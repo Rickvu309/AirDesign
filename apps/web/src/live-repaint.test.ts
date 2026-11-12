@@ -1,0 +1,89 @@
+import { decide, elementId, openRegister, type Command, type Register } from "@airdesign/document"
+import { paintStore } from "@airdesign/render"
+import { expect, it } from "vitest"
+import { busyElements, liveRepaint } from "./live-repaint"
+
+const node = elementId("256.2")
+const other = elementId("256.3")
+const box = { x: 1, y: 2, cx: 3, cy: 4 }
+const dragged = { x: 9, y: 9, cx: 3, cy: 4 }
+const files = new Map([
+  [node, "Hello"],
+  [other, "World"],
+])
+
+function landed(commands: readonly Command[]): Register {
+  let register = openRegister("", "deck")
+  for (const command of commands) {
+    const decision = decide(register, command)
+    if (decision.decision === "refuse") throw new Error(decision.code)
+    register = decision.register
+  }
+  return register
+}
+
+const added: readonly Command[] = [
+  { command: "add", node, floor: "", route: "deck" },
+  { command: "add", node: other, floor: "", route: "deck" },
+]
+
+const otherEdited = landed([...added, { command: "person", node: other, value: "Agent other" }])
+
+const edited = landed([
+  ...added,
+  { command: "person", node, value: "Agent" },
+  { command: "person", node, property: "box", value: box },
+  { command: "person", node: other, value: "Agent other" },
+])
+
+function painted() {
+  const store = paintStore()
+  store.publish({ id: node, kind: "shape", text: "Hello", picture: null })
+  store.publish({ id: other, kind: "shape", text: "Typing", picture: null })
+  return store
+}
+
+it("paints the text and box the server holds and leaves the element the person is typing in", () => {
+  const store = painted()
+  const busy = busyElements()
+  const repaint = liveRepaint(store, files, null, busy)
+  const release = busy.hold(other)
+  repaint(edited)
+  expect(store.getElement(node)?.text).toBe("Agent")
+  expect(store.getBox(node)).toEqual(box)
+  expect(store.getElement(other)?.text).toBe("Typing")
+  release()
+  repaint(edited)
+  expect(store.getElement(other)?.text).toBe("Agent other")
+})
+
+it("paints the file text and box again when the server no longer holds an edit", () => {
+  const store = painted()
+  const repaint = liveRepaint(store, files, null, busyElements())
+  repaint(edited)
+  repaint(openRegister("", "deck"))
+  expect(store.getElement(node)?.text).toBe("Hello")
+  expect(store.getBox(node)).toBeNull()
+})
+
+it("leaves an element the person is dragging until the server changes that element", () => {
+  const store = painted()
+  const repaint = liveRepaint(store, files, null, busyElements())
+  store.placeBox(node, dragged)
+  repaint(otherEdited)
+  expect(store.getBox(node)).toEqual(dragged)
+  expect(store.getElement(other)?.text).toBe("Agent other")
+  repaint(edited)
+  expect(store.getBox(node)).toEqual(box)
+})
+
+it("keeps an element busy until every edit that held it lets go", () => {
+  const busy = busyElements()
+  const first = busy.hold(node)
+  const second = busy.hold(node)
+  first()
+  first()
+  expect(busy.has(node)).toBe(true)
+  second()
+  expect(busy.has(node)).toBe(false)
+})

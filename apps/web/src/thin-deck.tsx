@@ -1,7 +1,5 @@
 import { deckRoutes } from "@airdesign/catalog"
 import {
-  currentValue,
-  history,
   readElementId,
   slideId,
   writeTextValue,
@@ -37,6 +35,8 @@ import { exportedParts } from "@/exported-parts"
 import { ensureMarkup } from "@/markup"
 import { backfillIndex } from "@/index-deck"
 import { pictureSources, type PictureSources } from "@/picture-fill"
+import { followDeck } from "@/deck-follow"
+import { busyElements, liveRepaint, shownValue } from "@/live-repaint"
 
 type NamedShape = { readonly id: ElementId; readonly shape: ReadShape }
 
@@ -102,11 +102,6 @@ export function valueStorable(
   }
 }
 
-export function shownValue(register: Register | null, id: ElementId, file: string): string {
-  const body = register?.elements[id]
-  return body === undefined || history(body).length === 0 ? file : currentValue(body)
-}
-
 function paint(
   store: PaintStore,
   parts: ReadonlyMap<string, Uint8Array>,
@@ -118,6 +113,7 @@ function paint(
   readonly movables: ReadonlyMap<ElementId, TextBox>
   readonly shapes: ReadonlyMap<ElementId, ReadShape>
   readonly pictures: PictureSources
+  readonly files: ReadonlyMap<ElementId, string>
 } {
   const named = namedShapes(parts)
   const ids = named.map((each) => each.id)
@@ -126,9 +122,11 @@ function paint(
   const boxes = new Map<ElementId, TextBox>()
   const movables = new Map<ElementId, TextBox>()
   const rows = new Map<ElementId, ReadShape>()
+  const files = new Map<ElementId, string>()
   for (const { id, shape } of named) {
     const kind = paintKind(shape.kind)
     const file = storedText(shape.text)
+    files.set(id, file)
     store.publish({ id, kind, text: shownValue(register, id, file), picture: kind === "picture" ? "" : null })
     store.placeBox(id, landedBox(register, id))
     if (seen.get(id) === 1 && boxStorable(parts, shape)) movables.set(id, { id, file })
@@ -154,7 +152,7 @@ function paint(
   }))
   const pictures = pictureSources(parts)
   const canvases = slideCanvases(paintReader(parts), sources, pictures.src)
-  return { count: read.length, canvases, boxes, movables, shapes: rows, pictures }
+  return { count: read.length, canvases, boxes, movables, shapes: rows, pictures, files }
 }
 
 async function listedName(deck: string): Promise<string | undefined> {
@@ -195,6 +193,7 @@ export function ThinDeck({ id }: { id: string }) {
   const shownParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
   const canvases = useRef<SlideCanvases>(() => null)
   const pictures = useRef<PictureSources | null>(null)
+  const busy = useRef(busyElements())
   const [slideCount, setSlideCount] = useState(0)
   const [current, setCurrent] = useState(0)
   const [title, setTitle] = useState("")
@@ -212,6 +211,7 @@ export function ThinDeck({ id }: { id: string }) {
 
   useEffect(() => {
     let live = true
+    const leaving = new AbortController()
     setPaintedDeck(undefined)
     void (async () => {
       await ensureMarkup()
@@ -225,7 +225,9 @@ export function ThinDeck({ id }: { id: string }) {
         .openDeck(id)
         .catch(() => null)
       if (!live) return
-      const painted = paint(store.current, stored.parts, opened?.ok === true ? opened.register : null)
+      const register = opened?.ok === true ? opened.register : null
+      const painted = paint(store.current, stored.parts, register)
+      const repaint = liveRepaint(store.current, painted.files, register, busy.current)
       boxes.current = painted.boxes
       movables.current = painted.movables
       shapes.current = painted.shapes
@@ -239,9 +241,19 @@ export function ThinDeck({ id }: { id: string }) {
       setPaintedDeck(id)
       await backfillIndex(id, stored.parts)
       settle(await flushPending(connect, id))
+      await followDeck(
+        connect(server),
+        id,
+        async () => {
+          const next = await connect(server).openDeck(id)
+          if (live && next.ok) repaint(next.register)
+        },
+        leaving.signal,
+      )
     })()
     return () => {
       live = false
+      leaving.abort()
     }
   }, [id, settle])
 
@@ -330,6 +342,11 @@ export function ThinDeck({ id }: { id: string }) {
     settle(outcome)
   }
 
+  function holding(target: ElementId, work: () => Promise<void>) {
+    const release = busy.current.hold(target)
+    void work().finally(release)
+  }
+
   async function exportDeck() {
     await ensureMarkup()
     const stored = await getParts(id)
@@ -390,8 +407,8 @@ export function ThinDeck({ id }: { id: string }) {
               ) : (
                 <SlideCanvas
                   className={cn(slideFrame, "shrink-0 overflow-clip focus-within:overflow-visible")}
-                  onBox={(target, box) => void onBox(target, box)}
-                  onEdit={(target, value) => void onEdit(target, value)}
+                  onBox={(target, box) => holding(target, () => onBox(target, box))}
+                  onEdit={(target, value) => holding(target, () => onEdit(target, value))}
                   slide={canvas}
                   store={store.current}
                   width={width}

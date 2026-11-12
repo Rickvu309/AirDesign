@@ -1,7 +1,7 @@
-import { catalog, projectTools, toolInputSchema } from "@airdesign/catalog"
 import { describe, expect, it } from "vitest"
 
-import { airaMessageCap, airaTextCap, airaTools, readTurn } from "./aira-conversation.js"
+import { airaMessageCap, airaTextCap, airaTools, readTurn } from "./aira-turn.js"
+import { catalog, projectTools, toolInputSchema } from "./catalog.js"
 
 const deck = "airadeck"
 const ask = { role: "user", content: "Retitle slide one." }

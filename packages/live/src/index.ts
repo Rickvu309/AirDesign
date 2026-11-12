@@ -1,4 +1,4 @@
-export { connect } from "./cache.js"
+export { connect, type FollowResult } from "./cache.js"
 export { fetchOriginal, sendOriginal } from "./original.js"
 export { getPart, getParts, putPart, putParts } from "./part.js"
 export {

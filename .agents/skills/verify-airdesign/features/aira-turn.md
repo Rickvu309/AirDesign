@@ -27,8 +27,8 @@ Preconditions:
 - **First call.** `post(airaRoutes.turn, { deck, messages })` with `edit.sse` filled with the deck, its revision and `256.2`. Four lines: two text pieces, one `airdesign_edit_deck` call, and the end line with `stop: "tool_use"`.
 - **Tool call.** `post(mcpRoutes.mcp, tools/call)` with the session cookie and `accept: application/json, text/event-stream`. The answer carries `ok`, the next revision and a `runId`.
 - **Next call.** The conversation plus the reply content and the tool result. The end line says `stop: "end_turn"` and more usage.
-- **Server copy.** `deckRoutes.open` reads `Hello from Aira`. With the local rows gone the reopened deck paints it. Evidence `NN-aira-edited`.
-- **Undo.** `post(deckRoutes.undo, { deck, runId })` answers the next revision. The reopened deck reads `Hello`. Evidence `NN-undone`. The same undo again is refused `run-fenced`.
+- **Server copy.** `deckRoutes.open` reads `Hello from Aira`. The open editor paints it without a reload: it watches the deck and repaints what changed. Evidence `NN-aira-edited`.
+- **Undo.** `post(deckRoutes.undo, { deck, runId })` answers the next revision. The open editor reads `Hello` again in the same page load. Evidence `NN-undone`. The same undo again is refused `run-fenced`.
 
 ## Gotchas
 

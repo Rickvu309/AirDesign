@@ -1,4 +1,4 @@
-import { airaTools, type ReplyBlock, type ToolCall } from "./aira-conversation.js"
+import { airaTools, type ReplyBlock, type ToolCall } from "@airdesign/catalog"
 
 export type Counts = {
   readonly input: number

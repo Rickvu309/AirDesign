@@ -2,10 +2,10 @@ import { once } from "node:events"
 import { createServer, type IncomingHttpHeaders } from "node:http"
 import type { AddressInfo } from "node:net"
 
+import { airaTools } from "@airdesign/catalog"
 import { afterAll, beforeAll, expect, it } from "vitest"
 
 import { airaMaxTokens, airaModel, airaSystem, type ModelCall } from "./aira.js"
-import { airaTools } from "./aira-conversation.js"
 import { failureOf, fixtureText, streamEvents } from "./aira-replay.js"
 import { anthropicTransport } from "./anthropic-transport.js"
 

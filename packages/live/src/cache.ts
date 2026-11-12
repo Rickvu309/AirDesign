@@ -50,6 +50,10 @@ export type OpenDeckResult =
     }
   | { ok: false; readonly refusal: WireRefusal }
 
+export type FollowResult =
+  | { ok: true; readonly deck: DeckId; readonly revision: number; readonly changed: boolean }
+  | Extract<WatchResult, { ok: false }>
+
 export type EnqueueResult<Painted = string> =
   | { ok: true; readonly painted: Painted }
   | { ok: false; readonly refusal: WireRefusal }
@@ -160,11 +164,24 @@ const flushing = new Map<DeckId, Promise<unknown>>()
 type OpenOnceResult = { ok: true } | Extract<OpenResult, { ok: false }>
 
 const openingByRemote = new WeakMap<Remote, Map<DeckId, Promise<OpenResult>>>()
+const knownByRemote = new WeakMap<Remote, Map<DeckId, number>>()
+
+function serial<T>(deck: DeckId, work: () => Promise<T>): Promise<T> {
+  const before = flushing.get(deck) ?? Promise.resolve()
+  const run = before.then(
+    () => work(),
+    () => work(),
+  )
+  flushing.set(deck, run)
+  return run
+}
 
 export function connect(remote: Remote, options: { readonly once?: () => string } = {}) {
   const nextOnce = (options.once ?? crypto.randomUUID).bind(crypto)
   const openingDecks = openingByRemote.get(remote) ?? new Map<DeckId, Promise<OpenResult>>()
   openingByRemote.set(remote, openingDecks)
+  const known = knownByRemote.get(remote) ?? new Map<DeckId, number>()
+  knownByRemote.set(remote, known)
 
   function forget(deck: DeckId, opening: Promise<OpenResult>) {
     if (openingDecks.get(deck) === opening) openingDecks.delete(deck)
@@ -217,6 +234,7 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
       if (result.deck !== deck || result.key !== `${deck}:${result.revision}`) {
         return { ok: false, refusal: "payload" }
       }
+      if (known.get(deck) === result.revision - 1) known.set(deck, result.revision)
       const stored: ConfirmedRow[] = []
       for (const row of rowsInBatch) revision = fitConfirmed(deck, revision, row, row.node, stored)
       await writeRows(
@@ -226,6 +244,20 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
       start += rowsInBatch.length
     }
     return result
+  }
+
+  async function refresh(deck: DeckId): Promise<OpenResult> {
+    const opened = await remote.open({ deck })
+    if (!opened.ok) return opened
+    const confirmed = rowsFromRegister(deck, opened.register)
+    const existing = await readRows(deck)
+    await writeRows(
+      confirmed.map((row) => ({ key: rowKey(deck, "confirmed", row.revision), row })),
+      existing.filter(isConfirmed).map((row) => rowKey(deck, "confirmed", row.revision)),
+    )
+    openingDecks.set(deck, Promise.resolve(opened))
+    known.set(deck, opened.revision)
+    return opened
   }
 
   function enqueueValue(deck: string, edit: Value, node: ElementId, floor: string): Promise<Enqueued> {
@@ -278,13 +310,7 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
     async flush(deck: string): Promise<CommitResult> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return { ok: false, refusal: "deck" }
-      const before = flushing.get(parsed.deck) ?? Promise.resolve()
-      const sent = before.then(
-        () => sendRows(parsed.deck),
-        () => sendRows(parsed.deck),
-      )
-      flushing.set(parsed.deck, sent)
-      return sent
+      return serial(parsed.deck, () => sendRows(parsed.deck))
     },
     async openDeck(deck: string): Promise<OpenDeckResult> {
       const parsed = readDeckId(deck)
@@ -300,6 +326,7 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
           [],
         )
       }
+      if (!known.has(parsed.deck)) known.set(parsed.deck, opened.revision)
       return { ok: true, ...view(parsed.deck, confirmed) }
     },
     async phase(deck: string): Promise<LivePhase> {
@@ -323,18 +350,20 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
       if (!parsed.ok) return parsed
       const watched = await remote.watch({ deck: parsed.deck, cursor })
       if (!watched.ok) return watched
-      if (cursor === null || watched.revision > cursor) {
-        const opened = await remote.open({ deck: parsed.deck })
-        if (opened.ok) {
-          const confirmed = rowsFromRegister(parsed.deck, opened.register)
-          const existing = await readRows(parsed.deck)
-          await writeRows(
-            confirmed.map((row) => ({ key: rowKey(parsed.deck, "confirmed", row.revision), row })),
-            existing.filter(isConfirmed).map((row) => rowKey(parsed.deck, "confirmed", row.revision)),
-          )
-        }
-      }
+      if (cursor === null || watched.revision > cursor) await serial(parsed.deck, () => refresh(parsed.deck))
       return watched
+    },
+    async follow(deck: string): Promise<FollowResult> {
+      const parsed = readDeckId(deck)
+      if (!parsed.ok) return parsed
+      const watched = await remote.watch({ deck: parsed.deck, cursor: known.get(parsed.deck) ?? null })
+      if (!watched.ok) return watched
+      return serial(parsed.deck, async (): Promise<FollowResult> => {
+        if (watched.revision <= (known.get(parsed.deck) ?? -1)) return { ...watched, changed: false }
+        const opened = await refresh(parsed.deck)
+        if (!opened.ok) return opened
+        return { ok: true, deck: opened.deck, revision: opened.revision, changed: true }
+      })
     },
   }
 }

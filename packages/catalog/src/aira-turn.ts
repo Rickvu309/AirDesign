@@ -1,4 +1,5 @@
-import { catalog, projectTools, readDeckId, toolInputSchema, type DeckId } from "@airdesign/catalog"
+import { catalog, projectTools, toolInputSchema } from "./catalog.js"
+import { readDeckId, type DeckId } from "./wire.js"
 
 export const airaTextCap = 8000
 export const airaMessageCap = 199
