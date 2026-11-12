@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto"
-import { deckRoutes, mcpRoutes, oauthRoutes, signInRoutes } from "@airdesign/catalog"
+import { airaRoutes, deckRoutes, mcpRoutes, oauthRoutes, signInRoutes } from "@airdesign/catalog"
 
 import { ask, askForm, cookieFrom, verifierPair } from "./harness.js"
 import type { Mail, OriginalUpload, Sql } from "./index.js"
@@ -92,7 +92,8 @@ export async function fillAccount(served: Served, sql: Sql, email: string): Prom
   const decks = [await storedDeck(served, cookie), await storedDeck(served, cookie)]
   await posted(served, deckRoutes.trash.path, { deck: decks[1] }, cookie)
   const oauth = await connected(served, cookie)
-  const turn = await ask(served.base, "POST", "/aira/turn", { text: "Fuzz" }, cookie, { "cf-ipcountry": "VN" })
+  const asked = { deck: decks[0], messages: [{ role: "user", content: "Fuzz" }] }
+  const turn = await ask(served.base, "POST", airaRoutes.turn.path, asked, cookie, { "cf-ipcountry": "VN" })
   if (turn.status !== 200) throw new Error(turn.text)
   await ask(served.base, "POST", signInRoutes.email.path, { email })
   const grants = await sql.query<{ id: string }>("select id from session.oauth_grant where principal = $1", [email])

@@ -71,7 +71,7 @@ Journeys are Playwright scripts in `.agents/skills/verify-airdesign/journeys/`. 
 $V journey <run> open-edit-save
 ```
 
-Shipped journeys: `open-edit-save`, `deck-list-trash`, `slide-paint`, `cleared-browser` (a deck reopened in a cleared browser is rebuilt from the original the server keeps), and `delete-account` (the account menu deletes the account and everything it holds). Each feature file in `features/` names its journey and steps.
+Shipped journeys: `open-edit-save`, `deck-list-trash`, `slide-paint`, `cleared-browser` (a deck reopened in a cleared browser is rebuilt from the original the server keeps), `delete-account` (the account menu deletes the account and everything it holds), and `aira-turn` (a scripted Aira call streams a tool call, `/mcp` runs it, and the run is undone). Each feature file in `features/` names its journey and steps.
 
 ## Every journey after every merge
 
@@ -89,8 +89,9 @@ To prove something no journey covers, write a new journey file there (or a scrat
 
 - `page`, `context`: a fresh Chromium page at 1600x1000 with `baseURL` set to the run's origin, so `page.goto("/")` works.
 - `signIn()`: real sign-in through `signInRoutes.email` and the emailed code on `signInRoutes.code`, then sets the session cookie on the browser. Returns `{ email, cookie }`.
-- `post(route, body, cookie)`: POST to a `deckRoutes` or `signInRoutes` entry; saves the request and answer as JSON evidence.
-- `deckRoutes`, `signInRoutes`: the catalog tables.
+- `post(route, body, cookie, headers)`: POST to a catalog route entry; saves the request and answer as JSON evidence. An NDJSON answer lands in `json.lines`, an event stream in `json.events`.
+- `deckRoutes`, `signInRoutes`, `airaRoutes`, `mcpRoutes`: the catalog tables.
+- `aira(scripts)`: the recorded model streams the next Aira calls play, one per call, the last one repeating. See `features/aira-turn.md`.
 - `capture(label)`: screenshot plus ARIA snapshot of the page.
 - `note(line)`: append a line to the run's `proof.md`.
 - `repo`: the checkout root, for fixtures such as `scripts/pptx-fixtures/clean.pptx`.
@@ -122,7 +123,7 @@ Proof standards:
 - Drive the user's path: the file input on Home, typing in the slide, the buttons on Home and Trash. Never call internal setters or test-only routes.
 - Capture the action and the result, not only the last screen.
 - Prove side effects through a second view: after a UI action, read the server copy with `deckRoutes.open` or `deckRoutes.list`. A UI that looks right while the server disagrees is a failure.
-- The only stand-in is the mail sender (writes a file instead of calling Resend) and the original store (in memory instead of R2, its signed URLs served by the front server under `/verify-original/`). Both sit behind production seams.
+- The only stand-ins are the mail sender (writes a file instead of calling Resend), the original store (in memory instead of R2, its signed URLs served by the front server under `/verify-original/`), Aira's model (`bin/scripted-aira.mjs` plays recorded streams instead of calling Claude), and the country header (the front server adds `cf-ipcountry: US` as Cloudflare would). Each sits behind a production seam.
 - Put the run id, the journey and the evidence path in your PR or review comment.
 
 ## Cleanup

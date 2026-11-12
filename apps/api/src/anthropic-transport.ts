@@ -1,6 +1,16 @@
 import Anthropic from "@anthropic-ai/sdk"
 
 import type { ModelCall, ModelOpen, Transport } from "./aira.js"
+import type { ModelMessage, ModelTool } from "./aira-conversation.js"
+
+function messageParam(message: ModelMessage): Anthropic.MessageParam {
+  if (typeof message.content === "string") return { role: message.role, content: message.content }
+  return { role: message.role, content: [...message.content] }
+}
+
+function toolParam(tool: ModelTool): Anthropic.Tool {
+  return { name: tool.name, description: tool.description, input_schema: { ...tool.input_schema, type: "object" } }
+}
 
 async function* relay(stream: AsyncIterable<unknown>): AsyncIterable<unknown> {
   try {
@@ -33,7 +43,8 @@ export function anthropicTransport(baseURL?: string): Transport {
           model: call.model,
           max_tokens: call.max_tokens,
           system: call.system,
-          messages: call.messages.map((message) => ({ role: message.role, content: message.content })),
+          tools: call.tools.map(toolParam),
+          messages: call.messages.map(messageParam),
           metadata: { user_id: call.metadata.user_id },
           output_config: { effort: call.output_config.effort },
           stream: true,

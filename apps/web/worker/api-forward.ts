@@ -1,11 +1,19 @@
-import { accountPaths, deckPaths, mcpPaths, oauthPaths, signInPaths, signOutPaths } from "@airdesign/catalog"
+import { accountPaths, airaPaths, deckPaths, mcpPaths, oauthPaths, signInPaths, signOutPaths } from "@airdesign/catalog"
 
 type Env = {
   API_ORIGIN?: string
   ASSETS: { fetch(request: Request): Promise<Response> }
 }
 
-const apiPaths = [...accountPaths, ...signInPaths, ...signOutPaths, ...deckPaths, ...oauthPaths, ...mcpPaths]
+const apiPaths = [
+  ...accountPaths,
+  ...signInPaths,
+  ...signOutPaths,
+  ...deckPaths,
+  ...oauthPaths,
+  ...mcpPaths,
+  ...airaPaths,
+]
 
 export default {
   fetch(request: Request, env: Env): Promise<Response> | Response {

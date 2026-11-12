@@ -43,6 +43,7 @@ for (const name of [
   "cleared-browser",
   "delete-account",
   "move-resize",
+  "aira-turn",
 ]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)

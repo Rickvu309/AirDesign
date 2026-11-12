@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { catalog, projectTools } from "./index.js"
+import { catalog, projectTools, toolInputSchema } from "./index.js"
 
 describe("run operations in the catalog", () => {
   it("keeps start_run and undo_run from agents and offers stop_run on the server", () => {
@@ -78,6 +78,16 @@ describe("projectTools", () => {
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+    })
+  })
+
+  it("gives every agent tool the JSON schema of its reader, a closed object that names its fields", () => {
+    for (const tool of projectTools(catalog)) {
+      expect(toolInputSchema(tool.op)).toMatchObject({ type: "object", additionalProperties: false })
+    }
+    expect(toolInputSchema("stop_run")).toMatchObject({
+      properties: { deck: { type: "string" }, runId: { type: "string" } },
+      required: ["deck", "runId"],
     })
   })
 

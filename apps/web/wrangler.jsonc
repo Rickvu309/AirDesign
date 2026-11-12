@@ -19,6 +19,7 @@
       "/oauth/token",
       "/oauth/revoke",
       "/mcp",
+      "/aira/*",
       "/.well-known/*",
     ],
   },

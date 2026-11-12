@@ -1,8 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 
+import { airaRoutes } from "@airdesign/catalog"
 import type { CallerLog } from "@airdesign/mcp"
 
-import { airaBodyCap, airaTurn, type AiraSettings } from "./aira.js"
+import { airaBodyCap, airaTurn, type AiraLine, type AiraSettings } from "./aira.js"
 import type { Sql } from "./pool.js"
 
 type AiraVisit = {
@@ -22,17 +23,27 @@ type AiraHttp<Visit extends AiraVisit> = {
   readonly sendJson: (res: ServerResponse, status: number, body: unknown) => void
 }
 
+async function streamLines(res: ServerResponse, lines: AsyncIterable<AiraLine>): Promise<void> {
+  if (!res.destroyed) {
+    res.writeHead(200, { "content-type": "application/x-ndjson; charset=utf-8", "cache-control": "no-store" })
+  }
+  for await (const line of lines) {
+    if (!res.destroyed && !res.writableEnded) res.write(`${JSON.stringify(line)}\n`)
+  }
+  res.end()
+}
+
 export function airaRoute<Visit extends AiraVisit>(
   http: AiraHttp<Visit>,
 ): {
   readonly method: "POST"
-  readonly path: "/aira/turn"
+  readonly path: typeof airaRoutes.turn.path
   readonly cap: number
   readonly serve: (visit: Visit) => Promise<void>
 } {
   return {
     method: "POST",
-    path: "/aira/turn",
+    path: airaRoutes.turn.path,
     cap: airaBodyCap,
     serve: async (visit) => {
       const { options, logs, now, mint, req, res } = visit
@@ -49,7 +60,8 @@ export function airaRoute<Visit extends AiraVisit>(
         req.headers["cf-ipcountry"],
         http.parsedJson(body),
       )
-      http.sendJson(res, answer.status, answer.body)
+      if ("lines" in answer) await streamLines(res, answer.lines)
+      else http.sendJson(res, answer.status, answer.body)
     },
   }
 }

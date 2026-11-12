@@ -5,20 +5,25 @@ import { admit, emptyLog, type CallerLog } from "@airdesign/mcp"
 import { allowance, usage, type Command, type Ledger } from "@airdesign/usage"
 
 import { withAddress } from "./account.js"
+import { airaTools, readTurn, type ModelMessage, type ModelTool, type ReplyBlock } from "./aira-conversation.js"
+import { play, type AiraEvent, type Counts, type Played } from "./aira-stream.js"
 import type { Sql } from "./pool.js"
 
 export const airaModel = "claude-sonnet-5-5"
 export const airaMaxTokens = 8192
-export const airaTextCap = 8000
-export const airaBodyCap = 65_536
+export const airaBodyCap = 262_144
 export const staleTurn = 900_000
 
 const framing = 64
 const weekLength = 604_800_000
 const nano = 1_000_000_000
 
-export const instructions =
-  "You are Aira, the AI agent inside AirDesign, where people make slide decks. You are an AI, not a person. Answer the person's message about their deck plainly and briefly. Say when a fact should be checked."
+const instructions =
+  "You are Aira, the AI agent inside AirDesign, where people make slide decks. You are an AI, not a person. The person watches the deck change as you edit it. Use the airdesign tools to read the deck before you edit it, edit only what the person asked for, and call airdesign_stop_run with your runId when your edits are done. Answer plainly and briefly. Say when a fact should be checked."
+
+export function airaSystem(deck: string): string {
+  return `${instructions} The open deck is ${deck}.`
+}
 
 export const supportedCountries: ReadonlySet<string> = new Set(
   (
@@ -36,7 +41,8 @@ export type ModelCall = {
   readonly model: string
   readonly max_tokens: number
   readonly system: string
-  readonly messages: readonly { readonly role: "user"; readonly content: string }[]
+  readonly tools: readonly ModelTool[]
+  readonly messages: readonly ModelMessage[]
   readonly metadata: { readonly user_id: string }
   readonly output_config: { readonly effort: "low" }
 }
@@ -69,17 +75,32 @@ export type AiraHost = {
   readonly mint: () => string
 }
 
-export type Counts = {
-  readonly input: number
-  readonly output: number
-  readonly write5m: number
-  readonly write1h: number
-  readonly read: number
-}
-
 export type WeekUsage = { readonly used: number; readonly allowed: number; readonly resets: string }
 
 export type AiraAnswer = { readonly status: number; readonly body: unknown }
+
+export type AiraLine =
+  | AiraEvent
+  | {
+      readonly type: "end"
+      readonly ok: true
+      readonly stop: string
+      readonly content: readonly ReplyBlock[]
+      readonly usage: WeekUsage
+    }
+  | { readonly type: "end"; readonly ok: false; readonly refusal: "dropped" | "unavailable"; readonly usage: WeekUsage }
+
+export type AiraStream = { readonly status: 200; readonly lines: AsyncIterable<AiraLine> }
+
+type Asked = {
+  readonly account: string
+  readonly user: string
+  readonly id: string
+  readonly input: number
+  readonly key: string
+  readonly transport: Transport
+  readonly call: ModelCall
+}
 
 type Stored = Ledger & { readonly monday: number }
 
@@ -87,21 +108,7 @@ type Reserved =
   | { readonly ok: true; readonly ledger: Stored }
   | { readonly ok: false; readonly refusal: "open" | "allowance"; readonly ledger: Stored }
 
-type Played =
-  | { readonly kind: "settled"; readonly text: string; readonly counts: Counts }
-  | { readonly kind: "released" }
-  | { readonly kind: "dropped" }
-
 const noUsage = { search: 0, searchOn: false, usOnly: false } as const
-
-export function readTurn(raw: unknown): { readonly ok: true; readonly text: string } | { readonly ok: false } {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return { ok: false }
-  const keys = Object.keys(raw)
-  if (keys.length !== 1 || keys[0] !== "text") return { ok: false }
-  const text: unknown = (raw as { text?: unknown }).text
-  if (typeof text !== "string" || text.trim().length === 0 || text.length > airaTextCap) return { ok: false }
-  return { ok: true, text }
-}
 
 export function accountId(secret: string, account: string): string {
   return createHmac("sha256", secret).update(account).digest("hex")
@@ -113,8 +120,8 @@ export function weekStart(now: number): number {
   return Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate() - back)
 }
 
-function inputCeiling(text: string): number {
-  return bytesOf(instructions) + bytesOf(text) + framing
+function inputCeiling(system: string, messages: readonly ModelMessage[]): number {
+  return bytesOf(system) + bytesOf(JSON.stringify(airaTools)) + bytesOf(JSON.stringify(messages)) + framing
 }
 
 function weekUsage(ledger: Stored): WeekUsage {
@@ -275,72 +282,33 @@ async function noteRequest(db: Sql, id: string, request: string | null): Promise
   await db.query("update session.aira_turn set request = $2 where id = $1", [id, request])
 }
 
-function fieldOf(value: unknown, name: string): unknown {
-  if (typeof value !== "object" || value === null) return undefined
-  return (value as Record<string, unknown>)[name]
-}
-
-function countOf(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined
-}
-
-export function unavailable(status: number, type: string, message: string): boolean {
-  if (status === 429 || status === 529) return true
-  if (type === "rate_limit_error" || type === "overloaded_error") return true
-  return status === 400 && /usage limits/i.test(message)
-}
-
-async function play(events: AsyncIterable<unknown>): Promise<Played> {
-  let text = ""
-  let started: unknown
-  let final: unknown
-  let begun = false
-  try {
-    for await (const event of events) {
-      const type = fieldOf(event, "type")
-      if (type === "message_start") {
-        begun = true
-        started = fieldOf(fieldOf(event, "message"), "usage")
-      } else if (type === "content_block_delta") {
-        const delta = fieldOf(event, "delta")
-        const piece = fieldOf(delta, "text")
-        if (fieldOf(delta, "type") === "text_delta" && typeof piece === "string") text += piece
-      } else if (type === "message_delta") {
-        final = fieldOf(event, "usage")
-      } else if (type === "error") {
-        const error = fieldOf(event, "error")
-        const kind = fieldOf(error, "type")
-        const message = fieldOf(error, "message")
-        if (
-          !begun &&
-          final === undefined &&
-          unavailable(0, typeof kind === "string" ? kind : "", typeof message === "string" ? message : "")
-        ) {
-          return { kind: "released" }
-        }
-        break
-      }
-    }
-  } catch {
-    return { kind: "dropped" }
-  }
-  if (final === undefined) return { kind: "dropped" }
-  const pick = (name: string): number => countOf(fieldOf(final, name)) ?? countOf(fieldOf(started, name)) ?? 0
-  return {
-    kind: "settled",
-    text,
-    counts: {
-      input: pick("input_tokens"),
-      output: pick("output_tokens"),
-      write5m: pick("cache_creation_input_tokens"),
-      write1h: 0,
-      read: pick("cache_read_input_tokens"),
-    },
-  }
-}
-
 function writeLine(line: string): void {
   process.stdout.write(`${line}\n`)
+}
+
+async function* answered(host: AiraHost, asked: Asked, log: (line: string) => void): AsyncGenerator<AiraLine> {
+  const { account, id, input } = asked
+  let opened: ModelOpen
+  try {
+    opened = await asked.transport(asked.call, asked.key)
+  } catch {
+    opened = { ok: false, request: null, status: 0, type: "api_error", message: "" }
+  }
+  await noteRequest(host.db, id, opened.request)
+  const played: Played = opened.ok ? yield* play(opened.events) : { kind: "released" }
+  const ended = host.now()
+  let ledger: Stored
+  if (played.kind === "settled") ledger = await settleTurn(host.db, account, id, "settled", played.counts, ended)
+  else if (played.kind === "dropped")
+    ledger = await settleTurn(host.db, account, id, "dropped", heldCounts(input), ended)
+  else ledger = await releaseTurn(host.db, account, id, ended)
+  log(`aira turn ${id} account ${asked.user} request ${opened.request ?? "none"} outcome ${played.kind}`)
+  const usage = weekUsage(ledger)
+  if (played.kind === "settled") {
+    yield { type: "end", ok: true, stop: played.stop, content: played.content, usage }
+    return
+  }
+  yield { type: "end", ok: false, refusal: played.kind === "dropped" ? "dropped" : "unavailable", usage }
 }
 
 export async function airaTurn(
@@ -348,7 +316,7 @@ export async function airaTurn(
   account: string,
   country: string | string[] | undefined,
   raw: unknown,
-): Promise<AiraAnswer> {
+): Promise<AiraAnswer | AiraStream> {
   const settings = host.settings
   if (settings === undefined || !settings.on || settings.key === undefined || settings.secret === undefined) {
     return refuse(403, "off")
@@ -360,7 +328,8 @@ export async function airaTurn(
   const admission = admit(host.logs.get(account) ?? emptyLog(), "turn", now)
   if (!admission.ok) return refuse(429, "rate", { text: admission.text })
   const id = host.mint()
-  const input = inputCeiling(parsed.text)
+  const system = airaSystem(parsed.deck)
+  const input = inputCeiling(system, parsed.messages)
   const reserved = await reserveTurn(host.db, account, id, input, now)
   if (!reserved.ok)
     return refuse(reserved.refusal === "open" ? 409 : 402, reserved.refusal, {
@@ -371,29 +340,12 @@ export async function airaTurn(
   const call: ModelCall = {
     model: airaModel,
     max_tokens: airaMaxTokens,
-    system: instructions,
-    messages: [{ role: "user", content: parsed.text }],
+    system,
+    tools: airaTools,
+    messages: parsed.messages,
     metadata: { user_id: user },
     output_config: { effort: "low" },
   }
-  let opened: ModelOpen
-  try {
-    opened = await settings.transport(call, settings.key)
-  } catch {
-    opened = { ok: false, request: null, status: 0, type: "api_error", message: "" }
-  }
-  await noteRequest(host.db, id, opened.request)
-  const played: Played = opened.ok ? await play(opened.events) : { kind: "released" }
-  const ended = host.now()
-  let ledger: Stored
-  if (played.kind === "settled") ledger = await settleTurn(host.db, account, id, "settled", played.counts, ended)
-  else if (played.kind === "dropped")
-    ledger = await settleTurn(host.db, account, id, "dropped", heldCounts(input), ended)
-  else ledger = await releaseTurn(host.db, account, id, ended)
-  ;(settings.log ?? writeLine)(
-    `aira turn ${id} account ${user} request ${opened.request ?? "none"} outcome ${played.kind}`,
-  )
-  if (played.kind === "settled") return { status: 200, body: { ok: true, text: played.text, usage: weekUsage(ledger) } }
-  if (played.kind === "dropped") return refuse(200, "dropped", { usage: weekUsage(ledger) })
-  return refuse(200, "unavailable", { usage: weekUsage(ledger) })
+  const asked = { account, user, id, input, key: settings.key, transport: settings.transport, call }
+  return { status: 200, lines: answered(host, asked, settings.log ?? writeLine) }
 }

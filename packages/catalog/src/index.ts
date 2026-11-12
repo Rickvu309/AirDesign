@@ -1,4 +1,4 @@
-export { catalog, projectTools, type AgentOp, type CommandOp } from "./catalog.js"
+export { catalog, projectTools, toolInputSchema, type AgentOp, type CommandOp } from "./catalog.js"
 export { deckName } from "./deck-name.js"
 export { storableText } from "./storable-text.js"
 export {
@@ -11,6 +11,8 @@ export {
   signOutRoutes,
   accountRoutes,
   accountPaths,
+  airaRoutes,
+  airaPaths,
   signOutPaths,
   type CallRefusal,
   type EditRefusal,

@@ -1,7 +1,16 @@
 import { unreachable } from "@airdesign/device"
 import { foldRegister, refusals, type Register, type StoredRegister } from "@airdesign/document"
 import { readCommit } from "./edit-wire.js"
-import { readCapture, readDecks, readNoFields, readOriginalUpload, readRename, readWatch, type DeckId } from "./wire.js"
+import {
+  readCapture,
+  readDecks,
+  readNoFields,
+  readOriginalUpload,
+  readRename,
+  readRun,
+  readWatch,
+  type DeckId,
+} from "./wire.js"
 import { isRegister } from "./register-answer.js"
 
 const callRefusals = [...refusals, "field", "deck", "batch", "base", "payload"] as const
@@ -163,6 +172,11 @@ export const deckRoutes = {
   originalUpload: { path: "/decks/original/upload", read: readOriginalUpload, result: decode(uploadAnswer) },
   originalDone: { path: "/decks/original/done", read: readCapture, result: decode(recordAnswer) },
   original: { path: "/decks/original", read: readCapture, result: decode(originalAnswer) },
+  undo: { path: "/decks/undo", read: readRun, result: decode(commitAnswer) },
+} as const
+
+export const airaRoutes = {
+  turn: { path: "/aira/turn", method: "POST" },
 } as const
 
 export const signInRoutes = {
@@ -192,3 +206,4 @@ export const signOutPaths: readonly string[] = Object.values(signOutRoutes).map(
 export const accountPaths: readonly string[] = Object.values(accountRoutes).map((route) => route.path)
 export const deckPaths: readonly string[] = Object.values(deckRoutes).map((route) => route.path)
 export const oauthPaths: readonly string[] = Object.values(oauthRoutes).map((route) => route.path)
+export const airaPaths: readonly string[] = Object.values(airaRoutes).map((route) => route.path)

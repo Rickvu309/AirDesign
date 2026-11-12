@@ -1,13 +1,11 @@
-import { catalog, projectTools } from "@airdesign/catalog"
+import { catalog, projectTools, toolInputSchema } from "@airdesign/catalog"
 import { McpServer } from "@modelcontextprotocol/server"
-import * as z from "zod/v4"
 import { admit } from "./admit.js"
 import { agentOps, callTool, type Session, type ToolResult } from "./call-tool.js"
 import type { EditCode } from "./edit-next.js"
 import { settleTurn } from "./turn.js"
 
-function inputSchema(input: z.ZodType) {
-  const json = z.toJSONSchema(input, { io: "input" })
+function inputSchema(json: Readonly<Record<string, unknown>>) {
   return {
     "~standard": {
       version: 1 as const,
@@ -42,7 +40,7 @@ export function createServer(session: Session, host?: Host): McpServer {
       tool.name,
       {
         description: tool.description,
-        inputSchema: inputSchema(catalog[tool.op].read.input),
+        inputSchema: inputSchema(toolInputSchema(tool.op)),
         annotations: {
           readOnlyHint: tool.readOnlyHint,
           destructiveHint: tool.destructiveHint,

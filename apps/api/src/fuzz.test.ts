@@ -4,7 +4,7 @@ import { connect, type AddressInfo } from "node:net"
 import type { Pool } from "pg"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
-import { airaFuzzGood, airaFuzzSettings } from "./aira-fuzz.js"
+import { fuzzGood, fuzzAira } from "./aira-fuzz.js"
 import { attacks, hostileValues, type Attack } from "./fuzz-attack.js"
 import { badTargets } from "./fuzz-target.js"
 import { ask, askForm, cookieFrom, postgresInfo, serve, testResource } from "./harness.js"
@@ -230,7 +230,7 @@ describe("hostile input over every route", () => {
       send: async (mail) => {
         mails.push(mail)
       },
-      aira: airaFuzzSettings,
+      aira: fuzzAira,
     })
     const broken = { query: () => Promise.reject(thrown) } as unknown as Pool
     const brokenListen = new DeckListen(info.listen)
@@ -350,7 +350,7 @@ describe("hostile input over every route", () => {
         },
       ],
       "POST /oauth/revoke": [{ shape: "form", answers: 200, fields: { token: "t" } }],
-      ...airaFuzzGood,
+      ...fuzzGood(deck),
       "POST /account/delete": [{ shape: "json", answers: 400, fields: { email: "wrong@example.com" } }],
       "POST /sign-in/email": [{ shape: "json", answers: 202, fields: { email: "good@example.com" } }],
       "POST /sign-in/code": [{ shape: "json", answers: 401, fields: { email: "good@example.com", code: "000000" } }],

@@ -4,7 +4,8 @@ import type { AddressInfo } from "node:net"
 
 import { afterAll, beforeAll, expect, it } from "vitest"
 
-import { airaMaxTokens, airaModel, instructions, type ModelCall } from "./aira.js"
+import { airaMaxTokens, airaModel, airaSystem, type ModelCall } from "./aira.js"
+import { airaTools } from "./aira-conversation.js"
 import { failureOf, fixtureText, streamEvents } from "./aira-replay.js"
 import { anthropicTransport } from "./anthropic-transport.js"
 
@@ -12,8 +13,27 @@ const fakeKey = "test-key-not-real"
 const call: ModelCall = {
   model: airaModel,
   max_tokens: airaMaxTokens,
-  system: instructions,
-  messages: [{ role: "user", content: "How should slide two open?" }],
+  system: airaSystem("airadeck"),
+  tools: airaTools,
+  messages: [
+    { role: "user", content: "How should slide two open?" },
+    {
+      role: "assistant",
+      content: [
+        { type: "thinking", thinking: "", signature: "EqQBCgIYAhIMfixturesignature" },
+        { type: "redacted_thinking", data: "EmwKAhgBEgyfixtureredacted" },
+        { type: "text", text: "I will read the deck first." },
+        { type: "tool_use", id: "toolu_fixture_read", name: "airdesign_read_deck", input: { deck: "airadeck" } },
+      ],
+    },
+    {
+      role: "user",
+      content: [
+        { type: "tool_result", tool_use_id: "toolu_fixture_read", content: "stale", is_error: true },
+        { type: "text", text: "Keep it short." },
+      ],
+    },
+  ],
   metadata: { user_id: "0f".repeat(32) },
   output_config: { effort: "low" },
 }
@@ -56,6 +76,11 @@ async function opened(name: string) {
   for await (const event of open.events) events.push(event)
   return { open, events }
 }
+
+it("streams a recorded tool turn through the SDK event by event", async () => {
+  const { events } = await opened("tool.sse")
+  expect(events).toEqual(streamEvents("tool.sse").filter((event) => (event as { type?: string }).type !== "ping"))
+})
 
 it("streams a recorded turn through the SDK with the request id, the pinned call and the given key", async () => {
   const { open, events } = await opened("turn.sse")
