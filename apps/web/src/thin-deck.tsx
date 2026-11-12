@@ -368,32 +368,34 @@ export function ThinDeck({ id }: { id: string }) {
       <ThinNoticeView notice={notice} onTryAgain={tryAgain} />
       <EditorFrame>
         <EditorShell
-          panel="none"
-          onExport={() => void onExport()}
-          slides={{
-            count: slideCount,
-            current,
-            onSelect: setCurrent,
-            thumbHeight: thumbHeight(canvases.current(0)),
-            thumb: (index, width) => {
-              const slide = canvases.current(index)
-              return slide === null ? null : <SlideCanvas quiet slide={slide} store={store.current} width={width} />
+          deck={{
+            onExport: () => void onExport(),
+            size: canvases.current(current),
+            slides: {
+              count: slideCount,
+              current,
+              onSelect: setCurrent,
+              thumbHeight: thumbHeight(canvases.current(0)),
+              thumb: (index, width) => {
+                const slide = canvases.current(index)
+                return slide === null ? null : <SlideCanvas quiet slide={slide} store={store.current} width={width} />
+              },
             },
-          }}
-          slide={(width) => {
-            const canvas = canvases.current(current)
-            return canvas === null ? (
-              <div />
-            ) : (
-              <SlideCanvas
-                className={cn(slideFrame, "shrink-0 overflow-clip focus-within:overflow-visible")}
-                onBox={(target, box) => void onBox(target, box)}
-                onEdit={(target, value) => void onEdit(target, value)}
-                slide={canvas}
-                store={store.current}
-                width={width}
-              />
-            )
+            slide: (width) => {
+              const canvas = canvases.current(current)
+              return canvas === null ? (
+                <div />
+              ) : (
+                <SlideCanvas
+                  className={cn(slideFrame, "shrink-0 overflow-clip focus-within:overflow-visible")}
+                  onBox={(target, box) => void onBox(target, box)}
+                  onEdit={(target, value) => void onEdit(target, value)}
+                  slide={canvas}
+                  store={store.current}
+                  width={width}
+                />
+              )
+            },
           }}
           slideLabel={String(current + 1)}
           title={title}

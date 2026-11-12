@@ -12,7 +12,7 @@ import { Tool, ToolHeader } from "@/components/ai-elements/tool"
 import { productCopy } from "@/copy/product-copy"
 import { creditsCopy } from "@/credits/credits-sample"
 import { EditorIcon } from "@/editor/editor-icons"
-import { ExportButton, ZoomReadout } from "@/editor/editor-chrome"
+import { ExportButton, PanelHead, ZoomReadout } from "@/editor/editor-chrome"
 
 export function LimitCover({ phase, mark = "tile" }: { phase: "limit" | "reset"; mark?: "tile" | "ring" }) {
   return (
@@ -25,10 +25,10 @@ export function LimitCover({ phase, mark = "tile" }: { phase: "limit" | "reset";
 function LimitPanel({ phase, mark }: { phase: "limit" | "reset"; mark: "tile" | "ring" }) {
   return (
     <aside className="flex h-full w-[360px] shrink-0 flex-col border-l border-line bg-white">
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-line pr-2 pl-3">
+      <PanelHead>
         <ZoomReadout value="64%" />
         <ExportButton />
-      </div>
+      </PanelHead>
       <div className="flex h-11 shrink-0 items-center justify-between pr-3 pl-3">
         <span className="flex h-6 items-center gap-1.5 rounded-[var(--shape-control)] pr-1.5 pl-1 text-xs text-quiet">
           <EditorIcon name="history" size={13} className="text-faint" />

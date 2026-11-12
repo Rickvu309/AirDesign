@@ -48,6 +48,12 @@ export function ZoomReadout({ value, tone = "quiet" }: { value: string; tone?: "
   )
 }
 
+export function PanelHead({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex h-14 shrink-0 items-center justify-between border-b border-line pr-2 pl-3">{children}</div>
+  )
+}
+
 export function Island({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div className={cn("flex h-11 items-center gap-1 rounded-xl bg-white px-1.5", cardShadow, className)}>
@@ -56,7 +62,15 @@ export function Island({ children, className }: { children: ReactNode; className
   )
 }
 
-export function SidebarHead({ title, trailing }: { title: string; trailing?: ReactNode }) {
+export function SidebarHead({
+  title,
+  trailing,
+  gridOff = false,
+}: {
+  title: string
+  trailing?: ReactNode
+  gridOff?: boolean
+}) {
   return (
     <div className="flex h-14 shrink-0 items-center justify-between pr-2 pl-3">
       <span className="flex items-center gap-2">
@@ -70,6 +84,7 @@ export function SidebarHead({ title, trailing }: { title: string; trailing?: Rea
           size="icon"
           className="size-8 rounded-md text-quiet active:translate-y-0"
           aria-label="Grid"
+          disabled={gridOff}
         >
           <EditorIcon name="grid" size={16} />
         </Button>

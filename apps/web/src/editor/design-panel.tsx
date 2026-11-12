@@ -1,14 +1,9 @@
 import { haldenMist, haldenTeal, swatchMist, swatchNavy, swatchTeal, swatchWhite } from "@/editor/design-panel-art"
 import { EditorIcon } from "@/editor/editor-icons"
-import { ExportButton, ZoomReadout } from "@/editor/editor-chrome"
 
 export function DesignPanel() {
   return (
-    <aside className="flex h-full w-[360px] shrink-0 flex-col border-l border-line bg-white">
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-line pr-2 pl-3">
-        <ZoomReadout value="64%" />
-        <ExportButton />
-      </div>
+    <>
       <div className="flex h-12 shrink-0 items-center border-b border-line px-4">
         <span className="text-sm font-semibold text-foreground">Slide 3</span>
       </div>
@@ -46,7 +41,7 @@ export function DesignPanel() {
           <Swatch color={swatchWhite} name="White" edged />
         </div>
       </section>
-    </aside>
+    </>
   )
 }
 
