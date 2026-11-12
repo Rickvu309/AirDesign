@@ -1,9 +1,35 @@
+import fs from "node:fs"
 import path from "node:path"
 import { defineConfig } from "vitest/config"
 
-const sharedWorker = ["catalog", "device", "document", "engine", "oauth", "usage"].map(
-  (name) => `packages/${name}/**/*.test.ts`,
-)
+const root = import.meta.dirname
+
+const mocksModules = /\bvi\.(mock|doMock|stubGlobal|stubEnv|spyOn|useFakeTimers|setSystemTime)\(/
+
+const unitTests = fs
+  .globSync(
+    [
+      "apps/**/*.test.ts",
+      "apps/**/*.test.tsx",
+      "packages/**/*.test.ts",
+      "tests/**/*.test.ts",
+      ".agents/skills/**/*.test.mjs",
+    ],
+    {
+      cwd: root,
+      exclude: (name) => name === "node_modules" || name === "dist",
+    },
+  )
+  .filter(
+    (file) =>
+      !file.startsWith("tests/browser/") && !file.startsWith("packages/render/") && !file.startsWith("apps/api/"),
+  )
+  .sort()
+
+const holdsModules = (file: string) => mocksModules.test(fs.readFileSync(path.join(root, file), "utf8"))
+const readsGlobals = (file: string) => file.startsWith("apps/web/") || file.startsWith("apps/site/")
+const sharedTests = unitTests.filter((file) => !holdsModules(file) && !readsGlobals(file))
+const isolatedTests = unitTests.filter((file) => !sharedTests.includes(file))
 
 const alias = [
   {
@@ -33,29 +59,14 @@ export default defineConfig({
         extends: true,
         test: {
           name: "unit",
-          include: [
-            "apps/**/*.test.ts",
-            "apps/**/*.test.tsx",
-            "packages/**/*.test.ts",
-            "tests/**/*.test.ts",
-            ".agents/skills/**/*.test.mjs",
-          ],
-          exclude: [
-            "tests/browser/**",
-            "**/node_modules/**",
-            "**/dist/**",
-            "packages/render/**/*.test.ts",
-            "apps/api/**/*.test.ts",
-            ...sharedWorker,
-          ],
+          include: isolatedTests,
         },
       },
       {
         extends: true,
         test: {
           name: "shared",
-          include: sharedWorker,
-          exclude: ["**/node_modules/**", "**/dist/**"],
+          include: sharedTests,
           isolate: false,
         },
       },
