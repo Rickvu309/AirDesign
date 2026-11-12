@@ -67,7 +67,7 @@ export function DecksShell({
     : sections.slice(1)
   return (
     <div className="flex h-full w-full">
-      <aside className="flex h-full w-[248px] shrink-0 flex-col bg-canvas px-3 pt-3 pb-3">
+      <aside data-decks-sidebar className="flex h-full w-[248px] shrink-0 flex-col bg-canvas px-3 pt-3 pb-3">
         {realAccount && onSignOut ? (
           <>
             {deletingAccount && (
@@ -181,7 +181,9 @@ export function DecksShell({
           )}
         </div>
       </aside>
-      <main className="min-w-0 flex-1 px-14 pt-10">{children}</main>
+      <main data-decks-main className="min-w-0 flex-1 px-14 pt-10">
+        {children}
+      </main>
     </div>
   )
 }

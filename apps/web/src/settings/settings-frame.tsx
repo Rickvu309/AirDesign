@@ -23,7 +23,7 @@ export function SettingsFrame({
     <div className="screen-frame">
       <DecksShell active="settings">
         <div className="-mx-14">
-          <div className="border-b border-line">
+          <div data-settings-header className="border-b border-line">
             <div className="mx-auto w-[860px]">
               <h1 className="text-[26px] leading-[34px] font-semibold tracking-[-0.5px] text-foreground">
                 {settingsCopy.title}
@@ -49,7 +49,9 @@ export function SettingsFrame({
               </nav>
             </div>
           </div>
-          <div className="mx-auto mt-7 flex w-[860px] flex-col gap-4">{children}</div>
+          <div data-settings-content className="mx-auto mt-7 flex w-[860px] flex-col gap-4">
+            {children}
+          </div>
         </div>
       </DecksShell>
       {overlay}

@@ -8,6 +8,8 @@ export default defineConfig({
   globalSetup: "./tests/journeys/launch.ts",
   use: {
     browserName: "chromium",
-    viewport: { width: 1600, height: 1000 },
+    viewport: { width: 1470, height: 923 },
+    deviceScaleFactor: 2,
+    reducedMotion: "reduce",
   },
 })

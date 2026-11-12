@@ -1,6 +1,6 @@
 ---
 name: verify-airdesign
-description: "Drive the real AirDesign app (apps/web product UI served with the real apps/api server on its own Postgres) the way a user does, and capture proof: screenshots, ARIA snapshots, API answers and a proof.md under ~/tmp/verify-airdesign/<run>/. Use before review to prove a change to the editor, import, save, deck list, Trash or sign-in, and as a verifier to check a PR in one pass."
+description: "Drive the real AirDesign app (apps/web product UI served with the real apps/api server on its own Postgres) the way a user does, capture proof (screenshots, ARIA snapshots, API answers, proof.md under ~/tmp/verify-airdesign/<run>/), and look at it as a design: ranked design faults, the real page beside its design screen, a contact sheet of every state. Use to prove a change to the editor, import, save, deck list, Trash, sign-in or anything a person sees."
 ---
 
 # Verify AirDesign
@@ -87,7 +87,7 @@ When it fails on `main`, the workflow opens the issue `journey failed on main` (
 
 To prove something no journey covers, write a new journey file there (or a scratch one under `~/tmp`, copied into `journeys/` for the run) that exports `default async function drive(kit)`. The kit gives you:
 
-- `page`, `context`: a fresh Chromium page at 1600x1000 with `baseURL` set to the run's origin, so `page.goto("/")` works.
+- `page`, `context`: a fresh Chromium page at the design's 1470x923 viewport, device scale 2 and reduced motion, with `baseURL` set to the run's origin. Captures wait for fonts and images. A journey may override the viewport when its purpose needs another size.
 - `signIn()`: real sign-in through `signInRoutes.email` and the emailed code on `signInRoutes.code`, then sets the session cookie on the browser. Returns `{ email, cookie }`.
 - `post(route, body, cookie, headers)`: POST to a catalog route entry; saves the request and answer as JSON evidence. An NDJSON answer lands in `json.lines`, an event stream in `json.events`.
 - `deckRoutes`, `signInRoutes`, `accountRoutes`, `oauthRoutes`, `airaRoutes`, `mcpRoutes`: the catalog tables.
@@ -110,7 +110,21 @@ $V api <run> open '{"deck":"<id>"}' --cookie '...'
 
 `api` takes a `deckRoutes` key (`open`, `commit`, `watch`, `list`, `rename`, `trash`, `restore`, `delete`, `originalUpload`, `originalDone`, `original`) and saves the answer under the evidence dir.
 
-## Evidence
+## Look at it
+
+Working is not the same as looking right. For every change a person sees:
+
+1. Find the states your change touches with `$V states`. Run `$V look <run> <state>` on each, before your change and after. A page no state covers: `$V look <run> <path>`, with `--import deck.pptx --slide n` for a slide.
+2. Run `$V compare <run> <state>` to put the state beside its design screen under `/screens/`.
+3. Open `annotated.png`, `compare.png` and the crops, and read them. Then write two or three sentences on what you see, as a designer would: what draws the eye, what looks off, how it differs from the design.
+4. Fix every finding or explain it. A finding that is meant gets an entry in `look/allow.json` with a reason; a real fault you leave gets a `test.fail` in `tests/browser/design-states.spec.ts`. When you add a state a person can reach, add it to `look/states.mjs`.
+5. Put the image paths, your sentences, and the finding counts before and after in the PR body.
+
+`$V sheet <run>` does all states at once and writes a contact sheet a person can open.
+
+Zero findings is not a design sign-off. The tool cannot judge taste, hierarchy, whether words are true for their situation, or whether a flow makes sense; only your reading of the images can. `look/README.md` lists what each detector reads and cannot see.
+
+## Saved proof
 
 Everything lands in `~/tmp/verify-airdesign/<run>/` and survives `stop`:
 
@@ -149,4 +163,5 @@ Run `stop` after every run, passed or failed. A failed `launch` prints the run i
 ## Helpers
 
 - `bin/verify-airdesign.mjs`: the only helper. `$V` with no command prints usage.
+- `look/`: the design commands' parts: the detectors, the state list, compare and the sheet. See `look/README.md`.
 - `journeys/*.mjs`: Playwright journeys run by `$V journey <run> <name>` and by `pnpm test:journeys`.
