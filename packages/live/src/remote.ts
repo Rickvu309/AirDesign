@@ -14,7 +14,11 @@ export type { OpenResult, CommitResult, WatchResult } from "@airdesign/catalog"
 
 export type Remote = {
   open(body: { readonly deck: string }): Promise<OpenResult>
-  commit(body: { readonly deck: string; readonly batch: readonly WireEdit[] }): Promise<CommitResult>
+  commit(body: {
+    readonly deck: string
+    readonly batch: readonly WireEdit[]
+    readonly once?: string
+  }): Promise<CommitResult>
   watch(body: { readonly deck: string; readonly cursor: number | null }): Promise<WatchResult>
 }
 

@@ -14,6 +14,7 @@ export type ConfirmedRow = {
 
 export type PendingRow = {
   readonly kind: "pending"
+  readonly once?: string
   readonly deck: DeckId
   readonly order: number
   readonly base: number
