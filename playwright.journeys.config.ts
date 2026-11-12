@@ -11,5 +11,6 @@ export default defineConfig({
     viewport: { width: 1470, height: 923 },
     deviceScaleFactor: 2,
     reducedMotion: "reduce",
+    screenshot: "only-on-failure",
   },
 })

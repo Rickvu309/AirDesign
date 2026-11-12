@@ -12,6 +12,7 @@ export default defineConfig({
   use: {
     baseURL: origin,
     browserName: "chromium",
+    screenshot: "only-on-failure",
   },
   webServer: {
     command: `pnpm --filter web build && pnpm --filter web exec vite preview --host 127.0.0.1 --port ${port} --strictPort`,
