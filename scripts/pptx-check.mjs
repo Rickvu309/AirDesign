@@ -96,7 +96,9 @@ const run = (command, args) =>
     )
   })
 
-const judgeBuilt = run(dotnet, judgeBuild)
+const background = (command, args) => run("nice", ["-n", "19", command, ...args])
+
+const judgeBuilt = background(dotnet, judgeBuild)
 judgeBuilt.catch(() => {})
 const validatorTally = { files: 0, distinct: 0, hits: 0 }
 const validatorLists = async (files) => {
@@ -105,7 +107,7 @@ const validatorLists = async (files) => {
     files,
     code: validatorCode(root),
     tally: validatorTally,
-    validate: async (group) => judgeRows(await run(dotnet, [judgeProgram, ...group])),
+    validate: async (group) => judgeRows(await background(dotnet, [judgeProgram, ...group])),
   })
 }
 
@@ -115,7 +117,7 @@ const renderCacheReady = readMachine({ soffice, pdftoppm: "pdftoppm", env: proce
     machine: machine.imageOs === null && machine.imageVersion === null ? { ...machine, ...localImage() } : machine,
     settings: renderSettings,
     code: renderCode(),
-    render: (file) => renderPages(file, { soffice, pdftoppm: "pdftoppm", run }),
+    render: (file) => renderPages(file, { soffice, pdftoppm: "pdftoppm", run: background }),
   }),
 )
 
@@ -176,7 +178,12 @@ const renderNext = async () => {
     }
   }
 }
-const proofStarted = Date.now()
+const renderWidth = Math.min(os.availableParallelism(), 4)
+const startRenders = () => {
+  const done = phases.time("render", () => Promise.all(Array.from({ length: renderWidth }, renderNext)))
+  done.catch(() => {})
+  return done
+}
 const proofFile = path.join(fixtures, "judge-proof.json")
 const proofSeeds = seedsFor({
   chosen: process.env.JUDGE_SEED,
@@ -202,6 +209,7 @@ const gitAnswer = (args) => {
 }
 const committed = committedBlobs(gitAnswer(committedArgs("HEAD")) ?? "")
 committed.delete(browserExportName)
+const earlyRenders = startRenders()
 const eventFile = process.env.GITHUB_EVENT_PATH
 const freshFails = freshMissFails({
   eventText: eventFile === undefined ? undefined : fs.existsSync(eventFile) ? fs.readFileSync(eventFile, "utf8") : "",
@@ -235,8 +243,10 @@ const routeFiles = writtenDecks.flatMap((deck) =>
 )
 const decks = cleanDecks.map((name) => ({ name, parts: parts.get(name) }))
 const samples = Number(process.env.JUDGE_SAMPLES ?? 3)
+const plantStarted = Date.now()
 const runs = proofSeeds.map((run) => ({ ...run, planted: plantSamples({ pptx, decks, seed: run.seed, samples }) }))
 endPrep()
+const earlyNames = new Set(parts.keys())
 const proofFolder = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-judge-proof-"))
 const sampleFile = (seed, index) => `judge-sample-${seed}-${index}.pptx`
 const judgedFiles = async () => {
@@ -247,10 +257,10 @@ const judgedFiles = async () => {
         fs.writeFileSync(path.join(proofFolder, sampleFile(run.seed, index)), storedZip(sample.parts))
       }
     }
-    const planting = (Date.now() - proofStarted) / 1000
+    const planting = (Date.now() - plantStarted) / 1000
     const found = await validatorLists(
       validatorFiles({
-        names: parts.keys(),
+        names: earlyNames,
         fixturePath,
         others: [
           ...routeFiles,
@@ -265,6 +275,8 @@ const judgedFiles = async () => {
     fs.rmSync(proofFolder, { recursive: true, force: true })
   }
 }
+const earlyLists = judgedFiles()
+earlyLists.catch(() => {})
 const spec = await browserSpec
 console.log(`browser export spec ${spec.seconds.toFixed(1)} seconds`)
 if (spec.ok) {
@@ -287,10 +299,16 @@ if (spec.ok) {
   const index = cases.findIndex((row) => row.name === "browser-text-export")
   if (index >= 0) cases.splice(index, 1)
 }
-const [{ found: lists, planting }] = await Promise.all([
-  judgedFiles(),
-  phases.time("render", () => Promise.all(Array.from({ length: Math.min(os.availableParallelism(), 4) }, renderNext))),
-])
+const lateLists = validatorLists(
+  validatorFiles({
+    names: [...parts.keys()].filter((name) => !earlyNames.has(name)),
+    fixturePath,
+    others: [],
+  }),
+)
+const [early, late] = await Promise.all([earlyLists, lateLists, earlyRenders, startRenders()])
+const { found: earlyFound, planting } = early
+const lists = new Map([...earlyFound, ...late])
 console.log((await renderCacheReady).line())
 console.log(validatorLine(validatorTally))
 const endJudging = phases.begin("judging")
