@@ -33,6 +33,16 @@ export function playwrightFailureLines(output) {
   return clean.trim()
 }
 
+export function playwrightTestLines(output) {
+  if (typeof output !== "string") return []
+  return output
+    .replace(/\u001b\[[0-9;]*m/g, "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => /^[✓✘x-]?\s*\d+ .*\(\d+(\.\d+)?m?s\)$/.test(line))
+    .map((line) => `browser test ${line}`)
+}
+
 export async function freshBrowserExport({ file, also = [], run }) {
   const files = [file, ...also]
   for (const stale of files) fs.rmSync(stale, { force: true })

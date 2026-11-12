@@ -2,7 +2,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { freshBrowserExport, playwrightFailureLines } from "./browser-export.mjs"
+import { freshBrowserExport, playwrightFailureLines, playwrightTestLines } from "./browser-export.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "browser-export-"))
@@ -242,3 +242,17 @@ if (failedPlaywrightSpec.detail.includes("[WebServer]")) {
 }
 
 console.log("browser export tests passed")
+
+const listed = playwrightTestLines(
+  [
+    "Running 2 tests using 2 workers",
+    "  ✓  1 [chromium] › tests/browser/box-export.spec.ts:76:5 › a box dragged and resized (12.3s)",
+    "  ✘  2 [chromium] › tests/browser/chart-export.spec.ts:58:5 › a chart paints (1.2m)",
+    "  1 failed",
+    "  1 passed (13.5s)",
+  ].join("\n"),
+)
+if (listed.length !== 2 || !listed[0].startsWith("browser test ✓  1 [chromium] › tests/browser/box-export.spec.ts")) {
+  throw new Error(`the test lines were ${JSON.stringify(listed)}`)
+}
+if (playwrightTestLines(undefined).length !== 0) throw new Error("a missing output gave test lines")
