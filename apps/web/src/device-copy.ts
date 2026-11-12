@@ -20,7 +20,7 @@ export async function deckParts(deck: string) {
   const stored = await getParts(deck)
   if (stored.ok) return stored
   const original = await fetchOriginal(deck)
-  if (!original.ok) return null
+  if (!original.ok) return original.refusal === "session" ? "signed-out" : null
   const read = await readPackage(original.file)
   if (!read.ok) return null
   const name = await listedName(deck)

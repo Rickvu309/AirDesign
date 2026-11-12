@@ -101,6 +101,10 @@ export function ThinDeck({ id }: { id: string }) {
       if (device !== null) openFrom(device.stored, device.register)
       const stored = device?.stored ?? (await deckParts(id))
       if (!live) return
+      if (stored === "signed-out") {
+        window.location.assign(signInAddress(window.location))
+        return
+      }
       if (stored === null) {
         setFailure("import-failed")
         return
