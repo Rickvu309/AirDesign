@@ -4,10 +4,12 @@ import {
   orderKeyAfter,
   presentSlides,
   readSlideId,
+  slideUndoable,
   type OrderKey,
   type Register,
   type SlideCommand,
   type SlideId,
+  type Undoable,
 } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { readSlides } from "@airdesign/pptx"
@@ -78,15 +80,16 @@ export async function commitSlideChange(
   register: Register,
   change: SlideChange,
   index: number,
-  paint: (current: number) => void | Promise<void>,
+  paint: (current: number, undoable: Undoable | null) => void | Promise<void>,
   to = index,
 ): Promise<CommitOutcome> {
   const file = fileSlides(parts, register)
   const built = slideCommand(file, register.order, change, index, to)
   if (built === null) return "refused"
   const edit = flooredEdit(parts, register, file, built.edit)
+  const undoable = slideUndoable(register, file, edit)
   const kept = await connect(memoryRemote()).enqueueSlide(deckId, file, edit)
   if (!kept.ok) return "refused"
-  await paint(built.current)
+  await paint(built.current, undoable)
   return flushPending(connect, deckId)
 }

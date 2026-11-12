@@ -21,6 +21,14 @@ const deck: EditorDeck = {
   size: { width: 12_192_000, height: 6_858_000 },
   slide: (width) => <div data-real-slide={width} />,
   onExport: () => undefined,
+  undo: {
+    undoLabel: "Undo",
+    redoLabel: "Redo",
+    canUndo: false,
+    canRedo: false,
+    onUndo: () => undefined,
+    onRedo: () => undefined,
+  },
 }
 
 function disabledLabels(markup: string): string[] {
@@ -75,6 +83,14 @@ describe("editor shell", () => {
     expect(markup.match(/data-slide-entry=/g)).toHaveLength(2)
     expect(markup.match(/<aside/g)).toHaveLength(2)
     for (const word of sampleWords) expect(markup).not.toContain(word)
+    expect(disabledLabels(markup)).toEqual(["Grid", "text", "shape", "image", "actions", "Undo", "Redo"])
+  })
+
+  it("names the edit the undo and redo buttons turn back once there is one", () => {
+    const undo = { ...deck.undo, undoLabel: "Undo move", redoLabel: "Redo delete slide", canUndo: true, canRedo: true }
+    const markup = renderToStaticMarkup(<EditorShell title="Real deck" slideLabel="1" deck={{ ...deck, undo }} />)
+    expect(markup).toContain('aria-label="Undo move"')
+    expect(markup).toContain('aria-label="Redo delete slide"')
     expect(disabledLabels(markup)).toEqual(["Grid", "text", "shape", "image", "actions"])
   })
 

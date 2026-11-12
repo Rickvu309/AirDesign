@@ -48,3 +48,14 @@ it("opens a register that names its slide file and order, and refuses a broken o
     refusal: "payload",
   })
 })
+
+it("reads a restore on a person's commit and turns it back into the same command", () => {
+  const restore = { slide: "restore", id: "257", key, file: ["256", "257"] }
+  const read = readCommit({ deck: "deck", batch: [restore] })
+  if (!read.ok) throw new Error(read.refusal)
+  const edit = read.batch[0]
+  if (edit === undefined || !("slide" in edit)) throw new Error("slide")
+  expect(slideEditCommand(edit)).toEqual({ slide: "restore", id: file[1], key })
+  expect(readCommit({ deck: "deck", batch: [{ ...restore, source: "256" }] })).toEqual(field)
+  expect(readAgentEdit({ deck: "deck", base: 0, changes: [restore] })).toEqual(field)
+})

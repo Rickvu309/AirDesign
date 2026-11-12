@@ -32,7 +32,13 @@ export type SlideMove = {
   readonly key: OrderKey
 }
 
-export type SlideCommand = SlideAdd | SlideClone | SlideRemove | SlideMove
+export type SlideRestore = {
+  readonly slide: "restore"
+  readonly id: SlideId
+  readonly key: OrderKey
+}
+
+export type SlideCommand = SlideAdd | SlideClone | SlideRemove | SlideMove | SlideRestore
 
 export type SlideBirth =
   | { readonly from: "file" }
@@ -79,6 +85,7 @@ function fileKeys(file: readonly SlideId[]): Map<SlideId, OrderKey> {
 function placed(spot: FoldedSlide, command: SlideCommand): FoldedSlide {
   if (command.slide === "remove") return { ...spot, present: false }
   if (command.slide === "move") return { ...spot, key: command.key }
+  if (command.slide === "restore") return { ...spot, key: command.key, present: true }
   return spot
 }
 
@@ -173,6 +180,11 @@ export function applySlide(
     if (!ids.has(command.id)) return { ok: false, code: "dead" }
     return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
   }
+  if (command.slide === "restore") {
+    if (ids.has(command.id) || !known(withFile, command.id)) return { ok: false, code: "dead" }
+    if (present.length >= limits.slides) return { ok: false, code: "limit" }
+    return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
+  }
   if (known(withFile, command.id) || ids.has(command.id)) return { ok: false, code: "present" }
   if (present.length >= limits.slides) return { ok: false, code: "limit" }
   if (command.slide === "add") {
@@ -201,6 +213,7 @@ function commandOf(raw: Record<string, unknown>): SlideCommand | undefined {
   const key = readOrderKey(raw.key)
   if (key === undefined) return undefined
   if (raw.slide === "move") return { slide: "move", id, key }
+  if (raw.slide === "restore") return { slide: "restore", id, key }
   const floor = Object.hasOwn(raw, "floor") ? readFloor(raw.floor, id) : null
   if (floor === undefined) return undefined
   const floored = floor === null ? {} : { floor }
