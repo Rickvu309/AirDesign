@@ -73,7 +73,6 @@ const live = vi.hoisted(() => {
       return state.original
     },
     connect: () => ({
-      index: async () => ({ ok: true }),
       layered: async () => true,
       async enqueue(deck: string, value: string, node: string, floor: string) {
         if (state.refuse) return { ok: false, refusal: "limit" }
