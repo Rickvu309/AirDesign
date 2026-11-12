@@ -1,0 +1,77 @@
+import { join } from "node:path"
+import { pathToFileURL } from "node:url"
+import { expect, test } from "@playwright/test"
+
+type Box = { x: number; y: number; width: number; height: number }
+type Callout = { at: string; note: string }
+type Block = { state: string; title: string; crop: string | null; click: string[]; callouts: Callout[] }
+type Shot = { full: Buffer; frame: Box; boxes: (Box | null)[] }
+type Side = { key: string; label: string; missing: string }
+type Composer = {
+  composeBlock: (block: Block, sides: Side[], shots: Shot[]) => { block: unknown }
+}
+type Drawer = { blockHtml: (block: unknown) => string; pageHtml: (articles: string[], css: string) => string }
+
+const look = join(process.cwd(), ".agents/skills/verify-airdesign/look")
+const load = async <T>(name: string) => (await import(pathToFileURL(join(look, name)).href)) as T
+
+const fixture = `<body style="margin:0;font:16px sans-serif">
+<button id="save" style="position:absolute;left:40px;top:30px;width:90px;height:32px">Save</button>
+<p id="note" style="position:absolute;left:600px;top:400px;margin:0;width:300px">A sentence in the middle of the page.</p>
+<div id="edge" style="position:absolute;left:1400px;top:880px;width:60px;height:36px;background:silver"></div>
+<div id="wide" style="position:absolute;left:0;top:200px;width:1470px;height:40px;background:gainsboro"></div></body>`
+
+const targets = ["#save", "#note", "#edge", "#wide"]
+
+test("annotate puts each arrow tip a few px from its target and no circle on any target", async ({ browser }) => {
+  const { composeBlock } = await load<Composer>("before-after.mjs")
+  const { blockHtml, pageHtml } = await load<Drawer>("annotate.mjs")
+  const app = await browser.newContext({ viewport: { width: 1470, height: 923 }, deviceScaleFactor: 2 })
+  const page = await app.newPage()
+  await page.setContent(fixture)
+  const boxes = await Promise.all(targets.map(async (selector) => page.locator(selector).boundingBox()))
+  const full = await page.screenshot()
+  await app.close()
+  const block = {
+    state: "fixture",
+    title: "Fixture",
+    crop: null,
+    click: [],
+    callouts: targets.map((at) => ({ at, note: `Points at ${at}` })),
+  }
+  const { block: composed } = composeBlock(
+    block,
+    [{ key: "page", label: "", missing: "missing" }],
+    [{ full, frame: { x: 0, y: 0, width: 1470, height: 923 }, boxes }],
+  )
+  const sheet = await browser.newContext({ viewport: { width: 850, height: 1000 } })
+  const drawn = await sheet.newPage()
+  await drawn.setContent(pageHtml([blockHtml(composed)], ":root{--limit:red;--background:white}"))
+  const image = await drawn.locator(".frame img").boundingBox()
+  const frame = await drawn.locator(".frame").boundingBox()
+  expect(image).not.toBeNull()
+  expect(frame).not.toBeNull()
+  const scale = image!.width / 1470
+  const shown = boxes.map((box) => ({
+    x: image!.x - frame!.x + box!.x * scale,
+    y: image!.y - frame!.y + box!.y * scale,
+    width: box!.width * scale,
+    height: box!.height * scale,
+  }))
+  const gap = (box: Box, x: number, y: number) =>
+    Math.hypot(Math.max(box.x - x, 0, x - box.x - box.width), Math.max(box.y - y, 0, y - box.y - box.height))
+  for (const [index, box] of shown.entries()) {
+    const tip = drawn.locator(`[data-tip="${String(index + 1)}"]`)
+    const x = Number(await tip.getAttribute("data-x"))
+    const y = Number(await tip.getAttribute("data-y"))
+    expect(gap(box, x, y)).toBeGreaterThan(1)
+    expect(gap(box, x, y)).toBeLessThan(5)
+    const circle = drawn.locator(`[data-callout="${String(index + 1)}"]`)
+    const cx = Number(await circle.getAttribute("data-cx"))
+    const cy = Number(await circle.getAttribute("data-cy"))
+    expect(gap(box, cx, cy)).toBeLessThan(60)
+    for (const other of shown) expect(gap(other, cx, cy)).toBeGreaterThan(13)
+  }
+  await expect(drawn.locator("li")).toHaveCount(targets.length)
+  await sheet.close()
+})

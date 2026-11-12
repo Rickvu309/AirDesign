@@ -35,6 +35,12 @@ Regions are the `data-*` handles both sides share, listed in `compare.mjs`. The 
 
 To add a state, add one entry. Reuse a journey's capture when one shows the state.
 
+## before-after and annotate
+
+`callouts.mjs` reads the callouts file and refuses a bad one with the block and callout it means. `placement.mjs` is the rule: each numbered circle goes on the side of its target with the most free room, off every target and every other circle, in the frame's 30 px margin when the crop has no room, at the same spot on both sides; the arrow stops 3 px outside the target. `annotate.mjs` lays each block out as HTML with the `packages/theme` tokens and Geist, and the browser screenshots it at 850 CSS px and scale 2, a new image every 6000 px. Narrow crops sit side by side, wide ones stack. `before-after.mjs` drives a state on one stack and measures the selectors. A side runs its own `look/states.mjs` when it has the state, and otherwise this one with that side's own journey files.
+
+`publish` adds the PNGs to the `archive/proof` branch with git plumbing (a temporary index, `commit-tree`, `push <sha>:refs/heads/archive/proof`), retrying when another publisher moved the branch first. Links are pinned to the commit, so a later publish never changes an old PR's pictures. The repo is private, so only signed-in readers of the repo can load them. The pre-push check lets a commit through to that branch only when every file in it is a PNG. No workflow runs on a push to it, and the `closed-branch` workflow leaves `archive/` branches alone.
+
 ## Detectors
 
 `detectors.mjs` is the table. Each detector is one module in `detectors/` that runs in the page on one element at a time, with the kit in `page-kit.mjs`. Each has a fixture where it must fire and a near miss where it must not, in `tests/browser/design-detectors.spec.ts`.

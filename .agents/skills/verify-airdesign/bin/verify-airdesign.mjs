@@ -9,7 +9,9 @@ import { serve } from "./serve.mjs"
 import { designContext, openBrowser, settle } from "./browser.mjs"
 
 const skill = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
-const repo = execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: skill, encoding: "utf8" }).trim()
+const repo = process.env.VERIFY_AIRDESIGN_REPO
+  ? path.resolve(process.env.VERIFY_AIRDESIGN_REPO)
+  : execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: skill, encoding: "utf8" }).trim()
 const evidenceRoot = path.join(os.homedir(), "tmp", "verify-airdesign")
 const scratchRoot = path.join(os.homedir(), "tmp", "verify-airdesign-scratch")
 const webDist = path.join(repo, "apps/web/dist")
@@ -153,13 +155,14 @@ async function call(origin, method, pathname, body, cookie, headers = {}) {
   return { status: response.status, json, cookie: response.headers.getSetCookie()[0]?.split(";")[0] }
 }
 
-async function catalog() {
-  return import(pathToFileURL(catalogDist).href)
+async function catalog(state) {
+  const root = state?.repo ?? repo
+  return import(pathToFileURL(path.join(root, "packages/catalog/dist/index.js")).href)
 }
 
 async function doctor(run) {
   const state = readState(run)
-  const { deckRoutes } = await catalog()
+  const { deckRoutes } = await catalog(state)
   const checks = {
     serveOwned: ownsServe(state),
     postgresOwned: ownsPostgres(state),
@@ -182,7 +185,7 @@ async function doctor(run) {
 }
 
 async function signIn(state, email = `verify${randomBytes(4).toString("hex")}@example.com`) {
-  const { signInRoutes } = await catalog()
+  const { signInRoutes } = await catalog(state)
   const asked = await call(state.origin, signInRoutes.email.method, signInRoutes.email.path, { email })
   if (asked.status !== 202) throw new Error(`sign-in email answered ${String(asked.status)}`)
   const mails = readFileSync(state.mail, "utf8")
@@ -201,7 +204,7 @@ async function signIn(state, email = `verify${randomBytes(4).toString("hex")}@ex
 
 async function apiCall(run, name, bodyText, cookie) {
   const state = readState(run)
-  const { deckRoutes } = await catalog()
+  const { deckRoutes } = await catalog(state)
   const route = deckRoutes[name]
   if (route === undefined) fail(`unknown deck route ${name}; one of ${Object.keys(deckRoutes).join(", ")}`)
   const answer = await call(state.origin, "POST", route.path, JSON.parse(bodyText ?? "{}"), cookie)
@@ -212,7 +215,7 @@ async function apiCall(run, name, bodyText, cookie) {
 
 export async function journeyKit({ run, name, page, context }) {
   const state = readState(run)
-  const { deckRoutes, signInRoutes, accountRoutes, oauthRoutes, airaRoutes, mcpRoutes } = await catalog()
+  const { deckRoutes, signInRoutes, accountRoutes, oauthRoutes, airaRoutes, mcpRoutes } = await catalog(state)
   const out = path.join(evidenceDir(run), `${name}-${String(Date.now())}`)
   mkdirSync(out, { recursive: true })
   let step = 0
@@ -351,6 +354,11 @@ try {
     process.stdout.write(
       `${JSON.stringify(await designCommand(command, rest, { repo, readState, evidenceDir, journeyKit }))}\n`,
     )
+  } else if (["before-after", "annotate", "publish"].includes(command)) {
+    const { proofCommand } = await import("./proof.mjs")
+    process.stdout.write(
+      `${JSON.stringify(await proofCommand(command, rest, { repo, readState, evidenceDir, journeyKit }))}\n`,
+    )
   } else if (command === "launch") await launch(rest)
   else if (command === "serve")
     await serve(rest[0], { repo, apiDist, webDist, catalogDist, scratchDir, statePath, airaPath, head })
@@ -375,6 +383,10 @@ try {
         "verify-airdesign sheet <run> [--only glob] [--off-token] [--out dir]",
         "                                            every named state: look, compare, one contact sheet",
         "verify-airdesign states                     list the named states and their design screens",
+        "verify-airdesign before-after <callouts.json> [--base ref] [--head ref] [--before-run run] [--after-run run] [--keep] [--out dir]",
+        "                                            the same states on the base and on this change; annotated image and table",
+        "verify-airdesign annotate <run> <callouts.json> [--out dir]  numbered callouts on one run's states",
+        "verify-airdesign publish <dir> [--pr n]     push the images to archive/proof; prints links and the PR fragment",
         "verify-airdesign stop <run>                 stop only this run's processes; keeps evidence",
         "",
       ].join("\n"),
