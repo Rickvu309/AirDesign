@@ -29,7 +29,7 @@ export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown
   if (parsed.base !== deck.revision) return { ok: false, refusal: "stale" }
   const register = deck.register
   const index = register.index
-  if (index === undefined || index.elements.length !== index.total) return { ok: false, refusal: "dead" }
+  if (index === undefined || index.elements.length !== index.total) return { ok: false, refusal: "indexing" }
   const file = index.slides.flatMap((row) => {
     const id = readSlideId(row.id)
     return id === undefined ? [] : [id]

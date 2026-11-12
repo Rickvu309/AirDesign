@@ -65,6 +65,7 @@ export type AskOptions = {
   readonly fetch?: typeof fetch
   readonly mint?: () => string
   readonly after?: Promise<unknown>
+  readonly pause?: (ms: number, signal: AbortSignal) => Promise<void>
 }
 
 type Turned =
@@ -73,6 +74,8 @@ type Turned =
 
 type Called = { readonly answer: ToolAnswer; readonly ok: boolean; readonly run: string | undefined }
 
+const indexingTries = 15
+const indexingPause = 1000
 const accept = "application/json, text/event-stream"
 const lasting: ReadonlySet<string> = new Set(["run-fenced", "person-protected", "dead"])
 
@@ -226,9 +229,38 @@ async function sendTool(send: typeof fetch, rpc: number, name: string, input: un
   return toolOutcome(await response.text())
 }
 
-async function callTool(send: typeof fetch, rpc: number, call: ToolCall): Promise<Called> {
+function pauseFor(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, ms)
+    signal.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer)
+        resolve()
+      },
+      { once: true },
+    )
+  })
+}
+
+async function callTool(
+  send: typeof fetch,
+  rpc: number,
+  call: ToolCall,
+  signal: AbortSignal,
+  pause: NonNullable<AskOptions["pause"]>,
+): Promise<Called> {
   try {
-    const outcome = await sendTool(send, rpc, call.name, call.input)
+    let outcome = await sendTool(send, rpc, call.name, call.input)
+    for (
+      let tried = 0;
+      outcome.fields?.refusal === "indexing" && tried < indexingTries && !signal.aborted;
+      tried += 1
+    ) {
+      await pause(indexingPause, signal)
+      if (signal.aborted) break
+      outcome = await sendTool(send, rpc, call.name, call.input)
+    }
     const run = outcome.fields?.runId
     const edited =
       outcome.ok && catalog[opOf.get(call.name) ?? "read_deck"].kind === "command" && typeof run === "string"
@@ -302,7 +334,7 @@ export async function askAira(start: AiraChat, asked: string, options: AskOption
         update({ type: "answered", answer: stoppedAnswer(call), state: "stopped", run: undefined })
         continue
       }
-      const called = await callTool(send, rpc, call)
+      const called = await callTool(send, rpc, call, signal, options.pause ?? pauseFor)
       rpc += 1
       const runId = call.input.runId
       if (called.ok && call.name === stopTool && typeof runId === "string") closed.add(runId)

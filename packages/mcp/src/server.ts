@@ -1,6 +1,6 @@
 import { catalog, projectTools, toolInputSchema } from "@airdesign/catalog"
 import { McpServer } from "@modelcontextprotocol/server"
-import { admit, type Admission } from "./admit.js"
+import { admit, refund, type Admission } from "./admit.js"
 import { agentOps, callTool, type Session, type ToolResult } from "./call-tool.js"
 import type { EditCode } from "./edit-next.js"
 import { settleTurn } from "./turn.js"
@@ -32,6 +32,7 @@ export type Host = {
     session: Session,
   ) => Promise<{ readonly ok: true } | { readonly ok: false; readonly refusal: EditCode }>
   commit?: (result: ToolResult, session: Session) => Promise<ToolResult>
+  refund?: (session: Session) => Promise<void>
 }
 
 export function createServer(session: Session, host?: Host): McpServer {
@@ -75,6 +76,10 @@ export function createServer(session: Session, host?: Host): McpServer {
         const result = callTool(tool.name, args, session)
         const settled = host?.commit ? await host.commit(result, session) : result
         if (settled.ok) session.deck = settled.deck
+        else if (settled.refusal === "indexing") {
+          if (host?.refund) await host.refund(session)
+          else session.log = refund(session.log, "tool")
+        }
         settleTurn(tool.op, settled, session)
         return mcpResult(settled)
       },
