@@ -298,7 +298,7 @@ export function Home({
                 <DeckCard
                   name={importing.name}
                   edited={importFailureWords(importing.reason).title}
-                  editedClassName="text-destructive"
+                  editedClassName="text-danger-text"
                   previewClassName="bg-background"
                   preview={
                     <ImportFailedPreview
