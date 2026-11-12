@@ -122,3 +122,12 @@ it("draws no empty placeholder outline around a diagram that fills its placehold
   const host = await painted([{ ...frame([chevron, words]), placeholder: true }])
   expect(host.querySelector<HTMLElement>(`[data-canvas-element="${id}"]`)?.style.outline).toBe("")
 })
+
+it.fails("draws no bullet on an empty diagram paragraph, as PowerPoint does", async () => {
+  const text = words.text
+  if (text === null) throw new Error("text")
+  const empty = { ...text.paragraphs[0]!, runs: [], bullet: { char: "•", font: null, color: null, size: null } }
+  const host = await painted([frame([{ ...words, text: { ...text, paragraphs: [empty] } }])])
+  const paragraph = host.querySelector<HTMLElement>("[data-diagram-shape] [data-paragraph]")
+  expect(paragraph?.style.getPropertyValue("--bullet")).toBe("none")
+})
