@@ -126,6 +126,28 @@ test("home import through the first typed edit opens the deck exactly once", asy
   expect(asked.filter((path) => path === "/decks/open")).toHaveLength(1)
 })
 
+test("a first typed edit that lands before the server answers the open still opens the deck exactly once", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await signInBrowser(context, await stack.signIn())
+  const asked = await forward(page, stack)
+  let slow = true
+  await page.route("**/decks/open", async (route) => {
+    if (slow) {
+      slow = false
+      await new Promise((resolve) => setTimeout(resolve, 2500))
+    }
+    await route.fallback()
+  })
+  await openClean(page)
+  await typeOver(page, typed)
+  await confirmedText(page, typed)
+  await expect.poll(() => asked.filter((path) => path === "/decks/watch").length).toBeGreaterThan(0)
+  expect(asked.filter((path) => path === "/decks/open")).toHaveLength(1)
+})
+
 test("opening an existing deck from the deck list through the first typed edit opens it exactly once", async ({
   page,
   context,
