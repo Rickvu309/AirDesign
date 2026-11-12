@@ -97,4 +97,14 @@ describe("placeholder prompt in SlideCanvas", () => {
     const frame = host.querySelector<HTMLElement>("[data-canvas-element]")
     expect(frame).toBeNull()
   })
+
+  it("does not paint a prompt on a placeholder nobody can type into", async () => {
+    const host = await mount(
+      { ...wide, elements: [{ ...placeholderShape(id, "Click icon to add chart"), editable: false }] },
+      paintStore(),
+      false,
+    )
+    expect(host.querySelector("[data-placeholder-prompt]")).toBeNull()
+    expect(host.querySelector("[aria-placeholder]")).toBeNull()
+  })
 })

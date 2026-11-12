@@ -15,7 +15,12 @@ describe("placeholderCopy", () => {
     expect(fallbackPrompt("sldNum")).toBe("Add slide number")
     expect(fallbackPrompt(null)).toBe("Add text")
     expect(fallbackPrompt(undefined)).toBe("Add text")
-    expect(fallbackPrompt("unknown")).toBe("Add text")
+  })
+
+  it("has no prompt for a placeholder that is not typed text", () => {
+    for (const type of ["pic", "chart", "tbl", "media", "dgm", "clipArt", "unknown"]) {
+      expect(fallbackPrompt(type)).toBeNull()
+    }
   })
 
   it("exports table with valid prompt phrases", () => {

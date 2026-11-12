@@ -1,3 +1,4 @@
+import { cn } from "@/lib/class-names"
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -220,7 +221,11 @@ export function UsagePop({ id, usage }: { id: string; usage: WeekUsage }) {
         <span>{`${String(percent)}%`}</span>
       </span>
       <span className="flex h-1 rounded-full bg-line">
-        <span className="block h-1 rounded-full bg-primary" style={{ width: `${String(percent)}%` }} />
+        <span
+          data-usage-fill
+          className={cn("block h-1 rounded-full", percent >= 100 ? "bg-destructive" : "bg-primary")}
+          style={{ width: `${String(percent)}%` }}
+        />
       </span>
       <span className="flex items-center justify-between gap-2">
         <span className="text-[length:var(--type-caption)] text-muted-foreground">
