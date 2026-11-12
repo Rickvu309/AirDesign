@@ -71,7 +71,7 @@ Journeys are Playwright scripts in `.agents/skills/verify-airdesign/journeys/`. 
 $V journey <run> open-edit-save
 ```
 
-Shipped journeys: `open-edit-save`, `deck-list-trash`, `slide-paint`, `cleared-browser` (a deck reopened in a cleared browser is rebuilt from the original the server keeps), `delete-account` (the account menu deletes the account and everything it holds), and `aira-turn` (a scripted Aira call streams a tool call, `/mcp` runs it, and the run is undone). Each feature file in `features/` names its journey and steps.
+Shipped journeys: `open-edit-save`, `deck-list-trash`, `slide-paint`, `cleared-browser` (a deck reopened in a cleared browser is rebuilt from the original the server keeps), `delete-account` (the account menu deletes the account and everything it holds), `aira-turn` (a scripted Aira call streams a tool call, `/mcp` runs it, and the run is undone), and `connected-agents` (the account menu opens Agents, copies the MCP address, lists connected agents, and disconnects one so its tokens stop working). Each feature file in `features/` names its journey and steps.
 
 ## Every journey after every merge
 
@@ -90,7 +90,7 @@ To prove something no journey covers, write a new journey file there (or a scrat
 - `page`, `context`: a fresh Chromium page at 1600x1000 with `baseURL` set to the run's origin, so `page.goto("/")` works.
 - `signIn()`: real sign-in through `signInRoutes.email` and the emailed code on `signInRoutes.code`, then sets the session cookie on the browser. Returns `{ email, cookie }`.
 - `post(route, body, cookie, headers)`: POST to a catalog route entry; saves the request and answer as JSON evidence. An NDJSON answer lands in `json.lines`, an event stream in `json.events`.
-- `deckRoutes`, `signInRoutes`, `airaRoutes`, `mcpRoutes`: the catalog tables.
+- `deckRoutes`, `signInRoutes`, `accountRoutes`, `oauthRoutes`, `airaRoutes`, `mcpRoutes`: the catalog tables.
 - `aira(scripts)`: the recorded model streams the next Aira calls play, one per call, the last one repeating. See `features/aira-turn.md`.
 - `capture(label)`: screenshot plus ARIA snapshot of the page.
 - `note(line)`: append a line to the run's `proof.md`.

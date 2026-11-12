@@ -368,7 +368,7 @@ async function apiCall(run, name, bodyText, cookie) {
 
 export async function journeyKit({ run, name, page, context }) {
   const state = readState(run)
-  const { deckRoutes, signInRoutes, airaRoutes, mcpRoutes } = await catalog()
+  const { deckRoutes, signInRoutes, accountRoutes, oauthRoutes, airaRoutes, mcpRoutes } = await catalog()
   const out = path.join(evidenceDir(run), `${name}-${String(Date.now())}`)
   mkdirSync(out, { recursive: true })
   let step = 0
@@ -379,6 +379,8 @@ export async function journeyKit({ run, name, page, context }) {
     context,
     deckRoutes,
     signInRoutes,
+    accountRoutes,
+    oauthRoutes,
     airaRoutes,
     mcpRoutes,
     aira(scripts) {

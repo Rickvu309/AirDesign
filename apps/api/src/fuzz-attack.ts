@@ -100,3 +100,14 @@ export const hostileValues: readonly unknown[] = [
   {},
   JSON.parse('{"__proto__":{"deck":"x"}}'),
 ]
+
+export const hostileEscapes: readonly string[] = ["", "%00", "a%00b", "%ED%A0%80", "%", "%E0%A4%A", "x".repeat(70_000)]
+
+export const leaks: readonly RegExp[] = [
+  /\n\s+at /,
+  /\bat [^\n]+:\d+:\d+/,
+  /node_modules|node:internal|\/home\/|\/src\/|\.[cm]?[jt]s:\d/,
+  /postgres:\/\//,
+  /\b(select .+ from|insert into|delete from|update .+ set)\b/i,
+  /syntax error at|invalid input syntax|invalid byte sequence|violates .+ constraint|unsupported unicode/i,
+]

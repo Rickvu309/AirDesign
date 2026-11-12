@@ -174,16 +174,21 @@ describe("API forwarding", () => {
     expect(response.headers.get("set-cookie")).toBe("airdesign.session=abc; Path=/")
   })
 
-  it.each(["/deck/abc", "/sign-in/check", "/sign-in", "/decks", "/decks/open/x", "/screens/example"])(
-    "serves %s from assets",
-    async (path) => {
-      const request = new Request(`https://example.com${path}`)
-      const response = await worker.fetch(request, env())
-      expect(await response.text()).toBe("asset")
-      expect(assets).toEqual([request])
-      expect(seen).toEqual([])
-    },
-  )
+  it.each([
+    "/deck/abc",
+    "/settings/agents",
+    "/sign-in/check",
+    "/sign-in",
+    "/decks",
+    "/decks/open/x",
+    "/screens/example",
+  ])("serves %s from assets", async (path) => {
+    const request = new Request(`https://example.com${path}`)
+    const response = await worker.fetch(request, env())
+    expect(await response.text()).toBe("asset")
+    expect(assets).toEqual([request])
+    expect(seen).toEqual([])
+  })
 
   it.each([undefined, ""])("returns 503 when the API origin is absent or empty", async (apiOrigin) => {
     const response = await worker.fetch(new Request("https://example.com/decks/open", { method: "POST" }), {
@@ -200,6 +205,8 @@ describe("API forwarding", () => {
     "/sign-in/code",
     "/sign-out",
     "/account/delete",
+    "/account/agents",
+    "/account/agents/revoke",
     "/decks/open",
     "/decks/watch",
     "/decks/list",

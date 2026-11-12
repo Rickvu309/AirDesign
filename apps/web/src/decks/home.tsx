@@ -176,6 +176,7 @@ export function Home({
       menuOpen={menu}
       onNewDeck={() => setMenu(!menu)}
       onSignOut={() => void signOut()}
+      onNavigate={navigate}
       trailing={
         trash ? <EmptyTrashButton disabled={decks.length === 0} onClick={() => setDeleting([...decks])} /> : undefined
       }

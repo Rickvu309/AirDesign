@@ -5,7 +5,7 @@ import type { Pool } from "pg"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
 import { fuzzGood, fuzzAira } from "./aira-fuzz.js"
-import { attacks, hostileValues, type Attack } from "./fuzz-attack.js"
+import { attacks, hostileEscapes, hostileValues, leaks, type Attack } from "./fuzz-attack.js"
 import { badTargets } from "./fuzz-target.js"
 import { ask, askForm, cookieFrom, postgresInfo, serve, testResource } from "./harness.js"
 import type { CallerLog } from "@airdesign/mcp"
@@ -44,17 +44,6 @@ const jsonType = "application/json"
 const formType = "application/x-www-form-urlencoded"
 const mcpAccept = "accept: application/json, text/event-stream"
 const unreadSentence = "The request could not be read."
-
-const hostileEscapes: readonly string[] = ["", "%00", "a%00b", "%ED%A0%80", "%", "%E0%A4%A", "x".repeat(70_000)]
-
-const leaks: readonly RegExp[] = [
-  /\n\s+at /,
-  /\bat [^\n]+:\d+:\d+/,
-  /node_modules|node:internal|\/home\/|\/src\/|\.[cm]?[jt]s:\d/,
-  /postgres:\/\//,
-  /\b(select .+ from|insert into|delete from|update .+ set)\b/i,
-  /syntax error at|invalid input syntax|invalid byte sequence|violates .+ constraint|unsupported unicode/i,
-]
 
 function complete(text: string, method: string): boolean {
   const split = text.indexOf("\r\n\r\n")
@@ -351,6 +340,10 @@ describe("hostile input over every route", () => {
       ],
       "POST /oauth/revoke": [{ shape: "form", answers: 200, fields: { token: "t" } }],
       ...fuzzGood(deck),
+      "POST /account/agents": [{ shape: "json", answers: 200, says: '"ok":true', fields: {} }],
+      "POST /account/agents/revoke": [
+        { shape: "json", answers: 403, says: '"refusal":"owner"', fields: { id: "missing" } },
+      ],
       "POST /account/delete": [{ shape: "json", answers: 400, fields: { email: "wrong@example.com" } }],
       "POST /sign-in/email": [{ shape: "json", answers: 202, fields: { email: "good@example.com" } }],
       "POST /sign-in/code": [{ shape: "json", answers: 401, fields: { email: "good@example.com", code: "000000" } }],

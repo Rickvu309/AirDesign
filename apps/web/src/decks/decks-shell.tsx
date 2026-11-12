@@ -47,12 +47,14 @@ export function DecksShell({
   firstVisit = false,
   account: realAccount,
   onSignOut,
+  onNavigate,
 }: {
   active: DeckSection
   children: ReactNode
   firstVisit?: boolean
   account?: { email: string }
   onSignOut?: () => void
+  onNavigate?: (path: string) => void
 }) {
   const [deletingAccount, setDeletingAccount] = useState(false)
   const primary = { ...sections[0], href: realAccount ? "/" : sections[0].href }
@@ -60,6 +62,7 @@ export function DecksShell({
     ? [
         { ...sections[1], href: "/" },
         { ...sections[2], href: "/trash" },
+        { ...sections[3], href: "/settings/agents" },
       ]
     : sections.slice(1)
   return (
@@ -75,6 +78,14 @@ export function DecksShell({
                 <AccountFace account={realAccount} />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (onNavigate) onNavigate("/settings/agents")
+                    else window.location.assign("/settings/agents")
+                  }}
+                >
+                  {settingsCopy.agents}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setDeletingAccount(true)}>
                   {settingsCopy.deleteAccount}
                 </DropdownMenuItem>

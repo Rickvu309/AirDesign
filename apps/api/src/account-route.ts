@@ -1,12 +1,22 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 
-import { accountRoutes, readEmail, readSessionCookie, signOutRoutes } from "@airdesign/catalog"
+import {
+  accountRoutes,
+  readEmail,
+  readGrantId,
+  readNoFields,
+  readSessionCookie,
+  signOutRoutes,
+} from "@airdesign/catalog"
 import type { CallerLog, Turns } from "@airdesign/mcp"
 
 import { deleteAccess } from "./account.js"
+import { screenFor } from "./clients.js"
+import { advance, readApproval } from "./grants.js"
 import { drainOriginals } from "./original.js"
 import type { OriginalStore } from "./original-store.js"
 import type { Sql } from "./pool.js"
+import { readUrl } from "./resource.js"
 
 type AccountVisit = {
   readonly options: {
@@ -15,6 +25,7 @@ type AccountVisit = {
     readonly originals?: OriginalStore
     readonly cookieDomain?: string
     readonly turns: Map<string, Turns>
+    readonly resource: string
   }
   readonly logs: Map<string, CallerLog>
   readonly req: IncomingMessage
@@ -61,6 +72,93 @@ async function deleteAccount<Visit extends AccountVisit>(http: AccountHttp<Visit
   http.sendJson(res, 200, { ok: true }, http.clearSessionCookie(options.cookieDomain))
 }
 
+type ConnectedGrantRow = {
+  id: string
+  name: string | null
+  redirect_uri: string
+  connected: Date
+}
+
+const connectedGrantsSql = `
+select g.id, c.name, g.redirect_uri, g.connected
+from session.oauth_grant g
+join session.oauth_client c on c.id = g.client_id
+where g.principal = $1 and g.code = 'used' and not g.revoked
+order by g.connected desc, g.id desc
+`
+
+async function sessionBody<Visit extends AccountVisit>(
+  http: AccountHttp<Visit>,
+  visit: Visit,
+): Promise<{ readonly email: string; readonly body: Buffer } | undefined> {
+  const { req, res } = visit
+  if (req.headers.authorization !== undefined) {
+    if ((await visit.body()) === undefined) {
+      http.answerSize(res)
+      return undefined
+    }
+    http.sendJson(res, 401, { ok: false, refusal: "session" })
+    return undefined
+  }
+  const email = await http.signedIn(visit)
+  if (email === undefined) return undefined
+  const body = await visit.body()
+  if (body === undefined) {
+    http.answerSize(res)
+    return undefined
+  }
+  return { email, body }
+}
+
+async function listAgents<Visit extends AccountVisit>(http: AccountHttp<Visit>, visit: Visit): Promise<void> {
+  const { options, req, res } = visit
+  const session = await sessionBody(http, visit)
+  if (session === undefined) return
+  if (!jsonBody(req) || !readNoFields(http.parsedJson(session.body)).ok) {
+    http.sendJson(res, 400, { ok: false, refusal: "field" })
+    return
+  }
+  const result = await options.session.query<ConnectedGrantRow>(connectedGrantsSql, [session.email])
+  http.sendJson(res, 200, {
+    ok: true,
+    account: { email: session.email },
+    mcp: options.resource,
+    agents: result.rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      agent: screenFor(row.name, row.redirect_uri),
+      host: readUrl(row.redirect_uri)?.host ?? "",
+      connected: row.connected.toISOString(),
+    })),
+  })
+}
+
+async function revokeAgent<Visit extends AccountVisit>(http: AccountHttp<Visit>, visit: Visit): Promise<void> {
+  const { options, req, res } = visit
+  const session = await sessionBody(http, visit)
+  if (session === undefined) return
+  const parsed = readGrantId(http.parsedJson(session.body))
+  if (!jsonBody(req) || !parsed.ok) {
+    http.sendJson(res, 400, { ok: false, refusal: "field" })
+    return
+  }
+  const stored = await readApproval(options.session, parsed.id)
+  if (stored === undefined || stored.grant.principal !== session.email) {
+    http.sendJson(res, 403, { ok: false, refusal: "owner" })
+    return
+  }
+  if (stored.grant.revoked) {
+    http.sendJson(res, 200, { ok: true })
+    return
+  }
+  const advanced = await advance(options.session, parsed.id, { command: "revoke" }, { issue: false })
+  if (advanced?.lost === true) {
+    http.sendJson(res, 503, { ok: false, refusal: "server" })
+    return
+  }
+  http.sendJson(res, 200, { ok: true })
+}
+
 async function signOut<Visit extends AccountVisit>(http: AccountHttp<Visit>, visit: Visit): Promise<void> {
   const { options, req, res } = visit
   if ((await visit.body()) === undefined) {
@@ -75,6 +173,8 @@ async function signOut<Visit extends AccountVisit>(http: AccountHttp<Visit>, vis
 export function accountRouteList<Visit extends AccountVisit>(http: AccountHttp<Visit>): readonly AccountRoute<Visit>[] {
   return [
     { method: "POST", path: accountRoutes.delete.path, serve: (visit) => deleteAccount(http, visit) },
+    { method: "POST", path: accountRoutes.agents.path, serve: (visit) => listAgents(http, visit) },
+    { method: "POST", path: accountRoutes.revokeAgent.path, serve: (visit) => revokeAgent(http, visit) },
     { method: "POST", path: signOutRoutes.session.path, serve: (visit) => signOut(http, visit) },
   ]
 }
