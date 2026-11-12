@@ -28,6 +28,7 @@ import {
 } from "./judge-proof.mjs"
 import { scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
+import { memoPptx } from "./pptx-memo.mjs"
 import { phaseClock } from "./pptx-phases.mjs"
 import { judgedWrites, timeMetric } from "./metrics.mjs"
 import {
@@ -130,7 +131,7 @@ const browserSpec = freshExports({
   ],
   run: () => phases.time("browser", () => run("pnpm", ["exec", "playwright", "test", ...browserExportArgs])),
 })
-const pptx = await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href)
+const pptx = memoPptx(await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href))
 const require = createRequire(path.join(root, "packages/pptx/package.json"))
 await pptx.prepareMarkup(fs.readFileSync(require.resolve("sax-wasm/lib/sax-wasm.wasm")))
 const cases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
