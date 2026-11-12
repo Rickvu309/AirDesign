@@ -3,6 +3,7 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { stored, storedValues } from "./device-store"
+import { savedExport } from "./export-dialog.ts"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const slide = "ppt/slides/slide1.xml"
@@ -50,12 +51,6 @@ async function open(page: Page, file: string): Promise<void> {
   await page.locator("input[type=file]").setInputFiles(file)
   await expect(page).toHaveURL(deckAddress)
   await settled(page)
-}
-
-async function saveExport(page: Page, file: string): Promise<void> {
-  const download = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export" }).click()
-  await (await download).saveAs(file)
 }
 
 async function selectText(run: Locator, start: number, end: number): Promise<void> {
@@ -121,7 +116,7 @@ test("a word made bold, italic and underlined survives reload, export and import
       ),
     )
     .toEqual(formatted)
-  await saveExport(page, download)
+  await savedExport(page, download)
   expect(await changedParts(fixture, download)).toEqual([slide])
   const saved = (await partsOf(download)).get(slide)?.toString("utf8") ?? ""
   const fill = '<a:solidFill><a:schemeClr val="dk1"/></a:solidFill></a:rPr>'
@@ -150,7 +145,7 @@ test("bold turned on and off exports the file byte for byte, and each turn is on
   await expect(formatButton(page, "Bold")).toHaveAttribute("aria-pressed", "false")
   await expect.poll(async () => (await storedValues(page)).filter((value) => value.includes('"bold"')).length).toBe(1)
   await expect.poll(async () => (await storedValues(page)).some((value) => value === unformatted)).toBe(true)
-  await saveExport(page, download)
+  await savedExport(page, download)
   expect(await changedParts(fixture, download)).toEqual([])
   await page.getByRole("button", { name: "Undo text edit" }).click()
   await expect.poll(() => looks(editor.locator("[data-run]").first())).toEqual(["700", "normal", "none"])

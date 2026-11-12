@@ -70,7 +70,9 @@ async function renameRefused(kit) {
 async function downloaded(kit) {
   await fixtureDeck(kit)
   const saving = kit.page.waitForEvent("download")
-  await kit.page.getByRole("button", { name: "Export" }).click()
+  await kit.page.getByRole("button", { name: "Export", exact: true }).click()
+  await expect(kit.page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
+  await kit.page.keyboard.press("Enter")
   await saving
   await expect(kit.page.getByText("clean.pptx downloaded", { exact: true })).toBeVisible()
 }

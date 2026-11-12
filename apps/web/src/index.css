@@ -117,3 +117,38 @@ html:has(.screen-frame) {
     transition-delay: 0s;
   }
 }
+
+[data-print-sheet] {
+  position: fixed;
+  top: 0;
+  left: -200vw;
+  pointer-events: none;
+}
+
+@media print {
+  html:has([data-print-sheet]),
+  html:has([data-print-sheet]) body {
+    width: auto;
+    height: auto;
+    overflow: visible;
+    background: none;
+  }
+
+  body:has([data-print-sheet]) > :not([data-print-sheet]) {
+    display: none;
+  }
+
+  [data-print-sheet] {
+    position: static;
+    print-color-adjust: exact;
+  }
+
+  [data-print-page] {
+    overflow: hidden;
+    break-after: page;
+  }
+
+  [data-print-page]:last-child {
+    break-after: auto;
+  }
+}

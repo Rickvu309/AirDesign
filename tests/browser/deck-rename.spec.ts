@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test"
 import { openFixture as open } from "./fixture-deck.ts"
 import { store } from "./home-store.ts"
 import { forward, openClean, signInBrowser, test as stackTest, type Stack } from "./api-stack"
+import { exportFromDialog } from "./export-dialog.ts"
 
 const title = (page: Page) => page.getByRole("button", { name: /^Rename deck: / })
 const field = (page: Page) => page.getByRole("textbox", { name: "Deck name" })
@@ -31,7 +32,7 @@ test("the new name is the exported file's name", async ({ page }) => {
   await field(page).fill("Quarterly plan")
   await field(page).press("Enter")
   const download = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export" }).click()
+  await exportFromDialog(page)
   expect((await download).suggestedFilename()).toBe("Quarterly plan.pptx")
 })
 

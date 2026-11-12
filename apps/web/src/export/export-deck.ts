@@ -1,17 +1,27 @@
 import { connect, getParts, memoryRemote } from "@airdesign/live"
 import { exportPackage } from "@airdesign/pptx"
-import { exportedParts } from "@/exported-parts"
+import { chosenParts } from "@/export/chosen-parts"
 import { exportFileName } from "@/export/export-file-name"
 import { ensureMarkup } from "@/markup"
 
-export async function exportDeck(id: string, ready: Promise<void>): Promise<string> {
+export type ExportRequest = {
+  readonly slides?: readonly number[]
+  readonly signal?: AbortSignal
+}
+
+const asked = new Map<string, readonly number[] | undefined>()
+
+export async function exportDeck(id: string, ready: Promise<void>, request?: ExportRequest): Promise<string | null> {
+  const slides = request === undefined ? asked.get(id) : request.slides
+  asked.set(id, slides)
   await ready
   await ensureMarkup()
   const stored = await getParts(id)
   if (!stored.ok) throw new Error("parts")
   const opened = await connect(memoryRemote()).openDeck(id)
   if (!opened.ok) throw new Error("register")
-  const bytes = await exportPackage(stored.file, exportedParts(stored.parts, opened.register))
+  const bytes = await exportPackage(stored.file, chosenParts(stored.parts, opened.register, slides))
+  if (request?.signal?.aborted === true) return null
   const copy = new Uint8Array(bytes.byteLength)
   copy.set(bytes)
   const url = URL.createObjectURL(new Blob([copy]))

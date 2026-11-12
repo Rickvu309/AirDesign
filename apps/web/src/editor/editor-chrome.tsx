@@ -1,4 +1,4 @@
-import type { ReactNode } from "react"
+import type { ReactNode, Ref } from "react"
 import { Button } from "@/components/ui/button"
 import { AirdesignMark } from "@/decks/airdesign-mark"
 import { DeckTitleEdit } from "@/editor/deck-title-edit"
@@ -32,9 +32,18 @@ export function DeckTitle({
   )
 }
 
-export function ExportButton({ faded = false, onClick }: { faded?: boolean; onClick?: () => void }) {
+export function ExportButton({
+  faded = false,
+  onClick,
+  ref,
+}: {
+  faded?: boolean
+  onClick?: () => void
+  ref?: Ref<HTMLButtonElement>
+}) {
   return (
     <Button
+      {...(ref === undefined ? {} : { ref })}
       type="button"
       variant="default"
       className={cn(

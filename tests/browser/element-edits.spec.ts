@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { exportFromDialog } from "./export-dialog.ts"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
 
@@ -64,7 +65,7 @@ test("adds a text box and deletes an element, and both survive a reload, the exp
   await expect(texts).toHaveCount(2)
   await expect(texts.last()).toHaveText("Added text")
   const saving = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   const file = testInfo.outputPath("element-edits.pptx")
   await (await saving).saveAs(file)
   const xml = await slideXml(file)

@@ -110,7 +110,9 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await capture("reloaded-from-server")
   note("with every local edit row gone, reopening the deck paints the box where the server keeps it")
   const saving = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export" }).click()
+  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
+  await page.keyboard.press("Enter")
   const xml = await slideXml(repo, await (await saving).path())
   const frame = `<a:xfrm><a:off x="${kept.x}" y="${kept.y}"/><a:ext cx="${kept.cx}" cy="${kept.cy}"/></a:xfrm>`
   expect(xml).toContain(frame)

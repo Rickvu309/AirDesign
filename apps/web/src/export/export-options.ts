@@ -10,22 +10,27 @@ export const exportCopy = {
   pdf: "PDF",
   slides: "Slides",
   allSlides: "All slides",
-  quality: "Quality",
-  standard: "Standard",
+  currentSlide: "Current slide",
+  range: "Range",
+  from: "First slide",
+  to: "Last slide",
+  rangeOf: (count: number) => `Choose slides from 1 to ${count}, first slide before last.`,
+  printWindow: "Your browser's print window opens next. Choose Save as PDF there.",
   action: "Export",
+  exporting: "Exporting…",
+  cancel: "Cancel",
   downloaded: downloadedOf("Q3 Investor Update.pptx"),
   failed: "Unable to export. Your deck is unchanged.",
   tryAgain: "Try again",
 } as const
 
-export const exportOptions: Record<ExportFormat, { label: string; value: string }[]> = {
-  powerpoint: [
-    { label: exportCopy.fileType, value: exportCopy.powerpoint },
-    { label: exportCopy.slides, value: exportCopy.allSlides },
-  ],
-  pdf: [
-    { label: exportCopy.fileType, value: exportCopy.pdf },
-    { label: exportCopy.slides, value: exportCopy.allSlides },
-    { label: exportCopy.quality, value: exportCopy.standard },
-  ],
+export const formatNames: Record<ExportFormat, string> = {
+  powerpoint: exportCopy.powerpoint,
+  pdf: exportCopy.pdf,
 }
+
+export const slideNames = {
+  all: exportCopy.allSlides,
+  current: exportCopy.currentSlide,
+  range: exportCopy.range,
+} as const

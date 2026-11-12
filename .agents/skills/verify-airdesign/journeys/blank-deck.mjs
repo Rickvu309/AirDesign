@@ -80,6 +80,8 @@ export default async function drive({ repo, page, context, signIn, post, capture
   note("Home lists the new deck; reload and a cleared browser rebuild the edited slide from the server original")
   const download = page.waitForEvent("download")
   await page.getByRole("button", { name: "Export", exact: true }).click()
+  await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
+  await page.keyboard.press("Enter")
   const exported = await download
   expect(exported.suggestedFilename()).toBe("Blank deck.pptx")
   const file = path.join(out, "blank-export.pptx")

@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
 import { slideEditsExportName } from "../../scripts/slide-edits.mjs"
+import { exportFromDialog } from "./export-dialog.ts"
 
 const duplicate = process.platform === "darwin" ? "Meta+d" : "Control+d"
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
@@ -176,7 +177,7 @@ test("a duplicate keeps the title it had when it was made, and a new slide takes
   await entry(page, 3).click()
   await expect(added).toHaveText("Typed on a new slide")
   const saving = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   const file = testInfo.outputPath(slideEditsExportName)
   await (await saving).saveAs(file)
   const sourceXml = await partText(file, sourcePart)

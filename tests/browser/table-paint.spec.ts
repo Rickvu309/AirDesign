@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test } from "@playwright/test"
+import { exportFromDialog } from "./export-dialog.ts"
 
 const deck = join(process.cwd(), "scripts/pptx-fixtures/corpus/nasa-cots-electronics.pptx")
 
@@ -50,7 +51,7 @@ test("an imported merged table paints locked cells rather than a grey box and ex
   }
   await expect(page.locator('[data-slide-entry="11"] [data-canvas-table]')).toHaveCount(1)
   const download = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   const saved = testInfo.outputPath("untouched-table.pptx")
   await (await download).saveAs(saved)
   expect(await readFile(saved)).toEqual(await readFile(deck))

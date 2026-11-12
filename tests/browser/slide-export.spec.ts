@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
 import { slideExportName, slideOriginalName } from "../../scripts/slide-export.mjs"
+import { exportFromDialog } from "./export-dialog.ts"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures", slideOriginalName)
 const judged = join(process.cwd(), "tests/browser", slideExportName)
@@ -137,7 +138,7 @@ test("a person adds, duplicates, deletes and reorders slides, then the export ke
   await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
   await expect(entry(page, 2).locator("[data-thumb-paint]")).toContainText("Heat pumps")
   const saving = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export" }).click()
+  await exportFromDialog(page)
   await (await saving).saveAs(download)
   const original = await partsOf(fixture)
   const saved = await partsOf(download)

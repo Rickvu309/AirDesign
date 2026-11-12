@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { exportFromDialog } from "./export-dialog.ts"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/nasa-1d-cnn.pptx")
 const typed = "Remember the result & the next step.\nThank everyone."
@@ -62,7 +63,7 @@ test("a speaker note typed in the bar survives a reload and changes only its not
   field = await openNotes(page)
   await expect(field).toHaveValue(typed)
   const saving = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   const download = testInfo.outputPath("exported-notes.pptx")
   await (await saving).saveAs(download)
   const original = await partsOf(fixture)

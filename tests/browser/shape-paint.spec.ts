@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises"
 import { expect, test } from "@playwright/test"
 import { PNG } from "pngjs"
 import { shapeDeck } from "./shape-deck"
+import { exportFromDialog } from "./export-dialog.ts"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -116,7 +117,7 @@ test("an imported arrow and callout keep their outlines, connector ends paint, a
   )
   expect([...tail.data].filter((channel, index) => index % 4 === 1 && channel < 80).length).toBeGreaterThan(0)
   const download = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   const file = await (await download).path()
   if (file === null) throw new Error("no export")
   expect(await readFile(file)).toEqual(original)

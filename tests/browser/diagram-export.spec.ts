@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { diagramEditsExportName, diagramEditsOriginalName } from "../../scripts/diagram-edits.mjs"
 import { stored } from "./device-store"
+import { exportFromDialog } from "./export-dialog.ts"
 
 const duplicate = process.platform === "darwin" ? "Meta+d" : "Control+d"
 const original = join(process.cwd(), "scripts/pptx-fixtures", diagramEditsOriginalName)
@@ -90,7 +91,7 @@ test("a diagram paints its saved shapes and words, offers nothing to edit, and e
   await expect(page.locator("[data-slide-paint] [data-diagram-shape]")).toHaveCount(6)
   await expect(page.locator("[data-slide-paint]")).toContainText("2024")
   const saving = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   const file = testInfo.outputPath(diagramEditsExportName)
   await (await saving).saveAs(file)
   const before = await partsOf(original)

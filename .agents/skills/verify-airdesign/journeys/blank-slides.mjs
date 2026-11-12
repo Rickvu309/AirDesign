@@ -18,6 +18,8 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await expect.poll(async () => (await post(deckRoutes.open, { deck }, cookie)).json.register.order?.length).toBe(1)
   const saving = page.waitForEvent("download")
   await page.getByRole("button", { name: "Export", exact: true }).click()
+  await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
+  await page.keyboard.press("Enter")
   const file = path.join(out, "blank-slides.pptx")
   await (await saving).saveAs(file)
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)

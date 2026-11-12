@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react"
 import { NotesBar } from "@/editor/notes-bar"
 import { CanvasStage } from "@/editor/canvas-stage"
 import { fitWidth, slideRoom, zoomPercent, zoomWidth, type SlideSize, type Zoom } from "@/editor/canvas-zoom"
-import { ExportButton, PanelHead, ZoomReadout } from "@/editor/editor-chrome"
+import { PanelHead, ZoomReadout } from "@/editor/editor-chrome"
 import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
 import { usePointerTool } from "@/editor/pointer-tool"
 import { RevenueSlide } from "@/editor/revenue-slide"
@@ -20,6 +20,8 @@ import {
   TextPanel,
 } from "@/editor/tool-panels"
 import { ZoomMenu } from "@/editor/zoom-menu"
+import { ExportControl } from "@/export/export-control"
+import type { ExportRequest } from "@/export/export-deck"
 
 export type EditorRail = "slides" | "images" | "shapes" | "text"
 
@@ -27,7 +29,7 @@ export type EditorDeck = {
   readonly slides: SlideStrip
   readonly size: SlideSize | null
   readonly slide: (width: number) => ReactNode
-  readonly onExport: () => void
+  readonly onExport: (request?: ExportRequest) => Promise<void> | void
   readonly undo: UndoButtonsState
   readonly onText?: () => void
   readonly onRename?: (name: string) => void
@@ -174,7 +176,20 @@ export function EditorShell({
               onZoom={setZoom}
             />
           )}
-          <ExportButton faded={run === "offline"} {...(deck === undefined ? {} : { onClick: deck.onExport })} />
+          <ExportControl
+            faded={run === "offline"}
+            {...(deck === undefined
+              ? {}
+              : {
+                  target: {
+                    count: deck.slides.count,
+                    current: deck.slides.current,
+                    size,
+                    slide: deck.slides.thumb,
+                    onExport: deck.onExport,
+                  },
+                })}
+          />
         </PanelHead>
         {side}
       </aside>

@@ -69,7 +69,9 @@ export default async function drive({ repo, page, signIn, capture, note }) {
 
   const original = await parts(fixture)
   const saving = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export" }).click()
+  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
+  await page.keyboard.press("Enter")
   const file = path.join(evidence, "exported.pptx")
   await (await saving).saveAs(file)
   const exported = await parts(file)

@@ -3,6 +3,7 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { stored } from "./device-store"
+import { exportFromDialog } from "./export-dialog.ts"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -67,7 +68,7 @@ test("a person picks the layout of a new slide, types in its placeholders, and i
   await expect(heading).toHaveText("Two columns")
   await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(3)
   const saving = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   const file = testInfo.outputPath("slide-layouts.pptx")
   await (await saving).saveAs(file)
   const rels = await partText(file, "ppt/slides/_rels/slide2.xml.rels")

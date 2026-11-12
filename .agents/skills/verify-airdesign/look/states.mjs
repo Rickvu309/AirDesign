@@ -4,6 +4,7 @@ import { expect } from "@playwright/test"
 import { deckHomeStates } from "./deck-home-states.mjs"
 import { landingStates } from "./landing-states.mjs"
 import { keyboardStates } from "./keyboard-states.mjs"
+import { exportStates } from "./export-states.mjs"
 import { signInStates } from "./sign-in-states.mjs"
 import { textFormatStates } from "./text-format-states.mjs"
 import { airaOpenStates } from "./aira-open-states.mjs"
@@ -313,6 +314,7 @@ export const states = [
   ...textFormatStates,
   ...keyboardStates,
   ...airaOpenStates,
+  ...exportStates,
   { name: "notes-closed", design: editor, drive: (kit) => notesState(kit) },
   { name: "notes-open", design: editor, drive: (kit) => notesState(kit, true) },
   {
