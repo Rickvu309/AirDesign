@@ -70,7 +70,9 @@ describe("account key", () => {
     const second = await sign(email)
     const other = await sign(address("other"))
     expect(first.account).toMatch(
-      new RegExp(`^${accountCookieName.replace(".", "\\.")}=[0-9a-f]{32}; Secure; SameSite=Lax; Path=/; Max-Age=2592000$`),
+      new RegExp(
+        `^${accountCookieName.replace(".", "\\.")}=[0-9a-f]{32}; Secure; SameSite=Lax; Path=/; Max-Age=2592000$`,
+      ),
     )
     expect(first.account).not.toContain("HttpOnly")
     expect(first.account).not.toContain(email.split("@")[0] ?? email)

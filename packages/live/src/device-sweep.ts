@@ -98,10 +98,7 @@ export async function dropDeck(deck: string, shelf: Shelf | undefined = pageShel
   await finished(writing, () => undefined)
 }
 
-export async function dropAccount(
-  account: string | undefined,
-  shelf: Shelf | undefined = pageShelf(),
-): Promise<void> {
+export async function dropAccount(account: string | undefined, shelf: Shelf | undefined = pageShelf()): Promise<void> {
   if (account === undefined) return
   dropJournal(shelf, account)
   heldDecks().clear()

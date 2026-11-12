@@ -126,7 +126,11 @@ export function Home({
     }
   }
   useEffect(() => {
-    void refresh().then(() => connect(memoryRemote()).sweep().catch(() => undefined))
+    void refresh().then(() =>
+      connect(memoryRemote())
+        .sweep()
+        .catch(() => undefined),
+    )
     const focused = () => void refresh()
     window.addEventListener("focus", focused)
     return () => window.removeEventListener("focus", focused)

@@ -213,7 +213,8 @@ describe("live cache", () => {
   it("sends 101 pending edits in batches of at most 100", async () => {
     const { remote, commits } = countingRemote()
     const cache = connect(remote)
-    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, index % 2 === 0 ? node : other, "")
+    for (let index = 0; index < 101; index += 1)
+      await cache.enqueue("deck", `v${index}`, index % 2 === 0 ? node : other, "")
     expect(await cache.flush("deck")).toMatchObject({ ok: true })
     expect(commits.map((batch) => batch.length)).toEqual([100, 1])
     expect(commits.flat()).toEqual(Array.from({ length: 101 }, (_, index) => `v${index}`))
@@ -224,7 +225,8 @@ describe("live cache", () => {
   it("sends exactly 100 pending edits in one batch", async () => {
     const { remote, commits } = countingRemote()
     const cache = connect(remote)
-    for (let index = 0; index < 100; index += 1) await cache.enqueue("deck", `v${index}`, index % 2 === 0 ? node : other, "")
+    for (let index = 0; index < 100; index += 1)
+      await cache.enqueue("deck", `v${index}`, index % 2 === 0 ? node : other, "")
     expect(await cache.flush("deck")).toMatchObject({ ok: true })
     expect(commits.map((batch) => batch.length)).toEqual([100])
     expect(await cache.pending("deck")).toEqual([])
@@ -244,7 +246,8 @@ describe("live cache", () => {
       },
     }
     const cache = connect(remote)
-    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, index % 2 === 0 ? node : other, "")
+    for (let index = 0; index < 101; index += 1)
+      await cache.enqueue("deck", `v${index}`, index % 2 === 0 ? node : other, "")
     expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "session" })
     expect(sizes).toEqual([100, 1])
     const kept = await cache.rows("deck")
@@ -564,7 +567,8 @@ describe("live cache", () => {
       },
     }
     const cache = connect(remote)
-    for (let index = 0; index < 201; index += 1) await cache.enqueue("deck", `v${index}`, index % 2 === 0 ? node : other, "")
+    for (let index = 0; index < 201; index += 1)
+      await cache.enqueue("deck", `v${index}`, index % 2 === 0 ? node : other, "")
     expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "session" })
     expect(sizes).toEqual([100, 100])
     expect(await cache.pending("deck")).toHaveLength(101)
@@ -584,7 +588,8 @@ describe("live cache", () => {
       },
     }
     const cache = connect(remote)
-    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, index % 2 === 0 ? node : other, "")
+    for (let index = 0; index < 101; index += 1)
+      await cache.enqueue("deck", `v${index}`, index % 2 === 0 ? node : other, "")
     expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "payload" })
     expect((await cache.rows("deck")).filter((row) => row.kind === "confirmed")).toHaveLength(100)
     expect((await cache.pending("deck")).map((row) => row.value)).toEqual(["v100"])
@@ -603,7 +608,8 @@ describe("live cache", () => {
       },
     }
     const cache = connect(remote)
-    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, index % 2 === 0 ? node : other, "")
+    for (let index = 0; index < 101; index += 1)
+      await cache.enqueue("deck", `v${index}`, index % 2 === 0 ? node : other, "")
     const result = await cache.flush("deck")
     expect(answers).toHaveLength(2)
     expect(result).toEqual(answers[1])

@@ -54,7 +54,5 @@ test("a second account on the same browser sees nothing of the first, whose unse
   await page.goto(`/deck/${deck}`)
   await settled(page)
   await expect(editor).toHaveText("Hello unsent")
-  await expect
-    .poll(async () => JSON.stringify((await stack.saved(deck))?.register ?? {}))
-    .toContain("unsent")
+  await expect.poll(async () => JSON.stringify((await stack.saved(deck))?.register ?? {})).toContain("unsent")
 })
