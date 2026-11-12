@@ -4,7 +4,8 @@ The account button at the top of the side navigation (on Home, Trash and every S
 
 ## Sub-features
 
-- `delete-ask` the dialog `Delete your account?` has `button "Delete account"`, which stays disabled until the typed email matches the signed-in one. `Cancel` closes it and sends nothing.
+- `delete-ask` the dialog `Delete your account?` has `button "Delete account"`, which stays disabled until the typed email matches the signed-in one. `Cancel` closes it and sends nothing. While the signed-in email has not loaded (a page whose own load failed), it stays disabled whatever is typed.
+- `delete-failed` when the server refuses the delete or cannot be reached, the dialog stays open with the alert `Unable to delete your account. Check your connection and try again.` and `Delete account` can be pressed again; a 401 goes to sign-in. Driven live by answering `accountRoutes.delete` with 500; `tests/browser/account.spec.ts` covers both.
 - `delete-server` `accountRoutes.delete` with `{ email }` answers 200 and clears the session cookie the way sign-out does. Any other email answers 400 `field`.
 - `delete-credentials` afterwards the old cookie answers 401 `session` everywhere, and the person's agent access and refresh tokens are refused.
 - `delete-originals` the person's stored originals are deleted from the store; a download link issued before answers 404.

@@ -55,6 +55,10 @@ for (const name of [
   "sign-in-mail",
   "sign-in-pages",
   "landing-pages",
+  "typed-reload",
+  "deck-names",
+  "slide-charts",
+  "signed-out-deck",
 ]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)
@@ -63,7 +67,7 @@ for (const name of [
 
 test.describe("recorded Aira", () => {
   test.describe.configure({ mode: "default" })
-  for (const name of ["element-index", "aira-turn", "aira-panel", "aira-slides", "aira-head"]) {
+  for (const name of ["element-index", "aira-turn", "aira-panel", "aira-slides", "aira-head", "agent-after-open"]) {
     test(name, async ({ page, context }) => {
       await drive(name, page, context)
     })

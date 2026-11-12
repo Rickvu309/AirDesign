@@ -20,12 +20,23 @@ type Stored = {
   readonly register: {
     readonly elements: Record<
       string,
-      { readonly phase: string; readonly guarded: boolean; readonly landed: readonly { readonly visible: boolean }[] }
+      {
+        readonly phase: string
+        readonly guarded: boolean
+        readonly runId: string | null
+        readonly landed: readonly { readonly visible: boolean }[]
+      }
     >
+    readonly order?: readonly { readonly id?: string; readonly runId?: string }[]
   }
 }
-type Reply = { readonly ok: boolean; readonly runId?: string; readonly refusal?: string }
-type Seen = { readonly outcome: string; readonly landedOn: string }
+type Reply = {
+  readonly ok: boolean
+  readonly runId?: string
+  readonly slide?: string
+  readonly refusal?: string
+}
+type Seen = { readonly outcome: string; readonly landedOn: string; readonly runId?: string; readonly slide?: string }
 
 const traces: readonly (readonly Step[])[] = [
   [
@@ -92,6 +103,14 @@ function versionOf(stored: Stored | undefined, name: Name): number {
   return stored?.register.elements[nodes[name]]?.landed.filter((row) => row.visible).length ?? 0
 }
 
+function runRows(stored: Stored | undefined, seen: Seen): readonly (string | null | undefined)[] {
+  const held = (Object.keys(nodes) as Name[])
+    .filter((name) => ["open", "closed"].includes(stateOf(stored, name)))
+    .map((name) => stored?.register.elements[nodes[name]]?.runId)
+  const slide = seen.slide === undefined ? [] : [stored?.register.order?.find((row) => row.id === seen.slide)?.runId]
+  return [...held, ...slide, seen.runId]
+}
+
 function matches(state: SpecState | undefined, stored: Stored | undefined, seen: Seen): boolean {
   return (
     state?.stateX === stateOf(stored, "x") &&
@@ -106,11 +125,12 @@ describe("a person closes an element for the rest of a turn", () => {
   let clock = 1_000_000
   let base = ""
   let deck: Sql = openPool("postgres://deck@127.0.0.1/api")
+  let session: Sql = openPool("postgres://session@127.0.0.1/api")
   let close = async () => {}
 
   beforeAll(async () => {
     const info = await postgresInfo()
-    const session = openPool(info.session, "turn-session")
+    session = openPool(info.session, "turn-session")
     deck = openPool(info.deck, "turn-deck")
     const listen = new DeckListen(info.listen)
     const served = await serve({
@@ -141,6 +161,14 @@ describe("a person closes an element for the rest of a turn", () => {
   async function row(id: string): Promise<Stored | undefined> {
     const result = await deck.query<Stored>("select revision, register from deck.saved where id = $1", [id])
     return result.rows[0]
+  }
+
+  async function turnRow(id: string): Promise<string | null | undefined> {
+    const result = await session.query<{ run_id: string | null }>(
+      "select run_id from session.agent_turn where deck = $1",
+      [id],
+    )
+    return result.rows[0]?.run_id
   }
 
   async function replay(trace: readonly Step[], index: number, failures: string[]): Promise<void> {
@@ -227,15 +255,22 @@ describe("a person closes an element for the rest of a turn", () => {
         })
         if (!answer.ok) return { outcome: answer.refusal ?? "none", landedOn: "none" }
         runId = answer.runId ?? ""
-        return { outcome: "landed", landedOn: "none" }
+        return {
+          outcome: "landed",
+          landedOn: "none",
+          runId,
+          ...(answer.slide === undefined ? {} : { slide: answer.slide }),
+        }
       }
       const name = step.element ?? "x"
       const answer = await edited(name, stored, versionOf(stored, name))
       if (!answer.ok) return { outcome: answer.refusal ?? "none", landedOn: "none" }
       runId = answer.runId ?? ""
-      return { outcome: "landed", landedOn: name }
+      return { outcome: "landed", landedOn: name, runId }
     }
 
+    const opened = new Set<string>()
+    let turnRun = ""
     try {
       let at = initial[0]
       for (const [position, step] of trace.entries()) {
@@ -254,6 +289,15 @@ describe("a person closes an element for the rest of a turn", () => {
         }
         const refused = seen.outcome === "refused" || seen.outcome === "person-protected"
         if (refused && !same(before, after)) failures.push(`${where} was refused and changed the stored row`)
+        const starts = graph.states.get(at)?.turn === "none" && seen.runId !== undefined
+        if (starts && opened.has(seen.runId ?? "")) failures.push(`${where} started a turn on an old run`)
+        if (starts) turnRun = seen.runId ?? ""
+        opened.add(seen.runId ?? "")
+        if (graph.states.get(edge.to)?.turn === "live") {
+          const rows = [...runRows(after, seen), await turnRow(id)]
+          if (rows.some((each) => each !== undefined && each !== turnRun))
+            failures.push(`${where} stored run ids ${JSON.stringify(rows)}, not the turn's run ${turnRun}`)
+        }
         at = edge.to
       }
     } finally {

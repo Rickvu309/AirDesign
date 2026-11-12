@@ -4,11 +4,12 @@ The slide list on the left of an open deck lists every slide. The person adds a 
 
 ## Sub-features
 
-- `slide-add` `button "Add slide"` adds a slide after the current one with the layout's empty title and body, and opens it. The new slide takes typed text.
+- `slide-add` `button "Add slide"` adds a slide after the current one with the current slide's layout (the deck's content layout after a title slide), and opens it. The new slide takes typed text.
 - `slide-layout` the chevron beside `New slide` (`button "Choose a layout for the new slide"`) lists the deck's layouts by the names in the file. Choosing one adds a slide after the current one with that layout's placeholders. `Add slide` uses the current slide's layout, and the deck's content layout after a title slide. Journey `slide-layouts`.
 - `slide-duplicate` Ctrl/Cmd+D on a focused `[data-slide-entry]` adds a copy after it and makes the copy current. The copy keeps the text the slide had when it was made.
 - `slide-move` Alt+ArrowUp or Alt+ArrowDown on a focused entry moves that slide one place, and the moved slide becomes current. Dragging an entry onto another moves it there.
 - `slide-delete` Delete or Backspace on a focused entry deletes that slide.
+- `slide-focus` after an add with `Add slide`, a duplicate, a move or a delete, keyboard focus moves to the entry of the slide that is now current, so the next key acts on it. Choosing from the layout menu does not move focus. `tests/browser/slide-focus.spec.ts`.
 - `slide-undo` each change is on the person's undo list: `Undo new slide`, `Undo duplicate slide`, `Undo slide order`, `Undo delete slide`, and the matching `Redo` names. See `person-undo.md`.
 - `slide-sections` in a deck with sections, a new or duplicated slide joins the section of the slide it comes after, sections follow moves and deletes, and the export writes them back (`tests/browser/slide-sections.spec.ts`).
 - `slide-saved` the server's `register.order` gets `add`, `clone`, `move` and `remove` rows (`restore` for an undone delete).
@@ -34,5 +35,6 @@ Preconditions:
 
 ## Gotchas
 
-- After Alt+ArrowUp the moved slide becomes current, but keyboard focus stays on the same place in the list, now another slide. Click the moved slide before the next key, or the next key moves the other slide.
+- Focus follows the current slide after every slide command, so two Alt+ArrowUp presses in a row move the same slide twice. The journey still clicks an entry before each key; that proves the key, not the focus.
+- A slide that holds a chart or a diagram duplicates, moves and deletes like any other; `slide-charts` drives it.
 - An entry's text is its thumbnail's text plus its number, so `toContainText` works and `toHaveText` does not.

@@ -34,18 +34,20 @@ Each feature file starts with an H1 title and one paragraph describing what the 
 ## Features
 
 - [Open a PowerPoint or a blank deck and edit its text](./open-edit-save.md): import from Home or start a blank deck, type in the slide, the server keeps the text, reopening shows it. Journeys `open-edit-save`, `blank-deck`, `commit-once`, `element-index`.
-- [Deck list and Trash](./deck-list-trash.md): Home's first visit, its decks, `No decks yet`, Move to Trash, Restore, Empty Trash. Journey `deck-list-trash`.
+- [Deck list and Trash](./deck-list-trash.md): Recents' first visit, its six newest decks, `No decks yet`, Move to Trash, Restore, Empty Trash. Journey `deck-list-trash`.
+- [Deck names, search and All decks](./deck-names.md): `All decks`, the sidebar search, renaming from the editor title, the exported file's name and its toast, the disabled Design tab. Journey `deck-names`.
+- [Keep typed text and paint from the device](./keep-typed-text.md): the keystroke journal through a reload or a closed tab, the device copy painting before the server answers, a refused deck closing. Journey `typed-reload`.
 - [Move and resize an element](./move-resize.md): select an element, drag it, resize it from a corner, nudge it with the arrows; the server keeps the box and the export writes it. Journey `move-resize`.
 - [Add a text box and delete an element](./element-edits.md): `Add text box` in the toolbar, Delete on a selected element. Journey `element-edits`.
 - [Add, duplicate, move and delete slides](./slide-commands.md): the slide list's `Add slide`, Ctrl/Cmd+D, Alt+arrows and Delete. Journeys `slide-commands`, `blank-slides`, `slide-layouts`.
 - [Undo and redo the person's edits](./person-undo.md): the keys, the named toolbar buttons and `Unable to undo`. Journey `person-undo`.
 - [Speaker notes](./speaker-notes.md): the notes bar under the slide, editable or locked, offline and through the export. Journey `speaker-notes`.
-- [Slide paint](./slide-paint.md): the opened deck paints each element at its place on a slide of the right shape: text, pictures, shapes, tables, prompts, thumbnails. Journey `slide-paint`.
+- [Slide paint](./slide-paint.md): the opened deck paints each element at its place on a slide of the right shape: text, pictures, shapes, tables, prompts, thumbnails. Journeys `slide-paint`, `slide-charts` (SmartArt and charts, read-only, through a duplicate, a delete and the export).
 - [Reopen in a cleared browser](./cleared-browser.md): after IndexedDB, local storage and site files are cleared, the saved deck still shows its slide. Journey `cleared-browser`.
 - [Delete account](./delete-account.md): the account menu deletes the account after the person types its email; the server, the stored originals and the browser keep nothing of it. Journey `delete-account`.
-- [Ask Aira through the server](./aira-turn.md): one metered model call at a time streams text and tool calls, the tool calls run through `/mcp`, the person stops or undoes the run. Journey `aira-turn`.
+- [Ask Aira through the server](./aira-turn.md): one metered model call at a time streams text and tool calls, the tool calls run through `/mcp`, the person stops or undoes the run. Journeys `aira-turn`, `agent-after-open` (an ask while the index is on its way, two calls at once, Stop after a call landed).
 - [Connected agents](./connected-agents.md): the account menu opens `/settings/agents`, shows and copies the MCP address, lists connected agents, and disconnects one so its access and refresh tokens stop working at once. Journey `connected-agents`.
-- [Ask Aira in the Agent panel](./aira-panel.md): the person types to Aira in the open deck, watches the reply stream and the slide change, stops, retries or undoes the run, goes back to earlier chats, and reads the week's usage. Journeys `aira-panel`, `aira-head`, `aira-slides`.
+- [Ask Aira in the Agent panel](./aira-panel.md): the person types to Aira in the open deck, watches the reply stream and the slide change, stops, retries or undoes the run, goes back to earlier chats, and reads the week's usage. Journeys `aira-panel`, `aira-head`, `aira-slides`, `agent-after-open`.
 - [Usage page](./usage-page.md): `/settings/usage` shows the week's Aira usage and when it resets. Journey `usage-page`.
-- [Sign in](./sign-in.md): email, six-digit code, the designed mail, session cookie, signed-out redirect. Command `$V sign-in`, journeys `sign-in-mail` and `sign-in-pages` (the site pages on their own origin).
+- [Sign in](./sign-in.md): email, six-digit code, the designed mail, session cookie, signed-out redirect. Command `$V sign-in`, journeys `sign-in-mail`, `sign-in-pages` (the site pages on their own origin) and `signed-out-deck` (a deck address after signing out).
 - [Landing page on a phone](./landing-page.md): the site's home page at 390 px, 844 px landscape and 320 px: no sideways scroll, taps 44 px, hover only on a mouse, edges padded for the notch. Journey `landing-pages`; the rules are held by `tests/browser/site-mobile.spec.ts`.
