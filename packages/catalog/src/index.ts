@@ -1,3 +1,12 @@
+export {
+  airaTools,
+  readTurn,
+  type ModelMessage,
+  type ModelTool,
+  type ReplyBlock,
+  type ToolAnswer,
+  type ToolCall,
+} from "./aira-turn.js"
 export { catalog, projectTools, toolInputSchema, type AgentOp, type CommandOp } from "./catalog.js"
 export { deckName } from "./deck-name.js"
 export { storableText } from "./storable-text.js"

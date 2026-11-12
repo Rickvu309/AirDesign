@@ -1,7 +1,6 @@
-import { readRun } from "@airdesign/catalog"
+import { readRun, readTurn } from "@airdesign/catalog"
 import { describe, expect, it } from "vitest"
 
-import { readTurn } from "./aira-conversation.js"
 import { fuzzGood } from "./aira-fuzz.js"
 
 describe("the fuzz requests of Aira's routes", () => {

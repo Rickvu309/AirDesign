@@ -1,6 +1,6 @@
 import { decide, elementId, openRegister, type Command, type Register } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { shownValue } from "./thin-deck"
+import { shownValue } from "./live-repaint"
 
 const node = elementId("256.2")
 const box = { x: 1, y: 2, cx: 3, cy: 4 }

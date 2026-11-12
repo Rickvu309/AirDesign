@@ -1,7 +1,7 @@
+import type { ModelMessage, ModelTool } from "@airdesign/catalog"
 import Anthropic from "@anthropic-ai/sdk"
 
 import type { ModelCall, ModelOpen, Transport } from "./aira.js"
-import type { ModelMessage, ModelTool } from "./aira-conversation.js"
 
 function messageParam(message: ModelMessage): Anthropic.MessageParam {
   if (typeof message.content === "string") return { role: message.role, content: message.content }

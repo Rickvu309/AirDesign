@@ -17,40 +17,6 @@ function lastText(register) {
   return last === undefined ? null : textOf(last.value)
 }
 
-async function forgetLocalRows(page) {
-  await page.evaluate(
-    () =>
-      new Promise((resolve, reject) => {
-        const request = indexedDB.open("airdesign")
-        request.onerror = () => reject(request.error)
-        request.onsuccess = () => {
-          const database = request.result
-          const transaction = database.transaction("rows", "readwrite")
-          transaction.onerror = () => reject(transaction.error)
-          transaction.oncomplete = () => {
-            database.close()
-            resolve()
-          }
-          const cursor = transaction.objectStore("rows").openCursor()
-          cursor.onsuccess = () => {
-            const at = cursor.result
-            if (at === null) return
-            const row = at.value
-            if (typeof row === "object" && row !== null && "kind" in row) at.delete()
-            at.continue()
-          }
-        }
-      }),
-  )
-}
-
-async function reopen(page) {
-  const deckUrl = page.url()
-  await page.goto("/version")
-  await forgetLocalRows(page)
-  await page.goto(deckUrl)
-}
-
 export default async function drive(kit) {
   const { repo, page, signIn, post, capture, note, deckRoutes, airaRoutes, mcpRoutes, aira } = kit
   const { cookie, email } = await signIn()
@@ -61,6 +27,9 @@ export default async function drive(kit) {
   const deck = page.url().split("/").at(-1)
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveText("Hello")
+  await page.evaluate(() => {
+    document.body.dataset.sameLoad = "yes"
+  })
   await capture("imported")
   const base = (await post(deckRoutes.open, { deck }, cookie)).json.revision
   note(`imported clean.pptx as deck ${deck} at revision ${String(base)}`)
@@ -100,19 +69,18 @@ export default async function drive(kit) {
   )
 
   expect(lastText((await post(deckRoutes.open, { deck }, cookie)).json.register)).toBe("Hello from Aira")
-  await reopen(page)
-  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello from Aira", { timeout: 20_000 })
+  await expect(editor).toHaveText("Hello from Aira")
   await capture("aira-edited")
-  note("the server copy reads Hello from Aira and the reopened deck paints it")
+  note("the server copy reads Hello from Aira and the open editor painted it without a reload")
 
   const undone = await post(deckRoutes.undo, { deck, runId: edited.runId }, cookie)
   expect(undone.json).toMatchObject({ ok: true, deck, revision: edited.revision + 1 })
   expect(lastText((await post(deckRoutes.open, { deck }, cookie)).json.register)).not.toBe("Hello from Aira")
-  await reopen(page)
-  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello", { timeout: 20_000 })
+  await expect(editor).toHaveText("Hello")
+  expect(await page.evaluate(() => document.body.dataset.sameLoad)).toBe("yes")
   await capture("undone")
   note(
-    `${deckRoutes.undo.path} took the run back at revision ${String(undone.json.revision)}; the reopened deck reads Hello`,
+    `${deckRoutes.undo.path} took the run back at revision ${String(undone.json.revision)}; the open editor painted Hello again in the same page load`,
   )
 
   const again = await post(deckRoutes.undo, { deck, runId: edited.runId }, cookie)
