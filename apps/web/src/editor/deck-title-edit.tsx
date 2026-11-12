@@ -52,10 +52,7 @@ export function DeckTitleEdit({
           closed.current = false
           setDraft(title)
         }}
-        className={cn(
-          "flex h-8 min-w-0 items-center gap-1 rounded-md px-1.5 hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-          className,
-        )}
+        className={cn("flex h-8 min-w-0 items-center gap-1 rounded-md px-1.5 hover:bg-black/4", className)}
       >
         <span className="truncate text-[length:var(--type-dense)] font-medium text-foreground">{title}</span>
         <EditorIcon name="chev" size={14} className="shrink-0 text-faint" />
@@ -86,7 +83,7 @@ export function DeckTitleEdit({
             close()
           }
         }}
-        className="h-8 min-w-0 flex-1 rounded-md bg-background px-1.5 text-[length:var(--type-dense)] font-medium text-foreground shadow-[0_0_0_1px_var(--field-edge)] outline-none focus-visible:shadow-[0_0_0_2px_var(--primary)] aria-invalid:shadow-[0_0_0_2px_var(--destructive)]"
+        className="h-8 min-w-0 flex-1 rounded-md bg-background px-1.5 text-[length:var(--type-dense)] font-medium text-foreground shadow-[0_0_0_1px_var(--field-edge)] aria-invalid:shadow-[0_0_0_2px_var(--destructive)]"
       />
       {words === null ? null : (
         <span
