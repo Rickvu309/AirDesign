@@ -1,6 +1,6 @@
 import type { PaintTable } from "@airdesign/pptx"
 import type { CanvasElement, CanvasTable } from "@airdesign/render"
-import { elementFrom, type RowPaint } from "@/canvas-element"
+import { elementFrom, movableRow, type RowPaint } from "@/canvas-element"
 import { canvasLine, geometryOf, outlineOf } from "@/canvas-shape"
 import { canvasText } from "@/canvas-text"
 import { fillOf, paintedFill } from "@/paint-css"
@@ -39,7 +39,7 @@ export function paintTable(ctx: RowPaint): CanvasElement {
     text: canvasText(ctx.row.text),
     geometry: geometryOf(ctx.row),
     table: canvasTable(ctx.row.table, ctx.src),
-    editable: false,
-    movable: false,
+    editable: ctx.shape?.editable ?? false,
+    movable: movableRow(ctx),
   })
 }

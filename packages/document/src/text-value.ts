@@ -66,6 +66,10 @@ export function readTextValue(value: string): TextValue | null {
   } catch {
     return null
   }
+  return readParagraphs(parsed)
+}
+
+export function readParagraphs(parsed: unknown): TextValue | null {
   if (!Array.isArray(parsed) || parsed.length === 0) {
     return null
   }

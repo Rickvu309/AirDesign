@@ -61,6 +61,15 @@ export {
   type SlideState,
 } from "./slide-order.js"
 export {
+  cellText,
+  changedTable,
+  openingTable,
+  readTableValue,
+  writeTableValue,
+  type TableChange,
+  type TableValue,
+} from "./table-value.js"
+export {
   readTextValue,
   formatNames,
   writeTextValue,

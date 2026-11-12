@@ -66,12 +66,14 @@ export function scoreWrittenRoute(pptx, beforeParts, beforeErrors, item, afterEr
   const shared = pptx.newSharedOwnedParts(pptx.sharedOwnedParts(beforeParts), pptx.sharedOwnedParts(item.back))
   const partsMatch = pptx.touchMatches(beforeParts, item.back, item.run.touch)
   const notes = pptx.newNotesLinkFailures(beforeParts, item.back)
+  const tables = pptx.newTableBreaks(beforeParts, item.back)
   if (
     errors.length === 0 &&
     dupes.length === 0 &&
     dangling.length === 0 &&
     shared.length === 0 &&
     notes.length === 0 &&
+    tables.length === 0 &&
     partsMatch
   )
     return null
@@ -82,6 +84,7 @@ export function scoreWrittenRoute(pptx, beforeParts, beforeErrors, item, afterEr
     ...(dangling.length === 0 ? {} : { dangling: dangling.length }),
     ...(shared.length === 0 ? {} : { shared: shared.length }),
     ...(notes.length === 0 ? {} : { notes }),
+    ...(tables.length === 0 ? {} : { tables: tables.map((each) => each.reason) }),
     parts: partsMatch,
     firstError: errors[0] ?? null,
   }

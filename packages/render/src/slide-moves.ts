@@ -39,7 +39,7 @@ export function canMove(element: CanvasElement): boolean {
 }
 
 export function canResize(element: CanvasElement): boolean {
-  return canMove(element) && element.box?.rotation === 0
+  return canMove(element) && element.box?.rotation === 0 && element.table === undefined
 }
 
 function inText(target: EventTarget, frame: HTMLElement): boolean {

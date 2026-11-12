@@ -34,6 +34,7 @@ export type EditorDeck = {
   readonly onText?: () => void
   readonly onRename?: (name: string) => void
   readonly formatting?: TextFormatting
+  readonly onTable?: () => void
 }
 
 export type EditorShellProps = {
@@ -146,6 +147,7 @@ export function EditorShell({
               {...(deck?.onText === undefined ? {} : { onText: deck.onText })}
               {...(deck?.formatting === undefined ? {} : { formatting: deck.formatting })}
               {...(formats === undefined ? {} : { formats })}
+              {...(deck?.onTable === undefined ? {} : { onTable: deck.onTable })}
               {...(onPanel === undefined ? {} : { onPanel })}
             />
           </div>

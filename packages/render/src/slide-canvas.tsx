@@ -1,10 +1,11 @@
 import { useLayoutEffect, useRef } from "react"
-import type { Box, ElementId } from "@airdesign/document"
+import type { Box, ElementId, TableChange } from "@airdesign/document"
 import { PaintedElement } from "./element-kind.js"
 import { SelectionFrame } from "./selection-frame.js"
 import { slideBackground } from "./slide-background.js"
 import { canMove, canResize, enterElement, useMoves } from "./slide-moves.js"
 import type { CanvasSlide } from "./record.js"
+import type { TableBar } from "./table-paint.js"
 import type { PaintStore } from "./store.js"
 import { ensureBulletRule, type Scaled } from "./text-look.js"
 import type { TextFormatting } from "./text-formatting.js"
@@ -34,6 +35,8 @@ export function SlideCanvas(props: {
   readonly onEdit?: (id: ElementId, value: string) => void
   readonly onBox?: (id: ElementId, box: Box) => void
   readonly onRemove?: (id: ElementId) => void
+  readonly onTable?: (id: ElementId, change: TableChange) => void
+  readonly tableBar?: TableBar
   readonly entering?: ElementId | null
   readonly formatting?: TextFormatting
 }) {
@@ -78,6 +81,8 @@ export function SlideCanvas(props: {
           formatting={props.formatting}
           moves={moving}
           onEdit={props.onEdit}
+          onTable={props.onTable}
+          tableBar={props.tableBar}
           quiet={quiet}
           scaled={scaled}
           store={props.store}

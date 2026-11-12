@@ -3,6 +3,7 @@ import {
   foldSections,
   foldSlides,
   presentSlides,
+  readTableValue,
   shapeOf,
   type ElementCommand,
   type IndexElement,
@@ -61,6 +62,29 @@ function pendingAfter(pending: Pending, command: ElementCommand): void {
   shapes.set(shape, { ...kept, now: command.slide === "element-restore" })
 }
 
+function elementAdded(
+  parts: ReadonlyMap<string, Uint8Array>,
+  part: string,
+  shape: string,
+  element: IndexElement | undefined,
+): ReadonlyMap<string, Uint8Array> {
+  const box = element?.box ?? null
+  if (element === undefined || box === null) throw new Error("box")
+  const id = Number(shape)
+  if (element.kind !== "table") return applyRoute(parts, { name: "add", part, id, text: "", ...box })
+  const table = readTableValue(element.value ?? "")
+  const columns = table?.rows[0]?.cells.length
+  if (table === null || columns === undefined) throw new Error("a:tbl")
+  return applyStructuralRoute(parts, {
+    name: "graphicFrame.addTable",
+    part,
+    id,
+    ...box,
+    rows: table.rows.length,
+    columns,
+  })
+}
+
 function elementsShown(
   parts: ReadonlyMap<string, Uint8Array>,
   slide: string,
@@ -75,9 +99,7 @@ function elementsShown(
       next = applyRoute(next, { name: "remove", part, shape })
       continue
     }
-    const box = shown.element?.box ?? null
-    if (box === null) throw new Error("box")
-    next = applyRoute(next, { name: "add", part, id: Number(shape), text: "", ...box })
+    next = elementAdded(next, part, shape, shown.element)
   }
   return next
 }
