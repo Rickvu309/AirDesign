@@ -69,7 +69,7 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 - Decide a call that can be undone, do it, and report it. Ask the owner only for what the owner alone can do, or what cannot be undone.
 - A thread that hands out work never waits on another thread and never polls. It ends its turn, and the reports wake it.
 - Never hold finished work until another PR merges. Open it as its own PR now, since the queue keeps the order, or call `watch_pull_request` on the PR you wait on so its merge wakes you.
-- Before changing an MCP tool or schema, read the `mcp-builder` skill at `~/.agents/skills/mcp-builder`. Our own tool limits win where they differ.
+- Before changing an MCP tool or schema, read the MCP specification at https://modelcontextprotocol.io/specification. Our own tool limits win where they differ.
 
 ## What enforces each rule
 
