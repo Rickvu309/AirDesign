@@ -34,7 +34,7 @@ async function slideDiagram(kit) {
   await kit.signIn()
   await kit.page.goto("/")
   await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/census-updating-spm.pptx"), 5)
-  await expect(kit.page.locator("[data-slide-paint] [data-diagram-shape]")).toHaveCount(6)
+  await expect(kit.page.locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide5.xml#6"]')).toBeVisible()
   await kit.page.evaluate(() => document.fonts.ready)
 }
 
