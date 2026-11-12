@@ -164,6 +164,7 @@ export function Home({
   const decks = (trash ? listing?.trash : listing?.decks) ?? []
   const firstVisit =
     listing !== null && !trash && decks.length === 0 && listing.trash.length === 0 && importing === null
+  const emptyRecents = listing !== null && !trash && decks.length === 0 && !firstVisit && importing === null
   return (
     <DeckBrowser
       title={trash ? "Trash" : "Recents"}
@@ -211,7 +212,26 @@ export function Home({
       )}
       {loading && (!listView || trash) && <DeckGridSkeleton className={trash ? "mt-6" : undefined} />}
       {loading && listView && !trash && <DeckTableSkeleton />}
-      {(listing !== null || importing !== null) && (
+      {emptyRecents && (
+        <div className="mt-8">
+          <Card
+            className="w-full"
+            title={productCopy.noDecksTitle}
+            description={productCopy.noDecksBody}
+            actions={
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={() => void blankDeck().then(choose)}>
+                  {productCopy.blankDeck}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => picker.current?.click()}>
+                  {productCopy.importPowerPoint}
+                </Button>
+              </div>
+            }
+          />
+        </div>
+      )}
+      {(listing !== null || importing !== null) && !emptyRecents && (
         <DeckGrid className={trash ? "mt-6" : undefined}>
           {importing &&
             (importing.failed ? (
@@ -259,7 +279,7 @@ export function Home({
             : null}
         </DeckGrid>
       )}
-      {listView && !trash && listing !== null && (
+      {listView && !trash && listing !== null && !emptyRecents && (
         <div className="mt-8">
           <DeckTableHeader />
           {decks.map((deck) => (

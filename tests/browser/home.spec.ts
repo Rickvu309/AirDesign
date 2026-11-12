@@ -225,12 +225,21 @@ test("the Undo toast leaves on its own", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toHaveCount(0)
 })
 
-test("home with the only deck in Trash shows no sample decks", async ({ page }) => {
+test("home with the only deck in Trash shows the empty state pointing forward and no sample decks", async ({
+  page,
+}) => {
   await store(page, [], [{ ...first, trashed: now }])
   await page.goto("/")
   await expect(page.getByRole("link", { name: "Trash" })).toBeVisible()
   await expect(page.getByText("Scratchpad", { exact: true })).toHaveCount(0)
   await expect(page.getByText("Welcome to AirDesign", { exact: true })).toHaveCount(0)
+  await expect(page.getByRole("heading", { name: "No decks yet" })).toBeVisible()
+  await expect(page.getByText("Decks hold your slides, ready to edit or export to PowerPoint.")).toBeVisible()
+  await expect(page.getByRole("button", { name: "Blank deck" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Import PowerPoint" })).toBeVisible()
+  await page.goto("/?view=list")
+  await expect(page.getByRole("heading", { name: "No decks yet" })).toBeVisible()
+  await expect(page.getByText("Name", { exact: true })).toHaveCount(0)
 })
 
 test("a failed list shows the shell and no sample decks", async ({ page }) => {

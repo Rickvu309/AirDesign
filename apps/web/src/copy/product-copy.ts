@@ -19,9 +19,12 @@ export function emptyTrashTitleOf(count: number): string {
   return `Delete ${new Intl.NumberFormat("en").format(count)} ${decks} for good?`
 }
 
-const sampleReset = "Monday at 8:00 AM"
+const sampleReset = "Mon 8:00 AM"
 
 export const productCopy = {
+  noDecksTitle: "No decks yet",
+  noDecksBody: "Decks hold your slides, ready to edit or export to PowerPoint.",
+  importPowerPoint: "Import PowerPoint",
   usageTitle: "Weekly usage",
   usageResets: usageResetsOn(sampleReset),
   usageResetAction: "Reset",

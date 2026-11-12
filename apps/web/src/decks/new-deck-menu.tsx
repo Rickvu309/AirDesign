@@ -31,7 +31,7 @@ export function NewDeckMenu({ onImport, onBlank }: { onImport?: () => void; onBl
             fill="var(--muted-foreground)"
           />
         </svg>
-        Import PowerPoint
+        {productCopy.importPowerPoint}
       </button>
     </div>
   )

@@ -4,7 +4,7 @@ export const settingsCopy = {
   agents: "Agents",
   account: "Account",
   weeklyUsage: "Weekly usage",
-  resets: "Resets Monday at 8:00 AM",
+  resets: "Resets Mon 8:00 AM",
   reset: "Reset",
   used: "62% used",
   credits: "Credits",
