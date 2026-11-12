@@ -40,14 +40,23 @@ export function ConversationEmptyState({
   )
 }
 
-export function ConversationScrollButton({ shown, onClick }: { shown: boolean; onClick: () => void }) {
+export function ConversationScrollButton({
+  label,
+  shown,
+  onClick,
+}: {
+  label: string
+  shown: boolean
+  onClick: () => void
+}) {
   return (
     <button
       type="button"
-      aria-hidden="true"
-      tabIndex={-1}
+      aria-label={label}
+      aria-hidden={!shown}
+      tabIndex={shown ? 0 : -1}
       data-shown={shown}
-      className="absolute bottom-3 left-1/2 flex size-8 -translate-x-1/2 items-center justify-center rounded-full bg-background text-foreground opacity-0 shadow-[0px_0px_0px_1px_var(--field-edge),0px_2px_8px_var(--black-8)] [transition:opacity_var(--ease-micro),translate_var(--ease-micro)] pointer-events-none translate-y-1 data-[shown=true]:pointer-events-auto data-[shown=true]:translate-y-0 data-[shown=true]:opacity-100 motion-reduce:transition-none"
+      className="absolute bottom-3 left-1/2 flex size-8 -translate-x-1/2 items-center justify-center rounded-full bg-background text-foreground opacity-0 shadow-[0px_0px_0px_1px_var(--field-edge),0px_2px_8px_var(--black-8)] [transition:opacity_var(--ease-micro),translate_var(--ease-micro)] pointer-events-none translate-y-1 outline-hidden focus-visible:shadow-[0px_0px_0px_2px_var(--ring)] data-[shown=true]:pointer-events-auto data-[shown=true]:translate-y-0 data-[shown=true]:opacity-100 motion-reduce:transition-none"
       onClick={onClick}
     >
       <svg

@@ -121,22 +121,25 @@ test("a refused import shows the designed failure, focuses the way out, and can 
   await page
     .locator("input[type=file]")
     .setInputFiles({ name: "broken.pptx", mimeType: "application/octet-stream", buffer: Buffer.from("broken") })
-  await expect(page.getByText("Unable to import", { exact: true })).toBeVisible()
+  await expect(page.getByText("Unable to open this file", { exact: true })).toBeVisible()
   const refused = page.getByRole("alert")
-  await expect(refused).toContainText("Unable to import")
+  await expect(refused).toContainText(
+    "Open it in PowerPoint and save it as a .pptx file without a password, then import that copy.",
+  )
   await expect(refused.getByRole("button", { name: "Choose another file" })).toBeFocused()
   await page.getByRole("button", { name: "Remove", exact: true }).click()
-  await expect(page.getByText("Unable to import", { exact: true })).toHaveCount(0)
+  await expect(page.getByText("Unable to open this file", { exact: true })).toHaveCount(0)
 })
 
-test("a file that is not a PowerPoint is refused with the same designed failure", async ({ page }) => {
+test("a file that is not a PowerPoint is refused with words of its own", async ({ page }) => {
   await store(page)
   await page.goto("/")
   const emptyZip = Buffer.from([0x50, 0x4b, 0x05, 0x06, ...Array.from({ length: 18 }, () => 0)])
   await page
     .locator("input[type=file]")
     .setInputFiles({ name: "archive.pptx", mimeType: "application/octet-stream", buffer: emptyZip })
-  await expect(page.getByRole("alert").getByText("Unable to import", { exact: true })).toBeVisible()
+  await expect(page.getByRole("alert").getByText("This file isn't a PowerPoint deck", { exact: true })).toBeVisible()
+  await expect(page.getByRole("alert")).toContainText("Choose a PowerPoint file that ends in .pptx.")
   await expect(page.getByRole("alert").getByRole("button", { name: "Choose another file" })).toBeFocused()
 })
 
@@ -252,13 +255,13 @@ test("a failed list shows a message, retries when asked, and returns focus to th
   })
   await page.goto("/")
   const failure = page.getByRole("alert")
-  await expect(failure.getByRole("heading", { name: "Unable to finish this run" })).toBeVisible()
-  await expect(failure.getByText("Your work so far is saved.")).toBeVisible()
+  await expect(failure.getByRole("heading", { name: "Unable to load your decks" })).toBeVisible()
+  await expect(failure.getByText("Check your connection and try again.")).toBeVisible()
   const tryAgain = failure.getByRole("button", { name: "Try again" })
   shouldFail = false
   await tryAgain.click()
   await expect(page.getByRole("heading", { name: first.name })).toBeVisible()
-  await expect(page.getByRole("heading", { name: "Unable to finish this run" })).toHaveCount(0)
+  await expect(page.getByRole("heading", { name: "Unable to load your decks" })).toHaveCount(0)
   await expect(page.getByRole("heading", { name: "Recents", level: 1 })).toBeFocused()
 })
 

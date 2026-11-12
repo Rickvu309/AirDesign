@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test"
+import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { creditsCopy } from "../../apps/web/src/credits/credits-sample.ts"
 
@@ -41,7 +42,9 @@ export async function expectNoSample(page: Page) {
       "New slide",
       creditsCopy.newChat,
       productCopy.agentName,
-      productCopy.agentCaution,
+      airaCopy.welcome,
+      ...airaCopy.starters,
+      airaCopy.caution,
       "Agent",
       "Design",
     ]),

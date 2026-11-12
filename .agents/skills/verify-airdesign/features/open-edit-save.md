@@ -10,7 +10,7 @@ A signed-in person chooses a PowerPoint file on Home. AirDesign opens it as a ne
 - `edit-text` typing replaces the text box's text on screen.
 - `edit-save` the edit lands on the server: `deckRoutes.open` returns the typed text.
 - `edit-reopen` with the local edit rows gone, opening the deck again shows the server's text.
-- `import-refused` a file that is not a PowerPoint shows `Unable to import` with `Choose another file` and `Remove`.
+- `import-refused` a file that is not a PowerPoint shows `Unable to open this file` with the next step under it, `Choose another file` and `Remove`. Each refusal has its own words in `apps/web/src/copy/import-failure-words.ts`.
 
 ## How to get to it (user POV)
 
@@ -33,7 +33,7 @@ Preconditions:
 - **Server copy.** Poll `post(deckRoutes.open, { deck })` until the register's visible text is `["Saved on the server"]`. Evidence `NN-api-decks-open.json`.
 - **Listed.** `post(deckRoutes.list, {})` lists the deck. Evidence `NN-api-decks-list.json`.
 - **Reopen.** Go to `/version` on the same origin, delete every IndexedDB `airdesign` row that has a `kind` (the local edit rows), then open `/deck/<id>`. The text box reads `Saved on the server`. Evidence `NN-reloaded-from-server`.
-- **Refused import.** Not in the journey. In a scratch journey, set a file named `broken.pptx` with bytes `broken` on the Home file input. `Unable to import` is visible; `Remove` clears it.
+- **Refused import.** Not in the journey. In a scratch journey, set a file named `broken.pptx` with bytes `broken` on the Home file input. `Unable to open this file` is visible; `Remove` clears it.
 
 ## Gotchas
 

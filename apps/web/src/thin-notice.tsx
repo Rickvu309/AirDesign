@@ -78,8 +78,8 @@ export function ThinNoticeView({
   if (notice === "import-failed") {
     return (
       <FailureNotice
-        text={productCopy.importFailedTitle}
-        action={productCopy.importChooseAnother}
+        text={productCopy.deckOpenFailed}
+        action={productCopy.goToDecks}
         onAct={() => onTryAgain(notice)}
       />
     )

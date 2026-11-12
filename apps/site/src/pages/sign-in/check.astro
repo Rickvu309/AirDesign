@@ -25,6 +25,7 @@ import SiteDocument from "../../site/site-document.astro";
 </SiteDocument>
 
 <script>
+  import { connectSendAgain } from "../../access/check-email/send-again";
   import { connectSixDigitCodeEntry } from "../../access/check-email/six-digit-code-entry";
   import { readPendingEmail } from "../../access/pending-sign-in-email";
 
@@ -36,5 +37,8 @@ import SiteDocument from "../../site/site-document.astro";
       element.textContent = pendingEmail;
     });
     document.querySelectorAll("[data-six-digit-code]").forEach((entry) => connectSixDigitCodeEntry(entry));
+    const sendAgain = document.querySelector<HTMLButtonElement>("[data-send-again]");
+    const sendAgainStatus = document.querySelector<HTMLElement>("[data-send-again-status]");
+    if (sendAgain && sendAgainStatus) connectSendAgain(sendAgain, sendAgainStatus);
   }
 </script>

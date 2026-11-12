@@ -7,7 +7,7 @@ The account menu on Home has `Agents`, which opens `/settings/agents`. The page 
 - `agents-reach` the account menu on Home and the `Settings` link in the side navigation open `/settings/agents`. Signed-out visits go to sign-in with `next` set to the path and query.
 - `agents-mcp` the `MCP server` card shows the server's `resource` address from `accountRoutes.agents` and copies it to the clipboard when `Copy` is clicked, switching the button label to `Done`.
 - `agents-list` `accountRoutes.agents` returns only the signed-in person's exchanged, unrevoked grants, newest first, with `id`, `name`, `agent` (`claude`, `claude-code`, `codex`, or `other`), `host`, and `connected`. Unexchanged approvals, revoked grants, and another person's grants never appear.
-- `agents-disconnect` clicking `Disconnect` opens `Disconnect <agent>?` (`This can't be undone.`). Confirming posts `accountRoutes.revokeAgent` with `{ id }`, removes the row, and refuses that grant's access token on `/mcp` (401 `invalid_token`) and refresh token on `/oauth/token` (400 `invalid_grant`) at once.
+- `agents-disconnect` clicking `Disconnect` opens `Disconnect <agent>?` (`Claude can no longer read or edit your decks. You can connect it again at any time.`). Confirming posts `accountRoutes.revokeAgent` with `{ id }`, removes the row, and refuses that grant's access token on `/mcp` (401 `invalid_token`) and refresh token on `/oauth/token` (400 `invalid_grant`) at once.
 - `agents-session-only` both `accountRoutes.agents` and `accountRoutes.revokeAgent` accept only a browser session cookie; any `Authorization` header answers 401 `session` even alongside a valid cookie, and another account's or unknown grant id answers 403 `owner`.
 
 ## How to get to it (user POV)

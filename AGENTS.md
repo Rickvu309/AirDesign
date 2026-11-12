@@ -55,7 +55,7 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 - Use one word per idea, everywhere. The same name appears in the code, the test and the tool, so one search finds all of it. `GLOSSARY.md` says which word.
 - Every package exposes only its `index.ts`, and tests sit beside the code. `@airdesign/theme` also exposes `tokens.css`.
 - Extend what exists before building a parallel version.
-- Copy follows the existing screens. Do not invent product copy. Layout follows the tokens in `packages/theme` and the components in `apps/web/src/components/ui/`. Add a missing role to the token file.
+- Agents write product copy. It follows the `better-writing` skill, which lives only on the owner's machine at `~/.claude/skills/better-writing`. It reuses the product's words, recorded in `GLOSSARY.md`, and says only what the product does today. Layout follows the tokens in `packages/theme` and the components in `apps/web/src/components/ui/`. Add a missing role to the token file.
 - With reduced motion on, a page shows its finished state with no movement.
 - Test behavior that can break, at the lowest layer that fails. Tests never retry.
 - Do not commit plans, research notes or scratch files. A merged PR is the record.
@@ -105,5 +105,6 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | A change to what `ci` checks is seen by the owner | the `bar` check labels the PR `changes-ci`. It does not block |
 | A bug you find and do not fix is an `it.fails` test. A skipped, todo, expected-failure or no-expect test counts as a known failure | `scripts/metrics.mjs` prints the count on every run. A known failure is shown, never blocked. A deleted test is caught only by the `mutation` job, which reports the planted faults that tests no longer catch |
 | A new check starts in `warnSteps` in `scripts/check.mjs` and blocks only after it has caught a real fault with no false stop | review |
-| Extend before you build a parallel version, no invented copy, reduced motion shows the finished state | review |
+| Extend before you build a parallel version, reduced motion shows the finished state | review |
+| Product copy follows `better-writing`, uses the words in `GLOSSARY.md`, and is true of what the product does | review |
 | How agents work here | review |

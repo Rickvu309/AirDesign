@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
+import { signInCopy } from "../sign-in-copy"
 import { connectSixDigitCodeEntry } from "./six-digit-code-entry"
 
 type JsdomModule = {
@@ -24,7 +25,7 @@ async function codeEntryFixture() {
         <input />
       </div>
       <p id="sign-in-code-error" role="alert" data-code-error>
-        <span data-failure hidden>Unable to finish this run</span>
+        <span data-failure hidden>${signInCopy.codeRefused}</span>
       </p>
     </div>
   `)
@@ -56,7 +57,7 @@ describe("connectSixDigitCodeEntry", () => {
     await vi.waitFor(() => {
       expect(failure.hasAttribute("hidden")).toBe(false)
     })
-    expect(failure.textContent).toBe("Unable to finish this run")
+    expect(failure.textContent).toBe(signInCopy.codeRefused)
     expect(input.getAttribute("aria-invalid")).toBe("true")
     expect(input.getAttribute("aria-describedby")).toBe(region.id)
 

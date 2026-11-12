@@ -10,7 +10,7 @@ import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
 import { ImportingPreview, ImportFailedPreview } from "@/decks/deck-status-preview"
-import { importFailureWords, type ImportFailureReason } from "@/decks/import-failure-words"
+import { importFailureWords, type ImportFailureReason } from "@/copy/import-failure-words"
 import { NewDeckMenu } from "@/decks/new-deck-menu"
 import { blankDeck } from "@/decks/blank-deck"
 import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/deck-moved-toast"
@@ -88,6 +88,7 @@ export function Home({
   const [menu, setMenu] = useState(false)
   const [deleting, setDeleting] = useState<Deck[] | null>(null)
   const [busy, setBusy] = useState(false)
+  const [deleteFailed, setDeleteFailed] = useState(false)
   const [importing, setImporting] = useState<Importing | null>(null)
   const picker = useRef<HTMLInputElement>(null)
   const listFailed = useRef(false)
@@ -200,8 +201,8 @@ export function Home({
         <div className="mt-8" role="alert">
           <Card
             className="w-full"
-            title={productCopy.agentFailedTitle}
-            description={productCopy.agentFailedBody}
+            title={productCopy.decksFailedTitle}
+            description={productCopy.decksFailedBody}
             actions={
               <Button variant="outline" size="sm" onClick={() => void refresh()}>
                 {productCopy.payTryAgain}
@@ -219,11 +220,12 @@ export function Home({
               <div role="alert">
                 <DeckCard
                   name={importing.name}
-                  edited={importFailureWords(importing.reason).detail}
+                  edited={importFailureWords(importing.reason).title}
                   editedClassName="text-destructive"
                   previewClassName="bg-background"
                   preview={
                     <ImportFailedPreview
+                      detail={importFailureWords(importing.reason).detail}
                       focusChoose
                       onChoose={() => picker.current?.click()}
                       onRemove={() => setImporting(null)}
@@ -232,7 +234,7 @@ export function Home({
                 />
               </div>
             ) : (
-              <DeckCard name={importing.name} edited="Importing" preview={<ImportingPreview />} />
+              <DeckCard name={importing.name} edited={productCopy.importing} preview={<ImportingPreview />} />
             ))}
           {firstVisit && starterDeckCards.map((deck) => <DeckCard key={deck.name} {...deck} />)}
           {!listView || trash
@@ -250,7 +252,7 @@ export function Home({
                       <RestoreButton onClick={() => void restore(deck)} />
                     ) : (
                       <Button variant="outline" size="sm" onClick={() => void move(deck)}>
-                        Move to Trash
+                        {productCopy.moveToTrash}
                       </Button>
                     )
                   }
@@ -271,7 +273,7 @@ export function Home({
               href={`/deck/${deck.deck}`}
               action={
                 <Button variant="ghost" size="sm" onClick={() => void move(deck)}>
-                  Move to Trash
+                  {productCopy.moveToTrash}
                 </Button>
               }
             />
@@ -283,20 +285,35 @@ export function Home({
           count={deleting.length}
           busy={busy}
           onCancel={() => {
-            if (!busy) setDeleting(null)
+            if (busy) return
+            setDeleting(null)
+            setDeleteFailed(false)
           }}
           onConfirm={() => {
             setBusy(true)
+            setDeleteFailed(false)
             void post(deckRoutes.delete.path, { decks: deleting.map((deck) => deck.deck) })
+              .catch(() => ({ ok: false }))
               .then(async (result) => {
-                if (result.ok) {
-                  setDeleting(null)
-                  await refresh()
+                if (!result.ok) {
+                  setDeleteFailed(true)
+                  return
                 }
+                setDeleting(null)
+                await refresh()
               })
               .finally(() => setBusy(false))
           }}
-        />
+        >
+          {deleteFailed ? (
+            <p
+              role="alert"
+              className="mt-3 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-destructive"
+            >
+              {productCopy.deleteFailed}
+            </p>
+          ) : null}
+        </EmptyTrashDialog>
       )}
       <MovedToaster />
     </DeckBrowser>

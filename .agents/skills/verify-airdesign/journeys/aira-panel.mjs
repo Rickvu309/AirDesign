@@ -51,18 +51,18 @@ export default async function drive(kit) {
   await page.keyboard.press("Enter")
   await expect(log.getByText(asked, { exact: true })).toBeVisible()
   await expect(log.getByText("I will change the title on the first slide.", { exact: true })).toBeVisible()
-  await expect(log.locator('[data-tool-state="working"]')).toHaveText("Editing the deck")
+  await expect(log.locator('[data-tool-state="working"]')).toHaveText("Editing slides")
   await expect(side.getByRole("button", { name: "Stop" })).toBeVisible()
-  await expect(side.getByRole("textbox", { name: "Add to the request" })).toBeVisible()
+  await expect(side.getByRole("textbox", { name: "Add to your request" })).toBeVisible()
   await capture("working")
   note(
-    "typed the ask and pressed Enter; the reply streamed and the Editing the deck step waits on /mcp with Stop showing",
+    "typed the ask and pressed Enter; the reply streamed and the Editing slides step waits on /mcp with Stop showing",
   )
 
   open()
   await expect(editor).toHaveText("Hello from Aira")
   await expect(log.getByText("The title now reads Hello from Aira.", { exact: true })).toBeVisible()
-  await expect(log.locator('[data-tool-state="done"]')).toHaveText("Edited the deck")
+  await expect(log.locator('[data-tool-state="done"]')).toHaveText("Edited slides")
   await expect(side.getByRole("button", { name: "Undo" })).toBeVisible()
   expect(lastText((await post(deckRoutes.open, { deck }, cookie)).json.register)).toBe("Hello from Aira")
   await capture("done")
@@ -88,8 +88,10 @@ export default async function drive(kit) {
   aira([{ name: "overloaded.sse" }])
   await composer.fill("Make the title bigger")
   await page.keyboard.press("Enter")
-  await expect(log.getByText("Unable to finish this run", { exact: true })).toBeVisible()
-  await expect(log.getByText("Your work so far is saved.", { exact: true })).toBeVisible()
+  await expect(log.getByText("Unable to finish your request", { exact: true })).toBeVisible()
+  await expect(
+    log.getByText("Nothing in your deck changed. Ask again to try once more.", { exact: true }),
+  ).toBeVisible()
   await capture("failed")
   note("an overloaded model call shows the failed card")
 }

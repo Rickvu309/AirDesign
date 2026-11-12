@@ -23,15 +23,28 @@ describe("stepLine", () => {
   })
 
   it("writes a running step in the present tense and a finished one in the past", () => {
-    expect(stepLine("airdesign_edit_deck", "working")).toBe("Editing the deck")
-    expect(stepLine("airdesign_edit_deck", "done")).toBe("Edited the deck")
+    expect(stepLine("airdesign_edit_deck", "working")).toBe("Editing slides")
+    expect(stepLine("airdesign_edit_deck", "done")).toBe("Edited slides")
     expect(stepLine("airdesign_read_deck", "working")).toBe("Reading the deck")
     expect(stepLine("airdesign_read_deck", "done")).toBe("Read the deck")
   })
 
   it("says a refused step could not be done and a stopped step was stopped", () => {
-    expect(stepLine("airdesign_edit_deck", "refused")).toBe("Unable to edit the deck")
-    expect(stepLine("airdesign_edit_deck", "stopped")).toBe("Stopped editing the deck")
+    expect(stepLine("airdesign_edit_deck", "refused")).toBe("Couldn't edit slides")
+    expect(stepLine("airdesign_edit_deck", "stopped")).toBe("Stopped editing slides")
+  })
+
+  it("gives every tool Aira can call its own words in each state", () => {
+    for (const { name } of projectTools(catalog)) {
+      if (name === "airdesign_stop_run") continue
+      const said = states.map((state) => stepLine(name, state))
+      expect(new Set(said).size, name).toBe(states.length)
+      expect(said, name).not.toContain(stepLine("airdesign_future_tool", "done"))
+    }
+  })
+
+  it("says a refused tool Aira does not know could not finish its step", () => {
+    expect(stepLine("airdesign_future_tool", "refused")).toBe("Couldn't finish a step")
   })
 
   it("hides the call that only ends Aira's turn", () => {
@@ -55,30 +68,39 @@ describe("replyPieces", () => {
       { kind: "text", text: "I will change the title." },
       {
         kind: "steps",
-        title: "Edited the deck",
+        title: "Edited slides",
         state: "done",
-        lines: [{ id: "airdesign_edit_deck", text: "Edited the deck", state: "done" }],
+        lines: [{ id: "airdesign_edit_deck", text: "Edited slides", state: "done" }],
       },
       { kind: "text", text: "The title now reads Hello." },
     ])
+  })
+
+  it("lists three different steps in one sentence", () => {
+    const [row] = replyPieces([
+      tool("airdesign_read_deck", "done"),
+      tool("airdesign_capture_slide", "done"),
+      tool("airdesign_edit_deck", "done"),
+    ])
+    expect(row).toMatchObject({ title: "Read the deck, viewed a slide, and edited slides" })
   })
 
   it("sums up steps taken one after another in one line that expands to each step", () => {
     const [row] = replyPieces([tool("airdesign_read_deck", "done"), tool("airdesign_edit_deck", "done")])
     expect(row).toEqual({
       kind: "steps",
-      title: "Read the deck, edited the deck",
+      title: "Read the deck and edited slides",
       state: "done",
       lines: [
         { id: "airdesign_read_deck", text: "Read the deck", state: "done" },
-        { id: "airdesign_edit_deck", text: "Edited the deck", state: "done" },
+        { id: "airdesign_edit_deck", text: "Edited slides", state: "done" },
       ],
     })
   })
 
   it("says a repeated step once in the summary and lists every call when expanded", () => {
     const [row] = replyPieces([tool("airdesign_edit_deck", "done", "a"), tool("airdesign_edit_deck", "done", "b")])
-    expect(row).toMatchObject({ title: "Edited the deck", lines: [{ id: "a" }, { id: "b" }] })
+    expect(row).toMatchObject({ title: "Edited slides", lines: [{ id: "a" }, { id: "b" }] })
   })
 
   it("shows the running step on its own line after the finished ones", () => {
@@ -92,16 +114,16 @@ describe("replyPieces", () => {
       },
       {
         kind: "steps",
-        title: "Editing the deck",
+        title: "Editing slides",
         state: "working",
-        lines: [{ id: "airdesign_edit_deck", text: "Editing the deck", state: "working" }],
+        lines: [{ id: "airdesign_edit_deck", text: "Editing slides", state: "working" }],
       },
     ])
   })
 
   it("marks a row refused when any of its steps was refused, so the summary says so", () => {
     const [row] = replyPieces([tool("airdesign_read_deck", "done"), tool("airdesign_edit_deck", "refused")])
-    expect(row).toMatchObject({ title: "Read the deck, unable to edit the deck", state: "refused" })
+    expect(row).toMatchObject({ title: "Read the deck and couldn't edit slides", state: "refused" })
   })
 
   it("leaves out the turn-ending call without splitting the row around it", () => {
@@ -111,7 +133,7 @@ describe("replyPieces", () => {
       tool("airdesign_read_deck", "done"),
     ])
     expect(pieces).toHaveLength(1)
-    expect(pieces[0]).toMatchObject({ title: "Edited the deck, read the deck" })
+    expect(pieces[0]).toMatchObject({ title: "Edited slides and read the deck" })
     expect(JSON.stringify(pieces)).not.toContain("stop")
   })
 

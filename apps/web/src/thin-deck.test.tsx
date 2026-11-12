@@ -482,7 +482,7 @@ it("shows the import notice and no slide when neither the device nor the server 
     })
   })
   expect(window.document.querySelector("[data-slide-paint]")).toBeNull()
-  expect(window.document.body.textContent).toContain(productCopy.importFailedTitle)
+  expect(window.document.body.textContent).toContain(productCopy.deckOpenFailed)
 })
 
 it("sends what is pending when a deck opens", async () => {

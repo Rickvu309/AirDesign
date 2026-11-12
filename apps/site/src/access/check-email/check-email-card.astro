@@ -1,4 +1,5 @@
 ---
+import { signInCopy } from "../sign-in-copy";
 import MailMark from "./check-email-art.astro";
 
 const codeBoxes = [0, 1, 2, 3, 4, 5];
@@ -27,7 +28,7 @@ const mailButtonClass =
     />
   </div>
   <p id="sign-in-code-error" class="mt-2 text-[length:var(--type-dense)] leading-[1.31] text-destructive" role="alert" data-code-error>
-    <span data-failure hidden>Unable to finish this run</span>
+    <span data-failure hidden>{signInCopy.codeRefused}</span>
   </p>
 
   <div class="mt-6 grid w-full grid-cols-2 gap-2.5">
@@ -43,6 +44,7 @@ const mailButtonClass =
 
   <p class="mt-[var(--space-24)] text-[length:var(--type-body)] leading-[1.43] text-muted-foreground">
     Didn't get it?{" "}
-    <button class="cursor-pointer font-semibold text-primary-strong" type="button">Send it again</button>
+    <button class="cursor-pointer font-semibold text-primary-strong disabled:cursor-default" type="button" data-send-again>{signInCopy.sendAgain}</button>
   </p>
+  <p class="mt-2 text-[length:var(--type-dense)] leading-[1.31] text-muted-foreground data-failed:text-destructive" role="status" data-send-again-status></p>
 </div>

@@ -1,3 +1,7 @@
+---
+import { signInCopy } from "../sign-in-copy";
+---
+
 <form class="rounded-2xl bg-background p-10 shadow-[0px_0px_0px_1px_var(--black-7),0px_1px_2px_0px_var(--black-3),0px_12px_32px_0px_var(--black-4)] max-sm:p-6" method="post" data-sign-in-form>
   <label class="block text-[length:var(--type-body)] leading-[1.5] font-medium" for="sign-in-email">Email</label>
   <input
@@ -10,7 +14,7 @@
     required
   />
   <p id="sign-in-error" class="mt-2 text-[length:var(--type-dense)] leading-[1.31] text-destructive" role="alert" data-sign-in-error>
-    <span data-failure hidden>Unable to finish this run</span>
+    <span data-failure hidden>{signInCopy.emailFailed}</span>
   </p>
   <button class="primary-button mt-5 h-11 w-full cursor-pointer rounded-lg text-[length:var(--type-section)]" type="submit">Continue with email</button>
   <p class="mt-5 text-center text-[length:var(--type-dense)] leading-[1.31] text-muted-foreground">New email? The same link creates your account.</p>
