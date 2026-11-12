@@ -139,6 +139,6 @@ test("a table's text and the legend under it are never painted over each other",
   ).toEqual([])
 })
 
-test.fail("text in the real app meets WCAG AA contrast", () => {
+test("text in the real app meets WCAG AA contrast", () => {
   expect(seen([...swept.keys()], "text-contrast"), "text is below WCAG AA contrast").toEqual([])
 })

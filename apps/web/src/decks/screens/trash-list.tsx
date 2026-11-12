@@ -59,7 +59,7 @@ export function EmptyTrashButton({ disabled, onClick }: { disabled?: boolean; on
 }
 
 export function TrashNote() {
-  return <p className="mt-6 text-sm leading-[18px] text-faint">Decks here are removed for good after 30 days.</p>
+  return <p className="mt-6 text-sm leading-[18px] text-quiet">Decks here are removed for good after 30 days.</p>
 }
 
 export function TrashList({ confirm = false }: { confirm?: boolean }) {
