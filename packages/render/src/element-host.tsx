@@ -155,7 +155,7 @@ function SheetElement(props: { readonly element: CanvasElement; readonly scaled:
   return (
     <div data-canvas-element={element.key} style={elementFrame(element, scaled, false, unshown)}>
       <ShapeArt element={element} scaled={scaled} />
-      <UnshownLabel scaled={scaled} text={element.unshownText} />
+      <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
       {text === null ? null : (
         <div style={textLayer(element.box, text, scaled)}>
           <SheetText look={textLook(text, scaled)} text={text} />
@@ -233,7 +233,7 @@ function PlacedText(props: {
       {...(moves === null ? {} : reach(element, id, shown, moves, typing, fallbackName))}
     >
       <ShapeArt element={element} grab={moves !== null && canMove(element)} scaled={scaled} />
-      <UnshownLabel scaled={scaled} text={element.unshownText} />
+      <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
       <div style={textLayer(element.box, text, scaled)}>
         {showPrompt ? (
           <div

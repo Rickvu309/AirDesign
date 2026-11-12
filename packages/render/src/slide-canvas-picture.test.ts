@@ -74,7 +74,8 @@ it("paints the slide's picture background", async () => {
 
 it("says in the box what it cannot show, on the canvas and not in a thumbnail", async () => {
   const words = "EMF picture can't be shown here"
-  const unshown = { ...picture(unshownFill), unshownText: words }
+  const large = { x: 0, y: 0, width: 4_000_000, height: 2_000_000, rotation: 0, flipH: false, flipV: false }
+  const unshown = { ...picture(unshownFill), box: large, unshownText: words }
   const store = paintStore()
   store.publish({ id, kind: "picture", text: "", picture: "" })
   const host = document.createElement("div")
@@ -91,4 +92,11 @@ it("says in the box what it cannot show, on the canvas and not in a thumbnail", 
     )
   })
   expect(host.querySelector(`[data-canvas-element="${id}"]`)?.textContent ?? "").not.toContain(words)
+})
+
+it("keeps the words out of a box too small to hold them", async () => {
+  const small = { ...picture(unshownFill), unshownText: "WMF picture can't be shown here" }
+  const box = { x: 0, y: 0, width: 400_000, height: 400_000, rotation: 0, flipH: false, flipV: false }
+  const host = await painted({ ...slide, elements: [{ ...small, box }] })
+  expect(host.querySelector(`[data-canvas-element="${id}"]`)?.textContent ?? "").toBe("")
 })
