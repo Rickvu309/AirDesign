@@ -74,7 +74,16 @@ export type Command =
   | { readonly command: "read"; readonly runId: string; readonly node: ElementId }
   | { readonly command: "slide"; readonly file: readonly SlideId[]; readonly edit: SlideCommand }
 
-export const refusals = ["stale", "person-protected", "run-fenced", "dead", "present", "limit", "group-box"] as const
+export const refusals = [
+  "stale",
+  "person-protected",
+  "run-fenced",
+  "dead",
+  "present",
+  "limit",
+  "group-box",
+  "locked",
+] as const
 
 export type Refusal = (typeof refusals)[number]
 

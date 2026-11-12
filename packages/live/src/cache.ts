@@ -26,7 +26,7 @@ import {
   type Value,
 } from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
-import { hasLayouts, queueIndex, sendIndex } from "./deck-index.js"
+import { hasMeasures, queueIndex, sendIndex } from "./deck-index.js"
 import { withSlides } from "./slide-replay.js"
 import {
   holdsUnsaved,
@@ -393,7 +393,7 @@ export function connect(remote: Remote, options: Options = {}) {
 
   return {
     index: (deck: string, index: Parameters<typeof queueIndex>[1]) => queueIndex(deck, index, nextOnce),
-    layered: hasLayouts,
+    measured: hasMeasures,
     async enqueueSlide(
       deck: string,
       file: readonly SlideId[],

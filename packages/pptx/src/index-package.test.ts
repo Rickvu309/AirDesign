@@ -24,7 +24,7 @@ const parts = new Map([
 
 it("indexes stable slide ids, group children, table kinds, text floors, and opening boxes", () => {
   const index = indexPackage(parts)
-  expect(index.slides).toEqual([{ id: "258", position: 0 }])
+  expect(index.slides).toEqual([{ id: "258", position: 0, free: 5, animated: [] }])
   expect(index.elements).toEqual([
     { node: elementId("258.2"), kind: "group", value: null, box: { x: 10, y: 20, cx: 30, cy: 40 }, grouped: false },
     {
@@ -37,4 +37,23 @@ it("indexes stable slide ids, group children, table kinds, text floors, and open
     { node: elementId("258.4"), kind: "table", value: null, box: null, grouped: false },
   ])
   expect(indexPackage(new Map([...parts].reverse()))).toEqual(index)
+})
+
+it("records the slide size, the first free shape id and the shapes an animation names", () => {
+  const sized = new Map(parts)
+  sized.set(
+    "ppt/presentation.xml",
+    xml(
+      '<p:presentation><p:sldSz cx="12192000" cy="6858000"/><p:sldIdLst><p:sldId id="258" r:id="rId1"/></p:sldIdLst></p:presentation>',
+    ),
+  )
+  sized.set(
+    "ppt/slides/slide1.xml",
+    xml(
+      '<p:sld><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2"/></p:nvSpPr></p:sp><p:sp><p:nvSpPr><p:cNvPr id="9"/></p:nvSpPr></p:sp></p:spTree></p:cSld><p:timing><p:tnLst><p:par><p:cTn><p:childTnLst><p:set><p:cBhvr><p:tgtEl><p:spTgt spid="9"/></p:tgtEl></p:cBhvr></p:set></p:childTnLst></p:cTn></p:par></p:tnLst></p:timing></p:sld>',
+    ),
+  )
+  expect(indexPackage(sized).slides).toEqual([
+    { id: "258", position: 0, size: { width: 12192000, height: 6858000 }, free: 10, animated: ["9"] },
+  ])
 })

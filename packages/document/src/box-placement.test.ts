@@ -1,0 +1,79 @@
+import { describe, expect, it } from "vitest"
+import { placeNewBox } from "./box-placement.js"
+import type { Box } from "./box.js"
+
+const slide = { width: 12_192_000, height: 6_858_000 }
+
+function overlaps(left: Box, right: Box): boolean {
+  return (
+    left.x < right.x + right.cx &&
+    right.x < left.x + left.cx &&
+    left.y < right.y + right.cy &&
+    right.y < left.y + left.cy
+  )
+}
+
+describe("placing a new text box", () => {
+  it("centres the default box on an empty slide", () => {
+    const placed = placeNewBox(slide, [])
+    expect(placed.cx).toBe(Math.round(slide.width * 0.4))
+    expect(placed.cy).toBe(Math.round(slide.height * 0.12))
+    expect(placed.x).toBe(Math.round((slide.width - placed.cx) / 2))
+    expect(placed.y).toBe(Math.round((slide.height - placed.cy) / 2))
+  })
+
+  it("lands below a title and a subtitle that sit in the middle of a blank title slide", () => {
+    const title = { x: 1_524_000, y: 1_122_363, cx: 9_144_000, cy: 2_387_600 }
+    const subtitle = { x: 1_524_000, y: 3_602_038, cx: 9_144_000, cy: 1_655_762 }
+    const placed = placeNewBox(slide, [title, subtitle])
+    expect(overlaps(placed, title)).toBe(false)
+    expect(overlaps(placed, subtitle)).toBe(false)
+    expect(placed.y).toBeGreaterThanOrEqual(subtitle.y + subtitle.cy)
+    expect(placed.y + placed.cy).toBeLessThanOrEqual(slide.height)
+  })
+
+  it("lands in the free column beside a left half that holds text", () => {
+    const left = { x: 0, y: 0, cx: 6_000_000, cy: 6_858_000 }
+    const placed = placeNewBox(slide, [left])
+    expect(overlaps(placed, left)).toBe(false)
+    expect(placed.x + placed.cx).toBeLessThanOrEqual(slide.width)
+  })
+
+  it("puts two boxes added in a row in different places", () => {
+    const first = placeNewBox(slide, [])
+    const second = placeNewBox(slide, [first])
+    expect(overlaps(first, second)).toBe(false)
+  })
+
+  it("falls back to the centre, away from a box exactly there, when nothing is free", () => {
+    const full = { x: 0, y: 0, cx: slide.width, cy: slide.height }
+    const centred = placeNewBox(slide, [full])
+    const again = placeNewBox(slide, [full, centred])
+    expect(centred).toEqual(placeNewBox(slide, []))
+    expect(again.x === centred.x && again.y === centred.y).toBe(false)
+    expect(again.x + again.cx).toBeLessThanOrEqual(slide.width)
+    expect(again.y + again.cy).toBeLessThanOrEqual(slide.height)
+  })
+
+  it("keeps the box on the slide when it is offset from the centre again and again", () => {
+    const full = { x: 0, y: 0, cx: slide.width, cy: slide.height }
+    const taken: Box[] = [full]
+    for (let count = 0; count < 40; count += 1) {
+      const placed = placeNewBox(slide, taken)
+      expect(placed.x).toBeGreaterThanOrEqual(0)
+      expect(placed.y).toBeGreaterThanOrEqual(0)
+      expect(placed.x + placed.cx).toBeLessThanOrEqual(slide.width)
+      expect(placed.y + placed.cy).toBeLessThanOrEqual(slide.height)
+      taken.push(placed)
+    }
+  })
+
+  it("ignores boxes with no area", () => {
+    expect(placeNewBox(slide, [{ x: 100, y: 100, cx: 0, cy: 0 }])).toEqual(placeNewBox(slide, []))
+  })
+
+  it("chooses the same place every time", () => {
+    const taken = [{ x: 0, y: 0, cx: 4_000_000, cy: 2_000_000 }]
+    expect(placeNewBox(slide, taken)).toEqual(placeNewBox(slide, taken))
+  })
+})

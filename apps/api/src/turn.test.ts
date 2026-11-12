@@ -12,6 +12,10 @@ const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site
 const nodes = { x: "258.7", y: "258.8" } as const
 const idleWindow = 600_000
 
+const slideTools = ["add_slide", "add_text_box", "delete_element"] as const
+const spare = Array.from({ length: 8 }, (_, count) => `258.${String(20 + count)}`)
+
+type SlideTool = (typeof slideTools)[number]
 type Name = keyof typeof nodes
 type Action = "TurnStart" | "AgentEdit" | "SlideStart" | "SlideInTurn" | "PersonEdit" | "Stop" | "Idle" | "Refused"
 type Step = { readonly action: Action; readonly element?: Name; readonly refusal?: "stale" | "unknown" }
@@ -143,7 +147,12 @@ describe("a person closes an element for the rest of a turn", () => {
     return result.rows[0]
   }
 
-  async function replay(trace: readonly Step[], index: number, failures: string[]): Promise<void> {
+  async function replay(
+    trace: readonly Step[],
+    index: number,
+    failures: string[],
+    tool: SlideTool = "add_slide",
+  ): Promise<void> {
     const graph = await specGraph("turn", "Turn")
     const initial = [...graph.states.entries()].find(
       ([, state]) =>
@@ -164,11 +173,21 @@ describe("a person closes an element for the rest of a turn", () => {
         deck: id,
         once: "turn-index",
         offset: 0,
-        total: 2,
-        slides: [{ id: "258", position: 0, layout: [] }],
+        total: 2 + spare.length,
+        slides: [
+          {
+            id: "258",
+            position: 0,
+            size: { width: 12192000, height: 6858000 },
+            free: 40,
+            animated: [],
+            layout: [],
+          },
+        ],
         elements: [
           { node: nodes.x, ...floor },
           { node: nodes.y, ...floor },
+          ...spare.map((node) => ({ node, ...floor })),
         ],
       },
       cookie,
@@ -180,6 +199,7 @@ describe("a person closes an element for the rest of a turn", () => {
     await client.connect(transport)
     let runId = ""
     let written = 0
+    let deleted = 0
 
     async function called(name: string, args: Record<string, unknown>): Promise<Reply> {
       const result = await client.callTool({ name, arguments: args })
@@ -219,12 +239,13 @@ describe("a person closes an element for the rest of a turn", () => {
         return { outcome: answer.ok ? "landed" : "refused", landedOn: "none" }
       }
       if (step.action === "SlideStart" || step.action === "SlideInTurn") {
-        const answer = await called("airdesign_add_slide", {
-          deck: id,
-          base: stored?.revision ?? 0,
-          after: "258",
-          layout: "258",
-        })
+        const base = stored?.revision ?? 0
+        const inputs = {
+          add_slide: { after: "258", layout: "258" },
+          add_text_box: { slide: "258", box: { x: 0, y: 0, cx: 100, cy: 100 } },
+          delete_element: { node: spare[deleted++] },
+        }
+        const answer = await called(`airdesign_${tool}`, { deck: id, base, ...inputs[tool] })
         if (!answer.ok) return { outcome: answer.refusal ?? "none", landedOn: "none" }
         runId = answer.runId ?? ""
         return { outcome: "landed", landedOn: "none" }
@@ -263,7 +284,9 @@ describe("a person closes an element for the rest of a turn", () => {
 
   it("replays traces of the spec through POST /mcp and the stored rows", async () => {
     const failures: string[] = []
-    for (const [index, trace] of traces.entries()) await replay(trace, index, failures)
+    for (const tool of slideTools) {
+      for (const [index, trace] of traces.entries()) await replay(trace, index, failures, tool)
+    }
     expect(failures).toEqual([])
   }, 120_000)
 

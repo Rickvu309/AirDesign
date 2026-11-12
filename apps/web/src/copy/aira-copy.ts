@@ -46,6 +46,18 @@ export const airaStepWords: Readonly<Record<AgentOp, StepWords | null>> = {
     refused: "Couldn't delete a slide",
     stopped: "Stopped deleting a slide",
   },
+  add_text_box: {
+    working: "Adding a text box",
+    done: "Added a text box",
+    refused: "Couldn't add a text box",
+    stopped: "Stopped adding a text box",
+  },
+  delete_element: {
+    working: "Deleting an element",
+    done: "Deleted an element",
+    refused: "Couldn't delete an element",
+    stopped: "Stopped deleting an element",
+  },
   move_slide: {
     working: "Moving a slide",
     done: "Moved a slide",
@@ -85,7 +97,8 @@ export function airaChatsKeptOf(count: number): string {
 }
 
 export const airaCopy = {
-  welcome: "Aira can add, duplicate, delete and reorder slides, rewrite text, and move or resize elements.",
+  welcome:
+    "Aira can add, duplicate, delete and reorder slides, rewrite text, add text boxes, and move, resize or delete elements.",
   caution: "Aira can be wrong. Check a number, a quote, or a slide before you rely on it.",
   starters: [
     "Fix the typos on every slide",
@@ -101,7 +114,7 @@ export const airaCopy = {
   retry: "Try again",
   notOffered: "Aira isn't available in your country or region yet.",
   notOfferedBody: "You can keep editing this deck yourself.",
-  undoRefused: "Couldn't undo. These slides changed after Aira's edit.",
+  undoRefused: "Couldn't undo. Something Aira changed was changed again after its edit.",
   chatsTitle: "Chats on this deck",
   chatsEmpty: "Your chats with Aira on this deck show here.",
 } as const

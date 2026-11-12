@@ -1,7 +1,8 @@
 import { decide, elementId, openRegister, slideId, type Register, type SlideCommand } from "@airdesign/document"
 import { readShapes } from "@airdesign/pptx"
+import type { PaintBox } from "@airdesign/render"
 import { expect, it } from "vitest"
-import { elementCommand } from "./element-edit"
+import { elementCommand, removalRefusal } from "./element-edit"
 import { exportedParts } from "./exported-parts"
 import { onSlide, twoBoxSlide, xml } from "./slide-fixtures"
 
@@ -58,4 +59,56 @@ it("exports a slide whose typed element was then removed", () => {
   }
   const removed = landed(register, { slide: "element-remove", id: file[0]!, node })
   expect(readShapes(exportedParts(parts, removed)).map((shape) => shape.shape)).toEqual(["2"])
+})
+
+it("puts a new text box clear of the boxes the slide paints, and not on top of the box before it", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const title = { x: 100, y: 50, cx: 800, cy: 150 }
+  const subtitle = { x: 100, y: 220, cx: 800, cy: 120 }
+  const elements = [title, subtitle].map((box) => ({
+    box: {
+      x: box.x,
+      y: box.y,
+      width: box.cx,
+      height: box.cy,
+      rotation: 0,
+      flipH: false,
+      flipV: false,
+    } satisfies PaintBox,
+  }))
+  const first = elementCommand(parts, openRegister("", ""), { change: "text", index: 0, size: { ...size, elements } })
+  if (first?.slide !== "element-add") throw new Error("no add")
+  const box = first.element.box
+  expect(box).not.toBeNull()
+  if (box === null) return
+  expect(box.y).toBeGreaterThanOrEqual(subtitle.y + subtitle.cy)
+  expect(box.y + box.cy).toBeLessThanOrEqual(size.height)
+})
+
+it("says why it cannot delete an animated shape, a group and a shape inside one, and nothing for a plain shape", () => {
+  const register = openRegister("", "")
+  const animated = onSlide(
+    xml(
+      twoBoxSlide.replace(
+        "</p:cSld>",
+        '</p:cSld><p:timing><p:tnLst><p:par><p:cTn><p:childTnLst><p:set><p:cBhvr><p:tgtEl><p:spTgt spid="3"/></p:tgtEl></p:cBhvr></p:set></p:childTnLst></p:cTn></p:par></p:tnLst></p:timing>',
+      ),
+    ),
+  )
+  expect(removalRefusal(animated, register, elementId("256.3"))).toBe("animated")
+  expect(removalRefusal(animated, register, elementId("256.2"))).toBeNull()
+  const grouped = onSlide(
+    xml(
+      twoBoxSlide
+        .replace(
+          '<p:sp><p:nvSpPr><p:cNvPr id="3"',
+          '<p:grpSp><p:nvGrpSpPr><p:cNvPr id="9"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/><p:sp><p:nvSpPr><p:cNvPr id="3"',
+        )
+        .replace("</p:spTree>", "</p:grpSp></p:spTree>"),
+    ),
+  )
+  expect(removalRefusal(grouped, register, elementId("256.9"))).toBe("group")
+  expect(removalRefusal(grouped, register, elementId("256.3"))).toBe("group")
+  expect(removalRefusal(grouped, register, elementId("256.2"))).toBeNull()
+  expect(removalRefusal(grouped, register, elementId("256.77"))).toBeNull()
 })

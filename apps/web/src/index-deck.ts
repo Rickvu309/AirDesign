@@ -75,7 +75,7 @@ export function indexedParts(parts: ReadonlyMap<string, Uint8Array>) {
 }
 
 export async function backfillIndex(deck: string, parts: ReadonlyMap<string, Uint8Array>): Promise<void> {
-  if (await connect(server).layered(deck)) return
+  if (await connect(server).measured(deck)) return
   const queued = await connect(server).index(deck, indexedParts(parts))
   if (!queued.ok) throw new Error(queued.refusal)
 }

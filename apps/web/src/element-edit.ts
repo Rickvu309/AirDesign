@@ -1,5 +1,6 @@
 import {
   nextElementId,
+  placeNewBox,
   readSlideId,
   shapeOf,
   slideUndoable,
@@ -9,8 +10,11 @@ import {
   type Undoable,
 } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
-import { applyRoute, freeShapeId, readSlides } from "@airdesign/pptx"
+import { applyRoute, freeShapeId, paintKind, readShapes, readSlides } from "@airdesign/pptx"
+import { boxOf, type PaintBox } from "@airdesign/render"
+import { toast } from "sonner"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
+import { elementCopy, type RemovalRefusal } from "@/copy/element-copy"
 import { slideBase } from "@/exported-parts"
 import { fileSlides } from "@/slide-edit"
 
@@ -20,7 +24,11 @@ export type ElementChange =
   | {
       readonly change: "text"
       readonly index: number
-      readonly size: { readonly width: number; readonly height: number }
+      readonly size: {
+        readonly width: number
+        readonly height: number
+        readonly elements?: readonly { readonly box: PaintBox | null }[]
+      }
     }
   | { readonly change: "remove"; readonly node: ElementId }
 
@@ -28,6 +36,20 @@ function slideAt(parts: Parts, index: number) {
   const slide = readSlides(parts)[index]
   const id = slide === undefined ? undefined : readSlideId(slide.slide)
   return slide === undefined || id === undefined ? null : { id, part: slide.part }
+}
+
+export function removalRefusal(parts: Parts, register: Register, node: ElementId): RemovalRefusal | null {
+  const base = slideBase(parts, register)
+  const { slide, shape } = shapeOf(node)
+  const found = readShapes(base).find((each) => each.slide === slide && each.shape === shape)
+  if (found === undefined) return null
+  if (found.grouped === true || paintKind(found.kind) === "group") return "group"
+  try {
+    applyRoute(base, { name: "remove", part: found.part, shape })
+    return null
+  } catch (error) {
+    return error instanceof Error && error.message === "shape-animated" ? "animated" : null
+  }
 }
 
 export function elementCommand(parts: Parts, register: Register, change: ElementChange): SlideCommand | null {
@@ -47,9 +69,8 @@ export function elementCommand(parts: Parts, register: Register, change: Element
   const slide = slideAt(base, change.index)
   if (slide === null) return null
   const node = nextElementId(register, slide.id, freeShapeId(base, slide.part))
-  const cx = Math.round(change.size.width * 0.4)
-  const cy = Math.round(change.size.height * 0.12)
-  const box = { x: Math.round((change.size.width - cx) / 2), y: Math.round((change.size.height - cy) / 2), cx, cy }
+  const taken = (change.size.elements ?? []).flatMap((each) => (each.box === null ? [] : [boxOf(each.box)]))
+  const box = placeNewBox(change.size, taken)
   return { slide: "element-add", id: slide.id, element: { node, kind: "shape", value: "", box, grouped: false } }
 }
 
@@ -60,6 +81,11 @@ export async function commitElement(
   change: ElementChange,
   paint: (added: ElementId | null, undoable: Undoable | null) => void | Promise<void>,
 ): Promise<CommitOutcome> {
+  const refusal = change.change === "remove" ? removalRefusal(parts, register, change.node) : null
+  if (refusal !== null) {
+    toast.error(elementCopy.removeRefusedTitle, { description: elementCopy.removeRefusedBody[refusal] })
+    return "refused"
+  }
   const edit = elementCommand(parts, register, change)
   if (edit === null) return "refused"
   const file = fileSlides(parts, register)

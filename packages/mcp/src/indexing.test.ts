@@ -10,6 +10,8 @@ const slideCalls = [
   ["airdesign_duplicate_slide", { slide: "256" }],
   ["airdesign_delete_slide", { slide: "256" }],
   ["airdesign_move_slide", { slide: "256", after: null }],
+  ["airdesign_add_text_box", { slide: "256" }],
+  ["airdesign_delete_element", { node: "256.2" }],
 ] as const
 
 function unindexed(): Deck {

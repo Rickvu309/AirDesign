@@ -1,3 +1,4 @@
+import { elementReaders } from "./agent-element-wire.js"
 import { slideReaders } from "./agent-slide-wire.js"
 import * as z from "zod/v4"
 
@@ -106,6 +107,24 @@ export const catalog = {
     read: slideReaders.move_slide,
     description:
       "Move the named slide after another slide, or to the beginning with after: null. Read the deck first and send its revision as base.",
+  },
+  add_text_box: {
+    kind: "command",
+    exposure: "agent",
+    runsOn: "server",
+    destructive: true,
+    read: elementReaders.add_text_box,
+    description:
+      "Add a text box to a slide, with a box in EMU and opening text if you send them. Without a box it goes in the largest free area of the slide. Read the deck first and send its revision as base. Returns the new element id in elements, and you can edit it next with airdesign_edit_deck. Open the deck in AirDesign to index its slides first.",
+  },
+  delete_element: {
+    kind: "command",
+    exposure: "agent",
+    runsOn: "server",
+    destructive: true,
+    read: elementReaders.delete_element,
+    description:
+      "Delete one element from its slide. A group, an element inside a group, and an element with an animation cannot be deleted. Read the deck first and send its revision as base. The person's Undo for your run brings the element back.",
   },
   list_decks: {
     kind: "query",

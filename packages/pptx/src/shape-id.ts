@@ -121,6 +121,16 @@ function idsWithin(elements: readonly MarkupElement[], shape: MarkupElement): Re
   return new Set(elements.filter((item) => inside(item, shape)).map((item) => shapeMarkId(elements, item)))
 }
 
+export function animatedShapeIds(bytes: Uint8Array): readonly string[] {
+  const { elements } = markupDocument(bytes)
+  const ids = new Set<string>()
+  for (const element of elements) {
+    const id = animationId(elements, element)
+    if (id !== null && /^[0-9]{1,10}$/.test(id)) ids.add(id)
+  }
+  return [...ids].sort((left, right) => Number(left) - Number(right))
+}
+
 export function shapeAnimated(elements: readonly MarkupElement[], shape: MarkupElement): boolean {
   const ids = idsWithin(elements, shape)
   return elements.some((element) => {

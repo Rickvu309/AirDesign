@@ -1,9 +1,10 @@
 ---- MODULE Element ----
 \* A person adds one text box or removes it. Their undo puts back whether it shows, only while their own edit still shows, and someone else may remove or bring it back in between.
+\* An agent's run adds the box or removes it. The run's Undo puts the box back as it was before the run, all or nothing, and is refused once a person changed the box since.
 EXTENDS Naturals
 
-VARIABLES added, removed, typed, held, kind, told, last
-vars == <<added, removed, typed, held, kind, told, last>>
+VARIABLES added, removed, typed, held, kind, told, last, run
+vars == <<added, removed, typed, held, kind, told, last, run>>
 
 Shown == added /\ ~removed
 
@@ -15,6 +16,7 @@ Init ==
   /\ kind = "none"
   /\ told = FALSE
   /\ last = "none"
+  /\ run = "none"
 
 Add ==
   /\ ~added
@@ -22,28 +24,83 @@ Add ==
   /\ held' = "undo"
   /\ kind' = "add"
   /\ last' = "none"
-  /\ UNCHANGED <<removed, typed, told>>
+  /\ UNCHANGED <<removed, typed, told, run>>
 
-Type == Shown /\ ~typed /\ typed' = TRUE /\ UNCHANGED <<added, removed, held, kind, told, last>>
+Type ==
+  /\ Shown
+  /\ ~typed
+  /\ typed' = TRUE
+  /\ UNCHANGED <<added, removed, held, kind, told, last, run>>
 
 Remove ==
   /\ Shown
+  /\ run = "none"
   /\ removed' = TRUE
   /\ held' = "undo"
   /\ kind' = "remove"
   /\ last' = "none"
-  /\ UNCHANGED <<added, typed, told>>
+  /\ UNCHANGED <<added, typed, told, run>>
 
 \* Another tab or person removes the box, or brings a removed one back.
-OtherRemove == Shown /\ removed' = TRUE /\ last' = "none" /\ UNCHANGED <<added, typed, held, kind, told>>
+OtherRemove ==
+  /\ Shown
+  /\ removed' = TRUE
+  /\ last' = "none"
+  /\ UNCHANGED <<added, typed, held, kind, told, run>>
 
-OtherRestore == added /\ removed /\ removed' = FALSE /\ last' = "none" /\ UNCHANGED <<added, typed, held, kind, told>>
+OtherRestore ==
+  /\ added
+  /\ removed
+  /\ removed' = FALSE
+  /\ last' = "none"
+  /\ UNCHANGED <<added, typed, held, kind, told, run>>
+
+\* An agent's run adds the box, or removes a box that shows. A person's typing during the run closes the box to the agent's removal.
+AgentAdd ==
+  /\ ~added
+  /\ run = "none"
+  /\ added' = TRUE
+  /\ run' = "add"
+  /\ last' = "none"
+  /\ UNCHANGED <<removed, typed, held, kind, told>>
+
+AgentRemove ==
+  /\ Shown
+  /\ run \in {"none", "add"}
+  /\ ~(run \in {"add", "both"} /\ typed)
+  /\ removed' = TRUE
+  /\ run' = IF run = "add" THEN "both" ELSE "remove"
+  /\ last' = "none"
+  /\ UNCHANGED <<added, typed, held, kind, told>>
+
+AgentRemoveRefused ==
+  /\ Shown
+  /\ run = "add"
+  /\ typed
+  /\ UNCHANGED vars
+
+\* The run's Undo takes back everything the run did, or nothing: it is refused once a person typed in a box the run added, or removed or brought back a box, so the box no longer shows as the run left it.
+RunUndoable == run # "none" /\ Shown = (run = "add") /\ ~(run \in {"add", "both"} /\ typed)
+
+UndoRun ==
+  /\ RunUndoable
+  /\ removed' = (run # "remove")
+  /\ last' = "runundone"
+  /\ UNCHANGED <<added, typed, held, kind, told, run>>
+
+UndoRunRefused ==
+  /\ run # "none"
+  /\ ~RunUndoable
+  /\ told' = TRUE
+  /\ last' = "none"
+  /\ UNCHANGED <<added, removed, typed, held, kind, run>>
 
 \* What the person's own edit left: the box shows after an add, and is gone after a removal.
 EditShows == IF kind = "add" THEN Shown ELSE added /\ removed
 
 Undo ==
   /\ held = "undo"
+  /\ run = "none"
   /\ IF EditShows
        THEN /\ removed' = (kind = "add")
             /\ held' = "redo"
@@ -53,10 +110,11 @@ Undo ==
             /\ told' = TRUE
             /\ last' = "none"
             /\ UNCHANGED removed
-  /\ UNCHANGED <<added, typed, kind>>
+  /\ UNCHANGED <<added, typed, kind, run>>
 
 Redo ==
   /\ held = "redo"
+  /\ run = "none"
   /\ IF ~EditShows
        THEN /\ removed' = (kind = "remove")
             /\ held' = "undo"
@@ -66,9 +124,11 @@ Redo ==
             /\ told' = TRUE
             /\ last' = "none"
             /\ UNCHANGED removed
-  /\ UNCHANGED <<added, typed, kind>>
+  /\ UNCHANGED <<added, typed, kind, run>>
 
-Next == Add \/ Type \/ Remove \/ OtherRemove \/ OtherRestore \/ Undo \/ Redo
+Next ==
+  \/ Add \/ Type \/ Remove \/ OtherRemove \/ OtherRestore \/ Undo \/ Redo
+  \/ AgentAdd \/ AgentRemove \/ AgentRemoveRefused \/ UndoRun \/ UndoRunRefused
 Spec == Init /\ [][Next]_vars
 
 TypeOK ==
@@ -78,7 +138,8 @@ TypeOK ==
   /\ held \in {"empty", "undo", "redo", "dropped"}
   /\ kind \in {"none", "add", "remove"}
   /\ told \in BOOLEAN
-  /\ last \in {"none", "undone", "redone"}
+  /\ last \in {"none", "undone", "redone", "runundone"}
+  /\ run \in {"none", "add", "remove", "both"}
 
 RemovedWasAdded == removed => added
 TypedWhileShown == typed => added
@@ -87,6 +148,13 @@ TypedWhileShown == typed => added
 UndoShowsBefore ==
   /\ last = "undone" => Shown = (kind = "remove")
   /\ last = "redone" => Shown = (kind = "add")
+
+\* A run's Undo leaves the box as it was before the run: shown after a removal, gone after an add.
+RunUndoRestores == last = "runundone" => Shown = (run = "remove")
+
+\* A run's Undo never lands over a change a person made to the box since, and only while the box still shows as the run left it.
+RunUndoOnlyUnchanged ==
+  [][(last' = "runundone" /\ last # "runundone") => RunUndoable]_vars
 
 \* An undo or redo that changed nothing is always told.
 DroppedIsTold == held = "dropped" => told
