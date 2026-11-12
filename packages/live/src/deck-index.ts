@@ -82,7 +82,9 @@ async function keepIndex(deck: DeckId, index: ImportIndex, once: () => string) {
     offset += elements.length
     if (offset === index.elements.length) break
   }
-  const write = upgrade ? (puts: Parameters<typeof replaceSlots>[0]) => replaceSlots(puts) : (puts: Parameters<typeof replaceSlots>[0]) => installSlots(key(deck, "queue"), puts)
+  const write = upgrade
+    ? (puts: Parameters<typeof replaceSlots>[0]) => replaceSlots(puts)
+    : (puts: Parameters<typeof replaceSlots>[0]) => installSlots(key(deck, "queue"), puts)
   await write([
     ...pages.flatMap((page, n) => pageSlots(deck, n, page)),
     { key: key(deck, "layered"), value: layered },

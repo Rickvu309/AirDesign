@@ -51,5 +51,13 @@ it("keeps a readable deck index when a layout has more placeholders than an inde
   const index = indexedParts(parts)
   expect(index.elements.map((row) => row.node)).toEqual(["256.2", "256.3"])
   expect(index.slides[0]?.layout).toBeUndefined()
-  expect(readIndexPage({ once: "a", offset: 0, total: index.elements.length, slides: index.slides, elements: index.elements })).not.toBeNull()
+  expect(
+    readIndexPage({
+      once: "a",
+      offset: 0,
+      total: index.elements.length,
+      slides: index.slides,
+      elements: index.elements,
+    }),
+  ).not.toBeNull()
 })

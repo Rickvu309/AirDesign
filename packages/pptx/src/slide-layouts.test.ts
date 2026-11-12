@@ -7,7 +7,9 @@ declare const process: {
 }
 
 async function fixture(name: string) {
-  const read = await readPackage(process.getBuiltinModule("node:fs").readFileSync(`${process.cwd()}/scripts/pptx-fixtures/${name}`))
+  const read = await readPackage(
+    process.getBuiltinModule("node:fs").readFileSync(`${process.cwd()}/scripts/pptx-fixtures/${name}`),
+  )
   if (!read.ok) throw new Error(name)
   return read.parts
 }
