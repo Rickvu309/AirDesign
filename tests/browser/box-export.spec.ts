@@ -73,7 +73,7 @@ async function keptBox(page: Page): Promise<unknown> {
   )
 }
 
-test("a box dragged and resized in the editor exports through the move and resize routes for the PowerPoint check", async ({
+test("a box dragged and resized in the editor exports through the move and resize routes for the PowerPoint check @export", async ({
   page,
 }, testInfo) => {
   await rm(judged, { force: true })

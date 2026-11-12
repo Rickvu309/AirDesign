@@ -51,6 +51,9 @@ export const browserSpecs = [
   "tests/browser/slide-edits.spec.ts",
 ]
 
+export const browserExportTag = "@export"
+export const browserExportArgs = [...browserSpecs, "--grep", browserExportTag]
+
 export const freshExports = ({ deck, paragraphs, box, slides, also = [], run }) =>
   freshBrowserExport({ file: deck, also: [paragraphs, box, ...(slides === undefined ? [] : [slides]), ...also], run })
 

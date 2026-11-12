@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import {
   boxExportLines,
   boxExportName,
-  browserSpecs,
+  browserExportArgs,
   freshExports,
   judgedExportNames,
   paragraphExportLines,
@@ -72,8 +72,14 @@ const inputs = corpusInputs(root)
 const run = (command, args) =>
   new Promise((resolve, reject) => {
     execFile(command, args, { cwd: root, env: process.env, maxBuffer: 64 * 1024 * 1024 }, (error, stdout, stderr) => {
-      if (error) reject(new Error((stderr || stdout || `${command} failed`).trim()))
-      else resolve(stdout)
+      if (error) {
+        const failure = new Error([stdout, stderr].filter(Boolean).join("\n").trim() || `${command} failed`)
+        failure.stdout = stdout
+        failure.stderr = stderr
+        reject(failure)
+      } else {
+        resolve(stdout)
+      }
     })
   })
 
@@ -109,7 +115,7 @@ const browserSpec = freshExports({
     path.join(root, "tests/browser/exported-blank-slides.pptx"),
     path.join(root, "tests/browser", slideEditsExportName),
   ],
-  run: () => run("pnpm", ["exec", "playwright", "test", ...browserSpecs]),
+  run: () => run("pnpm", ["exec", "playwright", "test", ...browserExportArgs]),
 })
 const pptx = await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href)
 const require = createRequire(path.join(root, "packages/pptx/package.json"))

@@ -26,7 +26,7 @@ async function partsOf(file: string): Promise<Map<string, Buffer>> {
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("Blank deck edits, reloads, exports and imports without an upload, even when created offline", async ({
+test("Blank deck edits, reloads, exports and imports without an upload, even when created offline @export", async ({
   page,
   context,
 }, testInfo) => {
@@ -61,7 +61,7 @@ test("Blank deck edits, reloads, exports and imports without an upload, even whe
   await expect(title).toHaveText("My first deck")
 })
 
-test("New slide on a blank deck paints layout placeholders and exports", async ({ page }, testInfo) => {
+test("New slide on a blank deck paints layout placeholders and exports @export", async ({ page }, testInfo) => {
   await page.goto("/")
   await page.getByRole("button", { name: "New deck", exact: true }).click()
   await page.getByRole("button", { name: "Blank deck", exact: true }).click()
