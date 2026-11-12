@@ -204,7 +204,7 @@ export function Home({
   const noMatch = listing !== null && searching && held.length > 0 && decks.length === 0
   const firstVisit =
     listing !== null && section === "recents" && held.length === 0 && listing.trash.length === 0 && importing === null
-  const noDecks = listing !== null && !trash && held.length === 0 && !firstVisit && importing === null
+  const noDecks = listing !== null && !trash && held.length === 0 && importing === null
   return (
     <DeckBrowser
       title={sectionTitles[section]}
