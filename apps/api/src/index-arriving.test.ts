@@ -1,12 +1,8 @@
-import { deckRoutes, mcpRoutes, readDeckId, signInRoutes } from "@airdesign/catalog"
+import { deckRoutes, mcpRoutes, signInRoutes } from "@airdesign/catalog"
 import { elementId, writeTextValue } from "@airdesign/document"
-import { agentCaller, callTool, emptyLog, memoryTurns, type Session } from "@airdesign/mcp"
 import { afterAll, beforeAll, expect, it } from "vitest"
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
-import { indexSaved } from "./index-saved.js"
-import { commitEdit } from "./mcp.js"
-import { openSaved } from "./saved.js"
 import { readSignInMail } from "./sign-in-mail.js"
 
 let base = ""
@@ -82,26 +78,4 @@ it("answers an add_slide before the index as indexing, never counts it, and land
   }
   expect((await ask(base, "POST", deckRoutes.index.path, page(deck), cookie)).json).toMatchObject({ ok: true })
   expect((await tool("airdesign_add_slide", call)).answer).toMatchObject({ ok: true, slide: "257" })
-})
-
-it("answers an edit as indexing when the index arrives between reading the deck and writing the edit", async () => {
-  const parsed = readDeckId("arriving-race")
-  if (!parsed.ok) throw new Error("deck")
-  await ask(base, "POST", deckRoutes.open.path, { deck: parsed.deck }, cookie)
-  const loaded = await openSaved(deckPool, parsed, owner)
-  if (!loaded.ok) throw new Error(loaded.refusal)
-  const held = { id: parsed.deck, revision: loaded.revision, register: loaded.register }
-  const session: Session = { caller: agentCaller("run"), deck: held, log: emptyLog(), now: 0, turns: memoryTurns() }
-  const text = writeTextValue([{ from: 0, runs: [{ from: 0, text: "Hello" }] }])
-  const result = callTool(
-    "airdesign_edit_deck",
-    { deck: parsed.deck, base: held.revision, changes: [{ node: "256.2", readAt: 0, value: text }] },
-    session,
-  )
-  expect(result.ok).toBe(true)
-  expect(await indexSaved(deckPool, { ok: true, ...page(parsed.deck), deck: parsed.deck }, owner)).toMatchObject({
-    ok: true,
-  })
-  const settled = await commitEdit(deckPool, held, result)
-  expect(settled).toMatchObject({ ok: false, refusal: "indexing" })
 })

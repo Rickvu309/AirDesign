@@ -1,4 +1,4 @@
-import { catalog, projectTools, toolInputSchema } from "@airdesign/catalog"
+import { catalog, projectTools, toolInputSchema, type AgentOp } from "@airdesign/catalog"
 import { McpServer } from "@modelcontextprotocol/server"
 import { admit, refund, type Admission } from "./admit.js"
 import { agentOps, callTool, type Session, type ToolResult } from "./call-tool.js"
@@ -31,8 +31,30 @@ export type Host = {
     raw: unknown,
     session: Session,
   ) => Promise<{ readonly ok: true } | { readonly ok: false; readonly refusal: EditCode }>
-  commit?: (result: ToolResult, session: Session) => Promise<ToolResult>
+  commit?: (result: ToolResult, session: Session) => Promise<ToolResult | Lost>
   refund?: (session: Session) => Promise<void>
+}
+
+export type Lost = { readonly lost: ToolResult }
+
+export const commitTries = 3
+
+async function settledCall(
+  tool: { readonly name: string; readonly op: AgentOp },
+  args: unknown,
+  session: Session,
+  host: Host | undefined,
+): Promise<ToolResult> {
+  for (let tried = 1; ; tried += 1) {
+    if (host?.prepare) {
+      const prepared = await host.prepare(tool.name, args, session)
+      if (!prepared.ok) return agentOps[tool.op].refuse(session.deck, prepared.refusal)
+    }
+    const result = callTool(tool.name, args, session)
+    const committed = host?.commit ? await host.commit(result, session) : result
+    if (!("lost" in committed)) return committed
+    if (tried === commitTries) return committed.lost
+  }
 }
 
 export function createServer(session: Session, host?: Host): McpServer {
@@ -67,14 +89,7 @@ export function createServer(session: Session, host?: Host): McpServer {
           return mcpResult(refusal)
         }
         session.log = admitted.log
-        if (host?.prepare) {
-          const prepared = await host.prepare(tool.name, args, session)
-          if (!prepared.ok) {
-            return mcpResult(agentOps[tool.op].refuse(session.deck, prepared.refusal))
-          }
-        }
-        const result = callTool(tool.name, args, session)
-        const settled = host?.commit ? await host.commit(result, session) : result
+        const settled = await settledCall(tool, args, session, host)
         if (settled.ok) session.deck = settled.deck
         else if (settled.refusal === "indexing") {
           if (host?.refund) await host.refund(session)
