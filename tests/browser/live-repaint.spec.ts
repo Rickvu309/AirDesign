@@ -23,6 +23,9 @@ test("an outside agent's edit and its undo paint in the open editor without a re
   await page.evaluate(() => {
     document.body.dataset.sameLoad = "yes"
   })
+  await expect
+    .poll(async () => (await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)).index)
+    .toBe("ready")
   const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
   const edited = await stack.callTool(
     "airdesign_edit_deck",
