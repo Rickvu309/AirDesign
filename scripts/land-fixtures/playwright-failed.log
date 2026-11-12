@@ -1,0 +1,24 @@
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2725630Z [236/250] tests/browser/person-undo.spec.ts:139:1 › an undo after an agent changed the same text changes nothing and says so
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2727326Z [237/250] tests/browser/person-undo.spec.ts:168:1 › undoing a text edit paints the old text on the slide and its thumbnail without a reload
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2728800Z [238/250] tests/browser/real-save.spec.ts:9:1 › home import exposes every untouched text box on slide one to the agent API
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2732808Z [239/250] tests/browser/real-save.spec.ts:120:1 › home import through the first typed edit opens the deck exactly once
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2734302Z   1) tests/browser/real-save.spec.ts:120:1 › home import through the first typed edit opens the deck exactly once 
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2735218Z 
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2735553Z     Error: expect(received).toHaveLength(expected)
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2736713Z     Received array:  ["/decks/open", "/decks/open"]
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2737002Z 
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2737193Z       124 |   await typeOver(page, typed)
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2737678Z       125 |   await confirmedText(page, typed)
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2738272Z     > 126 |   expect(asked.filter((path) => path === "/decks/open")).toHaveLength(1)
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2738862Z           |                                                          ^
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2739293Z       127 | })
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2761058Z [248/250] tests/browser/usage.spec.ts:86:1 › the Usage page says when it cannot load and tries again, and sends a signed-out person to sign in
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2762625Z [249/250] tests/browser/usage.spec.ts:113:1 › a long email stays inside the sidebar with its menu arrow, and the full address is its title
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2763950Z [250/250] tests/browser/usage.spec.ts:135:1 › the Usage page shows a loading label while usage is loading and respects reduced motion
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2765090Z   1 failed
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2765931Z     tests/browser/real-save.spec.ts:120:1 › home import through the first typed edit opens the deck exactly once 
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2766600Z   249 passed (6.3m)
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2767012Z [ELIFECYCLE] Command failed with exit code 1.
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2767430Z fail browser 385.7s
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.2823168Z metric design-findings  now 139  goal 0
+check (side)	Run pnpm check --part=side	2026-11-12T16:29:54.3310233Z failed: browser

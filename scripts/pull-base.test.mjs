@@ -1,0 +1,14 @@
+import { baseFault } from "./pull-base.mjs"
+
+const same = (what, actual, expected) => {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(`${what}\n${JSON.stringify(actual)}\n${JSON.stringify(expected)}`)
+  }
+}
+
+same("a pull request against main is fine", baseFault(406, "main"), undefined)
+same(
+  "pull request 403 was opened against another pull request's branch and is refused with the fix",
+  baseFault(403, "agent-element-tools"),
+  "pull request 403 targets agent-element-tools, and every pull request targets main. A branch of another pull request has no merge queue, so a merge there lands with no ci, and a later force-push of that branch drops it. Fix: gh pr edit 403 --base main, and wait for the other pull request to merge before this one.",
+)

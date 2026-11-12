@@ -8,6 +8,7 @@
   "scripts": {
     "prepare": "node scripts/install-hooks.mjs",
     "check": "node scripts/check.mjs",
+    "land": "node scripts/land.mjs",
     "new:package": "node scripts/new-package.mjs",
     "lint": "pnpm -r --if-present run lint && node tooling/oxlint-plugin-airdesign/lint-tree.js",
     "typecheck": "node scripts/typecheck.mjs",

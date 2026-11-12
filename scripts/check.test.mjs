@@ -1,6 +1,6 @@
 import { stages } from "./check.mjs"
 import { partOf, sideSteps, stagesFor } from "./check.mjs"
-import { judgedOnCi, mayPush } from "./check.mjs"
+import { judgedOnCi, mayPush, stampable } from "./check.mjs"
 import { localSteps, onCi } from "./check.mjs"
 import { recordFailure, warnSteps } from "./check.mjs"
 
@@ -127,3 +127,15 @@ if (sideStageOf("design-findings") <= sideStageOf("browser"))
   throw new Error("design-findings reads what the browser tests wrote, so it must run after them")
 if (!ciOnlySteps.has("design-findings"))
   throw new Error("design-findings needs the browser tests, which run only on ci")
+
+if (!stampable([], true)) throw new Error("a passing check must stamp the commit")
+if (stampable(["test"], true)) {
+  throw new Error("a failed test must not stamp the commit: only pnpm land stamps it, after the file passes alone")
+}
+if (stampable(["browser", "test"], true)) throw new Error("a failed test next to browser must not stamp the commit")
+if (!stampable(["browser"], true)) throw new Error("the browser tests run on ci and must not stop a stamp")
+if (stampable([], false)) throw new Error("a check that stopped early must not stamp the commit")
+for (const name of ["conflict-markers", "migration-numbers"]) {
+  if (!everyStep.includes(name)) throw new Error(`check lost the step ${name}`)
+  if (!warnSteps.has(name)) throw new Error(`${name} is new and starts in warnSteps`)
+}
