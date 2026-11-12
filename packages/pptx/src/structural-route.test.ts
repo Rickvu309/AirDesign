@@ -286,18 +286,6 @@ describe("applyStructuralRoute", () => {
     expect(back.get("ppt/presentation.xml")).toEqual(second.get("ppt/presentation.xml"))
   })
 
-  it("adds a table frame and remove restores the slide", () => {
-    const parts = deck()
-    const added = applyStructuralRoute(parts, { name: "graphicFrame.addTable", part: "ppt/slides/slide1.xml" })
-    const addedXml = xml(added, "ppt/slides/slide1.xml")
-    expect(addedXml).toContain('<p:cNvPr id="4" name="Table 4"/>')
-    expect(addedXml).toContain(">One<")
-    expect(addedXml.indexOf("<a:tblPr")).toBeLessThan(addedXml.indexOf("<a:tblGrid"))
-    expect(addedXml.indexOf("<a:txBody")).toBeLessThan(addedXml.indexOf("<a:tcPr"))
-    const back = applyStructuralRoute(added, { name: "spTree.remove", part: "ppt/slides/slide1.xml", shape: "4" })
-    expect(back.get("ppt/slides/slide1.xml")).toEqual(parts.get("ppt/slides/slide1.xml"))
-  })
-
   it("copies a table row and the inverse order restores the part", () => {
     const parts = deck(table)
     const added = applyStructuralRoute(parts, { name: "tbl.addRow", part: "ppt/slides/slide1.xml", row: 1 })
@@ -353,7 +341,10 @@ describe("applyStructuralRoute", () => {
       [shapeDeck, { name: "spTree.clone", part: "ppt/slides/slide1.xml", shape: "2" }],
       [shapeDeck, { name: "spTree.remove", part: "ppt/slides/slide1.xml", shape: "2" }],
       [shapeDeck, { name: "spTree.add", part: "ppt/slides/slide1.xml", text: "New", x: 0, y: 0, cx: 1, cy: 1 }],
-      [shapeDeck, { name: "graphicFrame.addTable", part: "ppt/slides/slide1.xml" }],
+      [
+        shapeDeck,
+        { name: "graphicFrame.addTable", part: "ppt/slides/slide1.xml", x: 0, y: 0, cx: 9, cy: 9, rows: 3, columns: 3 },
+      ],
       [tableDeck, { name: "tbl.addRow", part: "ppt/slides/slide1.xml", row: 1 }],
       [tableDeck, { name: "tbl.removeRow", part: "ppt/slides/slide1.xml", row: 2 }],
       [tableDeck, { name: "tbl.orderRow", part: "ppt/slides/slide1.xml", row: 2, before: 1 }],

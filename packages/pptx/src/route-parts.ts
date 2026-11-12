@@ -15,6 +15,7 @@ import { routeName, routeOperations } from "./route-operations.js"
 import { notesRuns } from "./notes-runs.js"
 import { probedValue } from "./text-probe.js"
 import { formatRuns } from "./text-format-runs.js"
+import { tableHost } from "./route-table-host.js"
 export { routeOperations } from "./route-operations.js"
 
 export type RouteRun = {
@@ -313,58 +314,6 @@ function sectionIds(parts: ReadonlyMap<string, Uint8Array>): MarkupElement[] {
     .sort((left, right) => left.start - right.start)
 }
 
-function rowBytes(bytes: Uint8Array): Uint8Array[] {
-  return markup(bytes)
-    .filter((element) => element.kind === "a:tr")
-    .map((element) => bytes.slice(element.start, element.end))
-}
-
-function rowOfMultiRowTable(bytes: Uint8Array): number | null {
-  const elements = markup(bytes)
-  const rows = elements.filter((element) => element.kind === "a:tr")
-  for (let index = 0; index < rows.length; index += 1) {
-    const row = rows[index]
-    if (row === undefined) continue
-    const table = tableOf(elements, row)
-    if (table === null) continue
-    if (rows.filter((other) => tableOf(elements, other) === table).length >= 2) return index + 1
-  }
-  return null
-}
-
-function tableOf(elements: readonly MarkupElement[], row: MarkupElement): MarkupElement | null {
-  let parent = row.parent
-  while (parent >= 0) {
-    const next = elements[parent]
-    if (next === undefined) return null
-    if (next.kind === "a:tbl") return next
-    parent = next.parent
-  }
-  return null
-}
-
-function tableHost(
-  parts: ReadonlyMap<string, Uint8Array>,
-): { part: string; removable: number | null; swap: { row: number; before: number } | null } | null {
-  for (const name of slideNames(parts)) {
-    const bytes = parts.get(name)
-    if (bytes === undefined) continue
-    const rows = rowBytes(bytes)
-    if (rows.length === 0) continue
-    let swap: { row: number; before: number } | null = null
-    for (let index = 0; index < rows.length - 1; index += 1) {
-      const left = rows[index]
-      const right = rows[index + 1]
-      if (left !== undefined && right !== undefined && !sameBytes(left, right)) {
-        swap = { row: index + 2, before: index + 1 }
-        break
-      }
-    }
-    return { part: name, removable: rowOfMultiRowTable(bytes), swap }
-  }
-  return null
-}
-
 function hasOwned(
   elements: readonly MarkupElement[],
   shape: MarkupElement,
@@ -493,7 +442,7 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
         parts: applyStructuralRoute(parts, route),
       })),
     )
-    const table = { name: "graphicFrame.addTable", part: slide } as const
+    const table = { name: "graphicFrame.addTable", part: slide, ...box, rows: 3, columns: 3 } as const
     runs.push(
       attempt("graphicFrame.addTable", table, () => ({
         touch: partTouch(parts, table),
@@ -637,7 +586,7 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
       })),
     )
   }
-  const table = tableHost(parts)
+  const table = tableHost(parts, slideNames(parts))
   if (table !== null) {
     const added = { name: "tbl.addRow", part: table.part, row: 1 } as const
     runs.push(

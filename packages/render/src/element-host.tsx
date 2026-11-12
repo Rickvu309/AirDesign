@@ -1,5 +1,5 @@
 import { type CSSProperties, type FocusEvent, type KeyboardEvent, type PointerEvent } from "react"
-import type { ElementId } from "@airdesign/document"
+import type { ElementId, TableChange } from "@airdesign/document"
 import { paintedAt } from "./box-gesture.js"
 import { useBox, useElement } from "./element-view.js"
 import { paragraphText, textValue } from "./paragraph-edit.js"
@@ -9,6 +9,7 @@ import { ShapeArt, shapePaths } from "./shape-art.js"
 import { SheetText } from "./sheet-text.js"
 import { DiagramArt } from "./diagram-art.js"
 import { ChartArt } from "./chart-art.js"
+import type { TableBar } from "./table-paint.js"
 import { canMove, type Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
 import { anchored, textLook, type Scaled, type TextLook } from "./text-look.js"
@@ -33,6 +34,8 @@ export type ElementPaintProps = {
   readonly scaled: Scaled
   readonly quiet: boolean
   readonly onEdit?: ((id: ElementId, value: string) => void) | undefined
+  readonly onTable?: ((id: ElementId, change: TableChange) => void) | undefined
+  readonly tableBar?: TableBar | undefined
   readonly moves: Moves | null
   readonly formatting?: TextFormatting | undefined
 }

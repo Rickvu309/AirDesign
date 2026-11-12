@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import { ActionsTool } from "@/editor/actions-menu"
 import { DropdownMenu, DropdownMenuRadioGroup, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
 import { EditorMenuContent, EditorMenuRow } from "@/editor/editor-menu"
@@ -39,6 +40,7 @@ export function EditorToolbar({
   onText,
   formatting,
   formats,
+  onTable,
 }: {
   activeTool?: EditorTool
   menuOpen?: boolean
@@ -49,6 +51,7 @@ export function EditorToolbar({
   onText?: () => void
   formatting?: TextFormatting
   formats?: FormatShown
+  onTable?: () => void
 }) {
   const chosen = pointer?.tool ?? "move"
   const shown = pointerTools.find((each) => each.tool === chosen) ?? pointerTools[0]
@@ -109,6 +112,7 @@ export function EditorToolbar({
         </DropdownMenu>
       </span>
       {tools.map(({ tool, icon }) => {
+        if (tool === "actions" && onTable !== undefined) return <ActionsTool key={tool} onTable={onTable} />
         const on = pointer === undefined && activeTool === tool
         const run = tool === "text" ? onText : undefined
         return (

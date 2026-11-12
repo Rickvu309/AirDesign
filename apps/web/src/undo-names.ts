@@ -1,5 +1,6 @@
 import type { Box } from "@airdesign/document"
 import type { UndoName } from "@/copy/undo-copy"
+import type { ElementChange } from "@/element-edit"
 import type { SlideChange } from "@/slide-edit"
 
 export const slideNames: Readonly<Record<SlideChange, UndoName>> = {
@@ -7,6 +8,12 @@ export const slideNames: Readonly<Record<SlideChange, UndoName>> = {
   clone: "duplicate",
   remove: "delete",
   move: "order",
+}
+
+export const elementNames: Readonly<Record<ElementChange["change"], UndoName>> = {
+  text: "add-box",
+  table: "add-table",
+  remove: "delete-element",
 }
 
 export function boxName(before: Box, after: Box): UndoName | null {

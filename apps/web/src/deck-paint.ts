@@ -17,6 +17,7 @@ import { editedParts, slideBase, storedText } from "@/exported-parts"
 import { pictureSources, type PictureSources } from "@/picture-fill"
 import { shownValue, type BusyElements } from "@/live-repaint"
 import { fallbackPrompt } from "@/copy/placeholder-copy"
+import { tableEditable } from "@/table-edit"
 
 type NamedShape = { readonly id: ElementId; readonly shape: ReadShape }
 
@@ -110,9 +111,12 @@ export function paint(
       store.placeBox(id, landedBox(register, id))
     }
     const holding = base.has(shape.part) ? base : null
-    if (holding !== null && seen.get(id) === 1 && boxStorable(holding, shape)) movables.set(id, { id, file })
+    const table = holding !== null && shape.contentKind === "table" && tableEditable(holding, shape)
+    if (holding !== null && seen.get(id) === 1 && (table || boxStorable(holding, shape))) movables.set(id, { id, file })
     const storable =
-      holding !== null && seen.get(id) === 1 && !shape.locked && valueStorable(holding, shape, trialValue(shape.text))
+      holding !== null &&
+      seen.get(id) === 1 &&
+      (table || (!shape.locked && valueStorable(holding, shape, trialValue(shape.text))))
     if (!storable) continue
     boxes.set(id, { id, file })
     rows.set(id, shape)

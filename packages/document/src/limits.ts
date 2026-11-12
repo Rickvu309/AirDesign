@@ -13,6 +13,8 @@ export const limits = {
   clientName: 200,
   address: 2_000,
   row: 65_536,
+  tableRows: 100,
+  tableColumns: 20,
 } as const
 
 const outsideAscii = /[^\u0000-\u007f]/
