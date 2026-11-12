@@ -74,6 +74,12 @@ async function textBoxes(page) {
         if (rect.width > 1 && rect.height > 1)
           found.push({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
     }
+    for (const element of document.querySelectorAll("svg, img, input, textarea")) {
+      if (element.parentElement?.closest("svg") != null) continue
+      const rect = element.getBoundingClientRect()
+      if (rect.width > 1 && rect.height > 1)
+        found.push({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
+    }
     return found
   })
 }
