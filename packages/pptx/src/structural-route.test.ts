@@ -1,7 +1,9 @@
+import { sectionIds } from "./section-ids.js"
 import { describe, expect, it } from "vitest"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import { applyRoute, shapeById } from "./slide-route.js"
+import { applyRoute } from "./slide-route.js"
+import { shapeById } from "./shape-tree.js"
 import { newDuplicateShapeIds, shapeIdCounts } from "./shape-id.js"
 import { applyStructuralRoute, writeStructuralRoute } from "./structural-route.js"
 
@@ -53,15 +55,6 @@ function frameMarks(bytes: Uint8Array): { id: string | null; name: string | null
       const name = mark?.attributes.find((item) => item.name === "name")?.value ?? null
       return { id: mark?.id ?? null, name }
     })
-}
-
-function sectionIds(parts: ReadonlyMap<string, Uint8Array>): string[] {
-  const bytes = parts.get("ppt/presentation.xml")
-  if (bytes === undefined) throw new Error("part")
-  return markupDocument(bytes)
-    .elements.filter((element) => element.kind === "p14:section" && element.id !== null)
-    .sort((left, right) => left.start - right.start)
-    .flatMap((element) => (element.id === null ? [] : [element.id]))
 }
 
 function inside(elements: readonly MarkupElement[], child: MarkupElement, ancestor: MarkupElement): boolean {

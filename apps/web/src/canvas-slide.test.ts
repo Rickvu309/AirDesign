@@ -1,3 +1,4 @@
+import { paintKind } from "@airdesign/pptx"
 import { elementId } from "@airdesign/document"
 import type {
   PaintBox,
@@ -11,7 +12,7 @@ import type {
   SlidePaint,
 } from "@airdesign/pptx"
 import { expect, it } from "vitest"
-import { paintKind, slideCanvases, type CanvasSource } from "./canvas-slide"
+import { slideCanvases, type CanvasSource } from "./canvas-slide"
 
 const part = "ppt/slides/slide1.xml"
 const box: PaintBox = { x: 1, y: 2, width: 3, height: 4, rotation: 0, flipH: false, flipV: false }

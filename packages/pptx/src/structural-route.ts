@@ -1,9 +1,11 @@
+import { tableFrame } from "./table-frame.js"
 import { markupDocument, spliceBytes, type MarkupDocument, type MarkupElement } from "./element-span.js"
 import { partOf, presentationPart, presentationRels, relsOf } from "./package-address.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { nextShapeId } from "./shape-id.js"
 import { addTextShape, xmlText } from "./shape-write.js"
-import { removeShape, shapeById, type RouteResult } from "./slide-route.js"
+import { removeShape, type RouteResult } from "./slide-route.js"
+import { shapeById } from "./shape-tree.js"
 
 export type StructuralEdit =
   | {
@@ -163,10 +165,6 @@ function cloneShape(bytes: Uint8Array, shape: string): Uint8Array {
     next += 1
   }
   return insertAt(bytes, found.end, piece)
-}
-
-function tableFrame(id: number): string {
-  return `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="${id}" name="Table ${id}"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="370840"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr/><a:tblGrid><a:gridCol w="914400"/></a:tblGrid><a:tr h="370840"><a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="en-US"/></a:p></a:txBody><a:tcPr/></a:tc></a:tr></a:tbl></a:graphicData></a:graphic></p:graphicFrame>`
 }
 
 function addTable(bytes: Uint8Array): Uint8Array {

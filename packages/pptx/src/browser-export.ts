@@ -1,3 +1,4 @@
+import { owns, shapeById } from "./shape-tree.js"
 import type { TextValue } from "@airdesign/document"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
@@ -7,7 +8,6 @@ import { applyRoute } from "./slide-route.js"
 import { shownText } from "./text-value-route.js"
 
 const slidePart = "ppt/slides/slide1.xml"
-const shapeKinds = new Set(["p:sp", "p:pic", "p:graphicFrame", "p:cxnSp", "p:grpSp"])
 
 type TextSpan = {
   readonly start: number
@@ -22,36 +22,15 @@ function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
   return true
 }
 
-function owns(elements: readonly MarkupElement[], index: number, shape: MarkupElement): boolean {
-  let parent = elements[index]?.parent ?? -1
-  while (parent >= 0) {
-    const ancestor = elements[parent]
-    if (ancestor === undefined) return false
-    if (shapeKinds.has(ancestor.kind)) return ancestor.index === shape.index
-    parent = ancestor.parent
-  }
-  return false
-}
-
-function shapeById(elements: readonly MarkupElement[], id: string): MarkupElement | null {
-  for (const mark of elements) {
-    if (mark.kind !== "p:cNvPr" || mark.id !== id) continue
-    let parent = mark.parent
-    while (parent >= 0) {
-      const ancestor = elements[parent]
-      if (ancestor === undefined) break
-      if (shapeKinds.has(ancestor.kind)) return ancestor
-      parent = ancestor.parent
-    }
-  }
-  return null
-}
-
 function textInteriors(bytes: Uint8Array, shapeId: string): readonly TextSpan[] | null {
   const document = markupDocument(bytes)
   if (!document.wellFormed) return null
-  const shape = shapeById(document.elements, shapeId)
-  if (shape === null) return []
+  let shape: MarkupElement
+  try {
+    shape = shapeById(document.elements, shapeId)
+  } catch {
+    return []
+  }
   const spans: TextSpan[] = []
   for (const element of document.elements) {
     if (element.kind !== "a:t" || element.selfClosing || element.closeStart < element.openEnd) continue

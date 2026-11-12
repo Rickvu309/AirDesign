@@ -1,3 +1,4 @@
+import { paintKind } from "@airdesign/pptx"
 import type { ElementId, Kind } from "@airdesign/document"
 import type {
   PaintColor,
@@ -8,7 +9,6 @@ import type {
   PaintReader,
   PaintRunStyle,
   PaintText,
-  ShapeKind,
   SlidePaint,
 } from "@airdesign/pptx"
 import {
@@ -50,14 +50,6 @@ const dashes = new Map<string, readonly number[]>([
 ])
 const aligned = { left: "left", center: "center", right: "right", justify: "justify", distributed: "justify" } as const
 
-export function paintKind(kind: ShapeKind): Kind {
-  if (kind === "p:pic") return "picture"
-  if (kind === "p:cxnSp") return "connector"
-  if (kind === "p:grpSp") return "group"
-  if (kind === "p:graphicFrame") return "chart"
-  return "shape"
-}
-
 function visibleFill(fill: PaintFill | null): boolean {
   if (fill === null || fill.type === "none") return false
   if (fill.type === "solid") return fill.color.alpha > 0
@@ -85,7 +77,7 @@ function cssFill(fill: PaintFill | null): string | null {
 }
 
 function outlineOf(row: PaintElement): CanvasOutline {
-  if (row.kind === "p:cxnSp") return "line"
+  if (paintKind(row.kind) === "connector") return "line"
   return outlines.get(row.geometry ?? "") ?? "box"
 }
 

@@ -1,10 +1,11 @@
+import { owns, shapeById } from "./shape-tree.js"
 import { elementId, type TextValue } from "@airdesign/document"
 import { exportElements } from "./element-export.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { presentationPart, presentationRels, relsOf, slidePart } from "./package-address.js"
 import { readShapes } from "./read-shapes.js"
 import { shapeAnimated } from "./shape-id.js"
-import { applyRoute, shapeById, type SlideRoute } from "./slide-route.js"
+import { applyRoute, type SlideRoute } from "./slide-route.js"
 import { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
 import { markupChildren, shapeTextValue, shownText } from "./text-value-route.js"
 import { writtenRoutes } from "./written-routes.js"
@@ -27,7 +28,6 @@ export type RouteRun = {
 const contentTypesPart = "[Content_Types].xml"
 const slidePrefix = "ppt/slides/slide"
 const slideSuffix = ".xml"
-const shapeKinds = new Set(["p:sp", "p:pic", "p:graphicFrame", "p:cxnSp", "p:grpSp"])
 const box = { x: 914400, y: 914400, cx: 914400, cy: 914400 }
 
 export const routeOperations = [
@@ -269,18 +269,7 @@ function owned(elements: readonly MarkupElement[], shape: MarkupElement, kind: s
   const found = []
   for (const element of elements) {
     if (element.kind !== kind) continue
-    let parent = element.parent
-    let nearest: MarkupElement | null = null
-    while (parent >= 0) {
-      const ancestor = elements[parent]
-      if (ancestor === undefined) break
-      if (shapeKinds.has(ancestor.kind)) {
-        nearest = ancestor
-        break
-      }
-      parent = ancestor.parent
-    }
-    if (nearest !== null && nearest.index === shape.index) found.push(element)
+    if (owns(elements, element.index, shape)) found.push(element)
   }
   return found
 }

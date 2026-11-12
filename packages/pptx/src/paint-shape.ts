@@ -1,3 +1,4 @@
+import { isShapeTag, shapeTags } from "./shape-tree.js"
 import type { MarkupElement } from "./element-span.js"
 import { paintAttribute, paintColor, type PaintFill, type PaintPalette } from "./paint-color.js"
 import { paintChild, paintFill } from "./paint-fill.js"
@@ -34,8 +35,11 @@ export type ShapePaint = {
 
 const fillKinds = ["a:noFill", "a:solidFill", "a:gradFill", "a:pattFill", "a:blipFill", "a:grpFill"]
 
-const propertiesOf = (source: PaintSource) =>
-  paintChild(source.children, source.element, source.element.kind === "p:grpSp" ? "p:grpSpPr" : "p:spPr")
+const propertiesOf = (source: PaintSource) => {
+  if (!isShapeTag(source.element.kind)) return undefined
+  const properties = shapeTags[source.element.kind].properties
+  return properties === null ? undefined : paintChild(source.children, source.element, properties)
+}
 
 const fillOf = (source: PaintSource, holder: MarkupElement | undefined) =>
   holder === undefined ? undefined : source.children[holder.index]?.find((element) => fillKinds.includes(element.kind))
@@ -56,7 +60,8 @@ export const paintShape = (
   picture: (part: string, id: string) => ReturnType<PaintPicture>,
 ): ShapePaint => {
   const own = sources[0]
-  if (own === undefined || own.element.kind === "p:graphicFrame") return { fill: null, line: null, geometry: null }
+  if (own === undefined || (isShapeTag(own.element.kind) && shapeTags[own.element.kind].properties === null))
+    return { fill: null, line: null, geometry: null }
   const readFill = (source: PaintSource, fill: MarkupElement, colors = palette): PaintFill | null =>
     fill.kind === "a:grpFill"
       ? source.groupFill

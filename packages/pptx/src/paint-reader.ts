@@ -12,7 +12,7 @@ import {
 } from "./paint-text.js"
 import { paintShape, type PaintLine, type PaintSource, type PaintStyles, type ShapePaint } from "./paint-shape.js"
 import { paintContentType, paintImage, paintPictureFill, type PaintImage, type PaintPicture } from "./paint-image.js"
-import type { ShapeKind } from "./read-shapes.js"
+import { isShapeTag, shapeTags, type ShapeKind } from "./shape-tree.js"
 import { markupChildren, type MarkupChildren } from "./text-value-route.js"
 
 export type PaintBox = {
@@ -128,20 +128,11 @@ const wholeNumber = /^[+-]?\d+$/
 const fullTurn = 21_600_000
 const turnsPerDegree = 60_000
 const omittedType = "obj"
-const nonVisualKinds: Record<ShapeKind, string> = {
-  "p:sp": "p:nvSpPr",
-  "p:pic": "p:nvPicPr",
-  "p:graphicFrame": "p:nvGraphicFramePr",
-  "p:cxnSp": "p:nvCxnSpPr",
-  "p:grpSp": "p:nvGrpSpPr",
-}
 const masterTypes = new Map([
   ["ctrTitle", "title"],
   ["subTitle", "body"],
   [omittedType, "body"],
 ])
-
-const shapeKind = (kind: string): kind is ShapeKind => Object.hasOwn(nonVisualKinds, kind)
 
 const attr = (element: MarkupElement, name: string): string | null => {
   for (const item of element.attributes) if (item.name === name) return item.value
@@ -175,9 +166,10 @@ const angle = (element: MarkupElement): number | null => {
 }
 
 const transformOf = (children: MarkupChildren, shape: MarkupElement): MarkupElement | undefined => {
-  if (shape.kind === "p:graphicFrame") return childOf(children, shape, "p:xfrm")
-  const holder = childOf(children, shape, shape.kind === "p:grpSp" ? "p:grpSpPr" : "p:spPr")
-  return holder === undefined ? undefined : childOf(children, holder, "a:xfrm")
+  if (!isShapeTag(shape.kind)) return undefined
+  const facts = shapeTags[shape.kind]
+  const holder = facts.properties === null ? shape : childOf(children, shape, facts.properties)
+  return holder === undefined ? undefined : childOf(children, holder, facts.transform)
 }
 
 const ownPlacement = (children: MarkupChildren, xfrm: MarkupElement | undefined): Own => {
@@ -317,8 +309,8 @@ const drawnIn = (elements: readonly MarkupElement[], children: MarkupChildren): 
       if (choice !== undefined) visitInside(choice, visit)
       continue
     }
-    if (!shapeKind(element.kind)) continue
-    const nonVisual = childOf(children, element, nonVisualKinds[element.kind])
+    if (!isShapeTag(element.kind)) continue
+    const nonVisual = childOf(children, element, shapeTags[element.kind].nonVisual)
     const identity = nonVisual === undefined ? undefined : childOf(children, nonVisual, "p:cNvPr")
     if (identity === undefined || identity.id === null) continue
     const hidden = visit.hidden || isTrue(attr(identity, "hidden"))
