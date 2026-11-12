@@ -10,5 +10,17 @@
     "detector": "truncated-text",
     "selector": "[data-account-name]",
     "reason": "The account row is one line in a fixed 248 px sidebar. A long email address is cut with an ellipsis and its full text is the row's title, as a name is in any account menu."
+  },
+  {
+    "page": "check-email*",
+    "detector": "dead-control",
+    "selector": "[data-send-again]",
+    "reason": "The send-again button gets its click handler from connectSendAgain with addEventListener, which the detector cannot see; send-again.test.ts clicks it."
+  },
+  {
+    "page": "code-wrong*",
+    "detector": "dead-control",
+    "selector": "[data-send-again]",
+    "reason": "The send-again button gets its click handler from connectSendAgain with addEventListener, which the detector cannot see; send-again.test.ts clicks it."
   }
 ]

@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs"
 import path from "node:path"
 import { expect } from "@playwright/test"
+import { signInStates } from "./sign-in-states.mjs"
 
 const editor = "/screens/s42-02-editor-agent-run-complete"
 
@@ -234,6 +235,7 @@ async function accountDeleteAsk(kit) {
 }
 
 export const states = [
+  ...signInStates,
   { name: "notes-closed", design: editor, drive: (kit) => notesState(kit) },
   { name: "notes-open", design: editor, drive: (kit) => notesState(kit, true) },
   {

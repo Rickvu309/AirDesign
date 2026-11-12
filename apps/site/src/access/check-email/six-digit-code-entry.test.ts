@@ -38,6 +38,30 @@ async function codeEntryFixture() {
 }
 
 describe("connectSixDigitCodeEntry", () => {
+  it("submits a pasted code that carries spaces", async () => {
+    const entries = new Map([["airdesign.pending-sign-in-email", "ada@example.com"]])
+    vi.stubGlobal("sessionStorage", {
+      getItem: (key: string) => entries.get(key) ?? null,
+      setItem: (key: string, value: string) => entries.set(key, value),
+      removeItem: (key: string) => entries.delete(key),
+    })
+    const { dom, entry, input } = await codeEntryFixture()
+    vi.stubGlobal("document", dom.window.document)
+    const assign = vi.fn()
+    vi.stubGlobal("location", { assign })
+    const sent: unknown[] = []
+    vi.stubGlobal("fetch", async (_path: string, init: RequestInit) => {
+      sent.push(JSON.parse(String(init.body)))
+      return new Response(JSON.stringify({ ok: true }), { status: 200 })
+    })
+    connectSixDigitCodeEntry(entry)
+
+    input.value = " 123 456 "
+    input.dispatchEvent(new dom.window.Event("input"))
+    await vi.waitFor(() => expect(assign).toHaveBeenCalled())
+    expect(sent).toEqual([{ email: "ada@example.com", code: "123456" }])
+  })
+
   it("tells the person when a code is refused, and clears that when the code changes", async () => {
     const entries = new Map<string, string>()
     vi.stubGlobal("sessionStorage", {
@@ -60,6 +84,8 @@ describe("connectSixDigitCodeEntry", () => {
     expect(failure.textContent).toBe(signInCopy.codeRefused)
     expect(input.getAttribute("aria-invalid")).toBe("true")
     expect(input.getAttribute("aria-describedby")).toBe(region.id)
+    expect(input.value).toBe("")
+    expect(entry.querySelectorAll("[data-code-box]")[0]?.textContent).toBe("")
 
     input.value = "12345"
     input.dispatchEvent(new dom.window.Event("input"))

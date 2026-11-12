@@ -36,6 +36,8 @@ export function connectSixDigitCodeEntry(entry: Element): void {
       return
     }
     if (failure) showSignInFailure(failure, input)
+    input.value = ""
+    render()
   }
 
   ;["input", "focus", "blur"].forEach((eventName) => input.addEventListener(eventName, render))

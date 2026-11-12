@@ -3,11 +3,17 @@ import AirdesignMark from "../../site/airdesign-mark.astro";
 import SiteDocument from "../../site/site-document.astro";
 ---
 
-<SiteDocument title="This link has expired">
-  <main class="flex min-h-dvh flex-col items-center justify-center px-4 py-8 text-center">
-    <AirdesignMark size={44} />
-    <h1 class="mt-[21px] text-[length:var(--type-section)] leading-[1.5] font-semibold">This link has expired</h1>
-    <p class="mt-[var(--space-4)] text-[length:var(--type-dense)] leading-[1.31] text-faint-foreground">Sign-in links work once and last 15 minutes.</p>
-    <a class="primary-button mt-5 h-[38px] w-[140px] rounded-lg text-[length:var(--type-section)]" href="/sign-in">Send a new link</a>
-  </main>
+<SiteDocument title="This sign-in link no longer works">
+  <div class="flex min-h-dvh items-center justify-center bg-canvas px-4 py-8">
+    <main class="w-full max-w-[440px]">
+      <div class="flex flex-col items-center">
+        <AirdesignMark size={40} weight="bold" />
+        <h1 class="mt-5 text-center text-[26px] leading-[1.2] font-semibold tracking-[-0.5px]">This link no longer works</h1>
+      </div>
+      <div class="mt-7 rounded-2xl bg-background p-10 text-center shadow-[0px_0px_0px_1px_var(--black-7),0px_1px_2px_0px_var(--black-3),0px_12px_32px_0px_var(--black-4)] max-sm:p-6">
+        <p class="text-[length:var(--type-section)] leading-[1.5] text-balance text-muted-foreground">A sign-in link works once and expires after 15 minutes.</p>
+        <a class="primary-button mt-5 flex h-11 w-full items-center justify-center rounded-lg text-[length:var(--type-section)]" href="/sign-in">Get a new link</a>
+      </div>
+    </main>
+  </div>
 </SiteDocument>
