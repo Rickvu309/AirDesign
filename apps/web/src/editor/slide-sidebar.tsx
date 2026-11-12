@@ -316,7 +316,7 @@ function SectionHead({
       <EditorIcon name={open ? "chev" : "chevr"} size={14} className="text-faint" />
       <span className="min-w-0 truncate text-[length:var(--type-dense)] font-semibold text-foreground">{name}</span>
       {range ? (
-        <span className="flex h-5 shrink-0 items-center rounded-sm px-1.5 text-[length:var(--type-caption)] text-faint shadow-[0px_0px_0px_1px_var(--field-edge)]">
+        <span className="flex h-5 shrink-0 items-center rounded-sm px-1.5 text-[length:var(--type-caption)] text-muted-foreground shadow-[0px_0px_0px_1px_var(--field-edge)]">
           {range}
         </span>
       ) : null}
