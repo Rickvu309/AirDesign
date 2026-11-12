@@ -21,6 +21,7 @@ import {
   type CanvasSlide,
   type CanvasText,
 } from "@airdesign/render"
+import { pictureLayer, type PictureImage, type PictureSource } from "@/picture-fill"
 
 export type CanvasShape = { readonly id: ElementId; readonly kind: Kind; readonly editable: boolean }
 
@@ -81,9 +82,20 @@ function outlineOf(row: PaintElement): CanvasOutline {
   return outlines.get(row.geometry ?? "") ?? "box"
 }
 
-function shapeFill(row: PaintElement, outline: CanvasOutline): string | null {
-  if (outline === "line") return null
-  return row.fill?.type === "picture" ? unshownFill : cssFill(row.fill)
+function pictureFill(image: PictureImage, src: PictureSource, under: string | null = null): string {
+  const url = src(image)
+  const layer = url === null ? null : pictureLayer(image, url)
+  if (layer === null) return unshownFill
+  return under === null ? layer : `${layer}, ${under}`
+}
+
+function fillOf(fill: PaintFill | null, src: PictureSource): string | null {
+  return fill?.type === "picture" ? pictureFill(fill, src) : cssFill(fill)
+}
+
+function shapeFill(row: PaintElement, outline: CanvasOutline, src: PictureSource): string | null {
+  if (row.image !== null) return pictureFill(row.image, src, fillOf(row.fill, src))
+  return outline === "line" ? null : fillOf(row.fill, src)
 }
 
 function lineColor(fill: PaintFill): string | null {
@@ -129,7 +141,11 @@ function canvasText(text: PaintText | null): CanvasText | null {
   }
 }
 
-function canvasElements(rows: readonly PaintElement[], source: CanvasSource): readonly CanvasElement[] {
+function canvasElements(
+  rows: readonly PaintElement[],
+  source: CanvasSource,
+  src: PictureSource,
+): readonly CanvasElement[] {
   const seen = new Map<string, number>()
   const elements: CanvasElement[] = []
   for (const row of rows) {
@@ -147,7 +163,7 @@ function canvasElements(rows: readonly PaintElement[], source: CanvasSource): re
       editable: shape?.editable ?? false,
       placeholder: row.placeholder !== null,
       filled: visibleFill(row.fill),
-      fill: shapeFill(row, outline),
+      fill: shapeFill(row, outline, src),
       line: canvasLine(row.line),
       outline,
       text: canvasText(row.text),
@@ -180,28 +196,32 @@ function paintOf(reader: PaintReader, part: string): SlidePaint | null {
   }
 }
 
-function canvasOf(reader: PaintReader, source: CanvasSource): CanvasSlide {
+function canvasOf(reader: PaintReader, source: CanvasSource, src: PictureSource): CanvasSlide {
   const paint = paintOf(reader, source.part)
   if (paint === null) return { ...standardSlide, background: null, elements: unplaced(source) }
   const size = paint.width > 0 && paint.height > 0 ? paint : standardSlide
-  const rows = canvasElements(paint.elements, source)
+  const rows = canvasElements(paint.elements, source, src)
   const readsSlide = paint.elements.some((row) => row.from === "slide")
   return {
     width: size.width,
     height: size.height,
-    background: cssFill(paint.background),
+    background: fillOf(paint.background, src),
     elements: readsSlide ? rows : [...rows, ...unplaced(source)],
   }
 }
 
-export function slideCanvases(reader: PaintReader, sources: readonly CanvasSource[]): SlideCanvases {
+export function slideCanvases(
+  reader: PaintReader,
+  sources: readonly CanvasSource[],
+  src: PictureSource = () => null,
+): SlideCanvases {
   const known = new Map<number, CanvasSlide>()
   return (index) => {
     const painted = known.get(index)
     if (painted !== undefined) return painted
     const source = sources[index]
     if (source === undefined) return null
-    const canvas = canvasOf(reader, source)
+    const canvas = canvasOf(reader, source, src)
     known.set(index, canvas)
     return canvas
   }
