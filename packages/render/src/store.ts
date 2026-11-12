@@ -1,5 +1,6 @@
 import { kinds, overLimit } from "@airdesign/document"
-import type { ElementId, SlideId } from "@airdesign/document"
+import type { Box, ElementId, SlideId } from "@airdesign/document"
+import { sameBox } from "./box-gesture.js"
 import type { ElementRecord, SlideRecord } from "./record.js"
 
 export type PaintResult = { readonly ok: true } | { readonly ok: false; readonly code: "limit" | "absent" | "kind" }
@@ -14,6 +15,9 @@ export type PaintStore = {
   readonly slideSubscribe: (id: SlideId) => (listener: () => void) => () => void
   readonly beginComposition: (id: ElementId) => void
   readonly endComposition: (id: ElementId, data: string) => void
+  readonly getBox: (id: ElementId) => Box | null
+  readonly placeBox: (id: ElementId, box: Box | null) => void
+  readonly boxSubscribe: (id: ElementId) => (listener: () => void) => () => void
 }
 
 const accepted: PaintResult = Object.freeze({ ok: true })
@@ -98,6 +102,9 @@ export function paintStore(): PaintStore {
   const elementSubscribeCache = new Map<ElementId, (listener: () => void) => () => void>()
   const slideListeners = new Map<SlideId, Set<() => void>>()
   const slideSubscribeCache = new Map<SlideId, (listener: () => void) => () => void>()
+  const boxes = new Map<ElementId, Box>()
+  const boxListeners = new Map<ElementId, Set<() => void>>()
+  const boxSubscribeCache = new Map<ElementId, (listener: () => void) => () => void>()
   const composing = new Set<ElementId>()
   const held = new Map<ElementId, ElementRecord[]>()
   let slideList: readonly SlideRecord[] = Object.freeze([])
@@ -119,6 +126,13 @@ export function paintStore(): PaintStore {
     }
     commit(record)
     return accepted
+  }
+
+  function placeBox(id: ElementId, box: Box | null): void {
+    if (sameBox(boxes.get(id) ?? null, box)) return
+    if (box === null) boxes.delete(id)
+    else boxes.set(id, Object.freeze({ x: box.x, y: box.y, cx: box.cx, cy: box.cy }))
+    notify(boxListeners, id)
   }
 
   function setSlides(next: readonly SlideRecord[]): PaintResult {
@@ -173,5 +187,8 @@ export function paintStore(): PaintStore {
       }
       for (const record of queue) commit(record)
     },
+    getBox: (id) => boxes.get(id) ?? null,
+    placeBox,
+    boxSubscribe: (id) => subscribeTo(boxListeners, boxSubscribeCache, id),
   }
 }

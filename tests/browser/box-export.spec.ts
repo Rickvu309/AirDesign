@@ -6,7 +6,7 @@ import { boxExpected, boxExportName, boxOriginalName } from "../../scripts/parag
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures", boxOriginalName)
 const judged = join(process.cwd(), "tests/browser", boxExportName)
-const { part: slide, element, box } = boxExpected
+const { part: slide, box } = boxExpected
 
 type ZipEntry = {
   readonly filename: string
@@ -44,7 +44,36 @@ async function settled(page: Page): Promise<void> {
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("a box kept on the device exports through the move and resize routes for the PowerPoint check", async ({
+async function drag(page: Page, from: { x: number; y: number }, by: { x: number; y: number }): Promise<void> {
+  await page.mouse.move(from.x, from.y)
+  await page.mouse.down()
+  await page.mouse.move(from.x + by.x, from.y + by.y, { steps: 8 })
+  await page.mouse.up()
+}
+
+async function keptBox(page: Page): Promise<unknown> {
+  return page.evaluate(
+    () =>
+      new Promise<unknown>((resolve, reject) => {
+        const request = indexedDB.open("airdesign")
+        request.onerror = () => reject(request.error)
+        request.onsuccess = () => {
+          const database = request.result
+          const all = database.transaction("rows", "readonly").objectStore("rows").getAll()
+          all.onerror = () => reject(all.error)
+          all.onsuccess = () => {
+            database.close()
+            const boxes = (all.result as { property?: string; value: unknown }[]).filter(
+              (row) => row.property === "box",
+            )
+            resolve(boxes.at(-1)?.value ?? null)
+          }
+        }
+      }),
+  )
+}
+
+test("a box dragged and resized in the editor exports through the move and resize routes for the PowerPoint check", async ({
   page,
 }, testInfo) => {
   await rm(judged, { force: true })
@@ -53,16 +82,14 @@ test("a box kept on the device exports through the move and resize routes for th
   await page.locator("input[type=file]").setInputFiles(fixture)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
-  const address = page.url()
-  const deck = address.split("/").pop() ?? ""
-  await page.goto("/live-proof")
-  const kept = await page.evaluate(([named, value, id]) => globalThis.airdesignLive.enqueueBox(named, value, id), [
-    deck,
-    box,
-    element,
-  ] as const)
-  expect(kept).toEqual({ ok: true, painted: box })
-  await page.goto(address)
+  const slideBox = await page.locator("[data-slide-paint]").boundingBox()
+  if (slideBox === null) throw new Error("no slide")
+  const origin = { x: Math.round(slideBox.x), y: Math.round(slideBox.y) }
+  await page.locator('[contenteditable="true"]').click()
+  await drag(page, { x: origin.x + 300, y: origin.y + 150 }, { x: 30, y: 60 })
+  await drag(page, { x: origin.x + 420, y: origin.y + 210 }, { x: -120, y: 60 })
+  await expect.poll(() => keptBox(page)).toEqual(box)
+  await page.reload()
   await settled(page)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
   const saving = page.waitForEvent("download")

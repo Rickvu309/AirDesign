@@ -1,6 +1,6 @@
 import { elementId } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { commitEdit } from "./commit-edit"
+import { commitBox, commitEdit, server } from "./commit-edit"
 
 it("paints before the commit is sent", async () => {
   const order: string[] = []
@@ -90,4 +90,55 @@ it("keeps the edit without a word when the server answers another refusal", asyn
     { id: elementId("256.2"), file: "Hello" },
   )
   expect(outcome).toBe("kept")
+})
+
+it("keeps a box with the element's floor, paints it, then sends it on the text's flush path", async () => {
+  const order: string[] = []
+  const box = { x: 1, y: 2, cx: 3, cy: 4 }
+  const outcome = await commitBox(
+    (remote) => ({
+      async enqueueBox(deck, value, node, floor) {
+        order.push(`keep ${remote === server ? "server" : "device"} ${deck} ${JSON.stringify(value)} ${node} ${floor}`)
+        return { ok: true }
+      },
+      async flush(deck) {
+        order.push(`flush ${remote === server ? "server" : "device"} ${deck}`)
+        return { ok: true }
+      },
+    }),
+    "any-deck",
+    box,
+    { id: elementId("256.2"), file: "Hello" },
+    () => {
+      order.push("paint")
+    },
+  )
+  expect(order).toEqual([`keep device any-deck ${JSON.stringify(box)} 256.2 Hello`, "paint", "flush server any-deck"])
+  expect(outcome).toBe("sent")
+})
+
+it("puts a refused box back and sends nothing", async () => {
+  const order: string[] = []
+  const outcome = await commitBox(
+    () => ({
+      async enqueueBox() {
+        return { ok: false }
+      },
+      async flush() {
+        order.push("flush")
+        return { ok: true }
+      },
+    }),
+    "any-deck",
+    { x: 1, y: 2, cx: 3, cy: 4 },
+    { id: elementId("256.2"), file: "Hello" },
+    () => {
+      order.push("paint")
+    },
+    () => {
+      order.push("refused")
+    },
+  )
+  expect(order).toEqual(["refused"])
+  expect(outcome).toBe("refused")
 })

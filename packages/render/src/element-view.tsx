@@ -1,5 +1,5 @@
 import { memo, useSyncExternalStore } from "react"
-import type { ElementId, SlideId } from "@airdesign/document"
+import type { Box, ElementId, SlideId } from "@airdesign/document"
 import type { ElementRecord } from "./record.js"
 import type { PaintStore } from "./store.js"
 
@@ -8,6 +8,14 @@ export function useElement(store: PaintStore, id: ElementId): ElementRecord | nu
     store.elementSubscribe(id),
     () => store.getElement(id),
     () => store.getElement(id),
+  )
+}
+
+export function useBox(store: PaintStore, id: ElementId): Box | null {
+  return useSyncExternalStore(
+    store.boxSubscribe(id),
+    () => store.getBox(id),
+    () => store.getBox(id),
   )
 }
 
