@@ -37,7 +37,7 @@ async function partsOf(file: string): Promise<Map<string, Buffer>> {
 
 async function settled(page: Page): Promise<void> {
   await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/thin\/([A-Za-z0-9_-]{1,64})$/)?.[1]
+    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
     return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
   })
 }
@@ -49,9 +49,9 @@ test("a box kept on the device exports through the move and resize routes for th
 }, testInfo) => {
   await rm(judged, { force: true })
   const download = testInfo.outputPath(boxExportName)
-  await page.goto("/thin")
+  await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/thin\/[A-Za-z0-9_-]{1,64}$/)
+  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   const address = page.url()
   const deck = address.split("/").pop() ?? ""
