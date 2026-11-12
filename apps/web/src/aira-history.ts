@@ -40,6 +40,8 @@ const ends: ReadonlySet<string> = new Set<AiraEnd>([
   "out-of-usage",
   "signed-out",
   "country",
+  "off",
+  "malformed",
   "undone",
 ])
 const toolStates: ReadonlySet<string> = new Set(["working", "done", "refused", "stopped"])
