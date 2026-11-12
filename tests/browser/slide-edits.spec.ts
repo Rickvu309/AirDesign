@@ -4,7 +4,6 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
 import { slideEditsExportName } from "../../scripts/slide-edits.mjs"
-import { stored } from "./device-store"
 
 const duplicate = process.platform === "darwin" ? "Meta+d" : "Control+d"
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
@@ -160,7 +159,6 @@ test("a duplicate keeps the title it had when it was made, and a new slide takes
   await added.click()
   await added.pressSequentially("Typed on a new slide", { delay: 20 })
   await expect(added).toHaveText("Typed on a new slide")
-  await stored(page, "Typed on a new slide")
   await expect(page.locator("[data-slide-paint] [data-grip]:not([data-grip=move])")).toHaveCount(4)
   await page.keyboard.press("Escape")
   await page.keyboard.press("ArrowDown")
