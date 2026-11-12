@@ -220,6 +220,8 @@ it("checks every register field and nested landed row before opening", () => {
     readNodes: ["bad"],
     elements: { bad: register },
     b: {},
+    file: ["slide"],
+    order: [{ slide: "nope" }],
   }
   for (const [key, value] of Object.entries(bad)) {
     expect(deckRoutes.open.result({ ...opened, register: { ...register, [key]: value } })).toEqual(payload)

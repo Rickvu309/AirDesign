@@ -639,7 +639,7 @@ test("an empty box takes typed text, keeps it after reload and exports it", asyn
 })
 
 test("the page names the opened file, not the sample deck", async ({ page }) => {
-  const sample = ["Q3 Investor Update", "New slide", "Opening", "Performance", "Outlook"]
+  const sample = ["Q3 Investor Update", "Opening", "Performance", "Outlook"]
   await open(page, join(fixtures, "nasa-1d-cnn.pptx"))
   const sidebar = page.locator("aside").first()
   for (const reading of [0, 1]) {
@@ -679,7 +679,7 @@ async function expectNoSample(page: Page): Promise<void> {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
-  expect(new Set(seen)).toEqual(new Set(["clean", "1", "Hello", "63%", "Export", "Aira", "Agent", "Design"]))
+  expect(new Set(seen)).toEqual(new Set(["clean", "1", "Hello", "63%", "Export", "New slide", "Aira", "Agent", "Design"]))
 }
 
 test("a real deck paints no sample and still exports", async ({ page }, testInfo) => {

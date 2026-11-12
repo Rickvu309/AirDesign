@@ -53,6 +53,8 @@ function copyRegister(register: Register): Register {
     floor: register.floor,
     slides: register.slides,
     bytes: register.bytes,
+    file: register.file,
+    order: register.order,
     nodes: [...register.nodes],
     readNodes: register.readNodes === null ? null : [...register.readNodes],
     elements: copyElements(register.elements),

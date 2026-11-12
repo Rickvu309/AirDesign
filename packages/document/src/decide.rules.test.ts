@@ -334,6 +334,7 @@ function rulesOf(kind: Command["command"]): readonly Rule[] {
       ]
     case "add":
     case "remove":
+    case "slide":
       return []
     case "read":
       return [
@@ -359,10 +360,6 @@ function rulesOf(kind: Command["command"]): readonly Rule[] {
           effect: { outcome: "refuse", code: "run-fenced" },
         },
       ]
-    default: {
-      const unreachable: never = kind
-      throw new Error(unreachable)
-    }
   }
 }
 
@@ -458,6 +455,7 @@ function situation(register: View, command: Command): Situation | null {
       }
     case "add":
     case "remove":
+    case "slide":
       return null
     case "read":
       return {
@@ -469,10 +467,6 @@ function situation(register: View, command: Command): Situation | null {
         agent: agentState(register),
         ...namedRows(register, command.runId),
       }
-    default: {
-      const unreachable: never = command
-      throw new Error(unreachable)
-    }
   }
 }
 
@@ -491,14 +485,11 @@ function commands(register: View): readonly Command[] {
         return
       case "add":
       case "remove":
+      case "slide":
         return
       case "read":
         list.push(command)
         return
-      default: {
-        const unreachable: never = command
-        throw new Error(unreachable)
-      }
     }
   }
   for (const runId of ["r", "s"] as const) {
@@ -713,7 +704,7 @@ function writtenBack(register: Register, view: View, target: ElementId | null): 
 }
 
 function aimedAt(command: Command, target: ElementId | null): Command {
-  if (target === null || command.command === "add") return command
+  if (target === null || command.command === "add" || command.command === "slide") return command
   return { ...command, node: target }
 }
 

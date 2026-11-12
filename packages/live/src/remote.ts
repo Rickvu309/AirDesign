@@ -6,7 +6,9 @@ import {
   readDeckIndex,
   type DeckId,
   type WireRefusal,
+  slideEditCommand,
   type WireEdit,
+  type WireSlide,
   type OpenResult,
   type CommitResult,
   type WatchResult,
@@ -25,7 +27,7 @@ export type Remote = {
   open(body: { readonly deck: string }): Promise<OpenResult>
   commit(body: {
     readonly deck: string
-    readonly batch: readonly WireEdit[]
+    readonly batch: readonly (WireEdit | WireSlide)[]
     readonly once?: string
   }): Promise<CommitResult>
   watch(body: { readonly deck: string; readonly cursor: number | null }): Promise<WatchResult>
@@ -89,6 +91,12 @@ export function memoryRemote(): Remote {
       if (stored === undefined) return { ok: false, refusal: "deck" }
       let register = stored.register
       for (const edit of parsed.batch) {
+        if ("slide" in edit) {
+          const decision = decide(register, { command: "slide", file: edit.file, edit: slideEditCommand(edit) })
+          if (decision.decision === "refuse") return { ok: false, refusal: decision.code }
+          register = decision.register
+          continue
+        }
         if (!register.nodes.includes(edit.node)) {
           const opened = decide(register, {
             command: "add",

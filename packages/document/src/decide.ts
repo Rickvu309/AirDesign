@@ -1,7 +1,8 @@
 import type { Box } from "./box.js"
 import type { DeckIndex } from "./deck-index.js"
-import { legacyElement, rootElement, type ElementId } from "./element-id.js"
+import { legacyElement, rootElement, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { limits, overLimit } from "./limits.js"
+import { applySlide, openSlides, slideGone, type SlideCommand } from "./slide-order.js"
 import { storedValue, type Value } from "./value.js"
 
 export type Phase = "idle" | "running" | "stopped" | "undone"
@@ -36,6 +37,8 @@ export type Register = {
   readonly floor: string
   readonly slides: number
   readonly bytes: number
+  readonly file: readonly SlideId[]
+  readonly order: readonly SlideCommand[]
   readonly nodes: readonly ElementId[]
   readonly readNodes: readonly ElementId[] | null
   readonly elements: Readonly<Record<ElementId, NodeRegister>>
@@ -46,6 +49,8 @@ export type RootRegister = NodeRegister & {
   readonly nodes: readonly ElementId[]
   readonly readNodes: readonly ElementId[] | null
   readonly elements: Readonly<Partial<Record<ElementId, NodeRegister>>>
+  readonly file?: readonly SlideId[]
+  readonly order?: readonly SlideCommand[]
   readonly b?: NodeRegister | null
 }
 
@@ -65,6 +70,7 @@ export type Command =
   | { readonly command: "add"; readonly node: ElementId; readonly floor: string; readonly route: string }
   | { readonly command: "remove"; readonly node: ElementId }
   | { readonly command: "read"; readonly runId: string; readonly node: ElementId }
+  | { readonly command: "slide"; readonly file: readonly SlideId[]; readonly edit: SlideCommand }
 
 export const refusals = ["stale", "person-protected", "run-fenced", "dead", "present", "limit", "group-box"] as const
 
@@ -100,6 +106,7 @@ export function openRegister(floor: string, route: string): Register {
     floor,
     slides: 1,
     bytes: 0,
+    ...openSlides(),
     nodes: [rootElement],
     readNodes: null,
     elements: { [rootElement]: openNode(floor, route) },
@@ -166,8 +173,18 @@ function rooted(stored: StoredRegister): stored is RootRegister {
   return rootFields.some((field) => Object.hasOwn(stored, field))
 }
 
+function keptSlides(stored: StoredRegister): {
+  readonly file: readonly SlideId[]
+  readonly order: readonly SlideCommand[]
+} {
+  const slides = openSlides()
+  return { file: stored.file ?? slides.file, order: stored.order ?? slides.order }
+}
+
 export function foldRegister(stored: StoredRegister): Register {
-  if (!rooted(stored)) return stored
+  if (!rooted(stored)) {
+    return stored.file !== undefined && stored.order !== undefined ? stored : { ...stored, ...keptSlides(stored) }
+  }
   const kept = Object.entries(stored.elements).flatMap(([id, body]) =>
     body === undefined ? [] : [[id as ElementId, body] as const],
   )
@@ -178,6 +195,7 @@ export function foldRegister(stored: StoredRegister): Register {
     floor: stored.floor,
     slides: stored.slides,
     bytes: stored.bytes,
+    ...keptSlides(stored),
     nodes: stored.nodes,
     readNodes: stored.readNodes,
     elements: Object.fromEntries([...kept, ...legacyBody(stored), [rootElement, first]]),
@@ -313,6 +331,11 @@ function readNodes(register: Register, id: ElementId, runId: string): Decision {
   return apply({ ...register, readNodes: [...register.nodes] }, body.route)
 }
 
+function hostedSlide(id: ElementId): string | null {
+  if (!id.includes(".")) return null
+  return shapeOf(id).slide
+}
+
 function editNode(register: Register, id: ElementId, command: Command): Decision {
   const current = storedBody(register, id)
   if (current === null) {
@@ -345,6 +368,11 @@ export function decide(stored: StoredRegister, command: Command): Decision {
   if (overLimit({ decks: 1, slides: register.slides, bytes: register.bytes })) {
     return refuse("limit")
   }
+  if (command.command === "slide") {
+    const applied = applySlide(register, command.file, command.edit)
+    if (!applied.ok) return refuse(applied.code)
+    return apply({ ...register, file: applied.state.file, order: applied.state.order }, register.route)
+  }
   if (command.command === "add") {
     const supplied = command as { readonly node: ElementId; readonly floor?: string; readonly route?: string }
     return addNode(register, supplied.node, supplied.floor ?? register.floor, supplied.route ?? register.route)
@@ -358,6 +386,14 @@ export function decide(stored: StoredRegister, command: Command): Decision {
     return refuse("group-box")
   }
   if (!register.nodes.includes(node)) {
+    return refuse("dead")
+  }
+  const slide = hostedSlide(node)
+  if (
+    slide !== null &&
+    (command.command === "person" || command.command === "agent" || command.command === "start") &&
+    slideGone(register, slide)
+  ) {
     return refuse("dead")
   }
   if (command.command === "remove") {

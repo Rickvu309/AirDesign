@@ -1,15 +1,17 @@
-import { readDeckId, type DeckId, type WireEdit, type WireRefusal } from "@airdesign/catalog"
+import { readDeckId, type DeckId, type WireEdit, type WireSlide, type WireRefusal } from "@airdesign/catalog"
 import {
   currentBox,
   currentValue,
   decide,
   legacyElement,
-  rootElement,
   limits,
   openRegister,
+  presentSlides,
   readBox,
   readElementId,
+  readSlideState,
   replay,
+  rootElement,
   storedValue,
   unsent,
   valueBytes,
@@ -19,10 +21,13 @@ import {
   type NodeRegister,
   type Queued,
   type Register,
+  type SlideCommand,
+  type SlideId,
   type Value,
 } from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
 import { queueIndex, sendIndex } from "./deck-index.js"
+import { withSlides } from "./slide-replay.js"
 import {
   changeRows,
   fitConfirmed,
@@ -70,6 +75,10 @@ function rowsFromRegister(deck: DeckId, register: Register): ConfirmedRow[] {
       revision = fitConfirmed(deck, revision, landed, node, into)
     }
   }
+  for (const edit of register.order) {
+    into.push({ kind: "confirmed", deck, revision, value: "", slideFile: register.file, slideEdit: edit })
+    revision += 1
+  }
   return into
 }
 
@@ -87,7 +96,7 @@ function opened(register: Register, node: ElementId | undefined, floor: string):
   return decision.decision === "apply" ? decision.register : register
 }
 
-function played(deck: DeckId, confirmed: readonly ConfirmedRow[], pending: readonly WiredRow[]): Register {
+function played(deck: DeckId, confirmed: readonly ConfirmedRow[], pending: readonly PendingRow[]): Register {
   let register = openRegister("", deck)
   const versions = new Map<string, number>()
   const seeded: Queued[] = []
@@ -98,26 +107,29 @@ function played(deck: DeckId, confirmed: readonly ConfirmedRow[], pending: reado
     versions.set(row.node ?? "", base + 1)
     seeded.push(row.node === undefined ? { base, ...storedValue(row) } : { base, ...storedValue(row), node: row.node })
   }
-  for (const row of pending) register = opened(register, row.node, row.floor ?? "")
-  const queued = pending
-    .filter((row) => register.nodes.includes(row.node))
-    .map((row) => ({ base: row.base, ...storedValue(row), node: row.node }))
-  return replay(replay(register, seeded), queued)
+  for (const row of pending) {
+    if (row.slideEdit !== undefined) continue
+    register = opened(register, row.node, row.floor ?? "")
+  }
+  return withSlides(replay(register, seeded), confirmed, pending)
 }
 
-function split(rows: readonly StoredRow[]): { confirmed: ConfirmedRow[]; pending: WiredRow[] } {
+function split(rows: readonly StoredRow[]): { confirmed: ConfirmedRow[]; pending: PendingRow[] } {
   const confirmed = rows
     .filter(isConfirmed)
     .filter(readable)
     .sort((left, right) => left.revision - right.revision)
   const pending = rows
     .filter(isPending)
-    .filter(wired)
+    .filter((row) => readable(row) && (row.slideEdit !== undefined || wired(row)))
     .sort((left, right) => left.order - right.order)
   return { confirmed, pending }
 }
 
 function readable(row: StoredRow): boolean {
+  if (row.slideEdit !== undefined) {
+    return row.slideFile !== undefined && readSlideState({ file: row.slideFile, order: [row.slideEdit] }) !== undefined
+  }
   if (isPending(row)) return wired(row)
   return row.node === undefined || row.node === legacyElement || readElementId(row.node) !== undefined
 }
@@ -137,7 +149,9 @@ async function readDeck(deck: DeckId): Promise<StoredRow[]> {
   return rows.filter(readable)
 }
 
-function wireOf(row: WiredRow): WireEdit {
+function wireOf(row: PendingRow): WireEdit | WireSlide {
+  if (row.slideEdit !== undefined && row.slideFile !== undefined) return { ...row.slideEdit, file: row.slideFile }
+  if (row.node === undefined) throw new Error("missing node")
   if (row.floor === undefined) return { ...storedValue(row), node: row.node }
   return { ...storedValue(row), node: row.node, floor: row.floor }
 }
@@ -217,7 +231,7 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
     for (let start = 0; start < sending.length;) {
       const first = sending[start]
       if (first === undefined) break
-      const rowsInBatch: WiredRow[] = []
+      const rowsInBatch: PendingRow[] = []
       for (const row of sending.slice(start, start + limits.batch)) {
         if (row.once !== first.once) break
         rowsInBatch.push(row)
@@ -236,7 +250,21 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
       }
       if (known.get(deck) === result.revision - 1) known.set(deck, result.revision)
       const stored: ConfirmedRow[] = []
-      for (const row of rowsInBatch) revision = fitConfirmed(deck, revision, row, row.node, stored)
+      for (const row of rowsInBatch) {
+        if (row.slideEdit !== undefined && row.slideFile !== undefined) {
+          stored.push({
+            kind: "confirmed",
+            deck,
+            revision,
+            value: "",
+            slideFile: row.slideFile,
+            slideEdit: row.slideEdit,
+          })
+          revision += 1
+          continue
+        }
+        revision = fitConfirmed(deck, revision, row, row.node, stored)
+      }
       await writeRows(
         stored.map((row) => ({ key: rowKey(deck, "confirmed", row.revision), row })),
         rowsInBatch.map((row) => rowKey(deck, "pending", row.order)),
@@ -289,6 +317,37 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
 
   return {
     index: (deck: string, index: Parameters<typeof queueIndex>[1]) => queueIndex(deck, index, nextOnce),
+    async enqueueSlide(
+      deck: string,
+      file: readonly SlideId[],
+      edit: SlideCommand,
+    ): Promise<EnqueueResult<readonly string[]>> {
+      const parsed = readDeckId(deck)
+      if (!parsed.ok) return parsed
+      const state = readSlideState({ file, order: [edit] })
+      const command = state?.order[0]
+      if (state === undefined || command === undefined) return { ok: false, refusal: "field" }
+      return changeRows<EnqueueResult<readonly string[]>>(parsed.deck, (rows) => {
+        const { confirmed, pending } = split(rows)
+        const editing = played(parsed.deck, confirmed, pending)
+        const decision = decide(editing, { command: "slide", file: state.file, edit: command })
+        if (decision.decision === "refuse") return { puts: [], result: { ok: false, refusal: decision.code } }
+        const order = rows.filter(isPending).reduce((max, row) => Math.max(max, row.order + 1), 0)
+        const row = {
+          kind: "pending" as const,
+          deck: parsed.deck,
+          order,
+          base: 0,
+          value: "",
+          slideFile: state.file,
+          slideEdit: command,
+        }
+        return {
+          puts: [{ key: rowKey(parsed.deck, "pending", order), row }],
+          result: { ok: true, painted: presentSlides(decision.register).map((spot) => spot.id) },
+        }
+      })
+    },
     async enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<EnqueueResult> {
       const result = await enqueueValue(deck, { value }, node, floor)
       if (!result.ok) return result

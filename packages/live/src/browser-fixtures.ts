@@ -212,7 +212,7 @@ export function countingRemote(): { remote: Remote; commits: WireEdit["value"][]
       open: (body) => remote.open(body),
       watch: (body) => remote.watch(body),
       commit: async (body) => {
-        commits.push(body.batch.map((edit) => edit.value))
+        commits.push(body.batch.map((edit) => ("slide" in edit ? edit.slide : edit.value)))
         return remote.commit(body)
       },
     },

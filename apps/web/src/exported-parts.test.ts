@@ -87,7 +87,7 @@ function moved(edits: readonly (readonly [string, Box | string])[]) {
   const commands: Command[] = []
   for (const [id, value] of edits) {
     const node = elementId(id)
-    if (!commands.some((command) => command.node === node))
+    if (!commands.some((command) => command.command !== "slide" && command.node === node))
       commands.push({ command: "add", node, floor: "", route: "clean" })
     commands.push(
       typeof value === "string"

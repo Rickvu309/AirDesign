@@ -68,7 +68,17 @@ describe("foldRegister", () => {
   it("folds a register stored in the root shape with a run, an undo and a hidden row", () => {
     const stored = rootShaped()
     const folded = foldRegister(stored)
-    expect(Object.keys(folded).sort()).toEqual(["bytes", "elements", "floor", "nodes", "readNodes", "route", "slides"])
+    expect(Object.keys(folded).sort()).toEqual([
+      "bytes",
+      "elements",
+      "file",
+      "floor",
+      "nodes",
+      "order",
+      "readNodes",
+      "route",
+      "slides",
+    ])
     expect(folded).toMatchObject({ route: "slide", floor: "floor", slides: 3, bytes: 40 })
     expect(folded.nodes).toEqual([rootElement, legacyElement, "258.7"])
     expect(folded.readNodes).toEqual([rootElement])

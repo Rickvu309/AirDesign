@@ -30,7 +30,14 @@ function copyElements(elements: Register["elements"]): Register["elements"] {
 }
 
 function deckOf(register: Register): Omit<Register, "nodes" | "readNodes" | "elements"> {
-  return { route: register.route, floor: register.floor, slides: register.slides, bytes: register.bytes }
+  return {
+    route: register.route,
+    floor: register.floor,
+    slides: register.slides,
+    bytes: register.bytes,
+    file: register.file,
+    order: register.order,
+  }
 }
 
 export function copyRegister(register: Register): Register {

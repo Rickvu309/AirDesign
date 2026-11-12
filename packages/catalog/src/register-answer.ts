@@ -2,6 +2,7 @@ import {
   legacyElement,
   readBox,
   readElementId,
+  readSlideState,
   rootElement,
   type ElementId,
   type Landed,
@@ -76,8 +77,18 @@ function deck(raw: unknown): raw is Record<string, unknown> {
 
 const rootFields = ["landed", "version", "phase", "runId", "readAt", "guarded", "claimed", "stoppedAt", "b"] as const
 
+function slideFields(raw: Record<string, unknown>): boolean {
+  if (!Object.hasOwn(raw, "file") && !Object.hasOwn(raw, "order")) return true
+  return (
+    readSlideState({
+      file: Object.hasOwn(raw, "file") ? raw.file : [],
+      order: Object.hasOwn(raw, "order") ? raw.order : [],
+    }) !== undefined
+  )
+}
+
 export function isRegister(raw: unknown): raw is StoredRegister {
-  if (!deck(raw)) return false
+  if (!deck(raw) || !slideFields(raw)) return false
   if (!rootFields.some((field) => Object.hasOwn(raw, field))) return true
   return node(raw) && (raw.b === undefined || raw.b === null || node(raw.b))
 }

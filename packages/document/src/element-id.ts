@@ -22,6 +22,13 @@ export function elementId(value: string): ElementId {
   return read
 }
 
+const slidePattern = /^[0-9]{1,10}$/
+
+export function readSlideId(raw: unknown): SlideId | undefined {
+  if (typeof raw !== "string" || !slidePattern.test(raw)) return undefined
+  return raw as SlideId
+}
+
 export function slideId(value: string): SlideId {
   return value as SlideId
 }

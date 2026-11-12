@@ -32,6 +32,7 @@ import { cn } from "@/lib/class-names"
 import { commitBox, commitEdit, flushPending, server, type CommitOutcome, type TextBox } from "@/commit-edit"
 import { boxStorable, landedBox } from "@/element-move"
 import { exportedParts } from "@/exported-parts"
+import { commitSlideChange, type SlideChange } from "@/slide-edit"
 import { ensureMarkup } from "@/markup"
 import { backfillIndex } from "@/index-deck"
 import { pictureSources, type PictureSources } from "@/picture-fill"
@@ -116,7 +117,8 @@ function paint(
   readonly pictures: PictureSources
   readonly files: ReadonlyMap<ElementId, string>
 } {
-  const named = namedShapes(parts)
+  const display = register !== null && register.order.length > 0 ? exportedParts(parts, register) : parts
+  const named = namedShapes(display)
   const ids = named.map((each) => each.id)
   const seen = new Map<ElementId, number>()
   for (const id of ids) seen.set(id, (seen.get(id) ?? 0) + 1)
@@ -130,13 +132,15 @@ function paint(
     files.set(id, file)
     store.publish({ id, kind, text: shownValue(register, id, file), picture: kind === "picture" ? "" : null })
     store.placeBox(id, landedBox(register, id))
-    if (seen.get(id) === 1 && boxStorable(parts, shape)) movables.set(id, { id, file })
-    const storable = seen.get(id) === 1 && !shape.locked && valueStorable(parts, shape, trialValue(shape.text))
+    const holding = parts.has(shape.part) ? parts : null
+    if (holding !== null && seen.get(id) === 1 && boxStorable(holding, shape)) movables.set(id, { id, file })
+    const storable =
+      holding !== null && seen.get(id) === 1 && !shape.locked && valueStorable(holding, shape, trialValue(shape.text))
     if (!storable) continue
     boxes.set(id, { id, file })
     rows.set(id, shape)
   }
-  const read = readSlides(parts).map(({ slide, part }) => ({
+  const read = readSlides(display).map(({ slide, part }) => ({
     slide,
     part,
     named: named.filter((each) => each.shape.slide === slide),
@@ -151,8 +155,8 @@ function paint(
       ]),
     ),
   }))
-  const pictures = pictureSources(parts)
-  const canvases = slideCanvases(paintReader(parts), sources, pictures.src)
+  const pictures = pictureSources(display)
+  const canvases = slideCanvases(paintReader(display), sources, pictures.src)
   return { count: read.length, canvases, boxes, movables, shapes: rows, pictures, files }
 }
 
@@ -368,6 +372,27 @@ export function ThinDeck({ id }: { id: string }) {
     URL.revokeObjectURL(url)
   }
 
+  async function showEdited(currentIndex: number) {
+    const next = await connect(memoryRemote()).openDeck(id)
+    if (!next.ok) return
+    const painted = paint(store.current, shownParts.current, next.register)
+    boxes.current = painted.boxes
+    movables.current = painted.movables
+    shapes.current = painted.shapes
+    canvases.current = painted.canvases
+    pictures.current?.release()
+    pictures.current = painted.pictures
+    setSlideCount(painted.count)
+    setCurrent(painted.count === 0 ? 0 : Math.min(currentIndex, painted.count - 1))
+    setPending(true)
+  }
+
+  async function changeSlide(change: SlideChange, index: number, to = index) {
+    const opened = await connect(memoryRemote()).openDeck(id)
+    if (!opened.ok) return
+    settle(await commitSlideChange(id, shownParts.current, opened.register, change, index, showEdited, to))
+  }
+
   async function onExport() {
     try {
       await exportDeck()
@@ -396,6 +421,10 @@ export function ThinDeck({ id }: { id: string }) {
               count: slideCount,
               current,
               onSelect: setCurrent,
+              onAdd: () => void changeSlide("add", current),
+              onClone: (index) => void changeSlide("clone", index),
+              onRemove: (index) => void changeSlide("remove", index),
+              onMove: (from, to) => void changeSlide("move", from, to),
               thumbHeight: thumbHeight(canvases.current(0)),
               thumb: (index, width) => {
                 const slide = canvases.current(index)

@@ -11,6 +11,7 @@ import {
 import * as z from "zod/v4"
 
 import { storableText } from "./storable-text.js"
+import { readSlideEdit, type WireSlide } from "./slide-wire.js"
 import {
   baseRefusal,
   batchRefusal,
@@ -77,11 +78,20 @@ export function readEdit(raw: unknown): { ok: true; edit: WireEdit } | FieldRefu
   return { ok: true, edit: { value: body.value, node, floor } }
 }
 
-function readEditBatch(raw: unknown): { ok: true; edits: readonly WireEdit[] } | FieldRefusal | BatchRefusal {
+function readCommitEdit(raw: unknown): { ok: true; edit: WireEdit | WireSlide } | FieldRefusal {
+  const body = recordOf(raw)
+  if (body === undefined) return fieldRefusal
+  if (Object.hasOwn(body, "slide")) return readSlideEdit(body)
+  return readEdit(raw)
+}
+
+function readEditBatch(
+  raw: unknown,
+): { ok: true; edits: readonly (WireEdit | WireSlide)[] } | FieldRefusal | BatchRefusal {
   if (!Array.isArray(raw) || raw.length < 1 || raw.length > limits.batch) return batchRefusal
-  const edits: WireEdit[] = []
+  const edits: (WireEdit | WireSlide)[] = []
   for (const item of raw) {
-    const edit = readEdit(item)
+    const edit = readCommitEdit(item)
     if (!edit.ok) return fieldRefusal
     edits.push(edit.edit)
   }
@@ -90,7 +100,11 @@ function readEditBatch(raw: unknown): { ok: true; edits: readonly WireEdit[] } |
 
 export function readCommit(
   raw: unknown,
-): { ok: true; deck: DeckId; batch: readonly WireEdit[]; once?: string } | FieldRefusal | DeckRefusal | BatchRefusal {
+):
+  | { ok: true; deck: DeckId; batch: readonly (WireEdit | WireSlide)[]; once?: string }
+  | FieldRefusal
+  | DeckRefusal
+  | BatchRefusal {
   const body = recordOf(raw)
   if (body === undefined || !knownKeys(body, ["deck", "batch", "once"]) || !Object.hasOwn(body, "deck")) {
     return fieldRefusal
