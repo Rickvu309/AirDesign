@@ -1,7 +1,7 @@
 import { elementId, type Box, type ElementId, type Register, type Undoable } from "@airdesign/document"
 import { connect, distrustDevice, flushOriginal, memoryRemote, trustDeck } from "@airdesign/live"
 import { readNotes, type ReadShape, type SectionStart, type SlideNotes } from "@airdesign/pptx"
-import { paintStore, SlideCanvas, textValue } from "@airdesign/render"
+import { paintStore, SlideCanvas, textFormatting, textValue } from "@airdesign/render"
 import { toast } from "sonner"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { type SlideCanvases } from "@/canvas-slide"
@@ -38,19 +38,7 @@ import { AiraPanel } from "@/aira-panel"
 import { useDeckTitle } from "@/editor/use-deck-title"
 import { useUndoKeys } from "@/editor/undo-keys"
 import { emptyUndo, recorded, turnBack, undoLabel, type UndoDirection, type UndoEntry } from "@/undo-list"
-import type { UndoName } from "@/copy/undo-copy"
-
-const slideNames: Readonly<Record<SlideChange, UndoName>> = {
-  add: "new",
-  clone: "duplicate",
-  remove: "delete",
-  move: "order",
-}
-
-function boxName(before: Box, after: Box): UndoName | null {
-  if (before.cx !== after.cx || before.cy !== after.cy) return "resize"
-  return before.x === after.x && before.y === after.y ? null : "move"
-}
+import { boxName, slideNames } from "@/undo-names"
 
 export function ThinDeck({ id }: { id: string }) {
   const store = useRef(paintStore())
@@ -88,6 +76,11 @@ export function ThinDeck({ id }: { id: string }) {
     null,
   )
   const sessions = useRef(0)
+  const formatting = useRef(
+    textFormatting(() => {
+      typed.current = null
+    }),
+  )
 
   const settle = useCallback((outcome: CommitOutcome) => {
     if (outcome === "sent") setPending(false)
@@ -473,6 +466,7 @@ export function ThinDeck({ id }: { id: string }) {
             },
             onText: addText,
             onRename: rename,
+            formatting: formatting.current,
             size: canvases.current(current),
             slides: {
               count: slideCount,
@@ -498,6 +492,7 @@ export function ThinDeck({ id }: { id: string }) {
                 <SlideCanvas
                   className={cn(slideFrame, "shrink-0 overflow-clip focus-within:overflow-visible")}
                   entering={entering}
+                  formatting={formatting.current}
                   onBox={(target, box) => holding(target, () => onBox(target, box))}
                   onRemove={(target) => holding(target, () => changeElement({ change: "remove", node: target }))}
                   onEdit={(target, value) => holding(target, () => onEdit(target, value))}

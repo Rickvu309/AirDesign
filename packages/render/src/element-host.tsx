@@ -1,4 +1,4 @@
-import { type CSSProperties, type KeyboardEvent, type PointerEvent } from "react"
+import { type CSSProperties, type FocusEvent, type KeyboardEvent, type PointerEvent } from "react"
 import type { ElementId } from "@airdesign/document"
 import { paintedAt } from "./box-gesture.js"
 import { useBox, useElement } from "./element-view.js"
@@ -12,6 +12,7 @@ import { ChartArt } from "./chart-art.js"
 import { canMove, type Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
 import { anchored, textLook, type Scaled, type TextLook } from "./text-look.js"
+import { formatKey, keepsFormat, type TextFormatting } from "./text-formatting.js"
 import { unshownFill } from "./unshown-fill.js"
 import { UnshownLabel } from "./unshown-label.js"
 
@@ -33,6 +34,7 @@ export type ElementPaintProps = {
   readonly quiet: boolean
   readonly onEdit?: ((id: ElementId, value: string) => void) | undefined
   readonly moves: Moves | null
+  readonly formatting?: TextFormatting | undefined
 }
 
 function turned(box: PaintBox): string | undefined {
@@ -182,6 +184,35 @@ function reach(element: CanvasElement, id: ElementId, text: string, moves: Moves
   }
 }
 
+function formatReach(
+  formatting: TextFormatting | undefined,
+  id: ElementId,
+  moves: Moves | null,
+  element: CanvasElement,
+) {
+  if (formatting === undefined) return {}
+  return {
+    onFocus: (event: FocusEvent<HTMLElement>) => {
+      moves?.select(id)
+      if (event.target instanceof HTMLElement) formatting.aim(id, event.target)
+    },
+    onBlur: (event: FocusEvent<HTMLElement>) => {
+      const next = event.relatedTarget
+      if (next instanceof Element && (event.currentTarget.contains(next) || next.closest(keepsFormat) !== null)) return
+      formatting.aim(null)
+    },
+    onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
+      const format = formatKey(event)
+      if (format === null) {
+        moves?.key(event, element)
+        return
+      }
+      event.preventDefault()
+      formatting.toggle(format)
+    },
+  }
+}
+
 function promptLook(text: CanvasText, look: TextLook, scaled: Scaled): CSSProperties {
   const paragraph = text.paragraphs[0]
   if (paragraph === undefined) {
@@ -210,8 +241,9 @@ function PlacedText(props: {
   readonly unshown: boolean
   readonly drawnWhenBlank: boolean
   readonly fallbackName: string
+  readonly formatting: TextFormatting | undefined
 }) {
-  const { drawnWhenBlank, fallbackName, id, moves, onEdit, scaled, store, unshown } = props
+  const { drawnWhenBlank, fallbackName, formatting, id, moves, onEdit, scaled, store, unshown } = props
   const record = useElement(store, id)
   const box = paintedAt(props.element.box, useBox(store, id))
   const element = box === props.element.box ? props.element : { ...props.element, box }
@@ -238,6 +270,7 @@ function PlacedText(props: {
         ...(moves === null || typing || !canMove(element) ? {} : { cursor: "move", touchAction: "none" }),
       }}
       {...(moves === null ? {} : reach(element, id, shown, moves, typing, fallbackName))}
+      {...(typing ? formatReach(formatting, id, moves, element) : {})}
     >
       <ShapeArt element={element} grab={moves !== null && canMove(element)} scaled={scaled} />
       <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
@@ -273,6 +306,7 @@ function PlacedText(props: {
         ) : null}
         {element.editable && onEdit !== undefined ? (
           <Passage
+            formatting={formatting}
             framed={moves !== null}
             id={id}
             look={look}
@@ -295,7 +329,7 @@ export function ElementHost(
     readonly fallbackName: string
   },
 ) {
-  const { drawnWhenBlank, element, fallbackName, moves, onEdit, quiet, scaled, store, unshown } = props
+  const { drawnWhenBlank, element, fallbackName, formatting, moves, onEdit, quiet, scaled, store, unshown } = props
   if (quiet) return <QuietElement element={element} scaled={scaled} store={store} unshown={unshown} />
   if (element.id === null) return <SheetElement element={element} scaled={scaled} unshown={unshown} />
   return (
@@ -303,6 +337,7 @@ export function ElementHost(
       drawnWhenBlank={drawnWhenBlank}
       element={element}
       fallbackName={fallbackName}
+      formatting={formatting}
       id={element.id}
       moves={moves}
       onEdit={onEdit}

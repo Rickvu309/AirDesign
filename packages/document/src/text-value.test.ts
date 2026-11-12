@@ -53,3 +53,31 @@ describe("writeTextValue", () => {
     )
   })
 })
+
+describe("run formats", () => {
+  it("reads bold, italic and underline on a run", () => {
+    expect(
+      readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","bold":true,"italic":false,"underline":true}]}]'),
+    ).toEqual([{ from: 0, runs: [{ from: 0, text: "a", bold: true, italic: false, underline: true }] }])
+  })
+
+  it("refuses a format that is not true or false", () => {
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","bold":1}]}]')).toBeNull()
+  })
+
+  it("refuses an unknown run key beside a format", () => {
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","bold":true,"size":12}]}]')).toBeNull()
+  })
+
+  it("writes a format after text and leaves out a format the run lacks", () => {
+    expect(writeTextValue([{ from: 0, runs: [{ from: 0, text: "a", underline: false, bold: true }] }])).toBe(
+      '[{"from":0,"runs":[{"from":0,"text":"a","bold":true,"underline":false}]}]',
+    )
+  })
+
+  it("reads a value an older client wrote with no formats", () => {
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a"}]}]')).toEqual([
+      { from: 0, runs: [{ from: 0, text: "a" }] },
+    ])
+  })
+})

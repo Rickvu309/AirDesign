@@ -42,6 +42,10 @@ export function TextScreen() {
   return <EditorView {...galleryDeck} run="done" rail="text" activeTool="text" />
 }
 
+export function TextFormatScreen() {
+  return <EditorView {...galleryDeck} run="done" formats={{ bold: "on", italic: "off", underline: "mixed" }} />
+}
+
 export function ActionsScreen() {
   return <EditorView {...galleryDeck} run="done" activeTool="actions" actionsMenu />
 }

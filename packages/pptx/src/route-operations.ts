@@ -1,9 +1,11 @@
+import { formatOperations } from "./text-format-runs.js"
 import { writtenRoutes } from "./written-routes.js"
 
 export const routeOperations = [
   "notes.body",
   "spPr.fill",
   "text",
+  ...formatOperations,
   "move",
   "resize",
   "spTree.add",
@@ -28,6 +30,9 @@ export const routeName: Record<(typeof routeOperations)[number], string> = {
   "notes.body": "notes.body",
   "spPr.fill": writtenRoutes.fill,
   text: writtenRoutes.text,
+  "text.format": writtenRoutes.text,
+  "text.format.range": writtenRoutes.text,
+  "text.format.paragraphs": writtenRoutes.text,
   move: writtenRoutes.move,
   resize: writtenRoutes.resize,
   "spTree.add": writtenRoutes.add,

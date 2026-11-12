@@ -1,9 +1,7 @@
+import type { TextRun } from "@airdesign/document"
 import type { TextLook } from "./text-look.js"
 
-type ShownParagraph = {
-  readonly from: number
-  readonly runs: readonly { readonly from: number; readonly text: string }[]
-}
+type ShownParagraph = { readonly from: number; readonly runs: readonly TextRun[] }
 
 export function SheetText(props: {
   readonly text: { readonly paragraphs: readonly ShownParagraph[] }
@@ -12,12 +10,12 @@ export function SheetText(props: {
   const { look, text } = props
   return (
     <div style={look.body}>
-      {text.paragraphs.map((paragraph) => {
+      {text.paragraphs.map((paragraph, index) => {
         const filled = paragraph.runs.some((run) => run.text !== "")
         return (
-          <div key={paragraph.from} data-paragraph={paragraph.from} style={look.paragraph(paragraph.from, filled)}>
-            {paragraph.runs.map((run) => (
-              <span key={run.from} style={look.run(paragraph.from, run.from)}>
+          <div key={index} data-paragraph={paragraph.from} style={look.paragraph(paragraph.from, filled)}>
+            {paragraph.runs.map((run, at) => (
+              <span key={at} style={look.run(paragraph.from, run.from, run)}>
                 {run.text}
               </span>
             ))}

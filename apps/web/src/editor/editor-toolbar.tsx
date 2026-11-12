@@ -2,10 +2,12 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuRadioGroup, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
 import { EditorMenuContent, EditorMenuRow } from "@/editor/editor-menu"
+import { FormatButtons, LiveFormatButtons, type FormatShown } from "@/editor/format-buttons"
 import { PanelSwitch } from "@/editor/panel-switch"
 import type { PointerTool, ToolPick } from "@/editor/pointer-tool"
 import { UndoButtons, type UndoButtonsState } from "@/editor/undo-buttons"
 import { cn } from "@/lib/class-names"
+import type { TextFormatting } from "@airdesign/render"
 
 export type EditorTool = "move" | "text" | "shape" | "image" | "actions"
 
@@ -35,6 +37,8 @@ export function EditorToolbar({
   undo,
   onPanel,
   onText,
+  formatting,
+  formats,
 }: {
   activeTool?: EditorTool
   menuOpen?: boolean
@@ -43,6 +47,8 @@ export function EditorToolbar({
   undo?: UndoButtonsState
   onPanel?: (panel: Exclude<EditorPanel, "none">) => void
   onText?: () => void
+  formatting?: TextFormatting
+  formats?: FormatShown
 }) {
   const chosen = pointer?.tool ?? "move"
   const shown = pointerTools.find((each) => each.tool === chosen) ?? pointerTools[0]
@@ -51,6 +57,7 @@ export function EditorToolbar({
     <div
       className="relative flex items-center gap-1 rounded-xl bg-white p-1 shadow-[0px_0px_0px_1px_var(--field-edge),0px_4px_12px_var(--black-6)]"
       data-editor-toolbar
+      data-keeps-format
     >
       <span className="flex items-center gap-0.5">
         <Button
@@ -123,6 +130,8 @@ export function EditorToolbar({
           </Button>
         )
       })}
+      {formatting === undefined ? null : <LiveFormatButtons formatting={formatting} />}
+      {formats === undefined ? null : <FormatButtons shown={formats} />}
       <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />
       <UndoButtons {...(undo === undefined ? {} : { state: undo })} />
       {panel === "none" ? null : (

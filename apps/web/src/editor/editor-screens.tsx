@@ -12,6 +12,7 @@ import {
   ShapesExpandedScreen,
   ShapesScreen,
   TemplatePickerScreen,
+  TextFormatScreen,
   TextScreen,
 } from "@/editor/screens/slide-views"
 import { GridAddHold, GridAddHover, GridDefault, GridPasted } from "@/editor/screens/grid-views"
@@ -32,6 +33,7 @@ export const screens = {
   [editorRoutes.shapesExpanded]: ShapesExpandedScreen,
   [editorRoutes.text]: TextScreen,
   [editorRoutes.actions]: ActionsScreen,
+  [editorRoutes.textFormat]: TextFormatScreen,
   [editorRoutes.runFailed]: RunFailed,
   [editorRoutes.offline]: Offline,
 }
