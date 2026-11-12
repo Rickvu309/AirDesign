@@ -18,6 +18,7 @@ export function DeckBrowser({
   onSignOut,
   onNavigate,
   menuOpen,
+  search,
 }: {
   title: string
   active: DeckSection
@@ -33,6 +34,7 @@ export function DeckBrowser({
   onSignOut?: () => void
   onNavigate?: (path: string) => void
   menuOpen?: boolean
+  search?: { value: string; onChange: (value: string) => void }
 }) {
   return (
     <div className="screen-frame">
@@ -43,6 +45,7 @@ export function DeckBrowser({
           account={account}
           onSignOut={onSignOut}
           onNavigate={onNavigate}
+          search={search}
         >
           <BrowseHeader
             title={title}

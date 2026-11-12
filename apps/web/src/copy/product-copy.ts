@@ -6,6 +6,10 @@ export function usageLimitBodyOn(when: string): string {
   return `${usageResetsOn(when)}. Your request is saved.`
 }
 
+export function noMatchTitleOf(query: string): string {
+  return `No decks match “${query}”`
+}
+
 export function disconnectTitleOf(agent: string): string {
   return `Disconnect ${agent}?`
 }
@@ -23,6 +27,8 @@ const sampleReset = "Mon 8:00 AM"
 
 export const productCopy = {
   noDecksTitle: "No decks yet",
+  noMatchBody: "Check the spelling or search for another name.",
+  clearSearch: "Clear search",
   noDecksBody: "Decks hold your slides, ready to edit or export to PowerPoint.",
   importPowerPoint: "Import PowerPoint",
   usageTitle: "Weekly usage",
