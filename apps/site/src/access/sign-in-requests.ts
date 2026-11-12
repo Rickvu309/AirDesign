@@ -35,7 +35,12 @@ export async function submitSignInCode(
 
 let emailInFlight = false
 
-export async function startEmailSignIn(apiBase: string, email: string, go: (path: string) => void): Promise<void> {
+export async function startEmailSignIn(
+  apiBase: string,
+  email: string,
+  go: (path: string) => void,
+  onFail: () => void = () => undefined,
+): Promise<void> {
   if (emailInFlight) {
     return
   }
@@ -45,7 +50,9 @@ export async function startEmailSignIn(apiBase: string, email: string, go: (path
     if (destination !== null) {
       rememberPendingEmail(email)
       go(destination)
+      return
     }
+    onFail()
   } finally {
     emailInFlight = false
   }

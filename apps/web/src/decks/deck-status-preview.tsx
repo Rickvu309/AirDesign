@@ -42,13 +42,22 @@ export function ImportingPreview() {
   )
 }
 
-export function ImportFailedPreview({ onChoose, onRemove }: { onChoose?: () => void; onRemove?: () => void }) {
+export function ImportFailedPreview({
+  onChoose,
+  onRemove,
+  focusChoose = false,
+}: {
+  onChoose?: () => void
+  onRemove?: () => void
+  focusChoose?: boolean
+}) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 bg-background shadow-[inset_0_0_0_1px_var(--line)]">
       <PptxMark />
       <div className="flex translate-y-[-0.5px] items-center gap-4">
         <button
           type="button"
+          autoFocus={focusChoose}
           onClick={onChoose}
           className="flex h-8 w-[145.83px] items-center rounded-lg border-0 bg-background px-3 text-[length:var(--type-dense)] leading-[17px] font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)]"
           style={trimmed}

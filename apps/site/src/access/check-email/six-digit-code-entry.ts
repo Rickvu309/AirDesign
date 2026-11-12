@@ -1,3 +1,4 @@
+import { clearSignInFailure, showSignInFailure } from "../sign-in-failure"
 import { submitPendingCode } from "../sign-in-requests"
 
 const codeLength = 6
@@ -5,6 +6,7 @@ const codeLength = 6
 export function connectSixDigitCodeEntry(entry: Element): void {
   const input = entry.querySelector("input")
   const boxes = Array.from(entry.querySelectorAll<HTMLElement>("[data-code-box]"))
+  const failure = entry.parentElement?.querySelector<HTMLElement>("[data-code-error]")
   if (!input) {
     return
   }
@@ -22,6 +24,7 @@ export function connectSixDigitCodeEntry(entry: Element): void {
 
   let submitting = false
   const submitWhenComplete = async () => {
+    if (failure) clearSignInFailure(failure, input)
     if (submitting || input.value.length !== codeLength) {
       return
     }
@@ -30,7 +33,9 @@ export function connectSixDigitCodeEntry(entry: Element): void {
     submitting = false
     if (destination !== null) {
       location.assign(destination)
+      return
     }
+    if (failure) showSignInFailure(failure, input)
   }
 
   ;["input", "focus", "blur"].forEach((eventName) => input.addEventListener(eventName, render))

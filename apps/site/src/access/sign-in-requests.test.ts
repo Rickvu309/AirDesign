@@ -135,6 +135,37 @@ describe("startEmailSignIn", () => {
     await startEmailSignIn(api.base, "ada@example.com", () => undefined)
     expect(api.received).toHaveLength(2)
   })
+
+  it.each([400, 500])("calls onFail and does not navigate when the API answers %i", async (status) => {
+    stubSessionStorage()
+    const api = await startApi(status)
+    const went: string[] = []
+    let failed = 0
+    await startEmailSignIn(
+      api.base,
+      "ada@example.com",
+      (path) => went.push(path),
+      () => {
+        failed += 1
+      },
+    )
+    expect(failed).toBe(1)
+    expect(went).toEqual([])
+  })
+
+  it("calls onFail when the API cannot be reached", async () => {
+    stubSessionStorage()
+    let failed = 0
+    await startEmailSignIn(
+      "http://127.0.0.1:1",
+      "ada@example.com",
+      () => undefined,
+      () => {
+        failed += 1
+      },
+    )
+    expect(failed).toBe(1)
+  })
 })
 
 describe("rememberNextFromSearch", () => {

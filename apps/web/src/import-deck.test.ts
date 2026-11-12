@@ -53,10 +53,20 @@ async function importedNames(fileName: string) {
     return new Response("{}")
   })
   const imported = await importDeck(new File([Uint8Array.from(await cleanFile())], fileName))
-  if (imported === null) throw new Error("import")
-  await nameImportedDeck(imported)
+  if (!imported.ok) throw new Error("import")
+  await nameImportedDeck(imported.deck)
   return { device: live.saved[0], server }
 }
+
+it("returns a failure reason when the file is not a valid package", async () => {
+  const wasm = await wasmBytes()
+  vi.stubGlobal("fetch", async () => new Response(Uint8Array.from(wasm).buffer))
+  const result = await importDeck(new File([Uint8Array.from([1, 2, 3])], "broken.pptx"))
+  expect(result.ok).toBe(false)
+  if (!result.ok) {
+    expect(result.reason).toBe("zip")
+  }
+})
 
 it("saves the file name without .pptx with the deck", async () => {
   await saveDeck(new Map([["first", new Uint8Array([1])]]), new Uint8Array([1]), deckName("Board deck.PPTX"))

@@ -26,6 +26,9 @@ const mailButtonClass =
       autofocus
     />
   </div>
+  <p id="sign-in-code-error" class="mt-2 text-[length:var(--type-dense)] leading-[1.31] text-destructive" role="alert" data-code-error>
+    <span data-failure hidden>Unable to finish this run</span>
+  </p>
 
   <div class="mt-6 grid w-full grid-cols-2 gap-2.5">
     <a class={mailButtonClass} href="https://outlook.live.com/mail/" target="_blank" rel="noreferrer">
