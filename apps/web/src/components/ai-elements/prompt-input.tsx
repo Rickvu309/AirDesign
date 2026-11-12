@@ -1,9 +1,10 @@
-import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react"
+import type { ComponentProps, HTMLAttributes, ReactNode } from "react"
 import { cn } from "@/lib/class-names"
 
-export function PromptInput({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+export function PromptInput({ className, ...props }: ComponentProps<"div">) {
   return (
     <div
+      data-slot="prompt-input"
       className={cn(
         "flex rounded-[var(--shape-dialog)] bg-white shadow-[0px_0px_0px_1px_var(--field-edge),0px_2px_8px_var(--black-5)]",
         className,
@@ -21,7 +22,7 @@ export function PromptInputText({ className, ...props }: HTMLAttributes<HTMLPara
   return <p className={cn("min-w-0 flex-1 text-[length:var(--type-dense)] text-faint", className)} {...props} />
 }
 
-export function PromptInputTextarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function PromptInputTextarea({ className, ...props }: ComponentProps<"textarea">) {
   return (
     <textarea
       rows={1}
@@ -38,7 +39,7 @@ export function PromptInputFooter({ className, ...props }: HTMLAttributes<HTMLDi
   return <div className={cn("flex items-center justify-between", className)} {...props} />
 }
 
-export function PromptInputButton({ className, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
+export function PromptInputButton({ className, ...props }: ComponentProps<"button">) {
   return <button type="button" className={cn("flex shrink-0 items-center justify-center", className)} {...props} />
 }
 

@@ -29,7 +29,7 @@ function LimitPanel({ phase, mark }: { phase: "limit" | "reset"; mark: "tile" | 
         <ZoomReadout value="64%" />
         <ExportButton />
       </PanelHead>
-      <div className="flex h-11 shrink-0 items-center justify-between pr-3 pl-3">
+      <div data-slot="conversation-head" className="flex h-11 shrink-0 items-center justify-between pr-3 pl-3">
         <span className="flex h-6 items-center gap-1.5 rounded-[var(--shape-control)] pr-1.5 pl-1 text-xs text-quiet">
           <EditorIcon name="history" size={13} className="text-faint" />
           {creditsCopy.chatTitle}

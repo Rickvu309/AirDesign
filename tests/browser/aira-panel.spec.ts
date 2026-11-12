@@ -57,7 +57,8 @@ test("a person asks Aira, watches the reply stream, and sees the slide change wi
   stack.release()
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello from Aira")
   await expect(side.getByText("I will change the title on the first slide.", { exact: true })).toBeVisible()
-  await expect(side.getByText("airdesign_edit_deck", { exact: true })).toBeVisible()
+  await expect(side.getByText("Edited the deck", { exact: true })).toBeVisible()
+  await expect(side.getByText(/airdesign_/)).toHaveCount(0)
   await expect(side.getByText("The title now reads Hello from Aira.", { exact: true })).toBeVisible()
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
   await expect(side.getByRole("button", { name: productCopy.undo })).toBeVisible()
@@ -190,4 +191,71 @@ test("Aira refuses an edit of a slide removed during its reply without hanging",
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
   await expect(side.getByRole("textbox", { name: "Ask Aira" })).toBeEnabled()
   await expect(entries).toHaveCount(1)
+})
+
+test("a new deck's panel says who Aira is, and Enter sends while Shift+Enter starts a new line", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const { side } = await openDeck(page, context, stack)
+  await expect(side.getByRole("heading", { name: productCopy.agentName })).toBeVisible()
+  await expect(side.getByText(productCopy.agentCaution, { exact: true })).toBeVisible()
+  await expect(side.getByRole("button", { name: "New chat" })).toBeDisabled()
+  await expect(side.getByRole("button", { name: "Send" })).toBeDisabled()
+  stack.aira({ name: "turn.sse" })
+  const composer = side.getByRole("textbox", { name: "Ask Aira" })
+  await composer.fill("Lead with")
+  await composer.press("Shift+Enter")
+  await composer.pressSequentially("the claim")
+  await expect(composer).toHaveValue("Lead with\nthe claim")
+  await expect(side.getByRole("log")).toHaveCount(0)
+  await composer.press("Enter")
+  await expect(side.getByRole("log").getByText("Lead with\nthe claim", { exact: true })).toBeVisible()
+  await expect(side.getByText("Lead with the claim. Then show the evidence.", { exact: true })).toBeVisible()
+  await expect(side.getByRole("heading", { name: productCopy.agentName })).toHaveCount(0)
+})
+
+test("steps Aira takes one after another sum up in one line that opens to each step", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const { deck, base, side } = await openDeck(page, context, stack)
+  stack.aira({ name: "read-edit.sse", fill: { deck, base: String(base), node } }, { name: "edited.sse" })
+  await ask(page, asked)
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello from Aira")
+  const summary = side.getByRole("button", { name: "Read the deck, edited the deck" })
+  await expect(summary).toHaveAttribute("aria-expanded", "false")
+  await summary.click()
+  await expect(summary).toHaveAttribute("aria-expanded", "true")
+  const steps = side.locator('li[data-tool-state="done"]')
+  await expect(steps).toHaveText(["Read the deck", "Edited the deck"])
+  await summary.click()
+  await expect(steps).toHaveCount(0)
+})
+
+test("the thread follows the reply at the latest message and stays put once the person scrolls up", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const { side, log } = await openDeck(page, context, stack)
+  stack.aira({ name: "turn.sse", holdAfter: 2 })
+  const reached = stack.hold()
+  await ask(page, Array.from({ length: 80 }, (_, line) => `Line ${String(line + 1)} of my notes`).join("\n"))
+  await reached
+  const gap = () => log.evaluate((box) => box.scrollHeight - box.scrollTop - box.clientHeight)
+  await expect.poll(gap).toBeLessThanOrEqual(8)
+  await log.evaluate((box) => {
+    box.scrollTop = 0
+  })
+  const jump = side.locator("button[data-shown]")
+  await expect(jump).toHaveAttribute("data-shown", "true")
+  stack.release()
+  await expect(side.getByText("Lead with the claim. Then show the evidence.", { exact: true })).toBeAttached()
+  expect(await log.evaluate((box) => box.scrollTop)).toBe(0)
+  await jump.click()
+  await expect.poll(gap).toBeLessThanOrEqual(8)
+  await expect(jump).toHaveAttribute("data-shown", "false")
 })

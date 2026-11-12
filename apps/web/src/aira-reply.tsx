@@ -1,13 +1,21 @@
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
+import {
+  ChainOfThought,
+  ChainOfThoughtContent,
+  ChainOfThoughtHeader,
+  ChainOfThoughtLine,
+  ChainOfThoughtStep,
+  type StepStatus,
+} from "@/components/ai-elements/chain-of-thought"
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message"
-import { Tool, ToolHeader } from "@/components/ai-elements/tool"
 import { productCopy, usageLimitBodyOn, usageResetsOn } from "@/copy/product-copy"
 import { LimitMark } from "@/credits/limit-panel"
 import { FailedMark } from "@/editor/agent-panel"
 import { surfaceShadow } from "@/editor/editor-chrome"
-import { EditorIcon } from "@/editor/editor-icons"
-import type { AiraExchange, AiraStep } from "@/aira-loop"
+import { EditorIcon, SparkIcon } from "@/editor/editor-icons"
+import type { AiraExchange, AiraStep, ToolState } from "@/aira-loop"
+import { replyPieces, type ReplyPiece } from "@/aira-steps"
 import { resetsWhen, usagePercent } from "@/aira-usage"
 import type { WeekUsage } from "@/aira-wire"
 
@@ -41,22 +49,53 @@ export function Asked({ text }: { text: string }) {
   )
 }
 
-function StepView({ step }: { step: AiraStep }) {
-  if (step.kind === "tool") {
+const statusOf: Readonly<Record<ToolState, StepStatus | undefined>> = {
+  working: "running",
+  done: undefined,
+  refused: "error",
+  stopped: "stopped",
+}
+
+function StepsRow({ row }: { row: Extract<ReplyPiece, { kind: "steps" }> }) {
+  if (row.lines.length === 1) {
     return (
-      <Tool data-tool-state={step.state}>
-        <ToolHeader title={step.name} caret={step.state !== "working"} />
-      </Tool>
+      <ChainOfThoughtLine data-tool-state={row.state} status={statusOf[row.state]}>
+        {row.title}
+      </ChainOfThoughtLine>
     )
   }
-  return <MessageResponse className="break-words whitespace-pre-wrap">{step.text}</MessageResponse>
+  return (
+    <ChainOfThought data-tool-state={row.state}>
+      <ChainOfThoughtHeader>{row.title}</ChainOfThoughtHeader>
+      <ChainOfThoughtContent>
+        {row.lines.map((line) => (
+          <ChainOfThoughtStep key={line.id} data-tool-state={line.state} status={statusOf[line.state]}>
+            {line.text}
+          </ChainOfThoughtStep>
+        ))}
+      </ChainOfThoughtContent>
+    </ChainOfThought>
+  )
+}
+
+function PieceView({ piece }: { piece: ReplyPiece }) {
+  if (piece.kind === "steps") return <StepsRow row={piece} />
+  return <MessageResponse className="break-words whitespace-pre-wrap">{piece.text}</MessageResponse>
+}
+
+function Working() {
+  return (
+    <span className="flex h-6 items-center text-primary" data-aira-working aria-hidden="true">
+      <SparkIcon size={14} className="motion-safe:animate-pulse" />
+    </span>
+  )
 }
 
 function UndoLink({ onUndo }: { onUndo: (() => void) | undefined }) {
   return (
     <button
       type="button"
-      className="flex items-center gap-1.5 self-start text-xs text-faint hover:text-quiet disabled:opacity-50"
+      className="-ml-1.5 flex h-6 items-center gap-1.5 self-start rounded-[var(--shape-control)] px-1.5 text-xs text-muted-foreground outline-hidden [transition:color_var(--ease-micro)] hover:text-foreground focus-visible:shadow-[0px_0px_0px_2px_var(--ring)] disabled:opacity-50 motion-reduce:transition-none"
       disabled={onUndo === undefined}
       onClick={onUndo}
     >
@@ -111,7 +150,13 @@ function endingOf(
   if (exchange.end === "out-of-usage") return <LimitCard resets={resets} />
   if (exchange.end === "failed") return <FailedCard onUndo={undoable ? onUndo : undefined} />
   if ((exchange.end === "done" || exchange.end === "stopped") && undoable) return <UndoLink onUndo={onUndo} />
+  if (exchange.end === "working" && !running(exchange.steps)) return <Working />
   return null
+}
+
+function running(steps: readonly AiraStep[]): boolean {
+  const last = replyPieces(steps).at(-1)
+  return last?.kind === "steps" && last.state === "working"
 }
 
 export function ExchangeView({
@@ -133,8 +178,8 @@ export function ExchangeView({
           <Asked key={index} text={part.text} />
         ) : (
           <Message key={index} from="assistant">
-            {part.steps.map((step, at) => (
-              <StepView key={at} step={step} />
+            {replyPieces(part.steps).map((piece, at) => (
+              <PieceView key={at} piece={piece} />
             ))}
             {index === parts.length - 1 ? ending : null}
           </Message>
@@ -161,7 +206,9 @@ export function UsagePop({ id, usage }: { id: string; usage: WeekUsage }) {
       <span className="flex h-1 rounded-full bg-line">
         <span className="block h-1 rounded-full bg-primary" style={{ width: `${String(percent)}%` }} />
       </span>
-      <span className="text-[length:var(--type-caption)] text-faint">{usageResetsOn(resetsWhen(usage.resets))}</span>
+      <span className="text-[length:var(--type-caption)] text-muted-foreground">
+        {usageResetsOn(resetsWhen(usage.resets))}
+      </span>
     </div>
   )
 }

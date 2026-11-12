@@ -28,7 +28,7 @@ export function AgentPanel({ run, usageOpen = false }: { run: SidebarRun; usageO
   const fraction = working ? 0.34 : 0.38
   return (
     <>
-      <div className="flex h-11 shrink-0 items-center justify-between pr-3 pl-3">
+      <div data-slot="conversation-head" className="flex h-11 shrink-0 items-center justify-between pr-3 pl-3">
         <span className="flex h-6 items-center gap-1.5 rounded-[var(--shape-control)] pr-1.5 pl-1 text-xs text-quiet">
           <EditorIcon name="history" size={13} className="text-faint" />
           Q3 investor update
@@ -292,6 +292,8 @@ function UsagePop() {
   )
 }
 
+const toastRoom = "30rem"
+
 const toastMetrics = {
   screen: { width: "301.11px", shift: "0px" },
   canvas: { width: "289.46px", shift: "-56px" },
@@ -312,7 +314,10 @@ export function EditorToast({
   useEffect(() => {
     toast.custom(
       () => (
-        <StatusPill className="gap-2.5 pr-4 pl-3.5" style={{ width }}>
+        <StatusPill
+          className="pointer-events-auto mx-auto h-auto min-h-10 w-max max-w-full gap-2.5 py-2 pr-4 pl-3.5"
+          style={{ minWidth: width }}
+        >
           {kind === "success" ? (
             <span className="relative block size-4 shrink-0">
               <svg
@@ -333,7 +338,7 @@ export function EditorToast({
               </svg>
             </span>
           ) : null}
-          <span className="min-w-0 flex-1 truncate">{text}</span>
+          <span className="min-w-0 flex-1 text-pretty">{text}</span>
           {action ? <span className="text-[length:var(--type-dense)] font-medium">{action}</span> : null}
         </StatusPill>
       ),
@@ -341,7 +346,14 @@ export function EditorToast({
         id: "editor-status",
         duration: Number.POSITIVE_INFINITY,
         unstyled: true,
-        style: { left: 0, width, opacity: 1, transform: "translateY(0)", transition: "none" },
+        style: {
+          left: 0,
+          right: 0,
+          opacity: 1,
+          transform: "translateY(0)",
+          transition: "none",
+          pointerEvents: "none",
+        },
       },
     )
   }, [action, kind, text, width])
@@ -350,8 +362,8 @@ export function EditorToast({
       position="top-center"
       offset={{ top: 12 }}
       visibleToasts={1}
-      style={{ "--width": width } as CSSProperties}
-      className={shift === "0px" ? undefined : "![left:calc(50%-56px)]"}
+      style={{ "--width": toastRoom } as CSSProperties}
+      className={shift === "0px" ? undefined : "min-[601px]:![left:calc(50%-56px)]"}
     />
   )
 }

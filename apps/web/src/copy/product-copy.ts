@@ -21,6 +21,7 @@ export const productCopy = {
   agentResumeLine: "Pick up where you left off.",
   agentResume: "Resume",
   agentName: "Aira",
+  agentCaution: "Aira can be wrong. Check a number, a quote, or a slide before you rely on it.",
   agentFailedTitle: "Unable to finish this run",
   agentFailedBody: "Your work so far is saved.",
   creditsTitle: "Credits",
@@ -58,3 +59,5 @@ export const productCopy = {
   presetTwentyFive: "$25",
   presetFifty: "$50",
 } as const
+
+export const airaStarters: readonly string[] = []
