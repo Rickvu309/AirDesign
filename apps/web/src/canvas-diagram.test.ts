@@ -2,6 +2,7 @@ import { elementId } from "@airdesign/document"
 import type { PaintBox, PaintElement, PaintReader, PaintText } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { slideCanvases, type CanvasSource } from "./canvas-slide"
+import { cssColor } from "./paint-css"
 
 const part = "ppt/slides/slide5.xml"
 const drawing = "ppt/diagrams/drawing1.xml"
@@ -89,7 +90,8 @@ const source: CanvasSource = {
 }
 
 it("carries a diagram's shapes on its frame, painted but never editable or movable", () => {
-  const chevron = inside("0", { geometry: "chevron", fill: { type: "solid", color: { hex: "156082", alpha: 1 } } })
+  const accent = { hex: "156082", alpha: 1 }
+  const chevron = inside("0", { geometry: "chevron", fill: { type: "solid", color: accent } })
   const words = inside("0.text", { text })
   const canvas = slideCanvases(reader([frame([chevron, words])]), [source])(0)
   expect(canvas?.elements).toHaveLength(1)
@@ -100,7 +102,7 @@ it("carries a diagram's shapes on its frame, painted but never editable or movab
     [`${part}#6/0.text`, null, false, false],
   ])
   expect(painted?.diagram?.[0]?.geometry?.preset).toBe("chevron")
-  expect(painted?.diagram?.[0]?.fill).toBe("#156082")
+  expect(painted?.diagram?.[0]?.fill).toBe(cssColor(accent))
   expect(painted?.diagram?.[1]?.text?.paragraphs[0]?.runs[0]?.text).toBe("2023")
 })
 
