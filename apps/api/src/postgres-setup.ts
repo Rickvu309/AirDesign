@@ -177,7 +177,7 @@ async function launch(
       "-w",
       "start",
       "-o",
-      `-p ${String(port)} -k ${dir} -c listen_addresses=127.0.0.1 -c synchronous_commit=on`,
+      `-p ${String(port)} -k ${dir} -c listen_addresses=127.0.0.1 -c synchronous_commit=on -c fsync=off -c full_page_writes=off`,
     ],
     found.library,
   )
