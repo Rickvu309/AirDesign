@@ -57,7 +57,7 @@ const measures = {
   "fault-detection": plantedBreaks,
 }
 
-const measuredLive = new Set(["known-failures"])
+export const measuredLive = new Set(["known-failures"])
 
 export const timedMetrics = {
   "ci-duration": "scripts/check.mjs",
