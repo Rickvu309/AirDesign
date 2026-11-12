@@ -4,6 +4,14 @@
 @import "@fontsource-variable/newsreader";
 @import "@airdesign/theme/tokens.css";
 
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+
 @keyframes ticker-run {
   to {
     transform: translateX(calc(-100% / 3));
@@ -13,6 +21,16 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  a,
+  button,
+  input,
+  [role="button"] {
+    touch-action: manipulation;
   }
 
   body {
@@ -40,7 +58,27 @@
     margin-inline: auto;
     width: 100%;
     max-width: 1440px;
-    padding-inline: clamp(16px, 6.667vw, 96px);
+    padding-left: max(clamp(16px, 6.667vw, 96px), env(safe-area-inset-left, 0px));
+    padding-right: max(clamp(16px, 6.667vw, 96px), env(safe-area-inset-right, 0px));
+  }
+
+  .edge-inline {
+    padding-left: max(var(--space-16), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--space-16), env(safe-area-inset-right, 0px));
+  }
+
+  .touch-target {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--target-size);
+    min-height: var(--target-size);
+  }
+
+  .picture {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
   }
 
   .section-title {
@@ -70,11 +108,24 @@
       0 2px 6px var(--strong-20);
     color: var(--primary-foreground);
     font-weight: 500;
-    transition: filter var(--transition-micro);
+    transition:
+      filter var(--transition-micro),
+      transform var(--transition-micro);
   }
 
-  .primary-button:hover {
-    filter: brightness(1.06);
+  .pressable {
+    transition:
+      filter var(--transition-micro),
+      transform var(--transition-micro);
+  }
+
+  .primary-button,
+  .nav-tab,
+  .text-link,
+  .pressable {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
   }
 
   .status-pill {
@@ -111,6 +162,10 @@
     color: var(--primary-foreground);
   }
 
+  .nav-tabs {
+    height: calc(var(--space-32) + var(--space-8));
+  }
+
   .nav-tab {
     position: relative;
     z-index: 1;
@@ -122,15 +177,13 @@
     padding-inline: 16px;
     color: var(--muted-foreground);
     font-size: 14px;
-    transition: color var(--transition-micro);
+    transition:
+      color var(--transition-micro),
+      transform var(--transition-micro);
   }
 
-  .nav-tab:hover,
   .nav-tab[data-active] {
     color: var(--foreground);
-  }
-
-  .nav-tab[data-active] {
     background-color: var(--background);
     box-shadow:
       0 1px 3px var(--navy-12),
@@ -185,6 +238,40 @@
     .ticker-track:hover {
       animation-play-state: paused;
     }
+
+    .primary-button:hover {
+      filter: brightness(1.06);
+    }
+
+    .nav-tab:hover,
+    .text-link:hover {
+      color: var(--foreground);
+    }
+  }
+
+  .primary-button:active {
+    filter: brightness(0.94);
+  }
+
+  .nav-tab:active,
+  .text-link:active {
+    color: var(--foreground);
+  }
+
+  .primary-button:active,
+  .nav-tab:active,
+  .text-link:active,
+  .pressable:active {
+    transform: scale(0.97);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .primary-button:active,
+    .nav-tab:active,
+    .text-link:active,
+    .pressable:active {
+      transform: none;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -222,11 +309,9 @@
   }
 
   .text-link {
-    transition: color var(--transition-micro);
-  }
-
-  .text-link:hover {
-    color: var(--foreground);
+    transition:
+      color var(--transition-micro),
+      transform var(--transition-micro);
   }
 
   .legal-text {
@@ -279,6 +364,7 @@
 
   .legal-text .legal-table {
     overflow-x: auto;
+    overscroll-behavior-x: contain;
   }
 
   .legal-text table {
@@ -298,5 +384,22 @@
   .legal-text th {
     color: var(--muted-foreground);
     font-weight: 500;
+  }
+}
+
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: var(--type-field);
+  }
+
+  .nav-tabs {
+    height: calc(var(--target-size) + var(--space-8));
+  }
+
+  .nav-tab,
+  .nav-tab-pill {
+    height: var(--target-size);
   }
 }

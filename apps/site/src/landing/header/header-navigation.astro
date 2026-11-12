@@ -2,22 +2,22 @@
 import AirdesignMark from "../../site/airdesign-mark.astro";
 ---
 
-<header class="pointer-events-none fixed inset-x-0 top-5 z-50 flex justify-center px-4">
-  <nav class="pointer-events-auto flex h-14 items-center gap-6 rounded-full bg-[var(--white-80)] pr-2 pl-5 shadow-[0px_0px_0px_1px_var(--navy-8),0px_10px_30px_var(--navy-10),0px_2px_6px_var(--navy-5),inset_0px_1px_0px_var(--background)] backdrop-blur-sm" aria-label="Main">
-    <a href="/" class="flex items-center gap-2.5">
+<header class="edge-inline pointer-events-none fixed inset-x-0 top-[max(1.25rem,env(safe-area-inset-top,0px))] z-50 flex justify-center">
+  <nav class="pointer-events-auto flex h-14 items-center gap-3 rounded-full bg-[var(--white-80)] pr-2 pl-5 sm:gap-6 shadow-[0px_0px_0px_1px_var(--navy-8),0px_10px_30px_var(--navy-10),0px_2px_6px_var(--navy-5),inset_0px_1px_0px_var(--background)] backdrop-blur-sm" aria-label="Main">
+    <a href="/" class="touch-target pressable gap-2.5">
       <AirdesignMark size={22} />
-      <span class="text-[length:var(--type-section)] font-semibold tracking-[-0.3px]">AirDesign</span>
+      <span class="text-[length:var(--type-section)] font-semibold tracking-[-0.3px] max-[359px]:sr-only">AirDesign</span>
     </a>
     <div class="hidden h-5 w-px bg-[var(--navy-12)] md:block"></div>
-    <div class="nav-tabs relative hidden h-10 items-center gap-0.5 rounded-full bg-[var(--navy-4)] p-1 shadow-[inset_0px_1px_2px_var(--navy-6)] md:flex" data-nav-tabs>
+    <div class="nav-tabs relative hidden items-center gap-0.5 rounded-full bg-[var(--navy-4)] p-1 shadow-[inset_0px_1px_2px_var(--navy-6)] md:flex" data-nav-tabs>
       <span class="nav-tab-pill" data-nav-pill aria-hidden="true"></span>
       <a href="#product" class="nav-tab" data-nav-tab data-active aria-current="location">Product</a>
       <a href="#agents" class="nav-tab" data-nav-tab>Agents</a>
       <a href="#pricing" class="nav-tab" data-nav-tab>Pricing</a>
     </div>
-    <div class="flex items-center gap-4 pl-1">
-      <a href="/sign-in" class="text-[length:var(--type-body)] font-medium">Sign in</a>
-      <a href="/sign-in" class="primary-button h-10 rounded-full px-5 text-[length:var(--type-section)]">Start free</a>
+    <div class="flex items-center gap-2 pl-1 sm:gap-4">
+      <a href="/sign-in" class="touch-target pressable px-1 text-[length:var(--type-body)] font-medium whitespace-nowrap">Sign in</a>
+      <a href="/sign-in" class="primary-button h-11 rounded-full px-5 text-[length:var(--type-section)] whitespace-nowrap">Start free</a>
     </div>
   </nav>
 </header>

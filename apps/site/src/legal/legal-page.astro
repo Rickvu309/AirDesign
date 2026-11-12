@@ -18,7 +18,7 @@ const links = [
 <SiteDocument title={`${title} · AirDesign`}>
   <div class="flex min-h-dvh flex-col bg-background">
     <header class="page-column flex h-16 items-center">
-      <a class="flex items-center gap-2.5" href="/">
+      <a class="touch-target pressable justify-start gap-2.5" href="/">
         <AirdesignMark size={20} />
         <span class="text-[length:var(--type-body)] font-semibold">AirDesign</span>
       </a>
@@ -31,8 +31,8 @@ const links = [
       </article>
     </main>
     <footer class="mt-auto border-t border-border">
-      <nav class="page-column flex flex-wrap items-center gap-x-7 gap-y-2 py-6" aria-label="Footer">
-        {links.map((link) => <a href={link.href} class="text-link text-[length:var(--type-dense)] text-muted-foreground">{link.label}</a>)}
+      <nav class="page-column flex flex-wrap items-center gap-x-3 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]" aria-label="Footer">
+        {links.map((link) => <a href={link.href} class="text-link touch-target px-2 text-[length:var(--type-dense)] text-muted-foreground">{link.label}</a>)}
       </nav>
     </footer>
   </div>

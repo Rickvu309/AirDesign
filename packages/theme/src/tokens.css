@@ -129,6 +129,8 @@
   --shadow-dialog: 0 16px 48px rgb(15 36 51 / 16%);
   --shadow-toast: 0 8px 24px rgb(15 36 51 / 12%);
   --control-size: 28px;
+  --target-size: 44px;
+  --type-field: 16px;
   --rhythm-compact: 4px;
   --rhythm-comfortable: 8px;
 }

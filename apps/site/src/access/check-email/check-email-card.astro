@@ -4,7 +4,7 @@ import MailMark from "./check-email-art.astro";
 
 const codeBoxes = [0, 1, 2, 3, 4, 5];
 const mailButtonClass =
-  "flex h-11 items-center justify-center gap-3 rounded-lg bg-background text-[length:var(--type-section)] font-medium shadow-[0_0_0_1px_var(--field-edge),0_1px_2px_var(--black-5)] transition-[filter] duration-150 hover:brightness-[0.98]";
+  "flex h-11 items-center justify-center gap-3 rounded-lg bg-background text-[length:var(--type-section)] font-medium shadow-[0_0_0_1px_var(--field-edge),0_1px_2px_var(--black-5)] pressable hover:brightness-[0.98]";
 ---
 
 <div class="flex flex-col items-center rounded-2xl bg-background p-10 text-center shadow-[0px_0px_0px_1px_var(--black-7),0px_1px_2px_0px_var(--black-3),0px_12px_32px_0px_var(--black-4)] max-sm:p-6">
@@ -23,6 +23,10 @@ const mailButtonClass =
       name="code"
       inputmode="numeric"
       autocomplete="one-time-code"
+      autocapitalize="none"
+      autocorrect="off"
+      spellcheck="false"
+      enterkeyhint="done"
       aria-labelledby="six-digit-code-label"
       autofocus
     />
@@ -44,7 +48,7 @@ const mailButtonClass =
 
   <p class="mt-[var(--space-24)] text-[length:var(--type-body)] leading-[1.43] text-muted-foreground">
     Didn't get it?{" "}
-    <button class="cursor-pointer font-semibold text-primary-strong disabled:cursor-default" type="button" data-send-again>{signInCopy.sendAgain}</button>
+    <button class="touch-target pressable cursor-pointer px-1 font-semibold text-primary-strong disabled:cursor-default" type="button" data-send-again>{signInCopy.sendAgain}</button>
   </p>
   <p class="mt-2 text-[length:var(--type-dense)] leading-[1.31] text-muted-foreground data-failed:text-danger-text" role="status" data-send-again-status></p>
 </div>

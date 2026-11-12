@@ -1,19 +1,25 @@
 ---
+import tokens from "@airdesign/theme/tokens.css?raw";
 import "./site-theme.css";
 
 interface Props {
   title: string;
   description?: string;
+  top?: "background" | "canvas";
 }
 
-const { title, description } = Astro.props;
+const { title, description, top = "background" } = Astro.props;
+const topColor = new RegExp(`--${top}:\\s*(#[0-9a-fA-F]{6})`).exec(tokens)?.[1] ?? "";
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content={topColor} />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content={topColor} />
     {description && <meta name="description" content={description} />}
     <link rel="icon" type="image/svg+xml" href="/favicon-art.svg" />
     <title>{title}</title>
