@@ -40,6 +40,7 @@ for (const name of [
   "open-edit-save",
   "blank-deck",
   "blank-slides",
+  "slide-layouts",
   "element-edits",
   "commit-once",
   "deck-list-trash",

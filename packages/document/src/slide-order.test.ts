@@ -3,7 +3,7 @@ import { decide, openRegister, version } from "./decide.js"
 import { elementId, slideId, type SlideId } from "./element-id.js"
 import { orderKeyBetween, type OrderKey } from "./order-key.js"
 import { limits } from "./limits.js"
-import { foldSlides, orderKeyAfter, presentSlides, type SlideCommand } from "./slide-order.js"
+import { foldSlides, orderKeyAfter, presentSlides, readSlideState, type SlideCommand } from "./slide-order.js"
 
 const file = [slideId("256"), slideId("257")] as const
 
@@ -45,6 +45,27 @@ describe("slide order", () => {
       from: "clone",
       source: "257",
     })
+  })
+
+  it("keeps the layout part a slide was added with in its birth", () => {
+    const layoutPart = "ppt/slideLayouts/slideLayout2.xml"
+    const added = slide(openRegister("", ""), {
+      slide: "add",
+      id: slideId("258"),
+      after: file[0],
+      key: keyAfter(file, file[0]),
+      layout: file[0],
+      layoutPart,
+    })
+    if (added.decision !== "apply") throw new Error(added.code)
+    expect(foldSlides(added.register).find((spot) => spot.id === "258")?.birth).toEqual({
+      from: "blank",
+      layout: "256",
+      layoutPart,
+    })
+    expect(readSlideState(JSON.parse(JSON.stringify({ file, order: added.register.order })))?.order).toEqual(
+      added.register.order,
+    )
   })
 
   it("refuses to remove the last slide and selects no absence for a file the edit never named", () => {

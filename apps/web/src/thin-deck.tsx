@@ -24,6 +24,7 @@ import {
 import { landedBox, shownBox } from "@/element-move"
 import { exportedParts } from "@/exported-parts"
 import { commitSlideChange, type SlideChange } from "@/slide-edit"
+import { layoutChoices } from "@/slide-layout"
 import { commitElement, type ElementChange } from "@/element-edit"
 import { ensureMarkup } from "@/markup"
 import { backfillIndex } from "@/index-deck"
@@ -71,6 +72,7 @@ export function ThinDeck({ id }: { id: string }) {
   const [notes, setNotes] = useState<readonly SlideNotes[]>([])
   const notesQueue = useRef(Promise.resolve())
   const [slideCount, setSlideCount] = useState(0)
+  const [layouts, setLayouts] = useState<ReturnType<typeof layoutChoices>>([])
   const [sections, setSections] = useState<readonly SectionStart[]>([])
   const [current, setCurrent] = useState(0)
   const [title, setTitle] = useState("")
@@ -312,6 +314,7 @@ export function ThinDeck({ id }: { id: string }) {
     register: Register | null,
   ) {
     shownParts.current = stored.parts
+    setLayouts(layoutChoices(stored.parts))
     showRegister(register)
     setCurrent(0)
     setTitle(stored.name ?? "")
@@ -369,14 +372,14 @@ export function ThinDeck({ id }: { id: string }) {
     setPending(true)
   }
 
-  async function changeSlide(change: SlideChange, index: number, to = index) {
+  async function changeSlide(change: SlideChange, index: number, to = index, layoutPart?: string) {
     const opened = await connect(memoryRemote()).openDeck(id)
     if (!opened.ok) return
     const painted = async (currentIndex: number, undoable: Undoable | null) => {
       if (undoable !== null) record({ name: slideNames[change], undoable })
       await showEdited(currentIndex)
     }
-    settle(await commitSlideChange(id, shownParts.current, opened.register, change, index, painted, to))
+    settle(await commitSlideChange(id, shownParts.current, opened.register, change, index, painted, to, layoutPart))
   }
 
   function record(entry: UndoEntry) {
@@ -494,7 +497,8 @@ export function ThinDeck({ id }: { id: string }) {
               sections,
               current,
               onSelect: setCurrent,
-              onAdd: () => void changeSlide("add", current),
+              onAdd: (layoutPart) => void changeSlide("add", current, current, layoutPart),
+              layouts,
               onClone: (index) => void changeSlide("clone", index),
               onRemove: (index) => void changeSlide("remove", index),
               onMove: (from, to) => void changeSlide("move", from, to),

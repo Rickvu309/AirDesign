@@ -55,6 +55,16 @@ async function slideSections(kit) {
   await expect(first).toHaveAttribute("aria-current", "true")
 }
 
+async function newSlideMenu(kit) {
+  await kit.signIn()
+  await kit.page.goto("/")
+  await kit.page.getByRole("button", { name: "New deck", exact: true }).click()
+  await kit.page.getByRole("button", { name: "Blank deck", exact: true }).click()
+  await expect(kit.page.locator("[data-slide-entry]")).toHaveCount(1)
+  await kit.page.getByRole("button", { name: "Choose a layout for the new slide" }).click()
+  await expect(kit.page.getByRole("menuitem")).toHaveCount(6)
+}
+
 async function slideChart(kit) {
   await kit.signIn()
   await kit.page.goto("/")
@@ -330,6 +340,7 @@ export const states = [
   { name: "text-undone", design: editor, drive: textUndone },
   { name: "slide-moved-twice", design: editor, drive: slideMovedTwice },
   { name: "deck-signed-out", design: null, drive: signedOutDeck },
+  { name: "new-slide-menu", design: editor, drive: newSlideMenu },
   { name: "editor-text-focused", design: editor, journey: "move-resize", at: "selected" },
   { name: "editor-selected", design: editor, journey: "move-resize", at: "resized" },
   { name: "editor-offline", design: "/screens/s49-02-editor-errors-offline", drive: offline },

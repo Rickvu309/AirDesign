@@ -11,7 +11,7 @@ const keysFor = {
   move: ["slide", "id", "key", "file"],
   restore: ["slide", "id", "key", "file"],
   clone: ["slide", "id", "source", "key", "floor", "file"],
-  add: ["slide", "id", "after", "key", "layout", "floor", "file"],
+  add: ["slide", "id", "after", "key", "layout", "layoutPart", "floor", "file"],
 } as const
 
 function slideKeys(slide: unknown): readonly string[] | undefined {
@@ -44,5 +44,6 @@ export function slideEditCommand(edit: WireSlide): SlideCommand {
   if (edit.slide === "restore") return { slide: "restore", id: edit.id, key: edit.key }
   const floor = edit.floor === undefined ? {} : { floor: edit.floor }
   if (edit.slide === "clone") return { slide: "clone", id: edit.id, source: edit.source, key: edit.key, ...floor }
-  return { slide: "add", id: edit.id, after: edit.after, key: edit.key, layout: edit.layout, ...floor }
+  const part = edit.layoutPart === undefined ? {} : { layoutPart: edit.layoutPart }
+  return { slide: "add", id: edit.id, after: edit.after, key: edit.key, layout: edit.layout, ...part, ...floor }
 }

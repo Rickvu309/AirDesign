@@ -11,6 +11,7 @@ export type SlideAdd = {
   readonly after: SlideId
   readonly key: OrderKey
   readonly layout: SlideId
+  readonly layoutPart?: string
   readonly floor?: readonly IndexElement[]
 }
 
@@ -45,7 +46,7 @@ export type SlideCommand = (SlideAdd | SlideClone | SlideRemove | SlideMove | Sl
 
 export type SlideBirth =
   | { readonly from: "file" }
-  | { readonly from: "blank"; readonly layout: SlideId }
+  | { readonly from: "blank"; readonly layout: SlideId; readonly layoutPart?: string }
   | { readonly from: "clone"; readonly source: SlideId }
 
 export type FoldedSlide = {
@@ -106,7 +107,10 @@ export function foldSlides(state: SlideState): readonly FoldedSlide[] {
       spots.set(command.id, {
         id: command.id,
         key: command.key,
-        birth: { from: "blank", layout: command.layout },
+        birth:
+          command.layoutPart === undefined
+            ? { from: "blank", layout: command.layout }
+            : { from: "blank", layout: command.layout, layoutPart: command.layoutPart },
         present: true,
       })
       continue
@@ -220,6 +224,12 @@ function slideList(raw: unknown): readonly SlideId[] | undefined {
   return ids
 }
 
+const layoutPartPattern = /^ppt(?:\/[A-Za-z0-9_-]{1,100}){1,4}\.xml$/
+
+function readLayoutPart(raw: unknown): string | undefined {
+  return typeof raw === "string" && layoutPartPattern.test(raw) ? raw : undefined
+}
+
 function commandOf(raw: Record<string, unknown>): SlideCommand | undefined {
   const id = readSlideId(raw.id)
   if (id === undefined) return undefined
@@ -241,7 +251,10 @@ function commandOf(raw: Record<string, unknown>): SlideCommand | undefined {
   const after = readSlideId(raw.after)
   const layout = readSlideId(raw.layout)
   if (after === undefined || layout === undefined) return undefined
-  return { slide: "add", id, after, key, layout, ...floored }
+  if (!Object.hasOwn(raw, "layoutPart")) return { slide: "add", id, after, key, layout, ...floored }
+  const layoutPart = readLayoutPart(raw.layoutPart)
+  if (layoutPart === undefined) return undefined
+  return { slide: "add", id, after, key, layout, layoutPart, ...floored }
 }
 
 export function readSlideState(raw: unknown): SlideState | undefined {

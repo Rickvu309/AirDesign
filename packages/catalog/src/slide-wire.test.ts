@@ -19,6 +19,19 @@ it("reads a slide edit on a person's commit and refuses it as an agent change", 
   expect(readAgentEdit({ deck: "deck", base: 0, changes: [add] })).toEqual(field)
 })
 
+it("reads the layout part a person picked for a new slide and refuses a part that is not a package path", () => {
+  const layoutPart = "ppt/slideLayouts/slideLayout2.xml"
+  const add = { slide: "add", id: "258", after: "256", key, layout: "256", layoutPart, file: ["256", "257"] }
+  const read = readCommit({ deck: "deck", batch: [add] })
+  if (!read.ok) throw new Error(read.refusal)
+  const edit = read.batch[0]
+  if (edit === undefined || !("slide" in edit)) throw new Error("slide")
+  expect(slideEditCommand(edit)).toEqual({ slide: "add", id: "258", after: "256", key, layout: "256", layoutPart })
+  for (const bad of ["ppt/../_rels/.rels", "../slideLayouts/a.xml", "ppt/slideLayouts/a.rels", "", 7]) {
+    expect(readCommit({ deck: "deck", batch: [{ ...add, layoutPart: bad }] })).toEqual(field)
+  }
+})
+
 it("carries the opening elements of a new slide and refuses a row that names another slide", () => {
   const row = { node: "258.2", kind: "shape", value: "Title", box: { x: 1, y: 2, cx: 3, cy: 4 }, grouped: false }
   const clone = { slide: "clone", id: "258", source: "256", key, floor: [row], file: ["256", "257"] }

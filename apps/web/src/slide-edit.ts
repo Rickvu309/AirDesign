@@ -15,6 +15,7 @@ import { connect, memoryRemote } from "@airdesign/live"
 import { readSlides } from "@airdesign/pptx"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { flooredEdit } from "@/slide-floor"
+import { newSlideLayout } from "@/slide-layout"
 
 export type SlideChange = "add" | "clone" | "remove" | "move"
 
@@ -52,6 +53,7 @@ export function slideCommand(
   change: SlideChange,
   index: number,
   to = index,
+  layoutPart?: string,
 ): { readonly edit: SlideCommand; readonly current: number } | null {
   const spots = presentSlides({ file, order })
   const spot = spots[index]
@@ -69,7 +71,8 @@ export function slideCommand(
   if (key === null) return null
   const id = nextSlideId(taken(file, order))
   if (change === "add") {
-    return { edit: { slide: "add", id, after: spot.id, key, layout: spot.id }, current: index + 1 }
+    const part = layoutPart === undefined ? {} : { layoutPart }
+    return { edit: { slide: "add", id, after: spot.id, key, layout: spot.id, ...part }, current: index + 1 }
   }
   return { edit: { slide: "clone", id, source: spot.id, key }, current: index + 1 }
 }
@@ -82,9 +85,14 @@ export async function commitSlideChange(
   index: number,
   paint: (current: number, undoable: Undoable | null) => void | Promise<void>,
   to = index,
+  layoutPart?: string,
 ): Promise<CommitOutcome> {
   const file = fileSlides(parts, register)
-  const built = slideCommand(file, register.order, change, index, to)
+  const state = { file, order: register.order }
+  const current = presentSlides(state)[index]
+  const chosen =
+    layoutPart ?? (change === "add" && current !== undefined ? newSlideLayout(parts, state, current.id) : undefined)
+  const built = slideCommand(file, register.order, change, index, to, chosen)
   if (built === null) return "refused"
   const edit = flooredEdit(parts, register, file, built.edit)
   const undoable = slideUndoable(register, file, edit)

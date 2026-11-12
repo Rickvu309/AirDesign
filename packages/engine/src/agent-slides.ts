@@ -15,6 +15,7 @@ import {
   storedElements,
   currentValue,
   currentBox,
+  type DeckIndex,
   type IndexElement,
   type Register,
   type SlideCommand,
@@ -37,6 +38,15 @@ function runFence(register: Register, runId: string, deleted: SlideId | null): C
     ({ node, body }) => body.guarded && node.includes(".") && shapeOf(node).slide === deleted,
   )
   return protectedHere ? "person-protected" : null
+}
+
+function openingRows(register: Deck["register"], index: DeckIndex, slide: SlideId): readonly IndexElement[] {
+  const rows: IndexElement[] = [...index.elements]
+  for (const node of floorNodes(register)) {
+    const row = openingElement(register, node)
+    if (row !== undefined) rows.push(row)
+  }
+  return rows.filter((row) => shapeOf(row.node).slide === slide)
 }
 
 export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown): Built {
@@ -63,15 +73,20 @@ export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown
     const layoutSpot = spots.find((row) => row.id === parsed.layout)
     if (key === null || layoutSpot === undefined) return { ok: false, refusal: "dead" }
     let layout = parsed.layout
+    let floor: readonly IndexElement[] | undefined
     for (let count = 0; count <= register.order.length; count += 1) {
       const birth = foldSlides(state).find((row) => row.id === layout)?.birth
+      if (birth?.from === "blank" && birth.layoutPart !== undefined) {
+        floor = openingRows(register, index, layout)
+        break
+      }
       if (birth?.from === "blank") layout = birth.layout
       else if (birth?.from === "clone") layout = birth.source
       else break
     }
-    const floor = index.slides.find((row) => row.id === layout)?.layout
+    floor ??= index.slides.find((row) => row.id === layout)?.layout
     if (floor === undefined) return { ok: false, refusal: "dead" }
-    edit = { slide: "add", id, after: parsed.layout, key, layout: parsed.layout, floor: floorFor(floor, id) }
+    edit = { slide: "add", id, after: parsed.after, key, layout: parsed.layout, floor: floorFor(floor, id) }
   } else if ("after" in parsed) {
     const remaining = spots.filter((row) => row.id !== parsed.slide)
     const after = readSlideId(parsed.after)
@@ -88,13 +103,8 @@ export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown
   } else {
     const key = orderKeyAfter(spots, parsed.slide)
     if (key === null) return { ok: false, refusal: "dead" }
-    const rows: IndexElement[] = [...index.elements]
-    for (const node of floorNodes(register)) {
-      const row = openingElement(register, node)
-      if (row !== undefined) rows.push(row)
-    }
-    const floor = rows
-      .filter((row) => shapeOf(row.node).slide === parsed.slide && !elementGone(register, row.node))
+    const floor = openingRows(register, index, parsed.slide)
+      .filter((row) => !elementGone(register, row.node))
       .map((row) => {
         const body = register.elements[row.node]
         return body === undefined ? row : { ...row, value: currentValue(body), box: currentBox(body) ?? row.box }
