@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { slideId, type SlideId } from "./element-id.js"
+import { decide, openRegister } from "./decide.js"
 import { orderKeyBetween } from "./order-key.js"
+import { undoSlides } from "./person-undo.js"
 import { foldSections } from "./section-order.js"
 import { orderKeyAfter, presentSlides, type SlideCommand, type SlideState } from "./slide-order.js"
 
@@ -107,5 +109,21 @@ describe("foldSections", () => {
       { name: "Opening", slides: ["258", "259", "256", "257"] },
       { name: "Numbers", slides: [] },
     ])
+  })
+
+  it("puts a slide an agent's run moved up from the head of a section back at that head when the run is undone", () => {
+    const present = presentSlides({ file, order: [] })
+    const up: SlideCommand = {
+      slide: "move",
+      id: file[2] as SlideId,
+      key: orderKeyBetween(present[0]?.key ?? null, present[1]?.key ?? null),
+      runId: "run",
+    }
+    const decision = decide(openRegister("", ""), { command: "slide", file, edit: up })
+    if (decision.decision !== "apply") throw new Error(decision.code)
+    expect(listed({ file, order: decision.register.order })[0]?.slides).toEqual(["256", "258", "257"])
+    const undone = undoSlides(decision.register, "run")
+    if (undone === null) throw new Error("undo")
+    expect(listed({ file, order: undone.order })).toEqual(listed({ file, order: [] }))
   })
 })

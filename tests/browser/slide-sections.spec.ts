@@ -1,8 +1,18 @@
+import { readFile } from "node:fs/promises"
+import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 
 const sectioned = join(process.cwd(), "scripts/pptx-fixtures/sections-before.pptx")
 const clean = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
+const zip = createRequire(join(process.cwd(), "packages/pptx/package.json"))("@zip.js/zip.js") as {
+  readonly ZipReader: new (reader: unknown) => {
+    getEntries(): Promise<{ filename: string; getData(writer: unknown): Promise<Uint8Array> }[]>
+    close(): Promise<void>
+  }
+  readonly Uint8ArrayReader: new (bytes: Uint8Array) => unknown
+  readonly Uint8ArrayWriter: new () => unknown
+}
 const designed = "/screens/s42-02-editor-agent-run-complete"
 
 type Box = { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
@@ -207,4 +217,41 @@ test("the real filmstrip draws section headings and a collapsed section where th
     drawnCollapsed.stack.y - (drawnCollapsed.head.y + drawnCollapsed.head.height),
     0,
   )
+})
+
+async function sectionList(file: string): Promise<string[]> {
+  const reader = new zip.ZipReader(new zip.Uint8ArrayReader(new Uint8Array(await readFile(file))))
+  const presentation = (await reader.getEntries()).find((item) => item.filename === "ppt/presentation.xml")
+  if (presentation === undefined) throw new Error("presentation")
+  const text = Buffer.from(await presentation.getData(new zip.Uint8ArrayWriter())).toString("utf8")
+  await reader.close()
+  return [...text.matchAll(/<p14:section [^>]*name="([^"]*)"[\s\S]*?<\/p14:section>/g)].map(
+    (section) => `${section[1]}:${[...section[0].matchAll(/<p14:sldId id="(\d+)"/g)].map((id) => id[1]).join(",")}`,
+  )
+}
+
+test("a person moves the first slide of a section into the section above and undoes it, and the export lists the sections the file had", async ({
+  page,
+}, testInfo) => {
+  await open(page, sectioned)
+  const rows = () =>
+    page
+      .locator("[data-slide-list] > *")
+      .evaluateAll((items) =>
+        items.map((item) =>
+          item.hasAttribute("data-section-head")
+            ? (item.textContent ?? "")
+            : (item.firstElementChild?.textContent ?? ""),
+        ),
+      )
+  await page.locator("[data-slide-entry='2']").click()
+  await page.keyboard.press("Alt+ArrowUp")
+  await expect.poll(rows).toEqual(["Opening", "1", "2"])
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(rows).toEqual(["Opening", "1", "Numbers", "2"])
+  const saving = page.waitForEvent("download")
+  await page.getByRole("button", { name: "Export" }).click()
+  const download = testInfo.outputPath("sections-undone.pptx")
+  await (await saving).saveAs(download)
+  expect(await sectionList(download)).toEqual(await sectionList(sectioned))
 })
