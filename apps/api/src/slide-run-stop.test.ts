@@ -48,7 +48,12 @@ it.fails("lands no slide of a run that only added slides once its stop answered"
   await loadDeck(owned, stop)
   expect((await decide(owned, stop, "stop_run", { deck: owned.deck, runId: "r" })).ok).toBe(true)
   await settle(stop)
-  const added = await decide(owned, agent, "add_slide", { deck: owned.deck, base: owned.base, after: "256", layout: "256" })
+  const added = await decide(owned, agent, "add_slide", {
+    deck: owned.deck,
+    base: owned.base,
+    after: "256",
+    layout: "256",
+  })
   expect(added.ok).toBe(false)
 })
 
@@ -57,7 +62,12 @@ it.fails("keeps the turn ended after stop_run answered while an add_slide of the
   const agent = request(owned, "u")
   await loadTurn(owned, agent)
   await loadDeck(owned, agent)
-  const added = await decide(owned, agent, "add_slide", { deck: owned.deck, base: owned.base, after: "256", layout: "256" })
+  const added = await decide(owned, agent, "add_slide", {
+    deck: owned.deck,
+    base: owned.base,
+    after: "256",
+    layout: "256",
+  })
   expect(added.ok).toBe(true)
   const stop = request(owned, "s")
   await loadTurn(owned, stop)

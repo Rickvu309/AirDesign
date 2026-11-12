@@ -45,7 +45,10 @@ function commandOf(register: Register, pick: Pick, fresh: SlideId): SlideCommand
 }
 
 function sectioned(register: Register, base: readonly FileSection[]) {
-  return foldSections(slideState(register), base).map((section) => ({ name: section.name, slides: [...section.slides] }))
+  return foldSections(slideState(register), base).map((section) => ({
+    name: section.name,
+    slides: [...section.slides],
+  }))
 }
 
 function applied(register: Register, edit: SlideCommand): Register {

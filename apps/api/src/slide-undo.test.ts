@@ -23,8 +23,8 @@ let stores: Stores
 
 async function saved(live: Live) {
   const row = await readSaved(stores.deck, live.deck)
-  if (row === undefined) throw new Error("deck")
-  return row
+  if (row === undefined || row.register === null) throw new Error("deck")
+  return { revision: row.revision, register: row.register }
 }
 
 async function opened(): Promise<Live> {
@@ -93,7 +93,8 @@ async function observed(live: Live): Promise<SpecState> {
 
 function pathsFrom(graph: Graph): Map<string, readonly { readonly action: string; readonly to: string }[]> {
   const paths = new Map<string, readonly { readonly action: string; readonly to: string }[]>()
-  for (const [id, state] of graph.states) if (state.adds === 0 && state.undos === 0 && state.rev === 1 && state.turn === "r") paths.set(id, [])
+  for (const [id, state] of graph.states)
+    if (state.adds === 0 && state.undos === 0 && state.rev === 1 && state.turn === "r") paths.set(id, [])
   const order = [...paths.keys()]
   for (let at = 0; at < order.length; at += 1) {
     const from = order[at]
