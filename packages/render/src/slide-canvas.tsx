@@ -75,7 +75,7 @@ function rounding(element: CanvasElement, scaled: Scaled): CSSProperties {
 }
 
 function frame(element: CanvasElement, scaled: Scaled, pointer: boolean): CSSProperties {
-  const unshown = element.kind === "picture" || element.kind === "chart"
+  const unshown = element.kind === "chart" || (element.kind === "picture" && element.fill === null)
   const background = unshown ? unshownFill : element.fill
   return {
     ...placement(element.box, scaled),

@@ -259,33 +259,44 @@ it.each<[string, PaintFill, string | null]>([
   expect(painted({ fill }).fill).toBe(css)
 })
 
-it("shows a picture fill as the box it cannot show yet", () => {
-  expect(
-    painted({
-      fill: {
-        type: "picture",
-        part: "ppt/media/image1.png",
-        contentType: "image/png",
-        crop: { left: 0, top: 0, right: 0, bottom: 0 },
-        tile: false,
-      },
-    }).fill,
-  ).toBe("var(--line)")
+const picture = {
+  type: "picture",
+  part: "ppt/media/image1.png",
+  contentType: "image/png",
+  crop: { left: 0, top: 0, right: 0, bottom: 0 },
+  tile: false,
+} as const
+const layer = 'url("blob:1") 0% 0% / 100% 100% no-repeat'
+const drawn = () => "blob:1"
+const undrawn = () => null
+
+function pictured(overrides: Partial<PaintElement>, src: (image: unknown) => string | null) {
+  const canvas = slideCanvases(reader({ ...size, elements: [row(overrides)] }), [source], src)(0)
+  return canvas?.elements[0]?.fill
+}
+
+it("paints a picture fill from the picture's own address", () => {
+  expect(pictured({ fill: picture }, drawn)).toBe(layer)
 })
 
-it("leaves the slide's background out when it is a picture", () => {
-  const paint: SlidePaint = {
-    ...size,
-    elements: [],
-    background: {
-      type: "picture",
-      part: "ppt/media/image1.png",
-      contentType: "image/png",
-      crop: { left: 0, top: 0, right: 0, bottom: 0 },
-      tile: false,
-    },
-  }
-  expect(slideCanvases({ slide: () => paint }, [source])(0)?.background).toBeNull()
+it("shows a picture fill the browser cannot draw as the box it cannot show", () => {
+  expect(pictured({ fill: picture }, undrawn)).toBe("var(--line)")
+})
+
+it("paints a picture's image at its box over the picture's own fill", () => {
+  const under = { type: "solid", color: { hex: "0A0B0C", alpha: 1 } } as const
+  expect(pictured({ kind: "p:pic", image: picture, fill: under }, drawn)).toBe(`${layer}, ${css("0A0B0C")}`)
+  expect(pictured({ kind: "p:pic", image: picture }, drawn)).toBe(layer)
+})
+
+it("shows a picture the browser cannot draw as the box it cannot show", () => {
+  expect(pictured({ kind: "p:pic", image: picture }, undrawn)).toBe("var(--line)")
+})
+
+it("paints the slide's picture background", () => {
+  const paint: SlidePaint = { ...size, elements: [], background: picture }
+  expect(slideCanvases({ slide: () => paint }, [source], drawn)(0)?.background).toBe(layer)
+  expect(slideCanvases({ slide: () => paint }, [source], undrawn)(0)?.background).toBe("var(--line)")
 })
 
 const line: PaintLine = {

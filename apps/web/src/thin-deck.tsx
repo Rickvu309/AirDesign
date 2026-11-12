@@ -31,6 +31,7 @@ import { commitEdit, flushPending, server, type CommitOutcome, type TextBox } fr
 import { exportedParts } from "@/exported-parts"
 import { importDeck, nameImportedDeck } from "@/import-deck"
 import { ensureMarkup } from "@/markup"
+import { pictureSources, type PictureSources } from "@/picture-fill"
 
 type NamedShape = { readonly id: ElementId; readonly shape: ReadShape }
 
@@ -105,6 +106,7 @@ function paint(
   readonly canvases: SlideCanvases
   readonly boxes: ReadonlyMap<ElementId, TextBox>
   readonly shapes: ReadonlyMap<ElementId, ReadShape>
+  readonly pictures: PictureSources
 } {
   const named = namedShapes(parts)
   const ids = named.map((each) => each.id)
@@ -133,7 +135,9 @@ function paint(
       each.named.map(({ id, shape }) => [shape.shape, { id, kind: paintKind(shape.kind), editable: boxes.has(id) }]),
     ),
   }))
-  return { count: read.length, canvases: slideCanvases(paintReader(parts), sources), boxes, shapes: rows }
+  const pictures = pictureSources(parts)
+  const canvases = slideCanvases(paintReader(parts), sources, pictures.src)
+  return { count: read.length, canvases, boxes, shapes: rows, pictures }
 }
 
 async function listedName(deck: string): Promise<string | undefined> {
@@ -173,6 +177,7 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
   const shownParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
   const [deckId, setDeckId] = useState(id)
   const canvases = useRef<SlideCanvases>(() => null)
+  const pictures = useRef<PictureSources | null>(null)
   const [slideCount, setSlideCount] = useState(0)
   const [current, setCurrent] = useState(0)
   const [title, setTitle] = useState("")
@@ -211,6 +216,8 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
       shapes.current = painted.shapes
       shownParts.current = stored.parts
       canvases.current = painted.canvases
+      pictures.current?.release()
+      pictures.current = painted.pictures
       setSlideCount(painted.count)
       setCurrent(0)
       setTitle(stored.name ?? "")
@@ -221,6 +228,14 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
       live = false
     }
   }, [id, settle])
+
+  useEffect(
+    () => () => {
+      pictures.current?.release()
+      pictures.current = null
+    },
+    [],
+  )
 
   useEffect(() => {
     function leftNetwork() {
@@ -269,6 +284,8 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
       shapes.current = painted.shapes
       shownParts.current = parts
       canvases.current = painted.canvases
+      pictures.current?.release()
+      pictures.current = painted.pictures
       setSlideCount(painted.count)
       setCurrent(0)
       setTitle(name)
