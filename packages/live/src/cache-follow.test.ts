@@ -1,4 +1,4 @@
-import { currentValue } from "@airdesign/document"
+import { currentValue, presentSlides, slideId, orderKeyAfter } from "@airdesign/document"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { installIndexedDb, node, other } from "./browser-fixtures.js"
 import { connect, deleteDatabase, memoryRemote, ownerRemote, type Remote } from "./index.js"
@@ -89,4 +89,36 @@ it("catches a reopened tab up on its first follow when it starts from local rows
 it("answers the server's refusal and a malformed deck without touching the local rows", async () => {
   expect(await connect(ownerRemote()).follow("deck")).toEqual({ ok: false, refusal: "owner" })
   expect(await connect(memoryRemote()).follow("bad id")).toEqual({ ok: false, refusal: "deck" })
+})
+
+it("follows slide commands and continues following the next element revision", async () => {
+  const { real, remote } = traced()
+  const cache = connect(remote)
+  await cache.openDeck("deck")
+  const file = [slideId("256")] as const
+  const key = orderKeyAfter(presentSlides({ file, order: [] }), file[0])
+  if (key === null) throw new Error("key")
+  await real.commit({ deck: "deck", batch: [{ slide: "clone", id: slideId("257"), source: file[0], key, file }] })
+  expect(await cache.follow("deck")).toMatchObject({ ok: true, changed: true, revision: 1 })
+  const opened = await cache.openDeck("deck")
+  if (!opened.ok) throw new Error(opened.refusal)
+  expect(presentSlides(opened.register).map((slide) => slide.id)).toEqual(["256", "257"])
+  await real.commit({ deck: "deck", batch: [{ node, value: "After slides" }] })
+  expect(await cache.follow("deck")).toMatchObject({ ok: true, changed: true, revision: 2 })
+  expect(await shown(cache)).toBe("After slides")
+})
+
+it("keeps its own slide order when follow sees the committed revision", async () => {
+  const { remote, calls } = traced()
+  const cache = connect(remote)
+  await cache.openDeck("deck")
+  const following = cache.follow("deck")
+  const file = [slideId("256"), slideId("257")] as const
+  expect(await cache.enqueueSlide("deck", file, { slide: "remove", id: file[0] })).toMatchObject({ ok: true })
+  expect(await cache.flush("deck")).toMatchObject({ ok: true, revision: 1 })
+  expect(await following).toMatchObject({ ok: true, changed: false, revision: 1 })
+  const opened = await cache.openDeck("deck")
+  if (!opened.ok) throw new Error(opened.refusal)
+  expect(presentSlides(opened.register).map((slide) => slide.id)).toEqual(["257"])
+  expect(calls).toEqual(["open", "commit"])
 })
