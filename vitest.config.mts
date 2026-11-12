@@ -1,35 +1,10 @@
-import fs from "node:fs"
 import path from "node:path"
 import { defineConfig } from "vitest/config"
+import { splitUnitTests } from "./scripts/test-isolation.mjs"
 
 const root = import.meta.dirname
 
-const mocksModules = /\bvi\.(mock|doMock|stubGlobal|stubEnv|spyOn|useFakeTimers|setSystemTime)\(/
-
-const unitTests = fs
-  .globSync(
-    [
-      "apps/**/*.test.ts",
-      "apps/**/*.test.tsx",
-      "packages/**/*.test.ts",
-      "tests/**/*.test.ts",
-      ".agents/skills/**/*.test.mjs",
-    ],
-    {
-      cwd: root,
-      exclude: (name) => name === "node_modules" || name === "dist",
-    },
-  )
-  .filter(
-    (file) =>
-      !file.startsWith("tests/browser/") && !file.startsWith("packages/render/") && !file.startsWith("apps/api/"),
-  )
-  .sort()
-
-const holdsModules = (file: string) => mocksModules.test(fs.readFileSync(path.join(root, file), "utf8"))
-const readsGlobals = (file: string) => file.startsWith("apps/web/") || file.startsWith("apps/site/")
-const sharedTests = unitTests.filter((file) => !holdsModules(file) && !readsGlobals(file))
-const isolatedTests = unitTests.filter((file) => !sharedTests.includes(file))
+const { shared: sharedTests, isolated: isolatedTests } = splitUnitTests(root)
 
 const alias = [
   {
