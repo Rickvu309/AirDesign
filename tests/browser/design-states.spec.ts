@@ -128,7 +128,11 @@ test("an empty placeholder on a blank slide shows that it is there", () => {
   expect(seen(["blank-deck"], "invisible-control"), "an empty placeholder paints nothing").toEqual([])
 })
 
-test.fail("a table's text and the legend under it are never painted over each other", () => {
+test("an imported Calibri slide keeps its text inside its boxes", () => {
+  expect(seen(["imported-text"], "overflowing-text"), "imported text runs past its box").toEqual([])
+})
+
+test("a table's text and the legend under it are never painted over each other", () => {
   expect(
     seen(["table-cells"], "overflowing-text"),
     "the grown table and the legend are painted over each other",

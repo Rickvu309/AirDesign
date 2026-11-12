@@ -71,7 +71,7 @@ it("paints a hanging bullet, the gaps around a paragraph, and the marks on a run
   expect(Number.parseFloat(block.style.getPropertyValue("--bullet-size"))).toBeCloseTo(scaled(font * 0.8), 4)
   expect(block.style.getPropertyValue("--bullet-color")).toBe("rgb(4, 5, 6)")
   expect(block.textContent).toBe("Item")
-  expect(paintedRun.style.lineHeight).toBe("0.9")
+  expect(paintedRun.style.lineHeight).toBe("1.08")
   expect(paintedRun.style.textDecoration).toBe("underline line-through")
   expect(paintedRun.style.backgroundColor).toBe("rgb(9, 8, 7)")
   expect(paintedRun.style.verticalAlign).toBe("0.3em")
@@ -104,7 +104,37 @@ it("prints roman numerals and a positive indent has no hang", () => {
   expect(Number.parseFloat(block.style.textIndent)).toBeCloseTo(scaled(margin), 4)
   expect(block.style.getPropertyValue("--bullet")).toBe('"IV."')
   expect(block.style.getPropertyValue("--bullet-hang")).toBe("")
-  expect(paintedRun.style.lineHeight).toBe("normal")
+  expect(paintedRun.style.lineHeight).toBe("1.2")
   expect(paintedRun.style.verticalAlign).toBe("-0.25em")
   expect(paintedRun.style.textDecoration).toBe("")
+})
+
+it("spaces lines by a share of PowerPoint's single line, which is 1.2 times the font size", () => {
+  expect(painted(paragraph({ lineSpacing: { percent: 0.9 } })).run.style.lineHeight).toBe("1.08")
+  expect(painted(paragraph({ lineSpacing: { percent: 1.5 } })).run.style.lineHeight).toBe("1.8")
+  expect(painted(paragraph({ lineSpacing: null })).run.style.lineHeight).toBe("1.2")
+  expect(painted(paragraph({ lineSpacing: { percent: 0.9 }, runs: [] }), "").block.style.lineHeight).toBe("1.08")
+  expect(painted(paragraph({ lineSpacing: null, runs: [] }), "").block.style.lineHeight).toBe("1.2")
+})
+
+it.each([
+  ["Calibri", "Carlito"],
+  ["Calibri Light", "Carlito"],
+  ["calibri", "Carlito"],
+  ["Cambria", "Caladea"],
+  ["Arial", "Arimo"],
+  ["Helvetica", "Arimo"],
+  ["Times New Roman", "Tinos"],
+])("follows %s with %s, an open font of the same widths", (font, twin) => {
+  const text = paragraph({
+    bullet: { char: "•", font, color: null, size: null },
+    runs: [{ from: 0, text: "Item", ...run, font }],
+  })
+  const { block, run: paintedRun } = painted(text)
+  expect(paintedRun.style.fontFamily).toBe(`"${font}", "${twin}", var(--font-sans)`)
+  expect(block.style.getPropertyValue("--bullet-font")).toBe(`"${font}", "${twin}", var(--font-sans)`)
+})
+
+it("follows a font with no open twin with the page font alone", () => {
+  expect(painted(paragraph()).run.style.fontFamily).toBe('"Serifa", var(--font-sans)')
 })

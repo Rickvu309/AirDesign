@@ -23,6 +23,13 @@ async function tableCells(kit) {
   await expect(kit.page.locator("[data-slide-paint] [data-canvas-table]")).toHaveCount(1)
 }
 
+async function importedText(kit) {
+  await kit.signIn()
+  await kit.page.goto("/")
+  await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/corpus/nasa-cots-parts-nesc.pptx"), 5)
+  await kit.page.evaluate(() => document.fonts.ready)
+}
+
 async function listFailed(kit) {
   await kit.signIn()
   await kit.page.route(
@@ -187,6 +194,7 @@ export const states = [
   { name: "editor-selected", design: editor, journey: "move-resize", at: "resized" },
   { name: "editor-offline", design: "/screens/s49-02-editor-errors-offline", drive: offline },
   { name: "table-cells", design: null, drive: tableCells },
+  { name: "imported-text", design: null, drive: importedText },
   { name: "agent-empty", design: editor, journey: "aira-panel", at: "agent-panel" },
   {
     name: "agent-working",
