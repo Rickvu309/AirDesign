@@ -6,7 +6,7 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { validatorFiles } from "./paragraph-export.mjs"
-import { freshBrowserExport } from "./browser-export.mjs"
+import { freshBrowserExport, playwrightTestLines } from "./browser-export.mjs"
 import { browserExportArgs, caseExports, loadCases } from "./pptx-cases.mjs"
 import { textExportName } from "./pptx-cases/text.mjs"
 import { judgeParts } from "./judge.mjs"
@@ -107,10 +107,14 @@ const renderCacheReady = readMachine({ soffice, pdftoppm: "pdftoppm", env: proce
 )
 
 await phases.time("build", () => run("pnpm", ["--filter", "@airdesign/pptx", "build"]))
+let specOutput = ""
 const browserSpec = freshBrowserExport({
   file: exportPath(exportNames[0]),
   also: exportNames.slice(1).map(exportPath),
-  run: () => phases.time("browser", () => run("pnpm", ["exec", "playwright", "test", ...browserExportArgs(entries)])),
+  run: () =>
+    phases.time("browser", async () => {
+      specOutput = await run("pnpm", ["exec", "playwright", "test", "--reporter=list", ...browserExportArgs(entries)])
+    }),
 })
 const pptx = memoPptx(await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href))
 const require = createRequire(path.join(root, "packages/pptx/package.json"))
@@ -235,6 +239,7 @@ const earlyLists = judgedFiles()
 earlyLists.catch(() => {})
 const spec = await browserSpec
 console.log(`browser export spec ${spec.seconds.toFixed(1)} seconds`)
+for (const line of playwrightTestLines(specOutput)) console.log(line)
 if (spec.ok) {
   for (const name of exportNames) parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
   for (const entry of entries) {
