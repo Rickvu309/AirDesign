@@ -48,3 +48,4 @@ Each feature file starts with an H1 title and one paragraph describing what the 
 - [Ask Aira in the Agent panel](./aira-panel.md): the person types to Aira in the open deck, watches the reply stream and the slide change, stops, retries or undoes the run, goes back to earlier chats, and reads the week's usage. Journeys `aira-panel`, `aira-head`, `aira-slides`.
 - [Usage page](./usage-page.md): `/settings/usage` shows the week's Aira usage and when it resets. Journey `usage-page`.
 - [Sign in](./sign-in.md): email, six-digit code, the designed mail, session cookie, signed-out redirect. Command `$V sign-in`, journeys `sign-in-mail` and `sign-in-pages` (the site pages on their own origin).
+- [Landing page on a phone](./landing-page.md): the site's home page at 390 px, 844 px landscape and 320 px: no sideways scroll, taps 44 px, hover only on a mouse, edges padded for the notch. Journey `landing-pages`; the rules are held by `tests/browser/site-mobile.spec.ts`.

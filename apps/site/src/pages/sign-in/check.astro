@@ -4,8 +4,8 @@ import AirdesignMark from "../../site/airdesign-mark.astro";
 import SiteDocument from "../../site/site-document.astro";
 ---
 
-<SiteDocument title="Check your email">
-  <div class="flex min-h-dvh items-center justify-center bg-canvas px-4 py-8">
+<SiteDocument title="Check your email" top="canvas">
+  <div class="flex min-h-dvh items-center justify-center edge-inline bg-canvas pt-8 pb-[max(2rem,env(safe-area-inset-bottom,0px))]">
     <main class="w-full max-w-[440px]">
       <div class="flex flex-col items-center">
         <AirdesignMark size={40} weight="bold" />
@@ -15,7 +15,7 @@ import SiteDocument from "../../site/site-document.astro";
         <CheckEmailCard />
       </div>
       <div class="mt-[29px] flex justify-center">
-        <a class="text-link flex items-center gap-1 text-[length:var(--type-body)] leading-[1.43] font-semibold text-muted-foreground" href="/sign-in">
+        <a class="text-link touch-target gap-1 text-[length:var(--type-body)] leading-[1.43] font-semibold text-muted-foreground" href="/sign-in">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg>
           Use a different email
         </a>

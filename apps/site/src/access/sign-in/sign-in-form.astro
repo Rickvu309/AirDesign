@@ -6,11 +6,15 @@ import { signInCopy } from "../sign-in-copy";
   <label class="block text-[length:var(--type-body)] leading-[1.5] font-medium" for="sign-in-email">Email</label>
   <input
     id="sign-in-email"
-    class="sign-in-email mt-2 block h-11 w-full rounded-lg bg-background px-3.5 text-[length:var(--type-section)] leading-[1.5] placeholder:text-faint-foreground"
+    class="sign-in-email mt-2 block h-11 w-full rounded-lg bg-background px-3.5 leading-[1.5] text-[length:var(--type-section)] placeholder:text-faint-foreground"
     name="email"
     type="email"
     placeholder="Your email address"
     autocomplete="email"
+    autocapitalize="none"
+    autocorrect="off"
+    spellcheck="false"
+    enterkeyhint="go"
     required
   />
   <p id="sign-in-error" class="mt-2 text-[length:var(--type-dense)] leading-[1.31] text-danger-text" role="alert" data-sign-in-error>
