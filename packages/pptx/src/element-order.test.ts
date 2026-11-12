@@ -73,3 +73,57 @@ it("writes the same slide parts the validator judges in the element-added and el
   })
   expect(removed.get(part)).toEqual((await fixture("element-removed.pptx")).get(part))
 })
+
+function unchanged(original: ReadonlyMap<string, Uint8Array>, changed: ReadonlyMap<string, Uint8Array>) {
+  expect([...changed.keys()]).toEqual([...original.keys()])
+  for (const [name, bytes] of original) expect(changed.get(name), name).toEqual(bytes)
+}
+
+it("leaves every part as it was when an added box, a removed shape and an added slide are taken back", async () => {
+  const original = await clean()
+  const element = { node: elementId("256.9"), kind: "shape" as const, value: "", box, grouped: false }
+  const node = elementId("256.2")
+  const key = orderKeyBetween(orderKeyBetween(null, null), null)
+  const order = [
+    { slide: "element-add", id, element },
+    { slide: "element-remove", id, node: element.node },
+    { slide: "element-remove", id, node },
+    { slide: "element-restore", id, node },
+    { slide: "add", id: slideId("257"), after: id, key, layout: id },
+    { slide: "remove", id: slideId("257") },
+  ] as const
+  unchanged(original, orderedParts(original, { file: [id], order }))
+})
+
+it("gives a copy the elements its slide showed when it was copied, whatever is taken back later", async () => {
+  const original = await clean()
+  const element = { node: elementId("256.9"), kind: "shape" as const, value: "", box, grouped: false }
+  const node = elementId("256.2")
+  const key = orderKeyBetween(orderKeyBetween(null, null), null)
+  const shapesOf = (parts: ReadonlyMap<string, Uint8Array>, slide: string) =>
+    readShapes(parts)
+      .filter((shape) => shape.slide === slide)
+      .map((shape) => shape.shape)
+  const added = orderedParts(original, {
+    file: [id],
+    order: [
+      { slide: "element-add", id, element },
+      { slide: "clone", id: slideId("257"), source: id, key },
+      { slide: "element-remove", id, node: element.node },
+    ],
+  })
+  expect(shapesOf(added, "256")).toEqual(["2"])
+  expect(shapesOf(added, "257")).toEqual(["2", "9"])
+  expect(added.get(part)).toEqual(original.get(part))
+  const removed = orderedParts(original, {
+    file: [id],
+    order: [
+      { slide: "element-remove", id, node },
+      { slide: "clone", id: slideId("257"), source: id, key },
+      { slide: "element-restore", id, node },
+    ],
+  })
+  expect(shapesOf(removed, "256")).toEqual(["2"])
+  expect(shapesOf(removed, "257")).toEqual([])
+  expect(removed.get(part)).toEqual(original.get(part))
+})
