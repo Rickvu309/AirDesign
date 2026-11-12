@@ -56,8 +56,11 @@ const config = (await import(path.join(root, "vitest.config.mts"))).default
 const projects = config.test.projects
 const included = (name) => projects.find((project) => project.test.name === name).test.include
 const asList = (list) => JSON.stringify([...list].sort())
-if (asList(included("shared")) !== asList(sharedFiles)) fail("vitest.config.mts does not run the shared files this scan chose")
-if (asList(included("unit")) !== asList(isolatedFiles)) fail("vitest.config.mts does not isolate the files this scan chose")
-if (projects.find((project) => project.test.name === "shared").test.isolate !== false) fail("the shared project isolates")
+if (asList(included("shared")) !== asList(sharedFiles))
+  fail("vitest.config.mts does not run the shared files this scan chose")
+if (asList(included("unit")) !== asList(isolatedFiles))
+  fail("vitest.config.mts does not isolate the files this scan chose")
+if (projects.find((project) => project.test.name === "shared").test.isolate !== false)
+  fail("the shared project isolates")
 
 console.log("test isolation tests passed")

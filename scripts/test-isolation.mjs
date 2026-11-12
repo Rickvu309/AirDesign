@@ -14,7 +14,14 @@ export const pureMembers = new Set([
 
 const globalNames = new Set(["globalThis", "global", "window", "self", "document", "navigator"])
 const reflectNames = new Set(["Object", "Reflect"])
-const reflectMembers = new Set(["defineProperty", "defineProperties", "assign", "set", "deleteProperty", "setPrototypeOf"])
+const reflectMembers = new Set([
+  "defineProperty",
+  "defineProperties",
+  "assign",
+  "set",
+  "deleteProperty",
+  "setPrototypeOf",
+])
 
 const unitGlobs = [
   "apps/**/*.test.ts",
@@ -48,7 +55,14 @@ const walk = (node, visit) => {
 }
 
 const unwrap = (node) =>
-  node && ["ParenthesizedExpression", "TSNonNullExpression", "TSAsExpression", "TSSatisfiesExpression", "ChainExpression"].includes(node.type)
+  node &&
+  [
+    "ParenthesizedExpression",
+    "TSNonNullExpression",
+    "TSAsExpression",
+    "TSSatisfiesExpression",
+    "ChainExpression",
+  ].includes(node.type)
     ? unwrap(node.expression)
     : node
 
@@ -84,7 +98,8 @@ const bindingsOf = (program) => {
   walk(program, (node) => {
     if (node.type === "ImportDeclaration" && isVitestSource(node.source)) {
       for (const specifier of node.specifiers) {
-        if (specifier.type === "ImportSpecifier" && nameOf(specifier.imported) === "vi") viNames.add(specifier.local.name)
+        if (specifier.type === "ImportSpecifier" && nameOf(specifier.imported) === "vi")
+          viNames.add(specifier.local.name)
         if (specifier.type === "ImportNamespaceSpecifier") moduleNames.add(specifier.local.name)
       }
     }
@@ -120,9 +135,7 @@ const bindingsOf = (program) => {
 const isVi = (node, { viNames, moduleNames }) => {
   const inner = unwrap(node)
   if (inner?.type === "Identifier") return viNames.has(inner.name)
-  return (
-    memberOf(inner) === "vi" && inner.object.type === "Identifier" && moduleNames.has(inner.object.name)
-  )
+  return memberOf(inner) === "vi" && inner.object.type === "Identifier" && moduleNames.has(inner.object.name)
 }
 
 const rootOf = (node) => {
@@ -156,13 +169,19 @@ export const isolationReasons = (text, fileName = "file.test.ts") => {
       if (member === null) reasons.add("vi[...]")
       else if (!pureMembers.has(member)) reasons.add(`vi.${member}`)
     }
-    if (node.type === "VariableDeclarator" && node.id.type === "ObjectPattern" && node.init && isVi(node.init, bindings)) {
+    if (
+      node.type === "VariableDeclarator" &&
+      node.id.type === "ObjectPattern" &&
+      node.init &&
+      isVi(node.init, bindings)
+    ) {
       for (const property of node.id.properties) {
         const member = property.type === "Property" ? nameOf(property.key) : undefined
         if (member === undefined || !pureMembers.has(member)) reasons.add(`vi.${member ?? "..."}`)
       }
     }
-    if (node.type === "CallExpression" && node.arguments.some((argument) => isVi(argument, bindings))) reasons.add("vi passed on")
+    if (node.type === "CallExpression" && node.arguments.some((argument) => isVi(argument, bindings)))
+      reasons.add("vi passed on")
     const target = writtenTarget(node)
     if (target !== undefined) {
       const touched = touchesGlobal(target)
