@@ -187,7 +187,7 @@ test("a second account opening the deck is refused owner", async ({ page, contex
   expect(textsIn((await stack.saved(deck))?.register ?? { elements: {} })).toEqual([typed])
 })
 
-test("an edit to a deck deleted on the server keeps its row and does not bring the deck back", async ({
+test("a deck deleted on the server closes the editor, takes no edit and does not come back after a reload", async ({
   page,
   context,
   stack,
@@ -200,31 +200,12 @@ test("an edit to a deck deleted on the server keeps its row and does not bring t
   await confirmedText(page, typed)
   expect((await stack.post("/decks/trash", { deck }, cookie)).json.ok).toBe(true)
   expect((await stack.post("/decks/delete", { decks: [deck] }, cookie)).json.ok).toBe(true)
-  expect(await stack.saved(deck)).toBeUndefined()
+  await expect(page.locator("[data-deck-refused]")).toBeVisible()
+  await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
   const commits = asked.filter((path) => path === "/decks/commit").length
-  await page.locator('[contenteditable="true"]').pressSequentially("!", { delay: 50 })
-  await expect.poll(() => asked.filter((path) => path === "/decks/commit").length).toBeGreaterThan(commits)
-  await expect
-    .poll(async () => (await deckRows(page)).filter((row) => row.kind === "pending").map((row) => textOf(row.value)))
-    .toEqual([`${typed}!`])
-  expect(await stack.saved(deck)).toBeUndefined()
-})
-
-test("a reload does not bring back a deck deleted on the server", async ({ page, context, stack }) => {
-  test.fail()
-  const cookie = await stack.signIn()
-  await signInBrowser(context, cookie)
-  const asked = await forward(page, stack)
-  const deck = await openClean(page)
-  await typeOver(page, typed)
-  await confirmedText(page, typed)
-  expect((await stack.post("/decks/trash", { deck }, cookie)).json.ok).toBe(true)
-  expect((await stack.post("/decks/delete", { decks: [deck] }, cookie)).json.ok).toBe(true)
-  const commits = asked.filter((path) => path === "/decks/commit").length
-  await page.locator('[contenteditable="true"]').pressSequentially("!", { delay: 50 })
-  await expect.poll(() => asked.filter((path) => path === "/decks/commit").length).toBeGreaterThan(commits)
   await page.reload()
-  await expect(page.locator(".thin-page[data-deck-ready]")).toHaveCount(1)
-  await expect.poll(async () => (await deckRows(page)).filter((row) => row.kind === "pending").length).toBe(0)
+  await expect(page.locator("[data-deck-refused]")).toBeVisible()
+  await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
+  expect(asked.filter((path) => path === "/decks/commit")).toHaveLength(commits)
   expect(await stack.saved(deck)).toBeUndefined()
 })

@@ -8,6 +8,9 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await expect(page).toHaveURL(/\/deck\//)
   await expect(page.locator('[contenteditable="true"]')).toHaveCount(2)
   const deck = page.url().split("/").at(-1)
+  await expect
+    .poll(async () => (await post(deckRoutes.open, { deck }, cookie)).json.register?.index?.total)
+    .toBeGreaterThan(0)
   const base = Number((await post(deckRoutes.open, { deck }, cookie)).json.revision)
   await capture("before-add")
   aira([
