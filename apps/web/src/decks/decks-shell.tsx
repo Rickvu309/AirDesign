@@ -73,7 +73,7 @@ export function DecksShell({
   const primary = { ...sections[0], href: realAccount ? "/" : sections[0].href }
   const rest = realAccount
     ? [
-        { ...sections[1], href: "/" },
+        { ...sections[1], href: "/all" },
         { ...sections[2], href: "/trash" },
         { ...sections[3], href: settingsPaths.usage },
       ]

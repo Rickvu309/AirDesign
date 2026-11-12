@@ -13,7 +13,7 @@ export function DeckBrowser({
   trailing,
   children,
   account,
-  home,
+  links,
   onNewDeck,
   onSignOut,
   onNavigate,
@@ -28,7 +28,7 @@ export function DeckBrowser({
   trailing?: ReactNode
   children: ReactNode
   account?: { email: string }
-  home?: boolean
+  links?: { grid: string; list: string }
   onNewDeck?: () => void
   onSignOut?: () => void
   onNavigate?: (path: string) => void
@@ -51,7 +51,7 @@ export function DeckBrowser({
             menu={menu}
             trailing={trailing}
             compact={firstVisit}
-            home={home}
+            links={links}
             onNewDeck={onNewDeck}
             menuOpen={menuOpen}
           />

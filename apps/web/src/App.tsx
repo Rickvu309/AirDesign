@@ -2,7 +2,7 @@ import { useEffect, useState, type ComponentType } from "react"
 import { OAuthAuthorize } from "./connect/oauth-authorize"
 import { LiveProof } from "./live-proof"
 import { ThinDeck } from "./thin-deck"
-import { Home } from "./decks/home"
+import { Home, homeSection } from "./decks/home"
 import { AccountPage } from "./settings/account-page"
 import { AgentsPage } from "./settings/agents-page"
 import { settingsPaths } from "./settings/settings-routes"
@@ -52,7 +52,8 @@ export default function App() {
     window.history.pushState(null, "", next)
     setPath(next)
   }
-  if (path === "/" || path === "/trash") return <Home trash={path === "/trash"} navigate={navigate} />
+  if (path === "/" || path === "/all" || path === "/trash")
+    return <Home section={homeSection(path)} navigate={navigate} />
   if (path === settingsPaths.account) return <AccountPage navigate={navigate} />
   if (path === settingsPaths.agents) return <AgentsPage navigate={navigate} />
   if (path === settingsPaths.usage) return <UsagePage navigate={navigate} />

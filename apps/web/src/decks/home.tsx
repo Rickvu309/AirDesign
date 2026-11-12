@@ -17,10 +17,12 @@ import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/dec
 import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/decks/screens/trash-list"
 import { starterDeckCards } from "@/decks/sample-decks"
 import { deckTime } from "@/decks/deck-time"
+import { addressOf, addressRead } from "@/decks/deck-address"
+import { allDecks, recentDecks, type ListedDeck } from "@/decks/deck-listing"
 import { importDeck } from "@/import-deck"
 import { signInAddress } from "@/thin-notice"
 
-type Deck = { deck: string; name: string; edited: string; created: string; trashed?: string }
+type Deck = ListedDeck
 type Listing = { ok: true; account: { email: string }; decks: Deck[]; trash: Deck[] }
 type Importing = { name: string; failed: false } | { name: string; failed: true; reason: ImportFailureReason }
 
@@ -75,15 +77,26 @@ function DeckTableSkeleton() {
   )
 }
 
+export type HomeSection = "recents" | "all-decks" | "trash"
+
+const sectionPaths: Record<HomeSection, string> = { recents: "/", "all-decks": "/all", trash: "/trash" }
+
+const sectionTitles: Record<HomeSection, string> = { recents: "Recents", "all-decks": "All decks", trash: "Trash" }
+
+export function homeSection(path: string): HomeSection {
+  return path === "/trash" ? "trash" : path === "/all" ? "all-decks" : "recents"
+}
+
 export function Home({
-  trash = false,
+  section = "recents",
   now = Date.now,
   navigate,
 }: {
-  trash?: boolean
+  section?: HomeSection
   now?: () => number
   navigate: (path: string) => void
 }) {
+  const trash = section === "trash"
   const [listing, setListing] = useState<Listing | null>(null)
   const [unavailable, setUnavailable] = useState(false)
   const [menu, setMenu] = useState(false)
@@ -93,7 +106,7 @@ export function Home({
   const [importing, setImporting] = useState<Importing | null>(null)
   const picker = useRef<HTMLInputElement>(null)
   const listFailed = useRef(false)
-  const listView = new URLSearchParams(window.location.search).get("view") === "list"
+  const listView = addressRead(window.location.search).list
   async function refresh() {
     try {
       const result = await post(deckRoutes.list.path, {})
@@ -162,18 +175,22 @@ export function Home({
   }
 
   const loading = listing === null && !unavailable
-  const decks = (trash ? listing?.trash : listing?.decks) ?? []
+  const held = (trash ? listing?.trash : listing?.decks) ?? []
+  const decks = trash ? held : section === "recents" ? recentDecks(held) : allDecks(held)
   const firstVisit =
-    listing !== null && !trash && decks.length === 0 && listing.trash.length === 0 && importing === null
-  const emptyRecents = listing !== null && !trash && decks.length === 0 && !firstVisit && importing === null
+    listing !== null && section === "recents" && held.length === 0 && listing.trash.length === 0 && importing === null
+  const noDecks = listing !== null && !trash && held.length === 0 && !firstVisit && importing === null
   return (
     <DeckBrowser
-      title={trash ? "Trash" : "Recents"}
-      active={trash ? "trash" : "recents"}
+      title={sectionTitles[section]}
+      active={section}
       account={listing?.account ?? { email: "" }}
       firstVisit={firstVisit}
       view={listView ? "list" : "grid"}
-      home
+      links={{
+        grid: addressOf(sectionPaths[section], { list: false, query: "" }),
+        list: addressOf(sectionPaths[section], { list: true, query: "" }),
+      }}
       menu={
         menu && <NewDeckMenu onImport={() => picker.current?.click()} onBlank={() => void blankDeck().then(choose)} />
       }
@@ -213,7 +230,7 @@ export function Home({
       )}
       {loading && (!listView || trash) && <DeckGridSkeleton className={trash ? "mt-6" : undefined} />}
       {loading && listView && !trash && <DeckTableSkeleton />}
-      {emptyRecents && (
+      {noDecks && (
         <div className="mt-8">
           <Card
             className="w-full"
@@ -232,7 +249,7 @@ export function Home({
           />
         </div>
       )}
-      {(listing !== null || importing !== null) && !emptyRecents && (
+      {(listing !== null || importing !== null) && !noDecks && (
         <DeckGrid className={trash ? "mt-6" : undefined}>
           {importing &&
             (importing.failed ? (
@@ -280,7 +297,7 @@ export function Home({
             : null}
         </DeckGrid>
       )}
-      {listView && !trash && listing !== null && !emptyRecents && (
+      {listView && !trash && listing !== null && !noDecks && (
         <div className="mt-8">
           <DeckTableHeader />
           {decks.map((deck) => (
