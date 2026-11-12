@@ -1,5 +1,5 @@
 import { Filmstrip } from "@airdesign/render"
-import { useState, type DragEvent, type KeyboardEvent, type ReactNode } from "react"
+import { useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { EditorIcon } from "@/editor/editor-icons"
 import { hairlineShadow, SidebarHead, surfaceShadow } from "@/editor/editor-chrome"
@@ -51,6 +51,16 @@ export function SlideSidebar({ run, title, strip }: { run: SidebarRun; title: st
 }
 
 function DeckStrip({ strip }: { strip: SlideStrip }) {
+  const list = useRef<HTMLDivElement>(null)
+  const following = useRef(false)
+  const { current, count } = strip
+  useLayoutEffect(() => {
+    if (!following.current) return
+    const next = list.current?.querySelector<HTMLElement>(`[data-slide-entry="${current + 1}"]`)
+    if (next === null || next === undefined) return
+    following.current = false
+    if (next !== document.activeElement) next.focus()
+  }, [current, count])
   const sections = strip.sections ?? noSections
   const [collapsed, setCollapsed] = useState<ReadonlySet<number>>(new Set())
   const [seen, setSeen] = useState(strip.current)
@@ -103,13 +113,30 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
             variant="ghost"
             className="h-8 w-8 rounded-none px-0 text-foreground hover:bg-transparent active:translate-y-0"
             aria-label="Add slide"
-            onClick={() => strip.onAdd?.()}
+            onClick={() => {
+              following.current = true
+              strip.onAdd?.()
+            }}
           >
             <EditorIcon name="plus" size={15} />
           </Button>
         </div>
       </div>
-      <div className="flex flex-col gap-1 overflow-y-auto px-2 pb-2" data-slide-list>
+      <div
+        ref={list}
+        className="flex flex-col gap-1 overflow-y-auto px-2 pb-2"
+        data-slide-list
+        onKeyDownCapture={(event) => {
+          if (slideKey(event) !== null) following.current = true
+        }}
+        onDropCapture={() => {
+          following.current = true
+        }}
+        onBlur={(event) => {
+          if (event.relatedTarget !== null && !event.currentTarget.contains(event.relatedTarget))
+            following.current = false
+        }}
+      >
         {sections.length === 0
           ? Array.from({ length: strip.count }, (_, index) => item(index))
           : sections.map((section, number) => {
