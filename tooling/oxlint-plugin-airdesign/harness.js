@@ -48,16 +48,82 @@ export const lintSource = (relativeName, source, rules) => {
   }
 }
 
-export const expectRejects = (name, relativeName, source, rules, text) => {
-  const result = lintSource(relativeName, source, rules)
-  if (result.status === 0 || !result.output.includes(text)) {
-    throw new Error(`${name}\nexpected a failure containing ${JSON.stringify(text)}\n${result.output}`)
+const queued = new Map()
+
+const configFor = (rules) =>
+  JSON.stringify({
+    categories: {
+      correctness: "off",
+      suspicious: "off",
+      pedantic: "off",
+      perf: "off",
+      style: "off",
+      restriction: "off",
+      nursery: "off",
+    },
+    jsPlugins: [{ name: "airdesign", specifier: path.join(pluginRoot, "index.js") }],
+    rules,
+  })
+
+const lintBatch = (rules, cases) => {
+  const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-oxlint-"))
+  try {
+    const files = cases.map((item, index) => {
+      const filePath = path.join(fixtureRoot, `case-${String(index)}`, item.relativeName)
+      fs.mkdirSync(path.dirname(filePath), { recursive: true })
+      fs.writeFileSync(filePath, item.source)
+      return filePath
+    })
+    const configPath = path.join(fixtureRoot, "oxlintrc.json")
+    fs.writeFileSync(configPath, configFor(rules))
+    const result = spawnSync(oxlint, ["--config", configPath, "--format", "unix", ...files], {
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    })
+    const everything = `${result.stdout ?? ""}${result.stderr ?? ""}${result.error ? result.error.message : ""}`
+    const lines = everything.split("\n")
+    return files.map((filePath) => {
+      const own = lines.filter((line) => line.startsWith(`${filePath}:`))
+      return {
+        failed: own.some((line) => line.includes("[Error")),
+        output: result.status === 0 || result.status === 1 ? own.join("\n") : everything,
+        broken: result.status !== 0 && result.status !== 1,
+      }
+    })
+  } finally {
+    fs.rmSync(fixtureRoot, { recursive: true, force: true })
   }
 }
 
-export const expectAccepts = (name, relativeName, source, rules) => {
-  const result = lintSource(relativeName, source, rules)
-  if (result.status !== 0) {
-    throw new Error(`${name}\nexpected a pass\n${result.output}`)
+const settleQueue = () => {
+  const problems = []
+  for (const { rules, cases } of queued.values()) {
+    const results = lintBatch(rules, cases)
+    for (const [index, item] of cases.entries()) {
+      const result = results[index]
+      if (item.expected === undefined) {
+        if (result.failed || result.broken) problems.push(`${item.name}\nexpected a pass\n${result.output}`)
+      } else if (!result.failed || result.broken || !result.output.includes(item.expected)) {
+        problems.push(`${item.name}\nexpected a failure containing ${JSON.stringify(item.expected)}\n${result.output}`)
+      }
+    }
   }
+  queued.clear()
+  if (problems.length > 0) throw new Error(problems.join("\n\n"))
+}
+
+const enqueue = (item, rules) => {
+  const key = JSON.stringify(rules)
+  const group = queued.get(key) ?? { rules, cases: [] }
+  if (queued.size === 0) process.once("beforeExit", settleQueue)
+  group.cases.push(item)
+  queued.set(key, group)
+}
+
+export const expectRejects = (name, relativeName, source, rules, text) => {
+  enqueue({ name, relativeName, source, expected: text }, rules)
+}
+
+export const expectAccepts = (name, relativeName, source, rules) => {
+  enqueue({ name, relativeName, source }, rules)
 }
