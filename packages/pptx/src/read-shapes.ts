@@ -1,5 +1,6 @@
 import type { TextValue } from "@airdesign/document"
 import { markupDocument, type MarkupElement } from "./element-span.js"
+import { slideAddresses } from "./package-address.js"
 import type { ShapeBox } from "./shape-write.js"
 import { markupChildren, shapeTextValue } from "./text-value-route.js"
 
@@ -17,8 +18,6 @@ export type ReadShape = {
 
 const kinds = new Set<string>(["p:sp", "p:pic", "p:graphicFrame", "p:cxnSp", "p:grpSp"])
 const slidePart = /^ppt\/slides\/[^/]+\.xml$/
-const presentationPart = "ppt/presentation.xml"
-const presentationRels = "ppt/_rels/presentation.xml.rels"
 const fallbackKind = "mc:Fallback"
 
 const attr = (element: MarkupElement, name: string): string | null => {
@@ -68,34 +67,9 @@ const emu = (value: string | null): number | null => {
   return Number.isInteger(number) ? number : null
 }
 
-const slidePartName = (target: string): string => {
-  if (target.startsWith("/")) return target.slice(1)
-  if (target.startsWith("ppt/")) return target
-  return `ppt/${target}`
-}
-
 const slideByPart = (parts: ReadonlyMap<string, Uint8Array>): ReadonlyMap<string, string> => {
-  const presentation = parts.get(presentationPart)
-  const rels = parts.get(presentationRels)
   const slides = new Map<string, string>()
-  if (presentation === undefined || rels === undefined) return slides
-  const relationships = new Map<string, MarkupElement>()
-  for (const item of markupDocument(rels).elements) {
-    if (item.kind !== "Relationship") continue
-    const id = attr(item, "Id")
-    if (id !== null && !relationships.has(id)) relationships.set(id, item)
-  }
-  for (const element of markupDocument(presentation).elements) {
-    if (element.kind !== "p:sldId" || element.id === null) continue
-    const rid = attr(element, "r:id")
-    if (rid === null) continue
-    const relationship = relationships.get(rid)
-    if (relationship === undefined) continue
-    const type = attr(relationship, "Type")
-    const target = attr(relationship, "Target")
-    if (type === null || target === null || !type.endsWith("/slide")) continue
-    slides.set(slidePartName(target), element.id)
-  }
+  for (const address of slideAddresses(parts)) slides.set(address.part, address.slide)
   return slides
 }
 

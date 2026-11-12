@@ -1,6 +1,7 @@
 import { elementId, type TextValue } from "@airdesign/document"
 import { exportElements } from "./element-export.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
+import { presentationPart, presentationRels, relsOf, slidePart } from "./package-address.js"
 import { readShapes } from "./read-shapes.js"
 import { shapeAnimated } from "./shape-id.js"
 import { applyRoute, shapeById, type SlideRoute } from "./slide-route.js"
@@ -23,8 +24,6 @@ export type RouteRun = {
   readonly error: string | null
 }
 
-const presentationPart = "ppt/presentation.xml"
-const presentationRels = "ppt/_rels/presentation.xml.rels"
 const contentTypesPart = "[Content_Types].xml"
 const slidePrefix = "ppt/slides/slide"
 const slideSuffix = ".xml"
@@ -113,10 +112,6 @@ function presentation(parts: ReadonlyMap<string, Uint8Array>): readonly MarkupEl
   return markup(bytes)
 }
 
-function byId(elements: readonly MarkupElement[], kind: string, id: string): MarkupElement | null {
-  return elements.find((element) => element.kind === kind && element.id === id) ?? null
-}
-
 function slideFileNumber(name: string): number | null {
   if (!name.startsWith(slidePrefix) || !name.endsWith(slideSuffix)) return null
   return digits(name.slice(slidePrefix.length, name.length - slideSuffix.length))
@@ -131,29 +126,14 @@ function nextSlideFile(parts: ReadonlyMap<string, Uint8Array>): number {
   return max + 1
 }
 
-function relsPart(part: string): string {
-  const slash = part.lastIndexOf("/")
-  return `${part.slice(0, slash)}/_rels/${part.slice(slash + 1)}.rels`
-}
-
-function slidePartName(target: string): string {
-  if (target.startsWith("/")) return target.slice(1)
-  if (target.startsWith("ppt/")) return target
-  return `ppt/${target}`
-}
-
-function slidePart(parts: ReadonlyMap<string, Uint8Array>, slide: string): string {
-  const source = byId(presentation(parts), "p:sldId", slide)
-  if (source === null) throw new Error("slide")
-  const rid = attribute(source, "r:id")
+function slideFile(parts: ReadonlyMap<string, Uint8Array>, slide: string): string {
+  presentation(parts)
   const rels = parts.get(presentationRels)
-  if (rid === null || rels === undefined) throw new Error("slide")
-  const relationship = markup(rels).find(
-    (element) => element.kind === "Relationship" && attribute(element, "Id") === rid,
-  )
-  const target = relationship === undefined ? null : attribute(relationship, "Target")
-  if (target === null) throw new Error("slide")
-  return slidePartName(target)
+  if (rels === undefined) throw new Error("slide")
+  markup(rels)
+  const part = slidePart(parts, slide)
+  if (part === null) throw new Error("slide")
+  return part
 }
 
 function slideTouch(part: string): PartTouch {
@@ -168,17 +148,17 @@ function addedSlideTouch(parts: ReadonlyMap<string, Uint8Array>): PartTouch {
   const part = `${slidePrefix}${nextSlideFile(parts)}${slideSuffix}`
   return {
     changed: [presentationPart, presentationRels, contentTypesPart],
-    added: [part, relsPart(part)],
+    added: [part, relsOf(part)],
     removed: [],
   }
 }
 
 function removedSlideTouch(parts: ReadonlyMap<string, Uint8Array>, slide: string): PartTouch {
-  const part = slidePart(parts, slide)
+  const part = slideFile(parts, slide)
   return {
     changed: [presentationPart, presentationRels, contentTypesPart],
     added: [],
-    removed: [part, relsPart(part)],
+    removed: [part, relsOf(part)],
   }
 }
 
@@ -195,7 +175,7 @@ export function elementExportTouch(parts: ReadonlyMap<string, Uint8Array>): Part
   const added: string[] = []
   for (let step = 0; step < 3; step += 1) {
     const part = `${slidePrefix}${first + step}${slideSuffix}`
-    added.push(part, relsPart(part))
+    added.push(part, relsOf(part))
   }
   return {
     changed: [presentationPart, presentationRels, contentTypesPart],

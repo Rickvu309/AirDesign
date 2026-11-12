@@ -1,12 +1,11 @@
 import { readElementId, shapeOf, type ElementId } from "@airdesign/document"
-import { markupDocument, type MarkupElement } from "./element-span.js"
+import { markupDocument } from "./element-span.js"
+import { slidePart } from "./package-address.js"
 import { oneRunValue, writeRoute, type SlideRoute } from "./slide-route.js"
 import { writeStructuralRoute } from "./structural-route.js"
 
 const slideId = /^(?:[0-9]{1,10}|n[0-9a-z]{12})$/
 const createdId = /^n[0-9a-z]{12}$/
-const presentationPart = "ppt/presentation.xml"
-const presentationRels = "ppt/_rels/presentation.xml.rels"
 
 export type ElementEdit =
   | { readonly id: ElementId; readonly name: "text"; readonly text: string }
@@ -107,41 +106,10 @@ function splitId(id: string): { readonly slide: string; readonly shape: string }
   return shapeOf(read)
 }
 
-function attribute(element: MarkupElement, name: string): string | null {
-  for (const item of element.attributes) if (item.name === name) return item.value
-  return null
-}
-
-function slidePartName(target: string): string {
-  if (target.startsWith("/")) return target.slice(1)
-  if (target.startsWith("ppt/")) return target
-  return `ppt/${target}`
-}
-
-function partForSlide(parts: ReadonlyMap<string, Uint8Array>, slide: string): string | null {
-  const presentation = parts.get(presentationPart)
-  const rels = parts.get(presentationRels)
-  if (presentation === undefined || rels === undefined) return null
-  const relationships = markupDocument(rels).elements
-  for (const element of markupDocument(presentation).elements) {
-    if (element.kind !== "p:sldId" || element.id !== slide) continue
-    const rid = attribute(element, "r:id")
-    if (rid === null) return null
-    for (const item of relationships) {
-      if (item.kind !== "Relationship" || attribute(item, "Id") !== rid) continue
-      const target = attribute(item, "Target")
-      if (target === null || target === "") return null
-      return slidePartName(target)
-    }
-    return null
-  }
-  return null
-}
-
 function originalPart(known: Known, slide: string): string {
   let part = known.slideParts.get(slide)
   if (part === undefined) {
-    part = partForSlide(known.original, slide)
+    part = slidePart(known.original, slide)
     known.slideParts.set(slide, part)
   }
   if (part === null || !known.original.has(part)) throw new Error("slide")
@@ -339,7 +307,7 @@ function slideNumber(slide: Slide, written: ReadonlyMap<string, string>): string
 
 function partOf(slide: Slide, current: ReadonlyMap<string, Uint8Array>, written: ReadonlyMap<string, string>): string {
   if (slide.kind === "original") return slide.part
-  const part = partForSlide(current, slideNumber(slide, written))
+  const part = slidePart(current, slideNumber(slide, written))
   if (part === null) throw new Error("slide")
   return part
 }
