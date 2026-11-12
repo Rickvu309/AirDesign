@@ -28,6 +28,7 @@ import {
 } from "./judge-proof.mjs"
 import { scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
+import { phaseClock } from "./pptx-phases.mjs"
 import { judgedWrites, timeMetric } from "./metrics.mjs"
 import {
   afterRender,
@@ -61,6 +62,7 @@ import { blankCase, blankExportLines, blankExportName } from "./blank-export.mjs
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 await takeMachineLock()
 const checkStarted = Date.now()
+const phases = phaseClock()
 const dotnet = process.env.PPTX_DOTNET ?? "dotnet"
 const soffice = process.env.PPTX_SOFFICE ?? "soffice"
 const fixtures = path.join(root, "scripts/pptx-fixtures")
@@ -113,7 +115,7 @@ const renderCacheReady = readMachine({ soffice, pdftoppm: "pdftoppm", env: proce
   }),
 )
 
-await run("pnpm", ["--filter", "@airdesign/pptx", "build"])
+await phases.time("build", () => run("pnpm", ["--filter", "@airdesign/pptx", "build"]))
 const browserSpec = freshExports({
   deck: browserExportPath,
   paragraphs: paragraphsExportPath,
@@ -126,7 +128,7 @@ const browserSpec = freshExports({
     path.join(root, "tests/browser", diagramEditsExportName),
     path.join(root, "tests/browser", chartEditsExportName),
   ],
-  run: () => run("pnpm", ["exec", "playwright", "test", ...browserExportArgs]),
+  run: () => phases.time("browser", () => run("pnpm", ["exec", "playwright", "test", ...browserExportArgs])),
 })
 const pptx = await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href)
 const require = createRequire(path.join(root, "packages/pptx/package.json"))
@@ -203,6 +205,7 @@ const freshFails = freshMissFails({
   changedSince: (base) => gitAnswer(changedSinceArgs(base))?.split("\n"),
 })
 const cleanDecks = ["clean.pptx", "nasa-1d-cnn.pptx", "doe-heat-pumps.pptx", "census-updating-spm.pptx"]
+const endPrep = phases.begin("prep")
 const parts = new Map()
 for (const name of new Set([...names, ...cleanDecks])) {
   if (name === browserExportName) continue
@@ -229,9 +232,11 @@ const routeFiles = writtenDecks.flatMap((deck) =>
 const decks = cleanDecks.map((name) => ({ name, parts: parts.get(name) }))
 const samples = Number(process.env.JUDGE_SAMPLES ?? 3)
 const runs = proofSeeds.map((run) => ({ ...run, planted: plantSamples({ pptx, decks, seed: run.seed, samples }) }))
+endPrep()
 const proofFolder = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-judge-proof-"))
 const sampleFile = (seed, index) => `judge-sample-${seed}-${index}.pptx`
 const judgedFiles = async () => {
+  const endValidate = phases.begin("validate")
   try {
     for (const run of runs) {
       for (const [index, sample] of run.planted.entries()) {
@@ -252,6 +257,7 @@ const judgedFiles = async () => {
     )
     return { found, planting }
   } finally {
+    endValidate()
     fs.rmSync(proofFolder, { recursive: true, force: true })
   }
 }
@@ -279,9 +285,10 @@ if (spec.ok) {
 }
 const [{ found: lists, planting }] = await Promise.all([
   judgedFiles(),
-  ...Array.from({ length: Math.min(os.availableParallelism(), 4) }, renderNext),
+  phases.time("render", () => Promise.all(Array.from({ length: Math.min(os.availableParallelism(), 4) }, renderNext))),
 ])
 console.log((await renderCacheReady).line())
+const endJudging = phases.begin("judging")
 const ids = new Map([...parts].map(([name, packageParts]) => [name, pptx.shapeIdCounts(packageParts)]))
 const orders = new Map([...parts].map(([name, packageParts]) => [name, pptx.branchOrderErrors(packageParts)]))
 const references = new Map([...parts].map(([name, packageParts]) => [name, pptx.danglingShapeReferences(packageParts)]))
@@ -390,9 +397,11 @@ for (const row of cases) {
     )
   }
 }
+endJudging()
 const checkSeconds = decision.duration(() => timeMetric(root, "pptx-check-duration", checkStarted))
 console.log(checkSeconds.line)
 if (checkSeconds.over !== undefined) console.log(checkSeconds.over)
+const endRoutes = phases.begin("routes")
 const routeFailures = []
 const seen = new Map()
 for (const deck of decision.hardOf(writtenDecks)) {
@@ -425,6 +434,8 @@ const corpus = corpusResult({ decision, pptx, decks: writtenDecks, lists, render
 for (const line of corpus.lines) console.log(line)
 console.log(`${corpus.judged} corpus decks judged, ${corpus.misses} misses, ${corpus.failed} fail this run`)
 fs.rmSync(routeDir, { recursive: true, force: true })
+endRoutes()
+for (const line of phases.lines()) console.log(line)
 for (const failure of routeFailures) console.log(JSON.stringify(failure))
 if (failed > 0) console.log(`${failed} pptx checks failed`)
 else console.log(`${cases.length} pptx checks passed`)
