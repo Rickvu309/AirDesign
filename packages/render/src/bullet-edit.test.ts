@@ -114,6 +114,7 @@ it("keeps a bullet out of the caret, Enter and Backspace", async () => {
   ])
   const empty = editor.querySelectorAll("[data-paragraph]")[1]
   if (empty === undefined) throw new Error("no second paragraph")
+  expect((empty as HTMLElement).style.getPropertyValue("--bullet")).not.toBe("none")
   const selection = window.getSelection()
   const range = document.createRange()
   range.setStart(empty, 0)
