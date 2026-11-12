@@ -46,11 +46,13 @@ test("signed out goes to sign-in with the path and query", async ({ page }) => {
   await expect(page).toHaveURL(/\/sign-in\?next=%2F%3Fview%3Dlist$/)
 })
 
-test("empty home shows the designed first visit and import menu", async ({ page }) => {
+test("empty home lists no sample decks and offers the import menu", async ({ page }) => {
   await store(page, [])
   await page.goto("/")
-  await expect(page.getByRole("heading", { name: "Scratchpad" })).toBeVisible()
-  await expect(page.getByText("Your first draft")).toBeVisible()
+  await expect(page.getByText("home@example.com")).toBeVisible()
+  await expect(page.getByRole("heading", { level: 2 })).toHaveCount(0)
+  await expect(page.getByText("Scratchpad", { exact: true })).toHaveCount(0)
+  await expect(page.getByText("Welcome to AirDesign", { exact: true })).toHaveCount(0)
   await page.getByRole("button", { name: "New deck", exact: true }).click()
   await expect(page.getByRole("button", { name: "Import PowerPoint" })).toBeVisible()
   await expect(page.getByRole("button", { name: "Blank deck", exact: true })).toBeVisible()
