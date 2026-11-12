@@ -184,3 +184,7 @@ export async function findAccess(db: Sql, token: string): Promise<string | undef
   )
   return result.rows[0]?.email
 }
+
+export async function deleteAccess(db: Sql, token: string): Promise<void> {
+  await db.query("delete from session.access where token = $1", [digest(token)])
+}

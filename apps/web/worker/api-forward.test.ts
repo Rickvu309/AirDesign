@@ -3,7 +3,17 @@ import { createServer, type Server } from "node:http"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 
 import worker from "./api-forward.js"
-import { deckPaths, deckRoutes, mcpPaths, oauthPaths, oauthRoutes, signInPaths, signInRoutes } from "@airdesign/catalog"
+import {
+  deckPaths,
+  deckRoutes,
+  mcpPaths,
+  oauthPaths,
+  oauthRoutes,
+  signInPaths,
+  signInRoutes,
+  signOutPaths,
+  signOutRoutes,
+} from "@airdesign/catalog"
 
 type Seen = {
   method: string | undefined
@@ -65,7 +75,11 @@ function env() {
 
 describe("API forwarding", () => {
   it("forwards every catalog deck and sign-in path instead of serving assets", async () => {
-    for (const route of [...Object.values(deckRoutes), ...Object.values(signInRoutes)]) {
+    for (const route of [
+      ...Object.values(deckRoutes),
+      ...Object.values(signInRoutes),
+      ...Object.values(signOutRoutes),
+    ]) {
       const method = "method" in route ? route.method : "POST"
       const response = await worker.fetch(new Request(`https://example.com${route.path}`, { method }), env())
       expect(seen.at(-1)?.url).toBe(route.path)
@@ -94,7 +108,9 @@ describe("API forwarding", () => {
     const routed = (path: string) =>
       entries.some((entry) => !entry.startsWith("!") && matches(entry, path)) &&
       !entries.some((entry) => entry.startsWith("!") && matches(entry.slice(1), path))
-    expect([...signInPaths, ...deckPaths, ...oauthPaths, ...mcpPaths].filter((path) => !routed(path))).toEqual([])
+    expect(
+      [...signInPaths, ...signOutPaths, ...deckPaths, ...oauthPaths, ...mcpPaths].filter((path) => !routed(path)),
+    ).toEqual([])
   })
 
   it("forwards the commit request and returns the API response", async () => {
@@ -148,6 +164,7 @@ describe("API forwarding", () => {
   it.each([
     "/sign-in/email",
     "/sign-in/code",
+    "/sign-out",
     "/decks/open",
     "/decks/watch",
     "/decks/list",
