@@ -1,6 +1,10 @@
 import path from "node:path"
 import { defineConfig } from "vitest/config"
 
+const sharedWorker = ["catalog", "device", "document", "engine", "oauth", "usage"].map(
+  (name) => `packages/${name}/**/*.test.ts`,
+)
+
 const alias = [
   {
     find: /^@airdesign\/([a-z0-9-]+)$/,
@@ -42,7 +46,17 @@ export default defineConfig({
             "**/dist/**",
             "packages/render/**/*.test.ts",
             "apps/api/**/*.test.ts",
+            ...sharedWorker,
           ],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "shared",
+          include: sharedWorker,
+          exclude: ["**/node_modules/**", "**/dist/**"],
+          isolate: false,
         },
       },
       {
