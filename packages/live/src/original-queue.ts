@@ -1,4 +1,5 @@
 import { deckRoutes } from "@airdesign/catalog"
+import { flushRename } from "./deck-rename.js"
 import { sendOriginal } from "./original.js"
 import { getParts } from "./part.js"
 import { post } from "./remote.js"
@@ -11,6 +12,7 @@ export async function queueOriginal(deck: string): Promise<void> {
 }
 
 export async function flushOriginal(deck: string): Promise<{ readonly ok: boolean }> {
+  await flushRename(deck)
   try {
     if ((await readSlot(key(deck))) !== true) return { ok: true }
     const stored = await getParts(deck)

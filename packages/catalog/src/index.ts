@@ -9,7 +9,7 @@ export {
   type ToolCall,
 } from "./aira-turn.js"
 export { catalog, projectTools, toolInputSchema, type AgentOp, type CommandOp } from "./catalog.js"
-export { deckName } from "./deck-name.js"
+export { deckName, readDeckName } from "./deck-name.js"
 export { storableText } from "./storable-text.js"
 export {
   deckRoutes,

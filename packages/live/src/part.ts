@@ -57,6 +57,15 @@ export async function putParts(deck: string, parts: DeckParts): Promise<PartsRes
   }
 }
 
+export async function renameParts(deck: string, name: string): Promise<{ readonly ok: boolean }> {
+  const parsed = readDeckId(deck)
+  if (!parsed.ok) return { ok: false }
+  const stored = await readSlot(partKey(parsed.deck))
+  if (!isPartRow(stored)) return { ok: false }
+  await writeSlot(partKey(parsed.deck), { ...stored, name })
+  return { ok: true }
+}
+
 export async function getParts(deck: string): Promise<PartsResult> {
   const parsed = readDeckId(deck)
   if (!parsed.ok) return parsed

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { AirdesignMark } from "@/decks/airdesign-mark"
+import { DeckTitleEdit } from "@/editor/deck-title-edit"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 
@@ -12,7 +13,17 @@ export const floatShadow = "shadow-[0px_0px_0px_1px_var(--black-8),0px_12px_32px
 
 export const hairlineShadow = "shadow-[0px_0px_0px_1px_var(--field-edge)]"
 
-export function DeckTitle({ title, className }: { title: string; className?: string }) {
+export function DeckTitle({
+  title,
+  className,
+  onRename,
+}: {
+  title: string
+  className?: string
+  onRename?: (name: string) => void
+}) {
+  if (onRename !== undefined)
+    return <DeckTitleEdit title={title} onRename={onRename} {...(className === undefined ? {} : { className })} />
   return (
     <span className={cn("flex min-w-0 items-center gap-1", className)}>
       <span className="truncate text-[length:var(--type-dense)] font-medium text-foreground">{title}</span>
@@ -66,16 +77,18 @@ export function SidebarHead({
   title,
   trailing,
   gridOff = false,
+  onRename,
 }: {
   title: string
   trailing?: ReactNode
   gridOff?: boolean
+  onRename?: (name: string) => void
 }) {
   return (
     <div className="flex h-14 shrink-0 items-center justify-between pr-2 pl-3">
       <span className="flex items-center gap-2">
         <AirdesignMark size={20} />
-        <DeckTitle title={title} />
+        <DeckTitle title={title} {...(onRename === undefined ? {} : { onRename })} />
       </span>
       {trailing ?? (
         <Button
