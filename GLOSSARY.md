@@ -91,3 +91,55 @@ _Avoid_: validate, verify, diff
 **planted fault**:
 A break put into code on purpose, to see whether a check catches it.
 _Avoid_: mutant, planted break, injected bug
+
+## Product words
+
+The words a person reads in AirDesign. Code may keep its own names; the screen uses these. Every button, title and menu item is in sentence case, except the names Trash, PowerPoint, Aira and AirDesign. Copy speaks to the person as "you", never "we".
+
+**deck**:
+One presentation a person makes, imports or exports.
+_Avoid_: presentation, project, file (a file is what a deck is imported from or exported to)
+
+**slide**:
+One page of a deck.
+_Avoid_: page, frame
+
+**import**:
+To make a deck from a PowerPoint file.
+_Avoid_: upload, open, convert
+
+**export**:
+To save a deck as a PowerPoint or PDF file.
+_Avoid_: download, save as
+
+**Trash**:
+Where a deck goes when a person moves it out of their decks. It can be restored for 30 days. Its actions are Move to Trash, Restore and Delete for good.
+_Avoid_: bin, archive, remove
+
+**agent**:
+Software that works on a person's decks over MCP, such as Claude or Codex. A person connects and disconnects it.
+_Avoid_: bot, integration, app
+
+**Aira**:
+The agent built into AirDesign. It reads a deck, rewrites its text, and moves or resizes what is on its slides.
+_Avoid_: the assistant, the AI
+
+**request**:
+What a person asks Aira to do, and everything Aira does to answer it.
+_Avoid_: run, job, prompt (a run is the code's word for it)
+
+**step**:
+One thing Aira did while it answered a request, written in the past tense when done: "Read the deck", "Edited slides". A step it could not do starts with "Couldn't".
+_Avoid_: tool call, action
+
+**usage**:
+How much of the week's Aira allowance a person has spent. It resets each week.
+_Avoid_: quota, tokens, limit (the limit is where usage runs out)
+
+**credits**:
+Money a person adds to reset usage before the week ends.
+_Avoid_: balance, funds
+
+**Unable to**:
+How a failure's title starts: what did not happen, then the next step in the body. "Unable to load your decks. Check your connection and try again."
+_Avoid_: "Failed to", "Error", "Oops", "Something went wrong"

@@ -1,11 +1,10 @@
 import { useRef, type KeyboardEvent } from "react"
 import { PromptInput, PromptInputButton, PromptInputTextarea } from "@/components/ai-elements/prompt-input"
+import { airaCopy } from "@/copy/aira-copy"
 import { creditsCopy } from "@/credits/credits-sample"
 import { surfaceShadow } from "@/editor/editor-chrome"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
-
-const addHint = "Add to the request"
 
 const focusRing =
   "focus-within:shadow-[0px_0px_0px_1px_var(--ring),0px_0px_0px_3px_var(--strong-15),0px_2px_8px_var(--black-5)]"
@@ -30,7 +29,7 @@ export function AiraComposer({
   const field = useRef<HTMLTextAreaElement>(null)
   const composing = useRef(false)
   const waiting = limit !== undefined
-  const hint = limit ?? (working ? addHint : creditsCopy.askAira)
+  const hint = limit ?? (working ? airaCopy.addToRequest : creditsCopy.askAira)
   function onKey(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== "Enter" || event.shiftKey) return
     if (composing.current || event.nativeEvent.isComposing) return

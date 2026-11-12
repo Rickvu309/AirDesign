@@ -2,7 +2,7 @@ import { accountRoutes, signOutRoutes } from "@airdesign/catalog"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { productCopy } from "@/copy/product-copy"
+import { disconnectBodyOf, disconnectTitleOf, productCopy } from "@/copy/product-copy"
 import { DangerDialog } from "@/decks/danger-dialog"
 import { DeckGlyph } from "@/decks/deck-glyph"
 import { DecksShell } from "@/decks/decks-shell"
@@ -76,6 +76,7 @@ export function AgentsPage({ now = Date.now, navigate }: { now?: () => number; n
   const [copied, setCopied] = useState(false)
   const [disconnecting, setDisconnecting] = useState<ConnectedAgent | null>(null)
   const [busy, setBusy] = useState(false)
+  const [disconnectFailed, setDisconnectFailed] = useState(false)
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   async function refresh() {
@@ -112,12 +113,13 @@ export function AgentsPage({ now = Date.now, navigate }: { now?: () => number; n
 
   async function confirmDisconnect(item: ConnectedAgent) {
     setBusy(true)
+    setDisconnectFailed(false)
     try {
-      const result = await post(accountRoutes.revokeAgent.path, { id: item.id })
+      const result = await post(accountRoutes.revokeAgent.path, { id: item.id }).catch(() => ({ ok: false }))
       if (result.ok) {
         setDisconnecting(null)
         await refresh()
-      }
+      } else setDisconnectFailed(true)
     } finally {
       setBusy(false)
     }
@@ -142,7 +144,13 @@ export function AgentsPage({ now = Date.now, navigate }: { now?: () => number; n
           <div className="mx-auto mt-7 flex w-[860px] flex-col gap-4">
             <Card title={settingsCopy.agents} description={settingsCopy.agentsBody}>
               {listing === null && unavailable ? (
-                <div className="py-3 shadow-[inset_0_1px_0_0_var(--line)]">
+                <div
+                  role="alert"
+                  className="flex items-center justify-between gap-4 py-3 shadow-[inset_0_1px_0_0_var(--line)]"
+                >
+                  <span className="text-[length:var(--type-body)] leading-[18px] text-muted-foreground">
+                    {productCopy.agentsFailed}
+                  </span>
                   <Button type="button" variant="outline" className={settingsAction} onClick={() => void refresh()}>
                     {productCopy.payTryAgain}
                   </Button>
@@ -166,7 +174,7 @@ export function AgentsPage({ now = Date.now, navigate }: { now?: () => number; n
                           className={settingsAction}
                           onClick={() => setDisconnecting(item)}
                         >
-                          Disconnect
+                          {productCopy.disconnect}
                         </Button>
                       }
                     />
@@ -194,16 +202,27 @@ export function AgentsPage({ now = Date.now, navigate }: { now?: () => number; n
         </div>
         {disconnecting !== null && (
           <DangerDialog
-            title={`Disconnect ${agentLabel(disconnecting)}?`}
-            body={productCopy.trashEmptyBody}
-            action="Disconnect"
+            title={disconnectTitleOf(agentLabel(disconnecting))}
+            body={disconnectBodyOf(agentLabel(disconnecting))}
+            action={productCopy.disconnect}
             busy={busy}
             className="pb-6"
             onCancel={() => {
-              if (!busy) setDisconnecting(null)
+              if (busy) return
+              setDisconnecting(null)
+              setDisconnectFailed(false)
             }}
             onConfirm={() => void confirmDisconnect(disconnecting)}
-          />
+          >
+            {disconnectFailed ? (
+              <p
+                role="alert"
+                className="mt-3 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-destructive"
+              >
+                {productCopy.disconnectFailed}
+              </p>
+            ) : null}
+          </DangerDialog>
         )}
       </DecksShell>
     </div>

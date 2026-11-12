@@ -694,7 +694,7 @@ test("one slide shows at a time", async ({ page }, testInfo) => {
 })
 
 const offlineWords = "You're offline. Edits are saved on this device."
-const importFailedWords = "Unable to import this file"
+const openFailedWords = "Unable to open this deck"
 const exportFailedWords = "Unable to export. Your deck is unchanged."
 
 test("an edit made offline shows the offline words and they go when a commit answers", async ({ page, context }) => {
@@ -802,13 +802,13 @@ test("the offline words go when the next commit is answered 404 on a device that
   await expect(page.getByText(offlineWords)).toHaveCount(0)
 })
 
-test("a deck the device and the server do not have shows the import words, and Choose another file goes home", async ({
+test("a deck the device and the server do not have says it cannot open, and Go to your decks goes home", async ({
   page,
 }) => {
   await page.goto("/deck/missing-deck")
-  await expect(page.getByText(importFailedWords)).toBeVisible()
+  await expect(page.getByText(openFailedWords)).toBeVisible()
   expect(new URL(page.url()).pathname).toBe("/deck/missing-deck")
-  await page.getByRole("button", { name: "Choose another file" }).click()
+  await page.getByRole("button", { name: "Go to your decks" }).click()
   await expect(page).toHaveURL(/\/$/)
   await expect(page.locator("input[type=file]")).toHaveCount(1)
 })
@@ -861,7 +861,7 @@ test("after a failed import a good file keeps each box's edit on its own box", a
   await writeFile(notes, "this is not a PowerPoint file")
   await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(notes)
-  await expect(page.getByText("Unable to import", { exact: true })).toBeVisible()
+  await expect(page.getByText("Unable to open this file", { exact: true })).toBeVisible()
   await open(page, join(fixtures, "doe-heat-pumps.pptx"))
   await showSlide(page, 4)
   const title = page.locator('[contenteditable="true"]').filter({ hasText: /^What is a heat pump\?$/ })
@@ -890,6 +890,6 @@ test("a file the device store refuses shows the failed import on the deck home",
   await writeFile(crowded, await writer.close())
   await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(crowded)
-  await expect(page.getByText("Unable to import", { exact: true })).toBeVisible()
+  await expect(page.getByText("Unable to save this deck", { exact: true })).toBeVisible()
   expect(new URL(page.url()).pathname).toBe("/")
 })

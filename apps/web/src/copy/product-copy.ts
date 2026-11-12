@@ -6,6 +6,19 @@ export function usageLimitBodyOn(when: string): string {
   return `${usageResetsOn(when)}. Your request is saved.`
 }
 
+export function disconnectTitleOf(agent: string): string {
+  return `Disconnect ${agent}?`
+}
+
+export function disconnectBodyOf(agent: string): string {
+  return `${agent} can no longer read or edit your decks. You can connect it again at any time.`
+}
+
+export function emptyTrashTitleOf(count: number): string {
+  const decks = new Intl.PluralRules("en").select(count) === "one" ? "deck" : "decks"
+  return `Delete ${new Intl.NumberFormat("en").format(count)} ${decks} for good?`
+}
+
 const sampleReset = "Monday at 8:00 AM"
 
 export const productCopy = {
@@ -21,9 +34,6 @@ export const productCopy = {
   agentResumeLine: "Pick up where you left off.",
   agentResume: "Resume",
   agentName: "Aira",
-  agentCaution: "Aira can be wrong. Check a number, a quote, or a slide before you rely on it.",
-  agentFailedTitle: "Unable to finish this run",
-  agentFailedBody: "Your work so far is saved.",
   creditsTitle: "Credits",
   creditsFacts: "Each reset is $5. Credits never expire.",
   creditsAdd: "Add credits",
@@ -48,8 +58,18 @@ export const productCopy = {
   editorOffline: "You're offline. Edits are saved on this device.",
   trashEmptyBody: "This can't be undone.",
   trashEmptyAction: "Delete for good",
-  importFailedTitle: "Unable to import this file",
+  importing: "Importing",
+  moveToTrash: "Move to Trash",
   importChooseAnother: "Choose another file",
+  importRemove: "Remove",
+  deckOpenFailed: "Unable to open this deck",
+  goToDecks: "Go to your decks",
+  decksFailedTitle: "Unable to load your decks",
+  decksFailedBody: "Check your connection and try again.",
+  deleteFailed: "Unable to delete these decks. Check your connection and try again.",
+  agentsFailed: "Unable to load your agents. Check your connection and try again.",
+  disconnect: "Disconnect",
+  disconnectFailed: "Unable to disconnect. Check your connection and try again.",
   blankDeck: "Blank deck",
   amount: "Amount",
   currentBalance: "Current balance",

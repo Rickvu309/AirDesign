@@ -1,11 +1,12 @@
 import { ConversationEmptyState } from "@/components/ai-elements/conversation"
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion"
-import { airaStarters, productCopy } from "@/copy/product-copy"
+import { airaCopy } from "@/copy/aira-copy"
+import { productCopy } from "@/copy/product-copy"
 import { AiraTile } from "@/settings/settings-controls"
 
 export function AiraWelcome({
   onPick,
-  starters = airaStarters,
+  starters = airaCopy.starters,
   disabled = false,
 }: {
   onPick: (text: string) => void
@@ -14,11 +15,7 @@ export function AiraWelcome({
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 pt-3 pb-4" data-aira-welcome>
-      <ConversationEmptyState
-        icon={<AiraTile large />}
-        title={productCopy.agentName}
-        description={productCopy.agentCaution}
-      />
+      <ConversationEmptyState icon={<AiraTile large />} title={productCopy.agentName} description={airaCopy.welcome} />
       {starters.length === 0 ? null : (
         <Suggestions>
           {starters.slice(0, 4).map((starter) => (
@@ -26,6 +23,9 @@ export function AiraWelcome({
           ))}
         </Suggestions>
       )}
+      <p className="px-3 text-center text-[length:var(--type-caption)] leading-[var(--leading-dense)] text-pretty text-muted-foreground">
+        {airaCopy.caution}
+      </p>
     </div>
   )
 }

@@ -2,7 +2,8 @@ import { useEffect, useId, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation"
 import { useConversationFollow } from "@/components/ai-elements/conversation-follow"
-import { productCopy, usageResetsOn } from "@/copy/product-copy"
+import { airaBackOn, airaCopy } from "@/copy/aira-copy"
+import { productCopy } from "@/copy/product-copy"
 import { creditsCopy } from "@/credits/credits-sample"
 import { UsageRing } from "@/editor/agent-panel"
 import { EditorIcon } from "@/editor/editor-icons"
@@ -29,7 +30,7 @@ export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
   const last = chat.exchanges.at(-1)
   const working = last?.end === "working"
   const usage = chat.usage
-  const limit = last?.end === "out-of-usage" && usage !== null ? usageResetsOn(resetsWhen(usage.resets)) : undefined
+  const limit = last?.end === "out-of-usage" && usage !== null ? airaBackOn(resetsWhen(usage.resets)) : undefined
   const empty = chat.exchanges.length === 0
   const asked = chat.exchanges[0]?.asked
   const { viewport, content, away, toLatest, onScroll } = useConversationFollow(empty)
@@ -156,7 +157,7 @@ export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
               ))}
             </ConversationContent>
           </Conversation>
-          <ConversationScrollButton shown={away} onClick={toLatest} />
+          <ConversationScrollButton label={airaCopy.latest} shown={away} onClick={toLatest} />
         </div>
       )}
       <AiraComposer

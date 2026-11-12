@@ -43,10 +43,12 @@ export function ImportingPreview() {
 }
 
 export function ImportFailedPreview({
+  detail,
   onChoose,
   onRemove,
   focusChoose = false,
 }: {
+  detail?: string
   onChoose?: () => void
   onRemove?: () => void
   focusChoose?: boolean
@@ -54,6 +56,11 @@ export function ImportFailedPreview({
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 bg-background shadow-[inset_0_0_0_1px_var(--line)]">
       <PptxMark />
+      {detail === undefined ? null : (
+        <p className="max-w-72 px-4 text-center text-[length:var(--type-dense)] leading-[var(--leading-dense)] text-pretty text-muted-foreground">
+          {detail}
+        </p>
+      )}
       <div className="flex translate-y-[-0.5px] items-center gap-4">
         <button
           type="button"
@@ -70,7 +77,7 @@ export function ImportFailedPreview({
           className="border-0 bg-transparent text-[length:var(--type-dense)] leading-[17px] font-medium text-muted-foreground"
           style={trimmed}
         >
-          Remove
+          {productCopy.importRemove}
         </button>
       </div>
     </div>

@@ -92,7 +92,9 @@ test("reaches Agents from the Home account menu, copies the MCP address, disconn
   await disconnectButtons.first().click()
 
   const dialog = page.getByRole("dialog", { name: "Disconnect Claude?" })
-  await expect(dialog.getByText("This can't be undone.")).toBeVisible()
+  await expect(
+    dialog.getByText("Claude can no longer read or edit your decks. You can connect it again at any time."),
+  ).toBeVisible()
   await dialog.getByRole("button", { name: "Cancel" }).click()
   await expect(dialog).toBeHidden()
   expect(revoked).toEqual([])

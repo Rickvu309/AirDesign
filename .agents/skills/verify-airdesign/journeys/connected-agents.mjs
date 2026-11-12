@@ -132,7 +132,9 @@ export default async function drive({
 
   await page.getByRole("button", { name: "Disconnect", exact: true }).click()
   const dialog = page.getByRole("dialog", { name: "Disconnect Claude?" })
-  await expect(dialog.getByText("This can't be undone.")).toBeVisible()
+  await expect(
+    dialog.getByText("Claude can no longer read or edit your decks. You can connect it again at any time."),
+  ).toBeVisible()
   await capture("disconnect-confirm")
   await dialog.getByRole("button", { name: "Disconnect", exact: true }).click()
   await expect(dialog).toBeHidden()

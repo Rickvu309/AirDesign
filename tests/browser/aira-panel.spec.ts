@@ -1,5 +1,6 @@
 import { expect, type BrowserContext, type Page } from "@playwright/test"
-import { productCopy, usageLimitBodyOn, usageResetsOn } from "../../apps/web/src/copy/product-copy.ts"
+import { airaBackOn, airaCopy, airaLimitBodyOn } from "../../apps/web/src/copy/aira-copy.ts"
+import { productCopy, usageResetsOn } from "../../apps/web/src/copy/product-copy.ts"
 import { forward, openClean, signInBrowser, test, type Stack } from "./api-stack"
 
 const node = "256.2"
@@ -53,11 +54,11 @@ test("a person asks Aira, watches the reply stream, and sees the slide change wi
   await expect(log.getByText(asked, { exact: true })).toBeVisible()
   await expect(side.getByText("I will change the title", { exact: true })).toBeVisible()
   await expect(side.getByRole("button", { name: "Stop" })).toBeVisible()
-  await expect(side.getByRole("textbox", { name: "Add to the request" })).toBeVisible()
+  await expect(side.getByRole("textbox", { name: airaCopy.addToRequest })).toBeVisible()
   stack.release()
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello from Aira")
   await expect(side.getByText("I will change the title on the first slide.", { exact: true })).toBeVisible()
-  await expect(side.getByText("Edited the deck", { exact: true })).toBeVisible()
+  await expect(side.getByText("Edited slides", { exact: true })).toBeVisible()
   await expect(side.getByText(/airdesign_/)).toHaveCount(0)
   await expect(side.getByText("The title now reads Hello from Aira.", { exact: true })).toBeVisible()
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
@@ -108,9 +109,9 @@ test("a person out of weekly usage sees the limit from the server and when it re
   await stack.exhaust(cookie)
   await ask(page, asked)
   await expect(side.getByText(productCopy.usageLimitTitle, { exact: true })).toBeVisible()
-  await expect(side.getByText(usageLimitBodyOn("Monday at 7:00 AM"), { exact: true })).toBeVisible()
+  await expect(side.getByText(airaLimitBodyOn("Monday at 7:00 AM"), { exact: true })).toBeVisible()
   await expect(log.getByText(asked, { exact: true })).toBeVisible()
-  await expect(side.getByRole("textbox", { name: usageResetsOn("Monday at 7:00 AM") })).toBeDisabled()
+  await expect(side.getByRole("textbox", { name: airaBackOn("Monday at 7:00 AM") })).toBeDisabled()
   await side.getByRole("button", { name: productCopy.usageTitle }).click()
   await expect(side.getByRole("region", { name: productCopy.usageTitle })).toContainText("100%")
   expect(paths).not.toContain("/mcp")
@@ -120,8 +121,8 @@ test("a failed run says so, and the panel switch keeps the conversation", async 
   const { side, log } = await openDeck(page, context, stack)
   stack.aira({ name: "overloaded.sse" })
   await ask(page, asked)
-  await expect(side.getByText(productCopy.agentFailedTitle, { exact: true })).toBeVisible()
-  await expect(side.getByText(productCopy.agentFailedBody, { exact: true })).toBeVisible()
+  await expect(side.getByText(airaCopy.failedTitle, { exact: true })).toBeVisible()
+  await expect(side.getByText(airaCopy.failedNothing, { exact: true })).toBeVisible()
   await expect(side.getByRole("textbox", { name: "Ask Aira" })).toBeEnabled()
   await page.getByRole("button", { name: "Design" }).click()
   await expect(log.getByText(asked, { exact: true })).toBeHidden()
@@ -200,7 +201,8 @@ test("a new deck's panel says who Aira is, and Enter sends while Shift+Enter sta
 }) => {
   const { side } = await openDeck(page, context, stack)
   await expect(side.getByRole("heading", { name: productCopy.agentName })).toBeVisible()
-  await expect(side.getByText(productCopy.agentCaution, { exact: true })).toBeVisible()
+  await expect(side.getByText(airaCopy.welcome, { exact: true })).toBeVisible()
+  await expect(side.getByText(airaCopy.caution, { exact: true })).toBeVisible()
   await expect(side.getByRole("button", { name: "New chat" })).toBeDisabled()
   await expect(side.getByRole("button", { name: "Send" })).toBeDisabled()
   stack.aira({ name: "turn.sse" })
@@ -225,12 +227,12 @@ test("steps Aira takes one after another sum up in one line that opens to each s
   stack.aira({ name: "read-edit.sse", fill: { deck, base: String(base), node } }, { name: "edited.sse" })
   await ask(page, asked)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello from Aira")
-  const summary = side.getByRole("button", { name: "Read the deck, edited the deck" })
+  const summary = side.getByRole("button", { name: "Read the deck and edited slides" })
   await expect(summary).toHaveAttribute("aria-expanded", "false")
   await summary.click()
   await expect(summary).toHaveAttribute("aria-expanded", "true")
   const steps = side.locator('li[data-tool-state="done"]')
-  await expect(steps).toHaveText(["Read the deck", "Edited the deck"])
+  await expect(steps).toHaveText(["Read the deck", "Edited slides"])
   await summary.click()
   await expect(steps).toHaveCount(0)
 })
@@ -252,6 +254,7 @@ test("the thread follows the reply at the latest message and stays put once the 
   })
   const jump = side.locator("button[data-shown]")
   await expect(jump).toHaveAttribute("data-shown", "true")
+  await expect(side.getByRole("button", { name: airaCopy.latest })).toBeVisible()
   stack.release()
   await expect(side.getByText("Lead with the claim. Then show the evidence.", { exact: true })).toBeAttached()
   expect(await log.evaluate((box) => box.scrollTop)).toBe(0)

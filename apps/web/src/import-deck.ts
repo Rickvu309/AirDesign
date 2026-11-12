@@ -2,7 +2,7 @@ import { deckName, deckRoutes } from "@airdesign/catalog"
 import { connect, putParts, queueOriginal } from "@airdesign/live"
 import { indexPackage, readPackage } from "@airdesign/pptx"
 import { server } from "@/commit-edit"
-import type { ImportFailureReason } from "@/decks/import-failure-words"
+import type { ImportFailureReason } from "@/copy/import-failure-words"
 import { ensureMarkup } from "@/markup"
 
 export type ImportedDeck = {

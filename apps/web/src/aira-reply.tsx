@@ -9,7 +9,8 @@ import {
   type StepStatus,
 } from "@/components/ai-elements/chain-of-thought"
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message"
-import { productCopy, usageLimitBodyOn, usageResetsOn } from "@/copy/product-copy"
+import { airaCopy, airaLimitBodyOn } from "@/copy/aira-copy"
+import { productCopy, usageResetsOn } from "@/copy/product-copy"
 import { LimitMark } from "@/credits/limit-panel"
 import { FailedMark } from "@/editor/agent-panel"
 import { surfaceShadow } from "@/editor/editor-chrome"
@@ -105,14 +106,14 @@ function UndoLink({ onUndo }: { onUndo: (() => void) | undefined }) {
   )
 }
 
-function FailedCard({ onUndo }: { onUndo: (() => void) | undefined }) {
+function FailedCard({ changed, onUndo }: { changed: boolean; onUndo: (() => void) | undefined }) {
   return (
     <div className={cardClass}>
       <span className="flex items-center gap-2">
         <FailedMark />
-        <span className={cardTitle}>{productCopy.agentFailedTitle}</span>
+        <span className={cardTitle}>{airaCopy.failedTitle}</span>
       </span>
-      <p className={cardBody}>{productCopy.agentFailedBody}</p>
+      <p className={cardBody}>{changed ? airaCopy.failedKept : airaCopy.failedNothing}</p>
       {onUndo === undefined ? null : (
         <span className="flex items-center gap-2">
           <Button
@@ -136,7 +137,7 @@ function LimitCard({ resets }: { resets: string | undefined }) {
         <LimitMark mark="tile" />
         <span className={cardTitle}>{productCopy.usageLimitTitle}</span>
       </span>
-      {resets === undefined ? null : <p className={cardBody}>{usageLimitBodyOn(resetsWhen(resets))}</p>}
+      {resets === undefined ? null : <p className={cardBody}>{airaLimitBodyOn(resetsWhen(resets))}</p>}
     </div>
   )
 }
@@ -148,7 +149,7 @@ function endingOf(
 ): ReactNode | null {
   const undoable = exchange.runs.length > 0
   if (exchange.end === "out-of-usage") return <LimitCard resets={resets} />
-  if (exchange.end === "failed") return <FailedCard onUndo={undoable ? onUndo : undefined} />
+  if (exchange.end === "failed") return <FailedCard changed={undoable} onUndo={undoable ? onUndo : undefined} />
   if ((exchange.end === "done" || exchange.end === "stopped") && undoable) return <UndoLink onUndo={onUndo} />
   if (exchange.end === "working" && !running(exchange.steps)) return <Working />
   return null

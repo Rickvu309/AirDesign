@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+import { emptyTrashTitleOf, productCopy } from "@/copy/product-copy"
 import { DangerDialog } from "@/decks/danger-dialog"
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
@@ -18,24 +20,28 @@ export function RestoreButton({ onClick }: { onClick?: () => void }) {
 export function EmptyTrashDialog({
   count = 3,
   busy = false,
+  children,
   onCancel,
   onConfirm,
 }: {
   count?: number
   busy?: boolean
+  children?: ReactNode
   onCancel?: () => void
   onConfirm?: () => void
 }) {
   return (
     <DangerDialog
-      title={`Delete ${String(count)} ${count === 1 ? "deck" : "decks"} for good?`}
-      body="This can't be undone."
-      action="Delete for good"
+      title={emptyTrashTitleOf(count)}
+      body={productCopy.trashEmptyBody}
+      action={productCopy.trashEmptyAction}
       busy={busy}
-      className="h-[207.5px]"
+      className={children === undefined ? "h-[207.5px]" : "pb-6"}
       onCancel={onCancel}
       onConfirm={onConfirm}
-    />
+    >
+      {children}
+    </DangerDialog>
   )
 }
 
