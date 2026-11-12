@@ -48,6 +48,12 @@ function live(log: CallerLog, now: number): CallerLog {
   return { events }
 }
 
+export function refund(log: CallerLog, kind: LimitKind): CallerLog {
+  const at = log.events.findLastIndex((event) => event.kind === kind)
+  if (at < 0) return log
+  return { events: log.events.filter((_, position) => position !== at) }
+}
+
 export function admit(log: CallerLog, kind: LimitKind, now: number): Admission {
   const current = live(log, now)
   const window = windowOf[kind]

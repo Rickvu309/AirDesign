@@ -30,6 +30,8 @@ export const editNext = {
     "A field is missing or has the wrong form. Send only the fields the input schema lists, each in its described form.",
   "text-from":
     "A from index in this value is not one the file has, and nothing landed. Use an index listed next, or -1 for a new run.",
+  indexing:
+    "The deck is still being indexed by the open AirDesign editor, and nothing landed. Call airdesign_read_deck until it reports index ready, then send this call again.",
   store: "The deck could not be reached, and nothing landed. Try again later.",
 } as const satisfies Record<EditCode, string>
 

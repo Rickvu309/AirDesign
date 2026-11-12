@@ -15,6 +15,7 @@ export function slideTool(op: SlideOp, raw: unknown, session: Session): ToolResu
   const runId = held?.runId ?? session.caller.runId
   const result = call(op, stopped.deck, { actor: "agent", runId }, raw)
   if (!result.ok) {
+    if (result.refusal === "indexing") return editRefusal(before, result.refusal, [])
     const named = "slide" in parsed ? `Slide ${parsed.slide}` : `After ${parsed.after}, layout ${parsed.layout}`
     const detail =
       op === "delete_slide"
