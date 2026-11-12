@@ -150,9 +150,7 @@ export async function readSlot(key: string): Promise<unknown> {
   const account = accountKey()
   if (account === undefined) return null
   const reading = await transaction("readonly")
-  const request = reading.objectStore(storeName).getAll(
-    IDBKeyRange.bound(scoped(account, key), scoped(account, key)),
-  )
+  const request = reading.objectStore(storeName).getAll(IDBKeyRange.bound(scoped(account, key), scoped(account, key)))
   return finished(reading, () => (request.result as unknown[])[0] ?? null)
 }
 

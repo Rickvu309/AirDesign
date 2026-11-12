@@ -161,7 +161,12 @@ it("does not replay an edit that another page has since replaced with a newer ke
   slow.hold()
   const opening = reopened.openDeck("deck")
   await tick()
-  keepUnsaved(memoryShelf(journal), firstAccount, "deck", "newer", { kind: "text", node, floor: "file text", value: "abcd" })
+  keepUnsaved(memoryShelf(journal), firstAccount, "deck", "newer", {
+    kind: "text",
+    node,
+    floor: "file text",
+    value: "abcd",
+  })
   slow.release()
   await opening
   expect(await reopened.pending("deck")).toEqual([])

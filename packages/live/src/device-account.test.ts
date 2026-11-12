@@ -90,7 +90,10 @@ it("never shows one account's deck, typed text or journal to another account on 
 
   signInAs(firstAccount)
   const back = connect(remote, { shelf: memoryShelf(journal) })
-  expect((await back.pending("deck")).map((row) => row.value)).toEqual(["Mine, not sent", "Typed before the page closed"])
+  expect((await back.pending("deck")).map((row) => row.value)).toEqual([
+    "Mine, not sent",
+    "Typed before the page closed",
+  ])
   expect(await getParts("deck")).toMatchObject({ ok: true })
   expect(await readChats("deck")).toEqual([{ id: "chat" }])
   expect(await back.flush("deck")).toMatchObject({ ok: true })

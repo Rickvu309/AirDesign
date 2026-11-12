@@ -96,7 +96,9 @@ it("does nothing without a shelf", async () => {
   keepUnsaved(undefined, account, "deck", "a", text("T"))
   releaseUnsaved(undefined, account, "deck", "a")
   expect(unsavedOf(undefined, account, "deck")).toEqual([])
-  await expect(recoverUnsaved(undefined, account, "deck", () => Promise.reject(new Error("never")))).resolves.toBeUndefined()
+  await expect(
+    recoverUnsaved(undefined, account, "deck", () => Promise.reject(new Error("never"))),
+  ).resolves.toBeUndefined()
 })
 
 it("replays what was unsaved in order once per shelf and releases each after it is replayed", async () => {

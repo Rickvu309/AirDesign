@@ -33,7 +33,15 @@ export async function deckParts(deck: string) {
 }
 
 export async function deviceCopy(deck: string, server: Remote) {
-  await adoptDeck(deck, async () => (await connect(server).open(deck).catch(() => null))?.ok === true)
+  await adoptDeck(
+    deck,
+    async () =>
+      (
+        await connect(server)
+          .open(deck)
+          .catch(() => null)
+      )?.ok === true,
+  )
   const stored = await getParts(deck)
   if (!stored.ok) return null
   const opened = await connect(memoryRemote()).openDeck(deck)

@@ -117,7 +117,15 @@ it("never writes over a row another page put at the next place", async () => {
     [
       {
         key: rowKey("deck", "pending", 1),
-        row: { kind: "pending", deck: "deck" as DeckId, order: 1, base: 0, value: "theirs", node: other, floor: "file" },
+        row: {
+          kind: "pending",
+          deck: "deck" as DeckId,
+          order: 1,
+          base: 0,
+          value: "theirs",
+          node: other,
+          floor: "file",
+        },
       },
     ],
     [],
@@ -133,7 +141,16 @@ it("never writes over a row another page has started to send", async () => {
     [
       {
         key: rowKey("deck", "pending", 0),
-        row: { kind: "pending", deck: "deck" as DeckId, order: 0, base: 0, value: "sending", node, floor: "file", once: "o" },
+        row: {
+          kind: "pending",
+          deck: "deck" as DeckId,
+          order: 0,
+          base: 0,
+          value: "sending",
+          node,
+          floor: "file",
+          once: "o",
+        },
       },
     ],
     [],
