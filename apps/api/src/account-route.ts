@@ -34,8 +34,8 @@ export type AccountHttp<Visit extends AccountVisit> = {
   readonly signedIn: (visit: Visit) => Promise<string | undefined>
   readonly answerSize: (res: ServerResponse) => void
   readonly parsedJson: (body: Buffer) => unknown
-  readonly sendJson: (res: ServerResponse, status: number, body: unknown, cookie?: string) => void
-  readonly clearSessionCookie: (cookieDomain?: string) => string
+  readonly sendJson: (res: ServerResponse, status: number, body: unknown, cookie?: string | readonly string[]) => void
+  readonly clearSessionCookie: (cookieDomain?: string) => readonly string[]
 }
 
 type AccountRoute<Visit> = {

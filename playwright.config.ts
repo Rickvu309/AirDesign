@@ -13,6 +13,21 @@ export default defineConfig({
     baseURL: origin,
     browserName: "chromium",
     screenshot: "only-on-failure",
+    storageState: {
+      cookies: [
+        {
+          name: "airdesign.account",
+          value: "0123456789abcdef0123456789abcdef",
+          domain: "127.0.0.1",
+          path: "/",
+          expires: -1,
+          httpOnly: false,
+          secure: false,
+          sameSite: "Lax",
+        },
+      ],
+      origins: [],
+    },
   },
   webServer: {
     command: `pnpm --filter web build && pnpm --filter web exec vite preview --host 127.0.0.1 --port ${port} --strictPort`,

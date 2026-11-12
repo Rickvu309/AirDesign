@@ -1,6 +1,6 @@
 import { currentBox, currentValue, orderKeyAfter, presentSlides, slideId, type Register } from "@airdesign/document"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
-import { installSlowIndexedDb, memoryShelf, node, other, slowStore } from "./browser-fixtures.js"
+import { firstAccount, installSlowIndexedDb, memoryShelf, node, other, slowStore } from "./browser-fixtures.js"
 import { connect, deleteDatabase, memoryRemote } from "./index.js"
 import { keepUnsaved } from "./unsaved.js"
 
@@ -161,7 +161,7 @@ it("does not replay an edit that another page has since replaced with a newer ke
   slow.hold()
   const opening = reopened.openDeck("deck")
   await tick()
-  keepUnsaved(memoryShelf(journal), "deck", "newer", { kind: "text", node, floor: "file text", value: "abcd" })
+  keepUnsaved(memoryShelf(journal), firstAccount, "deck", "newer", { kind: "text", node, floor: "file text", value: "abcd" })
   slow.release()
   await opening
   expect(await reopened.pending("deck")).toEqual([])

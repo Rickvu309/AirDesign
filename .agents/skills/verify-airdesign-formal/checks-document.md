@@ -78,8 +78,10 @@ The browser's queue of person edits: send, acknowledge, crash, wipe and replay.
 - `SentInOrder`, `AckedOnce`, `BatchLandsOnce`: edits go in order, each acknowledgement once, and a batch lands once after a lost answer.
 - `StaleSkips`: a queued edit whose base is stale is skipped, not landed.
 - `CrashKeepsUnsent`, `WipeClears`, `UndoWaits`.
+- `PaintedEditKept`: a typed edit is on the device or in the journal.
+- `JoinedTextSent`: a newer keystroke on the same element joins the last queued row only while that row is unsent (`Join`), so whatever is sent carries the newest text. Harm if broken: the server lands the older text and the acknowledgement deletes the row that held the newer one.
 
-Bounds: two queued edits and one stale edit. Run: `pnpm check:specs offline`. Replay: `replayOffline` checks queue edges with `unsent` and land edges with `replay` from `packages/document/src/replay.ts`. Leaves out: the real queue in `packages/live/src/cache.ts` (`sendRows`, `played`) and the server's once key; `Crash`, `Wipe` and `Undo` are unconnected. `replay` throws on a refused person edit; `played` applies slide commands after it, so a `dead` refusal cannot reach it today.
+Bounds: two queued edits and one stale edit. Run: `pnpm check:specs offline`. Replay: `replayOffline` checks queue edges with `unsent` and land edges with `replay` from `packages/document/src/replay.ts`; a `Join` edge keeps the row's base and replaces its value. The join itself is `valueChange` and `joinable` in `packages/live/src/deck-edit.ts` and `deck-view.ts`, and `sealRows` in `packages/live/src/held.ts` seals the row as stored when sending starts; `packages/live/src/held.test.ts` covers those. Leaves out: the real queue in `packages/live/src/cache.ts` (`sendRows`, `played`) and the server's once key; `Crash`, `Wipe` and `Undo` are unconnected. `replay` throws on a refused person edit; `played` applies slide commands after it, so a `dead` refusal cannot reach it today.
 
 Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
 

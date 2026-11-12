@@ -32,6 +32,8 @@ const hostPattern = /^(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::([0-9]{1,5}))?$/
 const portCap = 65_535
 
 export const sessionCookieName = "airdesign.session"
+export const accountCookieName = "airdesign.account"
+const accountKeyPattern = /^[0-9a-f]{32}$/
 
 export type FieldRefusal = { ok: false; refusal: "field" }
 export type DeckRefusal = { ok: false; refusal: "deck" }
@@ -286,16 +288,25 @@ function decodedCookie(raw: string): string | undefined {
   }
 }
 
-export function readSessionCookie(header: unknown): string | undefined {
+function readCookie(header: unknown, name: string): string | undefined {
   if (typeof header !== "string") return undefined
   for (const part of header.split(";")) {
     const trimmed = part.trim()
     const split = trimmed.indexOf("=")
     if (split <= 0) continue
-    if (trimmed.slice(0, split) !== sessionCookieName) continue
+    if (trimmed.slice(0, split) !== name) continue
     return decodedCookie(trimmed.slice(split + 1))
   }
   return undefined
+}
+
+export function readSessionCookie(header: unknown): string | undefined {
+  return readCookie(header, sessionCookieName)
+}
+
+export function readAccountCookie(header: unknown): string | undefined {
+  const key = readCookie(header, accountCookieName)
+  return key !== undefined && accountKeyPattern.test(key) ? key : undefined
 }
 
 export function readBearer(raw: unknown): string | undefined {

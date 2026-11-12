@@ -1,5 +1,5 @@
 import { elementId, type Box, type ElementId, type Register, type Undoable } from "@airdesign/document"
-import { connect, distrustDevice, flushOriginal, memoryRemote, trustDeck } from "@airdesign/live"
+import { connect, flushOriginal, memoryRemote } from "@airdesign/live"
 import { readNotes, type ReadShape, type SectionStart, type SlideNotes } from "@airdesign/pptx"
 import { paintStore, SlideCanvas, textValue } from "@airdesign/render"
 import { toast } from "sonner"
@@ -93,8 +93,7 @@ export function ThinDeck({ id }: { id: string }) {
     if (outcome === "sent") setPending(false)
     if (outcome === "offline") setPending(true)
     if (outcome !== "refused") setOffline(outcome === "offline")
-    if (outcome === "signed-out")
-      void distrustDevice().then(() => window.location.assign(signInAddress(window.location)))
+    if (outcome === "signed-out") window.location.assign(signInAddress(window.location))
   }, [])
 
   useEffect(() => {
@@ -104,9 +103,16 @@ export function ThinDeck({ id }: { id: string }) {
     setRefused(false)
     void (async () => {
       await ensureMarkup()
-      const device = await deviceCopy(id)
+      const device = await deviceCopy(id, server)
       if (!live) return
       if (device !== null) openFrom(device.stored, device.register)
+      else {
+        const asked = await connect(server)
+          .open(id)
+          .catch(() => null)
+        if (!live) return
+        if (asked !== null && !asked.ok && (await refusedBy(asked.refusal))) return
+      }
       const stored = device?.stored ?? (await deckParts(id))
       if (!live) return
       if (stored === "signed-out") {
@@ -122,7 +128,6 @@ export function ThinDeck({ id }: { id: string }) {
         .catch(() => null)
       if (!live) return
       if (answered !== null && !answered.ok && (await refusedBy(answered.refusal))) return
-      if (answered?.ok === true) await trustDeck(id)
       const opened = await connect(server)
         .openDeck(id)
         .catch(() => null)
@@ -316,7 +321,6 @@ export function ThinDeck({ id }: { id: string }) {
 
   async function refusedBy(refusal: string): Promise<boolean> {
     if (refusal === "session") {
-      await distrustDevice()
       window.location.assign(signInAddress(window.location))
       return true
     }

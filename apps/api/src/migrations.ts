@@ -223,4 +223,10 @@ create index aira_ask_email on session.aira_ask (email, ask);
 grant select, insert, update, delete on session.caller_log, session.agent_turn, session.aira_ask to session;
 `,
   },
+  {
+    id: 9,
+    sql: `
+alter table session.account add column device text not null unique default replace(gen_random_uuid()::text, '-', '');
+`,
+  },
 ]

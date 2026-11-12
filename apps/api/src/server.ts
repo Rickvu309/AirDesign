@@ -15,8 +15,10 @@ import {
   readHost,
   readLinkToken,
   readRevokeRequest,
+  readAccountCookie,
   readSessionCookie,
   readTokenRequest,
+  accountCookieName,
   sessionCookieName,
   type DeckId,
   type FormPairs,
@@ -121,11 +123,26 @@ export function sessionCookie(token: string, cookieDomain?: string): string {
   return sessionCookieHeader(encodeURIComponent(token), 2592000, cookieDomain)
 }
 
-function clearSessionCookie(cookieDomain?: string): string {
-  return sessionCookieHeader("", 0, cookieDomain)
+function accountCookie(device: string, maxAge: number, cookieDomain?: string): string {
+  const cookie = `${accountCookieName}=${device}; Secure; SameSite=Lax; Path=/; Max-Age=${String(maxAge)}`
+  if (cookieDomain === undefined) return cookie
+  return `${cookie}; Domain=${cookieDomain}`
 }
 
-function sendJson(res: ServerResponse, status: number, body: unknown, cookie?: string): void {
+function clearSessionCookie(cookieDomain?: string): readonly string[] {
+  return [sessionCookieHeader("", 0, cookieDomain), accountCookie("", 0, cookieDomain)]
+}
+
+async function signedInCookies(options: ApiOptions, token: string): Promise<readonly string[]> {
+  const access = await findAccess(options.session, token)
+  const session = sessionCookie(token, options.cookieDomain)
+  if (access === undefined) return [session]
+  return [session, accountCookie(access.device, 2592000, options.cookieDomain)]
+}
+
+type Cookie = string | readonly string[]
+
+function sendJson(res: ServerResponse, status: number, body: unknown, cookie?: Cookie): void {
   if (res.writableEnded || res.destroyed) return
   const payload = JSON.stringify(body)
   if (cookie !== undefined) res.setHeader("set-cookie", cookie)
@@ -136,7 +153,7 @@ function sendJson(res: ServerResponse, status: number, body: unknown, cookie?: s
   res.end(payload)
 }
 
-function redirect(res: ServerResponse, location: string, cookie?: string): void {
+function redirect(res: ServerResponse, location: string, cookie?: Cookie): void {
   if (res.writableEnded || res.destroyed) return
   if (cookie !== undefined) res.setHeader("set-cookie", cookie)
   res.writeHead(302, { location })
@@ -219,10 +236,14 @@ function gone(res: ServerResponse): AbortSignal {
 
 async function signedIn({ options, req, res, body }: Visit): Promise<string | undefined> {
   const token = readSessionCookie(req.headers.cookie)
-  const email = token === undefined ? undefined : await findAccess(options.session, token)
-  if (email !== undefined) return email
+  const access = token === undefined ? undefined : await findAccess(options.session, token)
+  if (access !== undefined) {
+    if (readAccountCookie(req.headers.cookie) !== access.device)
+      res.setHeader("set-cookie", accountCookie(access.device, 2592000, options.cookieDomain))
+    return access.email
+  }
   await body()
-  sendJson(res, 401, { ok: false, refusal: "session" })
+  sendJson(res, 401, { ok: false, refusal: "session" }, accountCookie("", 0, options.cookieDomain))
   return undefined
 }
 
@@ -275,7 +296,7 @@ async function smokeRoute({ options, req, res, body }: Visit): Promise<void> {
     return
   }
   const session = await openSmokeSession(options.session, smokeEmail)
-  sendJson(res, 200, { ok: true }, sessionCookie(session, options.cookieDomain))
+  sendJson(res, 200, { ok: true }, await signedInCookies(options, session))
 }
 
 async function emailRoute(visit: Visit): Promise<void> {
@@ -302,7 +323,7 @@ async function codeRoute(visit: Visit): Promise<void> {
     sendJson(res, 401, { ok: false, refusal: "code" })
     return
   }
-  sendJson(res, 200, { ok: true }, sessionCookie(token, options.cookieDomain))
+  sendJson(res, 200, { ok: true }, await signedInCookies(options, token))
 }
 
 async function linkRoute({ options, query, res }: Visit): Promise<void> {
@@ -317,7 +338,7 @@ async function linkRoute({ options, query, res }: Visit): Promise<void> {
     redirect(res, expired)
     return
   }
-  redirect(res, "/", sessionCookie(session, options.cookieDomain))
+  redirect(res, "/", await signedInCookies(options, session))
 }
 
 function deckRoute<Read extends Reader>(

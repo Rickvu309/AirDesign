@@ -13,5 +13,6 @@ export {
   type WatchResult,
 } from "./remote.js"
 export { dropChats, readChats, writeChat } from "./chat-slot.js"
-export { distrustDevice, isTrusted, trustDeck } from "./trust.js"
-export { databaseName, deleteDatabase, rowKey, storeName } from "./store.js"
+export { adoptDeck, dropAccount, dropDeck } from "./device-sweep.js"
+export { accountKey, databaseName, deleteDatabase, scoped, storeName } from "./device.js"
+export { rowKey } from "./store.js"

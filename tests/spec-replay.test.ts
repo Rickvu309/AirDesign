@@ -820,10 +820,14 @@ function replayRun(graph: Graph, view: View, failures: string[]) {
 
 function queueOf(spec: Spec): Queued[] {
   const queue: Queued[] = []
-  if (flag(spec, "queued1")) queue.push({ base: 0, value: "one" })
+  if (flag(spec, "queued1")) queue.push({ base: 0, value: firstValue(spec) })
   if (flag(spec, "queued2")) queue.push({ base: 1, value: "two" })
   if (flag(spec, "stale")) queue.push({ base: 0, value: "stale" })
   return queue
+}
+
+function firstValue(spec: Spec): string {
+  return flag(spec, "joined") ? "joined" : "one"
 }
 
 function ackOf(spec: Spec): number {
@@ -833,7 +837,7 @@ function ackOf(spec: Spec): number {
 function offlineRegister(spec: Spec): Register {
   let register = openRegister("floor", "slide")
   const values: string[] = []
-  if (flag(spec, "landed1")) values.push("one")
+  if (flag(spec, "landed1")) values.push(firstValue(spec))
   if (flag(spec, "landed2")) values.push("two")
   for (const value of values) {
     const decision = decide(register, { command: "person", value })
@@ -857,7 +861,7 @@ function gained(before: readonly Queued[], after: readonly Queued[]): string | n
 
 function landedHistory(spec: Spec): string[] {
   const values: string[] = []
-  if (flag(spec, "landed1")) values.push("one")
+  if (flag(spec, "landed1")) values.push(firstValue(spec))
   if (flag(spec, "landed2")) values.push("two")
   return values
 }
@@ -889,13 +893,22 @@ function replayOffline(graph: Graph, view: View, failures: string[]) {
       else replayed += 1
       continue
     }
+    if (edge.action === "Join") {
+      const kept = later.length === pending.length && later.every((item, at) => item.base === pending[at]?.base)
+      const last = pending.length === 1 && later.length === 1
+      const newest = last && later[0]?.value === "joined" && flag(source, "sent1") === false
+      if (!kept || !newest) failures.push(`offline ${where} did not join the newer text into the unsent row`)
+      else replayed += 1
+      continue
+    }
     if (edge.action === "Send") {
-      if (pending[0]?.value !== "one" || !same(later, pending)) failures.push(`offline ${where} sent out of order`)
+      if (pending[0]?.value !== firstValue(source) || !same(later, pending))
+        failures.push(`offline ${where} sent out of order`)
       else replayed += 1
       continue
     }
     if (edge.action === "SendNext") {
-      const first = pending.findIndex((item) => item.value === "one")
+      const first = pending.findIndex((item) => item.value === firstValue(source))
       const second = pending.findIndex((item) => item.value === "two")
       const ordered =
         second >= 0 && !(first !== -1 && first < second && flag(source, "sent1") === false) && same(later, pending)
@@ -911,7 +924,7 @@ function replayOffline(graph: Graph, view: View, failures: string[]) {
     if (edge.action === "Land" || edge.action === "LandNext" || edge.action === "Skip" || edge.action === "LandStale") {
       const picked =
         edge.action === "Land"
-          ? pending.filter((item) => item.value === "one").slice(0, 1)
+          ? pending.filter((item) => item.value === firstValue(source)).slice(0, 1)
           : edge.action === "LandNext"
             ? pending.filter((item) => item.value === "two").slice(0, 1)
             : pending.filter((item) => item.value === "stale")
