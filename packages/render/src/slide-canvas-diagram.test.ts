@@ -117,3 +117,8 @@ it("keeps the box it cannot show for a chart with no diagram", async () => {
   const host = await painted([frame(undefined)])
   expect(host.querySelector<HTMLElement>(`[data-canvas-element="${id}"]`)?.style.background).toBe(unshownFill)
 })
+
+it("draws no empty placeholder outline around a diagram that fills its placeholder", async () => {
+  const host = await painted([{ ...frame([chevron, words]), placeholder: true }])
+  expect(host.querySelector<HTMLElement>(`[data-canvas-element="${id}"]`)?.style.outline).toBe("")
+})

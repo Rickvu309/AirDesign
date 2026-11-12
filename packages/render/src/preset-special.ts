@@ -41,6 +41,11 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
       },
     ],
   },
+  pieWedge: {
+    adjusts: [],
+    guides: [],
+    paths: [{ data: "M l b A w h cd2 cd4 L r b Z", fill: true, stroke: true }],
+  },
   flowChartProcess: {
     adjusts: [],
     guides: [],
