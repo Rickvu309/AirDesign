@@ -31,6 +31,7 @@ export type ShapePaint = {
   fill: PaintFill | null
   line: PaintLine | null
   geometry: string | null
+  adjusts?: Readonly<Record<string, number>>
 }
 
 const fillKinds = ["a:noFill", "a:solidFill", "a:gradFill", "a:pattFill", "a:blipFill", "a:grpFill"]
@@ -132,11 +133,21 @@ export const paintShape = (
     line = { fill: lineFill ?? { type: "none" }, width: width ?? 9525, dash, head, tail }
   }
   let geometry: string | null = null
+  const adjusts: Record<string, number> = {}
   for (const source of sources) {
     const properties = propertiesOf(source)
     const preset = paintChild(source.children, properties, "a:prstGeom")
     if (preset !== undefined) {
       geometry = paintAttribute(preset, "prst")
+      const list = paintChild(source.children, preset, "a:avLst")
+      for (const guide of list === undefined ? [] : (source.children[list.index] ?? [])) {
+        const name = paintAttribute(guide, "name")
+        const formula = paintAttribute(guide, "fmla")
+        if (guide.kind !== "a:gd" || name === null || formula === null || !/^val [+-]?\d+$/.test(formula)) continue
+        const value = Number(formula.slice(4))
+        if (Number.isSafeInteger(value))
+          Object.defineProperty(adjusts, name, { value, enumerable: true, configurable: true })
+      }
       break
     }
     if (paintChild(source.children, properties, "a:custGeom") !== undefined) {
@@ -144,5 +155,5 @@ export const paintShape = (
       break
     }
   }
-  return { fill, line, geometry }
+  return { fill, line, geometry, adjusts }
 }

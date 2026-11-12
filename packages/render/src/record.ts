@@ -29,6 +29,8 @@ export type CanvasLine = {
   readonly color: string
   readonly width: number
   readonly dash: readonly number[] | null
+  readonly head?: "triangle" | "stealth" | "diamond" | "oval" | "arrow" | undefined
+  readonly tail?: "triangle" | "stealth" | "diamond" | "oval" | "arrow" | undefined
 }
 
 export type CanvasSpacing = { readonly percent: number } | { readonly length: number }
@@ -90,6 +92,14 @@ export type CanvasElement = {
   readonly fill: string | null
   readonly line: CanvasLine | null
   readonly outline: CanvasOutline
+  readonly geometry?: {
+    readonly preset: string
+    readonly adjusts: Readonly<Record<string, number>>
+    readonly gradient?: {
+      readonly angle: number | null
+      readonly stops: readonly { readonly position: number; readonly color: string }[]
+    }
+  }
   readonly text: CanvasText | null
 }
 

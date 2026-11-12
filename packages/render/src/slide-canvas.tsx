@@ -8,13 +8,13 @@ import type { CanvasElement, CanvasSlide, CanvasText, PaintBox } from "./record.
 import { SelectionFrame } from "./selection-frame.js"
 import { canMove, canResize, useMoves, type Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
+import { ShapeArt as LineArt, shapePaths } from "./shape-art.js"
 import { anchored, ensureBulletRule, textLook, type Scaled, type TextLook } from "./text-look.js"
 
 const defaultTextSize = 203_200
 const defaultInsetX = 91_440
 const defaultInsetY = 45_720
 const roundCorner = 0.16667
-const lineMinimum = 1
 const noText: CanvasText = {
   paragraphs: [],
   anchor: "top",
@@ -102,46 +102,8 @@ function frame(element: CanvasElement, scaled: Scaled, pointer: boolean): CSSPro
     ...placement(element.box, scaled),
     ...rounding(element, scaled),
     pointerEvents: pointer ? "auto" : "none",
-    ...(background === null ? {} : { background }),
+    ...(background === null || shapePaths(element, scaled) !== null ? {} : { background }),
   }
-}
-
-function LineArt(props: { readonly element: CanvasElement; readonly scaled: Scaled; readonly grab?: boolean }) {
-  const { element, scaled } = props
-  if (element.line === null || element.box === null) return null
-  const width = scaled(element.box.width)
-  const height = scaled(element.box.height)
-  const weight = scaled(element.line.width)
-  const stroke = {
-    fill: "none",
-    stroke: element.line.color,
-    strokeWidth: weight,
-    ...(props.grab === true ? { style: { pointerEvents: "visibleStroke", cursor: "move" } as const } : {}),
-    ...(element.line.dash === null
-      ? {}
-      : { strokeDasharray: element.line.dash.map((step) => step * weight).join(" ") }),
-  }
-  return (
-    <svg
-      data-canvas-line
-      width={Math.max(width, lineMinimum)}
-      height={Math.max(height, lineMinimum)}
-      style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none" }}
-    >
-      {element.outline === "line" ? (
-        <line x1={0} y1={0} x2={width} y2={height} {...stroke} />
-      ) : element.outline === "ellipse" ? (
-        <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} {...stroke} />
-      ) : (
-        <rect
-          width={width}
-          height={height}
-          {...(element.outline === "round" ? { rx: cornerOf(element, scaled) } : {})}
-          {...stroke}
-        />
-      )}
-    </svg>
-  )
 }
 
 type ShownRun = { readonly from: number; readonly text: string }

@@ -10,7 +10,7 @@ import {
   type PaintTextHolder,
   type PaintTextScope,
 } from "./paint-text.js"
-import { paintShape, type PaintLine, type PaintSource, type PaintStyles, type ShapePaint } from "./paint-shape.js"
+import { paintShape, type PaintSource, type PaintStyles, type ShapePaint } from "./paint-shape.js"
 import { paintContentType, paintImage, paintPictureFill, type PaintImage, type PaintPicture } from "./paint-image.js"
 import { isShapeTag, shapeTags, type ShapeKind } from "./shape-tree.js"
 import { markupChildren, type MarkupChildren } from "./text-value-route.js"
@@ -35,10 +35,7 @@ export type PaintElement = {
   group: string | null
   placeholder: { type: string; index: number | null } | null
   text: PaintText | null
-  fill: PaintFill | null
-  line: PaintLine | null
-  geometry: string | null
-}
+} & ShapePaint
 
 export type SlidePaint = {
   width: number
