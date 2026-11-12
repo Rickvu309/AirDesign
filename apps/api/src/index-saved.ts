@@ -9,6 +9,7 @@ const writeSql = `
 update deck.saved set import_index = $3::jsonb
 where id = $1 and owner = $2 and deleted is null
   and import_index is not distinct from $4::jsonb
+  and revision = $5
 returning id
 `
 
@@ -35,6 +36,7 @@ export async function indexSaved(
       owner,
       JSON.stringify(next.deck.register.index),
       before.register.index === undefined ? null : JSON.stringify(before.register.index),
+      saved.revision,
     ])
     if (written.rows.length > 0) return { ok: true, deck: parsed.deck, revision: saved.revision }
   }

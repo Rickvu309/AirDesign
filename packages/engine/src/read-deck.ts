@@ -2,6 +2,8 @@ import type { DeckId } from "@airdesign/catalog"
 import { readDeckId } from "@airdesign/catalog"
 import {
   bytesOf,
+  presentSlides,
+  slideGone,
   currentBox,
   currentValue,
   readElementId,
@@ -157,6 +159,7 @@ export function readDeckPage(
   query: { readonly slide?: string; readonly cursor?: string; readonly runId: string | null },
 ): ReadDeckAnswer {
   const nodes = knownNodes(deck.register).filter((node) => {
+    if (slideGone(deck.register, shapeOf(node).slide)) return false
     if (query.slide !== undefined && shapeOf(node).slide !== query.slide) return false
     if (query.cursor !== undefined && !(node > query.cursor)) return false
     return true
@@ -166,7 +169,10 @@ export function readDeckPage(
   return packRead(
     {
       revision: deck.revision,
-      slides: index?.slides ?? [],
+      slides:
+        deck.register.order.length === 0
+          ? (index?.slides ?? [])
+          : presentSlides(deck.register).map(({ id }, position) => ({ id, position })),
       index: index === undefined ? "missing" : index.elements.length === index.total ? "ready" : "pending",
     },
     nodes,

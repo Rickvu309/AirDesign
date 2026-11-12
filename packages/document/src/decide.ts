@@ -369,6 +369,12 @@ export function decide(stored: StoredRegister, command: Command): Decision {
     return refuse("limit")
   }
   if (command.command === "slide") {
+    const opening = register.index?.slides
+    if (
+      opening !== undefined &&
+      (opening.length !== command.file.length || opening.some((slide, position) => slide.id !== command.file[position]))
+    )
+      return refuse("stale")
     const applied = applySlide(register, command.file, command.edit)
     if (!applied.ok) return refuse(applied.code)
     return apply({ ...register, file: applied.state.file, order: applied.state.order }, register.route)

@@ -25,6 +25,7 @@ with updated as (
   update deck.saved
   set revision = $2, register = $3::jsonb - 'index', edited = now()
   where id = $1 and revision = $4 and deleted is null
+    and import_index is not distinct from ($3::jsonb -> 'index')
   returning id, revision, register
 )
 select updated.id, updated.revision, updated.register, pg_notify('deck', $5) as notified
@@ -38,6 +39,7 @@ with updated as (
   update deck.saved
   set revision = $2, register = $3::jsonb - 'index', edited = now()
   where id = $1 and revision = $4 and deleted is null
+    and import_index is not distinct from ($3::jsonb -> 'index')
   returning id, revision, register
 ),
 noted as (
