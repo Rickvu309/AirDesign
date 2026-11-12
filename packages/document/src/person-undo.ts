@@ -1,6 +1,7 @@
 import type { Box } from "./box.js"
 import { currentBox, currentValue, decide, type Command, type Register } from "./decide.js"
 import type { ElementId, SlideId } from "./element-id.js"
+import { elementCommand, elementGone } from "./element-order.js"
 import type { OrderKey } from "./order-key.js"
 import { foldSlides, type SlideCommand, type SlideState } from "./slide-order.js"
 import type { Value } from "./value.js"
@@ -14,6 +15,13 @@ export type Undoable =
       readonly file: readonly SlideId[]
       readonly before: SlideSpot
       readonly after: SlideSpot
+    }
+  | {
+      readonly element: ElementId
+      readonly slide: SlideId
+      readonly file: readonly SlideId[]
+      readonly before: boolean
+      readonly after: boolean
     }
 
 export type Turn = { readonly ok: true; readonly command: Command } | { readonly ok: false }
@@ -29,6 +37,17 @@ function spotOf(register: Register, file: readonly SlideId[], id: SlideId): Slid
 export function slideUndoable(register: Register, file: readonly SlideId[], edit: SlideCommand): Undoable | null {
   const decision = decide(register, { command: "slide", file, edit })
   if (decision.decision !== "apply") return null
+  if (elementCommand(edit)) {
+    const element = edit.slide === "element-add" ? edit.element.node : edit.node
+    const shown = (state: Register) => !elementGone(state, element)
+    return {
+      element,
+      slide: edit.id,
+      file,
+      before: edit.slide !== "element-add" && shown(register),
+      after: shown(decision.register),
+    }
+  }
   const after = spotOf(decision.register, file, edit.id)
   if (after === undefined) return null
   const before = spotOf(register, file, edit.id) ?? { present: false, key: after.key }
@@ -68,10 +87,18 @@ function turn(register: Register, undoable: Undoable, from: "before" | "after"):
     if (!shows(register, undoable.node, undoable[from])) return changed
     return landing(register, { command: "person", ...undoable[to], node: undoable.node })
   }
+  const file = register.file.length > 0 ? register.file : undoable.file
+  if ("element" in undoable) {
+    const { element, slide } = undoable
+    if (elementGone(register, element) === undoable[from] || undoable[from] === undoable[to]) return changed
+    const edit: SlideCommand = undoable[to]
+      ? { slide: "element-restore", id: slide, node: element }
+      : { slide: "element-remove", id: slide, node: element }
+    return landing(register, { command: "slide", file, edit })
+  }
   if (!sits(spotOf(register, undoable.file, undoable.slide), undoable[from])) return changed
   const edit = slideTurn(undoable[from], undoable[to], undoable.slide)
   if (edit === null) return changed
-  const file = register.file.length > 0 ? register.file : undoable.file
   return landing(register, { command: "slide", file, edit })
 }
 

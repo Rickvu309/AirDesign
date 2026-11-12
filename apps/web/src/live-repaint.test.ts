@@ -111,3 +111,17 @@ it("paints an undo the person makes while the text they just typed is still on i
   expect(store.getElement(node)?.text).toBe("Hello")
   release()
 })
+
+it("paints an undo of an element whose own edit is still on its way to the server", () => {
+  const busy = busyElements()
+  const store = painted()
+  const repaint = liveRepaint(store, files, null, busy)
+  busy.hold(node)
+  store.publish({ id: node, kind: "shape", text: "Mine", picture: null })
+  store.placeBox(node, dragged)
+  repaint(openRegister("", "deck"))
+  expect(store.getElement(node)?.text).toBe("Mine")
+  repaint(openRegister("", "deck"), "person")
+  expect(store.getElement(node)?.text).toBe("Hello")
+  expect(store.getBox(node)).toBeNull()
+})

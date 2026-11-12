@@ -1,5 +1,6 @@
 import { currentBox, type Box, type ElementId, type Register } from "@airdesign/document"
 import { applyRoute, type ReadShape } from "@airdesign/pptx"
+import { boxOf, type PaintBox } from "@airdesign/render"
 import { newSlideElement } from "@/exported-parts"
 
 const movableKinds: ReadonlySet<ReadShape["kind"]> = new Set(["p:sp", "p:pic", "p:cxnSp"])
@@ -25,4 +26,11 @@ export function landedBox(register: Register | null, id: ElementId): Box | null 
 
 export function shownBox(register: Register | null, id: ElementId, file: Box | null): Box | null {
   return landedBox(register, id) ?? newSlideElement(register, id)?.box ?? file
+}
+
+type Painted = { readonly elements: readonly { readonly id: ElementId | null; readonly box: PaintBox | null }[] }
+
+export function paintedBox(slide: Painted | null, id: ElementId): Box | null {
+  const box = slide?.elements.find((element) => element.id === id)?.box ?? null
+  return box === null ? null : boxOf(box)
 }

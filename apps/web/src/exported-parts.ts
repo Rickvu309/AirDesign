@@ -14,8 +14,8 @@ import {
   type Register,
   type TextValue,
 } from "@airdesign/document"
-import { applyRoute, writeNotes, orderedParts, readShapes, type ReadShape } from "@airdesign/pptx"
-import { sameBox, textValue } from "@airdesign/render"
+import { applyRoute, paintReader, writeNotes, orderedParts, readShapes, type ReadShape } from "@airdesign/pptx"
+import { boxOf, sameBox, textValue } from "@airdesign/render"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -72,6 +72,17 @@ function moved(parts: Parts, { part, shape }: ReadShape, box: NonNullable<IndexE
   return applyRoute(next, { name: "resize", part, shape, cx: box.cx, cy: box.cy })
 }
 
+function layoutBox(parts: Parts, { part, shape }: ReadShape): NonNullable<IndexElement["box"]> | null {
+  try {
+    const painted = paintReader(parts)
+      .slide(part)
+      .elements.find((element) => element.from === "slide" && element.shape === shape)?.box
+    return painted === undefined || painted === null ? null : boxOf(painted)
+  } catch {
+    return null
+  }
+}
+
 function withBox(
   parts: Parts,
   shapes: readonly ReadShape[],
@@ -83,6 +94,7 @@ function withBox(
   if (landed !== null) {
     const found = shapeFor(shapes, id, "box-shape")
     if (found.grouped) throw new Error("group-box")
+    if (sameBox(found.box ?? layoutBox(parts, found), landed)) return parts
     return moved(parts, found, landed)
   }
   if (opening === undefined || opening.box === null || opening.grouped) return parts

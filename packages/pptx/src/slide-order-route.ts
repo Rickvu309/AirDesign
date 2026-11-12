@@ -1,9 +1,13 @@
 import {
+  elementCommand,
   foldSections,
   foldSlides,
   presentSlides,
   shapeOf,
+  type ElementCommand,
+  type IndexElement,
   type SlideCommand,
+  type SlideId,
   type SlideState,
 } from "@airdesign/document"
 
@@ -41,18 +45,51 @@ function placed(parts: ReadonlyMap<string, Uint8Array>, wanted: readonly string[
   return next
 }
 
-function elementEdited(
+type Shown = { readonly start: boolean; readonly now: boolean; readonly element?: IndexElement }
+
+type Pending = Map<SlideId, Map<string, Shown>>
+
+function pendingAfter(pending: Pending, command: ElementCommand): void {
+  const shapes = pending.get(command.id) ?? new Map<string, Shown>()
+  pending.set(command.id, shapes)
+  if (command.slide === "element-add") {
+    shapes.set(shapeOf(command.element.node).shape, { start: false, now: true, element: command.element })
+    return
+  }
+  const shape = shapeOf(command.node).shape
+  const kept = shapes.get(shape) ?? { start: true, now: true }
+  shapes.set(shape, { ...kept, now: command.slide === "element-restore" })
+}
+
+function elementsShown(
   parts: ReadonlyMap<string, Uint8Array>,
-  minted: ReadonlyMap<string, string>,
-  command: Extract<SlideCommand, { readonly slide: "element-add" | "element-remove" }>,
+  slide: string,
+  shapes: ReadonlyMap<string, Shown> | undefined,
 ): ReadonlyMap<string, Uint8Array> {
-  const part = slidePart(parts, minted.get(command.id) ?? "")
+  const part = slidePart(parts, slide)
   if (part === null) throw new Error("slide")
-  if (command.slide === "element-remove")
-    return applyRoute(parts, { name: "remove", part, shape: shapeOf(command.node).shape })
-  const { node, box } = command.element
-  if (box === null) throw new Error("box")
-  return applyRoute(parts, { name: "add", part, id: Number(shapeOf(node).shape), text: "", ...box })
+  let next = parts
+  for (const [shape, shown] of shapes ?? []) {
+    if (shown.start === shown.now) continue
+    if (!shown.now) {
+      next = applyRoute(next, { name: "remove", part, shape })
+      continue
+    }
+    const box = shown.element?.box ?? null
+    if (box === null) throw new Error("box")
+    next = applyRoute(next, { name: "add", part, id: Number(shape), text: "", ...box })
+  }
+  return next
+}
+
+function needed(state: SlideState): ReadonlySet<SlideId> {
+  const kept = new Set<SlideId>(presentSlides(state).map((spot) => spot.id))
+  for (const command of state.order.toReversed()) {
+    if (!kept.has(command.id)) continue
+    if (command.slide === "add") kept.add(command.after).add(command.layout)
+    if (command.slide === "clone") kept.add(command.source)
+  }
+  return kept
 }
 
 function chosenLayout(
@@ -91,10 +128,13 @@ export function orderedParts(
 ): ReadonlyMap<string, Uint8Array> {
   if (state.order.length === 0) return parts
   const minted = new Map<string, string>(state.file.map((id) => [id, id]))
+  const kept = needed(state)
+  const pending: Pending = new Map()
   let next: ReadonlyMap<string, Uint8Array> = parts
   for (const command of state.order) {
-    if (command.slide === "element-add" || command.slide === "element-remove") {
-      next = elementEdited(next, minted, command)
+    if (!kept.has(command.id)) continue
+    if (elementCommand(command)) {
+      pendingAfter(pending, command)
       continue
     }
     if (command.slide !== "add" && command.slide !== "clone") continue
@@ -109,10 +149,14 @@ export function orderedParts(
     next = applyStructuralRoute(next, route)
     const id = createdId(before, idsOf(next))
     minted.set(command.id, id)
-    if (command.slide !== "add") continue
+    if (command.slide === "clone") {
+      next = elementsShown(next, id, pending.get(command.source))
+      continue
+    }
     const born = slidePart(next, id)
     if (born !== null && layout !== null) next = withLayoutPlaceholders(next, born, layout)
   }
+  for (const [slide, shapes] of pending) next = elementsShown(next, minted.get(slide) ?? "", shapes)
   for (const spot of foldSlides(state)) {
     if (spot.present) continue
     const id = minted.get(spot.id)

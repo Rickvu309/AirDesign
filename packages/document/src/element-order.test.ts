@@ -74,6 +74,38 @@ describe("element order", () => {
     expect(nextElementId(removed, file[1]!, 3)).toBe("257.3")
   })
 
+  it("restores a removed element with its text, takes edits again, and refuses a restore of an element that shows", () => {
+    const added = applied(openRegister("", ""), { slide: "element-add", id: file[0]!, element: textBox })
+    const opened = decide(added, { command: "add", node, floor: "", route: "" })
+    if (opened.decision !== "apply") throw new Error(opened.code)
+    const typed = decide(opened.register, { command: "person", value: "Hello", node })
+    if (typed.decision !== "apply") throw new Error(typed.code)
+    expect(slide(typed.register, { slide: "element-restore", id: file[0]!, node })).toEqual({
+      decision: "refuse",
+      code: "dead",
+    })
+    const removed = applied(typed.register, { slide: "element-remove", id: file[0]!, node })
+    const restored = applied(removed, { slide: "element-restore", id: file[0]!, node })
+    expect(elementGone(restored, node)).toBe(false)
+    expect(restored.elements[node]?.landed.at(-1)?.value).toBe("Hello")
+    expect(decide(restored, { command: "person", value: "Again", node }).decision).toBe("apply")
+    expect(nextElementId(restored, file[0]!, 3)).toBe("256.10")
+    expect(elementGone(applied(restored, { slide: "element-remove", id: file[0]!, node }), node)).toBe(true)
+  })
+
+  it("refuses a restore on a removed slide or of an element off its slide", () => {
+    const indexedRemoved = applied(indexed, { slide: "element-remove", id: file[0]!, node: elementId("256.2") })
+    expect(slide(indexedRemoved, { slide: "element-restore", id: file[1]!, node: elementId("256.2") })).toEqual({
+      decision: "refuse",
+      code: "dead",
+    })
+    const gone = applied(indexedRemoved, { slide: "remove", id: file[0]! })
+    expect(slide(gone, { slide: "element-restore", id: file[0]!, node: elementId("256.2") })).toEqual({
+      decision: "refuse",
+      code: "dead",
+    })
+  })
+
   it("refuses a text box that names another slide, a known id, text, a group or no box", () => {
     const refused = (element: IndexElement, id = file[0]!) =>
       slide(indexed, { slide: "element-add", id, element }).decision === "refuse"
@@ -104,6 +136,7 @@ describe("element order", () => {
     const order = [
       { slide: "element-add", id: "256", element: textBox },
       { slide: "element-remove", id: "256", node: "256.9" },
+      { slide: "element-restore", id: "256", node: "256.9" },
     ]
     expect(readSlideState({ file, order })?.order).toEqual(order)
     expect(readSlideState({ file, order: [{ ...order[1], node: "257.9" }] })).toBeUndefined()
