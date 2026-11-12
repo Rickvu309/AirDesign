@@ -53,7 +53,8 @@ function serveSite(pathname, res, siteDist, appOrigin) {
   }
   const type = types[path.extname(file)] ?? "application/octet-stream"
   res.writeHead(200, { "content-type": type })
-  if (type.startsWith("text/") || type === "image/svg+xml") res.end(withAppOrigin(readFileSync(file, "utf8"), appOrigin))
+  if (type.startsWith("text/") || type === "image/svg+xml")
+    res.end(withAppOrigin(readFileSync(file, "utf8"), appOrigin))
   else createReadStream(file).pipe(res)
 }
 
@@ -77,7 +78,10 @@ function serveOriginal(originals, pathname, req, res) {
   })
 }
 
-export async function serve(run, { repo, apiDist, webDist, siteDist, catalogDist, scratchDir, statePath, airaPath, head }) {
+export async function serve(
+  run,
+  { repo, apiDist, webDist, siteDist, catalogDist, scratchDir, statePath, airaPath, head },
+) {
   const log = (line) => appendFileSync(process.env.VERIFY_AIRDESIGN_LOG ?? "/dev/null", `${line}\n`)
   const load = (name) => import(pathToFileURL(path.join(apiDist, name)).href)
   const { startEmptyCluster } = await load("postgres-setup.js")
@@ -180,6 +184,9 @@ export async function serve(run, { repo, apiDist, webDist, siteDist, catalogDist
   process.on("SIGHUP", stop)
   process.on("uncaughtException", (error) => stop(`uncaught ${String(error?.stack ?? error)}`))
   process.on("unhandledRejection", (error) => stop(`unhandled ${String(error?.stack ?? error)}`))
-  writeFileSync(statePath(run), JSON.stringify({ ...state, apiPort, origin, siteOrigin: origins.site, mail: mailFile, ready: true }, null, 2))
+  writeFileSync(
+    statePath(run),
+    JSON.stringify({ ...state, apiPort, origin, siteOrigin: origins.site, mail: mailFile, ready: true }, null, 2),
+  )
   log(`ready ${origin}`)
 }
