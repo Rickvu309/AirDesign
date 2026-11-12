@@ -34,7 +34,15 @@ async function signOut(): Promise<void> {
   if (response.ok) window.location.assign(signInAddress(window.location))
 }
 
-export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?: () => number }) {
+export function Home({
+  trash = false,
+  now = Date.now,
+  navigate,
+}: {
+  trash?: boolean
+  now?: () => number
+  navigate: (path: string) => void
+}) {
   const [listing, setListing] = useState<Listing | null>(null)
   const [unavailable, setUnavailable] = useState(false)
   const [menu, setMenu] = useState(false)
@@ -89,7 +97,7 @@ export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?:
       if (imported === null) throw new Error("import-failed")
       await nameImportedDeck(imported)
       await sendOriginal(imported.id, imported.file)
-      window.location.assign(`/deck/${imported.id}`)
+      navigate(`/deck/${imported.id}`)
     } catch {
       setImporting({ name: file.name, failed: true })
     }
