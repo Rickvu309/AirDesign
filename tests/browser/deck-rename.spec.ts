@@ -94,7 +94,7 @@ test("the deck home shows the new name", async ({ page }) => {
   await title(page).click()
   await field(page).fill("Shown at home")
   await field(page).press("Enter")
-  await expect.poll(() => calls.some((call) => call.path === "rename")).toBe(true)
+  await expect.poll(() => calls.some((call) => call.path === "rename" && call.body.name === "Shown at home")).toBe(true)
   await page.goto("/")
   await expect(page.getByRole("heading", { name: "Shown at home" })).toBeVisible()
 })
