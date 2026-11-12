@@ -230,7 +230,8 @@ async function callTool(send: typeof fetch, rpc: number, call: ToolCall): Promis
   try {
     const outcome = await sendTool(send, rpc, call.name, call.input)
     const run = outcome.fields?.runId
-    const edited = outcome.ok && opOf.get(call.name) === "edit_deck" && typeof run === "string"
+    const edited =
+      outcome.ok && catalog[opOf.get(call.name) ?? "read_deck"].kind === "command" && typeof run === "string"
     return { answer: toolAnswer(call.id, outcome.text, outcome.ok), ok: outcome.ok, run: edited ? run : undefined }
   } catch {
     return {

@@ -1,6 +1,14 @@
-import { catalog, projectTools, type WireRefusal } from "@airdesign/catalog"
+import { catalog, projectTools, type SlideOp, type WireRefusal } from "@airdesign/catalog"
 import type { Tab } from "@airdesign/device"
-import { elementId, history, rootElement, type ElementId, type NodeRegister, type Register } from "@airdesign/document"
+import {
+  elementId,
+  history,
+  presentSlides,
+  rootElement,
+  type ElementId,
+  type NodeRegister,
+  type Register,
+} from "@airdesign/document"
 import { liveRuns, type Deck } from "@airdesign/engine"
 import { emptyLog } from "./admit.js"
 import { callTool, type ToolResult } from "./call-tool.js"
@@ -20,7 +28,7 @@ export const fixtureRun = "run"
 
 export type EditableName = Exclude<ElementName, "opened">
 
-export type Tool = "edit_deck" | "capture_slide" | "read_deck"
+export type Tool = "edit_deck" | "capture_slide" | "read_deck" | SlideOp
 
 export type AttemptCall = {
   readonly name: string
@@ -53,6 +61,7 @@ export type Task = {
   readonly want: {
     readonly calls: number
     readonly steps: readonly Step[]
+    readonly slides?: readonly string[]
     readonly elements: Readonly<Partial<Record<EditableName, readonly string[]>>>
   }
 }
@@ -82,6 +91,10 @@ const toolNames = {
   edit_deck: toolName("edit_deck"),
   capture_slide: toolName("capture_slide"),
   read_deck: toolName("read_deck"),
+  add_slide: toolName("add_slide"),
+  duplicate_slide: toolName("duplicate_slide"),
+  delete_slide: toolName("delete_slide"),
+  move_slide: toolName("move_slide"),
 } as const
 
 export function edit(deck: string, writes: readonly Write[], base = 0): AttemptCall {
@@ -207,6 +220,14 @@ export function score(task: Task, attempt: Attempt): ScoreResult {
   }
   if (!answeredInOrder(task.want.steps, answers)) return failed("tool", current)
   if (touched(start, current, task.want.elements)) return failed("touched", current)
+  if (
+    task.want.slides !== undefined &&
+    !sameOrder(
+      presentSlides(current.register).map((row) => row.id),
+      task.want.slides,
+    )
+  )
+    return failed("landed", current)
   if (!landedMatches(current, task.want.elements)) return failed("landed", current)
   return { pass: true, reason: "ok", answers, deck: current, start }
 }

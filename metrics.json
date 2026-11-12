@@ -4,7 +4,7 @@
   "export-coverage": { "now": 18, "goal": 50 },
   "export-verified": { "now": 21, "goal": 50 },
   "fault-detection": { "now": 9, "goal": 10 },
-  "eval-coverage": { "now": 42, "goal": 42 },
+  "eval-coverage": { "now": 46, "goal": 46 },
   "design-findings": { "now": 118, "goal": 0 },
   "ci-duration": { "limit": 40 },
   "pptx-check-duration": { "limit": 90 }

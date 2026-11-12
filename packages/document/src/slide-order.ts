@@ -39,7 +39,9 @@ export type SlideRestore = {
   readonly key: OrderKey
 }
 
-export type SlideCommand = SlideAdd | SlideClone | SlideRemove | SlideMove | SlideRestore | ElementCommand
+export type SlideCommand = (SlideAdd | SlideClone | SlideRemove | SlideMove | SlideRestore | ElementCommand) & {
+  readonly runId?: string
+}
 
 export type SlideBirth =
   | { readonly from: "file" }
@@ -252,7 +254,8 @@ export function readSlideState(raw: unknown): SlideState | undefined {
     if (typeof item !== "object" || item === null) return undefined
     const command = commandOf(item as Record<string, unknown>)
     if (command === undefined) return undefined
-    order.push(command)
+    if (item.runId !== undefined && (typeof item.runId !== "string" || item.runId.length > 64)) return undefined
+    order.push(item.runId === undefined ? command : { ...command, runId: item.runId })
   }
   return { file, order }
 }

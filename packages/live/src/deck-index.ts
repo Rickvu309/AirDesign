@@ -5,7 +5,7 @@ import { installSlots, readSlot, writeSlot } from "./store.js"
 
 type ImportIndex = Pick<DeckIndex, "slides" | "elements">
 type Queue = { readonly count: number; readonly sent: number }
-const key = (deck: string, part: string) => `${deck}\u0002${part}`
+const key = (deck: string, part: string) => `${deck}\u0002layouts\u0002${part}`
 const chunkSize = Math.floor(limits.row / 4)
 
 function pageSlots(deck: string, n: number, page: IndexPage): { readonly key: string; readonly value: unknown }[] {

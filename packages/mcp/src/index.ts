@@ -1,3 +1,4 @@
+import { slideSuite } from "./slide-suite.js"
 import { readSuite } from "./read-suite.js"
 import { suite as writtenSuite, type SuiteRow } from "./suite.js"
 
@@ -21,7 +22,7 @@ export {
   type Write,
 } from "./score.js"
 
-export const suite: readonly SuiteRow[] = [...writtenSuite, ...readSuite]
+export const suite: readonly SuiteRow[] = [...writtenSuite, ...readSuite, ...slideSuite]
 
 export {
   captureAbsentAttempt,

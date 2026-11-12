@@ -1,3 +1,4 @@
+import { slideReaders } from "./agent-slide-wire.js"
 import * as z from "zod/v4"
 
 import { readAgentEdit } from "./edit-wire.js"
@@ -69,6 +70,42 @@ export const catalog = {
     read: readAgentEdit,
     description:
       "Write values on one deck. A slide element whose node ends in .notes holds plain-text speaker notes; send its value as plain text. Read it first with airdesign_read_deck and send that revision as base and each element's version as readAt. The server names the actor. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
+  },
+  add_slide: {
+    kind: "command",
+    exposure: "agent",
+    runsOn: "server",
+    destructive: true,
+    read: slideReaders.add_slide,
+    description:
+      "Add a slide after an existing slide, using the layout of the named slide. Read the deck first and send its revision as base. Returns the new slide id. Open the deck in AirDesign to index its layouts first. Slide edits cannot yet be undone by run Undo.",
+  },
+  duplicate_slide: {
+    kind: "command",
+    exposure: "agent",
+    runsOn: "server",
+    destructive: true,
+    read: slideReaders.duplicate_slide,
+    description:
+      "Duplicate a slide after itself, including its current text and boxes. Read the deck first and send its revision as base. Returns the new slide id. Slide edits cannot yet be undone by run Undo.",
+  },
+  delete_slide: {
+    kind: "command",
+    exposure: "agent",
+    runsOn: "server",
+    destructive: true,
+    read: slideReaders.delete_slide,
+    description:
+      "Delete the named slide. The last slide cannot be deleted. Read the deck first and send its revision as base. Slide edits cannot yet be undone by run Undo.",
+  },
+  move_slide: {
+    kind: "command",
+    exposure: "agent",
+    runsOn: "server",
+    destructive: true,
+    read: slideReaders.move_slide,
+    description:
+      "Move the named slide after another slide, or to the beginning with after: null. Read the deck first and send its revision as base. Slide edits cannot yet be undone by run Undo.",
   },
   list_decks: {
     kind: "query",

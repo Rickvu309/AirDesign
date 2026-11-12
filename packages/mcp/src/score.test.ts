@@ -36,6 +36,11 @@ afterEach(() => {
 const title = elements.title
 
 const toolNames = {
+  add_slide: "airdesign_add_slide",
+  duplicate_slide: "airdesign_duplicate_slide",
+  delete_slide: "airdesign_delete_slide",
+  move_slide: "airdesign_move_slide",
+
   edit_deck: edit("deck", []).name,
   capture_slide: capture("deck").name,
   read_deck: "airdesign_read_deck",
@@ -265,11 +270,11 @@ describe("score", () => {
   })
 
   it("scores every task", () => {
-    expect(suite).toHaveLength(42)
+    expect(suite).toHaveLength(46)
     const ids = suite.map((row) => row.task.id)
     const prompts = suite.map((row) => row.task.prompt)
-    expect(new Set(ids).size).toBe(42)
-    expect(new Set(prompts).size).toBe(42)
+    expect(new Set(ids).size).toBe(46)
+    expect(new Set(prompts).size).toBe(46)
     const starts = suite.map((row) => {
       const deck = row.task.deck()
       return JSON.stringify({
@@ -279,7 +284,7 @@ describe("score", () => {
         want: row.task.want,
       })
     })
-    expect(new Set(starts).size).toBe(42)
+    expect(new Set(starts).size).toBe(46)
     for (const row of suite) expect(score(row.task, row.reference).pass, row.task.id).toBe(true)
   })
 })

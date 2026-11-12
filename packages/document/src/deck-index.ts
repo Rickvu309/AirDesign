@@ -4,7 +4,7 @@ import { bytesOf, limits } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
 import { kinds, type Kind } from "./properties.js"
 
-export type IndexSlide = { readonly id: string; readonly position: number }
+export type IndexSlide = { readonly id: string; readonly position: number; readonly layout?: readonly IndexElement[] }
 export type IndexElement = {
   readonly node: ElementId
   readonly kind: Kind
@@ -45,9 +45,18 @@ function openingText(raw: unknown): raw is string | null {
 
 function readSlide(raw: unknown, position: number): IndexSlide | null {
   const row = record(raw)
-  if (row === null || !onlyKeys(row, ["id", "position"])) return null
+  if (row === null || !onlyKeys(row, row.layout === undefined ? ["id", "position"] : ["id", "position", "layout"]))
+    return null
   if (typeof row.id !== "string" || !slidePattern.test(row.id) || row.position !== position) return null
-  return { id: row.id, position }
+  if (row.layout === undefined) return { id: row.id, position }
+  if (!Array.isArray(row.layout) || row.layout.length > limits.batch) return null
+  const layout: IndexElement[] = []
+  for (const raw of row.layout) {
+    const element = readElement(raw, new Set([row.id]))
+    if (element === null || layout.some((kept) => kept.node === element.node)) return null
+    layout.push(element)
+  }
+  return { id: row.id, position, layout }
 }
 
 export function readElement(raw: unknown, slides: ReadonlySet<string>): IndexElement | null {
@@ -108,14 +117,31 @@ export function appendIndex(
   if (readIndexPage(page) === null || bytesOf(JSON.stringify(page)) > limits.body)
     return { ok: false, refusal: "limit" }
   if (current !== undefined) {
-    if (current.total !== page.total || !same(current.slides, page.slides)) return { ok: false, refusal: "present" }
+    if (
+      current.total !== page.total ||
+      !same(
+        current.slides.map(({ id, position }) => ({ id, position })),
+        page.slides.map(({ id, position }) => ({ id, position })),
+      )
+    )
+      return { ok: false, refusal: "present" }
     const prior = current.pages.find((kept) => kept.once === page.once)
     if (prior !== undefined && (prior.offset !== page.offset || prior.count !== page.elements.length)) {
       return { ok: false, refusal: "present" }
     }
     if (prior !== undefined || page.offset < current.elements.length || current.elements.length === current.total) {
       return same(current.elements.slice(page.offset, page.offset + page.elements.length), page.elements)
-        ? { ok: true, index: current }
+        ? {
+            ok: true,
+            index: same(current.slides, page.slides)
+              ? current
+              : {
+                  ...current,
+                  slides: page.slides.map((slide, n) =>
+                    slide.layout === undefined ? (current.slides[n] ?? slide) : slide,
+                  ),
+                },
+          }
         : { ok: false, refusal: "present" }
     }
   }

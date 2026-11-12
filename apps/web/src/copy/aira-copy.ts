@@ -28,6 +28,30 @@ export const airaStepWords: Readonly<Record<AgentOp, StepWords | null>> = {
     refused: "Couldn't view a slide",
     stopped: "Stopped viewing a slide",
   },
+  add_slide: {
+    working: "Adding a slide",
+    done: "Added a slide",
+    refused: "Couldn't add a slide",
+    stopped: "Stopped adding a slide",
+  },
+  duplicate_slide: {
+    working: "Duplicating a slide",
+    done: "Duplicated a slide",
+    refused: "Couldn't duplicate a slide",
+    stopped: "Stopped duplicating a slide",
+  },
+  delete_slide: {
+    working: "Deleting a slide",
+    done: "Deleted a slide",
+    refused: "Couldn't delete a slide",
+    stopped: "Stopped deleting a slide",
+  },
+  move_slide: {
+    working: "Moving a slide",
+    done: "Moved a slide",
+    refused: "Couldn't move a slide",
+    stopped: "Stopped moving a slide",
+  },
   stop_run: null,
 }
 
@@ -61,7 +85,7 @@ export function airaChatsKeptOf(count: number): string {
 }
 
 export const airaCopy = {
-  welcome: "Aira can read this deck, rewrite its text, and move or resize what's on its slides.",
+  welcome: "Aira can add, duplicate, delete and reorder slides, rewrite text, and move or resize elements.",
   caution: "Aira can be wrong. Check a number, a quote, or a slide before you rely on it.",
   starters: [
     "Fix the typos on every slide",

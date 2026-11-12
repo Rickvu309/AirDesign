@@ -1,3 +1,4 @@
+import { slideTool } from "./slide-tool.js"
 import {
   catalog,
   projectTools,
@@ -139,6 +140,26 @@ export const agentOps: Record<
     turnRun: (answer: Extract<EditAnswer, { ok: true }>, held: Turn | undefined) => string | null | undefined
   }
 > = {
+  add_slide: {
+    handle: (raw, session) => slideTool("add_slide", raw, session),
+    refuse: (deck, code) => editRefusal(deck, code, []),
+    turnRun: (answer) => answer.runId,
+  },
+  duplicate_slide: {
+    handle: (raw, session) => slideTool("duplicate_slide", raw, session),
+    refuse: (deck, code) => editRefusal(deck, code, []),
+    turnRun: (answer) => answer.runId,
+  },
+  delete_slide: {
+    handle: (raw, session) => slideTool("delete_slide", raw, session),
+    refuse: (deck, code) => editRefusal(deck, code, []),
+    turnRun: (answer) => answer.runId,
+  },
+  move_slide: {
+    handle: (raw, session) => slideTool("move_slide", raw, session),
+    refuse: (deck, code) => editRefusal(deck, code, []),
+    turnRun: (answer) => answer.runId,
+  },
   edit_deck: {
     handle: editDeck,
     refuse: (deck, code) => editRefusal(deck, code, []),
