@@ -33,7 +33,7 @@ Each feature file starts with an H1 title and one paragraph describing what the 
 
 ## Features
 
-- [Open a PowerPoint or a blank deck and edit its text](./open-edit-save.md): import from Home or start a blank deck, type in the slide, the server keeps the text, reopening shows it. Journeys `open-edit-save`, `blank-deck`, `commit-once`, `element-index`.
+- [Open a PowerPoint or a blank deck and edit its text](./open-edit-save.md): import from Home or start a blank deck, type in the slide, make it bold, italic or underlined, the server keeps the text, reopening shows it. Journeys `open-edit-save`, `blank-deck`, `commit-once`, `element-index`.
 - [Deck list and Trash](./deck-list-trash.md): Recents' first visit, its six newest decks, `No decks yet`, Move to Trash, Restore, Empty Trash. Journey `deck-list-trash`.
 - [Deck names, search and All decks](./deck-names.md): `All decks`, the sidebar search, renaming from the editor title, the exported file's name and its toast, the disabled Design tab. Journey `deck-names`.
 - [Keep typed text and paint from the device](./keep-typed-text.md): the keystroke journal through a reload or a closed tab, the device copy painting before the server answers, a refused deck closing. Journey `typed-reload`.

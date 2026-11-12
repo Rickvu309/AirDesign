@@ -10,6 +10,7 @@ A signed-in person chooses a PowerPoint file on Home, or starts a blank deck. Ai
 - `commit-once` when the server stores an edit but its answer is lost, a reload sends the same batch with the same `once` key and the revision rises once. Journey `commit-once`.
 - `import-index` an agent reads untouched element ids, kinds, text, boxes, slide order and version zero before making an edit.
 - `edit-text` typing replaces the text box's text on screen.
+- `edit-format` while text is selected, `group "Text format"` offers `Bold`, `Italic` and `Underline` (`aria-pressed` shows the state); the run paints at once and the server's text value gets `bold`, `italic` and `underline` on the run. Driven live: all three on `Hello` paint as weight 700, italic and underlined and stay through a reload; the server had bold and italic at once and underline about 5 s later. Look state `text-format-bold`.
 - `edit-save` the edit lands on the server: `deckRoutes.open` returns the typed text.
 - `edit-reopen` with the local edit rows gone, opening the deck again shows the server's text.
 - `import-refused` a file that is not a PowerPoint shows `Unable to open this file` with the next step under it, `Choose another file` and `Remove`. Each refusal has its own words in `apps/web/src/copy/import-failure-words.ts`.
