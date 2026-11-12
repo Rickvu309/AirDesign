@@ -38,6 +38,7 @@ async function drive(name: string, page: Page, context: BrowserContext): Promise
 for (const name of [
   "open-edit-save",
   "blank-deck",
+  "blank-slides",
   "element-index",
   "commit-once",
   "deck-list-trash",

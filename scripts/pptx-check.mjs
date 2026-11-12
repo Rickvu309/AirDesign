@@ -103,7 +103,10 @@ const browserSpec = freshExports({
   paragraphs: paragraphsExportPath,
   box: boxExportPath,
   slides: slideExportPath,
-  also: [path.join(root, "tests/browser", blankExportName)],
+  also: [
+    path.join(root, "tests/browser", blankExportName),
+    path.join(root, "tests/browser/exported-blank-slides.pptx"),
+  ],
   run: () => run("pnpm", ["exec", "playwright", "test", ...browserSpecs]),
 })
 const pptx = await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href)
@@ -127,6 +130,7 @@ const browserExports = new Map([
   [boxExportName, boxExportPath],
   [slideExportName, slideExportPath],
   [blankExportName, path.join(root, "tests/browser", blankExportName)],
+  ["exported-blank-slides.pptx", path.join(root, "tests/browser/exported-blank-slides.pptx")],
 ])
 const fixturePath = (name) => browserExports.get(name) ?? path.join(root, decision.deckPath(name))
 const rendered = new Map()
@@ -235,6 +239,10 @@ if (spec.ok) {
     parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
   }
   parts.set(blankExportName, await pptx.readParts(fs.readFileSync(fixturePath(blankExportName))))
+  parts.set(
+    "exported-blank-slides.pptx",
+    await pptx.readParts(fs.readFileSync(fixturePath("exported-blank-slides.pptx"))),
+  )
   cases.push(blankCase)
   waiting.push(blankExportName)
   waiting.push(browserExportName)
@@ -306,7 +314,22 @@ if (!spec.ok) {
     failed += 1
     console.log(line)
   }
-  for (const line of [...slideExportLines({ pptx, parts, lists, ids, orders }), ...blankExportLines({ pptx, parts, lists })]) {
+  for (const line of [
+    ...slideExportLines({ pptx, parts, lists, ids, orders }),
+    ...blankExportLines({ pptx, parts, lists }),
+    ...slideExportLines({
+      pptx,
+      parts,
+      lists,
+      ids,
+      orders,
+      kept: [...parts.get("blank.pptx").keys()].filter(
+        (name) => !["[Content_Types].xml", "ppt/presentation.xml", "ppt/_rels/presentation.xml.rels"].includes(name),
+      ),
+      original: "blank.pptx",
+      exported: "exported-blank-slides.pptx",
+    }),
+  ]) {
     failed += 1
     console.log(line)
   }
