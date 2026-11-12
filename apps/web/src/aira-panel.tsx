@@ -4,7 +4,6 @@ import { Conversation, ConversationContent, ConversationScrollButton } from "@/c
 import { useConversationFollow } from "@/components/ai-elements/conversation-follow"
 import { airaBackOn, airaCopy } from "@/copy/aira-copy"
 import { productCopy } from "@/copy/product-copy"
-import { creditsCopy } from "@/credits/credits-sample"
 import { UsageRing } from "@/usage-ring"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
@@ -61,7 +60,7 @@ export function AiraPanel({
     onRestore: display,
     empty: () => latest.current.exchanges.length === 0,
   })
-  const title = history.current?.title ?? (asked === undefined ? creditsCopy.newChat : chatTitle(asked))
+  const title = history.current?.title ?? (asked === undefined ? airaCopy.newChat : chatTitle(asked))
 
   useEffect(() => () => stopper.current?.abort(), [])
 
@@ -186,7 +185,7 @@ export function AiraPanel({
             variant="ghost"
             size="icon"
             className={cn("size-7 rounded-md text-quiet", headControl)}
-            aria-label={creditsCopy.newChat}
+            aria-label={airaCopy.newChat}
             disabled={empty || working || undoing}
             onClick={newChat}
           >

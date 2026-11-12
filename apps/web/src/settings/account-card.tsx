@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { accountCopy } from "@/copy/account-copy"
 import { ModuleRow } from "@/settings/module-row"
-import { settingsCopy } from "@/settings/settings-sample"
+import { settingsCopy } from "@/copy/settings-copy"
 
 const settingsAction =
   "h-[var(--space-32)] border-0 bg-background px-3.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"

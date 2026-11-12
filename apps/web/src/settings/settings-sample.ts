@@ -1,8 +1,7 @@
+import { settingsCopy as words } from "@/copy/settings-copy"
+
 export const settingsCopy = {
-  title: "Settings",
-  usage: "Usage",
-  agents: "Agents",
-  account: "Account",
+  ...words,
   weeklyUsage: "Weekly usage",
   resets: "Resets Mon 8:00 AM",
   reset: "Reset",
@@ -14,19 +13,11 @@ export const settingsCopy = {
   autoReset: "Auto reset",
   autoResetBody: "When usage runs out, reset for $5 from your credits.",
   history: "History",
-  agentsBody: "Agents that can work on your decks.",
   aira: "Aira",
   airaStatus: "Built in. Uses your weekly usage faster.",
-  claude: "Claude",
-  connected: "Connected",
   manage: "Manage",
-  codex: "Codex",
-  notConnected: "Not connected",
   connect: "Connect",
-  mcp: "MCP server",
-  mcpBody: "Add this address in Claude or Codex to connect.",
   mcpAddress: "https://mcp.airdesign.app/mcp",
-  copy: "Copy",
   setupGuides: "Setup guides for Claude and Codex",
   profile: "Profile",
   profileLine: "Ada Lovelace, ada@halden.com",
@@ -37,10 +28,7 @@ export const settingsCopy = {
   slideSize: "Slide size",
   slideSizeBody: "For new decks",
   slideRatio: "16:9",
-  signedIn: "Signed in with email",
   email: "ada@halden.com",
-  signOut: "Sign out",
-  deleteAccount: "Delete account",
 } as const
 
 export const usageHistory = [

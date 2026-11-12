@@ -7,7 +7,7 @@ import { DeleteAccountDialog } from "@/decks/delete-account"
 import { loadAccount, type AccountLoad } from "@/settings/account-load"
 import { AccountCard } from "@/settings/account-card"
 import { SettingsPage, signOut } from "@/settings/settings-page"
-import { settingsCopy } from "@/settings/settings-sample"
+import { settingsCopy } from "@/copy/settings-copy"
 import { signInAddress } from "@/thin-notice"
 
 export function AccountPage({
