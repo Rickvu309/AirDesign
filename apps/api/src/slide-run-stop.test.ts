@@ -1,80 +1,75 @@
+import { createServer } from "node:http"
+
 import { afterAll, beforeAll, expect, it } from "vitest"
 
 import { postgresInfo } from "./harness.js"
 import {
-  decide,
+  finish,
   indexedDeck,
-  loadDeck,
-  loadTurn,
-  request,
-  settle,
+  mcpSteps,
+  revisionOf,
   turnRow,
   wholeCall,
+  type McpSteps,
   type Owned,
   type Stores,
 } from "./mcp-steps.js"
 import { openPool } from "./pool.js"
 
 let stores: Stores
+let steps: McpSteps
 
 beforeAll(async () => {
   const info = await postgresInfo()
   stores = { deck: openPool(info.deck, "slide-stop-deck"), session: openPool(info.session, "slide-stop-session") }
+  steps = await mcpSteps(createServer)
 })
 
 afterAll(async () => {
+  await steps.close()
   await Promise.all([stores.deck.end(), stores.session.end()])
 })
 
 async function slideRun(): Promise<Owned & { readonly base: number }> {
   const owned = await indexedDeck(stores, "slide-stop")
-  const added = await wholeCall(owned, "r", "add_slide", {
+  const added = await wholeCall(steps, owned, "r", "add_slide", {
     deck: owned.deck,
     base: owned.revision,
     after: "256",
     layout: "256",
   })
-  if (!added.ok) throw new Error(added.refusal)
-  return { ...owned, base: added.deck.revision }
+  return { ...owned, base: revisionOf(added) }
+}
+
+async function addingSlide(owned: Owned & { readonly base: number }) {
+  const agent = await steps.start(owned, "u", "add_slide", {
+    deck: owned.deck,
+    base: owned.base,
+    after: "256",
+    layout: "256",
+  })
+  await agent.release()
+  await agent.release()
+  expect(agent.at).toBe("write")
+  return agent
 }
 
 it.fails("lands no slide of a run that only added slides once its stop answered", async () => {
   const owned = await slideRun()
-  const agent = request(owned, "u")
-  await loadTurn(owned, agent)
-  await loadDeck(owned, agent)
-  const stop = request(owned, "s")
-  await loadTurn(owned, stop)
-  await loadDeck(owned, stop)
-  expect((await decide(owned, stop, "stop_run", { deck: owned.deck, runId: "r" })).ok).toBe(true)
-  await settle(stop)
-  const added = await decide(owned, agent, "add_slide", {
-    deck: owned.deck,
-    base: owned.base,
-    after: "256",
-    layout: "256",
-  })
-  expect(added.ok).toBe(false)
+  const agent = await addingSlide(owned)
+  const stopped = await wholeCall(steps, owned, "s", "stop_run", { deck: owned.deck, runId: "r" })
+  expect(stopped.ok).toBe(true)
+  expect((await finish(agent)).ok).toBe(false)
 })
 
 it.fails("keeps the turn ended after stop_run answered while an add_slide of the run was saving its turn", async () => {
   const owned = await slideRun()
-  const agent = request(owned, "u")
-  await loadTurn(owned, agent)
-  await loadDeck(owned, agent)
-  const added = await decide(owned, agent, "add_slide", {
-    deck: owned.deck,
-    base: owned.base,
-    after: "256",
-    layout: "256",
-  })
-  expect(added.ok).toBe(true)
-  const stop = request(owned, "s")
-  await loadTurn(owned, stop)
-  await loadDeck(owned, stop)
-  expect((await decide(owned, stop, "stop_run", { deck: owned.deck, runId: "r" })).ok).toBe(true)
-  await settle(stop)
+  const agent = await addingSlide(owned)
+  await agent.release()
+  expect(agent.at).toBe("save")
+  const stopped = await wholeCall(steps, owned, "s", "stop_run", { deck: owned.deck, runId: "r" })
+  expect(stopped.ok).toBe(true)
   expect((await turnRow(owned))?.run_id).toBe(null)
-  await settle(agent)
+  await finish(agent)
   expect((await turnRow(owned))?.run_id).toBe(null)
 })

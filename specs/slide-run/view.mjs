@@ -1,12 +1,11 @@
 const steps = {
-  AgentLoadsTurn: "an agent call loads the turn row",
-  AgentLoadsDeck: "the agent call reads the deck",
-  AgentReads: "read_deck answers and the agent keeps that revision as its base",
-  AgentAddsSlide: "add_slide decides on the deck it read and writes it if the revision still matches",
+  AgentLoadsTurn: "an agent call, or its next try, loads the turn row",
+  AgentLoadsDeck: "the agent call reads the deck and decides on it",
+  AgentAddsSlide: "add_slide writes the deck if the revision it read still holds, or tries again",
   AgentSavesTurn: "the agent call saves the turn row",
-  StopLoadsTurn: "stop_run loads the turn row",
-  StopLoadsDeck: "stop_run reads the deck",
-  StopCommits: "stop_run stops r and writes the deck if it changed",
+  StopLoadsTurn: "stop_run, or its next try, loads the turn row",
+  StopLoadsDeck: "stop_run reads the deck and decides on it",
+  StopCommits: "stop_run writes the stopped element if the revision it read still holds, or tries again",
   StopSavesTurn: "stop_run saves the turn row",
   Done: "nothing is left to do",
 }
