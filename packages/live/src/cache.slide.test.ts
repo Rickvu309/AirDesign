@@ -107,3 +107,21 @@ it("keeps a cloned slide's opening elements and their edits through offline, rel
   expect(openingElement(cleared.register, title.node)).toEqual(title)
   expect(shown(cleared.register, title.node)).toEqual({ value: "Edited", box: moved })
 })
+
+it("reopens a text box added and typed in while the network is down, and sends both in order", async () => {
+  const remote = memoryRemote()
+  const offline = { ...remote, commit: () => Promise.reject(new TypeError("offline")) }
+  const cache = connect(offline)
+  const node = elementId("256.9")
+  const element = { node, kind: "shape" as const, value: "", box: { x: 0, y: 0, cx: 10, cy: 5 }, grouped: false }
+  expect((await cache.enqueueSlide("deck", file, { slide: "element-add", id: file[0], element })).ok).toBe(true)
+  expect((await cache.enqueue("deck", "Typed", node, "")).ok).toBe(true)
+  const kept = await connect(offline).openDeck("deck")
+  if (!kept.ok) throw new Error(kept.refusal)
+  expect(openingElement(kept.register, node)).toEqual(element)
+  expect(currentValue(kept.register.elements[node]!)).toBe("Typed")
+  expect((await connect(remote).flush("deck")).ok).toBe(true)
+  const confirmed = await connect(remote).openDeck("deck")
+  if (!confirmed.ok) throw new Error(confirmed.refusal)
+  expect(currentValue(confirmed.register.elements[node]!)).toBe("Typed")
+})

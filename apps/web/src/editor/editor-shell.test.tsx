@@ -94,6 +94,14 @@ describe("editor shell", () => {
     expect(disabledLabels(markup)).toEqual(["Grid", "text", "shape", "image", "actions"])
   })
 
+  it("turns on the text box tool alone when the deck can add a text box", () => {
+    const markup = renderToStaticMarkup(
+      <EditorShell title="Real deck" slideLabel="1" deck={{ ...deck, onText: () => undefined }} />,
+    )
+    expect(markup).toContain('aria-label="Add text box"')
+    expect(disabledLabels(markup)).toEqual(["Grid", "shape", "image", "actions", "Undo", "Redo"])
+  })
+
   it("gallery screen keeps its copy", () => {
     const markup = renderToStaticMarkup(<AgentWorking />)
     expect(markup).toContain('font-medium text-foreground">Q3 Investor Update')

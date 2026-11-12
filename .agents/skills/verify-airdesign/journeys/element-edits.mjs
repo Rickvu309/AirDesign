@@ -1,0 +1,50 @@
+import path from "node:path"
+import { expect } from "@playwright/test"
+
+export default async function drive({ page, signIn, post, capture, note, deckRoutes }) {
+  const { cookie } = await signIn()
+  await page.goto("/")
+  await page.getByRole("button", { name: "New deck", exact: true }).click()
+  await page.getByRole("button", { name: "Blank deck", exact: true }).click()
+  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  const deck = page.url().split("/").at(-1)
+  const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
+  await expect(texts).toHaveCount(2)
+  await capture("before-add")
+  await page.getByRole("button", { name: "Add text box", exact: true }).click()
+  await expect(texts).toHaveCount(3)
+  await expect(texts.last()).toBeFocused()
+  await capture("added-box")
+  await page.keyboard.type("Added text", { delay: 30 })
+  const order = async () => (await post(deckRoutes.open, { deck }, cookie)).json.register.order
+  await expect.poll(async () => (await order()).filter((row) => row.slide === "element-add").length).toBe(1)
+  await expect
+    .poll(async () => JSON.stringify((await post(deckRoutes.open, { deck }, cookie)).json.register.elements))
+    .toContain("Added text")
+  await capture("added-text")
+  await page.reload()
+  await expect(texts.last()).toHaveText("Added text")
+  await texts.first().click()
+  await page.keyboard.press("Escape")
+  await capture("title-selected")
+  await page.keyboard.press("Delete")
+  await expect(texts).toHaveCount(2)
+  await expect.poll(async () => (await order()).filter((row) => row.slide === "element-remove").length).toBe(1)
+  await capture("deleted-element")
+  await page.reload()
+  await expect(texts).toHaveCount(2)
+  await expect(texts.last()).toHaveText("Added text")
+  const out = path.dirname(await capture("reloaded"))
+  const downloading = page.waitForEvent("download")
+  await page.getByRole("button", { name: "Export", exact: true }).click()
+  const file = path.join(out, "element-edits.pptx")
+  await (await downloading).saveAs(file)
+  await page.goto("/")
+  await page.locator("input[type=file]").setInputFiles(file)
+  await expect(texts).toHaveCount(2)
+  await expect(texts.last()).toHaveText("Added text")
+  await capture("reimported")
+  note(
+    "Add text box put a selected, focused box in the middle of the slide; the typed text reached the server and came back after a reload. Delete on the selected title (outside its text) removed it on the server and after a reload. The export and a new import kept both.",
+  )
+}

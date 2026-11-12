@@ -18,6 +18,7 @@ export function readFloor(raw: unknown, slide: SlideId): readonly IndexElement[]
 }
 
 export function floorOf(command: SlideCommand): readonly IndexElement[] {
+  if (command.slide === "element-add") return [command.element]
   if (command.slide === "add" || command.slide === "clone") return command.floor ?? []
   return []
 }
@@ -32,10 +33,16 @@ export function openingElement(state: Floored, node: ElementId): IndexElement | 
   const indexed = state.index?.elements.find((element) => element.node === node)
   if (indexed !== undefined || !node.includes(".")) return indexed
   const slide = shapeOf(node).slide
-  const born = state.order.find(
-    (command) => command.id === slide && (command.slide === "add" || command.slide === "clone"),
-  )
-  return born === undefined ? undefined : floorOf(born).find((element) => element.node === node)
+  for (const command of state.order) {
+    if (
+      command.id !== slide ||
+      (command.slide !== "add" && command.slide !== "clone" && command.slide !== "element-add")
+    )
+      continue
+    const found = floorOf(command).find((element) => element.node === node)
+    if (found !== undefined) return found
+  }
+  return undefined
 }
 
 export function floorNodes(state: Floored): readonly ElementId[] {

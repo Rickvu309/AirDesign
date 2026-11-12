@@ -1,7 +1,7 @@
 import { insertChild } from "./child-order.js"
 import { markupDocument } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import { nextShapeId } from "./shape-id.js"
+import { nextShapeId, shapeIdsIn } from "./shape-id.js"
 
 export type ShapeBox = {
   readonly x: number
@@ -75,12 +75,14 @@ export function addTextShape(
   slideXml: string,
   text: string,
   box: ShapeBox,
+  id?: number,
 ): { readonly xml: string; readonly id: number } {
-  const shapeId = nextShapeId(slideXml)
+  const shapeId = id ?? nextShapeId(slideXml)
   if (!Number.isInteger(shapeId) || shapeId < 1 || shapeId > 4294967295) throw new Error("shape id")
   const idText = String(shapeId)
   const bytes = encodeUtf8(slideXml)
   const document = markupDocument(bytes)
+  if (shapeIdsIn(bytes).includes(idText)) throw new Error("shape id")
   const shape = `<p:sp><p:nvSpPr><p:cNvPr id="${idText}" name="Shape ${idText}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text)}</p:sp>`
   const tree = document.elements.find((element) => element.kind === "p:spTree")
   if (!document.wellFormed || tree === undefined || tree.selfClosing || tree.closeStart < 0) throw new Error("p:spTree")

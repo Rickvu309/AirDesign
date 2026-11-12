@@ -1,6 +1,7 @@
 import type { DeckId } from "@airdesign/catalog"
 import { readDeckId } from "@airdesign/catalog"
 import {
+  elementGone,
   bytesOf,
   presentSlides,
   slideGone,
@@ -127,7 +128,7 @@ function knownNodes(register: Register): ElementId[] {
     nodes.push(node)
   }
   nodes.sort(byId)
-  return nodes
+  return nodes.filter((node) => !elementGone(register, node))
 }
 
 type ReadHead = Pick<ReadDeckAnswer, "revision" | "slides" | "index">

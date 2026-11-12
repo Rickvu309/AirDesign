@@ -1,3 +1,6 @@
+import { parseDot, type Graph } from "./spec-graph.js"
+import { replayElement } from "./element-replay.js"
+import * as elementView from "../specs/element/view.mjs"
 import { opened, viewed, personSplit } from "./spec-register.js"
 import { dumpTopics } from "./spec-dump.js"
 import { replayIndex } from "./index-replay.js"
@@ -43,48 +46,9 @@ type View = {
   step: (action: string, spec: Spec) => string | null
   group: (spec: Spec) => string
 }
-type Graph = {
-  states: Map<string, Spec>
-  edges: { from: string; to: string; action: string }[]
-}
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const run = "r"
-
-function parseValue(raw: string): Value {
-  if (raw === "TRUE") return true
-  if (raw === "FALSE") return false
-  if (raw.startsWith('"') && raw.endsWith('"')) return raw.slice(1, -1)
-  const number = Number(raw)
-  if (Number.isNaN(number)) throw new Error(`bad value ${raw}`)
-  return number
-}
-
-function parseLabel(label: string): Spec {
-  const spec: Spec = {}
-  for (const part of label.split("\n")) {
-    const matched = part.match(/^\/\\ (\w+) = (.+)$/)
-    if (!matched) throw new Error(`bad state line ${part}`)
-    spec[matched[1]] = parseValue(matched[2])
-  }
-  return spec
-}
-
-function parseDot(dot: string): Graph {
-  const states = new Map<string, Spec>()
-  const edges: Graph["edges"] = []
-  for (const line of dot.split("\n")) {
-    const node = line.match(/^(-?\d+) \[label="(.*)"(?:,style = filled)?\]?;?$/)
-    if (node) {
-      const label = node[2].replaceAll("\\\\", "\\").replaceAll("\\n", "\n").replaceAll('\\"', '"')
-      states.set(node[1], parseLabel(label))
-      continue
-    }
-    const edge = line.match(/^(-?\d+) -> (-?\d+) \[label="([^"]+)"/)
-    if (edge) edges.push({ from: edge[1], to: edge[2], action: edge[3] })
-  }
-  return { states, edges }
-}
 
 function same(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right)
@@ -1138,6 +1102,7 @@ describe("spec replay", () => {
       oauth: { state: oauthState, step: oauthStep, group: oauthGroup },
       rerun: { state: rerunState, step: rerunStep, group: rerunGroup },
       turn: { state: turnState, step: turnStep, group: turnGroup },
+      element: elementView,
       index: { state: indexState, step: indexStep, group: indexGroup },
       "person-undo": personUndoView,
     }
@@ -1152,6 +1117,7 @@ describe("spec replay", () => {
       const graph = parseDot(dumped.graph)
       const view = views[topic.name]
       if (!view) throw new Error(`${topic.name} has no reader`)
+      if (topic.name === "element") reports.element = replayElement(graph, failures)
       if (topic.name === "index") reports.index = replayIndex(graph, failures)
       if (topic.name === "person-undo")
         reports.personUndo = replayPersonUndo(
@@ -1219,6 +1185,7 @@ describe("spec replay", () => {
     }
     expect(failures, JSON.stringify(reports)).toEqual([])
     expect(reports).toMatchObject({
+      element: { states: 5, edges: expect.any(Number) },
       index: { replayed: expect.any(Number), stuttered: expect.any(Number) },
       personUndo: { replayed: expect.any(Number), told: expect.any(Number) },
       edit: { stuttered: expect.any(Number) },

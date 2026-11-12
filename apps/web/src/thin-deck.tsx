@@ -16,6 +16,7 @@ import { commitBox, commitEdit, flushPending, server, type CommitOutcome, type T
 import { landedBox, shownBox } from "@/element-move"
 import { exportedParts } from "@/exported-parts"
 import { commitSlideChange, type SlideChange } from "@/slide-edit"
+import { commitElement, type ElementChange } from "@/element-edit"
 import { ensureMarkup } from "@/markup"
 import { backfillIndex } from "@/index-deck"
 import { type PictureSources } from "@/picture-fill"
@@ -87,6 +88,7 @@ export function ThinDeck({ id }: { id: string }) {
   const busy = useRef(busyElements())
   const structure = useRef("")
   const repaint = useRef<(register: Register) => void>(() => undefined)
+  const [entering, setEntering] = useState<ElementId | null>(null)
   const [slideCount, setSlideCount] = useState(0)
   const [current, setCurrent] = useState(0)
   const [title, setTitle] = useState("")
@@ -384,6 +386,22 @@ export function ThinDeck({ id }: { id: string }) {
 
   useUndoKeys(paintedDeck === id, turn)
 
+  async function changeElement(change: ElementChange) {
+    const opened = await connect(memoryRemote()).openDeck(id)
+    if (!opened.ok) return
+    settle(
+      await commitElement(id, shownParts.current, opened.register, change, async (added) => {
+        await showEdited(current)
+        setEntering(added)
+      }),
+    )
+  }
+
+  function addText() {
+    const size = canvases.current(current)
+    if (size !== null) void changeElement({ change: "text", index: current, size })
+  }
+
   async function onExport() {
     try {
       await exportDeck()
@@ -416,6 +434,7 @@ export function ThinDeck({ id }: { id: string }) {
               onUndo: () => turn("undo"),
               onRedo: () => turn("redo"),
             },
+            onText: addText,
             size: canvases.current(current),
             slides: {
               count: slideCount,
@@ -438,7 +457,9 @@ export function ThinDeck({ id }: { id: string }) {
               ) : (
                 <SlideCanvas
                   className={cn(slideFrame, "shrink-0 overflow-clip focus-within:overflow-visible")}
+                  entering={entering}
                   onBox={(target, box) => holding(target, () => onBox(target, box))}
+                  onRemove={(target) => holding(target, () => changeElement({ change: "remove", node: target }))}
                   onEdit={(target, value) => holding(target, () => onEdit(target, value))}
                   slide={canvas}
                   store={store.current}

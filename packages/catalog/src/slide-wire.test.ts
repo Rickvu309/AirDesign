@@ -59,3 +59,18 @@ it("reads a restore on a person's commit and turns it back into the same command
   expect(readCommit({ deck: "deck", batch: [{ ...restore, source: "256" }] })).toEqual(field)
   expect(readAgentEdit({ deck: "deck", base: 0, changes: [restore] })).toEqual(field)
 })
+
+it("reads an added text box and a removed element on a person's commit and refuses extra fields", () => {
+  const element = { node: "256.9", kind: "shape", value: "", box: { x: 1, y: 2, cx: 3, cy: 4 }, grouped: false }
+  const add = { slide: "element-add", id: "256", element, file: ["256", "257"] }
+  const remove = { slide: "element-remove", id: "256", node: "256.2", file: ["256", "257"] }
+  const read = readCommit({ deck: "deck", batch: [add, remove] })
+  if (!read.ok) throw new Error(read.refusal)
+  expect(read.batch.map((edit) => ("slide" in edit ? slideEditCommand(edit) : edit))).toEqual([
+    { slide: "element-add", id: "256", element },
+    { slide: "element-remove", id: "256", node: "256.2" },
+  ])
+  expect(readCommit({ deck: "deck", batch: [{ ...remove, removed: ["256.3"] }] })).toEqual(field)
+  expect(readCommit({ deck: "deck", batch: [{ ...add, element: { ...element, node: "257.9" } }] })).toEqual(field)
+  expect(readAgentEdit({ deck: "deck", base: 0, changes: [remove] })).toEqual(field)
+})

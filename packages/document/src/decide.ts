@@ -3,6 +3,7 @@ import type { DeckIndex } from "./deck-index.js"
 import { legacyElement, rootElement, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { limits, overLimit } from "./limits.js"
 import { floorFits, openingElement } from "./slide-floor.js"
+import { elementGone } from "./element-order.js"
 import { applySlide, openSlides, slideGone, type SlideCommand } from "./slide-order.js"
 import { storedValue, type Value } from "./value.js"
 
@@ -400,7 +401,7 @@ export function decide(stored: StoredRegister, command: Command): Decision {
   if (
     slide !== null &&
     (command.command === "person" || command.command === "agent" || command.command === "start") &&
-    slideGone(register, slide)
+    (slideGone(register, slide) || elementGone(register, node))
   ) {
     return refuse("dead")
   }

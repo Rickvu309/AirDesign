@@ -1,5 +1,5 @@
 import { decodedXmlText, markupDocument, type MarkupElement } from "./element-span.js"
-import { encodeUtf8 } from "./package-bytes.js"
+import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 
 export const shapePart = /^ppt\/(slides|notesSlides|slideLayouts|slideMasters)\/[^/]+\.xml$/
 const maxShapeId = 4294967295
@@ -26,7 +26,7 @@ function shapeIdentity(value: string): string {
   return unsignedInteger.exec(collapsed)?.[1]?.replace(/^0+(?=[0-9])/, "") ?? collapsed
 }
 
-function shapeIdsIn(bytes: Uint8Array): readonly string[] {
+export function shapeIdsIn(bytes: Uint8Array): readonly string[] {
   const ids: string[] = []
   for (const element of markupDocument(bytes).elements) {
     if (element.kind !== "p:cNvPr" || element.id === null) continue
@@ -65,6 +65,12 @@ export function nextShapeId(partXml: string): number {
   }
   if (max === maxShapeId) throw new Error("shape id")
   return max + 1
+}
+
+export function freeShapeId(parts: ReadonlyMap<string, Uint8Array>, part: string): number {
+  const bytes = parts.get(part)
+  if (bytes === undefined) throw new Error("part")
+  return nextShapeId(decodeUtf8(bytes))
 }
 
 export function newDuplicateShapeIds(
