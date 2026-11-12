@@ -1,7 +1,7 @@
 ---- MODULE Turn ----
 
 \* A turn belongs to an account on a deck. It starts with that account's first
-\* edit there and ends by a stop of its run or the idle window.
+\* edit or slide tool call there and ends by a stop of its run or the idle window.
 \* stateX and stateY are what the stored row shows for an element:
 \* idle, open (a run holds it), closed (a run holds it and a person edited it), or ended.
 \* closedX and closedY record only that a person closed the element during this turn.
@@ -66,6 +66,23 @@ AgentEdit ==
             /\ stateY' = IF e = "y" THEN "open" ELSE stateY
             /\ UNCHANGED <<turn, closedX, closedY>>
 
+\* A slide tool call with no live turn ends the runs it finds and starts a turn. It opens no element.
+SlideStart ==
+  /\ turn = "none"
+  /\ turn' = "live"
+  /\ stateX' = Ended(stateX)
+  /\ stateY' = Ended(stateY)
+  /\ outcome' = "landed"
+  /\ landedOn' = "none"
+  /\ UNCHANGED <<closedX, closedY>>
+
+\* A slide tool call in a live turn joins its run and leaves every element as it was.
+SlideInTurn ==
+  /\ turn = "live"
+  /\ outcome' = "landed"
+  /\ landedOn' = "none"
+  /\ UNCHANGED <<turn, stateX, stateY, closedX, closedY>>
+
 PersonEdit ==
   \E e \in Elements :
     /\ IF State(e) \in {"open", "closed"}
@@ -108,6 +125,8 @@ Refused ==
 Next ==
   \/ TurnStart
   \/ AgentEdit
+  \/ SlideStart
+  \/ SlideInTurn
   \/ PersonEdit
   \/ Stop
   \/ Idle
