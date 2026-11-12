@@ -4,7 +4,7 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { openBrowser } from "./browser.mjs"
-import { githubRepository, imageLink, proofFolder, publish } from "./publish.mjs"
+import { proofFolder, publish } from "./publish.mjs"
 import { renderBlocks, themeCss } from "../look/annotate.mjs"
 import { captureSide, composeBlock, driverFor, saveFull } from "../look/before-after.mjs"
 import { readCallouts } from "../look/callouts.mjs"
@@ -217,24 +217,17 @@ function publishCommand(values, flags, runtime) {
     .filter((name) => name.endsWith(".png"))
     .sort()
     .map((name) => path.join(folder, name))
-  const into = `${proofFolder({ pr: flags.pr, branch: branch === "HEAD" ? "" : branch })}/${path.basename(folder)}`
+  const prefix = proofFolder({ pr: flags.pr, branch: branch === "HEAD" ? "" : branch })
   mkdirSync(scratchRoot, { recursive: true })
-  const done = publish({ root: runtime.repo, files, folder: into, scratch: scratchRoot })
-  const repository = githubRepository(git(["remote", "get-url", "origin"]))
-  const links = Object.fromEntries(
-    Object.entries(done.placed).map(([file, placed]) => [
-      path.basename(file),
-      imageLink(repository, done.commit, placed),
-    ]),
-  )
+  const done = publish({ files, prefix, scratch: scratchRoot })
   const summaryFile = path.join(folder, "before-after.json")
   let published
   if (existsSync(summaryFile)) {
     const summary = JSON.parse(readFileSync(summaryFile, "utf8"))
     published = path.join(folder, "before-after.published.md")
-    writeFileSync(published, fragment({ ...summary, link: (file) => links[path.basename(file)] }))
+    writeFileSync(published, fragment({ ...summary, link: (file) => done.links[path.basename(file)] }))
   }
-  return { command: "publish", commit: done.commit, folder: into, attempts: done.attempts, links, fragment: published }
+  return { command: "publish", release: done.release, links: done.links, fragment: published }
 }
 
 export async function proofCommand(command, args, runtime) {

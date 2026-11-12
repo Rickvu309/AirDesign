@@ -24,7 +24,7 @@ export const hasBeforeAfter = (body, repository) => {
   if (text === undefined) return false
   const place = repository.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
   return new RegExp(
-    `!\\[[^\\]]*\\]\\(https://github\\.com/${place}/(?:blob|raw)/[0-9a-f]{40}/(?:pr|branch)-[^)\\s]+\\.png(?:\\?raw=true)?\\)`,
+    `!\\[[^\\]]*\\]\\(https://github\\.com/${place}/releases/download/proof/[^)\\s]+\\.png\\)`,
     "i",
   ).test(text)
 }

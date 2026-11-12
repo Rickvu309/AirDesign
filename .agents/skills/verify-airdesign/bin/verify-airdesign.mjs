@@ -359,6 +359,9 @@ try {
     process.stdout.write(
       `${JSON.stringify(await proofCommand(command, rest, { repo, readState, evidenceDir, journeyKit }))}\n`,
     )
+  } else if (command === "comment") {
+    const { comment: postComment } = await import("./comment.mjs")
+    process.stdout.write(`${JSON.stringify(await postComment({ pr: rest[0], file: rest[1] }))}\n`)
   } else if (command === "launch") await launch(rest)
   else if (command === "serve")
     await serve(rest[0], { repo, apiDist, webDist, catalogDist, scratchDir, statePath, airaPath, head })
@@ -386,7 +389,8 @@ try {
         "verify-airdesign before-after <callouts.json> [--base ref] [--head ref] [--before-run run] [--after-run run] [--keep] [--out dir]",
         "                                            the same states on the base and on this change; annotated image and table",
         "verify-airdesign annotate <run> <callouts.json> [--out dir]  numbered callouts on one run's states",
-        "verify-airdesign publish <dir> [--pr n]     push the images to archive/proof; prints links and the PR fragment",
+        "verify-airdesign publish <dir> [--pr n]     upload images to the proof release; prints links and the PR fragment",
+        "verify-airdesign comment <pr> <file>       post a PR comment with the agent header; refuses an empty file",
         "verify-airdesign stop <run>                 stop only this run's processes; keeps evidence",
         "",
       ].join("\n"),
