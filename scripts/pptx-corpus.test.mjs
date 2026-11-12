@@ -173,7 +173,6 @@ for (const follows of [
   "decision.renderFailure(render, error)",
   "rendered.set(render, failure.pages)",
   "decision.deckPath(name)",
-  "lists.set(row.file, validatorList(row))",
   "corpusResult({ decision, pptx, decks: writtenDecks, lists, rendered, freshFails })",
   "checkFails({ failed, routeFailures, duration: checkSeconds, corpus })",
   "const browserSpec = freshExports({",
@@ -183,6 +182,11 @@ for (const follows of [
   "for (const line of boxExportLines({ pptx, parts, lists, ids, orders })) {",
 ]) {
   if (!checkSource.includes(follows)) throw new Error(`pptx-check.mjs does not follow the decision: ${follows}`)
+}
+
+const validatorSource = fs.readFileSync(path.join(repoRoot, "scripts/pptx-validator.mjs"), "utf8")
+if (!validatorSource.includes("validatorList(rows.get(key))")) {
+  throw new Error("pptx-validator.mjs does not turn each row into a list with validatorList")
 }
 
 const noFailure = { failed: 0, routeFailures: [], duration: { fails: false }, corpus: { failed: 0 } }
