@@ -58,7 +58,7 @@ export function ThinDeck({ id }: { id: string }) {
   const pictures = useRef<PictureSources | null>(null)
   const busy = useRef(busyElements())
   const structure = useRef("")
-  const repaint = useRef<(register: Register) => void>(() => undefined)
+  const repaint = useRef<(register: Register, from?: "person") => void>(() => undefined)
   const [entering, setEntering] = useState<ElementId | null>(null)
   const [notes, setNotes] = useState<readonly SlideNotes[]>([])
   const notesQueue = useRef(Promise.resolve())
@@ -376,7 +376,7 @@ export function ThinDeck({ id }: { id: string }) {
     const next = await connect(memoryRemote()).openDeck(id)
     if (!next.ok) return
     if ("slide" in undoable) showRegister(next.register)
-    else repaint.current(next.register)
+    else repaint.current(next.register, "person")
     const slides = store.current.slides()
     const shown =
       "slide" in undoable

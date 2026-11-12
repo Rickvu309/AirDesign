@@ -164,3 +164,33 @@ test("an undo after an agent changed the same text changes nothing and says so",
   await expect(text).toHaveText("Agent")
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeDisabled()
 })
+
+test("undoing a text edit paints the old text on the slide and its thumbnail without a reload", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await signInBrowser(context, await stack.signIn())
+  await forward(page, stack)
+  await openClean(page)
+  const text = page.locator('[data-slide-paint] [contenteditable="true"]')
+  const thumbnail = entry(page, 1)
+  await expect(thumbnail).toContainText("Hello")
+  await text.click()
+  await page.keyboard.press("ControlOrMeta+a")
+  await text.pressSequentially("Mine", { delay: 40 })
+  await page.keyboard.press("Escape")
+  await expect(text).toHaveText("Mine")
+  await expect(thumbnail).toContainText("Mine")
+  await expect(page.getByRole("button", { name: "Undo text edit" })).toBeEnabled()
+
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(text).toHaveText("Hello")
+  await expect(thumbnail).toContainText("Hello")
+  await expect(thumbnail).not.toContainText("Mine")
+  await expect(page.getByRole("button", { name: "Redo text edit" })).toBeEnabled()
+
+  await page.keyboard.press("ControlOrMeta+Shift+z")
+  await expect(text).toHaveText("Mine")
+  await expect(thumbnail).toContainText("Mine")
+})
