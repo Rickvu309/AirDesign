@@ -174,7 +174,7 @@ export function readDeckPage(
       revision: deck.revision,
       slides:
         deck.register.order.length === 0
-          ? (index?.slides ?? [])
+          ? (index?.slides ?? []).map(({ id, position }) => ({ id, position }))
           : presentSlides(deck.register).map(({ id }, position) => ({ id, position })),
       index: index === undefined ? "missing" : index.elements.length === index.total ? "ready" : "pending",
     },
