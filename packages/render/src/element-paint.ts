@@ -1,4 +1,5 @@
 import type { ElementId } from "@airdesign/document"
+import type { CanvasChart } from "./chart-record.js"
 import type { CanvasLine, CanvasOutline } from "./line-record.js"
 import type { CanvasElement } from "./record.js"
 import type { PaintBox } from "./paint-box.js"
@@ -31,4 +32,5 @@ export type ElementPaint = {
   readonly text: CanvasText | null
   readonly table?: CanvasTable
   readonly diagram?: readonly CanvasElement[]
+  readonly chart?: CanvasChart
 }

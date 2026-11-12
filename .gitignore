@@ -20,3 +20,4 @@ tests/browser/exported-deck.pptx
 tests/browser/exported-blank-slides.pptx
 tests/browser/exported-slide-edits.pptx
 tests/browser/exported-diagram-edits.pptx
+tests/browser/exported-chart-edits.pptx

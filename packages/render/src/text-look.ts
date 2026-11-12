@@ -40,7 +40,7 @@ function quotedFamily(font: string): string {
   return `"${font.replace(/["\\]/g, "\\$&")}"`
 }
 
-function familyOf(font: string | null): string {
+export function familyOf(font: string | null): string {
   if (font === null) return pageFont
   const twin = openTwins.get(font.toLowerCase())
   return [quotedFamily(font), ...(twin === undefined ? [] : [quotedFamily(twin)]), pageFont].join(", ")
