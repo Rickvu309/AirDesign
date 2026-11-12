@@ -4,6 +4,7 @@ import { markupDocument, type MarkupElement } from "./element-span.js"
 import { slideAddresses } from "./package-address.js"
 import type { ShapeBox } from "./shape-write.js"
 import { markupChildren, shapeTextValue } from "./text-value-route.js"
+import { tableIn } from "./paint-table.js"
 
 export type ReadShape = {
   readonly slide: string
@@ -108,7 +109,7 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
         kind: shape.kind,
         box: x === null || y === null || cx === null || cy === null ? null : { x, y, cx, cy },
         text: shapeTextValue(children, bytes, shape),
-        locked: false,
+        locked: tableIn(shape, children) !== undefined,
       })
     }
     for (const row of kept) rows.push(fallbackIds.has(row.shape) ? { ...row, locked: true } : row)

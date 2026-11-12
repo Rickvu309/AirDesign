@@ -52,7 +52,7 @@ function childrenOf(children: MarkupChildren, parent: MarkupElement): readonly M
   return children[parent.index] ?? []
 }
 
-function holderText(bytes: Uint8Array, holder: MarkupElement | undefined): string {
+export function holderText(bytes: Uint8Array, holder: MarkupElement | undefined): string {
   if (holder === undefined) return ""
   return contentSpans(bytes, holder)
     .map((span) => {

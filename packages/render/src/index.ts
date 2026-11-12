@@ -10,6 +10,7 @@ export {
   type CanvasRunStyle,
   type CanvasSlide,
   type CanvasText,
+  type CanvasTable,
   type ElementRecord,
   type PaintBox,
 } from "./record.js"

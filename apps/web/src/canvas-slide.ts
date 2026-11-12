@@ -22,6 +22,7 @@ import {
   type CanvasText,
 } from "@airdesign/render"
 import { pictureLayer, type PictureImage, type PictureSource } from "@/picture-fill"
+import { canvasTable } from "@/canvas-table"
 
 export type CanvasShape = {
   readonly id: ElementId
@@ -203,13 +204,14 @@ function canvasElements(
     seen.set(name, count + 1)
     const shape = row.from === "slide" ? source.shapes.get(row.shape) : undefined
     const outline = outlineOf(row)
+    const table = canvasTable(row.table, (fill) => fillOf(fill, src), canvasLine, canvasText)
     elements.push({
       key: count === 0 ? name : `${name}#${count}`,
       id: shape?.id ?? null,
       kind: shape?.kind ?? paintKind(row.kind),
       box: row.box,
-      editable: shape?.editable ?? false,
-      movable: (shape?.movable ?? false) && row.group === null && row.box !== null,
+      editable: table === undefined && (shape?.editable ?? false),
+      movable: table === undefined && (shape?.movable ?? false) && row.group === null && row.box !== null,
       placeholder: row.placeholder !== null,
       filled: visibleFill(row.fill),
       fill: shapeFill(row, outline, src),
@@ -232,6 +234,7 @@ function canvasElements(
             },
           }),
       text: canvasText(row.text),
+      ...(table === undefined ? {} : { table }),
     })
   }
   return elements
