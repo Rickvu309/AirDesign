@@ -87,3 +87,16 @@ it("keeps an element busy until every edit that held it lets go", () => {
   second()
   expect(busy.has(node)).toBe(false)
 })
+
+it("paints the text and box an undo gives back even though the last repaint already held them", () => {
+  const store = painted()
+  const repaint = liveRepaint(store, files, null, busyElements())
+  store.publish({ id: node, kind: "shape", text: "Mine", picture: null })
+  store.placeBox(node, dragged)
+  repaint(openRegister("", "deck"))
+  expect(store.getElement(node)?.text).toBe("Mine")
+  expect(store.getBox(node)).toEqual(dragged)
+  repaint(openRegister("", "deck"), "person")
+  expect(store.getElement(node)?.text).toBe("Hello")
+  expect(store.getBox(node)).toBeNull()
+})

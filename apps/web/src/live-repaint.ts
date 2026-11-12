@@ -40,14 +40,14 @@ export function liveRepaint(
   files: ReadonlyMap<ElementId, string>,
   painted: Register | null,
   busy: BusyElements,
-): (register: Register) => void {
+): (register: Register, from?: "person") => void {
   const landed = new Map<ElementId, Landed>()
   for (const [id, file] of files) landed.set(id, { text: shownValue(painted, id, file), box: landedBox(painted, id) })
-  return (register) => {
+  return (register, from) => {
     for (const [id, file] of files) {
       const record = store.getElement(id)
       if (record === null || busy.has(id)) continue
-      const before = landed.get(id)
+      const before = from === "person" ? { text: record.text, box: store.getBox(id) } : landed.get(id)
       const text = shownValue(register, id, file)
       const box = landedBox(register, id)
       if (before?.text !== text) store.publish({ ...record, text })
