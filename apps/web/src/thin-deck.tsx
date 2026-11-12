@@ -21,7 +21,7 @@ import {
   type CommitOutcome,
   type TextBox,
 } from "@/commit-edit"
-import { landedBox, shownBox } from "@/element-move"
+import { boxName, landedBox, shownBox } from "@/element-move"
 import { exportedParts } from "@/exported-parts"
 import { commitSlideChange, type SlideChange } from "@/slide-edit"
 import { layoutChoices } from "@/slide-layout"
@@ -36,6 +36,7 @@ import { closesDeck, deckParts, deviceCopy } from "@/device-copy"
 import { busyElements, liveRepaint, shownValue } from "@/live-repaint"
 import { AiraPanel } from "@/aira-panel"
 import { useDeckTitle } from "@/editor/use-deck-title"
+import { structureOf, useTables } from "@/table-hook"
 import { useUndoKeys } from "@/editor/undo-keys"
 import { emptyUndo, recorded, turnBack, undoLabel, type UndoDirection, type UndoEntry } from "@/undo-list"
 import type { UndoName } from "@/copy/undo-copy"
@@ -45,11 +46,6 @@ const slideNames: Readonly<Record<SlideChange, UndoName>> = {
   clone: "duplicate",
   remove: "delete",
   move: "order",
-}
-
-function boxName(before: Box, after: Box): UndoName | null {
-  if (before.cx !== after.cx || before.cy !== after.cy) return "resize"
-  return before.x === after.x && before.y === after.y ? null : "move"
 }
 
 export function ThinDeck({ id }: { id: string }) {
@@ -301,7 +297,7 @@ export function ThinDeck({ id }: { id: string }) {
 
   function reconcile(register: Register) {
     const before = store.current.slides().map((slide) => slide.id)
-    if (structure.current !== JSON.stringify(register.order)) {
+    if (structure.current !== structureOf(register)) {
       showRegister(register)
       const after = store.current.slides().map((slide) => slide.id)
       setCurrent((index) => {
@@ -335,7 +331,7 @@ export function ThinDeck({ id }: { id: string }) {
     canvases.current = painted.canvases
     pictures.current?.release()
     pictures.current = painted.pictures
-    structure.current = JSON.stringify(register?.order ?? [])
+    structure.current = structureOf(register)
     repaint.current = liveRepaint(store.current, painted.files, register, busy.current)
     setNotes(readNotes(register === null ? shownParts.current : exportedParts(shownParts.current, register)))
     setSlideCount(painted.count)
@@ -369,7 +365,7 @@ export function ThinDeck({ id }: { id: string }) {
   async function showTurned(undoable: Undoable) {
     const next = await connect(memoryRemote()).openDeck(id)
     if (!next.ok) return
-    if ("slide" in undoable) showRegister(next.register)
+    if ("slide" in undoable || structure.current !== structureOf(next.register)) showRegister(next.register)
     else repaint.current(next.register, "person")
     const slides = store.current.slides()
     const shown =
@@ -406,6 +402,19 @@ export function ThinDeck({ id }: { id: string }) {
       }),
     )
   }
+
+  const tables = useTables({
+    id,
+    current,
+    boxes,
+    shapes,
+    editParts,
+    canvases,
+    record,
+    settle,
+    showEdited,
+    changeElement,
+  })
 
   function addText() {
     const size = canvases.current(current)
@@ -473,6 +482,7 @@ export function ThinDeck({ id }: { id: string }) {
             },
             onText: addText,
             onRename: rename,
+            onTable: tables.insert,
             size: canvases.current(current),
             slides: {
               count: slideCount,
@@ -502,6 +512,7 @@ export function ThinDeck({ id }: { id: string }) {
                   onRemove={(target) => holding(target, () => changeElement({ change: "remove", node: target }))}
                   onEdit={(target, value) => holding(target, () => onEdit(target, value))}
                   slide={canvas}
+                  {...tables.canvas}
                   store={store.current}
                   width={width}
                 />

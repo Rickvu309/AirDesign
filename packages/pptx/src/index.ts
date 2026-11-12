@@ -22,6 +22,8 @@ export {
 export { applyRoute, oneRunValue } from "./slide-route.js"
 export { routeOperations, touchMatches } from "./route-parts.js"
 export { routeRuns } from "./route-runs.js"
+export { newTableBreaks } from "./table-check.js"
+export { readTable, writeTable } from "./table-write.js"
 export { newValidatorErrors } from "./validator-error.js"
 export { writtenRoutes } from "./written-routes.js"
 export { sectionStarts, type SectionStart } from "./section-read.js"

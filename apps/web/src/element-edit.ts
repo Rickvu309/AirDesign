@@ -1,5 +1,8 @@
 import {
   nextElementId,
+  openingTable,
+  writeTableValue,
+  type Box,
   readSlideId,
   shapeOf,
   type ElementId,
@@ -9,10 +12,13 @@ import {
 import { connect, memoryRemote } from "@airdesign/live"
 import { applyRoute, freeShapeId, readSlides } from "@airdesign/pptx"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
+import { clearSpot } from "@/clear-spot"
 import { slideBase } from "@/exported-parts"
 import { fileSlides } from "@/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
+
+const tableRow = 370840
 
 export type ElementChange =
   | {
@@ -21,6 +27,12 @@ export type ElementChange =
       readonly size: { readonly width: number; readonly height: number }
     }
   | { readonly change: "remove"; readonly node: ElementId }
+  | {
+      readonly change: "table"
+      readonly index: number
+      readonly size: { readonly width: number; readonly height: number }
+      readonly taken: readonly Box[]
+    }
 
 function slideAt(parts: Parts, index: number) {
   const slide = readSlides(parts)[index]
@@ -45,6 +57,11 @@ export function elementCommand(parts: Parts, register: Register, change: Element
   const slide = slideAt(base, change.index)
   if (slide === null) return null
   const node = nextElementId(register, slide.id, freeShapeId(base, slide.part))
+  if (change.change === "table") {
+    const box = clearSpot(change.size, change.taken, { cx: Math.round(change.size.width * 0.6), cy: 3 * tableRow })
+    const value = writeTableValue(openingTable(3, 3))
+    return { slide: "element-add", id: slide.id, element: { node, kind: "table", value, box, grouped: false } }
+  }
   const cx = Math.round(change.size.width * 0.4)
   const cy = Math.round(change.size.height * 0.12)
   const box = { x: Math.round((change.size.width - cx) / 2), y: Math.round((change.size.height - cy) / 2), cx, cy }

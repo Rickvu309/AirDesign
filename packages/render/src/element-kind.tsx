@@ -5,7 +5,7 @@ import { GroupArt } from "./group-art.js"
 import { PictureArt } from "./picture-art.js"
 import { PresetArt } from "./preset-art.js"
 import type { CanvasElement } from "./record.js"
-import { TablePaint } from "./table-art.js"
+import { TablePaint } from "./table-paint.js"
 import { TextBoxArt } from "./text-box.js"
 
 const textPreset = new Set(["rect", "roundRect", "ellipse"])

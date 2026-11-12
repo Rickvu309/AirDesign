@@ -9,6 +9,7 @@ import { danglingShapeReferences, newDanglingShapeReferences } from "./shape-id.
 import { applyRoute, type SlideRoute } from "./slide-route.js"
 import { shapeById } from "./shape-tree.js"
 import { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
+import { newTableBreaks } from "./table-check.js"
 import { markupChildren, shapeTextValue, shownText, type MarkupChildren } from "./text-value-route.js"
 
 declare const process: {
@@ -460,14 +461,17 @@ function expectInside(before: Parts, after: Parts, edit: Edit) {
     case "graphicFrame.addTable":
       expectAppendedShape(oldSlide, nextSlide, "p:graphicFrame")
       return
-    case "tbl.addRow": {
-      const row = required(markup(oldSlide).filter((element) => element.kind === "a:tr")[edit.row - 1], "a:tr")
-      expectBytes(nextSlide, insertedAt(oldSlide, row.end, oldSlide.slice(row.start, row.end)))
+    case "tbl.addRow":
+      expect(newTableBreaks(before, after)).toEqual([])
+      expectBytes(
+        partOf(applyStructuralRoute(after, { ...edit, name: "tbl.removeRow", row: edit.row + 1 }), edit.part),
+        oldSlide,
+      )
       return
-    }
     case "tbl.removeRow": {
       const row = required(markup(oldSlide).filter((element) => element.kind === "a:tr")[edit.row - 1], "a:tr")
-      expectBytes(nextSlide, cutOut(oldSlide, row))
+      expect(newTableBreaks(before, after)).toEqual([])
+      expectBytes(nextSlide.subarray(nextSlide.length - oldSlide.length + row.end), oldSlide.subarray(row.end))
       return
     }
     case "tbl.orderRow": {
@@ -617,31 +621,6 @@ describe("routeRuns", () => {
   it("attempts every written route when the deck has a host for each", () => {
     const operations = routeRuns(hosts()).map((run) => run.operation)
     expect([...operations].sort()).toEqual(routeOperations.filter((operation) => operation !== "notes.body").sort())
-  })
-
-  it("does not remove the only row of a table", () => {
-    const parts = hosts()
-    const bytes = parts.get("ppt/slides/slide1.xml")
-    if (bytes === undefined) throw new Error("part")
-    parts.set(
-      "ppt/slides/slide1.xml",
-      text(decodeUtf8(bytes).replace(`<a:tr h="2"><a:tc><a:t>B</a:t></a:tc></a:tr>`, "")),
-    )
-    const runs = routeRuns(parts)
-    const operations = runs.map((run) => run.operation)
-    expect(operations).toContain("tbl.addRow")
-    expect(operations).not.toContain("tbl.removeRow")
-    expect(runs.filter((run) => run.operation.startsWith("tbl.") && run.error !== null)).toEqual([])
-  })
-
-  it("removes a row of a table that has two, not the last row of the slide", () => {
-    const parts = hosts()
-    const bytes = parts.get("ppt/slides/slide1.xml")
-    if (bytes === undefined) throw new Error("part")
-    const lone = `<a:tbl><a:tr h="3"><a:tc><a:t>C</a:t></a:tc></a:tr></a:tbl>`
-    parts.set("ppt/slides/slide1.xml", text(decodeUtf8(bytes).replace("</p:spTree>", `${lone}</p:spTree>`)))
-    const run = routeRuns(parts).find((item) => item.operation === "tbl.removeRow")
-    expect(run?.error).toBeNull()
   })
 
   it("picks a shape to remove that no animation refers to", () => {

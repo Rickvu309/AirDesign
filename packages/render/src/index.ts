@@ -17,4 +17,5 @@ export {
   type PaintBox,
 } from "./record.js"
 export { SlideCanvas, unshownFill } from "./slide-canvas.js"
+export type { TableBar } from "./table-paint.js"
 export { paintStore, type PaintStore } from "./store.js"

@@ -16,6 +16,7 @@ import {
 } from "@airdesign/document"
 import { applyRoute, writeNotes, orderedParts, readShapes, type ReadShape } from "@airdesign/pptx"
 import { sameBox, textValue } from "@airdesign/render"
+import { tableShape, tableWritten } from "@/table-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -101,6 +102,11 @@ export function editedParts(base: Parts, register: Register): Parts {
     if (id.endsWith(".notes")) {
       const value = body !== undefined ? currentValue(body) : opening?.value
       if (value !== undefined && value !== null) next = writeNotes(next, shapeOf(id).slide, value)
+      continue
+    }
+    const table = tableShape(shapes, id)
+    if (table !== undefined) {
+      next = tableWritten(next, table, body)
       continue
     }
     next = withText(next, shapes, id, body, opening)

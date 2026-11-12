@@ -1,3 +1,4 @@
+import type { UndoName } from "@/copy/undo-copy"
 import { currentBox, type Box, type ElementId, type Register } from "@airdesign/document"
 import { applyRoute, type ReadShape } from "@airdesign/pptx"
 import { newSlideElement } from "@/exported-parts"
@@ -25,4 +26,9 @@ export function landedBox(register: Register | null, id: ElementId): Box | null 
 
 export function shownBox(register: Register | null, id: ElementId, file: Box | null): Box | null {
   return landedBox(register, id) ?? newSlideElement(register, id)?.box ?? file
+}
+
+export function boxName(before: Box, after: Box): UndoName | null {
+  if (before.cx !== after.cx || before.cy !== after.cy) return "resize"
+  return before.x === after.x && before.y === after.y ? null : "move"
 }

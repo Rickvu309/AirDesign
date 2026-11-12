@@ -2,6 +2,7 @@ import type { DeckIndex, IndexElement } from "./deck-index.js"
 import { elementId, readElementId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { openingElement, readFloor } from "./slide-floor.js"
 import type { SlideState } from "./slide-order.js"
+import { openedTable } from "./table-value.js"
 
 export type ElementAdd = {
   readonly slide: "element-add"
@@ -39,17 +40,12 @@ export function nextElementId(state: SlideState, slide: SlideId, free: number): 
   return elementId(`${slide}.${String(next)}`)
 }
 
-function textBox(element: IndexElement): boolean {
+function addable(element: IndexElement): boolean {
   const number = shapeNumber(element.node)
-  return (
-    Number.isInteger(number) &&
-    number > 1 &&
-    number <= highestShape &&
-    element.kind === "shape" &&
-    element.box !== null &&
-    element.value === "" &&
-    !element.grouped
-  )
+  const placed = Number.isInteger(number) && number > 1 && number <= highestShape && element.box !== null
+  if (!placed || element.grouped) return false
+  if (element.kind === "table") return openedTable(element.value)
+  return element.kind === "shape" && element.value === ""
 }
 
 function indexComplete(state: Indexed): boolean {
@@ -62,7 +58,7 @@ export function elementRefusal(state: Indexed, command: ElementCommand): "dead" 
   const opening = openingElement(state, node)
   if (command.slide === "element-add") {
     if (opening !== undefined || elementGone(state, node)) return "present"
-    return textBox(command.element) ? null : "dead"
+    return addable(command.element) ? null : "dead"
   }
   if (elementGone(state, node)) return "dead"
   if (opening === undefined) return indexComplete(state) ? "dead" : null

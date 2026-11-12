@@ -2,6 +2,7 @@ import {
   foldSections,
   foldSlides,
   presentSlides,
+  readTableValue,
   shapeOf,
   type SlideCommand,
   type SlideState,
@@ -50,9 +51,21 @@ function elementEdited(
   if (part === null) throw new Error("slide")
   if (command.slide === "element-remove")
     return applyRoute(parts, { name: "remove", part, shape: shapeOf(command.node).shape })
-  const { node, box } = command.element
+  const { node, box, kind, value } = command.element
   if (box === null) throw new Error("box")
-  return applyRoute(parts, { name: "add", part, id: Number(shapeOf(node).shape), text: "", ...box })
+  const id = Number(shapeOf(node).shape)
+  if (kind !== "table") return applyRoute(parts, { name: "add", part, id, text: "", ...box })
+  const table = readTableValue(value ?? "")
+  const columns = table?.rows[0]?.cells.length
+  if (table === null || columns === undefined) throw new Error("a:tbl")
+  return applyStructuralRoute(parts, {
+    name: "graphicFrame.addTable",
+    part,
+    id,
+    ...box,
+    rows: table.rows.length,
+    columns,
+  })
 }
 
 function chosenLayout(

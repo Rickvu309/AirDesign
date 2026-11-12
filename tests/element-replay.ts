@@ -1,5 +1,5 @@
 import { readDeckId } from "@airdesign/catalog"
-import { elementId, nextElementId, readSlideId } from "@airdesign/document"
+import { changedTable, elementId, nextElementId, openingTable, readSlideId, writeTableValue } from "@airdesign/document"
 import { call, openDeck, readDeckPage, type Deck } from "@airdesign/engine"
 import type { Graph } from "./spec-graph.js"
 
@@ -8,15 +8,30 @@ if (!parsed.ok) throw new Error("deck")
 const deck = parsed.deck
 const node = elementId("256.9")
 const file = ["256"]
-const element = { node, kind: "shape", value: "", box: { x: 0, y: 0, cx: 1000, cy: 500 }, grouped: false }
-const batches: Record<string, unknown> = {
-  Add: { slide: "element-add", id: "256", element, file },
-  Type: { node, value: "Typed" },
-  Remove: { slide: "element-remove", id: "256", node, file },
+const box = { x: 0, y: 0, cx: 1000, cy: 500 }
+const opened = openingTable(2, 2)
+const grown = changedTable(changedTable(opened, { change: "cell", row: 0, column: 0, text: "Typed" })!, {
+  change: "row",
+  row: 1,
+  place: "below",
+})!
+const kinds = {
+  box: { element: { node, kind: "shape", value: "", box, grouped: false }, typed: "Typed" },
+  table: {
+    element: { node, kind: "table", value: writeTableValue(opened), box, grouped: false },
+    typed: writeTableValue(grown),
+  },
+}
+let kind: keyof typeof kinds = "box"
+
+function batches(action: string): unknown {
+  if (action === "Add") return { slide: "element-add", id: "256", element: kinds[kind].element, file }
+  if (action === "Type") return { node, value: kinds[kind].typed }
+  return { slide: "element-remove", id: "256", node, file }
 }
 
 function act(current: Deck, action: string) {
-  return call("commit_edits", current, { actor: "person" }, { deck, batch: [batches[action]] })
+  return call("commit_edits", current, { actor: "person" }, { deck, batch: [batches(action)] })
 }
 
 function landed(current: Deck, action: string): Deck {
@@ -35,22 +50,30 @@ function built(state: Record<string, unknown>): Deck {
 
 function shown(current: Deck): { readonly added: boolean; readonly typed: boolean } | null {
   const read = readDeckPage(current, { runId: null }).elements.find((each) => each.node === node)
-  return read === undefined ? null : { added: true, typed: read.value === "Typed" }
+  return read === undefined ? null : { added: true, typed: read.value === kinds[kind].typed }
 }
 
 export function replayElement(graph: Graph, failures: string[]) {
+  for (const each of ["box", "table"] as const) {
+    kind = each
+    replayKind(graph, failures)
+  }
+  return { states: graph.states.size, edges: graph.edges.length }
+}
+
+function replayKind(graph: Graph, failures: string[]) {
   for (const edge of graph.edges) {
     const target = graph.states.get(edge.to)
     const source = graph.states.get(edge.from)
     if (source === undefined || target === undefined) throw new Error("state")
     const answer = act(built(source), edge.action)
     if (!answer.ok) {
-      failures.push(`element ${edge.action} refused ${answer.refusal}`)
+      failures.push(`element ${kind} ${edge.action} refused ${answer.refusal}`)
       continue
     }
     const expected = target.added === true && target.removed !== true ? { added: true, typed: target.typed } : null
     if (JSON.stringify(shown(answer.deck)) !== JSON.stringify(expected))
-      failures.push(`element ${edge.action} reads ${JSON.stringify(shown(answer.deck))}`)
+      failures.push(`element ${kind} ${edge.action} reads ${JSON.stringify(shown(answer.deck))}`)
   }
   const slide = readSlideId("256")
   if (slide === undefined) throw new Error("slide")
@@ -63,5 +86,4 @@ export function replayElement(graph: Graph, failures: string[]) {
       if (act(built(state), action).ok) failures.push(`element ${action} lands where the spec forbids it`)
     }
   }
-  return { states: graph.states.size, edges: graph.edges.length }
 }

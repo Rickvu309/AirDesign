@@ -6,6 +6,7 @@ import { cloneShape, orderShape } from "./shape-route.js"
 import { addTextShape } from "./shape-write.js"
 import { addSlide, orderSlide, removeSlide } from "./slide-list-route.js"
 import { removeShape, type RouteResult } from "./slide-route.js"
+import { defaultTableStyle, type TableShape } from "./table-frame.js"
 import { addRow, addTable, orderRow, removeRow } from "./table-route.js"
 
 export type StructuralEdit =
@@ -28,7 +29,7 @@ export type StructuralEdit =
   | { readonly name: "sectionLst.add"; readonly title: string }
   | { readonly name: "sectionLst.remove"; readonly section: string }
   | { readonly name: "sectionLst.order"; readonly section: string; readonly before: string }
-  | { readonly name: "graphicFrame.addTable"; readonly part: string }
+  | ({ readonly name: "graphicFrame.addTable"; readonly part: string; readonly id?: number } & TableShape)
   | { readonly name: "tbl.addRow"; readonly part: string; readonly row: number }
   | { readonly name: "tbl.removeRow"; readonly part: string; readonly row: number }
   | { readonly name: "tbl.orderRow"; readonly part: string; readonly row: number; readonly before: number }
@@ -76,7 +77,7 @@ export function writeStructuralRoute(parts: ReadonlyMap<string, Uint8Array>, rou
       editPart(next, presentationPart, (bytes) => orderSection(bytes, route.section, route.before))
       return { parts: next, id: null }
     case "graphicFrame.addTable":
-      editPart(next, route.part, addTable)
+      editPart(next, route.part, (bytes) => addTable(bytes, route, defaultTableStyle(next)))
       return { parts: next, id: null }
     case "tbl.addRow":
       editPart(next, route.part, (bytes) => addRow(bytes, route.row))

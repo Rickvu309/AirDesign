@@ -306,6 +306,7 @@ same(
 const routePptx = {
   ...partsPptx,
   touchMatches: () => true,
+  newTableBreaks: () => [],
 }
 const routeFolder = fs.mkdtempSync(path.join(os.tmpdir(), "judge-route-"))
 const writtenRoute = async (before, back) => {
@@ -319,18 +320,18 @@ const writtenRoute = async (before, back) => {
   return item
 }
 same(
-  "a written route that leaves a new dangling reference fails",
+  "a written route that adds a dangling reference fails",
   scoreWrittenRoute(routePptx, [], [], await writtenRoute([], [dangling]), [])?.dangling,
   1,
 )
 same(
-  "a written route is not blamed for a dangling reference the deck already had",
+  "a written route is not blamed for a dangling reference the deck had",
   scoreWrittenRoute(routePptx, [dangling], [], await writtenRoute([dangling], [dangling]), []),
   null,
 )
 fs.rmSync(routeFolder, { recursive: true, force: true })
 same(
-  "pptx-check scores only the files writtenRouteFiles made, which always carry the dangling data",
+  "pptx-check scores only the files writtenRouteFiles made, with the dangling data",
   checkSource.includes("await writtenRouteFiles("),
   true,
 )

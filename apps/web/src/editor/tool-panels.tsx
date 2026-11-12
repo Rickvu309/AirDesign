@@ -118,7 +118,7 @@ function ActionRow({ icon, label }: { icon: "chart" | "table" | "icon" | "rmbg" 
   )
 }
 
-function ActionGlyph({ name }: { name: "chart" | "table" | "icon" | "rmbg" | "hd" }) {
+export function ActionGlyph({ name }: { name: "chart" | "table" | "icon" | "rmbg" | "hd" }) {
   const paths = {
     chart: '<path d="M4 20h16M7 16v-5M12 16V7M17 16v-8"/>',
     table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M10 4v16"/>',

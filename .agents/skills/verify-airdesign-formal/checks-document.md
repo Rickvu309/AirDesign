@@ -97,11 +97,11 @@ Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
 
 ## element
 
-A text box a person adds, types in and removes.
+A text box or a table a person adds, types in and removes.
 
-- `RemovedWasAdded`, `TypedWhileShown` are guards of the model. The promise lives in the replay: after a remove, add, type and remove of that id are refused, and `nextElementId` never hands an added id out again. Harm: a deleted text box comes back or its id is reused.
+- `RemovedWasAdded`, `TypedWhileShown` are guards of the model. The promise lives in the replay: after a remove, add, type and remove of that id are refused, and `nextElementId` never hands an added id out again. Harm: a deleted text box or table comes back or its id is reused.
 
-Bounds: one element on one slide. Run: `pnpm check:specs element`. Replay: `tests/element-replay.ts` through `call("commit_edits")` and `readDeckPage` in `packages/engine`, and `nextElementId`. Code: `elementRefusal`, `elementGone`, `nextElementId` in `packages/document/src/element-order.ts`, `applySlide` in `slide-order.ts`, the `dead` check in `decide`. Leaves out: other elements and other slides, and the layout a new slide takes (`layout` and `layoutPart` on `add` change only the opening elements the command carries and the part the export points at, never an order or a refusal). A duplicate leaves removed elements out of its copy, for an agent (`agentSlide` in `packages/engine/src/agent-slides.ts`, tested by `packages/engine/src/duplicate-removed.test.ts`) and for a person (`flooredEdit` in `apps/web/src/slide-floor.ts`, tested in `apps/web/src/slide-copy.test.ts`); no spec models the duplicate.
+Bounds: one element on one slide. Run: `pnpm check:specs element`. Replay: `tests/element-replay.ts` drives every edge twice, once for a text box and once for a table, through `call("commit_edits")` and `readDeckPage` in `packages/engine`, and `nextElementId`. Code: `elementRefusal`, `elementGone`, `nextElementId` in `packages/document/src/element-order.ts`, `applySlide` in `slide-order.ts`, the `dead` check in `decide`. A table's `Type` is one edit of its value: a typed cell and an added row, as `changedTable` in `packages/document/src/table-value.ts` writes them, and `openedTable` there decides which table an add may carry. Leaves out: other elements and other slides, and the table value's own rules (rows, cells, `from`), which `table-value.test.ts` covers. A duplicate leaves removed elements out of its copy, for an agent (`agentSlide` in `packages/engine/src/agent-slides.ts`, tested by `packages/engine/src/duplicate-removed.test.ts`) and for a person (`flooredEdit` in `apps/web/src/slide-floor.ts`, tested in `apps/web/src/slide-copy.test.ts`); no spec models the duplicate.
 
 Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
 

@@ -4,6 +4,7 @@ import {
   elementGone,
   elementId,
   nextElementId,
+  openingTable,
   openRegister,
   openingElement,
   readSlideState,
@@ -11,6 +12,7 @@ import {
   type IndexElement,
   type Register,
   type SlideCommand,
+  writeTableValue,
 } from "./index.js"
 
 const file = [slideId("256"), slideId("257")]
@@ -84,6 +86,24 @@ describe("element order", () => {
     expect(refused({ ...textBox, kind: "picture" })).toBe(true)
     expect(refused({ ...textBox, box: null })).toBe(true)
     expect(refused(textBox)).toBe(false)
+  })
+
+  it("opens an added table with its box and empty rows, and refuses one with text, no box or rows it does not own", () => {
+    const table: IndexElement = { ...textBox, kind: "table", value: writeTableValue(openingTable(3, 3)) }
+    const added = applied(openRegister("", ""), { slide: "element-add", id: file[0]!, element: table })
+    expect(openingElement(added, node)).toEqual(table)
+    const refused = (element: IndexElement) =>
+      slide(indexed, { slide: "element-add", id: file[0]!, element }).decision === "refuse"
+    expect(refused(table)).toBe(false)
+    expect(refused({ ...table, value: "" })).toBe(true)
+    expect(refused({ ...table, box: null })).toBe(true)
+    expect(refused({ ...table, grouped: true })).toBe(true)
+    const typed = writeTableValue({ rows: [{ from: 0, cells: [[{ from: 0, runs: [{ from: -1, text: "x" }] }]] }] })
+    expect(refused({ ...table, value: typed })).toBe(true)
+    expect(
+      refused({ ...table, value: writeTableValue({ rows: [{ from: -1, cells: [[{ from: 0, runs: [] }]] }] }) }),
+    ).toBe(true)
+    expect(refused({ ...textBox, value: writeTableValue(openingTable(1, 1)) })).toBe(true)
   })
 
   it("removes an indexed element but refuses a group, a grouped element and an element the index lacks", () => {

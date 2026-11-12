@@ -1,8 +1,10 @@
-import type { MarkupElement } from "./element-span.js"
+import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import { cut, insertAt, moveBytes, requireMarkup, within } from "./part-markup.js"
-import { nextShapeId } from "./shape-id.js"
-import { tableFrame } from "./table-frame.js"
+import { insertAt, moveBytes, requireMarkup, within } from "./part-markup.js"
+import { nextShapeId, shapeIdsIn } from "./shape-id.js"
+import { tableFrame, type TableShape } from "./table-frame.js"
+
+const emptyBytes = new Uint8Array(0)
 
 function rowAt(elements: readonly MarkupElement[], index: number): MarkupElement {
   if (!Number.isInteger(index) || index < 1) throw new Error("a:tr")
@@ -11,37 +13,109 @@ function rowAt(elements: readonly MarkupElement[], index: number): MarkupElement
   return row
 }
 
-export function addTable(bytes: Uint8Array): Uint8Array {
-  const document = requireMarkup(bytes)
-  const tree = document.elements.find((element) => element.kind === "p:spTree")
-  if (tree === undefined || tree.selfClosing || tree.closeStart < 0) throw new Error("p:spTree")
-  return insertAt(bytes, tree.closeStart, encodeUtf8(tableFrame(nextShapeId(decodeUtf8(bytes)))))
-}
-
-export function addRow(bytes: Uint8Array, row: number): Uint8Array {
-  const found = rowAt(requireMarkup(bytes).elements, row)
-  return insertAt(bytes, found.end, bytes.slice(found.start, found.end))
-}
-
-function tableOf(elements: readonly MarkupElement[], row: MarkupElement): MarkupElement | null {
-  let parent = row.parent
+function ancestor(elements: readonly MarkupElement[], child: MarkupElement, kind: string): MarkupElement | null {
+  let parent = child.parent
   while (parent >= 0) {
     const next = elements[parent]
     if (next === undefined) return null
-    if (next.kind === "a:tbl") return next
+    if (next.kind === kind) return next
     parent = next.parent
   }
   return null
 }
 
+function heightOf(row: MarkupElement): number {
+  const value = row.attributes.find((item) => item.name === "h")?.value ?? ""
+  const height = /^\d+$/.test(value) ? Number(value) : NaN
+  if (!Number.isSafeInteger(height)) throw new Error("a:tr")
+  return height
+}
+
+function frameHeight(elements: readonly MarkupElement[], table: MarkupElement, change: number): ByteEdit[] {
+  const frame = ancestor(elements, table, "p:graphicFrame")
+  if (frame === null) return []
+  const ext = elements.find(
+    (element) =>
+      element.kind === "a:ext" && elements[element.parent]?.kind === "p:xfrm" && within(elements, element, frame),
+  )
+  const cy = ext?.attributes.find((item) => item.name === "cy")
+  if (cy === undefined) return []
+  const height = /^\d+$/.test(cy.value) ? Number(cy.value) + change : NaN
+  if (!Number.isSafeInteger(height) || height < 0) throw new Error("p:xfrm")
+  return [{ start: cy.valueStart, end: cy.valueEnd, next: encodeUtf8(String(height)) }]
+}
+
+function endingFrom(bytes: Uint8Array, format: MarkupElement): string {
+  const opening = decodeUtf8(bytes.slice(format.start + "<a:rPr".length, format.openEnd))
+  if (format.selfClosing) return `<a:endParaRPr${opening}`
+  return `<a:endParaRPr${opening}${decodeUtf8(bytes.slice(format.openEnd, format.closeStart))}</a:endParaRPr>`
+}
+
+function emptiedCells(bytes: Uint8Array, elements: readonly MarkupElement[], row: MarkupElement): Uint8Array {
+  const edits: ByteEdit[] = []
+  const inside = elements.filter((element) => within(elements, element, row))
+  for (const body of inside.filter((element) => element.kind === "a:txBody" && !element.selfClosing)) {
+    const paragraphs = inside.filter((element) => element.kind === "a:p" && element.parent === body.index)
+    const first = paragraphs[0]
+    if (first === undefined) continue
+    const owned = inside.filter((element) => element.parent === first.index)
+    const properties = owned.find((element) => element.kind === "a:pPr")
+    const ending = owned.find((element) => element.kind === "a:endParaRPr")
+    const format = inside.find(
+      (element) => element.kind === "a:rPr" && elements[element.parent]?.parent === first.index,
+    )
+    const kept = properties === undefined ? "" : decodeUtf8(bytes.slice(properties.start, properties.end))
+    const end =
+      ending !== undefined
+        ? decodeUtf8(bytes.slice(ending.start, ending.end))
+        : format !== undefined
+          ? endingFrom(bytes, format)
+          : '<a:endParaRPr lang="en-US"/>'
+    const last = paragraphs.at(-1) ?? first
+    edits.push({
+      start: first.start - row.start,
+      end: last.end - row.start,
+      next: encodeUtf8(`<a:p>${kept}${end}</a:p>`),
+    })
+  }
+  return spliceBytes(bytes.slice(row.start, row.end), edits)
+}
+
+function tableOf(elements: readonly MarkupElement[], row: MarkupElement): MarkupElement {
+  const table = ancestor(elements, row, "a:tbl")
+  if (table === null) throw new Error("a:tr")
+  return table
+}
+
+export function addTable(bytes: Uint8Array, shape: TableShape & { readonly id?: number }, style: string | null) {
+  const document = requireMarkup(bytes)
+  const tree = document.elements.find((element) => element.kind === "p:spTree")
+  if (tree === undefined || tree.selfClosing || tree.closeStart < 0) throw new Error("p:spTree")
+  const id = shape.id ?? nextShapeId(decodeUtf8(bytes))
+  if (!Number.isInteger(id) || id < 2 || id > 4294967295 || shapeIdsIn(bytes).includes(String(id)))
+    throw new Error("shape id")
+  if (![shape.x, shape.y].every(Number.isSafeInteger)) throw new Error("emu")
+  return insertAt(bytes, tree.closeStart, encodeUtf8(tableFrame(id, shape, style)))
+}
+
+export function addRow(bytes: Uint8Array, row: number): Uint8Array {
+  const { elements } = requireMarkup(bytes)
+  const found = rowAt(elements, row)
+  const grown = frameHeight(elements, tableOf(elements, found), heightOf(found))
+  return spliceBytes(bytes, [
+    ...grown,
+    { start: found.end, end: found.end, next: emptiedCells(bytes, elements, found) },
+  ])
+}
+
 export function removeRow(bytes: Uint8Array, row: number): Uint8Array {
-  const elements = requireMarkup(bytes).elements
+  const { elements } = requireMarkup(bytes)
   const found = rowAt(elements, row)
   const table = tableOf(elements, found)
-  if (table === null) throw new Error("a:tr")
   const count = elements.filter((element) => element.kind === "a:tr" && within(elements, element, table)).length
   if (count < 2) throw new Error("a:tr")
-  return cut(bytes, found.start, found.end)
+  const shrunk = frameHeight(elements, table, -heightOf(found))
+  return spliceBytes(bytes, [...shrunk, { start: found.start, end: found.end, next: emptyBytes }])
 }
 
 export function orderRow(bytes: Uint8Array, row: number, before: number): Uint8Array {
