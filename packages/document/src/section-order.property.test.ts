@@ -88,16 +88,16 @@ describe("foldSections over any slide command log", () => {
     )
   })
 
-  it("restores the sections a person's undo of an add, a duplicate, a delete or a restore goes back to", () => {
+  it("restores the sections a person's undo of an add, a duplicate, a move, a delete or a restore goes back to", () => {
     fc.assert(
       fc.property(bases, picks, (base, chosen) => {
         let register = openRegister("", "")
         for (const [index, pick] of chosen.entries()) {
-          if (pick.kind === "move") continue
           const edit = commandOf(register, pick, slideId(String(300 + index)))
           if (edit === null) continue
           const undoable = slideUndoable(register, file, edit)
           if (undoable === null) continue
+          if ("slide" in undoable && undoable.before.present && undoable.before.key === undoable.after.key) continue
           const before = sectioned(register, base)
           const after = applied(register, edit)
           const undone = undoOf(after, undoable)
@@ -113,7 +113,7 @@ describe("foldSections over any slide command log", () => {
   })
 })
 
-it.fails("puts a moved slide back in its own section when a person undoes the move", () => {
+it("puts a moved slide back in its own section when a person undoes the move", () => {
   const base = [
     { name: "Opening", slides: ["256", "257"] },
     { name: "Numbers", slides: ["258", "259"] },
