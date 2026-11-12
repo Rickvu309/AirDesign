@@ -13,7 +13,15 @@ export function SheetText(props: {
       {text.paragraphs.map((paragraph, index) => {
         const filled = paragraph.runs.some((run) => run.text !== "")
         return (
-          <div key={index} data-paragraph={paragraph.from} style={look.paragraph(paragraph.from, filled)}>
+          <div
+            key={index}
+            data-paragraph={paragraph.from}
+            style={
+              filled
+                ? look.paragraph(paragraph.from, true)
+                : { ...look.paragraph(paragraph.from, false), "--bullet": "none" }
+            }
+          >
             {paragraph.runs.map((run, at) => (
               <span key={at} style={look.run(paragraph.from, run.from, run)}>
                 {run.text}
