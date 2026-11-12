@@ -6,7 +6,7 @@ export type ToolPick = { readonly tool: PointerTool; readonly pick: (tool: Point
 
 const toolKeys: Readonly<Record<string, PointerTool>> = { v: "move", h: "hand" }
 
-function typing(target: EventTarget | null): boolean {
+export function typing(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
   return target.isContentEditable || target.closest("input, textarea, select") !== null
 }

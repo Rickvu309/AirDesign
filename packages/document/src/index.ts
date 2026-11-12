@@ -59,3 +59,4 @@ export {
   type SlideState,
 } from "./slide-order.js"
 export { readTextValue, writeTextValue, type TextParagraph, type TextRun, type TextValue } from "./text-value.js"
+export { redoOf, slideUndoable, undoOf, type Undoable } from "./person-undo.js"

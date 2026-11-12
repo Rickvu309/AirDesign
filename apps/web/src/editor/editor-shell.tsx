@@ -6,6 +6,7 @@ import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/edito
 import { usePointerTool } from "@/editor/pointer-tool"
 import { RevenueSlide } from "@/editor/revenue-slide"
 import { SlideSidebar, type SidebarRun, type SlideStrip } from "@/editor/slide-sidebar"
+import type { UndoButtonsState } from "@/editor/undo-buttons"
 import {
   ActionsMenu,
   ImagesPanel,
@@ -24,6 +25,7 @@ export type EditorDeck = {
   readonly size: SlideSize | null
   readonly slide: (width: number) => ReactNode
   readonly onExport: () => void
+  readonly undo: UndoButtonsState
 }
 
 export type EditorShellProps = {
@@ -125,6 +127,7 @@ export function EditorShell({
               menuOpen={toolMenu}
               panel={panel}
               {...(deck === undefined ? {} : { pointer })}
+              {...(deck === undefined ? {} : { undo: deck.undo })}
               {...(onPanel === undefined ? {} : { onPanel })}
             />
           </div>

@@ -33,7 +33,7 @@ export function openingElement(state: Floored, node: ElementId): IndexElement | 
   if (indexed !== undefined || !node.includes(".")) return indexed
   const slide = shapeOf(node).slide
   const born = state.order.find(
-    (command) => command.id === slide && command.slide !== "remove" && command.slide !== "move",
+    (command) => command.id === slide && (command.slide === "add" || command.slide === "clone"),
   )
   return born === undefined ? undefined : floorOf(born).find((element) => element.node === node)
 }

@@ -4,6 +4,7 @@ import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
 import { EditorMenuContent, EditorMenuRow } from "@/editor/editor-menu"
 import { PanelSwitch } from "@/editor/panel-switch"
 import type { PointerTool, ToolPick } from "@/editor/pointer-tool"
+import { UndoButtons, type UndoButtonsState } from "@/editor/undo-buttons"
 import { cn } from "@/lib/class-names"
 
 export type EditorTool = "move" | "text" | "shape" | "image" | "actions"
@@ -31,12 +32,14 @@ export function EditorToolbar({
   menuOpen = false,
   panel = "agent",
   pointer,
+  undo,
   onPanel,
 }: {
   activeTool?: EditorTool
   menuOpen?: boolean
   panel?: EditorPanel
   pointer?: ToolPick
+  undo?: UndoButtonsState
   onPanel?: (panel: Exclude<EditorPanel, "none">) => void
 }) {
   const chosen = pointer?.tool ?? "move"
@@ -116,6 +119,8 @@ export function EditorToolbar({
           </Button>
         )
       })}
+      <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />
+      <UndoButtons {...(undo === undefined ? {} : { state: undo })} />
       {panel === "none" ? null : (
         <>
           <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />

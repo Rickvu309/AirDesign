@@ -4,9 +4,10 @@ import { Toaster } from "@/components/ui/sonner"
 import { StatusPill } from "@/components/ui/status-pill"
 import { productCopy } from "@/copy/product-copy"
 import { EditorToast } from "@/editor/agent-panel"
+import { undoCopy } from "@/copy/undo-copy"
 import { exportCopy } from "@/export/export-options"
 
-export type ThinNotice = "offline" | "import-failed" | "export-failed"
+export type ThinNotice = "offline" | "import-failed" | "export-failed" | "undo-changed" | "redo-changed"
 
 const noticeId = "thin-notice"
 const noticeWidth = "24rem"
@@ -56,14 +57,14 @@ function FailureNotice({ text, action, onAct }: { text: string; action: string; 
   )
 }
 
-function OfflineNotice() {
+function StatusNotice({ text }: { text: string }) {
   useEffect(
     () => () => {
       toast.dismiss("editor-status")
     },
     [],
   )
-  return <EditorToast kind="info" text={productCopy.editorOffline} place="canvas" />
+  return <EditorToast kind="info" text={text} place="canvas" />
 }
 
 export function ThinNoticeView({
@@ -74,7 +75,9 @@ export function ThinNoticeView({
   onTryAgain: (notice: ThinNotice) => void
 }) {
   if (notice === null) return null
-  if (notice === "offline") return <OfflineNotice />
+  if (notice === "offline") return <StatusNotice text={productCopy.editorOffline} />
+  if (notice === "undo-changed") return <StatusNotice text={undoCopy.undoChanged} />
+  if (notice === "redo-changed") return <StatusNotice text={undoCopy.redoChanged} />
   if (notice === "import-failed") {
     return (
       <FailureNotice

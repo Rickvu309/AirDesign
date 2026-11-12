@@ -2,6 +2,8 @@ import { opened, viewed, personSplit } from "./spec-register.js"
 import { dumpTopics } from "./spec-dump.js"
 import { replayIndex } from "./index-replay.js"
 import { replayUsage } from "./usage-replay.js"
+import { replayOauth } from "./oauth-replay.js"
+import { replayPersonUndo } from "./person-undo-replay.js"
 import { readdirSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -21,7 +23,6 @@ import {
   type Queued,
   type Register,
 } from "@airdesign/document"
-import { oauth, type Command as OauthCommand, type Grant } from "@airdesign/oauth"
 import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import { group as editGroup, state as editState, step as editStep } from "../specs/edit/view.mjs"
 import { group as offlineGroup, state as offlineState, step as offlineStep } from "../specs/offline/view.mjs"
@@ -33,6 +34,7 @@ import { group as oauthGroup, state as oauthState, step as oauthStep } from "../
 import { group as rerunGroup, state as rerunState, step as rerunStep } from "../specs/rerun/view.mjs"
 import { group as turnGroup, state as turnState, step as turnStep } from "../specs/turn/view.mjs"
 import { group as indexGroup, state as indexState, step as indexStep } from "../specs/index/view.mjs"
+import * as personUndoView from "../specs/person-undo/view.mjs"
 
 type Value = boolean | number | string
 type Spec = Record<string, Value>
@@ -962,89 +964,6 @@ function replayOffline(graph: Graph, view: View, failures: string[]) {
   return { replayed, stuttered, unconnected }
 }
 
-function oauthGrant(spec: Spec): Grant {
-  const code = text(spec, "code")
-  if (code !== "open" && code !== "used") throw new Error(`bad oauth code ${code}`)
-  return {
-    principal: text(spec, "principal"),
-    code,
-    generation: num(spec, "generation"),
-    revoked: flag(spec, "revoked"),
-  }
-}
-
-function oauthPicture(grant: Grant) {
-  return {
-    principal: grant.principal,
-    code: grant.code,
-    generation: grant.generation,
-    revoked: grant.revoked,
-  }
-}
-
-function oauthEdge(action: string): { command: OauthCommand; accepted: boolean } | null {
-  const call = (generation: number, accepted: boolean) => ({
-    command: { command: "call" as const, generation },
-    accepted,
-  })
-  const rotate = (generation: number, accepted: boolean) => ({
-    command: { command: "rotate" as const, generation },
-    accepted,
-  })
-  if (action === "Exchange") return { command: { command: "exchange" }, accepted: true }
-  if (action === "ExchangeRefused") return { command: { command: "exchange" }, accepted: false }
-  if (action === "Call0Refused") return call(0, false)
-  if (action === "Call1") return call(1, true)
-  if (action === "Call1Refused") return call(1, false)
-  if (action === "Call2") return call(2, true)
-  if (action === "Call2Refused") return call(2, false)
-  if (action === "Call3") return call(3, true)
-  if (action === "Call3Refused") return call(3, false)
-  if (action === "Rotate0") return rotate(0, false)
-  if (action === "Rotate1") return rotate(1, true)
-  if (action === "Rotate1Reuse") return rotate(1, false)
-  if (action === "Rotate1Refused") return rotate(1, false)
-  if (action === "Rotate2") return rotate(2, true)
-  if (action === "Rotate2Reuse") return rotate(2, false)
-  if (action === "Rotate2Refused") return rotate(2, false)
-  if (action === "Rotate3Refused") return rotate(3, false)
-  if (action === "Rotate4") return rotate(4, false)
-  if (action === "Revoke") return { command: { command: "revoke" }, accepted: true }
-  if (action === "RevokeAgain") return { command: { command: "revoke" }, accepted: false }
-  return null
-}
-
-function replayOauth(graph: Graph, view: View, failures: string[]) {
-  let replayed = 0
-  let stuttered = 0
-  for (const edge of graph.edges) {
-    const source = graph.states.get(edge.from)
-    const target = graph.states.get(edge.to)
-    if (!source || !target) throw new Error(`missing oauth state for ${edge.action}`)
-    const where = `${readView(view, source, edge.action)} -${edge.action}-> ${readView(view, target, edge.action)}`
-    const step = oauthEdge(edge.action)
-    if (!step) {
-      failures.push(`oauth ${where} is not connected`)
-      continue
-    }
-    const result = oauth(oauthGrant(source), step.command)
-    const actual = oauthPicture(result.grant)
-    const expected = oauthPicture(oauthGrant(target))
-    if (!same(actual, expected)) {
-      failures.push(`oauth ${where}\n  actual ${JSON.stringify(actual)}\n  expected ${JSON.stringify(expected)}`)
-      continue
-    }
-    if (result.accepted !== step.accepted) {
-      failures.push(`oauth ${where} accepted ${String(result.accepted)}`)
-      continue
-    }
-    const changed = !same(oauthPicture(oauthGrant(source)), expected)
-    if (changed || result.accepted) replayed += 1
-    else stuttered += 1
-  }
-  return { replayed, stuttered }
-}
-
 const secondRun = "s"
 
 function rerunVersion(spec: Spec): number {
@@ -1220,6 +1139,7 @@ describe("spec replay", () => {
       rerun: { state: rerunState, step: rerunStep, group: rerunGroup },
       turn: { state: turnState, step: turnStep, group: turnGroup },
       index: { state: indexState, step: indexStep, group: indexGroup },
+      "person-undo": personUndoView,
     }
     expect(Object.keys(views).sort()).toEqual(folders.filter((name) => name !== replayedByApi))
     for (const dumped of await dumpTopics(found)) {
@@ -1233,6 +1153,13 @@ describe("spec replay", () => {
       const view = views[topic.name]
       if (!view) throw new Error(`${topic.name} has no reader`)
       if (topic.name === "index") reports.index = replayIndex(graph, failures)
+      if (topic.name === "person-undo")
+        reports.personUndo = replayPersonUndo(
+          graph,
+          (source, target, action) =>
+            `${readView(view, source, action)} -${action}-> ${readView(view, target, action)}`,
+          failures,
+        )
       if (topic.name === "edit")
         reports.edit = { states: graph.states.size, edges: graph.edges.length, ...replayEdit(graph, view, failures) }
       if (topic.name === "undo")
@@ -1274,7 +1201,12 @@ describe("spec replay", () => {
         reports.oauth = {
           states: graph.states.size,
           edges: graph.edges.length,
-          ...replayOauth(graph, view, failures),
+          ...replayOauth(
+            graph,
+            (source, target, action) =>
+              `${readView(view, source, action)} -${action}-> ${readView(view, target, action)}`,
+            failures,
+          ),
         }
       }
       if (topic.name === "rerun") {
@@ -1288,6 +1220,7 @@ describe("spec replay", () => {
     expect(failures, JSON.stringify(reports)).toEqual([])
     expect(reports).toMatchObject({
       index: { replayed: expect.any(Number), stuttered: expect.any(Number) },
+      personUndo: { replayed: expect.any(Number), told: expect.any(Number) },
       edit: { stuttered: expect.any(Number) },
       undo: { stuttered: expect.any(Number) },
       structure: { replayed: expect.any(Number) },
