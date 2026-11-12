@@ -1,5 +1,6 @@
 import type { ElementId } from "@airdesign/document"
 import type { CanvasLine, CanvasOutline } from "./line-record.js"
+import type { CanvasElement } from "./record.js"
 import type { PaintBox } from "./paint-box.js"
 import type { CanvasTable } from "./table-record.js"
 import type { CanvasText } from "./text-record.js"
@@ -29,4 +30,5 @@ export type ElementPaint = {
   readonly geometry?: CanvasGeometry
   readonly text: CanvasText | null
   readonly table?: CanvasTable
+  readonly diagram?: readonly CanvasElement[]
 }

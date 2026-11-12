@@ -7,6 +7,7 @@ import { framedOutline, Passage } from "./passage.js"
 import type { CanvasElement, CanvasText, PaintBox } from "./record.js"
 import { ShapeArt, shapePaths } from "./shape-art.js"
 import { SheetText } from "./sheet-text.js"
+import { DiagramArt } from "./diagram-art.js"
 import { canMove, type Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
 import { anchored, textLook, type Scaled, type TextLook } from "./text-look.js"
@@ -53,7 +54,7 @@ function placement(box: PaintBox | null, scaled: Scaled): CSSProperties {
   }
 }
 
-function textLayer(box: PaintBox | null, text: CanvasText, scaled: Scaled): CSSProperties {
+export function textLayer(box: PaintBox | null, text: CanvasText, scaled: Scaled): CSSProperties {
   const mirrored = box !== null && box.flipH !== box.flipV
   const { bottom, left, right, top } = text.insets
   return {
@@ -136,6 +137,7 @@ function QuietElement(props: {
   return (
     <div style={elementFrame(element, scaled, false, unshown)}>
       <ShapeArt element={element} scaled={scaled} />
+      <DiagramArt element={element} scaled={scaled} />
       {text === null ? null : (
         <div style={textLayer(element.box, text, scaled)}>
           {element.id === null ? (
@@ -156,6 +158,7 @@ function SheetElement(props: { readonly element: CanvasElement; readonly scaled:
     <div data-canvas-element={element.key} style={elementFrame(element, scaled, false, unshown)}>
       <ShapeArt element={element} scaled={scaled} />
       <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
+      <DiagramArt element={element} scaled={scaled} />
       {text === null ? null : (
         <div style={textLayer(element.box, text, scaled)}>
           <SheetText look={textLook(text, scaled)} text={text} />
@@ -234,6 +237,7 @@ function PlacedText(props: {
     >
       <ShapeArt element={element} grab={moves !== null && canMove(element)} scaled={scaled} />
       <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
+      <DiagramArt element={element} scaled={scaled} />
       <div style={textLayer(element.box, text, scaled)}>
         {showPrompt ? (
           <div
