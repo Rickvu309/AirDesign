@@ -147,4 +147,36 @@ create index aira_turn_email on session.aira_turn (email, started);
 grant select, insert, update on session.aira_ledger, session.aira_turn to session;
 `,
   },
+  {
+    id: 5,
+    sql: `
+alter table session.access add foreign key (email) references session.account (email) not valid;
+alter table session.oauth_grant add foreign key (principal) references session.account (email) not valid;
+alter table session.aira_ledger add foreign key (email) references session.account (email) not valid;
+alter table session.aira_turn add foreign key (email) references session.account (email) not valid;
+alter table deck.saved add foreign key (owner) references session.account (email) not valid;
+create function session.delete_account(address text) returns void
+language plpgsql security definer set search_path = pg_catalog as $$
+begin
+  perform pg_advisory_xact_lock(hashtextextended(address, 0));
+  perform email from session.account where email = address for update;
+  insert into deck.original_delete (key, owner, expires)
+    select original_key, owner, coalesce(original_until, now()) from deck.saved
+    where owner = address and original_key is not null
+    on conflict (key) do nothing;
+  delete from session.oauth_token where grant_id in (select id from session.oauth_grant where principal = address);
+  delete from session.oauth_grant where principal = address;
+  delete from session.access where email = address;
+  delete from session.code where email = address;
+  delete from session.sent where email = address;
+  delete from session.aira_turn where email = address;
+  delete from session.aira_ledger where email = address;
+  delete from deck.saved where owner = address;
+  delete from session.account where email = address;
+end
+$$;
+revoke all on function session.delete_account(text) from public;
+grant execute on function session.delete_account(text) to session;
+`,
+  },
 ]

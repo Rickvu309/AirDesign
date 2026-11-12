@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest"
 
 import worker from "./api-forward.js"
 import {
+  accountPaths,
+  accountRoutes,
   deckPaths,
   deckRoutes,
   mcpPaths,
@@ -79,6 +81,7 @@ describe("API forwarding", () => {
       ...Object.values(deckRoutes),
       ...Object.values(signInRoutes),
       ...Object.values(signOutRoutes),
+      ...Object.values(accountRoutes),
     ]) {
       const method = "method" in route ? route.method : "POST"
       const response = await worker.fetch(new Request(`https://example.com${route.path}`, { method }), env())
@@ -109,7 +112,9 @@ describe("API forwarding", () => {
       entries.some((entry) => !entry.startsWith("!") && matches(entry, path)) &&
       !entries.some((entry) => entry.startsWith("!") && matches(entry.slice(1), path))
     expect(
-      [...signInPaths, ...signOutPaths, ...deckPaths, ...oauthPaths, ...mcpPaths].filter((path) => !routed(path)),
+      [...signInPaths, ...signOutPaths, ...accountPaths, ...deckPaths, ...oauthPaths, ...mcpPaths].filter(
+        (path) => !routed(path),
+      ),
     ).toEqual([])
   })
 
@@ -165,6 +170,7 @@ describe("API forwarding", () => {
     "/sign-in/email",
     "/sign-in/code",
     "/sign-out",
+    "/account/delete",
     "/decks/open",
     "/decks/watch",
     "/decks/list",

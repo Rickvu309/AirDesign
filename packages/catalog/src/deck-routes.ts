@@ -175,6 +175,10 @@ export const signOutRoutes = {
   session: { path: "/sign-out", method: "POST" },
 } as const
 
+export const accountRoutes = {
+  delete: { path: "/account/delete", method: "POST" },
+} as const
+
 export const oauthRoutes = {
   register: { path: "/oauth/register", method: "POST" },
   token: { path: "/oauth/token", method: "POST" },
@@ -185,5 +189,6 @@ export const oauthRoutes = {
 
 export const signInPaths: readonly string[] = Object.values(signInRoutes).map((route) => route.path)
 export const signOutPaths: readonly string[] = Object.values(signOutRoutes).map((route) => route.path)
+export const accountPaths: readonly string[] = Object.values(accountRoutes).map((route) => route.path)
 export const deckPaths: readonly string[] = Object.values(deckRoutes).map((route) => route.path)
 export const oauthPaths: readonly string[] = Object.values(oauthRoutes).map((route) => route.path)

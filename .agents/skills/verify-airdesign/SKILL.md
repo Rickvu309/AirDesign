@@ -71,7 +71,7 @@ Journeys are Playwright scripts in `.agents/skills/verify-airdesign/journeys/`. 
 $V journey <run> open-edit-save
 ```
 
-Shipped journeys: `open-edit-save`, `deck-list-trash`, `slide-paint`, and `cleared-browser` (a deck reopened in a cleared browser is rebuilt from the original the server keeps). Each feature file in `features/` names its journey and steps.
+Shipped journeys: `open-edit-save`, `deck-list-trash`, `slide-paint`, `cleared-browser` (a deck reopened in a cleared browser is rebuilt from the original the server keeps), and `delete-account` (the account menu deletes the account and everything it holds). Each feature file in `features/` names its journey and steps.
 
 ## Every journey after every merge
 
