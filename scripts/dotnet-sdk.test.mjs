@@ -62,10 +62,24 @@ same(printed, fake, "the command line prints the binary")
 fs.rmSync(folder, { recursive: true, force: true })
 
 const bare = fs.mkdtempSync(path.join(os.tmpdir(), "dotnet-sdk-bare-"))
-const shell = spawnSync("bash", [new URL("./pptx-tools.sh", import.meta.url).pathname, "true"], {
-  env: { PATH: `${path.dirname(process.execPath)}:/usr/bin:/bin`, HOME: bare },
+const bin = path.join(bare, "bin")
+const spawned = path.join(bare, "spawned")
+fs.mkdirSync(bin)
+const dirnameBinary = execFileSync("which", ["dirname"], { encoding: "utf8" }).trim()
+fs.symlinkSync(process.execPath, path.join(bin, "node"))
+fs.symlinkSync(dirnameBinary, path.join(bin, "dirname"))
+for (const name of ["apt-get", "sudo", "curl", "wget", "dpkg-deb"])
+  fs.writeFileSync(path.join(bin, name), `#!/bin/sh\necho ${name} >> "${spawned}"\nexit 1\n`, { mode: 0o755 })
+const started = Date.now()
+const shell = spawnSync("/usr/bin/bash", [new URL("./pptx-tools.sh", import.meta.url).pathname, "true"], {
+  env: { PATH: bin, HOME: bare },
   encoding: "utf8",
+  timeout: 10000,
 })
+const elapsed = Date.now() - started
+const launched = fs.existsSync(spawned) ? fs.readFileSync(spawned, "utf8") : ""
 fs.rmSync(bare, { recursive: true, force: true })
+if (launched) fail(`the shell wrapper started installers before reporting: ${launched}`)
+if (elapsed > 5000) fail(`the shell wrapper took ${elapsed} ms to report`)
 if (shell.status === 0 || !shell.stderr.includes("Tried:"))
   fail(`the shell wrapper does not report the places tried: ${shell.stderr}`)
