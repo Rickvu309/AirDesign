@@ -87,14 +87,16 @@ test("an imported deck opens in the editor while the server has not answered", a
 })
 
 test("back from a deck that was just imported shows the deck home", async ({ page }) => {
-  await store(page, [])
+  const { calls } = await store(page, [])
   await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(join(process.cwd(), "scripts/pptx-fixtures/clean.pptx"))
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await expect(page.locator(".thin-page")).toBeVisible()
+  await expect.poll(() => calls.some((call) => call.path === "rename" && call.body.name === "clean")).toBe(true)
   await page.goBack()
   await expect(page).toHaveURL(/\/$/)
-  await expect(page.getByRole("heading", { name: "Scratchpad" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "clean", level: 2 })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Scratchpad" })).toHaveCount(0)
   await expect(page.locator(".thin-page")).toHaveCount(0)
 })
 
