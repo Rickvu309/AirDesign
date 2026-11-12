@@ -3,6 +3,7 @@ import { chromium, expect, test } from "@playwright/test"
 
 async function launch(directory: string, baseURL: string) {
   const context = await chromium.launchPersistentContext(directory, { baseURL })
+  await context.addCookies([{ name: "airdesign.account", value: "a".repeat(32), url: baseURL }])
   const page = context.pages()[0] ?? (await context.newPage())
   await page.goto("/live-proof")
   return { context, page }
@@ -15,7 +16,7 @@ test("pending edits survive a killed tab", async ({ baseURL }, testInfo) => {
   const first = await launch(profile, baseURL ?? "")
   await first.page.evaluate(async () => {
     await globalThis.airdesignLive.enqueue("deck", "earlier", "258.7")
-    await globalThis.airdesignLive.enqueue("deck", "later", "258.7")
+    await globalThis.airdesignLive.enqueue("deck", "later", "258.8")
   })
   await first.context.close()
   const second = await launch(profile, baseURL ?? "")

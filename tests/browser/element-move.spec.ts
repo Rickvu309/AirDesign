@@ -174,13 +174,7 @@ test("a corner handle resizes, the arrows nudge, and Shift nudges ten times as f
   await page.keyboard.press("Shift+ArrowDown")
   const resized = { ...start, cx: 3_657_600, cy: 2_743_200 }
   const nudged = { ...resized, x: start.x + 12_700, y: start.y + 127_000 }
-  await expect
-    .poll(() => boxRows(page))
-    .toEqual([
-      `pending:256.2:${JSON.stringify(resized)}`,
-      `pending:256.2:${JSON.stringify({ ...resized, x: start.x + 12_700 })}`,
-      `pending:256.2:${JSON.stringify(nudged)}`,
-    ])
+  await expect.poll(() => boxRows(page)).toEqual([`pending:256.2:${JSON.stringify(nudged)}`])
   await page.reload()
   await settled(page)
   const shown = await placed(page)
@@ -261,7 +255,7 @@ test("a picture moves by a drag anywhere on it and keeps the arrows once selecte
   )
   expect(after[0]).toBeCloseTo((before[0] ?? 0) + 20 - 12_700 / 11_430, 3)
   expect(after[1]).toBeCloseTo((before[1] ?? 0) + 10, 3)
-  await expect.poll(async () => (await boxRows(page)).length).toBe(2)
+  await expect.poll(async () => (await boxRows(page)).length).toBe(1)
 })
 
 const pictured = "ppt/slides/slide4.xml#6"

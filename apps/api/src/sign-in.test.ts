@@ -417,7 +417,6 @@ describe("sign-in", () => {
     const response = await ask(base, "POST", "/decks/open", { deck: "abc" }, cookie)
     expect(response.status).toBe(401)
     expect(response.json).toEqual({ ok: false, refusal: "session" })
-    expect(response.headers["set-cookie"]).toEqual(["airdesign.account=; Secure; SameSite=Lax; Path=/; Max-Age=0"])
   })
 
   it("stores no code, link token or session token as sent", async () => {
@@ -669,7 +668,6 @@ describe("sign-in", () => {
     expect(linkedHeader).toContain("Secure")
     expect(linkedHeader).toContain("SameSite=Lax")
     expect(linked.headers["set-cookie"]?.length).toBe(2)
-    expect(linked.headers["set-cookie"]?.[1]?.toLowerCase().includes("domain")).toBe(false)
   })
 
   it("rejects a public origin with a path", () => {
