@@ -15,7 +15,6 @@ import { NewDeckMenu } from "@/decks/new-deck-menu"
 import { blankDeck } from "@/decks/blank-deck"
 import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/deck-moved-toast"
 import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/decks/screens/trash-list"
-import { starterDeckCards } from "@/decks/sample-decks"
 import { deckTime } from "@/decks/deck-time"
 import { addressOf, addressRead } from "@/decks/deck-address"
 import { allDecks, decksMatching, recentDecks, type ListedDeck } from "@/decks/deck-listing"
@@ -313,7 +312,6 @@ export function Home({
             ) : (
               <DeckCard name={importing.name} edited={productCopy.importing} preview={<ImportingPreview />} />
             ))}
-          {firstVisit && starterDeckCards.map((deck) => <DeckCard key={deck.name} {...deck} />)}
           {!listView || trash
             ? decks.map((deck) => (
                 <DeckCard
