@@ -3,6 +3,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { beforeAfterLabel, beforeAfterLine, beforeAfterNeed, seen } from "./before-after.mjs"
 import { workingTree } from "./checked.mjs"
+import { ghApi, readWithRetry } from "./github-read.mjs"
 import { measuredLive } from "./metrics.mjs"
 
 const guardedFolders = [".github/", "tooling/", "scripts/", "specs/"]
@@ -194,12 +195,7 @@ export const labelsFor = (result) => [
   ...(result.lowers ? ["lowers-the-bar"] : []),
 ]
 
-const github = (args) =>
-  execFileSync("gh", ["api", ...args], {
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-    stdio: ["ignore", "pipe", "pipe"],
-  })
+const github = readWithRetry({ run: ghApi })
 
 const rows = (endpoint, shape) =>
   github(["--paginate", endpoint, "--jq", `.[] | ${shape} | @json`])
