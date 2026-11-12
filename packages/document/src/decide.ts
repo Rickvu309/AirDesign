@@ -1,4 +1,5 @@
 import type { Box } from "./box.js"
+import type { DeckIndex } from "./deck-index.js"
 import { legacyElement, rootElement, type ElementId } from "./element-id.js"
 import { limits, overLimit } from "./limits.js"
 import { storedValue, type Value } from "./value.js"
@@ -16,6 +17,7 @@ export type Landed = Value & {
 export type NodeRegister = {
   readonly route: string
   readonly floor: string
+  readonly floorBox?: Box
   readonly landed: readonly Landed[]
   readonly version?: number
   readonly phase: Phase
@@ -29,6 +31,7 @@ export type NodeRegister = {
 }
 
 export type Register = {
+  readonly index?: DeckIndex
   readonly route: string
   readonly floor: string
   readonly slides: number
@@ -39,6 +42,7 @@ export type Register = {
 }
 
 export type RootRegister = NodeRegister & {
+  readonly index?: DeckIndex
   readonly nodes: readonly ElementId[]
   readonly readNodes: readonly ElementId[] | null
   readonly elements: Readonly<Partial<Record<ElementId, NodeRegister>>>
@@ -62,7 +66,7 @@ export type Command =
   | { readonly command: "remove"; readonly node: ElementId }
   | { readonly command: "read"; readonly runId: string; readonly node: ElementId }
 
-export const refusals = ["stale", "person-protected", "run-fenced", "dead", "present", "limit"] as const
+export const refusals = ["stale", "person-protected", "run-fenced", "dead", "present", "limit", "group-box"] as const
 
 export type Refusal = (typeof refusals)[number]
 
@@ -128,13 +132,14 @@ export function history(register: NodeRegister): readonly string[] {
 
 export function currentBox(register: NodeRegister): Box | null {
   const boxes = visibleRows(register).flatMap((row) => (row.property === "box" ? [row.value] : []))
-  return boxes.at(-1) ?? null
+  return boxes.at(-1) ?? register.floorBox ?? null
 }
 
 function nodeOf(register: NodeRegister): NodeRegister {
   return {
     route: register.route,
     floor: register.floor,
+    ...(register.floorBox === undefined ? {} : { floorBox: register.floorBox }),
     landed: register.landed,
     version: version(register),
     phase: register.phase,
@@ -169,6 +174,7 @@ export function foldRegister(stored: StoredRegister): Register {
   const first = nodeOf({ ...stored.elements[rootElement], ...stored })
   return {
     route: stored.route,
+    ...(stored.index === undefined ? {} : { index: stored.index }),
     floor: stored.floor,
     slides: stored.slides,
     bytes: stored.bytes,
@@ -274,10 +280,14 @@ function addNode(register: Register, id: ElementId, floor: string, route: string
   if (id === rootElement || register.nodes.includes(id)) {
     return refuse("present")
   }
-  if (register.nodes.length >= limits.elements) {
+  const indexed = register.index?.elements.find((element) => element.node === id)
+  if (register.nodes.length >= limits.elements && indexed === undefined) {
     return refuse("limit")
   }
-  const body = storedBody(register, id) ?? openNode(floor, route)
+  const body = storedBody(register, id) ?? {
+    ...openNode(indexed?.value ?? floor, route),
+    ...(indexed?.box === null || indexed?.box === undefined ? {} : { floorBox: indexed.box }),
+  }
   return apply(
     { ...register, nodes: [...register.nodes, id], elements: { ...register.elements, [id]: body } },
     body.route,
@@ -340,6 +350,13 @@ export function decide(stored: StoredRegister, command: Command): Decision {
     return addNode(register, supplied.node, supplied.floor ?? register.floor, supplied.route ?? register.route)
   }
   const node = command.node ?? rootElement
+  if (
+    (command.command === "person" || command.command === "agent") &&
+    command.property === "box" &&
+    register.index?.elements.some((element) => element.node === node && element.grouped)
+  ) {
+    return refuse("group-box")
+  }
   if (!register.nodes.includes(node)) {
     return refuse("dead")
   }

@@ -1,11 +1,13 @@
 import type { DeckAnswers } from "./deck-answer.js"
 import { notifyKey, type DeckId, type WireEdit, type WireRefusal } from "@airdesign/catalog"
-import { foldRegister, type StoredRegister } from "@airdesign/document"
+import { foldRegister, type DeckIndex, type StoredRegister } from "@airdesign/document"
 import { call, openDeck, type Deck } from "@airdesign/engine"
 
 import type { Sql } from "./pool.js"
+import { indexSaved } from "./index-saved.js"
 
-const readSql = "select id, revision, register, owner, deleted is not null as deleted from deck.saved where id = $1"
+const readSql =
+  "select id, revision, register, import_index, owner, deleted is not null as deleted from deck.saved where id = $1"
 
 const insertSql = `
 with inserted as (
@@ -21,7 +23,7 @@ from inserted
 const revisionSql = `
 with updated as (
   update deck.saved
-  set revision = $2, register = $3::jsonb, edited = now()
+  set revision = $2, register = $3::jsonb - 'index', edited = now()
   where id = $1 and revision = $4 and deleted is null
   returning id, revision, register
 )
@@ -34,7 +36,7 @@ const onceReadSql = "select revision, notify from deck.once where email = $1 and
 const revisionOnceSql = `
 with updated as (
   update deck.saved
-  set revision = $2, register = $3::jsonb, edited = now()
+  set revision = $2, register = $3::jsonb - 'index', edited = now()
   where id = $1 and revision = $4 and deleted is null
   returning id, revision, register
 ),
@@ -94,8 +96,10 @@ async function readStoredOnce(db: Sql, email: string, deck: string, once: string
   return result.rows[0]
 }
 
-type StoredSaved = Omit<Saved, "register" | "deleted"> &
-  ({ readonly deleted: false; readonly register: StoredRegister } | { readonly deleted: true; readonly register: null })
+type StoredSaved = Omit<Saved, "register" | "deleted"> & { readonly import_index?: DeckIndex | null } & (
+    | { readonly deleted: false; readonly register: StoredRegister }
+    | { readonly deleted: true; readonly register: null }
+  )
 
 function savedFrom(row: StoredSaved | undefined): Saved | undefined {
   if (row === undefined) return undefined
@@ -103,7 +107,7 @@ function savedFrom(row: StoredSaved | undefined): Saved | undefined {
   return {
     id: row.id,
     revision: row.revision,
-    register: foldRegister(row.register),
+    register: { ...foldRegister(row.register), ...(row.import_index == null ? {} : { index: row.import_index }) },
     owner: row.owner,
     deleted: row.deleted,
   }
@@ -239,4 +243,5 @@ export async function commitEdits(
 export const savedAnswers = {
   open: openSaved,
   commit: commitEdits,
+  index: indexSaved,
 } satisfies Partial<DeckAnswers>

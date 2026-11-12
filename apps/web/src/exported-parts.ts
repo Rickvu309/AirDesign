@@ -22,9 +22,11 @@ export function exportedParts(
       const { part, shape } = shapeFor(shapes, id, "text-shape")
       next = applyRoute(next, { name: "text", part, shape, value: textValue(currentValue(body)) })
     }
-    const box = currentBox(body)
+    const box = body.landed.some((row) => row.visible && row.property === "box") ? currentBox(body) : null
     if (box === null) continue
-    const { part, shape } = shapeFor(shapes, id, "box-shape")
+    const found = shapeFor(shapes, id, "box-shape")
+    if (found.grouped) throw new Error("group-box")
+    const { part, shape } = found
     next = applyRoute(next, { name: "move", part, shape, x: box.x, y: box.y })
     next = applyRoute(next, { name: "resize", part, shape, cx: box.cx, cy: box.cy })
   }

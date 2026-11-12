@@ -179,7 +179,7 @@ afterAll(async () => {
   await close()
 })
 
-const readsDeck = (sql: string): boolean => sql.startsWith("select id, revision, register, owner")
+const readsDeck = (sql: string): boolean => sql.startsWith("select id, revision, register,")
 
 it("a reload after delete for good does not bring the deck back", async () => {
   const deck = await deletedForGood()

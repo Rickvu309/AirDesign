@@ -240,6 +240,7 @@ describe("database migrations", () => {
         original_stored: false,
         original_until: null,
         deleted: null,
+        import_index: null,
       },
     ])
     const deck = await open(roleUrl("deck", database))
@@ -264,7 +265,9 @@ describe("database migrations", () => {
     const onceBefore = await migrator.query("select * from deck.once")
     expect(await applySchema(migrator)).toEqual({ applied: latest - 2, at: latest })
     const after = await migrator.query("select * from deck.saved order by id")
-    expect(after.rows).toEqual(before.rows.map((row: Record<string, unknown>) => ({ ...row, deleted: null })))
+    expect(after.rows).toEqual(
+      before.rows.map((row: Record<string, unknown>) => ({ ...row, deleted: null, import_index: null })),
+    )
     expect((await migrator.query("select * from deck.once")).rows).toEqual(onceBefore.rows)
     const deck = await open(roleUrl("deck", database))
     await expect(deck.query("delete from deck.saved where id = 'live'")).rejects.toThrow(/permission denied/)

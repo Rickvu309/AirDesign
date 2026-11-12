@@ -6,6 +6,7 @@ A signed-in person chooses a PowerPoint file on Home. AirDesign opens it as a ne
 
 - `import-open` choosing a `.pptx` on Home opens it at `/deck/<id>` and shows its text.
 - `import-name` the new deck takes the file name without `.pptx` (`clean` for `clean.pptx`) through `deckRoutes.rename`, the same name the editor shows.
+- `import-index` an agent reads untouched element ids, kinds, text, boxes, slide order and version zero before making an edit.
 - `edit-text` typing replaces the text box's text on screen.
 - `edit-save` the edit lands on the server: `deckRoutes.open` returns the typed text.
 - `edit-reopen` with the local edit rows gone, opening the deck again shows the server's text.
@@ -25,6 +26,7 @@ Preconditions:
 - `scripts/pptx-fixtures/clean.pptx` exists.
 
 - **Run it.** `$V journey <run> open-edit-save`. Prints `"passed":true` and the evidence dir.
+- **Agent read.** `$V journey <run> element-index` imports from Home, reads the untouched deck over MCP, edits using `readAt: 0`, then checks the same ids, boxes and edited text after clearing device storage.
 - **Sign in.** `signIn()` signs a new account in through the emailed code. Home shows `button "New deck"`. Evidence `01-home-signed-in`.
 - **Import.** `page.locator("input[type=file]").setInputFiles(<repo>/scripts/pptx-fixtures/clean.pptx)`. The URL becomes `/deck/<id>` and `[contenteditable="true"]` reads `Hello`. Evidence `02-imported`.
 - **Type.** Click the text box, select all, type `Saved on the server`. The box shows it. Evidence `03-typed`.

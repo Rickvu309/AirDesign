@@ -22,6 +22,7 @@ import {
   type Value,
 } from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
+import { queueIndex, sendIndex } from "./deck-index.js"
 import {
   changeRows,
   fitConfirmed,
@@ -187,8 +188,10 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
   }
 
   async function sendRows(deck: DeckId): Promise<CommitResult> {
+    const indexed = await sendIndex(remote, deck, () => openOnce(deck))
+    if (indexed !== null && !indexed.ok) return indexed
     const { confirmed, pending } = split(await readDeck(deck))
-    if (pending.length === 0) return { ok: false, refusal: "batch" }
+    if (pending.length === 0) return indexed ?? { ok: false, refusal: "batch" }
     const opened = await openOnce(deck)
     if (!opened.ok) return opened
     const sending = unsent(pending, 0)
@@ -253,6 +256,7 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
   }
 
   return {
+    index: (deck: string, index: Parameters<typeof queueIndex>[1]) => queueIndex(deck, index, nextOnce),
     async enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<EnqueueResult> {
       const result = await enqueueValue(deck, { value }, node, floor)
       if (!result.ok) return result

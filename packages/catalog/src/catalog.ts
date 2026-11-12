@@ -48,6 +48,7 @@ export type AgentTool<Op extends string = AgentOp> = {
 
 export const catalog = {
   commit_edits: { kind: "command", exposure: "web" },
+  index_deck: { kind: "action", exposure: "web", runsOn: "server" },
   start_run: { kind: "command", exposure: "web" },
   stop_run: {
     idempotent: true,
@@ -83,7 +84,7 @@ export const catalog = {
     runsOn: "server",
     read: readDeckQuery,
     description:
-      "Read one deck this account owns. Send the answer revision as base to airdesign_edit_deck, and each element's version as readAt. Each element the server holds has node, slide, value, box, and version. closed means a person's newer edit or another run holds it. An element nobody has edited is absent; use readAt 0 for it. Send slide or cursor to read the rest.",
+      "Read one deck this account owns. Send revision as base to airdesign_edit_deck and each element's version as readAt. slides lists slide ids in position order. Indexed elements include node, slide, kind, opening or edited value and box, and version (0 before edits). closed means a person's newer edit or another run holds it. grouped elements refuse box edits. index is ready, pending, or missing; pending or missing means the owner must open the deck in AirDesign to finish indexing. Send slide or cursor to read the rest.",
   },
   capture_slide: {
     kind: "action",

@@ -2,7 +2,9 @@ import { execFileSync } from "node:child_process"
 import { randomBytes } from "node:crypto"
 import type { AddressInfo } from "node:net"
 import { join } from "node:path"
+import { pathToFileURL } from "node:url"
 import { expect, test as base, type BrowserContext, type Page } from "@playwright/test"
+import type { ReadDeckAnswer } from "../../packages/engine/src/index.ts"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const typed = "Saved on the server"
@@ -113,6 +115,54 @@ const test = base.extend<object, { stack: Stack }>({
 })
 
 test.use({ viewport: { width: 1600, height: 1000 } })
+
+test("home import exposes every untouched text box on slide one to the agent API", async ({ page, context, stack }) => {
+  const { deckRoutes, mcpRoutes } = await import(
+    pathToFileURL(join(process.cwd(), "packages/catalog/dist/index.js")).href
+  )
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  const deck = await openClean(page)
+  const opened = await stack.post(deckRoutes.open.path, { deck }, cookie)
+  const register = opened.json.register as { index: { elements: { node: string; value: string | null }[] } }
+  expect(opened.json.revision).toBe(0)
+  const answer = await fetch(new URL(mcpRoutes.mcp.path, stack.origin), {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json", accept: "application/json, text/event-stream" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/call",
+      params: { name: "airdesign_read_deck", arguments: { deck, slide: "256" } },
+    }),
+  })
+  const text = await answer.text()
+  const payload = text.startsWith("event:")
+    ? JSON.parse(
+        text
+          .split("\n")
+          .find((line) => line.startsWith("data: "))!
+          .slice(6),
+      )
+    : JSON.parse(text)
+  const read = payload.result.structuredContent as ReadDeckAnswer
+  expect(read).toMatchObject({ ok: true, index: "ready", revision: 0, slides: [{ id: "256", position: 0 }] })
+  expect(read.elements).toEqual([
+    {
+      node: "256.2",
+      slide: "256",
+      kind: "shape",
+      grouped: false,
+      value: '[{"from":0,"runs":[{"from":0,"text":"Hello"}]}]',
+      version: 0,
+      box: { x: 457200, y: 457200, cx: 5486400, cy: 1828800 },
+    },
+  ])
+  expect(read.elements.map((element) => element.node)).toEqual(
+    register.index.elements.filter((element) => element.value !== null).map((element) => element.node),
+  )
+})
 
 function textOf(value: string): string {
   const paragraphs = JSON.parse(value) as { runs: { text: string }[] }[]

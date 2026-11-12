@@ -4,7 +4,7 @@ import { applyRoute, type ReadShape } from "@airdesign/pptx"
 const movableKinds: ReadonlySet<ReadShape["kind"]> = new Set(["p:sp", "p:pic", "p:cxnSp"])
 
 export function boxStorable(parts: ReadonlyMap<string, Uint8Array>, shape: ReadShape): boolean {
-  if (!movableKinds.has(shape.kind) || shape.locked) return false
+  if (!movableKinds.has(shape.kind) || shape.locked || shape.grouped) return false
   const { part } = shape
   try {
     const moved = applyRoute(parts, { name: "move", part, shape: shape.shape, x: 0, y: 0 })
@@ -17,5 +17,7 @@ export function boxStorable(parts: ReadonlyMap<string, Uint8Array>, shape: ReadS
 
 export function landedBox(register: Register | null, id: ElementId): Box | null {
   const body = register?.elements[id]
-  return body === undefined ? null : currentBox(body)
+  return body === undefined || !body.landed.some((row) => row.visible && row.property === "box")
+    ? null
+    : currentBox(body)
 }

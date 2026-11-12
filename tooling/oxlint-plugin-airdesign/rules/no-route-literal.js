@@ -1,6 +1,7 @@
 export const routePaths = [
   "/decks/open",
   "/decks/commit",
+  "/decks/index",
   "/decks/watch",
   "/decks/list",
   "/decks/rename",

@@ -8,7 +8,8 @@ import { wireCommit } from "./harness.js"
 import type { Sql } from "./pool.js"
 import { commitEdits, readSaved } from "./saved.js"
 
-const readSql = "select id, revision, register, owner, deleted is not null as deleted from deck.saved where id = $1"
+const readSql =
+  "select id, revision, register, import_index, owner, deleted is not null as deleted from deck.saved where id = $1"
 
 describe("saved", () => {
   it("refuses a commit whose deck is not the row the server loaded", async () => {

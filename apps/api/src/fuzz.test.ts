@@ -5,7 +5,7 @@ import type { Pool } from "pg"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
 import { fuzzGood, fuzzAira } from "./aira-fuzz.js"
-import { attacks, hostileEscapes, hostileValues, leaks, type Attack } from "./fuzz-attack.js"
+import { attacks, hostileEscapes, hostileValues, indexFuzzGood, leaks, type Attack } from "./fuzz-attack.js"
 import { badTargets } from "./fuzz-target.js"
 import { ask, askForm, cookieFrom, postgresInfo, serve, testResource } from "./harness.js"
 import type { CallerLog } from "@airdesign/mcp"
@@ -344,6 +344,7 @@ describe("hostile input over every route", () => {
       "POST /account/agents/revoke": [
         { shape: "json", answers: 403, says: '"refusal":"owner"', fields: { id: "missing" } },
       ],
+      ...indexFuzzGood,
       "POST /account/delete": [{ shape: "json", answers: 400, fields: { email: "wrong@example.com" } }],
       "POST /sign-in/email": [{ shape: "json", answers: 202, fields: { email: "good@example.com" } }],
       "POST /sign-in/code": [{ shape: "json", answers: 401, fields: { email: "good@example.com", code: "000000" } }],
@@ -392,13 +393,9 @@ describe("hostile input over every route", () => {
     return exchange(port, wire)
   }
 
-  function keyOf(route: (typeof routes)[number]): string {
-    return `${route.method} ${route.path}`
-  }
+  const keyOf = (route: (typeof routes)[number]) => `${route.method} ${route.path}`
 
-  function signedHeaders(): readonly string[] {
-    return [`cookie: ${cookie}`]
-  }
+  const signedHeaders = () => [`cookie: ${cookie}`]
 
   it("names a good request for every route the server answers", () => {
     expect(routes.map(keyOf).filter((key) => goods[key] === undefined)).toEqual([])

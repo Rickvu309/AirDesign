@@ -53,5 +53,6 @@ export {
 } from "./wire.js"
 export { readAgentEdit, readCommit, readEdit, type WireChange, type WireEdit } from "./edit-wire.js"
 export { readDeckQuery, readListDecks } from "./read-wire.js"
+export { readDeckIndex } from "./index-wire.js"
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath } from "./mcp-routes.js"

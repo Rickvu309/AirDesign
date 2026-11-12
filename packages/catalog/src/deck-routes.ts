@@ -1,6 +1,7 @@
 import { unreachable } from "@airdesign/device"
 import { foldRegister, refusals, type Register, type StoredRegister } from "@airdesign/document"
 import { readCommit } from "./edit-wire.js"
+import { readDeckIndex } from "./index-wire.js"
 import {
   readCapture,
   readDecks,
@@ -163,6 +164,7 @@ function originalAnswer(raw: unknown): raw is Signed & { readonly bytes: number;
 export const deckRoutes = {
   open: { path: "/decks/open", read: readCapture, result: decodeOpen },
   commit: { path: "/decks/commit", read: readCommit, result: decode(commitAnswer) },
+  index: { path: "/decks/index", read: readDeckIndex, result: decode(revisionAnswer) },
   watch: { path: "/decks/watch", read: readWatch, result: decode(revisionAnswer) },
   list: { path: "/decks/list", read: readNoFields, result: decode(listAnswer) },
   rename: { path: "/decks/rename", read: readRename, result: decode(renameAnswer) },

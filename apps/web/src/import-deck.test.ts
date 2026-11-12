@@ -12,6 +12,8 @@ vi.mock("@airdesign/live", async () => {
   return {
     ...actual,
     connect: () => ({
+      index: async () => ({ ok: true }),
+      flush: async () => ({ ok: true }),
       async open() {
         return { ok: true }
       },

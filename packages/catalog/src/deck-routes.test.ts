@@ -155,6 +155,7 @@ it("decodes deleted on every deck route", () => {
   expect(Object.keys(deckRoutes)).toEqual([
     "open",
     "commit",
+    "index",
     "watch",
     "list",
     "rename",
@@ -172,6 +173,7 @@ it("refuses missing and malformed success fields for every deck route", () => {
   const wrong = {
     open: [{ ...revision }, { ...opened, register: null }],
     commit: [{ ...revision }, { ...revision, key: "deck:9" }],
+    index: [{ ok: true }, { ...revision, revision: -1 }],
     watch: [
       { ...revision, revision: 0.5 },
       { ...revision, deck: "bad deck" },

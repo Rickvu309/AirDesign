@@ -151,7 +151,7 @@ it("discovers authorization from only the MCP address and calls a tool with its 
     expect(rows.decks).toContainEqual({ deck: "discovery-bin", name: "", trash: true })
     expect(rows.decks).toHaveLength(2)
     const empty = await sdk.callTool({ name: "airdesign_read_deck", arguments: { deck: "discovery-bin" } })
-    expect(empty.structuredContent).toEqual({ ok: true, revision: 0, elements: [] })
+    expect(empty.structuredContent).toEqual({ ok: true, revision: 0, elements: [], slides: [], index: "missing" })
     const committed = await ask(
       base,
       "POST",

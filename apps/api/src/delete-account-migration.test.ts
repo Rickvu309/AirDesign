@@ -67,7 +67,7 @@ it("keys a database at migration 4 to its accounts without changing a row, and d
     insert into deck.saved (id, revision, register, owner) values ('kept', 1, '{}', 'kept@example.com'), ('gone', 1, '{}', 'gone@example.com');
   `)
   const before = await rows(migrator)
-  expect(await applySchema(migrator)).toEqual({ applied: migrations.length - 4, at: migrations.length })
+  expect(await applySchema(migrator, migrations.slice(0, 5))).toEqual({ applied: 1, at: 5 })
   expect(await rows(migrator)).toEqual(before)
 
   const deck = await open("deck", "keyed")

@@ -22,6 +22,11 @@ export function elementFloors(register: Register, changes: readonly WireChange[]
       floors.set(change.node, kept.floor)
       continue
     }
+    const indexed = register.index?.elements.find((element) => element.node === change.node)
+    if (indexed !== undefined) {
+      floors.set(change.node, indexed.value ?? "")
+      continue
+    }
     if (!named.has(change.node)) {
       named.set(change.node, change.floor)
       floors.set(change.node, change.floor ?? register.floor)
