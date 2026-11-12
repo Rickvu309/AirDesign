@@ -9,7 +9,7 @@ import { signInAddress, ThinNoticeView, type ThinNotice } from "@/thin-notice"
 import { exportFileName } from "@/export/export-file-name"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
-import { slideThumbWidth } from "@/editor/slide-sidebar"
+import { thumbHeight } from "@/thumb-height"
 import { slideFrame } from "@/editor/revenue-slide"
 import { cn } from "@/lib/class-names"
 import {
@@ -49,11 +49,6 @@ const slideNames: Readonly<Record<SlideChange, UndoName>> = {
 function boxName(before: Box, after: Box): UndoName | null {
   if (before.cx !== after.cx || before.cy !== after.cy) return "resize"
   return before.x === after.x && before.y === after.y ? null : "move"
-}
-
-function thumbHeight(slide: { readonly width: number; readonly height: number } | null): number {
-  if (slide === null || slide.width === 0) return Math.round((slideThumbWidth * 9) / 16)
-  return Math.round((slideThumbWidth * slide.height) / slide.width)
 }
 
 export function ThinDeck({ id }: { id: string }) {
