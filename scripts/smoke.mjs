@@ -8,6 +8,7 @@ const requestTimeoutMs = 15_000
 const gitTimeoutMs = 60_000
 const graceMs = 20 * 60_000
 const elementName = "1.1"
+export const studioOrigin = "https://studio.airdesign.app"
 
 export function deckIdFor(token) {
   return `smoke-${createHash("sha256").update(`smoke-deck:${token}`).digest("hex").slice(0, 32)}`
@@ -32,9 +33,15 @@ async function fetched(url, init) {
     } catch {
       json = undefined
     }
-    return { status: reply.status, json, headers: reply.headers }
+    return { status: reply.status, text, json, headers: reply.headers }
   } catch (error) {
-    return { status: 0, json: undefined, headers: new Headers(), error: error instanceof Error ? error.name : "error" }
+    return {
+      status: 0,
+      text: "",
+      json: undefined,
+      headers: new Headers(),
+      error: error instanceof Error ? error.name : "error",
+    }
   }
 }
 
@@ -88,6 +95,26 @@ function cookiePair(reply) {
 function landedValues(opened) {
   const landed = opened.json?.register?.elements?.[elementName]?.landed
   return Array.isArray(landed) ? landed.map((each) => each?.value) : []
+}
+
+export async function studio({ origin = studioOrigin }) {
+  const page = await fetched(`${origin}/`)
+  if (page.status !== 200) return failure("studio-page", describe(page))
+  const html = (page.headers.get("content-type") ?? "").startsWith("text/html")
+  if (!html || !page.text.includes('<div id="root">')) {
+    return failure("studio-page", "the answer is not the web app's page")
+  }
+  const metadata = await fetched(`${origin}/.well-known/oauth-protected-resource`)
+  if (metadata.status !== 200) return failure("studio-resource", describe(metadata))
+  if (metadata.json?.resource !== `${origin}/mcp`) {
+    return failure("studio-resource", `the resource is ${String(metadata.json?.resource)}, expected ${origin}/mcp`)
+  }
+  const mcp = await fetched(`${origin}/mcp`, { method: "POST" })
+  if (mcp.status !== 401) return failure("studio-mcp", describe(mcp))
+  if (!(mcp.headers.get("www-authenticate") ?? "").includes("resource_metadata=")) {
+    return failure("studio-mcp", "the 401 names no resource_metadata")
+  }
+  return { ok: true, line: "web app passed: page, protected resource and MCP challenge" }
 }
 
 export async function smoke({
@@ -150,7 +177,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.log("smoke failed at setup: usage is node scripts/smoke.mjs <origin>")
     process.exit(1)
   }
-  const result = await smoke({ origin: origin.replace(/\/+$/, ""), token: process.env.SMOKE_TOKEN })
-  console.log(result.line)
-  process.exit(result.ok ? 0 : 1)
+  const api = await smoke({ origin: origin.replace(/\/+$/, ""), token: process.env.SMOKE_TOKEN })
+  const web = await studio({ origin: studioOrigin })
+  const failed = [api, web].find((result) => !result.ok)
+  console.log(failed?.line ?? `${api.line}; ${web.line}`)
+  process.exit(failed === undefined ? 0 : 1)
 }

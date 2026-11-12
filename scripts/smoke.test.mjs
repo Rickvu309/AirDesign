@@ -2,7 +2,7 @@ import { createServer } from "node:http"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { deckIdFor, smoke } from "./smoke.mjs"
+import { deckIdFor, smoke, studio } from "./smoke.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const token = "secret-token-for-the-fake"
@@ -239,6 +239,106 @@ same("the deck id is not the bare word smoke", deckIdFor(token) === "smoke", fal
 same("the deck id does not carry the token", deckIdFor(token).includes(token), false)
 same("the deck id follows the token", deckIdFor(token) === deckIdFor("another-token"), false)
 same("the deck id is stable", deckIdFor(token), deckIdFor(token))
+
+function fakeWeb(behaviour = {}) {
+  let origin = ""
+  const server = createServer((req, res) => {
+    const send = (status, body, headers = {}) => {
+      res.writeHead(status, headers)
+      res.end(body)
+    }
+    if (req.method === "GET" && req.url === "/") {
+      if (behaviour.page !== undefined) return send(behaviour.page.status, behaviour.page.body, behaviour.page.headers)
+      return send(200, '<!doctype html><html><body><div id="root"></div></body></html>', {
+        "content-type": "text/html; charset=utf-8",
+      })
+    }
+    if (req.method === "GET" && req.url === "/.well-known/oauth-protected-resource") {
+      if (behaviour.metadataStatus !== undefined) return send(behaviour.metadataStatus, "")
+      const resource = behaviour.resource ?? `${origin}/mcp`
+      return send(200, JSON.stringify({ resource }), { "content-type": "application/json" })
+    }
+    if (req.method === "POST" && req.url === "/mcp") {
+      if (behaviour.mcp === "open") return send(200, "{}", { "content-type": "application/json" })
+      const challenge =
+        behaviour.challenge === "bare"
+          ? "Bearer"
+          : `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource"`
+      return send(401, '{"error":"unauthorized"}', {
+        "content-type": "application/json",
+        "www-authenticate": challenge,
+      })
+    }
+    return send(404, "")
+  })
+  return new Promise((resolve) => {
+    server.listen(0, "127.0.0.1", () => {
+      origin = `http://127.0.0.1:${server.address().port}`
+      resolve({ origin, close: () => server.close() })
+    })
+  })
+}
+
+async function runStudio(behaviour) {
+  const web = await fakeWeb(behaviour)
+  try {
+    return await studio({ origin: web.origin })
+  } finally {
+    web.close()
+  }
+}
+
+const studioGood = await runStudio({})
+same("the web app passes when it serves its page, metadata and MCP challenge", studioGood.ok, true)
+same(
+  "the web app pass names what it checked",
+  studioGood.line,
+  "web app passed: page, protected resource and MCP challenge",
+)
+
+const studioNoAnswer = await studio({ origin: "http://127.0.0.1:1" })
+same(
+  "an unreachable web app fails at the page",
+  studioNoAnswer.line,
+  "smoke failed at studio-page: no answer (TypeError)",
+)
+
+const studioPageMissing = await runStudio({ page: { status: 404, body: "", headers: {} } })
+same("a missing page fails at the page", studioPageMissing.line, "smoke failed at studio-page: status 404")
+
+const studioPageJson = await runStudio({
+  page: { status: 200, body: '{"ok":true}', headers: { "content-type": "application/json" } },
+})
+same(
+  "a JSON answer for the page fails at the page",
+  studioPageJson.line,
+  "smoke failed at studio-page: the answer is not the web app's page",
+)
+
+const studioPageNoRoot = await runStudio({
+  page: { status: 200, body: "<html><body>hello</body></html>", headers: { "content-type": "text/html" } },
+})
+same("an HTML page without the app root fails at the page", studioPageNoRoot.ok, false)
+
+const studioNoMetadata = await runStudio({ metadataStatus: 404 })
+same("missing protected resource metadata fails", studioNoMetadata.line, "smoke failed at studio-resource: status 404")
+
+const studioWrongResource = await runStudio({ resource: "https://mcp.airdesign.app/mcp" })
+same(
+  "a protected resource that names another host fails",
+  studioWrongResource.line.startsWith("smoke failed at studio-resource: the resource is https://mcp.airdesign.app/mcp"),
+  true,
+)
+
+const studioOpenMcp = await runStudio({ mcp: "open" })
+same("an MCP address that takes no token fails", studioOpenMcp.line, "smoke failed at studio-mcp: status 200")
+
+const studioBareChallenge = await runStudio({ challenge: "bare" })
+same(
+  "a 401 without resource_metadata fails at the MCP address",
+  studioBareChallenge.line,
+  "smoke failed at studio-mcp: the 401 names no resource_metadata",
+)
 
 const workflow = fs.readFileSync(path.join(root, ".github/workflows/smoke.yml"), "utf8")
 same(

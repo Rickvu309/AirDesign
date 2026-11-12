@@ -1,7 +1,6 @@
 import { createServer, type Server } from "node:http"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import oldDeployment from "./old-deployment-passthrough.js"
 import worker from "./sign-in-forward.js"
 import { signInRoutes, signOutRoutes } from "@airdesign/catalog"
 
@@ -90,7 +89,7 @@ describe("sign-in forwarding", () => {
   })
 
   it.each(["/sign-in", "/sign-in/check", "/sign-in/expired", "/sign-in/email/x", "/decks/open"])(
-    "does not forward %s and answers as the old deployment does",
+    "does not forward %s and answers 404",
     async (path) => {
       const response = await worker.fetch(new Request(`https://airdesign.app${path}`), { API_ORIGIN: origin })
       expect(response.status).toBe(404)
@@ -109,26 +108,16 @@ describe("sign-in forwarding", () => {
     expect(seen).toEqual([])
   })
 
-  it("sends an old deployment path to the URL it names", async () => {
-    const response = await worker.fetch(new Request(`${origin}/pricing`), { API_ORIGIN: origin })
-    expect(seen).toHaveLength(1)
-    expect(seen[0]?.url).toBe("/pricing")
-    expect(response.status).toBe(201)
-  })
-
-  it("keeps serving old deployment paths when the API origin is unset", async () => {
-    await worker.fetch(new Request(`${origin}/pricing`), {})
-    expect(seen.map((entry) => entry.url)).toEqual(["/pricing"])
-  })
-
-  it.each(["/sign-in/email", "/sign-in/code", "/sign-in/link", "/sign-out"])(
-    "never calls the old deployment for %s",
+  it.each(["/pricing", "/agents", "/status", "/assets", "/assets/logo.png", "/agent-instructions.txt"])(
+    "answers the site's 404 for the retired path %s and fetches nothing",
     async (path) => {
-      const passthrough = vi.spyOn(oldDeployment, "fetch")
-      await worker.fetch(new Request(`https://airdesign.app${path}`, { method: "POST" }), { API_ORIGIN: origin })
-      await worker.fetch(new Request(`https://airdesign.app${path}`, { method: "POST" }), {})
-      expect(passthrough).not.toHaveBeenCalled()
-      passthrough.mockRestore()
+      const outbound = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("old", { status: 308 }))
+      const response = await worker.fetch(new Request(`https://airdesign.app${path}`), { API_ORIGIN: origin })
+      expect(response.status).toBe(404)
+      expect(await response.text()).toBe("Not found")
+      expect(outbound).not.toHaveBeenCalled()
+      expect(seen).toEqual([])
+      outbound.mockRestore()
     },
   )
 })

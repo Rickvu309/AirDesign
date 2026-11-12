@@ -1,4 +1,4 @@
-name: deploy-site
+name: deploy
 
 on:
   workflow_run:
@@ -13,16 +13,25 @@ permissions:
   contents: read
   issues: write
 
-concurrency:
-  group: deploy-site
-  cancel-in-progress: false
-
 jobs:
-  deploy-site:
-    name: deploy-site
+  deploy:
+    name: deploy ${{ matrix.app }}
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: site
+            directory: apps/site
+            what: Site
+          - app: web
+            directory: apps/web
+            what: Web app
+    concurrency:
+      group: deploy-${{ matrix.app }}
+      cancel-in-progress: false
     steps:
       - id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -43,7 +52,7 @@ jobs:
         run: pnpm install --frozen-lockfile
       - id: deploy
         continue-on-error: true
-        working-directory: apps/site
+        working-directory: ${{ matrix.directory }}
         env:
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -66,6 +75,8 @@ jobs:
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           DEPLOYED: ${{ steps.deploy.outputs.deployed }}
           OUTCOMES: checkout=${{ steps.checkout.outcome }} pnpm=${{ steps.pnpm.outcome }} node=${{ steps.node.outcome }} install=${{ steps.install.outcome }} deploy=${{ steps.deploy.outcome }}
+          APP: ${{ matrix.app }}
+          WHAT: ${{ matrix.what }}
         run: |
           failed=""
           for outcome in $OUTCOMES; do
@@ -73,18 +84,19 @@ jobs:
               *=failure | *=cancelled) failed="$failed ${outcome%%=*}" ;;
             esac
           done
-          title="Site deploy is red"
-          open=$(gh issue list --label site-deploy-red --state open --json number --jq '.[0].number // empty')
+          title="$WHAT deploy is red"
+          label="$APP-deploy-red"
+          open=$(gh issue list --label "$label" --state open --json number --jq '.[0].number // empty')
           if [ -z "$failed" ]; then
             if [ "$DEPLOYED" = "true" ] && [ -n "$open" ]; then
-              gh issue close "$open" --comment "Site deployed at $HEAD_SHA. $RUN_URL"
+              gh issue close "$open" --comment "$WHAT deployed at $HEAD_SHA. $RUN_URL"
             fi
             exit 0
           fi
-          line="Site deploy of $HEAD_SHA failed in:$failed. $RUN_URL"
+          line="$WHAT deploy of $HEAD_SHA failed in:$failed. $RUN_URL"
           if [ -n "$open" ]; then
             gh issue comment "$open" --body "$line"
           else
-            gh label create site-deploy-red --description "A site deploy is red" --color B60205 --force
-            gh issue create --title "$title" --label site-deploy-red --body "$line"
+            gh label create "$label" --description "$title" --color B60205 --force
+            gh issue create --title "$title" --label "$label" --body "$line"
           fi
