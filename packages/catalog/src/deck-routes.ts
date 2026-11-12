@@ -184,6 +184,7 @@ export const airaRoutes = {
 } as const
 
 export const countryHeader = "visitor-country"
+export const forwardSecretHeader = "forward-secret"
 
 export const signInRoutes = {
   email: { path: "/sign-in/email", method: "POST" },

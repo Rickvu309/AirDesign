@@ -31,6 +31,7 @@ const {
   resendKey,
   resendFrom,
   r2,
+  forwardSecret,
   aira,
 } = settings
 const session = openPool(sessionUrl, "api-session")
@@ -52,6 +53,7 @@ const server = createApi({
   ...(hosts === undefined ? {} : { hosts }),
   ...(commit === undefined ? {} : { commit }),
   ...(smokeToken === undefined ? {} : { smokeToken }),
+  ...(forwardSecret === undefined ? {} : { forwardSecret }),
   aira: { ...aira, transport: anthropicTransport() },
 })
 const sockets = new Set<Socket>()

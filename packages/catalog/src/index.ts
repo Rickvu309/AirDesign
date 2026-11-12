@@ -24,6 +24,7 @@ export {
   airaRoutes,
   airaPaths,
   countryHeader,
+  forwardSecretHeader,
   signOutPaths,
   type CallRefusal,
   type EditRefusal,

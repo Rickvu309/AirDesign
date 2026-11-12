@@ -20,6 +20,7 @@ export type StartSettings = {
   readonly resendKey: string
   readonly resendFrom: string
   readonly r2: R2Settings | undefined
+  readonly forwardSecret: string | undefined
   readonly aira: AiraStart
 }
 
@@ -110,6 +111,7 @@ export function readStartSettings(env: Environment): StartSettings | StartRefusa
     resendKey,
     resendFrom,
     r2,
+    forwardSecret: nonEmpty(env.FORWARD_SECRET),
     aira: { on: airaOn, key: airaKey, secret: airaSecret },
   }
 }

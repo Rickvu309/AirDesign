@@ -3,6 +3,7 @@ import {
   airaPaths,
   countryHeader,
   deckPaths,
+  forwardSecretHeader,
   mcpPaths,
   oauthPaths,
   signInPaths,
@@ -11,6 +12,7 @@ import {
 
 type Env = {
   API_ORIGIN?: string
+  FORWARD_SECRET?: string
   ASSETS: { fetch(request: Request): Promise<Response> }
 }
 
@@ -34,6 +36,10 @@ export default {
     const destination = new URL(url.pathname + url.search, env.API_ORIGIN)
     const forwarded = new Request(destination, request)
     forwarded.headers.delete(countryHeader)
+    forwarded.headers.delete(forwardSecretHeader)
+    if (typeof env.FORWARD_SECRET === "string" && env.FORWARD_SECRET.length > 0) {
+      forwarded.headers.set(forwardSecretHeader, env.FORWARD_SECRET)
+    }
     const country = request.cf?.country
     if (typeof country === "string") forwarded.headers.set(countryHeader, country)
     return fetch(forwarded, { redirect: "manual", signal: request.signal })
