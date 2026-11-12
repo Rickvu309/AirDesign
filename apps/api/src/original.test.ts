@@ -437,7 +437,7 @@ it("keeps a deleted key until its actual signed upload expires", async () => {
   expect(kept.rows[0]?.expires.getTime()).toBeGreaterThanOrEqual(Date.parse(late) + 60 * 1000)
 })
 
-it.fails("leaves no object when a delete overtakes a stalled signer", async () => {
+it("leaves no object when a delete overtakes a stalled signer", async () => {
   const id = await deck()
   let release = () => {}
   const gate = new Promise<void>((resolve) => {
