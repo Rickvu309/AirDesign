@@ -27,11 +27,13 @@ async function ask(page: Page, text: string) {
 
 async function chatRuns(page: Page, deck: string): Promise<string[]> {
   return page.evaluate(
-    (prefix) =>
+    (deck) =>
       new Promise<string[]>((resolve, reject) => {
         const opened = indexedDB.open("airdesign")
         opened.onerror = () => reject(opened.error)
         opened.onsuccess = () => {
+          const account = /airdesign\.account=([0-9a-f]{32})/.exec(document.cookie)?.[1] ?? ""
+          const prefix = `${account}\u0005${deck}\u0004`
           const values = opened.result
             .transaction("rows", "readonly")
             .objectStore("rows")
@@ -43,17 +45,19 @@ async function chatRuns(page: Page, deck: string): Promise<string[]> {
           }
         }
       }),
-    `${deck}\u0004`,
+    deck,
   )
 }
 
 async function chatKeys(page: Page, deck: string): Promise<string[]> {
   return page.evaluate(
-    (prefix) =>
+    (deck) =>
       new Promise<string[]>((resolve, reject) => {
         const opened = indexedDB.open("airdesign")
         opened.onerror = () => reject(opened.error)
         opened.onsuccess = () => {
+          const account = /airdesign\.account=([0-9a-f]{32})/.exec(document.cookie)?.[1] ?? ""
+          const prefix = `${account}\u0005${deck}\u0004`
           const keys = opened.result
             .transaction("rows", "readonly")
             .objectStore("rows")
@@ -64,7 +68,7 @@ async function chatKeys(page: Page, deck: string): Promise<string[]> {
           }
         }
       }),
-    `${deck}\u0004`,
+    deck,
   )
 }
 
