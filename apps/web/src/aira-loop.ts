@@ -72,7 +72,12 @@ type Turned =
   | { readonly kind: "replied"; readonly content: readonly ReplyBlock[]; readonly usage: WeekUsage }
   | { readonly kind: "ended"; readonly end: AiraEnd; readonly usage?: WeekUsage | undefined }
 
-type Called = { readonly answer: ToolAnswer; readonly ok: boolean; readonly run: string | undefined }
+type Called = {
+  readonly answer: ToolAnswer
+  readonly ok: boolean
+  readonly run: string | undefined
+  readonly stopped?: true
+}
 
 const indexingTries = 15
 const indexingPause = 1000
@@ -220,13 +225,25 @@ function toolAnswer(id: string, text: string, ok: boolean): ToolAnswer {
     : { type: "tool_result", tool_use_id: id, content: text, is_error: true }
 }
 
-async function sendTool(send: typeof fetch, rpc: number, name: string, input: unknown) {
+async function sendTool(send: typeof fetch, rpc: number, name: string, input: unknown, signal?: AbortSignal) {
   const response = await send(mcpRoutes.mcp.path, {
     method: mcpRoutes.mcp.method,
     headers: { "content-type": "application/json", accept },
     body: JSON.stringify({ jsonrpc: "2.0", id: rpc, method: "tools/call", params: { name, arguments: input } }),
+    ...(signal === undefined ? {} : { signal }),
   })
   return toolOutcome(await response.text())
+}
+
+function interruptedAnswer(call: ToolCall): ToolAnswer {
+  const changes = catalog[opOf.get(call.name) ?? "read_deck"].kind === "command"
+  return toolAnswer(
+    call.id,
+    changes
+      ? "The person stopped the run while this call was running. It may have landed: read the deck before relying on it."
+      : "The person stopped the run while this call was running. Nothing changed.",
+    false,
+  )
 }
 
 function pauseFor(ms: number, signal: AbortSignal): Promise<void> {
@@ -251,7 +268,7 @@ async function callTool(
   pause: NonNullable<AskOptions["pause"]>,
 ): Promise<Called> {
   try {
-    let outcome = await sendTool(send, rpc, call.name, call.input)
+    let outcome = await sendTool(send, rpc, call.name, call.input, signal)
     for (
       let tried = 0;
       outcome.fields?.refusal === "indexing" && tried < indexingTries && !signal.aborted;
@@ -259,13 +276,14 @@ async function callTool(
     ) {
       await pause(indexingPause, signal)
       if (signal.aborted) break
-      outcome = await sendTool(send, rpc, call.name, call.input)
+      outcome = await sendTool(send, rpc, call.name, call.input, signal)
     }
     const run = outcome.fields?.runId
     const edited =
       outcome.ok && catalog[opOf.get(call.name) ?? "read_deck"].kind === "command" && typeof run === "string"
     return { answer: toolAnswer(call.id, outcome.text, outcome.ok), ok: outcome.ok, run: edited ? run : undefined }
   } catch {
+    if (signal.aborted) return { answer: interruptedAnswer(call), ok: false, run: undefined, stopped: true }
     return {
       answer: toolAnswer(call.id, "The call did not reach the server. Nothing landed.", false),
       ok: false,
@@ -338,7 +356,8 @@ export async function askAira(start: AiraChat, asked: string, options: AskOption
       rpc += 1
       const runId = call.input.runId
       if (called.ok && call.name === stopTool && typeof runId === "string") closed.add(runId)
-      update({ type: "answered", answer: called.answer, state: called.ok ? "done" : "refused", run: called.run })
+      const state = called.stopped === true ? "stopped" : called.ok ? "done" : "refused"
+      update({ type: "answered", answer: called.answer, state, run: called.run })
     }
     if (signal.aborted) {
       update({ type: "end", end: "stopped" })

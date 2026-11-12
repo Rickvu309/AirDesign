@@ -63,9 +63,9 @@ export default async function drive({
   release()
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
   await expect(composer).toBeEditable()
-  await expect(editor).toHaveText("Hello from Aira")
+  await expect(log.getByText("Stopped editing slides", { exact: true })).toBeVisible()
+  await expect(editor).toHaveText("Hello")
   await expect(log.getByText("The title now reads Hello from Aira.")).toHaveCount(0)
-  await expect(side.getByRole("button", { name: "Undo" })).toBeVisible()
   await capture("stopped")
   await page.unroute((url) => url.pathname === mcpRoutes.mcp.path)
   const stop = await post(airaRoutes.stop, { ask: "00000000-0000-4000-8000-000000000000" }, cookie)
@@ -78,7 +78,7 @@ export default async function drive({
   expect(elsewhere.status).toBe(403)
   expect(elsewhere.json.refusal).toBe("country")
   note(
-    "Stop during a held tool call let that call land, asked the model nothing more, and offered Undo; /aira/stop answers 200 for an ask id and 400 for a bad one; a turn from an unsupported country answers 403 country",
+    "Stop during a held tool call ended that call, marked the step stopped, left the title as it was and asked the model nothing more; /aira/stop answers 200 for an ask id and 400 for a bad one; a turn from an unsupported country answers 403 country",
   )
 
   aira([{ name: "overloaded.sse" }])
