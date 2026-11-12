@@ -131,15 +131,62 @@ it("discovers authorization from only the MCP address and calls a tool with its 
     )
     const tools = await sdk.listTools()
     expect(tools.tools.find((tool) => tool.name === "airdesign_edit_deck")?.annotations?.idempotentHint).toBe(false)
+    expect(tools.tools.find((tool) => tool.name === "airdesign_read_deck")?.annotations).toMatchObject({
+      readOnlyHint: true,
+      idempotentHint: true,
+    })
+    expect(tools.tools.find((tool) => tool.name === "airdesign_list_decks")?.annotations).toMatchObject({
+      readOnlyHint: true,
+      idempotentHint: true,
+    })
     await ask(base, "POST", "/decks/open", { deck: "discovery" }, cookie)
+    await ask(base, "POST", "/decks/rename", { deck: "discovery", name: "Discovery" }, cookie)
+    await ask(base, "POST", "/decks/open", { deck: "discovery-bin" }, cookie)
+    const trashed = await ask(base, "POST", "/decks/trash", { deck: "discovery-bin" }, cookie)
+    expect(trashed.status).toBe(200)
+    const listed = await sdk.callTool({ name: "airdesign_list_decks", arguments: {} })
+    expect(listed.isError).not.toBe(true)
+    const rows = listed.structuredContent as { decks?: { deck: string; name: string; trash: boolean }[] }
+    expect(rows.decks).toContainEqual({ deck: "discovery", name: "Discovery", trash: false })
+    expect(rows.decks).toContainEqual({ deck: "discovery-bin", name: "", trash: true })
+    expect(rows.decks).toHaveLength(2)
+    const empty = await sdk.callTool({ name: "airdesign_read_deck", arguments: { deck: "discovery-bin" } })
+    expect(empty.structuredContent).toEqual({ ok: true, revision: 0, elements: [] })
+    const committed = await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      { deck: "discovery", batch: [{ node: "258.7", value: "Before" }] },
+      cookie,
+    )
+    expect(committed.status).toBe(200)
+    const read = await sdk.callTool({ name: "airdesign_read_deck", arguments: { deck: "discovery" } })
+    expect(read.isError).not.toBe(true)
+    const seen = read.structuredContent as {
+      revision?: number
+      elements?: { node: string; slide: string; value: string; version: number }[]
+    }
+    expect(seen.elements).toEqual([{ node: "258.7", slide: "258", value: "Before", version: 1 }])
+    const version = seen.elements?.[0]?.version
+    if (seen.revision === undefined || version === undefined) throw new Error("read")
     const called = await sdk.callTool({
       name: "airdesign_edit_deck",
-      arguments: { deck: "discovery", base: 0, changes: [{ node: "258.7", value: "Connected", readAt: 0 }] },
+      arguments: {
+        deck: "discovery",
+        base: seen.revision,
+        changes: [{ node: "258.7", value: "Connected", readAt: version }],
+      },
     })
     expect(called.isError).not.toBe(true)
-    expect(called.content).toContainEqual({ type: "text", text: "Landed revision 1." })
+    expect(called.content).toContainEqual({ type: "text", text: "Landed revision 2." })
+    const again = await sdk.callTool({ name: "airdesign_read_deck", arguments: { deck: "discovery" } })
+    expect(again.isError).not.toBe(true)
+    const landed = again.structuredContent as {
+      elements?: { node: string; slide: string; value: string; version: number; closed?: boolean }[]
+    }
+    expect(landed.elements).toEqual([{ node: "258.7", slide: "258", value: "Connected", version: 2 }])
     const saved = await ask(base, "POST", "/decks/open", { deck: "discovery" }, cookie)
-    expect(saved.json).toMatchObject({ revision: 1 })
+    expect(saved.json).toMatchObject({ revision: 2 })
   } finally {
     await sdk.close()
   }

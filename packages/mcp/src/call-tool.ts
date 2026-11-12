@@ -8,12 +8,20 @@ import {
   type WireRefusal,
 } from "@airdesign/catalog"
 import { reach, type Reach, type Tab } from "@airdesign/device"
-import { call, type Caller, type Deck } from "@airdesign/engine"
+import {
+  call,
+  type Caller,
+  type Deck,
+  type ListDeckAnswer,
+  type OwnedDeck,
+  type ReadDeckAnswer,
+} from "@airdesign/engine"
 import type { CallerLog, AdmissionText } from "./admit.js"
 import { editLanded, editRefusal, namedNodes, runEnded, runRefusal, type EditAnswer } from "./edit-answer.js"
 import { agentCaller, elementFloors, joinRun, openRun, stopLiveRuns } from "./run.js"
 import { textProblem } from "./text-from.js"
 import { editNext, type EditCode } from "./edit-next.js"
+import { listDecksTool, readDeckTool } from "./read-tool.js"
 import { liveTurn, type Turn, type Turns } from "./turn.js"
 
 export type AgentCaller = Extract<Caller, { readonly actor: "agent" }>
@@ -26,6 +34,7 @@ export type Session = {
   readonly turns: Turns
   readonly idleWindow?: number
   readonly tab?: Tab
+  owned?: readonly OwnedDeck[]
 }
 
 export type ToolContent = {
@@ -39,6 +48,7 @@ export type ToolResult =
       readonly deck: Deck
       readonly content: readonly ToolContent[]
       readonly answer?: EditAnswer
+      readonly reported?: ReadDeckAnswer | ListDeckAnswer
     }
   | {
       readonly ok: false
@@ -147,6 +157,16 @@ export const agentOps: Record<
       deck,
       content: [{ type: "text", text: editNext[code] }],
     }),
+    turnRun: () => undefined,
+  },
+  read_deck: {
+    handle: (raw, session) => readDeckTool(raw, session, liveTurn(session, session.deck.id)?.runId ?? null),
+    refuse: (deck, code) => editRefusal(deck, code, []),
+    turnRun: () => undefined,
+  },
+  list_decks: {
+    handle: listDecksTool,
+    refuse: (deck, code) => editRefusal(deck, code, []),
     turnRun: () => undefined,
   },
 }

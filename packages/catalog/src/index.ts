@@ -49,5 +49,6 @@ export {
   type WireRunElement,
 } from "./wire.js"
 export { readAgentEdit, readCommit, readEdit, type WireChange, type WireEdit } from "./edit-wire.js"
+export { readDeckQuery, readListDecks } from "./read-wire.js"
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath } from "./mcp-routes.js"

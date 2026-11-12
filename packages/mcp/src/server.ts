@@ -20,7 +20,8 @@ function inputSchema(input: z.ZodType) {
 
 function mcpResult(result: ToolResult) {
   const content = result.content.map((block) => ({ type: "text" as const, text: block.text }))
-  const structured = result.answer === undefined ? {} : { structuredContent: result.answer }
+  const body = result.ok && result.reported !== undefined ? result.reported : result.answer
+  const structured = body === undefined ? {} : { structuredContent: body }
   if (result.ok) return { content, ...structured }
   return { content, isError: true as const, ...structured }
 }

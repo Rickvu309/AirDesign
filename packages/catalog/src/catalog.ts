@@ -1,4 +1,5 @@
 import { readAgentEdit } from "./edit-wire.js"
+import { readDeckQuery, readListDecks } from "./read-wire.js"
 import { readCapture, readRun, type WireReader } from "./wire.js"
 
 type OpDetails = {
@@ -64,7 +65,23 @@ export const catalog = {
     destructive: true,
     read: readAgentEdit,
     description:
-      "Write values on one deck. The server names the actor. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
+      "Write values on one deck. Read it first with airdesign_read_deck and send that revision as base and each element's version as readAt. The server names the actor. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
+  },
+  list_decks: {
+    kind: "query",
+    exposure: "agent",
+    runsOn: "server",
+    read: readListDecks,
+    description:
+      "List the decks this account owns. Each row has the deck id, its name, and trash when the deck is in Trash.",
+  },
+  read_deck: {
+    kind: "query",
+    exposure: "agent",
+    runsOn: "server",
+    read: readDeckQuery,
+    description:
+      "Read one deck this account owns. Send the answer revision as base to airdesign_edit_deck, and each element's version as readAt. Each element the server holds has node, slide, value, box, and version. closed means a person's newer edit or another run holds it. An element nobody has edited is absent; use readAt 0 for it. Send slide or cursor to read the rest.",
   },
   capture_slide: {
     kind: "action",

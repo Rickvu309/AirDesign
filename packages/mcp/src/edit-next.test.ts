@@ -20,6 +20,8 @@ describe("editNext", () => {
     expect(editNext["run-fenced"]).toContain("airdesign_stop_run")
     expect(editNext["run-fenced"]).not.toContain("in its own call")
     expect(editNext.base).not.toContain("behind")
+    expect(editNext.base).toContain("airdesign_read_deck")
+    expect(editNext.base).not.toContain("your last answer")
     expect(editNext.limit).toContain("8,000 bytes")
     expect(editNext.limit).not.toContain("Send less")
     expect(editNext["text-from"]).not.toContain("current value")
