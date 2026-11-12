@@ -15,14 +15,22 @@ export const limits = {
   row: 65_536,
 } as const
 
+const outsideAscii = /[^\u0000-\u007f]/
+
 export function bytesOf(value: string): number {
+  if (!outsideAscii.test(value)) return value.length
   let size = 0
-  for (const symbol of value) {
-    const code = symbol.codePointAt(0) ?? 0
+  for (let at = 0; at < value.length; at += 1) {
+    const code = value.charCodeAt(at)
     if (code <= 0x7f) size += 1
     else if (code <= 0x7ff) size += 2
-    else if (code <= 0xffff) size += 3
-    else size += 4
+    else if (code >= 0xd800 && code <= 0xdbff && at + 1 < value.length) {
+      const next = value.charCodeAt(at + 1)
+      if (next >= 0xdc00 && next <= 0xdfff) {
+        size += 4
+        at += 1
+      } else size += 3
+    } else size += 3
   }
   return size
 }
