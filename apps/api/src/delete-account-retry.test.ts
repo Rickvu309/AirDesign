@@ -2,7 +2,7 @@ import { Client } from "pg"
 import { afterAll, beforeAll, expect, it } from "vitest"
 import { accountRoutes, deckRoutes } from "@airdesign/catalog"
 
-import { airaFuzzSettings } from "./aira-fuzz.js"
+import { fuzzAira } from "./aira-fuzz.js"
 import { emptied, fillAccount, mcpStatus, personalRows, storedKeys, type Served } from "./filled-account.js"
 import { ask, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type OriginalStore, type Sql } from "./index.js"
@@ -43,7 +43,7 @@ beforeAll(async () => {
     originals,
     publicOrigin: "https://app.example",
     siteOrigin: "https://site.example",
-    aira: airaFuzzSettings,
+    aira: fuzzAira,
     send: async (mail) => {
       mails.push(mail)
     },

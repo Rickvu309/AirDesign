@@ -1,3 +1,5 @@
+import * as z from "zod/v4"
+
 import { readAgentEdit } from "./edit-wire.js"
 import { readDeckQuery, readListDecks } from "./read-wire.js"
 import { readCapture, readRun, type WireReader } from "./wire.js"
@@ -91,6 +93,10 @@ export const catalog = {
     description: "Render one slide in the person's open tab.",
   },
 } as const satisfies Readonly<Record<string, OpRow>>
+
+export function toolInputSchema(op: AgentOp): Readonly<Record<string, unknown>> {
+  return z.toJSONSchema(catalog[op].read.input, { io: "input" })
+}
 
 function toolOrder(left: AgentTool<string>, right: AgentTool<string>): number {
   if (left.name < right.name) return -1

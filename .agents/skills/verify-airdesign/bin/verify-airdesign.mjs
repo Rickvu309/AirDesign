@@ -15,6 +15,7 @@ import { request as httpRequest, createServer } from "node:http"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { scriptedAira } from "./scripted-aira.mjs"
 
 const skill = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const repo = execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: skill, encoding: "utf8" }).trim()
@@ -51,6 +52,10 @@ function scratchDir(run) {
 
 function statePath(run) {
   return path.join(scratchDir(run), "state.json")
+}
+
+function airaPath(run) {
+  return path.join(scratchDir(run), "aira.json")
 }
 
 function readState(run) {
@@ -146,8 +151,9 @@ async function launch(args) {
 }
 
 function forward(req, res, apiPort) {
+  const headers = { ...req.headers, "cf-ipcountry": req.headers["cf-ipcountry"] ?? "US" }
   const outgoing = httpRequest(
-    { host: "127.0.0.1", port: apiPort, method: req.method, path: req.url, headers: req.headers },
+    { host: "127.0.0.1", port: apiPort, method: req.method, path: req.url, headers },
     (answer) => {
       res.writeHead(answer.statusCode ?? 502, answer.headers)
       answer.pipe(res)
@@ -199,6 +205,7 @@ async function serve(run) {
   const { DeckListen } = await load("listen.js")
   const { createApi, routes } = await load("server.js")
   const { LocalOriginalStore } = await load("local-original-store.js")
+  const { Replay } = await load("aira-replay.js")
   const cluster = await startEmptyCluster()
   const role = (name) => `postgres://${name}:${randomBytes(18).toString("hex")}@127.0.0.1:${String(cluster.port)}/api`
   const environment = {
@@ -240,6 +247,7 @@ async function serve(run) {
     send: async (mail) => {
       appendFileSync(mailFile, `${JSON.stringify(mail)}\n`)
     },
+    aira: scriptedAira({ Replay, repo, file: airaPath(run), log }),
   })
   await new Promise((resolve) => api.listen(0, "127.0.0.1", resolve))
   const apiPort = api.address().port
@@ -277,16 +285,24 @@ async function serve(run) {
   log(`ready ${origin}`)
 }
 
-async function call(origin, method, pathname, body, cookie) {
+function answerOf(type, text) {
+  const rows = text.split("\n").filter((line) => line.trim() !== "")
+  if (type.includes("ndjson")) return { lines: rows.map((line) => JSON.parse(line)) }
+  const data = rows.flatMap((line) => (line.startsWith("data: ") ? [JSON.parse(line.slice(6))] : []))
+  if (type.includes("event-stream")) return { events: data }
+  return text.length === 0 ? {} : JSON.parse(text)
+}
+
+async function call(origin, method, pathname, body, cookie, headers = {}) {
   const response = await fetch(`${origin}${pathname}`, {
     method,
-    headers: { "content-type": "application/json", ...(cookie === undefined ? {} : { cookie }) },
+    headers: { "content-type": "application/json", ...headers, ...(cookie === undefined ? {} : { cookie }) },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   })
   const text = await response.text()
   let json
   try {
-    json = text.length === 0 ? {} : JSON.parse(text)
+    json = answerOf(response.headers.get("content-type") ?? "", text)
   } catch {
     json = { text: text.slice(0, 200) }
   }
@@ -352,7 +368,7 @@ async function apiCall(run, name, bodyText, cookie) {
 
 export async function journeyKit({ run, name, page, context }) {
   const state = readState(run)
-  const { deckRoutes, signInRoutes } = await catalog()
+  const { deckRoutes, signInRoutes, airaRoutes, mcpRoutes } = await catalog()
   const out = path.join(evidenceDir(run), `${name}-${String(Date.now())}`)
   mkdirSync(out, { recursive: true })
   let step = 0
@@ -363,6 +379,11 @@ export async function journeyKit({ run, name, page, context }) {
     context,
     deckRoutes,
     signInRoutes,
+    airaRoutes,
+    mcpRoutes,
+    aira(scripts) {
+      writeFileSync(airaPath(run), JSON.stringify({ at: Date.now(), scripts }))
+    },
     async signIn() {
       const signed = await signIn(state)
       const split = signed.cookie.indexOf("=")
@@ -379,8 +400,8 @@ export async function journeyKit({ run, name, page, context }) {
       ])
       return signed
     },
-    async post(route, body, cookie) {
-      const answer = await call(state.origin, "POST", route.path, body, cookie)
+    async post(route, body, cookie, headers) {
+      const answer = await call(state.origin, "POST", route.path, body, cookie, headers)
       step += 1
       writeFileSync(
         path.join(out, `${String(step).padStart(2, "0")}-api${route.path.replace(/\//g, "-")}.json`),

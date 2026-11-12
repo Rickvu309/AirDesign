@@ -6,6 +6,7 @@ import worker from "./api-forward.js"
 import {
   accountPaths,
   accountRoutes,
+  airaPaths,
   deckPaths,
   deckRoutes,
   mcpPaths,
@@ -29,10 +30,12 @@ let server: Server
 let origin: string
 let seen: Seen[]
 let assets: Request[]
+let finish: () => void
 
 beforeEach(async () => {
   seen = []
   assets = []
+  finish = () => undefined
   server = createServer((request, response) => {
     const chunks: Buffer[] = []
     request.on("data", (chunk: Buffer) => chunks.push(chunk))
@@ -44,6 +47,15 @@ beforeEach(async () => {
         contentType: request.headers["content-type"],
         body: Buffer.concat(chunks).toString(),
       })
+      if (request.url === "/aira/turn") {
+        response.writeHead(200, { "content-type": "application/x-ndjson; charset=utf-8" })
+        response.write('{"type":"text","text":"Lead"}\n')
+        finish = () => {
+          finish = () => undefined
+          response.end('{"type":"end","ok":true}\n')
+        }
+        return
+      }
       if (request.url?.startsWith("/sign-in/link")) {
         response.writeHead(302, { location: "/", "set-cookie": "airdesign.session=abc; Path=/" })
         response.end()
@@ -60,6 +72,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
+  finish()
   await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())))
 })
 
@@ -112,7 +125,7 @@ describe("API forwarding", () => {
       entries.some((entry) => !entry.startsWith("!") && matches(entry, path)) &&
       !entries.some((entry) => entry.startsWith("!") && matches(entry.slice(1), path))
     expect(
-      [...signInPaths, ...signOutPaths, ...accountPaths, ...deckPaths, ...oauthPaths, ...mcpPaths].filter(
+      [...signInPaths, ...signOutPaths, ...accountPaths, ...deckPaths, ...oauthPaths, ...mcpPaths, ...airaPaths].filter(
         (path) => !routed(path),
       ),
     ).toEqual([])
@@ -133,6 +146,22 @@ describe("API forwarding", () => {
     ])
     expect(response.status).toBe(201)
     expect(await response.text()).toBe("saved")
+    expect(assets).toEqual([])
+  })
+
+  it("passes each line of an Aira turn through as the API writes it, before the turn ends", async () => {
+    const response = await worker.fetch(
+      new Request("https://example.com/aira/turn", { method: "POST", headers: { cookie: "airdesign.session=abc" } }),
+      env(),
+    )
+    expect(response.headers.get("content-type")).toBe("application/x-ndjson; charset=utf-8")
+    const reader = response.body?.getReader()
+    if (reader === undefined) throw new Error("body")
+    const decoder = new TextDecoder()
+    expect(decoder.decode((await reader.read()).value)).toBe('{"type":"text","text":"Lead"}\n')
+    finish()
+    expect(decoder.decode((await reader.read()).value)).toBe('{"type":"end","ok":true}\n')
+    expect((await reader.read()).done).toBe(true)
     expect(assets).toEqual([])
   })
 
@@ -183,7 +212,9 @@ describe("API forwarding", () => {
     "/oauth/register",
     "/oauth/token",
     "/oauth/revoke",
+    "/decks/undo",
     "/mcp",
+    "/aira/turn",
     "/.well-known/oauth-protected-resource",
     "/.well-known/oauth-authorization-server",
   ])("forwards %s", async (path) => {

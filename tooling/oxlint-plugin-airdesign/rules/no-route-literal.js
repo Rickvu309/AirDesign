@@ -10,6 +10,7 @@ export const routePaths = [
   "/decks/original/upload",
   "/decks/original/done",
   "/decks/original",
+  "/decks/undo",
   "/sign-in/email",
   "/sign-in/code",
   "/sign-in/link",

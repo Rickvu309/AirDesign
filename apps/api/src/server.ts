@@ -41,6 +41,7 @@ import { checkedResource, readUrl } from "./resource.js"
 import { authorizationMetadata, resourceChallenge, resourceMetadata } from "./discovery.js"
 import { chosenRevision, deckAccess, savedAnswers, readSaved } from "./saved.js"
 import { bearerPrincipal, revokeToken, tokenAnswer } from "./tokens.js"
+import { undoAnswers } from "./undo.js"
 
 export type ApiOptions = {
   readonly session: Sql
@@ -486,6 +487,7 @@ export const deckAnswers: DeckAnswers = {
   ...savedAnswers,
   ...deckListAnswers,
   ...originalAnswers,
+  ...undoAnswers,
 }
 
 export const routes: readonly Route[] = [

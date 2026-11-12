@@ -1,12 +1,19 @@
+import { readRun } from "@airdesign/catalog"
 import { describe, expect, it } from "vitest"
 
-import { readTurn } from "./aira.js"
-import { airaFuzzGood } from "./aira-fuzz.js"
+import { readTurn } from "./aira-conversation.js"
+import { fuzzGood } from "./aira-fuzz.js"
 
-describe("POST /aira/turn fuzz request", () => {
-  it("is one text field from a supported country", () => {
-    const good = airaFuzzGood["POST /aira/turn"][0]
-    expect(good?.headers).toEqual(["cf-ipcountry: VN"])
-    expect(readTurn(good?.fields)).toEqual({ ok: true, text: "Fuzz" })
+describe("the fuzz requests of Aira's routes", () => {
+  it("are the person's text on the open deck from a supported country, and a run of that deck", () => {
+    const goods = fuzzGood("fuzzdeck")
+    const turn = goods["POST /aira/turn"][0]
+    expect(turn?.headers).toEqual(["cf-ipcountry: VN"])
+    expect(readTurn(turn?.fields)).toEqual({
+      ok: true,
+      deck: "fuzzdeck",
+      messages: [{ role: "user", content: "Fuzz" }],
+    })
+    expect(readRun(goods["POST /decks/undo"][0]?.fields)).toEqual({ ok: true, deck: "fuzzdeck", runId: "fuzzrun" })
   })
 })
