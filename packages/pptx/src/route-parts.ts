@@ -1,5 +1,6 @@
 import { owns, shapeById } from "./shape-tree.js"
 import { elementId, type TextValue } from "@airdesign/document"
+import { sameBytes } from "./package-bytes.js"
 import { exportElements } from "./element-export.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { contentTypesPart, presentationPart, presentationRels, relsOf, slidePart } from "./package-address.js"
@@ -28,14 +29,6 @@ export type RouteRun = {
 const slidePrefix = "ppt/slides/slide"
 const slideSuffix = ".xml"
 const box = { x: 914400, y: 914400, cx: 914400, cy: 914400 }
-
-function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
-  if (left.length !== right.length) return false
-  for (let index = 0; index < left.length; index += 1) {
-    if (left[index] !== right[index]) return false
-  }
-  return true
-}
 
 function attribute(element: MarkupElement, name: string): string | null {
   return element.attributes.find((item) => item.name === name)?.value ?? null

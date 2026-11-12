@@ -1,7 +1,7 @@
 import { owns, shapeById } from "./shape-tree.js"
 import type { TextValue } from "@airdesign/document"
 import { markupDocument, type MarkupElement } from "./element-span.js"
-import { encodeUtf8 } from "./package-bytes.js"
+import { encodeUtf8, sameBytes } from "./package-bytes.js"
 import { readShapes } from "./read-shapes.js"
 import { xmlText } from "./shape-write.js"
 import { applyRoute, type SlideRoute } from "./slide-route.js"
@@ -12,14 +12,6 @@ const slidePart = "ppt/slides/slide1.xml"
 type TextSpan = {
   readonly start: number
   readonly end: number
-}
-
-function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
-  if (left.length !== right.length) return false
-  for (let index = 0; index < left.length; index += 1) {
-    if (left[index] !== right[index]) return false
-  }
-  return true
 }
 
 function textInteriors(bytes: Uint8Array, shapeId: string): readonly TextSpan[] | null {

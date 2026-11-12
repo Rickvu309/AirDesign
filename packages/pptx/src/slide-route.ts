@@ -2,7 +2,7 @@ import { owns, shapeById } from "./shape-tree.js"
 import type { TextValue } from "@airdesign/document"
 import { insertChild } from "./child-order.js"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupDocument, type MarkupElement } from "./element-span.js"
-import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
+import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { attachedConnections, shapeAnimated } from "./shape-id.js"
 import { addTextShape } from "./shape-write.js"
 import {
@@ -107,14 +107,6 @@ function writeFill(bytes: Uint8Array, id: string, value: ShapeFill): Uint8Array 
 function emu(value: number): number {
   if (!Number.isInteger(value)) throw new Error("emu")
   return value
-}
-
-function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
-  if (left.length !== right.length) return false
-  for (let index = 0; index < left.length; index += 1) {
-    if (left[index] !== right[index]) return false
-  }
-  return true
 }
 
 function requireMarkup(bytes: Uint8Array): MarkupDocument {

@@ -56,7 +56,18 @@ export function decodeUtf8(bytes: Uint8Array): string {
 
 export function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
   if (left.length !== right.length) return false
-  for (let index = 0; index < left.length; index += 1) {
+  if (left === right) return true
+  const words = left.length >>> 2
+  let index = 0
+  if (words > 0 && left.byteOffset % 4 === 0 && right.byteOffset % 4 === 0) {
+    const leftWords = new Uint32Array(left.buffer, left.byteOffset, words)
+    const rightWords = new Uint32Array(right.buffer, right.byteOffset, words)
+    for (; index < words; index += 1) {
+      if (leftWords[index] !== rightWords[index]) return false
+    }
+    index = words << 2
+  }
+  for (; index < left.length; index += 1) {
     if (left[index] !== right[index]) return false
   }
   return true
