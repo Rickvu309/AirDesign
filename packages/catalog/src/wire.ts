@@ -211,6 +211,17 @@ export function readOriginalUpload(
   return { ok: true, deck: deck.deck, bytes, sha256: body.sha256.toLowerCase() }
 }
 
+export function readMediaRequest(
+  raw: unknown,
+): { ok: true; deck: DeckId; sha256: string } | FieldRefusal | DeckRefusal {
+  const body = recordOf(raw)
+  if (body === undefined || !knownKeys(body, ["deck", "sha256"]) || !Object.hasOwn(body, "deck")) return fieldRefusal
+  const deck = readDeckId(body.deck)
+  if (!deck.ok) return deckRefusal
+  if (typeof body.sha256 !== "string" || !/^[0-9a-fA-F]{64}$/.test(body.sha256)) return fieldRefusal
+  return { ok: true, deck: deck.deck, sha256: body.sha256.toLowerCase() }
+}
+
 export function readNoFields(raw: unknown): { ok: true } | FieldRefusal {
   const body = recordOf(raw)
   if (body === undefined || Object.keys(body).length > 0) return fieldRefusal

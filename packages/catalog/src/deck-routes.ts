@@ -6,6 +6,7 @@ import {
   readCapture,
   readDecks,
   readNoFields,
+  readMediaRequest,
   readOriginalUpload,
   readRename,
   readRun,
@@ -174,6 +175,8 @@ export const deckRoutes = {
   originalUpload: { path: "/decks/original/upload", read: readOriginalUpload, result: decode(uploadAnswer) },
   originalDone: { path: "/decks/original/done", read: readCapture, result: decode(recordAnswer) },
   original: { path: "/decks/original", read: readCapture, result: decode(originalAnswer) },
+  mediaUpload: { path: "/decks/media/upload", read: readOriginalUpload, result: decode(uploadAnswer) },
+  media: { path: "/decks/media", read: readMediaRequest, result: decode(originalAnswer) },
   undo: { path: "/decks/undo", read: readRun, result: decode(commitAnswer) },
 } as const
 

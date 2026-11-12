@@ -4,10 +4,20 @@ import { Toaster } from "@/components/ui/sonner"
 import { StatusPill } from "@/components/ui/status-pill"
 import { productCopy } from "@/copy/product-copy"
 import { EditorToast } from "@/editor/agent-panel"
+import { pictureCopy } from "@/copy/picture-copy"
 import { undoCopy } from "@/copy/undo-copy"
 import { exportCopy } from "@/export/export-options"
 
-export type ThinNotice = "offline" | "import-failed" | "export-failed" | "undo-changed" | "redo-changed"
+export type ThinNotice =
+  | "offline"
+  | "import-failed"
+  | "export-failed"
+  | "picture-uploading"
+  | "picture-type"
+  | "picture-size"
+  | "picture-unread"
+  | "undo-changed"
+  | "redo-changed"
 
 const noticeId = "thin-notice"
 const noticeWidth = "24rem"
@@ -78,6 +88,8 @@ export function ThinNoticeView({
   if (notice === "offline") return <StatusNotice text={productCopy.editorOffline} />
   if (notice === "undo-changed") return <StatusNotice text={undoCopy.undoChanged} />
   if (notice === "redo-changed") return <StatusNotice text={undoCopy.redoChanged} />
+  if (notice === "picture-type" || notice === "picture-size" || notice === "picture-unread")
+    return <StatusNotice text={pictureCopy[notice]} />
   if (notice === "import-failed") {
     return (
       <FailureNotice
@@ -87,5 +99,6 @@ export function ThinNoticeView({
       />
     )
   }
-  return <FailureNotice text={productCopy.exportFailed} action={exportCopy.tryAgain} onAct={() => onTryAgain(notice)} />
+  const text = notice === "picture-uploading" ? pictureCopy.exportWaiting : productCopy.exportFailed
+  return <FailureNotice text={text} action={exportCopy.tryAgain} onAct={() => onTryAgain(notice)} />
 }

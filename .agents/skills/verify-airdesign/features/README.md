@@ -37,6 +37,7 @@ Each feature file starts with an H1 title and one paragraph describing what the 
 - [Deck list and Trash](./deck-list-trash.md): Home's first visit, its decks, `No decks yet`, Move to Trash, Restore, Empty Trash. Journey `deck-list-trash`.
 - [Move and resize an element](./move-resize.md): select an element, drag it, resize it from a corner, nudge it with the arrows; the server keeps the box and the export writes it. Journey `move-resize`.
 - [Add a text box and delete an element](./element-edits.md): `Add text box` in the toolbar, Delete on a selected element. Journey `element-edits`.
+- [Add a picture](./picture-add.md): `Add picture` in the toolbar, a dropped or pasted file, the upload and another device. Journey `picture-add`.
 - [Add, duplicate, move and delete slides](./slide-commands.md): the slide list's `Add slide`, Ctrl/Cmd+D, Alt+arrows and Delete. Journeys `slide-commands`, `blank-slides`, `slide-layouts`.
 - [Undo and redo the person's edits](./person-undo.md): the keys, the named toolbar buttons and `Unable to undo`. Journey `person-undo`.
 - [Speaker notes](./speaker-notes.md): the notes bar under the slide, editable or locked, offline and through the export. Journey `speaker-notes`.

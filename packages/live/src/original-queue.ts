@@ -1,4 +1,5 @@
 import { deckRoutes } from "@airdesign/catalog"
+import { flushMedia } from "./media.js"
 import { sendOriginal } from "./original.js"
 import { getParts } from "./part.js"
 import { post } from "./remote.js"
@@ -11,6 +12,12 @@ export async function queueOriginal(deck: string): Promise<void> {
 }
 
 export async function flushOriginal(deck: string): Promise<{ readonly ok: boolean }> {
+  const original = await sendQueued(deck)
+  const media = await flushMedia(deck)
+  return { ok: original.ok && media.ok }
+}
+
+async function sendQueued(deck: string): Promise<{ readonly ok: boolean }> {
   try {
     if ((await readSlot(key(deck))) !== true) return { ok: true }
     const stored = await getParts(deck)

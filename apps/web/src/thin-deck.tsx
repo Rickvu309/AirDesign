@@ -1,12 +1,11 @@
 import { elementId, type Box, type ElementId, type Register, type Undoable } from "@airdesign/document"
-import { connect, distrustDevice, flushOriginal, getParts, memoryRemote, trustDeck } from "@airdesign/live"
-import { exportPackage, readNotes, type ReadShape, type SectionStart, type SlideNotes } from "@airdesign/pptx"
+import { connect, distrustDevice, flushOriginal, memoryRemote, trustDeck } from "@airdesign/live"
+import { readNotes, type ReadShape, type SectionStart, type SlideNotes } from "@airdesign/pptx"
 import { paintStore, SlideCanvas, textValue } from "@airdesign/render"
 import { toast } from "sonner"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { type SlideCanvases } from "@/canvas-slide"
 import { signInAddress, ThinNoticeView, type ThinNotice } from "@/thin-notice"
-import { exportFileName } from "@/export/export-file-name"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
 import { thumbHeight } from "@/thumb-height"
@@ -26,6 +25,9 @@ import { exportedParts } from "@/exported-parts"
 import { commitSlideChange, type SlideChange } from "@/slide-edit"
 import { layoutChoices } from "@/slide-layout"
 import { commitElement, type ElementChange } from "@/element-edit"
+import { PicturesUploading, usePictureTool } from "@/picture-tool"
+import { commitPicture } from "@/picture-add"
+import { exportDeck } from "@/deck-export"
 import { ensureMarkup } from "@/markup"
 import { backfillIndex } from "@/index-deck"
 import { type PictureSources } from "@/picture-fill"
@@ -74,7 +76,7 @@ export function ThinDeck({ id }: { id: string }) {
   const [paintedDeck, setPaintedDeck] = useState<string | undefined>(undefined)
   const [pending, setPending] = useState(false)
   const [offline, setOffline] = useState(() => navigator.onLine === false)
-  const [failure, setFailure] = useState<"import-failed" | "export-failed" | null>(null)
+  const [failure, setFailure] = useState<"import-failed" | "export-failed" | "picture-uploading" | null>(null)
   const [refused, setRefused] = useState(false)
   const [panel, setPanel] = useState<"agent" | "design">("agent")
   const undoList = useRef(emptyUndo)
@@ -85,6 +87,12 @@ export function ThinDeck({ id }: { id: string }) {
     null,
   )
   const sessions = useRef(0)
+  const pictureTool = usePictureTool(paintedDeck === id, async (picture) => {
+    const slide = canvases.current(current)
+    if (slide === null) return
+    const at = { index: current, slide, keep: pictureTool.store.keep }
+    settle(await commitPicture(id, shownParts.current, picture, at, showAdded))
+  })
 
   const settle = useCallback((outcome: CommitOutcome) => {
     if (outcome === "sent") setPending(false)
@@ -284,26 +292,6 @@ export function ThinDeck({ id }: { id: string }) {
     void work().finally(release)
   }
 
-  async function exportDeck() {
-    await notesQueue.current
-    await ensureMarkup()
-    const stored = await getParts(id)
-    if (!stored.ok) throw new Error("parts")
-    const opened = await connect(memoryRemote()).openDeck(id)
-    if (!opened.ok) throw new Error("register")
-    const bytes = await exportPackage(stored.file, exportedParts(stored.parts, opened.register))
-    const copy = new Uint8Array(bytes.byteLength)
-    copy.set(bytes)
-    const url = URL.createObjectURL(new Blob([copy]))
-    const link = document.createElement("a")
-    link.href = url
-    link.download = exportFileName(stored.name)
-    document.body.append(link)
-    link.click()
-    link.remove()
-    URL.revokeObjectURL(url)
-  }
-
   function openFrom(
     stored: { readonly parts: ReadonlyMap<string, Uint8Array>; readonly name?: string },
     register: Register | null,
@@ -344,7 +332,7 @@ export function ThinDeck({ id }: { id: string }) {
   }
 
   function showRegister(register: Register | null) {
-    const painted = paint(store.current, shownParts.current, register, busy.current)
+    const painted = paint(store.current, shownParts.current, register, busy.current, pictureTool.store.bytes)
     boxes.current = painted.boxes
     movables.current = painted.movables
     shapes.current = painted.shapes
@@ -357,6 +345,9 @@ export function ThinDeck({ id }: { id: string }) {
     setNotes(readNotes(register === null ? shownParts.current : exportedParts(shownParts.current, register)))
     setSlideCount(painted.count)
     setSections(painted.sections)
+    void pictureTool.store.load(id, register).then((more) => {
+      if (more && structure.current === JSON.stringify(register?.order ?? [])) showRegister(register)
+    })
   }
 
   async function showEdited(currentIndex: number) {
@@ -365,6 +356,11 @@ export function ThinDeck({ id }: { id: string }) {
     showRegister(next.register)
     setCurrent(Math.max(0, Math.min(currentIndex, store.current.slides().length - 1)))
     setPending(true)
+  }
+
+  async function showAdded(added: ElementId | null) {
+    await showEdited(current)
+    setEntering(added)
   }
 
   async function changeSlide(change: SlideChange, index: number, to = index, layoutPart?: string) {
@@ -416,12 +412,7 @@ export function ThinDeck({ id }: { id: string }) {
   async function changeElement(change: ElementChange) {
     const opened = await connect(memoryRemote()).openDeck(id)
     if (!opened.ok) return
-    settle(
-      await commitElement(id, shownParts.current, opened.register, change, async (added) => {
-        await showEdited(current)
-        setEntering(added)
-      }),
-    )
+    settle(await commitElement(id, shownParts.current, opened.register, change, showAdded))
   }
 
   function addText() {
@@ -431,16 +422,17 @@ export function ThinDeck({ id }: { id: string }) {
 
   async function onExport() {
     try {
-      await exportDeck()
+      await notesQueue.current
+      await exportDeck(id, pictureTool.store)
       setFailure(null)
-    } catch {
-      setFailure("export-failed")
+    } catch (error) {
+      setFailure(error instanceof PicturesUploading ? "picture-uploading" : "export-failed")
     }
   }
 
   function tryAgain(notice: ThinNotice) {
     if (notice === "import-failed") window.location.assign("/")
-    if (notice === "export-failed") void onExport()
+    if (notice === "export-failed" || notice === "picture-uploading") void onExport()
   }
 
   const currentSlide = store.current.slides()[current]?.id
@@ -468,7 +460,8 @@ export function ThinDeck({ id }: { id: string }) {
   }
 
   const toldNotice: ThinNotice | null = told === null ? null : told === "undo" ? "undo-changed" : "redo-changed"
-  const notice: ThinNotice | null = failure ?? toldNotice ?? (offline && pending ? "offline" : null)
+  const notice: ThinNotice | null =
+    failure ?? toldNotice ?? pictureTool.notice ?? (offline && pending ? "offline" : null)
 
   return (
     <div className="thin-page" data-deck-ready={paintedDeck}>
@@ -486,6 +479,7 @@ export function ThinDeck({ id }: { id: string }) {
               onRedo: () => turn("redo"),
             },
             onText: addText,
+            onPicture: pictureTool.pick,
             size: canvases.current(current),
             slides: {
               count: slideCount,

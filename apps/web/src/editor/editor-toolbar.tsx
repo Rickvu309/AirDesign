@@ -6,6 +6,8 @@ import { PanelSwitch } from "@/editor/panel-switch"
 import type { PointerTool, ToolPick } from "@/editor/pointer-tool"
 import { UndoButtons, type UndoButtonsState } from "@/editor/undo-buttons"
 import { cn } from "@/lib/class-names"
+import { pictureCopy } from "@/copy/picture-copy"
+import { pickPicture } from "@/editor/picture-picker"
 
 export type EditorTool = "move" | "text" | "shape" | "image" | "actions"
 
@@ -35,6 +37,7 @@ export function EditorToolbar({
   undo,
   onPanel,
   onText,
+  onPicture,
 }: {
   activeTool?: EditorTool
   menuOpen?: boolean
@@ -43,6 +46,7 @@ export function EditorToolbar({
   undo?: UndoButtonsState
   onPanel?: (panel: Exclude<EditorPanel, "none">) => void
   onText?: () => void
+  onPicture?: (file: File) => void
 }) {
   const chosen = pointer?.tool ?? "move"
   const shown = pointerTools.find((each) => each.tool === chosen) ?? pointerTools[0]
@@ -103,14 +107,20 @@ export function EditorToolbar({
       </span>
       {tools.map(({ tool, icon }) => {
         const on = pointer === undefined && activeTool === tool
-        const run = tool === "text" ? onText : undefined
+        const run =
+          tool === "text"
+            ? onText
+            : tool === "image" && onPicture !== undefined
+              ? () => pickPicture(onPicture)
+              : undefined
+        const label = tool === "text" ? "Add text box" : pictureCopy.add
         return (
           <Button
             key={tool}
             type="button"
             variant={on ? "default" : "ghost"}
             size="icon"
-            aria-label={run === undefined ? tool : "Add text box"}
+            aria-label={run === undefined ? tool : label}
             {...(run === undefined ? { "aria-pressed": on } : {})}
             disabled={pointer !== undefined && run === undefined}
             {...(run === undefined ? {} : { onClick: run })}

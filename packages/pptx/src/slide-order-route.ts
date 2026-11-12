@@ -12,6 +12,7 @@ import { presentationPart, slideAddresses, slidePart } from "./package-address.j
 import { editPart } from "./part-markup.js"
 import { readSections } from "./section-read.js"
 import { writeSectionSlides } from "./section-write.js"
+import { addPicture } from "./picture-write.js"
 import { layoutPart, withLayoutPlaceholders } from "./slide-placeholders.js"
 import { applyRoute } from "./slide-route.js"
 import { applyStructuralRoute } from "./structural-route.js"
@@ -45,6 +46,7 @@ function elementEdited(
   parts: ReadonlyMap<string, Uint8Array>,
   minted: ReadonlyMap<string, string>,
   command: Extract<SlideCommand, { readonly slide: "element-add" | "element-remove" }>,
+  media: MediaBytes,
 ): ReadonlyMap<string, Uint8Array> {
   const part = slidePart(parts, minted.get(command.id) ?? "")
   if (part === null) throw new Error("slide")
@@ -52,7 +54,10 @@ function elementEdited(
     return applyRoute(parts, { name: "remove", part, shape: shapeOf(command.node).shape })
   const { node, box } = command.element
   if (box === null) throw new Error("box")
-  return applyRoute(parts, { name: "add", part, id: Number(shapeOf(node).shape), text: "", ...box })
+  const id = Number(shapeOf(node).shape)
+  if (command.media !== undefined)
+    return addPicture(parts, part, { id, box, media: command.media, bytes: media(command.media.sha256) })
+  return applyRoute(parts, { name: "add", part, id, text: "", ...box })
 }
 
 function chosenLayout(
@@ -85,16 +90,21 @@ function withSectionSlides(
   return next
 }
 
+export type MediaBytes = (sha256: string) => Uint8Array | undefined
+
+const noMedia: MediaBytes = () => undefined
+
 export function orderedParts(
   parts: ReadonlyMap<string, Uint8Array>,
   state: SlideState,
+  media: MediaBytes = noMedia,
 ): ReadonlyMap<string, Uint8Array> {
   if (state.order.length === 0) return parts
   const minted = new Map<string, string>(state.file.map((id) => [id, id]))
   let next: ReadonlyMap<string, Uint8Array> = parts
   for (const command of state.order) {
     if (command.slide === "element-add" || command.slide === "element-remove") {
-      next = elementEdited(next, minted, command)
+      next = elementEdited(next, minted, command, media)
       continue
     }
     if (command.slide !== "add" && command.slide !== "clone") continue

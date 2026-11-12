@@ -57,10 +57,11 @@ test.use({ viewport: { width: 1600, height: 1000 }, reducedMotion: "reduce" })
 
 test("the tools that do nothing yet are disabled, and the grid toggle too", async ({ page }) => {
   await openClean(page)
-  for (const name of ["shape", "image", "actions", "Grid"]) {
+  for (const name of ["shape", "actions", "Grid"]) {
     await expect(page.getByRole("button", { name, exact: true }), name).toBeDisabled()
   }
   await expect(page.getByRole("button", { name: "Add text box", exact: true })).toBeEnabled()
+  await expect(page.getByRole("button", { name: "Add picture", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Move", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Move", exact: true })).toHaveAttribute("aria-pressed", "true")
   const look = await page

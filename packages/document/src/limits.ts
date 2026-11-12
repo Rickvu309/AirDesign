@@ -2,6 +2,7 @@ export const limits = {
   decks: null,
   slides: 50,
   bytes: 70_000_000,
+  media: 10_000_000,
   valueBytes: 8_000,
   elements: 5_000,
   body: 1_000_000,

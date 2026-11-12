@@ -28,6 +28,7 @@ export type EditorDeck = {
   readonly onExport: () => void
   readonly undo: UndoButtonsState
   readonly onText?: () => void
+  readonly onPicture?: (file: File) => void
 }
 
 export type EditorShellProps = {
@@ -134,6 +135,7 @@ export function EditorShell({
               {...(deck === undefined ? {} : { pointer })}
               {...(deck === undefined ? {} : { undo: deck.undo })}
               {...(deck?.onText === undefined ? {} : { onText: deck.onText })}
+              {...(deck?.onPicture === undefined ? {} : { onPicture: deck.onPicture })}
               {...(onPanel === undefined ? {} : { onPanel })}
             />
           </div>

@@ -36,6 +36,12 @@ describe("unshownText", () => {
     expect(unshownText(row({ image: png }), () => null)).toBe("PNG picture can't be shown here")
   })
 
+  it("says an added picture whose bytes have not arrived is still uploading", () => {
+    const added = { ...png, part: "ppt/media/picture-0123456789abcdef.png" }
+    expect(unshownText(row({ image: added }), () => null)).toBe("Picture is still uploading from another device")
+    expect(unshownText(row({ image: added }), () => "blob:2")).toBeNull()
+  })
+
   it("says a chart or diagram frame is not shown", () => {
     expect(unshownText(row({ kind: "p:graphicFrame" }), () => null)).toBe("Chart or diagram can't be shown here")
   })
