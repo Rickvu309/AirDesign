@@ -153,6 +153,35 @@ function FailedCard({
   )
 }
 
+function StuckCard({
+  title,
+  body,
+  changed,
+  onUndo,
+}: {
+  title: string
+  body: string
+  changed: boolean
+  onUndo: (() => void) | undefined
+}) {
+  return (
+    <div className={cardClass} data-aira-stuck>
+      <span className="flex items-center gap-2">
+        <FailedMark />
+        <span className={cardTitle}>{title}</span>
+      </span>
+      <p className={cardBody}>{changed ? `${body} ${airaCopy.keptNote}` : body}</p>
+      {onUndo === undefined ? null : (
+        <span className="flex items-center gap-2">
+          <Button type="button" variant="ghost" className={cardButton} onClick={onUndo}>
+            {productCopy.undo}
+          </Button>
+        </span>
+      )}
+    </div>
+  )
+}
+
 function CountryCard() {
   return (
     <div className={cardClass} data-aira-country>
@@ -187,8 +216,17 @@ function endingOf(
   const refused = exchange.undoRefused === true
   if (exchange.end === "out-of-usage") return <LimitCard resets={resets} />
   if (exchange.end === "country") return <CountryCard />
+  const undoOffer = undoable && !refused ? onUndo : undefined
+  if (exchange.end === "off") {
+    return <StuckCard title={airaCopy.offTitle} body={airaCopy.offBody} changed={undoable} onUndo={undoOffer} />
+  }
+  if (exchange.end === "malformed") {
+    return (
+      <StuckCard title={airaCopy.malformedTitle} body={airaCopy.malformedBody} changed={undoable} onUndo={undoOffer} />
+    )
+  }
   if (exchange.end === "failed") {
-    return <FailedCard changed={undoable} onUndo={undoable && !refused ? onUndo : undefined} onRetry={onRetry} />
+    return <FailedCard changed={undoable} onUndo={undoOffer} onRetry={onRetry} />
   }
   if ((exchange.end === "done" || exchange.end === "stopped") && undoable) {
     return refused ? <UndoRefused /> : <UndoLink onUndo={onUndo} />

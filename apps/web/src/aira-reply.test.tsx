@@ -5,6 +5,7 @@ import type { AiraEnd, AiraExchange, AiraStep, ToolState } from "@/aira-loop"
 import { ExchangeView } from "@/aira-reply"
 import { stepLine } from "@/aira-steps"
 import { airaCopy } from "@/copy/aira-copy"
+import { productCopy } from "@/copy/product-copy"
 
 const states: readonly ToolState[] = ["working", "done", "refused", "stopped"]
 const markOf: Readonly<Record<ToolState, string>> = {
@@ -69,12 +70,35 @@ describe("a request that could not finish", () => {
 
   it("offers no Try again when nothing can be retried", () => {
     expect(view(exchange([], "failed"))).not.toContain(airaCopy.retry)
-    for (const end of ["out-of-usage", "signed-out", "country"] as const) {
+    for (const end of ["out-of-usage", "signed-out", "country", "off", "malformed"] as const) {
       expect(
         view(exchange([], end), () => undefined),
         end,
       ).not.toContain(airaCopy.retry)
     }
+  })
+
+  it("says what is true when Aira is switched off or the chat cannot be sent, and offers Undo only when runs landed", () => {
+    const off = plain(view(exchange([], "off"), () => undefined))
+    expect(off).toContain(airaCopy.offTitle)
+    expect(off).toContain(airaCopy.offBody)
+    expect(off).not.toContain(airaCopy.failedTitle)
+    const malformed = plain(view(exchange([], "malformed"), () => undefined))
+    expect(malformed).toContain(airaCopy.malformedTitle)
+    expect(malformed).toContain(airaCopy.malformedBody)
+    expect(malformed).not.toContain(productCopy.undo)
+    const landed = plain(
+      renderToStaticMarkup(
+        <ExchangeView
+          exchange={exchange([], "off", ["r1"])}
+          resets={undefined}
+          onUndo={() => undefined}
+          onRetry={undefined}
+        />,
+      ),
+    )
+    expect(landed).toContain(airaCopy.keptNote)
+    expect(landed).toContain(productCopy.undo)
   })
 
   it("says plainly that Aira is not offered in the person's country or region", () => {

@@ -353,13 +353,15 @@ describe("Aira's loop in the browser", () => {
   it("ends as not offered in the person's country when the server answers 403 country, and as failed for any other refusal", async () => {
     const country = scripted([{ status: 403, body: { ok: false, refusal: "country" } }], [])
     expect((await asking(airaChat(deck), "Hello", country)).done.exchanges[0]?.end).toBe("country")
-    for (const refusal of [
-      { status: 403, body: { ok: false, refusal: "off" } },
-      { status: 500, body: {} },
-    ]) {
-      const link = scripted([refusal], [])
-      expect((await asking(airaChat(deck), "Hello", link)).done.exchanges[0]?.end).toBe("failed")
-    }
+    const link = scripted([{ status: 500, body: {} }], [])
+    expect((await asking(airaChat(deck), "Hello", link)).done.exchanges[0]?.end).toBe("failed")
+  })
+
+  it("ends as off when the server answers 403 off and as malformed when it answers 400, because the same ask fails the same way", async () => {
+    const off = scripted([{ status: 403, body: { ok: false, refusal: "off" } }], [])
+    expect((await asking(airaChat(deck), "Hello", off)).done.exchanges[0]?.end).toBe("off")
+    const malformed = scripted([{ status: 400, body: { ok: false, refusal: "body" } }], [])
+    expect((await asking(airaChat(deck), "Hello", malformed)).done.exchanges[0]?.end).toBe("malformed")
   })
 
   it("undoes every run an exchange landed, once, and marks an exchange whose run can no longer be undone", async () => {
