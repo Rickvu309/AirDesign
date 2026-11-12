@@ -145,9 +145,10 @@ Every PR that changes what a person sees gets a `## Before / after` section. The
 
 2. Run `$V before-after callouts.json`. It builds and launches the merge base with `origin/main` in a scratch worktree, launches this checkout, drives each state on both with that side's own journey, and writes `annotated-N.png`, each full screenshot, and `before-after.md`. `--base` and `--head` take other commits. `--keep` keeps both stacks and prints their runs, so the next try takes `--before-run` and `--after-run` and costs seconds. Stop them with `$V stop` when done.
 3. Open every `annotated-N.png`. Check each arrow points at the thing its note names on both sides, each note is true, and a stranger sees what changed in ten seconds. A selector missing on one side shows a grey number and says so in the legend; that is right only when the thing is new or gone.
-4. `$V publish <out-dir> --pr <number>` commits the PNGs to the `archive/proof` branch and writes `before-after.published.md`. Paste it into the PR body as is.
+4. `$V publish <out-dir> --pr <number>` uploads the PNGs to the `proof` release and writes `before-after.published.md`. Paste it into the PR body as is.
 
 `$V annotate <run> callouts.json` draws the same callouts on one run, for a comment or a `look`.
+`$V comment <pr> <markdown-file>` posts a pull request comment prefixed with the agent line `🤖 **AI Agent responding on behalf of Quan Vu**`. Always post PR comments with this command.
 
 ## Saved proof
 
@@ -189,5 +190,5 @@ Run `stop` after every run, passed or failed. A failed `launch` prints the run i
 
 - `bin/verify-airdesign.mjs`: the entry point for every command. `$V` with no command prints usage.
 - `look/`: the design commands' parts: the detectors, the state list, compare, the sheet, and the callouts, placement and drawing behind `before-after` and `annotate`. See `look/README.md`.
-- `bin/proof.mjs` and `bin/publish.mjs`: `before-after`, `annotate` and `publish`.
+- `bin/proof.mjs`, `bin/publish.mjs` and `bin/comment.mjs`: `before-after`, `annotate`, `publish` and `comment`.
 - `journeys/*.mjs`: Playwright journeys run by `$V journey <run> <name>` and by `pnpm test:journeys`.

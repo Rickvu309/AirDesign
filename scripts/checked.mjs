@@ -54,15 +54,7 @@ export const pushedRefs = (pushed) =>
       remote: /^0*$/.test(remote ?? "") ? undefined : remote,
     }))
 
-export const proofBranch = "archive/proof"
-
-export const onlyImages = (root, commit) => {
-  const files = git(root, ["ls-tree", "-r", "--name-only", commit]).split("\n")
-  return files.every((file) => file.endsWith(".png"))
-}
-
 export const uncheckedPushes = (root, pushed) =>
   pushedRefs(pushed)
-    .filter(({ commit, to }) => !(to === `refs/heads/${proofBranch}` && onlyImages(root, commit)))
     .filter(({ commit }) => !isChecked(root, commit))
     .map(({ ref, commit }) => ({ ref, commit }))

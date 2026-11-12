@@ -3,7 +3,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { isChecked, proofBranch, stampChecked, uncheckedPushes, workingTree } from "./checked.mjs"
+import { isChecked, stampChecked, uncheckedPushes, workingTree } from "./checked.mjs"
 import { installHooks } from "./install-hooks.mjs"
 
 const same = (name, actual, expected) => {
@@ -91,18 +91,8 @@ const only = (name) =>
   git(root, "commit-tree", git(root, "mktree", { input: `100644 blob ${blob}\t${name}\n` }), "-m", name)
 const proof = only("shot.png")
 same(
-  "an image-only commit pushed to the proof branch needs no check",
-  uncheckedPushes(root, `${proof} ${proof} refs/heads/${proofBranch} ${zero}\n`),
-  [],
-)
-same(
-  "the same commit pushed to any other branch still needs a check",
-  uncheckedPushes(root, `${proof} ${proof} refs/heads/main ${zero}\n`).length,
-  1,
-)
-same(
-  "code pushed to the proof branch still needs a check",
-  uncheckedPushes(root, `${only("run.mjs")} ${only("run.mjs")} refs/heads/${proofBranch} ${zero}\n`).length,
+  "a png-only commit pushed to archive/proof needs a check like any unchecked commit",
+  uncheckedPushes(root, `${proof} ${proof} refs/heads/archive/proof ${zero}\n`).length,
   1,
 )
 

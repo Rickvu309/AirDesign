@@ -8,7 +8,7 @@ const same = (name, actual, expected) => {
 
 const repository = "Rickvu309/AirDesign"
 const sha = "a".repeat(40)
-const image = `![Annotated before and after](https://github.com/${repository}/blob/${sha}/pr-12/before-after-1/annotated-1.png?raw=true)`
+const image = `![Annotated before and after](https://github.com/${repository}/releases/download/proof/pr-12-annotated-1-abcdef1234.png)`
 
 for (const file of [
   "apps/web/src/aira-panel.tsx",
@@ -57,8 +57,11 @@ same(
   false,
 )
 same(
-  "an image not pinned to a commit does not count",
-  hasBeforeAfter(`## Before / after\n\n${image.replace(sha, "archive/proof")}\n`, repository),
+  "a branch link does not count",
+  hasBeforeAfter(
+    `## Before / after\n\n![x](https://github.com/${repository}/blob/${sha}/pr-12/shot.png?raw=true)\n`,
+    repository,
+  ),
   false,
 )
 same(

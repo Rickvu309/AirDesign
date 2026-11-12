@@ -64,7 +64,8 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 
 - One agent builds, tests and proves its own change, then queues the PR. No review or verifier agent reads it, and no agent starts one. A bug that gets through is fixed later, together with a test or check that keeps it from coming back.
 - Prove the change before you push. Write the failing test first, then run `pnpm check`. For anything a user sees or the API answers, also drive the real app with the `verify-airdesign` skill in `.agents/skills/verify-airdesign`. The PR body says what you ran and what you saw.
-- A PR that changes what a person sees carries a `## Before / after` section made with `verify-airdesign before-after` and `publish`: one annotated image and a `| main | this PR |` table, linked from the `archive/proof` branch.
+- A PR that changes what a person sees carries a `## Before / after` section made with `verify-airdesign before-after` and `publish`: one annotated image and a `| main | this PR |` table, linked from the `proof` release.
+- An agent's comment or review on a pull request or issue starts with `🤖 **AI Agent responding on behalf of Quan Vu**`.
 - For a change a person sees, look at it as a design: run `look` and `compare` from `verify-airdesign` on each state it touches, open the images, say what you see, and put the image paths and the finding counts before and after in the PR body.
 - A bug or a rule lands in the repo as a test, a check or a metric. A chat message fixes nothing.
 - A check is a free mechanical rule. No check calls a paid model, needs a model key in GitHub secrets, or waits for a person.
@@ -104,7 +105,8 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | `main` takes only a commit that passed `ci` on top of the latest `main` | branch protection and the merge queue |
 | A metric that moves away from its goal, and a changed PowerPoint case or deck that was already judged, is seen by the owner | the `bar` check labels the PR `lowers-the-bar`. It does not block |
 | Planted faults on changed code are reported | the `mutation` job, which warns and blocks nothing |
-| A PR that changes what a person sees has a Before / after section with an image from `archive/proof` | the `bar` check labels the PR `needs-before-after` (`scripts/before-after.mjs`). It does not block. It reads paths only: a `.ts` file in `apps/web/src` outside `copy/`, `apps/web/public` and server words are missed |
+| A PR that changes what a person sees has a Before / after section with an image from the `proof` release | the `bar` check labels the PR `needs-before-after` (`scripts/before-after.mjs`). It does not block. It reads paths only: a `.ts` file in `apps/web/src` outside `copy/`, `apps/web/public` and server words are missed |
+| An agent's comment or review on a pull request or issue starts with the agent line | review |
 | A change to what `ci` checks is seen by the owner | the `bar` check labels the PR `changes-ci`. It does not block |
 | A bug you find and do not fix is an `it.fails` test. A skipped, todo, expected-failure or no-expect test counts as a known failure | `scripts/metrics.mjs` prints the count on every run. A known failure is shown, never blocked. A deleted test is caught only by the `mutation` job, which reports the planted faults that tests no longer catch |
 | A new check starts in `warnSteps` in `scripts/check.mjs` and blocks only after it has caught a real fault with no false stop | review |
