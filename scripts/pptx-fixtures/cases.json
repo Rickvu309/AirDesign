@@ -118,5 +118,15 @@
     "errors": 0,
     "dupes": 0,
     "pages": true
+  },
+  {
+    "name": "section-slide-edits",
+    "before": "sections-before.pptx",
+    "after": "sections-after.pptx",
+    "visible": true,
+    "targeted": [],
+    "errors": 0,
+    "dupes": 0,
+    "pages": false
   }
 ]

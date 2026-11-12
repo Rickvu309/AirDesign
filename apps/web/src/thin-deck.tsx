@@ -1,7 +1,14 @@
 import { deckRoutes } from "@airdesign/catalog"
 import { elementId, type Box, type ElementId, type Register, type Undoable } from "@airdesign/document"
 import { connect, fetchOriginal, flushOriginal, getParts, memoryRemote, putParts } from "@airdesign/live"
-import { exportPackage, readNotes, readPackage, type SlideNotes, type ReadShape } from "@airdesign/pptx"
+import {
+  exportPackage,
+  readNotes,
+  readPackage,
+  type ReadShape,
+  type SectionStart,
+  type SlideNotes,
+} from "@airdesign/pptx"
 import { paintStore, SlideCanvas, textValue } from "@airdesign/render"
 import { toast } from "sonner"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -93,6 +100,7 @@ export function ThinDeck({ id }: { id: string }) {
   const [notes, setNotes] = useState<readonly SlideNotes[]>([])
   const notesQueue = useRef(Promise.resolve())
   const [slideCount, setSlideCount] = useState(0)
+  const [sections, setSections] = useState<readonly SectionStart[]>([])
   const [current, setCurrent] = useState(0)
   const [title, setTitle] = useState("")
   const [paintedDeck, setPaintedDeck] = useState<string | undefined>(undefined)
@@ -339,6 +347,7 @@ export function ThinDeck({ id }: { id: string }) {
     repaint.current = liveRepaint(store.current, painted.files, register, busy.current)
     setNotes(readNotes(register === null ? shownParts.current : exportedParts(shownParts.current, register)))
     setSlideCount(painted.count)
+    setSections(painted.sections)
   }
 
   async function showEdited(currentIndex: number) {
@@ -467,6 +476,7 @@ export function ThinDeck({ id }: { id: string }) {
             size: canvases.current(current),
             slides: {
               count: slideCount,
+              sections,
               current,
               onSelect: setCurrent,
               onAdd: () => void changeSlide("add", current),

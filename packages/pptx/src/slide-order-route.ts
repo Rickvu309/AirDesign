@@ -1,6 +1,16 @@
-import { foldSlides, presentSlides, shapeOf, type SlideCommand, type SlideState } from "@airdesign/document"
+import {
+  foldSections,
+  foldSlides,
+  presentSlides,
+  shapeOf,
+  type SlideCommand,
+  type SlideState,
+} from "@airdesign/document"
 
-import { slideAddresses, slidePart } from "./package-address.js"
+import { presentationPart, slideAddresses, slidePart } from "./package-address.js"
+import { editPart } from "./part-markup.js"
+import { readSections } from "./section-read.js"
+import { writeSectionSlides } from "./section-write.js"
 import { layoutPart, withLayoutPlaceholders } from "./slide-placeholders.js"
 import { applyRoute } from "./slide-route.js"
 import { applyStructuralRoute } from "./structural-route.js"
@@ -42,6 +52,24 @@ function elementEdited(
   const { node, box } = command.element
   if (box === null) throw new Error("box")
   return applyRoute(parts, { name: "add", part, id: Number(shapeOf(node).shape), text: "", ...box })
+}
+
+function withSectionSlides(
+  parts: ReadonlyMap<string, Uint8Array>,
+  original: ReadonlyMap<string, Uint8Array>,
+  state: SlideState,
+  minted: ReadonlyMap<string, string>,
+): ReadonlyMap<string, Uint8Array> {
+  const sections = foldSections(state, readSections(original))
+  if (sections.length === 0) return parts
+  const next = new Map(parts)
+  editPart(next, presentationPart, (bytes) =>
+    writeSectionSlides(
+      bytes,
+      sections.map((section) => section.slides.map((id) => minted.get(id) ?? id)),
+    ),
+  )
+  return next
 }
 
 export function orderedParts(
@@ -86,5 +114,5 @@ export function orderedParts(
     if (id === undefined) throw new Error("slide")
     wanted.push(id)
   }
-  return placed(next, wanted)
+  return withSectionSlides(placed(next, wanted), parts, state, minted)
 }

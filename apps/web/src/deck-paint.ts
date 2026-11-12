@@ -1,5 +1,14 @@
 import { readElementId, slideId, type ElementId, type Register, type TextValue } from "@airdesign/document"
-import { applyRoute, paintReader, paintKind, readShapes, readSlides, type ReadShape } from "@airdesign/pptx"
+import {
+  applyRoute,
+  paintReader,
+  paintKind,
+  readShapes,
+  readSlides,
+  sectionStarts,
+  type ReadShape,
+  type SectionStart,
+} from "@airdesign/pptx"
 import type { PaintStore } from "@airdesign/render"
 import { slideCanvases, type SlideCanvases } from "@/canvas-slide"
 import type { TextBox } from "@/commit-edit"
@@ -71,6 +80,7 @@ export function paint(
   busy: BusyElements,
 ): {
   readonly count: number
+  readonly sections: readonly SectionStart[]
   readonly canvases: SlideCanvases
   readonly boxes: ReadonlyMap<ElementId, TextBox>
   readonly movables: ReadonlyMap<ElementId, TextBox>
@@ -124,5 +134,15 @@ export function paint(
   }))
   const pictures = pictureSources(display)
   const canvases = slideCanvases(paintReader(display, { fallbackPrompt }), sources, pictures.src)
-  return { count: read.length, canvases, boxes, movables, shapes: rows, pictures, files, base }
+  return {
+    count: read.length,
+    sections: sectionStarts(display),
+    canvases,
+    boxes,
+    movables,
+    shapes: rows,
+    pictures,
+    files,
+    base,
+  }
 }
