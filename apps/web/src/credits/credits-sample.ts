@@ -1,3 +1,5 @@
+import { airaCopy } from "@/copy/aira-copy"
+
 export const creditsCopy = {
   waiting: "Waiting for your $25.00 payment. Finish in the new tab.",
   addedTitle: "$25.00 added",
@@ -7,10 +9,10 @@ export const creditsCopy = {
   notesFile: "Q3 board notes.docx",
   chatTitle: "Q3 investor update",
   slideChip: "Slide 3",
-  askAira: "Ask Aira",
-  attach: "Attach",
-  microphone: "Microphone",
-  newChat: "New chat",
+  askAira: airaCopy.askAira,
+  attach: airaCopy.attach,
+  microphone: airaCopy.microphone,
+  newChat: airaCopy.newChat,
 } as const
 
 export const addedHistory = [

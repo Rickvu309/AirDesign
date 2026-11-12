@@ -1,7 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
-import { creditsCopy } from "../../apps/web/src/credits/credits-sample.ts"
 
 const sampleWords = [
   "Q3 investor update",
@@ -41,7 +40,7 @@ export async function expectNoSample(page: Page) {
       "Export",
       "New slide",
       "Speaker notes can't be edited on this slide yet.",
-      creditsCopy.newChat,
+      airaCopy.newChat,
       productCopy.agentName,
       airaCopy.welcome,
       ...airaCopy.starters,

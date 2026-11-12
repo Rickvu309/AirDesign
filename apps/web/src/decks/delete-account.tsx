@@ -4,7 +4,7 @@ import { accountCopy } from "@/copy/account-copy"
 import { Input } from "@/components/ui/input"
 import { askDeletion, matchesEmail, type Deletion } from "@/decks/account-deletion"
 import { DangerDialog } from "@/decks/danger-dialog"
-import { settingsCopy } from "@/settings/settings-sample"
+import { settingsCopy } from "@/copy/settings-copy"
 import { signInAddress } from "@/thin-notice"
 
 async function leave(deletion: Deletion): Promise<boolean> {

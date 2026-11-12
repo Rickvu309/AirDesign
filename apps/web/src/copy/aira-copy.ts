@@ -85,6 +85,10 @@ export function airaChatsKeptOf(count: number): string {
 }
 
 export const airaCopy = {
+  askAira: "Ask Aira",
+  newChat: "New chat",
+  attach: "Attach",
+  microphone: "Microphone",
   welcome: "Aira can add, duplicate, delete and reorder slides, rewrite text, and move or resize elements.",
   caution: "Aira can be wrong. Check a number, a quote, or a slide before you rely on it.",
   starters: [

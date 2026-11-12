@@ -1,7 +1,6 @@
 import { useRef, type KeyboardEvent } from "react"
 import { PromptInput, PromptInputButton, PromptInputTextarea } from "@/components/ai-elements/prompt-input"
 import { airaCopy } from "@/copy/aira-copy"
-import { creditsCopy } from "@/credits/credits-sample"
 import { surfaceShadow } from "@/editor/editor-chrome"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
@@ -29,7 +28,7 @@ export function AiraComposer({
   const field = useRef<HTMLTextAreaElement>(null)
   const composing = useRef(false)
   const waiting = blocked !== undefined
-  const hint = blocked ?? (working ? airaCopy.addToRequest : creditsCopy.askAira)
+  const hint = blocked ?? (working ? airaCopy.addToRequest : airaCopy.askAira)
   function onKey(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== "Enter" || event.shiftKey) return
     if (composing.current || event.nativeEvent.isComposing) return

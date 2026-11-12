@@ -2,7 +2,7 @@ import { signOutRoutes } from "@airdesign/catalog"
 import type { ReactNode } from "react"
 import { DecksShell } from "@/decks/decks-shell"
 import { cn } from "@/lib/class-names"
-import { settingsCopy } from "@/settings/settings-sample"
+import { settingsCopy } from "@/copy/settings-copy"
 import { settingsPaths, type SettingsPath } from "@/settings/settings-routes"
 import { signInAddress } from "@/thin-notice"
 

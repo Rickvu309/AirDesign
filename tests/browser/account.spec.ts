@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
-import { settingsCopy } from "../../apps/web/src/settings/settings-sample"
+import { settingsCopy } from "../../apps/web/src/copy/settings-copy"
 import { accountCopy } from "../../apps/web/src/copy/account-copy"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 

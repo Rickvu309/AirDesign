@@ -7,7 +7,7 @@ import { AgentPromo } from "@/decks/agent-promo"
 import { account, starredFolders } from "@/decks/sample-decks"
 import { deckRoutes, type DeckSection } from "@/decks/deck-routes"
 import { settingsPaths } from "@/settings/settings-routes"
-import { settingsCopy } from "@/settings/settings-sample"
+import { settingsCopy } from "@/copy/settings-copy"
 import { cn } from "@/lib/class-names"
 
 const sections: {

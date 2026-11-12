@@ -1,0 +1,17 @@
+export const settingsCopy = {
+  title: "Settings",
+  usage: "Usage",
+  agents: "Agents",
+  account: "Account",
+  agentsBody: "Agents that can work on your decks.",
+  claude: "Claude",
+  connected: "Connected",
+  codex: "Codex",
+  notConnected: "Not connected",
+  mcp: "MCP server",
+  mcpBody: "Add this address in Claude or Codex to connect.",
+  copy: "Copy",
+  signedIn: "Signed in with email",
+  signOut: "Sign out",
+  deleteAccount: "Delete account",
+} as const

@@ -9,7 +9,7 @@ import { deckTime } from "@/decks/deck-time"
 import { ModuleRow } from "@/settings/module-row"
 import { SettingsPage, signOut } from "@/settings/settings-page"
 import { AgentTile } from "@/settings/settings-controls"
-import { settingsCopy } from "@/settings/settings-sample"
+import { settingsCopy } from "@/copy/settings-copy"
 import { signInAddress } from "@/thin-notice"
 
 type ConnectedAgent = {
