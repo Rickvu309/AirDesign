@@ -3,6 +3,7 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { boxExpected, boxExportName, boxOriginalName } from "../../scripts/paragraph-export.mjs"
+import { exportFromDialog } from "./export-dialog.ts"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures", boxOriginalName)
 const judged = join(process.cwd(), "tests/browser", boxExportName)
@@ -93,7 +94,7 @@ test("a box dragged and resized in the editor exports through the move and resiz
   await settled(page)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
   const saving = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export" }).click()
+  await exportFromDialog(page)
   await (await saving).saveAs(download)
   const original = await partsOf(fixture)
   const saved = await partsOf(download)

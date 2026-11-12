@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
+import { savedExport } from "./export-dialog.ts"
 
 const deck = join(process.cwd(), "scripts/pptx-fixtures/doe-heat-pumps.pptx")
 
@@ -584,9 +585,7 @@ async function storedBox(page: Page, box: Locator): Promise<void> {
 }
 
 async function exportedParts(page: Page, file: string): Promise<Map<string, string>> {
-  const download = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export" }).click()
-  await (await download).saveAs(file)
+  await savedExport(page, file)
   return partsOf(file)
 }
 

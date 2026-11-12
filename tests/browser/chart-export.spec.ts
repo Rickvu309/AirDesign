@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { chartEditsExportName, chartEditsOriginalName, chartFrames } from "../../scripts/chart-edits.mjs"
 import { stored } from "./device-store"
+import { exportFromDialog } from "./export-dialog.ts"
 
 const duplicate = process.platform === "darwin" ? "Meta+d" : "Control+d"
 const original = join(process.cwd(), "scripts/pptx-fixtures", chartEditsOriginalName)
@@ -84,7 +85,7 @@ test("a chart paints its title and labels, offers nothing to edit, and exports b
   await expect(page.locator("[data-slide-paint] svg[data-chart=pie]")).toHaveCount(3)
   await expect(page.locator("[data-slide-paint]")).toContainText("Owner with")
   const saving = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   const file = testInfo.outputPath(chartEditsExportName)
   await (await saving).saveAs(file)
   const before = await partsOf(original)

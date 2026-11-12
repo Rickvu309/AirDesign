@@ -79,4 +79,5 @@ export {
   type FormatState,
   type TextRange,
 } from "./text-format.js"
+export { slidesKept } from "./slide-kept.js"
 export { redoOf, slideUndoable, undoOf, undoSlides, type Undoable } from "./person-undo.js"

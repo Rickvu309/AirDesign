@@ -2,6 +2,7 @@ import { copyFile, readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test } from "@playwright/test"
+import { exportFromDialog } from "./export-dialog.ts"
 
 type ZipLibrary = {
   ZipReader: new (reader: unknown) => {
@@ -47,7 +48,7 @@ test("Blank deck edits, reloads, exports and imports without an upload, even whe
   await expect(page).toHaveURL(address)
   await expect(title).toHaveText("My first deck")
   const download = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   const exported = await download
   expect(exported.suggestedFilename()).toBe("Blank deck.pptx")
   const file = testInfo.outputPath("blank-export.pptx")
@@ -71,7 +72,7 @@ test("New slide on a blank deck paints layout placeholders and exports @export",
   await expect(page.locator('[data-slide-entry="2"]')).toHaveAttribute("aria-current", "true")
   await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(2)
   const download = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   const file = testInfo.outputPath("exported-blank-slides.pptx")
   await (await download).saveAs(file)
   await copyFile(file, join(process.cwd(), "tests/browser/exported-blank-slides.pptx"))
@@ -96,7 +97,7 @@ test("Blank deck subtitle prompt shows, typing replaces it, deleting brings it b
   await expect(prompt).toBeVisible()
   await expect(page.locator("[data-thumb-paint] [data-placeholder-prompt]")).toHaveCount(0)
   const download = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   const exported = await download
   const file = testInfo.outputPath("prompt-blank-export.pptx")
   await exported.saveAs(file)

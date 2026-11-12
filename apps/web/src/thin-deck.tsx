@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { type SlideCanvases } from "@/canvas-slide"
 import { DownloadedNotice, signInAddress, ThinNoticeView, type ThinNotice } from "@/thin-notice"
-import { exportDeck } from "@/export/export-deck"
+import { exportDeck, type ExportRequest } from "@/export/export-deck"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
 import { thumbHeight } from "@/thumb-height"
@@ -421,9 +421,9 @@ export function ThinDeck({ id }: { id: string }) {
     if (size !== null) void changeElement({ change: "text", index: current, size })
   }
 
-  async function onExport() {
+  async function onExport(request?: ExportRequest) {
     try {
-      setDownloaded(await exportDeck(id, notesQueue.current))
+      setDownloaded(await exportDeck(id, notesQueue.current, request))
       setFailure(null)
     } catch {
       setFailure("export-failed")
@@ -471,7 +471,7 @@ export function ThinDeck({ id }: { id: string }) {
       <EditorFrame>
         <EditorShell
           deck={{
-            onExport: () => void onExport(),
+            onExport,
             undo: {
               undoLabel: undoLabel("undo", undoShown),
               redoLabel: undoLabel("redo", undoShown),

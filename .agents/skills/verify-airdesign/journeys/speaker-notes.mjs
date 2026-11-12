@@ -37,6 +37,8 @@ export default async function drive({ repo, page, context, signIn, post, capture
   await capture("notes-reloaded")
   const download = page.waitForEvent("download")
   await page.getByRole("button", { name: "Export", exact: true }).click()
+  await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
+  await page.keyboard.press("Enter")
   const file = await download
   const saved = await file.path()
   await page.goto("/")

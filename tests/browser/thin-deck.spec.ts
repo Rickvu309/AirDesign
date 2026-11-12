@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
 import { stored } from "./device-store"
 import { expectNoSample } from "./no-sample"
+import { exportFromDialog, savedExport } from "./export-dialog.ts"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const fixture = join(fixtures, "clean.pptx")
@@ -86,14 +87,6 @@ async function open(page: Page, file: string): Promise<string> {
   return page.url()
 }
 
-async function saveExport(page: Page, file: string): Promise<string> {
-  const download = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export" }).click()
-  const got = await download
-  await got.saveAs(file)
-  return got.suggestedFilename()
-}
-
 test.use({ viewport: { width: 1600, height: 1000 } })
 
 test("edit to Hello! survives reload, exports @export", async ({ page }, testInfo) => {
@@ -111,7 +104,7 @@ test("edit to Hello! survives reload, exports @export", async ({ page }, testInf
   await reload(page)
   expect(page.url()).toBe(address)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello!")
-  expect(await saveExport(page, download)).toBe("clean.pptx")
+  expect(await savedExport(page, download)).toBe("clean.pptx")
   expect(await changedParts(fixture, download)).toEqual([slide])
   const saved = (await partsOf(download)).get(slide)?.toString("utf8") ?? ""
   expect(saved.match(/<a:t>[^<]*<\/a:t>/g)).toEqual(["<a:t>Hello!</a:t>"])
@@ -195,7 +188,7 @@ test("a second deck does not carry the first deck's edit", async ({ page }, test
   expect(page.url()).toBe(second)
   await expect(page.getByText("Introduction to Heat Pumps").first()).toBeVisible()
   await expect(page.getByText(marker)).toHaveCount(0)
-  await saveExport(page, saved)
+  await savedExport(page, saved)
   await everyPartLacks(saved, marker)
 })
 
@@ -289,7 +282,7 @@ test("an export with no edit keeps every part and the whole file byte for byte",
   const saved = testInfo.outputPath("no-edit.pptx")
   await open(page, fixture)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
-  await saveExport(page, saved)
+  await savedExport(page, saved)
   expect(await changedParts(fixture, saved)).toEqual([])
   expect((await readFile(saved)).equals(await readFile(fixture))).toBe(true)
 })
@@ -399,7 +392,7 @@ test("two text boxes keep their own edits after reload and both export", async (
   await expect(editors.filter({ hasText: /^Same technology as: Beta$/ })).toHaveCount(1)
   const nodes = new Set((await rowsOf(page)).map((row) => row.node))
   expect([...nodes].sort()).toEqual(["2727.2", "2727.44"])
-  await saveExport(page, download)
+  await savedExport(page, download)
   expect(await changedParts(deck, download)).toEqual(["ppt/slides/slide4.xml"])
   const saved = (await partsOf(download)).get("ppt/slides/slide4.xml")?.toString("utf8") ?? ""
   expect(saved).toContain("<a:t>What is a heat pump? Alpha</a:t>")
@@ -484,7 +477,7 @@ test("Enter inside a run of a box with eight runs makes a paragraph that keeps e
   await reload(page)
   await showSlide(page, 7)
   await expect.poll(() => paragraphsOf(page, box)).toEqual(shown)
-  await saveExport(page, download)
+  await savedExport(page, download)
   expect(await changedParts(deck, download)).toEqual([part])
   const before = (await partsOf(deck)).get(part)?.toString("utf8") ?? ""
   const after = (await partsOf(download)).get(part)?.toString("utf8") ?? ""
@@ -555,7 +548,7 @@ test("replaced run and paragraph export for PPTX check @export", async ({ page }
     "Extra line",
   ]
   await stored(page, shown.join("\n"))
-  await saveExport(page, download)
+  await savedExport(page, download)
   expect(await changedParts(deck, download)).toEqual([part])
   const written = shapeIn((await partsOf(download)).get(part)?.toString("utf8") ?? "", "45")
   expect(runsIn(written).map(([, text]) => text)).toEqual([
@@ -600,7 +593,7 @@ test("an empty box takes typed text, keeps it after reload and exports it", asyn
   await stored(page, "Typed here")
   await reload(page)
   await expect(page.locator("[contenteditable]").nth(2)).toHaveText("Typed here")
-  await saveExport(page, download)
+  await savedExport(page, download)
   expect(await changedParts(deck, download)).toEqual([part])
   const before = (await partsOf(deck)).get(part)?.toString("utf8") ?? ""
   const after = (await partsOf(download)).get(part)?.toString("utf8") ?? ""
@@ -631,7 +624,7 @@ test("a real deck paints no sample and still exports", async ({ page }, testInfo
   const place = await page.getByRole("button", { name: "Export", exact: true }).boundingBox()
   expect(place?.y ?? 923).toBeLessThan(56)
   expect(1470 - (place?.x ?? 0) - (place?.width ?? 0)).toBeLessThan(40)
-  await saveExport(page, saved)
+  await savedExport(page, saved)
   expect(await changedParts(fixture, saved)).toEqual([])
 })
 
@@ -658,7 +651,7 @@ test("one slide shows at a time", async ({ page }, testInfo) => {
   await showSlide(page, 7)
   await expect(seventh).toContainText("How do heat pumps work? Seven")
   await showSlide(page, 1)
-  await saveExport(page, download)
+  await savedExport(page, download)
   expect(await changedParts(deck, download)).toEqual([part])
   expect((await partsOf(download)).get(part)?.toString("utf8") ?? "").toContain("How do heat pumps work? Seven")
 })
@@ -792,7 +785,7 @@ test("an export whose stored parts are gone shows the export words and downloads
   page.on("download", () => {
     downloads += 1
   })
-  await page.getByRole("button", { name: "Export" }).click()
+  await exportFromDialog(page)
   await expect(page.getByText(exportFailedWords)).toBeVisible()
   expect(downloads).toBe(0)
 })

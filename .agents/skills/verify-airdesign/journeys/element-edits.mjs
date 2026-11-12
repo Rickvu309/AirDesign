@@ -37,6 +37,8 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   const out = path.dirname(await capture("reloaded"))
   const downloading = page.waitForEvent("download")
   await page.getByRole("button", { name: "Export", exact: true }).click()
+  await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
+  await page.keyboard.press("Enter")
   const file = path.join(out, "element-edits.pptx")
   await (await downloading).saveAs(file)
   await page.goto("/")
