@@ -1,8 +1,20 @@
+import { createServer } from "node:http"
+
 import { orderKeyBetween, presentSlides, readSlideId } from "@airdesign/document"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { postgresInfo } from "./harness.js"
-import { indexedDeck, slidesAddedBy, turnRow, wholeCall, type Owned, type Stores } from "./mcp-steps.js"
+import {
+  indexedDeck,
+  mcpSteps,
+  revisionOf,
+  slidesAddedBy,
+  turnRow,
+  wholeCall,
+  type McpSteps,
+  type Owned,
+  type Stores,
+} from "./mcp-steps.js"
 import { openPool } from "./pool.js"
 import { commitEdits, readSaved } from "./saved.js"
 import { specGraph, type Graph, type SpecState } from "./spec-graph.js"
@@ -20,6 +32,7 @@ type Live = Owned & {
 }
 
 let stores: Stores
+let steps: McpSteps
 
 async function saved(live: Live) {
   const row = await readSaved(stores.deck, live.deck)
@@ -29,14 +42,13 @@ async function saved(live: Live) {
 
 async function opened(): Promise<Live> {
   const owned = await indexedDeck(stores, "slide-undo")
-  const added = await wholeCall(owned, "r", "add_slide", {
+  const added = await wholeCall(steps, owned, "r", "add_slide", {
     deck: owned.deck,
     base: owned.revision,
     after: "256",
     layout: "256",
   })
-  if (!added.ok) throw new Error(added.refusal)
-  const live = { ...owned, offset: added.deck.revision - 1, minted: 0, moved: false, undone: false, afterUndo: 0 }
+  const live = { ...owned, offset: revisionOf(added) - 1, minted: 0, moved: false, undone: false, afterUndo: 0 }
   return { ...live, told: "none", adds: 0, undos: 0 }
 }
 
@@ -44,16 +56,15 @@ async function act(live: Live, action: string): Promise<void> {
   live.minted += 1
   const fresh = `u${String(live.minted)}`
   if (action === "AgentAddsSlide") {
-    const read = await wholeCall(live, fresh, "read_deck", { deck: live.deck })
-    if (!read.ok || read.reported === undefined || !("revision" in read.reported)) throw new Error("read")
-    const args = { deck: live.deck, base: read.reported.revision, after: "256", layout: "256" }
-    const added = await wholeCall(live, fresh, "add_slide", args)
-    if (!added.ok || added.answer?.ok !== true) throw new Error(`add ${added.ok ? "" : added.refusal}`)
-    if (added.answer.runId === "r" && live.undone) live.afterUndo += 1
+    const read = await wholeCall(steps, live, fresh, "read_deck", { deck: live.deck })
+    const args = { deck: live.deck, base: revisionOf(read), after: "256", layout: "256" }
+    const added = await wholeCall(steps, live, fresh, "add_slide", args)
+    revisionOf(added)
+    if (added.body?.runId === "r" && live.undone) live.afterUndo += 1
     live.adds += 1
   } else if (action === "AgentStops") {
-    const stopped = await wholeCall(live, fresh, "stop_run", { deck: live.deck, runId: "r" })
-    if (!stopped.ok) throw new Error(stopped.refusal)
+    const stopped = await wholeCall(steps, live, fresh, "stop_run", { deck: live.deck, runId: "r" })
+    if (!stopped.ok) throw new Error(JSON.stringify(stopped))
   } else if (action === "PersonMoves") {
     const row = await saved(live)
     const file = row.register.file
@@ -128,13 +139,15 @@ describe("slide-undo replay", () => {
   beforeAll(async () => {
     const info = await postgresInfo()
     stores = { deck: openPool(info.deck, "slide-undo-deck"), session: openPool(info.session, "slide-undo-session") }
+    steps = await mcpSteps(createServer)
   })
 
   afterAll(async () => {
+    await steps.close()
     await Promise.all([stores.deck.end(), stores.session.end()])
   })
 
-  it("drives every edge of the slide-undo model through run Undo, person moves and MCP calls on Postgres", async () => {
+  it("drives every edge of the slide-undo model through run Undo, person moves and serveMcp calls on Postgres", async () => {
     const graph = await specGraph("slide-undo", "SlideUndo")
     const paths = pathsFrom(graph)
     expect(paths.size).toBe(graph.states.size)

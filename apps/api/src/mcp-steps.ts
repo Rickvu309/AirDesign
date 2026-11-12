@@ -1,23 +1,14 @@
 import { randomBytes } from "node:crypto"
+import type { createServer, IncomingMessage, Server } from "node:http"
+import type { AddressInfo } from "node:net"
 
 import { readDeckId, readDeckIndex, type AgentOp, type DeckId } from "@airdesign/catalog"
 import { elementId, foldSlides, type Register } from "@airdesign/document"
-import { openDeck, type Deck } from "@airdesign/engine"
-import {
-  agentCaller,
-  callTool,
-  dropGoneTurn,
-  emptyLog,
-  settleTurn,
-  type Session,
-  type ToolResult,
-} from "@airdesign/mcp"
 
-import { storedTurns, type StoredTurns } from "./agent-turn.js"
 import { indexSaved } from "./index-saved.js"
-import { commitEdit } from "./mcp.js"
+import { serveMcp } from "./mcp.js"
 import type { Sql } from "./pool.js"
-import { deckAccess, openSaved, readSaved } from "./saved.js"
+import { openSaved } from "./saved.js"
 
 export const stepNode = elementId("256.2")
 
@@ -25,78 +16,199 @@ export type Stores = { readonly deck: Sql; readonly session: Sql }
 
 export type Owned = { readonly stores: Stores; readonly deck: DeckId; readonly email: string }
 
-export type Request = {
-  readonly turns: StoredTurns
-  readonly session: Session
-  loaded: Deck
-  seen: ReturnType<StoredTurns["read"]>
-  result: ToolResult | undefined
-  op: AgentOp
-  pc: "turn" | "deck" | "settle" | "idle"
+export type Gate = "turn" | "deck" | "write" | "save"
+
+export type Reply = { readonly ok: boolean; readonly body: Record<string, unknown> | undefined }
+
+export type Call = {
+  at: Gate | "end"
+  tries: number
+  read: number | undefined
+  reply: Reply | undefined
+  readonly release: () => Promise<void>
 }
 
-export function request(owned: Owned, runId: string): Request {
-  const turns = storedTurns(owned.stores.session, owned.email)
-  const session: Session = {
-    caller: agentCaller(runId),
-    deck: openDeck(owned.deck),
-    log: emptyLog(),
-    now: 1_000_000,
-    turns,
+type Running = Call & { last: Gate | undefined; go: () => void; arrived: () => void; ended: Promise<void> }
+
+const accept = "application/json, text/event-stream"
+
+function gateOf(text: string): Gate | undefined {
+  if (text.includes("from session.agent_turn where email")) return "turn"
+  if (text.includes("from deck.saved where id")) return "deck"
+  if (text.includes("update deck.saved")) return "write"
+  if (text.includes("insert into session.agent_turn")) return "save"
+  return undefined
+}
+
+function gated(db: Sql, call: Running): Sql {
+  return new Proxy(db, {
+    get(target, key) {
+      const member = Reflect.get(target, key) as unknown
+      if (key !== "query" || typeof member !== "function")
+        return typeof member === "function" ? member.bind(target) : member
+      const query = member as (...args: unknown[]) => Promise<{ rows: { revision?: number }[] }>
+      return async (...args: unknown[]) => {
+        const gate = typeof args[0] === "string" ? gateOf(args[0]) : undefined
+        if (gate === undefined || (gate === "deck" && call.last === "write")) return query.apply(target, args)
+        call.last = gate
+        await new Promise<void>((resolve) => {
+          call.at = gate
+          call.go = resolve
+          call.arrived()
+        })
+        const result = await query.apply(target, args)
+        if (gate === "turn") call.tries += 1
+        if (gate === "deck") call.read = result.rows[0]?.revision
+        return result
+      }
+    },
+  }) as Sql
+}
+
+function bodyOf(req: IncomingMessage): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = []
+    req.on("data", (chunk: Buffer) => chunks.push(chunk))
+    req.on("end", () => resolve(Buffer.concat(chunks)))
+    req.on("error", reject)
+  })
+}
+
+function replyOf(text: string): Reply {
+  const lines = text.startsWith("{")
+    ? [text]
+    : text.split("\n").flatMap((line) => (line.startsWith("data: ") ? [line.slice(6)] : []))
+  for (const line of lines) {
+    const message = JSON.parse(line) as {
+      result?: { isError?: boolean; structuredContent?: Record<string, unknown> }
+    }
+    if (message.result !== undefined)
+      return { ok: message.result.isError !== true, body: message.result.structuredContent }
   }
-  return { turns, session, loaded: session.deck, seen: undefined, result: undefined, op: "read_deck", pc: "turn" }
+  throw new Error(`no result in ${text}`)
 }
 
-export async function loadTurn(owned: Owned, req: Request): Promise<void> {
-  await req.turns.load(owned.deck)
-  req.seen = req.turns.read(owned.deck)
-  req.pc = "turn"
+function ended(call: Call): boolean {
+  return call.at === "end"
 }
 
-export async function loadDeck(owned: Owned, req: Request): Promise<void> {
-  const saved = await readSaved(owned.stores.deck, owned.deck)
-  if (saved === undefined) throw new Error("deck")
-  const access = deckAccess(saved, owned.email)
-  if (!access.ok) throw new Error(access.refusal)
-  req.loaded = { id: owned.deck, revision: access.saved.revision, register: access.saved.register }
-  req.session.deck = req.loaded
-  dropGoneTurn(req.session, req.seen)
-  req.pc = "deck"
+function waitFor(): { readonly promise: Promise<void>; readonly resolve: () => void } {
+  let resolve = () => undefined as void
+  const promise = new Promise<void>((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
 }
 
-export async function decide(
-  owned: Owned,
-  req: Request,
-  op: AgentOp,
-  args: Record<string, unknown>,
-): Promise<ToolResult> {
-  req.op = op
-  const settled = await commitEdit(owned.stores.deck, req.loaded, callTool(`airdesign_${op}`, args, req.session))
-  if (settled.ok) req.session.deck = settled.deck
-  req.result = settled
-  req.pc = "settle"
-  return settled
+export type McpSteps = {
+  readonly start: (owned: Owned, runId: string, op: AgentOp, args: Record<string, unknown>) => Promise<Call>
+  readonly close: () => Promise<void>
 }
 
-export async function settle(req: Request): Promise<void> {
-  if (req.result === undefined) throw new Error("settle")
-  settleTurn(req.op, req.result, req.session)
-  await req.turns.saved()
-  req.pc = "idle"
+export async function mcpSteps(open: typeof createServer): Promise<McpSteps> {
+  const waiting = new Map<string, { readonly owned: Owned; readonly runId: string; readonly call: Running }>()
+  const server: Server = open((req, res) => {
+    const id = String(req.headers["x-call"])
+    const found = waiting.get(id)
+    if (found === undefined) {
+      res.writeHead(404).end()
+      return
+    }
+    waiting.delete(id)
+    const { owned, runId, call } = found
+    void bodyOf(req).then((body) =>
+      serveMcp(
+        {
+          deck: gated(owned.stores.deck, call),
+          session: gated(owned.stores.session, call),
+          email: owned.email,
+          now: () => 1_000_000,
+          mint: () => runId,
+          hosts: ["127.0.0.1"],
+          bodyCap: 1_000_000,
+          fail: (error) => {
+            res.writeHead(500).end(String(error))
+          },
+        },
+        req,
+        res,
+        body,
+      ).finally(() => {
+        call.at = "end"
+        call.arrived()
+      }),
+    )
+  })
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve))
+  const port = (server.address() as AddressInfo).port
+  const start = async (owned: Owned, runId: string, op: AgentOp, args: Record<string, unknown>): Promise<Call> => {
+    const id = randomBytes(8).toString("hex")
+    let arrival = waitFor()
+    const call: Running = {
+      at: "turn",
+      tries: 0,
+      read: undefined,
+      reply: undefined,
+      last: undefined,
+      go: () => undefined,
+      arrived: () => arrival.resolve(),
+      ended: Promise.resolve(),
+      release: async () => {
+        if (ended(call)) throw new Error("ended")
+        arrival = waitFor()
+        call.go()
+        await arrival.promise
+        if (ended(call)) await call.ended
+      },
+    }
+    waiting.set(id, { owned, runId, call })
+    call.ended = fetch(`http://127.0.0.1:${String(port)}/mcp`, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept, "x-call": id },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: `airdesign_${op}`, arguments: args },
+      }),
+    })
+      .then((answer) => answer.text())
+      .then((text) => {
+        call.reply = replyOf(text)
+      })
+      .catch(() => undefined)
+    await arrival.promise
+    if (ended(call)) await call.ended
+    return call
+  }
+  const close = () =>
+    new Promise<void>((resolve) => {
+      server.close(() => resolve())
+      server.closeAllConnections()
+    })
+  return { start, close }
+}
+
+export async function finish(call: Call): Promise<Reply> {
+  while (!ended(call)) await call.release()
+  if (call.reply === undefined) throw new Error("reply")
+  return call.reply
 }
 
 export async function wholeCall(
+  steps: McpSteps,
   owned: Owned,
   runId: string,
   op: AgentOp,
   args: Record<string, unknown>,
-): Promise<ToolResult> {
-  const req = request(owned, runId)
-  await loadTurn(owned, req)
-  await loadDeck(owned, req)
-  const result = await decide(owned, req, op, args)
-  await settle(req)
-  return result
+): Promise<Reply> {
+  return finish(await steps.start(owned, runId, op, args))
+}
+
+export function revisionOf(reply: Reply): number {
+  const revision = reply.body?.revision
+  if (!reply.ok || typeof revision !== "number") throw new Error(`no revision in ${JSON.stringify(reply)}`)
+  return revision
 }
 
 export async function indexedDeck(stores: Stores, name: string): Promise<Owned & { readonly revision: number }> {
@@ -129,6 +241,14 @@ export async function turnRow(owned: Owned) {
     [owned.email, owned.deck],
   )
   return found.rows[0]
+}
+
+export async function toolCalls(owned: Owned): Promise<number> {
+  const found = await owned.stores.session.query<{ events: { kind: string }[] }>(
+    "select events from session.caller_log where email = $1",
+    [owned.email],
+  )
+  return (found.rows[0]?.events ?? []).filter((event) => event.kind === "tool").length
 }
 
 export function slidesAddedBy(register: Register, runId: string): readonly string[] {

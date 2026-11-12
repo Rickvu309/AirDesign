@@ -1,19 +1,20 @@
+import { createServer } from "node:http"
+
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { postgresInfo } from "./harness.js"
 import {
-  decide,
   indexedDeck,
-  loadDeck,
-  loadTurn,
-  request,
-  settle,
+  mcpSteps,
+  revisionOf,
   slidesAddedBy,
   stepNode as node,
+  toolCalls,
   turnRow,
   wholeCall,
+  type Call,
+  type McpSteps,
   type Owned,
-  type Request,
   type Stores,
 } from "./mcp-steps.js"
 import { openPool } from "./pool.js"
@@ -22,9 +23,11 @@ import { specGraph, type Graph, type SpecState } from "./spec-graph.js"
 
 type Live = Owned & {
   offset: number
+  tools: number
   base: number
-  agent: Request | undefined
-  stop: Request | undefined
+  agent: Call | undefined
+  reading: boolean
+  stop: Call | undefined
   minted: number
   stopped: boolean
   stopTold: boolean
@@ -32,6 +35,7 @@ type Live = Owned & {
 }
 
 let stores: Stores
+let steps: McpSteps
 
 async function stored(live: Live) {
   const saved = await readSaved(stores.deck, live.deck)
@@ -45,6 +49,12 @@ function runWord(runId: string | null | undefined): string {
   return runId === "r" ? "r" : "u"
 }
 
+function pcOf(call: Call | undefined, ended: string): string {
+  if (call === undefined) return "idle"
+  if (call.at === "end") return ended
+  return { turn: "retry", deck: "turn", write: "deck", save: "settle" }[call.at]
+}
+
 async function observed(live: Live): Promise<SpecState> {
   const row = await stored(live)
   const body = row.register.elements[node]
@@ -56,90 +66,96 @@ async function observed(live: Live): Promise<SpecState> {
     turn: runWord(row.turn.run_id),
     turnRev: row.turn.revision - live.offset,
     base: live.base - live.offset,
-    aPc: live.agent?.pc ?? "idle",
-    sPc: live.stop === undefined ? "idle" : live.stop.pc === "idle" ? "done" : live.stop.pc,
+    aPc: pcOf(live.agent, "idle"),
+    sPc: live.stop === undefined ? "idle" : pcOf(live.stop, "done"),
     stopped: live.stopped,
     stopTold: live.stopTold,
     late: live.late,
+    tools: (await toolCalls(live)) - live.tools,
   }
 }
 
 async function opened(element: string): Promise<Live> {
   const owned = await indexedDeck(stores, "slide-run")
-  const live: Live = {
-    ...owned,
-    offset: 0,
+  const added = await wholeCall(steps, owned, "r", "add_slide", {
+    deck: owned.deck,
     base: owned.revision,
-    agent: undefined,
-    stop: undefined,
-    minted: 0,
-    stopped: false,
-    stopTold: false,
-    late: 0,
-  }
-  const added = await wholeCall(live, "r", "add_slide", {
-    deck: live.deck,
-    base: live.base,
     after: "256",
     layout: "256",
   })
-  if (!added.ok) throw new Error(added.refusal)
-  live.base = added.deck.revision
+  let base = revisionOf(added)
   if (element === "running") {
-    const edited = await wholeCall(live, "r", "edit_deck", {
-      deck: live.deck,
-      base: live.base,
+    const edited = await wholeCall(steps, owned, "r", "edit_deck", {
+      deck: owned.deck,
+      base,
       changes: [{ node, value: "Agent", readAt: 0 }],
     })
-    if (!edited.ok) throw new Error(edited.refusal)
-    live.base = edited.deck.revision
+    base = revisionOf(edited)
   }
-  live.offset = live.base - 1
-  return live
+  const live = { ...owned, offset: base - 1, tools: await toolCalls(owned), base, agent: undefined, reading: false }
+  return { ...live, stop: undefined, minted: 0, stopped: false, stopTold: false, late: 0 }
+}
+
+function told(call: Call): boolean {
+  return call.at === "end" && call.reply?.ok === true
 }
 
 async function act(live: Live, action: string, target: SpecState): Promise<void> {
   const agent = live.agent
   const stop = live.stop
   if (action === "AgentLoadsTurn") {
-    live.minted += 1
-    live.agent = request(live, `u${String(live.minted)}`)
-    live.agent.op = target.aKind === "read" ? "read_deck" : "add_slide"
-    await loadTurn(live, live.agent)
-  } else if (action === "AgentLoadsDeck" && agent !== undefined) await loadDeck(live, agent)
-  else if (action === "AgentReads" && agent !== undefined) {
-    const read = await decide(live, agent, "read_deck", { deck: live.deck })
-    if (!read.ok || read.reported === undefined || !("revision" in read.reported)) throw new Error("read")
-    live.base = read.reported.revision
-    if (target.aPc === "idle") await settle(agent)
+    if (agent === undefined || agent.at === "end") {
+      live.minted += 1
+      const args =
+        target.aKind === "read"
+          ? { deck: live.deck }
+          : { deck: live.deck, base: live.base, after: "256", layout: "256" }
+      live.reading = target.aKind === "read"
+      const op = live.reading ? "read_deck" : "add_slide"
+      live.agent = await steps.start(live, `u${String(live.minted)}`, op, args)
+      await live.agent.release()
+    } else await agent.release()
+  } else if (action === "AgentLoadsDeck" && agent !== undefined) {
+    await agent.release()
+    if (live.reading) live.base = agent.read ?? live.base
   } else if (action === "AgentAddsSlide" && agent !== undefined) {
-    const added = await decide(live, agent, "add_slide", {
-      deck: live.deck,
-      base: live.base,
-      after: "256",
-      layout: "256",
-    })
-    if (added.ok && added.answer?.ok === true && added.answer.runId === "r" && live.stopped) live.late += 1
-    if (!added.ok) await settle(agent)
-  } else if (action === "AgentSavesTurn" && agent !== undefined) await settle(agent)
+    const before = (await observed(live)).shown
+    await agent.release()
+    if ((await observed(live)).shown !== before && live.stopped) live.late += 1
+  } else if (action === "AgentSavesTurn" && agent !== undefined) await agent.release()
   else if (action === "StopLoadsTurn") {
-    live.stop = request(live, "s")
-    await loadTurn(live, live.stop)
-  } else if (action === "StopLoadsDeck" && stop !== undefined) await loadDeck(live, stop)
-  else if (action === "StopCommits" && stop !== undefined) {
-    const ended = await decide(live, stop, "stop_run", { deck: live.deck, runId: "r" })
-    if (ended.ok) live.stopped = true
-    if (target.sPc === "done") {
-      await settle(stop)
-      live.stopTold = ended.ok
-    }
+    if (stop === undefined) {
+      live.stop = await steps.start(live, "s", "stop_run", { deck: live.deck, runId: "r" })
+      await live.stop.release()
+    } else await stop.release()
+  } else if (action === "StopLoadsDeck" && stop !== undefined) {
+    await stop.release()
+    if (stop.at === "save" || told(stop)) live.stopped = true
+    live.stopTold = told(stop)
+  } else if (action === "StopCommits" && stop !== undefined) {
+    await stop.release()
+    if ((await observed(live)).element === "stopped") live.stopped = true
+    live.stopTold = told(stop)
   } else if (action === "StopSavesTurn" && stop !== undefined) {
-    await settle(stop)
-    live.stopTold = true
+    await stop.release()
+    live.stopTold = told(stop)
   } else throw new Error(`no step for ${action}`)
 }
 
-const compared = ["rev", "shown", "element", "turn", "turnRev", "base", "aPc", "sPc", "stopped", "stopTold", "late"]
+const compared = [
+  "rev",
+  "shown",
+  "element",
+  "turn",
+  "turnRev",
+  "base",
+  "aPc",
+  "sPc",
+  "stopped",
+  "stopTold",
+  "late",
+  "tools",
+]
 
 type Path = { readonly root: string; readonly steps: readonly { readonly action: string; readonly to: string }[] }
 
@@ -184,16 +200,21 @@ describe("slide-run replay", () => {
   beforeAll(async () => {
     const info = await postgresInfo()
     stores = { deck: openPool(info.deck, "slide-run-deck"), session: openPool(info.session, "slide-run-session") }
+    steps = await mcpSteps(createServer)
   })
 
   afterAll(async () => {
+    await steps.close()
     await Promise.all([stores.deck.end(), stores.session.end()])
   })
 
-  it("drives every edge of the slide-run model through the MCP request steps on Postgres", async () => {
+  it("drives every edge of the slide-run model through serveMcp, step by step, on Postgres", async () => {
     const graph = await specGraph("slide-run", "SlideRun")
     const paths = pathsFrom(graph)
     expect(paths.size).toBe(graph.states.size)
+    const states = [...graph.states.values()]
+    expect(states.some((state) => state.aPc === "retry")).toBe(true)
+    expect(states.some((state) => state.sPc === "retry")).toBe(true)
     const edges = graph.edges.filter((edge) => edge.action !== "Done")
     const failures: string[] = []
     for (let at = 0; at < edges.length; at += 8) {
