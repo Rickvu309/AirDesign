@@ -54,6 +54,7 @@ function runText(editor: HTMLElement, index: number): Text {
 }
 
 function caretAt(node: Text, offset: number): Selection {
+  node.parentElement?.closest<HTMLElement>("[contenteditable]")?.focus()
   const selection = window.getSelection()
   if (selection === null) throw new Error("missing selection")
   const range = document.createRange()
@@ -504,6 +505,7 @@ describe("Passage paragraphs", () => {
 
   it("typing over a selection of the whole box keeps the first run's from", async () => {
     const { sent, editor } = await mountValue(twoRuns)
+    editor.focus()
     const selection = window.getSelection()
     const range = document.createRange()
     range.setStart(runText(editor, 0), 0)

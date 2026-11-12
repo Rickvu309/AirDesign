@@ -141,7 +141,7 @@ function paragraphNode(document: Document, paragraph: TextParagraph): HTMLElemen
 function showValue(box: HTMLElement, value: TextValue, carets: Carets | null, look: TextLook | undefined): void {
   box.replaceChildren(...value.map((paragraph) => paragraphNode(box.ownerDocument, paragraph)))
   if (look !== undefined) restyle(box, look)
-  if (carets === null) return
+  if (carets === null || !box.contains(box.ownerDocument.activeElement)) return
   const selection = box.ownerDocument.getSelection()
   if (selection === null) return
   const kept = box.ownerDocument.createRange()
