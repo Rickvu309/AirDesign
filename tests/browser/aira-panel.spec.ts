@@ -155,16 +155,14 @@ test("a person out of weekly usage sees the limit from the server and when it re
   expect(paths).not.toContain("/mcp")
 })
 
-test("a failed run says so, and the panel switch keeps the conversation", async ({ page, context, stack }) => {
+test("a failed run says so, and Design stays disabled while the conversation stays", async ({ page, context, stack }) => {
   const { side, log } = await openDeck(page, context, stack)
   stack.aira({ name: "overloaded.sse" })
   await ask(page, asked)
   await expect(side.getByText(airaCopy.failedTitle, { exact: true })).toBeVisible()
   await expect(side.getByText(airaCopy.failedNothing, { exact: true })).toBeVisible()
   await expect(side.getByRole("textbox", { name: "Ask Aira" })).toBeEnabled()
-  await page.getByRole("button", { name: "Design" }).click()
-  await expect(log.getByText(asked, { exact: true })).toBeHidden()
-  await page.getByRole("button", { name: "Agent" }).click()
+  await expect(page.getByRole("button", { name: productCopy.designOff })).toBeDisabled()
   await expect(log.getByText(asked, { exact: true })).toBeVisible()
   await side.getByRole("button", { name: "New chat", exact: true }).click()
   await expect(log.getByText(asked, { exact: true })).toHaveCount(0)

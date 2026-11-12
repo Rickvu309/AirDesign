@@ -128,7 +128,11 @@ export function EditorToolbar({
       {panel === "none" ? null : (
         <>
           <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />
-          <PanelSwitch active={panel} {...(onPanel === undefined ? {} : { onPick: onPanel })} />
+          <PanelSwitch
+            active={panel}
+            designOff={pointer !== undefined}
+            {...(onPanel === undefined ? {} : { onPick: onPanel })}
+          />
         </>
       )}
     </div>
