@@ -15,6 +15,7 @@ assert.deepEqual(
     "box.mjs",
     "chart-edits.mjs",
     "diagram-edits.mjs",
+    "notes.mjs",
     "paragraphs.mjs",
     "slide-edits.mjs",
     "slide-subset.mjs",

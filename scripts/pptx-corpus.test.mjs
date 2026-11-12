@@ -228,6 +228,7 @@ const pptx = {
   partCopies: () => new Map(),
   newSharedOwnedParts: () => [],
   touchMatches: () => true,
+  newNotesLinkFailures: () => [],
 }
 const written = (name) => ({
   name,

@@ -41,7 +41,6 @@ export type EditorShellProps = {
   slideLabel: string
   notes?: string
   onNotes?: (text: string) => void
-  notesLocked?: string
   run?: SidebarRun
   panel?: EditorPanel
   onPanel?: (panel: Exclude<EditorPanel, "none">) => void
@@ -63,7 +62,6 @@ export function EditorShell({
   slideLabel,
   notes,
   onNotes,
-  notesLocked,
   run = "done",
   panel = "none",
   onPanel,
@@ -133,7 +131,6 @@ export function EditorShell({
                 <NotesBar
                   text={run === "working" ? "" : notes}
                   {...(onNotes === undefined ? {} : { onEdit: onNotes })}
-                  {...(notesLocked === undefined ? {} : { locked: notesLocked })}
                 />
               </div>
               <span className="block h-3" />

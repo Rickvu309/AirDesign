@@ -65,7 +65,15 @@ export function scoreWrittenRoute(pptx, beforeParts, beforeErrors, item, afterEr
   const dangling = item.dangling ?? []
   const shared = pptx.newSharedOwnedParts(pptx.sharedOwnedParts(beforeParts), pptx.sharedOwnedParts(item.back))
   const partsMatch = pptx.touchMatches(beforeParts, item.back, item.run.touch)
-  if (errors.length === 0 && dupes.length === 0 && dangling.length === 0 && shared.length === 0 && partsMatch)
+  const notes = pptx.newNotesLinkFailures(beforeParts, item.back)
+  if (
+    errors.length === 0 &&
+    dupes.length === 0 &&
+    dangling.length === 0 &&
+    shared.length === 0 &&
+    notes.length === 0 &&
+    partsMatch
+  )
     return null
   return {
     operation: item.run.operation,
@@ -73,6 +81,7 @@ export function scoreWrittenRoute(pptx, beforeParts, beforeErrors, item, afterEr
     dupes: dupes.length,
     ...(dangling.length === 0 ? {} : { dangling: dangling.length }),
     ...(shared.length === 0 ? {} : { shared: shared.length }),
+    ...(notes.length === 0 ? {} : { notes }),
     parts: partsMatch,
     firstError: errors[0] ?? null,
   }

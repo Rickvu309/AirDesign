@@ -62,7 +62,7 @@ export function ThinDeck({ id }: { id: string }) {
   const structure = useRef("")
   const repaint = useRef<(register: Register, from?: "person") => void>(() => undefined)
   const [entering, setEntering] = useState<ElementId | null>(null)
-  const [notes, setNotes] = useState<readonly SlideNotes[]>([])
+  const [notes, setNotes] = useState<readonly Pick<SlideNotes, "slide" | "text">[]>([])
   const notesQueue = useRef(Promise.resolve())
   const [slideCount, setSlideCount] = useState(0)
   const [layouts, setLayouts] = useState<ReturnType<typeof layoutChoices>>([])
@@ -443,20 +443,21 @@ export function ThinDeck({ id }: { id: string }) {
   const currentNotes = notes.find((notes) => notes.slide === currentSlide)
 
   function editNotes(value: string) {
-    if (currentNotes === undefined) return
-    const note = currentNotes
-    const node = elementId(`${note.slide}.notes`)
+    if (currentSlide === undefined) return
+    const slide = currentSlide
+    const node = elementId(`${slide}.notes`)
+    const floor = currentNotes?.text ?? ""
     if (typed.current?.node !== node) {
       sessions.current += 1
-      typed.current = { node, session: sessions.current, before: Promise.resolve(note.text) }
+      typed.current = { node, session: sessions.current, before: Promise.resolve(floor) }
     }
     const { session, before } = typed.current
-    const kept = connect(memoryRemote()).enqueue(id, value, node, note.text)
+    setNotes((shown) => [...shown.filter((row) => row.slide !== slide), { slide, text: value }])
+    const kept = connect(memoryRemote()).enqueue(id, value, node, floor)
     notesQueue.current = notesQueue.current.then(async () => {
       const outcome = await commitKept(connect, id, kept, async () => {
         const from = await before
         setPending(true)
-        setNotes((all) => all.map((each) => (each.slide === note.slide ? { ...each, text: value } : each)))
         record({ name: "notes", session, undoable: { node, floor: from, before: { value: from }, after: { value } } })
       })
       if (outcome === "refused")
@@ -535,9 +536,7 @@ export function ThinDeck({ id }: { id: string }) {
             },
           }}
           notes={currentNotes?.text ?? ""}
-          {...(currentNotes === undefined
-            ? { notesLocked: "Speaker notes can't be edited on this slide yet." }
-            : { onNotes: editNotes })}
+          onNotes={editNotes}
           panel={panel}
           onPanel={setPanel}
           side={<AiraPanel key={id} deck={id} hidden={panel !== "agent"} />}
