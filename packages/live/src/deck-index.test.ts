@@ -114,7 +114,7 @@ it("upgrades an imported deck's index with its layouts once and then leaves it a
   const cache = connect(remote)
   const layout = [{ ...index.elements[0]!, node: elementId("258.2") }]
   expect(await cache.sized("up")).toBe(false)
-  expect(await cache.index("up", index)).toEqual({ ok: true })
+  expect(await cache.index("up", { ...index, slides: [{ id: "258", position: 0, free: 5 }] })).toEqual({ ok: true })
   expect((await cache.flush("up")).ok).toBe(true)
   expect(await cache.sized("up")).toBe(false)
   const layered = { ...index, slides: [{ id: "258", position: 0, free: 5, layout }] }
