@@ -39,3 +39,10 @@ export async function store(page: Page, decks: Deck[] = [first, second], trash: 
   })
   return { state, calls }
 }
+
+export const many: Deck[] = Array.from({ length: 8 }, (_, index) => ({
+  ...first,
+  deck: `deck-${index}`,
+  name: `Deck ${index}`,
+  edited: new Date(Date.UTC(2026, 10, 1 + index, 9)).toISOString(),
+}))

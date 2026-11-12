@@ -1,14 +1,7 @@
 import { expect, test } from "@playwright/test"
-import { first, store, type Deck } from "./home-store.ts"
+import { many, store } from "./home-store.ts"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
-
-const many: Deck[] = Array.from({ length: 8 }, (_, index) => ({
-  ...first,
-  deck: `deck-${index}`,
-  name: `Deck ${index}`,
-  edited: new Date(Date.UTC(2026, 10, 1 + index, 9)).toISOString(),
-}))
 
 const cards = (page: import("@playwright/test").Page) =>
   page.locator("[data-decks-main]").getByRole("heading", { level: 2 })

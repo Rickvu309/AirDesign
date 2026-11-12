@@ -5,7 +5,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { productCopy } from "@/copy/product-copy"
+import { noMatchTitleOf, productCopy } from "@/copy/product-copy"
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
@@ -18,7 +18,7 @@ import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/
 import { starterDeckCards } from "@/decks/sample-decks"
 import { deckTime } from "@/decks/deck-time"
 import { addressOf, addressRead } from "@/decks/deck-address"
-import { allDecks, recentDecks, type ListedDeck } from "@/decks/deck-listing"
+import { allDecks, decksMatching, recentDecks, type ListedDeck } from "@/decks/deck-listing"
 import { importDeck } from "@/import-deck"
 import { signInAddress } from "@/thin-notice"
 
@@ -106,6 +106,7 @@ export function Home({
   const [importing, setImporting] = useState<Importing | null>(null)
   const picker = useRef<HTMLInputElement>(null)
   const listFailed = useRef(false)
+  const [query, setQuery] = useState(() => addressRead(window.location.search).query)
   const listView = addressRead(window.location.search).list
   async function refresh() {
     try {
@@ -138,6 +139,11 @@ export function Home({
       heading.focus()
     }
   }, [unavailable])
+
+  function search(next: string) {
+    setQuery(next)
+    window.history.replaceState(null, "", addressOf(window.location.pathname, { list: listView, query: next }))
+  }
 
   async function restore(deck: Deck) {
     if ((await post(deckRoutes.restore.path, { deck: deck.deck })).ok) await refresh()
@@ -176,7 +182,10 @@ export function Home({
 
   const loading = listing === null && !unavailable
   const held = (trash ? listing?.trash : listing?.decks) ?? []
-  const decks = trash ? held : section === "recents" ? recentDecks(held) : allDecks(held)
+  const searching = query.trim() !== ""
+  const ordered = trash ? held : section === "recents" && !searching ? recentDecks(held) : allDecks(held)
+  const decks = decksMatching(ordered, query)
+  const noMatch = listing !== null && searching && held.length > 0 && decks.length === 0
   const firstVisit =
     listing !== null && section === "recents" && held.length === 0 && listing.trash.length === 0 && importing === null
   const noDecks = listing !== null && !trash && held.length === 0 && !firstVisit && importing === null
@@ -188,9 +197,10 @@ export function Home({
       firstVisit={firstVisit}
       view={listView ? "list" : "grid"}
       links={{
-        grid: addressOf(sectionPaths[section], { list: false, query: "" }),
-        list: addressOf(sectionPaths[section], { list: true, query: "" }),
+        grid: addressOf(sectionPaths[section], { list: false, query }),
+        list: addressOf(sectionPaths[section], { list: true, query }),
       }}
+      search={{ value: query, onChange: search }}
       menu={
         menu && <NewDeckMenu onImport={() => picker.current?.click()} onBlank={() => void blankDeck().then(choose)} />
       }
@@ -249,7 +259,21 @@ export function Home({
           />
         </div>
       )}
-      {(listing !== null || importing !== null) && !noDecks && (
+      {noMatch && (
+        <div className="mt-8">
+          <Card
+            className="w-full"
+            title={noMatchTitleOf(query.trim())}
+            description={productCopy.noMatchBody}
+            actions={
+              <Button variant="outline" size="sm" onClick={() => search("")}>
+                {productCopy.clearSearch}
+              </Button>
+            }
+          />
+        </div>
+      )}
+      {(listing !== null || importing !== null) && !noDecks && !noMatch && (
         <DeckGrid className={trash ? "mt-6" : undefined}>
           {importing &&
             (importing.failed ? (
@@ -297,7 +321,7 @@ export function Home({
             : null}
         </DeckGrid>
       )}
-      {listView && !trash && listing !== null && !noDecks && (
+      {listView && !trash && listing !== null && !noDecks && !noMatch && (
         <div className="mt-8">
           <DeckTableHeader />
           {decks.map((deck) => (

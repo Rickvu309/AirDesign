@@ -61,6 +61,7 @@ export function DecksShell({
   account: realAccount,
   onSignOut,
   onNavigate,
+  search,
 }: {
   active: DeckSection
   children: ReactNode
@@ -68,6 +69,7 @@ export function DecksShell({
   account?: { email: string }
   onSignOut?: () => void
   onNavigate?: (path: string) => void
+  search?: { value: string; onChange: (value: string) => void }
 }) {
   const [deletingAccount, setDeletingAccount] = useState(false)
   const primary = { ...sections[0], href: realAccount ? "/" : sections[0].href }
@@ -114,17 +116,37 @@ export function DecksShell({
             <AccountFace account={realAccount} />
           </button>
         )}
-        <label className="relative mt-3 block">
+        <form
+          role="search"
+          action="/"
+          method="get"
+          className="relative mt-3 block"
+          onSubmit={(event) => {
+            if (search || !realAccount) event.preventDefault()
+          }}
+        >
           <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-faint">
             <DeckGlyph name="search" size={15} />
           </span>
           <Input
             type="search"
+            name="q"
             placeholder="Search"
             aria-label="Search"
+            {...(search
+              ? {
+                  value: search.value,
+                  onChange: (event) => search.onChange(event.currentTarget.value),
+                  onKeyDown: (event) => {
+                    if (event.key !== "Escape" || search.value === "") return
+                    event.preventDefault()
+                    search.onChange("")
+                  },
+                }
+              : {})}
             className="h-9 rounded-lg border-0 bg-background pl-[var(--space-32)] text-sm shadow-[0_0_0_1px_var(--line)] placeholder:text-faint focus-visible:border-0 focus-visible:ring-2 focus-visible:ring-primary md:text-sm"
           />
-        </label>
+        </form>
         <nav className="mt-4" aria-label="Decks">
           <a
             href={primary.href}
