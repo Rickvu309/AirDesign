@@ -46,7 +46,7 @@ function streamed(turn: Extract<Turn, { lines: unknown }>, signal: AbortSignal |
 function scripted(
   turns: readonly Turn[],
   answers: readonly Answer[],
-  hooks: { onTool?: () => void; onStop?: () => Promise<void> } = {},
+  hooks: { onTool?: () => void; onStop?: () => Promise<void>; holdTools?: true } = {},
 ) {
   const queue = [...turns]
   const replies = [...answers]
@@ -67,6 +67,11 @@ function scripted(
     }
     if (path === mcpRoutes.mcp.path) {
       hooks.onTool?.()
+      if (hooks.holdTools === true) {
+        await new Promise<never>((_, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(new DOMException("stopped", "AbortError")))
+        })
+      }
       const params = body.params as { name: string; arguments: Record<string, unknown> }
       const reply = params.name === stop ? { structuredContent: { ok: true } } : (replies.shift() ?? {})
       const text = reply.text ?? JSON.stringify(reply.structuredContent ?? {})
@@ -373,5 +378,38 @@ describe("Aira's loop in the browser", () => {
     const asked = link.sent.length
     expect(refused === undefined ? "missing" : await undoExchange(refused, 0, link.send)).toBeUndefined()
     expect(link.sent).toHaveLength(asked)
+  })
+
+  describe("when Stop comes while a tool call is still waiting for the server", () => {
+    async function stoppedInFlight(calls: readonly ReplyBlock[]) {
+      const controller = new AbortController()
+      const link = scripted([{ lines: [ended(calls)] }, { lines: [ended([{ type: "text", text: "Ok" }])] }], [], {
+        onTool: () => void setTimeout(() => controller.abort(), 0),
+        holdTools: true,
+      })
+      const done = await askAira(airaChat(deck), "Retitle", {
+        signal: controller.signal,
+        fetch: link.send,
+        show: () => undefined,
+      })
+      return { done, link }
+    }
+
+    it("ends the hung call, marks its step stopped, and tells the model an edit may have landed", async () => {
+      const { done, link } = await stoppedInFlight([editCall])
+      expect(done.exchanges[0]?.end).toBe("stopped")
+      expect(done.exchanges[0]?.steps).toEqual([{ kind: "tool", id: "call_1", name: edit, state: "stopped" }])
+      expect(link.toolsSent()).toEqual([edit])
+      const [answer] = done.answers
+      expect(answer).toMatchObject({ tool_use_id: "call_1", is_error: true })
+      expect(JSON.stringify(answer)).toContain("may have landed")
+      expect(JSON.stringify(answer)).not.toContain("Nothing landed")
+    })
+
+    it("says a read changed nothing", async () => {
+      const { done } = await stoppedInFlight([call("call_1", read, { deck })])
+      expect(done.exchanges[0]?.steps).toEqual([{ kind: "tool", id: "call_1", name: read, state: "stopped" }])
+      expect(JSON.stringify(done.answers[0])).toContain("Nothing changed")
+    })
   })
 })
