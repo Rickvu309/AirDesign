@@ -1,11 +1,11 @@
-import type { CSSProperties } from "react"
+import { useLayoutEffect, type CSSProperties } from "react"
 import type { ElementId } from "@airdesign/document"
 import { useElement } from "./element-view.js"
 import { paragraphText, textValue } from "./paragraph-edit.js"
 import { Passage } from "./passage.js"
 import type { CanvasElement, CanvasSlide, CanvasText, PaintBox } from "./record.js"
 import type { PaintStore } from "./store.js"
-import { anchored, textLook, type Scaled, type TextLook } from "./text-look.js"
+import { anchored, ensureBulletRule, textLook, type Scaled, type TextLook } from "./text-look.js"
 
 const defaultTextSize = 203_200
 const defaultInsetX = 91_440
@@ -129,7 +129,7 @@ function SheetText(props: { readonly text: CanvasText; readonly look: TextLook }
       {text.paragraphs.map((paragraph) => {
         const filled = paragraph.runs.some((run) => run.text !== "")
         return (
-          <div key={paragraph.from} style={look.paragraph(paragraph.from, filled)}>
+          <div key={paragraph.from} data-paragraph={paragraph.from} style={look.paragraph(paragraph.from, filled)}>
             {paragraph.runs.map((run) => (
               <span key={run.from} style={look.run(paragraph.from, run.from)}>
                 {run.text}
@@ -192,6 +192,9 @@ export function SlideCanvas(props: {
 }) {
   const { slide, width } = props
   const scaled: Scaled = (emu) => (emu * width) / slide.width
+  useLayoutEffect(() => {
+    ensureBulletRule(document)
+  }, [])
   return (
     <div
       data-slide-paint

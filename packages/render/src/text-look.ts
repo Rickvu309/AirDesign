@@ -1,22 +1,20 @@
 import type { CSSProperties } from "react"
-import type { CanvasParagraph, CanvasRunStyle, CanvasText } from "./record.js"
+import { bulletLabel } from "./bullet-label.js"
+import type { CanvasBullet, CanvasParagraph, CanvasRunStyle, CanvasSpacing, CanvasText } from "./record.js"
 
 export type Scaled = (emu: number) => number
 
-type Styles = {
-  readonly fontFamily?: string
-  readonly fontSize?: string
-  readonly fontStyle?: string
-  readonly fontWeight?: string
-  readonly color?: string
-  readonly lineHeight: string
-  readonly textAlign?: CanvasParagraph["align"]
-}
+type Look = CSSProperties &
+  Partial<Record<"--bullet" | "--bullet-font" | "--bullet-color" | "--bullet-size" | "--bullet-hang", string>>
+
+const bulletProps = ["--bullet", "--bullet-font", "--bullet-color", "--bullet-size", "--bullet-hang"]
+const bulletRule =
+  "[data-paragraph]::before{content:var(--bullet);display:inline-block;min-width:var(--bullet-hang,auto);text-indent:0;pointer-events:none;user-select:none;white-space:pre;font-family:var(--bullet-font,inherit);color:var(--bullet-color,inherit);font-size:var(--bullet-size,1em);line-height:1}"
 
 export type TextLook = {
   readonly body: CSSProperties
-  paragraph(from: number, filled: boolean): Styles
-  run(paragraph: number, from: number): Styles
+  paragraph(from: number, filled: boolean): Look
+  run(paragraph: number, from: number): Look
 }
 
 export const anchored = { top: "flex-start", middle: "center", bottom: "flex-end" } as const
@@ -35,7 +33,7 @@ function familyOf(font: string | null): string {
   return `"${font.replace(/["\\]/g, "\\$&")}", ${pageFont}`
 }
 
-function styleOf(run: CanvasRunStyle, scaled: Scaled): Styles {
+function styleOf(run: CanvasRunStyle, scaled: Scaled): Look {
   return {
     fontFamily: familyOf(run.font),
     fontSize: `${scaled(run.size)}px`,
@@ -44,6 +42,104 @@ function styleOf(run: CanvasRunStyle, scaled: Scaled): Styles {
     color: run.color ?? pageColor,
     lineHeight: naturalLine,
   }
+}
+
+function marks(run: CanvasRunStyle): Look {
+  const drawn = [run.underline === true ? "underline" : "", run.strike === true ? "line-through" : ""].filter(
+    (mark) => mark !== "",
+  )
+  return {
+    ...(drawn.length === 0 ? {} : { textDecoration: drawn.join(" ") }),
+    ...(run.highlight == null ? {} : { backgroundColor: run.highlight }),
+    ...(run.baseline == null || run.baseline === 0 ? {} : { verticalAlign: `${run.baseline}em` }),
+  }
+}
+
+function fontSize(paragraph: CanvasParagraph): number {
+  let size = paragraph.endStyle.size
+  for (const run of paragraph.runs) if (run.size > size) size = run.size
+  return size
+}
+
+function lineHeights(
+  spacing: CanvasSpacing | null | undefined,
+  scaled: Scaled,
+  filled: boolean,
+): { readonly paragraph: string; readonly run: string } {
+  if (spacing == null) return { paragraph: filled ? noLine : naturalLine, run: naturalLine }
+  if ("percent" in spacing) {
+    const height = String(spacing.percent)
+    return { paragraph: filled ? noLine : height, run: height }
+  }
+  const height = `${scaled(spacing.length)}px`
+  return { paragraph: filled ? noLine : height, run: height }
+}
+
+function gap(
+  spacing: CanvasSpacing | null | undefined,
+  paragraph: CanvasParagraph,
+  scaled: Scaled,
+): string | undefined {
+  if (spacing == null) return undefined
+  const length = "percent" in spacing ? fontSize(paragraph) * spacing.percent : spacing.length
+  return `${scaled(length)}px`
+}
+
+function cssQuote(value: string): string {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`
+}
+
+function bulletVars(paragraph: CanvasParagraph, scaled: Scaled): Look {
+  const bullet: CanvasBullet | null | undefined = paragraph.bullet
+  if (bullet == null) return { "--bullet": "none" }
+  const source = paragraph.runs[0] ?? paragraph.endStyle
+  const font = bullet.font ?? source.font
+  const color = bullet.color ?? source.color
+  const indent = paragraph.indent ?? 0
+  return {
+    "--bullet": cssQuote(bulletLabel(bullet)),
+    "--bullet-size": `${scaled((source.size || paragraph.endStyle.size) * (bullet.size ?? 1))}px`,
+    ...(font === null ? {} : { "--bullet-font": familyOf(font) }),
+    ...(color === null ? {} : { "--bullet-color": color }),
+    ...(indent < 0 ? { "--bullet-hang": `${scaled(-indent)}px` } : {}),
+  }
+}
+
+function paragraphStyle(paragraph: CanvasParagraph, filled: boolean, scaled: Scaled): Look {
+  const margin = paragraph.marginLeft ?? 0
+  const indent = paragraph.indent ?? 0
+  const before = gap(paragraph.spaceBefore, paragraph, scaled)
+  const after = gap(paragraph.spaceAfter, paragraph, scaled)
+  return {
+    ...styleOf(paragraph.endStyle, scaled),
+    textAlign: paragraph.align,
+    lineHeight: lineHeights(paragraph.lineSpacing, scaled, filled).paragraph,
+    ...(margin === 0 ? {} : { paddingLeft: `${scaled(margin)}px` }),
+    ...(indent === 0 ? {} : { textIndent: `${scaled(indent)}px` }),
+    ...(before === undefined ? {} : { marginTop: before }),
+    ...(after === undefined ? {} : { marginBottom: after }),
+    ...(filled ? {} : marks(paragraph.endStyle)),
+    ...bulletVars(paragraph, scaled),
+  }
+}
+
+export function ensureBulletRule(doc: Document): void {
+  if (doc.head.querySelector("style[data-bullet-rule]") !== null) return
+  const style = doc.createElement("style")
+  style.dataset.bulletRule = ""
+  style.textContent = bulletRule
+  doc.head.append(style)
+}
+
+function applyStyle(node: HTMLElement, style: Look): void {
+  for (const name of bulletProps) node.style.removeProperty(name)
+  const plain: Record<string, string | number> = {}
+  for (const [key, value] of Object.entries(style)) {
+    if (value === undefined || value === null) continue
+    if (key.startsWith("--")) node.style.setProperty(key, String(value))
+    else plain[key] = value
+  }
+  Object.assign(node.style, plain)
 }
 
 export function textLook(text: CanvasText, scaled: Scaled): TextLook {
@@ -59,14 +155,15 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
     },
     paragraph(from, filled) {
       const paragraph = paragraphs.get(from)
-      const lineHeight = filled ? noLine : naturalLine
-      if (paragraph === undefined) return { lineHeight }
-      return { ...styleOf(paragraph.endStyle, scaled), textAlign: paragraph.align, lineHeight }
+      if (paragraph === undefined) return { lineHeight: filled ? noLine : naturalLine, "--bullet": "none" }
+      return paragraphStyle(paragraph, filled, scaled)
     },
     run(from, run) {
       const paragraph = paragraphs.get(from)
       if (paragraph === undefined) return { lineHeight: naturalLine }
-      return styleOf(paragraph.runs.find((each) => each.from === run) ?? paragraph.endStyle, scaled)
+      const style = paragraph.runs.find((each) => each.from === run) ?? paragraph.endStyle
+      const lineHeight = lineHeights(paragraph.lineSpacing, scaled, true).run
+      return { ...styleOf(style, scaled), ...marks(style), lineHeight }
     },
   }
 }
@@ -98,10 +195,10 @@ export function restyle(box: HTMLElement, look: TextLook): void {
   for (const block of box.children) {
     if (!isElement(block) || block.dataset.paragraph === undefined) continue
     const from = Number(block.dataset.paragraph)
-    Object.assign(block.style, look.paragraph(from, isFilled(block)))
+    applyStyle(block, look.paragraph(from, isFilled(block)))
     for (const span of runsOf(block)) {
       const [paragraph, run] = (span.dataset.run ?? "").split(".").map(Number)
-      Object.assign(span.style, look.run(from, paragraph === from && run !== undefined ? run : loneRun))
+      applyStyle(span, look.run(from, paragraph === from && run !== undefined ? run : loneRun))
     }
   }
 }

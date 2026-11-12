@@ -371,6 +371,48 @@ const text: PaintText = {
   spacingReduction: 0,
 }
 
+it("keeps a paragraph's bullet, gaps and run marks, and reduces its line spacing", () => {
+  const marked: PaintText = {
+    ...text,
+    fontScale: 1,
+    spacingReduction: 0.5,
+    paragraphs: [
+      {
+        ...paragraph,
+        marginLeft: 285_750,
+        indent: -285_750,
+        lineSpacing: { points: 10 },
+        spaceBefore: { points: 6 },
+        spaceAfter: { percent: 0.2 },
+        bullet: { autoNumber: "arabicPeriod", start: 1, number: 2, font: null, color: null, size: null },
+        runs: [
+          {
+            ...runLook,
+            from: 3,
+            kind: "text",
+            text: "words",
+            underline: true,
+            strike: true,
+            baseline: 0.3,
+            highlight: { hex: "FFFF00", alpha: 1 },
+          },
+        ],
+      },
+    ],
+  }
+  expect(painted({ text: marked }).text?.paragraphs[0]).toMatchObject({
+    marginLeft: 285_750,
+    indent: -285_750,
+    lineSpacing: { length: 63_500 },
+    spaceBefore: { length: 76_200 },
+    spaceAfter: { percent: 0.2 },
+    bullet: { autoNumber: "arabicPeriod", number: 2, font: null, color: null, size: null },
+    runs: [{ underline: true, strike: true, baseline: 0.3, highlight: css("FFFF00"), size: 304_800 }],
+  })
+  const tightened: PaintText = { ...text, spacingReduction: 0.25 }
+  expect(painted({ text: tightened }).text?.paragraphs[0]?.lineSpacing).toEqual({ percent: 0.75 })
+})
+
 it("turns a paragraph's points into the slide's units, shrunk by the box's font scale", () => {
   expect(painted({ text }).text).toEqual({
     anchor: "middle",
@@ -380,10 +422,38 @@ it("turns a paragraph's points into the slide's units, shrunk by the box's font 
       {
         from: 2,
         align: "justify",
+        marginLeft: 0,
+        indent: 0,
+        lineSpacing: null,
+        spaceBefore: null,
+        spaceAfter: null,
+        bullet: null,
         runs: [
-          { from: 3, text: "words", font: "Serifa", size: 152_400, bold: true, italic: true, color: css("102030") },
+          {
+            from: 3,
+            text: "words",
+            font: "Serifa",
+            size: 152_400,
+            bold: true,
+            italic: true,
+            underline: false,
+            strike: false,
+            baseline: 0,
+            color: css("102030"),
+            highlight: null,
+          },
         ],
-        endStyle: { font: null, size: 76_200, bold: false, italic: false, color: null },
+        endStyle: {
+          font: null,
+          size: 76_200,
+          bold: false,
+          italic: false,
+          underline: false,
+          strike: false,
+          baseline: 0,
+          color: null,
+          highlight: null,
+        },
       },
     ],
   })
