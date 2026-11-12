@@ -93,7 +93,17 @@ function layoutRelationships(rels: Uint8Array): Uint8Array {
   return next
 }
 
-export function addSlide(parts: Map<string, Uint8Array>, after: string, copy: boolean) {
+const largestSlideId = 2147483647
+
+function namedSlideId(elements: readonly MarkupElement[], id: string | undefined): string {
+  if (id === undefined) return String(nextNumbered(elements, "p:sldId"))
+  const number = digits(id)
+  const taken = elements.some((element) => element.kind === "p:sldId" && element.id === id)
+  if (number === null || number < 256 || number > largestSlideId || taken) throw new Error("slide")
+  return id
+}
+
+export function addSlide(parts: Map<string, Uint8Array>, after: string, copy: boolean, id?: string) {
   const presentation = partBytes(parts, presentationPart)
   const rels = partBytes(parts, presentationRels)
   const types = partBytes(parts, contentTypesPart)
@@ -109,7 +119,7 @@ export function addSlide(parts: Map<string, Uint8Array>, after: string, copy: bo
   if (sourceBytes === undefined || sourceRelBytes === undefined) throw new Error("part")
   const number = nextSlideFile(parts)
   const newRid = nextRelationshipId(relDocument.elements)
-  const newId = String(nextNumbered(presentationDocument.elements, "p:sldId"))
+  const newId = namedSlideId(presentationDocument.elements, id)
   const part = partOf(presentationPart, `slides/slide${number}.xml`)
   const typeDocument = requireMarkup(types)
   replacePart(

@@ -66,6 +66,7 @@ export function ThinDeck({ id }: { id: string }) {
   const movables = useRef<ReadonlyMap<ElementId, TextBox>>(new Map())
   const shapes = useRef<ReadonlyMap<ElementId, ReadShape>>(new Map())
   const shownParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
+  const editParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
   const canvases = useRef<SlideCanvases>(() => null)
   const pictures = useRef<PictureSources | null>(null)
   const busy = useRef(busyElements())
@@ -182,7 +183,7 @@ export function ThinDeck({ id }: { id: string }) {
       show(target, shownValue(opened.ok ? opened.register : null, target, file))
     }
     const shape = shapes.current.get(target)
-    if (shape === undefined || !valueStorable(shownParts.current, shape, textValue(value))) {
+    if (shape === undefined || !valueStorable(editParts.current, shape, textValue(value))) {
       await refused()
       return
     }
@@ -253,6 +254,7 @@ export function ThinDeck({ id }: { id: string }) {
     boxes.current = painted.boxes
     movables.current = painted.movables
     shapes.current = painted.shapes
+    editParts.current = painted.base
     canvases.current = painted.canvases
     pictures.current?.release()
     pictures.current = painted.pictures

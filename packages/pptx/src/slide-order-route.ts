@@ -43,8 +43,8 @@ export function orderedParts(
     const before = idsOf(next)
     const route =
       command.slide === "add"
-        ? ({ name: "sldIdLst.add", after: anchorId } as const)
-        : ({ name: "sldIdLst.clone", slide: anchorId } as const)
+        ? ({ name: "sldIdLst.add", after: anchorId, id: command.id } as const)
+        : ({ name: "sldIdLst.clone", slide: anchorId, id: command.id } as const)
     next = applyStructuralRoute(next, route)
     const id = createdId(before, idsOf(next))
     minted.set(command.id, id)

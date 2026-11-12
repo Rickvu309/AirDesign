@@ -1,17 +1,10 @@
-import {
-  readElementId,
-  slideId,
-  writeTextValue,
-  type ElementId,
-  type Register,
-  type TextValue,
-} from "@airdesign/document"
+import { readElementId, slideId, type ElementId, type Register, type TextValue } from "@airdesign/document"
 import { applyRoute, paintReader, paintKind, readShapes, readSlides, type ReadShape } from "@airdesign/pptx"
 import type { PaintStore } from "@airdesign/render"
 import { slideCanvases, type SlideCanvases } from "@/canvas-slide"
 import type { TextBox } from "@/commit-edit"
 import { boxStorable, landedBox } from "@/element-move"
-import { exportedParts } from "@/exported-parts"
+import { editedParts, slideBase, storedText } from "@/exported-parts"
 import { pictureSources, type PictureSources } from "@/picture-fill"
 import { shownValue, type BusyElements } from "@/live-repaint"
 
@@ -28,10 +21,6 @@ function namedShapes(parts: ReadonlyMap<string, Uint8Array>): readonly NamedShap
 
 export function elementIds(parts: ReadonlyMap<string, Uint8Array>): readonly ElementId[] {
   return namedShapes(parts).map((named) => named.id)
-}
-
-function storedText(value: TextValue): string {
-  return value.length === 0 ? "" : writeTextValue(value)
 }
 
 function trialValue(value: TextValue): TextValue | null {
@@ -87,9 +76,12 @@ export function paint(
   readonly shapes: ReadonlyMap<ElementId, ReadShape>
   readonly pictures: PictureSources
   readonly files: ReadonlyMap<ElementId, string>
+  readonly base: ReadonlyMap<string, Uint8Array>
 } {
-  const display = register !== null && register.order.length > 0 ? exportedParts(parts, register) : parts
+  const base = register === null ? parts : slideBase(parts, register)
+  const display = register !== null && register.order.length > 0 ? editedParts(base, register) : parts
   const named = namedShapes(display)
+  const based = new Map(namedShapes(base).map((each) => [each.id, each.shape]))
   const ids = named.map((each) => each.id)
   const seen = new Map<ElementId, number>()
   for (const id of ids) seen.set(id, (seen.get(id) ?? 0) + 1)
@@ -97,15 +89,16 @@ export function paint(
   const movables = new Map<ElementId, TextBox>()
   const rows = new Map<ElementId, ReadShape>()
   const files = new Map<ElementId, string>()
-  for (const { id, shape } of named) {
-    const kind = paintKind(shape.kind)
+  for (const { id, shape: shown } of named) {
+    const shape = based.get(id) ?? shown
+    const kind = paintKind(shown.kind)
     const file = storedText(shape.text)
     files.set(id, file)
     if (!busy.has(id) || store.getElement(id) === null) {
       store.publish({ id, kind, text: shownValue(register, id, file), picture: kind === "picture" ? "" : null })
       store.placeBox(id, landedBox(register, id))
     }
-    const holding = parts.has(shape.part) ? parts : null
+    const holding = base.has(shape.part) ? base : null
     if (holding !== null && seen.get(id) === 1 && boxStorable(holding, shape)) movables.set(id, { id, file })
     const storable =
       holding !== null && seen.get(id) === 1 && !shape.locked && valueStorable(holding, shape, trialValue(shape.text))
@@ -130,5 +123,5 @@ export function paint(
   }))
   const pictures = pictureSources(display)
   const canvases = slideCanvases(paintReader(display), sources, pictures.src)
-  return { count: read.length, canvases, boxes, movables, shapes: rows, pictures, files }
+  return { count: read.length, canvases, boxes, movables, shapes: rows, pictures, files, base }
 }

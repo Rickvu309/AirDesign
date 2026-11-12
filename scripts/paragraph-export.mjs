@@ -48,6 +48,7 @@ export const browserSpecs = [
   "tests/browser/box-export.spec.ts",
   "tests/browser/blank-deck.spec.ts",
   "tests/browser/slide-export.spec.ts",
+  "tests/browser/slide-edits.spec.ts",
 ]
 
 export const freshExports = ({ deck, paragraphs, box, slides, also = [], run }) =>
