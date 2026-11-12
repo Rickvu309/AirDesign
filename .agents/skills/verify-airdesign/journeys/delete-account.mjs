@@ -31,10 +31,10 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await expect(remove).toHaveCSS("opacity", "1")
   await capture("delete-account-typed")
   await remove.click()
-  await expect(page.getByRole("heading", { name: "Sign in or create an account" })).toBeVisible()
+  await expect(page).toHaveURL(/^https:\/\/airdesign\.app\/sign-in\/?\?next=%2F$/)
   await capture("after-delete")
   note(
-    `Delete account in the account menu, with the email typed, lands on ${new URL(page.url()).pathname}${new URL(page.url()).search}`,
+    `Delete account in the account menu, with the email typed, asks for the sign-in page ${page.url()}, which the kit answers with its stand-in`,
   )
 
   const listed = await post(deckRoutes.list, {}, cookie)

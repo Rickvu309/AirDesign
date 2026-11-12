@@ -4,7 +4,7 @@ This directory is the maintained source for verifying what an AirDesign user doe
 
 ## Every merge runs every journey
 
-The `journeys` workflow (`.github/workflows/journeys.yml`) runs `pnpm test:journeys` on every push to `main`: it builds `apps/api` and `apps/web` once, launches one stack with `$V launch --no-build`, runs every journey in `journeys/` against it through `tests/journeys/journeys.spec.ts`, and stops the stack. A failure opens or comments on the issue `journey failed on main`, naming the journey, the commit and the run; the next passing push closes it. It does not run on pull requests and blocks no merge. Run the same thing locally with `pnpm test:journeys` from the repo root. A new journey file is driven in that suite once it is listed in `tests/journeys/journeys.spec.ts`.
+The `journeys` workflow (`.github/workflows/journeys.yml`) runs `pnpm test:journeys` on every push to `main`: it builds `apps/api` and `apps/web` once, launches one stack with `$V launch --no-build`, runs every journey in `journeys/` against it through `tests/journeys/journeys.spec.ts`, and stops the stack. A failure opens or comments on the issue `journey failed on main`, naming the journey, the commit and the run; the next passing push closes it. It does not run on pull requests and blocks no merge. Run the same thing locally with `pnpm test:journeys` from the repo root. A new journey file is driven in that suite once it is listed in `tests/journeys/journeys.spec.ts`. Journeys that call `kit.aira()` share the stack's one queue of recorded model streams, so they go in that file's `recorded Aira` group, which runs them one after another; every other journey runs in parallel.
 
 ## Baseline preconditions
 
@@ -33,13 +33,18 @@ Each feature file starts with an H1 title and one paragraph describing what the 
 
 ## Features
 
-- [Open a PowerPoint and edit its text](./open-edit-save.md): import from Home, type in the slide, the server keeps the text, reopening shows it. Journey `open-edit-save`.
-- [Deck list and Trash](./deck-list-trash.md): Home lists the person's decks, Move to Trash, Restore, Empty Trash. Journey `deck-list-trash`.
+- [Open a PowerPoint or a blank deck and edit its text](./open-edit-save.md): import from Home or start a blank deck, type in the slide, the server keeps the text, reopening shows it. Journeys `open-edit-save`, `blank-deck`, `commit-once`, `element-index`.
+- [Deck list and Trash](./deck-list-trash.md): Home's first visit, its decks, `No decks yet`, Move to Trash, Restore, Empty Trash. Journey `deck-list-trash`.
 - [Move and resize an element](./move-resize.md): select an element, drag it, resize it from a corner, nudge it with the arrows; the server keeps the box and the export writes it. Journey `move-resize`.
-- [Slide paint](./slide-paint.md): the opened deck paints each element at its place on a slide of the right shape. Journey `slide-paint`.
+- [Add a text box and delete an element](./element-edits.md): `Add text box` in the toolbar, Delete on a selected element. Journey `element-edits`.
+- [Add, duplicate, move and delete slides](./slide-commands.md): the slide list's `Add slide`, Ctrl/Cmd+D, Alt+arrows and Delete. Journeys `slide-commands`, `blank-slides`.
+- [Undo and redo the person's edits](./person-undo.md): the keys, the named toolbar buttons and `Unable to undo`. Journey `person-undo`.
+- [Speaker notes](./speaker-notes.md): the notes bar under the slide, editable or locked, offline and through the export. Journey `speaker-notes`.
+- [Slide paint](./slide-paint.md): the opened deck paints each element at its place on a slide of the right shape: text, pictures, shapes, tables, prompts, thumbnails. Journey `slide-paint`.
 - [Reopen in a cleared browser](./cleared-browser.md): after IndexedDB, local storage and site files are cleared, the saved deck still shows its slide. Journey `cleared-browser`.
 - [Delete account](./delete-account.md): the account menu deletes the account after the person types its email; the server, the stored originals and the browser keep nothing of it. Journey `delete-account`.
-- [Ask Aira through the server](./aira-turn.md): one metered model call at a time streams text and tool calls, the tool calls run through `/mcp`, and the person undoes the run. Journey `aira-turn`.
+- [Ask Aira through the server](./aira-turn.md): one metered model call at a time streams text and tool calls, the tool calls run through `/mcp`, the person stops or undoes the run. Journey `aira-turn`.
 - [Connected agents](./connected-agents.md): the account menu opens `/settings/agents`, shows and copies the MCP address, lists connected agents, and disconnects one so its access and refresh tokens stop working at once. Journey `connected-agents`.
-- [Ask Aira in the Agent panel](./aira-panel.md): the person types to Aira in the open deck, watches the reply stream and the slide change, stops or undoes the run, and reads the week's usage. Journey `aira-panel`.
-- [Sign in](./sign-in.md): email, six-digit code, session cookie, signed-out redirect. Command `$V sign-in`.
+- [Ask Aira in the Agent panel](./aira-panel.md): the person types to Aira in the open deck, watches the reply stream and the slide change, stops, retries or undoes the run, goes back to earlier chats, and reads the week's usage. Journeys `aira-panel`, `aira-head`, `aira-slides`.
+- [Usage page](./usage-page.md): `/settings/usage` shows the week's Aira usage and when it resets. Journey `usage-page`.
+- [Sign in](./sign-in.md): email, six-digit code, the designed mail, session cookie, signed-out redirect. Command `$V sign-in`, journey `sign-in-mail`.

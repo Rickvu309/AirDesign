@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { arrow, circleRadius, crossesBox, place, relative, tipGap } from "./placement.mjs"
+import { aimAt, arrow, circleRadius, crossesBox, place, relative, tipGap } from "./placement.mjs"
 
 const area = { width: 400, height: 300 }
 const inside = (box, point) =>
@@ -78,5 +78,20 @@ describe("placement", () => {
     const box = { x: 10, y: 10, width: 20, height: 20 }
     expect(crossesBox({ x: 0, y: 20 }, { x: 40, y: 20 }, box)).toBe(true)
     expect(crossesBox({ x: 0, y: 0 }, { x: 40, y: 0 }, box)).toBe(false)
+  })
+})
+
+describe("aimAt", () => {
+  it("aims at the words of a wide block whose text is centered", () => {
+    const block = { x: 0, y: 100, width: 400, height: 30 }
+    const words = { x: 180, y: 104, width: 40, height: 22 }
+    expect(aimAt(block, words)).toEqual(words)
+  })
+
+  it("keeps the element when it has no text or its text spills outside it", () => {
+    const field = { x: 10, y: 10, width: 200, height: 40 }
+    expect(aimAt(field, null)).toEqual(field)
+    expect(aimAt(field, { x: 0, y: 0, width: 0, height: 0 })).toEqual(field)
+    expect(aimAt(field, { x: 5, y: 15, width: 300, height: 20 })).toEqual({ x: 10, y: 15, width: 200, height: 20 })
   })
 })

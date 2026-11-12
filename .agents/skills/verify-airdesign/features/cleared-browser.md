@@ -1,11 +1,14 @@
 # Reopen a saved deck in a cleared browser
 
-A person saves an edit, then their browser loses everything AirDesign stored on the device: IndexedDB, local storage and site files. When they open the deck again, the slide shows its content and their edit: import sends the original file to the server (`deckRoutes.originalUpload`, then `originalDone`), and a deck whose parts are not on the device is rebuilt from `deckRoutes.original` with the saved edits painted over it. A deck with no stored original shows the import notice instead of an empty slide.
+A person saves an edit, then their browser loses everything AirDesign stored on the device: IndexedDB, local storage and site files. When they open the deck again, the slide shows its content and their edit: the editor sends the original file to the server (`deckRoutes.originalUpload`, then `originalDone`) after it opens the deck, and again when the browser is back online, and a deck whose parts are not on the device is rebuilt from `deckRoutes.original` with the saved edits painted over it. When that fails (no original on the server, offline, signed out, a size or hash mismatch), the editor shows an empty slide with the notice `Unable to open this deck` and `Go to your decks`.
 
 ## Sub-features
 
 - `cleared-reopen-text` the edited text box reads the text the server kept.
 - `cleared-reopen-paint` the slide paints as many elements as it did before the browser was cleared.
+- `cleared-rebuilding` while it rebuilds there is no loading text: an empty slide area, a blank title and slide label `1`. `.thin-page` gets `data-deck-ready` once the slide is painted.
+- `cleared-failed` a failed rebuild shows `Unable to open this deck` with `button "Go to your decks"`, which goes to `/`. Signed out, the same notice shows; the editor does not send the person to sign-in.
+- `cleared-no-edits` if the original downloads but `deckRoutes.open` fails, the plain original shows without the edits and without a notice.
 
 ## How to get to it (user POV)
 
@@ -25,5 +28,6 @@ Preconditions:
 
 ## Gotchas
 
-- The upload runs after import, before Home opens the deck. A browser cleared before it lands loses the original, and that deck shows the import notice.
+- The upload runs from the editor after the deck opens, not during the import. A browser cleared before it lands loses the original, and that deck shows `Unable to open this deck`. Poll `deckRoutes.original` for `ok: true` before clearing.
+- `[data-canvas-element]` also matches tables in the slide-list thumbnails. Count `[data-slide-paint] [data-canvas-element]` on a deck with tables.
 - Fixed 2026-11-11: before, the web app never sent the original, so the reopened deck showed an empty slide with page number `1`.

@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import { execFileSync, spawn } from "node:child_process"
 import { randomBytes } from "node:crypto"
-import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { serve } from "./serve.mjs"
 import { designContext, openBrowser, settle } from "./browser.mjs"
+import { loadLine } from "./load.mjs"
 
 const skill = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const repo = process.env.VERIFY_AIRDESIGN_REPO
@@ -118,7 +119,10 @@ async function launch(args) {
     if (existsSync(statePath(run))) {
       const state = readState(run)
       if (state.ready) {
-        proof(run, `# verify-airdesign run ${run}\n\n- commit ${state.commit}\n- origin ${state.origin}`)
+        proof(
+          run,
+          `# verify-airdesign run ${run}\n\n- commit ${state.commit}\n- origin ${state.origin}\n- launched at ${loadLine()}`,
+        )
         process.stdout.write(
           `${JSON.stringify({ run, origin: state.origin, evidence: evidenceDir(run), pid: state.pid })}\n`,
         )
@@ -180,7 +184,12 @@ async function doctor(run) {
     checks.databaseAnswers = list.status === 401 && list.json.refusal === "session"
   }
   const ok = Object.values(checks).every(Boolean)
-  process.stdout.write(`${JSON.stringify({ ok, run, origin: state.origin, checks })}\n`)
+  const gone = checks.serveOwned
+    ? {}
+    : {
+        next: `the stack is gone; its last lines are in ${path.join(scratchDir(run), "stack.log")}. Run stop ${run}, then launch again.`,
+      }
+  process.stdout.write(`${JSON.stringify({ ok, run, origin: state.origin, checks, load: loadLine(), ...gone })}\n`)
   if (!ok) process.exit(1)
 }
 
@@ -211,12 +220,22 @@ async function apiCall(run, name, bodyText, cookie) {
   process.stdout.write(`${JSON.stringify({ status: answer.status, file })}\n`)
 }
 
+export const productionHosts = /^https:\/\/([a-z0-9-]+\.)*airdesign\.app\//
+
+export function productionStandIn(url) {
+  const shown = url.replace(/[<>&"]/g, "")
+  return `<!doctype html><title>Production stand-in</title><h1>Production stand-in</h1><p data-production-url="${shown}">${shown}</p>`
+}
+
 export async function journeyKit({ run, name, page, context }) {
   const state = readState(run)
   const { deckRoutes, signInRoutes, accountRoutes, oauthRoutes, airaRoutes, mcpRoutes, countryHeader } =
     await catalog(state)
   const out = path.join(evidenceDir(run), `${name}-${String(Date.now())}`)
   mkdirSync(out, { recursive: true })
+  await context.route(productionHosts, (route) =>
+    route.fulfill({ contentType: "text/html", body: productionStandIn(route.request().url()) }),
+  )
   let step = 0
   const kit = {
     repo,
@@ -232,6 +251,16 @@ export async function journeyKit({ run, name, page, context }) {
     countryHeader,
     aira(scripts) {
       writeFileSync(airaPath(run), JSON.stringify({ at: Date.now(), scripts }))
+    },
+    mail(to) {
+      const mails = readFileSync(state.mail, "utf8")
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line))
+        .filter((mail) => mail.to === to)
+      const last = mails.at(-1)
+      if (last !== undefined) writeFileSync(path.join(out, "mail.json"), JSON.stringify(last, null, 2))
+      return last
     },
     async signIn() {
       const signed = await signIn(state)
@@ -282,7 +311,7 @@ export function originOf(run) {
 }
 
 export function recordJourney(run, name, passed, out) {
-  proof(run, `- ${name}: ${passed ? "PASSED" : "FAILED"}, artifacts ${out}`)
+  proof(run, `- ${name}: ${passed ? "PASSED" : "FAILED"} at ${loadLine()}, artifacts ${out}`)
 }
 
 async function journey(run, name) {
@@ -300,7 +329,11 @@ async function journey(run, name) {
     passed = true
   } catch (error) {
     await kit.capture("failure").catch(() => undefined)
-    proof(run, `- ${name}: FAILED ${String(error?.message ?? error).split("\n")[0]}`)
+    writeFileSync(path.join(out, "failure.txt"), `${String(error?.stack ?? error)}\n`)
+    proof(
+      run,
+      `- ${name}: FAILED ${String(error?.message ?? error).split("\n")[0]}; whole error in ${path.join(out, "failure.txt")}`,
+    )
   } finally {
     await browser.close()
   }
@@ -334,6 +367,9 @@ async function stop(run) {
   if (path.basename(clusterDir).startsWith("airdesign-api-") && !ownsPostgres(state)) {
     rmSync(clusterDir, { recursive: true, force: true })
   }
+  const stackLog = path.join(scratchDir(run), "stack.log")
+  if (existsSync(stackLog) && existsSync(evidenceDir(run)))
+    copyFileSync(stackLog, path.join(evidenceDir(run), "stack.log"))
   rmSync(scratchDir(run), { recursive: true, force: true })
   if (existsSync(evidenceDir(run))) proof(run, `- stopped: ${stopped.join(", ") || "nothing was running"}`)
   process.stdout.write(
@@ -359,6 +395,9 @@ try {
     process.stdout.write(
       `${JSON.stringify(await proofCommand(command, rest, { repo, readState, evidenceDir, journeyKit }))}\n`,
     )
+  } else if (command === "suites") {
+    const { suitesCommand } = await import("./suites.mjs")
+    process.stdout.write(`${JSON.stringify(await suitesCommand(rest, { repo, evidenceRoot }))}\n`)
   } else if (command === "comment") {
     const { comment: postComment } = await import("./comment.mjs")
     process.stdout.write(`${JSON.stringify(await postComment({ pr: rest[0], file: rest[1] }))}\n`)
@@ -391,6 +430,8 @@ try {
         "verify-airdesign annotate <run> <callouts.json> [--out dir]  numbered callouts on one run's states",
         "verify-airdesign publish <dir> [--pr n]     upload images to the proof release; prints links and the PR fragment",
         "verify-airdesign comment <pr> <file>       post a PR comment with the agent header; refuses an empty file",
+        "verify-airdesign suites [--run] [check|browser|journeys|pptx...] [-- args]",
+        "                                            the test suites this branch's changes need; --run runs them under the machine lock",
         "verify-airdesign stop <run>                 stop only this run's processes; keeps evidence",
         "",
       ].join("\n"),

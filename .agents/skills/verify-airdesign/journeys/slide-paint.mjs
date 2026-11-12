@@ -8,7 +8,7 @@ export default async function drive({ repo, page, signIn, capture, note }) {
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const canvas = page.locator("[data-slide-paint]")
   await expect(canvas).toBeVisible()
-  const elements = page.locator("[data-canvas-element]")
+  const elements = page.locator("[data-slide-paint] [data-canvas-element]")
   await expect(elements.first()).toBeVisible()
   const box = await canvas.boundingBox()
   const count = await elements.count()

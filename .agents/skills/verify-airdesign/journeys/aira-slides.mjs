@@ -28,7 +28,13 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await page.reload()
   await expect(page.locator('[data-slide-entry="2"]')).toContainText("Hello from Aira")
   await capture("reloaded")
+  await page.locator("[data-editor-panel]").getByRole("button", { name: "Undo", exact: true }).click()
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
+  await expect
+    .poll(async () => (await post(deckRoutes.open, { deck }, cookie)).json.register.order.at(-1)?.slide)
+    .toBe("remove")
+  await capture("run-undone")
   note(
-    "Aira's replayed transport called add_slide then edit_deck through MCP; the new slide and title painted live, the server agreed, and reload kept both. Slide run Undo is a known failure in agent-slides.test.ts.",
+    "Aira's replayed transport called add_slide then edit_deck through MCP; the new slide and title painted live, the server agreed, and reload kept both. The panel's Undo took the added slide back on the canvas and on the server.",
   )
 }

@@ -155,3 +155,13 @@ export function scaled(box, scale) {
     ? null
     : { x: box.x * scale, y: box.y * scale, width: box.width * scale, height: box.height * scale }
 }
+
+export function aimAt(box, ink) {
+  if (box === null || ink === null || ink.width <= 0 || ink.height <= 0) return box
+  const x = Math.max(box.x, ink.x)
+  const y = Math.max(box.y, ink.y)
+  const right = Math.min(box.x + box.width, ink.x + ink.width)
+  const bottom = Math.min(box.y + box.height, ink.y + ink.height)
+  if (right <= x || bottom <= y) return box
+  return { x, y, width: right - x, height: bottom - y }
+}
