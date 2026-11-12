@@ -1,12 +1,15 @@
+import { productCopy } from "@/copy/product-copy"
 import { Button } from "@/components/ui/button"
 import { EditorIcon, SparkIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 
 export function PanelSwitch({
   active,
+  designOff = false,
   onPick,
 }: {
   active: "agent" | "design"
+  designOff?: boolean
   onPick?: (panel: "agent" | "design") => void
 }) {
   const agent = active === "agent"
@@ -31,6 +34,8 @@ export function PanelSwitch({
         type="button"
         variant="ghost"
         aria-pressed={!agent}
+        disabled={designOff}
+        {...(designOff ? { "aria-label": productCopy.designOff } : {})}
         className={cn(
           "h-7 gap-1.5 rounded-[var(--shape-control)] px-2.5 text-[length:var(--type-dense)] active:translate-y-0",
           agent

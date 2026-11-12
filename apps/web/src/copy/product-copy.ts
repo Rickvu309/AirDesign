@@ -35,6 +35,7 @@ const sampleReset = "Mon 8:00 AM"
 
 export const productCopy = {
   noDecksTitle: "No decks yet",
+  designOff: "Design, not available yet",
   nameEmpty: "Enter a name for this deck.",
   renameDeck: "Rename deck",
   deckName: "Deck name",
