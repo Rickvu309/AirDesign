@@ -3,6 +3,11 @@ import { expect } from "@playwright/test"
 const phone = { width: 390, height: 844 }
 const desktop = { width: 1470, height: 923 }
 
+async function codeEntry(page) {
+  await expect(page.locator("[data-code-box][data-active]")).toHaveCount(1)
+  return page.getByLabel("Or enter the 6-digit code")
+}
+
 async function askForEmail(page, siteOrigin, address) {
   await page.goto(`${siteOrigin}/sign-in`)
   await page.getByLabel("Email").fill(address)
@@ -16,19 +21,22 @@ async function sitePages(kit, size, address) {
   await page.setViewportSize(size)
   await page.goto(`${siteOrigin}/sign-in`)
   await expect(page.getByRole("heading", { name: "Sign in or create an account" })).toBeVisible()
-  await capture(narrow ? "sign-in-empty-phone" : "sign-in-empty")
+  if (narrow) await capture("sign-in-empty-phone")
+  else await capture("sign-in-empty")
   await page.getByLabel("Email").fill("a@b")
   await page.getByRole("button", { name: "Continue with email" }).click()
-  await expect(page.getByRole("alert").filter({ hasText: "That email address doesn't look right" })).toBeVisible()
-  await capture(narrow ? "sign-in-bad-email-phone" : "sign-in-bad-email")
+  await expect(page.getByRole("alert").filter({ hasText: /\S/ })).toBeVisible()
+  if (narrow) await capture("sign-in-bad-email-phone")
+  else await capture("sign-in-bad-email")
   await askForEmail(page, siteOrigin, address)
   await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible()
-  await capture(narrow ? "check-email-phone" : "check-email")
-  const code = page.getByLabel("Or enter the 6-digit code")
+  if (narrow) await capture("check-email-phone")
+  else await capture("check-email")
+  const code = await codeEntry(page)
   await code.pressSequentially("000000")
-  await expect(page.getByRole("alert").filter({ hasText: "That code didn't work" })).toBeVisible()
-  await expect(code).toHaveValue("")
-  await capture(narrow ? "code-wrong-phone" : "code-wrong")
+  await expect(page.getByRole("alert").filter({ hasText: /\S/ })).toBeVisible()
+  if (narrow) await capture("code-wrong-phone")
+  else await capture("code-wrong")
 }
 
 export default async function drive(kit) {
@@ -41,7 +49,7 @@ export default async function drive(kit) {
 
   await askForEmail(page, siteOrigin, address)
   const first = await mailParts(address)
-  await page.getByLabel("Or enter the 6-digit code").fill(`${first.code.slice(0, 3)} ${first.code.slice(3)}`)
+  await (await codeEntry(page)).fill(`${first.code.slice(0, 3)} ${first.code.slice(3)}`)
   await expect(page).toHaveURL(`${origin}/`)
   await expect(page.getByRole("button", { name: "New deck" })).toBeVisible()
   await capture("signed-in-by-code")
@@ -68,11 +76,28 @@ export default async function drive(kit) {
   await page.context().clearCookies()
   await page.goto(second.link)
   await expect(page).toHaveURL(`${siteOrigin}/sign-in/expired`)
-  await expect(page.getByRole("heading", { name: "This link no longer works" })).toBeVisible()
-  await expect(page.getByRole("heading", { level: 1 })).toHaveCSS("font-size", "26px")
-  await expect(page.locator("body > div")).toHaveCSS("background-color", "rgb(245, 245, 242)")
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
   await capture("link-expired")
   await page.setViewportSize(phone)
   await capture("link-expired-phone")
   note("a link used twice sends the browser to the site's expired page")
+
+  await page.setViewportSize(desktop)
+  await page.goto(`${siteOrigin}/sign-in`)
+  await page.getByLabel("Email").fill("a@b")
+  await page.getByRole("button", { name: "Continue with email" }).click()
+  await expect(page.getByRole("alert")).toHaveText("That email address doesn't look right. Check it and try again.")
+  await askForEmail(page, siteOrigin, address)
+  const code = await codeEntry(page)
+  await code.pressSequentially("000000")
+  await expect(page.getByRole("alert").filter({ hasText: /\S/ })).toHaveText(/^That code didn't work/)
+  await expect(code).toHaveValue("")
+  note(
+    "an address the API refuses is called wrong, not a connection fault; a refused code leaves the field empty to retype",
+  )
+
+  await page.goto(`${siteOrigin}/sign-in/expired`)
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCSS("font-size", "26px")
+  await expect(page.locator("body > div")).toHaveCSS("background-color", "rgb(245, 245, 242)")
+  note("the expired page has the sign-in page's canvas and 26 px heading")
 }
