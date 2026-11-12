@@ -27,6 +27,7 @@ export type DeckIndex = {
 }
 
 const slidePattern = /^(?:[0-9]{1,10}|n[0-9a-z]{12})$/
+const unwritable = /[\u0000\p{Cs}]/u
 const oncePattern = /^[A-Za-z0-9_-]{1,200}$/
 
 function whole(raw: unknown): raw is number {
@@ -36,11 +37,7 @@ function whole(raw: unknown): raw is number {
 function openingText(raw: unknown): raw is string | null {
   if (raw === null) return true
   if (typeof raw !== "string" || bytesOf(raw) > limits.body) return false
-  for (const symbol of raw) {
-    const code = symbol.codePointAt(0) ?? 0
-    if (code === 0 || (code >= 0xd800 && code <= 0xdfff)) return false
-  }
-  return true
+  return !unwritable.test(raw)
 }
 
 function readSlide(raw: unknown, position: number): IndexSlide | null {
