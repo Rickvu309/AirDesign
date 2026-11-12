@@ -8,6 +8,8 @@ export type Counts = {
   readonly read: number
 }
 
+export type Reported = { readonly input: number; readonly write5m: number; readonly read: number }
+
 export type AiraEvent =
   | { readonly type: "text"; readonly text: string }
   | ({ readonly type: "tool" } & Omit<ToolCall, "type">)
@@ -20,7 +22,7 @@ export type Played =
       readonly counts: Counts
     }
   | { readonly kind: "released" }
-  | { readonly kind: "dropped" }
+  | { readonly kind: "dropped"; readonly started: Reported | null }
 
 type Building =
   | { readonly type: "text"; text: string }
@@ -132,11 +134,19 @@ export async function* play(events: AsyncIterable<unknown>): AsyncGenerator<Aira
         break
       }
     }
-  } catch {
-    return { kind: "dropped" }
-  }
-  if (final === undefined) return { kind: "dropped" }
+  } catch {}
   const pick = (name: string): number => countOf(fieldOf(final, name)) ?? countOf(fieldOf(started, name)) ?? 0
+  if (final === undefined) {
+    if (!begun) return { kind: "dropped", started: null }
+    return {
+      kind: "dropped",
+      started: {
+        input: pick("input_tokens"),
+        write5m: pick("cache_creation_input_tokens"),
+        read: pick("cache_read_input_tokens"),
+      },
+    }
+  }
   const content = [...blocks.entries()]
     .sort(([left], [right]) => left - right)
     .flatMap(([, block]) => finished(block) ?? [])

@@ -6,10 +6,11 @@ export type Script = {
   readonly name: string
   readonly request?: string
   readonly holdAfter?: number
+  readonly lingers?: boolean
   readonly fill?: Readonly<Record<string, string>>
 }
 
-export type Recorded = { readonly call: ModelCall; readonly key: string }
+export type Recorded = { readonly call: ModelCall; readonly key: string; readonly signal: AbortSignal }
 
 type Failure = {
   readonly status: number
@@ -36,6 +37,13 @@ export function streamEvents(name: string): unknown[] {
 
 export function failureOf(name: string, folder: URL = fixtures): Failure {
   return JSON.parse(fixtureText(name, folder)) as Failure
+}
+
+function aborted(signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal.aborted) resolve()
+    else signal.addEventListener("abort", () => resolve(), { once: true })
+  })
 }
 
 function filled(text: string, fill: Readonly<Record<string, string>>): string {
@@ -71,8 +79,8 @@ export class Replay {
     this.open()
   }
 
-  readonly transport: Transport = async (call, key) => {
-    this.calls.push({ call, key })
+  readonly transport: Transport = async (call, key, signal) => {
+    this.calls.push({ call, key, signal })
     const [script = { name: "turn.sse" }, ...rest] = this.scripts
     if (rest.length > 0) this.scripts = rest
     if (script.name.endsWith(".json")) {
@@ -94,8 +102,9 @@ export class Replay {
       for (const [index, event] of events.entries()) {
         if (index === script.holdAfter) {
           reach?.()
-          await opened
+          await (script.lingers === true ? opened : Promise.race([opened, aborted(signal)]))
         }
+        if (signal.aborted) return
         yield event
       }
     }

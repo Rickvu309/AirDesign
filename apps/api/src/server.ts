@@ -26,6 +26,7 @@ import type { CallerLog, Turns } from "@airdesign/mcp"
 import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession } from "./account.js"
 import { accountRouteList } from "./account-route.js"
 import { type AiraSettings } from "./aira.js"
+import { Closing } from "./aira-closing.js"
 import { airaRoute } from "./aira-route.js"
 import { airaUsageRoute } from "./aira-usage-route.js"
 import { deckListAnswers } from "./deck-list.js"
@@ -61,9 +62,10 @@ export type ApiOptions = {
   readonly smokeToken?: string
   readonly originals?: OriginalStore
   readonly aira?: AiraSettings
+  readonly closing?: Closing
 }
 
-type ServedOptions = ApiOptions & { readonly turns: Map<string, Turns> }
+type ServedOptions = ApiOptions & { readonly turns: Map<string, Turns>; readonly closing: Closing }
 
 type Context = {
   readonly options: ServedOptions
@@ -567,7 +569,7 @@ async function handle(context: Context): Promise<void> {
 }
 
 export function createApi(given: ApiOptions): Server {
-  const options: ServedOptions = { ...given, turns: new Map<string, Turns>() }
+  const options: ServedOptions = { ...given, turns: new Map<string, Turns>(), closing: given.closing ?? new Closing() }
   requireOrigin("publicOrigin", options.publicOrigin)
   requireOrigin("siteOrigin", options.siteOrigin)
   requireDomain(options.cookieDomain)

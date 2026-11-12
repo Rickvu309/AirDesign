@@ -22,6 +22,12 @@ HoldTracksTurn ==
   \/ (turn = "none" /\ hold = 0)
   \/ (turn = "a" /\ hold \in {Half, Whole, SearchHold, UsHold})
 
+WithinAllowance ==
+  /\ spent <= Allowance
+  /\ spent + hold <= Allowance
+
+Charge(cost) == IF cost < hold THEN cost ELSE hold
+
 Init ==
   /\ spent = 0
   /\ hold = 0
@@ -117,6 +123,27 @@ SettleUs ==
   /\ turn' = "none"
   /\ UNCHANGED <<week, outside>>
 
+StopHalf ==
+  /\ turn = "a"
+  /\ spent' = spent + Charge(Half)
+  /\ hold' = 0
+  /\ turn' = "none"
+  /\ UNCHANGED <<week, outside>>
+
+StopAll ==
+  /\ turn = "a"
+  /\ spent' = spent + Charge(Whole)
+  /\ hold' = 0
+  /\ turn' = "none"
+  /\ UNCHANGED <<week, outside>>
+
+StopAgain ==
+  /\ turn = "none"
+  /\ UNCHANGED vars
+
+StopOther ==
+  UNCHANGED vars
+
 Release ==
   /\ turn = "a"
   /\ hold' = 0
@@ -158,6 +185,10 @@ Next ==
   \/ SettleOther
   \/ SettleSearch
   \/ SettleUs
+  \/ StopHalf
+  \/ StopAll
+  \/ StopAgain
+  \/ StopOther
   \/ Release
   \/ ReleaseOther
   \/ ReleaseClosed
@@ -165,5 +196,11 @@ Next ==
   \/ Outside
 
 Spec == Init /\ [][Next]_vars
+
+StoppedWithinReserve ==
+  [][(StopHalf \/ StopAll) => spent' - spent <= hold]_vars
+
+ChargedOnlyWhileOpen ==
+  [][turn = "none" => spent' <= spent]_vars
 
 ====

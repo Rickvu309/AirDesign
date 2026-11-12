@@ -33,22 +33,25 @@ function failed(error: InstanceType<typeof Anthropic.APIError>): ModelOpen {
 
 export function anthropicTransport(baseURL?: string): Transport {
   const clients = new Map<string, Anthropic>()
-  return async (call: ModelCall, key: string): Promise<ModelOpen> => {
+  return async (call: ModelCall, key: string, signal: AbortSignal): Promise<ModelOpen> => {
     const client =
       clients.get(key) ?? new Anthropic({ apiKey: key, maxRetries: 0, ...(baseURL === undefined ? {} : { baseURL }) })
     clients.set(key, client)
     try {
       const { data, request_id } = await client.messages
-        .create({
-          model: call.model,
-          max_tokens: call.max_tokens,
-          system: call.system,
-          tools: call.tools.map(toolParam),
-          messages: call.messages.map(messageParam),
-          metadata: { user_id: call.metadata.user_id },
-          output_config: { effort: call.output_config.effort },
-          stream: true,
-        })
+        .create(
+          {
+            model: call.model,
+            max_tokens: call.max_tokens,
+            system: call.system,
+            tools: call.tools.map(toolParam),
+            messages: call.messages.map(messageParam),
+            metadata: { user_id: call.metadata.user_id },
+            output_config: { effort: call.output_config.effort },
+            stream: true,
+          },
+          { signal },
+        )
         .withResponse()
       return { ok: true, request: request_id ?? null, events: relay(data) }
     } catch (error) {

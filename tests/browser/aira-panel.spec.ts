@@ -132,12 +132,11 @@ test("a failed run says so, and the panel switch keeps the conversation", async 
   await expect(log.getByText(asked, { exact: true })).toHaveCount(0)
 })
 
-test("a new ask right after Stop is answered while the stopped model call finishes on the server", async ({
+test("a new ask right after Stop is answered once the server has stopped and closed the first model call", async ({
   page,
   context,
   stack,
 }) => {
-  test.fail()
   const { deck, base, side, log } = await openDeck(page, context, stack)
   stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node }, holdAfter: 3 }, { name: "turn.sse" })
   const reached = stack.hold()

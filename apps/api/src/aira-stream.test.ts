@@ -18,6 +18,7 @@ async function played(events: readonly unknown[], breaks = false) {
   }
 }
 
+const answeredText = "Lead with the claim. Then show the evidence."
 const start = { type: "message_start", message: { usage: { input_tokens: 10, output_tokens: 1 } } }
 const stopped = { type: "message_delta", delta: { stop_reason: "tool_use" }, usage: { output_tokens: 9 } }
 
@@ -115,10 +116,33 @@ describe("play relays one model turn", () => {
   })
 
   it("drops a turn whose stream ends or breaks before message_delta and releases one the API refused first", async () => {
-    expect((await played(streamEvents("dropped.sse"))).played).toEqual({ kind: "dropped" })
-    expect((await played(streamEvents("turn.sse").slice(0, 5), true)).played).toEqual({ kind: "dropped" })
+    const reported = { input: 412, write5m: 200, read: 100 }
+    expect((await played(streamEvents("dropped.sse"))).played).toEqual({ kind: "dropped", started: reported })
+    expect((await played(streamEvents("turn.sse").slice(0, 5), true)).played).toEqual({
+      kind: "dropped",
+      started: reported,
+    })
     expect((await played(streamEvents("overloaded.sse"))).played).toEqual({ kind: "released" })
     const late = { type: "error", error: { type: "overloaded_error", message: "Overloaded" } }
-    expect((await played([...streamEvents("tool.sse").slice(0, 4), late])).played).toEqual({ kind: "dropped" })
+    expect((await played([...streamEvents("tool.sse").slice(0, 4), late])).played).toEqual({
+      kind: "dropped",
+      started: { input: 2950, write5m: 0, read: 0 },
+    })
+  })
+
+  it("drops a stream that ends before message_start with no usage reported", async () => {
+    expect((await played([], true)).played).toEqual({ kind: "dropped", started: null })
+    expect((await played([])).played).toEqual({ kind: "dropped", started: null })
+  })
+
+  it("settles a stream that breaks after message_delta at the usage message_delta reported", async () => {
+    const events = streamEvents("turn.sse")
+    const delta = events.findIndex((event) => (event as { type?: string }).type === "message_delta")
+    expect((await played(events.slice(0, delta + 1), true)).played).toEqual({
+      kind: "settled",
+      stop: "end_turn",
+      content: [{ type: "text", text: answeredText }],
+      counts: { input: 412, output: 57, write5m: 200, write1h: 0, read: 100 },
+    })
   })
 })

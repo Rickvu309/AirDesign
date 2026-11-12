@@ -21,6 +21,18 @@ export type Ledger = {
   readonly outside: number
 }
 
+type Counted = {
+  readonly id: string
+  readonly input: number
+  readonly output: number
+  readonly write5m: number
+  readonly write1h: number
+  readonly read: number
+  readonly search: number
+  readonly searchOn: boolean
+  readonly usOnly: boolean
+}
+
 export type Command =
   | {
       readonly command: "reserve"
@@ -32,18 +44,8 @@ export type Command =
       readonly searchOn: boolean
       readonly usOnly: boolean
     }
-  | {
-      readonly command: "settle"
-      readonly id: string
-      readonly input: number
-      readonly output: number
-      readonly write5m: number
-      readonly write1h: number
-      readonly read: number
-      readonly search: number
-      readonly searchOn: boolean
-      readonly usOnly: boolean
-    }
+  | ({ readonly command: "settle" } & Counted)
+  | ({ readonly command: "stop" } & Counted)
   | { readonly command: "release"; readonly id: string }
   | { readonly command: "monday" }
   | { readonly command: "outside" }
@@ -73,7 +75,7 @@ function reserveCeiling(command: Extract<Command, { command: "reserve" }>): numb
   return inference(tokens, command.usOnly) + searchCharge(command.search, command.searchOn)
 }
 
-function settleCharge(command: Extract<Command, { command: "settle" }>): number {
+function settleCharge(command: Counted): number {
   const tokens =
     command.input * listPrice.input +
     command.output * listPrice.output +
@@ -101,6 +103,10 @@ export function usage(ledger: Ledger, command: Command): UsageResult {
   if (command.command === "settle") {
     if (ledger.open?.turn !== command.id) return refused(ledger)
     return accepted({ ...ledger, spent: ledger.spent + settleCharge(command), open: null })
+  }
+  if (command.command === "stop") {
+    if (ledger.open?.turn !== command.id) return refused(ledger)
+    return accepted({ ...ledger, spent: ledger.spent + Math.min(settleCharge(command), ledger.open.hold), open: null })
   }
   if (command.command === "release") {
     if (ledger.open?.turn !== command.id) return refused(ledger)

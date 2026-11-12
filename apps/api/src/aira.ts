@@ -6,7 +6,8 @@ import { admit, emptyLog, type CallerLog } from "@airdesign/mcp"
 import { allowance, usage, type Command, type Ledger } from "@airdesign/usage"
 
 import { withAddress } from "./account.js"
-import { play, type AiraEvent, type Counts, type Played } from "./aira-stream.js"
+import type { Closing } from "./aira-closing.js"
+import { play, type AiraEvent, type Counts, type Played, type Reported } from "./aira-stream.js"
 import type { Sql } from "./pool.js"
 
 export const airaModel = "claude-sonnet-5-5"
@@ -57,7 +58,7 @@ export type ModelOpen =
       readonly message: string
     }
 
-export type Transport = (call: ModelCall, key: string) => Promise<ModelOpen>
+export type Transport = (call: ModelCall, key: string, signal: AbortSignal) => Promise<ModelOpen>
 
 export type AiraSettings = {
   readonly on: boolean
@@ -73,6 +74,7 @@ export type AiraHost = {
   readonly logs: Map<string, CallerLog>
   readonly now: () => number
   readonly mint: () => string
+  readonly closing: Closing
 }
 
 export type WeekUsage = { readonly used: number; readonly allowed: number; readonly resets: string }
@@ -209,7 +211,8 @@ async function closeTurn(
   counts: Counts,
   now: number,
 ): Promise<Stored> {
-  const result = applied(ledger, { command: "settle", id, ...counts, ...noUsage })
+  const command = outcome === "settled" ? "settle" : "stop"
+  const result = applied(ledger, { command, id, ...counts, ...noUsage })
   if (!result.accepted) return ledger
   await writeLedger(db, account, result.ledger)
   await db.query(
@@ -227,11 +230,17 @@ async function dropStale(db: Sql, account: string, ledger: Stored, now: number):
   )
   const row = found.rows[0]
   if (row === undefined || now - row.started.getTime() < staleTurn) return ledger
-  return closeTurn(db, account, ledger, ledger.open.turn, "dropped", heldCounts(row.input), now)
+  return closeTurn(db, account, ledger, ledger.open.turn, "dropped", unseenCounts(row.input, null), now)
 }
 
-function heldCounts(input: number): Counts {
-  return { input, output: airaMaxTokens, write5m: 0, write1h: 0, read: 0 }
+function unseenCounts(input: number, started: Reported | null): Counts {
+  return {
+    input: started?.input ?? input,
+    output: airaMaxTokens,
+    write5m: started?.write5m ?? 0,
+    write1h: 0,
+    read: started?.read ?? 0,
+  }
 }
 
 async function reserveTurn(db: Sql, account: string, id: string, input: number, now: number): Promise<Reserved> {
@@ -297,29 +306,42 @@ function writeLine(line: string): void {
   process.stdout.write(`${line}\n`)
 }
 
-async function* answered(host: AiraHost, asked: Asked, log: (line: string) => void): AsyncGenerator<AiraLine> {
+async function* answered(
+  host: AiraHost,
+  asked: Asked,
+  log: (line: string) => void,
+  signal: AbortSignal,
+): AsyncGenerator<AiraLine> {
   const { account, id, input } = asked
-  let opened: ModelOpen
+  const done = host.closing.follow(account, signal)
   try {
-    opened = await asked.transport(asked.call, asked.key)
-  } catch {
-    opened = { ok: false, request: null, status: 0, type: "api_error", message: "" }
+    const sent = !signal.aborted
+    let opened: ModelOpen = { ok: false, request: null, status: 0, type: "api_error", message: "" }
+    if (sent) opened = await asked.transport(asked.call, asked.key, signal).catch(() => opened)
+    await noteRequest(host.db, id, opened.request)
+    const stopped = sent && signal.aborted
+    const played: Played = opened.ok
+      ? yield* play(opened.events)
+      : stopped
+        ? { kind: "dropped", started: null }
+        : { kind: "released" }
+    const ended = host.now()
+    let ledger: Stored
+    if (played.kind === "settled") ledger = await settleTurn(host.db, account, id, "settled", played.counts, ended)
+    else if (played.kind === "dropped")
+      ledger = await settleTurn(host.db, account, id, "dropped", unseenCounts(input, played.started), ended)
+    else ledger = await releaseTurn(host.db, account, id, ended)
+    const outcome = played.kind === "dropped" && signal.aborted ? "stopped" : played.kind
+    log(`aira turn ${id} account ${asked.user} request ${opened.request ?? "none"} outcome ${outcome}`)
+    const usage = weekUsage(ledger)
+    if (played.kind === "settled") {
+      yield { type: "end", ok: true, stop: played.stop, content: played.content, usage }
+      return
+    }
+    yield { type: "end", ok: false, refusal: played.kind === "dropped" ? "dropped" : "unavailable", usage }
+  } finally {
+    done()
   }
-  await noteRequest(host.db, id, opened.request)
-  const played: Played = opened.ok ? yield* play(opened.events) : { kind: "released" }
-  const ended = host.now()
-  let ledger: Stored
-  if (played.kind === "settled") ledger = await settleTurn(host.db, account, id, "settled", played.counts, ended)
-  else if (played.kind === "dropped")
-    ledger = await settleTurn(host.db, account, id, "dropped", heldCounts(input), ended)
-  else ledger = await releaseTurn(host.db, account, id, ended)
-  log(`aira turn ${id} account ${asked.user} request ${opened.request ?? "none"} outcome ${played.kind}`)
-  const usage = weekUsage(ledger)
-  if (played.kind === "settled") {
-    yield { type: "end", ok: true, stop: played.stop, content: played.content, usage }
-    return
-  }
-  yield { type: "end", ok: false, refusal: played.kind === "dropped" ? "dropped" : "unavailable", usage }
 }
 
 export async function airaTurn(
@@ -327,6 +349,7 @@ export async function airaTurn(
   account: string,
   country: string | string[] | undefined,
   raw: unknown,
+  signal: AbortSignal,
 ): Promise<AiraAnswer | AiraStream> {
   const settings = host.settings
   if (settings === undefined || !settings.on || settings.key === undefined || settings.secret === undefined) {
@@ -341,7 +364,9 @@ export async function airaTurn(
   const id = host.mint()
   const system = airaSystem(parsed.deck)
   const input = inputCeiling(system, parsed.messages)
-  const reserved = await reserveTurn(host.db, account, id, input, now)
+  let reserved = await reserveTurn(host.db, account, id, input, now)
+  if (!reserved.ok && reserved.refusal === "open" && (await host.closing.closed(account)))
+    reserved = await reserveTurn(host.db, account, id, input, host.now())
   if (!reserved.ok)
     return refuse(reserved.refusal === "open" ? 409 : 402, reserved.refusal, {
       usage: weekUsage(reserved.ledger),
@@ -358,5 +383,5 @@ export async function airaTurn(
     output_config: { effort: "low" },
   }
   const asked = { account, user, id, input, key: settings.key, transport: settings.transport, call }
-  return { status: 200, lines: answered(host, asked, settings.log ?? writeLine) }
+  return { status: 200, lines: answered(host, asked, settings.log ?? writeLine, signal) }
 }
