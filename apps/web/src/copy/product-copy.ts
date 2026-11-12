@@ -39,6 +39,7 @@ export const productCopy = {
   trashEmptyAction: "Delete for good",
   importFailedTitle: "Unable to import this file",
   importChooseAnother: "Choose another file",
+  blankDeck: "Blank deck",
   amount: "Amount",
   currentBalance: "Current balance",
   adding: "Adding",
