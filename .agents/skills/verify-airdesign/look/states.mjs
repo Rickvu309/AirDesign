@@ -66,6 +66,54 @@ async function deckRefused(kit) {
   await expect(kit.page.locator("[data-deck-refused]")).toBeVisible()
 }
 
+const cleanDeck = "scripts/pptx-fixtures/clean.pptx"
+
+async function textUndone(kit) {
+  await kit.signIn()
+  await kit.page.goto("/")
+  await openDeck(kit.page, path.join(kit.repo, cleanDeck))
+  const text = kit.page.locator('[data-slide-paint] [contenteditable="true"]')
+  await text.click()
+  await kit.page.keyboard.press("ControlOrMeta+a")
+  await text.pressSequentially("Mine", { delay: 40 })
+  await kit.page.keyboard.press("Escape")
+  await expect(text).toHaveText("Mine")
+  await kit.page.keyboard.press("ControlOrMeta+z")
+  await expect(kit.page.getByRole("button", { name: "Redo text edit" })).toBeEnabled()
+}
+
+async function slideMovedTwice(kit) {
+  await kit.signIn()
+  await kit.page.goto("/")
+  await openDeck(kit.page, path.join(kit.repo, cleanDeck))
+  const entries = kit.page.locator("[data-slide-entry]")
+  for (const count of [2, 3]) {
+    await kit.page.getByRole("button", { name: "Add slide" }).click()
+    await expect(entries).toHaveCount(count)
+  }
+  await entries.first().click()
+  const helloAt = async () => (await entries.allTextContents()).findIndex((each) => each.includes("Hello")) + 1
+  await kit.page.keyboard.press("Alt+ArrowDown")
+  await expect.poll(helloAt).toBe(2)
+  await kit.page.keyboard.press("Alt+ArrowDown")
+  await expect.poll(helloAt).not.toBe(2)
+}
+
+async function signedOutDeck(kit) {
+  await kit.page.route(
+    (url) => url.pathname === "/sign-in",
+    (route) =>
+      route.fulfill({
+        contentType: "text/html",
+        body: "<main style='font:16px sans-serif;padding:32px'>Sign in</main>",
+      }),
+  )
+  await kit.page.goto("/deck/lost-deck")
+  await expect(
+    kit.page.getByText("Unable to open this deck").or(kit.page.getByText("Sign in", { exact: true })),
+  ).toBeVisible()
+}
+
 async function listFailed(kit) {
   await kit.signIn()
   await kit.page.route(
@@ -268,6 +316,9 @@ export const states = [
   { name: "blank-deck", design: editor, journey: "blank-slides", at: "blank-original" },
   { name: "slides-several", design: editor, journey: "blank-slides", at: "layout-placeholders" },
   { name: "slide-sections", design: editor, drive: slideSections },
+  { name: "text-undone", design: editor, drive: textUndone },
+  { name: "slide-moved-twice", design: editor, drive: slideMovedTwice },
+  { name: "deck-signed-out", design: null, drive: signedOutDeck },
   { name: "editor-text-focused", design: editor, journey: "move-resize", at: "selected" },
   { name: "editor-selected", design: editor, journey: "move-resize", at: "resized" },
   { name: "editor-offline", design: "/screens/s49-02-editor-errors-offline", drive: offline },
