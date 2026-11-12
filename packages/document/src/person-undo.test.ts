@@ -4,7 +4,7 @@ import { elementId, slideId } from "./element-id.js"
 import { orderKeyBetween } from "./order-key.js"
 import { elementGone } from "./element-order.js"
 import { orderKeyAfter, presentSlides, type SlideCommand } from "./slide-order.js"
-import { redoOf, slideUndoable, undoOf, type Undoable } from "./person-undo.js"
+import { redoOf, slideUndoable, undoOf, undoSlides, type Undoable } from "./person-undo.js"
 
 const file = [slideId("256"), slideId("257"), slideId("258")] as const
 const node = elementId("256.2")
@@ -222,5 +222,77 @@ describe("person undo", () => {
 
   it("gives no undoable for a slide edit the register refuses", () => {
     expect(slideUndoable(openRegister("", ""), file, { slide: "remove", id: slideId("300") })).toBeNull()
+  })
+})
+
+describe("undoing a run's element commands", () => {
+  const runId = "run-1"
+  const slide = file[0]
+  const added = elementId("256.9")
+  const box = { x: 10, y: 20, cx: 300, cy: 40 }
+  const textBox = { node: added, kind: "shape" as const, value: "", box, grouped: false }
+
+  function indexed(): Register {
+    return {
+      ...openRegister("", ""),
+      index: {
+        total: 1,
+        slides: [
+          { id: "256", position: 0 },
+          { id: "257", position: 1 },
+          { id: "258", position: 2 },
+        ],
+        elements: [{ node, kind: "shape", value: "Title", box, grouped: false }],
+        pages: [{ once: "page", offset: 0, count: 1 }],
+      },
+    }
+  }
+
+  function slideLanded(register: Register, edit: SlideCommand): Register {
+    return landed(register, { command: "slide", file, edit: { ...edit, runId } })
+  }
+
+  it("takes back a box the run added", () => {
+    const register = slideLanded(indexed(), { slide: "element-add", id: slide, element: textBox })
+    const undone = undoSlides(register, runId)
+    expect(undone).not.toBeNull()
+    expect(undone !== null && elementGone(undone, added)).toBe(true)
+  })
+
+  it("brings back an element the run removed", () => {
+    const register = slideLanded(indexed(), { slide: "element-remove", id: slide, node })
+    expect(elementGone(register, node)).toBe(true)
+    const undone = undoSlides(register, runId)
+    expect(undone !== null && !elementGone(undone, node)).toBe(true)
+  })
+
+  it("takes back an add and a removal of the same box in one run", () => {
+    const added1 = slideLanded(indexed(), { slide: "element-add", id: slide, element: textBox })
+    const removed = slideLanded(added1, { slide: "element-remove", id: slide, node: added })
+    const undone = undoSlides(removed, runId)
+    expect(undone !== null && elementGone(undone, added)).toBe(true)
+  })
+
+  it("refuses the whole run when a person typed in the box it added", () => {
+    const register = slideLanded(indexed(), { slide: "element-add", id: slide, element: textBox })
+    const opened = landed(register, { command: "add", node: added, floor: "", route: "" })
+    const typed = landed(opened, { command: "person", value: "Mine", node: added })
+    expect(undoSlides(typed, runId)).toBeNull()
+  })
+
+  it("refuses when a person brought back the element the run removed", () => {
+    const register = slideLanded(indexed(), { slide: "element-remove", id: slide, node })
+    const restored = landed(register, { command: "slide", file, edit: { slide: "element-restore", id: slide, node } })
+    expect(undoSlides(restored, runId)).toBeNull()
+  })
+
+  it("refuses when a person removed the box the run added", () => {
+    const register = slideLanded(indexed(), { slide: "element-add", id: slide, element: textBox })
+    const removed = landed(register, {
+      command: "slide",
+      file,
+      edit: { slide: "element-remove", id: slide, node: added },
+    })
+    expect(undoSlides(removed, runId)).toBeNull()
   })
 })

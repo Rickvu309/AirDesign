@@ -4,7 +4,15 @@ import { bytesOf, limits } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
 import { kinds, type Kind } from "./properties.js"
 
-export type IndexSlide = { readonly id: string; readonly position: number; readonly layout?: readonly IndexElement[] }
+export type SlideSize = { readonly width: number; readonly height: number }
+export type IndexSlide = {
+  readonly id: string
+  readonly position: number
+  readonly size?: SlideSize
+  readonly free?: number
+  readonly animated?: readonly string[]
+  readonly layout?: readonly IndexElement[]
+}
 export type IndexElement = {
   readonly node: ElementId
   readonly kind: Kind
@@ -40,12 +48,53 @@ function openingText(raw: unknown): raw is string | null {
   return !unwritable.test(raw)
 }
 
+function readSize(raw: unknown): SlideSize | null {
+  const row = record(raw)
+  if (row === null || !onlyKeys(row, ["width", "height"])) return null
+  const { width, height } = row
+  if (typeof width !== "number" || !Number.isSafeInteger(width) || width < 1) return null
+  if (typeof height !== "number" || !Number.isSafeInteger(height) || height < 1) return null
+  return { width, height }
+}
+
+function readAnimated(raw: unknown): readonly string[] | null {
+  if (!Array.isArray(raw) || raw.length > limits.batch) return null
+  const shapes: string[] = []
+  for (const shape of raw) {
+    if (typeof shape !== "string" || !/^[0-9]{1,10}$/.test(shape) || shapes.includes(shape)) return null
+    shapes.push(shape)
+  }
+  return shapes
+}
+
+const slideKeys = ["id", "position", "size", "free", "animated", "layout"]
+
+function readFree(raw: unknown): number | null {
+  return typeof raw === "number" && Number.isSafeInteger(raw) && raw >= 1 && raw <= 4294967295 ? raw : null
+}
+
+function readMeasures(row: Record<string, unknown>): Pick<IndexSlide, "size" | "free" | "animated"> | null {
+  const size = row.size === undefined ? null : readSize(row.size)
+  const free = row.free === undefined ? null : readFree(row.free)
+  const animated = row.animated === undefined ? null : readAnimated(row.animated)
+  if ((row.size !== undefined && size === null) || (row.free !== undefined && free === null)) return null
+  if (row.animated !== undefined && animated === null) return null
+  return {
+    ...(size === null ? {} : { size }),
+    ...(free === null ? {} : { free }),
+    ...(animated === null ? {} : { animated }),
+  }
+}
+
 function readSlide(raw: unknown, position: number): IndexSlide | null {
   const row = record(raw)
-  if (row === null || !onlyKeys(row, row.layout === undefined ? ["id", "position"] : ["id", "position", "layout"]))
-    return null
+  if (row === null) return null
+  const keys = slideKeys.filter((key) => key === "id" || key === "position" || row[key] !== undefined)
+  if (!onlyKeys(row, keys)) return null
   if (typeof row.id !== "string" || !slidePattern.test(row.id) || row.position !== position) return null
-  if (row.layout === undefined) return { id: row.id, position }
+  const measures = readMeasures(row)
+  if (measures === null) return null
+  if (row.layout === undefined) return { id: row.id, position, ...measures }
   if (!Array.isArray(row.layout) || row.layout.length > limits.batch) return null
   const layout: IndexElement[] = []
   for (const raw of row.layout) {
@@ -53,7 +102,7 @@ function readSlide(raw: unknown, position: number): IndexSlide | null {
     if (element === null || layout.some((kept) => kept.node === element.node)) return null
     layout.push(element)
   }
-  return { id: row.id, position, layout }
+  return { id: row.id, position, ...measures, layout }
 }
 
 export function readElement(raw: unknown, slides: ReadonlySet<string>): IndexElement | null {
@@ -135,7 +184,7 @@ export function appendIndex(
               : {
                   ...current,
                   slides: page.slides.map((slide, n) =>
-                    slide.layout === undefined ? (current.slides[n] ?? slide) : slide,
+                    slide.layout === undefined && slide.free === undefined ? (current.slides[n] ?? slide) : slide,
                   ),
                 },
           }

@@ -1,6 +1,7 @@
 import {
   limits,
   nextElementId,
+  placeNewBox,
   readSlideId,
   slideUndoable,
   type Box,
@@ -14,6 +15,7 @@ import {
 import { connect, flushMedia, keepMedia, memoryRemote } from "@airdesign/live"
 import { freeShapeId, readSlides } from "@airdesign/pptx"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
+import { takenBoxes, type SlideRoom } from "@/element-edit"
 import { slideBase } from "@/exported-parts"
 import { fileSlides } from "@/slide-edit"
 
@@ -23,7 +25,7 @@ export type PictureRefusal = "type" | "size" | "unread"
 
 export type PictureAt = {
   readonly index: number
-  readonly slide: { readonly width: number; readonly height: number }
+  readonly slide: SlideRoom
   readonly keep: (sha256: string, bytes: Uint8Array) => void
 }
 
@@ -55,16 +57,13 @@ export function pictureRefusal(bytes: Uint8Array): PictureRefusal | null {
   return bytes.byteLength >= limits.media ? "size" : null
 }
 
-export function placedPicture(
-  natural: { readonly width: number; readonly height: number },
-  slide: { readonly width: number; readonly height: number },
-): Box {
+export function placedPicture(natural: { readonly width: number; readonly height: number }, slide: SlideRoom): Box {
   const width = Math.max(1, natural.width) * emuPerPixel
   const height = Math.max(1, natural.height) * emuPerPixel
   const scale = Math.min(1, (slide.width * margin) / width, (slide.height * margin) / height)
   const cx = Math.max(1, Math.round(width * scale))
   const cy = Math.max(1, Math.round(height * scale))
-  return { x: Math.round((slide.width - cx) / 2), y: Math.round((slide.height - cy) / 2), cx, cy }
+  return placeNewBox(slide, takenBoxes(slide), { cx, cy })
 }
 
 export function pictureCommand(

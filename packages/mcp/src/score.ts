@@ -1,6 +1,7 @@
-import { catalog, projectTools, type SlideOp, type WireRefusal } from "@airdesign/catalog"
+import { catalog, projectTools, type ElementOp, type SlideOp, type WireRefusal } from "@airdesign/catalog"
 import type { Tab } from "@airdesign/device"
 import {
+  elementGone,
   elementId,
   history,
   presentSlides,
@@ -28,7 +29,7 @@ export const fixtureRun = "run"
 
 export type EditableName = Exclude<ElementName, "opened">
 
-export type Tool = "edit_deck" | "capture_slide" | "read_deck" | SlideOp
+export type Tool = "edit_deck" | "capture_slide" | "read_deck" | SlideOp | ElementOp
 
 export type AttemptCall = {
   readonly name: string
@@ -62,6 +63,8 @@ export type Task = {
     readonly calls: number
     readonly steps: readonly Step[]
     readonly slides?: readonly string[]
+    readonly added?: readonly string[]
+    readonly removed?: readonly string[]
     readonly elements: Readonly<Partial<Record<EditableName, readonly string[]>>>
   }
 }
@@ -95,6 +98,8 @@ const toolNames = {
   duplicate_slide: toolName("duplicate_slide"),
   delete_slide: toolName("delete_slide"),
   move_slide: toolName("move_slide"),
+  add_text_box: toolName("add_text_box"),
+  delete_element: toolName("delete_element"),
 } as const
 
 export function edit(deck: string, writes: readonly Write[], base = 0): AttemptCall {
@@ -169,6 +174,27 @@ function landedMatches(deck: Deck, named: Task["want"]["elements"]): boolean {
   return true
 }
 
+function elementsLanded(register: Register, want: Task["want"]): boolean {
+  const added = register.order.flatMap((row) => (row.slide === "element-add" ? [row.element.node] : []))
+  const removed = register.order.flatMap((row) => (row.slide === "element-remove" ? [row.node] : []))
+  if (
+    want.added !== undefined &&
+    !sameOrder(
+      added.filter((node) => !elementGone(register, node)),
+      want.added,
+    )
+  ) {
+    return false
+  }
+  return (
+    want.removed === undefined ||
+    sameOrder(
+      removed.filter((node) => elementGone(register, node)),
+      want.removed,
+    )
+  )
+}
+
 function nameOf(step: unknown): string {
   if (typeof step !== "object" || step === null) return ""
   const name = (step as { readonly name?: unknown }).name
@@ -229,5 +255,6 @@ export function score(task: Task, attempt: Attempt): ScoreResult {
   )
     return failed("landed", current)
   if (!landedMatches(current, task.want.elements)) return failed("landed", current)
+  if (!elementsLanded(current.register, task.want)) return failed("landed", current)
   return { pass: true, reason: "ok", answers, deck: current, start }
 }

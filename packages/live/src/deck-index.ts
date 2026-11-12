@@ -50,13 +50,13 @@ function queue(raw: unknown): Queue | null {
   return { count: raw.count, sent: raw.sent, once: raw.once }
 }
 
-export async function hasLayouts(deck: string): Promise<boolean> {
-  return (await readSlot(key(deck, "layered"))) === true
+export async function hasMeasures(deck: string): Promise<boolean> {
+  return (await readSlot(key(deck, "measured"))) === true
 }
 
 async function keepIndex(deck: DeckId, index: ImportIndex, once: () => string) {
-  const layered = index.slides.some((row) => row.layout !== undefined)
-  const upgrade = layered && !(await hasLayouts(deck))
+  const measured = index.slides.some((row) => row.free !== undefined)
+  const upgrade = measured && !(await hasMeasures(deck))
   if (queue(await readSlot(key(deck, "queue"))) !== null && !upgrade) return { ok: true as const }
   const pages: IndexPage[] = []
   let held: DeckIndex | undefined
@@ -89,7 +89,7 @@ async function keepIndex(deck: DeckId, index: ImportIndex, once: () => string) {
     : (puts: Parameters<typeof replaceSlots>[0]) => installSlots(key(deck, "queue"), puts)
   await write([
     ...pages.flatMap((page, n) => pageSlots(deck, n, page)),
-    { key: key(deck, "layered"), value: layered },
+    { key: key(deck, "measured"), value: measured },
     { key: key(deck, "queue"), value: { count: pages.length, sent: 0, once: pages[0]!.once } },
   ])
   return { ok: true as const }

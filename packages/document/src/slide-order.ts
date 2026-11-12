@@ -61,7 +61,7 @@ export type SlideState = {
   readonly order: readonly SlideCommand[]
 }
 
-export type SlideRefusal = "stale" | "dead" | "present" | "limit" | "group-box"
+export type SlideRefusal = "stale" | "dead" | "present" | "limit" | "group-box" | "locked"
 
 export function openSlides(): SlideState {
   return { file: [], order: [] }

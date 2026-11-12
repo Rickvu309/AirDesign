@@ -40,6 +40,8 @@ const toolNames = {
   duplicate_slide: "airdesign_duplicate_slide",
   delete_slide: "airdesign_delete_slide",
   move_slide: "airdesign_move_slide",
+  add_text_box: "airdesign_add_text_box",
+  delete_element: "airdesign_delete_element",
 
   edit_deck: edit("deck", []).name,
   capture_slide: capture("deck").name,
@@ -270,11 +272,11 @@ describe("score", () => {
   })
 
   it("scores every task", () => {
-    expect(suite).toHaveLength(46)
+    expect(suite).toHaveLength(48)
     const ids = suite.map((row) => row.task.id)
     const prompts = suite.map((row) => row.task.prompt)
-    expect(new Set(ids).size).toBe(46)
-    expect(new Set(prompts).size).toBe(46)
+    expect(new Set(ids).size).toBe(48)
+    expect(new Set(prompts).size).toBe(48)
     const starts = suite.map((row) => {
       const deck = row.task.deck()
       return JSON.stringify({
@@ -284,7 +286,7 @@ describe("score", () => {
         want: row.task.want,
       })
     })
-    expect(new Set(starts).size).toBe(46)
+    expect(new Set(starts).size).toBe(48)
     for (const row of suite) expect(score(row.task, row.reference).pass, row.task.id).toBe(true)
   })
 })

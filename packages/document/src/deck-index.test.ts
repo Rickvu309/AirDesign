@@ -34,6 +34,32 @@ describe("deck index", () => {
     expect(appendIndex(undefined, { ...page, once: "bad", offset: 1 })).toEqual({ ok: false, refusal: "stale" })
   })
 
+  it("reads the slide's size, first free shape id and animated shapes, and replaces the slides of an older index", () => {
+    const measured = {
+      ...page,
+      slides: [
+        { id: "258", position: 0, size: { width: 9144000, height: 6858000 }, free: 12, animated: ["7", "9"] },
+        { id: "259", position: 1, size: { width: 9144000, height: 6858000 }, free: 3, animated: [] },
+      ],
+    }
+    expect(readIndexPage(measured)).toEqual(measured)
+    for (const slide of [
+      { size: { width: 0, height: 5 } },
+      { size: { width: 5 } },
+      { free: 0 },
+      { free: 1.5 },
+      { animated: ["x"] },
+      { animated: ["7", "7"] },
+      { animated: "7" },
+    ]) {
+      expect(readIndexPage({ ...page, slides: [{ ...page.slides[0], ...slide }, page.slides[1]] })).toBeNull()
+    }
+    const older = appendIndex(undefined, page)
+    if (!older.ok) throw new Error(older.refusal)
+    const upgraded = appendIndex(older.index, measured)
+    expect(upgraded.ok && upgraded.index.slides).toEqual(measured.slides)
+  })
+
   it("rejects duplicate nodes, bad slide membership, order, text, boxes, and counts", () => {
     for (const changed of [
       { total: limits.elements + 1 },

@@ -146,6 +146,23 @@ describe("element order", () => {
     expect(remove("256.7")).toEqual({ decision: "refuse", code: "dead" })
   })
 
+  it("refuses to remove an element the index marks animated, and removes one it does not", () => {
+    const marked: Register = {
+      ...indexed,
+      index: {
+        ...indexed.index!,
+        slides: [
+          { id: "256", position: 0, size: { width: 9, height: 9 }, free: 8, animated: ["2"] },
+          { id: "257", position: 1 },
+        ],
+      },
+    }
+    const remove = (id: string) => slide(marked, { slide: "element-remove", id: file[0]!, node: elementId(id) })
+    expect(remove("256.2")).toEqual({ decision: "refuse", code: "locked" })
+    expect(remove("256.5")).toEqual({ decision: "refuse", code: "group-box" })
+    expect(slide(indexed, { slide: "element-remove", id: file[0]!, node: elementId("256.2") }).decision).toBe("apply")
+  })
+
   it("refuses an element command on a removed slide", () => {
     const gone = applied(openRegister("", ""), { slide: "remove", id: file[1]! })
     const element = { ...textBox, node: elementId("257.9") }

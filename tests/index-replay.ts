@@ -15,7 +15,7 @@ const pages = (layered: boolean) =>
     offset,
     once: `${layered ? "layered" : "page"}-${offset}`,
     total: 2,
-    slides: [layered ? { id: "258", position: 0, layout } : { id: "258", position: 0 }],
+    slides: [layered ? { id: "258", position: 0, free: 5, layout } : { id: "258", position: 0 }],
     elements: [{ node: elementId(`258.${offset + 1}`), kind: "shape", value: "Title", box: null, grouped: false }],
   }))
 

@@ -2,6 +2,7 @@ import type { DeckIndex, IndexElement } from "./deck-index.js"
 import { elementId, readElementId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { onlyKeys, record } from "./plain-object.js"
 import { openingElement, readFloor } from "./slide-floor.js"
+import { slideMeasure } from "./slide-measure.js"
 import type { SlideState } from "./slide-order.js"
 import { openedTable } from "./table-value.js"
 
@@ -98,7 +99,10 @@ function indexComplete(state: Indexed): boolean {
   return state.index !== undefined && state.index.total === state.index.elements.length
 }
 
-export function elementRefusal(state: Indexed, command: ElementCommand): "dead" | "present" | "group-box" | null {
+export function elementRefusal(
+  state: Indexed,
+  command: ElementCommand,
+): "dead" | "present" | "group-box" | "locked" | null {
   const node = command.slide === "element-add" ? command.element.node : command.node
   if (shapeOf(node).slide !== command.id) return "dead"
   const opening = openingElement(state, node)
@@ -109,7 +113,8 @@ export function elementRefusal(state: Indexed, command: ElementCommand): "dead" 
   if (command.slide === "element-restore") return elementGone(state, node) ? null : "dead"
   if (elementGone(state, node)) return "dead"
   if (opening === undefined) return indexComplete(state) ? "dead" : null
-  return opening.grouped || opening.kind === "group" ? "group-box" : null
+  if (opening.grouped || opening.kind === "group") return "group-box"
+  return slideMeasure(state, command.id)?.animated.includes(shapeOf(node).shape) === true ? "locked" : null
 }
 
 export function readElementCommand(raw: Record<string, unknown>, id: SlideId): ElementCommand | undefined {
