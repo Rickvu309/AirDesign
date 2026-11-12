@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react"
+import { NotesBar } from "@/editor/notes-bar"
 import { CanvasStage } from "@/editor/canvas-stage"
 import { fitWidth, slideRoom, zoomPercent, zoomWidth, type SlideSize, type Zoom } from "@/editor/canvas-zoom"
 import { ExportButton, PanelHead, ZoomReadout } from "@/editor/editor-chrome"
@@ -33,6 +34,8 @@ export type EditorShellProps = {
   title: string
   slideLabel: string
   notes?: string
+  onNotes?: (text: string) => void
+  notesLocked?: string
   run?: SidebarRun
   panel?: EditorPanel
   onPanel?: (panel: Exclude<EditorPanel, "none">) => void
@@ -52,6 +55,8 @@ export function EditorShell({
   title,
   slideLabel,
   notes,
+  onNotes,
+  notesLocked,
   run = "done",
   panel = "none",
   onPanel,
@@ -111,13 +116,12 @@ export function EditorShell({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center pb-4">
           {notes === undefined ? null : (
             <>
-              <span className="block h-1 w-12 rounded-full bg-[var(--dot)]" />
-              <span className="block h-2" />
-              <div
-                className="pointer-events-auto flex h-12 items-center rounded-[var(--shape-card)] bg-line px-4"
-                style={{ width }}
-              >
-                <span className={cnTone(run === "working")}>{run === "working" ? "Add speaker notes" : notes}</span>
+              <div style={{ width }}>
+                <NotesBar
+                  text={run === "working" ? "" : notes}
+                  {...(onNotes === undefined ? {} : { onEdit: onNotes })}
+                  {...(notesLocked === undefined ? {} : { locked: notesLocked })}
+                />
               </div>
               <span className="block h-3" />
             </>
@@ -166,10 +170,4 @@ export function EditorShell({
       {overlay}
     </div>
   )
-}
-
-function cnTone(empty: boolean) {
-  return empty
-    ? "truncate text-[length:var(--type-dense)] text-faint"
-    : "truncate text-[length:var(--type-dense)] text-quiet"
 }

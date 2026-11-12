@@ -1,4 +1,5 @@
 import { elementId, writeTextValue, type DeckIndex } from "@airdesign/document"
+import { readNotes } from "./notes-body.js"
 import { readShapes, readSlides } from "./read-shapes.js"
 import { paintKind } from "./shape-tree.js"
 
@@ -12,6 +13,15 @@ export function indexPackage(parts: ReadonlyMap<string, Uint8Array>): Pick<DeckI
     box: shape.box,
     grouped: shape.grouped === true,
   }))
+  elements.push(
+    ...readNotes(parts).map((notes) => ({
+      node: elementId(`${notes.slide}.notes`),
+      kind: "slide" as const,
+      value: notes.text,
+      box: null,
+      grouped: false,
+    })),
+  )
   elements.sort((left, right) => {
     const slide = (order.get(left.node.split(".")[0] ?? "") ?? 0) - (order.get(right.node.split(".")[0] ?? "") ?? 0)
     return slide || (left.node < right.node ? -1 : left.node > right.node ? 1 : 0)

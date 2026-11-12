@@ -36,6 +36,7 @@ async function drive(name: string, page: Page, context: BrowserContext): Promise
 }
 
 for (const name of [
+  "speaker-notes",
   "open-edit-save",
   "blank-deck",
   "blank-slides",
