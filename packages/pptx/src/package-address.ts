@@ -22,6 +22,7 @@ export function relsOf(part: string): string {
 
 export const presentationPart = "ppt/presentation.xml"
 export const presentationRels = relsOf(presentationPart)
+export const contentTypesPart = "[Content_Types].xml"
 
 const attribute = (element: MarkupElement, name: string): string | null => {
   for (const item of element.attributes) if (item.name === name) return item.value

@@ -2,19 +2,15 @@ import { owns, shapeById } from "./shape-tree.js"
 import { elementId, type TextValue } from "@airdesign/document"
 import { exportElements } from "./element-export.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
-import { presentationPart, presentationRels, relsOf, slidePart } from "./package-address.js"
+import { contentTypesPart, presentationPart, presentationRels, relsOf, slidePart } from "./package-address.js"
 import { readShapes } from "./read-shapes.js"
 import { shapeAnimated } from "./shape-id.js"
 import { applyRoute, type SlideRoute } from "./slide-route.js"
+import { nextSlideFile, slideFileNumber } from "./slide-list-route.js"
+import { addedSlideTouch, clonedSlideTouch, removedSlideTouch, type PartTouch } from "./slide-touch.js"
 import { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
 import { markupChildren, shapeTextValue, shownText } from "./text-value-route.js"
 import { writtenRoutes } from "./written-routes.js"
-
-export type PartTouch = {
-  readonly changed: readonly string[]
-  readonly added: readonly string[]
-  readonly removed: readonly string[]
-}
 
 export type RouteRun = {
   readonly operation: (typeof routeOperations)[number]
@@ -25,7 +21,6 @@ export type RouteRun = {
   readonly error: string | null
 }
 
-const contentTypesPart = "[Content_Types].xml"
 const slidePrefix = "ppt/slides/slide"
 const slideSuffix = ".xml"
 const box = { x: 914400, y: 914400, cx: 914400, cy: 914400 }
@@ -112,20 +107,6 @@ function presentation(parts: ReadonlyMap<string, Uint8Array>): readonly MarkupEl
   return markup(bytes)
 }
 
-function slideFileNumber(name: string): number | null {
-  if (!name.startsWith(slidePrefix) || !name.endsWith(slideSuffix)) return null
-  return digits(name.slice(slidePrefix.length, name.length - slideSuffix.length))
-}
-
-function nextSlideFile(parts: ReadonlyMap<string, Uint8Array>): number {
-  let max = 0
-  for (const name of parts.keys()) {
-    const value = slideFileNumber(name)
-    if (value !== null && value > max) max = value
-  }
-  return max + 1
-}
-
 function slideFile(parts: ReadonlyMap<string, Uint8Array>, slide: string): string {
   presentation(parts)
   const rels = parts.get(presentationRels)
@@ -142,24 +123,6 @@ function slideTouch(part: string): PartTouch {
 
 function presentationTouch(): PartTouch {
   return { changed: [presentationPart], added: [], removed: [] }
-}
-
-function addedSlideTouch(parts: ReadonlyMap<string, Uint8Array>): PartTouch {
-  const part = `${slidePrefix}${nextSlideFile(parts)}${slideSuffix}`
-  return {
-    changed: [presentationPart, presentationRels, contentTypesPart],
-    added: [part, relsOf(part)],
-    removed: [],
-  }
-}
-
-function removedSlideTouch(parts: ReadonlyMap<string, Uint8Array>, slide: string): PartTouch {
-  const part = slideFile(parts, slide)
-  return {
-    changed: [presentationPart, presentationRels, contentTypesPart],
-    added: [],
-    removed: [part, relsOf(part)],
-  }
 }
 
 const createdSlideFirst = "n000000000000"
@@ -226,10 +189,11 @@ export function partTouch(parts: ReadonlyMap<string, Uint8Array>, route: SlideRo
     case "sectionLst.order":
       return presentationTouch()
     case "sldIdLst.add":
-    case "sldIdLst.clone":
       return addedSlideTouch(parts)
+    case "sldIdLst.clone":
+      return clonedSlideTouch(parts, slideFile(parts, route.slide))
     case "sldIdLst.remove":
-      return removedSlideTouch(parts, route.slide)
+      return removedSlideTouch(parts, slideFile(parts, route.slide))
   }
 }
 

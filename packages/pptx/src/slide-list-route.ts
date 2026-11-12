@@ -1,5 +1,5 @@
 import type { MarkupElement } from "./element-span.js"
-import { partOf, presentationPart, presentationRels, relsOf } from "./package-address.js"
+import { contentTypesPart, partOf, presentationPart, presentationRels, relsOf } from "./package-address.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import {
   attribute,
@@ -13,8 +13,8 @@ import {
   requireMarkup,
   rootClose,
 } from "./part-markup.js"
+import { cloneNotes, dropNotes, onlyNotes } from "./slide-notes.js"
 
-export const contentTypesPart = "[Content_Types].xml"
 const slideRelType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
 const layoutRelType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout"
 const slideContentType = "application/vnd.openxmlformats-officedocument.presentationml.slide+xml"
@@ -23,12 +23,12 @@ const slideSuffix = ".xml"
 
 const blankSlide = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr></p:spTree></p:cSld></p:sld>`
 
-function slideFileNumber(name: string): number | null {
+export function slideFileNumber(name: string): number | null {
   if (!name.startsWith(slidePrefix) || !name.endsWith(slideSuffix)) return null
   return digits(name.slice(slidePrefix.length, name.length - slideSuffix.length))
 }
 
-function nextSlideFile(parts: ReadonlyMap<string, Uint8Array>): number {
+export function nextSlideFile(parts: ReadonlyMap<string, Uint8Array>): number {
   let max = 0
   for (const name of parts.keys()) {
     const value = slideFileNumber(name)
@@ -136,7 +136,10 @@ export function addSlide(parts: Map<string, Uint8Array>, after: string, copy: bo
     ),
   )
   parts.set(part, copy ? sourceBytes : encodeUtf8(blankSlide))
-  parts.set(relsOf(part), copy ? sourceRelBytes : layoutRelationships(sourceRelBytes))
+  parts.set(
+    relsOf(part),
+    copy ? cloneNotes(parts, sourcePart, part, sourceRelBytes) : layoutRelationships(sourceRelBytes),
+  )
   return newId
 }
 
@@ -150,11 +153,13 @@ export function removeSlide(parts: Map<string, Uint8Array>, slide: string) {
   const relationship = relationshipById(relDocument.elements, rid)
   const part = partOf(presentationPart, attribute(relationship, "Target", "slide"))
   const override = overridePart(requireMarkup(types).elements, part)
+  const notes = onlyNotes(parts, part)
   replacePart(parts, presentationPart, cut(presentation, source.start, source.end))
   replacePart(parts, presentationRels, cut(rels, relationship.start, relationship.end))
   replacePart(parts, contentTypesPart, cut(types, override.start, override.end))
   parts.delete(part)
   parts.delete(relsOf(part))
+  if (notes !== null) dropNotes(parts, notes)
 }
 
 export function orderSlide(bytes: Uint8Array, slide: string, before: string): Uint8Array {
