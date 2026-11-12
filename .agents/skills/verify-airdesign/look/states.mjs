@@ -6,6 +6,7 @@ import { landingStates } from "./landing-states.mjs"
 import { keyboardStates } from "./keyboard-states.mjs"
 import { signInStates } from "./sign-in-states.mjs"
 import { textFormatStates } from "./text-format-states.mjs"
+import { airaOpenStates } from "./aira-open-states.mjs"
 
 const editor = "/screens/s42-02-editor-agent-run-complete"
 
@@ -311,6 +312,7 @@ export const states = [
   ...deckHomeStates,
   ...textFormatStates,
   ...keyboardStates,
+  ...airaOpenStates,
   { name: "notes-closed", design: editor, drive: (kit) => notesState(kit) },
   { name: "notes-open", design: editor, drive: (kit) => notesState(kit, true) },
   {

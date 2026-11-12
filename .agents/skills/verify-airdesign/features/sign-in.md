@@ -9,12 +9,13 @@ A person enters their email on the site's sign-in page, gets an email with a lin
 - `signin-code` `signInRoutes.code` with the email and code answers 200 and sets `airdesign.session`. A wrong code answers 401 `code`.
 - `signin-link` `signInRoutes.link` (GET) signs in from the emailed link and redirects to `/`; a used or bad link redirects to the site's `/sign-in/expired`. In this stack the link's host is `https://app.example`, so rewrite it to the run's origin to follow it.
 - `signin-session` with the cookie, `deckRoutes.list` answers 200 with the account email; without it, 401 `session`.
+- `signin-deck` a deck address `/deck/<id>` opened signed out goes to sign-in with `?next=%2Fdeck%2F<id>` and, after signing out from the account menu on Home, paints nothing of the deck. Known failure: after `Sign out` in Settings the device copy is still trusted, so the deck's slide paints (`Hello` for `clean.pptx`) before the server refuses the session and the page goes to sign-in; pinned in `tests/browser/signed-out-deck.spec.ts`. Journey `signed-out-deck` drives both and notes what painted.
 - `signin-form` the site page `/sign-in` with `Email` and `Continue with email`, then `/sign-in/check`, which sends the code as soon as six digits are typed, with `Send again`. Both call the API with same-origin paths.
 
 ## How to get to it (user POV)
 
 - `/sign-in` on the site, reached from its header.
-- An app page whose first call answers 401 `session` goes to the sign-in address built into `apps/web` (`VITE_SIGN_IN_URL`, `https://airdesign.app/sign-in` in the production build this stack serves) with `?next=<path>`.
+- An app page whose first call answers 401 `session` goes to the sign-in address built into `apps/web` (`VITE_SIGN_IN_URL`, `https://airdesign.app/sign-in` in the production build this stack serves) with `?next=<path>`. A deck address does the same once the server refuses the session.
 - The link in the sign-in email.
 
 ## Driving it with verify-airdesign

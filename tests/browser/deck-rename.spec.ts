@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 import { openFixture as open } from "./fixture-deck.ts"
 import { store } from "./home-store.ts"
+import { forward, openClean, signInBrowser, test as stackTest, type Stack } from "./api-stack"
 
 const title = (page: Page) => page.getByRole("button", { name: /^Rename deck: / })
 const field = (page: Page) => page.getByRole("textbox", { name: "Deck name" })
@@ -98,3 +99,51 @@ test("the deck home shows the new name", async ({ page }) => {
   await page.goto("/")
   await expect(page.getByRole("heading", { name: "Shown at home" })).toBeVisible()
 })
+
+async function serverName(stack: Stack, cookie: string, deck: string): Promise<unknown> {
+  const listed = (await stack.post("/decks/list", {}, cookie)).json.decks as readonly Record<string, unknown>[]
+  return listed.find((each) => each.deck === deck)?.name
+}
+
+async function slowRename(page: Page): Promise<void> {
+  await page.route(
+    (url) => url.pathname === "/decks/rename",
+    async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      const left = !new URL(page.url()).pathname.startsWith("/deck/")
+      await (left ? route.abort() : route.fallback()).catch(() => undefined)
+    },
+  )
+}
+
+stackTest.fail(
+  "a name entered just before going Back on a slow network reaches the server without opening the deck again",
+  async ({ page, context, stack }) => {
+    const cookie = await stack.signIn()
+    await signInBrowser(context, cookie)
+    await forward(page, stack)
+    const deck = await openClean(page)
+    await expect.poll(() => serverName(stack, cookie, deck)).toBe("clean")
+    await slowRename(page)
+    await title(page).click()
+    await field(page).fill("Quick rename")
+    await field(page).press("Enter")
+    await page.goBack()
+    await expect(page).toHaveURL(/\/$/)
+    await expect.poll(() => serverName(stack, cookie, deck), { timeout: 5000 }).toBe("Quick rename")
+  },
+)
+
+stackTest.fail(
+  "a deck imported and left at once on a slow network keeps its file's name on Home",
+  async ({ page, context, stack }) => {
+    const cookie = await stack.signIn()
+    await signInBrowser(context, cookie)
+    await forward(page, stack)
+    await slowRename(page)
+    const deck = await openClean(page)
+    await page.goBack()
+    await expect(page).toHaveURL(/\/$/)
+    await expect.poll(() => serverName(stack, cookie, deck), { timeout: 5000 }).toBe("clean")
+  },
+)

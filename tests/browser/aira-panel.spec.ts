@@ -121,6 +121,36 @@ test("Stop ends an edit call the server has not answered, and the step says it s
   await expect(side.getByText("Stopped editing slides", { exact: true })).toBeVisible()
 })
 
+test.fail(
+  "Stop after an edit reached the server offers Undo for the edit that landed",
+  async ({ page, context, stack }) => {
+    const { deck, base, side } = await openDeck(page, context, stack)
+    stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node } }, { name: "edited.sse" })
+    let reachedCall: () => void = () => undefined
+    const reached = new Promise<void>((resolve) => {
+      reachedCall = resolve
+    })
+    let answer: () => void = () => undefined
+    const answered = new Promise<void>((resolve) => {
+      answer = resolve
+    })
+    await page.route("**/mcp", async (route) => {
+      const request = route.request()
+      const landed = await route.fetch({ url: `${stack.origin}${stack.mcp}`, headers: await request.allHeaders() })
+      reachedCall()
+      await answered
+      await route.fulfill({ response: landed }).catch(() => undefined)
+    })
+    await ask(page, asked)
+    await reached
+    await side.getByRole("button", { name: "Stop" }).click()
+    answer()
+    await expect(side.getByText("Stopped editing slides", { exact: true })).toBeVisible()
+    await expect(page.locator('[data-slide-paint] [contenteditable="true"]')).toHaveText("Hello from Aira")
+    await expect(side.getByRole("button", { name: "Undo", exact: true })).toBeVisible({ timeout: 3000 })
+  },
+)
+
 test("after Stop the usage ring shows what the stopped model call was charged", async ({ page, context, stack }) => {
   const { deck, base, side } = await openDeck(page, context, stack)
   await side.getByRole("button", { name: productCopy.usageTitle }).click()
