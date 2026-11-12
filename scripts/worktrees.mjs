@@ -121,7 +121,45 @@ export const removeStale = ({ root, say = console.log, ...options }) => {
   return removed
 }
 
+export const staleBranches = ({ root, base = "origin/main" }) => {
+  const listed = git(root, ["worktree", "list", "--porcelain"])
+  const named = git(root, ["for-each-ref", "--format=%(refname)", "refs/heads"])
+  if (listed === undefined || named === undefined) return []
+  const held = new Set(readWorktrees(listed).map((worktree) => worktree.branch))
+  return named
+    .split("\n")
+    .filter((branch) => branch.length > 0 && branch !== "refs/heads/main" && !held.has(branch))
+    .filter((branch) => ownCommits(root, branch, base)?.unlanded === 0)
+    .map((branch) => branch.replace("refs/heads/", ""))
+    .sort()
+}
+
+export const removeStaleBranches = ({ root, say = console.log, ...options }) => {
+  const removed = []
+  for (const branch of staleBranches({ root, ...options })) {
+    if (git(root, ["branch", "-D", branch]) === undefined) continue
+    say(`deleted branch ${branch}, because it holds nothing main lacks`)
+    removed.push(branch)
+  }
+  return removed
+}
+
+export const bringMainUp = ({ root, base = "origin/main" }) => {
+  const listed = git(root, ["worktree", "list", "--porcelain"])
+  if (listed === undefined) return false
+  const [first] = readWorktrees(listed)
+  if (first?.path === undefined || first.branch !== "refs/heads/main" || !clean(first.path)) return false
+  const before = git(first.path, ["rev-parse", "HEAD"])
+  if (git(first.path, ["merge", "--ff-only", "--quiet", base]) === undefined) return false
+  return git(first.path, ["rev-parse", "HEAD"]) !== before
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === new URL(import.meta.url).pathname) {
   const onCi = process.env.CI === "true" || process.env.CI === "1"
-  if (!onCi) removeStale({ root: path.resolve(path.dirname(new URL(import.meta.url).pathname), "..") })
+  if (!onCi) {
+    const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..")
+    removeStale({ root })
+    removeStaleBranches({ root })
+    if (bringMainUp({ root })) console.log("brought the main checkout up to origin/main")
+  }
 }

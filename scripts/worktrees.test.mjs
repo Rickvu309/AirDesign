@@ -2,7 +2,16 @@ import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { findStale, idleBefore, readWorktrees, removeStale, staleReason } from "./worktrees.mjs"
+import {
+  bringMainUp,
+  findStale,
+  idleBefore,
+  readWorktrees,
+  removeStale,
+  removeStaleBranches,
+  staleBranches,
+  staleReason,
+} from "./worktrees.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -137,5 +146,56 @@ same(
   staleReason({ commits: { total: 1, unlanded: 0 }, gone: false, idle: true, detached: true }),
   "its work is on main",
 )
+
+git(root, "branch", "pointer", "main")
+git(root, "branch", "spent", "main")
+git(root, "checkout", "-q", "spent")
+const spentCommit = commit(root, "spent.txt", "spent")
+git(root, "checkout", "-q", "main")
+git(root, "cherry-pick", "-x", spentCommit)
+git(root, "branch", "unfinished", "main")
+git(root, "checkout", "-q", "unfinished")
+commit(root, "unfinished.txt", "unfinished")
+git(root, "checkout", "-q", "main")
+same("a branch with no worktree is stale when it holds nothing main lacks", staleBranches({ root, base: "main" }), [
+  "pointer",
+  "spent",
+])
+const saidBranches = []
+same(
+  "the stale branches are deleted",
+  removeStaleBranches({ root, base: "main", say: (line) => saidBranches.push(line) }),
+  ["pointer", "spent"],
+)
+same("each deleted branch is named", saidBranches, [
+  "deleted branch pointer, because it holds nothing main lacks",
+  "deleted branch spent, because it holds nothing main lacks",
+])
+const left = git(root, "branch", "--format=%(refname:short)").split("\n").filter(Boolean).sort()
+same("main, unfinished work and branches in a worktree stay", left, [
+  "busy",
+  "closed",
+  "dirty",
+  "fresh",
+  "locked",
+  "main",
+  "open",
+  "unfinished",
+])
+
+const clone = path.join(folder, "clone")
+git(folder, "clone", "-q", remote, clone)
+git(root, "push", "-q", "origin", "main")
+git(clone, "fetch", "-q", "origin")
+const tip = git(root, "rev-parse", "main").trim()
+same("a clean main checkout is brought up to origin/main", bringMainUp({ root: clone }), true)
+same("it now sits on the tip", git(clone, "rev-parse", "HEAD").trim(), tip)
+same("a main checkout that is already there is left alone", bringMainUp({ root: clone }), false)
+git(clone, "checkout", "-q", "-b", "side")
+same("a checkout on another branch is left alone", bringMainUp({ root: clone }), false)
+git(clone, "checkout", "-q", "main")
+git(clone, "reset", "-q", "--hard", "HEAD~1")
+fs.writeFileSync(path.join(clone, "unsaved.txt"), "unsaved")
+same("a main checkout with unsaved work is left alone", bringMainUp({ root: clone }), false)
 
 console.log("worktrees tests passed")
