@@ -14,7 +14,7 @@ One run edits one element while a person edits it too.
 - `StopFences`: after Stop, no agent row of that run lands. Harm: a stopped agent keeps writing.
 - `UndoRevertsOnlyTheRun`: run Undo hides only that run's rows and keeps every person edit. Harm: Undo erases a person's work.
 
-Bounds: one element, one run, two agent rows, one person edit before and one after the run's first row. Assumes the element and its slide are present and the edit is not a box edit on a grouped element (those are refused `dead` or `group-box` first). Run: `pnpm check:specs edit`. Replay: `replayEdit` drives every edge through `decide`. Leaves out: agent slide commands under a run (`packages/engine/src/agent-slides.ts`), which land with no run phase, guard or stop check and are only stale-checked by deck revision.
+Bounds: one element, one run, two agent rows, one person edit before and one after the run's first row. Assumes the element and its slide are present and the edit is not a box edit on a grouped element (those are refused `dead` or `group-box` first). Run: `pnpm check:specs edit`. Replay: `replayEdit` drives every edge through `decide`. Leaves out: agent slide commands under a run (`packages/engine/src/agent-slides.ts`), which land with no run phase, guard or stop check and are only stale-checked by deck revision. slide-run and slide-undo in [checks-server.md](checks-server.md) model them. Speaker notes need no model of their own: a note is the element `<slide>.notes` (`openedRegister` in `packages/engine/src/call.ts`), so a person or agent edit of it goes through `decide` like text, and this model and run, undo and rerun cover it per element. `packages/engine/src/notes.test.ts` checks that both actors use that path. Writing a first note's parts on export is a PowerPoint question for `pnpm check:pptx`, not an order one.
 
 Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
 
@@ -28,7 +28,7 @@ Undo of a run hides only that run's rows.
 - `CompactKeepsHead`, `HorizonIsGiven`: compaction drops a hidden row only after a horizon, and keeps the person row.
 - `VersionNeverReused`: the version never falls, and each change to what the element shows raises it. Harm: a client trusts a stale version and drops an edit.
 
-Bounds: one element, one person row, two runs with one row each. Run: `pnpm check:specs undo`. Replay: `replayUndo` through `decide`, `decideUndo` and `compactChain`. Leaves out: `compactChain` has no product caller, so the compaction half verifies library code nothing runs. Run Undo of slide rows goes through `undoSlides` in `packages/document/src/person-undo.ts` and is all or nothing; no model covers it.
+Bounds: one element, one person row, two runs with one row each. Run: `pnpm check:specs undo`. Replay: `replayUndo` through `decide`, `decideUndo` and `compactChain`. Leaves out: `compactChain` has no product caller, so the compaction half verifies library code nothing runs. Run Undo of slide rows goes through `undoSlides` in `packages/document/src/person-undo.ts`; slide-undo covers it.
 
 Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
 
@@ -79,7 +79,7 @@ The browser's queue of person edits: send, acknowledge, crash, wipe and replay.
 - `StaleSkips`: a queued edit whose base is stale is skipped, not landed.
 - `CrashKeepsUnsent`, `WipeClears`, `UndoWaits`.
 
-Bounds: two queued edits and one stale edit. Run: `pnpm check:specs offline`. Replay: `replayOffline` checks queue edges with `unsent` and land edges with `replay` from `packages/document/src/replay.ts`. Leaves out: the real queue in `packages/live/src/cache.ts` (`sendRows`, `played`) and the server's once key; `Crash`, `Wipe` and `Undo` are unconnected. `replay` throws on a refused person edit; `played` applies slide commands after it, so a `dead` refusal cannot reach it today.
+Bounds: two queued edits and one stale edit. Run: `pnpm check:specs offline`. Replay: `replayOffline` checks queue edges with `unsent` and land edges with `replay` from `packages/document/src/replay.ts`. Leaves out: the real queue in `packages/live/src/cache.ts` (`sendRows`, `played`) and the server's once key; `Crash`, `Wipe` and `Undo` are unconnected. The device journal of PR 385 (`PaintedEditKept`, a second tab, a crash between the journal write and the device write) is not merged at the sync commit and is not modeled. The device trust stamp of PR 384 (`packages/live/src/trust.ts`) has no model: its rule is that every path that ends a session withdraws the stamp, which is a list of code paths, not an order of steps, so a model would only repeat the list by hand. Two paths miss it, from `7e5fd6b9`: `signOut` in `apps/web/src/settings/settings-page.tsx` (Settings and its account menu) and the deck list's session refusal in `apps/web/src/decks/home.tsx`. After either, the next person to sign in on that browser who opens the first person's deck address sees it painted from the device until the server refuses it. Reproduced by the `it.fails` tests in `apps/web/src/settings/sign-out.test.ts` and `apps/web/src/decks/home-session.test.tsx`. A session that ends by its 30-day age with no request from the editor in between misses it too. `replay` throws on a refused person edit; `played` applies slide commands after it, so a `dead` refusal cannot reach it today.
 
 Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
 
@@ -91,7 +91,7 @@ A person's Undo and Redo of their own text edit, beside an agent run.
 - `NeverCoversAgent`, `AgentRowStays`: a person's undo never lands over an agent row that shows, and only the run's own Undo hides that row. Harm: a person's Ctrl+Z erases Aira's work.
 - `DroppedIsTold`: an undo that changed nothing is always told.
 
-Bounds: up to four person rows, one agent row. Run: `pnpm check:specs person-undo`. Replay: `tests/person-undo-replay.ts` through `undoOf`, `redoOf` and `decide`. Code: `undoOf`, `redoOf` in `packages/document/src/person-undo.ts`, the stack in `apps/web/src/undo-list.ts`. Leaves out: box undo and slide undo (`slideUndoable`), and notes edits.
+Bounds: up to four person rows, one agent row. Run: `pnpm check:specs person-undo`. Replay: `tests/person-undo-replay.ts` through `undoOf`, `redoOf` and `decide`. Code: `undoOf`, `redoOf` in `packages/document/src/person-undo.ts`, the stack in `apps/web/src/undo-list.ts`. Leaves out: box undo and slide undo (`slideUndoable`), and notes edits. Box, element add and remove and notes undo arrive with PR 383, not merged at the sync commit; when it merges, model them here with another tab and an agent interleaving, and replay every edge.
 
 Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
 
@@ -118,3 +118,18 @@ Bounds: two pages, one crash, one edit, one upgrade. Run: `pnpm check:specs inde
 Known bug, from `ba4dd329`: `sendIndex` sends the last page, the deck opens with layouts and `keepIndex` rewrites the queue to sent 0, then the answer writes the old loop's sent count over it. The queue says done, the layout pages are never sent, and the browser marks the deck layered, so the upgrade never runs again. Agents then cannot add a slide from that deck's layouts. Reproduced by the `it.fails` test in `packages/live/src/deck-index-upgrade.test.ts`.
 
 Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
+
+## sections
+
+A deck's PowerPoint sections carried through the slide command log by `foldSections` in `packages/document/src/section-order.ts`, which the slide list and export (`packages/pptx/src/slide-order-route.ts`) both read.
+
+This is a pure function of the log, with no concurrency, so it has no TLA+ model. A property test runs the real code on generated logs of add, duplicate, move, delete and restore over two sections: `packages/document/src/section-order.property.test.ts`.
+
+- Every present slide is in exactly one section, the sections are runs in slide order, and every section name is kept, an emptied one included. Harm if broken: export drops a section name or lists a slide twice.
+- A person's undo of an add, a duplicate, a delete or a restore gives back the sections from before it.
+
+Bounds: four slides in two sections split anywhere, logs of up to six commands, 300 runs each. Run: `pnpm vitest run packages/document/src/section-order.property.test.ts`. Code: `foldSections`, `slideUndoable` and `undoOf`. Leaves out: three or more sections, and export's own writing of the section list, which `pnpm check:pptx` judges.
+
+Known bug, from `43f2f2d1`: a moved slide joins the section of the slide before it, and the undo of a move is another move. A person moves the first slide of a section to the end and undoes it; the slide comes back after the last slide of the earlier section and stays in that section. Harm: a person who undid every edit exports a deck whose section list moved a slide into another section. Run Undo of an agent's move does the same. Reproduced by the `it.fails` test in the same file; the undo property leaves moves out until the fix moves them back in.
+
+Sync: `a68645c585e877ba8bf7628ab998911969d0ad07`.
