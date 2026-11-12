@@ -1,4 +1,5 @@
 import { markupDocument, spliceBytes, type MarkupDocument, type MarkupElement } from "./element-span.js"
+import { partOf, presentationPart, presentationRels, relsOf } from "./package-address.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { nextShapeId } from "./shape-id.js"
 import { addTextShape, xmlText } from "./shape-write.js"
@@ -29,8 +30,6 @@ export type StructuralEdit =
   | { readonly name: "tbl.removeRow"; readonly part: string; readonly row: number }
   | { readonly name: "tbl.orderRow"; readonly part: string; readonly row: number; readonly before: number }
 
-const presentationPart = "ppt/presentation.xml"
-const presentationRels = "ppt/_rels/presentation.xml.rels"
 const contentTypesPart = "[Content_Types].xml"
 const slideRelType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
 const layoutRelType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout"
@@ -245,17 +244,6 @@ function nextRelationshipId(elements: readonly MarkupElement[]): string {
   return `rId${max + 1}`
 }
 
-function slidePartName(target: string): string {
-  if (target.startsWith("/")) return target.slice(1)
-  if (target.startsWith("ppt/")) return target
-  return `ppt/${target}`
-}
-
-function relsPart(part: string): string {
-  const slash = part.lastIndexOf("/")
-  return `${part.slice(0, slash)}/_rels/${part.slice(slash + 1)}.rels`
-}
-
 function relationshipById(elements: readonly MarkupElement[], id: string): MarkupElement {
   const found = elements.find(
     (element) =>
@@ -299,15 +287,15 @@ function addSlide(parts: Map<string, Uint8Array>, after: string, copy: boolean) 
   const rid = attribute(source, "r:id", "slide")
   const relDocument = requireMarkup(rels)
   const relationship = relationshipById(relDocument.elements, rid)
-  const sourcePart = slidePartName(attribute(relationship, "Target", "slide"))
-  const sourceRels = relsPart(sourcePart)
+  const sourcePart = partOf(presentationPart, attribute(relationship, "Target", "slide"))
+  const sourceRels = relsOf(sourcePart)
   const sourceBytes = parts.get(sourcePart)
   const sourceRelBytes = parts.get(sourceRels)
   if (sourceBytes === undefined || sourceRelBytes === undefined) throw new Error("part")
   const number = nextSlideFile(parts)
   const newRid = nextRelationshipId(relDocument.elements)
   const newId = String(nextNumbered(presentationDocument.elements, "p:sldId"))
-  const part = slidePartName(`slides/slide${number}.xml`)
+  const part = partOf(presentationPart, `slides/slide${number}.xml`)
   const typeDocument = requireMarkup(types)
   replacePart(
     parts,
@@ -333,7 +321,7 @@ function addSlide(parts: Map<string, Uint8Array>, after: string, copy: boolean) 
     ),
   )
   parts.set(part, copy ? sourceBytes : encodeUtf8(blankSlide))
-  parts.set(relsPart(part), copy ? sourceRelBytes : layoutRelationships(sourceRelBytes))
+  parts.set(relsOf(part), copy ? sourceRelBytes : layoutRelationships(sourceRelBytes))
   return newId
 }
 
@@ -345,13 +333,13 @@ function removeSlide(parts: Map<string, Uint8Array>, slide: string) {
   const rid = attribute(source, "r:id", "slide")
   const relDocument = requireMarkup(rels)
   const relationship = relationshipById(relDocument.elements, rid)
-  const part = slidePartName(attribute(relationship, "Target", "slide"))
+  const part = partOf(presentationPart, attribute(relationship, "Target", "slide"))
   const override = overridePart(requireMarkup(types).elements, part)
   replacePart(parts, presentationPart, cut(presentation, source.start, source.end))
   replacePart(parts, presentationRels, cut(rels, relationship.start, relationship.end))
   replacePart(parts, contentTypesPart, cut(types, override.start, override.end))
   parts.delete(part)
-  parts.delete(relsPart(part))
+  parts.delete(relsOf(part))
 }
 
 function orderSlide(bytes: Uint8Array, slide: string, before: string): Uint8Array {

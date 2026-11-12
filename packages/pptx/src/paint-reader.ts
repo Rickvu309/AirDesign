@@ -1,4 +1,5 @@
 import { markupDocument, type MarkupElement } from "./element-span.js"
+import { partOf, presentationPart, relsOf } from "./package-address.js"
 import { paintColor, type PaintFill, type PaintPalette } from "./paint-color.js"
 import { paintChild, paintFill } from "./paint-fill.js"
 import {
@@ -122,7 +123,6 @@ type Above = {
   readonly painted: readonly Omit<PaintElement, keyof ShapePaint>[]
 }
 
-const presentationPart = "ppt/presentation.xml"
 const slideName = /^ppt\/slides\/[^/]+\.xml$/
 const wholeNumber = /^[+-]?\d+$/
 const fullTurn = 21_600_000
@@ -343,21 +343,6 @@ const drawnIn = (elements: readonly MarkupElement[], children: MarkupChildren): 
 const finalPlacement = (item: Drawn): Placement | null =>
   typeof item.own === "string" ? null : throughFrames(item.own, item.frames)
 
-const targetPart = (source: string, target: string): string => {
-  const path = target.startsWith("/") ? [] : source.split("/").slice(0, -1)
-  for (const segment of target.split("/")) {
-    if (segment === "..") path.pop()
-    else if (segment !== "." && segment !== "") path.push(segment)
-  }
-  return path.join("/")
-}
-
-const relsPart = (part: string): string => {
-  const path = part.split("/")
-  const name = path.pop() ?? ""
-  return [...path, "_rels", `${name}.rels`].join("/")
-}
-
 const masterType = (type: string): string => masterTypes.get(type) ?? type
 
 const layoutMatch = (layout: Sheet, wanted: Placeholder): Drawn | undefined => {
@@ -480,17 +465,18 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
     const known = relationships.get(part)
     if (known !== undefined) return known
     const targets = new Map<string, string>()
-    const bytes = parts.get(relsPart(part))
+    const bytes = parts.get(relsOf(part))
     const items = bytes === undefined ? [] : markupDocument(bytes).elements
     for (const item of items) {
       const type = attr(item, "Type")
       const target = attr(item, "Target")
       if (item.kind !== "Relationship" || type === null || target === null) continue
       if (attr(item, "TargetMode") === "External") continue
+      const resolved = partOf(part, target)
       const name = type.split("/").pop() ?? ""
-      if (!targets.has(name)) targets.set(name, targetPart(part, target))
+      if (!targets.has(name)) targets.set(name, resolved)
       const id = attr(item, "Id")
-      if (id !== null) targets.set(`id:${id}`, targetPart(part, target))
+      if (id !== null) targets.set(`id:${id}`, resolved)
     }
     relationships.set(part, targets)
     return targets

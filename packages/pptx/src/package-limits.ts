@@ -1,6 +1,7 @@
 import { limits } from "@airdesign/document"
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js"
 import { markupLimits, markupReady } from "./element-span.js"
+import { presentationPart } from "./package-address.js"
 
 export const packageLimits = {
   packedBytes: limits.bytes,
@@ -88,7 +89,7 @@ export async function readPackageWith(bytes: Uint8Array, limits: PackageLimits):
     if (unpacked > bytes.length * limits.ratio) return overLimit("ratio")
     if (files.some((entry) => entry.encrypted)) return { ok: false, reason: "encrypted" }
     const names = new Set(files.map((entry) => entry.filename))
-    if (!names.has("[Content_Types].xml") || !names.has("ppt/presentation.xml")) {
+    if (!names.has("[Content_Types].xml") || !names.has(presentationPart)) {
       return { ok: false, reason: "not-pptx" }
     }
     const parts = new Map<string, Uint8Array>()
