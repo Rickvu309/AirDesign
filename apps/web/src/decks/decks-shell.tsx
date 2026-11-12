@@ -1,7 +1,8 @@
-import type { ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { DeckGlyph } from "@/decks/deck-glyph"
+import { DeleteAccountDialog } from "@/decks/delete-account"
 import { AgentPromo } from "@/decks/agent-promo"
 import { account, starredFolders } from "@/decks/sample-decks"
 import { deckRoutes, type DeckSection } from "@/decks/deck-routes"
@@ -53,6 +54,7 @@ export function DecksShell({
   account?: { email: string }
   onSignOut?: () => void
 }) {
+  const [deletingAccount, setDeletingAccount] = useState(false)
   const primary = { ...sections[0], href: realAccount ? "/" : sections[0].href }
   const rest = realAccount
     ? [
@@ -64,14 +66,22 @@ export function DecksShell({
     <div className="flex h-full w-full">
       <aside className="flex h-full w-[248px] shrink-0 flex-col bg-canvas px-3 pt-3 pb-3">
         {realAccount && onSignOut ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger type="button" className={accountButton}>
-              <AccountFace account={realAccount} />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={onSignOut}>{settingsCopy.signOut}</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <>
+            {deletingAccount && (
+              <DeleteAccountDialog email={realAccount.email} onCancel={() => setDeletingAccount(false)} />
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger type="button" className={accountButton}>
+                <AccountFace account={realAccount} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => setDeletingAccount(true)}>
+                  {settingsCopy.deleteAccount}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onSignOut}>{settingsCopy.signOut}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
         ) : (
           <button type="button" className={accountButton}>
             <AccountFace account={realAccount} />

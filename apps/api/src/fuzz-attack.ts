@@ -81,3 +81,22 @@ export const attacks: readonly Attack[] = [
   { name: "a body over the cap", body: Buffer.alloc(bodyCap + 1, 0x78), type: jsonType },
   { name: "a chunked body over the cap", body: Buffer.alloc(bodyCap + 1, 0x78), type: jsonType, chunked: true },
 ]
+
+export const hostileValues: readonly unknown[] = [
+  null,
+  true,
+  -1,
+  1.5,
+  1e308,
+  Number.MAX_SAFE_INTEGER + 2,
+  "",
+  "\u0000",
+  "a\u0000b",
+  "\ud800",
+  "a\udc00b",
+  "x".repeat(70_000),
+  [],
+  [[]],
+  {},
+  JSON.parse('{"__proto__":{"deck":"x"}}'),
+]

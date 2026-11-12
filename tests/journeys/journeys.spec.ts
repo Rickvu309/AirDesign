@@ -35,7 +35,14 @@ async function drive(name: string, page: Page, context: BrowserContext): Promise
   }
 }
 
-for (const name of ["open-edit-save", "commit-once", "deck-list-trash", "slide-paint", "cleared-browser"]) {
+for (const name of [
+  "open-edit-save",
+  "commit-once",
+  "deck-list-trash",
+  "slide-paint",
+  "cleared-browser",
+  "delete-account",
+]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)
   })

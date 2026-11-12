@@ -37,4 +37,5 @@ Each feature file starts with an H1 title and one paragraph describing what the 
 - [Deck list and Trash](./deck-list-trash.md): Home lists the person's decks, Move to Trash, Restore, Empty Trash. Journey `deck-list-trash`.
 - [Slide paint](./slide-paint.md): the opened deck paints each element at its place on a slide of the right shape. Journey `slide-paint`.
 - [Reopen in a cleared browser](./cleared-browser.md): after IndexedDB, local storage and site files are cleared, the saved deck still shows its slide. Journey `cleared-browser`.
+- [Delete account](./delete-account.md): the account menu deletes the account after the person types its email; the server, the stored originals and the browser keep nothing of it. Journey `delete-account`.
 - [Sign in](./sign-in.md): email, six-digit code, session cookie, signed-out redirect. Command `$V sign-in`.

@@ -9,6 +9,8 @@ export {
   signInRoutes,
   signInPaths,
   signOutRoutes,
+  accountRoutes,
+  accountPaths,
   signOutPaths,
   type CallRefusal,
   type EditRefusal,

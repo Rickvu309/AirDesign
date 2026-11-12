@@ -5,7 +5,6 @@ import { bytesOf, limits } from "@airdesign/document"
 import {
   deckRoutes,
   signInRoutes,
-  signOutRoutes,
   readApprovalRequest,
   oauthRoutes,
   mcpRoutes,
@@ -24,7 +23,8 @@ import {
 } from "@airdesign/catalog"
 import type { CallerLog, Turns } from "@airdesign/mcp"
 
-import { acceptCode, acceptLink, deleteAccess, findAccess, issueMail, openSmokeSession } from "./account.js"
+import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession } from "./account.js"
+import { accountRouteList } from "./account-route.js"
 import { type AiraSettings } from "./aira.js"
 import { airaRoute } from "./aira-route.js"
 import { deckListAnswers } from "./deck-list.js"
@@ -324,17 +324,6 @@ async function linkRoute({ options, query, res }: Visit): Promise<void> {
   redirect(res, "/", sessionCookie(session, options.cookieDomain))
 }
 
-async function signOutRoute({ options, req, res, body }: Visit): Promise<void> {
-  const read = await body()
-  if (read === undefined) {
-    answerSize(res)
-    return
-  }
-  const token = readSessionCookie(req.headers.cookie)
-  if (token !== undefined) await deleteAccess(options.session, token)
-  sendJson(res, 200, { ok: true }, clearSessionCookie(options.cookieDomain))
-}
-
 function deckRoute<Read extends Reader>(
   read: Read,
   answer: (
@@ -517,7 +506,7 @@ export const routes: readonly Route[] = [
   { method: "GET", path: signInRoutes.link.path, serve: linkRoute },
   ...answeredDeckRoutes(deckAnswers, deckRoute),
   { method: "POST", path: deckRoutes.watch.path, serve: watchRoute },
-  { method: "POST", path: signOutRoutes.session.path, serve: signOutRoute },
+  ...accountRouteList({ signedIn, answerSize, parsedJson, sendJson, clearSessionCookie }),
 ]
 
 function causedByInput(error: unknown): boolean {

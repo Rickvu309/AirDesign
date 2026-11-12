@@ -255,3 +255,49 @@ test("sign out from the account menu returns to sign-in and keeps deck data", as
     ),
   ).toEqual({ name: "kept" })
 })
+
+test("delete account asks for the account's email, then removes the device copy and goes to sign-in", async ({
+  page,
+}) => {
+  await store(page)
+  const posted: unknown[] = []
+  await page.route("**/account/delete", async (route) => {
+    posted.push(route.request().postDataJSON())
+    await route.fulfill({ json: { ok: true } })
+  })
+  await page.route("**/sign-in?*", (route) => route.fulfill({ body: "Sign in" }))
+  await page.goto("/")
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open("airdesign")
+        request.onerror = () => reject(request.error)
+        request.onsuccess = () => {
+          request.result.close()
+          resolve()
+        }
+      }),
+  )
+  const databases = () => page.evaluate(async () => (await indexedDB.databases()).map((database) => database.name))
+  expect(await databases()).toContain("airdesign")
+  const open = async () => {
+    await page.getByRole("button", { name: "home@example.com" }).click()
+    await page.getByRole("menuitem", { name: "Delete account" }).click()
+  }
+  await open()
+  const dialog = page.getByRole("dialog", { name: "Delete account" })
+  await expect(dialog.getByText("Removes your decks and credits for good.")).toBeVisible()
+  const remove = dialog.getByRole("button", { name: "Delete account" })
+  await expect(remove).toBeDisabled()
+  await dialog.getByLabel("Signed in with email").fill("other@example.com")
+  await expect(remove).toBeDisabled()
+  await dialog.getByRole("button", { name: "Cancel" }).click()
+  await expect(dialog).toBeHidden()
+  expect(posted).toEqual([])
+  await open()
+  await dialog.getByLabel("Signed in with email").fill(" Home@Example.com ")
+  await remove.click()
+  await expect(page).toHaveURL(/\/sign-in\?next=%2F$/)
+  expect(posted).toEqual([{ email: "home@example.com" }])
+  expect(await databases()).not.toContain("airdesign")
+})
