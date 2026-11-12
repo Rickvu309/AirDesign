@@ -49,3 +49,5 @@ export {
   type WireEdit,
   type WireRunElement,
 } from "./wire.js"
+
+export { mcpRoutes, mcpPaths, oauthAuthorizePath } from "./mcp-routes.js"

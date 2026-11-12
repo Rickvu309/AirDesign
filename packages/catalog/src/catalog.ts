@@ -3,6 +3,7 @@ import { readAgentEdit, readCapture, readRun, type WireReader } from "./wire.js"
 type OpDetails = {
   readonly kind: "query" | "command" | "action" | "stream"
   readonly destructive?: true
+  readonly idempotent?: true
 }
 
 export type OpRow = OpDetails &
@@ -37,7 +38,7 @@ export type AgentTool<Op extends string = AgentOp> = {
   readonly runsOn: "server" | "device"
   readonly readOnlyHint: boolean
   readonly destructiveHint: boolean
-  readonly idempotentHint: true
+  readonly idempotentHint: boolean
   readonly openWorldHint: false
 }
 
@@ -45,6 +46,7 @@ export const catalog = {
   commit_edits: { kind: "command", exposure: "web" },
   start_run: { kind: "command", exposure: "web" },
   stop_run: {
+    idempotent: true,
     kind: "command",
     exposure: "agent",
     runsOn: "server",
@@ -94,7 +96,7 @@ export function projectTools<Ops extends Readonly<Record<string, OpRow>>>(
       runsOn: row.runsOn,
       readOnlyHint: row.kind !== "command",
       destructiveHint: row.destructive === true,
-      idempotentHint: true,
+      idempotentHint: row.kind !== "command" || row.idempotent === true,
       openWorldHint: false,
     })
   }

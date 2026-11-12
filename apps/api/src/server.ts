@@ -7,6 +7,7 @@ import {
   signInRoutes,
   readApprovalRequest,
   oauthRoutes,
+  mcpRoutes,
   readBearer,
   readClientRequest,
   readCode,
@@ -36,6 +37,7 @@ import type { Sql } from "./pool.js"
 import { originalAnswers } from "./original.js"
 import type { OriginalStore } from "./original-store.js"
 import { checkedResource, readUrl } from "./resource.js"
+import { authorizationMetadata, resourceChallenge, resourceMetadata } from "./discovery.js"
 import { chosenRevision, deckAccess, savedAnswers, readSaved } from "./saved.js"
 import { bearerPrincipal, revokeToken, tokenAnswer } from "./tokens.js"
 
@@ -216,12 +218,15 @@ async function signedIn({ options, req, res, body }: Visit): Promise<string | un
 async function caller(visit: Visit): Promise<string | undefined> {
   const { options, now, req, res } = visit
   const authorization = req.headers.authorization
-  if (authorization === undefined) return signedIn(visit)
+  if (authorization === undefined) {
+    res.setHeader("www-authenticate", resourceChallenge(options))
+    return signedIn(visit)
+  }
   const secret = readBearer(authorization)
   const bearer = secret === undefined ? undefined : await bearerPrincipal(options.session, secret, now())
   if (bearer?.ok === true) return bearer.principal
   await visit.body()
-  res.setHeader("www-authenticate", 'Bearer error="invalid_token"')
+  res.setHeader("www-authenticate", resourceChallenge(options, "invalid_token"))
   sendJson(res, 401, { error: "invalid_token" })
   return undefined
 }
@@ -460,6 +465,14 @@ async function versionRoute({ options, res }: Visit): Promise<void> {
   sendJson(res, 200, { commit: options.commit ?? "unknown" })
 }
 
+async function resourceMetadataRoute({ options, res }: Visit): Promise<void> {
+  sendJson(res, 200, resourceMetadata(options))
+}
+
+async function authorizationMetadataRoute({ options, res }: Visit): Promise<void> {
+  sendJson(res, 200, authorizationMetadata(options))
+}
+
 export const deckAnswers: DeckAnswers = {
   ...savedAnswers,
   ...deckListAnswers,
@@ -467,16 +480,18 @@ export const deckAnswers: DeckAnswers = {
 }
 
 export const routes: readonly Route[] = [
+  { method: "GET", path: mcpRoutes.resourceMetadata.path, serve: resourceMetadataRoute },
+  { method: "GET", path: mcpRoutes.authorizationMetadata.path, serve: authorizationMetadataRoute },
   { method: "GET", path: "/health", serve: healthRoute },
   { method: "GET", path: "/version", serve: versionRoute },
   { method: "POST", path: "/smoke/session", serve: smokeRoute },
-  { method: "any", path: "/mcp", serve: mcpRoute },
+  { method: "any", path: mcpRoutes.mcp.path, serve: mcpRoute },
   airaRoute({ signedIn, answerSize, parsedJson, sendJson }),
-  { method: "POST", path: "/oauth/register", serve: registerRoute },
+  { method: "POST", path: oauthRoutes.register.path, serve: registerRoute },
   { method: "POST", path: oauthRoutes.client.path, serve: clientRoute },
   { method: "POST", path: oauthRoutes.approve.path, serve: approveRoute },
-  { method: "POST", path: "/oauth/token", serve: tokenRoute, cap: limits.form },
-  { method: "POST", path: "/oauth/revoke", serve: revokeRoute, cap: limits.form },
+  { method: "POST", path: oauthRoutes.token.path, serve: tokenRoute, cap: limits.form },
+  { method: "POST", path: oauthRoutes.revoke.path, serve: revokeRoute, cap: limits.form },
   { method: "POST", path: signInRoutes.email.path, serve: emailRoute },
   { method: "POST", path: signInRoutes.code.path, serve: codeRoute },
   { method: "GET", path: signInRoutes.link.path, serve: linkRoute },
