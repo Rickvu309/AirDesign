@@ -3,7 +3,7 @@ import { once } from "node:events"
 import { request } from "node:http"
 import type { Socket } from "node:net"
 
-import { airaTools, countryHeader, signInRoutes } from "@airdesign/catalog"
+import { airaTools, countryHeader } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/document"
 import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
@@ -11,7 +11,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { airaMaxTokens, airaSystem, settleTurn } from "./aira.js"
 import { Closing } from "./aira-closing.js"
 import { Replay } from "./aira-replay.js"
-import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
+import { ask, postgresInfo, serve, signInByCode } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 
 const vietnam = { [countryHeader]: "VN" }
@@ -90,11 +90,7 @@ beforeEach(() => {
 
 async function signIn(): Promise<Account> {
   const email = `stop${randomBytes(6).toString("hex")}@example.com`
-  await ask(main, "POST", signInRoutes.email.path, { email })
-  const code = mails.find((mail) => mail.to === email)?.text.split("\n")[1]
-  const response = await ask(main, "POST", signInRoutes.code.path, { email, code })
-  const cookie = cookieFrom(response.headers)
-  if (cookie === undefined) throw new Error("cookie")
+  const cookie = await signInByCode(main, mails, email)
   return { email, cookie }
 }
 
