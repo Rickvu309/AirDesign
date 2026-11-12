@@ -30,16 +30,16 @@ import { scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 import { memoPptx } from "./pptx-memo.mjs"
 import { phaseClock } from "./pptx-phases.mjs"
-import { judgedWrites, timeMetric } from "./metrics.mjs"
 import {
-  afterRender,
-  checkFails,
-  committedArgs,
-  corpusDecision,
-  corpusInputs,
-  corpusResult,
-  validatorList,
-} from "./pptx-corpus.mjs"
+  judgeBuild,
+  judgeProgram,
+  judgeRows,
+  validatorCode,
+  validatorLine,
+  validatorLists as validatedLists,
+} from "./pptx-validator.mjs"
+import { judgedWrites, timeMetric } from "./metrics.mjs"
+import { afterRender, checkFails, committedArgs, corpusDecision, corpusInputs, corpusResult } from "./pptx-corpus.mjs"
 import {
   committedBlobs,
   renderCache,
@@ -95,15 +95,17 @@ const run = (command, args) =>
     )
   })
 
+const judgeBuilt = run(dotnet, judgeBuild)
+judgeBuilt.catch(() => {})
+const validatorTally = { files: 0, distinct: 0, hits: 0 }
 const validatorLists = async (files) => {
-  const lists = new Map()
-  const output = await run(dotnet, ["run", "--project", "scripts/pptx-judge", "-v", "q", "--", ...files])
-  for (const line of output.split("\n")) {
-    if (!line.startsWith("{")) continue
-    const row = JSON.parse(line)
-    lists.set(row.file, validatorList(row))
-  }
-  return lists
+  await judgeBuilt
+  return validatedLists({
+    files,
+    code: validatorCode(root),
+    tally: validatorTally,
+    validate: async (group) => judgeRows(await run(dotnet, [judgeProgram, ...group])),
+  })
 }
 
 const renderCacheReady = readMachine({ soffice, pdftoppm: "pdftoppm", env: process.env }).then((machine) =>
@@ -289,6 +291,7 @@ const [{ found: lists, planting }] = await Promise.all([
   phases.time("render", () => Promise.all(Array.from({ length: Math.min(os.availableParallelism(), 4) }, renderNext))),
 ])
 console.log((await renderCacheReady).line())
+console.log(validatorLine(validatorTally))
 const endJudging = phases.begin("judging")
 const ids = new Map([...parts].map(([name, packageParts]) => [name, pptx.shapeIdCounts(packageParts)]))
 const orders = new Map([...parts].map(([name, packageParts]) => [name, pptx.branchOrderErrors(packageParts)]))
