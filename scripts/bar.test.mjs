@@ -27,7 +27,7 @@ import {
 import { workingTree } from "./checked.mjs"
 
 const metrics = {
-  "known-failures": { now: 2, goal: 0 },
+  "known-failures": { goal: 0 },
   "corpus-size": { now: 2, goal: 20 },
   "ci-duration": { limit: 40 },
 }
@@ -44,12 +44,12 @@ const withMetric = (name, value) => ({ headMetrics: { ...metrics, [name]: value 
 const decks = "corpus-size"
 
 same("product code alone needs nobody", texts({ changedFiles: ["packages/pptx/src/slide-route.ts"] }), [])
-same("a fixed fault needs nobody", texts(withMetric("known-failures", { now: 1, goal: 0 })), [])
+same("a pull that changes no metric needs nobody", texts({}), [])
 same("a deck added needs nobody", texts(withMetric(decks, { now: 3, goal: 20 })), [])
 same("a tighter limit needs nobody", texts(withMetric("ci-duration", { limit: 30 })), [])
 same("a new metric needs nobody", texts(withMetric("new one", { now: 9, goal: 0 })), [])
-same("a new fault needs the owner", texts(withMetric("known-failures", { now: 3, goal: 0 })), [
-  "known-failures went from 2 to 3, away from its goal of 0.",
+same("a stored count for a measured metric needs the owner", texts(withMetric("known-failures", { now: 3, goal: 0 })), [
+  "The metric known-failures is measured on each run, so it must be only a goal, as a number.",
 ])
 same("a deck dropped needs the owner", texts(withMetric(decks, { now: 1, goal: 20 })), [
   `${decks} went from 2 to 1, away from its goal of 20.`,
@@ -60,29 +60,34 @@ same("a count that jumps past its goal needs the owner", texts(withMetric(decks,
 same("a looser limit needs the owner", texts(withMetric("ci-duration", { limit: 60 })), [
   "The limit of ci-duration went from 40 to 60.",
 ])
-same("a moved goal needs the owner", texts(withMetric("known-failures", { now: 2, goal: 5 })), [
+same("a moved goal needs the owner", texts(withMetric("known-failures", { goal: 5 })), [
   "The goal of known-failures went from 0 to 5.",
 ])
 same("a limit turned into a count needs the owner", texts(withMetric("ci-duration", { now: 1, goal: 0 })), [
   "The metric ci-duration stopped being a limit.",
 ])
-same(
-  "a removed metric needs the owner",
-  texts({ headMetrics: { "known-failures": metrics["known-failures"] } }).length,
-  2,
-)
+same("a removed metric needs the owner", texts({ headMetrics: { ...metrics, "known-failures": undefined } }), [
+  "The metric known-failures was removed.",
+])
+const measuredShape = "The metric known-failures is measured on each run, so it must be only a goal, as a number."
 for (const loose of [
   { limit: "9" },
   { limit: null },
   { limit: [39] },
   { now: null, goal: 0 },
   { now: "0", goal: 0 },
+  { goal: "0" },
+  { goal: null },
+  { goal: 0, limit: 5 },
+  {},
   7,
   null,
 ]) {
-  same(`a metric shaped ${JSON.stringify(loose)} needs the owner`, texts(withMetric("known-failures", loose)), [
-    "The metric known-failures must be only a limit, or only now and goal, as numbers.",
-  ])
+  same(
+    `a measured metric shaped ${JSON.stringify(loose)} needs the owner`,
+    texts(withMetric("known-failures", loose)),
+    [measuredShape],
+  )
 }
 same("a malformed new metric needs the owner", texts(withMetric("new one", { now: [] })).length, 1)
 
@@ -125,13 +130,8 @@ same("changed scripts need the owner", texts({ changedScripts: ["package.json"] 
   "The scripts in package.json changed, and they are what ci runs.",
 ])
 
-same(
-  "a count given a limit as well needs the owner",
-  texts(withMetric("known-failures", { now: 2, goal: 0, limit: 5 })),
-  ["The metric known-failures must be only a limit, or only now and goal, as numbers."],
-)
-same("a count turned into a limit needs the owner", texts(withMetric("known-failures", { limit: 5 })), [
-  "The metric known-failures stopped being a count with a goal.",
+same("a measured metric with a limit needs the owner", texts(withMetric("known-failures", { goal: 0, limit: 5 })), [
+  measuredShape,
 ])
 
 const cases = [
@@ -272,8 +272,8 @@ const lowersOf = (change) =>
   )
 same("a raised limit lowers the bar", lowersOf(withMetric("ci-duration", { limit: 60 })), [true])
 same("a dropped deck count lowers the bar", lowersOf(withMetric(decks, { now: 1, goal: 20 })), [true])
-same("a moved goal lowers the bar", lowersOf(withMetric("known-failures", { now: 2, goal: 5 })), [true])
-same("a recorded fault is only listed", lowersOf(withMetric("known-failures", { now: 3, goal: 0 })), [false])
+same("a moved goal lowers the bar", lowersOf(withMetric("known-failures", { goal: 5 })), [true])
+same("a measured fault is not in metrics.json, so it lowers nothing", lowersOf({}), [])
 same("a changed check file is only listed", lowersOf({ changedFiles: ["scripts/check.mjs"] }), [false])
 same("changed scripts are only listed", lowersOf({ changedScripts: ["package.json"] }), [false])
 same("a changed case lowers the bar", lowersOf({ changedCases: ["text-page"] }), [true])
@@ -348,7 +348,7 @@ same(
 )
 
 const renamed = {
-  "known-failures": { now: 17, goal: 0 },
+  "known-failures": { goal: 0 },
   "corpus-size": { now: 2, goal: 20 },
   "fault-detection": { now: 9, goal: 10 },
   "export-coverage": { now: 17, goal: 50 },
@@ -434,7 +434,10 @@ same(
   localFork(localRepo).why,
   "There is no origin/main here, so this branch cannot be judged locally. CI judges it.",
 )
-localFile("metrics.json", JSON.stringify({ "ci-duration": { limit: 40 }, "corpus-size": { now: 2, goal: 20 } }))
+localFile(
+  "metrics.json",
+  JSON.stringify({ "ci-duration": { limit: 40 }, "corpus-size": { now: 2, goal: 20 }, "known-failures": { goal: 0 } }),
+)
 localFile("scripts/pptx-fixtures/cases.json", JSON.stringify([{ name: "nasa-1d-cnn" }, { name: "doe-heat-pumps" }]))
 localFile("scripts/pptx-fixtures/corpus.json", JSON.stringify(corpusList))
 localFile("packages/pptx/src/route.test.ts", "case\n")
@@ -449,7 +452,10 @@ localGit(["update-ref", "HEAD", mainCommit])
 localGit(["remote", "add", "origin", "https://github.com/Rickvu309/AirDesign.git"])
 same("an untouched branch forks where main is", localFork(localRepo).fork, mainCommit)
 same("an untouched branch touches nothing", verdict(readLocal(localRepo)).lines, ["Nothing here touches the bar."])
-localFile("metrics.json", JSON.stringify({ "ci-duration": { limit: 50 }, "corpus-size": { now: 1, goal: 20 } }))
+localFile(
+  "metrics.json",
+  JSON.stringify({ "ci-duration": { limit: 50 }, "corpus-size": { now: 1, goal: 20 }, "known-failures": { goal: 0 } }),
+)
 localFile("scripts/pptx-fixtures/cases.json", JSON.stringify([{ name: "nasa-1d-cnn" }]))
 localFile("scripts/pptx-fixtures/corpus.json", JSON.stringify([{ name: "a.pptx", sha256: "9" }]))
 fs.rmSync(path.join(localRepo, "packages/pptx/src/route.test.ts"))

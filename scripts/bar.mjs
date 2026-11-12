@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { workingTree } from "./checked.mjs"
+import { measuredLive } from "./metrics.mjs"
 
 const guardedFolders = [".github/", "tooling/", "scripts/", "specs/"]
 const openFolders = ["scripts/pptx-fixtures/"]
@@ -45,6 +46,7 @@ const keysOf = (metric) =>
   metric !== null && typeof metric === "object" && !Array.isArray(metric) ? Object.keys(metric).sort().join() : ""
 const timed = (metric) => keysOf(metric) === "limit" && finite(metric.limit)
 const counted = (metric) => keysOf(metric) === "goal,now" && finite(metric.now) && finite(metric.goal)
+const measured = (metric) => keysOf(metric) === "goal" && finite(metric.goal)
 
 const metricsFile = "metrics.json"
 export const oldMetricsFile = "sticks.json"
@@ -67,11 +69,20 @@ export const metricsFrom = (read) => {
   return Object.fromEntries(Object.entries(old).map(([name, metric]) => [oldMetricNames[name] ?? name, metric]))
 }
 
-const recordsFaults = new Set(["known-failures"])
 const countsProof = new Set(["fault-detection"])
+
+const measuredReason = (name, before, after) => {
+  if (!measured(after)) {
+    return `The metric ${name} is measured on each run, so it must be only a goal, as a number.`
+  }
+  if (before === undefined) return undefined
+  if (timed(before)) return `The metric ${name} stopped being a limit.`
+  return before.goal === after.goal ? undefined : `The goal of ${name} went from ${before.goal} to ${after.goal}.`
+}
 
 const metricReason = (name, before, after) => {
   if (after === undefined) return `The metric ${name} was removed.`
+  if (measuredLive.has(name)) return measuredReason(name, before, after)
   if (!timed(after) && !counted(after)) {
     return `The metric ${name} must be only a limit, or only now and goal, as numbers.`
   }
@@ -125,8 +136,7 @@ export const ownerReasons = ({
   const reasons = []
   for (const name of new Set([...Object.keys(baseMetrics), ...Object.keys(headMetrics)])) {
     const text = metricReason(name, baseMetrics[name], headMetrics[name])
-    const recorded = recordsFaults.has(name) && text?.includes("away from its goal")
-    if (text !== undefined) reasons.push({ about: `metric ${name}`, text, lowers: !recorded })
+    if (text !== undefined) reasons.push({ about: `metric ${name}`, text, lowers: true })
   }
   for (const file of changedFiles.filter(guarded)) {
     reasons.push({ about: `file ${file}`, text: `${file} decides what ci checks.`, lowers: false })
