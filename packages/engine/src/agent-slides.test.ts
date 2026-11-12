@@ -39,6 +39,14 @@ for (const [op, input, ids] of [
     expect(result.deck.revision).toBe(1)
   })
 }
+it("refuses Undo of a run that changed the slide order and leaves the deck as it is", () => {
+  const result = call("add_slide", opened(), actor, { deck: "deck", base: 0, after: "256", layout: "256" })
+  expect(result.ok).toBe(true)
+  if (!result.ok) return
+  const undone = call("undo_run", result.deck, { actor: "person" }, { deck: "deck", runId: "run" })
+  expect(undone).toEqual({ ok: false, refusal: "run-fenced" })
+  expect(presentSlides(result.deck.register).map((row) => row.id)).toEqual(["256", "258", "257"])
+})
 it.fails("Undo restores slide edits from an agent run", () => {
   const result = call("delete_slide", opened(), actor, { deck: "deck", base: 0, slide: "256" })
   expect(result.ok).toBe(true)
