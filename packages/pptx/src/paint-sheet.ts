@@ -110,7 +110,7 @@ const transformOf = (children: MarkupChildren, shape: MarkupElement): MarkupElem
   return holder === undefined ? undefined : childOf(children, holder, facts.transform)
 }
 
-const ownPlacement = (children: MarkupChildren, xfrm: MarkupElement | undefined): Own => {
+export const ownPlacement = (children: MarkupChildren, xfrm: MarkupElement | undefined): Own => {
   if (xfrm === undefined) return "missing"
   const off = childOf(children, xfrm, "a:off")
   const ext = sizeOf(children, xfrm)
@@ -225,10 +225,7 @@ const placeholderOf = (children: MarkupChildren, nonVisual: MarkupElement | unde
   return { type: attr(placeholder, "type") ?? omittedType, index: integer(attr(placeholder, "idx")) }
 }
 
-const drawnIn = (elements: readonly MarkupElement[], children: MarkupChildren): readonly Drawn[] => {
-  const root = elements[0]
-  const body = root === undefined ? undefined : childOf(children, root, "p:cSld")
-  const tree = body === undefined ? undefined : childOf(children, body, "p:spTree")
+const drawnIn = (tree: MarkupElement | undefined, children: MarkupChildren): readonly Drawn[] => {
   if (tree === undefined) return []
   const drawn: Drawn[] = []
   const visits: Visit[] = []
@@ -302,6 +299,11 @@ export const slidePlacement = (item: Drawn, layout: Sheet | null, master: Sheet 
   return inherited === null ? null : throughFrames(inherited, item.frames)
 }
 
+const treeOf = (children: MarkupChildren, root: MarkupElement | undefined): MarkupElement | undefined => {
+  const body = root === undefined ? undefined : childOf(children, root, "p:cSld")
+  return body === undefined ? undefined : childOf(children, body, "p:spTree")
+}
+
 export const sheetFrom = (part: string, bytes: Uint8Array): Sheet => {
   const { elements } = markupDocument(bytes)
   const root = elements[0]
@@ -312,6 +314,13 @@ export const sheetFrom = (part: string, bytes: Uint8Array): Sheet => {
     children,
     part,
     showsMaster: root === undefined || !isFalse(attr(root, "showMasterSp")),
-    drawn: drawnIn(elements, children),
+    drawn: drawnIn(treeOf(children, root), children),
   }
+}
+
+export const drawingFrom = (part: string, bytes: Uint8Array, elements: readonly MarkupElement[]): Sheet => {
+  const children = markupChildren(elements)
+  const root = elements[0]
+  const tree = root === undefined ? undefined : childOf(children, root, "p:spTree")
+  return { bytes, elements, children, part, showsMaster: false, drawn: drawnIn(tree, children) }
 }

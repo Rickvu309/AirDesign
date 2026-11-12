@@ -49,8 +49,17 @@ export function paintElements(
     const count = seen.get(name) ?? 0
     seen.set(name, count + 1)
     const shape = row.from === "slide" ? source.shapes.get(row.shape) : undefined
-    const painted = painters[kind]({ row, shape, key: count === 0 ? name : `${name}#${count}`, src })
-    if (painted !== null) elements.push(painted)
+    const key = count === 0 ? name : `${name}#${count}`
+    const painted = painters[kind]({ row, shape, key, src })
+    if (painted !== null)
+      elements.push(row.diagram === undefined ? painted : { ...painted, diagram: diagramOf(row.diagram, key, src) })
   }
   return elements
+}
+
+function diagramOf(rows: readonly PaintElement[], key: string, src: PictureSource): readonly CanvasElement[] {
+  return rows.flatMap((row) => {
+    const kind = paintKindOf(row)
+    return kind === "group" ? [] : [painters[kind]({ row, shape: undefined, key: `${key}/${row.shape}`, src })]
+  })
 }

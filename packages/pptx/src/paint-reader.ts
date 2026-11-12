@@ -29,6 +29,7 @@ import { markupChildren } from "./text-value-route.js"
 import { paintTable, type PaintTable } from "./paint-table.js"
 import { placeholderPrompt } from "./placeholder-prompt.js"
 import { tableStyles } from "./table-style.js"
+import { paintDiagram } from "./paint-diagram.js"
 
 export type PaintBox = {
   x: number
@@ -52,6 +53,7 @@ export type PaintElement = {
   prompt?: string | null
   text: PaintText | null
   table?: PaintTable
+  diagram?: readonly PaintElement[]
 } & ShapePaint
 
 export type SlidePaint = {
@@ -387,22 +389,57 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
         const texted = withText(level, layoutLevel, masterSheet, scope)
         return shownAbove(level.sheet).map((item, at) => ({ ...texted[at]!, ...paints.get(item)! }))
       }
+      const diagramOf = (item: Drawn, box: PaintBox | null): Pick<PaintElement, "diagram"> => {
+        const read =
+          box === null
+            ? null
+            : paintDiagram(item, sheet.children, box, parts, (id) => relationshipsOf(slidePart).get(`id:${id}`))
+        if (read === null) return {}
+        const themeStyles = context.theme === null ? null : (styles.get(context.theme.part) ?? null)
+        const diagram = read.shapes.flatMap(({ drawn, box: shapeBox, textBox }, at): PaintElement[] => {
+          const source = {
+            element: drawn.element,
+            children: read.sheet.children,
+            part: read.sheet.part,
+            groupFill: null,
+          }
+          const holder = { ...source, bytes: read.sheet.bytes, placeholder: null, above: [] }
+          const text = paintText(holder, scope)
+          const base = { part: read.sheet.part, from: "slide", kind: drawn.kind, image: null, group: null } as const
+          const own: PaintElement = {
+            ...base,
+            shape: String(at),
+            box: shapeBox,
+            placeholder: null,
+            text: textBox === null ? text : null,
+            ...paintShape([source], themeStyles, context.palette, picture),
+          }
+          if (textBox === null || text === null) return [own]
+          const words = { fill: null, line: null, geometry: null, placeholder: null }
+          return [own, { ...base, ...words, shape: `${at}.text`, box: textBox, text }]
+        })
+        return { diagram }
+      }
       const painted = sheet.drawn
         .filter((item) => !item.hidden)
-        .map((item): PaintElement => ({
-          part: slidePart,
-          shape: item.shape,
-          from: "slide",
-          kind: item.kind,
-          image: imageOf(sheet, item),
-          box: boxOf(slidePlacement(item, layout?.sheet ?? null, master?.sheet ?? null)),
-          group: item.group,
-          placeholder: item.placeholder,
-          prompt: placeholderPrompt(item, sheet, layoutSheet, options?.fallbackPrompt),
-          text: textOf(item, sheet, layoutSheet, masterSheet, scope),
-          ...tableOf(item, sheet, scope),
-          ...paints.get(item)!,
-        }))
+        .map((item): PaintElement => {
+          const box = boxOf(slidePlacement(item, layout?.sheet ?? null, master?.sheet ?? null))
+          return {
+            part: slidePart,
+            shape: item.shape,
+            from: "slide",
+            kind: item.kind,
+            image: imageOf(sheet, item),
+            box,
+            group: item.group,
+            placeholder: item.placeholder,
+            prompt: placeholderPrompt(item, sheet, layoutSheet, options?.fallbackPrompt),
+            text: textOf(item, sheet, layoutSheet, masterSheet, scope),
+            ...tableOf(item, sheet, scope),
+            ...diagramOf(item, box),
+            ...paints.get(item)!,
+          }
+        })
       const showsLayout = sheet.showsMaster
       const showsMaster = showsLayout && layout !== null && layout.sheet.showsMaster
       return {
