@@ -69,10 +69,14 @@ export async function uploadOriginal(
     `with kept as (
        update deck.saved set original_until = greatest(original_until, $2::timestamptz + interval '1 minute')
        where original_key = $1 returning original_until
+     ), queued as (
+       update deck.original_delete set expires = greatest(expires, $2::timestamptz + interval '1 minute')
+       where key = $1 returning key
      )
-     update deck.original_delete set expires = greatest(expires, $2::timestamptz + interval '1 minute')
-     where key = $1`,
-    [row.original_key, signed.expires],
+     insert into deck.original_delete (key, owner, expires)
+     select $1, $3, $2::timestamptz + interval '1 minute'
+     where not exists (select 1 from kept) and not exists (select 1 from queued)`,
+    [row.original_key, signed.expires, email],
   )
   return { ok: true, ...signed }
 }
