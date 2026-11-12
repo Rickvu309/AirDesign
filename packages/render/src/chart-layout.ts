@@ -92,7 +92,9 @@ function roundShapes(chart: CanvasChart, plot: ChartBox, width: number, height: 
     const spot = { x: cx + distance * sin + label.dx * width, y: cy - distance * cos + label.dy * height }
     const anchor = !out || Math.abs(sin) < sideShare ? "middle" : sin > 0 ? "start" : "end"
     const align = !out || Math.abs(cos) < sideShare ? "middle" : cos > 0 ? "bottom" : "top"
-    shapes.push(words(`label 0 ${at}`, label.text, label.look, spot, anchor, align))
+    const half = anchor === "middle" ? 0 : measure(label.text, label.look).width / 2
+    const centred = { x: spot.x + (anchor === "start" ? half : -half), y: spot.y }
+    shapes.push(words(`label 0 ${at}`, label.text, label.look, centred, "middle", align))
   }
   return shapes
 }

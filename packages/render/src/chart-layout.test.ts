@@ -167,6 +167,8 @@ it("wraps a long label at about a fifth of the chart's width so the pie keeps it
   }
   const label = chartLayout(chart, 300, 300).find((shape) => shape.kind === "text" && shape.key === "label 0 0")
   expect(label?.kind === "text" ? label.lines : []).toEqual(["Owner with", "mortgage; 25%"])
+  expect(label?.kind === "text" ? label.anchor : null).toBe("middle")
+  expect(label?.kind === "text" ? label.x : 0).toBeGreaterThan(150 + 13 * 10 * 0.26)
 })
 
 it("writes the title, the axis steps, the categories, the labels and the legend", () => {
