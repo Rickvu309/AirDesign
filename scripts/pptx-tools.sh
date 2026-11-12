@@ -4,12 +4,8 @@ root="${PPTX_TOOLS:-$HOME/.cache/pptx-tools}"
 brand="$root/usr/lib/libreoffice"
 soffice="$brand/program/soffice"
 ppm="$root/usr/bin/pdftoppm"
-dotnet="${PPTX_DOTNET:-dotnet}"
-
-if ! "$dotnet" --list-sdks 2>/dev/null | grep -q '^8\.'; then
-  echo "The PowerPoint check needs the .NET 8 SDK. Install it, or set PPTX_DOTNET to its dotnet binary." >&2
-  exit 1
-fi
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+dotnet="$(node "$here/dotnet-sdk.mjs")" || exit 1
 
 if [ ! -f "$root/installed" ] && command -v soffice > /dev/null && command -v pdftoppm > /dev/null; then
   PPTX_SOFFICE="$(command -v soffice)"

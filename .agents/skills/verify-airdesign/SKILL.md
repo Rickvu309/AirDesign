@@ -202,6 +202,8 @@ Run `stop` after every run, passed or failed. A failed `launch` prints the run i
 | `apps/web`, `apps/api`, any package they import, `tests/journeys`, this skill               | every journey, `pnpm test:journeys`          |
 | the paths `ci`'s `pptx` job watches (`packages/pptx`, `packages/document`, `apps/web`, ...) | `pnpm check:pptx`                            |
 
+`pnpm check:pptx` finds the .NET 8 SDK itself: `PPTX_DOTNET`, then `dotnet` on PATH, then `$DOTNET_ROOT/dotnet`, then `~/.dotnet/dotnet`. It adds Chromium's library folder itself too. Set nothing; when no SDK is found it lists the places it tried.
+
 One command reads the branch's changes against `origin/main` and does it:
 
 ```sh
