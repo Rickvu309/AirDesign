@@ -1,7 +1,8 @@
 import { decide, elementId, openRegister, writeTextValue, type Box, type Command } from "@airdesign/document"
-import { applyRoute } from "@airdesign/pptx"
+import { applyRoute, readPackage, readShapes } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { exportedParts } from "./exported-parts"
+import { ensureMarkup } from "./markup"
 import { editedRegister, fallbackSlide, onSlide, twoBoxSlide, xml } from "./slide-fixtures"
 
 it("an export skips an element whose only rows were undone", () => {
@@ -143,3 +144,42 @@ it("an export of a box refuses the fallback box that shares the moved id and wri
   expect(() => exportedParts(parts, moved([["256.2", box]]))).toThrow(/box-shape/)
   expect(parts.get(part)).toEqual(saved)
 })
+
+it("an export keeps the stored part when an edit was taken back to the file's text and box", () => {
+  const boxed = twoBoxSlide.replace(
+    '<p:cNvPr id="3" name="Body"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr/>',
+    '<p:cNvPr id="3" name="Body"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="10" y="20"/><a:ext cx="30" cy="40"/></a:xfrm></p:spPr>',
+  )
+  const parts = onSlide(xml(boxed))
+  const back = moved([
+    ["256.2", "Changed"],
+    ["256.2", writeTextValue([{ from: 0, runs: [{ from: 0, text: "Hello" }] }])],
+    ["256.3", box],
+    ["256.3", { x: 10, y: 20, cx: 30, cy: 40 }],
+  ])
+  expect(exportedParts(parts, back).get(part)).toBe(parts.get(part))
+})
+
+it("an export keeps the stored part when a placeholder that takes its box from the layout is moved back there", async () => {
+  await ensureMarkup()
+  const fsName = "node:fs/promises"
+  const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
+  const read = await readPackage(
+    await fs.readFile(new URL("../../../scripts/pptx-fixtures/doe-heat-pumps.pptx", import.meta.url)),
+  )
+  if (!read.ok) throw new Error(read.reason)
+  const shape = readShapes(read.parts).find((each) => each.part === "ppt/slides/slide3.xml" && each.shape === "3")
+  if (shape === undefined || shape.box !== null) throw new Error("shape")
+  const id = `${shape.slide}.3`
+  const layout = { x: 628650, y: 274320, cx: 7886700, cy: 914400 }
+  const back = exportedParts(
+    read.parts,
+    moved([
+      [id, box],
+      [id, layout],
+    ]),
+  )
+  expect(back.get(shape.part)).toBe(read.parts.get(shape.part))
+  const away = exportedParts(read.parts, moved([[id, box]]))
+  expect(away.get(shape.part)).not.toEqual(read.parts.get(shape.part))
+}, 20_000)

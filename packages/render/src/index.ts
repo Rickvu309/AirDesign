@@ -1,4 +1,4 @@
-export { sameBox } from "./box-gesture.js"
+export { boxOf, sameBox } from "./box-gesture.js"
 export { ElementView, OpenSlide, useElement } from "./element-view.js"
 export { Filmstrip } from "./filmstrip.js"
 export { textValue } from "./paragraph-edit.js"

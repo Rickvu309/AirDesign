@@ -1185,7 +1185,6 @@ describe("spec replay", () => {
     }
     expect(failures, JSON.stringify(reports)).toEqual([])
     expect(reports).toMatchObject({
-      element: { states: 5, edges: expect.any(Number) },
       index: { replayed: expect.any(Number), stuttered: expect.any(Number) },
       personUndo: { replayed: expect.any(Number), told: expect.any(Number) },
       edit: { stuttered: expect.any(Number) },

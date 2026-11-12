@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { currentBox, currentValue, decide, openRegister, type Command, type Register } from "./decide.js"
 import { elementId, slideId } from "./element-id.js"
 import { orderKeyBetween } from "./order-key.js"
+import { elementGone } from "./element-order.js"
 import { orderKeyAfter, presentSlides, type SlideCommand } from "./slide-order.js"
 import { redoOf, slideUndoable, undoOf, type Undoable } from "./person-undo.js"
 
@@ -155,6 +156,68 @@ describe("person undo", () => {
     const added = slid(openRegister("", ""), { slide: "add", id: slideId("259"), after: file[0], key, layout: file[0] })
     const gone = landed(added.register, { command: "slide", file, edit: { slide: "remove", id: slideId("259") } })
     expect(undoOf(gone, added.undoable)).toEqual({ ok: false })
+  })
+
+  it("undoes an added text box by removing it, and redoes it by bringing it back with its text", () => {
+    const box = { node: elementId("256.9"), kind: "shape" as const, value: "", box: from, grouped: false }
+    const added = slid(openRegister("", ""), { slide: "element-add", id: file[0], element: box })
+    const typed = landed(landed(added.register, { command: "add", node: box.node, floor: "", route: "" }), {
+      command: "person",
+      value: "Typed",
+      node: box.node,
+    })
+    const undone = turned(typed, undoOf(typed, added.undoable))
+    expect(elementGone(undone, box.node)).toBe(true)
+    const redone = turned(undone, redoOf(undone, added.undoable))
+    expect(elementGone(redone, box.node)).toBe(false)
+    expect(currentValue(redone.elements[box.node]!)).toBe("Typed")
+  })
+
+  it("undoes a deleted element by bringing it back with its text and box as they were, and redoes the delete", () => {
+    const moved = landed(landed(opened(), { command: "person", value: "New", node }), {
+      command: "person",
+      property: "box",
+      value: to,
+      node,
+    })
+    const removed = slid(moved, { slide: "element-remove", id: file[0], node })
+    expect(elementGone(removed.register, node)).toBe(true)
+    const undone = turned(removed.register, undoOf(removed.register, removed.undoable))
+    expect(elementGone(undone, node)).toBe(false)
+    expect(shownText(undone)).toBe("New")
+    expect(shownBox(undone)).toEqual(to)
+    expect(elementGone(turned(undone, redoOf(undone, removed.undoable)), node)).toBe(true)
+  })
+
+  it("refuses to undo an element edit once someone else changed whether it shows", () => {
+    const removed = slid(opened(), { slide: "element-remove", id: file[0], node })
+    const restored = landed(removed.register, {
+      command: "slide",
+      file,
+      edit: { slide: "element-restore", id: file[0], node },
+    })
+    expect(undoOf(restored, removed.undoable)).toEqual({ ok: false })
+    const box = { node: elementId("256.9"), kind: "shape" as const, value: "", box: from, grouped: false }
+    const added = slid(openRegister("", ""), { slide: "element-add", id: file[0], element: box })
+    const gone = landed(added.register, {
+      command: "slide",
+      file,
+      edit: { slide: "element-remove", id: file[0], node: box.node },
+    })
+    expect(undoOf(gone, added.undoable)).toEqual({ ok: false })
+  })
+
+  it("undoes a speaker notes edit like a text edit", () => {
+    const notes = elementId("256.notes")
+    const opening = landed(openRegister("", ""), { command: "add", node: notes, floor: "Say hello", route: "" })
+    const edited = landed(opening, { command: "person", value: "Say goodbye", node: notes })
+    const undoable: Undoable = {
+      node: notes,
+      floor: "Say hello",
+      before: { value: "Say hello" },
+      after: { value: "Say goodbye" },
+    }
+    expect(currentValue(turned(edited, undoOf(edited, undoable)).elements[notes]!)).toBe("Say hello")
   })
 
   it("gives no undoable for a slide edit the register refuses", () => {

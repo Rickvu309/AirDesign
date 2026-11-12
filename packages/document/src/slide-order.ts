@@ -1,6 +1,6 @@
 import type { DeckIndex, IndexElement } from "./deck-index.js"
 import { readSlideId, slideId, type SlideId } from "./element-id.js"
-import { elementRefusal, readElementCommand, type ElementCommand } from "./element-order.js"
+import { elementCommand, elementRefusal, readElementCommand, type ElementCommand } from "./element-order.js"
 import { limits } from "./limits.js"
 import { orderKeyBetween, readOrderKey, type OrderKey } from "./order-key.js"
 import { readFloor } from "./slide-floor.js"
@@ -102,7 +102,7 @@ export function foldSlides(state: SlideState): readonly FoldedSlide[] {
     spots.set(id, { id, key, birth: { from: "file" }, present: true })
   }
   for (const command of state.order) {
-    if (command.slide === "element-add" || command.slide === "element-remove") continue
+    if (elementCommand(command)) continue
     if (command.slide === "add") {
       spots.set(command.id, {
         id: command.id,
@@ -180,7 +180,7 @@ export function applySlide(
   const withFile = state.file.length === 0 ? { file, order: state.order } : state
   const present = presentSlides(withFile)
   const ids = new Set(present.map((spot) => spot.id))
-  if (command.slide === "element-add" || command.slide === "element-remove") {
+  if (elementCommand(command)) {
     if (!ids.has(command.id)) return { ok: false, code: "dead" }
     const refusal = elementRefusal({ ...withFile, ...index(state) }, command)
     if (refusal !== null) return { ok: false, code: refusal }
@@ -233,7 +233,8 @@ function readLayoutPart(raw: unknown): string | undefined {
 function commandOf(raw: Record<string, unknown>): SlideCommand | undefined {
   const id = readSlideId(raw.id)
   if (id === undefined) return undefined
-  if (raw.slide === "element-add" || raw.slide === "element-remove") return readElementCommand(raw, id)
+  if (raw.slide === "element-add" || raw.slide === "element-remove" || raw.slide === "element-restore")
+    return readElementCommand(raw, id)
   if (raw.slide === "remove") return { slide: "remove", id }
   const key = readOrderKey(raw.key)
   if (key === undefined) return undefined

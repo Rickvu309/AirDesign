@@ -1,12 +1,25 @@
-export type UndoName = "text" | "move" | "resize" | "new" | "duplicate" | "delete" | "order"
+export type UndoName =
+  | "text"
+  | "notes"
+  | "move"
+  | "resize"
+  | "add-box"
+  | "delete-element"
+  | "new"
+  | "duplicate"
+  | "delete"
+  | "order"
 
 export const undoCopy = {
   undo: "Undo",
   redo: "Redo",
   undoNamed: {
     text: "Undo text edit",
+    notes: "Undo speaker notes edit",
     move: "Undo move",
     resize: "Undo resize",
+    "add-box": "Undo add text box",
+    "delete-element": "Undo delete element",
     new: "Undo new slide",
     duplicate: "Undo duplicate slide",
     delete: "Undo delete slide",
@@ -14,8 +27,11 @@ export const undoCopy = {
   },
   redoNamed: {
     text: "Redo text edit",
+    notes: "Redo speaker notes edit",
     move: "Redo move",
     resize: "Redo resize",
+    "add-box": "Redo add text box",
+    "delete-element": "Redo delete element",
     new: "Redo new slide",
     duplicate: "Redo duplicate slide",
     delete: "Redo delete slide",

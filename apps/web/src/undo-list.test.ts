@@ -138,7 +138,43 @@ describe("undo list", () => {
     expect(deck.sent).toEqual(["slide restore", "box 1"])
   })
 
+  it("takes back an added text box and a deleted element through the slide queue, and names each", async () => {
+    const box = {
+      node: elementId("256.9"),
+      kind: "shape" as const,
+      value: "",
+      box: { x: 0, y: 0, cx: 1, cy: 1 },
+      grouped: false,
+    }
+    const added = landed(edited(), {
+      command: "slide",
+      file,
+      edit: { slide: "element-add", id: file[0], element: box },
+    })
+    const removed = landed(added, { command: "slide", file, edit: { slide: "element-remove", id: file[0], node } })
+    const deck = deckLink(removed)
+    const addBox = {
+      name: "add-box",
+      undoable: { element: box.node, slide: file[0], file, before: false, after: true },
+    } as const
+    const deleted = {
+      name: "delete-element",
+      undoable: { element: node, slide: file[0], file, before: true, after: false },
+    } as const
+    const list = recorded(recorded(emptyUndo, addBox), deleted)
+    expect(undoLabel("undo", list)).toBe("Undo delete element")
+    const first = await turnBack(deck.link, "deck", list, "undo")
+    expect(undoLabel("undo", first.list)).toBe("Undo add text box")
+    expect(undoLabel("redo", first.list)).toBe("Redo delete element")
+    const second = await turnBack(deck.link, "deck", first.list, "undo")
+    expect(undoLabel("redo", second.list)).toBe("Redo add text box")
+    const third = await turnBack(deck.link, "deck", second.list, "redo")
+    expect(third.outcome).toBe("turned")
+    expect(deck.sent).toEqual(["slide element-restore", "slide element-remove", "slide element-restore"])
+  })
+
   it("names the edit each button undoes or redoes", () => {
+    expect(undoLabel("undo", recorded(emptyUndo, { ...textEdit, name: "notes" }))).toBe("Undo speaker notes edit")
     expect(undoLabel("undo", emptyUndo)).toBe("Undo")
     expect(undoLabel("redo", emptyUndo)).toBe("Redo")
     expect(undoLabel("undo", recorded(emptyUndo, textEdit))).toBe("Undo text edit")

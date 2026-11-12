@@ -91,17 +91,19 @@ A person's Undo and Redo of their own text edit, beside an agent run.
 - `NeverCoversAgent`, `AgentRowStays`: a person's undo never lands over an agent row that shows, and only the run's own Undo hides that row. Harm: a person's Ctrl+Z erases Aira's work.
 - `DroppedIsTold`: an undo that changed nothing is always told.
 
-Bounds: up to four person rows, one agent row. Run: `pnpm check:specs person-undo`. Replay: `tests/person-undo-replay.ts` through `undoOf`, `redoOf` and `decide`. Code: `undoOf`, `redoOf` in `packages/document/src/person-undo.ts`, the stack in `apps/web/src/undo-list.ts`. Leaves out: box undo and slide undo (`slideUndoable`), and notes edits.
+Bounds: up to four person rows, one agent row. Run: `pnpm check:specs person-undo`. Replay: `tests/person-undo-replay.ts` through `undoOf`, `redoOf` and `decide`. Code: `undoOf`, `redoOf` in `packages/document/src/person-undo.ts`, the stack in `apps/web/src/undo-list.ts`. Leaves out: box undo, slide undo (`slideUndoable`) and notes edits, which take the same path as text. The undo of an added or removed element is covered by element.
 
 Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
 
 ## element
 
-A text box a person adds, types in and removes.
+A text box a person adds, types in and removes, the person's Undo and Redo of the add or the removal, and another tab removing it or bringing it back in between.
 
-- `RemovedWasAdded`, `TypedWhileShown` are guards of the model. The promise lives in the replay: after a remove, add, type and remove of that id are refused, and `nextElementId` never hands an added id out again. Harm: a deleted text box comes back or its id is reused.
+- `RemovedWasAdded`, `TypedWhileShown` are guards of the model. The promise lives in the replay: after a remove, add, type and remove of that id are refused, a restore of a box that shows is refused, and `nextElementId` never hands an added id out again. Harm: a deleted text box takes edits or its id is reused.
+- `UndoShowsBefore`: an undo shows whether the box showed before the person's add or removal, and a redo shows the edit again. Harm: Ctrl+Z after adding a box leaves it, or after deleting one leaves it gone.
+- `DroppedIsTold`: an undo or redo after someone else changed whether the box shows changes nothing and is told. Harm: a person's undo removes a box another tab brought back.
 
-Bounds: one element on one slide. Run: `pnpm check:specs element`. Replay: `tests/element-replay.ts` through `call("commit_edits")` and `readDeckPage` in `packages/engine`, and `nextElementId`. Code: `elementRefusal`, `elementGone`, `nextElementId` in `packages/document/src/element-order.ts`, `applySlide` in `slide-order.ts`, the `dead` check in `decide`. Leaves out: other elements and other slides, and the layout a new slide takes (`layout` and `layoutPart` on `add` change only the opening elements the command carries and the part the export points at, never an order or a refusal). A duplicate leaves removed elements out of its copy, for an agent (`agentSlide` in `packages/engine/src/agent-slides.ts`, tested by `packages/engine/src/duplicate-removed.test.ts`) and for a person (`flooredEdit` in `apps/web/src/slide-floor.ts`, tested in `apps/web/src/slide-copy.test.ts`); no spec models the duplicate.
+Bounds: one element on one slide, one undo entry. Run: `pnpm check:specs element`. Replay: `tests/element-replay.ts` through `call("commit_edits")` and `readDeckPage` in `packages/engine`, `undoOf` and `redoOf`, and `nextElementId`. Code: `elementRefusal`, `elementGone`, `nextElementId` in `packages/document/src/element-order.ts`, the element branch of `slideUndoable` and `turn` in `person-undo.ts`, `applySlide` in `slide-order.ts`, the `dead` check in `decide`. Leaves out: other elements and other slides, the layout a new slide takes (`layout` and `layoutPart` on `add` change only the opening elements the command carries and the part the export points at, never an order or a refusal), and export, where `orderedParts` in `packages/pptx/src/slide-order-route.ts` applies each slide's net element change and gives a copy the elements its slide showed when it was copied (`packages/pptx/src/element-order.test.ts`). A duplicate leaves removed elements out of its copy, for an agent (`agentSlide` in `packages/engine/src/agent-slides.ts`, tested by `packages/engine/src/duplicate-removed.test.ts`) and for a person (`flooredEdit` in `apps/web/src/slide-floor.ts`, tested in `apps/web/src/slide-copy.test.ts`); no spec models the duplicate.
 
 Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
 
