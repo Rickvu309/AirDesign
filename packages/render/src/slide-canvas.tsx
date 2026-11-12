@@ -9,7 +9,9 @@ import { SelectionFrame } from "./selection-frame.js"
 import { canMove, canResize, useMoves, type Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
 import { ShapeArt as LineArt, shapePaths } from "./shape-art.js"
-import { anchored, ensureBulletRule, textLook, type Scaled, type TextLook } from "./text-look.js"
+import { anchored, ensureBulletRule, textLook, type Scaled } from "./text-look.js"
+import { SheetText } from "./sheet-text.js"
+import { TableArt } from "./table-art.js"
 
 const defaultTextSize = 203_200
 const defaultInsetX = 91_440
@@ -96,7 +98,8 @@ function rounding(element: CanvasElement, scaled: Scaled): CSSProperties {
 }
 
 function frame(element: CanvasElement, scaled: Scaled, pointer: boolean): CSSProperties {
-  const unshown = element.kind === "chart" || (element.kind === "picture" && element.fill === null)
+  const unshown =
+    element.table === undefined && (element.kind === "chart" || (element.kind === "picture" && element.fill === null))
   const background = unshown ? unshownFill : element.fill
   return {
     ...placement(element.box, scaled),
@@ -106,34 +109,6 @@ function frame(element: CanvasElement, scaled: Scaled, pointer: boolean): CSSPro
   }
 }
 
-type ShownRun = { readonly from: number; readonly text: string }
-type ShownParagraph = { readonly from: number; readonly runs: readonly ShownRun[] }
-
-function ShownText(props: { readonly paragraphs: readonly ShownParagraph[]; readonly look: TextLook }) {
-  const { look, paragraphs } = props
-  return (
-    <div style={look.body}>
-      {paragraphs.map((paragraph) => {
-        const filled = paragraph.runs.some((run) => run.text !== "")
-        return (
-          <div key={paragraph.from} data-paragraph={paragraph.from} style={look.paragraph(paragraph.from, filled)}>
-            {paragraph.runs.map((run) => (
-              <span key={run.from} style={look.run(paragraph.from, run.from)}>
-                {run.text}
-              </span>
-            ))}
-            {filled ? null : <br />}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-function SheetText(props: { readonly text: CanvasText; readonly look: TextLook }) {
-  return <ShownText look={props.look} paragraphs={props.text.paragraphs} />
-}
-
 function LiveText(props: {
   readonly store: PaintStore
   readonly id: ElementId
@@ -141,7 +116,7 @@ function LiveText(props: {
   readonly scaled: Scaled
 }) {
   const record = useElement(props.store, props.id)
-  return <ShownText look={textLook(props.text, props.scaled)} paragraphs={textValue(record?.text ?? "")} />
+  return <SheetText look={textLook(props.text, props.scaled)} text={{ paragraphs: textValue(record?.text ?? "") }} />
 }
 
 function QuietElement(props: { readonly store: PaintStore; readonly element: CanvasElement; readonly scaled: Scaled }) {
@@ -261,7 +236,16 @@ export function SlideCanvas(props: {
       {...(moving === null ? {} : { tabIndex: -1, ...moving.slide })}
     >
       {slide.elements.map((element) =>
-        quiet ? (
+        element.table !== undefined ? (
+          <TableArt
+            key={element.key}
+            elementKey={element.key}
+            table={element.table}
+            box={element.box}
+            scaled={scaled}
+            style={frame(element, scaled, false)}
+          />
+        ) : quiet ? (
           <QuietElement key={element.key} element={element} scaled={scaled} store={props.store} />
         ) : element.id === null ? (
           <SheetElement key={element.key} element={element} scaled={scaled} />

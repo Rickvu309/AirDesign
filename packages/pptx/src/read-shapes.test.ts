@@ -93,17 +93,19 @@ describe("readShapes", () => {
     const shapes = readShapes(parts)
     expect(shapes.some((shape) => shape.kind === "p:grpSp")).toBe(true)
     expect(shapes.some((shape) => shape.text.length === 0)).toBe(true)
-    expect(shapes.filter((shape) => shape.locked)).toHaveLength(1)
     let hosts = 0
+    let tables = 0
     for (const [name, bytes] of parts) {
       if (!slidePart.test(name)) continue
       const { elements } = markupDocument(bytes)
       for (const element of elements) {
+        if (element.kind === "a:tbl" && !inFallback(elements, element.index)) tables += 1
         if (!kinds.has(element.kind as ShapeKind) || inFallback(elements, element.index)) continue
         hosts += 1
       }
     }
     expect(shapes.length).toBe(hosts)
+    expect(shapes.filter((shape) => shape.locked)).toHaveLength(1 + tables)
     const seen = new Set(shapes.map((shape) => `${shape.slide}.${shape.shape}`))
     expect(seen.size).toBe(shapes.length)
   })
@@ -133,7 +135,15 @@ describe("readShapes", () => {
       }
       expect(duplicates).toEqual([])
       expect(mismatches).toEqual([])
-      expect(shapes.filter((shape) => shape.locked)).toHaveLength(name === "doe-heat-pumps.pptx" ? 5 : 0)
+      const tables = [...documents.values()].reduce(
+        (count, document) =>
+          count +
+          document.elements.filter(
+            (element) => element.kind === "a:tbl" && !inFallback(document.elements, element.index),
+          ).length,
+        0,
+      )
+      expect(shapes.filter((shape) => shape.locked)).toHaveLength((name === "doe-heat-pumps.pptx" ? 5 : 0) + tables)
     }
   }, 30_000)
 
