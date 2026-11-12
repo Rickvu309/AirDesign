@@ -1,5 +1,5 @@
 import { deckRoutes, signOutRoutes } from "@airdesign/catalog"
-import { dropChats, flushOriginal } from "@airdesign/live"
+import { dropChats } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -17,7 +17,7 @@ import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/dec
 import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/decks/screens/trash-list"
 import { starterDeckCards } from "@/decks/sample-decks"
 import { deckTime } from "@/decks/deck-time"
-import { importDeck, nameImportedDeck } from "@/import-deck"
+import { importDeck } from "@/import-deck"
 import { signInAddress } from "@/thin-notice"
 
 type Deck = { deck: string; name: string; edited: string; created: string; trashed?: string }
@@ -154,8 +154,6 @@ export function Home({
         setImporting({ name: file.name, failed: true, reason: imported.reason })
         return
       }
-      await nameImportedDeck(imported.deck)
-      await flushOriginal(imported.deck.id)
       navigate(`/deck/${imported.deck.id}`)
     } catch {
       setImporting({ name: file.name, failed: true, reason: "save" })

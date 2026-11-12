@@ -11,10 +11,13 @@ test("home import exposes every untouched text box on slide one to the agent API
   await signInBrowser(context, cookie)
   await forward(page, stack)
   const deck = await openClean(page)
+  const readDeck = async () =>
+    (await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)) as ReadDeckAnswer
+  await expect.poll(async () => (await readDeck()).index).toBe("ready")
   const opened = await stack.post("/decks/open", { deck }, cookie)
   const register = opened.json.register as { index: { elements: { node: string; value: string | null }[] } }
   expect(opened.json.revision).toBe(0)
-  const read = (await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)) as ReadDeckAnswer
+  const read = await readDeck()
   expect(read).toMatchObject({ ok: true, index: "ready", revision: 0, slides: [{ id: "256", position: 0 }] })
   expect(read.elements).toEqual([
     {

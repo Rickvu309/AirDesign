@@ -168,6 +168,51 @@ describe("live cache", () => {
     expect(readOther.parts.get(blank)?.byteLength).toBe(0)
   })
 
+  it("starts writing every part before the first write closes", async () => {
+    installParts()
+    const parts = new Map(
+      Array.from({ length: 4 }, (_, index) => [`ppt/slides/slide${index}.xml`, new Uint8Array([index])]),
+    )
+    const storage = navigator.storage
+    let started = 0
+    let allStarted = () => {}
+    const everyWrite = new Promise<void>((resolve) => {
+      allStarted = resolve
+    })
+    const gated = {
+      async getDirectory() {
+        const root = await storage.getDirectory()
+        return {
+          async getFileHandle(name: string, options?: { create?: boolean }) {
+            const handle = await root.getFileHandle(name, options)
+            return {
+              ...handle,
+              async createWritable() {
+                const writable = await handle.createWritable()
+                started += 1
+                if (started === parts.size + 1) allStarted()
+                return {
+                  write: (data: Uint8Array<ArrayBuffer>) => writable.write(data),
+                  async close() {
+                    await everyWrite
+                    await writable.close()
+                  },
+                }
+              },
+            }
+          },
+        }
+      },
+    }
+    Object.defineProperty(globalThis, "navigator", { value: { storage: gated }, configurable: true })
+    const saved = await putParts("clean", { parts, file: new Uint8Array([9]) })
+    expect(saved.ok).toBe(true)
+    const read = await getParts("clean")
+    expect(read.ok && [...read.parts].map(([name, bytes]) => [name, Array.from(bytes)])).toEqual(
+      [...parts].map(([name, bytes]) => [name, Array.from(bytes)]),
+    )
+  })
+
   it("answers absent for parts after the database is deleted", async () => {
     installParts()
     const saved = await putParts("clean", {

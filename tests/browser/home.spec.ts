@@ -96,11 +96,29 @@ test("choosing a file opens its deck and posts the filename rename", async ({ pa
   await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(join(process.cwd(), "scripts/pptx-fixtures/clean.pptx"))
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  expect(calls.find((call) => call.path === "rename")?.body).toEqual({
-    deck: page.url().split("/").at(-1),
-    name: "clean",
-  })
+  await expect
+    .poll(() => calls.find((call) => call.path === "rename")?.body)
+    .toEqual({ deck: page.url().split("/").at(-1), name: "clean" })
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
+})
+
+test("an imported deck opens in the editor while the server has not answered", async ({ page }) => {
+  const { calls } = await store(page, [])
+  await page.goto("/")
+  const held: (() => void)[] = []
+  await page.route(/\/decks\/(?!list$)[a-z-]+$/, (route) => {
+    held.push(() => void route.fallback())
+  })
+  await page.locator("input[type=file]").setInputFiles(join(process.cwd(), "scripts/pptx-fixtures/clean.pptx"))
+  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  await expect(page.locator(".thin-page")).toBeVisible()
+  expect(calls.filter((call) => call.path !== "list")).toEqual([])
+  await page.unroute(/\/decks\/(?!list$)[a-z-]+$/)
+  for (const release of held.splice(0)) release()
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
+  await expect
+    .poll(() => calls.find((call) => call.path === "rename")?.body)
+    .toEqual({ deck: page.url().split("/").at(-1), name: "clean" })
 })
 
 test("back from a deck that was just imported shows the deck home", async ({ page }) => {
