@@ -136,6 +136,8 @@ test("slide list entries paint different slides and follow an edit", async ({ pa
   await expect(page.locator("[data-thumb-paint] [contenteditable]")).toHaveCount(0)
   await page.locator('[data-slide-entry="1"]').focus()
   await page.keyboard.press("Tab")
+  await expect(page.locator("[data-section-head]").nth(1)).toBeFocused()
+  await page.keyboard.press("Tab")
   await expect(page.locator('[data-slide-entry="2"]')).toBeFocused()
   const motions = await page
     .locator("[data-slide-list]")
