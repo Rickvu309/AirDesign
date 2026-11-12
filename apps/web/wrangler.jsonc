@@ -12,6 +12,8 @@
       "/sign-in/*",
       "/sign-out",
       "/account/delete",
+      "/account/agents",
+      "/account/agents/revoke",
       "/decks/*",
       "/oauth/client",
       "/oauth/approve",

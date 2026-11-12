@@ -191,6 +191,8 @@ export const signOutRoutes = {
 
 export const accountRoutes = {
   delete: { path: "/account/delete", method: "POST" },
+  agents: { path: "/account/agents", method: "POST" },
+  revokeAgent: { path: "/account/agents/revoke", method: "POST" },
 } as const
 
 export const oauthRoutes = {

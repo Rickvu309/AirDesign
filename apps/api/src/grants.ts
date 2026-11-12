@@ -55,7 +55,10 @@ const columns =
 const writeSql = `
 with updated as (
   update session.oauth_grant
-  set code = $2, generation = $3, revoked = $4
+  set code = $2,
+      generation = $3,
+      revoked = $4,
+      connected = coalesce(connected, to_timestamp($11::float8 / 1000.0))
   where id = $1 and code = $5 and generation = $6 and revoked = $7
   returning id, generation
 ), issued as (
@@ -161,6 +164,7 @@ export async function advance(
       issuing === undefined ? [] : [hashSecret(issuing.access), hashSecret(issuing.refresh)],
       issuing === undefined ? [] : ["access", "refresh"],
       plan.issue && issuing !== undefined ? [plan.now + accessLifetime, null] : [],
+      command.command === "exchange" && plan.issue && result.accepted ? plan.now : null,
     ])
     if (written.rows.length > 0) {
       return {

@@ -22,6 +22,7 @@ export const deckPattern = /^[A-Za-z0-9_-]{1,64}$/
 const revisionPattern = /^(?:0|[1-9][0-9]*)$/
 const redirectCap = 5
 const emailCap = 254
+const grantIdCap = 128
 const emailPattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i
 const codePattern = /^\d{6}$/
 const bearerPattern = /^Bearer ([A-Za-z0-9._~+/=-]+)$/i
@@ -258,6 +259,14 @@ export function readEmail(raw: unknown): { ok: true; email: string } | FieldRefu
   const email = readAddress(body.email)
   if (email === undefined) return fieldRefusal
   return { ok: true, email }
+}
+
+export function readGrantId(raw: unknown): { ok: true; id: string } | FieldRefusal {
+  const body = recordOf(raw)
+  if (body === undefined || !exactKeys(body, ["id"])) return fieldRefusal
+  const id = body.id
+  if (!storableText(id) || id.length === 0 || id.length > grantIdCap) return fieldRefusal
+  return { ok: true, id }
 }
 
 export function readCode(raw: unknown): { ok: true; email: string; code: string } | FieldRefusal {

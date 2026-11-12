@@ -44,6 +44,7 @@ for (const name of [
   "delete-account",
   "move-resize",
   "aira-turn",
+  "connected-agents",
 ]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)

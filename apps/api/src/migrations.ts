@@ -179,4 +179,15 @@ revoke all on function session.delete_account(text) from public;
 grant execute on function session.delete_account(text) to session;
 `,
   },
+  {
+    id: 6,
+    sql: `
+alter table session.oauth_grant add column connected timestamptz;
+update session.oauth_grant
+  set connected = to_timestamp((code_expires - 600000) / 1000.0)
+  where code = 'used' and connected is null;
+alter table session.oauth_grant
+  add constraint oauth_grant_connected check (code = 'open' or connected is not null);
+`,
+  },
 ]

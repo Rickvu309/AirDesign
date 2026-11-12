@@ -3,6 +3,7 @@ import { OAuthAuthorize } from "./connect/oauth-authorize"
 import { LiveProof } from "./live-proof"
 import { ThinDeck } from "./thin-deck"
 import { Home } from "./decks/home"
+import { AgentsPage } from "./settings/agents-page"
 
 type ScreenRegistry = { screens: Record<string, ComponentType> }
 
@@ -49,6 +50,7 @@ export default function App() {
     setPath(next)
   }
   if (path === "/" || path === "/trash") return <Home trash={path === "/trash"} navigate={navigate} />
+  if (path === "/settings/agents") return <AgentsPage navigate={navigate} />
   if (path === "/deck") {
     window.location.replace("/")
     return null

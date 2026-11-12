@@ -33,6 +33,7 @@ export {
   readDeckId,
   readDecks,
   readEmail,
+  readGrantId,
   readHost,
   readLinkToken,
   readNamedDeck,
