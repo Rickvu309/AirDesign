@@ -27,6 +27,7 @@ import {
 } from "./paint-sheet.js"
 import { markupChildren } from "./text-value-route.js"
 import { paintTable, type PaintTable } from "./paint-table.js"
+import { placeholderPrompt } from "./placeholder-prompt.js"
 import { tableStyles } from "./table-style.js"
 
 export type PaintBox = {
@@ -48,6 +49,7 @@ export type PaintElement = {
   box: PaintBox | null
   group: string | null
   placeholder: { type: string; index: number | null } | null
+  prompt?: string | null
   text: PaintText | null
   table?: PaintTable
 } & ShapePaint
@@ -95,6 +97,7 @@ const paintedAbove = (
     box: boxOf(finalPlacement(item)),
     group: item.group,
     placeholder: null,
+    prompt: null,
     text: null,
   }))
 
@@ -124,7 +127,11 @@ const textOf = (
   )
 }
 
-export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader {
+export type PaintReaderOptions = {
+  readonly fallbackPrompt?: (type: string | null | undefined) => string | null
+}
+
+export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: PaintReaderOptions): PaintReader {
   const styleOf = tableStyles(parts)
   const tableOf = (item: Drawn, sheet: Sheet, scope: () => PaintTextScope): Pick<PaintElement, "table"> => {
     const table = paintTable(item.element, sheet.children, sheet.bytes, scope, styleOf, (id) => picture(sheet.part, id))
@@ -391,6 +398,7 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
           box: boxOf(slidePlacement(item, layout?.sheet ?? null, master?.sheet ?? null)),
           group: item.group,
           placeholder: item.placeholder,
+          prompt: placeholderPrompt(item, sheet, layoutSheet, options?.fallbackPrompt),
           text: textOf(item, sheet, layoutSheet, masterSheet, scope),
           ...tableOf(item, sheet, scope),
           ...paints.get(item)!,

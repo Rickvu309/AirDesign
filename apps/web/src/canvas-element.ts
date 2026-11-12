@@ -38,6 +38,7 @@ export function elementFrom(ctx: RowPaint, spec: DrawnSpec): CanvasElement {
     editable: spec.editable,
     movable: spec.movable,
     placeholder: row.placeholder !== null,
+    ...(row.prompt ? { prompt: row.prompt } : {}),
     filled: visibleFill(row.fill),
     fill: spec.fill,
     line: spec.line,

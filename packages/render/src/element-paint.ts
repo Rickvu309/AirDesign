@@ -20,6 +20,7 @@ export type ElementPaint = {
   readonly editable: boolean
   readonly movable?: boolean
   readonly placeholder: boolean
+  readonly prompt?: string | null
   readonly filled: boolean
   readonly fill: string | null
   readonly line: CanvasLine | null

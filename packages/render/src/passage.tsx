@@ -163,6 +163,7 @@ export function Passage(props: {
   readonly onEdit?: (value: string) => void
   readonly look?: TextLook | undefined
   readonly framed?: boolean
+  readonly prompt?: string | undefined
 }) {
   const { look } = props
   const record = useElement(props.store, props.id)
@@ -228,6 +229,7 @@ export function Passage(props: {
     <div
       ref={box}
       contentEditable={props.onEdit !== undefined}
+      aria-placeholder={props.prompt}
       style={{ whiteSpace: "pre-wrap", ...(props.framed === true ? framedOutline : {}), ...look?.body }}
       onKeyDown={(event) => {
         if (composing.current || event.nativeEvent.isComposing) return
