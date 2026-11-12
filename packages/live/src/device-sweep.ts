@@ -51,10 +51,11 @@ function unsentIn(store: IDBObjectStore, account: string, deck: string): () => b
   )
   const queue = store.get(scoped(account, `${deck}\u0002layouts\u0002queue`))
   const original = store.get(scoped(account, `${deck}\u0003original`))
+  const name = store.get(scoped(account, `${deck}\u0003name`))
   return () => {
     const index = queue.result as { count?: unknown; sent?: unknown } | undefined
     const indexing = typeof index === "object" && index !== null && index.sent !== index.count
-    return pending.result.length > 0 || indexing || original.result === true
+    return pending.result.length > 0 || indexing || original.result === true || typeof name.result === "string"
   }
 }
 

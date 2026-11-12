@@ -13,6 +13,7 @@ import {
   signInAs,
 } from "./browser-fixtures.js"
 import { finished, storeName, transaction } from "./device.js"
+import { queueRename } from "./deck-rename.js"
 import { idleDays } from "./device-sweep.js"
 import {
   adoptDeck,
@@ -210,4 +211,19 @@ it(`removes a deck not opened for ${String(idleDays)} days only when everything 
   expect(await getParts("recent")).toMatchObject({ ok: true })
   expect([...journal.keys()]).toEqual([])
   expect((await later.pending("never-opened")).map((row) => row.value)).toEqual(["Journaled, deck never opened again"])
+})
+
+it(`keeps a deck not opened for ${String(idleDays)} days while its new name is not sent`, async () => {
+  const { remote } = countingRemote()
+  let now = 1_000 * day
+  const cache = connect(remote, { now: () => now })
+  for (const deck of ["sent", "renamed"]) {
+    await putParts(deck, parts, () => now)
+    await cache.enqueue(deck, `Text of ${deck}`, node, "file")
+    await cache.flush(deck)
+  }
+  await queueRename("renamed", "New name")
+  now += (idleDays + 1) * day
+  expect([...(await cache.sweep())]).toEqual(["sent"])
+  expect(await getParts("renamed")).toMatchObject({ ok: true })
 })
