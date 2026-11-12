@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import oldDeployment from "./old-deployment-passthrough.js"
 import worker from "./sign-in-forward.js"
-import { signInRoutes } from "@airdesign/catalog"
+import { signInRoutes, signOutRoutes } from "@airdesign/catalog"
 
 type Seen = {
   method: string | undefined
@@ -50,8 +50,8 @@ afterEach(async () => {
 })
 
 describe("sign-in forwarding", () => {
-  it("forwards every catalog sign-in path", async () => {
-    for (const route of Object.values(signInRoutes)) {
+  it("forwards every catalog sign-in and sign-out path", async () => {
+    for (const route of [...Object.values(signInRoutes), ...Object.values(signOutRoutes)]) {
       await worker.fetch(new Request(`https://airdesign.app${route.path}`, { method: route.method }), {
         API_ORIGIN: origin,
       })
@@ -99,8 +99,8 @@ describe("sign-in forwarding", () => {
     },
   )
 
-  it.each([undefined, ""])("answers 503 for the sign-in paths when the API origin is %j", async (apiOrigin) => {
-    for (const path of ["/sign-in/email", "/sign-in/code", "/sign-in/link"]) {
+  it.each([undefined, ""])("answers 503 for the forwarded paths when the API origin is %j", async (apiOrigin) => {
+    for (const path of ["/sign-in/email", "/sign-in/code", "/sign-in/link", "/sign-out"]) {
       const response = await worker.fetch(new Request(`https://airdesign.app${path}`, { method: "POST" }), {
         API_ORIGIN: apiOrigin,
       })
@@ -121,7 +121,7 @@ describe("sign-in forwarding", () => {
     expect(seen.map((entry) => entry.url)).toEqual(["/pricing"])
   })
 
-  it.each(["/sign-in/email", "/sign-in/code", "/sign-in/link"])(
+  it.each(["/sign-in/email", "/sign-in/code", "/sign-in/link", "/sign-out"])(
     "never calls the old deployment for %s",
     async (path) => {
       const passthrough = vi.spyOn(oldDeployment, "fetch")

@@ -15,6 +15,7 @@ export function DeckBrowser({
   account,
   home,
   onNewDeck,
+  onSignOut,
   menuOpen,
 }: {
   title: string
@@ -28,12 +29,13 @@ export function DeckBrowser({
   account?: { email: string }
   home?: boolean
   onNewDeck?: () => void
+  onSignOut?: () => void
   menuOpen?: boolean
 }) {
   return (
     <div className="screen-frame">
       <div className="h-full bg-canvas">
-        <DecksShell active={active} firstVisit={firstVisit} account={account}>
+        <DecksShell active={active} firstVisit={firstVisit} account={account} onSignOut={onSignOut}>
           <BrowseHeader
             title={title}
             view={view}

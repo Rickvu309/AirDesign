@@ -8,6 +8,8 @@ export {
   oauthPaths,
   signInRoutes,
   signInPaths,
+  signOutRoutes,
+  signOutPaths,
   type CallRefusal,
   type EditRefusal,
   type WireRefusal,

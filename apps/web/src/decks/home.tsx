@@ -1,4 +1,4 @@
-import { deckRoutes } from "@airdesign/catalog"
+import { deckRoutes, signOutRoutes } from "@airdesign/catalog"
 import { sendOriginal } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
@@ -27,6 +27,11 @@ async function post(path: string, body: object) {
   const answer = await response.json()
   if (response.status === 401 && answer.refusal === "session") window.location.assign(signInAddress(window.location))
   return answer
+}
+
+async function signOut(): Promise<void> {
+  const response = await fetch(signOutRoutes.session.path, { method: signOutRoutes.session.method })
+  if (response.ok) window.location.assign(signInAddress(window.location))
 }
 
 export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?: () => number }) {
@@ -105,6 +110,7 @@ export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?:
       menu={menu && <NewDeckMenu onImport={() => picker.current?.click()} />}
       menuOpen={menu}
       onNewDeck={() => setMenu(!menu)}
+      onSignOut={() => void signOut()}
       trailing={
         trash ? <EmptyTrashButton disabled={decks.length === 0} onClick={() => setDeleting([...decks])} /> : undefined
       }

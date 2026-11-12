@@ -5,6 +5,7 @@ import { bytesOf, limits } from "@airdesign/document"
 import {
   deckRoutes,
   signInRoutes,
+  signOutRoutes,
   readApprovalRequest,
   oauthRoutes,
   mcpRoutes,
@@ -23,7 +24,7 @@ import {
 } from "@airdesign/catalog"
 import type { CallerLog, Turns } from "@airdesign/mcp"
 
-import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession } from "./account.js"
+import { acceptCode, acceptLink, deleteAccess, findAccess, issueMail, openSmokeSession } from "./account.js"
 import { type AiraSettings } from "./aira.js"
 import { airaRoute } from "./aira-route.js"
 import { deckListAnswers } from "./deck-list.js"
@@ -108,10 +109,18 @@ export function requireDomain(cookieDomain: string | undefined): void {
   if (!plainHost.test(cookieDomain)) throw new Error("cookieDomain is not a plain host name")
 }
 
-export function sessionCookie(token: string, cookieDomain?: string): string {
-  const cookie = `${sessionCookieName}=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`
+function sessionCookieHeader(value: string, maxAge: number, cookieDomain?: string): string {
+  const cookie = `${sessionCookieName}=${value}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${String(maxAge)}`
   if (cookieDomain === undefined) return cookie
   return `${cookie}; Domain=${cookieDomain}`
+}
+
+export function sessionCookie(token: string, cookieDomain?: string): string {
+  return sessionCookieHeader(encodeURIComponent(token), 2592000, cookieDomain)
+}
+
+function clearSessionCookie(cookieDomain?: string): string {
+  return sessionCookieHeader("", 0, cookieDomain)
 }
 
 function sendJson(res: ServerResponse, status: number, body: unknown, cookie?: string): void {
@@ -315,6 +324,17 @@ async function linkRoute({ options, query, res }: Visit): Promise<void> {
   redirect(res, "/", sessionCookie(session, options.cookieDomain))
 }
 
+async function signOutRoute({ options, req, res, body }: Visit): Promise<void> {
+  const read = await body()
+  if (read === undefined) {
+    answerSize(res)
+    return
+  }
+  const token = readSessionCookie(req.headers.cookie)
+  if (token !== undefined) await deleteAccess(options.session, token)
+  sendJson(res, 200, { ok: true }, clearSessionCookie(options.cookieDomain))
+}
+
 function deckRoute<Read extends Reader>(
   read: Read,
   answer: (
@@ -497,6 +517,7 @@ export const routes: readonly Route[] = [
   { method: "GET", path: signInRoutes.link.path, serve: linkRoute },
   ...answeredDeckRoutes(deckAnswers, deckRoute),
   { method: "POST", path: deckRoutes.watch.path, serve: watchRoute },
+  { method: "POST", path: signOutRoutes.session.path, serve: signOutRoute },
 ]
 
 function causedByInput(error: unknown): boolean {

@@ -194,3 +194,64 @@ test("a failed list shows the shell and no sample decks", async ({ page }) => {
   await expect(page.getByText("Scratchpad", { exact: true })).toHaveCount(0)
   await expect(page.getByText("Project Atlas", { exact: true })).toHaveCount(0)
 })
+
+test("sign out from the account menu returns to sign-in and keeps deck data", async ({ page }) => {
+  await store(page)
+  const posted: string[] = []
+  await page.route("**/sign-out", async (route) => {
+    posted.push(route.request().method())
+    await route.fulfill({ json: { ok: true } })
+  })
+  await page.route("**/sign-in?*", (route) => route.fulfill({ body: "Sign in" }))
+  await page.goto("/")
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open("deck-kept", 1)
+        request.onupgradeneeded = () => request.result.createObjectStore("decks")
+        request.onerror = () => reject(request.error)
+        request.onsuccess = () => {
+          const database = request.result
+          const tx = database.transaction("decks", "readwrite")
+          tx.objectStore("decks").put({ name: "kept" }, "one")
+          tx.oncomplete = () => {
+            database.close()
+            resolve()
+          }
+          tx.onerror = () => reject(tx.error)
+        }
+      }),
+  )
+  await page.getByRole("button", { name: "home@example.com" }).click()
+  await page.getByRole("menuitem", { name: "Sign out" }).click()
+  await expect(page).toHaveURL(/\/sign-in\?next=%2F$/)
+  expect(posted).toEqual(["POST"])
+  await page.goto("/")
+  expect(
+    await page.evaluate(
+      () =>
+        new Promise<unknown>((resolve, reject) => {
+          let missing = false
+          const request = indexedDB.open("deck-kept")
+          request.onupgradeneeded = () => {
+            missing = true
+          }
+          request.onerror = () => reject(request.error)
+          request.onsuccess = () => {
+            const database = request.result
+            if (missing || !database.objectStoreNames.contains("decks")) {
+              database.close()
+              resolve("missing")
+              return
+            }
+            const get = database.transaction("decks", "readonly").objectStore("decks").get("one")
+            get.onerror = () => reject(get.error)
+            get.onsuccess = () => {
+              database.close()
+              resolve(get.result)
+            }
+          }
+        }),
+    ),
+  ).toEqual({ name: "kept" })
+})

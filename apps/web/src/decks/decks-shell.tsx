@@ -1,9 +1,11 @@
 import type { ReactNode } from "react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { DeckGlyph } from "@/decks/deck-glyph"
 import { AgentPromo } from "@/decks/agent-promo"
 import { account, starredFolders } from "@/decks/sample-decks"
 import { deckRoutes, type DeckSection } from "@/decks/deck-routes"
+import { settingsCopy } from "@/settings/settings-sample"
 import { cn } from "@/lib/class-names"
 
 const sections: {
@@ -19,16 +21,37 @@ const sections: {
   { id: "settings", label: "Settings", href: deckRoutes.settings, glyph: "gear", size: 16 },
 ]
 
+const accountButton =
+  "flex h-10 w-full items-center gap-2.5 rounded-lg pr-2 pl-2 text-left hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+
+function AccountFace({ account: realAccount }: { account?: { email: string } }) {
+  return (
+    <>
+      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] leading-none font-semibold text-white">
+        {realAccount ? realAccount.email.charAt(0).toUpperCase() : account.initials}
+      </span>
+      <span className="text-[length:var(--type-body)] leading-[var(--leading-body)] font-medium text-foreground">
+        {realAccount?.email ?? account.name}
+      </span>
+      <span className="text-faint">
+        <DeckGlyph name="chevron" size={14} />
+      </span>
+    </>
+  )
+}
+
 export function DecksShell({
   active,
   children,
   firstVisit = false,
   account: realAccount,
+  onSignOut,
 }: {
   active: DeckSection
   children: ReactNode
   firstVisit?: boolean
   account?: { email: string }
+  onSignOut?: () => void
 }) {
   const primary = { ...sections[0], href: realAccount ? "/" : sections[0].href }
   const rest = realAccount
@@ -40,20 +63,20 @@ export function DecksShell({
   return (
     <div className="flex h-full w-full">
       <aside className="flex h-full w-[248px] shrink-0 flex-col bg-canvas px-3 pt-3 pb-3">
-        <button
-          type="button"
-          className="flex h-10 w-full items-center gap-2.5 rounded-lg pr-2 pl-2 text-left hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        >
-          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] leading-none font-semibold text-white">
-            {realAccount ? realAccount.email.charAt(0).toUpperCase() : account.initials}
-          </span>
-          <span className="text-[length:var(--type-body)] leading-[var(--leading-body)] font-medium text-foreground">
-            {realAccount?.email ?? account.name}
-          </span>
-          <span className="text-faint">
-            <DeckGlyph name="chevron" size={14} />
-          </span>
-        </button>
+        {realAccount && onSignOut ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger type="button" className={accountButton}>
+              <AccountFace account={realAccount} />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={onSignOut}>{settingsCopy.signOut}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <button type="button" className={accountButton}>
+            <AccountFace account={realAccount} />
+          </button>
+        )}
         <label className="relative mt-3 block">
           <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-faint">
             <DeckGlyph name="search" size={15} />
