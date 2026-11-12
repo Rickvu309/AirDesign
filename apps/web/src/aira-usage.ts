@@ -14,3 +14,11 @@ export function resetsWhen(resets: string, format: ClockFormat = {}): string {
   const time = at.toLocaleTimeString(format.locale, { hour: "numeric", minute: "2-digit", ...zone })
   return `${day} at ${time.replace(/\s/gu, " ")}`
 }
+
+export function resetsShort(resets: string, format: ClockFormat = {}): string {
+  const at = new Date(resets)
+  const zone = format.timeZone === undefined ? {} : { timeZone: format.timeZone }
+  const day = at.toLocaleDateString(format.locale, { weekday: "short", ...zone })
+  const time = at.toLocaleTimeString(format.locale, { hour: "numeric", minute: "2-digit", ...zone })
+  return `${day} ${time.replace(/\s/gu, " ")}`
+}

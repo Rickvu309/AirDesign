@@ -5,3 +5,10 @@ export const settingsRoutes = {
 } as const
 
 export type SettingsTab = keyof typeof settingsRoutes
+
+export const settingsPaths = {
+  usage: "/settings/usage",
+  agents: "/settings/agents",
+} as const
+
+export type SettingsPath = keyof typeof settingsPaths

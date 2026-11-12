@@ -22,6 +22,7 @@ export function fuzzGood(deck: string) {
         fields: { deck, messages: [{ role: "user", content: "Fuzz" }] },
       },
     ],
+    "POST /aira/usage": [{ shape: "json" as const, answers: 200, says: '"ok":true', fields: {} }],
     "POST /decks/undo": [
       { shape: "json" as const, answers: 200, says: '"refusal":"run-fenced"', fields: { deck, runId: "fuzzrun" } },
     ],

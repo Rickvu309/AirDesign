@@ -75,7 +75,7 @@ test("reaches Agents from the Home account menu, copies the MCP address, disconn
   await expect(page.getByRole("switch", { name: "Aira" })).toHaveCount(0)
   await expect(page.getByRole("button", { name: "Connect", exact: true })).toHaveCount(0)
   await expect(page.getByText("Setup guides for Claude and Codex")).toHaveCount(0)
-  await expect(page.getByRole("link", { name: "Usage", exact: true })).toHaveCount(0)
+  await expect(page.getByRole("link", { name: "Usage", exact: true })).toBeVisible()
   await expect(page.getByRole("link", { name: "Account", exact: true })).toHaveCount(0)
 
   await page.getByRole("button", { name: "Copy", exact: true }).click()

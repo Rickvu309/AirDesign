@@ -6,6 +6,7 @@ import { DeleteAccountDialog } from "@/decks/delete-account"
 import { AgentPromo } from "@/decks/agent-promo"
 import { account, starredFolders } from "@/decks/sample-decks"
 import { deckRoutes, type DeckSection } from "@/decks/deck-routes"
+import { settingsPaths } from "@/settings/settings-routes"
 import { settingsCopy } from "@/settings/settings-sample"
 import { cn } from "@/lib/class-names"
 
@@ -20,6 +21,11 @@ const sections: {
   { id: "all-decks", label: "All decks", href: deckRoutes.allDecksGrid, glyph: "decks", size: 16 },
   { id: "trash", label: "Trash", href: deckRoutes.trash, glyph: "trash", size: 15 },
   { id: "settings", label: "Settings", href: deckRoutes.settings, glyph: "gear", size: 16 },
+]
+
+const settingsMenu = [
+  { path: settingsPaths.usage, label: settingsCopy.usage },
+  { path: settingsPaths.agents, label: settingsCopy.agents },
 ]
 
 const accountButton =
@@ -62,7 +68,7 @@ export function DecksShell({
     ? [
         { ...sections[1], href: "/" },
         { ...sections[2], href: "/trash" },
-        { ...sections[3], href: "/settings/agents" },
+        { ...sections[3], href: settingsPaths.usage },
       ]
     : sections.slice(1)
   return (
@@ -78,14 +84,17 @@ export function DecksShell({
                 <AccountFace account={realAccount} />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuItem
-                  onClick={() => {
-                    if (onNavigate) onNavigate("/settings/agents")
-                    else window.location.assign("/settings/agents")
-                  }}
-                >
-                  {settingsCopy.agents}
-                </DropdownMenuItem>
+                {settingsMenu.map((item) => (
+                  <DropdownMenuItem
+                    key={item.path}
+                    onClick={() => {
+                      if (onNavigate) onNavigate(item.path)
+                      else window.location.assign(item.path)
+                    }}
+                  >
+                    {item.label}
+                  </DropdownMenuItem>
+                ))}
                 <DropdownMenuItem onClick={() => setDeletingAccount(true)}>
                   {settingsCopy.deleteAccount}
                 </DropdownMenuItem>

@@ -75,6 +75,18 @@ async function outOfUsage(kit) {
   await expect(kit.page.getByText("You've hit this week's limit", { exact: true })).toBeVisible()
 }
 
+async function usageOpen(kit) {
+  await reach(find("agent-empty"), kit)
+  await kit.page.locator("[data-editor-panel]").getByRole("button", { name: "Weekly usage" }).click()
+  await expect(kit.page.getByRole("region", { name: "Weekly usage" })).toContainText("%")
+}
+
+async function usagePage(kit) {
+  await kit.signIn()
+  await kit.page.goto("/settings/usage")
+  await expect(kit.page.getByText(/% used$/)).toBeVisible()
+}
+
 export const states = [
   {
     name: "decks-empty",
@@ -124,6 +136,8 @@ export const states = [
     at: "failed",
     aira: true,
   },
+  { name: "usage-open", design: editor, drive: usageOpen },
+  { name: "usage-page", design: "/screens/s81-01-settings-settings-usage-tab", drive: usagePage },
   { name: "agent-out-of-usage", design: "/screens/s92-01-credits-out-of-usage-limit-reached", drive: outOfUsage },
   {
     name: "agents-empty",

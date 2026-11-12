@@ -27,6 +27,7 @@ import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession } from 
 import { accountRouteList } from "./account-route.js"
 import { type AiraSettings } from "./aira.js"
 import { airaRoute } from "./aira-route.js"
+import { airaUsageRoute } from "./aira-usage-route.js"
 import { deckListAnswers } from "./deck-list.js"
 import { readRegistration, registerClient } from "./clients.js"
 import { approve, describeClient } from "./consent.js"
@@ -498,6 +499,7 @@ export const routes: readonly Route[] = [
   { method: "POST", path: "/smoke/session", serve: smokeRoute },
   { method: "any", path: mcpRoutes.mcp.path, serve: mcpRoute },
   airaRoute({ signedIn, answerSize, parsedJson, sendJson }),
+  airaUsageRoute({ signedIn, answerSize, parsedJson, sendJson, clearSessionCookie }),
   { method: "POST", path: oauthRoutes.register.path, serve: registerRoute },
   { method: "POST", path: oauthRoutes.client.path, serve: clientRoute },
   { method: "POST", path: oauthRoutes.approve.path, serve: approveRoute },

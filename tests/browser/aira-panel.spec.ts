@@ -66,7 +66,7 @@ test("a person asks Aira, watches the reply stream, and sees the slide change wi
   await side.getByRole("button", { name: productCopy.usageTitle }).click()
   const usage = side.getByRole("region", { name: productCopy.usageTitle })
   await expect(usage).toContainText(/\d+%/)
-  await expect(usage).toContainText(usageResetsOn("Monday at 7:00 AM"))
+  await expect(usage).toContainText(usageResetsOn("Mon 7:00 AM"))
   expect(await page.evaluate(() => document.body.dataset.sameLoad)).toBe("yes")
 })
 

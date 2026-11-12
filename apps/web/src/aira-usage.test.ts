@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { resetsWhen, usagePercent } from "./aira-usage"
+import { resetsShort, resetsWhen, usagePercent } from "./aira-usage"
 
 const resets = "2026-11-16T00:00:00.000Z"
 
@@ -16,5 +16,10 @@ describe("weekly usage readout", () => {
     expect(resetsWhen(resets, { locale: "en-US", timeZone: "Asia/Ho_Chi_Minh" })).toBe("Monday at 7:00 AM")
     expect(resetsWhen(resets, { locale: "en-US", timeZone: "Asia/Singapore" })).toBe("Monday at 8:00 AM")
     expect(resetsWhen(resets, { locale: "en-US", timeZone: "America/Los_Angeles" })).toBe("Sunday at 4:00 PM")
+  })
+
+  it("says the reset in a short form for the usage popover", () => {
+    expect(resetsShort(resets, { locale: "en-US", timeZone: "Asia/Singapore" })).toBe("Mon 8:00 AM")
+    expect(resetsShort(resets, { locale: "en-US", timeZone: "America/Los_Angeles" })).toBe("Sun 4:00 PM")
   })
 })
