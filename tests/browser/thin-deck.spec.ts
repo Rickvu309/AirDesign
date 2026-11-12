@@ -56,22 +56,13 @@ async function paragraphsOf(page: Page, box: ReturnType<Page["locator"]>): Promi
   return box.locator("[data-paragraph]").allTextContents()
 }
 
-const deckAddress = /\/thin\/[A-Za-z0-9_-]{1,64}$/
+const deckAddress = /\/deck\/[A-Za-z0-9_-]{1,64}$/
 
 async function settled(page: Page): Promise<void> {
   await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/thin\/([A-Za-z0-9_-]{1,64})$/)?.[1]
+    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
     return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
   })
-}
-
-async function choose(page: Page, file: string): Promise<string> {
-  const before = page.url()
-  await page.locator("input[type=file]").setInputFiles(file)
-  await page.waitForFunction((previous) => location.href !== previous, before)
-  await settled(page)
-  await expect(page).toHaveURL(deckAddress)
-  return page.url()
 }
 
 async function reload(page: Page): Promise<void> {
@@ -86,8 +77,11 @@ async function showSlide(page: Page, number: number): Promise<void> {
 }
 
 async function open(page: Page, file: string): Promise<string> {
-  await page.goto("/thin")
-  return choose(page, file)
+  await page.goto("/")
+  await page.locator("input[type=file]").setInputFiles(file)
+  await expect(page).toHaveURL(deckAddress)
+  await settled(page)
+  return page.url()
 }
 
 async function stored(page: Page, value: string): Promise<void> {
@@ -134,6 +128,7 @@ test("an edit to Hello! survives reload and exports", async ({ page }, testInfo)
   await rm(exported, { force: true })
   const download = testInfo.outputPath("exported-deck.pptx")
   const address = await open(page, fixture)
+  await expect(page.locator("input[type=file]")).toHaveCount(0)
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveText("Hello")
   await editor.click()
@@ -157,9 +152,7 @@ async function readyLog(page: Page): Promise<ReadyEntry[]> {
   return page.evaluate(() => (window as unknown as { readyLog: ReadyEntry[] }).readyLog)
 }
 
-test("the page marks a deck ready only once it is painted and clears the mark while a file is read", async ({
-  page,
-}) => {
+test("the page marks a deck ready only once it is painted", async ({ page }) => {
   await page.addInitScript(() => {
     const log: { value: string | null; boxes: number }[] = []
     Object.assign(window, { readyLog: log })
@@ -174,21 +167,21 @@ test("the page marks a deck ready only once it is painted and clears the mark wh
       attributeFilter: ["data-deck-ready"],
     })
   })
-  const first = await open(page, fixture)
-  const second = await choose(page, join(fixtures, "doe-heat-pumps.pptx"))
-  const deck = (address: string) => address.slice(address.lastIndexOf("/") + 1)
-  const chosen = await readyLog(page)
-  expect(chosen.map((entry) => entry.value)).toEqual([deck(first), null, deck(second)])
-  expect(chosen.filter((entry) => entry.value !== null).map((entry) => entry.boxes > 0)).toEqual([true, true])
+  const address = await open(page, fixture)
+  const deck = address.slice(address.lastIndexOf("/") + 1)
+  const painted = await readyLog(page)
+  expect(painted.map((entry) => entry.value)).toEqual([deck])
+  expect(painted.map((entry) => entry.boxes > 0)).toEqual([true])
   await reload(page)
   const reloaded = await readyLog(page)
-  expect(reloaded.map((entry) => entry.value)).toEqual([deck(second)])
+  expect(reloaded.map((entry) => entry.value)).toEqual([deck])
   expect(reloaded.map((entry) => entry.boxes > 0)).toEqual([true])
 })
 
-test("a page with no deck id shows no slide", async ({ page }) => {
+test("the old /thin address is gone and shows no editor", async ({ page }) => {
   await page.goto("/thin")
-  await expect(page.locator("input[type=file]")).toHaveCount(1)
+  await expect(page.getByText("Unknown screen")).toBeVisible()
+  await expect(page.locator("input[type=file]")).toHaveCount(0)
   await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
 })
 
@@ -212,30 +205,6 @@ async function everyPartLacks(file: string, marker: string): Promise<void> {
   }
 }
 
-test("a bare /thin after a deck was opened reads no deck", async ({ page }) => {
-  await open(page, fixture)
-  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
-  await page.addInitScript(() => {
-    const reads = { count: 0 }
-    Object.assign(globalThis, { deckReads: reads })
-    const openDatabase = indexedDB.open.bind(indexedDB)
-    indexedDB.open = (name: string, version?: number) => {
-      reads.count += 1
-      return openDatabase(name, version)
-    }
-    const directory = navigator.storage.getDirectory.bind(navigator.storage)
-    navigator.storage.getDirectory = () => {
-      reads.count += 1
-      return directory()
-    }
-  })
-  await page.goto("/thin")
-  await expect(page.locator("input[type=file]")).toHaveCount(1)
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
-  expect(await page.evaluate(() => (globalThis as unknown as { deckReads: { count: number } }).deckReads.count)).toBe(0)
-  await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
-})
-
 test("a second deck does not carry the first deck's edit", async ({ page }, testInfo) => {
   const marker = "MARKER4471"
   const saved = testInfo.outputPath("second-deck.pptx")
@@ -247,7 +216,7 @@ test("a second deck does not carry the first deck's edit", async ({ page }, test
   await editor.pressSequentially(marker, { delay: 50 })
   await expect(editor).toHaveText(`Hello${marker}`)
   await stored(page, `Hello${marker}`)
-  const second = await choose(page, join(fixtures, "doe-heat-pumps.pptx"))
+  const second = await open(page, join(fixtures, "doe-heat-pumps.pptx"))
   expect(second).not.toBe(first)
   await expect(page.getByText("Introduction to Heat Pumps").first()).toBeVisible()
   await reload(page)
@@ -367,7 +336,7 @@ test("a box that cannot keep an edit is not editable", async ({ page }) => {
     editable += await page.locator('[contenteditable="true"]').count()
   }
   expect(editable).toBe(35)
-  await choose(page, fixture)
+  await open(page, fixture)
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveCount(1)
   await expect(editor).toHaveText("Hello")
@@ -714,23 +683,19 @@ async function expectNoSample(page: Page): Promise<void> {
   expect(new Set(seen)).toEqual(new Set(["clean", "1", "Hello", "Export"]))
 }
 
-for (const route of ["thin", "deck"]) {
-  test(`a real deck on /${route} paints no sample and still exports`, async ({ page }, testInfo) => {
-    const saved = testInfo.outputPath(`${route}-no-sample.pptx`)
-    const deck = (await open(page, fixture)).split("/").pop() ?? ""
-    await page.goto(`/${route}/${deck}`)
-    await page.locator(`.thin-page[data-deck-ready="${deck}"]`).waitFor({ state: "attached" })
-    await expectNoSample(page)
-    await expect(page.locator("aside").first()).toContainText("clean")
-    await expect(page.locator("[data-slide-entry]").first()).toBeVisible()
-    await expect(page.locator("[data-slide-paint]")).toContainText("Hello")
-    const place = await page.getByRole("button", { name: "Export", exact: true }).boundingBox()
-    expect(place?.y ?? 923).toBeLessThan(56)
-    expect(1470 - (place?.x ?? 0) - (place?.width ?? 0)).toBeLessThan(40)
-    await saveExport(page, saved)
-    expect(await changedParts(fixture, saved)).toEqual([])
-  })
-}
+test("a real deck paints no sample and still exports", async ({ page }, testInfo) => {
+  const saved = testInfo.outputPath("deck-no-sample.pptx")
+  await open(page, fixture)
+  await expectNoSample(page)
+  await expect(page.locator("aside").first()).toContainText("clean")
+  await expect(page.locator("[data-slide-entry]").first()).toBeVisible()
+  await expect(page.locator("[data-slide-paint]")).toContainText("Hello")
+  const place = await page.getByRole("button", { name: "Export", exact: true }).boundingBox()
+  expect(place?.y ?? 923).toBeLessThan(56)
+  expect(1470 - (place?.x ?? 0) - (place?.width ?? 0)).toBeLessThan(40)
+  await saveExport(page, saved)
+  expect(await changedParts(fixture, saved)).toEqual([])
+})
 
 test("one slide shows at a time", async ({ page }, testInfo) => {
   const deck = join(fixtures, "doe-heat-pumps.pptx")
@@ -869,33 +834,15 @@ test("the offline words go when the next commit is answered 404 on a device that
   await expect(page.getByText(offlineWords)).toHaveCount(0)
 })
 
-test("a file that is not a PowerPoint shows the import words and Choose another file opens the picker", async ({
+test("a deck the device and the server do not have shows the import words, and Choose another file goes home", async ({
   page,
-}, testInfo) => {
-  const notes = testInfo.outputPath("notes.pptx")
-  await writeFile(notes, "this is not a PowerPoint file")
-  await page.goto("/thin")
-  await page.locator("input[type=file]").setInputFiles(notes)
+}) => {
+  await page.goto("/deck/missing-deck")
   await expect(page.getByText(importFailedWords)).toBeVisible()
-  expect(new URL(page.url()).pathname).toBe("/thin")
-  const chooser = page.waitForEvent("filechooser")
+  expect(new URL(page.url()).pathname).toBe("/deck/missing-deck")
   await page.getByRole("button", { name: "Choose another file" }).click()
-  await chooser
-  expect(new URL(page.url()).pathname).toBe("/thin")
-  await choose(page, fixture)
-  await expect(page).toHaveURL(deckAddress)
-  await expect(page.getByText(importFailedWords)).toHaveCount(0)
-})
-
-test("a device with no file store shows the import words and keeps the address", async ({ page }) => {
-  await page.addInitScript(() => {
-    navigator.storage.getDirectory = () => Promise.reject(new Error("no file store"))
-  })
-  await page.goto("/thin")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await expect(page.getByText(importFailedWords)).toBeVisible()
-  expect(new URL(page.url()).pathname).toBe("/thin")
-  await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
+  await expect(page).toHaveURL(/\/$/)
+  await expect(page.locator("input[type=file]")).toHaveCount(1)
 })
 
 test("an export whose stored parts are gone shows the export words and downloads nothing", async ({ page }) => {
@@ -944,10 +891,10 @@ test("a refused session keeps the edit and sends the person to sign in", async (
 test("after a failed import a good file keeps each box's edit on its own box", async ({ page }, testInfo) => {
   const notes = testInfo.outputPath("notes.pptx")
   await writeFile(notes, "this is not a PowerPoint file")
-  await page.goto("/thin")
+  await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(notes)
-  await expect(page.getByText(importFailedWords)).toBeVisible()
-  await choose(page, join(fixtures, "doe-heat-pumps.pptx"))
+  await expect(page.getByText("Unable to import", { exact: true })).toBeVisible()
+  await open(page, join(fixtures, "doe-heat-pumps.pptx"))
   await showSlide(page, 4)
   const title = page.locator('[contenteditable="true"]').filter({ hasText: /^What is a heat pump\?$/ })
   await title.click()
@@ -963,7 +910,7 @@ test("after a failed import a good file keeps each box's edit on its own box", a
   expect([...new Set((await rowsOf(page)).map((row) => row.node))]).toEqual(["2727.2"])
 })
 
-test("a file the device store refuses shows the import words and keeps the address", async ({ page }, testInfo) => {
+test("a file the device store refuses shows the failed import on the deck home", async ({ page }, testInfo) => {
   const crowded = testInfo.outputPath("crowded.pptx")
   const writer = new zip.ZipWriter(new zip.Uint8ArrayWriter())
   for (const [name, bytes] of await partsOf(fixture))
@@ -973,9 +920,8 @@ test("a file the device store refuses shows the import words and keeps the addre
     await writer.add(`ppt/media/${longName}${part}.bin`, new zip.Uint8ArrayReader(new Uint8Array([1])))
   }
   await writeFile(crowded, await writer.close())
-  await page.goto("/thin")
+  await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(crowded)
-  await expect(page.getByText(importFailedWords)).toBeVisible()
-  expect(new URL(page.url()).pathname).toBe("/thin")
-  await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
+  await expect(page.getByText("Unable to import", { exact: true })).toBeVisible()
+  expect(new URL(page.url()).pathname).toBe("/")
 })

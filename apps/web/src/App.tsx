@@ -41,19 +41,12 @@ export default function App() {
     return null
   }
   const deck = /^\/deck\/([A-Za-z0-9_-]{1,64})$/.exec(path)
-  if (deck?.[1] !== undefined) return <ThinDeck id={deck[1]} route="deck" />
+  if (deck?.[1] !== undefined) return <ThinDeck id={deck[1]} />
   if (path === "/live-proof") {
     return <LiveProof />
   }
-  if (path === "/thin") {
-    return <ThinDeck />
-  }
   if (path === "/oauth/authorize") {
     return <OAuthAuthorize />
-  }
-  const thinDeck = /^\/thin\/([A-Za-z0-9_-]{1,64})$/.exec(path)
-  if (thinDeck?.[1] !== undefined) {
-    return <ThinDeck id={thinDeck[1]} />
   }
   if (path === screenIndexPath) {
     return <ScreenIndex />

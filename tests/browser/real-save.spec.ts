@@ -211,17 +211,17 @@ async function forgetDeckRows(page: Page): Promise<void> {
 
 async function settled(page: Page): Promise<void> {
   await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/thin\/([A-Za-z0-9_-]{1,64})$/)?.[1]
+    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
     return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
   })
 }
 
 async function openClean(page: Page): Promise<string> {
-  await page.goto("/thin")
+  await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForFunction(() => /^\/thin\/[A-Za-z0-9_-]{1,64}$/.test(location.pathname))
+  await page.waitForFunction(() => /^\/deck\/[A-Za-z0-9_-]{1,64}$/.test(location.pathname))
   await settled(page)
-  return new URL(page.url()).pathname.slice("/thin/".length)
+  return new URL(page.url()).pathname.slice("/deck/".length)
 }
 
 async function typeOver(page: Page, text: string): Promise<void> {
@@ -251,7 +251,8 @@ test("a typed edit lands in Postgres and comes back from the server", async ({ p
   const deck = await openClean(page)
   await typeOver(page, typed)
   await confirmedText(page, typed)
-  expect(asked[0]).toBe("/decks/open")
+  const firstCommit = asked.indexOf("/decks/commit")
+  expect(firstCommit).toBeGreaterThan(0)
   expect(asked.filter((path) => path === "/decks/open")).toHaveLength(1)
   expect(asked.filter((path) => path === "/decks/commit").length).toBeGreaterThan(0)
 

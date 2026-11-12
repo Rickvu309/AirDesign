@@ -8,7 +8,7 @@ import {
   type Register,
   type TextValue,
 } from "@airdesign/document"
-import { connect, fetchOriginal, getParts, memoryRemote, putParts, sendOriginal } from "@airdesign/live"
+import { connect, fetchOriginal, getParts, memoryRemote, putParts } from "@airdesign/live"
 import {
   applyRoute,
   exportPackage,
@@ -30,7 +30,6 @@ import { slideFrame } from "@/editor/revenue-slide"
 import { cn } from "@/lib/class-names"
 import { commitEdit, flushPending, server, type CommitOutcome, type TextBox } from "@/commit-edit"
 import { exportedParts } from "@/exported-parts"
-import { importDeck, nameImportedDeck } from "@/import-deck"
 import { ensureMarkup } from "@/markup"
 import { pictureSources, type PictureSources } from "@/picture-fill"
 
@@ -171,23 +170,20 @@ export async function deckParts(deck: string) {
   return saved.ok ? saved : null
 }
 
-export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" | "deck" }) {
+export function ThinDeck({ id }: { id: string }) {
   const store = useRef(paintStore())
   const boxes = useRef<ReadonlyMap<ElementId, TextBox>>(new Map())
   const shapes = useRef<ReadonlyMap<ElementId, ReadShape>>(new Map())
   const shownParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
-  const [deckId, setDeckId] = useState(id)
   const canvases = useRef<SlideCanvases>(() => null)
   const pictures = useRef<PictureSources | null>(null)
   const [slideCount, setSlideCount] = useState(0)
   const [current, setCurrent] = useState(0)
   const [title, setTitle] = useState("")
   const [paintedDeck, setPaintedDeck] = useState<string | undefined>(undefined)
-  const shownDeck = useRef(id)
   const [pending, setPending] = useState(false)
   const [offline, setOffline] = useState(() => navigator.onLine === false)
   const [failure, setFailure] = useState<"import-failed" | "export-failed" | null>(null)
-  const picker = useRef<HTMLInputElement>(null)
 
   const settle = useCallback((outcome: CommitOutcome) => {
     if (outcome === "sent") setPending(false)
@@ -197,7 +193,6 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
   }, [])
 
   useEffect(() => {
-    if (id === undefined) return
     let live = true
     setPaintedDeck(undefined)
     void (async () => {
@@ -243,8 +238,7 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
       setOffline(true)
     }
     async function returnedToNetwork() {
-      const deck = shownDeck.current
-      if (deck !== undefined) settle(await flushPending(connect, deck))
+      settle(await flushPending(connect, id))
     }
     window.addEventListener("offline", leftNetwork)
     window.addEventListener("online", returnedToNetwork)
@@ -252,7 +246,7 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
       window.removeEventListener("offline", leftNetwork)
       window.removeEventListener("online", returnedToNetwork)
     }
-  }, [settle])
+  }, [id, settle])
 
   function show(target: ElementId, text: string) {
     const record = store.current.getElement(target)
@@ -265,44 +259,12 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
       })
   }
 
-  async function openFile(file: File) {
-    setPaintedDeck(undefined)
-    try {
-      const imported = await importDeck(file)
-      if (imported === null) {
-        setFailure("import-failed")
-        return
-      }
-      const { id: nextId, name, parts } = imported
-      window.history.replaceState(null, "", `/${route}/${nextId}`)
-      void nameImportedDeck(imported).then(() => sendOriginal(nextId, imported.file))
-      shownDeck.current = nextId
-      setDeckId(nextId)
-      setPending(false)
-      setFailure(null)
-      const painted = paint(store.current, parts, null)
-      boxes.current = painted.boxes
-      shapes.current = painted.shapes
-      shownParts.current = parts
-      canvases.current = painted.canvases
-      pictures.current?.release()
-      pictures.current = painted.pictures
-      setSlideCount(painted.count)
-      setCurrent(0)
-      setTitle(name)
-      setPaintedDeck(nextId)
-    } catch {
-      setFailure("import-failed")
-    }
-  }
-
   async function onEdit(target: ElementId, value: string) {
     const box = boxes.current.get(target)
-    if (box === undefined || deckId === undefined) return
-    const deck = deckId
+    if (box === undefined) return
     const file = box.file
     async function refused() {
-      const opened = await connect(memoryRemote()).openDeck(deck)
+      const opened = await connect(memoryRemote()).openDeck(id)
       show(target, shownValue(opened.ok ? opened.register : null, target, file))
     }
     const shape = shapes.current.get(target)
@@ -312,7 +274,7 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
     }
     const outcome = await commitEdit(
       connect,
-      deck,
+      id,
       value,
       box,
       () => {
@@ -324,7 +286,7 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
     settle(outcome)
   }
 
-  async function exportDeck(id: string) {
+  async function exportDeck() {
     await ensureMarkup()
     const stored = await getParts(id)
     if (!stored.ok) throw new Error("parts")
@@ -344,9 +306,8 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
   }
 
   async function onExport() {
-    if (deckId === undefined) return
     try {
-      await exportDeck(deckId)
+      await exportDeck()
       setFailure(null)
     } catch {
       setFailure("export-failed")
@@ -354,7 +315,7 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
   }
 
   function tryAgain(notice: ThinNotice) {
-    if (notice === "import-failed") picker.current?.click()
+    if (notice === "import-failed") window.location.assign("/")
     if (notice === "export-failed") void onExport()
   }
 
@@ -363,22 +324,7 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
   return (
     <div className="thin-page" data-deck-ready={paintedDeck}>
       <ThinNoticeView notice={notice} onTryAgain={tryAgain} />
-      <EditorFrame
-        top={
-          <div className="flex items-center gap-4 px-4 py-2">
-            <input
-              ref={picker}
-              accept=".pptx"
-              type="file"
-              onChange={(event) => {
-                const file = event.currentTarget.files?.[0]
-                if (file === undefined) return
-                void openFile(file)
-              }}
-            />
-          </div>
-        }
-      >
+      <EditorFrame>
         <EditorShell
           panel="none"
           onExport={() => void onExport()}

@@ -66,18 +66,18 @@ describe("submitSignInCode", () => {
       "https://app.airdesign.app",
       "ada@example.com",
       "123456",
-      "/thin/abc?x=1",
+      "/deck/abc?x=1",
     )
     expect(api.received).toEqual([
       { method: "POST", path: "/sign-in/code", body: { email: "ada@example.com", code: "123456" } },
     ])
-    expect(destination).toBe("https://app.airdesign.app/thin/abc?x=1")
+    expect(destination).toBe("https://app.airdesign.app/deck/abc?x=1")
   })
 
   it("goes to the path alone when the app origin is unset", async () => {
     const api = await startApi(200)
-    expect(await submitSignInCode(api.base, undefined, "ada@example.com", "123456", "/thin/abc?x=1")).toBe(
-      "/thin/abc?x=1",
+    expect(await submitSignInCode(api.base, undefined, "ada@example.com", "123456", "/deck/abc?x=1")).toBe(
+      "/deck/abc?x=1",
     )
   })
 
@@ -140,13 +140,13 @@ describe("startEmailSignIn", () => {
 describe("rememberNextFromSearch", () => {
   it("remembers the next path with its query", () => {
     stubSessionStorage()
-    rememberNextFromSearch("?next=%2Fthin%2Fabc%3Fx%3D1")
-    expect(readPendingNext()).toBe("/thin/abc?x=1")
+    rememberNextFromSearch("?next=%2Fdeck%2Fabc%3Fx%3D1")
+    expect(readPendingNext()).toBe("/deck/abc?x=1")
   })
 
   it("clears the remembered path when the search has no next", () => {
     stubSessionStorage()
-    rememberPendingNext("/thin/abc?x=1")
+    rememberPendingNext("/deck/abc?x=1")
     rememberNextFromSearch("")
     expect(readPendingNext()).toBeNull()
   })
@@ -157,9 +157,9 @@ describe("submitPendingCode", () => {
     stubSessionStorage()
     vi.stubEnv("PUBLIC_APP_ORIGIN", "https://app.airdesign.app")
     sessionStorage.setItem("airdesign.pending-sign-in-email", "ada@example.com")
-    rememberNextFromSearch("?next=%2Fthin%2Fabc%3Fx%3D1")
+    rememberNextFromSearch("?next=%2Fdeck%2Fabc%3Fx%3D1")
     const api = await startApi(200)
-    expect(await submitPendingCode(api.base, "123456")).toBe("https://app.airdesign.app/thin/abc?x=1")
+    expect(await submitPendingCode(api.base, "123456")).toBe("https://app.airdesign.app/deck/abc?x=1")
     expect(api.received).toEqual([
       { method: "POST", path: "/sign-in/code", body: { email: "ada@example.com", code: "123456" } },
     ])
