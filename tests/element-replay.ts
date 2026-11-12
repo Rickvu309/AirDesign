@@ -1,5 +1,5 @@
 import { readDeckId } from "@airdesign/catalog"
-import { elementId } from "@airdesign/document"
+import { elementId, nextElementId, readSlideId } from "@airdesign/document"
 import { call, openDeck, readDeckPage, type Deck } from "@airdesign/engine"
 import type { Graph } from "./spec-graph.js"
 
@@ -52,7 +52,12 @@ export function replayElement(graph: Graph, failures: string[]) {
     if (JSON.stringify(shown(answer.deck)) !== JSON.stringify(expected))
       failures.push(`element ${edge.action} reads ${JSON.stringify(shown(answer.deck))}`)
   }
+  const slide = readSlideId("256")
+  if (slide === undefined) throw new Error("slide")
   for (const state of graph.states.values()) {
+    if (state.added === true && nextElementId(built(state).register, slide, 9) === node) {
+      failures.push("element id handed out again after it was added")
+    }
     const forbidden = state.removed === true ? ["Add", "Type", "Remove"] : state.added === true ? ["Add"] : []
     for (const action of forbidden) {
       if (act(built(state), action).ok) failures.push(`element ${action} lands where the spec forbids it`)

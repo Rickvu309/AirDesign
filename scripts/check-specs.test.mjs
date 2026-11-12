@@ -2,7 +2,8 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { assertJar, checkSpec, jarPath, javaBin } from "./check-specs.mjs"
+import { assertJar, checkSpec, chosenTopics, jarPath, javaBin, readableTrace, topics } from "./check-specs.mjs"
+import * as editView from "../specs/edit/view.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const source = fs.readFileSync(path.join(root, "specs/edit/Edit.tla"), "utf8")
@@ -54,5 +55,29 @@ if (!(read >= 0 && edited > read && wrote > edited)) {
 if (!trace.includes("guarded = TRUE") || !trace.includes("agent = 1")) {
   throw new Error(`the agent wrote on a guarded property\n${trace}`)
 }
+
+const told = readableTrace(trace, editView)
+if (
+  !told.startsWith("Invariant AgentSawCurrent is violated.") ||
+  !told.includes("the person edits [during the run] [PersonWrites]: Person edit, person is guarding") ||
+  !told.includes("guarded false -> true")
+) {
+  throw new Error(`the counterexample was not told step by step\n${told}`)
+}
+const every = topics(root)
+if (
+  chosenTopics(every, ["edit"])
+    .map((topic) => topic.name)
+    .join() !== "edit"
+)
+  throw new Error("edit alone was not chosen")
+if (chosenTopics(every, []).length !== every.length) throw new Error("no name did not choose every spec")
+let unknown = ""
+try {
+  chosenTopics(every, ["nothing"])
+} catch (error) {
+  unknown = error.message
+}
+if (unknown !== "no spec named nothing") throw new Error(`an unknown spec name was not refused: ${unknown}`)
 
 console.log("check-specs tests passed")

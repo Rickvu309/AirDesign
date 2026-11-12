@@ -92,6 +92,8 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | No hand-kept list of what a folder holds: `pnpm typecheck` reads `apps/` and `packages/`, `pnpm test:tooling` reads `scripts/`, and the spec replay reads `specs/` | the `references` step of `pnpm check` fails when the root `tsconfig.json` lists references |
 | Unit tests run with nothing built | `pnpm check` runs tests before typecheck |
 | A state machine keeps its invariants | `pnpm check:specs` |
+| Every spec in `specs/` is replayed against the code by a test, or listed with a reason | `scripts/spec-replays.mjs`, the `spec-replays` step of `pnpm check`. It warns for now and blocks nothing |
+| A spec property the code breaks today is kept in `<Module>.known.cfg` beside an `it.fails` test | `pnpm check:specs` fails when a known config stops failing |
 | An edit changes only its PowerPoint parts and adds no validator error | `pnpm check:pptx` |
 | Every lint rule has a test and is switched on | `scripts/bug-rule.mjs` |
 | Rule code in `tooling/` stays under 10 percent of product code | `scripts/bug-rule.mjs` |

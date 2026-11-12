@@ -13,7 +13,7 @@ const nodes = { x: "258.7", y: "258.8" } as const
 const idleWindow = 600_000
 
 type Name = keyof typeof nodes
-type Action = "TurnStart" | "AgentEdit" | "PersonEdit" | "Stop" | "Idle" | "Refused"
+type Action = "TurnStart" | "AgentEdit" | "SlideStart" | "SlideInTurn" | "PersonEdit" | "Stop" | "Idle" | "Refused"
 type Step = { readonly action: Action; readonly element?: Name; readonly refusal?: "stale" | "unknown" }
 type Stored = {
   readonly revision: number
@@ -50,6 +50,17 @@ const traces: readonly (readonly Step[])[] = [
     { action: "PersonEdit", element: "y" },
     { action: "TurnStart", element: "x" },
     { action: "AgentEdit", element: "y" },
+  ],
+  [
+    { action: "SlideStart" },
+    { action: "AgentEdit", element: "x" },
+    { action: "PersonEdit", element: "x" },
+    { action: "SlideInTurn" },
+    { action: "AgentEdit", element: "x" },
+    { action: "Stop" },
+    { action: "SlideStart" },
+    { action: "AgentEdit", element: "y" },
+    { action: "Idle" },
   ],
   [
     { action: "TurnStart", element: "y" },
@@ -137,6 +148,24 @@ describe("a person closes an element for the rest of a turn", () => {
     const id = named.deck
     const cookie = await sign(`turn${String(index)}${randomBytes(4).toString("hex")}@example.com`)
     await ask(base, "POST", "/decks/open", { deck: id }, cookie)
+    const floor = { kind: "shape", value: "", box: null, grouped: false }
+    await ask(
+      base,
+      "POST",
+      "/decks/index",
+      {
+        deck: id,
+        once: "turn-index",
+        offset: 0,
+        total: 2,
+        slides: [{ id: "258", position: 0, layout: [] }],
+        elements: [
+          { node: nodes.x, ...floor },
+          { node: nodes.y, ...floor },
+        ],
+      },
+      cookie,
+    )
     const transport = new StreamableHTTPClientTransport(new URL(`${base}/mcp`), {
       requestInit: { headers: { cookie } },
     })
@@ -182,6 +211,17 @@ describe("a person closes an element for the rest of a turn", () => {
             : await called("airdesign_stop_run", { deck: id, runId: "unknown" })
         return { outcome: answer.ok ? "landed" : "refused", landedOn: "none" }
       }
+      if (step.action === "SlideStart" || step.action === "SlideInTurn") {
+        const answer = await called("airdesign_add_slide", {
+          deck: id,
+          base: stored?.revision ?? 0,
+          after: "258",
+          layout: "258",
+        })
+        if (!answer.ok) return { outcome: answer.refusal ?? "none", landedOn: "none" }
+        runId = answer.runId ?? ""
+        return { outcome: "landed", landedOn: "none" }
+      }
       const name = step.element ?? "x"
       const answer = await edited(name, stored, versionOf(stored, name))
       if (!answer.ok) return { outcome: answer.refusal ?? "none", landedOn: "none" }
@@ -217,6 +257,18 @@ describe("a person closes an element for the rest of a turn", () => {
   it("replays traces of the spec through POST /mcp and the stored rows", async () => {
     const failures: string[] = []
     for (const [index, trace] of traces.entries()) await replay(trace, index, failures)
+    expect(failures).toEqual([])
+  }, 120_000)
+
+  it.fails("lands a slide tool call after the turn went idle with its run still live", async () => {
+    const failures: string[] = []
+    const stuck: readonly Step[] = [
+      { action: "TurnStart", element: "x" },
+      { action: "Idle" },
+      { action: "SlideStart" },
+      { action: "SlideStart" },
+    ]
+    await replay(stuck, traces.length, failures)
     expect(failures).toEqual([])
   }, 120_000)
 

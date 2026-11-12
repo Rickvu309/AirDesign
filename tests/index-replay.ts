@@ -8,17 +8,19 @@ const parsed = readDeckId("index-replay")
 if (!parsed.ok) throw new Error("deck")
 const id = parsed.deck
 const node = elementId("258.1")
-const pages = [0, 1].map((offset) => ({
-  deck: id,
-  offset,
-  once: `page-${offset}`,
-  total: 2,
-  slides: [{ id: "258", position: 0 }],
-  elements: [{ node: elementId(`258.${offset + 1}`), kind: "shape", value: "Title", box: null, grouped: false }],
-}))
+const layout = [{ node: elementId("258.9"), kind: "shape", value: "Layout", box: null, grouped: false }]
+const pages = (layered: boolean) =>
+  [0, 1].map((offset) => ({
+    deck: id,
+    offset,
+    once: `${layered ? "layered" : "page"}-${offset}`,
+    total: 2,
+    slides: [layered ? { id: "258", position: 0, layout } : { id: "258", position: 0 }],
+    elements: [{ node: elementId(`258.${offset + 1}`), kind: "shape", value: "Title", box: null, grouped: false }],
+  }))
 
-function store(deck: Deck, page: number): Deck {
-  const indexed = indexDeck(deck, { actor: "person" }, pages[page])
+function store(deck: Deck, page: number, layered = false): Deck {
+  const indexed = indexDeck(deck, { actor: "person" }, pages(layered)[page])
   if (!indexed.ok) throw new Error(indexed.refusal)
   return indexed.deck
 }
@@ -44,8 +46,9 @@ export function replayIndex(graph: Graph, failures: string[]) {
     let deck = openDeck(id)
     if (source.edited === true) deck = edit(deck)
     for (let n = 0; n < Number(source.stored); n += 1) deck = store(deck, n)
+    if (source.layered === true) deck = store(deck, 0, true)
     if (edge.action === "Store") {
-      deck = store(deck, Number(source.sent) - 1)
+      deck = store(deck, Number(source.sent) - 1, source.upgraded === true && source.flightOld !== true)
       replayed += 1
     } else if (edge.action === "Edit") {
       deck = edit(deck)
@@ -58,6 +61,9 @@ export function replayIndex(graph: Graph, failures: string[]) {
       read.elements.some((element) => element.closed)
     ) {
       failures.push(`index ${edge.action} disagrees with stored pages or edit revision`)
+    }
+    if ((deck.register.index?.slides[0]?.layout !== undefined) !== (target.layered === true)) {
+      failures.push(`index ${edge.action} ${target.layered === true ? "lost" : "made up"} the layouts`)
     }
     const title = read.elements.find((element) => element.node === node)
     if (target.edited === true && (title?.value !== "After" || title.version !== 1)) {
