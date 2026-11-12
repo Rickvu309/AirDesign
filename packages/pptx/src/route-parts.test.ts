@@ -338,15 +338,7 @@ function expectSlideAdded(before: Parts, after: Parts, sourceId: string, copy: b
   expectBytes(cutOut(nextRels, relationship), oldRels)
   const part = `ppt/${attribute(relationship, "Target")}`
   expect(before.has(part)).toBe(false)
-  const nextTypes = partOf(after, contentTypesPart)
-  const override = required(
-    markup(nextTypes)
-      .filter((element) => element.kind === "Override")
-      .at(-1),
-    "Override",
-  )
-  expect(attribute(override, "PartName")).toBe(`/${part}`)
-  expectBytes(cutOut(nextTypes, override), partOf(before, contentTypesPart))
+  expectTypes(after, before, `/${part}`)
   const written = partOf(after, part)
   if (copy) expectBytes(written, partOf(before, targetOf(before, source)))
   else expect(topShapes(markup(written), markupChildren(markup(written)))).toEqual([])
@@ -371,13 +363,17 @@ function expectSlideRemoved(before: Parts, after: Parts, slideId: string) {
   const slide = named(markup(oldPresentation), "p:sldId", slideId)
   expectBytes(partOf(after, presentationPart), cutOut(oldPresentation, slide))
   expectBytes(partOf(after, presentationRels), cutOut(partOf(before, presentationRels), relationshipOf(before, slide)))
-  const oldTypes = partOf(before, contentTypesPart)
-  const partName = `/${targetOf(before, slide)}`
-  const override = required(
-    markup(oldTypes).find((element) => element.kind === "Override" && attribute(element, "PartName") === partName),
-    "Override",
+  expectTypes(before, after, `/${targetOf(before, slide)}`)
+}
+
+function expectTypes(larger: Parts, smaller: Parts, slide: string) {
+  const types = partOf(larger, contentTypesPart)
+  const only = markup(types).filter(
+    (item) => item.kind === "Override" && !smaller.has(attribute(item, "PartName").slice(1)),
   )
-  expectBytes(partOf(after, contentTypesPart), cutOut(oldTypes, override))
+  expect(only[0] === undefined ? null : attribute(only[0], "PartName")).toBe(slide)
+  const cut = only.map((item) => ({ start: item.start, end: item.end, next: emptyBytes }))
+  expectBytes(spliceBytes(types, cut), partOf(smaller, contentTypesPart))
 }
 
 function expectOnlyWrapped(larger: Uint8Array, smaller: Uint8Array, element: MarkupElement) {
