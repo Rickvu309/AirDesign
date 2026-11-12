@@ -4,7 +4,7 @@ import { request as httpRequest } from "node:http"
 
 import { catalog, projectTools, readDeckId } from "@airdesign/catalog"
 import { rootElement } from "@airdesign/document"
-import { editNext, runNext } from "@airdesign/mcp"
+import { commitTries, editNext, runNext } from "@airdesign/mcp"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
@@ -1308,12 +1308,12 @@ describe("mcp route", () => {
       })
       expect(newer).toMatchObject({ ok: true, revision: 4, runId: first.runId })
       gate.release()
-      expect((await pending).structuredContent).toMatchObject({ ok: false, refusal: "stale" })
+      expect((await pending).structuredContent).toMatchObject({ ok: true, revision: 5 })
       const before = await row(id)
       expect(elementOf(before).guarded).toBe(true)
       const closed = await editAnswer(fast, {
         deck: id,
-        base: 4,
+        base: 5,
         changes: [{ value: "overwrite", node: element, readAt: 2 }],
       })
       expect(closed).toMatchObject({ ok: false, refusal: "person-protected" })
@@ -1359,14 +1359,14 @@ describe("mcp route", () => {
   ): Promise<{ readonly base: string; readonly race: () => void; readonly close: () => Promise<void> }> {
     const info = await postgresInfo()
     const stored = openPool(info.deck, `mcp-${mark}-race`)
-    let racing = false
+    let racing = 0
     const racer = new Proxy(stored, {
       get(target, prop, receiver) {
         if (prop !== "query") return Reflect.get(target, prop, receiver)
         const query = target.query.bind(target) as (sql: unknown, params?: unknown[]) => Promise<unknown>
         return async (sql: unknown, params?: unknown[]) => {
-          if (racing && typeof sql === "string" && sql.includes("update deck.saved")) {
-            racing = false
+          if (racing > 0 && typeof sql === "string" && sql.includes("update deck.saved")) {
+            racing -= 1
             await query("update deck.saved set revision = revision + 1 where id = $1", [params?.[0]])
           }
           return query(sql, params)
@@ -1377,7 +1377,7 @@ describe("mcp route", () => {
     return {
       base: served.base,
       race: () => {
-        racing = true
+        racing = commitTries
       },
       close: async () => {
         await served.close()
@@ -1400,13 +1400,13 @@ describe("mcp route", () => {
             name: "airdesign_stop_run",
             arguments: { deck: id, runId: first.runId },
           })
-          const answer = { ok: false, revision: 2, refusal: "stale", elements: [] }
+          const answer = { ok: false, revision: 1 + commitTries, refusal: "stale", elements: [] }
           expect(lost.content).toEqual([
             { type: "text", text: runNext.stale },
             { type: "text", text: JSON.stringify(answer) },
           ])
           const kept = await row(id)
-          expect(kept?.revision).toBe(2)
+          expect(kept?.revision).toBe(1 + commitTries)
           expect(kept?.register).toEqual(before?.register)
           const next = await editAnswer(client, secondEdit(id))
           expect(next.runId).toBe(first.runId)
@@ -1431,9 +1431,9 @@ describe("mcp route", () => {
           clock += 600_000
           served.race()
           const lost = await editAnswer(client, secondEdit(id))
-          expect(lost).toMatchObject({ ok: false, revision: 2, refusal: "stale" })
+          expect(lost).toMatchObject({ ok: false, revision: 1 + commitTries, refusal: "stale" })
           const kept = await row(id)
-          expect(kept?.revision).toBe(2)
+          expect(kept?.revision).toBe(1 + commitTries)
           expect(kept?.register).toEqual(before?.register)
           expect(elementOf(kept).phase).toBe("running")
           expect(runOf(kept)).toBe(first.runId)
@@ -1733,7 +1733,7 @@ describe("mcp route", () => {
     })
   })
 
-  it("lands one of two edits sent at the same base", async () => {
+  it("lands both of two edits sent at the same base and read, the one that lost the write on a fresh read", async () => {
     const named = readDeckId(deckName())
     if (!named.ok) throw new Error(named.refusal)
     const info = await postgresInfo()
@@ -1786,29 +1786,10 @@ describe("mcp route", () => {
         if (block === undefined || block.type !== "text") throw new Error("text")
         return block.text
       })
-      expect(texts.filter((text) => text === "Landed revision 1.")).toHaveLength(1)
-      expect(texts.filter((text) => text === editNext.stale)).toHaveLength(1)
+      expect(texts.toSorted()).toEqual(["Landed revision 1.", "Landed revision 2."])
       const kept = await row(named.deck)
-      expect(kept?.revision).toBe(1)
-      expect(elementOf(kept).landed).toHaveLength(1)
-      const value = elementOf(kept).landed[0]?.value
-      expect(value === "21" || value === "22").toBe(true)
-      const lost = [first, second].find((result) => result.isError === true)
-      if (lost === undefined) throw new Error("no lost write")
-      const stored = { ok: false, revision: 1, refusal: "stale", elements: [{ node: element, value, version: 1 }] }
-      expect(lost.structuredContent).toEqual(stored)
-      expect(lost.content).toEqual([
-        { type: "text", text: editNext.stale },
-        { type: "text", text: JSON.stringify(stored) },
-      ])
-      const resent = await left.callTool({
-        name: "airdesign_edit_deck",
-        arguments: { deck: named.deck, base: 1, changes: [{ value: "23", node: element, readAt: 1 }] },
-      })
-      expect(resent.structuredContent).toEqual(landedAnswer(2, [{ node: element, value: "23", version: 2 }]))
-      const after = await row(named.deck)
-      expect(after?.revision).toBe(2)
-      expect(values(after)).toEqual([value, "23"])
+      expect(kept?.revision).toBe(2)
+      expect(values(kept).toSorted()).toEqual(["21", "22"])
     } finally {
       await Promise.all([left.close(), right.close()])
       await served.close()

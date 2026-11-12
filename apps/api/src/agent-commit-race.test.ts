@@ -34,7 +34,8 @@ describe("an agent edit that meets a person's edit on another element while it i
     const racing = new Proxy(pool, {
       get(target, key) {
         const member = Reflect.get(target, key) as unknown
-        if (key !== "query" || typeof member !== "function") return typeof member === "function" ? member.bind(target) : member
+        if (key !== "query" || typeof member !== "function")
+          return typeof member === "function" ? member.bind(target) : member
         return async (...args: unknown[]) => {
           if (!personWriting && racesLeft > 0 && typeof args[0] === "string" && args[0].includes(revisionWrite)) {
             racesLeft -= 1
@@ -51,7 +52,13 @@ describe("an agent edit that meets a person's edit on another element while it i
       },
     }) as Sql
     const listen = new DeckListen(info.listen)
-    const served = await serve({ ...origins, session, deck: racing, listen, send: async (mail) => void mails.push(mail) })
+    const served = await serve({
+      ...origins,
+      session,
+      deck: racing,
+      listen,
+      send: async (mail) => void mails.push(mail),
+    })
     base = served.base
     close = async () => {
       await served.close()
@@ -113,7 +120,9 @@ describe("an agent edit that meets a person's edit on another element while it i
     const cookie = await signInByCode(base, mails, email)
     await ask(base, "POST", "/decks/open", { deck: id }, cookie)
     if (indexed) await indexPage(id, cookie)
-    const transport = new StreamableHTTPClientTransport(new URL(`${base}/mcp`), { requestInit: { headers: { cookie } } })
+    const transport = new StreamableHTTPClientTransport(new URL(`${base}/mcp`), {
+      requestInit: { headers: { cookie } },
+    })
     const client = new Client({ name: "airdesign-test", version: "0.0.0" })
     await client.connect(transport)
     person = indexed
