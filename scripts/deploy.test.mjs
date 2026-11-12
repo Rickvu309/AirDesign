@@ -110,3 +110,11 @@ same(
 same("the alarm never uses the smoke title", workflow.includes("Deploy or smoke check is red"), false)
 same("a deployed app closes its own issue", workflow.includes('gh issue close "$open"'), true)
 same("the workflow does not swallow a failure with || true", workflow.includes("|| true"), false)
+
+const railway = fs.readFileSync(path.join(root, ".railway/railway.ts"), "utf8")
+same(
+  "the api deploys every commit on main without waiting for check suites, because Railway skips the deployment when any workflow on the commit fails",
+  /github\("Rickvu309\/AirDesign", \{ branch: "main", checkSuites: false \}\)/.test(railway),
+  true,
+)
+same("the api deploys every commit, so no watch path can skip one", /watchPatterns/.test(railway), false)
