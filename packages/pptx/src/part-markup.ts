@@ -1,14 +1,7 @@
 import { markupDocument, spliceBytes, type MarkupDocument, type MarkupElement } from "./element-span.js"
+import { sameBytes } from "./package-bytes.js"
 
 const emptyBytes = new Uint8Array(0)
-
-export function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
-  if (left.length !== right.length) return false
-  for (let index = 0; index < left.length; index += 1) {
-    if (left[index] !== right[index]) return false
-  }
-  return true
-}
 
 export function partBytes(parts: ReadonlyMap<string, Uint8Array>, name: string): Uint8Array {
   const bytes = parts.get(name)
