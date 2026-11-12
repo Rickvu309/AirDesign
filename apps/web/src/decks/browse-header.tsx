@@ -9,7 +9,7 @@ export function BrowseHeader({
   menu,
   trailing,
   compact = false,
-  home = false,
+  links,
   onNewDeck,
   menuOpen,
 }: {
@@ -19,7 +19,7 @@ export function BrowseHeader({
   menu?: ReactNode
   trailing?: ReactNode
   compact?: boolean
-  home?: boolean
+  links?: { grid: string; list: string }
   onNewDeck?: () => void
   menuOpen?: boolean
 }) {
@@ -60,7 +60,7 @@ export function BrowseHeader({
             </Button>
             {menu}
           </div>
-          {view && (scope || home) ? <ViewSwitch active={view} scope={scope} home={home} /> : null}
+          {view && (scope || links) ? <ViewSwitch active={view} scope={scope} links={links} /> : null}
         </div>
       )}
     </header>
