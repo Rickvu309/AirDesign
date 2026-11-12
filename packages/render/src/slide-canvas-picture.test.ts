@@ -71,3 +71,24 @@ it("paints the slide's picture background", async () => {
   const host = await painted({ ...slide, background: layer, elements: [] })
   expect(styleOf(host, "[data-slide-paint]").backgroundImage).toBe('url("blob:picture")')
 })
+
+it("says in the box what it cannot show, on the canvas and not in a thumbnail", async () => {
+  const words = "EMF picture can't be shown here"
+  const unshown = { ...picture(unshownFill), unshownText: words }
+  const store = paintStore()
+  store.publish({ id, kind: "picture", text: "", picture: "" })
+  const host = document.createElement("div")
+  document.body.append(host)
+  const root = createRoot(host)
+  hosts.push({ host, root })
+  await act(async () => {
+    root.render(createElement(SlideCanvas, { store, slide: { ...slide, elements: [unshown] }, width: 800 }))
+  })
+  expect(host.querySelector(`[data-canvas-element="${id}"]`)?.textContent).toContain(words)
+  await act(async () => {
+    root.render(
+      createElement(SlideCanvas, { quiet: true, store, slide: { ...slide, elements: [unshown] }, width: 200 }),
+    )
+  })
+  expect(host.querySelector(`[data-canvas-element="${id}"]`)?.textContent ?? "").not.toContain(words)
+})

@@ -11,6 +11,7 @@ import { canMove, type Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
 import { anchored, textLook, type Scaled, type TextLook } from "./text-look.js"
 import { unshownFill } from "./unshown-fill.js"
+import { UnshownLabel } from "./unshown-label.js"
 
 const defaultInsetX = 91_440
 const defaultInsetY = 45_720
@@ -154,6 +155,7 @@ function SheetElement(props: { readonly element: CanvasElement; readonly scaled:
   return (
     <div data-canvas-element={element.key} style={elementFrame(element, scaled, false, unshown)}>
       <ShapeArt element={element} scaled={scaled} />
+      <UnshownLabel scaled={scaled} text={element.unshownText} />
       {text === null ? null : (
         <div style={textLayer(element.box, text, scaled)}>
           <SheetText look={textLook(text, scaled)} text={text} />
@@ -231,6 +233,7 @@ function PlacedText(props: {
       {...(moves === null ? {} : reach(element, id, shown, moves, typing, fallbackName))}
     >
       <ShapeArt element={element} grab={moves !== null && canMove(element)} scaled={scaled} />
+      <UnshownLabel scaled={scaled} text={element.unshownText} />
       <div style={textLayer(element.box, text, scaled)}>
         {showPrompt ? (
           <div

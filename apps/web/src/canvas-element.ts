@@ -3,6 +3,7 @@ import type { CanvasElement, CanvasLine, CanvasOutline, CanvasTable, CanvasText 
 import type { CanvasShape } from "@/canvas-source"
 import type { PictureSource } from "@/picture-fill"
 import { visibleFill } from "@/paint-css"
+import { unshownText } from "@/unshown-text"
 
 export type RowPaint = {
   readonly row: PaintElement
@@ -30,6 +31,7 @@ export function movableRow(ctx: RowPaint): boolean {
 
 export function elementFrom(ctx: RowPaint, spec: DrawnSpec): CanvasElement {
   const { key, row, shape } = ctx
+  const unshown = unshownText(row, ctx.src)
   return {
     key,
     id: shape?.id ?? null,
@@ -39,6 +41,7 @@ export function elementFrom(ctx: RowPaint, spec: DrawnSpec): CanvasElement {
     movable: spec.movable,
     placeholder: row.placeholder !== null,
     ...(row.prompt ? { prompt: row.prompt } : {}),
+    ...(unshown === null ? {} : { unshownText: unshown }),
     filled: visibleFill(row.fill),
     fill: spec.fill,
     line: spec.line,

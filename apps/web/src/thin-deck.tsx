@@ -1,14 +1,6 @@
-import { deckRoutes } from "@airdesign/catalog"
 import { elementId, type Box, type ElementId, type Register, type Undoable } from "@airdesign/document"
-import { connect, fetchOriginal, flushOriginal, getParts, memoryRemote, putParts } from "@airdesign/live"
-import {
-  exportPackage,
-  readNotes,
-  readPackage,
-  type ReadShape,
-  type SectionStart,
-  type SlideNotes,
-} from "@airdesign/pptx"
+import { connect, distrustDevice, flushOriginal, getParts, memoryRemote, trustDeck } from "@airdesign/live"
+import { exportPackage, readNotes, type ReadShape, type SectionStart, type SlideNotes } from "@airdesign/pptx"
 import { paintStore, SlideCanvas, textValue } from "@airdesign/render"
 import { toast } from "sonner"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -31,6 +23,7 @@ import { type PictureSources } from "@/picture-fill"
 import { paint, valueStorable } from "@/deck-paint"
 export { elementIds, valueStorable } from "@/deck-paint"
 import { followDeck } from "@/deck-follow"
+import { closesDeck, deckParts, deviceCopy } from "@/device-copy"
 import { busyElements, liveRepaint, shownValue } from "@/live-repaint"
 import { AiraPanel } from "@/aira-panel"
 import { useUndoKeys } from "@/editor/undo-keys"
@@ -52,36 +45,6 @@ function boxName(before: Box, after: Box): UndoName | null {
 function thumbHeight(slide: { readonly width: number; readonly height: number } | null): number {
   if (slide === null || slide.width === 0) return Math.round((slideThumbWidth * 9) / 16)
   return Math.round((slideThumbWidth * slide.height) / slide.width)
-}
-
-async function listedName(deck: string): Promise<string | undefined> {
-  try {
-    const response = await fetch(deckRoutes.list.path, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: "{}",
-    })
-    const listed = deckRoutes.list.result(await response.json())
-    return listed.ok ? listed.decks.find((each) => each.deck === deck)?.name : undefined
-  } catch {
-    return undefined
-  }
-}
-
-export async function deckParts(deck: string) {
-  const stored = await getParts(deck)
-  if (stored.ok) return stored
-  const original = await fetchOriginal(deck)
-  if (!original.ok) return null
-  const read = await readPackage(original.file)
-  if (!read.ok) return null
-  const name = await listedName(deck)
-  const saved = await putParts(deck, {
-    parts: read.parts,
-    file: original.file,
-    ...(name === undefined ? {} : { name }),
-  })
-  return saved.ok ? saved : null
 }
 
 export function ThinDeck({ id }: { id: string }) {
@@ -107,6 +70,7 @@ export function ThinDeck({ id }: { id: string }) {
   const [pending, setPending] = useState(false)
   const [offline, setOffline] = useState(() => navigator.onLine === false)
   const [failure, setFailure] = useState<"import-failed" | "export-failed" | null>(null)
+  const [refused, setRefused] = useState(false)
   const [panel, setPanel] = useState<"agent" | "design">("agent")
   const undoList = useRef(emptyUndo)
   const turning = useRef<Promise<void>>(Promise.resolve())
@@ -121,57 +85,53 @@ export function ThinDeck({ id }: { id: string }) {
     if (outcome === "sent") setPending(false)
     if (outcome === "offline") setPending(true)
     if (outcome !== "refused") setOffline(outcome === "offline")
-    if (outcome === "signed-out") window.location.assign(signInAddress(window.location))
+    if (outcome === "signed-out")
+      void distrustDevice().then(() => window.location.assign(signInAddress(window.location)))
   }, [])
 
   useEffect(() => {
     let live = true
     const leaving = new AbortController()
     setPaintedDeck(undefined)
+    setRefused(false)
     void (async () => {
       await ensureMarkup()
-      const stored = await deckParts(id)
+      const device = await deviceCopy(id)
+      if (!live) return
+      if (device !== null) openFrom(device.stored, device.register)
+      const stored = device?.stored ?? (await deckParts(id))
       if (!live) return
       if (stored === null) {
         setFailure("import-failed")
         return
       }
+      const answered = await connect(server)
+        .open(id)
+        .catch(() => null)
+      if (!live) return
+      if (answered !== null && !answered.ok && (await refusedBy(answered.refusal))) return
+      if (answered?.ok === true) await trustDeck(id)
       const opened = await connect(server)
         .openDeck(id)
         .catch(() => null)
       if (!live) return
       const register = opened?.ok === true ? opened.register : null
-      shownParts.current = stored.parts
-      showRegister(register)
-      setCurrent(0)
-      setTitle(stored.name ?? "")
-      setPaintedDeck(id)
+      if (device === null) openFrom(stored, register)
+      else if (register !== null) reconcile(register)
       if (register?.index === undefined || register.index.elements.length !== register.index.total)
         await backfillIndex(id, stored.parts)
       settle(await flushPending(connect, id))
       await flushOriginal(id)
-      await followDeck(
+      const ended = await followDeck(
         connect(server),
         id,
         async () => {
           const next = await connect(server).openDeck(id)
-          if (live && next.ok) {
-            const before = store.current.slides().map((slide) => slide.id)
-            if (structure.current !== JSON.stringify(next.register.order)) {
-              showRegister(next.register)
-              const after = store.current.slides().map((slide) => slide.id)
-              setCurrent((index) => {
-                const kept = after.findIndex((slide) => slide === before[index])
-                return kept >= 0 ? kept : Math.max(0, Math.min(index, after.length - 1))
-              })
-            } else {
-              repaint.current(next.register)
-              setNotes(readNotes(exportedParts(shownParts.current, next.register)))
-            }
-          }
+          if (live && next.ok) reconcile(next.register)
         },
         leaving.signal,
       )
+      if (live && ended !== undefined) await refusedBy(ended)
     })()
     return () => {
       live = false
@@ -334,6 +294,44 @@ export function ThinDeck({ id }: { id: string }) {
     URL.revokeObjectURL(url)
   }
 
+  function openFrom(
+    stored: { readonly parts: ReadonlyMap<string, Uint8Array>; readonly name?: string },
+    register: Register | null,
+  ) {
+    shownParts.current = stored.parts
+    showRegister(register)
+    setCurrent(0)
+    setTitle(stored.name ?? "")
+    setPaintedDeck(id)
+  }
+
+  function reconcile(register: Register) {
+    const before = store.current.slides().map((slide) => slide.id)
+    if (structure.current !== JSON.stringify(register.order)) {
+      showRegister(register)
+      const after = store.current.slides().map((slide) => slide.id)
+      setCurrent((index) => {
+        const kept = after.findIndex((slide) => slide === before[index])
+        return kept >= 0 ? kept : Math.max(0, Math.min(index, after.length - 1))
+      })
+    } else {
+      repaint.current(register)
+      setNotes(readNotes(exportedParts(shownParts.current, register)))
+    }
+  }
+
+  async function refusedBy(refusal: string): Promise<boolean> {
+    if (refusal === "session") {
+      await distrustDevice()
+      window.location.assign(signInAddress(window.location))
+      return true
+    }
+    if (!closesDeck(refusal)) return false
+    setPaintedDeck(undefined)
+    setRefused(true)
+    return true
+  }
+
   function showRegister(register: Register | null) {
     const painted = paint(store.current, shownParts.current, register, busy.current)
     boxes.current = painted.boxes
@@ -452,6 +450,15 @@ export function ThinDeck({ id }: { id: string }) {
         toast.error("Unable to save speaker notes", { description: "Copy your notes, reload the deck and try again." })
       settle(outcome)
     })
+  }
+
+  if (refused) {
+    return (
+      <div className="thin-page" data-deck-refused>
+        <ThinNoticeView notice="import-failed" onTryAgain={tryAgain} />
+        <EditorFrame>{null}</EditorFrame>
+      </div>
+    )
   }
 
   const toldNotice: ThinNotice | null = told === null ? null : told === "undo" ? "undo-changed" : "redo-changed"
