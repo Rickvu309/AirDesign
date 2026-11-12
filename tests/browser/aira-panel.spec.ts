@@ -149,3 +149,43 @@ test("a new ask right after Stop is answered while the stopped model call finish
     stack.release()
   }
 })
+
+test("Aira keeps streaming and repainting while a person changes slide order", async ({ page, context, stack }) => {
+  const { cookie, deck, base, side } = await openDeck(page, context, stack)
+  stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node }, holdAfter: 3 }, { name: "edited.sse" })
+  const reached = stack.hold()
+  await ask(page, asked)
+  await reached
+  await page.getByRole("button", { name: "Add slide", exact: true }).click()
+  const entries = page.locator("[data-slide-entry]")
+  await expect(entries).toHaveCount(2)
+  await entries.nth(1).focus()
+  await page.keyboard.press("Alt+ArrowUp")
+  await page.keyboard.press("Delete")
+  await expect(entries).toHaveCount(1)
+  stack.release()
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello from Aira")
+  await expect(side.getByText("The title now reads Hello from Aira.", { exact: true })).toBeVisible()
+  expect(await serverText(stack, deck, cookie)).toBe("Hello from Aira")
+  await expect(entries).toHaveCount(1)
+})
+
+test("Aira refuses an edit of a slide removed during its reply without hanging", async ({ page, context, stack }) => {
+  const { cookie, deck, base, side } = await openDeck(page, context, stack)
+  stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node }, holdAfter: 3 }, { name: "edited.sse" })
+  const reached = stack.hold()
+  await ask(page, asked)
+  await reached
+  await page.getByRole("button", { name: "Add slide", exact: true }).click()
+  const entries = page.locator("[data-slide-entry]")
+  await expect(entries).toHaveCount(2)
+  await entries.first().focus()
+  await page.keyboard.press("Delete")
+  await expect(entries).toHaveCount(1)
+  await expect.poll(async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision).toBe(base + 2)
+  stack.release()
+  await expect(side.locator('[data-tool-state="refused"], [data-tool-state="failed"]')).toBeVisible()
+  await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
+  await expect(side.getByRole("textbox", { name: "Ask Aira" })).toBeEnabled()
+  await expect(entries).toHaveCount(1)
+})
