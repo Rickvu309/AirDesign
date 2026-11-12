@@ -33,7 +33,7 @@ export function NewSlideMenu({
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger
-        className={`${label} h-8 rounded-l-lg outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+        className={`${label} h-8 rounded-l-lg outline-none`}
         aria-label="Choose a layout for the new slide"
         data-new-slide-layouts
       >
