@@ -1,9 +1,19 @@
+export function usageResetsOn(when: string): string {
+  return `Resets ${when}`
+}
+
+export function usageLimitBodyOn(when: string): string {
+  return `${usageResetsOn(when)}. Your request is saved.`
+}
+
+const sampleReset = "Monday at 8:00 AM"
+
 export const productCopy = {
   usageTitle: "Weekly usage",
-  usageResets: "Resets Monday at 8:00 AM",
+  usageResets: usageResetsOn(sampleReset),
   usageResetAction: "Reset",
   usageLimitTitle: "You've hit this week's limit",
-  usageLimitBody: "Resets Monday at 8:00 AM. Your request is saved.",
+  usageLimitBody: usageLimitBodyOn(sampleReset),
   usageResetDone: "Usage reset. $5 used from your credits.",
   usageResetConfirmTitle: "Reset usage?",
   usageResetConfirmBody: "This uses $5 of your credits.",

@@ -74,7 +74,7 @@ function LimitPanel({ phase, mark }: { phase: "limit" | "reset"; mark: "tile" | 
   )
 }
 
-function LimitMark({ mark }: { mark: "tile" | "ring" }) {
+export function LimitMark({ mark }: { mark: "tile" | "ring" }) {
   if (mark === "ring") {
     return (
       <span className="flex size-4 items-center justify-center">

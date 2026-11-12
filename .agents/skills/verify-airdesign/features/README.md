@@ -41,4 +41,5 @@ Each feature file starts with an H1 title and one paragraph describing what the 
 - [Delete account](./delete-account.md): the account menu deletes the account after the person types its email; the server, the stored originals and the browser keep nothing of it. Journey `delete-account`.
 - [Ask Aira through the server](./aira-turn.md): one metered model call at a time streams text and tool calls, the tool calls run through `/mcp`, and the person undoes the run. Journey `aira-turn`.
 - [Connected agents](./connected-agents.md): the account menu opens `/settings/agents`, shows and copies the MCP address, lists connected agents, and disconnects one so its access and refresh tokens stop working at once. Journey `connected-agents`.
+- [Ask Aira in the Agent panel](./aira-panel.md): the person types to Aira in the open deck, watches the reply stream and the slide change, stops or undoes the run, and reads the week's usage. Journey `aira-panel`.
 - [Sign in](./sign-in.md): email, six-digit code, session cookie, signed-out redirect. Command `$V sign-in`.
