@@ -1,7 +1,7 @@
 import { coordinates, decide, elementId, openRegister } from "@airdesign/document"
 import { expect, it } from "vitest"
 import * as z from "zod/v4"
-import { deckRoutes, readAgentEdit, readCommit, readEdit } from "./index.js"
+import { deckRoutes, readAgentEdit, readCommit, readEdit, toolInputSchema } from "./index.js"
 
 const node = elementId("258.7")
 const box = { x: -914400, y: 0, cx: 1828800, cy: 457200 }
@@ -87,4 +87,9 @@ it("decodes a stored register holding a box row and refuses a box row that holds
     const broken = { ...moved.register, elements: { ...moved.register.elements, [node]: { ...body, landed: [row] } } }
     expect(deckRoutes.open.result(answer(broken))).toEqual({ ok: false, refusal: "payload" })
   }
+})
+
+it("tells the agent a run can set bold, italic and underline", () => {
+  const schema = JSON.stringify(toolInputSchema("edit_deck"))
+  expect(schema).toContain("A run may set bold, italic or underline to true or false")
 })

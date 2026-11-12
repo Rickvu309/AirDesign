@@ -60,5 +60,23 @@ export {
   type SlideCommand,
   type SlideState,
 } from "./slide-order.js"
-export { readTextValue, writeTextValue, type TextParagraph, type TextRun, type TextValue } from "./text-value.js"
+export {
+  readTextValue,
+  formatNames,
+  writeTextValue,
+  type RunFormat,
+  type TextFormat,
+  type TextParagraph,
+  type TextRun,
+  type TextValue,
+} from "./text-value.js"
+export {
+  formatRange,
+  formatState,
+  formatWhole,
+  sameFormats,
+  type Caret,
+  type FormatState,
+  type TextRange,
+} from "./text-format.js"
 export { redoOf, slideUndoable, undoOf, undoSlides, type Undoable } from "./person-undo.js"

@@ -7,6 +7,7 @@ import { canMove, canResize, enterElement, useMoves } from "./slide-moves.js"
 import type { CanvasSlide } from "./record.js"
 import type { PaintStore } from "./store.js"
 import { ensureBulletRule, type Scaled } from "./text-look.js"
+import type { TextFormatting } from "./text-formatting.js"
 
 const defaultTextSize = 203_200
 
@@ -22,6 +23,7 @@ export function SlideCanvas(props: {
   readonly onBox?: (id: ElementId, box: Box) => void
   readonly onRemove?: (id: ElementId) => void
   readonly entering?: ElementId | null
+  readonly formatting?: TextFormatting
 }) {
   const { slide, width } = props
   const quiet = props.quiet === true
@@ -61,6 +63,7 @@ export function SlideCanvas(props: {
         <PaintedElement
           key={element.key}
           element={element}
+          formatting={props.formatting}
           moves={moving}
           onEdit={props.onEdit}
           quiet={quiet}

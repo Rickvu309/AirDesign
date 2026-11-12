@@ -29,6 +29,9 @@ const iconPaths = {
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
   chart: '<path d="M4 20h16M7 16v-5M12 16V7M17 16v-8"/>',
   up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  bold: '<path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z"/>',
+  italic: '<path d="M19 4h-9M14 20H5M15 4 9 20"/>',
+  underline: '<path d="M6 4v6a6 6 0 0 0 12 0V4M4 20h16"/>',
 } as const
 
 export type EditorIconName = keyof typeof iconPaths

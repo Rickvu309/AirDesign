@@ -14,6 +14,7 @@ export const editorRoutes = {
   shapesExpanded: "/screens/s43-05-editor-tools-shapes-expanded",
   text: "/screens/s43-06-editor-tools-text",
   actions: "/screens/s43-07-editor-tools-actions",
+  textFormat: "/screens/s43-08-editor-tools-text-format",
   runFailed: "/screens/s49-01-editor-errors-agent-run-failed",
   offline: "/screens/s49-02-editor-errors-offline",
 } as const

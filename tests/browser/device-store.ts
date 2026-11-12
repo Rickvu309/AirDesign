@@ -29,3 +29,26 @@ export async function stored(page: Page, value: string): Promise<void> {
     })
   }, value)
 }
+
+export async function storedValues(page: Page): Promise<string[]> {
+  return page.evaluate(async () => {
+    const rows = await new Promise<unknown[]>((resolve, reject) => {
+      const request = indexedDB.open("airdesign")
+      request.onerror = () => reject(request.error)
+      request.onsuccess = () => {
+        const database = request.result
+        const all = database.transaction("rows", "readonly").objectStore("rows").getAll()
+        all.onerror = () => reject(all.error)
+        all.onsuccess = () => {
+          database.close()
+          resolve(all.result as unknown[])
+        }
+      }
+    })
+    return rows.flatMap((row) => {
+      if (typeof row !== "object" || row === null || !("value" in row)) return []
+      const value = (row as { value: unknown }).value
+      return typeof value === "string" ? [value] : []
+    })
+  })
+}

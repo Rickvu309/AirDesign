@@ -4,6 +4,7 @@ import { backgroundOf } from "@/canvas-background"
 import { isGroupKind } from "@/canvas-group"
 import { paintElements } from "@/canvas-kind"
 import type { CanvasSource, SlideCanvases } from "@/canvas-source"
+import { fileTexts } from "@/file-text"
 import type { PictureSource } from "@/picture-fill"
 
 export type { CanvasShape, CanvasSource, SlideCanvases } from "@/canvas-source"
@@ -35,11 +36,17 @@ function paintOf(reader: PaintReader, part: string) {
   }
 }
 
-function canvasOf(reader: PaintReader, source: CanvasSource, src: PictureSource): CanvasSlide {
+function canvasOf(
+  reader: PaintReader,
+  source: CanvasSource,
+  src: PictureSource,
+  texts: PaintReader | undefined,
+): CanvasSlide {
   const paint = paintOf(reader, source.part)
   if (paint === null) return { ...standardSlide, background: null, elements: unplaced(source) }
   const size = paint.width > 0 && paint.height > 0 ? paint : standardSlide
-  const rows = paintElements(paint.elements, source, src)
+  const file = texts === undefined ? null : paintOf(texts, source.part)
+  const rows = paintElements(fileTexts(paint.elements, file), source, src)
   const readsSlide = paint.elements.some((row) => row.from === "slide")
   return {
     width: size.width,
@@ -53,6 +60,7 @@ export function slideCanvases(
   reader: PaintReader,
   sources: readonly CanvasSource[],
   src: PictureSource = () => null,
+  texts?: PaintReader,
 ): SlideCanvases {
   const known = new Map<number, CanvasSlide>()
   return (index) => {
@@ -60,7 +68,7 @@ export function slideCanvases(
     if (painted !== undefined) return painted
     const source = sources[index]
     if (source === undefined) return null
-    const canvas = canvasOf(reader, source, src)
+    const canvas = canvasOf(reader, source, src, texts)
     known.set(index, canvas)
     return canvas
   }

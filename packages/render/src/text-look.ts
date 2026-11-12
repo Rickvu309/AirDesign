@@ -1,5 +1,7 @@
+import type { RunFormat, TextFormat } from "@airdesign/document"
 import type { CSSProperties } from "react"
 import { bulletLabel } from "./bullet-label.js"
+import { readFormat } from "./run-format-node.js"
 import type { CanvasBullet, CanvasParagraph, CanvasRunStyle, CanvasSpacing, CanvasText } from "./record.js"
 
 export type Scaled = (emu: number) => number
@@ -14,7 +16,8 @@ const bulletRule =
 export type TextLook = {
   readonly body: CSSProperties
   paragraph(from: number, filled: boolean): Look
-  run(paragraph: number, from: number): Look
+  run(paragraph: number, from: number, format?: RunFormat): Look
+  file(paragraph: number, from: number, format: TextFormat): boolean
 }
 
 export const anchored = { top: "flex-start", middle: "center", bottom: "flex-end" } as const
@@ -162,6 +165,19 @@ function applyStyle(node: HTMLElement, style: Look): void {
   Object.assign(node.style, plain)
 }
 
+function fileStyle(paragraph: CanvasParagraph, run: number): CanvasRunStyle {
+  return paragraph.runs.find((each) => each.from === run) ?? paragraph.endStyle
+}
+
+function formatted(style: CanvasRunStyle, format: RunFormat): CanvasRunStyle {
+  return {
+    ...style,
+    bold: format.bold ?? style.bold,
+    italic: format.italic ?? style.italic,
+    underline: format.underline ?? style.underline === true,
+  }
+}
+
 export function textLook(text: CanvasText, scaled: Scaled): TextLook {
   const paragraphs = new Map(text.paragraphs.map((paragraph) => [paragraph.from, paragraph]))
   return {
@@ -178,12 +194,19 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
       if (paragraph === undefined) return { lineHeight: filled ? noLine : singleLine, "--bullet": "none" }
       return paragraphStyle(paragraph, filled, scaled)
     },
-    run(from, run) {
+    run(from, run, format = {}) {
       const paragraph = paragraphs.get(from)
       if (paragraph === undefined) return { lineHeight: singleLine }
-      const style = paragraph.runs.find((each) => each.from === run) ?? paragraph.endStyle
+      const style = formatted(fileStyle(paragraph, run), format)
       const lineHeight = lineHeights(paragraph.lineSpacing, scaled, true).run
-      return { ...styleOf(style, scaled), ...marks(style), lineHeight }
+      const drawn = marks(style)
+      const plain =
+        format.underline === undefined || drawn.textDecoration !== undefined ? {} : { textDecoration: "none" }
+      return { ...styleOf(style, scaled), ...drawn, ...plain, lineHeight }
+    },
+    file(from, run, format) {
+      const paragraph = paragraphs.get(from)
+      return paragraph === undefined ? false : fileStyle(paragraph, run)[format] === true
     },
   }
 }
@@ -218,7 +241,7 @@ export function restyle(box: HTMLElement, look: TextLook): void {
     applyStyle(block, look.paragraph(from, isFilled(block)))
     for (const span of runsOf(block)) {
       const [paragraph, run] = (span.dataset.run ?? "").split(".").map(Number)
-      applyStyle(span, look.run(from, paragraph === from && run !== undefined ? run : loneRun))
+      applyStyle(span, look.run(from, paragraph === from && run !== undefined ? run : loneRun, readFormat(span)))
     }
   }
 }

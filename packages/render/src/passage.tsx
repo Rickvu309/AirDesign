@@ -1,6 +1,9 @@
 import { writeTextValue, type TextParagraph, type TextRun, type TextValue } from "@airdesign/document"
 import { useLayoutEffect, useRef } from "react"
 import type { ElementId } from "@airdesign/document"
+import { formatTarget, type FormatEdit } from "./passage-format.js"
+import { readFormat, writeFormat } from "./run-format-node.js"
+import type { TextFormatting } from "./text-formatting.js"
 import { useElement } from "./element-view.js"
 import {
   cutValue,
@@ -51,7 +54,11 @@ function collectRuns(nodes: NodeListOf<ChildNode> | readonly Node[], from: numbe
       continue
     }
     const [paragraph, run] = source.split(".").map(Number)
-    runs.push({ from: paragraph === from && run !== undefined ? run : -1, text: node.textContent ?? "" })
+    runs.push({
+      ...readFormat(node),
+      from: paragraph === from && run !== undefined ? run : -1,
+      text: node.textContent ?? "",
+    })
   }
 }
 
@@ -131,6 +138,7 @@ function paragraphNode(document: Document, paragraph: TextParagraph): HTMLElemen
   for (const run of paragraph.runs) {
     const span = document.createElement("span")
     span.dataset.run = `${paragraph.from}.${run.from}`
+    writeFormat(span, run)
     if (run.text !== "") span.append(run.text)
     block.append(span)
   }
@@ -164,6 +172,7 @@ export function Passage(props: {
   readonly look?: TextLook | undefined
   readonly framed?: boolean
   readonly prompt?: string | undefined
+  readonly formatting?: TextFormatting | undefined
 }) {
   const { look } = props
   const record = useElement(props.store, props.id)
@@ -198,10 +207,28 @@ export function Passage(props: {
     pending.current.push(value)
     props.onEdit(value)
   }
-  function edit(shown: HTMLElement, value: TextValue, caret: Caret) {
-    showValue(shown, value, { start: caret, end: caret }, look)
+  function edit(shown: HTMLElement, value: TextValue, caret: Caret, end: Caret = caret) {
+    showValue(shown, value, { start: caret, end }, look)
     report(writeTextValue(value))
   }
+  const formats = useRef<FormatEdit | null>(null)
+  formats.current = {
+    look,
+    read(shown) {
+      const read = readBox(shown)
+      return { value: read.value, carets: selectionCarets(shown, read.units) }
+    },
+    edit,
+  }
+  const { formatting, id } = props
+  useLayoutEffect(() => {
+    const shown = box.current
+    if (formatting === undefined || shown === null) return
+    return formatTarget(formatting, id, shown, formats)
+  }, [formatting, id])
+  useLayoutEffect(() => {
+    if (props.formatting !== undefined) props.formatting.changed()
+  }, [props.formatting, text])
   function settle(shown: HTMLElement, read: ReadBox) {
     if (look === undefined) return
     if (holdsOnlyRuns(shown)) restyle(shown, look)
@@ -211,6 +238,10 @@ export function Passage(props: {
     const shown = box.current
     if (shown === null) return
     function replace(event: InputEvent) {
+      if (event.inputType.startsWith("format")) {
+        event.preventDefault()
+        return
+      }
       if (shown === null || composing.current || event.isComposing) return
       if (event.inputType !== "insertText" || event.data === null) return
       const read = readBox(shown)

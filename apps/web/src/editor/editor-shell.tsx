@@ -8,6 +8,8 @@ import { usePointerTool } from "@/editor/pointer-tool"
 import { RevenueSlide } from "@/editor/revenue-slide"
 import { SlideSidebar, type SidebarRun, type SlideStrip } from "@/editor/slide-sidebar"
 import type { UndoButtonsState } from "@/editor/undo-buttons"
+import type { FormatShown } from "@/editor/format-buttons"
+import type { TextFormatting } from "@airdesign/render"
 import {
   ActionsMenu,
   ImagesPanel,
@@ -29,6 +31,7 @@ export type EditorDeck = {
   readonly undo: UndoButtonsState
   readonly onText?: () => void
   readonly onRename?: (name: string) => void
+  readonly formatting?: TextFormatting
 }
 
 export type EditorShellProps = {
@@ -49,6 +52,7 @@ export type EditorShellProps = {
   actionsMenu?: boolean
   toast?: ReactNode
   overlay?: ReactNode
+  formats?: FormatShown
   deck?: EditorDeck
 }
 
@@ -70,6 +74,7 @@ export function EditorShell({
   actionsMenu = false,
   toast,
   overlay,
+  formats,
   deck,
 }: EditorShellProps) {
   const room = slideRoom(rail === "slides" ? 800 : 720)
@@ -140,6 +145,8 @@ export function EditorShell({
               {...(deck === undefined ? {} : { pointer })}
               {...(deck === undefined ? {} : { undo: deck.undo })}
               {...(deck?.onText === undefined ? {} : { onText: deck.onText })}
+              {...(deck?.formatting === undefined ? {} : { formatting: deck.formatting })}
+              {...(formats === undefined ? {} : { formats })}
               {...(onPanel === undefined ? {} : { onPanel })}
             />
           </div>

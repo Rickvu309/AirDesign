@@ -1,6 +1,17 @@
-import { readTextValue, type TextParagraph, type TextRun, type TextValue } from "@airdesign/document"
+import {
+  readTextValue,
+  sameFormats,
+  type Caret,
+  type TextParagraph,
+  type TextRun,
+  type TextValue,
+} from "@airdesign/document"
 
-export type Caret = { readonly paragraph: number; readonly offset: number }
+export type { Caret } from "@airdesign/document"
+
+function joins(left: TextRun | undefined, right: TextRun | undefined): boolean {
+  return left !== undefined && right !== undefined && left.from === right.from && sameFormats(left, right)
+}
 
 export function textValue(stored: string): TextValue {
   return readTextValue(stored) ?? [{ from: 0, runs: stored === "" ? [] : [{ from: 0, text: stored }] }]
@@ -19,8 +30,8 @@ function splitRuns(runs: readonly TextRun[], offset: number): readonly [TextRun[
     if (end <= offset) head.push(run)
     else if (start >= offset) tail.push(run)
     else {
-      head.push({ from: run.from, text: run.text.slice(0, offset - start) })
-      tail.push({ from: run.from, text: run.text.slice(offset - start) })
+      head.push({ ...run, text: run.text.slice(0, offset - start) })
+      tail.push({ ...run, text: run.text.slice(offset - start) })
     }
     start = end
   }
@@ -45,10 +56,10 @@ export function joinParagraph(value: TextValue, index: number): TextValue {
   if (before === undefined || joined === undefined) return value
   const runs = [...before.runs]
   for (const run of joined.runs) {
-    const from = before.from === joined.from ? run.from : -1
+    const moved = { ...run, from: before.from === joined.from ? run.from : -1 }
     const last = runs.at(-1)
-    if (last !== undefined && last.from === from) runs[runs.length - 1] = { from, text: last.text + run.text }
-    else runs.push({ from, text: run.text })
+    if (last !== undefined && joins(last, moved)) runs[runs.length - 1] = { ...last, text: last.text + run.text }
+    else runs.push(moved)
   }
   return [...value.slice(0, index - 1), { from: before.from, runs }, ...value.slice(index + 1)]
 }
@@ -66,7 +77,7 @@ export function cutValue(value: TextValue, start: Caret, end: Caret): TextValue 
   }
   return [
     ...joined.slice(0, start.paragraph),
-    { from: paragraph.from, runs: [{ from: anchor.from, text: "" }] },
+    { from: paragraph.from, runs: [{ ...anchor, text: "" }] },
     ...joined.slice(start.paragraph + 1),
   ]
 }
@@ -88,10 +99,10 @@ export function insertLines(value: TextValue, caret: Caret, lines: readonly stri
       last === undefined
         ? first === undefined
           ? [{ from: -1, text: line }]
-          : [{ from: first.from, text: line + first.text }, ...tail.slice(1)]
-        : first !== undefined && first.from === last.from
-          ? [...head.slice(0, -1), { from: last.from, text: last.text + line + first.text }, ...tail.slice(1)]
-          : [...head.slice(0, -1), { from: last.from, text: last.text + line }, ...tail]
+          : [{ ...first, text: line + first.text }, ...tail.slice(1)]
+        : first !== undefined && joins(first, last)
+          ? [...head.slice(0, -1), { ...last, text: last.text + line + first.text }, ...tail.slice(1)]
+          : [...head.slice(0, -1), { ...last, text: last.text + line }, ...tail]
     next = [...next.slice(0, at.paragraph), { from: paragraph.from, runs: written }, ...next.slice(at.paragraph + 1)]
     at = { paragraph: at.paragraph, offset: at.offset + line.length }
   })
@@ -111,14 +122,13 @@ export function replaceSelection(
   const line = lines[0] ?? ""
   if (anchor === undefined || paragraph === undefined || line === "") return insertLines(cut, start, lines)
   const [head, tail] = splitRuns(paragraph.runs, start.offset)
-  if (head.at(-1)?.from === anchor.from) return insertLines(cut, start, lines)
+  if (joins(head.at(-1), anchor)) return insertLines(cut, start, lines)
   const first = tail[0]
   const emptied = first !== undefined && first.text === ""
   const rest = emptied ? tail.slice(1) : tail
-  const joins = rest[0]?.from === anchor.from
-  const written = joins
-    ? [...head, { from: anchor.from, text: line + (rest[0]?.text ?? "") }, ...rest.slice(1)]
-    : [...head, { from: anchor.from, text: line }, ...rest]
+  const written = joins(rest[0], anchor)
+    ? [...head, { ...anchor, text: line + (rest[0]?.text ?? "") }, ...rest.slice(1)]
+    : [...head, { ...anchor, text: line }, ...rest]
   const next = [
     ...cut.slice(0, start.paragraph),
     { from: paragraph.from, runs: written },

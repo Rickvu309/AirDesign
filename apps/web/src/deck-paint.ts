@@ -133,7 +133,8 @@ export function paint(
     ),
   }))
   const pictures = pictureSources(display)
-  const canvases = slideCanvases(paintReader(display, { fallbackPrompt }), sources, pictures.src)
+  const texts = display === base ? undefined : paintReader(base, { fallbackPrompt })
+  const canvases = slideCanvases(paintReader(display, { fallbackPrompt }), sources, pictures.src, texts)
   return {
     count: read.length,
     sections: sectionStarts(display),

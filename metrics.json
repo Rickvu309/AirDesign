@@ -2,7 +2,7 @@
   "known-failures": { "goal": 0 },
   "corpus-size": { "now": 20, "goal": 20 },
   "export-coverage": { "now": 18, "goal": 50 },
-  "export-verified": { "now": 21, "goal": 50 },
+  "export-verified": { "now": 24, "goal": 50 },
   "fault-detection": { "now": 9, "goal": 10 },
   "eval-coverage": { "now": 46, "goal": 46 },
   "design-findings": { "now": 118, "goal": 0 },

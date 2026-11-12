@@ -18,3 +18,4 @@ export {
 } from "./record.js"
 export { SlideCanvas, unshownFill } from "./slide-canvas.js"
 export { paintStore, type PaintStore } from "./store.js"
+export { textFormatting, type TextFormatting } from "./text-formatting.js"

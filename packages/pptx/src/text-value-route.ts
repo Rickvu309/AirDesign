@@ -1,6 +1,7 @@
 import type { TextParagraph, TextRun, TextValue } from "@airdesign/document"
 import { contentSpans, decodedXmlText, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
+import { formatEdits, formattedInline, runProperties } from "./run-format.js"
 import { xmlText } from "./shape-write.js"
 
 export type MarkupChildren = readonly (readonly MarkupElement[])[]
@@ -29,8 +30,6 @@ const textOpen = encodeUtf8("<a:t>")
 const textClose = encodeUtf8("</a:t>")
 const paragraphOpen = encodeUtf8("<a:p>")
 const paragraphClose = encodeUtf8("</a:p>")
-const formatOpen = encodeUtf8("<a:rPr")
-const formatClose = encodeUtf8("</a:rPr>")
 
 function joinBytes(chunks: readonly Uint8Array[]): Uint8Array {
   const merged = new Uint8Array(chunks.reduce((size, chunk) => size + chunk.length, 0))
@@ -129,13 +128,6 @@ function openTag(bytes: Uint8Array, element: MarkupElement, written: Uint8Array)
   return element.selfClosing ? written : bytes.subarray(element.start, element.openEnd)
 }
 
-function endFormat(bytes: Uint8Array, end: MarkupElement | undefined): Uint8Array {
-  if (end === undefined) return emptyBytes
-  const rest = end.start + end.kind.length + 1
-  if (end.selfClosing) return joinBytes([formatOpen, bytes.subarray(rest, end.end)])
-  return joinBytes([formatOpen, bytes.subarray(rest, end.closeStart), formatClose])
-}
-
 function writtenText(bytes: Uint8Array, holder: MarkupElement | undefined, text: string): Uint8Array {
   const open = holder === undefined ? textOpen : openTag(bytes, holder, textOpen)
   return joinBytes([open, encodeUtf8(xmlText(text)), textClose])
@@ -144,18 +136,23 @@ function writtenText(bytes: Uint8Array, holder: MarkupElement | undefined, text:
 function writtenRun(bytes: Uint8Array, source: SourceParagraph, wanted: TextRun): Uint8Array {
   if (wanted.from === -1) {
     refuseBreak(wanted.text)
-    return joinBytes([runOpen, endFormat(bytes, source.end), writtenText(bytes, undefined, wanted.text), runClose])
+    return joinBytes([
+      runOpen,
+      runProperties(bytes, source.end, wanted),
+      writtenText(bytes, undefined, wanted.text),
+      runClose,
+    ])
   }
   const origin = source.inlines[wanted.from]
   if (origin === undefined) throw new Error("text-run")
   if (origin.element.kind !== "a:r") {
     if (origin.text !== wanted.text) throw new Error("text-carried")
-    return copied(bytes, origin.element)
+    return formattedInline(bytes, origin, wanted)
   }
   if (origin.text !== wanted.text) refuseBreak(wanted.text)
   return joinBytes([
     openTag(bytes, origin.element, runOpen),
-    copied(bytes, origin.format),
+    runProperties(bytes, origin.format, wanted),
     writtenText(bytes, origin.holder, wanted.text),
     runClose,
   ])
@@ -183,6 +180,7 @@ function keptEdits(bytes: Uint8Array, source: SourceParagraph, wanted: TextParag
   for (const [index, run] of wanted.runs.entries()) {
     const origin = source.inlines[index]
     if (origin === undefined || run.from !== index) return null
+    edits.push(...formatEdits(bytes, origin, run))
     if (run.text === origin.text) continue
     if (origin.element.kind !== "a:r" || origin.holder === undefined) return null
     refuseBreak(run.text)

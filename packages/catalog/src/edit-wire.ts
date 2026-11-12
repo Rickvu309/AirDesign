@@ -131,7 +131,7 @@ const coordinateInput = z.int().min(coordinates.lowest).max(coordinates.highest)
 const extentInput = z.int().min(0).max(coordinates.highest)
 const textChange = z.strictObject({
   value: textInput.describe(
-    "Text to write. For an element whose file text is a JSON text value, send a JSON text value: [{from, runs: [{from, text}]}]. Each from is an index the file has, and a run from of -1 is a new run.",
+    "Text to write. For an element whose file text is a JSON text value, send a JSON text value: [{from, runs: [{from, text}]}]. Each from is an index the file has, and a run from of -1 is a new run. A run may set bold, italic or underline to true or false; a run that leaves one out keeps the file's.",
   ),
   node: nodeInput,
   readAt: readAtInput,

@@ -1,11 +1,17 @@
 import { onlyKeys, record } from "./plain-object.js"
 
-export type TextRun = { readonly from: number; readonly text: string }
+export const formatNames = ["bold", "italic", "underline"] as const
+
+export type TextFormat = (typeof formatNames)[number]
+
+export type RunFormat = { readonly [format in TextFormat]?: boolean }
+
+export type TextRun = { readonly from: number; readonly text: string } & RunFormat
 export type TextParagraph = { readonly from: number; readonly runs: readonly TextRun[] }
 export type TextValue = readonly TextParagraph[]
 
 const paragraphKeys = ["from", "runs"]
-const runKeys = ["from", "text"]
+const runKeys = new Set<string>(["from", "text", ...formatNames])
 
 function integerAtLeast(value: unknown, floor: number): number | null {
   if (typeof value !== "number" || !Number.isInteger(value) || value < floor) {
@@ -16,14 +22,21 @@ function integerAtLeast(value: unknown, floor: number): number | null {
 
 function readRun(value: unknown): TextRun | null {
   const run = record(value)
-  if (run === null || !onlyKeys(run, runKeys)) {
+  if (run === null || !Object.keys(run).every((key) => runKeys.has(key))) {
     return null
   }
   const from = integerAtLeast(run.from, -1)
   if (from === null || typeof run.text !== "string") {
     return null
   }
-  return { from, text: run.text }
+  let read: TextRun = { from, text: run.text }
+  for (const format of formatNames) {
+    const set = run[format]
+    if (set === undefined) continue
+    if (typeof set !== "boolean") return null
+    read = { ...read, [format]: set }
+  }
+  return read
 }
 
 function readParagraph(value: unknown): TextParagraph | null {
@@ -67,11 +80,17 @@ export function readTextValue(value: string): TextValue | null {
   return paragraphs
 }
 
+function writtenRun(run: TextRun): Record<string, unknown> {
+  const written: Record<string, unknown> = { from: run.from, text: run.text }
+  for (const format of formatNames) if (run[format] !== undefined) written[format] = run[format]
+  return written
+}
+
 export function writeTextValue(text: TextValue): string {
   return JSON.stringify(
     text.map((paragraph) => ({
       from: paragraph.from,
-      runs: paragraph.runs.map((run) => ({ from: run.from, text: run.text })),
+      runs: paragraph.runs.map(writtenRun),
     })),
   )
 }
