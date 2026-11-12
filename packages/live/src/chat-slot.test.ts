@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { installIndexedDb } from "./browser-fixtures.js"
 import { deleteDatabase, dropChats, readChats, writeChat } from "./index.js"
-import { readRows, readSlot, rowKey, writeRows, writeSlot } from "./store.js"
+import { readRows, readSlot, rowKey, writeSlot } from "./store.js"
+import { writeRows } from "./browser-fixtures.js"
 
 async function readSlotsLeft(): Promise<string[]> {
   const found: string[] = []

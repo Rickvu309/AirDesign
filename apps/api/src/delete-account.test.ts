@@ -86,7 +86,7 @@ it("deletes every row and stored file of the account, refuses its credentials, a
   const deleted = await deleteAccount({ email: " Gone@Example.com " }, person.cookie)
   expect(deleted.status).toBe(200)
   expect(deleted.json).toEqual({ ok: true })
-  expect(deleted.headers["set-cookie"]).toEqual([cleared])
+  expect(deleted.headers["set-cookie"]).toEqual([cleared, "airdesign.account=; Secure; SameSite=Lax; Path=/; Max-Age=0"])
   expect(storedKeys(store, person.email)).toEqual([])
 
   await admin.query("update deck.original_delete set expires = now() where owner = $1", [person.email])

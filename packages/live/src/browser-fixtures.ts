@@ -1,9 +1,43 @@
 import type { WireEdit } from "@airdesign/catalog"
 import { elementId } from "@airdesign/document"
+import { accountCookieName } from "@airdesign/catalog"
+import { accountKey, finished, newPage, scoped, storeName, transaction } from "./device.js"
 import { memoryRemote, type OpenResult, type Remote } from "./index.js"
+import type { StoredRow } from "./store.js"
 
 export const node = elementId("258.7")
 export const other = elementId("258.8")
+export const firstAccount = "a".repeat(32)
+export const secondAccount = "b".repeat(32)
+
+export function signInAs(account: string | undefined): void {
+  Object.assign(globalThis, { document: { cookie: account === undefined ? "" : `${accountCookieName}=${account}` } })
+  newPage()
+}
+
+export type Traffic = { opens: number; ranges: number; keys: number; puts: number }
+
+export const traffic: Traffic = { opens: 0, ranges: 0, keys: 0, puts: 0 }
+
+export function quiet(): void {
+  traffic.opens = 0
+  traffic.ranges = 0
+  traffic.keys = 0
+  traffic.puts = 0
+}
+
+export async function writeRows(
+  puts: readonly { readonly key: string; readonly row: StoredRow }[],
+  deletes: readonly string[],
+): Promise<void> {
+  const account = accountKey()
+  if (account === undefined) throw new Error("session")
+  const writing = await transaction("readwrite")
+  const store = writing.objectStore(storeName)
+  for (const key of deletes) store.delete(scoped(account, key))
+  for (const put of puts) store.put(put.row, scoped(account, put.key))
+  await finished(writing, () => undefined)
+}
 
 export type SlowStore = {
   closed: boolean
@@ -31,6 +65,7 @@ export function slowStore(): SlowStore {
       slow.waiting.length = 0
       for (const drop of [...slow.alive]) drop()
       slow.alive.clear()
+      newPage()
     },
   }
   return slow
@@ -38,8 +73,12 @@ export function slowStore(): SlowStore {
 
 export function memoryShelf(
   held: Map<string, string> = new Map(),
-): Pick<Storage, "getItem" | "setItem" | "removeItem"> {
+): Pick<Storage, "getItem" | "setItem" | "removeItem" | "key" | "length"> {
   return {
+    get length() {
+      return held.size
+    },
+    key: (at) => [...held.keys()][at] ?? null,
     getItem: (key) => held.get(key) ?? null,
     setItem: (key, value) => {
       held.set(key, value)
@@ -52,10 +91,12 @@ export function memoryShelf(
 
 export function installIndexedDb(): void {
   installStore()
+  signInAs(firstAccount)
 }
 
 export function installSlowIndexedDb(slow: SlowStore): void {
   installStore(slow)
+  signInAs(firstAccount)
 }
 
 function installStore(slow?: SlowStore): void {
@@ -79,10 +120,13 @@ function installStore(slow?: SlowStore): void {
     createObjectStore: (store: string) => void
     transaction: (store: string, mode: string) => unknown
     close: () => void
+    onversionchange: (() => void) | null
+    onclose: (() => void) | null
   }
 
   const indexed = {
     open(name: string) {
+      traffic.opens += 1
       const request: {
         result: Opened | undefined
         onupgradeneeded: (() => void) | null
@@ -139,22 +183,35 @@ function installStore(slow?: SlowStore): void {
                   queue.push({ request, run })
                   return request
                 }
+                type Range = { lower: string; upper: string; lowerOpen?: boolean; upperOpen?: boolean }
+                const within = (range?: Range) =>
+                  [...rows.keys()].filter((key) => range === undefined || contains(key, range)).sort()
                 return {
-                  getAll: (range: { lower: string; upper: string; lowerOpen?: boolean; upperOpen?: boolean }) =>
-                    enqueue(() =>
-                      [...rows.keys()]
-                        .filter((key) => contains(key, range))
-                        .sort()
-                        .map((key) => rows.get(key)),
-                    ),
+                  getAll: (range: Range) =>
+                    enqueue(() => {
+                      traffic.ranges += 1
+                      return within(range).map((key) => rows.get(key))
+                    }),
+                  getAllKeys: (range?: Range | null, count?: number) =>
+                    enqueue(() => {
+                      traffic.ranges += 1
+                      return within(range ?? undefined).slice(0, count)
+                    }),
+                  get: (key: string) =>
+                    enqueue(() => {
+                      traffic.keys += 1
+                      return rows.get(key)
+                    }),
                   put: (value: unknown, key: string) =>
                     enqueue(() => {
-                      rows.set(key, value)
+                      traffic.puts += 1
+                      rows.set(key, structuredClone(value))
                       return key
                     }),
-                  delete: (key: string) =>
+                  delete: (key: string | Range) =>
                     enqueue(() => {
-                      rows.delete(key)
+                      if (typeof key === "string") rows.delete(key)
+                      else for (const each of within(key)) rows.delete(each)
                       return undefined
                     }),
                 }
@@ -174,10 +231,10 @@ function installStore(slow?: SlowStore): void {
                   queueMicrotask(pump)
                 }
                 if (slow?.closed !== true) {
-                  queueMicrotask(pump)
+                  setTimeout(pump, 0)
                   return
                 }
-                slow.waiting.push(() => queueMicrotask(pump))
+                slow.waiting.push(() => setTimeout(pump, 0))
               },
             }
             slow?.alive.add(() => {
@@ -190,6 +247,8 @@ function installStore(slow?: SlowStore): void {
             return transaction
           },
           close: () => undefined,
+          onversionchange: null,
+          onclose: null,
         }
         if (created) request.onupgradeneeded?.()
         request.onsuccess?.()

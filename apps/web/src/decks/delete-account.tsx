@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { deleteDatabase } from "@airdesign/live"
+import { accountKey, dropAccount } from "@airdesign/live"
 import { accountCopy } from "@/copy/account-copy"
 import { Input } from "@/components/ui/input"
 import { askDeletion, matchesEmail, type Deletion } from "@/decks/account-deletion"
@@ -7,9 +7,9 @@ import { DangerDialog } from "@/decks/danger-dialog"
 import { settingsCopy } from "@/copy/settings-copy"
 import { signInAddress } from "@/thin-notice"
 
-async function leave(deletion: Deletion): Promise<boolean> {
+async function leave(deletion: Deletion, account: string | undefined): Promise<boolean> {
   if (deletion === "refused") return false
-  if (deletion === "deleted") await deleteDatabase().catch(() => undefined)
+  if (deletion === "deleted") await dropAccount(account).catch(() => undefined)
   window.location.assign(signInAddress(window.location))
   return true
 }
@@ -30,8 +30,9 @@ export function DeleteAccountDialog({ email, onCancel }: { email: string; onCanc
       onConfirm={() => {
         setBusy(true)
         setFailed(false)
+        const account = accountKey()
         void askDeletion(email)
-          .then(leave)
+          .then((deletion) => leave(deletion, account))
           .catch(() => false)
           .then((left) => setFailed(!left))
           .finally(() => setBusy(false))

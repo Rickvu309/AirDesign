@@ -1,7 +1,7 @@
 import { readCommit } from "@airdesign/catalog"
 import { limits } from "@airdesign/document"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
-import { installIndexedDb, node } from "./browser-fixtures.js"
+import { installIndexedDb, node, other } from "./browser-fixtures.js"
 import { connect, deleteDatabase, httpRemote, memoryRemote, type CommitResult } from "./index.js"
 
 beforeEach(installIndexedDb)
@@ -68,13 +68,15 @@ it("keeps full batch boundaries when an answer is lost", async () => {
       return result
     },
   })
-  for (let i = 0; i < limits.batch + 1; i += 1) await cache.enqueue("full", String(i), node, "")
+  for (let i = 0; i < limits.batch + 1; i += 1) await cache.enqueue("full", String(i), i % 2 === 0 ? node : other, "")
   await expect(cache.flush("full")).rejects.toThrow("answer lost")
-  await cache.enqueue("full", "last", node, "")
+  await cache.enqueue("full", "last", other, "")
   expect(await cache.flush("full")).toMatchObject({ ok: true, revision: 3 })
   const opened = await server.open({ deck: "full" })
   expect(opened).toMatchObject({ ok: true, revision: 3 })
   if (!opened.ok) throw new Error("open")
-  expect(opened.register.elements[node]?.landed).toHaveLength(limits.batch + 2)
+  expect(
+    (opened.register.elements[node]?.landed.length ?? 0) + (opened.register.elements[other]?.landed.length ?? 0),
+  ).toBe(limits.batch + 2)
   expect(await cache.pending("full")).toEqual([])
 })

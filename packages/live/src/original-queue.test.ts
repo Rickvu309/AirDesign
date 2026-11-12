@@ -1,6 +1,6 @@
 import { deckRoutes } from "@airdesign/catalog"
 import { afterEach, expect, it, vi } from "vitest"
-import { installIndexedDb } from "./browser-fixtures.js"
+import { firstAccount, installIndexedDb, signInAs } from "./browser-fixtures.js"
 import { flushOriginal, queueOriginal } from "./original-queue.js"
 
 const stored = vi.hoisted(() => ({ sends: 0, ok: false }))
@@ -19,6 +19,7 @@ afterEach(() => {
 })
 
 it("reports an unsent original when device storage cannot be read", async () => {
+  signInAs(firstAccount)
   vi.stubGlobal("indexedDB", {
     open() {
       throw new Error("storage")

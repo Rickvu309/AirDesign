@@ -1,5 +1,6 @@
 import { readDeckId } from "@airdesign/catalog"
 import { bytesOf, limits } from "@airdesign/document"
+import { markSeen } from "./device-sweep.js"
 import { readSlot, writeSlot } from "./store.js"
 
 export type DeckParts = {
@@ -35,7 +36,7 @@ function isPartRow(value: unknown): value is PartRow {
   return typeof row.file === "string" && (row.name === undefined || typeof row.name === "string")
 }
 
-export async function putParts(deck: string, parts: DeckParts): Promise<PartsResult> {
+export async function putParts(deck: string, parts: DeckParts, now: () => number = Date.now): Promise<PartsResult> {
   const parsed = readDeckId(deck)
   if (!parsed.ok) return parsed
   const [named, file] = await Promise.all([
@@ -49,6 +50,7 @@ export async function putParts(deck: string, parts: DeckParts): Promise<PartsRes
   }
   if (bytesOf(JSON.stringify(row)) >= limits.row) return { ok: false, refusal: "limit" }
   await writeSlot(partKey(parsed.deck), row)
+  await markSeen(parsed.deck, now())
   return {
     ok: true,
     parts: new Map(parts.parts),
