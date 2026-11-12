@@ -20,18 +20,37 @@ export type TextLook = {
 export const anchored = { top: "flex-start", middle: "center", bottom: "flex-end" } as const
 const pageFont = "var(--font-sans)"
 const pageColor = "black"
-const naturalLine = "normal"
+const singleLineHeight = 1.2
 const noLine = "0"
+const openTwins = new Map([
+  ["calibri", "Carlito"],
+  ["calibri light", "Carlito"],
+  ["cambria", "Caladea"],
+  ["arial", "Arimo"],
+  ["helvetica", "Arimo"],
+  ["times new roman", "Tinos"],
+])
 const loneRun = -1
 
 function isElement(node: Node): node is HTMLElement {
   return node.nodeType === node.ELEMENT_NODE
 }
 
+function quotedFamily(font: string): string {
+  return `"${font.replace(/["\\]/g, "\\$&")}"`
+}
+
 function familyOf(font: string | null): string {
   if (font === null) return pageFont
-  return `"${font.replace(/["\\]/g, "\\$&")}", ${pageFont}`
+  const twin = openTwins.get(font.toLowerCase())
+  return [quotedFamily(font), ...(twin === undefined ? [] : [quotedFamily(twin)]), pageFont].join(", ")
 }
+
+function lineShare(percent: number): string {
+  return String(Math.round(percent * singleLineHeight * 10_000) / 10_000)
+}
+
+const singleLine = lineShare(1)
 
 function styleOf(run: CanvasRunStyle, scaled: Scaled): Look {
   return {
@@ -40,7 +59,8 @@ function styleOf(run: CanvasRunStyle, scaled: Scaled): Look {
     fontStyle: run.italic ? "italic" : "normal",
     fontWeight: run.bold ? "700" : "400",
     color: run.color ?? pageColor,
-    lineHeight: naturalLine,
+    lineHeight: singleLine,
+    textRendering: "geometricPrecision",
   }
 }
 
@@ -66,9 +86,9 @@ function lineHeights(
   scaled: Scaled,
   filled: boolean,
 ): { readonly paragraph: string; readonly run: string } {
-  if (spacing == null) return { paragraph: filled ? noLine : naturalLine, run: naturalLine }
+  if (spacing == null) return { paragraph: filled ? noLine : singleLine, run: singleLine }
   if ("percent" in spacing) {
-    const height = String(spacing.percent)
+    const height = lineShare(spacing.percent)
     return { paragraph: filled ? noLine : height, run: height }
   }
   const height = `${scaled(spacing.length)}px`
@@ -155,12 +175,12 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
     },
     paragraph(from, filled) {
       const paragraph = paragraphs.get(from)
-      if (paragraph === undefined) return { lineHeight: filled ? noLine : naturalLine, "--bullet": "none" }
+      if (paragraph === undefined) return { lineHeight: filled ? noLine : singleLine, "--bullet": "none" }
       return paragraphStyle(paragraph, filled, scaled)
     },
     run(from, run) {
       const paragraph = paragraphs.get(from)
-      if (paragraph === undefined) return { lineHeight: naturalLine }
+      if (paragraph === undefined) return { lineHeight: singleLine }
       const style = paragraph.runs.find((each) => each.from === run) ?? paragraph.endStyle
       const lineHeight = lineHeights(paragraph.lineSpacing, scaled, true).run
       return { ...styleOf(style, scaled), ...marks(style), lineHeight }

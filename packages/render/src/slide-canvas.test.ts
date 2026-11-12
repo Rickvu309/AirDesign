@@ -430,12 +430,12 @@ describe("SlideCanvas style", () => {
     expect(runNode(host, "0.0").style.fontFamily).toBe('"Serifa", var(--font-sans)')
   })
 
-  it("gives an empty paragraph its end style and its natural line", async () => {
+  it("gives an empty paragraph its end style and a single line", async () => {
     const host = await canvas({ ...wide, elements: [written(id, { text: twoRuns })] }, 800, value([]))
     const block = host.querySelector<HTMLElement>('[data-paragraph="0"]')
     expect(Number.parseFloat(block?.style.fontSize ?? "")).toBeCloseTo((127_000 * 800) / 12_192_000, 3)
     expect(block?.style.color).toBe("rgb(7, 8, 9)")
-    expect(block?.style.lineHeight).toBe("normal")
+    expect(block?.style.lineHeight).toBe("1.2")
   })
 
   it("styles a new run with the end style the export writes it with", async () => {
@@ -454,7 +454,7 @@ describe("SlideCanvas style", () => {
       value([{ from: 0, text: "big" }]),
     )
     expect(host.querySelector<HTMLElement>('[data-paragraph="0"]')?.style.lineHeight).toBe("0")
-    expect(runNode(host, "0.0").style.lineHeight).toBe("normal")
+    expect(runNode(host, "0.0").style.lineHeight).toBe("1.2")
   })
 
   it("aligns each paragraph and places the words by the box's insets and anchor", async () => {
