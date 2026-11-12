@@ -4,10 +4,10 @@ import { expect, test, type Page } from "@playwright/test"
 const deck = join(process.cwd(), "scripts/pptx-fixtures/corpus/nasa-cots-electronics.pptx")
 
 async function open(page: Page): Promise<void> {
-  await page.goto("/thin")
+  await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(deck)
   await page.waitForFunction(() => {
-    const id = location.pathname.match(/^\/thin\/([A-Za-z0-9_-]{1,64})$/)?.[1]
+    const id = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
     return id !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === id
   })
 }
