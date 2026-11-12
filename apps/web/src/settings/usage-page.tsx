@@ -64,7 +64,9 @@ export function UsagePage({
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={percent}
-              className="h-2 min-w-0 flex-1 rounded-sm bg-line"
+              aria-busy={week === null ? "true" : undefined}
+              data-loading={week === null ? "true" : undefined}
+              className={cn("h-2 min-w-0 flex-1 rounded-sm bg-line", week === null && "motion-safe:animate-pulse")}
             >
               <div
                 data-usage-fill
@@ -72,8 +74,13 @@ export function UsagePage({
                 style={{ width: `${String(percent)}%` }}
               />
             </div>
-            <span className="text-[length:var(--type-dense)] leading-[17px] text-muted-foreground">
-              {week === null ? null : usageUsedOf(percent)}
+            <span
+              className={cn(
+                "text-[length:var(--type-dense)] leading-[17px] text-muted-foreground",
+                week === null && "motion-safe:animate-pulse",
+              )}
+            >
+              {week === null ? usageCopy.loading : usageUsedOf(percent)}
             </span>
           </div>
         )}

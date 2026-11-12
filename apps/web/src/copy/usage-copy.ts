@@ -3,6 +3,7 @@ export function usageUsedOf(percent: number): string {
 }
 
 export const usageCopy = {
+  loading: "Loading usage…",
   seeAll: "See all",
   seeAllName: "See all usage",
   runsOutTitle: "When usage runs out",

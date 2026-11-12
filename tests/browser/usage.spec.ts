@@ -6,7 +6,7 @@ import { forward, openClean, signInBrowser, test } from "./api-stack"
 
 test.use({ viewport: { width: 1600, height: 1000 }, locale: "en-US", timezoneId: "Asia/Ho_Chi_Minh" })
 
-const resets = usageResetsOn("Monday at 7:00 AM")
+const resets = usageResetsOn("Mon 7:00 AM")
 const spentColor = "rgb(217, 63, 63)"
 
 test("the usage ring shows before any ask, stays current, and See all opens the Usage page", async ({
@@ -130,4 +130,32 @@ test("a long email stays inside the sidebar with its menu arrow, and the full ad
   expect(sidebar).not.toBeNull()
   expect(arrow).not.toBeNull()
   expect(arrow!.x + arrow!.width).toBeLessThanOrEqual(sidebar!.x + sidebar!.width)
+})
+
+test("the Usage page shows a loading label while usage is loading and respects reduced motion", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  let resolveRoute: (() => void) | undefined
+  const gate = new Promise<void>((resolve) => {
+    resolveRoute = resolve
+  })
+  await page.route("**/aira/usage", async (route) => {
+    await gate
+    await route.fulfill({
+      json: {
+        ok: true,
+        account: { email: "person@example.com" },
+        usage: { used: 0.76, allowed: 2, resets: "2026-11-16T00:00:00.000Z" },
+      },
+    })
+  })
+  await page.goto("/settings/usage")
+  const meter = page.getByRole("meter", { name: productCopy.usageTitle })
+  await expect(meter).toBeVisible()
+  await expect(meter).toHaveAttribute("aria-valuenow", "0")
+  const label = page.getByText(usageCopy.loading)
+  await expect(label).toBeVisible()
+  await expect(label).toHaveCSS("animation-name", "none")
+  resolveRoute?.()
+  await expect(page.getByText(usageUsedOf(38), { exact: true })).toBeVisible()
+  await expect(page.getByText(usageCopy.loading)).toHaveCount(0)
 })

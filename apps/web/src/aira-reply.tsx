@@ -19,7 +19,7 @@ import { surfaceShadow } from "@/editor/editor-chrome"
 import { EditorIcon, SparkIcon } from "@/editor/editor-icons"
 import type { AiraExchange, AiraStep, ToolState } from "@/aira-loop"
 import { replyPieces, type ReplyPiece } from "@/aira-steps"
-import { resetsShort, resetsWhen, usagePercent } from "@/aira-usage"
+import { resetsWhen, usagePercent } from "@/aira-usage"
 import type { WeekUsage } from "@/aira-wire"
 import { settingsPaths } from "@/settings/settings-routes"
 
@@ -257,7 +257,7 @@ export function UsagePop({ id, usage }: { id: string; usage: WeekUsage }) {
       </span>
       <span className="flex items-center justify-between gap-2">
         <span className="text-[length:var(--type-caption)] text-muted-foreground">
-          {usageResetsOn(resetsShort(usage.resets))}
+          {usageResetsOn(resetsWhen(usage.resets))}
         </span>
         <a
           href={settingsPaths.usage}

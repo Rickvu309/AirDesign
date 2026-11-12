@@ -10,15 +10,12 @@ export function usagePercent(usage: WeekUsage): number {
 export function resetsWhen(resets: string, format: ClockFormat = {}): string {
   const at = new Date(resets)
   const zone = format.timeZone === undefined ? {} : { timeZone: format.timeZone }
-  const day = at.toLocaleDateString(format.locale, { weekday: "long", ...zone })
-  const time = at.toLocaleTimeString(format.locale, { hour: "numeric", minute: "2-digit", ...zone })
-  return `${day} at ${time.replace(/\s/gu, " ")}`
-}
-
-export function resetsShort(resets: string, format: ClockFormat = {}): string {
-  const at = new Date(resets)
-  const zone = format.timeZone === undefined ? {} : { timeZone: format.timeZone }
-  const day = at.toLocaleDateString(format.locale, { weekday: "short", ...zone })
-  const time = at.toLocaleTimeString(format.locale, { hour: "numeric", minute: "2-digit", ...zone })
-  return `${day} ${time.replace(/\s/gu, " ")}`
+  return new Intl.DateTimeFormat(format.locale, {
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    ...zone,
+  })
+    .format(at)
+    .replace(/\s/gu, " ")
 }
