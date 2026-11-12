@@ -150,7 +150,8 @@ type OpenOnceResult = { ok: true } | Extract<OpenResult, { ok: false }>
 
 const openingByRemote = new WeakMap<Remote, Map<DeckId, Promise<OpenOnceResult>>>()
 
-export function connect(remote: Remote) {
+export function connect(remote: Remote, options: { readonly once?: () => string } = {}) {
+  const nextOnce = (options.once ?? crypto.randomUUID).bind(crypto)
   const openingDecks = openingByRemote.get(remote) ?? new Map<DeckId, Promise<OpenOnceResult>>()
   openingByRemote.set(remote, openingDecks)
 
@@ -184,9 +185,22 @@ export function connect(remote: Remote) {
     const sending = unsent(pending, 0)
     let revision = confirmed.reduce((max, row) => Math.max(max, row.revision + 1), 0)
     let result: CommitResult = { ok: false, refusal: "batch" }
-    for (let start = 0; start < sending.length; start += limits.batch) {
-      const rowsInBatch = sending.slice(start, start + limits.batch)
-      result = await remote.commit({ deck, batch: rowsInBatch.map(wireOf) })
+    for (let start = 0; start < sending.length;) {
+      const first = sending[start]
+      if (first === undefined) break
+      const rowsInBatch: WiredRow[] = []
+      for (const row of sending.slice(start, start + limits.batch)) {
+        if (row.once !== first.once) break
+        rowsInBatch.push(row)
+      }
+      const once = first.once ?? nextOnce()
+      if (first.once === undefined) {
+        await writeRows(
+          rowsInBatch.map((row) => ({ key: rowKey(deck, "pending", row.order), row: { ...row, once } })),
+          [],
+        )
+      }
+      result = await remote.commit({ deck, batch: rowsInBatch.map(wireOf), once })
       if (!result.ok) return result
       if (result.deck !== deck || result.key !== `${deck}:${result.revision}`) {
         return { ok: false, refusal: "payload" }
@@ -197,6 +211,7 @@ export function connect(remote: Remote) {
         stored.map((row) => ({ key: rowKey(deck, "confirmed", row.revision), row })),
         rowsInBatch.map((row) => rowKey(deck, "pending", row.order)),
       )
+      start += rowsInBatch.length
     }
     return result
   }
