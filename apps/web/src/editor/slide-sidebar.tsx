@@ -35,7 +35,17 @@ export type SlideStrip = {
   readonly thumb: (index: number, width: number) => ReactNode
 }
 
-export function SlideSidebar({ run, title, strip }: { run: SidebarRun; title: string; strip?: SlideStrip }) {
+export function SlideSidebar({
+  run,
+  title,
+  strip,
+  onRename,
+}: {
+  run: SidebarRun
+  title: string
+  strip?: SlideStrip
+  onRename?: (name: string) => void
+}) {
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white" data-editor-sidebar>
       {strip === undefined ? (
@@ -45,7 +55,7 @@ export function SlideSidebar({ run, title, strip }: { run: SidebarRun; title: st
         </>
       ) : (
         <>
-          <SidebarHead title={title} gridOff />
+          <SidebarHead title={title} gridOff {...(onRename === undefined ? {} : { onRename })} />
           <DeckStrip strip={strip} />
         </>
       )}

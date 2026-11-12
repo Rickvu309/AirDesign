@@ -10,6 +10,14 @@ export function noMatchTitleOf(query: string): string {
   return `No decks match “${query}”`
 }
 
+export function nameTooLongOf(limit: number): string {
+  return `Use ${new Intl.NumberFormat("en").format(limit)} characters or fewer.`
+}
+
+export function tabTitleOf(name: string): string {
+  return `${name} - AirDesign`
+}
+
 export function disconnectTitleOf(agent: string): string {
   return `Disconnect ${agent}?`
 }
@@ -27,6 +35,9 @@ const sampleReset = "Mon 8:00 AM"
 
 export const productCopy = {
   noDecksTitle: "No decks yet",
+  nameEmpty: "Enter a name for this deck.",
+  renameDeck: "Rename deck",
+  deckName: "Deck name",
   noMatchBody: "Check the spelling or search for another name.",
   clearSearch: "Clear search",
   noDecksBody: "Decks hold your slides, ready to edit or export to PowerPoint.",

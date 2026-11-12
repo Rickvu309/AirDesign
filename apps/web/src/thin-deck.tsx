@@ -35,6 +35,7 @@ import { followDeck } from "@/deck-follow"
 import { closesDeck, deckParts, deviceCopy } from "@/device-copy"
 import { busyElements, liveRepaint, shownValue } from "@/live-repaint"
 import { AiraPanel } from "@/aira-panel"
+import { useDeckTitle } from "@/editor/use-deck-title"
 import { useUndoKeys } from "@/editor/undo-keys"
 import { emptyUndo, recorded, turnBack, undoLabel, type UndoDirection, type UndoEntry } from "@/undo-list"
 import type { UndoName } from "@/copy/undo-copy"
@@ -71,6 +72,7 @@ export function ThinDeck({ id }: { id: string }) {
   const [sections, setSections] = useState<readonly SectionStart[]>([])
   const [current, setCurrent] = useState(0)
   const [title, setTitle] = useState("")
+  const rename = useDeckTitle(id, title, setTitle)
   const [paintedDeck, setPaintedDeck] = useState<string | undefined>(undefined)
   const [pending, setPending] = useState(false)
   const [offline, setOffline] = useState(() => navigator.onLine === false)
@@ -486,6 +488,7 @@ export function ThinDeck({ id }: { id: string }) {
               onRedo: () => turn("redo"),
             },
             onText: addText,
+            onRename: rename,
             size: canvases.current(current),
             slides: {
               count: slideCount,

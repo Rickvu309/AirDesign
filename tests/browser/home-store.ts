@@ -22,6 +22,13 @@ export async function store(page: Page, decks: Deck[] = [first, second], trash: 
       await route.fulfill({ json: { ok: true, deck: body.deck, revision: 0, register: openRegister("", "") } })
       return
     }
+    if (path === "rename") {
+      const deck = state.decks.find((deck) => deck.deck === body.deck)
+      if (deck) deck.name = String(body.name)
+      else state.decks.push({ ...first, deck: String(body.deck), name: String(body.name) })
+      await route.fulfill({ json: { ok: true, deck: body.deck, name: body.name } })
+      return
+    }
     if (path === "trash") {
       const deck = state.decks.find((deck) => deck.deck === body.deck)
       state.decks = state.decks.filter((deck) => deck.deck !== body.deck)

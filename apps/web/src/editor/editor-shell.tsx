@@ -28,6 +28,7 @@ export type EditorDeck = {
   readonly onExport: () => void
   readonly undo: UndoButtonsState
   readonly onText?: () => void
+  readonly onRename?: (name: string) => void
 }
 
 export type EditorShellProps = {
@@ -80,7 +81,12 @@ export function EditorShell({
   return (
     <div className="relative flex h-full min-h-0">
       {rail === "slides" ? (
-        <SlideSidebar run={run} title={title} {...(deck === undefined ? {} : { strip: deck.slides })} />
+        <SlideSidebar
+          run={run}
+          title={title}
+          {...(deck === undefined ? {} : { strip: deck.slides })}
+          {...(deck?.onRename === undefined ? {} : { onRename: deck.onRename })}
+        />
       ) : null}
       {rail === "images" ? (
         <>
