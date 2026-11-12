@@ -1,5 +1,5 @@
 import { readAgentEdit, type WireChange, type WireRunElement } from "@airdesign/catalog"
-import type { ElementId, Register } from "@airdesign/document"
+import { openingElement, type ElementId, type Register } from "@airdesign/document"
 import { call, liveRuns, type Deck } from "@airdesign/engine"
 import type { AgentCaller, ToolResult } from "./call-tool.js"
 import { editRefusal, heldElements, runRefusal } from "./edit-answer.js"
@@ -22,7 +22,7 @@ export function elementFloors(register: Register, changes: readonly WireChange[]
       floors.set(change.node, kept.floor)
       continue
     }
-    const indexed = register.index?.elements.find((element) => element.node === change.node)
+    const indexed = openingElement(register, change.node)
     if (indexed !== undefined) {
       floors.set(change.node, indexed.value ?? "")
       continue

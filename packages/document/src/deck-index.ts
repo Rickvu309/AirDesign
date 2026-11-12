@@ -50,7 +50,7 @@ function readSlide(raw: unknown, position: number): IndexSlide | null {
   return { id: row.id, position }
 }
 
-function readElement(raw: unknown, slides: ReadonlySet<string>): IndexElement | null {
+export function readElement(raw: unknown, slides: ReadonlySet<string>): IndexElement | null {
   const row = record(raw)
   if (row === null || !onlyKeys(row, ["node", "kind", "value", "box", "grouped"])) return null
   const node = readElementId(row.node)

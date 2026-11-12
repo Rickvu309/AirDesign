@@ -4,6 +4,7 @@ import {
   storedElements,
   storedValue,
   limits,
+  openingElement,
   openRegister,
   valueBytes,
   type Command,
@@ -68,11 +69,7 @@ function openedRegister(
 ): { readonly ok: true; readonly register: Register } | { readonly ok: false; readonly refusal: CallRefusal } {
   if (register.nodes.includes(edit.node)) return { ok: true, register }
   const index = register.index
-  if (
-    index !== undefined &&
-    index.elements.length === index.total &&
-    !index.elements.some((element) => element.node === edit.node)
-  )
+  if (index !== undefined && index.elements.length === index.total && openingElement(register, edit.node) === undefined)
     return { ok: false, refusal: "dead" }
   const opened = decide(register, {
     command: "add",

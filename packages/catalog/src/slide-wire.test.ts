@@ -1,6 +1,6 @@
 import { decide, openRegister, orderKeyBetween, presentSlides, slideId } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { deckRoutes, readAgentEdit, readCommit } from "./index.js"
+import { deckRoutes, readAgentEdit, readCommit, slideEditCommand } from "./index.js"
 
 const file = [slideId("256"), slideId("257")] as const
 const key = orderKeyBetween(null, null)
@@ -17,6 +17,19 @@ it("reads a slide edit on a person's commit and refuses it as an agent change", 
   expect(readCommit({ deck: "deck", batch: [{ ...add, note: "no" }] })).toEqual(field)
   expect(readCommit({ deck: "deck", batch: [{ slide: "remove", id: "nope", file: ["256"] }] })).toEqual(field)
   expect(readAgentEdit({ deck: "deck", base: 0, changes: [add] })).toEqual(field)
+})
+
+it("carries the opening elements of a new slide and refuses a row that names another slide", () => {
+  const row = { node: "258.2", kind: "shape", value: "Title", box: { x: 1, y: 2, cx: 3, cy: 4 }, grouped: false }
+  const clone = { slide: "clone", id: "258", source: "256", key, floor: [row], file: ["256", "257"] }
+  const read = readCommit({ deck: "deck", batch: [clone] })
+  if (!read.ok) throw new Error(read.refusal)
+  const edit = read.batch[0]
+  if (edit === undefined || !("slide" in edit)) throw new Error("slide")
+  expect(slideEditCommand(edit)).toEqual({ slide: "clone", id: "258", source: "256", key, floor: [row] })
+  expect(readCommit({ deck: "deck", batch: [{ ...clone, floor: [{ ...row, node: "256.2" }] }] })).toEqual(field)
+  const add = { slide: "add", id: "258", after: "256", key, layout: "256", floor: [], file: ["256", "257"] }
+  expect(readCommit({ deck: "deck", batch: [add] })).toMatchObject({ ok: true, batch: [{ floor: [] }] })
 })
 
 it("opens a register that names its slide file and order, and refuses a broken one", () => {
