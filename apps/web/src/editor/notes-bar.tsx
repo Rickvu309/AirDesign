@@ -1,14 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 
-export function NotesBar({
-  text,
-  onEdit,
-  locked,
-}: {
-  readonly text: string
-  readonly onEdit?: (text: string) => void
-  readonly locked?: string
-}) {
+export function NotesBar({ text, onEdit }: { readonly text: string; readonly onEdit?: (text: string) => void }) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState(text)
   const focused = useRef(false)
@@ -48,7 +40,6 @@ export function NotesBar({
               onEdit?.(event.target.value)
             }}
           />
-          {locked === undefined ? null : <p className="text-[length:var(--type-caption)] text-quiet">{locked}</p>}
         </div>
       ) : (
         <button
@@ -58,9 +49,7 @@ export function NotesBar({
           aria-expanded={false}
           onClick={() => setOpen(true)}
         >
-          <span className="truncate text-[length:var(--type-dense)] text-quiet">
-            {draft || locked || "Add speaker notes"}
-          </span>
+          <span className="truncate text-[length:var(--type-dense)] text-quiet">{draft || "Add speaker notes"}</span>
         </button>
       )}
     </div>

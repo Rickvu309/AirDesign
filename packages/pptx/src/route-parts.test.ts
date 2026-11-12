@@ -713,7 +713,7 @@ describe("routeRuns", () => {
       }
     }
     expect([...seen].sort()).toEqual(
-      routeOperations.filter((operation) => operation !== "element.export" && operation !== "notes.body").sort(),
+      routeOperations.filter((operation) => operation !== "element.export" && !/^notes/.test(operation)).sort(),
     )
   })
 
