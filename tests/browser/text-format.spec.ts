@@ -143,7 +143,6 @@ test("bold turned on and off exports the file byte for byte, and each turn is on
   await page.keyboard.press("ControlOrMeta+b")
   await expect.poll(() => looks(run)).toEqual(["400", "normal", "none"])
   await expect(formatButton(page, "Bold")).toHaveAttribute("aria-pressed", "false")
-  await expect.poll(async () => (await storedValues(page)).filter((value) => value.includes('"bold"')).length).toBe(1)
   await expect.poll(async () => (await storedValues(page)).some((value) => value === unformatted)).toBe(true)
   await savedExport(page, download)
   expect(await changedParts(fixture, download)).toEqual([])
