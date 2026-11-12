@@ -163,7 +163,7 @@ for (const follows of [
   seeds: proofSeeds,
   ...inputs,
   cases,
-  browser: browserExportName,
+  browser: textExportName,
 })`,
   "const waiting = [...decision.renders]",
   'committedArgs("HEAD")',
@@ -175,11 +175,10 @@ for (const follows of [
   "decision.deckPath(name)",
   "corpusResult({ decision, pptx, decks: writtenDecks, lists, rendered, freshFails })",
   "checkFails({ failed, routeFailures, duration: checkSeconds, corpus })",
-  "const browserSpec = freshExports({",
+  "const browserSpec = freshBrowserExport({",
   "validatorFiles({",
-  "for (const name of judgedExportNames(spec)) {",
-  "for (const line of paragraphExportLines({ pptx, parts, lists, ids, orders })) {",
-  "for (const line of boxExportLines({ pptx, parts, lists, ids, orders })) {",
+  "for (const name of exportNames) parts.set(",
+  "for (const line of entry.lines({ pptx, parts, lists, ids, orders })) {",
 ]) {
   if (!checkSource.includes(follows)) throw new Error(`pptx-check.mjs does not follow the decision: ${follows}`)
 }
