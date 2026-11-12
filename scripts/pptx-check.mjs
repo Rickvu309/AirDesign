@@ -177,6 +177,14 @@ const freshFails = freshMissFails({
   changedSince: (base) => gitAnswer(changedSinceArgs(base))?.split("\n"),
 })
 const cleanDecks = ["clean.pptx", "nasa-1d-cnn.pptx", "doe-heat-pumps.pptx", "census-updating-spm.pptx"]
+const validations = []
+const validate = (files) => {
+  const done = phases.time("validate", () => validatorLists(files))
+  done.catch(() => {})
+  validations.push(done)
+}
+const fixtureNames = [...new Set([...names, ...cleanDecks])].filter((name) => !exportNames.includes(name))
+validate(validatorFiles({ names: fixtureNames, fixturePath, others: [] }))
 const endPrep = phases.begin("prep")
 const parts = new Map()
 for (const name of new Set([...names, ...cleanDecks])) {
@@ -196,47 +204,30 @@ for (const name of decision.routeDecks) {
     name.slice(0, -".pptx".length),
   )
   writtenDecks.push({ name, deckParts, written })
+  validate(
+    validatorFiles({
+      names: fixtureNames.includes(name) ? [] : [name],
+      fixturePath,
+      others: written.flatMap((item) => (item.file === null ? [] : [item.file])),
+    }),
+  )
 }
 const cloneEditsFile = await writeCloneEdits({ pptx, root, parts, directory: routeDir })
-const routeFiles = writtenDecks.flatMap((deck) =>
-  deck.written.flatMap((item) => (item.file === null ? [] : [item.file])),
-)
+validate([cloneEditsFile])
 const decks = cleanDecks.map((name) => ({ name, parts: parts.get(name) }))
 const samples = Number(process.env.JUDGE_SAMPLES ?? 3)
 const plantStarted = Date.now()
 const runs = proofSeeds.map((run) => ({ ...run, planted: plantSamples({ pptx, decks, seed: run.seed, samples }) }))
-endPrep()
-const earlyNames = new Set(parts.keys())
 const proofFolder = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-judge-proof-"))
 const sampleFile = (seed, index) => `judge-sample-${seed}-${index}.pptx`
-const judgedFiles = async () => {
-  const endValidate = phases.begin("validate")
-  try {
-    for (const run of runs) {
-      for (const [index, sample] of run.planted.entries()) {
-        fs.writeFileSync(path.join(proofFolder, sampleFile(run.seed, index)), storedZip(sample.parts))
-      }
-    }
-    const planting = (Date.now() - plantStarted) / 1000
-    const found = await validatorLists(
-      validatorFiles({
-        names: earlyNames,
-        fixturePath,
-        others: [
-          ...routeFiles,
-          cloneEditsFile,
-          ...runs.flatMap((run) => run.planted.map((_, index) => path.join(proofFolder, sampleFile(run.seed, index)))),
-        ],
-      }),
-    )
-    return { found, planting }
-  } finally {
-    endValidate()
-    fs.rmSync(proofFolder, { recursive: true, force: true })
+for (const run of runs) {
+  for (const [index, sample] of run.planted.entries()) {
+    fs.writeFileSync(path.join(proofFolder, sampleFile(run.seed, index)), storedZip(sample.parts))
   }
 }
-const earlyLists = judgedFiles()
-earlyLists.catch(() => {})
+const planting = (Date.now() - plantStarted) / 1000
+validate(runs.flatMap((run) => run.planted.map((_, index) => path.join(proofFolder, sampleFile(run.seed, index)))))
+endPrep()
 const spec = await browserSpec
 console.log(`browser export spec ${spec.seconds.toFixed(1)} seconds`)
 for (const line of playwrightTestLines(specOutput)) console.log(line)
@@ -246,17 +237,12 @@ if (spec.ok) {
     cases.push(...(entry.cases ?? []))
     waiting.push(...(entry.renders ?? []))
   }
+  validate(validatorFiles({ names: exportNames, fixturePath, others: [] }))
 }
-const lateLists = validatorLists(
-  validatorFiles({
-    names: [...parts.keys()].filter((name) => !earlyNames.has(name)),
-    fixturePath,
-    others: [],
-  }),
+const answered = await Promise.all([...validations, earlyRenders, startRenders()]).finally(() =>
+  fs.rmSync(proofFolder, { recursive: true, force: true }),
 )
-const [early, late] = await Promise.all([earlyLists, lateLists, earlyRenders, startRenders()])
-const { found: earlyFound, planting } = early
-const lists = new Map([...earlyFound, ...late])
+const lists = new Map(answered.slice(0, validations.length).flatMap((found) => [...found]))
 console.log((await renderCacheReady).line())
 console.log(validatorLine(validatorTally))
 const endJudging = phases.begin("judging")
