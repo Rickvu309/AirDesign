@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
-import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
+import { ask, signInByCode, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
 
 const accept = "application/json, text/event-stream"
@@ -35,15 +35,7 @@ afterAll(async () => {
   await close()
 })
 
-async function sign(email: string): Promise<string> {
-  const index = mails.length
-  await ask(base, "POST", "/sign-in/email", { email })
-  const code = mails[index]?.text.split("\n")[1]
-  const signed = await ask(base, "POST", "/sign-in/code", { email, code })
-  const cookie = cookieFrom(signed.headers)
-  if (cookie === undefined) throw new Error("cookie")
-  return cookie
-}
+const sign = (email: string): Promise<string> => signInByCode(base, mails, email)
 
 async function mcp(cookie: string, name: string, args: unknown): Promise<{ status: number; text: string }> {
   const response = await fetch(`${base}/mcp`, {

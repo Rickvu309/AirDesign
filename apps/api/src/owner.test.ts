@@ -4,7 +4,7 @@ import { readDeckId } from "@airdesign/catalog"
 import { editNext } from "@airdesign/mcp"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, askForm, cookieFrom, verifierPair, postgresInfo, serve } from "./harness.js"
+import { ask, askForm, signInByCode, verifierPair, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 import { same, specGraph, type SpecState, type Value } from "./spec-graph.js"
 
@@ -77,15 +77,7 @@ describe("only a deck's owner acts on it", () => {
     await close()
   })
 
-  async function sign(email: string): Promise<string> {
-    const index = mails.length
-    await ask(base, "POST", "/sign-in/email", { email })
-    const code = mails[index]?.text.split("\n")[1]
-    const signed = await ask(base, "POST", "/sign-in/code", { email, code })
-    const cookie = cookieFrom(signed.headers)
-    if (cookie === undefined) throw new Error("cookie")
-    return cookie
-  }
+  const sign = (email: string): Promise<string> => signInByCode(base, mails, email)
 
   async function register(): Promise<string> {
     const reply = await ask(base, "POST", "/oauth/register", { redirect_uris: [callback] })

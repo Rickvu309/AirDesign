@@ -8,7 +8,7 @@ import type { Script } from "../../apps/api/src/aira-replay.ts"
 
 export const cleanFixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 
-type Mail = { readonly to: string; readonly text: string }
+type Mail = { readonly to: string; readonly subject: string; readonly text: string; readonly html: string }
 type Landed = { readonly value: string; readonly visible: boolean }
 export type SavedRegister = { readonly elements: Record<string, { readonly landed: readonly Landed[] }> }
 export type Answer = {
@@ -74,6 +74,7 @@ export const test = base.extend<object, { stack: Stack }>({
       const { DeckListen } = await import("../../apps/api/src/listen.js")
       const { createApi } = await import("../../apps/api/src/server.js")
       const { Replay } = await import("../../apps/api/src/aira-replay.js")
+      const { readSignInMail } = await import("../../apps/api/src/sign-in-mail.js")
       const { mcpRoutes, signInRoutes } = await import("../../packages/catalog/src/index.ts")
       const { LocalOriginalStore } = await import("../../apps/api/src/local-original-store.js")
       const originals = new LocalOriginalStore(Date.now, "https://original.test")
@@ -158,7 +159,7 @@ export const test = base.extend<object, { stack: Stack }>({
         async signIn() {
           const email = `person${randomBytes(4).toString("hex")}@example.com`
           expect((await post(signInRoutes.email.path, { email })).status).toBe(202)
-          const code = mails.find((mail) => mail.to === email)?.text.split("\n")[1]
+          const { code } = readSignInMail(mails.find((mail) => mail.to === email)?.text ?? "")
           const signed = await post(signInRoutes.code.path, { email, code })
           expect(signed.status).toBe(200)
           if (signed.cookie === undefined) throw new Error("cookie")

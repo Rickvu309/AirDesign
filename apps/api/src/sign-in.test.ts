@@ -5,6 +5,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
 import { ask, cookieFrom, postgresInfo, serve, testResource } from "./harness.js"
 import { DeckListen, createApi, openPool, sendWithResend, type Mail } from "./index.js"
+import { signInMinutes } from "./account.js"
+import { readSignInMail, signInMail } from "./sign-in-mail.js"
 
 const publicOrigin = "https://app.example"
 const siteOrigin = "https://site.example"
@@ -28,10 +30,7 @@ function rawSession(header: string): string {
 }
 
 function mailParts(text: string | undefined): { readonly link: string; readonly code: string; readonly token: string } {
-  const parts = text?.split("\n") ?? []
-  const link = parts[0]
-  const code = parts[1]
-  if (link === undefined || code === undefined) throw new Error("mail")
+  const { link, code } = readSignInMail(text ?? "")
   const token = new URL(link).searchParams.get("token")
   if (token === null || token.length === 0) throw new Error("token")
   return { link, code, token }
@@ -209,9 +208,12 @@ describe("sign-in", () => {
     expect(response.status).toBe(202)
     expect(response.json).toEqual({ ok: true })
     expect(mails).toHaveLength(1)
-    const text = mails[0]?.text.split("\n") ?? []
-    expect(text[0]).toContain("/sign-in/link?token=")
-    expect(text[1]).toMatch(/^\d{6}$/)
+    const mailed = readSignInMail(mails[0]?.text ?? "")
+    expect(mailed.link).toContain("/sign-in/link?token=")
+    expect(mailed.code).toMatch(/^\d{6}$/)
+    expect(mails[0]?.subject).toBe("Sign in to AirDesign")
+    expect(mails[0]?.html).toContain(mailed.code)
+    expect(mails[0]?.text).toContain(`expire in ${String(signInMinutes)} minutes.`)
     expect(mails[0]?.to).toBe(email)
     expect(calls).toEqual([])
     const counted = await session.query<{ count: string }>(
@@ -240,7 +242,7 @@ describe("sign-in", () => {
   it("sets the session cookie for a matching code", async () => {
     const email = address()
     await ask(base, "POST", "/sign-in/email", { email })
-    const code = mails[0]?.text.split("\n")[1]
+    const { code } = readSignInMail(mails[0]?.text ?? "")
     const response = await ask(base, "POST", "/sign-in/code", { email, code })
     expect(response.status).toBe(200)
     expect(response.json).toEqual({ ok: true })
@@ -281,8 +283,7 @@ describe("sign-in", () => {
   it("sets the cookie from the link and sends a bad token back to sign-in", async () => {
     const email = address()
     await ask(base, "POST", "/sign-in/email", { email })
-    const link = mails[0]?.text.split("\n")[0]
-    if (link === undefined) throw new Error("link")
+    const { link } = readSignInMail(mails[0]?.text ?? "")
     const url = new URL(link)
     const response = await ask(base, "GET", `${url.pathname}${url.search}`)
     expect(response.status).toBe(302)
@@ -296,22 +297,6 @@ describe("sign-in", () => {
     expect(missing.status).toBe(302)
     expect(missing.headers.location).toBe(expired)
     expect(missing.headers["set-cookie"]).toBeUndefined()
-  })
-
-  it("posts the link and the code to resend from the environment", async () => {
-    const seen: { url: string; body: string }[] = []
-    globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
-      seen.push({ url: String(input), body: String(init?.body ?? "") })
-      return new Response("{}", { status: 200 })
-    }) as typeof fetch
-    const text = "https://localhost/sign-in/link?token=abc\n123456"
-    await sendWithResend({ to: "a@example.com", text }, { key: "test-key", from: "sign-in@localhost" })
-    const body = seen[0]?.body
-    if (body === undefined) throw new Error("body")
-    const posted = JSON.parse(body) as { readonly text: string; readonly subject: string }
-    expect(seen[0]?.url).toBe("https://api.resend.com/emails")
-    expect(posted.text).toBe(text)
-    expect(posted.subject).toBe("Sign in")
   })
 
   it("refuses the right code after 10 wrong ones", async () => {
@@ -590,29 +575,36 @@ describe("sign-in", () => {
     expect(response.status).toBe(202)
     expect(response.json).toEqual({ ok: true })
     expect(mails).toHaveLength(1)
-    const text = mails[0]?.text ?? ""
-    expect(text.startsWith("https://app.example/sign-in/link?token=")).toBe(true)
-    expect(text.includes("evil.example")).toBe(false)
+    const { link } = readSignInMail(mails[0]?.text ?? "")
+    expect(link.startsWith("https://app.example/sign-in/link?token=")).toBe(true)
+    expect(mails[0]?.text.includes("evil.example")).toBe(false)
+    expect(mails[0]?.html.includes("evil.example")).toBe(false)
     expect(JSON.stringify(mails[0]).includes("evil.example")).toBe(false)
   })
 
-  it("keeps the link and the code out of the subject", async () => {
-    const seen: { body: string }[] = []
-    globalThis.fetch = (async (_input: string | URL, init?: RequestInit) => {
-      seen.push({ body: String(init?.body ?? "") })
+  it("posts the subject, the text and the HTML to Resend, and keeps the link and the code out of the subject", async () => {
+    const seen: { url: string; body: string }[] = []
+    globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
+      seen.push({ url: String(input), body: String(init?.body ?? "") })
       return new Response("{}", { status: 200 })
     }) as typeof fetch
     const link = "https://app.example/sign-in/link?token=abc"
     const code = "123456"
-    const text = `${link}\n${code}`
-    await sendWithResend({ to: "a@example.com", text }, { key: "test-key", from: "sign-in@localhost" })
+    const mail = signInMail({ link, code, minutes: signInMinutes })
+    await sendWithResend({ to: "a@example.com", ...mail }, { key: "test-key", from: "sign-in@localhost" })
     const body = seen[0]?.body
     if (body === undefined) throw new Error("body")
-    const posted = JSON.parse(body) as { readonly text: string; readonly subject: string }
-    expect(posted.text).toBe(text)
-    expect(posted.subject).toBe("Sign in")
-    expect(posted.subject.includes(link)).toBe(false)
-    expect(posted.subject.includes(code)).toBe(false)
+    const posted = JSON.parse(body) as Record<string, unknown>
+    expect(seen[0]?.url).toBe("https://api.resend.com/emails")
+    expect(posted).toEqual({
+      from: "sign-in@localhost",
+      to: ["a@example.com"],
+      subject: mail.subject,
+      text: mail.text,
+      html: mail.html,
+    })
+    expect(mail.subject.includes(link)).toBe(false)
+    expect(mail.subject.includes(code)).toBe(false)
   })
 
   it("sets the configured domain on the session cookie", async () => {

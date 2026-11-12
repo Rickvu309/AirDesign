@@ -2,17 +2,15 @@ import { signInRoutes } from "@airdesign/catalog"
 
 export type Mail = {
   readonly to: string
+  readonly subject: string
   readonly text: string
+  readonly html: string
 }
 
 export type Sender = (mail: Mail) => Promise<void>
 
 export function signLink(publicOrigin: string, token: string): string {
   return `${publicOrigin}${signInRoutes.link.path}?token=${encodeURIComponent(token)}`
-}
-
-export function mailText(publicOrigin: string, token: string, code: string): string {
-  return `${signLink(publicOrigin, token)}\n${code}`
 }
 
 export type ResendAccount = {
@@ -30,8 +28,9 @@ export async function sendWithResend(mail: Mail, { key, from }: ResendAccount): 
     body: JSON.stringify({
       from,
       to: [mail.to],
-      subject: "Sign in",
+      subject: mail.subject,
       text: mail.text,
+      html: mail.html,
     }),
   })
   if (!response.ok) {

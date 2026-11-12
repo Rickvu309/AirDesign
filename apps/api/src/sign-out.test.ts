@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { deckRoutes, oauthRoutes, signInRoutes, signOutRoutes } from "@airdesign/catalog"
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
+import { readSignInMail } from "./sign-in-mail.js"
 
 function address(mark: string): string {
   return `${mark}${randomBytes(4).toString("hex")}@example.com`
@@ -29,7 +30,7 @@ describe("sign-out", () => {
   async function sign(account: string): Promise<{ readonly cookie: string; readonly header: string }> {
     const index = mails.length
     await ask(base, "POST", signInRoutes.email.path, { email: account })
-    const code = mails[index]?.text.split("\n")[1]
+    const { code } = readSignInMail(mails[index]?.text ?? "")
     const signed = await ask(base, "POST", signInRoutes.code.path, { email: account, code })
     const cookie = cookieFrom(signed.headers)
     const header = setCookie(signed.headers)
@@ -142,7 +143,7 @@ describe("sign-out", () => {
     try {
       const email = address("domain")
       await ask(served.base, "POST", signInRoutes.email.path, { email })
-      const code = sent[0]?.text.split("\n")[1]
+      const { code } = readSignInMail(sent[0]?.text ?? "")
       const signed = await ask(served.base, "POST", signInRoutes.code.path, { email, code })
       const cookie = cookieFrom(signed.headers)
       const header = setCookie(signed.headers)

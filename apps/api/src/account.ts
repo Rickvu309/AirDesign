@@ -1,7 +1,8 @@
 import { createHash, randomBytes, randomInt } from "node:crypto"
 import { Pool } from "pg"
 
-import { mailText, type Sender } from "./mail.js"
+import { signLink, type Sender } from "./mail.js"
+import { signInMail } from "./sign-in-mail.js"
 import type { Sql } from "./pool.js"
 
 const reserveSql = `
@@ -57,7 +58,7 @@ with removed as (
   where email = $1
     and code = $2
     and misses < 10
-    and issued > now() - interval '15 minutes'
+    and issued > now() - make_interval(mins => $4)
   returning email
 ), issued as (
   insert into session.access (token, email, issued)
@@ -70,7 +71,7 @@ with removed as (
     and (
       code <> $2
       or misses >= 10
-      or issued <= now() - interval '15 minutes'
+      or issued <= now() - make_interval(mins => $4)
     )
   returning email
 )
@@ -80,7 +81,7 @@ select (select token from issued) as token, (select count(*)::int from missed) a
 const acceptLinkSql = `
 with removed as (
   delete from session.code
-  where token = $1 and issued > now() - interval '15 minutes'
+  where token = $1 and issued > now() - make_interval(mins => $3)
   returning email
 ), issued as (
   insert into session.access (token, email, issued)
@@ -89,6 +90,8 @@ with removed as (
 )
 select token from issued
 `
+
+export const signInMinutes = 15
 
 function newToken(): string {
   return randomBytes(32).toString("base64url")
@@ -140,7 +143,7 @@ export async function issueMail(db: Sql, email: string, publicOrigin: string, se
   })
   if (reserved === undefined) return
   try {
-    await send({ to: email, text: mailText(publicOrigin, token, code) })
+    await send({ to: email, ...signInMail({ link: signLink(publicOrigin, token), code, minutes: signInMinutes }) })
   } catch (error) {
     await dropSend(db, email, reserved)
     throw error
@@ -152,14 +155,19 @@ export async function issueMail(db: Sql, email: string, publicOrigin: string, se
 
 export async function acceptCode(db: Sql, email: string, code: string): Promise<string | undefined> {
   const token = newToken()
-  const result = await db.query<{ token: string | null }>(acceptCodeSql, [email, digest(code), digest(token)])
+  const result = await db.query<{ token: string | null }>(acceptCodeSql, [
+    email,
+    digest(code),
+    digest(token),
+    signInMinutes,
+  ])
   if (typeof result.rows[0]?.token !== "string") return undefined
   return token
 }
 
 export async function acceptLink(db: Sql, linkToken: string): Promise<string | undefined> {
   const token = newToken()
-  const result = await db.query<{ token: string }>(acceptLinkSql, [digest(linkToken), digest(token)])
+  const result = await db.query<{ token: string }>(acceptLinkSql, [digest(linkToken), digest(token), signInMinutes])
   if (result.rows[0] === undefined) return undefined
   return token
 }

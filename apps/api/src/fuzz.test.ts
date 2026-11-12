@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { fuzzGood, fuzzAira } from "./aira-fuzz.js"
 import { attacks, hostileEscapes, hostileValues, indexFuzzGood, leaks, type Attack } from "./fuzz-attack.js"
 import { badTargets } from "./fuzz-target.js"
-import { ask, askForm, cookieFrom, postgresInfo, serve, testResource } from "./harness.js"
+import { ask, askForm, signInByCode, postgresInfo, serve, testResource } from "./harness.js"
 import type { CallerLog } from "@airdesign/mcp"
 import { DeckListen, openPool, type Mail } from "./index.js"
 import { serveMcp } from "./mcp.js"
@@ -243,12 +243,7 @@ describe("hostile input over every route", () => {
       await sessionPool.end()
       await deckPool.end()
     }
-    await ask(base, "POST", "/sign-in/email", { email: "fuzz@example.com" })
-    const code = mails[0]?.text.split("\n")[1]
-    const signed = await ask(base, "POST", "/sign-in/code", { email: "fuzz@example.com", code })
-    const signedCookie = cookieFrom(signed.headers)
-    if (signedCookie === undefined) throw new Error("cookie")
-    cookie = signedCookie
+    cookie = await signInByCode(base, mails, "fuzz@example.com")
     await ask(base, "POST", "/decks/open", { deck }, cookie)
     const registered = await ask(base, "POST", "/oauth/register", { redirect_uris: ["https://client.example/cb"] })
     const clientId = (registered.json as { client_id: string }).client_id

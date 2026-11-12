@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
+import { ask, signInByCode, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
 
 type Row = { deck: string; name: string; edited: string; created: string; trashed?: string }
@@ -28,15 +28,7 @@ describe("deck list and trash", () => {
   let admin = new Client()
   let close = async () => {}
 
-  async function sign(account: string): Promise<string> {
-    const index = mails.length
-    await ask(base, "POST", "/sign-in/email", { email: account })
-    const code = mails[index]?.text.split("\n")[1]
-    const signed = await ask(base, "POST", "/sign-in/code", { email: account, code })
-    const sessionCookie = cookieFrom(signed.headers)
-    if (sessionCookie === undefined) throw new Error("cookie")
-    return sessionCookie
-  }
+  const sign = (email: string): Promise<string> => signInByCode(base, mails, email)
 
   beforeAll(async () => {
     const info = await postgresInfo()

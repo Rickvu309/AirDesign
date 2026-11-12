@@ -1,11 +1,11 @@
 import { randomBytes } from "node:crypto"
 
-import { airaRoutes, countryHeader, signInRoutes } from "@airdesign/catalog"
+import { airaRoutes, countryHeader } from "@airdesign/catalog"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { Replay } from "./aira-replay.js"
-import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
+import { ask, postgresInfo, serve, signInByCode } from "./harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
@@ -60,10 +60,7 @@ afterAll(async () => {
 
 async function signIn(): Promise<{ email: string; cookie: string }> {
   const email = `usage${randomBytes(6).toString("hex")}@example.com`
-  await ask(main, "POST", signInRoutes.email.path, { email })
-  const code = mails.find((mail) => mail.to === email)?.text.split("\n")[1]
-  const cookie = cookieFrom((await ask(main, "POST", signInRoutes.code.path, { email, code })).headers)
-  if (cookie === undefined) throw new Error("cookie")
+  const cookie = await signInByCode(main, mails, email)
   return { email, cookie }
 }
 

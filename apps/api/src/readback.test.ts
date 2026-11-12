@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest"
 
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
+import { readSignInMail } from "./sign-in-mail.js"
 
 function address(): string {
   return `person${randomBytes(4).toString("hex")}@example.com`
@@ -38,7 +39,7 @@ describe("committed text", () => {
     try {
       const email = address()
       await ask(writing.base, "POST", "/sign-in/email", { email })
-      const code = mails[0]?.text.split("\n")[1]
+      const { code } = readSignInMail(mails[0]?.text ?? "")
       const signed = await ask(writing.base, "POST", "/sign-in/code", { email, code })
       const cookie = cookieFrom(signed.headers)
       if (cookie === undefined) throw new Error("cookie")

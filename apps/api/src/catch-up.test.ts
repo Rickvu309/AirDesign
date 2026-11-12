@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
+import { readSignInMail } from "./sign-in-mail.js"
 
 describe("lost acknowledgment", () => {
   const mails: Mail[] = []
@@ -31,7 +32,7 @@ describe("lost acknowledgment", () => {
     base = served.base
     const email = `person${randomBytes(4).toString("hex")}@example.com`
     await ask(base, "POST", "/sign-in/email", { email })
-    const code = mails[0]?.text.split("\n")[1]
+    const { code } = readSignInMail(mails[0]?.text ?? "")
     const signed = await ask(base, "POST", "/sign-in/code", { email, code })
     const sessionCookie = cookieFrom(signed.headers)
     if (sessionCookie === undefined) throw new Error("cookie")

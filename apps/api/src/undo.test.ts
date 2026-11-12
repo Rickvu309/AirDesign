@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
+import { readSignInMail } from "./sign-in-mail.js"
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 const title = "258.7"
@@ -50,7 +51,7 @@ describe("POST /decks/undo takes back an agent's run for the person", () => {
     const email = `undo${randomBytes(6).toString("hex")}@example.com`
     const index = mails.length
     await ask(base, "POST", "/sign-in/email", { email })
-    const code = mails[index]?.text.split("\n")[1]
+    const { code } = readSignInMail(mails[index]?.text ?? "")
     const cookie = cookieFrom((await ask(base, "POST", "/sign-in/code", { email, code })).headers)
     if (cookie === undefined) throw new Error("cookie")
     return cookie

@@ -9,6 +9,7 @@ import {
 import { afterAll, beforeAll, expect, it } from "vitest"
 import { ask, askForm, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
+import { readSignInMail } from "./sign-in-mail.js"
 
 const resource = "https://resource.example/mcp"
 const publicOrigin = "https://app.example"
@@ -91,7 +92,7 @@ it("discovers authorization from only the MCP address and calls a tool with its 
   await ask(base, "POST", "/sign-in/email", { email: "discovery@example.com" })
   const signed = await ask(base, "POST", "/sign-in/code", {
     email: "discovery@example.com",
-    code: mails[0]?.text.split("\n")[1],
+    code: readSignInMail(mails[0]?.text ?? "").code,
   })
   const cookie = cookieFrom(signed.headers)
   const verifier = "a".repeat(43)

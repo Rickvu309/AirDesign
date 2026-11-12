@@ -4,6 +4,7 @@ import { airaRoutes, countryHeader, deckRoutes, mcpRoutes, oauthRoutes, signInRo
 import { ask, askForm, cookieFrom, verifierPair } from "./harness.js"
 import type { Mail, OriginalUpload, Sql } from "./index.js"
 import type { LocalOriginalStore } from "./local-original-store.js"
+import { readSignInMail } from "./sign-in-mail.js"
 
 export type Served = { readonly base: string; readonly mails: readonly Mail[]; readonly store: LocalOriginalStore }
 
@@ -24,7 +25,7 @@ const sha256 = createHash("sha256").update(bytes).digest("hex")
 export async function signIn(served: Served, email: string): Promise<string> {
   const index = served.mails.length
   await ask(served.base, "POST", signInRoutes.email.path, { email })
-  const code = served.mails[index]?.text.split("\n")[1]
+  const { code } = readSignInMail(served.mails[index]?.text ?? "")
   const signed = await ask(served.base, "POST", signInRoutes.code.path, { email, code })
   const cookie = cookieFrom(signed.headers)
   if (cookie === undefined) throw new Error("cookie")

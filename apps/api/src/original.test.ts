@@ -3,7 +3,7 @@ import { Client } from "pg"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import { limits } from "@airdesign/document"
 
-import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
+import { ask, signInByCode, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type OriginalUpload } from "./index.js"
 import { LocalOriginalStore } from "./local-original-store.js"
 import { drainOriginals } from "./original.js"
@@ -19,15 +19,7 @@ let admin = new Client()
 let sequence = 0
 let close = async () => {}
 
-async function sign(email: string): Promise<string> {
-  const index = mails.length
-  await ask(base, "POST", "/sign-in/email", { email })
-  const code = mails[index]?.text.split("\n")[1]
-  const signed = await ask(base, "POST", "/sign-in/code", { email, code })
-  const session = cookieFrom(signed.headers)
-  if (session === undefined) throw new Error("session")
-  return session
-}
+const sign = (email: string): Promise<string> => signInByCode(base, mails, email)
 
 async function post(path: string, body: unknown, session = cookie, origin = base) {
   return ask(origin, "POST", path, body, session)

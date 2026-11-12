@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it } from "vitest"
 
 import { ask, postgresInfo } from "./harness.js"
 import { openPool } from "./index.js"
+import { readSignInMail } from "./sign-in-mail.js"
 
 const entry = path.join(process.cwd(), "apps/api/src/start.ts")
 const sourceHooks = path.join(process.cwd(), "apps/api/src/source-hooks.ts")
@@ -398,7 +399,7 @@ describe("start entry", () => {
       const response = await ask(base, "POST", "/sign-in/email", { email })
       expect(response.status).toBe(202)
       const posted = JSON.parse(await readFile(capture, "utf8")) as { readonly text: string }
-      const link = posted.text.split("\n")[0] ?? ""
+      const { link } = readSignInMail(posted.text)
       expect(link.startsWith("https://link.example/sign-in/link?token=")).toBe(true)
       const url = new URL(link)
       const opened = await ask(base, "GET", `${url.pathname}${url.search}`)
