@@ -122,11 +122,14 @@ function LineArt(props: { readonly element: CanvasElement; readonly scaled: Scal
   )
 }
 
-function SheetText(props: { readonly text: CanvasText; readonly look: TextLook }) {
-  const { look, text } = props
+type ShownRun = { readonly from: number; readonly text: string }
+type ShownParagraph = { readonly from: number; readonly runs: readonly ShownRun[] }
+
+function ShownText(props: { readonly paragraphs: readonly ShownParagraph[]; readonly look: TextLook }) {
+  const { look, paragraphs } = props
   return (
     <div style={look.body}>
-      {text.paragraphs.map((paragraph) => {
+      {paragraphs.map((paragraph) => {
         const filled = paragraph.runs.some((run) => run.text !== "")
         return (
           <div key={paragraph.from} data-paragraph={paragraph.from} style={look.paragraph(paragraph.from, filled)}>
@@ -139,6 +142,39 @@ function SheetText(props: { readonly text: CanvasText; readonly look: TextLook }
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function SheetText(props: { readonly text: CanvasText; readonly look: TextLook }) {
+  return <ShownText look={props.look} paragraphs={props.text.paragraphs} />
+}
+
+function LiveText(props: {
+  readonly store: PaintStore
+  readonly id: ElementId
+  readonly text: CanvasText
+  readonly scaled: Scaled
+}) {
+  const record = useElement(props.store, props.id)
+  return <ShownText look={textLook(props.text, props.scaled)} paragraphs={textValue(record?.text ?? "")} />
+}
+
+function QuietElement(props: { readonly store: PaintStore; readonly element: CanvasElement; readonly scaled: Scaled }) {
+  const { element, scaled, store } = props
+  const text = element.text
+  return (
+    <div style={frame(element, scaled, false)}>
+      <LineArt element={element} scaled={scaled} />
+      {text === null ? null : (
+        <div style={textLayer(element.box, text, scaled)}>
+          {element.id === null ? (
+            <SheetText look={textLook(text, scaled)} text={text} />
+          ) : (
+            <LiveText id={element.id} scaled={scaled} store={store} text={text} />
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -188,16 +224,18 @@ export function SlideCanvas(props: {
   readonly slide: CanvasSlide
   readonly width: number
   readonly className?: string
+  readonly quiet?: boolean
   readonly onEdit?: (id: ElementId, value: string) => void
 }) {
   const { slide, width } = props
+  const quiet = props.quiet === true
   const scaled: Scaled = (emu) => (emu * width) / slide.width
   useLayoutEffect(() => {
     ensureBulletRule(document)
   }, [])
   return (
     <div
-      data-slide-paint
+      {...(quiet ? { "data-thumb-paint": true } : { "data-slide-paint": true })}
       className={props.className}
       style={{
         position: "relative",
@@ -209,7 +247,9 @@ export function SlideCanvas(props: {
       }}
     >
       {slide.elements.map((element) =>
-        element.id === null ? (
+        quiet ? (
+          <QuietElement key={element.key} element={element} scaled={scaled} store={props.store} />
+        ) : element.id === null ? (
           <SheetElement key={element.key} element={element} scaled={scaled} />
         ) : (
           <PlacedText

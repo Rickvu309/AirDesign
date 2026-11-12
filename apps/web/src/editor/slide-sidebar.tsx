@@ -1,3 +1,5 @@
+import { Filmstrip } from "@airdesign/render"
+import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { EditorIcon } from "@/editor/editor-icons"
 import { SidebarHead, surfaceShadow } from "@/editor/editor-chrome"
@@ -6,12 +8,19 @@ import { cn } from "@/lib/class-names"
 
 export type SidebarRun = "working" | "done" | "own" | "compose" | "failed" | "offline"
 
-const thumbWidth = 180
+export const slideThumbWidth = 180
+
+const thumbWidth = slideThumbWidth
+
+const thumbFrame =
+  "block shrink-0 overflow-hidden rounded-[2px] bg-canvas shadow-[inset_0px_0px_0px_1px_var(--field-edge)]"
 
 export type SlideStrip = {
   readonly count: number
   readonly current: number
   readonly onSelect: (index: number) => void
+  readonly thumbHeight: number
+  readonly thumb: (index: number, width: number) => ReactNode
 }
 
 export function SlideSidebar({ run, title, strip }: { run: SidebarRun; title: string; strip?: SlideStrip }) {
@@ -27,6 +36,8 @@ export function SlideSidebar({ run, title, strip }: { run: SidebarRun; title: st
               index={index + 1}
               active={index === strip.current}
               onSelect={() => strip.onSelect(index)}
+              thumb={strip.thumb}
+              thumbHeight={strip.thumbHeight}
             />
           ))}
         </div>
@@ -74,7 +85,19 @@ export function SlideSidebar({ run, title, strip }: { run: SidebarRun; title: st
   )
 }
 
-function OpenedItem({ index, active, onSelect }: { index: number; active: boolean; onSelect: () => void }) {
+function OpenedItem({
+  index,
+  active,
+  onSelect,
+  thumb,
+  thumbHeight,
+}: {
+  index: number
+  active: boolean
+  onSelect: () => void
+  thumb: SlideStrip["thumb"]
+  thumbHeight: number
+}) {
   return (
     <button
       type="button"
@@ -88,9 +111,11 @@ function OpenedItem({ index, active, onSelect }: { index: number; active: boolea
           {index}
         </span>
       </span>
-      <span
-        className="block shrink-0 rounded-[2px] bg-canvas shadow-[inset_0px_0px_0px_1px_var(--field-edge)]"
-        style={{ width: thumbWidth, height: Math.round((thumbWidth * 9) / 16) }}
+      <Filmstrip
+        className={thumbFrame}
+        height={thumbHeight}
+        paint={() => thumb(index - 1, thumbWidth)}
+        width={thumbWidth}
       />
     </button>
   )

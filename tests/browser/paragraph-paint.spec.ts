@@ -23,8 +23,8 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 test("a numbered list paints its numbers outside the editable words", async ({ page }) => {
   await open(page)
   await showSlide(page, 17)
-  const painted = await page.locator("[data-slide-paint]").evaluate(() =>
-    [...document.querySelectorAll<HTMLElement>("[data-paragraph]")].map((block) => ({
+  const painted = await page.locator("[data-slide-paint]").evaluate((root) =>
+    [...root.querySelectorAll<HTMLElement>("[data-paragraph]")].map((block) => ({
       bullet: getComputedStyle(block, "::before").content,
       hang: block.style.textIndent,
       words: block.textContent ?? "",
@@ -43,8 +43,8 @@ test("an underlined run paints its line", async ({ page }) => {
   await showSlide(page, 10)
   const lined = await page
     .locator("[data-slide-paint]")
-    .evaluate(() =>
-      [...document.querySelectorAll<HTMLElement>("[data-run]")].some(
+    .evaluate((root) =>
+      [...root.querySelectorAll<HTMLElement>("[data-run]")].some(
         (run) => run.style.textDecoration.includes("underline") && (run.textContent ?? "").includes("readily"),
       ),
     )

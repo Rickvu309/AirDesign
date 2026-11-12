@@ -27,6 +27,7 @@ import { signInAddress, ThinNoticeView, type ThinNotice } from "@/thin-notice"
 import { exportFileName } from "@/export/export-file-name"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
+import { slideThumbWidth } from "@/editor/slide-sidebar"
 import { slideFrame } from "@/editor/revenue-slide"
 import { cn } from "@/lib/class-names"
 import { commitEdit, flushPending, server, type CommitOutcome, type TextBox } from "@/commit-edit"
@@ -47,6 +48,11 @@ function namedShapes(parts: ReadonlyMap<string, Uint8Array>): readonly NamedShap
 
 export function elementIds(parts: ReadonlyMap<string, Uint8Array>): readonly ElementId[] {
   return namedShapes(parts).map((named) => named.id)
+}
+
+function thumbHeight(slide: { readonly width: number; readonly height: number } | null): number {
+  if (slide === null || slide.width === 0) return Math.round((slideThumbWidth * 9) / 16)
+  return Math.round((slideThumbWidth * slide.height) / slide.width)
 }
 
 function storedText(value: TextValue): string {
@@ -329,7 +335,16 @@ export function ThinDeck({ id }: { id: string }) {
         <EditorShell
           panel="none"
           onExport={() => void onExport()}
-          slides={{ count: slideCount, current, onSelect: setCurrent }}
+          slides={{
+            count: slideCount,
+            current,
+            onSelect: setCurrent,
+            thumbHeight: thumbHeight(canvases.current(0)),
+            thumb: (index, width) => {
+              const slide = canvases.current(index)
+              return slide === null ? null : <SlideCanvas quiet slide={slide} store={store.current} width={width} />
+            },
+          }}
           slide={(width) => {
             const canvas = canvases.current(current)
             return canvas === null ? (
