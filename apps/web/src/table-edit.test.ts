@@ -10,7 +10,6 @@ import {
 } from "@airdesign/document"
 import { newTableBreaks, readShapes, readTable } from "@airdesign/pptx"
 import { expect, it } from "vitest"
-import { clearSpot } from "./clear-spot"
 import { elementCommand } from "./element-edit"
 import { exportedParts, slideBase } from "./exported-parts"
 import { onSlide, twoBoxSlide, xml } from "./slide-fixtures"
@@ -33,8 +32,9 @@ function slide(register: Register, edit: SlideCommand | null): Register {
 
 function inserted() {
   const parts = onSlide(xml(twoBoxSlide))
-  const taken = [{ x: 0, y: 0, cx: size.width, cy: 3000000 }]
-  const edit = elementCommand(parts, openRegister("", ""), { change: "table", index: 0, size, taken })
+  const top = { x: 0, y: 0, width: size.width, height: 3000000, rotation: 0, flipH: false, flipV: false }
+  const room = { ...size, elements: [{ box: top }] }
+  const edit = elementCommand(parts, openRegister("", ""), { change: "table", index: 0, size: room })
   return { parts, edit, register: slide(openRegister("", ""), edit) }
 }
 
@@ -42,17 +42,8 @@ it("puts a new three by three table in clear space under the next free id, empty
   const { edit } = inserted()
   expect(edit).toMatchObject({ slide: "element-add", id: "256", element: { node: "256.4", kind: "table" } })
   if (edit?.slide !== "element-add") throw new Error("element-add")
-  expect(edit.element.box).toEqual({ x: 2438400, y: 3205740, cx: 7315200, cy: 1112520 })
+  expect(edit.element.box).toEqual({ x: 2438400, y: 4235580, cx: 7315200, cy: 1112520 })
   expect(readTableValue(edit.element.value ?? "")?.rows.map((row) => row.cells.length)).toEqual([3, 3, 3])
-})
-
-it("finds the first clear spot below what the slide holds, and centres the box when nothing is clear", () => {
-  const box = { cx: 400, cy: 100 }
-  expect(clearSpot({ width: 1000, height: 1000 }, [], box)).toEqual({ x: 300, y: 450, ...box })
-  const middle = [{ x: 0, y: 400, cx: 1000, cy: 200 }]
-  expect(clearSpot({ width: 1000, height: 1000 }, middle, box)).toEqual({ x: 300, y: 630, ...box })
-  const full = [{ x: 0, y: 0, cx: 1000, cy: 1000 }]
-  expect(clearSpot({ width: 1000, height: 1000 }, full, box)).toEqual({ x: 300, y: 450, ...box })
 })
 
 it("exports a typed table with an added and a removed row, and a table as it was opened changes nothing", () => {

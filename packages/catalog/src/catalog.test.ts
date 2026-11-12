@@ -10,7 +10,9 @@ describe("run operations in the catalog", () => {
     expect(catalog.read_deck).toMatchObject({ kind: "query", exposure: "agent", runsOn: "server" })
     expect(projectTools(catalog).map((tool) => tool.op)).toEqual([
       "add_slide",
+      "add_text_box",
       "capture_slide",
+      "delete_element",
       "delete_slide",
       "duplicate_slide",
       "edit_deck",
@@ -25,10 +27,12 @@ describe("run operations in the catalog", () => {
 describe("projectTools", () => {
   it("projects the agent tools in name order", () => {
     const tools = projectTools(catalog)
-    expect(tools).toHaveLength(9)
+    expect(tools).toHaveLength(11)
     expect(tools.map((tool) => tool.name)).toEqual([
       "airdesign_add_slide",
+      "airdesign_add_text_box",
       "airdesign_capture_slide",
+      "airdesign_delete_element",
       "airdesign_delete_slide",
       "airdesign_duplicate_slide",
       "airdesign_edit_deck",
@@ -39,7 +43,9 @@ describe("projectTools", () => {
     ])
     expect(tools.map((tool) => tool.runsOn)).toEqual([
       "server",
+      "server",
       "device",
+      "server",
       "server",
       "server",
       "server",
@@ -119,5 +125,27 @@ describe("projectTools", () => {
     expect(() => projectTools({ bad: { kind: "command", exposure: "agent", description: "x" } as never })).toThrow(
       "agent tool bad must say where it runs",
     )
+  })
+})
+
+describe("element tools", () => {
+  it("reads a text box with an optional box and text, and a delete with an element id", () => {
+    const add = catalog.add_text_box.read
+    const base = { deck: "d", base: 3, slide: "258" }
+    expect(add(base).ok).toBe(true)
+    expect(add({ ...base, text: "Hello", box: { x: 0, y: 0, cx: 10, cy: 10 } }).ok).toBe(true)
+    expect(add({ ...base, box: { x: 0, y: 0, cx: 0, cy: 10 } }).ok).toBe(false)
+    expect(add({ ...base, box: { x: 0, y: 0, cx: 10 } }).ok).toBe(false)
+    expect(add({ ...base, slide: "x" }).ok).toBe(false)
+    expect(add({ ...base, more: 1 }).ok).toBe(false)
+    const remove = catalog.delete_element.read
+    expect(remove({ deck: "d", base: 3, node: "258.7" }).ok).toBe(true)
+    expect(remove({ deck: "d", base: 3, node: "258" }).ok).toBe(false)
+  })
+
+  it("states the units and the free area in the schema", () => {
+    const schema = JSON.stringify(toolInputSchema("add_text_box"))
+    expect(schema).toContain("914400 EMU")
+    expect(schema).toContain("largest free area")
   })
 })

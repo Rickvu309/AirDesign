@@ -1,10 +1,34 @@
 import { elementId, writeTextValue, type DeckIndex } from "@airdesign/document"
 import { readNotes } from "./notes-body.js"
 import { readShapes, readSlides } from "./read-shapes.js"
+import { presentationPart } from "./package-address.js"
+import { markupDocument } from "./element-span.js"
+import { animatedShapeIds, freeShapeId } from "./shape-id.js"
 import { paintKind } from "./shape-tree.js"
 
+function slideSize(parts: ReadonlyMap<string, Uint8Array>): { readonly width: number; readonly height: number } | null {
+  const bytes = parts.get(presentationPart)
+  const element =
+    bytes === undefined ? undefined : markupDocument(bytes).elements.find((each) => each.kind === "p:sldSz")
+  const width = Number(element?.attributes.find((item) => item.name === "cx")?.value)
+  const height = Number(element?.attributes.find((item) => item.name === "cy")?.value)
+  return Number.isSafeInteger(width) && width > 0 && Number.isSafeInteger(height) && height > 0
+    ? { width, height }
+    : null
+}
+
 export function indexPackage(parts: ReadonlyMap<string, Uint8Array>): Pick<DeckIndex, "slides" | "elements"> {
-  const slides = readSlides(parts).map(({ slide }, position) => ({ id: slide, position }))
+  const size = slideSize(parts)
+  const slides = readSlides(parts).map(({ slide, part }, position) => {
+    const bytes = parts.get(part)
+    return {
+      id: slide,
+      position,
+      ...(size === null ? {} : { size }),
+      free: freeShapeId(parts, part),
+      animated: bytes === undefined ? [] : animatedShapeIds(bytes),
+    }
+  })
   const order = new Map(slides.map((slide) => [slide.id, slide.position]))
   const elements = readShapes(parts).map((shape) => ({
     node: elementId(`${shape.slide}.${shape.shape}`),

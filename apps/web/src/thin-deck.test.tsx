@@ -72,7 +72,7 @@ const live = vi.hoisted(() => {
     },
     connect: () => ({
       index: async () => ({ ok: true }),
-      layered: async () => true,
+      measured: async () => true,
       async enqueue(deck: string, value: string, node: string, floor: string) {
         if (state.refuse) return { ok: false, refusal: "limit" }
         sent.push({ deck, value, node, floor })

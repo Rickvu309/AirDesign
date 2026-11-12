@@ -82,13 +82,7 @@ export function useTables(deck: TableDeck) {
   return {
     insert() {
       const slide = deck.canvases.current(deck.current)
-      if (slide === null) return
-      const taken = slide.elements.flatMap((element) =>
-        element.box === null
-          ? []
-          : [{ x: element.box.x, y: element.box.y, cx: element.box.width, cy: element.box.height }],
-      )
-      void deck.changeElement({ change: "table", index: deck.current, size: slide, taken })
+      if (slide !== null) void deck.changeElement({ change: "table", index: deck.current, size: slide })
     },
     canvas: {
       tableBar,

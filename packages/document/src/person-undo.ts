@@ -1,7 +1,7 @@
 import type { Box } from "./box.js"
 import { currentBox, currentValue, decide, type Command, type Register } from "./decide.js"
 import type { ElementId, SlideId } from "./element-id.js"
-import { elementCommand, elementGone } from "./element-order.js"
+import { elementCommand, elementGone, type ElementCommand } from "./element-order.js"
 import type { OrderKey } from "./order-key.js"
 import { foldSlides, type SlideCommand, type SlideState } from "./slide-order.js"
 import type { Value } from "./value.js"
@@ -34,11 +34,15 @@ function spotOf(register: Register, file: readonly SlideId[], id: SlideId): Slid
   return spot === undefined ? undefined : { present: spot.present, key: spot.key }
 }
 
+function elementOf(edit: ElementCommand): ElementId {
+  return edit.slide === "element-add" ? edit.element.node : edit.node
+}
+
 export function slideUndoable(register: Register, file: readonly SlideId[], edit: SlideCommand): Undoable | null {
   const decision = decide(register, { command: "slide", file, edit })
   if (decision.decision !== "apply") return null
   if (elementCommand(edit)) {
-    const element = edit.slide === "element-add" ? edit.element.node : edit.node
+    const element = elementOf(edit)
     const shown = (state: Register) => !elementGone(state, element)
     return {
       element,
@@ -115,18 +119,41 @@ function spotIn(state: SlideState, id: SlideId): SlideSpot | undefined {
   return spot === undefined ? undefined : { present: spot.present, key: spot.key }
 }
 
+function personEdited(register: Register, node: ElementId): boolean {
+  return register.elements[node]?.landed.some((row) => row.actor === "person" && row.visible) === true
+}
+
+function undoableAt(register: Register, at: number, edit: SlideCommand): Undoable | null {
+  if (elementCommand(edit)) {
+    const node = elementOf(edit)
+    if (edit.slide === "element-add" && personEdited(register, node)) return null
+    const before = register.order.slice(0, at)
+    const upTo = register.order.slice(0, at + 1)
+    return {
+      element: node,
+      slide: edit.id,
+      file: register.file,
+      before: edit.slide !== "element-add" && !elementGone({ file: register.file, order: before }, node),
+      after: !elementGone({ file: register.file, order: upTo }, node),
+    }
+  }
+  const after = spotIn({ file: register.file, order: register.order.slice(0, at + 1) }, edit.id)
+  if (after === undefined) return null
+  const before = spotIn({ file: register.file, order: register.order.slice(0, at) }, edit.id) ?? {
+    present: false,
+    key: after.key,
+  }
+  return { slide: edit.id, file: register.file, before, after }
+}
+
 export function undoSlides(register: Register, runId: string): Register | null {
   let current = register
   for (let at = register.order.length - 1; at >= 0; at -= 1) {
     const edit = register.order[at]
     if (edit === undefined || edit.runId !== runId) continue
-    const after = spotIn({ file: register.file, order: register.order.slice(0, at + 1) }, edit.id)
-    if (after === undefined) return null
-    const before = spotIn({ file: register.file, order: register.order.slice(0, at) }, edit.id) ?? {
-      present: false,
-      key: after.key,
-    }
-    const undone = undoOf(current, { slide: edit.id, file: register.file, before, after })
+    const undoable = undoableAt(register, at, edit)
+    if (undoable === null) return null
+    const undone = undoOf(current, undoable)
     if (!undone.ok) return null
     const decision = decide(current, undone.command)
     if (decision.decision !== "apply") return null
