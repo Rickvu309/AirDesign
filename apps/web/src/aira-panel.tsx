@@ -61,6 +61,7 @@ export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
     })
     finishing.current = asking
     const done = await asking
+    if (done.exchanges.at(-1)?.end === "stopped") refreshUsage()
     if (stopper.current !== controller) return
     stopper.current = null
     shown(done)

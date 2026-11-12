@@ -35,6 +35,7 @@ export function useWeekUsage(
 ): { readonly usage: WeekUsage | null; readonly refresh: () => void } {
   const [fetched, setFetched] = useState<Fetched | null>(null)
   const mounted = useRef(true)
+  const turn = useRef(fromTurn)
   const keep = useCallback(
     (after: WeekUsage | null) =>
       void load().then((loaded) => {
@@ -49,6 +50,9 @@ export function useWeekUsage(
       mounted.current = false
     }
   }, [keep])
+  useEffect(() => {
+    turn.current = fromTurn
+  }, [fromTurn])
   const usage = fetched !== null && fetched.after === fromTurn ? fetched.usage : (fromTurn ?? fetched?.usage ?? null)
-  return { usage, refresh: () => keep(fromTurn) }
+  return { usage, refresh: () => keep(turn.current) }
 }
