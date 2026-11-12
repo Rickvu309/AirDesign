@@ -1,6 +1,13 @@
+import { join } from "node:path"
+import { pathToFileURL } from "node:url"
 import { expect, test, type Page } from "@playwright/test"
 
-test.use({ reducedMotion: "reduce" })
+test.use({ reducedMotion: "reduce", viewport: { width: 1470, height: 923 } })
+
+type Scanned = { findings: unknown[]; used: number[] }
+type Scanner = { scan: (page: Page, options: { scope: string }) => Promise<Scanned> }
+type Reports = { writeReport: (root: string, name: string, report: object) => void }
+const root = process.cwd()
 
 const screenIndexPath = "/screens"
 const pageCount = 4
@@ -33,6 +40,14 @@ test("every registered screen opens with no error", async ({ context, page }) =>
   expect(screenPaths.length).toBeGreaterThan(0)
 
   const waiting = [...screenPaths]
+  const { scan } = (await import(
+    pathToFileURL(join(root, ".agents/skills/verify-airdesign/look/scan.mjs")).href
+  )) as Scanner
+  const { writeReport } = (await import(pathToFileURL(join(root, "scripts/design-findings.mjs")).href)) as Reports
+  const rows: { page: string; findings: unknown[] }[] = []
+  const used = new Set<number>()
+  const failures: { page: string; error: string }[] = []
+  let scanning = 0
   const faultsByScreen: Record<string, string[]> = {}
   const pages = [page, ...(await Promise.all(Array.from({ length: pageCount - 1 }, () => context.newPage())))]
   await Promise.all(
@@ -40,9 +55,21 @@ test("every registered screen opens with no error", async ({ context, page }) =>
       for (let screenPath = waiting.shift(); screenPath !== undefined; screenPath = waiting.shift()) {
         const faults = await screenFaults(screenPage, screenPath)
         if (faults.length > 0) faultsByScreen[screenPath] = faults
+        const started = performance.now()
+        try {
+          await screenPage.evaluate(() => document.fonts.ready.then(() => undefined))
+          const scanned = await scan(screenPage, { scope: screenPath })
+          rows.push({ page: screenPath, findings: scanned.findings })
+          for (const index of scanned.used) used.add(index)
+        } catch (error) {
+          failures.push({ page: screenPath, error: String(error).split("\n")[0] })
+        }
+        scanning += performance.now() - started
       }
     }),
   )
+  rows.sort((a, b) => a.page.localeCompare(b.page))
+  writeReport(root, "screens", { rows, used: [...used], failures, seconds: scanning / 1000 / pageCount })
 
   expect(faultsByScreen, `${Object.keys(faultsByScreen).length} of ${screenPaths.length} screens are broken`).toEqual(
     {},

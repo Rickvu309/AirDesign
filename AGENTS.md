@@ -109,3 +109,4 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | Extend before you build a parallel version, reduced motion shows the finished state | review |
 | Product copy follows `better-writing`, uses the words in `GLOSSARY.md`, and is true of what the product does | review |
 | How agents work here | review |
+| Every design screen and named state of the app shows no mechanical design fault: cut, covered or invisible text and controls, internal names, empty panels, stacked frames, low contrast | the `design-findings` step counts what the scanner finds in the browser tests into the `design-findings` metric. It warns for now and blocks nothing. Looking at the images is review |
