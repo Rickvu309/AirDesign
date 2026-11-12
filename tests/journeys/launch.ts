@@ -1,8 +1,16 @@
 import { execFileSync } from "node:child_process"
+import { join } from "node:path"
+import { pathToFileURL } from "node:url"
 
 const helper = ".agents/skills/verify-airdesign/bin/verify-airdesign.mjs"
+const browserHelper = join(process.cwd(), ".agents/skills/verify-airdesign/bin/browser.mjs")
 
-export default function launch(): () => void {
+export default async function launch(): Promise<() => void> {
+  const { browserEnv } = (await import(pathToFileURL(browserHelper).href)) as {
+    browserEnv: (env: NodeJS.ProcessEnv) => NodeJS.ProcessEnv
+  }
+  const libraries = browserEnv(process.env).LD_LIBRARY_PATH
+  if (libraries !== undefined) process.env.LD_LIBRARY_PATH = libraries
   const launched = JSON.parse(
     execFileSync(process.execPath, [helper, "launch", "--no-build"], { encoding: "utf8" }),
   ) as {

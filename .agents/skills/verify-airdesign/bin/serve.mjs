@@ -136,9 +136,10 @@ export async function serve(run, { repo, apiDist, webDist, catalogDist, scratchD
   await new Promise((resolve) => front.listen(0, "127.0.0.1", resolve))
   const origin = `http://127.0.0.1:${String(front.address().port)}`
   let stopping = false
-  const stop = async () => {
+  const stop = async (why) => {
     if (stopping) return
     stopping = true
+    log(`stopping: ${String(why)} at ${new Date().toISOString()}`)
     front.close()
     front.closeAllConnections()
     api.close()
@@ -150,6 +151,9 @@ export async function serve(run, { repo, apiDist, webDist, catalogDist, scratchD
   }
   process.on("SIGTERM", stop)
   process.on("SIGINT", stop)
+  process.on("SIGHUP", stop)
+  process.on("uncaughtException", (error) => stop(`uncaught ${String(error?.stack ?? error)}`))
+  process.on("unhandledRejection", (error) => stop(`unhandled ${String(error?.stack ?? error)}`))
   writeFileSync(statePath(run), JSON.stringify({ ...state, apiPort, origin, mail: mailFile, ready: true }, null, 2))
   log(`ready ${origin}`)
 }

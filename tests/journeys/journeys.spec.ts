@@ -40,19 +40,29 @@ for (const name of [
   "open-edit-save",
   "blank-deck",
   "blank-slides",
-  "element-index",
+  "element-edits",
   "commit-once",
   "deck-list-trash",
   "slide-paint",
   "cleared-browser",
   "delete-account",
   "move-resize",
-  "aira-turn",
   "connected-agents",
-  "aira-panel",
-  "aira-slides",
+  "slide-commands",
+  "person-undo",
+  "usage-page",
+  "sign-in-mail",
 ]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)
   })
 }
+
+test.describe("recorded Aira", () => {
+  test.describe.configure({ mode: "default" })
+  for (const name of ["element-index", "aira-turn", "aira-panel", "aira-slides", "aira-head"]) {
+    test(name, async ({ page, context }) => {
+      await drive(name, page, context)
+    })
+  }
+})

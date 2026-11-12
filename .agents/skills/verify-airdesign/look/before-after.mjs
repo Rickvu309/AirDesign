@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { PNG } from "pngjs"
 import { designContext, designViewport, settle } from "../bin/browser.mjs"
 import { crop } from "./images.mjs"
-import { relative } from "./placement.mjs"
+import { aimAt, relative } from "./placement.mjs"
 import { find, reach } from "./states.mjs"
 
 const skillPath = ".agents/skills/verify-airdesign"
@@ -50,8 +50,15 @@ async function measure(page, places) {
       for (const element of found) {
         const rect = element.getBoundingClientRect()
         const style = getComputedStyle(element)
-        if (rect.width > 0 && rect.height > 0 && style.visibility !== "hidden")
-          return { box: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } }
+        if (rect.width > 0 && rect.height > 0 && style.visibility !== "hidden") {
+          const range = document.createRange()
+          range.selectNodeContents(element)
+          const words = range.getBoundingClientRect()
+          return {
+            box: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+            ink: { x: words.x, y: words.y, width: words.width, height: words.height },
+          }
+        }
       }
       return { box: null }
     })
@@ -106,7 +113,9 @@ export async function captureSide({ browser, side, block, runtime }) {
     const places = await measure(page, [block.crop ?? wholeFrame, ...block.callouts.map((callout) => callout.at)])
     const broken = places.find((place) => place.error)
     if (broken) throw new Error(`${block.state}: ${broken.error}`)
-    const [frame, ...boxes] = places.map((place) => place.box)
+    const [frame, ...boxes] = places.map((place, index) =>
+      index === 0 ? place.box : aimAt(place.box, place.ink ?? null),
+    )
     const texts = await textBoxes(page)
     return { full, frame, boxes, texts, skipped }
   } finally {

@@ -1,10 +1,11 @@
 # Connected agents
 
-The account menu on Home has `Agents`, which opens `/settings/agents`. The page shows the signed-in person's connected MCP agents with a `Disconnect` button for each, and shows the server's own MCP address with a `Copy` button so the person can paste it into Claude, Claude Code, Codex, or another MCP client.
+The account menu (on Home, Trash and every Settings page) has `Agents`, which opens `/settings/agents`, the second tab of Settings, between `Usage` and `Account`. The side navigation's `Bring your own agent` card links there too (`Connect an agent`). The page shows the signed-in person's connected MCP agents with a `Disconnect` button for each, and shows the server's own MCP address with a `Copy` button so the person can paste it into Claude, Claude Code, Codex, or another MCP client.
 
 ## Sub-features
 
-- `agents-reach` the account menu on Home and the `Settings` link in the side navigation open `/settings/agents`. Signed-out visits go to sign-in with `next` set to the path and query.
+- `agents-reach` the account menu's `Agents` opens `/settings/agents`. The `Settings` link in the side navigation opens `/settings/usage` with a full page load; from there the `Agents` tab (`navigation "Settings"`) opens it. Signed out, the first call answers 401 `session` and the page then goes to sign-in with `next` set to the path and query.
+- `agents-loading` while the list loads there is no loading text: the Agents card is empty, the MCP address is blank and `Copy` is disabled. A failed load shows the alert `Unable to load your agents. Check your connection and try again.` with `Try again`; a failed disconnect shows `Unable to disconnect. Check your connection and try again.` in the dialog. The list refreshes on window focus.
 - `agents-mcp` the `MCP server` card shows the server's `resource` address from `accountRoutes.agents` and copies it to the clipboard when `Copy` is clicked, switching the button label to `Done`.
 - `agents-list` `accountRoutes.agents` returns only the signed-in person's exchanged, unrevoked grants, newest first, with `id`, `name`, `agent` (`claude`, `claude-code`, `codex`, or `other`), `host`, and `connected`. Unexchanged approvals, revoked grants, and another person's grants never appear.
 - `agents-disconnect` clicking `Disconnect` opens `Disconnect <agent>?` (`Claude can no longer read or edit your decks. You can connect it again at any time.`). Confirming posts `accountRoutes.revokeAgent` with `{ id }`, removes the row, and refuses that grant's access token on `/mcp` (401 `invalid_token`) and refresh token on `/oauth/token` (400 `invalid_grant`) at once.
@@ -12,7 +13,8 @@ The account menu on Home has `Agents`, which opens `/settings/agents`. The page 
 
 ## How to get to it (user POV)
 
-- Sign in, open `/`, click the account button with the email in the side navigation, choose `Agents` (or click `Settings` in the side navigation).
+- Sign in, open `/`, click the account button with the email in the side navigation, choose `Agents`.
+- Or click `Settings` in the side navigation, then the `Agents` tab.
 
 ## Driving it with verify-airdesign
 
@@ -30,4 +32,5 @@ Preconditions:
 ## Gotchas
 
 - Only grants whose authorization code has been exchanged (`code = 'used'`) and not revoked appear in `agents`. Approving on `/oauth/authorize` without completing token exchange leaves the grant `open` and unlisted.
-- Static sample controls from the design screen (`Aira` switch, `Connect` buttons, `Setup guides for Claude and Codex`, and `Usage` / `Account` tabs) are intentionally absent on `/settings/agents` until their backend slices exist.
+- Static sample controls from the design screen (`Aira` switch, `Connect` buttons, `Setup guides for Claude and Codex`) are absent on `/settings/agents` until their backend slices exist. The `Usage` and `Account` tabs are live; see `usage-page.md` and `delete-account.md`.
+- Row names: `Claude Code` for claude-code; for `other`, the client name, or its host when it has none. Claude Code and Codex count only with loopback redirect addresses.
