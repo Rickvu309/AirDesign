@@ -125,7 +125,7 @@ async function saveExport(page: Page, file: string): Promise<string> {
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("an edit to Hello! survives reload and exports", async ({ page }, testInfo) => {
+test("edit to Hello! survives reload, exports @export", async ({ page }, testInfo) => {
   await rm(exported, { force: true })
   const download = testInfo.outputPath("exported-deck.pptx")
   const address = await open(page, fixture)
@@ -546,7 +546,7 @@ test("Enter inside a run of a box with eight runs makes a paragraph that keeps e
   expect(written.match(/<a:p>|<a:p /g)?.length).toBe(5)
 })
 
-test("a replaced run and a new paragraph export for the PowerPoint check", async ({ page }, testInfo) => {
+test("replaced run and paragraph export for PPTX check @export", async ({ page }, testInfo) => {
   const judged = join(process.cwd(), "tests/browser/exported-paragraphs.pptx")
   await rm(judged, { force: true })
   const deck = join(fixtures, "doe-heat-pumps.pptx")

@@ -109,7 +109,7 @@ async function answerCommits(page: Page): Promise<void> {
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("a person adds, duplicates, deletes and reorders slides, then the export keeps that order", async ({
+test("a person adds, duplicates, deletes and reorders slides, then the export keeps that order @export", async ({
   page,
 }, testInfo) => {
   await rm(judged, { force: true })

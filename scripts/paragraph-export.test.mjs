@@ -6,6 +6,8 @@ import {
   boxExportName,
   boxOriginalName,
   boxRoutes,
+  browserExportArgs,
+  browserExportTag,
   freshExports,
   judgedExportNames,
   paragraphExportLines,
@@ -176,5 +178,8 @@ const slideSpec = await freshExports({
   },
 })
 if (!slideSpec.ok) throw new Error(slideSpec.line)
+
+if (!browserExportArgs.includes("--grep")) throw new Error("browserExportArgs missing --grep")
+if (!browserExportArgs.includes(browserExportTag)) throw new Error("browserExportArgs missing browserExportTag")
 
 console.log("paragraph export tests passed")

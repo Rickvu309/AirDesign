@@ -115,7 +115,7 @@ async function rowsOf(page: Page): Promise<Row[]> {
   )
 }
 
-test("a duplicate keeps the title it had when it was made, and a new slide takes typed text, through a reload and the export", async ({
+test("a duplicate keeps the title it had when it was made, and a new slide takes typed text, through a reload and the export @export", async ({
   page,
 }, testInfo) => {
   await blank(page)
