@@ -103,6 +103,18 @@ test("choosing a file opens its deck and posts the filename rename", async ({ pa
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
 })
 
+test("back from a deck that was just imported shows the deck home", async ({ page }) => {
+  await store(page, [])
+  await page.goto("/")
+  await page.locator("input[type=file]").setInputFiles(join(process.cwd(), "scripts/pptx-fixtures/clean.pptx"))
+  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  await expect(page.locator(".thin-page")).toBeVisible()
+  await page.goBack()
+  await expect(page).toHaveURL(/\/$/)
+  await expect(page.getByRole("heading", { name: "Scratchpad" })).toBeVisible()
+  await expect(page.locator(".thin-page")).toHaveCount(0)
+})
+
 test("a refused import shows the designed failure and can be removed", async ({ page }) => {
   await store(page)
   await page.goto("/")

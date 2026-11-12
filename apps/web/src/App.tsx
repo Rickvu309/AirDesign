@@ -1,4 +1,4 @@
-import type { ComponentType } from "react"
+import { useEffect, useState, type ComponentType } from "react"
 import { OAuthAuthorize } from "./connect/oauth-authorize"
 import { LiveProof } from "./live-proof"
 import { ThinDeck } from "./thin-deck"
@@ -33,9 +33,22 @@ function ScreenIndex() {
   )
 }
 
+function currentPath(): string {
+  return window.location.pathname.replace(/\/$/, "") || "/"
+}
+
 export default function App() {
-  const path = window.location.pathname.replace(/\/$/, "") || "/"
-  if (path === "/" || path === "/trash") return <Home trash={path === "/trash"} />
+  const [path, setPath] = useState(currentPath)
+  useEffect(() => {
+    const reload = () => window.location.reload()
+    window.addEventListener("popstate", reload)
+    return () => window.removeEventListener("popstate", reload)
+  }, [])
+  function navigate(next: string) {
+    window.history.pushState(null, "", next)
+    setPath(next)
+  }
+  if (path === "/" || path === "/trash") return <Home trash={path === "/trash"} navigate={navigate} />
   if (path === "/deck") {
     window.location.replace("/")
     return null

@@ -158,24 +158,23 @@ function view(
 const flushing = new Map<DeckId, Promise<unknown>>()
 type OpenOnceResult = { ok: true } | Extract<OpenResult, { ok: false }>
 
-const openingByRemote = new WeakMap<Remote, Map<DeckId, Promise<OpenOnceResult>>>()
+const openingByRemote = new WeakMap<Remote, Map<DeckId, Promise<OpenResult>>>()
 
 export function connect(remote: Remote, options: { readonly once?: () => string } = {}) {
   const nextOnce = (options.once ?? crypto.randomUUID).bind(crypto)
-  const openingDecks = openingByRemote.get(remote) ?? new Map<DeckId, Promise<OpenOnceResult>>()
+  const openingDecks = openingByRemote.get(remote) ?? new Map<DeckId, Promise<OpenResult>>()
   openingByRemote.set(remote, openingDecks)
 
-  function forget(deck: DeckId, opening: Promise<OpenOnceResult>) {
+  function forget(deck: DeckId, opening: Promise<OpenResult>) {
     if (openingDecks.get(deck) === opening) openingDecks.delete(deck)
   }
 
-  function openOnce(deck: DeckId): Promise<OpenOnceResult> {
+  function openOnce(deck: DeckId): Promise<OpenResult> {
     const known = openingDecks.get(deck)
     if (known !== undefined) return known
-    const opening: Promise<OpenOnceResult> = remote.open({ deck }).then(
+    const opening: Promise<OpenResult> = remote.open({ deck }).then(
       (opened) => {
-        if (opened.ok) return { ok: true }
-        forget(deck, opening)
+        if (!opened.ok) forget(deck, opening)
         return opened
       },
       (error: unknown) => {
@@ -269,7 +268,8 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
     async open(deck: string): Promise<OpenOnceResult> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return parsed
-      return openOnce(parsed.deck)
+      const opened = await openOnce(parsed.deck)
+      return opened.ok ? { ok: true } : opened
     },
     async flush(deck: string): Promise<CommitResult> {
       const parsed = readDeckId(deck)
@@ -287,7 +287,7 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
       if (!parsed.ok) return parsed
       const rows = await readDeck(parsed.deck)
       if (rows.length > 0) return { ok: true, ...view(parsed.deck, rows) }
-      const opened: OpenResult = await remote.open({ deck: parsed.deck })
+      const opened = await openOnce(parsed.deck)
       if (!opened.ok) return opened
       const confirmed = rowsFromRegister(parsed.deck, opened.register)
       if (confirmed.length > 0) {
