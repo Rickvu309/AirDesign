@@ -18,6 +18,7 @@ import {
   type SlideCommand,
   type SlideId,
 } from "@airdesign/document"
+import { runFence } from "./agent-slides.js"
 import type { Caller, Deck } from "./call.js"
 
 type Built = { readonly ok: true; readonly register: Register } | { readonly ok: false; readonly refusal: CallRefusal }
@@ -64,9 +65,12 @@ function ready(
   head: Head,
   deck: Deck,
   slide: SlideId | undefined,
+  runId: string,
 ): { readonly file: readonly SlideId[] } | { readonly refusal: CallRefusal } {
   if (head.deck !== deck.id) return { refusal: "deck" }
   if (head.base !== deck.revision) return { refusal: "stale" }
+  const fenced = runFence(deck.register, runId, null)
+  if (fenced !== null) return { refusal: fenced }
   const index = deck.register.index
   if (index === undefined || index.elements.length !== index.total) return { refusal: "indexing" }
   const file = index.slides.flatMap((row) => {
@@ -89,7 +93,7 @@ export function agentElement(op: ElementOp, deck: Deck, caller: Caller, raw: unk
   if (op === "add_text_box") {
     const parsed = elementReaders.add_text_box(raw)
     if (!parsed.ok) return parsed
-    const opened = ready(parsed, deck, parsed.slide)
+    const opened = ready(parsed, deck, parsed.slide, caller.runId)
     if ("refusal" in opened) return { ok: false, refusal: opened.refusal }
     const measure = slideMeasure(register, parsed.slide)
     if (measure === undefined || (parsed.box === undefined && measure.size === undefined)) {
@@ -103,7 +107,7 @@ export function agentElement(op: ElementOp, deck: Deck, caller: Caller, raw: unk
   const parsed = elementReaders.delete_element(raw)
   if (!parsed.ok) return parsed
   const slide = readSlideId(shapeOf(parsed.node).slide)
-  const opened = ready(parsed, deck, slide)
+  const opened = ready(parsed, deck, slide, caller.runId)
   if ("refusal" in opened || slide === undefined)
     return { ok: false, refusal: "refusal" in opened ? opened.refusal : "dead" }
   const refusal = protectedFrom(register, parsed.node, caller.runId)
