@@ -5,6 +5,7 @@ The slide list on the left of an open deck lists every slide. The person adds a 
 ## Sub-features
 
 - `slide-add` `button "Add slide"` adds a slide after the current one with the layout's empty title and body, and opens it. The new slide takes typed text.
+- `slide-layout` the chevron beside `New slide` (`button "Choose a layout for the new slide"`) lists the deck's layouts by the names in the file. Choosing one adds a slide after the current one with that layout's placeholders. `Add slide` uses the current slide's layout, and the deck's content layout after a title slide. Journey `slide-layouts`.
 - `slide-duplicate` Ctrl/Cmd+D on a focused `[data-slide-entry]` adds a copy after it and makes the copy current. The copy keeps the text the slide had when it was made.
 - `slide-move` Alt+ArrowUp or Alt+ArrowDown on a focused entry moves that slide one place, and the moved slide becomes current. Dragging an entry onto another moves it there.
 - `slide-delete` Delete or Backspace on a focused entry deletes that slide.

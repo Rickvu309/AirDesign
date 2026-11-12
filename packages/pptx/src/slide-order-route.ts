@@ -7,6 +7,7 @@ import {
   type SlideState,
 } from "@airdesign/document"
 
+import { deckLayouts } from "./deck-layouts.js"
 import { presentationPart, slideAddresses, slidePart } from "./package-address.js"
 import { editPart } from "./part-markup.js"
 import { readSections } from "./section-read.js"
@@ -54,6 +55,18 @@ function elementEdited(
   return applyRoute(parts, { name: "add", part, id: Number(shapeOf(node).shape), text: "", ...box })
 }
 
+function chosenLayout(
+  parts: ReadonlyMap<string, Uint8Array>,
+  minted: ReadonlyMap<string, string>,
+  command: Extract<SlideCommand, { readonly slide: "add" }>,
+): string | null {
+  if (command.layoutPart !== undefined && deckLayouts(parts).some((layout) => layout.part === command.layoutPart)) {
+    return command.layoutPart
+  }
+  const layoutSlide = slidePart(parts, minted.get(command.layout) ?? "")
+  return layoutSlide === null ? null : layoutPart(parts, layoutSlide)
+}
+
 function withSectionSlides(
   parts: ReadonlyMap<string, Uint8Array>,
   original: ReadonlyMap<string, Uint8Array>,
@@ -88,17 +101,16 @@ export function orderedParts(
     const anchorId = minted.get(command.slide === "add" ? command.after : command.source)
     if (anchorId === undefined) throw new Error("slide")
     const before = idsOf(next)
+    const layout = command.slide === "add" ? chosenLayout(next, minted, command) : null
     const route =
       command.slide === "add"
-        ? ({ name: "sldIdLst.add", after: anchorId, id: command.id } as const)
+        ? ({ name: "sldIdLst.add", after: anchorId, id: command.id, ...(layout === null ? {} : { layout }) } as const)
         : ({ name: "sldIdLst.clone", slide: anchorId, id: command.id } as const)
     next = applyStructuralRoute(next, route)
     const id = createdId(before, idsOf(next))
     minted.set(command.id, id)
     if (command.slide !== "add") continue
     const born = slidePart(next, id)
-    const layoutSlide = slidePart(next, minted.get(command.layout) ?? "")
-    const layout = born === null || layoutSlide === null ? null : layoutPart(next, layoutSlide)
     if (born !== null && layout !== null) next = withLayoutPlaceholders(next, born, layout)
   }
   for (const spot of foldSlides(state)) {

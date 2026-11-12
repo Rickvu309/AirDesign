@@ -14,6 +14,7 @@ import {
   rootClose,
 } from "./part-markup.js"
 import { cloneNotes, dropNotes, onlyNotes } from "./slide-notes.js"
+import { layoutPart } from "./slide-placeholders.js"
 
 const slideRelType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
 const layoutRelType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout"
@@ -103,7 +104,21 @@ function namedSlideId(elements: readonly MarkupElement[], id: string | undefined
   return id
 }
 
-export function addSlide(parts: Map<string, Uint8Array>, after: string, copy: boolean, id?: string) {
+function relativeTarget(from: string, to: string): string {
+  const base = from.split("/").slice(0, -1)
+  const path = to.split("/")
+  let shared = 0
+  while (shared < base.length && shared < path.length - 1 && base[shared] === path[shared]) shared += 1
+  return [...base.slice(shared).map(() => ".."), ...path.slice(shared)].join("/")
+}
+
+function layoutOnlyRelationships(slide: string, layout: string): Uint8Array {
+  return encodeUtf8(
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${layoutRelType}" Target="${relativeTarget(slide, layout)}"/></Relationships>`,
+  )
+}
+
+export function addSlide(parts: Map<string, Uint8Array>, after: string, copy: boolean, id?: string, layout?: string) {
   const presentation = partBytes(parts, presentationPart)
   const rels = partBytes(parts, presentationRels)
   const types = partBytes(parts, contentTypesPart)
@@ -148,7 +163,11 @@ export function addSlide(parts: Map<string, Uint8Array>, after: string, copy: bo
   parts.set(part, copy ? sourceBytes : encodeUtf8(blankSlide))
   parts.set(
     relsOf(part),
-    copy ? cloneNotes(parts, sourcePart, part, sourceRelBytes) : layoutRelationships(sourceRelBytes),
+    copy
+      ? cloneNotes(parts, sourcePart, part, sourceRelBytes)
+      : layout === undefined || layoutPart(parts, sourcePart) === layout
+        ? layoutRelationships(sourceRelBytes)
+        : layoutOnlyRelationships(part, layout),
   )
   return newId
 }

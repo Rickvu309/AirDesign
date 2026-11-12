@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button"
 import { EditorIcon } from "@/editor/editor-icons"
 import { hairlineShadow, SidebarHead, surfaceShadow } from "@/editor/editor-chrome"
 import { slideKey } from "@/editor/slide-keys"
+import { NewSlideMenu } from "@/editor/new-slide-menu"
 import { SlideThumb } from "@/editor/slide-thumb"
+import type { LayoutChoice } from "@/slide-layout"
 import { cn } from "@/lib/class-names"
 
 export type SidebarRun = "working" | "done" | "own" | "compose" | "failed" | "offline"
@@ -24,7 +26,8 @@ export type SlideStrip = {
   readonly sections?: readonly StripSection[]
   readonly current: number
   readonly onSelect: (index: number) => void
-  readonly onAdd?: () => void
+  readonly onAdd?: (layoutPart?: string) => void
+  readonly layouts?: readonly LayoutChoice[]
   readonly onClone?: (index: number) => void
   readonly onRemove?: (index: number) => void
   readonly onMove?: (from: number, to: number) => void
@@ -103,10 +106,10 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
     <>
       <div className="flex px-3 pb-2">
         <div className={cn("flex h-8 flex-1 items-center rounded-lg bg-white", surfaceShadow)}>
-          <span className="flex flex-1 items-center justify-center gap-1 text-[length:var(--type-dense)] font-medium text-foreground">
-            New slide
-            <EditorIcon name="chev" size={13} className="text-faint" />
-          </span>
+          <NewSlideMenu
+            layouts={strip.onAdd === undefined ? [] : (strip.layouts ?? [])}
+            onChoose={(part) => strip.onAdd?.(part)}
+          />
           <span className="block h-8 w-px bg-[var(--field-edge)]" />
           <Button
             type="button"

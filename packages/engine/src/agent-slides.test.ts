@@ -79,7 +79,7 @@ it("uses the requested layout's package relationships when inserting after a dif
   const result = call("add_slide", opened(), actor, { deck: "deck", base: 0, after: "256", layout: "257" })
   expect(result.ok).toBe(true)
   if (!result.ok) return
-  expect(result.deck.register.order.at(-1)).toMatchObject({ slide: "add", after: "257", layout: "257" })
+  expect(result.deck.register.order.at(-1)).toMatchObject({ slide: "add", after: "256", layout: "257" })
   expect(presentSlides(result.deck.register).map((row) => row.id)).toEqual(["256", "258", "257"])
 })
 it("Undo of a run that added a slide and titled it removes the slide", () => {

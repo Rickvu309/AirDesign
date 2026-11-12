@@ -4,12 +4,12 @@ import path from "node:path"
 export async function writtenRouteFiles(pptx, original, parts, directory, prefix) {
   const files = []
   const references = pptx.danglingShapeReferences(parts)
-  for (const run of pptx.routeRuns(parts)) {
+  for (const [position, run] of pptx.routeRuns(parts).entries()) {
     if (run.error !== null || run.parts === null || run.touch === null) {
       files.push({ run, file: null, back: null, exportError: null })
       continue
     }
-    const name = `${prefix}-${run.operation.replaceAll(".", "-")}.pptx`
+    const name = `${prefix}-${position}-${run.operation.replaceAll(".", "-")}.pptx`
     try {
       const packed = await pptx.exportPackage(original, run.parts)
       const file = path.join(directory, name)
