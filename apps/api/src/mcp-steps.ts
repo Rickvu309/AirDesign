@@ -3,7 +3,15 @@ import { randomBytes } from "node:crypto"
 import { readDeckId, readDeckIndex, type AgentOp, type DeckId } from "@airdesign/catalog"
 import { elementId, foldSlides, type Register } from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
-import { agentCaller, callTool, dropGoneTurn, emptyLog, settleTurn, type Session, type ToolResult } from "@airdesign/mcp"
+import {
+  agentCaller,
+  callTool,
+  dropGoneTurn,
+  emptyLog,
+  settleTurn,
+  type Session,
+  type ToolResult,
+} from "@airdesign/mcp"
 
 import { storedTurns, type StoredTurns } from "./agent-turn.js"
 import { indexSaved } from "./index-saved.js"

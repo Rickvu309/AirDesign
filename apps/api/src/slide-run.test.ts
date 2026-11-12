@@ -36,7 +36,7 @@ let stores: Stores
 async function stored(live: Live) {
   const saved = await readSaved(stores.deck, live.deck)
   const turn = await turnRow(live)
-  if (saved === undefined || turn === undefined) throw new Error("rows")
+  if (saved === undefined || saved.register === null || turn === undefined) throw new Error("rows")
   return { revision: saved.revision, register: saved.register, turn }
 }
 
@@ -77,7 +77,12 @@ async function opened(element: string): Promise<Live> {
     stopTold: false,
     late: 0,
   }
-  const added = await wholeCall(live, "r", "add_slide", { deck: live.deck, base: live.base, after: "256", layout: "256" })
+  const added = await wholeCall(live, "r", "add_slide", {
+    deck: live.deck,
+    base: live.base,
+    after: "256",
+    layout: "256",
+  })
   if (!added.ok) throw new Error(added.refusal)
   live.base = added.deck.revision
   if (element === "running") {
@@ -108,7 +113,12 @@ async function act(live: Live, action: string, target: SpecState): Promise<void>
     live.base = read.reported.revision
     if (target.aPc === "idle") await settle(agent)
   } else if (action === "AgentAddsSlide" && agent !== undefined) {
-    const added = await decide(live, agent, "add_slide", { deck: live.deck, base: live.base, after: "256", layout: "256" })
+    const added = await decide(live, agent, "add_slide", {
+      deck: live.deck,
+      base: live.base,
+      after: "256",
+      layout: "256",
+    })
     if (added.ok && added.answer?.ok === true && added.answer.runId === "r" && live.stopped) live.late += 1
     if (!added.ok) await settle(agent)
   } else if (action === "AgentSavesTurn" && agent !== undefined) await settle(agent)
