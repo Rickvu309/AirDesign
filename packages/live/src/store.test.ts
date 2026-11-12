@@ -3,7 +3,8 @@ import { legacyElement, rootElement } from "@airdesign/document"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { installIndexedDb, node, countingRemote } from "./browser-fixtures.js"
 import { connect, deleteDatabase, memoryRemote } from "./index.js"
-import { readRows, rowKey, writeRows } from "./store.js"
+import { readRows, rowKey } from "./store.js"
+import { writeRows } from "./browser-fixtures.js"
 
 beforeEach(() => {
   installIndexedDb()

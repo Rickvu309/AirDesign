@@ -1,5 +1,5 @@
 import { deckName } from "@airdesign/catalog"
-import { connect, putParts, queueOriginal, trustDeck } from "@airdesign/live"
+import { connect, putParts, queueOriginal } from "@airdesign/live"
 import { indexPackage, readPackage } from "@airdesign/pptx"
 import { server } from "@/commit-edit"
 import type { ImportFailureReason } from "@/copy/import-failure-words"
@@ -27,10 +27,7 @@ export async function saveDeck(
   const indexed = await connect(server).index(deckId, indexPackage(parts))
   if (!indexed.ok) return null
   const saved = await putParts(deckId, { parts, file, ...(name === undefined ? {} : { name }) })
-  if (saved.ok) {
-    await trustDeck(deckId)
-    await queueOriginal(deckId)
-  }
+  if (saved.ok) await queueOriginal(deckId)
   return saved.ok ? deckId : null
 }
 

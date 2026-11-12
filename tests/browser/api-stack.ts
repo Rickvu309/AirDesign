@@ -135,7 +135,12 @@ export const test = base.extend<object, { stack: Stack }>({
         return {
           status: response.status,
           json: text.length === 0 ? {} : (JSON.parse(text) as Record<string, unknown>),
-          cookie: response.headers.getSetCookie()[0]?.split(";")[0],
+          cookie:
+            response.headers
+              .getSetCookie()
+              .map((header) => header.split(";")[0] ?? "")
+              .filter((pair) => !pair.endsWith("="))
+              .join("; ") || undefined,
         }
       }
       const owners = new Map<string, string>()
@@ -201,18 +206,21 @@ export const test = base.extend<object, { stack: Stack }>({
 })
 
 export async function signInBrowser(context: BrowserContext, cookie: string): Promise<void> {
-  const split = cookie.indexOf("=")
-  await context.addCookies([
-    {
-      name: cookie.slice(0, split),
-      value: cookie.slice(split + 1),
-      domain: "127.0.0.1",
-      path: "/",
-      httpOnly: true,
-      secure: true,
-      sameSite: "Lax",
-    },
-  ])
+  await context.addCookies(
+    cookie.split("; ").map((pair) => {
+      const split = pair.indexOf("=")
+      const name = pair.slice(0, split)
+      return {
+        name,
+        value: pair.slice(split + 1),
+        domain: "127.0.0.1",
+        path: "/",
+        httpOnly: name !== "airdesign.account",
+        secure: true,
+        sameSite: "Lax" as const,
+      }
+    }),
+  )
 }
 
 const forwarded = ["/decks/", "/sign-in/"]

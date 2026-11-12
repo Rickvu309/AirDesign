@@ -1,12 +1,14 @@
 import { readDeckId } from "@airdesign/catalog"
-import { openDatabase, storeName } from "./store.js"
+import { accountKey, finished, scoped, storeName, transaction } from "./device.js"
 
 export type ChatSlot = { readonly id: string }
 
 function chatPrefix(deck: string): string {
   const parsed = readDeckId(deck)
   if (!parsed.ok) throw new Error("deck")
-  return `${parsed.deck}\u0004`
+  const account = accountKey()
+  if (account === undefined) throw new Error("session")
+  return scoped(account, `${parsed.deck}\u0004`)
 }
 
 function chatRange(deck: string): IDBKeyRange {
@@ -19,35 +21,20 @@ function slotId(value: unknown): string | undefined {
   return typeof value.id === "string" && value.id !== "" ? value.id : undefined
 }
 
-function inStore<Result>(
+async function inStore<Result>(
   mode: IDBTransactionMode,
   work: (store: IDBObjectStore, done: (result: Result) => void) => void,
 ): Promise<Result> {
-  return openDatabase().then(
-    (database) =>
-      new Promise((resolve, reject) => {
-        const transaction = database.transaction(storeName, mode)
-        let result: Result | undefined
-        work(transaction.objectStore(storeName), (value) => {
-          result = value
-        })
-        transaction.oncomplete = () => {
-          database.close()
-          resolve(result as Result)
-        }
-        transaction.onerror = () => {
-          database.close()
-          reject(transaction.error)
-        }
-        transaction.onabort = () => {
-          database.close()
-          reject(transaction.error)
-        }
-      }),
-  )
+  const running = await transaction(mode)
+  let result: Result | undefined
+  work(running.objectStore(storeName), (value) => {
+    result = value
+  })
+  return finished(running, () => result as Result)
 }
 
 export async function readChats(deck: string): Promise<unknown[]> {
+  if (accountKey() === undefined) return []
   const range = chatRange(deck)
   return inStore<unknown[]>("readonly", (store, done) => {
     const request = store.getAll(range)

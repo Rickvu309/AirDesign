@@ -32,7 +32,7 @@ function sending(remote: Remote, sent: (WireEdit | WireSlide)[]): Remote {
   }
 }
 
-it("keeps a box on the device, replays it after a reopen and sends it as a box", async () => {
+it("keeps a box on the device, joins successive moves of one box, replays it after a reopen and sends it as a box", async () => {
   const sent: (WireEdit | WireSlide)[] = []
   const remote = sending(memoryRemote(), sent)
   const cache = connect(remote)
@@ -42,17 +42,16 @@ it("keeps a box on the device, replays it after a reopen and sends it as a box",
   const pending = await connect(remote).openDeck("deck")
   if (!pending.ok) throw new Error(pending.refusal)
   expect(pending.phase).toBe("on-device")
-  expect(shown(pending.register)).toEqual({ text: "typed", box: second, version: 3 })
+  expect(shown(pending.register)).toEqual({ text: "typed", box: second, version: 2 })
   expect((await cache.flush("deck")).ok).toBe(true)
   expect(sent).toEqual([
     { value: "typed", node, floor: "file text" },
-    { property: "box", value: first, node },
     { property: "box", value: second, node },
   ])
   const confirmed = await connect(remote).openDeck("deck")
   if (!confirmed.ok) throw new Error(confirmed.refusal)
   expect(confirmed.phase).toBe("confirmed")
-  expect(shown(confirmed.register)).toEqual({ text: "typed", box: second, version: 3 })
+  expect(shown(confirmed.register)).toEqual({ text: "typed", box: second, version: 2 })
 })
 
 it("stores an agent's box from the server and shows it after the device store is gone", async () => {

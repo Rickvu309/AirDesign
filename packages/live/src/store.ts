@@ -8,10 +8,7 @@ import {
   type SlideId,
   type Value,
 } from "@airdesign/document"
-
-export const databaseName = "airdesign"
-export const storeName = "rows"
-
+import { accountKey, finished, scoped, storeName, transaction } from "./device.js"
 export type ConfirmedRow = Value & {
   readonly kind: "confirmed"
   readonly deck: DeckId
@@ -127,141 +124,36 @@ function piece(part: number, value: string, offset: number, count: number): stri
   return `\u0001${text}`
 }
 
-export function openDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(databaseName, 1)
-    request.onupgradeneeded = () => {
-      const database = request.result
-      if (!database.objectStoreNames.contains(storeName)) database.createObjectStore(storeName)
-    }
-    request.onsuccess = () => {
-      const database = request.result
-      database.onversionchange = () => database.close()
-      resolve(database)
-    }
-    request.onerror = () => reject(request.error)
-  })
+export function rowRange(deck: string): IDBKeyRange {
+  return IDBKeyRange.bound(`${deck}\u0000`, `${deck}\u0000\uffff`)
 }
 
-export function readRows(deck: string): Promise<StoredRow[]> {
-  return openDatabase().then(
-    (database) =>
-      new Promise((resolve, reject) => {
-        const transaction = database.transaction(storeName, "readonly")
-        const request = transaction
-          .objectStore(storeName)
-          .getAll(IDBKeyRange.bound(`${deck}\u0000`, `${deck}\u0000\uffff`))
-        let rows: StoredRow[] = []
-        request.onsuccess = () => {
-          rows = request.result as StoredRow[]
-        }
-        request.onerror = () => {
-          database.close()
-          reject(request.error)
-        }
-        transaction.oncomplete = () => {
-          database.close()
-          resolve(rows)
-        }
-        transaction.onerror = () => {
-          database.close()
-          reject(transaction.error)
-        }
-      }),
+export function headKey(deck: string): string {
+  return `${deck}\u0002head`
+}
+
+export function signedIn(): string {
+  const account = accountKey()
+  if (account === undefined) throw new Error("session")
+  return account
+}
+
+export async function readRows(deck: string): Promise<StoredRow[]> {
+  const account = accountKey()
+  if (account === undefined) return []
+  const reading = await transaction("readonly")
+  const request = reading.objectStore(storeName).getAll(rowRange(scoped(account, deck)))
+  return finished(reading, () => request.result as StoredRow[])
+}
+
+export async function readSlot(key: string): Promise<unknown> {
+  const account = accountKey()
+  if (account === undefined) return null
+  const reading = await transaction("readonly")
+  const request = reading.objectStore(storeName).getAll(
+    IDBKeyRange.bound(scoped(account, key), scoped(account, key)),
   )
-}
-
-export function writeRows(
-  puts: readonly { readonly key: string; readonly row: StoredRow }[],
-  deletes: readonly string[],
-): Promise<void> {
-  if (puts.length === 0 && deletes.length === 0) return Promise.resolve()
-  return openDatabase().then(
-    (database) =>
-      new Promise((resolve, reject) => {
-        const transaction = database.transaction(storeName, "readwrite")
-        const store = transaction.objectStore(storeName)
-        for (const key of deletes) store.delete(key)
-        for (const put of puts) store.put(put.row, put.key)
-        transaction.oncomplete = () => {
-          database.close()
-          resolve()
-        }
-        transaction.onerror = () => {
-          database.close()
-          reject(transaction.error)
-        }
-        transaction.onabort = () => {
-          database.close()
-          reject(transaction.error)
-        }
-      }),
-  )
-}
-
-export type RowChange<Result> = {
-  readonly puts: readonly { readonly key: string; readonly row: StoredRow }[]
-  readonly result: Result
-}
-
-export function changeRows<Result>(deck: string, change: (rows: StoredRow[]) => RowChange<Result>): Promise<Result> {
-  return openDatabase().then(
-    (database) =>
-      new Promise((resolve, reject) => {
-        const transaction = database.transaction(storeName, "readwrite")
-        const store = transaction.objectStore(storeName)
-        const request = store.getAll(IDBKeyRange.bound(`${deck}\u0000`, `${deck}\u0000\uffff`))
-        let changed: RowChange<Result> | undefined
-        request.onsuccess = () => {
-          changed = change(request.result as StoredRow[])
-          for (const put of changed.puts) store.put(put.row, put.key)
-        }
-        request.onerror = () => {
-          database.close()
-          reject(request.error)
-        }
-        transaction.oncomplete = () => {
-          database.close()
-          if (changed === undefined) reject(new Error("rows were not read"))
-          else resolve(changed.result)
-        }
-        transaction.onerror = () => {
-          database.close()
-          reject(transaction.error)
-        }
-        transaction.onabort = () => {
-          database.close()
-          reject(transaction.error)
-        }
-      }),
-  )
-}
-
-export function readSlot(key: string): Promise<unknown> {
-  return openDatabase().then(
-    (database) =>
-      new Promise((resolve, reject) => {
-        const transaction = database.transaction(storeName, "readonly")
-        const request = transaction.objectStore(storeName).getAll(IDBKeyRange.bound(key, key))
-        let value: unknown = null
-        request.onsuccess = () => {
-          const rows = request.result as unknown[]
-          value = rows[0] ?? null
-        }
-        request.onerror = () => {
-          database.close()
-          reject(request.error)
-        }
-        transaction.oncomplete = () => {
-          database.close()
-          resolve(value)
-        }
-        transaction.onerror = () => {
-          database.close()
-          reject(transaction.error)
-        }
-      }),
-  )
+  return finished(reading, () => (request.result as unknown[])[0] ?? null)
 }
 
 export function writeSlot(key: string, value: unknown): Promise<void> {
@@ -283,47 +175,24 @@ export function swapSlot(key: string, value: unknown, keep: (current: unknown) =
   return putSlots([{ key, value }], { key, keep })
 }
 
-function putSlots(
+async function putSlots(
   puts: readonly { readonly key: string; readonly value: unknown }[],
   guard?: { readonly key: string; readonly keep: (current: unknown) => boolean },
 ): Promise<boolean> {
-  return openDatabase().then(
-    (database) =>
-      new Promise((resolve, reject) => {
-        const transaction = database.transaction(storeName, "readwrite")
-        const store = transaction.objectStore(storeName)
-        let written = false
-        const put = () => {
-          for (const { key, value } of puts) store.put(value, key)
-          written = true
-        }
-        if (guard === undefined) put()
-        else {
-          const request = store.getAll(IDBKeyRange.bound(guard.key, guard.key))
-          request.onsuccess = () => {
-            if (guard.keep((request.result as unknown[])[0])) put()
-          }
-        }
-        transaction.oncomplete = () => {
-          database.close()
-          resolve(written)
-        }
-        transaction.onerror = () => {
-          database.close()
-          reject(transaction.error)
-        }
-        transaction.onabort = () => {
-          database.close()
-          reject(transaction.error)
-        }
-      }),
-  )
-}
-
-export function deleteDatabase(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.deleteDatabase(databaseName)
-    request.onsuccess = () => resolve()
-    request.onerror = () => reject(request.error)
-  })
+  const account = signedIn()
+  const writing = await transaction("readwrite")
+  const store = writing.objectStore(storeName)
+  let written = false
+  const put = () => {
+    for (const { key, value } of puts) store.put(value, scoped(account, key))
+    written = true
+  }
+  if (guard === undefined) put()
+  else {
+    const request = store.getAll(IDBKeyRange.bound(scoped(account, guard.key), scoped(account, guard.key)))
+    request.onsuccess = () => {
+      if (guard.keep((request.result as unknown[])[0])) put()
+    }
+  }
+  return finished(writing, () => written)
 }

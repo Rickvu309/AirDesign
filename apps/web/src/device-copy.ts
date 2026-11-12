@@ -1,5 +1,5 @@
 import { deckRoutes } from "@airdesign/catalog"
-import { connect, fetchOriginal, getParts, isTrusted, memoryRemote, putParts } from "@airdesign/live"
+import { adoptDeck, connect, fetchOriginal, getParts, memoryRemote, putParts, type Remote } from "@airdesign/live"
 import { readPackage } from "@airdesign/pptx"
 
 async function listedName(deck: string): Promise<string | undefined> {
@@ -32,8 +32,8 @@ export async function deckParts(deck: string) {
   return saved.ok ? saved : null
 }
 
-export async function deviceCopy(deck: string) {
-  if (!(await isTrusted(deck))) return null
+export async function deviceCopy(deck: string, server: Remote) {
+  await adoptDeck(deck, async () => (await connect(server).open(deck).catch(() => null))?.ok === true)
   const stored = await getParts(deck)
   if (!stored.ok) return null
   const opened = await connect(memoryRemote()).openDeck(deck)

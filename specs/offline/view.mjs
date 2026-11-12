@@ -15,6 +15,7 @@ export const state = (v) => {
 
 export const step = (action) => {
   if (action === "QueueFirst") return "the device holds the edit, so the journal lets it go"
+  if (action === "Join") return "a newer keystroke on the same element joins the unsent row"
   if (action === "Send" || action === "SendNext") return "the later edit waits until the earlier one is sent"
   if (action === "Ack") return "the server acknowledges the next edit"
   if (action === "Skip") return "a stale edit is skipped"

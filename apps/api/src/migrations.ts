@@ -260,4 +260,10 @@ end
 $$;
 `,
   },
+  {
+    id: 10,
+    sql: `
+alter table session.account add column device text not null unique default replace(gen_random_uuid()::text, '-', '');
+`,
+  },
 ]

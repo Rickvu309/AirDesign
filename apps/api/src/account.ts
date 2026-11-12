@@ -185,12 +185,17 @@ export async function openSmokeSession(db: Sql, email: string): Promise<string> 
   return token
 }
 
-export async function findAccess(db: Sql, token: string): Promise<string | undefined> {
-  const result = await db.query<{ email: string }>(
-    "select email from session.access where token = $1 and issued > now() - interval '30 days'",
+export type Access = { readonly email: string; readonly device: string }
+
+export async function findAccess(db: Sql, token: string): Promise<Access | undefined> {
+  const result = await db.query<Access>(
+    `select access.email, account.device
+     from session.access access
+     join session.account account on account.email = access.email
+     where access.token = $1 and access.issued > now() - interval '30 days'`,
     [digest(token)],
   )
-  return result.rows[0]?.email
+  return result.rows[0]
 }
 
 export async function deleteAccess(db: Sql, token: string): Promise<void> {

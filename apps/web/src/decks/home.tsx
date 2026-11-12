@@ -1,5 +1,5 @@
 import { deckRoutes, signOutRoutes } from "@airdesign/catalog"
-import { distrustDevice, dropChats, sendQueuedNames } from "@airdesign/live"
+import { connect, dropDeck, memoryRemote, sendQueuedNames } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -45,7 +45,6 @@ async function withQueuedNames(listing: Listing): Promise<Listing> {
 }
 
 async function signOut(): Promise<void> {
-  await distrustDevice()
   const response = await fetch(signOutRoutes.session.path, { method: signOutRoutes.session.method })
   if (response.ok) window.location.assign(signInAddress(window.location))
 }
@@ -127,7 +126,7 @@ export function Home({
     }
   }
   useEffect(() => {
-    void refresh()
+    void refresh().then(() => connect(memoryRemote()).sweep().catch(() => undefined))
     const focused = () => void refresh()
     window.addEventListener("focus", focused)
     return () => window.removeEventListener("focus", focused)
@@ -382,7 +381,7 @@ export function Home({
                   setDeleteFailed(true)
                   return
                 }
-                await Promise.all(deleting.map((deck) => dropChats(deck.deck).catch(() => undefined)))
+                await Promise.all(deleting.map((deck) => dropDeck(deck.deck).catch(() => undefined)))
                 setDeleting(null)
                 await refresh()
               })

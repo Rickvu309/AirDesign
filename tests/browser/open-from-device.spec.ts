@@ -102,7 +102,12 @@ test("the server refusing the deck after it painted shows the refusal and stops 
 
 test("a deck on the device is not painted for the next person to sign in", async ({ page }) => {
   const server = await serve(page)
-  await page.route("**/sign-out", (route) => route.fulfill({ json: { ok: true } }))
+  await page.route("**/sign-out", (route) =>
+    route.fulfill({
+      json: { ok: true },
+      headers: { "set-cookie": "airdesign.account=; SameSite=Lax; Path=/; Max-Age=0" },
+    }),
+  )
   await page.route("**/sign-in?*", (route) => route.fulfill({ body: "Sign in" }))
   const address = await importClean(page)
   await page.goto("/")

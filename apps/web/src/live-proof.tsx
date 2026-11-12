@@ -1,5 +1,6 @@
 import { readElementId } from "@airdesign/document"
 import {
+  accountKey,
   connect,
   databaseName,
   getPart,
@@ -7,6 +8,7 @@ import {
   memoryRemote,
   putPart,
   rowKey,
+  scoped,
   storeName,
   type Remote,
 } from "@airdesign/live"
@@ -22,7 +24,8 @@ const airdesignLive = {
   httpRemote,
   putPart,
   getPart,
-  rowKey,
+  rowKey: (deck: string, kind: "confirmed" | "pending", number: number) =>
+    scoped(accountKey() ?? "", rowKey(deck, kind, number)),
   database: databaseName,
   store: storeName,
   useRemote(remote: Remote) {
