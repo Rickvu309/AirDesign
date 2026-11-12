@@ -128,4 +128,4 @@ This is a pure function of the log, with no concurrency, so it has no TLA+ model
 
 Bounds: four slides in two sections split anywhere, logs of up to six commands, 300 runs each. Run: `pnpm vitest run packages/document/src/section-order.property.test.ts`. Code: `foldSections`, `slideUndoable` and `undoOf`. Leaves out: three or more sections, and export's own writing of the section list, which `pnpm check:pptx` judges.
 
-Sync: `c8223b3d38278202ddf0bc13d99cac00f85cc810`.
+Sync: `c757fd3d4819dabeb077254205e44a7214da780b`.
