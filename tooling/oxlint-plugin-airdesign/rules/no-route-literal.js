@@ -15,6 +15,9 @@ export const routePaths = [
   "/sign-in/link",
   "/oauth/client",
   "/oauth/approve",
+  "/oauth/register",
+  "/oauth/token",
+  "/oauth/revoke",
 ]
 
 const routeFamilies = ["/decks", "/oauth"]

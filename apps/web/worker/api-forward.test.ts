@@ -3,7 +3,7 @@ import { createServer, type Server } from "node:http"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 
 import worker from "./api-forward.js"
-import { deckPaths, deckRoutes, oauthPaths, oauthRoutes, signInPaths, signInRoutes } from "@airdesign/catalog"
+import { deckPaths, deckRoutes, mcpPaths, oauthPaths, oauthRoutes, signInPaths, signInRoutes } from "@airdesign/catalog"
 
 type Seen = {
   method: string | undefined
@@ -94,7 +94,7 @@ describe("API forwarding", () => {
     const routed = (path: string) =>
       entries.some((entry) => !entry.startsWith("!") && matches(entry, path)) &&
       !entries.some((entry) => entry.startsWith("!") && matches(entry.slice(1), path))
-    expect([...signInPaths, ...deckPaths, ...oauthPaths].filter((path) => !routed(path))).toEqual([])
+    expect([...signInPaths, ...deckPaths, ...oauthPaths, ...mcpPaths].filter((path) => !routed(path))).toEqual([])
   })
 
   it("forwards the commit request and returns the API response", async () => {
@@ -157,6 +157,12 @@ describe("API forwarding", () => {
     "/decks/delete",
     "/oauth/client",
     "/oauth/approve",
+    "/oauth/register",
+    "/oauth/token",
+    "/oauth/revoke",
+    "/mcp",
+    "/.well-known/oauth-protected-resource",
+    "/.well-known/oauth-authorization-server",
   ])("forwards %s", async (path) => {
     await worker.fetch(new Request(`https://example.com${path}`, { method: "POST" }), env())
     expect(seen[0]?.url).toBe(path)

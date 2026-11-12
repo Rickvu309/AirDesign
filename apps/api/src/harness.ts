@@ -1,5 +1,5 @@
 import { readCommit } from "@airdesign/catalog"
-import { randomBytes } from "node:crypto"
+import { createHash, randomBytes } from "node:crypto"
 import { request, type IncomingHttpHeaders, type Server } from "node:http"
 import { readFile } from "node:fs/promises"
 import type { AddressInfo } from "node:net"
@@ -172,4 +172,9 @@ export async function serve(
         })
       }),
   }
+}
+
+export function verifierPair(): { readonly verifier: string; readonly challenge: string } {
+  const verifier = randomBytes(32).toString("base64url")
+  return { verifier, challenge: createHash("sha256").update(verifier).digest("base64url") }
 }

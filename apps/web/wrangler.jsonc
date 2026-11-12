@@ -8,6 +8,16 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/sign-in/*", "/decks/*", "/oauth/client", "/oauth/approve"],
+    "run_worker_first": [
+      "/sign-in/*",
+      "/decks/*",
+      "/oauth/client",
+      "/oauth/approve",
+      "/oauth/register",
+      "/oauth/token",
+      "/oauth/revoke",
+      "/mcp",
+      "/.well-known/*",
+    ],
   },
 }

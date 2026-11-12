@@ -1,10 +1,10 @@
-import { createHash, randomBytes } from "node:crypto"
+import { randomBytes } from "node:crypto"
 
 import { readDeckId } from "@airdesign/catalog"
 import { editNext } from "@airdesign/mcp"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, askForm, cookieFrom, postgresInfo, serve } from "./harness.js"
+import { ask, askForm, cookieFrom, verifierPair, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 import { same, specGraph, type SpecState, type Value } from "./spec-graph.js"
 
@@ -13,7 +13,8 @@ const callback = "http://127.0.0.1:8124/owner"
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 const element = "258.7"
 const captureNext = "Open the deck in AirDesign, then try again."
-const invalidToken = 'Bearer error="invalid_token"'
+const invalidToken =
+  'Bearer resource_metadata="https://mcp.example.test/.well-known/oauth-protected-resource", error="invalid_token"'
 
 type Pair = { readonly access: string; readonly refresh: string }
 type Stored = { readonly revision: number; readonly register: unknown; readonly owner: string }
@@ -36,11 +37,6 @@ function deckName(): string {
 
 function address(mark: string): string {
   return `${mark}${randomBytes(4).toString("hex")}@example.com`
-}
-
-function verifierPair(): { readonly verifier: string; readonly challenge: string } {
-  const verifier = randomBytes(32).toString("base64url")
-  return { verifier, challenge: createHash("sha256").update(verifier).digest("base64url") }
 }
 
 describe("only a deck's owner acts on it", () => {

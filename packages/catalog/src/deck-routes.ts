@@ -180,6 +180,9 @@ export const signInRoutes = {
 } as const
 
 export const oauthRoutes = {
+  register: { path: "/oauth/register", method: "POST" },
+  token: { path: "/oauth/token", method: "POST" },
+  revoke: { path: "/oauth/revoke", method: "POST" },
   client: { path: "/oauth/client", method: "POST" },
   approve: { path: "/oauth/approve", method: "POST" },
 } as const
