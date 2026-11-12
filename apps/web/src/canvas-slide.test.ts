@@ -46,7 +46,8 @@ function reader(paint: Omit<SlidePaint, "background">, reads: string[] = []): Pa
   }
 }
 
-const source: CanvasSource = { part, shapes: new Map([["2", { id, kind: "shape", editable: true }]]) }
+const source: CanvasSource = { part, shapes: new Map([["2", { id, kind: "shape", editable: true, movable: false }]]) }
+const movable: CanvasSource = { part, shapes: new Map([["2", { id, kind: "shape", editable: true, movable: true }]]) }
 
 it("carries the deck's size and each row's own box", () => {
   const canvas = slideCanvases(reader({ ...size, elements: [row()] }), [source])(0)
@@ -60,6 +61,7 @@ it("carries the deck's size and each row's own box", () => {
         kind: "shape",
         box,
         editable: true,
+        movable: false,
         placeholder: false,
         filled: false,
         fill: null,
@@ -178,6 +180,7 @@ it("keeps every shape's words on the slide when the reader cannot read it", () =
       kind: "shape",
       box: null,
       editable: true,
+      movable: false,
       placeholder: false,
       filled: false,
       fill: null,
@@ -457,4 +460,23 @@ it("turns a paragraph's points into the slide's units, shrunk by the box's font 
       },
     ],
   })
+})
+
+it("lets a slide shape move when the host can keep its box", () => {
+  const canvas = slideCanvases(reader({ ...size, elements: [row()] }), [movable])(0)
+  expect(canvas?.elements.map((each) => each.movable)).toEqual([true])
+})
+
+it("does not move a shape inside a group, since its box is in the group's space", () => {
+  const canvas = slideCanvases(reader({ ...size, elements: [row({ group: "5" })] }), [movable])(0)
+  expect(canvas?.elements.map((each) => each.movable)).toEqual([false])
+})
+
+it("does not move a shape the reader gave no place", () => {
+  const placeless = slideCanvases(reader({ ...size, elements: [row({ box: null })] }), [movable])(0)
+  const broken = slideCanvases({ slide: () => ({ ...size, background: null, elements: [] }) }, [movable])(0)
+  expect([...(placeless?.elements ?? []), ...(broken?.elements ?? [])].map((each) => each.movable)).toEqual([
+    false,
+    false,
+  ])
 })

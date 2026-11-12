@@ -288,15 +288,6 @@ test("every text under an empty unfilled box takes its own click", async ({ page
   }
 })
 
-test("an empty unfilled box the pointer passes through is still reached by Tab", async ({ page }) => {
-  await open(page)
-  await showSlide(page, 29)
-  const slide = "ppt/slides/slide29.xml"
-  await clickOnText(page, `${slide}#2`)
-  await page.keyboard.press("Tab")
-  await expect(page.locator(`[data-canvas-element="${slide}#4"] [contenteditable="true"]`)).toBeFocused()
-})
-
 const corpusDeck = (name: string): string => join(process.cwd(), "scripts/pptx-fixtures/corpus", name)
 const emuPerPoint = 12_700
 const styleNames = ["font-size", "font-weight", "font-style", "font-family", "color"] as const

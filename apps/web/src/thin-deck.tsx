@@ -5,6 +5,7 @@ import {
   readElementId,
   slideId,
   writeTextValue,
+  type Box,
   type ElementId,
   type Register,
   type TextValue,
@@ -30,7 +31,8 @@ import { EditorShell } from "@/editor/editor-shell"
 import { slideThumbWidth } from "@/editor/slide-sidebar"
 import { slideFrame } from "@/editor/revenue-slide"
 import { cn } from "@/lib/class-names"
-import { commitEdit, flushPending, server, type CommitOutcome, type TextBox } from "@/commit-edit"
+import { commitBox, commitEdit, flushPending, server, type CommitOutcome, type TextBox } from "@/commit-edit"
+import { boxStorable, landedBox } from "@/element-move"
 import { exportedParts } from "@/exported-parts"
 import { ensureMarkup } from "@/markup"
 import { pictureSources, type PictureSources } from "@/picture-fill"
@@ -112,6 +114,7 @@ function paint(
   readonly count: number
   readonly canvases: SlideCanvases
   readonly boxes: ReadonlyMap<ElementId, TextBox>
+  readonly movables: ReadonlyMap<ElementId, TextBox>
   readonly shapes: ReadonlyMap<ElementId, ReadShape>
   readonly pictures: PictureSources
 } {
@@ -120,11 +123,14 @@ function paint(
   const seen = new Map<ElementId, number>()
   for (const id of ids) seen.set(id, (seen.get(id) ?? 0) + 1)
   const boxes = new Map<ElementId, TextBox>()
+  const movables = new Map<ElementId, TextBox>()
   const rows = new Map<ElementId, ReadShape>()
   for (const { id, shape } of named) {
     const kind = paintKind(shape.kind)
     const file = storedText(shape.text)
     store.publish({ id, kind, text: shownValue(register, id, file), picture: kind === "picture" ? "" : null })
+    store.placeBox(id, landedBox(register, id))
+    if (seen.get(id) === 1 && boxStorable(parts, shape)) movables.set(id, { id, file })
     const storable = seen.get(id) === 1 && !shape.locked && valueStorable(parts, shape, trialValue(shape.text))
     if (!storable) continue
     boxes.set(id, { id, file })
@@ -139,12 +145,15 @@ function paint(
   const sources = read.map((each) => ({
     part: each.part,
     shapes: new Map(
-      each.named.map(({ id, shape }) => [shape.shape, { id, kind: paintKind(shape.kind), editable: boxes.has(id) }]),
+      each.named.map(({ id, shape }) => [
+        shape.shape,
+        { id, kind: paintKind(shape.kind), editable: boxes.has(id), movable: movables.has(id) },
+      ]),
     ),
   }))
   const pictures = pictureSources(parts)
   const canvases = slideCanvases(paintReader(parts), sources, pictures.src)
-  return { count: read.length, canvases, boxes, shapes: rows, pictures }
+  return { count: read.length, canvases, boxes, movables, shapes: rows, pictures }
 }
 
 async function listedName(deck: string): Promise<string | undefined> {
@@ -180,6 +189,7 @@ export async function deckParts(deck: string) {
 export function ThinDeck({ id }: { id: string }) {
   const store = useRef(paintStore())
   const boxes = useRef<ReadonlyMap<ElementId, TextBox>>(new Map())
+  const movables = useRef<ReadonlyMap<ElementId, TextBox>>(new Map())
   const shapes = useRef<ReadonlyMap<ElementId, ReadShape>>(new Map())
   const shownParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
   const canvases = useRef<SlideCanvases>(() => null)
@@ -216,6 +226,7 @@ export function ThinDeck({ id }: { id: string }) {
       if (!live) return
       const painted = paint(store.current, stored.parts, opened?.ok === true ? opened.register : null)
       boxes.current = painted.boxes
+      movables.current = painted.movables
       shapes.current = painted.shapes
       shownParts.current = stored.parts
       canvases.current = painted.canvases
@@ -293,6 +304,30 @@ export function ThinDeck({ id }: { id: string }) {
     settle(outcome)
   }
 
+  async function onBox(target: ElementId, box: Box) {
+    async function refused() {
+      const opened = await connect(memoryRemote()).openDeck(id)
+      store.current.placeBox(target, landedBox(opened.ok ? opened.register : null, target))
+    }
+    const element = movables.current.get(target)
+    if (element === undefined) {
+      await refused()
+      return
+    }
+    const outcome = await commitBox(
+      connect,
+      id,
+      box,
+      element,
+      () => {
+        setPending(true)
+        store.current.placeBox(target, box)
+      },
+      refused,
+    )
+    settle(outcome)
+  }
+
   async function exportDeck() {
     await ensureMarkup()
     const stored = await getParts(id)
@@ -352,6 +387,7 @@ export function ThinDeck({ id }: { id: string }) {
             ) : (
               <SlideCanvas
                 className={cn(slideFrame, "shrink-0 overflow-clip focus-within:overflow-visible")}
+                onBox={(target, box) => void onBox(target, box)}
                 onEdit={(target, value) => void onEdit(target, value)}
                 slide={canvas}
                 store={store.current}

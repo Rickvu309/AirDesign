@@ -1,9 +1,12 @@
-import { useLayoutEffect, type CSSProperties } from "react"
-import type { ElementId } from "@airdesign/document"
-import { useElement } from "./element-view.js"
+import { useLayoutEffect, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react"
+import type { Box, ElementId, Kind } from "@airdesign/document"
+import { paintedAt } from "./box-gesture.js"
+import { useBox, useElement } from "./element-view.js"
 import { paragraphText, textValue } from "./paragraph-edit.js"
 import { Passage } from "./passage.js"
 import type { CanvasElement, CanvasSlide, CanvasText, PaintBox } from "./record.js"
+import { SelectionFrame } from "./selection-frame.js"
+import { canMove, canResize, useMoves, type Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
 import { anchored, ensureBulletRule, textLook, type Scaled, type TextLook } from "./text-look.js"
 
@@ -20,6 +23,8 @@ const noText: CanvasText = {
 }
 
 export const unshownFill = "var(--line)"
+
+const kindNames: Partial<Record<Kind, string>> = { picture: "Image", chart: "Chart", connector: "Line" }
 
 function turned(box: PaintBox): string | undefined {
   const turns: string[] = []
@@ -55,13 +60,29 @@ function textLayer(box: PaintBox | null, text: CanvasText, scaled: Scaled): CSSP
   }
 }
 
-function isBlank(text: string): boolean {
-  return textValue(text).every((paragraph) => paragraphText(paragraph).trim() === "")
+function lines(text: string): readonly string[] {
+  return textValue(text).flatMap((paragraph) => paragraphText(paragraph).split(/\r\n|[\r\n\v\f\u2028\u2029]/))
 }
 
-function takesPointer(element: CanvasElement, text: string): boolean {
-  if (!element.editable) return false
-  return element.placeholder || element.filled || element.box === null || !isBlank(text)
+function isBlank(text: string): boolean {
+  return lines(text).every((line) => line.trim() === "")
+}
+
+function nameOf(element: CanvasElement, text: string): string {
+  return (
+    lines(text)
+      .find((line) => line.trim() !== "")
+      ?.trim() ??
+    kindNames[element.kind] ??
+    "Shape"
+  )
+}
+
+function takesPointer(element: CanvasElement, text: string, moving: boolean): boolean {
+  const movable = moving && canMove(element)
+  if (!element.editable && !movable) return false
+  const drawn = movable && element.kind === "picture"
+  return drawn || element.placeholder || element.filled || element.box === null || !isBlank(text)
 }
 
 function cornerOf(element: CanvasElement, scaled: Scaled): number {
@@ -85,7 +106,7 @@ function frame(element: CanvasElement, scaled: Scaled, pointer: boolean): CSSPro
   }
 }
 
-function LineArt(props: { readonly element: CanvasElement; readonly scaled: Scaled }) {
+function LineArt(props: { readonly element: CanvasElement; readonly scaled: Scaled; readonly grab?: boolean }) {
   const { element, scaled } = props
   if (element.line === null || element.box === null) return null
   const width = scaled(element.box.width)
@@ -95,6 +116,7 @@ function LineArt(props: { readonly element: CanvasElement; readonly scaled: Scal
     fill: "none",
     stroke: element.line.color,
     strokeWidth: weight,
+    ...(props.grab === true ? { style: { pointerEvents: "visibleStroke", cursor: "move" } as const } : {}),
     ...(element.line.dash === null
       ? {}
       : { strokeDasharray: element.line.dash.map((step) => step * weight).join(" ") }),
@@ -194,20 +216,44 @@ function SheetElement(props: { readonly element: CanvasElement; readonly scaled:
   )
 }
 
+function reach(element: CanvasElement, id: ElementId, text: string, moves: Moves, typing: boolean) {
+  return {
+    role: "group",
+    "aria-label": nameOf(element, text),
+    tabIndex: canMove(element) && !typing ? 0 : -1,
+    onPointerDown: (event: PointerEvent<HTMLElement>) => moves.press(event, element, "move"),
+    onKeyDown: (event: KeyboardEvent<HTMLElement>) => moves.key(event, element),
+    onFocus: () => moves.select(id),
+  }
+}
+
 function PlacedText(props: {
   readonly store: PaintStore
   readonly element: CanvasElement
   readonly id: ElementId
   readonly scaled: Scaled
   readonly onEdit?: ((id: ElementId, value: string) => void) | undefined
+  readonly moves: Moves | null
 }) {
-  const { element, id, onEdit, scaled, store } = props
+  const { id, moves, onEdit, scaled, store } = props
   const record = useElement(store, id)
+  const box = paintedAt(props.element.box, useBox(store, id))
+  const element = box === props.element.box ? props.element : { ...props.element, box }
   const text = element.text ?? noText
   const look = textLook(text, scaled)
+  const shown = record?.text ?? ""
+  const typing = element.editable && onEdit !== undefined
   return (
-    <div data-canvas-element={element.key} style={frame(element, scaled, takesPointer(element, record?.text ?? ""))}>
-      <LineArt element={element} scaled={scaled} />
+    <div
+      data-canvas-element={element.key}
+      style={{
+        ...frame(element, scaled, takesPointer(element, shown, moves !== null)),
+        ...(moves === null ? {} : { outline: "none" }),
+        ...(moves === null || typing || !canMove(element) ? {} : { cursor: "move", touchAction: "none" }),
+      }}
+      {...(moves === null ? {} : reach(element, id, shown, moves, typing))}
+    >
+      <LineArt element={element} grab={moves !== null && canMove(element)} scaled={scaled} />
       <div style={textLayer(element.box, text, scaled)}>
         {element.editable && onEdit !== undefined ? (
           <Passage id={id} look={look} onEdit={(value) => onEdit(id, value)} store={store} />
@@ -226,6 +272,7 @@ export function SlideCanvas(props: {
   readonly className?: string
   readonly quiet?: boolean
   readonly onEdit?: (id: ElementId, value: string) => void
+  readonly onBox?: (id: ElementId, box: Box) => void
 }) {
   const { slide, width } = props
   const quiet = props.quiet === true
@@ -233,6 +280,9 @@ export function SlideCanvas(props: {
   useLayoutEffect(() => {
     ensureBulletRule(document)
   }, [])
+  const moves = useMoves(props.store, slide, width, props.onBox)
+  const moving = props.onBox === undefined ? null : moves
+  const selected = moving === null ? undefined : slide.elements.find((each) => each.id === moving.selected)
   return (
     <div
       {...(quiet ? { "data-thumb-paint": true } : { "data-slide-paint": true })}
@@ -244,7 +294,9 @@ export function SlideCanvas(props: {
         background: slide.background ?? "white",
         color: "black",
         fontSize: scaled(defaultTextSize),
+        ...(moving === null ? {} : { outline: "none" }),
       }}
+      {...(moving === null ? {} : { tabIndex: -1, ...moving.slide })}
     >
       {slide.elements.map((element) =>
         quiet ? (
@@ -256,11 +308,23 @@ export function SlideCanvas(props: {
             key={element.key}
             element={element}
             id={element.id}
+            moves={moving}
             onEdit={props.onEdit}
             scaled={scaled}
             store={props.store}
           />
         ),
+      )}
+      {moving === null || selected === undefined || selected.id === null ? null : (
+        <SelectionFrame
+          element={selected}
+          id={selected.id}
+          movable={canMove(selected)}
+          onPress={(event, grip) => moving.press(event, selected, grip)}
+          resizable={canResize(selected)}
+          scaled={scaled}
+          store={props.store}
+        />
       )}
     </div>
   )

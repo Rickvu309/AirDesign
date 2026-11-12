@@ -42,6 +42,7 @@ for (const name of [
   "slide-paint",
   "cleared-browser",
   "delete-account",
+  "move-resize",
 ]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)

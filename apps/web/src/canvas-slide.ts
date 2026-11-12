@@ -23,7 +23,12 @@ import {
 } from "@airdesign/render"
 import { pictureLayer, type PictureImage, type PictureSource } from "@/picture-fill"
 
-export type CanvasShape = { readonly id: ElementId; readonly kind: Kind; readonly editable: boolean }
+export type CanvasShape = {
+  readonly id: ElementId
+  readonly kind: Kind
+  readonly editable: boolean
+  readonly movable: boolean
+}
 
 export type CanvasSource = { readonly part: string; readonly shapes: ReadonlyMap<string, CanvasShape> }
 
@@ -189,6 +194,7 @@ function canvasElements(
       kind: shape?.kind ?? paintKind(row.kind),
       box: row.box,
       editable: shape?.editable ?? false,
+      movable: (shape?.movable ?? false) && row.group === null && row.box !== null,
       placeholder: row.placeholder !== null,
       filled: visibleFill(row.fill),
       fill: shapeFill(row, outline, src),
@@ -207,6 +213,7 @@ function unplaced(source: CanvasSource): readonly CanvasElement[] {
       key: `${source.part}#${name}`,
       ...shape,
       box: null,
+      movable: false,
       placeholder: false,
       filled: false,
       fill: null,

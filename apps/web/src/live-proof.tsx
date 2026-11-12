@@ -1,4 +1,4 @@
-import { readElementId, type Box } from "@airdesign/document"
+import { readElementId } from "@airdesign/document"
 import {
   connect,
   databaseName,
@@ -32,11 +32,6 @@ const airdesignLive = {
     const id = readElementId(node)
     if (id === undefined) return Promise.resolve({ ok: false, refusal: "node" })
     return cache().enqueue(deck, value, id, floor)
-  },
-  enqueueBox(deck: string, box: Box, node: string, floor = "") {
-    const id = readElementId(node)
-    if (id === undefined) return Promise.resolve({ ok: false, refusal: "node" })
-    return cache().enqueueBox(deck, box, id, floor)
   },
   pending(deck: string) {
     return cache().pending(deck)
