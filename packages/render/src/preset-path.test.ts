@@ -20,13 +20,17 @@ it("sizes an arrowhead from the short side, not the width", () => {
   expect(presetOutline("rightArrow", 200, 100)?.[0]?.d).toBe("M0 25L150 25L150 0L200 50L150 100L150 75L0 75Z")
 })
 
+it("draws a pie wedge as the quarter ellipse around its bottom right corner", () => {
+  expect(presetOutline("pieWedge", 200, 100)?.[0]?.d).toBe("M0 100A200 100 0 0 1 200 0L200 100Z")
+})
+
 it("keeps unknown and custom geometry on the rectangle fallback", () => {
   expect(presetOutline("unknown", 200, 100)).toBeNull()
   expect(presetOutline("custom", 200, 100)).toBeNull()
 })
 
 const presets =
-  "triangle rtTriangle diamond parallelogram trapezoid pentagon hexagon octagon homePlate chevron rightArrow leftArrow upArrow downArrow leftRightArrow plus star5 round1Rect round2SameRect snip1Rect snip2DiagRect wedgeRectCallout wedgeRoundRectCallout flowChartProcess flowChartDecision flowChartTerminator bracketPair bracePair donut arc can cube rightBrace leftBrace cloud leftRightArrowCallout bentConnector2 bentConnector3 bentConnector4 bentConnector5 curvedConnector2 curvedConnector3 curvedConnector4 curvedConnector5".split(
+  "triangle rtTriangle diamond parallelogram trapezoid pentagon hexagon octagon homePlate chevron rightArrow leftArrow upArrow downArrow leftRightArrow plus star5 round1Rect round2SameRect snip1Rect snip2DiagRect wedgeRectCallout wedgeRoundRectCallout flowChartProcess flowChartDecision flowChartTerminator bracketPair bracePair donut arc can cube rightBrace leftBrace cloud leftRightArrowCallout bentConnector2 bentConnector3 bentConnector4 bentConnector5 curvedConnector2 curvedConnector3 curvedConnector4 curvedConnector5 pieWedge".split(
     " ",
   )
 

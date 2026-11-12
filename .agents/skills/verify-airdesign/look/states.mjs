@@ -30,6 +30,14 @@ async function importedText(kit) {
   await kit.page.evaluate(() => document.fonts.ready)
 }
 
+async function slideDiagram(kit) {
+  await kit.signIn()
+  await kit.page.goto("/")
+  await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/census-updating-spm.pptx"), 5)
+  await expect(kit.page.locator("[data-slide-paint] [data-diagram-shape]")).toHaveCount(6)
+  await kit.page.evaluate(() => document.fonts.ready)
+}
+
 async function slideSections(kit) {
   await kit.signIn()
   await kit.page.goto("/")
@@ -46,10 +54,10 @@ async function slideSections(kit) {
   await expect(first).toHaveAttribute("aria-current", "true")
 }
 
-async function unshownDiagram(kit) {
+async function unshownChart(kit) {
   await kit.signIn()
   await kit.page.goto("/")
-  await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/doe-heat-pumps.pptx"), 3)
+  await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/census-updating-spm.pptx"), 14)
   await kit.page.evaluate(() => document.fonts.ready)
 }
 
@@ -273,8 +281,9 @@ export const states = [
   { name: "editor-offline", design: "/screens/s49-02-editor-errors-offline", drive: offline },
   { name: "table-cells", design: null, drive: tableCells },
   { name: "imported-text", design: null, drive: importedText },
-  { name: "unshown-diagram", design: null, drive: unshownDiagram },
+  { name: "unshown-chart", design: null, drive: unshownChart },
   { name: "deck-refused", design: null, drive: deckRefused },
+  { name: "slide-diagram", design: null, drive: slideDiagram },
   { name: "agent-empty", design: editor, journey: "aira-panel", at: "agent-panel" },
   {
     name: "agent-working",

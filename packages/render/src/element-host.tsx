@@ -219,7 +219,7 @@ function PlacedText(props: {
   const empty = isBlank(shown)
   const isSelected = moves !== null && moves.selected === id
   const showPrompt = typing && element.placeholder && empty && Boolean(element.prompt)
-  const showQuietOutline = element.placeholder && empty && !isSelected
+  const showQuietOutline = element.placeholder && empty && !isSelected && element.diagram === undefined
   const promptOutline: CSSProperties = showQuietOutline
     ? { outline: "1px dashed var(--placeholder-edge)", outlineOffset: -1 }
     : moves === null
