@@ -1,15 +1,9 @@
-import fs from "node:fs"
-import os from "node:os"
 import path from "node:path"
 import {
   boxExportLines,
   boxExportName,
   boxOriginalName,
   boxRoutes,
-  browserExportArgs,
-  browserExportTag,
-  freshExports,
-  judgedExportNames,
   paragraphExportLines,
   paragraphsExpected,
   paragraphsExportName,
@@ -17,37 +11,6 @@ import {
   validatorFiles,
 } from "./paragraph-export.mjs"
 import { slideExportLines, slideExportName, slideKeptParts, slideOriginalName } from "./slide-export.mjs"
-
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), "paragraph-export-"))
-process.on("exit", () => fs.rmSync(dir, { recursive: true, force: true }))
-
-const deck = path.join(dir, "exported-deck.pptx")
-const paragraphs = path.join(dir, paragraphsExportName)
-const box = path.join(dir, boxExportName)
-fs.writeFileSync(deck, "old deck")
-fs.writeFileSync(paragraphs, "old paragraphs")
-fs.writeFileSync(box, "old box")
-let seen = ""
-const spec = await freshExports({
-  deck,
-  paragraphs,
-  box,
-  run: async () => {
-    seen = `${fs.existsSync(deck)} ${fs.existsSync(paragraphs)} ${fs.existsSync(box)}`
-    fs.writeFileSync(deck, "fresh deck")
-    fs.writeFileSync(paragraphs, "fresh paragraphs")
-  },
-})
-if (seen !== "false false false") throw new Error(`a stale export was there when the spec ran: ${seen}`)
-if (spec.ok) throw new Error("a spec that wrote no exported-box.pptx passed")
-if (!spec.line.includes(`wrote no tests/browser/${boxExportName}`)) throw new Error(spec.line)
-
-if (judgedExportNames({ ok: true }).join() !== [paragraphsExportName, boxExportName, slideExportName].join()) {
-  throw new Error("a good spec must judge the paragraph, box and slide exports")
-}
-if (judgedExportNames({ ok: false }).length !== 0) {
-  throw new Error("a failed spec must judge no export")
-}
 
 const fixturePath = (name) => path.join("fixtures", name)
 const files = validatorFiles({
@@ -165,24 +128,4 @@ const dangling = slideExportLines({
   ...answers(),
 })
 if (!dangling.includes("slide export dangling p:spTgt 9")) throw new Error("a new dangling reference was ignored")
-const slides = path.join(dir, slideExportName)
-fs.writeFileSync(slides, "old slides")
-const slideSpec = await freshExports({
-  deck,
-  paragraphs,
-  box,
-  slides,
-  run: async () => {
-    if (fs.existsSync(slides)) throw new Error("stale")
-    fs.writeFileSync(deck, "fresh deck")
-    fs.writeFileSync(paragraphs, "fresh paragraphs")
-    fs.writeFileSync(box, "fresh box")
-    fs.writeFileSync(slides, "fresh slides")
-  },
-})
-if (!slideSpec.ok) throw new Error(slideSpec.line)
-
-if (!browserExportArgs.includes("--grep")) throw new Error("browserExportArgs missing --grep")
-if (!browserExportArgs.includes(browserExportTag)) throw new Error("browserExportArgs missing browserExportTag")
-
 console.log("paragraph export tests passed")

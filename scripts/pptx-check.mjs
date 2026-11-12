@@ -5,16 +5,10 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
-import {
-  boxExportLines,
-  boxExportName,
-  browserExportArgs,
-  freshExports,
-  judgedExportNames,
-  paragraphExportLines,
-  paragraphsExportName,
-  validatorFiles,
-} from "./paragraph-export.mjs"
+import { validatorFiles } from "./paragraph-export.mjs"
+import { freshBrowserExport } from "./browser-export.mjs"
+import { browserExportArgs, caseExports, loadCases } from "./pptx-cases.mjs"
+import { textExportName } from "./pptx-cases/text.mjs"
 import { judgeParts } from "./judge.mjs"
 import {
   changedSinceArgs,
@@ -52,14 +46,9 @@ import {
   renderUse,
   readMachine,
 } from "./pptx-render.mjs"
-import { slideEditsExportName, slideEditsLines } from "./slide-edits.mjs"
-import { diagramEditsExportName, diagramEditsLines } from "./diagram-edits.mjs"
-import { chartEditsExportName, chartEditsLines } from "./chart-edits.mjs"
 import { cloneEditsLines, writeCloneEdits } from "./clone-edits.mjs"
-import { slideExportLines, slideExportName } from "./slide-export.mjs"
 import { storedZip } from "./stored-zip.mjs"
 import { browserEnv } from "../.agents/skills/verify-airdesign/bin/browser.mjs"
-import { blankCase, blankExportLines, blankExportName } from "./blank-export.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 await takeMachineLock()
@@ -68,13 +57,9 @@ const phases = phaseClock()
 const dotnet = process.env.PPTX_DOTNET ?? "dotnet"
 const soffice = process.env.PPTX_SOFFICE ?? "soffice"
 const fixtures = path.join(root, "scripts/pptx-fixtures")
-const browserExportName = "exported-deck.pptx"
-const browserExportPath = path.join(root, "tests/browser", browserExportName)
-const paragraphsExportPath = path.join(root, "tests/browser", paragraphsExportName)
-const boxExportPath = path.join(root, "tests/browser", boxExportName)
-const slideExportPath = path.join(root, "tests/browser", slideExportName)
-const browserShape = "2"
-const browserText = "Hello!"
+const entries = await loadCases(root)
+const exportNames = caseExports(entries)
+const exportPath = (name) => path.join(root, "tests/browser", name)
 const inputs = corpusInputs(root)
 
 const run = (command, args) =>
@@ -122,46 +107,17 @@ const renderCacheReady = readMachine({ soffice, pdftoppm: "pdftoppm", env: proce
 )
 
 await phases.time("build", () => run("pnpm", ["--filter", "@airdesign/pptx", "build"]))
-const browserSpec = freshExports({
-  deck: browserExportPath,
-  paragraphs: paragraphsExportPath,
-  box: boxExportPath,
-  slides: slideExportPath,
-  also: [
-    path.join(root, "tests/browser", blankExportName),
-    path.join(root, "tests/browser/exported-blank-slides.pptx"),
-    path.join(root, "tests/browser", slideEditsExportName),
-    path.join(root, "tests/browser", diagramEditsExportName),
-    path.join(root, "tests/browser", chartEditsExportName),
-  ],
-  run: () => phases.time("browser", () => run("pnpm", ["exec", "playwright", "test", ...browserExportArgs])),
+const browserSpec = freshBrowserExport({
+  file: exportPath(exportNames[0]),
+  also: exportNames.slice(1).map(exportPath),
+  run: () => phases.time("browser", () => run("pnpm", ["exec", "playwright", "test", ...browserExportArgs(entries)])),
 })
 const pptx = memoPptx(await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href))
 const require = createRequire(path.join(root, "packages/pptx/package.json"))
 await pptx.prepareMarkup(fs.readFileSync(require.resolve("sax-wasm/lib/sax-wasm.wasm")))
 const cases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
-cases.push({
-  name: "browser-text-export",
-  before: "clean.pptx",
-  after: browserExportName,
-  visible: true,
-  targeted: [1],
-  errors: 0,
-  dupes: 0,
-  pages: true,
-})
 const names = [...new Set(cases.flatMap((row) => [row.before, row.after]))]
-const browserExports = new Map([
-  [browserExportName, browserExportPath],
-  [paragraphsExportName, paragraphsExportPath],
-  [boxExportName, boxExportPath],
-  [slideExportName, slideExportPath],
-  [blankExportName, path.join(root, "tests/browser", blankExportName)],
-  ["exported-blank-slides.pptx", path.join(root, "tests/browser/exported-blank-slides.pptx")],
-  [slideEditsExportName, path.join(root, "tests/browser", slideEditsExportName)],
-  [diagramEditsExportName, path.join(root, "tests/browser", diagramEditsExportName)],
-  [chartEditsExportName, path.join(root, "tests/browser", chartEditsExportName)],
-])
+const browserExports = new Map(exportNames.map((name) => [name, exportPath(name)]))
 const fixturePath = (name) => browserExports.get(name) ?? path.join(root, decision.deckPath(name))
 const rendered = new Map()
 const renderNext = async () => {
@@ -196,7 +152,7 @@ const decision = corpusDecision({
   seeds: proofSeeds,
   ...inputs,
   cases,
-  browser: browserExportName,
+  browser: textExportName,
 })
 const waiting = [...decision.renders]
 console.log(`${decision.announce}: ${decision.added.join(", ")}`)
@@ -208,7 +164,7 @@ const gitAnswer = (args) => {
   }
 }
 const committed = committedBlobs(gitAnswer(committedArgs("HEAD")) ?? "")
-committed.delete(browserExportName)
+for (const name of exportNames) committed.delete(name)
 const earlyRenders = startRenders()
 const eventFile = process.env.GITHUB_EVENT_PATH
 const freshFails = freshMissFails({
@@ -220,7 +176,7 @@ const cleanDecks = ["clean.pptx", "nasa-1d-cnn.pptx", "doe-heat-pumps.pptx", "ce
 const endPrep = phases.begin("prep")
 const parts = new Map()
 for (const name of new Set([...names, ...cleanDecks])) {
-  if (name === browserExportName) continue
+  if (exportNames.includes(name)) continue
   parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
 }
 const routeDir = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-route-"))
@@ -280,24 +236,11 @@ earlyLists.catch(() => {})
 const spec = await browserSpec
 console.log(`browser export spec ${spec.seconds.toFixed(1)} seconds`)
 if (spec.ok) {
-  parts.set(browserExportName, await pptx.readParts(fs.readFileSync(browserExportPath)))
-  for (const name of judgedExportNames(spec)) {
-    parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
+  for (const name of exportNames) parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
+  for (const entry of entries) {
+    cases.push(...(entry.cases ?? []))
+    waiting.push(...(entry.renders ?? []))
   }
-  parts.set(blankExportName, await pptx.readParts(fs.readFileSync(fixturePath(blankExportName))))
-  parts.set(
-    "exported-blank-slides.pptx",
-    await pptx.readParts(fs.readFileSync(fixturePath("exported-blank-slides.pptx"))),
-  )
-  parts.set(slideEditsExportName, await pptx.readParts(fs.readFileSync(fixturePath(slideEditsExportName))))
-  parts.set(diagramEditsExportName, await pptx.readParts(fs.readFileSync(fixturePath(diagramEditsExportName))))
-  parts.set(chartEditsExportName, await pptx.readParts(fs.readFileSync(fixturePath(chartEditsExportName))))
-  cases.push(blankCase)
-  waiting.push(blankExportName)
-  waiting.push(browserExportName)
-} else {
-  const index = cases.findIndex((row) => row.name === "browser-text-export")
-  if (index >= 0) cases.splice(index, 1)
 }
 const lateLists = validatorLists(
   validatorFiles({
@@ -358,42 +301,11 @@ if (!spec.ok) {
   console.error(spec.line)
   if (spec.detail !== "") console.error(spec.detail)
 } else {
-  const cleanParts = parts.get("clean.pptx")
-  const exportParts = parts.get(browserExportName)
-  if (cleanParts === undefined || exportParts === undefined) throw new Error("browser export")
-  for (const failure of pptx.browserExportFailures(cleanParts, exportParts, browserShape, browserText)) {
-    failed += 1
-    console.log(failure)
-  }
-  for (const line of paragraphExportLines({ pptx, parts, lists, ids, orders })) {
-    failed += 1
-    console.log(line)
-  }
-  for (const line of boxExportLines({ pptx, parts, lists, ids, orders })) {
-    failed += 1
-    console.log(line)
-  }
-  for (const line of [
-    ...slideExportLines({ pptx, parts, lists, ids, orders }),
-    ...blankExportLines({ pptx, parts, lists }),
-    ...slideExportLines({
-      pptx,
-      parts,
-      lists,
-      ids,
-      orders,
-      kept: [...parts.get("blank.pptx").keys()].filter(
-        (name) => !["[Content_Types].xml", "ppt/presentation.xml", "ppt/_rels/presentation.xml.rels"].includes(name),
-      ),
-      original: "blank.pptx",
-      exported: "exported-blank-slides.pptx",
-    }),
-    ...slideEditsLines({ pptx, parts, lists, ids, orders }),
-    ...diagramEditsLines({ pptx, parts, lists, ids, orders }),
-    ...chartEditsLines({ pptx, parts, lists, ids, orders }),
-  ]) {
-    failed += 1
-    console.log(line)
+  for (const entry of entries) {
+    for (const line of entry.lines({ pptx, parts, lists, ids, orders })) {
+      failed += 1
+      console.log(line)
+    }
   }
 }
 for (const line of cloneEditsLines({ pptx, parts, lists, ids, orders })) {

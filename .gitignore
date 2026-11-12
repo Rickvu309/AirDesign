@@ -2,11 +2,7 @@ node_modules/
 dist/
 *.tsbuildinfo
 test-results/
-tests/browser/exported-deck.pptx
-tests/browser/exported-paragraphs.pptx
-tests/browser/exported-box.pptx
-tests/browser/exported-slides.pptx
-tests/browser/exported-blank.pptx
+tests/browser/exported-*.pptx
 playwright-report/
 blob-report/
 
@@ -14,10 +10,4 @@ scripts/pptx-judge/bin/
 scripts/pptx-judge/obj/
 
 .stryker-tmp/
-tests/browser/exported-deck.pptx
 .wrangler
-
-tests/browser/exported-blank-slides.pptx
-tests/browser/exported-slide-edits.pptx
-tests/browser/exported-diagram-edits.pptx
-tests/browser/exported-chart-edits.pptx

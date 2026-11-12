@@ -1,6 +1,4 @@
-import { freshBrowserExport } from "./browser-export.mjs"
 import { judge } from "./judge.mjs"
-import { slideExportName } from "./slide-export.mjs"
 
 export const paragraphsExportName = "exported-paragraphs.pptx"
 export const paragraphsOriginalName = "doe-heat-pumps.pptx"
@@ -42,24 +40,6 @@ export const boxRoutes = [
   { name: "move", part: boxExpected.part, shape: boxExpected.shape, x: boxExpected.box.x, y: boxExpected.box.y },
   { name: "resize", part: boxExpected.part, shape: boxExpected.shape, cx: boxExpected.box.cx, cy: boxExpected.box.cy },
 ]
-
-export const browserSpecs = [
-  "tests/browser/thin-deck.spec.ts",
-  "tests/browser/box-export.spec.ts",
-  "tests/browser/blank-deck.spec.ts",
-  "tests/browser/slide-export.spec.ts",
-  "tests/browser/slide-edits.spec.ts",
-  "tests/browser/diagram-export.spec.ts",
-  "tests/browser/chart-export.spec.ts",
-]
-
-export const browserExportTag = "@export"
-export const browserExportArgs = [...browserSpecs, "--grep", browserExportTag]
-
-export const freshExports = ({ deck, paragraphs, box, slides, also = [], run }) =>
-  freshBrowserExport({ file: deck, also: [paragraphs, box, ...(slides === undefined ? [] : [slides]), ...also], run })
-
-export const judgedExportNames = (spec) => (spec.ok ? [paragraphsExportName, boxExportName, slideExportName] : [])
 
 export const validatorFiles = ({ names, fixturePath, others }) => [...[...names].map(fixturePath), ...others]
 
