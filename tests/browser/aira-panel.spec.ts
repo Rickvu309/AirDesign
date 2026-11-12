@@ -161,6 +161,8 @@ test("Aira keeps streaming and repainting while a person changes slide order", a
   await expect(entries).toHaveCount(2)
   await entries.nth(1).focus()
   await page.keyboard.press("Alt+ArrowUp")
+  await expect(entries.first()).toHaveAttribute("aria-current", "true")
+  await entries.first().focus()
   await page.keyboard.press("Delete")
   await expect(entries).toHaveCount(1)
   stack.release()
