@@ -4,8 +4,10 @@ An open deck shows the Agent panel on the right. The person types to Aira, watch
 
 ## Sub-features
 
+- `empty` before the first ask the panel shows the Aira mark, `Aira`, and the line `Aira can be wrong. Check a number, a quote, or a slide before you rely on it.` The head reads `New chat` and its New chat button is disabled.
 - `ask` the composer reads `Ask Aira`. Enter sends; Shift+Enter starts a new line. The ask shows as the person's message and becomes the chat title.
-- `stream` Aira's words show as they arrive. Each tool call shows its tool name, without a caret while it runs.
+- `stream` Aira's words show as they arrive, and the thread follows them while the person is at the latest message. Scrolling up stops the following; the round arrow button brings it back.
+- `steps` tool calls show in plain words, never the tool's id: a running step reads like `Editing the deck`, a finished one `Edited the deck`. Steps taken one after another sum up in one line, such as `Read the deck, edited the deck`, that opens to each step.
 - `working` while a run works the composer reads `Add to the request` and shows `Stop`. Text sent then goes with the next model call, or starts the next run when this one ends first.
 - `live` Aira's edits land through `/mcp` and the slide, its thumbnail and the server copy change in the same page load.
 - `undo` a finished run with an edit shows `Undo`. It takes back every run of that ask through `deckRoutes.undo`.
@@ -28,7 +30,7 @@ Preconditions:
 
 - **Run it.** `$V journey <run> aira-panel`. Prints `"passed":true` and the evidence dir.
 - **Panel.** Import `clean.pptx`; the panel shows the `Ask Aira` composer. Evidence `NN-agent-panel`, `NN-typed`.
-- **Working.** Send the ask with `edit.sse` then `edited.sse`. The journey holds `/mcp` in the browser so the working state can be captured: the streamed words, the running `airdesign_edit_deck` row, `Stop`. Evidence `NN-working`.
+- **Working.** Send the ask with `edit.sse` then `edited.sse`. The journey holds `/mcp` in the browser so the working state can be captured: the streamed words, the running `Editing the deck` row, `Stop`. Evidence `NN-working`.
 - **Done.** Release `/mcp`. The slide reads `Hello from Aira`, the reply ends, `Undo` shows, and `deckRoutes.open` agrees. Evidence `NN-done`.
 - **Usage.** Open the ring. Evidence `NN-usage`.
 - **Undo.** The slide reads `Hello` again in the same page load and the server agrees. Evidence `NN-undone`.
@@ -38,4 +40,4 @@ Preconditions:
 
 - The 402 limit and `Stop` mid-stream are proven in `tests/browser/aira-panel.spec.ts`, which fills the ledger and holds the scripted stream. This stack has no handle for either.
 - The chat lives in the page. A reload starts a new chat.
-- Tool rows show the tool's name; no product copy names each tool yet.
+- The words for each tool live in `apps/web/src/aira-steps.ts`. They are put together from words the designed screens already use, until the owner gives each tool its own words.

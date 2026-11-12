@@ -155,11 +155,14 @@ function sameCaret(carets: Carets): boolean {
   return carets.start.paragraph === carets.end.paragraph && carets.start.offset === carets.end.offset
 }
 
+export const framedOutline = { outlineStyle: "solid", outlineWidth: 2, outlineColor: "transparent" } as const
+
 export function Passage(props: {
   readonly store: PaintStore
   readonly id: ElementId
   readonly onEdit?: (value: string) => void
   readonly look?: TextLook | undefined
+  readonly framed?: boolean
 }) {
   const { look } = props
   const record = useElement(props.store, props.id)
@@ -225,7 +228,7 @@ export function Passage(props: {
     <div
       ref={box}
       contentEditable={props.onEdit !== undefined}
-      style={{ whiteSpace: "pre-wrap", ...look?.body }}
+      style={{ whiteSpace: "pre-wrap", ...(props.framed === true ? framedOutline : {}), ...look?.body }}
       onKeyDown={(event) => {
         if (composing.current || event.nativeEvent.isComposing) return
         const shown = event.currentTarget

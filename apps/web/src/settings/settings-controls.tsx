@@ -1,10 +1,17 @@
+import { cn } from "@/lib/class-names"
 import { claudeLogo } from "@/decks/agent-logos"
 import { codexFill, codexTile } from "@/settings/settings-agent-art"
 
-export function AiraTile() {
+export function AiraTile({ large = false }: { large?: boolean }) {
+  const mark = large ? 20 : 16
   return (
-    <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-background shadow-[inset_0_0_0_1px_var(--line)]">
-      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+    <span
+      className={cn(
+        "flex shrink-0 items-center justify-center bg-background shadow-[inset_0_0_0_1px_var(--line)]",
+        large ? "size-10 rounded-[var(--shape-card)]" : "size-7 rounded-md",
+      )}
+    >
+      <svg width={mark} height={mark} viewBox="0 0 16 16" aria-hidden="true">
         <path
           d="M3 13.67 L6.27 6.8 M13 13.67 L9.73 6.8"
           fill="none"

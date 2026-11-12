@@ -3,7 +3,7 @@ import type { ElementId } from "@airdesign/document"
 import { paintedAt } from "./box-gesture.js"
 import { useBox, useElement } from "./element-view.js"
 import { paragraphText, textValue } from "./paragraph-edit.js"
-import { Passage } from "./passage.js"
+import { framedOutline, Passage } from "./passage.js"
 import type { CanvasElement, CanvasText, PaintBox } from "./record.js"
 import { ShapeArt, shapePaths } from "./shape-art.js"
 import { SheetText } from "./sheet-text.js"
@@ -197,7 +197,7 @@ function PlacedText(props: {
       data-canvas-element={element.key}
       style={{
         ...elementFrame(element, scaled, takesPointer(element, shown, moves !== null, drawnWhenBlank), unshown),
-        ...(moves === null ? {} : { outline: "none" }),
+        ...(moves === null ? {} : framedOutline),
         ...(moves === null || typing || !canMove(element) ? {} : { cursor: "move", touchAction: "none" }),
       }}
       {...(moves === null ? {} : reach(element, id, shown, moves, typing, fallbackName))}
@@ -205,7 +205,7 @@ function PlacedText(props: {
       <ShapeArt element={element} grab={moves !== null && canMove(element)} scaled={scaled} />
       <div style={textLayer(element.box, text, scaled)}>
         {element.editable && onEdit !== undefined ? (
-          <Passage id={id} look={look} onEdit={(value) => onEdit(id, value)} store={store} />
+          <Passage framed={moves !== null} id={id} look={look} onEdit={(value) => onEdit(id, value)} store={store} />
         ) : (
           <Passage id={id} look={look} store={store} />
         )}

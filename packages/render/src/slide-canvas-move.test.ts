@@ -215,6 +215,20 @@ describe("SlideCanvas boxes", () => {
     expect(host.ownerDocument.activeElement).toBe(surface(host))
   })
 
+  it("marks the text being typed in with the selection frame alone, and keeps the browser's ring when no frame shows", async () => {
+    const framed = await mounted([element(id, { editable: true })], "Hello", true)
+    const text = frameOf(framed.host).querySelector<HTMLElement>('[contenteditable="true"]')
+    if (text === null) throw new Error("no text")
+    await focus(text)
+    expect(selection(framed.host)?.dataset.selection).toBe(id)
+    expect(text.style.outlineColor).toBe("transparent")
+    expect(frameOf(framed.host).style.outlineColor).toBe("transparent")
+    const plain = await mounted([element(other, { editable: true })], "Hello", true, false)
+    expect(frameOf(plain.host, other).querySelector<HTMLElement>('[contenteditable="true"]')?.style.outlineColor).toBe(
+      "",
+    )
+  })
+
   it("goes back into the text on Enter", async () => {
     const { host } = await mounted([element(id, { editable: true })], "Hello", true)
     await focus(frameOf(host))

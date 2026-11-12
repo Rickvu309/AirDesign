@@ -1,75 +1,20 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Conversation, ConversationContent } from "@/components/ai-elements/conversation"
-import {
-  PromptInput,
-  PromptInputBody,
-  PromptInputButton,
-  PromptInputTextarea,
-} from "@/components/ai-elements/prompt-input"
+import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation"
+import { useConversationFollow } from "@/components/ai-elements/conversation-follow"
 import { productCopy, usageResetsOn } from "@/copy/product-copy"
 import { creditsCopy } from "@/credits/credits-sample"
 import { UsageRing } from "@/editor/agent-panel"
-import { surfaceShadow } from "@/editor/editor-chrome"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 import { airaChat, askAira, undoExchange, type AiraChat } from "@/aira-loop"
+import { AiraComposer } from "@/aira-composer"
 import { Asked, ExchangeView, UsagePop } from "@/aira-reply"
 import { resetsWhen, usagePercent } from "@/aira-usage"
+import { AiraWelcome } from "@/aira-welcome"
 import { signInAddress } from "@/thin-notice"
 
-function Composer({
-  draft,
-  working,
-  limit,
-  onDraft,
-  onSend,
-  onStop,
-}: {
-  draft: string
-  working: boolean
-  limit: string | undefined
-  onDraft: (text: string) => void
-  onSend: () => void
-  onStop: () => void
-}) {
-  const hint = limit ?? (working ? "Add to the request" : creditsCopy.askAira)
-  function onKey(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return
-    event.preventDefault()
-    onSend()
-  }
-  return (
-    <div className="flex flex-col px-3 pb-3">
-      <PromptInput className="min-h-12 items-center gap-2 py-2 pr-2 pl-3">
-        <PromptInputBody>
-          <PromptInputTextarea
-            aria-label={hint}
-            placeholder={hint}
-            value={draft}
-            disabled={limit !== undefined}
-            onChange={(event) => onDraft(event.target.value)}
-            onKeyDown={onKey}
-          />
-        </PromptInputBody>
-        {working ? (
-          <PromptInputButton className="size-7 rounded-full bg-ink" aria-label="Stop" onClick={onStop}>
-            <span className="block size-2.5 rounded-[2px] bg-white" />
-          </PromptInputButton>
-        ) : (
-          <PromptInputButton
-            className={cn("size-8 rounded-full bg-white text-foreground disabled:opacity-40", surfaceShadow)}
-            aria-label="Send"
-            disabled={limit !== undefined || draft.trim() === ""}
-            onClick={onSend}
-          >
-            <EditorIcon name="up" size={16} />
-          </PromptInputButton>
-        )}
-      </PromptInput>
-    </div>
-  )
-}
+const headControl = "outline-hidden focus-visible:shadow-[0px_0px_0px_2px_var(--ring)] active:translate-y-0"
 
 export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
   const [chat, setChat] = useState(() => airaChat(deck))
@@ -80,19 +25,16 @@ export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
   const latest = useRef(chat)
   const waiting = useRef<string[]>([])
   const stopper = useRef<AbortController | null>(null)
-  const scroller = useRef<HTMLDivElement>(null)
   const popId = useId()
   const last = chat.exchanges.at(-1)
   const working = last?.end === "working"
   const usage = chat.usage
   const limit = last?.end === "out-of-usage" && usage !== null ? usageResetsOn(resetsWhen(usage.resets)) : undefined
+  const empty = chat.exchanges.length === 0
+  const asked = chat.exchanges[0]?.asked
+  const { viewport, content, away, toLatest, onScroll } = useConversationFollow(empty)
 
   useEffect(() => () => stopper.current?.abort(), [])
-
-  useEffect(() => {
-    const box = scroller.current
-    if (box !== null) box.scrollTop = box.scrollHeight
-  }, [chat, queued])
 
   function shown(next: AiraChat) {
     latest.current = next
@@ -122,16 +64,21 @@ export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
     else setDraft((now) => (now === "" ? left : `${left}\n${now}`))
   }
 
-  function send() {
-    const text = draft.trim()
-    if (text === "" || limit !== undefined || undoing) return
-    setDraft("")
+  function ask(said: string) {
+    const text = said.trim()
+    if (text === "" || limit !== undefined || undoing) return false
+    toLatest()
     if (!working) {
       void run(text)
-      return
+      return true
     }
     waiting.current.push(text)
     setQueued([...waiting.current])
+    return true
+  }
+
+  function send() {
+    if (ask(draft)) setDraft("")
   }
 
   async function undo(exchange: number) {
@@ -149,9 +96,11 @@ export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col" hidden={hidden} data-aira-panel>
-      <div className="flex h-11 shrink-0 items-center justify-between gap-2 pr-3 pl-4">
-        <span className="min-w-0 truncate text-xs text-quiet">{chat.exchanges[0]?.asked ?? productCopy.agentName}</span>
+    <div className="relative flex min-h-0 flex-1 flex-col" hidden={hidden} data-aira-panel>
+      <div data-slot="conversation-head" className="flex h-11 shrink-0 items-center justify-between gap-2 pr-3 pl-4">
+        <span className="min-w-0 truncate text-xs text-quiet" {...(asked === undefined ? {} : { title: asked })}>
+          {asked ?? creditsCopy.newChat}
+        </span>
         <span className="flex shrink-0 items-center gap-0.5">
           {usage === null ? null : (
             <Button
@@ -161,7 +110,7 @@ export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
               aria-label={productCopy.usageTitle}
               aria-expanded={usageOpen}
               aria-controls={popId}
-              className={cn("size-6 rounded-[var(--shape-control)] active:translate-y-0", usageOpen && "bg-line")}
+              className={cn("size-6 rounded-[var(--shape-control)]", headControl, usageOpen && "bg-line")}
               onClick={() => setUsageOpen((open) => !open)}
             >
               <UsageRing fraction={usagePercent(usage) / 100} />
@@ -171,31 +120,46 @@ export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
             type="button"
             variant="ghost"
             size="icon"
-            className="size-7 rounded-md text-quiet active:translate-y-0"
+            className={cn("size-7 rounded-md text-quiet", headControl)}
             aria-label={creditsCopy.newChat}
-            disabled={working || undoing}
+            disabled={empty || working || undoing}
             onClick={newChat}
           >
             <EditorIcon name="pen" size={15} />
           </Button>
         </span>
       </div>
-      <Conversation ref={scroller} className="overflow-y-auto">
-        <ConversationContent className="pb-4">
-          {chat.exchanges.map((exchange, index) => (
-            <ExchangeView
-              key={index}
-              exchange={exchange}
-              resets={usage?.resets}
-              onUndo={working || undoing ? undefined : () => void undo(index)}
-            />
-          ))}
-          {queued.map((text, index) => (
-            <Asked key={index} text={text} />
-          ))}
-        </ConversationContent>
-      </Conversation>
-      <Composer
+      {empty ? (
+        <AiraWelcome onPick={(text) => void ask(text)} disabled={limit !== undefined || undoing} />
+      ) : (
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <Conversation
+            ref={viewport}
+            onScroll={onScroll}
+            tabIndex={0}
+            aria-label={productCopy.agentName}
+            aria-relevant="additions"
+            aria-busy={working}
+            className="overflow-y-auto outline-hidden focus-visible:shadow-[inset_0px_0px_0px_2px_var(--ring)]"
+          >
+            <ConversationContent ref={content} className="pb-4">
+              {chat.exchanges.map((exchange, index) => (
+                <ExchangeView
+                  key={index}
+                  exchange={exchange}
+                  resets={usage?.resets}
+                  onUndo={working || undoing ? undefined : () => void undo(index)}
+                />
+              ))}
+              {queued.map((text, index) => (
+                <Asked key={index} text={text} />
+              ))}
+            </ConversationContent>
+          </Conversation>
+          <ConversationScrollButton shown={away} onClick={toLatest} />
+        </div>
+      )}
+      <AiraComposer
         draft={draft}
         working={working}
         limit={limit}

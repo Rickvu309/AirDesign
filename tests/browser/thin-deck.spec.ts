@@ -3,6 +3,7 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
+import { expectNoSample } from "./no-sample"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const fixture = join(fixtures, "clean.pptx")
@@ -649,40 +650,6 @@ test("the page names the opened file, not the sample deck", async ({ page }) => 
     for (const word of sample) expect(body).not.toContain(word)
   }
 })
-
-const sampleWords = [
-  "Q3 investor update",
-  "64%",
-  "38%",
-  "Weekly usage",
-  "Resets Mon 8:00 AM",
-  "See all",
-  "Make an 8-slide investor update from my notes. Calm, data first, our Halden brand.",
-  "Q3 board notes.docx",
-  "Read 1 file, built 8 slides",
-  "Your deck is ready. Eight slides, every number from your notes.",
-  "Undo",
-  "Slide 3",
-  "Ask Aira",
-]
-const sampleControls = ["Attach", "Microphone"]
-
-async function expectNoSample(page: Page) {
-  const body = (await page.locator("body").textContent()) ?? ""
-  for (const word of sampleWords) expect(body, word).not.toContain(word)
-  for (const name of sampleControls) {
-    await expect(page.getByRole("button", { name, exact: true }), name).toHaveCount(0)
-  }
-  await expect(page.locator("circle[stroke-dasharray]"), "usage ring").toHaveCount(0)
-  await expect(page.locator("div.h-12.bg-line"), "notes band").toHaveCount(0)
-  const seen = (await page.locator(".screen-frame").innerText())
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-  expect(new Set(seen)).toEqual(
-    new Set(["clean", "1", "Hello", "63%", "Export", "New slide", "Aira", "Agent", "Design"]),
-  )
-}
 
 test("a real deck paints no sample and still exports", async ({ page }, testInfo) => {
   const saved = testInfo.outputPath("deck-no-sample.pptx")
