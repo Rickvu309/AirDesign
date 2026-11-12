@@ -1,6 +1,6 @@
 import { deckName, deckRoutes } from "@airdesign/catalog"
 import { afterEach, expect, it, vi } from "vitest"
-import { importDeck, nameImportedDeck, saveDeck } from "./import-deck"
+import { importDeck, saveDeck } from "./import-deck"
 
 const live = vi.hoisted(() => {
   const saved: { deck: string; name?: string }[] = []
@@ -14,10 +14,6 @@ vi.mock("@airdesign/live", async () => {
     queueOriginal: async () => {},
     connect: () => ({
       index: async () => ({ ok: true }),
-      flush: async () => ({ ok: true }),
-      async open() {
-        return { ok: true }
-      },
     }),
     putParts: async (deck: string, stored: { name?: string }) => {
       live.saved.push({ deck, ...stored })
@@ -49,16 +45,11 @@ async function wasmBytes(): Promise<Uint8Array> {
 
 async function importedNames(fileName: string) {
   const wasm = await wasmBytes()
-  const server: unknown[] = []
-  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
-    if (String(url) !== deckRoutes.rename.path) return new Response(Uint8Array.from(wasm).buffer)
-    server.push(deckRoutes.rename.read(JSON.parse(String(init?.body))))
-    return new Response("{}")
-  })
+  vi.stubGlobal("fetch", async () => new Response(Uint8Array.from(wasm).buffer))
   const imported = await importDeck(new File([Uint8Array.from(await cleanFile())], fileName))
   if (!imported.ok) throw new Error("import")
-  await nameImportedDeck(imported.deck)
-  return { device: live.saved[0], server }
+  const device = live.saved[0]
+  return { device, server: deckRoutes.rename.read({ deck: device?.deck, name: device?.name }) }
 }
 
 it("returns a failure reason when the file is not a valid package", async () => {
@@ -79,12 +70,12 @@ it("saves the file name without .pptx with the deck", async () => {
 it("gives an imported deck the same name on the device and on the server", async () => {
   const { device, server } = await importedNames("Board deck.PPTX")
   expect(device?.name).toBe("Board deck")
-  expect(server).toEqual([{ ok: true, deck: device?.deck, name: "Board deck" }])
+  expect(server).toEqual({ ok: true, deck: device?.deck, name: "Board deck" })
 })
 
 it("names a deck on the server from a long file name that has an emoji", async () => {
   const name = `${"x".repeat(199)}\ud83d\ude00`
   const { device, server } = await importedNames(`${name}.pptx`)
   expect(device?.name).toBe(name)
-  expect(server).toEqual([{ ok: true, deck: device?.deck, name }])
+  expect(server).toEqual({ ok: true, deck: device?.deck, name })
 })

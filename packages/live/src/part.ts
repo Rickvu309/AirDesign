@@ -38,11 +38,13 @@ function isPartRow(value: unknown): value is PartRow {
 export async function putParts(deck: string, parts: DeckParts): Promise<PartsResult> {
   const parsed = readDeckId(deck)
   if (!parsed.ok) return parsed
-  const names: Record<string, string> = {}
-  for (const [name, bytes] of parts.parts) names[name] = await putPart(bytes)
+  const [named, file] = await Promise.all([
+    Promise.all([...parts.parts].map(async ([name, bytes]) => [name, await putPart(bytes)] as const)),
+    putPart(parts.file),
+  ])
   const row: PartRow = {
-    names,
-    file: await putPart(parts.file),
+    names: Object.fromEntries(named),
+    file,
     ...(parts.name === undefined ? {} : { name: parts.name }),
   }
   if (bytesOf(JSON.stringify(row)) >= limits.row) return { ok: false, refusal: "limit" }
