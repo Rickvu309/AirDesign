@@ -230,6 +230,7 @@ function stopRun(deck: Deck, runId: string): CallResult {
 }
 
 function undoRun(deck: Deck, runId: string): CallResult {
+  if (deck.register.order.some((row) => row.runId === runId)) return refused("run-fenced")
   const result = endOnTouched(deck, "undo", runId, (body) => showsRows(body, runId))
   if (result.ok && result.deck === deck) return refused("run-fenced")
   return result
