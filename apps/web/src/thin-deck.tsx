@@ -23,7 +23,7 @@ import {
 } from "@/commit-edit"
 import { boxName, landedBox, paintedBox, shownBox } from "@/element-move"
 import { exportedParts } from "@/exported-parts"
-import { commitSlideChange, type SlideChange } from "@/slide-edit"
+import { commitSlideChange, slideNames, type SlideChange } from "@/slide-edit"
 import { layoutChoices } from "@/slide-layout"
 import { commitElement, type ElementChange } from "@/element-edit"
 import { ensureMarkup } from "@/markup"
@@ -37,14 +37,6 @@ import { busyElements, liveRepaint, shownValue } from "@/live-repaint"
 import { AiraPanel } from "@/aira-panel"
 import { useUndoKeys } from "@/editor/undo-keys"
 import { emptyUndo, recorded, turnBack, undoLabel, type UndoDirection, type UndoEntry } from "@/undo-list"
-import type { UndoName } from "@/copy/undo-copy"
-
-const slideNames: Readonly<Record<SlideChange, UndoName>> = {
-  add: "new",
-  clone: "duplicate",
-  remove: "delete",
-  move: "order",
-}
 
 export function ThinDeck({ id }: { id: string }) {
   const store = useRef(paintStore())

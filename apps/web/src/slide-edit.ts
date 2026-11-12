@@ -14,10 +14,18 @@ import {
 import { connect, memoryRemote } from "@airdesign/live"
 import { readSlides } from "@airdesign/pptx"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
+import type { UndoName } from "@/copy/undo-copy"
 import { flooredEdit } from "@/slide-floor"
 import { newSlideLayout } from "@/slide-layout"
 
 export type SlideChange = "add" | "clone" | "remove" | "move"
+
+export const slideNames: Readonly<Record<SlideChange, UndoName>> = {
+  add: "new",
+  clone: "duplicate",
+  remove: "delete",
+  move: "order",
+}
 
 export function fileSlides(parts: ReadonlyMap<string, Uint8Array>, register: Register): readonly SlideId[] {
   if (register.file.length > 0) return register.file

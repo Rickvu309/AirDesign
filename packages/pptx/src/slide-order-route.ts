@@ -5,6 +5,7 @@ import {
   presentSlides,
   shapeOf,
   type ElementCommand,
+  type SlideCommand,
   type IndexElement,
   type SlideId,
   type SlideState,
