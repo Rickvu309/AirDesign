@@ -1,6 +1,7 @@
 import { opened, viewed, personSplit } from "./spec-register.js"
 import { dumpTopics } from "./spec-dump.js"
 import { replayIndex } from "./index-replay.js"
+import { replayUsage } from "./usage-replay.js"
 import { readdirSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -20,7 +21,6 @@ import {
   type Queued,
   type Register,
 } from "@airdesign/document"
-import { usage, type Command, type Ledger } from "@airdesign/usage"
 import { oauth, type Command as OauthCommand, type Grant } from "@airdesign/oauth"
 import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import { group as editGroup, state as editState, step as editStep } from "../specs/edit/view.mjs"
@@ -962,110 +962,6 @@ function replayOffline(graph: Graph, view: View, failures: string[]) {
   return { replayed, stuttered, unconnected }
 }
 
-const halfTokens = 100_000
-const allTokens = 200_000
-
-function usageLedger(spec: Spec): Ledger {
-  const turn = text(spec, "turn")
-  return {
-    spent: num(spec, "spent"),
-    open: turn === "none" ? null : { turn, hold: num(spec, "hold") },
-    week: num(spec, "week"),
-    outside: num(spec, "outside"),
-  }
-}
-
-function usagePicture(ledger: Ledger) {
-  return {
-    spent: ledger.spent,
-    hold: ledger.open?.hold ?? 0,
-    turn: ledger.open?.turn ?? "none",
-    week: ledger.week,
-    outside: ledger.outside,
-  }
-}
-
-function usageCommand(action: string): Command | null {
-  const reserve = (maxTokens: number, search: number, searchOn: boolean, usOnly: boolean): Command => ({
-    command: "reserve",
-    id: "a",
-    input: 0,
-    maxTokens,
-    coldPrefix: 0,
-    search,
-    searchOn,
-    usOnly,
-  })
-  const settle = (
-    id: string,
-    output: number,
-    search: number,
-    searchOn: boolean,
-    usOnly: boolean,
-    command: "settle" | "stop" = "settle",
-  ): Command => ({
-    command,
-    id,
-    input: 0,
-    output,
-    write5m: 0,
-    write1h: 0,
-    read: 0,
-    search,
-    searchOn,
-    usOnly,
-  })
-  if (action === "ReserveHalf" || action === "ReserveHalfRefused") return reserve(halfTokens, 0, false, false)
-  if (action === "ReserveAll" || action === "ReserveAllRefused") return reserve(allTokens, 0, false, false)
-  if (action === "ReserveZero") return reserve(0, 0, false, false)
-  if (action === "ReserveSearch" || action === "ReserveSearchRefused") return reserve(halfTokens, 1, true, false)
-  if (action === "ReserveUs" || action === "ReserveUsRefused") return reserve(halfTokens, 0, false, true)
-  if (action === "SettleHalf" || action === "SettleAgain") return settle("a", halfTokens, 0, false, false)
-  if (action === "SettleAll") return settle("a", allTokens, 0, false, false)
-  if (action === "SettleOther") return settle("b", halfTokens, 0, false, false)
-  if (action === "SettleSearch") return settle("a", halfTokens, 1, true, false)
-  if (action === "SettleUs") return settle("a", halfTokens, 0, false, true)
-  if (action === "StopHalf" || action === "StopAgain") return settle("a", halfTokens, 0, false, false, "stop")
-  if (action === "StopAll") return settle("a", allTokens, 0, false, false, "stop")
-  if (action === "StopOther") return settle("b", halfTokens, 0, false, false, "stop")
-  if (action === "Release" || action === "ReleaseClosed") return { command: "release", id: "a" }
-  if (action === "ReleaseOther") return { command: "release", id: "b" }
-  if (action === "Monday") return { command: "monday" }
-  if (action === "Outside") return { command: "outside" }
-  return null
-}
-
-function replayUsage(graph: Graph, view: View, failures: string[]) {
-  let replayed = 0
-  let stuttered = 0
-  for (const edge of graph.edges) {
-    const source = graph.states.get(edge.from)
-    const target = graph.states.get(edge.to)
-    if (!source || !target) throw new Error(`missing usage state for ${edge.action}`)
-    const where = `${readView(view, source, edge.action)} -${edge.action}-> ${readView(view, target, edge.action)}`
-    const command = usageCommand(edge.action)
-    if (!command) {
-      failures.push(`usage ${where} is not connected`)
-      continue
-    }
-    const result = usage(usageLedger(source), command)
-    const actual = usagePicture(result.ledger)
-    const expected = usagePicture(usageLedger(target))
-    if (!same(actual, expected)) {
-      failures.push(`usage ${where}\n  actual ${JSON.stringify(actual)}\n  expected ${JSON.stringify(expected)}`)
-      continue
-    }
-    const changed = !same(usagePicture(usageLedger(source)), expected)
-    if (changed !== result.accepted) {
-      failures.push(`usage ${where} accepted ${String(result.accepted)}`)
-      continue
-    }
-    if (changed) replayed += 1
-    else stuttered += 1
-  }
-  return { replayed, stuttered }
-}
-
 function oauthGrant(spec: Spec): Grant {
   const code = text(spec, "code")
   if (code !== "open" && code !== "used") throw new Error(`bad oauth code ${code}`)
@@ -1366,7 +1262,12 @@ describe("spec replay", () => {
         reports.usage = {
           states: graph.states.size,
           edges: graph.edges.length,
-          ...replayUsage(graph, view, failures),
+          ...replayUsage(
+            graph,
+            (source, target, action) =>
+              `${readView(view, source, action)} -${action}-> ${readView(view, target, action)}`,
+            failures,
+          ),
         }
       }
       if (topic.name === "oauth") {
