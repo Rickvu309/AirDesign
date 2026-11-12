@@ -1,5 +1,22 @@
-import type { Kind } from "@airdesign/document"
-import type { ElementId, SlideId } from "@airdesign/document"
+import type { ElementId, Kind, SlideId } from "@airdesign/document"
+import type { FrameRecord } from "./frame-record.js"
+import type { GroupRecord } from "./group-record.js"
+import type { PictureRecord } from "./picture-record.js"
+import type { PresetRecord } from "./preset-record.js"
+import type { TableRecord } from "./table-kind.js"
+import type { TextBoxRecord } from "./text-box-record.js"
+
+export type {
+  CanvasBullet,
+  CanvasParagraph,
+  CanvasRun,
+  CanvasRunStyle,
+  CanvasSpacing,
+  CanvasText,
+} from "./text-record.js"
+export type { CanvasLine, CanvasOutline } from "./line-record.js"
+export type { CanvasTable } from "./table-record.js"
+export type { PaintBox } from "./paint-box.js"
 
 export type ElementRecord = {
   readonly id: ElementId
@@ -13,112 +30,7 @@ export type SlideRecord = {
   readonly elements: readonly ElementId[]
 }
 
-export type PaintBox = {
-  readonly x: number
-  readonly y: number
-  readonly width: number
-  readonly height: number
-  readonly rotation: number
-  readonly flipH: boolean
-  readonly flipV: boolean
-}
-
-export type CanvasOutline = "box" | "round" | "ellipse" | "line"
-
-export type CanvasLine = {
-  readonly color: string
-  readonly width: number
-  readonly dash: readonly number[] | null
-  readonly head?: "triangle" | "stealth" | "diamond" | "oval" | "arrow" | undefined
-  readonly tail?: "triangle" | "stealth" | "diamond" | "oval" | "arrow" | undefined
-}
-
-export type CanvasSpacing = { readonly percent: number } | { readonly length: number }
-
-export type CanvasBullet = {
-  readonly font: string | null
-  readonly color: string | null
-  readonly size: number | null
-} & ({ readonly char: string } | { readonly autoNumber: string; readonly number: number })
-
-export type CanvasRunStyle = {
-  readonly font: string | null
-  readonly size: number
-  readonly bold: boolean
-  readonly italic: boolean
-  readonly underline?: boolean
-  readonly strike?: boolean
-  readonly baseline?: number
-  readonly color: string | null
-  readonly highlight?: string | null
-}
-
-export type CanvasRun = CanvasRunStyle & { readonly from: number; readonly text: string }
-
-export type CanvasParagraph = {
-  readonly from: number
-  readonly align: "left" | "center" | "right" | "justify"
-  readonly marginLeft?: number
-  readonly indent?: number
-  readonly lineSpacing?: CanvasSpacing | null
-  readonly spaceBefore?: CanvasSpacing | null
-  readonly spaceAfter?: CanvasSpacing | null
-  readonly bullet?: CanvasBullet | null
-  readonly runs: readonly CanvasRun[]
-  readonly endStyle: CanvasRunStyle
-}
-
-export type CanvasText = {
-  readonly paragraphs: readonly CanvasParagraph[]
-  readonly anchor: "top" | "middle" | "bottom"
-  readonly insets: {
-    readonly left: number
-    readonly top: number
-    readonly right: number
-    readonly bottom: number
-  }
-  readonly wrap: boolean
-}
-
-export type CanvasElement = {
-  readonly key: string
-  readonly id: ElementId | null
-  readonly kind: Kind
-  readonly box: PaintBox | null
-  readonly editable: boolean
-  readonly movable?: boolean
-  readonly placeholder: boolean
-  readonly filled: boolean
-  readonly fill: string | null
-  readonly line: CanvasLine | null
-  readonly outline: CanvasOutline
-  readonly geometry?: {
-    readonly preset: string
-    readonly adjusts: Readonly<Record<string, number>>
-    readonly gradient?: {
-      readonly angle: number | null
-      readonly stops: readonly { readonly position: number; readonly color: string }[]
-    }
-  }
-  readonly text: CanvasText | null
-  readonly table?: CanvasTable
-}
-
-export type CanvasTable = {
-  readonly columns: readonly number[]
-  readonly rows: readonly {
-    readonly height: number
-    readonly cells: readonly {
-      readonly gridSpan: number
-      readonly rowSpan: number
-      readonly hMerge: boolean
-      readonly vMerge: boolean
-      readonly fill: string | null
-      readonly borders: Readonly<Record<"left" | "right" | "top" | "bottom", CanvasLine | null>>
-      readonly text: CanvasText | null
-    }[]
-  }[]
-}
+export type CanvasElement = TextBoxRecord | PictureRecord | PresetRecord | TableRecord | FrameRecord | GroupRecord
 
 export type CanvasSlide = {
   readonly width: number

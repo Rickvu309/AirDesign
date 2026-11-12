@@ -1,0 +1,46 @@
+export type CanvasSpacing = { readonly percent: number } | { readonly length: number }
+
+export type CanvasBullet = {
+  readonly font: string | null
+  readonly color: string | null
+  readonly size: number | null
+} & ({ readonly char: string } | { readonly autoNumber: string; readonly number: number })
+
+export type CanvasRunStyle = {
+  readonly font: string | null
+  readonly size: number
+  readonly bold: boolean
+  readonly italic: boolean
+  readonly underline?: boolean
+  readonly strike?: boolean
+  readonly baseline?: number
+  readonly color: string | null
+  readonly highlight?: string | null
+}
+
+export type CanvasRun = CanvasRunStyle & { readonly from: number; readonly text: string }
+
+export type CanvasParagraph = {
+  readonly from: number
+  readonly align: "left" | "center" | "right" | "justify"
+  readonly marginLeft?: number
+  readonly indent?: number
+  readonly lineSpacing?: CanvasSpacing | null
+  readonly spaceBefore?: CanvasSpacing | null
+  readonly spaceAfter?: CanvasSpacing | null
+  readonly bullet?: CanvasBullet | null
+  readonly runs: readonly CanvasRun[]
+  readonly endStyle: CanvasRunStyle
+}
+
+export type CanvasText = {
+  readonly paragraphs: readonly CanvasParagraph[]
+  readonly anchor: "top" | "middle" | "bottom"
+  readonly insets: {
+    readonly left: number
+    readonly top: number
+    readonly right: number
+    readonly bottom: number
+  }
+  readonly wrap: boolean
+}

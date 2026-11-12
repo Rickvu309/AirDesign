@@ -1,12 +1,12 @@
-import type { PaintFill, PaintLine, PaintTable, PaintText } from "@airdesign/pptx"
-import type { CanvasLine, CanvasTable, CanvasText } from "@airdesign/render"
+import type { PaintTable } from "@airdesign/pptx"
+import type { CanvasElement, CanvasTable } from "@airdesign/render"
+import { elementFrom, type RowPaint } from "@/canvas-element"
+import { canvasLine, geometryOf, outlineOf } from "@/canvas-shape"
+import { canvasText } from "@/canvas-text"
+import { fillOf, paintedFill } from "@/paint-css"
+import type { PictureSource } from "@/picture-fill"
 
-export function canvasTable(
-  table: PaintTable | undefined,
-  fillOf: (fill: PaintFill | null) => string | null,
-  lineOf: (line: PaintLine | null) => CanvasLine | null,
-  textOf: (text: PaintText | null) => CanvasText | null,
-): CanvasTable | undefined {
+export function canvasTable(table: PaintTable | undefined, src: PictureSource): CanvasTable | undefined {
   if (table === undefined) return undefined
   return {
     columns: table.columns,
@@ -17,15 +17,29 @@ export function canvasTable(
         rowSpan: cell.rowSpan,
         hMerge: cell.hMerge,
         vMerge: cell.vMerge,
-        fill: fillOf(cell.fill),
+        fill: fillOf(cell.fill, src),
         borders: {
-          left: lineOf(cell.borders.left),
-          right: lineOf(cell.borders.right),
-          top: lineOf(cell.borders.top),
-          bottom: lineOf(cell.borders.bottom),
+          left: canvasLine(cell.borders.left),
+          right: canvasLine(cell.borders.right),
+          top: canvasLine(cell.borders.top),
+          bottom: canvasLine(cell.borders.bottom),
         },
-        text: textOf(cell.text),
+        text: canvasText(cell.text),
       })),
     })),
   }
+}
+
+export function paintTable(ctx: RowPaint): CanvasElement {
+  const outline = outlineOf(ctx.row)
+  return elementFrom(ctx, {
+    outline,
+    fill: paintedFill(ctx.row, outline, ctx.src),
+    line: canvasLine(ctx.row.line),
+    text: canvasText(ctx.row.text),
+    geometry: geometryOf(ctx.row),
+    table: canvasTable(ctx.row.table, ctx.src),
+    editable: false,
+    movable: false,
+  })
 }
