@@ -49,6 +49,7 @@ for (const name of [
   "aira-turn",
   "connected-agents",
   "aira-panel",
+  "aira-slides",
 ]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)

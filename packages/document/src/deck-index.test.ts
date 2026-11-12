@@ -57,3 +57,25 @@ describe("deck index", () => {
     expect(readIndexPage({ ...page, elements: [{ ...page.elements[0], value: "é".repeat(5000) }] })).not.toBeNull()
   })
 })
+
+it("adds device layout placeholders to an older index without changing its opening elements", () => {
+  const first = appendIndex(undefined, page)
+  if (!first.ok) throw new Error(first.refusal)
+  const title = { node: elementId("258.2"), kind: "shape", value: "", box, grouped: false } as const
+  const enriched = {
+    ...page,
+    slides: [
+      { id: "258", position: 0, layout: [title] },
+      { id: "259", position: 1, layout: [] },
+    ],
+  }
+  const next = appendIndex(first.index, enriched)
+  expect(next.ok).toBe(true)
+  if (!next.ok) return
+  expect(next.index.elements).toEqual(first.index.elements)
+  expect(next.index.slides[0]?.layout).toEqual([title])
+  expect(appendIndex(next.index, enriched)).toEqual(next)
+  expect(
+    readIndexPage({ ...enriched, slides: [{ id: "258", position: 0, layout: [{ ...title, node: "259.2" }] }] }),
+  ).toBeNull()
+})

@@ -9,9 +9,13 @@ describe("run operations in the catalog", () => {
     expect(catalog.list_decks).toMatchObject({ kind: "query", exposure: "agent", runsOn: "server" })
     expect(catalog.read_deck).toMatchObject({ kind: "query", exposure: "agent", runsOn: "server" })
     expect(projectTools(catalog).map((tool) => tool.op)).toEqual([
+      "add_slide",
       "capture_slide",
+      "delete_slide",
+      "duplicate_slide",
       "edit_deck",
       "list_decks",
+      "move_slide",
       "read_deck",
       "stop_run",
     ])
@@ -21,15 +25,29 @@ describe("run operations in the catalog", () => {
 describe("projectTools", () => {
   it("projects the agent tools in name order", () => {
     const tools = projectTools(catalog)
-    expect(tools).toHaveLength(5)
+    expect(tools).toHaveLength(9)
     expect(tools.map((tool) => tool.name)).toEqual([
+      "airdesign_add_slide",
       "airdesign_capture_slide",
+      "airdesign_delete_slide",
+      "airdesign_duplicate_slide",
       "airdesign_edit_deck",
       "airdesign_list_decks",
+      "airdesign_move_slide",
       "airdesign_read_deck",
       "airdesign_stop_run",
     ])
-    expect(tools.map((tool) => tool.runsOn)).toEqual(["device", "server", "server", "server", "server"])
+    expect(tools.map((tool) => tool.runsOn)).toEqual([
+      "server",
+      "device",
+      "server",
+      "server",
+      "server",
+      "server",
+      "server",
+      "server",
+      "server",
+    ])
     expect(tools.find((tool) => tool.op === "stop_run")?.destructiveHint).toBe(false)
     expect(tools.find((tool) => tool.op === "stop_run")?.description).toContain("when your turn is finished")
     expect(tools.find((tool) => tool.op === "stop_run")?.description).toContain("closing elements")

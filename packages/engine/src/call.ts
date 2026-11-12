@@ -1,3 +1,4 @@
+import { agentSlide } from "./agent-slides.js"
 import {
   bytesOf,
   decide,
@@ -173,7 +174,10 @@ function endOnTouched(
   fencedStillRefuses: (body: NodeRegister) => boolean,
 ): CallResult {
   const touched = everyElement(deck.register).filter((node) => holdsRun(bodyOf(deck.register, node), runId))
-  if (touched.length === 0) return refused("run-fenced")
+  if (touched.length === 0) {
+    if (command === "stop" && deck.register.order.some((row) => row.runId === runId)) return landed(deck, deck.register)
+    return refused("run-fenced")
+  }
   let register = deck.register
   for (const node of touched) {
     const decision = decideOnElement(register, node, { command, runId, node })
@@ -255,6 +259,10 @@ function callEndRun(deck: Deck, caller: Caller, raw: unknown, end: typeof stopRu
 export function call(op: "start_run", deck: Deck, caller: Caller, raw: unknown): StartResult
 export function call(op: Exclude<CommandOp, "start_run">, deck: Deck, caller: Caller, raw: unknown): CallResult
 export function call(op: CommandOp, deck: Deck, caller: Caller, raw: unknown): CallResult | StartResult {
+  if (op === "add_slide" || op === "duplicate_slide" || op === "delete_slide" || op === "move_slide") {
+    const result = agentSlide(op, deck, caller, raw)
+    return result.ok ? landed(deck, result.register) : result
+  }
   if (op === "start_run") return callStartRun(deck, caller, raw)
   if (op === "undo_run") return callEndRun(deck, caller, raw, undoRun)
   if (op === "stop_run") {

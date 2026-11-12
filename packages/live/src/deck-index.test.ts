@@ -73,10 +73,10 @@ it("persists every worst-case escaped floor in bounded rows at the full deck lim
     })(),
   })
   expect(await cache.index("largest", { slides, elements })).toEqual({ ok: true })
-  const queued = (await readSlot("largest\u0002queue")) as { count: number }
+  const queued = (await readSlot("largest\u0002layouts\u0002queue")) as { count: number }
   let count = 0
   for (let n = 0; n < queued.count; n++) {
-    const page = await readSlot(`largest\u0002${n}`)
+    const page = await readSlot(`largest\u0002layouts\u0002${n}`)
     expect(bytesOf(JSON.stringify(page))).toBeLessThan(limits.row)
     const parsed = readIndexPage(page)
     expect(parsed).not.toBeNull()
@@ -99,10 +99,10 @@ it("keeps opening text larger than an edit or a storage row without clipping it"
       elements: [{ ...index.elements[0]!, value }],
     }),
   ).toEqual({ ok: true })
-  const stored = (await readSlot("long-floor\u00020")) as { chunks: number }
+  const stored = (await readSlot("long-floor\u0002layouts\u00020")) as { chunks: number }
   expect(stored.chunks).toBeGreaterThan(1)
   for (let part = 0; part < stored.chunks; part++) {
-    expect(bytesOf(JSON.stringify(await readSlot(`long-floor\u00020:${part}`)))).toBeLessThan(limits.row)
+    expect(bytesOf(JSON.stringify(await readSlot(`long-floor\u0002layouts\u00020:${part}`)))).toBeLessThan(limits.row)
   }
   expect((await cache.flush("long-floor")).ok).toBe(true)
   const opened = await remote.open({ deck: "long-floor" })
