@@ -2,9 +2,11 @@ import {
   nextElementId,
   readSlideId,
   shapeOf,
+  slideUndoable,
   type ElementId,
   type Register,
   type SlideCommand,
+  type Undoable,
 } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { applyRoute, freeShapeId, readSlides } from "@airdesign/pptx"
@@ -56,12 +58,14 @@ export async function commitElement(
   parts: Parts,
   register: Register,
   change: ElementChange,
-  paint: (added: ElementId | null) => void | Promise<void>,
+  paint: (added: ElementId | null, undoable: Undoable | null) => void | Promise<void>,
 ): Promise<CommitOutcome> {
   const edit = elementCommand(parts, register, change)
   if (edit === null) return "refused"
-  const kept = await connect(memoryRemote()).enqueueSlide(deckId, fileSlides(parts, register), edit)
+  const file = fileSlides(parts, register)
+  const undoable = slideUndoable(register, file, edit)
+  const kept = await connect(memoryRemote()).enqueueSlide(deckId, file, edit)
   if (!kept.ok) return "refused"
-  await paint(edit.slide === "element-add" ? edit.element.node : null)
+  await paint(edit.slide === "element-add" ? edit.element.node : null, undoable)
   return flushPending(connect, deckId)
 }

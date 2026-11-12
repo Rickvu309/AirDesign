@@ -21,9 +21,9 @@ import {
   type CommitOutcome,
   type TextBox,
 } from "@/commit-edit"
-import { landedBox, shownBox } from "@/element-move"
+import { boxName, landedBox, paintedBox, shownBox } from "@/element-move"
 import { exportedParts } from "@/exported-parts"
-import { commitSlideChange, type SlideChange } from "@/slide-edit"
+import { commitSlideChange, slideNames, type SlideChange } from "@/slide-edit"
 import { layoutChoices } from "@/slide-layout"
 import { commitElement, type ElementChange } from "@/element-edit"
 import { ensureMarkup } from "@/markup"
@@ -37,20 +37,7 @@ import { busyElements, liveRepaint, shownValue } from "@/live-repaint"
 import { AiraPanel } from "@/aira-panel"
 import { useDeckTitle } from "@/editor/use-deck-title"
 import { useUndoKeys } from "@/editor/undo-keys"
-import { emptyUndo, recorded, turnBack, undoLabel, type UndoDirection, type UndoEntry } from "@/undo-list"
-import type { UndoName } from "@/copy/undo-copy"
-
-const slideNames: Readonly<Record<SlideChange, UndoName>> = {
-  add: "new",
-  clone: "duplicate",
-  remove: "delete",
-  move: "order",
-}
-
-function boxName(before: Box, after: Box): UndoName | null {
-  if (before.cx !== after.cx || before.cy !== after.cy) return "resize"
-  return before.x === after.x && before.y === after.y ? null : "move"
-}
+import { emptyUndo, recorded, turnBack, undoLabel, type Typing, type UndoDirection, type UndoEntry } from "@/undo-list"
 
 export function ThinDeck({ id }: { id: string }) {
   const store = useRef(paintStore())
@@ -84,9 +71,7 @@ export function ThinDeck({ id }: { id: string }) {
   const turning = useRef<Promise<void>>(Promise.resolve())
   const [undoShown, setUndoShown] = useState(emptyUndo)
   const [told, setTold] = useState<UndoDirection | null>(null)
-  const typed = useRef<{ readonly node: ElementId; readonly session: number; readonly before: Promise<string> } | null>(
-    null,
-  )
+  const typed = useRef<Typing | null>(null)
   const sessions = useRef(0)
 
   const settle = useCallback((outcome: CommitOutcome) => {
@@ -256,6 +241,7 @@ export function ThinDeck({ id }: { id: string }) {
       return
     }
     const opening = connect(memoryRemote()).openDeck(id)
+    const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
     const outcome = await commitBox(
       connect,
       id,
@@ -263,7 +249,7 @@ export function ThinDeck({ id }: { id: string }) {
       element,
       async () => {
         const opened = await opening
-        const before = shownBox(opened.ok ? opened.register : null, target, shapes.current.get(target)?.box ?? null)
+        const before = shownBox(opened.ok ? opened.register : null, target, file)
         setPending(true)
         const name = before === null ? null : boxName(before, box)
         if (before === null || name === null) return
@@ -371,11 +357,13 @@ export function ThinDeck({ id }: { id: string }) {
     if (!next.ok) return
     if ("slide" in undoable) showRegister(next.register)
     else repaint.current(next.register, "person")
+    if ("node" in undoable && undoable.node.endsWith(".notes"))
+      setNotes(readNotes(exportedParts(shownParts.current, next.register)))
     const slides = store.current.slides()
     const shown =
       "slide" in undoable
         ? slides.findIndex((slide) => slide.id === undoable.slide)
-        : slides.findIndex((slide) => slide.elements.includes(undoable.node))
+        : slides.findIndex((slide) => undoable.node.startsWith(`${slide.id}.`))
     setCurrent((index) => (shown >= 0 ? shown : Math.max(0, Math.min(index, slides.length - 1))))
     setPending(true)
   }
@@ -383,6 +371,7 @@ export function ThinDeck({ id }: { id: string }) {
   function turn(direction: UndoDirection) {
     typed.current = null
     turning.current = turning.current.then(async () => {
+      await notesQueue.current
       const turned = await turnBack(connect(memoryRemote()), id, undoList.current, direction)
       if (turned.outcome === "empty") return
       undoList.current = turned.list
@@ -400,7 +389,8 @@ export function ThinDeck({ id }: { id: string }) {
     const opened = await connect(memoryRemote()).openDeck(id)
     if (!opened.ok) return
     settle(
-      await commitElement(id, shownParts.current, opened.register, change, async (added) => {
+      await commitElement(id, shownParts.current, opened.register, change, async (added, undoable) => {
+        if (undoable !== null) record({ name: added === null ? "delete-element" : "add-box", undoable })
         await showEdited(current)
         setEntering(added)
       }),
@@ -432,9 +422,20 @@ export function ThinDeck({ id }: { id: string }) {
   function editNotes(value: string) {
     if (currentNotes === undefined) return
     const note = currentNotes
-    const kept = connect(memoryRemote()).enqueue(id, value, elementId(`${note.slide}.notes`), note.text)
+    const node = elementId(`${note.slide}.notes`)
+    if (typed.current?.node !== node) {
+      sessions.current += 1
+      typed.current = { node, session: sessions.current, before: Promise.resolve(note.text) }
+    }
+    const { session, before } = typed.current
+    const kept = connect(memoryRemote()).enqueue(id, value, node, note.text)
     notesQueue.current = notesQueue.current.then(async () => {
-      const outcome = await commitKept(connect, id, kept, () => setPending(true))
+      const outcome = await commitKept(connect, id, kept, async () => {
+        const from = await before
+        setPending(true)
+        setNotes((all) => all.map((each) => (each.slide === note.slide ? { ...each, text: value } : each)))
+        record({ name: "notes", session, undoable: { node, floor: from, before: { value: from }, after: { value } } })
+      })
       if (outcome === "refused")
         toast.error("Unable to save speaker notes", { description: "Copy your notes, reload the deck and try again." })
       settle(outcome)

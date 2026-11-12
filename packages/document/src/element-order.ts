@@ -15,14 +15,29 @@ export type ElementRemove = {
   readonly node: ElementId
 }
 
-export type ElementCommand = ElementAdd | ElementRemove
+export type ElementRestore = {
+  readonly slide: "element-restore"
+  readonly id: SlideId
+  readonly node: ElementId
+}
+
+export type ElementCommand = ElementAdd | ElementRemove | ElementRestore
+
+export function elementCommand(command: { readonly slide: string }): command is ElementCommand {
+  return command.slide === "element-add" || command.slide === "element-remove" || command.slide === "element-restore"
+}
 
 type Indexed = SlideState & { readonly index?: DeckIndex }
 
 const highestShape = 4294967295
 
 export function elementGone(state: SlideState, node: ElementId): boolean {
-  return state.order.some((command) => command.slide === "element-remove" && command.node === node)
+  let gone = false
+  for (const command of state.order) {
+    if (command.slide === "element-remove" && command.node === node) gone = true
+    if (command.slide === "element-restore" && command.node === node) gone = false
+  }
+  return gone
 }
 
 function shapeNumber(node: ElementId): number {
@@ -34,7 +49,8 @@ export function nextElementId(state: SlideState, slide: SlideId, free: number): 
   for (const command of state.order) {
     if (command.id !== slide) continue
     if (command.slide === "element-add") next = Math.max(next, shapeNumber(command.element.node) + 1)
-    if (command.slide === "element-remove") next = Math.max(next, shapeNumber(command.node) + 1)
+    if (command.slide === "element-remove" || command.slide === "element-restore")
+      next = Math.max(next, shapeNumber(command.node) + 1)
   }
   return elementId(`${slide}.${String(next)}`)
 }
@@ -64,6 +80,7 @@ export function elementRefusal(state: Indexed, command: ElementCommand): "dead" 
     if (opening !== undefined || elementGone(state, node)) return "present"
     return textBox(command.element) ? null : "dead"
   }
+  if (command.slide === "element-restore") return elementGone(state, node) ? null : "dead"
   if (elementGone(state, node)) return "dead"
   if (opening === undefined) return indexComplete(state) ? "dead" : null
   return opening.grouped || opening.kind === "group" ? "group-box" : null
@@ -76,5 +93,7 @@ export function readElementCommand(raw: Record<string, unknown>, id: SlideId): E
   }
   const node = readElementId(raw.node)
   if (node === undefined || shapeOf(node).slide !== id) return undefined
-  return { slide: "element-remove", id, node }
+  return raw.slide === "element-restore"
+    ? { slide: "element-restore", id, node }
+    : { slide: "element-remove", id, node }
 }

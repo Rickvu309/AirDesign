@@ -100,3 +100,17 @@ it("paints the text and box an undo gives back even though the last repaint alre
   expect(store.getElement(node)?.text).toBe("Hello")
   expect(store.getBox(node)).toBeNull()
 })
+
+it("paints an undo of an element whose own edit is still on its way to the server", () => {
+  const busy = busyElements()
+  const store = painted()
+  const repaint = liveRepaint(store, files, null, busy)
+  busy.hold(node)
+  store.publish({ id: node, kind: "shape", text: "Mine", picture: null })
+  store.placeBox(node, dragged)
+  repaint(openRegister("", "deck"))
+  expect(store.getElement(node)?.text).toBe("Mine")
+  repaint(openRegister("", "deck"), "person")
+  expect(store.getElement(node)?.text).toBe("Hello")
+  expect(store.getBox(node)).toBeNull()
+})

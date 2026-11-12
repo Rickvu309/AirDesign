@@ -10,6 +10,8 @@ import {
 } from "@airdesign/document"
 import { undoCopy, type UndoName } from "@/copy/undo-copy"
 
+export type Typing = { readonly node: ElementId; readonly session: number; readonly before: Promise<string> }
+
 export type UndoEntry = { readonly name: UndoName; readonly undoable: Undoable; readonly session?: number }
 
 export type UndoList = { readonly undo: readonly UndoEntry[]; readonly redo: readonly UndoEntry[] }

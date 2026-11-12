@@ -43,3 +43,22 @@ it("lets a person add a text box, type in it and remove it, and hides it from a 
     call("edit_deck", removed, agent, { deck: "deck", base: 2, changes: [{ node, value: "Late", readAt: 1 }] }),
   ).toMatchObject({ ok: false })
 })
+
+it("shows a removed text box in a read again once a restore brings it back", () => {
+  const added = landed(
+    call("commit_edits", opened(), person, {
+      deck: "deck",
+      batch: [{ slide: "element-add", id: "256", element, file }],
+    }),
+  )
+  const removed = landed(
+    call("commit_edits", added, person, { deck: "deck", batch: [{ slide: "element-remove", id: "256", node, file }] }),
+  )
+  const restored = landed(
+    call("commit_edits", removed, person, {
+      deck: "deck",
+      batch: [{ slide: "element-restore", id: "256", node, file }],
+    }),
+  )
+  expect(readDeckPage(restored, { runId: null }).elements).toMatchObject([{ node }])
+})

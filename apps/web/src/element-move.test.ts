@@ -1,7 +1,7 @@
 import { decide, elementId, openRegister, type Command, type Register } from "@airdesign/document"
 import { readShapes } from "@airdesign/pptx"
 import { expect, it } from "vitest"
-import { boxStorable, landedBox } from "./element-move"
+import { boxStorable, landedBox, paintedBox } from "./element-move"
 import { onSlide, xml } from "./slide-fixtures"
 
 const namespaces =
@@ -83,4 +83,17 @@ it("answers a box an agent's run landed, so the device paints it like a person's
   const started = { command: "start", node, runId: "run" } as const
   const moved = { command: "agent", node, runId: "run", readAt: 0, property: "box", value: box } as const
   expect(landedBox(landed([added, started, moved]), node)).toEqual(box)
+})
+
+it("takes the box a person saw from the painted slide, so a picture or a placeholder with a layout box can be undone", () => {
+  const upright = { rotation: 0, flipH: false, flipV: false }
+  const painted = {
+    width: 100,
+    height: 100,
+    background: null,
+    elements: [{ id: elementId("256.4"), box: { x: 10.4, y: 20, width: 30, height: 39.6, ...upright } }],
+  }
+  expect(paintedBox(painted, elementId("256.4"))).toEqual({ x: 10, y: 20, cx: 30, cy: 40 })
+  expect(paintedBox(painted, elementId("256.5"))).toBeNull()
+  expect(paintedBox(null, elementId("256.4"))).toBeNull()
 })
