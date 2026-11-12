@@ -77,3 +77,36 @@ describe("a host whose store was written by someone else before the commit", () 
     expect(session.log.events.filter((event) => event.kind === "tool")).toHaveLength(1)
   })
 })
+
+describe("a host that saves the turn in a store", () => {
+  it("answers a call only after the host has saved the turn it settled", async () => {
+    const session = sessionFor(opened())
+    let reach = () => {}
+    let release = () => {}
+    const reached = new Promise<void>((resolve) => {
+      reach = resolve
+    })
+    const saving = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const host: Host = {
+      turnSaved: () => {
+        reach()
+        return saving
+      },
+    }
+    await withClient(session, host, async (client) => {
+      let answered = false
+      const call = client.callTool({ name: "airdesign_edit_deck", arguments: edit }).then((result) => {
+        answered = true
+        return result
+      })
+      expect(await Promise.race([reached.then(() => "saving"), call.then(() => "answered")])).toBe("saving")
+      await client.listTools()
+      expect(answered).toBe(false)
+      release()
+      expect((await call).isError).not.toBe(true)
+    })
+    expect(session.turns.read(session.deck.id)?.revision).toBe(1)
+  })
+})

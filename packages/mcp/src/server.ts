@@ -33,6 +33,7 @@ export type Host = {
   ) => Promise<{ readonly ok: true } | { readonly ok: false; readonly refusal: EditCode }>
   commit?: (result: ToolResult, session: Session) => Promise<ToolResult | Lost>
   refund?: (session: Session) => Promise<void>
+  turnSaved?: () => Promise<void>
 }
 
 export type Lost = { readonly lost: ToolResult }
@@ -96,6 +97,7 @@ export function createServer(session: Session, host?: Host): McpServer {
           else session.log = refund(session.log, "tool")
         }
         settleTurn(tool.op, settled, session)
+        if (host?.turnSaved) await host.turnSaved()
         return mcpResult(settled)
       },
     )

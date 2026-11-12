@@ -90,6 +90,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
     },
     commit: (result) => commitEdit(host.deck, loaded, result),
     refund: () => refundCaller(host.session, host.email, "tool"),
+    turnSaved: () => turns.saved(),
   }
   const handler = createMcpHandler(() => createServer(session, bridge), { maxRequestBodySize: host.bodyCap })
   let failed = false
