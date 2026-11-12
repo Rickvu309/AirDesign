@@ -86,6 +86,12 @@ jobs:
           key: pptx-renders-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
           restore-keys: pptx-renders-
       - if: matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/airdesign/pptx-validations
+          key: pptx-validations-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-${{ github.run_id }}
+          restore-keys: pptx-validations-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-
+      - if: matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
         run: pnpm --filter '!@airdesign/site' -r --if-present run build
       - if: matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
         run: pnpm check:pptx
@@ -96,6 +102,11 @@ jobs:
         with:
           path: ~/.cache/airdesign/pptx-renders
           key: pptx-renders-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
+      - if: matrix.part == 'pptx' && steps.pptx.outputs.changed != '0' && !cancelled()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/airdesign/pptx-validations
+          key: pptx-validations-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-${{ github.run_id }}
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:

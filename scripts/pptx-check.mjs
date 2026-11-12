@@ -25,11 +25,13 @@ import { takeMachineLock } from "./machine-lock.mjs"
 import { localImage } from "./local-image.mjs"
 import { memoPptx } from "./pptx-memo.mjs"
 import { phaseClock } from "./pptx-phases.mjs"
+import { pruneKeyed } from "./keyed-cache.mjs"
 import {
   judgeBuild,
   judgeProgram,
   judgeRows,
   validatorCode,
+  validationFolder,
   validatorLine,
   validatorLists as validatedLists,
 } from "./pptx-validator.mjs"
@@ -362,6 +364,7 @@ console.log(`${corpus.judged} corpus decks judged, ${corpus.misses} misses, ${co
 fs.rmSync(routeDir, { recursive: true, force: true })
 endRoutes()
 for (const line of phases.lines()) console.log(line)
+pruneKeyed(validationFolder, { olderThanDays: 30 })
 for (const failure of routeFailures) console.log(JSON.stringify(failure))
 if (failed > 0) console.log(`${failed} pptx checks failed`)
 else console.log(`${cases.length} pptx checks passed`)
