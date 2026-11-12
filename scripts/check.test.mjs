@@ -120,3 +120,10 @@ for (const name of [...requiredSteps, ...localSteps]) {
 if (!namesIn("main").includes("commit-authors")) throw new Error("the main part must run commit-authors")
 if (!stepsWhen(true).includes("commit-authors")) throw new Error("ci must run commit-authors")
 if (warnSteps.has("commit-authors")) throw new Error("commit-authors blocks from the start")
+
+const sideStages = stagesFor("side", true)
+const sideStageOf = (name) => sideStages.findIndex((stage) => stage.some(([step]) => step === name))
+if (sideStageOf("design-findings") <= sideStageOf("browser"))
+  throw new Error("design-findings reads what the browser tests wrote, so it must run after them")
+if (!ciOnlySteps.has("design-findings"))
+  throw new Error("design-findings needs the browser tests, which run only on ci")

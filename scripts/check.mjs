@@ -34,10 +34,13 @@ export const stages = [
     ["boundaries", "pnpm", ["check:boundaries"]],
     ["build", "pnpm", ["--filter", "!@airdesign/site", "-r", "--if-present", "run", "build"]],
   ],
-  [["metrics", "node", ["scripts/metrics.mjs"]]],
+  [
+    ["metrics", "node", ["scripts/metrics.mjs"]],
+    ["design-findings", "node", ["scripts/design-findings.mjs"]],
+  ],
 ]
 
-export const sideSteps = new Set(["browser", "site", "tooling"])
+export const sideSteps = new Set(["browser", "site", "tooling", "design-findings"])
 
 export const partOf = (argv) => {
   const given = argv.find((word) => word.startsWith("--part="))
@@ -57,7 +60,7 @@ export const stagesFor = (part, ci = onCi(process.env)) =>
     .map((stage) => stage.filter(([name]) => part === "all" || (part === "side") === sideSteps.has(name)))
     .filter((stage) => stage.length > 0)
 
-export const ciOnlySteps = new Set(["browser"])
+export const ciOnlySteps = new Set(["browser", "design-findings"])
 
 export const stepsToRun = (chosen, ci) =>
   ci
@@ -68,7 +71,7 @@ export const judgedOnCi = new Set(["test", "browser"])
 
 export const mayPush = (failed, ran) => ran && failed.every((name) => judgedOnCi.has(name))
 
-export const warnSteps = new Set(["interface-width"])
+export const warnSteps = new Set(["interface-width", "design-findings"])
 
 export const recordFailure = (failed, name, warned = warnSteps) => {
   if (warned.has(name)) return "warn"
