@@ -55,7 +55,7 @@ export async function hasMeasures(deck: string): Promise<boolean> {
 }
 
 async function keepIndex(deck: DeckId, index: ImportIndex, once: () => string) {
-  const measured = index.slides.some((row) => row.free !== undefined)
+  const measured = index.slides.some((row) => row.free !== undefined && row.layout !== undefined)
   const upgrade = measured && !(await hasMeasures(deck))
   if (queue(await readSlot(key(deck, "queue"))) !== null && !upgrade) return { ok: true as const }
   const pages: IndexPage[] = []
