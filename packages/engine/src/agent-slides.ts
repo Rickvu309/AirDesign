@@ -51,7 +51,7 @@ export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown
     }
     const floor = index.slides.find((row) => row.id === layout)?.layout
     if (floor === undefined) return { ok: false, refusal: "dead" }
-    edit = { slide: "add", id, after: parsed.after, key, layout: parsed.layout, floor: floorFor(floor, id) }
+    edit = { slide: "add", id, after: parsed.layout, key, layout: parsed.layout, floor: floorFor(floor, id) }
   } else if ("after" in parsed) {
     const remaining = spots.filter((row) => row.id !== parsed.slide)
     const after = readSlideId(parsed.after)
