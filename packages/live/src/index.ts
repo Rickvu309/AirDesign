@@ -1,5 +1,6 @@
 export { connect, type FollowResult } from "./cache.js"
-export { fetchOriginal, sendOriginal } from "./original.js"
+export { fetchOriginal } from "./original.js"
+export { flushOriginal, queueOriginal } from "./original-queue.js"
 export { getPart, getParts, putPart, putParts } from "./part.js"
 export {
   httpRemote,

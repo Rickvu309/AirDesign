@@ -1,5 +1,5 @@
 import { prepareMarkup } from "@airdesign/pptx"
-import wasmUrl from "sax-wasm/lib/sax-wasm.wasm?url"
+import wasmUrl from "sax-wasm/lib/sax-wasm.wasm?url&inline"
 
 let markup: Promise<void> | null = null
 

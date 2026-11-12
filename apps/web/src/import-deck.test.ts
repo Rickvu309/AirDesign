@@ -11,6 +11,7 @@ vi.mock("@airdesign/live", async () => {
   const actual = await vi.importActual<Record<string, unknown>>("@airdesign/live")
   return {
     ...actual,
+    queueOriginal: async () => {},
     connect: () => ({
       index: async () => ({ ok: true }),
       flush: async () => ({ ok: true }),

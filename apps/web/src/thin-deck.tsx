@@ -1,6 +1,6 @@
 import { deckRoutes } from "@airdesign/catalog"
 import { type Box, type ElementId, type Register } from "@airdesign/document"
-import { connect, fetchOriginal, getParts, memoryRemote, putParts } from "@airdesign/live"
+import { connect, fetchOriginal, flushOriginal, getParts, memoryRemote, putParts } from "@airdesign/live"
 import { exportPackage, readPackage, type ReadShape } from "@airdesign/pptx"
 import { paintStore, SlideCanvas, textValue } from "@airdesign/render"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -111,6 +111,7 @@ export function ThinDeck({ id }: { id: string }) {
       setPaintedDeck(id)
       await backfillIndex(id, stored.parts)
       settle(await flushPending(connect, id))
+      await flushOriginal(id)
       await followDeck(
         connect(server),
         id,
@@ -151,6 +152,7 @@ export function ThinDeck({ id }: { id: string }) {
     }
     async function returnedToNetwork() {
       settle(await flushPending(connect, id))
+      await flushOriginal(id)
     }
     window.addEventListener("offline", leftNetwork)
     window.addEventListener("online", returnedToNetwork)
