@@ -1,5 +1,5 @@
 import { airaRoutes, catalog, deckRoutes, mcpRoutes, projectTools, type ReplyBlock } from "@airdesign/catalog"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { airaChat, askAira, undoExchange, type AiraChat } from "./aira-loop"
 
 const deck = "deck"
@@ -43,7 +43,11 @@ function streamed(turn: Extract<Turn, { lines: unknown }>, signal: AbortSignal |
   })
 }
 
-function scripted(turns: readonly Turn[], answers: readonly Answer[], hooks: { onTool?: () => void } = {}) {
+function scripted(
+  turns: readonly Turn[],
+  answers: readonly Answer[],
+  hooks: { onTool?: () => void; onStop?: () => Promise<void> } = {},
+) {
   const queue = [...turns]
   const replies = [...answers]
   const sent: Sent[] = []
@@ -56,6 +60,10 @@ function scripted(turns: readonly Turn[], answers: readonly Answer[], hooks: { o
       if (turn === undefined) throw new Error("no turn left")
       if ("status" in turn) return new Response(JSON.stringify(turn.body), { status: turn.status })
       return new Response(streamed(turn, init?.signal), { status: 200 })
+    }
+    if (path === airaRoutes.stop.path) {
+      await hooks.onStop?.()
+      return new Response(JSON.stringify({ ok: true }))
     }
     if (path === mcpRoutes.mcp.path) {
       hooks.onTool?.()
@@ -203,6 +211,51 @@ describe("Aira's loop in the browser", () => {
     expect(done.history).toEqual([])
     await asking(done, "Second", link)
     expect(link.turnsSent()[1]).toEqual([{ role: "user", content: "Second" }])
+  })
+
+  it("tells the server which ask it stopped, and a new ask sends its turn only once the server answered", async () => {
+    let answerStop = (): void => undefined
+    const link = scripted(
+      [{ lines: [said("Work")], then: "hold" }, { lines: [ended([{ type: "text", text: "Ok" }])] }],
+      [],
+      {
+        onStop: () =>
+          new Promise<void>((resolve) => {
+            answerStop = resolve
+          }),
+      },
+    )
+    const stopping = new AbortController()
+    let stoppedChat: AiraChat | undefined
+    const first = askAira(airaChat(deck), "First", {
+      signal: stopping.signal,
+      fetch: link.send,
+      mint: () => "ask-1",
+      show: (next) => {
+        if (next.exchanges[0]?.end === "stopped") stoppedChat = next
+        else if (next.exchanges[0]?.steps.length === 1) stopping.abort()
+      },
+    })
+    await vi.waitFor(() => {
+      expect(stoppedChat).toBeDefined()
+    })
+    const second = askAira(stoppedChat ?? airaChat(deck), "Second", {
+      signal: new AbortController().signal,
+      fetch: link.send,
+      mint: () => "ask-2",
+      show: () => undefined,
+      after: first,
+    })
+    expect(link.sent.filter((each) => each.path === airaRoutes.stop.path).map((each) => each.body)).toEqual([
+      { ask: "ask-1" },
+    ])
+    expect(link.turnsSent()).toHaveLength(1)
+    answerStop()
+    expect((await second).exchanges.at(-1)?.end).toBe("done")
+    expect(link.sent.filter((each) => each.path === airaRoutes.turn.path).map((each) => each.body.ask)).toEqual([
+      "ask-1",
+      "ask-2",
+    ])
   })
 
   it("stops between calls, answers the call it skipped, and closes the run that landed", async () => {

@@ -61,6 +61,8 @@ export type AskOptions = {
   readonly show: (chat: AiraChat) => void
   readonly added?: () => string | undefined
   readonly fetch?: typeof fetch
+  readonly mint?: () => string
+  readonly after?: Promise<unknown>
 }
 
 type Turned =
@@ -169,6 +171,7 @@ async function refusedTurn(response: Response): Promise<Turned> {
 
 async function takeTurn(
   send: typeof fetch,
+  ask: string,
   deck: string,
   messages: readonly ModelMessage[],
   signal: AbortSignal,
@@ -179,7 +182,7 @@ async function takeTurn(
     const response = await send(airaRoutes.turn.path, {
       method: airaRoutes.turn.method,
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ deck, messages }),
+      body: JSON.stringify({ deck, messages, ask }),
       signal,
     })
     if (response.status !== 200 || response.body === null) return await refusedTurn(response)
@@ -231,6 +234,18 @@ function stoppedAnswer(call: ToolCall): ToolAnswer {
   return toolAnswer(call.id, "The person stopped the run before this call. Nothing landed.", false)
 }
 
+async function stopAsk(send: typeof fetch, ask: string): Promise<void> {
+  try {
+    await send(airaRoutes.stop.path, {
+      method: airaRoutes.stop.method,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ask }),
+    })
+  } catch {
+    return
+  }
+}
+
 async function closeRuns(send: typeof fetch, deck: string, runs: readonly string[], rpc: number): Promise<void> {
   for (const [index, runId] of runs.entries()) {
     try {
@@ -243,6 +258,8 @@ async function closeRuns(send: typeof fetch, deck: string, runs: readonly string
 
 export async function askAira(start: AiraChat, asked: string, options: AskOptions): Promise<AiraChat> {
   const send = options.fetch ?? fetch
+  const mint = options.mint ?? crypto.randomUUID.bind(crypto)
+  const ask = mint()
   const { signal } = options
   let chat = start
   function update(event: AiraEvent) {
@@ -250,12 +267,15 @@ export async function askAira(start: AiraChat, asked: string, options: AskOption
     options.show(chat)
   }
   update({ type: "ask", text: asked })
+  await options.after
   let sent = userMessage(start.answers, asked)
   const closed = new Set<string>()
   let rpc = 1
+  let stopped: Promise<void> = Promise.resolve()
   for (;;) {
-    const turned = await takeTurn(send, chat.deck, [...chat.history, sent], signal, update)
+    const turned = await takeTurn(send, ask, chat.deck, [...chat.history, sent], signal, update)
     if (turned.kind === "ended") {
+      if (turned.end === "stopped") stopped = stopAsk(send, ask)
       update({ type: "end", end: turned.end, usage: turned.usage })
       break
     }
@@ -285,7 +305,7 @@ export async function askAira(start: AiraChat, asked: string, options: AskOption
     sent = userMessage(chat.answers, more)
   }
   const open = (chat.exchanges.at(-1)?.runs ?? []).filter((runId) => !closed.has(runId))
-  await closeRuns(send, chat.deck, open, rpc)
+  await Promise.all([stopped, closeRuns(send, chat.deck, open, rpc)])
   return chat
 }
 

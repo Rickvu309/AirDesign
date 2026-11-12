@@ -3,7 +3,7 @@ import { once } from "node:events"
 import { request } from "node:http"
 import type { Socket } from "node:net"
 
-import { airaTools, signInRoutes } from "@airdesign/catalog"
+import { airaTools, countryHeader, signInRoutes } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/document"
 import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
@@ -14,7 +14,7 @@ import { Replay } from "./aira-replay.js"
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 
-const vietnam = { "cf-ipcountry": "VN" }
+const vietnam = { [countryHeader]: "VN" }
 const deck = "airadeck"
 const asked = [{ role: "user", content: "How should slide two open?" }]
 const turnCharge = 1_904_000
@@ -102,9 +102,16 @@ function turn(account: Account, base = main) {
   return ask(base, "POST", "/aira/turn", { deck, messages: asked }, account.cookie, vietnam)
 }
 
-function leaving(account: Account): { readonly socket: () => Socket; readonly leave: () => Promise<void> } {
+function stopped(account: Account, name: string) {
+  return ask(main, "POST", "/aira/stop", { ask: name }, account.cookie)
+}
+
+function leaving(
+  account: Account,
+  name?: string,
+): { readonly socket: () => Socket; readonly leave: () => Promise<void> } {
   const before = sockets.length
-  const payload = Buffer.from(JSON.stringify({ deck, messages: asked }))
+  const payload = Buffer.from(JSON.stringify({ deck, messages: asked, ask: name }))
   const sent = request({
     method: "POST",
     hostname: "127.0.0.1",
@@ -217,7 +224,8 @@ describe("a person who leaves a turn stops its model call and pays for what it c
     const client = leaving(account)
     await vi.waitFor(async () => {
       const waiting = await admin.query<{ count: string }>(
-        "select count(*) from pg_locks where locktype = 'advisory' and not granted",
+        `select count(*) from pg_locks where locktype = 'advisory' and not granted
+         and database = (select oid from pg_database where datname = current_database())`,
       )
       expect(waiting.rows[0]?.count).toBe("1")
     })
@@ -301,5 +309,73 @@ describe("a new ask right after a stop", () => {
     replay.release()
     await closedAt(account.email, stoppedCharge, "dropped")
     stopped.mockRestore()
+  })
+})
+
+describe("a stop the browser sends for its ask", () => {
+  it("aborts the model call, closes the turn by the same charge, and answers only once the turn is closed", async () => {
+    const account = await signIn()
+    replay.play({ name: "turn.sse", holdAfter: 3 }, { name: "turn.sse" })
+    const reached = replay.hold()
+    leaving(account, "ask-one")
+    await reached
+    const answer = await stopped(account, "ask-one")
+    expect(answer.status).toBe(200)
+    expect(replay.calls.at(-1)?.signal.aborted).toBe(true)
+    expect(await ledgerOf(account.email)).toEqual({ spent: String(stoppedCharge), hold: "0", turn: null })
+    expect(await turnsOf(account.email)).toMatchObject([{ outcome: "dropped", charged: String(stoppedCharge) }])
+    const next = await turn(account)
+    expect(next.status).toBe(200)
+    expect(await ledgerOf(account.email)).toEqual({ spent: String(stoppedCharge + turnCharge), hold: "0", turn: null })
+    replay.release()
+  })
+
+  it("charges once when the stop races the disconnect, and a second stop or one for an ended ask changes nothing", async () => {
+    const account = await signIn()
+    replay.play({ name: "turn.sse", holdAfter: 3 })
+    const reached = replay.hold()
+    const client = leaving(account, "ask-two")
+    await reached
+    const [answer] = await Promise.all([stopped(account, "ask-two"), client.leave()])
+    expect(answer.status).toBe(200)
+    expect((await stopped(account, "ask-two")).status).toBe(200)
+    await closedAt(account.email, stoppedCharge, "dropped")
+    replay.release()
+  })
+
+  it("leaves a turn of another ask or another account running", async () => {
+    const account = await signIn()
+    const other = await signIn()
+    replay.play({ name: "turn.sse", holdAfter: 3 })
+    const reached = replay.hold()
+    leaving(account, "ask-three")
+    await reached
+    expect((await stopped(account, "ask-four")).status).toBe(200)
+    expect((await stopped(other, "ask-three")).status).toBe(200)
+    expect(replay.calls.at(-1)?.signal.aborted).toBe(false)
+    expect(await ledgerOf(account.email)).toMatchObject({ spent: "0", turn: expect.any(String) })
+    replay.release()
+    await closedAt(account.email, turnCharge, "settled")
+  })
+
+  it("stops an ask that reached the server before it reserved, so no model is called and nothing is charged", async () => {
+    const account = await signIn()
+    const calls = replay.calls.length
+    await admin.query("begin")
+    await admin.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [account.email])
+    leaving(account, "ask-five")
+    await vi.waitFor(async () => {
+      const waiting = await admin.query<{ count: string }>(
+        `select count(*) from pg_locks where locktype = 'advisory' and not granted
+         and database = (select oid from pg_database where datname = current_database())`,
+      )
+      expect(waiting.rows[0]?.count).toBe("1")
+    })
+    const answer = stopped(account, "ask-five")
+    await admin.query("commit")
+    expect((await answer).status).toBe(200)
+    expect(await turnsOf(account.email)).toMatchObject([{ outcome: "released", charged: "0" }])
+    expect(await ledgerOf(account.email)).toEqual({ spent: "0", hold: "0", turn: null })
+    expect(replay.calls.length).toBe(calls)
   })
 })

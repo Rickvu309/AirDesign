@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { airaMessageCap, airaTextCap, airaTools, readTurn } from "./aira-turn.js"
+import { airaMessageCap, airaTextCap, airaTools, readStop, readTurn } from "./aira-turn.js"
 import { catalog, projectTools, toolInputSchema } from "./catalog.js"
 
 const deck = "airadeck"
@@ -65,6 +65,18 @@ describe("readTurn", () => {
 
   it("reads a run of tool calls, their results, thinking, and the person's next request as sent", () => {
     expect(readTurn({ deck, messages: run })).toEqual({ ok: true, deck, messages: run })
+  })
+
+  it("reads the name the browser gave the person's ask, so a stop can name it", () => {
+    expect(readTurn({ deck, messages: [ask], ask: "ask_1-A" })).toEqual({
+      ok: true,
+      deck,
+      messages: [ask],
+      ask: "ask_1-A",
+    })
+    for (const name of ["", "x".repeat(65), "a b", 7, null]) {
+      expect(readTurn({ deck, messages: [ask], ask: name })).toEqual({ ok: false })
+    }
   })
 
   it("refuses a body with anything but the open deck and the conversation", () => {
@@ -162,5 +174,23 @@ describe("readTurn", () => {
       { role: "user", content: [result("toolu_read"), { type: "text", text: "x".repeat(airaTextCap + 1) }] },
     ])
     refused([ask, { role: "assistant", content: [{ type: "text", text: "Done." }] }, readAnswer])
+  })
+})
+
+describe("readStop", () => {
+  it("reads the ask a stop names and refuses anything else", () => {
+    expect(readStop({ ask: "ask_1-A" })).toEqual({ ok: true, ask: "ask_1-A" })
+    for (const body of [
+      {},
+      { ask: "" },
+      { ask: "a b" },
+      { ask: "x".repeat(65) },
+      { ask: 7 },
+      { ask: "a", deck },
+      [],
+      null,
+    ]) {
+      expect(readStop(body)).toEqual({ ok: false })
+    }
   })
 })

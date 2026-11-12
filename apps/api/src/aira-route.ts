@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 
-import { airaRoutes, countryHeader } from "@airdesign/catalog"
+import { airaRoutes, countryHeader, readStop } from "@airdesign/catalog"
 import type { CallerLog } from "@airdesign/mcp"
 
 import { airaBodyCap, airaTurn, type AiraLine, type AiraSettings } from "./aira.js"
@@ -44,37 +44,59 @@ async function streamLines(res: ServerResponse, lines: AsyncIterable<AiraLine>):
   res.end()
 }
 
-export function airaRoute<Visit extends AiraVisit>(
-  http: AiraHttp<Visit>,
-): {
+type AiraServed<Visit> = {
   readonly method: "POST"
-  readonly path: typeof airaRoutes.turn.path
-  readonly cap: number
+  readonly path: string
+  readonly cap?: number
   readonly serve: (visit: Visit) => Promise<void>
-} {
-  return {
-    method: "POST",
-    path: airaRoutes.turn.path,
-    cap: airaBodyCap,
-    serve: async (visit) => {
-      const { options, logs, now, mint, req, res } = visit
-      const signal = leftEarly(res)
-      const email = await http.signedIn(visit)
-      if (email === undefined) return
-      const body = await visit.body()
-      if (body === undefined) {
-        http.answerSize(res)
-        return
-      }
-      const answer = await airaTurn(
-        { settings: options.aira, db: options.session, logs, now, mint, closing: options.closing },
-        email,
-        req.headers[countryHeader],
-        http.parsedJson(body),
-        signal,
-      )
-      if ("lines" in answer) await streamLines(res, answer.lines)
-      else http.sendJson(res, answer.status, answer.body)
+}
+
+export function airaRouteList<Visit extends AiraVisit>(http: AiraHttp<Visit>): readonly AiraServed<Visit>[] {
+  return [
+    {
+      method: "POST",
+      path: airaRoutes.turn.path,
+      cap: airaBodyCap,
+      serve: async (visit) => {
+        const { options, logs, now, mint, req, res } = visit
+        const signal = leftEarly(res)
+        const email = await http.signedIn(visit)
+        if (email === undefined) return
+        const body = await visit.body()
+        if (body === undefined) {
+          http.answerSize(res)
+          return
+        }
+        const answer = await airaTurn(
+          { settings: options.aira, db: options.session, logs, now, mint, closing: options.closing },
+          email,
+          req.headers[countryHeader],
+          http.parsedJson(body),
+          signal,
+        )
+        if ("lines" in answer) await streamLines(res, answer.lines)
+        else http.sendJson(res, answer.status, answer.body)
+      },
     },
-  }
+    {
+      method: "POST",
+      path: airaRoutes.stop.path,
+      serve: async (visit) => {
+        const email = await http.signedIn(visit)
+        if (email === undefined) return
+        const body = await visit.body()
+        if (body === undefined) {
+          http.answerSize(visit.res)
+          return
+        }
+        const stop = readStop(http.parsedJson(body))
+        if (!stop.ok) {
+          http.sendJson(visit.res, 400, { ok: false, refusal: "body" })
+          return
+        }
+        await visit.options.closing.stop(email, stop.ask)
+        http.sendJson(visit.res, 200, { ok: true })
+      },
+    },
+  ]
 }

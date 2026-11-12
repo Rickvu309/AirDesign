@@ -27,6 +27,7 @@ export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
   const latest = useRef(chat)
   const waiting = useRef<string[]>([])
   const stopper = useRef<AbortController | null>(null)
+  const finishing = useRef<Promise<unknown>>(Promise.resolve())
   const popId = useId()
   const last = chat.exchanges.at(-1)
   const working = last?.end === "working"
@@ -52,8 +53,16 @@ export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
   async function run(text: string) {
     const controller = new AbortController()
     stopper.current = controller
-    const done = await askAira(latest.current, text, { signal: controller.signal, show: shown, added: takeQueued })
-    if (stopper.current === controller) stopper.current = null
+    const asking = askAira(latest.current, text, {
+      signal: controller.signal,
+      show: shown,
+      added: takeQueued,
+      after: finishing.current,
+    })
+    finishing.current = asking
+    const done = await asking
+    if (stopper.current !== controller) return
+    stopper.current = null
     shown(done)
     const end = done.exchanges.at(-1)?.end
     if (end === "signed-out") {

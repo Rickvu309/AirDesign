@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process"
 import { randomBytes } from "node:crypto"
+import { createServer, request as forwardTo } from "node:http"
 import type { AddressInfo } from "node:net"
 import { join } from "node:path"
 import { expect, test as base, type BrowserContext, type Page } from "@playwright/test"
@@ -17,6 +18,7 @@ export type Answer = {
 }
 export type Stack = {
   readonly origin: string
+  readonly hop: string
   readonly mcp: string
   readonly post: (path: string, body: unknown, cookie?: string) => Promise<Answer>
   readonly callTool: (name: string, args: unknown, cookie: string) => Promise<Record<string, unknown>>
@@ -30,6 +32,35 @@ export type Stack = {
   readonly originals: {
     put(url: string, bytes: Uint8Array, headers: Readonly<Record<string, string>>): void
     get(url: string): Uint8Array
+  }
+}
+
+async function startBlindHop(
+  target: string,
+): Promise<{ readonly origin: string; readonly close: () => Promise<void> }> {
+  const hop = createServer((incoming, outgoing) => {
+    const headers = Object.fromEntries(Object.entries(incoming.headers).filter(([name]) => name !== "host"))
+    const upstream = forwardTo(`${target}${incoming.url ?? "/"}`, { method: incoming.method, headers }, (answer) => {
+      outgoing.writeHead(answer.statusCode ?? 502, answer.headers)
+      answer.on("data", (chunk: Buffer) => {
+        if (!outgoing.destroyed) outgoing.write(chunk)
+      })
+      answer.on("end", () => outgoing.end())
+      answer.on("error", () => outgoing.destroy())
+    })
+    upstream.on("error", () => outgoing.destroy())
+    incoming.pipe(upstream)
+  })
+  await new Promise<void>((resolve) => {
+    hop.listen(0, "127.0.0.1", () => resolve())
+  })
+  return {
+    origin: `http://127.0.0.1:${String((hop.address() as AddressInfo).port)}`,
+    close: () =>
+      new Promise<void>((resolve) => {
+        hop.close(() => resolve())
+        hop.closeAllConnections()
+      }),
   }
 }
 
@@ -92,6 +123,7 @@ export const test = base.extend<object, { stack: Stack }>({
         server.listen(0, "127.0.0.1", () => resolve())
       })
       const origin = `http://127.0.0.1:${String((server.address() as AddressInfo).port)}`
+      const hop = await startBlindHop(origin)
       async function post(path: string, body: unknown, cookie?: string): Promise<Answer> {
         const response = await fetch(`${origin}${path}`, {
           method: "POST",
@@ -108,6 +140,7 @@ export const test = base.extend<object, { stack: Stack }>({
       const owners = new Map<string, string>()
       await use({
         origin,
+        hop: hop.origin,
         mcp: mcpRoutes.mcp.path,
         post,
         async callTool(name, args, cookie) {
@@ -153,6 +186,7 @@ export const test = base.extend<object, { stack: Stack }>({
           )
         },
       })
+      await hop.close()
       await new Promise<void>((resolve) => {
         server.close(() => resolve())
         server.closeAllConnections()
@@ -197,7 +231,7 @@ export async function forward(page: Page, stack: Stack): Promise<string[]> {
       asked.push(pathname)
       const headers = { ...(await request.allHeaders()), [countryHeader]: "US" }
       if (pathname.startsWith(streamed)) {
-        await route.continue({ url: `${stack.origin}${pathname}${search}`, headers })
+        await route.continue({ url: `${stack.hop}${pathname}${search}`, headers })
         return
       }
       try {

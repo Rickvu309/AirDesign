@@ -19,10 +19,11 @@ export function fuzzGood(deck: string) {
         answers: 200,
         says: '"type":"end","ok":true',
         headers: [`${countryHeader}: VN`],
-        fields: { deck, messages: [{ role: "user", content: "Fuzz" }] },
+        fields: { deck, messages: [{ role: "user", content: "Fuzz" }], ask: "fuzzask" },
       },
     ],
     "POST /aira/usage": [{ shape: "json" as const, answers: 200, says: '"ok":true', fields: {} }],
+    "POST /aira/stop": [{ shape: "json" as const, answers: 200, says: '"ok":true', fields: { ask: "fuzzask" } }],
     "POST /decks/undo": [
       { shape: "json" as const, answers: 200, says: '"refusal":"run-fenced"', fields: { deck, runId: "fuzzrun" } },
     ],

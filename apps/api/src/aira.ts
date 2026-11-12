@@ -6,7 +6,7 @@ import { admit, emptyLog, type CallerLog } from "@airdesign/mcp"
 import { allowance, usage, type Command, type Ledger } from "@airdesign/usage"
 
 import { withAddress } from "./account.js"
-import type { Closing } from "./aira-closing.js"
+import type { Closing, Followed } from "./aira-closing.js"
 import { play, type AiraEvent, type Counts, type Played, type Reported } from "./aira-stream.js"
 import type { Sql } from "./pool.js"
 
@@ -310,10 +310,10 @@ async function* answered(
   host: AiraHost,
   asked: Asked,
   log: (line: string) => void,
-  signal: AbortSignal,
+  followed: Followed,
 ): AsyncGenerator<AiraLine> {
   const { account, id, input } = asked
-  const done = host.closing.follow(account, signal)
+  const { signal } = followed
   try {
     const sent = !signal.aborted
     let opened: ModelOpen = { ok: false, request: null, status: 0, type: "api_error", message: "" }
@@ -340,7 +340,7 @@ async function* answered(
     }
     yield { type: "end", ok: false, refusal: played.kind === "dropped" ? "dropped" : "unavailable", usage }
   } finally {
-    done()
+    followed.done()
   }
 }
 
@@ -349,7 +349,7 @@ export async function airaTurn(
   account: string,
   country: string | string[] | undefined,
   raw: unknown,
-  signal: AbortSignal,
+  left: AbortSignal,
 ): Promise<AiraAnswer | AiraStream> {
   const settings = host.settings
   if (settings === undefined || !settings.on || settings.key === undefined || settings.secret === undefined) {
@@ -358,6 +358,25 @@ export async function airaTurn(
   if (typeof country !== "string" || !supportedCountries.has(country.toUpperCase())) return refuse(403, "country")
   const parsed = readTurn(raw)
   if (!parsed.ok) return refuse(400, "body")
+  const followed = host.closing.follow(account, parsed.ask, left)
+  const answer = await admitted(
+    host,
+    { ...settings, key: settings.key, secret: settings.secret },
+    account,
+    parsed,
+    followed,
+  )
+  if (!("lines" in answer)) followed.done()
+  return answer
+}
+
+async function admitted(
+  host: AiraHost,
+  settings: AiraSettings & { readonly key: string; readonly secret: string },
+  account: string,
+  parsed: { readonly deck: string; readonly messages: readonly ModelMessage[] },
+  followed: Followed,
+): Promise<AiraAnswer | AiraStream> {
   const now = host.now()
   const admission = admit(host.logs.get(account) ?? emptyLog(), "turn", now)
   if (!admission.ok) return refuse(429, "rate", { text: admission.text })
@@ -383,5 +402,5 @@ export async function airaTurn(
     output_config: { effort: "low" },
   }
   const asked = { account, user, id, input, key: settings.key, transport: settings.transport, call }
-  return { status: 200, lines: answered(host, asked, settings.log ?? writeLine, signal) }
+  return { status: 200, lines: answered(host, asked, settings.log ?? writeLine, followed) }
 }
