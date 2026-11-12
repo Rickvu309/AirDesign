@@ -20,22 +20,37 @@ const scripted = (answers) => {
     if (answer instanceof Error) throw answer
     return answer
   }
-  const read = readWithRetry({ run, sleep: (ms) => slept.push(ms), say: (line) => said.push(line), attempts: 3, pause: 2000 })
+  const read = readWithRetry({
+    run,
+    sleep: (ms) => slept.push(ms),
+    say: (line) => said.push(line),
+    attempts: 3,
+    pause: 2000,
+  })
   return { read, calls, said, slept }
 }
 
 same("a 502 is read again", worthRetrying(failure("gh: Bad Gateway (HTTP 502)")), true)
 same("a 404 is not", worthRetrying(failure("gh: Not Found (HTTP 404)")), false)
 same("a 403 is not", worthRetrying(failure("gh: Forbidden (HTTP 403)")), false)
-same("a non-JSON answer is read again", worthRetrying(failure("invalid character 'S' looking for beginning of value")), true)
+same(
+  "a non-JSON answer is read again",
+  worthRetrying(failure("invalid character 'S' looking for beginning of value")),
+  true,
+)
 same("the status is read from gh", statusOf(failure("gh: x (HTTP 503)")), 503)
 
-const recovers = scripted([failure("invalid character 'S' looking for beginning of value"), failure("gh: x (HTTP 502)"), "{}"])
+const recovers = scripted([
+  failure("invalid character 'S' looking for beginning of value"),
+  failure("gh: x (HTTP 502)"),
+  "{}",
+])
 same("a read that recovers returns its answer", recovers.read(["repos/x"]), "{}")
 same("it asked three times", recovers.calls.length, 3)
 same("it paused between tries", recovers.slept, [2000, 2000])
 same("every retry is said in the log", recovers.said.length, 2)
-if (!recovers.said[0].includes("not JSON") || !recovers.said[1].includes("HTTP 502")) fail(`the log is vague: ${recovers.said}`)
+if (!recovers.said[0].includes("not JSON") || !recovers.said[1].includes("HTTP 502"))
+  fail(`the log is vague: ${recovers.said}`)
 
 const stuck = scripted([failure("gh: Bad Gateway (HTTP 502)")])
 let thrown
@@ -62,7 +77,11 @@ try {
   missing.read(["repos/x"])
   fail("a 404 returned")
 } catch (error) {
-  same("a 404 is thrown at once, untouched", [missing.calls.length, String(error.stderr).includes("HTTP 404")], [1, true])
+  same(
+    "a 404 is thrown at once, untouched",
+    [missing.calls.length, String(error.stderr).includes("HTTP 404")],
+    [1, true],
+  )
 }
 
 console.log("github read tests passed")

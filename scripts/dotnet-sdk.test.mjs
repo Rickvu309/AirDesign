@@ -36,7 +36,13 @@ same(
 )
 
 const none = findDotnet({ DOTNET_ROOT: "/r" }, { home: "/h", works: () => false })
-for (const place of ["dotnet on PATH", "$DOTNET_ROOT/dotnet (/r/dotnet)", "$HOME/.dotnet/dotnet (/h/.dotnet/dotnet)", "dotnet-install", "PPTX_DOTNET"])
+for (const place of [
+  "dotnet on PATH",
+  "$DOTNET_ROOT/dotnet (/r/dotnet)",
+  "$HOME/.dotnet/dotnet (/h/.dotnet/dotnet)",
+  "dotnet-install",
+  "PPTX_DOTNET",
+])
   if (!none.problem?.includes(place)) fail(`the problem does not name ${place}: ${none.problem}`)
 
 const folder = fs.mkdtempSync(path.join(os.tmpdir(), "dotnet-sdk-"))
@@ -61,4 +67,5 @@ const shell = spawnSync("bash", [new URL("./pptx-tools.sh", import.meta.url).pat
   encoding: "utf8",
 })
 fs.rmSync(bare, { recursive: true, force: true })
-if (shell.status === 0 || !shell.stderr.includes("Tried:")) fail(`the shell wrapper does not report the places tried: ${shell.stderr}`)
+if (shell.status === 0 || !shell.stderr.includes("Tried:"))
+  fail(`the shell wrapper does not report the places tried: ${shell.stderr}`)
