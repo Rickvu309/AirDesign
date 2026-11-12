@@ -115,16 +115,29 @@ test("back from a deck that was just imported shows the deck home", async ({ pag
   await expect(page.locator(".thin-page")).toHaveCount(0)
 })
 
-test("a refused import shows the designed failure and can be removed", async ({ page }) => {
+test("a refused import shows the designed failure, focuses the way out, and can be removed", async ({ page }) => {
   await store(page)
   await page.goto("/")
   await page
     .locator("input[type=file]")
     .setInputFiles({ name: "broken.pptx", mimeType: "application/octet-stream", buffer: Buffer.from("broken") })
   await expect(page.getByText("Unable to import", { exact: true })).toBeVisible()
-  await expect(page.getByRole("button", { name: "Choose another file" })).toBeVisible()
+  const refused = page.getByRole("alert")
+  await expect(refused).toContainText("Unable to import")
+  await expect(refused.getByRole("button", { name: "Choose another file" })).toBeFocused()
   await page.getByRole("button", { name: "Remove", exact: true }).click()
   await expect(page.getByText("Unable to import", { exact: true })).toHaveCount(0)
+})
+
+test("a file that is not a PowerPoint is refused with the same designed failure", async ({ page }) => {
+  await store(page)
+  await page.goto("/")
+  const emptyZip = Buffer.from([0x50, 0x4b, 0x05, 0x06, ...Array.from({ length: 18 }, () => 0)])
+  await page
+    .locator("input[type=file]")
+    .setInputFiles({ name: "archive.pptx", mimeType: "application/octet-stream", buffer: emptyZip })
+  await expect(page.getByRole("alert").getByText("Unable to import", { exact: true })).toBeVisible()
+  await expect(page.getByRole("alert").getByRole("button", { name: "Choose another file" })).toBeFocused()
 })
 
 test("move to Trash and Undo post trash and restore", async ({ page }) => {
@@ -205,6 +218,48 @@ test("a failed list shows the shell and no sample decks", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Trash" })).toBeVisible()
   await expect(page.getByText("Scratchpad", { exact: true })).toHaveCount(0)
   await expect(page.getByText("Project Atlas", { exact: true })).toHaveCount(0)
+})
+
+test("deck home shows a loading state until the list arrives and respects reduced motion", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  let resolveRoute: (() => void) | undefined
+  const gate = new Promise<void>((resolve) => {
+    resolveRoute = resolve
+  })
+  await page.route("**/decks/list", async (route) => {
+    await gate
+    await route.fulfill({ json: { ok: true, account: { email: "home@example.com" }, decks: [first], trash: [] } })
+  })
+  await page.goto("/")
+  const loading = page.locator('[data-loading="true"]')
+  await expect(loading).toBeVisible()
+  const skeleton = page.locator('[data-slot="skeleton"]')
+  await expect(skeleton).toHaveCount(9)
+  await expect(skeleton.first()).toHaveCSS("animation-name", "none")
+  resolveRoute?.()
+  await expect(loading).toHaveCount(0)
+  await expect(page.getByRole("heading", { name: first.name })).toBeVisible()
+})
+
+test("a failed list shows a message, retries when asked, and returns focus to the page title", async ({ page }) => {
+  let shouldFail = true
+  await page.route("**/decks/list", async (route) => {
+    if (shouldFail) {
+      await route.fulfill({ status: 500, body: "failed" })
+      return
+    }
+    await route.fulfill({ json: { ok: true, account: { email: "home@example.com" }, decks: [first], trash: [] } })
+  })
+  await page.goto("/")
+  const failure = page.getByRole("alert")
+  await expect(failure.getByRole("heading", { name: "Unable to finish this run" })).toBeVisible()
+  await expect(failure.getByText("Your work so far is saved.")).toBeVisible()
+  const tryAgain = failure.getByRole("button", { name: "Try again" })
+  shouldFail = false
+  await tryAgain.click()
+  await expect(page.getByRole("heading", { name: first.name })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Unable to finish this run" })).toHaveCount(0)
+  await expect(page.getByRole("heading", { name: "Recents", level: 1 })).toBeFocused()
 })
 
 test("sign out from the account menu returns to sign-in and keeps deck data", async ({ page }) => {

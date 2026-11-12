@@ -2,7 +2,19 @@ import { deckName, deckRoutes } from "@airdesign/catalog"
 import { connect, putParts } from "@airdesign/live"
 import { readPackage } from "@airdesign/pptx"
 import { server } from "@/commit-edit"
+import type { ImportFailureReason } from "@/decks/import-failure-words"
 import { ensureMarkup } from "@/markup"
+
+export type ImportedDeck = {
+  readonly id: string
+  readonly name: string
+  readonly parts: ReadonlyMap<string, Uint8Array>
+  readonly file: Uint8Array
+}
+
+export type ImportResult =
+  | { readonly ok: true; readonly deck: ImportedDeck }
+  | { readonly ok: false; readonly reason: ImportFailureReason }
 
 export async function saveDeck(
   parts: ReadonlyMap<string, Uint8Array>,
@@ -14,14 +26,15 @@ export async function saveDeck(
   return saved.ok ? deckId : null
 }
 
-export async function importDeck(file: File) {
+export async function importDeck(file: File): Promise<ImportResult> {
   await ensureMarkup()
   const bytes = new Uint8Array(await file.arrayBuffer())
   const read = await readPackage(bytes)
-  if (!read.ok) return null
+  if (!read.ok) return { ok: false, reason: read.reason === "limit" ? read.limit : read.reason }
   const name = deckName(file.name)
   const id = await saveDeck(read.parts, bytes, name)
-  return id === null ? null : { id, name, parts: read.parts, file: bytes }
+  if (id === null) return { ok: false, reason: "save" }
+  return { ok: true, deck: { id, name, parts: read.parts, file: bytes } }
 }
 
 export async function nameImportedDeck(imported: { readonly id: string; readonly name: string }) {

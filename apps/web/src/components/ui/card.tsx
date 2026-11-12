@@ -7,6 +7,7 @@ export function Card({
   detail,
   actions,
   align = "center",
+  className,
   children,
 }: {
   title: string
@@ -14,10 +15,11 @@ export function Card({
   detail?: string
   actions?: ReactNode
   align?: "center" | "end"
+  className?: string
   children?: ReactNode
 }) {
   return (
-    <section className="w-[860px] rounded-xl bg-background p-5 shadow-[inset_0_0_0_1px_var(--line)]">
+    <section className={cn("w-[860px] rounded-xl bg-background p-5 shadow-[inset_0_0_0_1px_var(--line)]", className)}>
       <header className={cn("flex justify-between gap-4", align === "end" ? "items-end" : "items-center")}>
         <div className="min-w-0">
           <h2 className="text-[length:var(--type-section)] leading-5 font-semibold text-foreground">{title}</h2>

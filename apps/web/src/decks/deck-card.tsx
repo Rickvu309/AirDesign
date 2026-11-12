@@ -1,4 +1,4 @@
-import type { ReactNode } from "react"
+import type { ComponentProps, ReactNode } from "react"
 import { cn } from "@/lib/class-names"
 
 export function DeckCard({
@@ -49,6 +49,14 @@ export function DeckCard({
   )
 }
 
-export function DeckGrid({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("mt-8 grid grid-cols-3 gap-5", className)}>{children}</div>
+export function DeckGrid({
+  children,
+  className,
+  ...props
+}: { children: ReactNode; className?: string } & ComponentProps<"div">) {
+  return (
+    <div className={cn("mt-8 grid grid-cols-3 gap-5", className)} {...props}>
+      {children}
+    </div>
+  )
 }
