@@ -89,6 +89,8 @@ jobs:
         run: pnpm --filter '!@airdesign/site' -r --if-present run build
       - if: matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
         run: pnpm check:pptx
+        env:
+          AIRDESIGN_WEB_BUILT: "1"
       - if: matrix.part == 'pptx' && steps.pptx.outputs.changed != '0' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
@@ -142,6 +144,8 @@ jobs:
           key: pptx-renders-corpus-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
           restore-keys: pptx-renders-
       - run: pnpm check:pptx:corpus
+        env:
+          AIRDESIGN_WEB_BUILT: "1"
       - name: paint-fidelity
         if: ${{ !cancelled() }}
         continue-on-error: true
