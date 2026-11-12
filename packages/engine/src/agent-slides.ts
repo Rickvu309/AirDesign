@@ -41,7 +41,7 @@ export function runFenced(register: Register, runId: string): boolean {
   return held.length > 0 && live.length === 0
 }
 
-function runFence(register: Register, runId: string, deleted: SlideId | null): CallRefusal | null {
+export function runFence(register: Register, runId: string, deleted: SlideId | null): CallRefusal | null {
   if (runFenced(register, runId)) return "run-fenced"
   const protectedHere = heldBy(register, runId).live.some(
     ({ node, body }) => body.guarded && node.includes(".") && shapeOf(node).slide === deleted,

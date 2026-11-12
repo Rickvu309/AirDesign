@@ -55,14 +55,19 @@ export function elementTool(op: ElementOp, raw: unknown, session: Session): Tool
   const parsed = elementReaders[op](raw)
   if (!parsed.ok) return editRefusal(before, parsed.refusal, [])
   const held = heldRun(session)
-  const stopped = held === undefined ? stopLiveRuns(before) : ({ ok: true, deck: before } as const)
+  const fresh = parsed.base === before.revision
+  const stopped = held === undefined && fresh ? stopLiveRuns(before) : ({ ok: true, deck: before } as const)
   if (!stopped.ok) return editRefusal(before, stopped.refusal, [])
   const runId = held?.runId ?? session.caller.runId
   const deck = { id: before.id, revision: before.revision, register: stopped.deck.register }
   const result = call(op, deck, { actor: "agent", runId }, raw)
   if (!result.ok) {
     const detail =
-      "node" in parsed ? deleteDetail(before, parsed.node, result.refusal) : addDetail(before, parsed.slide)
+      "node" in parsed
+        ? deleteDetail(before, parsed.node, result.refusal)
+        : result.refusal === "dead"
+          ? addDetail(before, parsed.slide)
+          : undefined
     return failed(before, result.refusal, detail)
   }
   if ("node" in parsed) return answered(result.deck, runId, [])
