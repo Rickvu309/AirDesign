@@ -24,6 +24,8 @@ export const stages = [
     ["interface-width", "node", ["scripts/interface-width.mjs"]],
     ["worktrees", "node", ["scripts/worktrees.mjs"]],
     ["commit-authors", "node", ["scripts/commit-authors.mjs"]],
+    ["conflict-markers", "node", ["scripts/conflict-markers.mjs"]],
+    ["migration-numbers", "node", ["scripts/migration-numbers.mjs"]],
     ["specs", "pnpm", ["check:specs"], { AIRDESIGN_SPEC_CACHE: specCache }],
     ["spec-replays", "node", ["scripts/spec-replays.mjs"]],
     ["browser", "pnpm", ["test:browser"]],
@@ -72,7 +74,15 @@ export const judgedOnCi = new Set(["test", "browser"])
 
 export const mayPush = (failed, ran) => ran && failed.every((name) => judgedOnCi.has(name))
 
-export const warnSteps = new Set(["interface-width", "design-findings", "spec-replays"])
+export const stampable = (failed, ran) => ran && failed.every((name) => name === "browser")
+
+export const warnSteps = new Set([
+  "interface-width",
+  "design-findings",
+  "spec-replays",
+  "conflict-markers",
+  "migration-numbers",
+])
 
 export const recordFailure = (failed, name, warned = warnSteps) => {
   if (warned.has(name)) return "warn"
@@ -134,10 +144,14 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   fs.rmSync(ownTemp, { recursive: true, force: true })
   release()
 
-  if (checkedTree !== undefined && mayPush(failed, ranSteps)) {
+  if (checkedTree !== undefined && stampable(failed, ranSteps)) {
     stampChecked(root, checkedTree)
     console.log(`checked ${checkedTree.slice(0, 8)}: a commit with exactly these files may be pushed`)
-    if (failed.length > 0) console.error("Only timing-sensitive steps failed here, so ci judges them on GitHub.")
+    if (failed.length > 0) console.error("Only the browser tests failed here, so ci judges them on GitHub.")
+  } else if (checkedTree !== undefined && mayPush(failed, ranSteps)) {
+    console.error(
+      "NOT checked: the test step failed, so this commit is not stamped and the push guard will refuse it. Run pnpm land --check: it reruns each failed test file alone, tells load from a fault, and stamps the commit only when every file passes alone.",
+    )
   }
   if (failed.length > 0) {
     console.error(`failed: ${failed.join(", ")}`)

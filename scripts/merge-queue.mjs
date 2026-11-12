@@ -1,0 +1,81 @@
+const pullQuery = `query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){state merged baseRefName headRefOid mergeable mergeStateStatus isInMergeQueue mergeQueueEntry{position state} autoMergeRequest{enabledAt mergeMethod} commits(last:1){nodes{commit{statusCheckRollup{state contexts(first:100){nodes{__typename ... on CheckRun{name conclusion status} ... on StatusContext{context state}}}}}}}} mergeQueue(branch:"main"){entries(first:50){nodes{position pullRequest{number}}}}}}`
+
+export const pullArgs = (repository, number) => {
+  const [owner, name] = repository.split("/")
+  return [
+    "api",
+    "graphql",
+    "-F",
+    `owner=${owner}`,
+    "-F",
+    `name=${name}`,
+    "-F",
+    `number=${number}`,
+    "-f",
+    `query=${pullQuery}`,
+  ]
+}
+
+const passedConclusions = new Set(["SUCCESS", "SKIPPED", "NEUTRAL"])
+
+const sortChecks = (contexts) => {
+  const checks = { passed: [], failed: [], running: [] }
+  for (const context of contexts) {
+    const run = context.__typename === "CheckRun"
+    const name = run ? context.name : context.context
+    if (run ? context.status !== "COMPLETED" : ["PENDING", "EXPECTED"].includes(context.state))
+      checks.running.push(name)
+    else if (run ? passedConclusions.has(context.conclusion) : context.state === "SUCCESS") checks.passed.push(name)
+    else checks.failed.push(name)
+  }
+  return checks
+}
+
+export const parsePull = (text) => {
+  const { pullRequest, mergeQueue } = JSON.parse(text).data.repository
+  const rollup = pullRequest.commits.nodes[0]?.commit.statusCheckRollup
+  return {
+    state: pullRequest.state,
+    merged: pullRequest.merged,
+    base: pullRequest.baseRefName,
+    head: pullRequest.headRefOid,
+    mergeable: pullRequest.mergeable,
+    mergeState: pullRequest.mergeStateStatus,
+    queued: pullRequest.mergeQueueEntry !== null,
+    position: pullRequest.mergeQueueEntry?.position,
+    armed: pullRequest.autoMergeRequest !== null,
+    checks: sortChecks(rollup?.contexts.nodes ?? []),
+    queue: (mergeQueue?.entries.nodes ?? []).map((entry) => entry.pullRequest.number),
+  }
+}
+
+export const queueLine = (pull) => {
+  if (pull.queued) return `in the merge queue at position ${pull.position}`
+  if (pull.armed) return "auto-merge is armed, and the queue takes it when checks pass"
+  return "not in the merge queue and auto-merge is not armed"
+}
+
+export const readPull = ({ read, repository, number }) => parsePull(read(pullArgs(repository, number)))
+
+const strategies = [["--auto", "--rebase"], ["--auto"]]
+
+export const enqueue = ({ merge, read, repository, number }) => {
+  const said = []
+  for (const strategy of strategies) {
+    const args = ["pr", "merge", String(number), ...strategy]
+    const result = merge(args)
+    said.push(
+      `gh ${args.join(" ")} said: ${`${result.stdout}${result.stderr}`.trim() || `nothing (exit ${result.status})`}`,
+    )
+    const state = readPull({ read, repository, number })
+    if (state.queued || state.armed) return { ok: true, state, said }
+    if (state.merged) return { ok: true, state, said }
+  }
+  const state = readPull({ read, repository, number })
+  return {
+    ok: false,
+    state,
+    said,
+    message: `pull request ${number} is not queued and auto-merge is not armed, whatever gh printed. ${said.join(" ")}`,
+  }
+}

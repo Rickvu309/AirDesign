@@ -12,7 +12,9 @@ if (unchecked.length > 0) {
   for (const { ref, commit } of unchecked) {
     console.error(`push refused: no passing pnpm check ran on ${ref} at ${commit.slice(0, 8)}.`)
   }
-  console.error("Run pnpm check with exactly what you commit, then push again.")
+  console.error(
+    "Run pnpm check with exactly what you commit, then push again. If a test failed, run pnpm land --check: it reruns each failed test file alone and stamps the commit when every file passes.",
+  )
   process.exit(1)
 }
 if (refused.length > 0) process.exit(1)

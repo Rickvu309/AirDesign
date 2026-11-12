@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url"
 import { beforeAfterLabel, beforeAfterLine, beforeAfterNeed, seen } from "./before-after.mjs"
 import { workingTree } from "./checked.mjs"
 import { ghApi, readWithRetry } from "./github-read.mjs"
+import { baseFault } from "./pull-base.mjs"
 import { measuredLive } from "./metrics.mjs"
 
 const guardedFolders = [".github/", "tooling/", "scripts/", "specs/"]
@@ -276,7 +277,11 @@ export const readReasons = ({ json, fork, head, listed }) => {
 const readPull = (repository, number) => {
   const pulls = `repos/${repository}/pulls/${number}`
   const pull = JSON.parse(
-    github([pulls, "--jq", "{head: .head.sha, base: .base.sha, files: .changed_files, body: .body} | @json"]),
+    github([
+      pulls,
+      "--jq",
+      "{head: .head.sha, base: .base.sha, baseRef: .base.ref, files: .changed_files, body: .body} | @json",
+    ]),
   )
   const fork = github([
     `repos/${repository}/compare/${pull.base}...${pull.head}`,
@@ -289,7 +294,11 @@ const readPull = (repository, number) => {
   }
   const reasons = readReasons({ json: githubJson(repository), fork, head: pull.head, listed })
   const changedFiles = listed.map((file) => file.name)
-  return { reasons, shown: beforeAfterNeed({ changedFiles, body: pull.body, repository }) }
+  return {
+    reasons,
+    shown: beforeAfterNeed({ changedFiles, body: pull.body, repository }),
+    wrongBase: baseFault(number, pull.baseRef),
+  }
 }
 
 const localGit = (root, args, env = process.env) =>
@@ -368,6 +377,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self && process.argv[2]
     const result = verdict(read)
     for (const line of result.lines) console.log(line)
     if (beforeAfterLine(read.shown)) console.log(beforeAfterLine(read.shown))
+    if (read.wrongBase !== undefined) {
+      console.log(`Wrong base: ${read.wrongBase}`)
+      process.exitCode = 1
+    }
     if (process.argv.includes("--label")) {
       const issue = `repos/${repository}/issues/${number}/labels`
       try {
