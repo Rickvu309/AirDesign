@@ -326,7 +326,7 @@ it("draws a solid line with no dash", () => {
 
 it.each<[string, Partial<PaintElement>, string]>([
   ["a rectangle", { geometry: "rect" }, "box"],
-  ["a preset it cannot draw", { geometry: "star5" }, "box"],
+  ["a preset with vector geometry", { geometry: "star5" }, "box"],
   ["a rounded rectangle", { geometry: "roundRect" }, "round"],
   ["an ellipse", { geometry: "ellipse" }, "ellipse"],
   ["a line", { geometry: "line" }, "line"],

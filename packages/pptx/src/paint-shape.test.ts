@@ -40,6 +40,21 @@ const ln = (inside = "", width = "") => `<a:ln ${width === "" ? "" : `w="${width
 const line = { fill: { type: "none" }, width: 9525, dash: null, head: null, tail: null }
 
 describe("shape paint", () => {
+  it("reads only numeric adjust values from the chosen preset without changing the parts", () => {
+    const geometry =
+      '<a:prstGeom prst="triangle"><a:avLst><a:gd name="adj" fmla="val 25000"/><a:gd name="bad" fmla="val nope"/></a:avLst></a:prstGeom>'
+    const parts = partsOf(sp(geometry))
+    const before = parts.get(slide)?.slice()
+    expect(own(parts).adjusts).toEqual({ adj: 25000 })
+    expect(parts.get(slide)).toEqual(before)
+  })
+
+  it("inherits adjusts only with the chosen geometry", () => {
+    const geometry = '<a:prstGeom prst="triangle"><a:avLst><a:gd name="adj" fmla="val 25000"/></a:avLst></a:prstGeom>'
+    expect(own(partsOf(sp("", ph()), sp(geometry, ph()))).adjusts).toEqual({ adj: 25000 })
+    expect(own(partsOf(sp('<a:prstGeom prst="triangle"/>', ph()), sp(geometry, ph()))).adjusts).toEqual({})
+  })
+
   it.each([
     ["<a:noFill/>", { type: "none" }],
     [solid("123456"), expected("123456")],

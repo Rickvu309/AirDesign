@@ -114,7 +114,22 @@ function lineColor(fill: PaintFill): string | null {
 function canvasLine(line: PaintLine | null): CanvasLine | null {
   if (line === null) return null
   const color = lineColor(line.fill)
-  return color === null ? null : { color, width: line.width, dash: dashes.get(line.dash ?? "") ?? null }
+  const ends = new Map<string, NonNullable<CanvasLine["head"]>>([
+    ["triangle", "triangle"],
+    ["stealth", "stealth"],
+    ["diamond", "diamond"],
+    ["oval", "oval"],
+    ["arrow", "arrow"],
+  ])
+  return color === null
+    ? null
+    : {
+        color,
+        width: line.width,
+        dash: dashes.get(line.dash ?? "") ?? null,
+        ...(ends.has(line.head ?? "") ? { head: ends.get(line.head ?? "") } : {}),
+        ...(ends.has(line.tail ?? "") ? { tail: ends.get(line.tail ?? "") } : {}),
+      }
 }
 
 function spacingOf(spacing: PaintText["paragraphs"][number]["lineSpacing"], factor: number) {
@@ -200,6 +215,22 @@ function canvasElements(
       fill: shapeFill(row, outline, src),
       line: canvasLine(row.line),
       outline,
+      ...(row.geometry === null
+        ? {}
+        : {
+            geometry: {
+              preset: row.geometry,
+              adjusts: row.adjusts ?? {},
+              ...(row.fill?.type !== "gradient" || row.image !== null
+                ? {}
+                : {
+                    gradient: {
+                      angle: row.fill.angle,
+                      stops: row.fill.stops.map((stop) => ({ position: stop.position, color: cssColor(stop.color) })),
+                    },
+                  }),
+            },
+          }),
       text: canvasText(row.text),
     })
   }
