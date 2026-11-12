@@ -236,7 +236,7 @@ async function start(): Promise<Info> {
 async function stop(info: Info): Promise<void> {
   await capture(
     path.join(info.bin, "pg_ctl"),
-    ["-D", path.join(info.dir, "data"), "-w", "-m", "fast", "stop"],
+    ["-D", path.join(info.dir, "data"), "-w", "-m", "immediate", "stop"],
     info.library,
   ).catch(() => undefined)
   await rm(info.dir, { recursive: true, force: true })
