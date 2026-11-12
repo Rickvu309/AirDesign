@@ -48,6 +48,7 @@ export { storedValue, valueBytes, type Value } from "./value.js"
 export { kinds, properties, type ExportRoute, type Kind } from "./properties.js"
 export { structure, type StructuralRoute } from "./structure.js"
 export { floorFor, floorNodes, openingElement } from "./slide-floor.js"
+export { elementGone, nextElementId } from "./element-order.js"
 export {
   foldSlides,
   nextSlideId,

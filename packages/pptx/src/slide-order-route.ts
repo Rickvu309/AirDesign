@@ -1,7 +1,8 @@
-import { foldSlides, presentSlides, type SlideState } from "@airdesign/document"
+import { foldSlides, presentSlides, shapeOf, type SlideCommand, type SlideState } from "@airdesign/document"
 
 import { slideAddresses, slidePart } from "./package-address.js"
 import { layoutPart, withLayoutPlaceholders } from "./slide-placeholders.js"
+import { applyRoute } from "./slide-route.js"
 import { applyStructuralRoute } from "./structural-route.js"
 
 function idsOf(parts: ReadonlyMap<string, Uint8Array>): string[] {
@@ -29,6 +30,20 @@ function placed(parts: ReadonlyMap<string, Uint8Array>, wanted: readonly string[
   return next
 }
 
+function elementEdited(
+  parts: ReadonlyMap<string, Uint8Array>,
+  minted: ReadonlyMap<string, string>,
+  command: Extract<SlideCommand, { readonly slide: "element-add" | "element-remove" }>,
+): ReadonlyMap<string, Uint8Array> {
+  const part = slidePart(parts, minted.get(command.id) ?? "")
+  if (part === null) throw new Error("slide")
+  if (command.slide === "element-remove")
+    return applyRoute(parts, { name: "remove", part, shape: shapeOf(command.node).shape })
+  const { node, box } = command.element
+  if (box === null) throw new Error("box")
+  return applyRoute(parts, { name: "add", part, id: Number(shapeOf(node).shape), text: "", ...box })
+}
+
 export function orderedParts(
   parts: ReadonlyMap<string, Uint8Array>,
   state: SlideState,
@@ -37,6 +52,10 @@ export function orderedParts(
   const minted = new Map<string, string>(state.file.map((id) => [id, id]))
   let next: ReadonlyMap<string, Uint8Array> = parts
   for (const command of state.order) {
+    if (command.slide === "element-add" || command.slide === "element-remove") {
+      next = elementEdited(next, minted, command)
+      continue
+    }
     if (command.slide !== "add" && command.slide !== "clone") continue
     const anchorId = minted.get(command.slide === "add" ? command.after : command.source)
     if (anchorId === undefined) throw new Error("slide")

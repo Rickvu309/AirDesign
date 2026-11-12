@@ -147,6 +147,8 @@ export const states = [
     journey: "deck-list-trash",
     at: "trash-lists-deck",
   },
+  { name: "element-added", design: editor, journey: "element-edits", at: "added-text" },
+  { name: "element-deleted", design: editor, journey: "element-edits", at: "deleted-element" },
   { name: "blank-deck", design: editor, journey: "blank-slides", at: "blank-original" },
   { name: "slides-several", design: editor, journey: "blank-slides", at: "layout-placeholders" },
   { name: "editor-text-focused", design: editor, journey: "move-resize", at: "selected" },

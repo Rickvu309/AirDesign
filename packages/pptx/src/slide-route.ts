@@ -21,6 +21,7 @@ export type SlideRoute =
   | { readonly name: "resize"; readonly part: string; readonly shape: string; readonly cx: number; readonly cy: number }
   | {
       readonly name: "add"
+      readonly id?: number
       readonly part: string
       readonly text: string
       readonly x: number
@@ -290,12 +291,8 @@ export function writeRoute(parts: ReadonlyMap<string, Uint8Array>, route: SlideR
   const current = parts.get(route.part)
   if (current === undefined) throw new Error("part")
   if (route.name === "add") {
-    const written = addTextShape(decodeUtf8(current), route.text, {
-      x: route.x,
-      y: route.y,
-      cx: route.cx,
-      cy: route.cy,
-    })
+    const { x, y, cx, cy } = route
+    const written = addTextShape(decodeUtf8(current), route.text, { x, y, cx, cy }, route.id)
     const nextBytes = encodeUtf8(written.xml)
     const next = new Map(parts)
     next.set(route.part, sameBytes(nextBytes, current) ? current : nextBytes)

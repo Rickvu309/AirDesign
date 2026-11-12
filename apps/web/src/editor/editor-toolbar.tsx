@@ -34,6 +34,7 @@ export function EditorToolbar({
   pointer,
   undo,
   onPanel,
+  onText,
 }: {
   activeTool?: EditorTool
   menuOpen?: boolean
@@ -41,6 +42,7 @@ export function EditorToolbar({
   pointer?: ToolPick
   undo?: UndoButtonsState
   onPanel?: (panel: Exclude<EditorPanel, "none">) => void
+  onText?: () => void
 }) {
   const chosen = pointer?.tool ?? "move"
   const shown = pointerTools.find((each) => each.tool === chosen) ?? pointerTools[0]
@@ -101,15 +103,17 @@ export function EditorToolbar({
       </span>
       {tools.map(({ tool, icon }) => {
         const on = pointer === undefined && activeTool === tool
+        const run = tool === "text" ? onText : undefined
         return (
           <Button
             key={tool}
             type="button"
             variant={on ? "default" : "ghost"}
             size="icon"
-            aria-label={tool}
-            aria-pressed={on}
-            disabled={pointer !== undefined}
+            aria-label={run === undefined ? tool : "Add text box"}
+            {...(run === undefined ? { "aria-pressed": on } : {})}
+            disabled={pointer !== undefined && run === undefined}
+            {...(run === undefined ? {} : { onClick: run })}
             className={cn(
               "size-9 rounded-lg active:translate-y-0",
               on ? "hover:bg-primary-strong" : "text-quiet hover:bg-transparent",

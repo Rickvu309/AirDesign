@@ -12,7 +12,13 @@ export { readShapes, readSlides, type ReadShape } from "./read-shapes.js"
 export { readParts } from "./package-container.js"
 export { readPackage, type PackageLimitName } from "./package-limits.js"
 export { exactPageCheck } from "./render-pages.js"
-export { danglingShapeReferences, newDanglingShapeReferences, newDuplicateShapeIds, shapeIdCounts } from "./shape-id.js"
+export {
+  danglingShapeReferences,
+  freeShapeId,
+  newDanglingShapeReferences,
+  newDuplicateShapeIds,
+  shapeIdCounts,
+} from "./shape-id.js"
 export { applyRoute, oneRunValue } from "./slide-route.js"
 export { routeOperations, routeRuns, touchMatches } from "./route-parts.js"
 export { newValidatorErrors } from "./validator-error.js"

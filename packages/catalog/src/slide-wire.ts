@@ -5,6 +5,8 @@ import { fieldRefusal, knownKeys, recordOf, type FieldRefusal } from "./wire.js"
 export type WireSlide = SlideCommand & { readonly file: readonly SlideId[] }
 
 const keysFor = {
+  "element-add": ["slide", "id", "element", "file"],
+  "element-remove": ["slide", "id", "node", "file"],
   remove: ["slide", "id", "file"],
   move: ["slide", "id", "key", "file"],
   restore: ["slide", "id", "key", "file"],
@@ -13,6 +15,8 @@ const keysFor = {
 } as const
 
 function slideKeys(slide: unknown): readonly string[] | undefined {
+  if (slide === "element-add") return keysFor["element-add"]
+  if (slide === "element-remove") return keysFor["element-remove"]
   if (slide === "remove") return keysFor.remove
   if (slide === "move") return keysFor.move
   if (slide === "restore") return keysFor.restore
@@ -33,6 +37,8 @@ export function readSlideEdit(raw: unknown): { ok: true; edit: WireSlide } | Fie
 }
 
 export function slideEditCommand(edit: WireSlide): SlideCommand {
+  if (edit.slide === "element-add") return { slide: "element-add", id: edit.id, element: edit.element }
+  if (edit.slide === "element-remove") return { slide: "element-remove", id: edit.id, node: edit.node }
   if (edit.slide === "remove") return { slide: "remove", id: edit.id }
   if (edit.slide === "move") return { slide: "move", id: edit.id, key: edit.key }
   if (edit.slide === "restore") return { slide: "restore", id: edit.id, key: edit.key }

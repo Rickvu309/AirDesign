@@ -98,5 +98,25 @@
     "errors": 0,
     "dupes": 0,
     "pages": true
+  },
+  {
+    "name": "element-added",
+    "before": "clean.pptx",
+    "after": "element-added.pptx",
+    "visible": true,
+    "targeted": [1],
+    "errors": 0,
+    "dupes": 0,
+    "pages": true
+  },
+  {
+    "name": "element-removed",
+    "before": "clean.pptx",
+    "after": "element-removed.pptx",
+    "visible": true,
+    "targeted": [1],
+    "errors": 0,
+    "dupes": 0,
+    "pages": true
   }
 ]

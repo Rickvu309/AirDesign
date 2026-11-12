@@ -62,11 +62,17 @@ function enterText(frame: HTMLElement): boolean {
   return true
 }
 
+export function enterElement(slide: HTMLElement, element: CanvasElement): void {
+  const frame = slide.querySelector<HTMLElement>(`[data-canvas-element="${element.key}"]`)
+  if (frame !== null && !enterText(frame)) frame.focus()
+}
+
 export function useMoves(
   store: PaintStore,
   size: SlideSize,
   width: number,
   onBox: ((id: ElementId, box: Box) => void) | undefined,
+  onRemove?: (id: ElementId) => void,
 ): Moves {
   const [selected, setSelected] = useState<Selection>(null)
   const gesture = useRef<Gesture | null>(null)
@@ -155,6 +161,12 @@ export function useMoves(
     const now = gesture.current
     const start = startOf(element)
     const chord = event.altKey || event.ctrlKey || event.metaKey
+    if ((event.key === "Delete" || event.key === "Backspace") && !chord && now === null && canMove(element)) {
+      if (onRemove === undefined) return
+      event.preventDefault()
+      onRemove(id)
+      return
+    }
     if (start === null || chord || !canMove(element) || now?.by === "pointer") return
     const next = nudgedBox(start, event.key, event.shiftKey, size)
     if (next === null) return

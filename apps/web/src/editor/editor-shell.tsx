@@ -26,6 +26,7 @@ export type EditorDeck = {
   readonly slide: (width: number) => ReactNode
   readonly onExport: () => void
   readonly undo: UndoButtonsState
+  readonly onText?: () => void
 }
 
 export type EditorShellProps = {
@@ -128,6 +129,7 @@ export function EditorShell({
               panel={panel}
               {...(deck === undefined ? {} : { pointer })}
               {...(deck === undefined ? {} : { undo: deck.undo })}
+              {...(deck?.onText === undefined ? {} : { onText: deck.onText })}
               {...(onPanel === undefined ? {} : { onPanel })}
             />
           </div>

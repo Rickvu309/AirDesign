@@ -1,4 +1,5 @@
 import {
+  elementGone,
   currentBox,
   currentValue,
   floorNodes,
@@ -94,7 +95,7 @@ export function editedParts(base: Parts, register: Register): Parts {
   const shapes = readShapes(base)
   let next = base
   for (const id of new Set([...register.nodes, ...floorNodes(register)])) {
-    if (id.includes(".") && slideGone(register, shapeOf(id).slide)) continue
+    if (id.includes(".") && (slideGone(register, shapeOf(id).slide) || elementGone(register, id))) continue
     const body = register.nodes.includes(id) ? register.elements[id] : undefined
     const opening = newSlideElement(register, id)
     next = withText(next, shapes, id, body, opening)

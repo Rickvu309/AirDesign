@@ -1,5 +1,6 @@
-import type { IndexElement } from "./deck-index.js"
+import type { DeckIndex, IndexElement } from "./deck-index.js"
 import { readSlideId, slideId, type SlideId } from "./element-id.js"
+import { elementRefusal, readElementCommand, type ElementCommand } from "./element-order.js"
 import { limits } from "./limits.js"
 import { orderKeyBetween, readOrderKey, type OrderKey } from "./order-key.js"
 import { readFloor } from "./slide-floor.js"
@@ -38,7 +39,7 @@ export type SlideRestore = {
   readonly key: OrderKey
 }
 
-export type SlideCommand = SlideAdd | SlideClone | SlideRemove | SlideMove | SlideRestore
+export type SlideCommand = SlideAdd | SlideClone | SlideRemove | SlideMove | SlideRestore | ElementCommand
 
 export type SlideBirth =
   | { readonly from: "file" }
@@ -57,7 +58,7 @@ export type SlideState = {
   readonly order: readonly SlideCommand[]
 }
 
-export type SlideRefusal = "stale" | "dead" | "present" | "limit"
+export type SlideRefusal = "stale" | "dead" | "present" | "limit" | "group-box"
 
 export function openSlides(): SlideState {
   return { file: [], order: [] }
@@ -98,6 +99,7 @@ export function foldSlides(state: SlideState): readonly FoldedSlide[] {
     spots.set(id, { id, key, birth: { from: "file" }, present: true })
   }
   for (const command of state.order) {
+    if (command.slide === "element-add" || command.slide === "element-remove") continue
     if (command.slide === "add") {
       spots.set(command.id, {
         id: command.id,
@@ -163,7 +165,7 @@ function known(state: SlideState, id: SlideId): boolean {
 }
 
 export function applySlide(
-  state: SlideState,
+  state: SlideState & { readonly index?: DeckIndex },
   file: readonly SlideId[],
   command: SlideCommand,
 ): { readonly ok: true; readonly state: SlideState } | { readonly ok: false; readonly code: SlideRefusal } {
@@ -172,6 +174,12 @@ export function applySlide(
   const withFile = state.file.length === 0 ? { file, order: state.order } : state
   const present = presentSlides(withFile)
   const ids = new Set(present.map((spot) => spot.id))
+  if (command.slide === "element-add" || command.slide === "element-remove") {
+    if (!ids.has(command.id)) return { ok: false, code: "dead" }
+    const refusal = elementRefusal({ ...withFile, ...index(state) }, command)
+    if (refusal !== null) return { ok: false, code: refusal }
+    return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
+  }
   if (command.slide === "remove") {
     if (!ids.has(command.id) || present.length === 1) return { ok: false, code: "dead" }
     return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
@@ -195,6 +203,10 @@ export function applySlide(
   return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
 }
 
+function index(state: { readonly index?: DeckIndex }): { readonly index?: DeckIndex } {
+  return state.index === undefined ? {} : { index: state.index }
+}
+
 function slideList(raw: unknown): readonly SlideId[] | undefined {
   if (!Array.isArray(raw) || raw.length > limits.slides) return undefined
   const ids: SlideId[] = []
@@ -209,6 +221,7 @@ function slideList(raw: unknown): readonly SlideId[] | undefined {
 function commandOf(raw: Record<string, unknown>): SlideCommand | undefined {
   const id = readSlideId(raw.id)
   if (id === undefined) return undefined
+  if (raw.slide === "element-add" || raw.slide === "element-remove") return readElementCommand(raw, id)
   if (raw.slide === "remove") return { slide: "remove", id }
   const key = readOrderKey(raw.key)
   if (key === undefined) return undefined
