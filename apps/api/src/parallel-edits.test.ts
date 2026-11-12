@@ -142,7 +142,7 @@ describe("two edits of one account sent at the same base and read", () => {
     expect(new Set(landed.map((row) => row.runId)).size).toBe(1)
   })
 
-  it.fails("both land when the second re-reads after losing the write before the first call's turn is saved", async () => {
+  it("both land when the second re-reads after losing the write before the first call's turn is saved", async () => {
     const { texts, kept } = await twoEditsAtOneBase("loser reads before the turn is saved")
     expect(texts.toSorted()).toEqual(["Landed revision 1.", "Landed revision 2."])
     expect(kept?.revision).toBe(2)

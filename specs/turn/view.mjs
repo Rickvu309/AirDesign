@@ -9,7 +9,8 @@ const steps = {
   Refused: "a refused call changes nothing",
 }
 
-export const state = (v) => `turn ${v.turn}, x ${v.stateX}, y ${v.stateY}, last ${v.outcome} on ${v.landedOn}`
+export const state = (v) =>
+  `turn ${v.turn}${v.saved === false ? " (row not saved yet)" : ""}, x ${v.stateX}, y ${v.stateY}, last ${v.outcome} on ${v.landedOn}`
 
 export const step = (action) => steps[action] ?? null
 
