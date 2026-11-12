@@ -3,6 +3,7 @@ const unsentCount = (v) => {
   if (v.queued1 === true && v.acked1 === false) count += 1
   if (v.queued2 === true) count += 1
   if (v.stale === true && v.skipped === false && v.landedStale === false) count += 1
+  if (v.journaled === true) count += 1
   return count
 }
 
@@ -13,6 +14,8 @@ export const state = (v) => {
 }
 
 export const step = (action) => {
+  if (action === "Type") return "a typed edit is painted and kept in the journal at once"
+  if (action === "QueueFirst") return "the device holds the edit, so the journal lets it go"
   if (action === "Send" || action === "SendNext") return "the later edit waits until the earlier one is sent"
   if (action === "Ack") return "the server acknowledges the next edit"
   if (action === "Skip") return "a stale edit is skipped"

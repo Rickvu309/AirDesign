@@ -5,7 +5,60 @@ import { memoryRemote, type OpenResult, type Remote } from "./index.js"
 export const node = elementId("258.7")
 export const other = elementId("258.8")
 
+export type SlowStore = {
+  closed: boolean
+  readonly waiting: (() => void)[]
+  readonly alive: Set<() => void>
+  hold(): void
+  release(): void
+  drop(): void
+}
+
+export function slowStore(): SlowStore {
+  const slow: SlowStore = {
+    closed: false,
+    waiting: [],
+    alive: new Set(),
+    hold: () => {
+      slow.closed = true
+    },
+    release: () => {
+      slow.closed = false
+      for (const run of slow.waiting.splice(0)) run()
+    },
+    drop: () => {
+      slow.closed = false
+      slow.waiting.length = 0
+      for (const drop of [...slow.alive]) drop()
+      slow.alive.clear()
+    },
+  }
+  return slow
+}
+
+export function memoryShelf(
+  held: Map<string, string> = new Map(),
+): Pick<Storage, "getItem" | "setItem" | "removeItem"> {
+  return {
+    getItem: (key) => held.get(key) ?? null,
+    setItem: (key, value) => {
+      held.set(key, value)
+    },
+    removeItem: (key) => {
+      held.delete(key)
+    },
+  }
+}
+
 export function installIndexedDb(): void {
+  installStore()
+}
+
+export function installSlowIndexedDb(slow: SlowStore): void {
+  installStore(slow)
+}
+
+function installStore(slow?: SlowStore): void {
   type Running = { mode: string; started: boolean; start: () => void }
   type Fake = {
     names: string[]
@@ -120,9 +173,18 @@ export function installIndexedDb(): void {
                   next.request.onsuccess?.()
                   queueMicrotask(pump)
                 }
-                queueMicrotask(pump)
+                if (slow?.closed !== true) {
+                  queueMicrotask(pump)
+                  return
+                }
+                slow.waiting.push(() => queueMicrotask(pump))
               },
             }
+            slow?.alive.add(() => {
+              const at = current.live.indexOf(transaction)
+              if (at >= 0) current.live.splice(at, 1)
+              transaction.started = true
+            })
             current.live.push(transaction)
             current.settle(transaction)
             return transaction

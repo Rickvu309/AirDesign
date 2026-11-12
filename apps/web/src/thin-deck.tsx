@@ -12,7 +12,15 @@ import { EditorShell } from "@/editor/editor-shell"
 import { slideThumbWidth } from "@/editor/slide-sidebar"
 import { slideFrame } from "@/editor/revenue-slide"
 import { cn } from "@/lib/class-names"
-import { commitBox, commitEdit, flushPending, server, type CommitOutcome, type TextBox } from "@/commit-edit"
+import {
+  commitBox,
+  commitEdit,
+  commitKept,
+  flushPending,
+  server,
+  type CommitOutcome,
+  type TextBox,
+} from "@/commit-edit"
 import { landedBox, shownBox } from "@/element-move"
 import { exportedParts } from "@/exported-parts"
 import { commitSlideChange, type SlideChange } from "@/slide-edit"
@@ -213,13 +221,13 @@ export function ThinDeck({ id }: { id: string }) {
       await refused()
       return
     }
-    const before = await started
     const outcome = await commitEdit(
       connect,
       id,
       value,
       box,
-      () => {
+      async () => {
+        const before = await started
         setPending(true)
         show(target, value)
         record({
@@ -243,14 +251,15 @@ export function ThinDeck({ id }: { id: string }) {
       await refused()
       return
     }
-    const opened = await connect(memoryRemote()).openDeck(id)
-    const before = shownBox(opened.ok ? opened.register : null, target, shapes.current.get(target)?.box ?? null)
+    const opening = connect(memoryRemote()).openDeck(id)
     const outcome = await commitBox(
       connect,
       id,
       box,
       element,
-      () => {
+      async () => {
+        const opened = await opening
+        const before = shownBox(opened.ok ? opened.register : null, target, shapes.current.get(target)?.box ?? null)
         setPending(true)
         const name = before === null ? null : boxName(before, box)
         if (before === null || name === null) return
@@ -438,14 +447,9 @@ export function ThinDeck({ id }: { id: string }) {
   function editNotes(value: string) {
     if (currentNotes === undefined) return
     const note = currentNotes
+    const kept = connect(memoryRemote()).enqueue(id, value, elementId(`${note.slide}.notes`), note.text)
     notesQueue.current = notesQueue.current.then(async () => {
-      const outcome = await commitEdit(
-        connect,
-        id,
-        value,
-        { id: elementId(`${note.slide}.notes`), file: note.text },
-        () => setPending(true),
-      )
+      const outcome = await commitKept(connect, id, kept, () => setPending(true))
       if (outcome === "refused")
         toast.error("Unable to save speaker notes", { description: "Copy your notes, reload the deck and try again." })
       settle(outcome)

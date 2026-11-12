@@ -29,6 +29,16 @@ import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
 import { hasLayouts, queueIndex, sendIndex } from "./deck-index.js"
 import { withSlides } from "./slide-replay.js"
 import {
+  holdsUnsaved,
+  keepUnsaved,
+  pageShelf,
+  recoverUnsaved,
+  releaseUnsaved,
+  type Kept,
+  type Shelf,
+  type Unsaved,
+} from "./unsaved.js"
+import {
   changeRows,
   fitConfirmed,
   isConfirmed,
@@ -190,8 +200,12 @@ function serial<T>(deck: DeckId, work: () => Promise<T>): Promise<T> {
   return run
 }
 
-export function connect(remote: Remote, options: { readonly once?: () => string } = {}) {
+type Options = { readonly once?: () => string; readonly entry?: () => string; readonly shelf?: Shelf }
+
+export function connect(remote: Remote, options: Options = {}) {
   const nextOnce = (options.once ?? crypto.randomUUID).bind(crypto)
+  const nextEntry = (options.entry ?? crypto.randomUUID).bind(crypto)
+  const shelf = options.shelf ?? pageShelf()
   const openingDecks = openingByRemote.get(remote) ?? new Map<DeckId, Promise<OpenResult>>()
   openingByRemote.set(remote, openingDecks)
   const known = knownByRemote.get(remote) ?? new Map<DeckId, number>()
@@ -288,14 +302,22 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
     return opened
   }
 
-  function enqueueValue(deck: string, edit: Value, node: ElementId, floor: string): Promise<Enqueued> {
-    const parsed = readDeckId(deck)
-    if (!parsed.ok) return Promise.resolve({ ok: false, refusal: "deck" })
-    const named = readElementId(node)
-    if (named === undefined) return Promise.resolve({ ok: false, refusal: "dead" })
-    return changeRows<Enqueued>(parsed.deck, (rows) => {
+  const recovered = (deck: DeckId) => recoverUnsaved(shelf, deck, (entry) => replayUnsaved(deck, entry))
+
+  const readRecovered = (deck: DeckId) => recovered(deck).then(() => readDeck(deck))
+
+  function writeValue(
+    deck: DeckId,
+    edit: Value,
+    named: ElementId,
+    floor: string,
+    replaying?: string,
+  ): Promise<Enqueued> {
+    return changeRows<Enqueued>(deck, (rows) => {
+      if (replaying !== undefined && !holdsUnsaved(shelf, deck, replaying))
+        return { puts: [], result: { ok: true, body: undefined } }
       const { confirmed, pending } = split(rows)
-      let editing = played(parsed.deck, confirmed, pending)
+      let editing = played(deck, confirmed, pending)
       let first: string | undefined
       if (!editing.nodes.includes(named)) {
         const added = decide(editing, { command: "add", node: named, floor, route: editing.route })
@@ -310,9 +332,63 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
       const order = rows.filter(isPending).reduce((max, row) => Math.max(max, row.order + 1), 0)
       const before = editing.elements[named]
       const base = before === undefined ? 0 : version(before)
-      const row = pendingRow(parsed.deck, order, base, edit, named, first)
-      return { puts: [{ key: rowKey(parsed.deck, "pending", order), row }], result: { ok: true, body } }
+      const row = pendingRow(deck, order, base, edit, named, first)
+      return { puts: [{ key: rowKey(deck, "pending", order), row }], result: { ok: true, body } }
     })
+  }
+
+  function writeSlide(
+    deck: DeckId,
+    file: readonly SlideId[],
+    command: SlideCommand,
+    replaying?: string,
+  ): Promise<EnqueueResult<readonly string[]>> {
+    return changeRows<EnqueueResult<readonly string[]>>(deck, (rows) => {
+      if (replaying !== undefined && !holdsUnsaved(shelf, deck, replaying))
+        return { puts: [], result: { ok: true, painted: [] } }
+      const { confirmed, pending } = split(rows)
+      const editing = played(deck, confirmed, pending)
+      const decision = decide(editing, { command: "slide", file, edit: command })
+      if (decision.decision === "refuse") return { puts: [], result: { ok: false, refusal: decision.code } }
+      const order = rows.filter(isPending).reduce((max, row) => Math.max(max, row.order + 1), 0)
+      const row = { kind: "pending" as const, deck, order, base: 0, value: "", slideFile: file, slideEdit: command }
+      return {
+        puts: [{ key: rowKey(deck, "pending", order), row }],
+        result: { ok: true, painted: presentSlides(decision.register).map((spot) => spot.id) },
+      }
+    })
+  }
+
+  function replayUnsaved(deck: DeckId, entry: Unsaved): Promise<unknown> {
+    if (entry.kind === "slide") return writeSlide(deck, entry.file, entry.edit, entry.id)
+    const node = readElementId(entry.node)
+    if (node === undefined) return Promise.resolve()
+    if (entry.kind === "text") return writeValue(deck, { value: entry.value }, node, entry.floor, entry.id)
+    const box = readBox(entry.box)
+    if (box === null) return Promise.resolve()
+    return writeValue(deck, { property: "box", value: box }, node, entry.floor, entry.id)
+  }
+
+  async function keepAndWrite<Result>(deck: DeckId, kept: Kept, write: () => Promise<Result>): Promise<Result> {
+    const waiting = recovered(deck)
+    const entry = nextEntry()
+    keepUnsaved(shelf, deck, entry, kept)
+    await waiting
+    const result = await write()
+    releaseUnsaved(shelf, deck, entry)
+    return result
+  }
+
+  function enqueueValue(deck: string, edit: Value, node: ElementId, floor: string): Promise<Enqueued> {
+    const parsed = readDeckId(deck)
+    if (!parsed.ok) return Promise.resolve({ ok: false, refusal: "deck" })
+    const named = readElementId(node)
+    if (named === undefined) return Promise.resolve({ ok: false, refusal: "dead" })
+    const kept: Kept =
+      edit.property === "box"
+        ? { kind: "box", node: named, floor, box: edit.value }
+        : { kind: "text", node: named, floor, value: edit.value }
+    return keepAndWrite(parsed.deck, kept, () => writeValue(parsed.deck, edit, named, floor))
   }
 
   return {
@@ -328,26 +404,9 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
       const state = readSlideState({ file, order: [edit] })
       const command = state?.order[0]
       if (state === undefined || command === undefined) return { ok: false, refusal: "field" }
-      return changeRows<EnqueueResult<readonly string[]>>(parsed.deck, (rows) => {
-        const { confirmed, pending } = split(rows)
-        const editing = played(parsed.deck, confirmed, pending)
-        const decision = decide(editing, { command: "slide", file: state.file, edit: command })
-        if (decision.decision === "refuse") return { puts: [], result: { ok: false, refusal: decision.code } }
-        const order = rows.filter(isPending).reduce((max, row) => Math.max(max, row.order + 1), 0)
-        const row = {
-          kind: "pending" as const,
-          deck: parsed.deck,
-          order,
-          base: 0,
-          value: "",
-          slideFile: state.file,
-          slideEdit: command,
-        }
-        return {
-          puts: [{ key: rowKey(parsed.deck, "pending", order), row }],
-          result: { ok: true, painted: presentSlides(decision.register).map((spot) => spot.id) },
-        }
-      })
+      return keepAndWrite(parsed.deck, { kind: "slide", file: state.file, edit: command }, () =>
+        writeSlide(parsed.deck, state.file, command),
+      )
     },
     async enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<EnqueueResult> {
       const result = await enqueueValue(deck, { value }, node, floor)
@@ -370,12 +429,13 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
     async flush(deck: string): Promise<CommitResult> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return { ok: false, refusal: "deck" }
+      await recovered(parsed.deck)
       return serial(parsed.deck, () => sendRows(parsed.deck))
     },
     async openDeck(deck: string): Promise<OpenDeckResult> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return parsed
-      const rows = await readDeck(parsed.deck)
+      const rows = await readRecovered(parsed.deck)
       if (rows.length > 0) return { ok: true, ...view(parsed.deck, rows) }
       const opened = await openOnce(parsed.deck)
       if (!opened.ok) return opened
@@ -392,18 +452,18 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
     async phase(deck: string): Promise<LivePhase> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return "confirmed"
-      const rows = await readDeck(parsed.deck)
+      const rows = await readRecovered(parsed.deck)
       return rows.some(isPending) ? "on-device" : "confirmed"
     },
     async pending(deck: string): Promise<readonly PendingRow[]> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return []
-      return split(await readDeck(parsed.deck)).pending
+      return split(await readRecovered(parsed.deck)).pending
     },
     async rows(deck: string): Promise<readonly StoredRow[]> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return []
-      return readDeck(parsed.deck)
+      return readRecovered(parsed.deck)
     },
     async watch(deck: string, cursor: number | null): Promise<WatchResult> {
       const parsed = readDeckId(deck)

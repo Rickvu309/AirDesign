@@ -20,11 +20,13 @@ VARIABLES
   kept1,
   kept2,
   keptStale,
-  undone
+  undone,
+  typed,
+  journaled
 
 vars == <<
   lands1, lands2, queued1, queued2, sent1, sent2, acked1, landed1, landed2, priorAck, version,
-  stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone
+  stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone, typed, journaled
 >>
 
 TypeOK ==
@@ -48,6 +50,8 @@ TypeOK ==
   /\ kept2 \in BOOLEAN
   /\ keptStale \in BOOLEAN
   /\ undone \in BOOLEAN
+  /\ typed \in BOOLEAN
+  /\ journaled \in BOOLEAN
 
 Init ==
   /\ lands1 = 0
@@ -70,13 +74,24 @@ Init ==
   /\ kept2 = FALSE
   /\ keptStale = FALSE
   /\ undone = FALSE
+  /\ typed = FALSE
+  /\ journaled = FALSE
+
+Type ==
+  /\ wiped = FALSE
+  /\ crashed = FALSE
+  /\ typed = FALSE
+  /\ typed' = TRUE
+  /\ journaled' = TRUE
+  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent1, sent2, acked1, landed1, landed2, priorAck, version, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone>>
 
 QueueFirst ==
   /\ wiped = FALSE
   /\ crashed = FALSE
   /\ queued1 = FALSE
   /\ queued1' = TRUE
-  /\ UNCHANGED <<lands1, lands2, queued2, sent1, sent2, acked1, landed1, landed2, priorAck, version, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone>>
+  /\ journaled' = FALSE
+  /\ UNCHANGED <<lands1, lands2, queued2, sent1, sent2, acked1, landed1, landed2, priorAck, version, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone, typed>>
 
 QueueSecond ==
   /\ wiped = FALSE
@@ -84,7 +99,7 @@ QueueSecond ==
   /\ queued1 = TRUE
   /\ queued2 = FALSE
   /\ queued2' = TRUE
-  /\ UNCHANGED <<lands1, lands2, queued1, sent1, sent2, acked1, landed1, landed2, priorAck, version, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone>>
+  /\ UNCHANGED <<lands1, lands2, queued1, sent1, sent2, acked1, landed1, landed2, priorAck, version, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone, typed, journaled>>
 
 Send ==
   /\ wiped = FALSE
@@ -92,7 +107,7 @@ Send ==
   /\ queued1 = TRUE
   /\ acked1 = FALSE
   /\ sent1' = TRUE
-  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent2, acked1, landed1, landed2, priorAck, version, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone>>
+  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent2, acked1, landed1, landed2, priorAck, version, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone, typed, journaled>>
 
 SendNext ==
   /\ wiped = FALSE
@@ -101,7 +116,7 @@ SendNext ==
   /\ sent1 = TRUE
   /\ sent2 = FALSE
   /\ sent2' = TRUE
-  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent1, acked1, landed1, landed2, priorAck, version, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone>>
+  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent1, acked1, landed1, landed2, priorAck, version, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone, typed, journaled>>
 
 Ack ==
   /\ wiped = FALSE
@@ -109,7 +124,7 @@ Ack ==
   /\ sent1 = TRUE
   /\ acked1 = FALSE
   /\ acked1' = TRUE
-  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent1, sent2, landed1, landed2, priorAck, version, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone>>
+  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent1, sent2, landed1, landed2, priorAck, version, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone, typed, journaled>>
 
 Land ==
   /\ wiped = FALSE
@@ -123,7 +138,7 @@ Land ==
   /\ landed1' = TRUE
   /\ priorAck' = acked1
   /\ version' = 1
-  /\ UNCHANGED <<queued1, queued2, sent1, sent2, acked1, landed2, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone>>
+  /\ UNCHANGED <<queued1, queued2, sent1, sent2, acked1, landed2, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone, typed, journaled>>
 
 LandNext ==
   /\ wiped = FALSE
@@ -135,7 +150,7 @@ LandNext ==
   /\ lands1' = lands1
   /\ landed2' = TRUE
   /\ version' = 2
-  /\ UNCHANGED <<queued1, queued2, sent1, sent2, acked1, landed1, priorAck, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone>>
+  /\ UNCHANGED <<queued1, queued2, sent1, sent2, acked1, landed1, priorAck, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone, typed, journaled>>
 
 QueueStale ==
   /\ wiped = FALSE
@@ -143,7 +158,7 @@ QueueStale ==
   /\ version = 1
   /\ stale = FALSE
   /\ stale' = TRUE
-  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent1, sent2, acked1, landed1, landed2, priorAck, version, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone>>
+  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent1, sent2, acked1, landed1, landed2, priorAck, version, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone, typed, journaled>>
 
 Skip ==
   /\ wiped = FALSE
@@ -154,7 +169,7 @@ Skip ==
   /\ skipped' = TRUE
   /\ landedStale' = FALSE
   /\ version' = version
-  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent1, sent2, acked1, landed1, landed2, priorAck, stale, wiped, crashed, kept1, kept2, keptStale, undone>>
+  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent1, sent2, acked1, landed1, landed2, priorAck, stale, wiped, crashed, kept1, kept2, keptStale, undone, typed, journaled>>
 
 LandStale ==
   /\ wiped = FALSE
@@ -165,7 +180,7 @@ LandStale ==
   /\ version = 0
   /\ landedStale' = TRUE
   /\ version' = version + 1
-  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent1, sent2, acked1, landed1, landed2, priorAck, stale, skipped, wiped, crashed, kept1, kept2, keptStale, undone>>
+  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent1, sent2, acked1, landed1, landed2, priorAck, stale, skipped, wiped, crashed, kept1, kept2, keptStale, undone, typed, journaled>>
 
 Crash ==
   /\ wiped = FALSE
@@ -177,7 +192,7 @@ Crash ==
   /\ queued1' = queued1
   /\ queued2' = queued2
   /\ stale' = stale
-  /\ UNCHANGED <<lands1, lands2, sent1, sent2, acked1, landed1, landed2, priorAck, version, skipped, landedStale, wiped, undone>>
+  /\ UNCHANGED <<lands1, lands2, sent1, sent2, acked1, landed1, landed2, priorAck, version, skipped, landedStale, wiped, undone, typed, journaled>>
 
 Wipe ==
   /\ wiped = FALSE
@@ -186,18 +201,20 @@ Wipe ==
   /\ queued1' = acked1
   /\ queued2' = FALSE
   /\ stale' = FALSE
+  /\ typed' = FALSE
+  /\ journaled' = FALSE
   /\ UNCHANGED <<lands1, lands2, sent1, sent2, acked1, landed1, landed2, priorAck, version, skipped, landedStale, crashed, kept1, kept2, keptStale, undone>>
 
 Undo ==
   /\ FALSE
   /\ undone = FALSE
   /\ undone' = TRUE
-  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent1, sent2, acked1, landed1, landed2, priorAck, version, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale>>
+  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent1, sent2, acked1, landed1, landed2, priorAck, version, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, typed, journaled>>
 
 Rest == UNCHANGED vars
 
 Next ==
-  QueueFirst \/ QueueSecond \/ Send \/ SendNext \/ Ack \/ Land \/ LandNext \/ QueueStale \/ Skip \/ LandStale \/ Crash \/ Wipe \/ Undo \/ Rest
+  Type \/ QueueFirst \/ QueueSecond \/ Send \/ SendNext \/ Ack \/ Land \/ LandNext \/ QueueStale \/ Skip \/ LandStale \/ Crash \/ Wipe \/ Undo \/ Rest
 
 Spec == Init /\ [][Next]_vars
 
@@ -220,6 +237,8 @@ WipeClears ==
   \/ /\ (queued1 => acked1)
      /\ queued2 = FALSE
      /\ stale = FALSE
+
+PaintedEditKept == typed = FALSE \/ queued1 = TRUE \/ journaled = TRUE
 
 UndoWaits == undone = FALSE
 
