@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuRadioGroup, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
+import { EditorMenuContent, EditorMenuRow } from "@/editor/editor-menu"
 import { PanelSwitch } from "@/editor/panel-switch"
+import type { PointerTool, ToolPick } from "@/editor/pointer-tool"
 import { cn } from "@/lib/class-names"
 
 export type EditorTool = "move" | "text" | "shape" | "image" | "actions"
@@ -14,47 +17,85 @@ const tools: { tool: Exclude<EditorTool, "move">; icon: EditorIconName }[] = [
   { tool: "actions", icon: "actions" },
 ]
 
+const pointerTools: { tool: PointerTool; icon: EditorIconName; label: string; shortcut: string }[] = [
+  { tool: "move", icon: "cursor", label: "Move", shortcut: "V" },
+  { tool: "hand", icon: "hand", label: "Hand tool", shortcut: "H" },
+]
+
+function isPointerTool(value: unknown): value is PointerTool {
+  return value === "move" || value === "hand"
+}
+
 export function EditorToolbar({
   activeTool = "move",
   menuOpen = false,
   panel = "agent",
+  pointer,
 }: {
   activeTool?: EditorTool
   menuOpen?: boolean
   panel?: EditorPanel
+  pointer?: ToolPick
 }) {
-  const moveOn = activeTool === "move"
+  const chosen = pointer?.tool ?? "move"
+  const shown = pointerTools.find((each) => each.tool === chosen) ?? pointerTools[0]
+  const pointerOn = pointer !== undefined || activeTool === "move"
   return (
-    <div className="relative flex items-center gap-1 rounded-xl bg-white p-1 shadow-[0px_0px_0px_1px_var(--field-edge),0px_4px_12px_var(--black-6)]">
+    <div
+      className="relative flex items-center gap-1 rounded-xl bg-white p-1 shadow-[0px_0px_0px_1px_var(--field-edge),0px_4px_12px_var(--black-6)]"
+      data-editor-toolbar
+    >
       <span className="flex items-center gap-0.5">
         <Button
           type="button"
-          variant={moveOn ? "default" : "ghost"}
+          variant={pointerOn ? "default" : "ghost"}
           size="icon"
-          aria-label="Move"
-          aria-pressed={moveOn}
+          aria-label={shown?.label ?? "Move"}
+          aria-pressed={pointerOn}
           className={cn(
             "size-9 rounded-lg active:translate-y-0",
-            moveOn ? "hover:bg-primary-strong" : "text-quiet hover:bg-transparent",
+            pointerOn ? "hover:bg-primary-strong" : "text-quiet hover:bg-transparent",
           )}
+          {...(pointer === undefined ? {} : { onClick: () => pointer.pick(chosen) })}
         >
-          <EditorIcon name="cursor" size={18} />
+          <EditorIcon name={shown?.icon ?? "cursor"} size={18} />
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          aria-label="Tools"
-          aria-expanded={menuOpen}
-          className={cn(
-            "h-9 w-4 rounded-[var(--shape-control)] px-0 text-quiet active:translate-y-0",
-            menuOpen ? "bg-line hover:bg-line" : "hover:bg-transparent",
-          )}
-        >
-          <EditorIcon name="chev" size={12} />
-        </Button>
+        <DropdownMenu modal={false} {...(pointer === undefined ? { open: menuOpen } : {})}>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                aria-label="Tools"
+                className="h-9 w-4 rounded-[var(--shape-control)] px-0 text-quiet hover:bg-transparent active:translate-y-0"
+              />
+            }
+          >
+            <EditorIcon name="chev" size={12} />
+          </DropdownMenuTrigger>
+          <EditorMenuContent side="top" align="start" sideOffset={12}>
+            <DropdownMenuRadioGroup
+              value={chosen}
+              onValueChange={(value) => {
+                if (pointer !== undefined && isPointerTool(value)) pointer.pick(value)
+              }}
+            >
+              {pointerTools.map((each) => (
+                <EditorMenuRow
+                  key={each.tool}
+                  value={each.tool}
+                  icon={each.icon}
+                  label={each.label}
+                  shortcut={each.shortcut}
+                  checked={each.tool === chosen}
+                />
+              ))}
+            </DropdownMenuRadioGroup>
+          </EditorMenuContent>
+        </DropdownMenu>
       </span>
       {tools.map(({ tool, icon }) => {
-        const on = activeTool === tool
+        const on = pointer === undefined && activeTool === tool
         return (
           <Button
             key={tool}
@@ -63,6 +104,7 @@ export function EditorToolbar({
             size="icon"
             aria-label={tool}
             aria-pressed={on}
+            disabled={pointer !== undefined}
             className={cn(
               "size-9 rounded-lg active:translate-y-0",
               on ? "hover:bg-primary-strong" : "text-quiet hover:bg-transparent",
@@ -78,39 +120,6 @@ export function EditorToolbar({
           <PanelSwitch active={panel} />
         </>
       )}
-      {menuOpen ? <ToolMenu /> : null}
-    </div>
-  )
-}
-
-function ToolMenu() {
-  return (
-    <div className="absolute bottom-[52px] left-[42px] flex w-[188px] flex-col rounded-xl bg-foreground p-1.5 shadow-[0px_8px_24px_var(--black-20)]">
-      <MenuRow icon="cursor" label="Move" shortcut="V" checked />
-      <MenuRow icon="hand" label="Hand tool" shortcut="H" />
-    </div>
-  )
-}
-
-function MenuRow({
-  icon,
-  label,
-  shortcut,
-  checked = false,
-}: {
-  icon: EditorIconName
-  label: string
-  shortcut: string
-  checked?: boolean
-}) {
-  return (
-    <div className="flex h-8 items-center gap-2.5 rounded-md pr-2.5 pl-2 text-white">
-      <span className="flex size-4 items-center justify-center">
-        {checked ? <EditorIcon name="check" size={14} /> : null}
-      </span>
-      <EditorIcon name={icon} size={16} />
-      <span className="flex-1 text-[length:var(--type-dense)]">{label}</span>
-      <span className="text-xs text-[var(--shortcut)]">{shortcut}</span>
     </div>
   )
 }
