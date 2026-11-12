@@ -83,3 +83,41 @@ test("follows the sidebar card to the Agents page", async ({ page }) => {
   await expect(page.getByRole("heading", { name: settingsCopy.agents, exact: true })).toBeVisible()
   await expect(sidebar.getByText(accountCopy.agentCardBody)).toBeVisible()
 })
+
+test("the account menu's delete dialog stays disabled while the email is unknown, and says what failed when the server refuses", async ({
+  page,
+}) => {
+  const email = "person@example.com"
+  await mockApp(page, email)
+  await page.route("**/aira/usage", (route) => route.fulfill({ status: 500, json: { ok: false } }))
+  let answer = 400
+  const posted: unknown[] = []
+  await page.route("**/account/delete", (route) => {
+    posted.push(route.request().postDataJSON())
+    return route.fulfill({ status: answer, json: { ok: false, refusal: "field" } })
+  })
+
+  await page.goto("/settings/usage")
+  await expect(page.getByRole("alert")).toContainText("Unable to load your usage")
+  await page.locator("[data-decks-sidebar]").getByRole("button").first().click()
+  await page.getByRole("menuitem", { name: settingsCopy.deleteAccount, exact: true }).click()
+  const dialog = page.getByRole("dialog", { name: accountCopy.deleteTitle })
+  const confirm = dialog.getByRole("button", { name: settingsCopy.deleteAccount, exact: true })
+  await expect(dialog).toBeVisible()
+  await expect(confirm).toBeDisabled()
+  await dialog.getByRole("button", { name: productCopy.cancel, exact: true }).click()
+  await expect(dialog).toBeHidden()
+
+  await page.goto("/settings/account")
+  await page.locator("[data-settings-content]").getByRole("button", { name: settingsCopy.deleteAccount }).click()
+  await dialog.getByLabel(accountCopy.deleteConfirmLabel).fill(email)
+  await expect(confirm).toBeEnabled()
+  await confirm.click()
+  await expect(dialog.getByRole("alert")).toHaveText(accountCopy.deleteFailed)
+  await expect(dialog).toBeVisible()
+  await expect(confirm).toBeEnabled()
+  answer = 500
+  await confirm.click()
+  await expect(dialog.getByRole("alert")).toHaveText(accountCopy.deleteFailed)
+  expect(posted).toEqual([{ email }, { email }])
+})
