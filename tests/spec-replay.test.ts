@@ -7,6 +7,7 @@ import { replayIndex } from "./index-replay.js"
 import { replayUsage } from "./usage-replay.js"
 import { replayOauth } from "./oauth-replay.js"
 import { replayPersonUndo } from "./person-undo-replay.js"
+import { flag, num, phaseOf, text } from "./spec-values.js"
 import { readdirSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -71,30 +72,6 @@ function readView(view: View, spec: Spec, action: string): string {
   if (typeof sentence !== "string" || typeof bucket !== "string") throw new Error(`${action} has no reader`)
   if (narrated !== null && typeof narrated !== "string") throw new Error(`${action} has no reader`)
   return `${bucket}: ${sentence}`
-}
-
-function num(spec: Spec, key: string): number {
-  const value = spec[key]
-  if (typeof value !== "number") throw new Error(`${key} is not a number`)
-  return value
-}
-
-function flag(spec: Spec, key: string): boolean {
-  const value = spec[key]
-  if (typeof value !== "boolean") throw new Error(`${key} is not a boolean`)
-  return value
-}
-
-function text(spec: Spec, key: string): string {
-  const value = spec[key]
-  if (typeof value !== "string") throw new Error(`${key} is not text`)
-  return value
-}
-
-function phaseOf(spec: Spec): Phase {
-  const phase = text(spec, "phase")
-  if (phase === "idle" || phase === "running" || phase === "stopped" || phase === "undone") return phase
-  throw new Error(`bad phase ${phase}`)
 }
 
 function editVersion(spec: Spec): number {
@@ -1088,7 +1065,7 @@ describe("spec replay", () => {
       .sort()
     expect(every.map((topic) => topic.name).sort()).toEqual(folders)
     for (const topic of every) expect(topic.view).toBe(true)
-    const byApi = ["owner", "stop"]
+    const byApi = ["owner", "stop", "slide-run", "slide-undo"]
     const found = every.filter((topic) => !byApi.includes(topic.name))
     const failures: string[] = []
     const reports: Record<string, unknown> = {}
