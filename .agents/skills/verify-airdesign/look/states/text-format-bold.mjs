@@ -1,16 +1,8 @@
-import path from "node:path"
 import { expect } from "@playwright/test"
+import { fixtureDeck } from "../fixture-deck.mjs"
 
-const design = "/screens/s43-08-editor-tools-text-format"
-
-async function boldWord(kit) {
-  await kit.signIn()
-  await kit.page.goto("/")
-  await kit.page.locator("input[type=file]").setInputFiles(path.join(kit.repo, "scripts/pptx-fixtures/clean.pptx"))
-  await kit.page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
+async function drive(kit) {
+  await fixtureDeck(kit)
   const text = kit.page.locator('[data-slide-paint] [contenteditable="true"]')
   await text.click()
   await text.press("ControlOrMeta+a")
@@ -27,4 +19,4 @@ async function boldWord(kit) {
   await expect(bold).toHaveAttribute("aria-pressed", "true")
 }
 
-export const textFormatStates = [{ name: "text-format-bold", design, drive: boldWord }]
+export default { name: "text-format-bold", design: "/screens/s43-08-editor-tools-text-format", drive }

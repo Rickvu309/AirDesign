@@ -1,7 +1,7 @@
 import path from "node:path"
 import { expect } from "@playwright/test"
 
-async function askedBeforeOpen(kit) {
+async function drive(kit) {
   const { page } = kit
   await kit.signIn()
   await page.route(
@@ -46,20 +46,4 @@ async function askedBeforeOpen(kit) {
   await page.waitForTimeout(1500)
 }
 
-export const airaOpenStates = [
-  {
-    name: "aira-indexing",
-    design: "/screens/s42-01-editor-agent-working",
-    journey: "agent-after-open",
-    at: "adding-while-indexing",
-    aira: true,
-  },
-  {
-    name: "aira-stopped-landed",
-    design: "/screens/s42-02-editor-agent-run-complete",
-    journey: "agent-after-open",
-    at: "stopped-after-landing",
-    aira: true,
-  },
-  { name: "aira-asked-before-open", design: "/screens/s42-01-editor-agent-working", drive: askedBeforeOpen },
-]
+export default { name: "aira-asked-before-open", design: "/screens/s42-01-editor-agent-working", drive }

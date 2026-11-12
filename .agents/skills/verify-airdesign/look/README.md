@@ -29,11 +29,11 @@ Regions are the `data-*` handles both sides share, listed in `compare.mjs`. The 
 
 ## states and sheet
 
-`states.mjs` is the one list of named states of the real app. A state names its design screen, if one exists, and how to reach it: a journey and the label of one of its captures, or a small driver built on the journey kit. `sheet` walks each journey once for all of its states, so a journey's later states cost little.
+`states/` holds one file per named state of the real app, and `states.mjs` reads the folder in name order. A state names its design screen, if one exists, and how to reach it: a journey and the label of one of its captures, or a small driver built on the journey kit. `sheet` walks each journey once for all of its states, so a journey's later states cost little.
 
 `sheet <run> [--only 'agent-*']` drives every state, runs `look`, and runs `compare` where a design exists. It writes `sheet.html` for a person, `sheet-00.png` as the summary and then one PNG page per state, and `sheet.json` with every finding ranked. A full sheet also names any allow entry that silenced nothing.
 
-To add a state, add one entry. Reuse a journey's capture when one shows the state.
+To add a state, add `states/<name>.mjs` that default-exports the state, named after its file. Reuse a journey's capture when one shows the state. A driver that two states share goes in its own module beside `states.mjs`, never in `states/`.
 
 ## before-after and annotate
 

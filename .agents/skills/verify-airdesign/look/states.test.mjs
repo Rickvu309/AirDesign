@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs"
+import { readdirSync, readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 import { matching, states, sweep, units } from "./states.mjs"
 
@@ -12,23 +12,28 @@ describe("states", () => {
     for (const state of states) expect(state.design === null || state.design.startsWith("/screens/s")).toBe(true)
   })
 
+  it("reads one state from each file in states/, named after its file and sorted by name", () => {
+    const files = readdirSync(new URL("./states/", import.meta.url)).sort()
+    expect(states.map((state) => `${state.name}.mjs`)).toEqual(files)
+  })
+
   it("selects states with a star", () => {
     expect(matching("agent-*").map((state) => state.name)).toEqual([
-      "agent-empty",
-      "agent-working",
       "agent-done",
+      "agent-empty",
       "agent-failed",
-      "agent-out-of-usage",
       "agent-not-offered",
+      "agent-out-of-usage",
+      "agent-working",
     ])
   })
 
   it("walks each journey once for all of its states", () => {
     const grouped = units(matching("agent-*"))
     expect(grouped.map((unit) => unit.states.map((state) => state.name))).toEqual([
-      ["agent-empty", "agent-working", "agent-done", "agent-failed"],
-      ["agent-out-of-usage"],
+      ["agent-done", "agent-empty", "agent-failed", "agent-working"],
       ["agent-not-offered"],
+      ["agent-out-of-usage"],
     ])
     expect(grouped[0].aira).toBe(true)
   })
