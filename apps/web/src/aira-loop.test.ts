@@ -292,7 +292,7 @@ describe("Aira's loop in the browser", () => {
     expect(done.exchanges[0]?.end).toBe("signed-out")
   })
 
-  it("undoes every run an exchange landed, once", async () => {
+  it("undoes every run an exchange landed, once, and marks an exchange whose run can no longer be undone", async () => {
     const link = scripted(
       [{ lines: [ended([editCall])] }, { lines: [ended([{ type: "text", text: "Ok" }])] }],
       [edited],
@@ -303,6 +303,10 @@ describe("Aira's loop in the browser", () => {
     expect(undone?.exchanges[0]?.end).toBe("undone")
     expect(undone === undefined ? "missing" : await undoExchange(undone, 0, link.send)).toBeUndefined()
     const fenced = { ...done, exchanges: [{ ...done.exchanges[0]!, runs: ["fenced"] }] }
-    expect(await undoExchange(fenced, 0, link.send)).toBeUndefined()
+    const refused = await undoExchange(fenced, 0, link.send)
+    expect(refused?.exchanges[0]).toMatchObject({ end: "done", undoRefused: true })
+    const asked = link.sent.length
+    expect(refused === undefined ? "missing" : await undoExchange(refused, 0, link.send)).toBeUndefined()
+    expect(link.sent).toHaveLength(asked)
   })
 })
