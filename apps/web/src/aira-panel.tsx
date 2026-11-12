@@ -149,7 +149,7 @@ export function AiraPanel({
     waiting.current = []
     setQueued([])
     setDraft("")
-    display({ ...picked, usage: latest.current.usage })
+    shown({ ...picked, usage: latest.current.usage })
   }
 
   return (
