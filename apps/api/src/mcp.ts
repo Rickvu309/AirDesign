@@ -10,6 +10,7 @@ import {
   editRefusal,
   emptyLog,
   type Host,
+  type Lost,
   type Session,
   type ToolResult,
 } from "@airdesign/mcp"
@@ -106,7 +107,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
   }
 }
 
-export async function commitEdit(db: Sql, loaded: Deck, result: ToolResult): Promise<ToolResult> {
+async function commitEdit(db: Sql, loaded: Deck, result: ToolResult): Promise<ToolResult | Lost> {
   if (!result.ok || result.deck === loaded) return result
   const nodes = (result.answer?.elements ?? []).map((element) => element.node)
   const key = notifyKey(result.deck.id, result.deck.revision)
@@ -132,11 +133,5 @@ export async function commitEdit(db: Sql, loaded: Deck, result: ToolResult): Pro
   }
   if (saved === undefined) return editRefusal(loaded, "deck", [])
   if (saved.deleted) return editRefusal(loaded, "deleted", [])
-  const stored = { id: loaded.id, revision: saved.revision, register: saved.register }
-  if (indexSize(loaded) !== indexSize(stored)) return editRefusal(stored, "indexing", nodes)
-  return afterWrite(false, result, stored)
-}
-
-function indexSize(deck: Deck): number {
-  return deck.register.index?.elements.length ?? -1
+  return { lost: afterWrite(false, result, { id: loaded.id, revision: saved.revision, register: saved.register }) }
 }

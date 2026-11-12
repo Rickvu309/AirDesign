@@ -33,4 +33,4 @@ export {
   staleEditTask,
   type SuiteRow,
 } from "./suite.js"
-export { createServer, type Host } from "./server.js"
+export { commitTries, createServer, type Host, type Lost } from "./server.js"
