@@ -48,7 +48,10 @@ test("home lists server decks instead of sample decks", async ({ page }) => {
   await store(page)
   await page.goto("/")
   await expect(page).toHaveTitle("AirDesign")
-  await expect(page.getByRole("heading", { level: 2 })).toHaveText([first.name, second.name])
+  await expect(page.locator("[data-decks-main]").getByRole("heading", { level: 2 })).toHaveText([
+    first.name,
+    second.name,
+  ])
   await expect(page.getByText("Edited just now", { exact: true })).toBeVisible()
   await expect(page.getByText("Edited 2 hours ago", { exact: true })).toBeVisible()
   await expect(page.getByText("home@example.com")).toBeVisible()
