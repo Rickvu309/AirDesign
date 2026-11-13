@@ -1,7 +1,10 @@
 import { useEffect, useRef } from "react"
-import { typing } from "@/editor/pointer-tool"
 
 export type UndoKey = "undo" | "redo"
+
+function field(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement && target.closest("input, textarea, select") !== null
+}
 
 export function undoKey(event: {
   readonly key: string
@@ -9,9 +12,9 @@ export function undoKey(event: {
   readonly ctrlKey: boolean
   readonly altKey: boolean
   readonly shiftKey: boolean
-  readonly typing: boolean
+  readonly field: boolean
 }): UndoKey | null {
-  if (event.typing || event.altKey || !(event.metaKey || event.ctrlKey)) return null
+  if (event.field || event.altKey || !(event.metaKey || event.ctrlKey)) return null
   const key = event.key.toLowerCase()
   if (key === "z") return event.shiftKey ? "redo" : "undo"
   if (key === "y" && event.ctrlKey && !event.metaKey && !event.shiftKey) return "redo"
@@ -32,7 +35,7 @@ export function useUndoKeys(working: boolean, onKey: (key: UndoKey) => void) {
         ctrlKey: event.ctrlKey,
         altKey: event.altKey,
         shiftKey: event.shiftKey,
-        typing: typing(event.target),
+        field: field(event.target),
       })
       if (key === null) return
       event.preventDefault()

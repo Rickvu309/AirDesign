@@ -574,7 +574,6 @@ test("replaced run and paragraph export for PPTX check @export", async ({ page }
 })
 
 test("undo after Enter takes the new paragraph back", async ({ page }) => {
-  test.fail()
   await open(page, fixture)
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveText("Hello")

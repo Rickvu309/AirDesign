@@ -31,6 +31,23 @@ export type TurnedBack =
 
 export const emptyUndo: UndoList = { undo: [], redo: [] }
 
+export type RecordsInFlight = { readonly hold: () => () => void; readonly landed: () => Promise<void> }
+
+export function recordsInFlight(): RecordsInFlight {
+  let all = Promise.resolve()
+  return {
+    hold() {
+      let release: () => void = () => undefined
+      const held = new Promise<undefined>((resolve) => {
+        release = () => resolve(undefined)
+      })
+      all = Promise.all([all, held]).then(() => undefined)
+      return release
+    },
+    landed: () => all,
+  }
+}
+
 const kept = 100
 
 function joined(top: UndoEntry | undefined, entry: UndoEntry): UndoEntry | null {

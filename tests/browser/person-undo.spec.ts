@@ -195,7 +195,7 @@ test("undoing a text edit paints the old text on the slide and its thumbnail wit
   await expect(thumbnail).toContainText("Mine")
 })
 
-test.fail("Ctrl+Z straight after typing over a text brings the old text back", async ({ page, context, stack }) => {
+test("Ctrl+Z straight after typing over a text brings the old text back", async ({ page, context, stack }) => {
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
   await openClean(page)
@@ -205,4 +205,6 @@ test.fail("Ctrl+Z straight after typing over a text brings the old text back", a
   await text.pressSequentially("Mine", { delay: 0 })
   await page.keyboard.press("ControlOrMeta+z")
   await expect(text).toHaveText("Hello", { timeout: 3000 })
+  await page.keyboard.press("ControlOrMeta+Shift+z")
+  await expect(text).toHaveText("Mine")
 })

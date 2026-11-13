@@ -46,7 +46,7 @@ export function liveRepaint(
   return (register, from) => {
     for (const [id, file] of files) {
       const record = store.getElement(id)
-      if (record === null || busy.has(id)) continue
+      if (record === null || (from !== "person" && busy.has(id))) continue
       const before = from === "person" ? { text: record.text, box: store.getBox(id) } : landed.get(id)
       const text = shownValue(register, id, file)
       const box = landedBox(register, id)
