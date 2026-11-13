@@ -62,6 +62,8 @@ const harness = (options = {}) => {
     mainMigrations = migrationsOf("a", "b"),
     headMigrations = migrationsOf("a", "b", "c"),
     markerFiles = [],
+    staleDiff = "",
+    staleLog = "",
     checkRuns = [{ status: 0, output: "ok lint 1s\n" }],
     alone = { status: 0, output: "" },
     pushed = ok(),
@@ -92,7 +94,9 @@ const harness = (options = {}) => {
           : ok(`${mark} HEAD\nx\n`)
     if (name === "push") return pushed
     if (name === "cat-file") return ok()
-    if (name === "diff") return ok()
+    if (name === "diff") return ok(command.includes("--raw") ? staleDiff : "")
+    if (name === "merge-base") return ok("base\n")
+    if (name === "log") return ok(command.includes("--raw") ? staleLog : "")
     throw new Error(`unexpected ${command.join(" ")}`)
   }
   const gh = (command) => {
@@ -188,6 +192,30 @@ same("two migrations with one number stop before the check", await twice.run(), 
 same(
   "and name the next free number",
   twice.said.some((line) => line.includes("next free number, 4")),
+  true,
+)
+
+const blob = (letter) => letter.repeat(40)
+const stale = harness({
+  staleDiff: [
+    `:100644 100644 ${blob("b")} ${blob("a")} M\0apps/web/src/thin-deck.tsx\0`,
+    `:100644 100644 ${blob("d")} ${blob("c")} M\0scripts/check.mjs\0`,
+  ].join(""),
+  staleLog: [
+    `\u0001${blob("e")}\u0002Move the title\0\n`,
+    `:100644 100644 ${blob("a")} ${blob("b")} M\0apps/web/src/thin-deck.tsx\0`,
+    `:100644 100644 ${blob("c")} ${blob("d")} M\0scripts/check.mjs\0`,
+  ].join(""),
+})
+same("a branch that puts back files main replaced stops before the check", await stale.run(), 1)
+same("and runs no check", stale.log.includes("stamp"), false)
+same(
+  "and names the files and the restore",
+  stale.said.some(
+    (line) =>
+      line.includes("eeeeeeee Move the title") &&
+      line.includes("--worktree -- apps/web/src/thin-deck.tsx scripts/check.mjs"),
+  ),
   true,
 )
 

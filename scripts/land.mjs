@@ -14,6 +14,7 @@ import { takeMachineLock } from "./machine-lock.mjs"
 import { awaitChecks, enqueue, queueLine, readPull } from "./merge-queue.mjs"
 import { migrationFault, recordFile } from "./migration-numbers.mjs"
 import { baseFault } from "./pull-base.mjs"
+import { restoredLimit, staleFault, staleFiles } from "./stale-tree.mjs"
 import { hasProof, titleAdvice, titleLimit, titleVerdict } from "./title.mjs"
 
 const valueFlags = ["--pr", "--title", "--body-file"]
@@ -184,6 +185,9 @@ export const land = async (ctx) => {
       )
     }
     line("conflicts", `none; ${behindMain(git)} commits behind origin/main`)
+    const stale = staleFault(staleFiles(git))
+    if (stale !== undefined) stop("stale tree", stale)
+    line("stale tree", `none; fewer than ${restoredLimit} files put back to content main replaced`)
     const numbers = migrationFault({ base: jsonAt(git, "origin/main"), head: jsonAt(git, "HEAD") })
     if (numbers !== undefined) stop("migrations", numbers)
     line("migrations", "no migration number is taken on origin/main")

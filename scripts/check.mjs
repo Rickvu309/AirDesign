@@ -27,6 +27,7 @@ export const stages = [
     ["commit-titles", "node", ["scripts/commit-titles.mjs"]],
     ["conflict-markers", "node", ["scripts/conflict-markers.mjs"]],
     ["migration-numbers", "node", ["scripts/migration-numbers.mjs"]],
+    ["stale-tree", "node", ["scripts/stale-tree.mjs"]],
     ["specs", "pnpm", ["check:specs"], { AIRDESIGN_SPEC_CACHE: specCache }],
     ["spec-replays", "node", ["scripts/spec-replays.mjs"]],
     ["browser", "pnpm", ["test:browser"]],
@@ -83,6 +84,7 @@ export const warnSteps = new Set([
   "spec-replays",
   "conflict-markers",
   "migration-numbers",
+  "stale-tree",
   "commit-titles",
 ])
 
