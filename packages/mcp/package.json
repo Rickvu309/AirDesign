@@ -24,7 +24,6 @@
   },
   "dependencies": {
     "@airdesign/catalog": "workspace:*",
-    "@airdesign/device": "workspace:*",
     "@airdesign/document": "workspace:*",
     "@airdesign/engine": "workspace:*",
     "@modelcontextprotocol/server": "^2.4.0",

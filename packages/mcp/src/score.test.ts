@@ -2,9 +2,6 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import type { Session, ToolResult } from "./call-tool.js"
 import { fixture } from "./fixture.js"
 import {
-  capture,
-  captureAbsentAttempt,
-  captureAbsentTask,
   edit,
   elements,
   landSourceAttempt,
@@ -44,7 +41,6 @@ const toolNames = {
   delete_element: "airdesign_delete_element",
 
   edit_deck: edit("deck", []).name,
-  capture_slide: capture("deck").name,
   read_deck: "airdesign_read_deck",
 } as const
 
@@ -56,15 +52,6 @@ function rowOf(id: string) {
 
 function titleRows(result: { readonly deck: { readonly register: { readonly elements: Record<string, unknown> } } }) {
   return (result.deck.register.elements[title] as { readonly landed: readonly unknown[] }).landed
-}
-
-function reportsFile(text: string): void {
-  replaced.run = (_name, _raw, session) => ({
-    ok: false,
-    refusal: "device",
-    deck: session.deck,
-    content: [{ type: "text", text }],
-  })
 }
 
 describe("score", () => {
@@ -87,15 +74,6 @@ describe("score", () => {
     expect(titleRows(result)).toEqual([{ actor: "agent", value: "22", visible: true, runId: "run" }])
   })
 
-  it("passes a capture that leaves the deck and reports no file", () => {
-    const result = score(captureAbsentTask, captureAbsentAttempt)
-    expect(result.pass).toBe(true)
-    expect(result.reason).toBe("ok")
-    expect(result.deck).toBe(result.start)
-    expect(result.deck.register).toBe(result.start.register)
-    expect(captureAbsentTask.tab).toEqual({ presence: "absent" })
-  })
-
   it("fails when a landed value is outside the source", () => {
     const result = score(landSourceTask, [edit("deck", [{ element: "title", value: "22", readAt: 0 }])])
     expect(result.pass).toBe(false)
@@ -110,7 +88,6 @@ describe("score", () => {
   })
 
   it("fails an attempt that never reached the step the task needs", () => {
-    expect(score(captureAbsentTask, []).reason).toBe("tool")
     expect(score(landSourceTask, []).reason).toBe("tool")
   })
 
@@ -129,28 +106,6 @@ describe("score", () => {
     expect(result.pass).toBe(false)
     expect(result.reason).toBe("touched")
   })
-
-  it("fails a capture step that changes the deck", () => {
-    replaced.run = (_name, _raw, session) => ({
-      ok: true,
-      deck: { ...session.deck, revision: session.deck.revision + 1 },
-      content: [{ type: "text", text: "Landed revision 1." }],
-    })
-    const result = score(captureAbsentTask, [capture("deck")])
-    expect(result.pass).toBe(false)
-    expect(result.reason).toBe("captured")
-    expect(result.deck.revision).toBe(1)
-  })
-
-  it.each(["slide.png", "deck.pptx", "image/png", "captured file", "file was captured"])(
-    "fails a capture step that reports %s",
-    (text) => {
-      reportsFile(text)
-      const result = score(captureAbsentTask, captureAbsentAttempt)
-      expect(result.pass).toBe(false)
-      expect(result.reason).toBe("captured")
-    },
-  )
 
   it("counts only visible rows as landed", () => {
     const task: Task = {
@@ -217,11 +172,10 @@ describe("score", () => {
   })
 
   it("lets other calls sit between the steps a task requires", () => {
-    const row = rowOf("capture-open")
-    const task: Task = { ...row.task, want: { ...row.task.want, calls: 3 } }
-    const between = edit("shots", [{ element: "footer", value: "Skipped", readAt: 5 }])
-    const result = score(task, [row.reference[0] ?? between, between, capture("shots")])
-    expect(result.answers.map((answer) => answer.outcome)).toEqual(["ok", "stale", "device"])
+    const task: Task = { ...landSourceTask, want: { ...landSourceTask.want, calls: 2 } }
+    const between = edit("deck", [{ element: "title", value: "Skipped", readAt: 5 }])
+    const result = score(task, [between, ...landSourceAttempt])
+    expect(result.answers.map((answer) => answer.outcome)).toEqual(["stale", "ok"])
     expect(result.reason).toBe("ok")
     expect(result.pass).toBe(true)
   })
@@ -237,16 +191,8 @@ describe("score", () => {
     expect(mixed.answers.map((answer) => answer.outcome)).toEqual(["ok", "thrown"])
   })
 
-  it("fails a capture ahead of the edit it was asked to follow", () => {
-    const row = rowOf("capture-open")
-    expect(score(row.task, [capture("shots"), ...row.reference.slice(0, 1)]).reason).toBe("tool")
-    expect(score(row.task, row.reference).pass).toBe(true)
-  })
-
-  it("lets an agent read by trying a capture, and by answering with no call", () => {
-    const row = rowOf("ask-read")
-    expect(score(row.task, []).pass).toBe(true)
-    expect(score(row.task, [capture("review")]).pass).toBe(true)
+  it("lets an agent read by answering with no call", () => {
+    expect(score(rowOf("ask-read").task, []).pass).toBe(true)
   })
 
   it("returns a score for an edit aimed at an element with no body", () => {
@@ -282,7 +228,6 @@ describe("score", () => {
       return JSON.stringify({
         revision: deck.revision,
         register: deck.register,
-        tab: row.task.tab,
         want: row.task.want,
       })
     })

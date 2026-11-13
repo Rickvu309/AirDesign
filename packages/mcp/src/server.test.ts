@@ -215,8 +215,6 @@ describe("createServer", () => {
       ["airdesign_edit_deck", { base: 0, changes: [change] }, "field"],
       ["airdesign_stop_run", { deck: "deck", runId: 7 }, "field"],
       ["airdesign_stop_run", { runId: "run" }, "field"],
-      ["airdesign_capture_slide", {}, "field"],
-      ["airdesign_capture_slide", { deck: 7 }, "deck"],
     ] as const) {
       const session = sessionFor(opened())
       const before = session.deck
@@ -272,12 +270,8 @@ describe("createServer", () => {
     const session = sessionFor(deck)
     await withClient(session, async (client) => {
       for (let call = 0; call < 30; call += 1) {
-        const opened = await client.callTool({
-          name: "airdesign_capture_slide",
-          arguments: { deck: "deck" },
-        })
-        expect(opened.isError).toBe(true)
-        expect(opened.content).toEqual([{ type: "text", text: "Open the deck in AirDesign, then try again." }])
+        const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
+        expect(read.isError).toBeFalsy()
       }
       const refused = await client.callTool({
         name: "airdesign_edit_deck",
@@ -411,25 +405,16 @@ describe("createServer", () => {
     const secondDeck = opened()
     const first = held(firstDeck, holder)
     const second = held(secondDeck, holder)
-    const capture = [{ type: "text" as const, text: "Open the deck in AirDesign, then try again." }]
     await withClient(first, async (client) => {
       for (let call = 0; call < 20; call += 1) {
-        const captured = await client.callTool({
-          name: "airdesign_capture_slide",
-          arguments: { deck: "deck" },
-        })
-        expect(captured.isError).toBe(true)
-        expect(captured.content).toEqual(capture)
+        const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
+        expect(read.isError).toBeFalsy()
       }
     })
     await withClient(second, async (client) => {
       for (let call = 0; call < 10; call += 1) {
-        const captured = await client.callTool({
-          name: "airdesign_capture_slide",
-          arguments: { deck: "deck" },
-        })
-        expect(captured.isError).toBe(true)
-        expect(captured.content).toEqual(capture)
+        const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
+        expect(read.isError).toBeFalsy()
       }
       const refused = await client.callTool({
         name: "airdesign_edit_deck",
@@ -451,11 +436,8 @@ describe("createServer", () => {
     const session = sessionFor(deck)
     await withClient(session, async (client) => {
       for (let call = 0; call < 30; call += 1) {
-        const captured = await client.callTool({
-          name: "airdesign_capture_slide",
-          arguments: { deck: "deck" },
-        })
-        expect(captured.isError).toBe(true)
+        const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
+        expect(read.isError).toBeFalsy()
       }
       session.now = 298_501
       const refused = await client.callTool({

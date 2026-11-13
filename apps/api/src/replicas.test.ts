@@ -22,7 +22,6 @@ const stoppedCharge = 412 * 2_000 + airaMaxTokens * 10_000 + 200 * 2_500 + 100 *
 const wednesday = Date.UTC(2026, 10, 11, 12)
 const toolLimit = "Thirty tool calls in five minutes. The next tool call can run in 300 seconds."
 const turnLimit = "Twenty turns in five minutes. The next turn can start in 300 seconds."
-const captureNext = "Open the deck in AirDesign, then try again."
 
 type Account = { readonly email: string; readonly cookie: string }
 type Replica = {
@@ -185,8 +184,8 @@ async function edited(client: McpClient, args: Record<string, unknown>): Promise
   return (await client.callTool({ name: "airdesign_edit_deck", arguments: args })).structuredContent
 }
 
-async function captured(client: McpClient, id: string): Promise<unknown> {
-  return (await client.callTool({ name: "airdesign_capture_slide", arguments: { deck: id } })).content
+async function read(client: McpClient, id: string) {
+  return client.callTool({ name: "airdesign_read_deck", arguments: { deck: id } })
 }
 
 describe("the limits an account's calls share hold on every server and after a restart", () => {
@@ -198,13 +197,13 @@ describe("the limits an account's calls share hold on every server and after a r
     for (const on of [first, second]) {
       await withMcp(account.cookie, on, async (client) => {
         for (let call = 0; call < 15; call += 1) {
-          expect(await captured(client, named.deck)).toEqual([{ type: "text", text: captureNext }])
+          expect((await read(client, named.deck)).isError).toBeFalsy()
         }
       })
     }
     for (const on of [first, second, await replica()]) {
       await withMcp(account.cookie, on, async (client) => {
-        expect(await captured(client, named.deck)).toEqual([{ type: "text", text: toolLimit }])
+        expect((await read(client, named.deck)).content).toEqual([{ type: "text", text: toolLimit }])
       })
     }
   })

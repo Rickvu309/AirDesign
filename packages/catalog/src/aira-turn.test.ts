@@ -51,7 +51,6 @@ describe("Aira's tools", () => {
     expect(airaTools.map((tool) => tool.name)).toEqual([
       "airdesign_add_slide",
       "airdesign_add_text_box",
-      "airdesign_capture_slide",
       "airdesign_delete_element",
       "airdesign_delete_slide",
       "airdesign_duplicate_slide",

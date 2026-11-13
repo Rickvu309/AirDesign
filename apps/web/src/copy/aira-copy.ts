@@ -22,12 +22,6 @@ export const airaStepWords: Readonly<Record<AgentOp, StepWords | null>> = {
     refused: "Couldn't list your decks",
     stopped: "Stopped listing your decks",
   },
-  capture_slide: {
-    working: "Viewing a slide",
-    done: "Viewed a slide",
-    refused: "Couldn't view a slide",
-    stopped: "Stopped viewing a slide",
-  },
   add_slide: {
     working: "Adding a slide",
     done: "Added a slide",

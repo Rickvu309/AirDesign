@@ -39,7 +39,6 @@ type Stored = {
 }
 
 const toolLimit = "Thirty tool calls in five minutes. The next tool call can run in 300 seconds."
-const captureNext = "Open the deck in AirDesign, then try again."
 const storeFailure = editNext.store
 
 const element = "258.7"
@@ -301,13 +300,13 @@ describe("mcp route", () => {
     }
   }
 
-  function heldCapture(target: string, cookie: string, id: string): { release: () => void; answer: Promise<string> } {
+  function heldRead(target: string, cookie: string, id: string): { release: () => void; answer: Promise<string> } {
     const payload = Buffer.from(
       JSON.stringify({
         jsonrpc: "2.0",
         id: 1,
         method: "tools/call",
-        params: { name: "airdesign_capture_slide", arguments: { deck: id } },
+        params: { name: "airdesign_read_deck", arguments: { deck: id } },
       }),
     )
     const url = new URL(`${target}/mcp`)
@@ -456,8 +455,8 @@ describe("mcp route", () => {
         cookie,
         async (client) => {
           for (let call = 0; call < 30; call += 1) {
-            const captured = await client.callTool({ name: "airdesign_capture_slide", arguments: { deck: id } })
-            expect(captured.content).toEqual([{ type: "text", text: captureNext }])
+            const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: id } })
+            expect(read.isError).toBeFalsy()
           }
           expect(await editText(client, firstEdit(id))).toBe(toolLimit)
           expect((await row(id))?.revision).toBe(0)
@@ -836,8 +835,8 @@ describe("mcp route", () => {
           expect(closed).toMatchObject({ ok: false, refusal: "person-protected" })
           expect(await row(id)).toEqual(closedRow)
           clock += 600_000
-          const captured = await client.callTool({ name: "airdesign_capture_slide", arguments: { deck: id } })
-          expect(captured.content).toEqual([{ type: "text", text: captureNext }])
+          const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: id } })
+          expect(read.isError).toBeFalsy()
           const stale = await editAnswer(client, {
             deck: id,
             base: 3,
@@ -1623,12 +1622,8 @@ describe("mcp route", () => {
     await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
     await withMcp(cookie, async (client) => {
       for (let call = 0; call < 30; call += 1) {
-        const captured = await client.callTool({
-          name: "airdesign_capture_slide",
-          arguments: { deck: named.deck },
-        })
-        expect(captured.isError).toBe(true)
-        expect(captured.content).toEqual([{ type: "text", text: captureNext }])
+        const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: named.deck } })
+        expect(read.isError).toBeFalsy()
       }
       const blocked = await client.callTool({
         name: "airdesign_edit_deck",
@@ -1642,10 +1637,7 @@ describe("mcp route", () => {
     expect(Object.keys(kept?.register.elements ?? {})).toEqual([rootElement])
     const again = await sign(email)
     await withMcp(again, async (client) => {
-      const blocked = await client.callTool({
-        name: "airdesign_capture_slide",
-        arguments: { deck: named.deck },
-      })
+      const blocked = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: named.deck } })
       expect(blocked.isError).toBe(true)
       expect(blocked.content).toEqual([{ type: "text", text: toolLimit }])
     })
@@ -1708,12 +1700,12 @@ describe("mcp route", () => {
     })
     try {
       const { id, cookie } = await openedDeck("race")
-      const held = Array.from({ length: requests }, () => heldCapture(served.base, cookie, id))
+      const held = Array.from({ length: requests }, () => heldRead(served.base, cookie, id))
       await allSignedIn
       await new Promise((resolve) => setImmediate(resolve))
       for (const call of held) call.release()
       const texts = await Promise.all(held.map((call) => call.answer))
-      expect(texts.filter((text) => text.includes(captureNext))).toHaveLength(30)
+      expect(texts.filter((text) => !text.includes(toolLimit))).toHaveLength(30)
       expect(texts.filter((text) => text.includes(toolLimit))).toHaveLength(3)
     } finally {
       await served.close()
@@ -1728,7 +1720,7 @@ describe("mcp route", () => {
     })
   })
 
-  it("refuses another account's capture", async () => {
+  it("refuses another account's read", async () => {
     const named = readDeckId(deckName())
     if (!named.ok) throw new Error(named.refusal)
     const owner = await sign(address("capown"))
@@ -1736,12 +1728,12 @@ describe("mcp route", () => {
     const before = await row(named.deck)
     const other = await sign(address("capelse"))
     await withMcp(other, async (client) => {
-      const refused = await client.callTool({
-        name: "airdesign_capture_slide",
-        arguments: { deck: named.deck },
-      })
+      const refused = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: named.deck } })
       expect(refused.isError).toBe(true)
-      expect(refused.content).toEqual([{ type: "text", text: editNext.owner }])
+      expect((refused.content as readonly { readonly text?: string }[])[0]).toEqual({
+        type: "text",
+        text: editNext.owner,
+      })
     })
     expect(await row(named.deck)).toEqual(before)
   })

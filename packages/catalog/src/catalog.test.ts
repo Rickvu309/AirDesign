@@ -11,7 +11,6 @@ describe("run operations in the catalog", () => {
     expect(projectTools(catalog).map((tool) => tool.op)).toEqual([
       "add_slide",
       "add_text_box",
-      "capture_slide",
       "delete_element",
       "delete_slide",
       "duplicate_slide",
@@ -27,11 +26,10 @@ describe("run operations in the catalog", () => {
 describe("projectTools", () => {
   it("projects the agent tools in name order", () => {
     const tools = projectTools(catalog)
-    expect(tools).toHaveLength(11)
+    expect(tools).toHaveLength(10)
     expect(tools.map((tool) => tool.name)).toEqual([
       "airdesign_add_slide",
       "airdesign_add_text_box",
-      "airdesign_capture_slide",
       "airdesign_delete_element",
       "airdesign_delete_slide",
       "airdesign_duplicate_slide",
@@ -41,25 +39,12 @@ describe("projectTools", () => {
       "airdesign_read_deck",
       "airdesign_stop_run",
     ])
-    expect(tools.map((tool) => tool.runsOn)).toEqual([
-      "server",
-      "server",
-      "device",
-      "server",
-      "server",
-      "server",
-      "server",
-      "server",
-      "server",
-      "server",
-      "server",
-    ])
+    expect(tools.every((tool) => tool.runsOn === "server")).toBe(true)
     expect(tools.find((tool) => tool.op === "stop_run")?.destructiveHint).toBe(false)
     expect(tools.find((tool) => tool.op === "stop_run")?.description).toContain("when your turn is finished")
     expect(tools.find((tool) => tool.op === "stop_run")?.description).toContain("closing elements")
     expect(tools.every((tool) => tool.openWorldHint === false)).toBe(true)
     const edit = tools.find((tool) => tool.name === "airdesign_edit_deck")
-    const capture = tools.find((tool) => tool.name === "airdesign_capture_slide")
     expect(edit).toEqual({
       name: "airdesign_edit_deck",
       op: "edit_deck",
@@ -69,16 +54,6 @@ describe("projectTools", () => {
       readOnlyHint: false,
       destructiveHint: true,
       idempotentHint: false,
-      openWorldHint: false,
-    })
-    expect(capture).toEqual({
-      name: "airdesign_capture_slide",
-      op: "capture_slide",
-      description: "Render one slide in the person's open tab.",
-      runsOn: "device",
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
       openWorldHint: false,
     })
     expect(tools.find((tool) => tool.name === "airdesign_read_deck")).toEqual({

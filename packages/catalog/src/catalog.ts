@@ -4,7 +4,7 @@ import * as z from "zod/v4"
 
 import { readAgentEdit } from "./edit-wire.js"
 import { readDeckQuery, readListDecks } from "./read-wire.js"
-import { readCapture, readRun, type WireReader } from "./wire.js"
+import { readRun, type WireReader } from "./wire.js"
 
 type OpDetails = {
   readonly kind: "query" | "command" | "action" | "stream"
@@ -141,13 +141,6 @@ export const catalog = {
     read: readDeckQuery,
     description:
       "Read one deck this account owns. Send revision as base to airdesign_edit_deck and each element's version as readAt. slides lists slide ids in position order. Indexed elements include node, slide, kind, opening or edited value and box, and version (0 before edits). closed means a person's newer edit or another run holds it. grouped elements refuse box edits. index is ready, pending, or missing; pending or missing means the owner must open the deck in AirDesign to finish indexing. Send slide or cursor to read the rest.",
-  },
-  capture_slide: {
-    kind: "action",
-    exposure: "agent",
-    runsOn: "device",
-    read: readCapture,
-    description: "Render one slide in the person's open tab.",
   },
 } as const satisfies Readonly<Record<string, OpRow>>
 
