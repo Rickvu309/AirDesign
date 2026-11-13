@@ -40,14 +40,16 @@ export function AiraPanel({
   const [queued, setQueued] = useState<readonly string[]>([])
   const [usageOpen, setUsageOpen] = useState(false)
   const [undoing, setUndoing] = useState(false)
+  const [settling, setSettling] = useState(false)
   const latest = useRef(chat)
   const waiting = useRef<string[]>([])
   const stopper = useRef<AbortController | null>(null)
-  const finishing = useRef<Promise<unknown>>(Promise.resolve())
+  const finishing = useRef<Promise<AiraChat | undefined>>(Promise.resolve(undefined))
   const popId = useId()
   const usageButton = useRef<HTMLButtonElement>(null)
   const last = chat.exchanges.at(-1)
   const working = last?.end === "working"
+  const busy = working || settling || undoing
   const { usage, available, refresh: refreshUsage } = useWeekUsage(chat.usage)
   const limit = last?.end === "out-of-usage" && usage !== null ? airaBackOn(resetsWhen(usage.resets)) : undefined
   const notOffered = !available || last?.end === "country"
@@ -86,9 +88,12 @@ export function AiraPanel({
   async function run(text: string) {
     const controller = new AbortController()
     stopper.current = controller
+    setSettling(true)
     const asking = askAira(latest.current, text, {
       signal: controller.signal,
-      show: shown,
+      show: (next) => {
+        if (stopper.current === controller) shown(next)
+      },
       added: takeQueued,
       after: finishing.current,
       opened: connect(server).open(deck),
@@ -98,6 +103,7 @@ export function AiraPanel({
     if (done.exchanges.at(-1)?.end === "stopped") refreshUsage()
     if (stopper.current !== controller) return
     stopper.current = null
+    setSettling(false)
     shown(done)
     const end = done.exchanges.at(-1)?.end
     if (end === "signed-out") {
@@ -143,7 +149,7 @@ export function AiraPanel({
   }
 
   function pick(id: string) {
-    if (working || undoing) return
+    if (busy) return
     const picked = history.pick(id)
     if (picked === undefined) return
     waiting.current = []
@@ -172,7 +178,7 @@ export function AiraPanel({
             chats={history.chats}
             openId={history.openId}
             now={now()}
-            disabled={working || undoing}
+            disabled={busy}
             onPick={pick}
           />
         </span>
@@ -201,7 +207,7 @@ export function AiraPanel({
             size="icon"
             className={cn("size-7 rounded-md text-quiet", headControl)}
             aria-label={airaCopy.newChat}
-            disabled={empty || working || undoing}
+            disabled={empty || busy}
             onClick={newChat}
           >
             <EditorIcon name="pen" size={15} />
@@ -231,7 +237,7 @@ export function AiraPanel({
                   key={index}
                   exchange={exchange}
                   resets={usage?.resets}
-                  onUndo={working || undoing ? undefined : () => void undo(index)}
+                  onUndo={busy ? undefined : () => void undo(index)}
                   onRetry={
                     index === chat.exchanges.length - 1 && !working && !undoing && blocked === undefined
                       ? () => void ask(exchange.asked)

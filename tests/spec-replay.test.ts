@@ -956,8 +956,8 @@ describe("spec replay", () => {
       .sort()
     expect(every.map((topic) => topic.name).sort()).toEqual(folders)
     for (const topic of every) expect(topic.view).toBe(true)
-    const byApi = ["owner", "stop", "slide-run", "slide-sibling", "slide-undo"]
-    const found = every.filter((topic) => !byApi.includes(topic.name))
+    const elsewhere = ["aira-loop", "owner", "stop", "slide-run", "slide-sibling", "slide-undo"]
+    const found = every.filter((topic) => !elsewhere.includes(topic.name))
     const failures: string[] = []
     const reports: Record<string, unknown> = {}
     const views: Record<string, View> = {
@@ -974,7 +974,7 @@ describe("spec replay", () => {
       index: { state: indexState, step: indexStep, group: indexGroup },
       "person-undo": personUndoView,
     }
-    expect(Object.keys(views).sort()).toEqual(folders.filter((name) => !byApi.includes(name)))
+    expect(Object.keys(views).sort()).toEqual(folders.filter((name) => !elsewhere.includes(name)))
     for (const dumped of await dumpTopics(found)) {
       const topic = found.find((item) => item.name === dumped.name)
       if (!topic) throw new Error(dumped.name)
@@ -985,15 +985,11 @@ describe("spec replay", () => {
       const graph = parseDot(dumped.graph)
       const view = views[topic.name]
       if (!view) throw new Error(`${topic.name} has no reader`)
+      const told = (source: Spec, target: Spec, action: string) =>
+        `${readView(view, source, action)} -${action}-> ${readView(view, target, action)}`
       if (topic.name === "element") reports.element = replayElement(graph, failures)
       if (topic.name === "index") reports.index = replayIndex(graph, failures)
-      if (topic.name === "person-undo")
-        reports.personUndo = replayPersonUndo(
-          graph,
-          (source, target, action) =>
-            `${readView(view, source, action)} -${action}-> ${readView(view, target, action)}`,
-          failures,
-        )
+      if (topic.name === "person-undo") reports.personUndo = replayPersonUndo(graph, told, failures)
       if (topic.name === "edit")
         reports.edit = { states: graph.states.size, edges: graph.edges.length, ...replayEdit(graph, view, failures) }
       if (topic.name === "undo")
@@ -1016,36 +1012,21 @@ describe("spec replay", () => {
         reports.offline = {
           states: graph.states.size,
           edges: graph.edges.length,
-          ...replayOffline(
-            graph,
-            (source, target, action) =>
-              `${readView(view, source, action)} -${action}-> ${readView(view, target, action)}`,
-            failures,
-          ),
+          ...replayOffline(graph, told, failures),
         }
       }
       if (topic.name === "usage") {
         reports.usage = {
           states: graph.states.size,
           edges: graph.edges.length,
-          ...replayUsage(
-            graph,
-            (source, target, action) =>
-              `${readView(view, source, action)} -${action}-> ${readView(view, target, action)}`,
-            failures,
-          ),
+          ...replayUsage(graph, told, failures),
         }
       }
       if (topic.name === "oauth") {
         reports.oauth = {
           states: graph.states.size,
           edges: graph.edges.length,
-          ...replayOauth(
-            graph,
-            (source, target, action) =>
-              `${readView(view, source, action)} -${action}-> ${readView(view, target, action)}`,
-            failures,
-          ),
+          ...replayOauth(graph, told, failures),
         }
       }
       if (topic.name === "rerun") {

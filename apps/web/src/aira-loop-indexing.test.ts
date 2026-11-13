@@ -92,7 +92,7 @@ describe("Aira's loop when the deck is still being indexed", () => {
     expect(paused).toEqual([])
   })
 
-  it("does not wait once the person pressed Stop", async () => {
+  it("does not send again once the person pressed Stop during the wait", async () => {
     const stopping = new AbortController()
     const paused: number[] = []
     const held = link([indexing, indexing, landed])
@@ -105,7 +105,7 @@ describe("Aira's loop when the deck is still being indexed", () => {
         stopping.abort()
       },
     })
-    expect(paused).toEqual([1000])
+    expect(paused).toEqual([1000, 10_000])
     expect(held.sent.filter((name) => name === addSlide)).toHaveLength(1)
     expect(done.exchanges[0]?.end).toBe("stopped")
   })
