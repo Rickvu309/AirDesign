@@ -2,6 +2,7 @@ import { copyFile } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { notesExports } from "../../scripts/notes-export.mjs"
+import { exportFromDialog } from "./export-dialog"
 
 const duplicate = process.platform === "darwin" ? "Meta+d" : "Control+d"
 const [blankNotes, importedNotes] = notesExports
@@ -44,7 +45,7 @@ async function shown(page: Page, number: number, text: string): Promise<void> {
 
 async function exported(page: Page, file: string, name: string): Promise<string> {
   const saving = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   await (await saving).saveAs(file)
   await copyFile(file, join(process.cwd(), "tests/browser", name))
   return file

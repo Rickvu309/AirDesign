@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { expect } from "@playwright/test"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { forward, signInBrowser, test } from "./api-stack"
+import { exportFromDialog } from "./export-dialog"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
 type ZipLibrary = {
@@ -47,7 +48,7 @@ test("Aira adds a text box with text, a reload keeps it, the export keeps it, an
   await expect(texts).toHaveCount(3)
   await expect(texts.last()).toHaveText("Hello from Aira")
   const saving = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   const file = testInfo.outputPath("aira-text-box.pptx")
   await (await saving).saveAs(file)
   expect(await slideXml(file)).toContain("<a:t>Hello from Aira</a:t>")

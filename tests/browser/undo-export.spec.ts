@@ -3,6 +3,7 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect } from "@playwright/test"
 import { cleanFixture, forward, openClean, settled, signInBrowser, test } from "./api-stack"
+import { exportFromDialog } from "./export-dialog"
 
 type ZipEntry = {
   readonly filename: string
@@ -69,7 +70,7 @@ test("an export after every edit is undone changes no part of the original", asy
   await expect(text).toHaveText("Hello")
 
   const saving = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   const file = testInfo.outputPath("undone.pptx")
   await (await saving).saveAs(file)
   const original = await partsOf(cleanFixture)
@@ -103,7 +104,7 @@ test("an export after a layout placeholder's move is undone changes no part of t
   await expect.poll(async () => (await title.boundingBox())?.x).toBe(start.x)
 
   const saving = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   const file = testInfo.outputPath("undone-layout.pptx")
   await (await saving).saveAs(file)
   const original = await partsOf(fixture)

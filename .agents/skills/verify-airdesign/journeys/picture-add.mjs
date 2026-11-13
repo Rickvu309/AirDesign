@@ -53,6 +53,8 @@ export default async function drive({ repo, page, context, signIn, post, capture
   await expect(picture).toContainText("Picture is still uploading from another device")
   await capture("picture-uploading")
   await page.getByRole("button", { name: "Export", exact: true }).click()
+  await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
+  await page.keyboard.press("Enter")
   await expect(page.getByText("Unable to export. A picture is uploading.")).toBeVisible()
   await capture("export-waiting")
 
@@ -66,6 +68,8 @@ export default async function drive({ repo, page, context, signIn, post, capture
   await capture("picture-added")
   const downloading = page.waitForEvent("download")
   await page.getByRole("button", { name: "Export", exact: true }).click()
+  await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
+  await page.keyboard.press("Enter")
   const exported = path.join(out, "picture-add.pptx")
   await (await downloading).saveAs(exported)
   await page.goto("/")
