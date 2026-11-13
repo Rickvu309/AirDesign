@@ -5,9 +5,9 @@ A signed-in person chooses a PowerPoint file on Home, or starts a blank deck. Ai
 ## Sub-features
 
 - `import-open` choosing a `.pptx` on Home shows an `Importing` card, then opens `/deck/<id>` and shows its text as soon as the deck's parts are saved in the browser. The server's copy, the name and the original file are sent from the editor afterwards (`flushOriginal` in `apps/web/src/thin-deck.tsx`).
-- `import-name` the new deck takes the file name without `.pptx` (`clean` for `clean.pptx`). The editor sends it with `deckRoutes.rename` after the deck opens, not Home during the import.
-- `blank-deck` `New deck` > `Blank deck` opens a one-slide deck named `Blank deck` with an empty title and subtitle, painted with the prompts `Add a title` and `Add a subtitle`. It works offline and reaches the server when the browser is back online. Journey `blank-deck`.
-- `commit-once` when the server stores an edit but its answer is lost, a reload sends the same batch with the same `once` key and the revision rises once. Journey `commit-once`.
+- `import-name` the new deck takes the file name without `.pptx` (`clean` for `clean.pptx`), queued on the device. The editor sends it with `deckRoutes.rename` after the deck opens; Home sends it too when the editor's request was cut off (see `deck-names.md`).
+- `blank-deck` `New deck` > `Blank deck` (in `group "New deck"`, or the `No decks yet` card's own button) opens a one-slide deck named `Blank deck` with an empty title and subtitle, painted with the prompts `Add a title` and `Add a subtitle`. It works offline and reaches the server when the browser is back online. Journey `blank-deck`.
+- `commit-once` when the server stores an edit but its answer is lost, a reload sends the same batch with the same `once` key and the revision rises once. Journey `commit-once`, for text. Known failure for a slide command: see `lost-answer` in `keep-typed-text.md`.
 - `import-index` an agent reads untouched element ids, kinds, text, boxes, slide order and version zero before making an edit.
 - `edit-text` typing replaces the text box's text on screen.
 - `edit-format` while text is selected, `group "Text format"` offers `Bold`, `Italic` and `Underline` (`aria-pressed` shows the state); the run paints at once and the server's text value gets `bold`, `italic` and `underline` on the run. Driven live: all three on `Hello` paint as weight 700, italic and underlined and stay through a reload; the server had bold and italic at once and underline about 5 s later. Look state `text-format-bold`.
@@ -18,8 +18,7 @@ A signed-in person chooses a PowerPoint file on Home, or starts a blank deck. Ai
 ## How to get to it (user POV)
 
 - Home `/`: the file input behind `New deck` > `Import PowerPoint`.
-- Home `/` on a first visit shows two sample cards, `Scratchpad` and `Welcome to AirDesign`, which are not links. There is no drop target; import through `New deck`.
-- Home `/` with no decks but something in Trash: the `No decks yet` card has `Blank deck` and `Import PowerPoint`.
+- Home `/` with no decks, on a first visit or with something in Trash: the `No decks yet` card has `Blank deck` and `Import PowerPoint`. There is no drop target.
 - An open deck: click the text box on the slide and type.
 
 ## Driving it with verify-airdesign

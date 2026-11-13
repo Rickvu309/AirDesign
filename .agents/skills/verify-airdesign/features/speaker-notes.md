@@ -1,14 +1,15 @@
 # Speaker notes
 
-Under the slide of an open deck, the speaker notes bar shows the current slide's notes. The person expands it and types; the notes save like any edit, offline included, and the export writes them to the slide's notes part. A slide whose PowerPoint has no notes part shows its notes as not editable yet.
+Under the slide of an open deck, the speaker notes bar shows the current slide's notes. The person expands it and types; the notes save like any edit, offline included, and the export writes them to the slide's notes part, building the notes slide, and a notes master when the deck has none.
 
 ## Sub-features
 
-- `notes-open` `button "Expand speaker notes"` opens `textbox "Speaker notes"` (placeholder `Add speaker notes`); `Collapse speaker notes` closes it. Closed, the bar shows the notes' first line or `Add speaker notes`.
-- `notes-edit` typed notes paint at once and reach the server as the slide's `.notes` element.
-- `notes-locked` on a slide with no notes part the field is not editable and the bar says `Speaker notes can't be edited on this slide yet.`
+- `notes-open` `button "Expand speaker notes"` opens `textbox "Speaker notes"` (placeholder `Add speaker notes`); `Collapse speaker notes` closes it. Closed, the bar shows the notes' first line or `Add speaker notes`. Enter on the bar opens it and keeps focus on `Collapse speaker notes`; one Tab reaches the field.
+- `notes-edit` typed notes paint at once and reach the server as the slide's `.notes` element, on any slide, including one whose PowerPoint has no notes part.
+- `notes-undo` a visit's typing in the field is one `Undo speaker notes edit` step on the toolbar, and its undo repaints the bar. Inside the field Ctrl/Cmd+Z is the browser's own text undo, since the field is a `textarea`.
 - `notes-offline` typed offline, the editor says `You're offline. Edits are saved on this device.` and sends them when the browser is back online.
-- `notes-export` the export writes the notes, and a new import of that file shows them.
+- `notes-reload` notes typed and reloaded at once are still there (the keystroke journal, see `keep-typed-text.md`).
+- `notes-export` the export waits for notes still on their way, writes them, and a new import of that file shows them. A slide with no notes part gets a new notes slide; a deck with no notes master gets one.
 
 ## How to get to it (user POV)
 
@@ -23,9 +24,11 @@ Preconditions:
 
 - **Run it.** `$V journey <run> speaker-notes`. Prints `"passed":true`.
 - **Open.** Import the fixture, click `Expand speaker notes`. The field is editable. Evidence `NN-notes-closed`, `NN-notes-open`.
-- **Locked.** Click `[data-slide-entry="2"]`. The field is not editable and the locked line shows.
+- **Any slide.** Click `[data-slide-entry="2"]`, the slide with no notes part. The field is editable and empty.
 - **Offline edit.** Back on slide 1, go offline, fill the field, see the offline toast, go online; poll `deckRoutes.open` for the `.notes` element's value.
 - **Reload, export, import.** The notes come back each time. Evidence `NN-notes-reloaded`, `NN-notes-reimported`.
+- **Notes in a range export.** Driven live on 2026-11-13 with a scratch journey: notes typed on slides 2 and 3 of a blank deck, the second just before Export, were both in a range 2 to 3 export and in its new import (see `export.md`).
+- **States for look.** `notes-closed`, `notes-open`.
 
 ## Gotchas
 
