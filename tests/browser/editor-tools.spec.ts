@@ -66,9 +66,7 @@ test("the tools that do nothing yet are disabled, the grid toggle too, and Actio
   await expect(page.getByRole("button", { name: "Add picture", exact: true })).toBeEnabled()
   await page.getByRole("button", { name: "Actions", exact: true }).click()
   await expect(page.getByRole("menuitem", { name: "Table", exact: true })).toBeEnabled()
-  for (const name of ["Chart", "Icon", "Remove background", "Boost resolution"]) {
-    await expect(page.getByRole("menuitem", { name, exact: true }), name).toBeDisabled()
-  }
+  await expect(page.getByRole("menuitem")).toHaveCount(1)
   await page.keyboard.press("Escape")
   await expect(page.getByRole("button", { name: "Move", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Move", exact: true })).toHaveAttribute("aria-pressed", "true")

@@ -31,6 +31,7 @@ export const regions = [
   { name: "slide label", selector: "[data-slide-label]", properties: ["font-size", "color"] },
   { name: "slide", selector: "[data-slide-label] + *, [data-slide-paint]", properties: frameLook },
   { name: "toolbar", selector: "[data-editor-toolbar]", keys: ["y", "height"] },
+  { name: "actions menu", selector: "[data-actions-menu]" },
   { name: "panel", selector: "[data-editor-panel]" },
   { name: "panel head", selector: "[data-editor-panel] > :first-child" },
   {
