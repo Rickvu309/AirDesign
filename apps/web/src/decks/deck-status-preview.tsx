@@ -15,7 +15,7 @@ function PptxMark() {
 
 export function ImportingPreview() {
   return (
-    <div className="relative flex h-full flex-col items-center justify-center gap-3 bg-canvas">
+    <div className="relative flex h-full flex-col items-center justify-center gap-3 bg-background">
       <PptxMark />
       <span className="block h-1 w-40 overflow-hidden rounded-sm bg-line">
         <span className="block h-full w-[93px] rounded-sm bg-[linear-gradient(90deg,var(--primary-top),var(--primary))]" />

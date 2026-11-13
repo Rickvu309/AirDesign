@@ -21,7 +21,7 @@ export function DeckCard({
   href?: string
 }) {
   return (
-    <article className="relative rounded-[var(--shape-dialog)] bg-background p-1.5">
+    <article className="relative rounded-[var(--shape-dialog)] bg-canvas p-1.5">
       <div className="flex items-start gap-2 px-2.5 pt-2 pb-2.5">
         <div className="min-w-0 flex-1">
           <h2

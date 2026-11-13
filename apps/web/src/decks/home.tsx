@@ -68,12 +68,12 @@ function DeckGridSkeleton({ className }: { className?: string }) {
   return (
     <DeckGrid className={className} data-loading="true" aria-busy="true">
       {[0, 1, 2].map((key) => (
-        <article key={key} className="rounded-[var(--shape-dialog)] bg-background p-1.5" aria-hidden="true">
+        <article key={key} className="rounded-[var(--shape-dialog)] bg-canvas p-1.5" aria-hidden="true">
           <div className="space-y-2 px-2.5 pt-2 pb-2.5">
-            <Skeleton className="h-4 w-3/5" />
-            <Skeleton className="h-3.5 w-2/5" />
+            <Skeleton className="h-4 w-3/5 bg-line" />
+            <Skeleton className="h-3.5 w-2/5 bg-line" />
           </div>
-          <Skeleton className="h-[200px] w-full rounded-[var(--shape-card)]" />
+          <Skeleton className="h-[200px] w-full rounded-[var(--shape-card)] bg-line" />
         </article>
       ))}
     </DeckGrid>
@@ -85,13 +85,9 @@ function DeckTableSkeleton() {
     <div className="mt-8 space-y-3" data-loading="true" aria-busy="true">
       <DeckTableHeader sortMarks={false} />
       {[0, 1, 2].map((key) => (
-        <div
-          key={key}
-          className="flex h-12 items-center justify-between rounded-lg bg-background px-4"
-          aria-hidden="true"
-        >
-          <Skeleton className="h-4 w-1/3" />
-          <Skeleton className="h-4 w-24" />
+        <div key={key} className="flex h-12 items-center justify-between rounded-lg bg-canvas px-4" aria-hidden="true">
+          <Skeleton className="h-4 w-1/3 bg-line" />
+          <Skeleton className="h-4 w-24 bg-line" />
         </div>
       ))}
     </div>

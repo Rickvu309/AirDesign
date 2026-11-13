@@ -19,12 +19,7 @@ export function Card({
   children?: ReactNode
 }) {
   return (
-    <section
-      className={cn(
-        "w-[860px] max-w-full rounded-xl bg-background p-5 shadow-[inset_0_0_0_1px_var(--line)]",
-        className,
-      )}
-    >
+    <section className={cn("w-[860px] max-w-full rounded-xl bg-canvas p-5", className)}>
       <header
         className={cn(
           "flex justify-between gap-4 max-md:flex-col max-md:items-start",
