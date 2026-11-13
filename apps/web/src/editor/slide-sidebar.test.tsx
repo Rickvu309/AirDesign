@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
+import { slideChangeAllowed } from "@/editor/slide-menu"
 import { SlideSidebar, type SlideStrip } from "@/editor/slide-sidebar"
 
 const strip: SlideStrip = {
@@ -75,6 +76,17 @@ describe("slide list", () => {
     expect(entry("1")).toContain("text-quiet")
     expect(entry("1")).not.toContain("text-index")
   })
+
+  it("names an actions control on every slide, outside the slide button and out of the tab order", () => {
+    const html = markup()
+    for (const number of [1, 2, 3, 4]) {
+      const actions = tags(html, new RegExp(`<button[^>]*aria-label="Slide ${String(number)} actions"[^>]*>`, "g"))
+      expect(actions).toHaveLength(1)
+      expect(actions[0]).toContain('tabindex="-1"')
+      const entry = new RegExp(`<button[^>]*data-slide-entry="${String(number)}"[^>]*>[\\s\\S]*?</button>`).exec(html)
+      expect(entry?.[0] ?? "").not.toContain("actions")
+    }
+  })
 })
 
 describe("way home", () => {
@@ -86,5 +98,19 @@ describe("way home", () => {
   it("leaves the design screen's mark as it was", () => {
     const html = renderToStaticMarkup(<SlideSidebar run="done" title="Deck" />)
     expect(html).not.toContain('aria-label="Go to your decks"')
+  })
+})
+
+describe("slide menu", () => {
+  it("allows move up after the first slide, move down before the last, and delete only when another slide remains", () => {
+    expect(slideChangeAllowed("up", 0, 4)).toBe(false)
+    expect(slideChangeAllowed("down", 0, 4)).toBe(true)
+    expect(slideChangeAllowed("down", 3, 4)).toBe(false)
+    expect(slideChangeAllowed("up", 3, 4)).toBe(true)
+    expect(slideChangeAllowed("up", 1, 4)).toBe(true)
+    expect(slideChangeAllowed("down", 1, 4)).toBe(true)
+    expect(slideChangeAllowed("remove", 0, 1)).toBe(false)
+    expect(slideChangeAllowed("remove", 1, 4)).toBe(true)
+    expect(slideChangeAllowed("clone", 0, 1)).toBe(true)
   })
 })

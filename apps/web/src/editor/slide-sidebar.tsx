@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { EditorIcon } from "@/editor/editor-icons"
 import { hairlineShadow, SidebarHead, surfaceShadow } from "@/editor/editor-chrome"
-import { slideKey } from "@/editor/slide-keys"
+import { slideKey, type SlideKey } from "@/editor/slide-keys"
+import { SlideMenu, slideChangeAllowed } from "@/editor/slide-menu"
 import { NewSlideMenu } from "@/editor/new-slide-menu"
 import { SlideThumb } from "@/editor/slide-thumb"
 import type { LayoutChoice } from "@/slide-layout"
@@ -136,6 +137,10 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
       reachable={reachable === `slide:${String(index)}`}
       onSelect={() => strip.onSelect(index)}
       onKeyDown={(event) => onSlideKey(strip, index, event, announce)}
+      onChoose={(change) => {
+        following.current = true
+        runSlideChange(strip, index, change, announce)
+      }}
       onDragStart={(event) => {
         event.dataTransfer.setData("text/plain", String(index))
         event.dataTransfer.effectAllowed = "move"
@@ -356,15 +361,8 @@ function SampleStrip({ run }: { run: SidebarRun }) {
   )
 }
 
-function onSlideKey(
-  strip: SlideStrip,
-  index: number,
-  event: KeyboardEvent<HTMLButtonElement>,
-  announce: (text: string) => void,
-): void {
-  const change = slideKey(event)
-  if (change === null) return
-  event.preventDefault()
+function runSlideChange(strip: SlideStrip, index: number, change: SlideKey, announce: (text: string) => void): void {
+  if (!slideChangeAllowed(change, index, strip.count)) return
   const number = index + 1
   if (change === "remove") {
     strip.onRemove?.(index)
@@ -374,14 +372,26 @@ function onSlideKey(
     strip.onClone?.(index)
     announce(slideListCopy.duplicated(number))
   }
-  if (change === "up" && index > 0) {
+  if (change === "up") {
     strip.onMove?.(index, index - 1)
     announce(slideListCopy.moved(number, number - 1))
   }
-  if (change === "down" && index < strip.count - 1) {
+  if (change === "down") {
     strip.onMove?.(index, index + 1)
     announce(slideListCopy.moved(number, number + 1))
   }
+}
+
+function onSlideKey(
+  strip: SlideStrip,
+  index: number,
+  event: KeyboardEvent<HTMLButtonElement>,
+  announce: (text: string) => void,
+): void {
+  const change = slideKey(event)
+  if (change === null) return
+  event.preventDefault()
+  runSlideChange(strip, index, change, announce)
 }
 
 function SlideItem({
@@ -391,6 +401,7 @@ function SlideItem({
   reachable = true,
   working = false,
   onSelect,
+  onChoose,
   onKeyDown,
   onDragStart,
   onDragOver,
@@ -403,12 +414,15 @@ function SlideItem({
   reachable?: boolean
   working?: boolean
   onSelect?: () => void
+  onChoose?: (change: SlideKey) => void
   onKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void
   onDragStart?: (event: DragEvent<HTMLButtonElement>) => void
   onDragOver?: (event: DragEvent<HTMLButtonElement>) => void
   onDrop?: (event: DragEvent<HTMLButtonElement>) => void
   children: ReactNode
 }) {
+  const entry = useRef<HTMLButtonElement>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
   const look = cn("flex items-start gap-2 rounded-[var(--shape-card)] p-2", active && "bg-[var(--row)]")
   const number = (
     <span className="flex w-4 flex-col items-center gap-1.5 pt-0.5">
@@ -424,26 +438,67 @@ function SlideItem({
       </div>
     )
   }
+  const openMenu = () => {
+    onSelect?.()
+    setMenuOpen(true)
+  }
+  const anchor = `--slide-row-${String(index)}`
   return (
-    <button
-      type="button"
-      draggable={onDragStart !== undefined}
-      aria-current={active ? "true" : undefined}
-      aria-label={slideListCopy.slideName(index, count)}
-      tabIndex={reachable ? 0 : -1}
-      className={cn(look, "text-left")}
-      data-stop={`slide:${String(index - 1)}`}
-      data-slide-entry={index}
-      data-slide-item
-      onClick={onSelect}
-      onKeyDown={onKeyDown}
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-    >
-      {number}
-      {children}
-    </button>
+    <>
+      <button
+        ref={entry}
+        type="button"
+        draggable={onDragStart !== undefined}
+        aria-current={active ? "true" : undefined}
+        aria-label={slideListCopy.slideName(index, count)}
+        tabIndex={reachable ? 0 : -1}
+        className={cn(look, "w-full text-left")}
+        style={onChoose === undefined ? undefined : { anchorName: anchor }}
+        data-stop={`slide:${String(index - 1)}`}
+        data-slide-entry={index}
+        data-slide-item
+        onClick={onSelect}
+        onContextMenu={
+          onChoose === undefined
+            ? undefined
+            : (event) => {
+                event.preventDefault()
+                openMenu()
+              }
+        }
+        onKeyDown={(event) => {
+          if (onChoose !== undefined && (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey))) {
+            event.preventDefault()
+            openMenu()
+            return
+          }
+          onKeyDown?.(event)
+        }}
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+      >
+        {number}
+        {children}
+      </button>
+      {onChoose === undefined ? null : (
+        <SlideMenu
+          number={index}
+          index={index - 1}
+          count={count}
+          anchor={anchor}
+          anchorRef={entry}
+          open={menuOpen}
+          onOpenChange={(next) => {
+            setMenuOpen(next)
+            if (next) onSelect?.()
+            else if (entry.current?.isConnected) entry.current.focus()
+          }}
+          onChoose={onChoose}
+          returnFocus={entry}
+        />
+      )}
+    </>
   )
 }
 
