@@ -22,6 +22,7 @@ function elementUnder(target: EventTarget | null, slide: CanvasSlide): ElementId
 }
 
 export function ArrangeMenu(props: {
+  readonly className: string
   readonly slide: CanvasSlide
   readonly parts: ReadonlyMap<string, Uint8Array>
   readonly onOrder: (node: ElementId, move: StackMove) => Promise<CommitOutcome | "closed">
@@ -60,7 +61,7 @@ export function ArrangeMenu(props: {
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger className="block" onContextMenu={onContextMenu}>
+      <ContextMenuTrigger className={props.className} onContextMenu={onContextMenu}>
         {props.children({ notice, order, clear })}
       </ContextMenuTrigger>
       <ContextMenuContent>
