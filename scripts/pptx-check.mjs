@@ -94,6 +94,7 @@ const validatorLists = async (files) => {
     files,
     code: validatorCode(root),
     tally: validatorTally,
+    width: roomy ? 4 : 2,
     validate: async (group) => judgeRows(await background(dotnet, [judgeProgram, ...group])),
   })
 }
@@ -140,9 +141,10 @@ const renderNext = async () => {
     }
   }
 }
+const roomy = os.availableParallelism() > 4
 const renderWidth = Math.min(os.availableParallelism(), 4)
-const startRenders = () => {
-  const done = phases.time("render", () => Promise.all(Array.from({ length: renderWidth }, renderNext)))
+const startRenders = (width = renderWidth) => {
+  const done = phases.time("render", () => Promise.all(Array.from({ length: width }, renderNext)))
   done.catch(() => {})
   return done
 }
@@ -171,7 +173,7 @@ const gitAnswer = (args) => {
 }
 const committed = committedBlobs(gitAnswer(committedArgs("HEAD")) ?? "")
 for (const name of exportNames) committed.delete(name)
-const earlyRenders = startRenders()
+const earlyRenders = startRenders(roomy ? renderWidth : 2)
 const eventFile = process.env.GITHUB_EVENT_PATH
 const freshFails = freshMissFails({
   eventText: eventFile === undefined ? undefined : fs.existsSync(eventFile) ? fs.readFileSync(eventFile, "utf8") : "",
