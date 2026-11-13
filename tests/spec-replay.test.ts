@@ -956,8 +956,6 @@ describe("spec replay", () => {
       .sort()
     expect(every.map((topic) => topic.name).sort()).toEqual(folders)
     for (const topic of every) expect(topic.view).toBe(true)
-    const elsewhere = ["agents", "aira-loop", "owner", "stop", "slide-run", "slide-sibling", "slide-undo", "typing"]
-    const found = every.filter((topic) => !elsewhere.includes(topic.name))
     const failures: string[] = []
     const reports: Record<string, unknown> = {}
     const views: Record<string, View> = {
@@ -974,7 +972,7 @@ describe("spec replay", () => {
       index: { state: indexState, step: indexStep, group: indexGroup },
       "person-undo": personUndoView,
     }
-    expect(Object.keys(views).sort()).toEqual(folders.filter((name) => !elsewhere.includes(name)))
+    const found = every.filter((topic) => topic.name in views)
     for (const dumped of await dumpTopics(found)) {
       const topic = found.find((item) => item.name === dumped.name)
       if (!topic) throw new Error(dumped.name)

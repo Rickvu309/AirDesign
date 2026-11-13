@@ -12,10 +12,45 @@ function slideRow(row: {
   return { slideFile: row.slideFile, slideEdit: row.slideEdit }
 }
 
-function applySlideRow(register: Register, row: SlideRow): Register {
+function appliedSlide(register: Register, row: SlideRow): Register | null {
   const decision = decide(register, { command: "slide", file: row.slideFile, edit: row.slideEdit })
-  if (decision.decision !== "apply") throw new Error("person edit refused")
-  return decision.register
+  return decision.decision === "apply" ? decision.register : null
+}
+
+export function landed(register: Register, row: PendingRow): Register | null {
+  const slide = slideRow(row)
+  if (slide !== null) return appliedSlide(register, slide)
+  if (row.node === undefined) return null
+  let current = register
+  if (!current.nodes.includes(row.node)) {
+    const opened = decide(current, {
+      command: "add",
+      node: row.node,
+      floor: row.floor ?? current.floor,
+      route: current.route,
+    })
+    if (opened.decision !== "apply") return null
+    current = opened.register
+  }
+  const decision = decide(current, { command: "person", ...storedValue(row), node: row.node })
+  return decision.decision === "apply" ? decision.register : null
+}
+
+export function refusedRows(register: Register, pending: readonly PendingRow[]): PendingRow[] {
+  const refused: PendingRow[] = []
+  let current = register
+  for (const row of pending) {
+    const next = landed(current, row)
+    if (next === null) refused.push(row)
+    else current = next
+  }
+  return refused
+}
+
+function staleText(register: Register, row: PendingRow): boolean {
+  if (slideRow(row) !== null || row.node === undefined) return false
+  const body = register.elements[row.node]
+  return body !== undefined && row.base !== version(body)
 }
 
 export function withSlides(
@@ -27,23 +62,11 @@ export function withSlides(
   for (const row of confirmed) {
     const slide = slideRow(row)
     if (slide === null) continue
-    current = applySlideRow(current, slide)
+    current = appliedSlide(current, slide) ?? current
   }
   for (const row of pending) {
-    const slide = slideRow(row)
-    if (slide !== null) {
-      const decision = decide(current, { command: "slide", file: slide.slideFile, edit: slide.slideEdit })
-      if (decision.decision === "apply") current = decision.register
-      else if (decision.code !== "dead") throw new Error("person edit refused")
-      continue
-    }
-    if (row.node === undefined || !current.nodes.includes(row.node)) throw new Error("missing node")
-    const body = current.elements[row.node]
-    if (body === undefined) throw new Error("missing node")
-    if (row.base !== version(body)) continue
-    const decision = decide(current, { command: "person", ...storedValue(row), node: row.node })
-    if (decision.decision === "apply") current = decision.register
-    else if (decision.code !== "dead") throw new Error("person edit refused")
+    if (staleText(current, row)) continue
+    current = landed(current, row) ?? current
   }
   return current
 }

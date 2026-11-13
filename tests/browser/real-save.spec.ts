@@ -232,35 +232,37 @@ test("a deck deleted on the server closes the editor, takes no edit and does not
   expect(await stack.saved(deck)).toBeUndefined()
 })
 
-test.fail(
-  "a new slide whose commit answer was lost still opens after the reloads that follow",
-  async ({ page, context, stack }) => {
-    const cookie = await stack.signIn()
-    await signInBrowser(context, cookie)
-    await forward(page, stack)
-    const deck = await openClean(page)
-    const committing = (url: URL) => url.pathname === "/decks/commit"
-    await page.route(committing, async (route) => {
-      const batch = (route.request().postDataJSON() as { batch: { slide?: string }[] }).batch
-      if (!batch.some((row) => row.slide !== undefined)) {
-        await route.fallback()
-        return
-      }
-      await route.fetch({ url: `${stack.origin}/decks/commit`, headers: await route.request().allHeaders() })
-      await route.abort()
-    })
-    await page.getByRole("button", { name: "Add slide" }).click()
-    await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
-    await expect
-      .poll(
-        async () => ((await stack.post("/decks/open", { deck }, cookie)).json.register as { order: unknown[] }).order,
-      )
-      .toHaveLength(1)
-    await page.unroute(committing)
-    for (const round of [1, 2]) {
-      await page.reload()
-      await expect(page.locator(".thin-page"), `reload ${String(round)}`).toHaveAttribute("data-deck-ready", deck)
-      await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
+test("a new slide whose commit answer was lost still opens after the reloads that follow, and lands once", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  const deck = await openClean(page)
+  const committing = (url: URL) => url.pathname === "/decks/commit"
+  await page.route(committing, async (route) => {
+    const batch = (route.request().postDataJSON() as { batch: { slide?: string }[] }).batch
+    if (!batch.some((row) => row.slide !== undefined)) {
+      await route.fallback()
+      return
     }
-  },
-)
+    await route.fetch({ url: `${stack.origin}/decks/commit`, headers: await route.request().allHeaders() })
+    await route.abort()
+  })
+  await page.getByRole("button", { name: "Add slide" }).click()
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
+  await expect
+    .poll(async () => ((await stack.post("/decks/open", { deck }, cookie)).json.register as { order: unknown[] }).order)
+    .toHaveLength(1)
+  await page.unroute(committing)
+  for (const round of [1, 2]) {
+    await page.reload()
+    await expect(page.locator(".thin-page"), `reload ${String(round)}`).toHaveAttribute("data-deck-ready", deck)
+    await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
+  }
+  await expect.poll(async () => (await deckRows(page)).filter((row) => row.kind === "pending")).toHaveLength(0)
+  const saved = await stack.post("/decks/open", { deck }, cookie)
+  expect((saved.json.register as { order: unknown[] }).order).toHaveLength(1)
+})

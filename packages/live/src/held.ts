@@ -2,7 +2,16 @@ import type { DeckId } from "@airdesign/catalog"
 import type { Register } from "@airdesign/document"
 import { finished, heldDecks, scoped, storeName, transaction } from "./device.js"
 import { deckView, joinable, played, readable, split, storedKey, type DeckView } from "./deck-view.js"
-import { headKey, rowKey, rowRange, signedIn, type ConfirmedRow, type PendingRow, type StoredRow } from "./store.js"
+import {
+  asideKey,
+  headKey,
+  rowKey,
+  rowRange,
+  signedIn,
+  type ConfirmedRow,
+  type PendingRow,
+  type StoredRow,
+} from "./store.js"
 
 export type Held = {
   readonly head: number
@@ -156,6 +165,45 @@ export async function writeDeckRows(
     remember(account, deck, undefined)
     throw error
   }
+}
+
+function asideOf(raw: unknown): PendingRow[] {
+  return Array.isArray(raw) ? (raw as PendingRow[]) : []
+}
+
+export async function setAside(deck: DeckId, rows: readonly PendingRow[]): Promise<void> {
+  if (rows.length === 0) return
+  const account = signedIn()
+  const writing = await transaction("readwrite")
+  const store = writing.objectStore(storeName)
+  const head = scoped(account, headKey(deck))
+  const slot = scoped(account, asideKey(deck))
+  remember(account, deck, undefined)
+  const kept = store.get(slot)
+  const stored = store.get(head)
+  stored.onsuccess = () => {
+    store.put([...asideOf(kept.result), ...rows], slot)
+    for (const row of rows) store.delete(scoped(account, rowKey(deck, "pending", row.order)))
+    store.put(headOf(stored.result) + 1, head)
+  }
+  try {
+    await finished(writing, () => undefined)
+  } catch (error) {
+    remember(account, deck, undefined)
+    throw error
+  }
+}
+
+export async function takeAside(deck: DeckId): Promise<number> {
+  const account = signedIn()
+  const writing = await transaction("readwrite")
+  const store = writing.objectStore(storeName)
+  const slot = scoped(account, asideKey(deck))
+  const kept = store.get(slot)
+  kept.onsuccess = () => {
+    if (kept.result !== undefined) store.delete(slot)
+  }
+  return finished(writing, () => asideOf(kept.result).length)
 }
 
 export async function sealRows(deck: DeckId, keys: readonly string[], once: string): Promise<PendingRow[]> {

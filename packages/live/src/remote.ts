@@ -47,6 +47,7 @@ function readyRevision(stored: StoredDeck | undefined, cursor: number | null): n
 export function memoryRemote(): Remote {
   const decks = new Map<string, StoredDeck>()
   const waiters = new Map<string, Waiter[]>()
+  const spent = new Map<string, CommitResult>()
 
   function notify(deck: string) {
     const stored = decks.get(deck)
@@ -89,6 +90,9 @@ export function memoryRemote(): Remote {
       if (!parsed.ok) return { ok: false, refusal: parsed.refusal }
       const stored = decks.get(parsed.deck)
       if (stored === undefined) return { ok: false, refusal: "deck" }
+      const once = parsed.once === undefined ? undefined : `${parsed.deck}\u0000${parsed.once}`
+      const prior = once === undefined ? undefined : spent.get(once)
+      if (prior !== undefined) return prior
       let register = stored.register
       for (const edit of parsed.batch) {
         if ("slide" in edit) {
@@ -113,8 +117,10 @@ export function memoryRemote(): Remote {
       }
       const revision = stored.revision + 1
       decks.set(parsed.deck, { revision, register })
+      const landed = { ok: true, deck: parsed.deck, revision, key: `${parsed.deck}:${revision}` } as const
+      if (once !== undefined) spent.set(once, landed)
       notify(parsed.deck)
-      return { ok: true, deck: parsed.deck, revision, key: `${parsed.deck}:${revision}` }
+      return landed
     },
     watch(body) {
       const parsed = readWatch(body)

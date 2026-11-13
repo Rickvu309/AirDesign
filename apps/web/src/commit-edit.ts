@@ -15,7 +15,7 @@ type BoxLink = FlushLink & {
 
 export const server = httpRemote()
 
-export type FlushOutcome = "sent" | "offline" | "signed-out" | "kept"
+export type FlushOutcome = "sent" | "offline" | "signed-out" | "kept" | "set-aside"
 
 export type CommitOutcome = FlushOutcome | "refused"
 
@@ -23,6 +23,7 @@ export async function flushPending(open: (remote: Remote) => FlushLink, deckId: 
   try {
     const flushed = await open(server).flush(deckId)
     if (typeof flushed !== "object" || flushed === null) return "kept"
+    if ("aside" in flushed && typeof flushed.aside === "number" && flushed.aside > 0) return "set-aside"
     if ("ok" in flushed && flushed.ok === true) return "sent"
     if ("refusal" in flushed && flushed.refusal === "session") return "signed-out"
     return "kept"

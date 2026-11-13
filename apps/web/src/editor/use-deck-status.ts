@@ -11,9 +11,17 @@ export function useDeckStatus() {
   const [offline, setOffline] = useState(() => navigator.onLine === false)
   const [failure, setFailure] = useState<DeckFailure | null>(null)
   const [refused, setRefused] = useState(false)
+  const [aside, setAside] = useState(0)
 
   const settle = useCallback((outcome: CommitOutcome) => {
-    if (outcome === "sent") setPending(false)
+    if (outcome === "sent") {
+      setPending(false)
+      setAside(0)
+    }
+    if (outcome === "set-aside") {
+      setPending(false)
+      setAside((count) => count + 1)
+    }
     if (outcome === "offline") setPending(true)
     if (outcome !== "refused") setOffline(outcome === "offline")
     if (outcome === "signed-out") window.location.assign(signInAddress(window.location))
@@ -30,6 +38,7 @@ export function useDeckStatus() {
     setFailure,
     refused,
     setRefused,
+    aside,
     settle,
     leftNetwork,
   }
@@ -41,8 +50,10 @@ export function shownNotice(shown: {
   readonly picture: ThinNotice | null
   readonly offline: boolean
   readonly pending: boolean
+  readonly aside: number
 }): ThinNotice | null {
   const { failure, told, offline, pending } = shown
   const toldNotice: ThinNotice | null = told === null ? null : told === "undo" ? "undo-changed" : "redo-changed"
-  return failure ?? toldNotice ?? shown.picture ?? (offline && pending ? "offline" : null)
+  const asideNotice: ThinNotice | null = shown.aside > 0 ? "set-aside" : null
+  return failure ?? toldNotice ?? shown.picture ?? asideNotice ?? (offline && pending ? "offline" : null)
 }

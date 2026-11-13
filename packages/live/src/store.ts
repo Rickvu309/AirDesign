@@ -132,6 +132,10 @@ export function headKey(deck: string): string {
   return `${deck}\u0002head`
 }
 
+export function asideKey(deck: string): string {
+  return `${deck}\u0003aside`
+}
+
 export function signedIn(): string {
   const account = accountKey()
   if (account === undefined) throw new Error("session")
