@@ -97,7 +97,13 @@ describe("foldSections over any slide command log", () => {
           if (edit === null) continue
           const undoable = slideUndoable(register, file, edit)
           if (undoable === null) continue
-          if ("slide" in undoable && undoable.before.present && undoable.before.key === undoable.after.key) continue
+          if (
+            "slide" in undoable &&
+            !("element" in undoable) &&
+            undoable.before.present &&
+            undoable.before.key === undoable.after.key
+          )
+            continue
           const before = sectioned(register, base)
           const after = applied(register, edit)
           const undone = undoOf(after, undoable)
