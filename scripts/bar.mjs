@@ -11,7 +11,14 @@ import { titleVerdict } from "./title.mjs"
 
 const guardedFolders = [".github/", "tooling/", "scripts/", "specs/"]
 const openFolders = ["scripts/pptx-fixtures/"]
-const guardedFiles = new Set([".node-version", ".npmrc", ".oxfmtrc.json", "AGENTS.md", "CHECKS.md", "pnpm-workspace.yaml"])
+const guardedFiles = new Set([
+  ".node-version",
+  ".npmrc",
+  ".oxfmtrc.json",
+  "AGENTS.md",
+  "CHECKS.md",
+  "pnpm-workspace.yaml",
+])
 const guardedNames = [/^tsconfig.*\.json$/, /^\.oxlintrc\.json$/, /^vitest\./, /^playwright\.config\./]
 const casesFile = "scripts/pptx-fixtures/cases.json"
 const proofFile = "scripts/pptx-fixtures/judge-proof.json"

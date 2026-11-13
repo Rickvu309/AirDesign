@@ -95,7 +95,6 @@ for (const file of [
   ".github/workflows/ci.yml",
   "tooling/oxlint-plugin-airdesign/rules/no-raw.js",
   "AGENTS.md",
-  "CHECKS.md",
   "scripts/metrics.mjs",
   "scripts/pptx-check.mjs",
   "scripts/pptx-tools.sh",
