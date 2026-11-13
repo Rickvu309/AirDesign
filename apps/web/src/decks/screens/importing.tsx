@@ -13,7 +13,7 @@ export function Importing() {
           name="Brightwater board review"
           edited="Importing, slide 14 of 24"
           editedClassName="text-[var(--primary-strong)]"
-          previewClassName="bg-canvas"
+          previewClassName="bg-background"
           preview={<ImportingPreview />}
         />
         {rest.map((deck) => (

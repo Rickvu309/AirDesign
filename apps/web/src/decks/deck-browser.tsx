@@ -40,30 +40,28 @@ export function DeckBrowser({
 }) {
   return (
     <div className="screen-frame reflow-frame">
-      <div className="h-full bg-canvas">
-        <DecksShell
-          active={active}
-          firstVisit={firstVisit}
-          account={account}
-          onSignOut={onSignOut}
-          onNavigate={onNavigate}
-          search={search}
-          starred={starred}
-        >
-          <BrowseHeader
-            title={title}
-            view={view}
-            scope={scope}
-            menu={menu}
-            trailing={trailing}
-            compact={firstVisit}
-            links={links}
-            onNewDeck={onNewDeck}
-            menuOpen={menuOpen}
-          />
-          {children}
-        </DecksShell>
-      </div>
+      <DecksShell
+        active={active}
+        firstVisit={firstVisit}
+        account={account}
+        onSignOut={onSignOut}
+        onNavigate={onNavigate}
+        search={search}
+        starred={starred}
+      >
+        <BrowseHeader
+          title={title}
+          view={view}
+          scope={scope}
+          menu={menu}
+          trailing={trailing}
+          compact={firstVisit}
+          links={links}
+          onNewDeck={onNewDeck}
+          menuOpen={menuOpen}
+        />
+        {children}
+      </DecksShell>
     </div>
   )
 }
