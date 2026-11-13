@@ -7,8 +7,7 @@ Home (`Recents`, `/`) shows the signed-in person's six most recently edited deck
 - `list-home` Recents lists the six newest server decks as `heading "<name>"` with their edit time; `link "All decks"` in the sidebar opens `/all` with every deck, and the sidebar marks the page you are on with `aria-current="page"`. Search, All decks and renaming are in `deck-names.md`.
 - `list-view` `/?view=list` shows a table with `Name`, `Edited` and `Created` columns. In a row, the star and `Move to Trash` sit beside the name's `h2`, not inside it.
 - `star` each deck card and list row has `button "Star <name>"`; once starred it reads `button "Remove star from <name>"` and a status line says `Starred <name>` or `Removed star from <name>`. The sidebar's `navigation "Starred"` links each starred deck to `/deck/<id>` in Home's order, or says `Star a deck to keep it here.` The star paints at once and is kept on the device under the signed-in account until `deckRoutes.star` takes it; Home sends a held one again on load and on focus. Only the owner can star a deck, and deleting it for good clears the star. Journey `deck-stars`.
-- `home-first-visit` with no decks and nothing in Trash, Recents shows two sample cards, `Scratchpad` and `Welcome to AirDesign`. They are not links.
-- `home-no-decks` with no decks while Trash holds some, Home shows `No decks yet` with `Blank deck` and `Import PowerPoint`.
+- `home-no-decks` with no decks, on a first visit or while Trash holds some, Home shows the `No decks yet` card with its own `Blank deck` and `Import PowerPoint`, beside the `New deck` menu's pair (the menu is `group "New deck"`; scope to it, as `bin/new-deck.mjs` does). No sample deck is shown (PR 381). It never shows with the search's `No decks match` card. States `decks-empty`, `recents-empty`.
 - `home-loading` and `home-failed` while the list loads, Home shows a skeleton (`[aria-busy=true][data-loading=true]`). A failed list shows the alert `Unable to load your decks` with `Try again`.
 - `new-deck` `button "New deck"` opens `Blank deck` and `Import PowerPoint`. While a file imports, an `Importing` card shows; a refused file shows an alert card (see `open-edit-save.md`).
 - `trash-move` `button "Move to Trash"` removes the deck from Home and shows `<name> moved to Trash` with `Undo`.
@@ -17,7 +16,9 @@ Home (`Recents`, `/`) shows the signed-in person's six most recently edited deck
 - `trash-restore` `button "Restore"` moves the deck back to Home.
 - `trash-empty` `button "Empty Trash"` asks `Delete 1 deck for good?` (`decks` for more than one), says `This can't be undone.`, and offers `Cancel`; `Delete for good` removes them from the server.
 - `list-signed-out` signed out, Home's list call answers 401 and the page goes to the sign-in page with `next=<path and query>`.
-- Not in the app today: a menu on deck cards, and renaming from Home. `deckRoutes.rename` is called only by the editor (its title, and the file name after an import).
+- `home-queued-name` a deck name still queued on this device for the signed-in account shows on its card at once, and Home sends it (see `deck-names.md`).
+- Not in the app today: a menu on deck cards, and renaming from Home. A name is typed only in the editor (its title, and the file name after an import); Home only sends a name already queued.
+- `home-unopened` a deck imported or made blank and left before its editor opens shows on Home at once, under its file's name, and Home sends its first open, name and original; it leaves the device's queue once the server lists it (PR 439, `tests/browser/deck-rename.spec.ts`). State `home-after-import-back`.
 
 ## How to get to it (user POV)
 
@@ -40,7 +41,7 @@ Preconditions:
 - **Restore.** Click `button "Restore"`. The heading leaves Trash, `deckRoutes.list` lists the deck under `decks`, and Home shows it again. Evidence `NN-restored`.
 - **Empty Trash.** Not in the journey. In a scratch journey: move to Trash, open `/trash`, click `Empty Trash`, then `Delete for good`. `deckRoutes.list` no longer has the deck anywhere and `deckRoutes.open` refuses it.
 - **Signed out.** Not in the journey. The stack builds `apps/web` for production, so the signed-out redirect goes to `https://airdesign.app/sign-in?next=%2F`; the journey kit answers that address with a stand-in page, so assert the URL. `signed-out-deck` drives it from a deck address.
-- **Home states.** `No decks yet` shows right after the journey's Move to Trash. The first-visit cards show on a new account before any import.
+- **Home states.** `No decks yet` shows on a new account before any import and right after the journey's Move to Trash.
 
 ## Gotchas
 

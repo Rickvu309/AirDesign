@@ -12,7 +12,8 @@ The slide list on the left of an open deck lists every slide. The person adds a 
 - `slide-focus` after an add with `Add slide`, a duplicate, a move or a delete, keyboard focus moves to the entry of the slide that is now current, so the next key acts on it. Choosing from the layout menu does not move focus. `tests/browser/slide-focus.spec.ts`.
 - `slide-undo` each change is on the person's undo list: `Undo new slide`, `Undo duplicate slide`, `Undo slide order`, `Undo delete slide`, and the matching `Redo` names. See `person-undo.md`.
 - `slide-sections` in a deck with sections, a new or duplicated slide joins the section of the slide it comes after, sections follow moves and deletes, and the export writes them back (`tests/browser/slide-sections.spec.ts`).
-- `slide-saved` the server's `register.order` gets `add`, `clone`, `move` and `remove` rows (`restore` for an undone delete).
+- `slide-saved` the server's `register.order` gets `add`, `clone`, `move` and `remove` rows (`restore` for an undone delete). Known failure: when the answer to that commit is lost, the deck stops opening on this browser from the second reload on (`lost-answer` in `keep-typed-text.md`).
+- `slide-said` the slide list's status says what a command did, such as `Added slide 2`. Known failure: at the same time the canvas's status says `<name> deleted` for each named element of the slide left behind (`element-said` in `element-edits.md`).
 
 ## How to get to it (user POV)
 
