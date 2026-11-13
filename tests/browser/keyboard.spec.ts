@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
-import { forward, signInBrowser, test } from "./api-stack"
+import { forward, openClean, signInBrowser, test } from "./api-stack"
 
 const blank = join(process.cwd(), "scripts/pptx-fixtures/blank.pptx")
 
@@ -194,3 +194,26 @@ for (const width of [320, 735]) {
     }
   })
 }
+
+test.fail(
+  "adding a slide says the slide was added and no element of the slide left behind was deleted",
+  async ({ page, context, stack }) => {
+    await signedIn(page, context, stack)
+    await openClean(page)
+    await expect(page.locator("[data-slide-paint]").getByRole("group", { name: "Hello" })).toBeVisible()
+    await page.evaluate(() => {
+      const said: string[] = []
+      Reflect.set(window, "said", said)
+      new MutationObserver(() => {
+        const status = document.querySelector('[data-slide-paint] [role="status"]')?.textContent ?? ""
+        if (status !== "") said.push(status)
+      }).observe(document.body, { subtree: true, childList: true, characterData: true })
+    })
+    await page.getByRole("button", { name: "Add slide" }).click()
+    await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
+    await page.waitForTimeout(1000)
+    expect(await page.evaluate(() => Reflect.get(window, "said") as string[])).not.toContainEqual(
+      expect.stringContaining("deleted"),
+    )
+  },
+)
