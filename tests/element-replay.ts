@@ -217,7 +217,17 @@ function replayKind(graph: Graph, failures: string[]): number {
           ? ["Add", "AddPicture", "OtherRestore"]
           : ["OtherRestore"]
     if (state.added === true) {
-      const another = act(current, state, "AgentAdd")
+      const another = call(
+        "add_text_box",
+        current,
+        { actor: "agent", runId: "next" },
+        {
+          deck,
+          base: current.revision,
+          slide: "256",
+          box,
+        },
+      )
       const order = another === "told" || !another.ok ? [] : another.deck.register.order
       const last = order.at(-1)
       if (last?.slide !== "element-add" || last.element.node === node) {
