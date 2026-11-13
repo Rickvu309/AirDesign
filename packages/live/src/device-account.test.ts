@@ -28,6 +28,7 @@ import {
   queueOriginal,
   readChats,
   readMedia,
+  sendQueuedNames,
   writeChat,
 } from "./index.js"
 import { keepUnsaved } from "./unsaved.js"
@@ -263,4 +264,16 @@ it("never lists a picture waiting to upload among the deck's chats", async () =>
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")))
   await keepMedia("deck", picture)
   expect(await readChats("deck")).toEqual([])
+})
+
+it("shows a queued deck name only to the account that typed it, and to no one signed out", async () => {
+  vi.stubGlobal("fetch", () => Promise.reject(new Error("offline")))
+  signInAs(firstAccount)
+  await queueRename("deck-named", "Mine")
+  signInAs(secondAccount)
+  expect([...(await sendQueuedNames(["deck-named"]))]).toEqual([])
+  signInAs(undefined)
+  expect([...(await sendQueuedNames(["deck-named"]))]).toEqual([])
+  signInAs(firstAccount)
+  expect([...(await sendQueuedNames(["deck-named"]))]).toEqual([["deck-named", "Mine"]])
 })
