@@ -110,3 +110,52 @@ describe("Aira's loop when the deck is still being indexed", () => {
     expect(done.exchanges[0]?.end).toBe("stopped")
   })
 })
+
+describe("Aira's loop before the server's first open of the deck", () => {
+  it("holds the first call until the open lands, then sends it once", async () => {
+    let land: () => void = () => undefined
+    const opened = new Promise<void>((resolve) => {
+      land = resolve
+    })
+    const held = link([landed])
+    const asking = askAira(airaChat(deck), "Add a slide", {
+      signal: new AbortController().signal,
+      fetch: held.send,
+      show: () => undefined,
+      opened,
+    })
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(held.sent).toEqual([])
+    land()
+    const done = await asking
+    expect(held.sent.filter((name) => name === addSlide)).toHaveLength(1)
+    expect(done.exchanges[0]?.steps.find((step) => step.kind === "tool")).toMatchObject({ state: "done" })
+  })
+
+  it("sends the call when the open fails, so the call meets the server's own refusal", async () => {
+    const held = link([landed])
+    await askAira(airaChat(deck), "Add a slide", {
+      signal: new AbortController().signal,
+      fetch: held.send,
+      show: () => undefined,
+      opened: Promise.reject(new TypeError("offline")),
+    })
+    expect(held.sent.filter((name) => name === addSlide)).toHaveLength(1)
+  })
+
+  it("stops waiting and sends nothing once the person pressed Stop", async () => {
+    const stopping = new AbortController()
+    const held = link([landed])
+    const asking = askAira(airaChat(deck), "Add a slide", {
+      signal: stopping.signal,
+      fetch: held.send,
+      show: () => undefined,
+      opened: new Promise<void>(() => undefined),
+    })
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    stopping.abort()
+    const done = await asking
+    expect(held.sent).toEqual([])
+    expect(done.exchanges[0]?.end).toBe("stopped")
+  })
+})

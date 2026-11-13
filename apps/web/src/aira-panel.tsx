@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react"
+import { connect } from "@airdesign/live"
 import { Button } from "@/components/ui/button"
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation"
 import { useConversationFollow } from "@/components/ai-elements/conversation-follow"
@@ -16,6 +17,7 @@ import { chatTitle } from "@/aira-history"
 import { deviceChats, useChatHistory, type ChatStore } from "@/aira-history-hook"
 import { AiraHistoryMenu } from "@/aira-history-menu"
 import { signInAddress } from "@/thin-notice"
+import { server } from "@/commit-edit"
 import { useWeekUsage } from "@/usage-load"
 
 const headControl = "outline-hidden active:translate-y-0"
@@ -89,6 +91,7 @@ export function AiraPanel({
       show: shown,
       added: takeQueued,
       after: finishing.current,
+      opened: connect(server).open(deck),
     })
     finishing.current = asking
     const done = await asking
