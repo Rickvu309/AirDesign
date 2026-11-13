@@ -81,19 +81,22 @@ export default async function drive(kit) {
   await page.setViewportSize(phone)
   await capture("link-expired-phone")
   note("a link used twice sends the browser to the site's expired page")
-
   await page.setViewportSize(desktop)
+  await page.getByRole("link", { name: "Get a new link" }).click()
+  await expect(page.getByLabel("Email")).toHaveValue(address)
+  note(`Get a new link opens sign-in with ${address} still in the field`)
+
   await page.goto(`${siteOrigin}/sign-in`)
   await page.getByLabel("Email").fill("a@b")
   await page.getByRole("button", { name: "Continue with email" }).click()
-  await expect(page.getByRole("alert")).toHaveText("That email address doesn't look right. Check it and try again.")
+  await expect(page.getByRole("alert")).toHaveText("Enter an email address, like name@example.com.")
   await askForEmail(page, siteOrigin, address)
   const code = await codeEntry(page)
   await code.pressSequentially("000000")
   await expect(page.getByRole("alert").filter({ hasText: /\S/ })).toHaveText(/^That code didn't work/)
   await expect(code).toHaveValue("")
   note(
-    "an address the API refuses is called wrong, not a connection fault; a refused code leaves the field empty to retype",
+    "an address the API would refuse is refused on the page with how to fix it, not a connection fault; a refused code leaves the field empty to retype",
   )
 
   await page.goto(`${siteOrigin}/sign-in/expired`)
