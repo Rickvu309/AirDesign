@@ -63,6 +63,18 @@ describe("slide list", () => {
   it("keeps a polite status region ready to announce what a slide command did", () => {
     expect(markup()).toContain('role="status" aria-live="polite"')
   })
+
+  it("paints the current slide number with the index role", () => {
+    const html = markup()
+    const entry = (number: string) => {
+      const start = html.indexOf(`data-slide-entry="${number}"`)
+      const next = html.indexOf("data-slide-entry=", start + 1)
+      return html.slice(start, next === -1 ? undefined : next)
+    }
+    expect(entry("3")).toContain("text-index")
+    expect(entry("1")).toContain("text-quiet")
+    expect(entry("1")).not.toContain("text-index")
+  })
 })
 
 describe("way home", () => {

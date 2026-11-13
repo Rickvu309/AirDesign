@@ -25,7 +25,9 @@ const at = (source, index) => {
 export const rawExtensions = new Set([".css", ".astro", ".html", ".vue", ".svelte", ".yml", ".yaml", ".svg"])
 
 const banned = "transition-" + "all"
+const mixCall = "color-" + "mix("
 const hexMessage = "Use a theme token instead of a raw hex."
+const mixMessage = "Use a theme token instead of a raw color mix."
 const motionMessage = "Name the properties that change."
 const sizeMessage = "Use a theme token instead of a sized arbitrary class."
 const spaceUtilities = new Set(
@@ -96,6 +98,10 @@ export const rawFindings = (filename, source) => {
       index += length
     }
     flagSized(source, findings)
+    const folded = source.toLowerCase()
+    for (let index = folded.indexOf(mixCall); index !== -1; index = folded.indexOf(mixCall, index + mixCall.length)) {
+      findings.push({ ...at(source, index), message: mixMessage })
+    }
   }
   for (let index = source.indexOf(banned); index !== -1; index = source.indexOf(banned, index + banned.length)) {
     if (word(source[index - 1]) || word(source[index + banned.length])) continue
@@ -108,7 +114,8 @@ const rule = {
   meta: {
     type: "problem",
     docs: {
-      description: "Reject a raw hex or a near-scale size outside the token file, and name transition properties.",
+      description:
+        "Reject a raw hex, a raw color mix or a near-scale size outside the token file, and name transition properties.",
     },
   },
   create(context) {

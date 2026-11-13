@@ -33,6 +33,34 @@ describe("theme tokens", () => {
     expect(packageJson.exports["./tokens.css"]).toBe("./src/tokens.css")
   })
 
+  it("names each color mix, and the slide index clears 4.5 on white and on the selected row", () => {
+    const tokens = read("packages/theme/src/tokens.css")
+    const mix = "color-" + "mix("
+    expect(tokens).toContain(`--index: ${mix}in oklch, var(--primary-strong), var(--navy) 8%);`)
+    expect(tokens).toContain(`--secondary-hover: ${mix}in oklch, var(--secondary), var(--foreground) 5%);`)
+    expect(tokens).toContain(`--strong-hover: ${mix}in oklch, var(--primary-strong), black 15%);`)
+    expect(tokens).toContain("--color-index: var(--index);")
+    expect(tokens).toContain("--color-secondary-hover: var(--secondary-hover);")
+    expect(tokens).toContain("--color-strong-hover: var(--strong-hover);")
+
+    const channel = (hex: string, start: number) => {
+      const value = Number.parseInt(hex.slice(start, start + 2), 16) / 255
+      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+    }
+    const luminance = (hex: string) => 0.2126 * channel(hex, 1) + 0.7152 * channel(hex, 3) + 0.0722 * channel(hex, 5)
+    const ratio = (front: string, back: string) => {
+      const lighter = Math.max(luminance(front), luminance(back))
+      const darker = Math.min(luminance(front), luminance(back))
+      return (lighter + 0.05) / (darker + 0.05)
+    }
+    const row = "#" + "e8f1fe"
+    const white = "#" + "ffffff"
+    expect(ratio("#" + "2d6fcd", row)).toBeCloseTo(4.32, 2)
+    const index = "#" + "2769bf"
+    expect(ratio(index, white)).toBeGreaterThanOrEqual(4.5)
+    expect(ratio(index, row)).toBeGreaterThanOrEqual(4.5)
+  })
+
   it("draws one focus ring from the theme tokens, and no component or page styles its own", () => {
     const tokens = read("packages/theme/src/tokens.css")
     expect(tokens).toMatch(/--focus-ring: var\(--ring\);/)

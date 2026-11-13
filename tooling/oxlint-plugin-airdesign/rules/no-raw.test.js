@@ -47,4 +47,24 @@ if (!css[0].message.includes("token") || !html[0].message.includes("token")) {
   throw new Error("css and html walk failed")
 }
 
+const mix = "color-" + "mix("
+const mixMessage = "Use a theme token instead of a raw color mix."
+expectRejects(
+  "a color mix fails",
+  "screen.tsx",
+  `export const paint = "${mix}in oklch, red, blue)"\n`,
+  rule,
+  mixMessage,
+)
+const cssMix = rawFindings("page.css", `x { color: ${mix}in oklch, red, blue); }\n`)
+const upperMix = rawFindings("page.css", `x { color: ${"Color-" + "Mix("}in oklch, red, blue); }\n`)
+const tokenMix = rawFindings("packages/theme/src/tokens.css", `x { color: ${mix}in oklch, red, blue); }\n`)
+const artMix = rawFindings("shape-art.ts", `export const paint = "${mix}in oklch, red, blue)"\n`)
+if (cssMix.length !== 1 || upperMix.length !== 1 || tokenMix.length !== 0 || artMix.length !== 0) {
+  throw new Error("color mix walk failed")
+}
+if (!cssMix[0].message.includes("color mix") || !upperMix[0].message.includes("color mix")) {
+  throw new Error("color mix walk failed")
+}
+
 console.log("no-raw tests passed")
