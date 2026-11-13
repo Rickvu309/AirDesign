@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto"
+import { availableParallelism } from "node:os"
 import { defineConfig } from "@playwright/test"
+import { onCi, workerLimit, workerOverrideName } from "./tests/browser-workers.ts"
 
 const checkout = createHash("sha256").update(process.cwd()).digest().readUInt16BE(0)
 const port = Number(process.env.AIRDESIGN_PORT || 4400 + (checkout % 600))
@@ -10,6 +12,11 @@ export default defineConfig({
   testDir: "tests/browser",
   globalSetup: "./tests/browser/launch.ts",
   retries: 0,
+  workers: workerLimit({
+    cores: availableParallelism(),
+    ci: onCi(process.env),
+    override: process.env[workerOverrideName],
+  }),
   reporter: "line",
   use: {
     baseURL: origin,

@@ -34,6 +34,7 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | A migration number is used once | the `migration-numbers` step of `pnpm check` compares the record with `origin/main` and names the next free number. It warns for now and blocks nothing; `pnpm land` stops on it |
 | A dropped queue entry is seen | `pnpm land --watch` exits 1 with the queue run's failed tests when the queue drops the PR |
 | The check lane's wait is said | `takeMachineLock` prints the place and expected wait, and logs runs to `~/.cache/airdesign/check-queue.jsonl` |
+| A local browser run uses at most 4 workers | `playwright.config.ts` sets the count through `workerLimit` in `tests/browser-workers.ts`, and the `globalSetup` in `tests/browser/launch.ts` stops a larger `--workers` with one line unless `AIRDESIGN_BROWSER_WORKERS` is set. ci is left to Playwright's default |
 | A test file sees only the rows it wrote | `postgresInfo` in `apps/api/src/harness.ts` gives each `apps/api` test file its own database, cloned from the template the globalSetup prepares, and `isolation.test.ts` fails when it sees another file's rows |
 | A shipped migration is never edited; a change is a new migration | `apps/api/src/frozen-migrations.test.ts` checks each migration's exact sql against `apps/api/src/frozen-migrations.json`, and `scripts/frozen-migrations.mjs` only appends |
 | Tests never retry | the Vitest and Playwright configs set no retries. A retry on one test is caught only in review |
