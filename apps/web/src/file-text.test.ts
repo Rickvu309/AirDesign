@@ -34,6 +34,8 @@ function text(bold: boolean): PaintText {
     anchor: "top",
     insets: { left: 0, top: 0, right: 0, bottom: 0 },
     wrap: true,
+    fit: "none",
+    vertical: false,
     fontScale: 1,
     spacingReduction: 0,
   }

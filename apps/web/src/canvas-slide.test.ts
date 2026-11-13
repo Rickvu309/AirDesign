@@ -371,6 +371,8 @@ const text: PaintText = {
   anchor: "middle",
   insets: { left: 1, top: 2, right: 3, bottom: 4 },
   wrap: false,
+  fit: "shrink",
+  vertical: false,
   fontScale: 0.5,
   spacingReduction: 0,
 }

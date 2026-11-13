@@ -120,3 +120,15 @@ export {
 } from "./text-format.js"
 export { slidesKept } from "./slide-kept.js"
 export { redoOf, slideUndoable, undoOf, undoSlides, type Undoable } from "./person-undo.js"
+export type {
+  Fill,
+  ResolvedElement,
+  ResolvedParagraph,
+  ResolvedRun,
+  ResolvedSlide,
+  ResolvedText,
+  Spacing,
+} from "./resolved-slide.js"
+export { fontFace, layText, type FontWidths } from "./text-fit.js"
+export { findingLimits, type Finding } from "./finding.js"
+export { slideFindings, type SlideFindings } from "./slide-findings.js"

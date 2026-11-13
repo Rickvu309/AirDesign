@@ -157,3 +157,35 @@ _Avoid_: balance, funds
 **Unable to**:
 How a failure's title starts: what did not happen, then the next step in the body. "Unable to load your decks. Check your connection and try again."
 _Avoid_: "Failed to", "Error", "Oops", "Something went wrong"
+
+## Findings
+
+What a slide's data can say is wrong, or worth knowing.
+
+**finding**:
+What is wrong on a slide, or worth knowing, and what would put it right.
+_Avoid_: issue, warning, lint, diagnostic
+
+**overflow**:
+Text that does not fit its box.
+_Avoid_: clipping, cutoff
+
+**off-slide**:
+An element that lies outside the slide.
+_Avoid_: out of bounds, cropped
+
+**overlap**:
+Text hidden by text, or by something painted over it.
+_Avoid_: collision, intersection
+
+**small text**:
+Type below a readable size. The limit is 10 points on a slide 540 points tall, and it scales with the slide.
+_Avoid_: tiny type, fine print
+
+**low contrast**:
+Text too close in colour to the solid colour behind it.
+_Avoid_: poor contrast, illegible
+
+**empty placeholder**:
+A placeholder that shows its prompt while someone edits and nothing in a slide show.
+_Avoid_: blank shape, missing text
