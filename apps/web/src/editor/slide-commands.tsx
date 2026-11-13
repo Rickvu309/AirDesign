@@ -35,7 +35,7 @@ export function slideCommands(deck: CommandedDeck): SlideStrip {
     sections,
     current,
     onSelect: setCurrent,
-    onAdd: (layoutPart) => void changeSlide("add", current, current, layoutPart),
+    onAdd: (layoutPart, after = current) => void changeSlide("add", after, after, layoutPart),
     layouts,
     onClone: (index) => void changeSlide("clone", index),
     onRemove: (index) => void changeSlide("remove", index),

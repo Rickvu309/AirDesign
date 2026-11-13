@@ -3,6 +3,7 @@ import { NotesBar } from "@/editor/notes-bar"
 import { CanvasStage } from "@/editor/canvas-stage"
 import { fitWidth, slideRoom, zoomPercent, zoomWidth, type SlideSize, type Zoom } from "@/editor/canvas-zoom"
 import { PanelHead, ZoomReadout } from "@/editor/editor-chrome"
+import { EditorGrid } from "@/editor/editor-grid"
 import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
 import { usePointerTool } from "@/editor/pointer-tool"
 import { RevenueSlide } from "@/editor/revenue-slide"
@@ -81,17 +82,42 @@ export function EditorShell({
 }: EditorShellProps) {
   const room = slideRoom(rail === "slides" ? 800 : 720)
   const [zoom, setZoom] = useState<Zoom>("fit")
+  const [gridOpen, setGridOpen] = useState(false)
   const pointer = usePointerTool(deck !== undefined)
   const size = deck?.size ?? null
   const width = size === null ? room.width : zoomWidth(zoom, room, size)
   const working = run === "working" || run === "own"
+  if (deck !== undefined && gridOpen) {
+    return (
+      <EditorGrid
+        title={title}
+        strip={deck.slides}
+        size={size}
+        onSlides={() => setGridOpen(false)}
+        onExport={deck.onExport}
+        undo={deck.undo}
+        pointer={pointer}
+        panel={panel}
+        activeTool={activeTool}
+        toolMenu={toolMenu}
+        faded={run === "offline"}
+        {...(deck.onRename === undefined ? {} : { onRename: deck.onRename })}
+        {...(deck.onText === undefined ? {} : { onText: deck.onText })}
+        {...(deck.formatting === undefined ? {} : { formatting: deck.formatting })}
+        {...(formats === undefined ? {} : { formats })}
+        {...(deck.onTable === undefined ? {} : { onTable: deck.onTable })}
+        {...(deck.onPicture === undefined ? {} : { onPicture: deck.onPicture })}
+        {...(onPanel === undefined ? {} : { onPanel })}
+      />
+    )
+  }
   return (
     <div className="relative flex h-full min-h-0">
       {rail === "slides" ? (
         <SlideSidebar
           run={run}
           title={title}
-          {...(deck === undefined ? {} : { strip: deck.slides })}
+          {...(deck === undefined ? {} : { strip: deck.slides, onGrid: () => setGridOpen(true) })}
           {...(deck?.onRename === undefined ? {} : { onRename: deck.onRename })}
         />
       ) : null}
