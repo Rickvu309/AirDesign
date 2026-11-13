@@ -26,9 +26,9 @@ export function ThinDeck({ id }: { id: string }) {
   const rename = useDeckTitle(id, title, setTitle)
   const [panel, setPanel] = useState<"agent" | "design">("agent")
   const undo = useUndoList()
-  const { typed, sessions, record } = undo
+  const { typed, sessions, records, record } = undo
   const pictureTool = usePictureTool(paintedDeck === id, (picture) => inserts.addPicture(picture))
-  const notesBar = useNotes({ id, typed, sessions, record, settle, sending: () => setPending(true) })
+  const notesBar = useNotes({ id, typed, sessions, records, record, settle, sending: () => setPending(true) })
   const shown = useDeckPaint(id, pictureTool, notesBar, setPending)
   const { store, boxes, shapes, editParts, canvases, current } = shown
   useDeckOpen({ ...status, id, shown, notesBar, setTitle })
@@ -49,7 +49,7 @@ export function ThinDeck({ id }: { id: string }) {
     showEdited,
     changeElement,
   })
-  const exported = useExport({ id, notesBar, pictureTool, setFailure: status.setFailure })
+  const exported = useExport({ id, records, pictureTool, setFailure: status.setFailure })
 
   const currentSlide = store.current.slides()[current]?.id
   const currentNotes = notesBar.notes.find((notes) => notes.slide === currentSlide)

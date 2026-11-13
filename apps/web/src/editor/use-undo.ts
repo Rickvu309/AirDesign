@@ -50,7 +50,6 @@ export type TurningDeck = {
   readonly undo: UndoList
   readonly shown: DeckPaint
   readonly notesBar: {
-    readonly queue: { readonly current: Promise<void> }
     readonly show: (notes: readonly ShownNotes[]) => void
   }
   readonly settle: (outcome: CommitOutcome) => void
@@ -96,7 +95,6 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     typed.current = null
     turning.current = turning.current.then(async () => {
       await records.current.landed()
-      await notesBar.queue.current
       const turned = await turnBack(connect(memoryRemote()), id, undoList.current, direction)
       if (turned.outcome === "empty") return
       undoList.current = turned.list

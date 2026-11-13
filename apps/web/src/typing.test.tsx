@@ -81,11 +81,11 @@ type Hooks = { readonly notes: Notes; readonly undo: UndoHooks }
 function Editor(props: {
   readonly paint: DeckPaint
   readonly onEdit: (value: string) => void
-  readonly notes: Omit<NotesDeck, "typed" | "sessions">
+  readonly notes: Omit<NotesDeck, "typed" | "sessions" | "records">
   readonly exposed: (hooks: Hooks) => void
 }) {
   const undo = useUndoList()
-  const notes = useNotes({ ...props.notes, typed: undo.typed, sessions: undo.sessions })
+  const notes = useNotes({ ...props.notes, typed: undo.typed, sessions: undo.sessions, records: undo.records })
   const nothing = () => undefined
   useUndoTurn({
     id: deck,
@@ -365,7 +365,7 @@ async function replayed(graph: Graph, view: View): Promise<{ walks: number; edge
       const actual = typing.seen()
       const held = typing.held()
       const busy = Number(target.tUp) < Number(target.tTyped)
-      const reached = target.ask !== "none" && target.tRec === target.tTyped && target.nUp === target.nTyped
+      const reached = target.ask !== "none" && target.tRec === target.tTyped && target.nRec === target.nTyped
       if (!same(actual, target)) failures.push(`${said}\n  code ${JSON.stringify(actual)}`)
       if (held.busy !== busy) failures.push(`${said}: the box is ${held.busy ? "" : "not "}busy`)
       if (held.reached !== reached)
@@ -413,7 +413,7 @@ afterAll(() => {
   window.close()
 })
 
-it("replays every edge of the typing spec through the undo list, the repaint, the notes queue and the box", async () => {
+it("replays every edge of the typing spec through the undo list, the repaint, the notes and the box", async () => {
   const view = (await import(new URL("../../../specs/typing/view.mjs", import.meta.url).href)) as View
   const graph = await specGraph("typing", "Typing")
   const report = await replayed(graph, view)
@@ -422,17 +422,23 @@ it("replays every edge of the typing spec through the undo list, the repaint, th
   expect(graph.states.size).toBeLessThan(500)
 }, 120_000)
 
-it.fails("brings back the text with one Ctrl+Z after typing notes then the text, while the notes are still sending", async () => {
+it("brings back the text with one Ctrl+Z after typing notes then the text, while the notes are still sending", async () => {
   const typing = await typingDeck()
-  const notesFirst = ["TypeNotes", "TypeNotes", "TypeText", "RecordNotes", "RecordText"]
-  for (const action of [...notesFirst, "UploadNotes", "RecordNotes", "UploadNotes", "KeyUndo", "Turn"]) {
-    await typing.steps[action]?.()
-  }
+  const typed = ["TypeNotes", "TypeNotes", "TypeText", "RecordNotes", "RecordNotes", "RecordText"]
+  for (const action of [...typed, "KeyUndo", "Turn"]) await typing.steps[action]?.()
   const shown = typing.seen()
   await typing.close()
-  expect({ turned: shown.turned, shownT: shown.shownT, deckT: shown.deckT }).toEqual({
+  expect({
+    nUp: shown.nUp,
+    turned: shown.turned,
+    shownT: shown.shownT,
+    deckT: shown.deckT,
+    shownN: shown.shownN,
+  }).toEqual({
+    nUp: 0,
     turned: "T",
     shownT: 0,
     deckT: 0,
+    shownN: 2,
   })
 })
