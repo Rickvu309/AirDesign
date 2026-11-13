@@ -213,6 +213,49 @@ describe("live cache", () => {
     )
   })
 
+  it("starts reading every part before the first read answers", async () => {
+    installParts()
+    const parts = new Map(
+      Array.from({ length: 4 }, (_, index) => [`ppt/slides/slide${index}.xml`, new Uint8Array([index])]),
+    )
+    const saved = await putParts("clean", { parts, file: new Uint8Array([9]) })
+    expect(saved.ok).toBe(true)
+    const storage = navigator.storage
+    let reading = 0
+    let most = 0
+    const counted = {
+      async getDirectory() {
+        const root = await storage.getDirectory()
+        return {
+          async getFileHandle(name: string) {
+            reading += 1
+            most = Math.max(most, reading)
+            const handle = await root.getFileHandle(name)
+            return {
+              async getFile() {
+                const file = await handle.getFile()
+                return {
+                  async arrayBuffer() {
+                    await new Promise((resolve) => setTimeout(resolve, 0))
+                    reading -= 1
+                    return file.arrayBuffer()
+                  },
+                }
+              },
+            }
+          },
+        }
+      },
+    }
+    Object.defineProperty(globalThis, "navigator", { value: { storage: counted }, configurable: true })
+    const read = await getParts("clean")
+    expect(read.ok && [...read.parts].map(([name, bytes]) => [name, Array.from(bytes)])).toEqual(
+      [...parts].map(([name, bytes]) => [name, Array.from(bytes)]),
+    )
+    expect(read.ok && Array.from(read.file)).toEqual([9])
+    expect(most).toBe(parts.size + 1)
+  })
+
   it("answers absent for parts after the database is deleted", async () => {
     installParts()
     const saved = await putParts("clean", {

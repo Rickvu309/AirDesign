@@ -73,12 +73,13 @@ export async function getParts(deck: string): Promise<PartsResult> {
   if (!parsed.ok) return parsed
   const stored = await readSlot(partKey(parsed.deck))
   if (!isPartRow(stored)) return { ok: false, refusal: "absent" }
-  const parts = new Map<string, Uint8Array>()
-  for (const [name, hash] of Object.entries(stored.names)) {
-    if (typeof hash !== "string") return { ok: false, refusal: "absent" }
-    parts.set(name, await getPart(hash))
-  }
-  const file = await getPart(stored.file)
+  const names = Object.entries(stored.names)
+  if (names.some(([, hash]) => typeof hash !== "string")) return { ok: false, refusal: "absent" }
+  const [read, file] = await Promise.all([
+    Promise.all(names.map(async ([name, hash]) => [name, await getPart(hash)] as const)),
+    getPart(stored.file),
+  ])
+  const parts = new Map<string, Uint8Array>(read)
   return { ok: true, parts, file, ...(stored.name === undefined ? {} : { name: stored.name }) }
 }
 

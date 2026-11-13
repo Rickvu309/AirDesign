@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { importParse } from "./import-parse.mjs"
 import { caughtCount, readSeedList } from "./judge-proof.mjs"
 import { judgedDecks } from "./pptx-corpus.mjs"
 import { titleLimit } from "./title.mjs"
@@ -68,12 +69,13 @@ export const mainTitles = (root) => {
   }
 }
 
-const measures = {
+export const measures = {
   "known-failures": knownFailures,
   "corpus-size": realDecks,
   "export-coverage": capabilitiesExported,
   "fault-detection": plantedBreaks,
   "long-titles": (root) => longTitles(mainTitles(root)),
+  "import-parse": importParse,
 }
 
 export const measuredLive = new Set(["known-failures", "long-titles"])
@@ -104,11 +106,11 @@ export const timeMetric = (root, name, started) => {
   return { line: `metric ${name}  now ${now}  limit ${limit}`, over }
 }
 
-export const readMetrics = async (root) => {
+export const readMetrics = async (root, measuring = measures) => {
   const recorded = record(root)
   const rows = []
   const drift = []
-  for (const [name, measure] of Object.entries(measures)) {
+  for (const [name, measure] of Object.entries(measuring)) {
     const metric = recorded[name]
     if (metric === undefined) {
       drift.push(`${name} is measured and missing from metrics.json.`)
@@ -132,7 +134,7 @@ export const readMetrics = async (root) => {
     else drift.push(`${name} is timed by ${runner} and has no limit in metrics.json.`)
   }
   for (const [name, metric] of Object.entries(recorded)) {
-    if (name in measures || name in timedMetrics || name in judgedBy) continue
+    if (name in measuring || name in timedMetrics || name in judgedBy) continue
     if ("limit" in metric) drift.push(`${name} has a limit in metrics.json and no runner times it.`)
     else drift.push(`${name} is in metrics.json and nothing measures it.`)
   }

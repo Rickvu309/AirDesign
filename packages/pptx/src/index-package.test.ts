@@ -1,4 +1,5 @@
-import { expect, it } from "vitest"
+import { SAXParser } from "sax-wasm"
+import { expect, it, vi } from "vitest"
 import { elementId, writeTextValue } from "@airdesign/document"
 import { indexPackage } from "./index.js"
 
@@ -56,4 +57,21 @@ it("records the slide size, the first free shape id and the shapes an animation 
   expect(indexPackage(sized).slides).toEqual([
     { id: "258", position: 0, size: { width: 12192000, height: 6858000 }, free: 10, animated: ["9"] },
   ])
+})
+
+it("reads each part's markup once while it indexes a deck", () => {
+  const fresh = new Map([...parts].map(([name, bytes]) => [name, bytes.slice()]))
+  const write = vi.spyOn(SAXParser.prototype, "write")
+  try {
+    indexPackage(fresh)
+    const reads = new Map<string, number>()
+    for (const [chunk] of write.mock.calls) {
+      const name = [...fresh].find(([, bytes]) => bytes.buffer === chunk.buffer)?.[0]
+      if (name !== undefined) reads.set(name, (reads.get(name) ?? 0) + 1)
+    }
+    expect(Object.fromEntries(reads)).toEqual(Object.fromEntries([...reads.keys()].map((name) => [name, 1])))
+    expect(reads.get("ppt/slides/slide1.xml")).toBe(1)
+  } finally {
+    write.mockRestore()
+  }
 })

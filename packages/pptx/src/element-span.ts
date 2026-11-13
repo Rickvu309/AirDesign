@@ -405,8 +405,14 @@ export function contentSpans(bytes: Uint8Array, element: MarkupElement): readonl
   return spans
 }
 
+const readDocuments = new WeakMap<Uint8Array, MarkupDocument>()
+
 export function markupDocument(bytes: Uint8Array): MarkupDocument {
-  return readMarkup(bytes, true)
+  const known = readDocuments.get(bytes)
+  if (known !== undefined) return known
+  const document = readMarkup(bytes, true)
+  if (document.wellFormed) readDocuments.set(bytes, document)
+  return document
 }
 
 export function markupLimits(bytes: Uint8Array): MarkupDocument {
