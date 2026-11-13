@@ -93,7 +93,7 @@ export function ShapeTray() {
 
 export function ActionsMenu() {
   return (
-    <div className={cn("flex w-[320px] flex-col gap-1 rounded-xl bg-white p-2", floatShadow)}>
+    <div className={cn("flex w-[320px] flex-col gap-1 rounded-xl bg-white p-2", floatShadow)} data-actions-menu>
       <span className="flex h-9 items-center gap-2 rounded-lg bg-line px-2.5 text-[length:var(--type-dense)] text-faint">
         <EditorIcon name="search" size={15} />
         Search actions

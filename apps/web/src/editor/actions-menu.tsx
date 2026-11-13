@@ -12,9 +12,14 @@ import { EditorIcon } from "@/editor/editor-icons"
 import { ActionGlyph } from "@/editor/tool-panels"
 import { cn } from "@/lib/class-names"
 
-type Action = { readonly icon: "chart" | "table" | "icon" | "rmbg" | "hd"; readonly label: string }
+type ActionIcon = "chart" | "table" | "icon" | "rmbg" | "hd"
 
-const groups: readonly { readonly label: string; readonly actions: readonly Action[] }[] = [
+type Action = {
+  readonly icon: ActionIcon
+  readonly label: string
+}
+
+const designed: readonly { readonly label: string; readonly actions: readonly Action[] }[] = [
   {
     label: "Insert",
     actions: [
@@ -31,6 +36,17 @@ const groups: readonly { readonly label: string; readonly actions: readonly Acti
     ],
   },
 ]
+
+export function actionsOffered({ onTable }: { readonly onTable: () => void }) {
+  const command: Partial<Record<ActionIcon, () => void>> = { table: onTable }
+  return designed.flatMap((group) => {
+    const actions = group.actions.flatMap((action) => {
+      const onSelect = command[action.icon]
+      return onSelect === undefined ? [] : [{ ...action, onSelect }]
+    })
+    return actions.length === 0 ? [] : [{ label: group.label, actions }]
+  })
+}
 
 export function ActionsTool({ onTable }: { onTable: () => void }) {
   return (
@@ -52,16 +68,16 @@ export function ActionsTool({ onTable }: { onTable: () => void }) {
         side="top"
         align="start"
         sideOffset={12}
+        data-actions-menu
         className={cn("flex w-60 flex-col gap-1 rounded-xl bg-white p-2 ring-0 duration-0", floatShadow)}
       >
-        {groups.map((group) => (
+        {actionsOffered({ onTable }).map((group) => (
           <DropdownMenuGroup key={group.label}>
-            <DropdownMenuLabel className="pt-1 pl-2 text-xs font-normal text-faint">{group.label}</DropdownMenuLabel>
+            <DropdownMenuLabel className="pt-1 pl-2 text-xs font-normal text-quiet">{group.label}</DropdownMenuLabel>
             {group.actions.map((action) => (
               <DropdownMenuItem
                 key={action.label}
-                disabled={action.icon !== "table"}
-                {...(action.icon === "table" ? { onClick: onTable } : {})}
+                onClick={action.onSelect}
                 className="h-9 gap-2.5 rounded-lg px-2 text-[length:var(--type-dense)] text-foreground"
               >
                 <ActionGlyph name={action.icon} />
