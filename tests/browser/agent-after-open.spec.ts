@@ -73,31 +73,32 @@ test("an outside agent's add_slide is refused with the reason while the index is
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
 })
 
-test.fail(
-  "Aira asked before the server's first open of a new deck adds the slide once the open lands",
-  async ({ page, context, stack }) => {
-    const cookie = await stack.signIn()
-    await signInBrowser(context, cookie)
-    await forward(page, stack)
-    let release: () => void = () => undefined
-    const held = new Promise<void>((resolve) => {
-      release = resolve
-    })
-    await page.route(
-      (url) => url.pathname === "/decks/open",
-      async (route) => {
-        await held
-        await route.fallback()
-      },
-    )
-    const deck = await importHeld(page)
-    stack.aira({ name: "add-slide.sse", fill: { deck, base: "0" } }, { name: "edited.sse" })
-    await page.getByRole("textbox", { name: "Ask Aira" }).fill("Add a slide")
-    await page.keyboard.press("Enter")
-    await expect(page.getByText("Adding a slide")).toBeVisible()
-    await page.waitForTimeout(1500)
-    release()
-    await expect(page.getByText("Added a slide")).toBeVisible({ timeout: 10_000 })
-    await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
-  },
-)
+test("Aira asked before the server's first open of a new deck adds the slide once the open lands", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  let release: () => void = () => undefined
+  const held = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await page.route(
+    (url) => url.pathname === "/decks/open",
+    async (route) => {
+      await held
+      await route.fallback()
+    },
+  )
+  const deck = await importHeld(page)
+  stack.aira({ name: "add-slide.sse", fill: { deck, base: "0" } }, { name: "edited.sse" })
+  await page.getByRole("textbox", { name: "Ask Aira" }).fill("Add a slide")
+  await page.keyboard.press("Enter")
+  await expect(page.getByText("Adding a slide")).toBeVisible()
+  await page.waitForTimeout(1500)
+  release()
+  await expect(page.getByText("Added a slide")).toBeVisible({ timeout: 10_000 })
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
+})

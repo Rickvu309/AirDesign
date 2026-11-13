@@ -65,6 +65,7 @@ export type AskOptions = {
   readonly fetch?: typeof fetch
   readonly mint?: () => string
   readonly after?: Promise<unknown>
+  readonly opened?: Promise<unknown>
   readonly pause?: (ms: number, signal: AbortSignal) => Promise<void>
 }
 
@@ -246,6 +247,14 @@ function interruptedAnswer(call: ToolCall): ToolAnswer {
   )
 }
 
+function untilStopped(work: Promise<unknown>, signal: AbortSignal): Promise<void> {
+  if (signal.aborted) return Promise.resolve()
+  return new Promise((resolve) => {
+    void work.then(() => resolve())
+    signal.addEventListener("abort", () => resolve(), { once: true })
+  })
+}
+
 function pauseFor(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
     const timer = setTimeout(resolve, ms)
@@ -323,6 +332,7 @@ export async function askAira(start: AiraChat, asked: string, options: AskOption
   const mint = options.mint ?? crypto.randomUUID.bind(crypto)
   const ask = mint()
   const { signal } = options
+  const opened = Promise.resolve(options.opened).catch(() => undefined)
   let chat = start
   function update(event: AiraEvent) {
     chat = airaStep(chat, event)
@@ -347,6 +357,7 @@ export async function askAira(start: AiraChat, asked: string, options: AskOption
       update({ type: "end", end: "done" })
       break
     }
+    await untilStopped(opened, signal)
     for (const call of calls) {
       if (signal.aborted) {
         update({ type: "answered", answer: stoppedAnswer(call), state: "stopped", run: undefined })
