@@ -39,9 +39,7 @@ type Stored = {
   }
 }
 
-function mintedPart(runId: string | null | undefined): string | undefined {
-  return runId?.slice(runId.indexOf("-") + 1)
-}
+const part = (id: string | null) => id?.slice(17)
 
 const toolLimit = "Thirty tool calls in five minutes. The next tool call can run in 300 seconds."
 const storeFailure = editNext.store
@@ -382,7 +380,7 @@ describe("mcp route", () => {
     expect(await row(id)).toEqual(before)
   })
 
-  it("counts a call refused as deck, owner, field or a store failure toward the thirty", async () => {
+  it("counts a deck, owner, field or store refusal toward the thirty", async () => {
     async function nearLimit(email: string): Promise<string> {
       const agent = agentKey("aira", email)
       const events = JSON.stringify(Array.from({ length: 29 }, () => ({ kind: "tool", at: 1_000_000, agent })))
@@ -452,7 +450,7 @@ describe("mcp route", () => {
     }
   })
 
-  it("refuses the thirty-first tool call until the injected clock leaves the window", async () => {
+  it("refuses the thirty-first call until the injected clock leaves the window", async () => {
     let clock = 1_000_000
     const served = await ownServer("clock", { now: () => clock })
     try {
@@ -502,7 +500,7 @@ describe("mcp route", () => {
       expect(first.structuredContent).toEqual(landedAnswer(1, [{ node: element, value: "21", version: 1 }], runId))
       expect(started?.revision).toBe(1)
       expect(values(started)).toEqual(["21"])
-      expect(minted.slice(before)).toContain(mintedPart(runId))
+      expect(minted.slice(before)).toContain(part(runId))
       const watched = await ask(base, "POST", "/decks/watch", { deck: named.deck, cursor: 0 }, firstCookie)
       expect(watched.json).toEqual({ ok: true, deck: named.deck, revision: 1 })
       const secondCookie = await sign(email)
@@ -560,7 +558,7 @@ describe("mcp route", () => {
     expect(await row(named.deck)).toEqual(before)
   })
 
-  it("lands one call on two elements at different versions, each at its own readAt", async () => {
+  it("lands one call on two elements at different versions, each at its readAt", async () => {
     const { id, cookie } = await openedDeck("pair")
     const before = minted.length
     await withMcp(cookie, async (client) => {
@@ -580,11 +578,11 @@ describe("mcp route", () => {
     expect(values(kept)).toEqual(["a1", "a2", "a3"])
     expect(values(kept, sibling)).toEqual(["b1", "b2"])
     const runId = elementOf(kept).runId
-    expect(minted.slice(before)).toContain(mintedPart(runId))
+    expect(minted.slice(before)).toContain(part(runId))
     expect(elementOf(kept, sibling).runId).toBe(runId)
   })
 
-  it("answers stale for a readAt behind the element and lands nothing of the call", async () => {
+  it("answers stale for a readAt behind the element and lands nothing", async () => {
     const { id, cookie } = await openedDeck("behind")
     await withMcp(cookie, async (client) => {
       await seeded(client, id)
@@ -641,7 +639,7 @@ describe("mcp route", () => {
     expect(values(kept)).toEqual(["a1", "a2", "late"])
   })
 
-  it("lands two edits in a row, each at the version the previous answer carried", async () => {
+  it("lands two edits in a row, each at the version the last answer carried", async () => {
     const { id, cookie } = await openedDeck("row")
     await withMcp(cookie, async (client) => {
       let readAt = 0
@@ -664,7 +662,7 @@ describe("mcp route", () => {
     expect(values(kept, sibling)).toEqual(["one", "two"])
   })
 
-  it("refuses a text value whose run the new element's floor does not have and creates nothing", async () => {
+  it("refuses text whose run the new element's floor lacks, and creates nothing", async () => {
     const { id, cookie } = await openedDeck("textfrom")
     const floor = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Before" }] }])
     const sent = JSON.stringify([{ from: 0, runs: [{ from: 3, text: "After" }] }])
@@ -726,11 +724,11 @@ describe("mcp route", () => {
     const body = elementOf(kept, created)
     expect(body.floor).toBe("Before")
     expect(body.phase).toBe("running")
-    expect(minted.slice(before)).toContain(mintedPart(body.runId))
+    expect(minted.slice(before)).toContain(part(body.runId))
     expect(values(kept, created)).toEqual(["After"])
   })
 
-  it("answers person-protected after a person commits on the element during the run", async () => {
+  it("answers person-protected after a person commits on the element in the run", async () => {
     const { id, cookie } = await openedDeck("guard")
     await withMcp(cookie, async (client) => {
       expect(await editText(client, firstEdit(id))).toBe("Landed revision 1.")
@@ -791,7 +789,7 @@ describe("mcp route", () => {
     expect(committed.json).toMatchObject({ ok: true, revision })
   }
 
-  it("an agent can edit a box again in a new turn after a person typed in it", async () => {
+  it("an agent edits a box again in a new turn after a person typed in it", async () => {
     const { id, cookie } = await openedDeck("again")
     await withMcp(cookie, async (client) => {
       const first = await editAnswer(client, firstEdit(id))
@@ -817,7 +815,7 @@ describe("mcp route", () => {
     })
   })
 
-  it("an agent can edit a box again after the idle window, and a person still closes it inside the window", async () => {
+  it("an agent edits a box again after the idle window, and a person still closes it inside it", async () => {
     let clock = 1_000_000
     const served = await ownServer("idle", { now: () => clock })
     try {
@@ -875,7 +873,7 @@ describe("mcp route", () => {
     }
   })
 
-  it("joins a second element in one turn and ends the idle turn on both in one write", async () => {
+  it("joins a second element and ends the idle turn on both in one write", async () => {
     let clock = 1_000_000
     const served = await ownServer("both", { now: () => clock })
     try {
@@ -906,7 +904,7 @@ describe("mcp route", () => {
     }
   })
 
-  it("answers owner to another account's stop_run and changes nothing", async () => {
+  it("answers owner to another account's stop_run", async () => {
     const { id, cookie } = await openedDeck("runowner")
     let runId = ""
     await withMcp(cookie, async (client) => {
@@ -926,7 +924,7 @@ describe("mcp route", () => {
     })
   })
 
-  it("answers run-fenced to a bad or unknown run id and changes nothing", async () => {
+  it("answers run-fenced to a bad or unknown run id", async () => {
     const { id, cookie } = await openedDeck("runfence")
     await withMcp(cookie, async (client) => {
       await editAnswer(client, firstEdit(id))
@@ -981,7 +979,7 @@ describe("mcp route", () => {
     })
   })
 
-  it("opens a closed element in a new turn whose first edit names another element", async () => {
+  it("opens a closed element in a new turn whose first edit names another", async () => {
     let clock = 1_000_000
     const served = await ownServer("newturn", { now: () => clock })
     try {
@@ -1080,7 +1078,7 @@ describe("mcp route", () => {
     })
   })
 
-  it("stores no start for an edit refused inside a turn or on opening one", async () => {
+  it("stores no start for an edit refused in a turn or on opening one", async () => {
     let clock = 1_000_000
     const served = await ownServer("nostart", { now: () => clock })
     try {
@@ -1105,7 +1103,7 @@ describe("mcp route", () => {
     }
   })
 
-  it("lets a person's edit close an element in a new turn after the deck id is deleted and reopened", async () => {
+  it("a person's edit closes an element in a new turn after the deck is deleted and reopened", async () => {
     let clock = 1_000_000
     const served = await ownServer("reborn", { now: () => clock })
     try {
@@ -1141,7 +1139,7 @@ describe("mcp route", () => {
     }
   })
 
-  it("refuses an agent edit on a deck deleted for good with deleted and changes nothing", async () => {
+  it("refuses an edit on a deck deleted for good with deleted and changes nothing", async () => {
     const { id, cookie } = await openedDeck("deletedagent")
     await withMcp(cookie, async (client) => {
       expect(await editAnswer(client, firstEdit(id))).toMatchObject({ ok: true, revision: 1 })
@@ -1154,7 +1152,7 @@ describe("mcp route", () => {
     })
   })
 
-  it("refuses an agent edit with deleted when the delete for good lands between its read and its write", async () => {
+  it("refuses with deleted when a delete for good lands between the read and the write", async () => {
     const info = await postgresInfo()
     const stored = openPool(info.deck, "mcp-deletedrace")
     let racing = false
@@ -1192,7 +1190,7 @@ describe("mcp route", () => {
     }
   })
 
-  it("leaves the live turn and its stored rows when stop_run names an old stopped run", async () => {
+  it("leaves the live turn and its rows when stop_run names an old stopped run", async () => {
     const { id, cookie } = await openedDeck("oldstop")
     await withMcp(cookie, async (client) => {
       const old = await editAnswer(client, firstEdit(id))
@@ -1287,7 +1285,7 @@ describe("mcp route", () => {
     }
   })
 
-  it("keeps the record and a closed element when a call's row read lags a newer settle", async () => {
+  it("keeps the record and a closed element when a row read lags a newer settle", async () => {
     const served = await holdingServer("lagread", () => 1_000_000)
     const { id, cookie } = await openedDeck("lagread")
     const [slow, fast] = await Promise.all([connected(cookie, served.base), connected(cookie, served.base)])
@@ -1418,7 +1416,7 @@ describe("mcp route", () => {
     }
   })
 
-  it("answers stale when the edit that ends an idle turn loses its write, and the old run stays live", async () => {
+  it("answers stale when an edit ending an idle turn loses its write and the old run stays live", async () => {
     let clock = 1_000_000
     const served = await racingServer("lostidle", () => clock)
     try {
@@ -1532,7 +1530,7 @@ describe("mcp route", () => {
     expect(values(kept, created)).toEqual([good, good.replace("Two", "Three")])
   })
 
-  it("answers run-fenced on an element its run ended, and a stop opens a fresh run that keeps the earlier rows", async () => {
+  it("answers run-fenced on an ended element, and a stop opens a fresh run keeping earlier rows", async () => {
     const { id, cookie } = await openedDeck("restart")
     const before = minted.length
     await withMcp(cookie, async (client) => {
@@ -1553,7 +1551,7 @@ describe("mcp route", () => {
       expect(await editText(client, send)).toBe("Landed revision 5.")
       const kept = await row(id)
       const fresh = runOf(kept)
-      expect(minted.slice(before)).toContain(mintedPart(fresh))
+      expect(minted.slice(before)).toContain(part(fresh))
       expect(fresh).not.toBe(firstRun)
       expect(elementOf(kept).phase).toBe("running")
       expect(elementOf(kept).landed.slice(0, 2)).toEqual(elementOf(earlier).landed)
@@ -1578,7 +1576,7 @@ describe("mcp route", () => {
         landedContent(1, [{ node: element, value: "21", version: 1 }], runOf(await row(named.deck))),
       )
       const started = await row(named.deck)
-      expect(minted.slice(before)).toContain(mintedPart(elementOf(started).runId))
+      expect(minted.slice(before)).toContain(part(elementOf(started).runId))
       for (const extra of [{ runId: "client-run" }, { readAt: 5 }, { actor: "person" }] as const) {
         const refused = await client.callTool({
           name: "airdesign_edit_deck",
@@ -1591,7 +1589,7 @@ describe("mcp route", () => {
         ])
         const kept = await row(named.deck)
         expect(kept).toEqual(started)
-        expect(minted.slice(before)).toContain(mintedPart(elementOf(kept).runId))
+        expect(minted.slice(before)).toContain(part(elementOf(kept).runId))
       }
     })
   })
@@ -1925,7 +1923,7 @@ describe("mcp route", () => {
     expect(response.status).toBe(200)
     expect(text).toContain("Landed revision 1.")
     const kept = await row(named.deck)
-    expect(minted.slice(before)).toEqual([mintedPart(elementOf(kept).runId)])
+    expect(minted.slice(before)).toEqual([part(elementOf(kept).runId)])
     expect(elementOf(kept).runId).not.toBe("client-side")
     expect(values(kept)).toEqual(["21"])
   })

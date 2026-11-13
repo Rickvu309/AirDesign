@@ -32,7 +32,7 @@ Then run the replays:
 
 ```sh
 pnpm vitest run tests/spec-replay.test.ts tests/aira-loop-replay.test.ts
-pnpm vitest run apps/api/src/owner.test.ts apps/api/src/turn.test.ts apps/api/src/agents.test.ts apps/api/src/aira-closing.test.ts apps/api/src/slide-run.test.ts apps/api/src/slide-sibling.test.ts apps/api/src/slide-undo.test.ts
+pnpm vitest run apps/api/src/owner.test.ts apps/api/src/turn.test.ts apps/api/src/agents.test.ts apps/api/src/agents-replay.test.ts apps/api/src/aira-closing.test.ts apps/api/src/slide-run.test.ts apps/api/src/slide-sibling.test.ts apps/api/src/slide-undo.test.ts
 pnpm vitest run apps/web/src/typing.test.tsx
 ```
 

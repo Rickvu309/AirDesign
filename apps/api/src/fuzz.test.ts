@@ -492,7 +492,7 @@ describe("hostile input over every route", () => {
     })
   }
 
-  it("does not log a client that hangs up mid-body", async () => {
+  it("does not log a client that hangs up", async () => {
     const write = vi.spyOn(process.stderr, "write").mockReturnValue(true)
     const seen = new Promise<void>((resolve) => {
       apiServer?.once("request", (req: IncomingMessage) => {
@@ -512,13 +512,13 @@ describe("hostile input over every route", () => {
     }
   })
 
-  it("hands a failure inside the SDK to the boundary once", async () => {
+  it("SDK failure reaches the boundary", async () => {
     const failures: unknown[] = []
     const server = createServer((req, res) => {
       void serveMcp(
         {
           deck: {} as Pool,
-          email: "a@example.com",
+          email: "a@e.co",
           agentKey: "",
           session: {} as Pool,
           now: () => 0,
