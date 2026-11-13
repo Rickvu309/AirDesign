@@ -8,6 +8,7 @@ const built = process.env.AIRDESIGN_WEB_BUILT === "1"
 
 export default defineConfig({
   testDir: "tests/browser",
+  globalSetup: "./tests/browser/launch.ts",
   retries: 0,
   reporter: "line",
   use: {

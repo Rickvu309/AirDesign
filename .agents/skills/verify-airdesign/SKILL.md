@@ -46,7 +46,7 @@ Ready means all of that finished and the state file says `ready: true`. Launch p
 
 Keep the `run`. Every other command takes it. Use `$V launch --no-build` only when you built this exact checkout already. A build or start failure names its log file.
 
-Needs PostgreSQL 18 at `/usr/lib/postgresql/18/bin`, `~/.local/pgsql-18/...`, or `AIRDESIGN_POSTGRES_BIN`, and Playwright's Chromium (`pnpm exec playwright install chromium` once per machine). Run `pnpm install` first in a fresh worktree. On a machine where Chromium's system libraries live in `~/.cache/chromium-libs/root/usr/lib/x86_64-linux-gnu`, every command here, `pnpm test:journeys` and `$V suites` add that folder to `LD_LIBRARY_PATH` themselves; set nothing.
+Needs PostgreSQL 18 at `/usr/lib/postgresql/18/bin`, `~/.local/pgsql-18/...`, or `AIRDESIGN_POSTGRES_BIN`, and Playwright's Chromium (`pnpm exec playwright install chromium` once per machine). Run `pnpm install` first in a fresh worktree. On a machine where Chromium's system libraries live in `~/.cache/chromium-libs/root/usr/lib/x86_64-linux-gnu`, every command here, `pnpm test:journeys`, `pnpm test:browser` and `$V suites` add that folder to `LD_LIBRARY_PATH` themselves; set nothing.
 
 ## Doctor
 
