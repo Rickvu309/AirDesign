@@ -66,7 +66,7 @@ test("every Tab stop in the editor draws the one focus ring, or the selection fr
     if (stop.tag === "body") break
     stops.push(stop)
   }
-  expect(stops.length).toBeGreaterThan(15)
+  expect(stops.at(-1)?.name).toBe("Ask Aira")
   expect(stops.filter((stop) => !stop.ringed && !stop.framed)).toEqual([])
   expect(stops.map((stop) => stop.name)).toEqual(expect.arrayContaining(["Add text box", "Agent", "Ask Aira"]))
 })
