@@ -49,6 +49,8 @@ export type PaintText = {
   anchor: "top" | "middle" | "bottom"
   insets: { left: number; top: number; right: number; bottom: number }
   wrap: boolean
+  fit: "none" | "shrink" | "grow"
+  vertical: boolean
   fontScale: number
   spacingReduction: number
 }
@@ -349,7 +351,7 @@ const levelOf = (properties: PaintTextHolder | undefined): number => {
 
 const textFrame = (
   shape: PaintTextShape,
-): Pick<PaintText, "anchor" | "insets" | "wrap" | "fontScale" | "spacingReduction"> => {
+): Pick<PaintText, "anchor" | "insets" | "wrap" | "fit" | "vertical" | "fontScale" | "spacingReduction"> => {
   const frames = present(
     [shape, ...shape.above].map((holder) => {
       const body = bodyOf(holder)
@@ -361,6 +363,12 @@ const textFrame = (
       ? (held(frame, "a:normAutofit") ?? null)
       : undefined,
   )
+  const fits = new Map<string, PaintText["fit"]>([
+    ["a:noAutofit", "none"],
+    ["a:normAutofit", "shrink"],
+    ["a:spAutoFit", "grow"],
+  ])
+  const mode = first(frames, (frame) => fits.get(inside(frame).find((item) => fits.has(item.kind))?.kind ?? ""))
   const inset = (name: string, standard: number) => first(frames, (frame) => whole(frame, name)) ?? standard
   const wraps = new Map([
     ["square", true],
@@ -375,6 +383,8 @@ const textFrame = (
       bottom: inset("bIns", 45720),
     },
     wrap: first(frames, (frame) => named(frame, "wrap", wraps)) ?? true,
+    fit: mode ?? "none",
+    vertical: (first(frames, (frame) => paintAttribute(frame.element, "vert") ?? undefined) ?? "horz") !== "horz",
     fontScale: between((fit === undefined || fit === null ? undefined : fraction(fit, "fontScale")) ?? 1),
     spacingReduction: between((fit === undefined || fit === null ? undefined : fraction(fit, "lnSpcReduction")) ?? 0),
   }
