@@ -11,6 +11,7 @@ import { SlideSidebar, type SidebarRun, type SlideStrip } from "@/editor/slide-s
 import type { UndoButtonsState } from "@/editor/undo-buttons"
 import type { FormatShown } from "@/editor/format-buttons"
 import type { TextFormatting } from "@airdesign/render"
+import type { Geometry } from "@airdesign/document"
 import {
   ActionsMenu,
   ImagesPanel,
@@ -37,6 +38,7 @@ export type EditorDeck = {
   readonly formatting?: TextFormatting
   readonly onTable?: () => void
   readonly onPicture?: (file: File) => void
+  readonly onShape?: (geometry: Geometry) => void
 }
 
 export type EditorShellProps = {
@@ -176,6 +178,7 @@ export function EditorShell({
               {...(formats === undefined ? {} : { formats })}
               {...(deck?.onTable === undefined ? {} : { onTable: deck.onTable })}
               {...(deck?.onPicture === undefined ? {} : { onPicture: deck.onPicture })}
+              {...(deck?.onShape === undefined ? {} : { onShape: deck.onShape })}
               {...(onPanel === undefined ? {} : { onPanel })}
             />
           </div>

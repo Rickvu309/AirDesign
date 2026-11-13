@@ -1,4 +1,4 @@
-import { type ElementId, type Undoable } from "@airdesign/document"
+import { type ElementId, type Geometry, type Undoable } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { holdKeys, type HeldKeys } from "@airdesign/render"
 import type { CommitOutcome } from "@/commit-edit"
@@ -53,6 +53,11 @@ export function deckInserts(deck: InsertingDeck) {
     if (size !== null) void changeElement({ change: "text", index: current, size })
   }
 
+  function addShape(geometry: Geometry) {
+    const size = canvases.current(current)
+    if (size !== null) void changeElement({ change: "shape", geometry, index: current, size })
+  }
+
   async function addPicture(picture: PictureFile) {
     const slide = canvases.current(current)
     if (slide === null) return
@@ -60,5 +65,5 @@ export function deckInserts(deck: InsertingDeck) {
     settle(await commitPicture(id, shownParts.current, picture, at, recordAdded("add-picture")))
   }
 
-  return { changeElement, addText, addPicture }
+  return { changeElement, addText, addShape, addPicture }
 }

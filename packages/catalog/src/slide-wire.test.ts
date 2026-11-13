@@ -103,3 +103,14 @@ it("carries an added picture's hash and media type through commit_edits, never i
   ])
   expect(readCommit({ deck: "deck", batch: [{ ...add, bytes: "iVBORw0KGgo=" }] })).toEqual(field)
 })
+
+it("carries an added shape's geometry through commit_edits and refuses one it does not know", () => {
+  const element = { node: "256.9", kind: "connector", value: null, box: { x: 0, y: 0, cx: 10, cy: 0 }, grouped: false }
+  const add = { slide: "element-add", id: "256", element, geometry: "line", file: ["256", "257"] }
+  const read = readCommit({ deck: "deck", batch: [add] })
+  if (!read.ok) throw new Error(read.refusal)
+  expect(read.batch.map((edit) => ("slide" in edit ? slideEditCommand(edit) : edit))).toEqual([
+    { slide: "element-add", id: "256", element, geometry: "line" },
+  ])
+  expect(readCommit({ deck: "deck", batch: [{ ...add, geometry: "arrow" }] })).toEqual(field)
+})

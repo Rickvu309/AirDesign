@@ -81,6 +81,7 @@ export function ThinDeck({ id }: { id: string }) {
             formatting: undo.formatting.current,
             onTable: tables.insert,
             onPicture: pictureTool.pick,
+            onShape: inserts.addShape,
             size: canvases.current(current),
             slides: slideCommands({ id, shown, record, settle }),
             slide: editableSlide({ id, shown, undo, tables, settle, setPending, changeElement }),

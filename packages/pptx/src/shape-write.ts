@@ -1,3 +1,4 @@
+import type { Geometry } from "@airdesign/document"
 import { insertChild } from "./child-order.js"
 import { markupDocument } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
@@ -101,6 +102,37 @@ export function addTextShape(
     slideXml,
     (idText) =>
       `<p:sp><p:nvSpPr><p:cNvPr id="${idText}" name="Shape ${idText}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text)}</p:sp>`,
+    id,
+  )
+}
+
+const shapeStyle =
+  '<p:style><a:lnRef idx="2"><a:schemeClr val="accent1"><a:shade val="15000"/></a:schemeClr></a:lnRef><a:fillRef idx="1"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style>'
+
+const lineStyle =
+  '<p:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="0"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="tx1"/></a:fontRef></p:style>'
+
+const drawnNames: Record<Geometry, string> = { rect: "Rectangle", ellipse: "Oval", line: "Straight Connector" }
+
+function drawnProperties(geometry: Geometry, box: ShapeBox): string {
+  return `<p:spPr>${shapeBox(box)}<a:prstGeom prst="${geometry}"><a:avLst/></a:prstGeom></p:spPr>`
+}
+
+export function addDrawnShape(
+  slideXml: string,
+  geometry: Geometry,
+  box: ShapeBox,
+  id?: number,
+): { readonly xml: string; readonly id: number } {
+  return appendShape(
+    slideXml,
+    (idText) => {
+      const name = `<p:cNvPr id="${idText}" name="${drawnNames[geometry]} ${idText}"/>`
+      const properties = drawnProperties(geometry, box)
+      if (geometry === "line")
+        return `<p:cxnSp><p:nvCxnSpPr>${name}<p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr>${properties}${lineStyle}</p:cxnSp>`
+      return `<p:sp><p:nvSpPr>${name}<p:cNvSpPr/><p:nvPr/></p:nvSpPr>${properties}${shapeStyle}</p:sp>`
+    },
     id,
   )
 }

@@ -1,24 +1,23 @@
+import type { Geometry } from "@airdesign/document"
 import { presentationPart } from "./package-address.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { editPart, partBytes, replacePart } from "./part-markup.js"
 import { addSection, orderSection, removeSection } from "./section-route.js"
 import { cloneShape, orderShape } from "./shape-route.js"
-import { addTextShape } from "./shape-write.js"
+import { addDrawnShape, addTextShape, type ShapeBox } from "./shape-write.js"
 import { addSlide, orderSlide, removeSlide } from "./slide-list-route.js"
 import { removeShape, type RouteResult } from "./slide-route.js"
 import { defaultTableStyle, type TableShape } from "./table-frame.js"
 import { addRow, addTable, orderRow, removeRow } from "./table-route.js"
 
 export type StructuralEdit =
-  | {
+  | ({
       readonly name: "spTree.add"
       readonly part: string
       readonly text: string
-      readonly x: number
-      readonly y: number
-      readonly cx: number
-      readonly cy: number
-    }
+      readonly geometry?: Geometry
+      readonly id?: number
+    } & ShapeBox)
   | { readonly name: "spTree.remove"; readonly part: string; readonly shape: string }
   | { readonly name: "spTree.order"; readonly part: string; readonly shape: string; readonly before: string }
   | { readonly name: "spTree.clone"; readonly part: string; readonly shape: string }
@@ -38,12 +37,13 @@ export function writeStructuralRoute(parts: ReadonlyMap<string, Uint8Array>, rou
   const next = new Map(parts)
   switch (route.name) {
     case "spTree.add": {
-      const written = addTextShape(decodeUtf8(partBytes(next, route.part)), route.text, {
-        x: route.x,
-        y: route.y,
-        cx: route.cx,
-        cy: route.cy,
-      })
+      const xml = decodeUtf8(partBytes(next, route.part))
+      const box = { x: route.x, y: route.y, cx: route.cx, cy: route.cy }
+      if (route.geometry !== undefined && route.text !== "") throw new Error("text")
+      const written =
+        route.geometry === undefined
+          ? addTextShape(xml, route.text, box, route.id)
+          : addDrawnShape(xml, route.geometry, box, route.id)
       replacePart(next, route.part, encodeUtf8(written.xml))
       return { parts: next, id: String(written.id) }
     }

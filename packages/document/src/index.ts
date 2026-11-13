@@ -59,6 +59,7 @@ export {
   mediaTypes,
   nextElementId,
   type ElementCommand,
+  type Geometry,
   type Media,
   type MediaType,
 } from "./element-order.js"

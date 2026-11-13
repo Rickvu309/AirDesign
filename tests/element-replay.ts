@@ -30,6 +30,7 @@ const grown = changedTable(changedTable(opening, { change: "cell", row: 0, colum
 })!
 const kinds = {
   box: { element: { node, kind: "shape", value: "", box, grouped: false }, typed: "Typed" },
+  shape: { element: { node, kind: "shape", value: null, box, grouped: false }, geometry: "ellipse", typed: "Typed" },
   table: {
     element: { node, kind: "table", value: writeTableValue(opening), box, grouped: false },
     typed: writeTableValue(grown),
@@ -47,7 +48,11 @@ function typedValue(state: Spec): string {
 }
 
 function batch(source: Spec, action: string): unknown {
-  if (action === "Add") return { slide: "element-add", id: "256", element: kinds[kind].element, file }
+  if (action === "Add") {
+    const shape = kinds[kind]
+    const geometry = "geometry" in shape ? { geometry: shape.geometry } : {}
+    return { slide: "element-add", id: "256", element: shape.element, ...geometry, file }
+  }
   if (action === "AddPicture") return { slide: "element-add", id: "256", element: picture, media, file }
   if (action === "Type") return { node, value: typedValue(source) }
   if (action === "OtherRestore") return { slide: "element-restore", id: "256", node, file }
@@ -149,7 +154,7 @@ function reached(graph: Graph, failures: string[]): Map<string, Deck> {
 
 export function replayElement(graph: Graph, failures: string[]) {
   let told = 0
-  for (const each of ["box", "table"] as const) {
+  for (const each of ["box", "shape", "table"] as const) {
     kind = each
     told += replayKind(graph, failures)
   }

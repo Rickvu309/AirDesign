@@ -115,6 +115,18 @@ describe("editor shell", () => {
     expect(disabledLabels(markup)).toEqual(["shape", "actions", "Undo", "Redo"])
   })
 
+  it("turns on the shape tool when the deck can add a shape", () => {
+    const markup = renderToStaticMarkup(
+      <EditorShell
+        title="Real deck"
+        slideLabel="1"
+        deck={{ ...deck, onText: () => undefined, onShape: () => undefined }}
+      />,
+    )
+    expect(markup).toContain('aria-label="Shapes"')
+    expect(disabledLabels(markup)).toEqual(["image", "actions", "Undo", "Redo"])
+  })
+
   it("gallery screen keeps its copy", () => {
     const markup = renderToStaticMarkup(<AgentWorking />)
     expect(markup).toContain('font-medium text-foreground">Q3 Investor Update')

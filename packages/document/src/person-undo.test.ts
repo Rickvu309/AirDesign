@@ -173,6 +173,23 @@ describe("person undo", () => {
     expect(currentValue(redone.elements[box.node]!)).toBe("Typed")
   })
 
+  it("undoes an added ellipse by removing it, and redoes it with its geometry and the box it was moved to", () => {
+    const shape = { node: elementId("256.9"), kind: "shape" as const, value: null, box: from, grouped: false }
+    const added = slid(openRegister("", ""), { slide: "element-add", id: file[0], element: shape, geometry: "ellipse" })
+    const moved = landed(landed(added.register, { command: "add", node: shape.node, floor: "", route: "" }), {
+      command: "person",
+      node: shape.node,
+      property: "box",
+      value: to,
+    })
+    const undone = turned(moved, undoOf(moved, added.undoable))
+    expect(elementGone(undone, shape.node)).toBe(true)
+    const redone = turned(undone, redoOf(undone, added.undoable))
+    expect(elementGone(redone, shape.node)).toBe(false)
+    expect(currentBox(redone.elements[shape.node]!)).toEqual(to)
+    expect(redone.order.find((each) => each.slide === "element-add")).toMatchObject({ geometry: "ellipse" })
+  })
+
   it("undoes a deleted element by bringing it back with its text and box as they were, and redoes the delete", () => {
     const moved = landed(landed(opened(), { command: "person", value: "New", node }), {
       command: "person",

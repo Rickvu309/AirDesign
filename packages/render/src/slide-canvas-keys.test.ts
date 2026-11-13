@@ -96,11 +96,37 @@ function announced(host: HTMLElement): string {
 }
 
 describe("canvas keyboard", () => {
-  it("tells a screen reader how to move, resize, edit and delete the focused element", async () => {
+  it("tells a screen reader how to move, resize and delete a focused element that has no text to edit", async () => {
     const { frame } = await mounted()
     expect(frame.getAttribute("aria-description")).toBe(
+      "Arrow keys move. Alt and Shift with the arrow keys resize. Delete removes it.",
+    )
+  })
+
+  it("says Enter edits the text only on an element with text to edit, and names a shape with none a shape", async () => {
+    const { host, paint } = await mounted()
+    const blank = elementId("256.7")
+    const empty: CanvasElement = { ...shape, key: `ppt/slides/slide1.xml#${blank}`, id: blank, fill: "var(--line)" }
+    await paint([{ ...shape, editable: true }, empty])
+    const frameOf = (named: string) => host.querySelector<HTMLElement>(`[data-canvas-element="${named}"]`)
+    expect(frameOf(key)?.getAttribute("aria-description")).toBe(
       "Arrow keys move. Alt and Shift with the arrow keys resize. Enter edits the text. Delete removes it.",
     )
+    expect(frameOf(empty.key)?.getAttribute("aria-label")).toBe("Shape")
+  })
+
+  it("gives a thin straight line a grab band wider than its stroke that paints nothing, and a filled shape none", async () => {
+    const { host, paint } = await mounted()
+    const line = { color: "var(--line)", width: 9_525, dash: null }
+    const flat = { ...place, height: 0 }
+    const connector: CanvasElement = { ...box, kind: "connector", box: flat, filled: false, line, outline: "line" }
+    await paint([{ ...shape, line, fill: "var(--line)" }, connector])
+    const band = host.querySelector<SVGElement>(`[data-canvas-element="${connector.key}"] [data-canvas-grab]`)
+    if (band === null) throw new Error("no grab band")
+    expect(band.getAttribute("stroke")).toBe("transparent")
+    expect(Number(band.getAttribute("stroke-width"))).toBeGreaterThanOrEqual(8)
+    expect(band.style.pointerEvents.toLowerCase()).toBe("stroke")
+    expect(host.querySelector(`[data-canvas-element="${key}"] [data-canvas-grab]`)).toBeNull()
   })
 
   it("resizes from the keyboard with Alt and Shift and the arrows, then reports one box on release", async () => {

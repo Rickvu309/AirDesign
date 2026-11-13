@@ -16,7 +16,7 @@ import {
 import { SlideThumb } from "@/editor/slide-thumb"
 import { cn } from "@/lib/class-names"
 
-const basicShapes: Record<string, string> = {
+export const basicShapes: Record<string, string> = {
   square: '<rect x="3" y="3" width="18" height="18" rx="2.5"/>',
   circle: '<circle cx="12" cy="12" r="9.5"/>',
   diamond: '<path d="M12 2.5 21.5 12 12 21.5 2.5 12z"/>',
@@ -33,9 +33,9 @@ const basicShapes: Record<string, string> = {
   chevron: '<path d="M3 5h13l5 7-5 7H3l5-7z"/>',
 }
 
-const trayShapes = ["square", "circle", "diamond", "triangle", "star", "plus", "arrowl", "arrowr", "bubble"]
+export const trayShapes = ["square", "circle", "diamond", "triangle", "star", "plus", "arrowl", "arrowr", "bubble"]
 
-function ShapeSvg({ markup, size, stroke = shapeStroke }: { markup: string; size: number; stroke?: string }) {
+export function ShapeSvg({ markup, size, stroke = shapeStroke }: { markup: string; size: number; stroke?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -51,7 +51,7 @@ function ShapeSvg({ markup, size, stroke = shapeStroke }: { markup: string; size
   )
 }
 
-function LineArt({ arrow, size }: { arrow: boolean; size: number }) {
+export function LineArt({ arrow, size }: { arrow: boolean; size: number }) {
   return (
     <svg
       viewBox="0 0 24 24"
