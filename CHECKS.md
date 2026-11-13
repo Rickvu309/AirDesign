@@ -31,6 +31,7 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | A failed ci job is never rerun to pick up a fix that merged since | `pnpm land` has no rerun and prints whether `main` moved (`scripts/land-report.mjs`). A hand-run `gh run rerun` is caught only in review |
 | A conflict with `main` is found before the check; no conflict marker is committed | `pnpm land` runs `git merge-tree` first and scans the commit before the push; the `conflict-markers` step of `pnpm check` scans it too. The step warns for now and blocks nothing |
 | A pull request targets `main` | the `bar` check fails on any other base and prints `gh pr edit <number> --base main`; `pnpm land` refuses it before the push |
+| A commit rebuilt from a stale tree does not undo other people's work: a branch does not put files back to content `main` has since replaced, unless its commit body says `Reverts: <path>` | `pnpm land` stops on it before the check, and the `stale-tree` step of `pnpm check` runs it too (`scripts/stale-tree.mjs`). The step warns for now and blocks nothing |
 | A migration number is used once | the `migration-numbers` step of `pnpm check` compares the record with `origin/main` and names the next free number. It warns for now and blocks nothing; `pnpm land` stops on it |
 | A dropped queue entry is seen | `pnpm land --watch` exits 1 with the queue run's failed tests when the queue drops the PR |
 | The check lane's wait is said | `takeMachineLock` prints the place and expected wait, and logs runs to `~/.cache/airdesign/check-queue.jsonl` |
