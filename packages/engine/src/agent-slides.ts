@@ -58,7 +58,7 @@ function openingRows(register: Deck["register"], index: DeckIndex, slide: SlideI
   return rows.filter((row) => shapeOf(row.node).slide === slide)
 }
 
-function readFresh(deck: Deck, runId: string, base: number): boolean {
+export function readFresh(deck: Deck, runId: string, base: number): boolean {
   if (base === deck.revision) return true
   const last = deck.register.lastRun
   return last?.runId === runId && last.revision === deck.revision && last.since <= base && base < deck.revision

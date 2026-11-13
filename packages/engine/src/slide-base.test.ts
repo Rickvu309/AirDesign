@@ -7,6 +7,8 @@ const agent = { actor: "agent", runId: "run" } as const
 const person = { actor: "person" } as const
 const node = elementId("256.2")
 const other = elementId("257.2")
+const spare = elementId("257.3")
+const size = { width: 12_192_000, height: 6_858_000 }
 
 function indexed(): Deck {
   const id = readDeckId("deck")
@@ -15,14 +17,15 @@ function indexed(): Deck {
     deck: "deck",
     once: "index",
     offset: 0,
-    total: 2,
+    total: 3,
     slides: [
-      { id: "256", position: 0, layout: [] },
-      { id: "257", position: 1, layout: [] },
+      { id: "256", position: 0, size, free: 3, animated: [], layout: [] },
+      { id: "257", position: 1, size, free: 4, animated: [], layout: [] },
     ],
     elements: [
       { node, kind: "shape", value: "Title", box: null, grouped: false },
       { node: other, kind: "shape", value: "Body", box: null, grouped: false },
+      { node: spare, kind: "shape", value: "Note", box: null, grouped: false },
     ],
   })
   if (!result.ok) throw new Error(result.refusal)
@@ -56,6 +59,8 @@ const slideCalls = [
   ["duplicate_slide", { slide: "256" }],
   ["delete_slide", { slide: "257" }],
   ["move_slide", { slide: "257", after: null }],
+  ["add_text_box", { slide: "256", box: { x: 0, y: 0, cx: 100, cy: 100 } }],
+  ["delete_element", { node: spare }],
 ] as const
 
 for (const [op, input] of slideCalls) {

@@ -299,7 +299,7 @@ export function call(op: CommandOp, deck: Deck, caller: Caller, raw: unknown): C
   }
   if (op === "add_text_box" || op === "delete_element") {
     const result = agentElement(op, deck, caller, raw)
-    return result.ok ? landed(deck, result.register) : result
+    return result.ok ? landed(deck, result.register, result.runId) : result
   }
   if (op === "start_run") return callStartRun(deck, caller, raw)
   if (op === "undo_run") return callEndRun(deck, caller, raw, undoRun)
