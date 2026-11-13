@@ -238,7 +238,7 @@ export function DecksShell({
               Connect an agent
             </a>
           ) : (
-            <AgentPromo {...(realAccount ? { href: settingsPaths.agents } : {})} />
+            <AgentPromo {...(realAccount ? { href: settingsPaths.agents, ornaments: false } : {})} />
           )}
         </div>
       </aside>

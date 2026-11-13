@@ -179,6 +179,25 @@ stackTest(
 )
 
 stackTest(
+  "a name entered just before leaving through the mark reaches the server and shows on Home",
+  async ({ page, context, stack }) => {
+    const cookie = await stack.signIn()
+    await signInBrowser(context, cookie)
+    await forward(page, stack)
+    const deck = await openClean(page)
+    await expect.poll(() => serverName(stack, cookie, deck)).toBe("clean")
+    await slow(page, "/decks/rename")
+    await title(page).click()
+    await field(page).fill("Quick rename")
+    await field(page).press("Enter")
+    await page.getByRole("link", { name: "Go to your decks" }).click()
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByRole("heading", { name: "Quick rename" })).toBeVisible()
+    await expect.poll(() => serverName(stack, cookie, deck), { timeout: 5000 }).toBe("Quick rename")
+  },
+)
+
+stackTest(
   "a deck imported and left at once on a slow network keeps its file's name on Home",
   async ({ page, context, stack }) => {
     const cookie = await stack.signIn()

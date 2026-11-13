@@ -6,7 +6,13 @@ import { claudeLogo, openAiLogo } from "@/decks/agent-logos"
 import { DeckGlyph } from "@/decks/deck-glyph"
 import { deckRoutes } from "@/decks/deck-routes"
 
-export function AgentPromo({ href = deckRoutes.connectAgent }: { href?: string }) {
+export function AgentPromo({
+  href = deckRoutes.connectAgent,
+  ornaments = true,
+}: {
+  href?: string
+  ornaments?: boolean
+}) {
   return (
     <section className="h-[254.31px] w-[224px] max-md:hidden shrink-0 overflow-hidden rounded-[var(--shape-dialog)] bg-background shadow-[0_0_0_1px_var(--line),0_4px_12px_rgb(0_0_0/4%)]">
       <div
@@ -54,25 +60,45 @@ export function AgentPromo({ href = deckRoutes.connectAgent }: { href?: string }
             />
           </svg>
         </span>
-        <span className="absolute top-[45px] left-[200px] flex size-9 items-center justify-center rounded-[var(--shape-card)] bg-background text-muted-foreground shadow-[0_0_0_1px_var(--field-edge),0_4px_10px_rgb(0_0_0/6%)]">
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-            <line x1="3.33" y1="8" x2="12.67" y2="8" stroke="currentColor" strokeWidth="1.33" strokeLinecap="round" />
-            <line x1="8" y1="3.33" x2="8" y2="12.67" stroke="currentColor" strokeWidth="1.33" strokeLinecap="round" />
-          </svg>
-        </span>
-        <span className="absolute top-2 left-[192px] flex size-6 items-center justify-center rounded-full bg-white/85 text-muted-foreground shadow-[0_0_0_1px_var(--line)]">
-          <svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true">
-            <line
-              x1="2.71"
-              y1="6.5"
-              x2="10.29"
-              y2="6.5"
-              stroke="currentColor"
-              strokeWidth="1.19"
-              strokeLinecap="round"
-            />
-          </svg>
-        </span>
+        {ornaments && (
+          <>
+            <span className="absolute top-[45px] left-[200px] flex size-9 items-center justify-center rounded-[var(--shape-card)] bg-background text-muted-foreground shadow-[0_0_0_1px_var(--field-edge),0_4px_10px_rgb(0_0_0/6%)]">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                <line
+                  x1="3.33"
+                  y1="8"
+                  x2="12.67"
+                  y2="8"
+                  stroke="currentColor"
+                  strokeWidth="1.33"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="8"
+                  y1="3.33"
+                  x2="8"
+                  y2="12.67"
+                  stroke="currentColor"
+                  strokeWidth="1.33"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+            <span className="absolute top-2 left-[192px] flex size-6 items-center justify-center rounded-full bg-white/85 text-muted-foreground shadow-[0_0_0_1px_var(--line)]">
+              <svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true">
+                <line
+                  x1="2.71"
+                  y1="6.5"
+                  x2="10.29"
+                  y2="6.5"
+                  stroke="currentColor"
+                  strokeWidth="1.19"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+          </>
+        )}
       </div>
       <div className="px-4 pt-3">
         <h2 className="h-[19.5px] text-[length:var(--type-dense)] leading-[var(--leading-body)] font-semibold text-foreground">

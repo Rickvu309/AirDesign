@@ -31,6 +31,8 @@ test("home lists server decks instead of sample decks", async ({ page }) => {
   await expect(page.getByText("Oct 30", { exact: true })).toHaveCount(2)
   await expect(page.getByText("Name", { exact: true })).toBeVisible()
   await expect(page.getByText("Created", { exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: /^(Name|Edited|Created)$/ })).toHaveCount(0)
+  await expect(page.getByText("Edited", { exact: true }).locator("svg")).toHaveCount(0)
   await page.getByRole("link", { name: second.name }).click()
   await expect(page).toHaveURL(/\/deck\/second$/)
   await page.goto("/?view=list")

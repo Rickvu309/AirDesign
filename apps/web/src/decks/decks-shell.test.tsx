@@ -59,3 +59,24 @@ describe("Starred", () => {
     expect(withStars([])).toContain("Star a deck to keep it here.")
   })
 })
+
+describe("bring your own agent card art", () => {
+  const plusTile = "left-[200px]"
+  const minusDisk = "left-[192px]"
+
+  it("keeps the design screen's plus tile and minus disk", () => {
+    const html = renderToStaticMarkup(
+      <DecksShell active="recents">
+        <p>content</p>
+      </DecksShell>,
+    )
+    expect(html).toContain(plusTile)
+    expect(html).toContain(minusDisk)
+  })
+
+  it("draws neither on a real account, where nothing answers them", () => {
+    const html = shell("person@example.com")
+    expect(html).not.toContain(plusTile)
+    expect(html).not.toContain(minusDisk)
+  })
+})

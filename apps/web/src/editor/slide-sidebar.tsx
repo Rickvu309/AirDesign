@@ -65,7 +65,7 @@ export function SlideSidebar({
         </>
       ) : (
         <>
-          <SidebarHead title={title} gridOff {...(onRename === undefined ? {} : { onRename })} />
+          <SidebarHead title={title} gridOff homeHref="/" {...(onRename === undefined ? {} : { onRename })} />
           <DeckStrip strip={strip} />
         </>
       )}

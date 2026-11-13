@@ -434,3 +434,31 @@ for (const invalid of [
     await expectRefusedInPlace(page)
   })
 }
+
+test("Switch signs out and returns to this consent request after sign-in", async ({ page }) => {
+  let signOuts = 0
+  await openConsent(page)
+  await page.route("**/sign-out", async (route) => {
+    signOuts += 1
+    await route.fulfill({ json: { ok: true } })
+  })
+  await page.route("**/sign-in**", (route) => route.fulfill({ contentType: "text/html", body: "<p>sign in</p>" }))
+
+  await page.getByRole("button", { name: "Switch", exact: true }).click()
+
+  await expect(page).toHaveURL((url) => {
+    const signIn = new URL(process.env.VITE_SIGN_IN_URL ?? "/sign-in", url.origin)
+    return url.pathname === signIn.pathname && new URL(url).searchParams.get("next") === authorizePath()
+  })
+  expect(signOuts).toBe(1)
+})
+
+test("Switch stays on the consent request when sign-out fails", async ({ page }) => {
+  await openConsent(page)
+  await page.route("**/sign-out", (route) => route.fulfill({ status: 500, json: { ok: false } }))
+
+  await page.getByRole("button", { name: "Switch", exact: true }).click()
+
+  await expect(page.getByRole("button", { name: "Allow", exact: true })).toBeVisible()
+  await expect(page).toHaveURL(/\/oauth\/authorize/)
+})

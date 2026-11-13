@@ -83,7 +83,7 @@ function DeckGridSkeleton({ className }: { className?: string }) {
 function DeckTableSkeleton() {
   return (
     <div className="mt-8 space-y-3" data-loading="true" aria-busy="true">
-      <DeckTableHeader />
+      <DeckTableHeader sortMarks={false} />
       {[0, 1, 2].map((key) => (
         <div
           key={key}
@@ -381,7 +381,7 @@ export function Home({
       )}
       {listView && !trash && listing !== null && !noDecks && !noMatch && (
         <div className="mt-8">
-          <DeckTableHeader />
+          <DeckTableHeader sortMarks={false} />
           {decks.map((deck) => (
             <DeckRow
               key={deck.deck}

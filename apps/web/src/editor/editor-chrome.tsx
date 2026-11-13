@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { AirdesignMark } from "@/decks/airdesign-mark"
 import { DeckTitleEdit } from "@/editor/deck-title-edit"
 import { EditorIcon } from "@/editor/editor-icons"
+import { productCopy } from "@/copy/product-copy"
 import { cn } from "@/lib/class-names"
 
 export const surfaceShadow = "shadow-[0px_0px_0px_1px_var(--field-edge),0px_1px_2px_var(--black-4)]"
@@ -87,16 +88,28 @@ export function SidebarHead({
   trailing,
   gridOff = false,
   onRename,
+  homeHref,
 }: {
   title: string
   trailing?: ReactNode
   gridOff?: boolean
   onRename?: (name: string) => void
+  homeHref?: string
 }) {
   return (
     <div className="flex h-14 shrink-0 items-center justify-between pr-2 pl-3">
       <span className="flex items-center gap-2">
-        <AirdesignMark size={20} />
+        {homeHref === undefined ? (
+          <AirdesignMark size={20} />
+        ) : (
+          <a
+            href={homeHref}
+            aria-label={productCopy.goToDecks}
+            className="flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-black/4"
+          >
+            <AirdesignMark size={20} />
+          </a>
+        )}
         <DeckTitle title={title} {...(onRename === undefined ? {} : { onRename })} />
       </span>
       {trailing ?? (

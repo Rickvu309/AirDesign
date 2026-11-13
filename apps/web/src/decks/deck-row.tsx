@@ -17,11 +17,11 @@ function SortMark() {
   )
 }
 
-function SortLabel({ children }: { children: string }) {
+function SortLabel({ children, mark }: { children: string; mark: boolean }) {
   return (
     <span className="inline-flex h-4 items-center gap-[var(--space-8)]" style={trimmed}>
       {children}
-      <SortMark />
+      {mark && <SortMark />}
     </span>
   )
 }
@@ -69,13 +69,13 @@ export function DeckRow({
   )
 }
 
-export function DeckTableHeader() {
+export function DeckTableHeader({ sortMarks = true }: { sortMarks?: boolean }) {
   return (
     <>
       <div className="grid h-[var(--space-24)] grid-cols-[minmax(0,1fr)_150px_150px] items-start px-3 text-[length:var(--type-dense)] leading-[17px] text-faint">
-        <SortLabel>Name</SortLabel>
-        <SortLabel>Edited</SortLabel>
-        <SortLabel>Created</SortLabel>
+        <SortLabel mark={sortMarks}>Name</SortLabel>
+        <SortLabel mark={sortMarks}>Edited</SortLabel>
+        <SortLabel mark={sortMarks}>Created</SortLabel>
       </div>
       <div className="h-px bg-line" />
     </>
