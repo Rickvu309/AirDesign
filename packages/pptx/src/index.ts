@@ -12,7 +12,9 @@ export { readShapes, readSlides, type ReadShape } from "./read-shapes.js"
 export { readParts } from "./package-container.js"
 export { readPackage, type PackageLimitName } from "./package-limits.js"
 export { exactPageCheck } from "./render-pages.js"
+export { danglingPackageReferences } from "./package-reference.js"
 export {
+  danglingMarkReferences,
   danglingShapeReferences,
   freeShapeId,
   newDanglingShapeReferences,
