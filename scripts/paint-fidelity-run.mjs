@@ -187,7 +187,7 @@ await reported({
   say,
   work: async () => {
     if (names.length === 0) names = readCorpus(root).map((deck) => deck.name)
-    await takeMachineLock()
+    await takeMachineLock({ job: "paint-fidelity" })
     await run("pnpm", ["--filter", "web", "build"])
     const pages = await renderDecks({ names, skipped, say })
     const port = await freePort()

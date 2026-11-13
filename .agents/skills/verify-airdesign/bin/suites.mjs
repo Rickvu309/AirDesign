@@ -96,7 +96,7 @@ async function machineLock(repo) {
   const file = path.join(repo, "scripts/machine-lock.mjs")
   if (!existsSync(file)) return async () => {}
   const { takeMachineLock } = await import(pathToFileURL(file).href)
-  return takeMachineLock()
+  return takeMachineLock({ job: "suites" })
 }
 
 export async function suitesCommand(args, { repo, evidenceRoot }) {
