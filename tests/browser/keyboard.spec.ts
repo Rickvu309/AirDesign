@@ -195,25 +195,104 @@ for (const width of [320, 735]) {
   })
 }
 
-test.fail(
-  "adding a slide says the slide was added and no element of the slide left behind was deleted",
-  async ({ page, context, stack }) => {
-    await signedIn(page, context, stack)
-    await openClean(page)
-    await expect(page.locator("[data-slide-paint]").getByRole("group", { name: "Hello" })).toBeVisible()
-    await page.evaluate(() => {
-      const said: string[] = []
-      Reflect.set(window, "said", said)
-      new MutationObserver(() => {
-        const status = document.querySelector('[data-slide-paint] [role="status"]')?.textContent ?? ""
-        if (status !== "") said.push(status)
-      }).observe(document.body, { subtree: true, childList: true, characterData: true })
-    })
-    await page.getByRole("button", { name: "Add slide" }).click()
-    await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
-    await page.waitForTimeout(1000)
-    expect(await page.evaluate(() => Reflect.get(window, "said") as string[])).not.toContainEqual(
-      expect.stringContaining("deleted"),
-    )
-  },
-)
+test("adding a slide says the slide was added and no element of the slide left behind was deleted", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await signedIn(page, context, stack)
+  await openClean(page)
+  await expect(page.locator("[data-slide-paint]").getByRole("group", { name: "Hello" })).toBeVisible()
+  const said = page.locator("[data-slide-list]").locator("xpath=preceding-sibling::*[@data-announcer]")
+  await page.evaluate(() => {
+    const heard: string[] = []
+    Reflect.set(window, "said", heard)
+    new MutationObserver(() => {
+      const status = document.querySelector('[data-slide-paint] [role="status"]')?.textContent ?? ""
+      if (status !== "") heard.push(status)
+    }).observe(document.body, { subtree: true, childList: true, characterData: true })
+  })
+  await page.getByRole("button", { name: "Add slide" }).click()
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
+  await expect(said).toHaveText("Added slide 2")
+  await expect.poll(() => page.evaluate(() => Reflect.get(window, "said") as string[])).toContain("Slide 2 of 2")
+  const heard = await page.evaluate(() => Reflect.get(window, "said") as string[])
+  expect(heard).not.toContainEqual(expect.stringContaining("deleted"))
+})
+
+test("duplicating, moving, selecting and deleting a slide says the slide, and so do undo and redo", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await signedIn(page, context, stack)
+  await openClean(page)
+  const canvas = page.locator('[data-slide-paint] [role="status"]')
+  const said = page.locator("[data-slide-list]").locator("xpath=preceding-sibling::*[@data-announcer]")
+  const entry = (number: number) => page.locator(`[data-slide-entry="${String(number)}"]`)
+  await page.evaluate(() => {
+    const heard: string[] = []
+    Reflect.set(window, "said", heard)
+    new MutationObserver(() => {
+      const status = document.querySelector('[data-slide-paint] [role="status"]')?.textContent ?? ""
+      if (status !== "") heard.push(status)
+    }).observe(document.body, { subtree: true, childList: true, characterData: true })
+  })
+
+  await entry(1).focus()
+  await page.keyboard.press("ControlOrMeta+d")
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
+  await expect(said).toHaveText("Duplicated slide 1. The copy is slide 2")
+  await expect(canvas).toHaveText("Slide 2 of 2")
+
+  await page.keyboard.press("Alt+ArrowUp")
+  await expect(said).toHaveText("Moved slide 2 to position 1")
+  const label = page.locator("[data-slide-label]")
+  await expect(label).toHaveText("1")
+  await entry(2).click()
+  await expect(label).toHaveText("2")
+  await entry(1).click()
+  await expect(label).toHaveText("1")
+  await expect(canvas).toHaveText("Slide 1 of 2")
+
+  await entry(1).focus()
+  await page.keyboard.press("Delete")
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
+  await expect(said).toHaveText("Deleted slide 1. Press Control+Z to undo")
+  await expect(canvas).toHaveText("Slide 1 of 1")
+
+  await entry(1).focus()
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
+  await expect(said).toHaveText("Slide 1 of 2")
+  await expect(canvas).toHaveText("Slide 1 of 2")
+  await page.keyboard.press("ControlOrMeta+Shift+z")
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
+  await expect(said).toHaveText("Deleted slide 1. Press Control+Z to undo")
+  await expect(canvas).toHaveText("Slide 1 of 1")
+
+  await page.getByRole("button", { name: "Add slide" }).click()
+  await expect(said).toHaveText("Added slide 2")
+  await expect(canvas).toHaveText("Slide 2 of 2")
+  await entry(2).focus()
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(said).toHaveText("Slide 1 of 1")
+  await expect(canvas).toHaveText("Slide 1 of 1")
+  await page.keyboard.press("ControlOrMeta+Shift+z")
+  await expect(said).toHaveText("Added slide 2")
+  await expect(canvas).toHaveText("Slide 2 of 2")
+
+  await page.getByRole("button", { name: "Grid" }).click()
+  const gridSaid = page.locator("[data-editor-grid] [data-announcer]")
+  const gridEntry = (number: number) => page.locator(`[data-editor-grid] [data-slide-entry="${String(number)}"]`)
+  await gridEntry(2).focus()
+  await page.keyboard.press("ArrowLeft")
+  await expect(gridEntry(1)).toBeFocused()
+  await expect(gridEntry(1)).toHaveAccessibleName("Slide 1 of 2")
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
+  await expect(gridSaid).toHaveText("Slide 1 of 1")
+
+  const heard = await page.evaluate(() => Reflect.get(window, "said") as string[])
+  expect(heard).not.toContainEqual(expect.stringContaining("deleted"))
+})

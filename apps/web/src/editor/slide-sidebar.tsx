@@ -1,5 +1,6 @@
 import { Filmstrip } from "@airdesign/render"
 import {
+  useCallback,
   useLayoutEffect,
   useRef,
   useState,
@@ -42,8 +43,19 @@ export type SlideStrip = {
   readonly onClone?: (index: number) => void
   readonly onRemove?: (index: number) => void
   readonly onMove?: (from: number, to: number) => void
+  readonly say?: { current: (text: string) => void }
   readonly thumbHeight: number
   readonly thumb: (index: number, width: number) => ReactNode
+}
+
+export function useSlideSay(say: SlideStrip["say"], announce: (text: string) => void) {
+  useLayoutEffect(() => {
+    if (say === undefined) return
+    say.current = announce
+    return () => {
+      say.current = () => undefined
+    }
+  }, [say, announce])
 }
 
 export function SlideSidebar({
@@ -121,7 +133,11 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<number>>(new Set())
   const [stop, setStop] = useState<string | null>(null)
   const [message, setMessage] = useState<Announcement | null>(null)
-  const announce = (text: string) => setMessage((held) => ({ text, odd: held === null ? false : !held.odd }))
+  const announce = useCallback(
+    (text: string) => setMessage((held) => ({ text, odd: held === null ? false : !held.odd })),
+    [],
+  )
+  useSlideSay(strip.say, announce)
   const [seen, setSeen] = useState(strip.current)
   if (seen !== strip.current) {
     setSeen(strip.current)
@@ -149,7 +165,9 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
       onDrop={(event) => {
         event.preventDefault()
         const from = Number(event.dataTransfer.getData("text/plain"))
-        if (Number.isInteger(from)) strip.onMove?.(from, index)
+        if (!Number.isInteger(from) || from === index) return
+        announce(slideListCopy.moved(from + 1, index + 1))
+        strip.onMove?.(from, index)
       }}
     >
       <Filmstrip
@@ -184,7 +202,10 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
         <div className={cn("flex h-8 flex-1 items-center rounded-lg bg-white", surfaceShadow)}>
           <NewSlideMenu
             layouts={strip.onAdd === undefined ? [] : (strip.layouts ?? [])}
-            onChoose={(part) => strip.onAdd?.(part)}
+            onChoose={(part) => {
+              strip.onAdd?.(part)
+              announce(slideListCopy.added(strip.count + 1))
+            }}
           />
           <span className="block h-8 w-px bg-[var(--field-edge)]" />
           <Button

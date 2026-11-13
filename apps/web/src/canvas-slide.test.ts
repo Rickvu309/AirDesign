@@ -54,6 +54,7 @@ it("carries the deck's size and each row's own box", () => {
   expect(canvas).toEqual({
     ...size,
     background: null,
+    part,
     elements: [
       {
         key: `${part}#2`,
