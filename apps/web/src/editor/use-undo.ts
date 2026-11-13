@@ -1,0 +1,121 @@
+import { type Undoable } from "@airdesign/document"
+import { connect, memoryRemote } from "@airdesign/live"
+import { textFormatting } from "@airdesign/render"
+import { useEffect, useRef, useState } from "react"
+import { flushPending, type CommitOutcome } from "@/commit-edit"
+import type { UndoButtonsState } from "@/editor/undo-buttons"
+import { useUndoKeys } from "@/editor/undo-keys"
+import type { DeckPaint } from "@/editor/use-deck-paint"
+import { notesShown, type ShownNotes } from "@/notes-edit"
+import { structureOf } from "@/table-hook"
+import {
+  emptyUndo,
+  recorded,
+  recordsInFlight,
+  turnBack,
+  undoLabel,
+  type Typing,
+  type UndoDirection,
+  type UndoEntry,
+} from "@/undo-list"
+
+export type UndoList = ReturnType<typeof useUndoList>
+
+export function useUndoList() {
+  const undoList = useRef(emptyUndo)
+  const turning = useRef<Promise<void>>(Promise.resolve())
+  const [undoShown, setUndoShown] = useState(emptyUndo)
+  const [told, setTold] = useState<UndoDirection | null>(null)
+  const typed = useRef<Typing | null>(null)
+  const sessions = useRef(0)
+  const records = useRef(recordsInFlight())
+  const formatting = useRef(
+    textFormatting(() => {
+      typed.current = null
+    }),
+  )
+
+  function record(entry: UndoEntry) {
+    undoList.current = recorded(undoList.current, entry)
+    setUndoShown(undoList.current)
+    setTold(null)
+  }
+
+  return { undoList, turning, undoShown, setUndoShown, told, setTold, typed, sessions, records, formatting, record }
+}
+
+export type TurningDeck = {
+  readonly id: string
+  readonly working: boolean
+  readonly undo: UndoList
+  readonly shown: DeckPaint
+  readonly notesBar: {
+    readonly queue: { readonly current: Promise<void> }
+    readonly show: (notes: readonly ShownNotes[]) => void
+  }
+  readonly settle: (outcome: CommitOutcome) => void
+  readonly setPending: (pending: boolean) => void
+}
+
+export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
+  const { id, undo, shown, notesBar, settle, setPending } = deck
+  const { undoList, turning, undoShown, setUndoShown, told, setTold, typed, records } = undo
+  const { store, shownParts, structure, repaint, setCurrent, showRegister } = shown
+
+  useEffect(() => {
+    function closeSession() {
+      typed.current = null
+    }
+    window.addEventListener("focusout", closeSession)
+    return () => window.removeEventListener("focusout", closeSession)
+  }, [])
+
+  useEffect(() => {
+    if (told === null) return
+    const clear = window.setTimeout(() => setTold(null), 4000)
+    return () => window.clearTimeout(clear)
+  }, [told])
+
+  async function showTurned(undoable: Undoable) {
+    const next = await connect(memoryRemote()).openDeck(id)
+    if (!next.ok) return
+    if ("slide" in undoable || structure.current !== structureOf(next.register)) showRegister(next.register)
+    else repaint.current(next.register, "person")
+    if ("node" in undoable && undoable.node.endsWith(".notes"))
+      notesBar.show(notesShown(shownParts.current, next.register))
+    const slides = store.current.slides()
+    const shownSlide =
+      "slide" in undoable
+        ? slides.findIndex((slide) => slide.id === undoable.slide)
+        : slides.findIndex((slide) => undoable.node.startsWith(`${slide.id}.`))
+    setCurrent((index) => (shownSlide >= 0 ? shownSlide : Math.max(0, Math.min(index, slides.length - 1))))
+    setPending(true)
+  }
+
+  function turn(direction: UndoDirection) {
+    typed.current = null
+    turning.current = turning.current.then(async () => {
+      await records.current.landed()
+      await notesBar.queue.current
+      const turned = await turnBack(connect(memoryRemote()), id, undoList.current, direction)
+      if (turned.outcome === "empty") return
+      undoList.current = turned.list
+      setUndoShown(turned.list)
+      setTold(turned.outcome === "changed" ? direction : null)
+      if (turned.outcome === "changed") return
+      await showTurned(turned.entry.undoable)
+      settle(await flushPending(connect, id))
+    })
+  }
+
+  useUndoKeys(deck.working, turn)
+
+  return {
+    undoLabel: undoLabel("undo", undoShown),
+    redoLabel: undoLabel("redo", undoShown),
+    canUndo: undoShown.undo.length > 0,
+    canRedo: undoShown.redo.length > 0,
+    onUndo: () => turn("undo"),
+    onRedo: () => turn("redo"),
+  }
+}
