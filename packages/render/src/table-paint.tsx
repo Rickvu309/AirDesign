@@ -1,7 +1,8 @@
-import type { ElementId, TableChange } from "@airdesign/document"
+import { cellText, readTableValue, type ElementId, type TableChange, type TableValue } from "@airdesign/document"
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react"
 import { paintedAt } from "./box-gesture.js"
-import { useBox } from "./element-view.js"
+import { useBox, useElement } from "./element-view.js"
+import { refusedInput } from "./passage.js"
 import type { CanvasElement, CanvasTable, CanvasText } from "./record.js"
 import { SheetText } from "./sheet-text.js"
 import type { Moves } from "./slide-moves.js"
@@ -55,27 +56,59 @@ function nextSpot(table: CanvasTable, spot: Spot, back: boolean): Spot | null {
   return { row: Math.floor(at / columns), column: at % columns }
 }
 
+function storedCells(text: string | undefined, table: CanvasTable): TableValue | "moving" | null {
+  const stored = text === undefined ? null : readTableValue(text)
+  if (stored === null) return null
+  const fits =
+    stored.rows.length === table.rows.length && stored.rows.every((row) => row.cells.length === table.columns.length)
+  return fits ? stored : "moving"
+}
+
 function CellText(props: {
   readonly cell: Cell
   readonly spot: Spot
   readonly scaled: Scaled
   readonly active: boolean
-  readonly typed: string | undefined
+  readonly shown: string
+  readonly steady: boolean
   readonly onFocus: () => void
   readonly onBlur: (holder: HTMLElement) => void
   readonly onText: (text: string) => void
   readonly onKey: (event: KeyboardEvent<HTMLDivElement>) => void
 }) {
-  const { active, cell, scaled, spot, typed } = props
+  const { active, cell, scaled, shown, spot, steady } = props
   const holder = useRef<HTMLDivElement>(null)
+  const pending = useRef<string[]>([])
   const text = cell.text
-  const shown = typed ?? plainText(text)
   useLayoutEffect(() => {
     const box = holder.current
     if (!active || box === null) return
+    pending.current.length = 0
     box.textContent = shown
     caretAtEnd(box)
   }, [active])
+  useLayoutEffect(() => {
+    const box = holder.current
+    if (!active || !steady || box === null) return
+    const echoed = pending.current.indexOf(shown)
+    if (echoed >= 0) {
+      pending.current.splice(0, echoed + 1)
+      return
+    }
+    pending.current.length = 0
+    if (readText(box) === shown) return
+    box.textContent = shown
+    caretAtEnd(box)
+  }, [shown, steady])
+  useLayoutEffect(() => {
+    const box = holder.current
+    if (box === null) return
+    function refuse(event: InputEvent) {
+      if (refusedInput(event)) event.preventDefault()
+    }
+    box.addEventListener("beforeinput", refuse)
+    return () => box.removeEventListener("beforeinput", refuse)
+  }, [])
   const look = text === null ? null : textLook(text, scaled)
   const first = text?.paragraphs[0]
   const style =
@@ -98,12 +131,14 @@ function CellText(props: {
         onFocus={props.onFocus}
         onBlur={(event) => props.onBlur(event.currentTarget)}
         onInput={(event) => {
-          if (!(event.nativeEvent instanceof InputEvent && event.nativeEvent.isComposing))
-            props.onText(readText(event.currentTarget))
+          if (event.nativeEvent instanceof InputEvent && event.nativeEvent.isComposing) return
+          const typed = readText(event.currentTarget)
+          pending.current.push(typed)
+          props.onText(typed)
         }}
         onKeyDown={props.onKey}
       >
-        {active ? null : typed === undefined && look !== null && text !== null ? (
+        {active ? null : shown === plainText(text) && look !== null && text !== null ? (
           <SheetText text={text} look={{ ...look, body: { ...look.body, minHeight: undefined } }} />
         ) : (
           <span style={style}>{shown}</span>
@@ -127,7 +162,7 @@ export function TableEdit(props: {
   const [active, setActive] = useState<Spot | null>(null)
   const [row, setRow] = useState<number | null>(null)
   const [within, setWithin] = useState(false)
-  const [typed, setTyped] = useState<ReadonlyMap<string, string>>(new Map())
+  const stored = storedCells(useElement(props.store, id)?.text, table)
   const pending = useRef<Spot | null>(null)
   const frame = useRef<HTMLDivElement>(null)
   const moved = paintedAt(element.box, useBox(props.store, id))
@@ -137,7 +172,6 @@ export function TableEdit(props: {
       : { ...moved, width: element.box.width, height: element.box.height }
 
   useEffect(() => {
-    setTyped(new Map())
     const wanted = pending.current
     if (wanted === null || wanted.row >= table.rows.length) return
     pending.current = null
@@ -168,6 +202,7 @@ export function TableEdit(props: {
   const editor = (cell: Cell, at: number, column: number) => {
     const spot = { row: at, column }
     const here = spotKey(spot)
+    const kept = stored === null || stored === "moving" ? undefined : stored.rows[at]?.cells[column]
     return (
       <CellText
         active={active !== null && spotKey(active) === here}
@@ -181,13 +216,11 @@ export function TableEdit(props: {
           setRow(at)
         }}
         onKey={(event) => key(spot, event)}
-        onText={(text) => {
-          setTyped((now) => new Map(now).set(here, text))
-          change({ change: "cell", row: at, column, text })
-        }}
+        onText={(text) => change({ change: "cell", row: at, column, text })}
         scaled={scaled}
+        shown={kept === undefined ? plainText(cell.text) : cellText(kept)}
         spot={spot}
-        typed={typed.get(here)}
+        steady={stored !== "moving"}
       />
     )
   }

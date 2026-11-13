@@ -181,6 +181,10 @@ function sameCaret(carets: Carets): boolean {
   return carets.start.paragraph === carets.end.paragraph && carets.start.offset === carets.end.offset
 }
 
+export function refusedInput(event: InputEvent): boolean {
+  return event.inputType.startsWith("format") || event.inputType.startsWith("history")
+}
+
 export const framedOutline = { outlineStyle: "solid", outlineWidth: 2, outlineColor: "transparent" } as const
 
 export function Passage(props: {
@@ -256,7 +260,7 @@ export function Passage(props: {
     const shown = box.current
     if (shown === null) return
     function replace(event: InputEvent) {
-      if (event.inputType.startsWith("format") || event.inputType.startsWith("history")) {
+      if (refusedInput(event)) {
         event.preventDefault()
         return
       }

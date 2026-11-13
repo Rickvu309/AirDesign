@@ -13,6 +13,7 @@ import { expect, it } from "vitest"
 import { elementCommand } from "./element-edit"
 import { exportedParts, slideBase } from "./exported-parts"
 import { onSlide, twoBoxSlide, xml } from "./slide-fixtures"
+import { shownValue } from "./live-repaint"
 import { tableEditable, tableValue } from "./table-edit"
 
 const size = { width: 12192000, height: 6858000 }
@@ -61,7 +62,7 @@ it("exports a typed table with an added and a removed row, and a table as it was
   ] as const
   let edited = opened
   for (const change of steps) {
-    const value = tableValue(base, shape, edited, change)
+    const value = tableValue(base, shape, shownValue(edited, node, ""), change)
     if (value === null) throw new Error(change.change)
     edited = applied(edited, { command: "person", node, value })
   }
@@ -91,7 +92,7 @@ it("keeps the frame as tall as its rows when a person moves the table after addi
   edited = applied(edited, {
     command: "person",
     node,
-    value: tableValue(base, shape, edited, { change: "row", row: 2, place: "below" })!,
+    value: tableValue(base, shape, shownValue(edited, node, ""), { change: "row", row: 2, place: "below" })!,
   })
   const exported = exportedParts(parts, edited)
   expect(readShapes(exported).find((each) => each.shape === "4")?.box).toEqual({ x: 0, y: 0, cx: 7315200, cy: 1483360 })
@@ -105,8 +106,16 @@ it("refuses a change that leaves no row, and the first edit of an imported table
   const one = { change: "remove-row", row: 0 } as const
   const node = elementId("256.4")
   let edited = applied(register, { command: "add", node, floor: "", route: "" })
-  edited = applied(edited, { command: "person", node, value: tableValue(base, shape, edited, one)! })
-  edited = applied(edited, { command: "person", node, value: tableValue(base, shape, edited, one)! })
-  expect(tableValue(base, shape, edited, one)).toBeNull()
+  edited = applied(edited, {
+    command: "person",
+    node,
+    value: tableValue(base, shape, shownValue(edited, node, ""), one)!,
+  })
+  edited = applied(edited, {
+    command: "person",
+    node,
+    value: tableValue(base, shape, shownValue(edited, node, ""), one)!,
+  })
+  expect(tableValue(base, shape, shownValue(edited, node, ""), one)).toBeNull()
   expect(tableValue(base, shape, null, { change: "cell", row: 0, column: 0, text: "" })).toBeNull()
 })

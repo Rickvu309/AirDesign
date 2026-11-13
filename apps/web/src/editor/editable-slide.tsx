@@ -1,5 +1,6 @@
-import { type Box, type ElementId } from "@airdesign/document"
+import { readTableValue, type Box, type ElementId } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
+import type { ReadShape } from "@airdesign/pptx"
 import { SlideCanvas, textValue } from "@airdesign/render"
 import type { ReactNode } from "react"
 import { commitBox, commitEdit, type CommitOutcome } from "@/commit-edit"
@@ -12,7 +13,8 @@ import type { ElementChange } from "@/element-edit"
 import { landedBox, paintedBox, shownBox } from "@/element-move"
 import { cn } from "@/lib/class-names"
 import { showText, shownValue } from "@/live-repaint"
-import type { useTables } from "@/table-hook"
+import { shownTable, type useTables } from "@/table-hook"
+import type { UndoName } from "@/copy/undo-copy"
 import { boxName } from "@/undo-names"
 
 export type EditableDeck = {
@@ -32,32 +34,44 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
 
   async function textBefore(target: ElementId): Promise<string> {
     const file = boxes.current.get(target)?.file ?? ""
-    return shownValue(await deviceRegister(id), target, file)
+    const shown = shapes.current.get(target)?.contentKind === "table" ? shownTable : shownValue
+    return shown(await deviceRegister(id), target, file)
   }
 
-  function onEdit(target: ElementId, value: string) {
+  function onEdit(target: ElementId, value: string, name: UndoName = "text") {
     const release = records.current.hold()
-    return editText(target, value, release).finally(release)
+    return editText(target, value, name, release).finally(release)
   }
 
-  async function editText(target: ElementId, value: string, release: () => void) {
-    if (typed.current?.node !== target) {
+  function storable(shape: ReadShape, value: string): boolean {
+    if (shape.contentKind === "table") return readTableValue(value) !== null
+    return valueStorable(editParts.current, shape, textValue(value))
+  }
+
+  async function editText(
+    target: ElementId,
+    value: string,
+    name: UndoName,
+    release: () => void,
+  ): Promise<CommitOutcome> {
+    if (name !== "text" || typed.current?.node !== target) {
       sessions.current += 1
       typed.current = { node: target, session: sessions.current, before: textBefore(target) }
     }
-    const { session } = typed.current
-    const started = typed.current.before
+    const { session, before: started } = typed.current
+    if (name !== "text") typed.current = null
     const box = boxes.current.get(target)
-    if (box === undefined) return
+    if (box === undefined) return "refused"
     const file = box.file
     async function refused() {
       showText(store.current, target, shownValue(await deviceRegister(id), target, file))
     }
     const shape = shapes.current.get(target)
-    if (shape === undefined || !valueStorable(editParts.current, shape, textValue(value))) {
+    if (shape === undefined || !storable(shape, value)) {
       await refused()
-      return
+      return "refused"
     }
+    showText(store.current, target, value)
     const outcome = await commitEdit(
       connect,
       id,
@@ -66,9 +80,8 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
       async () => {
         const before = await started
         setPending(true)
-        showText(store.current, target, value)
         record({
-          name: "text",
+          name,
           session,
           undoable: { node: target, floor: file, before: { value: before }, after: { value } },
         })
@@ -77,6 +90,7 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
       refused,
     )
     settle(outcome)
+    return outcome
   }
 
   async function onBox(target: ElementId, box: Box) {
@@ -116,9 +130,9 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     settle(outcome)
   }
 
-  function holding(target: ElementId, work: () => Promise<void>) {
+  function holding<T>(target: ElementId, work: () => Promise<T>): Promise<T> {
     const release = busy.current.hold(target)
-    void work().finally(release)
+    return work().finally(release)
   }
 
   return (width) => {
@@ -130,11 +144,14 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
         className={cn(slideFrame, "shrink-0 overflow-clip focus-within:overflow-visible")}
         entering={entering}
         formatting={formatting.current}
-        onBox={(target, box) => holding(target, () => onBox(target, box))}
-        onRemove={(target) => holding(target, () => changeElement({ change: "remove", node: target }))}
-        onEdit={(target, value) => holding(target, () => onEdit(target, value))}
+        onBox={(target, box) => void holding(target, () => onBox(target, box))}
+        onRemove={(target) => void holding(target, () => changeElement({ change: "remove", node: target }))}
+        onEdit={(target, value) => void holding(target, () => onEdit(target, value))}
+        onTable={(target, change) =>
+          tables.change(target, change, (value, name) => holding(target, () => onEdit(target, value, name)))
+        }
         slide={canvas}
-        {...tables.canvas}
+        tableBar={tables.tableBar}
         store={store.current}
         width={width}
       />
