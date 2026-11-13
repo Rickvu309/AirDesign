@@ -10,7 +10,7 @@ describe("signInCopy", () => {
 
   it("tells a person what to do next in every refusal", () => {
     for (const line of [signInCopy.emailRefused, signInCopy.emailFailed, signInCopy.codeRefused]) {
-      expect(line).toMatch(/try again|again|send/i)
+      expect(line).toMatch(/try again|enter/i)
       expect(line).not.toMatch(/oops|sorry|invalid|your fault/i)
     }
   })

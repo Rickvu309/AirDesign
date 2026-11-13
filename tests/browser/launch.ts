@@ -1,5 +1,6 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
+import { buildSite } from "./site-server.ts"
 
 const browserHelper = join(process.cwd(), ".agents/skills/verify-airdesign/bin/browser.mjs")
 
@@ -12,4 +13,5 @@ export default async function launch(): Promise<void> {
   if (libraries !== undefined) process.env.LD_LIBRARY_PATH = libraries
   const browser = await openBrowser()
   await browser.close()
+  await buildSite()
 }

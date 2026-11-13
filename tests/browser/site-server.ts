@@ -20,12 +20,19 @@ const types: Record<string, string> = {
 
 export type ServedSite = { readonly origin: string; readonly dist: string; readonly close: () => Promise<void> }
 
-export async function serveSite(): Promise<ServedSite> {
+async function siteBuild(repo: string): Promise<SiteBuild> {
+  return (await import(pathToFileURL(join(repo, ".agents/skills/verify-airdesign/bin/site.mjs")).href)) as SiteBuild
+}
+
+export async function buildSite(): Promise<void> {
   const repo = process.cwd()
   execFileSync("pnpm", ["--filter", "@airdesign/site^...", "run", "build"], { cwd: repo, stdio: "ignore" })
-  const build = (await import(
-    pathToFileURL(join(repo, ".agents/skills/verify-airdesign/bin/site.mjs")).href
-  )) as SiteBuild
+  ;(await siteBuild(repo)).builtSite(repo)
+}
+
+export async function serveSite(): Promise<ServedSite> {
+  const repo = process.cwd()
+  const build = await siteBuild(repo)
   const { dist } = build.builtSite(repo)
   const server = createServer((request, response) => {
     const file = build.siteFile(dist, (request.url ?? "/").split("?")[0] ?? "/")

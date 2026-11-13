@@ -1,4 +1,4 @@
-import { signInRoutes } from "@airdesign/catalog"
+import { readEmail, signInRoutes } from "@airdesign/catalog"
 import { appDestination } from "./app-destination"
 import { readPendingEmail, readPendingNext, rememberPendingEmail } from "./pending-sign-in-email"
 
@@ -55,11 +55,16 @@ export async function startEmailSignIn(
   if (emailInFlight) {
     return
   }
+  const checked = readEmail({ email })
+  if (!checked.ok) {
+    onFail("refused")
+    return
+  }
   emailInFlight = true
   try {
-    const asked = await askForSignInEmail(apiBase, email)
+    const asked = await askForSignInEmail(apiBase, checked.email)
     if ("path" in asked) {
-      rememberPendingEmail(email)
+      rememberPendingEmail(checked.email)
       go(asked.path)
       return
     }

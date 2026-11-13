@@ -154,6 +154,31 @@ describe("startEmailSignIn", () => {
     expect(went).toEqual([])
   })
 
+  it.each(["", "a@b", "a@b.c", "a!b@c.co", "a b@c.co"])(
+    "refuses %j on the page as the API would, and posts nothing",
+    async (address) => {
+      stubSessionStorage()
+      const api = await startApi(202)
+      const failures: string[] = []
+      await startEmailSignIn(
+        api.base,
+        address,
+        () => undefined,
+        (failure) => failures.push(failure),
+      )
+      expect(failures).toEqual(["refused"])
+      expect(api.received).toEqual([])
+    },
+  )
+
+  it("sends and remembers an address the way the API stores it", async () => {
+    stubSessionStorage()
+    const api = await startApi(202)
+    await startEmailSignIn(api.base, " Ada@Example.COM ", () => undefined)
+    expect(api.received.map((request) => request.body)).toEqual([{ email: "ada@example.com" }])
+    expect(readPendingEmail()).toBe("ada@example.com")
+  })
+
   it("calls onFail when the API cannot be reached", async () => {
     stubSessionStorage()
     const failures: string[] = []
