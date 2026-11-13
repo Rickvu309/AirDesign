@@ -219,7 +219,7 @@ function replayKind(graph: Graph, failures: string[]): number {
       state.removed === true
         ? ["Add", "AddPicture", "Type", "Remove", "AgentRemove"]
         : state.added === true
-          ? ["Add", "AddPicture", "OtherRestore"]
+          ? ["Add", "AddPicture", "OtherRestore", ...(state.picture === true ? ["Type"] : [])]
           : ["OtherRestore"]
     if (state.added === true) {
       const another = call(
