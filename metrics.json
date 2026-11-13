@@ -1,5 +1,6 @@
 {
   "known-failures": { "goal": 0 },
+  "long-titles": { "goal": 0 },
   "corpus-size": { "now": 20, "goal": 20 },
   "export-coverage": { "now": 18, "goal": 50 },
   "export-verified": { "now": 25, "goal": 50 },
