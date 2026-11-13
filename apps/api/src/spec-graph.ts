@@ -67,6 +67,30 @@ export function specGraph(name: string, module: string): Promise<Graph> {
   })
 }
 
+export type Path = {
+  readonly root: string
+  readonly steps: readonly { readonly action: string; readonly to: string }[]
+}
+
+export function pathsFrom(graph: Graph, root: (state: SpecState) => boolean): Map<string, Path> {
+  const paths = new Map<string, Path>()
+  for (const [id, state] of graph.states) {
+    if (root(state)) paths.set(id, { root: id, steps: [] })
+  }
+  const order = [...paths.keys()]
+  for (let at = 0; at < order.length; at += 1) {
+    const from = order[at]
+    const path = from === undefined ? undefined : paths.get(from)
+    if (path === undefined) continue
+    for (const edge of graph.edges) {
+      if (edge.from !== from || paths.has(edge.to)) continue
+      paths.set(edge.to, { root: path.root, steps: [...path.steps, { action: edge.action, to: edge.to }] })
+      order.push(edge.to)
+    }
+  }
+  return paths
+}
+
 export function same(left: unknown, right: unknown): boolean {
   return JSON.stringify(sorted(left)) === JSON.stringify(sorted(right))
 }

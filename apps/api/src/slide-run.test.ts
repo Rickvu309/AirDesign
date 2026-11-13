@@ -19,7 +19,7 @@ import {
 } from "./mcp-steps.js"
 import { openPool } from "./pool.js"
 import { readSaved } from "./saved.js"
-import { specGraph, type Graph, type SpecState } from "./spec-graph.js"
+import { pathsFrom, specGraph, type Graph, type Path, type SpecState } from "./spec-graph.js"
 
 type Live = Owned & {
   offset: number
@@ -32,6 +32,7 @@ type Live = Owned & {
   stopped: boolean
   stopTold: boolean
   late: number
+  foreign: boolean
 }
 
 let stores: Stores
@@ -59,11 +60,14 @@ async function observed(live: Live): Promise<SpecState> {
   const row = await stored(live)
   const body = row.register.elements[node]
   const element = body?.runId !== "r" ? "none" : body.phase === "running" ? "running" : "stopped"
+  const last = row.register.lastRun?.revision === row.revision ? row.register.lastRun : undefined
   return {
     rev: row.revision - live.offset,
     shown: slidesAddedBy(row.register, "r").length,
     element,
     ended: row.register.ended?.includes("r") === true,
+    last: runWord(last?.runId),
+    covers: last !== undefined && last.since <= live.base,
     turn: runWord(row.turn.run_id),
     turnRev: row.turn.revision - live.offset,
     base: live.base - live.offset,
@@ -72,6 +76,7 @@ async function observed(live: Live): Promise<SpecState> {
     stopped: live.stopped,
     stopTold: live.stopTold,
     late: live.late,
+    foreign: live.foreign,
     tools: (await toolCalls(live)) - live.tools,
   }
 }
@@ -94,7 +99,7 @@ async function opened(element: string): Promise<Live> {
     base = revisionOf(edited)
   }
   const live = { ...owned, offset: base - 1, tools: await toolCalls(owned), base, agent: undefined, reading: false }
-  return { ...live, stop: undefined, minted: 0, stopped: false, stopTold: false, late: 0 }
+  return { ...live, stop: undefined, minted: 0, stopped: false, stopTold: false, late: 0, foreign: false }
 }
 
 function told(call: Call): boolean {
@@ -118,11 +123,16 @@ async function act(live: Live, action: string, target: SpecState): Promise<void>
     } else await agent.release()
   } else if (action === "AgentLoadsDeck" && agent !== undefined) {
     await agent.release()
-    if (live.reading) live.base = agent.read ?? live.base
+    if (live.reading) {
+      live.base = agent.read ?? live.base
+      live.foreign = false
+    }
   } else if (action === "AgentAddsSlide" && agent !== undefined) {
-    const before = (await observed(live)).shown
+    const before = await observed(live)
     await agent.release()
-    if ((await observed(live)).shown !== before && live.stopped) live.late += 1
+    const after = await observed(live)
+    if (after.shown !== before.shown && live.stopped) live.late += 1
+    if (after.rev !== before.rev && after.shown === before.shown) live.foreign = true
   } else if (action === "AgentSavesTurn" && agent !== undefined) await agent.release()
   else if (action === "StopLoadsTurn") {
     if (stop === undefined) {
@@ -134,7 +144,9 @@ async function act(live: Live, action: string, target: SpecState): Promise<void>
     if (stop.at === "save" || told(stop)) live.stopped = true
     live.stopTold = told(stop)
   } else if (action === "StopCommits" && stop !== undefined) {
+    const before = (await observed(live)).rev
     await stop.release()
+    if ((await observed(live)).rev !== before) live.foreign = true
     if ((await observed(live)).ended) live.stopped = true
     live.stopTold = told(stop)
   } else if (action === "StopSavesTurn" && stop !== undefined) {
@@ -148,6 +160,8 @@ const compared = [
   "shown",
   "element",
   "ended",
+  "last",
+  "covers",
   "turn",
   "turnRev",
   "base",
@@ -156,29 +170,9 @@ const compared = [
   "stopped",
   "stopTold",
   "late",
+  "foreign",
   "tools",
 ]
-
-type Path = { readonly root: string; readonly steps: readonly { readonly action: string; readonly to: string }[] }
-
-function pathsFrom(graph: Graph): Map<string, Path> {
-  const paths = new Map<string, Path>()
-  for (const [id, state] of graph.states) {
-    if (state.calls === 0 && state.sPc === "idle") paths.set(id, { root: id, steps: [] })
-  }
-  const order = [...paths.keys()]
-  for (let at = 0; at < order.length; at += 1) {
-    const from = order[at]
-    const path = from === undefined ? undefined : paths.get(from)
-    if (path === undefined) continue
-    for (const edge of graph.edges) {
-      if (edge.from !== from || paths.has(edge.to)) continue
-      paths.set(edge.to, { root: path.root, steps: [...path.steps, { action: edge.action, to: edge.to }] })
-      order.push(edge.to)
-    }
-  }
-  return paths
-}
 
 async function replayEdge(graph: Graph, paths: Map<string, Path>, edge: Graph["edges"][number]) {
   const path = paths.get(edge.from)
@@ -212,7 +206,7 @@ describe("slide-run replay", () => {
 
   it("drives every edge of the slide-run model through serveMcp, step by step, on Postgres", async () => {
     const graph = await specGraph("slide-run", "SlideRun")
-    const paths = pathsFrom(graph)
+    const paths = pathsFrom(graph, (state) => state.calls === 0 && state.sPc === "idle")
     expect(paths.size).toBe(graph.states.size)
     const states = [...graph.states.values()]
     expect(states.some((state) => state.aPc === "retry")).toBe(true)

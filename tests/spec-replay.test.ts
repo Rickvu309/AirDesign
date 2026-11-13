@@ -36,7 +36,7 @@ import { group as undoGroup, state as undoState, step as undoStep } from "../spe
 import { group as usageGroup, state as usageState, step as usageStep } from "../specs/usage/view.mjs"
 import { group as oauthGroup, state as oauthState, step as oauthStep } from "../specs/oauth/view.mjs"
 import { group as rerunGroup, state as rerunState, step as rerunStep } from "../specs/rerun/view.mjs"
-import { group as turnGroup, state as turnState, step as turnStep } from "../specs/turn/view.mjs"
+import * as turnView from "../specs/turn/view.mjs"
 import { group as indexGroup, state as indexState, step as indexStep } from "../specs/index/view.mjs"
 import * as personUndoView from "../specs/person-undo/view.mjs"
 
@@ -1065,7 +1065,7 @@ describe("spec replay", () => {
       .sort()
     expect(every.map((topic) => topic.name).sort()).toEqual(folders)
     for (const topic of every) expect(topic.view).toBe(true)
-    const byApi = ["owner", "stop", "slide-run", "slide-undo"]
+    const byApi = ["owner", "stop", "slide-run", "slide-sibling", "slide-undo"]
     const found = every.filter((topic) => !byApi.includes(topic.name))
     const failures: string[] = []
     const reports: Record<string, unknown> = {}
@@ -1078,7 +1078,7 @@ describe("spec replay", () => {
       usage: { state: usageState, step: usageStep, group: usageGroup },
       oauth: { state: oauthState, step: oauthStep, group: oauthGroup },
       rerun: { state: rerunState, step: rerunStep, group: rerunGroup },
-      turn: { state: turnState, step: turnStep, group: turnGroup },
+      turn: turnView,
       element: elementView,
       index: { state: indexState, step: indexStep, group: indexGroup },
       "person-undo": personUndoView,

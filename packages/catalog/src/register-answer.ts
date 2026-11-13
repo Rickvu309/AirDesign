@@ -72,8 +72,13 @@ function deck(raw: unknown): raw is Record<string, unknown> {
     (raw.readNodes === null || (Array.isArray(raw.readNodes) && raw.readNodes.every(element))) &&
     record(raw.elements) &&
     Object.entries(raw.elements).every(([id, body]) => element(id) && node(body)) &&
-    (raw.ended === undefined || (Array.isArray(raw.ended) && raw.ended.every((runId) => typeof runId === "string")))
+    (raw.ended === undefined || (Array.isArray(raw.ended) && raw.ended.every((runId) => typeof runId === "string"))) &&
+    (raw.lastRun === undefined || lastRun(raw.lastRun))
   )
+}
+
+function lastRun(raw: unknown): boolean {
+  return record(raw) && typeof raw.runId === "string" && whole(raw.since) && whole(raw.revision)
 }
 
 const rootFields = ["landed", "version", "phase", "runId", "readAt", "guarded", "claimed", "stoppedAt", "b"] as const
