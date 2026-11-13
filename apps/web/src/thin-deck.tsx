@@ -15,6 +15,7 @@ import { useUndoList, useUndoTurn } from "@/editor/use-undo"
 import { usePictureTool } from "@/picture-tool"
 export { elementIds, valueStorable } from "@/deck-paint"
 import { AiraPanel } from "@/aira-panel"
+import { airaStarters } from "@/aira-starters"
 import { useTables } from "@/table-hook"
 import { useNotes } from "@/notes-edit"
 
@@ -88,7 +89,9 @@ export function ThinDeck({ id }: { id: string }) {
           onNotes={(value) => notesBar.edit(currentSlide, value)}
           panel={panel}
           onPanel={setPanel}
-          side={<AiraPanel key={id} deck={id} hidden={panel !== "agent"} />}
+          side={
+            <AiraPanel key={id} deck={id} starters={() => airaStarters(store.current)} hidden={panel !== "agent"} />
+          }
           slideLabel={String(current + 1)}
           title={title}
         />

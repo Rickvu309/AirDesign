@@ -36,7 +36,7 @@ test("where Aira is not offered, the panel says so as it opens and its composer 
   await expect(composer).toBeDisabled()
   await expect(composer).toHaveAttribute("placeholder", airaCopy.notOffered)
   await expect(side.getByRole("button", { name: "Send" })).toBeDisabled()
-  await expect(side.getByRole("button", { name: airaCopy.starters[0] })).toHaveCount(0)
+  await expect(side.getByRole("button", { name: airaCopy.draftStarters[0] })).toHaveCount(0)
   await expect(side.getByRole("button", { name: airaCopy.retry })).toHaveCount(0)
   expect(paths).not.toContain("/aira/turn")
 })

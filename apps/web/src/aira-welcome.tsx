@@ -6,12 +6,12 @@ import { AiraTile } from "@/settings/settings-controls"
 
 export function AiraWelcome({
   onPick,
-  starters = airaCopy.starters,
+  starters,
   disabled = false,
   notOffered = false,
 }: {
   onPick: (text: string) => void
-  starters?: readonly string[]
+  starters: readonly string[]
   disabled?: boolean
   notOffered?: boolean
 }) {
