@@ -134,7 +134,11 @@ export function openDatabase(): Promise<IDBDatabase> {
       const database = request.result
       if (!database.objectStoreNames.contains(storeName)) database.createObjectStore(storeName)
     }
-    request.onsuccess = () => resolve(request.result)
+    request.onsuccess = () => {
+      const database = request.result
+      database.onversionchange = () => database.close()
+      resolve(database)
+    }
     request.onerror = () => reject(request.error)
   })
 }

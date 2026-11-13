@@ -26,6 +26,11 @@ export function flushRename(deck: string): Promise<{ readonly ok: boolean }> {
   return run
 }
 
+export async function queuedName(deck: string): Promise<string | undefined> {
+  const name = await readSlot(key(deck))
+  return typeof name === "string" ? name : undefined
+}
+
 export async function queueRename(deck: string, name: string): Promise<void> {
   await writeSlot(key(deck), name)
 }

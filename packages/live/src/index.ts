@@ -1,7 +1,7 @@
 export { connect, type FollowResult } from "./cache.js"
 export { fetchOriginal } from "./original.js"
 export { renameDeck } from "./deck-rename.js"
-export { flushOriginal, queueOriginal } from "./original-queue.js"
+export { flushOriginal, queueOriginal, sendQueuedNames } from "./original-queue.js"
 export { getPart, getParts, putPart, putParts } from "./part.js"
 export {
   httpRemote,

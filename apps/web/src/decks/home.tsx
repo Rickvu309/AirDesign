@@ -1,5 +1,5 @@
 import { deckRoutes, signOutRoutes } from "@airdesign/catalog"
-import { distrustDevice, dropChats } from "@airdesign/live"
+import { distrustDevice, dropChats, sendQueuedNames } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -34,6 +34,14 @@ async function post(path: string, body: object) {
   const answer = await response.json()
   if (response.status === 401 && answer.refusal === "session") window.location.assign(signInAddress(window.location))
   return answer
+}
+
+async function withQueuedNames(listing: Listing): Promise<Listing> {
+  const queued = await sendQueuedNames([...listing.decks, ...listing.trash].map((deck) => deck.deck)).catch(
+    () => new Map<string, string>(),
+  )
+  const named = (decks: Deck[]) => decks.map((deck) => ({ ...deck, name: queued.get(deck.deck) ?? deck.name }))
+  return { ...listing, decks: named(listing.decks), trash: named(listing.trash) }
 }
 
 async function signOut(): Promise<void> {
@@ -111,7 +119,7 @@ export function Home({
     try {
       const result = await post(deckRoutes.list.path, {})
       if (result.ok) {
-        setListing(result)
+        setListing(await withQueuedNames(result))
         setUnavailable(false)
       } else if (result.refusal !== "session") setUnavailable(true)
     } catch {

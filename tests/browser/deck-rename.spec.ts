@@ -107,17 +107,25 @@ async function serverName(stack: Stack, cookie: string, deck: string): Promise<u
 }
 
 async function slowRename(page: Page): Promise<void> {
+  const onDeck = () => new URL(page.url()).pathname.startsWith("/deck/")
+  let loads = 0
+  let deckLoad = onDeck() ? loads : -1
+  page.on("domcontentloaded", () => loads++)
+  page.on("framenavigated", (frame) => {
+    if (frame === page.mainFrame() && onDeck()) deckLoad = loads
+  })
   await page.route(
     (url) => url.pathname === "/decks/rename",
     async (route) => {
+      const fromDeck = loads === deckLoad
       await new Promise((resolve) => setTimeout(resolve, 300))
-      const left = !new URL(page.url()).pathname.startsWith("/deck/")
-      await (left ? route.abort() : route.fallback()).catch(() => undefined)
+      const left = loads !== deckLoad || !onDeck()
+      await (fromDeck && left ? route.abort() : route.fallback()).catch(() => undefined)
     },
   )
 }
 
-stackTest.fail(
+stackTest(
   "a name entered just before going Back on a slow network reaches the server without opening the deck again",
   async ({ page, context, stack }) => {
     const cookie = await stack.signIn()
@@ -131,11 +139,12 @@ stackTest.fail(
     await field(page).press("Enter")
     await page.goBack()
     await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByRole("heading", { name: "Quick rename" })).toBeVisible()
     await expect.poll(() => serverName(stack, cookie, deck), { timeout: 5000 }).toBe("Quick rename")
   },
 )
 
-stackTest.fail(
+stackTest(
   "a deck imported and left at once on a slow network keeps its file's name on Home",
   async ({ page, context, stack }) => {
     const cookie = await stack.signIn()
@@ -145,6 +154,7 @@ stackTest.fail(
     const deck = await openClean(page)
     await page.goBack()
     await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByRole("heading", { name: "clean" })).toBeVisible()
     await expect.poll(() => serverName(stack, cookie, deck), { timeout: 5000 }).toBe("clean")
   },
 )
