@@ -3,6 +3,8 @@ import type { Page } from "@playwright/test"
 declare global {
   interface Window {
     deviceDelay?: number
+    deviceGate?: Promise<void>
+    openDevice?: () => void
   }
 }
 
@@ -16,9 +18,11 @@ export async function holdableDevice(page: Page): Promise<void> {
       options?: IDBTransactionOptions,
     ) {
       const delay = window.deviceDelay
-      if (mode !== "readwrite" || delay === undefined) return begin.call(this, stores, mode, options)
+      const gate = window.deviceGate
+      if (mode !== "readwrite" || (delay === undefined && gate === undefined))
+        return begin.call(this, stores, mode, options)
       type Operation = {
-        method: "getAll" | "put" | "delete"
+        method: "get" | "getAll" | "put" | "delete"
         args: unknown[]
         request: { result: unknown; onsuccess: (() => void) | null; onerror: (() => void) | null }
       }
@@ -43,14 +47,17 @@ export async function holdableDevice(page: Page): Promise<void> {
         else run(operation)
         return operation.request
       }
-      window.setTimeout(() => {
+      const start = () => {
         const real = begin.call(this, stores, mode, options)
         real.oncomplete = () => facade.oncomplete?.()
         store = real.objectStore(typeof stores === "string" ? stores : (stores[0] ?? ""))
         for (const operation of waiting.splice(0)) run(operation)
-      }, delay)
+      }
+      if (gate === undefined) window.setTimeout(start, delay)
+      else void gate.then(start)
       return Object.assign(facade, {
         objectStore: () => ({
+          get: (key: unknown) => queue("get", key),
           getAll: (range: unknown) => queue("getAll", range),
           put: (value: unknown, key: unknown) => queue("put", value, key),
           delete: (key: unknown) => queue("delete", key),
@@ -63,5 +70,22 @@ export async function holdableDevice(page: Page): Promise<void> {
 export async function slowDevice(page: Page): Promise<void> {
   await page.evaluate(() => {
     window.deviceDelay = 20_000
+  })
+}
+
+export async function holdDevice(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    window.deviceGate = new Promise((open) => {
+      window.openDevice = open
+    })
+  })
+}
+
+export async function openDevice(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const open = window.openDevice
+    window.deviceGate = undefined
+    window.openDevice = undefined
+    open?.()
   })
 }

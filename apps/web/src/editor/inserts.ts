@@ -1,5 +1,6 @@
 import { type ElementId, type Undoable } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
+import { holdKeys, type HeldKeys } from "@airdesign/render"
 import type { CommitOutcome } from "@/commit-edit"
 import type { UndoName } from "@/copy/undo-copy"
 import type { DeckPaint } from "@/editor/use-deck-paint"
@@ -21,20 +22,30 @@ export function deckInserts(deck: InsertingDeck) {
   const { id, pictureTool, record, settle } = deck
   const { shownParts, canvases, current, setEntering, showEdited } = deck.shown
 
-  function recordAdded(name: UndoName) {
+  function recordAdded(name: UndoName, keys?: HeldKeys) {
     return async (added: ElementId | null, undoable: Undoable | null) => {
       if (undoable !== null) record({ name, undoable })
       await showEdited(current)
-      setEntering(added)
+      setEntering(added === null ? null : { id: added, ...(keys === undefined ? {} : { keys }) })
     }
   }
 
   async function changeElement(change: ElementChange) {
+    const keys = change.change === "remove" ? undefined : holdKeys(document)
     const opened = await connect(memoryRemote()).openDeck(id)
-    if (!opened.ok) return
-    settle(
-      await commitElement(id, shownParts.current, opened.register, change, recordAdded(elementNames[change.change])),
+    if (!opened.ok) {
+      keys?.stop()
+      return
+    }
+    const outcome = await commitElement(
+      id,
+      shownParts.current,
+      opened.register,
+      change,
+      recordAdded(elementNames[change.change], keys),
     )
+    if (outcome === "refused") keys?.stop()
+    settle(outcome)
   }
 
   function addText() {

@@ -14,6 +14,7 @@ import {
   type Selection,
   type SlideSize,
 } from "./box-gesture.js"
+import { typeHeld } from "./held-keys.js"
 import type { CanvasElement } from "./record.js"
 import type { PaintStore } from "./store.js"
 
@@ -65,9 +66,11 @@ function enterText(frame: HTMLElement): boolean {
   return true
 }
 
-export function enterElement(slide: HTMLElement, element: CanvasElement): void {
+export function enterElement(slide: HTMLElement, element: CanvasElement, typed: string): void {
   const frame = slide.querySelector<HTMLElement>(`[data-canvas-element="${element.key}"]`)
-  if (frame !== null && !enterText(frame)) frame.focus()
+  if (frame === null) return
+  if (enterText(frame)) typeHeld(slide.ownerDocument, typed)
+  else frame.focus()
 }
 
 export function useMoves(

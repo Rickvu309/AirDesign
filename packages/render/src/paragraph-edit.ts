@@ -137,3 +137,5 @@ export function replaceSelection(
   const at = { paragraph: start.paragraph, offset: start.offset + line.length }
   return lines.length === 1 ? [next, at] : insertLines(next, at, ["", ...lines.slice(1)])
 }
+
+export const lineBreak = /\r\n|[\r\n\u2028\u2029\u0085\v\f]/

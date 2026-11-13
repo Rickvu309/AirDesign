@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from "react"
 import type { Box, ElementId, TableChange } from "@airdesign/document"
 import { PaintedElement } from "./element-kind.js"
+import type { HeldKeys } from "./held-keys.js"
 import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.js"
 import { SelectionFrame } from "./selection-frame.js"
 import { slideBackground } from "./slide-background.js"
@@ -27,6 +28,8 @@ const visuallyHidden = {
 
 export { unshownFill } from "./unshown-fill.js"
 
+export type Entering = { readonly id: ElementId; readonly keys?: HeldKeys }
+
 export function SlideCanvas(props: {
   readonly store: PaintStore
   readonly slide: CanvasSlide
@@ -38,7 +41,7 @@ export function SlideCanvas(props: {
   readonly onRemove?: (id: ElementId) => void
   readonly onTable?: (id: ElementId, change: TableChange) => void
   readonly tableBar?: TableBar
-  readonly entering?: ElementId | null
+  readonly entering?: Entering | null
   readonly formatting?: TextFormatting
 }) {
   const { slide, width } = props
@@ -52,7 +55,8 @@ export function SlideCanvas(props: {
   const selected = moving === null ? undefined : slide.elements.find((each) => each.id === moving.selected)
   const surface = useRef<HTMLDivElement>(null)
   const entered = useRef<ElementId | null>(null)
-  const entering = slide.elements.find((each) => each.id !== null && each.id === props.entering)
+  const keys = props.entering?.keys
+  const entering = slide.elements.find((each) => each.id !== null && each.id === props.entering?.id)
   const named = useRef<{ frames: Named; part: string | null }>({ frames: new Map(), part: null })
   const say = moving?.say
   useLayoutEffect(() => {
@@ -67,8 +71,8 @@ export function SlideCanvas(props: {
     const host = surface.current
     if (entering?.id === undefined || entering.id === null || host === null || entered.current === entering.id) return
     entered.current = entering.id
-    enterElement(host, entering)
-  }, [entering])
+    enterElement(host, entering, keys?.take() ?? "")
+  }, [entering, keys])
   return (
     <div
       ref={surface}

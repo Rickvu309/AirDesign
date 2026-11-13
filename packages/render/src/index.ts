@@ -16,7 +16,8 @@ export {
   type ElementRecord,
   type PaintBox,
 } from "./record.js"
-export { SlideCanvas, unshownFill } from "./slide-canvas.js"
+export { holdKeys, type HeldKeys } from "./held-keys.js"
+export { SlideCanvas, unshownFill, type Entering } from "./slide-canvas.js"
 export type { TableBar } from "./table-paint.js"
 export { paintStore, type PaintStore } from "./store.js"
 export { textFormatting, type TextFormatting } from "./text-formatting.js"
