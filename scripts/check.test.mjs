@@ -135,7 +135,7 @@ if (stampable(["test"], true)) {
 if (stampable(["browser", "test"], true)) throw new Error("a failed test next to browser must not stamp the commit")
 if (!stampable(["browser"], true)) throw new Error("the browser tests run on ci and must not stop a stamp")
 if (stampable([], false)) throw new Error("a check that stopped early must not stamp the commit")
-for (const name of ["conflict-markers", "migration-numbers"]) {
+for (const name of ["conflict-markers", "migration-numbers", "commit-titles"]) {
   if (!everyStep.includes(name)) throw new Error(`check lost the step ${name}`)
   if (!warnSteps.has(name)) throw new Error(`${name} is new and starts in warnSteps`)
 }
