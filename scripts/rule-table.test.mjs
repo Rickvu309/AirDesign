@@ -1,6 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { guarded } from "./bar.mjs"
 import { authored, tokenLimit, tokensOf } from "./file-size.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -19,5 +20,6 @@ same("AGENTS.md names the file that holds the rule table", agents.includes("`CHE
 same("AGENTS.md no longer holds the rule table", agents.includes("| Rule | Enforced by |"), false)
 same("the rule table sits in CHECKS.md", table.includes("| Rule | Enforced by |"), true)
 same("the file-size check covers CHECKS.md", authored("CHECKS.md"), true)
+same("a change to CHECKS.md is listed for the owner", guarded("CHECKS.md"), true)
 same("CHECKS.md is under the file-size limit", tokensOf(Buffer.byteLength(table)) <= tokenLimit, true)
 same("AGENTS.md has room to take a new rule", tokensOf(Buffer.byteLength(agents)) <= tokenLimit * 0.75, true)
