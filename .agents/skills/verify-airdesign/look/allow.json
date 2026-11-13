@@ -28,5 +28,11 @@
     "detector": "text-contrast",
     "selector": "[data-editor-grid] [data-slide-entry] > span",
     "reason": "An unselected slide number uses text-faint, the same token the designed grid uses on a light slide. The selected number uses primary-strong."
+  },
+  {
+    "page": "table-cell-undone",
+    "detector": "invisible-control",
+    "selector": "[data-table-text]",
+    "reason": "An empty table cell with the caret in it is drawn by the cell's borders, which sit on its parent. The text area inside has nothing of its own to paint, as a new table's first cell does."
   }
 ]
