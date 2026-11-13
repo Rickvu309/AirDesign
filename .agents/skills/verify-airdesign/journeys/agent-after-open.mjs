@@ -128,10 +128,11 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
   await expect(log.getByText("Stopped editing slides", { exact: true })).toBeVisible()
   await expect(title).toHaveText("Hello from Aira")
+  await expect(side.getByRole("button", { name: "Undo", exact: true })).toBeEnabled()
   await page.unroute(calling)
   const stored = (await post(deckRoutes.open, { deck: fresh }, cookie)).json.register.elements["256.2"]
   await capture("stopped-after-landing")
   note(
-    `Stop after the edit reached the server: the step reads Stopped editing slides, the title reads Hello from Aira, Undo buttons ${String(await side.getByRole("button", { name: "Undo", exact: true }).count())}, the server's element is ${stored.phase} (known failure: no Undo, pinned in tests/browser/aira-panel.spec.ts)`,
+    `Stop after the edit reached the server: the step reads Stopped editing slides, the title reads Hello from Aira, Undo is offered for the edit that landed, and the server's element is ${stored.phase}`,
   )
 }

@@ -1,119 +1,20 @@
-import { airaRoutes, catalog, deckRoutes, mcpRoutes, projectTools, type ReplyBlock } from "@airdesign/catalog"
+import { airaRoutes, deckRoutes } from "@airdesign/catalog"
 import { describe, expect, it, vi } from "vitest"
 import { airaChat, askAira, undoExchange, type AiraChat } from "./aira-loop"
-
-const deck = "deck"
-const nameOf = (op: string) => projectTools(catalog).find((tool) => tool.op === op)?.name ?? ""
-const edit = nameOf("edit_deck")
-const read = nameOf("read_deck")
-const stop = nameOf("stop_run")
-const usage = { used: 0.5, allowed: 2, resets: "2026-11-16T00:00:00.000Z" }
-
-type Turn =
-  | { readonly lines: readonly unknown[]; readonly then?: "drop" | "hold" }
-  | { readonly status: number; readonly body: unknown }
-
-type Answer = { readonly structuredContent?: unknown; readonly isError?: boolean; readonly text?: string }
-
-type Sent = { readonly path: string; readonly body: Record<string, unknown> }
-
-function said(text: string) {
-  return { type: "text", text }
-}
-
-function call(id: string, name: string, input: Record<string, unknown>): ReplyBlock {
-  return { type: "tool_use", id, name, input }
-}
-
-function ended(content: readonly ReplyBlock[]) {
-  const stop = content.some((block) => block.type === "tool_use") ? "tool_use" : "end_turn"
-  return { type: "end", ok: true, stop, content, usage }
-}
-
-function streamed(turn: Extract<Turn, { lines: unknown }>, signal: AbortSignal | null | undefined): ReadableStream {
-  const encoder = new TextEncoder()
-  return new ReadableStream({
-    start(controller) {
-      for (const line of turn.lines) controller.enqueue(encoder.encode(`${JSON.stringify(line)}\n`))
-      if (turn.then === "drop") controller.error(new TypeError("network"))
-      else if (turn.then === "hold") {
-        signal?.addEventListener("abort", () => controller.error(new DOMException("stopped", "AbortError")))
-      } else controller.close()
-    },
-  })
-}
-
-function scripted(
-  turns: readonly Turn[],
-  answers: readonly Answer[],
-  hooks: { onTool?: () => void; onStop?: () => Promise<void>; holdTools?: true } = {},
-) {
-  const queue = [...turns]
-  const replies = [...answers]
-  const sent: Sent[] = []
-  const send: typeof fetch = async (input, init) => {
-    const path = String(input)
-    const body = JSON.parse(String(init?.body)) as Record<string, unknown>
-    sent.push({ path, body })
-    if (path === airaRoutes.turn.path) {
-      const turn = queue.shift()
-      if (turn === undefined) throw new Error("no turn left")
-      if ("status" in turn) return new Response(JSON.stringify(turn.body), { status: turn.status })
-      return new Response(streamed(turn, init?.signal), { status: 200 })
-    }
-    if (path === airaRoutes.stop.path) {
-      await hooks.onStop?.()
-      return new Response(JSON.stringify({ ok: true }))
-    }
-    if (path === mcpRoutes.mcp.path) {
-      hooks.onTool?.()
-      if (hooks.holdTools === true) {
-        await new Promise<never>((_, reject) => {
-          init?.signal?.addEventListener("abort", () => reject(new DOMException("stopped", "AbortError")))
-        })
-      }
-      const params = body.params as { name: string; arguments: Record<string, unknown> }
-      const reply = params.name === stop ? { structuredContent: { ok: true } } : (replies.shift() ?? {})
-      const text = reply.text ?? JSON.stringify(reply.structuredContent ?? {})
-      const result = { content: [{ type: "text", text }], ...reply }
-      return new Response(`event: message\ndata: ${JSON.stringify({ jsonrpc: "2.0", id: body.id, result })}\n\n`)
-    }
-    if (path === deckRoutes.undo.path) {
-      const runId = String(body.runId)
-      if (runId === "fenced") return new Response(JSON.stringify({ ok: false, refusal: "run-fenced" }))
-      return new Response(JSON.stringify({ ok: true, deck, revision: 9, key: `${deck}:9` }))
-    }
-    throw new Error(path)
-  }
-  const turnsSent = () =>
-    sent.filter((each) => each.path === airaRoutes.turn.path).map((each) => each.body.messages as readonly unknown[])
-  const toolsSent = () =>
-    sent.filter((each) => each.path === mcpRoutes.mcp.path).map((each) => (each.body.params as { name: string }).name)
-  return { send, sent, turnsSent, toolsSent }
-}
-
-async function asking(
-  chat: AiraChat,
-  text: string,
-  link: ReturnType<typeof scripted>,
-  more: { readonly stopOn?: (chat: AiraChat) => boolean; readonly added?: () => string | undefined } = {},
-) {
-  const stopping = new AbortController()
-  const shown: AiraChat[] = []
-  const done = await askAira(chat, text, {
-    signal: stopping.signal,
-    fetch: link.send,
-    ...(more.added === undefined ? {} : { added: more.added }),
-    show: (next) => {
-      shown.push(next)
-      if (more.stopOn?.(next) === true) stopping.abort()
-    },
-  })
-  return { done, shown, stopping }
-}
-
-const edited = { structuredContent: { ok: true, revision: 2, runId: "run-1" } }
-const editCall = call("call_1", edit, { deck, base: 1, changes: [] })
+import {
+  asking,
+  call,
+  deck,
+  edit,
+  editCall,
+  edited,
+  ended,
+  read,
+  said,
+  scripted,
+  stop,
+  usage,
+} from "./aira-loop-script"
 
 describe("Aira's loop in the browser", () => {
   it("streams a text answer and ends the exchange with nothing to undo", async () => {
@@ -265,20 +166,10 @@ describe("Aira's loop in the browser", () => {
 
   it("stops between calls, answers the call it skipped, and closes the run that landed", async () => {
     const calls = [editCall, call("call_2", edit, { deck, base: 2, changes: [] })]
-    const stopping: { abort?: () => void } = {}
-    const link = scripted([{ lines: [ended(calls)] }, { lines: [ended([{ type: "text", text: "Ok" }])] }], [edited], {
-      onTool: () => stopping.abort?.(),
+    const link = scripted([{ lines: [ended(calls)] }, { lines: [ended([{ type: "text", text: "Ok" }])] }], [edited])
+    const { done } = await asking(airaChat(deck), "Retitle", link, {
+      stopOn: (chat) => chat.exchanges[0]?.steps[0]?.kind === "tool" && chat.exchanges[0].steps[0].state === "done",
     })
-    const first = askAira(airaChat(deck), "Retitle", {
-      signal: (() => {
-        const controller = new AbortController()
-        stopping.abort = () => controller.abort()
-        return controller.signal
-      })(),
-      fetch: link.send,
-      show: () => undefined,
-    })
-    const done = await first
     expect(done.exchanges[0]?.end).toBe("stopped")
     expect(done.exchanges[0]?.steps.map((step) => (step.kind === "tool" ? step.state : step.kind))).toEqual([
       "done",
@@ -380,38 +271,5 @@ describe("Aira's loop in the browser", () => {
     const asked = link.sent.length
     expect(refused === undefined ? "missing" : await undoExchange(refused, 0, link.send)).toBeUndefined()
     expect(link.sent).toHaveLength(asked)
-  })
-
-  describe("when Stop comes while a tool call is still waiting for the server", () => {
-    async function stoppedInFlight(calls: readonly ReplyBlock[]) {
-      const controller = new AbortController()
-      const link = scripted([{ lines: [ended(calls)] }, { lines: [ended([{ type: "text", text: "Ok" }])] }], [], {
-        onTool: () => void setTimeout(() => controller.abort(), 0),
-        holdTools: true,
-      })
-      const done = await askAira(airaChat(deck), "Retitle", {
-        signal: controller.signal,
-        fetch: link.send,
-        show: () => undefined,
-      })
-      return { done, link }
-    }
-
-    it("ends the hung call, marks its step stopped, and tells the model an edit may have landed", async () => {
-      const { done, link } = await stoppedInFlight([editCall])
-      expect(done.exchanges[0]?.end).toBe("stopped")
-      expect(done.exchanges[0]?.steps).toEqual([{ kind: "tool", id: "call_1", name: edit, state: "stopped" }])
-      expect(link.toolsSent()).toEqual([edit])
-      const [answer] = done.answers
-      expect(answer).toMatchObject({ tool_use_id: "call_1", is_error: true })
-      expect(JSON.stringify(answer)).toContain("may have landed")
-      expect(JSON.stringify(answer)).not.toContain("Nothing landed")
-    })
-
-    it("says a read changed nothing", async () => {
-      const { done } = await stoppedInFlight([call("call_1", read, { deck })])
-      expect(done.exchanges[0]?.steps).toEqual([{ kind: "tool", id: "call_1", name: read, state: "stopped" }])
-      expect(JSON.stringify(done.answers[0])).toContain("Nothing changed")
-    })
   })
 })

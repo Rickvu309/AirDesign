@@ -64,6 +64,7 @@ export type AiraEvent =
       readonly state: ToolState
       readonly run: string | undefined
     }
+  | { readonly type: "landed"; readonly run: string }
   | { readonly type: "end"; readonly end: AiraEnd; readonly usage?: WeekUsage | undefined }
   | { readonly type: "undone"; readonly exchange: number }
   | { readonly type: "undo-refused"; readonly exchange: number }
@@ -74,7 +75,7 @@ export type AskOptions = {
   readonly added?: () => string | undefined
   readonly fetch?: typeof fetch
   readonly mint?: () => string
-  readonly after?: Promise<unknown>
+  readonly after?: Promise<AiraChat | undefined>
   readonly opened?: Promise<unknown>
   readonly pause?: (ms: number, signal: AbortSignal) => Promise<void>
 }
@@ -88,10 +89,12 @@ type Called = {
   readonly ok: boolean
   readonly run: string | undefined
   readonly stopped?: true
+  readonly landing?: Promise<string | undefined>
 }
 
 const indexingTries = 15
 const indexingPause = 1000
+const landingWait = 10_000
 const accept = "application/json, text/event-stream"
 const lasting: ReadonlySet<string> = new Set(["run-fenced", "person-protected", "dead"])
 
@@ -101,6 +104,10 @@ const stopTool = tools.find((tool) => tool.op === "stop_run")?.name ?? ""
 
 export function airaChat(deck: string): AiraChat {
   return { deck, history: [], answers: [], exchanges: [], usage: null }
+}
+
+function withRun(runs: readonly string[], run: string | undefined): readonly string[] {
+  return run === undefined || runs.includes(run) ? runs : [...runs, run]
 }
 
 function changeLast(chat: AiraChat, change: (exchange: AiraExchange) => AiraExchange): AiraChat {
@@ -161,9 +168,11 @@ export function airaStep(chat: AiraChat, event: AiraEvent): AiraChat {
       return changeLast(next, (last) => ({
         ...last,
         steps: settled(last.steps, answer.tool_use_id, state),
-        runs: run === undefined || last.runs.includes(run) ? last.runs : [...last.runs, run],
+        runs: withRun(last.runs, run),
       }))
     }
+    case "landed":
+      return changeLast(chat, (last) => ({ ...last, runs: withRun(last.runs, event.run) }))
     case "end": {
       const next = event.usage === undefined ? chat : { ...chat, usage: event.usage }
       return changeLast(next, (last) => ({ ...last, end: event.end, steps: ended(last.steps) }))
@@ -249,10 +258,9 @@ async function sendTool(send: typeof fetch, rpc: number, name: string, input: un
 }
 
 function interruptedAnswer(call: ToolCall): ToolAnswer {
-  const changes = catalog[opOf.get(call.name) ?? "read_deck"].kind === "command"
   return toolAnswer(
     call.id,
-    changes
+    changes(call)
       ? "The person stopped the run while this call was running. It may have landed: read the deck before relying on it."
       : "The person stopped the run while this call was running. Nothing changed.",
     false,
@@ -281,15 +289,20 @@ function pauseFor(ms: number, signal: AbortSignal): Promise<void> {
   })
 }
 
-async function callTool(
+function changes(call: ToolCall): boolean {
+  return catalog[opOf.get(call.name) ?? "read_deck"].kind === "command"
+}
+
+async function sendCall(
   send: typeof fetch,
   rpc: number,
   call: ToolCall,
   signal: AbortSignal,
+  cut: AbortSignal,
   pause: NonNullable<AskOptions["pause"]>,
 ): Promise<Called> {
   try {
-    let outcome = await sendTool(send, rpc, call.name, call.input, signal)
+    let outcome = await sendTool(send, rpc, call.name, call.input, cut)
     for (
       let tried = 0;
       outcome.fields?.refusal === "indexing" && tried < indexingTries && !signal.aborted;
@@ -297,11 +310,10 @@ async function callTool(
     ) {
       await pause(indexingPause, signal)
       if (signal.aborted) break
-      outcome = await sendTool(send, rpc, call.name, call.input, signal)
+      outcome = await sendTool(send, rpc, call.name, call.input, cut)
     }
     const run = outcome.fields?.runId
-    const edited =
-      outcome.ok && catalog[opOf.get(call.name) ?? "read_deck"].kind === "command" && typeof run === "string"
+    const edited = outcome.ok && changes(call) && typeof run === "string"
     return { answer: toolAnswer(call.id, outcome.text, outcome.ok), ok: outcome.ok, run: edited ? run : undefined }
   } catch {
     if (signal.aborted) return { answer: interruptedAnswer(call), ok: false, run: undefined, stopped: true }
@@ -311,6 +323,29 @@ async function callTool(
       run: undefined,
     }
   }
+}
+
+async function callTool(
+  send: typeof fetch,
+  rpc: number,
+  call: ToolCall,
+  signal: AbortSignal,
+  pause: NonNullable<AskOptions["pause"]>,
+): Promise<Called> {
+  if (!changes(call)) return sendCall(send, rpc, call, signal, signal, pause)
+  const cut = new AbortController()
+  const sending = sendCall(send, rpc, call, signal, cut.signal, pause)
+  const answered = await Promise.race([sending, untilStopped(sending, signal).then(() => undefined)])
+  if (answered !== undefined) return answered
+  const waited = new AbortController()
+  const landing = Promise.race([
+    sending.then((called) => called.run),
+    pause(landingWait, waited.signal).then(() => undefined),
+  ]).finally(() => {
+    waited.abort()
+    cut.abort()
+  })
+  return { answer: interruptedAnswer(call), ok: false, run: undefined, stopped: true, landing }
 }
 
 function stoppedAnswer(call: ToolCall): ToolAnswer {
@@ -339,6 +374,19 @@ async function closeRuns(send: typeof fetch, deck: string, runs: readonly string
   }
 }
 
+function continues(chat: AiraChat, before: AiraChat): boolean {
+  return (
+    chat.deck === before.deck &&
+    before.exchanges.length < chat.exchanges.length &&
+    before.exchanges.every((exchange, index) => chat.exchanges[index]?.asked === exchange.asked)
+  )
+}
+
+function landedIn(exchange: AiraExchange, before: AiraExchange | undefined): AiraExchange {
+  const runs = (before?.runs ?? []).reduce(withRun, exchange.runs)
+  return runs === exchange.runs ? exchange : { ...exchange, runs }
+}
+
 export async function askAira(start: AiraChat, asked: string, options: AskOptions): Promise<AiraChat> {
   const send = options.fetch ?? fetch
   const mint = options.mint ?? crypto.randomUUID.bind(crypto)
@@ -351,11 +399,16 @@ export async function askAira(start: AiraChat, asked: string, options: AskOption
     options.show(chat)
   }
   update({ type: "ask", text: asked })
-  await options.after
+  const before = await options.after
+  if (before !== undefined && continues(chat, before)) {
+    chat = { ...chat, exchanges: chat.exchanges.map((exchange, index) => landedIn(exchange, before.exchanges[index])) }
+    options.show(chat)
+  }
   let sent = userMessage(start.answers, asked)
   const closed = new Set<string>()
   let rpc = 1
   let stopped: Promise<void> = Promise.resolve()
+  const landing: Promise<string | undefined>[] = []
   for (;;) {
     const turned = await takeTurn(send, ask, chat.deck, [...chat.history, sent], signal, update)
     if (turned.kind === "ended") {
@@ -379,6 +432,7 @@ export async function askAira(start: AiraChat, asked: string, options: AskOption
       rpc += 1
       const runId = call.input.runId
       if (called.ok && call.name === stopTool && typeof runId === "string") closed.add(runId)
+      if (called.landing !== undefined) landing.push(called.landing)
       const state = called.stopped === true ? "stopped" : called.ok ? "done" : "refused"
       update({ type: "answered", answer: called.answer, state, run: called.run })
     }
@@ -390,6 +444,7 @@ export async function askAira(start: AiraChat, asked: string, options: AskOption
     if (more !== undefined) update({ type: "add", text: more })
     sent = userMessage(chat.answers, more)
   }
+  for (const run of await Promise.all(landing)) if (run !== undefined) update({ type: "landed", run })
   const open = (chat.exchanges.at(-1)?.runs ?? []).filter((runId) => !closed.has(runId))
   await Promise.all([stopped, closeRuns(send, chat.deck, open, rpc)])
   return chat

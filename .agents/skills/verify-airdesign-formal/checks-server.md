@@ -1,4 +1,4 @@
-# Checks on agent turns, Aira stop, usage, OAuth and deck ownership
+# Checks on agent turns, Aira stop, the Aira loop, usage, OAuth and deck ownership
 
 Same fields as [checks-document.md](checks-document.md). The `apps/api` replays start the real API on their own Postgres database: `pnpm vitest run apps/api/src/turn.test.ts apps/api/src/aira-closing.test.ts apps/api/src/owner.test.ts`.
 
@@ -29,6 +29,19 @@ One Aira ask runs its model call on server A while a person stops it from server
 Bounds: one ask, one stop, one next ask, a listen connection that can drop and reconnect. Run: `pnpm check:specs stop`. Replay: `apps/api/src/aira-closing.test.ts` drives two `Closing` instances from `apps/api/src/aira-closing.ts`, each on its own listen connection, against the real rows. Code: `Closing`, and the reserve and settle calls in `apps/api/src/aira.ts`.
 
 Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
+
+## aira-loop
+
+One Aira ask in the browser asks for one edit while the person may press Stop and then ask again. `askAira` is the only actor; the server is the edit landing and the answers it sends.
+
+- `StoppedRunUndoable`: once a stopped ask resolved, an edit that landed and answered in time is in the exchange's runs, which offers Undo as one step, and its run is stopped. Harm: a person keeps a change they tried to stop, with no Undo, and the run stays live.
+- `KnownRunClosed`: a run the exchange holds is stopped with stop_run before the ask resolves.
+- `NextAskAfterClose`: a next ask's turn is sent only after the stopped ask resolved, so its edits never join the stopped run.
+- `NextAskKeepsUndo`: the chat a next ask sends with still holds the stopped run, so Undo stays offered.
+
+Bounds: one edit call, one Stop, one next ask. After Stop an edit call keeps its fetch for `landingWait` (10 s); the model assumes an answer comes within that wait once the server landed, so the wait ends only on a call that has not landed. Run: `pnpm check:specs aira-loop`. Replay: `tests/aira-loop-replay.test.ts` drives every edge through the real `askAira` with a scripted `fetch` and `pause`: each path from the start to an edge's source, then the edge, comparing every state the code shows with the model's. Code: `askAira`, `callTool`, `sendCall`, `continues`, `landedIn` and `closeRuns` in `apps/web/src/aira-loop.ts`; the panel's `run` in `apps/web/src/aira-panel.tsx`, which drops a superseded ask's updates and keeps New chat, history and Undo off until the ask resolved. Leaves out: an answer that comes after the wait. `late` marks that landing: the exchange offers no Undo for it and its run stays live until the idle window, so the next ask's edits may join it. A refused or failed edit, which writes no run, and a read, whose fetch Stop still cuts at once. Plants: Stop cutting the edit's fetch at once (main before this check) fails the replay and `StoppedRunUndoable`; dropping the next ask's merge fails it on `nextKnown`; not waiting for the landing fails it on `settled`.
+
+Sync: the commit that added this check, on `626fae68`.
 
 ## usage
 
