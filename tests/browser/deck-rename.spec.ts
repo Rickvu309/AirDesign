@@ -3,6 +3,7 @@ import { openFixture as open } from "./fixture-deck.ts"
 import { store } from "./home-store.ts"
 import { cleanFixture, forward, openClean, signInBrowser, test as stackTest, type Stack } from "./api-stack"
 import { exportFromDialog } from "./export-dialog.ts"
+import { newBlankDeck } from "./new-deck"
 
 const title = (page: Page) => page.getByRole("button", { name: /^Rename deck: / })
 const field = (page: Page) => page.getByRole("textbox", { name: "Deck name" })
@@ -125,6 +126,39 @@ async function slow(page: Page, path: string): Promise<void> {
   )
 }
 
+async function held(page: Page, path: string): Promise<() => void> {
+  let release = () => {}
+  const gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await page.route(
+    (url) => url.pathname === path,
+    async (route) => {
+      await gate
+      await route.fallback().catch(() => undefined)
+    },
+  )
+  return release
+}
+
+function opened(page: Page): string[] {
+  const decks: string[] = []
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/decks/open") decks.push(String(request.postDataJSON().deck))
+  })
+  return decks
+}
+
+async function leftAtOnce(page: Page, create: () => Promise<void>): Promise<string> {
+  await page.goto("/")
+  await create()
+  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  const deck = new URL(page.url()).pathname.slice("/deck/".length)
+  await page.goBack()
+  await expect(page).toHaveURL(/\/$/)
+  return deck
+}
+
 stackTest(
   "a name entered just before going Back on a slow network reaches the server without opening the deck again",
   async ({ page, context, stack }) => {
@@ -159,7 +193,7 @@ stackTest(
   },
 )
 
-stackTest.fail(
+stackTest(
   "a deck imported and left before its editor opens is listed on Home under its file's name",
   async ({ page, context, stack }) => {
     const cookie = await stack.signIn()
@@ -174,5 +208,54 @@ stackTest.fail(
     await expect(page).toHaveURL(/\/$/)
     await expect(page.getByRole("heading", { name: "clean" })).toBeVisible()
     await expect.poll(() => serverName(stack, cookie, deck), { timeout: 5000 }).toBe("clean")
+  },
+)
+
+for (const [kind, name, create] of [
+  ["deck imported", "clean", (page: Page) => page.locator("input[type=file]").setInputFiles(cleanFixture)],
+  ["blank deck created", "Blank deck", newBlankDeck],
+] as const) {
+  stackTest(
+    `a ${kind} and left at once shows on Home before its open reaches the server, then the server lists it`,
+    async ({ page, context, stack }) => {
+      const cookie = await stack.signIn()
+      await signInBrowser(context, cookie)
+      await forward(page, stack)
+      const release = await held(page, "/decks/open")
+      const deck = await leftAtOnce(page, () => create(page))
+      await expect(page.getByRole("heading", { name })).toBeVisible()
+      expect(await serverName(stack, cookie, deck)).toBeUndefined()
+      release()
+      await expect.poll(() => serverName(stack, cookie, deck), { timeout: 5000 }).toBe(name)
+      await page.reload()
+      await expect(page.getByRole("heading", { name })).toHaveCount(1)
+    },
+  )
+}
+
+stackTest(
+  "a deck imported and not opened is shown and sent only by the account that imported it",
+  async ({ page, context, stack }) => {
+    const first = await stack.signIn()
+    const second = await stack.signIn()
+    await signInBrowser(context, first)
+    await forward(page, stack)
+    await page.route("**/decks/open", (route) => route.abort())
+    const deck = await leftAtOnce(page, () => page.locator("input[type=file]").setInputFiles(cleanFixture))
+    await expect(page.getByRole("heading", { name: "clean" })).toBeVisible()
+    await page.unroute("**/decks/open")
+    const sent = opened(page)
+    await signInBrowser(context, second)
+    await page.reload()
+    await expect(page.getByRole("heading", { name: "No decks yet" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "clean" })).toHaveCount(0)
+    expect(sent).toEqual([])
+    expect(await stack.saved(deck)).toBeUndefined()
+    await signInBrowser(context, first)
+    await page.reload()
+    await expect(page.getByRole("heading", { name: "clean" })).toBeVisible()
+    await expect.poll(() => serverName(stack, first, deck), { timeout: 5000 }).toBe("clean")
+    expect(sent).toEqual([deck])
+    expect((await stack.saved(deck))?.owner).toBe(await stack.emailOf(first))
   },
 )

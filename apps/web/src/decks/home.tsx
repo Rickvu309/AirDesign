@@ -1,5 +1,5 @@
 import { deckRoutes, signOutRoutes } from "@airdesign/catalog"
-import { connect, dropDeck, memoryRemote, sendQueuedNames } from "@airdesign/live"
+import { connect, dropDeck, memoryRemote, sendQueuedNames, sendUnopened } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -18,6 +18,7 @@ import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/
 import { deckTime } from "@/decks/deck-time"
 import { addressOf, addressRead } from "@/decks/deck-address"
 import { allDecks, decksMatching, recentDecks, type ListedDeck } from "@/decks/deck-listing"
+import { server } from "@/commit-edit"
 import { importDeck } from "@/import-deck"
 import { signInAddress } from "@/thin-notice"
 
@@ -36,12 +37,15 @@ async function post(path: string, body: object) {
   return answer
 }
 
-async function withQueuedNames(listing: Listing): Promise<Listing> {
-  const queued = await sendQueuedNames([...listing.decks, ...listing.trash].map((deck) => deck.deck)).catch(
-    () => new Map<string, string>(),
-  )
+async function withDevice(listing: Listing): Promise<Listing> {
+  const listed = [...listing.decks, ...listing.trash].map((deck) => deck.deck)
+  const [queued, unopened] = await Promise.all([
+    sendQueuedNames(listed).catch(() => new Map<string, string>()),
+    sendUnopened(server, listed).catch(() => []),
+  ])
   const named = (decks: Deck[]) => decks.map((deck) => ({ ...deck, name: queued.get(deck.deck) ?? deck.name }))
-  return { ...listing, decks: named(listing.decks), trash: named(listing.trash) }
+  const device = unopened.map((deck) => ({ ...deck, edited: deck.created }))
+  return { ...listing, decks: [...device, ...named(listing.decks)], trash: named(listing.trash) }
 }
 
 async function signOut(): Promise<void> {
@@ -118,7 +122,7 @@ export function Home({
     try {
       const result = await post(deckRoutes.list.path, {})
       if (result.ok) {
-        setListing(await withQueuedNames(result))
+        setListing(await withDevice(result))
         setUnavailable(false)
       } else if (result.refusal !== "session") setUnavailable(true)
     } catch {
