@@ -92,6 +92,16 @@ _Avoid_: validate, verify, diff
 A break put into code on purpose, to see whether a check catches it.
 _Avoid_: mutant, planted break, injected bug
 
+### How a pull request is named
+
+**title**:
+The first line of a pull request or a commit: at most 72 characters, an imperative verb and the one outcome, with no full stop.
+_Avoid_: subject, headline, summary line
+
+**area**:
+The part of AirDesign a pull request touches, named by a label the `bar` check adds from the changed paths in `scripts/areas.json`: `editor`, `aira`, `deck-home`, `sign-in`, `pptx`, `document`, `verify`, `specs` and `tooling`. A pull request may have several.
+_Avoid_: component, scope, module
+
 ## Product words
 
 The words a person reads in AirDesign. Code may keep its own names; the screen uses these. Every button, title and menu item is in sentence case, except the names Trash, PowerPoint, Aira and AirDesign. Copy speaks to the person as "you", never "we".

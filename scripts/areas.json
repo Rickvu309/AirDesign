@@ -1,0 +1,107 @@
+{
+  "editor": {
+    "paths": ["apps/web/src/", "packages/render/", "tests/browser/"],
+    "except": [
+      "apps/web/src/aira-",
+      "apps/web/src/usage-",
+      "apps/web/src/copy/aira-",
+      "apps/web/src/copy/usage-",
+      "apps/web/src/copy/account-",
+      "apps/web/src/copy/settings-",
+      "apps/web/src/credits/",
+      "apps/web/src/pricing/",
+      "apps/web/src/decks/",
+      "apps/web/src/settings/",
+      "apps/web/src/connect/",
+      "tests/browser/aira-",
+      "tests/browser/usage",
+      "tests/browser/home",
+      "tests/browser/recents-",
+      "tests/browser/consent",
+      "tests/browser/account",
+      "tests/browser/site-"
+    ]
+  },
+  "aira": {
+    "paths": [
+      "apps/web/src/aira-",
+      "apps/web/src/usage-",
+      "apps/web/src/copy/aira-",
+      "apps/web/src/copy/usage-",
+      "apps/web/src/credits/",
+      "apps/web/src/pricing/",
+      "apps/web/src/settings/usage-",
+      "apps/api/src/aira",
+      "apps/api/src/agent-",
+      "apps/api/src/turn",
+      "apps/api/src/mcp",
+      "packages/mcp/",
+      "packages/usage/",
+      "tests/browser/aira-",
+      "tests/browser/usage"
+    ]
+  },
+  "deck-home": {
+    "paths": ["apps/web/src/decks/", "apps/api/src/deck-list", "tests/browser/home", "tests/browser/recents-"]
+  },
+  "sign-in": {
+    "paths": [
+      "apps/site/src/access/",
+      "apps/site/src/pages/sign-in",
+      "apps/api/src/sign-in",
+      "apps/api/src/sign-out",
+      "apps/api/src/session-cookie",
+      "apps/api/src/oauth",
+      "apps/api/src/grant",
+      "apps/api/src/consent",
+      "apps/api/src/clients",
+      "apps/api/src/account",
+      "apps/web/src/connect/",
+      "apps/web/src/settings/",
+      "apps/web/src/copy/account-",
+      "apps/web/src/copy/settings-",
+      "packages/oauth/",
+      "tests/browser/consent",
+      "tests/browser/account"
+    ],
+    "except": ["apps/web/src/settings/usage-"]
+  },
+  "pptx": {
+    "paths": ["packages/pptx/", "scripts/pptx-"]
+  },
+  "document": {
+    "paths": [
+      "packages/document/",
+      "packages/engine/",
+      "packages/catalog/",
+      "packages/live/",
+      "apps/api/src/slide-",
+      "apps/api/src/order",
+      "apps/api/src/undo",
+      "apps/api/src/parallel-edits"
+    ]
+  },
+  "verify": {
+    "paths": [".agents/skills/", "tests/journeys/"]
+  },
+  "specs": {
+    "paths": ["specs/", "tests/spec-"]
+  },
+  "tooling": {
+    "paths": [
+      "scripts/",
+      "tooling/",
+      ".github/",
+      "AGENTS.md",
+      "GLOSSARY.md",
+      "metrics.json",
+      "package.json",
+      "pnpm-",
+      "tsconfig.json",
+      "vitest.",
+      "playwright.config",
+      ".oxlintrc",
+      ".oxfmtrc"
+    ]
+  }
+}

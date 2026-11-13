@@ -1,11 +1,13 @@
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { areasOf } from "./areas.mjs"
 import { beforeAfterLabel, beforeAfterLine, beforeAfterNeed, seen } from "./before-after.mjs"
 import { workingTree } from "./checked.mjs"
 import { ghApi, readWithRetry } from "./github-read.mjs"
 import { baseFault } from "./pull-base.mjs"
 import { measuredLive } from "./metrics.mjs"
+import { titleVerdict } from "./title.mjs"
 
 const guardedFolders = [".github/", "tooling/", "scripts/", "specs/"]
 const openFolders = ["scripts/pptx-fixtures/"]
@@ -196,6 +198,21 @@ export const labelsFor = (result) => [
   ...(result.lowers ? ["lowers-the-bar"] : []),
 ]
 
+export const longTitleLabel = "long-title"
+
+export const labelChanges = ({ result, shown, changedFiles, title }) => {
+  const long = titleVerdict(title) !== undefined
+  return {
+    add: [
+      ...labelsFor(result),
+      ...areasOf(changedFiles),
+      ...(shown.needed ? [beforeAfterLabel] : []),
+      ...(long ? [longTitleLabel] : []),
+    ],
+    remove: [...(shown.needed ? [] : [beforeAfterLabel]), ...(long ? [] : [longTitleLabel])],
+  }
+}
+
 const github = readWithRetry({ run: ghApi })
 
 const rows = (endpoint, shape) =>
@@ -280,7 +297,7 @@ const readPull = (repository, number) => {
     github([
       pulls,
       "--jq",
-      "{head: .head.sha, base: .base.sha, baseRef: .base.ref, files: .changed_files, body: .body} | @json",
+      "{head: .head.sha, base: .base.sha, baseRef: .base.ref, files: .changed_files, body: .body, title: .title} | @json",
     ]),
   )
   const fork = github([
@@ -296,6 +313,8 @@ const readPull = (repository, number) => {
   const changedFiles = listed.map((file) => file.name)
   return {
     reasons,
+    changedFiles,
+    title: pull.title,
     shown: beforeAfterNeed({ changedFiles, body: pull.body, repository }),
     wrongBase: baseFault(number, pull.baseRef),
   }
@@ -359,6 +378,8 @@ export const readLocal = (root) => {
   }
 }
 
+const areasLine = (files) => `Areas: ${areasOf(files).join(", ") || "none"}.`
+
 const self = fileURLToPath(import.meta.url)
 if (process.argv[1] && path.resolve(process.argv[1]) === self && process.argv[2] === "local") {
   try {
@@ -381,21 +402,21 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self && process.argv[2]
       console.log(`Wrong base: ${read.wrongBase}`)
       process.exitCode = 1
     }
-    if (process.argv.includes("--label")) {
-      const issue = `repos/${repository}/issues/${number}/labels`
+    console.log(areasLine(read.changedFiles))
+    if (titleVerdict(read.title) !== undefined) console.log(`Long title: ${titleVerdict(read.title)}.`)
+    const { add, remove } = labelChanges({ result, ...read })
+    const issue = `repos/${repository}/issues/${number}/labels`
+    for (const label of process.argv.includes("--label") ? remove : []) {
       try {
-        if (read.shown.needed) github(["-X", "POST", issue, "-f", `labels[]=${beforeAfterLabel}`])
-        else github(["-X", "DELETE", `${issue}/${beforeAfterLabel}`])
+        github(["-X", "DELETE", `${issue}/${label}`])
       } catch (error) {
         if (!missing(error))
-          console.log(
-            `The label ${beforeAfterLabel} could not be changed: ${String(error.stderr ?? error.message).trim()}`,
-          )
+          console.log(`The label ${label} could not be removed: ${String(error.stderr ?? error.message).trim()}`)
       }
     }
-    for (const label of process.argv.includes("--label") ? labelsFor(result) : []) {
+    for (const label of process.argv.includes("--label") ? add : []) {
       try {
-        github(["-X", "POST", `repos/${repository}/issues/${number}/labels`, "-f", `labels[]=${label}`])
+        github(["-X", "POST", issue, "-f", `labels[]=${label}`])
       } catch (error) {
         console.log(`The label ${label} could not be added: ${String(error.stderr ?? error.message).trim()}`)
       }
