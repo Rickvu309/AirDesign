@@ -5,6 +5,7 @@ import { openingElement, readFloor } from "./slide-floor.js"
 import { slideMeasure } from "./slide-measure.js"
 import type { SlideState } from "./slide-order.js"
 import { openedTable } from "./table-value.js"
+import { elementTakes, indexFacts } from "./element-takes.js"
 
 export const mediaTypes = ["image/png", "image/jpeg", "image/gif"] as const
 
@@ -115,7 +116,7 @@ function indexComplete(state: Indexed): boolean {
 export function elementRefusal(
   state: Indexed,
   command: ElementCommand,
-): "dead" | "present" | "group-box" | "locked" | null {
+): "dead" | "present" | "group-box" | "locked" | "kind" | null {
   const node = command.slide === "element-add" ? command.element.node : command.node
   if (shapeOf(node).slide !== command.id) return "dead"
   const opening = openingElement(state, node)
@@ -126,8 +127,10 @@ export function elementRefusal(
   if (command.slide === "element-restore") return elementGone(state, node) ? null : "dead"
   if (elementGone(state, node)) return "dead"
   if (opening === undefined) return indexComplete(state) ? "dead" : null
+  const animated = slideMeasure(state, command.id)?.animated.includes(shapeOf(node).shape) === true
+  if (elementTakes(indexFacts(opening, animated)).includes("remove")) return null
   if (opening.grouped || opening.kind === "group") return "group-box"
-  return slideMeasure(state, command.id)?.animated.includes(shapeOf(node).shape) === true ? "locked" : null
+  return animated ? "locked" : "kind"
 }
 
 export function readElementCommand(raw: Record<string, unknown>, id: SlideId): ElementCommand | undefined {

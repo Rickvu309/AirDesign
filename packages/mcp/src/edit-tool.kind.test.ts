@@ -1,0 +1,136 @@
+import { readDeckId } from "@airdesign/catalog"
+import { elementId, writeTextValue, type Kind } from "@airdesign/document"
+import { indexDeck, openDeck } from "@airdesign/engine"
+import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
+import { describe, expect, it } from "vitest"
+import { createServer, emptyLog, memoryTurns, type Session } from "./index.js"
+
+const size = { width: 12_192_000, height: 6_858_000 }
+const box = { x: 1_524_000, y: 1_122_363, cx: 9_144_000, cy: 2_387_600 }
+const title = writeTextValue([{ from: 0, runs: [{ from: 0, text: "Title" }] }])
+
+const rows: readonly (readonly [string, Kind, string | null])[] = [
+  ["256.2", "shape", title],
+  ["256.3", "shape", null],
+  ["256.4", "picture", null],
+  ["256.5", "chart", null],
+  ["256.6", "table", null],
+  ["256.7", "group", null],
+  ["256.8", "kept", null],
+  ["256.9", "connector", null],
+]
+
+function session(): Session {
+  const id = readDeckId("deck")
+  if (!id.ok) throw new Error("deck")
+  const elements = rows.map(([node, kind, value]) => ({ node: elementId(node), kind, value, box, grouped: false }))
+  const indexed = indexDeck(
+    openDeck(id.deck),
+    { actor: "person" },
+    {
+      deck: "deck",
+      once: "index",
+      offset: 0,
+      total: elements.length,
+      slides: [{ id: "256", position: 0, size, free: 10, animated: [], layout: [] }],
+      elements,
+    },
+  )
+  if (!indexed.ok) throw new Error(indexed.refusal)
+  return { deck: indexed.deck, caller: { actor: "agent", runId: "run" }, now: 0, turns: memoryTurns(), log: emptyLog() }
+}
+
+async function withClient(held: Session, use: (client: Client) => Promise<void>) {
+  const server = createServer(held)
+  const [a, b] = InMemoryTransport.createLinkedPair()
+  const client = new Client({ name: "test", version: "1" })
+  await server.connect(b)
+  await client.connect(a)
+  try {
+    await use(client)
+  } finally {
+    await client.close()
+    await server.close()
+  }
+}
+
+const text = writeTextValue([{ from: 0, runs: [{ from: -1, text: "Agent" }] }])
+
+function said(result: Awaited<ReturnType<Client["callTool"]>>): string {
+  return (result.content as readonly { readonly text?: string }[]).map((block) => block.text ?? "").join("\n")
+}
+
+describe("edit_deck refuses an edit the element's kind cannot take, and says what it can take", () => {
+  it("refuses text on each element that holds none, names it, its kind and the next call, and lands nothing", async () => {
+    const held = session()
+    await withClient(held, async (client) => {
+      for (const [node, kind, next] of [
+        ["256.3", "a shape that holds no text", "airdesign_add_text_box"],
+        ["256.4", "a picture", "airdesign_add_text_box"],
+        ["256.5", "a chart", "Tell the person"],
+        ["256.6", "a table", "Tell the person"],
+        ["256.7", "a group", "grouped"],
+        ["256.8", "kept exactly as the file has it", "Leave it"],
+        ["256.9", "a line", "airdesign_add_text_box"],
+      ] as const) {
+        const refused = await client.callTool({
+          name: "airdesign_edit_deck",
+          arguments: { deck: "deck", base: 0, changes: [{ node, readAt: 0, value: text }] },
+        })
+        expect(refused.isError, node).toBe(true)
+        expect(refused.structuredContent, node).toMatchObject({ ok: false, refusal: "kind" })
+        const words = said(refused)
+        expect(words, node).toContain(`Element ${node} is ${kind}`)
+        expect(words, node).toContain(next)
+        expect(words, node).toContain("It takes")
+      }
+    })
+    expect(held.deck.revision).toBe(0)
+    expect(held.deck.register.nodes.every((node) => held.deck.register.elements[node]?.phase !== "running")).toBe(true)
+  })
+
+  it("names every change that needs fixing at once, and lands none of them", async () => {
+    const held = session()
+    await withClient(held, async (client) => {
+      const refused = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: {
+          deck: "deck",
+          base: 0,
+          changes: [
+            { node: "256.2", readAt: 0, value: text },
+            { node: "256.4", readAt: 0, value: text },
+            { node: "256.6", readAt: 0, property: "box", value: { ...box, cx: 1 } },
+          ],
+        },
+      })
+      expect(refused.structuredContent).toMatchObject({ ok: false, refusal: "kind" })
+      const words = said(refused)
+      expect(words).toContain("Change 2 (256.4)")
+      expect(words).toContain("Change 3 (256.6)")
+      expect(words).not.toContain("Change 1")
+      expect(words).toContain(`cx ${String(box.cx)} and cy ${String(box.cy)}`)
+    })
+    expect(held.deck.register.elements[elementId("256.2")]).toBeUndefined()
+  })
+
+  it("lands what each kind can take: a move of a table, a picture or a chart", async () => {
+    const held = session()
+    await withClient(held, async (client) => {
+      const landed = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: {
+          deck: "deck",
+          base: 0,
+          changes: ["256.4", "256.5", "256.6"].map((node) => ({
+            node,
+            readAt: 0,
+            property: "box",
+            value: { ...box, x: 0 },
+          })),
+        },
+      })
+      expect(landed.isError).toBeFalsy()
+    })
+  })
+})

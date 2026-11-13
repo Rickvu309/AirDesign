@@ -1,6 +1,8 @@
 import { elementReaders, type ElementOp } from "@airdesign/catalog"
 import {
   elementGone,
+  indexFacts,
+  openingElement,
   presentSlides,
   readSlideId,
   shapeOf,
@@ -12,6 +14,7 @@ import { call, type Deck } from "@airdesign/engine"
 import type { Session, ToolResult } from "./call-tool.js"
 import { editDeck } from "./edit-tool.js"
 import { editRefusal, type EditAnswer } from "./edit-answer.js"
+import { kindSentence } from "./kind-refusal.js"
 import type { EditCode } from "./edit-next.js"
 import { stopLiveRuns } from "./run.js"
 import { heldRun } from "./turn.js"
@@ -28,6 +31,11 @@ function deleteDetail(deck: Deck, node: ElementId, code: EditCode): string | und
     return `Element ${node} is a group or inside a group, and deleting it is not supported. Edit its text instead.`
   if (code === "locked")
     return `Element ${node} has an animation. The exported PowerPoint file cannot lose it, so it stays.`
+  if (code === "kind") {
+    const opening = openingElement(deck.register, node)
+    if (opening === undefined) return undefined
+    return kindSentence(node, { facts: indexFacts(opening, false), missing: ["remove"], box: null })
+  }
   if (code !== "dead") return undefined
   const gone = readSlideId(shapeOf(node).slide) !== undefined && elementGone(deck.register, node)
   return gone

@@ -72,11 +72,11 @@ it("an export writes a stored value with several paragraphs and a value the rout
   expect(parts.get("ppt/slides/slide1.xml")).toEqual(saved)
 })
 
-it("an export of a stored edit refuses the fallback box that shares the edited id and writes nothing", () => {
+it("an export of a stored edit skips the shape that shares its id with a fallback copy and writes nothing", () => {
   const slide = new TextEncoder().encode(fallbackSlide)
   const saved = Uint8Array.from(slide)
   const parts = onSlide(slide)
-  expect(() => exportedParts(parts, editedRegister([["256.2", "typed"]]))).toThrow(/text-shape/)
+  expect(exportedParts(parts, editedRegister([["256.2", "typed"]])).get("ppt/slides/slide1.xml")).toEqual(saved)
   expect(parts.get("ppt/slides/slide1.xml")).toEqual(saved)
 })
 
@@ -137,11 +137,11 @@ it("an export writes an element's text and its last box together", () => {
   expect(next.match(/<a:xfrm>.*?<\/a:xfrm>/g)).toEqual(['<a:xfrm><a:off x="0" y="0"/><a:ext cx="1" cy="2"/></a:xfrm>'])
 })
 
-it("an export of a box refuses the fallback box that shares the moved id and writes nothing", () => {
+it("an export of a box skips the shape that shares its id with a fallback copy and writes nothing", () => {
   const slide = new TextEncoder().encode(fallbackSlide)
   const saved = Uint8Array.from(slide)
   const parts = onSlide(slide)
-  expect(() => exportedParts(parts, moved([["256.2", box]]))).toThrow(/box-shape/)
+  expect(exportedParts(parts, moved([["256.2", box]])).get(part)).toEqual(saved)
   expect(parts.get(part)).toEqual(saved)
 })
 

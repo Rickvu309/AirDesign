@@ -63,7 +63,6 @@ export function tableWritten(parts: Parts, shape: ReadShape, body: NodeRegister 
     const value = currentValue(body)
     const table = readTableValue(value)
     if (table !== null) next = writeTable(next, shape.part, shape.shape, table)
-    else if (value !== body.floor) throw new Error("text-shape")
   }
   const box = body.landed.some((row) => row.visible && row.property === "box") ? currentBox(body) : null
   return box === null

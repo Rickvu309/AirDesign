@@ -9,7 +9,7 @@ export { paintReader, type PaintBox, type PaintElement, type PaintReader, type S
 export { themeSwatches } from "./theme-swatches.js"
 export type { PaintParagraph, PaintRunStyle, PaintText } from "./paint-text.js"
 export type { PaintTable } from "./paint-table.js"
-export { readShapes, readSlides, type ReadShape } from "./read-shapes.js"
+export { readShapes, readSlides, shapeKind, type ReadShape } from "./read-shapes.js"
 export { readParts } from "./package-container.js"
 export { readPackage, type PackageLimitName } from "./package-limits.js"
 export { exactPageCheck } from "./render-pages.js"

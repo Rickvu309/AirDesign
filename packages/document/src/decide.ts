@@ -4,6 +4,7 @@ import { legacyElement, rootElement, shapeOf, type ElementId, type SlideId } fro
 import { limits, overLimit } from "./limits.js"
 import { floorFits, openingElement } from "./slide-floor.js"
 import { elementGone } from "./element-order.js"
+import { boxEdits, elementTakes, indexFacts, type ElementEdit, type ElementFacts } from "./element-takes.js"
 import { applySlide, openSlides, slideGone, type SlideCommand } from "./slide-order.js"
 import { storedValue, type Value } from "./value.js"
 
@@ -85,6 +86,7 @@ export const refusals = [
   "limit",
   "group-box",
   "locked",
+  "kind",
 ] as const
 
 export type Refusal = (typeof refusals)[number]
@@ -349,6 +351,42 @@ function hostedSlide(id: ElementId): string | null {
   return shapeOf(id).slide
 }
 
+function elementFacts(register: Register, node: ElementId): ElementFacts | undefined {
+  if (node.endsWith(".notes")) return { kind: "slide", text: true, grouped: false, animated: false }
+  const opening = openingElement(register, node)
+  return opening === undefined ? undefined : indexFacts(opening, false)
+}
+
+export type Missing = {
+  readonly facts: ElementFacts
+  readonly missing: readonly ElementEdit[]
+  readonly box: Box | null
+}
+
+export function editMissing(
+  stored: StoredRegister,
+  edit: Value & { readonly command: "person" | "agent"; readonly node: ElementId },
+): Missing | null {
+  const register = foldRegister(stored)
+  const facts = elementFacts(register, edit.node)
+  if (facts === undefined) return null
+  const body = storedBody(register, edit.node)
+  const box = (body === null ? null : currentBox(body)) ?? openingElement(register, edit.node)?.box ?? null
+  const table = edit.command === "person" && facts.kind === "table"
+  const wanted = edit.property === "box" ? boxEdits(box, edit.value) : [table ? ("table" as const) : ("text" as const)]
+  const taken = elementTakes(facts)
+  const missing = wanted.filter((each) => !taken.includes(each))
+  return missing.length === 0 ? null : { facts, missing, box }
+}
+
+function takenRefusal(register: Register, node: ElementId, command: Command): Refusal | null {
+  if (command.command !== "person" && command.command !== "agent") return null
+  const found = editMissing(register, { ...command, node })
+  if (found === null) return null
+  const boxOnly = found.missing.every((edit) => edit === "move" || edit === "resize")
+  return found.facts.grouped && boxOnly ? "group-box" : "kind"
+}
+
 function editNode(register: Register, id: ElementId, command: Command): Decision {
   const current = storedBody(register, id)
   if (current === null) {
@@ -398,13 +436,8 @@ export function decide(stored: StoredRegister, command: Command): Decision {
     return addNode(register, supplied.node, supplied.floor ?? register.floor, supplied.route ?? register.route)
   }
   const node = command.node ?? rootElement
-  if (
-    (command.command === "person" || command.command === "agent") &&
-    command.property === "box" &&
-    openingElement(register, node)?.grouped === true
-  ) {
-    return refuse("group-box")
-  }
+  const taken = takenRefusal(register, node, command)
+  if (taken !== null) return refuse(taken)
   if (!register.nodes.includes(node)) {
     return refuse("dead")
   }

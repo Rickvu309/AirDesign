@@ -2,6 +2,7 @@ import { readAgentEdit } from "@airdesign/catalog"
 import { call } from "@airdesign/engine"
 import type { Session, ToolResult } from "./call-tool.js"
 import { editLanded, editRefusal, namedNodes } from "./edit-answer.js"
+import { kindProblem } from "./kind-refusal.js"
 import { elementFloors, joinRun, openRun } from "./run.js"
 import { textProblem } from "./text-from.js"
 import { heldRun } from "./turn.js"
@@ -19,6 +20,8 @@ export function editDeck(raw: unknown, session: Session): ToolResult {
   if (!parsed.ok) return editRefusal(before, parsed.refusal, [])
   if (parsed.deck !== before.id) return editRefusal(before, "deck", [])
   const nodes = namedNodes(parsed.changes)
+  const unfit = kindProblem(before.register, parsed.changes)
+  if (unfit !== undefined) return editRefusal(before, "kind", nodes, unfit)
   const floors = elementFloors(before.register, parsed.changes)
   if (!floors.ok) return editRefusal(before, floors.refusal, nodes)
   const problem = textProblem(floors.floors, parsed.changes)

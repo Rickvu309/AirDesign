@@ -1,4 +1,4 @@
-import { isShapeTag, type ShapeKind } from "./shape-tree.js"
+import { isShapeTag, paintKind, type ShapeKind } from "./shape-tree.js"
 import type { Kind, TextValue } from "@airdesign/document"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { slideAddresses } from "./package-address.js"
@@ -16,6 +16,10 @@ export type ReadShape = {
   readonly locked: boolean
   readonly grouped?: true
   readonly contentKind?: Kind
+}
+
+export function shapeKind(shape: ReadShape): Kind {
+  return shape.contentKind ?? (shape.locked ? "kept" : paintKind(shape.kind))
 }
 
 const slidePart = /^ppt\/slides\/[^/]+\.xml$/
