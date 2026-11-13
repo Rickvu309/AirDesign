@@ -77,3 +77,16 @@ test("adds a text box and deletes an element, and both survive a reload, the exp
   await expect(texts).toHaveCount(2)
   await expect(texts.last()).toHaveText("Added text")
 })
+
+test.fail("text typed straight after Add text box keeps its first letters", async ({ page }) => {
+  await page.goto("/")
+  await newBlankDeck(page)
+  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  await settled(page)
+  const boxes = page.locator('[data-slide-paint] [contenteditable="true"]')
+  await expect(boxes).toHaveCount(2)
+  await page.getByRole("button", { name: "Add text box", exact: true }).click()
+  await page.keyboard.type("Typed fast", { delay: 20 })
+  await expect(boxes).toHaveCount(3)
+  await expect(boxes.last()).toHaveText("Typed fast")
+})
