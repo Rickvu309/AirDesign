@@ -63,7 +63,7 @@ export function ApproveAgent({
           <button
             type="button"
             onClick={onSwitch}
-            className={`relative text-[length:var(--type-dense)] leading-[17px] font-medium text-[color:var(--primary-strong)] active:scale-[0.97] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)_and_(pointer:fine)]:hover:text-[color:color-mix(in_oklch,var(--primary-strong),black_15%)] after:absolute after:inset-[min(0px,calc((100%-44px)/2))] after:content-[''] ${trimmed}`}
+            className={`relative text-[length:var(--type-dense)] leading-[17px] font-medium text-[color:var(--primary-strong)] active:scale-[0.97] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)_and_(pointer:fine)]:hover:text-strong-hover after:absolute after:inset-[min(0px,calc((100%-44px)/2))] after:content-[''] ${trimmed}`}
           >
             Switch
           </button>
