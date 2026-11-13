@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 import { openFixture as open } from "./fixture-deck.ts"
 import { store } from "./home-store.ts"
-import { forward, openClean, signInBrowser, test as stackTest, type Stack } from "./api-stack"
+import { cleanFixture, forward, openClean, signInBrowser, test as stackTest, type Stack } from "./api-stack"
 import { exportFromDialog } from "./export-dialog.ts"
 
 const title = (page: Page) => page.getByRole("button", { name: /^Rename deck: / })
@@ -106,7 +106,7 @@ async function serverName(stack: Stack, cookie: string, deck: string): Promise<u
   return listed.find((each) => each.deck === deck)?.name
 }
 
-async function slowRename(page: Page): Promise<void> {
+async function slow(page: Page, path: string): Promise<void> {
   const onDeck = () => new URL(page.url()).pathname.startsWith("/deck/")
   let loads = 0
   let deckLoad = onDeck() ? loads : -1
@@ -115,7 +115,7 @@ async function slowRename(page: Page): Promise<void> {
     if (frame === page.mainFrame() && onDeck()) deckLoad = loads
   })
   await page.route(
-    (url) => url.pathname === "/decks/rename",
+    (url) => url.pathname === path,
     async (route) => {
       const fromDeck = loads === deckLoad
       await new Promise((resolve) => setTimeout(resolve, 300))
@@ -133,7 +133,7 @@ stackTest(
     await forward(page, stack)
     const deck = await openClean(page)
     await expect.poll(() => serverName(stack, cookie, deck)).toBe("clean")
-    await slowRename(page)
+    await slow(page, "/decks/rename")
     await title(page).click()
     await field(page).fill("Quick rename")
     await field(page).press("Enter")
@@ -150,8 +150,26 @@ stackTest(
     const cookie = await stack.signIn()
     await signInBrowser(context, cookie)
     await forward(page, stack)
-    await slowRename(page)
+    await slow(page, "/decks/rename")
     const deck = await openClean(page)
+    await page.goBack()
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByRole("heading", { name: "clean" })).toBeVisible()
+    await expect.poll(() => serverName(stack, cookie, deck), { timeout: 5000 }).toBe("clean")
+  },
+)
+
+stackTest.fail(
+  "a deck imported and left before its editor opens is listed on Home under its file's name",
+  async ({ page, context, stack }) => {
+    const cookie = await stack.signIn()
+    await signInBrowser(context, cookie)
+    await forward(page, stack)
+    await slow(page, "/decks/open")
+    await page.goto("/")
+    await page.locator("input[type=file]").setInputFiles(cleanFixture)
+    await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+    const deck = new URL(page.url()).pathname.slice("/deck/".length)
     await page.goBack()
     await expect(page).toHaveURL(/\/$/)
     await expect(page.getByRole("heading", { name: "clean" })).toBeVisible()
