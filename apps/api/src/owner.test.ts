@@ -12,7 +12,6 @@ const own = "https://mcp.example.test/mcp"
 const callback = "http://127.0.0.1:8124/owner"
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 const element = "258.7"
-const captureNext = "Open the deck in AirDesign, then try again."
 const invalidToken =
   'Bearer resource_metadata="https://mcp.example.test/.well-known/oauth-protected-resource", error="invalid_token"'
 
@@ -213,8 +212,8 @@ describe("only a deck's owner acts on it", () => {
     )
   }
 
-  function capture(credential: Credential, id: string, claim: Claim = {}) {
-    return call(credential, "airdesign_capture_slide", { deck: id }, claim)
+  function read(credential: Credential, id: string, claim: Claim = {}) {
+    return call(credential, "airdesign_read_deck", { deck: id }, claim)
   }
 
   function editRefusalOf(called: Called): string | undefined {
@@ -226,31 +225,28 @@ describe("only a deck's owner acts on it", () => {
     return code
   }
 
-  function captureRefusalOf(called: Called): string | undefined {
-    expect(called.answer).toBeUndefined()
-    if (called.text === editNext.owner) return "owner"
-    if (called.text === editNext.deck) return "deck"
-    return called.text
+  function readOutcome(called: Called): string | undefined {
+    return called.answer?.refusal === undefined ? "landed" : editRefusalOf(called)
   }
 
   describe("a credential of one account on another account's deck", () => {
-    it("refuses an access token of A on B's deck with owner for an edit and a capture", async () => {
+    it("refuses an access token of A on B's deck with owner for an edit and a read", async () => {
       const a = await connection(address("tokena"))
       const b = await sign(address("tokenb"))
       const id = await opened(b)
       const before = await row(id)
       expect(editRefusalOf(await edit({ bearer: a.pair.access }, id))).toBe("owner")
-      expect(captureRefusalOf(await capture({ bearer: a.pair.access }, id))).toBe("owner")
+      expect(editRefusalOf(await read({ bearer: a.pair.access }, id))).toBe("owner")
       expect(await row(id)).toEqual(before)
     })
 
-    it("refuses a session cookie of A on B's deck with owner for an edit and a capture", async () => {
+    it("refuses a session cookie of A on B's deck with owner for an edit and a read", async () => {
       const a = await sign(address("cookiea"))
       const b = await sign(address("cookieb"))
       const id = await opened(b)
       const before = await row(id)
       expect(editRefusalOf(await edit({ cookie: a }, id))).toBe("owner")
-      expect(captureRefusalOf(await capture({ cookie: a }, id))).toBe("owner")
+      expect(editRefusalOf(await read({ cookie: a }, id))).toBe("owner")
       expect(await row(id)).toEqual(before)
     })
 
@@ -258,7 +254,7 @@ describe("only a deck's owner acts on it", () => {
       const a = await connection(address("ownera"))
       const id = await opened(a.cookie)
       expect((await edit({ bearer: a.pair.access }, id)).text).toBe("Landed revision 1.")
-      expect((await capture({ bearer: a.pair.access }, id)).text).toBe(captureNext)
+      expect(readOutcome(await read({ bearer: a.pair.access }, id))).toBe("landed")
       expect((await row(id))?.revision).toBe(1)
     })
 
@@ -266,7 +262,7 @@ describe("only a deck's owner acts on it", () => {
       const a = await connection(address("unmade"))
       const id = deckName()
       expect(editRefusalOf(await edit({ bearer: a.pair.access }, id))).toBe("deck")
-      expect(captureRefusalOf(await capture({ bearer: a.pair.access }, id))).toBe("deck")
+      expect(editRefusalOf(await read({ bearer: a.pair.access }, id))).toBe("deck")
       expect(editRefusalOf(await edit({ cookie: a.cookie }, id))).toBe("deck")
       expect(await row(id)).toBeUndefined()
     })
@@ -287,7 +283,7 @@ describe("only a deck's owner acts on it", () => {
       ]
       for (const claim of claims) {
         expect(editRefusalOf(await edit({ bearer: a.pair.access }, id, claim))).toBe("owner")
-        expect(captureRefusalOf(await capture({ bearer: a.pair.access }, id, claim))).toBe("owner")
+        expect(editRefusalOf(await read({ bearer: a.pair.access }, id, claim))).toBe("owner")
         expect(editRefusalOf(await edit({ cookie: a.cookie }, id, claim))).toBe("owner")
       }
       expect(await row(id)).toEqual(before)
@@ -322,7 +318,7 @@ describe("only a deck's owner acts on it", () => {
       const revokedPair = await connection(email)
       expect((await askForm(base, "/oauth/revoke", { token: revokedPair.pair.refresh })).status).toBe(200)
       for (const bearer of [first.access, second.refresh, revokedPair.pair.access, "unknown", ""]) {
-        for (const answer of [await edit({ bearer }, id), await capture({ bearer }, id)]) {
+        for (const answer of [await edit({ bearer }, id), await read({ bearer }, id)]) {
           expect({ status: answer.status, challenge: answer.challenge }).toEqual({
             status: 401,
             challenge: invalidToken,
@@ -348,7 +344,7 @@ describe("only a deck's owner acts on it", () => {
           jsonrpc: "2.0",
           id: 1,
           method: "tools/call",
-          params: { name: "airdesign_capture_slide", arguments: { deck: id } },
+          params: { name: "airdesign_read_deck", arguments: { deck: id } },
         }),
       })
       expect(response.status).toBe(401)
@@ -372,7 +368,7 @@ describe("only a deck's owner acts on it", () => {
       const before = await row(id)
       const beside = { headers: { cookie } }
       const refused = async (bearer: string) => {
-        for (const answer of [await edit({ bearer }, id, beside), await capture({ bearer }, id, beside)]) {
+        for (const answer of [await edit({ bearer }, id, beside), await read({ bearer }, id, beside)]) {
           expect({ status: answer.status, challenge: answer.challenge }).toEqual({
             status: 401,
             challenge: invalidToken,
@@ -412,7 +408,7 @@ describe("only a deck's owner acts on it", () => {
           readonly account: Account
           readonly deck: string
           readonly claim?: Account
-          readonly tool?: "capture"
+          readonly tool?: "read"
         }
       | {
           readonly action: "TokenCall" | "TokenRefused"
@@ -420,7 +416,7 @@ describe("only a deck's owner acts on it", () => {
           readonly generation: number
           readonly deck: string
           readonly claim?: Account
-          readonly tool?: "capture"
+          readonly tool?: "read"
         }
       | { readonly action: "RefreshAsBearer"; readonly account: Account; readonly generation: number }
 
@@ -483,8 +479,8 @@ describe("only a deck's owner acts on it", () => {
           { action: "TokenCall", account: "a", generation: 1, deck: "deckA" },
           { action: "TokenCall", account: "a", generation: 1, deck: "deckB" },
           { action: "TokenCall", account: "a", generation: 1, deck: "deckB", claim: "b" },
-          { action: "CookieCall", account: "a", deck: "deckB", claim: "b", tool: "capture" },
-          { action: "TokenCall", account: "a", generation: 1, deck: "deckA", claim: "b", tool: "capture" },
+          { action: "CookieCall", account: "a", deck: "deckB", claim: "b", tool: "read" },
+          { action: "TokenCall", account: "a", generation: 1, deck: "deckA", claim: "b", tool: "read" },
           { action: "TokenCall", account: "a", generation: 1, deck: "unmade" },
           { action: "RefreshAsBearer", account: "a", generation: 1 },
           { action: "Rotate", account: "a" },
@@ -546,7 +542,7 @@ describe("only a deck's owner acts on it", () => {
           if (outcome !== undefined && outcome !== expected.callOutcome) {
             failures.push(`${where} answered ${outcome}, the spec says ${String(expected.callOutcome)}`)
           }
-          const edited = !("tool" in step && step.tool === "capture")
+          const edited = !("tool" in step && step.tool === "read")
           const landedOn = outcome === "landed" && edited && "deck" in step ? decks[step.deck] : undefined
           for (const [position, value] of Object.values(decks).entries()) {
             const was = rows[position]
@@ -623,14 +619,13 @@ describe("only a deck's owner acts on it", () => {
                 (step.action === "RefreshAsBearer" ? party.refresh : party.access).get(step.generation) ?? "unknown",
             }
       const claimed = claimFor(parties, step)
-      const answer =
-        "tool" in step && step.tool === "capture"
-          ? await capture(credential, target, claimed)
-          : await edit(credential, target, claimed)
+      const reading = "tool" in step && step.tool === "read"
+      const answer = reading ? await read(credential, target, claimed) : await edit(credential, target, claimed)
       if (answer.status === 401)
         return answer.challenge === invalidToken ? "invalid" : `401 ${String(answer.challenge)}`
-      if (answer.text.startsWith("Landed revision") || answer.text === captureNext) return "landed"
-      return "tool" in step && step.tool === "capture" ? captureRefusalOf(answer) : editRefusalOf(answer)
+      if (reading) return readOutcome(answer)
+      if (answer.text.startsWith("Landed revision")) return "landed"
+      return editRefusalOf(answer)
     }
 
     async function storedState(

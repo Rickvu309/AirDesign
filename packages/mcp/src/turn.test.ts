@@ -215,7 +215,6 @@ describe("the turn", () => {
     const held = turns.read(session.deck.id)
     session.now = 10
     expect((await called(session, "airdesign_stop_run", { deck: "deck", runId: "unknown" })).refusal).toBe("run-fenced")
-    await called(session, "airdesign_capture_slide", { deck: "deck" })
     expect((await edit(session, node, "late", 9)).refusal).toBe("stale")
     expect(turns.read(session.deck.id)).toBe(held)
   })

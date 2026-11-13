@@ -1,5 +1,4 @@
 import { readDeckId } from "@airdesign/catalog"
-import { openTab, type Tab } from "@airdesign/device"
 import {
   decide,
   elementId,
@@ -51,13 +50,8 @@ function callerFor(): AgentCaller {
   return { actor: "agent", runId: "run" }
 }
 
-function sessionFor(deck: Deck, tab?: Tab): Session {
-  const caller = callerFor()
-  const log = emptyLog()
-  const now = 0
-  const turns = memoryTurns()
-  if (tab === undefined) return { caller, deck, log, now, turns }
-  return { caller, deck, tab, log, now, turns }
+function sessionFor(deck: Deck): Session {
+  return { caller: callerFor(), deck, log: emptyLog(), now: 0, turns: memoryTurns() }
 }
 
 function turnOn(deck: Deck, runId: string): Turns {
@@ -68,17 +62,6 @@ function turnOn(deck: Deck, runId: string): Turns {
 
 function inTurn(deck: Deck, runId: string): Session {
   return { ...sessionFor(deck), turns: turnOn(deck, runId) }
-}
-
-function openedTab(fields: {
-  readonly presence: "hidden" | "visible"
-  readonly elapsedMs: number
-  readonly version: number
-  readonly authority: number
-}): Tab {
-  const tab = openTab(fields)
-  if (tab === null) throw new Error("closed")
-  return tab
 }
 
 const forbidden = [
@@ -458,75 +441,12 @@ describe("callTool", () => {
     expect(result.deck).toBe(deck)
   })
 
-  it("returns the reach code and does not capture", () => {
-    const rows: { readonly tab?: Tab; readonly refusal: string; readonly next: string }[] = [
-      {
-        refusal: "no-open-tab",
-        next: "Open the deck in AirDesign, then try again.",
-      },
-      {
-        tab: { presence: "absent" },
-        refusal: "no-open-tab",
-        next: "Open the deck in AirDesign, then try again.",
-      },
-      {
-        tab: openedTab({ presence: "hidden", elapsedMs: 0, version: 1, authority: 1 }),
-        refusal: "tab-hidden",
-        next: "Show the AirDesign tab, then try again.",
-      },
-      {
-        tab: openedTab({ presence: "visible", elapsedMs: 30000, version: 1, authority: 1 }),
-        refusal: "tab-timeout",
-        next: "The tab did not answer. Show the AirDesign tab, then try again.",
-      },
-      {
-        tab: openedTab({ presence: "visible", elapsedMs: 0, version: 2, authority: 1 }),
-        refusal: "tab-outdated",
-        next: "Reload the AirDesign tab, then try again.",
-      },
-      {
-        tab: openedTab({ presence: "visible", elapsedMs: 0, version: 1, authority: 1 }),
-        refusal: "device",
-        next: "Capture runs in the open tab. This server did not capture a slide.",
-      },
-    ]
-    for (const row of rows) {
-      const deck = running()
-      const register = deck.register
-      const result = callTool("airdesign_capture_slide", { deck: "deck" }, sessionFor(deck, row.tab))
-      expect(result.ok, row.refusal).toBe(false)
-      if (result.ok) return
-      expect(result.refusal, row.refusal).toBe(row.refusal)
-      expect(result.next, row.refusal).toBe(row.next)
-      expect(result.content, row.refusal).toEqual([{ type: "text", text: row.next }])
-      expect(result.deck, row.refusal).toBe(deck)
-      expect(deck.register, row.refusal).toBe(register)
-    }
-  })
-
-  it("refuses a capture for a different deck id", () => {
+  it("offers no capture tool, since no capture code exists behind it", () => {
     const deck = running()
-    const result = callTool("airdesign_capture_slide", { deck: "other" }, sessionFor(deck))
+    const result = callTool("airdesign_capture_slide", { deck: "deck" }, sessionFor(deck))
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.refusal).toBe("deck")
-    expect(result.next).toBeUndefined()
-    expect(result.content).toEqual([{ type: "text", text: "deck" }])
+    expect(result.refusal).toBe("field")
     expect(result.deck).toBe(deck)
-    expect(firstOf(deck.register).landed).toEqual([])
-  })
-
-  it("refuses a capture argument the catalog does not read", () => {
-    const deck = running()
-    const extra = callTool("airdesign_capture_slide", { deck: "deck", actor: "agent" }, sessionFor(deck))
-    expect(extra.ok).toBe(false)
-    if (extra.ok) return
-    expect(extra.refusal).toBe("field")
-    expect(extra.deck).toBe(deck)
-    const other = callTool("airdesign_capture_slide", { deck: "bad id" }, sessionFor(deck))
-    expect(other.ok).toBe(false)
-    if (other.ok) return
-    expect(other.refusal).toBe("deck")
-    expect(firstOf(deck.register).landed).toEqual([])
   })
 })

@@ -1,5 +1,4 @@
 import { catalog, projectTools, type ElementOp, type SlideOp, type WireRefusal } from "@airdesign/catalog"
-import type { Tab } from "@airdesign/device"
 import {
   elementGone,
   elementId,
@@ -29,7 +28,7 @@ export const fixtureRun = "run"
 
 export type EditableName = Exclude<ElementName, "opened">
 
-export type Tool = "edit_deck" | "capture_slide" | "read_deck" | SlideOp | ElementOp
+export type Tool = "edit_deck" | "read_deck" | SlideOp | ElementOp
 
 export type AttemptCall = {
   readonly name: string
@@ -38,7 +37,7 @@ export type AttemptCall = {
 
 export type Outcome = "ok" | WireRefusal | "thrown"
 
-export type Reason = "ok" | "calls" | "tool" | "captured" | "touched" | "landed"
+export type Reason = "ok" | "calls" | "tool" | "touched" | "landed"
 
 export type Step = {
   readonly name: Tool
@@ -58,7 +57,6 @@ export type Task = {
   readonly id: string
   readonly prompt: string
   readonly deck: () => Deck
-  readonly tab?: Tab
   readonly want: {
     readonly calls: number
     readonly steps: readonly Step[]
@@ -92,7 +90,6 @@ function toolName(op: Tool): string {
 
 const toolNames = {
   edit_deck: toolName("edit_deck"),
-  capture_slide: toolName("capture_slide"),
   read_deck: toolName("read_deck"),
   add_slide: toolName("add_slide"),
   duplicate_slide: toolName("duplicate_slide"),
@@ -118,20 +115,12 @@ export function edit(deck: string, writes: readonly Write[], base = 0): AttemptC
   }
 }
 
-export function capture(deck: string): AttemptCall {
-  return { name: toolNames.capture_slide, raw: { deck } }
-}
-
 export function readDeck(deck: string): AttemptCall {
   return { name: toolNames.read_deck, raw: { deck } }
 }
 
 function sameOrder(left: readonly string[], right: readonly string[]): boolean {
   return left.length === right.length && left.every((value, index) => value === right[index])
-}
-
-function reportsCapturedFile(result: ToolResult): boolean {
-  return result.content.some((block) => /captured file|file was captured|image\/png|\.png\b|\.pptx\b/i.test(block.text))
 }
 
 function bodyOf(register: Register, id: ElementId): NodeRegister | null {
@@ -225,12 +214,8 @@ export function score(task: Task, attempt: Attempt): ScoreResult {
   for (const step of attempt) {
     const log = emptyLog()
     const now = 0
-    const session =
-      task.tab === undefined
-        ? { caller, deck: current, log, now, turns }
-        : { caller, deck: current, tab: task.tab, log, now, turns }
+    const session = { caller, deck: current, log, now, turns }
     let result: ToolResult
-    const before = current
     try {
       result = callTool(step.name, step.raw, session)
     } catch {
@@ -238,10 +223,6 @@ export function score(task: Task, attempt: Attempt): ScoreResult {
       continue
     }
     answers.push({ name: step.name, outcome: result.ok ? "ok" : result.refusal })
-    if (step.name === toolNames.capture_slide) {
-      if (result.deck !== before || reportsCapturedFile(result)) return failed("captured", result.deck)
-      continue
-    }
     if (result.ok) current = result.deck
   }
   if (!answeredInOrder(task.want.steps, answers)) return failed("tool", current)

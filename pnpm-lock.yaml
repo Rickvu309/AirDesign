@@ -489,9 +489,6 @@ importers:
       '@airdesign/catalog':
         specifier: workspace:*
         version: link:../catalog
-      '@airdesign/device':
-        specifier: workspace:*
-        version: link:../device
       '@airdesign/document':
         specifier: workspace:*
         version: link:../document

@@ -10,7 +10,6 @@ export { editNext, runNext, type EditCode } from "./edit-next.js"
 export { afterWrite, agentCaller } from "./run.js"
 export { dropGoneTurn, liveTurn, memoryTurns, settleTurn, type Turn, type Turns } from "./turn.js"
 export {
-  capture,
   edit,
   elements,
   score,
@@ -25,13 +24,5 @@ export {
 
 export const suite: readonly SuiteRow[] = [...writtenSuite, ...readSuite, ...slideSuite, ...elementSuite]
 
-export {
-  captureAbsentAttempt,
-  captureAbsentTask,
-  landSourceAttempt,
-  landSourceTask,
-  staleEditAttempt,
-  staleEditTask,
-  type SuiteRow,
-} from "./suite.js"
+export { landSourceAttempt, landSourceTask, staleEditAttempt, staleEditTask, type SuiteRow } from "./suite.js"
 export { commitTries, createServer, type Host, type Lost } from "./server.js"

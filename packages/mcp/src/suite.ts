@@ -1,7 +1,6 @@
-import { timeoutMs, type Tab } from "@airdesign/device"
-import { elementId, limits, type Register } from "@airdesign/document"
+import { elementId, limits, type Box, type Kind, type Register } from "@airdesign/document"
 import { fixture } from "./fixture.js"
-import { capture, edit, type Attempt, type ElementName, type Reason, type Task } from "./score.js"
+import { edit, elements, type Attempt, type ElementName, type Reason, type Task } from "./score.js"
 
 export type SuiteRow = {
   readonly task: Task
@@ -11,12 +10,6 @@ export type SuiteRow = {
     readonly reason: Reason
   }
 }
-
-const hidden: Tab = { presence: "hidden", elapsedMs: 0, version: 1, authority: 1 }
-const timedOut: Tab = { presence: "visible", elapsedMs: timeoutMs, version: 1, authority: 1 }
-const outdated: Tab = { presence: "visible", elapsedMs: 0, version: 1, authority: 2 }
-const open: Tab = { presence: "visible", elapsedMs: 0, version: 1, authority: 1 }
-const absent: Tab = { presence: "absent" }
 
 function one(deck: string, element: ElementName, value: string, readAt: number): Attempt {
   return [edit(deck, [{ element, value, readAt }])]
@@ -44,6 +37,29 @@ function fullElements(register: Register): Register {
   return { ...register, nodes: [...register.nodes, ...filler] }
 }
 
+const placed: Box = { x: 914_400, y: 914_400, cx: 3_657_600, cy: 2_743_200 }
+
+function bodyIs(kind: Kind): (register: Register) => Register {
+  const rows = [
+    { node: elements.title, kind: "shape" as const, value: "Title", box: placed, grouped: false },
+    { node: elements.body, kind, value: null, box: placed, grouped: false },
+  ]
+  return (register) => ({
+    ...register,
+    index: { total: rows.length, slides: [{ id: "258", position: 0 }], elements: rows, pages: [] },
+  })
+}
+
+function boxed(deck: string, box: Box): Attempt {
+  const call = edit(deck, [])
+  return [
+    {
+      name: call.name,
+      raw: { deck, base: 0, changes: [{ node: elements.body, readAt: 0, property: "box", value: box }] },
+    },
+  ]
+}
+
 const longNote = "n".repeat(4000)
 const fits = "é".repeat(4000)
 const tooLong = "é".repeat(4001)
@@ -65,16 +81,6 @@ export const staleEditTask: Task = {
 }
 
 export const staleEditAttempt: Attempt = [edit("deck", [{ element: "title", value: "22", readAt: 0 }], 1)]
-
-export const captureAbsentTask: Task = {
-  id: "capture-absent-proof",
-  prompt: "Capture the title of deck deck. The tab is not open.",
-  deck: () => fixture("deck", [{ element: "title" }]),
-  tab: absent,
-  want: { calls: 1, steps: [{ name: "capture_slide", outcome: "no-open-tab" }], elements: {} },
-}
-
-export const captureAbsentAttempt: Attempt = [capture("deck")]
 
 export const suite: readonly SuiteRow[] = [
   {
@@ -222,50 +228,6 @@ export const suite: readonly SuiteRow[] = [
     },
     reference: one("guarded", "title", "Overwrite", 1),
     wrong: { attempt: one("guarded", "body", "Overwrite", 0), reason: "tool" },
-  },
-  {
-    task: {
-      id: "capture-absent",
-      prompt: "Capture the title of deck absent. The tab is not open.",
-      deck: () => fixture("absent", [{ element: "title" }]),
-      tab: absent,
-      want: { calls: 1, steps: [{ name: "capture_slide", outcome: "no-open-tab" }], elements: {} },
-    },
-    reference: [capture("absent")],
-    wrong: { attempt: one("absent", "title", "Captured", 0), reason: "tool" },
-  },
-  {
-    task: {
-      id: "capture-hidden",
-      prompt: "Capture the title of deck hidden. The tab is hidden.",
-      deck: () => fixture("hidden", [{ element: "title" }]),
-      tab: hidden,
-      want: { calls: 1, steps: [{ name: "capture_slide", outcome: "tab-hidden" }], elements: {} },
-    },
-    reference: [capture("hidden")],
-    wrong: { attempt: one("hidden", "title", "Captured", 0), reason: "tool" },
-  },
-  {
-    task: {
-      id: "capture-timeout",
-      prompt: "Capture the title of deck timeout. The tab did not answer in time.",
-      deck: () => fixture("timeout", [{ element: "title" }]),
-      tab: timedOut,
-      want: { calls: 1, steps: [{ name: "capture_slide", outcome: "tab-timeout" }], elements: {} },
-    },
-    reference: [capture("timeout")],
-    wrong: { attempt: one("timeout", "title", "Captured", 0), reason: "tool" },
-  },
-  {
-    task: {
-      id: "capture-outdated",
-      prompt: "Capture the title of deck outdated. The tab is out of date.",
-      deck: () => fixture("outdated", [{ element: "title" }]),
-      tab: outdated,
-      want: { calls: 1, steps: [{ name: "capture_slide", outcome: "tab-outdated" }], elements: {} },
-    },
-    reference: [capture("outdated")],
-    wrong: { attempt: one("outdated", "title", "Captured", 0), reason: "tool" },
   },
   {
     task: {
@@ -593,24 +555,6 @@ export const suite: readonly SuiteRow[] = [
   },
   {
     task: {
-      id: "capture-open",
-      prompt: "Set the title of deck shots to Cover, then capture it. The tab is open and up to date.",
-      deck: () => fixture("shots", [{ element: "title" }]),
-      tab: open,
-      want: {
-        calls: 2,
-        steps: [
-          { name: "edit_deck", outcome: "ok" },
-          { name: "capture_slide", outcome: "device" },
-        ],
-        elements: { title: ["Cover"] },
-      },
-    },
-    reference: [...one("shots", "title", "Cover", 0), capture("shots")],
-    wrong: { attempt: one("shots", "title", "Cover", 0), reason: "tool" },
-  },
-  {
-    task: {
       id: "two-calls-one-read",
       prompt:
         "The body of deck reread already says Start. Add First and then Second to the body, reading it only once.",
@@ -633,5 +577,55 @@ export const suite: readonly SuiteRow[] = [
     },
     reference: one("undone", "title", "Again", 2),
     wrong: { attempt: one("undone", "body", "Again", 0), reason: "touched" },
+  },
+  {
+    task: {
+      id: "text-on-picture",
+      prompt: "Write the caption Sunrise into the picture that is the body of deck pictured.",
+      deck: () => fixture("pictured", [{ element: "title" }, { element: "body" }], bodyIs("picture")),
+      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "kind" }], elements: { body: [] } },
+    },
+    reference: one("pictured", "body", "Sunrise", 0),
+    wrong: { attempt: one("pictured", "title", "Sunrise", 0), reason: "tool" },
+  },
+  {
+    task: {
+      id: "text-on-chart",
+      prompt: "Make the chart that is the body of deck charted say Revenue.",
+      deck: () => fixture("charted", [{ element: "title" }, { element: "body" }], bodyIs("chart")),
+      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "kind" }], elements: { body: [] } },
+    },
+    reference: one("charted", "body", "Revenue", 0),
+    wrong: { attempt: one("charted", "title", "Revenue", 0), reason: "tool" },
+  },
+  {
+    task: {
+      id: "text-on-table",
+      prompt: "Type Q3 into the table that is the body of deck tabled.",
+      deck: () => fixture("tabled", [{ element: "title" }, { element: "body" }], bodyIs("table")),
+      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "kind" }], elements: { body: [] } },
+    },
+    reference: one("tabled", "body", "Q3", 0),
+    wrong: { attempt: one("tabled", "title", "Q3", 0), reason: "tool" },
+  },
+  {
+    task: {
+      id: "text-on-kept",
+      prompt: "Change the diagram that is the body of deck diagrammed to read Plan.",
+      deck: () => fixture("diagrammed", [{ element: "title" }, { element: "body" }], bodyIs("kept")),
+      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "kind" }], elements: { body: [] } },
+    },
+    reference: one("diagrammed", "body", "Plan", 0),
+    wrong: { attempt: one("diagrammed", "title", "Plan", 0), reason: "tool" },
+  },
+  {
+    task: {
+      id: "resize-table",
+      prompt: "Make the table that is the body of deck widened twice as wide.",
+      deck: () => fixture("widened", [{ element: "title", before: ["Results"] }, { element: "body" }], bodyIs("table")),
+      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "kind" }], elements: { body: [] } },
+    },
+    reference: boxed("widened", { ...placed, cx: placed.cx * 2 }),
+    wrong: { attempt: boxed("widened", { ...placed, x: 0 }), reason: "tool" },
   },
 ]
