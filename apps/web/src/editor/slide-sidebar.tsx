@@ -516,7 +516,6 @@ function SlideItem({
             else if (entry.current?.isConnected) entry.current.focus()
           }}
           onChoose={onChoose}
-          returnFocus={entry}
         />
       )}
     </>
