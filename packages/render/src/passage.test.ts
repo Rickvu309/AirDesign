@@ -314,6 +314,19 @@ describe("Passage", () => {
     })
     expect(pressEnter(false)).toBe(false)
   })
+
+  it("refuses the browser's own undo and redo, which never saw the typed-over text", async () => {
+    const store = paintStore()
+    const id = elementId("1.1")
+    await show(store, id, "Kept")
+    const { host } = await render(createElement(Passage, { store, id, onEdit: () => undefined }))
+    const editor = editorIn(host)
+    for (const inputType of ["historyUndo", "historyRedo"]) {
+      const event = new InputEvent("beforeinput", { inputType, bubbles: true, cancelable: true })
+      editor.dispatchEvent(event)
+      expect(event.defaultPrevented).toBe(true)
+    }
+  })
 })
 
 describe("Passage paragraphs", () => {

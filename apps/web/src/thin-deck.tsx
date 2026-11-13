@@ -37,7 +37,15 @@ import { busyElements, liveRepaint, shownValue } from "@/live-repaint"
 import { AiraPanel } from "@/aira-panel"
 import { useDeckTitle } from "@/editor/use-deck-title"
 import { useUndoKeys } from "@/editor/undo-keys"
-import { emptyUndo, recorded, turnBack, undoLabel, type UndoDirection, type UndoEntry } from "@/undo-list"
+import {
+  emptyUndo,
+  recorded,
+  recordsInFlight,
+  turnBack,
+  undoLabel,
+  type UndoDirection,
+  type UndoEntry,
+} from "@/undo-list"
 import { boxName, slideNames } from "@/undo-names"
 
 export function ThinDeck({ id }: { id: string }) {
@@ -76,6 +84,7 @@ export function ThinDeck({ id }: { id: string }) {
     null,
   )
   const sessions = useRef(0)
+  const records = useRef(recordsInFlight())
   const formatting = useRef(
     textFormatting(() => {
       typed.current = null
@@ -199,7 +208,12 @@ export function ThinDeck({ id }: { id: string }) {
     return shownValue(opened.ok ? opened.register : null, target, file)
   }
 
-  async function onEdit(target: ElementId, value: string) {
+  function onEdit(target: ElementId, value: string) {
+    const release = records.current.hold()
+    return editText(target, value, release).finally(release)
+  }
+
+  async function editText(target: ElementId, value: string, release: () => void) {
     if (typed.current?.node !== target) {
       sessions.current += 1
       typed.current = { node: target, session: sessions.current, before: textBefore(target) }
@@ -232,6 +246,7 @@ export function ThinDeck({ id }: { id: string }) {
           session,
           undoable: { node: target, floor: file, before: { value: before }, after: { value } },
         })
+        release()
       },
       refused,
     )
@@ -376,6 +391,7 @@ export function ThinDeck({ id }: { id: string }) {
   function turn(direction: UndoDirection) {
     typed.current = null
     turning.current = turning.current.then(async () => {
+      await records.current.landed()
       const turned = await turnBack(connect(memoryRemote()), id, undoList.current, direction)
       if (turned.outcome === "empty") return
       undoList.current = turned.list

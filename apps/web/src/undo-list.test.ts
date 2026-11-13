@@ -8,7 +8,7 @@ import {
   type Register,
 } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { emptyUndo, recorded, turnBack, undoLabel, type UndoLink } from "./undo-list"
+import { emptyUndo, recorded, recordsInFlight, turnBack, undoLabel, type UndoLink } from "./undo-list"
 
 const node = elementId("256.2")
 const file = [slideId("256"), slideId("257")] as const
@@ -143,5 +143,23 @@ describe("undo list", () => {
     expect(undoLabel("redo", emptyUndo)).toBe("Redo")
     expect(undoLabel("undo", recorded(emptyUndo, textEdit))).toBe("Undo text edit")
     expect(undoLabel("redo", { undo: [], redo: [{ ...textEdit, name: "delete" }] })).toBe("Redo delete slide")
+  })
+
+  it("lands only once every edit still being recorded is recorded", async () => {
+    const records = recordsInFlight()
+    const first = records.hold()
+    const second = records.hold()
+    let landed = false
+    const waited = records.landed().then(() => {
+      landed = true
+    })
+    first()
+    first()
+    await Promise.resolve()
+    expect(landed).toBe(false)
+    second()
+    await waited
+    expect(landed).toBe(true)
+    await records.landed()
   })
 })

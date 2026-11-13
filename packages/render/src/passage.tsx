@@ -238,7 +238,7 @@ export function Passage(props: {
     const shown = box.current
     if (shown === null) return
     function replace(event: InputEvent) {
-      if (event.inputType.startsWith("format")) {
+      if (event.inputType.startsWith("format") || event.inputType.startsWith("history")) {
         event.preventDefault()
         return
       }
