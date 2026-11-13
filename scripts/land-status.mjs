@@ -2,7 +2,7 @@ import { behindMain, conflictsWithMain } from "./land-git.mjs"
 import { failedRunFor } from "./land-follow.mjs"
 import { ciFailureLines } from "./land-report.mjs"
 import { baseFault } from "./pull-base.mjs"
-import { queueLine } from "./merge-queue.mjs"
+import { queueLine, removalLine } from "./merge-queue.mjs"
 
 const checksLine = ({ passed, running, failed }) =>
   `${passed.length} passed, ${running.length} running, ${failed.length} failed${failed.length > 0 ? ` (${failed.join(", ")})` : ""}`
@@ -22,6 +22,7 @@ export const statusLines = ({ number, branch, repository, pull, git, gh, ref = "
   lines.push(`behind      ${behindMain(git, ref)} commits behind origin/main`)
   lines.push(`checks      ${checksLine(pull.checks)}`)
   lines.push(`queue       ${queueLine(pull)}`)
+  if (removalLine(pull) !== undefined) lines.push(`removed     ${removalLine(pull)}`)
   const failed = failedRunFor({ gh, repository, branch, head: pull.head, number, event: "pull_request" })
   lines.push(
     failed === undefined
