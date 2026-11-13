@@ -2,6 +2,7 @@ import { createHash } from "node:crypto"
 import { readFileSync } from "node:fs"
 import path from "node:path"
 import { expect } from "@playwright/test"
+import { newBlankDeck } from "../bin/new-deck.mjs"
 
 const pictureKey = "ppt/slides/slide1.xml#4"
 
@@ -31,8 +32,7 @@ export default async function drive({ repo, page, context, signIn, post, capture
       : route.continue(),
   )
   await first.goto("/")
-  await first.getByRole("button", { name: "New deck", exact: true }).click()
-  await first.getByRole("button", { name: "Blank deck", exact: true }).click()
+  await newBlankDeck(first)
   await expect(first).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const deck = first.url().split("/").at(-1)
   await expect.poll(async () => (await post(deckRoutes.original, { deck }, cookie)).json.ok).toBe(true)

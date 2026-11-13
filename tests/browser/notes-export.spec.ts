@@ -3,6 +3,7 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { notesExports } from "../../scripts/notes-export.mjs"
 import { exportFromDialog } from "./export-dialog"
+import { newBlankDeck } from "./new-deck"
 
 const duplicate = process.platform === "darwin" ? "Meta+d" : "Control+d"
 const [blankNotes, importedNotes] = notesExports
@@ -64,8 +65,7 @@ test("first speaker notes on a blank deck, a new slide and a copy survive a relo
   if (blankNotes === undefined) throw new Error("notes export")
   const [first, copy, added] = blankNotes.notes
   await page.goto("/")
-  await page.getByRole("button", { name: "New deck", exact: true }).click()
-  await page.getByRole("button", { name: "Blank deck", exact: true }).click()
+  await newBlankDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   await write(page, first)
