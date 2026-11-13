@@ -24,7 +24,7 @@ import { scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 import { localImage } from "./local-image.mjs"
 import { memoPptx } from "./pptx-memo.mjs"
-import { phaseClock } from "./pptx-phases.mjs"
+import { besideBrowser, phaseClock } from "./pptx-phases.mjs"
 import { pruneKeyed } from "./keyed-cache.mjs"
 import {
   judgeBuild,
@@ -90,11 +90,11 @@ judgeBuilt.catch(() => {})
 const validatorTally = { files: 0, distinct: 0, hits: 0 }
 const validatorLists = async (files) => {
   await judgeBuilt
+  await quiet
   return validatedLists({
     files,
     code: validatorCode(root),
     tally: validatorTally,
-    width: roomy ? 4 : 2,
     validate: async (group) => judgeRows(await background(dotnet, [judgeProgram, ...group])),
   })
 }
@@ -119,6 +119,7 @@ const browserSpec = freshBrowserExport({
       specOutput = await run("pnpm", ["exec", "playwright", "test", "--reporter=list", ...browserExportArgs(entries)])
     }),
 })
+const quiet = besideBrowser({ cores: os.availableParallelism(), browser: browserSpec })
 const pptx = memoPptx(await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href))
 const require = createRequire(path.join(root, "packages/pptx/package.json"))
 await pptx.prepareMarkup(fs.readFileSync(require.resolve("sax-wasm/lib/sax-wasm.wasm")))
@@ -141,10 +142,12 @@ const renderNext = async () => {
     }
   }
 }
-const roomy = os.availableParallelism() > 4
 const renderWidth = Math.min(os.availableParallelism(), 4)
-const startRenders = (width = renderWidth) => {
-  const done = phases.time("render", () => Promise.all(Array.from({ length: width }, renderNext)))
+const startRenders = () => {
+  const done = phases.time("render", async () => {
+    await quiet
+    await Promise.all(Array.from({ length: renderWidth }, renderNext))
+  })
   done.catch(() => {})
   return done
 }
@@ -173,7 +176,7 @@ const gitAnswer = (args) => {
 }
 const committed = committedBlobs(gitAnswer(committedArgs("HEAD")) ?? "")
 for (const name of exportNames) committed.delete(name)
-const earlyRenders = startRenders(roomy ? renderWidth : 2)
+const earlyRenders = startRenders()
 const eventFile = process.env.GITHUB_EVENT_PATH
 const freshFails = freshMissFails({
   eventText: eventFile === undefined ? undefined : fs.existsSync(eventFile) ? fs.readFileSync(eventFile, "utf8") : "",
