@@ -30,7 +30,7 @@ const grown = changedTable(changedTable(opening, { change: "cell", row: 0, colum
 })!
 const kinds = {
   box: { element: { node, kind: "shape", value: "", box, grouped: false }, typed: "Typed" },
-  shape: { element: { node, kind: "shape", value: null, box, grouped: false }, geometry: "ellipse", typed: "Typed" },
+  shape: { element: { node, kind: "shape", value: null, box, grouped: false }, geometry: "ellipse", typed: null },
   table: {
     element: { node, kind: "table", value: writeTableValue(opening), box, grouped: false },
     typed: writeTableValue(grown),
@@ -44,7 +44,11 @@ const person = { actor: "person" } as const
 type Spec = Graph["states"] extends Map<string, infer State> ? State : never
 
 function typedValue(state: Spec): string {
-  return state.run === "add" || state.run === "both" ? "Typed" : kinds[kind].typed
+  return state.run === "add" || state.run === "both" ? "Typed" : (kinds[kind].typed ?? "Typed")
+}
+
+function holdsNoText(state: Spec): boolean {
+  return kinds[kind].typed === null && state.run !== "add" && state.run !== "both"
 }
 
 function batch(source: Spec, action: string): unknown {
@@ -146,8 +150,9 @@ function reached(graph: Graph, failures: string[]): Map<string, Deck> {
       queue.push(edge.to)
     }
   }
-  for (const id of graph.states.keys()) {
-    if (!decks.has(id)) failures.push(`element state ${JSON.stringify(graph.states.get(id))} was not reached`)
+  for (const [id, state] of graph.states) {
+    if (decks.has(id) || (state.typed === true && holdsNoText(state))) continue
+    failures.push(`element state ${JSON.stringify(state)} was not reached`)
   }
   return decks
 }
@@ -180,6 +185,11 @@ function replayKind(graph: Graph, failures: string[]): number {
       continue
     }
     const answer = act(current, source, edge.action)
+    if (edge.action === "Type" && holdsNoText(source)) {
+      if (answer === "told" || answer.ok || answer.refusal !== "kind")
+        failures.push(`element ${kind} Type on a drawn shape was not refused kind ${JSON.stringify(source)}`)
+      continue
+    }
     const refusal = refusedBy[edge.action]
     if (refusal !== undefined) {
       if (answer === "told" || answer.ok || answer.refusal !== refusal) {
