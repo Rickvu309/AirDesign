@@ -263,3 +263,10 @@ it("accepts root, legacy, removed and current register elements and folds the ro
   expect(deckRoutes.open.result({ ...revision, register: current })).toEqual({ ...revision, register: current })
   expect(deckRoutes.open.result({ ...revision, register: { ...current, b: legacy } })).toEqual(payload)
 })
+
+it("decodes the runs a register records ended, and refuses a record that is not a list of run ids", () => {
+  const answer = { ...revision, register: { ...openRegister("", ""), ended: ["run"] } }
+  expect(deckRoutes.open.result(JSON.parse(JSON.stringify(answer)))).toEqual(answer)
+  expect(deckRoutes.open.result({ ...answer, register: { ...answer.register, ended: [1] } })).toEqual(payload)
+  expect(deckRoutes.open.result({ ...answer, register: { ...answer.register, ended: "run" } })).toEqual(payload)
+})

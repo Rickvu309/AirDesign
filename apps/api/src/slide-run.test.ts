@@ -63,6 +63,7 @@ async function observed(live: Live): Promise<SpecState> {
     rev: row.revision - live.offset,
     shown: slidesAddedBy(row.register, "r").length,
     element,
+    ended: row.register.ended?.includes("r") === true,
     turn: runWord(row.turn.run_id),
     turnRev: row.turn.revision - live.offset,
     base: live.base - live.offset,
@@ -134,7 +135,7 @@ async function act(live: Live, action: string, target: SpecState): Promise<void>
     live.stopTold = told(stop)
   } else if (action === "StopCommits" && stop !== undefined) {
     await stop.release()
-    if ((await observed(live)).element === "stopped") live.stopped = true
+    if ((await observed(live)).ended) live.stopped = true
     live.stopTold = told(stop)
   } else if (action === "StopSavesTurn" && stop !== undefined) {
     await stop.release()
@@ -146,6 +147,7 @@ const compared = [
   "rev",
   "shown",
   "element",
+  "ended",
   "turn",
   "turnRev",
   "base",

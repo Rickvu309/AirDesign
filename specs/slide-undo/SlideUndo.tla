@@ -4,17 +4,20 @@
 \* another. The race between them is in the slide-run model.
 \* turn is session.agent_turn. Undo goes through undoRun in apps/api/src/undo.ts and never
 \* touches the turn row, so the turn names r after an Undo whenever the agent did not stop r.
+\* ended is the deck's record that r ended: stop_run and run Undo of a run with slide rows
+\* write it, agentSlide refuses the run, and liveTurn does not take it as the turn's run.
 EXTENDS Integers
 
-VARIABLES rev, shown, moved, turn, adds, undos, undone, afterUndo, told
+VARIABLES rev, shown, moved, turn, ended, adds, undos, undone, afterUndo, told
 
-vars == <<rev, shown, moved, turn, adds, undos, undone, afterUndo, told>>
+vars == <<rev, shown, moved, turn, ended, adds, undos, undone, afterUndo, told>>
 
 TypeOK ==
   /\ rev \in 1..6
   /\ shown \in 0..3
   /\ moved \in BOOLEAN
   /\ turn \in {"r", "u", "none"}
+  /\ ended \in BOOLEAN
   /\ adds \in 0..2
   /\ undos \in 0..2
   /\ undone \in BOOLEAN
@@ -26,6 +29,7 @@ Init ==
   /\ shown = 1
   /\ moved = FALSE
   /\ turn = "r"
+  /\ ended = FALSE
   /\ adds = 0
   /\ undos = 0
   /\ undone = FALSE
@@ -34,20 +38,26 @@ Init ==
 
 \* read_deck, then add_slide on that base. The slide lands under the turn's run, or under
 \* a fresh run when no turn is live, and settleTurn saves that run in the turn row.
+\* A turn that names r is not live once the deck records r ended.
+SlideRunOf == IF turn = "none" \/ (turn = "r" /\ ended) THEN "u" ELSE turn
+
 AgentAddsSlide ==
   /\ adds < 2
   /\ adds' = adds + 1
   /\ rev' = rev + 1
-  /\ shown' = IF turn = "r" THEN shown + 1 ELSE shown
-  /\ afterUndo' = IF turn = "r" /\ undone THEN afterUndo + 1 ELSE afterUndo
-  /\ turn' = IF turn = "none" THEN "u" ELSE turn
-  /\ UNCHANGED <<moved, undos, undone, told>>
+  /\ shown' = IF SlideRunOf = "r" THEN shown + 1 ELSE shown
+  /\ afterUndo' = IF SlideRunOf = "r" /\ undone THEN afterUndo + 1 ELSE afterUndo
+  /\ turn' = SlideRunOf
+  /\ UNCHANGED <<moved, ended, undos, undone, told>>
 
-\* stop_run of r ends the turn. A run that only added slides does not change the deck.
+\* stop_run of r ends the turn and records r ended, which changes the deck unless an
+\* earlier Undo already recorded it.
 AgentStops ==
   /\ turn = "r"
   /\ turn' = "none"
-  /\ UNCHANGED <<rev, shown, moved, adds, undos, undone, afterUndo, told>>
+  /\ rev' = IF ended THEN rev ELSE rev + 1
+  /\ ended' = TRUE
+  /\ UNCHANGED <<shown, moved, adds, undos, undone, afterUndo, told>>
 
 \* A person moves a slide r added to the start of the deck.
 PersonMoves ==
@@ -55,7 +65,7 @@ PersonMoves ==
   /\ ~moved
   /\ moved' = TRUE
   /\ rev' = rev + 1
-  /\ UNCHANGED <<shown, turn, adds, undos, undone, afterUndo, told>>
+  /\ UNCHANGED <<shown, turn, ended, adds, undos, undone, afterUndo, told>>
 
 \* undoSlides walks every slide row of r from the newest and takes each back only while
 \* the slide still sits where that row left it. One that does not refuses the whole Undo.
@@ -69,9 +79,10 @@ PersonUndoes ==
      THEN /\ rev' = rev + 1
           /\ shown' = 0
           /\ undone' = TRUE
+          /\ ended' = TRUE
           /\ told' = "applied"
      ELSE /\ told' = "refused"
-          /\ UNCHANGED <<rev, shown, undone>>
+          /\ UNCHANGED <<rev, shown, undone, ended>>
   /\ UNCHANGED <<moved, turn, adds, afterUndo>>
 
 Done ==

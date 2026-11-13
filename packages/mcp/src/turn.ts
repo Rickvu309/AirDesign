@@ -1,5 +1,5 @@
 import type { AgentOp, DeckId } from "@airdesign/catalog"
-import { liveRuns } from "@airdesign/engine"
+import { liveRuns, runFenced } from "@airdesign/engine"
 import { agentOps, type Session, type ToolResult } from "./call-tool.js"
 
 export type Turn = {
@@ -31,6 +31,7 @@ export function liveTurn(session: Session, deck: DeckId): LiveTurn | undefined {
   const turn = session.turns.read(deck)
   if (turn === undefined || turn.runId === null) return undefined
   if (session.now - turn.lastCall >= (session.idleWindow ?? tenMinutes)) return undefined
+  if (runFenced(session.deck.register, turn.runId)) return undefined
   return { ...turn, runId: turn.runId }
 }
 

@@ -174,6 +174,11 @@ function isLive(register: Register, node: ElementId, runId: string): boolean {
   return decideOnElement(register, node, { command: "stop", runId, node }).decision === "apply"
 }
 
+function endSlides(register: Register, runId: string): Register {
+  if (!register.order.some((row) => row.runId === runId) || register.ended?.includes(runId) === true) return register
+  return { ...register, ended: [...(register.ended ?? []), runId] }
+}
+
 function endOnTouched(
   deck: Deck,
   command: "stop" | "undo",
@@ -182,7 +187,8 @@ function endOnTouched(
 ): CallResult {
   const touched = everyElement(deck.register).filter((node) => holdsRun(bodyOf(deck.register, node), runId))
   if (touched.length === 0) {
-    if (command === "stop" && deck.register.order.some((row) => row.runId === runId)) return landed(deck, deck.register)
+    if (command === "stop" && deck.register.order.some((row) => row.runId === runId))
+      return landed(deck, endSlides(deck.register, runId))
     return refused("run-fenced")
   }
   let register = deck.register
@@ -194,7 +200,7 @@ function endOnTouched(
     }
     if (decision.code !== "run-fenced" || fencedStillRefuses(bodyOf(register, node))) return refused(decision.code)
   }
-  return landed(deck, register)
+  return landed(deck, endSlides(register, runId))
 }
 
 function runLiveOn(register: Register, node: ElementId): string | null {
@@ -252,7 +258,7 @@ function undoRun(deck: Deck, runId: string): CallResult {
     register = slides
   }
   if (register === deck.register) return refused("run-fenced")
-  return landed(deck, register)
+  return landed(deck, endSlides(register, runId))
 }
 
 function namesOtherRun(caller: Caller, runId: string): boolean {

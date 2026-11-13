@@ -54,7 +54,7 @@ async function addingSlide(owned: Owned & { readonly base: number }) {
   return agent
 }
 
-it.fails("lands no slide of a run that only added slides once its stop answered", async () => {
+it("lands no slide of a run that only added slides once its stop answered", async () => {
   const owned = await slideRun()
   const agent = await addingSlide(owned)
   const stopped = await wholeCall(steps, owned, "s", "stop_run", { deck: owned.deck, runId: "r" })
@@ -62,7 +62,7 @@ it.fails("lands no slide of a run that only added slides once its stop answered"
   expect((await finish(agent)).ok).toBe(false)
 })
 
-it.fails("keeps the turn ended after stop_run answered while an add_slide of the run was saving its turn", async () => {
+it("keeps the turn ended after stop_run answered while an add_slide of the run was saving its turn", async () => {
   const owned = await slideRun()
   const agent = await addingSlide(owned)
   await agent.release()

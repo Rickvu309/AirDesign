@@ -41,6 +41,7 @@ export type Register = {
   readonly bytes: number
   readonly file: readonly SlideId[]
   readonly order: readonly SlideCommand[]
+  readonly ended?: readonly string[]
   readonly nodes: readonly ElementId[]
   readonly readNodes: readonly ElementId[] | null
   readonly elements: Readonly<Record<ElementId, NodeRegister>>
