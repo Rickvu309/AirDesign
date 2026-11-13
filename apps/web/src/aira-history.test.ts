@@ -7,6 +7,7 @@ import {
   chatsKept,
   droppedChats,
   leftOut,
+  newestOfEach,
   readSavedChat,
   restoredChat,
   saveStep,
@@ -184,6 +185,14 @@ describe("the chats this device keeps for a deck", () => {
     expect(droppedChats(list, "c5")).toEqual(["c1", "c0"])
     expect(droppedChats(list, "c0")).toEqual(["c2", "c1"])
     expect(droppedChats(list.slice(0, chatsKept), "c0")).toEqual([])
+  })
+
+  it("keeps the newest copy of each chat when the page's shelf and the device store both hold it", () => {
+    const stored = saved(doneChat(), "c1", 1)
+    const shelved = saved(doneChat(), "c1", 2)
+    const other = saved(doneChat(), "c2", 3)
+    const older = saved(doneChat(), "c2", 0)
+    expect(newestOfEach([stored, other, shelved, older])).toEqual([shelved, other])
   })
 })
 

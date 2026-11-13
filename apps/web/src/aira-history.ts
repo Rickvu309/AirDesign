@@ -123,6 +123,15 @@ export function restoredChat(saved: SavedChat): AiraChat {
   return chat.exchanges.at(-1)?.end === "working" ? airaStep(settled, { type: "end", end: "stopped" }) : settled
 }
 
+export function newestOfEach(chats: readonly SavedChat[]): readonly SavedChat[] {
+  const newest = new Map<string, SavedChat>()
+  for (const chat of chats) {
+    const known = newest.get(chat.id)
+    if (known === undefined || chat.updated > known.updated) newest.set(chat.id, chat)
+  }
+  return [...newest.values()]
+}
+
 export function droppedChats(chats: readonly SavedChat[], open: string): readonly string[] {
   const others = [...chats].filter((chat) => chat.id !== open).sort((one, two) => two.updated - one.updated)
   return others.slice(chatsKept - 1).map((chat) => chat.id)

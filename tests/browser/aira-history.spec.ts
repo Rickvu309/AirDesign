@@ -2,11 +2,13 @@ import { expect, type BrowserContext, type Page } from "@playwright/test"
 import { airaCopy, airaHistoryNameOf } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { forward, openClean, settled, signInBrowser, test, type Stack } from "./api-stack"
+import { holdableDevice, slowDevice } from "./slow-device"
 
 const node = "256.2"
 const asked = "Change the title to Hello from Aira"
 const title = "Change the title to Hello from Aira"
 const reply = "The title now reads Hello from Aira."
+const answer = "Lead with the claim. Then show the evidence."
 
 test.use({ viewport: { width: 1600, height: 1000 }, locale: "en-US", timezoneId: "Asia/Ho_Chi_Minh" })
 
@@ -72,6 +74,10 @@ async function chatKeys(page: Page, deck: string): Promise<string[]> {
   )
 }
 
+async function shelvedKeys(page: Page): Promise<string[]> {
+  return page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith("airdesign:chats:")))
+}
+
 test("a chat survives a reload, New chat keeps it in history, and picking it shows it again to continue", async ({
   page,
   context,
@@ -109,6 +115,48 @@ test("a chat survives a reload, New chat keeps it in history, and picking it sho
   expect(body.messages.length).toBeGreaterThan(1)
   await expect(log.getByText("Lead with the claim. Then show the evidence.", { exact: true })).toBeVisible()
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello from Aira")
+})
+
+test("an answer shown while the device write is slow is still there after an immediate reload", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await holdableDevice(page)
+  const { deck, side, log } = await openDeck(page, context, stack)
+  stack.aira({ name: "turn.sse" })
+  await slowDevice(page)
+  await ask(page, "Lead with the number")
+  await expect(log.getByText(answer, { exact: true })).toBeVisible()
+  await page.reload()
+  await settled(page)
+  await expect(log.getByText("Lead with the number", { exact: true })).toBeVisible()
+  await expect(log.getByText(answer, { exact: true })).toBeVisible()
+  await expect(side.getByRole("button", { name: airaHistoryNameOf("Lead with the number") })).toBeVisible()
+  await expect.poll(() => chatKeys(page, deck)).toHaveLength(1)
+  expect(await shelvedKeys(page)).toEqual([])
+})
+
+test("an answer shown while the device write is slow is still there when the tab is closed and the deck is opened again", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await holdableDevice(page)
+  const { deck } = await openDeck(page, context, stack)
+  stack.aira({ name: "turn.sse" })
+  await slowDevice(page)
+  await ask(page, "Lead with the number")
+  await expect(page.locator("[data-editor-panel]").getByRole("log").getByText(answer, { exact: true })).toBeVisible()
+  await page.close()
+  const reopened = await context.newPage()
+  await forward(reopened, stack)
+  await reopened.goto(`/deck/${deck}`)
+  await settled(reopened)
+  const log = reopened.locator("[data-editor-panel]").getByRole("log")
+  await expect(log.getByText("Lead with the number", { exact: true })).toBeVisible()
+  await expect(log.getByText(answer, { exact: true })).toBeVisible()
+  await expect.poll(() => chatKeys(reopened, deck)).toHaveLength(1)
 })
 
 test("Undo on a restored chat takes the run back, and the chat stays undone after a reload", async ({

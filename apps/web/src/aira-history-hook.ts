@@ -1,8 +1,9 @@
-import { dropChats, readChats, writeChat } from "@airdesign/live"
+import { dropChats, readChats, shelveChats, takeShelvedChats, writeChat } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
 import type { AiraChat } from "@/aira-loop"
 import {
   droppedChats,
+  newestOfEach,
   readSavedChat,
   restoredChat,
   saveStep,
@@ -15,9 +16,17 @@ export type ChatStore = {
   readonly list: (deck: string) => Promise<unknown[]>
   readonly put: (deck: string, chat: SavedChat) => Promise<void>
   readonly drop: (deck: string, ids?: readonly string[]) => Promise<void>
+  readonly take: (deck: string) => unknown[]
+  readonly shelve: (deck: string, chats: readonly SavedChat[]) => void
 }
 
-export const deviceChats: ChatStore = { list: readChats, put: writeChat, drop: dropChats }
+export const deviceChats: ChatStore = {
+  list: readChats,
+  put: writeChat,
+  drop: dropChats,
+  take: (deck) => takeShelvedChats(deck),
+  shelve: (deck, chats) => shelveChats(deck, chats),
+}
 
 type Open = { readonly id: string; readonly started: number }
 
@@ -45,8 +54,10 @@ export function useChatHistory({
   const open = useRef<Open | null>(null)
   const queue = useRef<SaveQueue>({ writing: false, next: [] })
   const kept = useRef<readonly SavedChat[]>([])
+  const unwritten = useRef(new Map<string, SavedChat>())
   const restore = useRef(onRestore)
   const isEmpty = useRef(empty)
+  const keep = useRef<(chat: SavedChat) => void>(() => undefined)
 
   useEffect(() => {
     restore.current = onRestore
@@ -67,7 +78,12 @@ export function useChatHistory({
     if (chat === null) return
     void store
       .put(deck, chat)
-      .catch(() => undefined)
+      .then(
+        () => {
+          if (unwritten.current.get(chat.id) === chat) unwritten.current.delete(chat.id)
+        },
+        () => undefined,
+      )
       .then(() => {
         const step = saveStep(queue.current, { type: "written" })
         queue.current = step.queue
@@ -75,17 +91,38 @@ export function useChatHistory({
       })
   }
 
+  function queued(chat: SavedChat) {
+    unwritten.current.set(chat.id, chat)
+    const step = saveStep(queue.current, { type: "changed", chat })
+    queue.current = step.queue
+    write(step.write)
+  }
+
+  useEffect(() => {
+    keep.current = queued
+  })
+
+  useEffect(() => {
+    const hide = () => store.shelve(deck, [...unwritten.current.values()])
+    window.addEventListener("pagehide", hide)
+    return () => window.removeEventListener("pagehide", hide)
+  }, [deck, store])
+
   useEffect(() => {
     let live = true
+    const readAll = (raw: readonly unknown[]) =>
+      raw.flatMap((value) => {
+        const chat = readSavedChat(value, deck)
+        return chat === undefined ? [] : [chat]
+      })
     void store
       .list(deck)
       .catch(() => [])
       .then((raw) => {
         if (!live) return
-        const read = raw.flatMap((value) => {
-          const chat = readSavedChat(value, deck)
-          return chat === undefined ? [] : [chat]
-        })
+        const shelved = readAll(store.take(deck))
+        const read = newestOfEach([...readAll(raw), ...shelved])
+        for (const chat of read) if (shelved.includes(chat)) keep.current(chat)
         const newest = newestFirst(read)[0]
         kept.current = newestFirst([...read.filter((chat) => chat.id !== open.current?.id), ...kept.current])
         setChats(kept.current)
@@ -106,10 +143,9 @@ export function useChatHistory({
     const saved = savedChat(chat, { id: current.id, started: current.started, updated: now() })
     const dropped = droppedChats([saved, ...kept.current.filter((each) => each.id !== saved.id)], saved.id)
     listed([saved, ...kept.current.filter((each) => each.id !== saved.id && !dropped.includes(each.id))])
+    for (const id of dropped) unwritten.current.delete(id)
     if (dropped.length > 0) void store.drop(deck, dropped).catch(() => undefined)
-    const step = saveStep(queue.current, { type: "changed", chat: saved })
-    queue.current = step.queue
-    write(step.write)
+    queued(saved)
   }
 
   function start() {
