@@ -270,3 +270,18 @@ it("decodes the runs a register records ended, and refuses a record that is not 
   expect(deckRoutes.open.result({ ...answer, register: { ...answer.register, ended: [1] } })).toEqual(payload)
   expect(deckRoutes.open.result({ ...answer, register: { ...answer.register, ended: "run" } })).toEqual(payload)
 })
+
+it("decodes the run a register records as its last writer, and refuses a record that is not one", () => {
+  const answer = {
+    ...revision,
+    register: { ...openRegister("", ""), lastRun: { runId: "run", since: 2, revision: 4 } },
+  }
+  expect(deckRoutes.open.result(JSON.parse(JSON.stringify(answer)))).toEqual(answer)
+  for (const lastRun of [
+    "run",
+    { runId: 1, since: 2, revision: 4 },
+    { runId: "run", since: -1, revision: 4 },
+    { runId: "run", since: 2 },
+  ])
+    expect(deckRoutes.open.result({ ...answer, register: { ...answer.register, lastRun } })).toEqual(payload)
+})

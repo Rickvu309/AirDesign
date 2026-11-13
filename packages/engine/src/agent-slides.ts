@@ -24,7 +24,7 @@ import {
 import type { Caller, Deck } from "./call.js"
 
 type Built =
-  | { readonly ok: true; readonly register: Deck["register"] }
+  | { readonly ok: true; readonly register: Deck["register"]; readonly runId: string }
   | { readonly ok: false; readonly refusal: CallRefusal }
 function heldBy(register: Register, runId: string) {
   const held = [...new Set([...register.nodes, ...storedElements(register)])].flatMap((node) => {
@@ -58,12 +58,18 @@ function openingRows(register: Deck["register"], index: DeckIndex, slide: SlideI
   return rows.filter((row) => shapeOf(row.node).slide === slide)
 }
 
+function readFresh(deck: Deck, runId: string, base: number): boolean {
+  if (base === deck.revision) return true
+  const last = deck.register.lastRun
+  return last?.runId === runId && last.revision === deck.revision && last.since <= base && base < deck.revision
+}
+
 export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown): Built {
   if (caller.actor !== "agent") return { ok: false, refusal: "field" }
   const parsed = slideReaders[op](raw)
   if (!parsed.ok) return parsed
   if (parsed.deck !== deck.id) return { ok: false, refusal: "deck" }
-  if (parsed.base !== deck.revision) return { ok: false, refusal: "stale" }
+  if (!readFresh(deck, caller.runId, parsed.base)) return { ok: false, refusal: "stale" }
   const register = deck.register
   const fenced = runFence(register, caller.runId, op === "delete_slide" && "slide" in parsed ? parsed.slide : null)
   if (fenced !== null) return { ok: false, refusal: fenced }
@@ -121,5 +127,6 @@ export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown
     edit = { slide: "clone", id, source: parsed.slide, key, floor: floorFor(floor, id) }
   }
   const result = decide(register, { command: "slide", file, edit: { ...edit, runId: caller.runId } })
-  return result.decision === "refuse" ? { ok: false, refusal: result.code } : { ok: true, register: result.register }
+  if (result.decision === "refuse") return { ok: false, refusal: result.code }
+  return { ok: true, register: result.register, runId: caller.runId }
 }

@@ -14,6 +14,7 @@ const elementWords = { none: "holds no element", running: "holds an element", st
 
 export const state = (v) =>
   `deck at ${v.rev}, r added ${v.shown} slides, r ${elementWords[v.element]}${v.ended ? ", the deck records r ended" : ""}, turn ${v.turn} at ${v.turnRev}` +
+  `${v.last === "none" ? "" : `, ${v.last} wrote the latest revisions${v.covers ? " since the agent's base" : ""}`}${v.foreign ? ", another write after the agent's base" : ""}` +
   `${v.stopped ? ", stop took effect" : ""}${v.late > 0 ? `, ${v.late} slides of r landed after the stop` : ""}`
 
 export const step = (action) => steps[action] ?? null

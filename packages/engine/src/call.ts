@@ -47,8 +47,6 @@ type StartResult =
   | { readonly ok: true; readonly deck: Deck; readonly key: string; readonly runId: string }
   | { readonly ok: false; readonly refusal: CallRefusal }
 
-type Touched = WireEdit | WireChange
-
 export function openDeck(id: DeckId): Deck {
   return { id, revision: 0, register: openRegister("", "") }
 }
@@ -89,12 +87,20 @@ function openedRegister(
   return { ok: true, register: opened.register }
 }
 
-function landed(deck: Deck, register: Register): CallResult {
+function wroteBy(deck: Deck, register: Register, runId: string): Register {
+  const last = deck.register.lastRun
+  const since = last?.runId === runId && last.revision === deck.revision ? last.since : deck.revision
+  return { ...register, lastRun: { runId, since, revision: deck.revision + 1 } }
+}
+
+function landed(deck: Deck, register: Register, runId?: string): CallResult {
   const changed = register !== deck.register
   const revision = changed ? deck.revision + 1 : deck.revision
   const notified = notifyKey(deck.id, revision)
   if (!notified.ok) return refused("payload")
-  return { ok: true, deck: changed ? { id: deck.id, revision, register } : deck, key: notified.key }
+  if (!changed) return { ok: true, deck, key: notified.key }
+  const written = runId === undefined ? register : wroteBy(deck, register, runId)
+  return { ok: true, deck: { id: deck.id, revision, register: written }, key: notified.key }
 }
 
 function applyPersonEdits(deck: Deck, edits: readonly (WireEdit | WireSlide)[]): CallResult {
@@ -121,11 +127,7 @@ function applyPersonEdits(deck: Deck, edits: readonly (WireEdit | WireSlide)[]):
   return landed(deck, register)
 }
 
-function applyEdits<Edit extends Touched>(
-  deck: Deck,
-  edits: readonly Edit[],
-  commandFor: (edit: Edit) => Command,
-): CallResult {
+function applyAgentEdits(deck: Deck, edits: readonly WireChange[], runId: string): CallResult {
   let register = deck.register
   for (const edit of edits) {
     const bytes = valueBytes(edit)
@@ -136,11 +138,11 @@ function applyEdits<Edit extends Touched>(
     register = opened.register
     const next = register.bytes + bytes
     if (next >= limits.bytes) return refused("limit")
-    const decision = decide(register, commandFor(edit))
+    const decision = decide(register, agentCommand(edit, runId))
     if (decision.decision === "refuse") return refused(decision.code)
     register = { ...decision.register, bytes: next }
   }
-  return landed(deck, register)
+  return landed(deck, register, runId)
 }
 
 function everyElement(register: Register): readonly ElementId[] {
@@ -287,7 +289,7 @@ export function call(op: Exclude<CommandOp, "start_run">, deck: Deck, caller: Ca
 export function call(op: CommandOp, deck: Deck, caller: Caller, raw: unknown): CallResult | StartResult {
   if (op === "add_slide" || op === "duplicate_slide" || op === "delete_slide" || op === "move_slide") {
     const result = agentSlide(op, deck, caller, raw)
-    return result.ok ? landed(deck, result.register) : result
+    return result.ok ? landed(deck, result.register, result.runId) : result
   }
   if (op === "start_run") return callStartRun(deck, caller, raw)
   if (op === "undo_run") return callEndRun(deck, caller, raw, undoRun)
@@ -306,5 +308,5 @@ export function call(op: CommandOp, deck: Deck, caller: Caller, raw: unknown): C
   const parsed = readAgentEdit(raw)
   if (!parsed.ok) return refused(parsed.refusal)
   if (parsed.deck !== deck.id) return refused("deck")
-  return applyEdits(deck, parsed.changes, (edit) => agentCommand(edit, caller.runId))
+  return applyAgentEdits(deck, parsed.changes, caller.runId)
 }
