@@ -4,6 +4,7 @@ import { store } from "./home-store.ts"
 import { cleanFixture, forward, openClean, signInBrowser, test as stackTest, type Stack } from "./api-stack"
 import { exportFromDialog } from "./export-dialog.ts"
 import { newBlankDeck } from "./new-deck"
+import { holdableDevice, slowDevice } from "./slow-device"
 
 const title = (page: Page) => page.getByRole("button", { name: /^Rename deck: / })
 const field = (page: Page) => page.getByRole("textbox", { name: "Deck name" })
@@ -276,5 +277,49 @@ stackTest(
     await expect.poll(() => serverName(stack, first, deck), { timeout: 5000 }).toBe("clean")
     expect(sent).toEqual([deck])
     expect((await stack.saved(deck))?.owner).toBe(await stack.emailOf(first))
+  },
+)
+
+stackTest(
+  "a name entered while its device write is held is still the deck's name after an immediate reload",
+  async ({ page, context, stack }) => {
+    const cookie = await stack.signIn()
+    await signInBrowser(context, cookie)
+    await forward(page, stack)
+    await holdableDevice(page)
+    const deck = await openClean(page)
+    await expect.poll(() => serverName(stack, cookie, deck)).toBe("clean")
+    await slowDevice(page)
+    await title(page).click()
+    await field(page).fill("Kept name")
+    await field(page).press("Enter")
+    await expect(title(page)).toHaveAccessibleName("Rename deck: Kept name")
+    await page.reload()
+    await expect(title(page)).toHaveAccessibleName("Rename deck: Kept name")
+    await expect.poll(() => serverName(stack, cookie, deck)).toBe("Kept name")
+    await page.goto("/")
+    await expect(page.getByRole("heading", { name: "Kept name" })).toBeVisible()
+  },
+)
+
+stackTest(
+  "a deck imported and left while the editor's device writes are held is still listed on Home after a reload",
+  async ({ page, context, stack }) => {
+    const cookie = await stack.signIn()
+    await signInBrowser(context, cookie)
+    await forward(page, stack)
+    await holdableDevice(page)
+    await page.route("**/decks/open", (route) => route.abort())
+    await page.goto("/")
+    await page.locator("input[type=file]").setInputFiles(cleanFixture)
+    await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+    const deck = new URL(page.url()).pathname.slice("/deck/".length)
+    await slowDevice(page)
+    await page.goto("/")
+    await expect(page.getByRole("heading", { name: "clean" })).toBeVisible()
+    await page.unroute("**/decks/open")
+    await page.reload()
+    await expect(page.getByRole("heading", { name: "clean" })).toBeVisible()
+    await expect.poll(() => serverName(stack, cookie, deck), { timeout: 5000 }).toBe("clean")
   },
 )

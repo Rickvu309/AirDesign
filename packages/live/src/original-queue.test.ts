@@ -6,6 +6,7 @@ import { flushOriginal, queueOriginal } from "./original-queue.js"
 const stored = vi.hoisted(() => ({ sends: 0, ok: false }))
 vi.mock("./part.js", () => ({
   getParts: async () => ({ ok: true, file: new Uint8Array([1]), name: "Blank deck" }),
+  renameParts: async () => ({ ok: true }),
 }))
 vi.mock("./original.js", () => ({
   sendOriginal: async () => {

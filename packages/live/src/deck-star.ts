@@ -4,7 +4,7 @@ import { post } from "./remote.js"
 
 const on = "starred"
 
-const stars: DeckQueue = {
+export const stars: DeckQueue = {
   slot: "\u0003star",
   send: async (deck, value) =>
     deckRoutes.star.result(await post(deckRoutes.star.path, { deck, starred: value === on })).ok,
