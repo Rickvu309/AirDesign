@@ -319,7 +319,7 @@ async function* answered(
   const { account, id, input } = asked
   const { signal } = followed
   try {
-    const sent = !signal.aborted
+    const sent = !(await followed.stopped())
     let opened: ModelOpen = { ok: false, request: null, status: 0, type: "api_error", message: "" }
     if (sent) opened = await asked.transport(asked.call, asked.key, signal).catch(() => opened)
     await noteRequest(host.db, id, opened.request)
