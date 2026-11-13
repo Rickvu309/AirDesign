@@ -1,7 +1,7 @@
 import { type ElementId, type Register } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { type ReadShape, type SectionStart } from "@airdesign/pptx"
-import { paintStore } from "@airdesign/render"
+import { paintStore, type Entering } from "@airdesign/render"
 import { useRef, useState } from "react"
 import { type SlideCanvases } from "@/canvas-slide"
 import { type TextBox } from "@/commit-edit"
@@ -32,7 +32,7 @@ export function useDeckPaint(
   const busy = useRef(busyElements())
   const structure = useRef("")
   const repaint = useRef<(register: Register, from?: "person") => void>(() => undefined)
-  const [entering, setEntering] = useState<ElementId | null>(null)
+  const [entering, setEntering] = useState<Entering | null>(null)
   const [slideCount, setSlideCount] = useState(0)
   const [layouts, setLayouts] = useState<ReturnType<typeof layoutChoices>>([])
   const [sections, setSections] = useState<readonly SectionStart[]>([])

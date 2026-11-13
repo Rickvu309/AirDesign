@@ -8,6 +8,7 @@ import { useElement } from "./element-view.js"
 import {
   cutValue,
   joinParagraph,
+  lineBreak,
   paragraphText,
   splitParagraph,
   textValue,
@@ -32,8 +33,6 @@ function textNodes(node: Node): Text[] {
   if (isText(node)) return [node]
   return [...node.childNodes].flatMap(textNodes)
 }
-
-const lineBreak = /\r\n|[\r\n\u2028\u2029\u0085\v\f]/
 
 function collectRuns(nodes: NodeListOf<ChildNode> | readonly Node[], from: number, runs: TextRun[]): void {
   let loose = false

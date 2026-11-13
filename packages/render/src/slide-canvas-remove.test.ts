@@ -54,7 +54,7 @@ async function mounted(elements: readonly CanvasElement[], entering: ElementId |
         store,
         slide: { width: 12_192_000, height: 6_858_000, background: null, elements },
         width: 800,
-        entering,
+        entering: entering === null ? null : { id: entering },
         onEdit: () => undefined,
         onBox: () => undefined,
         onRemove: (target: ElementId) => removed.push(target),
