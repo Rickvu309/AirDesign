@@ -169,6 +169,17 @@ export function replaceSlots(puts: readonly { readonly key: string; readonly val
   return putSlots(puts).then(() => undefined)
 }
 
+export async function changeSlot(key: string, change: (current: unknown) => unknown): Promise<void> {
+  const account = signedIn()
+  const writing = await transaction("readwrite")
+  const store = writing.objectStore(storeName)
+  const request = store.get(scoped(account, key))
+  request.onsuccess = () => {
+    store.put(change(request.result), scoped(account, key))
+  }
+  await finished(writing, () => undefined)
+}
+
 export function swapSlot(key: string, value: unknown, keep: (current: unknown) => boolean): Promise<boolean> {
   return putSlots([{ key, value }], { key, keep })
 }

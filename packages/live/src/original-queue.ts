@@ -1,14 +1,44 @@
+import { connect } from "./cache.js"
 import { flushRename, queuedName, queueRename } from "./deck-rename.js"
 import { flushMedia } from "./media.js"
 import { sendOriginal } from "./original.js"
 import { getParts } from "./part.js"
-import { readSlot, writeSlot } from "./store.js"
+import type { Remote } from "./remote.js"
+import { changeSlot, readSlot, writeSlot } from "./store.js"
 
 const key = (deck: string) => `${deck}\u0003original`
+const unopenedKey = "\u0007unopened"
+const settled = new Set(["deck", "owner", "deleted"])
 
-export async function queueOriginal(deck: string): Promise<void> {
+export type UnopenedDeck = { readonly deck: string; readonly name: string; readonly created: string }
+
+type Unopened = Readonly<Record<string, { readonly name: string; readonly created: string }>>
+
+function unopenedOf(raw: unknown): Unopened {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return {}
+  return Object.fromEntries(
+    Object.entries(raw).filter(
+      (entry): entry is [string, { name: string; created: string }] =>
+        typeof entry[1] === "object" &&
+        entry[1] !== null &&
+        typeof entry[1].name === "string" &&
+        typeof entry[1].created === "string",
+    ),
+  )
+}
+
+function forget(gone: (deck: string) => boolean): Promise<void> {
+  return changeSlot(unopenedKey, (raw) =>
+    Object.fromEntries(Object.entries(unopenedOf(raw)).filter(([deck]) => !gone(deck))),
+  )
+}
+
+export async function queueOriginal(deck: string, now: () => number = Date.now): Promise<void> {
   const stored = await getParts(deck)
-  if (stored.ok && stored.name !== undefined) await queueRename(deck, stored.name)
+  const name = stored.ok ? stored.name : undefined
+  if (name !== undefined) await queueRename(deck, name)
+  const created = new Date(now()).toISOString()
+  await changeSlot(unopenedKey, (raw) => ({ ...unopenedOf(raw), [deck]: { name: name ?? "", created } }))
   await writeSlot(key(deck), true)
 }
 
@@ -38,4 +68,27 @@ export async function sendQueuedNames(decks: readonly string[]): Promise<Readonl
   const queued = new Map(names.filter((entry): entry is readonly [string, string] => entry[1] !== undefined))
   for (const deck of queued.keys()) void flushOriginal(deck)
   return queued
+}
+
+async function sendOpen(remote: Remote, deck: string): Promise<void> {
+  const live = connect(remote)
+  const opened = await live.open(deck).catch(() => null)
+  if (opened === null || (!opened.ok && !settled.has(opened.refusal))) return
+  await forget((each) => each === deck)
+  if (!opened.ok) return
+  await live.flush(deck)
+  await flushOriginal(deck)
+}
+
+export async function sendUnopened(remote: Remote, listed: readonly string[]): Promise<readonly UnopenedDeck[]> {
+  const known = new Set(listed)
+  const held = Object.entries(unopenedOf(await readSlot(unopenedKey)))
+  if (held.some(([deck]) => known.has(deck))) await forget((deck) => known.has(deck))
+  const decks = await Promise.all(
+    held
+      .filter(([deck]) => !known.has(deck))
+      .map(async ([deck, entry]) => ({ deck, name: (await queuedName(deck)) ?? entry.name, created: entry.created })),
+  )
+  for (const { deck } of decks) void sendOpen(remote, deck).catch(() => undefined)
+  return decks
 }
