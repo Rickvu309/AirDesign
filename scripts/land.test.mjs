@@ -49,7 +49,14 @@ const harness = (options = {}) => {
     args = [],
     dirty = "",
     branch = "land-command",
-    pull = { number: 394, baseRefName: "main", url: "https://github.com/Rickvu309/AirDesign/pull/394" },
+    pull = {
+      number: 394,
+      baseRefName: "main",
+      url: "https://github.com/Rickvu309/AirDesign/pull/394",
+      title: "Add pnpm land",
+      body: "## Proof\n\nRan it.\n",
+    },
+    bodyText = "## What changes\n\nA.\n\n## Proof\n\nRan it.\n",
     conflicts = "",
     behind = "0",
     mainMigrations = migrationsOf("a", "b"),
@@ -112,6 +119,11 @@ const harness = (options = {}) => {
       return alone
     },
     stamp: () => log.push("stamp"),
+    readText: (file) => {
+      log.push(`read ${file}`)
+      if (bodyText === null) throw new Error(`ENOENT: no such file, open '${file}'`)
+      return bodyText
+    },
     sleep: (ms) => {
       clock += ms
     },
@@ -258,6 +270,71 @@ same(
   created.log.some((line) => line.startsWith("gh pr create --base main")),
   true,
 )
+
+const longTitle = `Add pnpm land, which checks, pushes, queues and follows a pull request to merged`
+const refusedTitle = harness({ pull: null, args: ["--title", longTitle, "--body-file", "/tmp/body.md"] })
+same("a --title over the limit stops", await refusedTitle.run(), 1)
+same("before the check", refusedTitle.log.includes("stamp"), false)
+same(
+  "and before the push",
+  refusedTitle.log.some((line) => line.startsWith("git push")),
+  false,
+)
+same(
+  "it prints the length and the limit",
+  refusedTitle.said
+    .at(-1)
+    .startsWith(`STOPPED at title: --title is ${[...longTitle].length} characters, limit 72: it is too long.`),
+  true,
+)
+
+const oldTitle = harness({
+  pull: { number: 412, baseRefName: "main", url: "u", title: "Add the deck list.", body: "" },
+})
+same("an open pull request whose title breaks the rule stops", await oldTitle.run(), 1)
+same("before the check", oldTitle.log.includes("stamp"), false)
+same(
+  "it names the pull request and how to retitle it",
+  oldTitle.said.at(-1).includes("the title of pull request 412 is 18 characters, limit 72: it ends with a full stop") &&
+    oldTitle.said.at(-1).includes("gh pr edit 412 --title"),
+  true,
+)
+same("an open pull request's title wins over --title", await harness({ args: ["--title", longTitle] }).run(), 0)
+
+const proofless = harness({
+  pull: null,
+  bodyText: "## What changes\n\nA.\n",
+  args: ["--title", "Add land", "--body-file", "/tmp/body.md", "--check"],
+})
+same("a body with no Proof heading only warns", await proofless.run(), 0)
+same(
+  "and says so in one line",
+  proofless.said.filter((line) => line.startsWith("body       warning: the body has no ## Proof heading")).length,
+  1,
+)
+same(
+  "a body with a Proof heading says nothing",
+  clean.said.some((line) => line.startsWith("body")),
+  false,
+)
+const prProofless = harness({
+  pull: { number: 412, baseRefName: "main", url: "u", title: "Add land", body: "A." },
+  args: ["--check"],
+})
+await prProofless.run()
+same(
+  "an open pull request's body is read too",
+  prProofless.said.some((line) => line.includes("no ## Proof heading")),
+  true,
+)
+same(
+  "and the body file is not",
+  prProofless.log.some((line) => line.startsWith("read ")),
+  false,
+)
+const unread = harness({ pull: null, bodyText: null, args: ["--title", "Add land", "--body-file", "/tmp/none.md"] })
+same("a body file that cannot be read stops", await unread.run(), 1)
+same("before the check", unread.log.includes("stamp"), false)
 
 const watch = harness({ args: ["--watch"], reads: [pullAnswer({ merged: true })] })
 same("--watch only follows", await watch.run(), 0)
