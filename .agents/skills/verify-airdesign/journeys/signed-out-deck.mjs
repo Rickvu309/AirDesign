@@ -48,8 +48,9 @@ export default async function drive({ repo, page, signIn, capture, note }) {
   shown.length = 0
   await page.goto(`/deck/${second}`)
   await expect(page).toHaveURL(signInAddress(second))
+  expect(shown).toEqual([])
   await capture("signed-out-from-settings")
   note(
-    `signed out with Sign out in Settings, then opened /deck/${second}: sent to sign-in with next; slide text painted before the redirect: ${JSON.stringify(shown)} (known failure, pinned in tests/browser/signed-out-deck.spec.ts)`,
+    `signed out with Sign out in Settings, then opened /deck/${second}: sent to sign-in with next, and no slide painted`,
   )
 }

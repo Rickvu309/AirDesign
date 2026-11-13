@@ -23,32 +23,29 @@ test("a deck address a signed-in person may not open keeps the refusal and stays
   expect(new URL(page.url()).pathname).toBe("/deck/someone-elses")
 })
 
-stackTest.fail(
-  "a deck on the device is not painted after signing out in Settings",
-  async ({ page, context, stack }) => {
-    await signInBrowser(context, await stack.signIn())
-    await forward(page, stack)
-    await page.route("**/sign-in?*", (route) => route.fulfill({ body: "Sign in" }))
-    await page.route(
-      (url) => url.pathname.startsWith("/account/") || url.pathname === "/sign-out",
-      async (route) => {
-        const request = route.request()
-        const answer = await route.fetch({
-          url: `${stack.origin}${new URL(request.url()).pathname}`,
-          headers: await request.allHeaders(),
-        })
-        await route.fulfill({ response: answer })
-      },
-    )
-    const deck = await openClean(page)
-    await page.goto("/settings/account")
-    await page.getByRole("button", { name: "Sign out" }).click()
-    await expect(page).toHaveURL(/\/sign-in\?next=/)
-    await page.route("**/decks/open", () => undefined)
-    await page.goto(`/deck/${deck}`)
-    await expect(page.locator(".thin-page")).toBeVisible()
-    await page.waitForTimeout(1500)
-    await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
-    await expect(page.locator(".thin-page")).not.toHaveAttribute("data-deck-ready", /.+/)
-  },
-)
+stackTest("a deck on the device is not painted after signing out in Settings", async ({ page, context, stack }) => {
+  await signInBrowser(context, await stack.signIn())
+  await forward(page, stack)
+  await page.route("**/sign-in?*", (route) => route.fulfill({ body: "Sign in" }))
+  await page.route(
+    (url) => url.pathname.startsWith("/account/") || url.pathname === "/sign-out",
+    async (route) => {
+      const request = route.request()
+      const answer = await route.fetch({
+        url: `${stack.origin}${new URL(request.url()).pathname}`,
+        headers: await request.allHeaders(),
+      })
+      await route.fulfill({ response: answer })
+    },
+  )
+  const deck = await openClean(page)
+  await page.goto("/settings/account")
+  await page.getByRole("button", { name: "Sign out" }).click()
+  await expect(page).toHaveURL(/\/sign-in\?next=/)
+  await page.route("**/decks/open", () => undefined)
+  await page.goto(`/deck/${deck}`)
+  await expect(page.locator(".thin-page")).toBeVisible()
+  await page.waitForTimeout(1500)
+  await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
+  await expect(page.locator(".thin-page")).not.toHaveAttribute("data-deck-ready", /.+/)
+})
