@@ -1,410 +1,41 @@
-import { type Box, type ElementId, type Register, type Undoable } from "@airdesign/document"
-import { connect, flushOriginal, memoryRemote } from "@airdesign/live"
-import { type ReadShape, type SectionStart } from "@airdesign/pptx"
-import { paintStore, SlideCanvas, textFormatting, textValue } from "@airdesign/render"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { type SlideCanvases } from "@/canvas-slide"
-import { DownloadedNotice, signInAddress, ThinNoticeView, type ThinNotice } from "@/thin-notice"
-import { exportDeck, type ExportRequest } from "@/export/export-deck"
+import { useState } from "react"
+import { DownloadedNotice, ThinNoticeView } from "@/thin-notice"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
-import { thumbHeight } from "@/thumb-height"
-import { slideFrame } from "@/editor/revenue-slide"
-import { cn } from "@/lib/class-names"
-import { commitBox, commitEdit, flushPending, server, type CommitOutcome, type TextBox } from "@/commit-edit"
-import { landedBox, paintedBox, shownBox } from "@/element-move"
-import { commitSlideChange, type SlideChange } from "@/slide-edit"
-import { layoutChoices } from "@/slide-layout"
-import { commitElement, type ElementChange } from "@/element-edit"
-import { PicturesUploading, usePictureTool } from "@/picture-tool"
-import { commitPicture } from "@/picture-add"
-import { ensureMarkup } from "@/markup"
-import { backfillIndex } from "@/index-deck"
-import { type PictureSources } from "@/picture-fill"
-import { paint, valueStorable } from "@/deck-paint"
-export { elementIds, valueStorable } from "@/deck-paint"
-import { followDeck } from "@/deck-follow"
-import { closesDeck, deckParts, deviceCopy, deviceRegister } from "@/device-copy"
-import { busyElements, liveRepaint, showText, shownValue } from "@/live-repaint"
-import { AiraPanel } from "@/aira-panel"
+import { editableSlide } from "@/editor/editable-slide"
+import { deckInserts } from "@/editor/inserts"
+import { slideCommands } from "@/editor/slide-commands"
+import { useDeckOpen } from "@/editor/use-deck-open"
+import { useDeckPaint } from "@/editor/use-deck-paint"
+import { shownNotice, useDeckStatus } from "@/editor/use-deck-status"
 import { useDeckTitle } from "@/editor/use-deck-title"
-import { structureOf, useTables } from "@/table-hook"
-import { notesShown, useNotes } from "@/notes-edit"
-import { useUndoKeys } from "@/editor/undo-keys"
+import { useExport } from "@/editor/use-export"
 import { useNetwork } from "@/editor/use-network"
-import {
-  emptyUndo,
-  recorded,
-  recordsInFlight,
-  turnBack,
-  undoLabel,
-  type Typing,
-  type UndoDirection,
-  type UndoEntry,
-} from "@/undo-list"
-import { boxName, elementNames, slideNames } from "@/undo-names"
-import type { UndoName } from "@/copy/undo-copy"
+import { useUndoList, useUndoTurn } from "@/editor/use-undo"
+import { usePictureTool } from "@/picture-tool"
+export { elementIds, valueStorable } from "@/deck-paint"
+import { AiraPanel } from "@/aira-panel"
+import { useTables } from "@/table-hook"
+import { useNotes } from "@/notes-edit"
 
 export function ThinDeck({ id }: { id: string }) {
-  const store = useRef(paintStore())
-  const boxes = useRef<ReadonlyMap<ElementId, TextBox>>(new Map())
-  const movables = useRef<ReadonlyMap<ElementId, TextBox>>(new Map())
-  const shapes = useRef<ReadonlyMap<ElementId, ReadShape>>(new Map())
-  const shownParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
-  const editParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
-  const canvases = useRef<SlideCanvases>(() => null)
-  const pictures = useRef<PictureSources | null>(null)
-  const busy = useRef(busyElements())
-  const structure = useRef("")
-  const repaint = useRef<(register: Register, from?: "person") => void>(() => undefined)
-  const [entering, setEntering] = useState<ElementId | null>(null)
-  const [slideCount, setSlideCount] = useState(0)
-  const [layouts, setLayouts] = useState<ReturnType<typeof layoutChoices>>([])
-  const [sections, setSections] = useState<readonly SectionStart[]>([])
-  const [current, setCurrent] = useState(0)
+  const status = useDeckStatus()
+  const { paintedDeck, settle, setPending } = status
   const [title, setTitle] = useState("")
   const rename = useDeckTitle(id, title, setTitle)
-  const [paintedDeck, setPaintedDeck] = useState<string | undefined>(undefined)
-  const [pending, setPending] = useState(false)
-  const [offline, setOffline] = useState(() => navigator.onLine === false)
-  const [failure, setFailure] = useState<"import-failed" | "export-failed" | "picture-uploading" | null>(null)
-  const [refused, setRefused] = useState(false)
-  const [downloaded, setDownloaded] = useState<string | null>(null)
   const [panel, setPanel] = useState<"agent" | "design">("agent")
-  const undoList = useRef(emptyUndo)
-  const turning = useRef<Promise<void>>(Promise.resolve())
-  const [undoShown, setUndoShown] = useState(emptyUndo)
-  const [told, setTold] = useState<UndoDirection | null>(null)
-  const typed = useRef<Typing | null>(null)
-  const sessions = useRef(0)
-  const records = useRef(recordsInFlight())
-  const formatting = useRef(
-    textFormatting(() => {
-      typed.current = null
-    }),
-  )
-  const pictureTool = usePictureTool(paintedDeck === id, async (picture) => {
-    const slide = canvases.current(current)
-    if (slide === null) return
-    const at = { index: current, slide, keep: pictureTool.store.keep }
-    settle(await commitPicture(id, shownParts.current, picture, at, recordAdded("add-picture")))
-  })
-
-  const settle = useCallback((outcome: CommitOutcome) => {
-    if (outcome === "sent") setPending(false)
-    if (outcome === "offline") setPending(true)
-    if (outcome !== "refused") setOffline(outcome === "offline")
-    if (outcome === "signed-out") window.location.assign(signInAddress(window.location))
-  }, [])
-  const leftNetwork = useCallback(() => setOffline(true), [])
+  const undo = useUndoList()
+  const { typed, sessions, record } = undo
+  const pictureTool = usePictureTool(paintedDeck === id, (picture) => inserts.addPicture(picture))
   const notesBar = useNotes({ id, typed, sessions, record, settle, sending: () => setPending(true) })
-
-  useEffect(() => {
-    let live = true
-    const leaving = new AbortController()
-    setPaintedDeck(undefined)
-    setRefused(false)
-    void (async () => {
-      await ensureMarkup()
-      const device = await deviceCopy(id, server)
-      if (!live) return
-      if (device !== null) openFrom(device.stored, device.register)
-      else {
-        const asked = await connect(server)
-          .open(id)
-          .catch(() => null)
-        if (!live) return
-        if (asked !== null && !asked.ok && (await refusedBy(asked.refusal))) return
-      }
-      const stored = device?.stored ?? (await deckParts(id))
-      if (!live) return
-      if (stored === "signed-out") {
-        window.location.assign(signInAddress(window.location))
-        return
-      }
-      if (stored === null) {
-        setFailure("import-failed")
-        return
-      }
-      const answered = await connect(server)
-        .open(id)
-        .catch(() => null)
-      if (!live) return
-      if (answered !== null && !answered.ok && (await refusedBy(answered.refusal))) return
-      const opened = await connect(server)
-        .openDeck(id)
-        .catch(() => null)
-      if (!live) return
-      const register = opened?.ok === true ? opened.register : null
-      if (device === null) openFrom(stored, register)
-      else if (register !== null) reconcile(register)
-      if (register?.index === undefined || register.index.elements.length !== register.index.total)
-        await backfillIndex(id, stored.parts)
-      settle(await flushPending(connect, id))
-      await flushOriginal(id)
-      const ended = await followDeck(
-        connect(server),
-        id,
-        async () => {
-          const next = await connect(server).openDeck(id)
-          if (live && next.ok) reconcile(next.register)
-        },
-        leaving.signal,
-      )
-      if (live && ended !== undefined) await refusedBy(ended)
-    })()
-    return () => {
-      live = false
-      leaving.abort()
-    }
-  }, [id, settle])
-
-  useEffect(
-    () => () => {
-      pictures.current?.release()
-      pictures.current = null
-    },
-    [],
-  )
-
-  useNetwork(id, settle, leftNetwork)
-
-  useEffect(() => {
-    function closeSession() {
-      typed.current = null
-    }
-    window.addEventListener("focusout", closeSession)
-    return () => window.removeEventListener("focusout", closeSession)
-  }, [])
-
-  useEffect(() => {
-    if (told === null) return
-    const clear = window.setTimeout(() => setTold(null), 4000)
-    return () => window.clearTimeout(clear)
-  }, [told])
-
-  async function textBefore(target: ElementId): Promise<string> {
-    const file = boxes.current.get(target)?.file ?? ""
-    return shownValue(await deviceRegister(id), target, file)
-  }
-
-  function onEdit(target: ElementId, value: string) {
-    const release = records.current.hold()
-    return editText(target, value, release).finally(release)
-  }
-
-  async function editText(target: ElementId, value: string, release: () => void) {
-    if (typed.current?.node !== target) {
-      sessions.current += 1
-      typed.current = { node: target, session: sessions.current, before: textBefore(target) }
-    }
-    const { session } = typed.current
-    const started = typed.current.before
-    const box = boxes.current.get(target)
-    if (box === undefined) return
-    const file = box.file
-    async function refused() {
-      showText(store.current, target, shownValue(await deviceRegister(id), target, file))
-    }
-    const shape = shapes.current.get(target)
-    if (shape === undefined || !valueStorable(editParts.current, shape, textValue(value))) {
-      await refused()
-      return
-    }
-    const outcome = await commitEdit(
-      connect,
-      id,
-      value,
-      box,
-      async () => {
-        const before = await started
-        setPending(true)
-        showText(store.current, target, value)
-        record({
-          name: "text",
-          session,
-          undoable: { node: target, floor: file, before: { value: before }, after: { value } },
-        })
-        release()
-      },
-      refused,
-    )
-    settle(outcome)
-  }
-
-  async function onBox(target: ElementId, box: Box) {
-    async function refused() {
-      store.current.placeBox(target, landedBox(await deviceRegister(id), target))
-    }
-    const element = movables.current.get(target)
-    if (element === undefined) {
-      await refused()
-      return
-    }
-    const opening = connect(memoryRemote()).openDeck(id)
-    const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
-    const outcome = await commitBox(
-      connect,
-      id,
-      box,
-      element,
-      async () => {
-        const opened = await opening
-        const before = shownBox(opened.ok ? opened.register : null, target, file)
-        setPending(true)
-        const name = before === null ? null : boxName(before, box)
-        if (before === null || name === null) return
-        record({
-          name,
-          undoable: {
-            node: target,
-            floor: element.file,
-            before: { property: "box", value: before },
-            after: { property: "box", value: box },
-          },
-        })
-      },
-      refused,
-    )
-    settle(outcome)
-  }
-
-  function holding(target: ElementId, work: () => Promise<void>) {
-    const release = busy.current.hold(target)
-    void work().finally(release)
-  }
-
-  function openFrom(
-    stored: { readonly parts: ReadonlyMap<string, Uint8Array>; readonly name?: string },
-    register: Register | null,
-  ) {
-    shownParts.current = stored.parts
-    setLayouts(layoutChoices(stored.parts))
-    showRegister(register)
-    setCurrent(0)
-    setTitle(stored.name ?? "")
-    setPaintedDeck(id)
-  }
-
-  function reconcile(register: Register) {
-    const before = store.current.slides().map((slide) => slide.id)
-    if (structure.current !== structureOf(register)) {
-      showRegister(register)
-      const after = store.current.slides().map((slide) => slide.id)
-      setCurrent((index) => {
-        const kept = after.findIndex((slide) => slide === before[index])
-        return kept >= 0 ? kept : Math.max(0, Math.min(index, after.length - 1))
-      })
-    } else {
-      repaint.current(register)
-      notesBar.show(notesShown(shownParts.current, register))
-    }
-  }
-
-  async function refusedBy(refusal: string): Promise<boolean> {
-    if (refusal === "session") {
-      window.location.assign(signInAddress(window.location))
-      return true
-    }
-    if (!closesDeck(refusal)) return false
-    setPaintedDeck(undefined)
-    setRefused(true)
-    return true
-  }
-
-  function showRegister(register: Register | null) {
-    const painted = paint(store.current, shownParts.current, register, busy.current, pictureTool.store.bytes)
-    boxes.current = painted.boxes
-    movables.current = painted.movables
-    shapes.current = painted.shapes
-    editParts.current = painted.base
-    canvases.current = painted.canvases
-    pictures.current?.release()
-    pictures.current = painted.pictures
-    structure.current = structureOf(register)
-    repaint.current = liveRepaint(store.current, painted.files, register, busy.current)
-    notesBar.show(notesShown(shownParts.current, register))
-    setSlideCount(painted.count)
-    setSections(painted.sections)
-    void pictureTool.store.load(id, register).then((more) => {
-      if (more && structure.current === structureOf(register)) showRegister(register)
-    })
-  }
-
-  async function showEdited(currentIndex: number) {
-    const next = await connect(memoryRemote()).openDeck(id)
-    if (!next.ok) return
-    showRegister(next.register)
-    setCurrent(Math.max(0, Math.min(currentIndex, store.current.slides().length - 1)))
-    setPending(true)
-  }
-
-  function recordAdded(name: UndoName) {
-    return async (added: ElementId | null, undoable: Undoable | null) => {
-      if (undoable !== null) record({ name, undoable })
-      await showEdited(current)
-      setEntering(added)
-    }
-  }
-
-  async function changeSlide(change: SlideChange, index: number, to = index, layoutPart?: string) {
-    const opened = await connect(memoryRemote()).openDeck(id)
-    if (!opened.ok) return
-    const painted = async (currentIndex: number, undoable: Undoable | null) => {
-      if (undoable !== null) record({ name: slideNames[change], undoable })
-      await showEdited(currentIndex)
-    }
-    settle(await commitSlideChange(id, shownParts.current, opened.register, change, index, painted, to, layoutPart))
-  }
-
-  function record(entry: UndoEntry) {
-    undoList.current = recorded(undoList.current, entry)
-    setUndoShown(undoList.current)
-    setTold(null)
-  }
-
-  async function showTurned(undoable: Undoable) {
-    const next = await connect(memoryRemote()).openDeck(id)
-    if (!next.ok) return
-    if ("slide" in undoable || structure.current !== structureOf(next.register)) showRegister(next.register)
-    else repaint.current(next.register, "person")
-    if ("node" in undoable && undoable.node.endsWith(".notes"))
-      notesBar.show(notesShown(shownParts.current, next.register))
-    const slides = store.current.slides()
-    const shown =
-      "slide" in undoable
-        ? slides.findIndex((slide) => slide.id === undoable.slide)
-        : slides.findIndex((slide) => undoable.node.startsWith(`${slide.id}.`))
-    setCurrent((index) => (shown >= 0 ? shown : Math.max(0, Math.min(index, slides.length - 1))))
-    setPending(true)
-  }
-
-  function turn(direction: UndoDirection) {
-    typed.current = null
-    turning.current = turning.current.then(async () => {
-      await records.current.landed()
-      await notesBar.queue.current
-      const turned = await turnBack(connect(memoryRemote()), id, undoList.current, direction)
-      if (turned.outcome === "empty") return
-      undoList.current = turned.list
-      setUndoShown(turned.list)
-      setTold(turned.outcome === "changed" ? direction : null)
-      if (turned.outcome === "changed") return
-      await showTurned(turned.entry.undoable)
-      settle(await flushPending(connect, id))
-    })
-  }
-
-  useUndoKeys(paintedDeck === id, turn)
-
-  async function changeElement(change: ElementChange) {
-    const opened = await connect(memoryRemote()).openDeck(id)
-    if (!opened.ok) return
-    settle(
-      await commitElement(id, shownParts.current, opened.register, change, recordAdded(elementNames[change.change])),
-    )
-  }
-
+  const shown = useDeckPaint(id, pictureTool, notesBar, setPending)
+  const { store, boxes, shapes, editParts, canvases, current } = shown
+  useDeckOpen({ ...status, id, shown, notesBar, setTitle })
+  useNetwork(id, settle, status.leftNetwork)
+  const undoButtons = useUndoTurn({ id, working: paintedDeck === id, undo, shown, notesBar, settle, setPending })
+  const inserts = deckInserts({ id, shown, pictureTool, record, settle })
+  const { changeElement } = inserts
+  const { showEdited } = shown
   const tables = useTables({
     id,
     current,
@@ -417,101 +48,41 @@ export function ThinDeck({ id }: { id: string }) {
     showEdited,
     changeElement,
   })
-
-  function addText() {
-    const size = canvases.current(current)
-    if (size !== null) void changeElement({ change: "text", index: current, size })
-  }
-
-  async function onExport(request?: ExportRequest) {
-    try {
-      setDownloaded(await exportDeck(id, notesBar.queue.current, pictureTool.store, request))
-      setFailure(null)
-    } catch (error) {
-      setFailure(error instanceof PicturesUploading ? "picture-uploading" : "export-failed")
-    }
-  }
-
-  function tryAgain(notice: ThinNotice) {
-    if (notice === "import-failed") window.location.assign("/")
-    if (notice === "export-failed" || notice === "picture-uploading") void onExport()
-  }
+  const exported = useExport({ id, notesBar, pictureTool, setFailure: status.setFailure })
 
   const currentSlide = store.current.slides()[current]?.id
   const currentNotes = notesBar.notes.find((notes) => notes.slide === currentSlide)
 
-  if (refused) {
+  if (status.refused) {
     return (
       <div className="thin-page" data-deck-refused>
-        <ThinNoticeView notice="import-failed" onTryAgain={tryAgain} />
+        <ThinNoticeView notice="import-failed" onTryAgain={exported.tryAgain} />
         <EditorFrame>{null}</EditorFrame>
       </div>
     )
   }
 
-  const toldNotice: ThinNotice | null = told === null ? null : told === "undo" ? "undo-changed" : "redo-changed"
-  const notice: ThinNotice | null =
-    failure ?? toldNotice ?? pictureTool.notice ?? (offline && pending ? "offline" : null)
+  const notice = shownNotice({ ...status, told: undo.told, picture: pictureTool.notice })
 
   return (
     <div className="thin-page" data-deck-ready={paintedDeck}>
-      <ThinNoticeView notice={notice} onTryAgain={tryAgain} />
-      {downloaded !== null && notice === null && (
-        <DownloadedNotice name={downloaded} onDone={() => setDownloaded(null)} />
+      <ThinNoticeView notice={notice} onTryAgain={exported.tryAgain} />
+      {exported.downloaded !== null && notice === null && (
+        <DownloadedNotice name={exported.downloaded} onDone={() => exported.setDownloaded(null)} />
       )}
       <EditorFrame>
         <EditorShell
           deck={{
-            onExport,
-            undo: {
-              undoLabel: undoLabel("undo", undoShown),
-              redoLabel: undoLabel("redo", undoShown),
-              canUndo: undoShown.undo.length > 0,
-              canRedo: undoShown.redo.length > 0,
-              onUndo: () => turn("undo"),
-              onRedo: () => turn("redo"),
-            },
-            onText: addText,
+            onExport: exported.onExport,
+            undo: undoButtons,
+            onText: inserts.addText,
             onRename: rename,
-            formatting: formatting.current,
+            formatting: undo.formatting.current,
             onTable: tables.insert,
             onPicture: pictureTool.pick,
             size: canvases.current(current),
-            slides: {
-              count: slideCount,
-              sections,
-              current,
-              onSelect: setCurrent,
-              onAdd: (layoutPart) => void changeSlide("add", current, current, layoutPart),
-              layouts,
-              onClone: (index) => void changeSlide("clone", index),
-              onRemove: (index) => void changeSlide("remove", index),
-              onMove: (from, to) => void changeSlide("move", from, to),
-              thumbHeight: thumbHeight(canvases.current(0)),
-              thumb: (index, width) => {
-                const slide = canvases.current(index)
-                return slide === null ? null : <SlideCanvas quiet slide={slide} store={store.current} width={width} />
-              },
-            },
-            slide: (width) => {
-              const canvas = canvases.current(current)
-              return canvas === null ? (
-                <div />
-              ) : (
-                <SlideCanvas
-                  className={cn(slideFrame, "shrink-0 overflow-clip focus-within:overflow-visible")}
-                  entering={entering}
-                  formatting={formatting.current}
-                  onBox={(target, box) => holding(target, () => onBox(target, box))}
-                  onRemove={(target) => holding(target, () => changeElement({ change: "remove", node: target }))}
-                  onEdit={(target, value) => holding(target, () => onEdit(target, value))}
-                  slide={canvas}
-                  {...tables.canvas}
-                  store={store.current}
-                  width={width}
-                />
-              )
-            },
+            slides: slideCommands({ id, shown, record, settle }),
+            slide: editableSlide({ id, shown, undo, tables, settle, setPending, changeElement }),
           }}
           notes={currentNotes?.text ?? ""}
           onNotes={(value) => notesBar.edit(currentSlide, value)}
