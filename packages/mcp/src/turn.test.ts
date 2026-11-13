@@ -1,7 +1,7 @@
 import { readDeckId } from "@airdesign/catalog"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { decide, elementId, limits, type Register } from "@airdesign/document"
-import { indexDeck, openDeck, type Deck } from "@airdesign/engine"
+import { call, indexDeck, openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
 import {
   callTool,
@@ -111,6 +111,53 @@ describe("the turn", () => {
     })
     expect(answer).toMatchObject({ ok: true, runId: "one" })
     expect(bodyOf(slide.deck.register).phase).toBe("running")
+  })
+
+  it("takes no run the deck records ended as the turn's run, so the next slide lands under a new run", async () => {
+    const indexed = indexDeck(
+      opened(),
+      { actor: "person" },
+      {
+        deck: "deck",
+        once: "index",
+        offset: 0,
+        total: 1,
+        slides: [{ id: "258", position: 0, layout: [] }],
+        elements: [{ node, kind: "shape", value: "", box: null, grouped: false }],
+      },
+    )
+    if (!indexed.ok) throw new Error(indexed.refusal)
+    const turns = memoryTurns()
+    const first = sessionFor(indexed.deck, turns, "one", 0)
+    const slide = { deck: "deck", after: "258", layout: "258" }
+    expect(await called(first, "airdesign_add_slide", { ...slide, base: first.deck.revision })).toMatchObject({
+      runId: "one",
+    })
+    const undone = call("undo_run", first.deck, { actor: "person" }, { deck: "deck", runId: "one" })
+    if (!undone.ok) throw new Error(undone.refusal)
+    const next = sessionFor(undone.deck, turns, "two", 1)
+    expect(turns.read(next.deck.id)?.runId).toBe("one")
+    expect(liveTurn(next, next.deck.id)).toBeUndefined()
+    expect(await called(next, "airdesign_add_slide", { ...slide, base: undone.deck.revision })).toMatchObject({
+      ok: true,
+      runId: "two",
+    })
+    expect(turns.read(next.deck.id)?.runId).toBe("two")
+  })
+
+  it("opens a new run for the next edit after a person's run Undo of the turn's run", async () => {
+    const turns = memoryTurns()
+    const first = sessionFor(opened(), turns, "one", 0)
+    expect((await edit(first, node, "a", 0)).runId).toBe("one")
+    const undone = call("undo_run", first.deck, { actor: "person" }, { deck: "deck", runId: "one" })
+    if (!undone.ok) throw new Error(undone.refusal)
+    const next = sessionFor(undone.deck, turns, "two", 1)
+    expect(
+      await called(next, "airdesign_edit_deck", { ...change(node, "b", 2), base: undone.deck.revision }),
+    ).toMatchObject({
+      ok: true,
+      runId: "two",
+    })
   })
 
   it("treats a call exactly at the idle window as idle and honours a shorter window", async () => {

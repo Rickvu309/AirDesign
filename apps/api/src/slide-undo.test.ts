@@ -94,6 +94,7 @@ async function observed(live: Live): Promise<SpecState> {
     shown: slidesAddedBy(row.register, "r").length,
     moved: live.moved,
     turn: runId === null ? "none" : runId === "r" ? "r" : "u",
+    ended: row.register.ended?.includes("r") === true,
     adds: live.adds,
     undos: live.undos,
     undone: live.undone,
@@ -163,18 +164,23 @@ describe("slide-undo replay", () => {
     expect(failures.slice(0, 5)).toEqual([])
   }, 300_000)
 
-  it.fails("lands no slide of a run after a person's run Undo took it back", async () => {
+  it("lands no slide of a run after a person's run Undo took it back", async () => {
     const live = await opened()
     await act(live, "PersonUndoes")
     await act(live, "AgentAddsSlide")
     expect(live.afterUndo).toBe(0)
   })
 
-  it.fails("takes back with run Undo a slide the run added after an earlier Undo", async () => {
+  it("takes back with run Undo a slide the agent added after an earlier Undo", async () => {
     const live = await opened()
     await act(live, "PersonUndoes")
     await act(live, "AgentAddsSlide")
-    await act(live, "PersonUndoes")
-    expect(live.told).toBe("applied")
+    const later = (await saved(live)).register.order.at(-1)?.runId
+    if (later === undefined) throw new Error("run")
+    expect(later).not.toBe("r")
+    expect(slidesAddedBy((await saved(live)).register, later)).toHaveLength(1)
+    const undone = await undoRun(stores.deck, { deck: live.deck, runId: later }, live.email)
+    expect(undone.ok).toBe(true)
+    expect(slidesAddedBy((await saved(live)).register, later)).toEqual([])
   })
 })

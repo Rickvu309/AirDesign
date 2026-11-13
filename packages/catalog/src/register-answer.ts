@@ -71,7 +71,8 @@ function deck(raw: unknown): raw is Record<string, unknown> {
     raw.nodes.every(element) &&
     (raw.readNodes === null || (Array.isArray(raw.readNodes) && raw.readNodes.every(element))) &&
     record(raw.elements) &&
-    Object.entries(raw.elements).every(([id, body]) => element(id) && node(body))
+    Object.entries(raw.elements).every(([id, body]) => element(id) && node(body)) &&
+    (raw.ended === undefined || (Array.isArray(raw.ended) && raw.ended.every((runId) => typeof runId === "string")))
   )
 }
 

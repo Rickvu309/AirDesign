@@ -26,15 +26,24 @@ import type { Caller, Deck } from "./call.js"
 type Built =
   | { readonly ok: true; readonly register: Deck["register"] }
   | { readonly ok: false; readonly refusal: CallRefusal }
-function runFence(register: Register, runId: string, deleted: SlideId | null): CallRefusal | null {
+function heldBy(register: Register, runId: string) {
   const held = [...new Set([...register.nodes, ...storedElements(register)])].flatMap((node) => {
     const body = register.elements[node]
     const holds = body !== undefined && (body.runId === runId || body.landed.some((row) => row.runId === runId))
     return holds ? [{ node, body }] : []
   })
-  const live = held.filter(({ body }) => body.phase === "running" && body.runId === runId)
-  if (held.length > 0 && live.length === 0) return "run-fenced"
-  const protectedHere = live.some(
+  return { held, live: held.filter(({ body }) => body.phase === "running" && body.runId === runId) }
+}
+
+export function runFenced(register: Register, runId: string): boolean {
+  if (register.ended?.includes(runId) === true) return true
+  const { held, live } = heldBy(register, runId)
+  return held.length > 0 && live.length === 0
+}
+
+function runFence(register: Register, runId: string, deleted: SlideId | null): CallRefusal | null {
+  if (runFenced(register, runId)) return "run-fenced"
+  const protectedHere = heldBy(register, runId).live.some(
     ({ node, body }) => body.guarded && node.includes(".") && shapeOf(node).slide === deleted,
   )
   return protectedHere ? "person-protected" : null
