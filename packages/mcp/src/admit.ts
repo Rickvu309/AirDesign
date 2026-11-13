@@ -1,12 +1,13 @@
 export type LimitKind = "deck" | "tool" | "turn"
 
 export type CallerLog = {
-  readonly events: readonly { readonly kind: LimitKind; readonly at: number }[]
+  readonly events: readonly { readonly kind: LimitKind; readonly at: number; readonly agent?: string }[]
 }
 
 export type AdmissionText =
   | `Five decks in one minute. The next deck can open in ${string} seconds.`
   | `Thirty tool calls in five minutes. The next tool call can run in ${string} seconds.`
+  | `Ninety tool calls in five minutes from this account's agents. The next tool call can run in ${string} seconds.`
   | `Twenty turns in five minutes. The next turn can start in ${string} seconds.`
 
 export type Admission =
@@ -18,6 +19,8 @@ const limitOf = {
   tool: 30,
   turn: 20,
 } as const
+
+const accountTools = 90
 
 const windowOf = {
   deck: 60_000,
@@ -35,8 +38,10 @@ function wholeSeconds(now: number, resetsAt: number): number {
   return seconds
 }
 
-function sentence(kind: LimitKind, now: number, resetsAt: number): AdmissionText {
+function sentence(kind: LimitKind, now: number, resetsAt: number, account: boolean): AdmissionText {
   const seconds = String(wholeSeconds(now, resetsAt))
+  if (account)
+    return `Ninety tool calls in five minutes from this account's agents. The next tool call can run in ${seconds} seconds.`
   if (kind === "deck") return `Five decks in one minute. The next deck can open in ${seconds} seconds.`
   if (kind === "tool") return `Thirty tool calls in five minutes. The next tool call can run in ${seconds} seconds.`
   return `Twenty turns in five minutes. The next turn can start in ${seconds} seconds.`
@@ -48,26 +53,27 @@ function live(log: CallerLog, now: number): CallerLog {
   return { events }
 }
 
-export function refund(log: CallerLog, kind: LimitKind): CallerLog {
-  const at = log.events.findLastIndex((event) => event.kind === kind)
+export function refund(log: CallerLog, kind: LimitKind, agent?: string): CallerLog {
+  const at = log.events.findLastIndex((event) => event.kind === kind && event.agent === agent)
   if (at < 0) return log
   return { events: log.events.filter((_, position) => position !== at) }
 }
 
-export function admit(log: CallerLog, kind: LimitKind, now: number): Admission {
+function oldest(events: CallerLog["events"]): number {
+  return Math.min(...events.map((event) => event.at))
+}
+
+function refused(kind: LimitKind, log: CallerLog, now: number, from: number, account: boolean): Admission {
+  const resetsAt = from + windowOf[kind]
+  return { ok: false, log, text: sentence(kind, now, resetsAt, account), resetsAt }
+}
+
+export function admit(log: CallerLog, kind: LimitKind, now: number, agent?: string): Admission {
   const current = live(log, now)
-  const window = windowOf[kind]
-  let counted = 0
-  let oldest: number | undefined
-  for (const event of current.events) {
-    if (event.kind !== kind) continue
-    counted += 1
-    if (oldest === undefined || event.at < oldest) oldest = event.at
-  }
-  if (counted >= limitOf[kind]) {
-    if (oldest === undefined) throw new Error(kind)
-    const resetsAt = oldest + window
-    return { ok: false, log: current, text: sentence(kind, now, resetsAt), resetsAt }
-  }
-  return { ok: true, log: { events: [...current.events, { kind, at: now }] } }
+  const counted = current.events.filter((event) => event.kind === kind)
+  const own = kind === "tool" ? counted.filter((event) => event.agent === agent) : counted
+  if (own.length >= limitOf[kind]) return refused(kind, current, now, oldest(own), false)
+  if (kind === "tool" && counted.length >= accountTools) return refused(kind, current, now, oldest(counted), true)
+  const event = agent === undefined ? { kind, at: now } : { kind, at: now, agent }
+  return { ok: true, log: { events: [...current.events, event] } }
 }

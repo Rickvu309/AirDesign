@@ -27,7 +27,7 @@ Fixed bugs. From `30244817`: stop_run of a run that only added slides answered o
 
 Planted faults that the replay catches: stop_run of a run with no element not writing it ended, `runFenced` not reading the record, `liveTurn` taking a fenced run as the turn's run, and `readFresh` back to `base === deck.revision`. TLC fails `TurnCallsLand` with `Fresh == base = rev`.
 
-One open turn per deck per account holds by the table's primary key `(email, deck)`. A person's protection lives in the deck's register, and every write to it is a compare-and-swap on `deck.saved.revision`, so a call on another server decides on the deck it read or does not land. edit and this replay cover that.
+One open turn per deck per agent holds by the table's primary key `(email, deck, agent)`. The model has one agent; a second agent's runs and turn are the agents model's. A person's protection lives in the deck's register, and every write to it is a compare-and-swap on `deck.saved.revision`, so a call on another server decides on the deck it read or does not land. edit and this replay cover that.
 
 Sync: the commit that added `lastRun`, on `67aad691`.
 

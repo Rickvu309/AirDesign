@@ -17,16 +17,22 @@ export async function writeLog(client: Sql, email: string, log: CallerLog): Prom
   await client.query("update session.caller_log set events = $2 where email = $1", [email, JSON.stringify(log.events)])
 }
 
-export async function admitCaller(db: Sql, email: string, kind: LimitKind, now: number): Promise<Admission> {
+export async function admitCaller(
+  db: Sql,
+  email: string,
+  kind: LimitKind,
+  now: number,
+  agent?: string,
+): Promise<Admission> {
   return withAddress(db, email, async (client) => {
-    const admission = admit(await lockedLog(client, email), kind, now)
+    const admission = admit(await lockedLog(client, email), kind, now, agent)
     if (admission.ok) await writeLog(client, email, admission.log)
     return admission
   })
 }
 
-export async function refundCaller(db: Sql, email: string, kind: LimitKind): Promise<void> {
+export async function refundCaller(db: Sql, email: string, kind: LimitKind, agent?: string): Promise<void> {
   await withAddress(db, email, async (client) => {
-    await writeLog(client, email, refund(await lockedLog(client, email), kind))
+    await writeLog(client, email, refund(await lockedLog(client, email), kind, agent))
   })
 }

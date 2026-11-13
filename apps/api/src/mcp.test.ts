@@ -8,6 +8,7 @@ import { commitTries, editNext, runNext } from "@airdesign/mcp"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
+import { agentKey } from "./agent-key.js"
 import { ask, signInByCode, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 import { limits } from "@airdesign/document"
@@ -36,6 +37,10 @@ type Stored = {
     nodes: string[]
     elements: Record<string, StoredElement>
   }
+}
+
+function mintedPart(runId: string | null | undefined): string | undefined {
+  return runId?.slice(runId.indexOf("-") + 1)
 }
 
 const toolLimit = "Thirty tool calls in five minutes. The next tool call can run in 300 seconds."
@@ -379,8 +384,9 @@ describe("mcp route", () => {
   })
 
   it("counts a call refused as deck, owner, field or a store failure toward the thirty", async () => {
-    const events = JSON.stringify(Array.from({ length: 29 }, () => ({ kind: "tool", at: 1_000_000 })))
     async function nearLimit(email: string): Promise<string> {
+      const agent = agentKey("aira", email)
+      const events = JSON.stringify(Array.from({ length: 29 }, () => ({ kind: "tool", at: 1_000_000, agent })))
       await sessionDb.query("insert into session.caller_log (email, events) values ($1, $2)", [email, events])
       return email
     }
@@ -497,7 +503,7 @@ describe("mcp route", () => {
       expect(first.structuredContent).toEqual(landedAnswer(1, [{ node: element, value: "21", version: 1 }], runId))
       expect(started?.revision).toBe(1)
       expect(values(started)).toEqual(["21"])
-      expect(minted.slice(before)).toContain(runId)
+      expect(minted.slice(before)).toContain(mintedPart(runId))
       const watched = await ask(base, "POST", "/decks/watch", { deck: named.deck, cursor: 0 }, firstCookie)
       expect(watched.json).toEqual({ ok: true, deck: named.deck, revision: 1 })
       const secondCookie = await sign(email)
@@ -575,7 +581,7 @@ describe("mcp route", () => {
     expect(values(kept)).toEqual(["a1", "a2", "a3"])
     expect(values(kept, sibling)).toEqual(["b1", "b2"])
     const runId = elementOf(kept).runId
-    expect(minted.slice(before)).toContain(runId)
+    expect(minted.slice(before)).toContain(mintedPart(runId))
     expect(elementOf(kept, sibling).runId).toBe(runId)
   })
 
@@ -721,7 +727,7 @@ describe("mcp route", () => {
     const body = elementOf(kept, created)
     expect(body.floor).toBe("Before")
     expect(body.phase).toBe("running")
-    expect(minted.slice(before)).toContain(body.runId)
+    expect(minted.slice(before)).toContain(mintedPart(body.runId))
     expect(values(kept, created)).toEqual(["After"])
   })
 
@@ -1548,7 +1554,7 @@ describe("mcp route", () => {
       expect(await editText(client, send)).toBe("Landed revision 5.")
       const kept = await row(id)
       const fresh = runOf(kept)
-      expect(minted.slice(before)).toContain(fresh)
+      expect(minted.slice(before)).toContain(mintedPart(fresh))
       expect(fresh).not.toBe(firstRun)
       expect(elementOf(kept).phase).toBe("running")
       expect(elementOf(kept).landed.slice(0, 2)).toEqual(elementOf(earlier).landed)
@@ -1573,7 +1579,7 @@ describe("mcp route", () => {
         landedContent(1, [{ node: element, value: "21", version: 1 }], runOf(await row(named.deck))),
       )
       const started = await row(named.deck)
-      expect(minted.slice(before)).toContain(elementOf(started).runId)
+      expect(minted.slice(before)).toContain(mintedPart(elementOf(started).runId))
       for (const extra of [{ runId: "client-run" }, { readAt: 5 }, { actor: "person" }] as const) {
         const refused = await client.callTool({
           name: "airdesign_edit_deck",
@@ -1586,7 +1592,7 @@ describe("mcp route", () => {
         ])
         const kept = await row(named.deck)
         expect(kept).toEqual(started)
-        expect(minted.slice(before)).toContain(elementOf(kept).runId)
+        expect(minted.slice(before)).toContain(mintedPart(elementOf(kept).runId))
       }
     })
   })
@@ -1927,7 +1933,7 @@ describe("mcp route", () => {
     expect(response.status).toBe(200)
     expect(text).toContain("Landed revision 1.")
     const kept = await row(named.deck)
-    expect(minted.slice(before)).toEqual([elementOf(kept).runId])
+    expect(minted.slice(before)).toEqual([mintedPart(elementOf(kept).runId)])
     expect(elementOf(kept).runId).not.toBe("client-side")
     expect(values(kept)).toEqual(["21"])
   })

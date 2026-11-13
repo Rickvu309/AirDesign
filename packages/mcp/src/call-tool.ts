@@ -83,10 +83,11 @@ function stopRun(raw: unknown, session: Session): ToolResult {
   const parsed = readRun(raw)
   if (!parsed.ok) return runRefusal(before, malformedRun(raw) ? "run-fenced" : parsed.refusal)
   if (parsed.deck !== before.id) return runRefusal(before, "deck")
+  if (!session.turns.owns(parsed.runId)) return runRefusal(before, "run-fenced")
   const result = call("stop_run", before, agentCaller(parsed.runId), raw)
   if (!result.ok) return runRefusal(before, result.refusal)
   const endsTurn = session.turns.read(before.id)?.runId === parsed.runId
-  const ended = endsTurn ? stopLiveRuns(result.deck) : result
+  const ended = endsTurn ? stopLiveRuns(result.deck, session.turns.owns) : result
   if (!ended.ok) return runRefusal(before, ended.refusal)
   const deck = ended.deck.register === before.register ? before : { ...ended.deck, revision: before.revision + 1 }
   return runEnded(deck, parsed.runId)

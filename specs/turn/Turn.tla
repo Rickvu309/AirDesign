@@ -1,12 +1,14 @@
 ---- MODULE Turn ----
 
-\* A turn belongs to an account on a deck. It starts with that account's first
-\* edit or slide tool call there and ends by a stop of its run or the idle window.
+\* A turn belongs to one agent on a deck: a connected agent, named by its OAuth grant, or
+\* Aira, named by the account. It starts with that agent's first edit or slide tool call
+\* there and ends by a stop of its run or the idle window. Another agent of the account
+\* has its own turn and runs; specs/agents models two agents.
 \* stateX and stateY are what the stored row shows for an element:
 \* idle, open (a run holds it), closed (a run holds it and a person edited it), or ended.
 \* closedX and closedY record only that a person closed the element during this turn.
 \* Only the end of a turn clears them, so they can disagree with a wrong stored row.
-\* saved says whether the account's stored turn row has caught up with the turn.
+\* saved says whether the agent's stored turn row has caught up with the turn.
 \* A call saves the row after its deck write, so a second call sent at the same
 \* time can read the deck with the first call's run live and no row naming it.
 

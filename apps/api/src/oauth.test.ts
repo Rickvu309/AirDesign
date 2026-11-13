@@ -172,6 +172,13 @@ describe("oauth host", () => {
     return result.rows[0] ?? {}
   }
 
+  async function bearerOf(clientId: string, email: string) {
+    const result = await session.query<{ id: string }>("select id from session.oauth_grant where client_id = $1", [
+      clientId,
+    ])
+    return { ok: true, principal: email, grant: result.rows[0]?.id }
+  }
+
   async function works(secret: string): Promise<boolean> {
     return (await bearerPrincipal(session, secret, clock)).ok
   }
@@ -864,7 +871,7 @@ describe("oauth host", () => {
       expect(next.headers["cache-control"]).toBe("no-store")
       const second = tokensOf(next)
       expect(await works(pair.access)).toBe(false)
-      expect(await bearerPrincipal(session, second.access, clock)).toEqual({ ok: true, principal: email })
+      expect(await bearerPrincipal(session, second.access, clock)).toEqual(await bearerOf(clientId, email))
       expect(await grantOf(clientId)).toMatchObject({ generation: 2, revoked: false })
       const kept = await session.query<{ generation: number }>(
         "select generation from session.oauth_token where hash = $1",
@@ -946,8 +953,8 @@ describe("oauth host", () => {
 
   describe("bearer principal", () => {
     it("answers the approving session's email", async () => {
-      const { email, pair } = await flow()
-      expect(await bearerPrincipal(session, pair.access, clock)).toEqual({ ok: true, principal: email })
+      const { email, pair, clientId } = await flow()
+      expect(await bearerPrincipal(session, pair.access, clock)).toEqual(await bearerOf(clientId, email))
     })
 
     it("refuses an access token past its hour", async () => {
@@ -983,11 +990,11 @@ describe("oauth host", () => {
       const first = await exchange(clientId, code, verifier, { ...impostor, generation: "5" })
       const pair = tokensOf(first)
       expect(await grantOf(clientId)).toEqual({ principal: email, code: "used", generation: 1, revoked: false })
-      expect(await bearerPrincipal(session, pair.access, clock)).toEqual({ ok: true, principal: email })
+      expect(await bearerPrincipal(session, pair.access, clock)).toEqual(await bearerOf(clientId, email))
       const next = await rotate(clientId, pair.refresh, { ...impostor, generation: "7" })
       const rotated = tokensOf(next)
       expect(await grantOf(clientId)).toEqual({ principal: email, code: "used", generation: 2, revoked: false })
-      expect(await bearerPrincipal(session, rotated.access, clock)).toEqual({ ok: true, principal: email })
+      expect(await bearerPrincipal(session, rotated.access, clock)).toEqual(await bearerOf(clientId, email))
       const generations = await session.query<{ generation: number }>(
         "select t.generation from session.oauth_token t join session.oauth_grant g on g.id = t.grant_id where g.client_id = $1 order by t.generation",
         [clientId],

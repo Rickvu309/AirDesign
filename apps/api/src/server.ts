@@ -22,6 +22,7 @@ import {
   type FormPairs,
 } from "@airdesign/catalog"
 import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession } from "./account.js"
+import { agentKey } from "./agent-key.js"
 import { accountRouteList } from "./account-route.js"
 import { accountCookie, clearSessionCookie, keptSeconds, signedInCookies } from "./session-cookie.js"
 import { type AiraSettings } from "./aira.js"
@@ -220,16 +221,17 @@ async function signedIn({ options, req, res, body }: Visit): Promise<string | un
   return undefined
 }
 
-async function caller(visit: Visit): Promise<string | undefined> {
+async function caller(visit: Visit): Promise<{ readonly email: string; readonly agentKey: string } | undefined> {
   const { options, now, req, res } = visit
   const authorization = req.headers.authorization
   if (authorization === undefined) {
     res.setHeader("www-authenticate", resourceChallenge(options))
-    return signedIn(visit)
+    const email = await signedIn(visit)
+    return email === undefined ? undefined : { email, agentKey: agentKey("aira", email) }
   }
   const secret = readBearer(authorization)
   const bearer = secret === undefined ? undefined : await bearerPrincipal(options.session, secret, now())
-  if (bearer?.ok === true) return bearer.principal
+  if (bearer?.ok === true) return { email: bearer.principal, agentKey: agentKey("grant", bearer.grant) }
   await visit.body()
   res.setHeader("www-authenticate", resourceChallenge(options, "invalid_token"))
   sendJson(res, 401, { error: "invalid_token" })
@@ -431,8 +433,8 @@ async function mcpRoute(visit: Visit): Promise<void> {
     sendJson(res, 400, { ok: false, refusal: unreadHost })
     return
   }
-  const email = await caller(visit)
-  if (email === undefined) return
+  const called = await caller(visit)
+  if (called === undefined) return
   const body = await visit.body()
   if (body === undefined) {
     answerSize(res)
@@ -442,9 +444,10 @@ async function mcpRoute(visit: Visit): Promise<void> {
     {
       deck: options.deck,
       session: options.session,
-      email,
+      email: called.email,
+      agentKey: called.agentKey,
       now,
-      mint,
+      mint: () => `${called.agentKey}-${mint()}`,
       hosts: options.hosts ?? localHosts,
       bodyCap: limits.body,
       fail: (error) => answerThrow(visit, name, error),

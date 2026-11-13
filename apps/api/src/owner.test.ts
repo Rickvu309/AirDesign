@@ -207,7 +207,7 @@ describe("only a deck's owner acts on it", () => {
       {
         deck: id,
         base: revision,
-        changes: [{ value: `v${String(revision + 1)}`, node: element, readAt: revision }],
+        changes: [{ value: `v${String(revision + 1)}`, node: `${element}${String(revision)}`, readAt: 0 }],
       },
       claim,
     )

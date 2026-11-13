@@ -13,8 +13,8 @@ import type { Session, ToolResult } from "./call-tool.js"
 import { editDeck } from "./edit-tool.js"
 import { editRefusal, type EditAnswer } from "./edit-answer.js"
 import type { EditCode } from "./edit-next.js"
-import { stopLiveRuns } from "./run.js"
-import { heldRun } from "./turn.js"
+import { stopForNewTurn } from "./run.js"
+import { heldRun, holders } from "./turn.js"
 
 function addDetail(deck: Deck, slide: string): string {
   const id = readSlideId(slide)
@@ -56,7 +56,8 @@ export function elementTool(op: ElementOp, raw: unknown, session: Session): Tool
   if (!parsed.ok) return editRefusal(before, parsed.refusal, [])
   const held = heldRun(session)
   const fresh = parsed.base === before.revision
-  const stopped = held === undefined && fresh ? stopLiveRuns(before) : ({ ok: true, deck: before } as const)
+  const stopped =
+    held === undefined && fresh ? stopForNewTurn(before, holders(session)) : ({ ok: true, deck: before } as const)
   if (!stopped.ok) return editRefusal(before, stopped.refusal, [])
   const runId = held?.runId ?? session.caller.runId
   const deck = { id: before.id, revision: before.revision, register: stopped.deck.register }

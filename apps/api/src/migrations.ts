@@ -278,4 +278,12 @@ alter table deck.saved add column starred boolean not null default false;
 alter table deck.once add column answer jsonb;
 `,
   },
+  {
+    id: 13,
+    sql: `
+alter table session.agent_turn add column agent text not null default '';
+alter table session.agent_turn drop constraint agent_turn_pkey;
+alter table session.agent_turn add primary key (email, deck, agent);
+`,
+  },
 ]
