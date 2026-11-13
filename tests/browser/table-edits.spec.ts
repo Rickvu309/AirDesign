@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { exportFromDialog } from "./export-dialog"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
 
@@ -104,7 +105,7 @@ test("inserts a table, types in two cells, adds and deletes a row, and it all su
   await expect(table).toContainText("Region")
   await expect(table).toContainText("Sales")
   const saving = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await exportFromDialog(page)
   const file = testInfo.outputPath("table-edits.pptx")
   await (await saving).saveAs(file)
   const xml = await slideXml(file)
