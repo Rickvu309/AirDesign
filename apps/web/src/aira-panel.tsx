@@ -24,12 +24,14 @@ const headControl = "outline-hidden active:translate-y-0"
 
 export function AiraPanel({
   deck,
+  starters,
   hidden,
   now = Date.now,
   mint = () => crypto.randomUUID(),
   store = deviceChats,
 }: {
   deck: string
+  starters: () => readonly string[]
   hidden: boolean
   now?: () => number
   mint?: () => string
@@ -217,6 +219,7 @@ export function AiraPanel({
       {empty ? (
         <AiraWelcome
           onPick={(text) => void ask(text)}
+          starters={starters()}
           disabled={blocked !== undefined || undoing}
           notOffered={notOffered}
         />

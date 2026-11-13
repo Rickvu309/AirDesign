@@ -7,7 +7,7 @@ export const pricingCopy = {
   subtitle: "Every feature, every week. No plan, no trial.",
   price: "$0",
   forever: "forever",
-  note: "Don't want to wait for the weekly reset? You can pay to reset.",
+  note: "Out of Aira for the week? Your own Claude or Codex keeps working.",
 } as const
 
 export const pricingFeatures = [
