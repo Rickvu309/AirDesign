@@ -1,4 +1,4 @@
-import { catalog, projectTools, toolInputSchema, type AgentOp } from "@airdesign/catalog"
+import { catalog, projectTools, readOnce, toolInputSchema, type AgentOp } from "@airdesign/catalog"
 import { McpServer } from "@modelcontextprotocol/server"
 import { admit, refund, type Admission } from "./admit.js"
 import { agentOps, callTool, type Session, type ToolResult } from "./call-tool.js"
@@ -26,17 +26,18 @@ function mcpResult(result: ToolResult) {
 
 export type Host = {
   admit?: (session: Session) => Promise<Admission>
-  prepare?: (
-    name: string,
-    raw: unknown,
-    session: Session,
-  ) => Promise<{ readonly ok: true } | { readonly ok: false; readonly refusal: EditCode }>
+  prepare?: (name: string, raw: unknown, session: Session) => Promise<Prepared>
   commit?: (result: ToolResult, session: Session) => Promise<ToolResult | Lost>
   refund?: (session: Session) => Promise<void>
   turnSaved?: () => Promise<void>
 }
 
 export type Lost = { readonly lost: ToolResult }
+
+export type Prepared =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly refusal: EditCode }
+  | { readonly answered: ToolResult }
 
 export const commitTries = 3
 
@@ -49,6 +50,7 @@ async function settledCall(
   for (let tried = 1; ; tried += 1) {
     if (host?.prepare) {
       const prepared = await host.prepare(tool.name, args, session)
+      if ("answered" in prepared) return prepared.answered
       if (!prepared.ok) return agentOps[tool.op].refuse(session.deck, prepared.refusal)
     }
     const result = callTool(tool.name, args, session)
@@ -73,7 +75,10 @@ export function createServer(session: Session, host?: Host): McpServer {
           openWorldHint: tool.openWorldHint,
         },
       },
-      async (args) => {
+      async (args, ctx) => {
+        const named = readOnce(ctx.mcpReq._meta)
+        if (!named.ok) return mcpResult(agentOps[tool.op].refuse(session.deck, "field"))
+        session.once = named.once
         let admitted: Admission
         try {
           admitted = host?.admit ? await host.admit(session) : admit(session.log, "tool", session.now)

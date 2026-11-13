@@ -272,4 +272,10 @@ alter table session.account add column device text not null unique default repla
 alter table deck.saved add column starred boolean not null default false;
 `,
   },
+  {
+    id: 12,
+    sql: `
+alter table deck.once add column answer jsonb;
+`,
+  },
 ]

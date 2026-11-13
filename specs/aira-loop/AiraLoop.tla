@@ -1,25 +1,25 @@
 ---- MODULE AiraLoop ----
 \* One Aira ask in the browser (askAira in apps/web/src/aira-loop.ts) whose model turn asks
 \* for one edit, while the person may press Stop and then ask again.
-\* The edit call is sent when the model starts. server says whether it landed and wrote run r.
-\* answer is the browser's fetch of that call: waiting, read, or cut once the browser gave up.
-\* After Stop the browser keeps an edit call's fetch until its answer comes or the wait ends.
-\* The model assumes an answer comes within the wait once the server landed, so the wait ends
-\* only on a call that has not landed. late marks a call that landed after the browser cut it.
-\* known is r in the exchange's runs, which is what offers Undo. closed is stop_run of r
-\* answered. settled is askAira resolved. A next ask starts from the chat shown when the
-\* person asks, and held is r in that chat's runs. Its turn waits for settled, and nextKnown
-\* is r in the runs of the chat it holds when its turn is sent.
+\* The edit call is sent when the model starts, with a once the browser made from the ask.
+\* server is the call's once in deck.once: none, landed with the edit under run r, or spent
+\* by the Stop. The edit and its once are one write, so the server lands only an unspent once.
+\* answer is the browser's fetch of that call: waiting, read, or cut by Stop at once.
+\* named is the stop that names the cut call answered: it spends the once, or finds it landed
+\* and answers r. known is r in the exchange's runs, which is what offers Undo. closed is
+\* stop_run of r answered. settled is askAira resolved. A next ask starts from the chat shown
+\* when the person asks, and held is r in that chat's runs. Its turn waits for settled, and
+\* nextKnown is r in the runs of the chat it holds when its turn is sent.
 EXTENDS Integers
 
-VARIABLES server, answer, late, stop, shown, known, closed, settled, asked, held, sent, nextKnown
+VARIABLES server, answer, named, stop, shown, known, closed, settled, asked, held, sent, nextKnown
 
-vars == <<server, answer, late, stop, shown, known, closed, settled, asked, held, sent, nextKnown>>
+vars == <<server, answer, named, stop, shown, known, closed, settled, asked, held, sent, nextKnown>>
 
 TypeOK ==
-  /\ server \in {"none", "landed"}
+  /\ server \in {"none", "landed", "spent"}
   /\ answer \in {"waiting", "read", "cut"}
-  /\ late \in BOOLEAN
+  /\ named \in BOOLEAN
   /\ stop \in BOOLEAN
   /\ shown \in {"working", "stopped", "done"}
   /\ known \in BOOLEAN
@@ -33,7 +33,7 @@ TypeOK ==
 Init ==
   /\ server = "none"
   /\ answer = "waiting"
-  /\ late = FALSE
+  /\ named = FALSE
   /\ stop = FALSE
   /\ shown = "working"
   /\ known = FALSE
@@ -51,39 +51,41 @@ Release ==
   /\ sent' = asked
   /\ nextKnown' = IF asked THEN held \/ known ELSE nextKnown
 
-\* The server writes the edit under run r.
+\* The server writes the edit under run r and spends its once in the same statement, which
+\* fails on a once the Stop already spent.
 Land ==
   /\ server = "none"
   /\ server' = "landed"
-  /\ late' = (answer = "cut")
-  /\ UNCHANGED <<answer, stop, shown, known, closed, settled, asked, held, sent, nextKnown>>
+  /\ UNCHANGED <<answer, named, stop, shown, known, closed, settled, asked, held, sent, nextKnown>>
 
-\* The browser reads the answer and puts r in the exchange's runs: the answered event while
-\* the run goes on, the landed event once a Stop came first.
+\* The browser reads the answer and puts r in the exchange's runs.
 Read ==
   /\ answer = "waiting"
   /\ server = "landed"
   /\ answer' = "read"
   /\ known' = TRUE
-  /\ UNCHANGED <<server, late, stop, shown, closed, settled, asked, held, sent, nextKnown>>
+  /\ UNCHANGED <<server, named, stop, shown, closed, settled, asked, held, sent, nextKnown>>
 
-\* The person presses Stop. The exchange shows stopped at once, whether the edit call still
-\* waits or the model's next turn streams.
+\* The person presses Stop. The exchange shows stopped at once, and a waiting edit call's
+\* fetch is cut at once.
 Stop ==
   /\ shown = "working"
   /\ stop' = TRUE
   /\ shown' = "stopped"
-  /\ UNCHANGED <<server, answer, late, known, closed, settled, asked, held, sent, nextKnown>>
+  /\ answer' = IF answer = "waiting" THEN "cut" ELSE answer
+  /\ UNCHANGED <<server, named, known, closed, settled, asked, held, sent, nextKnown>>
 
-\* The wait after Stop ends on a call with no answer. The browser cuts the fetch, and with no
-\* run to stop askAira resolves.
-WaitEnds ==
-  /\ stop
-  /\ answer = "waiting"
-  /\ server = "none"
-  /\ answer' = "cut"
-  /\ Release
-  /\ UNCHANGED <<server, late, stop, shown, known, closed, asked, held>>
+\* The stop names the cut call's deck and once. The server spends the once, or finds it
+\* landed and answers r, which the browser puts in the exchange's runs. With no run to stop,
+\* askAira resolves.
+Spend ==
+  /\ answer = "cut"
+  /\ ~named
+  /\ named' = TRUE
+  /\ IF server = "landed"
+     THEN known' = TRUE /\ UNCHANGED <<server, settled, sent, nextKnown>>
+     ELSE server' = "spent" /\ Release /\ UNCHANGED known
+  /\ UNCHANGED <<answer, stop, shown, closed, asked, held>>
 
 \* The model's next turn ends the run with no more calls.
 Finish ==
@@ -91,16 +93,16 @@ Finish ==
   /\ answer = "read"
   /\ shown = "working"
   /\ shown' = "done"
-  /\ UNCHANGED <<server, answer, late, stop, known, closed, settled, asked, held, sent, nextKnown>>
+  /\ UNCHANGED <<server, answer, named, stop, known, closed, settled, asked, held, sent, nextKnown>>
 
 \* closeRuns sends stop_run of r and the server answers it, then askAira resolves.
 Close ==
   /\ shown # "working"
-  /\ answer = "read"
+  /\ known
   /\ ~settled
   /\ closed' = TRUE
   /\ Release
-  /\ UNCHANGED <<server, answer, late, stop, shown, known, asked, held>>
+  /\ UNCHANGED <<server, answer, named, stop, shown, known, asked, held>>
 
 \* The person asks again once the exchange no longer works. The new ask's turn goes at once
 \* when the first ask resolved, or waits for it.
@@ -111,21 +113,21 @@ Ask ==
   /\ held' = known
   /\ sent' = settled
   /\ nextKnown' = IF settled THEN known ELSE nextKnown
-  /\ UNCHANGED <<server, answer, late, stop, shown, known, closed, settled>>
+  /\ UNCHANGED <<server, answer, named, stop, shown, known, closed, settled>>
 
 Done ==
   /\ settled
   /\ asked
-  /\ server = "landed"
   /\ UNCHANGED vars
 
-Next == Land \/ Read \/ Stop \/ WaitEnds \/ Finish \/ Close \/ Ask \/ Done
+Next == Land \/ Read \/ Stop \/ Spend \/ Finish \/ Close \/ Ask \/ Done
 
 Spec == Init /\ [][Next]_vars
 
-\* A stopped run's write that landed and answered in time is offered for Undo as one step,
-\* and its run is stopped, so nothing more of it lands.
-StoppedRunUndoable == settled /\ shown = "stopped" /\ server = "landed" /\ ~late => known /\ closed
+\* A stopped ask's run ends on the server however late its write would land: the edit lands
+\* before the Stop spent its once or never, and one that landed is offered for Undo as one
+\* step and its run is stopped, so nothing more of it lands.
+StoppedRunUndoable == settled /\ shown = "stopped" /\ server = "landed" => known /\ closed
 
 \* A run the exchange holds is stopped before askAira resolves.
 KnownRunClosed == settled /\ known => closed
