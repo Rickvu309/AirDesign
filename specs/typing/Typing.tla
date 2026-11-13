@@ -1,11 +1,10 @@
 ---- MODULE Typing ----
 \* A person types into a slide's speaker notes, then over a text box, and presses Ctrl+Z
 \* while what they typed is still on its way. Each edit is written to the device at once
-\* (enqueue), and its undo record lands later: a keystroke's once the device answered and the
-\* session's text before was read (editText in apps/web/src/editor/editable-slide.tsx), a notes edit's
-\* once the notes edit before it reached the server (useNotes in apps/web/src/notes-edit.ts).
-\* Each edit then goes to the server (flushPending), and the box stays busy until every
-\* keystroke got there.
+\* (enqueue), and its undo record lands once the device answered: a keystroke's once the session's
+\* text before was read too (editText in apps/web/src/editor/editable-slide.tsx), a notes edit's in
+\* the task its answer comes in (useNotes in apps/web/src/notes-edit.ts). Each edit then goes to the
+\* server (flushPending), and the box stays busy until every keystroke got there.
 \* A text is a number: 0 is the text before the person's typing session, 1 its first letter,
 \* 2 the whole new text. recorded in apps/web/src/undo-list.ts keeps one entry per run of
 \* records of one session, holding the text that run reached. An entry is a digit: 1 and 2
@@ -76,21 +75,18 @@ TypeText ==
   /\ shownT' = tTyped + 1
   /\ UNCHANGED <<Notes, tRec, tUp, list, redo, ask, deckN, shownN, done, turned, missing>>
 
-\* A notes edit records only once the notes edit before it reached the server.
+\* The device answers in typing order, and a notes edit records in the task its answer comes in.
 RecordNotes ==
   /\ nRec < nTyped
-  /\ nUp = nRec
   /\ nRec' = nRec + 1
   /\ Recorded("N", nRec + 1)
   /\ UNCHANGED <<nTyped, nUp, Text, ask, deckT, deckN, shownT, shownN, done, turned, missing>>
 
-\* Keystrokes record in typing order, and the box already shows them. The device answers in
-\* typing order, and a notes edit whose queue is free records in the task its answer comes
-\* in, so a keystroke records ahead of a notes edit typed before it only while that notes edit
-\* waits for the one before it to reach the server.
+\* Keystrokes record in typing order, after every notes edit typed before them, and the box
+\* already shows them.
 RecordText ==
   /\ tRec < tTyped
-  /\ nRec = nTyped \/ nUp < nRec
+  /\ nRec = nTyped
   /\ tRec' = tRec + 1
   /\ Recorded("T", tRec + 1)
   /\ UNCHANGED <<Notes, tTyped, tUp, ask, deckT, deckN, shownT, shownN, done, turned, missing>>
@@ -124,10 +120,10 @@ MenuUndo ==
   /\ tTyped > 0
   /\ UNCHANGED vars
 
-\* The undo waits for every keystroke's record and for the notes queue, then reads the list.
+\* The undo waits for every keystroke's and notes edit's record, never for the server, then reads the list.
 \* If the deck still shows the top entry's text it lands the other text, repaints as the
 \* person and shows the notes; otherwise it drops the entry and tells the person.
-Waited == tRec = tTyped /\ nUp = nTyped
+Waited == tRec = tTyped /\ nRec = nTyped
 
 Turn ==
   /\ ask # "none"

@@ -52,7 +52,7 @@ export function useTables(deck: TableDeck) {
   const latest = useRef(deck)
   latest.current = deck
 
-  async function commit(id: ElementId, change: TableChange) {
+  async function commit(id: ElementId, change: TableChange, kept: () => void) {
     const box = deck.boxes.current.get(id)
     const shape = deck.shapes.current.get(id)
     const opened = await connect(memoryRemote()).openDeck(deck.id)
@@ -70,9 +70,10 @@ export function useTables(deck: TableDeck) {
     }
     const name = change.change === "cell" ? "text" : change.change === "row" ? "add-row" : "delete-row"
     const undoable = { node: id, floor: box.file, before: { value: before }, after: { value } }
-    const outcome = await commitEdit(connect, deck.id, value, box, () =>
-      deck.record({ name, undoable, ...(cell === null ? {} : { session: sessions.current }) }),
-    )
+    const outcome = await commitEdit(connect, deck.id, value, box, () => {
+      deck.record({ name, undoable, ...(cell === null ? {} : { session: sessions.current }) })
+      kept()
+    })
     window.clearTimeout(repaint.current)
     if (cell === null || outcome === "refused") await deck.showEdited(deck.current)
     else repaint.current = window.setTimeout(() => void latest.current.showEdited(latest.current.current), typedRepaint)
@@ -87,7 +88,9 @@ export function useTables(deck: TableDeck) {
     canvas: {
       tableBar,
       onTable(id: ElementId, change: TableChange) {
-        queue.current = queue.current.then(() => commit(id, change))
+        queue.current = queue.current.then(
+          () => new Promise<void>((kept) => void commit(id, change, kept).finally(kept)),
+        )
       },
     },
   }
