@@ -3,47 +3,27 @@ import { DownloadedNotice, ThinNoticeView } from "@/thin-notice"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
 import { editableSlide } from "@/editor/editable-slide"
-import { deckInserts } from "@/editor/inserts"
 import { slideCommands } from "@/editor/slide-commands"
 import { useDeckOpen } from "@/editor/use-deck-open"
-import { useDeckPaint } from "@/editor/use-deck-paint"
-import { shownNotice, useDeckStatus } from "@/editor/use-deck-status"
-import { useDeckTitle } from "@/editor/use-deck-title"
-import { useExport } from "@/editor/use-export"
+import { shownNotice } from "@/editor/use-deck-status"
+import { useEditorDeck } from "@/editor/use-editor-deck"
 import { useNetwork } from "@/editor/use-network"
-import { useUndoList, useUndoTurn } from "@/editor/use-undo"
-import { usePictureTool } from "@/picture-tool"
+import { useUndoTurn } from "@/editor/use-undo"
 export { elementIds, valueStorable } from "@/deck-paint"
 import { AiraPanel } from "@/aira-panel"
 import { airaStarters } from "@/aira-starters"
-import { useTables } from "@/table-hook"
-import { useNotes } from "@/notes-edit"
 
 export function ThinDeck({ id }: { id: string }) {
-  const status = useDeckStatus()
-  const { paintedDeck, settle, setPending } = status
-  const [title, setTitle] = useState("")
-  const rename = useDeckTitle(id, title, setTitle)
+  const deck = useEditorDeck(id)
   const [panel, setPanel] = useState<"agent" | "design">("agent")
-  const undo = useUndoList()
-  const { typed, sessions, records, record } = undo
-  const pictureTool = usePictureTool(paintedDeck === id, (picture) => inserts.addPicture(picture))
-  const notesBar = useNotes({ id, typed, sessions, records, record, settle, sending: () => setPending(true) })
-  const shown = useDeckPaint(id, pictureTool, notesBar, setPending)
-  const { store, shapes, editParts, canvases, current } = shown
-  useDeckOpen({ ...status, id, shown, notesBar, setTitle })
-  useNetwork(id, settle, status.leftNetwork)
-  const undoButtons = useUndoTurn({ id, working: paintedDeck === id, undo, shown, notesBar, settle, setPending })
-  const inserts = deckInserts({ id, shown, pictureTool, record, settle })
-  const { changeElement } = inserts
-  const { showEdited } = shown
-  const tables = useTables({ current, store, shapes, editParts, canvases, showEdited, changeElement })
-  const exported = useExport({ id, records, pictureTool, setFailure: status.setFailure })
-
-  const currentSlide = store.current.slides()[current]?.id
+  useDeckOpen(deck)
+  useNetwork(deck)
+  const undoButtons = useUndoTurn(deck)
+  const { shown, notesBar, exported } = deck
+  const currentSlide = shown.store.current.slides()[shown.current]?.id
   const currentNotes = notesBar.notes.find((notes) => notes.slide === currentSlide)
 
-  if (status.refused) {
+  if (deck.refused) {
     return (
       <div className="thin-page" data-deck-refused>
         <ThinNoticeView notice="import-failed" onTryAgain={exported.tryAgain} />
@@ -52,10 +32,10 @@ export function ThinDeck({ id }: { id: string }) {
     )
   }
 
-  const notice = shownNotice({ ...status, told: undo.told, picture: pictureTool.notice })
+  const notice = shownNotice({ ...deck, told: deck.undo.told, picture: deck.pictureTool.notice })
 
   return (
-    <div className="thin-page" data-deck-ready={paintedDeck}>
+    <div className="thin-page" data-deck-ready={deck.paintedDeck}>
       <ThinNoticeView notice={notice} onTryAgain={exported.tryAgain} />
       {exported.downloaded !== null && notice === null && (
         <DownloadedNotice name={exported.downloaded} onDone={() => exported.setDownloaded(null)} />
@@ -65,25 +45,30 @@ export function ThinDeck({ id }: { id: string }) {
           deck={{
             onExport: exported.onExport,
             undo: undoButtons,
-            onText: inserts.addText,
-            onRename: rename,
-            formatting: undo.formatting.current,
-            onTable: tables.insert,
-            onPicture: pictureTool.pick,
-            onShape: inserts.addShape,
-            size: canvases.current(current),
-            slides: slideCommands({ id, shown, record, settle }),
-            slide: editableSlide({ id, shown, undo, tables, settle, setPending, changeElement }),
+            onText: deck.inserts.addText,
+            onRename: deck.rename,
+            formatting: deck.undo.formatting.current,
+            onTable: deck.tables.insert,
+            onPicture: deck.pictureTool.pick,
+            onShape: deck.inserts.addShape,
+            size: shown.canvases.current(shown.current),
+            slides: slideCommands(deck),
+            slide: editableSlide(deck),
           }}
           notes={currentNotes?.text ?? ""}
           onNotes={(value) => notesBar.edit(currentSlide, value)}
           panel={panel}
           onPanel={setPanel}
           side={
-            <AiraPanel key={id} deck={id} starters={() => airaStarters(store.current)} hidden={panel !== "agent"} />
+            <AiraPanel
+              key={id}
+              deck={id}
+              starters={() => airaStarters(shown.store.current)}
+              hidden={panel !== "agent"}
+            />
           }
-          slideLabel={String(current + 1)}
-          title={title}
+          slideLabel={String(shown.current + 1)}
+          title={deck.title}
         />
       </EditorFrame>
     </div>

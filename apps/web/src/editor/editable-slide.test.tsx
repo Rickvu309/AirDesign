@@ -61,7 +61,7 @@ function Deck(props: { readonly exposed: (deck: Exposed) => void }) {
   const changeElement = async () => undefined
   const { store, shapes, editParts, canvases, current, showEdited } = shown
   const tables = useTables({ current, store, shapes, editParts, canvases, showEdited, changeElement })
-  useUndoTurn({ id: deck, working: true, undo, shown, notesBar: notes, settle: nothing, setPending: nothing })
+  useUndoTurn({ id: deck, paintedDeck: deck, undo, shown, notesBar: notes, settle: nothing, setPending: nothing })
   props.exposed({ shown, undo })
   return editableSlide({ id: deck, shown, undo, tables, settle: nothing, setPending: nothing, changeElement })(800)
 }

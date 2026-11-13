@@ -89,7 +89,7 @@ function Editor(props: {
   const nothing = () => undefined
   useUndoTurn({
     id: deck,
-    working: true,
+    paintedDeck: deck,
     undo,
     shown: props.paint,
     notesBar: notes,

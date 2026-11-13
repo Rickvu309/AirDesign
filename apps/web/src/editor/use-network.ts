@@ -2,7 +2,14 @@ import { connect, flushOriginal } from "@airdesign/live"
 import { useEffect } from "react"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 
-export function useNetwork(id: string, settle: (outcome: CommitOutcome) => void, left: () => void) {
+export type NetworkDeck = {
+  readonly id: string
+  readonly settle: (outcome: CommitOutcome) => void
+  readonly leftNetwork: () => void
+}
+
+export function useNetwork(deck: NetworkDeck) {
+  const { id, settle, leftNetwork: left } = deck
   useEffect(() => {
     async function returnedToNetwork() {
       settle(await flushPending(connect, id))
