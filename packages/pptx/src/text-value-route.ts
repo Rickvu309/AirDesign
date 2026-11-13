@@ -1,6 +1,7 @@
 import type { TextParagraph, TextRun, TextValue } from "@airdesign/document"
 import { contentSpans, decodedXmlText, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
+import { paragraphBytes } from "./paragraph-format.js"
 import { formatEdits, formattedInline, runProperties } from "./run-format.js"
 import { xmlText } from "./shape-write.js"
 
@@ -158,11 +159,21 @@ function writtenRun(bytes: Uint8Array, source: SourceParagraph, wanted: TextRun)
   ])
 }
 
+function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
+  if (left.length !== right.length) return false
+  for (let index = 0; index < left.length; index += 1) if (left[index] !== right[index]) return false
+  return true
+}
+
+function propertiesBytes(bytes: Uint8Array, source: SourceParagraph, wanted: TextParagraph): Uint8Array {
+  return paragraphBytes(bytes, source.properties, wanted) ?? copied(bytes, source.properties)
+}
+
 function writtenParagraph(bytes: Uint8Array, source: SourceParagraph, wanted: TextParagraph): Uint8Array {
   if (!source.copyable) throw new Error("text-carried")
   return joinBytes([
     openTag(bytes, source.element, paragraphOpen),
-    copied(bytes, source.properties),
+    propertiesBytes(bytes, source, wanted),
     ...wanted.runs.map((run) => writtenRun(bytes, source, run)),
     copied(bytes, source.end),
     paragraphClose,
@@ -177,6 +188,18 @@ function textEdit(holder: MarkupElement, text: string, bytes: Uint8Array): ByteE
 function keptEdits(bytes: Uint8Array, source: SourceParagraph, wanted: TextParagraph): readonly ByteEdit[] | null {
   if (wanted.runs.length !== source.inlines.length) return null
   const edits: ByteEdit[] = []
+  const formatted = paragraphBytes(bytes, source.properties, wanted)
+  if (formatted !== null) {
+    if (source.properties === undefined) {
+      const at = source.element.selfClosing ? source.element.end - 2 : source.element.openEnd
+      const next = source.element.selfClosing
+        ? joinBytes([encodeUtf8(">"), formatted, encodeUtf8(`</${source.element.kind}>`)])
+        : formatted
+      edits.push({ start: at, end: source.element.selfClosing ? source.element.end : at, next })
+    } else if (!sameBytes(bytes.subarray(source.properties.start, source.properties.end), formatted)) {
+      edits.push({ start: source.properties.start, end: source.properties.end, next: formatted })
+    }
+  }
   for (const [index, run] of wanted.runs.entries()) {
     const origin = source.inlines[index]
     if (origin === undefined || run.from !== index) return null

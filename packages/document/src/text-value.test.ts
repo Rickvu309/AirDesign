@@ -66,7 +66,7 @@ describe("run formats", () => {
   })
 
   it("refuses an unknown run key beside a format", () => {
-    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","bold":true,"size":12}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","bold":true,"weight":1}]}]')).toBeNull()
   })
 
   it("writes a format after text and leaves out a format the run lacks", () => {
@@ -78,6 +78,78 @@ describe("run formats", () => {
   it("reads a value an older client wrote with no formats", () => {
     expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a"}]}]')).toEqual([
       { from: 0, runs: [{ from: 0, text: "a" }] },
+    ])
+  })
+})
+
+describe("size, colour, alignment and bullets", () => {
+  it("reads a size, a scheme colour, alignment and bullets", () => {
+    expect(
+      readTextValue(
+        '[{"from":0,"align":"center","bullet":true,"runs":[{"from":0,"text":"a","size":1800,"color":{"scheme":"accent1"}}]}]',
+      ),
+    ).toEqual([
+      {
+        from: 0,
+        align: "center",
+        bullet: true,
+        runs: [{ from: 0, text: "a", size: 1800, color: { scheme: "accent1" } }],
+      },
+    ])
+  })
+
+  it("reads an rgb colour", () => {
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","color":{"rgb":"FF00AA"}}]}]')).toEqual([
+      { from: 0, runs: [{ from: 0, text: "a", color: { rgb: "FF00AA" } }] },
+    ])
+  })
+
+  it("writes size after the formats and colour after size, and alignment before bullets", () => {
+    expect(
+      writeTextValue([
+        {
+          from: 0,
+          bullet: false,
+          align: "right",
+          runs: [{ from: 0, text: "a", color: { rgb: "00FF00" }, size: 2400, bold: true }],
+        },
+      ]),
+    ).toBe(
+      '[{"from":0,"align":"right","bullet":false,"runs":[{"from":0,"text":"a","bold":true,"size":2400,"color":{"rgb":"00FF00"}}]}]',
+    )
+  })
+
+  it("refuses a size below 100, above 400000, or not an integer", () => {
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","size":12}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","size":99}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","size":400001}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","size":"1800"}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","size":1800.5}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","size":100}]}]')).toEqual([
+      { from: 0, runs: [{ from: 0, text: "a", size: 100 }] },
+    ])
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","size":400000}]}]')).toEqual([
+      { from: 0, runs: [{ from: 0, text: "a", size: 400000 }] },
+    ])
+  })
+
+  it("refuses a bad colour", () => {
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","color":1}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","color":{"scheme":"tx1"}}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","color":{"rgb":"ff0000"}}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","color":{"rgb":"FF00"}}]}]')).toBeNull()
+    expect(
+      readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","color":{"scheme":"dk1","rgb":"000000"}}]}]'),
+    ).toBeNull()
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","color":{"scheme":"dk1","extra":1}}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","color":{}}]}]')).toBeNull()
+  })
+
+  it("refuses a bad alignment or bullet", () => {
+    expect(readTextValue('[{"from":0,"align":"justify","runs":[{"from":0,"text":"a"}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"bullet":"yes","runs":[{"from":0,"text":"a"}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"align":"left","runs":[{"from":0,"text":"a"}]}]')).toEqual([
+      { from: 0, align: "left", runs: [{ from: 0, text: "a" }] },
     ])
   })
 })

@@ -1,7 +1,15 @@
 import {
+  alignRange,
+  alignState,
+  bulletRange,
+  bulletState,
+  colorRange,
+  colorState,
   formatRange,
   formatState,
   formatWhole,
+  sizeState,
+  stepSize,
   writeTextValue,
   type Caret,
   type ElementId,
@@ -36,25 +44,76 @@ export function formatTarget(
     if (carets !== null) kept = carets
   }
   const range = (editing: boolean) => (!editing || kept === null || collapsed(kept) ? null : kept)
-  const file = (paragraph: number, run: number, format: TextFormat) =>
-    formats.current?.look?.file(paragraph, run, format) ?? false
+  const look = (): TextLook | undefined => formats.current?.look
+  const file = (paragraph: number, run: number, format: TextFormat) => look()?.file(paragraph, run, format) ?? false
+  const fileSize = (paragraph: number, run: number) => look()?.fileSize(paragraph, run) ?? null
+  const fileColor = (paragraph: number, run: number) => look()?.fileColor(paragraph, run) ?? null
+  const fileAlign = (paragraph: number) => look()?.fileAlign(paragraph) ?? null
+  const fileBullet = (paragraph: number) => look()?.fileBullet(paragraph) ?? false
+  const readNow = () => {
+    const current = formats.current
+    return current === null ? null : { current, value: current.read(shown).value }
+  }
+  const commit = (value: TextValue, next: TextValue, editing: boolean) => {
+    const current = formats.current
+    if (current === null || writeTextValue(next) === writeTextValue(value)) return
+    const chosen = range(editing)
+    const at = chosen ?? kept ?? { start: firstCaret, end: firstCaret }
+    current.edit(shown, next, at.start, at.end)
+  }
   const unregister = formatting.register(id, {
     edits: (node) => node === shown,
     state(format, editing) {
-      const current = formats.current
-      return current === null ? "off" : formatState(current.read(shown).value, range(editing), format, file)
+      const read = readNow()
+      return read === null ? "off" : formatState(read.value, range(editing), format, file)
     },
     apply(format, editing) {
-      const current = formats.current
-      if (current === null) return
-      const value = current.read(shown).value
+      const read = readNow()
+      if (read === null) return
       const chosen = range(editing)
-      const on = formatState(value, chosen, format, file) !== "on"
-      const next = chosen === null ? formatWhole(value, format, on, file) : formatRange(value, chosen, format, on, file)
-      if (writeTextValue(next) === writeTextValue(value)) return
-      const at = chosen ?? kept ?? { start: firstCaret, end: firstCaret }
-      current.edit(shown, next, at.start, at.end)
+      const on = formatState(read.value, chosen, format, file) !== "on"
+      const next =
+        chosen === null ? formatWhole(read.value, format, on, file) : formatRange(read.value, chosen, format, on, file)
+      commit(read.value, next, editing)
     },
+    size(editing) {
+      const read = readNow()
+      return read === null ? null : sizeState(read.value, range(editing), fileSize)
+    },
+    resize(delta, editing) {
+      const read = readNow()
+      if (read === null) return
+      commit(read.value, stepSize(read.value, range(editing), delta * 100, fileSize), editing)
+    },
+    color(editing) {
+      const read = readNow()
+      return read === null ? null : colorState(read.value, range(editing), fileColor)
+    },
+    choose(color, editing) {
+      const read = readNow()
+      if (read === null) return
+      commit(read.value, colorRange(read.value, range(editing), color, fileColor), editing)
+    },
+    align(editing) {
+      const read = readNow()
+      return read === null ? null : alignState(read.value, range(editing), fileAlign)
+    },
+    place(align, editing) {
+      const read = readNow()
+      if (read === null) return
+      commit(read.value, alignRange(read.value, range(editing), align, fileAlign), editing)
+    },
+    bullet(editing) {
+      const read = readNow()
+      return read === null ? "off" : bulletState(read.value, range(editing), fileBullet)
+    },
+    bullets(editing) {
+      const read = readNow()
+      if (read === null) return
+      const on = bulletState(read.value, range(editing), fileBullet) !== "on"
+      commit(read.value, bulletRange(read.value, range(editing), on, fileBullet), editing)
+    },
+    swatches: () => look()?.swatches() ?? [],
   })
   const document = shown.ownerDocument
   document.addEventListener("selectionchange", keep)

@@ -1,6 +1,7 @@
 import { formatNames, type TextFormat, type TextRun } from "@airdesign/document"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
+import { paintRunColor } from "./run-color.js"
 import type { SourceInline } from "./text-value-route.js"
 
 const propertiesKind = "a:rPr"
@@ -12,12 +13,13 @@ const written: Readonly<Record<TextFormat, readonly [name: string, on: string, o
 }
 
 function settings(run: TextRun): readonly (readonly [string, string])[] {
-  return formatNames.flatMap((format) => {
+  const formats = formatNames.flatMap((format) => {
     const on = run[format]
     if (on === undefined) return []
     const [name, yes, no] = written[format]
     return [[name, on ? yes : no] as const]
   })
+  return run.size === undefined ? formats : [...formats, ["sz", String(run.size)] as const]
 }
 
 function attributeText(set: readonly (readonly [string, string])[]): string {
@@ -28,10 +30,16 @@ function shifted(edits: readonly ByteEdit[], by: number): readonly ByteEdit[] {
   return edits.map((edit) => ({ start: edit.start - by, end: edit.end - by, next: edit.next }))
 }
 
+function colored(slice: Uint8Array, run: TextRun): Uint8Array {
+  return run.color === undefined ? slice : paintRunColor(slice, run.color)
+}
+
 export function runProperties(bytes: Uint8Array, source: MarkupElement | undefined, run: TextRun): Uint8Array {
   const set = settings(run)
-  if (source === undefined)
-    return set.length === 0 ? emptyBytes : encodeUtf8(`<${propertiesKind}${attributeText(set)}/>`)
+  if (source === undefined) {
+    if (set.length === 0 && run.color === undefined) return emptyBytes
+    return colored(encodeUtf8(`<${propertiesKind}${attributeText(set)}/>`), run)
+  }
   const nameStart = source.start + 1
   const nameEnd = nameStart + source.kind.length
   const edits: ByteEdit[] = []
@@ -51,11 +59,11 @@ export function runProperties(bytes: Uint8Array, source: MarkupElement | undefin
     const at = source.attributes.reduce((last, attribute) => Math.max(last, attribute.valueEnd + 1), nameEnd)
     edits.push({ start: at, end: at, next: encodeUtf8(attributeText(added)) })
   }
-  return spliceBytes(bytes.subarray(source.start, source.end), shifted(edits, source.start))
+  return colored(spliceBytes(bytes.subarray(source.start, source.end), shifted(edits, source.start)), run)
 }
 
 export function formatEdits(bytes: Uint8Array, inline: SourceInline, run: TextRun): readonly ByteEdit[] {
-  if (settings(run).length === 0) return []
+  if (settings(run).length === 0 && run.color === undefined) return []
   const { element, format } = inline
   if (format !== undefined) return [{ start: format.start, end: format.end, next: runProperties(bytes, format, run) }]
   const added = runProperties(bytes, undefined, run)

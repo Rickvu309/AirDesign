@@ -45,4 +45,12 @@ describe("a run's format through an edit", () => {
       { from: 0, text: " there", bold: true },
     ])
   })
+
+  it("keeps alignment and bullets when a paragraph splits or joins", () => {
+    const value = [{ from: 0, align: "center" as const, bullet: true, runs: [{ from: 0, text: "Hello" }] }]
+    const split = splitParagraph(value, { paragraph: 0, offset: 2 })
+    expect(split[0]).toMatchObject({ align: "center", bullet: true })
+    expect(split[1]).toMatchObject({ align: "center", bullet: true })
+    expect(joinParagraph(split, 1)).toEqual(value)
+  })
 })

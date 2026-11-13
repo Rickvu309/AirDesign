@@ -1,17 +1,51 @@
-import { onlyKeys, record } from "./plain-object.js"
+import { record } from "./plain-object.js"
 
 export const formatNames = ["bold", "italic", "underline"] as const
+export const schemeNames = [
+  "dk1",
+  "lt1",
+  "dk2",
+  "lt2",
+  "accent1",
+  "accent2",
+  "accent3",
+  "accent4",
+  "accent5",
+  "accent6",
+] as const
+export const alignNames = ["left", "center", "right"] as const
+export const sizeFloor = 100
+export const sizeCeiling = 400_000
+export const sizeDefault = 1800
 
 export type TextFormat = (typeof formatNames)[number]
-
+export type SchemeName = (typeof schemeNames)[number]
+export type ParagraphAlign = (typeof alignNames)[number]
+export type RunColor = { readonly scheme: SchemeName } | { readonly rgb: string }
 export type RunFormat = { readonly [format in TextFormat]?: boolean }
 
-export type TextRun = { readonly from: number; readonly text: string } & RunFormat
-export type TextParagraph = { readonly from: number; readonly runs: readonly TextRun[] }
+export type TextRun = {
+  readonly from: number
+  readonly text: string
+  readonly size?: number
+  readonly color?: RunColor
+} & RunFormat
+export type TextParagraph = {
+  readonly from: number
+  readonly align?: ParagraphAlign
+  readonly bullet?: boolean
+  readonly runs: readonly TextRun[]
+}
 export type TextValue = readonly TextParagraph[]
 
-const paragraphKeys = ["from", "runs"]
-const runKeys = new Set<string>(["from", "text", ...formatNames])
+const paragraphKeys = new Set<string>(["from", "runs", "align", "bullet"])
+const runKeys = new Set<string>(["from", "text", "size", "color", ...formatNames])
+const schemeSet = new Set<string>(schemeNames)
+
+function named<T extends string>(names: readonly T[], value: string): T | null {
+  for (const name of names) if (name === value) return name
+  return null
+}
 
 function integerAtLeast(value: unknown, floor: number): number | null {
   if (typeof value !== "number" || !Number.isInteger(value) || value < floor) {
@@ -20,13 +54,37 @@ function integerAtLeast(value: unknown, floor: number): number | null {
   return Object.is(value, -0) ? 0 : value
 }
 
+function readSize(value: unknown): number | null | undefined {
+  if (value === undefined) return undefined
+  if (typeof value !== "number" || !Number.isInteger(value) || value < sizeFloor || value > sizeCeiling) return null
+  return value
+}
+
+function readColor(value: unknown): RunColor | null | undefined {
+  if (value === undefined) return undefined
+  const color = record(value)
+  if (color === null) return null
+  const keys = Object.keys(color)
+  const scheme =
+    keys.length === 1 && keys[0] === "scheme" && typeof color.scheme === "string"
+      ? named(schemeNames, color.scheme)
+      : null
+  if (scheme !== null && schemeSet.has(scheme)) return { scheme }
+  if (keys.length === 1 && keys[0] === "rgb" && typeof color.rgb === "string" && /^[0-9A-F]{6}$/.test(color.rgb)) {
+    return { rgb: color.rgb }
+  }
+  return null
+}
+
 function readRun(value: unknown): TextRun | null {
   const run = record(value)
   if (run === null || !Object.keys(run).every((key) => runKeys.has(key))) {
     return null
   }
   const from = integerAtLeast(run.from, -1)
-  if (from === null || typeof run.text !== "string") {
+  const size = readSize(run.size)
+  const color = readColor(run.color)
+  if (from === null || typeof run.text !== "string" || size === null || color === null) {
     return null
   }
   let read: TextRun = { from, text: run.text }
@@ -36,27 +94,38 @@ function readRun(value: unknown): TextRun | null {
     if (typeof set !== "boolean") return null
     read = { ...read, [format]: set }
   }
+  if (size !== undefined) read = { ...read, size }
+  if (color !== undefined) read = { ...read, color }
   return read
 }
 
 function readParagraph(value: unknown): TextParagraph | null {
   const paragraph = record(value)
-  if (paragraph === null || !onlyKeys(paragraph, paragraphKeys) || !Array.isArray(paragraph.runs)) {
+  if (
+    paragraph === null ||
+    !Object.keys(paragraph).every((key) => paragraphKeys.has(key)) ||
+    !Object.hasOwn(paragraph, "from") ||
+    !Array.isArray(paragraph.runs)
+  ) {
     return null
   }
   const from = integerAtLeast(paragraph.from, 0)
-  if (from === null) {
-    return null
-  }
+  const align =
+    paragraph.align === undefined
+      ? undefined
+      : named(alignNames, typeof paragraph.align === "string" ? paragraph.align : "")
+  if (from === null || (paragraph.align !== undefined && align === null)) return null
+  if (paragraph.bullet !== undefined && typeof paragraph.bullet !== "boolean") return null
   const runs: TextRun[] = []
   for (const item of paragraph.runs) {
     const run = readRun(item)
-    if (run === null) {
-      return null
-    }
+    if (run === null) return null
     runs.push(run)
   }
-  return { from, runs }
+  let read: TextParagraph = { from, runs }
+  if (align !== undefined && align !== null) read = { ...read, align }
+  if (typeof paragraph.bullet === "boolean") read = { ...read, bullet: paragraph.bullet }
+  return read
 }
 
 export function readTextValue(value: string): TextValue | null {
@@ -84,17 +153,26 @@ export function readParagraphs(parsed: unknown): TextValue | null {
   return paragraphs
 }
 
+function writtenColor(color: RunColor): RunColor {
+  return "scheme" in color ? { scheme: color.scheme } : { rgb: color.rgb }
+}
+
 function writtenRun(run: TextRun): Record<string, unknown> {
   const written: Record<string, unknown> = { from: run.from, text: run.text }
   for (const format of formatNames) if (run[format] !== undefined) written[format] = run[format]
+  if (run.size !== undefined) written.size = run.size
+  if (run.color !== undefined) written.color = writtenColor(run.color)
+  return written
+}
+
+function writtenParagraph(paragraph: TextParagraph): Record<string, unknown> {
+  const written: Record<string, unknown> = { from: paragraph.from }
+  if (paragraph.align !== undefined) written.align = paragraph.align
+  if (paragraph.bullet !== undefined) written.bullet = paragraph.bullet
+  written.runs = paragraph.runs.map(writtenRun)
   return written
 }
 
 export function writeTextValue(text: TextValue): string {
-  return JSON.stringify(
-    text.map((paragraph) => ({
-      from: paragraph.from,
-      runs: paragraph.runs.map(writtenRun),
-    })),
-  )
+  return JSON.stringify(text.map(writtenParagraph))
 }

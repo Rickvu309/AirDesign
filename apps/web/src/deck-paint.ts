@@ -6,6 +6,7 @@ import {
   readShapes,
   readSlides,
   sectionStarts,
+  themeSwatches,
   type ReadShape,
   type SectionStart,
 } from "@airdesign/pptx"
@@ -43,7 +44,7 @@ function trialValue(value: TextValue): TextValue | null {
       return value.map((each, index) =>
         index === paragraph
           ? {
-              from: each.from,
+              ...each,
               runs: runs.map((kept, at) => (at === run ? { ...kept, text: `${kept.text}.` } : kept)),
             }
           : each,
@@ -52,7 +53,7 @@ function trialValue(value: TextValue): TextValue | null {
   }
   const first = value[0]
   if (first === undefined) return null
-  return [{ from: first.from, runs: [...first.runs, { from: -1, text: "." }] }, ...value.slice(1)]
+  return [{ ...first, runs: [...first.runs, { from: -1, text: "." }] }, ...value.slice(1)]
 }
 
 export function valueStorable(
@@ -139,7 +140,9 @@ export function paint(
   }))
   const pictures = pictureSources(display)
   const texts = display === base ? undefined : paintReader(base, { fallbackPrompt })
-  const canvases = slideCanvases(paintReader(display, { fallbackPrompt }), sources, pictures.src, texts)
+  const canvases = slideCanvases(paintReader(display, { fallbackPrompt }), sources, pictures.src, texts, (part) =>
+    themeSwatches(display, part),
+  )
   return {
     count: read.length,
     sections: sectionStarts(display),

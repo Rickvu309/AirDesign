@@ -1,5 +1,6 @@
 import { expect, it } from "vitest"
 import type { CanvasRunStyle, CanvasText } from "./record.js"
+import { accentPaint, inkPaint } from "./run-format-look-art.js"
 import { textLook } from "./text-look.js"
 
 const scaled = (emu: number) => emu / 12_700
@@ -40,6 +41,45 @@ it("paints a run's set format over the file's style", () => {
 it("paints a run with no set format as the file has it", () => {
   const look = textLook(text, scaled)
   expect(look.run(0, 1, {})).toEqual(look.run(0, 1))
+})
+
+it("paints a chosen size and scheme colour over the file", () => {
+  const look = textLook({ ...text, colors: [{ scheme: "accent2", css: accentPaint }] }, scaled)
+  expect(look.run(0, 0, { size: 2400, color: { scheme: "accent2" } })).toMatchObject({
+    fontSize: `${scaled(2400 * 127)}px`,
+    color: accentPaint,
+  })
+  expect(look.fileSize(0, 0)).toBe(2000)
+})
+
+it("paints alignment and bullets over the paragraph", () => {
+  const look = textLook(text, scaled)
+  expect(look.paragraph(0, true, { align: "center", bullet: true })).toMatchObject({
+    textAlign: "center",
+    "--bullet": '"•"',
+  })
+  expect(look.paragraph(0, true, { bullet: false })["--bullet"]).toBe("none")
+  expect(look.fileAlign(0)).toBe("left")
+  expect(look.fileBullet(0)).toBe(false)
+})
+
+it("reads a scheme colour when one theme swatch matches the painted colour", () => {
+  const colored: CanvasText = {
+    ...text,
+    colors: [{ scheme: "dk1", css: inkPaint }],
+    paragraphs: [
+      {
+        from: 0,
+        align: "left",
+        runs: [
+          { from: 0, text: "a", ...plain, color: inkPaint },
+          { from: 1, text: "b", ...marked, color: inkPaint },
+        ],
+        endStyle: { ...plain, color: inkPaint },
+      },
+    ],
+  }
+  expect(textLook(colored, scaled).fileColor(0, 0)).toEqual({ scheme: "dk1" })
 })
 
 it("reads the file's format of a run, and of a new run from the paragraph's end", () => {

@@ -3,7 +3,7 @@
   "long-titles": { "goal": 0 },
   "corpus-size": { "now": 20, "goal": 20 },
   "export-coverage": { "now": 18, "goal": 50 },
-  "export-verified": { "now": 25, "goal": 50 },
+  "export-verified": { "now": 29, "goal": 50 },
   "fault-detection": { "now": 10, "goal": 11 },
   "import-parse": { "now": 174, "goal": 100 },
   "eval-coverage": { "now": 48, "goal": 48 },

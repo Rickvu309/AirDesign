@@ -1,8 +1,16 @@
-import { formatRange, type TextParagraph, type TextValue } from "@airdesign/document"
+import { formatRange, type ParagraphAlign, type TextParagraph, type TextRun, type TextValue } from "@airdesign/document"
 import { readShapes } from "./read-shapes.js"
 import type { SlideRoute } from "./slide-route.js"
 
-export const formatOperations = ["text.format", "text.format.range", "text.format.paragraphs"] as const
+export const formatOperations = [
+  "text.format",
+  "text.format.range",
+  "text.format.paragraphs",
+  "text.size",
+  "text.color",
+  "text.align",
+  "text.bullet",
+] as const
 
 type FormatOperation = (typeof formatOperations)[number]
 
@@ -45,10 +53,43 @@ function paragraphsFormat(value: TextValue): TextValue | null {
   return formatRange(formatRange(value, range, "underline", true, fileless), range, "italic", true, fileless)
 }
 
+function filled(value: TextValue): boolean {
+  return value.some((paragraph) => lengthOf(paragraph) > 0)
+}
+
+function runsOf(paragraph: TextParagraph, run: (each: TextRun) => TextRun): TextParagraph {
+  return { ...paragraph, runs: paragraph.runs.map(run) }
+}
+
+function sized(value: TextValue): TextValue | null {
+  if (!filled(value)) return null
+  return value.map((paragraph) => runsOf(paragraph, (run) => ({ ...run, size: 2750 })))
+}
+
+function colored(value: TextValue): TextValue | null {
+  if (!filled(value)) return null
+  return value.map((paragraph) => runsOf(paragraph, (run) => ({ ...run, color: { scheme: "accent2" } })))
+}
+
+function aligned(value: TextValue): TextValue | null {
+  if (!filled(value)) return null
+  const align: ParagraphAlign = "right"
+  return value.map((paragraph) => ({ ...paragraph, align }))
+}
+
+function bulleted(value: TextValue): TextValue | null {
+  if (!filled(value)) return null
+  return value.map((paragraph) => ({ ...paragraph, bullet: true }))
+}
+
 const builders: Readonly<Record<FormatOperation, (value: TextValue) => TextValue | null>> = {
   "text.format": wholeFormat,
   "text.format.range": rangeFormat,
   "text.format.paragraphs": paragraphsFormat,
+  "text.size": sized,
+  "text.color": colored,
+  "text.align": aligned,
+  "text.bullet": bulleted,
 }
 
 export function formatRuns<Run>(
