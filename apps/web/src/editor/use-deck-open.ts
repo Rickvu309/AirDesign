@@ -7,7 +7,6 @@ import { closesDeck, deckParts, deviceCopy } from "@/device-copy"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import { backfillIndex } from "@/index-deck"
 import { notesShown, type ShownNotes } from "@/notes-edit"
-import { layoutChoices } from "@/slide-layout"
 import { structureOf } from "@/table-hook"
 import { signInAddress } from "@/thin-notice"
 
@@ -24,16 +23,13 @@ export type OpeningDeck = {
 
 export function useDeckOpen(deck: OpeningDeck) {
   const { id, shown, notesBar, settle, setTitle, setPaintedDeck, setRefused, setFailure } = deck
-  const { store, shownParts, pictures, structure, repaint, setLayouts, setCurrent, showRegister } = shown
+  const { store, shownParts, pictures, structure, repaint, setCurrent, showOpened, showRegister } = shown
 
   function openFrom(
     stored: { readonly parts: ReadonlyMap<string, Uint8Array>; readonly name?: string },
     register: Register | null,
   ) {
-    shownParts.current = stored.parts
-    setLayouts(layoutChoices(stored.parts))
-    showRegister(register)
-    setCurrent(0)
+    showOpened(stored.parts, register)
     setTitle(stored.name ?? "")
     setPaintedDeck(id)
   }
@@ -121,13 +117,13 @@ export function useDeckOpen(deck: OpeningDeck) {
       live = false
       leaving.abort()
     }
-  }, [id, settle])
+  }, [id, settle, setPaintedDeck, setRefused, setFailure])
 
   useEffect(
     () => () => {
       pictures.current?.release()
       pictures.current = null
     },
-    [],
+    [pictures],
   )
 }

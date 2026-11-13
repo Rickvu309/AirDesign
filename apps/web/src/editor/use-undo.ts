@@ -42,12 +42,30 @@ export function useUndoList() {
     setTold(null)
   }
 
-  return { undoList, turning, undoShown, setUndoShown, told, setTold, typed, sessions, records, formatting, record }
+  function turnAfter(work: () => Promise<void>) {
+    typed.current = null
+    turning.current = turning.current.then(work)
+  }
+
+  return {
+    undoList,
+    turning,
+    undoShown,
+    setUndoShown,
+    told,
+    setTold,
+    typed,
+    sessions,
+    records,
+    formatting,
+    record,
+    turnAfter,
+  }
 }
 
 export type TurningDeck = {
   readonly id: string
-  readonly working: boolean
+  readonly paintedDeck: string | undefined
   readonly undo: UndoList
   readonly shown: DeckPaint
   readonly notesBar: {
@@ -59,7 +77,7 @@ export type TurningDeck = {
 
 export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
   const { id, undo, shown, notesBar, settle, setPending } = deck
-  const { undoList, turning, undoShown, setUndoShown, told, setTold, typed, records } = undo
+  const { undoList, undoShown, setUndoShown, told, setTold, typed, records, turnAfter } = undo
   const { store, shownParts, structure, repaint, setCurrent, showRegister } = shown
 
   useEffect(() => {
@@ -68,13 +86,13 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     }
     window.addEventListener("focusout", closeSession)
     return () => window.removeEventListener("focusout", closeSession)
-  }, [])
+  }, [typed])
 
   useEffect(() => {
     if (told === null) return
     const clear = window.setTimeout(() => setTold(null), 4000)
     return () => window.clearTimeout(clear)
-  }, [told])
+  }, [told, setTold])
 
   function slideOf(undoable: Undoable): SlideId | null {
     if (!("slide" in undoable) || "element" in undoable) return null
@@ -105,8 +123,7 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
   }
 
   function turn(direction: UndoDirection) {
-    typed.current = null
-    turning.current = turning.current.then(async () => {
+    turnAfter(async () => {
       await records.current.landed()
       const turned = await turnBack(connect(memoryRemote()), id, undoList.current, direction)
       if (turned.outcome === "empty") return
@@ -119,7 +136,7 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     })
   }
 
-  useUndoKeys(deck.working, turn)
+  useUndoKeys(deck.paintedDeck === id, turn)
 
   return {
     undoLabel: undoLabel("undo", undoShown),

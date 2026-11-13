@@ -50,10 +50,17 @@ function typing(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && (target.isContentEditable || target.closest("input, textarea") !== null)
 }
 
-export function usePictureTool(enabled: boolean, onPicture: (picture: PictureFile) => Promise<void>) {
+export function usePictureStore(): PictureStore {
+  return useRef(pictureStore()).current
+}
+
+export function usePictureTool(
+  enabled: boolean,
+  store: PictureStore,
+  onPicture: (picture: PictureFile) => Promise<void>,
+) {
   const latest = useRef(onPicture)
   const [refused, setRefused] = useState<PictureRefusal | null>(null)
-  const store = useRef(pictureStore()).current
   useEffect(() => {
     latest.current = onPicture
   })

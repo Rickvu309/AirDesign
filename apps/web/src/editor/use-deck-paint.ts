@@ -10,7 +10,7 @@ import { busyElements, liveRepaint } from "@/live-repaint"
 import { notesShown, type ShownNotes } from "@/notes-edit"
 import { type PictureSources } from "@/picture-fill"
 import { type PictureStore } from "@/picture-tool"
-import type { layoutChoices } from "@/slide-layout"
+import { layoutChoices } from "@/slide-layout"
 import { structureOf } from "@/table-hook"
 
 export type DeckPaint = ReturnType<typeof useDeckPaint>
@@ -38,6 +38,13 @@ export function useDeckPaint(
   const [sections, setSections] = useState<readonly SectionStart[]>([])
   const [current, setCurrent] = useState(0)
   const saySlide = useRef<(text: string) => void>(() => undefined)
+
+  function showOpened(parts: ReadonlyMap<string, Uint8Array>, register: Register | null) {
+    shownParts.current = parts
+    setLayouts(layoutChoices(parts))
+    showRegister(register)
+    setCurrent(0)
+  }
 
   function showRegister(register: Register | null) {
     const painted = paint(store.current, shownParts.current, register, busy.current, pictureTool.store.bytes)
@@ -82,10 +89,10 @@ export function useDeckPaint(
     setEntering,
     slideCount,
     layouts,
-    setLayouts,
     sections,
     current,
     setCurrent,
+    showOpened,
     showRegister,
     showEdited,
     saySlide,
