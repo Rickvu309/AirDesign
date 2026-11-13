@@ -97,6 +97,7 @@ export const productCopy = {
   undo: "Undo",
   exportFailed: "Unable to export. Your deck is unchanged.",
   editorOffline: "You're offline. Edits are saved on this device.",
+  editsSetAside: "Unable to save some edits. The deck changed, so make them again if you need them.",
   trashEmptyBody: "This can't be undone.",
   trashEmptyAction: "Delete for good",
   importing: "Importing",

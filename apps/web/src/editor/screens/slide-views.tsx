@@ -1,4 +1,5 @@
 import { EditorToast } from "@/editor/agent-panel"
+import { productCopy } from "@/copy/product-copy"
 import { galleryDeck } from "@/editor/gallery-deck"
 import { EditorView } from "@/editor/screens/editor-view"
 
@@ -52,6 +53,16 @@ export function ActionsScreen() {
 
 export function RunFailed() {
   return <EditorView {...galleryDeck} run="failed" />
+}
+
+export function SetAside() {
+  return (
+    <EditorView
+      {...galleryDeck}
+      run="done"
+      toast={<EditorToast kind="info" text={productCopy.editsSetAside} place="canvas" />}
+    />
+  )
 }
 
 export function Offline() {

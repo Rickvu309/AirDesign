@@ -5,6 +5,7 @@ import {
   limits,
   readBox,
   readElementId,
+  refusals,
   readSlideState,
   storedValue,
   unsent,
@@ -19,7 +20,8 @@ import { hasMeasures, queueIndex, sendIndex } from "./deck-index.js"
 import { accountKey } from "./device.js"
 import { rowsFromRegister, view, type DeckView, type LivePhase } from "./deck-view.js"
 import { slideChange, valueChange, type Enqueued } from "./deck-edit.js"
-import { changeHeld, heldView, sealRows, writeDeckRows } from "./held.js"
+import { changeHeld, heldView, sealRows, setAside, takeAside, writeDeckRows } from "./held.js"
+import { refusedRows } from "./slide-replay.js"
 import { idleDays, markSeen, sweepIdle } from "./device-sweep.js"
 import {
   holdsUnsaved,
@@ -50,6 +52,8 @@ export type FollowResult =
   | { ok: true; readonly deck: DeckId; readonly revision: number; readonly changed: boolean }
   | Extract<WatchResult, { ok: false }>
 
+export type FlushResult = CommitResult & { readonly aside?: number }
+
 export type EnqueueResult<Painted = string> =
   | { ok: true; readonly painted: Painted }
   | { ok: false; readonly refusal: WireRefusal }
@@ -79,6 +83,8 @@ function serial<T>(deck: DeckId, work: () => Promise<T>): Promise<T> {
 }
 
 const signedOut = { ok: false, refusal: "session" } as const
+
+const decided: ReadonlySet<string> = new Set(refusals)
 
 type Options = {
   readonly once?: () => string
@@ -118,18 +124,9 @@ export function connect(remote: Remote, options: Options = {}) {
     return opening
   }
 
-  async function sendRows(deck: DeckId): Promise<CommitResult> {
-    const indexed = await sendIndex(remote, deck, () => openOnce(deck))
-    if (indexed !== null && !indexed.ok) return indexed
-    const held = await heldView(deck)
-    if (held === null || held.pending.length === 0) return indexed ?? { ok: false, refusal: "batch" }
-    const opened = await openOnce(deck)
-    if (!opened.ok) return opened
-    const adopting = !known.has(deck)
-    if (adopting) await adopt(deck, opened)
-    const { confirmed, pending } = adopting ? ((await heldView(deck)) ?? held) : held
-    const sending = unsent(pending, 0)
-    let revision = confirmed.reduce((max, row) => Math.max(max, row.revision + 1), 0)
+  async function sendBatches(deck: DeckId, held: DeckView): Promise<CommitResult> {
+    const sending = unsent(held.pending, 0)
+    let revision = held.confirmed.reduce((max, row) => Math.max(max, row.revision + 1), 0)
     let result: CommitResult = { ok: false, refusal: "batch" }
     for (let start = 0; start < sending.length;) {
       const first = sending[start]
@@ -151,7 +148,14 @@ export function connect(remote: Remote, options: Options = {}) {
       if (result.deck !== deck || result.key !== `${deck}:${result.revision}`) {
         return { ok: false, refusal: "payload" }
       }
-      if (known.get(deck) === result.revision - 1) known.set(deck, result.revision)
+      const sent = rowsInBatch.map((row) => rowKey(deck, "pending", row.order))
+      const mirror = known.get(deck)
+      start += rowsInBatch.length
+      if (mirror !== undefined && result.revision <= mirror) {
+        await writeDeckRows(deck, [], sent, "stale")
+        continue
+      }
+      if (mirror === result.revision - 1) known.set(deck, result.revision)
       const stored: ConfirmedRow[] = []
       for (const row of rowsInBatch) {
         if (row.slideEdit !== undefined && row.slideFile !== undefined) {
@@ -171,12 +175,40 @@ export function connect(remote: Remote, options: Options = {}) {
       await writeDeckRows(
         deck,
         stored.map((row) => ({ key: rowKey(deck, "confirmed", row.revision), row })),
-        rowsInBatch.map((row) => rowKey(deck, "pending", row.order)),
+        sent,
         "same",
       )
-      start += rowsInBatch.length
     }
     return result
+  }
+
+  async function asideRefused(deck: DeckId): Promise<boolean> {
+    const opened = await refresh(deck)
+    if (!opened.ok) return false
+    const held = await heldView(deck)
+    if (held === null) return false
+    const refused = refusedRows(opened.register, held.pending)
+    await setAside(deck, refused)
+    return refused.length > 0
+  }
+
+  async function sendRows(deck: DeckId): Promise<CommitResult> {
+    const indexed = await sendIndex(remote, deck, () => openOnce(deck))
+    if (indexed !== null && !indexed.ok) return indexed
+    const held = await heldView(deck)
+    if (held === null || held.pending.length === 0) return indexed ?? { ok: false, refusal: "batch" }
+    const opened = await openOnce(deck)
+    if (!opened.ok) return opened
+    const adopting = !known.has(deck)
+    if (adopting) await adopt(deck, opened)
+    let view = adopting ? ((await heldView(deck)) ?? held) : held
+    for (;;) {
+      const result = await sendBatches(deck, view)
+      if (result.ok || !decided.has(result.refusal) || !(await asideRefused(deck))) return result
+      const next = await heldView(deck)
+      if (next === null || next.pending.length === 0) return result
+      view = next
+    }
   }
 
   async function refresh(deck: DeckId): Promise<OpenResult> {
@@ -320,12 +352,16 @@ export function connect(remote: Remote, options: Options = {}) {
       const opened = await openOnce(parsed.deck)
       return opened.ok ? { ok: true } : opened
     },
-    async flush(deck: string): Promise<CommitResult> {
+    async flush(deck: string): Promise<FlushResult> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return { ok: false, refusal: "deck" }
       if (accountKey() === undefined) return signedOut
       await recovered(parsed.deck)
-      return serial(parsed.deck, () => sendRows(parsed.deck))
+      return serial(parsed.deck, async () => {
+        const result = await sendRows(parsed.deck)
+        const aside = await takeAside(parsed.deck)
+        return aside === 0 ? result : { ...result, aside }
+      })
     },
     async openDeck(deck: string): Promise<OpenDeckResult> {
       const parsed = readDeckId(deck)

@@ -1,0 +1,15 @@
+# Checks on a lost answer to a person's command
+
+Same fields as [checks-document.md](checks-document.md). The replay drives the device queue on IndexedDB: `pnpm vitest run packages/live/src/lost-answer-replay.test.ts`.
+
+## lost-answer
+
+One slide command a person queued on one device, while answers are lost and the page reloads: the device's pending row, its mirror of the server's deck, the once the row is sealed with, and the server's answer to a once it already spent. The offline model is silent here: it has no mirror and no adopt, and its `Crash` ends the run.
+
+- `LandsOnce`: the command lands once however often it is sent. Harm if broken: a slide added twice.
+- `OneRow`: the mirror holds the command at most once, and once the pending row is gone it holds exactly what the server holds. Harm if broken: a reload after a lost answer leaves the device with the command twice, and every later edit is decided on a deck the server does not hold.
+- `OpenNeverFails`: the deck opens whatever the mirror and the pending rows hold, because `withSlides` skips a copy it cannot apply. Harm if broken: `person edit refused` on the next open and an empty editor on every open after it, with the server's copy whole. Today's code failed both properties: TLC finds `OpenNeverFails` broken after Send, Land, Lose, Adopt, and `OneRow` broken when the next answer adds a second copy.
+
+Bounds: one command, two reloads, one request of a closed page still on its way, one write by another writer. Run: `pnpm check:specs lost-answer`. Replay: `packages/live/src/lost-answer-replay.test.ts` drives every edge through `connect`'s `flush`, `open`, `openDeck` and `follow` on IndexedDB, with `memoryRemote` answering a spent once as `commitEdits` does, and opens the device copy in every state. Code: `sendBatches`, `asideRefused` and `adopt` in `packages/live/src/cache.ts`, `withSlides`, `landed` and `refusedRows` in `slide-replay.ts`, `sealRows`, `setAside` and `takeAside` in `held.ts`, `commitEdits` in `apps/api/src/saved.ts`. Leaves out: rows the server's copy refuses for another reason, such as a slide id another writer took or text on a slide another writer removed. `sendRows` sets those aside after reading the server's copy again, and `flush` returns their count once, so the editor says `Unable to save some edits`; `packages/live/src/lost-answer.test.ts` covers that, and the text, notes, table, box, picture and slide-move shapes of a lost answer. Two tabs of one browser that send the same sealed row at once are not modelled: an answer the second tab reads after the first adopted is dropped like any revision the mirror holds, and a second copy in the mirror is skipped by the view and replaced by the next adopt.
+
+Sync: the commit that added this spec, on `288ae3e0`.

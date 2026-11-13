@@ -9,6 +9,7 @@ import {
   ImagesScreen,
   Offline,
   RunFailed,
+  SetAside,
   ShapesExpandedScreen,
   ShapesScreen,
   TemplatePickerScreen,
@@ -36,4 +37,5 @@ export const screens = {
   [editorRoutes.textFormat]: TextFormatScreen,
   [editorRoutes.runFailed]: RunFailed,
   [editorRoutes.offline]: Offline,
+  [editorRoutes.setAside]: SetAside,
 }

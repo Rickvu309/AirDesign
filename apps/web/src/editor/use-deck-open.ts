@@ -1,5 +1,5 @@
 import { type Register } from "@airdesign/document"
-import { connect, flushOriginal } from "@airdesign/live"
+import { connect, flushOriginal, memoryRemote } from "@airdesign/live"
 import { useEffect } from "react"
 import { flushPending, server, type CommitOutcome } from "@/commit-edit"
 import { followDeck } from "@/deck-follow"
@@ -19,10 +19,11 @@ export type OpeningDeck = {
   readonly setPaintedDeck: (deck: string | undefined) => void
   readonly setRefused: (refused: boolean) => void
   readonly setFailure: (failure: "import-failed") => void
+  readonly aside: number
 }
 
 export function useDeckOpen(deck: OpeningDeck) {
-  const { id, shown, notesBar, settle, setTitle, setPaintedDeck, setRefused, setFailure } = deck
+  const { id, shown, notesBar, settle, setTitle, setPaintedDeck, setRefused, setFailure, aside } = deck
   const { store, shownParts, pictures, structure, repaint, setCurrent, showOpened, showRegister } = shown
 
   function openFrom(
@@ -118,6 +119,19 @@ export function useDeckOpen(deck: OpeningDeck) {
       leaving.abort()
     }
   }, [id, settle, setPaintedDeck, setRefused, setFailure])
+
+  useEffect(() => {
+    if (aside === 0) return
+    let live = true
+    void connect(memoryRemote())
+      .openDeck(id)
+      .then((next) => {
+        if (live && next.ok) reconcile(next.register)
+      })
+    return () => {
+      live = false
+    }
+  }, [aside, id])
 
   useEffect(
     () => () => {

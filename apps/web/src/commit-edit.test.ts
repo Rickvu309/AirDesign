@@ -52,6 +52,24 @@ it("reports an offline device when the flush cannot reach the network", async ()
   expect(outcome).toBe("offline")
 })
 
+it("reports edits set aside whether the rest of the flush landed or not", async () => {
+  for (const answer of [
+    { ok: true, deck: "any-deck", revision: 2, key: "any-deck:2", aside: 1 },
+    { ok: false, refusal: "dead", aside: 2 },
+  ]) {
+    const outcome = await commitEdit(
+      linkAnswering(() => Promise.resolve(answer)),
+      "any-deck",
+      "Hello!",
+      {
+        id: elementId("256.2"),
+        file: "Hello",
+      },
+    )
+    expect(outcome).toBe("set-aside")
+  }
+})
+
 it("reports a signed-out person when the flush is refused for the session", async () => {
   const outcome = await commitEdit(
     linkAnswering(() => Promise.resolve({ ok: false, refusal: "session" })),
