@@ -39,3 +39,23 @@ describe("bring your own agent card", () => {
     expect(html).toContain('href="/screens/s71-01-agents-connect-approve-claude"')
   })
 })
+
+describe("Starred", () => {
+  const withStars = (starred: { deck: string; name: string }[]) =>
+    renderToStaticMarkup(
+      <DecksShell active="recents" account={{ email: "person@example.com" }} onSignOut={() => {}} starred={starred}>
+        <p>content</p>
+      </DecksShell>,
+    )
+
+  it("lists a real account's starred decks as links that open them", () => {
+    const html = withStars([{ deck: "d1", name: "Board pack" }])
+    expect(html).toMatch(/<nav aria-labelledby="[^"]+"[^>]*>[^]*Starred/)
+    expect(html).toMatch(/<a href="\/deck\/d1"[^>]*>[^]*Board pack/)
+    expect(html).not.toContain("Star a deck to keep it here.")
+  })
+
+  it("asks a real account with no starred deck to star one", () => {
+    expect(withStars([])).toContain("Star a deck to keep it here.")
+  })
+})

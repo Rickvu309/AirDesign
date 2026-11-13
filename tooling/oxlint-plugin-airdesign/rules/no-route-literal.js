@@ -7,6 +7,7 @@ export const routePaths = [
   "/decks/media",
   "/decks/media/upload",
   "/decks/rename",
+  "/decks/star",
   "/decks/trash",
   "/decks/restore",
   "/decks/delete",

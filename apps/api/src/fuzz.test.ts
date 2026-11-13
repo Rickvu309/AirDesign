@@ -8,6 +8,7 @@ import { fuzzGood, fuzzAira } from "./aira-fuzz.js"
 import { attacks, hostileEscapes, hostileValues, indexFuzzGood, leaks, type Attack } from "./fuzz-attack.js"
 import { badTargets } from "./fuzz-target.js"
 import { storageFuzzGood } from "./storage-fuzz.js"
+import { deckListFuzzGood } from "./deck-list-fuzz.js"
 import { ask, askForm, signInByCode, postgresInfo, serve, testResource } from "./harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
 import { serveMcp } from "./mcp.js"
@@ -359,11 +360,7 @@ describe("hostile input over every route", () => {
         },
       ],
       "POST /decks/watch": [{ shape: "json", answers: 200, says: '"ok":true', fields: { deck, cursor: null } }],
-      "POST /decks/list": [{ shape: "json", answers: 200, says: '"ok":true', fields: {} }],
-      "POST /decks/rename": [{ shape: "json", answers: 200, says: '"ok":true', fields: { deck, name: "n" } }],
-      "POST /decks/trash": [{ shape: "json", answers: 200, says: '"ok":true', fields: { deck } }],
-      "POST /decks/restore": [{ shape: "json", answers: 200, says: '"ok":true', fields: { deck } }],
-      "POST /decks/delete": [{ shape: "json", answers: 200, says: '"ok":true', fields: { decks: ["fuzzmissing"] } }],
+      ...deckListFuzzGood(deck),
       ...storageFuzzGood(deck),
     }
   })

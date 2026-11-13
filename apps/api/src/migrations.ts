@@ -266,4 +266,10 @@ $$;
 alter table session.account add column device text not null unique default replace(gen_random_uuid()::text, '-', '');
 `,
   },
+  {
+    id: 11,
+    sql: `
+alter table deck.saved add column starred boolean not null default false;
+`,
+  },
 ]

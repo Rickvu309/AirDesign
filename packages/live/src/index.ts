@@ -2,7 +2,8 @@ export { connect, type FollowResult } from "./cache.js"
 export { fetchOriginal } from "./original.js"
 export { renameDeck } from "./deck-rename.js"
 export { flushMedia, keepMedia, readMedia } from "./media.js"
-export { flushOriginal, queueOriginal, sendQueuedNames, sendUnopened } from "./original-queue.js"
+export { flushOriginal, queueOriginal, sendQueued, sendUnopened } from "./original-queue.js"
+export { starDeck } from "./deck-star.js"
 export { getPart, getParts, putPart, putParts } from "./part.js"
 export {
   httpRemote,

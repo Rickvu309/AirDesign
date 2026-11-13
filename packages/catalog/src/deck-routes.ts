@@ -10,6 +10,7 @@ import {
   readOriginalUpload,
   readRename,
   readRun,
+  readStar,
   readWatch,
   type DeckId,
 } from "./wire.js"
@@ -88,7 +89,13 @@ function commitAnswer(raw: unknown): raw is RevisionAnswer & { readonly key: str
   return revisionAnswer(raw) && raw.key === `${raw.deck}:${raw.revision}`
 }
 
-type Listed = { readonly deck: DeckId; readonly name: string; readonly edited: string; readonly created: string }
+type Listed = {
+  readonly deck: DeckId
+  readonly name: string
+  readonly edited: string
+  readonly created: string
+  readonly starred?: boolean
+}
 type ListedTrash = Listed & { readonly trashed: string }
 
 function listed(raw: unknown): raw is Listed & Record<string, unknown> {
@@ -97,7 +104,8 @@ function listed(raw: unknown): raw is Listed & Record<string, unknown> {
     readCapture({ deck: raw.deck }).ok &&
     typeof raw.name === "string" &&
     typeof raw.edited === "string" &&
-    typeof raw.created === "string"
+    typeof raw.created === "string" &&
+    (raw.starred === undefined || typeof raw.starred === "boolean")
   )
 }
 
@@ -127,6 +135,10 @@ function deckAnswer(raw: unknown): raw is { readonly deck: DeckId } & Record<str
 
 function renameAnswer(raw: unknown): raw is { readonly deck: DeckId; readonly name: string } {
   return deckAnswer(raw) && typeof raw.name === "string"
+}
+
+function starAnswer(raw: unknown): raw is { readonly deck: DeckId; readonly starred: boolean } {
+  return deckAnswer(raw) && typeof raw.starred === "boolean"
 }
 
 function trashAnswer(raw: unknown): raw is { readonly deck: DeckId; readonly trashed: string } {
@@ -169,6 +181,7 @@ export const deckRoutes = {
   watch: { path: "/decks/watch", read: readWatch, result: decode(revisionAnswer) },
   list: { path: "/decks/list", read: readNoFields, result: decode(listAnswer) },
   rename: { path: "/decks/rename", read: readRename, result: decode(renameAnswer) },
+  star: { path: "/decks/star", read: readStar, result: decode(starAnswer) },
   trash: { path: "/decks/trash", read: readCapture, result: decode(trashAnswer) },
   restore: { path: "/decks/restore", read: readCapture, result: decode(deckAnswer) },
   delete: { path: "/decks/delete", read: readDecks, result: decode(deleteAnswer) },

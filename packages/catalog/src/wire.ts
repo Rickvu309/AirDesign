@@ -240,6 +240,17 @@ export function readRename(raw: unknown): { ok: true; deck: DeckId; name: string
   return { ok: true, deck: deck.deck, name }
 }
 
+export function readStar(raw: unknown): { ok: true; deck: DeckId; starred: boolean } | FieldRefusal | DeckRefusal {
+  const body = recordOf(raw)
+  if (body === undefined || !knownKeys(body, ["deck", "starred"]) || typeof body.starred !== "boolean") {
+    return fieldRefusal
+  }
+  if (!Object.hasOwn(body, "deck")) return fieldRefusal
+  const deck = readDeckId(body.deck)
+  if (!deck.ok) return deckRefusal
+  return { ok: true, deck: deck.deck, starred: body.starred }
+}
+
 export function readDecks(raw: unknown): { ok: true; decks: readonly DeckId[] } | FieldRefusal | DeckRefusal {
   const body = recordOf(raw)
   if (body === undefined || !knownKeys(body, ["decks"]) || !Array.isArray(body.decks)) return fieldRefusal

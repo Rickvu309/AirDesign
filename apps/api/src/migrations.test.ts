@@ -241,6 +241,7 @@ describe("database migrations", () => {
         original_until: null,
         deleted: null,
         import_index: null,
+        starred: false,
       },
     ])
     const deck = await open(roleUrl("deck", database))
@@ -266,7 +267,12 @@ describe("database migrations", () => {
     expect(await applySchema(migrator)).toEqual({ applied: latest - 2, at: latest })
     const after = await migrator.query("select * from deck.saved order by id")
     expect(after.rows).toEqual(
-      before.rows.map((row: Record<string, unknown>) => ({ ...row, deleted: null, import_index: null })),
+      before.rows.map((row: Record<string, unknown>) => ({
+        ...row,
+        deleted: null,
+        import_index: null,
+        starred: false,
+      })),
     )
     expect((await migrator.query("select * from deck.once")).rows).toEqual(onceBefore.rows)
     const deck = await open(roleUrl("deck", database))

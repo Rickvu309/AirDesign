@@ -38,5 +38,9 @@
   {
     "id": 10,
     "sha256": "4f1ecb3eb354cbcc370abd81e8438197456fcd565d2f33d7c4ac07a7d5af8a9b"
+  },
+  {
+    "id": 11,
+    "sha256": "ec9c964559110656bd7117408982bc6217fc49cb81463a62683d1e6e50d87bdd"
   }
 ]

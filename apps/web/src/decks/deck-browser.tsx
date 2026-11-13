@@ -19,6 +19,7 @@ export function DeckBrowser({
   onNavigate,
   menuOpen,
   search,
+  starred,
 }: {
   title: string
   active: DeckSection
@@ -35,6 +36,7 @@ export function DeckBrowser({
   onNavigate?: (path: string) => void
   menuOpen?: boolean
   search?: { value: string; onChange: (value: string) => void }
+  starred?: readonly { readonly deck: string; readonly name: string }[]
 }) {
   return (
     <div className="screen-frame reflow-frame">
@@ -46,6 +48,7 @@ export function DeckBrowser({
           onSignOut={onSignOut}
           onNavigate={onNavigate}
           search={search}
+          starred={starred}
         >
           <BrowseHeader
             title={title}

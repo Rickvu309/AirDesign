@@ -1,5 +1,6 @@
 import { connect } from "./cache.js"
 import { flushRename, queuedName, queueRename } from "./deck-rename.js"
+import { flushStar, queuedStar } from "./deck-star.js"
 import { flushMedia } from "./media.js"
 import { sendOriginal } from "./original.js"
 import { getParts } from "./part.js"
@@ -43,12 +44,12 @@ export async function queueOriginal(deck: string, now: () => number = Date.now):
 }
 
 export async function flushOriginal(deck: string): Promise<{ readonly ok: boolean }> {
-  const original = await sendQueued(deck)
+  const original = await sendHeldOriginal(deck)
   const media = await flushMedia(deck)
   return { ok: original.ok && media.ok }
 }
 
-async function sendQueued(deck: string): Promise<{ readonly ok: boolean }> {
+async function sendHeldOriginal(deck: string): Promise<{ readonly ok: boolean }> {
   const renamed = await flushRename(deck)
   try {
     if ((await readSlot(key(deck))) !== true) return { ok: true }
@@ -63,11 +64,18 @@ async function sendQueued(deck: string): Promise<{ readonly ok: boolean }> {
   }
 }
 
-export async function sendQueuedNames(decks: readonly string[]): Promise<ReadonlyMap<string, string>> {
-  const names = await Promise.all(decks.map(async (deck) => [deck, await queuedName(deck)] as const))
-  const queued = new Map(names.filter((entry): entry is readonly [string, string] => entry[1] !== undefined))
-  for (const deck of queued.keys()) void flushOriginal(deck)
-  return queued
+type Queued = { readonly names: ReadonlyMap<string, string>; readonly stars: ReadonlyMap<string, boolean> }
+
+function held<Value>(entries: readonly (readonly [string, Value | undefined])[]): Map<string, Value> {
+  return new Map(entries.filter((entry): entry is readonly [string, Value] => entry[1] !== undefined))
+}
+
+export async function sendQueued(decks: readonly string[]): Promise<Queued> {
+  const names = held(await Promise.all(decks.map(async (deck) => [deck, await queuedName(deck)] as const)))
+  const stars = held(await Promise.all(decks.map(async (deck) => [deck, await queuedStar(deck)] as const)))
+  for (const deck of names.keys()) void flushOriginal(deck)
+  for (const deck of stars.keys()) void flushStar(deck)
+  return { names, stars }
 }
 
 async function sendOpen(remote: Remote, deck: string): Promise<void> {
