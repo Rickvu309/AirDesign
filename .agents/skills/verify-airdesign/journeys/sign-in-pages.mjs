@@ -20,6 +20,9 @@ async function sitePages(kit, size, address) {
   const { page, siteOrigin, capture } = kit
   await page.setViewportSize(size)
   await page.goto(`${siteOrigin}/sign-in`)
+  await page.evaluate(() => sessionStorage.clear())
+  await page.reload()
+  await expect(page.getByLabel("Email")).toHaveValue("")
   await expect(page.getByRole("heading", { name: "Sign in or create an account" })).toBeVisible()
   if (narrow) await capture("sign-in-empty-phone")
   else await capture("sign-in-empty")
