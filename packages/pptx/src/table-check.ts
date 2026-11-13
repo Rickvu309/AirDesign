@@ -1,4 +1,5 @@
 import { markupDocument, type MarkupElement } from "./element-span.js"
+import { partCopies } from "./owned-parts.js"
 import { sameBytes } from "./package-bytes.js"
 import { within } from "./part-markup.js"
 import { markupChildren } from "./text-value-route.js"
@@ -55,11 +56,13 @@ export function newTableBreaks(
   const changed = [...after].flatMap(([part, bytes]) =>
     slidePart.test(part) && !sameBytes(before.get(part) ?? new Uint8Array(), bytes) ? [part] : [],
   )
-  const old = tableShapes(before, changed)
+  const copies = partCopies(before, after)
+  const sources = changed.map((part) => copies.get(part) ?? part)
+  const old = tableShapes(before, sources)
   const breaks: TableBreak[] = []
   for (const [key, shape] of tableShapes(after, changed)) {
     const [part = "", id = ""] = key.split("\u0000")
-    const was = old.get(key)
+    const was = old.get(`${copies.get(part) ?? part}\u0000${id}`)
     if (!shape.cells && was?.cells !== false) breaks.push({ part, shape: id, reason: "cells" })
     if (shape.gap !== (was === undefined ? 0 : was.gap)) breaks.push({ part, shape: id, reason: "height" })
   }
