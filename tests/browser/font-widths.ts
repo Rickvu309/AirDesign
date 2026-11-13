@@ -30,9 +30,28 @@ export async function paintedFamilies(page: Page): Promise<readonly string[]> {
   })
 }
 
+const styles = [
+  { bold: false, italic: false },
+  { bold: true, italic: false },
+  { bold: false, italic: true },
+  { bold: true, italic: true },
+]
+
+function quotedName(family: string): string {
+  return (family.split(",")[0] ?? "").trim().replace(/^"|"$/g, "")
+}
+
 export async function measureFaces(page: Page, families: readonly string[], chars: string): Promise<FontWidths> {
+  const requests = families.flatMap((family) =>
+    styles.map(({ bold, italic }) => ({
+      family,
+      bold,
+      italic,
+      key: fontFace(quotedName(family), bold, italic),
+    })),
+  )
   return page.evaluate(
-    async ({ families, chars }) => {
+    async ({ requests, chars }) => {
       const glyphs = [...new Set([...chars])]
       const context = document.createElement("canvas").getContext("2d")
       if (context === null) throw new Error("no canvas")
@@ -40,42 +59,31 @@ export async function measureFaces(page: Page, families: readonly string[], char
         string,
         { ascent: number; descent: number; advances: Record<string, number>; kerning: Record<string, number> }
       > = {}
-      const styles = [
-        { bold: false, italic: false },
-        { bold: true, italic: false },
-        { bold: false, italic: true },
-        { bold: true, italic: true },
-      ]
-      for (const family of families) {
-        const name = (family.split(",")[0] ?? "").trim().replace(/^"|"$/g, "")
-        for (const { bold, italic } of styles) {
-          const font = `${italic ? "italic" : "normal"} ${bold ? 700 : 400} 1000px ${family}`
-          await document.fonts.load(font, glyphs.join(""))
-          context.font = font
-          context.textRendering = "geometricPrecision"
-          context.fontKerning = "normal"
-          const advances: Record<string, number> = {}
-          for (const glyph of glyphs) advances[glyph] = context.measureText(glyph).width / 1000
-          const kerning: Record<string, number> = {}
-          for (const left of glyphs)
-            for (const right of glyphs) {
-              const pair =
-                context.measureText(left + right).width / 1000 - (advances[left] ?? 0) - (advances[right] ?? 0)
-              if (Math.abs(pair) > 0.000001) kerning[left + right] = pair
-            }
-          const metrics = context.measureText("x")
-          const key = fontFace(name, bold, italic)
-          faces[key] = {
-            ascent: metrics.fontBoundingBoxAscent / 1000,
-            descent: metrics.fontBoundingBoxDescent / 1000,
-            advances,
-            kerning,
+      for (const { family, bold, italic, key } of requests) {
+        const font = `${italic ? "italic" : "normal"} ${bold ? 700 : 400} 1000px ${family}`
+        await document.fonts.load(font, glyphs.join(""))
+        context.font = font
+        context.textRendering = "geometricPrecision"
+        context.fontKerning = "normal"
+        const advances: Record<string, number> = {}
+        for (const glyph of glyphs) advances[glyph] = context.measureText(glyph).width / 1000
+        const kerning: Record<string, number> = {}
+        for (const left of glyphs)
+          for (const right of glyphs) {
+            const pair = context.measureText(left + right).width / 1000 - (advances[left] ?? 0) - (advances[right] ?? 0)
+            if (Math.abs(pair) > 0.000001) kerning[left + right] = pair
           }
+        const metrics = context.measureText("x")
+        faces[key] = {
+          ascent: metrics.fontBoundingBoxAscent / 1000,
+          descent: metrics.fontBoundingBoxDescent / 1000,
+          advances,
+          kerning,
         }
       }
       return faces
     },
-    { families: [...families], chars },
+    { requests, chars },
   )
 }
 
