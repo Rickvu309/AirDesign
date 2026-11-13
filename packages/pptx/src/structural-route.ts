@@ -8,6 +8,7 @@ import { addDrawnShape, addTextShape, type ShapeBox } from "./shape-write.js"
 import { addSlide, orderSlide, removeSlide } from "./slide-list-route.js"
 import { removeShape, type RouteResult } from "./slide-route.js"
 import { defaultTableStyle, type TableShape } from "./table-frame.js"
+import { addColumn, removeColumn } from "./table-column-route.js"
 import { addRow, addTable, orderRow, removeRow } from "./table-route.js"
 
 export type StructuralEdit =
@@ -32,6 +33,14 @@ export type StructuralEdit =
   | { readonly name: "tbl.addRow"; readonly part: string; readonly row: number }
   | { readonly name: "tbl.removeRow"; readonly part: string; readonly row: number }
   | { readonly name: "tbl.orderRow"; readonly part: string; readonly row: number; readonly before: number }
+  | {
+      readonly name: "tbl.addColumn"
+      readonly part: string
+      readonly shape: string
+      readonly column: number
+      readonly place: "before" | "after"
+    }
+  | { readonly name: "tbl.removeColumn"; readonly part: string; readonly shape: string; readonly column: number }
 
 export function writeStructuralRoute(parts: ReadonlyMap<string, Uint8Array>, route: StructuralEdit): RouteResult {
   const next = new Map(parts)
@@ -87,6 +96,12 @@ export function writeStructuralRoute(parts: ReadonlyMap<string, Uint8Array>, rou
       return { parts: next, id: null }
     case "tbl.orderRow":
       editPart(next, route.part, (bytes) => orderRow(bytes, route.row, route.before))
+      return { parts: next, id: null }
+    case "tbl.addColumn":
+      editPart(next, route.part, (bytes) => addColumn(bytes, route.shape, route.column, route.place))
+      return { parts: next, id: null }
+    case "tbl.removeColumn":
+      editPart(next, route.part, (bytes) => removeColumn(bytes, route.shape, route.column))
       return { parts: next, id: null }
     default: {
       const unexpected: never = route

@@ -1,6 +1,13 @@
 import type { MarkupElement } from "./element-span.js"
 import { sameBytes } from "./package-bytes.js"
 import { requireMarkup } from "./part-markup.js"
+import type { StructuralEdit } from "./structural-route.js"
+import { gridOf } from "./table-grid.js"
+
+export type TableEdit = Extract<
+  StructuralEdit,
+  { readonly name: "tbl.addRow" | "tbl.removeRow" | "tbl.orderRow" | "tbl.addColumn" | "tbl.removeColumn" }
+>
 
 function rowBytes(bytes: Uint8Array): Uint8Array[] {
   return requireMarkup(bytes)
@@ -32,7 +39,7 @@ function tableOf(elements: readonly MarkupElement[], row: MarkupElement): Markup
   return null
 }
 
-export function tableHost(
+function tableHost(
   parts: ReadonlyMap<string, Uint8Array>,
   names: readonly string[],
 ): { part: string; removable: number | null; swap: { row: number; before: number } | null } | null {
@@ -53,4 +60,45 @@ export function tableHost(
     return { part: name, removable: rowOfMultiRowTable(bytes), swap }
   }
   return null
+}
+
+function columnHost(
+  parts: ReadonlyMap<string, Uint8Array>,
+  names: readonly string[],
+): { part: string; shape: string; columns: number } | null {
+  for (const part of names) {
+    const bytes = parts.get(part)
+    if (bytes === undefined) continue
+    const frames = requireMarkup(bytes).elements.filter((element) => element.kind === "p:cNvPr" && element.id !== null)
+    for (const frame of frames) {
+      const shape = frame.id ?? ""
+      try {
+        const grid = gridOf(bytes, shape)
+        const widths = grid.widths.every((width) =>
+          /^\d+$/.test(width.attributes.find((item) => item.name === "w")?.value ?? ""),
+        )
+        if (!grid.merged && grid.columns >= 2 && widths) return { part, shape, columns: grid.columns }
+      } catch {
+        continue
+      }
+    }
+  }
+  return null
+}
+
+export function tableEdits(parts: ReadonlyMap<string, Uint8Array>, names: readonly string[]): readonly TableEdit[] {
+  const edits: TableEdit[] = []
+  const table = tableHost(parts, names)
+  if (table !== null) {
+    edits.push({ name: "tbl.addRow", part: table.part, row: 1 })
+    if (table.removable !== null) edits.push({ name: "tbl.removeRow", part: table.part, row: table.removable })
+    if (table.swap !== null)
+      edits.push({ name: "tbl.orderRow", part: table.part, row: table.swap.row, before: table.swap.before })
+  }
+  const grid = columnHost(parts, names)
+  if (grid !== null) {
+    edits.push({ name: "tbl.addColumn", part: grid.part, shape: grid.shape, column: 1, place: "after" })
+    edits.push({ name: "tbl.removeColumn", part: grid.part, shape: grid.shape, column: grid.columns })
+  }
+  return edits
 }

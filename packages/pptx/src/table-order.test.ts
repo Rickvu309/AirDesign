@@ -12,7 +12,28 @@ function fixture(name: string) {
   return readParts(readFileSync(`${process.cwd()}/scripts/pptx-fixtures/${name}`))
 }
 
-function tableAdded(original: ReadonlyMap<string, Uint8Array>) {
+type Change = Parameters<typeof changedTable>[1]
+
+const rowChanges: readonly Change[] = [
+  { change: "cell", row: 0, column: 0, text: "Region" },
+  { change: "cell", row: 0, column: 1, text: "Sales" },
+  { change: "row", row: 1, place: "below" },
+  { change: "remove-row", row: 3 },
+]
+
+const columnChanges: readonly Change[] = [
+  { change: "cell", row: 0, column: 0, text: "Region" },
+  { change: "cell", row: 0, column: 1, text: "Sales" },
+  { change: "cell", row: 0, column: 2, text: "Total" },
+  { change: "column", column: 1, place: "after" },
+  { change: "cell", row: 0, column: 2, text: "Growth" },
+  { change: "remove-column", column: 3 },
+  { change: "column", column: 0, place: "before" },
+  { change: "cell", row: 1, column: 0, text: "North" },
+  { change: "row", row: 1, place: "below" },
+]
+
+function tableAdded(original: ReadonlyMap<string, Uint8Array>, changes: readonly Change[] = rowChanges) {
   const shape = String(freeShapeId(original, part))
   const element = {
     node: elementId(`256.${shape}`),
@@ -22,12 +43,6 @@ function tableAdded(original: ReadonlyMap<string, Uint8Array>) {
     grouped: false,
   }
   const added = orderedParts(original, { file: [id], order: [{ slide: "element-add", id, element }] })
-  const changes: Parameters<typeof changedTable>[1][] = [
-    { change: "cell", row: 0, column: 0, text: "Region" },
-    { change: "cell", row: 0, column: 1, text: "Sales" },
-    { change: "row", row: 1, place: "below" },
-    { change: "remove-row", row: 3 },
-  ]
   const value = changes.reduce<TableValue>(
     (table, change) => changedTable(table, change) ?? table,
     readTable(added, part, shape)!,
@@ -58,4 +73,26 @@ it("adds a table under its own id with a frame as tall as its rows, changing onl
 it("writes the same slide part the validator judges in the table-added case", async () => {
   const { written } = tableAdded(await fixture("blank.pptx"))
   expect(written.get(part)).toEqual((await fixture("table-added.pptx")).get(part))
+})
+
+it("adds and deletes columns of a new table, widening the frame by each column's width", async () => {
+  const original = await fixture("blank.pptx")
+  const { shape, written } = tableAdded(original, columnChanges)
+  const table = readTable(written, part, shape)!
+  expect(
+    table.rows.map((row) => row.cells.map((cell) => cell.flatMap((each) => each.runs.map((run) => run.text)).join(""))),
+  ).toEqual([
+    ["", "Region", "Sales", "Growth"],
+    ["North", "", "", ""],
+    ["", "", "", ""],
+    ["", "", "", ""],
+  ])
+  expect(readShapes(written).find((each) => each.shape === shape)?.box).toMatchObject({ cx: 9753600, cy: 1483360 })
+  expect(newTableBreaks(original, written)).toEqual([])
+  for (const [name, bytes] of original) if (name !== part) expect(written.get(name)).toBe(bytes)
+})
+
+it("writes the same slide part the validator judges in the table-columns case", async () => {
+  const { written } = tableAdded(await fixture("blank.pptx"), columnChanges)
+  expect(written.get(part)).toEqual((await fixture("table-columns.pptx")).get(part))
 })

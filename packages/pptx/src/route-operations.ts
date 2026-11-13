@@ -24,6 +24,8 @@ export const routeOperations = [
   "tbl.addRow",
   "tbl.removeRow",
   "tbl.orderRow",
+  "tbl.addColumn",
+  "tbl.removeColumn",
   "element.export",
 ] as const
 
@@ -56,5 +58,7 @@ export const routeName: Record<(typeof routeOperations)[number], string> = {
   "tbl.addRow": writtenRoutes.addRow,
   "tbl.removeRow": writtenRoutes.removeRow,
   "tbl.orderRow": writtenRoutes.orderRow,
+  "tbl.addColumn": writtenRoutes.columns,
+  "tbl.removeColumn": writtenRoutes.columns,
   "element.export": "element.export",
 }

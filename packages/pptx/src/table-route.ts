@@ -31,18 +31,23 @@ function heightOf(row: MarkupElement): number {
   return height
 }
 
-function frameHeight(elements: readonly MarkupElement[], table: MarkupElement, change: number): ByteEdit[] {
+export function frameGrowth(
+  elements: readonly MarkupElement[],
+  table: MarkupElement,
+  side: "cx" | "cy",
+  change: number,
+): ByteEdit[] {
   const frame = ancestor(elements, table, "p:graphicFrame")
   if (frame === null) return []
   const ext = elements.find(
     (element) =>
       element.kind === "a:ext" && elements[element.parent]?.kind === "p:xfrm" && within(elements, element, frame),
   )
-  const cy = ext?.attributes.find((item) => item.name === "cy")
-  if (cy === undefined) return []
-  const height = /^\d+$/.test(cy.value) ? Number(cy.value) + change : NaN
-  if (!Number.isSafeInteger(height) || height < 0) throw new Error("p:xfrm")
-  return [{ start: cy.valueStart, end: cy.valueEnd, next: encodeUtf8(String(height)) }]
+  const size = ext?.attributes.find((item) => item.name === side)
+  if (size === undefined) return []
+  const grown = /^\d+$/.test(size.value) ? Number(size.value) + change : NaN
+  if (!Number.isSafeInteger(grown) || grown < 0) throw new Error("p:xfrm")
+  return [{ start: size.valueStart, end: size.valueEnd, next: encodeUtf8(String(grown)) }]
 }
 
 function endingFrom(bytes: Uint8Array, format: MarkupElement): string {
@@ -51,8 +56,36 @@ function endingFrom(bytes: Uint8Array, format: MarkupElement): string {
   return `<a:endParaRPr${opening}${decodeUtf8(bytes.slice(format.openEnd, format.closeStart))}</a:endParaRPr>`
 }
 
-function emptiedCells(bytes: Uint8Array, elements: readonly MarkupElement[], row: MarkupElement): Uint8Array {
-  const edits: ByteEdit[] = []
+const idLimit = 4294967295
+
+export function freshId(
+  elements: readonly MarkupElement[],
+  holder: MarkupElement,
+  kind: "a16:rowId" | "a16:colId",
+): ByteEdit[] {
+  const value = (element: MarkupElement) => element.attributes.find((item) => item.name === "val")
+  const own = elements.find((element) => element.kind === kind && within(elements, element, holder))
+  const val = own === undefined ? undefined : value(own)
+  if (val === undefined) return []
+  const used = new Set(
+    elements.flatMap((element) => {
+      const each = element.kind === kind ? (value(element)?.value ?? "") : ""
+      return /^\d+$/.test(each) ? [Number(each)] : []
+    }),
+  )
+  const highest = Math.max(-1, ...used)
+  let next = highest < idLimit ? highest + 1 : 0
+  while (used.has(next)) next += 1
+  return [{ start: val.valueStart - holder.start, end: val.valueEnd - holder.start, next: encodeUtf8(String(next)) }]
+}
+
+export function emptiedCells(
+  bytes: Uint8Array,
+  elements: readonly MarkupElement[],
+  row: MarkupElement,
+  extra: readonly ByteEdit[] = [],
+): Uint8Array {
+  const edits: ByteEdit[] = [...extra]
   const inside = elements.filter((element) => within(elements, element, row))
   for (const body of inside.filter((element) => element.kind === "a:txBody" && !element.selfClosing)) {
     const paragraphs = inside.filter((element) => element.kind === "a:p" && element.parent === body.index)
@@ -101,10 +134,14 @@ export function addTable(bytes: Uint8Array, shape: TableShape & { readonly id?: 
 export function addRow(bytes: Uint8Array, row: number): Uint8Array {
   const { elements } = requireMarkup(bytes)
   const found = rowAt(elements, row)
-  const grown = frameHeight(elements, tableOf(elements, found), heightOf(found))
+  const grown = frameGrowth(elements, tableOf(elements, found), "cy", heightOf(found))
   return spliceBytes(bytes, [
     ...grown,
-    { start: found.end, end: found.end, next: emptiedCells(bytes, elements, found) },
+    {
+      start: found.end,
+      end: found.end,
+      next: emptiedCells(bytes, elements, found, freshId(elements, found, "a16:rowId")),
+    },
   ])
 }
 
@@ -114,7 +151,7 @@ export function removeRow(bytes: Uint8Array, row: number): Uint8Array {
   const table = tableOf(elements, found)
   const count = elements.filter((element) => element.kind === "a:tr" && within(elements, element, table)).length
   if (count < 2) throw new Error("a:tr")
-  const shrunk = frameHeight(elements, table, -heightOf(found))
+  const shrunk = frameGrowth(elements, table, "cy", -heightOf(found))
   return spliceBytes(bytes, [...shrunk, { start: found.start, end: found.end, next: emptyBytes }])
 }
 

@@ -15,7 +15,7 @@ import { routeName, routeOperations } from "./route-operations.js"
 import { notesRuns } from "./notes-runs.js"
 import { probedValue } from "./text-probe.js"
 import { formatRuns } from "./text-format-runs.js"
-import { tableHost } from "./route-table-host.js"
+import { tableEdits } from "./route-table-host.js"
 export { routeOperations } from "./route-operations.js"
 
 export type RouteRun = {
@@ -134,6 +134,8 @@ export function partTouch(parts: ReadonlyMap<string, Uint8Array>, route: SlideRo
     case "tbl.addRow":
     case "tbl.removeRow":
     case "tbl.orderRow":
+    case "tbl.addColumn":
+    case "tbl.removeColumn":
       return slideTouch(route.part)
     case "sldIdLst.order":
     case "sectionLst.add":
@@ -586,38 +588,9 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
       })),
     )
   }
-  const table = tableHost(parts, slideNames(parts))
-  if (table !== null) {
-    const added = { name: "tbl.addRow", part: table.part, row: 1 } as const
+  for (const edit of tableEdits(parts, slideNames(parts)))
     runs.push(
-      attempt("tbl.addRow", added, () => ({
-        touch: partTouch(parts, added),
-        parts: applyStructuralRoute(parts, added),
-      })),
+      attempt(edit.name, edit, () => ({ touch: partTouch(parts, edit), parts: applyStructuralRoute(parts, edit) })),
     )
-    if (table.removable !== null) {
-      const removed = { name: "tbl.removeRow", part: table.part, row: table.removable } as const
-      runs.push(
-        attempt("tbl.removeRow", removed, () => ({
-          touch: partTouch(parts, removed),
-          parts: applyStructuralRoute(parts, removed),
-        })),
-      )
-    }
-    if (table.swap !== null) {
-      const ordered = {
-        name: "tbl.orderRow",
-        part: table.part,
-        row: table.swap.row,
-        before: table.swap.before,
-      } as const
-      runs.push(
-        attempt("tbl.orderRow", ordered, () => ({
-          touch: partTouch(parts, ordered),
-          parts: applyStructuralRoute(parts, ordered),
-        })),
-      )
-    }
-  }
   return runs
 }

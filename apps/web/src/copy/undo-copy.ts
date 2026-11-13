@@ -14,6 +14,8 @@ export type UndoName =
   | "order"
   | "add-row"
   | "delete-row"
+  | "add-column"
+  | "delete-column"
 
 export const undoCopy = {
   undo: "Undo",
@@ -34,6 +36,8 @@ export const undoCopy = {
     order: "Undo slide order",
     "add-row": "Undo add row",
     "delete-row": "Undo delete row",
+    "add-column": "Undo add column",
+    "delete-column": "Undo delete column",
   },
   redoNamed: {
     text: "Redo text edit",
@@ -51,6 +55,8 @@ export const undoCopy = {
     order: "Redo slide order",
     "add-row": "Redo add row",
     "delete-row": "Redo delete row",
+    "add-column": "Redo add column",
+    "delete-column": "Redo delete column",
   },
   undoChanged: "Unable to undo. This changed after your edit, so it stays as it is.",
   redoChanged: "Unable to redo. This changed after your undo, so it stays as it is.",

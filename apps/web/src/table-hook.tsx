@@ -40,8 +40,12 @@ export function shownTable(register: Register | null, id: ElementId, file: strin
   return (register === null ? undefined : openingElement(register, id)?.value) ?? file
 }
 
-function editName(change: TableChange): UndoName {
-  return change.change === "cell" ? "text" : change.change === "row" ? "add-row" : "delete-row"
+const editNames: Readonly<Record<TableChange["change"], UndoName>> = {
+  cell: "text",
+  row: "add-row",
+  "remove-row": "delete-row",
+  column: "add-column",
+  "remove-column": "delete-column",
 }
 
 export type TableEdit = (value: string, name: UndoName) => Promise<CommitOutcome>
@@ -69,7 +73,7 @@ export function useTables(deck: TableDeck) {
         if (change.change !== "cell") showLatest()
         return
       }
-      void edit(value, editName(change)).then((outcome) => {
+      void edit(value, editNames[change.change]).then((outcome) => {
         window.clearTimeout(repaint.current)
         if (change.change !== "cell" || outcome === "refused") showLatest()
         else repaint.current = window.setTimeout(showLatest, typedRepaint)

@@ -21,14 +21,17 @@ const id = elementId("256.4")
 const empty = { gridSpan: 1, rowSpan: 1, hMerge: false, vMerge: false, fill: null, text: null }
 const borders = { left: null, right: null, top: null, bottom: null }
 
-function grid(rows: number): CanvasTable {
+function grid(rows: number, columns: number): CanvasTable {
   return {
-    columns: [100_000, 100_000],
-    rows: Array.from({ length: rows }, () => ({ height: 370_840, cells: [0, 1].map(() => ({ ...empty, borders })) })),
+    columns: Array.from({ length: columns }, () => 100_000),
+    rows: Array.from({ length: rows }, () => ({
+      height: 370_840,
+      cells: Array.from({ length: columns }, () => ({ ...empty, borders })),
+    })),
   }
 }
 
-function table(rows: number, overrides: Partial<CanvasElement> = {}): CanvasElement {
+function table(rows: number, overrides: Partial<CanvasElement> = {}, columns = 2): CanvasElement {
   return {
     key: `ppt/slides/slide1.xml#${id}`,
     id,
@@ -42,17 +45,33 @@ function table(rows: number, overrides: Partial<CanvasElement> = {}): CanvasElem
     line: null,
     outline: "box",
     text: null,
-    table: grid(rows),
+    table: grid(rows, columns),
     ...overrides,
   }
 }
 
-const bar: TableBar = ({ row, rows, change }) =>
+const bar: TableBar = ({ row, rows, column, columns, change }) => [
   createElement(
     "button",
-    { type: "button", disabled: rows < 2, onClick: () => change({ change: "remove-row", row }) },
+    { key: "row", type: "button", disabled: rows < 2, onClick: () => change({ change: "remove-row", row }) },
     `Delete row ${row + 1}`,
-  )
+  ),
+  createElement(
+    "button",
+    { key: "add", type: "button", onClick: () => change({ change: "column", column, place: "after" }) },
+    `Add column right of column ${column + 1}`,
+  ),
+  createElement(
+    "button",
+    {
+      key: "column",
+      type: "button",
+      disabled: columns < 2,
+      onClick: () => change({ change: "remove-column", column }),
+    },
+    `Delete column ${column + 1}`,
+  ),
+]
 
 async function mounted(entering: ElementId | null, overrides: Partial<CanvasElement> = {}) {
   const store = paintStore()
@@ -63,12 +82,17 @@ async function mounted(entering: ElementId | null, overrides: Partial<CanvasElem
   document.body.append(host)
   const root = createRoot(host)
   hosts.push({ host, root })
-  const draw = async (rows: number) =>
+  const draw = async (rows: number, columns = 2) =>
     act(async () => {
       root.render(
         createElement(SlideCanvas, {
           store,
-          slide: { width: 12_192_000, height: 6_858_000, background: null, elements: [table(rows, overrides)] },
+          slide: {
+            width: 12_192_000,
+            height: 6_858_000,
+            background: null,
+            elements: [table(rows, overrides, columns)],
+          },
           width: 800,
           entering: entering === null ? null : { id: entering },
           onEdit: () => undefined,
@@ -175,6 +199,25 @@ describe("SlideCanvas table", () => {
     const undo = new InputEvent("beforeinput", { bubbles: true, cancelable: true, inputType: "historyUndo" })
     typing.dispatchEvent(undo)
     expect(undo.defaultPrevented).toBe(true)
+  })
+
+  it("names the column being edited in the bar and puts the caret in the new or the next cell after a change", async () => {
+    const { host, changes, draw } = await mounted(null)
+    const document = host.ownerDocument
+    const button = (name: string) =>
+      [...host.querySelectorAll<HTMLButtonElement>("[data-table-bar] button")].find((each) => each.textContent === name)
+    await act(async () => cell(host, "1.1").focus())
+    await act(async () => button("Add column right of column 2")?.click())
+    expect(changes).toEqual([{ change: "column", column: 1, place: "after" }])
+    await draw(2, 3)
+    expect(document.activeElement).toBe(cell(host, "1.2"))
+    await act(async () => button("Delete column 3")?.click())
+    expect(changes.at(-1)).toEqual({ change: "remove-column", column: 2 })
+    await draw(2, 2)
+    expect(document.activeElement).toBe(cell(host, "1.1"))
+    await act(async () => button("Delete row 2")?.click())
+    await draw(1, 2)
+    expect(document.activeElement).toBe(cell(host, "0.1"))
   })
 
   it("paints a table the deck cannot edit with no text to type in", async () => {

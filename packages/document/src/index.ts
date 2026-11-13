@@ -78,6 +78,7 @@ export {
   changedTable,
   openingTable,
   readTableValue,
+  tableColumns,
   writeTableValue,
   type TableChange,
   type TableValue,

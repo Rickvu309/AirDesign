@@ -24,6 +24,7 @@ describe("writtenRoutes", () => {
       addRow: structure.row.create.route,
       removeRow: structure.row.remove.route,
       orderRow: structure.row.move.route,
+      columns: properties.table.columns.route,
     })
   })
 })
