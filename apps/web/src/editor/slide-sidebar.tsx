@@ -36,7 +36,7 @@ export type SlideStrip = {
   readonly sections?: readonly StripSection[]
   readonly current: number
   readonly onSelect: (index: number) => void
-  readonly onAdd?: (layoutPart?: string) => void
+  readonly onAdd?: (layoutPart?: string, after?: number) => void
   readonly layouts?: readonly LayoutChoice[]
   readonly onClone?: (index: number) => void
   readonly onRemove?: (index: number) => void
@@ -50,11 +50,13 @@ export function SlideSidebar({
   title,
   strip,
   onRename,
+  onGrid,
 }: {
   run: SidebarRun
   title: string
   strip?: SlideStrip
   onRename?: (name: string) => void
+  onGrid?: () => void
 }) {
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white" data-editor-sidebar>
@@ -65,7 +67,12 @@ export function SlideSidebar({
         </>
       ) : (
         <>
-          <SidebarHead title={title} gridOff homeHref="/" {...(onRename === undefined ? {} : { onRename })} />
+          <SidebarHead
+            title={title}
+            homeHref="/"
+            {...(onGrid === undefined ? { gridOff: true } : { onGrid })}
+            {...(onRename === undefined ? {} : { onRename })}
+          />
           <DeckStrip strip={strip} />
         </>
       )}

@@ -87,12 +87,14 @@ export function SidebarHead({
   title,
   trailing,
   gridOff = false,
+  onGrid,
   onRename,
   homeHref,
 }: {
   title: string
   trailing?: ReactNode
   gridOff?: boolean
+  onGrid?: () => void
   onRename?: (name: string) => void
   homeHref?: string
 }) {
@@ -120,6 +122,7 @@ export function SidebarHead({
           className="size-8 rounded-md text-quiet active:translate-y-0"
           aria-label="Grid"
           disabled={gridOff}
+          {...(onGrid === undefined ? {} : { onClick: onGrid, "aria-pressed": false })}
         >
           <EditorIcon name="grid" size={16} />
         </Button>
