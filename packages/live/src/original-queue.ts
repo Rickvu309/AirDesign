@@ -1,4 +1,4 @@
-import { flushRename, queueRename } from "./deck-rename.js"
+import { flushRename, queuedName, queueRename } from "./deck-rename.js"
 import { sendOriginal } from "./original.js"
 import { getParts } from "./part.js"
 import { readSlot, writeSlot } from "./store.js"
@@ -24,4 +24,11 @@ export async function flushOriginal(deck: string): Promise<{ readonly ok: boolea
   } catch {
     return { ok: false }
   }
+}
+
+export async function sendQueuedNames(decks: readonly string[]): Promise<ReadonlyMap<string, string>> {
+  const names = await Promise.all(decks.map(async (deck) => [deck, await queuedName(deck)] as const))
+  const queued = new Map(names.filter((entry): entry is readonly [string, string] => entry[1] !== undefined))
+  for (const deck of queued.keys()) void flushOriginal(deck)
+  return queued
 }

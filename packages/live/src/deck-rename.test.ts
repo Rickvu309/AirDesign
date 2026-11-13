@@ -2,7 +2,7 @@ import { deckRoutes } from "@airdesign/catalog"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { installIndexedDb, installParts } from "./browser-fixtures.js"
 import { flushOriginal } from "./original-queue.js"
-import { deleteDatabase, getParts, putParts, renameDeck } from "./index.js"
+import { deleteDatabase, getParts, putParts, renameDeck, sendQueuedNames } from "./index.js"
 
 beforeEach(async () => {
   installIndexedDb()
@@ -86,4 +86,16 @@ it("never has two renames of one deck in flight, so the newest name is the one t
   await Promise.all([renameDeck("blank-one", "First"), renameDeck("blank-one", "Second")])
   expect(most).toBe(1)
   expect(sent.at(-1)).toBe("Second")
+})
+
+it("names on Home a deck whose new name was cut off by leaving, and sends that name from Home", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("left")))
+  await renameDeck("blank-one", "Quick rename")
+  const sent: unknown[] = []
+  vi.stubGlobal("fetch", answering(sent))
+  const shown = await sendQueuedNames(["blank-one", "other-deck"])
+  expect([...shown]).toEqual([["blank-one", "Quick rename"]])
+  await expect.poll(() => sent).toEqual([{ deck: "blank-one", name: "Quick rename" }])
+  await expect.poll(async () => [...(await sendQueuedNames(["blank-one"]))]).toEqual([])
+  expect(sent).toHaveLength(1)
 })
