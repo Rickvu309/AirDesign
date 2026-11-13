@@ -6,4 +6,13 @@ export const slideListCopy = {
   deleted: (number: number) => `Deleted slide ${String(number)}. Press Control+Z to undo`,
   moved: (from: number, to: number) => `Moved slide ${String(from)} to position ${String(to)}`,
   sectionRange: (range: string) => `slides ${range}`,
+  actions: (number: number) => `Slide ${String(number)} actions`,
+  duplicate: "Duplicate",
+  delete: "Delete",
+  moveUp: "Move up",
+  moveDown: "Move down",
+  duplicateKey: "Ctrl+D",
+  deleteKey: "Delete",
+  moveUpKey: "Alt+Up",
+  moveDownKey: "Alt+Down",
 } as const
