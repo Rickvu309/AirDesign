@@ -43,4 +43,4 @@ Planted faults. Each old behaviour PR 427 fixed, the notes wait PR 418 added, an
 
 Without `NoUndoOnMissing` and `TurnLands`, the model with either wait removed passed the other properties (376 and 408 states, with the old notes queue): a missing record makes Ctrl+Z do nothing or say nothing changed, never land a wrong text, because `undoOf` lands only while the deck shows the entry's text.
 
-Sync: `3392d4bb67173028143baeea143ad7414ca770f7`.
+Sync: `38702d5476cfe6d3b2cbb3c859c0fba409616aa5`.
