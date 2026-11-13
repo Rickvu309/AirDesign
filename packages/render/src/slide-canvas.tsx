@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from "react"
 import type { Box, ElementId, TableChange } from "@airdesign/document"
 import { PaintedElement } from "./element-kind.js"
+import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.js"
 import { SelectionFrame } from "./selection-frame.js"
 import { slideBackground } from "./slide-background.js"
 import { canMove, canResize, enterElement, useMoves } from "./slide-moves.js"
@@ -52,6 +53,16 @@ export function SlideCanvas(props: {
   const surface = useRef<HTMLDivElement>(null)
   const entered = useRef<ElementId | null>(null)
   const entering = slide.elements.find((each) => each.id !== null && each.id === props.entering)
+  const named = useRef<{ frames: Named; part: string | null }>({ frames: new Map(), part: null })
+  const say = moving?.say
+  useLayoutEffect(() => {
+    const host = surface.current
+    if (host === null || say === undefined) return
+    const frames = namedFrames(host)
+    const said = changeSaid(named.current.frames, frames, named.current.part)
+    named.current = { frames, part: shownPart(frames, named.current.part) }
+    if (said !== null) say(said)
+  }, [slide, say])
   useLayoutEffect(() => {
     const host = surface.current
     if (entering?.id === undefined || entering.id === null || host === null || entered.current === entering.id) return
