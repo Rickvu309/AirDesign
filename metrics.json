@@ -6,6 +6,7 @@
   "export-verified": { "now": 31, "goal": 50 },
   "fault-detection": { "now": 10, "goal": 11 },
   "import-parse": { "now": 174, "goal": 100 },
+  "slides-repainted": { "goal": 1 },
   "eval-coverage": { "now": 48, "goal": 48 },
   "design-findings": { "now": 118, "goal": 0 },
   "ci-duration": { "limit": 40 },

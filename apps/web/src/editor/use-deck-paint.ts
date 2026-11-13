@@ -5,7 +5,7 @@ import { paintStore, type Entering } from "@airdesign/render"
 import { useRef, useState } from "react"
 import { type SlideCanvases } from "@/canvas-slide"
 import { type TextBox } from "@/commit-edit"
-import { paint } from "@/deck-paint"
+import { paint, type Painted } from "@/deck-paint"
 import { busyElements, liveRepaint } from "@/live-repaint"
 import { notesShown, type ShownNotes } from "@/notes-edit"
 import { type PictureSources } from "@/picture-fill"
@@ -29,6 +29,7 @@ export function useDeckPaint(
   const editParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
   const canvases = useRef<SlideCanvases>(() => null)
   const pictures = useRef<PictureSources | null>(null)
+  const painted = useRef<Painted | null>(null)
   const busy = useRef(busyElements())
   const structure = useRef("")
   const repaint = useRef<(register: Register, from?: "person") => void>(() => undefined)
@@ -42,33 +43,35 @@ export function useDeckPaint(
   function showOpened(parts: ReadonlyMap<string, Uint8Array>, register: Register | null) {
     shownParts.current = parts
     setLayouts(layoutChoices(parts))
-    showRegister(register)
+    showRegister(register, "whole")
     setCurrent(0)
   }
 
-  function showRegister(register: Register | null) {
-    const painted = paint(store.current, shownParts.current, register, busy.current, pictureTool.store.bytes)
-    boxes.current = painted.boxes
-    movables.current = painted.movables
-    shapes.current = painted.shapes
-    editParts.current = painted.base
-    canvases.current = painted.canvases
+  function showRegister(register: Register | null, whole?: "whole") {
+    const before = whole === "whole" ? null : painted.current
+    const next = paint(store.current, shownParts.current, register, busy.current, pictureTool.store.bytes, before)
+    painted.current = next
+    boxes.current = next.boxes
+    movables.current = next.movables
+    shapes.current = next.shapes
+    editParts.current = next.base
+    canvases.current = next.canvases
     pictures.current?.release()
-    pictures.current = painted.pictures
+    pictures.current = next.pictures
     structure.current = structureOf(register)
-    repaint.current = liveRepaint(store.current, painted.files, register, busy.current)
+    repaint.current = liveRepaint(store.current, next.files, register, busy.current)
     notesBar.show(notesShown(shownParts.current, register))
-    setSlideCount(painted.count)
-    setSections(painted.sections)
+    setSlideCount(next.count)
+    setSections(next.sections)
     void pictureTool.store.load(id, register).then((more) => {
       if (more && structure.current === structureOf(register)) showRegister(register)
     })
   }
 
-  async function showEdited(currentIndex: number) {
+  async function showEdited(currentIndex: number, whole?: "whole") {
     const next = await connect(memoryRemote()).openDeck(id)
     if (!next.ok) return
-    showRegister(next.register)
+    showRegister(next.register, whole)
     setCurrent(Math.max(0, Math.min(currentIndex, store.current.slides().length - 1)))
     setPending(true)
   }

@@ -16,7 +16,7 @@ export type TableDeck = {
   readonly shapes: RefObject<ReadonlyMap<ElementId, ReadShape>>
   readonly editParts: RefObject<Parts>
   readonly canvases: RefObject<(index: number) => CanvasSlide | null>
-  readonly showEdited: (index: number) => Promise<void>
+  readonly showEdited: (index: number, whole?: "whole") => Promise<void>
   readonly changeElement: (change: ElementChange) => Promise<void>
 }
 
@@ -55,8 +55,8 @@ export function useTables(deck: TableDeck) {
   const latest = useRef(deck)
   latest.current = deck
 
-  function showLatest() {
-    void latest.current.showEdited(latest.current.current)
+  function showLatest(whole?: "whole") {
+    void latest.current.showEdited(latest.current.current, whole)
   }
 
   return {
@@ -70,13 +70,14 @@ export function useTables(deck: TableDeck) {
       const shown = deck.store.current.getElement(id)?.text ?? null
       const value = shape === undefined ? null : tableValue(deck.editParts.current, shape, shown, change)
       if (value === null) {
-        if (change.change !== "cell") showLatest()
+        if (change.change !== "cell") showLatest("whole")
         return
       }
       void edit(value, editNames[change.change]).then((outcome) => {
         window.clearTimeout(repaint.current)
-        if (change.change !== "cell" || outcome === "refused") showLatest()
-        else repaint.current = window.setTimeout(showLatest, typedRepaint)
+        if (outcome === "refused") showLatest("whole")
+        else if (change.change !== "cell") showLatest()
+        else repaint.current = window.setTimeout(() => showLatest(), typedRepaint)
       })
     },
   }
