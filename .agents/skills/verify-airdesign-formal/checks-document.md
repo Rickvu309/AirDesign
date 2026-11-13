@@ -85,18 +85,6 @@ Bounds: two queued edits and one stale edit. Run: `pnpm check:specs offline`. Re
 
 Sync: `6be7cad84aa47f389c95207dc57fd5cab2b2fd21`.
 
-## person-undo
-
-A person's Undo and Redo of their own text edit, beside an agent run.
-
-- `UndoShowsBefore`: an undo or redo shows exactly the text it went back to.
-- `NeverCoversAgent`, `AgentRowStays`: a person's undo never lands over an agent row that shows, and only the run's own Undo hides that row. Harm: a person's Ctrl+Z erases Aira's work.
-- `DroppedIsTold`: an undo that changed nothing is always told.
-
-Bounds: up to four person rows, one agent row. Run: `pnpm check:specs person-undo`. Replay: `tests/person-undo-replay.ts` through `undoOf`, `redoOf` and `decide`. Code: `undoOf`, `redoOf` in `packages/document/src/person-undo.ts`, the stack in `apps/web/src/undo-list.ts`. Leaves out: box undo, slide undo (`slideUndoable`) and notes edits, which take the same path as text. The undo of an added or removed element, with another tab and an agent's run in between, is covered by element.
-
-Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
-
 ## element
 
 A text box, a table or a picture a person adds, types in and removes, the person's Undo and Redo of the add or the removal, another tab removing it or bringing it back in between, an agent's run that adds a text box or removes the element with the run's Undo, the picture's bytes reaching the server, and an export of the deck on another device.

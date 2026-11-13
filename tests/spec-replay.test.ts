@@ -34,7 +34,7 @@ import { group as offlineGroup, state as offlineState, step as offlineStep } fro
 import { group as runGroup, state as runState, step as runStep } from "../specs/run/view.mjs"
 import { group as structureGroup, state as structureState, step as structureStep } from "../specs/structure/view.mjs"
 import { group as undoGroup, state as undoState, step as undoStep } from "../specs/undo/view.mjs"
-import { group as usageGroup, state as usageState, step as usageStep } from "../specs/usage/view.mjs"
+import * as usageView from "../specs/usage/view.mjs"
 import { group as oauthGroup, state as oauthState, step as oauthStep } from "../specs/oauth/view.mjs"
 import { group as rerunGroup, state as rerunState, step as rerunStep } from "../specs/rerun/view.mjs"
 import * as turnView from "../specs/turn/view.mjs"
@@ -956,7 +956,7 @@ describe("spec replay", () => {
       .sort()
     expect(every.map((topic) => topic.name).sort()).toEqual(folders)
     for (const topic of every) expect(topic.view).toBe(true)
-    const elsewhere = ["aira-loop", "owner", "stop", "slide-run", "slide-sibling", "slide-undo"]
+    const elsewhere = ["aira-loop", "owner", "stop", "slide-run", "slide-sibling", "slide-undo", "typing"]
     const found = every.filter((topic) => !elsewhere.includes(topic.name))
     const failures: string[] = []
     const reports: Record<string, unknown> = {}
@@ -966,7 +966,7 @@ describe("spec replay", () => {
       structure: { state: structureState, step: structureStep, group: structureGroup },
       run: { state: runState, step: runStep, group: runGroup },
       offline: { state: offlineState, step: offlineStep, group: offlineGroup },
-      usage: { state: usageState, step: usageStep, group: usageGroup },
+      usage: usageView,
       oauth: { state: oauthState, step: oauthStep, group: oauthGroup },
       rerun: { state: rerunState, step: rerunStep, group: rerunGroup },
       turn: turnView,
