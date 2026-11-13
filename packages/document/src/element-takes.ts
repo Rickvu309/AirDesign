@@ -2,7 +2,7 @@ import type { Box } from "./box.js"
 import type { IndexElement } from "./deck-index.js"
 import type { Kind } from "./properties.js"
 
-export const elementEdits = ["text", "table", "move", "resize", "remove"] as const
+const elementEdits = ["text", "table", "move", "resize", "remove"] as const
 
 export type ElementEdit = (typeof elementEdits)[number]
 
