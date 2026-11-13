@@ -83,6 +83,7 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
         expect(words, node).toContain(`Element ${node} is ${kind}`)
         expect(words, node).toContain(next)
         expect(words, node).toContain("It takes")
+        expect(words, node).not.toMatch(/\bTo put words beside it with\b/)
       }
     })
     expect(held.deck.revision).toBe(0)
@@ -112,6 +113,20 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
       expect(words).toContain(`cx ${String(box.cx)} and cy ${String(box.cy)}`)
     })
     expect(held.deck.register.elements[elementId("256.2")]).toBeUndefined()
+  })
+
+  it("says a group cannot be deleted without telling the agent to edit text it does not have", async () => {
+    const held = session()
+    await withClient(held, async (client) => {
+      const refused = await client.callTool({
+        name: "airdesign_delete_element",
+        arguments: { deck: "deck", base: 0, node: "256.7" },
+      })
+      expect(refused.structuredContent).toMatchObject({ ok: false, refusal: "group-box" })
+      const words = said(refused)
+      expect(words).toContain("Element 256.7 is a group, and deleting a group is not supported yet. Leave it")
+      expect(words).not.toContain("Element 256.7 is inside a group")
+    })
   })
 
   it("lands what each kind can take: a move of a table, a picture or a chart", async () => {

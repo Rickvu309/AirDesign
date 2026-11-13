@@ -27,8 +27,10 @@ function addDetail(deck: Deck, slide: string): string {
 }
 
 function deleteDetail(deck: Deck, node: ElementId, code: EditCode): string | undefined {
+  if (code === "group-box" && openingElement(deck.register, node)?.kind === "group")
+    return `Element ${node} is a group, and deleting a group is not supported yet. Leave it, or tell the person.`
   if (code === "group-box")
-    return `Element ${node} is a group or inside a group, and deleting it is not supported. Edit its text instead.`
+    return `Element ${node} is inside a group, and deleting it is not supported. Edit its text instead.`
   if (code === "locked")
     return `Element ${node} has an animation. The exported PowerPoint file cannot lose it, so it stays.`
   if (code === "kind") {

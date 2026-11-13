@@ -58,7 +58,7 @@ function textNext(node: ElementId, { facts }: Missing): string {
   if (facts.kind === "chart") return `No tool edits a chart's data yet. Tell the person, or ${beside}.`
   if (facts.kind === "table") return `No agent tool edits a table's cells yet. Tell the person, or ${beside}.`
   if (facts.kind === "kept") return "Leave it, or tell the person."
-  return `To ${beside}.`
+  return `To put words beside it, call airdesign_add_text_box on slide ${shapeOf(node).slide}.`
 }
 
 function boxNext({ facts, box }: Missing): string {
