@@ -147,13 +147,14 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
       <div />
     ) : (
       <ArrangeMenu
-        className={cn(slideFrame, "block shrink-0 overflow-clip focus-within:overflow-visible")}
+        className={cn(slideFrame, "block shrink-0")}
         parts={editParts.current}
         slide={canvas}
         onOrder={orderElement}
       >
         {({ notice, order, clear }) => (
           <SlideCanvas
+            className="overflow-clip rounded-[2px] focus-within:overflow-visible"
             entering={entering}
             formatting={formatting.current}
             notice={notice}
