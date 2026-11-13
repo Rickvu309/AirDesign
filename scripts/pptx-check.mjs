@@ -53,7 +53,7 @@ import { storedZip } from "./stored-zip.mjs"
 import { browserEnv } from "../.agents/skills/verify-airdesign/bin/browser.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
-await takeMachineLock()
+await takeMachineLock({ job: "pptx" })
 const checkStarted = Date.now()
 const phases = phaseClock()
 const dotnet = process.env.PPTX_DOTNET ?? "dotnet"

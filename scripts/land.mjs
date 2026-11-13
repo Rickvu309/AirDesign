@@ -234,7 +234,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
     gh: runner("gh", root),
     check: () => tee("pnpm", ["check"], process.env, root),
     rerun: async (file) => {
-      const release = await takeMachineLock({ say: console.error })
+      const release = await takeMachineLock({ job: "rerun", say: console.error })
       try {
         return await tee(testStep[1], [...testStep[2], file], { ...process.env, ...testStep[3] }, root)
       } finally {
