@@ -8,7 +8,7 @@ import { commitElement, type ElementChange } from "@/element-edit"
 import { commitPicture, type PictureFile } from "@/picture-add"
 import type { PictureStore } from "@/picture-tool"
 import type { UndoEntry } from "@/undo-list"
-import { elementNames } from "@/undo-names"
+import { elementNames, stackNames } from "@/undo-names"
 
 export type InsertingDeck = {
   readonly id: string
@@ -30,22 +30,18 @@ export function deckInserts(deck: InsertingDeck) {
     }
   }
 
-  async function changeElement(change: ElementChange) {
-    const keys = change.change === "remove" ? undefined : holdKeys(document)
+  async function changeElement(change: ElementChange): Promise<CommitOutcome | "closed"> {
+    const keys = change.change === "remove" || change.change === "order" ? undefined : holdKeys(document)
     const opened = await connect(memoryRemote()).openDeck(id)
     if (!opened.ok) {
       keys?.stop()
-      return
+      return "closed"
     }
-    const outcome = await commitElement(
-      id,
-      shownParts.current,
-      opened.register,
-      change,
-      recordAdded(elementNames[change.change], keys),
-    )
+    const name = change.change === "order" ? stackNames[change.move] : elementNames[change.change]
+    const outcome = await commitElement(id, shownParts.current, opened.register, change, recordAdded(name, keys))
     if (outcome === "refused") keys?.stop()
     settle(outcome)
+    return outcome
   }
 
   function addText() {

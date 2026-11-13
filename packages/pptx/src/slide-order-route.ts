@@ -1,10 +1,12 @@
 import {
   elementCommand,
+  elementStacks,
   foldSections,
   foldSlides,
   presentSlides,
   readTableValue,
   shapeOf,
+  type DeckIndex,
   type ElementCommand,
   type Geometry,
   type IndexElement,
@@ -21,6 +23,7 @@ import { readSections } from "./section-read.js"
 import { writeSectionSlides } from "./section-write.js"
 import { addPicture } from "./picture-write.js"
 import { layoutPart, withLayoutPlaceholders } from "./slide-placeholders.js"
+import { arrangeSlide, stacksOf } from "./element-stack-route.js"
 import { applyRoute } from "./slide-route.js"
 import { applyStructuralRoute } from "./structural-route.js"
 
@@ -60,6 +63,7 @@ type Shown = {
 type Pending = Map<SlideId, Map<string, Shown>>
 
 function pendingAfter(pending: Pending, command: ElementCommand): void {
+  if (command.slide === "element-order") return
   const shapes = pending.get(command.id) ?? new Map<string, Shown>()
   pending.set(command.id, shapes)
   if (command.slide === "element-add") {
@@ -168,7 +172,7 @@ const noMedia: MediaBytes = () => undefined
 
 export function orderedParts(
   parts: ReadonlyMap<string, Uint8Array>,
-  state: SlideState,
+  state: SlideState & { readonly index?: DeckIndex },
   media: MediaBytes = noMedia,
 ): ReadonlyMap<string, Uint8Array> {
   if (state.order.length === 0) return parts
@@ -176,7 +180,7 @@ export function orderedParts(
   const kept = needed(state)
   const pending: Pending = new Map()
   let next: ReadonlyMap<string, Uint8Array> = parts
-  for (const command of state.order) {
+  for (const [at, command] of state.order.entries()) {
     if (!kept.has(command.id)) continue
     if (elementCommand(command)) {
       pendingAfter(pending, command)
@@ -196,12 +200,30 @@ export function orderedParts(
     minted.set(command.id, id)
     if (command.slide === "clone") {
       next = elementsShown(next, id, pending.get(command.source), media)
+      const prefix = {
+        file: state.file,
+        order: state.order.slice(0, at + 1),
+        ...(state.index === undefined ? {} : { index: state.index }),
+      }
+      next = arrangeSlide(next, id, stacksOf(prefix, command.source))
       continue
     }
     const born = slidePart(next, id)
     if (born !== null && layout !== null) next = withLayoutPlaceholders(next, born, layout)
   }
   for (const [slide, shapes] of pending) next = elementsShown(next, minted.get(slide) ?? "", shapes, media)
+  if (state.order.some((command) => command.slide === "element-order")) {
+    const stacks = elementStacks(state)
+    for (const spot of presentSlides(state)) {
+      const id = minted.get(spot.id)
+      if (id === undefined) continue
+      next = arrangeSlide(
+        next,
+        id,
+        stacks.filter((stack) => stack.slide === spot.id),
+      )
+    }
+  }
   for (const spot of foldSlides(state)) {
     if (spot.present) continue
     const id = minted.get(spot.id)

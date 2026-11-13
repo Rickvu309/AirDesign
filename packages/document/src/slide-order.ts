@@ -1,6 +1,7 @@
 import type { DeckIndex, IndexElement } from "./deck-index.js"
 import { readSlideId, slideId, type SlideId } from "./element-id.js"
 import { elementCommand, elementRefusal, readElementCommand, type ElementCommand } from "./element-order.js"
+import { readElementOrder, stackRefusal } from "./element-stack.js"
 import { limits } from "./limits.js"
 import { orderKeyBetween, readOrderKey, type OrderKey } from "./order-key.js"
 import { readFloor } from "./slide-floor.js"
@@ -182,7 +183,8 @@ export function applySlide(
   const ids = new Set(present.map((spot) => spot.id))
   if (elementCommand(command)) {
     if (!ids.has(command.id)) return { ok: false, code: "dead" }
-    const refusal = elementRefusal({ ...withFile, ...index(state) }, command)
+    const seen = { ...withFile, ...index(state) }
+    const refusal = command.slide === "element-order" ? stackRefusal(seen, command) : elementRefusal(seen, command)
     if (refusal !== null) return { ok: false, code: refusal }
     return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
   }
@@ -233,6 +235,7 @@ function readLayoutPart(raw: unknown): string | undefined {
 function commandOf(raw: Record<string, unknown>): SlideCommand | undefined {
   const id = readSlideId(raw.id)
   if (id === undefined) return undefined
+  if (raw.slide === "element-order") return readElementOrder(raw, id)
   if (raw.slide === "element-add" || raw.slide === "element-remove" || raw.slide === "element-restore")
     return readElementCommand(raw, id)
   if (raw.slide === "remove") return { slide: "remove", id }

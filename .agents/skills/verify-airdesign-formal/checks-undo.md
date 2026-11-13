@@ -10,7 +10,7 @@ A person's Undo and Redo of their own text edit, beside an agent run.
 - `NeverCoversAgent`, `AgentRowStays`: a person's undo never lands over an agent row that shows, and only the run's own Undo hides that row. Harm: a person's Ctrl+Z erases Aira's work.
 - `DroppedIsTold`: an undo that changed nothing is always told.
 
-Bounds: up to four person rows, one agent row. Run: `pnpm check:specs person-undo`. Replay: `tests/person-undo-replay.ts` through `undoOf`, `redoOf` and `decide`. Code: `undoOf`, `redoOf` in `packages/document/src/person-undo.ts`, the stack in `apps/web/src/undo-list.ts`. Leaves out: box undo, slide undo (`slideUndoable`) and notes edits, which take the same path as text. The undo of an added or removed element, with another tab and an agent's run in between, is covered by element. An undo while typed edits are still being recorded or sent, and the browser's own undo, are typing.
+Bounds: up to four person rows, one agent row. Run: `pnpm check:specs person-undo`. Replay: `tests/person-undo-replay.ts` through `undoOf`, `redoOf` and `decide`. Code: `undoOf`, `redoOf` in `packages/document/src/person-undo.ts`, the stack in `apps/web/src/undo-list.ts`. Leaves out: box undo, slide undo (`slideUndoable`), stacking (`element-order` and the stack branch of `turn`), and notes edits, which take the same path as text. The undo of an added or removed element, with another tab and an agent's run in between, is covered by element. An undo while typed edits are still being recorded or sent, and the browser's own undo, are typing.
 
 Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
 

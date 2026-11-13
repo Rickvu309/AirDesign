@@ -1,4 +1,4 @@
-import type { Box, ElementId } from "@airdesign/document"
+import type { Box, ElementId, StackMove } from "@airdesign/document"
 import { useRef, useState, type FocusEvent, type KeyboardEvent, type PointerEvent } from "react"
 import {
   boxOf,
@@ -53,6 +53,13 @@ function frameOf(from: HTMLElement, element: CanvasElement): HTMLElement | null 
   return from.closest(slidePaint)?.querySelector<HTMLElement>(`[data-canvas-element="${element.key}"]`) ?? null
 }
 
+function stackMove(event: KeyboardEvent<HTMLElement>): StackMove | undefined {
+  if ((!event.ctrlKey && !event.metaKey) || event.altKey) return undefined
+  if (event.code === "BracketRight") return event.shiftKey ? "front" : "forward"
+  if (event.code === "BracketLeft") return event.shiftKey ? "back" : "backward"
+  return undefined
+}
+
 function enterText(frame: HTMLElement): boolean {
   const text = frame.querySelector<HTMLElement>(editableText)
   if (text === null) return false
@@ -79,6 +86,7 @@ export function useMoves(
   width: number,
   onBox: ((id: ElementId, box: Box) => void) | undefined,
   onRemove?: (id: ElementId) => void,
+  onOrder?: (id: ElementId, move: StackMove) => void,
 ): Moves {
   const [selected, setSelected] = useState<Selection>(null)
   const [message, setMessage] = useState("")
@@ -168,6 +176,13 @@ export function useMoves(
     if (!onFrame) return
     if (event.key === "Enter") {
       if (enterText(frame)) event.preventDefault()
+      return
+    }
+    const stacking = stackMove(event)
+    if (stacking !== undefined) {
+      if (onOrder === undefined || gesture.current !== null) return
+      event.preventDefault()
+      onOrder(id, stacking)
       return
     }
     const now = gesture.current

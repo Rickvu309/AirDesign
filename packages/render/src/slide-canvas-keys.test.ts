@@ -191,4 +191,57 @@ describe("canvas keyboard", () => {
     await paint([], { part: "ppt/slides/slide2.xml", slideName: "Slide 2 of 2" })
     expect(announced(host)).toBe("Slide 2 of 2")
   })
+
+  it("stacks the focused element with the PowerPoint chords and leaves a chord typed in its text alone", async () => {
+    const ordered: string[] = []
+    const store = paintStore()
+    store.publish({ id, kind: "shape", text: "Quarterly results", picture: null })
+    const host = document.createElement("div")
+    document.body.append(host)
+    const root = createRoot(host)
+    hosts.push({ host, root })
+    const slide: CanvasSlide = { width: 12_192_000, height: 6_858_000, background: null, elements: [shape] }
+    const order = (_target: ElementId, move: string) => ordered.push(move)
+    await act(async () => {
+      root.render(
+        createElement(SlideCanvas, {
+          store,
+          slide,
+          width: 800,
+          onBox: () => undefined,
+          onOrder: order,
+          notice: "Brought to front",
+        }),
+      )
+    })
+    const frame = host.querySelector<HTMLElement>(`[data-canvas-element="${key}"]`)
+    if (frame === null) throw new Error("no frame")
+    await act(async () => {
+      frame.focus()
+    })
+    await press(frame, "keydown", "}", { code: "BracketRight", ctrlKey: true, shiftKey: true })
+    await press(frame, "keydown", "]", { code: "BracketRight", ctrlKey: true })
+    await press(frame, "keydown", "[", { code: "BracketLeft", ctrlKey: true })
+    await press(frame, "keydown", "{", { code: "BracketLeft", ctrlKey: true, shiftKey: true })
+    await press(frame, "keydown", "]", { code: "BracketRight", metaKey: true, shiftKey: true })
+    await press(frame, "keydown", "]", { code: "BracketRight", ctrlKey: true, altKey: true })
+    expect(ordered).toEqual(["front", "forward", "backward", "back", "front"])
+    expect(announced(host)).toBe("Brought to front")
+    await act(async () => {
+      root.render(
+        createElement(SlideCanvas, {
+          store,
+          slide: { ...slide, elements: [{ ...shape, editable: true }] },
+          width: 800,
+          onBox: () => undefined,
+          onEdit: () => undefined,
+          onOrder: order,
+        }),
+      )
+    })
+    const text = host.querySelector<HTMLElement>("[contenteditable='true']")
+    if (text === null) throw new Error("no text")
+    await press(text, "keydown", "}", { code: "BracketRight", ctrlKey: true, shiftKey: true })
+    expect(ordered).toEqual(["front", "forward", "backward", "back", "front"])
+  })
 })

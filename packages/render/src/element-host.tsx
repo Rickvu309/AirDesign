@@ -141,7 +141,7 @@ function QuietElement(props: {
   const { element, scaled, store, unshown } = props
   const text = element.text
   return (
-    <div style={elementFrame(element, scaled, false, unshown)}>
+    <div data-thumb-element={element.key} style={elementFrame(element, scaled, false, unshown)}>
       <ShapeArt element={element} scaled={scaled} />
       <DiagramArt element={element} scaled={scaled} />
       <ChartArt box={element.box} chart={element.chart} described={false} scaled={scaled} />

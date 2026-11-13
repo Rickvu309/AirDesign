@@ -3,6 +3,7 @@ import { currentBox, currentValue, decide, openRegister, type Command, type Regi
 import { elementId, slideId } from "./element-id.js"
 import { orderKeyBetween } from "./order-key.js"
 import { elementGone } from "./element-order.js"
+import { elementStacks } from "./element-stack.js"
 import { orderKeyAfter, presentSlides, type SlideCommand } from "./slide-order.js"
 import { redoOf, slideUndoable, undoOf, undoSlides, type Undoable } from "./person-undo.js"
 
@@ -222,6 +223,31 @@ describe("person undo", () => {
       edit: { slide: "element-remove", id: file[0], node: box.node },
     })
     expect(undoOf(gone, added.undoable)).toEqual({ ok: false })
+  })
+
+  it("undoes a bring to front and redoes it, and refuses once that element was moved again", () => {
+    const back = elementId("256.2")
+    const front = elementId("256.4")
+    const among = [back, front]
+    const brought = slid(openRegister("", ""), {
+      slide: "element-order",
+      id: file[0],
+      node: back,
+      before: null,
+      among,
+    })
+    expect(elementStacks(brought.register)).toEqual([{ slide: file[0], ids: [front, back] }])
+    const undone = turned(brought.register, undoOf(brought.register, brought.undoable))
+    expect(elementStacks(undone)).toEqual([{ slide: file[0], ids: among }])
+    expect(elementStacks(turned(undone, redoOf(undone, brought.undoable)))).toEqual([
+      { slide: file[0], ids: [front, back] },
+    ])
+    const again = landed(brought.register, {
+      command: "slide",
+      file,
+      edit: { slide: "element-order", id: file[0], node: front, before: null, among: [front, back] },
+    })
+    expect(undoOf(again, brought.undoable)).toEqual({ ok: false })
   })
 
   it("undoes a speaker notes edit like a text edit", () => {
