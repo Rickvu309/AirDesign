@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { phaseClock } from "./pptx-phases.mjs"
+import { besideBrowser, phaseClock } from "./pptx-phases.mjs"
 
 let tick = 0
 const clock = phaseClock({ now: () => tick })
@@ -22,3 +22,16 @@ assert.deepEqual(clock.lines(), [
   "phase render          2.0 to    5.0 seconds",
   "phase broken          9.0 to   10.0 seconds",
 ])
+
+const order = []
+let finish
+const browser = new Promise((resolve) => {
+  finish = resolve
+}).then(() => order.push("browser"))
+const small = besideBrowser({ cores: 4, browser }).then(() => order.push("small"))
+const roomy = besideBrowser({ cores: 5, browser }).then(() => order.push("roomy"))
+await roomy
+assert.deepEqual(order, ["roomy"])
+finish()
+await small
+assert.deepEqual(order, ["roomy", "browser", "small"])

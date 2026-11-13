@@ -24,3 +24,5 @@ export const phaseClock = ({ now = () => performance.now() } = {}) => {
       )
   return { begin, time, lines }
 }
+
+export const besideBrowser = ({ cores, browser }) => (cores > 4 ? Promise.resolve() : browser.then(() => {}))
