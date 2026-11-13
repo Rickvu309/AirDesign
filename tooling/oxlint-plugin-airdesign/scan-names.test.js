@@ -32,9 +32,9 @@ const instead = (relative, line, use, old) => `${relative}:${line}: Write "${use
 expectWords("scripts/metrics.mjs", `  throw new Error("one ${oldFailure} was not counted")`, [
   instead("scripts/metrics.mjs", 1, "known failure", oldFailure),
 ])
-expectWords("AGENTS.md", `| A ${oldMetric} moves only toward its goal | the \`${oldBar}\` check, run from \`main\` |`, [
-  instead("AGENTS.md", 1, "bar", oldBar),
-  instead("AGENTS.md", 1, "metric", oldMetric),
+expectWords("CHECKS.md", `| A ${oldMetric} moves only toward its goal | the \`${oldBar}\` check, run from \`main\` |`, [
+  instead("CHECKS.md", 1, "bar", oldBar),
+  instead("CHECKS.md", 1, "metric", oldMetric),
 ])
 expectWords("scripts/metrics.mjs", `const ${"known" + "Fa" + "ults"} = (root) => 0`, [
   instead("scripts/metrics.mjs", 1, "known failure", oldFailure),
