@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process"
+import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { stages } from "./check.mjs"
@@ -13,6 +14,7 @@ import { takeMachineLock } from "./machine-lock.mjs"
 import { awaitChecks, enqueue, queueLine, readPull } from "./merge-queue.mjs"
 import { migrationFault, recordFile } from "./migration-numbers.mjs"
 import { baseFault } from "./pull-base.mjs"
+import { hasProof, titleAdvice, titleLimit, titleVerdict } from "./title.mjs"
 
 const valueFlags = ["--pr", "--title", "--body-file"]
 const switchFlags = ["--status", "--watch", "--check", "--no-follow", "--help", "-h"]
@@ -58,7 +60,18 @@ const jsonAt = (git, revision) => {
 const findPull = ({ gh, branch, number }) => {
   const found =
     number === undefined
-      ? gh(["pr", "list", "--head", branch, "--state", "open", "--json", "number,baseRefName,url", "--limit", "1"])
+      ? gh([
+          "pr",
+          "list",
+          "--head",
+          branch,
+          "--state",
+          "open",
+          "--json",
+          "number,baseRefName,url,title,body",
+          "--limit",
+          "1",
+        ])
       : gh(["pr", "view", String(number), "--json", "number,baseRefName,url"])
   const parsed = JSON.parse(succeeds(found, "could not read the pull request"))
   return number === undefined ? parsed[0] : parsed
@@ -66,10 +79,20 @@ const findPull = ({ gh, branch, number }) => {
 
 class Stop extends Error {}
 
+const readBody = (readText, file, stop) => {
+  if (file === undefined) return undefined
+  try {
+    return readText(file)
+  } catch (error) {
+    return stop("body", `the body file ${file} cannot be read: ${error.message}`)
+  }
+}
+
 const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
 
 export const land = async (ctx) => {
   const { args, git, gh, say, sleep = pause, now = () => Date.now() } = ctx
+  const readText = ctx.readText ?? ((file) => fs.readFileSync(file, "utf8"))
   if (args.help) {
     for (const each of usage) say(each)
     return 0
@@ -141,6 +164,18 @@ export const land = async (ctx) => {
       if (wrong !== undefined) stop("base", wrong)
       line("base", `pull request ${pull.number} targets main`)
     } else line("base", "no pull request yet; it will open against main")
+    const title = pull === undefined ? args.title : pull.title
+    if (title !== undefined) {
+      const fault = titleVerdict(title)
+      const named = pull === undefined ? "--title" : `the title of pull request ${pull.number}`
+      const retitle =
+        pull === undefined ? "" : ` Retitle it: gh pr edit ${pull.number} --title "...", then run pnpm land again.`
+      if (fault !== undefined) stop("title", `${named} is ${fault}. ${titleAdvice}${retitle}`)
+      line("title", `${[...title].length} characters, within the limit of ${titleLimit}`)
+    }
+    const body = pull === undefined ? readBody(readText, args.bodyFile, stop) : pull.body
+    if (body !== undefined && !hasProof(body))
+      line("body", "warning: the body has no ## Proof heading. Say what you ran and what you saw, with counts.")
     const conflicts = conflictsWithMain(git)
     if (conflicts.length > 0) {
       stop(
