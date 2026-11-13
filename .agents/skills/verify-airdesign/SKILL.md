@@ -89,10 +89,11 @@ It builds `@airdesign/api` and `apps/web` once, launches one stack with `$V laun
 
 When it fails on `main`, the workflow opens the issue `journey failed on main` (or comments on the open one) with the failed journey, the commit and the run link, through `scripts/red-main.sh`. The next passing push closes it. A known bug is a journey marked `test.fail()` in the spec; `scripts/metrics.mjs` counts it in `known-failures`, and the fix removes the mark.
 
-To prove something no journey covers, write a new journey file there (or a scratch one under `~/tmp`, copied into `journeys/` for the run) that exports `default async function drive(kit)`. The kit gives you:
+To prove something no journey covers, write a journey that exports `default async function drive(kit)`: a new file there, or a scratch file anywhere, run by its path (`$V journey <run> ~/tmp/seam.mjs`). The kit gives you:
 
 - `page`, `context`: a fresh Chromium page at the design's 1470x923 viewport, device scale 2 and reduced motion, with `baseURL` set to the run's origin. Captures wait for fonts and images. A journey may override the viewport when its purpose needs another size.
-- `signIn()`: real sign-in through `signInRoutes.email` and the emailed code on `signInRoutes.code`, then sets the session cookie on the browser. Returns `{ email, cookie }`.
+- `signIn(email?)`: real sign-in through `signInRoutes.email` and the emailed code on `signInRoutes.code`, then sets the session and account cookies on the browser, as production does. Returns `{ email, cookie }`. An earlier `email` signs that account in again.
+- `expect`: Playwright's, for a scratch journey outside the repo, where `@playwright/test` does not resolve.
 - `post(route, body, cookie, headers)`: POST to a catalog route entry; saves the request and answer as JSON evidence. An NDJSON answer lands in `json.lines`, an event stream in `json.events`.
 - `deckRoutes`, `signInRoutes`, `accountRoutes`, `oauthRoutes`, `airaRoutes`, `mcpRoutes`: the catalog tables.
 - `aira(scripts)`: the recorded model streams the next Aira calls play, one per call, the last one repeating. See `features/aira-turn.md`.
@@ -103,8 +104,6 @@ To prove something no journey covers, write a new journey file there (or a scrat
 - `capture(label)`: screenshot plus ARIA snapshot of the page.
 - `note(line)`: append a line to the run's `proof.md`.
 - `repo`: the checkout root, for fixtures such as `scripts/pptx-fixtures/clean.pptx`.
-
-Use `expect` from `@playwright/test`. A thrown error fails the journey, captures a `failure` screenshot and exits 1.
 
 Stable handles in the app today: `input[type=file]` on Home (import), `[contenteditable="true"]` (text box being edited), `[data-slide-paint]` (slide canvas), `[data-canvas-element="<key>"]` (painted element; thumbnail tables carry it too, so scope it to `[data-slide-paint]`), `[data-thumb-paint]` (thumbnail), `[data-slide-entry="<n>"]` (slide list entry), `[data-selection]` and `[data-grip]` (selection frame), `[data-editor-panel]` (Agent panel), `[data-step-mark]` (Aira step mark), `.thin-page[data-deck-ready]` (deck painted), roles and names such as `button "New deck"`, `button "Add slide"`, `button "Add text box"`, `button "Undo <step>"`, `button "Move to Trash"`, `button "Restore"`, `button "Empty Trash"`, `button "Export"`, `heading "<deck name>"`.
 
@@ -195,12 +194,12 @@ Run `stop` after every run, passed or failed. A failed `launch` prints the run i
 
 `pnpm check` skips the browser tests on this machine, and `ci` runs them. A change that passes only its own new spec can still break others. Before you push, run what your change needs:
 
-| Changed paths                                                                               | Suites                                       |
-| ------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| anything                                                                                    | `pnpm check`                                 |
-| `apps/web`, a package `apps/web` imports, `tests/browser`, this skill's `look/`             | the whole browser suite, `pnpm test:browser` |
-| `apps/web`, `apps/api`, any package they import, `tests/journeys`, this skill               | every journey, `pnpm test:journeys`          |
-| the paths `ci`'s `pptx` job watches (`packages/pptx`, `packages/document`, `apps/web`, ...) | `pnpm check:pptx`                            |
+| Changed paths                                                                   | Suites                                       |
+| ------------------------------------------------------------------------------- | -------------------------------------------- |
+| anything                                                                        | `pnpm check`                                 |
+| `apps/web`, a package `apps/web` imports, `tests/browser`, this skill's `look/` | the whole browser suite, `pnpm test:browser` |
+| `apps/web`, `apps/api`, any package they import, `tests/journeys`, this skill   | every journey, `pnpm test:journeys`          |
+| what `ci`'s `pptx` job watches (`packages/pptx`, `apps/web`, ...)               | `pnpm check:pptx`                            |
 
 `pnpm check:pptx` finds the .NET 8 SDK itself: `PPTX_DOTNET`, then `dotnet` on PATH, then `$DOTNET_ROOT/dotnet`, then `~/.dotnet/dotnet`. It adds Chromium's library folder itself too. Set nothing; when no SDK is found it lists the places it tried.
 
@@ -224,4 +223,4 @@ $V suites --run browser -- tests/browser/home.spec.ts:12   # one suite, one test
 - `look/`: the design commands' parts: the detectors, the state list, compare, the sheet, and the callouts, placement and drawing behind `before-after` and `annotate`. See `look/README.md`.
 - `bin/proof.mjs`, `bin/publish.mjs` and `bin/comment.mjs`: `before-after`, `annotate`, `publish` and `comment`.
 - `bin/suites.mjs`: `suites`. `bin/load.mjs`: the load line. `bin/browser.mjs`: Chromium's launch, with its library folder.
-- `journeys/*.mjs`: Playwright journeys run by `$V journey <run> <name>` and by `pnpm test:journeys`.
+- `journeys/*.mjs`: run by `$V journey <run> <name>` and by `pnpm test:journeys`.

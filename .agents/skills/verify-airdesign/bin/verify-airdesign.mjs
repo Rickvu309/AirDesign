@@ -5,7 +5,9 @@ import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSy
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { expect } from "@playwright/test"
 import { serve } from "./serve.mjs"
+import { browserCookies } from "./browser-cookies.mjs"
 import { designContext, openBrowser, settle } from "./browser.mjs"
 import { loadLine } from "./load.mjs"
 import { builtSite, fakeOrigins } from "./site.mjs"
@@ -158,7 +160,8 @@ async function call(origin, method, pathname, body, cookie, headers = {}) {
   } catch {
     json = { text: text.slice(0, 200) }
   }
-  return { status: response.status, json, cookie: response.headers.getSetCookie()[0]?.split(";")[0] }
+  const cookies = response.headers.getSetCookie().map((header) => header.split(";")[0])
+  return { status: response.status, json, cookie: cookies[0], cookies }
 }
 
 async function catalog(state) {
@@ -208,7 +211,7 @@ async function signIn(state, email = `verify${randomBytes(4).toString("hex")}@ex
   const signed = await call(state.origin, signInRoutes.code.method, signInRoutes.code.path, { email, code })
   if (signed.status !== 200 || signed.cookie === undefined)
     throw new Error(`sign-in code answered ${String(signed.status)}`)
-  return { email, cookie: signed.cookie }
+  return { email, cookie: signed.cookie, cookies: signed.cookies }
 }
 
 async function apiCall(run, name, bodyText, cookie) {
@@ -241,6 +244,7 @@ export async function journeyKit({ run, name, page, context }) {
   let step = 0
   const kit = {
     repo,
+    expect,
     origin: state.origin,
     siteOrigin: state.siteOrigin,
     page,
@@ -281,21 +285,10 @@ export async function journeyKit({ run, name, page, context }) {
       const { code, link } = readSignInMail(sent.text)
       return { sent, code, link: link.replace(fakeOrigins.app, state.origin) }
     },
-    async signIn() {
-      const signed = await signIn(state)
-      const split = signed.cookie.indexOf("=")
-      await context.addCookies([
-        {
-          name: signed.cookie.slice(0, split),
-          value: signed.cookie.slice(split + 1),
-          domain: "127.0.0.1",
-          path: "/",
-          httpOnly: true,
-          secure: true,
-          sameSite: "Lax",
-        },
-      ])
-      return signed
+    async signIn(again) {
+      const { email, cookie, cookies } = await signIn(state, again)
+      await context.addCookies(browserCookies(cookies))
+      return { email, cookie }
     },
     async post(route, body, cookie, headers) {
       const answer = await call(state.origin, "POST", route.path, body, cookie, headers)
@@ -322,7 +315,11 @@ export async function journeyKit({ run, name, page, context }) {
 }
 
 export function journeyFile(name) {
-  return path.join(skill, "journeys", `${name}.mjs`)
+  return name.endsWith(".mjs") ? path.resolve(name) : path.join(skill, "journeys", `${name}.mjs`)
+}
+
+export function journeyName(name) {
+  return path.basename(name, ".mjs")
 }
 
 export function originOf(run) {
@@ -333,10 +330,11 @@ export function recordJourney(run, name, passed, out) {
   proof(run, `- ${name}: ${passed ? "PASSED" : "FAILED"} at ${loadLine()}, artifacts ${out}`)
 }
 
-async function journey(run, name) {
+async function journey(run, given) {
   const state = readState(run)
-  const file = journeyFile(name)
-  if (!existsSync(file)) fail(`no journey ${name} in ${path.join(skill, "journeys")}`)
+  const file = journeyFile(given)
+  const name = journeyName(given)
+  if (!existsSync(file)) fail(`no journey ${given}: ${file} is missing`)
   const browser = await openBrowser()
   const context = await browser.newContext({ baseURL: state.origin, ...designContext })
   const page = await context.newPage()
@@ -434,9 +432,10 @@ try {
       head,
     })
   else if (command === "doctor") await doctor(rest[0])
-  else if (command === "sign-in")
-    process.stdout.write(`${JSON.stringify(await signIn(readState(rest[0]), flag("--email")))}\n`)
-  else if (command === "api") await apiCall(rest[0], rest[1], rest[2], flag("--cookie"))
+  else if (command === "sign-in") {
+    const { email, cookie } = await signIn(readState(rest[0]), flag("--email"))
+    process.stdout.write(`${JSON.stringify({ email, cookie })}\n`)
+  } else if (command === "api") await apiCall(rest[0], rest[1], rest[2], flag("--cookie"))
   else if (command === "journey") await journey(rest[0], rest[1])
   else if (command === "stop") await stop(rest[0])
   else if (command !== "library") {
@@ -446,7 +445,7 @@ try {
         "verify-airdesign doctor <run>               read-only health check of that run",
         "verify-airdesign sign-in <run> [--email e]  sign in through the real email code; prints the cookie",
         "verify-airdesign api <run> <route> [json] [--cookie c]  POST a deckRoutes entry; saves the answer",
-        "verify-airdesign journey <run> <name>       run journeys/<name>.mjs in Chromium; saves screenshots",
+        "verify-airdesign journey <run> <name|file>  run journeys/<name>.mjs, or a scratch .mjs by its path; saves screenshots",
         "verify-airdesign look <run> <state-or-path> [--import deck.pptx [--slide n]] [--off-token] [--cookie c] [--out dir]",
         "                                            capture one page at 1470x923 x2; boxes and ranks design faults",
         "verify-airdesign compare <run> <state-or-path> [design-screen] [--import deck.pptx [--slide n]] [--out dir]",
