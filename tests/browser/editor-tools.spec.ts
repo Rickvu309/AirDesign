@@ -55,13 +55,10 @@ async function zoomTo(page: Page, step: string): Promise<void> {
 
 test.use({ viewport: { width: 1600, height: 1000 }, reducedMotion: "reduce" })
 
-test("the tools that do nothing yet are disabled, the grid toggle too, and Actions offers only Table", async ({
-  page,
-}) => {
+test("the tools that do nothing yet are disabled, Grid is enabled, and Actions offers only Table", async ({ page }) => {
   await openClean(page)
-  for (const name of ["shape", "Grid"]) {
-    await expect(page.getByRole("button", { name, exact: true }), name).toBeDisabled()
-  }
+  await expect(page.getByRole("button", { name: "shape", exact: true })).toBeDisabled()
+  await expect(page.getByRole("button", { name: "Grid", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Add text box", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Add picture", exact: true })).toBeEnabled()
   await page.getByRole("button", { name: "Actions", exact: true }).click()
