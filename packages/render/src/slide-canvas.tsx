@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react"
+import { memo, useLayoutEffect, useRef } from "react"
 import type { Box, ElementId, TableChange } from "@airdesign/document"
 import { PaintedElement } from "./element-kind.js"
 import type { HeldKeys } from "./held-keys.js"
@@ -30,7 +30,7 @@ export { unshownFill } from "./unshown-fill.js"
 
 export type Entering = { readonly id: ElementId; readonly keys?: HeldKeys }
 
-export function SlideCanvas(props: {
+export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly store: PaintStore
   readonly slide: CanvasSlide
   readonly width: number
@@ -123,4 +123,4 @@ export function SlideCanvas(props: {
       )}
     </div>
   )
-}
+})

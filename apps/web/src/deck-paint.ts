@@ -1,87 +1,39 @@
-import { readElementId, slideId, type ElementId, type Register, type TextValue } from "@airdesign/document"
+import { slideId, type ElementId, type Register, type SlideId } from "@airdesign/document"
 import {
-  applyRoute,
   paintReader,
-  paintKind,
-  readShapes,
   readSlides,
   sectionStarts,
   themeSwatches,
   type ReadShape,
   type SectionStart,
 } from "@airdesign/pptx"
-import type { PaintStore } from "@airdesign/render"
-import { slideCanvases, type SlideCanvases } from "@/canvas-slide"
+import type { ElementRecord, PaintStore } from "@airdesign/render"
+import type { SlideCanvases } from "@/canvas-slide"
 import type { TextBox } from "@/commit-edit"
-import { boxStorable, landedBox } from "@/element-move"
-import { editedParts, slideBase, storedText, type PictureBytes } from "@/exported-parts"
+import { landedBox } from "@/element-move"
+import { editedParts, slideBase, type PictureBytes } from "@/exported-parts"
 import { pictureSources, type PictureSources } from "@/picture-fill"
 import { shownValue, type BusyElements } from "@/live-repaint"
 import { fallbackPrompt } from "@/copy/placeholder-copy"
-import { tableEditable, tableEdited } from "@/table-edit"
+import { tableEdited } from "@/table-edit"
+import {
+  namedShapes,
+  paintCanvas,
+  sameMedia,
+  sameSlide,
+  slideRels,
+  slideShapes,
+  type PaintedCanvas,
+  type SlideShapes,
+} from "@/slide-paint"
 
-type NamedShape = { readonly id: ElementId; readonly shape: ReadShape }
+export { valueStorable } from "@/slide-paint"
 
-function namedShapes(parts: ReadonlyMap<string, Uint8Array>): readonly NamedShape[] {
-  const named: NamedShape[] = []
-  for (const shape of readShapes(parts)) {
-    const id = readElementId(`${shape.slide}.${shape.shape}`)
-    if (id !== undefined) named.push({ id, shape })
-  }
-  return named
-}
+type Parts = ReadonlyMap<string, Uint8Array>
 
-export function elementIds(parts: ReadonlyMap<string, Uint8Array>): readonly ElementId[] {
-  return namedShapes(parts).map((named) => named.id)
-}
+type PaintedSlide = { readonly shapes: SlideShapes; readonly values: string; canvas: PaintedCanvas | null }
 
-function trialValue(value: TextValue): TextValue | null {
-  for (let paragraph = value.length - 1; paragraph >= 0; paragraph -= 1) {
-    const runs = value[paragraph]?.runs ?? []
-    for (let run = runs.length - 1; run >= 0; run -= 1) {
-      const found = runs[run]
-      if (found === undefined || found.text === "\n") continue
-      return value.map((each, index) =>
-        index === paragraph
-          ? {
-              ...each,
-              runs: runs.map((kept, at) => (at === run ? { ...kept, text: `${kept.text}.` } : kept)),
-            }
-          : each,
-      )
-    }
-  }
-  const first = value[0]
-  if (first === undefined) return null
-  return [{ ...first, runs: [...first.runs, { from: -1, text: "." }] }, ...value.slice(1)]
-}
-
-export function valueStorable(
-  parts: ReadonlyMap<string, Uint8Array>,
-  shape: ReadShape,
-  value: TextValue | null,
-): boolean {
-  if (value === null) return false
-  try {
-    applyRoute(parts, {
-      name: "text",
-      part: shape.part,
-      shape: shape.shape,
-      value,
-    })
-    return true
-  } catch {
-    return false
-  }
-}
-
-export function paint(
-  store: PaintStore,
-  parts: ReadonlyMap<string, Uint8Array>,
-  register: Register | null,
-  busy: BusyElements,
-  pictureBytes: PictureBytes = new Map(),
-): {
+export type Painted = {
   readonly count: number
   readonly sections: readonly SectionStart[]
   readonly canvases: SlideCanvases
@@ -90,60 +42,126 @@ export function paint(
   readonly shapes: ReadonlyMap<ElementId, ReadShape>
   readonly pictures: PictureSources
   readonly files: ReadonlyMap<ElementId, string>
-  readonly base: ReadonlyMap<string, Uint8Array>
-} {
-  const base = register === null ? parts : slideBase(parts, register, pictureBytes)
-  const display =
-    register !== null && (register.order.length > 0 || tableEdited(register)) ? editedParts(base, register) : parts
-  const named = namedShapes(display)
-  const based = new Map(namedShapes(base).map((each) => [each.id, each.shape]))
-  const ids = named.map((each) => each.id)
-  const seen = new Map<ElementId, number>()
-  for (const id of ids) seen.set(id, (seen.get(id) ?? 0) + 1)
+  readonly base: Parts
+  readonly display: Parts
+  readonly repainted: readonly SlideId[]
+  readonly from: Parts
+  readonly shared: Parts
+  readonly slides: readonly PaintedSlide[]
+}
+
+export function elementIds(parts: Parts): readonly ElementId[] {
+  return namedShapes(parts).map((named) => named.id)
+}
+
+function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
+  if (left.length !== right.length) return false
+  for (let index = 0; index < left.length; index += 1) if (left[index] !== right[index]) return false
+  return true
+}
+
+function sameIdentity(next: Parts, before: Parts | undefined): Parts {
+  if (before === undefined || before === next) return next
+  let held: Map<string, Uint8Array> | null = null
+  for (const [name, bytes] of next) {
+    const old = before.get(name)
+    if (old === undefined || old === bytes || !sameBytes(old, bytes)) continue
+    held ??= new Map(next)
+    held.set(name, old)
+  }
+  return held ?? next
+}
+
+function sharedParts(display: Parts, slideParts: ReadonlySet<string>): Parts {
+  const shared = new Map<string, Uint8Array>()
+  for (const [name, bytes] of display) if (!slideParts.has(name)) shared.set(name, bytes)
+  return shared
+}
+
+function deckWide(shared: Parts, slideParts: ReadonlySet<string>): readonly (readonly [string, Uint8Array])[] {
+  const rels = new Set([...slideParts].map(slideRels))
+  return [...shared].filter(
+    ([name]) => !rels.has(name) && !name.startsWith("ppt/media/") && !name.startsWith("ppt/notesSlides/"),
+  )
+}
+
+function sameShared(shared: Parts, before: Parts, slideParts: ReadonlySet<string>): boolean {
+  const now = deckWide(shared, slideParts)
+  return now.length === deckWide(before, slideParts).length && now.every(([name, bytes]) => before.get(name) === bytes)
+}
+
+function sameRecord(current: ElementRecord | null, next: ElementRecord): boolean {
+  return (
+    current !== null && current.kind === next.kind && current.text === next.text && current.picture === next.picture
+  )
+}
+
+function shownOf(register: Register | null, id: ElementId, file: string): string {
+  return JSON.stringify([shownValue(register, id, file), landedBox(register, id)])
+}
+
+export function paint(
+  store: PaintStore,
+  parts: Parts,
+  register: Register | null,
+  busy: BusyElements,
+  pictureBytes: PictureBytes = new Map(),
+  previous: Painted | null = null,
+): Painted {
+  const earlier = previous?.from === parts ? previous : null
+  const base = sameIdentity(register === null ? parts : slideBase(parts, register, pictureBytes), earlier?.base)
+  const edited =
+    register !== null && (register.order.length > 0 || tableEdited(register)) ? editedParts(base, register) : base
+  const display = sameIdentity(edited, earlier?.display)
+  const read = readSlides(display)
+  const slideParts = new Set(read.map((each) => each.part))
+  const shared = sharedParts(display, slideParts)
+  const reusable = earlier !== null && sameShared(shared, earlier.shared, slideParts)
+  const before = new Map(reusable ? earlier.slides.map((each) => [each.shapes.part, each]) : [])
+  const repainted: SlideId[] = []
+  const slides = read.map(({ slide, part }): PaintedSlide => {
+    const old = before.get(part)
+    const same = old !== undefined && sameSlide(old.shapes, slide, base, display)
+    const shapes = same ? old.shapes : slideShapes(shared, slide, part, base, display)
+    const values = shapes.shapes.map(({ id, file }) => shownOf(register, id, file)).join("\n")
+    if (same && old.values === values && old.canvas !== null && sameMedia(old.canvas, display))
+      return { shapes, values, canvas: old.canvas }
+    if (!same || old.values !== values) repainted.push(slideId(slide))
+    return { shapes, values, canvas: null }
+  })
   const boxes = new Map<ElementId, TextBox>()
   const movables = new Map<ElementId, TextBox>()
   const rows = new Map<ElementId, ReadShape>()
   const files = new Map<ElementId, string>()
-  for (const { id, shape: shown } of named) {
-    const shape = based.get(id) ?? shown
-    const kind = paintKind(shown.kind)
-    const file = storedText(shape.text)
-    files.set(id, file)
-    if (!busy.has(id) || store.getElement(id) === null) {
-      store.publish({ id, kind, text: shownValue(register, id, file), picture: kind === "picture" ? "" : null })
+  for (const { shapes } of slides) {
+    for (const { id, kind, file } of shapes.shapes) {
+      files.set(id, file)
+      const current = store.getElement(id)
+      if (busy.has(id) && current !== null) continue
+      const record = { id, kind, text: shownValue(register, id, file), picture: kind === "picture" ? "" : null }
+      if (!sameRecord(current, record)) store.publish(record)
       store.placeBox(id, landedBox(register, id))
     }
-    const holding = base.has(shape.part) ? base : null
-    const table = holding !== null && shape.contentKind === "table" && tableEditable(holding, shape)
-    if (holding !== null && seen.get(id) === 1 && (table || boxStorable(holding, shape))) movables.set(id, { id, file })
-    const storable =
-      holding !== null &&
-      seen.get(id) === 1 &&
-      (table || (!shape.locked && valueStorable(holding, shape, trialValue(shape.text))))
-    if (!storable) continue
-    boxes.set(id, { id, file })
-    rows.set(id, shape)
+    for (const [id, box] of shapes.boxes) boxes.set(id, box)
+    for (const [id, box] of shapes.movables) movables.set(id, box)
+    for (const [id, shape] of shapes.editable) rows.set(id, shape)
   }
-  const read = readSlides(display).map(({ slide, part }) => ({
-    slide,
-    part,
-    named: named.filter((each) => each.shape.slide === slide),
-  }))
-  store.setSlides(read.map((each) => ({ id: slideId(each.slide), elements: each.named.map((shape) => shape.id) })))
-  const sources = read.map((each) => ({
-    part: each.part,
-    shapes: new Map(
-      each.named.map(({ id, shape }) => [
-        shape.shape,
-        { id, kind: paintKind(shape.kind), editable: boxes.has(id), movable: movables.has(id) },
-      ]),
-    ),
-  }))
-  const pictures = pictureSources(display)
-  const texts = display === base ? undefined : paintReader(base, { fallbackPrompt })
-  const canvases = slideCanvases(paintReader(display, { fallbackPrompt }), sources, pictures.src, texts, (part) =>
-    themeSwatches(display, part),
+  store.setSlides(
+    slides.map(({ shapes }) => ({ id: slideId(shapes.slide), elements: shapes.shapes.map((each) => each.id) })),
   )
+  const pictures = earlier?.pictures.carried(display) ?? pictureSources(display)
+  let reader: ReturnType<typeof paintReader> | null = null
+  let texts: ReturnType<typeof paintReader> | null = null
+  const canvases: SlideCanvases = (index) => {
+    const painted = slides[index]
+    if (painted === undefined) return null
+    if (painted.canvas !== null) return painted.canvas.slide
+    reader ??= paintReader(display, { fallbackPrompt })
+    const fileTexts = () => (texts ??= paintReader(base, { fallbackPrompt }))
+    const swatches = themeSwatches(display, painted.shapes.part)
+    painted.canvas = paintCanvas(painted.shapes, reader, fileTexts, pictures.src, display, swatches)
+    return painted.canvas.slide
+  }
   return {
     count: read.length,
     sections: sectionStarts(display),
@@ -154,5 +172,10 @@ export function paint(
     pictures,
     files,
     base,
+    display,
+    repainted,
+    from: parts,
+    shared,
+    slides,
   }
 }

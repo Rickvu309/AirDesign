@@ -25,7 +25,7 @@ function urls() {
       revoked.push(url)
     },
   })
-  return { made, revoked, sources }
+  return { made, revoked, sources, parts }
 }
 
 describe("pictureSources", () => {
@@ -61,6 +61,19 @@ describe("pictureSources", () => {
     sources.release()
     sources.release()
     expect(revoked).toEqual(made)
+  })
+
+  it("hands an unchanged picture's address to the next paint and releases only the rest", () => {
+    const { revoked, sources, parts } = urls()
+    const kept = sources.src(image())
+    const changed = sources.src(image({ part: "ppt/media/image2.jpeg", contentType: "image/jpeg" }))
+    const carried = sources.carried(new Map(parts).set("ppt/media/image2.jpeg", new Uint8Array([9])))
+    sources.release()
+    expect(revoked).toEqual([changed])
+    expect(carried.src(image())).toBe(kept)
+    expect(carried.src(image({ part: "ppt/media/image2.jpeg", contentType: "image/jpeg" }))).toBe("blob:2:image/jpeg")
+    carried.release()
+    expect(revoked).toEqual([changed, kept, "blob:2:image/jpeg"])
   })
 })
 

@@ -4,7 +4,11 @@ export type PictureImage = NonNullable<PaintElement["image"]>
 
 export type PictureSource = (image: PictureImage) => string | null
 
-export type PictureSources = { readonly src: PictureSource; release(): void }
+export type PictureSources = {
+  readonly src: PictureSource
+  release(): void
+  carried(parts: ReadonlyMap<string, Uint8Array>): PictureSources
+}
 
 export type PictureAddress = { create(blob: Blob): string; revoke(url: string): void }
 
@@ -24,27 +28,39 @@ const browserAddress: PictureAddress = {
   revoke: (url) => URL.revokeObjectURL(url),
 }
 
+type Made = { readonly bytes: Uint8Array; readonly url: string }
+
 export function pictureSources(
   parts: ReadonlyMap<string, Uint8Array>,
   address: PictureAddress = browserAddress,
+  kept: ReadonlyMap<string, Made> = new Map(),
 ): PictureSources {
-  const made = new Map<string, string>()
+  const made = new Map(kept)
   return {
     src(image) {
       const known = made.get(image.part)
-      if (known !== undefined) return known
+      if (known !== undefined) return known.url
       const type = image.contentType?.toLowerCase() ?? ""
       const bytes = parts.get(image.part)
       if (!drawable.has(type) || bytes === undefined) return null
       const copy = new Uint8Array(bytes.byteLength)
       copy.set(bytes)
       const url = address.create(new Blob([copy], { type }))
-      made.set(image.part, url)
+      made.set(image.part, { bytes, url })
       return url
     },
     release() {
-      for (const url of made.values()) address.revoke(url)
+      for (const each of made.values()) address.revoke(each.url)
       made.clear()
+    },
+    carried(next) {
+      const handed = new Map<string, Made>()
+      for (const [part, each] of made) {
+        if (next.get(part) !== each.bytes) continue
+        handed.set(part, each)
+        made.delete(part)
+      }
+      return pictureSources(next, address, handed)
     },
   }
 }

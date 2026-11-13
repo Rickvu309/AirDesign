@@ -82,6 +82,19 @@ function withColors(element: CanvasElement, colors: readonly CanvasThemeColor[])
   }
 }
 
+export function slideCanvas(
+  reader: PaintReader,
+  source: CanvasSource,
+  src: PictureSource,
+  texts: PaintReader | undefined,
+  swatches: readonly CanvasThemeColor[],
+): CanvasSlide {
+  const canvas = canvasOf(reader, source, src, texts)
+  return swatches.length === 0
+    ? canvas
+    : { ...canvas, elements: canvas.elements.map((element) => withColors(element, swatches)) }
+}
+
 export function slideCanvases(
   reader: PaintReader,
   sources: readonly CanvasSource[],
@@ -95,12 +108,7 @@ export function slideCanvases(
     if (painted !== undefined) return painted
     const source = sources[index]
     if (source === undefined) return null
-    const swatches = colors(source.part)
-    const canvas = canvasOf(reader, source, src, texts)
-    const tinted =
-      swatches.length === 0
-        ? canvas
-        : { ...canvas, elements: canvas.elements.map((element) => withColors(element, swatches)) }
+    const tinted = slideCanvas(reader, source, src, texts, colors(source.part))
     known.set(index, tinted)
     return tinted
   }

@@ -18,10 +18,10 @@ const write = (relative, source) => {
   fs.mkdirSync(path.dirname(file), { recursive: true })
   fs.writeFileSync(file, source)
 }
-const cache = (tests, faults) => {
+const cache = (tests, faults, measured = { "slides-repainted": 1 }) => {
   const file = path.join(root, "node_modules/.cache/vitest-metrics.json")
   fs.mkdirSync(path.dirname(file), { recursive: true })
-  fs.writeFileSync(file, `${JSON.stringify({ tests, faults })}\n`)
+  fs.writeFileSync(file, `${JSON.stringify({ tests, faults, measured })}\n`)
 }
 const record = (faults, tests = 2) => {
   cache(tests, faults)
@@ -33,6 +33,7 @@ const record = (faults, tests = 2) => {
       "export-coverage": { now: 2, goal: 3 },
       "fault-detection": { now: 1, goal: 2 },
       "long-titles": { goal: 0 },
+      "slides-repainted": { goal: 1 },
       "ci-duration": { limit: 40 },
       "pptx-check-duration": { limit: 90 },
     }),
@@ -72,6 +73,23 @@ const steady = await readMetrics(root)
 if (steady.drift.length !== 0) throw new Error(`a matching record drifted\n${steady.drift.join("\n")}`)
 if (steady.rows.find((row) => row.name === "known-failures")?.now !== 1)
   throw new Error("one known failure was not counted")
+
+const repainted = steady.rows.find((row) => row.name === "slides-repainted")
+if (repainted?.now !== 1 || repainted.goal !== 1)
+  throw new Error(`the slides one edit repaints were not read: ${JSON.stringify(repainted)}`)
+cache(2, 1, { "slides-repainted": 41 })
+if ((await readMetrics(root)).rows.find((row) => row.name === "slides-repainted")?.now !== 41)
+  throw new Error("more slides repainted must show in the metric")
+if ((await readMetrics(root)).drift.length !== 0) throw new Error("a live metric must need no record")
+cache(2, 1, {})
+let unmeasured = ""
+try {
+  await readMetrics(root)
+} catch (error) {
+  unmeasured = error.message
+}
+if (unmeasured !== "Vitest did not measure slides-repainted. Run pnpm test:unit, then run this again.")
+  throw new Error(`a missing measure passed: ${unmeasured}`)
 
 cache(2, 2)
 if (steady.rows.find((row) => row.name === "ci-duration")?.limit !== 40)
@@ -186,6 +204,7 @@ const proveVitest = () => {
         'describe.skip("block", () => { it("inside", () => {}) })',
         'it("reads skip", () => { expect({ skip: true }.skip).toBe(true) })',
         'it("ctx", (ctx) => { ctx.skip() })',
+        'it("measures", ({ task }) => { Object.assign(task.meta, { measured: { probe: 3 } }); expect(1).toBe(1) })',
         "",
       ].join("\n"),
     )
@@ -222,9 +241,11 @@ const proveVitest = () => {
       throw new Error(`${failed.stdout ?? ""}\n${failed.stderr ?? failed.message}`)
     }
     const counted = JSON.parse(fs.readFileSync(reported, "utf8"))
-    if (counted.tests !== 14 || counted.faults !== 11) {
-      throw new Error(`vitest counted ${JSON.stringify(counted)}, expected 14 tests and 11 faults`)
+    if (counted.tests !== 15 || counted.faults !== 11) {
+      throw new Error(`vitest counted ${JSON.stringify(counted)}, expected 15 tests and 11 faults`)
     }
+    if (counted.measured?.probe !== 3)
+      throw new Error(`vitest did not report what a test measured: ${JSON.stringify(counted)}`)
   } finally {
     fs.rmSync(path.join(probe, "node_modules"), { force: true })
     fs.rmSync(probe, { recursive: true, force: true })
