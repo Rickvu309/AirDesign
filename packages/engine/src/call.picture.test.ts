@@ -24,7 +24,7 @@ it("lets a person add a picture by its hash and media type, and a read lists it 
   expect(readDeckPage(added(), { runId: null }).elements).toMatchObject([{ node, kind: "picture", box: picture.box }])
 })
 
-it.fails("refuses text typed into a picture, which export cannot write", () => {
+it("refuses text typed into a picture, which export cannot write", () => {
   expect(call("commit_edits", added(), person, { deck: "deck", batch: [{ node, value: "Typed" }] })).toMatchObject({
     ok: false,
   })

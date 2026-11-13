@@ -20,6 +20,7 @@ export const editNext = {
   "group-box":
     "This element is inside a group. Its box uses group coordinates, so moving or resizing it is not supported. Edit its text instead.",
   present: "This element is already in the deck. Check the element id.",
+  kind: "An element this call names cannot take this edit, and nothing landed. Each line below names the change, what its element takes, and what to send instead. Fix every line, then send the whole call again.",
   locked:
     "This element has an animation, and the exported PowerPoint file cannot lose it, so it cannot be deleted. Nothing landed. Leave it, or tell the person.",
   deck: "This session can reach no deck with this id. Check the deck id.",

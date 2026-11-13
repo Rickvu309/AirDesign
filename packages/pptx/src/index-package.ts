@@ -1,10 +1,9 @@
 import { elementId, writeTextValue, type DeckIndex } from "@airdesign/document"
 import { readNotes } from "./notes-body.js"
-import { readShapes, readSlides } from "./read-shapes.js"
+import { readShapes, readSlides, shapeKind } from "./read-shapes.js"
 import { presentationPart } from "./package-address.js"
 import { markupDocument } from "./element-span.js"
 import { animatedShapeIds, freeShapeId } from "./shape-id.js"
-import { paintKind } from "./shape-tree.js"
 
 function slideSize(parts: ReadonlyMap<string, Uint8Array>): { readonly width: number; readonly height: number } | null {
   const bytes = parts.get(presentationPart)
@@ -32,7 +31,7 @@ export function indexPackage(parts: ReadonlyMap<string, Uint8Array>): Pick<DeckI
   const order = new Map(slides.map((slide) => [slide.id, slide.position]))
   const elements = readShapes(parts).map((shape) => ({
     node: elementId(`${shape.slide}.${shape.shape}`),
-    kind: shape.contentKind ?? paintKind(shape.kind),
+    kind: shapeKind(shape),
     value: shape.text.length === 0 ? null : writeTextValue(shape.text),
     box: shape.box,
     grouped: shape.grouped === true,

@@ -75,3 +75,17 @@ it("reads each part's markup once while it indexes a deck", () => {
     write.mockRestore()
   }
 })
+
+it("indexes a shape that shares its id with a fallback copy as kept, so no edit reaches it", () => {
+  const fallback = new Map(parts)
+  fallback.set(
+    "ppt/slides/slide1.xml",
+    xml(
+      '<p:sld><p:cSld><p:spTree><mc:AlternateContent><mc:Choice Requires="a14"><p:sp><p:nvSpPr><p:cNvPr id="5"/></p:nvSpPr><p:txBody><a:p><a:r><a:t>New</a:t></a:r></a:p></p:txBody></p:sp></mc:Choice><mc:Fallback><p:sp><p:nvSpPr><p:cNvPr id="5"/></p:nvSpPr><p:txBody><a:p><a:r><a:t>Old</a:t></a:r></a:p></p:txBody></p:sp></mc:Fallback></mc:AlternateContent><p:sp><p:nvSpPr><p:cNvPr id="6"/></p:nvSpPr><p:txBody><a:p><a:r><a:t>Free</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>',
+    ),
+  )
+  expect(indexPackage(fallback).elements.map(({ node, kind }) => [node, kind])).toEqual([
+    ["258.5", "kept"],
+    ["258.6", "shape"],
+  ])
+})

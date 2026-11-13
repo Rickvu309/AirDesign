@@ -29,6 +29,7 @@ export {
   currentValue,
   decide,
   decideUndo,
+  editMissing,
   foldRegister,
   history,
   openRegister,
@@ -37,6 +38,7 @@ export {
   type Command,
   type Decision,
   type Landed,
+  type Missing,
   type NodeRegister,
   type Phase,
   type Register,
@@ -47,6 +49,14 @@ export {
 export { coordinates, readBox, type Box } from "./box.js"
 export { placeNewBox } from "./box-placement.js"
 export { storedValue, valueBytes, type Value } from "./value.js"
+export {
+  boxEdits,
+  elementEdits,
+  elementTakes,
+  indexFacts,
+  type ElementEdit,
+  type ElementFacts,
+} from "./element-takes.js"
 export { kinds, properties, type ExportRoute, type Kind } from "./properties.js"
 export { structure, type StructuralRoute } from "./structure.js"
 export { foldSections, type FileSection } from "./section-order.js"

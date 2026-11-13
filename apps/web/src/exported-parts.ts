@@ -1,6 +1,7 @@
 import {
   addedPictures,
   elementGone,
+  elementTakes,
   currentBox,
   currentValue,
   floorNodes,
@@ -9,13 +10,22 @@ import {
   shapeOf,
   slideGone,
   writeTextValue,
+  type ElementEdit,
   type ElementId,
   type IndexElement,
   type NodeRegister,
   type Register,
   type TextValue,
 } from "@airdesign/document"
-import { applyRoute, paintReader, writeNotes, orderedParts, readShapes, type ReadShape } from "@airdesign/pptx"
+import {
+  applyRoute,
+  paintReader,
+  writeNotes,
+  orderedParts,
+  readShapes,
+  shapeKind,
+  type ReadShape,
+} from "@airdesign/pptx"
 import { boxOf, sameBox, textValue } from "@airdesign/render"
 import { tableShape, tableWritten } from "@/table-edit"
 
@@ -61,6 +71,14 @@ function floorShape(shapes: readonly ReadShape[], id: ElementId): ReadShape | un
   return named.length === 1 && shape !== undefined && !shape.locked ? shape : undefined
 }
 
+function cannotTake(shapes: readonly ReadShape[], id: ElementId, edit: ElementEdit): boolean {
+  const named = shapes.filter((shape) => `${shape.slide}.${shape.shape}` === id)
+  const shape = named[0]
+  if (named.length !== 1 || shape === undefined) return false
+  const facts = { kind: shapeKind(shape), text: shape.text.length > 0, grouped: shape.grouped === true }
+  return !elementTakes({ ...facts, animated: false }).includes(edit)
+}
+
 function withText(
   parts: Parts,
   shapes: readonly ReadShape[],
@@ -69,6 +87,7 @@ function withText(
   opening: IndexElement | undefined,
 ): Parts {
   if (body !== undefined && history(body).length > 0) {
+    if (cannotTake(shapes, id, "text")) return parts
     const { part, shape } = shapeFor(shapes, id, "text-shape")
     return applyRoute(parts, { name: "text", part, shape, value: textValue(currentValue(body)) })
   }
@@ -104,8 +123,8 @@ function withBox(
 ): Parts {
   const landed = body?.landed.some((row) => row.visible && row.property === "box") === true ? currentBox(body) : null
   if (landed !== null) {
+    if (cannotTake(shapes, id, "move")) return parts
     const found = shapeFor(shapes, id, "box-shape")
-    if (found.grouped) throw new Error("group-box")
     if (sameBox(found.box ?? layoutBox(parts, found), landed)) return parts
     return moved(parts, found, landed)
   }
