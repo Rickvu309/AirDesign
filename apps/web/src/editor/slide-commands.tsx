@@ -20,14 +20,23 @@ export function slideCommands(deck: CommandedDeck): SlideStrip {
   const { id, record, settle } = deck
   const { store, shownParts, canvases, slideCount, sections, current, setCurrent, layouts, showEdited } = deck.shown
 
+  let pending = Promise.resolve()
+
   async function changeSlide(change: SlideChange, index: number, to = index, layoutPart?: string) {
-    const opened = await connect(memoryRemote()).openDeck(id)
-    if (!opened.ok) return
-    const painted = async (currentIndex: number, undoable: Undoable | null) => {
-      if (undoable !== null) record({ name: slideNames[change], undoable })
-      await showEdited(currentIndex)
-    }
-    settle(await commitSlideChange(id, shownParts.current, opened.register, change, index, painted, to, layoutPart))
+    const run = pending.then(async () => {
+      const opened = await connect(memoryRemote()).openDeck(id)
+      if (!opened.ok) return
+      const painted = async (currentIndex: number, undoable: Undoable | null) => {
+        if (undoable !== null) record({ name: slideNames[change], undoable })
+        await showEdited(currentIndex)
+      }
+      settle(await commitSlideChange(id, shownParts.current, opened.register, change, index, painted, to, layoutPart))
+    })
+    pending = run.then(
+      () => undefined,
+      () => undefined,
+    )
+    await run
   }
 
   return {
