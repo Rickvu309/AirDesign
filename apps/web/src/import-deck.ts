@@ -3,7 +3,6 @@ import { connect, putParts, queueOriginal } from "@airdesign/live"
 import { indexPackage, readPackage } from "@airdesign/pptx"
 import { server } from "@/commit-edit"
 import type { ImportFailureReason } from "@/copy/import-failure-words"
-import { ensureMarkup } from "@/markup"
 
 export type ImportedDeck = {
   readonly id: string
@@ -32,7 +31,6 @@ export async function saveDeck(
 }
 
 export async function importDeck(file: File): Promise<ImportResult> {
-  await ensureMarkup()
   const bytes = new Uint8Array(await file.arrayBuffer())
   const read = await readPackage(bytes)
   if (!read.ok) return { ok: false, reason: read.reason === "limit" ? read.limit : read.reason }

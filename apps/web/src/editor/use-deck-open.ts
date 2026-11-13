@@ -6,7 +6,6 @@ import { followDeck } from "@/deck-follow"
 import { closesDeck, deckParts, deviceCopy } from "@/device-copy"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import { backfillIndex } from "@/index-deck"
-import { ensureMarkup } from "@/markup"
 import { notesShown, type ShownNotes } from "@/notes-edit"
 import { layoutChoices } from "@/slide-layout"
 import { structureOf } from "@/table-hook"
@@ -71,7 +70,6 @@ export function useDeckOpen(deck: OpeningDeck) {
     setPaintedDeck(undefined)
     setRefused(false)
     void (async () => {
-      await ensureMarkup()
       const device = await deviceCopy(id, server)
       if (!live) return
       if (device !== null) openFrom(device.stored, device.register)

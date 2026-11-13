@@ -123,9 +123,15 @@ describe("browserExportFailures", () => {
       (element) => element.kind === "a:t" && element.start > host.start && element.end < host.end,
     )
     if (run === undefined) throw new Error("a:t")
+    const referenced = encodeUtf8("&#72;ello!")
+    exported.set(slidePart, spliceBytes(bytes, [{ start: run.openEnd, end: run.closeStart, next: referenced }]))
+    expect(browserExportFailures(clean, exported, shape, text)).toContain("shape 2 text bytes")
     const overlong = Uint8Array.of(0xc1, 0x88, 0x65, 0x6c, 0x6c, 0x6f, 0x21)
     exported.set(slidePart, spliceBytes(bytes, [{ start: run.openEnd, end: run.closeStart, next: overlong }]))
-    expect(browserExportFailures(clean, exported, shape, text)).toContain("shape 2 text bytes")
+    expect(browserExportFailures(clean, exported, shape, text)).toEqual([
+      "shape 2",
+      "ppt/slides/slide1.xml outside shape 2 text",
+    ])
   })
 
   it("V4 Goodbye is not Hello!", async () => {

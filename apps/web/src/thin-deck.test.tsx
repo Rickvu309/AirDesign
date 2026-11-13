@@ -208,16 +208,6 @@ function shapedParts(): Map<string, Uint8Array> {
   ])
 }
 
-async function wasmBytes(): Promise<Uint8Array> {
-  const fsName = "node:fs/promises"
-  const moduleName = "node:module"
-  const fs = (await import(fsName)) as { readFile: (path: string) => Promise<Uint8Array> }
-  const nodeModule = (await import(moduleName)) as {
-    createRequire: (url: string) => { resolve: (id: string) => string }
-  }
-  return fs.readFile(nodeModule.createRequire(import.meta.url).resolve("sax-wasm/lib/sax-wasm.wasm"))
-}
-
 async function renderedDeck(
   parts: ReadonlyMap<string, Uint8Array> | Uint8Array | null,
   deck = "opened-deck",
@@ -260,10 +250,6 @@ async function renderedDeck(
   })
   const container = window.document.getElementById("root")
   if (container === null) throw new Error("root")
-  const wasm = await wasmBytes()
-  const copy = new Uint8Array(wasm.byteLength)
-  copy.set(wasm)
-  vi.stubGlobal("fetch", async () => new Response(copy.buffer))
   const root = createRoot(container)
   teardowns.push(async () => {
     await act(async () => {

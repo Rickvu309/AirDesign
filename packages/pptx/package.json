@@ -23,7 +23,6 @@
   },
   "dependencies": {
     "@airdesign/document": "workspace:*",
-    "@zip.js/zip.js": "2.24.0",
-    "sax-wasm": "3.3.0"
+    "@zip.js/zip.js": "2.24.0"
   }
 }

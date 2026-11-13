@@ -1,7 +1,19 @@
-import { SAXParser } from "sax-wasm"
 import { expect, it, vi } from "vitest"
 import { elementId, writeTextValue } from "@airdesign/document"
 import { indexPackage } from "./index.js"
+
+const reads = vi.hoisted(() => ({ parts: [] as Uint8Array[] }))
+
+vi.mock("./markup-reader.js", async (importOriginal) => {
+  const original = await importOriginal<typeof import("./markup-reader.js")>()
+  return {
+    ...original,
+    readMarkup: (bytes: Uint8Array, full: boolean) => {
+      reads.parts.push(bytes)
+      return original.readMarkup(bytes, full)
+    },
+  }
+})
 
 const xml = (value: string) => Uint8Array.from(value, (letter) => letter.charCodeAt(0))
 const parts = new Map([
@@ -61,19 +73,15 @@ it("records the slide size, the first free shape id and the shapes an animation 
 
 it("reads each part's markup once while it indexes a deck", () => {
   const fresh = new Map([...parts].map(([name, bytes]) => [name, bytes.slice()]))
-  const write = vi.spyOn(SAXParser.prototype, "write")
-  try {
-    indexPackage(fresh)
-    const reads = new Map<string, number>()
-    for (const [chunk] of write.mock.calls) {
-      const name = [...fresh].find(([, bytes]) => bytes.buffer === chunk.buffer)?.[0]
-      if (name !== undefined) reads.set(name, (reads.get(name) ?? 0) + 1)
-    }
-    expect(Object.fromEntries(reads)).toEqual(Object.fromEntries([...reads.keys()].map((name) => [name, 1])))
-    expect(reads.get("ppt/slides/slide1.xml")).toBe(1)
-  } finally {
-    write.mockRestore()
+  reads.parts.length = 0
+  indexPackage(fresh)
+  const counts = new Map<string, number>()
+  for (const read of reads.parts) {
+    const name = [...fresh].find(([, bytes]) => bytes === read)?.[0]
+    if (name !== undefined) counts.set(name, (counts.get(name) ?? 0) + 1)
   }
+  expect(Object.fromEntries(counts)).toEqual(Object.fromEntries([...counts.keys()].map((name) => [name, 1])))
+  expect(counts.get("ppt/slides/slide1.xml")).toBe(1)
 })
 
 it("indexes a shape that shares its id with a fallback copy as kept, so no edit reaches it", () => {

@@ -1,5 +1,4 @@
 import { execFile, execFileSync } from "node:child_process"
-import { createRequire } from "node:module"
 import { randomInt } from "node:crypto"
 import fs from "node:fs"
 import os from "node:os"
@@ -121,8 +120,6 @@ const browserSpec = freshBrowserExport({
 })
 const quiet = besideBrowser({ cores: os.availableParallelism(), browser: browserSpec })
 const pptx = memoPptx(await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href))
-const require = createRequire(path.join(root, "packages/pptx/package.json"))
-await pptx.prepareMarkup(fs.readFileSync(require.resolve("sax-wasm/lib/sax-wasm.wasm")))
 const cases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
 const names = [...new Set(cases.flatMap((row) => [row.before, row.after]))]
 const browserExports = new Map(exportNames.map((name) => [name, exportPath(name)]))

@@ -1,6 +1,5 @@
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter, type ZipWriterAddDataOptions } from "@zip.js/zip.js"
-import { beforeAll, describe, expect, it } from "vitest"
-import { prepareMarkup } from "./element-span.js"
+import { describe, expect, it } from "vitest"
 import { exportPackage } from "./export-package.js"
 import { carryPackage } from "./package-carry.js"
 import { encodeUtf8, sameBytes } from "./package-bytes.js"
@@ -16,21 +15,14 @@ declare const process: {
     readFileSync(path: string): Uint8Array
     readdirSync(path: string): readonly string[]
   }
-  getBuiltinModule(name: "node:module"): { createRequire(path: string): { resolve(id: string): string } }
   getBuiltinModule(name: "node:zlib"): { crc32(data: Uint8Array): number }
 }
 
 const { readFileSync, readdirSync } = process.getBuiltinModule("node:fs")
-const { createRequire } = process.getBuiltinModule("node:module")
 const { crc32 } = process.getBuiltinModule("node:zlib")
 const fixtureDir = `${process.cwd()}/scripts/pptx-fixtures`
 const fixture = (name: string) => readFileSync(`${fixtureDir}/${name}`)
 const fixtureDecks = readdirSync(fixtureDir).filter((name) => name.endsWith(".pptx"))
-
-beforeAll(async () => {
-  const require = createRequire(`${process.cwd()}/packages/pptx/package.json`)
-  await prepareMarkup(readFileSync(require.resolve("sax-wasm/lib/sax-wasm.wasm")))
-})
 
 function view(bytes: Uint8Array): DataView {
   return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
