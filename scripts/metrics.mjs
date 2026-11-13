@@ -1,8 +1,10 @@
+import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { caughtCount, readSeedList } from "./judge-proof.mjs"
 import { judgedDecks } from "./pptx-corpus.mjs"
+import { titleLimit } from "./title.mjs"
 import { readRun } from "./vitest-metrics.mjs"
 
 const seedListFile = (root) => path.join(root, "scripts/pptx-fixtures/judge-seeds.json")
@@ -50,14 +52,31 @@ const capabilitiesExported = async (root) => {
 const plantedBreaks = (root) =>
   caughtCount(JSON.parse(fs.readFileSync(path.join(root, "scripts/pptx-fixtures/judge-proof.json"), "utf8")))
 
+export const longTitles = (titles) => titles.filter((title) => [...title].length > titleLimit).length
+
+export const mainTitles = (root) => {
+  try {
+    return execFileSync("git", ["log", "-50", "--no-merges", "--format=%s", "origin/main", "--"], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    })
+      .split("\n")
+      .filter((title) => title !== "")
+  } catch {
+    throw new Error("long-titles reads origin/main, which is missing. Run git fetch origin main.")
+  }
+}
+
 const measures = {
   "known-failures": knownFailures,
   "corpus-size": realDecks,
   "export-coverage": capabilitiesExported,
   "fault-detection": plantedBreaks,
+  "long-titles": (root) => longTitles(mainTitles(root)),
 }
 
-export const measuredLive = new Set(["known-failures"])
+export const measuredLive = new Set(["known-failures", "long-titles"])
 
 export const timedMetrics = {
   "ci-duration": "scripts/check.mjs",

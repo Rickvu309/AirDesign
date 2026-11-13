@@ -29,6 +29,7 @@ const record = (faults, tests = 2) => {
       "corpus-size": { now: 1, goal: 20 },
       "export-coverage": { now: 2, goal: 3 },
       "fault-detection": { now: 1, goal: 2 },
+      "long-titles": { goal: 0 },
       "ci-duration": { limit: 40 },
       "pptx-check-duration": { limit: 90 },
     }),
@@ -57,6 +58,11 @@ export const structure = { deck: {}, shape: { create: { route: "spTree.add" } } 
 write("packages/pptx/dist/index.js", 'export const writtenRoutes = { text: "txBody", move: "xfrm", resize: "xfrm" }\n')
 record(1)
 execFileSync("git", ["init", "-q"], { cwd: root })
+execFileSync("git", ["commit", "-q", "--allow-empty", "-m", "Start", "--author", "A <a@b.c>"], {
+  cwd: root,
+  env: { ...process.env, GIT_COMMITTER_NAME: "A", GIT_COMMITTER_EMAIL: "a@b.c" },
+})
+execFileSync("git", ["update-ref", "refs/remotes/origin/main", "HEAD"], { cwd: root })
 execFileSync("git", ["add", "-A"], { cwd: root })
 
 const steady = await readMetrics(root)
