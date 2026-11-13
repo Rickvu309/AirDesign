@@ -64,3 +64,15 @@ describe("slide list", () => {
     expect(markup()).toContain('role="status" aria-live="polite"')
   })
 })
+
+describe("way home", () => {
+  it("links the mark to the deck home, named by where it goes", () => {
+    const html = markup()
+    expect(html).toMatch(/<a [^>]*href="\/"[^>]*aria-label="Go to your decks"[^>]*>\s*<svg/)
+  })
+
+  it("leaves the design screen's mark as it was", () => {
+    const html = renderToStaticMarkup(<SlideSidebar run="done" title="Deck" />)
+    expect(html).not.toContain('aria-label="Go to your decks"')
+  })
+})

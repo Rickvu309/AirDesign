@@ -1,4 +1,4 @@
-import { deckRoutes, oauthRoutes } from "@airdesign/catalog"
+import { deckRoutes, oauthRoutes, signOutRoutes } from "@airdesign/catalog"
 import { useEffect, useRef, useState } from "react"
 import { ApproveAgent } from "@/connect/approve-agent"
 import { ClaudeConnected } from "@/connect/screens/claude-connected"
@@ -219,6 +219,11 @@ export function OAuthAuthorize() {
     }
   }
 
+  async function switchAccount() {
+    const reply = await post(signOutRoutes.session.path, {})
+    if (reply?.response.ok) window.location.assign(signInAddress())
+  }
+
   async function allow(consent: Consent) {
     if (approving.current) return
     approving.current = true
@@ -283,6 +288,7 @@ export function OAuthAuthorize() {
       account={view.consent.account}
       onDeny={() => deny(view.consent)}
       onAllow={() => void allow(view.consent)}
+      onSwitch={() => void switchAccount()}
       approving={isApproving}
     />
   )
