@@ -95,21 +95,7 @@ export const airaCopy = {
   newChat: "New chat",
   attach: "Attach",
   microphone: "Microphone",
-  welcome:
-    "Aira can add, duplicate, delete and reorder slides, rewrite text, add text boxes, and move, resize or delete elements.",
-  caution: "Aira can be wrong. Check a number, a quote, or a slide before you rely on it.",
-  draftStarters: [
-    "Draft a five-slide project kickoff",
-    "Add an agenda slide after the title",
-    "Write a title slide for a sales review",
-    "Ask me questions to plan this deck",
-  ],
-  repairStarters: [
-    "Fix the typos on every slide",
-    "Make the slide titles shorter",
-    "Sum up this deck in three sentences",
-    "Line up the text boxes on each slide",
-  ],
+  welcome: "Tell Aira what to change in this deck.",
   addToRequest: "Add to your request",
   latest: "Show latest message",
   failedTitle: "Unable to finish your request",
