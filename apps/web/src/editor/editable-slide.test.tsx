@@ -54,7 +54,7 @@ function insertedTable() {
 
 function Deck(props: { readonly exposed: (deck: Exposed) => void }) {
   const nothing = () => undefined
-  const notes = { queue: { current: Promise.resolve() }, show: nothing }
+  const notes = { show: nothing }
   const pictures = { store: { bytes: new Map(), load: async () => false, keep: nothing } }
   const undo = useUndoList()
   const shown = useDeckPaint(deck, pictures, notes, nothing)
@@ -204,5 +204,16 @@ it("paints the focused cell's text from before the edit on Ctrl+Z while its last
   expect(table.deckCell()).toBe("")
   expect(table.cell.ownerDocument.activeElement).toBe(table.cell)
   expect(table.cell.textContent).toBe("")
+  await table.close()
+}, 20_000)
+
+it("records a table's typed cell once the device takes it, while the cell is still sending", async () => {
+  const table = await tableDeck()
+  await act(async () => {
+    table.typed("N")
+    table.typed("No")
+  })
+  await table.answered()
+  expect(table.undo.undoList.current.undo.map((entry) => `${entry.name} ${entry.session ?? ""}`)).toEqual(["text 1"])
   await table.close()
 }, 20_000)
