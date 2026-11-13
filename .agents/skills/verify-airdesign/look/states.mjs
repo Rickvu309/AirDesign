@@ -107,6 +107,18 @@ async function textUndone(kit) {
   await expect(kit.page.getByRole("button", { name: "Redo text edit" })).toBeEnabled()
 }
 
+async function textUndoneInBox(kit) {
+  await kit.signIn()
+  await kit.page.goto("/")
+  await openDeck(kit.page, path.join(kit.repo, cleanDeck))
+  const text = kit.page.locator('[data-slide-paint] [contenteditable="true"]')
+  await text.click()
+  await kit.page.keyboard.press("ControlOrMeta+a")
+  await text.pressSequentially("Mine", { delay: 40 })
+  await kit.page.keyboard.press("ControlOrMeta+z")
+  await expect(text).not.toHaveText("Mine")
+}
+
 async function slideMovedTwice(kit) {
   await kit.signIn()
   await kit.page.goto("/")
@@ -348,6 +360,7 @@ export const states = [
   { name: "slides-several", design: editor, journey: "blank-slides", at: "layout-placeholders" },
   { name: "slide-sections", design: editor, drive: slideSections },
   { name: "text-undone", design: editor, drive: textUndone },
+  { name: "text-undone-in-box", design: editor, drive: textUndoneInBox },
   { name: "slide-moved-twice", design: editor, drive: slideMovedTwice },
   { name: "deck-signed-out", design: null, drive: signedOutDeck },
   { name: "new-slide-menu", design: editor, drive: newSlideMenu },
