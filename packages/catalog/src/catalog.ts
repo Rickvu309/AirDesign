@@ -59,7 +59,7 @@ export const catalog = {
     runsOn: "server",
     read: readRun,
     description:
-      "Call this when your turn is finished, so a person's edits stop closing elements to you. Takes the runId your edit answers carried.",
+      "Call this when your turn is finished, so a person's edits stop closing elements to you and other agents can change the elements your turn holds. Takes the runId your edit answers carried.",
   },
   undo_run: { kind: "command", exposure: "web" },
   watch_deck: { kind: "stream", exposure: "web" },

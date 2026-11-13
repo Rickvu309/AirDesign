@@ -519,6 +519,7 @@ describe("hostile input over every route", () => {
         {
           deck: {} as Pool,
           email: "a@example.com",
+          agentKey: "",
           session: {} as Pool,
           now: () => 0,
           mint: () => "id",

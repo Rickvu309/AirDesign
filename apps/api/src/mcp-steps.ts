@@ -14,7 +14,12 @@ export const stepNode = elementId("256.2")
 
 export type Stores = { readonly deck: Sql; readonly session: Sql }
 
-export type Owned = { readonly stores: Stores; readonly deck: DeckId; readonly email: string }
+export type Owned = {
+  readonly stores: Stores
+  readonly deck: DeckId
+  readonly email: string
+  readonly agentKey?: string
+}
 
 export type Gate = "turn" | "deck" | "write" | "save"
 
@@ -128,6 +133,7 @@ export async function mcpSteps(open: typeof createServer): Promise<McpSteps> {
           deck: gated(owned.stores.deck, call),
           session: gated(owned.stores.session, call),
           email: owned.email,
+          agentKey: owned.agentKey ?? "",
           now: () => 1_000_000,
           mint: () => runId,
           hosts: ["127.0.0.1"],

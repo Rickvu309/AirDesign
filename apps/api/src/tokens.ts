@@ -22,7 +22,7 @@ export type TokenHost = {
   readonly now: number
 }
 
-export type Bearer = { readonly ok: true; readonly principal: string } | { readonly ok: false }
+export type Bearer = { readonly ok: true; readonly principal: string; readonly grant: string } | { readonly ok: false }
 
 const verifierPattern = /^[A-Za-z0-9._~-]{43,128}$/
 
@@ -113,5 +113,5 @@ export async function bearerPrincipal(db: Sql, secret: string, now: number): Pro
   if (approval === undefined) return { ok: false }
   const result = oauth(approval.grant, { command: "call", generation: token.generation })
   if (!result.accepted) return { ok: false }
-  return { ok: true, principal: result.grant.principal }
+  return { ok: true, principal: result.grant.principal, grant: token.grantId }
 }

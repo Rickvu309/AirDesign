@@ -13,6 +13,7 @@ export const editNext = {
   stale: "The element changed since it was read. Use the value and version in this answer and send the change again.",
   "person-protected":
     "A person edited this element during this run. It is closed to this run. Do not send this change again.",
+  held: "Another agent is working on this element in its turn, and nothing landed. Its turn ends when it stops or after ten minutes without a call. Change other elements, then read this one again before you change it.",
   "run-fenced":
     "This turn's run has ended on an element this call names, or another run holds one of them, and nothing landed. Call airdesign_stop_run with the runId your edit answers carried to end the turn, then edit in a new turn.",
   limit: `The value is over ${valueBytes} bytes, or the deck is at its size, element or slide limit. Send a shorter value, or tell the person the deck is full.`,

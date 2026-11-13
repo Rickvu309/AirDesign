@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { admit, emptyLog, type CallerLog, type LimitKind } from "./index.js"
+import { admit, emptyLog, refund, type CallerLog, type LimitKind } from "./index.js"
 
 function take(log: CallerLog, kind: LimitKind, count: number, at: (index: number) => number): CallerLog {
   let current = log
@@ -92,6 +92,38 @@ describe("admit", () => {
     if (refused.ok) return
     expect(refused.log.events).toHaveLength(30)
     expect(refused.text).toBe("Thirty tool calls in five minutes. The next tool call can run in 300 seconds.")
+  })
+
+  it("gives each agent its own thirty tool calls and refuses the account's ninety-first", () => {
+    let log = emptyLog()
+    for (const agent of ["one", "two", "three"]) {
+      for (let call = 0; call < 30; call += 1) {
+        const admitted = admit(log, "tool", call, agent)
+        if (!admitted.ok) throw new Error(admitted.text)
+        log = admitted.log
+      }
+      const full = admit(log, "tool", 30, agent)
+      expect(full.ok).toBe(false)
+      if (full.ok) return
+      expect(full.text).toBe("Thirty tool calls in five minutes. The next tool call can run in 300 seconds.")
+    }
+    const fourth = admit(log, "tool", 40, "four")
+    expect(fourth.ok).toBe(false)
+    if (fourth.ok) return
+    expect(fourth.log).toBe(log)
+    expect(fourth.resetsAt).toBe(300_000)
+    expect(fourth.text).toBe(
+      "Ninety tool calls in five minutes from this account's agents. The next tool call can run in 300 seconds.",
+    )
+    expect(admit(log, "tool", 300_000, "four").ok).toBe(true)
+  })
+
+  it("refunds only the agent's own latest tool call", () => {
+    const first = admit(emptyLog(), "tool", 0, "one")
+    if (!first.ok) throw new Error(first.text)
+    const second = admit(first.log, "tool", 1, "two")
+    if (!second.ok) throw new Error(second.text)
+    expect(refund(second.log, "tool", "one").events).toEqual([{ kind: "tool", at: 1, agent: "two" }])
   })
 
   it("counts a deck apart from a tool call and a turn", () => {

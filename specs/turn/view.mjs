@@ -1,7 +1,7 @@
 const steps = {
-  TurnStart: "the account's first edit starts a turn",
+  TurnStart: "the agent's first edit starts a turn",
   AgentEdit: "the agent edits an element in the turn",
-  SlideStart: "the account's first slide tool call ends earlier runs and starts a turn",
+  SlideStart: "the agent's first slide tool call ends its earlier runs and starts a turn",
   SlideInTurn: "a slide tool call joins the live turn",
   PersonEdit: "a person edits an element",
   Stop: "the agent stops the run and the turn ends",

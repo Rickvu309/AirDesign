@@ -61,6 +61,11 @@ function runRequest(register: Register, raw: unknown): RunRequest {
   return { ok: true, deck: { id: parsed.deck, revision: 0, register }, elements: runElements(parsed.changes) }
 }
 
+export type Holders = {
+  readonly owns: (runId: string) => boolean
+  readonly ended: (runId: string) => boolean
+}
+
 function startRun(deck: Deck, elements: readonly WireRunElement[], runId: string) {
   return call("start_run", deck, agentCaller(runId), { deck: deck.id, runId, elements })
 }
@@ -70,30 +75,58 @@ function underRun(started: ReturnType<typeof startRun>): Opened {
   return { ok: true, register: started.deck.register, caller: agentCaller(started.runId) }
 }
 
-export function joinRun(register: Register, raw: unknown, runId: string): Opened {
-  const request = runRequest(register, raw)
-  if (!request.ok) return request
-  return underRun(startRun(request.deck, request.elements, runId))
+function stopRun(deck: Deck, runId: string): Stopped {
+  const stopped = call("stop_run", deck, agentCaller(runId), { deck: deck.id, runId })
+  return stopped.ok ? { ok: true, deck: stopped.deck } : stopped
 }
 
-export function stopLiveRuns(
-  deck: Deck,
-): { readonly ok: true; readonly deck: Deck } | { readonly ok: false; readonly refusal: EditCode } {
+type Stopped = { readonly ok: true; readonly deck: Deck } | { readonly ok: false; readonly refusal: EditCode }
+
+function freed(deck: Deck, elements: readonly WireRunElement[], holders: Holders): Stopped {
   let current = deck
-  for (const runId of liveRuns(deck)) {
-    const stopped = call("stop_run", current, agentCaller(runId), { deck: deck.id, runId })
+  for (const { node } of elements) {
+    const body = current.register.elements[node]
+    const runId = body?.phase === "running" ? body.runId : null
+    if (runId === null || holders.owns(runId)) continue
+    if (!holders.ended(runId)) return { ok: false, refusal: "held" }
+    const stopped = stopRun(current, runId)
     if (!stopped.ok) return stopped
     current = stopped.deck
   }
   return { ok: true, deck: current }
 }
 
-export function openRun(register: Register, raw: unknown, mint: () => string): Opened {
+export function joinRun(register: Register, raw: unknown, runId: string, holders: Holders): Opened {
   const request = runRequest(register, raw)
   if (!request.ok) return request
-  const stopped = stopLiveRuns(request.deck)
+  const free = freed(request.deck, request.elements, holders)
+  if (!free.ok) return free
+  return underRun(startRun(free.deck, request.elements, runId))
+}
+
+export function stopLiveRuns(deck: Deck, stops: (runId: string) => boolean): Stopped {
+  let current = deck
+  for (const runId of liveRuns(deck)) {
+    if (!stops(runId)) continue
+    const stopped = stopRun(current, runId)
+    if (!stopped.ok) return stopped
+    current = stopped.deck
+  }
+  return { ok: true, deck: current }
+}
+
+export function stopForNewTurn(deck: Deck, holders: Holders): Stopped {
+  return stopLiveRuns(deck, (runId) => holders.owns(runId) || holders.ended(runId))
+}
+
+export function openRun(register: Register, raw: unknown, mint: () => string, holders: Holders): Opened {
+  const request = runRequest(register, raw)
+  if (!request.ok) return request
+  const stopped = stopForNewTurn(request.deck, holders)
   if (!stopped.ok) return stopped
-  return underRun(startRun(stopped.deck, request.elements, mint()))
+  const free = freed(stopped.deck, request.elements, holders)
+  if (!free.ok) return free
+  return underRun(startRun(free.deck, request.elements, mint()))
 }
 
 export function afterWrite(wrote: boolean, result: ToolResult, stored: Deck): ToolResult {

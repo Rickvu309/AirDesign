@@ -27,6 +27,7 @@ export type McpHost = {
   readonly deck: Sql
   readonly session: Sql
   readonly email: string
+  readonly agentKey: string
   readonly now: () => number
   readonly mint: () => string
   readonly hosts: readonly string[]
@@ -50,7 +51,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
   if (!hostHeaderValidation(names)(req, res) || !originValidation(names)(req, res)) return
   const pending = readDeckId("pending")
   if (!pending.ok) throw new Error(pending.refusal)
-  const turns = storedTurns(host.session, host.email)
+  const turns = storedTurns(host.session, host.email, host.agentKey)
   const session: Session = {
     caller: agentCaller(host.mint()),
     deck: openDeck(pending.deck),
@@ -60,7 +61,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
   }
   let loaded: Deck = session.deck
   const bridge: Host = {
-    admit: (called) => admitCaller(host.session, host.email, "tool", called.now),
+    admit: (called) => admitCaller(host.session, host.email, "tool", called.now, host.agentKey),
     prepare: async (name, raw) => {
       if (name === "airdesign_list_decks") {
         try {
@@ -102,7 +103,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
         result,
         session.once === undefined ? undefined : { email: host.email, once: session.once },
       ),
-    refund: () => refundCaller(host.session, host.email, "tool"),
+    refund: () => refundCaller(host.session, host.email, "tool", host.agentKey),
     turnSaved: () => turns.saved(),
   }
   const handler = createMcpHandler(() => createServer(session, bridge), { maxRequestBodySize: host.bodyCap })

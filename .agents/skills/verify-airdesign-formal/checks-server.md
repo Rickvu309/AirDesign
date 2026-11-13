@@ -1,10 +1,10 @@
 # Checks on agent turns, Aira stop, the Aira loop, usage, OAuth and deck ownership
 
-Same fields as [checks-document.md](checks-document.md). The `apps/api` replays start the real API on their own Postgres database: `pnpm vitest run apps/api/src/turn.test.ts apps/api/src/aira-closing.test.ts apps/api/src/owner.test.ts`.
+Same fields as [checks-document.md](checks-document.md). The `apps/api` replays start the real API on their own Postgres database: `pnpm vitest run apps/api/src/turn.test.ts apps/api/src/agents.test.ts apps/api/src/aira-closing.test.ts apps/api/src/owner.test.ts`.
 
 ## turn
 
-An account's agent turn on a deck, and the elements a person closes during it.
+One agent's turn on a deck, and the elements a person closes during it. An agent is a connected agent, named by its OAuth grant, or Aira, named by the account; `session.agent_turn` keeps one row per (account, deck, agent). The model has one agent: until the agents change it said "an account's turn", and every agent of an account shared it. The agents entry below covers a second agent.
 
 - `ClosedUntilTurnEnds`: a person's edit on an element the turn holds closes it to agent writes until the turn ends, and only the end of the turn reopens it. Harm: the agent writes over an element the person is working on.
 - `RefusalKeepsTurn`: a refused call never ends the turn or reopens an element.
@@ -15,6 +15,19 @@ Bounds: one account, one deck, two elements, one turn at a time. A turn starts w
 With no live turn, `slideTool` checks the agent's `base` against the deck it read, stops any live run, then sends the stopped revision as `base`; the last trace replays a slide call after the idle window.
 
 Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
+
+## agents
+
+Two agents of one account edit one element of one deck. The server names the agent from the credential, never from the call: `agentKey` in `apps/api/src/agent-key.ts` hashes the grant id for a bearer token (`bearerPrincipal` in `apps/api/src/tokens.ts` now answers the grant) and the account for the cookie, which is Aira's. `server.ts` mints each run id as `<agent key>-<uuid>`, so a run's agent is read from its id with no stored state and no race between the deck write and the turn save.
+
+- `NoSilentOverwrite`: an agent's edit never replaces another agent's edit of the element that it had not read. Harm: an agent's change is lost with no refusal, and no one is told. Before this change both agents joined one run, and `readAt` equal to the run's `claimed` passed: TLC fails it in three steps (a edits x in run a1; b edits x on version 0 and lands in a1).
+- `RunsAreOwn`: a run holds one agent's writes only, so a person's Undo of it takes back only that agent's work. Harm: Undo removes another agent's edits.
+- `StopsOnlyOwn`: an agent's `stop_run` never ends another agent's run; naming one answers `run-fenced`. Harm: one agent stops another's work.
+- `HeldOnlyWhileLive`: an element is refused `held` only while the other agent's live turn holds it, so no hold outlives the ten-minute idle window. Harm: an agent is locked out of an element no one is working on.
+
+Bounds: agents a and b, one element, two runs each, `MaxVer = 2`. 259 states. Each call is one step; one agent's calls that interleave are slide-run's and slide-sibling's. Run: `pnpm check:specs agents`. Replay: `apps/api/src/agents.test.ts` covers every edge with walks from the start, through `POST /mcp` on the real server and Postgres, half with two grants and half with Aira's cookie and a grant, and compares the element's run and version, each agent's turn row and whether its window is open, the answer, and the run ids each agent was answered against the agent's key. Idle ages that agent's row by ten minutes. The same file holds the scenarios with a call paused at its deck write, one grant from two connections (one agent), and the limits. Code: `heldRun`, `holders` and `settleTurn` in `packages/mcp/src/turn.ts`; `freed`, `joinRun`, `openRun`, `stopForNewTurn` and `stopLiveRuns` in `packages/mcp/src/run.ts`; `stopRun` in `packages/mcp/src/call-tool.ts`; `slideTool` and `elementTool`; `storedTurns` in `apps/api/src/agent-turn.ts`; `caller` and `mcpRoute` in `apps/api/src/server.ts`; `admit` in `packages/mcp/src/admit.ts`. Leaves out: the person, whose edits close an element as the turn model says; slide and element tools, which check `base` against the deck's `lastRun`, now one agent's run; a run whose agent's turn row was never saved, which stays held until that agent's next call ends it; two Aira asks of one account, which are one agent. Plants that the replay and the scenarios catch: the bearer keyed by account instead of grant, `freed` treating another agent's run as its own, `stop_run` accepting another agent's run, and `heldRun` joining a live run that is not its agent's.
+
+Sync: the commit that keyed turns and runs by agent.
 
 ## stop
 

@@ -5,13 +5,13 @@ import { editLanded, editRefusal, namedNodes } from "./edit-answer.js"
 import { kindProblem } from "./kind-refusal.js"
 import { elementFloors, joinRun, openRun } from "./run.js"
 import { textProblem } from "./text-from.js"
-import { heldRun } from "./turn.js"
+import { heldRun, holders } from "./turn.js"
 
 function startedTurn(raw: unknown, session: Session) {
   const { deck } = session
   const held = heldRun(session)
-  if (held !== undefined) return joinRun(deck.register, raw, held.runId)
-  return openRun(deck.register, raw, () => session.caller.runId)
+  if (held !== undefined) return joinRun(deck.register, raw, held.runId, holders(session))
+  return openRun(deck.register, raw, () => session.caller.runId, holders(session))
 }
 
 export function editDeck(raw: unknown, session: Session): ToolResult {
