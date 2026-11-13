@@ -24,7 +24,7 @@ import { type PictureSources } from "@/picture-fill"
 import { paint, valueStorable } from "@/deck-paint"
 export { elementIds, valueStorable } from "@/deck-paint"
 import { followDeck } from "@/deck-follow"
-import { closesDeck, deckParts, deviceCopy } from "@/device-copy"
+import { closesDeck, deckParts, deviceCopy, deviceRegister } from "@/device-copy"
 import { busyElements, liveRepaint, showText, shownValue } from "@/live-repaint"
 import { AiraPanel } from "@/aira-panel"
 import { useDeckTitle } from "@/editor/use-deck-title"
@@ -185,8 +185,7 @@ export function ThinDeck({ id }: { id: string }) {
 
   async function textBefore(target: ElementId): Promise<string> {
     const file = boxes.current.get(target)?.file ?? ""
-    const opened = await connect(memoryRemote()).openDeck(id)
-    return shownValue(opened.ok ? opened.register : null, target, file)
+    return shownValue(await deviceRegister(id), target, file)
   }
 
   function onEdit(target: ElementId, value: string) {
@@ -205,8 +204,7 @@ export function ThinDeck({ id }: { id: string }) {
     if (box === undefined) return
     const file = box.file
     async function refused() {
-      const opened = await connect(memoryRemote()).openDeck(id)
-      showText(store.current, target, shownValue(opened.ok ? opened.register : null, target, file))
+      showText(store.current, target, shownValue(await deviceRegister(id), target, file))
     }
     const shape = shapes.current.get(target)
     if (shape === undefined || !valueStorable(editParts.current, shape, textValue(value))) {
@@ -236,8 +234,7 @@ export function ThinDeck({ id }: { id: string }) {
 
   async function onBox(target: ElementId, box: Box) {
     async function refused() {
-      const opened = await connect(memoryRemote()).openDeck(id)
-      store.current.placeBox(target, landedBox(opened.ok ? opened.register : null, target))
+      store.current.placeBox(target, landedBox(await deviceRegister(id), target))
     }
     const element = movables.current.get(target)
     if (element === undefined) {

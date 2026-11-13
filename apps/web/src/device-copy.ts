@@ -1,6 +1,7 @@
 import { deckRoutes } from "@airdesign/catalog"
 import { adoptDeck, connect, fetchOriginal, getParts, memoryRemote, putParts, type Remote } from "@airdesign/live"
 import { readPackage } from "@airdesign/pptx"
+import type { Register } from "@airdesign/document"
 
 async function listedName(deck: string): Promise<string | undefined> {
   try {
@@ -52,4 +53,9 @@ const closing: ReadonlySet<string> = new Set(["owner", "deleted", "deck"])
 
 export function closesDeck(refusal: string): boolean {
   return closing.has(refusal)
+}
+
+export async function deviceRegister(deck: string): Promise<Register | null> {
+  const opened = await connect(memoryRemote()).openDeck(deck)
+  return opened.ok ? opened.register : null
 }
