@@ -46,32 +46,43 @@ const shape: CanvasElement = {
   text: null,
 }
 
-async function mounted(removed: ElementId[] = []) {
+const added = elementId("256.9")
+const box: CanvasElement = { ...shape, key: `ppt/slides/slide1.xml#${added}`, id: added }
+const otherSlide: CanvasElement = { ...shape, key: `ppt/slides/slide2.xml#${added}`, id: added }
+
+async function mounted(removed: ElementId[] = [], removes = true) {
   const store = paintStore()
   store.publish({ id, kind: "shape", text: "Quarterly results", picture: null })
+  store.publish({ id: added, kind: "shape", text: "Next steps", picture: null })
   const boxes: Box[] = []
   const host = document.createElement("div")
   document.body.append(host)
   const root = createRoot(host)
   hosts.push({ host, root })
-  const slide: CanvasSlide = { width: 12_192_000, height: 6_858_000, background: null, elements: [shape] }
-  await act(async () => {
-    root.render(
-      createElement(SlideCanvas, {
-        store,
-        slide,
-        width: 800,
-        onBox: (_target: ElementId, box: Box) => boxes.push(box),
-        onRemove: (target: ElementId) => removed.push(target),
-      }),
-    )
-  })
+  const paint = async (elements: readonly CanvasElement[]) => {
+    const slide: CanvasSlide = { width: 12_192_000, height: 6_858_000, background: null, elements }
+    await act(async () => {
+      root.render(
+        createElement(SlideCanvas, {
+          store,
+          slide,
+          width: 800,
+          onBox: (_target: ElementId, box: Box) => boxes.push(box),
+          onRemove: (target: ElementId) => {
+            removed.push(target)
+            if (removes) void paint([])
+          },
+        }),
+      )
+    })
+  }
+  await paint([shape])
   const frame = host.querySelector<HTMLElement>(`[data-canvas-element="${key}"]`)
   if (frame === null) throw new Error("no frame")
   await act(async () => {
     frame.focus()
   })
-  return { host, store, boxes, frame }
+  return { host, store, boxes, frame, paint }
 }
 
 async function press(target: HTMLElement, type: "keydown" | "keyup", name: string, modifiers: KeyboardEventInit = {}) {
@@ -117,5 +128,27 @@ describe("canvas keyboard", () => {
     await press(frame, "keydown", "Delete")
     expect(removed).toEqual([id])
     expect(announced(host)).toBe("Quarterly results deleted")
+  })
+
+  it("says nothing was deleted when the delete is refused and the element stays", async () => {
+    const removed: ElementId[] = []
+    const { host, frame } = await mounted(removed, false)
+    await press(frame, "keydown", "Delete")
+    expect(removed).toEqual([id])
+    expect(announced(host)).toBe("")
+  })
+
+  it("announces an element added to the slide and its removal by undo, named by its text", async () => {
+    const { host, paint } = await mounted()
+    await paint([shape, box])
+    expect(announced(host)).toBe("Next steps added")
+    await paint([shape])
+    expect(announced(host)).toBe("Next steps deleted")
+  })
+
+  it("announces nothing when another slide is shown", async () => {
+    const { host, paint } = await mounted()
+    await paint([otherSlide])
+    expect(announced(host)).toBe("")
   })
 })

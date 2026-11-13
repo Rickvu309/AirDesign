@@ -20,6 +20,7 @@ import type { PaintStore } from "./store.js"
 export type Moves = {
   readonly selected: Selection
   readonly message: string
+  readonly say: (message: string) => void
   readonly select: (id: ElementId) => void
   readonly press: (event: PointerEvent<HTMLElement>, element: CanvasElement, grip: Grip) => void
   readonly key: (event: KeyboardEvent<HTMLElement>, element: CanvasElement) => void
@@ -173,7 +174,6 @@ export function useMoves(
       if (onRemove === undefined) return
       event.preventDefault()
       onRemove(id)
-      setMessage(`${frame.getAttribute("aria-label") ?? ""} deleted`)
       return
     }
     const resizing = event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey
@@ -219,5 +219,5 @@ export function useMoves(
     },
   }
 
-  return { selected, message, select: setSelected, press, key, slide }
+  return { selected, message, say: setMessage, select: setSelected, press, key, slide }
 }
