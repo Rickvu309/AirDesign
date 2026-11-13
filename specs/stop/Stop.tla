@@ -5,14 +5,17 @@ EXTENDS Integers
 \* or leaves A, or both at once. The ask row in Postgres is the only state the
 \* two servers share. B marks the row stopped and notifies; A learns it from a
 \* wake, which a dropped listen connection can lose until it reconnects.
-\* call is the model call on A: none, running, aborted, or closed once settled.
+\* call is the ask on A: none, running, aborted, or closed once settled or
+\* released.
 \* row is the stored ask row: none, live, stopped, or gone once A forgets it.
 \* stop is B's stop request; reached says it found the row; late says its wait
 \* passed the bound. next is a new ask on B while the turn may still be open.
+\* model is A's model call after the reserve: unsent, sent, or skipped when A
+\* finds the ask stopped just before it would send.
 
-VARIABLES call, row, charges, stop, reached, late, wake, left, next
+VARIABLES call, row, charges, stop, reached, late, wake, next, model
 
-vars == <<call, row, charges, stop, reached, late, wake, left, next>>
+vars == <<call, row, charges, stop, reached, late, wake, next, model>>
 
 TypeOK ==
   /\ call \in {"none", "running", "aborted", "closed"}
@@ -22,15 +25,19 @@ TypeOK ==
   /\ reached \in BOOLEAN
   /\ late \in BOOLEAN
   /\ wake \in BOOLEAN
-  /\ left \in BOOLEAN
   /\ next \in {"idle", "waiting", "reserved", "refused"}
+  /\ model \in {"unsent", "sent", "skipped"}
 
 ChargedOnce == charges <= 1
+
+ChargedOnlyIfSent == charges > 0 => model = "sent"
+
+StopBeforeAskIsHeeded == (stop = "answered" /\ ~reached /\ row /= "gone") => model /= "sent"
 
 RowOutlivesCall == row = "gone" => call = "closed"
 
 AnsweredAfterClose ==
-  (stop = "answered" /\ reached /\ ~late) => (call = "closed" /\ charges = 1)
+  (stop = "answered" /\ reached /\ ~late) => call = "closed"
 
 OneOpenTurn == next = "reserved" => call = "closed"
 
@@ -42,27 +49,25 @@ Init ==
   /\ reached = FALSE
   /\ late = FALSE
   /\ wake = FALSE
-  /\ left = FALSE
   /\ next = "idle"
+  /\ model = "unsent"
 
 Follow ==
   /\ call = "none"
   /\ call' = "running"
   /\ row' = "live"
-  /\ UNCHANGED <<charges, stop, reached, late, wake, left, next>>
+  /\ UNCHANGED <<charges, stop, reached, late, wake, next, model>>
 
 Leave ==
   /\ call = "running"
-  /\ ~left
-  /\ left' = TRUE
   /\ call' = "aborted"
-  /\ UNCHANGED <<row, charges, stop, reached, late, wake, next>>
+  /\ UNCHANGED <<row, charges, stop, reached, late, wake, next, model>>
 
 Mark ==
-  /\ left
+  /\ call = "aborted"
   /\ row = "live"
   /\ row' = "stopped"
-  /\ UNCHANGED <<call, charges, stop, reached, late, wake, left, next>>
+  /\ UNCHANGED <<call, charges, stop, reached, late, wake, next, model>>
 
 StopSent ==
   /\ stop = "idle"
@@ -73,60 +78,75 @@ StopSent ==
           /\ reached' = TRUE
      ELSE /\ stop' = "answered"
           /\ UNCHANGED <<row, wake, reached>>
-  /\ UNCHANGED <<call, charges, late, left, next>>
+  /\ UNCHANGED <<call, charges, late, next, model>>
 
 Drop ==
   /\ wake
   /\ wake' = FALSE
-  /\ UNCHANGED <<call, row, charges, stop, reached, late, left, next>>
+  /\ UNCHANGED <<call, row, charges, stop, reached, late, next, model>>
 
 Reconnect ==
   /\ ~wake
   /\ call = "running"
   /\ wake' = TRUE
-  /\ UNCHANGED <<call, row, charges, stop, reached, late, left, next>>
+  /\ UNCHANGED <<call, row, charges, stop, reached, late, next, model>>
 
 Watch ==
   /\ wake
   /\ wake' = FALSE
   /\ call' = IF call = "running" /\ row = "stopped" THEN "aborted" ELSE call
-  /\ UNCHANGED <<row, charges, stop, reached, late, left, next>>
+  /\ UNCHANGED <<row, charges, stop, reached, late, next, model>>
+
+Send ==
+  /\ call = "running"
+  /\ model = "unsent"
+  /\ row = "live"
+  /\ model' = "sent"
+  /\ UNCHANGED <<call, row, charges, stop, reached, late, wake, next>>
+
+Skip ==
+  /\ model = "unsent"
+  /\ (call = "aborted" \/ (call = "running" /\ row = "stopped"))
+  /\ model' = "skipped"
+  /\ call' = "closed"
+  /\ UNCHANGED <<row, charges, stop, reached, late, wake, next>>
 
 Settle ==
   /\ call \in {"running", "aborted"}
+  /\ model = "sent"
   /\ call' = "closed"
   /\ charges' = charges + 1
-  /\ UNCHANGED <<row, stop, reached, late, wake, left, next>>
+  /\ UNCHANGED <<row, stop, reached, late, wake, next, model>>
 
 Forget ==
   /\ call = "closed"
   /\ row \in {"live", "stopped"}
   /\ row' = "gone"
-  /\ UNCHANGED <<call, charges, stop, reached, late, wake, left, next>>
+  /\ UNCHANGED <<call, charges, stop, reached, late, wake, next, model>>
 
 Late ==
   /\ (stop = "waiting" \/ next = "waiting")
   /\ ~late
   /\ late' = TRUE
-  /\ UNCHANGED <<call, row, charges, stop, reached, wake, left, next>>
+  /\ UNCHANGED <<call, row, charges, stop, reached, wake, next, model>>
 
 Answer ==
   /\ stop = "waiting"
   /\ (row = "gone" \/ late)
   /\ stop' = "answered"
-  /\ UNCHANGED <<call, row, charges, reached, late, wake, left, next>>
+  /\ UNCHANGED <<call, row, charges, reached, late, wake, next, model>>
 
 NextAsk ==
   /\ next = "idle"
   /\ call /= "none"
   /\ next' = IF call = "closed" THEN "reserved" ELSE IF row = "stopped" THEN "waiting" ELSE "refused"
-  /\ UNCHANGED <<call, row, charges, stop, reached, late, wake, left>>
+  /\ UNCHANGED <<call, row, charges, stop, reached, late, wake, model>>
 
 NextRetry ==
   /\ next = "waiting"
   /\ (row = "gone" \/ late)
   /\ next' = IF call = "closed" THEN "reserved" ELSE "refused"
-  /\ UNCHANGED <<call, row, charges, stop, reached, late, wake, left>>
+  /\ UNCHANGED <<call, row, charges, stop, reached, late, wake, model>>
 
 Done ==
   /\ call = "closed"
@@ -143,6 +163,8 @@ Next ==
   \/ Drop
   \/ Reconnect
   \/ Watch
+  \/ Send
+  \/ Skip
   \/ Settle
   \/ Forget
   \/ Late
@@ -160,6 +182,8 @@ Spec ==
   /\ WF_vars(Late)
   /\ WF_vars(Answer)
   /\ WF_vars(NextRetry)
+
+SentOnlyWhileLive == [][(model = "unsent" /\ model' = "sent") => row = "live"]_vars
 
 StopIsNotLost == (row = "stopped" /\ call = "running") ~> (call /= "running")
 

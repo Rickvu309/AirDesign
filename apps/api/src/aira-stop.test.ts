@@ -228,6 +228,7 @@ describe("a person who leaves a turn stops its model call and pays for what it c
       expect(waiting.rows[0]?.count).toBe("1")
     })
     await client.leave()
+    await rowStopped(account.email, null)
     await admin.query("commit")
     await vi.waitFor(async () => {
       expect((await turnsOf(account.email)).map((row) => row.outcome).sort()).toEqual(["released", "settled"])
@@ -355,27 +356,6 @@ describe("a stop the browser sends for its ask", () => {
     replay.release()
     await closedAt(account.email, turnCharge, "settled")
   })
-
-  it("stops an ask that reached the server before it reserved, so no model is called and nothing is charged", async () => {
-    const account = await signIn()
-    const calls = replay.calls.length
-    await admin.query("begin")
-    await admin.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [account.email])
-    leaving(account, "ask-five")
-    await vi.waitFor(async () => {
-      const waiting = await admin.query<{ count: string }>(
-        `select count(*) from pg_locks where locktype = 'advisory' and not granted
-         and database = (select oid from pg_database where datname = current_database())`,
-      )
-      expect(waiting.rows[0]?.count).toBe("1")
-    })
-    const answer = stopped(account, "ask-five")
-    await admin.query("commit")
-    expect((await answer).status).toBe(200)
-    expect(await turnsOf(account.email)).toMatchObject([{ outcome: "released", charged: "0" }])
-    expect(await ledgerOf(account.email)).toEqual({ spent: "0", hold: "0", turn: null })
-    expect(replay.calls.length).toBe(calls)
-  })
 })
 
 describe("a stop that names the edit call it cut", () => {
@@ -436,3 +416,19 @@ describe("a stop that names the edit call it cut", () => {
     expect(JSON.parse(foreign.text)).toEqual({ ok: true })
   })
 })
+
+async function askRow(email: string, name: string | null): Promise<string> {
+  const found = await admin.query<{ stopped: boolean }>(
+    "select stopped is not null as stopped from session.aira_ask where email = $1 and ask is not distinct from $2",
+    [email, name],
+  )
+  const row = found.rows[0]
+  if (row === undefined) return "none"
+  return row.stopped ? "stopped" : "live"
+}
+
+async function rowStopped(email: string, name: string | null): Promise<void> {
+  await vi.waitFor(async () => {
+    expect(await askRow(email, name)).toBe("stopped")
+  })
+}

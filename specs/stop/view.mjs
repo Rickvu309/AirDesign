@@ -6,6 +6,8 @@ const steps = {
   Drop: "the listen connection drops a wake",
   Reconnect: "the listen connection comes back and wakes the watcher",
   Watch: "server A reads the row and aborts a stopped call",
+  Send: "server A reads the row live just before the model call and sends it",
+  Skip: "server A finds the ask stopped before the model call and releases the turn uncharged",
   Settle: "server A settles the turn once",
   Forget: "server A deletes the row and notifies",
   Late: "the wait passes its bound",
@@ -16,7 +18,7 @@ const steps = {
 }
 
 export const state = (v) =>
-  `call ${v.call}, row ${v.row}, charges ${v.charges}, stop ${v.stop}, next ${v.next}${v.late ? ", late" : ""}`
+  `call ${v.call}, model ${v.model}, row ${v.row}, charges ${v.charges}, stop ${v.stop}, next ${v.next}${v.late ? ", late" : ""}`
 
 export const step = (action) => steps[action] ?? null
 

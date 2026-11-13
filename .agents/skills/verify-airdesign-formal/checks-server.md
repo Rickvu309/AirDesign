@@ -21,14 +21,18 @@ Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
 One Aira ask runs its model call on server A while a person stops it from server B, leaves, or both. The `session.aira_ask` row in Postgres is the only shared state.
 
 - `ChargedOnce`: an ask is charged at most once. Harm: a person pays twice.
+- `ChargedOnlyIfSent`: an ask is charged only when A sent its model call. Harm: a person pays for a call that never ran.
+- `SentOnlyWhileLive`: A sends the model call only while the ask's row is live. A stop that marked the row first, from any server, keeps the model from being called, even while A's wake is late. Harm: the model runs and is charged after the person stopped it. Until A read the row just before the call, A decided on its own abort signal alone. TLC fails that model in three steps: Follow, StopSent (B marks the row, A's wake not yet taken), Send.
 - `RowOutlivesCall`: the ask row is forgotten only after the model call closed.
-- `AnsweredAfterClose`: a stop that found the row and did not time out is answered only after the call closed and was charged.
+- `AnsweredAfterClose`: a stop that found the row and did not time out is answered only after the call closed. It used to add "and was charged": a call skipped before its send now closes uncharged.
 - `OneOpenTurn`: a next ask is reserved only after the earlier call closed.
 - `StopIsNotLost`, `StopIsAnswered`, `NextAskIsAnswered`: a stop reaches the call even if a wake is dropped, and every waiting stop or next ask gets an answer. These are liveness properties under the fairness in `Spec`.
 
-Bounds: one ask, one stop, one next ask, a listen connection that can drop and reconnect. Run: `pnpm check:specs stop`. Replay: `apps/api/src/aira-closing.test.ts` drives two `Closing` instances from `apps/api/src/aira-closing.ts`, each on its own listen connection, against the real rows. Code: `Closing`, and the reserve and settle calls in `apps/api/src/aira.ts`.
+Bounds: one ask, one stop, one next ask, a listen connection that can drop and reconnect. `Follow` is the follow and the reserve; `Send` and `Skip` are the read of the row just before the model call. `Mark` happens while A's call is still open: a mark that lands after the close changes nothing the properties read. Run: `pnpm check:specs stop`. Replay: `apps/api/src/aira-closing.test.ts` drives two `Closing` instances from `apps/api/src/aira-closing.ts`, each on its own listen connection, against the real rows. `Send` and `Skip` call the real `stopped` that `follow` returns, and one trace holds A's wake read with `heldQueries` from `apps/api/src/held-queries.ts`. `apps/api/src/aira-stop-order.test.ts` holds a real ask at each point through the real routes: before its follow, at the reserve, at the read before the model call, and in the model call, with the stop sent to the same server or to another one. `apps/api/src/aira-stop.test.ts` waits until the ask row is stopped before it releases the account lock on a turn the person left. Code: `Closing`, and `reserveTurn`, `answered`, `settleTurn` and `releaseTurn` in `apps/api/src/aira.ts`. Plant: deciding on the abort signal alone fails `SentOnlyWhileLive` in TLC, the late-wake replay on `Skip`, and the late-wake test in `aira-stop-order.test.ts`.
 
-Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
+Known bug: `StopBeforeAskIsHeeded` in `Stop.known.cfg`. A stop that reaches the server before it followed the ask finds no row and is answered at once. The ask then runs and is charged. It matters when the browser's cut of the turn fetch does not reach the server. `aira-stop-order.test.ts` pins it with `it.fails` ("before the server followed the ask").
+
+Sync: the commit that added `Send` and `Skip`.
 
 ## aira-loop
 

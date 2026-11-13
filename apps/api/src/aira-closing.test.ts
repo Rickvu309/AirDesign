@@ -5,11 +5,13 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
 import { Closing, type Followed } from "./aira-closing.js"
 import { postgresInfo } from "./harness.js"
+import { heldQueries, type HeldQueries } from "./held-queries.js"
 import { DeckListen, openPool, type Sql } from "./index.js"
 import { same, specGraph, type Graph, type SpecState } from "./spec-graph.js"
 
 type Seen = {
   readonly call: string
+  readonly model: string
   readonly row: string
   readonly charges: number
   readonly stop: string
@@ -20,6 +22,7 @@ type Run = {
   readonly email: string
   readonly left: AbortController
   followed?: Followed
+  sent?: boolean
   settled: boolean
   charges: number
   stop?: { answered: boolean; readonly done: Promise<void> }
@@ -28,12 +31,15 @@ type Run = {
 
 type Step = { readonly actions: readonly string[]; readonly act: (run: Run) => Promise<void> }
 
-const observed = ["call", "row", "charges", "stop", "next"] as const
+const observed = ["call", "model", "row", "charges", "stop", "next"] as const
+
+const stoppedRead = "select stopped is not null as stopped from session.aira_ask"
 
 let session: Sql = openPool("postgres://session@127.0.0.1/api")
 let admin = new Client()
 let listens: DeckListen[] = []
 let a: Closing
+let held: HeldQueries
 let b: Closing
 let brief: Closing
 let graph: Graph = { states: new Map(), edges: [] }
@@ -46,7 +52,8 @@ beforeAll(async () => {
   listens = [new DeckListen(info.listen), new DeckListen(info.listen)]
   const [first, second] = listens
   if (first === undefined || second === undefined) throw new Error("listen")
-  a = new Closing({ db: session, listen: first })
+  held = heldQueries(session)
+  a = new Closing({ db: held.db, listen: first })
   b = new Closing({ db: session, listen: second })
   brief = new Closing({ db: session, listen: second }, 50)
   graph = await specGraph("stop", "Stop")
@@ -81,7 +88,8 @@ async function seen(run: Run): Promise<Seen> {
         : run.next.result && run.settled
           ? "reserved"
           : "refused"
-  return { call, row: await rowOf(run), charges: run.charges, stop, next }
+  const model = run.sent === undefined ? "unsent" : run.sent ? "sent" : "skipped"
+  return { call, model, row: await rowOf(run), charges: run.charges, stop, next }
 }
 
 function shown(state: SpecState | undefined): Record<string, unknown> {
@@ -113,8 +121,8 @@ function after(ids: ReadonlySet<string>, actions: readonly string[]): Set<string
 }
 
 function initial(): Set<string> {
-  const start: SpecState = { call: "none", row: "none", charges: 0, stop: "idle", next: "idle" }
-  const unset: SpecState = { reached: false, late: false, wake: false, left: false }
+  const start: SpecState = { call: "none", model: "unsent", row: "none", charges: 0, stop: "idle", next: "idle" }
+  const unset: SpecState = { reached: false, late: false, wake: false }
   const ids = [...graph.states].filter(([, state]) => same(state, { ...start, ...unset }))
   return new Set(ids.map(([id]) => id))
 }
@@ -128,12 +136,18 @@ async function replay(steps: readonly Step[]): Promise<void> {
   for (const step of steps) {
     await step.act(run)
     const now = await seen(run)
-    const matched = [...after(ids, step.actions)].filter((id) => same(shown(graph.states.get(id)), now))
-    expect({ step: step.actions.join(" "), matched: matched.length > 0, now }).toEqual({
-      step: step.actions.join(" "),
-      matched: true,
-      now,
-    })
+    const reached = [...after(ids, step.actions)]
+    const matched = reached.filter((id) => same(shown(graph.states.get(id)), now))
+    if (matched.length === 0) {
+      const sample = reached.slice(0, 6).map((id) => shown(graph.states.get(id)))
+      expect({ step: step.actions.join(" "), matched: false, now, reached: reached.length, sample }).toEqual({
+        step: step.actions.join(" "),
+        matched: true,
+        now,
+        reached: reached.length,
+        sample,
+      })
+    }
     ids = new Set(matched)
   }
 }
@@ -141,9 +155,27 @@ async function replay(steps: readonly Step[]): Promise<void> {
 const follow: Step = {
   actions: ["Follow"],
   act: async (run) => {
+    const reads = held.times(stoppedRead)
     run.followed = await a.follow(run.email, "ask", run.left.signal)
+    await vi.waitFor(() => {
+      expect(held.times(stoppedRead)).toBeGreaterThan(reads)
+    })
   },
 }
+
+function decide(actions: readonly string[]): Step {
+  return {
+    actions,
+    act: async (run) => {
+      run.sent = !(await run.followed?.stopped())
+      if (!run.sent) run.settled = true
+    },
+  }
+}
+
+const send = decide(["Send"])
+
+const skip = decide(["Skip"])
 
 function stopFrom(closing: Closing, actions: readonly string[], until: (run: Run) => Promise<boolean>): Step {
   return {
@@ -194,6 +226,7 @@ describe("a stop replays the stop spec through two servers on one database", () 
   it("aborts the call on server A from server B and answers once A forgot the ask", async () => {
     await replay([
       follow,
+      send,
       stopFrom(b, ["StopSent", "Watch"], async (run) => run.followed?.signal.aborted === true),
       settle,
       forget(["Forget", "Answer"]),
@@ -203,6 +236,7 @@ describe("a stop replays the stop spec through two servers on one database", () 
   it("charges once when the person leaves A before B's stop arrives", async () => {
     await replay([
       follow,
+      send,
       leave,
       stopFrom(b, ["StopSent"], async (run) => (await rowOf(run)) === "stopped"),
       settle,
@@ -213,6 +247,7 @@ describe("a stop replays the stop spec through two servers on one database", () 
   it("answers after the wait when A has not settled, and A still settles once", async () => {
     await replay([
       follow,
+      send,
       stopFrom(
         brief,
         ["StopSent", "Watch", "Late", "Answer"],
@@ -227,6 +262,7 @@ describe("a stop replays the stop spec through two servers on one database", () 
     await replay([
       stopFrom(b, ["StopSent"], async (run) => run.stop?.answered === true),
       follow,
+      send,
       settle,
       forget(["Forget"]),
     ])
@@ -235,6 +271,7 @@ describe("a stop replays the stop spec through two servers on one database", () 
   it("holds a new ask on B until the turn the person left on A has closed", async () => {
     await replay([
       follow,
+      send,
       leave,
       {
         actions: ["NextAsk"],
@@ -251,5 +288,32 @@ describe("a stop replays the stop spec through two servers on one database", () 
       settle,
       forget(["Forget", "NextRetry"]),
     ])
+  })
+
+  it("skips the model call when B marked the row before A sent, though A's wake is late", async () => {
+    let wake = { reached: Promise.resolve(), release: () => undefined as void }
+    await replay([
+      follow,
+      {
+        actions: ["StopSent"],
+        act: async (run) => {
+          wake = held.hold(stoppedRead)
+          await stopFrom(b, [], async (found) => (await rowOf(found)) === "stopped").act(run)
+          await wake.reached
+        },
+      },
+      skip,
+      {
+        actions: ["Forget", "Answer"],
+        act: async (run) => {
+          wake.release()
+          await forget([]).act(run)
+        },
+      },
+    ])
+  })
+
+  it("skips the model call when the person left A before it sent", async () => {
+    await replay([follow, leave, skip, forget(["Forget"])])
   })
 })

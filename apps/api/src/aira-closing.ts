@@ -3,7 +3,12 @@ import type { Sql } from "./pool.js"
 
 export const closeBound = 5_000
 
-export type Followed = { readonly id: string; readonly signal: AbortSignal; readonly done: () => Promise<void> }
+export type Followed = {
+  readonly id: string
+  readonly signal: AbortSignal
+  readonly stopped: () => Promise<boolean>
+  readonly done: () => Promise<void>
+}
 
 type Shared = { readonly db: Sql; readonly listen: DeckListen }
 
@@ -14,6 +19,8 @@ with stale as (delete from session.aira_ask where email = $1 and started < now()
 insert into session.aira_ask (email, ask) values ($1, $2) returning id`
 
 const stoppedSql = "select stopped is not null as stopped from session.aira_ask where id = $1"
+
+const liveSql = "select exists (select 1 from session.aira_ask where id = $1 and stopped is null) as live"
 
 const stopSql = `
 update session.aira_ask set stopped = coalesce(stopped, now())
@@ -57,6 +64,13 @@ export class Closing {
     return {
       id,
       signal,
+      stopped: async () => {
+        if (!signal.aborted) {
+          const found = await this.shared.db.query<{ live: boolean }>(liveSql, [id]).catch(() => undefined)
+          if (found?.rows[0]?.live !== true) stop.abort()
+        }
+        return signal.aborted
+      },
       done: async () => {
         signal.removeEventListener("abort", mark)
         finished.abort()
