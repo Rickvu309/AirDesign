@@ -323,7 +323,6 @@ test("a new deck's panel says who Aira is, and Enter sends while Shift+Enter sta
   const { side } = await openDeck(page, context, stack)
   await expect(side.getByRole("heading", { name: productCopy.agentName })).toBeVisible()
   await expect(side.getByText(airaCopy.welcome, { exact: true })).toBeVisible()
-  await expect(side.getByText(airaCopy.caution, { exact: true })).toBeVisible()
   await expect(side.getByRole("button", { name: "New chat", exact: true })).toBeDisabled()
   await expect(side.getByRole("button", { name: "Send" })).toBeDisabled()
   stack.aira({ name: "turn.sse" })

@@ -122,5 +122,3 @@ export const productCopy = {
   presetTwentyFive: "$25",
   presetFifty: "$50",
 } as const
-
-export const airaStarters: readonly string[] = []

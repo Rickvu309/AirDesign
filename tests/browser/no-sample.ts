@@ -43,8 +43,6 @@ export async function expectNoSample(page: Page) {
       airaCopy.newChat,
       productCopy.agentName,
       airaCopy.welcome,
-      ...airaCopy.draftStarters,
-      airaCopy.caution,
       "Agent",
       "Design",
     ]),
