@@ -3,7 +3,10 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { overLimit, readMetrics, timeMetric } from "./metrics.mjs"
+import { measures, overLimit, readMetrics as readEvery, timeMetric } from "./metrics.mjs"
+
+const offline = Object.fromEntries(Object.entries(measures).filter(([name]) => name !== "import-parse"))
+const readMetrics = (at) => readEvery(at, offline)
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
