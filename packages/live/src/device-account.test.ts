@@ -29,6 +29,7 @@ import {
   readChats,
   readMedia,
   sendQueued,
+  starDeck,
   writeChat,
 } from "./index.js"
 import { keepUnsaved } from "./unsaved.js"
@@ -232,6 +233,21 @@ it(`keeps a deck not opened for ${String(idleDays)} days while its new name is n
   expect(await getParts("renamed")).toMatchObject({ ok: true })
 })
 
+it(`keeps a deck not opened for ${String(idleDays)} days while its star is not sent`, async () => {
+  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")))
+  const { remote } = countingRemote()
+  let now = 1_000 * day
+  const cache = connect(remote, { now: () => now })
+  for (const deck of ["sent", "starred"]) {
+    await putParts(deck, parts, () => now)
+    await cache.enqueue(deck, `Text of ${deck}`, node, "file")
+    await cache.flush(deck)
+  }
+  await starDeck("starred", true)
+  now += (idleDays + 1) * day
+  expect([...(await cache.sweep())]).toEqual(["sent"])
+})
+
 it(`keeps a deck not opened for ${String(idleDays)} days while a picture's bytes are not sent`, async () => {
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")))
   const { remote } = countingRemote()
@@ -269,6 +285,7 @@ it("never lists a picture waiting to upload among the deck's chats", async () =>
 it("shows a queued deck name only to the account that typed it, and to no one signed out", async () => {
   vi.stubGlobal("fetch", () => Promise.reject(new Error("offline")))
   signInAs(firstAccount)
+  await putParts("deck-named", parts)
   await queueRename("deck-named", "Mine")
   signInAs(secondAccount)
   expect([...(await sendQueued(["deck-named"])).names]).toEqual([])

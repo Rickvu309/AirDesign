@@ -1,6 +1,7 @@
 import { connect } from "./cache.js"
-import { flushRename, queuedName, queueRename } from "./deck-rename.js"
-import { flushStar, queuedStar } from "./deck-star.js"
+import { keepShelved } from "./deck-queue.js"
+import { flushRename, names, queuedName, queueRename } from "./deck-rename.js"
+import { flushStar, queuedStar, stars } from "./deck-star.js"
 import { flushMedia } from "./media.js"
 import { sendOriginal } from "./original.js"
 import { getParts } from "./part.js"
@@ -70,7 +71,17 @@ function held<Value>(entries: readonly (readonly [string, Value | undefined])[])
   return new Map(entries.filter((entry): entry is readonly [string, Value] => entry[1] !== undefined))
 }
 
+let keeping: Promise<void> | undefined
+
+export function keepQueued(): Promise<void> {
+  keeping ??= keepShelved([names, stars]).finally(() => {
+    keeping = undefined
+  })
+  return keeping
+}
+
 export async function sendQueued(decks: readonly string[]): Promise<Queued> {
+  await keepQueued()
   const names = held(await Promise.all(decks.map(async (deck) => [deck, await queuedName(deck)] as const)))
   const stars = held(await Promise.all(decks.map(async (deck) => [deck, await queuedStar(deck)] as const)))
   for (const deck of names.keys()) void flushOriginal(deck)
@@ -89,6 +100,7 @@ async function sendOpen(remote: Remote, deck: string): Promise<void> {
 }
 
 export async function sendUnopened(remote: Remote, listed: readonly string[]): Promise<readonly UnopenedDeck[]> {
+  await keepQueued()
   const known = new Set(listed)
   const held = Object.entries(unopenedOf(await readSlot(unopenedKey)))
   if (held.some(([deck]) => known.has(deck))) await forget((deck) => known.has(deck))

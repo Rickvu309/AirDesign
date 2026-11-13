@@ -13,6 +13,7 @@ import {
   transaction,
 } from "./device.js"
 import { dropShelvedChats } from "./chat-slot.js"
+import { dropShelvedQueue } from "./deck-queue.js"
 import { adoptJournal, dropJournal, hasLegacyJournal, pageShelf, type Shelf } from "./unsaved.js"
 
 export const idleDays = 30
@@ -53,13 +54,19 @@ function unsentIn(store: IDBObjectStore, account: string, deck: string): () => b
   const queue = store.get(scoped(account, `${deck}\u0002layouts\u0002queue`))
   const original = store.get(scoped(account, `${deck}\u0003original`))
   const name = store.get(scoped(account, `${deck}\u0003name`))
+  const star = store.get(scoped(account, `${deck}\u0003star`))
   const media = store.get(scoped(account, `${deck}\u0003media`))
   return () => {
     const index = queue.result as { count?: unknown; sent?: unknown } | undefined
     const indexing = typeof index === "object" && index !== null && index.sent !== index.count
     const pictures = Array.isArray(media.result) && media.result.length > 0
     return (
-      pending.result.length > 0 || indexing || original.result === true || typeof name.result === "string" || pictures
+      pending.result.length > 0 ||
+      indexing ||
+      original.result === true ||
+      typeof name.result === "string" ||
+      typeof star.result === "string" ||
+      pictures
     )
   }
 }
@@ -99,6 +106,7 @@ export async function dropDeck(deck: string, shelf: Shelf | undefined = pageShel
   heldDecks().delete(scoped(account, parsed.deck))
   dropJournal(shelf, account, parsed.deck)
   dropShelvedChats(account, parsed.deck, shelf)
+  dropShelvedQueue(account, parsed.deck, shelf)
   await changeSeen(account, (seen) => Object.fromEntries(Object.entries(seen).filter(([each]) => each !== deck)))
   const writing = await transaction("readwrite")
   writing.objectStore(storeName).delete(deckRange(account, parsed.deck))
@@ -109,6 +117,7 @@ export async function dropAccount(account: string | undefined, shelf: Shelf | un
   if (account === undefined) return
   dropJournal(shelf, account)
   dropShelvedChats(account, undefined, shelf)
+  dropShelvedQueue(account, undefined, shelf)
   heldDecks().clear()
   const writing = await transaction("readwrite")
   const store = writing.objectStore(storeName)

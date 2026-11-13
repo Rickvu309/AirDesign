@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test"
 import { forward, openClean, signInBrowser, test, type Stack } from "./api-stack"
 import { first, store } from "./home-store.ts"
+import { holdableDevice, slowDevice } from "./slow-device"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -80,6 +81,37 @@ test("a star sent while the server is slow, then unreachable, shows at once and 
   await page.reload()
   await expect.poll(() => serverStar(stack, cookie, deck)).toBe(true)
   await expect(starred(page).getByRole("link", { name: "clean" })).toBeVisible()
+})
+
+test("a star shown while its device write is held is still there after an immediate reload, for its account only", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  await holdableDevice(page)
+  const deck = await openClean(page)
+  await home(page)
+  await slowDevice(page)
+  await page.getByRole("button", { name: "Star clean" }).click()
+  await expect(starred(page).getByRole("link", { name: "clean" })).toBeVisible()
+  await page.reload()
+  await expect(starred(page).getByRole("link", { name: "clean" })).toBeVisible()
+  await expect.poll(() => serverStar(stack, cookie, deck)).toBe(true)
+  await page.getByRole("button", { name: "Remove star from clean" }).click()
+  await slowDevice(page)
+  await page.getByRole("button", { name: "Star clean" }).click()
+  await expect(starred(page).getByRole("link", { name: "clean" })).toBeVisible()
+  await signInBrowser(context, await stack.signIn())
+  await page.reload()
+  await expect(page.getByRole("heading", { name: "No decks yet" })).toBeVisible()
+  await expect(starred(page).getByRole("link")).toHaveCount(0)
+  await signInBrowser(context, cookie)
+  await page.reload()
+  await expect(starred(page).getByRole("link", { name: "clean" })).toBeVisible()
+  await expect.poll(() => serverStar(stack, cookie, deck)).toBe(true)
 })
 
 test("a second account on the same browser sees none of the first one's stars, and the first keeps its unsent star", async ({
