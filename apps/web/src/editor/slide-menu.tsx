@@ -47,7 +47,6 @@ export function SlideMenu({
   open,
   onOpenChange,
   onChoose,
-  returnFocus,
 }: {
   number: number
   index: number
@@ -57,7 +56,6 @@ export function SlideMenu({
   open: boolean
   onOpenChange: (open: boolean) => void
   onChoose: (change: SlideKey) => void
-  returnFocus: RefObject<HTMLElement | null>
 }) {
   const trigger = useRef<HTMLButtonElement>(null)
   const [host, setHost] = useState<HTMLElement | null>(null)
@@ -125,7 +123,7 @@ export function SlideMenu({
         <ActionsMark />
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        finalFocus={returnFocus}
+        finalFocus={false}
         side="right"
         align="start"
         sideOffset={8}
