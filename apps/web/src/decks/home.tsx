@@ -1,17 +1,18 @@
 import { deckRoutes, signOutRoutes } from "@airdesign/catalog"
-import { connect, dropDeck, memoryRemote, sendQueuedNames, sendUnopened } from "@airdesign/live"
+import { connect, dropDeck, memoryRemote, sendQueued, sendUnopened, starDeck } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { noMatchTitleOf, productCopy } from "@/copy/product-copy"
+import { noMatchTitleOf, productCopy, starredOf, unstarredOf } from "@/copy/product-copy"
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
 import { ImportingPreview, ImportFailedPreview } from "@/decks/deck-status-preview"
 import { importFailureWords, type ImportFailureReason } from "@/copy/import-failure-words"
 import { NewDeckMenu } from "@/decks/new-deck-menu"
+import { StarButton } from "@/decks/star-button"
 import { blankDeck } from "@/decks/blank-deck"
 import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/deck-moved-toast"
 import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/decks/screens/trash-list"
@@ -40,12 +41,22 @@ async function post(path: string, body: object) {
 async function withDevice(listing: Listing): Promise<Listing> {
   const listed = [...listing.decks, ...listing.trash].map((deck) => deck.deck)
   const [queued, unopened] = await Promise.all([
-    sendQueuedNames(listed).catch(() => new Map<string, string>()),
+    sendQueued(listed).catch(() => ({ names: new Map<string, string>(), stars: new Map<string, boolean>() })),
     sendUnopened(server, listed).catch(() => []),
   ])
-  const named = (decks: Deck[]) => decks.map((deck) => ({ ...deck, name: queued.get(deck.deck) ?? deck.name }))
+  const shown = (decks: Deck[]) =>
+    decks.map((deck) => ({
+      ...deck,
+      name: queued.names.get(deck.deck) ?? deck.name,
+      starred: queued.stars.get(deck.deck) ?? deck.starred === true,
+    }))
   const device = unopened.map((deck) => ({ ...deck, edited: deck.created }))
-  return { ...listing, decks: [...device, ...named(listing.decks)], trash: named(listing.trash) }
+  return { ...listing, decks: [...device, ...shown(listing.decks)], trash: shown(listing.trash) }
+}
+
+function starredIn(listing: Listing, deck: string, starred: boolean): Listing {
+  const shown = (decks: Deck[]) => decks.map((each) => (each.deck === deck ? { ...each, starred } : each))
+  return { ...listing, decks: shown(listing.decks), trash: shown(listing.trash) }
 }
 
 async function signOut(): Promise<void> {
@@ -114,6 +125,7 @@ export function Home({
   const [busy, setBusy] = useState(false)
   const [deleteFailed, setDeleteFailed] = useState(false)
   const [importing, setImporting] = useState<Importing | null>(null)
+  const [said, setSaid] = useState("")
   const picker = useRef<HTMLInputElement>(null)
   const listFailed = useRef(false)
   const [query, setQuery] = useState(() => addressRead(window.location.search).query)
@@ -196,6 +208,13 @@ export function Home({
     )
   }
 
+  function star(deck: Deck) {
+    const starred = deck.starred !== true
+    setListing((shown) => shown && starredIn(shown, deck.deck, starred))
+    setSaid(starred ? starredOf(deck.name) : unstarredOf(deck.name))
+    void starDeck(deck.deck, starred).catch(() => undefined)
+  }
+
   async function choose(file: File) {
     setMenu(false)
     setImporting({ name: file.name, failed: false })
@@ -232,6 +251,7 @@ export function Home({
         list: addressOf(sectionPaths[section], { list: true, query }),
       }}
       search={{ value: query, onChange: search }}
+      starred={listing?.decks.filter((deck) => deck.starred === true)}
       menu={
         menu && <NewDeckMenu onImport={() => picker.current?.click()} onBlank={() => void blankDeck().then(choose)} />
       }
@@ -341,9 +361,17 @@ export function Home({
                     trash ? (
                       <RestoreButton onClick={() => void restore(deck)} />
                     ) : (
-                      <Button variant="outline" size="sm" aria-description={deck.name} onClick={() => void move(deck)}>
-                        {productCopy.moveToTrash}
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <StarButton name={deck.name} starred={deck.starred === true} onClick={() => star(deck)} />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          aria-description={deck.name}
+                          onClick={() => void move(deck)}
+                        >
+                          {productCopy.moveToTrash}
+                        </Button>
+                      </div>
                     )
                   }
                 />
@@ -362,9 +390,12 @@ export function Home({
               created={deckTime(deck.created, now()).created}
               href={`/deck/${deck.deck}`}
               action={
-                <Button variant="ghost" size="sm" aria-description={deck.name} onClick={() => void move(deck)}>
-                  {productCopy.moveToTrash}
-                </Button>
+                <>
+                  <StarButton name={deck.name} starred={deck.starred === true} onClick={() => star(deck)} />
+                  <Button variant="ghost" size="sm" aria-description={deck.name} onClick={() => void move(deck)}>
+                    {productCopy.moveToTrash}
+                  </Button>
+                </>
               }
             />
           ))}
@@ -406,6 +437,9 @@ export function Home({
           ) : null}
         </EmptyTrashDialog>
       )}
+      <p role="status" className="sr-only">
+        {said}
+      </p>
       <MovedToaster />
     </DeckBrowser>
   )

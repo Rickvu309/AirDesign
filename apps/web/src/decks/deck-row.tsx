@@ -45,13 +45,15 @@ export function DeckRow({
     <article className="border-b border-line">
       <div className="grid h-[60px] grid-cols-[64px_minmax(0,1fr)_150px_150px] items-center px-3">
         <div className="h-9 w-16 rounded bg-line">{preview}</div>
-        <h2
-          className="truncate pl-4 text-[length:var(--type-body)] leading-[18px] font-medium text-foreground"
-          style={trimmed}
-        >
-          {href ? <a href={href}>{name}</a> : name}
+        <div className="flex min-w-0 items-center gap-1 pl-4">
+          <h2
+            className="min-w-0 truncate py-1 text-[length:var(--type-body)] leading-[18px] font-medium text-foreground"
+            style={trimmed}
+          >
+            {href ? <a href={href}>{name}</a> : name}
+          </h2>
           {action}
-        </h2>
+        </div>
         <p className="text-[length:var(--type-body)] leading-[18px] text-muted-foreground" style={trimmed}>
           {edited}
         </p>

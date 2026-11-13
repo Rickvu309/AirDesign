@@ -126,6 +126,10 @@ _Avoid_: download, save as
 Where a deck goes when a person moves it out of their decks. It can be restored for 30 days. Its actions are Move to Trash, Restore and Delete for good.
 _Avoid_: bin, archive, remove
 
+**star**:
+To keep a deck in the Starred list in Home's sidebar. Only the person who owns the deck sees its star. Its actions are Star and Remove star.
+_Avoid_: favorite, pin, bookmark
+
 **agent**:
 Software that works on a person's decks over MCP, such as Claude or Codex. A person connects and disconnects it.
 _Avoid_: bot, integration, app

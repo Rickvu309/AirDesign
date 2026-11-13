@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react"
+import { useId, useState, type ReactNode } from "react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { DeckGlyph } from "@/decks/deck-glyph"
@@ -8,6 +8,7 @@ import { account, starredFolders } from "@/decks/sample-decks"
 import { deckRoutes, type DeckSection } from "@/decks/deck-routes"
 import { settingsPaths } from "@/settings/settings-routes"
 import { settingsCopy } from "@/copy/settings-copy"
+import { productCopy } from "@/copy/product-copy"
 import { cn } from "@/lib/class-names"
 
 const sections: {
@@ -28,6 +29,20 @@ const settingsMenu = [
   { path: settingsPaths.agents, label: settingsCopy.agents },
   { path: settingsPaths.account, label: settingsCopy.account },
 ]
+
+const starredRow =
+  "flex h-8 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-left text-[length:var(--type-dense)] leading-[var(--leading-body)] text-quiet hover:bg-black/4"
+
+function StarredRow({ name }: { name: string }) {
+  return (
+    <>
+      <span className="text-muted-foreground">
+        <DeckGlyph name="folder" size={15} />
+      </span>
+      <span className="truncate">{name}</span>
+    </>
+  )
+}
 
 const accountButton = "flex h-10 w-full items-center gap-2.5 rounded-lg pr-2 pl-2 text-left hover:bg-black/4"
 
@@ -61,6 +76,7 @@ export function DecksShell({
   onSignOut,
   onNavigate,
   search,
+  starred,
 }: {
   active: DeckSection
   children: ReactNode
@@ -69,8 +85,11 @@ export function DecksShell({
   onSignOut?: () => void
   onNavigate?: (path: string) => void
   search?: { value: string; onChange: (value: string) => void }
+  starred?: readonly { readonly deck: string; readonly name: string }[]
 }) {
   const [deletingAccount, setDeletingAccount] = useState(false)
+  const starredLabel = useId()
+  const empty = realAccount ? starred?.length === 0 : firstVisit
   const primary = { ...sections[0], href: realAccount ? "/" : sections[0].href }
   const rest = realAccount
     ? [
@@ -179,33 +198,35 @@ export function DecksShell({
             ))}
           </div>
         </nav>
-        {!realAccount && (
-          <div className="mt-6 flex flex-col gap-0.5">
-            <div className="flex h-8 items-center gap-1.5 pr-2.5 pl-2.5 text-[length:var(--type-caption)] leading-[var(--leading-body)] font-medium text-muted-foreground">
+        {(!realAccount || starred) && (
+          <nav aria-labelledby={starredLabel} className="mt-6 flex flex-col gap-0.5">
+            <div
+              id={starredLabel}
+              className="flex h-8 items-center gap-1.5 pr-2.5 pl-2.5 text-[length:var(--type-caption)] leading-[var(--leading-body)] font-medium text-muted-foreground"
+            >
               <span className="text-faint">
                 <DeckGlyph name="chevron" size={12} />
               </span>
-              Starred
+              {productCopy.starred}
             </div>
-            {firstVisit ? (
+            {empty ? (
               <p className="px-2.5 pt-1 text-[length:var(--type-dense)] leading-[1.45] text-muted-foreground">
-                Star a deck to keep it here.
+                {productCopy.starredEmpty}
               </p>
+            ) : starred && realAccount ? (
+              starred.map((deck) => (
+                <a key={deck.deck} href={`/deck/${deck.deck}`} className={starredRow}>
+                  <StarredRow name={deck.name} />
+                </a>
+              ))
             ) : (
               starredFolders.map((folder) => (
-                <button
-                  key={folder}
-                  type="button"
-                  className="flex h-8 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-left text-[length:var(--type-dense)] leading-[var(--leading-body)] text-quiet hover:bg-black/4"
-                >
-                  <span className="text-muted-foreground">
-                    <DeckGlyph name="folder" size={15} />
-                  </span>
-                  <span className="truncate">{folder}</span>
+                <button key={folder} type="button" className={starredRow}>
+                  <StarredRow name={folder} />
                 </button>
               ))
             )}
-          </div>
+          </nav>
         )}
         <div className="mt-auto">
           {firstVisit && !realAccount ? (

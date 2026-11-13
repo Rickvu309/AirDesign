@@ -51,6 +51,7 @@ export {
   readNamedDeck,
   readNoFields,
   readRename,
+  readStar,
   readRevokeRequest,
   readRun,
   readRunStart,

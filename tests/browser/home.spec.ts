@@ -24,7 +24,7 @@ test("home lists server decks instead of sample decks", async ({ page }) => {
   await expect(page).toHaveURL(/\/deck\/second$/)
   await page.goBack()
   await expect(page.getByRole("heading", { name: second.name })).toBeVisible()
-  await expect(page.getByText("Starred", { exact: true })).toHaveCount(0)
+  await expect(page.getByRole("navigation", { name: "Starred" })).toHaveText("StarredStar a deck to keep it here.")
   await expect(page.getByText("Project Atlas", { exact: true })).toHaveCount(0)
   await page.goto("/?view=list")
   await expect(page.getByText("Just now", { exact: true })).toBeVisible()

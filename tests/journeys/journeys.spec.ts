@@ -45,6 +45,7 @@ for (const name of [
   "picture-add",
   "commit-once",
   "deck-list-trash",
+  "deck-stars",
   "slide-paint",
   "cleared-browser",
   "delete-account",

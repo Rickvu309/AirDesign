@@ -14,6 +14,22 @@ export function nameTooLongOf(limit: number): string {
   return `Use ${new Intl.NumberFormat("en").format(limit)} characters or fewer.`
 }
 
+export function starOf(name: string): string {
+  return `Star ${name}`
+}
+
+export function unstarOf(name: string): string {
+  return `Remove star from ${name}`
+}
+
+export function starredOf(name: string): string {
+  return `Starred ${name}`
+}
+
+export function unstarredOf(name: string): string {
+  return `Removed star from ${name}`
+}
+
 export function tabTitleOf(name: string): string {
   return `${name} - AirDesign`
 }
@@ -85,6 +101,8 @@ export const productCopy = {
   trashEmptyAction: "Delete for good",
   importing: "Importing",
   moveToTrash: "Move to Trash",
+  starred: "Starred",
+  starredEmpty: "Star a deck to keep it here.",
   importChooseAnother: "Choose another file",
   importRemove: "Remove",
   deckOpenFailed: "Unable to open this deck",

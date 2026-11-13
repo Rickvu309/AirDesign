@@ -309,6 +309,7 @@ describe("API forwarding", () => {
     "/decks/watch",
     "/decks/list",
     "/decks/rename",
+    "/decks/star",
     "/decks/trash",
     "/decks/restore",
     "/decks/delete",

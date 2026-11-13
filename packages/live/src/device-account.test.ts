@@ -28,7 +28,7 @@ import {
   queueOriginal,
   readChats,
   readMedia,
-  sendQueuedNames,
+  sendQueued,
   writeChat,
 } from "./index.js"
 import { keepUnsaved } from "./unsaved.js"
@@ -271,9 +271,9 @@ it("shows a queued deck name only to the account that typed it, and to no one si
   signInAs(firstAccount)
   await queueRename("deck-named", "Mine")
   signInAs(secondAccount)
-  expect([...(await sendQueuedNames(["deck-named"]))]).toEqual([])
+  expect([...(await sendQueued(["deck-named"])).names]).toEqual([])
   signInAs(undefined)
-  expect([...(await sendQueuedNames(["deck-named"]))]).toEqual([])
+  expect([...(await sendQueued(["deck-named"])).names]).toEqual([])
   signInAs(firstAccount)
-  expect([...(await sendQueuedNames(["deck-named"]))]).toEqual([["deck-named", "Mine"]])
+  expect([...(await sendQueued(["deck-named"])).names]).toEqual([["deck-named", "Mine"]])
 })

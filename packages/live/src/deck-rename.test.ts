@@ -2,7 +2,7 @@ import { deckRoutes } from "@airdesign/catalog"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { installIndexedDb, installParts } from "./browser-fixtures.js"
 import { flushOriginal } from "./original-queue.js"
-import { deleteDatabase, getParts, putParts, renameDeck, sendQueuedNames } from "./index.js"
+import { deleteDatabase, getParts, putParts, renameDeck, sendQueued } from "./index.js"
 
 beforeEach(async () => {
   installIndexedDb()
@@ -93,9 +93,9 @@ it("names on Home a deck whose new name was cut off by leaving, and sends that n
   await renameDeck("blank-one", "Quick rename")
   const sent: unknown[] = []
   vi.stubGlobal("fetch", answering(sent))
-  const shown = await sendQueuedNames(["blank-one", "other-deck"])
+  const shown = (await sendQueued(["blank-one", "other-deck"])).names
   expect([...shown]).toEqual([["blank-one", "Quick rename"]])
   await expect.poll(() => sent).toEqual([{ deck: "blank-one", name: "Quick rename" }])
-  await expect.poll(async () => [...(await sendQueuedNames(["blank-one"]))]).toEqual([])
+  await expect.poll(async () => [...(await sendQueued(["blank-one"])).names]).toEqual([])
   expect(sent).toHaveLength(1)
 })

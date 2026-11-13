@@ -159,6 +159,7 @@ it("decodes deleted on every deck route", () => {
     "watch",
     "list",
     "rename",
+    "star",
     "trash",
     "restore",
     "delete",
@@ -184,6 +185,10 @@ it("refuses missing and malformed success fields for every deck route", () => {
     rename: [
       { ok: true, deck: "deck" },
       { ok: true, deck: "deck", name: 1 },
+    ],
+    star: [
+      { ok: true, deck: "deck" },
+      { ok: true, deck: "deck", starred: "yes" },
     ],
     trash: [
       { ok: true, deck: "deck" },

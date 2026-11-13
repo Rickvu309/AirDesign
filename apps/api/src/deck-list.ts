@@ -11,6 +11,7 @@ type Listed = {
   readonly name: string
   readonly edited: string
   readonly created: string
+  readonly starred: boolean
 }
 
 type ListedTrash = Listed & { readonly trashed: string }
@@ -21,11 +22,12 @@ type ListRow = {
   readonly edited: Date
   readonly created: Date
   readonly trashed: Date | null
+  readonly starred: boolean
 }
 
 type Refusal = "owner" | "deleted"
 
-const clearedColumns = `deleted = now(), register = null, import_index = null, name = '', trashed = null, original_key = null,
+const clearedColumns = `deleted = now(), register = null, import_index = null, name = '', trashed = null, starred = false, original_key = null,
   original_bytes = null, original_sha256 = null, original_stored = false, original_until = null`
 
 function deletedSql(doomed: string): string {
@@ -66,7 +68,7 @@ const onceClearSql = "delete from deck.once where deck = any($1::text[])"
 const missedSql = "select deleted is not null as deleted from deck.saved where id = $1 and owner = $2"
 
 const listSql = `
-select id, name, edited, created, trashed
+select id, name, edited, created, trashed, starred
 from deck.saved
 where owner = $1 and deleted is null
 order by edited desc, created desc, id
@@ -80,6 +82,8 @@ order by edited desc, created desc, id
 `
 
 const renameSql = "update deck.saved set name = $3 where id = $1 and owner = $2 and deleted is null returning id, name"
+
+const starSql = "update deck.saved set starred = $3 where id = $1 and owner = $2 and deleted is null returning starred"
 
 const trashSql = `
 update deck.saved set trashed = coalesce(trashed, now())
@@ -118,6 +122,7 @@ function listed(row: ListRow): Listed {
     name: row.name,
     edited: row.edited.toISOString(),
     created: row.created.toISOString(),
+    starred: row.starred,
   }
 }
 
@@ -176,6 +181,20 @@ export async function renameDeck(
   return { ok: true, deck: parsed.deck, name: row.name }
 }
 
+export async function starDeck(
+  db: Sql,
+  parsed: { readonly deck: DeckId; readonly starred: boolean },
+  email: string,
+): Promise<
+  | { readonly ok: true; readonly deck: DeckId; readonly starred: boolean }
+  | { readonly ok: false; readonly refusal: Refusal }
+> {
+  const result = await db.query<{ starred: boolean }>(starSql, [parsed.deck, email, parsed.starred])
+  const row = result.rows[0]
+  if (row === undefined) return missed(db, parsed.deck, email)
+  return { ok: true, deck: parsed.deck, starred: row.starred }
+}
+
 export async function trashDeck(
   db: Sql,
   parsed: { readonly deck: DeckId },
@@ -213,6 +232,7 @@ export async function deleteDecks(
 export const deckListAnswers = {
   list: (db, _, email, store) => listDecks(db, email, store),
   rename: renameDeck,
+  star: starDeck,
   trash: trashDeck,
   restore: restoreDeck,
   delete: deleteDecks,

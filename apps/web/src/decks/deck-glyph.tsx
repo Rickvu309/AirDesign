@@ -1,6 +1,18 @@
 import { gearIconPath, trashIconPaths } from "@/decks/icon-paths"
 
-type Glyph = "search" | "clock" | "decks" | "trash" | "gear" | "folder" | "chevron" | "grid" | "list" | "plug"
+type Glyph =
+  | "search"
+  | "clock"
+  | "decks"
+  | "trash"
+  | "gear"
+  | "folder"
+  | "chevron"
+  | "grid"
+  | "list"
+  | "plug"
+  | "star"
+  | "starred"
 
 const native: Record<Glyph, number> = {
   search: 15,
@@ -13,7 +25,12 @@ const native: Record<Glyph, number> = {
   grid: 15,
   list: 15,
   plug: 14,
+  star: 16,
+  starred: 16,
 }
+
+const starPath =
+  "M8 1.85 L9.68 6.14 L14.28 6.41 L10.71 9.33 L11.88 13.79 L8 11.3 L4.12 13.79 L5.29 9.33 L1.72 6.41 L6.32 6.14 Z"
 
 export function DeckGlyph({ name, size }: { name: Glyph; size?: number }) {
   const box = size ?? native[name]
@@ -106,6 +123,19 @@ export function DeckGlyph({ name, size }: { name: Glyph; size?: number }) {
           stroke="currentColor"
           strokeWidth={wide ? 1.17 : 1.2}
           strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    )
+  }
+  if (name === "star" || name === "starred") {
+    return (
+      <svg width={box} height={box} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path
+          d={starPath}
+          fill={name === "starred" ? "currentColor" : "none"}
+          stroke="currentColor"
+          strokeWidth="1.13"
           strokeLinejoin="round"
         />
       </svg>

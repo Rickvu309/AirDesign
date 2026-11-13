@@ -4,6 +4,7 @@ export type ListedDeck = {
   readonly edited: string
   readonly created: string
   readonly trashed?: string
+  readonly starred?: boolean
 }
 
 export const recentCount = 6
