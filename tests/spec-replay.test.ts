@@ -947,7 +947,7 @@ function replayRerun(graph: Graph, view: View, failures: string[]) {
 }
 
 describe("spec replay", () => {
-  it("replays every reachable spec edge through decide", async () => {
+  it("replays every spec edge through decide", async () => {
     assertJar(jarPath())
     const every = topics(root)
     const folders = readdirSync(path.join(root, "specs"), { withFileTypes: true })
@@ -956,7 +956,7 @@ describe("spec replay", () => {
       .sort()
     expect(every.map((topic) => topic.name).sort()).toEqual(folders)
     for (const topic of every) expect(topic.view).toBe(true)
-    const elsewhere = ["aira-loop", "owner", "stop", "slide-run", "slide-sibling", "slide-undo", "typing"]
+    const elsewhere = ["agents", "aira-loop", "owner", "stop", "slide-run", "slide-sibling", "slide-undo", "typing"]
     const found = every.filter((topic) => !elsewhere.includes(topic.name))
     const failures: string[] = []
     const reports: Record<string, unknown> = {}

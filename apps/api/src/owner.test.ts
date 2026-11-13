@@ -357,7 +357,7 @@ describe("only a deck's owner acts on it", () => {
   })
 
   describe("a dead bearer beside the owner's own cookie", () => {
-    it("answers 401 invalid_token and runs no tool for a revoked, rotated-out, expired or refresh token sent with B's cookie", async () => {
+    it("answers 401 invalid_token for a revoked, rotated-out, expired or refresh token with B's cookie", async () => {
       const email = address("deadwithcookie")
       const cookie = await sign(email)
       const id = await opened(cookie)

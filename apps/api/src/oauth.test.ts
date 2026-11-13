@@ -165,19 +165,18 @@ describe("oauth host", () => {
 
   async function grantOf(clientId: string): Promise<Record<string, unknown>> {
     const result = await session.query<Record<string, unknown>>(
-      "select principal, code, generation, revoked from session.oauth_grant where client_id = $1",
+      "select id, principal, code, generation, revoked from session.oauth_grant where client_id = $1",
       [clientId],
     )
     expect(result.rows).toHaveLength(1)
     return result.rows[0] ?? {}
   }
 
-  async function bearerOf(clientId: string, email: string) {
-    const result = await session.query<{ id: string }>("select id from session.oauth_grant where client_id = $1", [
-      clientId,
-    ])
-    return { ok: true, principal: email, grant: result.rows[0]?.id }
-  }
+  const bearerOf = async (id: string, email: string) => ({
+    ok: true,
+    principal: email,
+    grant: String((await grantOf(id)).id),
+  })
 
   async function works(secret: string): Promise<boolean> {
     return (await bearerPrincipal(session, secret, clock)).ok
@@ -308,7 +307,7 @@ describe("oauth host", () => {
       expect(stored.rows[0]?.name).toBeNull()
     })
 
-    it("refuses what is not a public client's metadata and stores nothing", async () => {
+    it("refuses non-public client metadata and stores nothing", async () => {
       const named = "http://127.0.0.1:8123/metadata"
       const bad: unknown[] = [
         { redirect_uris: ["http://example.com/cb"] },
@@ -368,7 +367,7 @@ describe("oauth host", () => {
       expect(await clientsWith([`${at}a`])).toBe(0)
     })
 
-    it("refuses an address whose host only starts like a loopback host", async () => {
+    it("refuses a host that only starts like a loopback host", async () => {
       const evil = ["http://localhost.evil.example/cb", "http://127.0.0.1.evil.example/cb"]
       for (const uri of evil) {
         const reply = await ask(base, "POST", "/oauth/register", { redirect_uris: [uri] })
@@ -378,7 +377,7 @@ describe("oauth host", () => {
       expect(await clientsWith(evil)).toBe(0)
     })
 
-    it("refuses text that Postgres cannot store and stores nothing", async () => {
+    it("refuses text Postgres cannot store and stores nothing", async () => {
       const unstored = "http://127.0.0.1:8123/unstored"
       const bad: unknown[] = [
         { redirect_uris: [unstored], client_name: "a\u0000b" },
@@ -502,7 +501,7 @@ describe("oauth host", () => {
       expect(await count("oauth_grant", "client_id", clientId)).toBe(0)
     })
 
-    it("keeps the query of the registered address and carries the state", async () => {
+    it("keeps the registered address query and carries the state", async () => {
       const email = address()
       const cookie = await sign(email)
       const registered = "https://app.example.test/cb?keep=1"
@@ -573,7 +572,7 @@ describe("oauth host", () => {
       expect((await exchange(clientId, code, verifier, { redirect_uri: registered })).status).toBe(200)
     })
 
-    it("always puts the server's code and state in the redirect", async () => {
+    it("puts the server's code and state in the redirect", async () => {
       const cookie = await sign(address())
       const registered = "https://app.example.test/cb?code=evil&state=evil&a=b"
       const clientId = await register([registered])
@@ -600,7 +599,7 @@ describe("oauth host", () => {
       expect((await exchange(clientId, code, verifier, { redirect_uri: registered })).status).toBe(200)
     })
 
-    it("refuses text that Postgres cannot store and stores no grant", async () => {
+    it("refuses text Postgres cannot store and stores no grant", async () => {
       const cookie = await sign(address())
       const clientId = await register()
       const { challenge } = verifierPair()
@@ -634,7 +633,7 @@ describe("oauth host", () => {
   describe("session cookie", () => {
     const malformed = ["%", "%E0%A4%A", "%00", "%ED%A0%80"]
 
-    it("reads a cookie that cannot be decoded or holds NUL as no session on every cookie route", async () => {
+    it("reads an undecodable or NUL cookie as no session on every cookie route", async () => {
       const clientId = await register()
       const { challenge } = verifierPair()
       for (const value of malformed) {
@@ -673,7 +672,7 @@ describe("oauth host", () => {
   })
 
   describe("authorization code", () => {
-    it("works once and a second use with the right verifier revokes what the first issued", async () => {
+    it("works once, and a second use with the right verifier revokes the first issue", async () => {
       const email = address()
       const cookie = await sign(email)
       const clientId = await register()
@@ -700,12 +699,12 @@ describe("oauth host", () => {
       const again = await exchange(clientId, code, verifier)
       expect(again.status).toBe(400)
       expect(again.json).toEqual({ error: "invalid_grant" })
-      expect(await grantOf(clientId)).toEqual({ principal: email, code: "used", generation: 1, revoked: true })
+      expect(await grantOf(clientId)).toMatchObject({ principal: email, code: "used", generation: 1, revoked: true })
       expect(await works(tokensOf(first).access)).toBe(false)
       expect((await rotate(clientId, tokensOf(first).refresh)).json).toEqual({ error: "invalid_grant" })
     })
 
-    it("leaves the first tokens working when a reused code fails the verifier, the client or the address", async () => {
+    it("keeps the first tokens when a reused code fails the verifier, the client or the address", async () => {
       const cookie = await sign(address())
       const clientId = await register([callback, "http://127.0.0.1:8123/other"])
       const stranger = await register()
@@ -752,7 +751,7 @@ describe("oauth host", () => {
       expect((await exchange(clientId, timelyCode, timely.verifier)).status).toBe(200)
     })
 
-    it("refuses another client, another address, an unknown code and a wrong resource", async () => {
+    it("refuses another client, address, unknown code or wrong resource", async () => {
       const cookie = await sign(address())
       const clientId = await register([callback, "http://127.0.0.1:8123/other"])
       const stranger = await register()
@@ -788,7 +787,7 @@ describe("oauth host", () => {
   })
 
   describe("token form", () => {
-    it("refuses a verifier of 42 or 129 characters even when its challenge matches", async () => {
+    it("refuses a verifier of 42 or 129 characters when its challenge matches", async () => {
       const cookie = await sign(address())
       const clientId = await register()
       for (const length of [42, 129]) {
@@ -839,7 +838,7 @@ describe("oauth host", () => {
       expect((await exchange(clientId, code, verifier)).status).toBe(200)
     })
 
-    it("refuses text that Postgres cannot store on the token and revoke routes", async () => {
+    it("refuses text Postgres cannot store on the token and revoke routes", async () => {
       const bad = ["a\u0000", "\u0000"]
       for (const value of bad) {
         for (const fields of [
@@ -880,7 +879,7 @@ describe("oauth host", () => {
       expect(kept.rows[0]?.generation).toBe(1)
     })
 
-    it("works five times in a row and replaying the first refresh token revokes the family", async () => {
+    it("works five times, and replaying the first refresh revokes the family", async () => {
       const { clientId, pair: first } = await flow()
       let previous = first
       for (let step = 0; step < 5; step += 1) {
@@ -901,7 +900,7 @@ describe("oauth host", () => {
       expect(newest.json).toEqual({ error: "invalid_grant" })
     })
 
-    it("refuses an access token, another client and an unknown client as a refresh token", async () => {
+    it("refuses an access token, another client and an unknown refresh token", async () => {
       const { clientId, pair } = await flow()
       const stranger = await register()
       expect((await rotate(clientId, pair.access)).json).toEqual({ error: "invalid_grant" })
@@ -975,7 +974,7 @@ describe("oauth host", () => {
   })
 
   describe("identity", () => {
-    it("is the approving session's email whatever the bodies say", async () => {
+    it("is the session email whatever the bodies say", async () => {
       const email = address()
       const cookie = await sign(email)
       const clientId = await register()
@@ -989,11 +988,11 @@ describe("oauth host", () => {
       const code = await codeFor(cookie, clientId, challenge, impostor)
       const first = await exchange(clientId, code, verifier, { ...impostor, generation: "5" })
       const pair = tokensOf(first)
-      expect(await grantOf(clientId)).toEqual({ principal: email, code: "used", generation: 1, revoked: false })
+      expect(await grantOf(clientId)).toMatchObject({ principal: email, code: "used", generation: 1, revoked: false })
       expect(await bearerPrincipal(session, pair.access, clock)).toEqual(await bearerOf(clientId, email))
       const next = await rotate(clientId, pair.refresh, { ...impostor, generation: "7" })
       const rotated = tokensOf(next)
-      expect(await grantOf(clientId)).toEqual({ principal: email, code: "used", generation: 2, revoked: false })
+      expect(await grantOf(clientId)).toMatchObject({ principal: email, code: "used", generation: 2, revoked: false })
       expect(await bearerPrincipal(session, rotated.access, clock)).toEqual(await bearerOf(clientId, email))
       const generations = await session.query<{ generation: number }>(
         "select t.generation from session.oauth_token t join session.oauth_grant g on g.id = t.grant_id where g.client_id = $1 order by t.generation",
@@ -1004,7 +1003,7 @@ describe("oauth host", () => {
   })
 
   describe("secrets at rest", () => {
-    it("stores no code, access token or refresh token as sent", async () => {
+    it("stores no code, access or refresh token as sent", async () => {
       const email = address()
       const cookie = await sign(email)
       const clientId = await register()
@@ -1030,7 +1029,7 @@ describe("oauth host", () => {
   })
 
   describe("two requests at once", () => {
-    it("two refreshes of one token leave no more than one refresh token that works", async () => {
+    it("two refreshes of one token leave one working refresh token", async () => {
       const { clientId, pair } = await flow()
       const side = await sideServer({ wrap: holdingTwoWrites })
       try {
@@ -1091,7 +1090,7 @@ describe("oauth host", () => {
   })
 
   describe("a store that fails", () => {
-    it("answers no-store and a bare server error on the token and revoke routes", async () => {
+    it("answers no-store and a bare server error on token and revoke", async () => {
       const side = await sideServer({
         wrap: (pool) => intercepting(pool, () => Promise.reject(new Error("internal detail: relation oauth"))),
       })
@@ -1114,7 +1113,7 @@ describe("oauth host", () => {
       }
     })
 
-    it("does not answer 200 for a revoke that loses every write", async () => {
+    it("does not answer 200 when a revoke loses every write", async () => {
       const { clientId, pair } = await flow()
       const side = await sideServer({
         wrap: (pool) =>
@@ -1138,7 +1137,7 @@ describe("oauth host", () => {
       }
     })
 
-    it("does not answer invalid_grant for a reuse revocation that loses every write", async () => {
+    it("does not answer invalid_grant when a reuse revocation loses every write", async () => {
       const cookie = await sign(address())
       const clientId = await register()
       const { verifier, challenge } = verifierPair()
@@ -1177,7 +1176,7 @@ describe("oauth host", () => {
         )
     }
 
-    it("answers 503 for a replayed refresh token and leaves the grant live", async () => {
+    it("answers 503 for a replayed refresh and leaves the grant live", async () => {
       const { clientId, pair: first } = await flow()
       const second = tokensOf(await rotate(clientId, first.refresh))
       const side = await sideServer({ wrap: losing() })
@@ -1197,7 +1196,7 @@ describe("oauth host", () => {
       }
     })
 
-    it("answers 503 for a good rotation and the old refresh token still works", async () => {
+    it("answers 503 for a good rotation and the old refresh still works", async () => {
       const { clientId, pair } = await flow()
       const side = await sideServer({ wrap: losing() })
       try {
@@ -1258,7 +1257,7 @@ describe("oauth host", () => {
   })
 
   describe("stored grant", () => {
-    it("gives the session role no delete on the oauth tables", async () => {
+    it("gives the session role no delete on oauth tables", async () => {
       for (const table of ["oauth_client", "oauth_grant", "oauth_token"]) {
         await expect(session.query(`delete from session.${table} where false`)).rejects.toThrow(/permission denied/)
       }
