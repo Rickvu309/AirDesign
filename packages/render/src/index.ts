@@ -12,6 +12,7 @@ export {
   type CanvasRunStyle,
   type CanvasSlide,
   type CanvasText,
+  type CanvasThemeColor,
   type CanvasTable,
   type ElementRecord,
   type PaintBox,

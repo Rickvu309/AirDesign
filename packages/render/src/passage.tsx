@@ -62,16 +62,33 @@ function collectRuns(nodes: NodeListOf<ChildNode> | readonly Node[], from: numbe
   }
 }
 
+type ReadParagraph = {
+  from: number
+  align?: "left" | "center" | "right"
+  bullet?: boolean
+  runs: TextRun[]
+}
+
+function readParagraph(node: HTMLElement, from: number, runs: TextRun[]): ReadParagraph {
+  let paragraph: ReadParagraph = { from, runs }
+  const align = node.dataset.align
+  if (align === "left" || align === "center" || align === "right") paragraph = { ...paragraph, align }
+  if (node.dataset.bullet === "true" || node.dataset.bullet === "false") {
+    paragraph = { ...paragraph, bullet: node.dataset.bullet === "true" }
+  }
+  return paragraph
+}
+
 function readBox(box: HTMLElement): ReadBox {
-  const paragraphs: { from: number; runs: TextRun[] }[] = []
+  const paragraphs: ReadParagraph[] = []
   const units: Node[][] = []
   let loose: Node[] | null = null
   for (const child of box.childNodes) {
-    const from = isElement(child) ? child.dataset.paragraph : undefined
-    if (from !== undefined) {
+    if (isElement(child) && child.dataset.paragraph !== undefined) {
+      const from = Number(child.dataset.paragraph)
       const runs: TextRun[] = []
-      collectRuns(child.childNodes, Number(from), runs)
-      paragraphs.push({ from: Number(from), runs })
+      collectRuns(child.childNodes, from, runs)
+      paragraphs.push(readParagraph(child, from, runs))
       units.push([child])
       loose = null
       continue
@@ -135,6 +152,8 @@ function pointAt(box: HTMLElement, caret: Caret): readonly [Node, number] {
 function paragraphNode(document: Document, paragraph: TextParagraph): HTMLElement {
   const block = document.createElement("div")
   block.dataset.paragraph = String(paragraph.from)
+  if (paragraph.align !== undefined) block.dataset.align = paragraph.align
+  if (paragraph.bullet !== undefined) block.dataset.bullet = String(paragraph.bullet)
   for (const run of paragraph.runs) {
     const span = document.createElement("span")
     span.dataset.run = `${paragraph.from}.${run.from}`

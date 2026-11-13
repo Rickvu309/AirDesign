@@ -96,6 +96,37 @@ it("formats the whole box when the box is selected without a range", async () =>
   expect(document.activeElement).toBe(host)
 })
 
+it("changes size, colour, alignment and bullets as separate edits and keeps the selection", async () => {
+  const { editor, formatting, edits, fresh } = await mounted()
+  await select(editor, 2, 7)
+  formatting.aim(id, editor)
+  await act(async () => formatting.resize(1))
+  await act(async () => formatting.choose({ scheme: "accent1" }))
+  await act(async () => formatting.place("center"))
+  await act(async () => formatting.bullets())
+  expect(fresh()).toBe(8)
+  expect(readTextValue(edits.at(-1) ?? "")).toEqual([
+    {
+      from: 0,
+      align: "center",
+      bullet: true,
+      runs: [
+        { from: 0, text: "He" },
+        { from: 0, text: "llo w", size: 1900, color: { scheme: "accent1" } },
+        { from: 0, text: "orld" },
+      ],
+    },
+  ])
+  expect(editor.querySelector("[data-size='1900']")?.textContent).toBe("llo w")
+  expect(editor.querySelector("[data-color='scheme:accent1']")).not.toBeNull()
+  expect(editor.querySelector("[data-align='center']")).not.toBeNull()
+  expect(editor.querySelector("[data-bullet='true']")).not.toBeNull()
+  expect(window.getSelection()?.toString()).toBe("llo w")
+  expect(formatting.size()).toBe(1900)
+  expect(formatting.align()).toBe("center")
+  expect(formatting.bullet()).toBe("on")
+})
+
 it("gives no state when no box is aimed at", async () => {
   const { formatting } = await mounted()
   expect(formatting.state("bold")).toBeNull()

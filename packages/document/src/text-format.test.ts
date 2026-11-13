@@ -1,5 +1,23 @@
 import { describe, expect, it } from "vitest"
-import { formatRange, formatState, formatWhole, type FileFormat } from "./text-format.js"
+import {
+  alignRange,
+  alignState,
+  bulletRange,
+  bulletState,
+  colorRange,
+  colorState,
+  formatRange,
+  formatState,
+  formatWhole,
+  sizeRange,
+  sizeState,
+  stepSize,
+  type FileAlign,
+  type FileBullet,
+  type FileColor,
+  type FileFormat,
+  type FileSize,
+} from "./text-format.js"
 import type { TextValue } from "./text-value.js"
 
 const plain: FileFormat = () => false
@@ -113,5 +131,110 @@ describe("formatState", () => {
   it("reads a set format before the file's", () => {
     const value: TextValue = [{ from: 0, runs: [{ from: 1, text: "x", bold: false }] }]
     expect(formatState(value, null, "bold", boldFile)).toBe("off")
+  })
+
+  it("keeps alignment, bullets, size and colour when it sets bold", () => {
+    const value: TextValue = [
+      {
+        from: 0,
+        align: "right",
+        bullet: true,
+        runs: [{ from: 0, text: "ab", size: 2000, color: { scheme: "dk1" } }],
+      },
+    ]
+    const range = { start: { paragraph: 0, offset: 0 }, end: { paragraph: 0, offset: 1 } }
+    expect(formatRange(value, range, "bold", true, plain)).toEqual([
+      {
+        from: 0,
+        align: "right",
+        bullet: true,
+        runs: [
+          { from: 0, text: "a", size: 2000, color: { scheme: "dk1" }, bold: true },
+          { from: 0, text: "b", size: 2000, color: { scheme: "dk1" } },
+        ],
+      },
+    ])
+  })
+})
+
+const noSize: FileSize = () => null
+const noColor: FileColor = () => null
+const noBullet: FileBullet = () => false
+const sizedFile: FileSize = (paragraph, run) => (paragraph === 0 && run === 0 ? 1800 : null)
+const coloredFile: FileColor = (paragraph, run) => (paragraph === 0 && run === 0 ? { scheme: "dk1" } : null)
+const alignedFile: FileAlign = (paragraph) => (paragraph === 0 ? "left" : null)
+const bulletedFile: FileBullet = (paragraph) => paragraph === 1
+
+describe("size, colour, alignment and bullets", () => {
+  const inside = { start: { paragraph: 0, offset: 1 }, end: { paragraph: 0, offset: 3 } }
+
+  it("omits a size or colour that matches the file and stores one that does not", () => {
+    const value: TextValue = [{ from: 0, runs: [{ from: 0, text: "abcd" }] }]
+    expect(sizeRange(value, inside, 1800, sizedFile)).toEqual(value)
+    expect(sizeRange(value, inside, 2400, sizedFile)).toEqual([
+      {
+        from: 0,
+        runs: [
+          { from: 0, text: "a" },
+          { from: 0, text: "bc", size: 2400 },
+          { from: 0, text: "d" },
+        ],
+      },
+    ])
+    expect(colorRange(value, inside, { scheme: "dk1" }, coloredFile)).toEqual(value)
+    expect(colorRange(value, inside, { rgb: "FF0000" }, coloredFile)[0]?.runs[1]).toEqual({
+      from: 0,
+      text: "bc",
+      color: { rgb: "FF0000" },
+    })
+  })
+
+  it("steps each covered run from its own size and clamps the ends", () => {
+    const value: TextValue = [
+      {
+        from: 0,
+        runs: [
+          { from: 0, text: "a", size: 2000 },
+          { from: 1, text: "b" },
+        ],
+      },
+    ]
+    expect(stepSize(value, null, 100, sizedFile)).toEqual([
+      {
+        from: 0,
+        runs: [
+          { from: 0, text: "a", size: 2100 },
+          { from: 1, text: "b", size: 1900 },
+        ],
+      },
+    ])
+    const floor: TextValue = [{ from: 0, runs: [{ from: 0, text: "a", size: 100 }] }]
+    const ceiling: TextValue = [{ from: 0, runs: [{ from: 0, text: "a", size: 400000 }] }]
+    expect(stepSize(floor, null, -100, noSize)).toEqual(floor)
+    expect(stepSize(ceiling, null, 100, noSize)).toEqual(ceiling)
+    expect(sizeState(value, null, sizedFile)).toBe("mixed")
+    expect(sizeState(floor, null, noSize)).toBe(100)
+  })
+
+  it("omits alignment or bullets that match the file, including an empty paragraph", () => {
+    const value: TextValue = [
+      { from: 0, runs: [{ from: 0, text: "ab" }] },
+      { from: 1, runs: [{ from: 0, text: "" }] },
+    ]
+    const first = { start: { paragraph: 0, offset: 0 }, end: { paragraph: 0, offset: 0 } }
+    expect(alignRange(value, first, "left", alignedFile)).toEqual(value)
+    expect(alignRange(value, null, "center", alignedFile)).toEqual([
+      { from: 0, align: "center", runs: [{ from: 0, text: "ab" }] },
+      { from: 1, align: "center", runs: [{ from: 0, text: "" }] },
+    ])
+    expect(bulletRange(value, null, false, bulletedFile)).toEqual([
+      { from: 0, runs: [{ from: 0, text: "ab" }] },
+      { from: 1, bullet: false, runs: [{ from: 0, text: "" }] },
+    ])
+    expect(alignState(value, null, alignedFile)).toBe("mixed")
+    expect(alignState(value, first, alignedFile)).toBe("left")
+    expect(bulletState(value, null, bulletedFile)).toBe("mixed")
+    expect(bulletState(value, first, noBullet)).toBe("off")
+    expect(colorState(value, first, noColor)).toBeNull()
   })
 })

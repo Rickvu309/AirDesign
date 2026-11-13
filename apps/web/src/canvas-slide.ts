@@ -1,5 +1,5 @@
 import type { PaintReader } from "@airdesign/pptx"
-import type { CanvasElement, CanvasSlide } from "@airdesign/render"
+import type { CanvasElement, CanvasSlide, CanvasText, CanvasThemeColor } from "@airdesign/render"
 import { backgroundOf } from "@/canvas-background"
 import { isGroupKind } from "@/canvas-group"
 import { paintElements } from "@/canvas-kind"
@@ -56,11 +56,37 @@ function canvasOf(
   }
 }
 
+function tintText(text: CanvasText | null, colors: readonly CanvasThemeColor[]): CanvasText | null {
+  return text === null || colors.length === 0 ? text : { ...text, colors }
+}
+
+function withColors(element: CanvasElement, colors: readonly CanvasThemeColor[]): CanvasElement {
+  if (colors.length === 0) return element
+  const table =
+    element.table === undefined
+      ? undefined
+      : {
+          ...element.table,
+          rows: element.table.rows.map((row) => ({
+            ...row,
+            cells: row.cells.map((cell) => ({ ...cell, text: tintText(cell.text, colors) })),
+          })),
+        }
+  const diagram = element.diagram?.map((child) => withColors(child, colors))
+  return {
+    ...element,
+    text: tintText(element.text, colors),
+    ...(table === undefined ? {} : { table }),
+    ...(diagram === undefined ? {} : { diagram }),
+  }
+}
+
 export function slideCanvases(
   reader: PaintReader,
   sources: readonly CanvasSource[],
   src: PictureSource = () => null,
   texts?: PaintReader,
+  colors: (part: string) => readonly CanvasThemeColor[] = () => [],
 ): SlideCanvases {
   const known = new Map<number, CanvasSlide>()
   return (index) => {
@@ -68,8 +94,13 @@ export function slideCanvases(
     if (painted !== undefined) return painted
     const source = sources[index]
     if (source === undefined) return null
+    const swatches = colors(source.part)
     const canvas = canvasOf(reader, source, src, texts)
-    known.set(index, canvas)
-    return canvas
+    const tinted =
+      swatches.length === 0
+        ? canvas
+        : { ...canvas, elements: canvas.elements.map((element) => withColors(element, swatches)) }
+    known.set(index, tinted)
+    return tinted
   }
 }

@@ -92,4 +92,6 @@ it("decodes a stored register holding a box row and refuses a box row that holds
 it("tells the agent a run can set bold, italic and underline", () => {
   const schema = JSON.stringify(toolInputSchema("edit_deck"))
   expect(schema).toContain("A run may set bold, italic or underline to true or false")
+  expect(schema).toContain("size to a whole number of hundredths of a point from 100 to 400000")
+  expect(schema).toContain("align to left, center or right, and bullet to true or false")
 })

@@ -437,6 +437,7 @@ it("turns a paragraph's points into the slide's units, shrunk by the box's font 
             text: "words",
             font: "Serifa",
             size: 152_400,
+            points: 2400,
             bold: true,
             italic: true,
             underline: false,
@@ -449,6 +450,7 @@ it("turns a paragraph's points into the slide's units, shrunk by the box's font 
         endStyle: {
           font: null,
           size: 76_200,
+          points: 1200,
           bold: false,
           italic: false,
           underline: false,

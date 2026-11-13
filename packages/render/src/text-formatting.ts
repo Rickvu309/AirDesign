@@ -1,9 +1,19 @@
-import type { ElementId, FormatState, TextFormat } from "@airdesign/document"
+import type { ElementId, FormatState, ParagraphAlign, RunColor, TextFormat } from "@airdesign/document"
+import type { CanvasThemeColor } from "./record.js"
 
 export type FormatTarget = {
   readonly edits: (node: Element) => boolean
   readonly state: (format: TextFormat, editing: boolean) => FormatState
   readonly apply: (format: TextFormat, editing: boolean) => void
+  readonly size: (editing: boolean) => number | "mixed" | null
+  readonly resize: (points: number, editing: boolean) => void
+  readonly color: (editing: boolean) => RunColor | "mixed" | null
+  readonly choose: (color: RunColor, editing: boolean) => void
+  readonly align: (editing: boolean) => ParagraphAlign | "mixed" | null
+  readonly place: (align: ParagraphAlign, editing: boolean) => void
+  readonly bullet: (editing: boolean) => FormatState
+  readonly bullets: (editing: boolean) => void
+  readonly swatches: () => readonly CanvasThemeColor[]
 }
 
 export type TextFormatting = {
@@ -11,6 +21,15 @@ export type TextFormatting = {
   readonly aim: (id: ElementId | null, focused?: HTMLElement) => void
   readonly state: (format: TextFormat) => FormatState | null
   readonly toggle: (format: TextFormat) => void
+  readonly size: () => number | "mixed" | null
+  readonly resize: (points: number) => void
+  readonly color: () => RunColor | "mixed" | null
+  readonly choose: (color: RunColor) => void
+  readonly align: () => ParagraphAlign | "mixed" | null
+  readonly place: (align: ParagraphAlign) => void
+  readonly bullet: () => FormatState | null
+  readonly bullets: () => void
+  readonly swatches: () => readonly CanvasThemeColor[]
   readonly changed: () => void
   readonly subscribe: (listener: () => void) => () => void
   readonly version: () => number
@@ -51,6 +70,18 @@ export function textFormatting(fresh: () => void = () => undefined): TextFormatt
     changed()
   }
   const editing = (found: FormatTarget) => returnTo !== null && found.edits(returnTo)
+  const act = (run: (found: FormatTarget, editing: boolean) => void) => {
+    const found = target()
+    if (found === undefined) return
+    const back = returnTo
+    if (back !== null && back.isConnected && back.ownerDocument.activeElement !== back) {
+      back.focus({ preventScroll: true })
+    }
+    fresh()
+    run(found, editing(found))
+    fresh()
+    changed()
+  }
   return {
     register(id, found) {
       targets.set(id, found)
@@ -72,15 +103,38 @@ export function textFormatting(fresh: () => void = () => undefined): TextFormatt
       return found === undefined ? null : found.state(format, editing(found))
     },
     toggle(format) {
+      act((found, on) => found.apply(format, on))
+    },
+    size() {
       const found = target()
-      if (found === undefined) return
-      const back = returnTo
-      if (back !== null && back.isConnected && back.ownerDocument.activeElement !== back)
-        back.focus({ preventScroll: true })
-      fresh()
-      found.apply(format, editing(found))
-      fresh()
-      changed()
+      return found === undefined ? null : found.size(editing(found))
+    },
+    resize(points) {
+      act((found, on) => found.resize(points, on))
+    },
+    color() {
+      const found = target()
+      return found === undefined ? null : found.color(editing(found))
+    },
+    choose(color) {
+      act((found, on) => found.choose(color, on))
+    },
+    align() {
+      const found = target()
+      return found === undefined ? null : found.align(editing(found))
+    },
+    place(align) {
+      act((found, on) => found.place(align, on))
+    },
+    bullet() {
+      const found = target()
+      return found === undefined ? null : found.bullet(editing(found))
+    },
+    bullets() {
+      act((found, on) => found.bullets(on))
+    },
+    swatches() {
+      return target()?.swatches() ?? []
     },
     changed,
     subscribe(listener) {

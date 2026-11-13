@@ -32,6 +32,12 @@ const iconPaths = {
   bold: '<path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z"/>',
   italic: '<path d="M19 4h-9M14 20H5M15 4 9 20"/>',
   underline: '<path d="M6 4v6a6 6 0 0 0 12 0V4M4 20h16"/>',
+  minus: '<path d="M5 12h14"/>',
+  alignLeft: '<path d="M4 6h16M4 12h10M4 18h16"/>',
+  alignCenter: '<path d="M4 6h16M7 12h10M4 18h16"/>',
+  alignRight: '<path d="M4 6h16M10 12h10M4 18h16"/>',
+  bullets:
+    '<circle cx="6" cy="7" r="1.15" fill="currentColor" stroke="none"/><circle cx="6" cy="12" r="1.15" fill="currentColor" stroke="none"/><circle cx="6" cy="17" r="1.15" fill="currentColor" stroke="none"/><path d="M10 7h10M10 12h10M10 17h10"/>',
 } as const
 
 export type EditorIconName = keyof typeof iconPaths

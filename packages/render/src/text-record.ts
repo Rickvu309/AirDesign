@@ -1,4 +1,8 @@
+import type { SchemeName } from "@airdesign/document"
+
 export type CanvasSpacing = { readonly percent: number } | { readonly length: number }
+
+export type CanvasThemeColor = { readonly scheme: SchemeName; readonly css: string }
 
 export type CanvasBullet = {
   readonly font: string | null
@@ -9,6 +13,7 @@ export type CanvasBullet = {
 export type CanvasRunStyle = {
   readonly font: string | null
   readonly size: number
+  readonly points?: number
   readonly bold: boolean
   readonly italic: boolean
   readonly underline?: boolean
@@ -34,6 +39,7 @@ export type CanvasParagraph = {
 }
 
 export type CanvasText = {
+  readonly colors?: readonly CanvasThemeColor[]
   readonly paragraphs: readonly CanvasParagraph[]
   readonly anchor: "top" | "middle" | "bottom"
   readonly insets: {

@@ -27,6 +27,7 @@ function runStyle(run: PaintRunStyle, scale: number): CanvasRunStyle {
   return {
     font: run.font,
     size: run.size * emuPerPoint * scale,
+    points: Math.round(run.size * 100),
     bold: run.bold,
     italic: run.italic,
     underline: run.underline,

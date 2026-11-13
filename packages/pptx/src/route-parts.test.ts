@@ -688,7 +688,7 @@ describe("routeRuns", () => {
         expect(touchMatches(deck.parts, run.parts, run.touch)).toBe(true)
         if (run.edit === null) continue
         seen.add(run.operation)
-        if (!run.operation.startsWith("text.format")) expectInside(deck.parts, run.parts, run.edit)
+        if (!run.operation.startsWith("text.")) expectInside(deck.parts, run.parts, run.edit)
       }
     }
     expect([...seen].sort()).toEqual(

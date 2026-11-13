@@ -1,4 +1,5 @@
 import type { TextValue } from "@airdesign/document"
+import { formatOperations } from "./text-format-runs.js"
 import { expect, it } from "vitest"
 import { markupDocument } from "./element-span.js"
 import { routeRuns, touchMatches } from "./index.js"
@@ -54,6 +55,15 @@ it("judges a format on a range that spans two paragraphs", () => {
   )
 })
 
+it("judges a font size, a theme colour, alignment and bullets", () => {
+  expect(written("text.size")).toContain('<a:rPr lang="en-US" sz="2750"/>')
+  expect(written("text.color")).toContain(
+    '<a:rPr lang="en-US"><a:solidFill><a:schemeClr val="accent2"/></a:solidFill></a:rPr>',
+  )
+  expect(written("text.align")).toContain('<a:pPr algn="r"/>')
+  expect(written("text.bullet")).toContain('<a:buChar char="•"/>')
+})
+
 declare const process: {
   cwd(): string
   getBuiltinModule(name: "node:fs"): { readFileSync(path: string): Uint8Array }
@@ -69,8 +79,8 @@ it("formats text on real decks inside its own shape's text and keeps every parag
   const fs = process.getBuiltinModule("node:fs")
   for (const name of realDecks) {
     const deck = await readParts(fs.readFileSync(`${process.cwd()}/scripts/pptx-fixtures/${name}`))
-    const runs = routeRuns(deck).filter((run) => run.operation.startsWith("text.format"))
-    expect(runs.map((run) => run.operation)).toEqual(["text.format", "text.format.range", "text.format.paragraphs"])
+    const runs = routeRuns(deck).filter((run) => formatOperations.some((operation) => operation === run.operation))
+    expect(runs.map((run) => run.operation)).toEqual([...formatOperations])
     for (const run of runs) {
       if (run.edit?.name !== "text" || run.parts === null) throw new Error(run.error ?? run.operation)
       const before = partOf(deck, run.edit.part)
@@ -80,7 +90,10 @@ it("formats text on real decks inside its own shape's text and keeps every parag
       expect(after.subarray(0, next.start)).toEqual(before.subarray(0, old.start))
       expect(after.subarray(next.end)).toEqual(before.subarray(old.end))
       expect(paragraphTexts(next.value)).toEqual(paragraphTexts(old.value))
-      expect(touchMatches(deck, run.parts, run.touch ?? { changed: [], added: [], removed: [] })).toBe(true)
+      expect(
+        touchMatches(deck, run.parts, run.touch ?? { changed: [], added: [], removed: [] }),
+        `${name} ${run.operation}`,
+      ).toBe(true)
     }
   }
 }, 30_000)

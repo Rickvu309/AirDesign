@@ -44,8 +44,8 @@ export function splitParagraph(value: TextValue, caret: Caret): TextValue {
   const [head, tail] = splitRuns(paragraph.runs, caret.offset)
   return [
     ...value.slice(0, caret.paragraph),
-    { from: paragraph.from, runs: head },
-    { from: paragraph.from, runs: tail },
+    { ...paragraph, runs: head },
+    { ...paragraph, runs: tail },
     ...value.slice(caret.paragraph + 1),
   ]
 }
@@ -61,7 +61,7 @@ export function joinParagraph(value: TextValue, index: number): TextValue {
     if (last !== undefined && joins(last, moved)) runs[runs.length - 1] = { ...last, text: last.text + run.text }
     else runs.push(moved)
   }
-  return [...value.slice(0, index - 1), { from: before.from, runs }, ...value.slice(index + 1)]
+  return [...value.slice(0, index - 1), { ...before, runs }, ...value.slice(index + 1)]
 }
 
 export function cutValue(value: TextValue, start: Caret, end: Caret): TextValue {
@@ -77,7 +77,7 @@ export function cutValue(value: TextValue, start: Caret, end: Caret): TextValue 
   }
   return [
     ...joined.slice(0, start.paragraph),
-    { from: paragraph.from, runs: [{ ...anchor, text: "" }] },
+    { ...paragraph, runs: [{ ...anchor, text: "" }] },
     ...joined.slice(start.paragraph + 1),
   ]
 }
@@ -103,7 +103,7 @@ export function insertLines(value: TextValue, caret: Caret, lines: readonly stri
         : first !== undefined && joins(first, last)
           ? [...head.slice(0, -1), { ...last, text: last.text + line + first.text }, ...tail.slice(1)]
           : [...head.slice(0, -1), { ...last, text: last.text + line }, ...tail]
-    next = [...next.slice(0, at.paragraph), { from: paragraph.from, runs: written }, ...next.slice(at.paragraph + 1)]
+    next = [...next.slice(0, at.paragraph), { ...paragraph, runs: written }, ...next.slice(at.paragraph + 1)]
     at = { paragraph: at.paragraph, offset: at.offset + line.length }
   })
   return [next, at]
@@ -129,11 +129,7 @@ export function replaceSelection(
   const written = joins(rest[0], anchor)
     ? [...head, { ...anchor, text: line + (rest[0]?.text ?? "") }, ...rest.slice(1)]
     : [...head, { ...anchor, text: line }, ...rest]
-  const next = [
-    ...cut.slice(0, start.paragraph),
-    { from: paragraph.from, runs: written },
-    ...cut.slice(start.paragraph + 1),
-  ]
+  const next = [...cut.slice(0, start.paragraph), { ...paragraph, runs: written }, ...cut.slice(start.paragraph + 1)]
   const at = { paragraph: start.paragraph, offset: start.offset + line.length }
   return lines.length === 1 ? [next, at] : insertLines(next, at, ["", ...lines.slice(1)])
 }
