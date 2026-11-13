@@ -152,6 +152,10 @@ export function attachedConnections(
 }
 
 export function danglingShapeReferences(parts: ReadonlyMap<string, Uint8Array>): readonly ShapeReference[] {
+  return [...danglingMarkReferences(parts), ...danglingPackageReferences(parts)]
+}
+
+export function danglingMarkReferences(parts: ReadonlyMap<string, Uint8Array>): readonly ShapeReference[] {
   const rows: ShapeReference[] = []
   for (const [name, bytes] of parts) {
     if (!shapePart.test(name)) continue
@@ -162,7 +166,7 @@ export function danglingShapeReferences(parts: ReadonlyMap<string, Uint8Array>):
       if (id !== null && !ids.has(id)) rows.push({ part: name, kind: element.kind, id })
     }
   }
-  return [...rows, ...danglingPackageReferences(parts)]
+  return rows
 }
 
 export function newDanglingShapeReferences(

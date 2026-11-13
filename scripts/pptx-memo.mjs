@@ -25,9 +25,11 @@ const byPart = (read) => {
   }
 }
 
+const withPackage = (marks, references) => (parts) => [...marks(parts), ...references(parts)]
+
 export const memoPptx = (pptx) => ({
   ...pptx,
   shapeIdCounts: byPart(pptx.shapeIdCounts),
   branchOrderErrors: byPart(pptx.branchOrderErrors),
-  danglingShapeReferences: byPart(pptx.danglingShapeReferences),
+  danglingShapeReferences: withPackage(byPart(pptx.danglingMarkReferences), pptx.danglingPackageReferences),
 })
