@@ -32,7 +32,13 @@ select updated.id, updated.revision, updated.register, pg_notify('deck', $5) as 
 from updated
 `
 
-const onceReadSql = "select revision, notify from deck.once where email = $1 and deck = $2 and once = $3"
+const onceReadSql = "select revision, notify, answer from deck.once where email = $1 and deck = $2 and once = $3"
+
+const spendSql = `
+insert into deck.once (email, deck, once, revision, notify)
+select $1, id, $3, revision, '' from deck.saved where id = $2 and owner = $1 and deleted is null
+on conflict (email, deck, once) do nothing
+returning revision`
 
 const revisionOnceSql = `
 with updated as (
@@ -43,8 +49,8 @@ with updated as (
   returning id, revision, register
 ),
 noted as (
-  insert into deck.once (email, deck, once, revision, notify)
-  select $6, updated.id, $7, updated.revision, $5
+  insert into deck.once (email, deck, once, revision, notify, answer)
+  select $6, updated.id, $7, updated.revision, $5, $8::jsonb
   from updated
   returning notify
 )
@@ -81,19 +87,26 @@ export type RevisionWrite = {
   readonly once?: {
     readonly email: string
     readonly once: string
+    readonly answer?: unknown
   }
 }
 
 type StoredOnce = {
   readonly revision: number
   readonly notify: string
+  readonly answer: unknown
 }
 
-function uniqueOnce(error: unknown): boolean {
+export function uniqueOnce(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === "23505"
 }
 
-async function readStoredOnce(db: Sql, email: string, deck: string, once: string): Promise<StoredOnce | undefined> {
+export async function readStoredOnce(
+  db: Sql,
+  email: string,
+  deck: string,
+  once: string,
+): Promise<StoredOnce | undefined> {
   const result = await db.query<StoredOnce>(onceReadSql, [email, deck, once])
   return result.rows[0]
 }
@@ -185,6 +198,7 @@ export async function writeRevision(db: Sql, input: RevisionWrite): Promise<bool
     input.key,
     input.once.email,
     input.once.once,
+    input.once.answer === undefined ? null : JSON.stringify(input.once.answer),
   ])
   return result.rows.length > 0
 }
@@ -247,3 +261,24 @@ export const savedAnswers = {
   commit: commitEdits,
   index: indexSaved,
 } satisfies Partial<DeckAnswers>
+
+function landedRun(answer: unknown): string | undefined {
+  if (typeof answer !== "object" || answer === null || !("answer" in answer)) return undefined
+  const landed: unknown = answer.answer
+  if (typeof landed !== "object" || landed === null || !("runId" in landed)) return undefined
+  return typeof landed.runId === "string" ? landed.runId : undefined
+}
+
+export async function spendOnce(
+  db: Sql,
+  email: string,
+  deck: string,
+  once: string,
+): Promise<{ readonly ok: false } | { readonly ok: true; readonly runId?: string }> {
+  const spent = await db.query(spendSql, [email, deck, once])
+  if (spent.rows.length > 0) return { ok: true }
+  const prior = await readStoredOnce(db, email, deck, once)
+  if (prior === undefined) return { ok: false }
+  const runId = landedRun(prior.answer)
+  return runId === undefined ? { ok: true } : { ok: true, runId }
+}

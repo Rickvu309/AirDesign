@@ -263,7 +263,7 @@ describe("database migrations", () => {
       "insert into deck.once (email, deck, once, revision, notify) values ('kept@example.com', 'live', 'k', 3, 'live:3')",
     )
     const before = await migrator.query("select * from deck.saved order by id")
-    const onceBefore = await migrator.query("select * from deck.once")
+    const kept = await migrator.query("select * from deck.once")
     expect(await applySchema(migrator)).toEqual({ applied: latest - 2, at: latest })
     const after = await migrator.query("select * from deck.saved order by id")
     expect(after.rows).toEqual(
@@ -274,7 +274,7 @@ describe("database migrations", () => {
         starred: false,
       })),
     )
-    expect((await migrator.query("select * from deck.once")).rows).toEqual(onceBefore.rows)
+    expect((await migrator.query("select * from deck.once")).rows).toMatchObject(kept.rows)
     const deck = await open(roleUrl("deck", database))
     await expect(deck.query("delete from deck.saved where id = 'live'")).rejects.toThrow(/permission denied/)
     await expect(deck.query("update deck.saved set deleted = now() where id = 'live'")).rejects.toThrow(

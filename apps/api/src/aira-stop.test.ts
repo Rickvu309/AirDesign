@@ -377,3 +377,62 @@ describe("a stop the browser sends for its ask", () => {
     expect(replay.calls.length).toBe(calls)
   })
 })
+
+describe("a stop that names the edit call it cut", () => {
+  async function landedEdit(account: Account, name: string, once: string) {
+    expect((await ask(main, "POST", "/decks/open", { deck: name }, account.cookie)).status).toBe(200)
+    const call = {
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/call",
+      params: {
+        name: "airdesign_edit_deck",
+        arguments: { deck: name, base: 0, changes: [{ node: "256.2", value: "Aira", readAt: 0 }] },
+        _meta: { "app.airdesign/once": once },
+      },
+    }
+    const answer = await ask(main, "POST", "/mcp", call, account.cookie, {
+      accept: "application/json, text/event-stream",
+    })
+    expect(answer.text).toContain('"runId"')
+    return /"runId":"([^"]+)"/.exec(answer.text)?.[1]
+  }
+
+  it("answers the run the call landed, so the browser can offer Undo for it", async () => {
+    const account = await signIn()
+    const name = `stopdeck${randomBytes(4).toString("hex")}`
+    const runId = await landedEdit(account, name, "edit-1")
+    const answer = await ask(
+      main,
+      "POST",
+      "/aira/stop",
+      { ask: "ask-six", call: { deck: name, once: "edit-1" } },
+      account.cookie,
+    )
+    expect(answer.status).toBe(200)
+    expect(JSON.parse(answer.text)).toEqual({ ok: true, runId })
+  })
+
+  it("answers no run for a call that had not landed, and for a deck of another account", async () => {
+    const account = await signIn()
+    const other = await signIn()
+    const name = `stopdeck${randomBytes(4).toString("hex")}`
+    await landedEdit(account, name, "edit-1")
+    const unsent = await ask(
+      main,
+      "POST",
+      "/aira/stop",
+      { ask: "a", call: { deck: name, once: "edit-2" } },
+      account.cookie,
+    )
+    expect(JSON.parse(unsent.text)).toEqual({ ok: true })
+    const foreign = await ask(
+      main,
+      "POST",
+      "/aira/stop",
+      { ask: "a", call: { deck: name, once: "edit-1" } },
+      other.cookie,
+    )
+    expect(JSON.parse(foreign.text)).toEqual({ ok: true })
+  })
+})

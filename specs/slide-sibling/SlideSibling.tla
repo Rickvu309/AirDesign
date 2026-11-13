@@ -1,8 +1,9 @@
 ---- MODULE SlideSibling ----
 \* One live turn of agent run r on one deck. The agent read the deck at Base and sent two
-\* calls of the turn at once with that base: add_slide, and edit_deck of an element no
-\* person edits. Both join r, the turn's run; the turn model covers how. A person may edit
-\* another element once, at any time.
+\* calls of the turn at once with that base: add_slide, and second. second is edit_deck of an
+\* element no person edits, or the same add_slide sent again with its once by a client that
+\* lost the first answer. Both join r, the turn's run; the turn model covers how. A person
+\* may edit another element once, at any time.
 \* Each call is one MCP request. settledCall in packages/mcp/src/server.ts runs up to three
 \* tries: each try reads the deck and decides, and commitEdit writes the deck only if
 \* deck.saved still has the revision that try read. A lost write sends the call back to
@@ -11,24 +12,28 @@
 \* last is the deck's lastRun: the run whose calls wrote its latest revisions, or none once
 \* a write that records no run, such as the person's, moved the revision. since is the
 \* revision those calls began writing on. foreign is the latest revision a write other than
-\* r's made.
+\* r's made. spent says whether the add_slide's once is in deck.once: commitEdit writes it
+\* with the add's write in one statement, and a call that reads it answers what that write
+\* answered and writes nothing.
 EXTENDS Integers
 
 CONSTANT Tries
 
-VARIABLES rev, last, since, slides, edits, foreign, person,
+VARIABLES second, spent, rev, last, since, slides, edits, foreign, person,
           sPc, sRev, sTries, sOut, ePc, eRev, eTries, eOut
 
-vars == <<rev, last, since, slides, edits, foreign, person,
+vars == <<second, spent, rev, last, since, slides, edits, foreign, person,
           sPc, sRev, sTries, sOut, ePc, eRev, eTries, eOut>>
 
 Base == 1
 
 Pcs == {"idle", "write", "done"}
 
-Outs == {"none", "landed", "stale"}
+Outs == {"none", "landed", "replayed", "stale"}
 
 TypeOK ==
+  /\ second \in {"edit", "resend"}
+  /\ spent \in BOOLEAN
   /\ rev \in 1..5
   /\ last \in {"r", "none"}
   /\ since \in 0..5
@@ -41,6 +46,8 @@ TypeOK ==
 
 \* The base's revision is r's own earlier call, or another writer's.
 Init ==
+  /\ second \in {"edit", "resend"}
+  /\ spent = FALSE
   /\ rev = Base
   /\ last \in {"r", "none"}
   /\ since = 0
@@ -65,52 +72,62 @@ RWrites ==
 \* began on the base or before it.
 Fresh == Base = rev \/ (last = "r" /\ since <= Base)
 
+\* prepare in apps/api/src/mcp.ts reads the deck, then the call's once.
 SlideReads ==
   /\ sPc = "idle"
   /\ sTries < Tries
   /\ sTries' = sTries + 1
   /\ sRev' = rev
-  /\ IF Fresh
-     THEN sPc' = "write" /\ UNCHANGED sOut
-     ELSE sPc' = "done" /\ sOut' = "stale"
-  /\ UNCHANGED <<rev, last, since, slides, edits, foreign, person, EditVars>>
+  /\ CASE spent -> sPc' = "done" /\ sOut' = "replayed"
+       [] Fresh -> sPc' = "write" /\ UNCHANGED sOut
+       [] OTHER -> sPc' = "done" /\ sOut' = "stale"
+  /\ UNCHANGED <<second, spent, rev, last, since, slides, edits, foreign, person, EditVars>>
 
+\* The write and the once's row are one statement: it lands only on the revision the try read
+\* and an unspent once, and a lost write goes back to read.
 SlideWrites ==
   /\ sPc = "write"
-  /\ IF rev = sRev
+  /\ IF rev = sRev /\ ~spent
      THEN /\ RWrites
           /\ slides' = slides + 1
+          /\ spent' = TRUE
           /\ sPc' = "done"
           /\ sOut' = "landed"
           /\ UNCHANGED <<edits, foreign>>
      ELSE /\ IF sTries < Tries
              THEN sPc' = "idle" /\ UNCHANGED sOut
              ELSE sPc' = "done" /\ sOut' = "stale"
-          /\ UNCHANGED <<rev, last, since, slides, edits, foreign>>
-  /\ UNCHANGED <<person, sRev, sTries, EditVars>>
+          /\ UNCHANGED <<rev, last, since, slides, edits, foreign, spent>>
+  /\ UNCHANGED <<second, person, sRev, sTries, EditVars>>
 
-\* An edit decides on the element's version, not on the base, and no one else edits it.
+\* An edit decides on the element's version, not on the base, and no one else edits it. A
+\* second send of the add_slide decides as the first does.
 EditReads ==
   /\ ePc = "idle"
   /\ eTries < Tries
   /\ eTries' = eTries + 1
   /\ eRev' = rev
-  /\ ePc' = "write"
-  /\ UNCHANGED <<rev, last, since, slides, edits, foreign, person, eOut, SlideVars>>
+  /\ CASE second = "edit" -> ePc' = "write" /\ UNCHANGED eOut
+       [] spent -> ePc' = "done" /\ eOut' = "replayed"
+       [] Fresh -> ePc' = "write" /\ UNCHANGED eOut
+       [] OTHER -> ePc' = "done" /\ eOut' = "stale"
+  /\ UNCHANGED <<second, spent, rev, last, since, slides, edits, foreign, person, SlideVars>>
 
 EditWrites ==
   /\ ePc = "write"
-  /\ IF rev = eRev
+  /\ IF rev = eRev /\ (second = "resend" => ~spent)
      THEN /\ RWrites
-          /\ edits' = edits + 1
+          /\ IF second = "edit"
+             THEN edits' = edits + 1 /\ UNCHANGED <<slides, spent>>
+             ELSE slides' = slides + 1 /\ spent' = TRUE /\ UNCHANGED edits
           /\ ePc' = "done"
           /\ eOut' = "landed"
-          /\ UNCHANGED <<slides, foreign>>
+          /\ UNCHANGED foreign
      ELSE /\ IF eTries < Tries
              THEN ePc' = "idle" /\ UNCHANGED eOut
              ELSE ePc' = "done" /\ eOut' = "stale"
-          /\ UNCHANGED <<rev, last, since, slides, edits, foreign>>
-  /\ UNCHANGED <<person, eRev, eTries, SlideVars>>
+          /\ UNCHANGED <<rev, last, since, slides, edits, foreign, spent>>
+  /\ UNCHANGED <<second, person, eRev, eTries, SlideVars>>
 
 \* A person's edit records no run, so the deck's lastRun no longer reaches its revision.
 PersonEdits ==
@@ -120,7 +137,7 @@ PersonEdits ==
   /\ last' = "none"
   /\ since' = 0
   /\ foreign' = rev + 1
-  /\ UNCHANGED <<slides, edits, SlideVars, EditVars>>
+  /\ UNCHANGED <<second, spent, slides, edits, SlideVars, EditVars>>
 
 Done ==
   /\ sPc = "done"
@@ -134,13 +151,22 @@ Spec == Init /\ [][Next]_vars
 
 \* Calls of one live turn that touch different things both land, whatever order their reads
 \* and writes take, when nothing but their run wrote after their base.
-TurnCallsBothLand == sPc = "done" /\ ePc = "done" /\ foreign <= Base => sOut = "landed" /\ eOut = "landed"
+TurnCallsBothLand ==
+  second = "edit" /\ sPc = "done" /\ ePc = "done" /\ foreign <= Base => sOut = "landed" /\ eOut = "landed"
 
 \* The edit lands even when the person wrote: it touches another element.
-EditLands == ePc = "done" => eOut = "landed"
+EditLands == second = "edit" /\ ePc = "done" => eOut = "landed"
+
+\* A call sent twice lands once, and the send that does not land answers what the other
+\* landed. Harm if broken: a client that lost an add_slide's answer and sent it again gets
+\* two slides.
+SentTwiceLandsOnce ==
+  /\ second = "resend" => slides <= 1
+  /\ second = "resend" /\ sPc = "done" /\ ePc = "done" /\ "landed" \in {sOut, eOut} =>
+       {sOut, eOut} = {"landed", "replayed"}
 
 \* A slide call is refused stale only when a write other than its run's landed after its base.
-StaleOnlyForOthers == sOut = "stale" => foreign > Base
+StaleOnlyForOthers == sOut = "stale" \/ eOut = "stale" => foreign > Base
 
 \* A slide lands only when nothing but its run wrote after its base, even when its run wrote
 \* last. Harm if broken: the agent adds a slide to a deck a person changed since it read it.

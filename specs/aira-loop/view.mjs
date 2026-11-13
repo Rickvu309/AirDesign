@@ -1,8 +1,8 @@
 const steps = {
   Land: "the server writes the edit under run r",
   Read: "the browser reads the edit's answer and keeps r in the exchange's runs",
-  Stop: "the person presses Stop and the exchange shows stopped",
-  WaitEnds: "the wait after Stop ends with no answer, and the browser cuts the call",
+  Stop: "the person presses Stop, the exchange shows stopped, and a waiting edit call is cut",
+  Spend: "the stop names the cut call, and the server spends its once or answers the run it landed",
   Finish: "the model's next turn ends the run",
   Close: "the browser stops r and the server answers",
   Ask: "the person asks again",
@@ -20,7 +20,7 @@ export const state = (v) =>
     v.asked
       ? `next ask ${v.held ? "from a chat with Undo" : "from a chat without Undo"}, ${v.sent ? `sent${v.nextKnown ? " with Undo" : " without Undo"}` : "waits"}`
       : "no next ask",
-    ...(v.late ? ["landed late"] : []),
+    ...(v.named ? ["the stop named the call"] : []),
   ].join(", ")
 
 export const step = (action) => steps[action] ?? null
@@ -37,4 +37,4 @@ export const colors = {
   Settled: "purple",
 }
 
-export const title = "A Stop that races an edit still offers Undo for the edit that landed"
+export const title = "A Stop that races an edit offers Undo for the edit that landed, and no edit lands after it"

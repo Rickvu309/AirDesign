@@ -193,10 +193,23 @@ describe("readStop", () => {
       { ask: "x".repeat(65) },
       { ask: 7 },
       { ask: "a", deck },
+      { ask: "a", call: { deck } },
+      { ask: "a", call: { deck, once: "a b" } },
+      { ask: "a", call: { deck, once: "c", more: 1 } },
+      { ask: "a", call: { deck: "", once: "c" } },
+      { ask: "a", call: null },
       [],
       null,
     ]) {
       expect(readStop(body)).toEqual({ ok: false })
     }
+  })
+
+  it("reads the deck and once of the call a stop names", () => {
+    expect(readStop({ ask: "a", call: { deck, once: "call_1-A" } })).toEqual({
+      ok: true,
+      ask: "a",
+      call: { deck, once: "call_1-A" },
+    })
   })
 })

@@ -21,7 +21,7 @@ import { storedTurns } from "./agent-turn.js"
 import { admitCaller, refundCaller } from "./caller-log.js"
 import { readOwnedDecks } from "./deck-list.js"
 import type { Sql } from "./pool.js"
-import { deckAccess, readSaved, writeRevision } from "./saved.js"
+import { deckAccess, readSaved, readStoredOnce, uniqueOnce, writeRevision } from "./saved.js"
 
 export type McpHost = {
   readonly deck: Sql
@@ -86,9 +86,22 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       loaded = { id: named.deck, revision: access.saved.revision, register: access.saved.register }
       session.deck = loaded
       dropGoneTurn(session, seen)
-      return { ok: true }
+      if (session.once === undefined) return { ok: true }
+      let prior: Awaited<ReturnType<typeof readStoredOnce>>
+      try {
+        prior = await readStoredOnce(host.deck, host.email, named.deck, session.once)
+      } catch {
+        return { ok: false, refusal: "store" }
+      }
+      return prior === undefined ? { ok: true } : { answered: storedAnswer(loaded, prior.answer) }
     },
-    commit: (result) => commitEdit(host.deck, loaded, result),
+    commit: (result) =>
+      commitEdit(
+        host.deck,
+        loaded,
+        result,
+        session.once === undefined ? undefined : { email: host.email, once: session.once },
+      ),
     refund: () => refundCaller(host.session, host.email, "tool"),
     turnSaved: () => turns.saved(),
   }
@@ -108,7 +121,21 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
   }
 }
 
-async function commitEdit(db: Sql, loaded: Deck, result: ToolResult): Promise<ToolResult | Lost> {
+const stopped = "The person stopped this call, and nothing landed."
+
+function storedAnswer(loaded: Deck, stored: unknown): ToolResult {
+  if (typeof stored !== "object" || stored === null || !("answer" in stored) || !("content" in stored))
+    return editRefusal(loaded, "run-fenced", [], stopped)
+  const { answer, content } = stored as Pick<Extract<ToolResult, { ok: true }>, "answer" | "content">
+  return { ok: true, deck: loaded, content, ...(answer === undefined ? {} : { answer }) }
+}
+
+async function commitEdit(
+  db: Sql,
+  loaded: Deck,
+  result: ToolResult,
+  once: { readonly email: string; readonly once: string } | undefined,
+): Promise<ToolResult | Lost> {
   if (!result.ok || result.deck === loaded) return result
   const nodes = (result.answer?.elements ?? []).map((element) => element.node)
   const key = notifyKey(result.deck.id, result.deck.revision)
@@ -121,9 +148,10 @@ async function commitEdit(db: Sql, loaded: Deck, result: ToolResult): Promise<To
       register: result.deck.register,
       expected: loaded.revision,
       key: key.key,
+      ...(once === undefined ? {} : { once: { ...once, answer: { content: result.content, answer: result.answer } } }),
     })
-  } catch {
-    return editRefusal(loaded, "store", nodes)
+  } catch (error) {
+    if (!uniqueOnce(error)) return editRefusal(loaded, "store", nodes)
   }
   if (wrote) return result
   let saved: Awaited<ReturnType<typeof readSaved>>

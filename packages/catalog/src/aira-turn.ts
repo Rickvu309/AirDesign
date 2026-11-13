@@ -1,5 +1,5 @@
 import { catalog, projectTools, toolInputSchema } from "./catalog.js"
-import { readDeckId, type DeckId } from "./wire.js"
+import { deckPattern, readDeckId, type DeckId } from "./wire.js"
 
 export const airaTextCap = 8000
 export const airaMessageCap = 199
@@ -45,7 +45,9 @@ export type TurnRead =
     }
   | { readonly ok: false }
 
-export type StopRead = { readonly ok: true; readonly ask: string } | { readonly ok: false }
+export type StopCall = { readonly deck: DeckId; readonly once: string }
+
+export type StopRead = { readonly ok: true; readonly ask: string; readonly call?: StopCall } | { readonly ok: false }
 
 export const airaTools: readonly ModelTool[] = projectTools(catalog).map((tool) => ({
   name: tool.name,
@@ -155,10 +157,20 @@ export function readTurn(raw: unknown): TurnRead {
   return { ok: true, deck: deck.deck, messages, ask }
 }
 
+function stopCall(raw: unknown): StopCall | undefined {
+  const call = fieldsOf(raw)
+  if (call === undefined || !named(call, ["deck", "once"])) return undefined
+  const deck = readDeckId(call.deck)
+  if (!deck.ok || typeof call.once !== "string" || !deckPattern.test(call.once)) return undefined
+  return { deck: deck.deck, once: call.once }
+}
+
 export function readStop(raw: unknown): StopRead {
   const body = fieldsOf(raw)
-  if (body === undefined || !named(body, ["ask"]) || typeof body.ask !== "string" || !askId.test(body.ask)) {
+  if (body === undefined || !named(body, ["ask"], ["call"]) || typeof body.ask !== "string" || !askId.test(body.ask)) {
     return { ok: false }
   }
-  return { ok: true, ask: body.ask }
+  if (!Object.hasOwn(body, "call")) return { ok: true, ask: body.ask }
+  const call = stopCall(body.call)
+  return call === undefined ? { ok: false } : { ok: true, ask: body.ask, call }
 }

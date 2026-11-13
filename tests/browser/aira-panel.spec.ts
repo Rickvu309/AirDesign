@@ -121,7 +121,7 @@ test("Stop ends an edit call the server has not answered, and the step says it s
   await expect(side.getByText("Stopped editing slides", { exact: true })).toBeVisible()
 })
 
-test("Stop after an edit reached the server ends its run and offers Undo for the edit that landed", async ({
+test("Stop after an edit reached the server ends its run and offers Undo for the edit that landed, while its answer is still held", async ({
   page,
   context,
   stack,
@@ -136,7 +136,13 @@ test("Stop after an edit reached the server ends its run and offers Undo for the
   const answered = new Promise<void>((resolve) => {
     answer = resolve
   })
+  let calls = 0
   await page.route("**/mcp", async (route) => {
+    calls += 1
+    if (calls > 1) {
+      await route.fallback()
+      return
+    }
     const request = route.request()
     const landed = await route.fetch({ url: `${stack.origin}${stack.mcp}`, headers: await request.allHeaders() })
     reachedCall()
@@ -146,7 +152,6 @@ test("Stop after an edit reached the server ends its run and offers Undo for the
   await ask(page, asked)
   await reached
   await side.getByRole("button", { name: "Stop" }).click()
-  answer()
   await expect(side.getByText("Stopped editing slides", { exact: true })).toBeVisible()
   await expect(page.locator('[data-slide-paint] [contenteditable="true"]')).toHaveText("Hello from Aira")
   const undo = side.getByRole("button", { name: productCopy.undo, exact: true })
@@ -158,6 +163,44 @@ test("Stop after an edit reached the server ends its run and offers Undo for the
   await undo.click()
   await expect(page.locator('[data-slide-paint] [contenteditable="true"]')).toHaveText("Hello")
   expect(await serverText(stack, deck, cookie)).not.toBe("Hello from Aira")
+  answer()
+})
+
+test("Stop before an edit reached the server keeps it from landing when it reaches the server later", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const { cookie, deck, base, side } = await openDeck(page, context, stack)
+  stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node } }, { name: "edited.sse" })
+  let heldCall: (request: { body: string; headers: Record<string, string> }) => void = () => undefined
+  const held = new Promise<{ body: string; headers: Record<string, string> }>((resolve) => {
+    heldCall = resolve
+  })
+  let calls = 0
+  await page.route("**/mcp", async (route) => {
+    calls += 1
+    if (calls > 1) {
+      await route.fallback()
+      return
+    }
+    const request = route.request()
+    heldCall({ body: request.postData() ?? "", headers: await request.allHeaders() })
+  })
+  await ask(page, asked)
+  const call = await held
+  const stopped = page.waitForResponse((response) => new URL(response.url()).pathname === "/aira/stop")
+  await side.getByRole("button", { name: "Stop" }).click()
+  expect(JSON.parse((await stopped).request().postData() ?? "")).toMatchObject({ call: { deck } })
+  await expect(side.getByText("Stopped editing slides", { exact: true })).toBeVisible()
+  const { cookie: sent, accept } = call.headers
+  const headers = { cookie: sent ?? "", accept: accept ?? "", "content-type": "application/json" }
+  const late = await fetch(`${stack.origin}${stack.mcp}`, { method: "POST", headers, body: call.body })
+  expect(await late.text()).toContain("run-fenced")
+  expect((await stack.post("/decks/open", { deck }, cookie)).json.revision).toBe(base)
+  await expect(page.locator('[data-slide-paint] [contenteditable="true"]')).toHaveText("Hello")
+  await expect(side.getByRole("button", { name: productCopy.undo, exact: true })).toHaveCount(0)
+  expect(calls).toBe(1)
 })
 
 test("after Stop the usage ring shows what the stopped model call was charged", async ({ page, context, stack }) => {

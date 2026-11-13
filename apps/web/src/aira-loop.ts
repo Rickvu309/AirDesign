@@ -3,6 +3,7 @@ import {
   catalog,
   deckRoutes,
   mcpRoutes,
+  onceMeta,
   projectTools,
   type AgentOp,
   type ModelMessage,
@@ -89,12 +90,11 @@ type Called = {
   readonly ok: boolean
   readonly run: string | undefined
   readonly stopped?: true
-  readonly landing?: Promise<string | undefined>
+  readonly cut?: string
 }
 
 const indexingTries = 15
 const indexingPause = 1000
-const landingWait = 10_000
 const accept = "application/json, text/event-stream"
 const lasting: ReadonlySet<string> = new Set(["run-fenced", "person-protected", "dead"])
 
@@ -247,11 +247,24 @@ function toolAnswer(id: string, text: string, ok: boolean): ToolAnswer {
     : { type: "tool_result", tool_use_id: id, content: text, is_error: true }
 }
 
-async function sendTool(send: typeof fetch, rpc: number, name: string, input: unknown, signal?: AbortSignal) {
+async function sendTool(
+  send: typeof fetch,
+  rpc: number,
+  name: string,
+  input: unknown,
+  signal?: AbortSignal,
+  once?: string,
+) {
+  const meta = once === undefined ? {} : { _meta: { [onceMeta]: once } }
   const response = await send(mcpRoutes.mcp.path, {
     method: mcpRoutes.mcp.method,
     headers: { "content-type": "application/json", accept },
-    body: JSON.stringify({ jsonrpc: "2.0", id: rpc, method: "tools/call", params: { name, arguments: input } }),
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: rpc,
+      method: "tools/call",
+      params: { name, arguments: input, ...meta },
+    }),
     ...(signal === undefined ? {} : { signal }),
   })
   return toolOutcome(await response.text())
@@ -293,16 +306,18 @@ function changes(call: ToolCall): boolean {
   return catalog[opOf.get(call.name) ?? "read_deck"].kind === "command"
 }
 
-async function sendCall(
+async function callTool(
   send: typeof fetch,
   rpc: number,
   call: ToolCall,
   signal: AbortSignal,
-  cut: AbortSignal,
   pause: NonNullable<AskOptions["pause"]>,
+  once: string,
+  again = true,
 ): Promise<Called> {
+  const sent = changes(call) ? once : undefined
   try {
-    let outcome = await sendTool(send, rpc, call.name, call.input, cut)
+    let outcome = await sendTool(send, rpc, call.name, call.input, signal, sent)
     for (
       let tried = 0;
       outcome.fields?.refusal === "indexing" && tried < indexingTries && !signal.aborted;
@@ -310,57 +325,40 @@ async function sendCall(
     ) {
       await pause(indexingPause, signal)
       if (signal.aborted) break
-      outcome = await sendTool(send, rpc, call.name, call.input, cut)
+      outcome = await sendTool(send, rpc, call.name, call.input, signal, sent)
     }
     const run = outcome.fields?.runId
     const edited = outcome.ok && changes(call) && typeof run === "string"
     return { answer: toolAnswer(call.id, outcome.text, outcome.ok), ok: outcome.ok, run: edited ? run : undefined }
   } catch {
-    if (signal.aborted) return { answer: interruptedAnswer(call), ok: false, run: undefined, stopped: true }
-    return {
-      answer: toolAnswer(call.id, "The call did not reach the server. Nothing landed.", false),
-      ok: false,
-      run: undefined,
+    if (signal.aborted) {
+      const stopped = { answer: interruptedAnswer(call), ok: false, run: undefined, stopped: true } as const
+      return sent === undefined ? stopped : { ...stopped, cut: sent }
     }
+    if (sent !== undefined && again) return callTool(send, rpc, call, signal, pause, once, false)
+    const lost =
+      sent === undefined
+        ? "The call did not reach the server. Nothing landed."
+        : "The call did not reach the server, or its answer was lost. Read the deck before sending it again."
+    return { answer: toolAnswer(call.id, lost, false), ok: false, run: undefined }
   }
-}
-
-async function callTool(
-  send: typeof fetch,
-  rpc: number,
-  call: ToolCall,
-  signal: AbortSignal,
-  pause: NonNullable<AskOptions["pause"]>,
-): Promise<Called> {
-  if (!changes(call)) return sendCall(send, rpc, call, signal, signal, pause)
-  const cut = new AbortController()
-  const sending = sendCall(send, rpc, call, signal, cut.signal, pause)
-  const answered = await Promise.race([sending, untilStopped(sending, signal).then(() => undefined)])
-  if (answered !== undefined) return answered
-  const waited = new AbortController()
-  const landing = Promise.race([
-    sending.then((called) => called.run),
-    pause(landingWait, waited.signal).then(() => undefined),
-  ]).finally(() => {
-    waited.abort()
-    cut.abort()
-  })
-  return { answer: interruptedAnswer(call), ok: false, run: undefined, stopped: true, landing }
 }
 
 function stoppedAnswer(call: ToolCall): ToolAnswer {
   return toolAnswer(call.id, "The person stopped the run before this call. Nothing landed.", false)
 }
 
-async function stopAsk(send: typeof fetch, ask: string): Promise<void> {
+async function stopAsk(send: typeof fetch, ask: string, call?: { deck: string; once: string }) {
   try {
-    await send(airaRoutes.stop.path, {
+    const response = await send(airaRoutes.stop.path, {
       method: airaRoutes.stop.method,
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ask }),
+      body: JSON.stringify(call === undefined ? { ask } : { ask, call }),
     })
+    const runId = fieldsOf(await response.json())?.runId
+    return typeof runId === "string" ? runId : undefined
   } catch {
-    return
+    return undefined
   }
 }
 
@@ -407,8 +405,8 @@ export async function askAira(start: AiraChat, asked: string, options: AskOption
   let sent = userMessage(start.answers, asked)
   const closed = new Set<string>()
   let rpc = 1
-  let stopped: Promise<void> = Promise.resolve()
-  const landing: Promise<string | undefined>[] = []
+  let stopped: Promise<unknown> = Promise.resolve()
+  let cut: string | undefined
   for (;;) {
     const turned = await takeTurn(send, ask, chat.deck, [...chat.history, sent], signal, update)
     if (turned.kind === "ended") {
@@ -428,11 +426,11 @@ export async function askAira(start: AiraChat, asked: string, options: AskOption
         update({ type: "answered", answer: stoppedAnswer(call), state: "stopped", run: undefined })
         continue
       }
-      const called = await callTool(send, rpc, call, signal, options.pause ?? pauseFor)
+      const called = await callTool(send, rpc, call, signal, options.pause ?? pauseFor, `${ask}-${String(rpc)}`)
       rpc += 1
       const runId = call.input.runId
       if (called.ok && call.name === stopTool && typeof runId === "string") closed.add(runId)
-      if (called.landing !== undefined) landing.push(called.landing)
+      cut = called.cut ?? cut
       const state = called.stopped === true ? "stopped" : called.ok ? "done" : "refused"
       update({ type: "answered", answer: called.answer, state, run: called.run })
     }
@@ -444,7 +442,8 @@ export async function askAira(start: AiraChat, asked: string, options: AskOption
     if (more !== undefined) update({ type: "add", text: more })
     sent = userMessage(chat.answers, more)
   }
-  for (const run of await Promise.all(landing)) if (run !== undefined) update({ type: "landed", run })
+  const landed = cut === undefined ? undefined : await stopAsk(send, ask, { deck: chat.deck, once: cut })
+  if (landed !== undefined) update({ type: "landed", run: landed })
   const open = (chat.exchanges.at(-1)?.runs ?? []).filter((runId) => !closed.has(runId))
   await Promise.all([stopped, closeRuns(send, chat.deck, open, rpc)])
   return chat

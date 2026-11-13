@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto"
 import type { createServer, IncomingMessage, Server } from "node:http"
 import type { AddressInfo } from "node:net"
 
-import { readDeckId, readDeckIndex, type AgentOp, type DeckId } from "@airdesign/catalog"
+import { onceMeta, readDeckId, readDeckIndex, type AgentOp, type DeckId } from "@airdesign/catalog"
 import { elementId, foldSlides, type Register } from "@airdesign/document"
 
 import { indexSaved } from "./index-saved.js"
@@ -101,7 +101,13 @@ function waitFor(): { readonly promise: Promise<void>; readonly resolve: () => v
 }
 
 export type McpSteps = {
-  readonly start: (owned: Owned, runId: string, op: AgentOp, args: Record<string, unknown>) => Promise<Call>
+  readonly start: (
+    owned: Owned,
+    runId: string,
+    op: AgentOp,
+    args: Record<string, unknown>,
+    once?: string,
+  ) => Promise<Call>
   readonly close: () => Promise<void>
 }
 
@@ -141,7 +147,13 @@ export async function mcpSteps(open: typeof createServer): Promise<McpSteps> {
   })
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve))
   const port = (server.address() as AddressInfo).port
-  const start = async (owned: Owned, runId: string, op: AgentOp, args: Record<string, unknown>): Promise<Call> => {
+  const start = async (
+    owned: Owned,
+    runId: string,
+    op: AgentOp,
+    args: Record<string, unknown>,
+    once?: string,
+  ): Promise<Call> => {
     const id = randomBytes(8).toString("hex")
     let arrival = waitFor()
     const call: Running = {
@@ -169,7 +181,11 @@ export async function mcpSteps(open: typeof createServer): Promise<McpSteps> {
         jsonrpc: "2.0",
         id: 1,
         method: "tools/call",
-        params: { name: `airdesign_${op}`, arguments: args },
+        params: {
+          name: `airdesign_${op}`,
+          arguments: args,
+          ...(once === undefined ? {} : { _meta: { [onceMeta]: once } }),
+        },
       }),
     })
       .then((answer) => answer.text())
@@ -201,8 +217,9 @@ export async function wholeCall(
   runId: string,
   op: AgentOp,
   args: Record<string, unknown>,
+  once?: string,
 ): Promise<Reply> {
-  return finish(await steps.start(owned, runId, op, args))
+  return finish(await steps.start(owned, runId, op, args, once))
 }
 
 export function revisionOf(reply: Reply): number {

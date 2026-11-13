@@ -45,7 +45,12 @@ function streamed(turn: Extract<Turn, { lines: unknown }>, signal: AbortSignal |
 export function scripted(
   turns: readonly Turn[],
   answers: readonly Answer[],
-  hooks: { onTool?: () => void; onStop?: () => Promise<void>; holdTools?: true; landing?: Promise<void> } = {},
+  hooks: {
+    onTool?: () => void
+    onStop?: () => Promise<void>
+    holdTools?: true
+    stopped?: (body: Record<string, unknown>) => unknown
+  } = {},
 ) {
   const queue = [...turns]
   const replies = [...answers]
@@ -62,15 +67,13 @@ export function scripted(
     }
     if (path === airaRoutes.stop.path) {
       await hooks.onStop?.()
-      return new Response(JSON.stringify({ ok: true }))
+      return new Response(JSON.stringify(hooks.stopped?.(body) ?? { ok: true }))
     }
     if (path === mcpRoutes.mcp.path) {
       hooks.onTool?.()
       const params = body.params as { name: string; arguments: Record<string, unknown> }
-      const landing = params.name === stop ? undefined : hooks.landing
-      if (hooks.holdTools === true || landing !== undefined) {
-        await new Promise<void>((resolve, reject) => {
-          void landing?.then(resolve)
+      if (hooks.holdTools === true && params.name !== stop) {
+        await new Promise<void>((_, reject) => {
           init?.signal?.addEventListener("abort", () => reject(new DOMException("stopped", "AbortError")))
         })
       }

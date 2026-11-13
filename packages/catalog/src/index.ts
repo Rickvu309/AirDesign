@@ -71,7 +71,7 @@ export { readDeckQuery, readListDecks } from "./read-wire.js"
 export { readDeckIndex } from "./index-wire.js"
 export { slideEditCommand, type WireSlide } from "./slide-wire.js"
 
-export { mcpRoutes, mcpPaths, oauthAuthorizePath } from "./mcp-routes.js"
+export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, readOnce } from "./mcp-routes.js"
 
 export { slideReaders, type SlideOp } from "./agent-slide-wire.js"
 export { elementReaders, type ElementOp } from "./agent-element-wire.js"

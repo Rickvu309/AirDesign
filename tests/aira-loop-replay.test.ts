@@ -1,6 +1,6 @@
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { airaRoutes, catalog, mcpRoutes, projectTools } from "@airdesign/catalog"
+import { airaRoutes, catalog, mcpRoutes, onceMeta, projectTools } from "@airdesign/catalog"
 import { describe, expect, it } from "vitest"
 import { airaChat, askAira, type AiraChat } from "@/aira-loop"
 import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
@@ -55,12 +55,13 @@ function hasRun(chat: AiraChat | undefined): boolean {
 function loop() {
   const read = later<void>()
   const finish = later<void>()
-  const waitEnds = later<void>()
+  const spend = later<void>()
   const close = later<void>()
   const stopping = new AbortController()
   const seen = {
-    landed: false,
-    late: false,
+    server: "none" as "none" | "landed" | "spent",
+    once: "",
+    named: false,
     cut: false,
     answered: false,
     stopRunSent: false,
@@ -75,7 +76,17 @@ function loop() {
   const send: typeof fetch = async (input, init) => {
     const body = JSON.parse(String(init?.body)) as Record<string, unknown>
     const where = String(input)
-    if (where === airaRoutes.stop.path) return new Response(JSON.stringify({ ok: true }))
+    if (where === airaRoutes.stop.path) {
+      if (body.call === undefined) return new Response(JSON.stringify({ ok: true }))
+      if (JSON.stringify(body.call) !== JSON.stringify({ deck, once: seen.once })) {
+        throw new Error(`stop names ${JSON.stringify(body.call)}`)
+      }
+      await spend.promise
+      seen.named = true
+      if (seen.server === "landed") return new Response(JSON.stringify({ ok: true, runId: run }))
+      seen.server = "spent"
+      return new Response(JSON.stringify({ ok: true }))
+    }
     if (where === airaRoutes.turn.path) {
       const messages = body.messages as readonly unknown[]
       if (body.ask === "ask-2") {
@@ -89,7 +100,11 @@ function loop() {
       return new Response(ended([{ type: "text", text: "Done" }]))
     }
     if (where === mcpRoutes.mcp.path) {
-      const params = body.params as { name: string; arguments: Record<string, unknown> }
+      const params = body.params as {
+        name: string
+        arguments: Record<string, unknown>
+        _meta?: Record<string, unknown>
+      }
       if (params.name === stopRun) {
         if (params.arguments.runId !== run) throw new Error(`stop_run of ${String(params.arguments.runId)}`)
         seen.stopRunSent = true
@@ -97,6 +112,7 @@ function loop() {
         seen.closed = true
         return mcpAnswer(body.id, { ok: true })
       }
+      seen.once = String(params._meta?.[onceMeta])
       init?.signal?.addEventListener(
         "abort",
         () => {
@@ -118,7 +134,6 @@ function loop() {
     show: (chat) => {
       seen.first = chat
     },
-    pause: () => waitEnds.promise,
   })
   void first.then(() => {
     seen.settled = true
@@ -126,13 +141,13 @@ function loop() {
   let next: Promise<AiraChat> | undefined
   const act = async (action: string): Promise<string | null> => {
     if (action === "Land") {
-      seen.late = seen.cut
-      seen.landed = true
+      if (seen.server !== "none") return `Land on a once already ${seen.server}`
+      seen.server = "landed"
     } else if (action === "Read") {
       if (seen.cut) return "Read after the browser cut the call"
       read.settle()
     } else if (action === "Stop") stopping.abort()
-    else if (action === "WaitEnds") waitEnds.settle()
+    else if (action === "Spend") spend.settle()
     else if (action === "Finish") finish.settle()
     else if (action === "Close") {
       if (!seen.stopRunSent) return "Close with no stop_run of r sent"
@@ -154,9 +169,9 @@ function loop() {
     return null
   }
   const picture = (): Spec => ({
-    server: seen.landed ? "landed" : "none",
+    server: seen.server,
     answer: seen.cut ? "cut" : seen.answered ? "read" : "waiting",
-    late: seen.late,
+    named: seen.named,
     stop: stopping.signal.aborted,
     shown: seen.first?.exchanges[0]?.end ?? "none",
     known: hasRun(seen.first),
@@ -170,7 +185,7 @@ function loop() {
   const finished = async () => {
     stopping.abort()
     read.settle()
-    waitEnds.settle()
+    spend.settle()
     close.settle()
     await Promise.allSettled([first, next])
   }
@@ -241,7 +256,7 @@ describe("aira-loop replay", () => {
     expect(failures).toEqual([])
     expect(replayed).toBe(graph.edges.length)
     expect(new Set(graph.edges.map((edge) => edge.action))).toEqual(
-      new Set(["Land", "Read", "Stop", "WaitEnds", "Finish", "Close", "Ask", "Done"]),
+      new Set(["Land", "Read", "Stop", "Spend", "Finish", "Close", "Ask", "Done"]),
     )
   }, 60_000)
 })

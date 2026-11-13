@@ -26,6 +26,7 @@ export type Session = {
   log: CallerLog
   now: number
   readonly turns: Turns
+  once?: string | undefined
   readonly idleWindow?: number
   readonly tab?: Tab
   owned?: readonly OwnedDeck[]
