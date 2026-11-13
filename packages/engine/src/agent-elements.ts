@@ -18,10 +18,12 @@ import {
   type SlideCommand,
   type SlideId,
 } from "@airdesign/document"
-import { runFence } from "./agent-slides.js"
+import { readFresh, runFence } from "./agent-slides.js"
 import type { Caller, Deck } from "./call.js"
 
-type Built = { readonly ok: true; readonly register: Register } | { readonly ok: false; readonly refusal: CallRefusal }
+type Built =
+  | { readonly ok: true; readonly register: Register; readonly runId: string }
+  | { readonly ok: false; readonly refusal: CallRefusal }
 
 function takenBoxes(register: Register, slide: SlideId): readonly Box[] {
   const rows = new Map<ElementId, IndexElement>()
@@ -68,7 +70,7 @@ function ready(
   runId: string,
 ): { readonly file: readonly SlideId[] } | { readonly refusal: CallRefusal } {
   if (head.deck !== deck.id) return { refusal: "deck" }
-  if (head.base !== deck.revision) return { refusal: "stale" }
+  if (!readFresh(deck, runId, head.base)) return { refusal: "stale" }
   const fenced = runFence(deck.register, runId, null)
   if (fenced !== null) return { refusal: fenced }
   const index = deck.register.index
@@ -82,9 +84,11 @@ function ready(
   return { file }
 }
 
-function decided(register: Register, file: readonly SlideId[], edit: SlideCommand): Built {
+function decided(register: Register, file: readonly SlideId[], edit: SlideCommand, runId: string): Built {
   const result = decide(register, { command: "slide", file, edit })
-  return result.decision === "refuse" ? { ok: false, refusal: result.code } : { ok: true, register: result.register }
+  return result.decision === "refuse"
+    ? { ok: false, refusal: result.code }
+    : { ok: true, register: result.register, runId }
 }
 
 export function agentElement(op: ElementOp, deck: Deck, caller: Caller, raw: unknown): Built {
@@ -102,7 +106,12 @@ export function agentElement(op: ElementOp, deck: Deck, caller: Caller, raw: unk
     const box = parsed.box ?? placeNewBox(measure.size ?? { width: 0, height: 0 }, takenBoxes(register, parsed.slide))
     const node = nextElementId(register, parsed.slide, measure.free)
     const element = { node, kind: "shape", value: "", box, grouped: false } as const
-    return decided(register, opened.file, { slide: "element-add", id: parsed.slide, element, runId: caller.runId })
+    return decided(
+      register,
+      opened.file,
+      { slide: "element-add", id: parsed.slide, element, runId: caller.runId },
+      caller.runId,
+    )
   }
   const parsed = elementReaders.delete_element(raw)
   if (!parsed.ok) return parsed
@@ -112,5 +121,10 @@ export function agentElement(op: ElementOp, deck: Deck, caller: Caller, raw: unk
     return { ok: false, refusal: "refusal" in opened ? opened.refusal : "dead" }
   const refusal = protectedFrom(register, parsed.node, caller.runId)
   if (refusal !== null) return { ok: false, refusal }
-  return decided(register, opened.file, { slide: "element-remove", id: slide, node: parsed.node, runId: caller.runId })
+  return decided(
+    register,
+    opened.file,
+    { slide: "element-remove", id: slide, node: parsed.node, runId: caller.runId },
+    caller.runId,
+  )
 }

@@ -89,6 +89,44 @@ for (const gate of ["deck", "write"] as const) {
   })
 }
 
+async function elementTurn(): Promise<Turn & { readonly slide: string; readonly box: string }> {
+  const owned = await indexedDeck(stores, "slide-sibling")
+  const added = await wholeCall(steps, owned, "r", "add_slide", {
+    deck: owned.deck,
+    base: owned.revision,
+    after: "256",
+    layout: "256",
+  })
+  const slide = String(added.body?.slide)
+  const boxed = await wholeCall(steps, owned, "r", "add_text_box", {
+    deck: owned.deck,
+    base: revisionOf(added),
+    slide,
+    box: { x: 0, y: 0, cx: 100, cy: 100 },
+  })
+  const rows = (boxed.body?.elements ?? []) as { node: string }[]
+  const box = rows.at(-1)?.node
+  if (box === undefined) throw new Error(JSON.stringify(boxed))
+  return { ...owned, base: revisionOf(boxed), slide, box }
+}
+
+for (const op of ["add_text_box", "delete_element"] as const) {
+  for (const gate of ["deck", "write"] as const) {
+    it(`lands ${op} and an edit of one turn sent at one base when the edit lands while ${op} waits at its ${gate === "deck" ? "deck read" : "deck write"}`, async () => {
+      const turn = await elementTurn()
+      const input =
+        op === "add_text_box" ? { slide: turn.slide, box: { x: 0, y: 200, cx: 100, cy: 100 } } : { node: turn.box }
+      const call = await steps.start(turn, "u1", op, { deck: turn.deck, base: turn.base, ...input })
+      while (call.at !== gate) await call.release()
+      const edit = await siblingEdit(turn)
+      expect(edit.body).toMatchObject({ ok: true, runId: "r", revision: turn.base + 1 })
+      const landed = await finish(call)
+      expect(landed.body).toMatchObject({ ok: true, runId: "r", revision: turn.base + 2 })
+      expect((await stored(turn)).revision).toBe(turn.base + 2)
+    })
+  }
+}
+
 it("refuses as stale a slide call whose base a person's edit moved while it waited at its deck write", async () => {
   const turn = await liveTurn()
   const slide = await slideHeldAt(turn, "write")
