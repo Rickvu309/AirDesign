@@ -12,6 +12,7 @@ import {
   storeName,
   transaction,
 } from "./device.js"
+import { dropShelvedChats } from "./chat-slot.js"
 import { adoptJournal, dropJournal, hasLegacyJournal, pageShelf, type Shelf } from "./unsaved.js"
 
 export const idleDays = 30
@@ -97,6 +98,7 @@ export async function dropDeck(deck: string, shelf: Shelf | undefined = pageShel
   if (account === undefined || !parsed.ok) return
   heldDecks().delete(scoped(account, parsed.deck))
   dropJournal(shelf, account, parsed.deck)
+  dropShelvedChats(account, parsed.deck, shelf)
   await changeSeen(account, (seen) => Object.fromEntries(Object.entries(seen).filter(([each]) => each !== deck)))
   const writing = await transaction("readwrite")
   writing.objectStore(storeName).delete(deckRange(account, parsed.deck))
@@ -106,6 +108,7 @@ export async function dropDeck(deck: string, shelf: Shelf | undefined = pageShel
 export async function dropAccount(account: string | undefined, shelf: Shelf | undefined = pageShelf()): Promise<void> {
   if (account === undefined) return
   dropJournal(shelf, account)
+  dropShelvedChats(account, undefined, shelf)
   heldDecks().clear()
   const writing = await transaction("readwrite")
   const store = writing.objectStore(storeName)

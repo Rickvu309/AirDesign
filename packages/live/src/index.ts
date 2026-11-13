@@ -13,7 +13,7 @@ export {
   type Remote,
   type WatchResult,
 } from "./remote.js"
-export { dropChats, readChats, writeChat } from "./chat-slot.js"
+export { dropChats, readChats, shelveChats, takeShelvedChats, writeChat } from "./chat-slot.js"
 export { adoptDeck, dropAccount, dropDeck } from "./device-sweep.js"
 export { accountKey, databaseName, deleteDatabase, scoped, storeName } from "./device.js"
 export { rowKey } from "./store.js"

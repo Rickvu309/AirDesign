@@ -1,5 +1,6 @@
 import { readDeckId } from "@airdesign/catalog"
 import { accountKey, finished, scoped, storeName, transaction } from "./device.js"
+import { pageShelf, type Shelf } from "./unsaved.js"
 
 export type ChatSlot = { readonly id: string }
 
@@ -9,6 +10,12 @@ function chatPrefix(deck: string): string {
   const account = accountKey()
   if (account === undefined) throw new Error("session")
   return scoped(account, `${parsed.deck}\u0004`)
+}
+
+const shelfPrefix = "airdesign:chats:"
+
+function shelfKey(account: string, deck: string): string {
+  return `${shelfPrefix}${account}:${deck}`
 }
 
 function chatRange(deck: string): IDBKeyRange {
@@ -55,6 +62,7 @@ export async function writeChat<Chat extends ChatSlot>(deck: string, chat: Chat)
 export async function dropChats(deck: string, ids?: readonly string[]): Promise<void> {
   const prefix = chatPrefix(deck)
   const range = chatRange(deck)
+  if (ids === undefined) dropShelvedChats(accountKey(), deck)
   await inStore<undefined>("readwrite", (store) => {
     if (ids !== undefined) {
       for (const id of ids) store.delete(`${prefix}${id}`)
@@ -68,4 +76,67 @@ export async function dropChats(deck: string, ids?: readonly string[]): Promise<
       }
     }
   })
+}
+
+function ownShelfKey(deck: string): string | undefined {
+  const account = accountKey()
+  const parsed = readDeckId(deck)
+  return account === undefined || !parsed.ok ? undefined : shelfKey(account, parsed.deck)
+}
+
+function shelvedChats(key: string, shelf: Shelf | undefined): unknown[] {
+  if (shelf === undefined) return []
+  try {
+    const raw = shelf.getItem(key)
+    const parsed: unknown = raw === null ? [] : JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((chat) => slotId(chat) !== undefined) : []
+  } catch {
+    return []
+  }
+}
+
+export function shelveChats<Chat extends ChatSlot>(
+  deck: string,
+  chats: readonly Chat[],
+  shelf: Shelf | undefined = pageShelf(),
+): void {
+  const key = ownShelfKey(deck)
+  if (shelf === undefined || key === undefined || chats.length === 0) return
+  const ids = new Set(chats.map((chat) => chat.id))
+  const kept = shelvedChats(key, shelf).filter((chat) => !ids.has(slotId(chat) ?? ""))
+  try {
+    shelf.setItem(key, JSON.stringify([...kept, ...chats]))
+  } catch {
+    return
+  }
+}
+
+export function takeShelvedChats(deck: string, shelf: Shelf | undefined = pageShelf()): unknown[] {
+  const key = ownShelfKey(deck)
+  if (key === undefined) return []
+  const shelved = shelvedChats(key, shelf)
+  dropShelvedChats(accountKey(), deck, shelf)
+  return shelved
+}
+
+export function dropShelvedChats(
+  account: string | undefined,
+  deck?: string,
+  shelf: Shelf | undefined = pageShelf(),
+): void {
+  if (shelf === undefined || account === undefined) return
+  try {
+    const parsed = deck === undefined ? undefined : readDeckId(deck)
+    if (parsed !== undefined && !parsed.ok) return
+    const own = shelfKey(account, "")
+    const keys =
+      parsed === undefined
+        ? Array.from({ length: shelf.length }, (_, at) => shelf.key(at)).filter(
+            (key): key is string => key?.startsWith(own) === true,
+          )
+        : [shelfKey(account, parsed.deck)]
+    for (const key of keys) shelf.removeItem(key)
+  } catch {
+    return
+  }
 }
