@@ -43,7 +43,7 @@ function canvasOf(
   texts: PaintReader | undefined,
 ): CanvasSlide {
   const paint = paintOf(reader, source.part)
-  if (paint === null) return { ...standardSlide, background: null, elements: unplaced(source) }
+  if (paint === null) return { ...standardSlide, background: null, elements: unplaced(source), part: source.part }
   const size = paint.width > 0 && paint.height > 0 ? paint : standardSlide
   const file = texts === undefined ? null : paintOf(texts, source.part)
   const rows = paintElements(fileTexts(paint.elements, file), source, src)
@@ -53,6 +53,7 @@ function canvasOf(
     height: size.height,
     background: backgroundOf(paint.background, src),
     elements: readsSlide ? rows : [...rows, ...unplaced(source)],
+    part: source.part,
   }
 }
 

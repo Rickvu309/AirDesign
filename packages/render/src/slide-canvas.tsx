@@ -43,6 +43,7 @@ export function SlideCanvas(props: {
   readonly tableBar?: TableBar
   readonly entering?: Entering | null
   readonly formatting?: TextFormatting
+  readonly slideName?: string
 }) {
   const { slide, width } = props
   const quiet = props.quiet === true
@@ -63,10 +64,11 @@ export function SlideCanvas(props: {
     const host = surface.current
     if (host === null || say === undefined) return
     const frames = namedFrames(host)
-    const said = changeSaid(named.current.frames, frames, named.current.part)
-    named.current = { frames, part: shownPart(frames, named.current.part) }
+    const shown = slide.part ?? null
+    const said = changeSaid(named.current.frames, frames, named.current.part, shown, props.slideName ?? null)
+    named.current = { frames, part: shown ?? shownPart(frames, named.current.part) }
     if (said !== null) say(said)
-  }, [slide, say])
+  }, [slide, slide.part, say, props.slideName])
   useLayoutEffect(() => {
     const host = surface.current
     if (entering?.id === undefined || entering.id === null || host === null || entered.current === entering.id) return

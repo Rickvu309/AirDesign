@@ -8,7 +8,7 @@ In an open deck, `Add text box` in the toolbar puts a new text box in clear spac
 - `element-type` text typed into the new box reaches the server like any text edit.
 - `element-remove` Delete or Backspace on a selected frame, outside its text and with no modifier key, removes the element. The server gets one `slide: "element-remove"` row. While the caret is in the text, the keys edit the text instead. An animated shape or a group is not removed: a toast says why and no undo step is recorded.
 - `element-undo` `Undo add text box` takes the box away and `Undo delete element` brings the element back (see `person-undo.md`).
-- `element-said` after each paint the canvas's `[role="status"]` says `<name> added` or `<name> deleted`, by the name the keyboard uses, and nothing for a refused delete. Known failure: `Add slide` makes it say `<name> deleted` for each named element of the slide left behind (`Hello deleted. Text box deleted`), though nothing was deleted; pinned in `tests/browser/keyboard.spec.ts`.
+- `element-said` after each paint the canvas's `[role="status"]` says `<name> added` or `<name> deleted`, by the name the keyboard uses, and nothing for a refused delete. A change of slide says `Slide N of M` and does not say the elements of the slide left behind were deleted.
 - `element-agent` `airdesign_add_text_box` and `airdesign_delete_element` land the same rows; run Undo takes them back (see `aira-turn.md`).
 - `element-export` the export keeps the added box and drops the deleted one, and a new import of that file shows the same slide.
 
@@ -29,7 +29,7 @@ Preconditions:
 - **Delete.** Reload, click the title, Escape, Delete. Two boxes; poll for one `element-remove` row. Evidence `NN-deleted-element`.
 - **Reload, export, import.** The deleted title stays gone and `Added text` stays. Evidence `NN-reloaded`, `NN-reimported`.
 - **States for look.** `element-added`, `element-deleted`.
-- **First letters and the announcement.** Driven live on 2026-11-13 with scratch journeys: typing `Offline box` at 20 ms a key right after the click showed `ffline box` or `fline box` four times out of four, online and offline; waiting 150 ms first kept every letter. After `Add slide`, the canvas said `Hello deleted. Text box deleted` four times out of four.
+- **First letters and the announcement.** Driven live on 2026-11-13 with scratch journeys: typing `Offline box` at 20 ms a key right after the click showed `ffline box` or `fline box` four times out of four, online and offline; waiting 150 ms first kept every letter. `Add slide` says `Slide 2 of 2` on the canvas and `Added slide 2` on the slide list. It does not say the previous slide's elements were deleted.
 
 ## Gotchas
 

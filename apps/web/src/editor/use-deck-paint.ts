@@ -37,6 +37,7 @@ export function useDeckPaint(
   const [layouts, setLayouts] = useState<ReturnType<typeof layoutChoices>>([])
   const [sections, setSections] = useState<readonly SectionStart[]>([])
   const [current, setCurrent] = useState(0)
+  const saySlide = useRef<(text: string) => void>(() => undefined)
 
   function showRegister(register: Register | null) {
     const painted = paint(store.current, shownParts.current, register, busy.current, pictureTool.store.bytes)
@@ -87,5 +88,6 @@ export function useDeckPaint(
     setCurrent,
     showRegister,
     showEdited,
+    saySlide,
   }
 }

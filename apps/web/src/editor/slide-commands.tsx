@@ -49,6 +49,7 @@ export function slideCommands(deck: CommandedDeck): SlideStrip {
     onClone: (index) => void changeSlide("clone", index),
     onRemove: (index) => void changeSlide("remove", index),
     onMove: (from, to) => void changeSlide("move", from, to),
+    say: deck.shown.saySlide,
     thumbHeight: thumbHeight(canvases.current(0)),
     thumb: (index, width) => {
       const slide = canvases.current(index)

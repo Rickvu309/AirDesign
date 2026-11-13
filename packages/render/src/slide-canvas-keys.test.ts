@@ -59,8 +59,14 @@ async function mounted(removed: ElementId[] = [], removes = true) {
   document.body.append(host)
   const root = createRoot(host)
   hosts.push({ host, root })
-  const paint = async (elements: readonly CanvasElement[]) => {
-    const slide: CanvasSlide = { width: 12_192_000, height: 6_858_000, background: null, elements }
+  const paint = async (elements: readonly CanvasElement[], told?: { part?: string; slideName?: string }) => {
+    const slide: CanvasSlide = {
+      width: 12_192_000,
+      height: 6_858_000,
+      background: null,
+      elements,
+      ...(told?.part === undefined ? {} : { part: told.part }),
+    }
     await act(async () => {
       root.render(
         createElement(SlideCanvas, {
@@ -72,6 +78,7 @@ async function mounted(removed: ElementId[] = [], removes = true) {
             removed.push(target)
             if (removes) void paint([])
           },
+          ...(told?.slideName === undefined ? {} : { slideName: told.slideName }),
         }),
       )
     })
@@ -176,5 +183,12 @@ describe("canvas keyboard", () => {
     const { host, paint } = await mounted()
     await paint([otherSlide])
     expect(announced(host)).toBe("")
+  })
+
+  it("says the slide when the canvas shows another slide, not that the elements left behind were deleted", async () => {
+    const { host, paint } = await mounted()
+    await paint([shape], { part: "ppt/slides/slide1.xml", slideName: "Slide 1 of 2" })
+    await paint([], { part: "ppt/slides/slide2.xml", slideName: "Slide 2 of 2" })
+    expect(announced(host)).toBe("Slide 2 of 2")
   })
 })

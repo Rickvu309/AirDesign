@@ -1,5 +1,5 @@
 import { Filmstrip, type TextFormatting } from "@airdesign/render"
-import { useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react"
+import { useCallback, useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react"
 import { Announcer, type Announcement } from "@/components/ui/announcer"
 import { Button } from "@/components/ui/button"
 import { slideListCopy } from "@/copy/slide-list-copy"
@@ -11,7 +11,7 @@ import { gridCommand, gridMove, type GridCommand } from "@/editor/editor-grid-ke
 import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
 import type { FormatShown } from "@/editor/format-buttons"
 import type { ToolPick } from "@/editor/pointer-tool"
-import { slideThumbWidth, type SlideStrip, type StripSection } from "@/editor/slide-sidebar"
+import { slideThumbWidth, useSlideSay, type SlideStrip, type StripSection } from "@/editor/slide-sidebar"
 import type { UndoButtonsState } from "@/editor/undo-buttons"
 import { ExportControl } from "@/export/export-control"
 import type { ExportRequest } from "@/export/export-deck"
@@ -86,7 +86,11 @@ export function EditorGrid({
   const [stop, setStop] = useState(strip.current)
   const [message, setMessage] = useState<Announcement | null>(null)
   const { current, count } = strip
-  const announce = (text: string) => setMessage((held) => ({ text, odd: held === null ? false : !held.odd }))
+  const announce = useCallback(
+    (text: string) => setMessage((held) => ({ text, odd: held === null ? false : !held.odd })),
+    [],
+  )
+  useSlideSay(strip.say, announce)
   useLayoutEffect(() => {
     if (!following.current) return
     const next = list.current?.querySelector<HTMLElement>(`[data-slide-entry="${current + 1}"]`)

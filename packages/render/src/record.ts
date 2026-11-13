@@ -38,4 +38,5 @@ export type CanvasSlide = {
   readonly height: number
   readonly background: string | null
   readonly elements: readonly CanvasElement[]
+  readonly part?: string
 }

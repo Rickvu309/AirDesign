@@ -4,6 +4,7 @@ import type { ReadShape } from "@airdesign/pptx"
 import { SlideCanvas, textValue } from "@airdesign/render"
 import type { ReactNode } from "react"
 import { commitBox, commitEdit, type CommitOutcome } from "@/commit-edit"
+import { slideListCopy } from "@/copy/slide-list-copy"
 import { valueStorable } from "@/deck-paint"
 import { deviceRegister } from "@/device-copy"
 import { slideFrame } from "@/editor/revenue-slide"
@@ -29,7 +30,7 @@ export type EditableDeck = {
 
 export function editableSlide(deck: EditableDeck): (width: number) => ReactNode {
   const { id, tables, settle, setPending, changeElement } = deck
-  const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current } = deck.shown
+  const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount } = deck.shown
   const { typed, sessions, records, formatting, record } = deck.undo
 
   async function textBefore(target: ElementId): Promise<string> {
@@ -151,6 +152,7 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
           tables.change(target, change, (value, name) => holding(target, () => onEdit(target, value, name)))
         }
         slide={canvas}
+        slideName={slideCount > 0 ? slideListCopy.slideName(current + 1, slideCount) : undefined}
         tableBar={tables.tableBar}
         store={store.current}
         width={width}

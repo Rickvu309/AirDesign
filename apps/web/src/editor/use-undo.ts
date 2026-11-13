@@ -1,10 +1,11 @@
-import { type Undoable } from "@airdesign/document"
+import { type SlideId, type Undoable } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { textFormatting } from "@airdesign/render"
 import { useEffect, useRef, useState } from "react"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import type { UndoButtonsState } from "@/editor/undo-buttons"
 import { useUndoKeys } from "@/editor/undo-keys"
+import { slideTurnSaid } from "@/editor/slide-said"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import { notesShown, type ShownNotes } from "@/notes-edit"
 import { structureOf } from "@/table-hook"
@@ -75,7 +76,16 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     return () => window.clearTimeout(clear)
   }, [told])
 
-  async function showTurned(undoable: Undoable) {
+  function slideOf(undoable: Undoable): SlideId | null {
+    if (!("slide" in undoable) || "element" in undoable) return null
+    return undoable.slide
+  }
+
+  async function showTurned(entry: UndoEntry, direction: UndoDirection) {
+    const { undoable } = entry
+    const held = shown.current
+    const slideId = slideOf(undoable)
+    const before = slideId === null ? -1 : store.current.slides().findIndex((slide) => slide.id === slideId)
     const next = await connect(memoryRemote()).openDeck(id)
     if (!next.ok) return
     if ("slide" in undoable || structure.current !== structureOf(next.register)) showRegister(next.register)
@@ -83,6 +93,9 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     if ("node" in undoable && undoable.node.endsWith(".notes"))
       notesBar.show(notesShown(shownParts.current, next.register))
     const slides = store.current.slides()
+    const after = slideId === null ? -1 : slides.findIndex((slide) => slide.id === slideId)
+    const said = slideTurnSaid(direction, entry.name, { before, after, count: slides.length, held })
+    if (said !== null) shown.saySlide?.current(said)
     const shownSlide =
       "slide" in undoable
         ? slides.findIndex((slide) => slide.id === undoable.slide)
@@ -101,7 +114,7 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
       setUndoShown(turned.list)
       setTold(turned.outcome === "changed" ? direction : null)
       if (turned.outcome === "changed") return
-      await showTurned(turned.entry.undoable)
+      await showTurned(turned.entry, direction)
       settle(await flushPending(connect, id))
     })
   }
