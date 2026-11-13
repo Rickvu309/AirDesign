@@ -12,6 +12,10 @@ export type UndoName =
   | "duplicate"
   | "delete"
   | "order"
+  | "front"
+  | "forward"
+  | "backward"
+  | "back"
   | "add-row"
   | "delete-row"
   | "add-column"
@@ -34,6 +38,10 @@ export const undoCopy = {
     duplicate: "Undo duplicate slide",
     delete: "Undo delete slide",
     order: "Undo slide order",
+    front: "Undo bring to front",
+    forward: "Undo bring forward",
+    backward: "Undo send backward",
+    back: "Undo send to back",
     "add-row": "Undo add row",
     "delete-row": "Undo delete row",
     "add-column": "Undo add column",
@@ -53,6 +61,10 @@ export const undoCopy = {
     duplicate: "Redo duplicate slide",
     delete: "Redo delete slide",
     order: "Redo slide order",
+    front: "Redo bring to front",
+    forward: "Redo bring forward",
+    backward: "Redo send backward",
+    back: "Redo send to back",
     "add-row": "Redo add row",
     "delete-row": "Redo delete row",
     "add-column": "Redo add column",

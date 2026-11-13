@@ -1,8 +1,9 @@
-import { readTableValue, type Box, type ElementId } from "@airdesign/document"
+import { readTableValue, type Box, type ElementId, type StackMove } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import type { ReadShape } from "@airdesign/pptx"
 import { SlideCanvas, textValue } from "@airdesign/render"
 import type { ReactNode } from "react"
+import { ArrangeMenu } from "@/editor/arrange-menu"
 import { commitBox, commitEdit, type CommitOutcome } from "@/commit-edit"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { valueStorable } from "@/deck-paint"
@@ -25,7 +26,7 @@ export type EditableDeck = {
   readonly tables: ReturnType<typeof useTables>
   readonly settle: (outcome: CommitOutcome) => void
   readonly setPending: (pending: boolean) => void
-  readonly changeElement: (change: ElementChange) => Promise<void>
+  readonly changeElement: (change: ElementChange) => Promise<CommitOutcome | "closed">
 }
 
 export function editableSlide(deck: EditableDeck): (width: number) => ReactNode {
@@ -136,27 +137,46 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     return work().finally(release)
   }
 
+  function orderElement(node: ElementId, move: StackMove) {
+    return changeElement({ change: "order", node, move })
+  }
+
   return (width) => {
     const canvas = canvases.current(current)
     return canvas === null ? (
       <div />
     ) : (
-      <SlideCanvas
-        className={cn(slideFrame, "shrink-0 overflow-clip focus-within:overflow-visible")}
-        entering={entering}
-        formatting={formatting.current}
-        onBox={(target, box) => void holding(target, () => onBox(target, box))}
-        onRemove={(target) => void holding(target, () => changeElement({ change: "remove", node: target }))}
-        onEdit={(target, value) => void holding(target, () => onEdit(target, value))}
-        onTable={(target, change) =>
-          tables.change(target, change, (value, name) => holding(target, () => onEdit(target, value, name)))
-        }
-        slide={canvas}
-        slideName={slideCount > 0 ? slideListCopy.slideName(current + 1, slideCount) : undefined}
-        tableBar={tables.tableBar}
-        store={store.current}
-        width={width}
-      />
+      <ArrangeMenu parts={editParts.current} slide={canvas} onOrder={orderElement}>
+        {({ notice, order, clear }) => (
+          <SlideCanvas
+            className={cn(slideFrame, "shrink-0 overflow-clip focus-within:overflow-visible")}
+            entering={entering}
+            formatting={formatting.current}
+            notice={notice}
+            onBox={(target, box) => {
+              clear()
+              void holding(target, () => onBox(target, box))
+            }}
+            onOrder={order}
+            onRemove={(target) => {
+              clear()
+              void holding(target, () => changeElement({ change: "remove", node: target }))
+            }}
+            onEdit={(target, value) => {
+              clear()
+              void holding(target, () => onEdit(target, value))
+            }}
+            onTable={(target, change) =>
+              tables.change(target, change, (value, name) => holding(target, () => onEdit(target, value, name)))
+            }
+            slide={canvas}
+            slideName={slideCount > 0 ? slideListCopy.slideName(current + 1, slideCount) : undefined}
+            tableBar={tables.tableBar}
+            store={store.current}
+            width={width}
+          />
+        )}
+      </ArrangeMenu>
     )
   }
 }

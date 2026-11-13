@@ -8,6 +8,7 @@ const keysFor = {
   "element-add": ["slide", "id", "element", "media", "geometry", "file"],
   "element-remove": ["slide", "id", "node", "file"],
   "element-restore": ["slide", "id", "node", "file"],
+  "element-order": ["slide", "id", "node", "before", "among", "file"],
   remove: ["slide", "id", "file"],
   move: ["slide", "id", "key", "file"],
   restore: ["slide", "id", "key", "file"],
@@ -19,6 +20,7 @@ function slideKeys(slide: unknown): readonly string[] | undefined {
   if (slide === "element-add") return keysFor["element-add"]
   if (slide === "element-remove") return keysFor["element-remove"]
   if (slide === "element-restore") return keysFor["element-restore"]
+  if (slide === "element-order") return keysFor["element-order"]
   if (slide === "remove") return keysFor.remove
   if (slide === "move") return keysFor.move
   if (slide === "restore") return keysFor.restore
@@ -46,6 +48,9 @@ export function slideEditCommand(edit: WireSlide): SlideCommand {
   }
   if (edit.slide === "element-remove") return { slide: "element-remove", id: edit.id, node: edit.node }
   if (edit.slide === "element-restore") return { slide: "element-restore", id: edit.id, node: edit.node }
+  if (edit.slide === "element-order") {
+    return { slide: "element-order", id: edit.id, node: edit.node, before: edit.before, among: edit.among }
+  }
   if (edit.slide === "remove") return { slide: "remove", id: edit.id }
   if (edit.slide === "move") return { slide: "move", id: edit.id, key: edit.key }
   if (edit.slide === "restore") return { slide: "restore", id: edit.id, key: edit.key }

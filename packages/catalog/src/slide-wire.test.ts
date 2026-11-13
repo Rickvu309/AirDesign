@@ -114,3 +114,22 @@ it("carries an added shape's geometry through commit_edits and refuses one it do
   ])
   expect(readCommit({ deck: "deck", batch: [{ ...add, geometry: "arrow" }] })).toEqual(field)
 })
+
+it("reads a stacking order on a person's commit and refuses an extra field", () => {
+  const order = {
+    slide: "element-order",
+    id: "256",
+    node: "256.2",
+    before: null,
+    among: ["256.2", "256.4"],
+    file: ["256", "257"],
+  }
+  const read = readCommit({ deck: "deck", batch: [order] })
+  if (!read.ok) throw new Error(read.refusal)
+  expect(read.batch.map((edit) => ("slide" in edit ? slideEditCommand(edit) : edit))).toEqual([
+    { slide: "element-order", id: "256", node: "256.2", before: null, among: ["256.2", "256.4"] },
+  ])
+  expect(readCommit({ deck: "deck", batch: [{ ...order, before: "256.4" }] }).ok).toBe(true)
+  expect(readCommit({ deck: "deck", batch: [{ ...order, placed: true }] })).toEqual(field)
+  expect(readAgentEdit({ deck: "deck", base: 0, changes: [order] })).toEqual(field)
+})

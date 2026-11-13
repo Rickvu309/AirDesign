@@ -58,7 +58,7 @@ function Deck(props: { readonly exposed: (deck: Exposed) => void }) {
   const pictures = { store: { bytes: new Map(), load: async () => false, keep: nothing } }
   const undo = useUndoList()
   const shown = useDeckPaint(deck, pictures, notes, nothing)
-  const changeElement = async () => undefined
+  const changeElement = async () => "kept" as const
   const { store, shapes, editParts, canvases, current, showEdited } = shown
   const tables = useTables({ current, store, shapes, editParts, canvases, showEdited, changeElement })
   useUndoTurn({ id: deck, paintedDeck: deck, undo, shown, notesBar: notes, settle: nothing, setPending: nothing })

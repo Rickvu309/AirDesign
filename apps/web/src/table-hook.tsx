@@ -17,7 +17,7 @@ export type TableDeck = {
   readonly editParts: RefObject<Parts>
   readonly canvases: RefObject<(index: number) => CanvasSlide | null>
   readonly showEdited: (index: number, whole?: "whole") => Promise<void>
-  readonly changeElement: (change: ElementChange) => Promise<void>
+  readonly changeElement: (change: ElementChange) => Promise<CommitOutcome | "closed">
 }
 
 const typedRepaint = 400

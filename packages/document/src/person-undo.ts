@@ -1,7 +1,8 @@
 import type { Box } from "./box.js"
 import { currentBox, currentValue, decide, type Command, type Register } from "./decide.js"
 import type { ElementId, SlideId } from "./element-id.js"
-import { elementCommand, elementGone, type ElementCommand } from "./element-order.js"
+import { elementCommand, elementGone, type ElementCommand, type ElementOrder } from "./element-order.js"
+import { elementStacks, sitsBefore } from "./element-stack.js"
 import type { OrderKey } from "./order-key.js"
 import { foldSlides, type SlideCommand, type SlideState } from "./slide-order.js"
 import type { Value } from "./value.js"
@@ -23,6 +24,13 @@ export type Undoable =
       readonly before: boolean
       readonly after: boolean
     }
+  | {
+      readonly stack: ElementId
+      readonly slide: SlideId
+      readonly file: readonly SlideId[]
+      readonly before: ElementId | null
+      readonly after: ElementId | null
+    }
 
 export type Turn = { readonly ok: true; readonly command: Command } | { readonly ok: false }
 
@@ -34,13 +42,20 @@ function spotOf(register: Register, file: readonly SlideId[], id: SlideId): Slid
   return spot === undefined ? undefined : { present: spot.present, key: spot.key }
 }
 
-function elementOf(edit: ElementCommand): ElementId {
+function elementOf(edit: Exclude<ElementCommand, ElementOrder>): ElementId {
   return edit.slide === "element-add" ? edit.element.node : edit.node
+}
+
+function stackUndoable(edit: ElementOrder, file: readonly SlideId[]): Undoable | null {
+  const place = sitsBefore(edit.among, edit.node)
+  if (place === undefined) return null
+  return { stack: edit.node, slide: edit.id, file, before: place, after: edit.before }
 }
 
 export function slideUndoable(register: Register, file: readonly SlideId[], edit: SlideCommand): Undoable | null {
   const decision = decide(register, { command: "slide", file, edit })
   if (decision.decision !== "apply") return null
+  if (edit.slide === "element-order") return stackUndoable(edit, file)
   if (elementCommand(edit)) {
     const element = elementOf(edit)
     const shown = (state: Register) => !elementGone(state, element)
@@ -92,6 +107,22 @@ function turn(register: Register, undoable: Undoable, from: "before" | "after"):
     return landing(register, { command: "person", ...undoable[to], node: undoable.node })
   }
   const file = register.file.length > 0 ? register.file : undoable.file
+  if ("stack" in undoable) {
+    const chain = elementStacks(register).find(
+      (stack) => stack.slide === undoable.slide && stack.ids.includes(undoable.stack),
+    )
+    if (chain === undefined) return changed
+    const place = sitsBefore(chain.ids, undoable.stack)
+    if (place !== undoable[from] || undoable[from] === undoable[to]) return changed
+    const edit: SlideCommand = {
+      slide: "element-order",
+      id: undoable.slide,
+      node: undoable.stack,
+      before: undoable[to],
+      among: chain.ids,
+    }
+    return landing(register, { command: "slide", file, edit })
+  }
   if ("element" in undoable) {
     const { element, slide } = undoable
     if (elementGone(register, element) === undoable[from] || undoable[from] === undoable[to]) return changed
@@ -124,6 +155,7 @@ function personEdited(register: Register, node: ElementId): boolean {
 }
 
 function undoableAt(register: Register, at: number, edit: SlideCommand): Undoable | null {
+  if (edit.slide === "element-order") return stackUndoable(edit, register.file)
   if (elementCommand(edit)) {
     const node = elementOf(edit)
     if (edit.slide === "element-add" && personEdited(register, node)) return null

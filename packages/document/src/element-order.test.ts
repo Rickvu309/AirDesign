@@ -3,6 +3,7 @@ import {
   decide,
   elementGone,
   elementId,
+  elementStacks,
   nextElementId,
   openingTable,
   openRegister,
@@ -214,5 +215,167 @@ describe("element order", () => {
     expect(readSlideState({ file, order })?.order).toEqual(order)
     expect(readSlideState({ file, order: [{ ...order[1], node: "257.9" }] })).toBeUndefined()
     expect(readSlideState({ file, order: [{ ...order[0], element: { ...textBox, node: "257.9" } }] })).toBeUndefined()
+  })
+
+  it("reads a stacking order and brings the element to the front without hiding it", () => {
+    const row = { slide: "element-order", id: "256", node: "256.2", before: null, among: ["256.2", "256.4"] }
+    const read = readSlideState({ file, order: [row] })
+    expect(read?.order).toEqual([
+      {
+        slide: "element-order",
+        id: slideId("256"),
+        node: elementId("256.2"),
+        before: null,
+        among: [elementId("256.2"), elementId("256.4")],
+      },
+    ])
+    const brought = applied(indexed, {
+      slide: "element-order",
+      id: file[0]!,
+      node: elementId("256.2"),
+      before: null,
+      among: [elementId("256.2"), elementId("256.4")],
+    })
+    expect(elementGone(brought, elementId("256.2"))).toBe(false)
+    expect(elementStacks(brought)).toEqual([{ slide: file[0]!, ids: [elementId("256.4"), elementId("256.2")] }])
+  })
+
+  it("refuses a stack move that changes nothing, names itself, leaves its list, or names a missing element", () => {
+    const order = (node: string, before: string | null, among: readonly string[]) =>
+      slide(indexed, {
+        slide: "element-order",
+        id: file[0]!,
+        node: elementId(node),
+        before: before === null ? null : elementId(before),
+        among: among.map((id) => elementId(id)),
+      })
+    expect(order("256.2", null, ["256.4", "256.2"])).toEqual({ decision: "refuse", code: "dead" })
+    expect(order("256.2", "256.2", ["256.2", "256.4"])).toEqual({ decision: "refuse", code: "dead" })
+    expect(order("256.2", "256.5", ["256.2", "256.4"])).toEqual({ decision: "refuse", code: "dead" })
+    expect(order("256.7", null, ["256.7", "256.2"])).toEqual({ decision: "refuse", code: "dead" })
+    expect(order("256.2", null, ["256.2", "256.2"])).toEqual({ decision: "refuse", code: "dead" })
+    expect(
+      readSlideState({
+        file,
+        order: [{ slide: "element-order", id: "256", node: "257.2", before: null, among: ["257.2"] }],
+      }),
+    ).toBeUndefined()
+  })
+
+  it("refuses a stale sibling list and accepts the list the earlier move left", () => {
+    const front = applied(indexed, {
+      slide: "element-order",
+      id: file[0]!,
+      node: elementId("256.2"),
+      before: null,
+      among: [elementId("256.2"), elementId("256.4")],
+    })
+    const stale = slide(front, {
+      slide: "element-order",
+      id: file[0]!,
+      node: elementId("256.4"),
+      before: null,
+      among: [elementId("256.2"), elementId("256.4")],
+    })
+    expect(stale).toEqual({ decision: "refuse", code: "stale" })
+    const again = applied(front, {
+      slide: "element-order",
+      id: file[0]!,
+      node: elementId("256.4"),
+      before: null,
+      among: [elementId("256.4"), elementId("256.2")],
+    })
+    expect(elementStacks(again)).toEqual([{ slide: file[0]!, ids: [elementId("256.2"), elementId("256.4")] }])
+  })
+
+  it("appends a new shape to a slide-level stack and leaves a group stack as it was", () => {
+    const grouped: Register = {
+      ...indexed,
+      index: {
+        ...indexed.index!,
+        total: 4,
+        elements: [
+          ...indexed.index!.elements,
+          { node: elementId("256.6"), kind: "shape", value: "Also", box, grouped: true },
+        ],
+        pages: [{ once: "page", offset: 0, count: 4 }],
+      },
+    }
+    const slideLevel = applied(grouped, {
+      slide: "element-order",
+      id: file[0]!,
+      node: elementId("256.2"),
+      before: null,
+      among: [elementId("256.2"), elementId("256.4")],
+    })
+    const inside = applied(slideLevel, {
+      slide: "element-order",
+      id: file[0]!,
+      node: elementId("256.5"),
+      before: null,
+      among: [elementId("256.5"), elementId("256.6")],
+    })
+    const added = applied(inside, { slide: "element-add", id: file[0]!, element: textBox })
+    expect(elementStacks(added)).toEqual([
+      { slide: file[0]!, ids: [elementId("256.4"), elementId("256.2"), elementId("256.9")] },
+      { slide: file[0]!, ids: [elementId("256.6"), elementId("256.5")] },
+    ])
+    expect(
+      slide(added, {
+        slide: "element-order",
+        id: file[0]!,
+        node: elementId("256.5"),
+        before: elementId("256.6"),
+        among: [elementId("256.6"), elementId("256.5")],
+      }).decision,
+    ).toBe("apply")
+  })
+
+  it("drops a removed sibling and puts it back in front of the one it sat before", () => {
+    const added = applied(indexed, { slide: "element-add", id: file[0]!, element: textBox })
+    const brought = applied(added, {
+      slide: "element-order",
+      id: file[0]!,
+      node: elementId("256.2"),
+      before: null,
+      among: [elementId("256.2"), elementId("256.4"), elementId("256.9")],
+    })
+    const removed = applied(brought, { slide: "element-remove", id: file[0]!, node: elementId("256.9") })
+    expect(elementStacks(removed)).toEqual([{ slide: file[0]!, ids: [elementId("256.4"), elementId("256.2")] }])
+    const restored = applied(removed, { slide: "element-restore", id: file[0]!, node: elementId("256.9") })
+    expect(elementStacks(restored)).toEqual([
+      { slide: file[0]!, ids: [elementId("256.4"), elementId("256.9"), elementId("256.2")] },
+    ])
+  })
+
+  it("reorders a group and an animated shape", () => {
+    const marked: Register = {
+      ...indexed,
+      index: {
+        ...indexed.index!,
+        slides: [
+          { id: "256", position: 0, animated: ["2", "4"] },
+          { id: "257", position: 1 },
+        ],
+      },
+    }
+    expect(
+      slide(marked, {
+        slide: "element-order",
+        id: file[0]!,
+        node: elementId("256.4"),
+        before: elementId("256.2"),
+        among: [elementId("256.2"), elementId("256.4")],
+      }).decision,
+    ).toBe("apply")
+    expect(
+      slide(marked, {
+        slide: "element-order",
+        id: file[0]!,
+        node: elementId("256.2"),
+        before: null,
+        among: [elementId("256.2"), elementId("256.4")],
+      }).decision,
+    ).toBe("apply")
   })
 })

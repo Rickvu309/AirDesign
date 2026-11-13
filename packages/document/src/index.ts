@@ -66,6 +66,7 @@ export {
   type Media,
   type MediaType,
 } from "./element-order.js"
+export { elementStacks, stackTarget, type ElementStack, type StackMove } from "./element-stack.js"
 export {
   foldSlides,
   nextSlideId,

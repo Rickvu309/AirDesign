@@ -1,5 +1,5 @@
 import { memo, useLayoutEffect, useRef } from "react"
-import type { Box, ElementId, TableChange } from "@airdesign/document"
+import type { Box, ElementId, StackMove, TableChange } from "@airdesign/document"
 import { PaintedElement } from "./element-kind.js"
 import type { HeldKeys } from "./held-keys.js"
 import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.js"
@@ -39,6 +39,8 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onEdit?: (id: ElementId, value: string) => void
   readonly onBox?: (id: ElementId, box: Box) => void
   readonly onRemove?: (id: ElementId) => void
+  readonly onOrder?: (id: ElementId, move: StackMove) => void
+  readonly notice?: string
   readonly onTable?: (id: ElementId, change: TableChange) => void
   readonly tableBar?: TableBar
   readonly entering?: Entering | null
@@ -51,7 +53,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   useLayoutEffect(() => {
     ensureBulletRule(document)
   }, [])
-  const moves = useMoves(props.store, slide, width, props.onBox, props.onRemove)
+  const moves = useMoves(props.store, slide, width, props.onBox, props.onRemove, props.onOrder)
   const moving = props.onBox === undefined ? null : moves
   const selected = moving === null ? undefined : slide.elements.find((each) => each.id === moving.selected)
   const surface = useRef<HTMLDivElement>(null)
@@ -107,7 +109,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
       ))}
       {moving === null ? null : (
         <div role="status" aria-live="polite" aria-atomic="true" style={visuallyHidden}>
-          {moving.message}
+          {props.notice !== undefined && props.notice !== "" ? props.notice : moving.message}
         </div>
       )}
       {moving === null || selected === undefined || selected.id === null ? null : (

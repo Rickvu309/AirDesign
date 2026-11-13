@@ -44,6 +44,37 @@ it("lets a person add a text box, type in it and remove it, and hides it from a 
   ).toMatchObject({ ok: false })
 })
 
+it("stores a stacking order from a person's commit and leaves the element showing", () => {
+  const added = landed(
+    call("commit_edits", opened(), person, {
+      deck: "deck",
+      batch: [{ slide: "element-add", id: "256", element, file }],
+    }),
+  )
+  const ordered = landed(
+    call("commit_edits", added, person, {
+      deck: "deck",
+      batch: [
+        {
+          slide: "element-order",
+          id: "256",
+          node: "256.2",
+          before: null,
+          among: ["256.2", node],
+          file,
+        },
+      ],
+    }),
+  )
+  expect(ordered.register.order.at(-1)).toMatchObject({
+    slide: "element-order",
+    node: "256.2",
+    before: null,
+    among: ["256.2", node],
+  })
+  expect(readDeckPage(ordered, { runId: null }).elements).toMatchObject([{ node }])
+})
+
 it("shows a removed text box in a read again once a restore brings it back", () => {
   const added = landed(
     call("commit_edits", opened(), person, {

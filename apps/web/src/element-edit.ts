@@ -6,6 +6,8 @@ import {
   readSlideId,
   shapeOf,
   slideUndoable,
+  stackTarget,
+  type StackMove,
   type Box,
   type ElementId,
   type Geometry,
@@ -14,7 +16,7 @@ import {
   type Undoable,
 } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
-import { applyRoute, freeShapeId, paintKind, readShapes, readSlides } from "@airdesign/pptx"
+import { applyRoute, freeShapeId, paintKind, readShapes, readSlides, shapeSiblings } from "@airdesign/pptx"
 import { boxOf, type PaintBox } from "@airdesign/render"
 import { toast } from "sonner"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
@@ -38,6 +40,7 @@ export type ElementChange =
   | { readonly change: "text" | "table"; readonly index: number; readonly size: SlideRoom }
   | { readonly change: "shape"; readonly geometry: Geometry; readonly index: number; readonly size: SlideRoom }
   | { readonly change: "remove"; readonly node: ElementId }
+  | { readonly change: "order"; readonly node: ElementId; readonly move: StackMove }
 
 export function takenBoxes(room: SlideRoom): readonly Box[] {
   return (room.elements ?? []).flatMap((each) => (each.box === null ? [] : [boxOf(each.box)]))
@@ -63,8 +66,19 @@ export function removalRefusal(parts: Parts, register: Register, node: ElementId
   }
 }
 
+function orderCommand(base: Parts, change: Extract<ElementChange, { change: "order" }>): SlideCommand | null {
+  const among = shapeSiblings(base, change.node)
+  if (among === null) return null
+  const before = stackTarget(among, change.node, change.move)
+  if (before === undefined) return null
+  const id = readSlideId(shapeOf(change.node).slide)
+  if (id === undefined) return null
+  return { slide: "element-order", id, node: change.node, before, among }
+}
+
 export function elementCommand(parts: Parts, register: Register, change: ElementChange): SlideCommand | null {
   const base = slideBase(parts, register)
+  if (change.change === "order") return orderCommand(base, change)
   if (change.change === "remove") {
     const { slide, shape } = shapeOf(change.node)
     const found = readSlides(base).find((each) => each.slide === slide)

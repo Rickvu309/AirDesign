@@ -113,6 +113,30 @@ it("says why it cannot delete an animated shape, a group and a shape inside one,
   expect(removalRefusal(grouped, register, elementId("256.77"))).toBeNull()
 })
 
+it("brings a shape to the front of its siblings and refuses a move that changes nothing", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const register = openRegister("", "")
+  const back = elementId("256.2")
+  const front = elementId("256.3")
+  const brought = elementCommand(parts, register, { change: "order", node: back, move: "front" })
+  expect(brought).toEqual({
+    slide: "element-order",
+    id: "256",
+    node: back,
+    before: null,
+    among: [back, front],
+  })
+  expect(readShapes(exportedParts(parts, landed(register, brought))).map((shape) => shape.shape)).toEqual(["3", "2"])
+  const stepped = elementCommand(parts, register, { change: "order", node: front, move: "backward" })
+  expect(stepped).toEqual({ slide: "element-order", id: "256", node: front, before: back, among: [back, front] })
+  expect(elementCommand(parts, register, { change: "order", node: back, move: "back" })).toBeNull()
+  expect(elementCommand(parts, register, { change: "order", node: back, move: "backward" })).toBeNull()
+  expect(elementCommand(parts, register, { change: "order", node: front, move: "front" })).toBeNull()
+  expect(elementCommand(parts, register, { change: "order", node: front, move: "forward" })).toBeNull()
+  expect(elementCommand(parts, landed(register, brought), { change: "order", node: back, move: "front" })).toBeNull()
+  expect(elementCommand(parts, register, { change: "order", node: elementId("256.7"), move: "front" })).toBeNull()
+})
+
 it("adds a rectangle, an ellipse and a line on the slide under the next free id, each in the theme's style", () => {
   const parts = onSlide(xml(twoBoxSlide))
   const register = openRegister("", "")

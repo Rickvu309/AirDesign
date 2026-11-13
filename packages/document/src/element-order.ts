@@ -37,10 +37,23 @@ export type ElementRestore = {
   readonly node: ElementId
 }
 
-export type ElementCommand = ElementAdd | ElementRemove | ElementRestore
+export type ElementOrder = {
+  readonly slide: "element-order"
+  readonly id: SlideId
+  readonly node: ElementId
+  readonly before: ElementId | null
+  readonly among: readonly ElementId[]
+}
+
+export type ElementCommand = ElementAdd | ElementRemove | ElementRestore | ElementOrder
 
 export function elementCommand(command: { readonly slide: string }): command is ElementCommand {
-  return command.slide === "element-add" || command.slide === "element-remove" || command.slide === "element-restore"
+  return (
+    command.slide === "element-add" ||
+    command.slide === "element-remove" ||
+    command.slide === "element-restore" ||
+    command.slide === "element-order"
+  )
 }
 
 type Indexed = SlideState & { readonly index?: DeckIndex }
@@ -115,7 +128,7 @@ function indexComplete(state: Indexed): boolean {
 
 export function elementRefusal(
   state: Indexed,
-  command: ElementCommand,
+  command: Exclude<ElementCommand, ElementOrder>,
 ): "dead" | "present" | "group-box" | "locked" | "kind" | null {
   const node = command.slide === "element-add" ? command.element.node : command.node
   if (shapeOf(node).slide !== command.id) return "dead"
