@@ -1,4 +1,4 @@
-import { enqueue, parsePull, queueLine } from "./merge-queue.mjs"
+import { awaitChecks, enqueue, parsePull, queueLine, removalLine } from "./merge-queue.mjs"
 
 const same = (what, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -6,7 +6,15 @@ const same = (what, actual, expected) => {
   }
 }
 
-const answer = ({ armed = false, entry = null, state = "OPEN", merged = false, contexts = [], others = [] } = {}) =>
+const answer = ({
+  armed = false,
+  entry = null,
+  state = "OPEN",
+  merged = false,
+  contexts = [],
+  others = [],
+  timeline = [],
+} = {}) =>
   JSON.stringify({
     data: {
       repository: {
@@ -22,6 +30,7 @@ const answer = ({ armed = false, entry = null, state = "OPEN", merged = false, c
           mergeQueueEntry: entry,
           autoMergeRequest: armed ? { enabledAt: "2026-11-12T10:00:00Z", mergeMethod: "REBASE" } : null,
           commits: { nodes: [{ commit: { statusCheckRollup: { state: "SUCCESS", contexts: { nodes: contexts } } } }] },
+          timelineItems: { nodes: timeline },
         },
         mergeQueue: { entries: { nodes: others.map((number, at) => ({ position: at + 1, pullRequest: { number } })) } },
       },
@@ -106,4 +115,85 @@ same(
   "a pull request armed by the first try stops there",
   [enqueue({ merge: first.merge, read: first.read, repository: "r/r", number: 1 }).ok, first.asked.length],
   [true, 1],
+)
+
+const commit = { __typename: "PullRequestCommit" }
+const removed = (reason, createdAt) => ({ __typename: "RemovedFromMergeQueueEvent", reason, createdAt })
+
+const dropped = parsePull(
+  answer({
+    timeline: [
+      commit,
+      removed("merge_conflict", "2026-11-12T21:44:43Z"),
+      { __typename: "AddedToMergeQueueEvent" },
+      removed("invalid_merge_commit", "2026-11-13T01:40:40Z"),
+    ],
+  }),
+)
+same("the latest removal on the head is read", dropped.removal, {
+  reason: "invalid_merge_commit",
+  at: "2026-11-13T01:40:40Z",
+})
+same(
+  "the removal line names the reason and the time",
+  removalLine(dropped),
+  "the merge queue removed this head: invalid_merge_commit (2026-11-13T01:40:40Z)",
+)
+same(
+  "a removal before the latest push belongs to an old head",
+  parsePull(answer({ timeline: [removed("merge_conflict", "2026-11-12T21:44:43Z"), commit] })).removal,
+  undefined,
+)
+same(
+  "a removal before a force push belongs to an old head",
+  parsePull(
+    answer({
+      timeline: [removed("merge_conflict", "2026-11-12T21:44:43Z"), { __typename: "HeadRefForcePushedEvent" }],
+    }),
+  ).removal,
+  undefined,
+)
+same(
+  "leaving the queue by merging is not a removal",
+  parsePull(answer({ timeline: [commit, removed("merged", "2026-11-13T02:03:23Z")] })).removal,
+  undefined,
+)
+same("a pull request never removed has no removal", parsePull(answer()).removal, undefined)
+same("and no removal line", removalLine(parsePull(answer())), undefined)
+
+const waiting = async ({ reads, limitMs = 60000 }) => {
+  const said = []
+  let at = 0
+  let clock = 0
+  const state = await awaitChecks({
+    read: () => reads[Math.min(at++, reads.length - 1)],
+    repository: "Rickvu309/AirDesign",
+    number: 394,
+    sleep: (ms) => {
+      clock += ms
+    },
+    now: () => clock,
+    say: (line) => said.push(line),
+    intervalMs: 10000,
+    limitMs,
+  })
+  return { state, said, reads: () => at, clock: () => clock }
+}
+const started = [{ __typename: "CheckRun", name: "check (main)", conclusion: null, status: "IN_PROGRESS" }]
+
+const early = await waiting({ reads: [answer(), answer(), answer({ contexts: started })] })
+same("it waits until a check is on the head", [early.state.ok, early.reads(), early.clock()], [true, 3, 20000])
+same("and says it is waiting", early.said.length > 0, true)
+
+const never = await waiting({ reads: [answer()] })
+same("it gives up when no check appears", never.state.ok, false)
+if (!never.state.message.includes("no check has started")) {
+  throw new Error(`the wait does not say why it stopped: ${never.state.message}`)
+}
+
+same("an armed pull request needs no wait", (await waiting({ reads: [answer({ armed: true })] })).reads(), 1)
+same(
+  "a queued pull request needs no wait",
+  (await waiting({ reads: [answer({ entry: { position: 1, state: "QUEUED" } })] })).reads(),
+  1,
 )

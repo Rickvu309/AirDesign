@@ -13,7 +13,14 @@ const pass = [{ __typename: "CheckRun", name: "check (main)", conclusion: "SUCCE
 const running = [{ __typename: "CheckRun", name: "check (main)", conclusion: null, status: "IN_PROGRESS" }]
 const fail = [{ __typename: "CheckRun", name: "check (main)", conclusion: "FAILURE", status: "COMPLETED" }]
 
-const answer = ({ armed = true, entry = null, merged = false, contexts = pass, mergeable = "MERGEABLE" } = {}) =>
+const answer = ({
+  armed = true,
+  entry = null,
+  merged = false,
+  contexts = pass,
+  mergeable = "MERGEABLE",
+  timeline = [],
+} = {}) =>
   JSON.stringify({
     data: {
       repository: {
@@ -28,6 +35,7 @@ const answer = ({ armed = true, entry = null, merged = false, contexts = pass, m
           mergeQueueEntry: entry,
           autoMergeRequest: armed ? { enabledAt: "x", mergeMethod: "REBASE" } : null,
           commits: { nodes: [{ commit: { statusCheckRollup: { state: "SUCCESS", contexts: { nodes: contexts } } } }] },
+          timelineItems: { nodes: timeline },
         },
         mergeQueue: { entries: { nodes: [] } },
       },
@@ -93,6 +101,33 @@ if (!dropped.said.includes("follow: dropped from the merge queue. The queue's ow
 if (!dropped.said.some((line) => line.includes("agent-commit-race.test.ts"))) {
   throw new Error("the drop does not print the queue run's failed tests")
 }
+
+const removal = {
+  __typename: "RemovedFromMergeQueueEvent",
+  reason: "merge_conflict",
+  createdAt: "2026-11-13T01:40:40Z",
+}
+const reasoned = await follow({
+  reads: [queuedAt(1), answer({ armed: false, timeline: [{ __typename: "PullRequestCommit" }, removal] })],
+  runs: [queueRun],
+})
+same(
+  "a drop says the reason GitHub recorded",
+  reasoned.said.includes("follow: the merge queue removed this head: merge_conflict (2026-11-13T01:40:40Z)"),
+  true,
+)
+
+const removedBefore = await follow({
+  reads: [
+    answer({ contexts: running, timeline: [{ __typename: "PullRequestCommit" }, removal] }),
+    answer({ merged: true }),
+  ],
+})
+same(
+  "a head the queue already removed says so while the follow starts",
+  removedBefore.said[0].includes("the merge queue removed this head: merge_conflict"),
+  true,
+)
 
 const red = await follow({
   reads: [answer({ contexts: fail })],

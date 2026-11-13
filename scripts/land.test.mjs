@@ -13,7 +13,16 @@ const no = (stderr = "", status = 1) => ({ status, stdout: "", stderr })
 const mark = "<".repeat(7)
 const migrationsOf = (...hashes) => JSON.stringify(hashes.map((sha256, at) => ({ id: at + 1, sha256 })))
 
-const pullAnswer = ({ armed = false, entry = null, merged = false, contexts = [], base = "main" } = {}) =>
+const checkRun = [{ __typename: "CheckRun", name: "check (main)", conclusion: null, status: "IN_PROGRESS" }]
+
+const pullAnswer = ({
+  armed = false,
+  entry = null,
+  merged = false,
+  contexts = checkRun,
+  base = "main",
+  timeline = [],
+} = {}) =>
   JSON.stringify({
     data: {
       repository: {
@@ -28,6 +37,7 @@ const pullAnswer = ({ armed = false, entry = null, merged = false, contexts = []
           mergeQueueEntry: entry,
           autoMergeRequest: armed ? { enabledAt: "x", mergeMethod: "REBASE" } : null,
           commits: { nodes: [{ commit: { statusCheckRollup: { state: "SUCCESS", contexts: { nodes: contexts } } } }] },
+          timelineItems: { nodes: timeline },
         },
         mergeQueue: { entries: { nodes: [] } },
       },
@@ -263,5 +273,90 @@ same(
 same(
   "it says where the pull request stands",
   status.said.some((line) => line.includes("auto-merge is armed")),
+  true,
+)
+
+const ranNothing = (run) => run.log.length === 0
+
+for (const flag of ["--help", "-h"]) {
+  const help = harness({ args: [flag] })
+  same(`${flag} exits 0`, await help.run(), 0)
+  same(`${flag} touches neither git nor gh`, ranNothing(help), true)
+  same(
+    `${flag} prints the usage`,
+    help.said.some((line) => line.startsWith("usage: pnpm land")),
+    true,
+  )
+}
+
+const typo = harness({ args: ["--tittle", "Add land"] })
+same("a flag the script does not know exits 1", await typo.run(), 1)
+same("and starts no land", ranNothing(typo), true)
+same(
+  "and names the flag and the usage",
+  typo.said.some((line) => line.includes("--tittle")) && typo.said.some((line) => line.startsWith("usage: pnpm land")),
+  true,
+)
+
+const stray = harness({ args: ["help"] })
+same("a stray word exits 1", await stray.run(), 1)
+same("and starts no land", ranNothing(stray), true)
+
+const knownFlags = harness({
+  args: ["--pr", "394", "--title", "Add land", "--body-file", "/tmp/body.md", "--no-follow", "--check"],
+})
+same("every flag the script knows is accepted", knownFlags.context.args.unknown, [])
+
+const early = harness({
+  pull: null,
+  args: ["--title", "Add land", "--body-file", "/tmp/body.md", "--no-follow"],
+  reads: [pullAnswer({ contexts: [] }), pullAnswer({ contexts: [] }), pullAnswer({ armed: true })],
+})
+early.context.gh = ((original) => (command) => {
+  if (command[0] === "pr" && command[1] === "list" && early.log.some((line) => line.startsWith("gh pr create"))) {
+    return ok(JSON.stringify([{ number: 394, baseRefName: "main", url: "u" }]))
+  }
+  return original(command)
+})(early.context.gh)
+early.context.read = ((original) => () => {
+  early.log.push("read")
+  return original()
+})(early.context.read)
+same("a push whose ci has not started waits, then arms", await early.run(), 0)
+const mergeAt = early.log.findIndex((line) => line.startsWith("gh pr merge"))
+same(
+  "and merges only after a check is on the head",
+  early.log.slice(0, mergeAt).filter((line) => line === "read").length,
+  3,
+)
+same(
+  "and says it waits",
+  early.said.some((line) => line.startsWith("queue") && line.includes("waiting")),
+  true,
+)
+
+const silent = harness({ reads: [pullAnswer({ contexts: [] })] })
+same("a head that never gets a check stops the queue step", await silent.run(), 1)
+same(
+  "and merges nothing",
+  silent.log.some((line) => line.startsWith("gh pr merge")),
+  false,
+)
+
+const removedStatus = harness({
+  args: ["--status"],
+  reads: [
+    pullAnswer({
+      timeline: [
+        { __typename: "PullRequestCommit" },
+        { __typename: "RemovedFromMergeQueueEvent", reason: "invalid_merge_commit", createdAt: "2026-11-13T01:40:40Z" },
+      ],
+    }),
+  ],
+})
+same("--status exits 0 for a removed head", await removedStatus.run(), 0)
+same(
+  "--status says why the queue removed it",
+  removedStatus.said.some((line) => line.includes("the merge queue removed this head: invalid_merge_commit")),
   true,
 )

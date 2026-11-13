@@ -10,9 +10,28 @@ import { followPull } from "./land-follow.mjs"
 import { behindMain, conflictsWithMain, currentBranch, dirtyFiles, runner, succeeds } from "./land-git.mjs"
 import { statusLines } from "./land-status.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
-import { enqueue, queueLine, readPull } from "./merge-queue.mjs"
+import { awaitChecks, enqueue, queueLine, readPull } from "./merge-queue.mjs"
 import { migrationFault, recordFile } from "./migration-numbers.mjs"
 import { baseFault } from "./pull-base.mjs"
+
+const valueFlags = ["--pr", "--title", "--body-file"]
+const switchFlags = ["--status", "--watch", "--check", "--no-follow", "--help", "-h"]
+
+export const usage = [
+  "usage: pnpm land [--title <text> --body-file <path>] [--no-follow] [--check]",
+  "       pnpm land --watch [--pr <number>]",
+  "       pnpm land --status [--pr <number>]",
+  "       pnpm land --help",
+]
+
+const unknownIn = (argv) => {
+  const unknown = []
+  for (let at = 0; at < argv.length; at += 1) {
+    if (valueFlags.includes(argv[at])) at += 1
+    else if (!switchFlags.includes(argv[at])) unknown.push(argv[at])
+  }
+  return unknown
+}
 
 const flagValue = (argv, name) => {
   const at = argv.indexOf(name)
@@ -20,6 +39,8 @@ const flagValue = (argv, name) => {
 }
 
 export const parseArgs = (argv) => ({
+  help: argv.includes("--help") || argv.includes("-h"),
+  unknown: unknownIn(argv),
   status: argv.includes("--status"),
   watch: argv.includes("--watch"),
   checkOnly: argv.includes("--check"),
@@ -49,6 +70,15 @@ const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, mil
 
 export const land = async (ctx) => {
   const { args, git, gh, say, sleep = pause, now = () => Date.now() } = ctx
+  if (args.help) {
+    for (const each of usage) say(each)
+    return 0
+  }
+  if (args.unknown.length > 0) {
+    say(`STOPPED: ${args.unknown.join(", ")} ${args.unknown.length === 1 ? "is" : "are"} not a flag of pnpm land.`)
+    for (const each of usage) say(each)
+    return 1
+  }
   const line = (step, text) => say(`${step.padEnd(11)}${text}`)
   const stop = (step, why) => {
     throw new Stop(`STOPPED at ${step}: ${why}`)
@@ -153,6 +183,17 @@ export const land = async (ctx) => {
     const wrong = baseFault(pull.number, pull.baseRefName)
     if (wrong !== undefined) stop("base", wrong)
     line("opened", `pull request ${pull.number}: ${pull.url}`)
+    const ready = await awaitChecks({
+      read,
+      repository,
+      number: pull.number,
+      sleep,
+      now,
+      say: (text) => line("queue", text),
+      intervalMs: ctx.checksIntervalMs,
+      limitMs: ctx.checksLimitMs,
+    })
+    if (!ready.ok) stop("queue", ready.message)
     const queued = enqueue({ merge: gh, read, repository, number: pull.number })
     if (!queued.ok) stop("queue", queued.message)
     line("queue", queueLine(queued.state))

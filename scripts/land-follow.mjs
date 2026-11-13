@@ -1,5 +1,5 @@
 import { ciFailureLines } from "./land-report.mjs"
-import { queueLine, readPull } from "./merge-queue.mjs"
+import { queueLine, readPull, removalLine } from "./merge-queue.mjs"
 
 const runsOf = ({ gh, repository, event, branch }) => {
   const fields =
@@ -79,11 +79,12 @@ export const followPull = async ({
         return 0
       }
       say("follow: dropped from the merge queue. The queue's own run failed:")
+      if (removalLine(again) !== undefined) say(`follow: ${removalLine(again)}`)
       report("merge_group", again)
       say(`follow: nothing merged. Fix the failure, push, and run: pnpm land --watch`)
       return 1
     } else {
-      speak(`${summary(pull)}; ${queueLine(pull)}`)
+      speak(`${summary(pull)}; ${queueLine(pull)}${removalLine(pull) === undefined ? "" : `; ${removalLine(pull)}`}`)
     }
     if (!pull.queued && armedSeen && !pull.armed) {
       say(`follow: auto-merge on pull request ${number} was switched off. Arm it again: pnpm land`)
