@@ -32,7 +32,7 @@ Bounds: one ask, one stop, one next ask, a listen connection that can drop and r
 
 Known bug: `StopBeforeAskIsHeeded` in `Stop.known.cfg`. A stop that reaches the server before it followed the ask finds no row and is answered at once. The ask then runs and is charged. It matters when the browser's cut of the turn fetch does not reach the server. `aira-stop-order.test.ts` pins it with `it.fails` ("before the server followed the ask").
 
-Sync: the commit that added `Send` and `Skip`.
+Sync: `dd181eadbeb66ceedc9c44a22a874960d804499f`.
 
 ## aira-loop
 
