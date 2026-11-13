@@ -2,7 +2,15 @@ declare const process: { cwd(): string; getBuiltinModule(name: "node:fs"): { rea
 import { elementId, orderKeyBetween, slideId, type Media, type SlideState } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { decodeUtf8 } from "./package-bytes.js"
-import { danglingShapeReferences, orderedParts, paintReader, readParts, readShapes, readSlides } from "./index.js"
+import {
+  danglingShapeReferences,
+  orderedParts,
+  paintReader,
+  readParts,
+  readShapes,
+  readSlides,
+  sharedOwnedParts,
+} from "./index.js"
 
 const { readFileSync } = process.getBuiltinModule("node:fs")
 const box = { x: 914400, y: 685800, cx: 2743200, cy: 1828800 }
@@ -130,4 +138,5 @@ it("shares the media part with a duplicated slide and drops a removed picture's 
   expect(pictures.map((shape) => shape.slide)).toEqual(["257"])
   expect([...changed.keys()].filter((name) => name.startsWith("ppt/media/"))).toHaveLength(1)
   expect(danglingShapeReferences(changed)).toEqual(danglingShapeReferences(original))
+  expect(sharedOwnedParts(changed)).toEqual([])
 })

@@ -1,5 +1,15 @@
 import { expect, it } from "vitest"
-import { notesLinkFailures, readNotes, readPackage, writeNotes, routeRuns, touchMatches } from "./index.js"
+import { orderKeyBetween, slideId } from "@airdesign/document"
+import {
+  notesLinkFailures,
+  orderedParts,
+  readNotes,
+  readPackage,
+  sharedOwnedParts,
+  writeNotes,
+  routeRuns,
+  touchMatches,
+} from "./index.js"
 
 import { encodeUtf8 as encode, decodeUtf8 } from "./package-bytes.js"
 declare const process: {
@@ -79,6 +89,23 @@ it("creates notes and a notes master for a slide without a notes part", async ()
   const run = routeRuns(blank).find((run) => run.operation === "notes.new")
   expect(run?.error).toBeNull()
   expect(touchMatches(blank, run!.parts!, run!.touch!)).toBe(true)
+})
+
+it("gives a copy of a slide whose notes were just created its own notes slide", async () => {
+  const withNotes = writeNotes(await fixture("blank.pptx"), "256", "New notes")
+  const copied = orderedParts(
+    withNotes,
+    {
+      file: [slideId("256")],
+      order: [{ slide: "clone", id: slideId("257"), source: slideId("256"), key: orderKeyBetween(null, null) }],
+    },
+    () => undefined,
+  )
+  const notes = readNotes(copied)
+  expect(notes.map((each) => each.text)).toEqual(["New notes", "New notes"])
+  expect(new Set(notes.map((each) => each.part)).size).toBe(2)
+  expect(sharedOwnedParts(copied)).toEqual([])
+  expect(notesLinkFailures(copied)).toEqual([])
 })
 
 it("adds only the notes slide when the deck has a notes master", async () => {
