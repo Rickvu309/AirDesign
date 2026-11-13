@@ -18,6 +18,7 @@ for (const file of [
   "scripts/check.mjs",
   "tests/browser/thin-deck.spec.ts",
   "AGENTS.md",
+  "CHECKS.md",
   "specs/edit/Edit.tla",
 ]) {
   same(`${file} is written by agents`, authored(file), true)

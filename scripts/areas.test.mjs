@@ -53,6 +53,7 @@ const cases = [
   ["tooling/oxlint-plugin-airdesign/glossary.json", ["tooling"]],
   [".github/workflows/bar.yml", ["tooling"]],
   ["AGENTS.md", ["tooling"]],
+  ["CHECKS.md", ["tooling"]],
   ["metrics.json", ["tooling"]],
   ["apps/site/src/landing/hero/hero.astro", []],
 ]

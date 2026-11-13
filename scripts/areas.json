@@ -93,6 +93,7 @@
       "tooling/",
       ".github/",
       "AGENTS.md",
+      "CHECKS.md",
       "GLOSSARY.md",
       "metrics.json",
       "package.json",

@@ -8,7 +8,7 @@ import { glossaryFindings, nameFindings, wordExtensions, wordFindings } from "./
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const lintPaths = ["apps", "packages", "scripts", "tests", "tooling", "playwright.config.ts", "vitest.config.mts"]
-const wordPaths = ["AGENTS.md", ".github", "specs", "metrics.json", "package.json"]
+const wordPaths = ["AGENTS.md", "CHECKS.md", ".github", "specs", "metrics.json", "package.json"]
 const skipDirectories = new Set(["node_modules", "dist"])
 
 const oxlint = spawnSync(

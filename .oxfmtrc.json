@@ -7,6 +7,7 @@
   "sortPackageJson": false,
   "ignorePatterns": [
     "AGENTS.md",
+    "CHECKS.md",
     "pnpm-lock.yaml",
     "apps/site/src/landing/product-demo/editor-demo-art.html",
     "dist",
