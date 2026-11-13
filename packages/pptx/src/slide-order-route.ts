@@ -6,6 +6,7 @@ import {
   readTableValue,
   shapeOf,
   type ElementCommand,
+  type Geometry,
   type IndexElement,
   type Media,
   type SlideCommand,
@@ -53,6 +54,7 @@ type Shown = {
   readonly now: boolean
   readonly element?: IndexElement
   readonly media?: Media | undefined
+  readonly geometry?: Geometry | undefined
 }
 
 type Pending = Map<SlideId, Map<string, Shown>>
@@ -61,7 +63,8 @@ function pendingAfter(pending: Pending, command: ElementCommand): void {
   const shapes = pending.get(command.id) ?? new Map<string, Shown>()
   pending.set(command.id, shapes)
   if (command.slide === "element-add") {
-    const shown = { start: false, now: true, element: command.element, media: command.media }
+    const { element, media, geometry } = command
+    const shown = { start: false, now: true, element, media, geometry }
     shapes.set(shapeOf(command.element.node).shape, shown)
     return
   }
@@ -83,6 +86,8 @@ function elementAdded(
   const id = Number(shape)
   if (shown.media !== undefined)
     return addPicture(parts, part, { id, box, media: shown.media, bytes: media(shown.media.sha256) })
+  if (shown.geometry !== undefined)
+    return applyStructuralRoute(parts, { name: "spTree.add", part, id, text: "", geometry: shown.geometry, ...box })
   if (element.kind !== "table") return applyRoute(parts, { name: "add", part, id, text: "", ...box })
   const table = readTableValue(element.value ?? "")
   const columns = table?.rows[0]?.cells.length

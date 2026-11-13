@@ -12,11 +12,16 @@ export type MediaType = (typeof mediaTypes)[number]
 
 export type Media = { readonly sha256: string; readonly type: MediaType }
 
+export const geometries = ["rect", "ellipse", "line"] as const
+
+export type Geometry = (typeof geometries)[number]
+
 export type ElementAdd = {
   readonly slide: "element-add"
   readonly id: SlideId
   readonly element: IndexElement
   readonly media?: Media
+  readonly geometry?: Geometry
 }
 
 export type ElementRemove = {
@@ -70,9 +75,17 @@ function freshShape(element: IndexElement): boolean {
   return Number.isInteger(number) && number > 1 && number <= highestShape && element.box !== null && !element.grouped
 }
 
+function drawable(element: IndexElement, geometry: Geometry): boolean {
+  const { box } = element
+  if (box === null || element.value !== null || !geometries.includes(geometry)) return false
+  if (geometry === "line") return element.kind === "connector" && box.cx >= 0 && box.cy >= 0 && box.cx + box.cy > 0
+  return element.kind === "shape" && box.cx > 0 && box.cy > 0
+}
+
 function addable(command: ElementAdd): boolean {
-  const { element, media } = command
+  const { element, media, geometry } = command
   if (!freshShape(element)) return false
+  if (geometry !== undefined) return media === undefined && drawable(element, geometry)
   if (element.kind === "table") return media === undefined && openedTable(element.value)
   if (element.kind === "shape") return element.value === "" && media === undefined
   const sized = element.box !== null && element.box.cx > 0 && element.box.cy > 0
@@ -121,6 +134,12 @@ export function readElementCommand(raw: Record<string, unknown>, id: SlideId): E
   if (raw.slide === "element-add") {
     const element = readFloor([raw.element], id)?.[0]
     if (element === undefined) return undefined
+    if (raw.geometry !== undefined) {
+      const geometry = geometries.find((each) => each === raw.geometry)
+      return geometry === undefined || raw.media !== undefined
+        ? undefined
+        : { slide: "element-add", id, element, geometry }
+    }
     if (raw.media === undefined) return { slide: "element-add", id, element }
     const media = readMedia(raw.media)
     return media === undefined ? undefined : { slide: "element-add", id, element, media }

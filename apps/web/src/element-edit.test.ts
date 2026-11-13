@@ -112,3 +112,27 @@ it("says why it cannot delete an animated shape, a group and a shape inside one,
   expect(removalRefusal(grouped, register, elementId("256.2"))).toBeNull()
   expect(removalRefusal(grouped, register, elementId("256.77"))).toBeNull()
 })
+
+it("adds a rectangle, an ellipse and a line on the slide under the next free id, each in the theme's style", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const register = openRegister("", "")
+  const shape = (geometry: "rect" | "ellipse" | "line") =>
+    elementCommand(parts, register, { change: "shape", geometry, index: 0, size })
+  expect(shape("rect")).toEqual({
+    slide: "element-add",
+    id: "256",
+    element: { node: "256.4", kind: "shape", value: null, box: { x: 450, y: 200, cx: 100, cy: 100 }, grouped: false },
+    geometry: "rect",
+  })
+  expect(shape("ellipse")).toMatchObject({ element: { kind: "shape", value: null }, geometry: "ellipse" })
+  expect(shape("line")).toEqual({
+    slide: "element-add",
+    id: "256",
+    element: { node: "256.4", kind: "connector", value: null, box: { x: 350, y: 250, cx: 300, cy: 0 }, grouped: false },
+    geometry: "line",
+  })
+  for (const geometry of ["rect", "ellipse", "line"] as const) {
+    const shown = readShapes(exportedParts(parts, landed(register, shape(geometry))))
+    expect(shown.find((each) => each.shape === "4")?.kind).toBe(geometry === "line" ? "p:cxnSp" : "p:sp")
+  }
+})

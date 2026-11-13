@@ -43,6 +43,7 @@ for (const name of [
   "slide-layouts",
   "element-edits",
   "picture-add",
+  "shape-insert",
   "commit-once",
   "deck-list-trash",
   "deck-stars",

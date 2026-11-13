@@ -5,7 +5,7 @@ import { fieldRefusal, knownKeys, recordOf, type FieldRefusal } from "./wire.js"
 export type WireSlide = SlideCommand & { readonly file: readonly SlideId[] }
 
 const keysFor = {
-  "element-add": ["slide", "id", "element", "media", "file"],
+  "element-add": ["slide", "id", "element", "media", "geometry", "file"],
   "element-remove": ["slide", "id", "node", "file"],
   "element-restore": ["slide", "id", "node", "file"],
   remove: ["slide", "id", "file"],
@@ -41,7 +41,8 @@ export function readSlideEdit(raw: unknown): { ok: true; edit: WireSlide } | Fie
 export function slideEditCommand(edit: WireSlide): SlideCommand {
   if (edit.slide === "element-add") {
     const media = edit.media === undefined ? {} : { media: edit.media }
-    return { slide: "element-add", id: edit.id, element: edit.element, ...media }
+    const geometry = edit.geometry === undefined ? {} : { geometry: edit.geometry }
+    return { slide: "element-add", id: edit.id, element: edit.element, ...media, ...geometry }
   }
   if (edit.slide === "element-remove") return { slide: "element-remove", id: edit.id, node: edit.node }
   if (edit.slide === "element-restore") return { slide: "element-restore", id: edit.id, node: edit.node }

@@ -8,6 +8,7 @@ import {
   slideUndoable,
   type Box,
   type ElementId,
+  type Geometry,
   type Register,
   type SlideCommand,
   type Undoable,
@@ -24,6 +25,8 @@ import { fileSlides } from "@/slide-edit"
 type Parts = ReadonlyMap<string, Uint8Array>
 
 const tableRow = 370840
+const shapeShare = 0.2
+const lineShare = 0.3
 
 export type SlideRoom = {
   readonly width: number
@@ -33,6 +36,7 @@ export type SlideRoom = {
 
 export type ElementChange =
   | { readonly change: "text" | "table"; readonly index: number; readonly size: SlideRoom }
+  | { readonly change: "shape"; readonly geometry: Geometry; readonly index: number; readonly size: SlideRoom }
   | { readonly change: "remove"; readonly node: ElementId }
 
 export function takenBoxes(room: SlideRoom): readonly Box[] {
@@ -82,6 +86,15 @@ export function elementCommand(parts: Parts, register: Register, change: Element
     const box = placeNewBox(change.size, taken, size)
     const value = writeTableValue(openingTable(3, 3))
     return { slide: "element-add", id: slide.id, element: { node, kind: "table", value, box, grouped: false } }
+  }
+  if (change.change === "shape") {
+    const line = change.geometry === "line"
+    const side = Math.round(change.size.height * shapeShare)
+    const wanted = line ? { cx: Math.round(change.size.width * lineShare), cy: 0 } : { cx: side, cy: side }
+    const box = placeNewBox(change.size, taken, wanted)
+    const kind = line ? "connector" : "shape"
+    const element = { node, kind, value: null, box, grouped: false } as const
+    return { slide: "element-add", id: slide.id, element, geometry: change.geometry }
   }
   const box = placeNewBox(change.size, taken)
   return { slide: "element-add", id: slide.id, element: { node, kind: "shape", value: "", box, grouped: false } }

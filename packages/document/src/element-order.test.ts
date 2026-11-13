@@ -138,6 +138,42 @@ describe("element order", () => {
     expect(refused({ ...textBox, value: writeTableValue(openingTable(1, 1)) })).toBe(true)
   })
 
+  it("opens an added rectangle, ellipse and line with their geometry, and refuses one with text, media or the wrong kind", () => {
+    const shape: IndexElement = { ...textBox, value: null }
+    const line: IndexElement = { ...shape, kind: "connector", box: { ...box, cy: 0 } }
+    const add = (element: IndexElement, geometry: unknown) =>
+      ({ slide: "element-add", id: file[0]!, element, geometry }) as SlideCommand
+    for (const [element, geometry] of [
+      [shape, "rect"],
+      [shape, "ellipse"],
+      [line, "line"],
+    ] as const) {
+      const added = applied(openRegister("", ""), add(element, geometry))
+      expect(openingElement(added, node)).toEqual(element)
+      expect(added.order.at(-1)).toEqual({ slide: "element-add", id: file[0]!, element, geometry })
+    }
+    const refused = (command: SlideCommand) => slide(indexed, command).decision === "refuse"
+    expect(refused(add(shape, "rect"))).toBe(false)
+    expect(refused(add({ ...shape, value: "" }, "rect"))).toBe(true)
+    expect(refused(add({ ...shape, value: "Text" }, "ellipse"))).toBe(true)
+    expect(refused(add(line, "rect"))).toBe(true)
+    expect(refused(add(shape, "line"))).toBe(true)
+    expect(refused(add({ ...shape, kind: "table" }, "rect"))).toBe(true)
+    expect(refused(add({ ...shape, box: { ...box, cx: 0 } }, "rect"))).toBe(true)
+    expect(refused(add({ ...line, box: { ...box, cx: 0, cy: 0 } }, "line"))).toBe(true)
+    expect(refused(add(shape, "star"))).toBe(true)
+    const media = { sha256: "d".repeat(64), type: "image/png" as const }
+    expect(refused({ ...add(shape, "rect"), media } as SlideCommand)).toBe(true)
+    expect(refused({ slide: "element-add", id: file[0]!, element: shape })).toBe(true)
+  })
+
+  it("reads an added shape's geometry back from a stored row and refuses one it does not know", () => {
+    const shape = { ...textBox, value: null }
+    const row = { slide: "element-add", id: "256", element: shape, geometry: "ellipse" }
+    expect(readSlideState({ file, order: [row] })?.order).toEqual([row])
+    expect(readSlideState({ file, order: [{ ...row, geometry: "star" }] })).toBeUndefined()
+  })
+
   it("removes an indexed element but refuses a group, a grouped element and an element the index lacks", () => {
     const remove = (id: string) => slide(indexed, { slide: "element-remove", id: file[0]!, node: elementId(id) })
     expect(remove("256.2").decision).toBe("apply")

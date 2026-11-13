@@ -46,6 +46,21 @@ function ArrowMarker(props: {
   )
 }
 
+const grabWidth = 10
+
+function GrabBand(props: { readonly d: string; readonly weight: number }) {
+  return (
+    <path
+      data-canvas-grab
+      d={props.d}
+      fill="none"
+      stroke="transparent"
+      strokeWidth={Math.max(props.weight, grabWidth)}
+      style={{ pointerEvents: "stroke", cursor: "move" }}
+    />
+  )
+}
+
 export function shapePaths(element: CanvasElement, scaled: Scaled) {
   if (element.box === null || element.geometry === undefined) return null
   return presetOutline(
@@ -78,6 +93,11 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
     ...(line?.head === undefined ? {} : { markerStart: `url(#${id}-head)` }),
     ...(line?.tail === undefined ? {} : { markerEnd: `url(#${id}-tail)` }),
   }
+  const open = paths === null ? element.outline === "line" : paths.every((path) => !path.fill)
+  const bands =
+    props.grab !== true || !open || line === null
+      ? []
+      : (paths?.map((path) => path.d) ?? [`M0 0L${String(width)} ${String(height)}`])
   return (
     <svg
       data-canvas-line
@@ -136,6 +156,9 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
           {...stroke}
         />
       )}
+      {bands.map((d, index) => (
+        <GrabBand key={index} d={d} weight={weight} />
+      ))}
     </svg>
   )
 }

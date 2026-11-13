@@ -9,7 +9,8 @@ import {
 import { deckLayouts } from "./deck-layouts.js"
 import { relsOf, slideAddresses } from "./package-address.js"
 import { routeName } from "./route-operations.js"
-import { routeRuns as structuralRuns, type RouteRun } from "./route-parts.js"
+import { partTouch, routeRuns as structuralRuns, type RouteRun } from "./route-parts.js"
+import { applyStructuralRoute } from "./structural-route.js"
 import { orderedParts } from "./slide-order-route.js"
 import { layoutPart } from "./slide-placeholders.js"
 import { nextSlideFile } from "./slide-list-route.js"
@@ -71,7 +72,32 @@ function addedFromLayouts(parts: ReadonlyMap<string, Uint8Array>): RouteRun | nu
   }
 }
 
+const drawnBox = { x: 914400, y: 914400, cx: 1828800, cy: 914400 }
+
+export function drawnRuns(parts: ReadonlyMap<string, Uint8Array>): readonly RouteRun[] {
+  const slide = slideAddresses(parts)[0]?.part
+  if (slide === undefined) return []
+  return (["rect", "ellipse", "line"] as const).map((geometry) => {
+    const edit = { name: "spTree.add", part: slide, text: "", geometry, ...drawnBox } as const
+    const route = routeName["spTree.add"]
+    try {
+      return {
+        operation: "spTree.add",
+        route,
+        edit,
+        touch: partTouch(parts, edit),
+        parts: applyStructuralRoute(parts, edit),
+        error: null,
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      return { operation: "spTree.add", route, edit, touch: null, parts: null, error: message }
+    }
+  })
+}
+
 export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly RouteRun[] {
   const layout = addedFromLayouts(parts)
-  return layout === null ? structuralRuns(parts) : [...structuralRuns(parts), layout]
+  const runs = [...structuralRuns(parts), ...drawnRuns(parts)]
+  return layout === null ? runs : [...runs, layout]
 }

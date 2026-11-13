@@ -11,6 +11,8 @@ import { cn } from "@/lib/class-names"
 import type { TextFormatting } from "@airdesign/render"
 import { pictureCopy } from "@/copy/picture-copy"
 import { pickPicture } from "@/editor/picture-picker"
+import { ShapeTool } from "@/editor/shape-tool"
+import type { Geometry } from "@airdesign/document"
 
 export type EditorTool = "move" | "text" | "shape" | "image" | "actions"
 
@@ -44,6 +46,7 @@ export function EditorToolbar({
   formats,
   onTable,
   onPicture,
+  onShape,
 }: {
   activeTool?: EditorTool
   menuOpen?: boolean
@@ -56,6 +59,7 @@ export function EditorToolbar({
   formats?: FormatShown
   onTable?: () => void
   onPicture?: (file: File) => void
+  onShape?: (geometry: Geometry) => void
 }) {
   const chosen = pointer?.tool ?? "move"
   const shown = pointerTools.find((each) => each.tool === chosen) ?? pointerTools[0]
@@ -117,6 +121,7 @@ export function EditorToolbar({
       </span>
       {tools.map(({ tool, icon }) => {
         if (tool === "actions" && onTable !== undefined) return <ActionsTool key={tool} onTable={onTable} />
+        if (tool === "shape" && onShape !== undefined) return <ShapeTool key={tool} onShape={onShape} />
         const on = pointer === undefined && activeTool === tool
         const run =
           tool === "text"
