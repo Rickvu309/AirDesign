@@ -174,6 +174,7 @@ async function typingDeck() {
       }
     }
     const { session, before } = typed.current
+    showText(store, box, value)
     void commitEdit(
       () => device.link as never,
       deck,
@@ -181,7 +182,6 @@ async function typingDeck() {
       { id: box, file: oldText },
       async () => {
         const from = await before
-        showText(store, box, value)
         record({
           name: "text",
           session,

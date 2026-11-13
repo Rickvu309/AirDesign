@@ -165,27 +165,26 @@ test("Undo takes back the insert of a table and Redo brings it back, through a r
   await expect(table).toHaveCount(0)
 })
 
-test.fail(
-  "one Ctrl+Z straight after typing in a new table's cell takes back the typing and keeps the table",
-  async ({ page }) => {
-    await page.goto("/")
-    await newBlankDeck(page)
-    await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-    await settled(page)
-    await page.getByRole("button", { name: "Actions", exact: true }).click()
-    await page.getByRole("menuitem", { name: "Table", exact: true }).click()
-    const table = page.locator("[data-slide-paint] [data-canvas-table]")
-    await expect(table.locator('[data-table-text="0.0"]')).toBeFocused()
-    await expect(page.getByRole("button", { name: "Undo add table", exact: true })).toBeEnabled()
-    await page.keyboard.type("Region")
-    await page.keyboard.press("ControlOrMeta+z")
-    await expect(table.locator('[role="row"]')).toHaveCount(3)
-    await expect(table.locator('[data-table-text="0.0"]')).toHaveText("")
-    await expect(page.getByRole("button", { name: "Redo text edit", exact: true })).toBeEnabled()
-  },
-)
+test("one Ctrl+Z straight after typing in a new table's cell takes back the typing and keeps the table", async ({
+  page,
+}) => {
+  await page.goto("/")
+  await newBlankDeck(page)
+  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  await settled(page)
+  await page.getByRole("button", { name: "Actions", exact: true }).click()
+  await page.getByRole("menuitem", { name: "Table", exact: true }).click()
+  const table = page.locator("[data-slide-paint] [data-canvas-table]")
+  await expect(table.locator('[data-table-text="0.0"]')).toBeFocused()
+  await expect(page.getByRole("button", { name: "Undo add table", exact: true })).toBeEnabled()
+  await page.keyboard.type("Region")
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(table.locator('[role="row"]')).toHaveCount(3)
+  await expect(table.locator('[data-table-text="0.0"]')).toHaveText("")
+  await expect(page.getByRole("button", { name: "Redo text edit", exact: true })).toBeEnabled()
+})
 
-test.fail("Ctrl+Z with the caret in a table cell paints the cell's text from before the edit", async ({ page }) => {
+test("Ctrl+Z with the caret in a table cell paints the cell's text from before the edit", async ({ page }) => {
   await page.goto("/")
   await newBlankDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)

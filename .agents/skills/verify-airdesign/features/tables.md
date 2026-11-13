@@ -8,8 +8,8 @@ In an open deck, `Actions` > `Table` inserts a three by three table in clear spa
 - `table-type` text typed in a cell paints at once and its thumbnail follows; the table's value reaches the server as one element value (`{"rows":...}`). Tab and Shift+Tab move between cells; Tab in the last cell adds a row and enters it.
 - `table-rows` while a cell has focus, `toolbar "Table rows"` offers `Add row above`, `Add row below` and `Delete row` (disabled on a one-row table).
 - `table-delete` Escape leaves the cell for the table's frame; Delete then removes the whole table.
-- `table-undo` `Undo add table`, `Undo text edit` for a cell, `Undo add row`, `Undo delete row`, and their Redo names (see `person-undo.md`). Known failures, pinned in `tests/browser/table-edits.spec.ts`: one Ctrl/Cmd+Z straight after typing in a new table's first cell takes the whole table away, and its Redo brings it back with only the first letter; a later Ctrl/Cmd+Z with the caret still in the cell takes the text back everywhere but in the cell, which keeps showing it until Escape.
-- `table-reload` known failure: text typed in a cell and reloaded at once comes back with only its first letter; pinned in `tests/browser/keep-typed-text.spec.ts`.
+- `table-undo` `Undo add table`, `Undo text edit` for a cell, `Undo add row`, `Undo delete row`, and their Redo names (see `person-undo.md`). A cell types through the text box's path: one Ctrl/Cmd+Z straight after typing takes the typing back as one step and keeps the table, and with the caret still in the cell the cell paints the text from before the edit (`tests/browser/table-edits.spec.ts`).
+- `table-reload` text typed in a cell and reloaded at once is all there: each keystroke reaches the journal in its own task, as a text box's does (`tests/browser/keep-typed-text.spec.ts`).
 - `table-size` a table is not resizable, by pointer or by keys.
 - `table-export` the export writes the table's rows and cells; the frame's height is the sum of its rows.
 

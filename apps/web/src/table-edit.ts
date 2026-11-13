@@ -2,7 +2,6 @@ import {
   changedTable,
   currentBox,
   currentValue,
-  elementId,
   history,
   limits,
   bytesOf,
@@ -10,7 +9,6 @@ import {
   writeTableValue,
   type ElementId,
   type NodeRegister,
-  type Register,
   type TableChange,
 } from "@airdesign/document"
 import { applyRoute, readTable, writeTable, type ReadShape } from "@airdesign/pptx"
@@ -36,15 +34,8 @@ export function tableEditable(parts: Parts, shape: ReadShape): boolean {
   return table !== null && bytesOf(writeTableValue(table)) <= limits.valueBytes
 }
 
-export function tableValue(
-  parts: Parts,
-  shape: ReadShape,
-  register: Register | null,
-  change: TableChange,
-): string | null {
-  const body = register?.elements[elementId(`${shape.slide}.${shape.shape}`)]
-  const shown = body !== undefined && history(body).length > 0 ? readTableValue(currentValue(body)) : null
-  const before = shown ?? fileTable(parts, shape)
+export function tableValue(parts: Parts, shape: ReadShape, shown: string | null, change: TableChange): string | null {
+  const before = (shown === null ? null : readTableValue(shown)) ?? fileTable(parts, shape)
   const next = before === null ? null : changedTable(before, change)
   if (next === null || next === before) return null
   const value = writeTableValue(next)

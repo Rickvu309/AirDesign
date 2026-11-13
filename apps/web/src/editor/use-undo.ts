@@ -79,7 +79,7 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     const next = await connect(memoryRemote()).openDeck(id)
     if (!next.ok) return
     if ("slide" in undoable || structure.current !== structureOf(next.register)) showRegister(next.register)
-    else repaint.current(next.register, "person")
+    repaint.current(next.register, "person")
     if ("node" in undoable && undoable.node.endsWith(".notes"))
       notesBar.show(notesShown(shownParts.current, next.register))
     const slides = store.current.slides()

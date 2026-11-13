@@ -129,7 +129,7 @@ test("a slide added while the device write is slow is still there after an immed
   await expectNothingUnsaved(page)
 })
 
-test.fail("text typed in a table cell is still there after an immediate reload", async ({ page }) => {
+test("text typed in a table cell is still there after an immediate reload", async ({ page }) => {
   await page.goto("/")
   await newBlankDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)

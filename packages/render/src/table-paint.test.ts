@@ -1,4 +1,4 @@
-import { elementId, type ElementId, type TableChange } from "@airdesign/document"
+import { elementId, openingTable, writeTableValue, type ElementId, type TableChange } from "@airdesign/document"
 import { act, createElement } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, describe, expect, it } from "vitest"
@@ -80,7 +80,7 @@ async function mounted(entering: ElementId | null, overrides: Partial<CanvasElem
       )
     })
   await draw(2)
-  return { host, changes, removed, draw }
+  return { host, store, changes, removed, draw }
 }
 
 function cell(host: HTMLElement, spot: string): HTMLElement {
@@ -148,6 +148,33 @@ describe("SlideCanvas table", () => {
     expect(changes).toEqual([{ change: "remove-row", row: 1 }])
     await act(async () => cell(host, "1.0").blur())
     expect(host.querySelector("[data-table-bar]")).toBeNull()
+  })
+
+  it("paints a focused cell from the store, keeps what is being typed, and refuses the browser's own undo", async () => {
+    const { host, store } = await mounted(id)
+    const typing = cell(host, "0.0")
+    const shown = (text: string) => {
+      const value = openingTable(2, 2)
+      const rows = value.rows.map((row, at) =>
+        at === 0
+          ? { ...row, cells: [[{ from: 0, runs: text === "" ? [] : [{ from: -1, text }] }], ...row.cells.slice(1)] }
+          : row,
+      )
+      return act(async () => {
+        store.publish({ id, kind: "table", text: writeTableValue({ rows }), picture: null })
+      })
+    }
+    await typed(typing, "Re")
+    await typed(typing, "Region")
+    await shown("Re")
+    expect(typing.textContent).toBe("Region")
+    await shown("Region")
+    await shown("")
+    expect(typing.textContent).toBe("")
+    expect(host.ownerDocument.activeElement).toBe(typing)
+    const undo = new InputEvent("beforeinput", { bubbles: true, cancelable: true, inputType: "historyUndo" })
+    typing.dispatchEvent(undo)
+    expect(undo.defaultPrevented).toBe(true)
   })
 
   it("paints a table the deck cannot edit with no text to type in", async () => {

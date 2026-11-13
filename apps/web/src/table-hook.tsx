@@ -1,25 +1,21 @@
 import { currentValue, openingElement, type ElementId, type Register, type TableChange } from "@airdesign/document"
-import { connect, memoryRemote } from "@airdesign/live"
 import type { ReadShape } from "@airdesign/pptx"
-import type { CanvasSlide, TableBar } from "@airdesign/render"
+import type { CanvasSlide, PaintStore, TableBar } from "@airdesign/render"
 import { createElement, useRef, type RefObject } from "react"
-import { commitEdit, type CommitOutcome, type TextBox } from "@/commit-edit"
+import type { CommitOutcome } from "@/commit-edit"
 import type { ElementChange } from "@/element-edit"
 import { TableRowBar } from "@/editor/table-bar"
 import { tableValue } from "@/table-edit"
-import type { UndoEntry } from "@/undo-list"
+import type { UndoName } from "@/copy/undo-copy"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
 export type TableDeck = {
-  readonly id: string
   readonly current: number
-  readonly boxes: RefObject<ReadonlyMap<ElementId, TextBox>>
+  readonly store: RefObject<PaintStore>
   readonly shapes: RefObject<ReadonlyMap<ElementId, ReadShape>>
   readonly editParts: RefObject<Parts>
   readonly canvases: RefObject<(index: number) => CanvasSlide | null>
-  readonly record: (entry: UndoEntry) => void
-  readonly settle: (outcome: CommitOutcome) => void
   readonly showEdited: (index: number) => Promise<void>
   readonly changeElement: (change: ElementChange) => Promise<void>
 }
@@ -38,46 +34,25 @@ export function structureOf(register: Register | null): string {
   return JSON.stringify(tables.length === 0 ? register.order : [register.order, tables])
 }
 
-function shownBefore(register: Register, id: ElementId, file: string): string {
-  const body = register.elements[id]
-  if (body !== undefined && register.nodes.includes(id)) return currentValue(body)
-  return openingElement(register, id)?.value ?? file
+export function shownTable(register: Register | null, id: ElementId, file: string): string {
+  const body = register?.elements[id]
+  if (body !== undefined && register?.nodes.includes(id) === true) return currentValue(body)
+  return (register === null ? undefined : openingElement(register, id)?.value) ?? file
 }
 
+function editName(change: TableChange): UndoName {
+  return change.change === "cell" ? "text" : change.change === "row" ? "add-row" : "delete-row"
+}
+
+export type TableEdit = (value: string, name: UndoName) => Promise<CommitOutcome>
+
 export function useTables(deck: TableDeck) {
-  const queue = useRef(Promise.resolve())
-  const typing = useRef<{ readonly cell: string; readonly session: number } | null>(null)
-  const sessions = useRef(0)
   const repaint = useRef<number | undefined>(undefined)
   const latest = useRef(deck)
   latest.current = deck
 
-  async function commit(id: ElementId, change: TableChange, kept: () => void) {
-    const box = deck.boxes.current.get(id)
-    const shape = deck.shapes.current.get(id)
-    const opened = await connect(memoryRemote()).openDeck(deck.id)
-    if (box === undefined || shape === undefined || !opened.ok) return
-    const value = tableValue(deck.editParts.current, shape, opened.register, change)
-    if (value === null) {
-      if (change.change !== "cell") await deck.showEdited(deck.current)
-      return
-    }
-    const before = shownBefore(opened.register, id, box.file)
-    const cell = change.change === "cell" ? `${id}#${change.row}.${change.column}` : null
-    if (cell === null || typing.current?.cell !== cell) {
-      sessions.current += 1
-      typing.current = cell === null ? null : { cell, session: sessions.current }
-    }
-    const name = change.change === "cell" ? "text" : change.change === "row" ? "add-row" : "delete-row"
-    const undoable = { node: id, floor: box.file, before: { value: before }, after: { value } }
-    const outcome = await commitEdit(connect, deck.id, value, box, () => {
-      deck.record({ name, undoable, ...(cell === null ? {} : { session: sessions.current }) })
-      kept()
-    })
-    window.clearTimeout(repaint.current)
-    if (cell === null || outcome === "refused") await deck.showEdited(deck.current)
-    else repaint.current = window.setTimeout(() => void latest.current.showEdited(latest.current.current), typedRepaint)
-    deck.settle(outcome)
+  function showLatest() {
+    void latest.current.showEdited(latest.current.current)
   }
 
   return {
@@ -85,13 +60,20 @@ export function useTables(deck: TableDeck) {
       const slide = deck.canvases.current(deck.current)
       if (slide !== null) void deck.changeElement({ change: "table", index: deck.current, size: slide })
     },
-    canvas: {
-      tableBar,
-      onTable(id: ElementId, change: TableChange) {
-        queue.current = queue.current.then(
-          () => new Promise<void>((kept) => void commit(id, change, kept).finally(kept)),
-        )
-      },
+    tableBar,
+    change(id: ElementId, change: TableChange, edit: TableEdit) {
+      const shape = deck.shapes.current.get(id)
+      const shown = deck.store.current.getElement(id)?.text ?? null
+      const value = shape === undefined ? null : tableValue(deck.editParts.current, shape, shown, change)
+      if (value === null) {
+        if (change.change !== "cell") showLatest()
+        return
+      }
+      void edit(value, editName(change)).then((outcome) => {
+        window.clearTimeout(repaint.current)
+        if (change.change !== "cell" || outcome === "refused") showLatest()
+        else repaint.current = window.setTimeout(showLatest, typedRepaint)
+      })
     },
   }
 }

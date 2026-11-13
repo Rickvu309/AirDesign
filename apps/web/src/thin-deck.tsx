@@ -30,25 +30,14 @@ export function ThinDeck({ id }: { id: string }) {
   const pictureTool = usePictureTool(paintedDeck === id, (picture) => inserts.addPicture(picture))
   const notesBar = useNotes({ id, typed, sessions, records, record, settle, sending: () => setPending(true) })
   const shown = useDeckPaint(id, pictureTool, notesBar, setPending)
-  const { store, boxes, shapes, editParts, canvases, current } = shown
+  const { store, shapes, editParts, canvases, current } = shown
   useDeckOpen({ ...status, id, shown, notesBar, setTitle })
   useNetwork(id, settle, status.leftNetwork)
   const undoButtons = useUndoTurn({ id, working: paintedDeck === id, undo, shown, notesBar, settle, setPending })
   const inserts = deckInserts({ id, shown, pictureTool, record, settle })
   const { changeElement } = inserts
   const { showEdited } = shown
-  const tables = useTables({
-    id,
-    current,
-    boxes,
-    shapes,
-    editParts,
-    canvases,
-    record,
-    settle,
-    showEdited,
-    changeElement,
-  })
+  const tables = useTables({ current, store, shapes, editParts, canvases, showEdited, changeElement })
   const exported = useExport({ id, records, pictureTool, setFailure: status.setFailure })
 
   const currentSlide = store.current.slides()[current]?.id
