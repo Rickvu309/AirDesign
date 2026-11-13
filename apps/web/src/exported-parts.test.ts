@@ -2,7 +2,6 @@ import { decide, elementId, openRegister, writeTextValue, type Box, type Command
 import { applyRoute, readPackage, readShapes } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { exportedParts } from "./exported-parts"
-import { ensureMarkup } from "./markup"
 import { editedRegister, fallbackSlide, onSlide, twoBoxSlide, xml } from "./slide-fixtures"
 
 it("an export skips an element whose only rows were undone", () => {
@@ -161,7 +160,6 @@ it("an export keeps the stored part when an edit was taken back to the file's te
 })
 
 it("an export keeps the stored part when a placeholder that takes its box from the layout is moved back there", async () => {
-  await ensureMarkup()
   const fsName = "node:fs/promises"
   const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
   const read = await readPackage(

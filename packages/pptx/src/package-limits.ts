@@ -1,6 +1,6 @@
 import { limits } from "@airdesign/document"
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js"
-import { markupLimits, markupReady } from "./element-span.js"
+import { markupLimits } from "./element-span.js"
 import { presentationPart } from "./package-address.js"
 
 export const packageLimits = {
@@ -94,7 +94,6 @@ export async function readPackageWith(bytes: Uint8Array, limits: PackageLimits):
     }
     const parts = new Map<string, Uint8Array>()
     let nodes = 0
-    await markupReady()
     for (const entry of files) {
       if (entry.directory) continue
       let data: Uint8Array

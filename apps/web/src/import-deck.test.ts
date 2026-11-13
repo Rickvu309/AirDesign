@@ -33,19 +33,7 @@ async function cleanFile(): Promise<Uint8Array> {
   return fs.readFile(new URL("../../../scripts/pptx-fixtures/clean.pptx", import.meta.url))
 }
 
-async function wasmBytes(): Promise<Uint8Array> {
-  const fsName = "node:fs/promises"
-  const moduleName = "node:module"
-  const fs = (await import(fsName)) as { readFile: (path: string) => Promise<Uint8Array> }
-  const nodeModule = (await import(moduleName)) as {
-    createRequire: (url: string) => { resolve: (id: string) => string }
-  }
-  return fs.readFile(nodeModule.createRequire(import.meta.url).resolve("sax-wasm/lib/sax-wasm.wasm"))
-}
-
 async function importedNames(fileName: string) {
-  const wasm = await wasmBytes()
-  vi.stubGlobal("fetch", async () => new Response(Uint8Array.from(wasm).buffer))
   const imported = await importDeck(new File([Uint8Array.from(await cleanFile())], fileName))
   if (!imported.ok) throw new Error("import")
   const device = live.saved[0]
@@ -53,8 +41,6 @@ async function importedNames(fileName: string) {
 }
 
 it("returns a failure reason when the file is not a valid package", async () => {
-  const wasm = await wasmBytes()
-  vi.stubGlobal("fetch", async () => new Response(Uint8Array.from(wasm).buffer))
   const result = await importDeck(new File([Uint8Array.from([1, 2, 3])], "broken.pptx"))
   expect(result.ok).toBe(false)
   if (!result.ok) {

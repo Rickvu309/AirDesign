@@ -1,6 +1,5 @@
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from "@zip.js/zip.js"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { markupReady } from "./element-span.js"
 import { packageLimits, readPackage, readPackageWith, scanMarkup } from "./package-limits.js"
 
 const forced = vi.hoisted(() => ({ nodesPerPart: null as number | null }))
@@ -320,8 +319,7 @@ describe("scanMarkup", () => {
   const nested = (depth: number) => encode(`${"<a>".repeat(depth)}${"</a>".repeat(depth)}`)
   const siblings = (count: number) => encode("<a/>".repeat(count))
 
-  it("accepts markup at each cap and names the cap one past it", async () => {
-    await markupReady()
+  it("accepts markup at each cap and names the cap one past it", () => {
     expect(scanMarkup(nested(small.depth), small, 0)).toEqual({ ok: true, nodes: small.depth })
     expect(scanMarkup(nested(small.depth + 1), small, 0)).toEqual({ ok: false, reason: "limit", limit: "depth" })
     expect(scanMarkup(encode(attributed(small.attributes)), small, 0)).toEqual({ ok: true, nodes: 1 })
@@ -334,14 +332,12 @@ describe("scanMarkup", () => {
     expect(scanMarkup(siblings(small.nodes + 1), small, 0)).toEqual({ ok: false, reason: "limit", limit: "nodes" })
   })
 
-  it("counts nodes across parts", async () => {
-    await markupReady()
+  it("counts nodes across parts", () => {
     expect(scanMarkup(siblings(4), small, 6)).toEqual({ ok: true, nodes: small.nodes })
     expect(scanMarkup(siblings(5), small, 6)).toEqual({ ok: false, reason: "limit", limit: "nodes" })
   })
 
-  it("does not treat comments, cdata, or quoted greater-than as markup", async () => {
-    await markupReady()
+  it("does not treat comments, cdata, or quoted greater-than as markup", () => {
     expect(scanMarkup(encode(`<a><![CDATA[${"<b>".repeat(small.depth + 1)}]]></a>`), small, 0)).toEqual({
       ok: true,
       nodes: 1,
@@ -351,8 +347,7 @@ describe("scanMarkup", () => {
     expect(scanMarkup(encode(`<a b="${"=".repeat(300)}"/>`), small, 0)).toEqual({ ok: true, nodes: 1 })
   })
 
-  it("rejects markup that is not well formed", async () => {
-    await markupReady()
+  it("rejects markup that is not well formed", () => {
     expect(scanMarkup(encode("<a>"), small, 0)).toEqual({ ok: false, reason: "xml" })
     expect(scanMarkup(encode("<a></b>"), small, 0)).toEqual({ ok: false, reason: "xml" })
   })

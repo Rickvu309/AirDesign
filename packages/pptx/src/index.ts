@@ -2,7 +2,7 @@ export { browserExportFailures, paragraphExportFailures, routeExportFailures } f
 export { branchOrderErrors } from "./child-order.js"
 export { exportPackage } from "./export-package.js"
 export { indexPackage } from "./index-package.js"
-export { prepareMarkup } from "./element-span.js"
+export { markupBytesRead } from "./markup-reader.js"
 export type { PaintColor, PaintFill } from "./paint-color.js"
 export type { PaintLine } from "./paint-shape.js"
 export { paintReader, type PaintBox, type PaintElement, type PaintReader, type SlidePaint } from "./paint-reader.js"

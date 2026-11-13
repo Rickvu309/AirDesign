@@ -1,11 +1,9 @@
 import { readIndexPage } from "@airdesign/document"
 import { readPackage } from "@airdesign/pptx"
-import { beforeAll, expect, it } from "vitest"
-import { ensureMarkup } from "./markup"
+import { expect, it } from "vitest"
 import { indexedParts } from "./index-deck"
 import { onSlide, twoBoxSlide, xml } from "./slide-fixtures"
 
-beforeAll(ensureMarkup)
 it("indexes layout placeholders on the device without copying the slide text", async () => {
   const fsName = "node:fs/promises"
   const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }

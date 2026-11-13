@@ -2,7 +2,6 @@ import { connect, getParts, memoryRemote } from "@airdesign/live"
 import { exportPackage } from "@airdesign/pptx"
 import { chosenParts } from "@/export/chosen-parts"
 import { exportFileName } from "@/export/export-file-name"
-import { ensureMarkup } from "@/markup"
 import { exportablePictures, type PictureStore } from "@/picture-tool"
 
 export type ExportRequest = {
@@ -21,7 +20,6 @@ export async function exportDeck(
   const slides = request === undefined ? asked.get(id) : request.slides
   asked.set(id, slides)
   await ready
-  await ensureMarkup()
   const stored = await getParts(id)
   if (!stored.ok) throw new Error("parts")
   const opened = await connect(memoryRemote()).openDeck(id)

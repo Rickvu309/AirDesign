@@ -27,7 +27,7 @@ export default defineConfig({
   },
   test: {
     retry: 0,
-    setupFiles: ["scripts/vitest-assertions.mjs", "packages/pptx/markup-setup.ts"],
+    setupFiles: ["scripts/vitest-assertions.mjs"],
     reporters: ["default", "scripts/vitest-metrics.mjs"],
     projects: [
       {
