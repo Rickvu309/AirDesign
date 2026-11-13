@@ -1,6 +1,16 @@
 export const tableCopy = {
   rows: "Table rows",
+  columns: "Table columns",
   rowAbove: "Add row above",
   rowBelow: "Add row below",
   deleteRow: "Delete row",
+  columnLeft: "Add column left",
+  columnRight: "Add column right",
+  deleteColumn: "Delete column",
+  rowAboveOf: (row: number) => `Add row above row ${row}`,
+  rowBelowOf: (row: number) => `Add row below row ${row}`,
+  deleteRowOf: (row: number) => `Delete row ${row}`,
+  columnLeftOf: (column: number) => `Add column left of column ${column}`,
+  columnRightOf: (column: number) => `Add column right of column ${column}`,
+  deleteColumnOf: (column: number) => `Delete column ${column}`,
 } as const

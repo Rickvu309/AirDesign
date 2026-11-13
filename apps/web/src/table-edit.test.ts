@@ -119,3 +119,39 @@ it("refuses a change that leaves no row, and the first edit of an imported table
   expect(tableValue(base, shape, shownValue(edited, node, ""), one)).toBeNull()
   expect(tableValue(base, shape, null, { change: "cell", row: 0, column: 0, text: "" })).toBeNull()
 })
+
+it("exports a table with an added and a deleted column, its frame as wide as its columns, and refuses the last column", () => {
+  const { parts, register } = inserted()
+  const node = elementId("256.4")
+  const base = slideBase(parts, register)
+  const shape = readShapes(base).find((each) => each.shape === "4")!
+  const steps = [
+    { change: "cell", row: 0, column: 1, text: "Sales" },
+    { change: "column", column: 1, place: "after" },
+    { change: "cell", row: 0, column: 2, text: "Growth" },
+    { change: "remove-column", column: 0 },
+  ] as const
+  let edited = applied(register, { command: "add", node, floor: "", route: "" })
+  for (const change of steps) {
+    const value = tableValue(base, shape, shownValue(edited, node, ""), change)
+    if (value === null) throw new Error(change.change)
+    edited = applied(edited, { command: "person", node, value })
+  }
+  const exported = exportedParts(parts, edited)
+  const cells = readTable(exported, part, "4")?.rows.map((row) => row.cells.map((cell) => cell[0]?.runs[0]?.text ?? ""))
+  expect(cells).toEqual([
+    ["Sales", "Growth", ""],
+    ["", "", ""],
+    ["", "", ""],
+  ])
+  expect(readShapes(exported).find((each) => each.shape === "4")?.box).toMatchObject({ cx: 7315200 })
+  expect(newTableBreaks(base, exported)).toEqual([])
+  const last = { change: "remove-column", column: 0 } as const
+  for (let column = 0; column < 2; column += 1)
+    edited = applied(edited, {
+      command: "person",
+      node,
+      value: tableValue(base, shape, shownValue(edited, node, ""), last)!,
+    })
+  expect(tableValue(base, shape, shownValue(edited, node, ""), last)).toBeNull()
+})

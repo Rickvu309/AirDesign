@@ -9,6 +9,7 @@ import {
   writeTableValue,
   type ElementId,
   type NodeRegister,
+  type Register,
   type TableChange,
 } from "@airdesign/document"
 import { applyRoute, readTable, writeTable, type ReadShape } from "@airdesign/pptx"
@@ -46,6 +47,13 @@ export function tableValue(parts: Parts, shape: ReadShape, shown: string | null,
   } catch {
     return null
   }
+}
+
+export function tableEdited(register: Register): boolean {
+  return register.nodes.some((node) => {
+    const body = register.elements[node]
+    return body !== undefined && history(body).length > 0 && readTableValue(currentValue(body)) !== null
+  })
 }
 
 export function tableWritten(parts: Parts, shape: ReadShape, body: NodeRegister | undefined): Parts {

@@ -20,4 +20,5 @@ export const writtenRoutes = {
   addRow: "tbl.addRow",
   removeRow: "tbl.removeRow",
   orderRow: "tbl.orderRow",
+  columns: "tblGrid",
 } as const satisfies Record<string, ExportRoute | StructuralRoute>

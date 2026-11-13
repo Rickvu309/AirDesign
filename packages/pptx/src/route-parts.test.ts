@@ -9,7 +9,7 @@ import { danglingShapeReferences, newDanglingShapeReferences } from "./shape-id.
 import { applyRoute, type SlideRoute } from "./slide-route.js"
 import { shapeById } from "./shape-tree.js"
 import { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
-import { newTableBreaks } from "./table-check.js"
+import { tableEditFault } from "./route-table-proof.js"
 import { markupChildren, shapeTextValue, shownText, type MarkupChildren } from "./text-value-route.js"
 
 declare const process: {
@@ -458,18 +458,11 @@ function expectInside(before: Parts, after: Parts, edit: Edit) {
       expectAppendedShape(oldSlide, nextSlide, "p:graphicFrame")
       return
     case "tbl.addRow":
-      expect(newTableBreaks(before, after)).toEqual([])
-      expectBytes(
-        partOf(applyStructuralRoute(after, { ...edit, name: "tbl.removeRow", row: edit.row + 1 }), edit.part),
-        oldSlide,
-      )
+    case "tbl.removeRow":
+    case "tbl.addColumn":
+    case "tbl.removeColumn":
+      expect(tableEditFault(before, after, edit)).toBeNull()
       return
-    case "tbl.removeRow": {
-      const row = required(markup(oldSlide).filter((element) => element.kind === "a:tr")[edit.row - 1], "a:tr")
-      expect(newTableBreaks(before, after)).toEqual([])
-      expectBytes(nextSlide.subarray(nextSlide.length - oldSlide.length + row.end), oldSlide.subarray(row.end))
-      return
-    }
     case "tbl.orderRow": {
       const rows = markup(oldSlide).filter((element) => element.kind === "a:tr")
       expectBytes(

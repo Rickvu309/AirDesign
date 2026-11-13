@@ -50,3 +50,19 @@ it("refuses a table added with text already in it", () => {
     }),
   ).toMatchObject({ ok: false })
 })
+
+it("keeps the columns a person added and deleted in the table's value", () => {
+  const grown = changedTable(openingTable(3, 3), { change: "column", column: 0, place: "before" })!
+  const value = writeTableValue(changedTable(grown, { change: "remove-column", column: 2 })!)
+  const added = landed(
+    call("commit_edits", opened(), person, {
+      deck: "deck",
+      batch: [
+        { slide: "element-add", id: "256", element, file },
+        { node, value },
+      ],
+    }),
+  )
+  const shown = readDeckPage(added, { runId: null }).elements[0]?.value ?? ""
+  expect(readTableValue(shown)?.columns).toEqual([-1, 0, 2])
+})

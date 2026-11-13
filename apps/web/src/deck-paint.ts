@@ -18,7 +18,7 @@ import { editedParts, slideBase, storedText, type PictureBytes } from "@/exporte
 import { pictureSources, type PictureSources } from "@/picture-fill"
 import { shownValue, type BusyElements } from "@/live-repaint"
 import { fallbackPrompt } from "@/copy/placeholder-copy"
-import { tableEditable } from "@/table-edit"
+import { tableEditable, tableEdited } from "@/table-edit"
 
 type NamedShape = { readonly id: ElementId; readonly shape: ReadShape }
 
@@ -93,7 +93,8 @@ export function paint(
   readonly base: ReadonlyMap<string, Uint8Array>
 } {
   const base = register === null ? parts : slideBase(parts, register, pictureBytes)
-  const display = register !== null && register.order.length > 0 ? editedParts(base, register) : parts
+  const display =
+    register !== null && (register.order.length > 0 || tableEdited(register)) ? editedParts(base, register) : parts
   const named = namedShapes(display)
   const based = new Map(namedShapes(base).map((each) => [each.id, each.shape]))
   const ids = named.map((each) => each.id)

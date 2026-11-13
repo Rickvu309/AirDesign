@@ -34,5 +34,11 @@
     "detector": "invisible-control",
     "selector": "[data-table-text]",
     "reason": "An empty table cell with the caret in it is drawn by the cell's borders, which sit on its parent. The text area inside has nothing of its own to paint, as a new table's first cell does."
+  },
+  {
+    "page": "table-bar",
+    "detector": "invisible-control",
+    "selector": "[data-table-text]",
+    "reason": "An empty table cell shows the cell's own borders and fill, as in PowerPoint. The text area inside the cell has no frame of its own, so the detector sees an empty editable area."
   }
 ]

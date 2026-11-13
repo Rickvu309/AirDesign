@@ -14,6 +14,8 @@ import { textLook, type Scaled } from "./text-look.js"
 export type TableBar = (table: {
   readonly row: number
   readonly rows: number
+  readonly column: number
+  readonly columns: number
   readonly change: (change: TableChange) => void
 }) => ReactNode
 
@@ -62,6 +64,21 @@ function storedCells(text: string | undefined, table: CanvasTable): TableValue |
   const fits =
     stored.rows.length === table.rows.length && stored.rows.every((row) => row.cells.length === table.columns.length)
   return fits ? stored : "moving"
+}
+
+function landing(change: TableChange, spot: Spot, rows: number, columns: number): Spot {
+  switch (change.change) {
+    case "row":
+      return { row: change.row + (change.place === "below" ? 1 : 0), column: spot.column }
+    case "remove-row":
+      return { row: Math.min(change.row, rows - 2), column: spot.column }
+    case "column":
+      return { row: spot.row, column: change.column + (change.place === "after" ? 1 : 0) }
+    case "remove-column":
+      return { row: spot.row, column: Math.min(change.column, columns - 2) }
+    case "cell":
+      return spot
+  }
 }
 
 function CellText(props: {
@@ -160,7 +177,7 @@ export function TableEdit(props: {
 }) {
   const { element, id, moves, onTable, scaled, table } = props
   const [active, setActive] = useState<Spot | null>(null)
-  const [row, setRow] = useState<number | null>(null)
+  const [editing, setEditing] = useState<Spot | null>(null)
   const [within, setWithin] = useState(false)
   const stored = storedCells(useElement(props.store, id)?.text, table)
   const pending = useRef<Spot | null>(null)
@@ -173,7 +190,7 @@ export function TableEdit(props: {
 
   useEffect(() => {
     const wanted = pending.current
-    if (wanted === null || wanted.row >= table.rows.length) return
+    if (wanted === null || wanted.row >= table.rows.length || wanted.column >= table.columns.length) return
     pending.current = null
     frame.current?.querySelector<HTMLElement>(`[data-table-text="${spotKey(wanted)}"]`)?.focus()
   }, [table])
@@ -213,7 +230,7 @@ export function TableEdit(props: {
         }}
         onFocus={() => {
           setActive(spot)
-          setRow(at)
+          setEditing(spot)
         }}
         onKey={(event) => key(spot, event)}
         onText={(text) => change({ change: "cell", row: at, column, text })}
@@ -225,7 +242,10 @@ export function TableEdit(props: {
     )
   }
 
-  const shown = within && row !== null && row < table.rows.length ? row : null
+  const shown =
+    within && editing !== null && editing.row < table.rows.length && editing.column < table.columns.length
+      ? editing
+      : null
   return (
     <div ref={frame} style={{ display: "contents" }}>
       <TableArt
@@ -263,7 +283,16 @@ export function TableEdit(props: {
             style={{ position: "absolute", left: 0, bottom: "100%", paddingBottom: "var(--space-8)", cursor: "auto" }}
             onPointerDown={(event) => event.stopPropagation()}
           >
-            {props.bar({ row: shown, rows: table.rows.length, change })}
+            {props.bar({
+              row: shown.row,
+              rows: table.rows.length,
+              column: shown.column,
+              columns: table.columns.length,
+              change: (next) => {
+                pending.current = landing(next, shown, table.rows.length, table.columns.length)
+                change(next)
+              },
+            })}
           </div>
         )}
       </TableArt>

@@ -5,7 +5,12 @@ const slide = `<p:sld><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/></
 export function routeHosts(): Map<string, Uint8Array> {
   return new Map([
     ["ppt/slides/slide1.xml", text(slide)],
-    ["ppt/slides/slide2.xml", text("<p:sld/>")],
+    [
+      "ppt/slides/slide2.xml",
+      text(
+        `<p:sld><p:cSld><p:spTree><p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="5" name="Grid"/></p:nvGraphicFramePr><p:xfrm><a:off x="0" y="0"/><a:ext cx="20" cy="1"/></p:xfrm><a:graphic><a:graphicData><a:tbl><a:tblGrid><a:gridCol w="10"/><a:gridCol w="10"/></a:tblGrid></a:tbl></a:graphicData></a:graphic></p:graphicFrame></p:spTree></p:cSld></p:sld>`,
+      ),
+    ],
     [
       "ppt/presentation.xml",
       text(

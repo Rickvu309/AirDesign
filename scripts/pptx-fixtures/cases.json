@@ -140,6 +140,16 @@
     "pages": true
   },
   {
+    "name": "table-columns",
+    "before": "blank.pptx",
+    "after": "table-columns.pptx",
+    "visible": true,
+    "targeted": [1],
+    "errors": 0,
+    "dupes": 0,
+    "pages": true
+  },
+  {
     "name": "section-slide-edits",
     "before": "sections-before.pptx",
     "after": "sections-after.pptx",
