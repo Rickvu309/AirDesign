@@ -201,6 +201,7 @@ TypeOK ==
 
 RemovedWasAdded == removed => added
 TypedWhileShown == typed => added
+\* The server admits only edits the device can apply: text lands on a text box, never on a picture.
 TypedIsText == typed => ~picture
 UploadedWasAdded == uploaded => picture /\ added
 ExportHasBytes == exported /\ picture => uploaded
