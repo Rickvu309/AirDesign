@@ -1,5 +1,6 @@
 import {
   legacyElement,
+  newerFormat,
   readBox,
   readElementId,
   readSlideState,
@@ -93,7 +94,16 @@ function slideFields(raw: Record<string, unknown>): boolean {
   )
 }
 
-export function isRegister(raw: unknown): raw is StoredRegister {
+export type RegisterRead =
+  | { readonly ok: true; readonly register: StoredRegister }
+  | { readonly ok: false; readonly refusal: "newer" | "payload" }
+
+export function readRegister(raw: unknown): RegisterRead {
+  if (newerFormat(raw)) return { ok: false, refusal: "newer" }
+  return isRegister(raw) ? { ok: true, register: raw } : { ok: false, refusal: "payload" }
+}
+
+function isRegister(raw: unknown): raw is StoredRegister {
   if (!deck(raw) || !slideFields(raw)) return false
   if (!rootFields.some((field) => Object.hasOwn(raw, field))) return true
   return node(raw) && (raw.b === undefined || raw.b === null || node(raw.b))

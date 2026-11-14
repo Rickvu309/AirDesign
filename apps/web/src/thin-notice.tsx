@@ -19,6 +19,7 @@ export type ThinNotice =
   | "undo-changed"
   | "redo-changed"
   | "set-aside"
+  | "newer"
 
 const noticeId = "thin-notice"
 const noticeWidth = "24rem"
@@ -105,6 +106,11 @@ export function ThinNoticeView({
   if (notice === "redo-changed") return <StatusNotice text={undoCopy.redoChanged} />
   if (notice === "picture-type" || notice === "picture-size" || notice === "picture-unread")
     return <StatusNotice text={pictureCopy[notice]} />
+  if (notice === "newer") {
+    return (
+      <FailureNotice text={productCopy.newerVersion} action={productCopy.reload} onAct={() => onTryAgain(notice)} />
+    )
+  }
   if (notice === "import-failed") {
     return (
       <FailureNotice

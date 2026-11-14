@@ -107,6 +107,8 @@ export const productCopy = {
   importRemove: "Remove",
   deckOpenFailed: "Unable to open this deck",
   goToDecks: "Go to your decks",
+  newerVersion: "AirDesign has a new version",
+  reload: "Reload",
   decksFailedTitle: "Unable to load your decks",
   decksFailedBody: "Check your connection and try again.",
   deleteFailed: "Unable to delete these decks. Check your connection and try again.",

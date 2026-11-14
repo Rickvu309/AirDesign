@@ -102,6 +102,8 @@ export function installSlowIndexedDb(slow: SlowStore): void {
 function installStore(slow?: SlowStore): void {
   type Running = { mode: string; started: boolean; start: () => void }
   type Fake = {
+    version: number
+    connections: Opened[]
     names: string[]
     rows: Map<string, Map<string, unknown>>
     live: Running[]
@@ -125,24 +127,33 @@ function installStore(slow?: SlowStore): void {
   }
 
   const indexed = {
-    open(name: string) {
+    open(name: string, version = 1) {
       traffic.opens += 1
       const request: {
         result: Opened | undefined
+        error: { readonly name: string } | null
         onupgradeneeded: (() => void) | null
         onsuccess: (() => void) | null
         onerror: (() => void) | null
       } = {
         result: undefined,
+        error: null,
         onupgradeneeded: null,
         onsuccess: null,
         onerror: null,
       }
       queueMicrotask(() => {
         let database = databases.get(name)
-        const created = database === undefined
+        if (database !== undefined && version < database.version) {
+          request.error = { name: "VersionError" }
+          request.onerror?.()
+          return
+        }
+        const upgraded = database === undefined || version > database.version
         if (database === undefined) {
           const created: Fake = {
+            version,
+            connections: [],
             names: [],
             rows: new Map(),
             live: [],
@@ -157,6 +168,10 @@ function installStore(slow?: SlowStore): void {
           databases.set(name, database)
         }
         const current = database
+        if (upgraded) {
+          for (const connection of current.connections.splice(0)) connection.onversionchange?.()
+          current.version = version
+        }
         request.result = {
           objectStoreNames: { contains: (store: string) => current.names.includes(store) },
           createObjectStore: (store: string) => {
@@ -250,7 +265,8 @@ function installStore(slow?: SlowStore): void {
           onversionchange: null,
           onclose: null,
         }
-        if (created) request.onupgradeneeded?.()
+        current.connections.push(request.result)
+        if (upgraded) request.onupgradeneeded?.()
         request.onsuccess?.()
       })
       return request

@@ -1,4 +1,5 @@
 import { readAccountCookie } from "@airdesign/catalog"
+import { format } from "@airdesign/document"
 
 export const databaseName = "airdesign"
 export const storeName = "rows"
@@ -9,9 +10,12 @@ type Page = {
   database?: Promise<IDBDatabase> | undefined
   readonly decks: Map<string, unknown>
   readonly seen: Set<string>
+  newer?: true
 }
 
 let page: Page | undefined
+
+const watching = new Set<() => void>()
 
 function current(): Page {
   const factory = globalThis.indexedDB
@@ -21,6 +25,25 @@ function current(): Page {
 
 export function newPage(): void {
   page = undefined
+}
+
+export function storeNewer(): boolean {
+  return current().newer === true
+}
+
+export function markNewer(): void {
+  const held = current()
+  if (held.newer === true) return
+  held.newer = true
+  held.decks.clear()
+  for (const listener of watching) listener()
+}
+
+export function watchNewer(listener: () => void): () => void {
+  watching.add(listener)
+  return () => {
+    watching.delete(listener)
+  }
 }
 
 export function accountKey(): string | undefined {
@@ -60,7 +83,7 @@ export function deckRange(account: string, deck: string): IDBKeyRange {
 
 function connectDatabase(held: Page): Promise<IDBDatabase> {
   const opening: Promise<IDBDatabase> = new Promise((resolve, reject) => {
-    const request = held.factory.open(databaseName, 1)
+    const request = held.factory.open(databaseName, format)
     request.onupgradeneeded = () => {
       const database = request.result
       if (!database.objectStoreNames.contains(storeName)) database.createObjectStore(storeName)
@@ -80,6 +103,7 @@ function connectDatabase(held: Page): Promise<IDBDatabase> {
     }
     request.onerror = () => {
       if (held.database === opening) held.database = undefined
+      if (request.error?.name === "VersionError") markNewer()
       reject(request.error)
     }
   })
@@ -88,6 +112,7 @@ function connectDatabase(held: Page): Promise<IDBDatabase> {
 
 export function openDatabase(): Promise<IDBDatabase> {
   const held = current()
+  if (held.newer === true) return Promise.reject(new Error("newer"))
   held.database ??= connectDatabase(held)
   return held.database
 }
