@@ -99,10 +99,13 @@ type Planned = {
   readonly name: UndoName
 } & ({ readonly values: readonly FormatOneValue[] } | { readonly row: Row })
 
-const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = { fill: "fill", line: "line" }
+const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = { fill: "fill", line: "line", geometry: "shape" }
 
 function rowName(node: ElementId, row: Row): UndoName {
   if (slideKind(node) === "slide") return "background"
+  const box = row.patch.box
+  if (box?.rot !== undefined) return "rotate"
+  if (box?.flipH !== undefined || box?.flipV !== undefined) return "flip"
   const [trait] = Object.keys(row.patch) as TraitName[]
   return (trait === undefined ? undefined : rowNames[trait]) ?? "format"
 }

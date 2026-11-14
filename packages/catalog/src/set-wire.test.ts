@@ -50,7 +50,18 @@ describe("readSetChange reads the agent form into a change in stored units", () 
   it("names the field it refuses", () => {
     const refused = (raw: Record<string, unknown>) => readSetChange({ op: "set", target: "258.2", ...raw })
     expect(refused({ box: { x: 914_400 } })).toEqual({ ok: false, refusal: "field", field: "box.x" })
-    expect(refused({ box: { rot: 45 } })).toEqual({ ok: false, refusal: "field", field: "box.rot" })
+    expect(refused({ box: { rot: 360 } })).toEqual({ ok: false, refusal: "field", field: "box.rot" })
+    expect(refused({ box: { align: "centre" } })).toEqual({ ok: false, refusal: "field", field: "box.align" })
+    expect(refused({ geometry: { shape: { preset: "heart", adjust: {} } } })).toEqual({
+      ok: false,
+      refusal: "field",
+      field: "geometry.shape",
+    })
+    expect(refused({ geometry: { shape: { preset: "rect", adjust: { adj: 1 } } } })).toEqual({
+      ok: false,
+      refusal: "field",
+      field: "geometry.shape",
+    })
     expect(refused({ text: { color: "accent9" } })).toEqual({ ok: false, refusal: "field", field: "text.color" })
     expect(refused({ fill: { value: "accent9" } })).toEqual({ ok: false, refusal: "field", field: "fill.value" })
     expect(refused({ box: { x: null } })).toEqual({ ok: false, refusal: "field", field: "box.x" })
@@ -70,6 +81,27 @@ describe("readSetChange reads the agent form into a change in stored units", () 
       change: { op: "set", target: { slide: "258" }, fill: { value: { solid: { scheme: "accent2" } } } },
     })
     expect(readSetChange({ target: "258.2", box: { x: 1 } })).toEqual({ ok: false, refusal: "field", field: "op" })
+  })
+})
+
+describe("readSetChange reads a turn in degrees, flips, a preset with its adjusts, and align and distribute", () => {
+  it("turns degrees into 60000ths and keeps flips, presets and the box inputs as they are", () => {
+    expect(
+      readSetChange({
+        op: "set",
+        target: "*.title",
+        box: { rot: 90, flipH: true, align: "center", distribute: "vertical" },
+        geometry: { shape: { preset: "roundRect", adjust: { adj: 30_000 } } },
+      }),
+    ).toEqual({
+      ok: true,
+      change: {
+        op: "set",
+        target: { role: "title", slide: "every" },
+        box: { rot: 5_400_000, flipH: true, align: "center", distribute: "vertical" },
+        geometry: { shape: { preset: "roundRect", adjust: { adj: 30_000 } } },
+      },
+    })
   })
 })
 
@@ -164,6 +196,11 @@ describe("readAddChange reads a new shape on one slide", () => {
     expect(readAddChange({ ...add, kind: "picture" })).toEqual({ ok: false, refusal: "field", field: "kind" })
     expect(readAddChange({ ...add, slide: "258.2" })).toEqual({ ok: false, refusal: "field", field: "slide" })
     expect(readAddChange({ ...add, line: { width: 1 } })).toEqual({ ok: false, refusal: "field", field: "line" })
+    expect(readAddChange({ ...add, box: { x: 1, y: 1, w: 1, h: 1, rot: 90 } })).toEqual({
+      ok: false,
+      refusal: "field",
+      field: "box",
+    })
   })
 })
 

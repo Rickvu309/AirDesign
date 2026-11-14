@@ -6,6 +6,8 @@ import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
 const segments = 4
+const actions = 6
+const rowLength = 3
 
 function ChoiceList({ row, onChange, label, options }: ControlProps & { label: string; options: readonly string[] }) {
   const value = !row.mixed && typeof row.value === "string" ? row.value : null
@@ -44,10 +46,17 @@ export function ChoiceControl(props: ControlProps) {
       <span id={label} className="text-[length:var(--type-caption)] text-quiet">
         {row.label}
       </span>
-      {options.length > segments ? (
+      {options.length > (row.action === true ? actions : segments) ? (
         <ChoiceList {...props} label={label} options={options} />
       ) : (
-        <div role="group" aria-labelledby={label} className="flex h-8 items-center rounded-lg bg-line p-0.5">
+        <div
+          role="group"
+          aria-labelledby={label}
+          className={cn(
+            "items-center rounded-lg bg-line p-0.5",
+            options.length > rowLength + 1 ? "grid grid-cols-3 gap-y-0.5" : "flex h-8",
+          )}
+        >
           {options.map((option) => {
             const chosen = !row.mixed && row.value === option
             return (

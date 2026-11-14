@@ -1,5 +1,6 @@
 import type { Box } from "./box.js"
 import { currentBox, currentValue, elementFacts, type Register } from "./decide.js"
+import type { SlideSize } from "./deck-index.js"
 import type { DesignKey, Role } from "./design.js"
 import { shapeOf, slideKind, slideNode, type ElementId, type SlideId } from "./element-id.js"
 import { elementGone } from "./element-order.js"
@@ -53,11 +54,13 @@ export type ScopedElement = {
   readonly kept: readonly DesignKey[]
   readonly value: string | null
   readonly box: Box | null
+  readonly placed?: Box
 }
 
 export type Scope = {
   readonly expand: (target: Target) => readonly ElementId[] | "indexing"
   readonly view: (node: ElementId) => ScopedElement | undefined
+  readonly size: (slide: SlideId) => SlideSize | null
 }
 
 export type PlanRefusal = "kind" | "group-box" | "kept" | "indexing" | "dead"
@@ -82,8 +85,9 @@ function inputOf(trait: TraitName, key: string): boolean {
   return Object.hasOwn(traits[trait].inputs, key)
 }
 
-function written(trait: TraitName, key: string): FieldKey {
-  return `${trait}.${inputOf(trait, key) ? "value" : key}` as FieldKey
+export function writtenField(trait: TraitName, key: string): FieldKey {
+  if (!inputOf(trait, key)) return `${trait}.${key}` as FieldKey
+  return trait === "box" ? "box.x" : (`${trait}.value` as FieldKey)
 }
 
 function namedTraits(change: TraitInputs): readonly (readonly [TraitName, Loose])[] {
@@ -94,14 +98,16 @@ function namedTraits(change: TraitInputs): readonly (readonly [TraitName, Loose]
 }
 
 export function namedFields(change: TraitInputs): readonly FieldKey[] {
-  const fields = namedTraits(change).flatMap(([trait, input]) => Object.keys(input).map((key) => written(trait, key)))
+  const fields = namedTraits(change).flatMap(([trait, input]) =>
+    Object.keys(input).map((key) => writtenField(trait, key)),
+  )
   return [...new Set(fields)]
 }
 
 function refusalOf(view: ScopedElement, trait: TraitName, input: Loose): PlanRefusal | null {
   const taken = takes(view.facts)
   const unset = Object.entries(input).some(([key, value]) => value === null && !inheritable(trait, key))
-  if (unset || Object.keys(input).some((key) => !taken.includes(written(trait, key))))
+  if (unset || Object.keys(input).some((key) => !taken.includes(writtenField(trait, key))))
     return view.facts.grouped && trait === "box" ? "group-box" : "kind"
   return Object.keys(input).some((key) => keptRefuses(view.kept, trait, key)) ? "kept" : null
 }
@@ -132,24 +138,117 @@ function wholeBox(box: Box | null): Loose {
   return box === null ? {} : { x: box.x, y: box.y, w: box.cx, h: box.cy }
 }
 
-function traitPatch(trait: TraitName, input: Loose, view: ScopedElement): Readonly<Record<string, FieldEdit<unknown>>> {
-  const fields = trait === "box" ? { ...wholeBox(view.box), ...input } : input
+type Spot = { readonly x: number; readonly y: number }
+type Frame = { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
+type Placed = ReadonlyMap<ElementId, Spot>
+
+function boxed(box: Box, input: Loose): Box {
+  const x = typeof input.x === "number" ? input.x : box.x
+  const y = typeof input.y === "number" ? input.y : box.y
+  const cx = typeof input.w === "number" ? input.w : box.cx
+  const cy = typeof input.h === "number" ? input.h : box.cy
+  return { x, y, cx, cy }
+}
+
+function boundsOf(boxes: readonly Box[]): Frame {
+  const left = Math.min(...boxes.map((box) => box.x))
+  const top = Math.min(...boxes.map((box) => box.y))
+  const right = Math.max(...boxes.map((box) => box.x + box.cx))
+  const bottom = Math.max(...boxes.map((box) => box.y + box.cy))
+  return { x: left, y: top, w: right - left, h: bottom - top }
+}
+
+function alignedBox(box: Box, frame: Frame, align: string): Box {
+  const across = (from: number, room: number, size: number, at: number) => Math.round(from + ((room - size) * at) / 2)
+  if (align === "left") return { ...box, x: frame.x }
+  if (align === "center") return { ...box, x: across(frame.x, frame.w, box.cx, 1) }
+  if (align === "right") return { ...box, x: across(frame.x, frame.w, box.cx, 2) }
+  if (align === "top") return { ...box, y: frame.y }
+  if (align === "middle") return { ...box, y: across(frame.y, frame.h, box.cy, 1) }
+  return { ...box, y: across(frame.y, frame.h, box.cy, 2) }
+}
+
+function distributedBoxes(boxes: readonly Box[], frame: Frame, across: boolean): readonly Box[] {
+  const start = (box: Box) => (across ? box.x : box.y)
+  const length = (box: Box) => (across ? box.cx : box.cy)
+  const order = boxes.map((box, at) => ({ box, at })).sort((left, right) => start(left.box) - start(right.box))
+  const room = across ? frame.w : frame.h
+  const used = boxes.reduce((sum, box) => sum + length(box), 0)
+  const lone = boxes.length === 1
+  const gap = (room - used) / (lone ? 2 : boxes.length - 1)
+  const next: Box[] = [...boxes]
+  let cursor = (across ? frame.x : frame.y) + (lone ? gap : 0)
+  for (const { box, at } of order) {
+    const spot = Math.round(cursor)
+    next[at] = across ? { ...box, x: spot } : { ...box, y: spot }
+    cursor += length(box) + gap
+  }
+  return next
+}
+
+function slideFrame(size: SlideSize): Frame {
+  return { x: 0, y: 0, w: size.width, h: size.height }
+}
+
+function placements(input: Loose | undefined, views: readonly ScopedElement[], scope: Scope): Placed {
+  const placed = new Map<ElementId, Spot>()
+  const align = typeof input?.align === "string" ? input.align : undefined
+  const distribute = typeof input?.distribute === "string" ? input.distribute : undefined
+  if (input === undefined || (align === undefined && distribute === undefined)) return placed
+  const slides = new Map<string, ScopedElement[]>()
+  for (const view of views) {
+    if ((view.box ?? view.placed) === undefined) continue
+    const slide = shapeOf(view.node).slide
+    slides.set(slide, [...(slides.get(slide) ?? []), view])
+  }
+  for (const [slide, group] of slides) {
+    const size = scope.size(slide as SlideId)
+    let boxes: readonly Box[] = group.map((view) => boxed((view.box ?? view.placed) as Box, input))
+    const frame = boxes.length > 1 ? boundsOf(boxes) : size === null ? null : slideFrame(size)
+    if (frame === null) continue
+    if (align !== undefined) boxes = boxes.map((box) => alignedBox(box, frame, align))
+    if (distribute !== undefined) boxes = distributedBoxes(boxes, frame, distribute === "horizontal")
+    group.forEach((view, at) => {
+      const box = boxes[at]
+      if (box !== undefined) placed.set(view.node, { x: box.x, y: box.y })
+    })
+  }
+  return placed
+}
+
+function traitPatch(
+  trait: TraitName,
+  input: Loose,
+  view: ScopedElement,
+  spot: Spot | undefined,
+): Readonly<Record<string, FieldEdit<unknown>>> {
+  const box = view.box ?? (spot === undefined ? null : (view.placed ?? null))
+  const fields = trait === "box" ? { ...wholeBox(box), ...input, ...spot } : input
   const edits: Record<string, FieldEdit<unknown>> = {}
   for (const [key, value] of Object.entries(fields))
     if (!inputOf(trait, key)) edits[key] = value === null ? "inherit" : { set: value }
-  if (!Object.keys(input).some((key) => inputOf(trait, key))) return edits
+  if (trait !== "text" || !Object.keys(input).some((key) => inputOf(trait, key))) return edits
   const base = typeof input.value === "string" ? input.value : (view.value ?? "")
   return { ...edits, value: { set: restyled(base, input) } }
 }
 
-function planNode(change: TraitInputs, view: ScopedElement): NodeRow | readonly ChangeRefusal[] {
+function moves(input: Loose): boolean {
+  return Object.keys(input).some((key) => inputOf("box", key))
+}
+
+function planNode(
+  change: TraitInputs,
+  view: ScopedElement,
+  spot: Spot | undefined,
+): NodeRow | readonly ChangeRefusal[] {
   const named = namedTraits(change)
   const refusals = named.flatMap(([trait, input]) => {
-    const code = refusalOf(view, trait, input)
+    const unplaced = trait === "box" && moves(input) && spot === undefined && refusalOf(view, trait, input) === null
+    const code = unplaced ? "kind" : refusalOf(view, trait, input)
     return code === null ? [] : [{ node: view.node, trait, code }]
   })
   if (refusals.length > 0) return refusals
-  const patch = Object.fromEntries(named.map(([trait, input]) => [trait, traitPatch(trait, input, view)]))
+  const patch = Object.fromEntries(named.map(([trait, input]) => [trait, traitPatch(trait, input, view, spot)]))
   return { node: view.node, row: { v: format, patch: patch as ElementPatch } }
 }
 
@@ -159,9 +258,12 @@ export function planChange(change: SetChange, scope: Scope): PlannedChange {
     return { ok: false, refusals: [{ node: null, trait: null, code: nodes === "indexing" ? "indexing" : "dead" }] }
   const rows: NodeRow[] = []
   const refusals: ChangeRefusal[] = []
+  const views = nodes.flatMap((node) => scope.view(node) ?? [])
+  const placed = placements(change.box as Loose | undefined, views, scope)
   for (const node of nodes) {
     const view = scope.view(node)
-    const planned = view === undefined ? [{ node, trait: null, code: "dead" as const }] : planNode(change, view)
+    const planned =
+      view === undefined ? [{ node, trait: null, code: "dead" as const }] : planNode(change, view, placed.get(node))
     if ("row" in planned) rows.push(planned)
     else refusals.push(...planned)
   }
@@ -213,9 +315,15 @@ function expanded(register: Register, target: Target): readonly ElementId[] | "i
   return known || slideOwned(register, target.node) ? [target.node] : "indexing"
 }
 
+function sizeOf(register: Register, slide: SlideId): SlideSize | null {
+  const slides = register.index?.slides ?? []
+  return slides.find((each) => each.id === slide)?.size ?? slides.find((each) => each.size !== undefined)?.size ?? null
+}
+
 export function registerScope(register: Register): Scope {
   return {
     expand: (target) => expanded(register, target),
+    size: (slide) => sizeOf(register, slide),
     view: (node) => {
       const opening = openingElement(register, node)
       if ((opening === undefined && !slideOwned(register, node)) || !present(register, node)) return undefined
@@ -228,6 +336,7 @@ export function registerScope(register: Register): Scope {
         kept: opening?.kept ?? [],
         value: body === undefined ? (opening?.value ?? null) : currentValue(body),
         box: (body === undefined ? null : currentBox(body)) ?? opening?.box ?? null,
+        ...(opening?.placed === undefined ? {} : { placed: opening.placed }),
       }
     },
   }

@@ -410,6 +410,36 @@ describe("design lines", () => {
     )
   })
 
+  it("prints the preset, turn and flips a change set, and drops a turn of 0 and a flip set back off", () => {
+    const actor = { actor: "agent", runId: "run" } as const
+    const running = call("start_run", designed(), actor, {
+      deck: "designed",
+      runId: "run",
+      elements: [{ node: "259.7" }],
+    })
+    if (!running.ok) throw new Error(running.refusal)
+    const set = (deck: Deck, change: object) => {
+      const next = call("edit_deck", deck, actor, {
+        deck: "designed",
+        base: deck.revision,
+        changes: [{ op: "set", target: "259.7", ...change }],
+      })
+      if (!next.ok) throw new Error(next.refusal)
+      return next.deck
+    }
+    const turned = set(running.deck, {
+      geometry: { shape: { preset: "roundRect", adjust: { adj: 30_000 } } },
+      box: { rot: 45, flipV: true },
+    })
+    expect(byNode(readDeckPage(turned, { runId: "run" })).get("259.7")?.design).toBe(
+      "geometry roundRect · fill accent1 (style) · line.width 1 (style) · box.rot 45 · box.flipV",
+    )
+    const back = set(turned, { geometry: { shape: { preset: "rect", adjust: {} } }, box: { rot: 0, flipV: false } })
+    expect(byNode(readDeckPage(back, { runId: "run" })).get("259.7")?.design).toBe(
+      "fill accent1 (style) · line.width 1 (style)",
+    )
+  })
+
   it("reads a slide added from a layout with the roles of its layout floor", () => {
     const deck = designed()
     const added = call(

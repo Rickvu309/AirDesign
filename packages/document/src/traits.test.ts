@@ -18,7 +18,9 @@ type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false
 type Expect<T extends true> = T
 
 export type Derived = [
-  Expect<Same<FieldName<"box">, "x" | "y" | "w" | "h">>,
+  Expect<Same<FieldName<"box">, "x" | "y" | "w" | "h" | "rot" | "flipH" | "flipV">>,
+  Expect<Same<FieldName<"geometry">, "shape">>,
+  Expect<Same<FieldValue<"box", "flipH">, boolean>>,
   Expect<Same<FieldValue<"box", "w">, number>>,
   Expect<Same<TraitValue<"notes">, { readonly value: string }>>,
   Expect<Same<FieldName<"fill">, "value">>,
@@ -28,7 +30,8 @@ export type Derived = [
   Expect<null extends WireAgent<"fill", "value"> ? true : false>,
   Expect<null extends WireAgent<"box", "x"> ? false : true>,
   Expect<"none" | "group" | "accent1" extends WireAgent<"fill", "value"> ? true : false>,
-  Expect<Same<WireField<"box">, "x" | "y" | "w" | "h">>,
+  Expect<Same<WireField<"box">, "x" | "y" | "w" | "h" | "rot" | "flipH" | "flipV" | "align" | "distribute">>,
+  Expect<"center" extends WireAgent<"box", "align"> ? true : false>,
   Expect<Same<WireAgent<"box", "x">, number>>,
   Expect<Same<WireAgent<"text", "value">, string>>,
   Expect<Same<HasAlpha, false>>,
@@ -57,12 +60,16 @@ describe("the one table of traits", () => {
     })
   })
 
-  it("holds only the fields that are live: the box, the fill, the line, and the text, notes and table values", () => {
+  it("holds only the fields that are live: the box, the geometry, the fill, the line, and the text, notes and table values", () => {
     expect(traitNames.flatMap(fieldKeys)).toEqual([
       "box.x",
       "box.y",
       "box.w",
       "box.h",
+      "box.rot",
+      "box.flipH",
+      "box.flipV",
+      "geometry.shape",
       "fill.value",
       "line.fill",
       "line.width",
@@ -97,7 +104,8 @@ describe("the one table of traits", () => {
 
   it("keeps a slot it cannot model from a patch inside it, but lets a whole value replace it", () => {
     expect(keptRefuses(["fill"], "fill", "value")).toBe(false)
-    expect(keptRefuses(["geometry"], "geometry", "shape")).toBe(true)
+    expect(keptRefuses(["geometry"], "geometry", "shape")).toBe(false)
+    expect(keptRefuses(["box.rot"], "box", "rot")).toBe(true)
     expect(keptRefuses(["effects.shadow"], "effects", "shadow")).toBe(true)
     expect(keptRefuses(["text.color"], "text", "value")).toBe(false)
     expect(keptRefuses([], "fill", "value")).toBe(false)

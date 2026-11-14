@@ -48,6 +48,7 @@ for (const name of [
   "slide-background",
   "shape-fill",
   "line-style",
+  "shape-geometry",
   "commit-once",
   "deck-list-trash",
   "deck-stars",

@@ -37,6 +37,8 @@ import {
   readTable,
   shownFill,
   shownLine,
+  shownGeometry,
+  shownTurn,
 } from "@airdesign/pptx"
 import { beforeAll, describe, expect, it } from "vitest"
 import { optionCopy } from "./copy/option-copy"
@@ -85,7 +87,15 @@ const lineOpening = {
   tail: "opening",
 } as const
 
-const boxKeys = { x: "x", y: "y", w: "cx", h: "cy" } as const
+const boxOpening = {
+  x: "opening",
+  y: "opening",
+  w: "opening",
+  h: "opening",
+  rot: "opening",
+  flipH: "opening",
+  flipV: "opening",
+} as const
 
 function words(text: TextValue): string {
   return text.map((paragraph) => paragraph.runs.map((run) => run.text).join("")).join("\n")
@@ -101,7 +111,13 @@ function grid(parts: Parts, at: At): readonly (readonly string[])[] | undefined 
 
 const probes: { readonly [T in TraitName]: Probe<T> } = {
   identity: { fields: {} },
-  geometry: { fields: {} },
+  geometry: {
+    deck: "clean.pptx",
+    kind: "shape",
+    opening: () => ({ v: format, patch: { geometry: { shape: "opening" } } }),
+    edit: (_, __, value) => ({ v: format, patch: { geometry: { shape: { set: value } } } }),
+    fields: { shape: { file: (parts, at) => shownGeometry(parts, at)?.value, shows: (value) => value } },
+  },
   fill: {
     deck: "clean.pptx",
     kind: "shape",
@@ -172,14 +188,16 @@ const probes: { readonly [T in TraitName]: Probe<T> } = {
   box: {
     deck: "clean.pptx",
     kind: "shape",
-    opening: (parts, at) => ({ property: "box", value: element(parts, at)?.box ?? { x: 0, y: 0, cx: 0, cy: 0 } }),
-    edit: (opening, field, value) =>
-      opening.property === "box" ? { property: "box", value: { ...opening.value, [boxKeys[field]]: value } } : opening,
+    opening: () => ({ v: format, patch: { box: boxOpening } }),
+    edit: (_, field, value) => ({ v: format, patch: { box: { [field]: { set: value } } } }),
     fields: {
       x: { file: (parts, at) => element(parts, at)?.box?.x, shows: (value) => value },
       y: { file: (parts, at) => element(parts, at)?.box?.y, shows: (value) => value },
       w: { file: (parts, at) => element(parts, at)?.box?.cx, shows: (value) => value },
       h: { file: (parts, at) => element(parts, at)?.box?.cy, shows: (value) => value },
+      rot: { file: (parts, at) => shownTurn(parts, at).rot, shows: (value) => value },
+      flipH: { file: (parts, at) => shownTurn(parts, at).flipH, shows: (value) => value },
+      flipV: { file: (parts, at) => shownTurn(parts, at).flipV, shows: (value) => value },
     },
   },
   text: {

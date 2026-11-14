@@ -15,6 +15,8 @@ const presets: Readonly<Record<string, PresetRule>> = {
   ...presetConnectors,
 }
 
+export const drawnPresets: readonly string[] = Object.keys(presets)
+
 export function presetOutline(
   name: string,
   width: number,
@@ -38,4 +40,14 @@ export function presetOutline(
   } catch {
     return null
   }
+}
+
+export function adjustDefaults(name: string): Readonly<Record<string, number>> {
+  const rule = Object.hasOwn(presets, name) ? presets[name] : undefined
+  return Object.fromEntries(
+    (rule?.adjusts ?? []).map((definition) => {
+      const [adjust = "", , value = "0"] = definition.trim().split(/\s+/)
+      return [adjust, Number(value)]
+    }),
+  )
 }

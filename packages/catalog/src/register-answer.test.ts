@@ -34,7 +34,7 @@ it("reads each stored row through readRow, a row of trait fields included", () =
   })
   const written = holding({ v: format, patch: { box: { x: { set: 12_700 } }, text: { value: { set: "Hi" } } } })
   expect(readRegister(JSON.parse(JSON.stringify(written)))).toEqual({ ok: true, register: written })
-  expect(readRegister(holding({ v: format, patch: { box: { rot: { set: 1 } } } }))).toEqual({
+  expect(readRegister(holding({ v: format, patch: { box: { spin: { set: 1 } } } }))).toEqual({
     ok: false,
     refusal: "payload",
   })

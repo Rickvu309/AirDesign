@@ -1,5 +1,6 @@
 import {
   inheritable,
+  presetAdjusts,
   readElementId,
   readSlideId,
   roles,
@@ -77,13 +78,19 @@ function nullable(trait: TraitName, field: string, schema: JsonSchema): JsonSche
   return { ...schema, type: [...types, "null"] }
 }
 
+function presetFits(trait: TraitName, field: string, value: unknown): boolean {
+  if (trait !== "geometry" || field !== "shape" || !plainObject(value)) return true
+  const named: readonly string[] = presetAdjusts[value.preset as keyof typeof presetAdjusts]
+  return plainObject(value.adjust) && Object.keys(value.adjust).every((name) => named.includes(name))
+}
+
 function readTrait(trait: TraitName, raw: unknown): Read<Inputs> {
   if (!plainObject(raw) || Object.keys(raw).length === 0) return refused(trait)
   const read: Record<string, unknown> = {}
   for (const [field, value] of Object.entries(raw)) {
     const desc = descOf(trait, field)
     const got = desc === undefined ? null : value === null ? inherited(trait, field) : readAgent(desc, value)
-    if (got === null || !got.ok) return refused(`${trait}.${field}`)
+    if (got === null || !got.ok || !presetFits(trait, field, got.value)) return refused(`${trait}.${field}`)
     read[field] = got.value
   }
   return { ok: true, change: read }
@@ -114,7 +121,7 @@ export function readSetChange(raw: unknown): Read<WireSet> {
 
 function readBox(raw: unknown): Box | null {
   const read = readTrait("box", raw)
-  if (!read.ok) return null
+  if (!read.ok || Object.keys(read.change).some((field) => !Object.hasOwn(boxSides, field))) return null
   const box = Object.fromEntries(Object.entries(boxSides).map(([field, side]) => [side, read.change[field]]))
   const { x, y, cx, cy } = box
   if (typeof x !== "number" || typeof y !== "number" || typeof cx !== "number" || typeof cy !== "number") return null
@@ -145,9 +152,10 @@ export function readAddChange(raw: unknown): Read<WireAdd> {
   }
 }
 
-function traitSchema(trait: TraitName, required: boolean): JsonSchema {
+function traitSchema(trait: TraitName, required: readonly string[] | null): JsonSchema {
   const wire = traitWire[trait] as { readonly description?: string }
-  const fields = Object.entries(wireFields(trait)).map(([field, { description }]) => {
+  const named = Object.entries(wireFields(trait)).filter(([field]) => required === null || required.includes(field))
+  const fields = named.map(([field, { description }]) => {
     const desc = descOf(trait, field)
     if (desc === undefined) throw new Error(`${trait}.${field}`)
     return [field, { ...nullable(trait, field, agentSchema(desc)), description }] as const
@@ -155,7 +163,7 @@ function traitSchema(trait: TraitName, required: boolean): JsonSchema {
   return {
     type: "object",
     additionalProperties: false,
-    ...(required ? { required: fields.map(([field]) => field) } : { minProperties: 1 }),
+    ...(required === null ? { minProperties: 1 } : { required: fields.map(([field]) => field) }),
     ...(wire.description === undefined ? {} : { description: wire.description }),
     properties: Object.fromEntries(fields),
   }
@@ -177,7 +185,7 @@ export function setChangeSchema(): JsonSchema {
         pattern: targetPattern,
         description: `An element id such as 258.7 or 258.notes; a slide id such as 258 for the slide itself, whose fill is the slide's background; <slide>.<role> such as 258.title for the element with that role on one slide; or *.<role> such as *.title for it on every slide. Roles: ${roles.join(", ")}.`,
       },
-      ...Object.fromEntries(wired.map((trait) => [trait, traitSchema(trait, false)])),
+      ...Object.fromEntries(wired.map((trait) => [trait, traitSchema(trait, null)])),
     },
   }
 }
@@ -193,8 +201,11 @@ export function addChangeSchema(): JsonSchema {
       op: { type: "string", const: "add" },
       kind: { type: "string", enum: addable },
       slide: { type: "string", pattern: `^${slidePart}$`, description: "Slide id from airdesign_read_deck." },
-      box: { ...traitSchema("box", true), description: "Where the box sits on the slide, in points. Send all four." },
-      text: traitSchema("text", false),
+      box: {
+        ...traitSchema("box", Object.keys(boxSides)),
+        description: "Where the box sits on the slide, in points. Send all four.",
+      },
+      text: traitSchema("text", null),
     },
   }
 }

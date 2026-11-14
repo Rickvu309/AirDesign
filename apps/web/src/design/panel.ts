@@ -5,9 +5,9 @@ import {
   takes,
   traitNames,
   traits,
+  writtenField,
   type Desc,
   type ElementId,
-  type FieldKey,
   type SchemeName,
   type ScopedElement,
   type SetChange,
@@ -82,7 +82,9 @@ export type PanelRow = {
   readonly value: unknown
   readonly mixed: boolean
   readonly caption: boolean
+  readonly action?: boolean
   readonly reset: string | null
+  readonly parent?: unknown
   readonly change: (value: unknown) => SetChange
 }
 
@@ -99,6 +101,7 @@ export function partRow(row: PanelRow, name: string, desc: Desc, value: unknown)
   const label = optionWord(row.field, name)
   return {
     ...row,
+    parent: row.value,
     field: `${row.field}.${name}`,
     label,
     control: controlOf(desc),
@@ -153,16 +156,21 @@ function shownOf(view: ScopedElement, trait: TraitName, field: string, shown: Pa
   const reads = shown.reads
   if (trait === "box") {
     const box = view.box
-    const sides: Readonly<Record<string, number | undefined>> = { x: box?.x, y: box?.y, w: box?.cx, h: box?.cy }
+    const sides: Readonly<Record<string, unknown>> = {
+      x: box?.x,
+      y: box?.y,
+      w: box?.cx,
+      h: box?.cy,
+      rot: reads["box.rot"]?.value ?? 0,
+      flipH: reads["box.flipH"]?.value ?? false,
+      flipV: reads["box.flipV"]?.value ?? false,
+    }
     return { value: sides[field], mixed: false }
   }
+  if (trait === "geometry") return { value: undefined, mixed: false }
   if (field === "value") return { value: view.value ?? "", mixed: false }
   const text = readTextValue(view.value ?? "") ?? []
   return textShown(text, field, reads)
-}
-
-function written(trait: TraitName, field: string): FieldKey {
-  return `${trait}.${Object.hasOwn(traits[trait].inputs, field) ? "value" : field}` as FieldKey
 }
 
 function wireFields(trait: TraitName): readonly (readonly [string, Desc])[] {
@@ -192,7 +200,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
   const sections = traitNames.flatMap((trait): PanelSection[] => {
     const labels = traitControls[trait] as Labels
     const rows = wireFields(trait).flatMap(([field, kind]): PanelRow[] => {
-      const key = written(trait, field)
+      const key = writtenField(trait, field)
       if (!taken.includes(key) || keptRefuses(view.kept, trait, field)) return []
       const copy = labels.fields[field]
       const own = shown.fields?.[key]?.own === true
@@ -202,7 +210,8 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       const desc = shownDesc(kind, view.facts.grouped, held.value)
       const label = copy?.label ?? ""
       const caption = label !== labels.section
-      return [{ trait, field, label, control: controlOf(desc), desc, ...held, caption, reset, change }]
+      const action = Object.hasOwn(traits[trait].inputs, field) && held.value === undefined ? { action: true } : {}
+      return [{ trait, field, label, control: controlOf(desc), desc, ...held, caption, reset, ...action, change }]
     })
     const visible = lineless(trait, rows) ? rows.filter((row) => row.field === "fill") : rows
     return visible.length === 0 ? [] : [{ trait, label: labels.section ?? "", rows: visible }]

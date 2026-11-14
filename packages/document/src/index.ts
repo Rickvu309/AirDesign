@@ -80,6 +80,7 @@ export {
   namedFields,
   planChange,
   registerScope,
+  writtenField,
   type AddChange,
   type Scope,
   type ScopedElement,
@@ -121,6 +122,8 @@ export { foldSections, type FileSection } from "./section-order.js"
 export { floorFor, floorNodes, floorOpening, newSlideElement, openingElement } from "./slide-floor.js"
 export { patternPresets } from "./trait-fill.js"
 export { arrowheads, arrowSizes, dashPresets, lineCaps, lineCompounds, lineJoins, widestLine } from "./trait-line.js"
+export { adjustLimit, presetAdjusts, presets, type Preset } from "./trait-geometry.js"
+export { alignments } from "./trait-box.js"
 export { slideMeasure } from "./slide-measure.js"
 export {
   addedPictures,

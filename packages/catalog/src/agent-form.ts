@@ -98,7 +98,7 @@ function shownOf<Key extends DesignKey>(key: Key, read: Read<NonNullable<TraitRe
   return read.source === undefined ? [value] : [value, read.source]
 }
 
-export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design" | "kept"> {
+export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design" | "kept" | "placed"> {
   const design: Partial<Record<DesignKey, Shown>> = {}
   for (const key of designKeys) {
     const field = read.reads[key] as Read<never> | undefined
@@ -113,6 +113,7 @@ export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design
     ...(read.role === undefined ? {} : { role: read.role }),
     ...(Object.keys(written).length === 0 ? {} : { design: written }),
     ...(read.kept.length === 0 ? {} : { kept: read.kept }),
+    ...(read.placed === undefined ? {} : { placed: read.placed }),
   }
 }
 
@@ -150,6 +151,10 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch): Des
   next = folded(next, "line.dash", line?.dash, (value) => (value === "solid" ? null : value))
   next = folded(next, "line.head", line?.head, arrowShown)
   next = folded(next, "line.tail", line?.tail, arrowShown)
+  next = folded(next, "geometry", patch.geometry?.shape, (value) => (value.preset === "rect" ? null : value.preset))
+  next = folded(next, "box.rot", patch.box?.rot, (value) => (value === 0 ? null : tenths(value / anglePerDegree)))
+  next = folded(next, "box.flipH", patch.box?.flipH, (value) => (value ? true : null))
+  next = folded(next, "box.flipV", patch.box?.flipV, (value) => (value ? true : null))
   if (next === design) return design
   return Object.keys(next).length === 0 ? undefined : next
 }

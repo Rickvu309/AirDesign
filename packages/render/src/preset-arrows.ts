@@ -144,4 +144,45 @@ export const presetArrows: Readonly<Record<string, PresetRule>> = {
       },
     ],
   },
+  upDownArrow: {
+    adjusts: ["adj1 val 50000", "adj2 val 50000"],
+    guides: [
+      "maxAdj2 */ 50000 h ss",
+      "a1 pin 0 adj1 100000",
+      "a2 pin 0 adj2 maxAdj2",
+      "y2 */ ss a2 100000",
+      "y3 +- b 0 y2",
+      "dx1 */ w a1 200000",
+      "x1 +- hc 0 dx1",
+      "x2 +- hc dx1 0",
+    ],
+    paths: [
+      {
+        data: "M l y2 L hc t L r y2 L x2 y2 L x2 y3 L r y3 L hc b L l y3 L x1 y3 L x1 y2 Z",
+        fill: true,
+        stroke: true,
+      },
+    ],
+  },
+  notchedRightArrow: {
+    adjusts: ["adj1 val 50000", "adj2 val 50000"],
+    guides: [
+      "maxAdj2 */ 100000 w ss",
+      "a1 pin 0 adj1 100000",
+      "a2 pin 0 adj2 maxAdj2",
+      "dx2 */ ss a2 100000",
+      "x2 +- r 0 dx2",
+      "dy1 */ h a1 200000",
+      "y1 +- vc 0 dy1",
+      "y2 +- vc dy1 0",
+      "x1 */ dy1 dx2 hd2",
+    ],
+    paths: [
+      {
+        data: "M l y1 L x2 y1 L x2 t L r vc L x2 b L x2 y2 L l y2 L x1 vc Z",
+        fill: true,
+        stroke: true,
+      },
+    ],
+  },
 }
