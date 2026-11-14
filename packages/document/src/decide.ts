@@ -419,7 +419,8 @@ function changedFields(patch: ElementPatch, box: Box | null): readonly FieldKey[
   const shown: Readonly<Record<string, number | undefined>> = { x: box?.x, y: box?.y, w: box?.cx, h: box?.cy }
   return fieldsOf(patch).filter((field) => {
     const side = field.startsWith("box.") ? field.slice(4) : null
-    const edit: FieldEdit<number> | undefined = side === null ? undefined : patch.box?.[side as keyof TraitPatch<"box">]
+    const edit: FieldEdit<unknown> | undefined =
+      side === null ? undefined : patch.box?.[side as keyof TraitPatch<"box">]
     return side === null || typeof edit !== "object" || edit.set !== shown[side]
   })
 }

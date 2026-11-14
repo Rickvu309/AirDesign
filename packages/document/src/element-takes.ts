@@ -10,7 +10,12 @@ export type ElementFacts = {
   readonly animated: boolean
 }
 
-const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = { table: ["box.w", "box.h"] }
+const turns: readonly FieldKey[] = ["box.rot", "box.flipH", "box.flipV"]
+
+const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
+  table: ["box.w", "box.h", ...turns],
+  chart: turns,
+}
 
 const textFields: readonly FieldKey[] = ["text.value", "notes.value"]
 

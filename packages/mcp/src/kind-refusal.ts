@@ -4,6 +4,7 @@ import {
   boxOnly,
   editMissing,
   kindTraits,
+  writtenField,
   namedFields,
   openingElement,
   planChange,
@@ -165,9 +166,7 @@ const instructedKinds: readonly (readonly [Kind, string])[] = [
 function traitWords(kind: Kind): string | undefined {
   const taken = agentTakes({ kind, text: true, grouped: false, animated: false })
   const traits = kindTraits[kind].flatMap((trait: TraitName) => {
-    const fields = Object.keys(traitWire[trait].fields).filter((field) =>
-      [`${trait}.${field}`, `${trait}.value`].some((key) => taken.includes(key as FieldKey)),
-    )
+    const fields = Object.keys(traitWire[trait].fields).filter((field) => taken.includes(writtenField(trait, field)))
     return fields.length === 0 ? [] : [`${trait} (${fields.join(", ")})`]
   })
   const last = traits.at(-1)

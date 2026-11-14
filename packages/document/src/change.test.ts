@@ -318,3 +318,127 @@ describe("a slide's own node takes fill, which PowerPoint calls the background",
     expect(plan({ target: { slide: slideId("300") }, fill: { value: solid } })).toEqual(refused)
   })
 })
+
+describe("box inputs align and distribute the elements a target names on each slide", () => {
+  const wide = { width: 1_000, height: 500 }
+  const slide = (id: string, position: number) => ({ id, position, size: wide })
+  const body = (node: string, x: number, y: number, cx: number): IndexElement => ({
+    ...shape(node, "body", ""),
+    box: { x, y, cx, cy: 50 },
+  })
+  const bodies = [body("260.2", 400, 10, 100), body("260.3", 100, 200, 50), body("260.4", 700, 90, 100)]
+  const sized = (more: readonly IndexElement[] = []) =>
+    indexed({
+      total: elements.length + more.length,
+      slides: [slide("258", 0), slide("259", 1), slide("260", 2)],
+      elements: [...elements, ...more],
+    })
+  const placed = (planned: ReturnType<typeof plan>) =>
+    planned.ok
+      ? planned.rows.map(({ node, row }) => {
+          const { x, y } = row.patch.box ?? {}
+          return [
+            node,
+            x !== undefined && x !== "inherit" && x !== "opening" ? x.set : null,
+            y !== undefined && y !== "inherit" && y !== "opening" ? y.set : null,
+          ]
+        })
+      : planned
+
+  it("aligns a lone element to its slide, so every title can be centred on its own slide", () => {
+    const planned = plan({ target: { role: "title", slide: "every" }, box: { align: "center" } }, sized())
+    expect(placed(planned)).toEqual([
+      ["258.2", 350, 20],
+      ["259.2", 350, 20],
+    ])
+    expect(planned.ok && planned.rows[0]?.row.patch.box).toEqual({
+      x: { set: 350 },
+      y: { set: 20 },
+      w: { set: 300 },
+      h: { set: 400 },
+    })
+    expect(placed(plan({ target: { node: elementId("258.2") }, box: { align: "bottom" } }, sized()))).toEqual([
+      ["258.2", 10, 100],
+    ])
+  })
+
+  it("aligns several elements on one slide to the edges and centres of their own bounds", () => {
+    const target = { role: "body", slide: slideId("260") } as const
+    expect(placed(plan({ target, box: { align: "left" } }, sized(bodies)))).toEqual([
+      ["260.2", 100, 10],
+      ["260.3", 100, 200],
+      ["260.4", 100, 90],
+    ])
+    expect(placed(plan({ target, box: { align: "middle" } }, sized(bodies)))).toEqual([
+      ["260.2", 400, 105],
+      ["260.3", 100, 105],
+      ["260.4", 700, 105],
+    ])
+  })
+
+  it("spaces several elements with equal gaps between the outer two, and centres a lone one on its slide", () => {
+    const target = { role: "body", slide: slideId("260") } as const
+    expect(placed(plan({ target, box: { distribute: "horizontal" } }, sized(bodies)))).toEqual([
+      ["260.2", 375, 10],
+      ["260.3", 100, 200],
+      ["260.4", 700, 90],
+    ])
+    expect(placed(plan({ target, box: { distribute: "vertical" } }, sized(bodies)))).toEqual([
+      ["260.2", 400, 10],
+      ["260.3", 100, 200],
+      ["260.4", 700, 105],
+    ])
+    expect(placed(plan({ target: { node: elementId("258.3") }, box: { distribute: "vertical" } }, sized()))).toEqual([
+      ["258.3", 10, 50],
+    ])
+  })
+
+  it("aligns a placeholder by the box its layout gives it, and writes that box as its own", () => {
+    const inherited = { ...shape("260.6", "title", ""), box: null, placed: { x: 100, y: 30, cx: 600, cy: 80 } }
+    const planned = plan({ target: { node: elementId("260.6") }, box: { align: "right" } }, sized([inherited]))
+    expect(planned.ok && planned.rows[0]?.row.patch.box).toEqual({
+      x: { set: 400 },
+      y: { set: 30 },
+      w: { set: 600 },
+      h: { set: 80 },
+    })
+    const lost: IndexElement = { ...shape("260.7", "title", ""), box: null }
+    expect(plan({ target: { node: elementId("260.7") }, box: { align: "right" } }, sized([lost]))).toEqual({
+      ok: false,
+      refusals: [{ node: "260.7", trait: "box", code: "kind" }],
+    })
+  })
+
+  it("moves a table by x and y, and refuses a grouped element's box", () => {
+    expect(placed(plan({ target: { node: elementId("259.3") }, box: { align: "right" } }, sized()))).toEqual([
+      ["259.3", 700, 20],
+    ])
+    expect(plan({ target: { node: elementId("258.5") }, box: { align: "left" } }, sized())).toEqual({
+      ok: false,
+      refusals: [{ node: "258.5", trait: "box", code: "group-box" }],
+    })
+  })
+
+  it("turns and flips with the whole current box around them", () => {
+    const planned = plan({ target: { node: elementId("258.3") }, box: { rot: 5_400_000, flipH: true } })
+    expect(planned.ok && planned.rows[0]?.row.patch.box).toEqual({
+      x: { set: 10 },
+      y: { set: 20 },
+      w: { set: 300 },
+      h: { set: 400 },
+      rot: { set: 5_400_000 },
+      flipH: { set: true },
+    })
+    expect(plan({ target: { node: elementId("259.3") }, box: { rot: 5_400_000 } })).toEqual({
+      ok: false,
+      refusals: [{ node: "259.3", trait: "box", code: "kind" }],
+    })
+  })
+
+  it("picks a preset for a kept custom geometry, since a preset replaces the whole slot", () => {
+    const custom = { ...shape("260.5", undefined, null), kept: ["geometry"] as const }
+    const shapeValue = { preset: "triangle", adjust: { adj: 25_000 } } as const
+    const planned = plan({ target: { node: elementId("260.5") }, geometry: { shape: shapeValue } }, sized([custom]))
+    expect(planned.ok && planned.rows[0]?.row.patch).toEqual({ geometry: { shape: { set: shapeValue } } })
+  })
+})

@@ -1,7 +1,9 @@
 import type { ComponentType } from "react"
+import { AdjustControl } from "@/design/controls/adjust"
 import { AngleControl } from "@/design/controls/angle"
 import { ChoiceControl } from "@/design/controls/choice"
 import { ColorControl } from "@/design/controls/color"
+import { CountControl } from "@/design/controls/count"
 import { LengthControl } from "@/design/controls/length"
 import { ListControl } from "@/design/controls/list"
 import { PercentControl } from "@/design/controls/percent"
@@ -16,6 +18,8 @@ export const controlViews: Partial<Readonly<Record<ControlKind, ComponentType<Co
   length: LengthControl,
   angle: AngleControl,
   percent: PercentControl,
+  count: CountControl,
+  adjust: AdjustControl,
   toggle: ToggleControl,
   choice: ChoiceControl,
   color: ColorControl,

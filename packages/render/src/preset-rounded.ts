@@ -73,4 +73,23 @@ export const presetRounded: Readonly<Record<string, PresetRule>> = {
       },
     ],
   },
+  roundRect: {
+    adjusts: ["adj val 16667"],
+    guides: [
+      "a pin 0 adj 50000",
+      "x1 */ ss a 100000",
+      "x2 +- r 0 x1",
+      "y2 +- b 0 x1",
+      "il */ x1 29289 100000",
+      "ir +- r 0 il",
+      "ib +- b 0 il",
+    ],
+    paths: [
+      {
+        data: "M l x1 A x1 x1 cd2 cd4 L x2 t A x1 x1 3cd4 cd4 L r y2 A x1 x1 0 cd4 L x1 b A x1 x1 cd4 cd4 Z",
+        fill: true,
+        stroke: true,
+      },
+    ],
+  },
 }

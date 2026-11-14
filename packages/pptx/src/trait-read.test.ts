@@ -86,6 +86,7 @@ it("names each placeholder's role and says which of its layout or master shows e
       "text.bold": { value: true, source: "master" },
     },
     kept: [],
+    placed: { x: 2499544, y: 1461562, cx: 6258941, cy: 1511960 },
   })
   expect(traits.elements.get(elementId("1188.3"))?.role).toBe("body")
   expect(traits.elements.get(elementId("1188.4"))?.role).toBe("number")
@@ -160,4 +161,10 @@ it("reads no text body on a picture, table or kept element in a content placehol
     )
   }
   expect(traits.elements.get(elementId("2775.5"))?.role).toBe("body")
+})
+
+it("records the box a placeholder shows from its layout when it has no box of its own", async () => {
+  const traits = readTraits(await deck("nasa-1d-cnn.pptx"))
+  expect(traits.elements.get(elementId("452.5"))?.placed).toEqual({ x: 1166285, y: 184151, cx: 11025716, cy: 519113 })
+  expect(traits.elements.get(elementId("447.5"))).not.toHaveProperty("placed")
 })

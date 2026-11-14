@@ -1,5 +1,6 @@
 import { expect, it } from "vitest"
-import { presetOutline } from "./preset-path.js"
+import { presetAdjusts, presets as pickable } from "@airdesign/document"
+import { adjustDefaults, drawnPresets, presetOutline } from "./preset-path.js"
 import { presetGuides } from "./preset-rule.js"
 
 it("reads DrawingML formulas with repeated whitespace without changing their operands", () => {
@@ -30,7 +31,7 @@ it("keeps unknown and custom geometry on the rectangle fallback", () => {
 })
 
 const presets =
-  "triangle rtTriangle diamond parallelogram trapezoid pentagon hexagon octagon homePlate chevron rightArrow leftArrow upArrow downArrow leftRightArrow plus star5 round1Rect round2SameRect snip1Rect snip2DiagRect wedgeRectCallout wedgeRoundRectCallout flowChartProcess flowChartDecision flowChartTerminator bracketPair bracePair donut arc can cube rightBrace leftBrace cloud leftRightArrowCallout bentConnector2 bentConnector3 bentConnector4 bentConnector5 curvedConnector2 curvedConnector3 curvedConnector4 curvedConnector5 pieWedge".split(
+  "triangle rtTriangle diamond parallelogram trapezoid pentagon hexagon octagon homePlate chevron rightArrow leftArrow upArrow downArrow leftRightArrow plus star5 round1Rect round2SameRect snip1Rect snip2DiagRect wedgeRectCallout wedgeRoundRectCallout flowChartProcess flowChartDecision flowChartTerminator bracketPair bracePair donut arc can cube rightBrace leftBrace cloud leftRightArrowCallout bentConnector2 bentConnector3 bentConnector4 bentConnector5 curvedConnector2 curvedConnector3 curvedConnector4 curvedConnector5 pieWedge roundRect frame corner star4 upDownArrow notchedRightArrow flowChartInputOutput flowChartManualOperation flowChartMerge flowChartExtract flowChartPreparation flowChartManualInput flowChartOffpageConnector flowChartPunchedCard".split(
     " ",
   )
 
@@ -77,4 +78,39 @@ it("keeps the default callout tail outside the box", () => {
 
 it("draws an elliptical arc from the radial DrawingML angle", () => {
   expect(presetOutline("arc", 200, 100)?.at(-1)?.d).toBe("M100 0A100 50 0 0 1 200 50")
+})
+
+it("rounds a rounded rectangle's corners by its adjust, as PowerPoint does", () => {
+  expect(presetOutline("roundRect", 200, 100, { adj: 50000 })?.[0]?.d).toBe(
+    "M0 50A50 50 0 0 1 50 0L150 0A50 50 0 0 1 200 50L200 50A50 50 0 0 1 150 100L50 100A50 50 0 0 1 0 50Z",
+  )
+})
+
+it("cuts a frame's hole by its border adjust", () => {
+  expect(presetOutline("frame", 200, 100, { adj1: 10000 })?.[0]?.d).toBe(
+    "M0 0L200 0L200 100L0 100ZM10 10L10 90L190 90L190 10Z",
+  )
+})
+
+it("narrows an up-down arrow's shaft and heads by its adjusts", () => {
+  expect(presetOutline("upDownArrow", 100, 200)?.[0]?.d).toBe(
+    "M0 50L50 0L100 50L75 50L75 150L100 150L50 200L0 150L25 150L25 50Z",
+  )
+})
+
+it("scales a flowchart path drawn on its own grid to the box", () => {
+  expect(presetOutline("flowChartInputOutput", 200, 100)?.[0]?.d).toBe("M0 100L40 0L200 0L160 100Z")
+})
+
+it("draws every preset a person or an agent can pick, with the same adjusts, and offers every one but the routed lines", () => {
+  const native = ["rect", "ellipse", "line", "straightConnector1"]
+  for (const preset of pickable) {
+    const names: readonly string[] = presetAdjusts[preset]
+    if (native.includes(preset)) expect(adjustDefaults(preset), preset).toEqual({})
+    else expect(presetOutline(preset, 200, 100), preset).not.toBeNull()
+    expect(Object.keys(adjustDefaults(preset)), preset).toEqual(names)
+  }
+  expect(drawnPresets.filter((name) => !(pickable as readonly string[]).includes(name))).toEqual(
+    ["bentConnector", "curvedConnector"].flatMap((routed) => [2, 3, 4, 5].map((bends) => `${routed}${String(bends)}`)),
+  )
 })

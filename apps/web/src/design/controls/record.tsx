@@ -1,5 +1,12 @@
+import type { Desc } from "@airdesign/document"
 import { Fragment } from "react"
 import { partRow, type ControlProps } from "@/design/panel"
+
+function cleared(fields: readonly (readonly [string, Desc])[], changed: string): Readonly<Record<string, unknown>> {
+  return Object.fromEntries(
+    fields.filter(([name, desc]) => name !== changed && desc.kind === "named").map(([name]) => [name, {}]),
+  )
+}
 
 export function RecordControl({ row, palette, onChange, inner }: ControlProps) {
   const fields = row.desc.kind === "record" ? Object.entries(row.desc.fields) : []
@@ -16,7 +23,7 @@ export function RecordControl({ row, palette, onChange, inner }: ControlProps) {
             {inner?.({
               row: partRow(row, name, desc, held[name]),
               palette,
-              onChange: (next) => onChange({ ...held, [name]: next }),
+              onChange: (next) => onChange({ ...held, ...cleared(fields, name), [name]: next }),
               inner,
             })}
           </Fragment>

@@ -221,4 +221,55 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
       },
     ],
   },
+  frame: {
+    adjusts: ["adj1 val 12500"],
+    guides: ["a1 pin 0 adj1 50000", "x1 */ ss a1 100000", "x4 +- r 0 x1", "y4 +- b 0 x1"],
+    paths: [
+      {
+        data: "M l t L r t L r b L l b Z M x1 x1 L x1 y4 L x4 y4 L x4 x1 Z",
+        fill: true,
+        stroke: true,
+      },
+    ],
+  },
+  corner: {
+    adjusts: ["adj1 val 50000", "adj2 val 50000"],
+    guides: [
+      "maxAdj1 */ 100000 h ss",
+      "maxAdj2 */ 100000 w ss",
+      "a1 pin 0 adj1 maxAdj1",
+      "a2 pin 0 adj2 maxAdj2",
+      "x1 */ ss a2 100000",
+      "dy1 */ ss a1 100000",
+      "y1 +- b 0 dy1",
+    ],
+    paths: [
+      {
+        data: "M l t L x1 t L x1 y1 L r y1 L r b L l b Z",
+        fill: true,
+        stroke: true,
+      },
+    ],
+  },
+  star4: {
+    adjusts: ["adj val 12500"],
+    guides: [
+      "a pin 0 adj 50000",
+      "iwd2 */ wd2 a 50000",
+      "ihd2 */ hd2 a 50000",
+      "sdx */ iwd2 70711 100000",
+      "sdy */ ihd2 70711 100000",
+      "sx1 +- hc 0 sdx",
+      "sx2 +- hc sdx 0",
+      "sy1 +- vc 0 sdy",
+      "sy2 +- vc sdy 0",
+    ],
+    paths: [
+      {
+        data: "M l vc L sx1 sy1 L hc t L sx2 sy1 L r vc L sx2 sy2 L hc b L sx1 sy2 Z",
+        fill: true,
+        stroke: true,
+      },
+    ],
+  },
 }

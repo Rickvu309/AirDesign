@@ -367,4 +367,108 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
       },
     ],
   },
+  flowChartInputOutput: {
+    adjusts: [],
+    guides: [],
+    paths: [
+      {
+        data: "M 0 5 L 1 0 L 5 0 L 4 5 Z",
+        fill: true,
+        stroke: true,
+        width: 5,
+        height: 5,
+      },
+    ],
+  },
+  flowChartManualOperation: {
+    adjusts: [],
+    guides: [],
+    paths: [
+      {
+        data: "M 0 0 L 5 0 L 4 5 L 1 5 Z",
+        fill: true,
+        stroke: true,
+        width: 5,
+        height: 5,
+      },
+    ],
+  },
+  flowChartMerge: {
+    adjusts: [],
+    guides: [],
+    paths: [
+      {
+        data: "M 0 0 L 2 0 L 1 2 Z",
+        fill: true,
+        stroke: true,
+        width: 2,
+        height: 2,
+      },
+    ],
+  },
+  flowChartExtract: {
+    adjusts: [],
+    guides: [],
+    paths: [
+      {
+        data: "M 0 2 L 1 0 L 2 2 Z",
+        fill: true,
+        stroke: true,
+        width: 2,
+        height: 2,
+      },
+    ],
+  },
+  flowChartPreparation: {
+    adjusts: [],
+    guides: [],
+    paths: [
+      {
+        data: "M 0 5 L 2 0 L 8 0 L 10 5 L 8 10 L 2 10 Z",
+        fill: true,
+        stroke: true,
+        width: 10,
+        height: 10,
+      },
+    ],
+  },
+  flowChartManualInput: {
+    adjusts: [],
+    guides: [],
+    paths: [
+      {
+        data: "M 0 1 L 5 0 L 5 5 L 0 5 Z",
+        fill: true,
+        stroke: true,
+        width: 5,
+        height: 5,
+      },
+    ],
+  },
+  flowChartOffpageConnector: {
+    adjusts: [],
+    guides: [],
+    paths: [
+      {
+        data: "M 0 0 L 10 0 L 10 8 L 5 10 L 0 8 Z",
+        fill: true,
+        stroke: true,
+        width: 10,
+        height: 10,
+      },
+    ],
+  },
+  flowChartPunchedCard: {
+    adjusts: [],
+    guides: [],
+    paths: [
+      {
+        data: "M 0 1 L 1 0 L 5 0 L 5 5 L 0 5 Z",
+        fill: true,
+        stroke: true,
+        width: 5,
+        height: 5,
+      },
+    ],
+  },
 }

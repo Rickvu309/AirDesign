@@ -52,7 +52,7 @@ it("keeps an agent's row of trait fields as one confirmed row and plays it back 
 it("reads a stored row through readRow and names a row from a newer build", () => {
   const row = { kind: "confirmed" as const, deck, revision: 0, node, v: format, patch: { box: { x: { set: 5 } } } }
   expect(readable(row)).toBe(true)
-  const unread = { ...row, patch: JSON.parse('{"box":{"rot":{"set":5}}}') as typeof row.patch }
+  const unread = { ...row, patch: JSON.parse('{"box":{"spin":{"set":5}}}') as typeof row.patch }
   expect(readable(unread)).toBe(false)
   expect(newerRow(row)).toBe(false)
   expect(newerRow({ ...row, v: format + 1 })).toBe(true)

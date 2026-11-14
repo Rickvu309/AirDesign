@@ -13,6 +13,7 @@ export type ElementAt = { readonly slide: string; readonly part: string; readonl
 export type AttributeCodec<V> = {
   readonly read: (text: string) => V | null
   readonly text: (value: V) => string
+  readonly absent?: V
 }
 
 export type PartCodec<V> = {
@@ -23,7 +24,7 @@ export type PartCodec<V> = {
 export type Inherit = (parts: Parts, at: ElementAt) => Parts
 
 export type FieldXml<V> =
-  | { readonly at: "inner"; readonly tag: string; readonly name: string; readonly codec: AttributeCodec<V> }
+  | { readonly at: "inner"; readonly tag: string | null; readonly name: string; readonly codec: AttributeCodec<V> }
   | { readonly at: "whole"; readonly codec: PartCodec<V>; readonly inherit: Inherit | null }
 
 export type SlotXml = "transform"
@@ -35,6 +36,10 @@ export type TraitXml<T extends TraitName> = {
 
 export function inner<V>(tag: string, name: string, codec: AttributeCodec<V>): FieldXml<V> {
   return { at: "inner", tag, name, codec }
+}
+
+export function attribute<V>(name: string, codec: AttributeCodec<V>): FieldXml<V> {
+  return { at: "inner", tag: null, name, codec }
 }
 
 export function whole<V>(codec: PartCodec<V>, inherit: Inherit | null = null): FieldXml<V> {
@@ -49,8 +54,16 @@ export const emu: AttributeCodec<number> = {
   },
 }
 
+export const angle: AttributeCodec<number> = { ...emu, absent: 0 }
+
+export const flag: AttributeCodec<boolean> = {
+  read: (text) => (text === "1" || text === "true" ? true : text === "0" || text === "false" ? false : null),
+  text: (value) => (value ? "1" : "0"),
+  absent: false,
+}
+
 type InnerWrite = {
-  readonly tag: string
+  readonly tag: string | null
   readonly name: string
   readonly text: string
   readonly shows: (text: string | null) => boolean
@@ -87,7 +100,8 @@ function childOf(
 
 function shownText(slot: Uint8Array | null, write: InnerWrite): string | null {
   if (slot === null) return null
-  return childOf(slot, write.tag).child?.attributes.find((attribute) => attribute.name === write.name)?.value ?? null
+  const held = write.tag === null ? childOf(slot, "").root : childOf(slot, write.tag).child
+  return held?.attributes.find((attribute) => attribute.name === write.name)?.value ?? null
 }
 
 function openTag(bytes: Uint8Array, element: MarkupElement): string {
@@ -128,6 +142,10 @@ function patchedSlot(slot: Uint8Array, writes: readonly InnerWrite[], order: rea
   let next = slot
   for (const tag of new Set(writes.map((write) => write.tag))) {
     const tagged = writes.filter((write) => write.tag === tag)
+    if (tag === null) {
+      next = spliceBytes(next, attributeEdits(childOf(next, "").root, tagged))
+      continue
+    }
     const { child } = childOf(next, tag)
     next = child === undefined ? childAdded(next, tag, tagged, order) : spliceBytes(next, attributeEdits(child, tagged))
   }
@@ -158,8 +176,9 @@ function writeSlot(
   const place = slotAt(bytes, at.shape, slot)
   const own = place.own === null ? null : bytes.subarray(place.own.start, place.own.end)
   const shown = own ?? inheritedSlot(parts, at, slot)
-  if (writes.every((write) => write.shows(shownText(shown, write)))) return parts
-  const patched = patchedSlot(shown ?? encodeUtf8(`<${place.tag}/>`), writes, order)
+  const needed = writes.filter((write) => !write.shows(shownText(shown, write)))
+  if (needed.length === 0) return parts
+  const patched = patchedSlot(shown ?? encodeUtf8(`<${place.tag}/>`), needed, order)
   let edit: ByteEdit
   if (place.own !== null) edit = { start: place.own.start, end: place.own.end, next: patched }
   else if (place.host === null) throw new Error(place.hostTag)
@@ -173,7 +192,10 @@ function innerWrite<V>(field: Extract<FieldXml<V>, { at: "inner" }>, value: V): 
     tag: field.tag,
     name: field.name,
     text: field.codec.text(value),
-    shows: (text) => text !== null && same(field.codec.read(text), value),
+    shows: (text) => {
+      const read = text === null ? (field.codec.absent ?? null) : field.codec.read(text)
+      return read !== null && same(read, value)
+    },
   }
 }
 
@@ -185,7 +207,9 @@ export function writeFields<T extends TraitName>(
 ): Parts {
   const fields = Object.entries(xml.fields) as [string, FieldXml<unknown>][]
   const edits = patch as Readonly<Record<string, FieldEdit<unknown> | undefined>>
-  const order = [...new Set(fields.flatMap(([, field]) => (field.at === "inner" ? [field.tag] : [])))]
+  const order = [
+    ...new Set(fields.flatMap(([, field]) => (field.at === "inner" && field.tag !== null ? [field.tag] : []))),
+  ]
   const writes: InnerWrite[] = []
   let next = parts
   for (const [name, field] of fields) {

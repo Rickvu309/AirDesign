@@ -1,5 +1,6 @@
 import {
   elementId,
+  type Box,
   mappedSlots,
   themeSlots,
   type Color,
@@ -172,7 +173,16 @@ function lineReads(
   ending("a:tailEnd", "line.tail", "type", "none")
 }
 
-function transformReads(owners: readonly Held[], reads: Partial<Record<DesignKey, Read<unknown>>>) {
+function placedBox(transform: Held): Box | undefined {
+  const offset = child(transform, "a:off")?.element
+  const extent = child(transform, "a:ext")?.element
+  if (offset === undefined || extent === undefined) return undefined
+  const [x, y, cx, cy] = [whole(offset, "x"), whole(offset, "y"), whole(extent, "cx"), whole(extent, "cy")]
+  if (x === undefined || y === undefined || cx === undefined || cy === undefined || cx < 0 || cy < 0) return undefined
+  return { x, y, cx, cy }
+}
+
+function transformReads(owners: readonly Held[], reads: Partial<Record<DesignKey, Read<unknown>>>): Box | undefined {
   const transforms = owners.flatMap((owner) => {
     if (!isShapeTag(owner.element.kind)) return []
     const tag = shapeTags[owner.element.kind].transform
@@ -181,11 +191,12 @@ function transformReads(owners: readonly Held[], reads: Partial<Record<DesignKey
     return found === undefined ? [] : [found]
   })
   const transform = transforms[0]
-  if (transform === undefined) return
+  if (transform === undefined) return undefined
   const rotation = whole(transform.element, "rot")
   if (rotation !== undefined && rotation !== 0) reads["box.rot"] = read(rotation, transform.source)
   if (flag(transform.element, "flipH") === true) reads["box.flipH"] = read(true, transform.source)
   if (flag(transform.element, "flipV") === true) reads["box.flipV"] = read(true, transform.source)
+  return transform.source === undefined ? undefined : placedBox(transform)
 }
 
 function bodyReads(owners: readonly Held[], reads: Partial<Record<DesignKey, Read<unknown>>>) {
@@ -383,7 +394,7 @@ export function readTraits(parts: ReadonlyMap<string, Uint8Array>): DeckTraits {
       const reads: Partial<Record<DesignKey, Read<unknown>>> = {}
       const kept: DesignKey[] = []
       shapeReads(owners, styles, reads, kept)
-      transformReads(owners, reads)
+      const placed = transformReads(owners, reads)
       bodyReads(owners, reads)
       textReads(owners, item.placeholder?.type ?? null, chain, fonts, reads)
       const type = item.placeholder?.type
@@ -397,6 +408,7 @@ export function readTraits(parts: ReadonlyMap<string, Uint8Array>): DeckTraits {
         ...(role === undefined ? {} : { role }),
         reads: reads as TraitReads,
         kept,
+        ...(placed === undefined ? {} : { placed }),
       })
     }
   }

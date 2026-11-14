@@ -1,4 +1,5 @@
 import { mappedSlots, themeSlots, type Color, type MappedSlot, type ThemeSlot } from "./color.js"
+import type { Box } from "./box.js"
 import { bytesOf } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
 
@@ -89,6 +90,7 @@ export type ElementRead = {
   readonly role?: Role
   readonly reads: TraitReads
   readonly kept: readonly DesignKey[]
+  readonly placed?: Box
 }
 
 function named<T extends string>(names: readonly T[], value: unknown): T | undefined {

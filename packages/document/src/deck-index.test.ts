@@ -142,6 +142,7 @@ describe("index format", () => {
     role: "title",
     design: { fill: ["accent1", "style"], "text.size": [36, "master"], "box.flipH": [true] },
     kept: ["geometry"],
+    placed: { x: 1, y: 2, cx: 3, cy: 4 },
   } as const
   const pictured = { ...second, role: "picture", design: { "line.width": [1, "style"] } } as const
   const resent = (offset: number, element: object, at = format): IndexPage => ({
@@ -153,7 +154,7 @@ describe("index format", () => {
     elements: [element as IndexElement],
   })
 
-  it("reads each element's role, design and kept fields, and the page's format and palettes", () => {
+  it("reads each element's role, design, kept and placed fields, and the page's format and palettes", () => {
     const read = readIndexPage(resent(0, titled))
     expect(read).toEqual(resent(0, titled))
     for (const element of [
@@ -165,6 +166,8 @@ describe("index format", () => {
       { ...titled, design: { fill: ["x".repeat(401)] } },
       { ...titled, kept: [] },
       { ...titled, kept: ["geometry", "geometry"] },
+      { ...titled, placed: { x: 1, y: 2, cx: -3, cy: 4 } },
+      { ...titled, placed: null },
     ])
       expect(readIndexPage(resent(0, element))).toBeNull()
     for (const changed of [
@@ -239,7 +242,7 @@ describe("index format", () => {
   })
 
   it("sends the index again when none is stored, it is incomplete, or its format is below this build's", () => {
-    expect(format).toBe(7)
+    expect(format).toBe(10)
     expect(indexDue(undefined)).toBe(true)
     const first = appendIndex(undefined, page)
     if (!first.ok) throw new Error(first.refusal)
@@ -255,11 +258,11 @@ describe("index format", () => {
 
   it("names every key the index stores, so a new key raises the index stamp", () => {
     expect({ stamp: stamps.index, keys: indexKeys }).toEqual({
-      stamp: 1,
+      stamp: 2,
       keys: {
         page: ["format", "once", "offset", "total", "palettes", "slides", "elements"],
         slide: ["id", "position", "size", "free", "animated", "layout", "palette"],
-        element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept"],
+        element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept", "placed"],
         design: designKeys,
         roles,
         sources,

@@ -38,6 +38,7 @@ export type IndexElement = {
   readonly role?: Role
   readonly design?: Design
   readonly kept?: readonly DesignKey[]
+  readonly placed?: Box
   readonly opening?: ElementPatch
 }
 export type IndexPage = {
@@ -62,7 +63,7 @@ export type DeckIndex = BuiltIndex & { readonly next?: BuiltIndex }
 export const indexKeys = {
   page: ["format", "once", "offset", "total", "palettes", "slides", "elements"],
   slide: ["id", "position", "size", "free", "animated", "layout", "palette"],
-  element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept"],
+  element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept", "placed"],
   design: designKeys,
   roles,
   sources,
@@ -146,15 +147,17 @@ function readSlide(raw: unknown, position: number, palettes: number): IndexSlide
 const elementKeys: readonly string[] = indexKeys.element
 const openingKeys = 5
 
-function readDerived(row: Record<string, unknown>): Pick<IndexElement, "role" | "design" | "kept"> | null {
+function readDerived(row: Record<string, unknown>): Pick<IndexElement, "role" | "design" | "kept" | "placed"> | null {
   const role = row.role === undefined ? undefined : readRole(row.role)
   const design = row.design === undefined ? undefined : readDesign(row.design)
   const kept = row.kept === undefined ? undefined : readKept(row.kept)
-  if (design === null || kept === null || (row.role !== undefined && role === undefined)) return null
+  const placed = row.placed === undefined ? undefined : readBox(row.placed)
+  if (design === null || kept === null || placed === null || (row.role !== undefined && role === undefined)) return null
   return {
     ...(role === undefined ? {} : { role }),
     ...(design === undefined ? {} : { design }),
     ...(kept === undefined ? {} : { kept }),
+    ...(placed === undefined ? {} : { placed }),
   }
 }
 

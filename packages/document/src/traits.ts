@@ -84,7 +84,9 @@ export function inheritable(trait: TraitName, field: string): boolean {
   return (traits[trait].inheritable as readonly string[]).includes(field)
 }
 
+const slotFields: Partial<Readonly<Record<TraitName, string>>> = { fill: "value", geometry: "shape" }
+
 export function keptRefuses(kept: readonly string[], trait: TraitName, field: string): boolean {
   if (kept.includes(`${trait}.${field}`)) return true
-  return kept.includes(trait) && !(traits[trait].inherits === "whole" && field === "value")
+  return kept.includes(trait) && slotFields[trait] !== field
 }

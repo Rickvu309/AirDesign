@@ -10,7 +10,16 @@ import {
   type TraitReads,
 } from "@airdesign/document"
 import { connect } from "@airdesign/live"
-import { readSlides, readTraits, shownFill, shownLine, themeSwatches, type DeckTraits } from "@airdesign/pptx"
+import {
+  readSlides,
+  readTraits,
+  shownFill,
+  shownGeometry,
+  shownLine,
+  shownTurn,
+  themeSwatches,
+  type DeckTraits,
+} from "@airdesign/pptx"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
@@ -54,13 +63,20 @@ function fieldsOf(parts: Parts, node: ElementId): PanelReads["fields"] {
   const { slide, shape } = shapeOf(node)
   const part = readSlides(parts).find((each) => each.slide === slide)?.part
   if (part === undefined) return {}
+  const at = { slide, part, shape }
   try {
-    const fill = shownFill(parts, { part, shape })
-    const line = Object.entries(shownLine(parts, { part, shape }) ?? {}).map(([field, shown]) => [
-      `line.${field}`,
-      shown,
-    ])
-    return { ...(fill === null ? {} : { "fill.value": fill }), ...Object.fromEntries(line) }
+    const fill = shownFill(parts, at)
+    const geometry = shownGeometry(parts, at)
+    const turn = shownTurn(parts, at)
+    const line = Object.entries(shownLine(parts, at) ?? {}).map(([field, shown]) => [`line.${field}`, shown])
+    return {
+      ...(fill === null ? {} : { "fill.value": fill }),
+      ...(geometry === null ? {} : { "geometry.shape": geometry }),
+      "box.rot": { value: turn.rot, own: true },
+      "box.flipH": { value: turn.flipH, own: true },
+      "box.flipV": { value: turn.flipV, own: true },
+      ...Object.fromEntries(line),
+    }
   } catch {
     return {}
   }

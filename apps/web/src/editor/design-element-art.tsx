@@ -42,6 +42,7 @@ export function DesignElementArt() {
         fields: {
           "fill.value": { value: { none: true }, own: false },
           "line.fill": { value: { none: true }, own: false },
+          "geometry.shape": { value: { preset: "rect", adjust: {} }, own: true },
         },
       })}
       kind="shape"

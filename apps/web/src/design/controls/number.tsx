@@ -8,12 +8,18 @@ function shownNumber(row: ControlProps["row"]): string {
   return String(agentNumberOf(row.desc.unit, row.value))
 }
 
-function stepOf(event: KeyboardEvent<HTMLInputElement>): number {
+function stepOf(event: KeyboardEvent<HTMLInputElement>, unit: number): number {
   if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return 0
-  return (event.key === "ArrowUp" ? 1 : -1) * (event.shiftKey ? 10 : 1)
+  return (event.key === "ArrowUp" ? 1 : -1) * (event.shiftKey ? 10 : 1) * unit
 }
 
-export function NumberField({ row, onChange, unit, kind }: ControlProps & { unit: string; kind: string }) {
+export function NumberField({
+  row,
+  onChange,
+  unit,
+  kind,
+  step = 1,
+}: ControlProps & { unit: string; kind: string; step?: number }) {
   const [draft, setDraft] = useState<string | null>(null)
   const shown = shownNumber(row)
 
@@ -28,11 +34,11 @@ export function NumberField({ row, onChange, unit, kind }: ControlProps & { unit
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Enter") commit(event.currentTarget.value)
     if (event.key === "Escape") setDraft(null)
-    const step = stepOf(event)
-    if (step === 0) return
+    const moved = stepOf(event, step)
+    if (moved === 0) return
     event.preventDefault()
     const from = Number(event.currentTarget.value.replace(",", "."))
-    commit(String((Number.isFinite(from) ? from : 0) + step))
+    commit(String((Number.isFinite(from) ? from : 0) + moved))
   }
 
   return (
