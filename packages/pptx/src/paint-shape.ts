@@ -4,6 +4,7 @@ import { paintAttribute, paintColor, type PaintFill, type PaintPalette } from ".
 import { paintChild, paintFill } from "./paint-fill.js"
 import type { MarkupChildren } from "./text-value-route.js"
 import type { PaintPicture } from "./paint-image.js"
+import { paintEffects, type PaintEffects } from "./paint-effects.js"
 
 export type PaintJoin = { kind: "round" | "bevel" | "miter"; limit?: number }
 
@@ -37,6 +38,7 @@ export type PaintStyles = {
   part: string
   fills: readonly MarkupElement[]
   lines: readonly MarkupElement[]
+  effects: readonly MarkupElement[]
 }
 
 export type ShapePaint = {
@@ -44,6 +46,7 @@ export type ShapePaint = {
   line: PaintLine | null
   geometry: string | null
   adjusts?: Readonly<Record<string, number>>
+  effects?: PaintEffects
 }
 
 const capKinds = ["rnd", "sq", "flat"]
@@ -215,6 +218,22 @@ export const paintShape = (
       ...(sizes.tailLength === null ? {} : { tailLength: sizes.tailLength }),
     }
   }
+  let effects: PaintEffects | undefined
+  let hasEffects = false
+  for (const source of sources) {
+    const properties = propertiesOf(source)
+    const list = paintChild(source.children, properties, "a:effectLst")
+    if (list !== undefined) effects = paintEffects(source.children, list, palette)
+    if (list !== undefined || paintChild(source.children, properties, "a:effectDag") !== undefined) {
+      hasEffects = true
+      break
+    }
+  }
+  if (!hasEffects && themeSource !== null) {
+    const style = styleOf("a:effectRef", styles?.effects ?? [])
+    const list = paintChild(themeSource.children, style?.element, "a:effectLst")
+    if (style !== null && list !== undefined) effects = paintEffects(themeSource.children, list, style.palette)
+  }
   let geometry: string | null = null
   const adjusts: Record<string, number> = {}
   for (const source of sources) {
@@ -238,5 +257,5 @@ export const paintShape = (
       break
     }
   }
-  return { fill, line, geometry, adjusts }
+  return { fill, line, geometry, adjusts, ...(effects === undefined ? {} : { effects }) }
 }
