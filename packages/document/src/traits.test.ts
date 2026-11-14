@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { kinds, kindTraits, type FieldKey } from "./index.js"
+import type { Alpha } from "./value-kind.js"
 import {
+  alphaKeys,
   fieldKeys,
   inheritable,
   keptRefuses,
@@ -23,8 +25,9 @@ export type Derived = [
   Expect<Same<FieldValue<"box", "flipH">, boolean>>,
   Expect<Same<FieldValue<"box", "w">, number>>,
   Expect<Same<TraitValue<"notes">, { readonly value: string }>>,
-  Expect<Same<FieldName<"fill">, "value">>,
-  Expect<Same<FieldName<"line">, "width" | "fill" | "dash" | "cap" | "compound" | "join" | "head" | "tail">>,
+  Expect<Same<FieldName<"fill">, "value" | "alpha">>,
+  Expect<Same<FieldValue<"fill", "alpha">, Alpha>>,
+  Expect<Same<FieldName<"line">, "width" | "fill" | "dash" | "cap" | "compound" | "join" | "head" | "tail" | "alpha">>,
   Expect<null extends WireAgent<"line", "width"> ? true : false>,
   Expect<"none" | "accent2" extends WireAgent<"line", "fill"> ? true : false>,
   Expect<null extends WireAgent<"fill", "value"> ? true : false>,
@@ -34,11 +37,12 @@ export type Derived = [
   Expect<"center" extends WireAgent<"box", "align"> ? true : false>,
   Expect<Same<WireAgent<"box", "x">, number>>,
   Expect<Same<WireAgent<"text", "value">, string>>,
-  Expect<Same<HasAlpha, false>>,
+  Expect<Same<HasAlpha, true>>,
   Expect<"table.value" extends FieldKey ? true : false>,
   Expect<"fill.value" extends FieldKey ? true : false>,
   Expect<"line.width" extends FieldKey ? true : false>,
-  Expect<"line.alpha" extends FieldKey ? false : true>,
+  Expect<"line.alpha" extends FieldKey ? true : false>,
+  Expect<Same<WireField<"line">, Exclude<FieldName<"line">, "alpha">>>,
 ]
 
 describe("the one table of traits", () => {
@@ -60,7 +64,7 @@ describe("the one table of traits", () => {
     })
   })
 
-  it("holds only the fields that are live: the box, the geometry, the fill, the line, and the text, notes and table values", () => {
+  it("holds only the fields that are live: the box, the geometry, the fill, the line, the text, notes and table values, and alpha", () => {
     expect(traitNames.flatMap(fieldKeys)).toEqual([
       "box.x",
       "box.y",
@@ -71,6 +75,7 @@ describe("the one table of traits", () => {
       "box.flipV",
       "geometry.shape",
       "fill.value",
+      "fill.alpha",
       "line.fill",
       "line.width",
       "line.dash",
@@ -79,10 +84,13 @@ describe("the one table of traits", () => {
       "line.join",
       "line.head",
       "line.tail",
+      "line.alpha",
       "text.value",
+      "text.alpha",
       "table.value",
       "notes.value",
     ])
+    expect(alphaKeys).toEqual(["fill.alpha", "line.alpha", "text.alpha"])
   })
 
   it("lets only a declared field go back to the value its layout, master or style gives", () => {

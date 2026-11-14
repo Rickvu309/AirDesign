@@ -1,4 +1,5 @@
 import {
+  alphaKeys,
   beforeOf,
   formatOne,
   landedPatch,
@@ -101,8 +102,16 @@ type Planned = {
 
 const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = { fill: "fill", line: "line", geometry: "shape" }
 
+function faded(row: Row): boolean {
+  const fields = Object.entries(row.patch).flatMap(([trait, edits]) =>
+    Object.keys(edits ?? {}).map((field) => `${trait}.${field}`),
+  )
+  return fields.length > 0 && fields.every((field) => (alphaKeys as readonly string[]).includes(field))
+}
+
 function rowName(node: ElementId, row: Row): UndoName {
   if (slideKind(node) === "slide") return "background"
+  if (faded(row)) return "opacity"
   const box = row.patch.box
   if (box?.rot !== undefined) return "rotate"
   if (box?.flipH !== undefined || box?.flipV !== undefined) return "flip"

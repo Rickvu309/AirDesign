@@ -171,3 +171,29 @@ export function sameColor(left: Color | null | undefined, right: Color | null | 
   if (left == null || right == null) return left == null && right == null
   return JSON.stringify(writtenColor(left)) === JSON.stringify(writtenColor(right))
 }
+
+export const opaque = 100_000
+
+const alphaOps: readonly string[] = ["alpha", "alphaMod", "alphaOff"]
+
+export function alphaOf(color: Color): number {
+  let alpha = opaque
+  for (const transform of color.transforms ?? []) {
+    if (!("val" in transform)) continue
+    if (transform.op === "alpha") alpha = transform.val
+    else if (transform.op === "alphaMod") alpha = (alpha * transform.val) / opaque
+    else if (transform.op === "alphaOff") alpha += transform.val
+  }
+  return Math.min(opaque, Math.max(0, Math.round(alpha)))
+}
+
+export function namesAlpha(colors: readonly Color[]): boolean {
+  return colors.some((color) => (color.transforms ?? []).some((transform) => alphaOps.includes(transform.op)))
+}
+
+export function fadedColor(color: Color, alpha: number): Color {
+  const kept = (color.transforms ?? []).filter((transform) => !alphaOps.includes(transform.op))
+  const transforms = alpha >= opaque ? kept : [...kept, { op: "alpha" as const, val: alpha }]
+  const base = writtenBase(color)
+  return transforms.length === 0 ? base : { ...base, transforms }
+}

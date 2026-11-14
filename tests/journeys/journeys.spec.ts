@@ -49,6 +49,7 @@ for (const name of [
   "shape-fill",
   "line-style",
   "shape-geometry",
+  "opacity",
   "commit-once",
   "deck-list-trash",
   "deck-stars",

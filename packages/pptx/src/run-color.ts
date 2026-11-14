@@ -40,10 +40,13 @@ function slot(root: MarkupElement, children: readonly MarkupElement[], tag: stri
 }
 
 export function paintRunColor(slice: Uint8Array, color: Color): Uint8Array {
+  return withRunFill(slice, encodeUtf8(solidFillXml(color)))
+}
+
+export function withRunFill(slice: Uint8Array, xml: Uint8Array): Uint8Array {
   const found = rootOf(slice)
   if (found === null) return slice
   const { root, children } = found
-  const xml = encodeUtf8(solidFillXml(color))
   const fills = children.filter((child) => fillKinds.has(child.kind))
   const first = fills[0]
   if (first !== undefined) {

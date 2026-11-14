@@ -41,3 +41,42 @@ it("names the line's own color apart from the fill's, so each swatch group has i
   if (solid === undefined) throw new Error("solid")
   expect(partRow(fill, "solid", solid, { scheme: "accent1" }).label).toBe("Line color")
 })
+
+const shape: ScopedElement = {
+  node: elementId("258.2"),
+  facts: { kind: "shape", text: true, grouped: false, animated: false },
+  kept: [],
+  value: "Hello",
+  box: { x: 0, y: 0, cx: 914_400, cy: 914_400 },
+}
+
+function opacityOf(view: ScopedElement, fields: Readonly<Record<string, unknown>>) {
+  const shown = Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, { value, own: true }]))
+  const panel = panelOf(view, { reads: {}, moves: true, fields: shown })
+  return panel.sections.find((section) => section.trait === "opacity")?.rows[0]
+}
+
+it("shows one Opacity just before the fill, line and text it fades together", () => {
+  const panel = panelOf(shape, { reads: {}, moves: true, fields: {} })
+  expect(panel.sections.map((section) => section.trait)).toEqual(["box", "geometry", "opacity", "fill", "line", "text"])
+  const row = opacityOf(shape, { "fill.alpha": 60_000, "line.alpha": 60_000, "text.alpha": 60_000 })
+  expect(row).toMatchObject({ label: "Opacity", control: "percent", value: 60_000, mixed: false, reset: null })
+  expect(row?.change(25_000)).toEqual({ target: { node: "258.2" }, opacity: 25_000 })
+})
+
+it("shows Mixed when the alphas differ, and full opacity when nothing shows a colour", () => {
+  expect(opacityOf(shape, { "fill.alpha": 60_000, "line.alpha": 30_000 })).toMatchObject({ mixed: true })
+  expect(opacityOf(shape, { "fill.alpha": "mixed", "line.alpha": null })).toMatchObject({ mixed: true })
+  expect(opacityOf(shape, { "fill.alpha": 40_000, "line.alpha": null, "text.alpha": null })).toMatchObject({
+    value: 40_000,
+    mixed: false,
+  })
+  expect(opacityOf(shape, {})).toMatchObject({ value: 100_000, mixed: false })
+  expect(opacityOf(connector, { "fill.alpha": 10_000, "line.alpha": 50_000 })).toMatchObject({ value: 50_000 })
+})
+
+it("offers no Opacity on a group, or on a shape whose fill the index keeps", () => {
+  const group = { ...shape, facts: { ...shape.facts, kind: "group" as const } }
+  expect(opacityOf(group, {})).toBeUndefined()
+  expect(opacityOf({ ...shape, kept: ["fill"] }, {})).toBeUndefined()
+})

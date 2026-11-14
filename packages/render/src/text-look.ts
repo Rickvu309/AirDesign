@@ -193,7 +193,7 @@ function hundredths(style: CanvasRunStyle): number | null {
 
 function cssHex(color: string | null): string | null {
   if (color === null) return null
-  const hex = /^#([\da-f]{6})$/i.exec(color)?.[1]
+  const hex = /^#([\da-f]{6})(?:[\da-f]{2})?$/i.exec(color)?.[1]
   if (hex !== undefined) return hex.toUpperCase()
   const rgb = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/.exec(color)
   if (rgb === null) return null
@@ -213,9 +213,15 @@ function schemeOf(style: CanvasRunStyle, colors: readonly CanvasThemeColor[]): C
 
 function paintedColor(color: Color, colors: readonly CanvasThemeColor[], file: string | null): string | null {
   if ((color.transforms?.length ?? 0) > 0) return file
-  if ("rgb" in color) return `#${color.rgb}`
-  if ("scheme" in color) return colors.find((swatch) => swatch.scheme === color.scheme)?.css ?? file
-  return file
+  const css =
+    "rgb" in color
+      ? `#${color.rgb}`
+      : "scheme" in color
+        ? colors.find((swatch) => swatch.scheme === color.scheme)?.css
+        : undefined
+  if (css === undefined) return file
+  const alpha = file === null ? undefined : /^#[\da-f]{6}([\da-f]{2})$/i.exec(file)?.[1]
+  return alpha === undefined || !/^#[\da-f]{6}$/i.test(css) ? css : `${css}${alpha}`
 }
 
 function formatted(style: CanvasRunStyle, format: RunPaint, colors: readonly CanvasThemeColor[]): CanvasRunStyle {

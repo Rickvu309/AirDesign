@@ -1,10 +1,8 @@
-import { readAgent, readSetChange, traitWire } from "@airdesign/catalog"
+import { readAgent, traitWire } from "@airdesign/catalog"
 import {
-  decide,
   format,
   formatOne,
   inheritable,
-  openRegister,
   planChange,
   registerScope,
   rowOf,
@@ -15,11 +13,11 @@ import {
   traits,
   undoOf,
   writeTableValue,
+  type AlphaField,
   type Command,
   type Desc,
   type FieldName,
   type FieldValue,
-  type IndexElement,
   type InheritableField,
   type Kind,
   type Register,
@@ -27,33 +25,32 @@ import {
   type TraitName,
   type Value,
 } from "@airdesign/document"
-import {
-  exportParts,
-  indexPackage,
-  paintReader,
-  readNotes,
-  readPackage,
-  readSlides,
-  readTable,
-  shownFill,
-  shownLine,
-  shownGeometry,
-  shownTurn,
-} from "@airdesign/pptx"
+import { exportParts, readNotes, readTable, shownFill, shownGeometry, shownLine, shownTurn } from "@airdesign/pptx"
 import { beforeAll, describe, expect, it } from "vitest"
 import { optionCopy } from "./copy/option-copy"
 import { panelOf } from "./design/panel"
 import { traitControls } from "./design/trait-controls"
 import { ensureMarkup } from "./markup"
-
-type Parts = ReadonlyMap<string, Uint8Array>
-
-type At = { readonly node: IndexElement["node"]; readonly slide: string; readonly part: string; readonly shape: string }
+import {
+  agentRegister,
+  deckParts,
+  element,
+  indexed,
+  judgedCases,
+  landed,
+  painted,
+  placed,
+  sameParts,
+  type At,
+  type Parts,
+} from "./parity-probe"
 
 type FieldProbe<T extends TraitName, F extends FieldName<T>> = {
   readonly file: (parts: Parts, at: At) => unknown
   readonly shows: (value: FieldValue<T, F>) => unknown
 } & (F extends InheritableField<T> ? { readonly inherited: (parts: Parts, at: At) => boolean } : unknown)
+
+type Shown<T extends TraitName> = Exclude<FieldName<T>, AlphaField<T>>
 
 type Probe<T extends TraitName> = [FieldName<T>] extends [never]
   ? { readonly fields: Readonly<Record<never, never>> }
@@ -62,19 +59,13 @@ type Probe<T extends TraitName> = [FieldName<T>] extends [never]
       readonly kind: Kind
       readonly node?: string
       readonly opening: (parts: Parts, at: At) => Value
-      readonly edit: (opening: Value, field: FieldName<T>, value: FieldValue<T, FieldName<T>>) => Value
-      readonly fields: { readonly [F in FieldName<T>]-?: FieldProbe<T, F> }
+      readonly edit: (opening: Value, field: Shown<T>, value: FieldValue<T, Shown<T>>) => Value
+      readonly fields: { readonly [F in Shown<T>]-?: FieldProbe<T, F> }
     }
 
 type Layer = "change" | "wire" | "control" | "round-trip" | "paint-change" | "undo" | "inherit" | "pptx-case"
 
 type Problem = { readonly field: string; readonly missing: Layer } | { readonly word: string; readonly missing: "copy" }
-
-type Case = { readonly covers?: readonly string[] }
-
-const cases = Object.values(
-  import.meta.glob<Case>("../../../scripts/pptx-cases/*.mjs", { import: "default", eager: true }),
-)
 
 const lineOpening = {
   fill: "opening",
@@ -99,10 +90,6 @@ const boxOpening = {
 
 function words(text: TextValue): string {
   return text.map((paragraph) => paragraph.runs.map((run) => run.text).join("")).join("\n")
-}
-
-function element(parts: Parts, at: At): IndexElement | undefined {
-  return indexPackage(parts).elements.find((each) => each.node === at.node)
 }
 
 function grid(parts: Parts, at: At): readonly (readonly string[])[] | undefined {
@@ -259,54 +246,6 @@ function optionWords(desc: Desc): readonly string[] {
   }
 }
 
-async function deckParts(name: string): Promise<Parts> {
-  const fsName = "node:fs/promises"
-  const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
-  const read = await readPackage(await fs.readFile(new URL(`../../../scripts/pptx-fixtures/${name}`, import.meta.url)))
-  if (!read.ok) throw new Error(read.reason)
-  return read.parts
-}
-
-function indexed(parts: Parts): Register {
-  const index = indexPackage(parts)
-  return { ...openRegister("", "clean"), index: { ...index, total: index.elements.length, pages: [] } }
-}
-
-function landed(register: Register, commands: readonly Command[]): Register | null {
-  let current = register
-  for (const command of commands) {
-    const decision = decide(current, command)
-    if (decision.decision === "refuse") return null
-    current = decision.register
-  }
-  return current
-}
-
-function placed(parts: Parts, kind: Kind, node?: string): At {
-  const found = indexPackage(parts).elements.find(
-    (each) => each.kind === kind && !each.grouped && (node === undefined || each.node === node),
-  )
-  if (found === undefined) throw new Error(kind)
-  const [slide = "", shape = ""] = found.node.split(".")
-  const part = readSlides(parts).find((each) => each.slide === slide)?.part ?? ""
-  return { node: found.node, slide, part, shape }
-}
-
-function agentRegister(register: Register, at: At, example: object): Register | null {
-  const read = readSetChange({ op: "set", target: at.node, ...example })
-  if (!read.ok) return null
-  const opened = landed(register, [
-    { command: "add", node: at.node, floor: "", route: "clean" },
-    { command: "start", runId: "parity", node: at.node },
-  ])
-  const planned = opened === null ? null : planChange(read.change, registerScope(opened))
-  if (opened === null || planned === null || !planned.ok) return null
-  return landed(
-    opened,
-    planned.rows.map(({ node, row }) => ({ command: "agent", runId: "parity", readAt: 0, node, ...row })),
-  )
-}
-
 function panelRegister(register: Register, at: At, trait: TraitName, field: string, value: unknown): Register | null {
   const scope = registerScope(register)
   const view = scope.view(at.node)
@@ -320,19 +259,6 @@ function panelRegister(register: Register, at: At, trait: TraitName, field: stri
   )
   const opened = landed(register, [{ command: "add", node: at.node, floor: "", route: "clean" }])
   return commands.length === 0 || opened === null ? null : landed(opened, commands)
-}
-
-function painted(parts: Parts, at: At): string {
-  const drawn = paintReader(parts).slide(at.part).elements
-  return JSON.stringify(drawn.filter((each) => each.from === "slide" && each.shape === at.shape))
-}
-
-function sameParts(left: Parts, right: Parts): boolean {
-  if (left.size !== right.size) return false
-  return [...left].every(([name, bytes]) => {
-    const other = right.get(name)
-    return other !== undefined && other.length === bytes.length && other.every((byte, at) => byte === bytes[at])
-  })
 }
 
 function same(left: unknown, right: unknown): boolean {
@@ -410,7 +336,7 @@ async function fieldProblems(
     if (shape?.inherited === undefined || !shape.inherited(back, at) || shape.inherited(parts, at))
       problems.push({ field: key, missing: "inherit" })
   }
-  if (!cases.some((each) => each.covers?.includes(key))) problems.push({ field: key, missing: "pptx-case" })
+  if (!judgedCases.some((each) => each.covers?.includes(key))) problems.push({ field: key, missing: "pptx-case" })
   return problems
 }
 
@@ -441,7 +367,9 @@ async function inputProblems(
 
 function copyProblems(trait: TraitName, controls: Partial<LooseControls>, wire: Partial<LooseWire>): Problem[] {
   const fields = [
-    ...Object.entries(traits[trait].fields as Readonly<Record<string, { readonly desc: Desc }>>),
+    ...Object.entries(traits[trait].fields as Readonly<Record<string, { readonly desc: Desc }>>).filter(
+      ([field]) => !alphaField(trait, field),
+    ),
     ...Object.entries(traits[trait].inputs as Readonly<Record<string, { readonly desc: Desc }>>),
   ]
   const wanted = [
@@ -459,6 +387,10 @@ function copyProblems(trait: TraitName, controls: Partial<LooseControls>, wire: 
     .map(([word]) => ({ word: word ?? "", missing: "copy" }))
 }
 
+function alphaField(trait: TraitName, field: string): boolean {
+  return (traits[trait].fields as Readonly<Record<string, { readonly desc: Desc }>>)[field]?.desc.kind === "alpha"
+}
+
 async function parityProblems(): Promise<readonly Problem[]> {
   const problems: Problem[] = []
   for (const trait of traitNames) {
@@ -467,7 +399,7 @@ async function parityProblems(): Promise<readonly Problem[]> {
     const wire = traitWire[trait] as Partial<LooseWire>
     problems.push(...copyProblems(trait, traitControls[trait] as Partial<LooseControls>, wire))
     for (const field of Object.keys(traits[trait].fields))
-      problems.push(...(await fieldProblems(trait, field, probe, wire)))
+      if (!alphaField(trait, field)) problems.push(...(await fieldProblems(trait, field, probe, wire)))
     for (const input of Object.keys(traits[trait].inputs))
       problems.push(...(await inputProblems(trait, input, probe, wire)))
   }

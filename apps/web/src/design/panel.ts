@@ -1,4 +1,5 @@
 import {
+  alphaKeys,
   inheritable,
   keptRefuses,
   readTextValue,
@@ -17,6 +18,7 @@ import {
 } from "@airdesign/document"
 import type { ReactNode } from "react"
 import { optionWord } from "@/copy/option-copy"
+import { opacitySection } from "./opacity-row"
 import { traitControls } from "./trait-controls"
 
 export const controlKinds = [
@@ -73,8 +75,10 @@ export function controlOf(desc: Desc): ControlKind {
   }
 }
 
+export type SectionName = TraitName | "opacity"
+
 export type PanelRow = {
-  readonly trait: TraitName
+  readonly trait: SectionName
   readonly field: string
   readonly label: string
   readonly control: ControlKind
@@ -112,7 +116,7 @@ export function partRow(row: PanelRow, name: string, desc: Desc, value: unknown)
   }
 }
 
-export type PanelSection = { readonly trait: TraitName; readonly label: string; readonly rows: readonly PanelRow[] }
+export type PanelSection = { readonly trait: SectionName; readonly label: string; readonly rows: readonly PanelRow[] }
 
 export type PanelModel = { readonly node: ElementId; readonly sections: readonly PanelSection[] }
 
@@ -216,5 +220,9 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     const visible = lineless(trait, rows) ? rows.filter((row) => row.field === "fill") : rows
     return visible.length === 0 ? [] : [{ trait, label: labels.section ?? "", rows: visible }]
   })
-  return { node: view.node, sections }
+  const opacity = opacitySection(view, shown)
+  if (opacity === null) return { node: view.node, sections }
+  const faded = new Set(alphaKeys.map((key) => key.split(".")[0]))
+  const at = sections.findIndex((section) => faded.has(section.trait))
+  return { node: view.node, sections: sections.toSpliced(at < 0 ? sections.length : at, 0, opacity) }
 }

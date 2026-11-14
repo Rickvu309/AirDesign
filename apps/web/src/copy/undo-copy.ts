@@ -23,6 +23,7 @@ export type UndoName =
   | "shape"
   | "rotate"
   | "flip"
+  | "opacity"
   | "add-row"
   | "delete-row"
   | "add-column"
@@ -56,6 +57,7 @@ export const undoCopy = {
     shape: "Undo shape",
     rotate: "Undo rotate",
     flip: "Undo flip",
+    opacity: "Undo opacity",
     "add-row": "Undo add row",
     "delete-row": "Undo delete row",
     "add-column": "Undo add column",
@@ -86,6 +88,7 @@ export const undoCopy = {
     shape: "Redo shape",
     rotate: "Redo rotate",
     flip: "Redo flip",
+    opacity: "Redo opacity",
     "add-row": "Redo add row",
     "delete-row": "Redo delete row",
     "add-column": "Redo add column",

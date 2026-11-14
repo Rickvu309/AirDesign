@@ -1,10 +1,10 @@
 import { trait } from "./trait-decl.js"
-import { choice, color, custom, flag, typeSize } from "./value-kind.js"
+import { alphaOver, choice, color, custom, flag, typeSize } from "./value-kind.js"
 
 export const text = trait(
   "run",
-  { version: 0, shape: "7bd8d0c1" },
-  { value: custom<string, string>("text") },
+  { version: 1, shape: "aaea7ede" },
+  { value: custom<string, string>("text"), alpha: alphaOver("value") },
   {
     color,
     size: typeSize,

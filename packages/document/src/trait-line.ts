@@ -1,6 +1,6 @@
 import { trait, type NoInputs } from "./trait-decl.js"
 import { fillCases } from "./trait-fill.js"
-import { choice, record, sizeUpTo, union } from "./value-kind.js"
+import { alphaOver, choice, record, sizeUpTo, union } from "./value-kind.js"
 
 export const dashPresets = [
   "solid",
@@ -36,7 +36,7 @@ const noInputs: NoInputs = {}
 
 export const line = trait(
   "field",
-  { version: 1, shape: "118c2fdf" },
+  { version: 2, shape: "db2c2c2c" },
   {
     fill: union(fillCases, "solid"),
     width: sizeUpTo(widestLine),
@@ -46,6 +46,7 @@ export const line = trait(
     join: choice(lineJoins),
     head: arrow,
     tail: arrow,
+    alpha: alphaOver("fill"),
   },
   noInputs,
   ["fill", "width", "dash", "cap", "compound", "join", "head", "tail"],

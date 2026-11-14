@@ -1,11 +1,13 @@
 import { traitWire, type AgentChange, type WireSet } from "@airdesign/catalog"
 import {
   agentTakes,
+  alphaKeys,
   boxOnly,
   editMissing,
   kindTraits,
   writtenField,
   namedFields,
+  opacityFields,
   openingElement,
   planChange,
   registerScope,
@@ -103,7 +105,8 @@ function setLines(register: Register, change: WireSet, at: number): readonly str
   return nodes.flatMap((node) => {
     const view = scope.view(node)
     if (view === undefined) return []
-    const missing = namedFields(change).filter((field) => !agentTakes(view.facts).includes(field))
+    const faded = change.opacity !== undefined && opacityFields(view.facts).length === 0 ? alphaKeys : []
+    const missing = [...namedFields(change).filter((field) => !agentTakes(view.facts).includes(field)), ...faded]
     if (missing.length === 0 || (view.facts.grouped && boxOnly(missing))) return []
     const found = { facts: view.facts, missing, box: openingElement(register, node)?.box ?? null }
     return [`Change ${String(at + 1)} (${node}): ${kindSentence(node, found)}`]
@@ -169,6 +172,7 @@ function traitWords(kind: Kind): string | undefined {
     const fields = Object.keys(traitWire[trait].fields).filter((field) => taken.includes(writtenField(trait, field)))
     return fields.length === 0 ? [] : [`${trait} (${fields.join(", ")})`]
   })
+  if (opacityFields({ kind, text: true, grouped: false, animated: false }).length > 0) traits.push("opacity")
   const last = traits.at(-1)
   if (last === undefined) return undefined
   return traits.length === 1 ? last : `${traits.slice(0, -1).join(", ")} and ${last}`
@@ -179,6 +183,7 @@ export function kindInstructions(): string {
     'airdesign_edit_deck sets fields with { "op": "set", "target": ..., "<trait>": { "<field>": value } }. The target is an element id, <slide> for the slide itself, whose fill is its background, <slide>.<role> for the element with that role on one slide, or *.<role> for it on every slide. One call lands on every element it names, or on none.',
     "What each kind of element takes:",
     ...instructedKinds.map(([kind, named]) => `${named} takes ${traitWords(kind) ?? "no field yet"}.`),
+    'opacity sits beside the target, { "op": "set", "target": ..., "opacity": 60 }, in percent from 0, invisible, to 100, solid. It fades the element\'s fill, line and text together.',
     "An element inside a group takes no box, and a shape that holds no text takes no text. Any other field cannot be set yet.",
   ].join("\n")
 }
