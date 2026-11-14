@@ -1,11 +1,11 @@
-import { execFile, spawn } from "node:child_process"
+import { execFile } from "node:child_process"
 import { createHash } from "node:crypto"
 import fs from "node:fs"
-import net from "node:net"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { chromium } from "@playwright/test"
+import { browserCookies } from "../.agents/skills/verify-airdesign/bin/browser-cookies.mjs"
 import { PNG } from "pngjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 import { chosenSlides, compareSmall, fidelityLines, paintSize, reported, scaleDown } from "./paint-fidelity.mjs"
@@ -66,28 +66,8 @@ const runKeepingPixels = async (command, args) => {
 
 const renderWithPixels = (file) => renderPages(file, { soffice, pdftoppm, run: runKeepingPixels })
 
-const freePort = () =>
-  new Promise((resolve, reject) => {
-    const probe = net.createServer()
-    probe.once("error", reject)
-    probe.listen(0, "127.0.0.1", () => {
-      const { port } = probe.address()
-      probe.close(() => resolve(port))
-    })
-  })
-
-const answered = async (origin) => {
-  const giveUp = Date.now() + paintLimit
-  while (Date.now() < giveUp) {
-    const up = await fetch(origin).then(
-      (response) => response.ok,
-      () => false,
-    )
-    if (up) return
-    await new Promise((resolve) => setTimeout(resolve, 250))
-  }
-  throw new Error(`${origin} did not answer`)
-}
+const verify = path.join(root, ".agents/skills/verify-airdesign/bin/verify-airdesign.mjs")
+const lastJson = (text) => JSON.parse(text.trim().split("\n").at(-1))
 
 const opened = async (page, file) => {
   await page.goto("/")
@@ -120,9 +100,10 @@ const paintedSlide = async (page, number, aspect) => {
   return PNG.sync.read(await slide.screenshot({ animations: "disabled" }))
 }
 
-const compareDeck = async ({ browser, origin, name, hashes, rows, skipped }) => {
+const compareDeck = async ({ browser, origin, cookies, name, hashes, rows, skipped }) => {
   const context = await browser.newContext({ baseURL: origin, viewport, reducedMotion: "reduce" })
   try {
+    await context.addCookies(cookies)
     const page = await context.newPage()
     page.setDefaultTimeout(paintLimit)
     await opened(page, path.join(corpus, name))
@@ -179,7 +160,7 @@ const say = (line) => console.log(line)
 let names = process.argv.slice(2)
 const rows = []
 const skipped = []
-let server
+let stack
 let browser
 
 await reported({
@@ -188,28 +169,18 @@ await reported({
   work: async () => {
     if (names.length === 0) names = readCorpus(root).map((deck) => deck.name)
     await takeMachineLock({ job: "paint-fidelity" })
-    await run("pnpm", ["--filter", "web", "build"])
     const pages = await renderDecks({ names, skipped, say })
-    const port = await freePort()
-    const origin = `http://127.0.0.1:${port}`
-    server = spawn(
-      "pnpm",
-      ["--filter", "web", "exec", "vite", "preview", "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
-      { cwd: root, stdio: "ignore", detached: true },
-    )
-    await answered(origin)
+    stack = lastJson(await run("node", [verify, "launch"]))
+    const signedIn = lastJson(await run("node", [verify, "sign-in", stack.run]))
+    const cookies = browserCookies([signedIn.cookie])
     browser = await chromium.launch()
-    for (const [name, hashes] of pages) await compareDeck({ browser, origin, name, hashes, rows, skipped })
+    for (const [name, hashes] of pages)
+      await compareDeck({ browser, origin: stack.origin, cookies, name, hashes, rows, skipped })
   },
 })
 
 for (const line of fidelityLines({ rows, skipped, decks: names.length })) say(line)
 await browser?.close().catch(() => undefined)
-if (server?.pid !== undefined) {
-  try {
-    process.kill(-server.pid)
-  } catch {
-    say("paint-fidelity server was already gone")
-  }
-}
+if (stack !== undefined)
+  await run("node", [verify, "stop", stack.run]).catch(() => say("paint-fidelity stack was already gone"))
 process.exit(0)
