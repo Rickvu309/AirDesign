@@ -5,7 +5,7 @@ import { orderKeyBetween } from "./order-key.js"
 import { elementGone } from "./element-order.js"
 import { elementStacks } from "./element-stack.js"
 import { orderKeyAfter, presentSlides, type SlideCommand } from "./slide-order.js"
-import { redoOf, redoSteps, slideUndoable, undoOf, undoSlides, undoSteps, type Undoable } from "./person-undo.js"
+import { redoOf, slideUndoable, undoOf, undoSlides, type Undoable } from "./person-undo.js"
 
 const file = [slideId("256"), slideId("257"), slideId("258")] as const
 const node = elementId("256.2")
@@ -35,7 +35,7 @@ function shownBox(register: Register) {
 
 function turned(register: Register, turn: ReturnType<typeof undoOf>): Register {
   if (!turn.ok) throw new Error("changed")
-  return landed(register, turn.command)
+  return turn.commands.reduce(landed, register)
 }
 
 function slid(register: Register, edit: SlideCommand): { register: Register; undoable: Undoable } {
@@ -48,15 +48,15 @@ function order(register: Register): readonly string[] {
   return presentSlides(register).map((spot) => spot.id)
 }
 
-const textEdit: Undoable = { node, floor: "Old", before: { value: "Old" }, after: { value: "New" } }
+const textEdit: Undoable = {
+  steps: [{ node, before: { text: { value: { set: "Old" } } }, after: { text: { value: { set: "New" } } } }],
+}
 const from = { x: 0, y: 0, cx: 10, cy: 10 }
 const to = { x: 5, y: 5, cx: 10, cy: 10 }
-const boxEdit: Undoable = {
-  node,
-  floor: "Old",
-  before: { property: "box", value: from },
-  after: { property: "box", value: to },
-}
+const boxOf = (box: typeof from) => ({
+  box: { x: { set: box.x }, y: { set: box.y }, w: { set: box.cx }, h: { set: box.cy } },
+})
+const boxEdit: Undoable = { steps: [{ node, before: boxOf(from), after: boxOf(to) }] }
 
 describe("person undo", () => {
   it("undoes a text edit with a person edit back to the text before, and redoes it", () => {
@@ -255,12 +255,33 @@ describe("person undo", () => {
     const opening = landed(openRegister("", ""), { command: "add", node: notes, floor: "Say hello", route: "" })
     const edited = landed(opening, { command: "person", value: "Say goodbye", node: notes })
     const undoable: Undoable = {
-      node: notes,
-      floor: "Say hello",
-      before: { value: "Say hello" },
-      after: { value: "Say goodbye" },
+      steps: [
+        {
+          node: notes,
+          before: { notes: { value: { set: "Say hello" } } },
+          after: { notes: { value: { set: "Say goodbye" } } },
+        },
+      ],
     }
     expect(currentValue(turned(edited, undoOf(edited, undoable)).elements[notes]!)).toBe("Say hello")
+  })
+
+  it("undoes a table edit by the trait its step names, on a register that has no index", () => {
+    const table = elementId("256.4")
+    const cells = (text: string) =>
+      JSON.stringify({ rows: [{ from: 0, cells: [[{ from: 0, runs: [{ from: -1, text }] }]] }] })
+    const opening = landed(openRegister("", ""), { command: "add", node: table, floor: "", route: "" })
+    const edited = landed(opening, { command: "person", value: cells("North"), node: table })
+    const undoable: Undoable = {
+      steps: [
+        {
+          node: table,
+          before: { table: { value: { set: cells("") } } },
+          after: { table: { value: { set: cells("North") } } },
+        },
+      ],
+    }
+    expect(currentValue(turned(edited, undoOf(edited, undoable)).elements[table]!)).toBe(cells(""))
   })
 
   it("gives no undoable for a slide edit the register refuses", () => {
@@ -357,11 +378,6 @@ describe("person undo per trait field", () => {
     })
   }
 
-  function stepped(register: Register, turn: ReturnType<typeof undoSteps>): Register {
-    if (!turn.ok) throw new Error("changed")
-    return turn.commands.reduce(landed, register)
-  }
-
   it("undoes the person's text while an agent's later move shows, and keeps the move", () => {
     const edited = landed(opened(), { command: "person", value: "New", node })
     const started = landed(edited, { command: "start", runId: run, node })
@@ -372,21 +388,43 @@ describe("person undo per trait field", () => {
   })
 
   it("turns a step on two elements back on both, and forward again", () => {
-    const steps = [step(node), step(other)]
-    const undone = stepped(both(), undoSteps(both(), steps))
+    const steps = { steps: [step(node), step(other)] }
+    const undone = turned(both(), undoOf(both(), steps))
     expect([shownText(undone), currentValue(undone.elements[other]!)]).toEqual(["Old", "Old"])
-    const redone = stepped(undone, redoSteps(undone, steps))
+    const redone = turned(undone, redoOf(undone, steps))
     expect([shownText(redone), currentValue(redone.elements[other]!)]).toEqual(["New", "New"])
   })
 
   it("turns no element of a step back once one of them no longer shows the step", () => {
     const changed = landed(both(), { command: "person", value: "Other", node: other })
-    expect(undoSteps(changed, [step(node), step(other)])).toEqual({ ok: false })
-    expect(undoSteps(changed, [step(other), step(node)])).toEqual({ ok: false })
+    expect(undoOf(changed, { steps: [step(node), step(other)] })).toEqual({ ok: false })
+    expect(undoOf(changed, { steps: [step(other), step(node)] })).toEqual({ ok: false })
   })
 
   it("turns nothing back that the rows of format 1 cannot store", () => {
     const opening = { node, before: { text: { value: "opening" as const } }, after: step(node).after }
-    expect(undoSteps(both(), [opening])).toEqual({ ok: false })
+    expect(undoOf(both(), { steps: [opening] })).toEqual({ ok: false })
+  })
+
+  it("turns a move and a text edit of one element back in one step", () => {
+    const moved = landed(landed(opened(), { command: "person", value: "New", node }), {
+      command: "person",
+      property: "box",
+      value: to,
+      node,
+    })
+    const both = {
+      steps: [
+        {
+          node,
+          before: { ...boxOf(from), text: { value: { set: "Old" } } },
+          after: { ...boxOf(to), text: { value: { set: "New" } } },
+        },
+      ],
+    }
+    const undone = turned(moved, undoOf(moved, both))
+    expect([shownText(undone), shownBox(undone)]).toEqual(["Old", from])
+    const redone = turned(undone, redoOf(undone, both))
+    expect([shownText(redone), shownBox(redone)]).toEqual(["New", to])
   })
 })

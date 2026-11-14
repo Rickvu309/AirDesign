@@ -77,11 +77,11 @@ describe("slide background", () => {
     const painted = set(opened, edit)
     const undo = undoOf(painted, undoable)
     if (!undo.ok) throw new Error("changed")
-    const undone = landed(painted, undo.command)
+    const undone = undo.commands.reduce(landed, painted)
     expect(backgroundOf(undone, first)).toBeNull()
     const redo = redoOf(undone, undoable)
     if (!redo.ok) throw new Error("changed")
-    expect(backgroundOf(landed(undone, redo.command), first)).toEqual(accent)
+    expect(backgroundOf(redo.commands.reduce(landed, undone), first)).toEqual(accent)
   })
 
   it("leaves a colour someone changed after the edit", () => {

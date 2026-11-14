@@ -2,7 +2,9 @@ import {
   redoOf,
   undoOf,
   type Box,
+  type Command,
   type ElementId,
+  type NodeStep,
   type Register,
   type SlideCommand,
   type SlideId,
@@ -52,14 +54,23 @@ export function recordsInFlight(): RecordsInFlight {
 
 const kept = 100
 
+function onlyStep(undoable: Undoable): NodeStep | undefined {
+  return "steps" in undoable && undoable.steps.length === 1 ? undoable.steps[0] : undefined
+}
+
 function joined(top: UndoEntry | undefined, entry: UndoEntry): UndoEntry | null {
   if (top === undefined || entry.session === undefined || top.session !== entry.session) return null
-  if (!("node" in top.undoable) || !("node" in entry.undoable) || top.undoable.node !== entry.undoable.node) return null
-  return { ...top, undoable: { ...top.undoable, after: entry.undoable.after } }
+  const below = onlyStep(top.undoable)
+  const above = onlyStep(entry.undoable)
+  if (below === undefined || above === undefined || below.node !== above.node) return null
+  return { ...top, undoable: { steps: [{ ...below, after: above.after }] } }
 }
 
 function unchanged(entry: UndoEntry): boolean {
-  return "node" in entry.undoable && JSON.stringify(entry.undoable.before) === JSON.stringify(entry.undoable.after)
+  return (
+    "steps" in entry.undoable &&
+    entry.undoable.steps.every((step) => JSON.stringify(step.before) === JSON.stringify(step.after))
+  )
 }
 
 export function recorded(list: UndoList, entry: UndoEntry): UndoList {
@@ -76,16 +87,18 @@ export function undoLabel(direction: UndoDirection, list: UndoList): string {
   return direction === "undo" ? undoCopy.undoNamed[entry.name] : undoCopy.redoNamed[entry.name]
 }
 
+async function sentCommand(link: UndoLink, deck: string, command: Command): Promise<boolean> {
+  if (command.command === "slide") return (await link.enqueueSlide(deck, command.file, command.edit)).ok
+  if (command.command !== "person" || command.v !== undefined || command.node === undefined) return false
+  if (command.property === "box") return (await link.enqueueBox(deck, command.value, command.node, "")).ok
+  return (await link.enqueue(deck, command.value, command.node, "")).ok
+}
+
 async function sent(link: UndoLink, deck: string, register: Register, entry: UndoEntry, direction: UndoDirection) {
   const turn = direction === "undo" ? undoOf(register, entry.undoable) : redoOf(register, entry.undoable)
   if (!turn.ok) return false
-  const { command } = turn
-  if (command.command === "slide") return (await link.enqueueSlide(deck, command.file, command.edit)).ok
-  if (command.command !== "person" || command.v !== undefined || command.node === undefined) return false
-  if (!("floor" in entry.undoable)) return false
-  const { floor } = entry.undoable
-  if (command.property === "box") return (await link.enqueueBox(deck, command.value, command.node, floor)).ok
-  return (await link.enqueue(deck, command.value, command.node, floor)).ok
+  for (const command of turn.commands) if (!(await sentCommand(link, deck, command))) return false
+  return true
 }
 
 export async function turnBack(

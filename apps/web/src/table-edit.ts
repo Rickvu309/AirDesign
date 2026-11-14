@@ -21,6 +21,11 @@ function fileTable(parts: Parts, shape: ReadShape) {
   }
 }
 
+export function fileTableValue(parts: Parts, shape: ReadShape): string | null {
+  const table = fileTable(parts, shape)
+  return table === null ? null : writeTableValue(table)
+}
+
 export function tableEditable(parts: Parts, shape: ReadShape): boolean {
   const table = fileTable(parts, shape)
   return table !== null && bytesOf(writeTableValue(table)) <= limits.valueBytes

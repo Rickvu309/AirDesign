@@ -13,7 +13,12 @@ export function PanelSwitch({
 }) {
   const agent = active === "agent"
   return (
-    <div className="inline-flex h-8 items-center rounded-lg bg-line p-0.5" role="group" aria-label="Panel">
+    <div
+      className="inline-flex h-8 items-center rounded-lg bg-line p-0.5"
+      role="group"
+      aria-label="Panel"
+      data-keeps-selection
+    >
       <Button
         type="button"
         variant="ghost"

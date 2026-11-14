@@ -1,4 +1,5 @@
 import {
+  boxPatch,
   decide,
   elementId,
   openRegister,
@@ -56,10 +57,10 @@ function edited(): Register {
   return landed(opened, { command: "person", value: "New", node })
 }
 
-const textEdit = {
-  name: "text",
-  undoable: { node, floor: "Old", before: { value: "Old" }, after: { value: "New" } },
-} as const
+const text = (value: string) => ({ text: { value: { set: value } } })
+const step = (before: string, after: string) => ({ node, before: text(before), after: text(after) })
+
+const textEdit = { name: "text", undoable: { steps: [step("Old", "New")] } } as const
 
 describe("undo list", () => {
   it("undoes the last edit, keeps it for redo, and redoes it", async () => {
@@ -81,23 +82,30 @@ describe("undo list", () => {
     expect(deck.sent).toEqual([])
   })
 
+  it("turns a step on two elements back through one entry", async () => {
+    const other = elementId("256.3")
+    const opened = landed(edited(), { command: "add", node: other, floor: "Old", route: "" })
+    const deck = deckLink(landed(opened, { command: "person", value: "New", node: other }))
+    const both = {
+      name: "format",
+      undoable: { steps: [step("Old", "New"), { ...step("Old", "New"), node: other }] },
+    } as const
+    const turned = await turnBack(deck.link, "deck", recorded(emptyUndo, both), "undo")
+    expect(turned.outcome).toBe("turned")
+    expect(deck.sent).toEqual(["text Old", "text Old"])
+    expect(undoLabel("redo", turned.list)).toBe("Redo text format")
+  })
+
   it("has nothing to undo on an empty list", async () => {
     const deck = deckLink(edited())
     expect(await turnBack(deck.link, "deck", emptyUndo, "redo")).toEqual({ outcome: "empty", list: emptyUndo })
   })
 
   it("keeps the keystrokes of one text session as one edit, and drops a session that ends where it began", () => {
-    const typed = (after: string) =>
-      ({
-        name: "text",
-        session: 1,
-        undoable: { ...textEdit.undoable, before: { value: "Ol" }, after: { value: after } },
-      }) as const
+    const typed = (after: string) => ({ name: "text", session: 1, undoable: { steps: [step("Ol", after)] } }) as const
     const first = recorded(emptyUndo, { ...textEdit, session: 1 })
     const second = recorded(first, typed("Newer"))
-    expect(second.undo).toEqual([
-      { ...textEdit, session: 1, undoable: { ...textEdit.undoable, after: { value: "Newer" } } },
-    ])
+    expect(second.undo).toEqual([{ ...textEdit, session: 1, undoable: { steps: [step("Old", "Newer")] } }])
     expect(recorded(second, typed("Old"))).toEqual(emptyUndo)
     expect(recorded(second, { ...typed("Two"), session: 2 }).undo).toHaveLength(2)
   })
@@ -114,10 +122,9 @@ describe("undo list", () => {
     const box = {
       name: "move",
       undoable: {
-        node,
-        floor: "Old",
-        before: { property: "box", value: { x: 1, y: 0, cx: 1, cy: 1 } },
-        after: { property: "box", value: { x: 9, y: 0, cx: 1, cy: 1 } },
+        steps: [
+          { node, before: boxPatch({ x: 1, y: 0, cx: 1, cy: 1 }), after: boxPatch({ x: 9, y: 0, cx: 1, cy: 1 }) },
+        ],
       },
     } as const
     const key = presentSlides({ file, order: [] })[1]?.key

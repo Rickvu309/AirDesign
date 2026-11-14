@@ -46,7 +46,9 @@ export function useNotes(deck: NotesDeck) {
       deck.record({
         name: "notes",
         session,
-        undoable: { node, floor: from, before: { value: from }, after: { value } },
+        undoable: {
+          steps: [{ node, before: { notes: { value: { set: from } } }, after: { notes: { value: { set: value } } } }],
+        },
       })
       release()
     })

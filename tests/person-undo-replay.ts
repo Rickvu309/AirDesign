@@ -5,10 +5,8 @@ import {
   elementId,
   openRegister,
   redoOf,
-  redoSteps,
   rootElement,
   undoOf,
-  undoSteps,
   type Box,
   type Command,
   type NodeRegister,
@@ -29,8 +27,8 @@ const nodeA = rootElement
 const nodeB = elementId("256.3")
 const text = (value: string) => ({ text: { value: { set: value } } })
 const stepOf = (node: typeof nodeA): NodeStep => ({ node, before: text(texts.file), after: text(texts.mine) })
-const steps: readonly NodeStep[] = [stepOf(nodeB), stepOf(nodeA)]
-const alone: Undoable = { node: nodeA, floor: texts.file, before: { value: texts.file }, after: { value: texts.mine } }
+const steps: Undoable = { steps: [stepOf(nodeB), stepOf(nodeA)] }
+const alone: Undoable = { steps: [stepOf(nodeA)] }
 
 function num(spec: Spec, key: string): number {
   const value = spec[key]
@@ -147,7 +145,7 @@ function expected(spec: Spec) {
 }
 
 function turnOf(action: "Undo" | "Redo", register: Register): readonly Command[] | "told" {
-  const turn = action === "Undo" ? undoSteps(register, steps) : redoSteps(register, steps)
+  const turn = action === "Undo" ? undoOf(register, steps) : redoOf(register, steps)
   return turn.ok ? turn.commands : "told"
 }
 

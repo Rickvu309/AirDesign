@@ -1,9 +1,12 @@
 import { readAgent, readSetChange, traitWire } from "@airdesign/catalog"
 import {
   decide,
+  formatOne,
   openRegister,
   planChange,
   registerScope,
+  rowOf,
+  valueHolder,
   readTableValue,
   readTextValue,
   traitNames,
@@ -24,6 +27,7 @@ import {
 import { exportParts, indexPackage, paintReader, readNotes, readPackage, readSlides, readTable } from "@airdesign/pptx"
 import { beforeAll, describe, expect, it } from "vitest"
 import { optionCopy } from "./copy/option-copy"
+import { panelOf } from "./design/panel"
 import { traitControls } from "./design/trait-controls"
 import { ensureMarkup } from "./markup"
 
@@ -46,7 +50,7 @@ type Probe<T extends TraitName> = [FieldName<T>] extends [never]
       readonly fields: { readonly [F in FieldName<T>]-?: FieldProbe<T, F> }
     }
 
-type Layer = "change" | "wire" | "round-trip" | "paint-change" | "undo" | "pptx-case"
+type Layer = "change" | "wire" | "control" | "round-trip" | "paint-change" | "undo" | "pptx-case"
 
 type Problem = { readonly field: string; readonly missing: Layer } | { readonly word: string; readonly missing: "copy" }
 
@@ -198,6 +202,21 @@ function agentRegister(register: Register, at: At, example: object): Register | 
   )
 }
 
+function panelRegister(register: Register, at: At, trait: TraitName, field: string, value: unknown): Register | null {
+  const scope = registerScope(register)
+  const view = scope.view(at.node)
+  const row = view === undefined ? undefined : panelOf(view, { reads: {}, moves: true }).sections
+  const control = row?.find((section) => section.trait === trait)?.rows.find((each) => each.field === field)
+  const planned = control === undefined ? null : planChange(control.change(value), scope)
+  if (planned === null || !planned.ok) return null
+  const holder = valueHolder(register, at.node, "person")
+  const commands = planned.rows.flatMap(({ node, row: planned }): Command[] =>
+    (formatOne(planned.patch, holder) ?? []).map((each) => ({ command: "person", node, ...each })),
+  )
+  const opened = landed(register, [{ command: "add", node: at.node, floor: "", route: "clean" }])
+  return commands.length === 0 || opened === null ? null : landed(opened, commands)
+}
+
 function painted(parts: Parts, at: At): string {
   const drawn = paintReader(parts).slide(at.part).elements
   return JSON.stringify(drawn.filter((each) => each.from === "slide" && each.shape === at.shape))
@@ -253,6 +272,8 @@ async function fieldProblems(
   const problems: Problem[] = shown(parts) ? [{ field: key, missing: "change" }] : []
   const agent = agentRegister(indexed(parts), at, sent)
   if (agent === null || !shown(exportParts(parts, agent))) problems.push({ field: key, missing: "wire" })
+  const panel = panelRegister(indexed(parts), at, trait, field, value)
+  if (panel === null || !shown(exportParts(parts, panel))) problems.push({ field: key, missing: "control" })
   const person = landed(indexed(parts), [
     { command: "add", node: at.node, floor: "", route: "clean" },
     { command: "person", node: at.node, ...edit },
@@ -262,8 +283,10 @@ async function fieldProblems(
   if (probe.kind !== "slide" && painted(exported, at) === painted(parts, at)) {
     problems.push({ field: key, missing: "paint-change" })
   }
-  const turn = person === null ? null : undoOf(person, { node: at.node, floor: "", before: opening, after: edit })
-  const undone = person === null || turn === null || !turn.ok ? null : landed(person, [turn.command])
+  const holder = trait === "box" ? "text" : (trait as "text" | "notes" | "table")
+  const step = { node: at.node, before: rowOf(opening, holder).patch, after: rowOf(edit, holder).patch }
+  const turn = person === null ? null : undoOf(person, { steps: [step] })
+  const undone = person === null || turn === null || !turn.ok ? null : landed(person, turn.commands)
   if (undone === null || !sameParts(exportParts(parts, undone), parts)) problems.push({ field: key, missing: "undo" })
   if (!cases.some((each) => each.covers?.includes(key))) problems.push({ field: key, missing: "pptx-case" })
   return problems
@@ -282,11 +305,23 @@ async function inputProblems(
   const at = placed(parts, probe.kind)
   const agent = agentRegister(indexed(parts), at, example as object)
   if (agent === null) return [{ field: key, missing: "wire" }]
-  return painted(exportParts(parts, agent), at) === painted(parts, at) ? [{ field: key, missing: "paint-change" }] : []
+  const desc = (traits[trait].inputs as Readonly<Record<string, { readonly desc: Desc }>>)[input]?.desc
+  const sent = (example as Readonly<Record<string, Readonly<Record<string, unknown>>>>)[trait]?.[input]
+  const value = desc === undefined ? undefined : fromAgent(desc, sent)
+  const panel = value === undefined ? null : panelRegister(indexed(parts), at, trait, input, value)
+  const problems: Problem[] = []
+  if (panel === null || painted(exportParts(parts, panel), at) === painted(parts, at))
+    problems.push({ field: key, missing: "control" })
+  if (painted(exportParts(parts, agent), at) === painted(parts, at))
+    problems.push({ field: key, missing: "paint-change" })
+  return problems
 }
 
 function copyProblems(trait: TraitName, controls: Partial<LooseControls>, wire: Partial<LooseWire>): Problem[] {
-  const fields = Object.entries(traits[trait].fields as Readonly<Record<string, { readonly desc: Desc }>>)
+  const fields = [
+    ...Object.entries(traits[trait].fields as Readonly<Record<string, { readonly desc: Desc }>>),
+    ...Object.entries(traits[trait].inputs as Readonly<Record<string, { readonly desc: Desc }>>),
+  ]
   const wanted = [
     [`${trait} section`, controls.section],
     [`${trait} description`, wire.description],

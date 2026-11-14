@@ -6,13 +6,16 @@ import type { OrderKey } from "./order-key.js"
 import { sameColor, type Color } from "./color.js"
 import { backgroundOf } from "./slide-background.js"
 import { foldSlides, type SlideCommand, type SlideState } from "./slide-order.js"
-import { formatOne, rowOf, shows, type ElementPatch } from "./row.js"
-import type { Value } from "./value.js"
+import { formatOne, shows, type ElementPatch, type ValueHolder } from "./row.js"
+
+const valueHolders: readonly ValueHolder[] = ["notes", "table", "text"]
 
 export type SlideSpot = { readonly present: boolean; readonly key: OrderKey }
 
+export type NodeStep = { readonly node: ElementId; readonly before: ElementPatch; readonly after: ElementPatch }
+
 export type Undoable =
-  | { readonly node: ElementId; readonly floor: string; readonly before: Value; readonly after: Value }
+  | { readonly steps: readonly NodeStep[] }
   | {
       readonly slide: SlideId
       readonly file: readonly SlideId[]
@@ -39,13 +42,9 @@ export type Undoable =
       readonly after: ElementId | null
     }
 
-export type NodeStep = { readonly node: ElementId; readonly before: ElementPatch; readonly after: ElementPatch }
-
-export type Turn = { readonly ok: true; readonly command: Command } | { readonly ok: false }
-
 export type Turns = { readonly ok: true; readonly commands: readonly Command[] } | { readonly ok: false }
 
-const changed: Turn = { ok: false }
+const changed: Turns = { ok: false }
 
 function spotOf(register: Register, file: readonly SlideId[], id: SlideId): SlideSpot | undefined {
   const known = register.file.length > 0 ? register.file : file
@@ -87,12 +86,17 @@ export function slideUndoable(register: Register, file: readonly SlideId[], edit
   return { slide: edit.id, file, before, after }
 }
 
+function holderOf(register: Register, step: NodeStep): ValueHolder {
+  const named = valueHolders.find((holder) => step.after[holder] !== undefined)
+  return named ?? valueHolder(register, step.node, "person")
+}
+
 function stepCommands(register: Register, steps: readonly NodeStep[], from: "before" | "after"): Command[] | null {
   const to = from === "before" ? "after" : "before"
   const commands: Command[] = []
   for (const step of steps) {
     const body = register.nodes.includes(step.node) ? register.elements[step.node] : undefined
-    const holder = valueHolder(register, step.node, "person")
+    const holder = holderOf(register, step)
     const values = formatOne(step[to], holder)
     if (body === undefined || values === null || !shows(shownPatch(body, holder), step[from])) return null
     commands.push(...values.map((value): Command => ({ command: "person", ...value, node: step.node })))
@@ -102,30 +106,14 @@ function stepCommands(register: Register, steps: readonly NodeStep[], from: "bef
 
 function stepTurn(register: Register, steps: readonly NodeStep[], from: "before" | "after"): Turns {
   const commands = stepCommands(register, steps, from)
-  if (commands === null) return { ok: false }
+  if (commands === null) return changed
   let current = register
   for (const command of commands) {
     const decision = decide(current, command)
-    if (decision.decision !== "apply") return { ok: false }
+    if (decision.decision !== "apply") return changed
     current = decision.register
   }
   return { ok: true, commands }
-}
-
-export function undoSteps(register: Register, steps: readonly NodeStep[]): Turns {
-  return stepTurn(register, steps, "after")
-}
-
-export function redoSteps(register: Register, steps: readonly NodeStep[]): Turns {
-  return stepTurn(register, steps, "before")
-}
-
-function nodeTurn(register: Register, node: ElementId, before: Value, after: Value, from: "before" | "after"): Turn {
-  const holder = valueHolder(register, node, "person")
-  const step = { node, before: rowOf(before, holder).patch, after: rowOf(after, holder).patch }
-  const turned = stepTurn(register, [step], from)
-  const [command, ...rest] = turned.ok ? turned.commands : []
-  return command === undefined || rest.length > 0 ? changed : { ok: true, command }
 }
 
 function sits(spot: SlideSpot | undefined, wanted: SlideSpot): boolean {
@@ -140,13 +128,13 @@ function slideTurn(from: SlideSpot, to: SlideSpot, id: SlideId): SlideCommand | 
   return null
 }
 
-function landing(register: Register, command: Command): Turn {
-  return decide(register, command).decision === "apply" ? { ok: true, command } : changed
+function landing(register: Register, command: Command): Turns {
+  return decide(register, command).decision === "apply" ? { ok: true, commands: [command] } : changed
 }
 
-function turn(register: Register, undoable: Undoable, from: "before" | "after"): Turn {
+function turn(register: Register, undoable: Undoable, from: "before" | "after"): Turns {
   const to = from === "before" ? "after" : "before"
-  if ("node" in undoable) return nodeTurn(register, undoable.node, undoable.before, undoable.after, from)
+  if ("steps" in undoable) return stepTurn(register, undoable.steps, from)
   const file = register.file.length > 0 ? register.file : undoable.file
   if ("background" in undoable) {
     const color = undoable.background
@@ -184,11 +172,11 @@ function turn(register: Register, undoable: Undoable, from: "before" | "after"):
   return landing(register, { command: "slide", file, edit })
 }
 
-export function undoOf(register: Register, undoable: Undoable): Turn {
+export function undoOf(register: Register, undoable: Undoable): Turns {
   return turn(register, undoable, "after")
 }
 
-export function redoOf(register: Register, undoable: Undoable): Turn {
+export function redoOf(register: Register, undoable: Undoable): Turns {
   return turn(register, undoable, "before")
 }
 
@@ -238,9 +226,11 @@ export function undoSlides(register: Register, runId: string): Register | null {
     if (undoable === null) return null
     const undone = undoOf(current, undoable)
     if (!undone.ok) return null
-    const decision = decide(current, undone.command)
-    if (decision.decision !== "apply") return null
-    current = decision.register
+    for (const command of undone.commands) {
+      const decision = decide(current, command)
+      if (decision.decision !== "apply") return null
+      current = decision.register
+    }
   }
   return current
 }

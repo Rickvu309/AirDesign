@@ -1,0 +1,149 @@
+import {
+  formatOne,
+  planChange,
+  readTableValue,
+  registerScope,
+  valueHolder,
+  type ElementId,
+  type ElementPatch,
+  type FieldEdit,
+  type FormatOneValue,
+  type NodeStep,
+  type Register,
+  type Scope,
+  type ScopedElement,
+  type SetChange,
+} from "@airdesign/document"
+import { connect, memoryRemote } from "@airdesign/live"
+import { indexPackage, type ReadShape } from "@airdesign/pptx"
+import { textValue } from "@airdesign/render"
+import { flushPending, type CommitOutcome } from "@/commit-edit"
+import type { UndoName } from "@/copy/undo-copy"
+import { valueStorable } from "@/slide-paint"
+import type { UndoEntry } from "@/undo-list"
+import { boxName } from "@/undo-names"
+
+type Parts = ReadonlyMap<string, Uint8Array>
+
+type Loose = Readonly<Record<string, Readonly<Record<string, FieldEdit<unknown>>> | undefined>>
+
+const openings = new WeakMap<Parts, ReturnType<typeof indexPackage>>()
+
+function indexed(parts: Parts, register: Register): Register {
+  const opening = openings.get(parts) ?? indexPackage(parts)
+  openings.set(parts, opening)
+  return { ...register, index: { ...opening, total: opening.elements.length, pages: [] } }
+}
+
+export function deviceScope(parts: Parts, register: Register): Scope {
+  return registerScope(indexed(parts, register))
+}
+
+export function valueFits(parts: Parts, shape: ReadShape | undefined, value: string): boolean {
+  if (shape === undefined) return false
+  if (shape.contentKind === "table") return readTableValue(value) !== null
+  return valueStorable(parts, shape, textValue(value))
+}
+
+function shownFields(view: ScopedElement): Readonly<Record<string, Readonly<Record<string, unknown>> | undefined>> {
+  const value = { value: view.value ?? "" }
+  const box = view.box === null ? undefined : { x: view.box.x, y: view.box.y, w: view.box.cx, h: view.box.cy }
+  return { box, text: value, table: value, notes: value }
+}
+
+function heldPatch(view: ScopedElement, after: ElementPatch): ElementPatch | null {
+  const shown = shownFields(view)
+  const before: Record<string, Record<string, FieldEdit<unknown>>> = {}
+  for (const [trait, fields] of Object.entries(after as Loose)) {
+    for (const field of Object.keys(fields ?? {})) {
+      const value = shown[trait]?.[field]
+      if (value === undefined) return null
+      before[trait] = { ...before[trait], [field]: { set: value } }
+    }
+  }
+  return before as ElementPatch
+}
+
+function plainOf(value: string): string {
+  return textValue(value)
+    .map((paragraph) => paragraph.runs.map((run) => run.text).join(""))
+    .join("\n")
+}
+
+function nameOf(view: ScopedElement, values: readonly FormatOneValue[]): UndoName {
+  const [value] = values
+  if (value === undefined) return "text"
+  if (value.property === "box") return (view.box === null ? null : boxName(view.box, value.value)) ?? "move"
+  if (view.node.endsWith(".notes")) return "notes"
+  return plainOf(value.value) === plainOf(view.value ?? "") ? "format" : "text"
+}
+
+export type ChangingDeck = {
+  readonly id: string
+  readonly parts: () => Parts
+  readonly floor: (node: ElementId) => string
+  readonly file: (node: ElementId) => string | null
+  readonly fits: (node: ElementId, value: string) => boolean
+  readonly hold: () => () => void
+  readonly record: (entry: UndoEntry) => void
+  readonly show: (register: Register) => void
+}
+
+type Planned = {
+  readonly node: ElementId
+  readonly values: readonly FormatOneValue[]
+  readonly step: NodeStep
+  readonly name: UndoName
+}
+
+function planned(deck: ChangingDeck, register: Register, change: SetChange): readonly Planned[] | null {
+  const opened = indexed(deck.parts(), register)
+  const scope = registerScope(opened)
+  const plan = planChange(change, scope)
+  if (!plan.ok) return null
+  const rows: Planned[] = []
+  for (const { node, row } of plan.rows) {
+    const shown = scope.view(node)
+    const view = shown === undefined ? undefined : { ...shown, value: shown.value ?? deck.file(node) }
+    const values = formatOne(row.patch, valueHolder(opened, node, "person"))
+    const before = view === undefined ? null : heldPatch(view, row.patch)
+    if (view === undefined || values === null || before === null) return null
+    if (values.some((value) => value.property !== "box" && !deck.fits(node, value.value))) return null
+    rows.push({ node, values, step: { node, before, after: row.patch }, name: nameOf(view, values) })
+  }
+  return rows
+}
+
+async function stored(deck: ChangingDeck, row: Planned): Promise<boolean> {
+  const live = connect(memoryRemote())
+  for (const value of row.values) {
+    const floor = deck.floor(row.node)
+    const kept =
+      value.property === "box"
+        ? await live.enqueueBox(deck.id, value.value, row.node, floor)
+        : await live.enqueue(deck.id, value.value, row.node, floor)
+    if (!kept.ok) return false
+  }
+  return true
+}
+
+export async function applyChange(deck: ChangingDeck, change: SetChange): Promise<CommitOutcome> {
+  const release = deck.hold()
+  try {
+    const opened = await connect(memoryRemote()).openDeck(deck.id)
+    const rows = opened.ok ? planned(deck, opened.register, change) : null
+    if (rows === null || rows.length === 0) return "refused"
+    const steps: NodeStep[] = []
+    for (const row of rows) {
+      if (!(await stored(deck, row))) break
+      steps.push(row.step)
+    }
+    const name = rows[0]?.name
+    if (name !== undefined && steps.length > 0) deck.record({ name, undoable: { steps } })
+    const next = await connect(memoryRemote()).openDeck(deck.id)
+    if (next.ok) deck.show(next.register)
+    return steps.length === rows.length ? await flushPending(connect, deck.id) : "refused"
+  } finally {
+    release()
+  }
+}

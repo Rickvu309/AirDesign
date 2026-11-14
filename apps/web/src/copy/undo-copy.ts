@@ -1,5 +1,6 @@
 export type UndoName =
   | "text"
+  | "format"
   | "notes"
   | "move"
   | "resize"
@@ -27,6 +28,7 @@ export const undoCopy = {
   redo: "Redo",
   undoNamed: {
     text: "Undo text edit",
+    format: "Undo text format",
     notes: "Undo speaker notes edit",
     move: "Undo move",
     resize: "Undo resize",
@@ -51,6 +53,7 @@ export const undoCopy = {
   },
   redoNamed: {
     text: "Redo text edit",
+    format: "Redo text format",
     notes: "Redo speaker notes edit",
     move: "Redo move",
     resize: "Redo resize",
