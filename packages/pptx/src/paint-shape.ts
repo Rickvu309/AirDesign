@@ -5,12 +5,24 @@ import { paintChild, paintFill } from "./paint-fill.js"
 import type { MarkupChildren } from "./text-value-route.js"
 import type { PaintPicture } from "./paint-image.js"
 
+export type PaintJoin = { kind: "round" | "bevel" | "miter"; limit?: number }
+
+export type PaintDashStep = { dash: number; space: number }
+
 export type PaintLine = {
   fill: PaintFill
   width: number
   dash: string | null
   head: string | null
   tail: string | null
+  cap?: string
+  compound?: string
+  join?: PaintJoin
+  dashes?: readonly PaintDashStep[]
+  headWidth?: string
+  headLength?: string
+  tailWidth?: string
+  tailLength?: string
 }
 
 export type PaintSource = {
@@ -32,6 +44,43 @@ export type ShapePaint = {
   line: PaintLine | null
   geometry: string | null
   adjusts?: Readonly<Record<string, number>>
+}
+
+const capKinds = ["rnd", "sq", "flat"]
+const compoundKinds = ["sng", "dbl", "thickThin", "thinThick", "tri"]
+const sizeKinds = ["sm", "med", "lg"]
+const joinKinds = [
+  ["a:round", "round"],
+  ["a:bevel", "bevel"],
+  ["a:miter", "miter"],
+] as const
+
+const oneOf = (kinds: readonly string[], value: string | null) =>
+  value !== null && kinds.includes(value) ? value : null
+
+const thousandths = (value: string | null) =>
+  value !== null && /^\d+$/.test(value) && Number.isSafeInteger(Number(value)) ? Number(value) / 100000 : null
+
+const joinOf = (source: PaintSource, line: MarkupElement): PaintJoin | null => {
+  for (const [kind, name] of joinKinds) {
+    const child = paintChild(source.children, line, kind)
+    if (child === undefined) continue
+    const limit = name === "miter" ? thousandths(paintAttribute(child, "lim")) : null
+    return limit === null ? { kind: name } : { kind: name, limit }
+  }
+  return null
+}
+
+const dashesOf = (source: PaintSource, line: MarkupElement): PaintDashStep[] | null => {
+  const custom = paintChild(source.children, line, "a:custDash")
+  if (custom === undefined) return null
+  const steps: PaintDashStep[] = []
+  for (const step of source.children[custom.index] ?? []) {
+    const dash = thousandths(paintAttribute(step, "d"))
+    const space = thousandths(paintAttribute(step, "sp"))
+    if (step.kind === "a:ds" && dash !== null && space !== null) steps.push({ dash, space })
+  }
+  return steps.length === 0 ? null : steps
 }
 
 const fillKinds = ["a:noFill", "a:solidFill", "a:gradFill", "a:pattFill", "a:blipFill", "a:grpFill"]
@@ -113,6 +162,16 @@ export const paintShape = (
     let dash: string | null = null
     let head: string | null = null
     let tail: string | null = null
+    let dashes: PaintDashStep[] | null = null
+    let cap: string | null = null
+    let compound: string | null = null
+    let join: PaintJoin | null = null
+    const sizes: Record<"headWidth" | "headLength" | "tailWidth" | "tailLength", string | null> = {
+      headWidth: null,
+      headLength: null,
+      tailWidth: null,
+      tailLength: null,
+    }
     for (const level of lines) {
       const child = fillOf(level.source, level.element)
       if (!hasLineFill && child !== undefined) {
@@ -126,11 +185,35 @@ export const paintShape = (
         const child = paintChild(level.source.children, level.element, kind)
         return child === undefined ? null : paintAttribute(child, name)
       }
-      dash ??= attributeOf("a:prstDash", "val")
+      if (dash === null && dashes === null) {
+        dashes = dashesOf(level.source, level.element)
+        if (dashes === null) dash = attributeOf("a:prstDash", "val")
+      }
       head ??= attributeOf("a:headEnd", "type")
       tail ??= attributeOf("a:tailEnd", "type")
+      cap ??= oneOf(capKinds, paintAttribute(level.element, "cap"))
+      compound ??= oneOf(compoundKinds, paintAttribute(level.element, "cmpd"))
+      join ??= joinOf(level.source, level.element)
+      sizes.headWidth ??= oneOf(sizeKinds, attributeOf("a:headEnd", "w"))
+      sizes.headLength ??= oneOf(sizeKinds, attributeOf("a:headEnd", "len"))
+      sizes.tailWidth ??= oneOf(sizeKinds, attributeOf("a:tailEnd", "w"))
+      sizes.tailLength ??= oneOf(sizeKinds, attributeOf("a:tailEnd", "len"))
     }
-    line = { fill: lineFill ?? { type: "none" }, width: width ?? 9525, dash, head, tail }
+    line = {
+      fill: lineFill ?? { type: "none" },
+      width: width ?? 9525,
+      dash,
+      head,
+      tail,
+      ...(cap === null ? {} : { cap }),
+      ...(compound === null ? {} : { compound }),
+      ...(join === null ? {} : { join }),
+      ...(dashes === null ? {} : { dashes }),
+      ...(sizes.headWidth === null ? {} : { headWidth: sizes.headWidth }),
+      ...(sizes.headLength === null ? {} : { headLength: sizes.headLength }),
+      ...(sizes.tailWidth === null ? {} : { tailWidth: sizes.tailWidth }),
+      ...(sizes.tailLength === null ? {} : { tailLength: sizes.tailLength }),
+    }
   }
   let geometry: string | null = null
   const adjusts: Record<string, number> = {}

@@ -28,6 +28,38 @@ const ends = new Map<string, NonNullable<CanvasLine["head"]>>([
   ["arrow", "arrow"],
 ])
 
+const caps = new Map<string, NonNullable<CanvasLine["cap"]>>([
+  ["rnd", "round"],
+  ["sq", "square"],
+  ["flat", "butt"],
+])
+const compounds = new Map<string, NonNullable<CanvasLine["compound"]>>([
+  ["dbl", "dbl"],
+  ["thickThin", "thickThin"],
+  ["thinThick", "thinThick"],
+  ["tri", "tri"],
+])
+const arrowScales = new Map<string, number>([
+  ["sm", 2],
+  ["med", 3],
+  ["lg", 5],
+])
+const defaultArrowScale = 3
+
+function arrowSize(width: string | undefined, length: string | undefined) {
+  const size = {
+    width: arrowScales.get(width ?? "") ?? defaultArrowScale,
+    length: arrowScales.get(length ?? "") ?? defaultArrowScale,
+  }
+  return size.width === defaultArrowScale && size.length === defaultArrowScale ? undefined : size
+}
+
+function dashSteps(line: PaintLine): readonly number[] | null {
+  const steps = line.dashes?.flatMap((step) => [step.dash, step.space])
+  if (steps !== undefined) return steps.some((step) => step > 0) ? steps : null
+  return dashes.get(line.dash ?? "") ?? null
+}
+
 export function outlineOf(row: PaintElement): CanvasOutline {
   if (paintKind(row.kind) === "connector") return "line"
   return outlines.get(row.geometry ?? "") ?? "box"
@@ -46,14 +78,23 @@ export function canvasLine(line: PaintLine | null): CanvasLine | null {
   const color = lineColor(line.fill)
   const head = ends.get(line.head ?? "")
   const tail = ends.get(line.tail ?? "")
+  const headSize = head === undefined ? undefined : arrowSize(line.headWidth, line.headLength)
+  const tailSize = tail === undefined ? undefined : arrowSize(line.tailWidth, line.tailLength)
+  const cap = caps.get(line.cap ?? "")
+  const compound = compounds.get(line.compound ?? "")
   return color === null
     ? null
     : {
         color,
         width: line.width,
-        dash: dashes.get(line.dash ?? "") ?? null,
+        dash: dashSteps(line),
         ...(head === undefined ? {} : { head }),
         ...(tail === undefined ? {} : { tail }),
+        ...(headSize === undefined ? {} : { headSize }),
+        ...(tailSize === undefined ? {} : { tailSize }),
+        ...(cap === undefined ? {} : { cap }),
+        ...(line.join === undefined ? {} : { join: line.join }),
+        ...(compound === undefined ? {} : { compound }),
       }
 }
 
