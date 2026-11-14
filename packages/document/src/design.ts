@@ -29,6 +29,8 @@ export const designKeys = [
   "line.head",
   "line.tail",
   "effects.shadow",
+  "effects.glow",
+  "effects.softEdge",
   "text.size",
   "text.color",
   "text.font",
@@ -66,6 +68,7 @@ export type ShadowRead = {
   readonly direction: number
   readonly color: Color | null
 }
+export type GlowRead = { readonly radius: number; readonly color: Color | null }
 export type TraitReads = {
   readonly geometry?: Read<string>
   readonly fill?: Read<FillRead>
@@ -75,6 +78,8 @@ export type TraitReads = {
   readonly "line.head"?: Read<string>
   readonly "line.tail"?: Read<string>
   readonly "effects.shadow"?: Read<ShadowRead>
+  readonly "effects.glow"?: Read<GlowRead>
+  readonly "effects.softEdge"?: Read<number>
   readonly "text.size"?: Read<number>
   readonly "text.color"?: Read<Color>
   readonly "text.font"?: Read<string>

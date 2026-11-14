@@ -2,7 +2,7 @@ import type { Color } from "@airdesign/document"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import { optionCopy } from "@/copy/option-copy"
-import { firstColor, seedOf } from "@/design/control-seed"
+import { caseSeed, firstColor, seedOf } from "@/design/control-seed"
 import { partRow, type ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
@@ -24,7 +24,8 @@ export function UnionControl({ row, palette, onChange, inner }: ControlProps) {
   function pick(name: string) {
     const desc = cases[name]
     if (desc === undefined || name === chosen) return
-    onChange({ [name]: desc.kind === "mark" ? true : seedOf(desc, color) })
+    if (desc.kind === "mark") onChange({ [name]: true })
+    else onChange({ [name]: caseSeed(`${row.trait}.${row.field}.${name}`, color) ?? seedOf(desc, color) })
   }
 
   return (

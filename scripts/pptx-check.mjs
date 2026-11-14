@@ -6,7 +6,7 @@ import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { validatorFiles } from "./paragraph-export.mjs"
 import { freshBrowserExport, playwrightTestLines } from "./browser-export.mjs"
-import { browserExportArgs, caseExports, loadCases } from "./pptx-cases.mjs"
+import { browserExportArgs, caseExports, caseOriginals, loadCases } from "./pptx-cases.mjs"
 import { textExportName } from "./pptx-cases/text.mjs"
 import { judgeParts } from "./judge.mjs"
 import {
@@ -121,7 +121,7 @@ const browserSpec = freshBrowserExport({
 const quiet = besideBrowser({ cores: os.availableParallelism(), browser: browserSpec })
 const pptx = memoPptx(await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href))
 const cases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
-const names = [...new Set(cases.flatMap((row) => [row.before, row.after]))]
+const names = [...new Set([...cases.flatMap((row) => [row.before, row.after]), ...caseOriginals(entries)])]
 const browserExports = new Map(exportNames.map((name) => [name, exportPath(name)]))
 const fixturePath = (name) => browserExports.get(name) ?? path.join(root, decision.deckPath(name))
 const rendered = new Map()

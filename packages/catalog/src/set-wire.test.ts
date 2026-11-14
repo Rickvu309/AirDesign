@@ -7,6 +7,8 @@ import { addChangeSchema, readAddChange, readSetChange, readTarget, setChangeSch
 import { opacityWire } from "./opacity-wire.js"
 import { traitWire } from "./trait-wire.js"
 
+const black = "000000"
+
 const title = elementId("258.2")
 const navy = "1F4E79"
 
@@ -48,6 +50,38 @@ describe("readSetChange reads the agent form into a change in stored units", () 
     })
   })
 
+  it("reads effects in points, degrees and colours, and a soft edge as its bare radius", () => {
+    expect(
+      readSetChange({
+        op: "set",
+        target: "258.2",
+        effects: {
+          shadow: { outer: { blur: 4, distance: 3, direction: 45, color: `#${black} alpha 35` } },
+          glow: "none",
+          softEdge: 5,
+        },
+      }),
+    ).toEqual({
+      ok: true,
+      change: {
+        op: "set",
+        target: { node: title },
+        effects: {
+          shadow: {
+            outer: {
+              blur: 50_800,
+              distance: 38_100,
+              direction: 2_700_000,
+              color: { rgb: "000000", transforms: [{ op: "alpha", val: 35_000 }] },
+            },
+          },
+          glow: { none: true },
+          softEdge: { radius: 63_500 },
+        },
+      },
+    })
+  })
+
   it("names the field it refuses", () => {
     const refused = (raw: Record<string, unknown>) => readSetChange({ op: "set", target: "258.2", ...raw })
     expect(refused({ box: { x: 914_400 } })).toEqual({ ok: false, refusal: "field", field: "box.x" })
@@ -66,7 +100,9 @@ describe("readSetChange reads the agent form into a change in stored units", () 
     expect(refused({ text: { color: "accent9" } })).toEqual({ ok: false, refusal: "field", field: "text.color" })
     expect(refused({ fill: { value: "accent9" } })).toEqual({ ok: false, refusal: "field", field: "fill.value" })
     expect(refused({ box: { x: null } })).toEqual({ ok: false, refusal: "field", field: "box.x" })
-    expect(refused({ effects: { glow: 1 } })).toEqual({ ok: false, refusal: "field", field: "effects" })
+    expect(refused({ effects: { glow: 1 } })).toEqual({ ok: false, refusal: "field", field: "effects.glow" })
+    expect(refused({ effects: { softEdge: null } })).toEqual({ ok: false, refusal: "field", field: "effects.softEdge" })
+    expect(refused({ crop: { left: 1 } })).toEqual({ ok: false, refusal: "field", field: "crop" })
     expect(refused({ line: { width: 1585 } })).toEqual({ ok: false, refusal: "field", field: "line.width" })
     expect(refused({ line: { dash: "dotted" } })).toEqual({ ok: false, refusal: "field", field: "line.dash" })
     expect(refused({ box: {} })).toEqual({ ok: false, refusal: "field", field: "box" })

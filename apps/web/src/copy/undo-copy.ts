@@ -20,6 +20,7 @@ export type UndoName =
   | "background"
   | "fill"
   | "line"
+  | "effects"
   | "shape"
   | "rotate"
   | "flip"
@@ -54,6 +55,7 @@ export const undoCopy = {
     background: "Undo background color",
     fill: "Undo fill",
     line: "Undo line",
+    effects: "Undo effects",
     shape: "Undo shape",
     rotate: "Undo rotate",
     flip: "Undo flip",
@@ -85,6 +87,7 @@ export const undoCopy = {
     background: "Redo background color",
     fill: "Redo fill",
     line: "Redo line",
+    effects: "Redo effects",
     shape: "Redo shape",
     rotate: "Redo rotate",
     flip: "Redo flip",

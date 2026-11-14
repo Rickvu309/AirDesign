@@ -2,6 +2,20 @@ import type { Color, Desc } from "@airdesign/document"
 
 const backdrop: Color = { scheme: "lt1" }
 const downward = 5_400_000
+const seen = { op: "alpha", val: 40_000 } as const
+
+export function caseSeed(key: string, color: Color): unknown {
+  switch (key) {
+    case "effects.shadow.outer":
+      return { blur: 50_800, distance: 38_100, direction: 2_700_000, color: { rgb: "000000", transforms: [seen] } }
+    case "effects.glow.halo":
+      return { radius: 63_500, color: { ...color, transforms: [...(color.transforms ?? []), seen] } }
+    case "effects.softEdge.radius":
+      return 63_500
+    default:
+      return undefined
+  }
+}
 
 export function firstColor(value: unknown): Color | null {
   if (typeof value !== "object" || value === null) return null

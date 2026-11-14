@@ -1,7 +1,11 @@
 import {
+  bareTransforms,
   coordinates,
   designBytes,
+  mappedSlots,
   readDesign,
+  themeSlots,
+  valuedTransforms,
   type Alpha,
   type Desc,
   type Design,
@@ -9,11 +13,31 @@ import {
 } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import * as z from "zod/v4"
-import { agentColor, agentSchema, designOf, flat, foldDesign, readAgent, readAgentColor } from "./agent-form.js"
+import {
+  agentColor,
+  agentSchema,
+  colorPattern,
+  designOf,
+  flat,
+  foldDesign,
+  readAgent,
+  readAgentColor,
+} from "./agent-form.js"
 
 const navy = "1F4E79"
 const black = "000000"
 const white = "FFFFFF"
+
+it("spells every theme slot and transform once in a compact colour pattern, and nothing else", () => {
+  const exact = new RegExp(`^${colorPattern}$`)
+  const slots = [...themeSlots, ...mappedSlots]
+  for (const slot of slots) expect(exact.test(slot), slot).toBe(true)
+  for (const op of valuedTransforms) expect(exact.test(`accent1 ${op} 50`), op).toBe(true)
+  for (const op of bareTransforms) expect(exact.test(`#${navy} ${op}`), op).toBe(true)
+  for (const wrong of ["accent7", "dk3", "accent1 lumAdd 5", "accent1 tintMod 5", "accent1 comp 5", "hlink1", "bg"])
+    expect(exact.test(wrong), wrong).toBe(false)
+  expect(colorPattern.length).toBeLessThan(220)
+})
 
 it("writes a colour as an agent sends one: a theme slot or hex, then each transform in percent", () => {
   expect(agentColor({ scheme: "accent1" })).toBe("accent1")
@@ -226,4 +250,39 @@ describe("foldDesign shows an element's opacity in the alpha of every colour its
     expect(foldDesign(shown, { fill: { value: { set: own } } })).toEqual({ fill: ["accent2 alpha 20"] })
     expect(foldDesign(shown, { fill: { alpha: "opening" } })).toBe(shown)
   })
+})
+
+it("folds the effects a change set over the design line, and drops one set to none", () => {
+  const design: Design = {
+    fill: ["accent1", "style"],
+    "effects.shadow": [`blur 3.1 distance 1.8 direction 90 #${black} alpha 35`, "style"],
+  }
+  const shadow = {
+    blur: 50_800,
+    distance: 38_100,
+    direction: 2_700_000,
+    color: { rgb: black, transforms: [{ op: "alpha" as const, val: 35_000 }] },
+  }
+  const glow = {
+    radius: 101_600,
+    color: { scheme: "accent1" as const, transforms: [{ op: "alpha" as const, val: 60_000 }] },
+  }
+  const lit = foldDesign(design, {
+    effects: {
+      shadow: { set: { outer: shadow } },
+      glow: { set: { halo: glow } },
+      softEdge: { set: { radius: 63_500 } },
+    },
+  })
+  expect(lit).toEqual({
+    fill: ["accent1", "style"],
+    "effects.shadow": [`blur 4 distance 3 direction 45 #${black} alpha 35`],
+    "effects.glow": ["radius 8 accent1 alpha 60"],
+    "effects.softEdge": [5],
+  })
+  expect(
+    foldDesign(lit, {
+      effects: { shadow: { set: { none: true } }, glow: { set: { none: true } }, softEdge: { set: { none: true } } },
+    }),
+  ).toEqual({ fill: ["accent1", "style"] })
 })
