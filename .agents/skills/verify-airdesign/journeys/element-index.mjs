@@ -51,6 +51,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
       value: '[{"from":0,"runs":[{"from":0,"text":"Hello"}]}]',
       version: 0,
       box: { x: 457200, y: 457200, cx: 5486400, cy: 1828800 },
+      design: "fill accent1 · text.size 32 · text.color dk1",
     },
   ])
   const continued = await post(

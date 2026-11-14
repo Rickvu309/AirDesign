@@ -1,10 +1,18 @@
 import { readDeckId, type DeckId, type WireRefusal } from "@airdesign/catalog"
-import { appendIndex, bytesOf, limits, readIndexPage, type DeckIndex, type IndexPage } from "@airdesign/document"
+import {
+  appendIndex,
+  bytesOf,
+  format,
+  limits,
+  readIndexPage,
+  type DeckIndex,
+  type IndexPage,
+} from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote } from "./remote.js"
 import { installSlots, readSlot, replaceSlots, swapSlot } from "./store.js"
 
-type ImportIndex = Pick<DeckIndex, "slides" | "elements">
-type Queue = { readonly count: number; readonly sent: number; readonly once?: string }
+type ImportIndex = Pick<DeckIndex, "slides" | "elements" | "palettes">
+type Queue = { readonly count: number; readonly sent: number; readonly once?: string; readonly format?: number }
 const key = (deck: string, part: string) => `${deck}\u0002layouts\u0002${part}`
 const chunkSize = Math.floor(limits.row / 4)
 
@@ -45,19 +53,21 @@ async function storedPage(deck: string, n: number): Promise<IndexPage | null> {
 function queue(raw: unknown): Queue | null {
   if (typeof raw !== "object" || raw === null || !("count" in raw) || !("sent" in raw)) return null
   if (typeof raw.count !== "number" || typeof raw.sent !== "number") return null
-  if (!("once" in raw)) return { count: raw.count, sent: raw.sent }
+  const stamped = "format" in raw && typeof raw.format === "number" ? { format: raw.format } : {}
+  if (!("once" in raw)) return { count: raw.count, sent: raw.sent, ...stamped }
   if (typeof raw.once !== "string") return null
-  return { count: raw.count, sent: raw.sent, once: raw.once }
+  return { count: raw.count, sent: raw.sent, once: raw.once, ...stamped }
 }
 
-export async function hasMeasures(deck: string): Promise<boolean> {
-  return (await readSlot(key(deck, "measured"))) === true
-}
+const widestDeck = "d".repeat(64)
 
-async function keepIndex(deck: DeckId, index: ImportIndex, once: () => string) {
-  const measured = index.slides.some((row) => row.free !== undefined && row.layout !== undefined)
-  const upgrade = measured && !(await hasMeasures(deck))
-  if (queue(await readSlot(key(deck, "queue"))) !== null && !upgrade) return { ok: true as const }
+export function indexPages(
+  index: ImportIndex,
+  once: () => string,
+):
+  | { readonly ok: true; readonly pages: readonly IndexPage[] }
+  | { readonly ok: false; readonly refusal: "present" | "stale" | "limit" } {
+  const shared = { format, ...(index.palettes === undefined ? {} : { palettes: index.palettes }) }
   const pages: IndexPage[] = []
   let held: DeckIndex | undefined
   for (let offset = 0; offset < index.elements.length || pages.length === 0;) {
@@ -65,7 +75,8 @@ async function keepIndex(deck: DeckId, index: ImportIndex, once: () => string) {
     const token = once()
     for (const element of index.elements.slice(offset, offset + limits.batch)) {
       const trial = {
-        deck,
+        deck: widestDeck,
+        ...shared,
         once: token,
         offset,
         total: index.elements.length,
@@ -75,8 +86,15 @@ async function keepIndex(deck: DeckId, index: ImportIndex, once: () => string) {
       if (elements.length > 0 && bytesOf(JSON.stringify(trial)) >= limits.row - 256) break
       elements.push(element)
     }
-    const page = readIndexPage({ once: token, offset, total: index.elements.length, slides: index.slides, elements })
-    if (page === null) return { ok: false as const, refusal: "limit" as const }
+    const page = readIndexPage({
+      ...shared,
+      once: token,
+      offset,
+      total: index.elements.length,
+      slides: index.slides,
+      elements,
+    })
+    if (page === null) return { ok: false, refusal: "limit" }
     const next = appendIndex(held, page)
     if (!next.ok) return next
     held = next.index
@@ -84,14 +102,20 @@ async function keepIndex(deck: DeckId, index: ImportIndex, once: () => string) {
     offset += elements.length
     if (offset === index.elements.length) break
   }
-  const write = upgrade
-    ? (puts: Parameters<typeof replaceSlots>[0]) => replaceSlots(puts)
-    : (puts: Parameters<typeof replaceSlots>[0]) => installSlots(key(deck, "queue"), puts)
-  await write([
+  return { ok: true, pages }
+}
+
+async function keepIndex(deck: DeckId, index: ImportIndex, once: () => string) {
+  const queued = queue(await readSlot(key(deck, "queue")))
+  if (queued !== null && (queued.format ?? 1) >= format) return { ok: true as const }
+  const split = indexPages(index, once)
+  if (!split.ok) return split
+  const { pages } = split
+  const puts = [
     ...pages.flatMap((page, n) => pageSlots(deck, n, page)),
-    { key: key(deck, "measured"), value: measured },
-    { key: key(deck, "queue"), value: { count: pages.length, sent: 0, once: pages[0]!.once } },
-  ])
+    { key: key(deck, "queue"), value: { count: pages.length, sent: 0, once: pages[0]!.once, format } },
+  ]
+  await (queued === null ? installSlots(key(deck, "queue"), puts) : replaceSlots(puts))
   return { ok: true as const }
 }
 
@@ -120,11 +144,11 @@ export async function sendIndex(
     const page = await storedPage(deck, pending.sent)
     if (page === null) return { ok: false, refusal: "payload" }
     const answer = await remote.index({ deck, ...page })
-    if (!answer.ok) return answer
-    if (answer.deck !== deck) return { ok: false, refusal: "payload" }
-    revision = answer.revision
+    if (!answer.ok && answer.refusal !== "present") return answer
+    if (answer.ok && answer.deck !== deck) return { ok: false, refusal: "payload" }
+    if (answer.ok) revision = answer.revision
     const was: Queue = pending
-    const next: Queue = { ...was, sent: was.sent + 1 }
+    const next: Queue = { ...was, sent: answer.ok ? was.sent + 1 : was.count }
     const kept = await swapSlot(key(deck, "queue"), next, (current) => {
       const stored = queue(current)
       return stored !== null && stored.count === was.count && stored.sent === was.sent && stored.once === was.once

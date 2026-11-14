@@ -1,6 +1,6 @@
 import type { DeckAnswers } from "./deck-answer.js"
 import { notifyKey, type DeckId, type WireEdit, type WireRefusal, type WireSlide } from "@airdesign/catalog"
-import { foldRegister, type DeckIndex, type StoredRegister } from "@airdesign/document"
+import { answeredRegister, foldRegister, type DeckIndex, type StoredRegister } from "@airdesign/document"
 import { call, openDeck, type Deck } from "@airdesign/engine"
 
 import type { Sql } from "./pool.js"
@@ -149,7 +149,7 @@ function openedRow(
   | { readonly ok: false; readonly refusal: "owner" | "deleted" } {
   const access = deckAccess(saved, owner)
   if (!access.ok) return access
-  return { ok: true, deck, revision: access.saved.revision, register: access.saved.register }
+  return { ok: true, deck, revision: access.saved.revision, register: answeredRegister(access.saved.register) }
 }
 
 export async function openSaved(

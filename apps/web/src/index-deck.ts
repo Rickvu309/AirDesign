@@ -6,14 +6,41 @@ import {
   nextSlideId,
   orderKeyBetween,
   readSlideId,
+  type DeckIndex,
   type IndexElement,
   type OrderKey,
   type SlideCommand,
   type SlideId,
 } from "@airdesign/document"
+import { designOf } from "@airdesign/catalog"
 import { connect } from "@airdesign/live"
-import { indexPackage, orderedParts, slideLayouts } from "@airdesign/pptx"
+import { indexPackage, orderedParts, readTraits, slideLayouts, type DeckTraits } from "@airdesign/pptx"
 import { server } from "@/commit-edit"
+
+function traitsOf(parts: ReadonlyMap<string, Uint8Array>): DeckTraits | null {
+  try {
+    return readTraits(parts)
+  } catch {
+    return null
+  }
+}
+
+export function designedParts(
+  parts: ReadonlyMap<string, Uint8Array>,
+): Pick<DeckIndex, "palettes" | "slides" | "elements"> {
+  const opening = indexPackage(parts)
+  const traits = traitsOf(parts)
+  if (traits === null) return opening
+  const elements = opening.elements.map((element) => {
+    const read = traits.elements.get(element.node)
+    return read === undefined ? element : { ...element, ...designOf(read) }
+  })
+  const slides = opening.slides.map((slide) => {
+    const palette = traits.slides.get(slide.id) ?? 0
+    return palette === 0 ? slide : { ...slide, palette }
+  })
+  return { ...(traits.palettes.length === 0 ? {} : { palettes: traits.palettes }), slides, elements }
+}
 
 function layoutFloors(parts: ReadonlyMap<string, Uint8Array>, file: readonly SlideId[]) {
   const layouts = slideLayouts(parts)
@@ -35,9 +62,15 @@ function layoutFloors(parts: ReadonlyMap<string, Uint8Array>, file: readonly Sli
   }
   const floors = new Map<SlideId, readonly IndexElement[]>()
   try {
-    const elements = indexPackage(orderedParts(parts, { file, order })).elements
+    const layered = orderedParts(parts, { file, order })
+    const elements = indexPackage(layered).elements
+    const roles = traitsOf(layered)?.elements
     for (const { from, id } of born) {
-      const made = elements.filter((row) => row.node.startsWith(`${id}.`))
+      const made = elements.flatMap((row) => {
+        if (!row.node.startsWith(`${id}.`)) return []
+        const role = roles?.get(row.node)?.role
+        return [role === undefined ? row : { ...row, role }]
+      })
       for (const source of from) floors.set(source, floorFor(made, source))
     }
   } catch {
@@ -46,9 +79,10 @@ function layoutFloors(parts: ReadonlyMap<string, Uint8Array>, file: readonly Sli
   return floors
 }
 
-function layoutsFit(index: ReturnType<typeof indexPackage>): boolean {
+function layoutsFit(index: ReturnType<typeof designedParts>): boolean {
   if (bytesOf(JSON.stringify(index.slides)) >= limits.row / 2) return false
   const page = readIndexPage({
+    ...(index.palettes === undefined ? {} : { palettes: index.palettes }),
     once: "layouts",
     offset: 0,
     total: index.elements.length,
@@ -59,7 +93,7 @@ function layoutsFit(index: ReturnType<typeof indexPackage>): boolean {
 }
 
 export function indexedParts(parts: ReadonlyMap<string, Uint8Array>) {
-  const indexed = indexPackage(parts)
+  const indexed = designedParts(parts)
   const file = indexed.slides.flatMap((row) => {
     const id = readSlideId(row.id)
     return id === undefined ? [] : [id]
@@ -75,7 +109,6 @@ export function indexedParts(parts: ReadonlyMap<string, Uint8Array>) {
 }
 
 export async function backfillIndex(deck: string, parts: ReadonlyMap<string, Uint8Array>): Promise<void> {
-  if (await connect(server).sized(deck)) return
   const queued = await connect(server).index(deck, indexedParts(parts))
   if (!queued.ok) throw new Error(queued.refusal)
 }

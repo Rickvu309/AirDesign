@@ -7,7 +7,10 @@ export function readDeckIndex(
   | ({ readonly ok: true; readonly deck: DeckId } & IndexPage)
   | { readonly ok: false; readonly refusal: "deck" | "field" } {
   const body = recordOf(raw)
-  if (body === undefined || !knownKeys(body, ["deck", "once", "offset", "total", "slides", "elements"]))
+  if (
+    body === undefined ||
+    !knownKeys(body, ["deck", "format", "once", "offset", "total", "palettes", "slides", "elements"])
+  )
     return fieldRefusal
   const deck = readDeckId(body.deck)
   if (!deck.ok) return deck

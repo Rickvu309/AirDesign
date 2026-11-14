@@ -10,6 +10,8 @@ export {
 } from "./aira-turn.js"
 export { catalog, projectTools, toolInputSchema, type AgentOp, type CommandOp } from "./catalog.js"
 export { deckName, readDeckName } from "./deck-name.js"
+export { designOf } from "./agent-form.js"
+export { printDesign } from "./design-print.js"
 export { storableText } from "./storable-text.js"
 export {
   deckRoutes,

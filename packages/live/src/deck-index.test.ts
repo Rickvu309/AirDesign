@@ -1,8 +1,8 @@
 import { beforeEach, expect, it } from "vitest"
-import { bytesOf, elementId, limits, readIndexPage } from "@airdesign/document"
+import { bytesOf, elementId, format, limits, readIndexPage } from "@airdesign/document"
 import { installIndexedDb } from "./browser-fixtures.js"
 import { connect, memoryRemote } from "./index.js"
-import { readSlot } from "./store.js"
+import { readSlot, writeSlot } from "./store.js"
 
 beforeEach(installIndexedDb)
 const index = {
@@ -109,22 +109,29 @@ it("keeps opening text larger than an edit or a storage row without clipping it"
   expect(opened.ok && opened.register.index?.elements[0]?.value).toBe(value)
 })
 
-it("upgrades an imported deck's index with its layouts once and then leaves it alone", async () => {
+it("leaves a queue at this build's format alone, sent or not", async () => {
   const remote = memoryRemote()
   const cache = connect(remote)
   const layout = [{ ...index.elements[0]!, node: elementId("258.2") }]
-  expect(await cache.sized("up")).toBe(false)
-  expect(await cache.index("up", { ...index, slides: [{ id: "258", position: 0, free: 5 }] })).toEqual({ ok: true })
-  expect((await cache.flush("up")).ok).toBe(true)
-  expect(await cache.sized("up")).toBe(false)
   const layered = { ...index, slides: [{ id: "258", position: 0, free: 5, layout }] }
   expect(await cache.index("up", layered)).toEqual({ ok: true })
-  expect((await cache.flush("up")).ok).toBe(true)
-  expect(await cache.sized("up")).toBe(true)
-  const upgraded = await remote.open({ deck: "up" })
-  expect(upgraded.ok && upgraded.register.index?.slides[0]?.layout).toEqual(layout)
-  expect(upgraded.ok && upgraded.register.index?.elements).toEqual(index.elements)
-  const queued = (await readSlot("up\u0002layouts\u0002queue")) as { count: number; sent: number }
-  expect(await cache.index("up", { ...layered, slides: [{ id: "258", position: 0 }] })).toEqual({ ok: true })
+  const queued = await readSlot("up\u0002layouts\u0002queue")
+  expect(queued).toMatchObject({ count: 1, sent: 0, format })
+  expect(await cache.index("up", index)).toEqual({ ok: true })
   expect(await readSlot("up\u0002layouts\u0002queue")).toEqual(queued)
+  expect((await cache.flush("up")).ok).toBe(true)
+  expect(await cache.index("up", index)).toEqual({ ok: true })
+  expect(await readSlot("up\u0002layouts\u0002queue")).toEqual({ ...(queued as object), sent: 1 })
+  const opened = await remote.open({ deck: "up" })
+  expect(opened.ok && opened.register.index).toMatchObject({ format, elements: index.elements })
+  expect(opened.ok && opened.register.index?.slides[0]?.layout).toEqual(layout)
+})
+
+it("queues an older build's queue again at this build's format", async () => {
+  const remote = memoryRemote()
+  await writeSlot("old\u0002layouts\u0002queue", { count: 1, sent: 0, once: "old-once" })
+  await writeSlot("old\u0002layouts\u00020", { once: "old-once", offset: 0, total: 1, ...index })
+  expect(await connect(remote).index("old", index)).toEqual({ ok: true })
+  expect(await readSlot("old\u0002layouts\u0002queue")).toMatchObject({ count: 1, sent: 0, format })
+  expect(await readSlot("old\u0002layouts\u00020")).toMatchObject({ format })
 })

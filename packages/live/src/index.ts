@@ -3,6 +3,7 @@ export { fetchOriginal } from "./original.js"
 export { renameDeck } from "./deck-rename.js"
 export { flushMedia, keepMedia, readMedia } from "./media.js"
 export { flushOriginal, keepQueued, queueOriginal, sendQueued, sendUnopened } from "./original-queue.js"
+export { indexPages } from "./deck-index.js"
 export { starDeck } from "./deck-star.js"
 export { getPart, getParts, putPart, putParts } from "./part.js"
 export {
