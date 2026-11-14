@@ -1,9 +1,9 @@
 declare const process: { cwd(): string; getBuiltinModule(name: "node:fs"): { readFileSync(path: string): Uint8Array } }
-import { readColor, slideId, type Color, type TextValue } from "@airdesign/document"
+import { readColor, type Color, type TextValue } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { colorXml, solidFillXml } from "./color-xml.js"
 import { markupDocument } from "./element-span.js"
-import { orderedParts, paintReader, readParts, readSlides } from "./index.js"
+import { paintReader, readParts, readSlides } from "./index.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { applyRoute } from "./slide-route.js"
 import { writeTrait } from "./trait-xml.js"
@@ -110,13 +110,13 @@ describe("the writers keep a theme colour's transforms", () => {
     const parts = await fixture("blank.pptx")
     const [first] = readSlides(parts)
     if (first === undefined) throw new Error("slide")
-    const id = slideId(first.slide)
-    const state = (color: Color) => ({ file: [id], order: [{ slide: "background" as const, id, color }] })
-    const next = orderedParts(parts, state(darker))
+    const at = { slide: first.slide, part: first.part, shape: "slide" }
+    const filled = (color: Color) => writeTrait(parts, at, "fill", { value: { set: { solid: color } } })
+    const next = filled(darker)
     expect(decodeUtf8(next.get(first.part)!)).toContain(
       '<p:cSld><p:bg><p:bgPr><a:solidFill><a:schemeClr val="accent1"><a:lumMod val="75000"/></a:schemeClr></a:solidFill><a:effectLst/></p:bgPr></p:bg>',
     )
-    const slot = paintReader(orderedParts(parts, state({ scheme: "accent1" }))).slide(first.part).background
+    const slot = paintReader(filled({ scheme: "accent1" })).slide(first.part).background
     expect(slot).toEqual({ type: "solid", color: { hex: "505050", alpha: 1 } })
     expect(paintReader(next).slide(first.part).background).toEqual({
       type: "solid",

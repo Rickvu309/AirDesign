@@ -1,24 +1,23 @@
 import { describe, expect, it } from "vitest"
 import {
-  backgroundOf,
+  beforeOf,
   decide,
+  elementId,
+  format,
+  landedPatch,
   openRegister,
-  readSlideState,
   redoOf,
   slideId,
-  slideUndoable,
   undoOf,
-  undoSlides,
   type Command,
+  type ElementPatch,
   type Register,
-  type SlideCommand,
 } from "./index.js"
 
 const file = [slideId("256"), slideId("257")]
-const first = slideId("256")
-const second = slideId("257")
-const accent = { scheme: "accent1" } as const
-const navy = { rgb: "0F2433" } as const
+const node = elementId("256.slide")
+const accent: ElementPatch = { fill: { value: { set: { solid: { scheme: "accent1" } } } } }
+const navy: ElementPatch = { fill: { value: { set: { solid: { rgb: "0F2433" } } } } }
 
 function landed(register: Register, command: Command): Register {
   const decision = decide(register, command)
@@ -26,89 +25,49 @@ function landed(register: Register, command: Command): Register {
   return decision.register
 }
 
-function set(register: Register, edit: SlideCommand): Register {
-  return landed(register, { command: "slide", file, edit })
+function opened(): Register {
+  return landed(openRegister("", ""), { command: "add", node, floor: "", route: "" })
 }
 
-describe("slide background", () => {
-  it("keeps the file's background until a colour is set, and the last colour set wins", () => {
-    const opened = openRegister("", "")
-    expect(backgroundOf(opened, first)).toBeNull()
-    const painted = set(opened, { slide: "background", id: first, color: accent })
-    expect(backgroundOf(painted, first)).toEqual(accent)
-    expect(backgroundOf(painted, second)).toBeNull()
-    const repainted = set(painted, { slide: "background", id: first, color: navy })
-    expect(backgroundOf(repainted, first)).toEqual(navy)
-    expect(backgroundOf(set(repainted, { slide: "background", id: first, color: null }), first)).toBeNull()
+function painted(register: Register, patch: ElementPatch): Register {
+  return landed(register, { command: "person", node, v: format, patch })
+}
+
+function shown(register: Register) {
+  const body = register.elements[node]
+  return body === undefined ? undefined : landedPatch(body, "text").fill?.value
+}
+
+describe("a slide's background is a fill row on the slide's own node", () => {
+  it("keeps the opening background until a fill is set, and the last fill set wins", () => {
+    expect(shown(opened())).toBeUndefined()
+    expect(shown(painted(opened(), accent))).toEqual({ set: { solid: { scheme: "accent1" } } })
+    expect(shown(painted(painted(opened(), accent), navy))).toEqual({ set: { solid: { rgb: "0F2433" } } })
   })
 
-  it("refuses a colour on a slide that is gone or never was", () => {
-    const removed = set(openRegister("", ""), { slide: "remove", id: second })
-    const edit = (id: string): Command => ({
-      command: "slide",
-      file,
-      edit: { slide: "background", id: slideId(id), color: accent },
+  it("refuses a fill on a slide that is gone", () => {
+    const removed = landed(opened(), { command: "slide", file, edit: { slide: "remove", id: slideId("256") } })
+    expect(decide(removed, { command: "person", node, v: format, patch: accent })).toEqual({
+      decision: "refuse",
+      code: "dead",
     })
-    expect(decide(removed, edit("257"))).toEqual({ decision: "refuse", code: "dead" })
-    expect(decide(removed, edit("300"))).toEqual({ decision: "refuse", code: "dead" })
   })
 
-  it("reads a theme colour, an RGB colour, their transforms and the file's background from the wire, and nothing else", () => {
-    const read = (color: unknown) => readSlideState({ file, order: [{ slide: "background", id: "256", color }] })
-    expect(read(accent)?.order).toEqual([{ slide: "background", id: first, color: accent }])
-    expect(read(navy)?.order).toEqual([{ slide: "background", id: first, color: navy }])
-    expect(read(null)?.order).toEqual([{ slide: "background", id: first, color: null }])
-    const darker = { scheme: "hlink", transforms: [{ op: "lumMod", val: 75000 }] }
-    expect(read(darker)?.order).toEqual([{ slide: "background", id: first, color: darker }])
-    expect(read({ scheme: "phClr" })).toBeUndefined()
-    expect(read({ scheme: "accent1", transforms: [] })).toBeUndefined()
-    expect(read({ rgb: "0f2433" })).toBeUndefined()
-    expect(read({ rgb: "0F2433", scheme: "dk1" })).toBeUndefined()
-    expect(read("accent1")).toBeUndefined()
-    expect(read(undefined)).toBeUndefined()
-  })
-
-  it("undoes a person's colour back to the file's background, and redoes it", () => {
-    const opened = openRegister("", "")
-    const edit: SlideCommand = { slide: "background", id: first, color: accent }
-    const undoable = slideUndoable(opened, file, edit)
-    expect(undoable).toEqual({ slide: first, file, background: { before: null, after: accent } })
-    if (undoable === null) throw new Error("undoable")
-    const painted = set(opened, edit)
-    const undo = undoOf(painted, undoable)
+  it("undoes a person's fill back to the opening background, and redoes it", () => {
+    const step = { node, before: beforeOf({}, accent), after: accent }
+    expect(step.before).toEqual({ fill: { value: "opening" } })
+    const filled = painted(opened(), accent)
+    const undo = undoOf(filled, { steps: [step] })
     if (!undo.ok) throw new Error("changed")
-    const undone = undo.commands.reduce(landed, painted)
-    expect(backgroundOf(undone, first)).toBeNull()
-    const redo = redoOf(undone, undoable)
+    const undone = undo.commands.reduce(landed, filled)
+    expect(shown(undone)).toBe("opening")
+    const redo = redoOf(undone, { steps: [step] })
     if (!redo.ok) throw new Error("changed")
-    expect(backgroundOf(redo.commands.reduce(landed, undone), first)).toEqual(accent)
+    expect(shown(redo.commands.reduce(landed, undone))).toEqual({ set: { solid: { scheme: "accent1" } } })
   })
 
-  it("leaves a colour someone changed after the edit", () => {
-    const opened = openRegister("", "")
-    const edit: SlideCommand = { slide: "background", id: first, color: accent }
-    const undoable = slideUndoable(opened, file, edit)
-    if (undoable === null) throw new Error("undoable")
-    const changed = set(set(opened, edit), { slide: "background", id: first, color: navy })
-    expect(undoOf(changed, undoable)).toEqual({ ok: false })
-  })
-
-  it("takes back every colour a run set and leaves a person's colour on another slide", () => {
-    const person = set(openRegister("", ""), { slide: "background", id: second, color: navy })
-    const before = set(person, { slide: "background", id: first, color: navy })
-    const runId = "run"
-    const once = set(before, { slide: "background", id: first, color: accent, runId })
-    const twice = set(once, { slide: "background", id: first, color: { scheme: "dk2" }, runId })
-    const undone = undoSlides(twice, runId)
-    if (undone === null) throw new Error("undo")
-    expect(backgroundOf(undone, first)).toEqual(navy)
-    expect(backgroundOf(undone, second)).toEqual(navy)
-  })
-
-  it("refuses to take back a run's colour a person changed since", () => {
-    const runId = "run"
-    const ran = set(openRegister("", ""), { slide: "background", id: first, color: accent, runId })
-    const changed = set(ran, { slide: "background", id: first, color: navy })
-    expect(undoSlides(changed, runId)).toBeNull()
+  it("leaves a fill someone changed after the edit", () => {
+    const step = { node, before: beforeOf({}, accent), after: accent }
+    expect(undoOf(painted(painted(opened(), accent), navy), { steps: [step] })).toEqual({ ok: false })
   })
 })

@@ -63,11 +63,19 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await painted(chip)
   await expect(accent).toHaveAttribute("aria-pressed", "true")
   await capture("background-set")
-  const order = async () => (await post(deckRoutes.open, { deck }, cookie)).json.register.order
-  await expect
-    .poll(async () => (await order()).filter((row) => row.slide === "background").map((row) => row.color))
-    .toEqual([{ scheme: "accent1" }])
-  note(`Accent 1 painted the canvas and the thumbnail ${chip}, and the server's order holds one background row`)
+  const fills = async () => {
+    const { register } = (await post(deckRoutes.open, { deck }, cookie)).json
+    const slide = Object.keys(register.elements).find((node) => node.endsWith(".slide"))
+    const rows = slide === undefined ? [] : register.elements[slide].landed
+    return {
+      order: register.order.filter((row) => row.slide === "background").length,
+      rows: rows.map((row) => row.patch),
+    }
+  }
+  await expect.poll(fills).toEqual({ order: 0, rows: [{ fill: { value: { set: { solid: { scheme: "accent1" } } } } }] })
+  note(
+    `Accent 1 painted the canvas and the thumbnail ${chip}, and the server holds one fill row on the slide's own node`,
+  )
   await page.getByRole("button", { name: "Undo background color", exact: true }).click()
   await painted(white)
   await capture("background-undone")
@@ -79,16 +87,19 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   note("Undo painted white again, Redo brought Accent 1 back, and a reload kept it")
   const read = await tool("airdesign_read_deck", { deck })
   const slide = read.slides[0].id
-  const set = await tool("airdesign_set_background", {
+  const set = await tool("airdesign_edit_deck", {
     deck,
     base: read.revision,
-    slide,
-    color: { rgb: "1F4E79" },
+    changes: [{ op: "set", target: slide, fill: { value: "#1F4E79" } }],
   })
   await tool("airdesign_stop_run", { deck, runId: set.runId })
   await painted(agentColor)
   await capture("agent-background")
-  note(`An agent's airdesign_set_background on slide ${slide} painted the open editor ${agentColor}`)
+  const reread = await tool("airdesign_read_deck", { deck })
+  expect(reread.elements.find((element) => element.node === `${slide}.slide`)?.design).toContain("1F4E79")
+  note(
+    `An agent's airdesign_edit_deck set with target ${slide} painted the open editor ${agentColor}, and read_deck shows it`,
+  )
   const downloading = page.waitForEvent("download")
   await page.getByRole("button", { name: "Export", exact: true }).click()
   await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()

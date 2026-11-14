@@ -85,6 +85,7 @@ describe("the one table of traits", () => {
   it("gives every kind a closed list of declared traits", () => {
     for (const kind of kinds) for (const trait of kindTraits[kind]) expect(traitNames).toContain(trait)
     expect(kindTraits.group).toEqual(["identity", "box", "effects"])
-    expect(kindTraits.slide).toEqual(["notes"])
+    expect(kindTraits.slide).toEqual(["fill"])
+    expect(kindTraits.notes).toEqual(["notes"])
   })
 })

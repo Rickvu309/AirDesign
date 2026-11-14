@@ -96,7 +96,6 @@ const toolNames = {
   duplicate_slide: toolName("duplicate_slide"),
   delete_slide: toolName("delete_slide"),
   move_slide: toolName("move_slide"),
-  set_background: toolName("set_background"),
   add_text_box: toolName("add_text_box"),
   delete_element: toolName("delete_element"),
 } as const

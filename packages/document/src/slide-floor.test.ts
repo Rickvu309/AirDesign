@@ -109,6 +109,10 @@ describe("the floor of a slide that was not in the file", () => {
     ).toBeUndefined()
     expect(read([{ ...placeholder, node: "259.2", box: { x: 1 } }])).toBeUndefined()
     expect(read("rows")).toBeUndefined()
+    const own = { node: "259.slide", kind: "slide", value: null, box: null, grouped: false }
+    const fill = { fill: { value: { set: { solid: { rgb: "0F2433" } } } } }
+    expect(read([{ ...own, opening: fill }])?.order[0]).toMatchObject({ floor: [{ node: "259.slide", opening: fill }] })
+    expect(read([{ ...own, node: "258.slide" }])).toBeUndefined()
     expect(readSlideState({ file, order: [{ slide: "clone", id: "259", source: "256", key }] })?.order[0]).toEqual({
       slide: "clone",
       id: "259",
@@ -131,7 +135,7 @@ describe("the floor of a slide that was not in the file", () => {
     expect(read({ fill: { value: "opening" } })).toBeUndefined()
     expect(read({ fill: { value: { set: { solid: { scheme: "nope" } } } } })).toBeUndefined()
     expect(read({ glow: { value: "inherit" } })).toBeUndefined()
-    expect(stamps.command).toBe(1)
+    expect(stamps.command).toBe(2)
   })
 
   it("gives a clone the fields its source shows, over the source's own opening, past the box and text", () => {

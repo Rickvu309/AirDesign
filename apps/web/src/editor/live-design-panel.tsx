@@ -4,16 +4,12 @@ import {
   openRegister,
   readTableValue,
   shapeOf,
-  type Color,
   type ElementId,
   type SchemeName,
   type SetChange,
-  type SlideId,
   type TraitReads,
 } from "@airdesign/document"
-import { connect, memoryRemote } from "@airdesign/live"
 import { readSlides, readTraits, shownFill, themeSwatches, type DeckTraits } from "@airdesign/pptx"
-import { commitBackground } from "@/background-edit"
 import type { CommitOutcome } from "@/commit-edit"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
@@ -138,29 +134,6 @@ function light(css: string): boolean {
   return hex !== null && hex.slice(1).every((pair) => Number.parseInt(pair, 16) >= lightest)
 }
 
-export function deckDesign(deck: DesigningDeck) {
-  const { id, shown, record, settle } = deck
-
-  async function setBackground(slide: SlideId, color: Color) {
-    const opened = await connect(memoryRemote()).openDeck(id)
-    if (!opened.ok) return
-    const outcome = await commitBackground(
-      id,
-      shown.shownParts.current,
-      opened.register,
-      slide,
-      color,
-      async (undoable) => {
-        record({ name: "background", undoable })
-        await shown.showEdited(shown.current)
-      },
-    )
-    settle(outcome)
-  }
-
-  return { setBackground }
-}
-
 export function LiveDesignPanel({ deck }: { deck: DesigningDeck }) {
   const { shown, designing } = deck
   const elements = shown.store.current.slides()[shown.current]?.elements ?? []
@@ -173,11 +146,16 @@ export function LiveDesignPanel({ deck }: { deck: DesigningDeck }) {
 
 function LiveSlideDesign({ deck }: { deck: DesigningDeck }) {
   const { shown } = deck
-  const parts = shown.editParts.current
+  const parts = shown.displayParts.current
   const painted = shown.canvases.current(shown.current)?.background ?? null
   const view = useMemo(() => designShown(parts, shown.current, painted), [parts, shown.current, painted])
   if (view === null) return null
-  return <DesignView shown={view} onColor={(scheme) => void deckDesign(deck).setBackground(view.slide, { scheme })} />
+  return (
+    <DesignView
+      shown={view}
+      onColor={(scheme) => changed(deck, { target: { slide: view.slide }, fill: { value: { solid: { scheme } } } })}
+    />
+  )
 }
 
 export function DesignView({ shown, onColor }: { shown: DesignShown; onColor: (scheme: SchemeName) => void }) {

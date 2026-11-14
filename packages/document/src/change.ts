@@ -1,7 +1,7 @@
 import type { Box } from "./box.js"
 import { currentBox, currentValue, elementFacts, type Register } from "./decide.js"
 import type { DesignKey, Role } from "./design.js"
-import { shapeOf, type ElementId, type SlideId } from "./element-id.js"
+import { shapeOf, slideKind, slideNode, type ElementId, type SlideId } from "./element-id.js"
 import { elementGone } from "./element-order.js"
 import { takes, type ElementFacts } from "./element-takes.js"
 import { format } from "./format.js"
@@ -25,7 +25,10 @@ import {
 } from "./traits.js"
 import type { ValueOf } from "./value-kind.js"
 
-export type Target = { readonly node: ElementId } | { readonly role: Role; readonly slide: SlideId | "every" }
+export type Target =
+  | { readonly node: ElementId }
+  | { readonly slide: SlideId }
+  | { readonly role: Role; readonly slide: SlideId | "every" }
 
 export type TraitInput<T extends TraitName> = {
   readonly [F in Exclude<FieldName<T>, AlphaField<T>>]?:
@@ -196,20 +199,26 @@ function expandRole(register: Register, role: Role, slide: SlideId | "every"): r
   )
 }
 
-function notesNode(register: Register, node: ElementId): boolean {
-  return node.endsWith(".notes") && slideOrder(register).includes(shapeOf(node).slide)
+function slideOwned(register: Register, node: ElementId): boolean {
+  return slideKind(node) !== null && slideOrder(register).includes(shapeOf(node).slide)
+}
+
+function expanded(register: Register, target: Target): readonly ElementId[] | "indexing" {
+  if ("role" in target) return expandRole(register, target.role, target.slide)
+  if (!("node" in target)) {
+    const node = slideNode(target.slide, "slide")
+    return slideOwned(register, node) && present(register, node) ? [node] : []
+  }
+  const known = indexReady(register) || openingElement(register, target.node) !== undefined
+  return known || slideOwned(register, target.node) ? [target.node] : "indexing"
 }
 
 export function registerScope(register: Register): Scope {
   return {
-    expand: (target) => {
-      if (!("node" in target)) return expandRole(register, target.role, target.slide)
-      const known = indexReady(register) || openingElement(register, target.node) !== undefined
-      return known || notesNode(register, target.node) ? [target.node] : "indexing"
-    },
+    expand: (target) => expanded(register, target),
     view: (node) => {
       const opening = openingElement(register, node)
-      if ((opening === undefined && !notesNode(register, node)) || !present(register, node)) return undefined
+      if ((opening === undefined && !slideOwned(register, node)) || !present(register, node)) return undefined
       const facts = elementFacts(register, node)
       if (facts === undefined) return undefined
       const body = register.nodes.includes(node) ? register.elements[node] : undefined

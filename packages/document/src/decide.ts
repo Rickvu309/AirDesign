@@ -1,6 +1,6 @@
 import type { Box } from "./box.js"
 import type { DeckIndex } from "./deck-index.js"
-import { legacyElement, rootElement, shapeOf, type ElementId, type SlideId } from "./element-id.js"
+import { legacyElement, rootElement, shapeOf, slideKind, type ElementId, type SlideId } from "./element-id.js"
 import { limits, overLimit } from "./limits.js"
 import { floorFits, openingElement } from "./slide-floor.js"
 import { elementGone } from "./element-order.js"
@@ -386,7 +386,8 @@ function hostedSlide(id: ElementId): string | null {
 }
 
 export function elementFacts(register: Register, node: ElementId): ElementFacts | undefined {
-  if (node.endsWith(".notes")) return { kind: "slide", text: true, grouped: false, animated: false }
+  const kind = slideKind(node)
+  if (kind !== null) return { kind, text: kind === "notes", grouped: false, animated: false }
   const opening = openingElement(register, node)
   return opening === undefined ? undefined : indexFacts(opening, false)
 }
@@ -398,7 +399,7 @@ export type Missing = {
 }
 
 export function valueHolder(register: Register, node: ElementId, actor: Actor): ValueHolder {
-  if (node.endsWith(".notes")) return "notes"
+  if (slideKind(node) === "notes") return "notes"
   return actor === "person" && openingElement(register, node)?.kind === "table" ? "table" : "text"
 }
 

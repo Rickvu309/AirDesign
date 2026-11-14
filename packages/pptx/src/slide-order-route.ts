@@ -1,5 +1,4 @@
 import {
-  backgroundOf,
   elementCommand,
   elementStacks,
   foldSections,
@@ -25,7 +24,6 @@ import { writeSectionSlides } from "./section-write.js"
 import { addPicture } from "./picture-write.js"
 import { layoutPart, withLayoutPlaceholders } from "./slide-placeholders.js"
 import { arrangeSlide, stacksOf } from "./element-stack-route.js"
-import { withBackground } from "./slide-background-route.js"
 import { applyRoute } from "./slide-route.js"
 import { applyStructuralRoute } from "./structural-route.js"
 
@@ -208,7 +206,6 @@ export function orderedParts(
         ...(state.index === undefined ? {} : { index: state.index }),
       }
       next = arrangeSlide(next, id, stacksOf(prefix, command.source))
-      next = withBackground(next, id, backgroundOf(prefix, command.source))
       continue
     }
     const born = slidePart(next, id)
@@ -226,10 +223,6 @@ export function orderedParts(
         stacks.filter((stack) => stack.slide === spot.id),
       )
     }
-  }
-  for (const spot of presentSlides(state)) {
-    const id = minted.get(spot.id)
-    if (id !== undefined) next = withBackground(next, id, backgroundOf(state, spot.id))
   }
   for (const spot of foldSlides(state)) {
     if (spot.present) continue

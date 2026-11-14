@@ -5,6 +5,7 @@ import {
   planChange,
   readTableValue,
   registerScope,
+  slideKind,
   valueHolder,
   type ElementId,
   type ElementPatch,
@@ -78,7 +79,7 @@ function nameOf(view: ScopedElement, values: readonly FormatOneValue[]): UndoNam
   const [value] = values
   if (value === undefined) return "text"
   if (value.property === "box") return (view.box === null ? null : boxName(view.box, value.value)) ?? "move"
-  if (view.node.endsWith(".notes")) return "notes"
+  if (slideKind(view.node) === "notes") return "notes"
   return plainOf(value.value) === plainOf(view.value ?? "") ? "format" : "text"
 }
 
@@ -101,7 +102,8 @@ type Planned = {
 
 const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = { fill: "fill" }
 
-function rowName(row: Row): UndoName {
+function rowName(node: ElementId, row: Row): UndoName {
+  if (slideKind(node) === "slide") return "background"
   const [trait] = Object.keys(row.patch) as TraitName[]
   return (trait === undefined ? undefined : rowNames[trait]) ?? "format"
 }
@@ -124,7 +126,7 @@ function planned(deck: ChangingDeck, register: Register, change: SetChange): rea
     if (view === undefined) return null
     if (values === null) {
       const before = landedBefore(opened, node, row.patch)
-      rows.push({ node, row, step: { node, before, after: row.patch }, name: rowName(row) })
+      rows.push({ node, row, step: { node, before, after: row.patch }, name: rowName(node, row) })
       continue
     }
     const before = heldPatch(view, row.patch)

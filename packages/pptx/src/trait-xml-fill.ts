@@ -2,7 +2,7 @@ import { insertChild } from "./child-order.js"
 import { colorXml, solidFillXml } from "./color-xml.js"
 import { fillKinds } from "./color-read.js"
 import { spliceBytes, type ByteEdit } from "./element-span.js"
-import { shownFill, type Fill } from "./fill-read.js"
+import { ownBackground, shownFill, type Fill } from "./fill-read.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { shapeById } from "./shape-tree.js"
@@ -37,7 +37,29 @@ export function fillMarkup(fill: Fill): Written {
   }
 }
 
+function changedPart(parts: Parts, part: string, bytes: Uint8Array, edit: ByteEdit | null): Parts {
+  if (edit === null) return parts
+  const next = spliceBytes(bytes, [edit])
+  if (sameBytes(next, bytes)) return parts
+  const changed = new Map(parts)
+  changed.set(part, next)
+  return changed
+}
+
+function writtenBackground(parts: Parts, at: ElementAt, written: Written | null): Parts {
+  const bytes = partBytes(parts, at.part)
+  const { elements } = requireMarkup(bytes)
+  const root = elements.find((element) => element.parent < 0)
+  const body = elements.find((element) => element.kind === "p:cSld" && element.parent === root?.index)
+  if (body === undefined || body.selfClosing) throw new Error("p:cSld")
+  const own = elements.find((element) => element.kind === "p:bg" && element.parent === body.index)
+  const next = encodeUtf8(written === null ? "" : `<p:bg><p:bgPr>${written.xml}<a:effectLst/></p:bgPr></p:bg>`)
+  if (own !== undefined) return changedPart(parts, at.part, bytes, { start: own.start, end: own.end, next })
+  return written === null ? parts : changedPart(parts, at.part, bytes, { start: body.openEnd, end: body.openEnd, next })
+}
+
 function writtenFill(parts: Parts, at: ElementAt, written: Written | null): Parts {
+  if (at.shape === "slide") return writtenBackground(parts, at, written)
   const bytes = partBytes(parts, at.part)
   const { elements } = requireMarkup(bytes)
   const shape = shapeById(elements, at.shape)
@@ -60,12 +82,7 @@ function writtenFill(parts: Parts, at: ElementAt, written: Written | null): Part
       next: encodeUtf8(insertChild("p:spPr", written.tag, written.xml, parent)),
     }
   }
-  if (edit === null) return parts
-  const next = spliceBytes(bytes, [edit])
-  if (sameBytes(next, bytes)) return parts
-  const changed = new Map(parts)
-  changed.set(at.part, next)
-  return changed
+  return changedPart(parts, at.part, bytes, edit)
 }
 
 export const fillXml: TraitXml<"fill"> = {
@@ -73,7 +90,8 @@ export const fillXml: TraitXml<"fill"> = {
   fields: {
     value: whole(
       {
-        read: (parts, at) => shownFill(parts, at)?.value ?? null,
+        read: (parts, at) =>
+          at.shape === "slide" ? ownBackground(parts, at.part) : (shownFill(parts, at)?.value ?? null),
         write: (parts, at, value) => writtenFill(parts, at, fillMarkup(value)),
       },
       (parts, at) => writtenFill(parts, at, null),

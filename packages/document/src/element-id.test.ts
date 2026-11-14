@@ -1,8 +1,28 @@
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
-import { elementId, legacyElement, readElementId, rootElement, shapeOf, storedElements } from "./element-id.js"
+import {
+  elementId,
+  legacyElement,
+  readElementId,
+  rootElement,
+  shapeOf,
+  slideId,
+  slideNode,
+  slideKind,
+  storedElements,
+} from "./element-id.js"
 
-const accepted = ["258.7", "0.0", "0.0000000000", "n4k2j9x0q1zab.7", "258.n4k2j9x0q1zab", "n4k2j9x0q1zab.n4k2j9x0q1zab"]
+const accepted = [
+  "258.7",
+  "0.0",
+  "0.0000000000",
+  "n4k2j9x0q1zab.7",
+  "258.n4k2j9x0q1zab",
+  "n4k2j9x0q1zab.n4k2j9x0q1zab",
+  "258.notes",
+  "258.slide",
+  "n4k2j9x0q1zab.slide",
+]
 const refused = [
   "",
   "a",
@@ -15,6 +35,9 @@ const refused = [
   "n4k2j9x0q1za.7",
   "N4K2J9X0Q1ZAB.7",
   "258.7\n",
+  "258.slides",
+  "258.notess",
+  "slide.7",
   "toString",
   "constructor",
   "__proto__",
@@ -88,5 +111,19 @@ describe("the named elements", () => {
 
   it("drops a stored key that is not an element id", () => {
     expect(storedElements({ elements: { toString: 1, "258.": 2, "258.7": 3 } })).toEqual(["258.7"])
+  })
+})
+
+describe("slideKind", () => {
+  it("names a slide's own nodes and nothing else", () => {
+    expect(slideKind(elementId("258.notes"))).toBe("notes")
+    expect(slideKind(elementId("258.slide"))).toBe("slide")
+    expect(slideKind(elementId("258.7"))).toBeNull()
+    expect(slideKind(elementId("258.n4k2j9x0q1zab"))).toBeNull()
+  })
+
+  it("builds the node it reads", () => {
+    expect(slideNode(slideId("258"), "slide")).toBe(elementId("258.slide"))
+    expect(slideKind(slideNode(slideId("258"), "notes"))).toBe("notes")
   })
 })

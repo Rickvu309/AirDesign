@@ -1,4 +1,4 @@
-import { type SlideId, type Undoable } from "@airdesign/document"
+import { slideKind, type SlideId, type Undoable } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { textFormatting } from "@airdesign/render"
 import { useEffect, useRef, useState } from "react"
@@ -109,7 +109,7 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     if ("slide" in undoable || structure.current !== structureOf(next.register)) showRegister(next.register)
     repaint.current(next.register, "person")
     const nodes = "steps" in undoable ? undoable.steps.map((step) => step.node) : []
-    if (nodes.some((node) => node.endsWith(".notes"))) notesBar.show(notesShown(shownParts.current, next.register))
+    if (nodes.some((node) => slideKind(node) === "notes")) notesBar.show(notesShown(shownParts.current, next.register))
     const slides = store.current.slides()
     const after = slideId === null ? -1 : slides.findIndex((slide) => slide.id === slideId)
     const said = slideTurnSaid(direction, entry.name, { before, after, count: slides.length, held })

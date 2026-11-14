@@ -13,6 +13,8 @@ import {
   openingElement,
   readElementId,
   shapeOf,
+  slideKind,
+  upgradeBackgrounds,
   version,
   type Box,
   type ElementId,
@@ -111,12 +113,17 @@ function elementOf(
   indexed?: IndexElement,
 ): ReadElement {
   const box = (body === undefined ? null : currentBox(body)) ?? indexed?.box ?? null
+  const own = slideKind(node) === "slide"
   const held = {
     node,
     slide: shapeOf(node).slide,
-    value: body === undefined ? (indexed?.value ?? null) : currentValue(body),
+    value: own || body === undefined ? (indexed?.value ?? null) : currentValue(body),
     version: body === undefined ? 0 : version(body),
-    ...(indexed === undefined ? {} : { kind: indexed.kind, grouped: indexed.grouped }),
+    ...(indexed === undefined
+      ? own
+        ? { kind: "slide" as const }
+        : {}
+      : { kind: indexed.kind, grouped: indexed.grouped }),
   }
   const withBox = box === null && indexed === undefined ? held : { ...held, box }
   const edited = body !== undefined && history(body).length > 0
@@ -145,6 +152,8 @@ function knownNodes(register: Register): readonly ElementId[] {
   const opening = [...(register.index?.elements.map((element) => element.node) ?? []), ...floorNodes(register)]
   for (const node of opening) {
     if (register.elements[node] !== undefined && !registered.has(node)) continue
+    if (slideKind(node) === "slide" && !registered.has(node) && openingElement(register, node)?.opening === undefined)
+      continue
     nodes.push(node)
     listed.add(node)
   }
@@ -221,9 +230,10 @@ function packRead(
 }
 
 export function readDeckPage(
-  deck: Deck,
+  stored: Deck,
   query: { readonly slide?: string; readonly cursor?: string; readonly runId: string | null },
 ): ReadDeckAnswer {
+  const deck = { ...stored, register: upgradeBackgrounds(stored.register) }
   const goneSlides = new Set<string>(foldSlides(deck.register).flatMap((spot) => (spot.present ? [] : [spot.id])))
   const nodes = knownNodes(deck.register)
   const index = deck.register.index

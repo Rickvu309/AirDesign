@@ -4,6 +4,8 @@ import {
   limits,
   openingElement,
   planChange,
+  shapeOf,
+  slideKind,
   registerScope,
   valueBytes,
   version,
@@ -20,14 +22,12 @@ export type Applied =
   | { readonly ok: true; readonly register: Register }
   | { readonly ok: false; readonly refusal: CallRefusal }
 
-function notesNode(register: Register, node: ElementId): boolean {
-  const index = register.index
+function slideOwned(register: Register, node: ElementId): boolean {
+  if (slideKind(node) === null) return false
+  const slide = shapeOf(node).slide
   return (
-    node.endsWith(".notes") &&
-    (index?.slides.some((slide) => `${slide.id}.notes` === node) === true ||
-      register.order.some(
-        (command) => (command.slide === "add" || command.slide === "clone") && `${command.id}.notes` === node,
-      ))
+    register.index?.slides.some((each) => each.id === slide) === true ||
+    register.order.some((command) => (command.slide === "add" || command.slide === "clone") && command.id === slide)
   )
 }
 
@@ -38,7 +38,7 @@ export function openedRegister(register: Register, edit: WireRunElement): Applie
     index !== undefined &&
     index.elements.length === index.total &&
     openingElement(register, edit.node) === undefined &&
-    !notesNode(register, edit.node)
+    !slideOwned(register, edit.node)
   )
     return { ok: false, refusal: "dead" }
   const opened = decide(register, {

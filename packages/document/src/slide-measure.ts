@@ -1,5 +1,5 @@
 import type { DeckIndex, SlideSize } from "./deck-index.js"
-import { shapeOf, type SlideId } from "./element-id.js"
+import { shapeOf, slideKind, type SlideId } from "./element-id.js"
 import { floorOf } from "./slide-floor.js"
 import type { SlideState } from "./slide-order.js"
 
@@ -15,7 +15,8 @@ function floorEnd(state: Measured, slide: SlideId): number {
   let end = 1
   for (const command of state.order) {
     if (command.id !== slide) continue
-    for (const element of floorOf(command)) end = Math.max(end, Number(shapeOf(element.node).shape))
+    for (const element of floorOf(command))
+      if (slideKind(element.node) === null) end = Math.max(end, Number(shapeOf(element.node).shape))
   }
   return end + 1
 }

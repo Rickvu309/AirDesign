@@ -26,7 +26,8 @@ const kindWords: Readonly<Record<Kind, string>> = {
   master: "a slide master",
   layout: "a layout",
   section: "a section",
-  slide: "the slide's speaker notes",
+  slide: "the slide itself, whose fill is its background",
+  notes: "the slide's speaker notes",
   shape: "a shape",
   picture: "a picture",
   connector: "a line",
@@ -41,6 +42,7 @@ const kindWords: Readonly<Record<Kind, string>> = {
 const takenWords: readonly (readonly [FieldKey | "remove", string])[] = [
   ["text.value", "new text"],
   ["notes.value", "new text"],
+  ["fill.value", "a fill"],
   ["box.x", "a move"],
   ["box.w", "a resize"],
   ["remove", "a delete"],
@@ -77,7 +79,8 @@ function textNext(node: ElementId, { facts }: Missing): string {
 function boxNext({ facts, box }: Missing): string {
   if (facts.kind === "table" && box !== null)
     return `A table moves but does not resize. Send its box with cx ${String(box.cx)} and cy ${String(box.cy)}.`
-  if (facts.kind === "slide") return "Notes have no box. Send their text only."
+  if (facts.kind === "notes") return "Notes have no box. Send their text only."
+  if (facts.kind === "slide") return "Send the slide's fill only."
   return "Leave it, or tell the person."
 }
 
@@ -125,6 +128,13 @@ export function setProblem(
     if (!("op" in change) || change.op !== "set" || "node" in change.target) continue
     const planned = planChange(change, registerScope(register))
     const code = planned.ok ? undefined : planned.refusals.find((refusal) => refusal.node === null)?.code
+    if (!("role" in change.target)) {
+      if (code !== "dead") continue
+      return {
+        code,
+        detail: `Change ${String(at + 1)} (${change.target.slide}): the deck has no slide ${change.target.slide}. Choose a present slide from airdesign_read_deck.`,
+      }
+    }
     const named = `Change ${String(at + 1)} (${change.target.slide === "every" ? "*" : change.target.slide}.${change.target.role})`
     if (code === "indexing")
       return {
@@ -148,7 +158,8 @@ const instructedKinds: readonly (readonly [Kind, string])[] = [
   ["table", "A table"],
   ["chart", "A chart"],
   ["kept", "An element kept exactly as the file has it, such as a diagram or an embedded object,"],
-  ["slide", "A slide's speaker notes, node <slide>.notes,"],
+  ["slide", "A slide itself, target <slide> or node <slide>.slide,"],
+  ["notes", "A slide's speaker notes, node <slide>.notes,"],
 ]
 
 function traitWords(kind: Kind): string | undefined {
@@ -166,7 +177,7 @@ function traitWords(kind: Kind): string | undefined {
 
 export function kindInstructions(): string {
   return [
-    'airdesign_edit_deck sets fields with { "op": "set", "target": ..., "<trait>": { "<field>": value } }. The target is an element id, <slide>.<role> for the element with that role on one slide, or *.<role> for it on every slide. One call lands on every element it names, or on none.',
+    'airdesign_edit_deck sets fields with { "op": "set", "target": ..., "<trait>": { "<field>": value } }. The target is an element id, <slide> for the slide itself, whose fill is its background, <slide>.<role> for the element with that role on one slide, or *.<role> for it on every slide. One call lands on every element it names, or on none.',
     "What each kind of element takes:",
     ...instructedKinds.map(([kind, named]) => `${named} takes ${traitWords(kind) ?? "no field yet"}.`),
     "An element inside a group takes no box, and a shape that holds no text takes no text. Any other field cannot be set yet.",

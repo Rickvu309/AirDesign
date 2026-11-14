@@ -18,7 +18,6 @@ describe("run operations in the catalog", () => {
       "list_decks",
       "move_slide",
       "read_deck",
-      "set_background",
       "stop_run",
     ])
   })
@@ -27,7 +26,7 @@ describe("run operations in the catalog", () => {
 describe("projectTools", () => {
   it("projects the agent tools in name order", () => {
     const tools = projectTools(catalog)
-    expect(tools).toHaveLength(11)
+    expect(tools).toHaveLength(10)
     expect(tools.map((tool) => tool.name)).toEqual([
       "airdesign_add_slide",
       "airdesign_add_text_box",
@@ -38,7 +37,6 @@ describe("projectTools", () => {
       "airdesign_list_decks",
       "airdesign_move_slide",
       "airdesign_read_deck",
-      "airdesign_set_background",
       "airdesign_stop_run",
     ])
     expect(tools.every((tool) => tool.runsOn === "server")).toBe(true)
@@ -124,24 +122,5 @@ describe("element tools", () => {
     const schema = JSON.stringify(toolInputSchema("add_text_box"))
     expect(schema).toContain("914400 EMU")
     expect(schema).toContain("largest free area")
-  })
-})
-
-describe("background tool", () => {
-  it("reads a theme colour or an RGB colour for one slide, and nothing else", () => {
-    const read = catalog.set_background.read
-    const base = { deck: "d", base: 3, slide: "258" }
-    expect(read({ ...base, color: { scheme: "accent1" } })).toMatchObject({ ok: true, color: { scheme: "accent1" } })
-    expect(read({ ...base, color: { rgb: "1F4E79" } })).toMatchObject({ ok: true, color: { rgb: "1F4E79" } })
-    for (const color of [{ rgb: "1f4e79" }, { rgb: "1F4E7" }, { scheme: "hlink" }, "accent1", null]) {
-      expect(read({ ...base, color }).ok).toBe(false)
-    }
-    expect(read({ ...base, color: { scheme: "dk1" }, image: "a.png" }).ok).toBe(false)
-  })
-
-  it("names the theme colours and the hex form in the schema", () => {
-    const schema = JSON.stringify(toolInputSchema("set_background"))
-    expect(schema).toContain("accent6")
-    expect(schema).toContain("1F4E79")
   })
 })

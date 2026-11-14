@@ -1,6 +1,7 @@
 import {
   decide,
   elementId,
+  format,
   openRegister,
   orderKeyAfter,
   presentSlides,
@@ -8,11 +9,12 @@ import {
   writeTextValue,
   type Box,
   type Command,
+  type ElementPatch,
   type Register,
   type SlideCommand,
   type SlideId,
 } from "@airdesign/document"
-import { notesLinkFailures, readNotes, readParts, readShapes, readSlides } from "@airdesign/pptx"
+import { notesLinkFailures, paintReader, readNotes, readParts, readShapes, readSlides } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { exportedParts, storedText } from "./exported-parts"
 import { shownValue } from "./live-repaint"
@@ -137,7 +139,9 @@ it("leaves a box the person removed out of their duplicate and out of the export
   })
   register = sliding(parts, register, { slide: "clone", id: copy, source, key: after(parts, register, source) })
   const clone = register.order.at(-1)
-  expect(clone?.slide === "clone" ? clone.floor : undefined).toEqual([])
+  expect(clone?.slide === "clone" ? clone.floor : undefined).toEqual([
+    { node: elementId("257.slide"), kind: "slide", value: null, box: null, grouped: false },
+  ])
   expect(shown(exportedParts(parts, register))).toEqual({})
 })
 
@@ -195,4 +199,29 @@ it("writes first notes on a blank deck's slide, a new slide and a copy that keep
     "301": "Opening line",
   })
   expect(notesLinkFailures(exported)).toEqual([])
+})
+
+it("gives a duplicate the background the person set on its source, and keeps the copy's own colour after", async () => {
+  const parts = await fixture("clean.pptx")
+  const navy = { set: { solid: { rgb: "0F2433" } } } as const
+  const filled = (register: Register, node: string, patch: ElementPatch): Register =>
+    applied(opened(register, node), { command: "person", v: format, patch, node: elementId(node) })
+  let register = filled(openRegister("", "deck"), "256.slide", { fill: { value: navy } })
+  register = sliding(parts, register, { slide: "clone", id: copy, source, key: after(parts, register, source) })
+  register = filled(register, "256.slide", { fill: { value: "opening" } })
+  const clone = register.order.at(-1)
+  expect(clone?.slide === "clone" ? clone.floor?.find((row) => row.node === "257.slide") : undefined).toEqual({
+    node: elementId("257.slide"),
+    kind: "slide",
+    value: null,
+    box: null,
+    grouped: false,
+    opening: { fill: { value: navy } },
+  })
+  const exported = exportedParts(parts, register)
+  const painted = new Map(
+    readSlides(exported).map((slide) => [slide.slide, paintReader(exported).slide(slide.part).background]),
+  )
+  expect(painted.get("257")).toEqual({ type: "solid", color: { hex: "0F2433", alpha: 1 } })
+  expect(painted.get("256")).not.toEqual(painted.get("257"))
 })
