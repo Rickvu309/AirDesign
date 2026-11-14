@@ -4,10 +4,20 @@ import type { PaintImage } from "./paint-image.js"
 
 export type PaintColor = { hex: string; alpha: number }
 
+export type PaintGradientPath = {
+  kind: "circle" | "rect" | "shape"
+  focus: { left: number; top: number; right: number; bottom: number } | null
+}
+
 export type PaintFill =
   | { type: "none" }
   | { type: "solid"; color: PaintColor }
-  | { type: "gradient"; stops: readonly { position: number; color: PaintColor }[]; angle: number | null }
+  | {
+      type: "gradient"
+      stops: readonly { position: number; color: PaintColor }[]
+      angle: number | null
+      path: PaintGradientPath | null
+    }
   | { type: "pattern"; preset: string; foreground: PaintColor; background: PaintColor }
   | ({ type: "picture" } & PaintImage)
 

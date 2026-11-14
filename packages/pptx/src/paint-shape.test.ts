@@ -60,7 +60,34 @@ describe("shape paint", () => {
     [solid("123456"), expected("123456")],
     [
       '<a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="123456"/></a:gs></a:gsLst><a:lin ang="5400000"/></a:gradFill>',
-      { type: "gradient", stops: [{ position: 0, color: { hex: "123456", alpha: 1 } }], angle: 90 },
+      { type: "gradient", stops: [{ position: 0, color: { hex: "123456", alpha: 1 } }], angle: 90, path: null },
+    ],
+    [
+      '<a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="123456"/></a:gs></a:gsLst><a:path path="rect"><a:fillToRect l="25000" t="50000" r="75000" b="0"/></a:path></a:gradFill>',
+      {
+        type: "gradient",
+        stops: [{ position: 0, color: { hex: "123456", alpha: 1 } }],
+        angle: null,
+        path: { kind: "rect", focus: { left: 0.25, top: 0.5, right: 0.75, bottom: 0 } },
+      },
+    ],
+    [
+      '<a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="123456"/></a:gs></a:gsLst><a:path path="shape"><a:fillToRect l="50000" t="50000" r="50000" b="50000"/></a:path></a:gradFill>',
+      {
+        type: "gradient",
+        stops: [{ position: 0, color: { hex: "123456", alpha: 1 } }],
+        angle: null,
+        path: { kind: "shape", focus: { left: 0.5, top: 0.5, right: 0.5, bottom: 0.5 } },
+      },
+    ],
+    [
+      '<a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="123456"/></a:gs></a:gsLst><a:path path="circle"/></a:gradFill>',
+      {
+        type: "gradient",
+        stops: [{ position: 0, color: { hex: "123456", alpha: 1 } }],
+        angle: null,
+        path: { kind: "circle", focus: null },
+      },
     ],
     [
       '<a:pattFill prst="pct5"><a:fgClr><a:srgbClr val="123456"/></a:fgClr><a:bgClr><a:srgbClr val="FFFFFF"/></a:bgClr></a:pattFill>',

@@ -9,6 +9,7 @@ const outlines = new Map<string, CanvasOutline>([
   ["straightConnector1", "line"],
 ])
 const dashes = new Map<string, readonly number[]>([
+  ["dot", [1, 3]],
   ["sysDot", [1, 1]],
   ["sysDash", [3, 1]],
   ["dash", [4, 3]],
@@ -64,6 +65,7 @@ export function geometryOf(row: PaintElement) {
       ? undefined
       : {
           angle: fill.angle,
+          ...(fill.path === null ? {} : { path: fill.path }),
           stops: fill.stops.map((stop) => ({ position: stop.position, color: cssColor(stop.color) })),
         }
   return {

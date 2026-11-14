@@ -2,7 +2,7 @@ import { useId } from "react"
 import { presetOutline } from "./preset-path.js"
 import type { CanvasElement, CanvasLine } from "./record.js"
 import type { Scaled } from "./text-look.js"
-import { ShapeGradient } from "./shape-gradient.js"
+import { ShapeGradient, sidesGradient } from "./shape-gradient.js"
 
 type Arrowhead = NonNullable<CanvasLine["head"]>
 
@@ -71,13 +71,20 @@ export function shapePaths(element: CanvasElement, scaled: Scaled) {
   )
 }
 
+export function paintsFillAsSvg(element: CanvasElement, scaled: Scaled) {
+  return (
+    shapePaths(element, scaled) !== null || (element.outline !== "line" && sidesGradient(element.geometry?.gradient))
+  )
+}
+
 export function ShapeArt(props: { readonly element: CanvasElement; readonly scaled: Scaled; readonly grab?: boolean }) {
   const id = useId().replaceAll(":", "")
   const { element, scaled } = props
   if (element.box === null) return null
   const paths = shapePaths(element, scaled)
   const line = element.line
-  if (paths === null && line === null) return null
+  const sidesFill = paths === null && element.outline !== "line" && sidesGradient(element.geometry?.gradient)
+  if (paths === null && line === null && !sidesFill) return null
   const width = scaled(element.box.width)
   const height = scaled(element.box.height)
   const weight = scaled(line?.width ?? 0)
@@ -85,7 +92,7 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
   const cssFill = element.fill?.includes("gradient(") === true || element.fill?.includes("url(") === true
   const fill = gradient !== undefined ? `url(#${id}-gradient)` : cssFill ? null : element.fill
   const stroke = {
-    fill: "none",
+    fill: sidesFill ? (fill ?? "none") : "none",
     stroke: line?.color ?? "none",
     strokeWidth: weight,
     ...(props.grab === true ? { style: { pointerEvents: "visibleStroke", cursor: "move" } as const } : {}),

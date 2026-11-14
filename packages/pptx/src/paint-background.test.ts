@@ -90,6 +90,7 @@ describe("paint backgrounds", () => {
         { position: 1, color: { hex: "336699", alpha: 0.5 } },
       ],
       angle: 90,
+      path: null,
     })
   })
 
@@ -132,11 +133,13 @@ describe("paint backgrounds", () => {
       type: "gradient",
       stops: expectedStops,
       angle: 90,
+      path: null,
     })
     expect(background(partsOf([fill(`<a:gradFill>${stops}<a:path path="circle"/></a:gradFill>`)]))).toEqual({
       type: "gradient",
       stops: expectedStops,
       angle: null,
+      path: { kind: "circle", focus: null },
     })
     expect(
       background(

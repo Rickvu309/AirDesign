@@ -11,6 +11,10 @@ export type CanvasGeometry = {
   readonly adjusts: Readonly<Record<string, number>>
   readonly gradient?: {
     readonly angle: number | null
+    readonly path?: {
+      readonly kind: "circle" | "rect" | "shape"
+      readonly focus: Readonly<Record<"left" | "top" | "right" | "bottom", number>> | null
+    }
     readonly stops: readonly { readonly position: number; readonly color: string }[]
   }
 }
