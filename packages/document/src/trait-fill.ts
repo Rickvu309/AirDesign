@@ -73,12 +73,14 @@ const gradient = record({
 
 const pattern = record({ preset: choice(patternPresets), fg: color, bg: color })
 
+export const fillCases = { none: mark, solid: color, gradient, pattern } as const
+
 const noInputs: NoInputs = {}
 
 export const fill = trait(
   "whole",
   { version: 1, shape: "5b43a296" },
-  { value: union({ none: mark, solid: color, gradient, pattern, group: mark }, "solid") },
+  { value: union({ ...fillCases, group: mark }, "solid") },
   noInputs,
   ["value"],
 )

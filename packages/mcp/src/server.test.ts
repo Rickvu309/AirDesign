@@ -89,7 +89,10 @@ describe("createServer", () => {
     await withClient(sessionFor(opened()), async (client) => {
       const instructions = client.getInstructions() ?? ""
       expect(instructions).toContain('"op": "set"')
-      expect(instructions).toContain("A shape takes box (x, y, w, h), fill (value) and text (value, color, size")
+      expect(instructions).toContain(
+        "A shape takes box (x, y, w, h), fill (value), line (fill, width, dash, cap, compound, join, head, tail) and text (value, color, size",
+      )
+      expect(instructions).toContain("A line takes box (x, y, w, h) and line (fill, width, dash")
       expect(instructions).toContain("A table takes box (x, y).")
     })
   })

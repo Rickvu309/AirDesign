@@ -58,6 +58,10 @@ export const flag = kind<boolean, boolean>({ kind: "flag" })
 export const mark: MarkKind = kind<true, MarkAgent>({ kind: "mark" })
 export const color = kind<Color, AgentColor>({ kind: "color" })
 
+export function sizeUpTo(max: number): ValueKind<number, number> {
+  return whole("emu", 0, max)
+}
+
 export function count(min: number, max: number): ValueKind<number, number> {
   return whole("count", min, max)
 }

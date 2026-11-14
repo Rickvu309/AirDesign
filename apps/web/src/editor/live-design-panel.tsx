@@ -9,7 +9,7 @@ import {
   type SetChange,
   type TraitReads,
 } from "@airdesign/document"
-import { readSlides, readTraits, shownFill, themeSwatches, type DeckTraits } from "@airdesign/pptx"
+import { readSlides, readTraits, shownFill, shownLine, themeSwatches, type DeckTraits } from "@airdesign/pptx"
 import type { CommitOutcome } from "@/commit-edit"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
@@ -55,7 +55,11 @@ function fieldsOf(parts: Parts, node: ElementId): PanelReads["fields"] {
   if (part === undefined) return {}
   try {
     const fill = shownFill(parts, { part, shape })
-    return fill === null ? {} : { "fill.value": fill }
+    const line = Object.entries(shownLine(parts, { part, shape }) ?? {}).map(([field, shown]) => [
+      `line.${field}`,
+      shown,
+    ])
+    return { ...(fill === null ? {} : { "fill.value": fill }), ...Object.fromEntries(line) }
   } catch {
     return {}
   }

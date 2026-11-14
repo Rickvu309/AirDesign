@@ -39,7 +39,10 @@ export function DesignElementArt() {
       model={panelOf(title, {
         reads: {},
         moves: true,
-        fields: { "fill.value": { value: { none: true }, own: false } },
+        fields: {
+          "fill.value": { value: { none: true }, own: false },
+          "line.fill": { value: { none: true }, own: false },
+        },
       })}
       kind="shape"
       palette={palette}

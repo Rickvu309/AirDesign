@@ -36,6 +36,7 @@ import {
   readSlides,
   readTable,
   shownFill,
+  shownLine,
 } from "@airdesign/pptx"
 import { beforeAll, describe, expect, it } from "vitest"
 import { optionCopy } from "./copy/option-copy"
@@ -57,6 +58,7 @@ type Probe<T extends TraitName> = [FieldName<T>] extends [never]
   : {
       readonly deck: string
       readonly kind: Kind
+      readonly node?: string
       readonly opening: (parts: Parts, at: At) => Value
       readonly edit: (opening: Value, field: FieldName<T>, value: FieldValue<T, FieldName<T>>) => Value
       readonly fields: { readonly [F in FieldName<T>]-?: FieldProbe<T, F> }
@@ -71,6 +73,17 @@ type Case = { readonly covers?: readonly string[] }
 const cases = Object.values(
   import.meta.glob<Case>("../../../scripts/pptx-cases/*.mjs", { import: "default", eager: true }),
 )
+
+const lineOpening = {
+  fill: "opening",
+  width: "opening",
+  dash: "opening",
+  cap: "opening",
+  compound: "opening",
+  join: "opening",
+  head: "opening",
+  tail: "opening",
+} as const
 
 const boxKeys = { x: "x", y: "y", w: "cx", h: "cy" } as const
 
@@ -102,7 +115,55 @@ const probes: { readonly [T in TraitName]: Probe<T> } = {
       },
     },
   },
-  line: { fields: {} },
+  line: {
+    deck: "census-updating-spm.pptx",
+    kind: "connector",
+    node: "324.26",
+    opening: () => ({ v: format, patch: { line: lineOpening } }),
+    edit: (_, field, value) => ({ v: format, patch: { line: { [field]: { set: value } } } }),
+    fields: {
+      fill: {
+        file: (parts, at) => shownLine(parts, at)?.fill.value,
+        shows: (value) => value,
+        inherited: (parts, at) => shownLine(parts, at)?.fill.own === false,
+      },
+      width: {
+        file: (parts, at) => shownLine(parts, at)?.width.value,
+        shows: (value) => value,
+        inherited: (parts, at) => shownLine(parts, at)?.width.own === false,
+      },
+      dash: {
+        file: (parts, at) => shownLine(parts, at)?.dash.value,
+        shows: (value) => value,
+        inherited: (parts, at) => shownLine(parts, at)?.dash.own === false,
+      },
+      cap: {
+        file: (parts, at) => shownLine(parts, at)?.cap.value,
+        shows: (value) => value,
+        inherited: (parts, at) => shownLine(parts, at)?.cap.own === false,
+      },
+      compound: {
+        file: (parts, at) => shownLine(parts, at)?.compound.value,
+        shows: (value) => value,
+        inherited: (parts, at) => shownLine(parts, at)?.compound.own === false,
+      },
+      join: {
+        file: (parts, at) => shownLine(parts, at)?.join.value,
+        shows: (value) => value,
+        inherited: (parts, at) => shownLine(parts, at)?.join.own === false,
+      },
+      head: {
+        file: (parts, at) => shownLine(parts, at)?.head.value,
+        shows: (value) => value,
+        inherited: (parts, at) => shownLine(parts, at)?.head.own === false,
+      },
+      tail: {
+        file: (parts, at) => shownLine(parts, at)?.tail.value,
+        shows: (value) => value,
+        inherited: (parts, at) => shownLine(parts, at)?.tail.own === false,
+      },
+    },
+  },
   effects: { fields: {} },
   body: { fields: {} },
   image: { fields: {} },
@@ -203,8 +264,10 @@ function landed(register: Register, commands: readonly Command[]): Register | nu
   return current
 }
 
-function placed(parts: Parts, kind: Kind): At {
-  const found = indexPackage(parts).elements.find((each) => each.kind === kind && !each.grouped)
+function placed(parts: Parts, kind: Kind, node?: string): At {
+  const found = indexPackage(parts).elements.find(
+    (each) => each.kind === kind && !each.grouped && (node === undefined || each.node === node),
+  )
   if (found === undefined) throw new Error(kind)
   const [slide = "", shape = ""] = found.node.split(".")
   const part = readSlides(parts).find((each) => each.slide === slide)?.part ?? ""
@@ -261,6 +324,7 @@ function same(left: unknown, right: unknown): boolean {
 type Loose = {
   readonly deck: string
   readonly kind: Kind
+  readonly node?: string
   readonly opening: (parts: Parts, at: At) => Value
   readonly edit: (opening: Value, field: string, value: unknown) => Value
   readonly fields: Readonly<
@@ -298,7 +362,7 @@ async function fieldProblems(
   const value = desc === undefined ? undefined : fromAgent(desc, example)
   if (desc === undefined || sent === undefined || value === undefined) return [{ field: key, missing: "wire" }]
   const parts = await deckParts(probe.deck)
-  const at = placed(parts, probe.kind)
+  const at = placed(parts, probe.kind, probe.node)
   const shape = probe.fields[field]
   const opening = probe.opening(parts, at)
   const edit = probe.edit(opening, field, value)
@@ -342,7 +406,7 @@ async function inputProblems(
   const example = wire.fields?.[input]?.example
   if (example === undefined) return [{ field: key, missing: "wire" }]
   const parts = await deckParts(probe.deck)
-  const at = placed(parts, probe.kind)
+  const at = placed(parts, probe.kind, probe.node)
   const agent = agentRegister(indexed(parts), at, example as object)
   if (agent === null) return [{ field: key, missing: "wire" }]
   const desc = (traits[trait].inputs as Readonly<Record<string, { readonly desc: Desc }>>)[input]?.desc

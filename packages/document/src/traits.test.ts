@@ -22,7 +22,9 @@ export type Derived = [
   Expect<Same<FieldValue<"box", "w">, number>>,
   Expect<Same<TraitValue<"notes">, { readonly value: string }>>,
   Expect<Same<FieldName<"fill">, "value">>,
-  Expect<Same<FieldName<"line">, never>>,
+  Expect<Same<FieldName<"line">, "width" | "fill" | "dash" | "cap" | "compound" | "join" | "head" | "tail">>,
+  Expect<null extends WireAgent<"line", "width"> ? true : false>,
+  Expect<"none" | "accent2" extends WireAgent<"line", "fill"> ? true : false>,
   Expect<null extends WireAgent<"fill", "value"> ? true : false>,
   Expect<null extends WireAgent<"box", "x"> ? false : true>,
   Expect<"none" | "group" | "accent1" extends WireAgent<"fill", "value"> ? true : false>,
@@ -32,7 +34,8 @@ export type Derived = [
   Expect<Same<HasAlpha, false>>,
   Expect<"table.value" extends FieldKey ? true : false>,
   Expect<"fill.value" extends FieldKey ? true : false>,
-  Expect<"line.width" extends FieldKey ? false : true>,
+  Expect<"line.width" extends FieldKey ? true : false>,
+  Expect<"line.alpha" extends FieldKey ? false : true>,
 ]
 
 describe("the one table of traits", () => {
@@ -54,13 +57,21 @@ describe("the one table of traits", () => {
     })
   })
 
-  it("holds only the fields that are live: the box, the fill, and the text, notes and table values", () => {
+  it("holds only the fields that are live: the box, the fill, the line, and the text, notes and table values", () => {
     expect(traitNames.flatMap(fieldKeys)).toEqual([
       "box.x",
       "box.y",
       "box.w",
       "box.h",
       "fill.value",
+      "line.fill",
+      "line.width",
+      "line.dash",
+      "line.cap",
+      "line.compound",
+      "line.join",
+      "line.head",
+      "line.tail",
       "text.value",
       "table.value",
       "notes.value",
@@ -71,7 +82,17 @@ describe("the one table of traits", () => {
     const fields = traitNames.flatMap((trait) =>
       Object.keys(traits[trait].fields).flatMap((field) => (inheritable(trait, field) ? [`${trait}.${field}`] : [])),
     )
-    expect(fields).toEqual(["fill.value"])
+    expect(fields).toEqual([
+      "fill.value",
+      "line.fill",
+      "line.width",
+      "line.dash",
+      "line.cap",
+      "line.compound",
+      "line.join",
+      "line.head",
+      "line.tail",
+    ])
   })
 
   it("keeps a slot it cannot model from a patch inside it, but lets a whole value replace it", () => {
