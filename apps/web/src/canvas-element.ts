@@ -2,6 +2,7 @@ import { paintKind, type PaintElement } from "@airdesign/pptx"
 import type { CanvasElement, CanvasLine, CanvasOutline, CanvasTable, CanvasText } from "@airdesign/render"
 import type { CanvasShape } from "@/canvas-source"
 import type { PictureSource } from "@/picture-fill"
+import { canvasEffects } from "@/canvas-effects"
 import { visibleFill } from "@/paint-css"
 import { unshownText } from "@/unshown-text"
 
@@ -32,6 +33,7 @@ export function movableRow(ctx: RowPaint): boolean {
 export function elementFrom(ctx: RowPaint, spec: DrawnSpec): CanvasElement {
   const { key, row, shape } = ctx
   const unshown = unshownText(row, ctx.src)
+  const effects = canvasEffects(row.effects)
   return {
     key,
     id: shape?.id ?? null,
@@ -45,6 +47,7 @@ export function elementFrom(ctx: RowPaint, spec: DrawnSpec): CanvasElement {
     filled: visibleFill(row.fill),
     fill: spec.fill,
     line: spec.line,
+    ...(effects === undefined ? {} : { effects }),
     outline: spec.outline,
     ...(spec.geometry === undefined ? {} : { geometry: spec.geometry }),
     text: spec.text,

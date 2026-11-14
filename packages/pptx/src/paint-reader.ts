@@ -260,6 +260,7 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
         part: theme.part,
         fills: entries("a:fillStyleLst"),
         lines: entries("a:lnStyleLst"),
+        effects: entries("a:effectStyleLst"),
       })
     }
     return { theme: theme ?? null, palette }

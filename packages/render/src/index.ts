@@ -5,6 +5,7 @@ export { textValue } from "./paragraph-edit.js"
 export { Passage } from "./passage.js"
 export type { CanvasChart } from "./chart-record.js"
 export {
+  type CanvasEffects,
   type CanvasElement,
   type CanvasLine,
   type CanvasOutline,

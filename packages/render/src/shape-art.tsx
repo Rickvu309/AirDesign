@@ -3,6 +3,7 @@ import { presetOutline } from "./preset-path.js"
 import type { CanvasElement, CanvasLine } from "./record.js"
 import type { CanvasArrowSize } from "./line-record.js"
 import type { Scaled } from "./text-look.js"
+import { EffectDefs, EffectLayers, paintsEffects, SoftFill, softAttributes, softensFill } from "./effect-art.js"
 import { ShapeGradient, sidesGradient } from "./shape-gradient.js"
 
 type Arrowhead = NonNullable<CanvasLine["head"]>
@@ -121,7 +122,9 @@ export function shapePaths(element: CanvasElement, scaled: Scaled) {
 
 export function paintsFillAsSvg(element: CanvasElement, scaled: Scaled) {
   return (
-    shapePaths(element, scaled) !== null || (element.outline !== "line" && sidesGradient(element.geometry?.gradient))
+    shapePaths(element, scaled) !== null ||
+    (element.outline !== "line" && sidesGradient(element.geometry?.gradient)) ||
+    softensFill(element)
   )
 }
 
@@ -132,7 +135,7 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
   const paths = shapePaths(element, scaled)
   const line = element.line
   const sidesFill = paths === null && element.outline !== "line" && sidesGradient(element.geometry?.gradient)
-  if (paths === null && line === null && !sidesFill) return null
+  if (paths === null && line === null && !sidesFill && !paintsEffects(element)) return null
   const width = scaled(element.box.width)
   const height = scaled(element.box.height)
   const weight = scaled(line?.width ?? 0)
@@ -143,6 +146,8 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
   const translated = compound !== undefined && paths === null && element.outline === "line"
   const masked = compound !== undefined && !translated
   const maskId = `${id}-compound`
+  const effect = { id, element, paths, scaled, width, height, weight }
+  const softened = element.effects?.softEdge !== undefined && fill !== null
   const shape = {
     ...(line?.cap === undefined ? {} : { strokeLinecap: line.cap }),
     ...(line?.join === undefined ? {} : { strokeLinejoin: line.join.kind }),
@@ -203,6 +208,7 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
       style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none" }}
     >
       <defs>
+        <EffectDefs {...effect} />
         {gradient === undefined ? null : (
           <ShapeGradient id={`${id}-gradient`} gradient={gradient} width={width} height={height} />
         )}
@@ -236,11 +242,14 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
           ) : null,
         )}
       </defs>
+      <EffectLayers {...effect} />
       {paths === null
         ? null
         : paths.map((path, index) => (
             <g key={index}>
-              {path.fill && fill !== null && element.outline !== "line" ? <path d={path.d} fill={fill} /> : null}
+              {path.fill && fill !== null && element.outline !== "line" ? (
+                <path d={path.d} fill={fill} {...(softened ? softAttributes(id) : {})} />
+              ) : null}
               {path.fill && fill === null && element.fill !== null && element.outline !== "line" ? (
                 <foreignObject
                   x={0}
@@ -256,6 +265,7 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
               {path.stroke ? <path d={path.d} {...stroke} /> : null}
             </g>
           ))}
+      <SoftFill {...effect} />
       {paths !== null ? null : translated ? (
         compoundBands[compound].map(([from, to], index) => {
           const offset = ((from + to) / 2) * weight

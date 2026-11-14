@@ -15,6 +15,7 @@ export type {
   CanvasText,
   CanvasThemeColor,
 } from "./text-record.js"
+export type { CanvasEffects, CanvasShadow } from "./effect-record.js"
 export type { CanvasLine, CanvasOutline } from "./line-record.js"
 export type { CanvasTable } from "./table-record.js"
 export type { PaintBox } from "./paint-box.js"
