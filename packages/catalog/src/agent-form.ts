@@ -16,6 +16,7 @@ import {
   type Design,
   type DesignKey,
   type ElementPatch,
+  type FieldEdit,
   type FieldValue,
   type ElementRead,
   type FillRead,
@@ -117,7 +118,7 @@ export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design
 
 type Fill = FieldValue<"fill", "value">
 
-function agentFillValue(fill: Fill): string {
+function agentFillValue(fill: Fill | FieldValue<"line", "fill">): string {
   if ("none" in fill) return "none"
   if ("group" in fill) return "group"
   if ("solid" in fill) return agentColor(fill.solid)
@@ -125,12 +126,32 @@ function agentFillValue(fill: Fill): string {
   return `gradient ${fill.gradient.stops.map((stop) => agentColor(stop.color)).join(", ")}`
 }
 
-export function foldDesign(design: Design | undefined, patch: ElementPatch): Design | undefined {
-  const edit = patch.fill?.value
+function folded<V>(
+  design: Design,
+  key: DesignKey,
+  edit: FieldEdit<V> | undefined,
+  shown: (value: V) => Shown[0] | null,
+): Design {
   if (edit === undefined || edit === "opening") return design
-  const rest: Design = Object.fromEntries(Object.entries(design ?? {}).filter(([key]) => key !== "fill"))
-  const folded: Design = edit === "inherit" ? rest : { ...rest, fill: [agentFillValue(edit.set)] }
-  return Object.keys(folded).length === 0 ? undefined : folded
+  const rest: Design = Object.fromEntries(Object.entries(design).filter(([each]) => each !== key))
+  const value = edit === "inherit" ? null : shown(edit.set)
+  return value === null ? rest : { ...rest, [key]: [value] }
+}
+
+type Arrow = FieldValue<"line", "head">
+
+const arrowShown = (arrow: Arrow) => (arrow.type === "none" ? null : arrow.type)
+
+export function foldDesign(design: Design | undefined, patch: ElementPatch): Design | undefined {
+  const line = patch.line
+  let next = folded(design ?? {}, "fill", patch.fill?.value, agentFillValue)
+  next = folded(next, "line.width", line?.width, (value) => tenths(value / emuPerPoint))
+  next = folded(next, "line.fill", line?.fill, agentFillValue)
+  next = folded(next, "line.dash", line?.dash, (value) => (value === "solid" ? null : value))
+  next = folded(next, "line.head", line?.head, arrowShown)
+  next = folded(next, "line.tail", line?.tail, arrowShown)
+  if (next === design) return design
+  return Object.keys(next).length === 0 ? undefined : next
 }
 
 export function shownDesign(design: Design, value: string): Design {

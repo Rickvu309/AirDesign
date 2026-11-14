@@ -1,3 +1,148 @@
-import type { TraitXml } from "./xml-codec.js"
+import type { FieldValue } from "@airdesign/document"
+import { insertChild, type ChildOf } from "./child-order.js"
+import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
+import { shownLine, type LineField } from "./line-read.js"
+import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
+import { partBytes, requireMarkup } from "./part-markup.js"
+import { isShapeTag, shapeById, shapeTags } from "./shape-tree.js"
+import { fillMarkup } from "./trait-xml-fill.js"
+import { whole, type ElementAt, type FieldXml, type Parts, type TraitXml } from "./xml-codec.js"
 
-export const lineXml: TraitXml<"line"> = { slot: null, fields: {} }
+type Slot = (line: Uint8Array) => Uint8Array
+
+type LineChild = ChildOf<"a:ln">
+
+type Arrow = FieldValue<"line", "head">
+
+const empty = "<a:ln/>"
+const fillTags = ["a:noFill", "a:solidFill", "a:gradFill", "a:pattFill", "a:blipFill", "a:grpFill"]
+const dashTags = ["a:prstDash", "a:custDash"]
+const joinTags = ["a:round", "a:bevel", "a:miter"]
+const miterLimit = "800000"
+
+function rootOf(bytes: Uint8Array): MarkupElement {
+  const root = requireMarkup(bytes).elements[0]
+  if (root === undefined) throw new Error("line")
+  return root
+}
+
+function openTag(bytes: Uint8Array, element: MarkupElement): string {
+  return decodeUtf8(bytes.subarray(element.start, element.openEnd - (element.selfClosing ? 2 : 1))).trimEnd()
+}
+
+function withAttribute(name: string, text: string | null): Slot {
+  return (line) => {
+    const root = rootOf(line)
+    const at = root.attributes.findIndex((each) => each.name === name)
+    const attribute = root.attributes[at]
+    if (attribute === undefined) {
+      if (text === null) return line
+      const end = root.openEnd - (root.selfClosing ? 2 : 1)
+      return spliceBytes(line, [{ start: end, end, next: encodeUtf8(` ${name}="${text}"`) }])
+    }
+    if (text !== null)
+      return spliceBytes(line, [{ start: attribute.valueStart, end: attribute.valueEnd, next: encodeUtf8(text) }])
+    const before = root.attributes[at - 1]
+    const start = before === undefined ? root.start + 1 + root.kind.length : before.valueEnd + 1
+    return spliceBytes(line, [{ start, end: attribute.valueEnd + 1, next: new Uint8Array() }])
+  }
+}
+
+function withChild(tags: readonly string[], tag: LineChild | null, element: string | null): Slot {
+  return (line) => {
+    const { elements } = requireMarkup(line)
+    const root = rootOf(line)
+    const gone: ByteEdit[] = elements
+      .filter((each) => each.parent === root.index && tags.includes(each.kind))
+      .map((each) => ({ start: each.start, end: each.end, next: new Uint8Array() }))
+    const kept = gone.length === 0 ? line : spliceBytes(line, gone)
+    if (tag === null || element === null) return kept
+    const held = rootOf(kept)
+    if (held.selfClosing) return encodeUtf8(`${openTag(kept, held)}>${element}</a:ln>`)
+    return encodeUtf8(insertChild("a:ln", tag, element, decodeUtf8(kept)))
+  }
+}
+
+function lineEdited(parts: Parts, at: ElementAt, slot: Slot): Parts {
+  const bytes = partBytes(parts, at.part)
+  const { elements } = requireMarkup(bytes)
+  const shape = shapeById(elements, at.shape)
+  if (!isShapeTag(shape.kind) || shapeTags[shape.kind].properties !== "p:spPr") throw new Error("line-shape")
+  const properties = elements.filter((each) => each.parent === shape.index && each.kind === "p:spPr")
+  const host = properties[0]
+  if (properties.length !== 1 || host === undefined) throw new Error("line-properties")
+  const own = elements.find((each) => each.parent === host.index && each.kind === "a:ln")
+  let edit: ByteEdit
+  if (own !== undefined) {
+    const line = bytes.subarray(own.start, own.end)
+    const next = slot(line)
+    if (sameBytes(next, line)) return parts
+    edit = { start: own.start, end: own.end, next }
+  } else {
+    const next = decodeUtf8(slot(encodeUtf8(empty)))
+    if (next === empty) return parts
+    const parent = host.selfClosing
+      ? `${openTag(bytes, host)}>${next}</p:spPr>`
+      : insertChild("p:spPr", "a:ln", next, decodeUtf8(bytes.subarray(host.start, host.end)))
+    edit = { start: host.start, end: host.end, next: encodeUtf8(parent) }
+  }
+  const changed = new Map(parts)
+  changed.set(at.part, spliceBytes(bytes, [edit]))
+  return changed
+}
+
+function arrowXml(tag: "a:headEnd" | "a:tailEnd", arrow: Arrow): string {
+  return `<${tag} type="${arrow.type}" w="${arrow.width}" len="${arrow.length}"/>`
+}
+
+function field<F extends LineField>(
+  name: F,
+  write: (value: FieldValue<"line", F>) => Slot,
+  inherit: Slot,
+): FieldXml<FieldValue<"line", F>> {
+  return whole(
+    {
+      read: (parts, at) => shownLine(parts, at)?.[name].value ?? null,
+      write: (parts, at, value) => lineEdited(parts, at, write(value)),
+    },
+    (parts, at) => lineEdited(parts, at, inherit),
+  )
+}
+
+export const lineXml: TraitXml<"line"> = {
+  slot: null,
+  fields: {
+    width: field("width", (value) => withAttribute("w", String(value)), withAttribute("w", null)),
+    fill: field(
+      "fill",
+      (value) => {
+        const written = fillMarkup(value)
+        return withChild(fillTags, written.tag as LineChild, written.xml)
+      },
+      withChild(fillTags, null, null),
+    ),
+    dash: field(
+      "dash",
+      (value) => withChild(dashTags, "a:prstDash", `<a:prstDash val="${value}"/>`),
+      withChild(dashTags, null, null),
+    ),
+    cap: field("cap", (value) => withAttribute("cap", value), withAttribute("cap", null)),
+    compound: field("compound", (value) => withAttribute("cmpd", value), withAttribute("cmpd", null)),
+    join: field(
+      "join",
+      (value) =>
+        withChild(joinTags, `a:${value}`, value === "miter" ? `<a:miter lim="${miterLimit}"/>` : `<a:${value}/>`),
+      withChild(joinTags, null, null),
+    ),
+    head: field(
+      "head",
+      (value) => withChild(["a:headEnd"], "a:headEnd", arrowXml("a:headEnd", value)),
+      withChild(["a:headEnd"], null, null),
+    ),
+    tail: field(
+      "tail",
+      (value) => withChild(["a:tailEnd"], "a:tailEnd", arrowXml("a:tailEnd", value)),
+      withChild(["a:tailEnd"], null, null),
+    ),
+  },
+}

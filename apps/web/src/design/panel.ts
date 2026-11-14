@@ -16,7 +16,7 @@ import {
   type TraitReads,
 } from "@airdesign/document"
 import type { ReactNode } from "react"
-import { optionCopy } from "@/copy/option-copy"
+import { optionWord } from "@/copy/option-copy"
 import { traitControls } from "./trait-controls"
 
 export const controlKinds = [
@@ -96,7 +96,7 @@ export type ControlProps = {
 }
 
 export function partRow(row: PanelRow, name: string, desc: Desc, value: unknown): PanelRow {
-  const label = optionCopy[name] ?? name
+  const label = optionWord(row.field, name)
   return {
     ...row,
     field: `${row.field}.${name}`,
@@ -182,6 +182,11 @@ function shownDesc(desc: Desc, grouped: boolean, value: unknown): Desc {
   return { ...desc, cases: Object.fromEntries(Object.entries(desc.cases).filter(([name]) => name !== "group")) }
 }
 
+function lineless(trait: TraitName, rows: readonly PanelRow[]): boolean {
+  const fill = rows.find((row) => row.field === "fill")?.value
+  return trait === "line" && typeof fill === "object" && fill !== null && "none" in fill
+}
+
 export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
   const taken = takes(view.facts).filter((field) => shown.moves || !field.startsWith("box."))
   const sections = traitNames.flatMap((trait): PanelSection[] => {
@@ -199,7 +204,8 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       const caption = label !== labels.section
       return [{ trait, field, label, control: controlOf(desc), desc, ...held, caption, reset, change }]
     })
-    return rows.length === 0 ? [] : [{ trait, label: labels.section ?? "", rows }]
+    const visible = lineless(trait, rows) ? rows.filter((row) => row.field === "fill") : rows
+    return visible.length === 0 ? [] : [{ trait, label: labels.section ?? "", rows: visible }]
   })
   return { node: view.node, sections }
 }

@@ -120,6 +120,7 @@ export { structure } from "./structure.js"
 export { foldSections, type FileSection } from "./section-order.js"
 export { floorFor, floorNodes, floorOpening, newSlideElement, openingElement } from "./slide-floor.js"
 export { patternPresets } from "./trait-fill.js"
+export { arrowheads, arrowSizes, dashPresets, lineCaps, lineCompounds, lineJoins, widestLine } from "./trait-line.js"
 export { slideMeasure } from "./slide-measure.js"
 export {
   addedPictures,

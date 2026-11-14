@@ -47,6 +47,7 @@ for (const name of [
   "element-order",
   "slide-background",
   "shape-fill",
+  "line-style",
   "commit-once",
   "deck-list-trash",
   "deck-stars",

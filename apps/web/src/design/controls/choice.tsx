@@ -1,7 +1,7 @@
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { optionCopy } from "@/copy/option-copy"
+import { optionWord } from "@/copy/option-copy"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
@@ -21,13 +21,13 @@ function ChoiceList({ row, onChange, label, options }: ControlProps & { label: s
         className="h-8 w-full rounded-lg border-0 bg-white text-[length:var(--type-dense)] shadow-[0px_0px_0px_1px_var(--field-edge)]"
       >
         <SelectValue>
-          {(selected: string | null) => (selected === null ? "" : (optionCopy[selected] ?? selected))}
+          {(selected: string | null) => (selected === null ? "" : optionWord(row.field, selected))}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (
           <SelectItem key={option} value={option}>
-            {optionCopy[option] ?? option}
+            {optionWord(row.field, option)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -66,7 +66,7 @@ export function ChoiceControl(props: ControlProps) {
                     : "text-quiet hover:bg-transparent hover:text-foreground",
                 )}
               >
-                {optionCopy[option] ?? option}
+                {optionWord(row.field, option)}
               </Button>
             )
           })}

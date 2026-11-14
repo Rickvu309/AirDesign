@@ -100,7 +100,7 @@ type Planned = {
   readonly name: UndoName
 } & ({ readonly values: readonly FormatOneValue[] } | { readonly row: Row })
 
-const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = { fill: "fill" }
+const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = { fill: "fill", line: "line" }
 
 function rowName(node: ElementId, row: Row): UndoName {
   if (slideKind(node) === "slide") return "background"

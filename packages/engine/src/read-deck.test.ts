@@ -378,6 +378,38 @@ describe("design lines", () => {
     )
   })
 
+  it("prints the line fields a change set in place of the style's, and drops one once it goes back to inherited", () => {
+    const actor = { actor: "agent", runId: "run" } as const
+    const running = call("start_run", designed(), actor, {
+      deck: "designed",
+      runId: "run",
+      elements: [{ node: "259.7" }],
+    })
+    if (!running.ok) throw new Error(running.refusal)
+    const line = (deck: Deck, value: unknown) => {
+      const set = call("edit_deck", deck, actor, {
+        deck: "designed",
+        base: deck.revision,
+        changes: [{ op: "set", target: "259.7", line: value }],
+      })
+      if (!set.ok) throw new Error(set.refusal)
+      return set.deck
+    }
+    const styled = line(running.deck, {
+      width: 3,
+      fill: "accent2",
+      dash: "sysDot",
+      tail: { type: "stealth", width: "lg", length: "lg" },
+    })
+    expect(byNode(readDeckPage(styled, { runId: "run" })).get("259.7")?.design).toBe(
+      "geometry custom · fill accent1 (style) · line.width 3 · line.fill accent2 · line.dash sysDot · line.tail stealth",
+    )
+    const back = line(styled, { width: null, dash: "solid", tail: { type: "none", width: "med", length: "med" } })
+    expect(byNode(readDeckPage(back, { runId: "run" })).get("259.7")?.design).toBe(
+      "geometry custom · fill accent1 (style) · line.fill accent2",
+    )
+  })
+
   it("reads a slide added from a layout with the roles of its layout floor", () => {
     const deck = designed()
     const added = call(
