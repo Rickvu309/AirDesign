@@ -1,8 +1,8 @@
 import {
   legacyElement,
   newerFormat,
-  readBox,
   readElementId,
+  readRow,
   readSlideState,
   rootElement,
   type ElementId,
@@ -27,16 +27,23 @@ function element(raw: unknown): raw is ElementId {
   return raw === rootElement || raw === legacyElement || readElementId(raw) !== undefined
 }
 
-function rowValue(raw: Record<string, unknown>): boolean {
-  if (!Object.hasOwn(raw, "property")) return typeof raw.value === "string"
-  return raw.property === "box" && readBox(raw.value) !== null
+function newerRow(raw: unknown): boolean {
+  const read = readRow(raw, "text")
+  return !read.ok && read.refusal === "newer"
+}
+
+function holdsNewerRow(raw: unknown): boolean {
+  if (!record(raw) || !record(raw.elements)) return false
+  return Object.values(raw.elements).some(
+    (body) => record(body) && Array.isArray(body.landed) && body.landed.some(newerRow),
+  )
 }
 
 function landed(raw: unknown): raw is Landed {
   return (
     record(raw) &&
     (raw.actor === "person" || raw.actor === "agent") &&
-    rowValue(raw) &&
+    readRow(raw, "text").ok &&
     typeof raw.visible === "boolean" &&
     (raw.runId === undefined || typeof raw.runId === "string")
   )
@@ -99,7 +106,7 @@ export type RegisterRead =
   | { readonly ok: false; readonly refusal: "newer" | "payload" }
 
 export function readRegister(raw: unknown): RegisterRead {
-  if (newerFormat(raw)) return { ok: false, refusal: "newer" }
+  if (newerFormat(raw) || holdsNewerRow(raw)) return { ok: false, refusal: "newer" }
   return isRegister(raw) ? { ok: true, register: raw } : { ok: false, refusal: "payload" }
 }
 

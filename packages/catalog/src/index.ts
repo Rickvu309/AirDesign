@@ -10,7 +10,7 @@ export {
 } from "./aira-turn.js"
 export { catalog, projectTools, toolInputSchema, type AgentOp, type CommandOp } from "./catalog.js"
 export { deckName, readDeckName } from "./deck-name.js"
-export { designOf } from "./agent-form.js"
+export { designOf, readAgent, shownDesign } from "./agent-form.js"
 export { traitWire } from "./trait-wire.js"
 export { printDesign } from "./design-print.js"
 export { storableText } from "./storable-text.js"
@@ -69,7 +69,8 @@ export {
   type TokenRequest,
   type WireRunElement,
 } from "./wire.js"
-export { readAgentEdit, readCommit, readEdit, type WireChange, type WireEdit } from "./edit-wire.js"
+export { readAgentEdit, readCommit, readEdit, type AgentChange, type WireChange, type WireEdit } from "./edit-wire.js"
+export { readAddChange, readSetChange, readTarget, type WireAdd, type WireSet } from "./set-wire.js"
 export { readDeckQuery, readListDecks } from "./read-wire.js"
 export { readDeckIndex } from "./index-wire.js"
 export { slideEditCommand, type WireSlide } from "./slide-wire.js"

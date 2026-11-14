@@ -4,9 +4,18 @@ import { legacyElement, rootElement, shapeOf, type ElementId, type SlideId } fro
 import { limits, overLimit } from "./limits.js"
 import { floorFits, openingElement } from "./slide-floor.js"
 import { elementGone } from "./element-order.js"
-import { boxFields, boxOnly, indexFacts, takes, type ElementFacts, type Wanted } from "./element-takes.js"
+import { agentTakes, boxFields, boxOnly, indexFacts, takes, type ElementFacts, type Wanted } from "./element-takes.js"
 import { applySlide, openSlides, slideGone, type SlideCommand } from "./slide-order.js"
-import { fieldsOf, netPatch, rowOf, type ElementPatch, type ValueHolder } from "./row.js"
+import {
+  fieldsOf,
+  netPatch,
+  rowOf,
+  type ElementPatch,
+  type FieldEdit,
+  type TraitPatch,
+  type ValueHolder,
+} from "./row.js"
+import type { FieldKey } from "./traits.js"
 import { storedValue, type Value } from "./value.js"
 
 export type Phase = "idle" | "running" | "stopped" | "undone"
@@ -141,8 +150,15 @@ export function version(register: NodeRegister): number {
   return register.version ?? register.landed.length + hiddenRows(register).length
 }
 
+function heldText(row: Value, floor: string): readonly string[] {
+  if (row.v === undefined) return row.property === "box" ? [] : [row.value]
+  const edit = row.patch.text?.value ?? row.patch.notes?.value ?? row.patch.table?.value
+  if (edit === undefined) return []
+  return [typeof edit === "object" ? edit.set : floor]
+}
+
 function textRows(register: NodeRegister): readonly string[] {
-  return visibleRows(register).flatMap((row) => (row.property === "box" ? [] : [row.value]))
+  return visibleRows(register).flatMap((row) => heldText(row, register.floor))
 }
 
 export function currentValue(register: NodeRegister): string {
@@ -153,9 +169,26 @@ export function history(register: NodeRegister): readonly string[] {
   return textRows(register)
 }
 
+function boxEdit(edit: FieldEdit<number> | undefined, now: number | undefined, opening: number | undefined) {
+  if (edit === undefined) return now
+  return typeof edit === "object" ? edit.set : opening
+}
+
+function patchedBox(box: Box | null, fields: TraitPatch<"box">, floor: Box | undefined): Box | null {
+  const x = boxEdit(fields.x, box?.x, floor?.x)
+  const y = boxEdit(fields.y, box?.y, floor?.y)
+  const cx = boxEdit(fields.w, box?.cx, floor?.cx)
+  const cy = boxEdit(fields.h, box?.cy, floor?.cy)
+  return x === undefined || y === undefined || cx === undefined || cy === undefined ? box : { x, y, cx, cy }
+}
+
 export function currentBox(register: NodeRegister): Box | null {
-  const boxes = visibleRows(register).flatMap((row) => (row.property === "box" ? [row.value] : []))
-  return boxes.at(-1) ?? register.floorBox ?? null
+  let box = register.floorBox ?? null
+  for (const row of visibleRows(register)) {
+    if (row.v === undefined) box = row.property === "box" ? row.value : box
+    else if (row.patch.box !== undefined) box = patchedBox(box, row.patch.box, register.floorBox)
+  }
+  return box
 }
 
 function nodeOf(register: NodeRegister): NodeRegister {
@@ -352,7 +385,7 @@ function hostedSlide(id: ElementId): string | null {
   return shapeOf(id).slide
 }
 
-function elementFacts(register: Register, node: ElementId): ElementFacts | undefined {
+export function elementFacts(register: Register, node: ElementId): ElementFacts | undefined {
   if (node.endsWith(".notes")) return { kind: "slide", text: true, grouped: false, animated: false }
   const opening = openingElement(register, node)
   return opening === undefined ? undefined : indexFacts(opening, false)
@@ -381,6 +414,15 @@ export function shownPatch(register: NodeRegister, holder: ValueHolder): Element
   return netPatch([...floor, ...visibleRows(register)].map((row) => rowOf(row, holder)))
 }
 
+function changedFields(patch: ElementPatch, box: Box | null): readonly FieldKey[] {
+  const shown: Readonly<Record<string, number | undefined>> = { x: box?.x, y: box?.y, w: box?.cx, h: box?.cy }
+  return fieldsOf(patch).filter((field) => {
+    const side = field.startsWith("box.") ? field.slice(4) : null
+    const edit: FieldEdit<number> | undefined = side === null ? undefined : patch.box?.[side as keyof TraitPatch<"box">]
+    return side === null || typeof edit !== "object" || edit.set !== shown[side]
+  })
+}
+
 export function editMissing(
   stored: StoredRegister,
   edit: Value & { readonly command: "person" | "agent"; readonly node: ElementId },
@@ -391,8 +433,13 @@ export function editMissing(
   const body = storedBody(register, edit.node)
   const box = (body === null ? null : currentBox(body)) ?? openingElement(register, edit.node)?.box ?? null
   const holder = valueHolder(register, edit.node, edit.command)
-  const wanted = edit.property === "box" ? boxFields(box, edit.value) : fieldsOf(rowOf(edit, holder).patch)
-  const taken = takes(facts)
+  const wanted =
+    edit.v === undefined
+      ? edit.property === "box"
+        ? boxFields(box, edit.value)
+        : fieldsOf(rowOf(edit, holder).patch)
+      : changedFields(edit.patch, box)
+  const taken = edit.command === "person" ? takes(facts) : agentTakes(facts)
   const missing = wanted.filter((each) => !taken.includes(each))
   return missing.length === 0 ? null : { facts, missing, box }
 }

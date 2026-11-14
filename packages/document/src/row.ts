@@ -1,9 +1,9 @@
 import type { Box } from "./box.js"
 import { format, type StoredRead } from "./format.js"
 import { onlyKeys, record } from "./plain-object.js"
-import { traits, type FieldKey, type FieldName, type FieldValue, type TraitName } from "./traits.js"
+import { traitNames, traits, type FieldKey, type FieldName, type FieldValue, type TraitName } from "./traits.js"
 import type { Value } from "./value.js"
-import { readValue } from "./value-kind.js"
+import { readValue, type AnyKind } from "./value-kind.js"
 
 export type FieldEdit<V> = { readonly set: V } | "inherit" | "opening"
 
@@ -31,6 +31,7 @@ function boxPatch(box: Box): ElementPatch {
 }
 
 export function rowOf(value: Value, holder: ValueHolder): Row {
+  if (value.v !== undefined) return { v: value.v, patch: value.patch }
   return { v: 1, patch: value.property === "box" ? boxPatch(value.value) : heldPatch(holder, value.value) }
 }
 
@@ -49,13 +50,52 @@ function readBox(raw: unknown): Box | null {
     : { x: box.x, y: box.y, cx: box.cx, cy: box.cy }
 }
 
+function readEdit(kind: AnyKind, raw: unknown): FieldEdit<unknown> | null {
+  if (raw === "inherit" || raw === "opening") return raw
+  const edit = record(raw)
+  if (edit === null || !onlyKeys(edit, ["set"])) return null
+  const value = readValue(kind, edit.set)
+  return value === null ? null : { set: value }
+}
+
+function readFields(trait: TraitName, raw: unknown): Readonly<Record<string, FieldEdit<unknown>>> | null {
+  const fields = record(raw)
+  const declared: Readonly<Record<string, AnyKind>> = traits[trait].fields
+  if (fields === null || Object.keys(fields).length === 0) return null
+  const read: Record<string, FieldEdit<unknown>> = {}
+  for (const [field, edit] of Object.entries(fields)) {
+    const kind = Object.hasOwn(declared, field) ? declared[field] : undefined
+    const value = kind === undefined ? null : readEdit(kind, edit)
+    if (value === null) return null
+    read[field] = value
+  }
+  return read
+}
+
+function readPatch(raw: unknown): ElementPatch | null {
+  const patch = record(raw)
+  if (patch === null || Object.keys(patch).length === 0) return null
+  const read: Record<string, Readonly<Record<string, FieldEdit<unknown>>>> = {}
+  for (const [trait, fields] of Object.entries(patch)) {
+    const name = traitNames.find((each) => each === trait)
+    const value = name === undefined ? null : readFields(name, fields)
+    if (value === null) return null
+    read[trait] = value
+  }
+  return read as ElementPatch
+}
+
+function readStamped(v: unknown, raw: unknown): StoredRead<Row> {
+  if (typeof v !== "number" || !Number.isSafeInteger(v) || v < 2) return payload
+  if (v > format) return { ok: false, refusal: "newer" }
+  const patch = readPatch(raw)
+  return patch === null ? payload : { ok: true, value: { v, patch } }
+}
+
 export function readRow(raw: unknown, holder: ValueHolder): StoredRead<Row> {
   const stored = record(raw)
   if (stored === null) return payload
-  if (Object.hasOwn(stored, "v")) {
-    const { v } = stored
-    return typeof v === "number" && Number.isSafeInteger(v) && v > format ? { ok: false, refusal: "newer" } : payload
-  }
+  if (Object.hasOwn(stored, "v")) return readStamped(stored.v, stored.patch)
   if (stored.property === "box") {
     const box = readBox(stored.value)
     return box === null ? payload : { ok: true, value: { v: 1, patch: boxPatch(box) } }

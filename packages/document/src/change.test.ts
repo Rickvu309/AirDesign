@@ -1,0 +1,249 @@
+import { describe, expect, it } from "vitest"
+import { planChange, registerScope, type SetChange } from "./change.js"
+import { decide, openRegister, type Command, type Register } from "./decide.js"
+import type { DeckIndex, IndexElement } from "./deck-index.js"
+import { elementId, slideId } from "./element-id.js"
+import { format } from "./format.js"
+import { readTextValue, writeTextValue, type TextValue } from "./text-value.js"
+
+const box = { x: 10, y: 20, cx: 300, cy: 400 }
+const quarterly: TextValue = [
+  {
+    from: 0,
+    runs: [
+      { from: 0, text: "Quarterly" },
+      { from: 1, text: " review", bold: true },
+    ],
+  },
+  { from: 1, align: "left", runs: [{ from: 0, text: "Q3", color: { scheme: "tx1" } }] },
+]
+
+function shape(node: string, role: IndexElement["role"], value: string | null): IndexElement {
+  return { node: elementId(node), kind: "shape", value, box, grouped: false, ...(role === undefined ? {} : { role }) }
+}
+
+const elements: readonly IndexElement[] = [
+  shape("258.2", "title", writeTextValue(quarterly)),
+  shape("258.3", "body", "Plain words"),
+  { node: elementId("258.4"), kind: "picture", value: null, box, grouped: false, role: "picture" },
+  { node: elementId("258.5"), kind: "shape", value: "", box, grouped: true },
+  { ...shape("258.6", undefined, ""), kept: ["text.color"] },
+  shape("259.2", "title", ""),
+  { node: elementId("259.3"), kind: "table", value: "{}", box, grouped: false, role: "table" },
+]
+
+function indexed(index: Partial<DeckIndex> = {}): Register {
+  const whole: DeckIndex = {
+    format: 2,
+    total: elements.length,
+    slides: [
+      { id: "258", position: 0 },
+      { id: "259", position: 1 },
+    ],
+    elements,
+    pages: [],
+    ...index,
+  }
+  return { ...openRegister("", "deck"), index: whole }
+}
+
+function plan(change: SetChange, register: Register = indexed()) {
+  return planChange(change, registerScope(register))
+}
+
+function textOf(planned: ReturnType<typeof plan>, at = 0): TextValue | null {
+  if (!planned.ok) return null
+  const edit = planned.rows[at]?.row.patch.text?.value
+  return edit === undefined || typeof edit !== "object" ? null : readTextValue(edit.set)
+}
+
+describe("planChange names its elements by node, by role on one slide, or by role on every slide", () => {
+  it("writes one row on a node target, with the whole current box around the sides it names", () => {
+    const whole = { x: { set: 914_400 }, y: { set: 20 }, w: { set: 12_700 }, h: { set: 400 } }
+    expect(plan({ target: { node: elementId("258.3") }, box: { x: 914_400, w: 12_700 } })).toEqual({
+      ok: true,
+      rows: [{ node: "258.3", row: { v: format, patch: { box: whole } } }],
+    })
+    const moved = moved258(indexed(), { x: 1, y: 2, cx: 3, cy: 4 })
+    const planned = plan({ target: { node: elementId("258.3") }, box: { y: 7 } }, moved)
+    expect(planned.ok && planned.rows[0]?.row.patch.box).toEqual({
+      x: { set: 1 },
+      y: { set: 7 },
+      w: { set: 3 },
+      h: { set: 4 },
+    })
+  })
+
+  it("moves a table by its sides x and y", () => {
+    const planned = plan({ target: { node: elementId("259.3") }, box: { x: 5 } })
+    expect(planned.ok && planned.rows[0]?.row.patch.box).toEqual({
+      x: { set: 5 },
+      y: { set: 20 },
+      w: { set: 300 },
+      h: { set: 400 },
+    })
+    const decision = decide(
+      applied(indexed(), [{ command: "add", node: elementId("259.3"), floor: "", route: "deck" }]),
+      {
+        command: "person",
+        node: elementId("259.3"),
+        v: format,
+        patch: planned.ok ? (planned.rows[0]?.row.patch ?? {}) : {},
+      },
+    )
+    expect(decision.decision).toBe("apply")
+  })
+
+  it("reaches the element with the role on one slide", () => {
+    const planned = plan({ target: { role: "title", slide: slideId("259") }, text: { value: "Plan" } })
+    expect(planned).toEqual({
+      ok: true,
+      rows: [{ node: "259.2", row: { v: format, patch: { text: { value: { set: "Plan" } } } } }],
+    })
+  })
+
+  it("reaches every element with the role, slide by slide in deck order", () => {
+    const planned = plan({ target: { role: "title", slide: "every" }, text: { color: { scheme: "accent1" } } })
+    expect(planned.ok && planned.rows.map((row) => row.node)).toEqual(["258.2", "259.2"])
+  })
+
+  it("skips a slide that was deleted", () => {
+    const register = deleted(indexed(), "259")
+    const planned = plan({ target: { role: "title", slide: "every" }, text: { bold: true } }, register)
+    expect(planned.ok && planned.rows.map((row) => row.node)).toEqual(["258.2"])
+  })
+})
+
+describe("text inputs rewrite every run of the element's current text", () => {
+  it("sets colour, size and format on every run and align and bullet on every paragraph", () => {
+    const planned = plan({
+      target: { node: elementId("258.2") },
+      text: { color: { scheme: "accent1" }, size: 3_600, italic: true, align: "center", bullet: false },
+    })
+    const run = { color: { scheme: "accent1" }, size: 3_600, italic: true }
+    expect(textOf(planned)).toEqual([
+      {
+        from: 0,
+        align: "center",
+        bullet: false,
+        runs: [
+          { from: 0, text: "Quarterly", ...run },
+          { from: 1, text: " review", bold: true, ...run },
+        ],
+      },
+      { from: 1, align: "center", bullet: false, runs: [{ from: 0, text: "Q3", ...run }] },
+    ])
+  })
+
+  it("starts from text the change sets, then from what the register holds, then from the file", () => {
+    expect(textOf(plan({ target: { node: elementId("258.3") }, text: { value: "Sent", bold: true } }))).toEqual([
+      { from: 0, runs: [{ from: 0, text: "Sent", bold: true }] },
+    ])
+    expect(textOf(plan({ target: { node: elementId("258.3") }, text: { underline: true } }))).toEqual([
+      { from: 0, runs: [{ from: 0, text: "Plain words", underline: true }] },
+    ])
+    const register = typed(indexed(), "258.3", "Typed")
+    expect(textOf(plan({ target: { node: elementId("258.3") }, text: { bold: false } }, register))).toEqual([
+      { from: 0, runs: [{ from: 0, text: "Typed", bold: false }] },
+    ])
+  })
+
+  it("leaves empty text empty", () => {
+    const planned = plan({ target: { node: elementId("259.2") }, text: { color: { rgb: "1F4E79" } } })
+    expect(planned.ok && planned.rows[0]?.row.patch).toEqual({ text: { value: { set: "" } } })
+  })
+})
+
+describe("planChange refuses the whole change and names every element it cannot take", () => {
+  it("refuses a trait the kind does not take as kind, and a grouped box as group-box", () => {
+    expect(plan({ target: { node: elementId("258.4") }, text: { bold: true } })).toEqual({
+      ok: false,
+      refusals: [{ node: "258.4", trait: "text", code: "kind" }],
+    })
+    expect(plan({ target: { node: elementId("258.5") }, box: { x: 0 } })).toEqual({
+      ok: false,
+      refusals: [{ node: "258.5", trait: "box", code: "group-box" }],
+    })
+    expect(plan({ target: { role: "table", slide: slideId("259") }, box: { w: 1 } })).toEqual({
+      ok: false,
+      refusals: [{ node: "259.3", trait: "box", code: "kind" }],
+    })
+  })
+
+  it("refuses a field the index keeps as kept", () => {
+    expect(plan({ target: { node: elementId("258.6") }, text: { color: { scheme: "accent2" } } })).toEqual({
+      ok: false,
+      refusals: [{ node: "258.6", trait: "text", code: "kept" }],
+    })
+  })
+
+  it("refuses a role target before the index holds roles as indexing", () => {
+    expect(plan({ target: { role: "title", slide: "every" }, text: { bold: true } }, indexed({ format: 1 }))).toEqual({
+      ok: false,
+      refusals: [{ node: null, trait: null, code: "indexing" }],
+    })
+    expect(plan({ target: { role: "title", slide: "every" }, text: { bold: true } }, indexed({ total: 99 }))).toEqual({
+      ok: false,
+      refusals: [{ node: null, trait: null, code: "indexing" }],
+    })
+  })
+
+  it("refuses a node the deck does not hold, and a role no element has, as dead", () => {
+    expect(plan({ target: { node: elementId("258.99") }, box: { x: 0 } })).toEqual({
+      ok: false,
+      refusals: [{ node: "258.99", trait: null, code: "dead" }],
+    })
+    expect(plan({ target: { role: "footer", slide: "every" }, box: { x: 0 } })).toEqual({
+      ok: false,
+      refusals: [{ node: null, trait: null, code: "dead" }],
+    })
+    expect(plan({ target: { node: elementId("259.2") }, box: { x: 0 } }, deleted(indexed(), "259"))).toEqual({
+      ok: false,
+      refusals: [{ node: "259.2", trait: null, code: "dead" }],
+    })
+  })
+
+  it("lists every refusal at once", () => {
+    const planned = plan({ target: { role: "picture", slide: "every" }, text: { bold: true }, box: { x: 0 } })
+    expect(planned).toEqual({ ok: false, refusals: [{ node: "258.4", trait: "text", code: "kind" }] })
+    const both = plan({ target: { node: elementId("258.5") }, text: { value: "x" }, box: { x: 0 } })
+    expect(both).toEqual({ ok: false, refusals: [{ node: "258.5", trait: "box", code: "group-box" }] })
+  })
+})
+
+function deleted(register: Register, id: string): Register {
+  const file = (register.index?.slides ?? []).map((slide) => slideId(slide.id))
+  const decision = decide(register, { command: "slide", file, edit: { slide: "remove", id: slideId(id) } })
+  if (decision.decision === "refuse") throw new Error(decision.code)
+  return decision.register
+}
+
+function typed(register: Register, node: string, value: string): Register {
+  const id = elementId(node)
+  let current = register
+  for (const command of [
+    { command: "add" as const, node: id, floor: "", route: "deck" },
+    { command: "person" as const, node: id, value },
+  ]) {
+    const decision = decide(current, command)
+    if (decision.decision === "refuse") throw new Error(decision.code)
+    current = decision.register
+  }
+  return current
+}
+
+function applied(register: Register, commands: readonly Command[]): Register {
+  return commands.reduce((current, command) => {
+    const decision = decide(current, command)
+    if (decision.decision === "refuse") throw new Error(decision.code)
+    return decision.register
+  }, register)
+}
+
+function moved258(register: Register, box: { x: number; y: number; cx: number; cy: number }): Register {
+  const node = elementId("258.3")
+  return applied(register, [
+    { command: "add", node, floor: "", route: "deck" },
+    { command: "person", node, property: "box", value: box },
+  ])
+}

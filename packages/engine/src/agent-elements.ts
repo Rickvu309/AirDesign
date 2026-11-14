@@ -91,27 +91,27 @@ export function decided(register: Register, file: readonly SlideId[], edit: Slid
     : { ok: true, register: result.register, runId }
 }
 
+export function addTextBox(head: Head, deck: Deck, slide: SlideId, wanted: Box | undefined, runId: string): Built {
+  const register = deck.register
+  const opened = ready(head, deck, slide, runId)
+  if ("refusal" in opened) return { ok: false, refusal: opened.refusal }
+  const measure = slideMeasure(register, slide)
+  if (measure === undefined || (wanted === undefined && measure.size === undefined)) {
+    return { ok: false, refusal: "dead" }
+  }
+  const box = wanted ?? placeNewBox(measure.size ?? { width: 0, height: 0 }, takenBoxes(register, slide))
+  const node = nextElementId(register, slide, measure.free)
+  const element = { node, kind: "shape", value: "", box, grouped: false } as const
+  return decided(register, opened.file, { slide: "element-add", id: slide, element, runId }, runId)
+}
+
 export function agentElement(op: ElementOp, deck: Deck, caller: Caller, raw: unknown): Built {
   if (caller.actor !== "agent") return { ok: false, refusal: "field" }
   const register = deck.register
   if (op === "add_text_box") {
     const parsed = elementReaders.add_text_box(raw)
     if (!parsed.ok) return parsed
-    const opened = ready(parsed, deck, parsed.slide, caller.runId)
-    if ("refusal" in opened) return { ok: false, refusal: opened.refusal }
-    const measure = slideMeasure(register, parsed.slide)
-    if (measure === undefined || (parsed.box === undefined && measure.size === undefined)) {
-      return { ok: false, refusal: "dead" }
-    }
-    const box = parsed.box ?? placeNewBox(measure.size ?? { width: 0, height: 0 }, takenBoxes(register, parsed.slide))
-    const node = nextElementId(register, parsed.slide, measure.free)
-    const element = { node, kind: "shape", value: "", box, grouped: false } as const
-    return decided(
-      register,
-      opened.file,
-      { slide: "element-add", id: parsed.slide, element, runId: caller.runId },
-      caller.runId,
-    )
+    return addTextBox(parsed, deck, parsed.slide, parsed.box, caller.runId)
   }
   const parsed = elementReaders.delete_element(raw)
   if (!parsed.ok) return parsed

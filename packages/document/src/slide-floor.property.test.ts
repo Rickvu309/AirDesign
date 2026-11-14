@@ -66,7 +66,7 @@ function onDevice(server: Register): Register {
     const body = server.elements[node]
     if (body === undefined || !node.includes(".")) continue
     for (const row of body.landed) {
-      if (!row.visible || row.property === "box") continue
+      if (!row.visible || row.v !== undefined || row.property === "box") continue
       device = personEdit(device, node, row.value)
     }
   }

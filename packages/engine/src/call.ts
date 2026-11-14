@@ -1,4 +1,5 @@
 import { agentBackground } from "./agent-background.js"
+import { applyAgentChange, openedRegister } from "./apply-change.js"
 import { agentElement } from "./agent-elements.js"
 import { agentSlide } from "./agent-slides.js"
 import {
@@ -8,7 +9,6 @@ import {
   storedElements,
   storedValue,
   limits,
-  openingElement,
   openRegister,
   valueBytes,
   type Command,
@@ -22,6 +22,7 @@ import {
   readAgentEdit,
   readCommit,
   readRun,
+  type AgentChange,
   readRunStart,
   slideEditCommand,
   type CallRefusal,
@@ -65,35 +66,6 @@ function agentCommand(edit: WireChange, runId: string): Command {
   return { command: "agent", runId, readAt: edit.readAt, ...storedValue(edit), node: edit.node }
 }
 
-function openedRegister(
-  register: Register,
-  edit: WireRunElement,
-): { readonly ok: true; readonly register: Register } | { readonly ok: false; readonly refusal: CallRefusal } {
-  if (register.nodes.includes(edit.node)) return { ok: true, register }
-  const index = register.index
-  const notes =
-    edit.node.endsWith(".notes") &&
-    (index?.slides.some((slide) => `${slide.id}.notes` === edit.node) === true ||
-      register.order.some(
-        (command) => (command.slide === "add" || command.slide === "clone") && `${command.id}.notes` === edit.node,
-      ))
-  if (
-    index !== undefined &&
-    index.elements.length === index.total &&
-    openingElement(register, edit.node) === undefined &&
-    !notes
-  )
-    return { ok: false, refusal: "dead" }
-  const opened = decide(register, {
-    command: "add",
-    node: edit.node,
-    floor: edit.floor ?? register.floor,
-    route: register.route,
-  })
-  if (opened.decision === "refuse") return { ok: false, refusal: opened.code }
-  return { ok: true, register: opened.register }
-}
-
 function wroteBy(deck: Deck, register: Register, runId: string): Register {
   const last = deck.register.lastRun
   const since = last?.runId === runId && last.revision === deck.revision ? last.since : deck.revision
@@ -134,9 +106,15 @@ function applyPersonEdits(deck: Deck, edits: readonly (WireEdit | WireSlide)[]):
   return landed(deck, register)
 }
 
-function applyAgentEdits(deck: Deck, edits: readonly WireChange[], runId: string): CallResult {
+function applyAgentEdits(deck: Deck, edits: readonly AgentChange[], runId: string, base: number): CallResult {
   let register = deck.register
   for (const edit of edits) {
+    if ("op" in edit) {
+      const applied = applyAgentChange({ ...deck, register }, edit, runId, base)
+      if (!applied.ok) return refused(applied.refusal)
+      register = applied.register
+      continue
+    }
     const bytes = valueBytes(edit)
     if (bytes > limits.valueBytes) return refused("limit")
     if (edit.floor !== undefined && bytesOf(edit.floor) > limits.valueBytes) return refused("limit")
@@ -323,5 +301,5 @@ export function call(op: CommandOp, deck: Deck, caller: Caller, raw: unknown): C
   const parsed = readAgentEdit(raw)
   if (!parsed.ok) return refused(parsed.refusal)
   if (parsed.deck !== deck.id) return refused("deck")
-  return applyAgentEdits(deck, parsed.changes, caller.runId)
+  return applyAgentEdits(deck, parsed.changes, caller.runId, parsed.base)
 }

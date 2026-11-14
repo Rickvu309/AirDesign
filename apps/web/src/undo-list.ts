@@ -81,7 +81,8 @@ async function sent(link: UndoLink, deck: string, register: Register, entry: Und
   if (!turn.ok) return false
   const { command } = turn
   if (command.command === "slide") return (await link.enqueueSlide(deck, command.file, command.edit)).ok
-  if (command.command !== "person" || command.node === undefined || !("floor" in entry.undoable)) return false
+  if (command.command !== "person" || command.v !== undefined || command.node === undefined) return false
+  if (!("floor" in entry.undoable)) return false
   const { floor } = entry.undoable
   if (command.property === "box") return (await link.enqueueBox(deck, command.value, command.node, floor)).ok
   return (await link.enqueue(deck, command.value, command.node, floor)).ok

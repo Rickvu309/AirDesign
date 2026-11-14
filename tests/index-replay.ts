@@ -104,7 +104,7 @@ export function replayIndex(graph: Graph, failures: string[]) {
     }
     const beside =
       target.format === 2 ? index?.next === undefined : (index?.next?.elements.length ?? 0) === target.beside
-    if ((index?.format ?? 1) !== target.format || !beside) {
+    if ((index?.format ?? 1) !== (target.format === 2 ? format : 1) || !beside) {
       failures.push(`index ${edge.action} disagrees with the stored format or the pages built beside it`)
     }
     if ((index?.slides[0]?.layout !== undefined) !== (target.format === 2)) {

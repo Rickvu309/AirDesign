@@ -65,6 +65,46 @@ describe("readRow reads both format 1 forms as trait fields", () => {
   })
 })
 
+describe("readRow reads a row of format 2 and up by its declared trait fields", () => {
+  const written = { v: format, patch: { box: { x: { set: 914_400 } }, text: { value: { set: "Hi" } } } }
+
+  it("reads each field's edit through the field's own kind", () => {
+    expect(readRow(written, "text")).toEqual({ ok: true, value: written })
+    expect(readRow({ actor: "agent", visible: true, runId: "r", ...written }, "notes")).toEqual({
+      ok: true,
+      value: written,
+    })
+    expect(readRow({ v: 2, patch: { box: { w: "opening", h: "inherit" } } }, "text")).toEqual({
+      ok: true,
+      value: { v: 2, patch: { box: { w: "opening", h: "inherit" } } },
+    })
+  })
+
+  it("refuses a field no trait declares, an empty patch, and a value its kind does not hold", () => {
+    for (const patch of [
+      {},
+      { box: {} },
+      { box: { rot: { set: 1 } } },
+      { glow: { radius: { set: 1 } } },
+      { box: { x: { set: 1.5 } } },
+      { box: { w: { set: -1 } } },
+      { box: { x: { set: 1, also: 2 } } },
+      { box: { x: "file" } },
+      { box: { x: null } },
+      { text: { value: { set: 7 } } },
+    ]) {
+      expect(readRow({ v: format, patch }, "text"), JSON.stringify(patch)).toEqual({ ok: false, refusal: "payload" })
+    }
+    expect(readRow({ v: format }, "text")).toEqual({ ok: false, refusal: "payload" })
+    expect(readRow({ v: 1.5, patch: written.patch }, "text")).toEqual({ ok: false, refusal: "payload" })
+  })
+
+  it("turns a stored row back into the same row for the fold", () => {
+    expect(rowOf(written, "notes")).toEqual(written)
+    expect(fieldsOf(rowOf(written, "text").patch)).toEqual(["box.x", "text.value"])
+  })
+})
+
 describe("the fold keeps, per trait field, the last row that names it", () => {
   const rows = [
     rowOf({ property: "box", value: box }, "text"),

@@ -14,7 +14,7 @@ import {
   type ElementId,
   type SlideCommand,
   type SlideId,
-  type Value,
+  type FormatOneValue,
 } from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
 import { queueIndex, sendIndex } from "./deck-index.js"
@@ -272,7 +272,7 @@ export function connect(remote: Remote, options: Options = {}) {
 
   function writeValue(
     deck: DeckId,
-    edit: Value,
+    edit: FormatOneValue,
     named: ElementId,
     floor: string,
     replaying?: string,
@@ -323,7 +323,7 @@ export function connect(remote: Remote, options: Options = {}) {
     return result
   }
 
-  function enqueueValue(deck: string, edit: Value, node: ElementId, floor: string): Promise<Enqueued> {
+  function enqueueValue(deck: string, edit: FormatOneValue, node: ElementId, floor: string): Promise<Enqueued> {
     const parsed = readDeckId(deck)
     if (!parsed.ok) return Promise.resolve({ ok: false, refusal: "deck" })
     const named = readElementId(node)

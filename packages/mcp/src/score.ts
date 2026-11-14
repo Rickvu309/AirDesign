@@ -5,6 +5,7 @@ import {
   history,
   presentSlides,
   rootElement,
+  storedValue,
   type ElementId,
   type NodeRegister,
   type Register,
@@ -138,7 +139,7 @@ function picture(register: Register, id: ElementId): string {
     guarded: body.guarded,
     slides: body.slides,
     bytes: body.bytes,
-    landed: body.landed.map((row) => [row.actor, row.value, row.visible]),
+    landed: body.landed.map((row) => [row.actor, storedValue(row), row.visible]),
   })
 }
 

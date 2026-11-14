@@ -19,9 +19,10 @@ export function boxStorable(parts: ReadonlyMap<string, Uint8Array>, shape: ReadS
 
 export function landedBox(register: Register | null, id: ElementId): Box | null {
   const body = register?.elements[id]
-  return body === undefined || !body.landed.some((row) => row.visible && row.property === "box")
-    ? null
-    : currentBox(body)
+  const moved = body?.landed.some(
+    (row) => row.visible && (row.v === undefined ? row.property === "box" : row.patch.box !== undefined),
+  )
+  return body === undefined || moved !== true ? null : currentBox(body)
 }
 
 export function shownBox(register: Register | null, id: ElementId, file: Box | null): Box | null {

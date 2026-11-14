@@ -135,7 +135,7 @@ Software that works on a person's decks over MCP, such as Claude or Codex. A per
 _Avoid_: bot, integration, app
 
 **Aira**:
-The agent built into AirDesign. It reads a deck, rewrites its text, adds, duplicates, deletes and reorders slides, sets a slide's background color, adds text boxes, deletes elements, and moves or resizes what is on its slides.
+The agent built into AirDesign. It reads a deck, rewrites its text and sets the text's color, size, bold, italic, underline, alignment and bullets, moves or resizes what is on its slides, adds, duplicates, deletes and reorders slides, sets a slide's background color, adds text boxes and deletes elements.
 _Avoid_: the assistant, the AI
 
 **request**:

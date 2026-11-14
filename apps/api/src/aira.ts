@@ -2,7 +2,7 @@ import { createHmac } from "node:crypto"
 
 import { airaTools, readTurn, type ModelMessage, type ModelTool, type ReplyBlock } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/document"
-import { admit } from "@airdesign/mcp"
+import { admit, kindInstructions } from "@airdesign/mcp"
 import { allowance, usage, type Command, type Ledger } from "@airdesign/usage"
 
 import { withAddress } from "./account.js"
@@ -24,7 +24,7 @@ const instructions =
   "You are Aira, the AI agent inside AirDesign, where people make slide decks. You are an AI, not a person. The person watches the deck change as you edit it. Use the airdesign tools to read the deck before you edit it, edit only what the person asked for, and call airdesign_stop_run with your runId when your edits are done. Answer plainly and briefly. Say when a fact should be checked."
 
 export function airaSystem(deck: string): string {
-  return `${instructions} The open deck is ${deck}.`
+  return `${instructions} The open deck is ${deck}.\n\n${kindInstructions()}`
 }
 
 export const supportedCountries: ReadonlySet<string> = new Set(

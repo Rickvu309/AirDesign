@@ -1,5 +1,5 @@
-import { readAgentEdit, type WireChange, type WireRunElement } from "@airdesign/catalog"
-import { openingElement, type ElementId, type Register } from "@airdesign/document"
+import { readAgentEdit, type AgentChange, type WireChange, type WireRunElement } from "@airdesign/catalog"
+import { openingElement, registerScope, type ElementId, type Register } from "@airdesign/document"
 import { call, liveRuns, type Deck } from "@airdesign/engine"
 import type { AgentCaller, ToolResult } from "./call-tool.js"
 import { editRefusal, heldElements, runRefusal } from "./edit-answer.js"
@@ -45,20 +45,34 @@ type RunRequest =
   | { readonly ok: true; readonly deck: Deck; readonly elements: readonly WireRunElement[] }
   | { readonly ok: false; readonly refusal: EditCode }
 
-function runElements(changes: readonly WireChange[]): readonly WireRunElement[] {
+export function nodeChanges(changes: readonly AgentChange[]): readonly WireChange[] {
+  return changes.flatMap((change) => ("op" in change ? [] : [change]))
+}
+
+export function setNodes(register: Register, changes: readonly AgentChange[]): readonly ElementId[] {
+  const scope = registerScope(register)
+  return changes.flatMap((change) => {
+    if (!("op" in change) || change.op !== "set") return []
+    const nodes = scope.expand(change.target)
+    return nodes === "indexing" ? [] : nodes
+  })
+}
+
+export function runElements(register: Register, changes: readonly AgentChange[]): readonly WireRunElement[] {
   const elements = new Map<ElementId, WireRunElement>()
-  for (const { node, floor } of changes) {
+  for (const { node, floor } of nodeChanges(changes)) {
     if (!elements.has(node)) elements.set(node, floor === undefined ? { node } : { node, floor })
   }
+  for (const node of setNodes(register, changes)) if (!elements.has(node)) elements.set(node, { node })
   return [...elements.values()]
 }
 
 function runRequest(register: Register, raw: unknown): RunRequest {
   const parsed = readAgentEdit(raw)
   if (!parsed.ok) return parsed
-  const floors = elementFloors(register, parsed.changes)
+  const floors = elementFloors(register, nodeChanges(parsed.changes))
   if (!floors.ok) return floors
-  return { ok: true, deck: { id: parsed.deck, revision: 0, register }, elements: runElements(parsed.changes) }
+  return { ok: true, deck: { id: parsed.deck, revision: 0, register }, elements: runElements(register, parsed.changes) }
 }
 
 export type Holders = {

@@ -2,6 +2,7 @@ import { createHmac, randomBytes } from "node:crypto"
 
 import { airaTools, countryHeader, signInRoutes } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/document"
+import { kindInstructions } from "@airdesign/mcp"
 import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
@@ -459,4 +460,8 @@ describe("POST /aira/turn resets the week on the recorded Monday", () => {
       monday: new Date(Date.UTC(2026, 10, 16)),
     })
   })
+})
+
+it("tells Aira what each kind of element takes, in the words the MCP server tells an agent", () => {
+  expect(airaSystem(deck)).toContain(kindInstructions())
 })

@@ -1,9 +1,19 @@
-import { readAgentEdit } from "@airdesign/catalog"
+import { readAddChange, readAgentEdit, readSetChange, type AgentChange, type WireChange } from "@airdesign/catalog"
+import { registerScope, type ElementId, type Register } from "@airdesign/document"
 import { call } from "@airdesign/engine"
 import type { Session, ToolResult } from "./call-tool.js"
 import { editLanded, editRefusal, namedNodes } from "./edit-answer.js"
-import { kindProblem } from "./kind-refusal.js"
-import { elementFloors, joinRun, openRun } from "./run.js"
+import { kindProblem, setProblem } from "./kind-refusal.js"
+import {
+  agentCaller,
+  elementFloors,
+  joinRun,
+  nodeChanges,
+  openRun,
+  runElements,
+  setNodes,
+  stopForNewTurn,
+} from "./run.js"
 import { textProblem } from "./text-from.js"
 import { heldRun, holders } from "./turn.js"
 
@@ -14,22 +24,70 @@ function startedTurn(raw: unknown, session: Session) {
   return openRun(deck.register, raw, () => session.caller.runId, holders(session))
 }
 
+function addTurn(session: Session, base: number) {
+  const before = session.deck
+  const held = heldRun(session)
+  const stopped =
+    held === undefined && base === before.revision
+      ? stopForNewTurn(before, holders(session))
+      : ({ ok: true, deck: before } as const)
+  if (!stopped.ok) return stopped
+  return {
+    ok: true,
+    register: stopped.deck.register,
+    caller: agentCaller(held?.runId ?? session.caller.runId),
+  } as const
+}
+
+function fieldDetail(raw: unknown): string | undefined {
+  const changes = typeof raw === "object" && raw !== null ? (raw as { readonly changes?: unknown }).changes : undefined
+  if (!Array.isArray(changes)) return undefined
+  for (const [at, change] of changes.entries()) {
+    const op = typeof change === "object" && change !== null ? (change as { readonly op?: unknown }).op : undefined
+    const read = op === "set" ? readSetChange(change) : op === "add" ? readAddChange(change) : undefined
+    if (read !== undefined && !read.ok)
+      return `Change ${String(at + 1)}: ${read.field} is missing or has the wrong form.`
+  }
+  return undefined
+}
+
+function setTexts(register: Register, changes: readonly AgentChange[]): readonly WireChange[] {
+  const scope = registerScope(register)
+  return changes.flatMap((change) => {
+    const value = "op" in change && change.op === "set" ? change.text?.value : undefined
+    const nodes = value === undefined || !("op" in change) || change.op !== "set" ? [] : scope.expand(change.target)
+    return value === undefined || nodes === "indexing" ? [] : nodes.map((node) => ({ node, value, readAt: 0 }))
+  })
+}
+
+function addedNodes(before: Register, after: Register): readonly ElementId[] {
+  return after.order
+    .slice(before.order.length)
+    .flatMap((command) => (command.slide === "element-add" ? [command.element.node] : []))
+}
+
 export function editDeck(raw: unknown, session: Session): ToolResult {
   const before = session.deck
   const parsed = readAgentEdit(raw)
-  if (!parsed.ok) return editRefusal(before, parsed.refusal, [])
+  if (!parsed.ok)
+    return editRefusal(before, parsed.refusal, [], parsed.refusal === "field" ? fieldDetail(raw) : undefined)
   if (parsed.deck !== before.id) return editRefusal(before, "deck", [])
-  const nodes = namedNodes(parsed.changes)
+  const named = nodeChanges(parsed.changes)
+  const nodes = namedNodes(named, setNodes(before.register, parsed.changes))
   const unfit = kindProblem(before.register, parsed.changes)
   if (unfit !== undefined) return editRefusal(before, "kind", nodes, unfit)
-  const floors = elementFloors(before.register, parsed.changes)
+  const unset = setProblem(before.register, parsed.changes)
+  if (unset !== undefined) return editRefusal(before, unset.code, nodes, unset.detail)
+  const checked = [...named, ...setTexts(before.register, parsed.changes)]
+  const floors = elementFloors(before.register, checked)
   if (!floors.ok) return editRefusal(before, floors.refusal, nodes)
-  const problem = textProblem(floors.floors, parsed.changes)
+  const problem = textProblem(floors.floors, checked)
   if (problem !== undefined) return editRefusal(before, problem.code, nodes, problem.detail)
-  const opened = startedTurn(raw, session)
+  const holds = runElements(before.register, parsed.changes).length > 0
+  const opened = holds ? startedTurn(raw, session) : addTurn(session, parsed.base)
   if (!opened.ok) return editRefusal(before, opened.refusal, nodes)
   const deck = { id: before.id, revision: before.revision, register: opened.register }
   const result = call("edit_deck", deck, opened.caller, raw)
   if (!result.ok) return { ...editRefusal(deck, result.refusal, nodes), deck: before }
-  return editLanded(result.deck, nodes, opened.caller.runId)
+  return editLanded(result.deck, [...nodes, ...addedNodes(deck.register, result.deck.register)], opened.caller.runId)
 }

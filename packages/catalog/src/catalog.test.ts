@@ -51,7 +51,7 @@ describe("projectTools", () => {
       name: "airdesign_edit_deck",
       op: "edit_deck",
       description:
-        "Write values on one deck. A slide element whose node ends in .notes holds plain-text speaker notes; send its value as plain text. Read it first with airdesign_read_deck and send that revision as base and each element's version as readAt. The server names the actor. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
+        "Write values on one deck. A slide element whose node ends in .notes holds plain-text speaker notes; send its value as plain text. Read it first with airdesign_read_deck and send that revision as base and each element's version as readAt. A change with op set sets fields on one element, on the element with a role on one slide, or on it on every slide, and needs no readAt. A change with op add adds a text box. The server names the actor. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
       runsOn: "server",
       readOnlyHint: false,
       destructiveHint: true,
@@ -62,7 +62,7 @@ describe("projectTools", () => {
       name: "airdesign_read_deck",
       op: "read_deck",
       description:
-        "Read one deck this account owns. Send revision as base to airdesign_edit_deck and each element's version as readAt. slides lists slide ids in position order. Indexed elements include node, slide, kind, opening or edited value and box, and version (0 before edits). role names a placeholder: title, subtitle, body, date, footer, number, picture, chart, table or object. design is one line of the element's look as it opened, field by field, each followed by (layout), (master) or (style) when that part shows it rather than the element itself. Colors name a theme slot or hex; palettes give each slot's hex, and a slide uses palette 0 unless it names another. closed means a person's newer edit or another run holds it. grouped elements refuse box edits. index is ready, pending, or missing; pending or missing means the owner must open the deck in AirDesign to finish indexing. Send slide or cursor to read the rest.",
+        "Read one deck this account owns. Send revision as base to airdesign_edit_deck and each element's version as readAt. slides lists slide ids in position order. Indexed elements include node, slide, kind, opening or edited value and box, and version (0 before edits). role names a placeholder: title, subtitle, body, date, footer, number, picture, chart, table or object. design is one line of the element's look as it opened, field by field, each followed by (layout), (master) or (style) when that part shows it rather than the element itself; once a change lands on an element, its text fields follow its first run as it is now. Colors name a theme slot or hex; palettes give each slot's hex, and a slide uses palette 0 unless it names another. closed means a person's newer edit or another run holds it. grouped elements refuse box edits. index is ready, pending, or missing; pending or missing means the owner must open the deck in AirDesign to finish indexing. Send slide or cursor to read the rest.",
       runsOn: "server",
       readOnlyHint: true,
       destructiveHint: false,

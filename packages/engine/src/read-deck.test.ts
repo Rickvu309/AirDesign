@@ -316,6 +316,35 @@ describe("design lines", () => {
     ])
   })
 
+  it("prints the text design of the element's current first run once a change lands on it", () => {
+    const deck = designed()
+    const running = call(
+      "start_run",
+      deck,
+      { actor: "agent", runId: "run" },
+      {
+        deck: "designed",
+        runId: "run",
+        elements: [{ node: "258.2" }],
+      },
+    )
+    if (!running.ok) throw new Error(running.refusal)
+    const set = call(
+      "edit_deck",
+      running.deck,
+      { actor: "agent", runId: "run" },
+      {
+        deck: "designed",
+        base: running.deck.revision,
+        changes: [{ op: "set", target: "*.title", text: { color: "accent1 lumMod 75", size: 40 } }],
+      },
+    )
+    if (!set.ok) throw new Error(set.refusal)
+    expect(byNode(readDeckPage(set.deck, { runId: "run" })).get("258.2")?.design).toBe(
+      "text.size 40 · text.color accent1 lumMod 75 · body.anchor b (layout)",
+    )
+  })
+
   it("reads a slide added from a layout with the roles of its layout floor", () => {
     const deck = designed()
     const added = call(
