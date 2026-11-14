@@ -5,6 +5,7 @@ export const kinds = [
   "layout",
   "section",
   "slide",
+  "notes",
   "shape",
   "picture",
   "connector",

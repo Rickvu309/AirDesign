@@ -1,4 +1,3 @@
-import { agentBackground } from "./agent-background.js"
 import { applyAgentChange, openedRegister } from "./apply-change.js"
 import { agentElement } from "./agent-elements.js"
 import { agentSlide } from "./agent-slides.js"
@@ -274,10 +273,6 @@ export function call(op: Exclude<CommandOp, "start_run">, deck: Deck, caller: Ca
 export function call(op: CommandOp, deck: Deck, caller: Caller, raw: unknown): CallResult | StartResult {
   if (op === "add_slide" || op === "duplicate_slide" || op === "delete_slide" || op === "move_slide") {
     const result = agentSlide(op, deck, caller, raw)
-    return result.ok ? landed(deck, result.register, result.runId) : result
-  }
-  if (op === "set_background") {
-    const result = agentBackground(deck, caller, raw)
     return result.ok ? landed(deck, result.register, result.runId) : result
   }
   if (op === "add_text_box" || op === "delete_element") {

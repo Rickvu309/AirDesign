@@ -1,4 +1,4 @@
-import { readSlideId, schemeNames } from "@airdesign/document"
+import { readSlideId } from "@airdesign/document"
 import * as z from "zod/v4"
 import { deckInput, wholeInput, readInput, inputRefusal } from "./wire.js"
 
@@ -12,19 +12,6 @@ const slide = z
     return z.NEVER
   })
 const head = { deck: deckInput, base: wholeInput.describe("Revision from airdesign_read_deck.") }
-const color = z
-  .union([
-    z.strictObject({
-      scheme: z.enum(schemeNames).describe("A theme colour: dk1, lt1, dk2, lt2, or accent1 to accent6."),
-    }),
-    z.strictObject({
-      rgb: z
-        .string()
-        .regex(/^[0-9A-F]{6}$/)
-        .describe("Six hex digits in capitals, with no #, such as 1F4E79."),
-    }),
-  ])
-  .describe("The colour. A theme colour follows the deck's theme; an RGB colour stays as sent.")
 export const slideReaders = {
   add_slide: readInput(
     z.strictObject({
@@ -35,7 +22,6 @@ export const slideReaders = {
     inputRefusal,
   ),
   duplicate_slide: readInput(z.strictObject({ ...head, slide }), inputRefusal),
-  set_background: readInput(z.strictObject({ ...head, slide, color }), inputRefusal),
   delete_slide: readInput(z.strictObject({ ...head, slide }), inputRefusal),
   move_slide: readInput(
     z.strictObject({

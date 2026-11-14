@@ -9,16 +9,19 @@ import { traitWire } from "./trait-wire.js"
 const title = elementId("258.2")
 const navy = "1F4E79"
 
-describe("readTarget names a node, a role on one slide, or a role on every slide", () => {
+describe("readTarget names a node, a slide, a role on one slide, or a role on every slide", () => {
   it("reads each form", () => {
     expect(readTarget("258.2")).toEqual({ node: title })
     expect(readTarget("258.notes")).toEqual({ node: elementId("258.notes") })
     expect(readTarget("258.title")).toEqual({ role: "title", slide: slideId("258") })
     expect(readTarget("*.subtitle")).toEqual({ role: "subtitle", slide: "every" })
+    expect(readTarget("258")).toEqual({ slide: slideId("258") })
+    expect(readTarget("258.slide")).toEqual({ node: elementId("258.slide") })
   })
 
-  it("refuses a slide alone, an unknown role and a wildcard node", () => {
-    for (const raw of ["258", "258.headline", "*.7", "*.*", "*", "", 258, null]) expect(readTarget(raw)).toBeNull()
+  it("refuses an unknown role, a wildcard node and a slide id that is not one", () => {
+    for (const raw of ["258.headline", "*.7", "*.*", "*", "", "258.", "n4k2j9x0q1zab", 258, null])
+      expect(readTarget(raw)).toBeNull()
   })
 })
 
@@ -55,10 +58,14 @@ describe("readSetChange reads the agent form into a change in stored units", () 
     expect(refused({ box: {} })).toEqual({ ok: false, refusal: "field", field: "box" })
     expect(refused({ opacity: 60 })).toEqual({ ok: false, refusal: "field", field: "opacity" })
     expect(refused({})).toEqual({ ok: false, refusal: "field", field: "set" })
-    expect(readSetChange({ op: "set", target: "258", box: { x: 1 } })).toEqual({
+    expect(readSetChange({ op: "set", target: "258.headline", box: { x: 1 } })).toEqual({
       ok: false,
       refusal: "field",
       field: "target",
+    })
+    expect(readSetChange({ op: "set", target: "258", fill: { value: "accent2" } })).toEqual({
+      ok: true,
+      change: { op: "set", target: { slide: "258" }, fill: { value: { solid: { scheme: "accent2" } } } },
     })
     expect(readSetChange({ target: "258.2", box: { x: 1 } })).toEqual({ ok: false, refusal: "field", field: "op" })
   })

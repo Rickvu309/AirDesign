@@ -14,6 +14,8 @@ import {
   presentSlides,
   readSlideId,
   shapeOf,
+  ownFloor,
+  slideKind,
   storedElements,
   currentValue,
   currentBox,
@@ -66,7 +68,7 @@ export function readFresh(deck: Deck, runId: string, base: number): boolean {
   return last?.runId === runId && last.revision === deck.revision && last.since <= base && base < deck.revision
 }
 
-export function agentSlide(op: Exclude<SlideOp, "set_background">, deck: Deck, caller: Caller, raw: unknown): Built {
+export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown): Built {
   if (caller.actor !== "agent") return { ok: false, refusal: "field" }
   const parsed = slideReaders[op](raw)
   if (!parsed.ok) return parsed
@@ -121,14 +123,20 @@ export function agentSlide(op: Exclude<SlideOp, "set_background">, deck: Deck, c
     const key = orderKeyAfter(spots, parsed.slide)
     if (key === null) return { ok: false, refusal: "dead" }
     const floor = openingRows(register, index, parsed.slide)
-      .filter((row) => !elementGone(register, row.node))
+      .filter((row) => !elementGone(register, row.node) && slideKind(row.node) !== "slide")
       .map((row) => {
         const body = register.elements[row.node]
         const opening = floorOpening(register, row.node, body === undefined ? {} : landedPatch(body, "text"))
         const shown = body === undefined ? row : { ...row, value: currentValue(body), box: currentBox(body) ?? row.box }
         return opening === undefined ? shown : { ...shown, opening }
       })
-    edit = { slide: "clone", id, source: parsed.slide, key, floor: floorFor(floor, id) }
+    edit = {
+      slide: "clone",
+      id,
+      source: parsed.slide,
+      key,
+      floor: floorFor([...floor, ownFloor(register, parsed.slide)], id),
+    }
   }
   const result = decide(register, { command: "slide", file, edit: { ...edit, runId: caller.runId } })
   if (result.decision === "refuse") return { ok: false, refusal: result.code }

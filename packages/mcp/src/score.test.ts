@@ -37,7 +37,6 @@ const toolNames = {
   duplicate_slide: "airdesign_duplicate_slide",
   delete_slide: "airdesign_delete_slide",
   move_slide: "airdesign_move_slide",
-  set_background: "airdesign_set_background",
   add_text_box: "airdesign_add_text_box",
   delete_element: "airdesign_delete_element",
 

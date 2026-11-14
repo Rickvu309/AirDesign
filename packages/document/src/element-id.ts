@@ -4,7 +4,13 @@ type SlideMark = { readonly mark: "slide" }
 export type ElementId = string & ElementMark
 export type SlideId = string & SlideMark
 
-export const elementPattern = /^(?:[0-9]{1,10}|n[0-9a-z]{12})\.(?:[0-9]{1,10}|n[0-9a-z]{12}|notes)$/
+export const slideKinds = ["notes", "slide"] as const
+
+export type SlideKind = (typeof slideKinds)[number]
+
+export const elementPattern = new RegExp(
+  `^(?:[0-9]{1,10}|n[0-9a-z]{12})\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${slideKinds.join("|")})$`,
+)
 
 export const rootElement = "a" as ElementId
 export const legacyElement = "b" as ElementId
@@ -56,4 +62,13 @@ export function shapeOf(id: ElementId): { readonly slide: string; readonly shape
     throw new Error("element id")
   }
   return { slide: id.slice(0, dot), shape: id.slice(dot + 1) }
+}
+
+export function slideKind(node: ElementId): SlideKind | null {
+  const shape = node.slice(node.indexOf(".") + 1)
+  return slideKinds.find((kind) => kind === shape) ?? null
+}
+
+export function slideNode(slide: SlideId, kind: SlideKind): ElementId {
+  return `${slide}.${kind}` as ElementId
 }

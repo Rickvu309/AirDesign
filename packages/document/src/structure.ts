@@ -61,6 +61,7 @@ type StructuralRoutes = {
     readonly remove: NamedRoute<"sldIdLst.remove">
     readonly duplicate: NamedRoute<"sldIdLst.clone">
   }
+  readonly notes: NoActions
   readonly shape: Placed
   readonly picture: Placed
   readonly connector: Placed
@@ -107,6 +108,7 @@ export const structure = {
     remove: sldIdLstRemove,
     duplicate: sldIdLstClone,
   },
+  notes: {},
   shape: placed,
   picture: placed,
   connector: placed,

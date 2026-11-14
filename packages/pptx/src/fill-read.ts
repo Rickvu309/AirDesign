@@ -120,3 +120,12 @@ export function shownFill(parts: ReadonlyMap<string, Uint8Array>, at: FillAt): S
   if (held !== undefined) return { value: fillValueOf(held, null), own: filled === 0 }
   return styleFill(owners, theme)
 }
+
+export function ownBackground(parts: ReadonlyMap<string, Uint8Array>, part: string): Fill | null {
+  const sheet = sheetOf(parts, part)
+  const root = sheet?.elements[0]
+  if (sheet === null || root === undefined) return null
+  const properties = child(child(child({ element: root, children: sheet.children }, "p:cSld"), "p:bg"), "p:bgPr")
+  const held = fillIn(properties)
+  return held === undefined ? null : fillValueOf(held, null)
+}

@@ -3,7 +3,9 @@ import {
   floorFor,
   floorOpening,
   landedPatch,
+  ownFloor,
   shapeOf,
+  slideKind,
   type IndexElement,
   type Register,
   type SlideCommand,
@@ -31,7 +33,7 @@ export function flooredEdit(
   }
   if (edit.slide !== "clone") return edit
   const notes = elementId(`${edit.source}.notes`)
-  const found = slideRows(slideBase(parts, register), edit.source)
+  const found = slideRows(slideBase(parts, register), edit.source).filter((row) => slideKind(row.node) !== "slide")
   const rows = [
     ...found,
     ...(found.some((row) => row.node === notes)
@@ -45,5 +47,5 @@ export function flooredEdit(
     const shown = { ...row, value: value === "" ? null : value, box: shownBox(register, row.node, row.box) }
     return [opening === undefined ? shown : { ...shown, opening }]
   })
-  return { ...edit, floor: floorFor(rows, edit.id) }
+  return { ...edit, floor: floorFor([...rows, ownFloor(register, edit.source)], edit.id) }
 }

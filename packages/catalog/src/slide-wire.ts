@@ -2,14 +2,13 @@ import { readSlideState, type SlideCommand, type SlideId } from "@airdesign/docu
 
 import { fieldRefusal, knownKeys, recordOf, type FieldRefusal } from "./wire.js"
 
-export type WireSlide = SlideCommand & { readonly file: readonly SlideId[] }
+export type WireSlide = Exclude<SlideCommand, { readonly slide: "background" }> & { readonly file: readonly SlideId[] }
 
 const keysFor = {
   "element-add": ["slide", "id", "element", "media", "geometry", "file"],
   "element-remove": ["slide", "id", "node", "file"],
   "element-restore": ["slide", "id", "node", "file"],
   "element-order": ["slide", "id", "node", "before", "among", "file"],
-  background: ["slide", "id", "color", "file"],
   remove: ["slide", "id", "file"],
   move: ["slide", "id", "key", "file"],
   restore: ["slide", "id", "key", "file"],
@@ -22,7 +21,6 @@ function slideKeys(slide: unknown): readonly string[] | undefined {
   if (slide === "element-remove") return keysFor["element-remove"]
   if (slide === "element-restore") return keysFor["element-restore"]
   if (slide === "element-order") return keysFor["element-order"]
-  if (slide === "background") return keysFor.background
   if (slide === "remove") return keysFor.remove
   if (slide === "move") return keysFor.move
   if (slide === "restore") return keysFor.restore
@@ -38,7 +36,7 @@ export function readSlideEdit(raw: unknown): { ok: true; edit: WireSlide } | Fie
   if (keys === undefined || !knownKeys(body, keys)) return fieldRefusal
   const state = readSlideState({ file: body.file, order: [body] })
   const edit = state?.order[0]
-  if (state === undefined || edit === undefined) return fieldRefusal
+  if (state === undefined || edit === undefined || edit.slide === "background") return fieldRefusal
   return { ok: true, edit: { ...edit, file: state.file } }
 }
 
@@ -53,7 +51,6 @@ export function slideEditCommand(edit: WireSlide): SlideCommand {
   if (edit.slide === "element-order") {
     return { slide: "element-order", id: edit.id, node: edit.node, before: edit.before, among: edit.among }
   }
-  if (edit.slide === "background") return { slide: "background", id: edit.id, color: edit.color }
   if (edit.slide === "remove") return { slide: "remove", id: edit.id }
   if (edit.slide === "move") return { slide: "move", id: edit.id, key: edit.key }
   if (edit.slide === "restore") return { slide: "restore", id: edit.id, key: edit.key }

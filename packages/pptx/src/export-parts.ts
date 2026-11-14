@@ -8,7 +8,9 @@ import {
   shapeOf,
   shownPatch,
   slideGone,
+  slideKind,
   takes,
+  upgradeBackgrounds,
   type ElementId,
   type ElementPatch,
   type FieldEdit,
@@ -53,6 +55,31 @@ function openingPatch(opening: IndexElement | undefined): ElementPatch {
   return netPatch([text, ...box, ...floor])
 }
 
+function heldFields(opened: Readonly<Fields>, rows: Readonly<Fields>): Fields {
+  const kept: Fields = { ...opened }
+  for (const [field, edit] of Object.entries(rows)) {
+    if (edit === "opening" && kept[field] !== undefined) continue
+    kept[field] = edit
+  }
+  return kept
+}
+
+function writtenSlide(
+  parts: Parts,
+  node: ElementId,
+  body: NodeRegister | undefined,
+  opening: IndexElement | undefined,
+): Parts {
+  const opened: Readonly<Fields> = opening?.opening?.fill ?? {}
+  const rows: Readonly<Fields> = (body === undefined ? undefined : landedPatch(body, "text").fill) ?? {}
+  const fields = heldFields(opened, rows)
+  if (Object.keys(fields).length === 0) return parts
+  const slide = shapeOf(node).slide
+  const part = slidePart(parts, slide)
+  if (part === null) throw new Error("fill-slide")
+  return writeTrait(parts, { slide, part, shape: "slide" }, "fill", fields)
+}
+
 function writtenElement(
   parts: Parts,
   shapes: readonly ReadShape[],
@@ -88,16 +115,21 @@ function writtenElement(
   return next
 }
 
-export function exportParts(parts: Parts, register: Register): Parts {
+export function exportParts(parts: Parts, stored: Register): Parts {
+  const register = upgradeBackgrounds(stored)
   const shapes = readShapes(parts)
   let next = parts
   for (const node of new Set([...register.nodes, ...floorNodes(register)])) {
     if (node.includes(".") && (slideGone(register, shapeOf(node).slide) || elementGone(register, node))) continue
     const body = register.nodes.includes(node) ? register.elements[node] : undefined
     const opening = newSlideElement(register, node)
-    next = node.endsWith(".notes")
-      ? writtenNotes(next, node, body, opening)
-      : writtenElement(next, shapes, node, body, opening)
+    const kind = slideKind(node)
+    next =
+      kind === "notes"
+        ? writtenNotes(next, node, body, opening)
+        : kind === "slide"
+          ? writtenSlide(next, node, body, opening)
+          : writtenElement(next, shapes, node, body, opening)
   }
   return next
 }

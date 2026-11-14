@@ -2,12 +2,14 @@ import { readDeckId, type DeckId, type WireEdit, type WireSlide, type WireRefusa
 import {
   currentBox,
   currentValue,
+  format,
   limits,
   readBox,
   readElementId,
   readRow,
   refusals,
   readSlideState,
+  slideNode,
   storedValue,
   unsent,
   type Box,
@@ -62,7 +64,12 @@ export type EnqueueResult<Painted = string> =
   | { ok: false; readonly refusal: WireRefusal }
 
 function wireOf(row: PendingRow): WireEdit | WireSlide {
-  if (row.slideEdit !== undefined && row.slideFile !== undefined) return { ...row.slideEdit, file: row.slideFile }
+  const edit = row.slideEdit
+  if (edit?.slide === "background") {
+    const value = edit.color === null ? "opening" : { set: { solid: edit.color } }
+    return { v: format, patch: { fill: { value } }, node: slideNode(edit.id, "slide"), floor: "" }
+  }
+  if (edit !== undefined && row.slideFile !== undefined) return { ...edit, file: row.slideFile }
   if (row.node === undefined) throw new Error("missing node")
   if (row.floor === undefined) return { ...storedValue(row), node: row.node }
   return { ...storedValue(row), node: row.node, floor: row.floor }

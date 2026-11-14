@@ -125,3 +125,32 @@ it("reopens a text box added and typed in while the network is down, and sends b
   if (!confirmed.ok) throw new Error(confirmed.refusal)
   expect(currentValue(confirmed.register.elements[node]!)).toBe("Typed")
 })
+
+it("sends a background colour an older build queued as a fill row on the slide's own node, and shows it meanwhile", async () => {
+  const remote = memoryRemote()
+  const offline = { ...remote, commit: () => Promise.reject(new TypeError("offline")) }
+  const accent = { scheme: "accent2" } as const
+  const queued = await connect(offline).enqueueSlide("deck", file, { slide: "background", id: file[0], color: accent })
+  expect(queued.ok).toBe(true)
+  await expect(connect(offline).flush("deck")).rejects.toThrow(TypeError)
+  const node = elementId("256.slide")
+  const filled = { fill: { value: { set: { solid: accent } } } }
+  const kept = await connect(offline).openDeck("deck")
+  if (!kept.ok) throw new Error(kept.refusal)
+  expect(kept.register.order).toEqual([])
+  expect(kept.register.elements[node]?.landed).toMatchObject([{ actor: "person", visible: true, patch: filled }])
+  const sent: unknown[] = []
+  const online = connect({
+    ...remote,
+    commit: (body) => {
+      sent.push(body.batch)
+      return remote.commit(body)
+    },
+  })
+  expect((await online.flush("deck")).ok).toBe(true)
+  expect(sent).toEqual([[{ v: expect.any(Number), patch: filled, node, floor: "" }]])
+  const confirmed = await connect(remote).openDeck("deck")
+  if (!confirmed.ok) throw new Error(confirmed.refusal)
+  expect(confirmed.phase).toBe("confirmed")
+  expect(confirmed.register.elements[node]?.landed).toMatchObject([{ actor: "person", visible: true, patch: filled }])
+})

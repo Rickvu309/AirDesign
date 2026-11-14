@@ -1,7 +1,17 @@
-import { slideId, type SlideCommand } from "@airdesign/document"
-import { orderedParts, readParts, readSlides } from "@airdesign/pptx"
+import {
+  decide,
+  elementId,
+  format,
+  openRegister,
+  slideId,
+  type Color,
+  type Command,
+  type Register,
+} from "@airdesign/document"
+import { readParts, readSlides } from "@airdesign/pptx"
 import { describe, expect, it } from "vitest"
 import { designShown } from "@/design-shown"
+import { exportedParts } from "@/exported-parts"
 
 async function fixture(name: string) {
   const fsName = "node:fs/promises"
@@ -9,8 +19,22 @@ async function fixture(name: string) {
   return readParts(await fs.readFile(new URL(`../../../scripts/pptx-fixtures/${name}`, import.meta.url)))
 }
 
-function painted(parts: ReadonlyMap<string, Uint8Array>, order: readonly SlideCommand[]) {
-  return orderedParts(parts, { file: readSlides(parts).map((each) => slideId(each.slide)), order })
+function painted(parts: ReadonlyMap<string, Uint8Array>, color: Color) {
+  const file = readSlides(parts).map((each) => slideId(each.slide))
+  const node = elementId(`${file[0] ?? ""}.slide`)
+  const commands: readonly Command[] = [
+    { command: "add", node, floor: "", route: "deck" },
+    { command: "person", node, v: format, patch: { fill: { value: { set: { solid: color } } } } },
+  ]
+  const register = commands.reduce<Register>(
+    (current, command) => {
+      const decision = decide(current, command)
+      if (decision.decision === "refuse") throw new Error(decision.code)
+      return decision.register
+    },
+    { ...openRegister("", "deck"), file },
+  )
+  return exportedParts(parts, register)
 }
 
 describe("design shown", () => {
@@ -38,11 +62,10 @@ describe("design shown", () => {
 
   it("shows a colour set on the slide, and an RGB colour by its hex", async () => {
     const parts = await fixture("blank.pptx")
-    const id = slideId(readSlides(parts)[0]!.slide)
-    const accent = designShown(painted(parts, [{ slide: "background", id, color: { scheme: "accent2" } }]), 0)
+    const accent = designShown(painted(parts, { scheme: "accent2" }), 0)
     expect(accent?.background.name).toBe("Accent 2")
     expect(accent?.colors.filter((color) => color.chosen).map((color) => color.scheme)).toEqual(["accent2"])
-    const navy = designShown(painted(parts, [{ slide: "background", id, color: { rgb: "0F2433" } }]), 0)
+    const navy = designShown(painted(parts, { rgb: "0F2433" }), 0)
     expect(navy?.background.css.slice(1)).toBe("0F2433")
     expect(navy?.background.name).toBe(navy?.background.css)
     expect(navy?.colors.some((color) => color.chosen)).toBe(false)

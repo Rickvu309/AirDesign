@@ -1,5 +1,5 @@
 import { readDeckId } from "@airdesign/catalog"
-import { backgroundOf, elementId, slideId, writeTextValue } from "@airdesign/document"
+import { elementId, landedPatch, writeTextValue } from "@airdesign/document"
 import { indexDeck, liveRuns, openDeck, readDeckPage, call } from "@airdesign/engine"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { expect, it } from "vitest"
@@ -136,7 +136,7 @@ it("lands a slide call on a fresh base while an earlier run is still live, and s
     await server.close()
   }
 })
-it("sets a slide's background through MCP, and tells the agent to choose a present slide when the slide is gone", async () => {
+it("fills a slide's background through edit_deck's set with a slide target, and no longer offers airdesign_set_background", async () => {
   const held = session()
   const server = createServer(held)
   const [a, b] = InMemoryTransport.createLinkedPair()
@@ -144,19 +144,33 @@ it("sets a slide's background through MCP, and tells the agent to choose a prese
   await server.connect(b)
   await client.connect(a)
   try {
+    const listed = await client.listTools()
+    expect(listed.tools.map((tool) => tool.name)).not.toContain("airdesign_set_background")
     const set = await client.callTool({
-      name: "airdesign_set_background",
-      arguments: { deck: "deck", base: 0, slide: "256", color: { scheme: "accent1" } },
+      name: "airdesign_edit_deck",
+      arguments: { deck: "deck", base: 0, changes: [{ op: "set", target: "256", fill: { value: "accent1" } }] },
     })
     expect(set.isError).not.toBe(true)
     expect(set.structuredContent).toMatchObject({ ok: true, revision: 1, runId: "run" })
-    expect(backgroundOf(held.deck.register, slideId("256"))).toEqual({ scheme: "accent1" })
-    const gone = await client.callTool({
-      name: "airdesign_set_background",
-      arguments: { deck: "deck", base: held.deck.revision, slide: "300", color: { rgb: "0F2433" } },
+    const body = held.deck.register.elements[elementId("256.slide")]
+    expect(body === undefined ? undefined : landedPatch(body, "text").fill).toEqual({
+      value: { set: { solid: { scheme: "accent1" } } },
     })
-    expect(gone.isError).toBe(true)
-    expect(JSON.stringify(gone.content)).toContain("Slide 300: choose a present slide")
+    const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
+    expect(read.structuredContent).toMatchObject({
+      elements: [{ node: "256.2" }, { node: "256.slide", kind: "slide", value: null, design: "fill accent1" }],
+    })
+    const old = await client
+      .callTool({
+        name: "airdesign_set_background",
+        arguments: { deck: "deck", base: 1, slide: "256", color: { scheme: "accent1" } },
+      })
+      .then(
+        (result) => JSON.stringify(result),
+        (error: unknown) => String(error),
+      )
+    expect(old).toContain("Tool airdesign_set_background not found")
+    expect(held.deck.revision).toBe(1)
   } finally {
     await client.close()
     await server.close()

@@ -1,5 +1,5 @@
 import type { WireChange } from "@airdesign/catalog"
-import { readTextValue, type ElementId, type TextRun, type TextValue } from "@airdesign/document"
+import { readTextValue, slideKind, type ElementId, type TextRun, type TextValue } from "@airdesign/document"
 
 export type TextProblem = { readonly code: "field" | "text-from"; readonly detail: string }
 
@@ -27,7 +27,7 @@ export function textProblem(
   changes: readonly WireChange[],
 ): TextProblem | undefined {
   for (const change of changes) {
-    if (change.property === "box" || change.node.endsWith(".notes")) continue
+    if (change.property === "box" || slideKind(change.node) !== null) continue
     const floor = floors.get(change.node)
     if (floor === undefined) continue
     const file = readTextValue(floor)

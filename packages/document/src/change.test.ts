@@ -272,3 +272,49 @@ function moved258(register: Register, box: { x: number; y: number; cx: number; c
     { command: "person", node, property: "box", value: box },
   ])
 }
+
+describe("a slide's own node takes fill, which PowerPoint calls the background", () => {
+  const solid = { solid: { scheme: "accent2" } } as const
+
+  it("reaches the slide's own node from a slide target", () => {
+    expect(plan({ target: { slide: slideId("259") }, fill: { value: solid } })).toEqual({
+      ok: true,
+      rows: [{ node: "259.slide", row: { v: format, patch: { fill: { value: { set: solid } } } } }],
+    })
+    expect(plan({ target: { node: elementId("258.slide") }, fill: { value: null } })).toEqual({
+      ok: true,
+      rows: [{ node: "258.slide", row: { v: format, patch: { fill: { value: "inherit" } } } }],
+    })
+  })
+
+  it("lands the row on the slide's node and refuses text there", () => {
+    const node = elementId("258.slide")
+    const opened = applied(indexed(), [{ command: "add", node, floor: "", route: "deck" }])
+    const planned = plan({ target: { slide: slideId("258") }, fill: { value: solid } }, opened)
+    if (!planned.ok) throw new Error("plan")
+    expect(decide(opened, { command: "person", node, ...(planned.rows[0]?.row ?? { v: 0, patch: {} }) }).decision).toBe(
+      "apply",
+    )
+    expect(decide(opened, { command: "person", node, value: "words" })).toEqual({ decision: "refuse", code: "kind" })
+    expect(plan({ target: { slide: slideId("258") }, text: { value: "words" } })).toEqual({
+      ok: false,
+      refusals: [{ node: "258.slide", trait: "text", code: "kind" }],
+    })
+  })
+
+  it("keeps the speaker notes node to its notes", () => {
+    expect(plan({ target: { node: elementId("258.notes") }, fill: { value: solid } })).toEqual({
+      ok: false,
+      refusals: [{ node: "258.notes", trait: "fill", code: "kind" }],
+    })
+    expect(plan({ target: { node: elementId("258.notes") }, notes: { value: "Say this" } }).ok).toBe(true)
+  })
+
+  it("finds no slide that was deleted or never was", () => {
+    const refused = { ok: false, refusals: [{ node: null, trait: null, code: "dead" }] }
+    expect(plan({ target: { slide: slideId("259") }, fill: { value: solid } }, deleted(indexed(), "259"))).toEqual(
+      refused,
+    )
+    expect(plan({ target: { slide: slideId("300") }, fill: { value: solid } })).toEqual(refused)
+  })
+})

@@ -44,4 +44,16 @@ describe("slide measure", () => {
     ]
     expect(slideMeasure({ file: [], order, index }, slideId("301"))?.free).toBe(7)
   })
+
+  it("counts no shape number for a clone's notes or its own slide node", () => {
+    const own: readonly IndexElement[] = [
+      ...floor,
+      { node: elementId("300.notes"), kind: "slide", value: "Say this", box: null, grouped: false },
+      { node: elementId("300.slide"), kind: "slide", value: null, box: null, grouped: false },
+    ]
+    const order: SlideCommand[] = [
+      { slide: "clone", id: slideId("300"), source: slideId("257"), key: "a1" as never, floor: own },
+    ]
+    expect(slideMeasure({ file: [], order, index }, slideId("300"))?.free).toBe(7)
+  })
 })
