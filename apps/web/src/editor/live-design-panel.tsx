@@ -14,6 +14,7 @@ import {
   readSlides,
   readTraits,
   shownAlphas,
+  shownEffects,
   shownFill,
   shownGeometry,
   shownLine,
@@ -83,6 +84,7 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
       `${trait}.alpha`,
       { value, own: true },
     ])
+    const effects = Object.entries(shownEffects(parts, at) ?? {}).map(([field, shown]) => [`effects.${field}`, shown])
     return {
       ...(fill === null ? {} : { "fill.value": fill }),
       ...(geometry === null ? {} : { "geometry.shape": geometry }),
@@ -91,6 +93,7 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
       "box.flipV": { value: turn.flipV, own: true },
       ...Object.fromEntries(line),
       ...Object.fromEntries(alphas),
+      ...Object.fromEntries(effects),
     }
   } catch {
     return {}

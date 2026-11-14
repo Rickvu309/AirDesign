@@ -100,7 +100,12 @@ type Planned = {
   readonly name: UndoName
 } & ({ readonly values: readonly FormatOneValue[] } | { readonly row: Row })
 
-const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = { fill: "fill", line: "line", geometry: "shape" }
+const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = {
+  fill: "fill",
+  line: "line",
+  effects: "effects",
+  geometry: "shape",
+}
 
 function faded(row: Row): boolean {
   const fields = Object.entries(row.patch).flatMap(([trait, edits]) =>

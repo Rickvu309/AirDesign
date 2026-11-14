@@ -25,7 +25,16 @@ import {
   type TraitName,
   type Value,
 } from "@airdesign/document"
-import { exportParts, readNotes, readTable, shownFill, shownGeometry, shownLine, shownTurn } from "@airdesign/pptx"
+import {
+  exportParts,
+  readNotes,
+  readTable,
+  shownEffects,
+  shownFill,
+  shownGeometry,
+  shownLine,
+  shownTurn,
+} from "@airdesign/pptx"
 import { beforeAll, describe, expect, it } from "vitest"
 import { optionCopy } from "./copy/option-copy"
 import { panelOf } from "./design/panel"
@@ -77,6 +86,8 @@ const lineOpening = {
   head: "opening",
   tail: "opening",
 } as const
+
+const effectsOpening = { shadow: "opening", glow: "opening", softEdge: "opening" } as const
 
 const boxOpening = {
   x: "opening",
@@ -167,7 +178,17 @@ const probes: { readonly [T in TraitName]: Probe<T> } = {
       },
     },
   },
-  effects: { fields: {} },
+  effects: {
+    deck: "clean.pptx",
+    kind: "shape",
+    opening: () => ({ v: format, patch: { effects: effectsOpening } }),
+    edit: (_, field, value) => ({ v: format, patch: { effects: { [field]: { set: value } } } }),
+    fields: {
+      shadow: { file: (parts, at) => shownEffects(parts, at)?.shadow.value, shows: (value) => value },
+      glow: { file: (parts, at) => shownEffects(parts, at)?.glow.value, shows: (value) => value },
+      softEdge: { file: (parts, at) => shownEffects(parts, at)?.softEdge.value, shows: (value) => value },
+    },
+  },
   body: { fields: {} },
   image: { fields: {} },
   crop: { fields: {} },

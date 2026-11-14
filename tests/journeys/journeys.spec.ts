@@ -48,6 +48,7 @@ for (const name of [
   "slide-background",
   "shape-fill",
   "line-style",
+  "shape-effects",
   "shape-geometry",
   "opacity",
   "commit-once",

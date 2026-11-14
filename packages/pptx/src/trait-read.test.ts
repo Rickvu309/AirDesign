@@ -147,7 +147,7 @@ it("keeps a custom geometry, a picture fill and an effect graph out of reach, an
       "text.color": { value: { scheme: "tx1" } },
       "text.font": { value: "Arial" },
     },
-    kept: ["geometry", "fill", "effects.shadow"],
+    kept: ["geometry", "fill", "effects.shadow", "effects.glow", "effects.softEdge"],
   })
 })
 

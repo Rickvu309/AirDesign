@@ -3,7 +3,15 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { browserExportArgs, browserExportTag, caseExports, caseProblems, caseSpecs, loadCases } from "./pptx-cases.mjs"
+import {
+  browserExportArgs,
+  browserExportTag,
+  caseExports,
+  caseOriginals,
+  caseProblems,
+  caseSpecs,
+  loadCases,
+} from "./pptx-cases.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -26,6 +34,7 @@ assert.deepEqual(
     "slides.mjs",
     "text-format.mjs",
     "text.mjs",
+    "trait-effects.mjs",
     "trait-fill.mjs",
     "trait-geometry.mjs",
     "trait-line.mjs",
@@ -54,6 +63,12 @@ assert.match(caseProblems("a.mjs", { ...good, exports: undefined })[0], /needs e
 assert.match(caseProblems("a.mjs", { ...good, lines: undefined })[0], /needs lines/)
 assert.match(caseProblems("a.mjs", { ...good, cases: {} })[0], /cases that is not a list/)
 assert.match(caseProblems("a.mjs", { ...good, renders: "exported-box.pptx" })[0], /renders that is not a list/)
+assert.match(caseProblems("a.mjs", { ...good, originals: "deck.pptx" })[0], /originals that is not a list/)
+assert.deepEqual(caseOriginals([{ originals: ["b.pptx", "a.pptx"] }, {}, { originals: ["a.pptx"] }]), [
+  "a.pptx",
+  "b.pptx",
+])
+assert.ok(caseOriginals(entries).includes("nasa-cots-electronics.pptx"), "the effects case reads its corpus original")
 assert.deepEqual(caseProblems("a.mjs", { ...good, covers: ["box.x", "table.value"] }), [])
 assert.match(caseProblems("a.mjs", { ...good, covers: "box.x" })[0], /covers that is not a list of trait fields/)
 assert.match(caseProblems("a.mjs", { ...good, covers: ["box"] })[0], /covers that is not a list of trait fields/)

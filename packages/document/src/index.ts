@@ -37,6 +37,7 @@ export {
   type DesignKey,
   type ElementRead,
   type FillRead,
+  type GlowRead,
   type Palette,
   type Read,
   type Role,
@@ -123,6 +124,7 @@ export { kinds, type Kind } from "./kinds.js"
 export { structure } from "./structure.js"
 export { foldSections, type FileSection } from "./section-order.js"
 export { floorFor, floorNodes, floorOpening, newSlideElement, openingElement } from "./slide-floor.js"
+export { widestEffect } from "./trait-effects.js"
 export { patternPresets } from "./trait-fill.js"
 export { arrowheads, arrowSizes, dashPresets, lineCaps, lineCompounds, lineJoins, widestLine } from "./trait-line.js"
 export { adjustLimit, presetAdjusts, presets, type Preset } from "./trait-geometry.js"

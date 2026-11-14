@@ -23,6 +23,7 @@ import {
   type FieldValue,
   type ElementRead,
   type FillRead,
+  type GlowRead,
   type IndexElement,
   type Read,
   type ShadowRead,
@@ -73,6 +74,11 @@ function agentShadow(shadow: ShadowRead): string {
   return shadow.color === null ? parts.join(" ") : `${parts.join(" ")} ${agentColor(shadow.color)}`
 }
 
+function agentGlow(glow: GlowRead): string {
+  const radius = `radius ${String(tenths(glow.radius / emuPerPoint))}`
+  return glow.color === null ? radius : `${radius} ${agentColor(glow.color)}`
+}
+
 type Agent = { readonly [Key in DesignKey]: (read: NonNullable<TraitReads[Key]>["value"]) => Shown[0] }
 
 const agent: Agent = {
@@ -84,6 +90,8 @@ const agent: Agent = {
   "line.head": (value) => value,
   "line.tail": (value) => value,
   "effects.shadow": agentShadow,
+  "effects.glow": agentGlow,
+  "effects.softEdge": (value) => tenths(value / emuPerPoint),
   "text.size": (value) => tenths(value / hundredthsPerPoint),
   "text.color": agentColor,
   "text.font": (value) => value,
@@ -189,6 +197,14 @@ function faded(
   return next === shown ? design : { ...design, [key]: [next] }
 }
 
+type Shadow = FieldValue<"effects", "shadow">
+type Glow = FieldValue<"effects", "glow">
+type SoftEdge = FieldValue<"effects", "softEdge">
+
+const shadowShown = (shadow: Shadow) => ("none" in shadow ? null : agentShadow(shadow.outer))
+const glowShown = (glow: Glow) => ("none" in glow ? null : agentGlow(glow.halo))
+const softEdgeShown = (soft: SoftEdge) => ("none" in soft ? null : tenths(soft.radius / emuPerPoint))
+
 export function foldDesign(design: Design | undefined, patch: ElementPatch): Design | undefined {
   const line = patch.line
   const before = design ?? {}
@@ -202,6 +218,9 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch): Des
   next = folded(next, "box.rot", patch.box?.rot, (value) => (value === 0 ? null : tenths(value / anglePerDegree)))
   next = folded(next, "box.flipH", patch.box?.flipH, (value) => (value ? true : null))
   next = folded(next, "box.flipV", patch.box?.flipV, (value) => (value ? true : null))
+  next = folded(next, "effects.shadow", patch.effects?.shadow, shadowShown)
+  next = folded(next, "effects.glow", patch.effects?.glow, glowShown)
+  next = folded(next, "effects.softEdge", patch.effects?.softEdge, softEdgeShown)
   next = faded(next, before, "fill", patch.fill?.value, patch.fill?.alpha)
   next = faded(next, before, "line.fill", line?.fill, line?.alpha)
   next = faded(next, before, "text.color", undefined, patch.text?.alpha)
@@ -239,11 +258,24 @@ const powerPointWidestSlide = 51_206_400
 const refused: AgentRead = { ok: false }
 
 const agentNumber = "-?[0-9]+(?:\\.[0-9]+)?"
-const slotPattern = [...themeSlots, ...mappedSlots].join("|")
-const valuedPattern = valuedTransforms.join("|")
-const barePattern = bareTransforms.join("|")
+function slotPattern(slots: readonly string[]): string {
+  const groups = new Map<string, string[]>()
+  for (const slot of slots) {
+    const [, stem = slot, digit = ""] = /^(.*?)([0-9]?)$/.exec(slot) ?? []
+    groups.set(stem, [...(groups.get(stem) ?? []), digit])
+  }
+  return [...groups]
+    .map(([stem, digits]) => (digits.length > 1 ? `${stem}[${digits.join("")}]` : `${stem}${digits.join("")}`))
+    .join("|")
+}
 
-export const colorPattern = `(?:#[0-9A-Fa-f]{6}|(?:${slotPattern}))(?: (?:${valuedPattern}) ${agentNumber}| (?:${barePattern}))*`
+function valuedPattern(ops: readonly string[]): string {
+  const stems = ops.filter((op) => ops.includes(`${op}Mod`) && ops.includes(`${op}Off`))
+  const single = ops.filter((op) => !stems.some((stem) => [stem, `${stem}Mod`, `${stem}Off`].includes(op)))
+  return [`(?:${stems.join("|")})(?:Mod|Off)?`, ...single].join("|")
+}
+
+export const colorPattern = `(?:#[0-9A-Fa-f]{6}|${slotPattern([...themeSlots, ...mappedSlots])})(?: (?:${valuedPattern(valuedTransforms)}) ${agentNumber}| (?:${bareTransforms.join("|")}))*`
 
 const colorExact = new RegExp(`^${colorPattern}$`)
 

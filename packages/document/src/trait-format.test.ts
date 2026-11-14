@@ -8,7 +8,7 @@ const recorded: Readonly<Record<TraitName, readonly string[]>> = {
   geometry: ["5465b825", "bd526818"],
   fill: ["5465b825", "5b43a296", "7ae321c1"],
   line: ["5465b825", "118c2fdf", "db2c2c2c"],
-  effects: ["5465b825"],
+  effects: ["5465b825", "20b46c0f"],
   body: ["5465b825"],
   text: ["7bd8d0c1", "aaea7ede"],
   image: ["5465b825"],

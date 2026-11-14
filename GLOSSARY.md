@@ -139,12 +139,16 @@ The agent built into AirDesign. It reads a deck, changes what a person can chang
 _Avoid_: the assistant, the AI
 
 **design panel**:
-The panel beside the slide that sets the selected element's position, size, rotation, flips, alignment, shape, opacity, fill, line and text, or the slide's background color when nothing is selected.
+The panel beside the slide that sets the selected element's position, size, rotation, flips, alignment, shape, opacity, fill, line, effects and text, or the slide's background color when nothing is selected.
 _Avoid_: inspector, properties, format pane
 
 **opacity**:
 How solid an element is, in percent: one value that fades its fill, line and text together. A group, a table and a slide's background have none. The code stores it as the alpha of each colour.
 _Avoid_: transparency, alpha (in product copy)
+
+**effects**:
+An element's shadow, glow and soft edge, set together in the Effects section of the design panel or with `effects` in an agent's `set`. Changing one keeps the others.
+_Avoid_: filters, shadow styles
 
 **request**:
 What a person asks Aira to do, and everything Aira does to answer it.

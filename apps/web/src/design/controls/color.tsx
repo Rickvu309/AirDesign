@@ -1,4 +1,4 @@
-import { fadedColor, opaque, sameColor, type Color } from "@airdesign/document"
+import { alphaKeys, alphaOf, fadedColor, opaque, sameColor, type Color } from "@airdesign/document"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import type { ControlProps } from "@/design/panel"
@@ -15,6 +15,8 @@ export function ColorControl({ row, palette, onChange }: ControlProps) {
   const label = useId()
   const held = row.mixed ? null : (row.value as Color | undefined)
   const shown = held === null || held === undefined ? held : fadedColor(held, opaque)
+  const carried = alphaKeys.some((key) => key.startsWith(`${row.trait}.`)) || shown === null || shown === undefined
+  const picked = (color: Color) => (carried ? color : fadedColor(color, alphaOf(held ?? color)))
   return (
     <div className="flex flex-col gap-1.5" data-control="color">
       <span id={label} className="text-[length:var(--type-caption)] text-quiet">
@@ -33,7 +35,7 @@ export function ColorControl({ row, palette, onChange }: ControlProps) {
               aria-pressed={chosen}
               title={swatch.name}
               onClick={() => {
-                if (!chosen) onChange(color)
+                if (!chosen) onChange(picked(color))
               }}
               className={cn(
                 "aspect-square h-auto w-full rounded-[var(--shape-control)] p-0 active:translate-y-0",

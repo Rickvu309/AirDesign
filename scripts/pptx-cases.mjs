@@ -30,7 +30,7 @@ export const caseProblems = (file, entry) => {
   ) {
     say("has covers that is not a list of trait fields, such as box.x.")
   }
-  for (const key of ["cases", "renders"]) {
+  for (const key of ["cases", "renders", "originals"]) {
     if (entry[key] !== undefined && !Array.isArray(entry[key])) say(`has ${key} that is not a list.`)
   }
   return problems
@@ -38,6 +38,7 @@ export const caseProblems = (file, entry) => {
 
 export const caseSpecs = (entries) => [...new Set(entries.flatMap((entry) => entry.specs))].sort()
 export const caseExports = (entries) => entries.flatMap((entry) => entry.exports)
+export const caseOriginals = (entries) => [...new Set(entries.flatMap((entry) => entry.originals ?? []))].sort()
 export const browserExportArgs = (entries) => [...caseSpecs(entries), "--grep", browserExportTag]
 
 export const loadCases = async (root) => {

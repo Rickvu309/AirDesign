@@ -64,7 +64,7 @@ describe("the one table of traits", () => {
     })
   })
 
-  it("holds only the fields that are live: the box, the geometry, the fill, the line, the text, notes and table values, and alpha", () => {
+  it("holds only the fields that are live: the box, the geometry, the fill, the line, the effects, the text, notes and table values, and alpha", () => {
     expect(traitNames.flatMap(fieldKeys)).toEqual([
       "box.x",
       "box.y",
@@ -85,6 +85,9 @@ describe("the one table of traits", () => {
       "line.head",
       "line.tail",
       "line.alpha",
+      "effects.shadow",
+      "effects.glow",
+      "effects.softEdge",
       "text.value",
       "text.alpha",
       "table.value",

@@ -11,7 +11,6 @@ import {
   type Palette,
   type Read,
   type Role,
-  type ShadowRead,
   type Source,
   type ThemeSlot,
   type TraitReads,
@@ -21,7 +20,9 @@ import { child, flag, inside, whole, type Held } from "./markup-held.js"
 import { linkedPart } from "./notes-part.js"
 import { paintAttribute } from "./paint-color.js"
 import { layoutMatch, masterMatch, sheetFrom, type Drawn, type Sheet } from "./paint-sheet.js"
+import { effectReads } from "./effect-reads.js"
 import { readSlides } from "./read-shapes.js"
+import { referenceOf } from "./style-reference.js"
 import { isShapeTag, shapeTags } from "./shape-tree.js"
 
 export type DeckTraits = {
@@ -73,20 +74,6 @@ export function propertiesOf(held: Held): Held | undefined {
   return properties === null ? undefined : child(held, properties)
 }
 
-type Reference = { readonly entry: Held; readonly placed: Color | null } | "none"
-
-function referenceOf(owners: readonly Held[], kind: string, list: readonly Held[]): Reference | undefined {
-  for (const owner of owners) {
-    const reference = child(child(owner, "p:style"), kind)
-    if (reference === undefined) continue
-    const index = whole(reference.element, "idx") ?? -1
-    if (index === 0) return "none"
-    const entry = list[index - 1]
-    return entry === undefined ? undefined : { entry: { ...entry, source: "style" }, placed: colorIn(reference, null) }
-  }
-  return undefined
-}
-
 function shapeReads(
   owners: readonly Held[],
   styles: Styles,
@@ -118,27 +105,7 @@ function shapeReads(
   if (fill !== undefined && fill.value !== null && fill.value !== "none")
     reads.fill = read(fill.value, fill.held.source)
   lineReads(properties, owners, styles, reads)
-  const effects = properties.find(
-    (held) => child(held, "a:effectLst") !== undefined || child(held, "a:effectDag") !== undefined,
-  )
-  if (effects !== undefined && child(effects, "a:effectDag") !== undefined) kept.push("effects.shadow")
-  const effectReference = effects === undefined ? referenceOf(owners, "a:effectRef", styles.effects) : undefined
-  const list =
-    effects !== undefined
-      ? { held: child(effects, "a:effectLst"), placed: null }
-      : effectReference === undefined || effectReference === "none"
-        ? undefined
-        : { held: child(effectReference.entry, "a:effectLst"), placed: effectReference.placed }
-  const shadow = list === undefined ? undefined : child(list.held, "a:outerShdw")
-  if (shadow !== undefined && list !== undefined) {
-    const value: ShadowRead = {
-      blur: whole(shadow.element, "blurRad") ?? 0,
-      distance: whole(shadow.element, "dist") ?? 0,
-      direction: whole(shadow.element, "dir") ?? 0,
-      color: colorIn(shadow, list.placed),
-    }
-    reads["effects.shadow"] = read(value, shadow.source)
-  }
+  effectReads(properties, owners, styles, reads, kept)
 }
 
 function lineReads(

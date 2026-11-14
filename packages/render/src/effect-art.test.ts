@@ -159,6 +159,11 @@ describe("soft edge paint", () => {
     expect(host.querySelector<HTMLElement>("[data-thumb-element]")?.style.background).toContain("linear-gradient")
   })
 
+  it.fails("softens a gradient fill's edge, as PowerPoint does", async () => {
+    const host = await painted(element({ softEdge: { radius: 20 } }, { fill: "linear-gradient(90deg, red, blue)" }))
+    expect(host.querySelector("[data-effect-soft]")).not.toBeNull()
+  })
+
   it("paints a rounded box's soft fill with its corners", async () => {
     const host = await painted(element({ softEdge: { radius: 20 } }, { outline: "round" }))
     expect(host.querySelector("[data-effect-soft]")?.getAttribute("rx")).not.toBeNull()
