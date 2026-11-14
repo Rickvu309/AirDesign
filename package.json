@@ -21,6 +21,7 @@
     "test:unit": "vitest run",
     "test:tooling": "node scripts/tooling-tests.mjs",
     "test:browser": "playwright test",
+    "test:production": "playwright test -c playwright.production.config.ts",
     "test:journeys": "pnpm --filter @airdesign/api --filter web build && playwright test -c playwright.journeys.config.ts",
     "metric:paint-fidelity": "bash scripts/pptx-tools.sh node scripts/paint-fidelity-run.mjs",
     "build": "pnpm -r --if-present run build"

@@ -5,6 +5,7 @@ import type { AddressInfo } from "node:net"
 import { join } from "node:path"
 import { expect, test as base, type BrowserContext, type Page } from "@playwright/test"
 import type { Script } from "../../apps/api/src/aira-replay.ts"
+import { sessionCookie, type Production } from "./production.ts"
 
 export const cleanFixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 
@@ -64,9 +65,76 @@ async function startBlindHop(
   }
 }
 
-export const test = base.extend<object, { stack: Stack }>({
+function poster(origin: string): Stack["post"] {
+  return async (path, body, cookie) => {
+    const response = await fetch(`${origin}${path}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...(cookie === undefined ? {} : { cookie }) },
+      body: JSON.stringify(body),
+    })
+    const text = await response.text()
+    return {
+      status: response.status,
+      json: text.length === 0 ? {} : (JSON.parse(text) as Record<string, unknown>),
+      cookie:
+        response.headers
+          .getSetCookie()
+          .map((header) => header.split(";")[0] ?? "")
+          .filter((pair) => !pair.endsWith("="))
+          .join("; ") || undefined,
+    }
+  }
+}
+
+function toolCaller(origin: string, mcp: string): Stack["callTool"] {
+  return async (name, args, cookie) => {
+    const response = await fetch(`${origin}${mcp}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json, text/event-stream", cookie },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }),
+    })
+    const data = (await response.text()).split("\n").find((line) => line.startsWith("data:"))
+    const answer = JSON.parse(data?.slice("data:".length) ?? "{}") as {
+      result?: { structuredContent?: Record<string, unknown> }
+    }
+    return answer.result?.structuredContent ?? {}
+  }
+}
+
+function localOnly(name: string): () => never {
+  return () => {
+    throw new Error(`${name} needs the local stack, and this run targets the deployed app`)
+  }
+}
+
+async function deployedStack(production: Production): Promise<Stack> {
+  const cookie = await sessionCookie(production)
+  const { mcpRoutes } = await import("../../packages/catalog/src/index.ts")
+  return {
+    origin: production.web,
+    hop: production.web,
+    mcp: mcpRoutes.mcp.path,
+    post: poster(production.web),
+    callTool: toolCaller(production.web, mcpRoutes.mcp.path),
+    signIn: async () => cookie,
+    saved: localOnly("saved"),
+    emailOf: localOnly("emailOf"),
+    aira: localOnly("aira"),
+    hold: localOnly("hold"),
+    release: localOnly("release"),
+    exhaust: localOnly("exhaust"),
+    originals: { put: localOnly("originals"), get: localOnly("originals") },
+  }
+}
+
+export const test = base.extend<object, { stack: Stack; production: Production | undefined }>({
+  production: [undefined, { option: true, scope: "worker" }],
   stack: [
-    async ({}, use) => {
+    async ({ production }, use) => {
+      if (production !== undefined) {
+        await use(await deployedStack(production))
+        return
+      }
       execFileSync("pnpm", ["--filter", "@airdesign/api", "build"], { stdio: "ignore" })
       const { startEmptyCluster } = await import("../../apps/api/src/postgres-setup.js")
       const { runBootstrap, runSetup } = await import("../../apps/api/src/provision.js")
@@ -125,42 +193,14 @@ export const test = base.extend<object, { stack: Stack }>({
       })
       const origin = `http://127.0.0.1:${String((server.address() as AddressInfo).port)}`
       const hop = await startBlindHop(origin)
-      async function post(path: string, body: unknown, cookie?: string): Promise<Answer> {
-        const response = await fetch(`${origin}${path}`, {
-          method: "POST",
-          headers: { "content-type": "application/json", ...(cookie === undefined ? {} : { cookie }) },
-          body: JSON.stringify(body),
-        })
-        const text = await response.text()
-        return {
-          status: response.status,
-          json: text.length === 0 ? {} : (JSON.parse(text) as Record<string, unknown>),
-          cookie:
-            response.headers
-              .getSetCookie()
-              .map((header) => header.split(";")[0] ?? "")
-              .filter((pair) => !pair.endsWith("="))
-              .join("; ") || undefined,
-        }
-      }
+      const post = poster(origin)
       const owners = new Map<string, string>()
       await use({
         origin,
         hop: hop.origin,
         mcp: mcpRoutes.mcp.path,
         post,
-        async callTool(name, args, cookie) {
-          const response = await fetch(`${origin}${mcpRoutes.mcp.path}`, {
-            method: "POST",
-            headers: { "content-type": "application/json", accept: "application/json, text/event-stream", cookie },
-            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }),
-          })
-          const data = (await response.text()).split("\n").find((line) => line.startsWith("data:"))
-          const answer = JSON.parse(data?.slice("data:".length) ?? "{}") as {
-            result?: { structuredContent?: Record<string, unknown> }
-          }
-          return answer.result?.structuredContent ?? {}
-        },
+        callTool: toolCaller(origin, mcpRoutes.mcp.path),
         async signIn() {
           const email = `person${randomBytes(4).toString("hex")}@example.com`
           expect((await post(signInRoutes.email.path, { email })).status).toBe(202)
