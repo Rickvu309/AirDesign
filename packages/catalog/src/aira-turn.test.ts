@@ -58,6 +58,7 @@ describe("Aira's tools", () => {
       "airdesign_list_decks",
       "airdesign_move_slide",
       "airdesign_read_deck",
+      "airdesign_set_background",
       "airdesign_stop_run",
     ])
   })

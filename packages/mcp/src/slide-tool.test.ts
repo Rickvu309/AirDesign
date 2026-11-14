@@ -1,5 +1,5 @@
 import { readDeckId } from "@airdesign/catalog"
-import { elementId, writeTextValue } from "@airdesign/document"
+import { backgroundOf, elementId, slideId, writeTextValue } from "@airdesign/document"
 import { indexDeck, liveRuns, openDeck, readDeckPage, call } from "@airdesign/engine"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { expect, it } from "vitest"
@@ -131,6 +131,32 @@ it("lands a slide call on a fresh base while an earlier run is still live, and s
     })
     expect(add.structuredContent).toMatchObject({ ok: true, slide: "257", runId: "run" })
     expect(liveRuns(held.deck)).toEqual([])
+  } finally {
+    await client.close()
+    await server.close()
+  }
+})
+it("sets a slide's background through MCP, and tells the agent to choose a present slide when the slide is gone", async () => {
+  const held = session()
+  const server = createServer(held)
+  const [a, b] = InMemoryTransport.createLinkedPair()
+  const client = new Client({ name: "test", version: "1" })
+  await server.connect(b)
+  await client.connect(a)
+  try {
+    const set = await client.callTool({
+      name: "airdesign_set_background",
+      arguments: { deck: "deck", base: 0, slide: "256", color: { scheme: "accent1" } },
+    })
+    expect(set.isError).not.toBe(true)
+    expect(set.structuredContent).toMatchObject({ ok: true, revision: 1, runId: "run" })
+    expect(backgroundOf(held.deck.register, slideId("256"))).toEqual({ scheme: "accent1" })
+    const gone = await client.callTool({
+      name: "airdesign_set_background",
+      arguments: { deck: "deck", base: held.deck.revision, slide: "300", color: { rgb: "0F2433" } },
+    })
+    expect(gone.isError).toBe(true)
+    expect(JSON.stringify(gone.content)).toContain("Slide 300: choose a present slide")
   } finally {
     await client.close()
     await server.close()

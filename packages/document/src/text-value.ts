@@ -60,7 +60,7 @@ function readSize(value: unknown): number | null | undefined {
   return value
 }
 
-function readColor(value: unknown): RunColor | null | undefined {
+export function readRunColor(value: unknown): RunColor | null | undefined {
   if (value === undefined) return undefined
   const color = record(value)
   if (color === null) return null
@@ -83,7 +83,7 @@ function readRun(value: unknown): TextRun | null {
   }
   const from = integerAtLeast(run.from, -1)
   const size = readSize(run.size)
-  const color = readColor(run.color)
+  const color = readRunColor(run.color)
   if (from === null || typeof run.text !== "string" || size === null || color === null) {
     return null
   }

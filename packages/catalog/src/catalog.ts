@@ -108,6 +108,15 @@ export const catalog = {
     description:
       "Move the named slide after another slide, or to the beginning with after: null. Read the deck first and send its revision as base.",
   },
+  set_background: {
+    kind: "command",
+    exposure: "agent",
+    runsOn: "server",
+    destructive: true,
+    read: slideReaders.set_background,
+    description:
+      "Fill the named slide's background with one solid colour, in place of the background it had. Read the deck first and send its revision as base. The person's Undo for your run gives the slide back its earlier background. Open the deck in AirDesign to index its slides first.",
+  },
   add_text_box: {
     kind: "command",
     exposure: "agent",

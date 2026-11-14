@@ -120,6 +120,7 @@ export {
   type TextRange,
 } from "./text-format.js"
 export { slidesKept } from "./slide-kept.js"
+export { backgroundOf } from "./slide-background.js"
 export { redoOf, slideUndoable, undoOf, undoSlides, type Undoable } from "./person-undo.js"
 export type {
   Fill,

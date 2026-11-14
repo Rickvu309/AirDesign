@@ -39,7 +39,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   expect(await named(decks[1])).toBe("Board pack")
   note("an empty name was refused with Enter a name for this deck., and Escape kept Board pack")
 
-  await expect(page.getByRole("button", { name: "Design, not available yet" })).toBeDisabled()
+  await expect(page.getByRole("button", { name: "Design", exact: true })).toBeEnabled()
   const saving = page.waitForEvent("download")
   await page.getByRole("button", { name: "Export", exact: true }).click()
   await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
@@ -47,7 +47,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   expect((await saving).suggestedFilename()).toBe("Board pack.pptx")
   await expect(page.getByText("Board pack.pptx downloaded", { exact: true })).toBeVisible()
   await capture("downloaded")
-  note("Design is off and named so; Export saved Board pack.pptx and said Board pack.pptx downloaded")
+  note("Design is on beside Agent; Export saved Board pack.pptx and said Board pack.pptx downloaded")
 
   await page.goBack()
   await page.getByRole("link", { name: "All decks" }).click()

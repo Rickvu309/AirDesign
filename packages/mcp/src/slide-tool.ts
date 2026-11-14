@@ -13,6 +13,8 @@ function slideDetail(op: SlideOp, refusal: string, named: string): string | unde
     return `${named}: deletion needs a present slide and at least one other slide to keep. Read the deck again and choose a slide from its current order.`
   if (op === "move_slide")
     return `${named}: choose a present slide and a different present slide as after, or null for the beginning. Read the deck again for its current order.`
+  if (op === "set_background")
+    return `${named}: choose a present slide from airdesign_read_deck. Open the deck in AirDesign to index it if its index is not ready.`
   if (op === "add_slide")
     return `${named}: both ids must be present, and the layout must be indexed. Open the deck in AirDesign to index it, or choose another slide's layout if its parts cannot create a slide.`
   return `${named}: duplication needs a present slide and a complete index. Open the deck in AirDesign and read it again.`

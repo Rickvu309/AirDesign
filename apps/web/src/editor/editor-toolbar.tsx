@@ -66,7 +66,7 @@ export function EditorToolbar({
   const pointerOn = pointer !== undefined || activeTool === "move"
   return (
     <div
-      className="relative flex items-center gap-1 rounded-xl bg-white p-1 shadow-[0px_0px_0px_1px_var(--field-edge),0px_4px_12px_var(--black-6)]"
+      className="group/toolbar relative flex items-center gap-1 rounded-xl bg-white p-1 shadow-[0px_0px_0px_1px_var(--field-edge),0px_4px_12px_var(--black-6)]"
       data-editor-toolbar
       data-keeps-format
     >
@@ -156,11 +156,7 @@ export function EditorToolbar({
       {panel === "none" ? null : (
         <>
           <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />
-          <PanelSwitch
-            active={panel}
-            designOff={pointer !== undefined}
-            {...(onPanel === undefined ? {} : { onPick: onPanel })}
-          />
+          <PanelSwitch active={panel} {...(onPanel === undefined ? {} : { onPick: onPanel })} />
         </>
       )}
     </div>

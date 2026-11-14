@@ -45,6 +45,7 @@ for (const name of [
   "picture-add",
   "shape-insert",
   "element-order",
+  "slide-background",
   "commit-once",
   "deck-list-trash",
   "deck-stars",

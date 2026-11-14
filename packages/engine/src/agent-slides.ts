@@ -64,7 +64,7 @@ export function readFresh(deck: Deck, runId: string, base: number): boolean {
   return last?.runId === runId && last.revision === deck.revision && last.since <= base && base < deck.revision
 }
 
-export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown): Built {
+export function agentSlide(op: Exclude<SlideOp, "set_background">, deck: Deck, caller: Caller, raw: unknown): Built {
   if (caller.actor !== "agent") return { ok: false, refusal: "field" }
   const parsed = slideReaders[op](raw)
   if (!parsed.ok) return parsed

@@ -4,6 +4,8 @@ import type { ElementId, SlideId } from "./element-id.js"
 import { elementCommand, elementGone, type ElementCommand, type ElementOrder } from "./element-order.js"
 import { elementStacks, sitsBefore } from "./element-stack.js"
 import type { OrderKey } from "./order-key.js"
+import { backgroundOf, sameColor } from "./slide-background.js"
+import type { RunColor } from "./text-value.js"
 import { foldSlides, type SlideCommand, type SlideState } from "./slide-order.js"
 import type { Value } from "./value.js"
 
@@ -23,6 +25,11 @@ export type Undoable =
       readonly file: readonly SlideId[]
       readonly before: boolean
       readonly after: boolean
+    }
+  | {
+      readonly slide: SlideId
+      readonly file: readonly SlideId[]
+      readonly background: { readonly before: RunColor | null; readonly after: RunColor | null }
     }
   | {
       readonly stack: ElementId
@@ -55,6 +62,9 @@ function stackUndoable(edit: ElementOrder, file: readonly SlideId[]): Undoable |
 export function slideUndoable(register: Register, file: readonly SlideId[], edit: SlideCommand): Undoable | null {
   const decision = decide(register, { command: "slide", file, edit })
   if (decision.decision !== "apply") return null
+  if (edit.slide === "background") {
+    return { slide: edit.id, file, background: { before: backgroundOf(register, edit.id), after: edit.color } }
+  }
   if (edit.slide === "element-order") return stackUndoable(edit, file)
   if (elementCommand(edit)) {
     const element = elementOf(edit)
@@ -107,6 +117,12 @@ function turn(register: Register, undoable: Undoable, from: "before" | "after"):
     return landing(register, { command: "person", ...undoable[to], node: undoable.node })
   }
   const file = register.file.length > 0 ? register.file : undoable.file
+  if ("background" in undoable) {
+    const color = undoable.background
+    if (!sameColor(backgroundOf(register, undoable.slide), color[from])) return changed
+    const edit: SlideCommand = { slide: "background", id: undoable.slide, color: color[to] }
+    return landing(register, { command: "slide", file, edit })
+  }
   if ("stack" in undoable) {
     const chain = elementStacks(register).find(
       (stack) => stack.slide === undoable.slide && stack.ids.includes(undoable.stack),
@@ -155,6 +171,10 @@ function personEdited(register: Register, node: ElementId): boolean {
 }
 
 function undoableAt(register: Register, at: number, edit: SlideCommand): Undoable | null {
+  if (edit.slide === "background") {
+    const before = backgroundOf({ order: register.order.slice(0, at) }, edit.id)
+    return { slide: edit.id, file: register.file, background: { before, after: edit.color } }
+  }
   if (edit.slide === "element-order") return stackUndoable(edit, register.file)
   if (elementCommand(edit)) {
     const node = elementOf(edit)
