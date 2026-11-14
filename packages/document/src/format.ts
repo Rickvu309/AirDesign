@@ -1,10 +1,14 @@
+import { traitNames, traits } from "./traits.js"
+
 export const stamps: { readonly row: number; readonly index: number; readonly command: number } = {
   row: 0,
   index: 0,
   command: 0,
 }
 
-export const format: number = 1 + stamps.row + stamps.index + stamps.command
+const traitVersions = traitNames.reduce((sum, name) => sum + traits[name].stamp.version, 0)
+
+export const format: number = 1 + stamps.row + stamps.index + stamps.command + traitVersions
 
 export function formatOf(raw: unknown): number {
   if (typeof raw !== "object" || raw === null || !("format" in raw)) return 1
@@ -15,3 +19,7 @@ export function formatOf(raw: unknown): number {
 export function newerFormat(raw: unknown): boolean {
   return formatOf(raw) > format
 }
+
+export type StoredRead<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly refusal: "newer" | "payload" }

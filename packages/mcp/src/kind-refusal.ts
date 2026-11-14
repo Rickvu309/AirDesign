@@ -1,11 +1,13 @@
 import type { WireChange } from "@airdesign/catalog"
 import {
+  boxOnly,
   editMissing,
-  elementTakes,
+  removable,
   shapeOf,
   storedValue,
-  type ElementEdit,
+  takes,
   type ElementId,
+  type FieldKey,
   type Kind,
   type Missing,
   type Register,
@@ -29,20 +31,24 @@ const kindWords: Readonly<Record<Kind, string>> = {
   kept: "kept exactly as the file has it: a diagram, an embedded object, or a shape with a copy for older PowerPoint",
 }
 
-const editWords: Readonly<Record<Exclude<ElementEdit, "table">, string>> = {
-  text: "new text",
-  move: "a move",
-  resize: "a resize",
-  remove: "a delete",
-}
+const takenWords: readonly (readonly [FieldKey | "remove", string])[] = [
+  ["text.value", "new text"],
+  ["notes.value", "new text"],
+  ["box.x", "a move"],
+  ["box.w", "a resize"],
+  ["remove", "a delete"],
+]
+
+const valueFields: readonly string[] = ["text.value", "notes.value", "table.value"]
 
 function listed(words: readonly string[]): string {
   if (words.length <= 1) return words.join("")
   return `${words.slice(0, -1).join(", ")} or ${words.at(-1) ?? ""}`
 }
 
-function takes({ facts }: Missing): string {
-  const edits = elementTakes(facts).flatMap((edit) => (edit === "table" ? [] : [editWords[edit]]))
+function taken({ facts }: Missing): string {
+  const all: readonly string[] = [...takes(facts), ...(removable(facts) ? ["remove"] : [])]
+  const edits = takenWords.flatMap(([edit, word]) => (all.includes(edit) ? [word] : []))
   return edits.length === 0 ? "It takes no edit from an agent." : `It takes ${listed(edits)}.`
 }
 
@@ -69,22 +75,21 @@ function boxNext({ facts, box }: Missing): string {
 }
 
 function nextStep(node: ElementId, found: Missing): string {
-  if (found.missing.some((edit) => edit === "text" || edit === "table")) return textNext(node, found)
+  if (found.missing.some((edit) => valueFields.includes(edit))) return textNext(node, found)
   if (found.missing.includes("remove")) return "Leave it, or tell the person."
   return boxNext(found)
 }
 
 export function kindSentence(node: ElementId, found: Missing): string {
   const next = nextStep(node, found)
-  return `${what(node, found)} ${takes(found)} ${next}`
+  return `${what(node, found)} ${taken(found)} ${next}`
 }
 
 export function kindProblem(register: Register, changes: readonly WireChange[]): string | undefined {
   const lines = changes.flatMap((change, at) => {
     const found = editMissing(register, { command: "agent", node: change.node, ...storedValue(change) })
     if (found === null) return []
-    const boxOnly = found.missing.every((edit) => edit === "move" || edit === "resize")
-    if (found.facts.grouped && boxOnly) return []
+    if (found.facts.grouped && boxOnly(found.missing)) return []
     return [`Change ${String(at + 1)} (${change.node}): ${kindSentence(change.node, found)}`]
   })
   return lines.length === 0 ? undefined : lines.join("\n")

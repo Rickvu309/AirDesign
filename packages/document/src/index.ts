@@ -49,7 +49,9 @@ export {
 export { coordinates, readBox, type Box } from "./box.js"
 export { placeNewBox } from "./box-placement.js"
 export { storedValue, valueBytes, type Value } from "./value.js"
-export { elementTakes, indexFacts, type ElementEdit } from "./element-takes.js"
+export { beforeOf, netPatch, readRow, shows, type ElementPatch, type Row } from "./row.js"
+export { boxOnly, indexFacts, removable, takes } from "./element-takes.js"
+export { kindTraits, type FieldKey } from "./traits.js"
 export { kinds, properties, type ExportRoute, type Kind } from "./properties.js"
 export { structure, type StructuralRoute } from "./structure.js"
 export { foldSections, type FileSection } from "./section-order.js"
@@ -132,7 +134,16 @@ export {
 } from "./text-format.js"
 export { slidesKept } from "./slide-kept.js"
 export { backgroundOf } from "./slide-background.js"
-export { redoOf, slideUndoable, undoOf, undoSlides, type Undoable } from "./person-undo.js"
+export {
+  redoOf,
+  redoSteps,
+  slideUndoable,
+  undoOf,
+  undoSlides,
+  undoSteps,
+  type NodeStep,
+  type Undoable,
+} from "./person-undo.js"
 export type {
   Fill,
   ResolvedElement,
