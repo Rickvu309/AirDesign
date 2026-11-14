@@ -99,15 +99,16 @@ test("a person widens and dashes a line that comes from its style and puts an ar
   await expect(tail.getByRole("combobox", { name: "Arrowhead", exact: true })).toHaveText(/^None/)
   await choose(tail, "Arrowhead", "Triangle")
   await expect.poll(async () => (await stroked(connector)).tail).toMatch(/url\(#.+-tail\)/)
-  await tail.getByRole("group", { name: "Width", exact: true }).getByRole("button", { name: "Large" }).click()
-  await expect(
-    tail.getByRole("group", { name: "Width", exact: true }).getByRole("button", { name: "Large" }),
-  ).toHaveAttribute("aria-pressed", "true")
+  const large = tail.getByRole("group", { name: "Width", exact: true }).getByRole("button", { name: "Large" })
+  await large.click()
+  await expect(large).toHaveAttribute("aria-pressed", "true")
   await page.getByRole("button", { name: "Undo line", exact: true }).click()
   await page.getByRole("button", { name: "Undo line", exact: true }).click()
   await expect.poll(async () => (await stroked(connector)).tail).toBeNull()
+  await expect(large).toHaveAttribute("aria-pressed", "false")
   await page.getByRole("button", { name: "Redo line", exact: true }).click()
   await page.getByRole("button", { name: "Redo line", exact: true }).click()
+  await expect(large).toHaveAttribute("aria-pressed", "true")
   await expect.poll(async () => (await stroked(connector)).tail).toMatch(/url\(#.+-tail\)/)
 
   await page.reload()

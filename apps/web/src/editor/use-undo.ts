@@ -132,7 +132,7 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
       setTold(turned.outcome === "changed" ? direction : null)
       if (turned.outcome === "changed") return
       await showTurned(turned.entry, direction)
-      settle(await flushPending(connect, id))
+      void flushPending(connect, id).then(settle)
     })
   }
 

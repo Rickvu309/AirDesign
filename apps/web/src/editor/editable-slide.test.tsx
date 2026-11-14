@@ -226,3 +226,25 @@ it("records a table's typed cell once the device takes it, while the cell is sti
   expect(table.undo.undoList.current.undo.map((entry) => `${entry.name} ${entry.session ?? ""}`)).toEqual(["text 1"])
   await table.close()
 }, 20_000)
+
+it("redoes a cell's typing straight after its undo while the undo is still on its way to the server", async () => {
+  const table = await tableDeck()
+  await act(async () => table.typed("Region"))
+  await table.answered()
+  const undo = new window.KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true, cancelable: true })
+  const redo = new window.KeyboardEvent("keydown", {
+    key: "z",
+    ctrlKey: true,
+    shiftKey: true,
+    bubbles: true,
+    cancelable: true,
+  })
+  await act(async () => table.cell.dispatchEvent(undo))
+  await table.answered()
+  expect(table.deckCell()).toBe("")
+  await act(async () => table.cell.dispatchEvent(redo))
+  await table.answered()
+  expect(table.deckCell()).toBe("Region")
+  expect(table.undo.undoList.current.undo.map((entry) => entry.name)).toEqual(["text"])
+  await table.close()
+}, 20_000)

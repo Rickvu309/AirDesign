@@ -22,7 +22,6 @@ import {
 import { connect, memoryRemote } from "@airdesign/live"
 import { indexPackage, type ReadShape } from "@airdesign/pptx"
 import { textValue } from "@airdesign/render"
-import { flushPending, type CommitOutcome } from "@/commit-edit"
 import type { UndoName } from "@/copy/undo-copy"
 import { valueStorable } from "@/slide-paint"
 import type { UndoEntry } from "@/undo-list"
@@ -151,12 +150,12 @@ async function stored(deck: ChangingDeck, row: Planned): Promise<boolean> {
   return true
 }
 
-export async function applyChange(deck: ChangingDeck, change: SetChange): Promise<CommitOutcome> {
+export async function applyChange(deck: ChangingDeck, change: SetChange): Promise<boolean> {
   const release = deck.hold()
   try {
     const opened = await connect(memoryRemote()).openDeck(deck.id)
     const rows = opened.ok ? planned(deck, opened.register, change) : null
-    if (rows === null || rows.length === 0) return "refused"
+    if (rows === null || rows.length === 0) return false
     const steps: NodeStep[] = []
     for (const row of rows) {
       if (!(await stored(deck, row))) break
@@ -166,7 +165,7 @@ export async function applyChange(deck: ChangingDeck, change: SetChange): Promis
     if (name !== undefined && steps.length > 0) deck.record({ name, undoable: { steps } })
     const next = await connect(memoryRemote()).openDeck(deck.id)
     if (next.ok) deck.show(next.register)
-    return steps.length === rows.length ? await flushPending(connect, deck.id) : "refused"
+    return steps.length === rows.length
   } finally {
     release()
   }
