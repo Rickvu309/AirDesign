@@ -1,33 +1,7 @@
-import {
-  addedPictures,
-  elementGone,
-  currentBox,
-  currentValue,
-  floorNodes,
-  history,
-  openingElement,
-  shapeOf,
-  slideGone,
-  takes,
-  writeTextValue,
-  type ElementId,
-  type FieldKey,
-  type IndexElement,
-  type NodeRegister,
-  type Register,
-  type TextValue,
-} from "@airdesign/document"
-import {
-  applyRoute,
-  paintReader,
-  writeNotes,
-  orderedParts,
-  readShapes,
-  shapeKind,
-  type ReadShape,
-} from "@airdesign/pptx"
-import { boxOf, sameBox, textValue } from "@airdesign/render"
-import { tableShape, tableWritten } from "@/table-edit"
+import { addedPictures, writeTextValue, type Register, type TextValue } from "@airdesign/document"
+import { exportParts, orderedParts } from "@airdesign/pptx"
+
+export { newSlideElement } from "@airdesign/document"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -37,15 +11,6 @@ const noPictures: PictureBytes = new Map()
 
 export function storedText(value: TextValue): string {
   return value.length === 0 ? "" : writeTextValue(value)
-}
-
-export function newSlideElement(register: Register | null, id: ElementId): IndexElement | undefined {
-  if (register === null || !id.includes(".")) return undefined
-  const slide = shapeOf(id).slide
-  const born = register.order.some(
-    (command) => (command.slide === "add" || command.slide === "clone") && command.id === slide,
-  )
-  return born ? openingElement(register, id) : undefined
 }
 
 export function slideBase(parts: Parts, register: Register, pictures: PictureBytes = noPictures): Parts {
@@ -58,105 +23,10 @@ export function missingPictures(register: Register, pictures: PictureBytes): rea
     .filter((sha256) => !pictures.has(sha256))
 }
 
-function shapeFor(shapes: readonly ReadShape[], id: ElementId, refusal: string): ReadShape {
-  const named = shapes.filter((shape) => `${shape.slide}.${shape.shape}` === id)
-  const shape = named[0]
-  if (named.length !== 1 || shape === undefined || shape.locked) throw new Error(refusal)
-  return shape
-}
-
-function floorShape(shapes: readonly ReadShape[], id: ElementId): ReadShape | undefined {
-  const named = shapes.filter((shape) => `${shape.slide}.${shape.shape}` === id)
-  const shape = named[0]
-  return named.length === 1 && shape !== undefined && !shape.locked ? shape : undefined
-}
-
-function cannotTake(shapes: readonly ReadShape[], id: ElementId, field: FieldKey): boolean {
-  const named = shapes.filter((shape) => `${shape.slide}.${shape.shape}` === id)
-  const shape = named[0]
-  if (named.length !== 1 || shape === undefined) return false
-  const facts = { kind: shapeKind(shape), text: shape.text.length > 0, grouped: shape.grouped === true }
-  return !takes({ ...facts, animated: false }).includes(field)
-}
-
-function withText(
-  parts: Parts,
-  shapes: readonly ReadShape[],
-  id: ElementId,
-  body: NodeRegister | undefined,
-  opening: IndexElement | undefined,
-): Parts {
-  if (body !== undefined && history(body).length > 0) {
-    if (cannotTake(shapes, id, "text.value")) return parts
-    const { part, shape } = shapeFor(shapes, id, "text-shape")
-    return applyRoute(parts, { name: "text", part, shape, value: textValue(currentValue(body)) })
-  }
-  if (opening === undefined) return parts
-  const found = floorShape(shapes, id)
-  const value = opening.value ?? ""
-  if (found === undefined || storedText(found.text) === value) return parts
-  return applyRoute(parts, { name: "text", part: found.part, shape: found.shape, value: textValue(value) })
-}
-
-function moved(parts: Parts, { part, shape }: ReadShape, box: NonNullable<IndexElement["box"]>): Parts {
-  const next = applyRoute(parts, { name: "move", part, shape, x: box.x, y: box.y })
-  return applyRoute(next, { name: "resize", part, shape, cx: box.cx, cy: box.cy })
-}
-
-function layoutBox(parts: Parts, { part, shape }: ReadShape): NonNullable<IndexElement["box"]> | null {
-  try {
-    const painted = paintReader(parts)
-      .slide(part)
-      .elements.find((element) => element.from === "slide" && element.shape === shape)?.box
-    return painted === undefined || painted === null ? null : boxOf(painted)
-  } catch {
-    return null
-  }
-}
-
-function withBox(
-  parts: Parts,
-  shapes: readonly ReadShape[],
-  id: ElementId,
-  body: NodeRegister | undefined,
-  opening: IndexElement | undefined,
-): Parts {
-  const landed = body?.landed.some((row) => row.visible && row.property === "box") === true ? currentBox(body) : null
-  if (landed !== null) {
-    if (cannotTake(shapes, id, "box.x")) return parts
-    const found = shapeFor(shapes, id, "box-shape")
-    if (sameBox(found.box ?? layoutBox(parts, found), landed)) return parts
-    return moved(parts, found, landed)
-  }
-  if (opening === undefined || opening.box === null || opening.grouped) return parts
-  const found = floorShape(shapes, id)
-  if (found === undefined || found.grouped === true || sameBox(found.box, opening.box)) return parts
-  return moved(parts, found, opening.box)
-}
-
 export function editedParts(base: Parts, register: Register): Parts {
-  const shapes = readShapes(base)
-  let next = base
-  for (const id of new Set([...register.nodes, ...floorNodes(register)])) {
-    if (id.includes(".") && (slideGone(register, shapeOf(id).slide) || elementGone(register, id))) continue
-    const body = register.nodes.includes(id) ? register.elements[id] : undefined
-    const opening = newSlideElement(register, id)
-    if (id.endsWith(".notes")) {
-      const value = body !== undefined ? currentValue(body) : opening?.value
-      if (value !== undefined && value !== null) next = writeNotes(next, shapeOf(id).slide, value)
-      continue
-    }
-    const table = tableShape(shapes, id)
-    if (table !== undefined) {
-      next = tableWritten(next, table, body)
-      continue
-    }
-    next = withText(next, shapes, id, body, opening)
-    next = withBox(next, shapes, id, body, opening)
-  }
-  return next
+  return exportParts(base, register)
 }
 
 export function exportedParts(parts: Parts, register: Register, pictures: PictureBytes = noPictures): Parts {
-  return editedParts(slideBase(parts, register, pictures), register)
+  return exportParts(slideBase(parts, register, pictures), register)
 }

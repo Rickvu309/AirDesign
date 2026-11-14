@@ -45,6 +45,15 @@ export function openingElement(state: Floored, node: ElementId): IndexElement | 
   return undefined
 }
 
+export function newSlideElement(state: Floored | null, node: ElementId): IndexElement | undefined {
+  if (state === null || !node.includes(".")) return undefined
+  const slide = shapeOf(node).slide
+  const born = state.order.some(
+    (command) => (command.slide === "add" || command.slide === "clone") && command.id === slide,
+  )
+  return born ? openingElement(state, node) : undefined
+}
+
 export function floorNodes(state: Floored): readonly ElementId[] {
   return state.order.flatMap((command) => floorOf(command).map((element) => element.node))
 }
