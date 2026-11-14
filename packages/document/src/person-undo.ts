@@ -4,8 +4,8 @@ import type { ElementId, SlideId } from "./element-id.js"
 import { elementCommand, elementGone, type ElementCommand, type ElementOrder } from "./element-order.js"
 import { elementStacks, sitsBefore } from "./element-stack.js"
 import type { OrderKey } from "./order-key.js"
-import { backgroundOf, sameColor } from "./slide-background.js"
-import type { RunColor } from "./text-value.js"
+import { sameColor, type Color } from "./color.js"
+import { backgroundOf } from "./slide-background.js"
 import { foldSlides, type SlideCommand, type SlideState } from "./slide-order.js"
 import type { Value } from "./value.js"
 
@@ -29,7 +29,7 @@ export type Undoable =
   | {
       readonly slide: SlideId
       readonly file: readonly SlideId[]
-      readonly background: { readonly before: RunColor | null; readonly after: RunColor | null }
+      readonly background: { readonly before: Color | null; readonly after: Color | null }
     }
   | {
       readonly stack: ElementId

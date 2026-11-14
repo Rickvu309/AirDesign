@@ -4,7 +4,7 @@ import {
   schemeNames,
   type FormatState,
   type ParagraphAlign,
-  type RunColor,
+  type Color,
   type SchemeName,
   type TextFormat,
 } from "@airdesign/document"
@@ -54,14 +54,21 @@ function sizeText(size: number): string {
   return Number.isInteger(points) ? String(points) : points.toFixed(1)
 }
 
-function schemeValue(color: RunColor | "mixed" | null): string {
-  return color !== null && color !== "mixed" && "scheme" in color ? color.scheme : ""
+function untransformed(color: Color | "mixed" | null): Color | null {
+  return color === null || color === "mixed" || (color.transforms?.length ?? 0) > 0 ? null : color
 }
 
-function barOf(color: RunColor | "mixed" | null, palette: readonly Swatch[]): string | null {
-  if (color === null || color === "mixed") return null
-  if ("rgb" in color) return `#${color.rgb}`
-  return palette.find((swatch) => swatch.scheme === color.scheme)?.css ?? null
+function schemeValue(color: Color | "mixed" | null): string {
+  const shown = untransformed(color)
+  return shown !== null && "scheme" in shown ? shown.scheme : ""
+}
+
+function barOf(color: Color | "mixed" | null, palette: readonly Swatch[]): string | null {
+  const shown = untransformed(color)
+  if (shown === null) return null
+  if ("rgb" in shown) return `#${shown.rgb}`
+  if ("scheme" in shown) return palette.find((swatch) => swatch.scheme === shown.scheme)?.css ?? null
+  return null
 }
 
 function moveAlign(
@@ -101,8 +108,8 @@ export function FormatButtons({
   onToggle?: (format: TextFormat) => void
   size?: number | "mixed" | null
   onResize?: (points: number) => void
-  color?: RunColor | "mixed" | null
-  onColor?: (color: RunColor) => void
+  color?: Color | "mixed" | null
+  onColor?: (color: Color) => void
   align?: ParagraphAlign | "mixed" | null
   onAlign?: (align: ParagraphAlign) => void
   bullet?: FormatState
@@ -110,7 +117,7 @@ export function FormatButtons({
   onBullet?: () => void
 }) {
   const sizeShown = size === undefined ? 1800 : size
-  const designColor: RunColor = { scheme: "dk1" }
+  const designColor: Color = { scheme: "dk1" }
   const colorShown = color === undefined ? designColor : color
   const alignShown = align === undefined ? "left" : align
   const palette = swatches !== undefined && swatches.length > 0 ? swatches : formatSwatches

@@ -1,4 +1,4 @@
-import type { ElementId, FormatState, ParagraphAlign, RunColor, TextFormat } from "@airdesign/document"
+import type { ElementId, FormatState, ParagraphAlign, Color, TextFormat } from "@airdesign/document"
 import type { CanvasThemeColor } from "./record.js"
 
 export type FormatTarget = {
@@ -7,8 +7,8 @@ export type FormatTarget = {
   readonly apply: (format: TextFormat, editing: boolean) => void
   readonly size: (editing: boolean) => number | "mixed" | null
   readonly resize: (points: number, editing: boolean) => void
-  readonly color: (editing: boolean) => RunColor | "mixed" | null
-  readonly choose: (color: RunColor, editing: boolean) => void
+  readonly color: (editing: boolean) => Color | "mixed" | null
+  readonly choose: (color: Color, editing: boolean) => void
   readonly align: (editing: boolean) => ParagraphAlign | "mixed" | null
   readonly place: (align: ParagraphAlign, editing: boolean) => void
   readonly bullet: (editing: boolean) => FormatState
@@ -23,8 +23,8 @@ export type TextFormatting = {
   readonly toggle: (format: TextFormat) => void
   readonly size: () => number | "mixed" | null
   readonly resize: (points: number) => void
-  readonly color: () => RunColor | "mixed" | null
-  readonly choose: (color: RunColor) => void
+  readonly color: () => Color | "mixed" | null
+  readonly choose: (color: Color) => void
   readonly align: () => ParagraphAlign | "mixed" | null
   readonly place: (align: ParagraphAlign) => void
   readonly bullet: () => FormatState | null

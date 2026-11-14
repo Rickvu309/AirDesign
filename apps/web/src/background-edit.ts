@@ -1,4 +1,4 @@
-import { slideUndoable, type Register, type RunColor, type SlideId, type Undoable } from "@airdesign/document"
+import { slideUndoable, type Register, type Color, type SlideId, type Undoable } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { fileSlides } from "@/slide-edit"
@@ -10,7 +10,7 @@ export async function commitBackground(
   parts: Parts,
   register: Register,
   slide: SlideId,
-  color: RunColor,
+  color: Color,
   paint: (undoable: Undoable) => Promise<void>,
 ): Promise<CommitOutcome> {
   const file = fileSlides(parts, register)

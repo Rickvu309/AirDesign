@@ -1,5 +1,5 @@
 import { useId, useMemo } from "react"
-import type { RunColor, SchemeName, SlideId } from "@airdesign/document"
+import type { Color, SchemeName, SlideId } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { commitBackground } from "@/background-edit"
 import type { CommitOutcome } from "@/commit-edit"
@@ -27,7 +27,7 @@ function light(css: string): boolean {
 export function deckDesign(deck: DesigningDeck) {
   const { id, shown, record, settle } = deck
 
-  async function setBackground(slide: SlideId, color: RunColor) {
+  async function setBackground(slide: SlideId, color: Color) {
     const opened = await connect(memoryRemote()).openDeck(id)
     if (!opened.ok) return
     const outcome = await commitBackground(

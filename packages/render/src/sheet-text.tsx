@@ -1,4 +1,4 @@
-import type { ParagraphAlign, RunColor, TextFormat } from "@airdesign/document"
+import type { ParagraphAlign, Color, TextFormat } from "@airdesign/document"
 import type { CanvasBullet } from "./text-record.js"
 import type { RunPaint, TextLook } from "./text-look.js"
 
@@ -11,7 +11,7 @@ type ShownRun = {
   readonly italic?: boolean
   readonly underline?: boolean
   readonly size?: number
-  readonly color?: RunColor | string | null
+  readonly color?: Color | string | null
 }
 
 type ShownParagraph = {

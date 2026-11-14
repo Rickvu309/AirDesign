@@ -1,13 +1,9 @@
-import { formatNames, schemeNames, type RunColor, type RunFormat, type SchemeName } from "@airdesign/document"
+import { formatNames, readColor, type Color, type ColorTransform, type RunFormat } from "@airdesign/document"
 
-type RunPaint = RunFormat & { readonly size?: number; readonly color?: RunColor }
+type RunPaint = RunFormat & { readonly size?: number; readonly color?: Color }
 
 const sizeFloor = 100
 const sizeCeiling = 400_000
-
-function schemeOf(value: string): SchemeName | null {
-  return schemeNames.find((name) => name === value) ?? null
-}
 
 function readSize(value: string | undefined): number | null {
   if (value === undefined || !/^\d+$/.test(value)) return null
@@ -15,17 +11,43 @@ function readSize(value: string | undefined): number | null {
   return size >= sizeFloor && size <= sizeCeiling ? size : null
 }
 
-function readColor(value: string | undefined): RunColor | null {
+const integer = /^-?\d+$/
+
+function baseToken(color: Color): string {
+  if ("scheme" in color) return `scheme:${color.scheme}`
+  if ("rgb" in color) return `rgb:${color.rgb}`
+  if ("system" in color) return `system:${color.system}:${color.last}`
+  return `preset:${color.preset}`
+}
+
+function transformToken(transform: ColorTransform): string {
+  return "val" in transform ? `${transform.op}:${transform.val}` : transform.op
+}
+
+function colorToken(color: Color): string {
+  return [baseToken(color), ...(color.transforms ?? []).map(transformToken)].join(" ")
+}
+
+function tokenBase(token: string): Record<string, string> | null {
+  const [kind, value, last] = token.split(":")
   if (value === undefined) return null
-  if (value.startsWith("scheme:")) {
-    const scheme = schemeOf(value.slice("scheme:".length))
-    return scheme === null ? null : { scheme }
-  }
-  if (value.startsWith("rgb:")) {
-    const rgb = value.slice("rgb:".length)
-    return /^[0-9A-F]{6}$/.test(rgb) ? { rgb } : null
-  }
-  return null
+  if (kind === "system") return last === undefined ? null : { system: value, last }
+  return last === undefined && kind !== undefined ? { [kind]: value } : null
+}
+
+function tokenTransform(token: string): Record<string, unknown> | null {
+  const [op, val, extra] = token.split(":")
+  if (val === undefined) return { op }
+  return extra === undefined && integer.test(val) ? { op, val: Number(val) } : null
+}
+
+function readColorToken(value: string | undefined): Color | null {
+  if (value === undefined) return null
+  const [first = "", ...rest] = value.split(" ")
+  const base = tokenBase(first)
+  const transforms = rest.map(tokenTransform)
+  if (base === null || transforms.includes(null)) return null
+  return readColor(transforms.length === 0 ? base : { ...base, transforms }) ?? null
 }
 
 export function writeFormat(span: HTMLElement, format: RunPaint): void {
@@ -35,7 +57,7 @@ export function writeFormat(span: HTMLElement, format: RunPaint): void {
   }
   if (format.size !== undefined) span.dataset.size = String(format.size)
   if (format.color !== undefined) {
-    span.dataset.color = "scheme" in format.color ? `scheme:${format.color.scheme}` : `rgb:${format.color.rgb}`
+    span.dataset.color = colorToken(format.color)
   }
 }
 
@@ -47,7 +69,7 @@ export function readFormat(span: HTMLElement): RunPaint {
   }
   const size = readSize(span.dataset.size)
   if (size !== null) format = { ...format, size }
-  const color = readColor(span.dataset.color)
+  const color = readColorToken(span.dataset.color)
   if (color !== null) format = { ...format, color }
   return format
 }

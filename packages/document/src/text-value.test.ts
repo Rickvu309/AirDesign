@@ -133,9 +133,25 @@ describe("size, colour, alignment and bullets", () => {
     ])
   })
 
+  it("reads a mapped slot and a colour's transforms", () => {
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","color":{"scheme":"tx1"}}]}]')).toEqual([
+      { from: 0, runs: [{ from: 0, text: "a", color: { scheme: "tx1" } }] },
+    ])
+    const darker = '{"scheme":"accent1","transforms":[{"op":"lumMod","val":75000}]}'
+    const stored = `[{"from":0,"runs":[{"from":0,"text":"a","color":${darker}}]}]`
+    const read = readTextValue(stored)
+    expect(read).toEqual([
+      {
+        from: 0,
+        runs: [{ from: 0, text: "a", color: { scheme: "accent1", transforms: [{ op: "lumMod", val: 75000 }] } }],
+      },
+    ])
+    expect(read === null ? null : writeTextValue(read)).toBe(stored)
+  })
+
   it("refuses a bad colour", () => {
     expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","color":1}]}]')).toBeNull()
-    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","color":{"scheme":"tx1"}}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","color":{"scheme":"phClr"}}]}]')).toBeNull()
     expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","color":{"rgb":"ff0000"}}]}]')).toBeNull()
     expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","color":{"rgb":"FF00"}}]}]')).toBeNull()
     expect(

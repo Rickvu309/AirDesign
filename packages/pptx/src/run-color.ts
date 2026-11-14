@@ -1,5 +1,6 @@
-import type { RunColor } from "@airdesign/document"
+import type { Color } from "@airdesign/document"
 import { childOrder } from "./child-order.js"
+import { solidFillXml } from "./color-xml.js"
 import { spliceBytes, markupDocument, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 
@@ -15,11 +16,6 @@ function joinBytes(chunks: readonly Uint8Array[]): Uint8Array {
     at += chunk.length
   }
   return merged
-}
-
-function fillText(color: RunColor): string {
-  if ("scheme" in color) return `<a:solidFill><a:schemeClr val="${color.scheme}"/></a:solidFill>`
-  return `<a:solidFill><a:srgbClr val="${color.rgb}"/></a:solidFill>`
 }
 
 function rootOf(
@@ -43,11 +39,11 @@ function slot(root: MarkupElement, children: readonly MarkupElement[], tag: stri
   return at
 }
 
-export function paintRunColor(slice: Uint8Array, color: RunColor): Uint8Array {
+export function paintRunColor(slice: Uint8Array, color: Color): Uint8Array {
   const found = rootOf(slice)
   if (found === null) return slice
   const { root, children } = found
-  const xml = encodeUtf8(fillText(color))
+  const xml = encodeUtf8(solidFillXml(color))
   const fills = children.filter((child) => fillKinds.has(child.kind))
   const first = fills[0]
   if (first !== undefined) {

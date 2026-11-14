@@ -89,13 +89,23 @@ export {
   type TableValue,
 } from "./table-value.js"
 export {
+  mappedSlots,
+  readColor,
+  sameColor,
+  themeSlots,
+  type Color,
+  type ColorBase,
+  type ColorTransform,
+  type MappedSlot,
+  type ThemeSlot,
+} from "./color.js"
+export {
   readTextValue,
   alignNames,
   formatNames,
   schemeNames,
   writeTextValue,
   type ParagraphAlign,
-  type RunColor,
   type RunFormat,
   type SchemeName,
   type TextFormat,

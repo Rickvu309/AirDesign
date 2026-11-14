@@ -85,7 +85,6 @@ describe("spPr.fill", () => {
     "tx1",
     "bg2",
     "tx2",
-    "phClr",
   ])("sets theme color %s", (value) => {
     const xml = slide("<p:spPr></p:spPr>")
     expect(write(xml, { kind: "theme", value })).toBe(
@@ -116,6 +115,7 @@ describe("spPr.fill", () => {
     { kind: "srgb", value: "FFF" },
     { kind: "srgb", value: '000000"/><a:noFill/>' },
     { kind: "theme", value: "unknown" },
+    { kind: "theme", value: "phClr" },
   ] as const)("refuses invalid colors without writing: %s", (value) => {
     refuses(slide("<p:spPr/>"), "fill-color", value)
   })
