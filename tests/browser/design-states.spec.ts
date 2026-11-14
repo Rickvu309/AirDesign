@@ -120,6 +120,13 @@ test("a selected text box draws one frame, not two", () => {
   ).toEqual([])
 })
 
+test.fail("a selected table draws one frame, not two", () => {
+  expect(
+    seen(["design-table"], "stacked-frames"),
+    "Escape from a cell focuses the table, whose focus ring draws inside the selection frame",
+  ).toEqual([])
+})
+
 test("the offline notice shows its whole sentence", () => {
   expect(seen(["editor-offline"], "truncated-text"), "the offline notice is cut by an ellipsis").toEqual([])
 })
