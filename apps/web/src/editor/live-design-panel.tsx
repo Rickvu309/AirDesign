@@ -81,11 +81,12 @@ function changingDeck(deck: DesigningDeck): ChangingDeck {
   }
 }
 
-async function changed(deck: DesigningDeck, change: SetChange) {
-  deck.undo.typed.current = null
-  const outcome = await applyChange(changingDeck(deck), change)
-  if (outcome === "refused") toast.error(designCopy.refused)
-  deck.settle(outcome)
+function changed(deck: DesigningDeck, change: SetChange) {
+  deck.undo.turnAfter(async () => {
+    const outcome = await applyChange(changingDeck(deck), change)
+    if (outcome === "refused") toast.error(designCopy.refused)
+    deck.settle(outcome)
+  })
 }
 
 function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementId }) {
@@ -108,7 +109,7 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
       model={model}
       kind={view.facts.kind}
       palette={palette}
-      onChange={(row, value) => void changed(deck, row.change(value))}
+      onChange={(row, value) => changed(deck, row.change(value))}
     />
   )
 }
