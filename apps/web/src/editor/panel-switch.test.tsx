@@ -9,11 +9,9 @@ describe("panel switch", () => {
     expect(html).toContain("Design")
   })
 
-  it("shows Design disabled, and says why in its name, when the deck has no design panel yet", () => {
-    const html = renderToStaticMarkup(<PanelSwitch active="agent" designOff onPick={() => {}} />)
-    expect(html).toMatch(
-      /<button[^>]*disabled=""[^>]*aria-label="Design, not available yet"|<button[^>]*aria-label="Design, not available yet"[^>]*disabled=""/,
-    )
-    expect(html).toMatch(/<button[^>]*aria-pressed="true"[^>]*>[^]*Agent/)
+  it("marks the panel that shows as pressed", () => {
+    const html = renderToStaticMarkup(<PanelSwitch active="design" onPick={() => {}} />)
+    expect(html).toMatch(/<button[^>]*aria-pressed="true"[^>]*>[^]*Design/)
+    expect(html).toMatch(/<button[^>]*aria-pressed="false"[^>]*>[^]*Agent/)
   })
 })

@@ -237,7 +237,7 @@ test("a person out of weekly usage sees the limit from the server and when it re
   expect(paths).not.toContain("/mcp")
 })
 
-test("a failed run says so, and Design stays disabled while the conversation stays", async ({
+test("a failed run says so, and the conversation stays while the Design panel is open", async ({
   page,
   context,
   stack,
@@ -248,7 +248,11 @@ test("a failed run says so, and Design stays disabled while the conversation sta
   await expect(side.getByText(airaCopy.failedTitle, { exact: true })).toBeVisible()
   await expect(side.getByText(airaCopy.failedNothing, { exact: true })).toBeVisible()
   await expect(side.getByRole("textbox", { name: "Ask Aira" })).toBeEnabled()
-  await expect(page.getByRole("button", { name: productCopy.designOff })).toBeDisabled()
+  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await expect(page.locator("[data-design-panel]")).toBeVisible()
+  await expect(side.getByRole("textbox", { name: "Ask Aira" })).toBeHidden()
+  await page.getByRole("button", { name: "Agent", exact: true }).click()
+  await expect(page.locator("[data-design-panel]")).toHaveCount(0)
   await expect(log.getByText(asked, { exact: true })).toBeVisible()
   await side.getByRole("button", { name: "New chat", exact: true }).click()
   await expect(log.getByText(asked, { exact: true })).toHaveCount(0)

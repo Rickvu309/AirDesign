@@ -11,6 +11,7 @@ import { useNetwork } from "@/editor/use-network"
 import { useUndoTurn } from "@/editor/use-undo"
 export { elementIds, valueStorable } from "@/deck-paint"
 import { AiraPanel } from "@/aira-panel"
+import { LiveDesignPanel } from "@/editor/live-design-panel"
 
 export function ThinDeck({ id }: { id: string }) {
   const deck = useEditorDeck(id)
@@ -58,7 +59,12 @@ export function ThinDeck({ id }: { id: string }) {
           onNotes={(value) => notesBar.edit(currentSlide, value)}
           panel={panel}
           onPanel={setPanel}
-          side={<AiraPanel key={id} deck={id} hidden={panel !== "agent"} />}
+          side={
+            <>
+              {panel === "design" ? <LiveDesignPanel deck={deck} /> : null}
+              <AiraPanel key={id} deck={id} hidden={panel !== "agent"} />
+            </>
+          }
           slideLabel={String(shown.current + 1)}
           title={deck.title}
         />

@@ -40,6 +40,12 @@ export const airaStepWords: Readonly<Record<AgentOp, StepWords | null>> = {
     refused: "Couldn't delete a slide",
     stopped: "Stopped deleting a slide",
   },
+  set_background: {
+    working: "Changing a slide's background",
+    done: "Changed a slide's background",
+    refused: "Couldn't change a slide's background",
+    stopped: "Stopped changing a slide's background",
+  },
   add_text_box: {
     working: "Adding a text box",
     done: "Added a text box",

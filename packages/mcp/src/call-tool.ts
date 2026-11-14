@@ -104,6 +104,11 @@ export const agentOps: Record<
     refuse: (deck, code) => editRefusal(deck, code, []),
     turnRun: (answer) => answer.runId,
   },
+  set_background: {
+    handle: (raw, session) => slideTool("set_background", raw, session),
+    refuse: (deck, code) => editRefusal(deck, code, []),
+    turnRun: (answer) => answer.runId,
+  },
   add_text_box: {
     handle: (raw, session) => elementTool("add_text_box", raw, session),
     refuse: (deck, code) => editRefusal(deck, code, []),

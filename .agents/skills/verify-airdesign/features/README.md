@@ -46,6 +46,7 @@ Each feature file starts with an H1 title and one paragraph describing what the 
 - [Add a picture](./picture-add.md): `Add picture` in the toolbar, a dropped or pasted file, its undo, the upload and another device. Journey `picture-add`.
 - [Insert a shape](./shape-insert.md): `Shapes` in the toolbar, a line, a rectangle or an ellipse in the theme's style, moved, resized, deleted, undone and exported. Journey `shape-insert`.
 - [Bring an element forward or send it backward](./element-order.md): the menu on a selected element, the four stacking actions, their shortcuts, and an export that changes only that slide. Journey `element-order`.
+- [Set a slide's background colour](./slide-background.md): the Design panel's theme colours, Undo back to the file's background, the agent tool, and an export that changes only that slide. Journey `slide-background`.
 - [Insert and edit a table](./tables.md): `Actions` > `Table`, typing in cells, rows, undo and the export. No journey; `tests/browser/table-edits.spec.ts`.
 - [Export a deck](./export.md): the Export dialog, PowerPoint or PDF, all slides, the current slide or a range, offline and from the keyboard. Driven through `deck-names`, `speaker-notes` and `picture-add`.
 - [Add, duplicate, move and delete slides](./slide-commands.md): the slide list's `Add slide`, Ctrl/Cmd+D, Alt+arrows and Delete. Journeys `slide-commands`, `blank-slides`, `slide-layouts`.

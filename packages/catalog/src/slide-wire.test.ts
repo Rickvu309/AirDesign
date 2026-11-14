@@ -133,3 +133,16 @@ it("reads a stacking order on a person's commit and refuses an extra field", () 
   expect(readCommit({ deck: "deck", batch: [{ ...order, placed: true }] })).toEqual(field)
   expect(readAgentEdit({ deck: "deck", base: 0, changes: [order] })).toEqual(field)
 })
+
+it("reads a person's background colour and the file's background, and refuses any other field or colour", () => {
+  const background = { slide: "background", id: "256", color: { scheme: "accent2" }, file: ["256", "257"] }
+  const read = readCommit({ deck: "deck", batch: [background, { ...background, color: null }] })
+  if (!read.ok) throw new Error(read.refusal)
+  const [set, reset] = read.batch
+  if (set === undefined || reset === undefined || !("slide" in set) || !("slide" in reset)) throw new Error("slide")
+  expect(slideEditCommand(set)).toEqual({ slide: "background", id: "256", color: { scheme: "accent2" } })
+  expect(slideEditCommand(reset)).toEqual({ slide: "background", id: "256", color: null })
+  expect(readCommit({ deck: "deck", batch: [{ ...background, image: "a.png" }] })).toEqual(field)
+  expect(readCommit({ deck: "deck", batch: [{ ...background, color: { rgb: "0F24" } }] })).toEqual(field)
+  expect(readAgentEdit({ deck: "deck", base: 0, changes: [background] })).toEqual(field)
+})

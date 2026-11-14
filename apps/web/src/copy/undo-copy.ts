@@ -16,6 +16,7 @@ export type UndoName =
   | "forward"
   | "backward"
   | "back"
+  | "background"
   | "add-row"
   | "delete-row"
   | "add-column"
@@ -42,6 +43,7 @@ export const undoCopy = {
     forward: "Undo bring forward",
     backward: "Undo send backward",
     back: "Undo send to back",
+    background: "Undo background color",
     "add-row": "Undo add row",
     "delete-row": "Undo delete row",
     "add-column": "Undo add column",
@@ -65,6 +67,7 @@ export const undoCopy = {
     forward: "Redo bring forward",
     backward: "Redo send backward",
     back: "Redo send to back",
+    background: "Redo background color",
     "add-row": "Redo add row",
     "delete-row": "Redo delete row",
     "add-column": "Redo add column",

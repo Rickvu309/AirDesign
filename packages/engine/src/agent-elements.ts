@@ -63,7 +63,7 @@ function protectedFrom(register: Register, node: ElementId, runId: string): Call
 
 type Head = { readonly deck: string; readonly base: number }
 
-function ready(
+export function ready(
   head: Head,
   deck: Deck,
   slide: SlideId | undefined,
@@ -84,7 +84,7 @@ function ready(
   return { file }
 }
 
-function decided(register: Register, file: readonly SlideId[], edit: SlideCommand, runId: string): Built {
+export function decided(register: Register, file: readonly SlideId[], edit: SlideCommand, runId: string): Built {
   const result = decide(register, { command: "slide", file, edit })
   return result.decision === "refuse"
     ? { ok: false, refusal: result.code }

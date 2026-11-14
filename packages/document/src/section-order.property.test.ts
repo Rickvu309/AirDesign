@@ -101,6 +101,7 @@ describe("foldSections over any slide command log", () => {
             "slide" in undoable &&
             !("element" in undoable) &&
             !("stack" in undoable) &&
+            !("background" in undoable) &&
             undoable.before.present &&
             undoable.before.key === undoable.after.key
           )
