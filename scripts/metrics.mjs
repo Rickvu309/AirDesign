@@ -38,17 +38,7 @@ const built = (root, name) => {
   return import(pathToFileURL(entry).href)
 }
 
-const routeNames = (table) =>
-  Object.values(table).flatMap((routes) => Object.values(routes).map((named) => named.route))
-
-const capabilitiesExported = async (root) => {
-  const document = await built(root, "document")
-  const pptx = await built(root, "pptx")
-  return {
-    now: new Set(Object.values(pptx.writtenRoutes)).size,
-    goal: new Set([...routeNames(document.properties), ...routeNames(document.structure)]).size,
-  }
-}
+const capabilitiesExported = async (root) => new Set(Object.values((await built(root, "pptx")).writtenRoutes)).size
 
 const plantedBreaks = (root) =>
   caughtCount(JSON.parse(fs.readFileSync(path.join(root, "scripts/pptx-fixtures/judge-proof.json"), "utf8")))

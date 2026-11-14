@@ -6,6 +6,7 @@ export const browserExportTag = "@export"
 
 const exportName = /^exported-[a-z0-9-]+\.pptx$/
 const specFile = /^tests\/browser\/[a-z0-9-]+\.spec\.ts$/
+const fieldKey = /^[a-z]+\.[a-zA-Z]+$/
 
 export const casesFolder = (root) => path.join(root, "scripts/pptx-cases")
 
@@ -23,6 +24,12 @@ export const caseProblems = (file, entry) => {
     say("needs exports: the exported-*.pptx files its specs write into tests/browser.")
   }
   if (typeof entry.lines !== "function") say("needs lines: a function from the answers to the failure lines.")
+  if (
+    entry.covers !== undefined &&
+    (!Array.isArray(entry.covers) || !entry.covers.every((key) => fieldKey.test(key)))
+  ) {
+    say("has covers that is not a list of trait fields, such as box.x.")
+  }
   for (const key of ["cases", "renders"]) {
     if (entry[key] !== undefined && !Array.isArray(entry[key])) say(`has ${key} that is not a list.`)
   }

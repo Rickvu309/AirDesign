@@ -1,4 +1,4 @@
-import { type Kind } from "./properties.js"
+import { type Kind } from "./kinds.js"
 
 function route<const Name extends string>(name: Name): { readonly route: Name } {
   return { route: name }
@@ -127,11 +127,3 @@ export const structure = {
   },
   kept: { move: spTreeOrder, remove: spTreeRemove },
 } as const satisfies Covered
-
-type StructureTable = typeof structure
-
-type RouteName<Named> = Named extends { readonly route: infer Name } ? Name : never
-
-export type StructuralRoute = {
-  [KindName in keyof StructureTable]: RouteName<StructureTable[KindName][keyof StructureTable[KindName]]>
-}[keyof StructureTable]

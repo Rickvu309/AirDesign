@@ -8,6 +8,7 @@ import {
   type FieldValue,
   type HasAlpha,
   type TraitValue,
+  type WireAgent,
   type WireField,
 } from "./traits.js"
 
@@ -20,6 +21,8 @@ export type Derived = [
   Expect<Same<TraitValue<"notes">, { readonly value: string }>>,
   Expect<Same<FieldName<"fill">, never>>,
   Expect<Same<WireField<"box">, "x" | "y" | "w" | "h">>,
+  Expect<Same<WireAgent<"box", "x">, number>>,
+  Expect<Same<WireAgent<"text", "value">, string>>,
   Expect<Same<HasAlpha, false>>,
   Expect<"table.value" extends FieldKey ? true : false>,
   Expect<"fill.value" extends FieldKey ? false : true>,

@@ -1,6 +1,6 @@
 import type { Box } from "./box.js"
 import type { SlideSize } from "./deck-index.js"
-import type { Kind } from "./properties.js"
+import type { Kind } from "./kinds.js"
 
 export type Fill = "none" | "unknown" | { readonly rgb: string }
 

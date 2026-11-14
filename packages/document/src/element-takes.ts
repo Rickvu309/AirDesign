@@ -1,6 +1,6 @@
 import type { Box } from "./box.js"
 import type { IndexElement } from "./deck-index.js"
-import type { Kind } from "./properties.js"
+import type { Kind } from "./kinds.js"
 import { fieldKeys, kindTraits, type FieldKey } from "./traits.js"
 
 export type ElementFacts = {

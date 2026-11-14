@@ -16,7 +16,7 @@ import { readElementId, shapeOf, type ElementId } from "./element-id.js"
 import { format } from "./format.js"
 import { bytesOf, limits } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
-import { kinds, type Kind } from "./properties.js"
+import { kinds, type Kind } from "./kinds.js"
 
 export type SlideSize = { readonly width: number; readonly height: number }
 export type IndexSlide = {
