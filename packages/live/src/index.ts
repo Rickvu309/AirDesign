@@ -16,5 +16,5 @@ export {
 } from "./remote.js"
 export { dropChats, readChats, shelveChats, takeShelvedChats, writeChat } from "./chat-slot.js"
 export { adoptDeck, dropAccount, dropDeck } from "./device-sweep.js"
-export { accountKey, databaseName, deleteDatabase, scoped, storeName } from "./device.js"
+export { accountKey, databaseName, deleteDatabase, scoped, storeName, storeNewer, watchNewer } from "./device.js"
 export { rowKey } from "./store.js"

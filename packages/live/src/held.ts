@@ -1,6 +1,6 @@
 import type { DeckId } from "@airdesign/catalog"
-import type { Register } from "@airdesign/document"
-import { finished, heldDecks, scoped, storeName, transaction } from "./device.js"
+import { newerFormat, type Register } from "@airdesign/document"
+import { finished, heldDecks, markNewer, scoped, storeName, storeNewer, transaction } from "./device.js"
 import { deckView, joinable, played, readable, split, storedKey, type DeckView } from "./deck-view.js"
 import {
   asideKey,
@@ -93,6 +93,10 @@ export async function changeHeld<Result>(deck: DeckId, change: (held: Held) => C
     const stored = store.get(head)
     stored.onsuccess = () => {
       const all = rows.result as StoredRow[]
+      if (all.some(newerFormat)) {
+        markNewer()
+        return
+      }
       const loaded = load(deck, headOf(stored.result), all.filter(readable))
       const dropped = all.filter((row) => !readable(row)).map((row) => storedKey(deck, row))
       apply(loaded, change(loaded), dropped)
@@ -120,6 +124,7 @@ export async function changeHeld<Result>(deck: DeckId, change: (held: Held) => C
     remember(account, deck, undefined)
     throw error
   }
+  if (storeNewer()) throw new Error("newer")
   if (!done) throw new Error("rows were not read")
   return result as Result
 }
@@ -239,6 +244,10 @@ export async function heldView(deck: DeckId): Promise<DeckView | null> {
     const rows = store.getAll(rowRange(scoped(account, deck)))
     rows.onsuccess = () => {
       const all = rows.result as StoredRow[]
+      if (all.some(newerFormat)) {
+        markNewer()
+        return
+      }
       held = load(deck, headOf(stored.result), all.filter(readable))
       dropped = all.filter((row) => !readable(row)).map((row) => storedKey(deck, row))
       remember(account, deck, held)
@@ -251,6 +260,7 @@ export async function heldView(deck: DeckId): Promise<DeckView | null> {
       else reload()
     }
   await finished(reading, () => undefined)
+  if (storeNewer()) throw new Error("newer")
   if (held === undefined) return null
   if (dropped.length > 0) await writeDeckRows(deck, [], dropped, "same")
   return deckView(held.register, [...held.confirmed], [...held.pending])

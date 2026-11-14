@@ -1,5 +1,5 @@
 import { unreachable } from "@airdesign/device"
-import { foldRegister, refusals, type Register, type StoredRegister } from "@airdesign/document"
+import { foldRegister, refusals, type Register } from "@airdesign/document"
 import { readCommit } from "./edit-wire.js"
 import { readDeckIndex } from "./index-wire.js"
 import {
@@ -14,7 +14,7 @@ import {
   readWatch,
   type DeckId,
 } from "./wire.js"
-import { isRegister } from "./register-answer.js"
+import { readRegister } from "./register-answer.js"
 
 const callRefusals = [...refusals, "field", "deck", "batch", "base", "payload", "indexing"] as const
 
@@ -30,6 +30,7 @@ const wireRefusals = [
   "server",
   "code",
   "device",
+  "newer",
   ...unreachable,
 ] as const
 
@@ -76,13 +77,11 @@ function isWireRefusal(raw: string): raw is WireRefusal {
   return decodable.has(raw)
 }
 
-function openAnswer(raw: unknown): raw is RevisionAnswer & { readonly register: StoredRegister } {
-  return revisionAnswer(raw) && isRegister(raw.register)
-}
-
 function decodeOpen(raw: unknown): OpenResult {
-  const result = decode(openAnswer)(raw)
-  return result.ok ? { ...result, register: foldRegister(result.register) } : result
+  const result = decode(revisionAnswer)(raw)
+  if (!result.ok) return result
+  const read = readRegister(result.register)
+  return read.ok ? { ...result, register: foldRegister(read.register) } : read
 }
 
 function commitAnswer(raw: unknown): raw is RevisionAnswer & { readonly key: string } {

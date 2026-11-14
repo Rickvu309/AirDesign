@@ -17,7 +17,7 @@ import {
 } from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
 import { hasMeasures, queueIndex, sendIndex } from "./deck-index.js"
-import { accountKey } from "./device.js"
+import { accountKey, markNewer, storeNewer } from "./device.js"
 import { rowsFromRegister, view, type DeckView, type LivePhase } from "./deck-view.js"
 import { slideChange, valueChange, type Enqueued } from "./deck-edit.js"
 import { changeHeld, heldView, sealRows, setAside, takeAside, writeDeckRows } from "./held.js"
@@ -84,6 +84,23 @@ function serial<T>(deck: DeckId, work: () => Promise<T>): Promise<T> {
 
 const signedOut = { ok: false, refusal: "session" } as const
 
+const newer = { ok: false, refusal: "newer" } as const
+
+async function unlessNewer<Result>(work: () => Promise<Result>): Promise<Result | typeof newer> {
+  if (storeNewer()) return newer
+  try {
+    return await work()
+  } catch (error) {
+    if (storeNewer()) return newer
+    throw error
+  }
+}
+
+function heard<Answer extends OpenResult>(opened: Answer): Answer {
+  if (!opened.ok && opened.refusal === "newer") markNewer()
+  return opened
+}
+
 const decided: ReadonlySet<string> = new Set(refusals)
 
 type Options = {
@@ -113,7 +130,7 @@ export function connect(remote: Remote, options: Options = {}) {
     const opening: Promise<OpenResult> = remote.open({ deck }).then(
       (opened) => {
         if (!opened.ok) forget(deck, opening)
-        return opened
+        return heard(opened)
       },
       (error: unknown) => {
         forget(deck, opening)
@@ -212,7 +229,7 @@ export function connect(remote: Remote, options: Options = {}) {
   }
 
   async function refresh(deck: DeckId): Promise<OpenResult> {
-    const opened = await remote.open({ deck })
+    const opened = heard(await remote.open({ deck }))
     if (!opened.ok) return opened
     await adopt(deck, opened)
     return opened
@@ -320,72 +337,84 @@ export function connect(remote: Remote, options: Options = {}) {
   return {
     index: (deck: string, index: Parameters<typeof queueIndex>[1]) => queueIndex(deck, index, nextOnce),
     sized: hasMeasures,
-    async enqueueSlide(
+    enqueueSlide(
       deck: string,
       file: readonly SlideId[],
       edit: SlideCommand,
     ): Promise<EnqueueResult<readonly string[]>> {
-      const parsed = readDeckId(deck)
-      if (!parsed.ok) return parsed
-      const state = readSlideState({ file, order: [edit] })
-      const command = state?.order[0]
-      if (state === undefined || command === undefined) return { ok: false, refusal: "field" }
-      return keepAndWrite(parsed.deck, { kind: "slide", file: state.file, edit: command }, () =>
-        writeSlide(parsed.deck, state.file, command),
-      )
-    },
-    async enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<EnqueueResult> {
-      const result = await enqueueValue(deck, { value }, node, floor)
-      if (!result.ok) return result
-      return { ok: true, painted: result.body === undefined ? value : currentValue(result.body) }
-    },
-    async enqueueBox(deck: string, box: Box, node: ElementId, floor: string): Promise<EnqueueResult<Box>> {
-      const read = readBox(box)
-      if (read === null) return { ok: false, refusal: "field" }
-      const result = await enqueueValue(deck, { property: "box", value: read }, node, floor)
-      if (!result.ok) return result
-      return { ok: true, painted: (result.body === undefined ? null : currentBox(result.body)) ?? read }
-    },
-    async open(deck: string): Promise<OpenOnceResult> {
-      const parsed = readDeckId(deck)
-      if (!parsed.ok) return parsed
-      const opened = await openOnce(parsed.deck)
-      return opened.ok ? { ok: true } : opened
-    },
-    async flush(deck: string): Promise<FlushResult> {
-      const parsed = readDeckId(deck)
-      if (!parsed.ok) return { ok: false, refusal: "deck" }
-      if (accountKey() === undefined) return signedOut
-      await recovered(parsed.deck)
-      return serial(parsed.deck, async () => {
-        const result = await sendRows(parsed.deck)
-        const aside = await takeAside(parsed.deck)
-        return aside === 0 ? result : { ...result, aside }
+      return unlessNewer(async () => {
+        const parsed = readDeckId(deck)
+        if (!parsed.ok) return parsed
+        const state = readSlideState({ file, order: [edit] })
+        const command = state?.order[0]
+        if (state === undefined || command === undefined) return { ok: false, refusal: "field" }
+        return keepAndWrite(parsed.deck, { kind: "slide", file: state.file, edit: command }, () =>
+          writeSlide(parsed.deck, state.file, command),
+        )
       })
     },
-    async openDeck(deck: string): Promise<OpenDeckResult> {
-      const parsed = readDeckId(deck)
-      if (!parsed.ok) return parsed
-      if (accountKey() === undefined) return signedOut
-      const held = await readRecovered(parsed.deck)
-      await markSeen(parsed.deck, now())
-      if (held !== null && (held.confirmed.length > 0 || held.pending.length > 0)) {
-        if (known.has(parsed.deck) || !openingDecks.has(parsed.deck)) return { ok: true, ...held }
-        await serial(parsed.deck, () => adoptOpening(parsed.deck))
-        const adopted = await readRecovered(parsed.deck)
-        return adopted === null ? signedOut : { ok: true, ...adopted }
-      }
-      const opened = await openOnce(parsed.deck)
-      if (!opened.ok) return opened
-      const confirmed = rowsFromRegister(parsed.deck, opened.register)
-      await writeDeckRows(
-        parsed.deck,
-        confirmed.map((row) => ({ key: rowKey(parsed.deck, "confirmed", row.revision), row })),
-        [],
-        "stale",
-      )
-      if (!known.has(parsed.deck)) known.set(parsed.deck, opened.revision)
-      return { ok: true, ...view(parsed.deck, confirmed) }
+    enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<EnqueueResult> {
+      return unlessNewer(async () => {
+        const result = await enqueueValue(deck, { value }, node, floor)
+        if (!result.ok) return result
+        return { ok: true, painted: result.body === undefined ? value : currentValue(result.body) }
+      })
+    },
+    enqueueBox(deck: string, box: Box, node: ElementId, floor: string): Promise<EnqueueResult<Box>> {
+      return unlessNewer(async () => {
+        const read = readBox(box)
+        if (read === null) return { ok: false, refusal: "field" }
+        const result = await enqueueValue(deck, { property: "box", value: read }, node, floor)
+        if (!result.ok) return result
+        return { ok: true, painted: (result.body === undefined ? null : currentBox(result.body)) ?? read }
+      })
+    },
+    open(deck: string): Promise<OpenOnceResult> {
+      return unlessNewer(async () => {
+        const parsed = readDeckId(deck)
+        if (!parsed.ok) return parsed
+        const opened = await openOnce(parsed.deck)
+        return opened.ok ? { ok: true } : opened
+      })
+    },
+    flush(deck: string): Promise<FlushResult> {
+      return unlessNewer(async () => {
+        const parsed = readDeckId(deck)
+        if (!parsed.ok) return { ok: false, refusal: "deck" }
+        if (accountKey() === undefined) return signedOut
+        await recovered(parsed.deck)
+        return serial(parsed.deck, async () => {
+          const result = await sendRows(parsed.deck)
+          const aside = await takeAside(parsed.deck)
+          return aside === 0 ? result : { ...result, aside }
+        })
+      })
+    },
+    openDeck(deck: string): Promise<OpenDeckResult> {
+      return unlessNewer(async () => {
+        const parsed = readDeckId(deck)
+        if (!parsed.ok) return parsed
+        if (accountKey() === undefined) return signedOut
+        const held = await readRecovered(parsed.deck)
+        await markSeen(parsed.deck, now())
+        if (held !== null && (held.confirmed.length > 0 || held.pending.length > 0)) {
+          if (known.has(parsed.deck) || !openingDecks.has(parsed.deck)) return { ok: true, ...held }
+          await serial(parsed.deck, () => adoptOpening(parsed.deck))
+          const adopted = await readRecovered(parsed.deck)
+          return adopted === null ? signedOut : { ok: true, ...adopted }
+        }
+        const opened = await openOnce(parsed.deck)
+        if (!opened.ok) return opened
+        const confirmed = rowsFromRegister(parsed.deck, opened.register)
+        await writeDeckRows(
+          parsed.deck,
+          confirmed.map((row) => ({ key: rowKey(parsed.deck, "confirmed", row.revision), row })),
+          [],
+          "stale",
+        )
+        if (!known.has(parsed.deck)) known.set(parsed.deck, opened.revision)
+        return { ok: true, ...view(parsed.deck, confirmed) }
+      })
     },
     async phase(deck: string): Promise<LivePhase> {
       const parsed = readDeckId(deck)
@@ -403,24 +432,28 @@ export function connect(remote: Remote, options: Options = {}) {
       const held = await readRecovered(parsed.deck)
       return held === null ? [] : [...held.confirmed, ...held.pending]
     },
-    async watch(deck: string, cursor: number | null): Promise<WatchResult> {
-      const parsed = readDeckId(deck)
-      if (!parsed.ok) return parsed
-      const watched = await remote.watch({ deck: parsed.deck, cursor })
-      if (!watched.ok) return watched
-      if (cursor === null || watched.revision > cursor) await serial(parsed.deck, () => refresh(parsed.deck))
-      return watched
+    watch(deck: string, cursor: number | null): Promise<WatchResult> {
+      return unlessNewer(async () => {
+        const parsed = readDeckId(deck)
+        if (!parsed.ok) return parsed
+        const watched = await remote.watch({ deck: parsed.deck, cursor })
+        if (!watched.ok) return watched
+        if (cursor === null || watched.revision > cursor) await serial(parsed.deck, () => refresh(parsed.deck))
+        return watched
+      })
     },
-    async follow(deck: string): Promise<FollowResult> {
-      const parsed = readDeckId(deck)
-      if (!parsed.ok) return parsed
-      const watched = await remote.watch({ deck: parsed.deck, cursor: known.get(parsed.deck) ?? null })
-      if (!watched.ok) return watched
-      return serial(parsed.deck, async (): Promise<FollowResult> => {
-        if (watched.revision <= (known.get(parsed.deck) ?? -1)) return { ...watched, changed: false }
-        const opened = await refresh(parsed.deck)
-        if (!opened.ok) return opened
-        return { ok: true, deck: opened.deck, revision: opened.revision, changed: true }
+    follow(deck: string): Promise<FollowResult> {
+      return unlessNewer(async () => {
+        const parsed = readDeckId(deck)
+        if (!parsed.ok) return parsed
+        const watched = await remote.watch({ deck: parsed.deck, cursor: known.get(parsed.deck) ?? null })
+        if (!watched.ok) return watched
+        return serial(parsed.deck, async (): Promise<FollowResult> => {
+          if (watched.revision <= (known.get(parsed.deck) ?? -1)) return { ...watched, changed: false }
+          const opened = await refresh(parsed.deck)
+          if (!opened.ok) return opened
+          return { ok: true, deck: opened.deck, revision: opened.revision, changed: true }
+        })
       })
     },
     async sweep(): Promise<readonly string[]> {

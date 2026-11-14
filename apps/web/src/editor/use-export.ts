@@ -27,6 +27,7 @@ export function useExport(deck: ExportingDeck) {
 
   function tryAgain(notice: ThinNotice) {
     if (notice === "import-failed") window.location.assign("/")
+    if (notice === "newer") window.location.reload()
     if (notice === "export-failed" || notice === "picture-uploading") void onExport()
   }
 

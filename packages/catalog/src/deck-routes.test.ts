@@ -3,6 +3,7 @@ import {
   decide,
   elementId,
   foldRegister,
+  format,
   openRegister,
   refusals,
   rootElement,
@@ -293,4 +294,11 @@ it("decodes the run a register records as its last writer, and refuses a record 
     { runId: "run", since: 2 },
   ])
     expect(deckRoutes.open.result({ ...answer, register: { ...answer.register, lastRun } })).toEqual(payload)
+})
+
+it("decodes an open answer whose register says a newer format as newer", () => {
+  expect(deckRoutes.open.result({ ...opened, register: { ...opened.register, format: format + 1 } })).toEqual({
+    ok: false,
+    refusal: "newer",
+  })
 })

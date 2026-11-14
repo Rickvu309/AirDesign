@@ -77,6 +77,7 @@ export {
   type SlideCommand,
   type SlideState,
 } from "./slide-order.js"
+export { format, formatOf, newerFormat, stamps } from "./format.js"
 export {
   cellText,
   changedTable,

@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { storeNewer, watchNewer } from "@airdesign/live"
+import { useState, useSyncExternalStore } from "react"
 import { DownloadedNotice, ThinNoticeView } from "@/thin-notice"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
@@ -19,14 +20,15 @@ export function ThinDeck({ id }: { id: string }) {
   useDeckOpen(deck)
   useNetwork(deck)
   const undoButtons = useUndoTurn(deck)
+  const newer = useSyncExternalStore(watchNewer, storeNewer)
   const { shown, notesBar, exported } = deck
   const currentSlide = shown.store.current.slides()[shown.current]?.id
   const currentNotes = notesBar.notes.find((notes) => notes.slide === currentSlide)
 
-  if (deck.refused) {
+  if (deck.refused || newer) {
     return (
       <div className="thin-page" data-deck-refused>
-        <ThinNoticeView notice="import-failed" onTryAgain={exported.tryAgain} />
+        <ThinNoticeView notice={newer ? "newer" : "import-failed"} onTryAgain={exported.tryAgain} />
         <EditorFrame>{null}</EditorFrame>
       </div>
     )
