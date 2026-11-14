@@ -149,7 +149,7 @@ export const catalog = {
     runsOn: "server",
     read: readDeckQuery,
     description:
-      "Read one deck this account owns. Send revision as base to airdesign_edit_deck and each element's version as readAt. slides lists slide ids in position order. Indexed elements include node, slide, kind, opening or edited value and box, and version (0 before edits). closed means a person's newer edit or another run holds it. grouped elements refuse box edits. index is ready, pending, or missing; pending or missing means the owner must open the deck in AirDesign to finish indexing. Send slide or cursor to read the rest.",
+      "Read one deck this account owns. Send revision as base to airdesign_edit_deck and each element's version as readAt. slides lists slide ids in position order. Indexed elements include node, slide, kind, opening or edited value and box, and version (0 before edits). role names a placeholder: title, subtitle, body, date, footer, number, picture, chart, table or object. design is one line of the element's look as it opened, field by field, each followed by (layout), (master) or (style) when that part shows it rather than the element itself. Colors name a theme slot or hex; palettes give each slot's hex, and a slide uses palette 0 unless it names another. closed means a person's newer edit or another run holds it. grouped elements refuse box edits. index is ready, pending, or missing; pending or missing means the owner must open the deck in AirDesign to finish indexing. Send slide or cursor to read the rest.",
   },
 } as const satisfies Readonly<Record<string, OpRow>>
 

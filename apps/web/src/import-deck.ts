@@ -1,7 +1,8 @@
 import { deckName } from "@airdesign/catalog"
 import { connect, putParts, queueOriginal } from "@airdesign/live"
-import { indexPackage, readPackage } from "@airdesign/pptx"
+import { readPackage } from "@airdesign/pptx"
 import { server } from "@/commit-edit"
+import { indexedParts } from "@/index-deck"
 import type { ImportFailureReason } from "@/copy/import-failure-words"
 
 export type ImportedDeck = {
@@ -23,7 +24,7 @@ export async function saveDeck(
 ): Promise<string | null> {
   const mint = options.mint ?? crypto.randomUUID.bind(crypto)
   const deckId = mint()
-  const indexed = await connect(server).index(deckId, indexPackage(parts))
+  const indexed = await connect(server).index(deckId, indexedParts(parts))
   if (!indexed.ok) return null
   const saved = await putParts(deckId, { parts, file, ...(name === undefined ? {} : { name }) })
   if (saved.ok) await queueOriginal(deckId)

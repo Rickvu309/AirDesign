@@ -13,7 +13,10 @@ export {
 } from "./element-id.js"
 export { orderKeyBetween, type OrderKey } from "./order-key.js"
 export {
+  answeredRegister,
   appendIndex,
+  indexDue,
+  indexKeys,
   readIndexPage,
   type DeckIndex,
   type IndexElement,
@@ -21,6 +24,24 @@ export {
   type IndexSlide,
   type SlideSize,
 } from "./deck-index.js"
+export {
+  designBytes,
+  designKeys,
+  readDesign,
+  roles,
+  sources,
+  type Design,
+  type DesignKey,
+  type ElementRead,
+  type FillRead,
+  type Palette,
+  type Read,
+  type Role,
+  type ShadowRead,
+  type Shown,
+  type Source,
+  type TraitReads,
+} from "./design.js"
 export { replay, unsent, type Queued } from "./replay.js"
 export { bytesOf, limits, overLimit } from "./limits.js"
 export {

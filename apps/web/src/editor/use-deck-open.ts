@@ -1,4 +1,4 @@
-import { type Register } from "@airdesign/document"
+import { indexDue, type Register } from "@airdesign/document"
 import { connect, flushOriginal, memoryRemote } from "@airdesign/live"
 import { useEffect } from "react"
 import { flushPending, server, type CommitOutcome } from "@/commit-edit"
@@ -99,8 +99,7 @@ export function useDeckOpen(deck: OpeningDeck) {
       const register = opened?.ok === true ? opened.register : null
       if (device === null) openFrom(stored, register)
       else if (register !== null) reconcile(register)
-      if (register?.index === undefined || register.index.elements.length !== register.index.total)
-        await backfillIndex(id, stored.parts)
+      if (answered?.ok !== true || indexDue(answered.index)) await backfillIndex(id, stored.parts)
       settle(await flushPending(connect, id))
       await flushOriginal(id)
       const ended = await followDeck(

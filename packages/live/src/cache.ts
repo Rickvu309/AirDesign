@@ -10,13 +10,14 @@ import {
   storedValue,
   unsent,
   type Box,
+  type DeckIndex,
   type ElementId,
   type SlideCommand,
   type SlideId,
   type Value,
 } from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
-import { hasMeasures, queueIndex, sendIndex } from "./deck-index.js"
+import { queueIndex, sendIndex } from "./deck-index.js"
 import { accountKey, markNewer, storeNewer } from "./device.js"
 import { rowsFromRegister, view, type DeckView, type LivePhase } from "./deck-view.js"
 import { slideChange, valueChange, type Enqueued } from "./deck-edit.js"
@@ -66,7 +67,7 @@ function wireOf(row: PendingRow): WireEdit | WireSlide {
 }
 
 const flushing = new Map<string, Promise<unknown>>()
-type OpenOnceResult = { ok: true } | Extract<OpenResult, { ok: false }>
+type OpenOnceResult = { ok: true; index?: DeckIndex } | Extract<OpenResult, { ok: false }>
 
 const openingByRemote = new WeakMap<Remote, Map<DeckId, Promise<OpenResult>>>()
 const knownByRemote = new WeakMap<Remote, Map<DeckId, number>>()
@@ -336,7 +337,6 @@ export function connect(remote: Remote, options: Options = {}) {
 
   return {
     index: (deck: string, index: Parameters<typeof queueIndex>[1]) => queueIndex(deck, index, nextOnce),
-    sized: hasMeasures,
     enqueueSlide(
       deck: string,
       file: readonly SlideId[],
@@ -374,7 +374,8 @@ export function connect(remote: Remote, options: Options = {}) {
         const parsed = readDeckId(deck)
         if (!parsed.ok) return parsed
         const opened = await openOnce(parsed.deck)
-        return opened.ok ? { ok: true } : opened
+        if (!opened.ok) return opened
+        return opened.register.index === undefined ? { ok: true } : { ok: true, index: opened.register.index }
       })
     },
     flush(deck: string): Promise<FlushResult> {

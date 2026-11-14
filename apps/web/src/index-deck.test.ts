@@ -1,5 +1,16 @@
-import { readIndexPage } from "@airdesign/document"
-import { readPackage } from "@airdesign/pptx"
+import {
+  bytesOf,
+  designBytes,
+  nextSlideId,
+  orderKeyBetween,
+  readIndexPage,
+  readSlideId,
+  type OrderKey,
+  type SlideCommand,
+  type SlideId,
+} from "@airdesign/document"
+import { indexPages } from "@airdesign/live"
+import { orderedParts, readPackage } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { indexedParts } from "./index-deck"
 import { onSlide, twoBoxSlide, xml } from "./slide-fixtures"
@@ -58,4 +69,49 @@ it("keeps a readable deck index when a layout has more placeholders than an inde
       elements: index.elements,
     }),
   ).not.toBeNull()
+})
+
+async function doeAtFifty() {
+  const fsName = "node:fs/promises"
+  const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
+  const read = await readPackage(
+    await fs.readFile(new URL("../../../scripts/pptx-fixtures/doe-heat-pumps.pptx", import.meta.url)),
+  )
+  if (!read.ok) throw new Error(read.reason)
+  const file = indexedParts(read.parts).slides.flatMap((row) => {
+    const id = readSlideId(row.id)
+    return id === undefined ? [] : [id]
+  })
+  const order: SlideCommand[] = []
+  const ids: SlideId[] = [...file]
+  let key: OrderKey | null = null
+  let after = file[file.length - 1]!
+  while (ids.length < 50) {
+    const id = nextSlideId(ids)
+    key = orderKeyBetween(key, null)
+    order.push({ slide: "add", id, after, layout: file[1]!, key })
+    ids.push(id)
+    after = id
+  }
+  return orderedParts(read.parts, { file, order })
+}
+
+it("indexes a 50-slide deck with every layout floor, in at most 4 pages, with no design above 400 bytes", async () => {
+  const index = indexedParts(await doeAtFifty())
+  expect(index.slides).toHaveLength(50)
+  const floors = index.slides.flatMap((slide) => (slide.layout === undefined ? [] : [slide.layout]))
+  expect(floors).toHaveLength(50)
+  expect(floors.flat().every((element) => element.design === undefined && element.kept === undefined)).toBe(true)
+  expect(floors.flat().some((element) => element.role === "title")).toBe(true)
+  expect(index.palettes).toHaveLength(1)
+  const designed = index.elements.filter((element) => element.design !== undefined)
+  expect(designed.length).toBeGreaterThan(index.elements.length / 2)
+  expect(
+    Math.max(...index.elements.map((element) => bytesOf(JSON.stringify(element.design ?? {})))),
+  ).toBeLessThanOrEqual(designBytes)
+  let once = 0
+  const pages = indexPages(index, () => `page-${String((once += 1))}`.padEnd(36, "x"))
+  if (!pages.ok) throw new Error(pages.refusal)
+  expect(pages.pages.length).toBeLessThanOrEqual(4)
+  expect(pages.pages.every((page) => readIndexPage(page) !== null)).toBe(true)
 })

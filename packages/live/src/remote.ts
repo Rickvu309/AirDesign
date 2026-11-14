@@ -13,7 +13,15 @@ import {
   type CommitResult,
   type WatchResult,
 } from "@airdesign/catalog"
-import { appendIndex, decide, openRegister, storedValue, type IndexPage, type Register } from "@airdesign/document"
+import {
+  answeredRegister,
+  appendIndex,
+  decide,
+  openRegister,
+  storedValue,
+  type IndexPage,
+  type Register,
+} from "@airdesign/document"
 
 export type { OpenResult, CommitResult, WatchResult } from "@airdesign/catalog"
 
@@ -83,7 +91,7 @@ export function memoryRemote(): Remote {
         notify(parsed.deck)
         return { ok: true, deck: parsed.deck, revision: 0, register }
       }
-      return { ok: true, deck: parsed.deck, revision: stored.revision, register: stored.register }
+      return { ok: true, deck: parsed.deck, revision: stored.revision, register: answeredRegister(stored.register) }
     },
     async commit(body) {
       const parsed = readCommit(body)

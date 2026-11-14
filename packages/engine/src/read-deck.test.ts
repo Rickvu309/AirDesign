@@ -10,7 +10,10 @@ import {
 } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import {
+  call,
+  indexDeck,
   listLead,
+  openDeck,
   ownedDecks,
   pageOwned,
   readDeckPage,
@@ -25,6 +28,12 @@ import {
   type ReadDeckAnswer,
   type ReadElement,
 } from "./index.js"
+
+function readDeckIdOf(id: string) {
+  const parsed = readDeckId(id)
+  if (!parsed.ok) throw new Error(parsed.refusal)
+  return parsed.deck
+}
 
 function apply(register: Register, command: Command): Register {
   const decision = decide(register, command)
@@ -235,5 +244,96 @@ describe("ownedDecks", () => {
     }
     expect(cursor).toBeUndefined()
     expect(seen).toEqual(rows.map((row) => row.deck))
+  })
+})
+
+describe("design lines", () => {
+  const palette = { slots: { dk1: "000000", lt1: "FFFFFF", accent1: "4472C4" }, map: { tx1: "dk1", bg1: "lt1" } }
+  const second = { slots: { dk1: "111111", accent1: "C0504D" }, map: { tx1: "dk1" } }
+  const layout = [{ node: elementId("258.9"), kind: "shape", value: "", box, grouped: false, role: "title" }] as const
+
+  function designed(): Deck {
+    const indexed = indexDeck(
+      openDeck(readDeckIdOf("designed")),
+      { actor: "person" },
+      {
+        deck: "designed",
+        format: 2,
+        once: "designed",
+        offset: 0,
+        total: 2,
+        palettes: [palette, second],
+        slides: [
+          { id: "258", position: 0, free: 9, layout },
+          { id: "259", position: 1, palette: 1 },
+        ],
+        elements: [
+          {
+            node: elementId("258.2"),
+            kind: "shape",
+            value: "Quarterly review",
+            box,
+            grouped: false,
+            role: "title",
+            design: { "text.size": [36, "master"], "text.color": ["tx1", "master"], "body.anchor": ["b", "layout"] },
+          },
+          {
+            node: elementId("259.7"),
+            kind: "shape",
+            value: null,
+            box,
+            grouped: false,
+            design: { geometry: ["custom"], fill: ["accent1", "style"], "line.width": [1, "style"] },
+            kept: ["geometry"],
+          },
+        ],
+      },
+    )
+    if (!indexed.ok) throw new Error(indexed.refusal)
+    return indexed.deck
+  }
+
+  it("prints each indexed element's role and design as one line, and the palettes its slides use", () => {
+    const answer = readDeckPage(designed(), { runId: null })
+    const read = byNode(answer)
+    expect(read.get("258.2")).toEqual({
+      node: elementId("258.2"),
+      slide: "258",
+      value: "Quarterly review",
+      kind: "shape",
+      grouped: false,
+      version: 0,
+      box,
+      role: "title",
+      design: "text.size 36 (master) · text.color tx1 (master) · body.anchor b (layout)",
+    })
+    expect(read.get("259.7")?.design).toBe("geometry custom · fill accent1 (style) · line.width 1 (style)")
+    expect(read.get("259.7")).not.toHaveProperty("role")
+    expect(answer.palettes).toEqual([palette, second])
+    expect(answer.slides).toEqual([
+      { id: "258", position: 0 },
+      { id: "259", position: 1, palette: 1 },
+    ])
+  })
+
+  it("reads a slide added from a layout with the roles of its layout floor", () => {
+    const deck = designed()
+    const added = call(
+      "add_slide",
+      deck,
+      { actor: "agent", runId: "run" },
+      {
+        deck: "designed",
+        base: 0,
+        after: "258",
+        layout: "258",
+      },
+    )
+    if (!added.ok) throw new Error(added.refusal)
+    const fresh = readDeckPage(added.deck, { runId: "run" }).elements.filter(
+      (element) => element.slide !== "258" && element.slide !== "259",
+    )
+    expect(fresh.map((element) => element.role)).toEqual(["title"])
+    expect(fresh[0]).not.toHaveProperty("design")
   })
 })

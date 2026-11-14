@@ -1,5 +1,5 @@
 import type { DeckId } from "@airdesign/catalog"
-import { readDeckId } from "@airdesign/catalog"
+import { printDesign, readDeckId } from "@airdesign/catalog"
 import {
   bytesOf,
   foldSlides,
@@ -18,6 +18,8 @@ import {
   type IndexElement,
   type IndexSlide,
   type Kind,
+  type Palette,
+  type Role,
 } from "@airdesign/document"
 
 import type { Deck } from "./call.js"
@@ -32,6 +34,8 @@ export type ReadElement = {
   readonly grouped?: boolean
   readonly version: number
   readonly box?: Box | null
+  readonly role?: Role
+  readonly design?: string
   readonly closed?: true
 }
 
@@ -39,7 +43,8 @@ export type ReadDeckAnswer = {
   readonly ok: true
   readonly revision: number
   readonly elements: readonly ReadElement[]
-  readonly slides: readonly IndexSlide[]
+  readonly slides: readonly Pick<IndexSlide, "id" | "position" | "palette">[]
+  readonly palettes?: readonly Palette[]
   readonly index: "missing" | "pending" | "ready"
   readonly cursor?: string
 }
@@ -111,8 +116,14 @@ function elementOf(
     ...(indexed === undefined ? {} : { kind: indexed.kind, grouped: indexed.grouped }),
   }
   const withBox = box === null && indexed === undefined ? held : { ...held, box }
-  if (body === undefined || !closedTo(body, runId)) return withBox
-  return { ...withBox, closed: true }
+  const line = indexed?.design === undefined ? "" : printDesign(indexed.design)
+  const designed = {
+    ...withBox,
+    ...(indexed?.role === undefined ? {} : { role: indexed.role }),
+    ...(line === "" ? {} : { design: line }),
+  }
+  if (body === undefined || !closedTo(body, runId)) return designed
+  return { ...designed, closed: true }
 }
 
 const sortedNodes = new WeakMap<Register, readonly ElementId[]>()
@@ -157,7 +168,7 @@ function firstAfter(nodes: readonly ElementId[], cursor: string): number {
   return low
 }
 
-type ReadHead = Pick<ReadDeckAnswer, "revision" | "slides" | "index">
+type ReadHead = Pick<ReadDeckAnswer, "revision" | "slides" | "palettes" | "index">
 
 function readAnswer(head: ReadHead, elements: readonly ReadElement[], cursor?: string): ReadDeckAnswer {
   if (cursor === undefined) return { ok: true, ...head, elements }
@@ -208,13 +219,21 @@ export function readDeckPage(
   const goneSlides = new Set<string>(foldSlides(deck.register).flatMap((spot) => (spot.present ? [] : [spot.id])))
   const nodes = knownNodes(deck.register)
   const index = deck.register.index
+  const palettes = new Map(
+    (index?.slides ?? []).flatMap(({ id, palette }) => (palette === undefined ? [] : [[id, palette]])),
+  )
+  const slideOf = (id: string, position: number) => {
+    const palette = palettes.get(id)
+    return palette === undefined || palette === 0 ? { id, position } : { id, position, palette }
+  }
   return packRead(
     {
       revision: deck.revision,
       slides:
         deck.register.order.length === 0
-          ? (index?.slides ?? []).map(({ id, position }) => ({ id, position }))
-          : presentSlides(deck.register).map(({ id }, position) => ({ id, position })),
+          ? (index?.slides ?? []).map(({ id, position }) => slideOf(id, position))
+          : presentSlides(deck.register).map(({ id }, position) => slideOf(id, position)),
+      ...(index?.palettes === undefined ? {} : { palettes: index.palettes }),
       index: index === undefined ? "missing" : index.elements.length === index.total ? "ready" : "pending",
     },
     nodes,

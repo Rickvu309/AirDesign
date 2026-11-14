@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest"
-import { appendIndex, elementId, limits, readIndexPage, type IndexPage } from "./index.js"
+import {
+  appendIndex,
+  designKeys,
+  elementId,
+  format,
+  indexDue,
+  indexKeys,
+  limits,
+  readIndexPage,
+  roles,
+  sources,
+  stamps,
+  type DeckIndex,
+  type IndexElement,
+  type IndexPage,
+} from "./index.js"
 
 const box = { x: 1, y: 2, cx: 3, cy: 4 }
 const page: IndexPage = {
@@ -104,4 +119,148 @@ it("adds device layout placeholders to an older index without changing its openi
   expect(
     readIndexPage({ ...enriched, slides: [{ id: "258", position: 0, layout: [{ ...title, node: "259.2" }] }] }),
   ).toBeNull()
+})
+
+describe("index format", () => {
+  const second = { node: elementId("259.9"), kind: "picture", value: null, box: null, grouped: true } as const
+  const stored = (() => {
+    const first = appendIndex(undefined, page)
+    if (!first.ok) throw new Error(first.refusal)
+    const last = appendIndex(first.index, { ...page, once: "page-two", offset: 1, elements: [second] })
+    if (!last.ok) throw new Error(last.refusal)
+    return last.index
+  })()
+  const palette = {
+    slots: { dk1: "000000", lt1: "FFFFFF", accent1: "4472C4" },
+    map: { tx1: "dk1", bg1: "lt1" },
+  } as const
+  const titled = {
+    ...page.elements[0]!,
+    role: "title",
+    design: { fill: ["accent1", "style"], "text.size": [36, "master"], "box.flipH": [true] },
+    kept: ["geometry"],
+  } as const
+  const pictured = { ...second, role: "picture", design: { "line.width": [1, "style"] } } as const
+  const resent = (offset: number, element: object, format = 2): IndexPage => ({
+    ...page,
+    format,
+    palettes: [palette],
+    once: `again-${String(offset)}`,
+    offset,
+    elements: [element as IndexElement],
+  })
+
+  it("reads each element's role, design and kept fields, and the page's format and palettes", () => {
+    const read = readIndexPage(resent(0, titled))
+    expect(read).toEqual(resent(0, titled))
+    for (const element of [
+      { ...titled, role: "headline" },
+      { ...titled, design: { "fill.color": ["accent1"] } },
+      { ...titled, design: { fill: ["accent1", "file"] } },
+      { ...titled, design: { fill: [] } },
+      { ...titled, design: { fill: [{ scheme: "accent1" }] } },
+      { ...titled, design: { fill: ["x".repeat(401)] } },
+      { ...titled, kept: [] },
+      { ...titled, kept: ["geometry", "geometry"] },
+    ])
+      expect(readIndexPage(resent(0, element))).toBeNull()
+    for (const changed of [
+      { format: 0 },
+      { format: format + 1 },
+      { palettes: [] },
+      { palettes: [{ ...palette, slots: { accent1: "blue" } }] },
+      { slides: [{ ...page.slides[0], palette: 1 }, page.slides[1]] },
+    ])
+      expect(readIndexPage({ ...resent(0, titled), ...changed })).toBeNull()
+    expect(
+      readIndexPage({ ...resent(0, titled), slides: [{ ...page.slides[0], palette: 0 }, page.slides[1]] }),
+    ).not.toBeNull()
+  })
+
+  it("builds a higher-format index beside the stored one and swaps it in whole once complete", () => {
+    const half = appendIndex(stored, resent(0, titled))
+    if (!half.ok) throw new Error(half.refusal)
+    expect(half.index.format).toBeUndefined()
+    expect(half.index.elements).toEqual(stored.elements)
+    expect(half.index.slides).toEqual(stored.slides)
+    expect(half.index.next?.elements).toEqual([titled])
+    expect(appendIndex(half.index, resent(0, titled))).toEqual(half)
+    const whole = appendIndex(half.index, resent(1, pictured))
+    if (!whole.ok) throw new Error(whole.refusal)
+    expect(whole.index).toMatchObject({ format: 2, palettes: [palette], elements: [titled, pictured] })
+    expect(whole.index.next).toBeUndefined()
+    expect(appendIndex(whole.index, resent(1, pictured))).toEqual(whole)
+  })
+
+  it("keeps the stored index when a higher-format page changes an opening value", () => {
+    for (const changed of [{ value: "Another title" }, { kind: "kept" }, { box: null }, { grouped: true }])
+      expect(appendIndex(stored, resent(0, { ...titled, ...changed }))).toEqual({ ok: false, refusal: "present" })
+    const half = appendIndex(stored, resent(0, titled))
+    if (!half.ok) throw new Error(half.refusal)
+    expect(appendIndex(half.index, resent(1, { ...pictured, value: "Changed" }))).toEqual({
+      ok: false,
+      refusal: "present",
+    })
+    expect(appendIndex(stored, { ...resent(0, titled), total: 3 })).toEqual({ ok: false, refusal: "present" })
+  })
+
+  it("builds beside a partial older index too, and stores a newer index directly when none is stored", () => {
+    const partial = appendIndex(undefined, page)
+    if (!partial.ok) throw new Error(partial.refusal)
+    expect(appendIndex(partial.index, resent(0, { ...titled, value: "Changed" }))).toEqual({
+      ok: false,
+      refusal: "present",
+    })
+    const half = appendIndex(partial.index, resent(0, titled))
+    if (!half.ok) throw new Error(half.refusal)
+    expect(half.index.elements).toEqual(partial.index.elements)
+    const whole = appendIndex(half.index, resent(1, pictured))
+    if (!whole.ok) throw new Error(whole.refusal)
+    expect(whole.index).toMatchObject({ format: 2, elements: [titled, pictured] })
+    const fresh = appendIndex(undefined, resent(0, titled))
+    expect(fresh.ok && fresh.index).toMatchObject({ format: 2, elements: [titled] })
+    expect(fresh.ok && fresh.index.next).toBeUndefined()
+  })
+
+  it("refuses a page below the stored index's format", () => {
+    const whole = [resent(0, titled), resent(1, pictured)].reduce<DeckIndex>((index, next) => {
+      const built = appendIndex(index, next)
+      if (!built.ok) throw new Error(built.refusal)
+      return built.index
+    }, stored)
+    expect(appendIndex(whole, page)).toEqual({ ok: false, refusal: "present" })
+    expect(appendIndex(whole, { ...page, offset: 1, once: "late", elements: [second] })).toEqual({
+      ok: false,
+      refusal: "present",
+    })
+  })
+
+  it("sends the index again when none is stored, it is incomplete, or its format is below this build's", () => {
+    expect(format).toBe(2)
+    expect(indexDue(undefined)).toBe(true)
+    const first = appendIndex(undefined, page)
+    if (!first.ok) throw new Error(first.refusal)
+    expect(indexDue(first.index)).toBe(true)
+    expect(indexDue(stored)).toBe(true)
+    const whole = [resent(0, titled), resent(1, pictured)].reduce<DeckIndex>((index, next) => {
+      const built = appendIndex(index, next)
+      if (!built.ok) throw new Error(built.refusal)
+      return built.index
+    }, stored)
+    expect(indexDue(whole)).toBe(false)
+  })
+
+  it("names every key the index stores, so a new key raises the index stamp", () => {
+    expect({ stamp: stamps.index, keys: indexKeys }).toEqual({
+      stamp: 1,
+      keys: {
+        page: ["format", "once", "offset", "total", "palettes", "slides", "elements"],
+        slide: ["id", "position", "size", "free", "animated", "layout", "palette"],
+        element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept"],
+        design: designKeys,
+        roles,
+        sources,
+      },
+    })
+  })
 })

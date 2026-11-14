@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   beforeOf,
+  format,
   netPatch,
   readRow,
   shows,
@@ -41,7 +42,7 @@ describe("readRow reads both format 1 forms as trait fields", () => {
   })
 
   it("refuses a row from a newer build as newer, and one it cannot read as payload", () => {
-    expect(readRow({ v: 2, patch: { line: { width: { set: 12_700 } } } }, "text")).toEqual({
+    expect(readRow({ v: format + 1, patch: { line: { width: { set: 12_700 } } } }, "text")).toEqual({
       ok: false,
       refusal: "newer",
     })
