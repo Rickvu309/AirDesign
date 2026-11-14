@@ -123,3 +123,58 @@ it("decides a box write by the same order, protection and stale rules as a text 
     }),
   )
 })
+
+function indexedAt(box: Box): Register {
+  const element = { node, kind: "shape" as const, value: "file text", box, grouped: false }
+  const register = { ...openRegister("", "deck"), index: { total: 1, slides: [], elements: [element], pages: [] } }
+  return applied(register, { command: "add", node, floor: "file text", route: "deck" })
+}
+
+it("folds a row of trait fields per field over the element's opening box and text", () => {
+  let register = applied(indexedAt(first), { command: "start", node, runId: "run" })
+  register = applied(register, {
+    command: "agent",
+    node,
+    runId: "run",
+    readAt: 0,
+    v: 3,
+    patch: { box: { x: { set: 5 } } },
+  })
+  expect(currentBox(bodyOf(register))).toEqual({ ...first, x: 5 })
+  expect(currentValue(bodyOf(register))).toBe("file text")
+  register = applied(register, {
+    command: "agent",
+    node,
+    runId: "run",
+    readAt: 1,
+    v: 3,
+    patch: { box: { w: { set: 7 }, x: "opening" }, text: { value: { set: "set" } } },
+  })
+  expect(currentBox(bodyOf(register))).toEqual({ ...first, cx: 7 })
+  expect(currentValue(bodyOf(register))).toBe("set")
+  expect(history(bodyOf(register))).toEqual(["set"])
+  register = applied(register, {
+    command: "agent",
+    node,
+    runId: "run",
+    readAt: 2,
+    v: 3,
+    patch: { text: { value: "opening" } },
+  })
+  expect(currentValue(bodyOf(register))).toBe("file text")
+  register = applied(register, { command: "undo", node, runId: "run" })
+  expect(currentBox(bodyOf(register))).toEqual(first)
+})
+
+it("refuses a row whose fields the element's kind does not take", () => {
+  const register = applied(indexedAt(first), { command: "start", node, runId: "run" })
+  const decision = decide(register, {
+    command: "agent",
+    node,
+    runId: "run",
+    readAt: 0,
+    v: 3,
+    patch: { notes: { value: { set: "n" } } },
+  })
+  expect(decision).toEqual({ decision: "refuse", code: "kind" })
+})

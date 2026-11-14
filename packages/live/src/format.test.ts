@@ -85,6 +85,20 @@ it("answers newer when a stored row says a newer format, and deletes nothing", a
   expect(await storedNodes(format)).toEqual(["258.7", "258.slide"])
 })
 
+it("answers newer when a stored row of trait fields is from a newer build, and deletes nothing", async () => {
+  const { remote, calls } = tracedRemote()
+  const tab = connect(remote)
+  await tab.openDeck("deck")
+  await tab.enqueue("deck", "typed before", node, "")
+  const { format: _, ...unstamped } = newerRow
+  await storeRow(format, { ...unstamped, node: "258.8", v: format + 1 })
+
+  expect(await connect(remote).openDeck("deck")).toEqual(newer)
+  expect(await tab.flush("deck")).toEqual(newer)
+  expect(calls).not.toContain("commit deck")
+  expect(await storedNodes(format)).toEqual(["258.7", "258.8"])
+})
+
 it("stops writing once the register answer says a newer format", async () => {
   const { remote, calls } = tracedRemote({ ok: false, refusal: "newer" })
   const tab = connect(remote)

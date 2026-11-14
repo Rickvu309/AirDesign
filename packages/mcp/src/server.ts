@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/server"
 import { admit, refund, type Admission } from "./admit.js"
 import { agentOps, callTool, type Session, type ToolResult } from "./call-tool.js"
 import type { EditCode } from "./edit-next.js"
+import { kindInstructions } from "./kind-refusal.js"
 import { settleTurn } from "./turn.js"
 
 function inputSchema(json: Readonly<Record<string, unknown>>) {
@@ -61,7 +62,7 @@ async function settledCall(
 }
 
 export function createServer(session: Session, host?: Host): McpServer {
-  const server = new McpServer({ name: "airdesign", version: "0.0.0" })
+  const server = new McpServer({ name: "airdesign", version: "0.0.0" }, { instructions: kindInstructions() })
   for (const tool of projectTools(catalog)) {
     server.registerTool(
       tool.name,

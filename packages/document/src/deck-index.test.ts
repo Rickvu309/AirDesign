@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  answeredRegister,
   appendIndex,
   designKeys,
   elementId,
@@ -7,7 +8,9 @@ import {
   indexDue,
   indexKeys,
   limits,
+  openRegister,
   readIndexPage,
+  rootElement,
   roles,
   sources,
   stamps,
@@ -141,9 +144,9 @@ describe("index format", () => {
     kept: ["geometry"],
   } as const
   const pictured = { ...second, role: "picture", design: { "line.width": [1, "style"] } } as const
-  const resent = (offset: number, element: object, format = 2): IndexPage => ({
+  const resent = (offset: number, element: object, at = format): IndexPage => ({
     ...page,
-    format,
+    format: at,
     palettes: [palette],
     once: `again-${String(offset)}`,
     offset,
@@ -187,7 +190,7 @@ describe("index format", () => {
     expect(appendIndex(half.index, resent(0, titled))).toEqual(half)
     const whole = appendIndex(half.index, resent(1, pictured))
     if (!whole.ok) throw new Error(whole.refusal)
-    expect(whole.index).toMatchObject({ format: 2, palettes: [palette], elements: [titled, pictured] })
+    expect(whole.index).toMatchObject({ format, palettes: [palette], elements: [titled, pictured] })
     expect(whole.index.next).toBeUndefined()
     expect(appendIndex(whole.index, resent(1, pictured))).toEqual(whole)
   })
@@ -216,9 +219,9 @@ describe("index format", () => {
     expect(half.index.elements).toEqual(partial.index.elements)
     const whole = appendIndex(half.index, resent(1, pictured))
     if (!whole.ok) throw new Error(whole.refusal)
-    expect(whole.index).toMatchObject({ format: 2, elements: [titled, pictured] })
+    expect(whole.index).toMatchObject({ format, elements: [titled, pictured] })
     const fresh = appendIndex(undefined, resent(0, titled))
-    expect(fresh.ok && fresh.index).toMatchObject({ format: 2, elements: [titled] })
+    expect(fresh.ok && fresh.index).toMatchObject({ format, elements: [titled] })
     expect(fresh.ok && fresh.index.next).toBeUndefined()
   })
 
@@ -236,7 +239,7 @@ describe("index format", () => {
   })
 
   it("sends the index again when none is stored, it is incomplete, or its format is below this build's", () => {
-    expect(format).toBe(2)
+    expect(format).toBe(3)
     expect(indexDue(undefined)).toBe(true)
     const first = appendIndex(undefined, page)
     if (!first.ok) throw new Error(first.refusal)
@@ -262,5 +265,28 @@ describe("index format", () => {
         sources,
       },
     })
+  })
+})
+
+describe("the register answer says the highest format the deck stores", () => {
+  const register = openRegister("", "deck")
+  const node = elementId("258.7")
+  const body = register.elements[rootElement]
+
+  it("counts a stored row's format beside the index's", () => {
+    if (body === undefined) throw new Error("root")
+    const landed = [
+      { actor: "agent" as const, visible: false, runId: "r", v: format, patch: { box: { x: { set: 1 } } } },
+    ]
+    const withRow = {
+      ...register,
+      nodes: [...register.nodes, node],
+      elements: { ...register.elements, [node]: { ...body, landed } },
+    }
+    expect(answeredRegister(withRow).format).toBe(format)
+    expect(answeredRegister(register).format).toBeUndefined()
+    const index: DeckIndex = { format: 2, total: 0, slides: [], elements: [], pages: [] }
+    expect(answeredRegister({ ...register, index }).format).toBe(2)
+    expect(answeredRegister({ ...withRow, index }).format).toBe(format)
   })
 })

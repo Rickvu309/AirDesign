@@ -1,5 +1,5 @@
 import type { DeckId } from "@airdesign/catalog"
-import { printDesign, readDeckId } from "@airdesign/catalog"
+import { printDesign, readDeckId, shownDesign } from "@airdesign/catalog"
 import {
   bytesOf,
   foldSlides,
@@ -7,6 +7,7 @@ import {
   currentBox,
   currentValue,
   floorNodes,
+  history,
   openingElement,
   readElementId,
   shapeOf,
@@ -116,7 +117,9 @@ function elementOf(
     ...(indexed === undefined ? {} : { kind: indexed.kind, grouped: indexed.grouped }),
   }
   const withBox = box === null && indexed === undefined ? held : { ...held, box }
-  const line = indexed?.design === undefined ? "" : printDesign(indexed.design)
+  const edited = body !== undefined && history(body).length > 0
+  const design = edited ? shownDesign(indexed?.design ?? {}, currentValue(body)) : indexed?.design
+  const line = design === undefined ? "" : printDesign(design)
   const designed = {
     ...withBox,
     ...(indexed?.role === undefined ? {} : { role: indexed.role }),

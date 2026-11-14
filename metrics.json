@@ -7,7 +7,7 @@
   "fault-detection": { "now": 10, "goal": 11 },
   "import-parse": { "now": 174, "goal": 100 },
   "slides-repainted": { "goal": 1 },
-  "eval-coverage": { "now": 48, "goal": 48 },
+  "eval-coverage": { "now": 49, "goal": 49 },
   "design-findings": { "now": 118, "goal": 0 },
   "ci-duration": { "limit": 40 },
   "pptx-check-duration": { "limit": 90 }

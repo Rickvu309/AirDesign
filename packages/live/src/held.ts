@@ -1,7 +1,7 @@
 import type { DeckId } from "@airdesign/catalog"
 import { newerFormat, type Register } from "@airdesign/document"
 import { finished, heldDecks, markNewer, scoped, storeName, storeNewer, transaction } from "./device.js"
-import { deckView, joinable, played, readable, split, storedKey, type DeckView } from "./deck-view.js"
+import { deckView, joinable, newerRow, played, readable, split, storedKey, type DeckView } from "./deck-view.js"
 import {
   asideKey,
   headKey,
@@ -93,7 +93,7 @@ export async function changeHeld<Result>(deck: DeckId, change: (held: Held) => C
     const stored = store.get(head)
     stored.onsuccess = () => {
       const all = rows.result as StoredRow[]
-      if (all.some(newerFormat)) {
+      if (all.some((row) => newerFormat(row) || newerRow(row))) {
         markNewer()
         return
       }
@@ -244,7 +244,7 @@ export async function heldView(deck: DeckId): Promise<DeckView | null> {
     const rows = store.getAll(rowRange(scoped(account, deck)))
     rows.onsuccess = () => {
       const all = rows.result as StoredRow[]
-      if (all.some(newerFormat)) {
+      if (all.some((row) => newerFormat(row) || newerRow(row))) {
         markNewer()
         return
       }

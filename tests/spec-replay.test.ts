@@ -1,7 +1,7 @@
 import { parseDot, type Graph } from "./spec-graph.js"
 import { replayElement } from "./element-replay.js"
 import * as elementView from "../specs/element/view.mjs"
-import { opened, viewed, personSplit } from "./spec-register.js"
+import { opened, viewed, personSplit, traitRow } from "./spec-register.js"
 import { dumpTopics } from "./spec-dump.js"
 import { replayIndex } from "./index-replay.js"
 import { replayUsage } from "./usage-replay.js"
@@ -201,7 +201,7 @@ function replayEdit(graph: Graph, view: View, failures: string[]) {
         command: "agent",
         runId: run,
         readAt: num(source, "readAt"),
-        value: "again",
+        ...traitRow,
       })
       if (decision.decision !== "apply") failures.push(`edit ${where} refused ${decision.code}`)
       else next = decision.register
@@ -213,7 +213,7 @@ function replayEdit(graph: Graph, view: View, failures: string[]) {
         value: "stale",
       })
       for (const probe of [0, 1, 2, 3, 4]) {
-        const probed = decide(register, { command: "agent", runId: run, readAt: probe, value: "stale" })
+        const probed = decide(register, { command: "agent", runId: run, readAt: probe, ...traitRow })
         if (probed.decision !== "refuse" || probed.code !== "person-protected") {
           failures.push(`edit ${where} did not refuse readAt ${probe} as person-protected`)
         }
@@ -402,7 +402,7 @@ function replayUndo(graph: Graph, view: View, failures: string[]) {
           : edge.action === "StartSecond"
             ? decide(register, { command: "start", runId: "s" })
             : edge.action === "LaterWrites"
-              ? decide(register, { command: "agent", runId: "s", readAt: version(register), value: "later" })
+              ? decide(register, { command: "agent", runId: "s", readAt: version(register), ...traitRow })
               : edge.action === "StopSecond"
                 ? decide(register, { command: "stop", runId: "s" })
                 : edge.action === "UndoSecond" || edge.action === "UndoLaterAgain"
@@ -763,7 +763,7 @@ function replayRun(graph: Graph, view: View, failures: string[]) {
                   command: "agent",
                   runId: edge.action === "AgentMiss" ? otherRun(stored) : stored,
                   readAt: num(source, "readAt"),
-                  value: "agent",
+                  ...traitRow,
                 })
               : edge.action === "Undo"
                 ? decide(register, { command: "undo", runId: stored })

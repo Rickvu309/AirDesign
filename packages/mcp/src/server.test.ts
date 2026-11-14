@@ -85,6 +85,15 @@ async function withClient(session: Session, use: (client: Client) => Promise<voi
 }
 
 describe("createServer", () => {
+  it("tells the agent what each kind of element takes", async () => {
+    await withClient(sessionFor(opened()), async (client) => {
+      const instructions = client.getInstructions() ?? ""
+      expect(instructions).toContain('"op": "set"')
+      expect(instructions).toContain("A shape takes box (x, y, w, h) and text (value, color, size")
+      expect(instructions).toContain("A table takes box (x, y).")
+    })
+  })
+
   it("returns a new server on every call", () => {
     const session = sessionFor(opened())
     expect(createServer(session)).not.toBe(createServer(session))
@@ -115,8 +124,12 @@ describe("createServer", () => {
         properties?: { changes?: { items?: { anyOf?: readonly { required?: readonly string[] }[] } } }
       }
       const changes = schema.properties?.changes?.items?.anyOf ?? []
-      expect(changes).toHaveLength(2)
-      for (const change of changes) expect(change.required).toEqual(expect.arrayContaining(["node", "readAt"]))
+      expect(changes.map((change) => change.required)).toEqual([
+        expect.arrayContaining(["node", "readAt"]),
+        expect.arrayContaining(["node", "readAt"]),
+        ["op", "target"],
+        ["op", "kind", "slide"],
+      ])
       const advertised = tools.map((tool) => ({
         name: tool.name,
         description: tool.description,

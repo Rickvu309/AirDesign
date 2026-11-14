@@ -40,10 +40,10 @@ export type EditResult =
       readonly answer: EditAnswer
     }
 
-export function namedNodes(changes: readonly WireChange[]): ElementId[] {
+export function namedNodes(changes: readonly WireChange[], also: readonly ElementId[] = []): ElementId[] {
   const nodes: ElementId[] = []
-  for (const change of changes) {
-    if (!nodes.includes(change.node)) nodes.push(change.node)
+  for (const node of [...changes.map((change) => change.node), ...also]) {
+    if (!nodes.includes(node)) nodes.push(node)
   }
   return nodes
 }

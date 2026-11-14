@@ -32,6 +32,7 @@ export const editNext = {
   payload: "The deck's next revision could not be named for storage, and nothing landed. Tell the person.",
   field:
     "A field is missing or has the wrong form. Send only the fields the input schema lists, each in its described form.",
+  kept: "An element this call names holds that field in a form AirDesign keeps exactly as the file has it, such as a custom shape, a picture fill or an effect graph, and nothing landed. Leave that field, or tell the person.",
   "text-from":
     "A from index in this value is not one the file has, and nothing landed. Use an index listed next, or -1 for a new run.",
   indexing:

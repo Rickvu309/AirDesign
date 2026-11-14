@@ -71,7 +71,8 @@ export {
 } from "./decide.js"
 export { coordinates, readBox, type Box } from "./box.js"
 export { placeNewBox } from "./box-placement.js"
-export { storedValue, valueBytes, type Value } from "./value.js"
+export { storedValue, valueBytes, type FormatOneValue, type Value } from "./value.js"
+export { namedFields, planChange, registerScope, type AddChange, type SetChange, type Target } from "./change.js"
 export {
   beforeOf,
   netPatch,
@@ -83,7 +84,7 @@ export {
   type Row,
   type TraitPatch,
 } from "./row.js"
-export { boxOnly, indexFacts, removable, takes } from "./element-takes.js"
+export { agentTakes, boxOnly, indexFacts, removable, takes } from "./element-takes.js"
 export {
   kindTraits,
   traitNames,
@@ -95,7 +96,7 @@ export {
   type WireAgent,
   type WireField,
 } from "./traits.js"
-export type { Desc } from "./value-kind.js"
+export type { Desc, Fields, NumberUnit } from "./value-kind.js"
 export { kinds, type Kind } from "./kinds.js"
 export { structure } from "./structure.js"
 export { foldSections, type FileSection } from "./section-order.js"
@@ -135,10 +136,12 @@ export {
   type TableValue,
 } from "./table-value.js"
 export {
+  bareTransforms,
   mappedSlots,
   readColor,
   sameColor,
   themeSlots,
+  valuedTransforms,
   type Color,
   type ColorBase,
   type ColorTransform,

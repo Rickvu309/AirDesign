@@ -330,11 +330,21 @@ export function indexDue(stored: DeckIndex | undefined): boolean {
   return stored === undefined || stored.elements.length !== stored.total || (stored.format ?? 1) < format
 }
 
-export function answeredRegister<Stored extends { readonly index?: DeckIndex }>(
-  register: Stored,
-): Stored & { readonly format?: number } {
-  if (register.index === undefined) return register
+type Rowed = { readonly landed: readonly { readonly v?: number }[] }
+
+function rowFormat(elements: Readonly<Partial<Record<string, Rowed>>>): number {
+  let highest = 1
+  for (const body of Object.values(elements))
+    for (const row of body?.landed ?? []) highest = Math.max(highest, row.v ?? 1)
+  return highest
+}
+
+export function answeredRegister<
+  Stored extends { readonly index?: DeckIndex; readonly elements: Readonly<Partial<Record<string, Rowed>>> },
+>(register: Stored): Stored & { readonly format?: number } {
+  const rows = rowFormat(register.elements)
+  if (register.index === undefined) return rows > 1 ? { ...register, format: rows } : register
   const { next, ...index } = register.index
-  const stored = Math.max(index.format ?? 1, next?.format ?? 1)
+  const stored = Math.max(index.format ?? 1, next?.format ?? 1, rows)
   return { ...register, index, ...(stored > 1 ? { format: stored } : {}) }
 }

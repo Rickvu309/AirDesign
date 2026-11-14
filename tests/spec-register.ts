@@ -1,4 +1,10 @@
-import { rootElement, type Register, type NodeRegister } from "@airdesign/document"
+import { format, rootElement, type Register, type NodeRegister } from "@airdesign/document"
+
+export const traitRow = {
+  v: format,
+  patch: { box: { x: { set: 914_400 } }, text: { value: { set: "agent" } } },
+} as const
+
 export function opened(register: Register): NodeRegister {
   const body = register.elements[rootElement]
   if (body === undefined) throw new Error("missing node")

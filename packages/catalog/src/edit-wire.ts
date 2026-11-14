@@ -10,6 +10,15 @@ import {
 } from "@airdesign/document"
 import * as z from "zod/v4"
 
+import type { JsonSchema } from "./agent-form.js"
+import {
+  addChangeSchema,
+  readAddChange,
+  readSetChange,
+  setChangeSchema,
+  type WireAdd,
+  type WireSet,
+} from "./set-wire.js"
 import { storableText } from "./storable-text.js"
 import { readSlideEdit, type WireSlide } from "./slide-wire.js"
 import {
@@ -54,6 +63,8 @@ type Unnamed = {
 export type WireEdit = Edited & Unnamed & { readonly readAt?: never }
 
 export type WireChange = Edited & Unnamed & { readonly readAt: number }
+
+export type AgentChange = WireChange | WireSet | WireAdd
 
 function readBoxEdit(body: Record<string, unknown>): { ok: true; edit: WireEdit } | FieldRefusal {
   if (body.property !== "box" || !knownKeys(body, ["property", "value", "node", "floor"])) return fieldRefusal
@@ -152,12 +163,32 @@ const boxChange = z.strictObject({
   floor: textInput.exactOptional(),
 })
 
+function agentForm<Change>(
+  read: (
+    raw: unknown,
+  ) => { readonly ok: true; readonly change: Change } | { readonly ok: false; readonly field: string },
+  schema: JsonSchema,
+) {
+  return z
+    .unknown()
+    .transform((raw, ctx) => {
+      const found = read(raw)
+      if (found.ok) return found.change
+      ctx.issues.push({ code: "custom", input: raw, message: found.field })
+      return z.NEVER
+    })
+    .meta(schema)
+}
+
+const setChange = agentForm(readSetChange, setChangeSchema())
+const addChange = agentForm(readAddChange, addChangeSchema())
+
 export const readAgentEdit = readInput(
   z.strictObject({
     deck: deckInput,
     base: wholeInput.describe("Revision from airdesign_read_deck."),
     changes: z
-      .array(z.union([textChange, boxChange]))
+      .array(z.union([textChange, boxChange, setChange, addChange]))
       .min(1)
       .max(limits.batch)
       .describe("Edits to land."),

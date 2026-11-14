@@ -4,6 +4,7 @@ import {
   limits,
   storedValue,
   type ElementId,
+  type FormatOneValue,
   type SlideCommand,
   type SlideId,
   type Value,
@@ -18,7 +19,7 @@ export type ConfirmedRow = Value & {
   readonly slideEdit?: SlideCommand
 }
 
-export type PendingRow = Value & {
+export type PendingRow = FormatOneValue & {
   readonly kind: "pending"
   readonly once?: string
   readonly deck: DeckId
@@ -50,7 +51,7 @@ export function pendingRow(
   deck: DeckId,
   order: number,
   base: number,
-  edit: Value,
+  edit: FormatOneValue,
   node: ElementId,
   floor: string | undefined,
 ): PendingRow {
@@ -73,8 +74,10 @@ export function fitConfirmed(
   node: ElementId | undefined,
   into: ConfirmedRow[],
 ): number {
-  if (edit.property === "box") {
-    into.push(confirmedRow(deck, revision, edit, node))
+  if (edit.v !== undefined || edit.property === "box") {
+    const row = confirmedRow(deck, revision, edit, node)
+    if (rowBytes(row) >= limits.row) return revision
+    into.push(row)
     return revision + 1
   }
   const value = edit.value
@@ -109,7 +112,14 @@ export function logicalValues(rows: readonly ConfirmedRow[]): LogicalValue[] {
   for (const row of rows) {
     if (row.slideEdit !== undefined) continue
     const last = values.at(-1)
-    if (row.property !== "box" && row.value.startsWith("\u0001") && last !== undefined && last.property !== "box") {
+    if (
+      row.v === undefined &&
+      row.property !== "box" &&
+      row.value.startsWith("\u0001") &&
+      last !== undefined &&
+      last.v === undefined &&
+      last.property !== "box"
+    ) {
       values[values.length - 1] = { ...last, value: `${last.value}${row.value.slice(1)}` }
       continue
     }

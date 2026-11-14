@@ -4,6 +4,7 @@ import {
   legacyElement,
   openRegister,
   readElementId,
+  readRow,
   readSlideState,
   replay,
   rootElement,
@@ -82,10 +83,16 @@ export function played(deck: DeckId, confirmed: readonly ConfirmedRow[], pending
   return withSlides(replay(register, seeded), confirmed, pending)
 }
 
+export function newerRow(row: StoredRow): boolean {
+  const read = row.slideEdit === undefined ? readRow(row, "text") : null
+  return read !== null && !read.ok && read.refusal === "newer"
+}
+
 export function readable(row: StoredRow): boolean {
   if (row.slideEdit !== undefined) {
     return row.slideFile !== undefined && readSlideState({ file: row.slideFile, order: [row.slideEdit] }) !== undefined
   }
+  if (!readRow(row, "text").ok) return false
   if (isPending(row)) return wired(row)
   return row.node === undefined || row.node === legacyElement || readElementId(row.node) !== undefined
 }

@@ -1,4 +1,4 @@
-import { decide, elementId, openRegister, type Command, type Register } from "@airdesign/document"
+import { decide, elementId, format, openRegister, type Command, type Register } from "@airdesign/document"
 import { readShapes } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { boxStorable, landedBox, paintedBox } from "./element-move"
@@ -83,6 +83,23 @@ it("answers a box an agent's run landed, so the device paints it like a person's
   const started = { command: "start", node, runId: "run" } as const
   const moved = { command: "agent", node, runId: "run", readAt: 0, property: "box", value: box } as const
   expect(landedBox(landed([added, started, moved]), node)).toEqual(box)
+})
+
+it("answers a box an agent's set row landed, with no index on the device", () => {
+  const added = { command: "add", node, floor: "", route: "deck" } as const
+  const started = { command: "start", node, runId: "run" } as const
+  const sides = { x: { set: box.x }, y: { set: box.y }, w: { set: box.cx }, h: { set: box.cy } }
+  const set = { command: "agent", node, runId: "run", readAt: 0, v: format, patch: { box: sides } } as const
+  const typed = {
+    command: "agent",
+    node,
+    runId: "run",
+    readAt: 0,
+    v: format,
+    patch: { text: { value: { set: "x" } } },
+  } as const
+  expect(landedBox(landed([added, started, set]), node)).toEqual(box)
+  expect(landedBox(landed([added, started, typed]), node)).toBeNull()
 })
 
 it("takes the box a person saw from the painted slide, so a picture or a placeholder with a layout box can be undone", () => {

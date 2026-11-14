@@ -1,7 +1,9 @@
-import { readAgentEdit, traitWire } from "@airdesign/catalog"
+import { readAgent, readSetChange, traitWire } from "@airdesign/catalog"
 import {
   decide,
   openRegister,
+  planChange,
+  registerScope,
   readTableValue,
   readTextValue,
   traitNames,
@@ -129,18 +131,9 @@ const probes: { readonly [T in TraitName]: Probe<T> } = {
   },
 }
 
-const agentScale: Readonly<Record<string, number>> = {
-  emu: 12_700,
-  angle: 60_000,
-  fraction: 1_000,
-  "hundredth-point": 100,
-  count: 1,
-}
-
 function fromAgent(desc: Desc, raw: unknown): unknown {
-  if (desc.kind === "number" && typeof raw === "number") return Math.round(raw * (agentScale[desc.unit] ?? Number.NaN))
-  if (desc.kind === "words" || desc.kind === "text" || desc.kind === "table") return raw
-  throw new Error(`${desc.kind} has no agent reader before readSetChange`)
+  const read = readAgent(desc, raw)
+  return read.ok ? read.value : undefined
 }
 
 function optionWords(desc: Desc): readonly string[] {
@@ -190,17 +183,19 @@ function placed(parts: Parts, kind: Kind): At {
   return { node: found.node, slide, part, shape }
 }
 
-function agentRegister(register: Register, at: At, value: Value): Register | null {
-  const read = readAgentEdit({ deck: "parity", base: 0, changes: [{ ...value, node: at.node, readAt: 0 }] })
+function agentRegister(register: Register, at: At, example: object): Register | null {
+  const read = readSetChange({ op: "set", target: at.node, ...example })
   if (!read.ok) return null
-  const [change] = read.changes
-  if (change === undefined) return null
-  const edit: Value = "property" in change ? { property: "box", value: change.value } : { value: change.value }
-  return landed(register, [
+  const opened = landed(register, [
     { command: "add", node: at.node, floor: "", route: "clean" },
     { command: "start", runId: "parity", node: at.node },
-    { command: "agent", runId: "parity", readAt: 0, node: at.node, ...edit },
   ])
+  const planned = opened === null ? null : planChange(read.change, registerScope(opened))
+  if (opened === null || planned === null || !planned.ok) return null
+  return landed(
+    opened,
+    planned.rows.map(({ node, row }) => ({ command: "agent", runId: "parity", readAt: 0, node, ...row })),
+  )
 }
 
 function painted(parts: Parts, at: At): string {
@@ -245,19 +240,18 @@ async function fieldProblems(
 ): Promise<Problem[]> {
   const key = `${trait}.${field}`
   const desc = (traits[trait].fields as Readonly<Record<string, { readonly desc: Desc }>>)[field]?.desc
-  const example = (wire.fields?.[field]?.example as Readonly<Record<string, Readonly<Record<string, unknown>>>>)?.[
-    trait
-  ]?.[field]
-  if (desc === undefined || example === undefined) return [{ field: key, missing: "wire" }]
+  const sent = wire.fields?.[field]?.example as Readonly<Record<string, Readonly<Record<string, unknown>>>> | undefined
+  const example = sent?.[trait]?.[field]
+  const value = desc === undefined ? undefined : fromAgent(desc, example)
+  if (desc === undefined || sent === undefined || value === undefined) return [{ field: key, missing: "wire" }]
   const parts = await deckParts(probe.deck)
   const at = placed(parts, probe.kind)
   const shape = probe.fields[field]
-  const value = fromAgent(desc, example)
   const opening = probe.opening(parts, at)
   const edit = probe.edit(opening, field, value)
   const shown = (exported: Parts) => shape !== undefined && same(shape.file(exported, at), shape.shows(value))
   const problems: Problem[] = shown(parts) ? [{ field: key, missing: "change" }] : []
-  const agent = agentRegister(indexed(parts), at, edit)
+  const agent = agentRegister(indexed(parts), at, sent)
   if (agent === null || !shown(exportParts(parts, agent))) problems.push({ field: key, missing: "wire" })
   const person = landed(indexed(parts), [
     { command: "add", node: at.node, floor: "", route: "clean" },
@@ -273,6 +267,22 @@ async function fieldProblems(
   if (undone === null || !sameParts(exportParts(parts, undone), parts)) problems.push({ field: key, missing: "undo" })
   if (!cases.some((each) => each.covers?.includes(key))) problems.push({ field: key, missing: "pptx-case" })
   return problems
+}
+
+async function inputProblems(
+  trait: TraitName,
+  input: string,
+  probe: Loose,
+  wire: Partial<LooseWire>,
+): Promise<Problem[]> {
+  const key = `${trait}.${input}`
+  const example = wire.fields?.[input]?.example
+  if (example === undefined) return [{ field: key, missing: "wire" }]
+  const parts = await deckParts(probe.deck)
+  const at = placed(parts, probe.kind)
+  const agent = agentRegister(indexed(parts), at, example as object)
+  if (agent === null) return [{ field: key, missing: "wire" }]
+  return painted(exportParts(parts, agent), at) === painted(parts, at) ? [{ field: key, missing: "paint-change" }] : []
 }
 
 function copyProblems(trait: TraitName, controls: Partial<LooseControls>, wire: Partial<LooseWire>): Problem[] {
@@ -300,6 +310,8 @@ async function parityProblems(): Promise<readonly Problem[]> {
     problems.push(...copyProblems(trait, traitControls[trait] as Partial<LooseControls>, wire))
     for (const field of Object.keys(traits[trait].fields))
       problems.push(...(await fieldProblems(trait, field, probe, wire)))
+    for (const input of Object.keys(traits[trait].inputs))
+      problems.push(...(await inputProblems(trait, input, probe, wire)))
   }
   return problems
 }
