@@ -1,4 +1,4 @@
-import type { ParagraphAlign, RunColor, RunFormat, TextFormat } from "@airdesign/document"
+import type { ParagraphAlign, Color, RunFormat, TextFormat } from "@airdesign/document"
 import type { CSSProperties } from "react"
 import { bulletLabel } from "./bullet-label.js"
 import { readFormat } from "./run-format-node.js"
@@ -20,7 +20,7 @@ const bulletProps = ["--bullet", "--bullet-font", "--bullet-color", "--bullet-si
 const bulletRule =
   "[data-paragraph]::before{content:var(--bullet);display:inline-block;min-width:var(--bullet-hang,auto);text-indent:0;pointer-events:none;user-select:none;white-space:pre;font-family:var(--bullet-font,inherit);color:var(--bullet-color,inherit);font-size:var(--bullet-size,1em);line-height:1}"
 
-export type RunPaint = RunFormat & { readonly size?: number; readonly color?: RunColor }
+export type RunPaint = RunFormat & { readonly size?: number; readonly color?: Color }
 export type ParagraphPaint = { readonly align?: ParagraphAlign; readonly bullet?: boolean }
 
 export type TextLook = {
@@ -29,7 +29,7 @@ export type TextLook = {
   run(paragraph: number, from: number, format?: RunPaint): Look
   file(paragraph: number, from: number, format: TextFormat): boolean
   fileSize(paragraph: number, from: number): number | null
-  fileColor(paragraph: number, from: number): RunColor | null
+  fileColor(paragraph: number, from: number): Color | null
   fileAlign(paragraph: number): ParagraphAlign | null
   fileBullet(paragraph: number): boolean
   swatches(): readonly CanvasThemeColor[]
@@ -203,7 +203,7 @@ function cssHex(color: string | null): string | null {
     .toUpperCase()
 }
 
-function schemeOf(style: CanvasRunStyle, colors: readonly CanvasThemeColor[]): RunColor | null {
+function schemeOf(style: CanvasRunStyle, colors: readonly CanvasThemeColor[]): Color | null {
   const hex = cssHex(style.color)
   if (hex === null) return null
   const matches = colors.filter((swatch) => cssHex(swatch.css) === hex)
@@ -211,9 +211,11 @@ function schemeOf(style: CanvasRunStyle, colors: readonly CanvasThemeColor[]): R
   return found === undefined ? null : { scheme: found.scheme }
 }
 
-function paintedColor(color: RunColor, colors: readonly CanvasThemeColor[], file: string | null): string | null {
+function paintedColor(color: Color, colors: readonly CanvasThemeColor[], file: string | null): string | null {
+  if ((color.transforms?.length ?? 0) > 0) return file
   if ("rgb" in color) return `#${color.rgb}`
-  return colors.find((swatch) => swatch.scheme === color.scheme)?.css ?? file
+  if ("scheme" in color) return colors.find((swatch) => swatch.scheme === color.scheme)?.css ?? file
+  return file
 }
 
 function formatted(style: CanvasRunStyle, format: RunPaint, colors: readonly CanvasThemeColor[]): CanvasRunStyle {

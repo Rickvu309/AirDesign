@@ -1,6 +1,7 @@
 import { owns, shapeById } from "./shape-tree.js"
-import type { TextValue } from "@airdesign/document"
+import { mappedSlots, themeSlots, type TextValue } from "@airdesign/document"
 import { insertChild } from "./child-order.js"
+import { solidFillXml } from "./color-xml.js"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { attachedConnections, shapeAnimated } from "./shape-id.js"
@@ -38,35 +39,16 @@ export type ShapeFill =
   | { readonly kind: "srgb"; readonly value: string }
   | { readonly kind: "theme"; readonly value: string }
 
-const themeColors = new Set([
-  "dk1",
-  "lt1",
-  "dk2",
-  "lt2",
-  "accent1",
-  "accent2",
-  "accent3",
-  "accent4",
-  "accent5",
-  "accent6",
-  "hlink",
-  "folHlink",
-  "bg1",
-  "tx1",
-  "bg2",
-  "tx2",
-  "phClr",
-])
 const fillKinds = new Set(["a:noFill", "a:solidFill", "a:gradFill", "a:blipFill", "a:pattFill", "a:grpFill"])
 
 function fillXml(value: ShapeFill): { tag: "a:noFill" | "a:solidFill"; xml: string } {
   if (value.kind === "none") return { tag: "a:noFill", xml: "<a:noFill/>" }
   if (value.kind === "srgb" && /^[0-9a-fA-F]{6}$/.test(value.value)) {
-    return { tag: "a:solidFill", xml: `<a:solidFill><a:srgbClr val="${value.value}"/></a:solidFill>` }
+    return { tag: "a:solidFill", xml: solidFillXml({ rgb: value.value }) }
   }
-  if (value.kind === "theme" && themeColors.has(value.value)) {
-    return { tag: "a:solidFill", xml: `<a:solidFill><a:schemeClr val="${value.value}"/></a:solidFill>` }
-  }
+  const scheme =
+    value.kind === "theme" ? [...themeSlots, ...mappedSlots].find((slot) => slot === value.value) : undefined
+  if (scheme !== undefined) return { tag: "a:solidFill", xml: solidFillXml({ scheme }) }
   throw new Error("fill-color")
 }
 

@@ -1,4 +1,5 @@
-import type { ParagraphAlign, RunColor, TextFormat, TextParagraph, TextRun, TextValue } from "./text-value.js"
+import { sameColor, type Color } from "./color.js"
+import type { ParagraphAlign, TextFormat, TextParagraph, TextRun, TextValue } from "./text-value.js"
 import { formatNames, sizeCeiling, sizeDefault, sizeFloor } from "./text-value.js"
 
 export type Caret = { readonly paragraph: number; readonly offset: number }
@@ -6,7 +7,7 @@ export type TextRange = { readonly start: Caret; readonly end: Caret }
 export type FormatState = "on" | "off" | "mixed"
 export type FileFormat = (paragraph: number, run: number, format: TextFormat) => boolean
 export type FileSize = (paragraph: number, run: number) => number | null
-export type FileColor = (paragraph: number, run: number) => RunColor | null
+export type FileColor = (paragraph: number, run: number) => Color | null
 export type FileAlign = (paragraph: number) => ParagraphAlign | null
 export type FileBullet = (paragraph: number) => boolean
 
@@ -15,13 +16,6 @@ type Piece = { readonly run: TextRun; readonly covered: boolean }
 function setFormat(run: TextRun, paragraph: number, format: TextFormat, on: boolean, file: FileFormat): TextRun {
   const { [format]: _dropped, ...rest } = run
   return on === file(paragraph, run.from, format) ? rest : { ...rest, [format]: on }
-}
-
-function sameColor(left: RunColor | null | undefined, right: RunColor | null | undefined): boolean {
-  if (left == null || right == null) return left == null && right == null
-  if ("scheme" in left && "scheme" in right) return left.scheme === right.scheme
-  if ("rgb" in left && "rgb" in right) return left.rgb === right.rgb
-  return false
 }
 
 export function sameFormats(left: TextRun, right: TextRun): boolean {
@@ -165,7 +159,7 @@ function setSize(run: TextRun, paragraphFrom: number, size: number, file: FileSi
   return size === file(paragraphFrom, run.from) ? rest : { ...rest, size }
 }
 
-function setColor(run: TextRun, paragraphFrom: number, color: RunColor, file: FileColor): TextRun {
+function setColor(run: TextRun, paragraphFrom: number, color: Color, file: FileColor): TextRun {
   const { color: _dropped, ...rest } = run
   return sameColor(color, file(paragraphFrom, run.from)) ? rest : { ...rest, color }
 }
@@ -189,11 +183,11 @@ export function sizeState(value: TextValue, range: TextRange | null, file: FileS
   return uniform(sizes, (left, right) => left === right)
 }
 
-export function colorRange(value: TextValue, range: TextRange | null, color: RunColor, file: FileColor): TextValue {
+export function colorRange(value: TextValue, range: TextRange | null, color: Color, file: FileColor): TextValue {
   return applyRuns(value, range, (paragraph, run) => setColor(run, paragraph.from, color, file))
 }
 
-export function colorState(value: TextValue, range: TextRange | null, file: FileColor): RunColor | "mixed" | null {
+export function colorState(value: TextValue, range: TextRange | null, file: FileColor): Color | "mixed" | null {
   const colors = coveredRuns(value, range).map(
     (part) => part.run.color ?? file(part.paragraph.from, part.run.from) ?? null,
   )

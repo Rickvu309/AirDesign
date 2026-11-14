@@ -1,3 +1,4 @@
+import { readColor, writtenColor, type Color } from "./color.js"
 import { record } from "./plain-object.js"
 
 export const formatNames = ["bold", "italic", "underline"] as const
@@ -21,14 +22,13 @@ export const sizeDefault = 1800
 export type TextFormat = (typeof formatNames)[number]
 export type SchemeName = (typeof schemeNames)[number]
 export type ParagraphAlign = (typeof alignNames)[number]
-export type RunColor = { readonly scheme: SchemeName } | { readonly rgb: string }
 export type RunFormat = { readonly [format in TextFormat]?: boolean }
 
 export type TextRun = {
   readonly from: number
   readonly text: string
   readonly size?: number
-  readonly color?: RunColor
+  readonly color?: Color
 } & RunFormat
 export type TextParagraph = {
   readonly from: number
@@ -40,7 +40,6 @@ export type TextValue = readonly TextParagraph[]
 
 const paragraphKeys = new Set<string>(["from", "runs", "align", "bullet"])
 const runKeys = new Set<string>(["from", "text", "size", "color", ...formatNames])
-const schemeSet = new Set<string>(schemeNames)
 
 function named<T extends string>(names: readonly T[], value: string): T | null {
   for (const name of names) if (name === value) return name
@@ -60,22 +59,6 @@ function readSize(value: unknown): number | null | undefined {
   return value
 }
 
-export function readRunColor(value: unknown): RunColor | null | undefined {
-  if (value === undefined) return undefined
-  const color = record(value)
-  if (color === null) return null
-  const keys = Object.keys(color)
-  const scheme =
-    keys.length === 1 && keys[0] === "scheme" && typeof color.scheme === "string"
-      ? named(schemeNames, color.scheme)
-      : null
-  if (scheme !== null && schemeSet.has(scheme)) return { scheme }
-  if (keys.length === 1 && keys[0] === "rgb" && typeof color.rgb === "string" && /^[0-9A-F]{6}$/.test(color.rgb)) {
-    return { rgb: color.rgb }
-  }
-  return null
-}
-
 function readRun(value: unknown): TextRun | null {
   const run = record(value)
   if (run === null || !Object.keys(run).every((key) => runKeys.has(key))) {
@@ -83,7 +66,7 @@ function readRun(value: unknown): TextRun | null {
   }
   const from = integerAtLeast(run.from, -1)
   const size = readSize(run.size)
-  const color = readRunColor(run.color)
+  const color = readColor(run.color)
   if (from === null || typeof run.text !== "string" || size === null || color === null) {
     return null
   }
@@ -151,10 +134,6 @@ export function readParagraphs(parsed: unknown): TextValue | null {
     paragraphs.push(paragraph)
   }
   return paragraphs
-}
-
-function writtenColor(color: RunColor): RunColor {
-  return "scheme" in color ? { scheme: color.scheme } : { rgb: color.rgb }
 }
 
 function writtenRun(run: TextRun): Record<string, unknown> {

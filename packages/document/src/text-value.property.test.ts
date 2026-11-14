@@ -1,11 +1,10 @@
 import fc from "fast-check"
 import { expect, it } from "vitest"
+import { mappedSlots, themeSlots, type Color, type ColorTransform } from "./color.js"
 import {
   readTextValue,
   writeTextValue,
   alignNames,
-  schemeNames,
-  type RunColor,
   type TextParagraph,
   type TextRun,
   type TextValue,
@@ -21,11 +20,26 @@ function kept<T extends Record<string, unknown>>(value: T): T {
 }
 
 function textValue(): fc.Arbitrary<TextValue> {
-  const color: fc.Arbitrary<RunColor | undefined> = fc.option(
-    fc.oneof(
-      fc.constantFrom(...schemeNames).map((scheme) => ({ scheme }) as RunColor),
-      fc.stringMatching(/^[0-9A-F]{6}$/).map((rgb) => ({ rgb }) as RunColor),
-    ),
+  const hex = fc.stringMatching(/^[0-9A-F]{6}$/)
+  const base = fc.oneof(
+    fc.constantFrom(...themeSlots, ...mappedSlots).map((scheme) => ({ scheme })),
+    hex.map((rgb) => ({ rgb })),
+    hex.map((last) => ({ system: "windowText", last })),
+    fc.constantFrom("black", "dkSlateBlue").map((preset) => ({ preset })),
+  )
+  const transform: fc.Arbitrary<ColorTransform> = fc.oneof(
+    fc
+      .constantFrom("lumMod", "lumOff", "satMod", "hueOff", "redOff")
+      .chain((op) => fc.integer({ min: -200_000, max: 200_000 }).map((val) => ({ op, val }))),
+    fc
+      .constantFrom("alpha", "tint", "shade")
+      .chain((op) => fc.integer({ min: 0, max: 100_000 }).map((val) => ({ op, val }))),
+    fc.constantFrom("comp", "inv", "gray", "gamma", "invGamma").map((op) => ({ op })),
+  )
+  const color: fc.Arbitrary<Color | undefined> = fc.option(
+    fc
+      .tuple(base, fc.array(transform, { maxLength: 4 }))
+      .map(([read, transforms]) => (transforms.length === 0 ? read : { ...read, transforms })),
     { nil: undefined },
   )
   const run = fc

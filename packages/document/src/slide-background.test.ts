@@ -53,12 +53,15 @@ describe("slide background", () => {
     expect(decide(removed, edit("300"))).toEqual({ decision: "refuse", code: "dead" })
   })
 
-  it("reads a theme colour, an RGB colour and the file's background from the wire, and nothing else", () => {
+  it("reads a theme colour, an RGB colour, their transforms and the file's background from the wire, and nothing else", () => {
     const read = (color: unknown) => readSlideState({ file, order: [{ slide: "background", id: "256", color }] })
     expect(read(accent)?.order).toEqual([{ slide: "background", id: first, color: accent }])
     expect(read(navy)?.order).toEqual([{ slide: "background", id: first, color: navy }])
     expect(read(null)?.order).toEqual([{ slide: "background", id: first, color: null }])
-    expect(read({ scheme: "hlink" })).toBeUndefined()
+    const darker = { scheme: "hlink", transforms: [{ op: "lumMod", val: 75000 }] }
+    expect(read(darker)?.order).toEqual([{ slide: "background", id: first, color: darker }])
+    expect(read({ scheme: "phClr" })).toBeUndefined()
+    expect(read({ scheme: "accent1", transforms: [] })).toBeUndefined()
     expect(read({ rgb: "0f2433" })).toBeUndefined()
     expect(read({ rgb: "0F2433", scheme: "dk1" })).toBeUndefined()
     expect(read("accent1")).toBeUndefined()

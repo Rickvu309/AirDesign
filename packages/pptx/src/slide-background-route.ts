@@ -1,18 +1,15 @@
-import type { RunColor } from "@airdesign/document"
+import type { Color } from "@airdesign/document"
+import { solidFillXml } from "./color-xml.js"
 import { spliceBytes } from "./element-span.js"
 import { slidePart } from "./package-address.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 
-function colorText(color: RunColor): string {
-  return "scheme" in color ? `<a:schemeClr val="${color.scheme}"/>` : `<a:srgbClr val="${color.rgb}"/>`
+export function backgroundText(color: Color): string {
+  return `<p:bg><p:bgPr>${solidFillXml(color)}<a:effectLst/></p:bgPr></p:bg>`
 }
 
-export function backgroundText(color: RunColor): string {
-  return `<p:bg><p:bgPr><a:solidFill>${colorText(color)}</a:solidFill><a:effectLst/></p:bgPr></p:bg>`
-}
-
-function painted(bytes: Uint8Array, color: RunColor): Uint8Array {
+function painted(bytes: Uint8Array, color: Color): Uint8Array {
   const { elements } = requireMarkup(bytes)
   const root = elements.find((element) => element.parent < 0)
   const body = elements.find((element) => element.kind === "p:cSld" && element.parent === root?.index)
@@ -26,7 +23,7 @@ function painted(bytes: Uint8Array, color: RunColor): Uint8Array {
 export function withBackground(
   parts: ReadonlyMap<string, Uint8Array>,
   slide: string,
-  color: RunColor | null,
+  color: Color | null,
 ): ReadonlyMap<string, Uint8Array> {
   if (color === null) return parts
   const part = slidePart(parts, slide)
