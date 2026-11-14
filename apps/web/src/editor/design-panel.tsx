@@ -1,5 +1,9 @@
+import type { Kind } from "@airdesign/document"
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
+import { designCopy } from "@/copy/design-copy"
+import { controlViews } from "@/design/control-views"
+import type { ControlKind, ControlProps, PanelModel, PanelRow, Swatch as PaletteSwatch } from "@/design/panel"
 import { haldenMist, haldenTeal, swatchMist, swatchNavy, swatchTeal, swatchWhite } from "@/editor/design-panel-art"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
@@ -130,5 +134,73 @@ export function SwatchButton({
       <Chip color={color} edged={edged} />
       <span className="truncate text-[length:var(--type-dense)] text-foreground">{name}</span>
     </Button>
+  )
+}
+
+type Run = { readonly control: ControlKind; readonly rows: readonly PanelRow[] }
+
+const paired: readonly ControlKind[] = ["length", "toggle"]
+
+function runsOf(rows: readonly PanelRow[]): readonly Run[] {
+  const runs: Run[] = []
+  for (const row of rows) {
+    const last = runs.at(-1)
+    if (last !== undefined && last.control === row.control && paired.includes(row.control))
+      runs[runs.length - 1] = { ...last, rows: [...last.rows, row] }
+    else runs.push({ control: row.control, rows: [row] })
+  }
+  return runs
+}
+
+function RowView({ row, palette, onChange }: ControlProps) {
+  const View = controlViews[row.control]
+  return View === undefined ? null : <View row={row} palette={palette} onChange={onChange} />
+}
+
+export function ElementDesign({
+  model,
+  kind,
+  palette,
+  onChange,
+}: {
+  model: PanelModel
+  kind: Kind
+  palette: readonly PaletteSwatch[]
+  onChange: (row: PanelRow, value: unknown) => void
+}) {
+  const last = model.sections.length - 1
+  return (
+    <div
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto outline-none"
+      data-design-panel
+      data-design-element={model.node}
+      data-keeps-selection
+      tabIndex={-1}
+    >
+      <DesignHead>{designCopy.kinds[kind]}</DesignHead>
+      {model.sections.length === 0 ? (
+        <p className="px-4 py-4 text-[length:var(--type-dense)] text-quiet">{designCopy.nothing}</p>
+      ) : null}
+      {model.sections.map((section, at) => (
+        <DesignSection key={section.trait} title={section.label} last={at === last}>
+          {runsOf(section.rows).map((run) => (
+            <div
+              key={run.rows.map((row) => row.field).join(" ")}
+              className={
+                run.control === "length"
+                  ? "grid grid-cols-2 gap-2"
+                  : run.control === "toggle"
+                    ? "grid grid-cols-3 gap-2"
+                    : "flex flex-col"
+              }
+            >
+              {run.rows.map((row) => (
+                <RowView key={row.field} row={row} palette={palette} onChange={(value) => onChange(row, value)} />
+              ))}
+            </div>
+          ))}
+        </DesignSection>
+      ))}
+    </div>
   )
 }

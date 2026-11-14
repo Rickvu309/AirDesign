@@ -1,5 +1,5 @@
 import type { Box, ElementId, StackMove } from "@airdesign/document"
-import { useRef, useState, type FocusEvent, type KeyboardEvent, type PointerEvent } from "react"
+import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent, type PointerEvent } from "react"
 import {
   boxOf,
   draggedBox,
@@ -35,6 +35,7 @@ export type Moves = {
 
 const editableText = '[contenteditable="true"]'
 const slidePaint = "[data-slide-paint]"
+const keepsSelection = "[data-keeps-selection]"
 
 export function canMove(element: CanvasElement): boolean {
   return element.id !== null && element.movable === true && element.box !== null
@@ -87,8 +88,12 @@ export function useMoves(
   onBox: ((id: ElementId, box: Box) => void) | undefined,
   onRemove?: (id: ElementId) => void,
   onOrder?: (id: ElementId, move: StackMove) => void,
+  onSelect?: (id: Selection) => void,
 ): Moves {
   const [selected, setSelected] = useState<Selection>(null)
+  useEffect(() => {
+    onSelect?.(selected)
+  }, [onSelect, selected])
   const [message, setMessage] = useState("")
   const keyed = useRef({ verb: "", label: "" })
   const gesture = useRef<Gesture | null>(null)
@@ -226,6 +231,7 @@ export function useMoves(
       const now = gesture.current
       if (now?.by === "keys") finish(now)
       const next = event.relatedTarget
+      if (next instanceof Element && next.closest(keepsSelection) !== null) return
       if (!(next instanceof Node) || !event.currentTarget.contains(next)) setSelected(null)
     },
     onKeyUp(event: KeyboardEvent<HTMLDivElement>) {

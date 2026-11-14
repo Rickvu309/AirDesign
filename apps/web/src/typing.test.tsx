@@ -156,7 +156,7 @@ async function typingDeck() {
     showRegister: () => (turn.painted = true),
   } as unknown as DeckPaint
   function record(entry: UndoEntry) {
-    if ("node" in entry.undoable && entry.undoable.node === notesNode) count.nRec += 1
+    if ("steps" in entry.undoable && entry.undoable.steps.some((step) => step.node === notesNode)) count.nRec += 1
     else count.tRec += 1
     hooks().undo.record(entry)
   }
@@ -185,7 +185,11 @@ async function typingDeck() {
         record({
           name: "text",
           session,
-          undoable: { node: box, floor: oldText, before: { value: from }, after: { value } },
+          undoable: {
+            steps: [
+              { node: box, before: { text: { value: { set: from } } }, after: { text: { value: { set: value } } } },
+            ],
+          },
         })
         release()
       },
@@ -208,7 +212,8 @@ async function typingDeck() {
       const other = key === "undo" ? "redo" : "undo"
       const moved = read !== null && after[other].length > read[other].length ? after[other].at(-1) : undefined
       turn.done = read === null ? "empty" : moved === undefined ? "told" : key === "undo" ? "undone" : "redone"
-      if (moved !== undefined && "node" in moved.undoable) turn.turned = moved.undoable.node === notesNode ? "N" : "T"
+      const node = moved !== undefined && "steps" in moved.undoable ? moved.undoable.steps[0]?.node : undefined
+      if (node !== undefined) turn.turned = node === notesNode ? "N" : "T"
       turn.over = true
       gate = null
     })
@@ -253,12 +258,14 @@ async function typingDeck() {
   function entries(side: readonly UndoEntry[]): number {
     return side.reduce((digits, entry) => {
       const { undoable } = entry
-      if (!("node" in undoable)) throw new Error("not a text entry")
-      const { before, after } = undoable
-      if (typeof before.value !== "string" || typeof after.value !== "string") throw new Error("not a text entry")
-      const lane: Lane = undoable.node === notesNode ? "N" : "T"
-      if (textIndex(lane, before.value) !== 0) throw new Error(`${lane} entry starts at ${before.value}`)
-      return digits * 10 + textIndex(lane, after.value) + (lane === "N" ? 0 : 2)
+      const [step, ...rest] = "steps" in undoable ? undoable.steps : []
+      if (step === undefined || rest.length > 0) throw new Error("not a text entry")
+      const lane: Lane = step.node === notesNode ? "N" : "T"
+      const before = lane === "N" ? step.before.notes?.value : step.before.text?.value
+      const after = lane === "N" ? step.after.notes?.value : step.after.text?.value
+      if (typeof before !== "object" || typeof after !== "object") throw new Error("not a text entry")
+      if (textIndex(lane, before.set) !== 0) throw new Error(`${lane} entry starts at ${before.set}`)
+      return digits * 10 + textIndex(lane, after.set) + (lane === "N" ? 0 : 2)
     }, 0)
   }
   const steps: Record<string, () => Promise<void> | void> = {

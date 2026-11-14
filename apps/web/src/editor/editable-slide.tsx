@@ -1,12 +1,11 @@
-import { readTableValue, type Box, type ElementId, type StackMove } from "@airdesign/document"
+import { boxPatch, type Box, type ElementId, type StackMove } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
-import type { ReadShape } from "@airdesign/pptx"
-import { SlideCanvas, textValue } from "@airdesign/render"
+import { SlideCanvas } from "@airdesign/render"
 import type { ReactNode } from "react"
 import { ArrangeMenu } from "@/editor/arrange-menu"
 import { commitBox, commitEdit, type CommitOutcome } from "@/commit-edit"
 import { slideListCopy } from "@/copy/slide-list-copy"
-import { valueStorable } from "@/deck-paint"
+import { valueFits } from "@/design/trait-edit"
 import { deviceRegister } from "@/device-copy"
 import { slideFrame } from "@/editor/revenue-slide"
 import type { DeckPaint } from "@/editor/use-deck-paint"
@@ -27,10 +26,11 @@ export type EditableDeck = {
   readonly settle: (outcome: CommitOutcome) => void
   readonly setPending: (pending: boolean) => void
   readonly changeElement: (change: ElementChange) => Promise<CommitOutcome | "closed">
+  readonly select: (id: ElementId | null) => void
 }
 
 export function editableSlide(deck: EditableDeck): (width: number) => ReactNode {
-  const { id, tables, settle, setPending, changeElement } = deck
+  const { id, tables, settle, setPending, changeElement, select } = deck
   const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount } = deck.shown
   const { typed, sessions, records, formatting, record } = deck.undo
 
@@ -43,11 +43,6 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
   function onEdit(target: ElementId, value: string, name: UndoName = "text") {
     const release = records.current.hold()
     return editText(target, value, name, release).finally(release)
-  }
-
-  function storable(shape: ReadShape, value: string): boolean {
-    if (shape.contentKind === "table") return readTableValue(value) !== null
-    return valueStorable(editParts.current, shape, textValue(value))
   }
 
   async function editText(
@@ -69,7 +64,7 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
       showText(store.current, target, shownValue(await deviceRegister(id), target, file))
     }
     const shape = shapes.current.get(target)
-    if (shape === undefined || !storable(shape, value)) {
+    if (shape === undefined || !valueFits(editParts.current, shape, value)) {
       await refused()
       return "refused"
     }
@@ -82,10 +77,19 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
       async () => {
         const before = await started
         setPending(true)
+        const holder = shape?.contentKind === "table" ? "table" : "text"
         record({
           name,
           session,
-          undoable: { node: target, floor: file, before: { value: before }, after: { value } },
+          undoable: {
+            steps: [
+              {
+                node: target,
+                before: { [holder]: { value: { set: before } } },
+                after: { [holder]: { value: { set: value } } },
+              },
+            ],
+          },
         })
         release()
       },
@@ -117,15 +121,7 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
         setPending(true)
         const name = before === null ? null : boxName(before, box)
         if (before === null || name === null) return
-        record({
-          name,
-          undoable: {
-            node: target,
-            floor: element.file,
-            before: { property: "box", value: before },
-            after: { property: "box", value: box },
-          },
-        })
+        record({ name, undoable: { steps: [{ node: target, before: boxPatch(before), after: boxPatch(box) }] } })
       },
       refused,
     )
@@ -163,6 +159,7 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
               void holding(target, () => onBox(target, box))
             }}
             onOrder={order}
+            onSelect={select}
             onRemove={(target) => {
               clear()
               void holding(target, () => changeElement({ change: "remove", node: target }))

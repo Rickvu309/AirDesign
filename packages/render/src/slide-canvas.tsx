@@ -40,6 +40,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onBox?: (id: ElementId, box: Box) => void
   readonly onRemove?: (id: ElementId) => void
   readonly onOrder?: (id: ElementId, move: StackMove) => void
+  readonly onSelect?: (id: ElementId | null) => void
   readonly notice?: string
   readonly onTable?: (id: ElementId, change: TableChange) => void
   readonly tableBar?: TableBar
@@ -53,7 +54,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   useLayoutEffect(() => {
     ensureBulletRule(document)
   }, [])
-  const moves = useMoves(props.store, slide, width, props.onBox, props.onRemove, props.onOrder)
+  const moves = useMoves(props.store, slide, width, props.onBox, props.onRemove, props.onOrder, props.onSelect)
   const moving = props.onBox === undefined ? null : moves
   const selected = moving === null ? undefined : slide.elements.find((each) => each.id === moving.selected)
   const surface = useRef<HTMLDivElement>(null)

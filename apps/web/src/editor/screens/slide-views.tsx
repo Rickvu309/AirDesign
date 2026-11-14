@@ -1,6 +1,7 @@
 import { EditorToast } from "@/editor/agent-panel"
 import { productCopy } from "@/copy/product-copy"
 import { galleryDeck } from "@/editor/gallery-deck"
+import { DesignElementArt } from "@/editor/design-element-art"
 import { EditorView } from "@/editor/screens/editor-view"
 
 export function AgentWorking() {
@@ -25,6 +26,10 @@ export function TemplatePickerScreen() {
 
 export function DesignPanelScreen() {
   return <EditorView {...galleryDeck} run="done" panel="design" />
+}
+
+export function DesignElementScreen() {
+  return <EditorView {...galleryDeck} run="done" panel="design" designed={<DesignElementArt />} />
 }
 
 export function ImagesScreen() {

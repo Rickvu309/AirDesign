@@ -110,7 +110,7 @@ describe("foldSections over any slide command log", () => {
           const after = applied(register, edit)
           const undone = undoOf(after, undoable)
           if (!undone.ok) throw new Error("undo")
-          const back = decide(after, undone.command)
+          const back = decide(after, undone.commands[0]!)
           if (back.decision !== "apply") throw new Error(back.code)
           expect(sectioned(back.register, base)).toEqual(before)
           register = after
@@ -136,7 +136,7 @@ it("puts a moved slide back in its own section when a person undoes the move", (
   const moved = applied(opened, move)
   const undone = undoOf(moved, undoable)
   if (!undone.ok) throw new Error("undo")
-  const back = decide(moved, undone.command)
+  const back = decide(moved, undone.commands[0]!)
   if (back.decision !== "apply") throw new Error(back.code)
   expect(sectioned(back.register, base)).toEqual(sectioned(opened, base))
 })

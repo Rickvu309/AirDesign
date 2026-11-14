@@ -57,6 +57,7 @@ export {
   openRegister,
   refusals,
   shownPatch,
+  valueHolder,
   version,
   type Command,
   type Decision,
@@ -72,9 +73,20 @@ export {
 export { coordinates, readBox, type Box } from "./box.js"
 export { placeNewBox } from "./box-placement.js"
 export { storedValue, valueBytes, type FormatOneValue, type Value } from "./value.js"
-export { namedFields, planChange, registerScope, type AddChange, type SetChange, type Target } from "./change.js"
+export {
+  namedFields,
+  planChange,
+  registerScope,
+  type AddChange,
+  type Scope,
+  type ScopedElement,
+  type SetChange,
+  type Target,
+} from "./change.js"
 export {
   beforeOf,
+  boxPatch,
+  formatOne,
   netPatch,
   readRow,
   rowOf,
@@ -181,16 +193,7 @@ export {
 } from "./text-format.js"
 export { slidesKept } from "./slide-kept.js"
 export { backgroundOf } from "./slide-background.js"
-export {
-  redoOf,
-  redoSteps,
-  slideUndoable,
-  undoOf,
-  undoSlides,
-  undoSteps,
-  type NodeStep,
-  type Undoable,
-} from "./person-undo.js"
+export { redoOf, slideUndoable, undoOf, undoSlides, type NodeStep, type Undoable } from "./person-undo.js"
 export type {
   Fill,
   ResolvedElement,

@@ -97,9 +97,10 @@ function turned(current: Deck, source: Spec, action: string): Answer {
     after: added,
   }
   const turn = action === "Undo" ? undoOf(current.register, undoable) : redoOf(current.register, undoable)
-  if (!turn.ok) return "told"
-  if (turn.command.command !== "slide") throw new Error("slide")
-  const batch = [{ ...turn.command.edit, file: turn.command.file }]
+  const [command] = turn.ok ? turn.commands : []
+  if (command === undefined) return "told"
+  if (command.command !== "slide") throw new Error("slide")
+  const batch = [{ ...command.edit, file: command.file }]
   return call("commit_edits", current, person, { deck, batch })
 }
 

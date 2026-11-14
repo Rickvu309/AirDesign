@@ -155,6 +155,10 @@ function plainObject(raw: unknown): raw is Readonly<Record<string, unknown>> {
   return typeof raw === "object" && raw !== null && !Array.isArray(raw)
 }
 
+export function agentNumberOf(unit: NumberUnit, stored: number): number {
+  return tenths(stored / agentScale[unit])
+}
+
 function agentRange(desc: NumberDesc): { readonly type: string; readonly minimum: number; readonly maximum: number } {
   const factor = agentScale[desc.unit]
   const low = desc.unit === "emu" ? Math.max(desc.min, -powerPointWidestSlide) : desc.min

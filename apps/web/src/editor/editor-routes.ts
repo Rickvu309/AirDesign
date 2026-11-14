@@ -15,6 +15,7 @@ export const editorRoutes = {
   text: "/screens/s43-06-editor-tools-text",
   actions: "/screens/s43-07-editor-tools-actions",
   textFormat: "/screens/s43-08-editor-tools-text-format",
+  designElement: "/screens/s43-09-editor-tools-design-element",
   runFailed: "/screens/s49-01-editor-errors-agent-run-failed",
   offline: "/screens/s49-02-editor-errors-offline",
   setAside: "/screens/s49-03-editor-errors-edits-set-aside",

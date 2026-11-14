@@ -32,6 +32,7 @@ export function useDeckPaint(
   const painted = useRef<Painted | null>(null)
   const busy = useRef(busyElements())
   const structure = useRef("")
+  const shownRegister = useRef<Register | null>(null)
   const repaint = useRef<(register: Register, from?: "person") => void>(() => undefined)
   const [entering, setEntering] = useState<Entering | null>(null)
   const [slideCount, setSlideCount] = useState(0)
@@ -59,6 +60,7 @@ export function useDeckPaint(
     pictures.current?.release()
     pictures.current = next.pictures
     structure.current = structureOf(register)
+    shownRegister.current = register
     repaint.current = liveRepaint(store.current, next.files, register, busy.current)
     notesBar.show(notesShown(shownParts.current, register))
     setSlideCount(next.count)
@@ -82,6 +84,7 @@ export function useDeckPaint(
     movables,
     shapes,
     shownParts,
+    shownRegister,
     editParts,
     canvases,
     pictures,

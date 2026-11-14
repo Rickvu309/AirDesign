@@ -108,8 +108,8 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     if (!next.ok) return
     if ("slide" in undoable || structure.current !== structureOf(next.register)) showRegister(next.register)
     repaint.current(next.register, "person")
-    if ("node" in undoable && undoable.node.endsWith(".notes"))
-      notesBar.show(notesShown(shownParts.current, next.register))
+    const nodes = "steps" in undoable ? undoable.steps.map((step) => step.node) : []
+    if (nodes.some((node) => node.endsWith(".notes"))) notesBar.show(notesShown(shownParts.current, next.register))
     const slides = store.current.slides()
     const after = slideId === null ? -1 : slides.findIndex((slide) => slide.id === slideId)
     const said = slideTurnSaid(direction, entry.name, { before, after, count: slides.length, held })
@@ -117,7 +117,7 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     const shownSlide =
       "slide" in undoable
         ? slides.findIndex((slide) => slide.id === undoable.slide)
-        : slides.findIndex((slide) => undoable.node.startsWith(`${slide.id}.`))
+        : slides.findIndex((slide) => nodes.some((node) => node.startsWith(`${slide.id}.`)))
     setCurrent((index) => (shownSlide >= 0 ? shownSlide : Math.max(0, Math.min(index, slides.length - 1))))
     setPending(true)
   }

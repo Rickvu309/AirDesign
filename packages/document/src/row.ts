@@ -2,7 +2,7 @@ import type { Box } from "./box.js"
 import { format, type StoredRead } from "./format.js"
 import { onlyKeys, record } from "./plain-object.js"
 import { traitNames, traits, type FieldKey, type FieldName, type FieldValue, type TraitName } from "./traits.js"
-import type { Value } from "./value.js"
+import type { FormatOneValue, Value } from "./value.js"
 import { readValue, type AnyKind } from "./value-kind.js"
 
 export type FieldEdit<V> = { readonly set: V } | "inherit" | "opening"
@@ -26,7 +26,7 @@ function heldPatch(holder: ValueHolder, value: string): ElementPatch {
   return { text: edit }
 }
 
-function boxPatch(box: Box): ElementPatch {
+export function boxPatch(box: Box): ElementPatch {
   return { box: { x: { set: box.x }, y: { set: box.y }, w: { set: box.cx }, h: { set: box.cy } } }
 }
 
@@ -168,8 +168,8 @@ function boxOf(patch: ElementPatch): Box | null {
     : { x: box.x, y: box.y, cx: box.cx, cy: box.cy }
 }
 
-export function formatOne(patch: ElementPatch, holder: ValueHolder): readonly Value[] | null {
-  const values: Value[] = []
+export function formatOne(patch: ElementPatch, holder: ValueHolder): readonly FormatOneValue[] | null {
+  const values: FormatOneValue[] = []
   const value = setOf(patch[holder]?.value)
   if (value !== undefined) values.push({ value })
   const box = boxOf(patch)
