@@ -1,4 +1,4 @@
-import { expect, test, type Locator } from "@playwright/test"
+import { expect, test, type Locator, type Route } from "@playwright/test"
 import { designing, openDeck, pendingValues, settled } from "./design-panel"
 import { holdableDevice } from "./slow-device"
 
@@ -54,4 +54,30 @@ test("toggles clicked one after another on a slow device all land, each its own 
   await expect.poll(() => looks(run)).toEqual(["700", "italic", "underline"])
   await page.getByRole("button", { name: "Undo text format", exact: true }).click()
   await expect.poll(() => looks(run)).toEqual(["700", "italic", "none"])
+})
+
+test("toggles, undos and redos clicked while the server has not answered each paint before it answers", async ({
+  page,
+}) => {
+  await openDeck(page, "clean.pptx")
+  const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
+  const panel = await designing(page, editor)
+  const run = editor.locator("[data-run]").first()
+  const held: Route[] = []
+  await page.route(/\/decks\/(open|commit)$/, (route) => {
+    held.push(route)
+  })
+  await panel.getByRole("button", { name: "Bold", exact: true }).click()
+  await expect.poll(() => looks(run)).toEqual(["700", "normal", "none"])
+  await panel.getByRole("button", { name: "Italic", exact: true }).click()
+  await expect.poll(() => looks(run)).toEqual(["700", "italic", "none"])
+  await page.getByRole("button", { name: "Undo text format", exact: true }).click()
+  await page.getByRole("button", { name: "Undo text format", exact: true }).click()
+  await expect.poll(() => looks(run)).toEqual(["400", "normal", "none"])
+  await page.getByRole("button", { name: "Redo text format", exact: true }).click()
+  await page.getByRole("button", { name: "Redo text format", exact: true }).click()
+  await expect.poll(() => looks(run)).toEqual(["700", "italic", "none"])
+  expect(held.length).toBeGreaterThan(0)
+  for (const route of held.splice(0)) await route.continue()
+  await page.unroute(/\/decks\/(open|commit)$/)
 })

@@ -9,8 +9,9 @@ import {
   type SetChange,
   type TraitReads,
 } from "@airdesign/document"
+import { connect } from "@airdesign/live"
 import { readSlides, readTraits, shownFill, shownLine, themeSwatches, type DeckTraits } from "@airdesign/pptx"
-import type { CommitOutcome } from "@/commit-edit"
+import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
 import { formatCopy } from "@/copy/format-copy"
@@ -96,9 +97,12 @@ function changingDeck(deck: DesigningDeck): ChangingDeck {
 
 function changed(deck: DesigningDeck, change: SetChange) {
   deck.undo.turnAfter(async () => {
-    const outcome = await applyChange(changingDeck(deck), change)
-    if (outcome === "refused") toast.error(designCopy.refused)
-    deck.settle(outcome)
+    if (await applyChange(changingDeck(deck), change)) {
+      void flushPending(connect, deck.id).then(deck.settle)
+      return
+    }
+    toast.error(designCopy.refused)
+    deck.settle("refused")
   })
 }
 
