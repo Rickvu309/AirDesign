@@ -1,4 +1,6 @@
 export const tableCopy = {
+  section: "Table",
+  cells: "Cells",
   rows: "Table rows",
   columns: "Table columns",
   rowAbove: "Add row above",

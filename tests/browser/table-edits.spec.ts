@@ -1,7 +1,8 @@
-import { readFile } from "node:fs/promises"
+import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { tableExportName } from "../../scripts/pptx-cases/trait-table.mjs"
 import { exportFromDialog } from "./export-dialog"
 import { newBlankDeck } from "./new-deck"
 
@@ -14,6 +15,7 @@ type ZipLibrary = {
 }
 
 const zip = createRequire(join(process.cwd(), "packages/pptx/package.json"))("@zip.js/zip.js") as ZipLibrary
+const judged = join(process.cwd(), "tests/browser", tableExportName)
 
 async function slideXml(file: string): Promise<string> {
   const reader = new zip.ZipReader(new zip.Uint8ArrayReader(new Uint8Array(await readFile(file))))
@@ -59,9 +61,10 @@ async function storedTable(page: Page, rows: number, text: string): Promise<void
   )
 }
 
-test("inserts a table, types in two cells, adds and deletes a row, and it all survives a reload, the export and a new import", async ({
+test("inserts a table, types in two cells, adds and deletes a row, and it all survives a reload, the export and a new import @export", async ({
   page,
 }, testInfo) => {
+  await rm(judged, { force: true })
   await page.goto("/")
   await newBlankDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
@@ -116,6 +119,7 @@ test("inserts a table, types in two cells, adds and deletes a row, and it all su
   const frame = xml.match(/<p:graphicFrame>.*?<a:ext cx="\d+" cy="(\d+)"\/>/)?.[1]
   expect(Number(frame)).toBe(heights.reduce((sum, height) => sum + height, 0))
   expect(xml.match(/<a:tc>/g)).toHaveLength(9)
+  await copyFile(file, judged)
   await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(file)
   await settled(page)

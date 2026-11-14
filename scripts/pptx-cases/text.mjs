@@ -6,6 +6,7 @@ const text = "Hello!"
 export default {
   specs: ["tests/browser/thin-deck.spec.ts"],
   exports: [textExportName],
+  covers: ["text.value"],
   cases: [
     {
       name: "browser-text-export",

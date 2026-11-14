@@ -53,12 +53,6 @@ const seedList = (known) => write("scripts/pptx-fixtures/judge-seeds.json", JSON
 seedList([])
 write("scripts/pptx-fixtures/a.pptx", "x".repeat(100_000))
 write("scripts/pptx-fixtures/b.pptx", "x")
-write(
-  "packages/document/dist/index.js",
-  `export const properties = { shape: { box: { route: "xfrm" }, text: { route: "txBody" } }, kept: { box: { route: "xfrm" } } }
-export const structure = { deck: {}, shape: { create: { route: "spTree.add" } } }
-`,
-)
 write("packages/pptx/dist/index.js", 'export const writtenRoutes = { text: "txBody", move: "xfrm", resize: "xfrm" }\n')
 record(1)
 execFileSync("git", ["init", "-q"], { cwd: root })
@@ -97,7 +91,7 @@ if (steady.rows.find((row) => row.name === "ci-duration")?.limit !== 40)
 
 const capabilities = steady.rows.find((row) => row.name === "export-coverage")
 if (capabilities?.now !== 2 || capabilities.goal !== 3)
-  throw new Error(`distinct routes were not counted: ${JSON.stringify(capabilities)}`)
+  throw new Error(`distinct routes were not counted against the recorded goal: ${JSON.stringify(capabilities)}`)
 
 const planted = steady.rows.find((row) => row.name === "fault-detection")
 if (planted?.now !== 1 || planted.goal !== 2)
@@ -167,13 +161,15 @@ write(
   JSON.stringify({
     "known-failures": { now: 0, goal: 0 },
     "export-coverage": { now: 1, goal: 4 },
+    "fault-detection": { now: 1, goal: 3 },
     "nobody measures": { now: 1, goal: 0 },
     "nobody times": { limit: 5 },
   }),
 )
 const loose = (await readMetrics(root)).drift.join("\n")
 if (!loose.includes("export-coverage is 2 and metrics.json says 1. Record 2 in metrics.json.")) throw new Error(loose)
-if (!loose.includes("export-coverage has goal 3 and metrics.json says 4. Record goal 3 in metrics.json."))
+if (loose.includes("export-coverage has goal")) throw new Error(loose)
+if (!loose.includes("fault-detection has goal 2 and metrics.json says 3. Record goal 2 in metrics.json."))
   throw new Error(loose)
 if (!loose.includes("nobody times has a limit in metrics.json and no runner times it.")) throw new Error(loose)
 if (!loose.includes("ci-duration is timed by scripts/check.mjs and has no limit in metrics.json."))

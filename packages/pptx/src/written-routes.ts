@@ -1,5 +1,3 @@
-import { type ExportRoute, type StructuralRoute } from "@airdesign/document"
-
 export const writtenRoutes = {
   fill: "spPr.fill",
   text: "txBody",
@@ -21,4 +19,4 @@ export const writtenRoutes = {
   removeRow: "tbl.removeRow",
   orderRow: "tbl.orderRow",
   columns: "tblGrid",
-} as const satisfies Record<string, ExportRoute | StructuralRoute>
+} as const

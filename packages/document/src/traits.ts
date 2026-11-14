@@ -1,4 +1,4 @@
-import type { Kind } from "./properties.js"
+import type { Kind } from "./kinds.js"
 import { body } from "./trait-body.js"
 import { box } from "./trait-box.js"
 import { connection } from "./trait-connection.js"
@@ -12,7 +12,7 @@ import { line } from "./trait-line.js"
 import { notes } from "./trait-notes.js"
 import { table } from "./trait-table.js"
 import { text } from "./trait-text.js"
-import type { Alpha, ValueOf } from "./value-kind.js"
+import type { AgentOf, Alpha, ValueOf } from "./value-kind.js"
 
 export const traits = {
   identity,
@@ -46,6 +46,9 @@ export type AlphaField<T extends TraitName> = {
 export type HasAlpha = { [T in TraitName]: AlphaField<T> }[TraitName] extends never ? false : true
 
 export type WireField<T extends TraitName> = Exclude<FieldName<T>, AlphaField<T>> | InputName<T>
+
+export type WireAgent<T extends TraitName, F extends WireField<T>> =
+  F extends FieldName<T> ? AgentOf<FieldKinds<T>[F]> : F extends InputName<T> ? AgentOf<InputKinds<T>[F]> : never
 
 export const traitNames = Object.keys(traits) as readonly TraitName[]
 

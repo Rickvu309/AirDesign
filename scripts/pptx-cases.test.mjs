@@ -26,6 +26,7 @@ assert.deepEqual(
     "slides.mjs",
     "text-format.mjs",
     "text.mjs",
+    "trait-table.mjs",
   ],
 )
 for (const spec of caseSpecs(entries)) assert.ok(fs.existsSync(path.join(root, spec)), `${spec} is not a spec file`)
@@ -49,6 +50,9 @@ assert.match(caseProblems("a.mjs", { ...good, exports: undefined })[0], /needs e
 assert.match(caseProblems("a.mjs", { ...good, lines: undefined })[0], /needs lines/)
 assert.match(caseProblems("a.mjs", { ...good, cases: {} })[0], /cases that is not a list/)
 assert.match(caseProblems("a.mjs", { ...good, renders: "exported-box.pptx" })[0], /renders that is not a list/)
+assert.deepEqual(caseProblems("a.mjs", { ...good, covers: ["box.x", "table.value"] }), [])
+assert.match(caseProblems("a.mjs", { ...good, covers: "box.x" })[0], /covers that is not a list of trait fields/)
+assert.match(caseProblems("a.mjs", { ...good, covers: ["box"] })[0], /covers that is not a list of trait fields/)
 
 const folders = []
 process.on("exit", () => {

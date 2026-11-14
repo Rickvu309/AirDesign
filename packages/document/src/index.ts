@@ -84,9 +84,20 @@ export {
   type TraitPatch,
 } from "./row.js"
 export { boxOnly, indexFacts, removable, takes } from "./element-takes.js"
-export { kindTraits, type FieldKey, type FieldName, type FieldValue, type TraitName } from "./traits.js"
-export { kinds, properties, type ExportRoute, type Kind } from "./properties.js"
-export { structure, type StructuralRoute } from "./structure.js"
+export {
+  kindTraits,
+  traitNames,
+  traits,
+  type FieldKey,
+  type FieldName,
+  type FieldValue,
+  type TraitName,
+  type WireAgent,
+  type WireField,
+} from "./traits.js"
+export type { Desc } from "./value-kind.js"
+export { kinds, type Kind } from "./kinds.js"
+export { structure } from "./structure.js"
 export { foldSections, type FileSection } from "./section-order.js"
 export { floorFor, floorNodes, newSlideElement, openingElement } from "./slide-floor.js"
 export { slideMeasure } from "./slide-measure.js"
