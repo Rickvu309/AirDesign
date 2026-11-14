@@ -117,6 +117,80 @@ it("extends the same gradient through the path rather than filling its box", asy
   expect(host.querySelector("foreignObject")).toBeNull()
 })
 
+const stops = [
+  { position: 0, color: "red" },
+  { position: 1, color: "blue" },
+]
+
+function pathGradient(
+  kind: "circle" | "rect" | "shape",
+  focus: Record<"left" | "top" | "right" | "bottom", number> | null,
+  preset = "rect",
+) {
+  return canvas([
+    { ...shape, geometry: { preset, adjusts: {}, gradient: { angle: null, stops, path: { kind, focus } } } },
+  ])
+}
+
+const centre = { left: 0.5, top: 0.5, right: 0.5, bottom: 0.5 }
+
+function sides(host: HTMLElement) {
+  return [...host.querySelectorAll("pattern polygon")].map((polygon) => {
+    const fill = polygon.getAttribute("fill") ?? ""
+    const gradient = host.querySelector(`[id="${fill.slice(5, -1)}"]`)
+    return {
+      points: polygon.getAttribute("points"),
+      from: [gradient?.getAttribute("x1"), gradient?.getAttribute("y1")],
+      to: [gradient?.getAttribute("x2"), gradient?.getAttribute("y2")],
+    }
+  })
+}
+
+it("paints a rect path gradient as four sides that grow from the focus to the box edge", async () => {
+  const host = await pathGradient("rect", centre)
+  expect(host.querySelector("radialGradient")).toBeNull()
+  expect(sides(host)).toEqual([
+    { points: "0,0 400,0 200,100 200,100", from: ["0", "100"], to: ["0", "0"] },
+    { points: "400,0 400,200 200,100 200,100", from: ["200", "0"], to: ["400", "0"] },
+    { points: "0,200 400,200 200,100 200,100", from: ["0", "100"], to: ["0", "200"] },
+    { points: "0,0 0,200 200,100 200,100", from: ["200", "0"], to: ["0", "0"] },
+  ])
+})
+
+it("fills a rectangle with a rect path gradient instead of a CSS background", async () => {
+  const host = await pathGradient("rect", centre)
+  expect(host.querySelector("rect")?.getAttribute("fill")).toBe(`url(#${host.querySelector("pattern")?.id})`)
+  expect(host.innerHTML).not.toContain("linear-gradient")
+})
+
+it("fills the path of a preset shape with a rect path gradient", async () => {
+  const host = await pathGradient("rect", centre, "rightArrow")
+  const fill = host.querySelector("[data-canvas-path] g > path")?.getAttribute("fill")
+  expect(fill).toBe(`url(#${host.querySelector("pattern")?.id})`)
+})
+
+it("starts a rect path gradient at its corner focus and splits the box along the diagonal", async () => {
+  const host = await pathGradient("rect", { left: 0, top: 0, right: 1, bottom: 1 })
+  expect(sides(host)).toEqual([
+    { points: "400,0 400,200 0,0 0,0", from: ["0", "0"], to: ["400", "0"] },
+    { points: "0,200 400,200 0,0 0,0", from: ["0", "0"], to: ["0", "200"] },
+  ])
+})
+
+it("paints a rect path gradient without a focus from the centre", async () => {
+  expect(sides(await pathGradient("rect", null))).toEqual(sides(await pathGradient("rect", centre)))
+})
+
+it("paints a shape path gradient as a rect path gradient", async () => {
+  expect(sides(await pathGradient("shape", centre))).toEqual(sides(await pathGradient("rect", centre)))
+})
+
+it("keeps a circle path gradient radial", async () => {
+  const host = await pathGradient("circle", centre)
+  expect(host.querySelector("radialGradient")).not.toBeNull()
+  expect(host.querySelector("pattern")).toBeNull()
+})
+
 it.each(["triangle", "stealth", "diamond", "oval", "arrow"] as const)(
   "paints %s at the start and end without dashing the markers",
   async (kind) => {

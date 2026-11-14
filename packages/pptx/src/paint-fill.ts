@@ -1,5 +1,5 @@
 import type { MarkupElement } from "./element-span.js"
-import { paintAttribute, paintColor, type PaintFill, type PaintPalette } from "./paint-color.js"
+import { paintAttribute, paintColor, type PaintFill, type PaintGradientPath, type PaintPalette } from "./paint-color.js"
 import type { MarkupChildren } from "./text-value-route.js"
 import { paintImage, type PaintPicture } from "./paint-image.js"
 
@@ -9,6 +9,23 @@ export const paintChild = (
   kind: string,
 ): MarkupElement | undefined =>
   parent === undefined ? undefined : children[parent.index]?.find((element) => element.kind === kind)
+
+const percentage = (value: string | null): number | null =>
+  value === null ? 0 : /^\d+$/.test(value) && Number(value) <= 100000 ? Number(value) / 100000 : null
+
+const paintGradientPath = (children: MarkupChildren, path: MarkupElement): PaintGradientPath | undefined => {
+  const kind = paintAttribute(path, "path")
+  if (kind !== "circle" && kind !== "rect" && kind !== "shape") return undefined
+  const rect = paintChild(children, path, "a:fillToRect")
+  if (rect === undefined) return { kind, focus: null }
+  const left = percentage(paintAttribute(rect, "l"))
+  const top = percentage(paintAttribute(rect, "t"))
+  const right = percentage(paintAttribute(rect, "r"))
+  const bottom = percentage(paintAttribute(rect, "b"))
+  return left === null || top === null || right === null || bottom === null
+    ? undefined
+    : { kind, focus: { left, top, right, bottom } }
+}
 
 export const paintFill = (
   holder: MarkupElement,
@@ -57,5 +74,8 @@ export const paintFill = (
   const linear = paintChild(children, fill, "a:lin")
   const angle = linear === undefined ? null : paintAttribute(linear, "ang")
   if (linear !== undefined && (angle === null || !/^\d+$/.test(angle) || Number(angle) >= 21600000)) return null
-  return { type: "gradient", stops, angle: angle === null ? null : Number(angle) / 60000 }
+  const shade = paintChild(children, fill, "a:path")
+  const path = shade === undefined ? null : (paintGradientPath(children, shade) ?? null)
+  if (shade !== undefined && path === null) return null
+  return { type: "gradient", stops, angle: angle === null ? null : Number(angle) / 60000, path }
 }

@@ -84,7 +84,7 @@ it.each<[string, PaintFill | null, boolean]>([
   ["no fill", { type: "none" }, false],
   ["a clear solid", { type: "solid", color: clear }, false],
   ["a solid", { type: "solid", color: seen }, true],
-  ["a clear gradient", { type: "gradient", stops: [{ position: 0, color: clear }], angle: 0 }, false],
+  ["a clear gradient", { type: "gradient", stops: [{ position: 0, color: clear }], angle: 0, path: null }, false],
   [
     "a gradient",
     {
@@ -94,6 +94,7 @@ it.each<[string, PaintFill | null, boolean]>([
         { position: 1, color: seen },
       ],
       angle: 0,
+      path: null,
     },
     true,
   ],
@@ -241,12 +242,18 @@ it.each<[string, PaintFill, string | null]>([
         { position: 1, color: { hex: "FFFFFF", alpha: 1 } },
       ],
       angle: 45,
+      path: null,
     },
     `linear-gradient(135deg, ${css("000000")} 0%, ${css("FFFFFF")} 100%)`,
   ],
   [
     "a path gradient",
-    { type: "gradient", stops: [{ position: 0.5, color: { hex: "123456", alpha: 1 } }], angle: null },
+    {
+      type: "gradient",
+      stops: [{ position: 0.5, color: { hex: "123456", alpha: 1 } }],
+      angle: null,
+      path: { kind: "circle", focus: null },
+    },
     `radial-gradient(${css("123456")} 50%)`,
   ],
   [
@@ -319,6 +326,22 @@ it("carries a line's colour, width and dash apart from the fill", () => {
 
 it("paints no line when the line has no fill", () => {
   expect(painted({ line: { ...line, fill: { type: "none" } } }).line).toBeNull()
+})
+
+it.each<[string, readonly number[] | null]>([
+  ["solid", null],
+  ["dot", [1, 3]],
+  ["dash", [4, 3]],
+  ["lgDash", [8, 3]],
+  ["dashDot", [4, 3, 1, 3]],
+  ["lgDashDot", [8, 3, 1, 3]],
+  ["lgDashDotDot", [8, 3, 1, 3, 1, 3]],
+  ["sysDash", [3, 1]],
+  ["sysDot", [1, 1]],
+  ["sysDashDot", [3, 1, 1, 1]],
+  ["sysDashDotDot", [3, 1, 1, 1, 1, 1]],
+])("gives a %s line the dash PowerPoint draws, in line widths", (dash, expected) => {
+  expect(painted({ line: { ...line, dash } }).line?.dash ?? null).toEqual(expected)
 })
 
 it("draws a solid line with no dash", () => {

@@ -5,7 +5,7 @@ import { useBox, useElement } from "./element-view.js"
 import { paragraphText, textValue } from "./paragraph-edit.js"
 import { framedOutline, Passage } from "./passage.js"
 import type { CanvasElement, CanvasText, PaintBox } from "./record.js"
-import { ShapeArt, shapePaths } from "./shape-art.js"
+import { paintsFillAsSvg, ShapeArt } from "./shape-art.js"
 import { SheetText } from "./sheet-text.js"
 import { DiagramArt } from "./diagram-art.js"
 import { ChartArt } from "./chart-art.js"
@@ -118,7 +118,7 @@ export function elementFrame(
     ...placement(element.box, scaled),
     ...rounding(element, scaled),
     pointerEvents: pointer ? "auto" : "none",
-    ...(background === null || shapePaths(element, scaled) !== null ? {} : { background }),
+    ...(background === null || paintsFillAsSvg(element, scaled) ? {} : { background }),
   }
 }
 
