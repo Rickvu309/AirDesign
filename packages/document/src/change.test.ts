@@ -28,6 +28,7 @@ const elements: readonly IndexElement[] = [
   { node: elementId("258.4"), kind: "picture", value: null, box, grouped: false, role: "picture" },
   { node: elementId("258.5"), kind: "shape", value: "", box, grouped: true },
   { ...shape("258.6", undefined, ""), kept: ["text.color"] },
+  { ...shape("258.7", undefined, null), kept: ["fill"] },
   shape("259.2", "title", ""),
   { node: elementId("259.3"), kind: "table", value: "{}", box, grouped: false, role: "table" },
 ]
@@ -174,6 +175,30 @@ describe("planChange refuses the whole change and names every element it cannot 
     expect(plan({ target: { node: elementId("258.6") }, text: { color: { scheme: "accent2" } } })).toEqual({
       ok: false,
       refusals: [{ node: "258.6", trait: "text", code: "kept" }],
+    })
+  })
+
+  it("fills a shape whose picture fill it keeps, since a fill replaces the whole slot", () => {
+    const solid = { solid: { scheme: "accent2" } } as const
+    expect(plan({ target: { node: elementId("258.7") }, fill: { value: solid } })).toEqual({
+      ok: true,
+      rows: [{ node: "258.7", row: { v: format, patch: { fill: { value: { set: solid } } } } }],
+    })
+  })
+
+  it("writes null on a field that inherits as a way back to the inherited value, and refuses it elsewhere", () => {
+    expect(plan({ target: { role: "title", slide: "every" }, fill: { value: null } })).toEqual({
+      ok: true,
+      rows: [
+        { node: "258.2", row: { v: format, patch: { fill: { value: "inherit" } } } },
+        { node: "259.2", row: { v: format, patch: { fill: { value: "inherit" } } } },
+      ],
+    })
+    const boxed = { target: { node: elementId("258.3") }, box: { x: null } } as unknown as SetChange
+    expect(plan(boxed)).toEqual({ ok: false, refusals: [{ node: "258.3", trait: "box", code: "kind" }] })
+    expect(plan({ target: { node: elementId("258.4") }, fill: { value: { none: true } } })).toEqual({
+      ok: false,
+      refusals: [{ node: "258.4", trait: "fill", code: "kind" }],
     })
   })
 

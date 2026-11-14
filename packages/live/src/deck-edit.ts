@@ -9,8 +9,8 @@ import {
   type NodeRegister,
   type Register,
   type SlideCommand,
-  type FormatOneValue,
   type SlideId,
+  type Value,
 } from "@airdesign/document"
 import { joinable } from "./deck-view.js"
 import type { Change, Held } from "./held.js"
@@ -28,15 +28,16 @@ function refused<Result>(result: Result): Change<Result> {
   return { puts: [], result }
 }
 
-function joins(held: Held, edit: FormatOneValue, node: ElementId): PendingRow | undefined {
+function joins(held: Held, edit: Value, node: ElementId): PendingRow | undefined {
   const last = held.pending.at(-1)
   if (!joinable(last) || held.before === undefined || last.node !== node) return undefined
+  if (edit.v !== undefined || last.v !== undefined) return undefined
   return (last.property === "box") === (edit.property === "box") ? last : undefined
 }
 
 function edited(
   register: Register,
-  edit: FormatOneValue,
+  edit: Value,
   node: ElementId,
   floor: string,
 ): { ok: true; readonly editing: Register; readonly after: Register; readonly added: boolean } | Enqueued {
@@ -54,13 +55,7 @@ function edited(
   return { ok: true, editing, after: decision.register, added }
 }
 
-export function valueChange(
-  deck: DeckId,
-  held: Held,
-  edit: FormatOneValue,
-  node: ElementId,
-  floor: string,
-): Change<Enqueued> {
+export function valueChange(deck: DeckId, held: Held, edit: Value, node: ElementId, floor: string): Change<Enqueued> {
   const joined = joins(held, edit, node)
   if (joined !== undefined && held.before !== undefined) {
     const made = edited(held.before, edit, node, joined.floor ?? floor)

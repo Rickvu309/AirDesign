@@ -1,14 +1,45 @@
+import type { FieldEdit } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { markupDocument } from "./element-span.js"
+import { fillKinds } from "./color-read.js"
+import { markupDocument, type MarkupElement } from "./element-span.js"
+import { shownFill, type Fill } from "./fill-read.js"
+import { readPackage } from "./index.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import { applyRoute, type ShapeFill } from "./slide-route.js"
+import { routeRuns } from "./route-parts.js"
+import { fillMarkup } from "./trait-xml-fill.js"
+import { writeTrait } from "./trait-xml.js"
+
+type Parts = ReadonlyMap<string, Uint8Array>
 
 const part = "ppt/slides/slide1.xml"
 const rels = "ppt/slides/_rels/slide1.xml.rels"
-const solid = '<a:solidFill><a:srgbClr val="19a7E8"/></a:solidFill>'
+const blue: Fill = { solid: { rgb: "19A7E8" } }
+const solid = '<a:solidFill><a:srgbClr val="19A7E8"/></a:solidFill>'
 const beforeGeometry = '<a:xfrm/><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
 const afterGeometry = "<a:ln><a:noFill/></a:ln><a:effectLst/><a:scene3d/><a:sp3d/><a:extLst/>"
 const style = '<p:style><a:fillRef idx="2"><a:schemeClr val="accent2"/></a:fillRef></p:style>'
+const gradient: Fill = {
+  gradient: {
+    stops: [
+      { pos: 0, color: { scheme: "accent1" } },
+      { pos: 100_000, color: { scheme: "accent1", transforms: [{ op: "lumMod", val: 50_000 }] } },
+    ],
+    shade: { linear: { angle: 5_400_000, scaled: true } },
+    rotateWithShape: true,
+  },
+}
+const radial: Fill = {
+  gradient: {
+    stops: [
+      { pos: 0, color: { rgb: "FFFFFF" } },
+      { pos: 40_000, color: { scheme: "bg1" } },
+      { pos: 100_000, color: { rgb: "000000" } },
+    ],
+    shade: { path: { kind: "circle", focus: { l: 50_000, t: 50_000, r: 50_000, b: 50_000 } } },
+    rotateWithShape: false,
+  },
+}
+const pattern: Fill = { pattern: { preset: "dkDnDiag", fg: { scheme: "accent2" }, bg: { scheme: "bg1" } } }
 
 function slide(properties: string, kind = "p:sp", extra = ""): string {
   return `<?xml version="1.0"?><p:sld><p:cSld><p:spTree><${kind}><p:nvSpPr><p:cNvPr id="2" name="日本語 &amp; café"/></p:nvSpPr>${properties}${style}${extra}</${kind}><p:sp><p:cNvPr id="3"/><p:spPr><a:gradFill/></p:spPr></p:sp></p:spTree></p:cSld></p:sld>`
@@ -22,34 +53,51 @@ function parts(xml: string, name = part): Map<string, Uint8Array> {
   ])
 }
 
-function write(xml: string, value: ShapeFill = { kind: "srgb", value: "19a7E8" }, name = part): string {
+function edit(xml: string, value: FieldEdit<Fill>, name = part): string {
   const before = parts(xml, name)
   const snapshot = new Map([...before].map(([name, bytes]) => [name, bytes.slice()]))
-  const next = applyRoute(before, { name: "spPr.fill", part: name, shape: "2", value })
+  const next = writeTrait(before, { slide: "256", part: name, shape: "2" }, "fill", { value })
   expect(before).toEqual(snapshot)
-  for (const [other, bytes] of before) {
-    if (other !== name) expect(next.get(other)).toBe(bytes)
-  }
+  for (const [other, bytes] of before) if (other !== name) expect(next.get(other)).toBe(bytes)
   const bytes = next.get(name)
   if (bytes === undefined) throw new Error("part")
   expect(markupDocument(bytes).wellFormed).toBe(true)
   return decodeUtf8(bytes)
 }
 
-function refuses(xml: string, error: string, value: ShapeFill = { kind: "none" }) {
-  const before = parts(xml)
-  const snapshot = new Map([...before].map(([name, bytes]) => [name, bytes.slice()]))
-  expect(() => applyRoute(before, { name: "spPr.fill", part, shape: "2", value })).toThrow(error)
-  expect(before).toEqual(snapshot)
+function write(xml: string, value: Fill = blue, name = part): string {
+  return edit(xml, { set: value }, name)
 }
 
-describe("spPr.fill", () => {
-  it.each(["", beforeGeometry, "<a:custGeom/>"])("inserts absent fill in schema order after %s", (geometry) => {
+function refuses(xml: string, error: string) {
+  const before = parts(xml)
+  expect(() => writeTrait(before, { slide: "256", part, shape: "2" }, "fill", { value: { set: blue } })).toThrow(error)
+}
+
+function cut(bytes: Uint8Array, element: MarkupElement | undefined): string {
+  if (element === undefined) return decodeUtf8(bytes)
+  return decodeUtf8(bytes.subarray(0, element.start)) + decodeUtf8(bytes.subarray(element.end))
+}
+
+declare const process: {
+  cwd(): string
+  getBuiltinModule(name: "node:fs"): { readFileSync(path: string): Uint8Array }
+}
+
+async function deck(name: string): Promise<Parts> {
+  const fs = process.getBuiltinModule("node:fs")
+  const read = await readPackage(fs.readFileSync(`${process.cwd()}/scripts/pptx-fixtures/${name}`))
+  if (!read.ok) throw new Error(read.reason)
+  return read.parts
+}
+
+describe("the fill codec writes the shape's one fill choice", () => {
+  it.each(["", beforeGeometry, "<a:custGeom/>"])("inserts an absent fill in schema order after %s", (geometry) => {
     const xml = slide(`<p:spPr bwMode='auto'>${geometry} \n${afterGeometry}</p:spPr>`)
     expect(write(xml)).toBe(xml.replace(`${geometry} \n`, `${geometry}${solid} \n`))
   })
 
-  it("expands self-closing properties without losing attributes or inherited style", () => {
+  it("expands self-closing properties without losing attributes or the style", () => {
     const xml = slide("<p:spPr bwMode='auto' />")
     expect(write(xml)).toBe(xml.replace("<p:spPr bwMode='auto' />", `<p:spPr bwMode='auto' >${solid}</p:spPr>`))
   })
@@ -57,70 +105,58 @@ describe("spPr.fill", () => {
   it.each([
     "<a:noFill/>",
     '<a:solidFill><a:schemeClr val="accent1"><a:lumMod val="50000"/><a:alpha val="75000"/></a:schemeClr></a:solidFill>',
-    '<a:solidFill><a:srgbClr val="FFFFFF"><a:alpha val="50000"/></a:srgbClr></a:solidFill>',
     '<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:srgbClr val="FFFFFF"/></a:gs></a:gsLst><a:lin ang="0"/></a:gradFill>',
     '<a:pattFill prst="pct5"><a:fgClr><a:srgbClr val="FFFFFF"/></a:fgClr></a:pattFill>',
     "<a:grpFill/>",
-  ])("replaces the entire fill and only its bytes: %s", (fill) => {
+    '<a:blipFill><a:blip r:embed="rId2"/><a:stretch/></a:blipFill>',
+  ])("replaces the whole fill and only its bytes: %s", (fill) => {
     const xml = slide(`<p:spPr>${beforeGeometry}\n${fill}\r\n${afterGeometry}</p:spPr>`)
     expect(write(xml)).toBe(xml.replace(fill, solid))
-    const none = write(xml, { kind: "none" })
-    expect(none).toBe(xml.replace(fill, "<a:noFill/>"))
+    expect(write(xml, { none: true })).toBe(xml.replace(fill, "<a:noFill/>"))
   })
 
   it.each([
-    "dk1",
-    "lt1",
-    "dk2",
-    "lt2",
-    "accent1",
-    "accent2",
-    "accent3",
-    "accent4",
-    "accent5",
-    "accent6",
-    "hlink",
-    "folHlink",
-    "bg1",
-    "tx1",
-    "bg2",
-    "tx2",
-  ])("sets theme color %s", (value) => {
-    const xml = slide("<p:spPr></p:spPr>")
-    expect(write(xml, { kind: "theme", value })).toBe(
-      xml.replace("</p:spPr>", `<a:solidFill><a:schemeClr val="${value}"/></a:solidFill></p:spPr>`),
-    )
+    [{ none: true }, "<a:noFill/>"],
+    [{ group: true }, "<a:grpFill/>"],
+    [
+      { solid: { scheme: "accent1", transforms: [{ op: "lumMod", val: 75_000 }] } },
+      '<a:solidFill><a:schemeClr val="accent1"><a:lumMod val="75000"/></a:schemeClr></a:solidFill>',
+    ],
+    [
+      gradient,
+      '<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="accent1"/></a:gs><a:gs pos="100000"><a:schemeClr val="accent1"><a:lumMod val="50000"/></a:schemeClr></a:gs></a:gsLst><a:lin ang="5400000" scaled="1"/></a:gradFill>',
+    ],
+    [
+      radial,
+      '<a:gradFill rotWithShape="0"><a:gsLst><a:gs pos="0"><a:srgbClr val="FFFFFF"/></a:gs><a:gs pos="40000"><a:schemeClr val="bg1"/></a:gs><a:gs pos="100000"><a:srgbClr val="000000"/></a:gs></a:gsLst><a:path path="circle"><a:fillToRect l="50000" t="50000" r="50000" b="50000"/></a:path></a:gradFill>',
+    ],
+    [
+      pattern,
+      '<a:pattFill prst="dkDnDiag"><a:fgClr><a:schemeClr val="accent2"/></a:fgClr><a:bgClr><a:schemeClr val="bg1"/></a:bgClr></a:pattFill>',
+    ],
+  ] as const)("writes %j as DrawingML and reads it back", (value, xml) => {
+    expect(fillMarkup(value).xml).toBe(xml)
+    const written = slide(`<p:spPr>${beforeGeometry}${xml}</p:spPr>`)
+    const picture = '<a:blipFill><a:blip r:embed="rId2"/></a:blipFill>'
+    expect(write(slide(`<p:spPr>${beforeGeometry}${picture}</p:spPr>`), value)).toBe(written)
+    expect(shownFill(parts(written), { part, shape: "2" })).toEqual({ value, own: true })
+    expect(write(written, value)).toBe(written)
   })
 
-  it("inserts no fill without an existing fill", () => {
-    const xml = slide(`<p:spPr>${beforeGeometry}${afterGeometry}</p:spPr>`)
-    expect(write(xml, { kind: "none" })).toBe(xml.replace(afterGeometry, `<a:noFill/>${afterGeometry}`))
+  it("goes back to the inherited fill by removing only the shape's own fill", () => {
+    const fill = '<a:gradFill rotWithShape="1"><a:gsLst/></a:gradFill>'
+    const xml = slide(`<p:spPr>${beforeGeometry}${fill}${afterGeometry}</p:spPr>`)
+    expect(edit(xml, "inherit")).toBe(xml.replace(fill, ""))
+    const bare = slide(`<p:spPr>${beforeGeometry}</p:spPr>`)
+    expect(edit(bare, "inherit")).toBe(bare)
+    expect(edit(xml, "opening")).toBe(xml)
   })
 
   it.each(["p:pic", "p:grpSp", "p:graphicFrame", "p:cxnSp"])("refuses %s without writing", (kind) => {
     refuses(slide("<p:spPr/>", kind), "fill-shape")
   })
 
-  it.each(["", '<p:pic><p:cNvPr id="4"/><p:blipFill><a:blip r:embed="rId2"/></p:blipFill></p:pic>'])(
-    "refuses picture fills whether their relationship is shared: %s",
-    (extra) => {
-      refuses(
-        slide('<p:spPr><a:blipFill><a:blip r:embed="rId2"/><a:stretch/></a:blipFill></p:spPr>', "p:sp", extra),
-        "fill-relationship",
-      )
-    },
-  )
-
-  it.each([
-    { kind: "srgb", value: "FFF" },
-    { kind: "srgb", value: '000000"/><a:noFill/>' },
-    { kind: "theme", value: "unknown" },
-    { kind: "theme", value: "phClr" },
-  ] as const)("refuses invalid colors without writing: %s", (value) => {
-    refuses(slide("<p:spPr/>"), "fill-color", value)
-  })
-
-  it("refuses missing, duplicate properties and multiple fill choices", () => {
+  it("refuses missing, duplicate properties and two fill choices", () => {
     refuses(slide(""), "fill-properties")
     refuses(slide("<p:spPr/><p:spPr/>"), "fill-properties")
     refuses(slide("<p:spPr><a:noFill/><a:solidFill/></p:spPr>"), "fill-choice")
@@ -137,15 +173,63 @@ describe("spPr.fill", () => {
     ["ppt/slideMasters/slideMaster1.xml", "p:sldMaster"],
   ])("sets the fill of a shape on %s", (name, root) => {
     const xml = slide("<p:spPr><a:noFill/></p:spPr>").replace("<p:sld>", `<${root}>`).replace("</p:sld>", `</${root}>`)
-    expect(write(xml, { kind: "srgb", value: "19a7E8" }, name)).toBe(xml.replace("<a:noFill/>", solid))
+    expect(write(xml, blue, name)).toBe(xml.replace("<a:noFill/>", solid))
+  })
+})
+
+describe("the fill a shape shows", () => {
+  it("reads a fill from the shape's style with the reference's colour in place of phClr, and writes nothing equal", async () => {
+    const shapes = await deck("shapes-added.pptx")
+    const at = { slide: "256", part, shape: "4" }
+    expect(shownFill(shapes, at)).toEqual({ value: { solid: { scheme: "accent1" } }, own: false })
+    expect(writeTrait(shapes, at, "fill", { value: { set: { solid: { scheme: "accent1" } } } })).toBe(shapes)
+    const filled = writeTrait(shapes, at, "fill", { value: { set: blue } })
+    expect(shownFill(filled, at)).toEqual({ value: blue, own: true })
+    expect(decodeUtf8(filled.get(part)!)).toContain(`<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${solid}</p:spPr>`)
+    expect(writeTrait(filled, at, "fill", { value: "inherit" }).get(part)).toEqual(shapes.get(part))
   })
 
-  it("sets a shape fill in a part with a table cell fill and leaves the cell fill as written", () => {
-    const cell = '<a:tcPr marL="0"><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill></a:tcPr>'
-    const frame = `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="5" name="Table"/></p:nvGraphicFramePr><a:graphic><a:graphicData><a:tbl><a:tr h="1"><a:tc><a:txBody><a:bodyPr/><a:p/></a:txBody>${cell}</a:tc></a:tr></a:tbl></a:graphicData></a:graphic></p:graphicFrame>`
-    const xml = slide("<p:spPr><a:noFill/></p:spPr>").replace("<p:spTree>", `<p:spTree>${frame}`)
-    const written = write(xml)
-    expect(written).toBe(xml.replace("<a:noFill/>", solid))
-    expect(written).toContain(cell)
+  it("reads a reference into the theme's background fills, and no fill for index 0", async () => {
+    const shapes = await deck("shapes-added.pptx")
+    const at = { slide: "256", part, shape: "4" }
+    const referred = (index: string) => {
+      const slide = decodeUtf8(shapes.get(part)!).replace('<a:fillRef idx="1">', `<a:fillRef idx="${index}">`)
+      return new Map([...shapes, [part, encodeUtf8(slide)]])
+    }
+    expect(shownFill(referred("1001"), at)).toEqual({ value: { solid: { scheme: "accent1" } }, own: false })
+    expect(shownFill(referred("1009"), at)).toEqual({ value: null, own: false })
+    expect(shownFill(referred("0"), at)).toEqual({ value: { none: true }, own: false })
   })
+
+  it("reads a fill the types cannot hold as no value, so a person replaces it whole", () => {
+    const picture = slide('<p:spPr><a:blipFill><a:blip r:embed="rId2"/></a:blipFill></p:spPr>')
+    expect(shownFill(parts(picture), { part, shape: "2" })).toEqual({ value: null, own: true })
+    const one = slide(
+      '<p:spPr><a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="FFFFFF"/></a:gs></a:gsLst></a:gradFill></p:spPr>',
+    )
+    expect(shownFill(parts(one), { part, shape: "2" })).toEqual({ value: null, own: true })
+    expect(shownFill(parts(picture), { part, shape: "9" })).toBeNull()
+  })
+
+  it.each(["clean.pptx", "shapes-added.pptx", "nasa-1d-cnn.pptx", "census-updating-spm.pptx", "doe-heat-pumps.pptx"])(
+    "changes only one shape's fill in %s when the route run fills a shape",
+    async (name) => {
+      const opened = await deck(name)
+      const run = routeRuns(opened).find((each) => each.operation === "spPr.fill")
+      if (run?.parts == null) throw new Error(run?.error ?? "no fill run")
+      const changed = [...opened].filter(([key, bytes]) => run.parts?.get(key) !== bytes)
+      expect(changed.length).toBe(1)
+      const [[key, old] = ["", new Uint8Array()]] = changed
+      const next = run.parts.get(key) ?? new Uint8Array()
+      const { elements } = markupDocument(next)
+      const color = elements.find(
+        (item) => item.kind === "a:srgbClr" && item.attributes.some((a) => a.value === "19A7E8"),
+      )
+      const fill = elements.find((item) => item.index === color?.parent) as MarkupElement
+      const spPr = elements.find((item) => item.index === fill.parent)
+      expect([fill.kind, spPr?.kind]).toEqual(["a:solidFill", "p:spPr"])
+      const before = markupDocument(old).elements.find((item) => item.start === fill.start && fillKinds.has(item.kind))
+      expect(cut(next, fill)).toBe(cut(old, before))
+    },
+  )
 })

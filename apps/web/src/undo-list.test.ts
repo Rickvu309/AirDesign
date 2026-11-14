@@ -2,6 +2,7 @@ import {
   boxPatch,
   decide,
   elementId,
+  format,
   openRegister,
   presentSlides,
   slideId,
@@ -35,6 +36,11 @@ function deckLink(start: Register) {
     async enqueueBox(_deck, box, target) {
       sent.push(`box ${box.x}`)
       register = landed(register, { command: "person", property: "box", value: box, node: target })
+      return { ok: true }
+    },
+    async enqueueRow(_deck, row, target) {
+      sent.push(`row ${JSON.stringify(row.patch)}`)
+      register = landed(register, { command: "person", ...row, node: target })
       return { ok: true }
     },
     async enqueueSlide(_deck, known, edit) {
@@ -94,6 +100,20 @@ describe("undo list", () => {
     expect(turned.outcome).toBe("turned")
     expect(deck.sent).toEqual(["text Old", "text Old"])
     expect(undoLabel("redo", turned.list)).toBe("Redo text format")
+  })
+
+  it("sends a fill step through the row queue, back to the opening fill and forward again", async () => {
+    const after = { fill: { value: { set: { solid: { scheme: "accent2" as const } } } } }
+    const deck = deckLink(landed(edited(), { command: "person", v: format, patch: after, node }))
+    const fill = {
+      name: "fill",
+      undoable: { steps: [{ node, before: { fill: { value: "opening" } }, after }] },
+    } as const
+    const undone = await turnBack(deck.link, "deck", recorded(emptyUndo, fill), "undo")
+    expect(undone.outcome).toBe("turned")
+    await turnBack(deck.link, "deck", undone.list, "redo")
+    expect(deck.sent).toEqual([`row {"fill":{"value":"opening"}}`, `row ${JSON.stringify(after)}`])
+    expect(undoLabel("undo", recorded(emptyUndo, fill))).toBe("Undo fill")
   })
 
   it("has nothing to undo on an empty list", async () => {

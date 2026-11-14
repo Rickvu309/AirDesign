@@ -17,6 +17,7 @@ import { format } from "./format.js"
 import { bytesOf, limits } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
 import { kinds, type Kind } from "./kinds.js"
+import type { ElementPatch } from "./row.js"
 
 export type SlideSize = { readonly width: number; readonly height: number }
 export type IndexSlide = {
@@ -37,6 +38,7 @@ export type IndexElement = {
   readonly role?: Role
   readonly design?: Design
   readonly kept?: readonly DesignKey[]
+  readonly opening?: ElementPatch
 }
 export type IndexPage = {
   readonly format?: number

@@ -20,9 +20,11 @@ export type PartCodec<V> = {
   readonly write: (parts: Parts, at: ElementAt, value: V) => Parts
 }
 
+export type Inherit = (parts: Parts, at: ElementAt) => Parts
+
 export type FieldXml<V> =
   | { readonly at: "inner"; readonly tag: string; readonly name: string; readonly codec: AttributeCodec<V> }
-  | { readonly at: "whole"; readonly codec: PartCodec<V> }
+  | { readonly at: "whole"; readonly codec: PartCodec<V>; readonly inherit: Inherit | null }
 
 export type SlotXml = "transform"
 
@@ -35,8 +37,8 @@ export function inner<V>(tag: string, name: string, codec: AttributeCodec<V>): F
   return { at: "inner", tag, name, codec }
 }
 
-export function whole<V>(codec: PartCodec<V>): FieldXml<V> {
-  return { at: "whole", codec }
+export function whole<V>(codec: PartCodec<V>, inherit: Inherit | null = null): FieldXml<V> {
+  return { at: "whole", codec, inherit }
 }
 
 export const emu: AttributeCodec<number> = {
@@ -54,8 +56,15 @@ type InnerWrite = {
   readonly shows: (text: string | null) => boolean
 }
 
+function sorted(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sorted)
+  if (typeof value !== "object" || value === null) return value
+  const entries = Object.entries(value).sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+  return Object.fromEntries(entries.map(([key, item]) => [key, sorted(item)]))
+}
+
 function same(left: unknown, right: unknown): boolean {
-  return left === right || JSON.stringify(left) === JSON.stringify(right)
+  return left === right || JSON.stringify(sorted(left)) === JSON.stringify(sorted(right))
 }
 
 function withPart(parts: Parts, part: string, bytes: Uint8Array): Parts {
@@ -182,8 +191,10 @@ export function writeFields<T extends TraitName>(
   for (const [name, field] of fields) {
     const edit = edits[name]
     if (edit === undefined || edit === "opening") continue
-    if (edit === "inherit") throw new Error("inherit")
-    if (field.at === "inner") writes.push(innerWrite(field, edit.set))
+    if (edit === "inherit") {
+      if (field.at === "inner" || field.inherit === null) throw new Error("inherit")
+      next = field.inherit(next, at)
+    } else if (field.at === "inner") writes.push(innerWrite(field, edit.set))
     else if (!same(field.codec.read(next, at), edit.set)) next = field.codec.write(next, at, edit.set)
   }
   return writes.length === 0 ? next : writeSlot(next, at, xml.slot, writes, order)

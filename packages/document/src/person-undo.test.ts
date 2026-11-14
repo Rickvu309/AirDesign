@@ -401,11 +401,6 @@ describe("person undo per trait field", () => {
     expect(undoOf(changed, { steps: [step(other), step(node)] })).toEqual({ ok: false })
   })
 
-  it("turns nothing back that the rows of format 1 cannot store", () => {
-    const opening = { node, before: { text: { value: "opening" as const } }, after: step(node).after }
-    expect(undoOf(both(), { steps: [opening] })).toEqual({ ok: false })
-  })
-
   it("turns a move and a text edit of one element back in one step", () => {
     const moved = landed(landed(opened(), { command: "person", value: "New", node }), {
       command: "person",

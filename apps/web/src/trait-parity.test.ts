@@ -1,7 +1,9 @@
 import { readAgent, readSetChange, traitWire } from "@airdesign/catalog"
 import {
   decide,
+  format,
   formatOne,
+  inheritable,
   openRegister,
   planChange,
   registerScope,
@@ -18,13 +20,23 @@ import {
   type FieldName,
   type FieldValue,
   type IndexElement,
+  type InheritableField,
   type Kind,
   type Register,
   type TextValue,
   type TraitName,
   type Value,
 } from "@airdesign/document"
-import { exportParts, indexPackage, paintReader, readNotes, readPackage, readSlides, readTable } from "@airdesign/pptx"
+import {
+  exportParts,
+  indexPackage,
+  paintReader,
+  readNotes,
+  readPackage,
+  readSlides,
+  readTable,
+  shownFill,
+} from "@airdesign/pptx"
 import { beforeAll, describe, expect, it } from "vitest"
 import { optionCopy } from "./copy/option-copy"
 import { panelOf } from "./design/panel"
@@ -38,7 +50,7 @@ type At = { readonly node: IndexElement["node"]; readonly slide: string; readonl
 type FieldProbe<T extends TraitName, F extends FieldName<T>> = {
   readonly file: (parts: Parts, at: At) => unknown
   readonly shows: (value: FieldValue<T, F>) => unknown
-}
+} & (F extends InheritableField<T> ? { readonly inherited: (parts: Parts, at: At) => boolean } : unknown)
 
 type Probe<T extends TraitName> = [FieldName<T>] extends [never]
   ? { readonly fields: Readonly<Record<never, never>> }
@@ -50,7 +62,7 @@ type Probe<T extends TraitName> = [FieldName<T>] extends [never]
       readonly fields: { readonly [F in FieldName<T>]-?: FieldProbe<T, F> }
     }
 
-type Layer = "change" | "wire" | "control" | "round-trip" | "paint-change" | "undo" | "pptx-case"
+type Layer = "change" | "wire" | "control" | "round-trip" | "paint-change" | "undo" | "inherit" | "pptx-case"
 
 type Problem = { readonly field: string; readonly missing: Layer } | { readonly word: string; readonly missing: "copy" }
 
@@ -77,7 +89,19 @@ function grid(parts: Parts, at: At): readonly (readonly string[])[] | undefined 
 const probes: { readonly [T in TraitName]: Probe<T> } = {
   identity: { fields: {} },
   geometry: { fields: {} },
-  fill: { fields: {} },
+  fill: {
+    deck: "clean.pptx",
+    kind: "shape",
+    opening: () => ({ v: format, patch: { fill: { value: "opening" } } }),
+    edit: (_, __, value) => ({ v: format, patch: { fill: { value: { set: value } } } }),
+    fields: {
+      value: {
+        file: (parts, at) => shownFill(parts, at)?.value,
+        shows: (value) => value,
+        inherited: (parts, at) => shownFill(parts, at)?.own === false,
+      },
+    },
+  },
   line: { fields: {} },
   effects: { fields: {} },
   body: { fields: {} },
@@ -147,7 +171,7 @@ function optionWords(desc: Desc): readonly string[] {
     case "union":
       return Object.entries(desc.cases).flatMap(([name, item]) => [name, ...optionWords(item)])
     case "record":
-      return Object.values(desc.fields).flatMap(optionWords)
+      return Object.entries(desc.fields).flatMap(([name, item]) => [name, ...optionWords(item)])
     case "list":
     case "named":
       return optionWords(desc.item)
@@ -211,7 +235,7 @@ function panelRegister(register: Register, at: At, trait: TraitName, field: stri
   if (planned === null || !planned.ok) return null
   const holder = valueHolder(register, at.node, "person")
   const commands = planned.rows.flatMap(({ node, row: planned }): Command[] =>
-    (formatOne(planned.patch, holder) ?? []).map((each) => ({ command: "person", node, ...each })),
+    (formatOne(planned.patch, holder) ?? [planned]).map((each) => ({ command: "person", node, ...each })),
   )
   const opened = landed(register, [{ command: "add", node: at.node, floor: "", route: "clean" }])
   return commands.length === 0 || opened === null ? null : landed(opened, commands)
@@ -240,7 +264,14 @@ type Loose = {
   readonly opening: (parts: Parts, at: At) => Value
   readonly edit: (opening: Value, field: string, value: unknown) => Value
   readonly fields: Readonly<
-    Record<string, { file: (parts: Parts, at: At) => unknown; shows: (value: unknown) => unknown }>
+    Record<
+      string,
+      {
+        file: (parts: Parts, at: At) => unknown
+        shows: (value: unknown) => unknown
+        inherited?: (parts: Parts, at: At) => boolean
+      }
+    >
   >
 }
 
@@ -249,7 +280,10 @@ type LooseWire = {
   readonly fields: Readonly<Record<string, { readonly description: string; readonly example: unknown }>>
 }
 
-type LooseControls = { readonly section: string; readonly fields: Readonly<Record<string, { readonly label: string }>> }
+type LooseControls = {
+  readonly section: string
+  readonly fields: Readonly<Record<string, { readonly label: string; readonly reset?: string }>>
+}
 
 async function fieldProblems(
   trait: TraitName,
@@ -283,11 +317,17 @@ async function fieldProblems(
   if (probe.kind !== "slide" && painted(exported, at) === painted(parts, at)) {
     problems.push({ field: key, missing: "paint-change" })
   }
-  const holder = trait === "box" ? "text" : (trait as "text" | "notes" | "table")
+  const holder = trait === "notes" || trait === "table" ? trait : "text"
   const step = { node: at.node, before: rowOf(opening, holder).patch, after: rowOf(edit, holder).patch }
   const turn = person === null ? null : undoOf(person, { steps: [step] })
   const undone = person === null || turn === null || !turn.ok ? null : landed(person, turn.commands)
   if (undone === null || !sameParts(exportParts(parts, undone), parts)) problems.push({ field: key, missing: "undo" })
+  if (inheritable(trait, field)) {
+    const reset = panelRegister(indexed(parts), at, trait, field, null)
+    const back = reset === null ? parts : exportParts(parts, reset)
+    if (shape?.inherited === undefined || !shape.inherited(back, at) || shape.inherited(parts, at))
+      problems.push({ field: key, missing: "inherit" })
+  }
   if (!cases.some((each) => each.covers?.includes(key))) problems.push({ field: key, missing: "pptx-case" })
   return problems
 }
@@ -327,6 +367,7 @@ function copyProblems(trait: TraitName, controls: Partial<LooseControls>, wire: 
     [`${trait} description`, wire.description],
     ...fields.flatMap(([field, kind]) => [
       [`${trait}.${field} label`, controls.fields?.[field]?.label],
+      ...(inheritable(trait, field) ? [[`${trait}.${field} reset`, controls.fields?.[field]?.reset]] : []),
       [`${trait}.${field} description`, wire.fields?.[field]?.description],
       ...optionWords(kind.desc).map((word) => [`option ${word}`, optionCopy[word]]),
     ]),

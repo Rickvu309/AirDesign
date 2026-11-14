@@ -10,12 +10,15 @@ import { floorNodes, openingElement } from "./slide-floor.js"
 import { presentSlides, slideGone } from "./slide-order.js"
 import { readTextValue, writeTextValue, type TextValue } from "./text-value.js"
 import {
+  inheritable,
+  keptRefuses,
   traitNames,
   traits,
   type AlphaField,
   type FieldKey,
   type FieldName,
   type FieldValue,
+  type InheritableField,
   type InputKinds,
   type InputName,
   type TraitName,
@@ -25,7 +28,9 @@ import type { ValueOf } from "./value-kind.js"
 export type Target = { readonly node: ElementId } | { readonly role: Role; readonly slide: SlideId | "every" }
 
 export type TraitInput<T extends TraitName> = {
-  readonly [F in Exclude<FieldName<T>, AlphaField<T>>]?: FieldValue<T, F>
+  readonly [F in Exclude<FieldName<T>, AlphaField<T>>]?:
+    | FieldValue<T, F>
+    | (F extends InheritableField<T> ? null : never)
 } & { readonly [I in InputName<T>]?: ValueOf<InputKinds<T>[I]> }
 
 export type TraitInputs = { readonly [T in TraitName]?: TraitInput<T> }
@@ -92,10 +97,10 @@ export function namedFields(change: TraitInputs): readonly FieldKey[] {
 
 function refusalOf(view: ScopedElement, trait: TraitName, input: Loose): PlanRefusal | null {
   const taken = takes(view.facts)
-  if (Object.keys(input).some((key) => !taken.includes(written(trait, key))))
+  const unset = Object.entries(input).some(([key, value]) => value === null && !inheritable(trait, key))
+  if (unset || Object.keys(input).some((key) => !taken.includes(written(trait, key))))
     return view.facts.grouped && trait === "box" ? "group-box" : "kind"
-  const kept = view.kept as readonly string[]
-  return kept.includes(trait) || Object.keys(input).some((key) => kept.includes(`${trait}.${key}`)) ? "kept" : null
+  return Object.keys(input).some((key) => keptRefuses(view.kept, trait, key)) ? "kept" : null
 }
 
 function shownText(value: string): TextValue {
@@ -127,7 +132,8 @@ function wholeBox(box: Box | null): Loose {
 function traitPatch(trait: TraitName, input: Loose, view: ScopedElement): Readonly<Record<string, FieldEdit<unknown>>> {
   const fields = trait === "box" ? { ...wholeBox(view.box), ...input } : input
   const edits: Record<string, FieldEdit<unknown>> = {}
-  for (const [key, value] of Object.entries(fields)) if (!inputOf(trait, key)) edits[key] = { set: value }
+  for (const [key, value] of Object.entries(fields))
+    if (!inputOf(trait, key)) edits[key] = value === null ? "inherit" : { set: value }
   if (!Object.keys(input).some((key) => inputOf(trait, key))) return edits
   const base = typeof input.value === "string" ? input.value : (view.value ?? "")
   return { ...edits, value: { set: restyled(base, input) } }

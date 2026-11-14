@@ -1,0 +1,64 @@
+import { useId } from "react"
+import { Button } from "@/components/ui/button"
+import { designCopy } from "@/copy/design-copy"
+import { partRow, type ControlProps } from "@/design/panel"
+
+const quiet =
+  "h-6 px-1.5 text-[length:var(--type-caption)] font-normal text-quiet hover:text-foreground active:translate-y-0"
+
+export function ListControl({ row, palette, onChange, inner }: ControlProps) {
+  const label = useId()
+  const desc = row.desc.kind === "list" ? row.desc : null
+  const items: readonly unknown[] = Array.isArray(row.value) ? row.value : []
+  if (desc === null) return null
+  return (
+    <div className="flex flex-col gap-2" data-control="list">
+      <span id={label} className="text-[length:var(--type-caption)] text-quiet">
+        {row.label}
+      </span>
+      <ol aria-labelledby={label} className="flex flex-col gap-2">
+        {items.map((item, at) => (
+          <li
+            key={at}
+            className="flex flex-col gap-2 rounded-lg bg-white p-2 shadow-[0px_0px_0px_1px_var(--field-edge)]"
+          >
+            <div className="flex min-h-6 items-center justify-between gap-2">
+              <span className="text-[length:var(--type-caption)] font-medium text-foreground">
+                {designCopy.stop(at + 1)}
+              </span>
+              {items.length > desc.min ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={quiet}
+                  aria-label={designCopy.removeStop(at + 1)}
+                  onClick={() => onChange(items.filter((_, each) => each !== at))}
+                >
+                  {designCopy.remove}
+                </Button>
+              ) : null}
+            </div>
+            {inner?.({
+              row: { ...partRow(row, String(at), desc.item, item), label: designCopy.stop(at + 1) },
+              palette,
+              onChange: (next) => onChange(items.map((each, place) => (place === at ? next : each))),
+              inner,
+            })}
+          </li>
+        ))}
+      </ol>
+      {items.length < desc.max ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={`self-start ${quiet}`}
+          onClick={() => onChange([...items, items.at(-1)])}
+        >
+          {designCopy.addStop}
+        </Button>
+      ) : null}
+    </div>
+  )
+}

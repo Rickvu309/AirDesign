@@ -29,9 +29,13 @@ export type DeckTraits = {
   readonly elements: ReadonlyMap<ElementId, ElementRead>
 }
 
-type Styles = { readonly fills: readonly Held[]; readonly lines: readonly Held[]; readonly effects: readonly Held[] }
+export type Styles = {
+  readonly fills: readonly Held[]
+  readonly lines: readonly Held[]
+  readonly effects: readonly Held[]
+}
 type Fonts = ReadonlyMap<string, string>
-type Chain = {
+export type Chain = {
   readonly sheet: Sheet
   readonly layout: Sheet | null
   readonly master: Sheet | null
@@ -62,7 +66,7 @@ const fontReference = /^\+m([jn])-lt$/
 const read = <Value>(value: Value, source: Source | undefined): Read<Value> =>
   source === undefined ? { value } : { value, source }
 
-function propertiesOf(held: Held): Held | undefined {
+export function propertiesOf(held: Held): Held | undefined {
   if (!isShapeTag(held.element.kind)) return undefined
   const properties = shapeTags[held.element.kind].properties
   return properties === null ? undefined : child(held, properties)
@@ -277,12 +281,12 @@ function textReads(
 
 const root = (sheet: Sheet): Held => ({ element: sheet.elements[0]!, children: sheet.children })
 
-function sheetOf(parts: ReadonlyMap<string, Uint8Array>, part: string | null): Sheet | null {
+export function sheetOf(parts: ReadonlyMap<string, Uint8Array>, part: string | null): Sheet | null {
   const bytes = part === null ? undefined : parts.get(part)
   return part === null || bytes === undefined ? null : sheetFrom(part, bytes)
 }
 
-function stylesOf(theme: Sheet | null): Styles {
+export function stylesOf(theme: Sheet | null): Styles {
   if (theme === null) return { fills: [], lines: [], effects: [] }
   const format = child(child(root(theme), "a:themeElements"), "a:fmtScheme")
   const list = (kind: string) => {
@@ -334,7 +338,7 @@ function paletteOf(chain: Chain): Palette {
   return { slots, map }
 }
 
-function ownersOf(item: Drawn, chain: Chain): readonly Held[] {
+export function ownersOf(item: Drawn, chain: Chain): readonly Held[] {
   const owners: Held[] = [{ element: item.element, children: chain.sheet.children }]
   const wanted = item.placeholder
   if (wanted === null) return owners

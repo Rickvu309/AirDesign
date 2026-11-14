@@ -26,6 +26,7 @@ assert.deepEqual(
     "slides.mjs",
     "text-format.mjs",
     "text.mjs",
+    "trait-fill.mjs",
     "trait-table.mjs",
   ],
 )

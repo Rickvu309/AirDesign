@@ -6,6 +6,7 @@ import { markupDocument } from "./element-span.js"
 import { orderedParts, paintReader, readParts, readSlides } from "./index.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { applyRoute } from "./slide-route.js"
+import { writeTrait } from "./trait-xml.js"
 
 const { readFileSync } = process.getBuiltinModule("node:fs")
 const fixture = (name: string) => readParts(readFileSync(`${process.cwd()}/scripts/pptx-fixtures/${name}`))
@@ -127,12 +128,9 @@ describe("the writers keep a theme colour's transforms", () => {
     const part = "ppt/slides/slide1.xml"
     const slide = (properties: string) =>
       `<p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="S"/></p:nvSpPr>${properties}</p:sp></p:spTree>`
-    const after = applyRoute(new Map([[part, encodeUtf8(slide("<p:spPr/>"))]]), {
-      name: "spPr.fill",
-      part,
-      shape: "2",
-      value: { kind: "theme", value: "accent1" },
-    })
+    const at = { slide: "256", part, shape: "2" }
+    const fill = { value: { set: { solid: { scheme: "accent1" as const } } } }
+    const after = writeTrait(new Map([[part, encodeUtf8(slide("<p:spPr/>"))]]), at, "fill", fill)
     expect(decodeUtf8(after.get(part)!)).toBe(slide(`<p:spPr>${solidFillXml({ scheme: "accent1" })}</p:spPr>`))
   })
 })

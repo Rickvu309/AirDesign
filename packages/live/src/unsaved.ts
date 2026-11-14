@@ -1,4 +1,4 @@
-import { limits, readBox, type Box, type SlideCommand, type SlideId } from "@airdesign/document"
+import { limits, readBox, readRow, type Box, type Row, type SlideCommand, type SlideId } from "@airdesign/document"
 
 export type Shelf = Pick<Storage, "getItem" | "setItem" | "removeItem" | "key" | "length">
 
@@ -11,6 +11,7 @@ export type Unsaved =
       readonly value: string
     }
   | { readonly kind: "box"; readonly id: string; readonly node: string; readonly floor: string; readonly box: Box }
+  | { readonly kind: "row"; readonly id: string; readonly node: string; readonly floor: string; readonly row: Row }
   | {
       readonly kind: "slide"
       readonly id: string
@@ -35,7 +36,7 @@ export function pageShelf(): Shelf | undefined {
 }
 
 function slotOf(entry: Kept): string | null {
-  return entry.kind === "slide" ? null : `${entry.kind}:${entry.node}`
+  return entry.kind === "slide" || entry.kind === "row" ? null : `${entry.kind}:${entry.node}`
 }
 
 function isEntry(raw: unknown): raw is Unsaved {
@@ -45,6 +46,7 @@ function isEntry(raw: unknown): raw is Unsaved {
   if (entry.kind === "slide") return Array.isArray(entry.file) && typeof entry.edit === "object" && entry.edit !== null
   if (typeof entry.node !== "string" || typeof entry.floor !== "string") return false
   if (entry.kind === "text") return typeof entry.value === "string"
+  if (entry.kind === "row") return readRow(entry.row, "text").ok
   return entry.kind === "box" && readBox(entry.box) !== null
 }
 

@@ -4,6 +4,7 @@ import type { CanvasSlide, PaintStore, TableBar } from "@airdesign/render"
 import { createElement, useRef, type RefObject } from "react"
 import type { CommitOutcome } from "@/commit-edit"
 import type { ElementChange } from "@/element-edit"
+import { designRows } from "@/design-rows"
 import { TableRowBar } from "@/editor/table-bar"
 import { tableValue } from "@/table-edit"
 import type { UndoName } from "@/copy/undo-copy"
@@ -31,6 +32,8 @@ export function structureOf(register: Register | null): string {
     const value = body === undefined ? "" : currentValue(body)
     return value.startsWith('{"rows"') ? [[node, value]] : []
   })
+  const designed = designRows(register)
+  if (designed.length > 0) return JSON.stringify([register.order, tables, designed])
   return JSON.stringify(tables.length === 0 ? register.order : [register.order, tables])
 }
 

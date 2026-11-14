@@ -3,6 +3,8 @@ import {
   decide,
   elementGone,
   floorFor,
+  floorOpening,
+  landedPatch,
   floorNodes,
   openingElement,
   foldSlides,
@@ -122,7 +124,9 @@ export function agentSlide(op: Exclude<SlideOp, "set_background">, deck: Deck, c
       .filter((row) => !elementGone(register, row.node))
       .map((row) => {
         const body = register.elements[row.node]
-        return body === undefined ? row : { ...row, value: currentValue(body), box: currentBox(body) ?? row.box }
+        const opening = floorOpening(register, row.node, body === undefined ? {} : landedPatch(body, "text"))
+        const shown = body === undefined ? row : { ...row, value: currentValue(body), box: currentBox(body) ?? row.box }
+        return opening === undefined ? shown : { ...shown, opening }
       })
     edit = { slide: "clone", id, source: parsed.slide, key, floor: floorFor(floor, id) }
   }

@@ -1,10 +1,42 @@
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { optionCopy } from "@/copy/option-copy"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
-export function ChoiceControl({ row, onChange }: ControlProps) {
+const segments = 4
+
+function ChoiceList({ row, onChange, label, options }: ControlProps & { label: string; options: readonly string[] }) {
+  const value = !row.mixed && typeof row.value === "string" ? row.value : null
+  return (
+    <Select
+      value={value}
+      onValueChange={(next) => {
+        if (typeof next === "string" && next !== value && options.includes(next)) onChange(next)
+      }}
+    >
+      <SelectTrigger
+        aria-labelledby={label}
+        className="h-8 w-full rounded-lg border-0 bg-white text-[length:var(--type-dense)] shadow-[0px_0px_0px_1px_var(--field-edge)]"
+      >
+        <SelectValue>
+          {(selected: string | null) => (selected === null ? "" : (optionCopy[selected] ?? selected))}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((option) => (
+          <SelectItem key={option} value={option}>
+            {optionCopy[option] ?? option}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
+export function ChoiceControl(props: ControlProps) {
+  const { row, onChange } = props
   const label = useId()
   const options = row.desc.kind === "choice" ? row.desc.options : []
   return (
@@ -12,30 +44,34 @@ export function ChoiceControl({ row, onChange }: ControlProps) {
       <span id={label} className="text-[length:var(--type-caption)] text-quiet">
         {row.label}
       </span>
-      <div role="group" aria-labelledby={label} className="flex h-8 items-center rounded-lg bg-line p-0.5">
-        {options.map((option) => {
-          const chosen = !row.mixed && row.value === option
-          return (
-            <Button
-              key={option}
-              type="button"
-              variant="ghost"
-              aria-pressed={chosen}
-              onClick={() => {
-                if (!chosen) onChange(option)
-              }}
-              className={cn(
-                "h-7 flex-1 rounded-[var(--shape-control)] text-xs font-normal active:translate-y-0",
-                chosen
-                  ? "bg-white font-medium text-foreground shadow-[0px_1px_2px_var(--black-10)] hover:bg-white"
-                  : "text-quiet hover:bg-transparent hover:text-foreground",
-              )}
-            >
-              {optionCopy[option] ?? option}
-            </Button>
-          )
-        })}
-      </div>
+      {options.length > segments ? (
+        <ChoiceList {...props} label={label} options={options} />
+      ) : (
+        <div role="group" aria-labelledby={label} className="flex h-8 items-center rounded-lg bg-line p-0.5">
+          {options.map((option) => {
+            const chosen = !row.mixed && row.value === option
+            return (
+              <Button
+                key={option}
+                type="button"
+                variant="ghost"
+                aria-pressed={chosen}
+                onClick={() => {
+                  if (!chosen) onChange(option)
+                }}
+                className={cn(
+                  "h-7 flex-1 rounded-[var(--shape-control)] text-xs font-normal active:translate-y-0",
+                  chosen
+                    ? "bg-white font-medium text-foreground shadow-[0px_1px_2px_var(--black-10)] hover:bg-white"
+                    : "text-quiet hover:bg-transparent hover:text-foreground",
+                )}
+              >
+                {optionCopy[option] ?? option}
+              </Button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,4 +1,6 @@
 import {
+  inheritable,
+  keptRefuses,
   readTextValue,
   takes,
   traitNames,
@@ -13,6 +15,8 @@ import {
   type TraitName,
   type TraitReads,
 } from "@airdesign/document"
+import type { ReactNode } from "react"
+import { optionCopy } from "@/copy/option-copy"
 import { traitControls } from "./trait-controls"
 
 export const controlKinds = [
@@ -77,6 +81,8 @@ export type PanelRow = {
   readonly desc: Desc
   readonly value: unknown
   readonly mixed: boolean
+  readonly caption: boolean
+  readonly reset: string | null
   readonly change: (value: unknown) => SetChange
 }
 
@@ -86,6 +92,21 @@ export type ControlProps = {
   readonly row: PanelRow
   readonly palette: readonly Swatch[]
   readonly onChange: (value: unknown) => void
+  readonly inner?: (props: ControlProps) => ReactNode
+}
+
+export function partRow(row: PanelRow, name: string, desc: Desc, value: unknown): PanelRow {
+  const label = optionCopy[name] ?? name
+  return {
+    ...row,
+    field: `${row.field}.${name}`,
+    label,
+    control: controlOf(desc),
+    desc,
+    value,
+    caption: true,
+    reset: null,
+  }
 }
 
 export type PanelSection = { readonly trait: TraitName; readonly label: string; readonly rows: readonly PanelRow[] }
@@ -94,7 +115,10 @@ export type PanelModel = { readonly node: ElementId; readonly sections: readonly
 
 type Loose = Readonly<Record<string, { readonly desc: Desc }>>
 
-type Labels = { readonly section?: string; readonly fields: Readonly<Record<string, { readonly label: string }>> }
+type Labels = {
+  readonly section?: string
+  readonly fields: Readonly<Record<string, { readonly label: string; readonly reset?: string }>>
+}
 
 const paragraphKeys = ["align", "bullet"] as const
 
@@ -121,7 +145,12 @@ function textShown(text: TextValue, key: string, reads: TraitReads) {
   return agreed(runs.map((run) => (run as Readonly<Record<string, unknown>>)[key] ?? fallback))
 }
 
-function shownOf(view: ScopedElement, trait: TraitName, field: string, reads: TraitReads) {
+export type ShownField = { readonly value: unknown; readonly own: boolean }
+
+function shownOf(view: ScopedElement, trait: TraitName, field: string, shown: PanelReads) {
+  const read = shown.fields?.[`${trait}.${field}`]
+  if (read !== undefined) return { value: read.value ?? undefined, mixed: false }
+  const reads = shown.reads
   if (trait === "box") {
     const box = view.box
     const sides: Readonly<Record<string, number | undefined>> = { x: box?.x, y: box?.y, w: box?.cx, h: box?.cy }
@@ -142,21 +171,33 @@ function wireFields(trait: TraitName): readonly (readonly [string, Desc])[] {
   return [...fields, ...inputs].map(([field, kind]) => [field, kind.desc] as const)
 }
 
-export type PanelReads = { readonly reads: TraitReads; readonly moves: boolean }
+export type PanelReads = {
+  readonly reads: TraitReads
+  readonly moves: boolean
+  readonly fields?: Readonly<Record<string, ShownField | undefined>>
+}
+
+function shownDesc(desc: Desc, grouped: boolean, value: unknown): Desc {
+  if (desc.kind !== "union" || grouped || (typeof value === "object" && value !== null && "group" in value)) return desc
+  return { ...desc, cases: Object.fromEntries(Object.entries(desc.cases).filter(([name]) => name !== "group")) }
+}
 
 export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
   const taken = takes(view.facts).filter((field) => shown.moves || !field.startsWith("box."))
-  const kept = view.kept as readonly string[]
   const sections = traitNames.flatMap((trait): PanelSection[] => {
     const labels = traitControls[trait] as Labels
-    const rows = wireFields(trait).flatMap(([field, desc]): PanelRow[] => {
+    const rows = wireFields(trait).flatMap(([field, kind]): PanelRow[] => {
       const key = written(trait, field)
-      if (!taken.includes(key) || kept.includes(trait) || kept.includes(`${trait}.${field}`)) return []
-      const label = labels.fields[field]?.label ?? ""
+      if (!taken.includes(key) || keptRefuses(view.kept, trait, field)) return []
+      const copy = labels.fields[field]
+      const own = shown.fields?.[key]?.own === true
+      const reset = own && inheritable(trait, field) ? (copy?.reset ?? null) : null
       const change = (value: unknown) => ({ target: { node: view.node }, [trait]: { [field]: value } }) as SetChange
-      return [
-        { trait, field, label, control: controlOf(desc), desc, ...shownOf(view, trait, field, shown.reads), change },
-      ]
+      const held = shownOf(view, trait, field, shown)
+      const desc = shownDesc(kind, view.facts.grouped, held.value)
+      const label = copy?.label ?? ""
+      const caption = label !== labels.section
+      return [{ trait, field, label, control: controlOf(desc), desc, ...held, caption, reset, change }]
     })
     return rows.length === 0 ? [] : [{ trait, label: labels.section ?? "", rows }]
   })

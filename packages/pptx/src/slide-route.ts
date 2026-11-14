@@ -1,7 +1,6 @@
 import { owns, shapeById } from "./shape-tree.js"
-import { mappedSlots, themeSlots, type TextValue } from "@airdesign/document"
+import type { TextValue } from "@airdesign/document"
 import { insertChild } from "./child-order.js"
-import { solidFillXml } from "./color-xml.js"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { attachedConnections, shapeAnimated } from "./shape-id.js"
@@ -16,7 +15,6 @@ import {
 } from "./text-value-route.js"
 
 export type SlideRoute =
-  | { readonly name: "spPr.fill"; readonly part: string; readonly shape: string; readonly value: ShapeFill }
   | { readonly name: "text"; readonly part: string; readonly shape: string; readonly value: TextValue }
   | { readonly name: "move"; readonly part: string; readonly shape: string; readonly x: number; readonly y: number }
   | { readonly name: "resize"; readonly part: string; readonly shape: string; readonly cx: number; readonly cy: number }
@@ -33,58 +31,6 @@ export type SlideRoute =
   | { readonly name: "remove"; readonly part: string; readonly shape: string }
 
 const emptyBytes = new Uint8Array(0)
-
-export type ShapeFill =
-  | { readonly kind: "none" }
-  | { readonly kind: "srgb"; readonly value: string }
-  | { readonly kind: "theme"; readonly value: string }
-
-const fillKinds = new Set(["a:noFill", "a:solidFill", "a:gradFill", "a:blipFill", "a:pattFill", "a:grpFill"])
-
-function fillXml(value: ShapeFill): { tag: "a:noFill" | "a:solidFill"; xml: string } {
-  if (value.kind === "none") return { tag: "a:noFill", xml: "<a:noFill/>" }
-  if (value.kind === "srgb" && /^[0-9a-fA-F]{6}$/.test(value.value)) {
-    return { tag: "a:solidFill", xml: solidFillXml({ rgb: value.value }) }
-  }
-  const scheme =
-    value.kind === "theme" ? [...themeSlots, ...mappedSlots].find((slot) => slot === value.value) : undefined
-  if (scheme !== undefined) return { tag: "a:solidFill", xml: solidFillXml({ scheme }) }
-  throw new Error("fill-color")
-}
-
-function writeFill(bytes: Uint8Array, id: string, value: ShapeFill): Uint8Array {
-  const document = requireMarkup(bytes)
-  const shape = shapeById(document.elements, id)
-  if (shape.kind !== "p:sp") throw new Error("fill-shape")
-  const properties = document.elements.filter((item) => item.parent === shape.index && item.kind === "p:spPr")
-  const spPr = properties[0]
-  if (properties.length !== 1 || spPr === undefined) throw new Error("fill-properties")
-  const fills = document.elements.filter((item) => item.parent === spPr.index && fillKinds.has(item.kind))
-  if (fills.length > 1) throw new Error("fill-choice")
-  const fill = fills[0]
-  if (fill?.kind === "a:blipFill") throw new Error("fill-relationship")
-  const next = fillXml(value)
-  if (fill !== undefined) {
-    return spliceBytes(bytes, [{ start: fill.start, end: fill.end, next: encodeUtf8(next.xml) }])
-  }
-  if (spPr.selfClosing) {
-    return spliceBytes(bytes, [
-      {
-        start: spPr.openEnd - 2,
-        end: spPr.openEnd,
-        next: encodeUtf8(`>${next.xml}</p:spPr>`),
-      },
-    ])
-  }
-  const parent = decodeUtf8(bytes.subarray(spPr.start, spPr.end))
-  return spliceBytes(bytes, [
-    {
-      start: spPr.start,
-      end: spPr.end,
-      next: encodeUtf8(insertChild("p:spPr", next.tag, next.xml, parent)),
-    },
-  ])
-}
 
 function emu(value: number): number {
   if (!Number.isInteger(value)) throw new Error("emu")
@@ -214,8 +160,6 @@ export function removeShape(bytes: Uint8Array, id: string): Uint8Array {
 
 function editPart(bytes: Uint8Array, route: Exclude<SlideRoute, { readonly name: "add" }>): Uint8Array {
   switch (route.name) {
-    case "spPr.fill":
-      return writeFill(bytes, route.shape, route.value)
     case "text": {
       const target = textTarget(bytes, route.shape)
       return spliceBytes(bytes, textValueEdits(target.children, bytes, target.shape, route.value))

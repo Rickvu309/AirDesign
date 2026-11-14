@@ -3,6 +3,7 @@ import { toast } from "sonner"
 import {
   openRegister,
   readTableValue,
+  shapeOf,
   type Color,
   type ElementId,
   type SchemeName,
@@ -11,13 +12,13 @@ import {
   type TraitReads,
 } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
-import { readSlides, readTraits, themeSwatches, type DeckTraits } from "@airdesign/pptx"
+import { readSlides, readTraits, shownFill, themeSwatches, type DeckTraits } from "@airdesign/pptx"
 import { commitBackground } from "@/background-edit"
 import type { CommitOutcome } from "@/commit-edit"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
 import { formatCopy } from "@/copy/format-copy"
-import { panelOf, type Swatch as PaletteSwatch } from "@/design/panel"
+import { panelOf, type PanelReads, type Swatch as PaletteSwatch } from "@/design/panel"
 import { applyChange, deviceScope, valueFits, type ChangingDeck } from "@/design/trait-edit"
 import { designShown, type DesignShown } from "@/design-shown"
 import { BackgroundKind, DesignHead, DesignSection, ElementDesign, Swatch, SwatchButton } from "@/editor/design-panel"
@@ -50,6 +51,18 @@ function readsOf(parts: Parts, node: ElementId): TraitReads {
     }
   }
   return deckTraits.get(parts)?.elements.get(node)?.reads ?? {}
+}
+
+function fieldsOf(parts: Parts, node: ElementId): PanelReads["fields"] {
+  const { slide, shape } = shapeOf(node)
+  const part = readSlides(parts).find((each) => each.slide === slide)?.part
+  if (part === undefined) return {}
+  try {
+    const fill = shownFill(parts, { part, shape })
+    return fill === null ? {} : { "fill.value": fill }
+  } catch {
+    return {}
+  }
 }
 
 function paletteOf(parts: Parts, index: number): readonly PaletteSwatch[] {
@@ -103,7 +116,11 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
   const held = opening.value ?? fileValue(shown, node)
   const value = opening.facts.kind === "table" && readTableValue(text ?? "") === null ? held : (text ?? held)
   const view = { ...opening, value, box: box ?? opening.box }
-  const model = panelOf(view, { reads: readsOf(edited, node), moves: shown.movables.current.has(node) })
+  const model = panelOf(view, {
+    reads: readsOf(edited, node),
+    moves: shown.movables.current.has(node),
+    fields: fieldsOf(shown.displayParts.current, node),
+  })
   return (
     <ElementDesign
       model={model}

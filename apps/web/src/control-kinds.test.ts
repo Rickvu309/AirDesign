@@ -9,16 +9,26 @@ const specs = Object.keys(import.meta.glob("../../../tests/browser/control-*.spe
   (path) => /control-([a-z]+)\.spec\.ts$/.exec(path)?.[1] ?? path,
 )
 
+function inside(desc: Desc): readonly Desc[] {
+  if (desc.kind === "union") return Object.values(desc.cases).flatMap((item) => [item, ...inside(item)])
+  if (desc.kind === "record") return Object.values(desc.fields).flatMap((item) => [item, ...inside(item)])
+  if (desc.kind === "list" || desc.kind === "named") return [desc.item, ...inside(desc.item)]
+  return []
+}
+
 function kindsInUse(): readonly string[] {
-  const descs = traitNames.flatMap((trait) => [
-    ...Object.values(traits[trait].fields as Loose),
-    ...Object.values(traits[trait].inputs as Loose),
-  ])
-  return [...new Set(descs.filter((kind) => kind.desc.kind !== "alpha").map((kind) => controlOf(kind.desc)))].sort()
+  const descs = traitNames
+    .flatMap((trait) => [
+      ...Object.values(traits[trait].fields as Loose),
+      ...Object.values(traits[trait].inputs as Loose),
+    ])
+    .flatMap((kind) => [kind.desc, ...inside(kind.desc)])
+    .filter((desc) => desc.kind !== "alpha" && desc.kind !== "mark")
+  return [...new Set(descs.map(controlOf))].sort()
 }
 
 describe("every control kind a field uses", () => {
-  it("has one component and one browser spec of its name", () => {
+  it("has one component and one browser spec of its name, inside a union, a record or a list too", () => {
     const used = kindsInUse()
     expect(used.filter((kind) => !Object.hasOwn(controlViews, kind))).toEqual([])
     expect(used.filter((kind) => !specs.includes(kind))).toEqual([])

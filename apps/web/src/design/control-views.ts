@@ -1,17 +1,27 @@
 import type { ComponentType } from "react"
+import { AngleControl } from "@/design/controls/angle"
 import { ChoiceControl } from "@/design/controls/choice"
 import { ColorControl } from "@/design/controls/color"
 import { LengthControl } from "@/design/controls/length"
+import { ListControl } from "@/design/controls/list"
+import { PercentControl } from "@/design/controls/percent"
+import { RecordControl } from "@/design/controls/record"
 import { TableControl } from "@/design/controls/table"
 import { TextControl } from "@/design/controls/text"
 import { ToggleControl } from "@/design/controls/toggle"
+import { UnionControl } from "@/design/controls/union"
 import type { ControlKind, ControlProps } from "@/design/panel"
 
 export const controlViews: Partial<Readonly<Record<ControlKind, ComponentType<ControlProps>>>> = {
   length: LengthControl,
+  angle: AngleControl,
+  percent: PercentControl,
   toggle: ToggleControl,
   choice: ChoiceControl,
   color: ColorControl,
+  record: RecordControl,
+  union: UnionControl,
+  list: ListControl,
   text: TextControl,
   table: TableControl,
 }

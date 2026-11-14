@@ -6,6 +6,7 @@ import {
   type ElementId,
   type NodeStep,
   type Register,
+  type Row,
   type SlideCommand,
   type SlideId,
   type Undoable,
@@ -26,6 +27,7 @@ export type UndoLink = {
   openDeck(deck: string): Promise<{ readonly ok: true; readonly register: Register } | { readonly ok: false }>
   enqueue(deck: string, value: string, node: ElementId, floor: string): Kept
   enqueueBox(deck: string, box: Box, node: ElementId, floor: string): Kept
+  enqueueRow(deck: string, row: Row, node: ElementId, floor: string): Kept
   enqueueSlide(deck: string, file: readonly SlideId[], edit: SlideCommand): Kept
 }
 
@@ -89,7 +91,9 @@ export function undoLabel(direction: UndoDirection, list: UndoList): string {
 
 async function sentCommand(link: UndoLink, deck: string, command: Command): Promise<boolean> {
   if (command.command === "slide") return (await link.enqueueSlide(deck, command.file, command.edit)).ok
-  if (command.command !== "person" || command.v !== undefined || command.node === undefined) return false
+  if (command.command !== "person" || command.node === undefined) return false
+  if (command.v !== undefined)
+    return (await link.enqueueRow(deck, { v: command.v, patch: command.patch }, command.node, "")).ok
   if (command.property === "box") return (await link.enqueueBox(deck, command.value, command.node, "")).ok
   return (await link.enqueue(deck, command.value, command.node, "")).ok
 }

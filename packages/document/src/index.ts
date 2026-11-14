@@ -98,10 +98,13 @@ export {
 } from "./row.js"
 export { agentTakes, boxOnly, indexFacts, removable, takes } from "./element-takes.js"
 export {
+  inheritable,
+  keptRefuses,
   kindTraits,
   traitNames,
   traits,
   type FieldKey,
+  type InheritableField,
   type FieldName,
   type FieldValue,
   type TraitName,
@@ -112,7 +115,8 @@ export type { Desc, Fields, NumberUnit } from "./value-kind.js"
 export { kinds, type Kind } from "./kinds.js"
 export { structure } from "./structure.js"
 export { foldSections, type FileSection } from "./section-order.js"
-export { floorFor, floorNodes, newSlideElement, openingElement } from "./slide-floor.js"
+export { floorFor, floorNodes, floorOpening, newSlideElement, openingElement } from "./slide-floor.js"
+export { patternPresets } from "./trait-fill.js"
 export { slideMeasure } from "./slide-measure.js"
 export {
   addedPictures,

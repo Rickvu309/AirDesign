@@ -5,6 +5,7 @@ import {
   limits,
   readBox,
   readElementId,
+  readRow,
   refusals,
   readSlideState,
   storedValue,
@@ -14,7 +15,8 @@ import {
   type ElementId,
   type SlideCommand,
   type SlideId,
-  type FormatOneValue,
+  type Row,
+  type Value,
 } from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
 import { queueIndex, sendIndex } from "./deck-index.js"
@@ -272,7 +274,7 @@ export function connect(remote: Remote, options: Options = {}) {
 
   function writeValue(
     deck: DeckId,
-    edit: FormatOneValue,
+    edit: Value,
     named: ElementId,
     floor: string,
     replaying?: string,
@@ -306,6 +308,7 @@ export function connect(remote: Remote, options: Options = {}) {
     const node = readElementId(entry.node)
     if (node === undefined) return Promise.resolve()
     if (entry.kind === "text") return writeValue(deck, { value: entry.value }, node, entry.floor, entry.id)
+    if (entry.kind === "row") return writeValue(deck, storedValue(entry.row), node, entry.floor, entry.id)
     const box = readBox(entry.box)
     if (box === null) return Promise.resolve()
     return writeValue(deck, { property: "box", value: box }, node, entry.floor, entry.id)
@@ -323,15 +326,17 @@ export function connect(remote: Remote, options: Options = {}) {
     return result
   }
 
-  function enqueueValue(deck: string, edit: FormatOneValue, node: ElementId, floor: string): Promise<Enqueued> {
+  function enqueueValue(deck: string, edit: Value, node: ElementId, floor: string): Promise<Enqueued> {
     const parsed = readDeckId(deck)
     if (!parsed.ok) return Promise.resolve({ ok: false, refusal: "deck" })
     const named = readElementId(node)
     if (named === undefined) return Promise.resolve({ ok: false, refusal: "dead" })
     const kept: Kept =
-      edit.property === "box"
-        ? { kind: "box", node: named, floor, box: edit.value }
-        : { kind: "text", node: named, floor, value: edit.value }
+      edit.v !== undefined
+        ? { kind: "row", node: named, floor, row: { v: edit.v, patch: edit.patch } }
+        : edit.property === "box"
+          ? { kind: "box", node: named, floor, box: edit.value }
+          : { kind: "text", node: named, floor, value: edit.value }
     return keepAndWrite(parsed.deck, kept, () => writeValue(parsed.deck, edit, named, floor))
   }
 
@@ -367,6 +372,14 @@ export function connect(remote: Remote, options: Options = {}) {
         const result = await enqueueValue(deck, { property: "box", value: read }, node, floor)
         if (!result.ok) return result
         return { ok: true, painted: (result.body === undefined ? null : currentBox(result.body)) ?? read }
+      })
+    },
+    enqueueRow(deck: string, row: Row, node: ElementId, floor: string): Promise<EnqueueResult<Row>> {
+      return unlessNewer(async () => {
+        const read = readRow(row, "text")
+        if (!read.ok) return { ok: false, refusal: "field" }
+        const result = await enqueueValue(deck, { v: read.value.v, patch: read.value.patch }, node, floor)
+        return result.ok ? { ok: true, painted: read.value } : result
       })
     },
     open(deck: string): Promise<OpenOnceResult> {

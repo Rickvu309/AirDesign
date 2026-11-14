@@ -4,17 +4,20 @@ import { sameBytes } from "./package-bytes.js"
 import { exportElements } from "./element-export.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { contentTypesPart, presentationPart, presentationRels, relsOf, slidePart } from "./package-address.js"
-import { readShapes } from "./read-shapes.js"
 import { shapeAnimated } from "./shape-id.js"
 import { applyRoute, type SlideRoute } from "./slide-route.js"
 import { nextSlideFile, slideFileNumber } from "./slide-list-route.js"
 import { addedSlideTouch, clonedSlideTouch, removedSlideTouch, type PartTouch } from "./slide-touch.js"
 import { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
-import { markupChildren, shapeTextValue, shownText } from "./text-value-route.js"
+import { markupChildren, shapeTextValue } from "./text-value-route.js"
+import { createdShapesLanded } from "./created-shapes.js"
+
+export { createdShapesLanded } from "./created-shapes.js"
 import { routeName, routeOperations } from "./route-operations.js"
 import { notesRuns } from "./notes-runs.js"
 import { probedValue } from "./text-probe.js"
 import { formatRuns } from "./text-format-runs.js"
+import { writeTrait } from "./trait-xml.js"
 import { tableEdits } from "./route-table-host.js"
 export { routeOperations } from "./route-operations.js"
 
@@ -99,28 +102,8 @@ export function elementExportTouch(parts: ReadonlyMap<string, Uint8Array>): Part
   }
 }
 
-export function createdShapesLanded(
-  parts: ReadonlyMap<string, Uint8Array>,
-  landed: readonly { readonly text: string; readonly slide: string }[],
-  untouched: readonly string[],
-): boolean {
-  const rows = readShapes(parts)
-  for (const item of landed) {
-    const found = rows.filter((row) => shownText(row.text) === item.text)
-    if (found.length !== 1) return false
-    const row = found[0]
-    if (row === undefined || row.slide !== item.slide) return false
-  }
-  for (const slide of untouched) {
-    if (rows.some((row) => row.slide === slide && landed.some((item) => item.text === shownText(row.text))))
-      return false
-  }
-  return true
-}
-
 export function partTouch(parts: ReadonlyMap<string, Uint8Array>, route: SlideRoute | StructuralEdit): PartTouch {
   switch (route.name) {
-    case "spPr.fill":
     case "text":
     case "move":
     case "resize":
@@ -382,8 +365,11 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
       )
     })
     if (host === undefined) continue
-    const route = { name: "spPr.fill", part, shape: host.id, value: { kind: "srgb", value: "19A7E8" } } as const
-    runs.push(attempt("spPr.fill", route, () => ({ touch: partTouch(parts, route), parts: applyRoute(parts, route) })))
+    const fill = { value: { set: { solid: { rgb: "19A7E8" } } } } as const
+    const at = { slide: "", part, shape: host.id }
+    runs.push(
+      attempt("spPr.fill", null, () => ({ touch: slideTouch(part), parts: writeTrait(parts, at, "fill", fill) })),
+    )
     break
   }
   const text = textHost(parts)

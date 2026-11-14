@@ -6,6 +6,7 @@ import type { OrderKey } from "./order-key.js"
 import { sameColor, type Color } from "./color.js"
 import { backgroundOf } from "./slide-background.js"
 import { foldSlides, type SlideCommand, type SlideState } from "./slide-order.js"
+import { format } from "./format.js"
 import { formatOne, shows, type ElementPatch, type ValueHolder } from "./row.js"
 
 const valueHolders: readonly ValueHolder[] = ["notes", "table", "text"]
@@ -97,8 +98,8 @@ function stepCommands(register: Register, steps: readonly NodeStep[], from: "bef
   for (const step of steps) {
     const body = register.nodes.includes(step.node) ? register.elements[step.node] : undefined
     const holder = holderOf(register, step)
-    const values = formatOne(step[to], holder)
-    if (body === undefined || values === null || !shows(shownPatch(body, holder), step[from])) return null
+    const values = formatOne(step[to], holder) ?? [{ v: format, patch: step[to] }]
+    if (body === undefined || !shows(shownPatch(body, holder), step[from])) return null
     commands.push(...values.map((value): Command => ({ command: "person", ...value, node: step.node })))
   }
   return commands

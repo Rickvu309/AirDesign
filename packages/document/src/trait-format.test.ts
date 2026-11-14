@@ -6,7 +6,7 @@ const recorded: Readonly<Record<TraitName, readonly string[]>> = {
   identity: ["5465b825"],
   box: ["f180e7a7"],
   geometry: ["5465b825"],
-  fill: ["5465b825"],
+  fill: ["5465b825", "5b43a296"],
   line: ["5465b825"],
   effects: ["5465b825"],
   body: ["5465b825"],
