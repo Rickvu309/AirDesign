@@ -152,9 +152,13 @@ describe("the server admits only the edits the device can write onto an element 
     const facts = { text: true, grouped: false, animated: false }
     const box = ["box.x", "box.y", "box.w", "box.h", "box.rot", "box.flipH", "box.flipV"]
     const drawn = [...box, "geometry.shape"]
-    const line = ["fill", "width", "dash", "cap", "compound", "join", "head", "tail"].map((field) => `line.${field}`)
-    expect(takes({ ...facts, kind: "shape" })).toEqual([...drawn, "fill.value", ...line, "text.value"])
-    expect(takes({ ...facts, kind: "shape", text: false })).toEqual([...drawn, "fill.value", ...line])
+    const line = ["fill", "width", "dash", "cap", "compound", "join", "head", "tail", "alpha"].map(
+      (field) => `line.${field}`,
+    )
+    const fill = ["fill.value", "fill.alpha"]
+    const text = ["text.value", "text.alpha"]
+    expect(takes({ ...facts, kind: "shape" })).toEqual([...drawn, ...fill, ...line, ...text])
+    expect(takes({ ...facts, kind: "shape", text: false })).toEqual([...drawn, ...fill, ...line])
     expect(takes({ ...facts, kind: "picture" })).toEqual([...drawn, ...line])
     expect(takes({ ...facts, kind: "connector" })).toEqual([...drawn, ...line])
     expect(takes({ ...facts, kind: "table" })).toEqual(["box.x", "box.y", "table.value"])
@@ -163,12 +167,7 @@ describe("the server admits only the edits the device can write onto an element 
     expect(takes({ ...facts, kind: "kept" })).toEqual([])
     expect(takes({ ...facts, kind: "slide" })).toEqual(["fill.value"])
     expect(takes({ ...facts, kind: "notes" })).toEqual(["notes.value"])
-    expect(takes({ ...facts, kind: "shape", grouped: true })).toEqual([
-      "geometry.shape",
-      "fill.value",
-      ...line,
-      "text.value",
-    ])
+    expect(takes({ ...facts, kind: "shape", grouped: true })).toEqual(["geometry.shape", ...fill, ...line, ...text])
     expect(takes({ ...facts, kind: "picture", animated: true })).toEqual([...drawn, ...line])
     for (const kind of kinds) {
       const traits: readonly string[] = kindTraits[kind]

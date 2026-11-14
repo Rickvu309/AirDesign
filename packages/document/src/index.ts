@@ -100,14 +100,17 @@ export {
   type Row,
   type TraitPatch,
 } from "./row.js"
-export { agentTakes, boxOnly, indexFacts, removable, takes } from "./element-takes.js"
+export { agentTakes, boxOnly, indexFacts, opacityFields, removable, takes } from "./element-takes.js"
 export {
+  alphaKeys,
+  type AlphaField,
   inheritable,
   keptRefuses,
   kindTraits,
   traitNames,
   traits,
   type FieldKey,
+  type HasAlpha,
   type InheritableField,
   type FieldName,
   type FieldValue,
@@ -115,7 +118,7 @@ export {
   type WireAgent,
   type WireField,
 } from "./traits.js"
-export type { Desc, Fields, NumberUnit } from "./value-kind.js"
+export type { Alpha, Desc, Fields, NumberUnit } from "./value-kind.js"
 export { kinds, type Kind } from "./kinds.js"
 export { structure } from "./structure.js"
 export { foldSections, type FileSection } from "./section-order.js"
@@ -159,8 +162,12 @@ export {
   type TableValue,
 } from "./table-value.js"
 export {
+  alphaOf,
   bareTransforms,
+  fadedColor,
   mappedSlots,
+  namesAlpha,
+  opaque,
   readColor,
   sameColor,
   themeSlots,

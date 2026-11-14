@@ -1,8 +1,10 @@
+import { namesAlpha, type Alpha } from "@airdesign/document"
+import { alphaKept, colorsOf, fadedBytes, shownAlpha, type Faded } from "./alpha-codec.js"
 import { insertChild } from "./child-order.js"
 import { colorXml, solidFillXml } from "./color-xml.js"
 import { fillKinds } from "./color-read.js"
-import { spliceBytes, type ByteEdit } from "./element-span.js"
-import { ownBackground, shownFill, type Fill } from "./fill-read.js"
+import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
+import { inheritedFill, ownBackground, shownFill, type Fill } from "./fill-read.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { shapeById } from "./shape-tree.js"
@@ -85,16 +87,63 @@ function writtenFill(parts: Parts, at: ElementAt, written: Written | null): Part
   return changedPart(parts, at.part, bytes, edit)
 }
 
+const fadedKinds: readonly string[] = ["a:solidFill", "a:gradFill", "a:pattFill"]
+
+function shownValue(parts: Parts, at: ElementAt): Fill | null {
+  return at.shape === "slide" ? ownBackground(parts, at.part) : (shownFill(parts, at)?.value ?? null)
+}
+
+export function fillAlpha(parts: Parts, at: ElementAt): Faded {
+  const value = shownValue(parts, at)
+  return value === null ? null : shownAlpha(colorsOf(value))
+}
+
+function ownFill(bytes: Uint8Array, at: ElementAt): MarkupElement | undefined {
+  const { elements } = requireMarkup(bytes)
+  const inside = (parent: MarkupElement | undefined, kind: string) =>
+    parent === undefined ? undefined : elements.find((each) => each.parent === parent.index && each.kind === kind)
+  let host: MarkupElement | undefined
+  if (at.shape === "slide") {
+    const root = elements.find((element) => element.parent < 0)
+    host = inside(inside(inside(root, "p:cSld"), "p:bg"), "p:bgPr")
+  } else host = inside(shapeById(elements, at.shape), "p:spPr")
+  return host === undefined
+    ? undefined
+    : elements.find((each) => each.parent === host.index && fillKinds.has(each.kind))
+}
+
+function fadedFill(parts: Parts, at: ElementAt, alpha: Alpha): Parts {
+  const bytes = partBytes(parts, at.part)
+  const own = ownFill(bytes, at)
+  if (own !== undefined) {
+    if (!fadedKinds.includes(own.kind)) return parts
+    const next = fadedBytes(bytes.subarray(own.start, own.end), alpha)
+    return changedPart(parts, at.part, bytes, { start: own.start, end: own.end, next })
+  }
+  const copied = at.shape === "slide" ? null : inheritedFill(parts, at)
+  const root = copied === null ? undefined : requireMarkup(copied).elements[0]
+  if (copied === null || root === undefined || !fadedKinds.includes(root.kind)) return parts
+  return writtenFill(parts, at, { tag: root.kind as FillTag, xml: decodeUtf8(fadedBytes(copied, alpha)) })
+}
+
 export const fillXml: TraitXml<"fill"> = {
   slot: null,
   fields: {
     value: whole(
-      {
-        read: (parts, at) =>
-          at.shape === "slide" ? ownBackground(parts, at.part) : (shownFill(parts, at)?.value ?? null),
-        write: (parts, at, value) => writtenFill(parts, at, fillMarkup(value)),
-      },
+      alphaKept(
+        { read: shownValue, write: (parts, at, value) => writtenFill(parts, at, fillMarkup(value)) },
+        fillAlpha,
+        fadedFill,
+        (value) => namesAlpha(colorsOf(value)),
+      ),
       (parts, at) => writtenFill(parts, at, null),
     ),
+    alpha: whole({
+      read: (parts, at) => {
+        const shown = fillAlpha(parts, at)
+        return shown === "mixed" ? null : shown
+      },
+      write: fadedFill,
+    }),
   },
 }

@@ -79,3 +79,29 @@ it("keeps every row when there is no file paint", () => {
   const edited = [row("2", text(true))]
   expect(fileTexts(edited, null)).toBe(edited)
 })
+
+function colored(alpha: number): PaintText {
+  const shown = text(false)
+  const color = { hex: "112233", alpha }
+  return {
+    ...shown,
+    paragraphs: shown.paragraphs.map((paragraph) => ({
+      ...paragraph,
+      runs: paragraph.runs.map((run) => ({ ...run, color })),
+      endStyle: { ...paragraph.endStyle, color },
+    })),
+  }
+}
+
+it("paints the file's text with the alpha the export gives every run, so an element's opacity shows on its text", () => {
+  const painted = fileTexts([row("2", colored(0.6))], file([row("2", colored(1))]))
+  expect(painted[0]?.text).toEqual(colored(0.6))
+  const mixed = colored(0.6)
+  const first = mixed.paragraphs[0]
+  if (first === undefined) throw new Error("paragraph")
+  const twoRuns = {
+    ...mixed,
+    paragraphs: [{ ...first, runs: [...first.runs, { ...first.runs[0]!, color: { hex: "112233", alpha: 0.2 } }] }],
+  }
+  expect(fileTexts([row("2", twoRuns)], file([row("2", colored(1))]))[0]?.text).toEqual(colored(1))
+})

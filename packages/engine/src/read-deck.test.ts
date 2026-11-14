@@ -440,6 +440,25 @@ describe("design lines", () => {
     )
   })
 
+  it("prints an opacity a change set as the alpha of every colour the element's design line names", () => {
+    const actor = { actor: "agent", runId: "run" } as const
+    const running = call("start_run", designed(), actor, {
+      deck: "designed",
+      runId: "run",
+      elements: [{ node: "259.7" }],
+    })
+    if (!running.ok) throw new Error(running.refusal)
+    const set = call("edit_deck", running.deck, actor, {
+      deck: "designed",
+      base: running.deck.revision,
+      changes: [{ op: "set", target: "259.7", opacity: 60, line: { fill: "accent2" } }],
+    })
+    if (!set.ok) throw new Error(set.refusal)
+    expect(byNode(readDeckPage(set.deck, { runId: "run" })).get("259.7")?.design).toBe(
+      "geometry custom · fill accent1 alpha 60 · line.width 1 (style) · line.fill accent2 alpha 60",
+    )
+  })
+
   it("reads a slide added from a layout with the roles of its layout floor", () => {
     const deck = designed()
     const added = call(

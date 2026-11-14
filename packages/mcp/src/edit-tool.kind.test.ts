@@ -1,5 +1,5 @@
 import { readDeckId } from "@airdesign/catalog"
-import { elementId, writeTextValue, type Kind } from "@airdesign/document"
+import { elementId, landedPatch, writeTextValue, type Kind } from "@airdesign/document"
 import { indexDeck, openDeck } from "@airdesign/engine"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
@@ -127,6 +127,37 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
       expect(words).toContain("Element 256.7 is a group, and deleting a group is not supported yet. Leave it")
       expect(words).not.toContain("Element 256.7 is inside a group")
     })
+  })
+
+  it("refuses opacity on a group, a table and a chart, which take no alpha, and lands it on a line and a picture", async () => {
+    const held = session()
+    await withClient(held, async (client) => {
+      const refused = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: {
+          deck: "deck",
+          base: 0,
+          changes: ["256.7", "256.6", "256.5", "256.9"].map((target) => ({ op: "set", target, opacity: 60 })),
+        },
+      })
+      expect(refused.structuredContent).toMatchObject({ ok: false, refusal: "kind" })
+      const words = said(refused)
+      expect(words).toContain("Change 1 (256.7): Element 256.7 is a group.")
+      expect(words).toContain("Change 2 (256.6): Element 256.6 is a table.")
+      expect(words).toContain("Change 3 (256.5): Element 256.5 is a chart.")
+      expect(words).not.toContain("Change 4")
+      const landed = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: {
+          deck: "deck",
+          base: 0,
+          changes: ["256.9", "256.4"].map((target) => ({ op: "set", target, opacity: 60 })),
+        },
+      })
+      expect(landed.isError).toBeFalsy()
+    })
+    const line = held.deck.register.elements[elementId("256.9")]
+    expect(line === undefined ? undefined : landedPatch(line, "text")).toEqual({ line: { alpha: { set: 60_000 } } })
   })
 
   it("lands what each kind can take: a move of a table, a picture or a chart", async () => {

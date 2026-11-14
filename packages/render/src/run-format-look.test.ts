@@ -90,3 +90,23 @@ it("reads the file's format of a run, and of a new run from the paragraph's end"
   expect(look.file(0, -1, "italic")).toBe(false)
   expect(look.file(5, 0, "bold")).toBe(false)
 })
+
+it("paints a chosen colour with the alpha the exported file paints on that run, so faded text stays faded", () => {
+  const faded = `${inkPaint}99`
+  const look = textLook(
+    {
+      ...text,
+      colors: [
+        { scheme: "accent2", css: accentPaint },
+        { scheme: "dk1", css: inkPaint },
+      ],
+      paragraphs: [{ from: 0, align: "left", runs: [{ from: 0, text: "a", ...plain, color: faded }], endStyle: plain }],
+    },
+    scaled,
+  )
+  expect(look.run(0, 0, { color: { scheme: "dk1" } })).toMatchObject({ color: faded })
+  expect(look.run(0, 0, { color: { scheme: "accent2" } })).toMatchObject({ color: `${accentPaint}99` })
+  const rgb = accentPaint.slice(1)
+  expect(look.run(0, 0, { color: { rgb } })).toMatchObject({ color: `${accentPaint}99` })
+  expect(textLook(text, scaled).run(0, 0, { color: { rgb } })).toMatchObject({ color: accentPaint })
+})

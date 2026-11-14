@@ -1,4 +1,5 @@
-import type { FieldValue } from "@airdesign/document"
+import { namesAlpha, type Alpha, type FieldValue } from "@airdesign/document"
+import { alphaKept, colorsOf, fadedBytes, fadedFill, shownAlpha, type Faded } from "./alpha-codec.js"
 import { insertChild, type ChildOf } from "./child-order.js"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { shownLine, type LineField } from "./line-read.js"
@@ -6,7 +7,7 @@ import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { isShapeTag, shapeById, shapeTags } from "./shape-tree.js"
 import { fillMarkup } from "./trait-xml-fill.js"
-import { whole, type ElementAt, type FieldXml, type Parts, type TraitXml } from "./xml-codec.js"
+import { whole, type ElementAt, type FieldXml, type PartCodec, type Parts, type TraitXml } from "./xml-codec.js"
 
 type Slot = (line: Uint8Array) => Uint8Array
 
@@ -19,6 +20,7 @@ const fillTags = ["a:noFill", "a:solidFill", "a:gradFill", "a:pattFill", "a:blip
 const dashTags = ["a:prstDash", "a:custDash"]
 const joinTags = ["a:round", "a:bevel", "a:miter"]
 const miterLimit = "800000"
+const fadedKinds = ["a:solidFill", "a:gradFill", "a:pattFill"]
 
 function rootOf(bytes: Uint8Array): MarkupElement {
   const root = requireMarkup(bytes).elements[0]
@@ -95,31 +97,59 @@ function arrowXml(tag: "a:headEnd" | "a:tailEnd", arrow: Arrow): string {
   return `<${tag} type="${arrow.type}" w="${arrow.width}" len="${arrow.length}"/>`
 }
 
+function codec<F extends LineField>(
+  name: F,
+  write: (value: FieldValue<"line", F>) => Slot,
+): PartCodec<FieldValue<"line", F>> {
+  return {
+    read: (parts, at) => shownLine(parts, at)?.[name].value ?? null,
+    write: (parts, at, value) => lineEdited(parts, at, write(value)),
+  }
+}
+
 function field<F extends LineField>(
   name: F,
   write: (value: FieldValue<"line", F>) => Slot,
   inherit: Slot,
 ): FieldXml<FieldValue<"line", F>> {
-  return whole(
-    {
-      read: (parts, at) => shownLine(parts, at)?.[name].value ?? null,
-      write: (parts, at, value) => lineEdited(parts, at, write(value)),
-    },
-    (parts, at) => lineEdited(parts, at, inherit),
-  )
+  return whole(codec(name, write), (parts, at) => lineEdited(parts, at, inherit))
+}
+
+function filled(value: FieldValue<"fill", "value">): Slot {
+  const written = fillMarkup(value)
+  return withChild(fillTags, written.tag as LineChild, written.xml)
+}
+
+export function lineAlpha(parts: Parts, at: ElementAt): Faded {
+  const value = shownLine(parts, at)?.fill.value
+  return value == null ? null : shownAlpha(colorsOf(value))
+}
+
+function fadedChild(alpha: Alpha): Slot {
+  return (line) => {
+    const { elements } = requireMarkup(line)
+    const root = rootOf(line)
+    const own = elements.find((each) => each.parent === root.index && fadedKinds.includes(each.kind))
+    if (own === undefined) return line
+    const next = fadedBytes(line.subarray(own.start, own.end), alpha)
+    return spliceBytes(line, [{ start: own.start, end: own.end, next }])
+  }
+}
+
+function fadedLine(parts: Parts, at: ElementAt, alpha: Alpha): Parts {
+  const shown = shownLine(parts, at)?.fill
+  const value = shown?.value
+  if (shown === undefined || value == null || colorsOf(value).length === 0) return parts
+  return lineEdited(parts, at, shown.own ? fadedChild(alpha) : filled(fadedFill(value, alpha)))
 }
 
 export const lineXml: TraitXml<"line"> = {
   slot: null,
   fields: {
     width: field("width", (value) => withAttribute("w", String(value)), withAttribute("w", null)),
-    fill: field(
-      "fill",
-      (value) => {
-        const written = fillMarkup(value)
-        return withChild(fillTags, written.tag as LineChild, written.xml)
-      },
-      withChild(fillTags, null, null),
+    fill: whole(
+      alphaKept(codec("fill", filled), lineAlpha, fadedLine, (value) => namesAlpha(colorsOf(value))),
+      (parts, at) => lineEdited(parts, at, withChild(fillTags, null, null)),
     ),
     dash: field(
       "dash",
@@ -144,5 +174,12 @@ export const lineXml: TraitXml<"line"> = {
       (value) => withChild(["a:tailEnd"], "a:tailEnd", arrowXml("a:tailEnd", value)),
       withChild(["a:tailEnd"], null, null),
     ),
+    alpha: whole({
+      read: (parts, at) => {
+        const shown = lineAlpha(parts, at)
+        return shown === "mixed" ? null : shown
+      },
+      write: fadedLine,
+    }),
   },
 }

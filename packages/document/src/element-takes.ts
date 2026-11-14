@@ -1,7 +1,7 @@
 import type { Box } from "./box.js"
 import type { IndexElement } from "./deck-index.js"
 import type { Kind } from "./kinds.js"
-import { fieldKeys, kindTraits, type FieldKey } from "./traits.js"
+import { alphaKeys, fieldKeys, kindTraits, type FieldKey } from "./traits.js"
 
 export type ElementFacts = {
   readonly kind: Kind
@@ -15,9 +15,10 @@ const turns: readonly FieldKey[] = ["box.rot", "box.flipH", "box.flipV"]
 const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
   table: ["box.w", "box.h", ...turns],
   chart: turns,
+  slide: ["fill.alpha"],
 }
 
-const textFields: readonly FieldKey[] = ["text.value", "notes.value"]
+const textFields: readonly FieldKey[] = ["text.value", "text.alpha", "notes.value"]
 
 const removes: readonly Kind[] = ["shape", "picture", "connector", "table", "chart", "kept"]
 
@@ -26,6 +27,10 @@ export function takes(facts: ElementFacts): readonly FieldKey[] {
   return fields.filter(
     (field) => !(unwritten[facts.kind]?.includes(field) ?? false) && (facts.text || !textFields.includes(field)),
   )
+}
+
+export function opacityFields(facts: ElementFacts): readonly FieldKey[] {
+  return takes(facts).filter((field) => alphaKeys.includes(field))
 }
 
 export function agentTakes(facts: ElementFacts): readonly FieldKey[] {

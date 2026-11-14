@@ -12,7 +12,7 @@ import { line } from "./trait-line.js"
 import { notes } from "./trait-notes.js"
 import { table } from "./trait-table.js"
 import { text } from "./trait-text.js"
-import type { AgentOf, Alpha, ValueOf } from "./value-kind.js"
+import type { AgentOf, Alpha, Fields, ValueOf } from "./value-kind.js"
 
 export const traits = {
   identity,
@@ -79,6 +79,12 @@ export const kindTraits = {
 export function fieldKeys(trait: TraitName): readonly FieldKey[] {
   return Object.keys(traits[trait].fields).map((field) => `${trait}.${field}` as FieldKey)
 }
+
+export const alphaKeys: readonly FieldKey[] = traitNames.flatMap((trait) =>
+  Object.entries(traits[trait].fields as Fields).flatMap(([field, kind]) =>
+    kind.desc.kind === "alpha" ? [`${trait}.${field}` as FieldKey] : [],
+  ),
+)
 
 export function inheritable(trait: TraitName, field: string): boolean {
   return (traits[trait].inheritable as readonly string[]).includes(field)

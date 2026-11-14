@@ -17,7 +17,7 @@ import { linkedPart } from "./notes-part.js"
 import { paintAttribute } from "./paint-color.js"
 import { ownersOf, propertiesOf, sheetOf, stylesOf } from "./trait-read.js"
 
-export type LineField = FieldName<"line">
+export type LineField = Exclude<FieldName<"line">, "alpha">
 
 export type ShownLine = {
   readonly [F in LineField]: { readonly value: FieldValue<"line", F> | null; readonly own: boolean }

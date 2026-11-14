@@ -15,6 +15,7 @@ import {
   type TraitName,
 } from "@airdesign/document"
 import { agentSchema, readAgent, type AgentRead, type JsonSchema } from "./agent-form.js"
+import { opacityWire } from "./opacity-wire.js"
 import { traitWire } from "./trait-wire.js"
 
 export type WireSet = SetChange & { readonly op: "set" }
@@ -109,14 +110,22 @@ function readTraits(body: Inputs, head: readonly string[]): Read<Readonly<Record
   return { ok: true, change: read }
 }
 
+function readOpacity(raw: Inputs): Read<Inputs> {
+  if (!Object.hasOwn(raw, "opacity")) return { ok: true, change: {} }
+  const read = readAgent(opacityWire.desc, raw.opacity)
+  return read.ok ? { ok: true, change: { opacity: read.value } } : refused("opacity")
+}
+
 export function readSetChange(raw: unknown): Read<WireSet> {
   if (!plainObject(raw) || raw.op !== "set") return refused("op")
   const target = readTarget(raw.target)
   if (target === null) return refused("target")
-  const read = readTraits(raw, ["op", "target"])
+  const opacity = readOpacity(raw)
+  if (!opacity.ok) return opacity
+  const read = readTraits(raw, ["op", "target", "opacity"])
   if (!read.ok) return read
-  if (Object.keys(read.change).length === 0) return refused("set")
-  return { ok: true, change: { op: "set", target, ...read.change } as WireSet }
+  if (Object.keys(read.change).length === 0 && Object.keys(opacity.change).length === 0) return refused("set")
+  return { ok: true, change: { op: "set", target, ...opacity.change, ...read.change } as WireSet }
 }
 
 function readBox(raw: unknown): Box | null {
@@ -185,6 +194,7 @@ export function setChangeSchema(): JsonSchema {
         pattern: targetPattern,
         description: `An element id such as 258.7 or 258.notes; a slide id such as 258 for the slide itself, whose fill is the slide's background; <slide>.<role> such as 258.title for the element with that role on one slide; or *.<role> such as *.title for it on every slide. Roles: ${roles.join(", ")}.`,
       },
+      opacity: { ...agentSchema(opacityWire.desc), description: opacityWire.description },
       ...Object.fromEntries(wired.map((trait) => [trait, traitSchema(trait, null)])),
     },
   }

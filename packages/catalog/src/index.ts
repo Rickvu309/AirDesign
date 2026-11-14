@@ -11,6 +11,7 @@ export {
 export { catalog, projectTools, toolInputSchema, type AgentOp, type CommandOp } from "./catalog.js"
 export { deckName, readDeckName } from "./deck-name.js"
 export { agentNumberOf, designOf, foldDesign, readAgent, shownDesign } from "./agent-form.js"
+export { opacityWire } from "./opacity-wire.js"
 export { traitWire } from "./trait-wire.js"
 export { printDesign } from "./design-print.js"
 export { storableText } from "./storable-text.js"

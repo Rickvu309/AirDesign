@@ -220,12 +220,17 @@ function bodyReads(owners: readonly Held[], reads: Partial<Record<DesignKey, Rea
     reads["body.vertical"] = read(verticalValue, vertical.source)
 }
 
-function listLevels(list: Held | undefined, level: number): readonly Held[] {
+export function listLevels(list: Held | undefined, level: number): readonly Held[] {
   if (list === undefined) return []
   return [child(list, `a:lvl${String(level + 1)}pPr`), child(list, "a:defPPr")].flatMap((held) => {
     const defaults = child(held, "a:defRPr")
     return defaults === undefined ? [] : [defaults]
   })
+}
+
+export function textStyleKind(placeholder: string | null): string {
+  if (placeholder !== null && titleTypes.has(placeholder)) return "p:titleStyle"
+  return placeholder !== null && bodyTypes.has(placeholder) ? "p:bodyStyle" : "p:otherStyle"
 }
 
 function textReads(
@@ -251,13 +256,7 @@ function textReads(
     ...owners.flatMap((owner) => listLevels(child(child(owner, "p:txBody"), "a:lstStyle"), level)),
   ]
   const styles = chain.master === null ? undefined : child(root(chain.master), "p:txStyles")
-  const kind =
-    placeholder !== null && titleTypes.has(placeholder)
-      ? "p:titleStyle"
-      : placeholder !== null && bodyTypes.has(placeholder)
-        ? "p:bodyStyle"
-        : "p:otherStyle"
-  const styleList = child(styles, kind)
+  const styleList = child(styles, textStyleKind(placeholder))
   const far = listLevels(styleList === undefined ? undefined : { ...styleList, source: "master" }, level)
   const reference = child(child(own, "p:style"), "a:fontRef")
   const size = [...near, ...far].find((held) => (whole(held.element, "sz") ?? 0) > 0)

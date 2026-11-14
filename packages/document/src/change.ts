@@ -4,7 +4,7 @@ import type { SlideSize } from "./deck-index.js"
 import type { DesignKey, Role } from "./design.js"
 import { shapeOf, slideKind, slideNode, type ElementId, type SlideId } from "./element-id.js"
 import { elementGone } from "./element-order.js"
-import { takes, type ElementFacts } from "./element-takes.js"
+import { opacityFields, takes, type ElementFacts } from "./element-takes.js"
 import { format } from "./format.js"
 import type { ElementPatch, FieldEdit, Row } from "./row.js"
 import { floorNodes, openingElement } from "./slide-floor.js"
@@ -19,12 +19,13 @@ import {
   type FieldKey,
   type FieldName,
   type FieldValue,
+  type HasAlpha,
   type InheritableField,
   type InputKinds,
   type InputName,
   type TraitName,
 } from "./traits.js"
-import type { ValueOf } from "./value-kind.js"
+import type { Alpha, ValueOf } from "./value-kind.js"
 
 export type Target =
   | { readonly node: ElementId }
@@ -39,7 +40,9 @@ export type TraitInput<T extends TraitName> = {
 
 export type TraitInputs = { readonly [T in TraitName]?: TraitInput<T> }
 
-export type SetChange = { readonly target: Target } & TraitInputs
+export type ElementInputs = HasAlpha extends true ? { readonly opacity?: Alpha } : Record<never, never>
+
+export type SetChange = { readonly target: Target } & ElementInputs & TraitInputs
 
 export type AddChange = {
   readonly kind: "shape"
@@ -236,19 +239,34 @@ function moves(input: Loose): boolean {
   return Object.keys(input).some((key) => inputOf("box", key))
 }
 
-function planNode(
-  change: TraitInputs,
-  view: ScopedElement,
-  spot: Spot | undefined,
-): NodeRow | readonly ChangeRefusal[] {
+function fieldOf(key: FieldKey): readonly [TraitName, string] {
+  const [trait, field] = key.split(".") as [TraitName, string]
+  return [trait, field]
+}
+
+function opacityRefusals(view: ScopedElement): readonly ChangeRefusal[] {
+  const fields = opacityFields(view.facts)
+  if (fields.length === 0) return [{ node: view.node, trait: null, code: "kind" }]
+  const kept = fields.map(fieldOf).find(([trait, field]) => keptRefuses(view.kept, trait, field))
+  return kept === undefined ? [] : [{ node: view.node, trait: kept[0], code: "kept" }]
+}
+
+function planNode(change: SetChange, view: ScopedElement, spot: Spot | undefined): NodeRow | readonly ChangeRefusal[] {
   const named = namedTraits(change)
-  const refusals = named.flatMap(([trait, input]) => {
+  const refusals: ChangeRefusal[] = named.flatMap(([trait, input]) => {
     const unplaced = trait === "box" && moves(input) && spot === undefined && refusalOf(view, trait, input) === null
     const code = unplaced ? "kind" : refusalOf(view, trait, input)
     return code === null ? [] : [{ node: view.node, trait, code }]
   })
+  if (change.opacity !== undefined) refusals.push(...opacityRefusals(view))
   if (refusals.length > 0) return refusals
-  const patch = Object.fromEntries(named.map(([trait, input]) => [trait, traitPatch(trait, input, view, spot)]))
+  const patch: Record<string, Readonly<Record<string, FieldEdit<unknown>>>> = Object.fromEntries(
+    named.map(([trait, input]) => [trait, traitPatch(trait, input, view, spot)]),
+  )
+  const opacity = change.opacity
+  if (opacity !== undefined)
+    for (const [trait, field] of opacityFields(view.facts).map(fieldOf))
+      patch[trait] = { ...patch[trait], [field]: { set: opacity } }
   return { node: view.node, row: { v: format, patch: patch as ElementPatch } }
 }
 

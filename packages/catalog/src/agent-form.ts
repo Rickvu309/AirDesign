@@ -1,9 +1,12 @@
 import {
+  alphaOf,
   bareTransforms,
   bytesOf,
   designBytes,
   designKeys,
+  fadedColor,
   mappedSlots,
+  namesAlpha,
   readColor,
   readElementId,
   readTextValue,
@@ -143,9 +146,53 @@ type Arrow = FieldValue<"line", "head">
 
 const arrowShown = (arrow: Arrow) => (arrow.type === "none" ? null : arrow.type)
 
+const gradientWord = "gradient "
+
+function shownColors(shown: Shown[0] | undefined): readonly (Color | null)[] {
+  if (typeof shown !== "string") return []
+  const words = shown.startsWith(gradientWord) ? shown.slice(gradientWord.length).split(", ") : [shown]
+  return words.map(readAgentColor)
+}
+
+function shownAlpha(shown: Shown[0] | undefined): number | null {
+  const [first, ...rest] = shownColors(shown).map((color) => (color === null ? null : alphaOf(color)))
+  return first === undefined || first === null || rest.some((each) => each !== first) ? null : first
+}
+
+function fadedShown(shown: string, alpha: number): string {
+  const words = shown.startsWith(gradientWord) ? shown.slice(gradientWord.length).split(", ") : [shown]
+  const faded = words.map((word) => {
+    const color = readAgentColor(word)
+    return color === null ? word : agentColor(fadedColor(color, alpha))
+  })
+  return `${shown.startsWith(gradientWord) ? gradientWord : ""}${faded.join(", ")}`
+}
+
+function setOf<V>(edit: FieldEdit<V> | undefined): V | undefined {
+  return edit === undefined || typeof edit !== "object" ? undefined : edit.set
+}
+
+function faded(
+  design: Design,
+  before: Design,
+  key: DesignKey,
+  value: FieldEdit<unknown> | undefined,
+  alpha: FieldEdit<number> | undefined,
+): Design {
+  const shown = design[key]?.[0]
+  if (typeof shown !== "string") return design
+  const kept = setOf(value) === undefined || alpha === "opening" ? null : shownAlpha(before[key]?.[0])
+  const own = shownColors(shown).flatMap((color) => (color === null ? [] : [color]))
+  const set = setOf(alpha) ?? (kept !== null && !namesAlpha(own) ? kept : undefined)
+  if (set === undefined) return design
+  const next = fadedShown(shown, set)
+  return next === shown ? design : { ...design, [key]: [next] }
+}
+
 export function foldDesign(design: Design | undefined, patch: ElementPatch): Design | undefined {
   const line = patch.line
-  let next = folded(design ?? {}, "fill", patch.fill?.value, agentFillValue)
+  const before = design ?? {}
+  let next = folded(before, "fill", patch.fill?.value, agentFillValue)
   next = folded(next, "line.width", line?.width, (value) => tenths(value / emuPerPoint))
   next = folded(next, "line.fill", line?.fill, agentFillValue)
   next = folded(next, "line.dash", line?.dash, (value) => (value === "solid" ? null : value))
@@ -155,7 +202,10 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch): Des
   next = folded(next, "box.rot", patch.box?.rot, (value) => (value === 0 ? null : tenths(value / anglePerDegree)))
   next = folded(next, "box.flipH", patch.box?.flipH, (value) => (value ? true : null))
   next = folded(next, "box.flipV", patch.box?.flipV, (value) => (value ? true : null))
-  if (next === design) return design
+  next = faded(next, before, "fill", patch.fill?.value, patch.fill?.alpha)
+  next = faded(next, before, "line.fill", line?.fill, line?.alpha)
+  next = faded(next, before, "text.color", undefined, patch.text?.alpha)
+  if (next === before) return design
   return Object.keys(next).length === 0 ? undefined : next
 }
 

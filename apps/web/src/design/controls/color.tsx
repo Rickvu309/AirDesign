@@ -1,4 +1,4 @@
-import { sameColor, type Color } from "@airdesign/document"
+import { fadedColor, opaque, sameColor, type Color } from "@airdesign/document"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import type { ControlProps } from "@/design/panel"
@@ -13,7 +13,8 @@ function light(css: string): boolean {
 
 export function ColorControl({ row, palette, onChange }: ControlProps) {
   const label = useId()
-  const shown = row.mixed ? null : (row.value as Color | undefined)
+  const held = row.mixed ? null : (row.value as Color | undefined)
+  const shown = held === null || held === undefined ? held : fadedColor(held, opaque)
   return (
     <div className="flex flex-col gap-1.5" data-control="color">
       <span id={label} className="text-[length:var(--type-caption)] text-quiet">

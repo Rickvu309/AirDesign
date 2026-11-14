@@ -104,7 +104,7 @@ describe("the fill codec writes the shape's one fill choice", () => {
 
   it.each([
     "<a:noFill/>",
-    '<a:solidFill><a:schemeClr val="accent1"><a:lumMod val="50000"/><a:alpha val="75000"/></a:schemeClr></a:solidFill>',
+    '<a:solidFill><a:schemeClr val="accent1"><a:lumMod val="50000"/></a:schemeClr></a:solidFill>',
     '<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:srgbClr val="FFFFFF"/></a:gs></a:gsLst><a:lin ang="0"/></a:gradFill>',
     '<a:pattFill prst="pct5"><a:fgClr><a:srgbClr val="FFFFFF"/></a:fgClr></a:pattFill>',
     "<a:grpFill/>",
@@ -112,6 +112,16 @@ describe("the fill codec writes the shape's one fill choice", () => {
   ])("replaces the whole fill and only its bytes: %s", (fill) => {
     const xml = slide(`<p:spPr>${beforeGeometry}\n${fill}\r\n${afterGeometry}</p:spPr>`)
     expect(write(xml)).toBe(xml.replace(fill, solid))
+    expect(write(xml, { none: true })).toBe(xml.replace(fill, "<a:noFill/>"))
+  })
+
+  it("gives a new colour the alpha the fill showed, as PowerPoint keeps transparency", () => {
+    const fill =
+      '<a:solidFill><a:schemeClr val="accent1"><a:lumMod val="50000"/><a:alpha val="75000"/></a:schemeClr></a:solidFill>'
+    const xml = slide(`<p:spPr>${beforeGeometry}\n${fill}\r\n${afterGeometry}</p:spPr>`)
+    expect(write(xml)).toBe(
+      xml.replace(fill, solid.replace("/></a:solidFill>", '><a:alpha val="75000"/></a:srgbClr></a:solidFill>')),
+    )
     expect(write(xml, { none: true })).toBe(xml.replace(fill, "<a:noFill/>"))
   })
 

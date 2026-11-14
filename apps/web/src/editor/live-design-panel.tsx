@@ -13,6 +13,7 @@ import { connect } from "@airdesign/live"
 import {
   readSlides,
   readTraits,
+  shownAlphas,
   shownFill,
   shownGeometry,
   shownLine,
@@ -59,7 +60,16 @@ function readsOf(parts: Parts, node: ElementId): TraitReads {
   return deckTraits.get(parts)?.elements.get(node)?.reads ?? {}
 }
 
+const shownFields = new WeakMap<Parts, Map<ElementId, PanelReads["fields"]>>()
+
 function fieldsOf(parts: Parts, node: ElementId): PanelReads["fields"] {
+  const read = shownFields.get(parts) ?? new Map<ElementId, PanelReads["fields"]>()
+  shownFields.set(parts, read)
+  if (!read.has(node)) read.set(node, fieldsRead(parts, node))
+  return read.get(node)
+}
+
+function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
   const { slide, shape } = shapeOf(node)
   const part = readSlides(parts).find((each) => each.slide === slide)?.part
   if (part === undefined) return {}
@@ -69,6 +79,10 @@ function fieldsOf(parts: Parts, node: ElementId): PanelReads["fields"] {
     const geometry = shownGeometry(parts, at)
     const turn = shownTurn(parts, at)
     const line = Object.entries(shownLine(parts, at) ?? {}).map(([field, shown]) => [`line.${field}`, shown])
+    const alphas = Object.entries(shownAlphas(parts, at)).map(([trait, value]) => [
+      `${trait}.alpha`,
+      { value, own: true },
+    ])
     return {
       ...(fill === null ? {} : { "fill.value": fill }),
       ...(geometry === null ? {} : { "geometry.shape": geometry }),
@@ -76,6 +90,7 @@ function fieldsOf(parts: Parts, node: ElementId): PanelReads["fields"] {
       "box.flipH": { value: turn.flipH, own: true },
       "box.flipV": { value: turn.flipV, own: true },
       ...Object.fromEntries(line),
+      ...Object.fromEntries(alphas),
     }
   } catch {
     return {}

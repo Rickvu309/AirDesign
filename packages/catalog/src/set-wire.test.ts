@@ -1,9 +1,10 @@
-import { elementId, slideId, traitNames, type TraitName } from "@airdesign/document"
+import { elementId, slideId, traitNames, traits, type Desc, type TraitName } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import * as z from "zod/v4"
 import { flat } from "./agent-form.js"
 import { readAgentEdit, toolInputSchema } from "./index.js"
 import { addChangeSchema, readAddChange, readSetChange, readTarget, setChangeSchema } from "./set-wire.js"
+import { opacityWire } from "./opacity-wire.js"
 import { traitWire } from "./trait-wire.js"
 
 const title = elementId("258.2")
@@ -69,7 +70,8 @@ describe("readSetChange reads the agent form into a change in stored units", () 
     expect(refused({ line: { width: 1585 } })).toEqual({ ok: false, refusal: "field", field: "line.width" })
     expect(refused({ line: { dash: "dotted" } })).toEqual({ ok: false, refusal: "field", field: "line.dash" })
     expect(refused({ box: {} })).toEqual({ ok: false, refusal: "field", field: "box" })
-    expect(refused({ opacity: 60 })).toEqual({ ok: false, refusal: "field", field: "opacity" })
+    for (const opacity of [101, -1, "60", null, true])
+      expect(refused({ opacity })).toEqual({ ok: false, refusal: "field", field: "opacity" })
     expect(refused({})).toEqual({ ok: false, refusal: "field", field: "set" })
     expect(readSetChange({ op: "set", target: "258.headline", box: { x: 1 } })).toEqual({
       ok: false,
@@ -101,6 +103,32 @@ describe("readSetChange reads a turn in degrees, flips, a preset with its adjust
         box: { rot: 5_400_000, flipH: true, align: "center", distribute: "vertical" },
         geometry: { shape: { preset: "roundRect", adjust: { adj: 30_000 } } },
       },
+    })
+  })
+})
+
+describe("readSetChange reads an element's one opacity in percent", () => {
+  it("turns percent into alpha, alone or beside other fields", () => {
+    expect(readSetChange({ op: "set", target: "*.title", opacity: 60 })).toEqual({
+      ok: true,
+      change: { op: "set", target: { role: "title", slide: "every" }, opacity: 60_000 },
+    })
+    expect(readSetChange({ op: "set", target: "258.2", opacity: 12.5, fill: { value: "accent2" } })).toEqual({
+      ok: true,
+      change: {
+        op: "set",
+        target: { node: title },
+        opacity: 12_500,
+        fill: { value: { solid: { scheme: "accent2" } } },
+      },
+    })
+  })
+
+  it("names no alpha on a trait, since opacity fades every field at once", () => {
+    expect(readSetChange({ op: "set", target: "258.2", fill: { alpha: 60 } })).toEqual({
+      ok: false,
+      refusal: "field",
+      field: "fill.alpha",
     })
   })
 })
@@ -211,8 +239,27 @@ describe("the set and add schemas derive from the agent forms", () => {
     expect(flat(setChangeSchema())).toBe(true)
     expect(flat(addChangeSchema())).toBe(true)
     const properties = setChangeSchema().properties as Readonly<Record<string, unknown>>
-    expect(Object.keys(properties)).toEqual(["op", "target", ...wired])
-    expect(properties).not.toHaveProperty("opacity")
+    expect(Object.keys(properties)).toEqual(["op", "target", "opacity", ...wired])
+    expect(properties.opacity).toMatchObject({ type: "number", minimum: 0, maximum: 100 })
+  })
+
+  it("never spends a description on the options its schema already lists", () => {
+    const quoted = (desc: Desc): readonly (readonly string[])[] => {
+      if (desc.kind === "choice") return [desc.options]
+      if (desc.kind === "record") return Object.values(desc.fields).flatMap(quoted)
+      if (desc.kind === "union") return Object.values(desc.cases).flatMap(quoted)
+      return desc.kind === "list" || desc.kind === "named" ? quoted(desc.item) : []
+    }
+    for (const trait of wired) {
+      const kinds = { ...traits[trait].fields, ...traits[trait].inputs } as Readonly<Record<string, { desc: Desc }>>
+      const fields = traitWire[trait as TraitName].fields as Readonly<Record<string, { readonly description: string }>>
+      for (const [field, { description }] of Object.entries(fields)) {
+        const listed = quoted(kinds[field]?.desc ?? { kind: "mark" }).filter((options) =>
+          options.every((option) => description.includes(`"${option}"`)),
+        )
+        expect(listed, `${trait}.${field}`).toEqual([])
+      }
+    }
   })
 
   it("takes every field's example, and the reader reads it", () => {
@@ -225,6 +272,10 @@ describe("the set and add schemas derive from the agent forms", () => {
         expect(readSetChange(change).ok, `${trait}.${field}`).toBe(true)
       }
     }
+    const opacity = { op: "set", target: "258.2", ...opacityWire.example }
+    expect(check.safeParse(opacity).success).toBe(true)
+    expect(readSetChange(opacity).ok).toBe(true)
+    expect(check.safeParse({ op: "set", target: "258.2", opacity: 101 }).success).toBe(false)
     expect(check.safeParse({ op: "set", target: "258.2", text: { color: "accent9" } }).success).toBe(false)
     expect(check.safeParse({ op: "set", target: "*.title", fill: { value: null } }).success).toBe(true)
     expect(check.safeParse({ op: "set", target: "*.title", text: { color: null } }).success).toBe(false)

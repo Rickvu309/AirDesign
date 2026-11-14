@@ -1,7 +1,15 @@
-import { coordinates, designBytes, readDesign, type Desc, type ElementRead } from "@airdesign/document"
+import {
+  coordinates,
+  designBytes,
+  readDesign,
+  type Alpha,
+  type Desc,
+  type Design,
+  type ElementRead,
+} from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import * as z from "zod/v4"
-import { agentColor, agentSchema, designOf, flat, readAgent, readAgentColor } from "./agent-form.js"
+import { agentColor, agentSchema, designOf, flat, foldDesign, readAgent, readAgentColor } from "./agent-form.js"
 
 const navy = "1F4E79"
 const black = "000000"
@@ -179,5 +187,43 @@ describe("the agent form reads what an agent sends into stored values, in agent 
         expect(read(desc, value).ok, JSON.stringify(value)).toBe(false)
       }
     }
+  })
+})
+
+describe("foldDesign shows an element's opacity in the alpha of every colour its design line names", () => {
+  const faded = { set: 60_000 as Alpha }
+  const design: Design = {
+    fill: ["accent1", "style"],
+    "line.fill": ["accent1 shade 15", "style"],
+    "line.width": [1, "style"],
+    "text.color": ["tx1 alpha 35", "master"],
+  }
+
+  it("fades each colour, a gradient stop by stop, and leaves a pattern's line as it is", () => {
+    expect(foldDesign(design, { fill: { alpha: faded }, line: { alpha: faded }, text: { alpha: faded } })).toEqual({
+      fill: ["accent1 alpha 60"],
+      "line.fill": ["accent1 shade 15 alpha 60"],
+      "line.width": [1, "style"],
+      "text.color": ["tx1 alpha 60"],
+    })
+    expect(foldDesign({ fill: [`gradient accent1, #${black} alpha 35`] }, { fill: { alpha: faded } })).toEqual({
+      fill: [`gradient accent1 alpha 60, #${black} alpha 60`],
+    })
+    expect(foldDesign({ fill: ["pattern dkDnDiag"] }, { fill: { alpha: faded } })).toEqual({
+      fill: ["pattern dkDnDiag"],
+    })
+    expect(foldDesign({ "text.color": ["tx1 alpha 35"] }, { text: { alpha: { set: 100_000 as Alpha } } })).toEqual({
+      "text.color": ["tx1"],
+    })
+  })
+
+  it("keeps the alpha a colour showed when a new one replaces it, unless the new one names its own", () => {
+    const shown: Design = { fill: ["accent1 alpha 60"] }
+    expect(foldDesign(shown, { fill: { value: { set: { solid: { scheme: "accent2" } } } } })).toEqual({
+      fill: ["accent2 alpha 60"],
+    })
+    const own = { solid: { scheme: "accent2", transforms: [{ op: "alpha", val: 20_000 }] } } as const
+    expect(foldDesign(shown, { fill: { value: { set: own } } })).toEqual({ fill: ["accent2 alpha 20"] })
+    expect(foldDesign(shown, { fill: { alpha: "opening" } })).toBe(shown)
   })
 })
