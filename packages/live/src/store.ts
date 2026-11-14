@@ -4,7 +4,6 @@ import {
   limits,
   storedValue,
   type ElementId,
-  type FormatOneValue,
   type SlideCommand,
   type SlideId,
   type Value,
@@ -19,7 +18,7 @@ export type ConfirmedRow = Value & {
   readonly slideEdit?: SlideCommand
 }
 
-export type PendingRow = FormatOneValue & {
+export type PendingRow = Value & {
   readonly kind: "pending"
   readonly once?: string
   readonly deck: DeckId
@@ -51,7 +50,7 @@ export function pendingRow(
   deck: DeckId,
   order: number,
   base: number,
-  edit: FormatOneValue,
+  edit: Value,
   node: ElementId,
   floor: string | undefined,
 ): PendingRow {

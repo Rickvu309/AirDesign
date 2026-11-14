@@ -27,6 +27,7 @@ export function useDeckPaint(
   const shapes = useRef<ReadonlyMap<ElementId, ReadShape>>(new Map())
   const shownParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
   const editParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
+  const displayParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
   const canvases = useRef<SlideCanvases>(() => null)
   const pictures = useRef<PictureSources | null>(null)
   const painted = useRef<Painted | null>(null)
@@ -56,6 +57,7 @@ export function useDeckPaint(
     movables.current = next.movables
     shapes.current = next.shapes
     editParts.current = next.base
+    displayParts.current = next.display
     canvases.current = next.canvases
     pictures.current?.release()
     pictures.current = next.pictures
@@ -86,6 +88,7 @@ export function useDeckPaint(
     shownParts,
     shownRegister,
     editParts,
+    displayParts,
     canvases,
     pictures,
     busy,

@@ -1,6 +1,8 @@
 import {
   elementId,
   floorFor,
+  floorOpening,
+  landedPatch,
   shapeOf,
   type IndexElement,
   type Register,
@@ -38,7 +40,10 @@ export function flooredEdit(
   ].flatMap((row) => {
     const value = shownValue(register, row.node, row.value ?? "")
     if (row.node === notes && row.value === null && value === "") return []
-    return [{ ...row, value: value === "" ? null : value, box: shownBox(register, row.node, row.box) }]
+    const body = register.nodes.includes(row.node) ? register.elements[row.node] : undefined
+    const opening = floorOpening(register, row.node, body === undefined ? {} : landedPatch(body, "text"))
+    const shown = { ...row, value: value === "" ? null : value, box: shownBox(register, row.node, row.box) }
+    return [opening === undefined ? shown : { ...shown, opening }]
   })
   return { ...edit, floor: floorFor(rows, edit.id) }
 }

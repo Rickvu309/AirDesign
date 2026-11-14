@@ -38,6 +38,7 @@ export type InputName<T extends TraitName> = keyof InputKinds<T> & string
 export type FieldValue<T extends TraitName, F extends FieldName<T>> = ValueOf<FieldKinds<T>[F]>
 export type TraitValue<T extends TraitName> = { readonly [F in FieldName<T>]: FieldValue<T, F> }
 export type FieldKey = { [T in TraitName]: `${T}.${FieldName<T>}` }[TraitName]
+export type InheritableField<T extends TraitName> = (typeof traits)[T]["inheritable"][number] & FieldName<T>
 
 export type AlphaField<T extends TraitName> = {
   [F in FieldName<T>]: FieldValue<T, F> extends Alpha ? F : never
@@ -48,7 +49,11 @@ export type HasAlpha = { [T in TraitName]: AlphaField<T> }[TraitName] extends ne
 export type WireField<T extends TraitName> = Exclude<FieldName<T>, AlphaField<T>> | InputName<T>
 
 export type WireAgent<T extends TraitName, F extends WireField<T>> =
-  F extends FieldName<T> ? AgentOf<FieldKinds<T>[F]> : F extends InputName<T> ? AgentOf<InputKinds<T>[F]> : never
+  F extends FieldName<T>
+    ? AgentOf<FieldKinds<T>[F]> | (F extends InheritableField<T> ? null : never)
+    : F extends InputName<T>
+      ? AgentOf<InputKinds<T>[F]>
+      : never
 
 export const traitNames = Object.keys(traits) as readonly TraitName[]
 
@@ -72,4 +77,13 @@ export const kindTraits = {
 
 export function fieldKeys(trait: TraitName): readonly FieldKey[] {
   return Object.keys(traits[trait].fields).map((field) => `${trait}.${field}` as FieldKey)
+}
+
+export function inheritable(trait: TraitName, field: string): boolean {
+  return (traits[trait].inheritable as readonly string[]).includes(field)
+}
+
+export function keptRefuses(kept: readonly string[], trait: TraitName, field: string): boolean {
+  if (kept.includes(`${trait}.${field}`)) return true
+  return kept.includes(trait) && !(traits[trait].inherits === "whole" && field === "value")
 }

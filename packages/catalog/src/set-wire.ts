@@ -1,4 +1,5 @@
 import {
+  inheritable,
   readElementId,
   readSlideId,
   roles,
@@ -11,7 +12,7 @@ import {
   type Target,
   type TraitName,
 } from "@airdesign/document"
-import { agentSchema, readAgent, type JsonSchema } from "./agent-form.js"
+import { agentSchema, readAgent, type AgentRead, type JsonSchema } from "./agent-form.js"
 import { traitWire } from "./trait-wire.js"
 
 export type WireSet = SetChange & { readonly op: "set" }
@@ -62,12 +63,22 @@ function wiredTrait(key: string): TraitName | undefined {
   return traitNames.find((trait) => trait === key && Object.keys(wireFields(trait)).length > 0)
 }
 
+function inherited(trait: TraitName, field: string): AgentRead {
+  return inheritable(trait, field) ? { ok: true, value: null } : { ok: false }
+}
+
+function nullable(trait: TraitName, field: string, schema: JsonSchema): JsonSchema {
+  if (!inheritable(trait, field)) return schema
+  const types = Array.isArray(schema.type) ? (schema.type as readonly string[]) : [schema.type as string]
+  return { ...schema, type: [...types, "null"] }
+}
+
 function readTrait(trait: TraitName, raw: unknown): Read<Inputs> {
   if (!plainObject(raw) || Object.keys(raw).length === 0) return refused(trait)
   const read: Record<string, unknown> = {}
   for (const [field, value] of Object.entries(raw)) {
     const desc = descOf(trait, field)
-    const got = desc === undefined ? null : readAgent(desc, value)
+    const got = desc === undefined ? null : value === null ? inherited(trait, field) : readAgent(desc, value)
     if (got === null || !got.ok) return refused(`${trait}.${field}`)
     read[field] = got.value
   }
@@ -135,7 +146,7 @@ function traitSchema(trait: TraitName, required: boolean): JsonSchema {
   const fields = Object.entries(wireFields(trait)).map(([field, { description }]) => {
     const desc = descOf(trait, field)
     if (desc === undefined) throw new Error(`${trait}.${field}`)
-    return [field, { ...agentSchema(desc), description }] as const
+    return [field, { ...nullable(trait, field, agentSchema(desc)), description }] as const
   })
   return {
     type: "object",

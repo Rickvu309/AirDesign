@@ -85,6 +85,13 @@ function readPatch(raw: unknown): ElementPatch | null {
   return read as ElementPatch
 }
 
+export function readOpening(raw: unknown): ElementPatch | null {
+  const patch = readPatch(raw)
+  if (patch === null) return null
+  const edits = Object.values(loose(patch)).flatMap((fields) => Object.values(fields ?? {}))
+  return edits.includes("opening") ? null : patch
+}
+
 function readStamped(v: unknown, raw: unknown): StoredRead<Row> {
   if (typeof v !== "number" || !Number.isSafeInteger(v) || v < 2) return payload
   if (v > format) return { ok: false, refusal: "newer" }

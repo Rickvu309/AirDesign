@@ -36,7 +36,11 @@ const title: ScopedElement = {
 export function DesignElementArt() {
   return (
     <ElementDesign
-      model={panelOf(title, { reads: {}, moves: true })}
+      model={panelOf(title, {
+        reads: {},
+        moves: true,
+        fields: { "fill.value": { value: { none: true }, own: false } },
+      })}
       kind="shape"
       palette={palette}
       onChange={() => undefined}

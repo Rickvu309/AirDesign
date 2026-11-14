@@ -56,20 +56,47 @@ export function DesignSection({
   title,
   id,
   last = false,
+  action = null,
   children,
 }: {
   title: string
   id?: string
   last?: boolean
+  action?: ReactNode
   children: ReactNode
 }) {
+  const heading = (
+    <h2 id={id} className="text-[length:var(--type-dense)] font-semibold text-foreground">
+      {title}
+    </h2>
+  )
   return (
     <section className={cn("flex flex-col gap-3 px-4 py-4", last ? null : "border-b border-line")}>
-      <h2 id={id} className="text-[length:var(--type-dense)] font-semibold text-foreground">
-        {title}
-      </h2>
+      {action === null ? (
+        heading
+      ) : (
+        <div className="flex min-h-6 items-center justify-between gap-2">
+          {heading}
+          {action}
+        </div>
+      )}
       {children}
     </section>
+  )
+}
+
+function SectionReset({ row, onChange }: { row: PanelRow; onChange: (row: PanelRow, value: unknown) => void }) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      data-section-reset
+      className="-my-1 h-6 px-1.5 text-[length:var(--type-caption)] font-normal text-quiet hover:text-foreground active:translate-y-0"
+      onClick={() => onChange(row, null)}
+    >
+      {row.reset}
+    </Button>
   )
 }
 
@@ -154,7 +181,7 @@ function runsOf(rows: readonly PanelRow[]): readonly Run[] {
 
 function RowView({ row, palette, onChange }: ControlProps) {
   const View = controlViews[row.control]
-  return View === undefined ? null : <View row={row} palette={palette} onChange={onChange} />
+  return View === undefined ? null : <View row={row} palette={palette} onChange={onChange} inner={RowView} />
 }
 
 export function ElementDesign({
@@ -181,26 +208,34 @@ export function ElementDesign({
       {model.sections.length === 0 ? (
         <p className="px-4 py-4 text-[length:var(--type-dense)] text-quiet">{designCopy.nothing}</p>
       ) : null}
-      {model.sections.map((section, at) => (
-        <DesignSection key={section.trait} title={section.label} last={at === last}>
-          {runsOf(section.rows).map((run) => (
-            <div
-              key={run.rows.map((row) => row.field).join(" ")}
-              className={
-                run.control === "length"
-                  ? "grid grid-cols-2 gap-2"
-                  : run.control === "toggle"
-                    ? "grid grid-cols-3 gap-2"
-                    : "flex flex-col"
-              }
-            >
-              {run.rows.map((row) => (
-                <RowView key={row.field} row={row} palette={palette} onChange={(value) => onChange(row, value)} />
-              ))}
-            </div>
-          ))}
-        </DesignSection>
-      ))}
+      {model.sections.map((section, at) => {
+        const reset = section.rows.find((row) => row.reset !== null && !row.caption)
+        return (
+          <DesignSection
+            key={section.trait}
+            title={section.label}
+            last={at === last}
+            action={reset === undefined ? null : <SectionReset row={reset} onChange={onChange} />}
+          >
+            {runsOf(section.rows).map((run) => (
+              <div
+                key={run.rows.map((row) => row.field).join(" ")}
+                className={
+                  run.control === "length"
+                    ? "grid grid-cols-2 gap-2"
+                    : run.control === "toggle"
+                      ? "grid grid-cols-3 gap-2"
+                      : "flex flex-col"
+                }
+              >
+                {run.rows.map((row) => (
+                  <RowView key={row.field} row={row} palette={palette} onChange={(value) => onChange(row, value)} />
+                ))}
+              </div>
+            ))}
+          </DesignSection>
+        )
+      })}
     </div>
   )
 }

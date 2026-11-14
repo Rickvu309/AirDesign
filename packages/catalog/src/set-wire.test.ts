@@ -49,7 +49,9 @@ describe("readSetChange reads the agent form into a change in stored units", () 
     expect(refused({ box: { x: 914_400 } })).toEqual({ ok: false, refusal: "field", field: "box.x" })
     expect(refused({ box: { rot: 45 } })).toEqual({ ok: false, refusal: "field", field: "box.rot" })
     expect(refused({ text: { color: "accent9" } })).toEqual({ ok: false, refusal: "field", field: "text.color" })
-    expect(refused({ fill: { value: "accent1" } })).toEqual({ ok: false, refusal: "field", field: "fill" })
+    expect(refused({ fill: { value: "accent9" } })).toEqual({ ok: false, refusal: "field", field: "fill.value" })
+    expect(refused({ box: { x: null } })).toEqual({ ok: false, refusal: "field", field: "box.x" })
+    expect(refused({ line: { width: 1 } })).toEqual({ ok: false, refusal: "field", field: "line" })
     expect(refused({ box: {} })).toEqual({ ok: false, refusal: "field", field: "box" })
     expect(refused({ opacity: 60 })).toEqual({ ok: false, refusal: "field", field: "opacity" })
     expect(refused({})).toEqual({ ok: false, refusal: "field", field: "set" })
@@ -59,6 +61,60 @@ describe("readSetChange reads the agent form into a change in stored units", () 
       field: "target",
     })
     expect(readSetChange({ target: "258.2", box: { x: 1 } })).toEqual({ ok: false, refusal: "field", field: "op" })
+  })
+})
+
+describe("readSetChange reads a fill in each of its forms", () => {
+  const fill = (value: unknown) => {
+    const read = readSetChange({ op: "set", target: "258.2", fill: { value } })
+    return read.ok ? read.change.fill?.value : read
+  }
+
+  it("reads a bare color as one color, a mark by its name, and null as the way back to the inherited fill", () => {
+    expect(fill("accent2")).toEqual({ solid: { scheme: "accent2" } })
+    expect(fill(`#${navy} lumMod 75`)).toEqual({ solid: { rgb: navy, transforms: [{ op: "lumMod", val: 75_000 }] } })
+    expect(fill({ solid: "tx1" })).toEqual({ solid: { scheme: "tx1" } })
+    expect(fill("none")).toEqual({ none: true })
+    expect(fill("group")).toEqual({ group: true })
+    expect(fill(null)).toBeNull()
+  })
+
+  it("reads a gradient's stops and angle in percent and degrees, and a pattern by its preset", () => {
+    const stops = [
+      { pos: 0, color: "accent1" },
+      { pos: 100, color: "accent1 lumMod 50" },
+    ]
+    expect(
+      fill({ gradient: { stops, shade: { linear: { angle: 90, scaled: true } }, rotateWithShape: true } }),
+    ).toEqual({
+      gradient: {
+        stops: [
+          { pos: 0, color: { scheme: "accent1" } },
+          { pos: 100_000, color: { scheme: "accent1", transforms: [{ op: "lumMod", val: 50_000 }] } },
+        ],
+        shade: { linear: { angle: 5_400_000, scaled: true } },
+        rotateWithShape: true,
+      },
+    })
+    const focus = { l: 50, t: 50, r: 50, b: 50 }
+    expect(
+      fill({ gradient: { stops, shade: { path: { kind: "circle", focus } }, rotateWithShape: false } }),
+    ).toMatchObject({
+      gradient: { shade: { path: { kind: "circle", focus: { l: 50_000, t: 50_000, r: 50_000, b: 50_000 } } } },
+    })
+    expect(fill({ pattern: { preset: "dkDnDiag", fg: "accent2", bg: "bg1" } })).toEqual({
+      pattern: { preset: "dkDnDiag", fg: { scheme: "accent2" }, bg: { scheme: "bg1" } },
+    })
+  })
+
+  it("refuses one stop, eleven stops, a pattern PowerPoint does not name and a picture", () => {
+    const stop = { pos: 0, color: "accent1" }
+    const shade = { linear: { angle: 0, scaled: false } }
+    const refused = { ok: false, refusal: "field", field: "fill.value" }
+    expect(fill({ gradient: { stops: [stop], shade, rotateWithShape: true } })).toEqual(refused)
+    expect(fill({ gradient: { stops: Array(11).fill(stop), shade, rotateWithShape: true } })).toEqual(refused)
+    expect(fill({ pattern: { preset: "stripes", fg: "accent2", bg: "bg1" } })).toEqual(refused)
+    expect(fill("picture")).toEqual(refused)
   })
 })
 
@@ -124,6 +180,8 @@ describe("the set and add schemas derive from the agent forms", () => {
       }
     }
     expect(check.safeParse({ op: "set", target: "258.2", text: { color: "accent9" } }).success).toBe(false)
+    expect(check.safeParse({ op: "set", target: "*.title", fill: { value: null } }).success).toBe(true)
+    expect(check.safeParse({ op: "set", target: "*.title", text: { color: null } }).success).toBe(false)
   })
 
   it("rides in airdesign_edit_deck beside the text and box changes, which read as before", () => {

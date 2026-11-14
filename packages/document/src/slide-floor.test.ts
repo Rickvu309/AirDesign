@@ -4,7 +4,8 @@ import { appendIndex, type IndexElement } from "./deck-index.js"
 import { elementId, slideId } from "./element-id.js"
 import { limits } from "./limits.js"
 import { orderKeyBetween } from "./order-key.js"
-import { floorFor, openingElement } from "./slide-floor.js"
+import { format, stamps } from "./format.js"
+import { floorFor, floorOpening, openingElement } from "./slide-floor.js"
 import { readSlideState, type SlideCommand } from "./slide-order.js"
 
 const file = [slideId("256"), slideId("257")] as const
@@ -114,6 +115,46 @@ describe("the floor of a slide that was not in the file", () => {
       source: "256",
       key,
     })
+  })
+
+  it("carries each cloned element's opening patch, and reads no floor that says opening inside it", () => {
+    const fill = { value: { set: { solid: { scheme: "accent2" } } } }
+    const read = (opening: unknown) =>
+      readSlideState({
+        file,
+        order: [{ slide: "clone", id: "259", source: "256", key, floor: [{ ...placeholder, node: "259.2", opening }] }],
+      })
+    expect(read({ fill })?.order[0]).toMatchObject({ floor: [{ node: "259.2", opening: { fill } }] })
+    expect(read({ fill: { value: "inherit" } })?.order[0]).toMatchObject({
+      floor: [{ opening: { fill: { value: "inherit" } } }],
+    })
+    expect(read({ fill: { value: "opening" } })).toBeUndefined()
+    expect(read({ fill: { value: { set: { solid: { scheme: "nope" } } } } })).toBeUndefined()
+    expect(read({ glow: { value: "inherit" } })).toBeUndefined()
+    expect(stamps.command).toBe(1)
+  })
+
+  it("gives a clone the fields its source shows, over the source's own opening, past the box and text", () => {
+    const navy = { set: { solid: { rgb: "1F4E79" } } } as const
+    const red = { set: { solid: { rgb: "C00000" } } } as const
+    const cloned = landed(indexed(), {
+      slide: "clone",
+      id: slideId("259"),
+      source: file[0],
+      key,
+      floor: [{ ...placeholder, node: elementId("259.2"), opening: { fill: { value: navy } } }],
+    })
+    const node = elementId("259.2")
+    expect(floorOpening(cloned, node, {})).toEqual({ fill: { value: navy } })
+    expect(floorOpening(cloned, node, { fill: { value: "opening" } })).toEqual({ fill: { value: navy } })
+    expect(floorOpening(cloned, node, { fill: { value: red }, box: { x: { set: 1 } } })).toEqual({
+      fill: { value: red },
+    })
+    expect(floorOpening(indexed(), elementId("256.2"), { fill: { value: "inherit" } })).toEqual({
+      fill: { value: "inherit" },
+    })
+    expect(floorOpening(indexed(), elementId("256.2"), { text: { value: { set: "x" } } })).toBeUndefined()
+    expect(format).toBeGreaterThan(stamps.command)
   })
 
   it("refuses a floor that would take the deck past its element limit or one device row", () => {

@@ -13,7 +13,7 @@ import { notesControls } from "./trait-controls-notes"
 import { tableControls } from "./trait-controls-table"
 import { textControls } from "./trait-controls-text"
 
-export type FieldCopy = { readonly label: string }
+export type FieldCopy = { readonly label: string; readonly reset?: string }
 
 export type TraitControls<T extends TraitName> = [WireField<T>] extends [never]
   ? { readonly fields: Readonly<Record<never, never>> }

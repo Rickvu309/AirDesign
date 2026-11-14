@@ -159,7 +159,9 @@ function traitWords(kind: Kind): string | undefined {
     )
     return fields.length === 0 ? [] : [`${trait} (${fields.join(", ")})`]
   })
-  return traits.length === 0 ? undefined : traits.join(" and ")
+  const last = traits.at(-1)
+  if (last === undefined) return undefined
+  return traits.length === 1 ? last : `${traits.slice(0, -1).join(", ")} and ${last}`
 }
 
 export function kindInstructions(): string {

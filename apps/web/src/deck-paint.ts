@@ -16,6 +16,7 @@ import { pictureSources, type PictureSources } from "@/picture-fill"
 import { shownValue, type BusyElements } from "@/live-repaint"
 import { fallbackPrompt } from "@/copy/placeholder-copy"
 import { tableEdited } from "@/table-edit"
+import { designRows } from "@/design-rows"
 import {
   namedShapes,
   paintCanvas,
@@ -111,7 +112,9 @@ export function paint(
   const earlier = previous?.from === parts ? previous : null
   const base = sameIdentity(register === null ? parts : slideBase(parts, register, pictureBytes), earlier?.base)
   const edited =
-    register !== null && (register.order.length > 0 || tableEdited(register)) ? editedParts(base, register) : base
+    register !== null && (register.order.length > 0 || tableEdited(register) || designRows(register).length > 0)
+      ? editedParts(base, register)
+      : base
   const display = sameIdentity(edited, earlier?.display)
   const read = readSlides(display)
   const slideParts = new Set(read.map((each) => each.part))

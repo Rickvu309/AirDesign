@@ -151,14 +151,14 @@ describe("the server admits only the edits the device can write onto an element 
   it("names what each kind takes field by field, only from the traits the kind takes", () => {
     const facts = { text: true, grouped: false, animated: false }
     const box = ["box.x", "box.y", "box.w", "box.h"]
-    expect(takes({ ...facts, kind: "shape" })).toEqual([...box, "text.value"])
-    expect(takes({ ...facts, kind: "shape", text: false })).toEqual(box)
+    expect(takes({ ...facts, kind: "shape" })).toEqual([...box, "fill.value", "text.value"])
+    expect(takes({ ...facts, kind: "shape", text: false })).toEqual([...box, "fill.value"])
     expect(takes({ ...facts, kind: "picture" })).toEqual(box)
     expect(takes({ ...facts, kind: "table" })).toEqual(["box.x", "box.y", "table.value"])
     expect(takes({ ...facts, kind: "group" })).toEqual(box)
     expect(takes({ ...facts, kind: "kept" })).toEqual([])
     expect(takes({ ...facts, kind: "slide" })).toEqual(["notes.value"])
-    expect(takes({ ...facts, kind: "shape", grouped: true })).toEqual(["text.value"])
+    expect(takes({ ...facts, kind: "shape", grouped: true })).toEqual(["fill.value", "text.value"])
     expect(takes({ ...facts, kind: "picture", animated: true })).toEqual(box)
     for (const kind of kinds) {
       const traits: readonly string[] = kindTraits[kind]

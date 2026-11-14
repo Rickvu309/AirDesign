@@ -1,4 +1,4 @@
-import { coordinates, decide, elementId, openRegister } from "@airdesign/document"
+import { coordinates, decide, elementId, format, openRegister } from "@airdesign/document"
 import { expect, it } from "vitest"
 import * as z from "zod/v4"
 import { deckRoutes, readAgentEdit, readCommit, readEdit, toolInputSchema } from "./index.js"
@@ -32,6 +32,32 @@ it("reads a person box edit and refuses one that is not a whole box", () => {
     { node: "258.7", property: "text", value: "hi" },
     { node: "258.7", property: "fill", value: box },
     { node: "258.", property: "box", value: box },
+  ]) {
+    expect(readEdit(raw)).toEqual(field)
+  }
+})
+
+it("reads a person's row of trait fields, which a fill needs, and refuses one it cannot read", () => {
+  const patch = { fill: { value: { set: { solid: { scheme: "accent2" } } } } }
+  expect(readEdit({ node: "258.7", v: format, patch, floor: "Hello" })).toEqual({
+    ok: true,
+    edit: { v: format, patch, node, floor: "Hello" },
+  })
+  expect(
+    readCommit({ deck: "deck", batch: [{ node: "258.7", v: format, patch: { fill: { value: "inherit" } } }] }),
+  ).toEqual({
+    ok: true,
+    deck: "deck",
+    batch: [{ v: format, patch: { fill: { value: "inherit" } }, node }],
+  })
+  for (const raw of [
+    { node: "258.7", v: format + 1, patch },
+    { node: "258.7", v: 1, patch },
+    { node: "258.7", v: format, patch: { fill: { value: { set: { solid: { scheme: "accent9" } } } } } },
+    { node: "258.7", v: format, patch: {} },
+    { node: "258.7", v: format, patch, readAt: 0 },
+    { node: "258.7", v: format, patch, value: "hi" },
+    { v: format, patch },
   ]) {
     expect(readEdit(raw)).toEqual(field)
   }

@@ -5,8 +5,10 @@ import {
   limits,
   readBox,
   readElementId,
+  readRow,
   type Box,
   type ElementId,
+  type Row,
 } from "@airdesign/document"
 import * as z from "zod/v4"
 
@@ -60,7 +62,14 @@ type Unnamed = {
   readonly onBehalfOf?: never
 }
 
-export type WireEdit = Edited & Unnamed & { readonly readAt?: never }
+type RowEdited = Row & {
+  readonly value?: never
+  readonly property?: never
+  readonly node: ElementId
+  readonly floor?: string
+}
+
+export type WireEdit = (Edited | RowEdited) & Unnamed & { readonly readAt?: never }
 
 export type WireChange = Edited & Unnamed & { readonly readAt: number }
 
@@ -76,9 +85,20 @@ function readBoxEdit(body: Record<string, unknown>): { ok: true; edit: WireEdit 
   return { ok: true, edit: { property: "box", value, node, floor } }
 }
 
+function readRowEdit(body: Record<string, unknown>): { ok: true; edit: WireEdit } | FieldRefusal {
+  if (!knownKeys(body, ["v", "patch", "node", "floor"])) return fieldRefusal
+  const read = readRow({ v: body.v, patch: body.patch }, "text")
+  const node = readElementId(body.node)
+  const floor = readFloor(body)
+  if (!read.ok || read.value.v < 2 || node === undefined || floor === null) return fieldRefusal
+  const edit = { v: read.value.v, patch: read.value.patch, node }
+  return { ok: true, edit: floor === undefined ? edit : { ...edit, floor } }
+}
+
 export function readEdit(raw: unknown): { ok: true; edit: WireEdit } | FieldRefusal {
   const body = recordOf(raw)
   if (body === undefined) return fieldRefusal
+  if (Object.hasOwn(body, "v")) return readRowEdit(body)
   if (Object.hasOwn(body, "property")) return readBoxEdit(body)
   if (!knownKeys(body, ["value", "node", "floor"]) || !storableText(body.value)) return fieldRefusal
   const node = readElementId(body.node)

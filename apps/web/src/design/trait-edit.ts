@@ -1,5 +1,7 @@
 import {
+  beforeOf,
   formatOne,
+  landedPatch,
   planChange,
   readTableValue,
   registerScope,
@@ -10,9 +12,11 @@ import {
   type FormatOneValue,
   type NodeStep,
   type Register,
+  type Row,
   type Scope,
   type ScopedElement,
   type SetChange,
+  type TraitName,
 } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { indexPackage, type ReadShape } from "@airdesign/pptx"
@@ -91,9 +95,20 @@ export type ChangingDeck = {
 
 type Planned = {
   readonly node: ElementId
-  readonly values: readonly FormatOneValue[]
   readonly step: NodeStep
   readonly name: UndoName
+} & ({ readonly values: readonly FormatOneValue[] } | { readonly row: Row })
+
+const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = { fill: "fill" }
+
+function rowName(row: Row): UndoName {
+  const [trait] = Object.keys(row.patch) as TraitName[]
+  return (trait === undefined ? undefined : rowNames[trait]) ?? "format"
+}
+
+function landedBefore(register: Register, node: ElementId, after: ElementPatch): ElementPatch {
+  const body = register.nodes.includes(node) ? register.elements[node] : undefined
+  return beforeOf(body === undefined ? {} : landedPatch(body, "text"), after)
 }
 
 function planned(deck: ChangingDeck, register: Register, change: SetChange): readonly Planned[] | null {
@@ -106,8 +121,14 @@ function planned(deck: ChangingDeck, register: Register, change: SetChange): rea
     const shown = scope.view(node)
     const view = shown === undefined ? undefined : { ...shown, value: shown.value ?? deck.file(node) }
     const values = formatOne(row.patch, valueHolder(opened, node, "person"))
-    const before = view === undefined ? null : heldPatch(view, row.patch)
-    if (view === undefined || values === null || before === null) return null
+    if (view === undefined) return null
+    if (values === null) {
+      const before = landedBefore(opened, node, row.patch)
+      rows.push({ node, row, step: { node, before, after: row.patch }, name: rowName(row) })
+      continue
+    }
+    const before = heldPatch(view, row.patch)
+    if (before === null) return null
     if (values.some((value) => value.property !== "box" && !deck.fits(node, value.value))) return null
     rows.push({ node, values, step: { node, before, after: row.patch }, name: nameOf(view, values) })
   }
@@ -116,6 +137,7 @@ function planned(deck: ChangingDeck, register: Register, change: SetChange): rea
 
 async function stored(deck: ChangingDeck, row: Planned): Promise<boolean> {
   const live = connect(memoryRemote())
+  if ("row" in row) return (await live.enqueueRow(deck.id, row.row, row.node, deck.floor(row.node))).ok
   for (const value of row.values) {
     const floor = deck.floor(row.node)
     const kept =

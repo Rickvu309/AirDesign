@@ -139,7 +139,7 @@ The agent built into AirDesign. It reads a deck, changes what a person can chang
 _Avoid_: the assistant, the AI
 
 **design panel**:
-The panel beside the slide that sets the selected element's position, size and text, or the slide's background color when nothing is selected.
+The panel beside the slide that sets the selected element's position, size, fill and text, or the slide's background color when nothing is selected.
 _Avoid_: inspector, properties, format pane
 
 **request**:

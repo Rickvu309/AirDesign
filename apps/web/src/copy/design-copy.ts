@@ -35,6 +35,12 @@ export const designCopy = {
   refused: "Unable to make that change. The element stays as it was.",
   mixed: "Mixed",
   points: "pt",
+  percent: "%",
+  degrees: "°",
+  addStop: "Add stop",
+  remove: "Remove",
+  removeStop: (number: number) => `Remove stop ${String(number)}`,
+  stop: (number: number) => `Stop ${String(number)}`,
   cell: (row: number, column: number) => `Row ${String(row)}, column ${String(column)}`,
 } as const satisfies {
   readonly fills: Record<Named, string>

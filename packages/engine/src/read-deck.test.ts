@@ -345,6 +345,39 @@ describe("design lines", () => {
     )
   })
 
+  it("prints the fill a change set, keeps it on a duplicate, and drops it once the fill goes back to inherited", () => {
+    const crimson = "C00000"
+    const actor = { actor: "agent", runId: "run" } as const
+    const running = call("start_run", designed(), actor, {
+      deck: "designed",
+      runId: "run",
+      elements: [{ node: "259.7" }],
+    })
+    if (!running.ok) throw new Error(running.refusal)
+    const fill = (deck: Deck, value: unknown) => {
+      const set = call("edit_deck", deck, actor, {
+        deck: "designed",
+        base: deck.revision,
+        changes: [{ op: "set", target: "259.7", fill: { value } }],
+      })
+      if (!set.ok) throw new Error(set.refusal)
+      return set.deck
+    }
+    const red = fill(running.deck, `#${crimson}`)
+    expect(byNode(readDeckPage(red, { runId: "run" })).get("259.7")?.design).toBe(
+      `geometry custom · fill #${crimson} · line.width 1 (style)`,
+    )
+    const copied = call("duplicate_slide", red, actor, { deck: "designed", base: red.revision, slide: "259" })
+    if (!copied.ok) throw new Error(copied.refusal)
+    const copy = readDeckPage(copied.deck, { runId: "run" }).elements.find(
+      (element) => element.slide !== "258" && element.slide !== "259",
+    )
+    expect(copy?.design).toBe(`geometry custom · fill #${crimson} · line.width 1 (style)`)
+    expect(byNode(readDeckPage(fill(red, null), { runId: "run" })).get("259.7")?.design).toBe(
+      "geometry custom · line.width 1 (style)",
+    )
+  })
+
   it("reads a slide added from a layout with the roles of its layout floor", () => {
     const deck = designed()
     const added = call(

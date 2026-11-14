@@ -408,29 +408,6 @@ function expectInside(before: Parts, after: Parts, edit: Edit) {
   const oldPresentation = partOf(before, presentationPart)
   const nextPresentation = partOf(after, presentationPart)
   switch (edit.name) {
-    case "spPr.fill": {
-      const oldElements = markup(oldSlide)
-      const nextElements = markup(nextSlide)
-      const oldShape = shapeById(oldElements, edit.shape)
-      const nextShape = shapeById(nextElements, edit.shape)
-      const oldPr = required(
-        oldElements.find((item) => item.parent === oldShape.index && item.kind === "p:spPr"),
-        "p:spPr",
-      )
-      const nextPr = required(
-        nextElements.find((item) => item.parent === nextShape.index && item.kind === "p:spPr"),
-        "p:spPr",
-      )
-      expectBytes(cutOut(nextSlide, nextPr), cutOut(oldSlide, oldPr))
-      const fill = required(
-        nextElements.find((item) => item.parent === nextPr.index && item.kind === "a:solidFill"),
-        "a:solidFill",
-      )
-      expect(decodeUtf8(nextSlide.subarray(fill.start, fill.end))).toBe(
-        '<a:solidFill><a:srgbClr val="19A7E8"/></a:solidFill>',
-      )
-      return
-    }
     case "text":
       expectText(before, after, edit)
       return
@@ -685,7 +662,9 @@ describe("routeRuns", () => {
       }
     }
     expect([...seen].sort()).toEqual(
-      routeOperations.filter((operation) => operation !== "element.export" && !/^notes/.test(operation)).sort(),
+      routeOperations
+        .filter((operation) => !["element.export", "spPr.fill"].includes(operation) && !/^notes/.test(operation))
+        .sort(),
     )
   })
 

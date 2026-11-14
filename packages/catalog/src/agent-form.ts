@@ -15,6 +15,8 @@ import {
   type NumberUnit,
   type Design,
   type DesignKey,
+  type ElementPatch,
+  type FieldValue,
   type ElementRead,
   type FillRead,
   type IndexElement,
@@ -111,6 +113,24 @@ export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design
     ...(Object.keys(written).length === 0 ? {} : { design: written }),
     ...(read.kept.length === 0 ? {} : { kept: read.kept }),
   }
+}
+
+type Fill = FieldValue<"fill", "value">
+
+function agentFillValue(fill: Fill): string {
+  if ("none" in fill) return "none"
+  if ("group" in fill) return "group"
+  if ("solid" in fill) return agentColor(fill.solid)
+  if ("pattern" in fill) return `pattern ${fill.pattern.preset}`
+  return `gradient ${fill.gradient.stops.map((stop) => agentColor(stop.color)).join(", ")}`
+}
+
+export function foldDesign(design: Design | undefined, patch: ElementPatch): Design | undefined {
+  const edit = patch.fill?.value
+  if (edit === undefined || edit === "opening") return design
+  const rest: Design = Object.fromEntries(Object.entries(design ?? {}).filter(([key]) => key !== "fill"))
+  const folded: Design = edit === "inherit" ? rest : { ...rest, fill: [agentFillValue(edit.set)] }
+  return Object.keys(folded).length === 0 ? undefined : folded
 }
 
 export function shownDesign(design: Design, value: string): Design {

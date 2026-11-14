@@ -48,9 +48,9 @@ function writtenNotes(
 function openingPatch(opening: IndexElement | undefined): ElementPatch {
   if (opening === undefined) return {}
   const text = rowOf({ value: opening.value ?? "" }, "text")
-  return opening.box === null || opening.grouped
-    ? text.patch
-    : netPatch([text, rowOf({ property: "box", value: opening.box }, "text")])
+  const box = opening.box === null || opening.grouped ? [] : [rowOf({ property: "box", value: opening.box }, "text")]
+  const floor = opening.opening === undefined ? [] : [{ v: 1, patch: opening.opening }]
+  return netPatch([text, ...box, ...floor])
 }
 
 function writtenElement(
@@ -73,6 +73,7 @@ function writtenElement(
   for (const [trait, fields] of entries(rows)) {
     const kept = written.get(trait) ?? {}
     for (const [field, edit] of Object.entries(fields)) {
+      if (edit === "opening" && kept[field] !== undefined) continue
       delete kept[field]
       if (taken !== null && !taken.includes(`${trait}.${field}` as FieldKey)) continue
       if (shape === undefined || (shape.locked && shape.contentKind !== "table")) throw new Error(`${trait}-shape`)
