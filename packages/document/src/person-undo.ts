@@ -1,5 +1,4 @@
-import type { Box } from "./box.js"
-import { currentBox, currentValue, decide, type Command, type Register } from "./decide.js"
+import { decide, shownPatch, valueHolder, type Command, type Register } from "./decide.js"
 import type { ElementId, SlideId } from "./element-id.js"
 import { elementCommand, elementGone, type ElementCommand, type ElementOrder } from "./element-order.js"
 import { elementStacks, sitsBefore } from "./element-stack.js"
@@ -7,6 +6,7 @@ import type { OrderKey } from "./order-key.js"
 import { sameColor, type Color } from "./color.js"
 import { backgroundOf } from "./slide-background.js"
 import { foldSlides, type SlideCommand, type SlideState } from "./slide-order.js"
+import { formatOne, rowOf, shows, type ElementPatch } from "./row.js"
 import type { Value } from "./value.js"
 
 export type SlideSpot = { readonly present: boolean; readonly key: OrderKey }
@@ -39,7 +39,11 @@ export type Undoable =
       readonly after: ElementId | null
     }
 
+export type NodeStep = { readonly node: ElementId; readonly before: ElementPatch; readonly after: ElementPatch }
+
 export type Turn = { readonly ok: true; readonly command: Command } | { readonly ok: false }
+
+export type Turns = { readonly ok: true; readonly commands: readonly Command[] } | { readonly ok: false }
 
 const changed: Turn = { ok: false }
 
@@ -83,15 +87,45 @@ export function slideUndoable(register: Register, file: readonly SlideId[], edit
   return { slide: edit.id, file, before, after }
 }
 
-function sameBox(left: Box | null, right: Box): boolean {
-  return left !== null && left.x === right.x && left.y === right.y && left.cx === right.cx && left.cy === right.cy
+function stepCommands(register: Register, steps: readonly NodeStep[], from: "before" | "after"): Command[] | null {
+  const to = from === "before" ? "after" : "before"
+  const commands: Command[] = []
+  for (const step of steps) {
+    const body = register.nodes.includes(step.node) ? register.elements[step.node] : undefined
+    const holder = valueHolder(register, step.node, "person")
+    const values = formatOne(step[to], holder)
+    if (body === undefined || values === null || !shows(shownPatch(body, holder), step[from])) return null
+    commands.push(...values.map((value): Command => ({ command: "person", ...value, node: step.node })))
+  }
+  return commands
 }
 
-function shows(register: Register, node: ElementId, value: Value): boolean {
-  const body = register.nodes.includes(node) ? register.elements[node] : undefined
-  if (body === undefined) return false
-  if (value.property === "box") return sameBox(currentBox(body), value.value)
-  return currentValue(body) === value.value
+function stepTurn(register: Register, steps: readonly NodeStep[], from: "before" | "after"): Turns {
+  const commands = stepCommands(register, steps, from)
+  if (commands === null) return { ok: false }
+  let current = register
+  for (const command of commands) {
+    const decision = decide(current, command)
+    if (decision.decision !== "apply") return { ok: false }
+    current = decision.register
+  }
+  return { ok: true, commands }
+}
+
+export function undoSteps(register: Register, steps: readonly NodeStep[]): Turns {
+  return stepTurn(register, steps, "after")
+}
+
+export function redoSteps(register: Register, steps: readonly NodeStep[]): Turns {
+  return stepTurn(register, steps, "before")
+}
+
+function nodeTurn(register: Register, node: ElementId, before: Value, after: Value, from: "before" | "after"): Turn {
+  const holder = valueHolder(register, node, "person")
+  const step = { node, before: rowOf(before, holder).patch, after: rowOf(after, holder).patch }
+  const turned = stepTurn(register, [step], from)
+  const [command, ...rest] = turned.ok ? turned.commands : []
+  return command === undefined || rest.length > 0 ? changed : { ok: true, command }
 }
 
 function sits(spot: SlideSpot | undefined, wanted: SlideSpot): boolean {
@@ -112,10 +146,7 @@ function landing(register: Register, command: Command): Turn {
 
 function turn(register: Register, undoable: Undoable, from: "before" | "after"): Turn {
   const to = from === "before" ? "after" : "before"
-  if ("node" in undoable) {
-    if (!shows(register, undoable.node, undoable[from])) return changed
-    return landing(register, { command: "person", ...undoable[to], node: undoable.node })
-  }
+  if ("node" in undoable) return nodeTurn(register, undoable.node, undoable.before, undoable.after, from)
   const file = register.file.length > 0 ? register.file : undoable.file
   if ("background" in undoable) {
     const color = undoable.background

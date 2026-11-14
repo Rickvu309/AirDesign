@@ -11,6 +11,11 @@ Bytes == <<picture, uploaded>>
 
 Shown == added /\ ~removed
 
+\* What each kind of element takes, as the one table of kinds says. A text box takes text; a picture does not.
+Takes == [box |-> {"box", "text"}, picture |-> {"box", "image"}]
+
+Kind == IF picture THEN "picture" ELSE "box"
+
 Init ==
   /\ added = FALSE
   /\ removed = FALSE
@@ -47,7 +52,7 @@ AddPicture ==
 Type ==
   /\ Shown
   /\ ~typed
-  /\ ~picture
+  /\ "text" \in Takes[Kind]
   /\ typed' = TRUE
   /\ exported' = FALSE
   /\ UNCHANGED <<added, removed, held, kind, told, last, run>>
@@ -201,8 +206,8 @@ TypeOK ==
 
 RemovedWasAdded == removed => added
 TypedWhileShown == typed => added
-\* The server admits only edits the device can apply: text lands on a text box, never on a picture.
-TypedIsText == typed => ~picture
+\* The server admits a row only on a trait the element's kind takes: text lands on a text box, never on a picture.
+TraitTakenByKind == typed => "text" \in Takes[Kind]
 UploadedWasAdded == uploaded => picture /\ added
 ExportHasBytes == exported /\ picture => uploaded
 

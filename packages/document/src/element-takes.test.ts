@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest"
 import {
   decide,
   elementId,
-  elementTakes,
+  kinds,
+  kindTraits,
+  removable,
+  takes,
   openingTable,
   openRegister,
   slideId,
@@ -145,16 +148,29 @@ describe("the server admits only the edits the device can write onto an element 
     ])
   })
 
-  it("names what each kind takes in one table", () => {
+  it("names what each kind takes field by field, only from the traits the kind takes", () => {
     const facts = { text: true, grouped: false, animated: false }
-    expect(elementTakes({ ...facts, kind: "shape" })).toEqual(["text", "move", "resize", "remove"])
-    expect(elementTakes({ ...facts, kind: "shape", text: false })).toEqual(["move", "resize", "remove"])
-    expect(elementTakes({ ...facts, kind: "picture" })).toEqual(["move", "resize", "remove"])
-    expect(elementTakes({ ...facts, kind: "table" })).toEqual(["table", "move", "remove"])
-    expect(elementTakes({ ...facts, kind: "group" })).toEqual(["move", "resize"])
-    expect(elementTakes({ ...facts, kind: "kept" })).toEqual(["remove"])
-    expect(elementTakes({ ...facts, kind: "slide" })).toEqual(["text"])
-    expect(elementTakes({ ...facts, kind: "shape", grouped: true })).toEqual(["text"])
-    expect(elementTakes({ ...facts, kind: "picture", animated: true })).toEqual(["move", "resize"])
+    const box = ["box.x", "box.y", "box.w", "box.h"]
+    expect(takes({ ...facts, kind: "shape" })).toEqual([...box, "text.value"])
+    expect(takes({ ...facts, kind: "shape", text: false })).toEqual(box)
+    expect(takes({ ...facts, kind: "picture" })).toEqual(box)
+    expect(takes({ ...facts, kind: "table" })).toEqual(["box.x", "box.y", "table.value"])
+    expect(takes({ ...facts, kind: "group" })).toEqual(box)
+    expect(takes({ ...facts, kind: "kept" })).toEqual([])
+    expect(takes({ ...facts, kind: "slide" })).toEqual(["notes.value"])
+    expect(takes({ ...facts, kind: "shape", grouped: true })).toEqual(["text.value"])
+    expect(takes({ ...facts, kind: "picture", animated: true })).toEqual(box)
+    for (const kind of kinds) {
+      const traits: readonly string[] = kindTraits[kind]
+      for (const field of takes({ ...facts, kind })) expect(traits).toContain(field.split(".")[0])
+    }
+  })
+
+  it("lets a person delete what the person's own Delete deletes", () => {
+    const facts = { text: true, grouped: false, animated: false }
+    const removes = kinds.filter((kind) => removable({ ...facts, kind }))
+    expect(removes).toEqual(["shape", "picture", "connector", "table", "chart", "kept"])
+    expect(removable({ ...facts, kind: "shape", grouped: true })).toBe(false)
+    expect(removable({ ...facts, kind: "picture", animated: true })).toBe(false)
   })
 })

@@ -4,8 +4,9 @@ import { legacyElement, rootElement, shapeOf, type ElementId, type SlideId } fro
 import { limits, overLimit } from "./limits.js"
 import { floorFits, openingElement } from "./slide-floor.js"
 import { elementGone } from "./element-order.js"
-import { boxEdits, elementTakes, indexFacts, type ElementEdit, type ElementFacts } from "./element-takes.js"
+import { boxFields, boxOnly, indexFacts, takes, type ElementFacts, type Wanted } from "./element-takes.js"
 import { applySlide, openSlides, slideGone, type SlideCommand } from "./slide-order.js"
+import { fieldsOf, netPatch, rowOf, type ElementPatch, type ValueHolder } from "./row.js"
 import { storedValue, type Value } from "./value.js"
 
 export type Phase = "idle" | "running" | "stopped" | "undone"
@@ -359,8 +360,21 @@ function elementFacts(register: Register, node: ElementId): ElementFacts | undef
 
 export type Missing = {
   readonly facts: ElementFacts
-  readonly missing: readonly ElementEdit[]
+  readonly missing: readonly Wanted[]
   readonly box: Box | null
+}
+
+export function valueHolder(register: Register, node: ElementId, actor: Actor): ValueHolder {
+  if (node.endsWith(".notes")) return "notes"
+  return actor === "person" && openingElement(register, node)?.kind === "table" ? "table" : "text"
+}
+
+export function shownPatch(register: NodeRegister, holder: ValueHolder): ElementPatch {
+  const floor: readonly Value[] = [
+    { value: register.floor },
+    ...(register.floorBox === undefined ? [] : [{ property: "box" as const, value: register.floorBox }]),
+  ]
+  return netPatch([...floor, ...visibleRows(register)].map((row) => rowOf(row, holder)))
 }
 
 export function editMissing(
@@ -372,9 +386,9 @@ export function editMissing(
   if (facts === undefined) return null
   const body = storedBody(register, edit.node)
   const box = (body === null ? null : currentBox(body)) ?? openingElement(register, edit.node)?.box ?? null
-  const table = edit.command === "person" && facts.kind === "table"
-  const wanted = edit.property === "box" ? boxEdits(box, edit.value) : [table ? ("table" as const) : ("text" as const)]
-  const taken = elementTakes(facts)
+  const holder = valueHolder(register, edit.node, edit.command)
+  const wanted = edit.property === "box" ? boxFields(box, edit.value) : fieldsOf(rowOf(edit, holder).patch)
+  const taken = takes(facts)
   const missing = wanted.filter((each) => !taken.includes(each))
   return missing.length === 0 ? null : { facts, missing, box }
 }
@@ -383,8 +397,7 @@ function takenRefusal(register: Register, node: ElementId, command: Command): Re
   if (command.command !== "person" && command.command !== "agent") return null
   const found = editMissing(register, { ...command, node })
   if (found === null) return null
-  const boxOnly = found.missing.every((edit) => edit === "move" || edit === "resize")
-  return found.facts.grouped && boxOnly ? "group-box" : "kind"
+  return found.facts.grouped && boxOnly(found.missing) ? "group-box" : "kind"
 }
 
 function editNode(register: Register, id: ElementId, command: Command): Decision {

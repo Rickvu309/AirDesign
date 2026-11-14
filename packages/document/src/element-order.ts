@@ -5,7 +5,7 @@ import { openingElement, readFloor } from "./slide-floor.js"
 import { slideMeasure } from "./slide-measure.js"
 import type { SlideState } from "./slide-order.js"
 import { openedTable } from "./table-value.js"
-import { elementTakes, indexFacts } from "./element-takes.js"
+import { indexFacts, removable } from "./element-takes.js"
 
 export const mediaTypes = ["image/png", "image/jpeg", "image/gif"] as const
 
@@ -141,7 +141,7 @@ export function elementRefusal(
   if (elementGone(state, node)) return "dead"
   if (opening === undefined) return indexComplete(state) ? "dead" : null
   const animated = slideMeasure(state, command.id)?.animated.includes(shapeOf(node).shape) === true
-  if (elementTakes(indexFacts(opening, animated)).includes("remove")) return null
+  if (removable(indexFacts(opening, animated))) return null
   if (opening.grouped || opening.kind === "group") return "group-box"
   return animated ? "locked" : "kind"
 }

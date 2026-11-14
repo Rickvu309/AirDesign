@@ -8,6 +8,7 @@ import {
   readSlideId,
   redoOf,
   slideId,
+  takes,
   undoOf,
   writeTableValue,
   type Register,
@@ -157,7 +158,25 @@ function reached(graph: Graph, failures: string[]): Map<string, Deck> {
   return decks
 }
 
+function takenByKind(failures: string[]): void {
+  const facts = { grouped: false, animated: false }
+  const taken = {
+    box: takes({ ...facts, kind: "shape", text: true }),
+    shape: takes({ ...facts, kind: "shape", text: false }),
+    table: takes({ ...facts, kind: "table", text: true }),
+    picture: takes({ ...facts, kind: "picture", text: false }),
+  }
+  const values = ["text.value", "notes.value", "table.value"]
+  if (!taken.box.includes("text.value")) failures.push("element TraitTakenByKind: a text box takes no text")
+  if (!taken.table.includes("table.value")) failures.push("element TraitTakenByKind: a table takes no table value")
+  if (taken.shape.includes("text.value"))
+    failures.push("element TraitTakenByKind: a shape with no text body takes text")
+  if (taken.picture.some((field) => values.includes(field)))
+    failures.push("element TraitTakenByKind: a picture takes a text or table value")
+}
+
 export function replayElement(graph: Graph, failures: string[]) {
+  takenByKind(failures)
   let told = 0
   for (const each of ["box", "shape", "table"] as const) {
     kind = each

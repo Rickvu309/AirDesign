@@ -4,13 +4,15 @@ Same fields as [checks-document.md](checks-document.md). person-undo is replayed
 
 ## person-undo
 
-A person's Undo and Redo of their own text edit, beside an agent run.
+A person's Undo and Redo of one step that edited the text of two elements, A and B, beside an agent run that writes A's text or moves A's box.
 
-- `UndoShowsBefore`: an undo or redo shows exactly the text it went back to.
-- `NeverCoversAgent`, `AgentRowStays`: a person's undo never lands over an agent row that shows, and only the run's own Undo hides that row. Harm: a person's Ctrl+Z erases Aira's work.
+- `UndoShowsBefore`: an undo or redo shows exactly the text it went back to, on every element of the step.
+- `NeverCoversAgent`, `AgentRowStays`: a person's undo never lands over an agent row that shows on a field the undo names, and only the run's own Undo hides that row. Harm: a person's Ctrl+Z erases Aira's work.
+- `UndoKeepsOtherFields`: a field the step does not name keeps what showed, so the person's text undo lands while Aira's move of the same element shows, and leaves the move. Harm: Ctrl+Z on a text puts back a box an agent moved, or refuses because of it.
+- `StepTurnsWhole`: a step lands on every element it names or on none. Harm: Ctrl+Z after one change to two titles turns back one of them.
 - `DroppedIsTold`: an undo that changed nothing is always told.
 
-Bounds: up to four person rows, one agent row. Run: `pnpm check:specs person-undo`. Replay: `tests/person-undo-replay.ts` through `undoOf`, `redoOf` and `decide`. Code: `undoOf`, `redoOf` in `packages/document/src/person-undo.ts`, the stack in `apps/web/src/undo-list.ts`. Leaves out: box undo, slide undo (`slideUndoable`), stacking (`element-order` and the stack branch of `turn`), and notes edits, which take the same path as text. The undo of an added or removed element, with another tab and an agent's run in between, is covered by element. An undo while typed edits are still being recorded or sent, and the browser's own undo, are typing.
+Bounds: up to four person steps, each one row on each element, one agent row on A's text or A's box, 185 states. Run: `pnpm check:specs person-undo`. Replay: `tests/person-undo-replay.ts` through `undoSteps`, `redoSteps` and `decide`, with the step's elements in the order B then A; on every Undo and Redo edge the undo of A alone, as the editor records it today (`undoOf`, `redoOf` on the `node` variant), must agree with the step. Code: `undoOf`, `redoOf`, `undoSteps`, `redoSteps` in `packages/document/src/person-undo.ts`, which compare each field a step names with `shows` over `shownPatch` (`packages/document/src/decide.ts`, the node's floor and its visible rows folded per trait field by `netPatch`) and write the step back as format 1 rows with `formatOne` (`packages/document/src/row.ts`), and the stack in `apps/web/src/undo-list.ts`. A step whose patch format 1 cannot store, such as a field back to `"opening"`, turns nothing until rows of format 2 exist (`row.test.ts`, `person-undo.test.ts`). Leaves out: box undo, slide undo (`slideUndoable`), stacking (`element-order` and the stack branch of `turn`), and notes edits, which take the same path as text. The undo of an added or removed element, with another tab and an agent's run in between, is covered by element. An undo while typed edits are still being recorded or sent, and the browser's own undo, are typing.
 
 Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
 

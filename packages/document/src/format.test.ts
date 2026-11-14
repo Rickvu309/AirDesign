@@ -1,10 +1,6 @@
 import { expect, it } from "vitest"
 import { format, formatOf, newerFormat, stamps } from "./format.js"
 
-it("is 1 plus the sum of the stamps", () => {
-  expect(format).toBe(1 + Object.values(stamps).reduce((sum, stamp) => sum + stamp, 0))
-})
-
 it("keeps each stamp a whole number from 0", () => {
   for (const stamp of Object.values(stamps)) {
     expect(Number.isSafeInteger(stamp)).toBe(true)

@@ -1,7 +1,6 @@
 import {
   addedPictures,
   elementGone,
-  elementTakes,
   currentBox,
   currentValue,
   floorNodes,
@@ -9,9 +8,10 @@ import {
   openingElement,
   shapeOf,
   slideGone,
+  takes,
   writeTextValue,
-  type ElementEdit,
   type ElementId,
+  type FieldKey,
   type IndexElement,
   type NodeRegister,
   type Register,
@@ -71,12 +71,12 @@ function floorShape(shapes: readonly ReadShape[], id: ElementId): ReadShape | un
   return named.length === 1 && shape !== undefined && !shape.locked ? shape : undefined
 }
 
-function cannotTake(shapes: readonly ReadShape[], id: ElementId, edit: ElementEdit): boolean {
+function cannotTake(shapes: readonly ReadShape[], id: ElementId, field: FieldKey): boolean {
   const named = shapes.filter((shape) => `${shape.slide}.${shape.shape}` === id)
   const shape = named[0]
   if (named.length !== 1 || shape === undefined) return false
   const facts = { kind: shapeKind(shape), text: shape.text.length > 0, grouped: shape.grouped === true }
-  return !elementTakes({ ...facts, animated: false }).includes(edit)
+  return !takes({ ...facts, animated: false }).includes(field)
 }
 
 function withText(
@@ -87,7 +87,7 @@ function withText(
   opening: IndexElement | undefined,
 ): Parts {
   if (body !== undefined && history(body).length > 0) {
-    if (cannotTake(shapes, id, "text")) return parts
+    if (cannotTake(shapes, id, "text.value")) return parts
     const { part, shape } = shapeFor(shapes, id, "text-shape")
     return applyRoute(parts, { name: "text", part, shape, value: textValue(currentValue(body)) })
   }
@@ -123,7 +123,7 @@ function withBox(
 ): Parts {
   const landed = body?.landed.some((row) => row.visible && row.property === "box") === true ? currentBox(body) : null
   if (landed !== null) {
-    if (cannotTake(shapes, id, "move")) return parts
+    if (cannotTake(shapes, id, "box.x")) return parts
     const found = shapeFor(shapes, id, "box-shape")
     if (sameBox(found.box ?? layoutBox(parts, found), landed)) return parts
     return moved(parts, found, landed)

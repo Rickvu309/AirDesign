@@ -5,7 +5,7 @@ import { orderKeyBetween } from "./order-key.js"
 import { elementGone } from "./element-order.js"
 import { elementStacks } from "./element-stack.js"
 import { orderKeyAfter, presentSlides, type SlideCommand } from "./slide-order.js"
-import { redoOf, slideUndoable, undoOf, undoSlides, type Undoable } from "./person-undo.js"
+import { redoOf, redoSteps, slideUndoable, undoOf, undoSlides, undoSteps, type Undoable } from "./person-undo.js"
 
 const file = [slideId("256"), slideId("257"), slideId("258")] as const
 const node = elementId("256.2")
@@ -337,5 +337,56 @@ describe("undoing a run's element commands", () => {
       edit: { slide: "element-remove", id: slide, node: added },
     })
     expect(undoSlides(removed, runId)).toBeNull()
+  })
+})
+
+describe("person undo per trait field", () => {
+  const other = elementId("256.3")
+  const step = (at: typeof node) => ({
+    node: at,
+    before: { text: { value: { set: "Old" } } },
+    after: { text: { value: { set: "New" } } },
+  })
+
+  function both(): Register {
+    const added = landed(opened(), { command: "add", node: other, floor: "Old", route: "" })
+    return landed(landed(added, { command: "person", value: "New", node }), {
+      command: "person",
+      value: "New",
+      node: other,
+    })
+  }
+
+  function stepped(register: Register, turn: ReturnType<typeof undoSteps>): Register {
+    if (!turn.ok) throw new Error("changed")
+    return turn.commands.reduce(landed, register)
+  }
+
+  it("undoes the person's text while an agent's later move shows, and keeps the move", () => {
+    const edited = landed(opened(), { command: "person", value: "New", node })
+    const started = landed(edited, { command: "start", runId: run, node })
+    const readAt = started.elements[node]?.readAt ?? 0
+    const agent = landed(started, { command: "agent", runId: run, readAt, property: "box", value: to, node })
+    const undone = turned(agent, undoOf(agent, textEdit))
+    expect([shownText(undone), shownBox(undone)]).toEqual(["Old", to])
+  })
+
+  it("turns a step on two elements back on both, and forward again", () => {
+    const steps = [step(node), step(other)]
+    const undone = stepped(both(), undoSteps(both(), steps))
+    expect([shownText(undone), currentValue(undone.elements[other]!)]).toEqual(["Old", "Old"])
+    const redone = stepped(undone, redoSteps(undone, steps))
+    expect([shownText(redone), currentValue(redone.elements[other]!)]).toEqual(["New", "New"])
+  })
+
+  it("turns no element of a step back once one of them no longer shows the step", () => {
+    const changed = landed(both(), { command: "person", value: "Other", node: other })
+    expect(undoSteps(changed, [step(node), step(other)])).toEqual({ ok: false })
+    expect(undoSteps(changed, [step(other), step(node)])).toEqual({ ok: false })
+  })
+
+  it("turns nothing back that the rows of format 1 cannot store", () => {
+    const opening = { node, before: { text: { value: "opening" as const } }, after: step(node).after }
+    expect(undoSteps(both(), [opening])).toEqual({ ok: false })
   })
 })
