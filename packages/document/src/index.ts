@@ -32,8 +32,10 @@ export {
   editMissing,
   foldRegister,
   history,
+  landedPatch,
   openRegister,
   refusals,
+  shownPatch,
   version,
   type Command,
   type Decision,
@@ -49,13 +51,23 @@ export {
 export { coordinates, readBox, type Box } from "./box.js"
 export { placeNewBox } from "./box-placement.js"
 export { storedValue, valueBytes, type Value } from "./value.js"
-export { beforeOf, netPatch, readRow, shows, type ElementPatch, type Row } from "./row.js"
+export {
+  beforeOf,
+  netPatch,
+  readRow,
+  rowOf,
+  shows,
+  type ElementPatch,
+  type FieldEdit,
+  type Row,
+  type TraitPatch,
+} from "./row.js"
 export { boxOnly, indexFacts, removable, takes } from "./element-takes.js"
-export { kindTraits, type FieldKey } from "./traits.js"
+export { kindTraits, type FieldKey, type FieldName, type FieldValue, type TraitName } from "./traits.js"
 export { kinds, properties, type ExportRoute, type Kind } from "./properties.js"
 export { structure, type StructuralRoute } from "./structure.js"
 export { foldSections, type FileSection } from "./section-order.js"
-export { floorFor, floorNodes, openingElement } from "./slide-floor.js"
+export { floorFor, floorNodes, newSlideElement, openingElement } from "./slide-floor.js"
 export { slideMeasure } from "./slide-measure.js"
 export {
   addedPictures,

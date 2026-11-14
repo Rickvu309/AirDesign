@@ -369,6 +369,10 @@ export function valueHolder(register: Register, node: ElementId, actor: Actor): 
   return actor === "person" && openingElement(register, node)?.kind === "table" ? "table" : "text"
 }
 
+export function landedPatch(register: NodeRegister, holder: ValueHolder): ElementPatch {
+  return netPatch(visibleRows(register).map((row) => rowOf(row, holder)))
+}
+
 export function shownPatch(register: NodeRegister, holder: ValueHolder): ElementPatch {
   const floor: readonly Value[] = [
     { value: register.floor },
