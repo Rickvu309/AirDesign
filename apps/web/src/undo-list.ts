@@ -64,16 +64,20 @@ export function recordsInFlight(): RecordsInFlight {
 
 const kept = 100
 
-function onlyStep(undoable: Undoable): NodeStep | undefined {
-  return "steps" in undoable && undoable.steps.length === 1 ? undoable.steps[0] : undefined
+function stepsOf(undoable: Undoable): readonly NodeStep[] {
+  return "steps" in undoable ? undoable.steps : []
 }
 
 function joined(top: UndoEntry | undefined, entry: UndoEntry): UndoEntry | null {
   if (top === undefined || entry.session === undefined || top.session !== entry.session) return null
-  const below = onlyStep(top.undoable)
-  const above = onlyStep(entry.undoable)
-  if (below === undefined || above === undefined || below.node !== above.node) return null
-  return { ...top, undoable: { steps: [{ ...below, after: above.after }] } }
+  const below = stepsOf(top.undoable)
+  const above = stepsOf(entry.undoable)
+  if (below.length === 0 || below.length !== above.length) return null
+  if (below.some((step, index) => step.node !== above[index]?.node)) return null
+  return {
+    ...top,
+    undoable: { steps: below.map((step, index) => ({ ...step, after: above[index]?.after ?? step.after })) },
+  }
 }
 
 function unchanged(entry: UndoEntry): boolean {

@@ -6,7 +6,7 @@ const point = 12_700
 
 test.use({ viewport: { width: 1470, height: 923 } })
 
-test("a length moves and sizes the selected element in points, Undo takes back each change, and a reload keeps it", async ({
+test("a length moves and sizes the selected element in points, Undo takes back each visit to a field, and a reload keeps it", async ({
   page,
 }) => {
   await openDeck(page, "clean.pptx")
@@ -29,8 +29,6 @@ test("a length moves and sizes the selected element in points, Undo takes back e
     .poll(() => pendingValues(page, "256.2"))
     .toEqual([{ x: 72 * point, y: 36 * point, cx: 423 * point, cy: 144 * point }])
   await page.getByRole("button", { name: "Undo resize", exact: true }).click()
-  await expect(width).toHaveValue("433")
-  await page.getByRole("button", { name: "Undo resize", exact: true }).click()
   await expect(width).toHaveValue("432")
   await page.getByRole("button", { name: "Undo move", exact: true }).click()
   await expect.poll(() => placed(page, element)).toEqual([30, 30, 360, 120])
@@ -40,6 +38,29 @@ test("a length moves and sizes the selected element in points, Undo takes back e
   await page.reload()
   await settled(page)
   await expect.poll(() => placed(page, element)).toEqual([60, 30, 360, 120])
+})
+
+test("five arrow presses in one visit to a field are one undo step, and a press after leaving it is the next", async ({
+  page,
+}) => {
+  await openDeck(page, "clean.pptx")
+  const panel = await designing(page, page.locator('[contenteditable="true"]'))
+  const width = panel.getByRole("textbox", { name: "Width", exact: true })
+  await expect(width).toHaveValue("432")
+  for (const shown of ["433", "434", "435", "436", "437"]) {
+    await width.press("ArrowUp")
+    await expect(width).toHaveValue(shown)
+  }
+  await width.blur()
+  await width.press("ArrowUp")
+  await expect(width).toHaveValue("438")
+  await width.blur()
+  await page.keyboard.press("Control+z")
+  await expect(width).toHaveValue("437")
+  await page.keyboard.press("Control+z")
+  await expect(width).toHaveValue("432")
+  await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeDisabled()
+  await expect.poll(() => placed(page, element)).toEqual([30, 30, 360, 120])
 })
 
 test("a length the slide cannot hold leaves the element where it was", async ({ page }) => {

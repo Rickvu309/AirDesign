@@ -34,6 +34,7 @@ export function useUndoList() {
   const [undoShown, setUndoShown] = useState(emptyShown)
   const typed = useRef<Typing | null>(null)
   const sessions = useRef(0)
+  const focused = useRef<number | null>(null)
   const records = useRef(recordsInFlight())
   const formatting = useRef(
     textFormatting(() => {
@@ -66,6 +67,7 @@ export function useUndoList() {
     told: undoShown.told,
     typed,
     sessions,
+    focused,
     records,
     formatting,
     record,
@@ -87,16 +89,26 @@ export type TurningDeck = {
 
 export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
   const { id, undo, shown, notesBar, settle, setPending } = deck
-  const { undoList, undoShown, show, told, typed, records, turnAfter } = undo
+  const { undoList, undoShown, show, told, typed, sessions, focused, records, turnAfter } = undo
   const { store, shownParts, structure, bound, repaint, setCurrent, showRegister } = shown
 
   useEffect(() => {
+    function openSession(event: FocusEvent) {
+      if (!(event.target instanceof Element) || event.target.closest("[data-session]") === null) return
+      sessions.current += 1
+      focused.current = sessions.current
+    }
     function closeSession() {
       typed.current = null
+      focused.current = null
     }
+    window.addEventListener("focusin", openSession)
     window.addEventListener("focusout", closeSession)
-    return () => window.removeEventListener("focusout", closeSession)
-  }, [typed])
+    return () => {
+      window.removeEventListener("focusin", openSession)
+      window.removeEventListener("focusout", closeSession)
+    }
+  }, [typed, sessions, focused])
 
   useEffect(() => {
     if (told === null) return

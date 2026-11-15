@@ -5,7 +5,7 @@ import { outline, pickShape, shapePanel } from "./shape-turns"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("a count takes a typed whole number, steps by a thousand with the arrow keys, and Undo puts it back", async ({
+test("a count takes a typed whole number, steps by a thousand with the arrow keys, and one Undo puts back the whole visit", async ({
   page,
 }) => {
   await openDeck(page, "clean.pptx")
@@ -24,8 +24,6 @@ test("a count takes a typed whole number, steps by a thousand with the arrow key
   await corner.fill("2.5")
   await corner.press("Enter")
   await expect(corner).toHaveValue("41000")
-  await page.getByRole("button", { name: "Undo shape", exact: true }).click()
-  await expect(corner).toHaveValue("40000")
   await page.getByRole("button", { name: "Undo shape", exact: true }).click()
   await expect(corner).toHaveValue("16667")
   await expect.poll(() => outline(shape)).toBe(rounded)

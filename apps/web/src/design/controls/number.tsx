@@ -57,6 +57,7 @@ export function NumberField({
         )}
         inputMode="decimal"
         aria-label={row.label}
+        data-session
         placeholder={row.mixed ? designCopy.mixed : ""}
         value={draft ?? shown}
         onChange={(event) => setDraft(event.target.value)}

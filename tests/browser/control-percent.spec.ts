@@ -4,7 +4,7 @@ import { fillPanel, filled, shapeAt } from "./shape-fills"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("a percent takes a typed number in percent, steps with the arrow keys, and Undo puts it back", async ({
+test("a percent takes a typed number in percent, steps with the arrow keys, and one Undo puts back the whole visit", async ({
   page,
 }) => {
   await openDeck(page, "clean.pptx")
@@ -23,8 +23,6 @@ test("a percent takes a typed number in percent, steps with the arrow keys, and 
   await position.fill("140")
   await position.press("Enter")
   await expect(position).toHaveValue("59")
-  await page.getByRole("button", { name: "Undo fill", exact: true }).click()
-  await expect(position).toHaveValue("60")
   await page.getByRole("button", { name: "Undo fill", exact: true }).click()
   await expect(position).toHaveValue("100")
   await expect.poll(() => filled(shape)).toBe(before)

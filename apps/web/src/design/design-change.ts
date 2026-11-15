@@ -24,7 +24,7 @@ export function fileValue(shown: DeckPaint, node: ElementId): string | null {
   return shape?.contentKind === "table" ? fileTableValue(shown.editParts.current, shape) : null
 }
 
-function changingDeck(deck: DesignDeck): ChangingDeck {
+function changingDeck(deck: DesignDeck, session: number | null): ChangingDeck {
   const { shown, undo } = deck
   return {
     id: deck.id,
@@ -33,7 +33,7 @@ function changingDeck(deck: DesignDeck): ChangingDeck {
     file: (node) => fileValue(shown, node),
     fits: (node, value) => valueFits(shown.editParts.current, shown.shapes.current.get(node), value),
     hold: () => undo.records.current.hold(),
-    record: deck.record,
+    record: (entry) => deck.record(session === null ? entry : { ...entry, session }),
     show: (register) => {
       if (shown.structure.current !== structureOf(register, shown.bound.current)) shown.showRegister(register)
       shown.repaint.current(register, "person")
@@ -53,8 +53,9 @@ export function endChange(node: ElementId, end: "start" | "end", to: Bound | Pla
 }
 
 export function changeDesign(deck: DesignDeck, change: () => SetChange) {
+  const session = deck.undo.focused.current
   deck.undo.turnAfter(async () => {
-    if (await applyChange(changingDeck(deck), change())) {
+    if (await applyChange(changingDeck(deck, session), change())) {
       void flushPending(connect, deck.id).then(deck.settle)
       return
     }
