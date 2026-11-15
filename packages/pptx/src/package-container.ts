@@ -1,5 +1,6 @@
 import { configure, Uint8ArrayReader, Uint8ArrayWriter, ZipReader, type Configuration } from "@zip.js/zip.js"
 import { decodeLatin1, decodeUtf8, sameBytes } from "./package-bytes.js"
+import { crc32 } from "./crc32.js"
 
 export type ContainerKind =
   | "comment"
@@ -269,18 +270,6 @@ export function readContainer(file: Uint8Array): readonly ContainerRecord[] {
     file.length,
   )
   return records
-}
-
-const crcTable = Uint32Array.from({ length: 256 }, (_, index) => {
-  let value = index
-  for (let bit = 0; bit < 8; bit += 1) value = (value & 1) === 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1
-  return value >>> 0
-})
-
-function crc32(data: Uint8Array): number {
-  let crc = 0xffffffff
-  for (const byte of data) crc = (crcTable[(crc ^ byte) & 0xff] ?? 0) ^ (crc >>> 8)
-  return (crc ^ 0xffffffff) >>> 0
 }
 
 function enveloped(record: ContainerRecord): Uint8Array {
