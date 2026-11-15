@@ -78,6 +78,22 @@ describe("a saved chat", () => {
     expect(readSavedChat(JSON.parse(JSON.stringify(kept)), deck)).toEqual(kept)
   })
 
+  it("keeps why a step was refused and where the request was tried again", () => {
+    const chat = doneChat()
+    const exchange: AiraExchange = {
+      asked,
+      steps: [
+        { kind: "tool", id: "t1", name: edit, state: "refused", refusal: "stale" },
+        { kind: "retry" },
+        { kind: "tool", id: "t2", name: edit, state: "done" },
+      ],
+      end: "done",
+      runs: ["run1"],
+    }
+    const kept = saved({ ...chat, exchanges: [exchange] })
+    expect(readSavedChat(JSON.parse(JSON.stringify(kept)), deck)?.exchanges).toEqual([exchange])
+  })
+
   it("reads the whole first sentence as the title of a chat saved with a shorter one", () => {
     const kept = saved(doneChat())
     const older = {

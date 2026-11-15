@@ -61,6 +61,20 @@ const statusOf: Readonly<Record<ToolState, StepStatus | undefined>> = {
 }
 
 function StepsRow({ row }: { row: Extract<ReplyPiece, { kind: "steps" }> }) {
+  if (row.reasons.length === 0) return <StepsLine row={row} />
+  return (
+    <div className="flex flex-col">
+      <StepsLine row={row} />
+      {row.reasons.map((reason) => (
+        <p key={reason} data-step-reason className="pl-4.5 text-xs leading-[1.5] text-muted-foreground">
+          {reason}
+        </p>
+      ))}
+    </div>
+  )
+}
+
+function StepsLine({ row }: { row: Extract<ReplyPiece, { kind: "steps" }> }) {
   if (row.lines.length === 1) {
     return (
       <ChainOfThoughtLine data-tool-state={row.state} status={statusOf[row.state]}>
@@ -120,11 +134,13 @@ function UndoRefused() {
 const cardButton = `h-8 rounded-lg bg-white px-3 text-[length:var(--type-dense)] font-medium text-foreground hover:bg-white active:translate-y-0 ${surfaceShadow}`
 
 function FailedCard({
-  changed,
+  title,
+  body,
   onUndo,
   onRetry,
 }: {
-  changed: boolean
+  title: string
+  body: string
   onUndo: (() => void) | undefined
   onRetry: (() => void) | undefined
 }) {
@@ -132,9 +148,9 @@ function FailedCard({
     <div className={cardClass} data-aira-failed>
       <span className="flex items-center gap-2">
         <FailedMark />
-        <span className={cardTitle}>{airaCopy.failedTitle}</span>
+        <span className={cardTitle}>{title}</span>
       </span>
-      <p className={cardBody}>{changed ? airaCopy.failedKept : airaCopy.failedNothing}</p>
+      <p className={cardBody}>{body}</p>
       {onUndo === undefined && onRetry === undefined ? null : (
         <span className="flex items-center gap-2">
           {onRetry === undefined ? null : (
@@ -226,13 +242,33 @@ function endingOf(
     )
   }
   if (exchange.end === "failed") {
-    return <FailedCard changed={undoable} onUndo={undoOffer} onRetry={onRetry} />
+    const body = undoable ? airaCopy.failedKept : airaCopy.failedNothing
+    return <FailedCard title={airaCopy.failedTitle} body={body} onUndo={undoOffer} onRetry={onRetry} />
+  }
+  if (exchange.end === "done" && refusedLast(exchange.steps)) {
+    return (
+      <FailedCard
+        title={airaCopy.stepsFailedTitle}
+        body={airaCopy.stepsFailedBody}
+        onUndo={undoOffer}
+        onRetry={onRetry}
+      />
+    )
   }
   if ((exchange.end === "done" || exchange.end === "stopped") && undoable) {
     return refused ? <UndoRefused /> : <UndoLink onUndo={onUndo} />
   }
   if (exchange.end === "working" && !running(exchange.steps)) return <Working />
   return null
+}
+
+export function refusedLast(steps: readonly AiraStep[]): boolean {
+  const from = steps.findLastIndex((step) => step.kind === "retry")
+  return steps.slice(from + 1).some((step) => step.kind === "tool" && step.state === "refused")
+}
+
+export function retryable(exchange: AiraExchange): boolean {
+  return exchange.end === "failed" || (exchange.end === "done" && refusedLast(exchange.steps))
 }
 
 function running(steps: readonly AiraStep[]): boolean {

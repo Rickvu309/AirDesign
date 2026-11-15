@@ -4,8 +4,10 @@ const steps = {
   Stop: "the person presses Stop, the exchange shows stopped, and a waiting edit call is cut",
   Spend: "the stop names the cut call, and the server spends its once or answers the run it landed",
   Finish: "the model's next turn ends the run",
+  Fail: "the model's next turn fails, and the request offers Try again",
   Close: "the browser stops r and the server answers",
   Ask: "the person asks again",
+  Retry: "the person presses Try again, which retries the failed request in place",
   Done: "nothing is left to do",
 }
 
@@ -18,7 +20,7 @@ export const state = (v) =>
     v.closed ? "r stopped" : "r not stopped",
     v.settled ? "settled" : "settling",
     v.asked
-      ? `next ask ${v.held ? "from a chat with Undo" : "from a chat without Undo"}, ${v.sent ? `sent${v.nextKnown ? " with Undo" : " without Undo"}` : "waits"}`
+      ? `${v.retried ? "Try again" : "next ask"} ${v.held ? "from a chat with Undo" : "from a chat without Undo"}, ${v.sent ? `sent${v.nextKnown ? " with Undo" : " without Undo"}` : "waits"}`
       : "no next ask",
     ...(v.named ? ["the stop named the call"] : []),
   ].join(", ")

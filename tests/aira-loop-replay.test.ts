@@ -2,7 +2,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { airaRoutes, catalog, mcpRoutes, onceMeta, projectTools } from "@airdesign/catalog"
 import { describe, expect, it } from "vitest"
-import { airaChat, askAira, type AiraChat } from "@/aira-loop"
+import { airaChat, askAira, retryAira, type AiraChat } from "@/aira-loop"
 import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import * as view from "../specs/aira-loop/view.mjs"
 import { dumpTopics } from "./spec-dump.js"
@@ -48,13 +48,21 @@ function stopped(signal: AbortSignal | null | undefined): Promise<never> {
   })
 }
 
+function answeredOnce(messages: readonly unknown[]): void {
+  const last = messages.at(-1) as { role: string; content: unknown }
+  const blocks = Array.isArray(last.content) ? (last.content as readonly { type: string; tool_use_id?: string }[]) : []
+  if (last.role !== "user" || blocks.length !== 1 || blocks[0]?.tool_use_id !== "call_1") {
+    throw new Error(`a retry sent ${JSON.stringify(last)}`)
+  }
+}
+
 function hasRun(chat: AiraChat | undefined): boolean {
   return chat?.exchanges[0]?.runs.includes(run) === true
 }
 
 function loop() {
   const read = later<void>()
-  const finish = later<void>()
+  const finish = later<"done" | "failed">()
   const spend = later<void>()
   const close = later<void>()
   const stopping = new AbortController()
@@ -70,6 +78,7 @@ function loop() {
     asked: false,
     held: false,
     sent: false,
+    retried: false,
     first: undefined as AiraChat | undefined,
     next: undefined as AiraChat | undefined,
   }
@@ -90,13 +99,15 @@ function loop() {
     if (where === airaRoutes.turn.path) {
       const messages = body.messages as readonly unknown[]
       if (body.ask === "ask-2") {
+        if (seen.retried) answeredOnce(messages)
         seen.sent = true
         return new Response(ended([{ type: "text", text: "Ok" }]))
       }
       if (messages.length === 1) {
         return new Response(ended([{ type: "tool_use", id: "call_1", name: edit, input: { deck, base: 1 } }]))
       }
-      await Promise.race([finish.promise, stopped(init?.signal)])
+      const how = await Promise.race([finish.promise, stopped(init?.signal)])
+      if (how === "failed") return new Response(`${JSON.stringify({ type: "end", ok: false, usage })}\n`)
       return new Response(ended([{ type: "text", text: "Done" }]))
     }
     if (where === mcpRoutes.mcp.path) {
@@ -148,22 +159,27 @@ function loop() {
       read.settle()
     } else if (action === "Stop") stopping.abort()
     else if (action === "Spend") spend.settle()
-    else if (action === "Finish") finish.settle()
+    else if (action === "Finish") finish.settle("done")
+    else if (action === "Fail") finish.settle("failed")
     else if (action === "Close") {
       if (!seen.stopRunSent) return "Close with no stop_run of r sent"
       close.settle()
-    } else if (action === "Ask") {
+    } else if (action === "Ask" || action === "Retry") {
       seen.asked = true
+      seen.retried = action === "Retry"
       seen.held = hasRun(seen.first)
-      next = askAira(seen.first ?? airaChat(deck), "Again", {
+      const options = {
         signal: new AbortController().signal,
         fetch: send,
         mint: () => "ask-2",
-        show: (chat) => {
+        show: (chat: AiraChat) => {
           seen.next = chat
         },
         after: first,
-      })
+      }
+      next = seen.retried
+        ? retryAira(seen.first ?? airaChat(deck), options)
+        : askAira(seen.first ?? airaChat(deck), "Again", options)
     } else if (action !== "Done") return `no step for ${action}`
     await flush()
     return null
@@ -181,8 +197,11 @@ function loop() {
     held: seen.held,
     sent: seen.sent,
     nextKnown: seen.sent && hasRun(seen.next),
+    retried: seen.retried,
+    rows: seen.asked ? (seen.next?.exchanges.length ?? 0) : 1,
   })
   const finished = async () => {
+    finish.settle("done")
     stopping.abort()
     read.settle()
     spend.settle()
@@ -256,7 +275,7 @@ describe("aira-loop replay", () => {
     expect(failures).toEqual([])
     expect(replayed).toBe(graph.edges.length)
     expect(new Set(graph.edges.map((edge) => edge.action))).toEqual(
-      new Set(["Land", "Read", "Stop", "Spend", "Finish", "Close", "Ask", "Done"]),
+      new Set(["Land", "Read", "Stop", "Spend", "Finish", "Fail", "Close", "Ask", "Retry", "Done"]),
     )
   }, 60_000)
 })

@@ -8,9 +8,9 @@ import { productCopy } from "@/copy/product-copy"
 import { UsageRing } from "@/usage-ring"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
-import { airaChat, askAira, undoExchange, type AiraChat } from "@/aira-loop"
+import { airaChat, askAira, retryAira, undoExchange, type AiraChat, type AskOptions } from "@/aira-loop"
 import { AiraComposer } from "@/aira-composer"
-import { Asked, ExchangeView, UsagePop } from "@/aira-reply"
+import { Asked, ExchangeView, UsagePop, retryable } from "@/aira-reply"
 import { resetsWhen, usagePercent } from "@/aira-usage"
 import { AiraWelcome } from "@/aira-welcome"
 import { chatTitle } from "@/aira-history"
@@ -85,11 +85,11 @@ export function AiraPanel({
     return text === "" ? undefined : text
   }
 
-  async function run(text: string) {
+  async function run(start: (chat: AiraChat, options: AskOptions) => Promise<AiraChat>) {
     const controller = new AbortController()
     stopper.current = controller
     setSettling(true)
-    const asking = askAira(latest.current, text, {
+    const asking = start(latest.current, {
       signal: controller.signal,
       show: (next) => {
         if (stopper.current === controller) shown(next)
@@ -112,7 +112,7 @@ export function AiraPanel({
     }
     const left = takeQueued()
     if (left === undefined) return
-    if (end === "done") void run(left)
+    if (end === "done") void run((chat, options) => askAira(chat, left, options))
     else setDraft((now) => (now === "" ? left : `${left}\n${now}`))
   }
 
@@ -121,12 +121,18 @@ export function AiraPanel({
     if (text === "" || blocked !== undefined || undoing) return false
     toLatest()
     if (!working) {
-      void run(text)
+      void run((chat, options) => askAira(chat, text, options))
       return true
     }
     waiting.current.push(text)
     setQueued([...waiting.current])
     return true
+  }
+
+  function retry() {
+    if (working || undoing || blocked !== undefined) return
+    toLatest()
+    void run(retryAira)
   }
 
   function send() {
@@ -235,8 +241,12 @@ export function AiraPanel({
                   resets={usage?.resets}
                   onUndo={busy ? undefined : () => void undo(index)}
                   onRetry={
-                    index === chat.exchanges.length - 1 && !working && !undoing && blocked === undefined
-                      ? () => void ask(exchange.asked)
+                    index === chat.exchanges.length - 1 &&
+                    retryable(exchange) &&
+                    !working &&
+                    !undoing &&
+                    blocked === undefined
+                      ? retry
                       : undefined
                   }
                 />

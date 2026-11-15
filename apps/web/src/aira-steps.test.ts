@@ -2,6 +2,7 @@ import { catalog, projectTools } from "@airdesign/catalog"
 import { describe, expect, it } from "vitest"
 import type { AiraStep, ToolState } from "@/aira-loop"
 import { replyPieces, stepLine } from "@/aira-steps"
+import { airaRefusalWords } from "@/copy/aira-copy"
 
 function tool(name: string, state: ToolState, id = name): AiraStep {
   return { kind: "tool", id, name, state }
@@ -71,6 +72,7 @@ describe("replyPieces", () => {
         title: "Edited slides",
         state: "done",
         lines: [{ id: "airdesign_edit_deck", text: "Edited slides", state: "done" }],
+        reasons: [],
       },
       { kind: "text", text: "The title now reads Hello." },
     ])
@@ -95,6 +97,7 @@ describe("replyPieces", () => {
         { id: "airdesign_read_deck", text: "Read the deck", state: "done" },
         { id: "airdesign_edit_deck", text: "Edited slides", state: "done" },
       ],
+      reasons: [],
     })
   })
 
@@ -111,12 +114,14 @@ describe("replyPieces", () => {
         title: "Read the deck",
         state: "done",
         lines: [{ id: "airdesign_read_deck", text: "Read the deck", state: "done" }],
+        reasons: [],
       },
       {
         kind: "steps",
         title: "Editing slides",
         state: "working",
         lines: [{ id: "airdesign_edit_deck", text: "Editing slides", state: "working" }],
+        reasons: [],
       },
     ])
   })
@@ -124,6 +129,51 @@ describe("replyPieces", () => {
   it("marks a row refused when any of its steps was refused, so the summary says so", () => {
     const [row] = replyPieces([tool("airdesign_read_deck", "done"), tool("airdesign_edit_deck", "refused")])
     expect(row).toMatchObject({ title: "Read the deck and couldn't edit slides", state: "refused" })
+  })
+
+  it("says under a refused step why it was refused, once per reason", () => {
+    const refused = (id: string, refusal: string): AiraStep => ({
+      kind: "tool",
+      id,
+      name: "airdesign_edit_deck",
+      state: "refused",
+      refusal,
+    })
+    const [row] = replyPieces([
+      refused("a", "person-protected"),
+      refused("b", "person-protected"),
+      refused("c", "stale"),
+    ])
+    expect(row).toMatchObject({
+      title: "Couldn't edit slides",
+      state: "refused",
+      reasons: [airaRefusalWords["person-protected"], airaRefusalWords.stale],
+    })
+    expect(airaRefusalWords["person-protected"]).toBe(
+      "You edited that element while Aira was working, so Aira left it as you made it.",
+    )
+  })
+
+  it("gives no reason for a refusal it has no words for, and none for a stopped step", () => {
+    const [row] = replyPieces([
+      { kind: "tool", id: "a", name: "airdesign_edit_deck", state: "refused", refusal: "future" },
+      { kind: "tool", id: "b", name: "airdesign_edit_deck", state: "stopped" },
+    ])
+    expect(row).toMatchObject({ reasons: [] })
+  })
+
+  it("writes every refusal reason as one plain sentence or two, with no internal names", () => {
+    for (const [code, words] of Object.entries(airaRefusalWords)) {
+      expect(words, code).toMatch(/^[A-Z].*\.$/)
+      expect(words, code).not.toMatch(/airdesign_|runId|_/)
+    }
+  })
+
+  it("keeps a retried attempt's words apart from the earlier attempt's", () => {
+    expect(replyPieces([{ kind: "text", text: "Done." }, { kind: "retry" }, { kind: "text", text: "Ok." }])).toEqual([
+      { kind: "text", text: "Done." },
+      { kind: "text", text: "Ok." },
+    ])
   })
 
   it("leaves out the turn-ending call without splitting the row around it", () => {
