@@ -1,6 +1,6 @@
 import { airaRoutes, deckRoutes } from "@airdesign/catalog"
 import { describe, expect, it, vi } from "vitest"
-import { airaChat, askAira, undoExchange, type AiraChat } from "./aira-loop"
+import { airaChat, askAira, retryAira, undoExchange, type AiraChat } from "./aira-loop"
 import {
   asking,
   call,
@@ -85,7 +85,11 @@ describe("Aira's loop in the browser", () => {
   })
 
   it("tells Aira when a call is refused and keeps going", async () => {
-    const refused = { isError: true, structuredContent: { ok: false, refusal: "closed" }, text: "A person holds it." }
+    const refused = {
+      isError: true,
+      structuredContent: { ok: false, refusal: "person-protected" },
+      text: "A person holds it.",
+    }
     const link = scripted(
       [{ lines: [ended([editCall])] }, { lines: [ended([{ type: "text", text: "Sorry" }])] }],
       [refused],
@@ -95,7 +99,13 @@ describe("Aira's loop in the browser", () => {
       role: "user",
       content: [{ type: "tool_result", tool_use_id: "call_1", content: "A person holds it.", is_error: true }],
     })
-    expect(done.exchanges[0]?.steps[0]).toEqual({ kind: "tool", id: "call_1", name: edit, state: "refused" })
+    expect(done.exchanges[0]?.steps[0]).toEqual({
+      kind: "tool",
+      id: "call_1",
+      name: edit,
+      state: "refused",
+      refusal: "person-protected",
+    })
     expect(done.exchanges[0]?.runs).toEqual([])
     expect(done.exchanges[0]?.end).toBe("done")
   })
@@ -207,6 +217,97 @@ describe("Aira's loop in the browser", () => {
     })
     const last = await asking(again.done, "Once more", link)
     expect(last.done.exchanges[2]?.end).toBe("done")
+  })
+
+  it("names a call that never reached the server as unreached", async () => {
+    const link = scripted(
+      [{ lines: [ended([call("call_1", read, { deck })])] }, { lines: [ended([{ type: "text", text: "Sorry" }])] }],
+      [],
+      {
+        onTool: () => {
+          throw new TypeError("network")
+        },
+      },
+    )
+    const { done } = await asking(airaChat(deck), "Read it", link)
+    expect(done.exchanges[0]?.steps[0]).toMatchObject({ state: "refused", refusal: "unreached" })
+  })
+
+  it("retries a failed request in place, sending the answers its model waits for and stopping only the new run", async () => {
+    const link = scripted(
+      [
+        { lines: [ended([editCall])] },
+        { lines: [{ type: "end", ok: false, usage }] },
+        { lines: [said("Done"), ended([{ type: "text", text: "Done" }])] },
+      ],
+      [edited],
+    )
+    const { done } = await asking(airaChat(deck), "Retitle", link)
+    expect(done.exchanges[0]?.end).toBe("failed")
+    const shown: AiraChat[] = []
+    const again = await retryAira(done, {
+      signal: new AbortController().signal,
+      fetch: link.send,
+      show: (chat) => shown.push(chat),
+    })
+    expect(shown[0]?.exchanges).toEqual([
+      { ...done.exchanges[0], end: "working", steps: [...(done.exchanges[0]?.steps ?? []), { kind: "retry" }] },
+    ])
+    expect(again.exchanges).toEqual([
+      {
+        asked: "Retitle",
+        steps: [
+          { kind: "tool", id: "call_1", name: edit, state: "done" },
+          { kind: "retry" },
+          { kind: "text", text: "Done" },
+        ],
+        end: "done",
+        runs: ["run-1"],
+      },
+    ])
+    expect(link.turnsSent()[2]?.at(-1)).toEqual({ role: "user", content: done.answers })
+    expect(link.toolsSent()).toEqual([edit, stop])
+  })
+
+  it("retries a request whose reply never came by asking its words again", async () => {
+    const link = scripted([{ status: 500, body: {} }, { lines: [ended([{ type: "text", text: "Ok" }])] }], [])
+    const { done } = await asking(airaChat(deck), "Retitle", link)
+    const again = await retryAira(done, {
+      signal: new AbortController().signal,
+      fetch: link.send,
+      show: () => undefined,
+    })
+    expect(link.turnsSent()[1]).toEqual([{ role: "user", content: "Retitle" }])
+    expect(again.exchanges).toHaveLength(1)
+    expect(again.exchanges[0]).toMatchObject({ asked: "Retitle", end: "done" })
+  })
+
+  it("retries a finished request with a refused step by asking its words again after Aira's reply", async () => {
+    const refused = { isError: true, structuredContent: { ok: false, refusal: "stale" }, text: "Changed." }
+    const link = scripted(
+      [
+        { lines: [ended([editCall])] },
+        { lines: [said("Done"), ended([{ type: "text", text: "Done" }])] },
+        { lines: [said("Ok"), ended([{ type: "text", text: "Ok" }])] },
+      ],
+      [refused],
+    )
+    const { done } = await asking(airaChat(deck), "Retitle", link)
+    const again = await retryAira(done, {
+      signal: new AbortController().signal,
+      fetch: link.send,
+      show: () => undefined,
+    })
+    expect(link.turnsSent()[2]?.slice(-2)).toEqual([
+      { role: "assistant", content: [{ type: "text", text: "Done" }] },
+      { role: "user", content: "Retitle" },
+    ])
+    expect(again.exchanges).toHaveLength(1)
+    expect(again.exchanges[0]?.steps.slice(-3)).toEqual([
+      { kind: "text", text: "Done" },
+      { kind: "retry" },
+      { kind: "text", text: "Ok" },
+    ])
   })
 
   it("ends out of usage when the server answers 402 mid-run and keeps the run to undo", async () => {

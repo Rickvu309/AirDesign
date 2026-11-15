@@ -26,6 +26,8 @@ describe("states", () => {
       "agent-not-offered",
       "agent-off",
       "agent-out-of-usage",
+      "agent-retried",
+      "agent-step-refused",
       "agent-working",
     ])
   })
@@ -38,6 +40,8 @@ describe("states", () => {
       ["agent-not-offered"],
       ["agent-off"],
       ["agent-out-of-usage"],
+      ["agent-retried"],
+      ["agent-step-refused"],
     ])
     expect(grouped[0].aira).toBe(true)
   })

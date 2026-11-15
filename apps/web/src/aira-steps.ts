@@ -1,12 +1,23 @@
 import { catalog, projectTools, type AgentOp } from "@airdesign/catalog"
 import type { AiraStep, ToolState } from "@/aira-loop"
-import { airaOtherStepWords, airaStepWords, airaStepsSummary } from "@/copy/aira-copy"
+import { airaOtherStepWords, airaRefusalWords, airaStepWords, airaStepsSummary } from "@/copy/aira-copy"
 
-export type StepLine = { readonly id: string; readonly text: string; readonly state: ToolState }
+export type StepLine = {
+  readonly id: string
+  readonly text: string
+  readonly state: ToolState
+  readonly reason?: string
+}
 
 export type ReplyPiece =
   | { readonly kind: "text"; readonly text: string }
-  | { readonly kind: "steps"; readonly title: string; readonly state: ToolState; readonly lines: readonly StepLine[] }
+  | {
+      readonly kind: "steps"
+      readonly title: string
+      readonly state: ToolState
+      readonly lines: readonly StepLine[]
+      readonly reasons: readonly string[]
+    }
 
 const opOf: ReadonlyMap<string, AgentOp> = new Map(projectTools(catalog).map((tool) => [tool.name, tool.op]))
 
@@ -14,6 +25,13 @@ export function stepLine(name: string, state: ToolState): string | null {
   const op = opOf.get(name)
   const words = op === undefined ? airaOtherStepWords : airaStepWords[op]
   return words === null ? null : words[state]
+}
+
+const reasonOf: Readonly<Record<string, string>> = airaRefusalWords
+
+function reasonFor(step: Extract<AiraStep, { kind: "tool" }>): string | undefined {
+  if (step.state !== "refused" || step.refusal === undefined) return undefined
+  return Object.hasOwn(reasonOf, step.refusal) ? reasonOf[step.refusal] : undefined
 }
 
 const weight: Readonly<Record<ToolState, number>> = { done: 0, stopped: 1, refused: 2, working: 3 }
@@ -29,6 +47,7 @@ function rowOf(lines: readonly StepLine[]): ReplyPiece {
     title: airaStepsSummary(said),
     state,
     lines,
+    reasons: [...new Set(lines.flatMap((line) => (line.reason === undefined ? [] : [line.reason])))],
   }
 }
 
@@ -44,7 +63,9 @@ export function replyPieces(steps: readonly AiraStep[]): readonly ReplyPiece[] {
   for (const step of steps) {
     if (step.kind === "tool") {
       const text = stepLine(step.name, step.state)
-      if (text !== null) group.push({ id: step.id, text, state: step.state })
+      const reason = reasonFor(step)
+      if (text !== null)
+        group.push({ id: step.id, text, state: step.state, ...(reason === undefined ? {} : { reason }) })
       continue
     }
     pieces.push(...rowsOf(group))

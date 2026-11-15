@@ -168,8 +168,10 @@ function readStep(raw: unknown): AiraStep | undefined {
     typeof step.state === "string" &&
     toolStates.has(step.state)
   ) {
-    return { kind: "tool", id: step.id, name: step.name, state: step.state as ToolState }
+    const read = { kind: "tool", id: step.id, name: step.name, state: step.state as ToolState } as const
+    return typeof step.refusal === "string" ? { ...read, refusal: step.refusal } : read
   }
+  if (step.kind === "retry") return { kind: "retry" }
   return undefined
 }
 

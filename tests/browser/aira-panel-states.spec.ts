@@ -1,5 +1,5 @@
 import { expect, type BrowserContext, type Page } from "@playwright/test"
-import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
+import { airaCopy, airaRefusalWords } from "../../apps/web/src/copy/aira-copy.ts"
 import { forward, openClean, signInBrowser, test, type Stack } from "./api-stack"
 
 const node = "256.2"
@@ -7,6 +7,7 @@ const asked = "Change the title to Hello from Aira"
 const longTitle =
   "Make the Q3 investor update lead with the number that matters most to the board, then the three risks behind it"
 const longAsk = `${longTitle}. Keep it calm.`
+const reason = airaRefusalWords.stale
 
 test.use({ viewport: { width: 1600, height: 1000 }, locale: "en-US", timezoneId: "Asia/Ho_Chi_Minh" })
 
@@ -76,7 +77,7 @@ test("a running step shows a progress mark that stops moving with reduced motion
   await expect(side.locator('[data-step-mark="progress"]')).toHaveCount(0)
 })
 
-test("a failed request offers Try again, which asks the same words again as a new exchange", async ({
+test("Try again retries a failed request in place, with no second copy of the request or its error", async ({
   page,
   context,
   stack,
@@ -88,9 +89,49 @@ test("a failed request offers Try again, which asks the same words again as a ne
   await expect(side.getByText(airaCopy.failedNothing, { exact: true })).toBeVisible()
   await side.getByRole("button", { name: airaCopy.retry }).click()
   await expect(side.getByText("Lead with the claim. Then show the evidence.", { exact: true })).toBeVisible()
-  await expect(log.getByText(asked, { exact: true })).toHaveCount(2)
+  await expect(log.getByText(asked, { exact: true })).toHaveCount(1)
   await expect(side.getByRole("button", { name: airaCopy.retry })).toHaveCount(0)
-  await expect(side.getByText(airaCopy.failedTitle, { exact: true })).toHaveCount(1)
+  await expect(side.getByText(airaCopy.failedTitle, { exact: true })).toHaveCount(0)
+})
+
+test("a step refused because the person typed in the same title says why, flags the reply, and retries in place", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const { cookie, deck, base, side, log } = await openDeck(page, context, stack)
+  stack.aira({ name: "edit.sse", fill: { deck, base, node } }, { name: "edited.sse" }, { name: "turn.sse" })
+  let open = () => {}
+  const gate = new Promise<void>((resolve) => {
+    open = resolve
+  })
+  await page.route(
+    (url) => url.pathname === stack.mcp,
+    async (route) => {
+      await gate
+      await route.fallback()
+    },
+  )
+  await ask(page, asked)
+  await expect(side.locator('[data-tool-state="working"]')).toHaveText("Editing slides")
+  await page.locator('[data-slide-paint] [contenteditable="true"]').first().click()
+  await page.keyboard.type("X")
+  await page.keyboard.press("Escape")
+  await expect
+    .poll(async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision)
+    .toBeGreaterThan(Number(base))
+  open()
+  const refused = side.locator('[data-tool-state="refused"]')
+  await expect(refused).toHaveText("Couldn't edit slides")
+  await expect(side.locator("[data-step-reason]")).toHaveText(reason)
+  await expect(side.getByText(airaCopy.stepsFailedTitle, { exact: true })).toBeVisible()
+  await expect(side.getByText(airaCopy.stepsFailedBody, { exact: true })).toBeVisible()
+  await side.getByRole("button", { name: airaCopy.retry }).click()
+  await expect(side.getByText("Lead with the claim. Then show the evidence.", { exact: true })).toBeVisible()
+  await expect(log.getByText(asked, { exact: true })).toHaveCount(1)
+  await expect(side.getByText(airaCopy.stepsFailedTitle, { exact: true })).toHaveCount(0)
+  await expect(side.getByRole("button", { name: airaCopy.retry })).toHaveCount(0)
+  await expect(refused).toHaveCount(1)
 })
 
 test("a request that ran out of usage offers no Try again", async ({ page, context, stack }) => {

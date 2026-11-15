@@ -1,5 +1,6 @@
-import type { AgentOp } from "@airdesign/catalog"
+import type { AgentOp, EditRefusal } from "@airdesign/catalog"
 import type { ToolState } from "@/aira-loop"
+import { elementCopy } from "@/copy/element-copy"
 
 export type StepWords = Readonly<Record<ToolState, string>>
 
@@ -68,6 +69,35 @@ export const airaOtherStepWords: StepWords = {
   stopped: "Stopped a step",
 }
 
+const oddForm = "Aira asked for this change in a form AirDesign doesn't take."
+const unsaved = "AirDesign couldn't save this change. Try again."
+
+export const airaRefusalWords: Readonly<Record<EditRefusal | "unreached", string>> = {
+  stale: "You or another agent changed the deck after Aira read it.",
+  "person-protected": "You edited that element while Aira was working, so Aira left it as you made it.",
+  held: "Another agent is editing that element right now.",
+  "run-fenced": "Another request is holding that element.",
+  limit: "The deck is at its size limit, or the text is too long.",
+  dead: "That element is no longer in the deck.",
+  present: "That element is already in the deck.",
+  "group-box": "That element is inside a group. Ungroup it to change it on its own.",
+  kind: "That element can't take this change.",
+  locked: elementCopy.removeRefusedBody.animated,
+  deck: "Aira couldn't find this deck.",
+  owner: "This deck belongs to another account.",
+  deleted: "This deck was deleted.",
+  base: oddForm,
+  batch: oddForm,
+  field: oddForm,
+  "text-from": oddForm,
+  site: oddForm,
+  payload: unsaved,
+  store: unsaved,
+  kept: "AirDesign keeps that part exactly as the PowerPoint file has it.",
+  indexing: "The deck was still loading. Try again in a moment.",
+  unreached: "Aira lost its connection during this step. Check your connection and try again.",
+}
+
 export function airaStepsSummary(said: readonly string[]): string {
   const [first = "", ...rest] = said
   const lowered = rest.map((text) => `${text.charAt(0).toLowerCase()}${text.slice(1)}`)
@@ -99,6 +129,8 @@ export const airaCopy = {
   addToRequest: "Add to your request",
   latest: "Show latest message",
   failedTitle: "Unable to finish your request",
+  stepsFailedTitle: "Unable to finish every step",
+  stepsFailedBody: "Aira's reply may describe changes that didn't happen. Try again, or check the slides.",
   failedKept: "Aira's reply didn't come through. Its changes so far are kept. Try again, or undo them.",
   failedNothing: "Aira's reply didn't come through. Nothing in your deck changed. Check your connection and try again.",
   retry: "Try again",
