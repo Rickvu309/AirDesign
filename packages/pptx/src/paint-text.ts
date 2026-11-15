@@ -332,6 +332,9 @@ const listOf = (shape: PaintTextHolder): PaintTextHolder | undefined => {
   return body === undefined ? undefined : held(body, "a:lstStyle")
 }
 
+const styledByMaster = (placeholder: string | null): boolean =>
+  placeholder !== null && (titleTypes.has(placeholder) || bodyTypes.has(placeholder))
+
 const stylesFor = (placeholder: string | null, styles: PaintTextHolder | null): PaintTextHolder | undefined => {
   if (styles === null) return undefined
   if (placeholder !== null && titleTypes.has(placeholder)) return held(styles, "p:titleStyle")
@@ -447,7 +450,10 @@ const textParagraph = (
 
 const resolvedText = (shape: PaintTextShape, source: readonly SourceParagraph[], scope: PaintTextScope): PaintText => {
   const nearLists = present([shape, ...shape.above].map(listOf))
-  const farLists = present([stylesFor(shape.placeholder, scope.styles), scope.defaults])
+  const farLists = present([
+    stylesFor(shape.placeholder, scope.styles),
+    styledByMaster(shape.placeholder) ? null : scope.defaults,
+  ])
   const known = new Map<number, Pick<Levels, "nearRuns" | "farRuns"> & { lists: readonly PaintTextHolder[] }>()
   const levelsAt = (properties: PaintTextHolder | undefined, level: number): Levels => {
     let lists = known.get(level)
