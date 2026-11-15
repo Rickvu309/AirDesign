@@ -91,57 +91,6 @@ export function ShapeTray() {
   )
 }
 
-export function ActionsMenu() {
-  return (
-    <div className={cn("flex w-[320px] flex-col gap-1 rounded-xl bg-white p-2", floatShadow)} data-actions-menu>
-      <span className="flex h-9 items-center gap-2 rounded-lg bg-line px-2.5 text-[length:var(--type-dense)] text-faint">
-        <EditorIcon name="search" size={15} />
-        Search actions
-      </span>
-      <span className="pt-1 pl-2 text-xs text-faint">Insert</span>
-      <ActionRow icon="chart" label="Chart" />
-      <ActionRow icon="table" label="Table" />
-      <ActionRow icon="icon" label="Icon" />
-      <span className="pt-1 pl-2 text-xs text-faint">Image</span>
-      <ActionRow icon="rmbg" label="Remove background" />
-      <ActionRow icon="hd" label="Boost resolution" />
-    </div>
-  )
-}
-
-function ActionRow({ icon, label }: { icon: "chart" | "table" | "icon" | "rmbg" | "hd"; label: string }) {
-  return (
-    <span className="flex h-9 items-center gap-2.5 rounded-lg px-2 text-[length:var(--type-dense)] text-foreground">
-      <ActionGlyph name={icon} />
-      {label}
-    </span>
-  )
-}
-
-export function ActionGlyph({ name }: { name: "chart" | "table" | "icon" | "rmbg" | "hd" }) {
-  const paths = {
-    chart: '<path d="M4 20h16M7 16v-5M12 16V7M17 16v-8"/>',
-    table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M10 4v16"/>',
-    icon: '<circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01M8.5 14.5c1 1.2 2.2 1.8 3.5 1.8s2.5-.6 3.5-1.8"/>',
-    rmbg: '<rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="2.5 2.5"/><circle cx="12" cy="10" r="2.5"/><path d="M7.5 18c.8-2.5 2.5-3.5 4.5-3.5s3.7 1 4.5 3.5"/>',
-    hd: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10v4M10 10v4M7 12h3M13 10v4h1.5a2 2 0 0 0 0-4z"/>',
-  }
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="17"
-      height="17"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      dangerouslySetInnerHTML={{ __html: paths[name] }}
-    />
-  )
-}
-
 function MediaChrome({ title, heading, search }: { title: string; heading: string; search: string }) {
   return (
     <>

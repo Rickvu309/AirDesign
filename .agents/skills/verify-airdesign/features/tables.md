@@ -1,10 +1,10 @@
 # Insert and edit a table
 
-In an open deck, `Actions` > `Table` inserts a three by three table in clear space on the slide with the caret in its first cell. The person types in the cells, moves between them with Tab, adds and deletes rows from the bar over the table, and deletes the whole table from its frame. Each change paints at once, can be undone, reaches the server, survives a reload and is written by the export. A table imported with the deck is edited the same way.
+In an open deck, `Insert table` in the toolbar opens a size picker, and the size picked, up to eight rows by ten columns, inserts a table in clear space on the slide with the caret in its first cell. The person types in the cells, moves between them with Tab, adds and deletes rows from the bar over the table, and deletes the whole table from its frame. Each change paints at once, can be undone, reaches the server, survives a reload and is written by the export. A table imported with the deck is edited the same way.
 
 ## Sub-features
 
-- `table-insert` `button "Actions"` opens a menu whose `menuitem "Table"` is the only enabled item. The table, 60% of the slide wide and three rows tall, lands where the slide has room (`placeNewBox`), and `[data-table-text="0.0"]` has focus. The server gets one `slide: "element-add"` row with `element.kind: "table"`.
+- `table-insert` `button "Insert table"` opens `[data-table-picker]`: a caption naming the size and `group "Table size"`, 80 buttons named `"<rows> rows, <columns> columns"`. Pointing at one or moving with the arrow keys (Home and End jump along a row) picks the cells from the top left to it; a click or Enter inserts that size, and Escape returns focus to the button. The table, 60% of the slide wide and one row height per row, lands where the slide has room (`placeNewBox`), and `[data-table-text="0.0"]` has focus. The server gets one `slide: "element-add"` row with `element.kind: "table"`.
 - `table-style` a new table takes the deck's default table style, or PowerPoint's own, Medium Style 2 - Accent 1 (`{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}`), when the deck defines none: an Accent 1 header row with light bold text, banded rows in Accent 1 tints, white borders. A deck without `ppt/tableStyles.xml` gets the part, its content type and its presentation relationship on export; an imported table keeps its own look.
 - `table-type` text typed in a cell paints at once and its thumbnail follows; the table's value reaches the server as one element value (`{"rows":...}`). Tab and Shift+Tab move between cells; Tab in the last cell adds a row and enters it.
 - `table-rows` while a cell has focus, `toolbar "Table rows"` offers `Add row above`, `Add row below` and `Delete row` (disabled on a one-row table).
@@ -17,7 +17,7 @@ In an open deck, `Actions` > `Table` inserts a three by three table in clear spa
 
 ## How to get to it (user POV)
 
-- An open deck `/deck/<id>`: the `Actions` button in the toolbar under the slide, then `Table`. From the keyboard: Tab to `Actions` (8 Tabs from the first slide entry of `clean.pptx`), Enter, ArrowDown to `Table`, Enter.
+- An open deck `/deck/<id>`: the `Insert table` button in the toolbar under the slide, then a size. From the keyboard: Tab to `Insert table`, Enter, the arrow keys to the size, Enter (`tests/browser/table-tool.spec.ts`).
 
 ## Driving it with verify-airdesign
 
@@ -28,7 +28,7 @@ Preconditions:
 - **Journey.** `table-fill` imports `table-added.pptx`, has an agent fill the header row with `set` over `/mcp`, has the person fill row 2 and give it a bottom border in the panel, reads the server copy, exports, checks the cells with `readCells`, and opens the export again.
 - **Specs.** No shipped journey inserts a table; `tests/browser/table-edits.spec.ts` inserts one, types in two cells, adds and deletes rows, undoes and redoes the insert, and checks a reload, the export and a new import. `tests/browser/table-paint.spec.ts` paints imported tables.
 - **Live.** Driven on 2026-11-13 with scratch journeys run by path (`$V journey <run> ~/tmp/<file>.mjs`): insert, type and undo at once; insert, type slowly and undo in the cell; insert and reload once the server had it; type `Cell` and reload at once; insert from the keyboard, type `Key`, Tab, type `Board`, Escape; export the current slide with the table. Each case and what it showed is in the sub-features above.
-- **States for look.** `table-cells` (an imported table, `scripts/pptx-fixtures/corpus/nasa-roman-thermal-runtime.pptx` slide 10).
+- **States for look.** `table-cells` (an imported table, `scripts/pptx-fixtures/corpus/nasa-roman-thermal-runtime.pptx` slide 10). `table-picker` (the size picker at four rows by three columns), `table-bar` (a new table), `table-fill-dark` (a new table with row 2 filled Dark 2).
 
 ## Gotchas
 

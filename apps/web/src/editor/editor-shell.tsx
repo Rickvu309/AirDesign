@@ -5,6 +5,8 @@ import { fitWidth, slideRoom, zoomPercent, zoomWidth, type SlideSize, type Zoom 
 import { PanelHead, ZoomReadout } from "@/editor/editor-chrome"
 import { EditorGrid } from "@/editor/editor-grid"
 import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
+import { TableSizeGrid } from "@/editor/table-tool"
+import type { TableSize } from "@/element-edit"
 import { usePointerTool } from "@/editor/pointer-tool"
 import { RevenueSlide } from "@/editor/revenue-slide"
 import { SlideSidebar, type SidebarRun, type SlideStrip } from "@/editor/slide-sidebar"
@@ -13,19 +15,13 @@ import type { FormatShown } from "@/editor/format-buttons"
 import type { TextFormatting } from "@airdesign/render"
 import type { Geometry } from "@airdesign/document"
 import type { SaveStatus } from "@/editor/use-deck-status"
-import {
-  ActionsMenu,
-  ImagesPanel,
-  ShapesPanel,
-  ShapeTray,
-  SlideColumn,
-  TemplatePicker,
-  TextPanel,
-} from "@/editor/tool-panels"
+import { ImagesPanel, ShapesPanel, ShapeTray, SlideColumn, TemplatePicker, TextPanel } from "@/editor/tool-panels"
 import { useCanvasRoom } from "@/editor/use-canvas-room"
 import { ZoomMenu } from "@/editor/zoom-menu"
 import { ExportControl } from "@/export/export-control"
 import type { ExportRequest } from "@/export/export-deck"
+
+const shownSize = { rows: 4, columns: 3 }
 
 export type EditorRail = "slides" | "images" | "shapes" | "text"
 
@@ -39,7 +35,7 @@ export type EditorDeck = {
   readonly onRename?: (name: string) => void
   readonly formatting?: TextFormatting
   readonly deckColors?: readonly string[]
-  readonly onTable?: () => void
+  readonly onTable?: (size: TableSize) => void
   readonly onPicture?: (file: File) => void
   readonly onShape?: (geometry: Geometry) => void
   readonly onIcon?: (name: string) => void
@@ -60,7 +56,7 @@ export type EditorShellProps = {
   toolMenu?: boolean
   templatePicker?: boolean
   shapeTray?: boolean
-  actionsMenu?: boolean
+  tablePicker?: boolean
   toast?: ReactNode
   overlay?: ReactNode
   formats?: FormatShown
@@ -81,7 +77,7 @@ export function EditorShell({
   toolMenu = false,
   templatePicker = false,
   shapeTray = false,
-  actionsMenu = false,
+  tablePicker = false,
   toast,
   overlay,
   formats,
@@ -198,9 +194,9 @@ export function EditorShell({
             />
           </div>
         </div>
-        {shapeTray || actionsMenu ? (
+        {shapeTray || tablePicker ? (
           <div className="absolute inset-x-0 bottom-[72px] flex justify-center">
-            {shapeTray ? <ShapeTray /> : <ActionsMenu />}
+            {shapeTray ? <ShapeTray /> : <TableSizeGrid picked={shownSize} onPick={() => {}} onSize={() => {}} />}
           </div>
         ) : null}
       </div>

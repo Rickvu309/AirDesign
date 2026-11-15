@@ -46,6 +46,8 @@ function insertedTable() {
     change: "table",
     index: 0,
     size: { ...size, elements: [{ box: top }] },
+    rows: 3,
+    columns: 3,
   })
   if (edit?.slide !== "element-add") throw new Error("element-add")
   const register = applied(openRegister("", ""), { command: "slide", file: [slideId("256")], edit })

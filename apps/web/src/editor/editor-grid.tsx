@@ -17,6 +17,7 @@ import { slideThumbWidth, useSlideSay, type SlideStrip, type StripSection } from
 import type { UndoButtonsState } from "@/editor/undo-buttons"
 import { ExportControl } from "@/export/export-control"
 import type { ExportRequest } from "@/export/export-deck"
+import type { TableSize } from "@/element-edit"
 import { cn } from "@/lib/class-names"
 
 const gridThumbWidth = 300
@@ -79,7 +80,7 @@ export function EditorGrid({
   onText?: () => void
   formatting?: TextFormatting
   formats?: FormatShown
-  onTable?: () => void
+  onTable?: (size: TableSize) => void
   onPicture?: (file: File) => void
   save?: SaveStatus | null
   faded?: boolean

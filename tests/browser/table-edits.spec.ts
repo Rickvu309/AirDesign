@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test"
 import { tableExportName } from "../../scripts/pptx-cases/trait-table.mjs"
 import { exportFromDialog } from "./export-dialog"
 import { newBlankDeck } from "./new-deck"
+import { insertTable } from "./insert-table"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
 
@@ -69,8 +70,7 @@ test("inserts a table, types in two cells, adds and deletes a row, and it all su
   await newBlankDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
-  await page.getByRole("button", { name: "Actions", exact: true }).click()
-  await page.getByRole("menuitem", { name: "Table", exact: true }).click()
+  await insertTable(page)
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
   const rows = table.locator('[role="row"]')
   const cell = (spot: string) => table.locator(`[data-table-text="${spot}"]`)
@@ -133,8 +133,7 @@ test("Escape leaves the cell for the table and Delete removes the whole table", 
   await newBlankDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
-  await page.getByRole("button", { name: "Actions", exact: true }).click()
-  await page.getByRole("menuitem", { name: "Table", exact: true }).click()
+  await insertTable(page)
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
   await expect(table.locator('[data-table-text="0.0"]')).toBeFocused()
   await page.keyboard.press("Backspace")
@@ -153,8 +152,7 @@ test("Undo takes back the insert of a table and Redo brings it back, through a r
   await newBlankDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
-  await page.getByRole("button", { name: "Actions", exact: true }).click()
-  await page.getByRole("menuitem", { name: "Table", exact: true }).click()
+  await insertTable(page)
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
   await expect(table).toHaveCount(1)
   await page.getByRole("button", { name: "Undo add table", exact: true }).click()
@@ -176,8 +174,7 @@ test("one Ctrl+Z straight after typing in a new table's cell takes back the typi
   await newBlankDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
-  await page.getByRole("button", { name: "Actions", exact: true }).click()
-  await page.getByRole("menuitem", { name: "Table", exact: true }).click()
+  await insertTable(page)
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
   await expect(table.locator('[data-table-text="0.0"]')).toBeFocused()
   await expect(page.getByRole("button", { name: "Undo add table", exact: true })).toBeEnabled()
@@ -193,8 +190,7 @@ test("Ctrl+Z with the caret in a table cell paints the cell's text from before t
   await newBlankDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
-  await page.getByRole("button", { name: "Actions", exact: true }).click()
-  await page.getByRole("menuitem", { name: "Table", exact: true }).click()
+  await insertTable(page)
   const cell = page.locator('[data-slide-paint] [data-canvas-table] [data-table-text="0.0"]')
   await expect(cell).toBeFocused()
   await page.keyboard.type("Region", { delay: 50 })
@@ -212,8 +208,7 @@ test("adds and deletes columns with undo and redo, and they survive a reload, th
   await newBlankDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
-  await page.getByRole("button", { name: "Actions", exact: true }).click()
-  await page.getByRole("menuitem", { name: "Table", exact: true }).click()
+  await insertTable(page)
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
   const cell = (spot: string) => table.locator(`[data-table-text="${spot}"]`)
   const columns = table.locator('[data-table-text^="0."]')

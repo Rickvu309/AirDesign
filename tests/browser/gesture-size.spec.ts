@@ -7,6 +7,7 @@ import { tableResizedExportName } from "../../scripts/pptx-cases/trait-table.mjs
 import { designing, openDeck, settled, storedRows } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { newBlankDeck } from "./new-deck"
+import { insertTable } from "./insert-table"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
 
@@ -87,8 +88,7 @@ test("a table resizes by its corner and by Width, scales its columns and rows, a
   await newBlankDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
-  await page.getByRole("button", { name: "Actions", exact: true }).click()
-  await page.getByRole("menuitem", { name: "Table", exact: true }).click()
+  await insertTable(page)
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
   await expect(table.locator('[data-table-text="0.0"]')).toBeFocused()
   await page.keyboard.type("Region")

@@ -95,7 +95,7 @@ it("each one-element edit on a 5 MB deck repaints its own slide and paints what 
   const typed = writeTextValue([{ from: 0, runs: [{ from: -1, text: "Typed" }] }])
   const edits: readonly (readonly [number, (before: Register) => Register])[] = [
     [2, (before) => changed(before, { change: "text", index: 2, size: room })],
-    [4, (before) => changed(before, { change: "table", index: 4, size: room })],
+    [4, (before) => changed(before, { change: "table", index: 4, size: room, rows: 3, columns: 3 })],
     [6, (before) => removed(before, store, 6)],
     [2, (before) => person(before, elementOn(store, 2, painted.boxes), typed)],
     [

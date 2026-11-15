@@ -10,7 +10,7 @@ import type { ReadShape } from "@airdesign/pptx"
 import type { CanvasSlide, PaintStore, TableBar } from "@airdesign/render"
 import { createElement, useRef, type RefObject } from "react"
 import type { CommitOutcome } from "@/commit-edit"
-import type { ElementChange } from "@/element-edit"
+import type { ElementChange, TableSize } from "@/element-edit"
 import { designRows } from "@/design-rows"
 import { TableRowBar } from "@/editor/table-bar"
 import { tableValue } from "@/table-edit"
@@ -79,9 +79,9 @@ export function useTables(deck: TableDeck) {
   }
 
   return {
-    insert() {
+    insert(size: TableSize) {
       const slide = deck.canvases.current(deck.current)
-      if (slide !== null) void deck.changeElement({ change: "table", index: deck.current, size: slide })
+      if (slide !== null) void deck.changeElement({ change: "table", index: deck.current, size: slide, ...size })
     },
     tableBar,
     change(id: ElementId, change: TableChange, edit: TableEdit) {
