@@ -45,6 +45,7 @@ export function EditorToolbar({
   onPanel,
   onText,
   formatting,
+  deckColors,
   formats,
   onTable,
   onPicture,
@@ -59,6 +60,7 @@ export function EditorToolbar({
   onPanel?: (panel: Exclude<EditorPanel, "none">) => void
   onText?: () => void
   formatting?: TextFormatting
+  deckColors?: readonly string[]
   formats?: FormatShown
   onTable?: () => void
   onPicture?: (file: File) => void
@@ -154,7 +156,9 @@ export function EditorToolbar({
           </Button>
         )
       })}
-      {formatting === undefined ? null : <LiveFormatButtons formatting={formatting} />}
+      {formatting === undefined ? null : (
+        <LiveFormatButtons formatting={formatting} {...(deckColors === undefined ? {} : { deckColors })} />
+      )}
       {formats === undefined ? null : <FormatButtons shown={formats} />}
       <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />
       <UndoButtons {...(undo === undefined ? {} : { state: undo })} />

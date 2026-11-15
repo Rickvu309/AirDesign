@@ -51,12 +51,14 @@ async function painted(page: Page, color: string): Promise<void> {
   await expect.poll(() => shown("[data-slide-entry='1'] [data-thumb-paint]")).toBe(color)
 }
 
-function colors(page: Page) {
-  return page.locator("[data-design-panel]").getByRole("group", { name: "Colors" })
+function background(page: Page) {
+  return page.locator("[data-design-panel]").getByRole("button", { name: /^Background color/ })
 }
 
-function color(page: Page, name: string) {
-  return colors(page).getByRole("button", { name, exact: true })
+async function pick(page: Page, name: string) {
+  await background(page).click()
+  await page.locator("[data-color-picker]").getByRole("button", { name, exact: true }).click()
+  await page.keyboard.press("Escape")
 }
 
 test("a person sets a slide's background colour, undoes and redoes it, and the export writes only that slide @export", async ({
@@ -71,16 +73,14 @@ test("a person sets a slide's background colour, undoes and redoes it, and the e
   await page.getByRole("button", { name: "Design", exact: true }).click()
   const panel = page.locator("[data-design-panel]")
   await expect(panel.getByText("Slide 1", { exact: true })).toBeVisible()
-  await expect(colors(page).getByRole("button")).toHaveCount(10)
-  await expect(color(page, "Light 1")).toHaveAttribute("aria-pressed", "true")
+  await expect(background(page)).toHaveText("Light 1")
   await expect(panel.getByRole("button", { name: "Picture, not available yet" })).toBeDisabled()
-  await color(page, "Dark 2").click()
+  await pick(page, "Dark 2")
   await painted(page, darkTwo)
-  await expect(color(page, "Dark 2")).toHaveAttribute("aria-pressed", "true")
-  await expect(color(page, "Light 1")).toHaveAttribute("aria-pressed", "false")
+  await expect(background(page)).toHaveText("Dark 2")
   await page.getByRole("button", { name: "Undo background color", exact: true }).click()
   await painted(page, white)
-  await expect(color(page, "Light 1")).toHaveAttribute("aria-pressed", "true")
+  await expect(background(page)).toHaveText("Light 1")
   await page.getByRole("button", { name: "Redo background color", exact: true }).click()
   await painted(page, darkTwo)
   await page.reload()

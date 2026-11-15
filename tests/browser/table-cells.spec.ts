@@ -3,7 +3,7 @@ import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import { tableCellsExportName } from "../../scripts/pptx-cases/trait-table.mjs"
 import { forward, settled, signInBrowser, test } from "./api-stack"
-import { fixtures } from "./design-panel"
+import { fixtures, pickColor } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { partsOf } from "./shape-fills"
 
@@ -72,11 +72,7 @@ test("an agent fills a table's header row, a person fills and borders the next r
   await panel.getByRole("group", { name: "Apply to", exact: true }).getByRole("button", { name: "Row" }).click()
   const fill = panel.getByRole("group", { name: "Cell fill", exact: true })
   await fill.getByRole("button", { name: "Color", exact: true }).click()
-  await panel
-    .getByRole("group", { name: "Color", exact: true })
-    .first()
-    .getByRole("button", { name: "Accent 2" })
-    .click()
+  await pickColor(page, panel.getByRole("group", { name: "Color", exact: true }).first(), "Accent 2")
   const second = async () => {
     const fill = await cellFill(page, "1.2")
     return fill === before || fill === header ? null : fill

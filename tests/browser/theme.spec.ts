@@ -2,7 +2,7 @@ import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { openDeck, settled } from "./design-panel"
+import { openDeck, settled, typeColor } from "./design-panel"
 import { partsOf } from "./shape-fills"
 
 const exportName = "exported-theme.pptx"
@@ -45,9 +45,12 @@ test("a person changes accent 1 and the heading font of a deck with two themes, 
   const oval = painted(page, "ppt/slides/slide8.xml#7")
   await expect(oval).toBeVisible()
   const ovalBefore = await oval.innerHTML()
-  await theme.getByLabel("Accent 1", { exact: true }).fill(`#${red}`)
+  await typeColor(page, theme.getByRole("button", { name: "Accent 1", exact: true }), `#${red}`)
   await expect.poll(() => oval.innerHTML()).not.toBe(ovalBefore)
-  await expect(theme.getByLabel("Accent 1", { exact: true })).toHaveValue(`#${red}`)
+  await expect(theme.getByRole("button", { name: "Accent 1", exact: true })).toHaveAttribute(
+    "title",
+    new RegExp(`#${red}`, "i"),
+  )
 
   await entry(page, 1).click()
   const title = painted(page, "ppt/slides/slide1.xml#2")
@@ -67,7 +70,10 @@ test("a person changes accent 1 and the heading font of a deck with two themes, 
   await settled(page)
   theme = await themePanel(page)
   await expect(theme.getByRole("textbox", { name: "Heading font", exact: true })).toHaveValue("Georgia")
-  await expect(theme.getByLabel("Accent 1", { exact: true })).toHaveValue(`#${red}`)
+  await expect(theme.getByRole("button", { name: "Accent 1", exact: true })).toHaveAttribute(
+    "title",
+    new RegExp(`#${red}`, "i"),
+  )
   await expect.poll(() => fonts(painted(page, "ppt/slides/slide1.xml#2"))).toContain("Georgia")
 
   const saving = page.waitForEvent("download")
@@ -91,5 +97,8 @@ test("a person changes accent 1 and the heading font of a deck with two themes, 
   await settled(page)
   theme = await themePanel(page)
   await expect(theme.getByRole("textbox", { name: "Heading font", exact: true })).toHaveValue("Georgia")
-  await expect(theme.getByLabel("Accent 1", { exact: true })).toHaveValue(`#${red}`)
+  await expect(theme.getByRole("button", { name: "Accent 1", exact: true })).toHaveAttribute(
+    "title",
+    new RegExp(`#${red}`, "i"),
+  )
 })

@@ -1,7 +1,6 @@
 import {
   alignNames,
   formatNames,
-  schemeNames,
   type FormatState,
   type ParagraphAlign,
   type Color,
@@ -12,14 +11,9 @@ import type { TextFormatting } from "@airdesign/render"
 import type { KeyboardEvent, MouseEvent } from "react"
 import { useSyncExternalStore } from "react"
 import { Button, buttonVariants } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { formatCopy } from "@/copy/format-copy"
+import { shownHex } from "@/design/color-choices"
+import { ColorPicker } from "@/design/color-picker"
 import { formatSwatches } from "@/editor/format-art"
 import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
@@ -54,23 +48,6 @@ function sizeText(size: number): string {
   return Number.isInteger(points) ? String(points) : points.toFixed(1)
 }
 
-function untransformed(color: Color | "mixed" | null): Color | null {
-  return color === null || color === "mixed" || (color.transforms?.length ?? 0) > 0 ? null : color
-}
-
-function schemeValue(color: Color | "mixed" | null): string {
-  const shown = untransformed(color)
-  return shown !== null && "scheme" in shown ? shown.scheme : ""
-}
-
-function barOf(color: Color | "mixed" | null, palette: readonly Swatch[]): string | null {
-  const shown = untransformed(color)
-  if (shown === null) return null
-  if ("rgb" in shown) return `#${shown.rgb}`
-  if ("scheme" in shown) return palette.find((swatch) => swatch.scheme === shown.scheme)?.css ?? null
-  return null
-}
-
 function moveAlign(
   event: KeyboardEvent<HTMLElement>,
   align: ParagraphAlign | "mixed" | null,
@@ -103,6 +80,7 @@ export function FormatButtons({
   bullet = "off",
   onBullet,
   swatches,
+  deckColors = [],
 }: {
   shown: FormatShown
   onToggle?: (format: TextFormat) => void
@@ -114,15 +92,19 @@ export function FormatButtons({
   onAlign?: (align: ParagraphAlign) => void
   bullet?: FormatState
   swatches?: readonly Swatch[]
+  deckColors?: readonly string[]
   onBullet?: () => void
 }) {
   const sizeShown = size === undefined ? 1800 : size
   const designColor: Color = { scheme: "dk1" }
   const colorShown = color === undefined ? designColor : color
   const alignShown = align === undefined ? "left" : align
-  const palette = swatches !== undefined && swatches.length > 0 ? swatches : formatSwatches
-  const bar = barOf(colorShown, palette)
-  const chosen = schemeValue(colorShown)
+  const theme = (swatches !== undefined && swatches.length > 0 ? swatches : formatSwatches).map((swatch) => ({
+    ...swatch,
+    name: formatCopy.colors[swatch.scheme],
+  }))
+  const value = colorShown === null || colorShown === "mixed" ? undefined : colorShown
+  const bar = value === undefined ? null : `#${shownHex(value, theme)}`
   const checked = alignShown === "left" || alignShown === "center" || alignShown === "right" ? alignShown : null
   return (
     <>
@@ -176,48 +158,31 @@ export function FormatButtons({
           <EditorIcon name="plus" size={18} />
         </Button>
       </span>
-      <DropdownMenu modal={false}>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label={formatCopy.color}
-              className={cn(quiet, "text-foreground")}
-              onMouseDown={holdCaret}
-            />
-          }
-        >
-          <span className="flex flex-col items-center gap-0.5">
-            <span className="text-sm leading-none font-semibold">A</span>
-            <span
-              className={cn("h-0.5 w-3.5 rounded-full", bar === null && "bg-foreground")}
-              {...(bar === null ? {} : { style: { backgroundColor: bar } })}
-            />
-          </span>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent side="top" align="start" className="min-w-44" data-keeps-format>
-          <DropdownMenuRadioGroup
-            value={chosen}
-            onValueChange={(value) => {
-              if (value === chosen) return
-              const scheme = schemeNames.find((name) => name === value)
-              if (scheme !== undefined) onColor?.({ scheme })
-            }}
-          >
-            {palette.map((swatch) => (
-              <DropdownMenuRadioItem key={swatch.scheme} value={swatch.scheme} onMouseDown={holdCaret}>
-                <span
-                  className="size-3 rounded-full ring-1 ring-foreground/20"
-                  style={{ backgroundColor: swatch.css }}
-                />
-                {formatCopy.colors[swatch.scheme]}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <ColorPicker
+        value={value}
+        palette={{ theme, deck: deckColors, behind: null }}
+        keepsFormat
+        side="top"
+        onPick={(picked) => onColor?.(picked)}
+        trigger={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={formatCopy.color}
+            className={cn(quiet, "text-foreground")}
+            onMouseDown={holdCaret}
+          />
+        }
+      >
+        <span className="flex flex-col items-center gap-0.5">
+          <span className="text-sm leading-none font-semibold">A</span>
+          <span
+            className={cn("h-0.5 w-3.5 rounded-full", bar === null && "bg-foreground")}
+            {...(bar === null ? {} : { style: { backgroundColor: bar } })}
+          />
+        </span>
+      </ColorPicker>
       <span
         role="radiogroup"
         aria-label={formatCopy.alignGroup}
@@ -264,7 +229,13 @@ function shownOf(formatting: TextFormatting): FormatShown | null {
   return bold === null || italic === null || underline === null ? null : { bold, italic, underline }
 }
 
-export function LiveFormatButtons({ formatting }: { formatting: TextFormatting }) {
+export function LiveFormatButtons({
+  formatting,
+  deckColors = [],
+}: {
+  formatting: TextFormatting
+  deckColors?: readonly string[]
+}) {
   useSyncExternalStore(formatting.subscribe, formatting.version)
   const shown = shownOf(formatting)
   return shown === null ? null : (
@@ -280,6 +251,7 @@ export function LiveFormatButtons({ formatting }: { formatting: TextFormatting }
       bullet={formatting.bullet() ?? "off"}
       onBullet={formatting.bullets}
       swatches={formatting.swatches()}
+      deckColors={deckColors}
     />
   )
 }

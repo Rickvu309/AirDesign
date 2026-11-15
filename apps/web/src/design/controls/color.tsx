@@ -1,52 +1,56 @@
-import { alphaKeys, alphaOf, fadedColor, opaque, sameColor, type Color } from "@airdesign/document"
+import { alphaKeys, alphaOf, fadedColor, opaque, type Color } from "@airdesign/document"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
+import { designCopy } from "@/copy/design-copy"
+import { shownHex, shownName } from "@/design/color-choices"
+import { ColorPicker, lightCss } from "@/design/color-picker"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
-const lightest = 0xe0
-
-function light(css: string): boolean {
-  const hex = /^#([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})$/i.exec(css)
-  return hex !== null && hex.slice(1).every((pair) => Number.parseInt(pair, 16) >= lightest)
+export function ColorField({ id, css, name }: { id: string; css: string | null; name: string }) {
+  return (
+    <>
+      <span
+        className={cn(
+          "size-4 shrink-0 rounded-sm",
+          css === null || lightCss(css) ? "shadow-[0px_0px_0px_1px_var(--field-edge)]" : null,
+        )}
+        style={css === null ? undefined : { background: css }}
+        aria-hidden
+      />
+      <span id={id} className="truncate text-[length:var(--type-dense)] text-foreground">
+        {name}
+      </span>
+    </>
+  )
 }
+
+export const fieldLook =
+  "h-9 w-full min-w-0 justify-start gap-2.5 rounded-lg border-0 bg-white px-3 font-normal shadow-[0px_0px_0px_1px_var(--field-edge)] hover:bg-white active:translate-y-0"
 
 export function ColorControl({ row, palette, onChange }: ControlProps) {
   const label = useId()
+  const named = useId()
   const held = row.mixed ? null : (row.value as Color | undefined)
-  const shown = held === null || held === undefined ? held : fadedColor(held, opaque)
-  const carried = alphaKeys.some((key) => key.startsWith(`${row.trait}.`)) || shown === null || shown === undefined
+  const shown = held === null || held === undefined ? undefined : fadedColor(held, opaque)
+  const carried = alphaKeys.some((key) => key.startsWith(`${row.trait}.`)) || shown === undefined
   const picked = (color: Color) => (carried ? color : fadedColor(color, alphaOf(held ?? color)))
+  const css = shown === undefined ? null : `#${shownHex(shown, palette.theme)}`
+  const name = row.mixed ? designCopy.mixed : shown === undefined ? "" : shownName(shown, palette.theme)
   return (
-    <div className="flex flex-col gap-1.5" data-control="color">
+    <div role="group" aria-labelledby={label} className="flex flex-col gap-1.5" data-control="color">
       <span id={label} className="text-[length:var(--type-caption)] text-quiet">
         {row.label}
       </span>
-      <div role="group" aria-labelledby={label} className="grid grid-cols-10 gap-1.5">
-        {palette.map((swatch) => {
-          const color: Color = { scheme: swatch.scheme }
-          const chosen = shown !== null && shown !== undefined && sameColor(shown, color)
-          return (
-            <Button
-              key={swatch.scheme}
-              type="button"
-              variant="ghost"
-              aria-label={swatch.name}
-              aria-pressed={chosen}
-              title={swatch.name}
-              onClick={() => {
-                if (!chosen) onChange(picked(color))
-              }}
-              className={cn(
-                "aspect-square h-auto w-full rounded-[var(--shape-control)] p-0 active:translate-y-0",
-                light(swatch.css) ? "shadow-[0px_0px_0px_1px_var(--field-edge)]" : null,
-                chosen ? "shadow-[0_0_0_2px_var(--background),0_0_0_4px_var(--ring)]" : null,
-              )}
-              style={{ background: swatch.css }}
-            />
-          )
-        })}
-      </div>
+      <ColorPicker
+        value={shown}
+        palette={palette}
+        contrast={row.trait === "text"}
+        onPick={(color) => onChange(picked(color))}
+        trigger={<Button type="button" variant="ghost" aria-labelledby={`${label} ${named}`} className={fieldLook} />}
+      >
+        <ColorField id={named} css={css} name={name} />
+      </ColorPicker>
     </div>
   )
 }

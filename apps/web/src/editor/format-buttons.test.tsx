@@ -36,7 +36,7 @@ it("names each button by its action and says its state for the selection", () =>
     "Control+I Meta+I",
     "Control+U Meta+U",
   ])
-  expect(markup).toContain('aria-haspopup="menu"')
+  expect(markup).toContain('aria-haspopup="dialog"')
   expect(markup).toContain('aria-checked="true"')
   expect(markup).toContain('aria-label="Bullets"')
   expect(markup).toContain('aria-pressed="false"')

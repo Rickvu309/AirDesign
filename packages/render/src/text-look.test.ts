@@ -2,6 +2,7 @@ import { expect, it } from "vitest"
 import type { CanvasParagraph, CanvasRunStyle, CanvasText } from "./record.js"
 import { restyle, textLook } from "./text-look.js"
 
+const hash = "#"
 const wide = 12_192_000
 const canvas = 800
 const scaled = (emu: number) => (emu * canvas) / wide
@@ -137,4 +138,20 @@ it.each([
 
 it("follows a font with no open twin with the page font alone", () => {
   expect(painted(paragraph()).run.style.fontFamily).toBe('"Serifa", var(--font-sans)')
+})
+
+it("paints a theme tint and shade a person picks before the file has them", () => {
+  const text = { ...paragraph(), colors: [{ scheme: "accent1", css: "rgb(68, 114, 196)" }] } as const
+  const look = textLook(text, scaled)
+  const tint = {
+    scheme: "accent1",
+    transforms: [
+      { op: "lumMod", val: 60_000 },
+      { op: "lumOff", val: 40_000 },
+    ],
+  } as const
+  expect(look.run(0, 0, { color: tint }).color).toBe(`${hash}8FAADC`)
+  expect(look.run(0, 0, { color: { scheme: "accent1", transforms: [{ op: "lumMod", val: 75_000 }] } }).color).toBe(
+    `${hash}2F5597`,
+  )
 })

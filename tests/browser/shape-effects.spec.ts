@@ -2,7 +2,7 @@ import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { openDeck, settled } from "./design-panel"
+import { openDeck, pickColor, settled, shownColor } from "./design-panel"
 import { partsOf, shapeAt } from "./shape-fills"
 
 const deck = "corpus/nasa-cots-electronics.pptx"
@@ -75,9 +75,9 @@ test("a person adds glow to a shape whose shadow comes from its style and recolo
   await expect.poll(() => painted(first)).toEqual({ shadow: 1, glow: 1 })
   await expect(effects.getByRole("textbox", { name: "Radius", exact: true })).toHaveValue("5")
   const glowColor = effects.getByRole("group", { name: "Color", exact: true }).nth(1)
-  await expect(glowColor.getByRole("button", { name: "Accent 1" })).toHaveAttribute("aria-pressed", "true")
-  await glowColor.getByRole("button", { name: "Accent 2" }).click()
-  await expect(glowColor.getByRole("button", { name: "Accent 2" })).toHaveAttribute("aria-pressed", "true")
+  await expect(shownColor(glowColor)).toHaveText("Accent 1")
+  await pickColor(page, glowColor, "Accent 2")
+  await expect(shownColor(glowColor)).toHaveText("Accent 2")
 
   await slide(page, 8)
   const second = shapeAt(page, "4", softened)

@@ -81,7 +81,7 @@ test("font size, theme colour, alignment and bullets survive reload, undo and ex
   await expect(word).toHaveAttribute("data-size", "3300")
   await expect(editor).toBeFocused()
   await page.getByRole("button", { name: "Text color" }).click()
-  await page.getByRole("menuitemradio", { name: "Accent 2" }).click()
+  await page.locator("[data-color-picker]").getByRole("button", { name: "Accent 2", exact: true }).click()
   await expect(word).toHaveAttribute("data-color", "scheme:accent2")
   await page.getByRole("radio", { name: "Align center" }).click()
   await expect(page.getByRole("radio", { name: "Align center" })).toHaveAttribute("aria-checked", "true")

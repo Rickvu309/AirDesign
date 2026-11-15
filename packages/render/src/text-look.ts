@@ -1,4 +1,5 @@
 import {
+  colorPaint,
   spacingNames,
   type ParagraphAlign,
   type ParagraphSpacing,
@@ -221,14 +222,13 @@ function schemeOf(style: CanvasRunStyle, colors: readonly CanvasThemeColor[]): C
 }
 
 function paintedColor(color: Color, colors: readonly CanvasThemeColor[], file: string | null): string | null {
-  if ((color.transforms?.length ?? 0) > 0) return file
-  const css =
-    "rgb" in color
-      ? `#${color.rgb}`
-      : "scheme" in color
-        ? colors.find((swatch) => swatch.scheme === color.scheme)?.css
-        : undefined
-  if (css === undefined) return file
+  const slot = (scheme: string) => cssHex(colors.find((swatch) => swatch.scheme === scheme)?.css ?? null)
+  const hex = colorPaint(
+    { ...color, transforms: (color.transforms ?? []).filter(({ op }) => !op.startsWith("alpha")) },
+    slot,
+  )?.hex
+  if (hex === undefined) return file
+  const css = `#${hex}`
   const alpha = file === null ? undefined : /^#[\da-f]{6}([\da-f]{2})$/i.exec(file)?.[1]
   return alpha === undefined || !/^#[\da-f]{6}$/i.test(css) ? css : `${css}${alpha}`
 }

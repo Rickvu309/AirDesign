@@ -3,7 +3,8 @@ import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
 import { controlViews } from "@/design/control-views"
-import type { ControlKind, ControlProps, PanelModel, PanelRow, Swatch as PaletteSwatch } from "@/design/panel"
+import type { Palette } from "@/design/color-choices"
+import type { ControlKind, ControlProps, PanelModel, PanelRow } from "@/design/panel"
 import { haldenMist, haldenTeal, swatchMist, swatchNavy, swatchTeal, swatchWhite } from "@/editor/design-panel-art"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
@@ -190,7 +191,7 @@ export function SectionRows({
   onChange,
 }: {
   rows: readonly PanelRow[]
-  palette: readonly PaletteSwatch[]
+  palette: Palette
   onChange: (row: PanelRow, value: unknown) => void
 }) {
   return runsOf(rows).map((run) => (
@@ -219,7 +220,7 @@ export function ElementDesign({
 }: {
   model: PanelModel
   kind: Kind
-  palette: readonly PaletteSwatch[]
+  palette: Palette
   onChange: (row: PanelRow, value: unknown) => void
 }) {
   const last = model.sections.length - 1

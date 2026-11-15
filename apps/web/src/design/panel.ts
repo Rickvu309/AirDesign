@@ -9,7 +9,6 @@ import {
   writtenField,
   type Desc,
   type ElementId,
-  type SchemeName,
   type ScopedElement,
   type SetChange,
   type TextValue,
@@ -18,6 +17,7 @@ import {
 } from "@airdesign/document"
 import type { ReactNode } from "react"
 import { optionWord } from "@/copy/option-copy"
+import type { Palette } from "./color-choices"
 import { cropChange } from "./crop-change"
 import { opacitySection } from "./opacity-row"
 import { traitControls } from "./trait-controls"
@@ -99,11 +99,9 @@ export type PanelRow = {
 
 export type NodeChoice = { readonly node: ElementId; readonly name: string }
 
-export type Swatch = { readonly scheme: SchemeName; readonly css: string; readonly name: string }
-
 export type ControlProps = {
   readonly row: PanelRow
-  readonly palette: readonly Swatch[]
+  readonly palette: Palette
   readonly onChange: (value: unknown) => void
   readonly inner?: (props: ControlProps) => ReactNode
 }

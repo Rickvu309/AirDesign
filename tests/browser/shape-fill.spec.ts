@@ -3,7 +3,7 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
 import { fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
-import { openDeck, settled } from "./design-panel"
+import { openDeck, pickColor, settled, shownColor } from "./design-panel"
 
 const exportName = "exported-shape-fill.pptx"
 const judged = join(process.cwd(), "tests/browser", exportName)
@@ -33,11 +33,11 @@ test("a person fills a shape whose fill comes from its style with a color and an
   await expect(kinds.getByRole("button", { name: "Color", exact: true })).toHaveAttribute("aria-pressed", "true")
   await expect(panel.getByRole("button", { name: "Reset fill", exact: true })).toHaveCount(0)
   const colors = panel.getByRole("group", { name: "Color", exact: true })
-  await expect(colors.getByRole("button", { name: "Accent 1", exact: true })).toHaveAttribute("aria-pressed", "true")
-  await colors.getByRole("button", { name: "Accent 2", exact: true }).click()
+  await expect(shownColor(colors)).toHaveText("Accent 1")
+  await pickColor(page, colors, "Accent 2")
   await expect.poll(() => filled(rectangle)).not.toBe(accentOne)
   const accentTwo = await filled(rectangle)
-  await expect(colors.getByRole("button", { name: "Accent 2", exact: true })).toHaveAttribute("aria-pressed", "true")
+  await expect(shownColor(colors)).toHaveText("Accent 2")
   await expect(panel.getByRole("button", { name: "Reset fill", exact: true })).toBeVisible()
 
   const ovalPanel = await fillPanel(page, oval)

@@ -60,3 +60,27 @@ export function placed(page: Page, element: string): Promise<number[]> {
       [frame.style.left, frame.style.top, frame.style.width, frame.style.height].map((each) => Number.parseFloat(each)),
     )
 }
+
+export function picker(page: Page): Locator {
+  return page.locator("[data-color-picker]")
+}
+
+export async function pickColor(page: Page, field: Locator, name: string): Promise<void> {
+  await field.getByRole("button").first().click()
+  await picker(page).getByRole("button", { name, exact: true }).click()
+  await page.keyboard.press("Escape")
+  await expect(picker(page)).toHaveCount(0)
+}
+
+export async function typeColor(page: Page, trigger: Locator, hex: string): Promise<void> {
+  await trigger.click()
+  const typed = picker(page).getByRole("textbox", { name: "Hex", exact: true })
+  await typed.fill(hex)
+  await typed.press("Enter")
+  await page.keyboard.press("Escape")
+  await expect(picker(page)).toHaveCount(0)
+}
+
+export function shownColor(field: Locator): Locator {
+  return field.getByRole("button").first()
+}

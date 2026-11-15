@@ -92,9 +92,10 @@ test("a background stored as a theme colour with lumMod paints darker and export
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await page
     .locator("[data-design-panel]")
-    .getByRole("group", { name: "Colors" })
-    .getByRole("button", { name: "Dark 2", exact: true })
+    .getByRole("button", { name: /^Background color/ })
     .click()
+  await page.locator("[data-color-picker]").getByRole("button", { name: "Dark 2", exact: true }).click()
+  await page.keyboard.press("Escape")
   await painted(page, darkTwo)
   expect(await storeColor(page, darker)).toBe(1)
   await page.reload()

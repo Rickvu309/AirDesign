@@ -1,6 +1,7 @@
 import { readSetChange } from "@airdesign/catalog"
 import {
   decide,
+  formatOne,
   openRegister,
   planChange,
   registerScope,
@@ -15,8 +16,10 @@ import {
   type Register,
   type TraitName,
   type Value,
+  valueHolder,
 } from "@airdesign/document"
 import { indexPackage, paintReader, readPackage, readSlides } from "@airdesign/pptx"
+import { panelOf } from "./design/panel"
 
 export type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -119,3 +122,28 @@ export type Probe<T extends TraitName> = [FieldName<T>] extends [never]
       readonly fields: { readonly [F in Shown<T>]-?: FieldProbe<T, F> }
       readonly painted?: (parts: Parts, at: At, field: string) => string
     }
+
+function panelRow(register: Register, at: At, trait: TraitName, field: string) {
+  const view = registerScope(register).view(at.node)
+  const sections = view === undefined ? undefined : panelOf(view, { reads: {}, moves: true }).sections
+  return sections?.find((section) => section.trait === trait)?.rows.find((each) => each.field === field)
+}
+
+export function panelRegister(
+  register: Register,
+  at: At,
+  trait: TraitName,
+  field: string,
+  value: unknown,
+): Register | null {
+  const scope = registerScope(register)
+  const control = panelRow(register, at, trait, field)
+  const planned = control === undefined ? null : planChange(control.change(value), scope)
+  if (planned === null || !planned.ok) return null
+  const holder = valueHolder(register, at.node, "person")
+  const commands = planned.rows.flatMap(({ node, row: planned }): Command[] =>
+    (formatOne(planned.patch, holder) ?? [planned]).map((each) => ({ command: "person", node, ...each })),
+  )
+  const opened = landed(register, [{ command: "add", node: at.node, floor: "", route: "clean" }])
+  return commands.length === 0 || opened === null ? null : landed(opened, commands)
+}

@@ -5,12 +5,14 @@ import {
   shapeOf,
   siteKinds,
   themeNode,
+  type Color,
   type ElementId,
-  type SchemeName,
   type ScopedElement,
   type TraitReads,
 } from "@airdesign/document"
 import {
+  colorHex,
+  deckColors,
   readSlides,
   readTraits,
   shownAlphas,
@@ -25,32 +27,19 @@ import {
   shownLine,
   shownTheme,
   shownTurn,
-  themeSwatches,
   type DeckTraits,
 } from "@airdesign/pptx"
 import type { CommitOutcome } from "@/commit-edit"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
-import { formatCopy } from "@/copy/format-copy"
-import {
-  panelOf,
-  type NodeChoice,
-  type PanelReads,
-  type PanelSection,
-  type Swatch as PaletteSwatch,
-} from "@/design/panel"
+import type { Palette, Swatch } from "@/design/color-choices"
+import { ColorPicker } from "@/design/color-picker"
+import { ColorField, fieldLook } from "@/design/controls/color"
+import { panelOf, type NodeChoice, type PanelReads, type PanelSection } from "@/design/panel"
 import { changeDesign, fileValue } from "@/design/design-change"
 import { deviceScope } from "@/design/trait-edit"
-import { designShown, type DesignShown } from "@/design-shown"
-import {
-  BackgroundKind,
-  DesignHead,
-  DesignSection,
-  ElementDesign,
-  SectionRows,
-  Swatch,
-  SwatchButton,
-} from "@/editor/design-panel"
+import { backgroundHex, designShown, themeOf, type DesignShown } from "@/design-shown"
+import { BackgroundKind, DesignHead, DesignSection, ElementDesign, SectionRows } from "@/editor/design-panel"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import type { UndoList } from "@/editor/use-undo"
 import type { UndoEntry } from "@/undo-list"
@@ -143,10 +132,31 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
   }
 }
 
-function paletteOf(parts: Parts, index: number): readonly PaletteSwatch[] {
+function themeAt(parts: Parts, index: number): readonly Swatch[] {
   const part = readSlides(parts)[index]?.part
-  if (part === undefined) return []
-  return themeSwatches(parts, part).map((swatch) => ({ ...swatch, name: formatCopy.colors[swatch.scheme] }))
+  return part === undefined ? [] : themeOf(parts, part)
+}
+
+const shownColors = new WeakMap<Parts, readonly string[]>()
+
+export function colorsIn(parts: Parts): readonly string[] {
+  const known = shownColors.get(parts)
+  if (known !== undefined) return known
+  let found: readonly string[] = []
+  try {
+    found = deckColors(parts)
+  } catch {
+    found = []
+  }
+  shownColors.set(parts, found)
+  return found
+}
+
+function behindOf(parts: Parts, index: number, node: ElementId, theme: readonly Swatch[]): string | null {
+  const fill = fieldsOf(parts, node)?.["fill.value"]?.value
+  if (typeof fill === "object" && fill !== null && "solid" in fill) return colorHex(fill.solid as Color, theme)
+  if (typeof fill === "object" && fill !== null && !("none" in fill)) return null
+  return backgroundHex(parts, index)
 }
 
 function nodeChoices(deck: DesigningDeck, connector: ScopedElement): readonly NodeChoice[] {
@@ -177,7 +187,13 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
   const parts = shown.shownParts.current
   const edited = shown.editParts.current
   const opening = deviceScope(parts, shown.shownRegister.current ?? openRegister("", "")).view(node)
-  const palette = useMemo(() => paletteOf(edited, current), [edited, current])
+  const theme = useMemo(() => themeAt(edited, current), [edited, current])
+  const display = shown.displayParts.current
+  const palette: Palette = {
+    theme,
+    deck: colorsIn(display),
+    behind: behindOf(display, current, node, theme),
+  }
   if (opening === undefined) return null
   const held = opening.value ?? fileValue(shown, node)
   const value = opening.facts.kind === "table" && readTableValue(text ?? "") === null ? held : (text ?? held)
@@ -196,13 +212,6 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
       onChange={(row, value) => changeDesign(deck, row.change(value))}
     />
   )
-}
-
-const lightest = 0xe0
-
-function light(css: string): boolean {
-  const hex = /^#([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})$/i.exec(css)
-  return hex !== null && hex.slice(1).every((pair) => Number.parseInt(pair, 16) >= lightest)
 }
 
 export function LiveDesignPanel({ deck }: { deck: DesigningDeck }) {
@@ -224,9 +233,8 @@ function LiveSlideDesign({ deck }: { deck: DesigningDeck }) {
   return (
     <DesignView
       shown={view}
-      onColor={(scheme) =>
-        changeDesign(deck, { target: { slide: view.slide }, fill: { value: { solid: { scheme } } } })
-      }
+      deck={colorsIn(parts)}
+      onColor={(color) => changeDesign(deck, { target: { slide: view.slide }, fill: { value: { solid: color } } })}
     >
       <LiveThemeDesign deck={deck} />
     </DesignView>
@@ -254,7 +262,7 @@ function LiveThemeDesign({ deck }: { deck: DesigningDeck }) {
       <div className="flex flex-col gap-2" data-design-theme>
         <SectionRows
           rows={section.rows}
-          palette={[]}
+          palette={{ theme: [], deck: colorsIn(deck.shown.displayParts.current), behind: null }}
           onChange={(row, value) => changeDesign(deck, row.change(value))}
         />
       </div>
@@ -264,21 +272,24 @@ function LiveThemeDesign({ deck }: { deck: DesigningDeck }) {
 
 export function DesignView({
   shown,
+  deck = [],
   onColor,
   children = null,
 }: {
   shown: DesignShown
-  onColor: (scheme: SchemeName) => void
+  deck?: readonly string[]
+  onColor: (color: Color) => void
   children?: ReactNode
 }) {
-  const heading = useId()
+  const { background } = shown
+  const named = useId()
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto" data-design-panel>
       <DesignHead>{designCopy.slide(shown.number)}</DesignHead>
       <DesignSection title={designCopy.template}>
         <p className="text-[length:var(--type-dense)] text-quiet">{designCopy.templateOff}</p>
       </DesignSection>
-      <DesignSection title={designCopy.background}>
+      <DesignSection title={designCopy.background} last={children === null}>
         <BackgroundKind color={designCopy.color}>
           <Button
             type="button"
@@ -290,23 +301,22 @@ export function DesignView({
             {designCopy.picture}
           </Button>
         </BackgroundKind>
-        <Swatch color={shown.background.css} name={shown.background.name} edged={light(shown.background.css)} />
-      </DesignSection>
-      <DesignSection title={designCopy.colors} id={heading} last={children === null}>
-        <div role="group" aria-labelledby={heading} className="grid grid-cols-2 gap-2">
-          {shown.colors.map((color) => (
-            <SwatchButton
-              key={color.scheme}
-              color={color.css}
-              name={color.name}
-              edged={light(color.css)}
-              pressed={color.chosen}
-              onPick={() => {
-                if (!color.chosen) onColor(color.scheme)
-              }}
+        <ColorPicker
+          value={background.value}
+          palette={{ theme: shown.theme, deck, behind: null }}
+          onPick={onColor}
+          trigger={
+            <Button
+              type="button"
+              variant="ghost"
+              aria-label={designCopy.backgroundColor(background.name)}
+              data-design-swatch
+              className={fieldLook}
             />
-          ))}
-        </div>
+          }
+        >
+          <ColorField id={named} css={background.css} name={background.name} />
+        </ColorPicker>
       </DesignSection>
       {children}
     </div>

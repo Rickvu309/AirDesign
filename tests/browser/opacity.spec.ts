@@ -2,7 +2,7 @@ import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { openDeck, settled } from "./design-panel"
+import { openDeck, pickColor, settled, shownColor } from "./design-panel"
 import { fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
 
 const styleExport = "exported-opacity.pptx"
@@ -83,8 +83,8 @@ test("a person fades a shape whose fill and line come from its style, and a line
 
   const panel = await fillPanel(page, rectangle)
   const colors = panel.getByRole("group", { name: "Color", exact: true })
-  await expect(colors.getByRole("button", { name: "Accent 1", exact: true })).toHaveAttribute("aria-pressed", "true")
-  await colors.getByRole("button", { name: "Accent 2", exact: true }).click()
+  await expect(shownColor(colors)).toHaveText("Accent 1")
+  await pickColor(page, colors, "Accent 2")
   await expect.poll(() => filled(rectangle)).not.toBe(accentOne)
   await expect.poll(() => filled(rectangle)).toMatch(/^rgba\(.+, 0\.6\)$/)
   await expect(shown).toHaveValue("60")

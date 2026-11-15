@@ -38,14 +38,15 @@ function painted(parts: ReadonlyMap<string, Uint8Array>, color: Color) {
 }
 
 describe("design shown", () => {
-  it("names the slide, its background from the master, and every theme colour, with the background's colour chosen", async () => {
+  it("names the slide, its background from the master, and every theme colour", async () => {
     const parts = await fixture("blank.pptx")
     const shown = designShown(parts, 0)
     expect(shown?.slide).toBe(readSlides(parts)[0]?.slide)
     expect(shown?.number).toBe(1)
     expect(shown?.background.name).toBe("Light 1")
-    expect(shown?.background.css).toBe(shown?.colors.find((color) => color.scheme === "lt1")?.css)
-    expect(shown?.colors.map((color) => color.name)).toEqual([
+    expect(shown?.background.value).toEqual({ scheme: "lt1" })
+    expect(shown?.background.css).toBe(shown?.theme.find((color) => color.scheme === "lt1")?.css)
+    expect(shown?.theme.map((color) => color.name)).toEqual([
       "Dark 1",
       "Light 1",
       "Dark 2",
@@ -57,18 +58,27 @@ describe("design shown", () => {
       "Accent 5",
       "Accent 6",
     ])
-    expect(shown?.colors.filter((color) => color.chosen).map((color) => color.scheme)).toEqual(["lt1"])
   })
 
-  it("shows a colour set on the slide, and an RGB colour by its hex", async () => {
+  it("shows a colour set on the slide, a theme tint by its name, and an RGB colour by its hex", async () => {
     const parts = await fixture("blank.pptx")
     const accent = designShown(painted(parts, { scheme: "accent2" }), 0)
     expect(accent?.background.name).toBe("Accent 2")
-    expect(accent?.colors.filter((color) => color.chosen).map((color) => color.scheme)).toEqual(["accent2"])
+    expect(accent?.background.value).toEqual({ scheme: "accent2" })
+    const tint: Color = {
+      scheme: "accent1",
+      transforms: [
+        { op: "lumMod", val: 60_000 },
+        { op: "lumOff", val: 40_000 },
+      ],
+    }
+    const tinted = designShown(painted(parts, tint), 0)
+    expect(tinted?.background.name).toBe("Accent 1, lighter 40%")
+    expect(tinted?.background.value).toEqual(tint)
     const navy = designShown(painted(parts, { rgb: "0F2433" }), 0)
     expect(navy?.background.css.slice(1)).toBe("0F2433")
     expect(navy?.background.name).toBe(navy?.background.css)
-    expect(navy?.colors.some((color) => color.chosen)).toBe(false)
+    expect(navy?.background.value).toEqual({ rgb: "0F2433" })
   })
 
   it("names a background that is not one colour, and shows nothing past the last slide", async () => {
