@@ -19,7 +19,7 @@ import {
 } from "./mcp-steps.js"
 import { openPool } from "./pool.js"
 import { readSaved } from "./saved.js"
-import { pathsFrom, specGraph, type Graph, type Path, type SpecState } from "./spec-graph.js"
+import { pathsFrom, specGraph, walks, type Graph, type Path, type SpecState } from "./spec-graph.js"
 
 type Live = Owned & {
   offset: number
@@ -174,12 +174,11 @@ const compared = [
   "tools",
 ]
 
-async function replayEdge(graph: Graph, paths: Map<string, Path>, edge: Graph["edges"][number]) {
-  const path = paths.get(edge.from)
-  const first = path === undefined ? undefined : graph.states.get(path.root)
-  if (path === undefined || first === undefined) return `no path to ${edge.from}`
+async function replayWalk(graph: Graph, walk: Path) {
+  const first = graph.states.get(walk.root)
+  if (first === undefined) return "no root"
   const live = await opened(String(first.element))
-  for (const step of [...path.steps, { action: edge.action, to: edge.to }]) {
+  for (const step of walk.steps) {
     const target = graph.states.get(step.to)
     if (target === undefined) return "no target"
     await act(live, step.action, target)
@@ -211,11 +210,11 @@ describe("slide-run replay", () => {
     const states = [...graph.states.values()]
     expect(states.some((state) => state.aPc === "retry")).toBe(true)
     expect(states.some((state) => state.sPc === "retry")).toBe(true)
-    const edges = graph.edges.filter((edge) => edge.action !== "Done")
+    const covering = walks(graph, paths)
     const failures: string[] = []
-    for (let at = 0; at < edges.length; at += 8) {
-      const batch = edges.slice(at, at + 8)
-      const told = await Promise.all(batch.map((edge) => replayEdge(graph, paths, edge)))
+    for (let at = 0; at < covering.length; at += 8) {
+      const batch = covering.slice(at, at + 8)
+      const told = await Promise.all(batch.map((walk) => replayWalk(graph, walk)))
       for (const line of told) if (line !== null) failures.push(line)
     }
     expect(failures.slice(0, 5)).toEqual([])
