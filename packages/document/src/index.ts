@@ -265,7 +265,7 @@ export {
   type TextRange,
 } from "./text-format.js"
 export { slidesKept } from "./slide-kept.js"
-export { ownFloor, upgradeBackgrounds } from "./background-upgrade.js"
+export { ownFloor } from "./own-floor.js"
 export { redoOf, slideUndoable, undoOf, undoSlides, type NodeStep, type Undoable } from "./person-undo.js"
 export type {
   Fill,

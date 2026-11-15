@@ -1,12 +1,5 @@
 import { readDeckId } from "@airdesign/catalog"
-import {
-  elementId,
-  landedPatch,
-  openingElement,
-  upgradeBackgrounds,
-  type DeckIndex,
-  type Register,
-} from "@airdesign/document"
+import { elementId, landedPatch, openingElement, type DeckIndex, type Register } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { call, openDeck, type Deck } from "./index.js"
 
@@ -51,7 +44,7 @@ function filled(deck: Deck, target: string, value: unknown) {
 }
 
 function fillOf(register: Register, node: string) {
-  const body = upgradeBackgrounds(register).elements[elementId(node)]
+  const body = register.elements[elementId(node)]
   return body === undefined ? undefined : landedPatch(body, "text").fill?.value
 }
 
@@ -87,23 +80,11 @@ it("refuses text on a slide and a slide that is not there", () => {
   })
 })
 
-it("gives a duplicate the background its source shows, whether a row or PR 478's stored command set it", () => {
+it("gives a duplicate the background its source's fill row shows, and no opening when the source shows its layout's", () => {
   const rowed = landed(filled(indexed(), "256", `#${hex}`))
   const copy = landed(call("duplicate_slide", rowed, agent, { deck: "deck", base: rowed.revision, slide: "256" }))
   const minted = copy.register.order.at(-1)?.id ?? ""
   expect(openingElement(copy.register, elementId(`${minted}.slide`))?.opening).toEqual({ fill: { value: navy } })
-  const stored = indexed()
-  const legacy = {
-    ...stored,
-    register: {
-      ...stored.register,
-      file: [],
-      order: [{ slide: "background", id: "256", color: { scheme: "accent2" } }],
-    } as unknown as Register,
-  }
-  const cloned = landed(call("duplicate_slide", legacy, agent, { deck: "deck", base: 0, slide: "256" }))
-  const id = cloned.register.order.at(-1)?.id ?? ""
-  expect(openingElement(cloned.register, elementId(`${id}.slide`))?.opening).toEqual({ fill: { value: accent2 } })
   const plain = landed(call("duplicate_slide", indexed(), agent, { deck: "deck", base: 0, slide: "257" }))
   const blank = plain.register.order.at(-1)?.id ?? ""
   expect(openingElement(plain.register, elementId(`${blank}.slide`))).toEqual({

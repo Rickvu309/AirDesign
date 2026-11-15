@@ -17,7 +17,6 @@ import {
   slideKind,
   themeNode,
   themeSlots,
-  upgradeBackgrounds,
   version,
   type Box,
   type ElementId,
@@ -261,10 +260,9 @@ function packRead(
 }
 
 export function readDeckPage(
-  stored: Deck,
+  deck: Deck,
   query: { readonly slide?: string; readonly cursor?: string; readonly runId: string | null },
 ): ReadDeckAnswer {
-  const deck = { ...stored, register: upgradeBackgrounds(stored.register) }
   const goneSlides = new Set<string>(foldSlides(deck.register).flatMap((spot) => (spot.present ? [] : [spot.id])))
   const nodes = knownNodes(deck.register)
   const index = deck.register.index

@@ -11,7 +11,6 @@ import {
   slideKind,
   takes,
   themeNode,
-  upgradeBackgrounds,
   type ElementId,
   type ElementPatch,
   type FieldEdit,
@@ -126,8 +125,7 @@ function writtenElement(
   return next
 }
 
-export function exportParts(parts: Parts, stored: Register): Parts {
-  const register = upgradeBackgrounds(stored)
+export function exportParts(parts: Parts, register: Register): Parts {
   const shapes = readShapes(parts)
   let next = parts
   for (const node of new Set([...register.nodes, ...floorNodes(register)])) {

@@ -6,7 +6,6 @@ import { readElementOrder, stackRefusal } from "./element-stack.js"
 import { limits } from "./limits.js"
 import { orderKeyBetween, readOrderKey, type OrderKey } from "./order-key.js"
 import { readFloor } from "./slide-floor.js"
-import { readBackground, type SlideBackground } from "./slide-background.js"
 
 export type SlideAdd = {
   readonly slide: "add"
@@ -49,7 +48,6 @@ export type SlideCommand = (
   | SlideRemove
   | SlideMove
   | SlideRestore
-  | SlideBackground
   | ElementCommand
   | GroupCommand
 ) & {
@@ -205,10 +203,6 @@ export function applySlide(
     if (refusal !== null) return { ok: false, code: refusal }
     return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
   }
-  if (command.slide === "background") {
-    if (!ids.has(command.id)) return { ok: false, code: "dead" }
-    return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
-  }
   if (command.slide === "remove") {
     if (!ids.has(command.id) || present.length === 1) return { ok: false, code: "dead" }
     return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
@@ -261,7 +255,6 @@ function commandOf(raw: Record<string, unknown>): SlideCommand | undefined {
     return readElementCommand(raw, id)
   if (raw.slide === "element-group" || raw.slide === "element-ungroup" || raw.slide === "element-regroup")
     return readGroupCommand(raw, id)
-  if (raw.slide === "background") return readBackground(raw, id)
   if (raw.slide === "remove") return { slide: "remove", id }
   const key = readOrderKey(raw.key)
   if (key === undefined) return undefined

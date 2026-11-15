@@ -9,7 +9,6 @@ import {
   replay,
   rootElement,
   storedValue,
-  upgradeBackgrounds,
   type ElementId,
   type Queued,
   type Register,
@@ -116,7 +115,7 @@ export function storedKey(deck: string, row: StoredRow): string {
 
 export function deckView(register: Register, confirmed: ConfirmedRow[], pending: PendingRow[]): DeckView {
   const phase = pending.length > 0 ? "on-device" : "confirmed"
-  return { register: upgradeBackgrounds(register), phase, pending, confirmed }
+  return { register, phase, pending, confirmed }
 }
 
 export function view(deck: DeckId, rows: readonly StoredRow[]): DeckView {

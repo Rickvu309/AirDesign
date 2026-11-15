@@ -2,6 +2,7 @@ import {
   currentBox,
   currentValue,
   elementId,
+  format,
   openingElement,
   orderKeyAfter,
   presentSlides,
@@ -11,8 +12,9 @@ import {
   type SlideId,
 } from "@airdesign/document"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
-import { installIndexedDb } from "./browser-fixtures.js"
+import { firstAccount, installIndexedDb, memoryShelf, writeRows } from "./browser-fixtures.js"
 import { connect, deleteDatabase, memoryRemote } from "./index.js"
+import { rowKey } from "./store.js"
 
 const file = [slideId("256"), slideId("257")] as const
 
@@ -126,19 +128,40 @@ it("reopens a text box added and typed in while the network is down, and sends b
   expect(currentValue(confirmed.register.elements[node]!)).toBe("Typed")
 })
 
-it("sends a background colour an older build queued as a fill row on the slide's own node, and shows it meanwhile", async () => {
+it("sends a background colour an older build left queued as a fill row on the slide's own node, and shows it meanwhile", async () => {
   const remote = memoryRemote()
-  const offline = { ...remote, commit: () => Promise.reject(new TypeError("offline")) }
   const accent = { scheme: "accent2" } as const
-  const queued = await connect(offline).enqueueSlide("deck", file, { slide: "background", id: file[0], color: accent })
-  expect(queued.ok).toBe(true)
-  await expect(connect(offline).flush("deck")).rejects.toThrow(TypeError)
+  const navy = { rgb: "0F2433" } as const
+  const old = (kind: string, background: unknown) => ({
+    kind,
+    deck: "deck",
+    value: "",
+    slideFile: file,
+    slideEdit: background,
+  })
+  await writeRows(
+    [
+      {
+        key: rowKey("deck", "confirmed", 0),
+        row: { ...old("confirmed", { slide: "background", id: "257", color: navy }), revision: 0 },
+      },
+      {
+        key: rowKey("deck", "pending", 0),
+        row: { ...old("pending", { slide: "background", id: "256", color: accent }), order: 0, base: 0 },
+      },
+    ] as unknown as Parameters<typeof writeRows>[0],
+    [],
+  )
   const node = elementId("256.slide")
   const filled = { fill: { value: { set: { solid: accent } } } }
-  const kept = await connect(offline).openDeck("deck")
+  const kept = await connect(remote).openDeck("deck")
   if (!kept.ok) throw new Error(kept.refusal)
+  expect(kept.phase).toBe("on-device")
   expect(kept.register.order).toEqual([])
   expect(kept.register.elements[node]?.landed).toMatchObject([{ actor: "person", visible: true, patch: filled }])
+  expect(kept.register.elements[elementId("257.slide")]?.landed).toMatchObject([
+    { actor: "person", visible: true, patch: { fill: { value: { set: { solid: navy } } } } },
+  ])
   const sent: unknown[] = []
   const online = connect({
     ...remote,
@@ -148,9 +171,27 @@ it("sends a background colour an older build queued as a fill row on the slide's
     },
   })
   expect((await online.flush("deck")).ok).toBe(true)
-  expect(sent).toEqual([[{ v: expect.any(Number), patch: filled, node, floor: "" }]])
+  expect(sent).toEqual([[{ v: format, patch: filled, node, floor: "" }]])
   const confirmed = await connect(remote).openDeck("deck")
   if (!confirmed.ok) throw new Error(confirmed.refusal)
   expect(confirmed.phase).toBe("confirmed")
   expect(confirmed.register.elements[node]?.landed).toMatchObject([{ actor: "person", visible: true, patch: filled }])
+})
+
+it("replays a background colour an older build left in the unsaved journal as a fill row", async () => {
+  const accent = { scheme: "accent2" } as const
+  const entry = { kind: "slide", id: "entry-1", file, edit: { slide: "background", id: "256", color: accent } }
+  const journal = new Map([[`airdesign:unsaved:${firstAccount}:deck`, JSON.stringify([entry])]])
+  const opened = await connect(memoryRemote(), { shelf: memoryShelf(journal) }).openDeck("deck")
+  if (!opened.ok) throw new Error(opened.refusal)
+  expect(opened.pending).toMatchObject([
+    {
+      kind: "pending",
+      node: "256.slide",
+      floor: "",
+      v: format,
+      patch: { fill: { value: { set: { solid: accent } } } },
+    },
+  ])
+  expect(journal.size).toBe(0)
 })
