@@ -58,11 +58,9 @@ export default async function drive({ repo, page, context, signIn, post, capture
     (route) => route.fulfill({ json: { ok: false, refusal: "deleted" } }),
   )
   await next.reload()
-  await expect(next.locator("[data-deck-refused]")).toContainText("Unable to open this deck")
-  await expect(next.getByRole("button", { name: "Go to your decks" })).toBeVisible()
+  await expect(next.locator("[data-deck-refused]")).toContainText("Deck not found")
+  await expect(next.getByRole("link", { name: "Go to your decks" })).toBeVisible()
   await expect(next.locator('[contenteditable="true"]')).toHaveCount(0)
   await expect(next.getByRole("button", { name: "Export" })).toHaveCount(0)
-  note(
-    "an open refused as deleted closed the editor: Unable to open this deck, Go to your decks, no text and no Export",
-  )
+  note("an open refused as deleted closed the editor: Deck not found, Go to your decks, no text and no Export")
 }

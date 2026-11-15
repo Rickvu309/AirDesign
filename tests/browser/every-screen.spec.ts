@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect, test, type Page } from "@playwright/test"
+import { deckRoutes } from "../../apps/web/src/decks/deck-routes"
 
 test.use({ reducedMotion: "reduce", viewport: { width: 1470, height: 923 } })
 
@@ -10,6 +11,7 @@ type Reports = { writeReport: (root: string, name: string, report: object) => vo
 const root = process.cwd()
 
 const screenIndexPath = "/screens"
+const notFoundScreens: ReadonlySet<string> = new Set([deckRoutes.deckNotFound, deckRoutes.addressNotFound])
 const pageCount = 4
 
 async function screenFaults(page: Page, screenPath: string) {
@@ -23,7 +25,8 @@ async function screenFaults(page: Page, screenPath: string) {
   try {
     await page.goto(screenPath)
     await expect(page.locator("body :visible").first(), "visible content").toBeVisible({ timeout: 2000 })
-    await expect(page.getByText("Unknown screen", { exact: true }), "Unknown screen").toHaveCount(0)
+    if (!notFoundScreens.has(screenPath))
+      await expect(page.locator("[data-not-found]"), "Page not found").toHaveCount(0)
   } catch (error) {
     faults.push(String(error).split("\n")[0])
   }

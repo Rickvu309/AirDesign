@@ -9,8 +9,8 @@ What a person types survives a reload or a closed tab, even one that comes befor
 - `tab-closed` text typed and the tab closed at once shows in a new tab and reaches the server.
 - `lost-answer` when the server stores an edit but its answer is lost, the next page sends it again with the same `once` key and the revision rises once (`commit-once` journey, for text). Known failure for a slide command (`Add slide`, `Add text box`, an inserted table): the first reload paints with the error `person edit refused`, and every reload after it leaves the editor blank, with no slide, no name and no slide list, on that browser for good. The device then holds a confirmed row and a pending row for the same command (`withSlides` in `packages/live/src/slide-replay.ts` throws on the second). The server's copy is whole and a fresh device opens it. Pinned in `tests/browser/real-save.spec.ts`.
 - `device-paint` a deck this account opened before on this browser paints from the device copy and sets `.thin-page[data-deck-ready]` while `deckRoutes.open` is still on its way, then applies the server's answer on top.
-- `device-account` the device copy, the journal, the queued names, the pictures and the Aira chats are kept under the account (`accountKey` in `packages/live`, read from the `airdesign.account` cookie the sign-in sets). Another account on the same browser sees no deck, name, picture or chat of the first, and a deck address of the first shows `Unable to open this deck` with nothing painted; the first account finds all of it again after signing in again. Signing out from Settings and deleting the account drop the chats kept for a closing page (`airdesign:chats:<account>:<deck>`).
-- `refused` when `deckRoutes.open` or `deckRoutes.watch` answers `owner`, `deleted` or `deck`, the editor drops the painted deck and shows `Unable to open this deck` with `Go to your decks` (`[data-deck-refused]`), with no editable text and no Export, and it stays closed through a reload. A `session` refusal goes to sign-in; any other refusal or a network failure keeps the deck open.
+- `device-account` the device copy, the journal, the queued names, the pictures and the Aira chats are kept under the account (`accountKey` in `packages/live`, read from the `airdesign.account` cookie the sign-in sets). Another account on the same browser sees no deck, name, picture or chat of the first, and a deck address of the first shows `Deck not found` with nothing painted; the first account finds all of it again after signing in again. Signing out from Settings and deleting the account drop the chats kept for a closing page (`airdesign:chats:<account>:<deck>`).
+- `refused` when `deckRoutes.open` or `deckRoutes.watch` answers `owner`, `deleted` or `deck`, the editor drops the painted deck and shows `Deck not found` with `link "Go to your decks"` (`[data-deck-refused]`), with no editable text and no Export, and it stays closed through a reload. A `session` refusal goes to sign-in; any other refusal or a network failure keeps the deck open.
 
 ## How to get to it (user POV)
 
@@ -34,7 +34,7 @@ Preconditions:
 
 ## Gotchas
 
-- A faked refusal closes the deck for good in that browser: a reload after `unroute` still shows `Unable to open this deck`. Drive the refusal last, or in a fresh context.
+- A faked refusal closes the deck for good in that browser: a reload after `unroute` still shows `Deck not found`. Drive the refusal last, or in a fresh context.
 - `.thin-page[data-deck-ready]` is set by the device paint as well as the server open, so it is no proof of a save. Poll `deckRoutes.open`.
 - `tests/browser/open-from-device.spec.ts` slows IndexedDB with `window.deviceDelay` to widen the window; the journey reloads with no wait instead.
 - A blank editor after a reload, with `person edit refused` in the page's errors, is the lost-answer failure above; listen with `page.on("pageerror")`.

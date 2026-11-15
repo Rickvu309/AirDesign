@@ -6,6 +6,7 @@ import { EmptyFirstVisit } from "@/decks/screens/empty-first-visit"
 import { ImportFailed } from "@/decks/screens/import-failed"
 import { Importing } from "@/decks/screens/importing"
 import { NewDeckMenuScreen } from "@/decks/screens/new-deck-menu"
+import { NotFound } from "@/decks/not-found"
 import { RecentsGrid } from "@/decks/screens/recents-grid"
 import { RecentsList } from "@/decks/screens/recents-list"
 import { TrashList } from "@/decks/screens/trash-list"
@@ -20,6 +21,12 @@ export const screens = {
   [deckRoutes.importing]: Importing,
   [deckRoutes.importFailed]: ImportFailed,
   [deckRoutes.deckMoved]: DeckMovedToast,
+  [deckRoutes.deckNotFound]: function DeckNotFound() {
+    return <NotFound kind="deck" />
+  },
+  [deckRoutes.addressNotFound]: function AddressNotFound() {
+    return <NotFound kind="address" />
+  },
   [deckRoutes.trash]: TrashList,
   [deckRoutes.emptyTrashConfirm]: function EmptyTrashConfirm() {
     return <TrashList confirm />

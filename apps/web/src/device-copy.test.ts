@@ -31,8 +31,15 @@ it("answers signed-out when the server refuses the original because there is no 
   expect(await deckParts("deck-one")).toBe("signed-out")
 })
 
-it("answers nothing when a signed-in person may not open the deck, so the refusal shows", async () => {
-  for (const refusal of ["missing", "deck", "storage", "server"]) {
+it("answers refused when the server has no deck of the person's to open", async () => {
+  for (const refusal of ["owner", "deleted", "deck", "missing"]) {
+    live.original = { ok: false, refusal }
+    expect(await deckParts("deck-one")).toBe("refused")
+  }
+})
+
+it("answers nothing when the original cannot be fetched, so the failure notice shows", async () => {
+  for (const refusal of ["storage", "server"]) {
     live.original = { ok: false, refusal }
     expect(await deckParts("deck-one")).toBeNull()
   }

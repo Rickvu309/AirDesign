@@ -3,6 +3,7 @@ import { OAuthAuthorize } from "./connect/oauth-authorize"
 import { LiveProof } from "./live-proof"
 import { ThinDeck } from "./thin-deck"
 import { Home, homeSection } from "./decks/home"
+import { NotFoundPage } from "./decks/not-found-page"
 import { AccountPage } from "./settings/account-page"
 import { AgentsPage } from "./settings/agents-page"
 import { settingsPaths } from "./settings/settings-routes"
@@ -74,7 +75,7 @@ export default function App() {
   }
   const Screen = screens[path]
   if (!Screen) {
-    return <main className="p-8 text-sm text-muted-foreground">Unknown screen</main>
+    return <NotFoundPage kind="address" />
   }
   return <Screen />
 }

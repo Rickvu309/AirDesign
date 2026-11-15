@@ -10,6 +10,7 @@ async function drive(kit) {
   )
   await kit.page.goto(address)
   await expect(kit.page.locator("[data-deck-refused]")).toBeVisible()
+  await expect(kit.page.getByText("Deck not found")).toBeVisible()
 }
 
-export default { name: "deck-refused", design: null, drive }
+export default { name: "deck-refused", design: "/screens/s34-01-decks-not-found-deck", drive }

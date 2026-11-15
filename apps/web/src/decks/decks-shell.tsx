@@ -78,7 +78,7 @@ export function DecksShell({
   search,
   starred,
 }: {
-  active: DeckSection
+  active?: DeckSection
   children: ReactNode
   firstVisit?: boolean
   account?: { email: string }
