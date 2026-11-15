@@ -3,7 +3,8 @@ import { useEffect, useRef } from "react"
 export type UndoKey = "undo" | "redo"
 
 function field(target: EventTarget | null): boolean {
-  return target instanceof HTMLElement && target.closest("input, textarea, select") !== null
+  if (!(target instanceof HTMLElement) || target.closest("[data-person-undo]") !== null) return false
+  return target.closest("input, textarea, select") !== null
 }
 
 export function undoKey(event: {

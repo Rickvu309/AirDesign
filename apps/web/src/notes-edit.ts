@@ -26,7 +26,16 @@ export function notesShown(parts: Parts, register: Register | null): readonly Sh
 }
 
 export function useNotes(deck: NotesDeck) {
-  const [notes, show] = useState<readonly ShownNotes[]>([])
+  const [notes, setNotes] = useState<readonly ShownNotes[]>([])
+
+  function show(next: readonly ShownNotes[]) {
+    const typing = deck.typed.current?.node
+    setNotes((rows) =>
+      next.map((row) =>
+        typing === elementId(`${row.slide}.notes`) ? (rows.find((kept) => kept.slide === row.slide) ?? row) : row,
+      ),
+    )
+  }
 
   function edit(slide: string | undefined, value: string) {
     if (slide === undefined) return
@@ -37,7 +46,7 @@ export function useNotes(deck: NotesDeck) {
       deck.typed.current = { node, session: deck.sessions.current, before: Promise.resolve(floor) }
     }
     const { session, before } = deck.typed.current
-    show((shown) => [...shown.filter((row) => row.slide !== slide), { slide, text: value }])
+    setNotes((shown) => [...shown.filter((row) => row.slide !== slide), { slide, text: value }])
     const release = deck.records.current.hold()
     const kept = connect(memoryRemote()).enqueue(deck.id, value, node, floor)
     void commitKept(connect, deck.id, kept, async () => {

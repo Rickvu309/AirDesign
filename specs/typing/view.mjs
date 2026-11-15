@@ -12,7 +12,7 @@ const steps = {
   UploadText: "a keystroke reaches the server",
   KeyUndo: "the person presses Ctrl+Z",
   KeyRedo: "the person presses Ctrl+Shift+Z",
-  MenuUndo: "the person picks Undo in the browser's menu, and the box refuses it",
+  MenuUndo: "the person picks Undo in the browser's menu, and the field they typed in refuses it",
   Turn: "the undo or redo reads the list and lands, or changes nothing",
 }
 

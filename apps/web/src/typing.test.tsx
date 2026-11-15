@@ -2,9 +2,9 @@ import { decide, elementId, openRegister, readTextValue, type Command, type Regi
 import { readPackage } from "@airdesign/pptx"
 import { Passage, paintStore } from "@airdesign/render"
 import { act, createElement } from "react"
-import { createRoot } from "react-dom/client"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import { commitEdit } from "./commit-edit"
+import { NotesBar } from "./editor/notes-bar"
 import type { DeckPaint } from "./editor/use-deck-paint"
 import { useUndoList, useUndoTurn, type UndoList as UndoHooks } from "./editor/use-undo"
 import { busyElements, liveRepaint, showText, shownValue } from "./live-repaint"
@@ -67,6 +67,7 @@ async function specGraph(name: string, module: string): Promise<Graph> {
 }
 
 let window: Window & typeof globalThis
+let createRoot: typeof import("react-dom/client").createRoot
 let cleanParts: ReadonlyMap<string, Uint8Array> = new Map()
 
 async function settled(work: () => void = () => undefined): Promise<void> {
@@ -97,7 +98,15 @@ function Editor(props: {
     setPending: nothing,
   })
   props.exposed({ notes, undo })
-  return createElement(Passage, { store: props.paint.store.current, id: box, onEdit: props.onEdit })
+  return createElement(
+    "div",
+    null,
+    createElement(Passage, { store: props.paint.store.current, id: box, onEdit: props.onEdit }),
+    createElement(NotesBar, {
+      text: notes.notes.find((row) => row.slide === slide)?.text ?? "",
+      onEdit: (value) => notes.edit(slide, value),
+    }),
+  )
 }
 
 async function typingDeck() {
@@ -229,6 +238,11 @@ async function typingDeck() {
   const found = host.querySelector("[contenteditable]")
   if (!(found instanceof window.HTMLElement)) throw new Error("no box")
   const editor: HTMLElement = found
+  await settled(() => host.querySelector<HTMLButtonElement>("button[aria-label='Expand speaker notes']")?.click())
+  const opened = host.querySelector("textarea")
+  if (opened === null) throw new Error("no notes field")
+  const field: HTMLTextAreaElement = opened
+  const typedIn = () => (count.tTyped > 0 ? editor : field)
   function filed(lane: Lane) {
     const call = flushes.shift()
     if (call === undefined || flushes.length > 0) throw new Error(`${lane} record sent ${flushes.length + 1} times`)
@@ -240,7 +254,7 @@ async function typingDeck() {
     call.resolve({ ok: true })
   }
   async function keyed(direction: "undo" | "redo") {
-    const target = count.tTyped > 0 ? editor : window.document.body
+    const target = typedIn()
     const shiftKey = direction === "redo"
     const event = new window.KeyboardEvent("keydown", {
       key: "z",
@@ -296,13 +310,14 @@ async function typingDeck() {
     KeyRedo: () => keyed("redo"),
     MenuUndo: async () => {
       const event = new window.InputEvent("beforeinput", { inputType: "historyUndo", bubbles: true, cancelable: true })
-      await settled(() => editor.dispatchEvent(event))
-      if (!event.defaultPrevented) throw new Error("the box let the browser undo")
+      await settled(() => typedIn().dispatchEvent(event))
+      if (!event.defaultPrevented)
+        throw new Error(`the ${count.tTyped > 0 ? "box" : "notes field"} let the browser undo`)
     },
     Turn: () => settled(() => gate?.resolve(undefined)),
   }
   function seen(): Spec {
-    const shownNotes = notes().notes.find((row) => row.slide === slide)?.text ?? ""
+    const shownNotes = field.value
     return {
       ...count,
       list: entries(hooks().undo.undoList.current.undo),
@@ -414,6 +429,7 @@ beforeAll(async () => {
     ["cancelAnimationFrame", (handle: number) => clearTimeout(handle)],
   ]
   for (const [name, value] of shared) vi.stubGlobal(name, value)
+  createRoot = (await import("react-dom/client")).createRoot
 })
 
 afterAll(() => {
