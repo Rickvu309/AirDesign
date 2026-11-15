@@ -1,5 +1,5 @@
 import { decodedXmlText, markupDocument, type MarkupElement } from "./element-span.js"
-import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
+import { encodeUtf8 } from "./package-bytes.js"
 import { danglingPackageReferences } from "./package-reference.js"
 
 export const shapePart = /^ppt\/(slides|notesSlides|slideLayouts|slideMasters)\/[^/]+\.xml$/
@@ -58,9 +58,9 @@ export function shapeIdCounts(parts: ReadonlyMap<string, Uint8Array>): readonly 
   return rows
 }
 
-export function nextShapeId(partXml: string): number {
+function freeAfter(ids: readonly string[]): number {
   let max = 0
-  for (const id of shapeIdsIn(encodeUtf8(partXml))) {
+  for (const id of ids) {
     const value = numericId(id)
     if (value !== null && value > max) max = value
   }
@@ -68,10 +68,14 @@ export function nextShapeId(partXml: string): number {
   return max + 1
 }
 
+export function nextShapeId(partXml: string): number {
+  return freeAfter(shapeIdsIn(encodeUtf8(partXml)))
+}
+
 export function freeShapeId(parts: ReadonlyMap<string, Uint8Array>, part: string): number {
   const bytes = parts.get(part)
   if (bytes === undefined) throw new Error("part")
-  return nextShapeId(decodeUtf8(bytes))
+  return freeAfter(shapeIdsIn(bytes))
 }
 
 export function newDuplicateShapeIds(
