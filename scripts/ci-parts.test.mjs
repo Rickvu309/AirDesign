@@ -23,7 +23,27 @@ same("ci waits for every part", workflow.jobs.ci.needs, "check")
 
 const partCheck = steps.filter((step) => (step.run ?? "").startsWith("pnpm check --part="))
 same("one step runs pnpm check for a part", partCheck.length, 1)
-same("the pptx part does not run pnpm check", partCheck[0].if, "matrix.part != 'pptx'")
+same(
+  "the pptx part does not run pnpm check, and main does not run the side part again for a commit the merge queue passed",
+  partCheck[0].if,
+  "matrix.part != 'pptx' && steps.queued.outputs.passed != 'true'",
+)
+
+const queued = steps.find((step) => step.id === "queued")
+same(
+  "only the side part on main asks whether the merge queue passed the commit",
+  queued?.if,
+  "github.event_name == 'push' && matrix.part == 'side'",
+)
+same("the question comes before pnpm check", steps.indexOf(queued) < steps.indexOf(partCheck[0]), true)
+same(
+  "the question reads ci runs of the merge queue for this exact commit",
+  [/head_sha=\$GITHUB_SHA/, /event=merge_group/, /status=success/, /ci\.yml/].map((pattern) =>
+    pattern.test(queued.run),
+  ),
+  [true, true, true, true],
+)
+same("the question may read runs", workflow.permissions.actions, "read")
 
 const pptxCheck = steps.filter((step) => step.run === "pnpm check:pptx")
 same("one step runs the PowerPoint check", pptxCheck.length, 1)
