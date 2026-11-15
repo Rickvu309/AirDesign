@@ -1,5 +1,6 @@
 import path from "node:path"
 import { defineConfig } from "vitest/config"
+import { sourceOnly } from "./scripts/source-only.mjs"
 import { renderTestFiles, splitTests, splitUnitTests } from "./scripts/test-isolation.mjs"
 
 const root = import.meta.dirname
@@ -23,6 +24,7 @@ const alias = [
 ]
 
 export default defineConfig({
+  plugins: [sourceOnly(root)],
   resolve: {
     alias,
   },
@@ -58,6 +60,7 @@ export default defineConfig({
       },
       {
         extends: false,
+        plugins: [sourceOnly(root)],
         resolve: {
           alias,
         },
@@ -71,6 +74,7 @@ export default defineConfig({
       },
       {
         extends: false,
+        plugins: [sourceOnly(root)],
         resolve: {
           alias,
         },

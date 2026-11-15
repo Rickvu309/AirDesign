@@ -1,7 +1,7 @@
 import { stages } from "./check.mjs"
 import { partOf, sideSteps, stagesFor } from "./check.mjs"
 import { judgedOnCi, mayPush, stampable } from "./check.mjs"
-import { localSteps, onCi } from "./check.mjs"
+import { localSteps, onCi, stepsOf } from "./check.mjs"
 import { recordFailure, warnSteps } from "./check.mjs"
 
 const requiredSteps = [
@@ -20,17 +20,22 @@ const requiredSteps = [
   "build",
   "metrics",
 ]
-const stageOf = (name) => stages.findIndex((stage) => stage.some(([step]) => step === name))
+const stepNames = (stage) => stage.flatMap(stepsOf).map(([name]) => name)
+const stageOf = (name) => stages.findIndex((stage) => stepNames(stage).includes(name))
 
 const lostSteps = requiredSteps.filter((name) => stageOf(name) === -1)
 if (lostSteps.length > 0) throw new Error(`check lost the step ${lostSteps.join(", ")}`)
 
-for (const later of ["typecheck", "build"]) {
-  if (stageOf("test") >= stageOf(later)) throw new Error(`check runs the unit tests no earlier than ${later}`)
+const laneOf = (name) => stages.flat().find((entry) => stepsOf(entry).some(([step]) => step === name)) ?? []
+const builders = laneOf("typecheck").map(([name]) => name)
+for (const later of ["build", "site"]) {
+  if (builders.indexOf(later) <= builders.indexOf("typecheck"))
+    throw new Error(`${later} runs beside typecheck, and both write the same built output`)
 }
+if (stageOf("metrics") <= stageOf("build")) throw new Error("metrics reads the build before it is written")
 if (stageOf("references") === -1) throw new Error("check lost the step references")
 
-const namesIn = (part) => stagesFor(part).flatMap((stage) => stage.map(([name]) => name))
+const namesIn = (part) => stagesFor(part).flatMap(stepNames)
 const everyStep = namesIn("all")
 const split = [...namesIn("main"), ...namesIn("side")]
 if (split.length !== everyStep.length || everyStep.some((name) => !split.includes(name))) {
@@ -43,10 +48,10 @@ for (const name of ["test", "build", "metrics", "specs", "typecheck"]) {
   if (!namesIn("main").includes(name)) throw new Error(`the main part must run ${name}`)
 }
 const mainStages = stagesFor("main")
-const mainStageOf = (name) => mainStages.findIndex((stage) => stage.some(([step]) => step === name))
-for (const later of ["typecheck", "build", "metrics"]) {
-  if (mainStageOf("test") >= mainStageOf(later))
-    throw new Error(`the main part runs the unit tests no earlier than ${later}`)
+const mainStageOf = (name) => mainStages.findIndex((stage) => stepNames(stage).includes(name))
+for (const earlier of ["test", "build"]) {
+  if (mainStageOf(earlier) >= mainStageOf("metrics"))
+    throw new Error(`the main part measures before ${earlier} finishes`)
 }
 if (partOf([]) !== "all" || partOf(["--part=side"]) !== "side" || partOf(["--part=main"]) !== "main") {
   throw new Error("--part does not choose its part")
@@ -58,7 +63,7 @@ try {
   refused = error.message
 }
 if (refused !== "--part must be main or side, and it is everything.") throw new Error("an unknown part is not refused")
-const stepsWhen = (ci) => stagesFor("all", ci).flatMap((stage) => stage.map(([name]) => name))
+const stepsWhen = (ci) => stagesFor("all", ci).flatMap(stepNames)
 for (const name of ["bar"]) {
   if (!localSteps.has(name)) throw new Error(`check does not run ${name} on this machine`)
   if (!stepsWhen(false).includes(name)) throw new Error(`a local check skips ${name}`)
@@ -94,7 +99,7 @@ if (mayPush([], false)) throw new Error("a check that stopped early saw too litt
 
 import { ciOnlySteps, stepsToRun } from "./check.mjs"
 
-const ranWhen = (part, ci) => stepsToRun(stagesFor(part, ci), ci).flatMap((stage) => stage.map(([name]) => name))
+const ranWhen = (part, ci) => stepsToRun(stagesFor(part, ci), ci).flatMap(stepNames)
 if (ranWhen("all", false).includes("browser")) throw new Error("a local check runs the browser tests")
 if (!ranWhen("all", true).includes("browser")) throw new Error("ci lost the browser tests")
 if (!ranWhen("side", true).includes("browser")) throw new Error("the side part on ci lost the browser tests")
@@ -122,7 +127,7 @@ if (!stepsWhen(true).includes("commit-authors")) throw new Error("ci must run co
 if (warnSteps.has("commit-authors")) throw new Error("commit-authors blocks from the start")
 
 const sideStages = stagesFor("side", true)
-const sideStageOf = (name) => sideStages.findIndex((stage) => stage.some(([step]) => step === name))
+const sideStageOf = (name) => sideStages.findIndex((stage) => stepNames(stage).includes(name))
 if (sideStageOf("design-findings") <= sideStageOf("browser"))
   throw new Error("design-findings reads what the browser tests wrote, so it must run after them")
 if (!ciOnlySteps.has("design-findings"))
