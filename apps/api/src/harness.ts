@@ -3,7 +3,6 @@ import { createHash, randomBytes } from "node:crypto"
 import { request, type IncomingHttpHeaders, type Server } from "node:http"
 import type { AddressInfo } from "node:net"
 import { Client } from "pg"
-import { afterAll, beforeAll } from "vitest"
 
 import { createApi, type ApiOptions, type Commit, type Mail } from "./index.js"
 import { clusterFile, publishedCluster } from "./postgres-setup.js"
@@ -38,14 +37,10 @@ async function onCluster(info: PostgresInfo, statement: string): Promise<void> {
 
 let cluster: Promise<PostgresInfo> | undefined
 
-function sharedCluster(): Promise<PostgresInfo> {
+export function sharedCluster(): Promise<PostgresInfo> {
   cluster ??= publishedCluster<PostgresInfo>(clusterFile(), 120_000)
   return cluster
 }
-
-beforeAll(async () => {
-  await sharedCluster()
-}, 120_000)
 
 async function ownDatabase(): Promise<PostgresInfo> {
   const template = await sharedCluster()
@@ -66,14 +61,14 @@ export function postgresInfo(): Promise<PostgresInfo> {
   return own
 }
 
-afterAll(async () => {
+export async function dropOwnDatabase(): Promise<void> {
   if (own === undefined) return
   const info = await own
   own = undefined
   await onCluster(info, `drop database if exists ${databaseOf(info.admin)}`).catch((error: unknown) => {
     if ((error as { code?: string }).code !== "55006") throw error
   })
-})
+}
 
 export function cookieFrom(headers: IncomingHttpHeaders): string | undefined {
   const header = headers["set-cookie"]

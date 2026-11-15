@@ -288,20 +288,41 @@ export function publishedCluster<T>(file: string, limitMs: number): Promise<T> {
   })
 }
 
-let starting: Promise<void> = Promise.resolve()
+type Held = { users: number; readonly cleared: Promise<void>; readonly starting: Promise<void> }
 
-export async function setup(): Promise<void> {
+const heldKey = Symbol.for("airdesign.api-postgres")
+const holder = globalThis as { [heldKey]?: Held }
+
+async function clearLeftover(): Promise<void> {
   await stopLeftover()
   await mkdir(path.dirname(clusterFile()), { recursive: true })
-  starting = start()
+}
+
+export async function setup(): Promise<void> {
+  const held = holder[heldKey]
+  if (held !== undefined) {
+    held.users += 1
+    await held.cleared
+    return
+  }
+  const cleared = clearLeftover()
+  const starting = cleared
+    .then(start)
     .then(
       (info) => publishCluster(clusterFile(), info),
       (error: unknown) => publishCluster(clusterFile(), { error: error instanceof Error ? error.message : "postgres" }),
     )
     .catch(() => undefined)
+  holder[heldKey] = { users: 1, cleared, starting }
+  await cleared
 }
 
 export async function teardown(): Promise<void> {
-  await starting
+  const held = holder[heldKey]
+  if (held === undefined) return
+  held.users -= 1
+  if (held.users > 0) return
+  delete holder[heldKey]
+  await held.starting
   await stopLeftover()
 }

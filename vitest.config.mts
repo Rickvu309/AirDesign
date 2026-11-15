@@ -2,12 +2,13 @@ import path from "node:path"
 import { defineConfig } from "vitest/config"
 import { sourceOnly } from "./scripts/source-only.mjs"
 import LongestFirst from "./scripts/vitest-longest-first.mjs"
-import { renderTestFiles, splitTests, splitUnitTests } from "./scripts/test-isolation.mjs"
+import { apiTestFiles, renderTestFiles, splitTests, splitUnitTests } from "./scripts/test-isolation.mjs"
 
 const root = import.meta.dirname
 
 const { shared: sharedTests, isolated: isolatedTests } = splitUnitTests(root)
 const { shared: sharedRenderTests, isolated: isolatedRenderTests } = splitTests(root, renderTestFiles(root))
+const { shared: sharedApiTests, isolated: isolatedApiTests } = splitTests(root, apiTestFiles(root))
 
 const alias = [
   {
@@ -55,9 +56,19 @@ export default defineConfig({
         extends: true,
         test: {
           name: "api",
-          include: ["apps/api/**/*.test.ts"],
-          exclude: ["**/node_modules/**", "**/dist/**"],
+          include: isolatedApiTests,
           globalSetup: ["apps/api/src/postgres-setup.ts"],
+          setupFiles: ["scripts/vitest-api-database.mjs"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "api-shared",
+          include: sharedApiTests,
+          isolate: false,
+          globalSetup: ["apps/api/src/postgres-setup.ts"],
+          setupFiles: ["scripts/vitest-kept-globals.mjs", "scripts/vitest-api-database.mjs"],
         },
       },
       {
