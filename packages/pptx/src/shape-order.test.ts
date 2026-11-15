@@ -24,7 +24,7 @@ function fixture(name: string) {
 }
 
 function added(shape: number, geometry: Geometry): SlideCommand {
-  const line = geometry === "line"
+  const line = geometry === "line" || geometry === "straightConnector1"
   const element: IndexElement = {
     node: elementId(`256.${String(shape)}`),
     kind: line ? "connector" : "shape",
@@ -106,4 +106,24 @@ it("refuses a drawn shape that brings text, since a drawn shape has none in this
   const original = await fixture("blank.pptx")
   const route = { name: "spTree.add", part, text: "Words", geometry: "rect", ...shapeBox } as const
   expect(() => applyStructuralRoute(original, route)).toThrow("text")
+})
+
+it("adds the shapes the tray offers as their own preset, and an arrow as a line with an end arrowhead", async () => {
+  const original = await fixture("blank.pptx")
+  const first = freeShapeId(original, part)
+  const geometries: readonly Geometry[] = ["star5", "triangle", "wedgeRectCallout", "straightConnector1"]
+  const order = geometries.map((geometry, at) => added(first + at, geometry))
+  const written = orderedParts(original, { file: [id], order })
+  const painted = paintReader(written)
+    .slide(part)
+    .elements.filter((each) => Number(each.shape) >= first)
+  expect(painted.map((each) => each.geometry)).toEqual(geometries)
+  expect(
+    readShapes(written)
+      .filter((each) => Number(each.shape) >= first)
+      .map((each) => each.kind),
+  ).toEqual(["p:sp", "p:sp", "p:sp", "p:cxnSp"])
+  expect(painted.map((each) => each.line?.tail)).toEqual([null, null, null, "triangle"])
+  const indexed = indexPackage(written).elements.filter((each) => Number(each.node.split(".")[1]) >= first)
+  expect(indexed.map((each) => each.kind)).toEqual(["shape", "shape", "shape", "connector"])
 })

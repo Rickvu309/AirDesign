@@ -148,6 +148,8 @@ describe("element order", () => {
       [shape, "rect"],
       [shape, "ellipse"],
       [line, "line"],
+      [shape, "star5"],
+      [line, "straightConnector1"],
     ] as const) {
       const added = applied(openRegister("", ""), add(element, geometry))
       expect(openingElement(added, node)).toEqual(element)
@@ -159,6 +161,8 @@ describe("element order", () => {
     expect(refused(add({ ...shape, value: "Text" }, "ellipse"))).toBe(true)
     expect(refused(add(line, "rect"))).toBe(true)
     expect(refused(add(shape, "line"))).toBe(true)
+    expect(refused(add(shape, "straightConnector1"))).toBe(true)
+    expect(refused(add(line, "star5"))).toBe(true)
     expect(refused(add({ ...shape, kind: "table" }, "rect"))).toBe(true)
     expect(refused(add({ ...shape, box: { ...box, cx: 0 } }, "rect"))).toBe(true)
     expect(refused(add({ ...line, box: { ...box, cx: 0, cy: 0 } }, "line"))).toBe(true)

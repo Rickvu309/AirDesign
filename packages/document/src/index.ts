@@ -165,6 +165,7 @@ export {
   openingIcon,
   type ElementCommand,
   type Geometry,
+  lineGeometries,
   type Media,
   type MediaType,
 } from "./element-order.js"

@@ -4,6 +4,7 @@ import { elementId, readElementId, shapeOf, type ElementId, type SlideId } from 
 import { onlyKeys, record } from "./plain-object.js"
 import { openingElement, readFloor } from "./slide-floor.js"
 import { slideMeasure } from "./slide-measure.js"
+import { presets, type Preset } from "./trait-geometry.js"
 import type { SlideState } from "./slide-order.js"
 import { openedTable } from "./table-value.js"
 import { indexFacts, removable } from "./element-takes.js"
@@ -15,9 +16,11 @@ export type MediaType = (typeof mediaTypes)[number]
 
 export type Media = { readonly sha256: string; readonly type: MediaType }
 
-export const geometries = ["rect", "ellipse", "line"] as const
+export const geometries = presets
 
-export type Geometry = (typeof geometries)[number]
+export type Geometry = Preset
+
+export const lineGeometries: readonly Geometry[] = ["line", "straightConnector1"]
 
 export type ElementAdd = {
   readonly slide: "element-add"
@@ -106,7 +109,8 @@ function freshShape(element: IndexElement): boolean {
 function drawable(element: IndexElement, geometry: Geometry): boolean {
   const { box } = element
   if (box === null || element.value !== null || !geometries.includes(geometry)) return false
-  if (geometry === "line") return element.kind === "connector" && box.cx >= 0 && box.cy >= 0 && box.cx + box.cy > 0
+  if (lineGeometries.includes(geometry))
+    return element.kind === "connector" && box.cx >= 0 && box.cy >= 0 && box.cx + box.cy > 0
   return element.kind === "shape" && box.cx > 0 && box.cy > 0
 }
 

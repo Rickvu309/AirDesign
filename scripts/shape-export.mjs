@@ -7,6 +7,9 @@ export const shapeKinds = [
   ["4", "p:sp", "rect"],
   ["5", "p:sp", "ellipse"],
   ["6", "p:cxnSp", "line"],
+  ["7", "p:sp", "star5"],
+  ["8", "p:sp", "triangle"],
+  ["9", "p:cxnSp", "straightConnector1"],
 ]
 
 export function shapeExportLines({ pptx, parts, lists, ids, orders }) {

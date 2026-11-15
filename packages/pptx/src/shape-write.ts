@@ -116,10 +116,18 @@ const shapeStyle =
 const lineStyle =
   '<p:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="0"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="tx1"/></a:fontRef></p:style>'
 
-const drawnNames: Record<Geometry, string> = { rect: "Rectangle", ellipse: "Oval", line: "Straight Connector" }
+const drawnNames: Readonly<Partial<Record<Geometry, string>>> = {
+  rect: "Rectangle",
+  ellipse: "Oval",
+  line: "Straight Connector",
+  straightConnector1: "Straight Arrow Connector",
+}
+
+const arrowEnd = '<a:ln w="28575"><a:tailEnd type="triangle"/></a:ln>'
 
 function drawnProperties(geometry: Geometry, box: ShapeBox): string {
-  return `<p:spPr>${shapeBox(box)}<a:prstGeom prst="${geometry}"><a:avLst/></a:prstGeom></p:spPr>`
+  const end = geometry === "straightConnector1" ? arrowEnd : ""
+  return `<p:spPr>${shapeBox(box)}<a:prstGeom prst="${geometry}"><a:avLst/></a:prstGeom>${end}</p:spPr>`
 }
 
 export function addDrawnShape(
@@ -131,9 +139,9 @@ export function addDrawnShape(
   return appendShape(
     slideXml,
     (idText) => {
-      const name = `<p:cNvPr id="${idText}" name="${drawnNames[geometry]} ${idText}"/>`
+      const name = `<p:cNvPr id="${idText}" name="${drawnNames[geometry] ?? "Shape"} ${idText}"/>`
       const properties = drawnProperties(geometry, box)
-      if (geometry === "line")
+      if (geometry === "line" || geometry === "straightConnector1")
         return `<p:cxnSp><p:nvCxnSpPr>${name}<p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr>${properties}${lineStyle}</p:cxnSp>`
       return `<p:sp><p:nvSpPr>${name}<p:cNvSpPr/><p:nvPr/></p:nvSpPr>${properties}${shapeStyle}</p:sp>`
     },
