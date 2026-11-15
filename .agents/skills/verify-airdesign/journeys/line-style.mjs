@@ -49,7 +49,12 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
         color: drawn?.getAttribute("stroke") ?? null,
         width: drawn?.getAttribute("stroke-width") ?? null,
         dash: drawn?.getAttribute("stroke-dasharray") ?? null,
-        tail: drawn?.getAttribute("marker-end") ?? null,
+        tail: arrowhead(drawn?.getAttribute("marker-end") ?? null),
+      }
+      function arrowhead(reference) {
+        if (reference === null) return null
+        const marker = node.ownerDocument.getElementById(reference.slice("url(#".length, -1))
+        return marker === null ? `missing ${reference}` : marker.outerHTML.replace(/ id="[^"]*"/, "")
       }
     })
   const connectorBefore = await stroke("6")
@@ -77,7 +82,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const design = read.elements.find((element) => element.node === node).design
   expect(design).toContain("line.width 4 · line.fill accent2 · line.dash dash · line.tail triangle")
   note(`read_deck prints ${node} as: ${design}`)
-  await expect.poll(async () => (await stroke("6")).tail).toMatch(/url\(#.+-tail\)/)
+  await expect.poll(async () => (await stroke("6")).tail).toMatch(/^<marker /)
   const connectorAfter = await stroke("6")
   expect(connectorAfter.width).not.toBe(connectorBefore.width)
   expect(connectorAfter.dash).not.toBeNull()
