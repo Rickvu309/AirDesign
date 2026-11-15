@@ -22,6 +22,7 @@ import {
   foldDesign,
   readAgent,
   readAgentColor,
+  shownDesign,
 } from "./agent-form.js"
 
 const navy = "1F4E79"
@@ -285,4 +286,24 @@ it("folds the effects a change set over the design line, and drops one set to no
       effects: { shadow: { set: { none: true } }, glow: { set: { none: true } }, softEdge: { set: { none: true } } },
     }),
   ).toEqual({ fill: ["accent1", "style"] })
+})
+
+describe("foldDesign shows a text box's layout as its rows set it", () => {
+  it("shows an own anchor, autofit and direction, and drops the ones that read as PowerPoint's own defaults", () => {
+    const design = { "body.anchor": ["b", "layout"], "text.size": [18] } as const
+    expect(
+      foldDesign(design, {
+        body: { anchor: { set: "ctr" }, autofit: { set: "shrink" }, vertical: { set: "vert" } },
+      }),
+    ).toEqual({ "text.size": [18], "body.anchor": ["ctr"], "body.autofit": ["shrink"], "body.vertical": ["vert"] })
+    expect(
+      foldDesign(design, { body: { anchor: { set: "t" }, autofit: { set: "none" }, vertical: { set: "horz" } } }),
+    ).toEqual({ "text.size": [18] })
+    expect(foldDesign(design, { body: { anchor: "inherit" } })).toEqual({ "text.size": [18] })
+  })
+})
+
+it("shows the font face of the first run once a change lands on the text", () => {
+  const value = '[{"from":0,"runs":[{"from":0,"text":"a","font":"Georgia"}]}]'
+  expect(shownDesign({ "text.font": ["Calibri", "master"] }, value)).toEqual({ "text.font": ["Georgia"] })
 })

@@ -43,6 +43,9 @@ const text: PaintText = {
   wrap: true,
   fit: "none",
   vertical: false,
+  flow: "horz",
+  columns: 1,
+  columnGap: 0,
   fontScale: 1,
   spacingReduction: 0,
 }

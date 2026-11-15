@@ -22,6 +22,7 @@ export function sameFormats(left: TextRun, right: TextRun): boolean {
   return (
     formatNames.every((format) => left[format] === right[format]) &&
     left.size === right.size &&
+    left.font === right.font &&
     sameColor(left.color, right.color)
   )
 }

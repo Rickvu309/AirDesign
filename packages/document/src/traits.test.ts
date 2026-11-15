@@ -88,6 +88,12 @@ describe("the one table of traits", () => {
       "effects.shadow",
       "effects.glow",
       "effects.softEdge",
+      "body.insets",
+      "body.anchor",
+      "body.wrap",
+      "body.autofit",
+      "body.vertical",
+      "body.columns",
       "text.value",
       "text.alpha",
       "table.value",
@@ -110,6 +116,12 @@ describe("the one table of traits", () => {
       "line.join",
       "line.head",
       "line.tail",
+      "body.insets",
+      "body.anchor",
+      "body.wrap",
+      "body.autofit",
+      "body.vertical",
+      "body.columns",
     ])
   })
 

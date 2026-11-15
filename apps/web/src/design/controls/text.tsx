@@ -29,7 +29,45 @@ function wordsOf(row: ControlProps["row"]): string {
   return row.desc.kind === "text" ? cellText(readTextValue(value) ?? []) : value
 }
 
-export function TextControl({ row, onChange }: ControlProps) {
+function WordsField({ row, onChange }: ControlProps) {
+  const shown = typeof row.value === "string" ? row.value : ""
+  const [draft, setDraft] = useState<string | null>(null)
+
+  function commit(words: string) {
+    setDraft(null)
+    const typed = words.trim()
+    if (typed !== "" && typed !== shown) onChange(typed)
+  }
+
+  return (
+    <label
+      className="flex h-8 min-w-0 items-center gap-2 rounded-lg bg-white px-2.5 shadow-[0px_0px_0px_1px_var(--field-edge)]"
+      data-control="words"
+      data-focus-ring
+    >
+      <span className="shrink-0 truncate text-[length:var(--type-caption)] text-quiet">{row.label}</span>
+      <input
+        className="min-w-0 flex-1 bg-transparent text-right text-[length:var(--type-dense)] text-foreground outline-none"
+        aria-label={row.label}
+        value={draft ?? shown}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={(event) => {
+          if (draft !== null) commit(event.currentTarget.value)
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") commit(event.currentTarget.value)
+          if (event.key === "Escape") setDraft(null)
+        }}
+      />
+    </label>
+  )
+}
+
+export function TextControl(props: ControlProps) {
+  return props.row.desc.kind === "words" ? <WordsField {...props} /> : <PassageField {...props} />
+}
+
+function PassageField({ row, onChange }: ControlProps) {
   const label = useId()
   const shown = wordsOf(row)
   const [draft, setDraft] = useState<string | null>(null)

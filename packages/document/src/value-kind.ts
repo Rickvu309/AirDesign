@@ -62,6 +62,14 @@ export function sizeUpTo(max: number): ValueKind<number, number> {
   return whole("emu", 0, max)
 }
 
+export function fractionWithin(min: number, max: number): ValueKind<number, number> {
+  return whole("fraction", min, max)
+}
+
+export function pointsUpTo(max: number): ValueKind<number, number> {
+  return whole("hundredth-point", 0, max)
+}
+
 export function count(min: number, max: number): ValueKind<number, number> {
   return whole("count", min, max)
 }

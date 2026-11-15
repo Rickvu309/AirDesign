@@ -59,6 +59,16 @@ export const childOrder = {
     "a:softEdge",
   ],
   "p:txBody": ["a:bodyPr", "a:lstStyle", "a:p"],
+  "a:bodyPr": [
+    "a:prstTxWarp",
+    "a:noAutofit",
+    "a:normAutofit",
+    "a:spAutoFit",
+    "a:scene3d",
+    "a:sp3d",
+    "a:flatTx",
+    "a:extLst",
+  ],
   "a:p": ["a:pPr", "a:r", "a:br", "a:fld", "a:endParaRPr"],
   "a:rPr": [
     "a:ln",

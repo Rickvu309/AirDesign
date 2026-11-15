@@ -65,6 +65,7 @@ it("shows one Opacity just before the fill, line and text it fades together", ()
     "fill",
     "line",
     "effects",
+    "body",
     "text",
   ])
   const row = opacityOf(shape, { "fill.alpha": 60_000, "line.alpha": 60_000, "text.alpha": 60_000 })
@@ -87,4 +88,36 @@ it("offers no Opacity on a group, or on a shape whose fill the index keeps", () 
   const group = { ...shape, facts: { ...shape.facts, kind: "group" as const } }
   expect(opacityOf(group, {})).toBeUndefined()
   expect(opacityOf({ ...shape, kept: ["fill"] }, {})).toBeUndefined()
+})
+
+it("lays out a text box's body field by field, and shows its autofit without letting it change", () => {
+  const panel = panelOf(shape, {
+    reads: { "text.font": { value: "Calibri", source: "master" } },
+    moves: true,
+    fields: {
+      "body.anchor": { value: "ctr", own: true },
+      "body.autofit": { value: "shrink", own: true },
+      "body.columns": { value: 1, own: false },
+    },
+  })
+  const body = panel.sections.find((section) => section.trait === "body")
+  expect(body?.label).toBe("Text box")
+  expect(body?.rows.map((row) => [row.field, row.control, row.value, row.reset])).toEqual([
+    ["insets", "record", undefined, null],
+    ["anchor", "choice", "ctr", "Reset vertical alignment"],
+    ["wrap", "toggle", undefined, null],
+    ["autofit", "choice", "shrink", null],
+    ["vertical", "choice", undefined, null],
+    ["columns", "count", 1, null],
+  ])
+  expect(body?.rows.filter((row) => row.shownOnly === true).map((row) => row.field)).toEqual(["autofit"])
+  const text = panel.sections.find((section) => section.trait === "text")
+  const typed = text?.rows.filter((row) => ["font", "lineSpacing", "spaceBefore", "spaceAfter"].includes(row.field))
+  expect(typed?.map((row) => [row.label, row.control, row.value])).toEqual([
+    ["Font", "text", "Calibri"],
+    ["Line spacing", "percent", undefined],
+    ["Space before", "length", undefined],
+    ["Space after", "length", undefined],
+  ])
+  expect(typed?.[0]?.change("Georgia")).toEqual({ target: { node: "258.2" }, text: { font: "Georgia" } })
 })

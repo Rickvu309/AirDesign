@@ -1,11 +1,7 @@
 import type { MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { cut, elementById, insertAt, moveBytes, requireMarkup, rootClose, within } from "./part-markup.js"
-import { xmlText } from "./shape-write.js"
-
-function attributeText(value: string): string {
-  return xmlText(value).replaceAll('"', "&quot;")
-}
+import { xmlAttribute as attributeText } from "./shape-write.js"
 
 const sectionUri = "{521415D9-36F7-43E2-AB2F-B90AF26B5E84}"
 const sectionNamespace = "http://schemas.microsoft.com/office/powerpoint/2010/main"

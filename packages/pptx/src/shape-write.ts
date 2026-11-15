@@ -27,6 +27,10 @@ function allowedChar(code: number): boolean {
   )
 }
 
+export function xmlAttribute(value: string): string {
+  return xmlText(value).replaceAll('"', "&quot;")
+}
+
 export function xmlText(value: string): string {
   let text = ""
   for (const char of value) {

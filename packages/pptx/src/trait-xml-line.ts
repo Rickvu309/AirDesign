@@ -1,15 +1,14 @@
 import { namesAlpha, type Alpha, type FieldValue } from "@airdesign/document"
 import { alphaKept, colorsOf, fadedBytes, fadedFill, shownAlpha, type Faded } from "./alpha-codec.js"
 import { insertChild, type ChildOf } from "./child-order.js"
-import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
+import { spliceBytes, type ByteEdit } from "./element-span.js"
 import { shownLine, type LineField } from "./line-read.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { isShapeTag, shapeById, shapeTags } from "./shape-tree.js"
+import { openTag, slotRoot, withAttribute, withChild as childIn, type Slot } from "./slot-edit.js"
 import { fillMarkup } from "./trait-xml-fill.js"
 import { whole, type ElementAt, type FieldXml, type PartCodec, type Parts, type TraitXml } from "./xml-codec.js"
-
-type Slot = (line: Uint8Array) => Uint8Array
 
 type LineChild = ChildOf<"a:ln">
 
@@ -22,47 +21,8 @@ const joinTags = ["a:round", "a:bevel", "a:miter"]
 const miterLimit = "800000"
 const fadedKinds = ["a:solidFill", "a:gradFill", "a:pattFill"]
 
-function rootOf(bytes: Uint8Array): MarkupElement {
-  const root = requireMarkup(bytes).elements[0]
-  if (root === undefined) throw new Error("line")
-  return root
-}
-
-function openTag(bytes: Uint8Array, element: MarkupElement): string {
-  return decodeUtf8(bytes.subarray(element.start, element.openEnd - (element.selfClosing ? 2 : 1))).trimEnd()
-}
-
-function withAttribute(name: string, text: string | null): Slot {
-  return (line) => {
-    const root = rootOf(line)
-    const at = root.attributes.findIndex((each) => each.name === name)
-    const attribute = root.attributes[at]
-    if (attribute === undefined) {
-      if (text === null) return line
-      const end = root.openEnd - (root.selfClosing ? 2 : 1)
-      return spliceBytes(line, [{ start: end, end, next: encodeUtf8(` ${name}="${text}"`) }])
-    }
-    if (text !== null)
-      return spliceBytes(line, [{ start: attribute.valueStart, end: attribute.valueEnd, next: encodeUtf8(text) }])
-    const before = root.attributes[at - 1]
-    const start = before === undefined ? root.start + 1 + root.kind.length : before.valueEnd + 1
-    return spliceBytes(line, [{ start, end: attribute.valueEnd + 1, next: new Uint8Array() }])
-  }
-}
-
-function withChild(tags: readonly string[], tag: LineChild | null, element: string | null): Slot {
-  return (line) => {
-    const { elements } = requireMarkup(line)
-    const root = rootOf(line)
-    const gone: ByteEdit[] = elements
-      .filter((each) => each.parent === root.index && tags.includes(each.kind))
-      .map((each) => ({ start: each.start, end: each.end, next: new Uint8Array() }))
-    const kept = gone.length === 0 ? line : spliceBytes(line, gone)
-    if (tag === null || element === null) return kept
-    const held = rootOf(kept)
-    if (held.selfClosing) return encodeUtf8(`${openTag(kept, held)}>${element}</a:ln>`)
-    return encodeUtf8(insertChild("a:ln", tag, element, decodeUtf8(kept)))
-  }
+function lineChild(tags: readonly string[], tag: LineChild | null, element: string | null): Slot {
+  return childIn("a:ln", tags, tag, element)
 }
 
 function lineEdited(parts: Parts, at: ElementAt, slot: Slot): Parts {
@@ -117,7 +77,7 @@ function field<F extends LineField>(
 
 function filled(value: FieldValue<"fill", "value">): Slot {
   const written = fillMarkup(value)
-  return withChild(fillTags, written.tag as LineChild, written.xml)
+  return lineChild(fillTags, written.tag as LineChild, written.xml)
 }
 
 export function lineAlpha(parts: Parts, at: ElementAt): Faded {
@@ -128,7 +88,7 @@ export function lineAlpha(parts: Parts, at: ElementAt): Faded {
 function fadedChild(alpha: Alpha): Slot {
   return (line) => {
     const { elements } = requireMarkup(line)
-    const root = rootOf(line)
+    const root = slotRoot(line)
     const own = elements.find((each) => each.parent === root.index && fadedKinds.includes(each.kind))
     if (own === undefined) return line
     const next = fadedBytes(line.subarray(own.start, own.end), alpha)
@@ -149,30 +109,30 @@ export const lineXml: TraitXml<"line"> = {
     width: field("width", (value) => withAttribute("w", String(value)), withAttribute("w", null)),
     fill: whole(
       alphaKept(codec("fill", filled), lineAlpha, fadedLine, (value) => namesAlpha(colorsOf(value))),
-      (parts, at) => lineEdited(parts, at, withChild(fillTags, null, null)),
+      (parts, at) => lineEdited(parts, at, lineChild(fillTags, null, null)),
     ),
     dash: field(
       "dash",
-      (value) => withChild(dashTags, "a:prstDash", `<a:prstDash val="${value}"/>`),
-      withChild(dashTags, null, null),
+      (value) => lineChild(dashTags, "a:prstDash", `<a:prstDash val="${value}"/>`),
+      lineChild(dashTags, null, null),
     ),
     cap: field("cap", (value) => withAttribute("cap", value), withAttribute("cap", null)),
     compound: field("compound", (value) => withAttribute("cmpd", value), withAttribute("cmpd", null)),
     join: field(
       "join",
       (value) =>
-        withChild(joinTags, `a:${value}`, value === "miter" ? `<a:miter lim="${miterLimit}"/>` : `<a:${value}/>`),
-      withChild(joinTags, null, null),
+        lineChild(joinTags, `a:${value}`, value === "miter" ? `<a:miter lim="${miterLimit}"/>` : `<a:${value}/>`),
+      lineChild(joinTags, null, null),
     ),
     head: field(
       "head",
-      (value) => withChild(["a:headEnd"], "a:headEnd", arrowXml("a:headEnd", value)),
-      withChild(["a:headEnd"], null, null),
+      (value) => lineChild(["a:headEnd"], "a:headEnd", arrowXml("a:headEnd", value)),
+      lineChild(["a:headEnd"], null, null),
     ),
     tail: field(
       "tail",
-      (value) => withChild(["a:tailEnd"], "a:tailEnd", arrowXml("a:tailEnd", value)),
-      withChild(["a:tailEnd"], null, null),
+      (value) => lineChild(["a:tailEnd"], "a:tailEnd", arrowXml("a:tailEnd", value)),
+      lineChild(["a:tailEnd"], null, null),
     ),
     alpha: whole({
       read: (parts, at) => {

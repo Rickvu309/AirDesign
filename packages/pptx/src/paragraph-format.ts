@@ -1,4 +1,4 @@
-import type { ParagraphAlign, TextParagraph } from "@airdesign/document"
+import { spacingNames, type ParagraphAlign, type TextParagraph } from "@airdesign/document"
 import { markupDocument, spliceBytes, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 
@@ -24,6 +24,16 @@ const order = [
   "a:extLst",
 ]
 const emptyBytes = new Uint8Array(0)
+const spacingXml: Readonly<Record<(typeof spacingNames)[number], (value: number) => string>> = {
+  lineSpacing: (value) => `<a:lnSpc><a:spcPct val="${value}"/></a:lnSpc>`,
+  spaceBefore: (value) => `<a:spcBef><a:spcPts val="${value}"/></a:spcBef>`,
+  spaceAfter: (value) => `<a:spcAft><a:spcPts val="${value}"/></a:spcAft>`,
+}
+const spacingTags: Readonly<Record<(typeof spacingNames)[number], string>> = {
+  lineSpacing: "a:lnSpc",
+  spaceBefore: "a:spcBef",
+  spaceAfter: "a:spcAft",
+}
 
 function joinBytes(chunks: readonly Uint8Array[]): Uint8Array {
   const merged = new Uint8Array(chunks.reduce((size, chunk) => size + chunk.length, 0))
@@ -44,11 +54,20 @@ function rootOf(
   return { root, children: document.elements.filter((element) => element.parent === root.index) }
 }
 
+function spacings(paragraph: TextParagraph): string {
+  return spacingNames
+    .map((name) => {
+      const value = paragraph[name]
+      return value === undefined ? "" : spacingXml[name](value)
+    })
+    .join("")
+}
+
 function created(paragraph: TextParagraph): Uint8Array {
   const align = paragraph.align === undefined ? "" : ` algn="${alignValue[paragraph.align]}"`
-  if (paragraph.bullet === undefined) return encodeUtf8(`<a:pPr${align}/>`)
-  const bullet = paragraph.bullet ? `<a:buChar char="•"/>` : `<a:buNone/>`
-  return encodeUtf8(`<a:pPr${align}>${bullet}</a:pPr>`)
+  const bullet = paragraph.bullet === undefined ? "" : paragraph.bullet ? `<a:buChar char="•"/>` : `<a:buNone/>`
+  const inner = spacings(paragraph) + bullet
+  return encodeUtf8(inner === "" ? `<a:pPr${align}/>` : `<a:pPr${align}>${inner}</a:pPr>`)
 }
 
 function alignBytes(slice: Uint8Array, align: ParagraphAlign): Uint8Array {
@@ -66,8 +85,8 @@ function alignBytes(slice: Uint8Array, align: ParagraphAlign): Uint8Array {
   return spliceBytes(slice, [{ start: at, end: at, next: encodeUtf8(` algn="${value}"`) }])
 }
 
-function slot(root: MarkupElement, children: readonly MarkupElement[]): number {
-  const target = order.indexOf("a:buNone")
+function slot(root: MarkupElement, children: readonly MarkupElement[], tag: string): number {
+  const target = order.indexOf(tag)
   let at = root.openEnd
   for (const child of children) {
     const rank = order.indexOf(child.kind)
@@ -79,11 +98,14 @@ function slot(root: MarkupElement, children: readonly MarkupElement[]): number {
 }
 
 function bulletBytes(slice: Uint8Array, on: boolean): Uint8Array {
+  return childBytes(slice, bulletKinds, "a:buNone", encodeUtf8(on ? `<a:buChar char="•"/>` : `<a:buNone/>`))
+}
+
+function childBytes(slice: Uint8Array, kinds: ReadonlySet<string>, tag: string, xml: Uint8Array): Uint8Array {
   const found = rootOf(slice)
   if (found === null) return slice
   const { root, children } = found
-  const xml = encodeUtf8(on ? `<a:buChar char="•"/>` : `<a:buNone/>`)
-  const choices = children.filter((child) => bulletKinds.has(child.kind))
+  const choices = children.filter((child) => kinds.has(child.kind))
   const first = choices[0]
   if (first !== undefined) {
     const edits = [{ start: first.start, end: first.end, next: xml }]
@@ -95,7 +117,7 @@ function bulletBytes(slice: Uint8Array, on: boolean): Uint8Array {
     const next = joinBytes([encodeUtf8(">"), xml, encodeUtf8(`</${root.kind}>`)])
     return spliceBytes(slice, [{ start: close, end: root.end, next }])
   }
-  const at = slot(root, children)
+  const at = slot(root, children, tag)
   return spliceBytes(slice, [{ start: at, end: at, next: xml }])
 }
 
@@ -104,10 +126,15 @@ export function paragraphBytes(
   properties: MarkupElement | undefined,
   paragraph: TextParagraph,
 ): Uint8Array | null {
-  if (paragraph.align === undefined && paragraph.bullet === undefined) return null
+  const spaced = spacingNames.filter((name) => paragraph[name] !== undefined)
+  if (paragraph.align === undefined && paragraph.bullet === undefined && spaced.length === 0) return null
   if (properties === undefined) return created(paragraph)
   let slice = bytes.subarray(properties.start, properties.end)
   if (paragraph.align !== undefined) slice = alignBytes(slice, paragraph.align)
+  for (const name of spaced) {
+    const tag = spacingTags[name]
+    slice = childBytes(slice, new Set([tag]), tag, encodeUtf8(spacingXml[name](paragraph[name] ?? 0)))
+  }
   if (paragraph.bullet !== undefined) slice = bulletBytes(slice, paragraph.bullet)
   return slice
 }

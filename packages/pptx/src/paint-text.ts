@@ -51,6 +51,9 @@ export type PaintText = {
   wrap: boolean
   fit: "none" | "shrink" | "grow"
   vertical: boolean
+  flow: "horz" | "vert" | "vert270"
+  columns: number
+  columnGap: number
   fontScale: number
   spacingReduction: number
 }
@@ -351,7 +354,19 @@ const levelOf = (properties: PaintTextHolder | undefined): number => {
 
 const textFrame = (
   shape: PaintTextShape,
-): Pick<PaintText, "anchor" | "insets" | "wrap" | "fit" | "vertical" | "fontScale" | "spacingReduction"> => {
+): Pick<
+  PaintText,
+  | "anchor"
+  | "insets"
+  | "wrap"
+  | "fit"
+  | "vertical"
+  | "flow"
+  | "columns"
+  | "columnGap"
+  | "fontScale"
+  | "spacingReduction"
+> => {
   const frames = present(
     [shape, ...shape.above].map((holder) => {
       const body = bodyOf(holder)
@@ -374,6 +389,7 @@ const textFrame = (
     ["square", true],
     ["none", false],
   ])
+  const vert = first(frames, (frame) => paintAttribute(frame.element, "vert") ?? undefined) ?? "horz"
   return {
     anchor: first(frames, (frame) => named(frame, "anchor", anchors)) ?? "top",
     insets: {
@@ -384,7 +400,10 @@ const textFrame = (
     },
     wrap: first(frames, (frame) => named(frame, "wrap", wraps)) ?? true,
     fit: mode ?? "none",
-    vertical: (first(frames, (frame) => paintAttribute(frame.element, "vert") ?? undefined) ?? "horz") !== "horz",
+    vertical: vert !== "horz",
+    flow: vert === "horz" ? "horz" : vert === "vert270" ? "vert270" : "vert",
+    columns: Math.min(Math.max(first(frames, (frame) => whole(frame, "numCol")) ?? 1, 1), 16),
+    columnGap: Math.max(first(frames, (frame) => whole(frame, "spcCol")) ?? 0, 0),
     fontScale: between((fit === undefined || fit === null ? undefined : fraction(fit, "fontScale")) ?? 1),
     spacingReduction: between((fit === undefined || fit === null ? undefined : fraction(fit, "lnSpcReduction")) ?? 0),
   }

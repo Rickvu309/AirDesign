@@ -44,10 +44,14 @@ export function paintRunColor(slice: Uint8Array, color: Color): Uint8Array {
 }
 
 export function withRunFill(slice: Uint8Array, xml: Uint8Array): Uint8Array {
+  return withRunChild(slice, fillKinds, "a:solidFill", xml)
+}
+
+export function withRunChild(slice: Uint8Array, kinds: ReadonlySet<string>, tag: string, xml: Uint8Array): Uint8Array {
   const found = rootOf(slice)
   if (found === null) return slice
   const { root, children } = found
-  const fills = children.filter((child) => fillKinds.has(child.kind))
+  const fills = children.filter((child) => kinds.has(child.kind))
   const first = fills[0]
   if (first !== undefined) {
     const edits: ByteEdit[] = [{ start: first.start, end: first.end, next: xml }]
@@ -59,6 +63,6 @@ export function withRunFill(slice: Uint8Array, xml: Uint8Array): Uint8Array {
     const next = joinBytes([encodeUtf8(">"), xml, encodeUtf8(`</${root.kind}>`)])
     return spliceBytes(slice, [{ start: close, end: root.end, next }])
   }
-  const at = slot(root, children, "a:solidFill")
+  const at = slot(root, children, tag)
   return spliceBytes(slice, [{ start: at, end: at, next: xml }])
 }

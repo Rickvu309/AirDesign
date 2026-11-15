@@ -1,4 +1,11 @@
-import { writeTextValue, type TextParagraph, type TextRun, type TextValue } from "@airdesign/document"
+import {
+  spacingNames,
+  writeTextValue,
+  type ParagraphSpacing,
+  type TextParagraph,
+  type TextRun,
+  type TextValue,
+} from "@airdesign/document"
 import { useLayoutEffect, useRef } from "react"
 import type { ElementId } from "@airdesign/document"
 import { formatTarget, type FormatEdit } from "./passage-format.js"
@@ -66,7 +73,7 @@ type ReadParagraph = {
   align?: "left" | "center" | "right"
   bullet?: boolean
   runs: TextRun[]
-}
+} & ParagraphSpacing
 
 function readParagraph(node: HTMLElement, from: number, runs: TextRun[]): ReadParagraph {
   let paragraph: ReadParagraph = { from, runs }
@@ -74,6 +81,10 @@ function readParagraph(node: HTMLElement, from: number, runs: TextRun[]): ReadPa
   if (align === "left" || align === "center" || align === "right") paragraph = { ...paragraph, align }
   if (node.dataset.bullet === "true" || node.dataset.bullet === "false") {
     paragraph = { ...paragraph, bullet: node.dataset.bullet === "true" }
+  }
+  for (const name of spacingNames) {
+    const kept = node.dataset[name]
+    if (kept !== undefined && /^\d+$/.test(kept)) paragraph = { ...paragraph, [name]: Number(kept) }
   }
   return paragraph
 }
@@ -153,6 +164,10 @@ function paragraphNode(document: Document, paragraph: TextParagraph): HTMLElemen
   block.dataset.paragraph = String(paragraph.from)
   if (paragraph.align !== undefined) block.dataset.align = paragraph.align
   if (paragraph.bullet !== undefined) block.dataset.bullet = String(paragraph.bullet)
+  for (const name of spacingNames) {
+    const kept = paragraph[name]
+    if (kept !== undefined) block.dataset[name] = String(kept)
+  }
   for (const run of paragraph.runs) {
     const span = document.createElement("span")
     span.dataset.run = `${paragraph.from}.${run.from}`

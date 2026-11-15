@@ -9,7 +9,7 @@ test("a choice aligns every paragraph of the element, shows the pick, and Undo p
   await openDeck(page, "clean.pptx")
   const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
   const panel = await designing(page, editor)
-  const alignment = panel.getByRole("group", { name: "Alignment" })
+  const alignment = panel.getByRole("group", { name: "Alignment", exact: true })
   const aligned = () =>
     editor
       .locator("[data-paragraph]")

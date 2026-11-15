@@ -168,4 +168,25 @@ describe("size, colour, alignment and bullets", () => {
       { from: 0, align: "left", runs: [{ from: 0, text: "a" }] },
     ])
   })
+
+  it("keeps a run's font face and a paragraph's line and paragraph spacing, and refuses ones it cannot write", () => {
+    const stored =
+      '[{"from":0,"lineSpacing":150000,"spaceBefore":600,"spaceAfter":0,"runs":[{"from":0,"text":"a","font":"Georgia"}]}]'
+    const read = readTextValue(stored)
+    expect(read).toEqual([
+      {
+        from: 0,
+        lineSpacing: 150_000,
+        spaceBefore: 600,
+        spaceAfter: 0,
+        runs: [{ from: 0, text: "a", font: "Georgia" }],
+      },
+    ])
+    expect(read === null ? null : writeTextValue(read)).toBe(stored)
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","font":""}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","font":7}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"lineSpacing":0,"runs":[{"from":0,"text":"a"}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"spaceBefore":-1,"runs":[{"from":0,"text":"a"}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"spaceAfter":1.5,"runs":[{"from":0,"text":"a"}]}]')).toBeNull()
+  })
 })

@@ -30,6 +30,7 @@ import {
   readNotes,
   readTable,
   shownEffects,
+  shownBody,
   shownFill,
   shownGeometry,
   shownLine,
@@ -37,7 +38,7 @@ import {
 } from "@airdesign/pptx"
 import { beforeAll, describe, expect, it } from "vitest"
 import { optionCopy } from "./copy/option-copy"
-import { panelOf } from "./design/panel"
+import { panelOf, shownOnly } from "./design/panel"
 import { traitControls } from "./design/trait-controls"
 import { ensureMarkup } from "./markup"
 import {
@@ -88,6 +89,22 @@ const lineOpening = {
 } as const
 
 const effectsOpening = { shadow: "opening", glow: "opening", softEdge: "opening" } as const
+const bodyOpening = {
+  insets: "opening",
+  anchor: "opening",
+  wrap: "opening",
+  autofit: "opening",
+  vertical: "opening",
+  columns: "opening",
+} as const
+
+function bodyProbe(field: "insets" | "anchor" | "wrap" | "autofit" | "vertical" | "columns") {
+  return {
+    file: (parts: Parts, at: At) => shownBody(parts, at)?.[field].value,
+    shows: (value: unknown) => value,
+    inherited: (parts: Parts, at: At) => shownBody(parts, at)?.[field].own === false,
+  }
+}
 
 const boxOpening = {
   x: "opening",
@@ -189,7 +206,21 @@ const probes: { readonly [T in TraitName]: Probe<T> } = {
       softEdge: { file: (parts, at) => shownEffects(parts, at)?.softEdge.value, shows: (value) => value },
     },
   },
-  body: { fields: {} },
+  body: {
+    deck: "nasa-1d-cnn.pptx",
+    kind: "shape",
+    node: "467.5",
+    opening: () => ({ v: format, patch: { body: bodyOpening } }),
+    edit: (_, field, value) => ({ v: format, patch: { body: { [field]: { set: value } } } }),
+    fields: {
+      insets: bodyProbe("insets"),
+      anchor: bodyProbe("anchor"),
+      wrap: bodyProbe("wrap"),
+      autofit: bodyProbe("autofit"),
+      vertical: bodyProbe("vertical"),
+      columns: bodyProbe("columns"),
+    },
+  },
   image: { fields: {} },
   crop: { fields: {} },
   connection: { fields: {} },
@@ -267,11 +298,15 @@ function optionWords(desc: Desc): readonly string[] {
   }
 }
 
+function panelRow(register: Register, at: At, trait: TraitName, field: string) {
+  const view = registerScope(register).view(at.node)
+  const sections = view === undefined ? undefined : panelOf(view, { reads: {}, moves: true }).sections
+  return sections?.find((section) => section.trait === trait)?.rows.find((each) => each.field === field)
+}
+
 function panelRegister(register: Register, at: At, trait: TraitName, field: string, value: unknown): Register | null {
   const scope = registerScope(register)
-  const view = scope.view(at.node)
-  const row = view === undefined ? undefined : panelOf(view, { reads: {}, moves: true }).sections
-  const control = row?.find((section) => section.trait === trait)?.rows.find((each) => each.field === field)
+  const control = panelRow(register, at, trait, field)
   const planned = control === undefined ? null : planChange(control.change(value), scope)
   if (planned === null || !planned.ok) return null
   const holder = valueHolder(register, at.node, "person")
@@ -335,8 +370,13 @@ async function fieldProblems(
   const problems: Problem[] = shown(parts) ? [{ field: key, missing: "change" }] : []
   const agent = agentRegister(indexed(parts), at, sent)
   if (agent === null || !shown(exportParts(parts, agent))) problems.push({ field: key, missing: "wire" })
-  const panel = panelRegister(indexed(parts), at, trait, field, value)
-  if (panel === null || !shown(exportParts(parts, panel))) problems.push({ field: key, missing: "control" })
+  if (shownOnly.includes(key)) {
+    if (panelRow(indexed(parts), at, trait, field)?.shownOnly !== true)
+      problems.push({ field: key, missing: "control" })
+  } else {
+    const panel = panelRegister(indexed(parts), at, trait, field, value)
+    if (panel === null || !shown(exportParts(parts, panel))) problems.push({ field: key, missing: "control" })
+  }
   const person = landed(indexed(parts), [
     { command: "add", node: at.node, floor: "", route: "clean" },
     { command: "person", node: at.node, ...edit },

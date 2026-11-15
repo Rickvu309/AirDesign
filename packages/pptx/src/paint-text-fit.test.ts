@@ -71,4 +71,15 @@ describe("paint text fit", () => {
     expect(textOf(`<a:bodyPr vert="eaVert"/>`).vertical).toBe(true)
     expect(textOf(`<a:bodyPr vert="horz"/>`).vertical).toBe(false)
   })
+
+  it("reads the direction text flows in and its columns, inheriting each from the layout", () => {
+    expect(textOf(`<a:bodyPr vert="vert270" numCol="2" spcCol="91440"/>`)).toMatchObject({
+      flow: "vert270",
+      columns: 2,
+      columnGap: 91440,
+    })
+    expect(textOf(`<a:bodyPr vert="eaVert"/>`).flow).toBe("vert")
+    expect(textOf("<a:bodyPr/>")).toMatchObject({ flow: "horz", columns: 1, columnGap: 0 })
+    expect(textOf("<a:bodyPr/>", `<a:bodyPr vert="vert" numCol="3"/>`)).toMatchObject({ flow: "vert", columns: 3 })
+  })
 })

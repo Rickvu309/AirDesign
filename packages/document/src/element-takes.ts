@@ -25,7 +25,9 @@ const removes: readonly Kind[] = ["shape", "picture", "connector", "table", "cha
 export function takes(facts: ElementFacts): readonly FieldKey[] {
   const fields = kindTraits[facts.kind].flatMap((trait) => (trait === "box" && facts.grouped ? [] : fieldKeys(trait)))
   return fields.filter(
-    (field) => !(unwritten[facts.kind]?.includes(field) ?? false) && (facts.text || !textFields.includes(field)),
+    (field) =>
+      !(unwritten[facts.kind]?.includes(field) ?? false) &&
+      (facts.text || !(textFields.includes(field) || field.startsWith("body."))),
   )
 }
 

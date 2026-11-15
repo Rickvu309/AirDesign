@@ -1,3 +1,4 @@
+import { colorPattern } from "./agent-form.js"
 import { elementReaders } from "./agent-element-wire.js"
 import { slideReaders } from "./agent-slide-wire.js"
 import * as z from "zod/v4"
@@ -144,8 +145,24 @@ export const catalog = {
   },
 } as const satisfies Readonly<Record<string, OpRow>>
 
+const colorRef = "#/$defs/color"
+const colorSchema = { type: "string", pattern: `^${colorPattern}$` } as const
+
+function sharedColors(schema: unknown): unknown {
+  if (Array.isArray(schema)) return schema.map(sharedColors)
+  if (typeof schema !== "object" || schema === null) return schema
+  const node = schema as Readonly<Record<string, unknown>>
+  if (node.type === colorSchema.type && node.pattern === colorSchema.pattern) {
+    const { type: _type, pattern: _pattern, ...rest } = node
+    return { $ref: colorRef, ...rest }
+  }
+  return Object.fromEntries(Object.entries(node).map(([key, value]) => [key, sharedColors(value)]))
+}
+
 export function toolInputSchema(op: AgentOp): Readonly<Record<string, unknown>> {
-  return z.toJSONSchema(catalog[op].read.input, { io: "input" })
+  const schema = z.toJSONSchema(catalog[op].read.input, { io: "input" })
+  const shared = sharedColors(schema) as Readonly<Record<string, unknown>>
+  return JSON.stringify(shared).includes(colorRef) ? { ...shared, $defs: { color: colorSchema } } : shared
 }
 
 function toolOrder(left: AgentTool<string>, right: AgentTool<string>): number {

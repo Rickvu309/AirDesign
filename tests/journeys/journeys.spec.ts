@@ -51,6 +51,7 @@ for (const name of [
   "shape-effects",
   "shape-geometry",
   "opacity",
+  "text-type",
   "commit-once",
   "deck-list-trash",
   "deck-stars",

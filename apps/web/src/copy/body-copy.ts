@@ -1,0 +1,37 @@
+export const bodyCopy = {
+  section: "Text box",
+  insets: "Margins",
+  anchor: "Vertical alignment",
+  wrap: "Wrap text",
+  autofit: "Autofit",
+  vertical: "Text direction",
+  columns: "Columns",
+  reset: {
+    insets: "Reset margins",
+    anchor: "Reset vertical alignment",
+    wrap: "Reset wrap text",
+    autofit: "Reset autofit",
+    vertical: "Reset text direction",
+    columns: "Reset columns",
+  },
+} as const
+
+export const bodyWords: Readonly<Record<string, string>> = {
+  "anchor.t": "Top",
+  "anchor.ctr": "Middle",
+  "anchor.b": "Bottom",
+  "autofit.none": "Off",
+  "autofit.shrink": "Shrink",
+  "autofit.grow": "Grow",
+  "vertical.horz": "Horizontal",
+  "vertical.vert": "Rotate 90°",
+  "vertical.vert270": "Rotate 270°",
+  t: "Top",
+  ctr: "Middle",
+  b: "Bottom",
+  shrink: "Shrink",
+  grow: "Grow",
+  horz: "Horizontal",
+  vert: "Rotate 90°",
+  vert270: "Rotate 270°",
+}

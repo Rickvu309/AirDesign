@@ -1,4 +1,4 @@
-import type { ParagraphAlign, Color, TextFormat } from "@airdesign/document"
+import type { ParagraphAlign, ParagraphSpacing, Color, TextFormat } from "@airdesign/document"
 import type { CanvasBullet } from "./text-record.js"
 import type { RunPaint, TextLook } from "./text-look.js"
 
@@ -12,6 +12,7 @@ type ShownRun = {
   readonly underline?: boolean
   readonly size?: number
   readonly color?: Color | string | null
+  readonly font?: string | null
 }
 
 type ShownParagraph = {
@@ -19,6 +20,9 @@ type ShownParagraph = {
   readonly align?: ShownAlign
   readonly bullet?: boolean | CanvasBullet | null
   readonly runs: readonly ShownRun[]
+  readonly lineSpacing?: unknown
+  readonly spaceBefore?: unknown
+  readonly spaceAfter?: unknown
 }
 
 function placed(align: ShownAlign | undefined): ParagraphAlign | undefined {
@@ -36,7 +40,20 @@ function overlayOf(run: ShownRun): RunPaint {
   }
   if (run.size !== undefined) paint = { ...paint, size: run.size }
   if (color !== undefined) paint = { ...paint, color }
+  if (typeof run.font === "string") paint = { ...paint, font: run.font }
   return paint
+}
+
+function spacingOf(paragraph: ShownParagraph): ParagraphSpacing {
+  const kept = (value: unknown) => (typeof value === "number" ? value : undefined)
+  const line = kept(paragraph.lineSpacing)
+  const before = kept(paragraph.spaceBefore)
+  const after = kept(paragraph.spaceAfter)
+  return {
+    ...(line === undefined ? {} : { lineSpacing: line }),
+    ...(before === undefined ? {} : { spaceBefore: before }),
+    ...(after === undefined ? {} : { spaceAfter: after }),
+  }
 }
 
 export function SheetText(props: {
@@ -50,15 +67,17 @@ export function SheetText(props: {
         const filled = paragraph.runs.some((run) => run.text !== "")
         const align = placed(paragraph.align)
         const bullet = paragraph.bullet === true || paragraph.bullet === false ? paragraph.bullet : undefined
-        const style = look.paragraph(paragraph.from, filled, {
+        const overlay = {
           ...(align === undefined ? {} : { align }),
           ...(bullet === undefined ? {} : { bullet }),
-        })
+          ...spacingOf(paragraph),
+        }
+        const style = look.paragraph(paragraph.from, filled, overlay)
         const shown = filled || paragraph.bullet === true ? style : { ...style, "--bullet": "none" }
         return (
           <div key={index} data-paragraph={paragraph.from} style={shown}>
             {paragraph.runs.map((run, at) => (
-              <span key={at} style={look.run(paragraph.from, run.from, overlayOf(run))}>
+              <span key={at} style={look.run(paragraph.from, run.from, overlayOf(run), overlay)}>
                 {run.text}
               </span>
             ))}

@@ -110,3 +110,21 @@ it("paints a chosen colour with the alpha the exported file paints on that run, 
   expect(look.run(0, 0, { color: { rgb } })).toMatchObject({ color: `${accentPaint}99` })
   expect(textLook(text, scaled).run(0, 0, { color: { rgb } })).toMatchObject({ color: accentPaint })
 })
+
+it("paints a chosen font face, line spacing and paragraph spacing over the file", () => {
+  const look = textLook(text, scaled)
+  expect(look.run(0, 0, { font: "Georgia" }).fontFamily).toMatch(/^"Georgia", /)
+  const overlay = { lineSpacing: 150_000, spaceBefore: 1_200, spaceAfter: 600 }
+  expect(look.paragraph(0, true, overlay)).toMatchObject({ marginTop: "12px", marginBottom: "6px" })
+  expect(look.run(0, 0, {}, overlay).lineHeight).toBe("1.8")
+  expect(look.run(0, 0, {}).lineHeight).toBe("1.2")
+})
+
+it("lays a text box's columns and direction out from the export", () => {
+  expect(textLook({ ...text, columns: 2, columnGap: 127_000 }, scaled).body).toMatchObject({
+    columnCount: 2,
+    columnGap: "10px",
+    columnFill: "auto",
+  })
+  expect(textLook({ ...text, flow: "vert" }, scaled).body).toMatchObject({ minBlockSize: "100%" })
+})

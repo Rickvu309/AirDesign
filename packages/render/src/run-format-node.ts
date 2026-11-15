@@ -1,6 +1,6 @@
 import { formatNames, readColor, type Color, type ColorTransform, type RunFormat } from "@airdesign/document"
 
-type RunPaint = RunFormat & { readonly size?: number; readonly color?: Color }
+type RunPaint = RunFormat & { readonly size?: number; readonly color?: Color; readonly font?: string }
 
 const sizeFloor = 100
 const sizeCeiling = 400_000
@@ -59,6 +59,7 @@ export function writeFormat(span: HTMLElement, format: RunPaint): void {
   if (format.color !== undefined) {
     span.dataset.color = colorToken(format.color)
   }
+  if (format.font !== undefined) span.dataset.font = format.font
 }
 
 export function readFormat(span: HTMLElement): RunPaint {
@@ -71,5 +72,7 @@ export function readFormat(span: HTMLElement): RunPaint {
   if (size !== null) format = { ...format, size }
   const color = readColorToken(span.dataset.color)
   if (color !== null) format = { ...format, color }
+  const font = span.dataset.font
+  if (font !== undefined && font.trim() !== "") format = { ...format, font }
   return format
 }

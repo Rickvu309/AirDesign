@@ -396,6 +396,9 @@ const text: PaintText = {
   wrap: false,
   fit: "shrink",
   vertical: false,
+  flow: "horz",
+  columns: 1,
+  columnGap: 0,
   fontScale: 0.5,
   spacingReduction: 0,
 }
@@ -447,6 +450,9 @@ it("turns a paragraph's points into the slide's units, shrunk by the box's font 
     anchor: "middle",
     insets: { left: 1, top: 2, right: 3, bottom: 4 },
     wrap: false,
+    flow: "horz",
+    columns: 1,
+    columnGap: 0,
     paragraphs: [
       {
         from: 2,

@@ -34,12 +34,14 @@ assert.deepEqual(
     "slides.mjs",
     "text-format.mjs",
     "text.mjs",
+    "trait-body.mjs",
     "trait-effects.mjs",
     "trait-fill.mjs",
     "trait-geometry.mjs",
     "trait-line.mjs",
     "trait-opacity.mjs",
     "trait-table.mjs",
+    "trait-text.mjs",
   ],
 )
 for (const spec of caseSpecs(entries)) assert.ok(fs.existsSync(path.join(root, spec)), `${spec} is not a spec file`)

@@ -242,7 +242,7 @@ describe("index format", () => {
   })
 
   it("sends the index again when none is stored, it is incomplete, or its format is below this build's", () => {
-    expect(format).toBe(15)
+    expect(format).toBe(17)
     expect(indexDue(undefined)).toBe(true)
     const first = appendIndex(undefined, page)
     if (!first.ok) throw new Error(first.refusal)
