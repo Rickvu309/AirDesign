@@ -138,7 +138,8 @@ test("a file that is not a PowerPoint is refused with words of its own", async (
 test("move to Trash and Undo post trash and restore", async ({ page }) => {
   const { calls } = await store(page, [first])
   await page.goto("/")
-  await page.getByRole("button", { name: "Move to Trash" }).click()
+  await page.getByRole("button", { name: `${first.name} actions` }).click()
+  await page.getByRole("menuitem", { name: "Move to Trash" }).click()
   await expect(page.getByText(`${first.name} moved to Trash`, { exact: true })).toBeVisible()
   await page.getByRole("button", { name: "Undo", exact: true }).click()
   await expect(page.getByRole("heading", { name: first.name })).toBeVisible()
@@ -193,7 +194,8 @@ test("a deck id of 64 characters opens and one of 65 never reaches the API", asy
 test("the Undo toast leaves on its own", async ({ page }) => {
   await store(page, [first])
   await page.goto("/")
-  await page.getByRole("button", { name: "Move to Trash" }).click()
+  await page.getByRole("button", { name: `${first.name} actions` }).click()
+  await page.getByRole("menuitem", { name: "Move to Trash" }).click()
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeVisible()
   await page.clock.fastForward(10000)
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toHaveCount(0)

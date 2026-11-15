@@ -15,7 +15,8 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await page.goto("/")
   await expect(page.getByRole("heading", { name: "clean", exact: true })).toBeVisible()
   await capture("home-lists-deck")
-  await page.getByRole("button", { name: "Move to Trash" }).click()
+  await page.getByRole("button", { name: "clean actions" }).click()
+  await page.getByRole("menuitem", { name: "Move to Trash" }).click()
   await expect(page.getByText("clean moved to Trash", { exact: true })).toBeVisible()
   await capture("moved-to-trash")
   await expect

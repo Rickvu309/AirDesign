@@ -8,6 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { noMatchTitleOf, productCopy, starredOf, unstarredOf } from "@/copy/product-copy"
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
+import { DeckActions } from "@/decks/deck-menu"
+import { DeckPreview } from "@/decks/deck-preview"
 import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
 import { ImportingPreview, ImportFailedPreview } from "@/decks/deck-status-preview"
 import { importFailureWords, type ImportFailureReason } from "@/copy/import-failure-words"
@@ -186,8 +188,7 @@ export function Home({
     }
   }
 
-  async function move(deck: Deck) {
-    const held = onDeck()
+  async function move(deck: Deck, held = onDeck()) {
     if (!(await post(deckRoutes.trash.path, { deck: deck.deck })).ok) return
     await refresh()
     if (held) keepFocus()
@@ -351,23 +352,19 @@ export function Home({
                   edited={
                     trash ? deckTime(deck.trashed ?? deck.edited, now()).trash : deckTime(deck.edited, now()).card
                   }
-                  href={`/deck/${deck.deck}`}
+                  href={trash ? undefined : `/deck/${deck.deck}`}
                   previewClassName={trash ? "h-[180px]" : undefined}
+                  preview={<DeckPreview deck={deck.deck} name={deck.name} edited={deck.edited} />}
                   action={
                     trash ? (
                       <RestoreButton onClick={() => void restore(deck)} />
                     ) : (
-                      <div className="flex items-center gap-1">
-                        <StarButton name={deck.name} starred={deck.starred === true} onClick={() => star(deck)} />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          aria-description={deck.name}
-                          onClick={() => void move(deck)}
-                        >
-                          {productCopy.moveToTrash}
-                        </Button>
-                      </div>
+                      <DeckActions
+                        name={deck.name}
+                        starred={deck.starred === true}
+                        onStar={() => star(deck)}
+                        onTrash={() => void move(deck, true)}
+                      />
                     )
                   }
                 />

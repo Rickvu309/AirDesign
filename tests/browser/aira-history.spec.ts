@@ -238,7 +238,11 @@ test("deleting a deck for good removes its chats from this device", async ({ pag
   await expect(side.getByText(reply, { exact: true })).toBeVisible()
   await expect.poll(() => chatKeys(page, deck)).toHaveLength(1)
   await page.goto("/")
-  await page.getByRole("button", { name: "Move to Trash" }).first().click()
+  await page
+    .getByRole("button", { name: / actions$/ })
+    .first()
+    .click()
+  await page.getByRole("menuitem", { name: "Move to Trash" }).click()
   await page.goto("/trash")
   await page.getByRole("button", { name: "Empty Trash" }).click()
   await page.getByRole("dialog").getByRole("button", { name: "Delete for good" }).click()

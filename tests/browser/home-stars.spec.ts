@@ -139,7 +139,7 @@ test("a second account on the same browser sees none of the first one's stars, a
   await expect.poll(() => serverStar(stack, first, deck)).toBe(true)
 })
 
-test("a long deck name stops before its star and its Move to Trash button in both views", async ({ page }) => {
+test("a long deck name stops before its buttons in both views", async ({ page }) => {
   const name = "Quarterly business review for the whole northern region"
   await store(page, [{ ...first, name }])
   for (const address of ["/", "/?view=list"]) {
