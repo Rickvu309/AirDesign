@@ -4,7 +4,7 @@ import { designing, openDeck, pendingValues, placed, settled } from "./design-pa
 const element = "ppt/slides/slide1.xml#2"
 const point = 12_700
 
-test.use({ viewport: { width: 1600, height: 1000 } })
+test.use({ viewport: { width: 1470, height: 923 } })
 
 test("a length moves and sizes the selected element in points, Undo takes back each change, and a reload keeps it", async ({
   page,

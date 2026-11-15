@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { fitWidth, slideRoom, zoomPercent, zoomSteps, zoomWidth } from "@/editor/canvas-zoom"
+import { canvasRoom, fitWidth, slideRoom, zoomPercent, zoomSteps, zoomWidth } from "@/editor/canvas-zoom"
 
 const wide = { width: 12_192_000, height: 6_858_000 }
 const standard = { width: 9_144_000, height: 6_858_000 }
@@ -32,5 +32,17 @@ describe("canvas zoom", () => {
     expect(zoomWidth("fit", room, wide)).toBe(800)
     expect(zoomSteps.map((step) => zoomWidth(step, room, wide))).toEqual([640, 1280, 2560])
     for (const step of zoomSteps) expect(zoomPercent(zoomWidth(step, room, standard), standard)).toBe(step)
+  })
+
+  it("fits a wide slide to the designed 800 px in the canvas column of a 1470x923 window", () => {
+    expect(fitWidth(canvasRoom({ width: 862, height: 923 }), wide)).toBe(800)
+    expect(fitWidth(canvasRoom({ width: 862, height: 923 }), standard)).toBe(800)
+  })
+
+  it("grows and shrinks the fitted slide with the canvas column, by width or by height", () => {
+    expect(fitWidth(canvasRoom({ width: 672, height: 720 }), wide)).toBe(610)
+    expect(fitWidth(canvasRoom({ width: 1312, height: 1080 }), wide)).toBe(1250)
+    expect(fitWidth(canvasRoom({ width: 1312, height: 600 }), wide)).toBe(645)
+    expect(fitWidth(canvasRoom({ width: 0, height: 0 }), wide)).toBe(0)
   })
 })

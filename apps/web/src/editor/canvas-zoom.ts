@@ -10,6 +10,15 @@ export function slideRoom(width: number): SlideSize {
   return { width, height: (width * 3) / 4 }
 }
 
+const canvasInset = { side: 31, top: 85, bottom: 152 } as const
+
+export function canvasRoom(canvas: SlideSize): SlideSize {
+  return {
+    width: Math.max(0, canvas.width - 2 * canvasInset.side),
+    height: Math.max(0, canvas.height - canvasInset.top - canvasInset.bottom),
+  }
+}
+
 export function fitWidth(room: SlideSize, slide: SlideSize): number {
   if (slide.width <= 0 || slide.height <= 0) return room.width
   return Math.floor(Math.min(room.width, (room.height * slide.width) / slide.height))

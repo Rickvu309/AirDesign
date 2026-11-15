@@ -175,7 +175,7 @@ async function expectPlaced(page: Page, parts: ReadonlyMap<string, string>, key:
   expect(Math.abs(element.height - box.height * scale), `${key} height`).toBeLessThanOrEqual(1)
 }
 
-test.use({ viewport: { width: 1600, height: 1000 } })
+test.use({ viewport: { width: 1470, height: 923 } })
 
 test("the canvas keeps the deck's aspect ratio at the shell's slide width", async ({ page }) => {
   const parts = await partsOf(deck)

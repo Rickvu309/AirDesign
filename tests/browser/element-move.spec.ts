@@ -102,7 +102,7 @@ async function answerCommits(page: Page): Promise<unknown[]> {
 
 const moved = { ...start, x: start.x + 30 * emuPerPixel, y: start.y + 60 * emuPerPixel }
 
-test.use({ viewport: { width: 1600, height: 1000 } })
+test.use({ viewport: { width: 1470, height: 923 } })
 
 test("a click selects an element with a frame and four handles, and the empty slide or Escape clears it", async ({
   page,

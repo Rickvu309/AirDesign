@@ -27,7 +27,7 @@ export async function expectNoSample(page: Page) {
   }
   await expect(page.locator("circle[stroke-dasharray]"), "usage ring").toHaveCount(0)
   await expect(page.locator("div.h-12.bg-line"), "notes band").toHaveCount(0)
-  const seen = (await page.locator(".screen-frame").innerText())
+  const seen = (await page.locator(".window-frame").innerText())
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)

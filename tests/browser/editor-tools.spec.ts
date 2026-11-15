@@ -53,7 +53,7 @@ async function zoomTo(page: Page, step: string): Promise<void> {
   await expect(page.getByRole("menu")).toHaveCount(0)
 }
 
-test.use({ viewport: { width: 1600, height: 1000 }, reducedMotion: "reduce" })
+test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
 test("Grid and Shapes are enabled, a shape not built yet looks off, and Actions offers only Table", async ({
   page,

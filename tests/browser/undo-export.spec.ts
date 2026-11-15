@@ -29,7 +29,7 @@ async function partsOf(file: string): Promise<Map<string, Buffer>> {
   return parts
 }
 
-test.use({ viewport: { width: 1600, height: 1000 } })
+test.use({ viewport: { width: 1470, height: 923 } })
 
 test("an export after every edit is undone changes no part of the original", async ({
   page,
