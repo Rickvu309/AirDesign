@@ -175,7 +175,7 @@ How solid an element is, in percent: one value that fades its fill, line, text a
 _Avoid_: transparency, alpha (in product copy)
 
 **group**:
-Two or more elements of one slide that move and resize as one. A person chooses them with Shift+click and groups them with Group or Ctrl+G; Ungroup or Ctrl+Shift+G puts each one back on the slide where it showed. An agent sends `group` or `ungroup` in its edit. The first click on an element of a group selects the group, the next selects that element.
+Two or more elements of one slide that move and resize as one. A person chooses them with Shift+click and groups them with Group or Ctrl+G; Ungroup or Ctrl+Shift+G puts each one back on the slide where it showed. An agent sends `group` or `ungroup` in its edit: `group` takes two or more element ids of one slide, `ungroup` takes one or more group ids, and nothing moves. The first click on an element of a group selects the group, the next selects that element.
 _Avoid_: bundle, combine, merge, set
 
 **connector**:
@@ -213,6 +213,70 @@ _Avoid_: balance, funds
 **Unable to**:
 How a failure's title starts: what did not happen, then the next step in the body. "Unable to load your decks. Check your connection and try again."
 _Avoid_: "Failed to", "Error", "Oops", "Something went wrong"
+
+## Model words
+
+The words the code and the agent tools use for how a deck is stored and edited. A person never reads them. The code, the test and the tool use the same word, so one search finds all of it.
+
+**element**:
+One thing on a slide: a shape, picture, connector, group, table, chart, or a kept part of the file. The code names which one in its `kind`.
+_Avoid_: object, item, widget
+
+**node**:
+Anything an edit can address that holds its own rows: an element, a slide's own node `<slide>.slide`, a slide's notes `<slide>.notes`, or the theme, `deck.theme`. An element's id, such as `258.7`, is its node. The code says `node`; the tool texts say "element id" for the same string.
+_Avoid_: entity, object, item
+
+**trait**:
+A named group of fields that an element takes together: `identity`, `box`, `geometry`, `fill`, `line`, `effects`, `body`, `text`, `image`, `crop`, `connection`, `table`, `notes` and `theme`. Each kind of element takes some traits (`kindTraits`), and an agent's `set` names a trait and then its fields.
+_Avoid_: property, attribute, facet, section (a section is a group of slides), group (a group is an element)
+
+**field**:
+One value of a trait, written `trait.field`, such as `box.x`, `line.width` or `text.size`. A field is the smallest thing a row sets, a reset returns to inherited, and a refusal names.
+_Avoid_: property, attribute, setting
+
+**row**:
+One stored edit of one node: the format it was written in, `v`, and a `patch` of the trait fields it changes. Each field in a patch is set to a value or sent back to `inherit` or `opening`. Rows stack in order, and a node shows its rows folded field by field. A table's own rows are a kind, `row`; say table row when the two could be mixed up.
+_Avoid_: edit record, change record, delta, diff
+
+**format**:
+The one number that says which stored shape a build writes: 1 plus every stamp. A row, an index page and a command carry the format they were written in. A build refuses a stored format newer than its own, and an older tab reloads before it reads one.
+_Avoid_: schema version, migration (a migration changes the API's database)
+
+**stamp**:
+A number that goes up when a stored shape changes. Each trait has one, with a hash of its fields, and the row, the index and the command have one each. The format adds them up, so raising one stamp raises the format. It is not the stamp `pnpm check` puts on a commit.
+_Avoid_: schema version, migration number
+
+**kept**:
+What the editor leaves exactly as the file has it. An element of kind `kept`, such as a diagram or an embedded object, takes only a name, alt text, hidden, a move and a delete. An element's `kept` list names design fields the editor cannot express, such as a custom shape, a picture fill or an effect graph, and a `set` on one is refused with `kept`.
+_Avoid_: locked, frozen, protected, preserved
+
+**opening**:
+What a node showed when the deck was opened or the element was added: the values the file or the add gave it. A field with no row shows its opening value, and `"opening"` in a row sends a field back to it. It differs from `inherit`: the opening is what the element itself held then.
+_Avoid_: original, initial, baseline, floor (the code's other word for an opening text and box)
+
+**inherit**:
+The edit that clears a node's own value so the field is inherited again. A row carries `"inherit"`, an agent's `set` sends `null`, and only fields a trait lists as `inheritable` take it. A trait's `inherits` names the rule PowerPoint inherits it by: `own` for never, `field` for each field alone, `whole` for all its fields at once, and `run` for each run of text. The design panel's Reset is the person's word for the same edit; the state it returns to is **inherited**.
+_Avoid_: reset (in code and tools), unset, clear, default
+
+**role**:
+Which placeholder an element fills: `title`, `subtitle`, `body`, `date`, `footer`, `number`, `picture`, `chart`, `table` or `object`. An agent targets one with `<slide>.<role>`, or `*.<role>` for every slide.
+_Avoid_: type, placeholder type
+
+**edit**:
+One call to `airdesign_edit_deck`: a deck, the revision it was read at, and up to 100 changes.
+_Avoid_: batch, update, patch (a patch is the part of a row)
+
+**change**:
+One item in an edit's `changes`. Its `op` names it: `set`, `add`, `diagram`, `group` or `ungroup`. A change with no `op` sets one node's text or box.
+_Avoid_: action, command (a command is what the server orders), operation
+
+**set**:
+The change that sets fields on every node its `target` names: an element id, a slide id, `<slide>.<role>`, `*.<role>` or `deck.theme`. Each field it sends becomes a row, and `null` sends it back to inherit. It lands on every node it names or on none.
+_Avoid_: update, modify, write
+
+**add**:
+The change that puts a new element on one slide: a text box, or with kind `picture` an icon. Without a `box` it takes the largest free area of the slide, and its id comes back in `elements`.
+_Avoid_: insert, create, new
 
 ## Findings
 
