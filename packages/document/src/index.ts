@@ -272,7 +272,15 @@ export {
 } from "./text-format.js"
 export { slidesKept } from "./slide-kept.js"
 export { ownFloor } from "./own-floor.js"
-export { redoOf, slideUndoable, undoOf, undoSlides, type NodeStep, type Undoable } from "./person-undo.js"
+export {
+  elementsUndoable,
+  redoOf,
+  slideUndoable,
+  undoOf,
+  undoSlides,
+  type NodeStep,
+  type Undoable,
+} from "./person-undo.js"
 export type {
   Fill,
   ResolvedElement,

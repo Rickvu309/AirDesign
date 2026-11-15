@@ -98,11 +98,17 @@ async function sentCommand(link: UndoLink, deck: string, command: Command): Prom
   return (await link.enqueue(deck, command.value, command.node, "")).ok
 }
 
-async function sent(link: UndoLink, deck: string, register: Register, entry: UndoEntry, direction: UndoDirection) {
+async function sent(
+  link: UndoLink,
+  deck: string,
+  register: Register,
+  entry: UndoEntry,
+  direction: UndoDirection,
+): Promise<UndoEntry | null> {
   const turn = direction === "undo" ? undoOf(register, entry.undoable) : redoOf(register, entry.undoable)
-  if (!turn.ok) return false
-  for (const command of turn.commands) if (!(await sentCommand(link, deck, command))) return false
-  return true
+  if (!turn.ok) return null
+  for (const command of turn.commands) if (!(await sentCommand(link, deck, command))) return null
+  return { ...entry, undoable: turn.undoable }
 }
 
 export async function turnBack(
@@ -118,9 +124,8 @@ export async function turnBack(
   const rest = list[direction].slice(0, -1)
   const left: UndoList = direction === "undo" ? { undo: rest, redo: list.redo } : { undo: list.undo, redo: rest }
   const register = !opened.ok ? null : "group" in entry.undoable ? grouped(opened.register) : opened.register
-  if (register === null || !(await sent(link, deck, register, entry, direction))) {
-    return { outcome: "changed", list: left, entry }
-  }
+  const turned = register === null ? null : await sent(link, deck, register, entry, direction)
+  if (turned === null) return { outcome: "changed", list: left, entry }
   const other = direction === "undo" ? "redo" : "undo"
-  return { outcome: "turned", list: { ...left, [other]: [...left[other], entry] }, entry }
+  return { outcome: "turned", list: { ...left, [other]: [...left[other], turned] }, entry: turned }
 }

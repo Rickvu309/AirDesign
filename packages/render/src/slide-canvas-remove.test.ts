@@ -41,7 +41,7 @@ async function mounted(elements: readonly CanvasElement[], entering: ElementId |
   for (const each of elements) {
     if (each.id !== null) store.publish({ id: each.id, kind: each.kind, text: "Hello", picture: null })
   }
-  const removed: ElementId[] = []
+  const removed: (readonly ElementId[])[] = []
   const host = document.createElement("div")
   document.body.append(host)
   const root = createRoot(host)
@@ -55,7 +55,7 @@ async function mounted(elements: readonly CanvasElement[], entering: ElementId |
         entering: entering === null ? null : { id: entering },
         onEdit: () => undefined,
         onBox: () => undefined,
-        onRemove: (target: ElementId) => removed.push(target),
+        onRemove: (targets: readonly ElementId[]) => removed.push(targets),
       }),
     )
   })
@@ -81,12 +81,36 @@ async function press(target: HTMLElement, key: string, metaKey = false): Promise
   })
 }
 
+async function click(target: HTMLElement, shiftKey = false): Promise<void> {
+  const init = { bubbles: true, cancelable: true, clientX: 200, clientY: 200, pointerId: 1, button: 0, shiftKey }
+  await act(async () => {
+    target.dispatchEvent(new PointerEvent("pointerdown", init))
+    target.ownerDocument.dispatchEvent(new PointerEvent("pointerup", init))
+  })
+}
+
 describe("SlideCanvas remove", () => {
   it("removes the selected element on Delete or Backspace", async () => {
     const { host, removed } = await mounted([element(id)])
     await press(frameOf(host), "Delete")
     await press(frameOf(host), "Backspace")
-    expect(removed).toEqual([id, id])
+    expect(removed).toEqual([[id], [id]])
+  })
+
+  it("removes every chosen element with one Delete", async () => {
+    const { host, removed } = await mounted([element(id), element(added)])
+    await click(frameOf(host))
+    await click(frameOf(host, added), true)
+    await press(frameOf(host, added), "Delete")
+    expect(removed).toEqual([[id, added]])
+  })
+
+  it("leaves out a chosen element that cannot keep its own box", async () => {
+    const { host, removed } = await mounted([element(id, { movable: false }), element(added)])
+    await click(frameOf(host))
+    await click(frameOf(host, added), true)
+    await press(frameOf(host, added), "Backspace")
+    expect(removed).toEqual([[added]])
   })
 
   it("leaves Delete and Backspace to the text while a person types, and to the browser with a modifier", async () => {

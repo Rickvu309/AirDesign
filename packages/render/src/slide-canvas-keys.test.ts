@@ -72,8 +72,8 @@ async function mounted(removed: ElementId[] = [], removes = true) {
           slide,
           width: 800,
           onBox: (_target: ElementId, box: Box) => boxes.push(box),
-          onRemove: (target: ElementId) => {
-            removed.push(target)
+          onRemove: (targets: readonly ElementId[]) => {
+            removed.push(...targets)
             if (removes) void paint([])
           },
           ...(told?.slideName === undefined ? {} : { slideName: told.slideName }),
