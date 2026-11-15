@@ -79,3 +79,13 @@ export function Offline() {
     />
   )
 }
+
+export function Unreached() {
+  return (
+    <EditorView
+      {...galleryDeck}
+      run="offline"
+      toast={<EditorToast kind="info" text={productCopy.editorUnreached} place="canvas" />}
+    />
+  )
+}

@@ -16,7 +16,8 @@ export const state = (v) =>
   `server at ${v.rev} holds the command ${v.lands === 0 ? "not yet" : `${v.lands === 1 ? "once" : "twice"}, from ${v.landedAt}`}; ` +
   `device ${v.known === -1 ? "has not read the deck" : `read ${v.known}`}, mirror holds it ${v.mirror === 0 ? "not" : v.mirror === 1 ? "once" : "twice"}` +
   `${v.pending ? ", row pending" : ""}${wire(v)}${v.orphan === "sent" ? ", an old page's send on its way" : ""}` +
-  `${v.reloads > 0 ? `, ${v.reloads} reload${v.reloads === 1 ? "" : "s"}` : ""}${v.other === 1 ? ", another writer wrote" : ""}`
+  `${v.reloads > 0 ? `, ${v.reloads} reload${v.reloads === 1 ? "" : "s"}` : ""}${v.other === 1 ? ", another writer wrote" : ""}` +
+  `${v.pending && v.due ? ", a send due" : ""}`
 
 export const step = (action) => steps[action] ?? null
 

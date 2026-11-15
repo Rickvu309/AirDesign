@@ -10,12 +10,16 @@
 \* reloaded page sent and never hears back from. known is the revision the device's mirror
 \* holds, -1 on a page that has not read the deck yet. mirror counts the command in the
 \* mirror, and pending says the pending row is still on the device. other says another
-\* writer, an agent or another tab, wrote once.
+\* writer, an agent or another tab, wrote once. due says the page will send the pending row:
+\* after the person's edit, when a page opens, and after a send whose fetch threw, which
+\* resendPending in apps/web/src/deck-resend.ts sends again with backoff. A fetch throws when
+\* the browser is offline and when the server cannot be reached with the browser online; the
+\* code cannot tell the two apart, so the model has one Lose for both.
 EXTENDS Integers
 
-VARIABLES lands, landedAt, rev, wire, orphan, pending, mirror, known, reloads, other
+VARIABLES lands, landedAt, rev, wire, orphan, pending, mirror, known, reloads, other, due
 
-vars == <<lands, landedAt, rev, wire, orphan, pending, mirror, known, reloads, other>>
+vars == <<lands, landedAt, rev, wire, orphan, pending, mirror, known, reloads, other, due>>
 
 Reloads == 2
 
@@ -30,6 +34,7 @@ TypeOK ==
   /\ known \in -1..3
   /\ reloads \in 0..Reloads
   /\ other \in 0..1
+  /\ due \in BOOLEAN
 
 \* The person added a slide on a deck the device read at revision 0.
 Init ==
@@ -43,6 +48,7 @@ Init ==
   /\ known = 0
   /\ reloads = 0
   /\ other = 0
+  /\ due = TRUE
 
 \* The server decides a send: a spent once answers where it landed, a new one lands now.
 Lands ==
@@ -55,21 +61,25 @@ Lands ==
 \* sendRows reads the deck before it sends from a page that has not, so a send needs known.
 Send ==
   /\ pending
+  /\ due
   /\ wire = "none"
   /\ known # -1
   /\ wire' = "sent"
+  /\ due' = FALSE
   /\ UNCHANGED <<lands, landedAt, rev, orphan, pending, mirror, known, reloads, other>>
 
 Land ==
   /\ wire = "sent"
   /\ Lands
   /\ wire' = "answered"
-  /\ UNCHANGED <<orphan, pending, mirror, known, reloads, other>>
+  /\ UNCHANGED <<orphan, pending, mirror, known, reloads, other, due>>
 
-\* The request or its answer is lost: the fetch throws, and the row stays pending.
+\* The request or its answer is lost: the fetch throws, the row stays pending, and a resend
+\* is due.
 Lose ==
   /\ wire \in {"sent", "answered"}
   /\ wire' = "none"
+  /\ due' = TRUE
   /\ UNCHANGED <<lands, landedAt, rev, orphan, pending, mirror, known, reloads, other>>
 
 \* sendRows reads the answer. A revision the mirror already holds means the mirror holds the
@@ -82,9 +92,10 @@ Answer ==
      THEN UNCHANGED <<mirror, known>>
      ELSE /\ mirror' = mirror + 1
           /\ known' = IF known = landedAt - 1 THEN landedAt ELSE known
-  /\ UNCHANGED <<lands, landedAt, rev, orphan, reloads, other>>
+  /\ UNCHANGED <<lands, landedAt, rev, orphan, reloads, other, due>>
 
-\* A reload drops the page's memory. A request on its way stays on its way, unheard.
+\* A reload drops the page's memory. A request on its way stays on its way, unheard. The page
+\* that opens sends the pending row.
 Reload ==
   /\ reloads < Reloads
   /\ orphan = "none"
@@ -92,18 +103,19 @@ Reload ==
   /\ known' = -1
   /\ wire' = "none"
   /\ orphan' = IF wire = "sent" THEN "sent" ELSE "none"
+  /\ due' = TRUE
   /\ UNCHANGED <<lands, landedAt, rev, pending, mirror, other>>
 
 OrphanLands ==
   /\ orphan = "sent"
   /\ orphan' = "none"
   /\ Lands
-  /\ UNCHANGED <<wire, pending, mirror, known, reloads, other>>
+  /\ UNCHANGED <<wire, pending, mirror, known, reloads, other, due>>
 
 OrphanLost ==
   /\ orphan = "sent"
   /\ orphan' = "none"
-  /\ UNCHANGED <<lands, landedAt, rev, wire, pending, mirror, known, reloads, other>>
+  /\ UNCHANGED <<lands, landedAt, rev, wire, pending, mirror, known, reloads, other, due>>
 
 \* adopt replaces the mirror with the server's deck: opening the deck on a new page, or a
 \* follow that saw a newer revision. Both wait for the page's own send (serial).
@@ -112,17 +124,25 @@ Adopt ==
   /\ known = -1 \/ known < rev
   /\ known' = rev
   /\ mirror' = lands
-  /\ UNCHANGED <<lands, landedAt, rev, wire, orphan, pending, reloads, other>>
+  /\ UNCHANGED <<lands, landedAt, rev, wire, orphan, pending, reloads, other, due>>
 
 Other ==
   /\ other = 0
   /\ other' = 1
   /\ rev' = rev + 1
-  /\ UNCHANGED <<lands, landedAt, wire, orphan, pending, mirror, known, reloads>>
+  /\ UNCHANGED <<lands, landedAt, wire, orphan, pending, mirror, known, reloads, due>>
 
 Next == Send \/ Land \/ Lose \/ Answer \/ Reload \/ OrphanLands \/ OrphanLost \/ Adopt \/ Other
 
-Spec == Init /\ [][Next]_vars
+\* The server answers again: a request sent again and again is not lost every time, and an
+\* answer on its way is not lost every time. A due send happens, and a page reads the deck.
+Spec ==
+  /\ Init
+  /\ [][Next]_vars
+  /\ WF_vars(Send)
+  /\ SF_vars(Land)
+  /\ SF_vars(Answer)
+  /\ WF_vars(Adopt)
 
 \* The command lands once however often it is sent. Harm if broken: a slide added twice.
 LandsOnce == lands <= 1
@@ -141,4 +161,9 @@ Copies == mirror + (IF pending THEN 1 ELSE 0)
 ViewSkips == TRUE
 
 OpenNeverFails == Copies <= 1 \/ ViewSkips
+
+\* Once the server answers again, the pending row lands and goes with no new edit. Harm if
+\* broken: an edit made while the server could not be reached stays on the device, and other
+\* devices and agents read an old deck until the person edits again.
+ResentOnceReached == <>~pending
 ====

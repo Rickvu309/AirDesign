@@ -10,6 +10,7 @@ import { exportCopy } from "@/export/export-options"
 
 export type ThinNotice =
   | "offline"
+  | "unreached"
   | "import-failed"
   | "export-failed"
   | "picture-uploading"
@@ -101,6 +102,7 @@ export function ThinNoticeView({
 }) {
   if (notice === null) return null
   if (notice === "offline") return <StatusNotice text={productCopy.editorOffline} />
+  if (notice === "unreached") return <StatusNotice text={productCopy.editorUnreached} />
   if (notice === "set-aside") return <StatusNotice text={productCopy.editsSetAside} />
   if (notice === "undo-changed") return <StatusNotice text={undoCopy.undoChanged} />
   if (notice === "redo-changed") return <StatusNotice text={undoCopy.redoChanged} />

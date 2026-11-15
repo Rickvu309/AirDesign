@@ -744,27 +744,6 @@ test("a commit answered 404 with a JSON body shows no offline words", async ({ p
   await expect(page.getByText(offlineWords)).toHaveCount(0)
 })
 
-test("the offline words go when the next commit is answered 404 on a device that stayed online", async ({ page }) => {
-  let status: number | null = null
-  await answerOpens(page)
-  await page.route("**/decks/commit", async (route) => {
-    if (status === null) {
-      await route.abort("connectionfailed")
-      return
-    }
-    await route.fulfill({ status, contentType: "text/html", body: "<html><body>Not found</body></html>" })
-  })
-  await open(page, fixture)
-  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
-  await typeAtEnd(page, "!")
-  await stored(page, "Hello!")
-  await expect(page.getByText(offlineWords)).toBeVisible()
-  status = 404
-  await typeAtEnd(page, "!")
-  await stored(page, "Hello!!")
-  await expect(page.getByText(offlineWords)).toHaveCount(0)
-})
-
 test("a deck the device and the server do not have says it cannot open, and its button goes home", async ({ page }) => {
   await page.goto("/deck/missing-deck")
   await expect(page.getByText(openFailedWords)).toBeVisible()

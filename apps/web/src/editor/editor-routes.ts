@@ -19,4 +19,5 @@ export const editorRoutes = {
   runFailed: "/screens/s49-01-editor-errors-agent-run-failed",
   offline: "/screens/s49-02-editor-errors-offline",
   setAside: "/screens/s49-03-editor-errors-edits-set-aside",
+  unreached: "/screens/s49-04-editor-errors-unreached",
 } as const
