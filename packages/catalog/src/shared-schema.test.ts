@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 import * as z from "zod/v4"
 import { agentSchema } from "./agent-form.js"
-import { toolInputSchema } from "./catalog.js"
-import { sharedSchemas } from "./shared-schema.js"
+import { catalog, toolInputSchema } from "./catalog.js"
+import { inlinedSchema, sharedSchemas } from "./shared-schema.js"
 import { traitWire } from "./trait-wire.js"
 
 const color = agentSchema({ kind: "color" })
@@ -59,5 +59,36 @@ describe("a tool's input schema says each repeated subschema once", () => {
     expect(check.safeParse({ deck: "d", base: 0, changes: [icon] }).success).toBe(true)
     const wrong = { op: "set", target: "258.2", effects: { glow: { halo: { radius: 8, color: "accent9" } } } }
     expect(check.safeParse({ deck: "d", base: 0, changes: [wrong] }).success).toBe(false)
+  })
+})
+
+describe("a schema for a caller that may not follow references", () => {
+  it("puts each shared subschema back where it was used, keeps the words beside a reference, and drops $defs", () => {
+    const leaf = { type: "string", pattern: "^[a-z]+$" }
+    const pair = { type: "object", properties: { left: { $ref: "#/$defs/leaf" }, right: { $ref: "#/$defs/leaf" } } }
+    const schema = {
+      type: "object",
+      properties: {
+        first: { $ref: "#/$defs/pair" },
+        second: { $ref: "#/$defs/leaf", description: "A name." },
+      },
+      $defs: { leaf, pair },
+    }
+    expect(inlinedSchema(schema)).toEqual({
+      type: "object",
+      properties: {
+        first: { type: "object", properties: { left: leaf, right: leaf } },
+        second: { ...leaf, description: "A name." },
+      },
+    })
+  })
+
+  it("gives back every tool's input schema as zod wrote it, with no reference left", () => {
+    for (const op of ["edit_deck", "add_text_box", "read_deck"] as const) {
+      const inlined = inlinedSchema(toolInputSchema(op))
+      expect(references(inlined)).toEqual([])
+      expect(inlined).not.toHaveProperty("$defs")
+      expect(inlined).toEqual(z.toJSONSchema(catalog[op].read.input, { io: "input" }))
+    }
   })
 })
