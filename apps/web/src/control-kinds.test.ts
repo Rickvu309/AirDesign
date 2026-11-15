@@ -34,6 +34,11 @@ describe("every control kind a field uses", () => {
     expect(used.filter((kind) => !specs.includes(kind))).toEqual([])
   })
 
+  it("has one component and one browser spec of its name for every kind, the action rows too", () => {
+    expect(controlKinds.filter((kind) => !Object.hasOwn(controlViews, kind))).toEqual([])
+    expect(controlKinds.filter((kind) => !specs.includes(kind))).toEqual([])
+  })
+
   it("names no spec or component for a kind outside the closed list", () => {
     const known: readonly string[] = controlKinds
     expect(specs.filter((kind) => !known.includes(kind))).toEqual([])

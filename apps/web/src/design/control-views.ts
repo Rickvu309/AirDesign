@@ -1,4 +1,5 @@
 import type { ComponentType } from "react"
+import { ActionControl } from "@/design/controls/action"
 import { AdjustControl } from "@/design/controls/adjust"
 import { AngleControl } from "@/design/controls/angle"
 import { AssetControl } from "@/design/controls/asset"
@@ -25,6 +26,7 @@ export const controlViews: Partial<Readonly<Record<ControlKind, ComponentType<Co
   adjust: AdjustControl,
   toggle: ToggleControl,
   choice: ChoiceControl,
+  action: ActionControl,
   color: ColorControl,
   hex: HexControl,
   record: RecordControl,

@@ -41,7 +41,7 @@ export function ChoiceControl(props: ControlProps) {
   const { row, onChange } = props
   const label = useId()
   const options = row.desc.kind === "choice" ? row.desc.options : []
-  const layout = choiceLayout(row.field, options, row.action === true)
+  const layout = choiceLayout(row.field, options)
   return (
     <div className="flex flex-col gap-1.5" data-control="choice" data-inherited={row.inherited ? "" : undefined}>
       <span id={label} className="text-[length:var(--type-caption)] text-quiet">
@@ -50,14 +50,7 @@ export function ChoiceControl(props: ControlProps) {
       {layout === "list" ? (
         <ChoiceList {...props} label={label} options={options} />
       ) : (
-        <div
-          role="group"
-          aria-labelledby={label}
-          className={cn(
-            "items-center rounded-lg bg-line p-0.5",
-            layout === "grid" ? "grid grid-cols-3 gap-y-0.5" : "flex h-8",
-          )}
-        >
+        <div role="group" aria-labelledby={label} className="flex h-8 items-center rounded-lg bg-line p-0.5">
           {options.map((option) => {
             const chosen = !row.mixed && row.value === option
             return (

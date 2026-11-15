@@ -29,6 +29,7 @@ export const controlKinds = [
   "count",
   "toggle",
   "choice",
+  "action",
   "color",
   "hex",
   "record",
@@ -91,7 +92,6 @@ export type PanelRow = {
   readonly mixed: boolean
   readonly inherited: boolean
   readonly caption: boolean
-  readonly action?: boolean
   readonly reset: string | null
   readonly parent?: unknown
   readonly nodes?: readonly NodeChoice[]
@@ -231,8 +231,21 @@ function lineless(trait: TraitName, rows: readonly PanelRow[]): boolean {
   return trait === "line" && typeof fill === "object" && fill !== null && "none" in fill
 }
 
+const actions = ["box.align", "box.distribute"]
+
+function joined(shown: PanelReads): boolean {
+  return (["connection.start", "connection.end"] as const).some((key) => {
+    const value = shown.fields?.[key]?.value
+    return typeof value === "object" && value !== null && "shape" in value
+  })
+}
+
 export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
-  const taken = takes(view.facts).filter((field) => shown.moves || !field.startsWith("box."))
+  const routed = view.facts.kind === "connector" && joined(shown)
+  const taken = takes(view.facts).filter(
+    (field) =>
+      (shown.moves || !field.startsWith("box.")) && !(routed && (field === "box.flipH" || field === "box.flipV")),
+  )
   const sections = traitNames.flatMap((trait): PanelSection[] => {
     const labels = traitControls[trait] as Labels
     const rows = wireFields(trait).flatMap(([field, kind]): PanelRow[] => {
@@ -249,19 +262,17 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       const desc = shownDesc(kind, view.facts.grouped, held.value)
       const label = copy?.label ?? ""
       const caption = label !== labels.section
-      const action = Object.hasOwn(traits[trait].inputs, field) && held.value === undefined ? { action: true } : {}
       const nodes = trait === "connection" && shown.nodes !== undefined ? { nodes: shown.nodes } : {}
       return [
         {
           trait,
           field,
           label,
-          control: controlOf(desc),
+          control: actions.includes(`${trait}.${field}`) ? "action" : controlOf(desc),
           desc,
           ...held,
           caption,
           reset,
-          ...action,
           ...nodes,
           change,
         },
