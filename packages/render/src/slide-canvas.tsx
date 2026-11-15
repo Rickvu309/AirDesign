@@ -1,5 +1,7 @@
 import { memo, useLayoutEffect, useRef } from "react"
-import type { Box, ElementId, StackMove, TableChange } from "@airdesign/document"
+import type { Bound, Box, ElementId, StackMove, TableChange } from "@airdesign/document"
+import { ConnectorEnds } from "./connector-ends.js"
+import type { End } from "./connector-drag.js"
 import { PaintedElement } from "./element-kind.js"
 import type { HeldKeys } from "./held-keys.js"
 import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.js"
@@ -44,6 +46,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onGroup?: (ids: readonly ElementId[]) => void
   readonly onUngroup?: (id: ElementId) => void
   readonly onChoose?: (ids: readonly ElementId[]) => void
+  readonly onConnect?: (id: ElementId, end: End, bound: Bound) => void
   readonly notice?: string
   readonly onTable?: (id: ElementId, change: TableChange) => void
   readonly tableBar?: TableBar
@@ -64,6 +67,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   })
   const moving = props.onBox === undefined ? null : moves
   const selected = moving === null ? undefined : slide.elements.find((each) => each.id === moving.selected)
+  const onConnect = selected?.kind === "connector" ? props.onConnect : undefined
   const surface = useRef<HTMLDivElement>(null)
   const entered = useRef<ElementId | null>(null)
   const keys = props.entering?.keys
@@ -133,9 +137,20 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
           id={selected.id}
           movable={canMove(selected)}
           onPress={(event, grip) => moving.press(event, selected, grip)}
-          resizable={canResize(selected)}
+          resizable={canResize(selected) && onConnect === undefined}
           scaled={scaled}
           store={props.store}
+        />
+      )}
+      {selected?.id === undefined || selected.id === null || onConnect === undefined ? null : (
+        <ConnectorEnds
+          element={selected}
+          id={selected.id}
+          onConnect={onConnect}
+          scaled={scaled}
+          slide={slide}
+          store={props.store}
+          width={width}
         />
       )}
     </div>

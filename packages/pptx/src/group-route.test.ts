@@ -123,6 +123,31 @@ describe("group export", () => {
     ])
   })
 
+  it("exports the file's slide again when shapes are added, grouped, ungrouped and removed, as a run's Undo does", () => {
+    const added = [30, 31].map((shape, at) => ({
+      node: node(shape),
+      kind: "shape" as const,
+      value: "",
+      box: { x: 1_000_000 + at * 600_000, y: 1_000_000, cx: 400_000, cy: 300_000 },
+      grouped: false,
+    }))
+    const made = ran(
+      opened,
+      added.map((element) => slideCommand({ slide: "element-add", id: slide, element })),
+    )
+    const group = groupOf(made, slide, node(32), [node(30), node(31)])
+    if (group === null) throw new Error("group")
+    const formed = ran(made, [slideCommand(group)])
+    expect(decodeUtf8(exported(formed).get(part) ?? new Uint8Array())).toContain('<p:cNvPr id="32" name="Group 32"/>')
+    const turn = ungroupTurn(formed, file, slide, node(32))
+    if (turn === null) throw new Error("ungroup")
+    const removed = ran(ran(formed, turn), [
+      slideCommand({ slide: "element-remove", id: slide, node: node(30) }),
+      slideCommand({ slide: "element-remove", id: slide, node: node(31) }),
+    ])
+    expect(decodeUtf8(exported(removed).get(part) ?? new Uint8Array())).toBe(body)
+  })
+
   it("moves a made group with its shapes and ungroups it with nothing moving", () => {
     const shifted = moved(grouped(opened), 600000)
     const before = exported(shifted)

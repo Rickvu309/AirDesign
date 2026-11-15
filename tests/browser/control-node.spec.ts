@@ -1,0 +1,61 @@
+import { expect, test, type Locator, type Page } from "@playwright/test"
+import { openDeck } from "./design-panel"
+
+test.use({ viewport: { width: 1600, height: 1000 } })
+
+const slidePart = "ppt/slides/slide10.xml"
+
+function frame(page: Page, shape: string): Locator {
+  return page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#${shape}"]`)
+}
+
+function placement(element: Locator): Promise<readonly string[]> {
+  return element.evaluate((node: HTMLElement) => [node.style.left, node.style.top, node.style.width, node.style.height])
+}
+
+async function connectorPanel(page: Page): Promise<Locator> {
+  await page.locator('[data-slide-entry="10"]').click()
+  const design = page.getByRole("button", { name: "Design", exact: true })
+  if ((await design.getAttribute("aria-pressed")) !== "true") await design.click()
+  const line = await frame(page, "26").boundingBox()
+  if (line === null) throw new Error("no connector")
+  await page.mouse.click(line.x + line.width / 2, line.y + line.height / 2)
+  await expect(page.locator("[data-design-element]")).toHaveAttribute("data-design-element", /\.26$/)
+  return page
+    .locator("[data-design-element] section")
+    .filter({ has: page.getByRole("heading", { name: "Connector", exact: true }) })
+}
+
+async function attached(row: Locator, name: string) {
+  await row.getByRole("combobox", { name: "Attached to", exact: true }).click()
+  await row.page().getByRole("option", { name, exact: true }).click()
+}
+
+test("a node control names the shape a connector's end attaches to, moves the end to another shape, Undo puts it back, and None leaves the end where the connector's own box draws it", async ({
+  page,
+}) => {
+  await openDeck(page, "census-updating-spm.pptx")
+  const section = await connectorPanel(page)
+  const start = section.locator('[data-control="union"]').filter({ hasText: "Start" })
+  const end = section.locator('[data-control="union"]').filter({ hasText: "End" })
+  await expect(start.getByRole("button", { name: "Shape", exact: true })).toHaveAttribute("aria-pressed", "true")
+  await expect(start.getByRole("combobox", { name: "Attached to", exact: true })).toHaveText(/^Content Placeholder 5/)
+  await expect(end.getByRole("combobox", { name: "Attached to", exact: true })).toHaveText(/^Graphic 14/)
+  await expect(end.getByRole("textbox", { name: "Site", exact: true })).toHaveValue("0")
+  const before = await placement(frame(page, "26"))
+
+  await attached(end, "Graphic 22")
+  await expect(end.getByRole("combobox", { name: "Attached to", exact: true })).toHaveText(/^Graphic 22/)
+  await expect.poll(() => placement(frame(page, "26"))).not.toEqual(before)
+  const moved = await placement(frame(page, "26"))
+
+  await page.getByRole("button", { name: "Undo connector", exact: true }).click()
+  await expect.poll(() => placement(frame(page, "26"))).toEqual(before)
+  await expect(end.getByRole("combobox", { name: "Attached to", exact: true })).toHaveText(/^Graphic 14/)
+  await page.getByRole("button", { name: "Redo connector", exact: true }).click()
+  await expect.poll(() => placement(frame(page, "26"))).toEqual(moved)
+
+  await end.getByRole("button", { name: "None", exact: true }).click()
+  await expect(end.getByRole("combobox", { name: "Attached to", exact: true })).toHaveCount(0)
+  await expect.poll(() => placement(frame(page, "26"))).toEqual(before)
+})

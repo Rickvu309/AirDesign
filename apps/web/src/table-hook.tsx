@@ -1,4 +1,11 @@
-import { currentValue, openingElement, type ElementId, type Register, type TableChange } from "@airdesign/document"
+import {
+  currentBox,
+  currentValue,
+  openingElement,
+  type ElementId,
+  type Register,
+  type TableChange,
+} from "@airdesign/document"
 import type { ReadShape } from "@airdesign/pptx"
 import type { CanvasSlide, PaintStore, TableBar } from "@airdesign/render"
 import { createElement, useRef, type RefObject } from "react"
@@ -25,7 +32,9 @@ const typedRepaint = 400
 
 const tableBar: TableBar = (table) => createElement(TableRowBar, table)
 
-export function structureOf(register: Register | null): string {
+const nothingBound: ReadonlySet<string> = new Set()
+
+export function structureOf(register: Register | null, bound: ReadonlySet<string> = nothingBound): string {
   if (register === null) return "[]"
   const tables = register.nodes.flatMap((node) => {
     const body = register.elements[node]
@@ -33,6 +42,11 @@ export function structureOf(register: Register | null): string {
     return value.startsWith('{"rows"') ? [[node, value]] : []
   })
   const designed = designRows(register)
+  const followed = register.nodes.flatMap((node) => {
+    const body = register.elements[node]
+    return body === undefined || !bound.has(node) ? [] : [[node, currentBox(body)]]
+  })
+  if (followed.length > 0) return JSON.stringify([register.order, tables, designed, followed])
   if (designed.length > 0) return JSON.stringify([register.order, tables, designed])
   return JSON.stringify(tables.length === 0 ? register.order : [register.order, tables])
 }

@@ -111,6 +111,7 @@ const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = {
   geometry: "shape",
   image: "picture",
   crop: "crop",
+  connection: "connector",
 }
 
 const identityNames: Readonly<Record<string, UndoName>> = { name: "rename", alt: "alt-text", hidden: "hide" }

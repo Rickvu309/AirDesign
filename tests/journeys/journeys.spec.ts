@@ -89,6 +89,7 @@ test.describe("recorded Aira", () => {
     "aira-head",
     "agent-after-open",
     "group-elements",
+    "connector-diagram",
   ]) {
     test(name, async ({ page, context }) => {
       await drive(name, page, context)

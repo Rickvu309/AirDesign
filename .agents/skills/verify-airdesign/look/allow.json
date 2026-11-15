@@ -58,5 +58,11 @@
     "detector": "overflowing-text",
     "selector": "[data-editor-panel] > div:nth-of-type(1)",
     "reason": "The state scrolls the design panel down to the Theme section, so the Slide head sits under the panel's top bar. The scroll area clips it, and the finding's own crop shows the zoom alone."
+  },
+  {
+    "page": "connector-*",
+    "detector": "empty-region",
+    "selector": "[data-design-panel] > section:nth-of-type(4)",
+    "reason": "The design panel is scrolled down to the Connector section, so the Line section above it sits outside the window and only its last few pixels show. It is full of controls when scrolled into view."
   }
 ]

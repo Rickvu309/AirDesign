@@ -5,11 +5,10 @@ import type { ReactNode } from "react"
 import { ArrangeMenu } from "@/editor/arrange-menu"
 import { commitBox, commitEdit, type CommitOutcome } from "@/commit-edit"
 import { slideListCopy } from "@/copy/slide-list-copy"
+import { changeDesign, type DesignDeck } from "@/design/design-change"
 import { valueFits } from "@/design/trait-edit"
 import { deviceRegister } from "@/device-copy"
 import { slideFrame } from "@/editor/revenue-slide"
-import type { DeckPaint } from "@/editor/use-deck-paint"
-import type { UndoList } from "@/editor/use-undo"
 import type { ElementChange } from "@/element-edit"
 import { landedBox, paintedBox, shownBox } from "@/element-move"
 import { cn } from "@/lib/class-names"
@@ -18,20 +17,15 @@ import { shownTable, type useTables } from "@/table-hook"
 import type { UndoName } from "@/copy/undo-copy"
 import { boxName } from "@/undo-names"
 
-export type EditableDeck = {
-  readonly id: string
-  readonly shown: DeckPaint
-  readonly undo: UndoList
+export type EditableDeck = DesignDeck & {
   readonly tables: ReturnType<typeof useTables>
-  readonly settle: (outcome: CommitOutcome) => void
-  readonly setPending: (pending: boolean) => void
   readonly changeElement: (change: ElementChange) => Promise<CommitOutcome | "closed">
   readonly select: (id: ElementId | null) => void
 }
 
 export function editableSlide(deck: EditableDeck): (width: number) => ReactNode {
   const { id, tables, settle, setPending, changeElement, select } = deck
-  const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount } = deck.shown
+  const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount, bound } = deck.shown
   const { typed, sessions, records, formatting, record } = deck.undo
 
   async function textBefore(target: ElementId): Promise<string> {
@@ -120,6 +114,7 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
         const before = shownBox(opened.ok ? opened.register : null, target, file)
         setPending(true)
         const name = before === null ? null : boxName(before, box)
+        if (bound.current.has(target)) void deck.shown.showEdited(current)
         if (before === null || name === null) return
         record({ name, undoable: { steps: [{ node: target, before: boxPatch(before), after: boxPatch(box) }] } })
       },
@@ -162,6 +157,10 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
             onOrder={order}
             onSelect={select}
             onChoose={choose}
+            onConnect={(node, end, bound) => {
+              clear()
+              changeDesign(deck, { target: { node }, connection: { [end]: { shape: bound } } })
+            }}
             onGroup={(nodes) => {
               clear()
               group({ change: "group", nodes })

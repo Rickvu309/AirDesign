@@ -65,7 +65,7 @@ describe("the one table of traits", () => {
     })
   })
 
-  it("holds only the fields that are live: identity, the box, the geometry, the fill, the line, the effects, the text, the picture, its crop, notes and table values, the theme's colours and fonts, and alpha", () => {
+  it("holds only the fields that are live: identity, the box, the geometry, the fill, the line, the effects, the text, the picture, its crop, a connector's ends, notes and table values, the theme's colours and fonts, and alpha", () => {
     expect(traitNames.flatMap(fieldKeys)).toEqual([
       "identity.name",
       "identity.alt",
@@ -104,6 +104,8 @@ describe("the one table of traits", () => {
       "image.alpha",
       "image.recolor",
       "crop.rect",
+      "connection.start",
+      "connection.end",
       "table.value",
       "notes.value",
       "theme.dk1",

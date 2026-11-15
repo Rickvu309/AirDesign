@@ -2,7 +2,7 @@ import { traitNames, traits } from "./traits.js"
 
 export const stamps: { readonly row: number; readonly index: number; readonly command: number } = {
   row: 1,
-  index: 5,
+  index: 6,
   command: 3,
 }
 

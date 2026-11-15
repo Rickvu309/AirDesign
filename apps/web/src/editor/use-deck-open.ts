@@ -24,7 +24,7 @@ export type OpeningDeck = {
 
 export function useDeckOpen(deck: OpeningDeck) {
   const { id, shown, notesBar, settle, setTitle, setPaintedDeck, setRefused, setFailure, aside } = deck
-  const { store, shownParts, pictures, structure, repaint, setCurrent, showOpened, showRegister } = shown
+  const { store, shownParts, pictures, structure, bound, repaint, setCurrent, showOpened, showRegister } = shown
 
   function openFrom(
     stored: { readonly parts: ReadonlyMap<string, Uint8Array>; readonly name?: string },
@@ -37,7 +37,7 @@ export function useDeckOpen(deck: OpeningDeck) {
 
   function reconcile(register: Register) {
     const before = store.current.slides().map((slide) => slide.id)
-    if (structure.current !== structureOf(register)) {
+    if (structure.current !== structureOf(register, bound.current)) {
       showRegister(register)
       const after = store.current.slides().map((slide) => slide.id)
       setCurrent((index) => {

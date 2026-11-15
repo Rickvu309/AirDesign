@@ -164,7 +164,14 @@ describe("the server admits only the edits the device can write onto an element 
     expect(takes({ ...facts, kind: "shape" })).toEqual([...named, ...drawn, ...fill, ...line, ...effects, ...text])
     expect(takes({ ...facts, kind: "shape", text: false })).toEqual([...named, ...drawn, ...fill, ...line, ...effects])
     expect(takes({ ...facts, kind: "picture" })).toEqual([...named, ...drawn, ...line, ...effects, ...picture])
-    expect(takes({ ...facts, kind: "connector" })).toEqual([...named, ...drawn, ...line, ...effects])
+    expect(takes({ ...facts, kind: "connector" })).toEqual([
+      ...named,
+      ...drawn,
+      ...line,
+      ...effects,
+      "connection.start",
+      "connection.end",
+    ])
     expect(takes({ ...facts, kind: "table" })).toEqual([...named, "box.x", "box.y", "table.value"])
     expect(takes({ ...facts, kind: "chart" })).toEqual([...named, "box.x", "box.y", "box.w", "box.h"])
     expect(takes({ ...facts, kind: "group" })).toEqual([...named, ...box, ...effects])

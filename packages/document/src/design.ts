@@ -46,6 +46,8 @@ export const designKeys = [
   "crop",
   "identity.alt",
   "identity.hidden",
+  "connection.start",
+  "connection.end",
 ] as const
 export type DesignKey = (typeof designKeys)[number]
 
@@ -76,6 +78,7 @@ export type ShadowRead = {
 export type GlowRead = { readonly radius: number; readonly color: Color | null }
 export type RecolorRead = "grayscale" | { readonly dark: Color; readonly light: Color }
 export type CropRead = { readonly l: number; readonly t: number; readonly r: number; readonly b: number }
+export type BoundRead = { readonly node: string; readonly site: number }
 export type TraitReads = {
   readonly geometry?: Read<string>
   readonly fill?: Read<FillRead>
@@ -102,6 +105,8 @@ export type TraitReads = {
   readonly crop?: Read<CropRead>
   readonly "identity.alt"?: Read<string>
   readonly "identity.hidden"?: Read<boolean>
+  readonly "connection.start"?: Read<BoundRead>
+  readonly "connection.end"?: Read<BoundRead>
 }
 export type ElementRead = {
   readonly role?: Role

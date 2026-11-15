@@ -33,6 +33,7 @@ export const editNext = {
   field:
     "A field is missing or has the wrong form. Send only the fields the input schema lists, each in its described form.",
   kept: "An element this call names holds that field in a form AirDesign keeps exactly as the file has it, such as a custom shape, a picture fill or an effect graph, and nothing landed. Leave that field, or tell the person.",
+  site: "A connection names an element that is not a shape or picture on the connector's slide, sits in another group, or has no site with that number, and nothing landed. Name a shape or picture of the same slide, and a site as the instructions number them: a rectangle has 0 top, 1 left, 2 bottom and 3 right.",
   "text-from":
     "A from index in this value is not one the file has, and nothing landed. Use an index listed next, or -1 for a new run.",
   indexing:

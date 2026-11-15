@@ -96,7 +96,7 @@ describe("createServer", () => {
       expect(instructions).toContain(
         "A line takes identity (name, alt, hidden), box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape), line (fill, width, dash",
       )
-      expect(instructions).toContain("join, head, tail), effects (shadow, glow, softEdge) and opacity.")
+      expect(instructions).toContain("connection (start, end) and opacity.")
       expect(instructions).toContain('"opacity": 60')
       expect(instructions).toContain(
         "A table takes identity (name, alt, hidden), box (x, y, align, distribute) and table (value).",
@@ -143,6 +143,7 @@ describe("createServer", () => {
         ["op", "target"],
         ["op", "kind", "slide"],
         ["op", "elements"],
+        ["op", "slide", "labels"],
       ])
       const advertised = tools.map((tool) => ({
         name: tool.name,

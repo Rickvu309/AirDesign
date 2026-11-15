@@ -94,8 +94,11 @@ export type PanelRow = {
   readonly shownOnly?: boolean
   readonly reset: string | null
   readonly parent?: unknown
+  readonly nodes?: readonly NodeChoice[]
   readonly change: (value: unknown) => SetChange
 }
+
+export type NodeChoice = { readonly node: ElementId; readonly name: string }
 
 export type Swatch = { readonly scheme: SchemeName; readonly css: string; readonly name: string }
 
@@ -179,7 +182,7 @@ function shownOf(view: ScopedElement, trait: TraitName, field: string, shown: Pa
     }
     return { value: sides[field], mixed: false }
   }
-  if (trait === "geometry" || trait === "theme") return { value: undefined, mixed: false }
+  if (trait === "geometry" || trait === "theme" || trait === "connection") return { value: undefined, mixed: false }
   if (field === "value") return { value: view.value ?? "", mixed: false }
   const text = readTextValue(view.value ?? "") ?? []
   return textShown(text, field, reads)
@@ -195,6 +198,7 @@ export type PanelReads = {
   readonly reads: TraitReads
   readonly moves: boolean
   readonly fields?: Readonly<Record<string, ShownField | undefined>>
+  readonly nodes?: readonly NodeChoice[]
 }
 
 function shownDesc(desc: Desc, grouped: boolean, value: unknown): Desc {
@@ -227,8 +231,22 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       const caption = label !== labels.section
       const action = Object.hasOwn(traits[trait].inputs, field) && held.value === undefined ? { action: true } : {}
       const fixed = shownOnly.includes(key) ? { shownOnly: true, reset: null } : {}
+      const nodes = trait === "connection" && shown.nodes !== undefined ? { nodes: shown.nodes } : {}
       return [
-        { trait, field, label, control: controlOf(desc), desc, ...held, caption, reset, ...action, ...fixed, change },
+        {
+          trait,
+          field,
+          label,
+          control: controlOf(desc),
+          desc,
+          ...held,
+          caption,
+          reset,
+          ...action,
+          ...fixed,
+          ...nodes,
+          change,
+        },
       ]
     })
     const visible = lineless(trait, rows) ? rows.filter((row) => row.field === "fill") : rows

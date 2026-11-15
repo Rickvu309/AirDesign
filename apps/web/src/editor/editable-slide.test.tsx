@@ -68,6 +68,7 @@ function Deck(props: { readonly exposed: (deck: Exposed) => void }) {
     shown,
     undo,
     tables,
+    record: nothing,
     settle: nothing,
     setPending: nothing,
     changeElement,

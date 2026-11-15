@@ -151,6 +151,7 @@ async function typingDeck() {
     store: { current: store },
     shownParts: { current: cleanParts },
     structure: { current: structureOf(register) },
+    bound: { current: new Set() },
     repaint: { current: liveRepaint(store, new Map([[box, oldText]]), null, busy) },
     setCurrent: () => undefined,
     showRegister: () => (turn.painted = true),

@@ -21,6 +21,7 @@ import {
   type Register,
   type TraitName,
 } from "@airdesign/document"
+import { routedParts } from "./connector-route.js"
 import { slidePart } from "./package-address.js"
 import { readShapes, shapeKind, type ReadShape } from "./read-shapes.js"
 import { writeTrait } from "./trait-xml.js"
@@ -143,5 +144,5 @@ export function exportParts(parts: Parts, stored: Register): Parts {
             ? writtenSlide(next, node, body, opening)
             : writtenElement(next, shapes, node, body, opening)
   }
-  return next
+  return routedParts(parts, next)
 }
