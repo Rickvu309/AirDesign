@@ -21,12 +21,26 @@ import type {
 
 export type Scaled = (emu: number) => number
 
-type Look = CSSProperties &
-  Partial<Record<"--bullet" | "--bullet-font" | "--bullet-color" | "--bullet-size" | "--bullet-hang", string>>
+type BulletProp =
+  | "--bullet"
+  | "--bullet-font"
+  | "--bullet-color"
+  | "--bullet-size"
+  | "--bullet-hang"
+  | "--bullet-unfocused"
 
-const bulletProps = ["--bullet", "--bullet-font", "--bullet-color", "--bullet-size", "--bullet-hang"]
+type Look = CSSProperties & Partial<Record<BulletProp, string>>
+
+const bulletProps: readonly BulletProp[] = [
+  "--bullet",
+  "--bullet-font",
+  "--bullet-color",
+  "--bullet-size",
+  "--bullet-hang",
+  "--bullet-unfocused",
+]
 const bulletRule =
-  "[data-paragraph]::before{content:var(--bullet);display:inline-block;min-width:var(--bullet-hang,auto);text-indent:0;pointer-events:none;user-select:none;white-space:pre;font-family:var(--bullet-font,inherit);color:var(--bullet-color,inherit);font-size:var(--bullet-size,1em);line-height:1}"
+  "[data-paragraph]::before{content:var(--bullet);display:inline-block;min-width:var(--bullet-hang,auto);text-indent:0;pointer-events:none;user-select:none;white-space:pre;font-family:var(--bullet-font,inherit);color:var(--bullet-color,inherit);font-size:var(--bullet-size,1em);line-height:1}[data-text-body]:not(:focus-within)>[data-paragraph]::before{content:var(--bullet-unfocused,var(--bullet))}"
 
 export type RunPaint = RunFormat & { readonly size?: number; readonly color?: Color; readonly font?: string }
 export type ParagraphPaint = { readonly align?: ParagraphAlign; readonly bullet?: boolean } & ParagraphSpacing
@@ -323,7 +337,8 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
     paragraph(from, filled, overlay) {
       const paragraph = paragraphs.get(from)
       if (paragraph === undefined) return { lineHeight: filled ? noLine : singleLine, "--bullet": "none" }
-      return paragraphOverlay(paragraphStyle(spaced(paragraph, overlay), filled, scaled), paragraph, overlay)
+      const style = paragraphOverlay(paragraphStyle(spaced(paragraph, overlay), filled, scaled), paragraph, overlay)
+      return filled || overlay?.bullet === true ? style : { ...style, "--bullet-unfocused": "none" }
     },
     run(from, run, format = {}, overlay) {
       const found = paragraphs.get(from)
