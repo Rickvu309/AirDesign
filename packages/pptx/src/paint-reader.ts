@@ -32,6 +32,7 @@ import { placeholderPrompt } from "./placeholder-prompt.js"
 import { tableStyles } from "./table-style.js"
 import { paintDiagram } from "./paint-diagram.js"
 import { frameChart, type PaintChart } from "./paint-chart.js"
+import { paintConnection, type PaintConnection } from "./paint-connection.js"
 
 export type PaintBox = {
   x: number
@@ -59,6 +60,7 @@ export type PaintElement = {
   chart?: PaintChart
   name?: string
   alt?: string
+  connection?: PaintConnection
 } & ShapePaint
 
 export type SlidePaint = {
@@ -465,6 +467,7 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
             ...diagramOf(item, box),
             ...frameChart(item.element, sheet.children, slidePart, charts),
             ...labelOf(item),
+            ...paintConnection(item.element, sheet.children),
             ...paints.get(item)!,
           }
         })

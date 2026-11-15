@@ -1,14 +1,15 @@
 import { memo, useLayoutEffect, useRef } from "react"
-import type { Bound, Box, ElementId, StackMove, TableChange } from "@airdesign/document"
-import { ConnectorEnds } from "./connector-ends.js"
+import type { Box, ElementId, StackMove, TableChange } from "@airdesign/document"
+import { ConnectorEnds, type EndDrop } from "./connector-ends.js"
 import type { End } from "./connector-drag.js"
+import { targetsOf } from "./connector-follow.js"
 import { PaintedElement } from "./element-kind.js"
 import { GroupEffects, layered } from "./group-effects.js"
 import type { HeldKeys } from "./held-keys.js"
 import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.js"
 import { ChosenFrame, SelectionFrame } from "./selection-frame.js"
 import { slideBackground } from "./slide-background.js"
-import { canMove, canResize, enterElement, useMoves } from "./slide-moves.js"
+import { canDrag, canResize, enterElement, useMoves } from "./slide-moves.js"
 import type { CanvasSlide } from "./record.js"
 import type { TableBar } from "./table-paint.js"
 import type { PaintStore } from "./store.js"
@@ -47,7 +48,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onGroup?: (ids: readonly ElementId[]) => void
   readonly onUngroup?: (id: ElementId) => void
   readonly onChoose?: (ids: readonly ElementId[]) => void
-  readonly onConnect?: (id: ElementId, end: End, bound: Bound) => void
+  readonly onConnect?: (id: ElementId, end: End, to: EndDrop) => void
   readonly notice?: string
   readonly onTable?: (id: ElementId, change: TableChange) => void
   readonly tableBar?: TableBar
@@ -120,6 +121,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
             quiet={quiet}
             scaled={scaled}
             store={props.store}
+            targets={targetsOf(slide.elements, element)}
           />
         ),
         (group, members) => (
@@ -144,7 +146,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
         <SelectionFrame
           element={selected}
           id={selected.id}
-          movable={canMove(selected)}
+          movable={canDrag(selected)}
           onPress={(event, grip) => moving.press(event, selected, grip)}
           resizable={canResize(selected) && onConnect === undefined}
           scaled={scaled}

@@ -73,6 +73,7 @@ for (const name of [
   "deck-names",
   "slide-charts",
   "signed-out-deck",
+  "connector-follow",
 ]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)

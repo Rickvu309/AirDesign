@@ -2,6 +2,10 @@ import { slideExportLines } from "../slide-export.mjs"
 
 const original = "census-updating-spm.pptx"
 const exported = "exported-connection.pptx"
+const elbowOriginal = "connectors.pptx"
+const elbowExported = "exported-elbow.pptx"
+const elbowSlide = "ppt/slides/slide1.xml"
+const clearance = 228600
 const slide = "ppt/slides/slide10.xml"
 const untouched = ["ppt/slides/slide7.xml", "ppt/slides/slide8.xml", "ppt/slides/slide9.xml"]
 const bound = '<a:stCxn id="6" idx="2"/><a:endCxn id="15" idx="3"/>'
@@ -17,9 +21,61 @@ function placeOf(text, id) {
     y: number("y"),
     cx: number("cx"),
     cy: number("cy"),
+    rot: number("rot") || 0,
     flipH: xfrm.includes('flipH="1"'),
     flipV: xfrm.includes('flipV="1"'),
   }
+}
+
+function endsOf(place) {
+  const angle = (place.rot / 60000) * (Math.PI / 180)
+  const half = { x: (place.flipH ? -place.cx : place.cx) / 2, y: (place.flipV ? -place.cy : place.cy) / 2 }
+  const turned = {
+    x: half.x * Math.cos(angle) - half.y * Math.sin(angle),
+    y: half.x * Math.sin(angle) + half.y * Math.cos(angle),
+  }
+  const middle = { x: place.x + place.cx / 2, y: place.y + place.cy / 2 }
+  return {
+    start: { x: middle.x - turned.x, y: middle.y - turned.y },
+    end: { x: middle.x + turned.x, y: middle.y + turned.y },
+  }
+}
+
+function adjustOf(text, id) {
+  const at = text.indexOf(`<p:cNvPr id="${id}"`)
+  const shape = text.slice(at, text.indexOf("</p:cxnSp>", at))
+  if (!shape.includes('<a:prstGeom prst="bentConnector3">')) return null
+  return Number(/name="adj1" fmla="val (-?\d+)"/.exec(shape)?.[1])
+}
+
+function elbowLines(answers, decode) {
+  const kept = [...(answers.parts.get(elbowOriginal)?.keys() ?? [])].filter((name) => name !== elbowSlide)
+  const lines = slideExportLines({ ...answers, original: elbowOriginal, exported: elbowExported, kept }).map((line) =>
+    line.replace(/^slide export/, "elbow connection"),
+  )
+  const after = decode(elbowExported, elbowSlide)
+  const plan = placeOf(after, "2")
+  const build = placeOf(after, "3")
+  if (build.y === 3810000) lines.push("elbow connection did not move Build")
+  const sites = {
+    right: { x: plan.x + plan.cx, y: plan.y + plan.cy / 2 },
+    left: { x: build.x, y: build.y + build.cy / 2 },
+    planBottom: { x: plan.x + plan.cx / 2, y: plan.y + plan.cy },
+    buildBottom: { x: build.x + build.cx / 2, y: build.y + build.cy },
+  }
+  const between = endsOf(placeOf(after, "4"))
+  const under = endsOf(placeOf(after, "5"))
+  if (!near(between.start, sites.right) || !near(between.end, sites.left))
+    lines.push("elbow connection left the elbow between Plan and Build off their right and left sites")
+  if (!near(under.start, sites.planBottom) || !near(under.end, sites.buildBottom))
+    lines.push("elbow connection left the elbow under Plan and Build off their bottom sites")
+  if (adjustOf(after, "4") !== 50000) lines.push("elbow connection moved the bend between Plan and Build off midway")
+  const w = Math.abs(sites.buildBottom.y - sites.planBottom.y)
+  if (adjustOf(after, "5") !== Math.round(((w + clearance) * 100000) / w))
+    lines.push("elbow connection did not turn the elbow under both shapes past Build by the clearance")
+  if (!after.includes('<a:stCxn id="2" idx="3"/><a:endCxn id="3" idx="1"/>'))
+    lines.push("elbow connection lost the binding between Plan and Build")
+  return lines
 }
 
 function near(left, right) {
@@ -28,8 +84,9 @@ function near(left, right) {
 
 export default {
   specs: ["tests/browser/connector-ends.spec.ts"],
-  exports: [exported],
-  renders: [exported],
+  exports: [exported, elbowExported],
+  originals: [elbowOriginal],
+  renders: [exported, elbowExported],
   covers: ["connection.start", "connection.end"],
   lines(answers) {
     const kept = [...(answers.parts.get(original)?.keys() ?? [])].filter((name) => name !== slide)
@@ -63,6 +120,6 @@ export default {
       if (was === null || JSON.stringify(was) !== JSON.stringify(now))
         lines.push(`connection changed the connector PowerPoint routed on ${part}`)
     }
-    return lines
+    return [...lines, ...elbowLines(answers, decode)]
   },
 }

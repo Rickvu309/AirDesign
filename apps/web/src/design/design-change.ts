@@ -1,4 +1,4 @@
-import type { ElementId, SetChange } from "@airdesign/document"
+import type { Bound, ElementId, Place, SetChange } from "@airdesign/document"
 import { connect } from "@airdesign/live"
 import { toast } from "sonner"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
@@ -39,6 +39,16 @@ function changingDeck(deck: DesignDeck): ChangingDeck {
       shown.repaint.current(register, "person")
       deck.setPending(true)
     },
+  }
+}
+
+export function endChange(node: ElementId, end: "start" | "end", to: Bound | Place): SetChange {
+  if ("node" in to) return { target: { node }, connection: { [end]: { shape: to } } }
+  const { box, flipH, flipV } = to
+  return {
+    target: { node },
+    box: { x: box.x, y: box.y, w: box.cx, h: box.cy, flipH, flipV },
+    connection: { [end]: { none: true } },
   }
 }
 

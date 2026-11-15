@@ -134,6 +134,10 @@ export function paintedAt(file: PaintBox | null, box: Box | null): PaintBox | nu
   return { ...(file ?? upright), x: box.x, y: box.y, width: box.cx, height: box.cy }
 }
 
+export function ownBox(element: { readonly box: PaintBox | null; readonly connection?: unknown }, box: Box | null) {
+  return element.connection === undefined ? paintedAt(element.box, box) : element.box
+}
+
 export function followed(child: PaintBox | null, group: PaintBox | null, moved: Box | null): PaintBox | null {
   if (child === null || group === null || moved === null) return child
   const scaleX = group.width === 0 ? 1 : moved.cx / group.width

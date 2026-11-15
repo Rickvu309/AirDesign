@@ -1,6 +1,7 @@
 import { type CSSProperties, type FocusEvent, type KeyboardEvent, type PointerEvent } from "react"
 import type { ElementId, TableChange } from "@airdesign/document"
-import { followed, paintedAt } from "./box-gesture.js"
+import { followed, ownBox } from "./box-gesture.js"
+import { useFollowed, type Targets } from "./connector-follow.js"
 import { useBox, useElement } from "./element-view.js"
 import { paragraphText, textValue } from "./paragraph-edit.js"
 import { framedOutline, Passage } from "./passage.js"
@@ -10,7 +11,7 @@ import { SheetText } from "./sheet-text.js"
 import { DiagramArt } from "./diagram-art.js"
 import { ChartArt } from "./chart-art.js"
 import type { TableBar } from "./table-paint.js"
-import { canMove, type Moves } from "./slide-moves.js"
+import { canDrag, canMove, type Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
 import { anchored, flowModes, textLook, type Scaled, type TextLook } from "./text-look.js"
 import { formatKey, keepsFormat, type TextFormatting } from "./text-formatting.js"
@@ -40,6 +41,7 @@ export type ElementPaintProps = {
   readonly tableBar?: TableBar | undefined
   readonly moves: Moves | null
   readonly formatting?: TextFormatting | undefined
+  readonly targets?: Targets | undefined
 }
 
 function turned(box: PaintBox): string | undefined {
@@ -194,7 +196,7 @@ function reach(element: CanvasElement, id: ElementId, text: string, moves: Moves
   return {
     role: "group",
     "aria-label": nameOf(text, fallback),
-    "aria-description": `Arrow keys move. Alt and Shift with the arrow keys resize. ${element.editable ? "Enter edits the text. " : ""}Delete removes it.`,
+    "aria-description": `${canDrag(element) ? "Arrow keys move. Alt and Shift with the arrow keys resize. " : ""}${element.editable ? "Enter edits the text. " : ""}Delete removes it.`,
     tabIndex: canMove(element) && !typing ? 0 : -1,
     onPointerDown: (event: PointerEvent<HTMLElement>) => moves.press(event, element, "move"),
     onKeyDown: (event: KeyboardEvent<HTMLElement>) => moves.key(event, element),
@@ -260,19 +262,21 @@ function PlacedText(props: {
   readonly drawnWhenBlank: boolean
   readonly fallbackName: string
   readonly formatting: TextFormatting | undefined
+  readonly targets: Targets | undefined
 }) {
   const { drawnWhenBlank, fallbackName, formatting, id, moves, onEdit, scaled, store, unshown } = props
   const record = useElement(store, id)
   const group = props.element.group
   const carried = useBox(store, group?.id ?? id)
-  const own = paintedAt(props.element.box, useBox(store, id))
+  const own = ownBox(props.element, useBox(store, id))
   const box = group === undefined ? own : followed(own, group.box, carried)
   const shown = record?.text ?? ""
-  const { element, layer } = useTextFit(
+  const placed = useFollowed(
+    store,
     box === props.element.box ? props.element : { ...props.element, box },
-    scaled,
-    shown,
+    props.targets,
   )
+  const { element, layer } = useTextFit(placed, scaled, shown)
   const text = element.text ?? noText
   const look = textLook(text, scaled)
   const typing = element.editable && onEdit !== undefined
@@ -364,7 +368,8 @@ export function ElementHost(
     readonly fallbackName: string
   },
 ) {
-  const { drawnWhenBlank, element, fallbackName, formatting, moves, onEdit, quiet, scaled, store, unshown } = props
+  const { drawnWhenBlank, element, fallbackName, formatting, moves, onEdit, quiet, scaled, store, targets, unshown } =
+    props
   if (quiet) return <QuietElement element={element} scaled={scaled} store={store} unshown={unshown} />
   if (element.id === null) return <SheetElement element={element} scaled={scaled} unshown={unshown} />
   return (
@@ -378,6 +383,7 @@ export function ElementHost(
       onEdit={onEdit}
       scaled={scaled}
       store={store}
+      targets={targets}
       unshown={unshown}
     />
   )

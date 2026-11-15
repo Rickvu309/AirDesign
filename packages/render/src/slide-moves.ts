@@ -48,8 +48,12 @@ export function canMove(element: CanvasElement): boolean {
   return element.id !== null && element.movable === true && element.box !== null
 }
 
+export function canDrag(element: CanvasElement): boolean {
+  return canMove(element) && element.connection === undefined
+}
+
 export function canResize(element: CanvasElement): boolean {
-  return canMove(element) && element.box?.rotation === 0 && element.table === undefined
+  return canDrag(element) && element.box?.rotation === 0 && element.table === undefined
 }
 
 function inText(target: EventTarget, frame: HTMLElement): boolean {
@@ -194,7 +198,7 @@ export function useMoves(
     frame.focus()
     only(id)
     const start = startOf(element)
-    if (start === null || !(grip === "move" ? canMove(element) : canResize(element))) return
+    if (start === null || !(grip === "move" ? canDrag(element) : canResize(element))) return
     const from = { x: event.clientX, y: event.clientY }
     const keepRatio = element.kind === "picture"
     const drag: Drag = { by: "pointer", id, grip, pointer: event.pointerId, from, start, moved: false, keepRatio }
@@ -288,7 +292,7 @@ export function useMoves(
       store.placeBox(id, grown)
       return
     }
-    if (start === null || chord || !canMove(element) || now?.by === "pointer") return
+    if (start === null || chord || !canDrag(element) || now?.by === "pointer") return
     const next = nudgedBox(start, event.key, event.shiftKey, size)
     if (next === null) return
     event.preventDefault()

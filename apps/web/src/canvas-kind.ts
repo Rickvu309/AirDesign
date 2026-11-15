@@ -1,4 +1,4 @@
-import type { PaintElement } from "@airdesign/pptx"
+import type { PaintElement, PaintTie } from "@airdesign/pptx"
 import type { CanvasElement } from "@airdesign/render"
 import { paintFrame } from "@/canvas-frame"
 import { groupsOf, paintGroup, withHeld } from "@/canvas-group"
@@ -56,9 +56,21 @@ export function paintElements(
     const painted = painters[kind]({ row, shape, key, src })
     if (painted === null) continue
     const diagram = row.diagram === undefined ? {} : { diagram: diagramOf(row.diagram, key, src) }
-    elements.push([{ ...painted, ...diagram, ...carried }, row])
+    elements.push([{ ...painted, ...diagram, ...carried, ...connectionOf(row, source) }, row])
   }
   return withHeld(elements, rows)
+}
+
+function tieOf(tie: PaintTie | null, source: CanvasSource) {
+  const node = tie === null ? undefined : source.shapes.get(tie.shape)?.id
+  return node === undefined || tie === null ? null : { node, site: tie.site }
+}
+
+function connectionOf(row: PaintElement, source: CanvasSource): Pick<CanvasElement, "connection"> {
+  if (row.connection === undefined || row.from !== "slide") return {}
+  const start = tieOf(row.connection.start, source)
+  const end = tieOf(row.connection.end, source)
+  return start === null && end === null ? {} : { connection: { start, end } }
 }
 
 function diagramOf(rows: readonly PaintElement[], key: string, src: PictureSource): readonly CanvasElement[] {
