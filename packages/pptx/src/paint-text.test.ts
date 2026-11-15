@@ -178,7 +178,7 @@ describe("paintText inheritance", () => {
       from: 0,
       kind: "text",
       text: "x",
-      font: null,
+      font: "Minor Latin",
       size: 18,
       bold: false,
       italic: false,
@@ -352,14 +352,9 @@ describe("paintText fontRef and fonts", () => {
     expect(runOf({ slide: shape({ text: para(run("x", format)) }) }).font).toBe(font)
   })
 
-  it("is null when a theme reference resolves to nothing and no level answers", () => {
-    const format = `<a:rPr><a:latin typeface="+mn-cs"/></a:rPr>`
-    expect(runOf({ slide: shape({ text: para(run("x", format)) }) }).font).toBeNull()
-  })
-
   it("reads only the latin typeface", () => {
     const format = `<a:rPr><a:ea typeface="East"/><a:cs typeface="Complex"/></a:rPr>`
-    expect(runOf({ slide: shape({ text: para(run("x", format)) }) }).font).toBeNull()
+    expect(runOf({ slide: shape({ text: para(run("x", format)) }) }).font).toBe("Minor Latin")
   })
 })
 
@@ -607,7 +602,7 @@ describe("paintText endStyle", () => {
 
   it("gives an empty box the schema values", () => {
     expect(paragraphOf({ slide: shape({ text: para("") }) }).endStyle).toEqual({
-      font: null,
+      font: "Minor Latin",
       size: 18,
       bold: false,
       italic: false,

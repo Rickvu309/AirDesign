@@ -33,6 +33,7 @@ export function opacitySection(view: ScopedElement, shown: PanelReads): PanelSec
     control: "percent",
     desc: opacityWire.desc,
     ...shownOf(fields.map((key) => shown.fields?.[key]?.value)),
+    inherited: false,
     caption: false,
     reset: null,
     change,

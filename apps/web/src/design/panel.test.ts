@@ -1,6 +1,6 @@
-import { elementId, type ScopedElement } from "@airdesign/document"
+import { elementId, writeTextValue, type ScopedElement } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { panelOf, partRow } from "./panel"
+import { panelOf, partRow, type ShownField } from "./panel"
 
 const connector: ScopedElement = {
   node: elementId("258.6"),
@@ -110,4 +110,54 @@ it("lays out a text box's body field by field, autofit included", () => {
     ["Space after", "length", undefined],
   ])
   expect(typed?.[0]?.change("Georgia")).toEqual({ target: { node: "258.2" }, text: { font: "Georgia" } })
+})
+
+const untouched = {
+  "text.size": { value: 1800, own: false },
+  "text.font": { value: "Arial", own: false },
+  "text.align": { value: "left", own: false },
+  "text.lineSpacing": { value: 100_000, own: false },
+  "text.spaceBefore": { value: 0, own: false },
+  "text.spaceAfter": { value: 0, own: false },
+  "body.columns": { value: 1, own: false },
+  "body.anchor": { value: "ctr", own: true },
+}
+
+function shownRows(view: ScopedElement, fields: Readonly<Record<string, ShownField>> = untouched) {
+  const panel = panelOf(view, { reads: {}, moves: true, fields })
+  return Object.fromEntries(
+    panel.sections.flatMap((section) =>
+      section.rows.map((row) => [`${row.trait}.${row.field}`, [row.value, row.inherited]]),
+    ),
+  )
+}
+
+it("shows an untouched text box's painted size, font and spacing as inherited", () => {
+  const rows = shownRows({ ...shape, value: writeTextValue([{ from: 0, runs: [{ from: 0, text: "Hello" }] }]) })
+  expect(rows["text.size"]).toEqual([1800, true])
+  expect(rows["text.font"]).toEqual(["Arial", true])
+  expect(rows["text.color"]).toEqual([{ scheme: "tx1" }, true])
+  expect(rows["text.align"]).toEqual(["left", true])
+  expect(rows["text.lineSpacing"]).toEqual([100_000, true])
+  expect(rows["text.spaceBefore"]).toEqual([0, true])
+  expect(rows["text.spaceAfter"]).toEqual([0, true])
+  expect(rows["body.columns"]).toEqual([1, true])
+  expect(rows["body.anchor"]).toEqual(["ctr", false])
+})
+
+it("shows a size or spacing the element sets as its own", () => {
+  const value = writeTextValue([{ from: 0, lineSpacing: 150_000, runs: [{ from: 0, text: "Hello", size: 2400 }] }])
+  const rows = shownRows({ ...shape, value })
+  expect(rows["text.size"]).toEqual([2400, false])
+  expect(rows["text.lineSpacing"]).toEqual([150_000, false])
+  expect(rows["text.font"]).toEqual(["Arial", true])
+  expect(shownRows(shape, { ...untouched, "text.font": { value: "Abadi", own: true } })["text.font"]).toEqual([
+    "Abadi",
+    false,
+  ])
+})
+
+it("leaves a field empty and not inherited when nothing paints it", () => {
+  const rows = shownRows(shape, { ...untouched, "text.lineSpacing": { value: null, own: false } })
+  expect(rows["text.lineSpacing"]).toEqual([undefined, false])
 })

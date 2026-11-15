@@ -25,6 +25,7 @@ import {
   shownIdentity,
   shownImage,
   shownLine,
+  shownTextStyle,
   shownTheme,
   shownTurn,
   type DeckTraits,
@@ -97,6 +98,7 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
     const turn = shownTurn(parts, at)
     const line = Object.entries(shownLine(parts, at) ?? {}).map(([field, shown]) => [`line.${field}`, shown])
     const body = Object.entries(shownBody(parts, at) ?? {}).map(([field, shown]) => [`body.${field}`, shown])
+    const text = Object.entries(shownTextStyle(parts, at) ?? {}).map(([field, shown]) => [`text.${field}`, shown])
     const alphas = Object.entries(shownAlphas(parts, at)).map(([trait, value]) => [
       `${trait}.alpha`,
       { value, own: true },
@@ -132,6 +134,7 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
       "box.flipV": { value: turn.flipV, own: true },
       ...Object.fromEntries(line),
       ...Object.fromEntries(body),
+      ...Object.fromEntries(text),
       ...Object.fromEntries(alphas),
       ...Object.fromEntries(effects),
     }

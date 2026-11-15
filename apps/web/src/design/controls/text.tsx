@@ -2,6 +2,7 @@ import { cellText, readTextValue, writeTextValue, type TextRun, type TextValue }
 import { useId, useState, type KeyboardEvent } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import type { ControlProps } from "@/design/panel"
+import { cn } from "@/lib/class-names"
 
 function styleOf(run: TextRun | undefined): Omit<TextRun, "from" | "text"> {
   if (run === undefined) return {}
@@ -36,18 +37,22 @@ function WordsField({ row, onChange }: ControlProps) {
   function commit(words: string) {
     setDraft(null)
     const typed = words.trim()
-    if (typed !== "" && typed !== shown) onChange(typed)
+    if (typed !== "" && (typed !== shown || row.inherited)) onChange(typed)
   }
 
   return (
     <label
       className="flex h-8 min-w-0 items-center gap-2 rounded-lg bg-white px-2.5 shadow-[0px_0px_0px_1px_var(--field-edge)]"
       data-control="words"
+      data-inherited={row.inherited ? "" : undefined}
       data-focus-ring
     >
       <span className="shrink-0 truncate text-[length:var(--type-caption)] text-quiet">{row.label}</span>
       <input
-        className="min-w-0 flex-1 bg-transparent text-right text-[length:var(--type-dense)] text-foreground outline-none"
+        className={cn(
+          "min-w-0 flex-1 bg-transparent text-right text-[length:var(--type-dense)] outline-none",
+          row.inherited && draft === null ? "text-quiet" : "text-foreground",
+        )}
         aria-label={row.label}
         value={draft ?? shown}
         onChange={(event) => setDraft(event.target.value)}

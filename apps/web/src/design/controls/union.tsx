@@ -34,7 +34,7 @@ export function UnionControl({ row, palette, onChange, inner }: ControlProps) {
   }
 
   return (
-    <div className="flex flex-col gap-3" data-control="union">
+    <div className="flex flex-col gap-3" data-control="union" data-inherited={row.inherited ? "" : undefined}>
       {row.caption ? (
         <div className="flex min-h-6 items-center justify-between gap-2">
           <span id={label} className="text-[length:var(--type-caption)] text-quiet">
@@ -77,7 +77,10 @@ export function UnionControl({ row, palette, onChange, inner }: ControlProps) {
               className={cn(
                 "h-7 min-w-0 flex-1 rounded-[var(--shape-control)] px-1 text-xs font-normal active:translate-y-0",
                 pressed
-                  ? "bg-white font-medium text-foreground shadow-[0px_1px_2px_var(--black-10)] hover:bg-white"
+                  ? cn(
+                      "bg-white font-medium shadow-[0px_1px_2px_var(--black-10)] hover:bg-white",
+                      row.inherited ? "text-quiet" : "text-foreground",
+                    )
                   : "text-quiet hover:bg-transparent hover:text-foreground",
               )}
             >
