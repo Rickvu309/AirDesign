@@ -159,7 +159,7 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
             onChoose={choose}
             onConnect={(node, end, to) => {
               clear()
-              changeDesign(deck, endChange(node, end, to))
+              changeDesign(deck, () => endChange(node, end, to))
             }}
             onGroup={(nodes) => {
               clear()
