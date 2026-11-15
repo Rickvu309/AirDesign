@@ -22,15 +22,42 @@ import {
 } from "@airdesign/document"
 import { routedParts } from "./connector-route.js"
 import { slidePart } from "./package-address.js"
+import { partBytes } from "./part-markup.js"
 import { readShapes, shapeKind, type ReadShape } from "./read-shapes.js"
+import { frameSize, scaledGrid } from "./table-size.js"
 import { writeTrait } from "./trait-xml.js"
 import { slideThemes } from "./trait-xml-theme.js"
-import type { Parts } from "./xml-codec.js"
+import type { ElementAt, Parts } from "./xml-codec.js"
 
 type Fields = Record<string, FieldEdit<unknown>>
 
 function entries(patch: ElementPatch): readonly (readonly [TraitName, Readonly<Fields>])[] {
   return Object.entries(patch) as [TraitName, Fields][]
+}
+
+function boxLast(body: NodeRegister | undefined): boolean {
+  const patches = (body?.landed ?? []).filter((row) => row.visible).map((row) => rowOf(row, "table").patch)
+  const box = patches.findLastIndex((patch) => patch.box !== undefined)
+  return box > patches.findLastIndex((patch) => patch.table !== undefined)
+}
+
+function sizedTable(parts: Parts, at: ElementAt, fields: Fields): Parts {
+  const before = frameSize(partBytes(parts, at.part), at.shape)
+  const next = writeTrait(parts, at, "box", fields)
+  const written = partBytes(next, at.part)
+  const fitted = scaledGrid(written, at.shape, before)
+  if (fitted === written) return next
+  const sized = new Map(next)
+  sized.set(at.part, fitted)
+  return sized
+}
+
+function writtenTable(parts: Parts, at: ElementAt, written: ReadonlyMap<TraitName, Fields>, last: boolean): Parts {
+  const box = written.get("box")
+  const sized = (from: Parts) => (box === undefined ? from : sizedTable(from, at, box))
+  let next = last ? parts : sized(parts)
+  for (const [trait, fields] of written) if (trait !== "box") next = writeTrait(next, at, trait, fields)
+  return last ? sized(next) : next
 }
 
 function writtenNotes(
@@ -120,6 +147,7 @@ function writtenElement(
   }
   if (shape === undefined) return parts
   const at = { slide: shape.slide, part: shape.part, shape: shape.shape }
+  if (shape.contentKind === "table") return writtenTable(parts, at, written, boxLast(body))
   let next = parts
   for (const [trait, fields] of written) next = writeTrait(next, at, trait, fields)
   return next

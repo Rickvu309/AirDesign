@@ -13,7 +13,7 @@ export type ElementFacts = {
 const turns: readonly FieldKey[] = ["box.rot", "box.flipH", "box.flipV"]
 
 const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
-  table: ["box.w", "box.h", ...turns],
+  table: turns,
   chart: turns,
   slide: ["fill.alpha"],
   kept: ["identity.name", "identity.alt", "identity.hidden"],

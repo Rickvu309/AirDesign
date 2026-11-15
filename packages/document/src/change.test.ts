@@ -165,7 +165,7 @@ describe("planChange refuses the whole change and names every element it cannot 
       ok: false,
       refusals: [{ node: "258.5", trait: "box", code: "group-box" }],
     })
-    expect(plan({ target: { role: "table", slide: slideId("259") }, box: { w: 1 } })).toEqual({
+    expect(plan({ target: { role: "table", slide: slideId("259") }, box: { rot: 30 } })).toEqual({
       ok: false,
       refusals: [{ node: "259.3", trait: "box", code: "kind" }],
     })

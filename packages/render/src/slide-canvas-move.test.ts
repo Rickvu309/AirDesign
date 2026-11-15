@@ -379,14 +379,18 @@ describe("SlideCanvas boxes", () => {
     expect(boxes).toEqual([])
   })
 
-  it("moves a turned element but offers no corner to resize it", async () => {
+  it("resizes a turned element by a corner and keeps the opposite corner where it was on screen", async () => {
     const { host, boxes } = await mounted([element(id, { box: { ...place, rotation: 30 } })])
     await focus(frameOf(host))
     expect(selection(host)?.style.transform).toBe("rotate(30deg)")
-    expect(host.querySelectorAll("[data-grip]:not([data-grip=move])")).toHaveLength(0)
-    await key(frameOf(host), "keydown", "ArrowLeft")
-    await key(frameOf(host), "keyup", "ArrowLeft")
-    expect(boxes).toEqual([[id, { ...start, x: start.x - nudgeStep }]])
+    expect(
+      [...host.querySelectorAll<HTMLElement>("[data-grip]:not([data-grip=move])")].map((each) => each.dataset.grip),
+    ).toEqual(["top-left", "top-right", "bottom-left", "bottom-right"])
+    expect(
+      ["top-left", "top-right", "bottom-left", "bottom-right"].map((name) => grip(host, name).style.cursor),
+    ).toEqual(["ns-resize", "ew-resize", "ew-resize", "ns-resize"])
+    await drag(grip(host, "bottom-right"), [390, 150], [410, 140])
+    expect(boxes).toEqual([[id, { x: 515_718, y: 523_191, cx: 5_674_165, cy: 1_544_418 }]])
   })
 
   it("names each element and puts a movable element with no text to edit in the tab order", async () => {

@@ -1,4 +1,11 @@
-import { elementId, openingTable, writeTableValue, type ElementId, type TableChange } from "@airdesign/document"
+import {
+  elementId,
+  openingTable,
+  writeTableValue,
+  type Box,
+  type ElementId,
+  type TableChange,
+} from "@airdesign/document"
 import { act, createElement } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, describe, expect, it } from "vitest"
@@ -76,6 +83,7 @@ async function mounted(entering: ElementId | null, overrides: Partial<CanvasElem
   store.publish({ id, kind: "table", text: "", picture: null })
   const changes: TableChange[] = []
   const removed: ElementId[] = []
+  const boxes: Box[] = []
   const host = document.createElement("div")
   document.body.append(host)
   const root = createRoot(host)
@@ -94,7 +102,7 @@ async function mounted(entering: ElementId | null, overrides: Partial<CanvasElem
           width: 800,
           entering: entering === null ? null : { id: entering },
           onEdit: () => undefined,
-          onBox: () => undefined,
+          onBox: (_: ElementId, box: Box) => boxes.push(box),
           onRemove: (targets: readonly ElementId[]) => removed.push(...targets),
           onTable: (_: ElementId, change: TableChange) => changes.push(change),
           tableBar: bar,
@@ -102,7 +110,7 @@ async function mounted(entering: ElementId | null, overrides: Partial<CanvasElem
       )
     })
   await draw(2)
-  return { host, store, changes, removed, draw }
+  return { host, store, changes, removed, boxes, draw }
 }
 
 function cell(host: HTMLElement, spot: string): HTMLElement {
@@ -118,6 +126,14 @@ async function key(target: Element | null, name: string, shiftKey = false) {
   })
 }
 
+async function pointer(target: EventTarget, type: string, x: number, y: number) {
+  await act(async () => {
+    target.dispatchEvent(
+      new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 1, button: 0 }),
+    )
+  })
+}
+
 async function typed(target: HTMLElement, text: string) {
   await act(async () => {
     target.textContent = text
@@ -130,9 +146,21 @@ describe("SlideCanvas table", () => {
     const { host, changes } = await mounted(id)
     expect(host.ownerDocument.activeElement).toBe(cell(host, "0.0"))
     expect(host.querySelector<HTMLElement>("[data-selection]")?.dataset.selection).toBe(id)
-    expect(host.querySelector("[data-selection] [style*='nwse-resize']")).toBeNull()
     await typed(cell(host, "0.0"), "Region")
     expect(changes).toEqual([{ change: "cell", row: 0, column: 0, text: "Region" }])
+  })
+
+  it("resizes a table by a corner and paints its columns and rows at the new size", async () => {
+    const { host, boxes } = await mounted(id)
+    const corner = host.querySelector<HTMLElement>('[data-selection] [data-grip="bottom-right"]')
+    if (corner === null) throw new Error("no corner")
+    await pointer(corner, "pointerdown", 390, 79)
+    await pointer(host.ownerDocument, "pointermove", 420, 99)
+    await pointer(host.ownerDocument, "pointerup", 420, 99)
+    expect(boxes).toEqual([{ x: 457_200, y: 457_200, cx: 5_943_600, cy: 1_046_480 }])
+    const art = host.querySelector<HTMLElement>("[aria-colcount]")
+    expect(art?.style.gridTemplateColumns).toBe("195px 195px")
+    expect(art?.style.gridTemplateRows).toBe("minmax(34.3333px, auto) minmax(34.3333px, auto)")
   })
 
   it("moves through the cells with Tab and Shift+Tab, and Tab in the last cell adds a row and enters it", async () => {

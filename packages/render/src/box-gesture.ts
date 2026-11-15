@@ -18,6 +18,7 @@ export type Drag = {
   readonly start: Box
   readonly moved: boolean
   readonly keepRatio?: boolean
+  readonly rotation?: number
   readonly enter?: ElementId
 }
 
@@ -78,12 +79,40 @@ function ratioKept(start: Box, cx: number, cy: number): { readonly cx: number; r
   return { cx: Math.round(start.cx * scale), cy: Math.round(start.cy * scale) }
 }
 
-export function resizedBox(start: Box, corner: Corner, dx: number, dy: number, keepRatio = false): Box {
+function turned(point: Point, degrees: number): Point {
+  const turn = (degrees * Math.PI) / 180
+  const cos = Math.cos(turn)
+  const sin = Math.sin(turn)
+  return { x: point.x * cos - point.y * sin, y: point.x * sin + point.y * cos }
+}
+
+function uprightResize(start: Box, corner: Corner, dx: number, dy: number, keepRatio: boolean): Box {
   const left = corner === "top-left" || corner === "bottom-left"
   const top = corner === "top-left" || corner === "top-right"
   const free = { cx: side(start.cx, left ? -dx : dx), cy: side(start.cy, top ? -dy : dy) }
   const { cx, cy } = keepRatio ? ratioKept(start, free.cx, free.cy) : free
   return { x: left ? start.x + start.cx - cx : start.x, y: top ? start.y + start.cy - cy : start.y, cx, cy }
+}
+
+function turnedResize(start: Box, corner: Corner, dx: number, dy: number, keepRatio: boolean, rotation: number): Box {
+  const upright = uprightResize(start, corner, dx, dy, keepRatio)
+  if (rotation === 0) return upright
+  const { cx, cy } = upright
+  const across = corner === "top-left" || corner === "bottom-left" ? 1 : -1
+  const down = corner === "top-left" || corner === "top-right" ? 1 : -1
+  const kept = turned({ x: (across * start.cx) / 2, y: (down * start.cy) / 2 }, rotation)
+  const next = turned({ x: (across * cx) / 2, y: (down * cy) / 2 }, rotation)
+  return {
+    x: Math.round(start.x + start.cx / 2 + kept.x - next.x - cx / 2),
+    y: Math.round(start.y + start.cy / 2 + kept.y - next.y - cy / 2),
+    cx,
+    cy,
+  }
+}
+
+export function resizedBox(start: Box, corner: Corner, dx: number, dy: number, keepRatio = false, rotation = 0): Box {
+  const own = turned({ x: dx, y: dy }, -rotation)
+  return turnedResize(start, corner, Math.round(own.x), Math.round(own.y), keepRatio, rotation)
 }
 
 export function isArrow(key: string): boolean {
@@ -97,10 +126,10 @@ export function nudgedBox(start: Box, key: string, large: boolean, slide: SlideS
   return movedBox(start, arrow.x * step, arrow.y * step, slide)
 }
 
-export function resizedByKey(start: Box, key: string): Box | null {
+export function resizedByKey(start: Box, key: string, rotation = 0): Box | null {
   const arrow = arrows.get(key)
   if (arrow === undefined) return null
-  return resizedBox(start, "bottom-right", arrow.x * nudgeStep, arrow.y * nudgeStep)
+  return turnedResize(start, "bottom-right", arrow.x * nudgeStep, arrow.y * nudgeStep, false, rotation)
 }
 
 export function draggedBox(gesture: Drag, at: Point, width: number, slide: SlideSize): Box {
@@ -108,7 +137,7 @@ export function draggedBox(gesture: Drag, at: Point, width: number, slide: Slide
   const dy = emuOf(at.y - gesture.from.y, width, slide)
   return gesture.grip === "move"
     ? movedBox(gesture.start, dx, dy, slide)
-    : resizedBox(gesture.start, gesture.grip, dx, dy, gesture.keepRatio === true)
+    : resizedBox(gesture.start, gesture.grip, dx, dy, gesture.keepRatio === true, gesture.rotation ?? 0)
 }
 
 export function travelled(from: Point, at: Point): boolean {

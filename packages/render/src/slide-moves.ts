@@ -52,10 +52,6 @@ export function canDrag(element: CanvasElement): boolean {
   return canMove(element) && element.connection === undefined
 }
 
-export function canResize(element: CanvasElement): boolean {
-  return canDrag(element) && element.box?.rotation === 0 && element.table === undefined
-}
-
 function inText(target: EventTarget, frame: HTMLElement): boolean {
   const text = target instanceof Element ? target.closest(editableText) : null
   return text !== null && frame.contains(text)
@@ -198,10 +194,21 @@ export function useMoves(
     frame.focus()
     only(id)
     const start = startOf(element)
-    if (start === null || !(grip === "move" ? canDrag(element) : canResize(element))) return
+    if (start === null || !canDrag(element)) return
     const from = { x: event.clientX, y: event.clientY }
     const keepRatio = element.kind === "picture"
-    const drag: Drag = { by: "pointer", id, grip, pointer: event.pointerId, from, start, moved: false, keepRatio }
+    const rotation = element.box?.rotation ?? 0
+    const drag: Drag = {
+      by: "pointer",
+      id,
+      grip,
+      pointer: event.pointerId,
+      from,
+      start,
+      moved: false,
+      keepRatio,
+      rotation,
+    }
     follow(enter === undefined ? drag : { ...drag, enter }, frame.ownerDocument)
   }
 
@@ -287,8 +294,8 @@ export function useMoves(
       return
     }
     const resizing = event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey
-    if (resizing && start !== null && canResize(element) && now?.by !== "pointer") {
-      const grown = resizedByKey(start, event.key)
+    if (resizing && start !== null && canDrag(element) && now?.by !== "pointer") {
+      const grown = resizedByKey(start, event.key, element.box?.rotation ?? 0)
       if (grown === null) return
       event.preventDefault()
       if (now === null) gesture.current = { by: "keys", id, start }
