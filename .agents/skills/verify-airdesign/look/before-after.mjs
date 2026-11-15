@@ -90,6 +90,22 @@ async function textBoxes(page) {
   })
 }
 
+const clickWait = 2_000
+
+export async function clickEach(page, selectors) {
+  const skipped = []
+  for (const selector of selectors) {
+    const target = page.locator(selector).first()
+    const shown = await target.waitFor({ state: "visible", timeout: clickWait }).then(
+      () => true,
+      () => false,
+    )
+    if (shown) await target.click()
+    else skipped.push(selector)
+  }
+  return skipped
+}
+
 export async function captureSide({ browser, side, block, runtime }) {
   const context = await browser.newContext({ ...designContext, baseURL: side.origin })
   try {
@@ -101,12 +117,7 @@ export async function captureSide({ browser, side, block, runtime }) {
     } catch (error) {
       return { error: String(error?.message ?? error).split("\n")[0] }
     }
-    const skipped = []
-    for (const selector of block.click) {
-      const target = page.locator(selector).first()
-      if (await target.isVisible().catch(() => false)) await target.click()
-      else skipped.push(selector)
-    }
+    const skipped = await clickEach(page, block.click)
     await settle(page)
     const full = await page.screenshot({ animations: "disabled" })
     const viewport = page.viewportSize() ?? designViewport
@@ -166,6 +177,15 @@ export function composeBlock(block, sides, shots) {
       sides: drawn,
     },
   }
+}
+
+export function fullNames(blocks) {
+  const seen = new Map()
+  return blocks.map(({ state }) => {
+    const count = (seen.get(state) ?? 0) + 1
+    seen.set(state, count)
+    return count === 1 ? state : `${state}-${String(count)}`
+  })
 }
 
 export function saveFull(out, state, side, shot) {

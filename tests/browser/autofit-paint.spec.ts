@@ -122,7 +122,7 @@ async function opened(page: Page, file: string | Buffer): Promise<void> {
   await page.evaluate(() => document.fonts.ready.then(() => undefined))
 }
 
-test("the canvas anchors text in columns, shrinks text to fit and grows a box to fit as its file says, and a person turns autofit on through Undo, a reload and the export @export", async ({
+test("the canvas anchors text in columns, shrinks text to fit and grows a box to fit as its file says, and a person chooses each autofit through Undo, a reload, the export and a new import @export", async ({
   page,
 }, testInfo) => {
   await opened(page, await fitDeck())
@@ -152,15 +152,21 @@ test("the canvas anchors text in columns, shrinks text to fit and grows a box to
   const autofit = page
     .locator("[data-design-element] section")
     .filter({ has: page.getByRole("heading", { name: "Text box", exact: true }) })
-    .getByRole("group", { name: "Autofit", exact: true })
-  await expect(autofit.getByRole("button", { name: "Off" })).toHaveAttribute("aria-pressed", "true")
-  await autofit.getByRole("button", { name: "Shrink" }).click()
+    .getByRole("combobox", { name: "Autofit", exact: true })
+  const choose = async (option: string) => {
+    await autofit.click()
+    await page.getByRole("option", { name: option, exact: true }).click()
+    await expect(autofit).toHaveText(new RegExp(`^${option}`))
+  }
+  await expect(autofit).toHaveText(/^Do not Autofit/)
+  await choose("Shrink text on overflow")
   await expect.poll(async () => (await laid(shapeAt(page, "25"))).font).toBeLessThan(loose.font)
   const fitted = await laid(shapeAt(page, "25"))
   expect(fitted.textBottom).toBeLessThanOrEqual(fitted.bottom + 1)
   await page.getByRole("button", { name: "Undo text box", exact: true }).click()
   await expect.poll(async () => (await laid(shapeAt(page, "25"))).font).toBe(loose.font)
-  await autofit.getByRole("button", { name: "Grow" }).click()
+  await expect(autofit).toHaveText(/^Do not Autofit/)
+  await choose("Resize shape to fit text")
   await expect.poll(async () => (await laid(shapeAt(page, "25"))).height).toBeGreaterThan(loose.height)
   const taller = await laid(shapeAt(page, "25"))
   expect(taller.font).toBe(loose.font)
@@ -178,6 +184,12 @@ test("the canvas anchors text in columns, shrinks text to fit and grows a box to
   expect(xml).toMatch(/<p:cNvPr id="25" name="Box 25"\/>.*?<a:bodyPr anchor="t"><a:spAutoFit\/><\/a:bodyPr>/)
   await opened(page, file)
   await expect.poll(async () => (await laid(shapeAt(page, "25"))).height).toBeCloseTo(taller.height, 0)
+  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await shapeAt(page, "25").click({ position: { x: 4, y: 4 } })
+  await expect(autofit).toHaveText(/^Resize shape to fit text/)
+  await choose("Do not Autofit")
+  await expect.poll(async () => (await laid(shapeAt(page, "25"))).height).toBeCloseTo(loose.height, 0)
+  expect((await laid(shapeAt(page, "25"))).font).toBe(loose.font)
 
   await shapeAt(page, "22").locator('[contenteditable="true"]').focus()
   await page.keyboard.press("Control+End")

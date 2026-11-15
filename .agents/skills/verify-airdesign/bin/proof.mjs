@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url"
 import { openBrowser } from "./browser.mjs"
 import { proofFolder, publish } from "./publish.mjs"
 import { renderBlocks, themeCss } from "../look/annotate.mjs"
-import { captureSide, composeBlock, driverFor, saveFull } from "../look/before-after.mjs"
+import { captureSide, composeBlock, driverFor, fullNames, saveFull } from "../look/before-after.mjs"
 import { readCallouts } from "../look/callouts.mjs"
 import { fragment } from "../look/fragment.mjs"
 import { find } from "../look/states.mjs"
@@ -110,11 +110,12 @@ async function shoot({ blocks, sides, runtime, out }) {
     const composed = []
     const warnings = []
     const rows = []
-    for (const block of blocks) {
+    const names = fullNames(blocks)
+    for (const [index, block] of blocks.entries()) {
       const shots = await Promise.all(sides.map((side) => captureSide({ browser, side, block, runtime })))
       const last = shots.at(-1)
       if (last.error) throw new Error(`${block.state} was not reached on ${sides.at(-1).label}: ${last.error}`)
-      const files = sides.map((side, index) => saveFull(out, block.state, side, shots[index]))
+      const files = sides.map((side, at) => saveFull(out, names[index], side, shots[at]))
       rows.push({ title: block.title, before: sides.length > 1 ? files[0] : null, after: files.at(-1) })
       const done = composeBlock(block, sides, shots)
       warnings.push(...done.warnings)
