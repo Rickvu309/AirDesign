@@ -64,6 +64,16 @@ const cases = [
       '<div data-tool-state="done"><span>Edited the deck</span></div><code>airdesign_edit_deck</code><p>Address https://mcp.example.test/mcp_v1</p>',
   },
   {
+    detector: "internal-identifier",
+    fires: "<ul><li><span>Attached to: ctrTitle 0, subTitle 1</span></li></ul>",
+    spares: "<ul><li><span>Attached to: Title, Subtitle, Rectangle 4</span></li></ul>",
+  },
+  {
+    detector: "internal-identifier",
+    fires: '<div role="option"><span>Site 3</span></div>',
+    spares: '<div role="option"><span>Top</span></div><p>Point 2 of the site list</p><p>Site map</p>',
+  },
+  {
     detector: "invisible-control",
     fires:
       '<div style="width:800px;height:450px;background:white;position:relative"><div contenteditable="true" style="position:absolute;left:60px;top:40px;width:668px;height:84px"></div></div>',

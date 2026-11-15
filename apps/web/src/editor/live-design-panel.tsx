@@ -45,7 +45,9 @@ import {
   type PanelSection,
 } from "@/design/panel"
 import { changeDesign, fileValue } from "@/design/design-change"
+import { plainNames } from "@/design/node-names"
 import { rebasedChange } from "@/design/rebase"
+import { siteNames } from "@/design/site-names"
 import { deviceScope } from "@/design/trait-edit"
 import { backgroundHex, designShown, themeOf, type DesignShown } from "@/design-shown"
 import { BackgroundKind, DesignHead, DesignSection, ElementDesign, SectionRows } from "@/editor/design-panel"
@@ -174,7 +176,7 @@ function nodeChoices(deck: DesigningDeck, connector: ScopedElement): readonly No
   const { shown } = deck
   const scope = deviceScope(shown.shownParts.current, shown.shownRegister.current ?? openRegister("", ""))
   const nodes = shown.store.current.slides()[shown.current]?.elements ?? []
-  return nodes.flatMap((node) => {
+  const found = nodes.flatMap((node) => {
     const view = node === connector.node ? undefined : scope.view(node)
     if (
       view === undefined ||
@@ -185,8 +187,18 @@ function nodeChoices(deck: DesigningDeck, connector: ScopedElement): readonly No
       return []
     if ((view.parent ?? null) !== (connector.parent ?? null)) return []
     const name = fieldsOf(shown.displayParts.current, node)?.["identity.name"]?.value
-    return [{ node, name: typeof name === "string" && name !== "" ? name : node }]
+    const frame = view.box ?? { cx: 0, cy: 0 }
+    return [
+      {
+        node,
+        name: typeof name === "string" ? name : "",
+        kind: view.facts.kind,
+        sites: siteNames(view.outline, frame),
+      },
+    ]
   })
+  const names = plainNames(found)
+  return found.map(({ node, sites }, at) => ({ node, name: names[at] ?? node, sites }))
 }
 
 function elementDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement; model: PanelModel } | null {

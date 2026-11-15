@@ -16,6 +16,7 @@ import { TableControl } from "@/design/controls/table"
 import { TextControl } from "@/design/controls/text"
 import { ToggleControl } from "@/design/controls/toggle"
 import { UnionControl } from "@/design/controls/union"
+import { SiteControl } from "@/design/controls/site"
 import type { ControlKind, ControlProps } from "@/design/panel"
 
 export const controlViews: Partial<Readonly<Record<ControlKind, ComponentType<ControlProps>>>> = {
@@ -36,4 +37,5 @@ export const controlViews: Partial<Readonly<Record<ControlKind, ComponentType<Co
   table: TableControl,
   asset: AssetControl,
   node: NodeControl,
+  site: SiteControl,
 }
