@@ -54,17 +54,33 @@ export const chosenSlides = (count, cap = slidesPerDeck) => {
   return Array.from({ length: size }, (_, step) => Math.floor((step * count) / size) + 1)
 }
 
-export const fidelityLines = ({ rows, skipped, decks, cap = slidesPerDeck, bar = matchBar, worst = worstShown }) => {
+export const fidelityLines = ({
+  rows,
+  skipped,
+  decks,
+  goal,
+  cap = slidesPerDeck,
+  bar = matchBar,
+  worst = worstShown,
+}) => {
   const matching = rows.filter((row) => row.match).length
   const measured = new Set(rows.map((row) => row.deck)).size
   const ranked = [...rows].sort((left, right) => right.difference - left.difference).slice(0, worst)
   return [
-    `metric paint-fidelity  now ${matching}  goal ${rows.length}  at most ${cap} slides per deck, ${measured} of ${decks} decks, bar ${bar} of 255`,
+    `metric paint-fidelity  now ${matching}  goal ${goal}  ${rows.length} slides compared, at most ${cap} per deck, ${measured} of ${decks} decks, bar ${bar} of 255`,
     ...ranked.map(
       (row) => `paint-fidelity worst ${row.deck} slide ${row.slide} difference ${row.difference.toFixed(1)}`,
     ),
     ...skipped.map((row) => `paint-fidelity skipped ${row.deck}: ${row.reason}`),
   ]
+}
+
+export const fidelityFailure = ({ rows, outcome }) => {
+  if (outcome === "failed")
+    return "paint-fidelity crashed before it finished, so its count is not the corpus. Read the lines above for why."
+  if (rows.length === 0)
+    return "paint-fidelity judged 0 decks, so its count says nothing. Read the lines above for why."
+  return undefined
 }
 
 export const reported = async ({ work, limit, say }) => {
@@ -76,9 +92,12 @@ export const reported = async ({ work, limit, say }) => {
   try {
     if ((await Promise.race([work(), deadline])) === stopped) {
       say(`paint-fidelity stopped at its limit of ${limit / 1000} seconds. The count covers what finished.`)
+      return "stopped"
     }
+    return "finished"
   } catch (error) {
     say(`paint-fidelity not finished: ${error instanceof Error ? error.message : String(error)}`)
+    return "failed"
   } finally {
     clearTimeout(timer)
   }

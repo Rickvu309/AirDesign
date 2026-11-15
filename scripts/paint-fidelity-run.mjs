@@ -8,7 +8,15 @@ import { chromium } from "@playwright/test"
 import { browserCookies } from "../.agents/skills/verify-airdesign/bin/browser-cookies.mjs"
 import { PNG } from "pngjs"
 import { takeMachineLock } from "./machine-lock.mjs"
-import { chosenSlides, compareSmall, fidelityLines, paintSize, reported, scaleDown } from "./paint-fidelity.mjs"
+import {
+  chosenSlides,
+  compareSmall,
+  fidelityFailure,
+  fidelityLines,
+  paintSize,
+  reported,
+  scaleDown,
+} from "./paint-fidelity.mjs"
 import { readCorpus } from "./pptx-corpus.mjs"
 import { readMachine, renderCache, renderCacheFolder, renderCode, renderPages, renderSettings } from "./pptx-render.mjs"
 
@@ -163,7 +171,7 @@ const skipped = []
 let stack
 let browser
 
-await reported({
+const outcome = await reported({
   limit: runLimit,
   say,
   work: async () => {
@@ -179,8 +187,13 @@ await reported({
   },
 })
 
-for (const line of fidelityLines({ rows, skipped, decks: names.length })) say(line)
+const recorded = JSON.parse(fs.readFileSync(path.join(root, "metrics.json"), "utf8"))["paint-fidelity"]
+for (const line of fidelityLines({ rows, skipped, decks: names.length, goal: recorded.goal })) say(line)
+const matching = rows.filter((row) => row.match).length
+if (matching !== recorded.now) say(`paint-fidelity is ${matching} and metrics.json says ${recorded.now}.`)
 await browser?.close().catch(() => undefined)
 if (stack !== undefined)
   await run("node", [verify, "stop", stack.run]).catch(() => say("paint-fidelity stack was already gone"))
-process.exit(0)
+const failure = fidelityFailure({ rows, outcome })
+if (failure !== undefined) console.error(failure)
+process.exit(failure === undefined ? 0 : 1)

@@ -1,4 +1,5 @@
-import { changedSources, survivorLines, totalLine } from "./check-mutation.mjs"
+import { execFileSync } from "node:child_process"
+import { changedSources, linkedPaths, survivorLines, totalLine } from "./check-mutation.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -82,3 +83,18 @@ same(
   "mutants 7  killed 2  survived 1  no-coverage 1  timeout 1  errors 2",
 )
 same("no mutants total zero", totalLine([]), "mutants 0  killed 0  survived 0  no-coverage 0  timeout 0  errors 0")
+
+same(
+  "every symlink git tracks is kept out of the sandbox Stryker copies, which cannot copy a linked folder",
+  linkedPaths(
+    "100644 1a2b 0\tAGENTS.md\n120000 3c4d 0\t.claude/skills/verify-airdesign\n160000 5e6f 0\tvendor/sub\n120000 7a8b 0\tdocs/link\n",
+  ),
+  ["/.claude/skills/verify-airdesign", "/docs/link"],
+)
+same(
+  "the repo's linked skill folders are among them",
+  linkedPaths(execFileSync("git", ["ls-files", "-s"], { encoding: "utf8" })).includes(
+    "/.claude/skills/verify-airdesign",
+  ),
+  true,
+)

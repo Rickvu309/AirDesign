@@ -169,7 +169,6 @@ jobs:
           AIRDESIGN_WEB_BUILT: "1"
       - name: paint-fidelity
         if: ${{ !cancelled() }}
-        continue-on-error: true
         timeout-minutes: 20
         run: pnpm metric:paint-fidelity
       - if: ${{ !cancelled() }}
@@ -224,5 +223,6 @@ jobs:
           if [ "$code" -eq 124 ] || [ "$code" -eq 137 ]; then
             echo "mutation stopped at its 30 minute limit with no total. It blocks nothing."
           elif [ "$code" -ne 0 ]; then
-            echo "mutation could not finish, exit $code. It blocks nothing."
+            echo "mutation crashed, exit $code. Its lines above say why."
+            exit "$code"
           fi

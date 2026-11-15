@@ -7,6 +7,7 @@ import {
   colorDifference,
   compareSlides,
   compareSmall,
+  fidelityFailure,
   fidelityLines,
   matchBar,
   paintSize,
@@ -127,12 +128,13 @@ same(
     ],
     skipped: [{ deck: "c.pptx", reason: "no painted slide on the page" }],
     decks: 3,
+    goal: 190,
     cap: 12,
     bar: 10,
     worst: 2,
   }),
   [
-    "metric paint-fidelity  now 1  goal 3  at most 12 slides per deck, 2 of 3 decks, bar 10 of 255",
+    "metric paint-fidelity  now 1  goal 190  3 slides compared, at most 12 per deck, 2 of 3 decks, bar 10 of 255",
     "paint-fidelity worst b.pptx slide 1 difference 90.3",
     "paint-fidelity worst a.pptx slide 2 difference 40.0",
     "paint-fidelity skipped c.pptx: no painted slide on the page",
@@ -140,27 +142,49 @@ same(
 )
 same(
   "no measured slide still prints the metric",
-  fidelityLines({ rows: [], skipped: [], decks: 18, cap: 12, bar: 10 }),
-  ["metric paint-fidelity  now 0  goal 0  at most 12 slides per deck, 0 of 18 decks, bar 10 of 255"],
+  fidelityLines({ rows: [], skipped: [], decks: 18, goal: 190, cap: 12, bar: 10 }),
+  ["metric paint-fidelity  now 0  goal 190  0 slides compared, at most 12 per deck, 0 of 18 decks, bar 10 of 255"],
+)
+
+const row = { deck: "a.pptx", slide: 1, difference: 2, match: true }
+same(
+  "a run that judged no deck fails",
+  fidelityFailure({ rows: [], outcome: "finished" }),
+  "paint-fidelity judged 0 decks, so its count says nothing. Read the lines above for why.",
+)
+same(
+  "a run that crashed fails, even with some slides compared",
+  fidelityFailure({ rows: [row], outcome: "failed" }),
+  "paint-fidelity crashed before it finished, so its count is not the corpus. Read the lines above for why.",
+)
+same("a finished run that compared slides passes", fidelityFailure({ rows: [row], outcome: "finished" }), undefined)
+same(
+  "a run stopped at its limit passes with what finished",
+  fidelityFailure({ rows: [row], outcome: "stopped" }),
+  undefined,
 )
 
 const said = []
 const say = (line) => said.push(line)
-await reported({
-  limit: 1000,
-  say,
-  work: async () => {
-    throw new Error("no browser")
-  },
-})
+same(
+  "a crash is told",
+  await reported({
+    limit: 1000,
+    say,
+    work: async () => {
+      throw new Error("no browser")
+    },
+  }),
+  "failed",
+)
 same("a crash is printed and does not throw", said, ["paint-fidelity not finished: no browser"])
 said.length = 0
-await reported({ limit: 10, say, work: () => new Promise(() => undefined) })
+same("a timeout is told", await reported({ limit: 10, say, work: () => new Promise(() => undefined) }), "stopped")
 same("a timeout is printed and does not throw", said, [
   "paint-fidelity stopped at its limit of 0.01 seconds. The count covers what finished.",
 ])
 said.length = 0
-await reported({ limit: 1000, say, work: async () => "done" })
+same("a finished run is told", await reported({ limit: 1000, say, work: async () => "done" }), "finished")
 same("a finished run prints nothing extra", said, [])
 
 console.log("paint-fidelity tests passed")

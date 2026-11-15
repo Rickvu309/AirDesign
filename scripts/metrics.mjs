@@ -82,6 +82,7 @@ const judgedBy = {
   [judgedWrites]: "scripts/pptx-check.mjs",
   "eval-coverage": "tests/eval-coverage.test.ts",
   "design-findings": "scripts/design-findings.mjs",
+  "paint-fidelity": "scripts/paint-fidelity-run.mjs",
 }
 
 const record = (root) => JSON.parse(fs.readFileSync(path.join(root, "metrics.json"), "utf8"))
