@@ -141,7 +141,12 @@ describe("index format", () => {
   const titled = {
     ...page.elements[0]!,
     role: "title",
-    design: { fill: ["accent1", "style"], "text.size": [36, "master"], "text.font": ["+mj-lt", "master"], "box.flipH": [true] },
+    design: {
+      fill: ["accent1", "style"],
+      "text.size": [36, "master"],
+      "text.font": ["+mj-lt", "master"],
+      "box.flipH": [true],
+    },
     kept: ["geometry"],
     placed: { x: 1, y: 2, cx: 3, cy: 4 },
   } as const

@@ -14,7 +14,7 @@ import {
 import { describe, expect, it } from "vitest"
 import * as z from "zod/v4"
 import { agentColor, colorPattern, readAgentColor } from "./agent-color.js"
-import { agentSchema, designOf, flat, foldDesign, readAgent, shownDesign, themedDesign } from "./agent-form.js"
+import { agentSchema, designOf, flat, foldDesign, readAgent, shownDesign } from "./agent-form.js"
 
 const navy = "1F4E79"
 const black = "000000"
@@ -325,17 +325,5 @@ describe("a text that shows a theme font", () => {
     expect(designOf({ reads: { "text.font": { value: "Abadi" } }, kept: [] }).design).toEqual({
       "text.font": ["Abadi"],
     })
-  })
-
-  it("names the theme font its palette gives now, and leaves a font named in the file as it is", () => {
-    const fonts = { major: "Georgia", minor: "Calibri" }
-    expect(themedDesign({ "text.font": ["+mj-lt", "master"], "text.size": [44] }, fonts)).toEqual({
-      "text.font": ["Georgia", "master"],
-      "text.size": [44],
-    })
-    expect(themedDesign({ "text.font": ["+mn-lt", "style"] }, fonts)).toEqual({ "text.font": ["Calibri", "style"] })
-    const named: Design = { "text.font": ["Calibri Light", "master"] }
-    expect(themedDesign(named, fonts)).toBe(named)
-    expect(themedDesign({ "text.font": ["+mj-lt"], "text.size": [44] }, {})).toEqual({ "text.size": [44] })
   })
 })

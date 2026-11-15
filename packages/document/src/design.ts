@@ -169,7 +169,8 @@ const hex = /^[0-9A-F]{6}$/
 
 export function readPalette(raw: unknown): Palette | null {
   const row = record(raw)
-  if (row === null || !onlyKeys(row, row.fonts === undefined ? ["slots", "map"] : ["slots", "map", "fonts"])) return null
+  if (row === null || !onlyKeys(row, row.fonts === undefined ? ["slots", "map"] : ["slots", "map", "fonts"]))
+    return null
   const slots = record(row.slots)
   const map = record(row.map)
   if (slots === null || map === null) return null
