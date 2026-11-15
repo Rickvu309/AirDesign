@@ -71,6 +71,7 @@ export const paintFill = (
     stops.push({ position: Number(position) / 100000, color })
   }
   if (stops.length === 0) return null
+  stops.sort((left, right) => left.position - right.position)
   const linear = paintChild(children, fill, "a:lin")
   const angle = linear === undefined ? null : paintAttribute(linear, "ang")
   if (linear !== undefined && (angle === null || !/^\d+$/.test(angle) || Number(angle) >= 21600000)) return null
