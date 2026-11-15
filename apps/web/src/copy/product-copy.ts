@@ -22,6 +22,10 @@ export function unstarOf(name: string): string {
   return `Remove star from ${name}`
 }
 
+export function deckActionsOf(name: string): string {
+  return `${name} actions`
+}
+
 export function starredOf(name: string): string {
   return `Starred ${name}`
 }

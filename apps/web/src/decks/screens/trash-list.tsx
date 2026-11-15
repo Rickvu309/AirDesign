@@ -4,6 +4,7 @@ import { DangerDialog } from "@/decks/danger-dialog"
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { trashDeckCards } from "@/decks/sample-decks"
+import { SampleSlide } from "@/decks/screens/sample-slide"
 
 export function RestoreButton({ onClick }: { onClick?: () => void }) {
   return (
@@ -74,6 +75,7 @@ export function TrashList({ confirm = false }: { confirm?: boolean }) {
             edited={deck.edited}
             action={<RestoreButton />}
             previewClassName="h-[180px]"
+            preview={<SampleSlide name={deck.name} />}
           />
         ))}
       </DeckGrid>

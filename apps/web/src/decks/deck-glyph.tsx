@@ -13,6 +13,7 @@ type Glyph =
   | "plug"
   | "star"
   | "starred"
+  | "more"
 
 const native: Record<Glyph, number> = {
   search: 15,
@@ -27,6 +28,7 @@ const native: Record<Glyph, number> = {
   plug: 14,
   star: 16,
   starred: 16,
+  more: 16,
 }
 
 const starPath =
@@ -34,6 +36,15 @@ const starPath =
 
 export function DeckGlyph({ name, size }: { name: Glyph; size?: number }) {
   const box = size ?? native[name]
+  if (name === "more") {
+    return (
+      <svg width={box} height={box} viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <circle cx="3.5" cy="8" r="1.25" />
+        <circle cx="8" cy="8" r="1.25" />
+        <circle cx="12.5" cy="8" r="1.25" />
+      </svg>
+    )
+  }
   if (name === "search") {
     return (
       <svg width={box} height={box} viewBox="0 0 15 15" fill="none" aria-hidden="true">

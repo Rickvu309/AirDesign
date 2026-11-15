@@ -10,7 +10,7 @@ Home (`Recents`, `/`) shows the signed-in person's six most recently edited deck
 - `home-no-decks` with no decks, on a first visit or while Trash holds some, Home shows the `No decks yet` card with its own `Blank deck` and `Import PowerPoint`, beside the `New deck` menu's pair (the menu is `group "New deck"`; scope to it, as `bin/new-deck.mjs` does). No sample deck is shown (PR 381). It never shows with the search's `No decks match` card. States `decks-empty`, `recents-empty`.
 - `home-loading` and `home-failed` while the list loads, Home shows a skeleton (`[aria-busy=true][data-loading=true]`). A failed list shows the alert `Unable to load your decks` with `Try again`.
 - `new-deck` `button "New deck"` opens `Blank deck` and `Import PowerPoint`. While a file imports, an `Importing` card shows; a refused file shows an alert card (see `open-edit-save.md`).
-- `trash-move` `button "Move to Trash"` removes the deck from Home and shows `<name> moved to Trash` with `Undo`.
+- `trash-move` `button "<name> actions"`, then `menuitem "Move to Trash"`, removes the deck from Home and shows `<name> moved to Trash` with `Undo`.
 - `trash-undo` `Undo` brings the deck back.
 - `trash-list` `/trash` says `Decks here are removed for good after 30 days.` and lists trashed decks with `Deleted <when>, <n> days left`. The server deletes trashed decks older than 30 days when the list loads. Trash has no empty-state text, and `Empty Trash` is disabled when it is empty.
 - `trash-restore` `button "Restore"` moves the deck back to Home.
@@ -24,7 +24,7 @@ Home (`Recents`, `/`) shows the signed-in person's six most recently edited deck
 
 - Open `/` after signing in.
 - `Trash` in the side navigation, or `/trash`.
-- The `Move to Trash` button on a deck card or list row.
+- The card's `<name> actions` menu item `Move to Trash`, or the `Move to Trash` button on a list row.
 
 ## Driving it with verify-airdesign
 
@@ -36,7 +36,7 @@ Preconditions:
 - **Run it.** `$V journey <run> deck-list-trash`. Prints `"passed":true`.
 - **Make a deck.** Import `clean.pptx` from Home. Poll `post(deckRoutes.list, {})` until the deck's name is `clean`, the file name without `.pptx`.
 - **Listed.** Open `/`. `heading "clean"` is visible. Evidence `NN-home-lists-deck`.
-- **Move to Trash.** Click `button "Move to Trash"`. The text `clean moved to Trash` appears. `deckRoutes.list` shows the deck under `trash`. Evidence `NN-moved-to-trash`, `NN-api-decks-list.json`.
+- **Move to Trash.** Click `button "clean actions"`, then `menuitem "Move to Trash"`. The text `clean moved to Trash` appears. `deckRoutes.list` shows the deck under `trash`. Evidence `NN-moved-to-trash`, `NN-api-decks-list.json`.
 - **Trash.** Open `/trash`. `heading "clean"` is visible. Evidence `NN-trash-lists-deck`.
 - **Restore.** Click `button "Restore"`. The heading leaves Trash, `deckRoutes.list` lists the deck under `decks`, and Home shows it again. Evidence `NN-restored`.
 - **Empty Trash.** Not in the journey. In a scratch journey: move to Trash, open `/trash`, click `Empty Trash`, then `Delete for good`. `deckRoutes.list` no longer has the deck anywhere and `deckRoutes.open` refuses it.
@@ -45,7 +45,7 @@ Preconditions:
 
 ## Gotchas
 
-- Each journey signs in a new account, so Home starts empty apart from the imported deck. With more than one deck, `button "Move to Trash"` matches one per card; scope it to the card of the deck you mean.
+- Each journey signs in a new account, so Home starts empty apart from the imported deck. With more than one deck, scope a card's buttons to the card of the deck you mean.
 - A rename does not change a deck's edit time, so it does not move the deck up in Recents.
 - Edit times read `Edited just now` only right after the edit. Assert names and server state, not times.
 - The `Undo` toast disappears after a few seconds. Click it at once or skip `trash-undo`.
