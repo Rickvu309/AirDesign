@@ -107,9 +107,7 @@ test("a person sets a text box's font, spacing, margins, anchor, wrap, direction
   await expect(wrap).toHaveAttribute("aria-pressed", "true")
   await wrap.click()
   await expect(wrap).toHaveAttribute("aria-pressed", "false")
-  await expect(
-    body.getByRole("group", { name: "Autofit", exact: true }).getByRole("button", { name: "Shrink" }),
-  ).toBeEnabled()
+  await expect(body.getByRole("combobox", { name: "Autofit", exact: true })).toBeEnabled()
   const direction = body.getByRole("group", { name: "Text direction", exact: true })
   await direction.getByRole("button", { name: "Rotate 270°" }).click()
   await expect.poll(async () => (await shown(shape)).writing).toBe("sideways-lr")

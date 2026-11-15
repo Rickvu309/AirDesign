@@ -44,9 +44,9 @@ test("an agent sets a text box's autofit, anchor and font, which the person sees
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await shapeAt(page, "2").click({ position: { x: 4, y: 4 } })
   const panel = page.locator("[data-design-element]")
-  const autofit = panel.getByRole("group", { name: "Autofit", exact: true })
-  await expect(autofit.getByRole("button", { name: "Shrink" })).toHaveAttribute("aria-pressed", "true")
-  await expect(autofit.getByRole("button", { name: "Off" })).toBeEnabled()
+  const autofit = panel.getByRole("combobox", { name: "Autofit", exact: true })
+  await expect(autofit).toHaveText(/^Shrink text on overflow/)
+  await expect(autofit).toBeEnabled()
 
   const file = testInfo.outputPath(exportName)
   const saving = page.waitForEvent("download")

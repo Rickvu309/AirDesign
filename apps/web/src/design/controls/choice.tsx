@@ -2,12 +2,9 @@ import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { optionWord } from "@/copy/option-copy"
+import { choiceLayout } from "@/design/choice-layout"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
-
-const segments = 4
-const actions = 6
-const rowLength = 3
 
 function ChoiceList({ row, onChange, label, options }: ControlProps & { label: string; options: readonly string[] }) {
   const value = !row.mixed && typeof row.value === "string" ? row.value : null
@@ -41,12 +38,13 @@ export function ChoiceControl(props: ControlProps) {
   const { row, onChange } = props
   const label = useId()
   const options = row.desc.kind === "choice" ? row.desc.options : []
+  const layout = choiceLayout(row.field, options, row.action === true)
   return (
     <div className="flex flex-col gap-1.5" data-control="choice">
       <span id={label} className="text-[length:var(--type-caption)] text-quiet">
         {row.label}
       </span>
-      {options.length > (row.action === true ? actions : segments) ? (
+      {layout === "list" ? (
         <ChoiceList {...props} label={label} options={options} />
       ) : (
         <div
@@ -54,7 +52,7 @@ export function ChoiceControl(props: ControlProps) {
           aria-labelledby={label}
           className={cn(
             "items-center rounded-lg bg-line p-0.5",
-            options.length > rowLength + 1 ? "grid grid-cols-3 gap-y-0.5" : "flex h-8",
+            layout === "grid" ? "grid grid-cols-3 gap-y-0.5" : "flex h-8",
           )}
         >
           {options.map((option) => {

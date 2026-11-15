@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { expect, test } from "@playwright/test"
+import { expect, test, type Page } from "@playwright/test"
 
 type Box = { x: number; y: number; width: number; height: number }
 type Callout = { at: string; note: string }
@@ -9,6 +9,7 @@ type Shot = { full: Buffer; frame: Box; boxes: (Box | null)[] }
 type Side = { key: string; label: string; missing: string }
 type Composer = {
   composeBlock: (block: Block, sides: Side[], shots: Shot[]) => { block: unknown }
+  clickEach: (page: Page, selectors: string[]) => Promise<string[]>
 }
 type Drawer = { blockHtml: (block: unknown) => string; pageHtml: (articles: string[], css: string) => string }
 
@@ -74,4 +75,16 @@ test("annotate puts each arrow tip a few px from its target and no circle on any
   }
   await expect(drawn.locator("li")).toHaveCount(targets.length)
   await sheet.close()
+})
+
+test("a click waits for what the click before it opens, and skips what never shows", async ({ page }) => {
+  const { clickEach } = await load<Composer>("before-after.mjs")
+  await page.setContent(`<body><button id="open" onclick="setTimeout(() => {
+    const item = document.createElement('button')
+    item.id = 'item'
+    item.onclick = () => item.textContent = 'picked'
+    document.body.append(item)
+  }, 300)">Open</button></body>`)
+  expect(await clickEach(page, ["#open", "#item", "#never"])).toEqual(["#never"])
+  await expect(page.locator("#item")).toHaveText("picked")
 })
