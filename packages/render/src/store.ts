@@ -5,6 +5,12 @@ import type { ElementRecord, SlideRecord } from "./record.js"
 
 export type PaintResult = { readonly ok: true } | { readonly ok: false; readonly code: "limit" | "absent" | "kind" }
 
+export type BoxGrip = {
+  readonly place: (box: Box | null) => void
+  readonly keep: () => void
+  readonly release: () => void
+}
+
 export type PaintStore = {
   readonly getElement: (id: ElementId) => ElementRecord | null
   readonly publish: (record: ElementRecord) => PaintResult
@@ -17,6 +23,7 @@ export type PaintStore = {
   readonly endComposition: (id: ElementId, data: string) => void
   readonly getBox: (id: ElementId) => Box | null
   readonly placeBox: (id: ElementId, box: Box | null) => void
+  readonly gripBox: (id: ElementId) => BoxGrip
   readonly boxSubscribe: (id: ElementId) => (listener: () => void) => () => void
 }
 
@@ -105,6 +112,7 @@ export function paintStore(): PaintStore {
   const boxes = new Map<ElementId, Box>()
   const boxListeners = new Map<ElementId, Set<() => void>>()
   const boxSubscribeCache = new Map<ElementId, (listener: () => void) => () => void>()
+  const gripped = new Map<ElementId, { held: Box | null }>()
   const composing = new Set<ElementId>()
   const held = new Map<ElementId, ElementRecord[]>()
   let slideList: readonly SlideRecord[] = Object.freeze([])
@@ -128,11 +136,38 @@ export function paintStore(): PaintStore {
     return accepted
   }
 
-  function placeBox(id: ElementId, box: Box | null): void {
+  function showBox(id: ElementId, box: Box | null): void {
     if (sameBox(boxes.get(id) ?? null, box)) return
     if (box === null) boxes.delete(id)
     else boxes.set(id, Object.freeze({ x: box.x, y: box.y, cx: box.cx, cy: box.cy }))
     notify(boxListeners, id)
+  }
+
+  function placeBox(id: ElementId, box: Box | null): void {
+    const grip = gripped.get(id)
+    if (grip === undefined) showBox(id, box)
+    else grip.held = box
+  }
+
+  function gripBox(id: ElementId): BoxGrip {
+    const grip = { held: boxes.get(id) ?? null }
+    gripped.set(id, grip)
+    function ended(): boolean {
+      if (gripped.get(id) !== grip) return false
+      gripped.delete(id)
+      return true
+    }
+    return {
+      place(box) {
+        if (gripped.get(id) === grip) showBox(id, box)
+      },
+      keep() {
+        ended()
+      },
+      release() {
+        if (ended()) showBox(id, grip.held)
+      },
+    }
   }
 
   function setSlides(next: readonly SlideRecord[]): PaintResult {
@@ -189,6 +224,7 @@ export function paintStore(): PaintStore {
     },
     getBox: (id) => boxes.get(id) ?? null,
     placeBox,
+    gripBox,
     boxSubscribe: (id) => subscribeTo(boxListeners, boxSubscribeCache, id),
   }
 }

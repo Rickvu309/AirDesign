@@ -16,7 +16,7 @@ import {
 } from "./box-gesture.js"
 import { typeHeld } from "./held-keys.js"
 import type { CanvasElement } from "./record.js"
-import type { PaintStore } from "./store.js"
+import type { BoxGrip, PaintStore } from "./store.js"
 
 export type Grouping = {
   readonly onGroup?: (ids: readonly ElementId[]) => void
@@ -115,8 +115,10 @@ export function useMoves(
   const [message, setMessage] = useState("")
   const keyed = useRef({ verb: "", label: "" })
   const gesture = useRef<Gesture | null>(null)
+  const grip = useRef<BoxGrip | null>(null)
   const cancelling = useRef<(() => void) | null>(null)
   const pressedFrame = useRef<HTMLElement | null>(null)
+  useEffect(() => () => letGo(false), [])
 
   function elementOf(id: ElementId | undefined): CanvasElement | undefined {
     return id === undefined ? undefined : size.elements?.find((each) => each.id === id)
@@ -140,21 +142,33 @@ export function useMoves(
     return store.getBox(element.id) ?? (element.box === null ? null : boxOf(element.box))
   }
 
-  function finish(done: Gesture) {
+  function hold(next: Gesture) {
+    gesture.current = next
+    grip.current = store.gripBox(next.id)
+  }
+
+  function letGo(changed: boolean) {
     gesture.current = null
+    if (changed) grip.current?.keep()
+    else grip.current?.release()
+    grip.current = null
+  }
+
+  function finish(done: Gesture) {
     const box = store.getBox(done.id)
-    if (box !== null && !sameBox(box, done.start)) onBox?.(done.id, box)
+    const changed = box !== null && !sameBox(box, done.start)
+    letGo(changed)
+    if (changed) onBox?.(done.id, box)
   }
 
   function follow(pressed: Drag, document: Document) {
-    const before = store.getBox(pressed.id)
     function move(event: globalThis.PointerEvent) {
       const now = gesture.current
       if (now?.by !== "pointer" || event.pointerId !== now.pointer) return
       const at = { x: event.clientX, y: event.clientY }
       if (!now.moved && !travelled(now.from, at)) return
       gesture.current = { ...now, moved: true }
-      store.placeBox(now.id, draggedBox(now, at, width, size))
+      grip.current?.place(draggedBox(now, at, width, size))
     }
     function stop() {
       document.removeEventListener("pointermove", move)
@@ -164,8 +178,7 @@ export function useMoves(
     }
     function cancel() {
       stop()
-      gesture.current = null
-      store.placeBox(pressed.id, before)
+      letGo(false)
     }
     function end(event: globalThis.PointerEvent) {
       if (event.pointerId !== pressed.pointer) return
@@ -177,7 +190,7 @@ export function useMoves(
     function lost(event: globalThis.PointerEvent) {
       if (event.pointerId === pressed.pointer) cancel()
     }
-    gesture.current = pressed
+    hold(pressed)
     cancelling.current = cancel
     document.addEventListener("pointermove", move)
     document.addEventListener("pointerup", end)
@@ -298,18 +311,18 @@ export function useMoves(
       const grown = resizedByKey(start, event.key, element.box?.rotation ?? 0)
       if (grown === null) return
       event.preventDefault()
-      if (now === null) gesture.current = { by: "keys", id, start }
+      if (now === null) hold({ by: "keys", id, start })
       keyed.current = { verb: "Resized", label: frame.getAttribute("aria-label") ?? "" }
-      store.placeBox(id, grown)
+      grip.current?.place(grown)
       return
     }
     if (start === null || chord || !canDrag(element) || now?.by === "pointer") return
     const next = nudgedBox(start, event.key, event.shiftKey, size)
     if (next === null) return
     event.preventDefault()
-    if (now === null) gesture.current = { by: "keys", id, start }
+    if (now === null) hold({ by: "keys", id, start })
     keyed.current = { verb: "Moved", label: frame.getAttribute("aria-label") ?? "" }
-    store.placeBox(id, next)
+    grip.current?.place(next)
   }
 
   const slide = {
