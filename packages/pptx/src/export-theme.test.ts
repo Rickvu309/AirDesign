@@ -64,7 +64,7 @@ function painted(parts: Parts): string {
 }
 
 describe("the deck's theme", () => {
-  it("writes an edited colour and font into every theme a slide uses, and leaves every other part alone", async () => {
+  it("writes an edited colour and Latin font into every theme a slide uses, keeps each theme's East Asian, complex script and script fonts, and leaves every other part alone", async () => {
     const parts = await deck()
     const exported = exportParts(parts, themed({ accent1: { set: "C00000" }, major: { set: "Georgia" } }))
     expect(changedParts(parts, exported)).toEqual(used)
@@ -72,7 +72,8 @@ describe("the deck's theme", () => {
       const before = text(parts, part)
       const after = text(exported, part)
       expect(after).toContain('<a:accent1><a:srgbClr val="C00000"/></a:accent1>')
-      expect(after).toContain('<a:majorFont><a:latin typeface="Georgia"/><a:ea typeface=""/>')
+      expect(after).toContain('<a:majorFont><a:latin typeface="Georgia"/><a:ea typeface=""/><a:cs typeface=""/>')
+      expect(after).toContain('<a:font script="Jpan" typeface="游ゴシック Light"/>')
       expect(after.replace('val="C00000"', 'val="4472C4"')).toBe(
         before.replace(
           '<a:latin typeface="Calibri Light" panose="020F0302020204030204"/>',
