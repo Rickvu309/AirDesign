@@ -10,7 +10,7 @@ export {
 } from "./aira-turn.js"
 export { catalog, projectTools, toolInputSchema, type AgentOp, type CommandOp } from "./catalog.js"
 export { deckName, readDeckName } from "./deck-name.js"
-export { agentNumberOf, designOf, foldDesign, readAgent, shownDesign } from "./agent-form.js"
+export { agentNumberOf, designOf, foldDesign, readAgent, shownDesign, themedDesign } from "./agent-form.js"
 export { closeIcons, iconNames, knownIcon } from "./icon-names.js"
 export { opacityWire } from "./opacity-wire.js"
 export { traitWire } from "./trait-wire.js"

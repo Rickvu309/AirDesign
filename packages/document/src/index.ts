@@ -34,6 +34,7 @@ export {
   readDesign,
   roles,
   sources,
+  themeFonts,
   type Design,
   type DesignKey,
   type ElementRead,
@@ -48,6 +49,7 @@ export {
   type ShadowRead,
   type Shown,
   type Source,
+  type ThemeFont,
   type TraitReads,
 } from "./design.js"
 export { replay, unsent, type Queued } from "./replay.js"

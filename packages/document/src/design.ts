@@ -2,6 +2,7 @@ import { mappedSlots, themeSlots, type Color, type MappedSlot, type ThemeSlot } 
 import type { Box } from "./box.js"
 import { bytesOf } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
+import { readTypeface } from "./text-value.js"
 
 export const roles = [
   "title",
@@ -57,9 +58,13 @@ export type Design = { readonly [Key in DesignKey]?: Shown }
 export const designBytes = 400
 const wordBytes = 200
 
+export const themeFonts = ["major", "minor"] as const
+export type ThemeFont = (typeof themeFonts)[number]
+
 export type Palette = {
   readonly slots: { readonly [Slot in ThemeSlot]?: string }
   readonly map: { readonly [Slot in MappedSlot]?: ThemeSlot }
+  readonly fonts?: { readonly [Font in ThemeFont]?: string }
 }
 
 export type Read<Value> = { readonly value: Value; readonly source?: Source }
@@ -92,7 +97,7 @@ export type TraitReads = {
   readonly "effects.softEdge"?: Read<number>
   readonly "text.size"?: Read<number>
   readonly "text.color"?: Read<Color>
-  readonly "text.font"?: Read<string>
+  readonly "text.font"?: Read<string> & { readonly theme?: ThemeFont }
   readonly "text.bold"?: Read<boolean>
   readonly "body.anchor"?: Read<string>
   readonly "body.autofit"?: Read<string>
@@ -164,7 +169,7 @@ const hex = /^[0-9A-F]{6}$/
 
 export function readPalette(raw: unknown): Palette | null {
   const row = record(raw)
-  if (row === null || !onlyKeys(row, ["slots", "map"])) return null
+  if (row === null || !onlyKeys(row, row.fonts === undefined ? ["slots", "map"] : ["slots", "map", "fonts"])) return null
   const slots = record(row.slots)
   const map = record(row.map)
   if (slots === null || map === null) return null
@@ -181,5 +186,20 @@ export function readPalette(raw: unknown): Palette | null {
     if (slot === undefined || target === undefined) return null
     readMap[slot] = target
   }
-  return { slots: readSlots, map: readMap }
+  const fonts = row.fonts === undefined ? undefined : readFonts(row.fonts)
+  if (fonts === null) return null
+  return { slots: readSlots, map: readMap, ...(fonts === undefined ? {} : { fonts }) }
+}
+
+function readFonts(raw: unknown): Palette["fonts"] | null {
+  const row = record(raw)
+  if (row === null) return null
+  const fonts: Partial<Record<ThemeFont, string>> = {}
+  for (const [key, value] of Object.entries(row)) {
+    const font = named(themeFonts, key)
+    const typeface = readTypeface(value)
+    if (font === undefined || typeof typeface !== "string") return null
+    fonts[font] = typeface
+  }
+  return fonts
 }

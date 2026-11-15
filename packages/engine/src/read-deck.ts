@@ -1,5 +1,5 @@
 import type { DeckId } from "@airdesign/catalog"
-import { foldDesign, printDesign, readDeckId, shownDesign } from "@airdesign/catalog"
+import { foldDesign, printDesign, readDeckId, shownDesign, themedDesign } from "@airdesign/catalog"
 import {
   bytesOf,
   foldSlides,
@@ -15,6 +15,7 @@ import {
   readElementId,
   shapeOf,
   slideKind,
+  themeFonts,
   themeNode,
   themeSlots,
   upgradeBackgrounds,
@@ -119,6 +120,7 @@ function elementOf(
   node: ElementId,
   body: NodeRegister | undefined,
   runId: string | null,
+  fonts: NonNullable<Palette["fonts"]>,
   indexed?: IndexElement,
 ): ReadElement {
   const box = (body === undefined ? null : currentBox(body)) ?? indexed?.box ?? null
@@ -140,7 +142,7 @@ function elementOf(
   const opening = indexed?.opening === undefined ? [] : [{ v: 1, patch: indexed.opening }]
   const rows = body === undefined ? [] : [{ v: 1, patch: landedPatch(body, "text") }]
   const design = foldDesign(typed, netPatch([...opening, ...rows]))
-  const line = design === undefined ? "" : printDesign(design)
+  const line = design === undefined ? "" : printDesign(themedDesign(design, fonts))
   const designed = {
     ...withBox,
     ...(indexed?.role === undefined ? {} : { role: indexed.role }),
@@ -207,13 +209,22 @@ function themeSet(register: Register): Readonly<Record<string, string>> {
 
 function themedHead(palettes: readonly Palette[] | undefined, set: Readonly<Record<string, string>>) {
   const slots = Object.fromEntries(themeSlots.flatMap((slot) => (set[slot] === undefined ? [] : [[slot, set[slot]]])))
+  const fonts = Object.fromEntries(themeFonts.flatMap((font) => (set[font] === undefined ? [] : [[font, set[font]]])))
   const theme = Object.fromEntries(
     Object.entries(set).map(([field, value]) => [field, Object.hasOwn(slots, field) ? `#${value}` : value]),
   )
   return {
     ...(palettes === undefined
       ? {}
-      : { palettes: palettes.map((each) => ({ ...each, slots: { ...each.slots, ...slots } })) }),
+      : {
+          palettes: palettes.map((each) => ({
+            ...each,
+            slots: { ...each.slots, ...slots },
+            ...(each.fonts === undefined && Object.keys(fonts).length === 0
+              ? {}
+              : { fonts: { ...each.fonts, ...fonts } }),
+          })),
+        }),
     ...(Object.keys(theme).length === 0 ? {} : { theme }),
   }
 }
@@ -275,6 +286,8 @@ export function readDeckPage(
     const palette = palettes.get(id)
     return palette === undefined || palette === 0 ? { id, position } : { id, position, palette }
   }
+  const themed = themedHead(index?.palettes, themeSet(deck.register))
+  const fontsOf = (slide: string) => themed.palettes?.[palettes.get(slide) ?? 0]?.fonts ?? {}
   return packRead(
     {
       revision: deck.revision,
@@ -282,7 +295,7 @@ export function readDeckPage(
         deck.register.order.length === 0
           ? (index?.slides ?? []).map(({ id, position }) => slideOf(id, position))
           : presentSlides(deck.register).map(({ id }, position) => slideOf(id, position)),
-      ...themedHead(index?.palettes, themeSet(deck.register)),
+      ...themed,
       index: index === undefined ? "missing" : index.elements.length === index.total ? "ready" : "pending",
     },
     nodes,
@@ -291,7 +304,14 @@ export function readDeckPage(
       const slide = shapeOf(node).slide
       return !goneSlides.has(slide) && (query.slide === undefined || slide === query.slide)
     },
-    (node) => elementOf(node, deck.register.elements[node], query.runId, foldedElement(deck.register, node)),
+    (node) =>
+      elementOf(
+        node,
+        deck.register.elements[node],
+        query.runId,
+        fontsOf(shapeOf(node).slide),
+        foldedElement(deck.register, node),
+      ),
   )
 }
 

@@ -26,7 +26,9 @@ import {
   type BoundRead,
   type RecolorRead,
   type ShadowRead,
+  type Palette,
   type Shown,
+  type ThemeFont,
   type TraitReads,
 } from "@airdesign/document"
 import { agentColor, agentPercent, colorPattern, hexPattern, readAgentColor, readAgentHex } from "./agent-color.js"
@@ -106,9 +108,24 @@ const agent: Agent = {
   "connection.end": agentBound,
 }
 
-function shownOf<Key extends DesignKey>(key: Key, read: Read<NonNullable<TraitReads[Key]>["value"]>): Shown {
-  const value = agent[key](read.value)
+const fontReferences: { readonly [Font in ThemeFont]: string } = { major: "+mj-lt", minor: "+mn-lt" }
+
+function shownOf<Key extends DesignKey>(
+  key: Key,
+  read: Read<NonNullable<TraitReads[Key]>["value"]> & { readonly theme?: ThemeFont },
+): Shown {
+  const value = read.theme === undefined ? agent[key](read.value) : fontReferences[read.theme]
   return read.source === undefined ? [value] : [value, read.source]
+}
+
+export function themedDesign(design: Design, fonts: NonNullable<Palette["fonts"]>): Design {
+  const [value, source] = design["text.font"] ?? []
+  const theme = (Object.keys(fontReferences) as ThemeFont[]).find((font) => fontReferences[font] === value)
+  if (theme === undefined) return design
+  const { "text.font": _, ...rest } = design
+  const name = fonts[theme]
+  if (name === undefined) return rest
+  return { ...rest, "text.font": source === undefined ? [name] : [name, source] }
 }
 
 const firstKeys: readonly DesignKey[] = ["box.rot", "box.flipH", "box.flipV", "connection.start", "connection.end"]

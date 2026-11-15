@@ -67,7 +67,7 @@ it("reads a shape whose fill, line, shadow and text colour come from its theme s
       "body.anchor": { value: "ctr" },
       "text.size": { value: 1800, source: "master" },
       "text.color": { value: { scheme: "lt1" }, source: "style" },
-      "text.font": { value: "Calibri", source: "style" },
+      "text.font": { value: "Calibri", source: "style", theme: "minor" },
     },
     kept: [],
   })
@@ -115,6 +115,7 @@ it("names each placeholder's role and says which of its layout or master shows e
         folHlink: "800080",
       },
       map: { bg1: "lt1", tx1: "dk1", bg2: "lt2", tx2: "dk2" },
+      fonts: { major: "Calibri", minor: "Calibri" },
     },
   ])
   expect(new Set(traits.slides.values())).toEqual(new Set([0]))
@@ -145,7 +146,7 @@ it("keeps a custom geometry, a picture fill and an effect graph out of reach, an
       "body.anchor": { value: "ctr" },
       "text.size": { value: 4400 },
       "text.color": { value: { scheme: "tx1" } },
-      "text.font": { value: "Arial" },
+      "text.font": { value: "Arial", theme: "minor" },
     },
     kept: ["geometry", "fill", "effects.shadow", "effects.glow", "effects.softEdge"],
   })
@@ -167,4 +168,15 @@ it("records the box a placeholder shows from its layout when it has no box of it
   const traits = readTraits(await deck("nasa-1d-cnn.pptx"))
   expect(traits.elements.get(elementId("452.5"))?.placed).toEqual({ x: 1166285, y: 184151, cx: 11025716, cy: 519113 })
   expect(traits.elements.get(elementId("447.5"))).not.toHaveProperty("placed")
+})
+
+it("says which theme font a text shows, so a theme font change can name it, and gives each palette its theme's fonts", async () => {
+  const traits = readTraits(await deck("doe-heat-pumps.pptx"))
+  expect(traits.palettes).toEqual([expect.objectContaining({ fonts: { major: "Calibri Light", minor: "Calibri" } })])
+  expect(traits.elements.get(elementId("256.4"))?.reads["text.font"]).toEqual({
+    value: "Calibri",
+    source: "master",
+    theme: "minor",
+  })
+  expect(traits.elements.get(elementId("256.2"))?.reads["text.font"]).toEqual({ value: "Abadi" })
 })
