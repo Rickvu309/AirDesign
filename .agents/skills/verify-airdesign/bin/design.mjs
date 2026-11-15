@@ -69,7 +69,7 @@ export async function designCommand(command, args, runtime) {
     try {
       const screenPage = await context.newPage()
       const answer = await screenPage.goto(design)
-      if (!answer?.ok() || (await screenPage.getByText("Unknown screen", { exact: true }).count()) > 0)
+      if (!answer?.ok() || (await screenPage.locator("[data-not-found-live]").count()) > 0)
         throw new Error(`no design screen at ${design}`)
       return await captureCompare(page, screenPage, folder)
     } finally {

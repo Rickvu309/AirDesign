@@ -22,6 +22,10 @@ it("names a missing deck and links to the decks", () => {
   expect(html).toMatch(new RegExp(`<a href="/"[^>]*>${productCopy.goToDecks}</a>`))
 })
 
+it("marks only the live page, never a design screen", () => {
+  expect(page("deck")).not.toContain("data-not-found-live")
+})
+
 it("keeps the decks sidebar and offers no editing controls", () => {
   const html = page("deck")
   expect(html).toContain("data-decks-sidebar")

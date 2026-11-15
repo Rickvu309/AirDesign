@@ -22,6 +22,7 @@ it("shows a not-found page with a link to the decks for an address nothing serve
   expect(html).toContain(productCopy.addressNotFoundTitle)
   expect(html).toMatch(new RegExp(`<a href="/"[^>]*>${productCopy.goToDecks}</a>`))
   expect(html).not.toContain("Unknown screen")
+  expect(html).toContain("data-not-found-live")
 })
 
 it("shows the same page for an old address and for a deck id that cannot exist", () => {
