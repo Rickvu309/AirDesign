@@ -1,5 +1,6 @@
 import type { DeckIndex } from "./deck-index.js"
 import { readElementId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
+import { groupCommand } from "./element-group.js"
 import { elementGone, type ElementOrder } from "./element-order.js"
 import { limits } from "./limits.js"
 import type { SlideState } from "./slide-order.js"
@@ -83,8 +84,12 @@ function take(chains: Chain[], slide: SlideId, among: readonly ElementId[]): Cha
 }
 
 function fold(state: Indexed): Chain[] {
-  const chains: Chain[] = []
+  let chains: Chain[] = []
   for (const command of state.order) {
+    if (groupCommand(command)) {
+      chains = chains.filter((chain) => chain.slide !== command.id)
+      continue
+    }
     if (command.slide === "element-add") {
       for (const chain of chains) {
         if (chain.slide !== command.id || !chain.acceptsAdds || chain.ids.includes(command.element.node)) continue

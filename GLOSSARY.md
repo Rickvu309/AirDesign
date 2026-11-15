@@ -135,7 +135,7 @@ Software that works on a person's decks over MCP, such as Claude or Codex. A per
 _Avoid_: bot, integration, app
 
 **Aira**:
-The agent built into AirDesign. It reads a deck, changes what a person can change in the design panel, adds, duplicates, deletes and reorders slides, sets a slide's background color, adds text boxes and icons and deletes elements.
+The agent built into AirDesign. It reads a deck, changes what a person can change in the design panel, adds, duplicates, deletes and reorders slides, sets a slide's background color, adds text boxes and icons, groups and ungroups elements and deletes elements.
 _Avoid_: the assistant, the AI
 
 **design panel**:
@@ -165,6 +165,10 @@ _Avoid_: description, caption, alternative text
 **opacity**:
 How solid an element is, in percent: one value that fades its fill, line, text and picture together. A group, a table and a slide's background have none. The code stores it as the alpha of each colour.
 _Avoid_: transparency, alpha (in product copy)
+
+**group**:
+Two or more elements of one slide that move and resize as one. A person chooses them with Shift+click and groups them with Group or Ctrl+G; Ungroup or Ctrl+Shift+G puts each one back on the slide where it showed. An agent sends `group` or `ungroup` in its edit. The first click on an element of a group selects the group, the next selects that element.
+_Avoid_: bundle, combine, merge, set
 
 **effects**:
 An element's shadow, glow and soft edge, set together in the Effects section of the design panel or with `effects` in an agent's `set`. Changing one keeps the others.

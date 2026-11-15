@@ -110,6 +110,21 @@ it("drops the last fields of a design that would not fit, so the index always ta
   expect(readDesign(design)).toEqual(design)
 })
 
+it("keeps an element's turn and flips when the rest of its design does not fit, so ungrouping maps it", () => {
+  const long = { value: "A".repeat(150) }
+  const reads = {
+    geometry: long,
+    "line.dash": long,
+    "text.font": long,
+    "box.rot": { value: 5_400_000 },
+    "box.flipH": { value: true },
+  }
+  const { design } = designOf({ reads, kept: [] })
+  expect(design?.["box.rot"]).toEqual([90])
+  expect(design?.["box.flipH"]).toEqual([true])
+  expect(JSON.stringify(design).length).toBeLessThanOrEqual(designBytes)
+})
+
 describe("the agent form reads what an agent sends into stored values, in agent units", () => {
   const read = (desc: Desc, raw: unknown) => readAgent(desc, raw)
   const emu: Desc = { kind: "number", unit: "emu", min: coordinates.lowest, max: coordinates.highest }

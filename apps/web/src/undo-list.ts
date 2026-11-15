@@ -110,13 +110,15 @@ export async function turnBack(
   deck: string,
   list: UndoList,
   direction: UndoDirection,
+  grouped: (register: Register) => Register = (register) => register,
 ): Promise<TurnedBack> {
   const entry = list[direction].at(-1)
   if (entry === undefined) return { outcome: "empty", list }
   const opened = await link.openDeck(deck)
   const rest = list[direction].slice(0, -1)
   const left: UndoList = direction === "undo" ? { undo: rest, redo: list.redo } : { undo: list.undo, redo: rest }
-  if (!opened.ok || !(await sent(link, deck, opened.register, entry, direction))) {
+  const register = !opened.ok ? null : "group" in entry.undoable ? grouped(opened.register) : opened.register
+  if (register === null || !(await sent(link, deck, register, entry, direction))) {
     return { outcome: "changed", list: left, entry }
   }
   const other = direction === "undo" ? "redo" : "undo"

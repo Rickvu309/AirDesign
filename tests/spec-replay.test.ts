@@ -8,6 +8,7 @@ import { replayUsage } from "./usage-replay.js"
 import { replayOffline } from "./offline-replay.js"
 import { replayOauth } from "./oauth-replay.js"
 import { replayPersonUndo } from "./person-undo-replay.js"
+import { replayStructure } from "./structure-replay.js"
 import { flag, num, phaseOf, text } from "./spec-values.js"
 import { readdirSync } from "node:fs"
 import path from "node:path"
@@ -486,113 +487,6 @@ function replayUndo(graph: Graph, view: View, failures: string[]) {
   return { replayed, stuttered }
 }
 
-function nodeNames(hasA: boolean, hasB: boolean): NodeName[] {
-  const names: NodeName[] = []
-  if (hasA) names.push("a")
-  if (hasB) names.push("b")
-  return names
-}
-
-function structureRegister(spec: Spec): Register {
-  const nodes = nodeNames(flag(spec, "nodeA"), flag(spec, "nodeB"))
-  const readNodes = flag(spec, "didRead") ? nodeNames(flag(spec, "storedA"), flag(spec, "storedB")) : null
-  const phase = phaseOf(spec)
-  const runId = text(spec, "runId")
-  return {
-    ...openRegister("floor", "slide"),
-    phase,
-    runId,
-    nodes,
-    readNodes,
-    b: flag(spec, "nodeB") ? { ...openRegister("floor", "slide"), phase, runId } : null,
-  }
-}
-
-function structurePicture(register: Register) {
-  return {
-    nodes: register.nodes,
-    readNodes: register.readNodes,
-    phase: register.phase,
-    runId: register.runId,
-    personBefore: 0,
-    personAfter: 0,
-    agent: 0,
-  }
-}
-
-function replayStructure(graph: Graph, view: View, failures: string[]) {
-  let replayed = 0
-  for (const edge of graph.edges) {
-    const source = graph.states.get(edge.from)
-    const target = graph.states.get(edge.to)
-    if (!source || !target) throw new Error(`missing structure state for ${edge.action}`)
-    const where = `${readView(view, source, edge.action)} -${edge.action}-> ${readView(view, target, edge.action)}`
-    const register = structureRegister(source)
-    if (edge.action === "NameAbsent") {
-      const decision = decide(register, { command: "person", value: "absent", node: "b" })
-      const countsHeld =
-        num(target, "personBefore") === num(source, "personBefore") &&
-        num(target, "personAfter") === num(source, "personAfter") &&
-        num(target, "agent") === num(source, "agent") &&
-        flag(target, "nodeA") === flag(source, "nodeA") &&
-        flag(target, "nodeB") === flag(source, "nodeB") &&
-        (!flag(source, "didRead") ||
-          same(register.readNodes, nodeNames(flag(target, "storedA"), flag(target, "storedB"))))
-      if (decision.decision !== "refuse" || decision.code !== "dead" || !countsHeld) {
-        failures.push(`structure ${where} did not refuse the absent node`)
-      } else replayed += 1
-      continue
-    }
-    const decision =
-      edge.action === "AddNode"
-        ? decide(register, { command: "add", node: "b" })
-        : edge.action === "RemoveNode"
-          ? decide(register, { command: "remove", node: "b" })
-          : edge.action === "SecondRunReads"
-            ? decide(register, { command: "read", runId: text(source, "readId"), node: "a" })
-            : null
-    if (decision === null) {
-      failures.push(`structure ${where} is not connected`)
-      continue
-    }
-    if (text(target, "lastKind") === "fenced") {
-      const held =
-        decision.decision === "refuse" &&
-        decision.code === "run-fenced" &&
-        flag(target, "nodeA") === flag(source, "nodeA") &&
-        flag(target, "nodeB") === flag(source, "nodeB") &&
-        flag(target, "didRead") === flag(source, "didRead") &&
-        flag(target, "storedA") === flag(source, "storedA") &&
-        flag(target, "storedB") === flag(source, "storedB") &&
-        text(target, "phase") === text(source, "phase") &&
-        text(target, "runId") === text(source, "runId") &&
-        text(target, "readId") === text(source, "readId")
-      if (!held) failures.push(`structure ${where} did not fence the read`)
-      else replayed += 1
-      continue
-    }
-    if (decision.decision !== "apply") {
-      failures.push(`structure ${where} refused ${decision.code}`)
-      continue
-    }
-    const actual = structurePicture(viewed(decision.register))
-    const expected = {
-      nodes: nodeNames(flag(target, "nodeA"), flag(target, "nodeB")),
-      readNodes: flag(target, "didRead") ? nodeNames(flag(target, "storedA"), flag(target, "storedB")) : null,
-      phase: phaseOf(target),
-      runId: text(target, "runId"),
-      personBefore: num(target, "personBefore"),
-      personAfter: num(target, "personAfter"),
-      agent: num(target, "agent"),
-    }
-    if (!flag(source, "didRead") && edge.action !== "SecondRunReads") expected.readNodes = null
-    if (!same(actual, expected)) {
-      failures.push(`structure ${where}\n  actual ${JSON.stringify(actual)}\n  expected ${JSON.stringify(expected)}`)
-    } else replayed += 1
-  }
-  return { replayed, stuttered: 0 }
-}
-
 function runRegister(spec: Spec): Register {
   const rows: NodeRegister["landed"][number][] = []
   if (num(spec, "writes") === 1) rows.push({ actor: "agent", value: "agent", visible: true })
@@ -996,7 +890,7 @@ describe("spec replay", () => {
         reports.structure = {
           states: graph.states.size,
           edges: graph.edges.length,
-          ...replayStructure(graph, view, failures),
+          ...replayStructure(graph, told, failures),
         }
       }
       if (topic.name === "run") {
@@ -1041,7 +935,7 @@ describe("spec replay", () => {
       personUndo: { replayed: expect.any(Number), told: expect.any(Number) },
       edit: { stuttered: expect.any(Number) },
       undo: { stuttered: expect.any(Number) },
-      structure: { replayed: expect.any(Number) },
+      structure: { replayed: expect.any(Number), grouped: expect.any(Number) },
       run: { unconnected: { Resume: expect.any(Number), Limit: expect.any(Number) } },
       offline: { unconnected: { Crash: expect.any(Number), Wipe: expect.any(Number), Undo: 0 } },
       usage: { replayed: expect.any(Number), stuttered: expect.any(Number) },
@@ -1051,5 +945,6 @@ describe("spec replay", () => {
     const runReport = reports.run as { unconnected: { Resume: number; Limit: number } }
     expect(runReport.unconnected.Resume).toBeGreaterThan(0)
     expect(runReport.unconnected.Limit).toBeGreaterThan(0)
+    expect((reports.structure as { grouped: number }).grouped).toBeGreaterThan(40)
   }, 60_000)
 })

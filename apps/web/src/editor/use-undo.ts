@@ -4,6 +4,7 @@ import { textFormatting } from "@airdesign/render"
 import { useEffect, useRef, useState } from "react"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import type { UndoButtonsState } from "@/editor/undo-buttons"
+import { indexedRegister } from "@/editor/group-actions"
 import { useUndoKeys } from "@/editor/undo-keys"
 import { slideTurnSaid } from "@/editor/slide-said"
 import type { DeckPaint } from "@/editor/use-deck-paint"
@@ -125,7 +126,9 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
   function turn(direction: UndoDirection) {
     turnAfter(async () => {
       await records.current.landed()
-      const turned = await turnBack(connect(memoryRemote()), id, undoList.current, direction)
+      const turned = await turnBack(connect(memoryRemote()), id, undoList.current, direction, (register) =>
+        indexedRegister(shownParts.current, register),
+      )
       if (turned.outcome === "empty") return
       undoList.current = turned.list
       setUndoShown(turned.list)

@@ -13,7 +13,7 @@ import { readPackage, readParts, readShapes } from "@airdesign/pptx"
 import { paintStore, type PaintStore } from "@airdesign/render"
 import { beforeAll, expect, it } from "vitest"
 import { paint } from "./deck-paint"
-import { elementCommand, type ElementChange } from "./element-edit"
+import { elementCommand } from "./element-edit"
 import { busyElements, shownValue } from "./live-repaint"
 import { pictureCommand } from "./picture-add"
 import { fileSlides } from "./slide-edit"
@@ -35,7 +35,7 @@ beforeAll(async () => {
 
 const room = { width: 9_144_000, height: 6_858_000 }
 
-function changed(register: Register, change: ElementChange): Register {
+function changed(register: Register, change: Parameters<typeof elementCommand>[2]): Register {
   const edit = elementCommand(parts, register, change)
   if (edit === null) throw new Error("refused")
   return { ...register, file: fileSlides(parts, register), order: [...register.order, edit] }

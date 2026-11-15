@@ -142,6 +142,7 @@ describe("createServer", () => {
         expect.arrayContaining(["node", "readAt"]),
         ["op", "target"],
         ["op", "kind", "slide"],
+        ["op", "elements"],
       ])
       const advertised = tools.map((tool) => ({
         name: tool.name,

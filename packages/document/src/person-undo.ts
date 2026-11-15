@@ -2,6 +2,9 @@ import { decide, shownPatch, valueHolder, type Command, type Register } from "./
 import type { ElementId, SlideId } from "./element-id.js"
 import { elementCommand, elementGone, type ElementCommand, type ElementOrder } from "./element-order.js"
 import { elementStacks, sitsBefore } from "./element-stack.js"
+import { groupCommand, groupFormed, groupNode, type GroupCommand } from "./element-group.js"
+import { rowsKept } from "./group-place.js"
+import { ungroupTurn } from "./group-turn.js"
 import type { OrderKey } from "./order-key.js"
 import { backgroundUndone } from "./background-upgrade.js"
 import { foldSlides, type SlideCommand, type SlideState } from "./slide-order.js"
@@ -36,6 +39,13 @@ export type Undoable =
       readonly before: ElementId | null
       readonly after: ElementId | null
     }
+  | {
+      readonly group: ElementId
+      readonly slide: SlideId
+      readonly file: readonly SlideId[]
+      readonly before: boolean
+      readonly after: boolean
+    }
 
 export type Turns = { readonly ok: true; readonly commands: readonly Command[] } | { readonly ok: false }
 
@@ -61,6 +71,16 @@ export function slideUndoable(register: Register, file: readonly SlideId[], edit
   const decision = decide(register, { command: "slide", file, edit })
   if (decision.decision !== "apply" || edit.slide === "background") return null
   if (edit.slide === "element-order") return stackUndoable(edit, file)
+  if (groupCommand(edit)) {
+    const group = groupNode(edit)
+    return {
+      group,
+      slide: edit.id,
+      file,
+      before: groupFormed(register, group),
+      after: groupFormed(decision.register, group),
+    }
+  }
   if (elementCommand(edit)) {
     const element = elementOf(edit)
     const shown = (state: Register) => !elementGone(state, element)
@@ -144,6 +164,15 @@ function turn(register: Register, undoable: Undoable, from: "before" | "after"):
     }
     return landing(register, { command: "slide", file, edit })
   }
+  if ("group" in undoable) {
+    if (groupFormed(register, undoable.group) !== undoable[from] || undoable[from] === undoable[to]) return changed
+    if (undoable[to]) {
+      const edit: SlideCommand = { slide: "element-regroup", id: undoable.slide, node: undoable.group }
+      return landing(register, { command: "slide", file, edit })
+    }
+    const commands = ungroupTurn(register, file, undoable.slide, undoable.group)
+    return commands === null ? changed : { ok: true, commands }
+  }
   if ("element" in undoable) {
     const { element, slide } = undoable
     if (elementGone(register, element) === undoable[from] || undoable[from] === undoable[to]) return changed
@@ -199,6 +228,20 @@ function undoableAt(register: Register, at: number, edit: SlideCommand): Undoabl
   return { slide: edit.id, file: register.file, before, after }
 }
 
+function groupUndone(register: Register, edit: GroupCommand): Register | null {
+  const node = groupNode(edit)
+  const formed = groupFormed(register, node)
+  if (edit.slide === "element-ungroup" ? formed : !formed) return register
+  if (edit.slide === "element-group" && (personEdited(register, node) || !rowsKept(register, edit))) return null
+  if (edit.slide === "element-regroup" && personEdited(register, node)) return null
+  const back: SlideCommand =
+    edit.slide === "element-ungroup"
+      ? { slide: "element-regroup", id: edit.id, node }
+      : { slide: "element-ungroup", id: edit.id, node }
+  const decision = decide(register, { command: "slide", file: register.file, edit: back })
+  return decision.decision === "apply" ? decision.register : null
+}
+
 export function undoSlides(register: Register, runId: string): Register | null {
   let current = register
   for (let at = register.order.length - 1; at >= 0; at -= 1) {
@@ -206,6 +249,12 @@ export function undoSlides(register: Register, runId: string): Register | null {
     if (edit === undefined || edit.runId !== runId) continue
     if (edit.slide === "background") {
       const turned = backgroundUndone(current, register.order.slice(0, at), edit)
+      if (turned === null) return null
+      current = turned
+      continue
+    }
+    if (groupCommand(edit)) {
+      const turned = groupUndone(current, edit)
       if (turned === null) return null
       current = turned
       continue

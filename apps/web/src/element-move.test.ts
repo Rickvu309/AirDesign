@@ -33,6 +33,10 @@ it.each([
     "a connector",
     `<p:cxnSp><p:nvCxnSpPr><p:cNvPr id="2" name="c"/><p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr><p:spPr>${xfrm}</p:spPr></p:cxnSp>`,
   ],
+  [
+    "a group on the slide, whose box carries its children",
+    `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="2" name="g"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr>${xfrm}</p:grpSpPr>${sp("3")}</p:grpSp>`,
+  ],
 ])("lets %s keep a box", (_name, shapes) => {
   expect(storable(shapes, "2")).toBe(true)
 })
@@ -43,8 +47,8 @@ it.each([
     `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="2" name="g"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="1" y="2"/><a:ext cx="3" cy="4"/></p:xfrm><a:graphic/></p:graphicFrame>`,
   ],
   [
-    "a group, whose children sit in its own space",
-    `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="2" name="g"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr>${xfrm}</p:grpSpPr>${sp("3")}</p:grpSp>`,
+    "a shape inside a group, whose box sits in the group's own space",
+    `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="3" name="g"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr>${xfrm}</p:grpSpPr>${sp("2")}</p:grpSp>`,
   ],
   ["a shape the move route cannot write", sp("2", "")],
   [

@@ -152,6 +152,22 @@ export {
 } from "./element-order.js"
 export { elementStacks, stackTarget, type ElementStack, type StackMove } from "./element-stack.js"
 export {
+  groupChildren,
+  groupCommand,
+  groupedNow,
+  groupFormed,
+  groupNode,
+  groupParent,
+  madeGroup,
+  type ElementGroup,
+  type ElementRegroup,
+  type ElementUngroup,
+  type GroupCommand,
+  type Member,
+} from "./element-group.js"
+export { groupOf, placeOf, throughGroup, ungroupRows, type Place, type PlacedRow } from "./group-place.js"
+export { ungroupTurn } from "./group-turn.js"
+export {
   foldSlides,
   nextSlideId,
   orderKeyAfter,

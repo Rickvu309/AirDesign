@@ -81,7 +81,15 @@ for (const name of [
 
 test.describe("recorded Aira", () => {
   test.describe.configure({ mode: "default" })
-  for (const name of ["element-index", "aira-turn", "aira-panel", "aira-slides", "aira-head", "agent-after-open"]) {
+  for (const name of [
+    "element-index",
+    "aira-turn",
+    "aira-panel",
+    "aira-slides",
+    "aira-head",
+    "agent-after-open",
+    "group-elements",
+  ]) {
     test(name, async ({ page, context }) => {
       await drive(name, page, context)
     })

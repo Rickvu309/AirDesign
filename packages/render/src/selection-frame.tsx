@@ -83,3 +83,30 @@ export function SelectionFrame(props: {
     </div>
   )
 }
+
+export function ChosenFrame(props: {
+  readonly store: PaintStore
+  readonly id: ElementId
+  readonly element: CanvasElement
+  readonly scaled: Scaled
+}) {
+  const { element, scaled } = props
+  const box = paintedAt(element.box, useBox(props.store, props.id))
+  if (box === null) return null
+  return (
+    <div
+      data-chosen={props.id}
+      aria-hidden
+      style={{
+        position: "absolute",
+        left: scaled(box.x),
+        top: scaled(box.y),
+        width: scaled(box.width),
+        height: scaled(box.height),
+        ...(box.rotation === 0 ? {} : { transform: `rotate(${box.rotation}deg)` }),
+        boxShadow: "0 0 0 2px var(--ring)",
+        pointerEvents: "none",
+      }}
+    />
+  )
+}

@@ -19,11 +19,11 @@ export const editNext = {
   limit: `The value is over ${valueBytes} bytes, or the deck is at its size, element or slide limit. Send a shorter value, or tell the person the deck is full.`,
   dead: "The deck has no element with this id. Check the element id.",
   "group-box":
-    "This element is inside a group. Its box uses group coordinates, so moving or resizing it is not supported. Edit its text instead.",
+    "This element is inside a group, and nothing landed. Ungroup that group first to move, resize or group this element on its own, or edit its text instead.",
   present: "This element is already in the deck. Check the element id.",
   kind: "An element this call names cannot take this edit, and nothing landed. Each line below names the change, what its element takes, and what to send instead. Fix every line, then send the whole call again.",
   locked:
-    "This element has an animation, and the exported PowerPoint file cannot lose it, so it cannot be deleted. Nothing landed. Leave it, or tell the person.",
+    "This element has an animation, and the exported PowerPoint file cannot lose it, so it cannot be deleted, grouped or ungrouped. Nothing landed. Leave it, or tell the person.",
   deck: "This session can reach no deck with this id. Check the deck id.",
   owner: "This deck belongs to another account. Work only on decks this account owns.",
   deleted: "This deck was deleted for good, and nothing landed. Do not send changes to it again.",

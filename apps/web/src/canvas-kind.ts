@@ -1,7 +1,7 @@
 import type { PaintElement } from "@airdesign/pptx"
 import type { CanvasElement } from "@airdesign/render"
 import { paintFrame } from "@/canvas-frame"
-import { paintGroup } from "@/canvas-group"
+import { groupsOf, paintGroup } from "@/canvas-group"
 import { paintPicture } from "@/canvas-picture"
 import { paintPreset } from "@/preset-paint"
 import type { CanvasSource } from "@/canvas-source"
@@ -17,10 +17,9 @@ const painters = {
   shape: paintPreset,
   table: paintTable,
   frame: paintFrame,
-  group: paintGroup,
 }
 
-type PaintKind = keyof typeof painters
+type PaintKind = keyof typeof painters | "group"
 
 export function paintKindOf(row: PaintElement): PaintKind {
   if (row.kind === "p:grpSp") return "group"
@@ -39,20 +38,25 @@ export function paintElements(
 ): readonly CanvasElement[] {
   const seen = new Map<string, number>()
   const elements: CanvasElement[] = []
+  const tops = groupsOf(rows, source)
   for (const row of rows) {
     const kind = paintKindOf(row)
-    if (kind === "group") {
-      painters.group()
-      continue
-    }
     const name = `${row.part}#${row.shape}`
     const count = seen.get(name) ?? 0
     seen.set(name, count + 1)
-    const shape = row.from === "slide" ? source.shapes.get(row.shape) : undefined
     const key = count === 0 ? name : `${name}#${count}`
+    const group = row.from === "slide" ? tops.get(row.shape) : undefined
+    const carried = group === undefined ? {} : { group }
+    if (kind === "group") {
+      const painted = paintGroup(row, source, key)
+      if (painted !== null) elements.push({ ...painted, ...carried })
+      continue
+    }
+    const shape = row.from === "slide" ? source.shapes.get(row.shape) : undefined
     const painted = painters[kind]({ row, shape, key, src })
-    if (painted !== null)
-      elements.push(row.diagram === undefined ? painted : { ...painted, diagram: diagramOf(row.diagram, key, src) })
+    if (painted === null) continue
+    const diagram = row.diagram === undefined ? {} : { diagram: diagramOf(row.diagram, key, src) }
+    elements.push({ ...painted, ...diagram, ...carried })
   }
   return elements
 }

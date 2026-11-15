@@ -21,6 +21,7 @@ import {
   type WireAdd,
   type WireSet,
 } from "./set-wire.js"
+import { groupChangeSchema, readGroupChange, type WireGroup } from "./group-wire.js"
 import { storableText } from "./storable-text.js"
 import { readSlideEdit, type WireSlide } from "./slide-wire.js"
 import {
@@ -73,7 +74,7 @@ export type WireEdit = (Edited | RowEdited) & Unnamed & { readonly readAt?: neve
 
 export type WireChange = Edited & Unnamed & { readonly readAt: number }
 
-export type AgentChange = WireChange | WireSet | WireAdd
+export type AgentChange = WireChange | WireSet | WireAdd | WireGroup
 
 function readBoxEdit(body: Record<string, unknown>): { ok: true; edit: WireEdit } | FieldRefusal {
   if (body.property !== "box" || !knownKeys(body, ["property", "value", "node", "floor"])) return fieldRefusal
@@ -202,13 +203,14 @@ function agentForm<Change>(
 
 const setChange = agentForm(readSetChange, setChangeSchema())
 const addChange = agentForm(readAddChange, addChangeSchema())
+const groupChange = agentForm(readGroupChange, groupChangeSchema())
 
 export const readAgentEdit = readInput(
   z.strictObject({
     deck: deckInput,
     base: wholeInput.describe("Revision from airdesign_read_deck."),
     changes: z
-      .array(z.union([textChange, boxChange, setChange, addChange]))
+      .array(z.union([textChange, boxChange, setChange, addChange, groupChange]))
       .min(1)
       .max(limits.batch)
       .describe("Edits to land."),

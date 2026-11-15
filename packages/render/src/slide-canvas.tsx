@@ -3,7 +3,7 @@ import type { Box, ElementId, StackMove, TableChange } from "@airdesign/document
 import { PaintedElement } from "./element-kind.js"
 import type { HeldKeys } from "./held-keys.js"
 import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.js"
-import { SelectionFrame } from "./selection-frame.js"
+import { ChosenFrame, SelectionFrame } from "./selection-frame.js"
 import { slideBackground } from "./slide-background.js"
 import { canMove, canResize, enterElement, useMoves } from "./slide-moves.js"
 import type { CanvasSlide } from "./record.js"
@@ -41,6 +41,9 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onRemove?: (id: ElementId) => void
   readonly onOrder?: (id: ElementId, move: StackMove) => void
   readonly onSelect?: (id: ElementId | null) => void
+  readonly onGroup?: (ids: readonly ElementId[]) => void
+  readonly onUngroup?: (id: ElementId) => void
+  readonly onChoose?: (ids: readonly ElementId[]) => void
   readonly notice?: string
   readonly onTable?: (id: ElementId, change: TableChange) => void
   readonly tableBar?: TableBar
@@ -54,7 +57,11 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   useLayoutEffect(() => {
     ensureBulletRule(document)
   }, [])
-  const moves = useMoves(props.store, slide, width, props.onBox, props.onRemove, props.onOrder, props.onSelect)
+  const moves = useMoves(props.store, slide, width, props.onBox, props.onRemove, props.onOrder, props.onSelect, {
+    ...(props.onGroup === undefined ? {} : { onGroup: props.onGroup }),
+    ...(props.onUngroup === undefined ? {} : { onUngroup: props.onUngroup }),
+    ...(props.onChoose === undefined ? {} : { onChoose: props.onChoose }),
+  })
   const moving = props.onBox === undefined ? null : moves
   const selected = moving === null ? undefined : slide.elements.find((each) => each.id === moving.selected)
   const surface = useRef<HTMLDivElement>(null)
@@ -113,6 +120,13 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
           {props.notice !== undefined && props.notice !== "" ? props.notice : moving.message}
         </div>
       )}
+      {moving === null
+        ? null
+        : slide.elements.flatMap((each) =>
+            each.id === null || each.id === moving.selected || !moving.chosen.includes(each.id)
+              ? []
+              : [<ChosenFrame key={each.key} id={each.id} element={each} scaled={scaled} store={props.store} />],
+          )}
       {moving === null || selected === undefined || selected.id === null ? null : (
         <SelectionFrame
           element={selected}

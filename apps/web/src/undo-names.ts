@@ -15,6 +15,8 @@ export const elementNames: Readonly<Record<Exclude<ElementChange["change"], "ord
   table: "add-table",
   shape: "add-shape",
   remove: "delete-element",
+  group: "group",
+  ungroup: "ungroup",
 }
 
 export const stackNames: Readonly<Record<StackMove, UndoName>> = {

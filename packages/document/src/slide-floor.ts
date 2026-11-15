@@ -22,7 +22,7 @@ export function readFloor(raw: unknown, slide: SlideId): readonly IndexElement[]
 }
 
 export function floorOf(command: SlideCommand): readonly IndexElement[] {
-  if (command.slide === "element-add") return [command.element]
+  if (command.slide === "element-add" || command.slide === "element-group") return [command.element]
   if (command.slide === "add" || command.slide === "clone") return command.floor ?? []
   return []
 }
@@ -40,7 +40,10 @@ export function openingElement(state: Floored, node: ElementId): IndexElement | 
   for (const command of state.order) {
     if (
       command.id !== slide ||
-      (command.slide !== "add" && command.slide !== "clone" && command.slide !== "element-add")
+      (command.slide !== "add" &&
+        command.slide !== "clone" &&
+        command.slide !== "element-add" &&
+        command.slide !== "element-group")
     )
       continue
     const found = floorOf(command).find((element) => element.node === node)
@@ -62,8 +65,16 @@ export function floorNodes(state: Floored): readonly ElementId[] {
   return state.order.flatMap((command) => floorOf(command).map((element) => element.node))
 }
 
+function onSlide(node: ElementId, slide: SlideId): ElementId {
+  return elementId(`${slide}.${shapeOf(node).shape}`)
+}
+
 export function floorFor(elements: readonly IndexElement[], slide: SlideId): readonly IndexElement[] {
-  return elements.map((element) => ({ ...element, node: elementId(`${slide}.${shapeOf(element.node).shape}`) }))
+  return elements.map((element) => ({
+    ...element,
+    node: onSlide(element.node, slide),
+    ...(element.group === undefined ? {} : { group: onSlide(element.group, slide) }),
+  }))
 }
 
 const carried: readonly string[] = ["box.x", "box.y", "box.w", "box.h", "text.value", "notes.value", "table.value"]

@@ -18,6 +18,7 @@ export type Drag = {
   readonly start: Box
   readonly moved: boolean
   readonly keepRatio?: boolean
+  readonly enter?: ElementId
 }
 
 export type Nudge = { readonly by: "keys"; readonly id: ElementId; readonly start: Box }
@@ -131,4 +132,17 @@ export function sameBox(left: Box | null, right: Box | null): boolean {
 export function paintedAt(file: PaintBox | null, box: Box | null): PaintBox | null {
   if (box === null) return file
   return { ...(file ?? upright), x: box.x, y: box.y, width: box.cx, height: box.cy }
+}
+
+export function followed(child: PaintBox | null, group: PaintBox | null, moved: Box | null): PaintBox | null {
+  if (child === null || group === null || moved === null) return child
+  const scaleX = group.width === 0 ? 1 : moved.cx / group.width
+  const scaleY = group.height === 0 ? 1 : moved.cy / group.height
+  return {
+    ...child,
+    x: moved.x + (child.x - group.x) * scaleX,
+    y: moved.y + (child.y - group.y) * scaleY,
+    width: child.width * scaleX,
+    height: child.height * scaleY,
+  }
 }

@@ -53,7 +53,7 @@ export function openedRegister(register: Register, edit: WireRunElement): Applie
   return { ok: true, register: opened.register }
 }
 
-function landRow(register: Register, node: ElementId, row: Row, runId: string): Applied {
+export function landRow(register: Register, node: ElementId, row: Row, runId: string): Applied {
   const bytes = valueBytes(row)
   if (bytes > limits.valueBytes) return { ok: false, refusal: "limit" }
   const opened = openedRegister(register, { node })
