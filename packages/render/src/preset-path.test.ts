@@ -4,7 +4,7 @@ import { adjustDefaults, drawnPresets, presetOutline } from "./preset-path.js"
 import { presetGuides } from "./preset-rule.js"
 
 it("reads DrawingML formulas with repeated whitespace without changing their operands", () => {
-  const value = presetGuides({ adjusts: [], guides: ["svc */ 50  110557 100000"], paths: [] }, 200, 100, {})
+  const value = presetGuides({ adjusts: [], guides: ["svc */ 50  110557 100000"] }, 200, 100, {})
   expect(value("svc")).toBe(55.2785)
 })
 

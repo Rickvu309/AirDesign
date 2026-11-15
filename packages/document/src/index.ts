@@ -41,6 +41,7 @@ export {
   type GlowRead,
   type RecolorRead,
   type CropRead,
+  type BoundRead,
   type Palette,
   type Read,
   type Role,
@@ -136,6 +137,18 @@ export { assetIcon, iconNamePattern, readAsset } from "./asset-ref.js"
 export { arrowheads, arrowSizes, dashPresets, lineCaps, lineCompounds, lineJoins, widestLine } from "./trait-line.js"
 export { anchors, autofits, mostColumns, verticals } from "./trait-body.js"
 export { adjustLimit, presetAdjusts, presets, type Preset } from "./trait-geometry.js"
+export {
+  connectorEnds,
+  outlineOf,
+  route,
+  routedPlace,
+  siteKinds,
+  sitePoint,
+  type Bound,
+  type Outline,
+} from "./connector.js"
+export { siteCount, type Spot } from "./preset-sites.js"
+export { presetGuides } from "./preset-guides.js"
 export { alignments } from "./trait-box.js"
 export { slideMeasure } from "./slide-measure.js"
 export {

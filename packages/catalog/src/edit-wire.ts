@@ -21,6 +21,7 @@ import {
   type WireAdd,
   type WireSet,
 } from "./set-wire.js"
+import { diagramChangeSchema, readDiagramChange, type WireDiagram } from "./diagram-wire.js"
 import { groupChangeSchema, readGroupChange, type WireGroup } from "./group-wire.js"
 import { storableText } from "./storable-text.js"
 import { readSlideEdit, type WireSlide } from "./slide-wire.js"
@@ -74,7 +75,7 @@ export type WireEdit = (Edited | RowEdited) & Unnamed & { readonly readAt?: neve
 
 export type WireChange = Edited & Unnamed & { readonly readAt: number }
 
-export type AgentChange = WireChange | WireSet | WireAdd | WireGroup
+export type AgentChange = WireChange | WireSet | WireAdd | WireGroup | WireDiagram
 
 function readBoxEdit(body: Record<string, unknown>): { ok: true; edit: WireEdit } | FieldRefusal {
   if (body.property !== "box" || !knownKeys(body, ["property", "value", "node", "floor"])) return fieldRefusal
@@ -162,19 +163,17 @@ const readAtInput = wholeInput.describe(
 const coordinateInput = z.int().min(coordinates.lowest).max(coordinates.highest)
 const extentInput = z.int().min(0).max(coordinates.highest)
 const textChange = z.strictObject({
-  value: textInput.describe(
-    "Text to write. For an element whose file text is a JSON text value, send a JSON text value: [{from, runs: [{from, text}]}]. Each from is an index the file has, and a run from of -1 is a new run. A run may set bold, italic or underline to true or false, size to a whole number of hundredths of a point from 100 to 400000, and color to {scheme: dk1, lt1, dk2, lt2 or accent1 through accent6} or {rgb: six uppercase hex digits}. A paragraph may set align to left, center or right, and bullet to true or false. Leaving one out keeps the file's.",
-  ),
+  value: textInput.describe("Text to write: plain text, or a JSON text value when the file's text is one."),
   node: nodeInput,
   readAt: readAtInput,
   floor: textInput.exactOptional(),
 })
 const boxChange = z.strictObject({
-  property: z.literal("box").describe("Send box to move or resize the element instead of writing its text."),
+  property: z.literal("box").describe("Moves or resizes the element instead of writing its text."),
   value: z
     .strictObject({
-      x: coordinateInput.describe("Left edge from the slide's left edge."),
-      y: coordinateInput.describe("Top edge from the slide's top edge."),
+      x: coordinateInput.describe("Left edge."),
+      y: coordinateInput.describe("Top edge."),
       cx: extentInput.describe("Width."),
       cy: extentInput.describe("Height."),
     })
@@ -204,13 +203,14 @@ function agentForm<Change>(
 const setChange = agentForm(readSetChange, setChangeSchema())
 const addChange = agentForm(readAddChange, addChangeSchema())
 const groupChange = agentForm(readGroupChange, groupChangeSchema())
+const diagramChange = agentForm(readDiagramChange, diagramChangeSchema())
 
 export const readAgentEdit = readInput(
   z.strictObject({
     deck: deckInput,
     base: wholeInput.describe("Revision from airdesign_read_deck."),
     changes: z
-      .array(z.union([textChange, boxChange, setChange, addChange, groupChange]))
+      .array(z.union([textChange, boxChange, setChange, addChange, groupChange, diagramChange]))
       .min(1)
       .max(limits.batch)
       .describe("Edits to land."),

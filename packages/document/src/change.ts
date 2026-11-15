@@ -1,12 +1,15 @@
 import type { Box } from "./box.js"
-import { currentBox, currentValue, elementFacts, type Register } from "./decide.js"
+import { outlineOf, siteKinds, type Outline } from "./connector.js"
+import { currentBox, currentValue, elementFacts, landedPatch, type Register } from "./decide.js"
 import type { SlideSize } from "./deck-index.js"
 import type { DesignKey, Role } from "./design.js"
 import { shapeOf, slideKind, slideNode, themeNode, type ElementId, type SlideId } from "./element-id.js"
+import { groupParent } from "./element-group.js"
 import { elementGone } from "./element-order.js"
 import { opacityFields, takes, type ElementFacts } from "./element-takes.js"
 import { format } from "./format.js"
 import type { ElementPatch, FieldEdit, Row } from "./row.js"
+import { siteCount } from "./preset-sites.js"
 import { floorNodes, openingElement } from "./slide-floor.js"
 import { presentSlides, slideGone } from "./slide-order.js"
 import { readTextValue, writeTextValue, type TextValue } from "./text-value.js"
@@ -55,6 +58,8 @@ export type ScopedElement = {
   readonly value: string | null
   readonly box: Box | null
   readonly placed?: Box
+  readonly outline?: Outline | null
+  readonly parent?: ElementId | null
 }
 
 export type Scope = {
@@ -63,7 +68,7 @@ export type Scope = {
   readonly size: (slide: SlideId) => SlideSize | null
 }
 
-export type PlanRefusal = "kind" | "group-box" | "kept" | "indexing" | "dead"
+export type PlanRefusal = "kind" | "group-box" | "kept" | "site" | "indexing" | "dead"
 
 export type ChangeRefusal = {
   readonly node: ElementId | null
@@ -248,13 +253,35 @@ function opacityRefusals(view: ScopedElement): readonly ChangeRefusal[] {
   return kept === undefined ? [] : [{ node: view.node, trait: kept[0], code: "kept" }]
 }
 
-function planNode(change: SetChange, view: ScopedElement, spot: Spot | undefined): NodeRow | readonly ChangeRefusal[] {
+function siteFits(view: ScopedElement, end: unknown, scope: Scope): boolean {
+  if (typeof end !== "object" || end === null || !("shape" in end)) return true
+  const { node, site } = (end as { readonly shape: { readonly node: ElementId; readonly site: number } }).shape
+  const target = node === view.node || shapeOf(node).slide !== shapeOf(view.node).slide ? undefined : scope.view(node)
+  const outline = target?.outline
+  if (target === undefined || !siteKinds.includes(target.facts.kind) || outline === undefined || outline === null)
+    return false
+  return site < siteCount(outline.preset) && (target.parent ?? null) === (view.parent ?? null)
+}
+
+function siteRefusals(change: SetChange, view: ScopedElement, scope: Scope): readonly ChangeRefusal[] {
+  const input: Loose | undefined = change.connection
+  if (input === undefined || [input.start, input.end].every((end) => siteFits(view, end, scope))) return []
+  return [{ node: view.node, trait: "connection", code: "site" }]
+}
+
+function planNode(
+  change: SetChange,
+  view: ScopedElement,
+  spot: Spot | undefined,
+  scope: Scope,
+): NodeRow | readonly ChangeRefusal[] {
   const named = namedTraits(change)
   const refusals: ChangeRefusal[] = named.flatMap(([trait, input]) => {
     const unplaced = trait === "box" && moves(input) && spot === undefined && refusalOf(view, trait, input) === null
     const code = unplaced ? "kind" : refusalOf(view, trait, input)
     return code === null ? [] : [{ node: view.node, trait, code }]
   })
+  if (refusals.length === 0) refusals.push(...siteRefusals(change, view, scope))
   if (change.opacity !== undefined) refusals.push(...opacityRefusals(view))
   if (refusals.length > 0) return refusals
   const patch: Record<string, Readonly<Record<string, FieldEdit<unknown>>>> = Object.fromEntries(
@@ -278,7 +305,9 @@ export function planChange(change: SetChange, scope: Scope): PlannedChange {
   for (const node of nodes) {
     const view = scope.view(node)
     const planned =
-      view === undefined ? [{ node, trait: null, code: "dead" as const }] : planNode(change, view, placed.get(node))
+      view === undefined
+        ? [{ node, trait: null, code: "dead" as const }]
+        : planNode(change, view, placed.get(node), scope)
     if ("row" in planned) rows.push(planned)
     else refusals.push(...planned)
   }
@@ -336,6 +365,22 @@ function sizeOf(register: Register, slide: SlideId): SlideSize | null {
   return slides.find((each) => each.id === slide)?.size ?? slides.find((each) => each.size !== undefined)?.size ?? null
 }
 
+type Shaped = { readonly preset: string; readonly adjust: Readonly<Record<string, number>> }
+
+function outlineNow(
+  rows: Readonly<Record<string, FieldEdit<unknown>>> | undefined,
+  opening: ReturnType<typeof openingElement>,
+): Outline | null {
+  const edit = rows?.shape
+  if (typeof edit === "object" && edit !== null && "set" in edit) {
+    const shaped = edit.set as Shaped
+    return outlineOf(shaped.preset, shaped.adjust)
+  }
+  if (opening?.kept?.includes("geometry") === true) return null
+  const named = opening?.design?.geometry?.[0]
+  return outlineOf(typeof named === "string" ? named : null, {})
+}
+
 export function registerScope(register: Register): Scope {
   return {
     expand: (target) => expanded(register, target),
@@ -353,6 +398,8 @@ export function registerScope(register: Register): Scope {
         value: body === undefined ? (opening?.value ?? null) : currentValue(body),
         box: (body === undefined ? null : currentBox(body)) ?? opening?.box ?? null,
         ...(opening?.placed === undefined ? {} : { placed: opening.placed }),
+        outline: outlineNow(body === undefined ? undefined : landedPatch(body, "text").geometry, opening),
+        parent: groupParent(register, node) ?? null,
       }
     },
   }

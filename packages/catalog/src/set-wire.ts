@@ -128,7 +128,7 @@ export function readSetChange(raw: unknown): Read<WireSet> {
   return { ok: true, change: { op: "set", target, ...opacity.change, ...read.change } as WireSet }
 }
 
-function readBox(raw: unknown): Box | null {
+export function readPlacedBox(raw: unknown): Box | null {
   const read = readTrait("box", raw)
   if (!read.ok || Object.keys(read.change).some((field) => !Object.hasOwn(boxSides, field))) return null
   const box = Object.fromEntries(Object.entries(boxSides).map(([field, side]) => [side, read.change[field]]))
@@ -151,7 +151,7 @@ export function readAddChange(raw: unknown): Read<WireAdd> {
   const keys: readonly string[] = addKeys[kind]
   const extra = Object.keys(raw).find((key) => !keys.includes(key))
   if (extra !== undefined) return refused(extra)
-  const box = raw.box === undefined ? undefined : readBox(raw.box)
+  const box = raw.box === undefined ? undefined : readPlacedBox(raw.box)
   if (box === null) return refused("box")
   const placed = box === undefined ? {} : { box }
   if (kind === "picture") {
@@ -204,12 +204,26 @@ export function setChangeSchema(): JsonSchema {
       target: {
         type: "string",
         pattern: targetPattern,
-        description: `An element id such as 258.7 or 258.notes; a slide id such as 258 for the slide itself, whose fill is the slide's background; <slide>.<role> such as 258.title for the element with that role on one slide; *.<role> such as *.title for it on every slide; or deck.theme. Roles: ${roles.join(", ")}.`,
+        description:
+          "An element id such as 258.7 or 258.notes, a slide id, <slide>.<role> such as 258.title, *.<role>, or deck.theme.",
       },
       opacity: { ...agentSchema(opacityWire.desc), description: opacityWire.description },
       ...Object.fromEntries(wired.map((trait) => [trait, traitSchema(trait, null)])),
     },
   }
+}
+
+export function placedBoxSchema(): JsonSchema {
+  return {
+    ...traitSchema("box", Object.keys(boxSides)),
+    description: "Where it sits on the slide, in points. Send all four.",
+  }
+}
+
+export const slideSchema: JsonSchema = {
+  type: "string",
+  pattern: `^${slidePart}$`,
+  description: "Slide id from airdesign_read_deck.",
 }
 
 export function addChangeSchema(): JsonSchema {
@@ -222,11 +236,8 @@ export function addChangeSchema(): JsonSchema {
     properties: {
       op: { type: "string", const: "add" },
       kind: { type: "string", enum: addable },
-      slide: { type: "string", pattern: `^${slidePart}$`, description: "Slide id from airdesign_read_deck." },
-      box: {
-        ...traitSchema("box", Object.keys(boxSides)),
-        description: "Where the box sits on the slide, in points. Send all four.",
-      },
+      slide: slideSchema,
+      box: placedBoxSchema(),
       text: traitSchema("text", null),
       icon: {
         ...agentSchema(traits.image.fields.source.desc),

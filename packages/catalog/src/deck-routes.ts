@@ -16,7 +16,7 @@ import {
 } from "./wire.js"
 import { readRegister } from "./register-answer.js"
 
-const callRefusals = [...refusals, "field", "deck", "batch", "base", "payload", "indexing", "kept"] as const
+const callRefusals = [...refusals, "field", "deck", "batch", "base", "payload", "indexing", "kept", "site"] as const
 
 const editRefusals = [...callRefusals, "text-from", "owner", "deleted", "store", "held"] as const
 

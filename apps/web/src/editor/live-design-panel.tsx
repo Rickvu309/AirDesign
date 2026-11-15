@@ -1,16 +1,15 @@
 import { useId, useMemo, useSyncExternalStore, type ReactNode } from "react"
-import { toast } from "sonner"
 import {
   openRegister,
   readTableValue,
   shapeOf,
+  siteKinds,
   themeNode,
   type ElementId,
   type SchemeName,
-  type SetChange,
+  type ScopedElement,
   type TraitReads,
 } from "@airdesign/document"
-import { connect } from "@airdesign/live"
 import {
   readSlides,
   readTraits,
@@ -18,6 +17,7 @@ import {
   shownCrop,
   shownEffects,
   shownBody,
+  shownConnection,
   shownFill,
   shownGeometry,
   shownIdentity,
@@ -28,12 +28,19 @@ import {
   themeSwatches,
   type DeckTraits,
 } from "@airdesign/pptx"
-import { flushPending, type CommitOutcome } from "@/commit-edit"
+import type { CommitOutcome } from "@/commit-edit"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
 import { formatCopy } from "@/copy/format-copy"
-import { panelOf, type PanelReads, type PanelSection, type Swatch as PaletteSwatch } from "@/design/panel"
-import { applyChange, deviceScope, valueFits, type ChangingDeck } from "@/design/trait-edit"
+import {
+  panelOf,
+  type NodeChoice,
+  type PanelReads,
+  type PanelSection,
+  type Swatch as PaletteSwatch,
+} from "@/design/panel"
+import { changeDesign, fileValue } from "@/design/design-change"
+import { deviceScope } from "@/design/trait-edit"
 import { designShown, type DesignShown } from "@/design-shown"
 import {
   BackgroundKind,
@@ -46,8 +53,6 @@ import {
 } from "@/editor/design-panel"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import type { UndoList } from "@/editor/use-undo"
-import { fileTableValue } from "@/table-edit"
-import { structureOf } from "@/table-hook"
 import type { UndoEntry } from "@/undo-list"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -102,6 +107,7 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
     const effects = Object.entries(shownEffects(parts, at) ?? {}).map(([field, shown]) => [`effects.${field}`, shown])
     const image = shownImage(parts, at)
     const crop = shownCrop(parts, at)
+    const connection = shownConnection(parts, at)
     const identity = Object.entries(shownIdentity(parts, at) ?? {}).map(([field, value]) => [
       `identity.${field}`,
       { value, own: true },
@@ -115,6 +121,12 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
             "image.alpha": { value: image.alpha, own: true },
           }),
       ...(crop === null ? {} : { "crop.rect": { value: crop, own: true } }),
+      ...(connection === null
+        ? {}
+        : {
+            "connection.start": { value: connection.start, own: true },
+            "connection.end": { value: connection.end, own: true },
+          }),
       ...Object.fromEntries(identity),
       ...(fill === null ? {} : { "fill.value": fill }),
       ...(geometry === null ? {} : { "geometry.shape": geometry }),
@@ -137,37 +149,22 @@ function paletteOf(parts: Parts, index: number): readonly PaletteSwatch[] {
   return themeSwatches(parts, part).map((swatch) => ({ ...swatch, name: formatCopy.colors[swatch.scheme] }))
 }
 
-function fileValue(shown: DeckPaint, node: ElementId): string | null {
-  const shape = shown.shapes.current.get(node)
-  return shape?.contentKind === "table" ? fileTableValue(shown.editParts.current, shape) : null
-}
-
-function changingDeck(deck: DesigningDeck): ChangingDeck {
-  const { shown, undo } = deck
-  return {
-    id: deck.id,
-    parts: () => shown.shownParts.current,
-    floor: (node) => shown.boxes.current.get(node)?.file ?? shown.movables.current.get(node)?.file ?? "",
-    file: (node) => fileValue(shown, node),
-    fits: (node, value) => valueFits(shown.editParts.current, shown.shapes.current.get(node), value),
-    hold: () => undo.records.current.hold(),
-    record: deck.record,
-    show: (register) => {
-      if (shown.structure.current !== structureOf(register)) shown.showRegister(register)
-      shown.repaint.current(register, "person")
-      deck.setPending(true)
-    },
-  }
-}
-
-function changed(deck: DesigningDeck, change: SetChange) {
-  deck.undo.turnAfter(async () => {
-    if (await applyChange(changingDeck(deck), change)) {
-      void flushPending(connect, deck.id).then(deck.settle)
-      return
-    }
-    toast.error(designCopy.refused)
-    deck.settle("refused")
+function nodeChoices(deck: DesigningDeck, connector: ScopedElement): readonly NodeChoice[] {
+  const { shown } = deck
+  const scope = deviceScope(shown.shownParts.current, shown.shownRegister.current ?? openRegister("", ""))
+  const nodes = shown.store.current.slides()[shown.current]?.elements ?? []
+  return nodes.flatMap((node) => {
+    const view = node === connector.node ? undefined : scope.view(node)
+    if (
+      view === undefined ||
+      !siteKinds.includes(view.facts.kind) ||
+      view.outline === undefined ||
+      view.outline === null
+    )
+      return []
+    if ((view.parent ?? null) !== (connector.parent ?? null)) return []
+    const name = fieldsOf(shown.displayParts.current, node)?.["identity.name"]?.value
+    return [{ node, name: typeof name === "string" && name !== "" ? name : node }]
   })
 }
 
@@ -189,13 +186,14 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
     reads: readsOf(edited, node),
     moves: shown.movables.current.has(node),
     fields: fieldsOf(shown.displayParts.current, node),
+    ...(view.facts.kind === "connector" ? { nodes: nodeChoices(deck, view) } : {}),
   })
   return (
     <ElementDesign
       model={model}
       kind={view.facts.kind}
       palette={palette}
-      onChange={(row, value) => changed(deck, row.change(value))}
+      onChange={(row, value) => changeDesign(deck, row.change(value))}
     />
   )
 }
@@ -226,7 +224,9 @@ function LiveSlideDesign({ deck }: { deck: DesigningDeck }) {
   return (
     <DesignView
       shown={view}
-      onColor={(scheme) => changed(deck, { target: { slide: view.slide }, fill: { value: { solid: { scheme } } } })}
+      onColor={(scheme) =>
+        changeDesign(deck, { target: { slide: view.slide }, fill: { value: { solid: { scheme } } } })
+      }
     >
       <LiveThemeDesign deck={deck} />
     </DesignView>
@@ -252,7 +252,11 @@ function LiveThemeDesign({ deck }: { deck: DesigningDeck }) {
   return (
     <DesignSection title={section.label} last>
       <div className="flex flex-col gap-2" data-design-theme>
-        <SectionRows rows={section.rows} palette={[]} onChange={(row, value) => changed(deck, row.change(value))} />
+        <SectionRows
+          rows={section.rows}
+          palette={[]}
+          onChange={(row, value) => changeDesign(deck, row.change(value))}
+        />
       </div>
     </DesignSection>
   )

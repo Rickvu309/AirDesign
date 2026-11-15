@@ -32,7 +32,7 @@ export function firstColor(value: unknown): Color | null {
   return null
 }
 
-export function seedOf(desc: Desc, color: Color, at = 0, count = 1): unknown {
+export function seedOf(desc: Desc, color: Color, at = 0, count = 1, node: string | null = null): unknown {
   switch (desc.kind) {
     case "number":
       if (desc.unit === "fraction" && count > 1) return Math.round((at / (count - 1)) * desc.max)
@@ -47,16 +47,18 @@ export function seedOf(desc: Desc, color: Color, at = 0, count = 1): unknown {
       return desc.options[0]
     case "record":
       return Object.fromEntries(
-        Object.entries(desc.fields).map(([name, field]) => [name, seedOf(field, color, at, count)]),
+        Object.entries(desc.fields).map(([name, field]) => [name, seedOf(field, color, at, count, node)]),
       )
     case "list": {
       const length = Math.max(desc.min, 2)
-      return Array.from({ length }, (_, item) => seedOf(desc.item, color, item, length))
+      return Array.from({ length }, (_, item) => seedOf(desc.item, color, item, length, node))
     }
     case "union": {
       const [name, item] = Object.entries(desc.cases).find(([, each]) => each.kind !== "mark") ?? []
-      return name === undefined || item === undefined ? null : { [name]: seedOf(item, color, at, count) }
+      return name === undefined || item === undefined ? null : { [name]: seedOf(item, color, at, count, node) }
     }
+    case "node":
+      return node
     default:
       return null
   }

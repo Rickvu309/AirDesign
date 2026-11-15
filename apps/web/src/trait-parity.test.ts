@@ -28,6 +28,7 @@ import {
   readTable,
   shownEffects,
   shownBody,
+  shownConnection,
   shownFill,
   shownGeometry,
   shownLine,
@@ -223,7 +224,17 @@ const probes: { readonly [T in TraitName]: Probe<T> } = {
   },
   image: pictureProbes.image,
   crop: pictureProbes.crop,
-  connection: { fields: {} },
+  connection: {
+    deck: "census-updating-spm.pptx",
+    kind: "connector",
+    node: "324.26",
+    opening: () => ({ v: format, patch: { connection: { start: "opening", end: "opening" } } }),
+    edit: (_, field, value) => ({ v: format, patch: { connection: { [field]: { set: value } } } }),
+    fields: {
+      start: { file: (parts, at) => shownConnection(parts, at)?.start, shows: (value) => value },
+      end: { file: (parts, at) => shownConnection(parts, at)?.end, shows: (value) => value },
+    },
+  },
   box: {
     deck: "clean.pptx",
     kind: "shape",

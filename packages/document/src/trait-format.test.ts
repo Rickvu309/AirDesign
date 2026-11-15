@@ -13,7 +13,7 @@ const recorded: Readonly<Record<TraitName, readonly string[]>> = {
   text: ["7bd8d0c1", "aaea7ede", "aaea7ede"],
   image: ["5465b825", "ceff7e39"],
   crop: ["5465b825", "3c06b041"],
-  connection: ["5465b825"],
+  connection: ["5465b825", "4ad8435a"],
   table: ["248ba3f0", "248ba3f0"],
   notes: ["d772d0d9"],
   theme: ["5465b825", "fd31b1bd"],

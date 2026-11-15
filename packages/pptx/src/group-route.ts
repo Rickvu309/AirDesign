@@ -1,6 +1,7 @@
 import {
   elementStacks,
   groupCommand,
+  groupNode,
   landedPatch,
   shapeOf,
   throughGroup,
@@ -15,6 +16,7 @@ import {
 import { arrangeSlide } from "./element-stack-route.js"
 import { regroupSaved, shapePlace, unwrapGroup, wrapGroup, type SavedGroup } from "./group-write.js"
 import { slidePart } from "./package-address.js"
+import { requireMarkup } from "./part-markup.js"
 import { writeTrait } from "./trait-xml.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -61,14 +63,24 @@ function rowsOf(state: GroupedState, node: Parameters<typeof shapeOf>[0]): Trait
   return body === undefined ? undefined : landedPatch(body, "text").box
 }
 
+function holds(bytes: Uint8Array, shapes: readonly string[]): boolean {
+  const { elements } = requireMarkup(bytes)
+  return shapes.every((shape) => elements.some((mark) => mark.kind === "p:cNvPr" && mark.id === shape))
+}
+
 export function groupsReplayed(parts: Parts, minted: string, from: SlideId, state: GroupedState, upTo: number): Parts {
   const saved = new Map<string, SavedGroup>()
+  const passed = new Set<string>()
   let next = parts
   for (let at = 0; at < upTo; at += 1) {
     const command = state.order[at]
     if (command === undefined || !groupCommand(command) || command.id !== from) continue
     const part = slidePart(next, minted)
     if (part === null) throw new Error("slide")
+    const members = command.slide === "element-group" ? command.members.map((member) => shapeOf(member.node).shape) : []
+    if (command.slide === "element-group" && !holds(bytesOf(next, part), members))
+      passed.add(shapeOf(groupNode(command)).shape)
+    if (passed.has(shapeOf(groupNode(command)).shape)) continue
     const prefix = {
       file: state.file,
       order: state.order.slice(0, at),
@@ -81,15 +93,14 @@ export function groupsReplayed(parts: Parts, minted: string, from: SlideId, stat
     )
     const where = (shape: string) => ({ slide: minted, part, shape })
     if (command.slide === "element-group") {
-      const { element, members } = command
+      const { element } = command
       if (element.box === null) throw new Error("box")
-      const shapes = members.map((member) => shapeOf(member.node).shape)
       next = withPart(
         next,
         part,
-        wrapGroup(bytesOf(next, part), Number(shapeOf(element.node).shape), element.box, shapes),
+        wrapGroup(bytesOf(next, part), Number(shapeOf(element.node).shape), element.box, members),
       )
-      for (const member of members) {
+      for (const member of command.members) {
         const shape = shapeOf(member.node).shape
         const filed = shapePlace(bytesOf(next, part), shape)
         next = writeTrait(next, where(shape), "box", boxPatch(keptTurn(memberPlace(member), filed)))

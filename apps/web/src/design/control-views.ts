@@ -8,6 +8,7 @@ import { CountControl } from "@/design/controls/count"
 import { HexControl } from "@/design/controls/hex"
 import { LengthControl } from "@/design/controls/length"
 import { ListControl } from "@/design/controls/list"
+import { NodeControl } from "@/design/controls/node"
 import { PercentControl } from "@/design/controls/percent"
 import { RecordControl } from "@/design/controls/record"
 import { TableControl } from "@/design/controls/table"
@@ -32,4 +33,5 @@ export const controlViews: Partial<Readonly<Record<ControlKind, ComponentType<Co
   text: TextControl,
   table: TableControl,
   asset: AssetControl,
+  node: NodeControl,
 }

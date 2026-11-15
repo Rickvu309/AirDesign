@@ -25,6 +25,7 @@ import { effectReads } from "./effect-reads.js"
 import { readSlides } from "./read-shapes.js"
 import { referenceOf } from "./style-reference.js"
 import { isShapeTag, shapeTags } from "./shape-tree.js"
+import { endOf } from "./trait-xml-connection.js"
 
 export type DeckTraits = {
   readonly palettes: readonly Palette[]
@@ -139,6 +140,18 @@ function lineReads(
   ending("a:prstDash", "line.dash", "val", "solid")
   ending("a:headEnd", "line.head", "type", "none")
   ending("a:tailEnd", "line.tail", "type", "none")
+}
+
+function connectionReads(slide: string, own: Held, reads: Partial<Record<DesignKey, Read<unknown>>>) {
+  const holder = child(child(own, "p:nvCxnSpPr"), "p:cNvCxnSpPr")
+  if (holder === undefined) return
+  for (const [tag, key] of [
+    ["a:stCxn", "connection.start"],
+    ["a:endCxn", "connection.end"],
+  ] as const) {
+    const end = endOf(slide, child(holder, tag)?.element)
+    if (!("none" in end)) reads[key] = read(end.shape, undefined)
+  }
 }
 
 function placedBox(transform: Held): Box | undefined {
@@ -365,6 +378,7 @@ export function readTraits(parts: ReadonlyMap<string, Uint8Array>): DeckTraits {
       bodyReads(owners, reads)
       textReads(owners, item.placeholder?.type ?? null, chain, fonts, reads)
       Object.assign(reads, pictureReads(parts, sheet, item))
+      if (owners[0] !== undefined) connectionReads(slide, owners[0], reads)
       const type = item.placeholder?.type
       const role =
         type === undefined

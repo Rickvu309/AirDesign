@@ -1,5 +1,6 @@
 import { bodyWords } from "@/copy/body-copy"
 import { boxWords } from "@/copy/box-copy"
+import { connectionWords } from "@/copy/connection-copy"
 import { effectsWords } from "@/copy/effects-copy"
 import { fillWords } from "@/copy/fill-copy"
 import { lineWords } from "@/copy/line-copy"
@@ -19,6 +20,7 @@ export const optionCopy: Readonly<Record<string, string>> = {
   ...bodyWords,
   ...pictureWords,
   ...tableWords,
+  ...connectionWords,
 }
 
 export function optionWord(field: string, option: string): string {

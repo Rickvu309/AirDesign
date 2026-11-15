@@ -135,11 +135,11 @@ Software that works on a person's decks over MCP, such as Claude or Codex. A per
 _Avoid_: bot, integration, app
 
 **Aira**:
-The agent built into AirDesign. It reads a deck, changes what a person can change in the design panel, adds, duplicates, deletes and reorders slides, sets a slide's background color, adds text boxes and icons, groups and ungroups elements and deletes elements.
+The agent built into AirDesign. It reads a deck, changes what a person can change in the design panel, adds, duplicates, deletes and reorders slides, sets a slide's background color, adds text boxes, icons and diagrams, groups and ungroups elements, attaches connectors and deletes elements.
 _Avoid_: the assistant, the AI
 
 **design panel**:
-The panel beside the slide that sets the selected element's position, size, rotation, flips, alignment, shape, opacity, fill, line, effects, text, a picture's icon, recolor and crop, and the element's name and alt text, or the slide's background color and the deck's theme when nothing is selected.
+The panel beside the slide that sets the selected element's position, size, rotation, flips, alignment, shape, opacity, fill, line, effects, text, a picture's icon, recolor and crop, a connector's ends, and the element's name and alt text, or the slide's background color and the deck's theme when nothing is selected.
 _Avoid_: inspector, properties, format pane
 
 **theme**:
@@ -169,6 +169,18 @@ _Avoid_: transparency, alpha (in product copy)
 **group**:
 Two or more elements of one slide that move and resize as one. A person chooses them with Shift+click and groups them with Group or Ctrl+G; Ungroup or Ctrl+Shift+G puts each one back on the slide where it showed. An agent sends `group` or `ungroup` in its edit. The first click on an element of a group selects the group, the next selects that element.
 _Avoid_: bundle, combine, merge, set
+
+**connector**:
+A line whose ends can attach to sites on the shapes and pictures of its slide, so it follows them when they move. A person drags an end onto a site, or picks the shape and site in the design panel's Connector section; an agent sends `connection` in its `set`. A connector keeps its own line form, straight, elbow or curved, and None frees an end. The code calls a connector's ends its `connection`.
+_Avoid_: link, edge, arrow (an arrow is a line's end)
+
+**site**:
+A numbered point on a shape or picture where a connector's end attaches, numbered as PowerPoint numbers them: a rectangle has 0 at the top, 1 left, 2 bottom and 3 right. A shape's sites show as dots while a person drags a connector's end over it. PowerPoint calls them connection points.
+_Avoid_: anchor, port, handle
+
+**diagram**:
+Shapes joined by connectors and grouped, which an agent adds in one change with `diagram`: one rounded shape per label, left to right, each joined to the next by an arrow attached to both.
+_Avoid_: flowchart, SmartArt
 
 **effects**:
 An element's shadow, glow and soft edge, set together in the Effects section of the design panel or with `effects` in an agent's `set`. Changing one keeps the others.

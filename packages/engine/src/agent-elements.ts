@@ -25,7 +25,7 @@ type Built =
   | { readonly ok: true; readonly register: Register; readonly runId: string }
   | { readonly ok: false; readonly refusal: CallRefusal }
 
-function takenBoxes(register: Register, slide: SlideId): readonly Box[] {
+export function takenBoxes(register: Register, slide: SlideId): readonly Box[] {
   const rows = new Map<ElementId, IndexElement>()
   for (const row of register.index?.elements ?? []) rows.set(row.node, row)
   for (const node of floorNodes(register)) {

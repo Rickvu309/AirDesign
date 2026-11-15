@@ -25,7 +25,10 @@ export function UnionControl({ row, palette, onChange, inner }: ControlProps) {
     const desc = cases[name]
     if (desc === undefined || name === chosen) return
     if (desc.kind === "mark") onChange({ [name]: true })
-    else onChange({ [name]: caseSeed(`${row.trait}.${row.field}.${name}`, color) ?? seedOf(desc, color) })
+    else
+      onChange({
+        [name]: caseSeed(`${row.trait}.${row.field}.${name}`, color) ?? seedOf(desc, color, 0, 1, row.nodes?.[0]?.node),
+      })
   }
 
   return (

@@ -13,8 +13,7 @@ export const tableWire: TraitWire<"table"> = {
   description: "The table's rows, columns, cell text, cell fills and cell borders.",
   fields: {
     value: {
-      description:
-        'A JSON table value, {rows: [{from, cells, fills, borders}]}, where each cell is a JSON text value. from names a row the file has, or -1 for a new row; a row left out is deleted. columns lists the file\'s column for each cell, or -1 for a new column, when columns change. fills and borders hold one entry per cell, or null to keep the cell\'s: a fill as stored, such as {"solid":{"scheme":"accent1"}}, and borders as {top, right, bottom, left}, each {fill, width in EMU, dash}.',
+      description: "A JSON table value, as the instructions give it.",
       example: {
         table: {
           value: JSON.stringify({

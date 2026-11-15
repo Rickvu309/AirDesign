@@ -1,6 +1,6 @@
 import { type ElementId, type Register } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
-import { type ReadShape, type SectionStart } from "@airdesign/pptx"
+import { boundTargets, type ReadShape, type SectionStart } from "@airdesign/pptx"
 import { paintStore, type Entering } from "@airdesign/render"
 import { useRef, useState } from "react"
 import { type SlideCanvases } from "@/canvas-slide"
@@ -33,6 +33,7 @@ export function useDeckPaint(
   const painted = useRef<Painted | null>(null)
   const busy = useRef(busyElements())
   const structure = useRef("")
+  const bound = useRef<ReadonlySet<string>>(new Set())
   const shownRegister = useRef<Register | null>(null)
   const repaint = useRef<(register: Register, from?: "person") => void>(() => undefined)
   const [entering, setEntering] = useState<Entering | null>(null)
@@ -61,14 +62,15 @@ export function useDeckPaint(
     canvases.current = next.canvases
     pictures.current?.release()
     pictures.current = next.pictures
-    structure.current = structureOf(register)
+    bound.current = boundTargets(next.display)
+    structure.current = structureOf(register, bound.current)
     shownRegister.current = register
     repaint.current = liveRepaint(store.current, next.files, register, busy.current)
     notesBar.show(notesShown(shownParts.current, register))
     setSlideCount(next.count)
     setSections(next.sections)
     void pictureTool.store.load(id, register).then((more) => {
-      if (more && structure.current === structureOf(register)) showRegister(register)
+      if (more && structure.current === structureOf(register, bound.current)) showRegister(register)
     })
   }
 
@@ -93,6 +95,7 @@ export function useDeckPaint(
     pictures,
     busy,
     structure,
+    bound,
     repaint,
     entering,
     setEntering,

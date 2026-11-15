@@ -23,6 +23,7 @@ import {
   type IndexElement,
   type Read,
   type CropRead,
+  type BoundRead,
   type RecolorRead,
   type ShadowRead,
   type Shown,
@@ -65,6 +66,10 @@ function agentRecolor(recolor: RecolorRead): string {
   return recolor === "grayscale" ? recolor : `duotone ${agentColor(recolor.dark)}, ${agentColor(recolor.light)}`
 }
 
+function agentBound(bound: BoundRead): string {
+  return `${bound.node} site ${String(bound.site)}`
+}
+
 function agentCrop(crop: CropRead): string {
   return `l ${agentPercent(crop.l)} t ${agentPercent(crop.t)} r ${agentPercent(crop.r)} b ${agentPercent(crop.b)}`
 }
@@ -97,6 +102,8 @@ const agent: Agent = {
   crop: agentCrop,
   "identity.alt": (value) => value,
   "identity.hidden": (value) => value,
+  "connection.start": agentBound,
+  "connection.end": agentBound,
 }
 
 function shownOf<Key extends DesignKey>(key: Key, read: Read<NonNullable<TraitReads[Key]>["value"]>): Shown {
@@ -104,8 +111,8 @@ function shownOf<Key extends DesignKey>(key: Key, read: Read<NonNullable<TraitRe
   return read.source === undefined ? [value] : [value, read.source]
 }
 
-const turnKeys: readonly DesignKey[] = ["box.rot", "box.flipH", "box.flipV"]
-const keptFirst: readonly DesignKey[] = [...turnKeys, ...designKeys.filter((key) => !turnKeys.includes(key))]
+const firstKeys: readonly DesignKey[] = ["box.rot", "box.flipH", "box.flipV", "connection.start", "connection.end"]
+const keptFirst: readonly DesignKey[] = [...firstKeys, ...designKeys.filter((key) => !firstKeys.includes(key))]
 
 export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design" | "kept" | "placed"> {
   const design: Partial<Record<DesignKey, Shown>> = {}
@@ -204,6 +211,10 @@ const shadowShown = (shadow: Shadow) => ("none" in shadow ? null : agentShadow(s
 const glowShown = (glow: Glow) => ("none" in glow ? null : agentGlow(glow.halo))
 const softEdgeShown = (soft: SoftEdge) => ("none" in soft ? null : tenths(soft.radius / emuPerPoint))
 
+type End = FieldValue<"connection", "start">
+
+const endShown = (end: End) => ("none" in end ? null : agentBound(end.shape))
+
 type Recolor = FieldValue<"image", "recolor">
 
 const recolorShown = (recolor: Recolor) =>
@@ -242,6 +253,8 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch): Des
   )
   next = folded(next, "identity.alt", patch.identity?.alt, (value) => (value.trim() === "" ? null : altShown(value)))
   next = folded(next, "identity.hidden", patch.identity?.hidden, (value) => (value ? true : null))
+  next = folded(next, "connection.start", patch.connection?.start, endShown)
+  next = folded(next, "connection.end", patch.connection?.end, endShown)
   next = faded(next, before, "fill", patch.fill?.value, patch.fill?.alpha)
   next = faded(next, before, "line.fill", line?.fill, line?.alpha)
   next = faded(next, before, "text.color", undefined, patch.text?.alpha)

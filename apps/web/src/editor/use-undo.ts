@@ -79,7 +79,7 @@ export type TurningDeck = {
 export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
   const { id, undo, shown, notesBar, settle, setPending } = deck
   const { undoList, undoShown, setUndoShown, told, setTold, typed, records, turnAfter } = undo
-  const { store, shownParts, structure, repaint, setCurrent, showRegister } = shown
+  const { store, shownParts, structure, bound, repaint, setCurrent, showRegister } = shown
 
   useEffect(() => {
     function closeSession() {
@@ -107,7 +107,8 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     const before = slideId === null ? -1 : store.current.slides().findIndex((slide) => slide.id === slideId)
     const next = await connect(memoryRemote()).openDeck(id)
     if (!next.ok) return
-    if ("slide" in undoable || structure.current !== structureOf(next.register)) showRegister(next.register)
+    if ("slide" in undoable || structure.current !== structureOf(next.register, bound.current))
+      showRegister(next.register)
     repaint.current(next.register, "person")
     const nodes = "steps" in undoable ? undoable.steps.map((step) => step.node) : []
     if (nodes.some((node) => slideKind(node) === "notes")) notesBar.show(notesShown(shownParts.current, next.register))

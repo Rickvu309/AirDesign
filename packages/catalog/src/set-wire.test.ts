@@ -103,7 +103,12 @@ describe("readSetChange reads the agent form into a change in stored units", () 
     expect(refused({ box: { x: null } })).toEqual({ ok: false, refusal: "field", field: "box.x" })
     expect(refused({ effects: { glow: 1 } })).toEqual({ ok: false, refusal: "field", field: "effects.glow" })
     expect(refused({ effects: { softEdge: null } })).toEqual({ ok: false, refusal: "field", field: "effects.softEdge" })
-    expect(refused({ connection: { start: 1 } })).toEqual({ ok: false, refusal: "field", field: "connection" })
+    expect(refused({ connection: { start: 1 } })).toEqual({ ok: false, refusal: "field", field: "connection.start" })
+    expect(refused({ connection: { start: { shape: { node: "258.7", site: 8 } } } })).toEqual({
+      ok: false,
+      refusal: "field",
+      field: "connection.start",
+    })
     expect(refused({ crop: { left: 1 } })).toEqual({ ok: false, refusal: "field", field: "crop.left" })
     expect(refused({ image: { source: "rocketship" } })).toEqual({ ok: false, refusal: "field", field: "image.source" })
     expect(refused({ image: { source: "Rocket" } })).toEqual({ ok: false, refusal: "field", field: "image.source" })

@@ -33,6 +33,7 @@ export type UndoName =
   | "opacity"
   | "picture"
   | "crop"
+  | "connector"
   | "rename"
   | "alt-text"
   | "hide"
@@ -83,6 +84,7 @@ export const undoCopy = {
     opacity: "Undo opacity",
     picture: "Undo picture",
     crop: "Undo crop",
+    connector: "Undo connector",
     rename: "Undo rename",
     "alt-text": "Undo alt text",
     hide: "Undo hide",
@@ -128,6 +130,7 @@ export const undoCopy = {
     opacity: "Redo opacity",
     picture: "Redo picture",
     crop: "Redo crop",
+    connector: "Redo connector",
     rename: "Redo rename",
     "alt-text": "Redo alt text",
     hide: "Redo hide",
