@@ -34,6 +34,7 @@ export async function expectNoSample(page: Page) {
   expect(new Set(seen)).toEqual(
     new Set([
       "clean",
+      productCopy.saved,
       "1",
       "Hello",
       "63%",
