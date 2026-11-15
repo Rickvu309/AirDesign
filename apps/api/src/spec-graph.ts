@@ -91,6 +91,35 @@ export function pathsFrom(graph: Graph, root: (state: SpecState) => boolean): Ma
   return paths
 }
 
+export function walks(graph: Graph, paths: Map<string, Path>): readonly Path[] {
+  const edges = graph.edges.filter((edge) => edge.action !== "Done")
+  const left = new Set(edges)
+  const covered = (from: string, step: { readonly action: string; readonly to: string }) => {
+    for (const edge of left)
+      if (edge.from === from && edge.action === step.action && edge.to === step.to) left.delete(edge)
+  }
+  const found: Path[] = []
+  for (const first of edges) {
+    if (!left.has(first)) continue
+    const path = paths.get(first.from)
+    if (path === undefined) throw new Error(`no path to ${first.from}`)
+    const steps = [...path.steps, { action: first.action, to: first.to }]
+    let at = path.root
+    for (const step of steps) {
+      covered(at, step)
+      at = step.to
+    }
+    for (let next = edges.find((edge) => left.has(edge) && edge.from === at); next !== undefined;) {
+      left.delete(next)
+      steps.push({ action: next.action, to: next.to })
+      at = next.to
+      next = edges.find((edge) => left.has(edge) && edge.from === at)
+    }
+    found.push({ root: path.root, steps })
+  }
+  return found
+}
+
 export function same(left: unknown, right: unknown): boolean {
   return JSON.stringify(sorted(left)) === JSON.stringify(sorted(right))
 }
