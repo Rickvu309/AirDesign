@@ -21,6 +21,12 @@ export type UndoList = { readonly undo: readonly UndoEntry[]; readonly redo: rea
 
 export type UndoDirection = "undo" | "redo"
 
+export type UndoShown = {
+  readonly undo: UndoName | null
+  readonly redo: UndoName | null
+  readonly told: UndoDirection | null
+}
+
 type Kept = Promise<{ readonly ok: boolean }>
 
 export type UndoLink = {
@@ -36,6 +42,8 @@ export type TurnedBack =
   | { readonly outcome: "empty"; readonly list: UndoList }
 
 export const emptyUndo: UndoList = { undo: [], redo: [] }
+
+export const emptyShown: UndoShown = { undo: null, redo: null, told: null }
 
 export type RecordsInFlight = { readonly hold: () => () => void; readonly landed: () => Promise<void> }
 
@@ -83,10 +91,18 @@ export function recorded(list: UndoList, entry: UndoEntry): UndoList {
   return { undo: unchanged(next) ? below : [...below, next].slice(-kept), redo: [] }
 }
 
-export function undoLabel(direction: UndoDirection, list: UndoList): string {
-  const entry = list[direction].at(-1)
-  if (entry === undefined) return direction === "undo" ? undoCopy.undo : undoCopy.redo
-  return direction === "undo" ? undoCopy.undoNamed[entry.name] : undoCopy.redoNamed[entry.name]
+export function shownOf(list: UndoList, told: UndoDirection | null): UndoShown {
+  return { undo: list.undo.at(-1)?.name ?? null, redo: list.redo.at(-1)?.name ?? null, told }
+}
+
+export function sameShown(left: UndoShown, right: UndoShown): boolean {
+  return left.undo === right.undo && left.redo === right.redo && left.told === right.told
+}
+
+export function undoLabel(direction: UndoDirection, shown: UndoShown): string {
+  const name = shown[direction]
+  if (name === null) return direction === "undo" ? undoCopy.undo : undoCopy.redo
+  return direction === "undo" ? undoCopy.undoNamed[name] : undoCopy.redoNamed[name]
 }
 
 async function sentCommand(link: UndoLink, deck: string, command: Command): Promise<boolean> {

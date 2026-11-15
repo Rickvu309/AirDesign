@@ -1,7 +1,7 @@
 import { slideKind, type SlideId, type Undoable } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { textFormatting } from "@airdesign/render"
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import type { UndoButtonsState } from "@/editor/undo-buttons"
 import { indexedRegister } from "@/editor/group-actions"
@@ -11,14 +11,18 @@ import type { DeckPaint } from "@/editor/use-deck-paint"
 import { notesShown, type ShownNotes } from "@/notes-edit"
 import { structureOf } from "@/table-hook"
 import {
+  emptyShown,
   emptyUndo,
   recorded,
   recordsInFlight,
+  sameShown,
+  shownOf,
   turnBack,
   undoLabel,
   type Typing,
   type UndoDirection,
   type UndoEntry,
+  type UndoList as UndoSides,
 } from "@/undo-list"
 
 export type UndoList = ReturnType<typeof useUndoList>
@@ -26,8 +30,8 @@ export type UndoList = ReturnType<typeof useUndoList>
 export function useUndoList() {
   const undoList = useRef(emptyUndo)
   const turning = useRef<Promise<void>>(Promise.resolve())
-  const [undoShown, setUndoShown] = useState(emptyUndo)
-  const [told, setTold] = useState<UndoDirection | null>(null)
+  const shownNow = useRef(emptyShown)
+  const [undoShown, setUndoShown] = useState(emptyShown)
   const typed = useRef<Typing | null>(null)
   const sessions = useRef(0)
   const records = useRef(recordsInFlight())
@@ -37,10 +41,16 @@ export function useUndoList() {
     }),
   )
 
+  const show = useCallback((list: UndoSides, told: UndoDirection | null) => {
+    const next = shownOf(list, told)
+    undoList.current = list
+    if (sameShown(next, shownNow.current)) return
+    shownNow.current = next
+    setUndoShown(next)
+  }, [])
+
   function record(entry: UndoEntry) {
-    undoList.current = recorded(undoList.current, entry)
-    setUndoShown(undoList.current)
-    setTold(null)
+    show(recorded(undoList.current, entry), null)
   }
 
   function turnAfter(work: () => Promise<void>) {
@@ -52,9 +62,8 @@ export function useUndoList() {
     undoList,
     turning,
     undoShown,
-    setUndoShown,
-    told,
-    setTold,
+    show,
+    told: undoShown.told,
     typed,
     sessions,
     records,
@@ -78,7 +87,7 @@ export type TurningDeck = {
 
 export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
   const { id, undo, shown, notesBar, settle, setPending } = deck
-  const { undoList, undoShown, setUndoShown, told, setTold, typed, records, turnAfter } = undo
+  const { undoList, undoShown, show, told, typed, records, turnAfter } = undo
   const { store, shownParts, structure, bound, repaint, setCurrent, showRegister } = shown
 
   useEffect(() => {
@@ -91,9 +100,9 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
 
   useEffect(() => {
     if (told === null) return
-    const clear = window.setTimeout(() => setTold(null), 4000)
+    const clear = window.setTimeout(() => show(undoList.current, null), 4000)
     return () => window.clearTimeout(clear)
-  }, [told, setTold])
+  }, [told, show, undoList])
 
   function slideOf(undoable: Undoable): SlideId | null {
     if (!("slide" in undoable) || "elements" in undoable) return null
@@ -131,9 +140,7 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
         indexedRegister(shownParts.current, register),
       )
       if (turned.outcome === "empty") return
-      undoList.current = turned.list
-      setUndoShown(turned.list)
-      setTold(turned.outcome === "changed" ? direction : null)
+      show(turned.list, turned.outcome === "changed" ? direction : null)
       if (turned.outcome === "changed") return
       await showTurned(turned.entry, direction)
       void flushPending(connect, id).then(settle)
@@ -145,8 +152,8 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
   return {
     undoLabel: undoLabel("undo", undoShown),
     redoLabel: undoLabel("redo", undoShown),
-    canUndo: undoShown.undo.length > 0,
-    canRedo: undoShown.redo.length > 0,
+    canUndo: undoShown.undo !== null,
+    canRedo: undoShown.redo !== null,
     onUndo: () => turn("undo"),
     onRedo: () => turn("redo"),
   }
