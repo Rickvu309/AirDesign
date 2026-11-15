@@ -6,8 +6,60 @@ soffice="$brand/program/soffice"
 ppm="$root/usr/bin/pdftoppm"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 dotnet="$(node "$here/dotnet-sdk.mjs")" || exit 1
+fonts="$root/fonts"
+
+reference_fonts() {
+  local mirrors="http://archive.ubuntu.com/ubuntu https://mirrors.kernel.org/ubuntu https://mirror.math.princeton.edu/pub/ubuntu"
+  local packages=(
+    "pool/universe/f/fonts-crosextra-carlito/fonts-crosextra-carlito_20230309-2_all.deb c238087a909a4f1d1c5c1a5e1ed42ab9cb522f09ea2715e8deab6ee2751b9a01"
+    "pool/universe/f/fonts-crosextra-caladea/fonts-crosextra-caladea_20200211-2_all.deb 1a85651d71331a0e07dafa5d54e9aa54b445c29ae0dacb8c7cd224b1b7baaf82"
+  )
+  if [ ! -f "$fonts/installed" ]; then
+    local work
+    work="$(mktemp -d)"
+    rm -rf "$fonts"
+    mkdir -p "$fonts"
+    local entry file sum mirror got
+    for entry in "${packages[@]}"; do
+      read -r file sum <<< "$entry"
+      got=0
+      for mirror in $mirrors; do
+        if curl -fsSL --retry 3 --retry-all-errors --connect-timeout 10 --max-time 120 -o "$work/font.deb" "$mirror/$file"; then
+          got=1
+          break
+        fi
+        echo "$mirror did not serve $file, so the next mirror is tried" >&2
+      done
+      if [ "$got" -ne 1 ]; then
+        rm -rf "$work" "$fonts"
+        echo "The reference fonts did not download: $file" >&2
+        exit 1
+      fi
+      if ! echo "$sum  $work/font.deb" | sha256sum -c --quiet; then
+        rm -rf "$work" "$fonts"
+        echo "The reference font package $file does not match its pinned checksum." >&2
+        exit 1
+      fi
+      dpkg-deb -x "$work/font.deb" "$fonts"
+    done
+    rm -rf "$work"
+    touch "$fonts/installed"
+  fi
+  local base="${FONTCONFIG_FILE:-/etc/fonts/fonts.conf}"
+  if [ "$base" = "$fonts/fonts.conf" ]; then
+    base=/etc/fonts/fonts.conf
+  fi
+  printf '%s\n' '<?xml version="1.0"?>' \
+    '<!DOCTYPE fontconfig SYSTEM "fonts.dtd">' \
+    "<fontconfig><include>${base}</include><dir>${fonts}/usr/share/fonts</dir>" \
+    '<alias binding="same"><family>Calibri Light</family><prefer><family>Carlito</family></prefer></alias>' \
+    '</fontconfig>' \
+    > "$fonts/fonts.conf"
+  export FONTCONFIG_FILE="$fonts/fonts.conf"
+}
 
 if [ ! -f "$root/installed" ] && command -v soffice > /dev/null && command -v pdftoppm > /dev/null; then
+  reference_fonts
   PPTX_SOFFICE="$(command -v soffice)"
   export PPTX_SOFFICE
   export PPTX_DOTNET="$dotnet"
@@ -115,6 +167,8 @@ printf '%s\n' '#!/bin/sh' \
   "exec \"${ppm}\" \"\$@\"" \
   > "$bindir/pdftoppm"
 chmod +x "$bindir/soffice" "$bindir/pdftoppm"
+
+reference_fonts
 
 export PATH="$bindir:$PATH"
 export PPTX_SOFFICE="$bindir/soffice"

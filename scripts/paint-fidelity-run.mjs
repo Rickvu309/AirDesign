@@ -4,7 +4,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { chromium } from "@playwright/test"
+import { openBrowser } from "../.agents/skills/verify-airdesign/bin/browser.mjs"
 import { browserCookies } from "../.agents/skills/verify-airdesign/bin/browser-cookies.mjs"
 import { PNG } from "pngjs"
 import { takeMachineLock } from "./machine-lock.mjs"
@@ -181,7 +181,7 @@ const outcome = await reported({
     stack = lastJson(await run("node", [verify, "launch"]))
     const signedIn = lastJson(await run("node", [verify, "sign-in", stack.run]))
     const cookies = browserCookies([signedIn.cookie])
-    browser = await chromium.launch()
+    browser = await openBrowser()
     for (const [name, hashes] of pages)
       await compareDeck({ browser, origin: stack.origin, cookies, name, hashes, rows, skipped })
   },
