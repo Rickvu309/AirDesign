@@ -140,6 +140,38 @@ describe("undo list", () => {
     expect(recorded(second, { ...typed("Two"), session: 2 }).undo).toHaveLength(2)
   })
 
+  it("five arrow presses in one visit are one entry", () => {
+    const other = elementId("256.3")
+    const width = (w: number) => ({ box: { w: { set: w } } })
+    const press = (from: number) =>
+      ({
+        name: "resize",
+        session: 3,
+        undoable: {
+          steps: [
+            { node, before: width(from), after: width(from + 1) },
+            { node: other, before: width(from), after: width(from + 1) },
+          ],
+        },
+      }) as const
+    const visit = [432, 433, 434, 435, 436].map(press).reduce(recorded, emptyUndo)
+    expect(visit.undo).toEqual([
+      {
+        name: "resize",
+        session: 3,
+        undoable: {
+          steps: [
+            { node, before: width(432), after: width(437) },
+            { node: other, before: width(432), after: width(437) },
+          ],
+        },
+      },
+    ])
+    const swapped = { ...press(437), undoable: { steps: [...press(437).undoable.steps].reverse() } }
+    expect(recorded(visit, swapped).undo).toHaveLength(2)
+    expect(recorded(visit, { ...press(437), session: 4 }).undo).toHaveLength(2)
+  })
+
   it("clears redo when a new edit is recorded", () => {
     const list = { undo: [], redo: [textEdit] }
     expect(recorded(list, textEdit)).toEqual({ undo: [textEdit], redo: [] })
