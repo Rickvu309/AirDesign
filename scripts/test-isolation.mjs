@@ -1,6 +1,6 @@
 import fs from "node:fs"
 import path from "node:path"
-import { parseSync } from "oxc-parser"
+import { parseSync, rawTransferSupported } from "oxc-parser"
 
 export const pureMembers = new Set([
   "fn",
@@ -40,18 +40,16 @@ export const unitTestFiles = (root) =>
     )
     .sort()
 
-const children = (node) =>
-  Object.values(node).flatMap((value) =>
-    Array.isArray(value)
-      ? value.filter((item) => item !== null && typeof item === "object" && typeof item.type === "string")
-      : value !== null && typeof value === "object" && typeof value.type === "string"
-        ? [value]
-        : [],
-  )
+const isNode = (value) => value !== null && typeof value === "object" && typeof value.type === "string"
 
 const walk = (node, visit) => {
   visit(node)
-  for (const child of children(node)) walk(child, visit)
+  for (const key in node) {
+    const value = node[key]
+    if (Array.isArray(value)) {
+      for (const item of value) if (isNode(item)) walk(item, visit)
+    } else if (isNode(value)) walk(value, visit)
+  }
 }
 
 const unwrap = (node) =>
@@ -164,7 +162,7 @@ const mayIsolate = new RegExp(`\\b(${["vi", "process", ...globalNames].join("|")
 
 export const isolationReasons = (text, fileName = "file.test.ts") => {
   if (!mayIsolate.test(text)) return []
-  const { program } = parseSync(fileName, text)
+  const { program } = parseSync(fileName, text, { experimentalRawTransfer: rawTransferSupported() })
   const bindings = bindingsOf(program)
   const reasons = new Set()
   walk(program, (node) => {

@@ -1,6 +1,7 @@
-import { configure, Uint8ArrayReader, Uint8ArrayWriter, ZipReader, type Configuration } from "@zip.js/zip.js"
+import type { Configuration } from "@zip.js/zip.js"
 import { decodeLatin1, decodeUtf8, sameBytes } from "./package-bytes.js"
 import { crc32 } from "./crc32.js"
+import { inflate } from "./part-inflate.js"
 
 export type ContainerKind =
   | "comment"
@@ -47,8 +48,6 @@ const unicodePathExtra = 0x7075
 const directoryAttribute = 0x10
 const unixTypeMask = 0xf000
 const unixDirectory = 0x4000
-const envelopeName = 0x70
-const envelopeVersion = 20
 
 export type ContainerRecord = {
   readonly name: string
@@ -272,52 +271,10 @@ export function readContainer(file: Uint8Array): readonly ContainerRecord[] {
   return records
 }
 
-function enveloped(record: ContainerRecord): Uint8Array {
-  const centralAt = localSize + 1 + record.stream.length
-  const endAt = centralAt + centralSize + 1
-  const whole = new Uint8Array(endAt + endSize)
-  const view = recordView(whole)
-  for (const [at, shift] of [
-    [0, 0],
-    [centralAt, 2],
-  ] as const) {
-    view.setUint16(at + 4 + shift, envelopeVersion, true)
-    view.setUint16(at + 8 + shift, record.method, true)
-    view.setUint32(at + 14 + shift, record.crc, true)
-    view.setUint32(at + 18 + shift, record.stream.length, true)
-    view.setUint32(at + 22 + shift, record.size, true)
-    view.setUint16(at + 26 + shift, 1, true)
-  }
-  view.setUint32(0, localSignature, true)
-  whole[localSize] = envelopeName
-  whole.set(record.stream, localSize + 1)
-  view.setUint32(centralAt, centralSignature, true)
-  whole[centralAt + centralSize] = envelopeName
-  view.setUint32(endAt, endSignature, true)
-  view.setUint16(endAt + 8, 1, true)
-  view.setUint16(endAt + 10, 1, true)
-  view.setUint32(endAt + 12, centralSize + 1, true)
-  view.setUint32(endAt + 16, centralAt, true)
-  return whole
-}
-
-async function inflated(record: ContainerRecord): Promise<Uint8Array> {
-  configure(onlyBundledCompressor)
-  const reader = new ZipReader(new Uint8ArrayReader(enveloped(record)), { useWebWorkers: false })
-  try {
-    const [entry, extra] = await reader.getEntries()
-    if (entry === undefined || extra !== undefined || entry.directory) throw new ContainerError("content")
-    return await entry.getData(new Uint8ArrayWriter())
-  } catch {
+function unpacked(record: ContainerRecord): Uint8Array {
+  const data = record.method === stored ? record.stream.slice() : inflate(record.stream, record.size)
+  if (data === undefined || data.length !== record.size || crc32(data) !== record.crc)
     throw new ContainerError("content")
-  } finally {
-    await reader.close()
-  }
-}
-
-async function unpacked(record: ContainerRecord): Promise<Uint8Array> {
-  const data = record.method === stored ? record.stream.slice() : await inflated(record)
-  if (data.length !== record.size || crc32(data) !== record.crc) throw new ContainerError("content")
   return data
 }
 
@@ -326,7 +283,7 @@ export async function readParts(bytes: Uint8Array): Promise<ReadonlyMap<string, 
   const parts = new Map<string, Uint8Array>()
   for (const record of readContainer(file)) {
     if (record.directory) throw new ContainerError("directory")
-    parts.set(record.name, await unpacked(record))
+    parts.set(record.name, unpacked(record))
   }
   return parts
 }

@@ -1,13 +1,12 @@
 import { readCommit, signInRoutes } from "@airdesign/catalog"
 import { createHash, randomBytes } from "node:crypto"
 import { request, type IncomingHttpHeaders, type Server } from "node:http"
-import { readFile } from "node:fs/promises"
 import type { AddressInfo } from "node:net"
-import path from "node:path"
 import { Client } from "pg"
-import { afterAll } from "vitest"
+import { afterAll, beforeAll } from "vitest"
 
 import { createApi, type ApiOptions, type Commit, type Mail } from "./index.js"
+import { clusterFile, publishedCluster } from "./postgres-setup.js"
 import { readSignInMail } from "./sign-in-mail.js"
 
 export type PostgresInfo = {
@@ -37,9 +36,19 @@ async function onCluster(info: PostgresInfo, statement: string): Promise<void> {
   }
 }
 
+let cluster: Promise<PostgresInfo> | undefined
+
+function sharedCluster(): Promise<PostgresInfo> {
+  cluster ??= publishedCluster<PostgresInfo>(clusterFile(), 120_000)
+  return cluster
+}
+
+beforeAll(async () => {
+  await sharedCluster()
+}, 120_000)
+
 async function ownDatabase(): Promise<PostgresInfo> {
-  const file = path.join(process.cwd(), "node_modules/.cache/airdesign-api-postgres.json")
-  const template = JSON.parse(await readFile(file, "utf8")) as PostgresInfo
+  const template = await sharedCluster()
   const database = `file_${String(process.pid)}_${randomBytes(6).toString("hex")}`
   await onCluster(template, `create database ${database} template ${databaseOf(template.admin)}`)
   return {

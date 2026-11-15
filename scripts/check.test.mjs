@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { stages } from "./check.mjs"
 import { partOf, sideSteps, stagesFor } from "./check.mjs"
 import { judgedOnCi, mayPush, stampable } from "./check.mjs"
@@ -143,4 +144,14 @@ if (stampable([], false)) throw new Error("a check that stopped early must not s
 for (const name of ["conflict-markers", "migration-numbers", "commit-titles", "stale-tree"]) {
   if (!everyStep.includes(name)) throw new Error(`check lost the step ${name}`)
   if (!warnSteps.has(name)) throw new Error(`${name} is new and starts in warnSteps`)
+}
+
+const testStep = stages.flat().find(([name]) => name === "test")
+const unitScript = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).scripts["test:unit"]
+if (
+  unitScript !== "vitest run" ||
+  testStep[1] !== "node" ||
+  testStep[2].join(" ") !== "node_modules/vitest/vitest.mjs run"
+) {
+  throw new Error("the test step runs vitest itself, the command test:unit names, without pnpm starting first")
 }

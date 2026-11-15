@@ -16,7 +16,12 @@ export const stages = [
     ["format", "pnpm", ["exec", "oxfmt", "--check"]],
     ["lint", "pnpm", ["lint"]],
     ["actionlint", "node", ["scripts/actionlint.mjs"]],
-    ["test", "pnpm", ["test:unit"], { AIRDESIGN_REPLAY_ONLY: "1", AIRDESIGN_SPEC_CACHE: specCache }],
+    [
+      "test",
+      "node",
+      ["node_modules/vitest/vitest.mjs", "run"],
+      { AIRDESIGN_REPLAY_ONLY: "1", AIRDESIGN_SPEC_CACHE: specCache },
+    ],
     ["tooling", "pnpm", ["test:tooling"]],
     ["bug-rule", "node", ["scripts/bug-rule.mjs"]],
     ["file-size", "node", ["scripts/file-size.mjs"]],
