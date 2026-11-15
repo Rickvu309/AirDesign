@@ -1,6 +1,6 @@
 import { act, createElement } from "react"
 import { createRoot } from "react-dom/client"
-import { afterAll, afterEach, beforeAll, expect, it } from "vitest"
+import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
 import { paintStore, SlideCanvas, type CanvasElement, type CanvasText } from "./index.js"
 
 const style = { font: "Arial", size: 10, points: 1_000, bold: false, italic: false, color: null }
@@ -69,17 +69,44 @@ const across = (node: HTMLElement): number => {
   return Math.max(columns, filled) * columnWidth
 }
 
+let wholePixels = false
+
+const padding = (layer: HTMLElement): number =>
+  Number.parseFloat(layer.style.paddingTop || "0") + Number.parseFloat(layer.style.paddingBottom || "0")
+
+const used = (node: HTMLElement): number => {
+  const layer = node.parentElement
+  if (layer === null || columnsOf(node) > 1) return laidOut(node)
+  return Math.max(laidOut(node), room(layer) - padding(layer))
+}
+
+const browserStyle = globalThis.getComputedStyle.bind(globalThis)
+
+const computedStyle = (element: Element): CSSStyleDeclaration => {
+  if (!(element instanceof HTMLElement)) return browserStyle(element)
+  if (element.dataset.textBody !== undefined) return { height: `${String(used(element))}px` } as CSSStyleDeclaration
+  if (element.querySelector(":scope > [data-text-body]") === null) return browserStyle(element)
+  const { paddingTop, paddingBottom } = element.style
+  return {
+    height: `${String(room(element))}px`,
+    boxSizing: "border-box",
+    paddingTop,
+    paddingBottom,
+  } as CSSStyleDeclaration
+}
+
 beforeAll(() => {
+  vi.spyOn(globalThis, "getComputedStyle").mockImplementation(computedStyle)
   Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
     configurable: true,
     get(this: HTMLElement) {
-      return laidOut(this)
+      return wholePixels ? Math.round(used(this)) : laidOut(this)
     },
   })
   Object.defineProperty(HTMLElement.prototype, "clientHeight", {
     configurable: true,
     get(this: HTMLElement) {
-      return room(this)
+      return wholePixels ? Math.round(room(this)) : room(this)
     },
   })
   Object.defineProperty(HTMLElement.prototype, "scrollWidth", {
@@ -97,6 +124,7 @@ beforeAll(() => {
 })
 
 afterAll(() => {
+  vi.restoreAllMocks()
   Reflect.deleteProperty(HTMLElement.prototype, "offsetHeight")
   Reflect.deleteProperty(HTMLElement.prototype, "clientHeight")
   Reflect.deleteProperty(HTMLElement.prototype, "scrollWidth")
@@ -108,6 +136,7 @@ const roots: ReturnType<typeof createRoot>[] = []
 afterEach(async () => {
   for (const root of roots.splice(0)) await act(async () => root.unmount())
   fontWidth = 1
+  wholePixels = false
   Reflect.deleteProperty(document, "fonts")
 })
 
@@ -146,6 +175,14 @@ it("makes the text smaller in PowerPoint's steps once narrower lines are not eno
 
 it("leaves text that fits at the scale its file stores", async () => {
   const host = await painted(lines({ kind: "shrink", scale: 0.5, reduction: 0 }, "top", 8))
+  expect(firstRun(host)?.style.fontSize).toBe("10px")
+  expect(firstRun(host)?.style.lineHeight).toBe("1.2")
+})
+
+it("leaves text that fits at its size though the browser reports the box and the text in whole pixels", async () => {
+  wholePixels = true
+  const insets = { left: 8.84, top: 4.42, right: 8.84, bottom: 4.42 }
+  const host = await painted({ ...lines({ kind: "shrink", scale: 1, reduction: 0 }, "top", 5), insets }, 100.383)
   expect(firstRun(host)?.style.fontSize).toBe("10px")
   expect(firstRun(host)?.style.lineHeight).toBe("1.2")
 })
