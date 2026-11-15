@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { onCi, workerCap, workerLimit, workerOverrideName, workerRefusal } from "./browser-workers"
 
-describe("the worker count of a browser run", () => {
+describe("the worker count of a local browser run", () => {
   it("is a quarter of the cores, at most four and at least one", () => {
     expect(
       [1, 2, 3, 4, 7, 8, 15, 16, 32, 64].map((cores) => workerLimit({ cores, ci: false, override: undefined })),
@@ -9,10 +9,9 @@ describe("the worker count of a browser run", () => {
     expect(workerCap).toBe(4)
   })
 
-  it("is one per core on ci, whose runner runs nothing else", () => {
-    expect(workerLimit({ cores: 4, ci: true, override: undefined })).toBe(4)
-    expect(workerLimit({ cores: 16, ci: true, override: undefined })).toBe(16)
-    expect(workerLimit({ cores: 4, ci: true, override: "2" })).toBe(4)
+  it("is left to Playwright on ci", () => {
+    expect(workerLimit({ cores: 16, ci: true, override: undefined })).toBeUndefined()
+    expect(workerLimit({ cores: 4, ci: true, override: "2" })).toBeUndefined()
   })
 
   it("follows an override on a local machine", () => {
@@ -48,7 +47,6 @@ describe("the refusal of a worker count above the limit", () => {
 
   it("lets any count through on ci", () => {
     expect(workerRefusal({ ...request, ci: true })).toBeUndefined()
-    expect(workerRefusal({ ...request, cores: 4, ci: true })).toBeUndefined()
   })
 
   it("lets a count through up to the override", () => {
