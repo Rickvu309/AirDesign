@@ -394,8 +394,10 @@ async function admitted(
   const system = airaSystem(parsed.deck)
   const input = inputCeiling(system, parsed.messages)
   let reserved = await reserveTurn(host.db, account, id, input, now)
-  if (!reserved.ok && reserved.refusal === "open" && (await host.closing.closed(account, followed)))
+  if (!reserved.ok && reserved.refusal === "open") {
+    await host.closing.closed(account, followed)
     reserved = await reserveTurn(host.db, account, id, input, host.now())
+  }
   if (!reserved.ok && reserved.refusal === "rate") return refuse(429, "rate", { text: reserved.text })
   if (!reserved.ok)
     return refuse(reserved.refusal === "open" ? 409 : 402, reserved.refusal, {

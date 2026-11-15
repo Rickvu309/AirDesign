@@ -26,7 +26,7 @@ type Run = {
   settled: boolean
   charges: number
   stop?: { answered: boolean; readonly done: Promise<void> }
-  next?: { result?: boolean; readonly done: Promise<void>; readonly own: Followed }
+  next?: { reserved?: boolean; readonly done: Promise<void>; readonly own: Followed }
 }
 
 type Step = { readonly actions: readonly string[]; readonly act: (run: Run) => Promise<void> }
@@ -35,11 +35,14 @@ const observed = ["call", "model", "row", "charges", "stop", "next"] as const
 
 const stoppedRead = "select stopped is not null as stopped from session.aira_ask"
 
+const openStopRead = "id <> $2 and stopped is not null"
+
 let session: Sql = openPool("postgres://session@127.0.0.1/api")
 let admin = new Client()
 let listens: DeckListen[] = []
 let a: Closing
 let held: HeldQueries
+let heldB: HeldQueries
 let b: Closing
 let brief: Closing
 let graph: Graph = { states: new Map(), edges: [] }
@@ -54,7 +57,8 @@ beforeAll(async () => {
   if (first === undefined || second === undefined) throw new Error("listen")
   held = heldQueries(session)
   a = new Closing({ db: held.db, listen: first })
-  b = new Closing({ db: session, listen: second })
+  heldB = heldQueries(session)
+  b = new Closing({ db: heldB.db, listen: second })
   brief = new Closing({ db: session, listen: second }, 50)
   graph = await specGraph("stop", "Stop")
 }, 60_000)
@@ -83,9 +87,9 @@ async function seen(run: Run): Promise<Seen> {
   const next =
     run.next === undefined
       ? "idle"
-      : run.next.result === undefined
+      : run.next.reserved === undefined
         ? "waiting"
-        : run.next.result && run.settled
+        : run.next.reserved
           ? "reserved"
           : "refused"
   const model = run.sent === undefined ? "unsent" : run.sent ? "sent" : "skipped"
@@ -222,6 +226,19 @@ const leave: Step = {
   },
 }
 
+const nextAsk: Step = {
+  actions: ["NextAsk"],
+  act: async (run) => {
+    const own = await b.follow(run.email, "next", new AbortController().signal)
+    const next: { reserved?: boolean; done: Promise<void>; own: Followed } = { done: Promise.resolve(), own }
+    next.done = b.closed(run.email, own).then(async () => {
+      next.reserved = run.settled
+      await own.done()
+    })
+    run.next = next
+  },
+}
+
 describe("a stop replays the stop spec through two servers on one database", () => {
   it("aborts the call on server A from server B and answers once A forgot the ask", async () => {
     await replay([
@@ -269,24 +286,32 @@ describe("a stop replays the stop spec through two servers on one database", () 
   })
 
   it("holds a new ask on B until the turn the person left on A has closed", async () => {
+    await replay([follow, send, leave, nextAsk, settle, forget(["Forget", "NextRetry"])])
+  })
+
+  it("reserves a new ask on B whose look at the rows comes back after A's turn closed", async () => {
+    let look = { reached: Promise.resolve(), release: () => undefined as void }
     await replay([
       follow,
       send,
       leave,
       {
-        actions: ["NextAsk"],
+        actions: nextAsk.actions,
         act: async (run) => {
-          const own = await b.follow(run.email, "next", new AbortController().signal)
-          const next: { result?: boolean; done: Promise<void>; own: Followed } = { done: Promise.resolve(), own }
-          next.done = b.closed(run.email, own).then(async (result) => {
-            next.result = result
-            await own.done()
-          })
-          run.next = next
+          look = heldB.hold(openStopRead)
+          await nextAsk.act(run)
+          await look.reached
         },
       },
       settle,
-      forget(["Forget", "NextRetry"]),
+      {
+        actions: ["Forget", "NextRetry"],
+        act: async (run) => {
+          await run.followed?.done()
+          look.release()
+          await run.next?.done
+        },
+      },
     ])
   })
 
