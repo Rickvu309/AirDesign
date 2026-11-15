@@ -1,0 +1,31 @@
+import { spawnSync } from "node:child_process"
+import fs from "node:fs"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
+import { parse } from "yaml"
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+const workflowFile = path.join(root, ".github/workflows/ci.yml")
+
+const same = (name, actual, expected) => {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(`${name}\n${JSON.stringify(actual)}\n${JSON.stringify(expected)}`)
+  }
+}
+
+const workflow = parse(fs.readFileSync(workflowFile, "utf8"))
+const mutation = workflow.jobs.mutation.steps.find((step) => (step.run ?? "").includes("scripts/check-mutation.mjs"))
+const command = "node scripts/check-mutation.mjs --changed-from HEAD^1"
+same("the mutation step runs the mutation check once", mutation.run.split(command).length, 2)
+
+const exitOf = (code) =>
+  spawnSync("bash", ["-e", "-c", mutation.run.replace(/timeout [^\n|]*check-mutation\.mjs[^\n|]*/, `(exit ${code})`)], {
+    encoding: "utf8",
+  }).status
+
+same("a mutation run that finished passes its step", exitOf(0), 0)
+same("a mutation run that crashed fails its step", exitOf(1), 1)
+same("a mutation run that hit its time limit warns and passes", [exitOf(124), exitOf(137)], [0, 0])
+
+const paint = workflow.jobs.corpus.steps.find((step) => step.name === "paint-fidelity")
+same("a paint-fidelity run that fails fails the corpus job", paint["continue-on-error"], undefined)

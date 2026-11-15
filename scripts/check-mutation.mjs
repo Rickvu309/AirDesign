@@ -22,6 +22,13 @@ export const changedSources = (nameStatus) =>
     return chosen ? [file] : []
   })
 
+export const linkedPaths = (stagedFiles) =>
+  stagedFiles.split("\n").flatMap((row) => {
+    const [mode] = row.split(" ")
+    const file = row.split("\t")[1]
+    return mode === "120000" && file !== undefined ? [`/${file}`] : []
+  })
+
 const missedOf = (mutants) => mutants.filter(({ status }) => status === "Survived" || status === "NoCoverage")
 
 const byPosition = (left, right) =>
@@ -58,6 +65,7 @@ const runMutants = async (targets) => {
     logLevel: "error",
     tsconfigFile: tsconfigStrykerCannotParseWithTypescript7,
     tempDirName: ".stryker-tmp",
+    ignorePatterns: linkedPaths(execFileSync("git", ["ls-files", "-s"], { cwd: root, encoding: "utf8" })),
     cleanTempDir: "always",
     incremental: false,
     allowEmpty: true,
