@@ -23,6 +23,10 @@ export type CanvasGeometry = {
 
 export type GroupOf = { readonly id: ElementId; readonly box: PaintBox | null }
 
+export type CanvasTie = { readonly node: ElementId; readonly site: number }
+
+export type CanvasConnection = { readonly start: CanvasTie | null; readonly end: CanvasTie | null }
+
 export type ElementPaint = {
   readonly key: string
   readonly id: ElementId | null
@@ -46,4 +50,5 @@ export type ElementPaint = {
   readonly chart?: CanvasChart
   readonly label?: string
   readonly picture?: CanvasPicture
+  readonly connection?: CanvasConnection
 }

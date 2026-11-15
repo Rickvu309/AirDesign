@@ -1,7 +1,8 @@
-import type { Bound, ElementId, Spot } from "@airdesign/document"
+import { route, type Bound, type ElementId, type Place, type Spot } from "@airdesign/document"
 import { useState, type CSSProperties, type PointerEvent } from "react"
-import { paintedAt } from "./box-gesture.js"
-import { aimAt, endsOf, type Aim, type End } from "./connector-drag.js"
+import { ownBox, travelled } from "./box-gesture.js"
+import { aimAt, endsOf, paintPlace, type Aim, type End } from "./connector-drag.js"
+import { liveBox } from "./connector-follow.js"
 import { useBox } from "./element-view.js"
 import type { CanvasElement, CanvasSlide } from "./record.js"
 import type { PaintStore } from "./store.js"
@@ -13,6 +14,8 @@ const ends: readonly End[] = ["start", "end"]
 type Aiming = { readonly end: End; readonly from: Spot; readonly at: Spot; readonly aim: Aim | null }
 
 type Client = { readonly clientX: number; readonly clientY: number }
+
+export type EndDrop = Bound | Place
 
 const dot: CSSProperties = {
   position: "absolute",
@@ -38,15 +41,15 @@ export function ConnectorEnds(props: {
   readonly id: ElementId
   readonly scaled: Scaled
   readonly width: number
-  readonly onConnect: (id: ElementId, end: End, bound: Bound) => void
+  readonly onConnect: (id: ElementId, end: End, to: EndDrop) => void
 }) {
   const { store, slide, element, id, scaled, width, onConnect } = props
-  const box = paintedAt(element.box, useBox(store, id))
+  const box = ownBox(element, useBox(store, id))
   const [aiming, setAiming] = useState<Aiming | null>(null)
   if (box === null) return null
   const spots = endsOf(box)
   const reach = (reachPixels * slide.width) / width
-  const placed = (each: CanvasElement) => (each.id === null ? each.box : paintedAt(each.box, store.getBox(each.id)))
+  const placed = (each: CanvasElement) => liveBox(store, each)
 
   function press(event: PointerEvent<HTMLElement>, end: End) {
     const surface = event.currentTarget.closest<HTMLElement>("[data-slide-paint]")
@@ -54,6 +57,7 @@ export function ConnectorEnds(props: {
     event.preventDefault()
     event.stopPropagation()
     const pointer = event.pointerId
+    const pressed = { x: event.clientX, y: event.clientY }
     const from = end === "start" ? spots.end : spots.start
     const aimed = (client: Client): Aiming => {
       const frame = surface.getBoundingClientRect()
@@ -75,9 +79,11 @@ export function ConnectorEnds(props: {
     }
     function up(next: globalThis.PointerEvent) {
       if (next.pointerId !== pointer) return
-      const { aim } = aimed(next)
+      const { aim, at } = aimed(next)
       stop()
       if (aim !== null && aim.site !== null) onConnect(id, end, { node: aim.node, site: aim.site })
+      else if (box !== null && travelled(pressed, { x: next.clientX, y: next.clientY }))
+        onConnect(id, end, end === "start" ? route(paintPlace(box), at, from) : route(paintPlace(box), from, at))
     }
     function lost(next: globalThis.PointerEvent) {
       if (next.pointerId === pointer) stop()

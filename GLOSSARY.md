@@ -171,7 +171,7 @@ Two or more elements of one slide that move and resize as one. A person chooses 
 _Avoid_: bundle, combine, merge, set
 
 **connector**:
-A line whose ends can attach to sites on the shapes and pictures of its slide, so it follows them when they move. A person drags an end onto a site, or picks the shape and site in the design panel's Connector section; an agent sends `connection` in its `set`. A connector keeps its own line form, straight, elbow or curved, and None frees an end. The code calls a connector's ends its `connection`.
+A line whose ends can attach to sites on the shapes and pictures of its slide, so it follows them while they move, resize or turn. A person drags an end onto a site, or to any other point on the slide to free it, or picks the shape and site in the design panel's Connector section; an agent sends `connection` in its `set`. A connector keeps its own line form, straight, elbow or curved, and an elbow bends where PowerPoint would bend it. None frees an end. An attached connector moves only by its ends. The code calls a connector's ends its `connection`.
 _Avoid_: link, edge, arrow (an arrow is a line's end)
 
 **site**:

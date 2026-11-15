@@ -1,4 +1,4 @@
-import { elementId, type Bound, type ElementId } from "@airdesign/document"
+import { elementId, type Bound, type ElementId, type Place } from "@airdesign/document"
 import { act, createElement } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, describe, expect, it } from "vitest"
@@ -46,28 +46,31 @@ function element(id: ElementId, kind: "shape" | "connector", box: PaintBox, pres
 
 const elements = [element(line, "connector", lineBox, "straightConnector1"), element(card, "shape", cardBox, "rect")]
 
-async function mounted(): Promise<{ host: HTMLDivElement; bound: [ElementId, string, Bound][] }> {
+async function mounted(
+  shown: readonly CanvasElement[] = elements,
+): Promise<{ host: HTMLDivElement; bound: [ElementId, string, Bound | Place][]; moved: [ElementId, unknown][] }> {
   const store = paintStore()
-  for (const each of elements)
+  for (const each of shown)
     if (each.id !== null) store.publish({ id: each.id, kind: each.kind, text: "", picture: null })
-  const bound: [ElementId, string, Bound][] = []
+  const bound: [ElementId, string, Bound | Place][] = []
+  const moved: [ElementId, unknown][] = []
   const host = document.createElement("div")
   document.body.append(host)
   const root = createRoot(host)
   hosts.push({ host, root })
-  const slide: CanvasSlide = { ...wide, elements }
+  const slide: CanvasSlide = { ...wide, elements: shown }
   await act(async () => {
     root.render(
       createElement(SlideCanvas, {
         store,
         slide,
         width,
-        onBox: () => undefined,
-        onConnect: (id: ElementId, end: string, to: Bound) => bound.push([id, end, to]),
+        onBox: (id: ElementId, box: unknown) => moved.push([id, box]),
+        onConnect: (id: ElementId, end: string, to: Bound | Place) => bound.push([id, end, to]),
       }),
     )
   })
-  return { host, bound }
+  return { host, bound, moved }
 }
 
 async function pointer(target: EventTarget, type: string, x: number, y: number): Promise<void> {
@@ -120,17 +123,100 @@ describe("a person drags a connector's end onto a shape", () => {
     expect(host.querySelector("[data-connector-site]")).toBeNull()
   })
 
-  it("binds nothing when the end is let go away from every site", async () => {
+  it("lands the end on the point it is let go at, away from every site", async () => {
     const { host, bound } = await mounted()
     const end = await chosen(host)
     await pointer(end, "pointerdown", pixels(3_000_000), pixels(1_000_000))
     await pointer(end.ownerDocument, "pointermove", pixels(5_000_000), pixels(1_000_000))
     expect(host.querySelectorAll("[data-connector-site]")).toHaveLength(4)
     expect(host.querySelector("[data-connector-chosen]")).toBeNull()
-    await pointer(end.ownerDocument, "pointerup", pixels(5_000_000), pixels(1_000_000))
+    await pointer(end.ownerDocument, "pointermove", pixels(9_000_000), pixels(500_000))
+    expect(host.querySelector("[data-connector-site]")).toBeNull()
+    await pointer(end.ownerDocument, "pointerup", pixels(9_000_000), pixels(500_000))
+    const [[id, which, place] = []] = bound
+    expect([id, which]).toEqual([line, "end"])
+    expect(place).toEqual({
+      box: { x: 1_000_000, y: 500_000, cx: 8_000_000, cy: 500_000 },
+      rot: 0,
+      flipH: false,
+      flipV: true,
+    })
+  })
+
+  it("lands nothing when the end is let go where it was picked up", async () => {
+    const { host, bound } = await mounted()
+    const end = await chosen(host)
     await pointer(end, "pointerdown", pixels(3_000_000), pixels(1_000_000))
-    await pointer(end.ownerDocument, "pointerup", pixels(9_000_000), pixels(5_000_000))
+    await pointer(end.ownerDocument, "pointerup", pixels(3_000_000), pixels(1_000_000))
     expect(bound).toEqual([])
+  })
+})
+
+const left = elementId("256.4")
+const leftBox: PaintBox = { x: 0, y: 1_000_000, width: 1_000_000, height: 1_000_000, ...upright }
+const tied: CanvasElement = {
+  ...element(line, "connector", { x: 1_000_000, y: 1_000_000, width: 3_000_000, height: 500_000, ...upright }, "line"),
+  box: { x: 1_000_000, y: 1_000_000, width: 3_000_000, height: 500_000, ...upright },
+  connection: { start: { node: left, site: 3 }, end: { node: card, site: 1 } },
+}
+const boundSlide = [element(left, "shape", leftBox, "rect"), element(card, "shape", cardBox, "rect"), tied]
+
+function placement(host: HTMLElement, id: ElementId): readonly string[] {
+  const frame = host.querySelector<HTMLElement>(`[data-canvas-element="ppt/slides/slide1.xml#${id}"]`)
+  if (frame === null) throw new Error("no element")
+  return [frame.style.left, frame.style.top, frame.style.width, frame.style.height, frame.style.transform]
+}
+
+const px = (emu: number) => `${String(pixels(emu))}px`
+
+describe("a connector bound to two shapes", () => {
+  it("follows a shape while a person drags it, before the drop", async () => {
+    const { host, moved } = await mounted(boundSlide)
+    expect(placement(host, line)).toEqual([px(1_000_000), px(1_000_000), px(3_000_000), px(500_000), ""])
+    const frame = host.querySelector<HTMLElement>(`[data-canvas-element="ppt/slides/slide1.xml#${card}"]`)
+    if (frame === null) throw new Error("no card")
+    await pointer(frame, "pointerdown", pixels(5_000_000), pixels(1_000_000))
+    await pointer(frame.ownerDocument, "pointermove", pixels(6_000_000), pixels(2_000_000))
+    expect(placement(host, line)).toEqual([px(1_000_000), px(1_500_000), px(4_000_000), px(500_000), ""])
+    expect(moved).toEqual([])
+    await pointer(frame.ownerDocument, "pointerup", pixels(6_000_000), pixels(2_000_000))
+    expect(moved).toHaveLength(1)
+  })
+
+  it("bends an elbow connector a quarter turn when the shape it ends on moves below it", async () => {
+    const elbow = {
+      ...tied,
+      geometry: { preset: "bentConnector3", adjusts: {} },
+      connection: { start: { node: left, site: 2 }, end: { node: card, site: 0 } },
+    }
+    const { host } = await mounted([boundSlide[0]!, boundSlide[1]!, elbow])
+    const frame = host.querySelector<HTMLElement>(`[data-canvas-element="ppt/slides/slide1.xml#${card}"]`)
+    if (frame === null) throw new Error("no card")
+    await pointer(frame, "pointerdown", pixels(5_000_000), pixels(1_000_000))
+    await pointer(frame.ownerDocument, "pointermove", pixels(5_000_000), pixels(4_000_000))
+    const [, , , , transform] = placement(host, line)
+    expect(transform).toBe("rotate(270deg) scale(-1, 1)")
+  })
+
+  it("keeps its body still when a person drags it, since its ends hold it", async () => {
+    const { host, moved } = await mounted(boundSlide)
+    const frame = host.querySelector<HTMLElement>(`[data-canvas-element="ppt/slides/slide1.xml#${line}"]`)
+    if (frame === null) throw new Error("no connector")
+    await pointer(frame, "pointerdown", pixels(2_000_000), pixels(1_200_000))
+    await pointer(frame.ownerDocument, "pointermove", pixels(3_000_000), pixels(2_200_000))
+    await pointer(frame.ownerDocument, "pointerup", pixels(3_000_000), pixels(2_200_000))
+    expect(moved).toEqual([])
+    expect(placement(host, line)).toEqual([px(1_000_000), px(1_000_000), px(3_000_000), px(500_000), ""])
+    expect(host.querySelectorAll("[data-connector-end]")).toHaveLength(2)
+    expect(frame.getAttribute("aria-description")).toBe("Delete removes it.")
+    for (const init of [{ key: "ArrowRight" }, { key: "ArrowDown", altKey: true, shiftKey: true }]) {
+      await act(async () => {
+        frame.dispatchEvent(new KeyboardEvent("keydown", { ...init, bubbles: true, cancelable: true }))
+        frame.dispatchEvent(new KeyboardEvent("keyup", { ...init, bubbles: true, cancelable: true }))
+      })
+    }
+    expect(placement(host, line)).toEqual([px(1_000_000), px(1_000_000), px(3_000_000), px(500_000), ""])
+    expect(moved).toEqual([])
   })
 })
 

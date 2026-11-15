@@ -8,6 +8,12 @@ export type Outline = { readonly preset: Preset; readonly adjust: Readonly<Recor
 
 export type Bound = { readonly node: ElementId; readonly site: number }
 
+export type Tie = { readonly spot: Spot; readonly way: Spot }
+
+export type Routed = { readonly place: Place; readonly adjust: Readonly<Record<string, number>> }
+
+type Elbow = { readonly segments: number; readonly adjusts: readonly string[] }
+
 export const siteKinds: readonly string[] = ["shape", "picture"]
 
 export const routedPresets: readonly string[] = [
@@ -23,7 +29,24 @@ export const routedPresets: readonly string[] = [
   "curvedConnector5",
 ]
 
+const elbows: Readonly<Record<string, Elbow>> = {
+  bentConnector2: { segments: 2, adjusts: [] },
+  bentConnector3: { segments: 3, adjusts: ["adj1"] },
+  bentConnector4: { segments: 4, adjusts: ["adj1", "adj2"] },
+  bentConnector5: { segments: 5, adjusts: ["adj1", "adj2", "adj3"] },
+  curvedConnector2: { segments: 2, adjusts: [] },
+  curvedConnector3: { segments: 3, adjusts: ["adj1"] },
+  curvedConnector4: { segments: 4, adjusts: ["adj1", "adj2"] },
+  curvedConnector5: { segments: 5, adjusts: ["adj1", "adj2", "adj3"] },
+}
+
+export const elbowClearance = 228_600
+
 const turn = Math.PI / 10_800_000
+const quarter = 5_400_000
+const half = 50_000
+const whole = 100_000
+const guideLimit = 2_147_483_647
 
 function turned(spot: Spot, rot: number, back: boolean): Spot {
   const angle = (back ? -rot : rot) * turn
@@ -44,6 +67,27 @@ export function outlineOf(preset: string | null, adjust: Readonly<Record<string,
   if (preset === null) return { preset: "rect", adjust: {} }
   const found = Object.hasOwn(presetAdjusts, preset) ? (preset as Preset) : undefined
   return found === undefined ? null : { preset: found, adjust }
+}
+
+function axis(spot: Spot): Spot {
+  return Math.abs(spot.x) >= Math.abs(spot.y) ? { x: Math.sign(spot.x), y: 0 } : { x: 0, y: Math.sign(spot.y) }
+}
+
+function sideOf(local: Spot, cx: number, cy: number): Spot {
+  const across = Math.min(local.x, cx - local.x)
+  const down = Math.min(local.y, cy - local.y)
+  if (across < down) return { x: local.x < cx - local.x ? -1 : 1, y: 0 }
+  return { x: 0, y: local.y < cy - local.y ? -1 : 1 }
+}
+
+export function siteTie(target: Place, outline: Outline, site: number): Tie | null {
+  const { box } = target
+  const local = siteSpot(outline.preset, box.cx, box.cy, outline.adjust, site)
+  const spot = sitePoint(target, outline, site)
+  if (local === null || spot === null) return null
+  const side = sideOf(local, box.cx, box.cy)
+  const mirrored = { x: target.flipH ? -side.x : side.x, y: target.flipV ? -side.y : side.y }
+  return { spot, way: axis(turned(mirrored, target.rot, false)) }
 }
 
 export function sitePoint(target: Place, outline: Outline, site: number): Spot | null {
@@ -84,8 +128,65 @@ export function route(connector: Place, start: Spot, end: Spot): Place {
   }
 }
 
-export function routedPlace(connector: Place, preset: string, start: Spot | null, end: Spot | null): Place | null {
+function elbowTurn(connector: Place, elbow: Elbow, from: Spot, to: Spot, start: Spot | null, end: Spot | null) {
+  const heading = turned({ x: 1, y: 0 }, connector.rot, false)
+  const across =
+    start !== null
+      ? start.x !== 0
+      : end !== null
+        ? (end.x !== 0) === (elbow.segments % 2 === 1)
+        : Math.abs(heading.x) >= Math.abs(heading.y)
+  const dx = to.x - from.x
+  const dy = to.y - from.y
+  if (across) return (start?.x ?? Math.sign(dx || 1)) > 0 ? 0 : 2 * quarter
+  return (dx > 0 && dy < 0) || (dx < 0 && dy > 0) ? quarter : 3 * quarter
+}
+
+function localWay(place: Place, way: Spot | null): Spot | null {
+  if (way === null) return null
+  const back = axis(turned(way, place.rot, true))
+  return { x: place.flipH ? -back.x : back.x, y: place.flipV ? -back.y : back.y }
+}
+
+function fraction(part: number, size: number): number {
+  const value = Math.round((part * whole) / (size === 0 ? 1 : size))
+  return Math.min(Math.max(value, -guideLimit), guideLimit)
+}
+
+function elbowAdjust(place: Place, elbow: Elbow, start: Spot | null, end: Spot | null): Record<string, number> {
+  const { cx: w, cy: h } = place.box
+  const leaves = localWay(place, start)
+  const arrives = localWay(place, end)
+  const out = leaves === null || leaves.x === 0 ? 1 : leaves.x
+  const back = arrives === null || arrives.x === 0 ? -1 : arrives.x
+  const below = arrives === null || arrives.y === 0 ? -1 : arrives.y
+  const past = fraction(w + elbowClearance, w)
+  const before = fraction(-elbowClearance, w)
+  const first = out < 0 ? before : back > 0 ? past : half
+  const values: Readonly<Record<number, readonly number[]>> = {
+    3: [out > 0 && back > 0 ? past : out < 0 && back < 0 ? before : half],
+    4: [out < 0 ? before : half, below > 0 ? fraction(h + elbowClearance, h) : half],
+    5: [first, half, back > 0 ? past : out < 0 ? before : half],
+  }
+  const chosen = values[elbow.segments] ?? []
+  return Object.fromEntries(elbow.adjusts.map((name, at) => [name, chosen[at] ?? half]))
+}
+
+export function routed(
+  connector: Place,
+  preset: string,
+  adjust: Readonly<Record<string, number>>,
+  start: Tie | null,
+  end: Tie | null,
+): Routed | null {
   if (!routedPresets.includes(preset) || (start === null && end === null)) return null
   const ends = connectorEnds(connector)
-  return route(connector, start ?? ends.start, end ?? ends.end)
+  const from = start?.spot ?? ends.start
+  const to = end?.spot ?? ends.end
+  const elbow = elbows[preset]
+  if (elbow === undefined) return { place: route(connector, from, to), adjust }
+  const ways = { start: start?.way ?? null, end: end?.way ?? null }
+  const rot = elbowTurn(connector, elbow, from, to, ways.start, ways.end)
+  const place = route({ ...connector, rot }, from, to)
+  return { place, adjust: elbow.adjusts.length === 0 ? adjust : elbowAdjust(place, elbow, ways.start, ways.end) }
 }

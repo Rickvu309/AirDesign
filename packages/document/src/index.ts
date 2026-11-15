@@ -141,13 +141,16 @@ export { anchors, autofits, mostColumns, verticals } from "./trait-body.js"
 export { adjustLimit, presetAdjusts, presets, type Preset } from "./trait-geometry.js"
 export {
   connectorEnds,
+  elbowClearance,
   outlineOf,
   route,
-  routedPlace,
+  routed,
   siteKinds,
   sitePoint,
+  siteTie,
   type Bound,
   type Outline,
+  type Tie,
 } from "./connector.js"
 export { siteCount, type Spot } from "./preset-sites.js"
 export { presetGuides } from "./preset-guides.js"

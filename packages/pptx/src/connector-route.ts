@@ -1,4 +1,4 @@
-import { outlineOf, routedPlace, sitePoint, type Place, type Spot } from "@airdesign/document"
+import { outlineOf, routed, siteTie, type Place, type Tie } from "@airdesign/document"
 import type { MarkupElement } from "./element-span.js"
 import { inheritedSlot } from "./inherited-slot.js"
 import { decodeUtf8, sameBytes } from "./package-bytes.js"
@@ -7,6 +7,7 @@ import { readSlides } from "./read-shapes.js"
 import { isShapeTag, shapeTags } from "./shape-tree.js"
 import { markupChildren, type MarkupChildren } from "./text-value-route.js"
 import { endOf, type End } from "./trait-xml-connection.js"
+import { presetMarkup, writtenMarkup } from "./trait-xml-geometry.js"
 import { writeTrait } from "./trait-xml.js"
 import type { ElementAt, Parts } from "./xml-codec.js"
 
@@ -114,13 +115,19 @@ function idOf(end: End): string | null {
   return "none" in end ? null : (end.shape.node.split(".")[1] ?? null)
 }
 
-function siteOf(drawn: ReadonlyMap<string, Drawn>, connector: Drawn, end: End): Spot | null {
+function siteOf(drawn: ReadonlyMap<string, Drawn>, connector: Drawn, end: End): Tie | null {
   const id = idOf(end)
   const target = id === null ? undefined : drawn.get(id)
   if (target === undefined || "none" in end || target.place === null) return null
   if (!targets.includes(target.kind) || target.parent !== connector.parent) return null
   const outline = outlineOf(target.preset, target.adjust)
-  return outline === null ? null : sitePoint(target.place, outline, end.shape.site)
+  return outline === null ? null : siteTie(target.place, outline, end.shape.site)
+}
+
+const drawnHalf = 50_000
+
+function bent(drawn: Readonly<Record<string, number>>, next: Readonly<Record<string, number>>): boolean {
+  return Object.entries(next).some(([name, value]) => (drawn[name] ?? drawnHalf) !== value)
 }
 
 function same(left: unknown, right: unknown): boolean {
@@ -151,17 +158,22 @@ function routedSlide(file: Parts, parts: Parts, slide: string, part: string, byt
     if (!moved(was, now, id, connector)) continue
     const start = siteOf(now, connector, connector.start)
     const end = siteOf(now, connector, connector.end)
-    const place = routedPlace(connector.place, connector.preset, start, end)
-    if (place === null) continue
+    const route = routed(connector.place, connector.preset, connector.adjust, start, end)
+    if (route === null) continue
+    const { place, adjust } = route
     const { box } = place
-    next = writeTrait(next, { slide, part, shape: id }, "box", {
+    const at = { slide, part, shape: id }
+    next = writeTrait(next, at, "box", {
       x: { set: box.x },
       y: { set: box.y },
       w: { set: box.cx },
       h: { set: box.cy },
+      rot: { set: place.rot },
       flipH: { set: place.flipH },
       flipV: { set: place.flipV },
     })
+    if (bent(connector.adjust, adjust))
+      next = writtenMarkup(next, at, presetMarkup(connector.preset, Object.keys(adjust), adjust))
   }
   return next
 }

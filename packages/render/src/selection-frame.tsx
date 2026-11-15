@@ -1,6 +1,6 @@
 import type { ElementId } from "@airdesign/document"
 import type { CSSProperties, PointerEvent } from "react"
-import { corners, paintedAt, type Corner, type Grip } from "./box-gesture.js"
+import { corners, ownBox, type Corner, type Grip } from "./box-gesture.js"
 import { useBox } from "./element-view.js"
 import type { CanvasElement } from "./record.js"
 import type { PaintStore } from "./store.js"
@@ -43,7 +43,7 @@ export function SelectionFrame(props: {
   readonly onPress: (event: PointerEvent<HTMLElement>, grip: Grip) => void
 }) {
   const { element, onPress, scaled } = props
-  const box = paintedAt(element.box, useBox(props.store, props.id))
+  const box = ownBox(element, useBox(props.store, props.id))
   if (box === null) return null
   return (
     <div
@@ -91,7 +91,7 @@ export function ChosenFrame(props: {
   readonly scaled: Scaled
 }) {
   const { element, scaled } = props
-  const box = paintedAt(element.box, useBox(props.store, props.id))
+  const box = ownBox(element, useBox(props.store, props.id))
   if (box === null) return null
   return (
     <div

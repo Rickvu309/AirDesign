@@ -574,3 +574,20 @@ it("does not move a shape the reader gave no place", () => {
     false,
   ])
 })
+
+it("names a connector's ends by the element ids of the shapes they attach to, and drops an end on no element", () => {
+  const line = elementId("256.9")
+  const shapes = new Map([
+    ["2", { id, kind: "shape" as const, editable: true, movable: true }],
+    ["9", { id: line, kind: "connector" as const, editable: false, movable: true }],
+  ])
+  const connector = row({
+    shape: "9",
+    kind: "p:cxnSp",
+    geometry: "bentConnector3",
+    connection: { start: { shape: "2", site: 3 }, end: { shape: "7", site: 1 } },
+  })
+  const canvas = slideCanvases(reader({ ...size, elements: [row(), connector] }), [{ part, shapes }])(0)
+  expect(canvas?.elements[1]?.connection).toEqual({ start: { node: id, site: 3 }, end: null })
+  expect(canvas?.elements[0]?.connection).toBeUndefined()
+})

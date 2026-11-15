@@ -5,7 +5,7 @@ import type { ReactNode } from "react"
 import { ArrangeMenu } from "@/editor/arrange-menu"
 import { commitBox, commitEdit, type CommitOutcome } from "@/commit-edit"
 import { slideListCopy } from "@/copy/slide-list-copy"
-import { changeDesign, type DesignDeck } from "@/design/design-change"
+import { changeDesign, endChange, type DesignDeck } from "@/design/design-change"
 import { valueFits } from "@/design/trait-edit"
 import { deviceRegister } from "@/device-copy"
 import { slideFrame } from "@/editor/revenue-slide"
@@ -157,9 +157,9 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
             onOrder={order}
             onSelect={select}
             onChoose={choose}
-            onConnect={(node, end, bound) => {
+            onConnect={(node, end, to) => {
               clear()
-              changeDesign(deck, { target: { node }, connection: { [end]: { shape: bound } } })
+              changeDesign(deck, endChange(node, end, to))
             }}
             onGroup={(nodes) => {
               clear()
