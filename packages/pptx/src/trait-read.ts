@@ -12,6 +12,7 @@ import {
   type Read,
   type Role,
   type Source,
+  type ThemeFont,
   type ThemeSlot,
   type TraitReads,
 } from "@airdesign/document"
@@ -38,7 +39,7 @@ export type Styles = {
   readonly lines: readonly Held[]
   readonly effects: readonly Held[]
 }
-type Fonts = ReadonlyMap<string, string>
+type Fonts = ReadonlyMap<ThemeFont, string>
 export type Chain = {
   readonly sheet: Sheet
   readonly layout: Sheet | null
@@ -252,20 +253,23 @@ function textReads(
     const color = fill?.element.kind === "a:solidFill" ? colorIn(fill, null) : null
     if (color !== null) reads["text.color"] = read(color, colored.source)
   } else if (referenceColor !== null) reads["text.color"] = read(referenceColor, "style")
+  const themed = (theme: ThemeFont, source: Source | undefined) => {
+    const value = fonts.get(theme)
+    return value === undefined ? undefined : { ...read(value, source), theme }
+  }
   const typeface = (held: Held) => {
     const latin = child(held, "a:latin")
     const value = latin === undefined ? null : paintAttribute(latin.element, "typeface")
     if (value === null || value === "") return undefined
     const theme = fontReference.exec(value)
-    return theme === null ? value : fonts.get(theme[1] === "j" ? "major" : "minor")
+    return theme === null ? read(value, held.source) : themed(theme[1] === "j" ? "major" : "minor", held.source)
   }
-  const nearFont = near.find((held) => typeface(held) !== undefined)
   const referenceIndex = reference === undefined ? null : paintAttribute(reference.element, "idx")
-  const referenceFont = referenceIndex === "major" || referenceIndex === "minor" ? fonts.get(referenceIndex) : undefined
-  const farFont = far.find((held) => typeface(held) !== undefined)
-  if (nearFont !== undefined) reads["text.font"] = read(typeface(nearFont)!, nearFont.source)
-  else if (referenceFont !== undefined) reads["text.font"] = read(referenceFont, "style")
-  else if (farFont !== undefined) reads["text.font"] = read(typeface(farFont)!, farFont.source)
+  const font =
+    near.map(typeface).find((each) => each !== undefined) ??
+    (referenceIndex === "major" || referenceIndex === "minor" ? themed(referenceIndex, "style") : undefined) ??
+    far.map(typeface).find((each) => each !== undefined)
+  if (font !== undefined) reads["text.font"] = font
   const bold = [...near, ...far].find((held) => flag(held.element, "b") !== undefined)
   if (bold !== undefined && flag(bold.element, "b") === true) reads["text.bold"] = read(true, bold.source)
 }
@@ -288,7 +292,7 @@ export function stylesOf(theme: Sheet | null): Styles {
 }
 
 function fontsOf(theme: Sheet | null): Fonts {
-  const fonts = new Map<string, string>()
+  const fonts = new Map<ThemeFont, string>()
   if (theme === null) return fonts
   const scheme = child(child(root(theme), "a:themeElements"), "a:fontScheme")
   for (const [name, kind] of [
@@ -302,7 +306,7 @@ function fontsOf(theme: Sheet | null): Fonts {
   return fonts
 }
 
-function paletteOf(chain: Chain): Palette {
+function paletteOf(chain: Chain, fonts: Fonts): Palette {
   const slots: Partial<Record<ThemeSlot, string>> = {}
   const scheme = chain.theme === null ? undefined : child(child(root(chain.theme), "a:themeElements"), "a:clrScheme")
   for (const element of scheme === undefined ? [] : inside(scheme)) {
@@ -326,7 +330,7 @@ function paletteOf(chain: Chain): Palette {
     const target = themeSlots.find((each) => each === value)
     if (slot !== undefined && target !== undefined) map[slot] = target
   }
-  return { slots, map }
+  return fonts.size === 0 ? { slots, map } : { slots, map, fonts: Object.fromEntries(fonts) }
 }
 
 export function ownersOf(item: Drawn, chain: Chain): readonly Held[] {
@@ -360,7 +364,8 @@ export function readTraits(parts: ReadonlyMap<string, Uint8Array>): DeckTraits {
     const master = layout === null ? null : cached(linkedPart(parts, layout.part, "slideMaster"))
     const theme = master === null ? null : cached(linkedPart(parts, master.part, "theme"))
     const chain: Chain = { sheet, layout, master, theme }
-    const palette = paletteOf(chain)
+    const fonts = fontsOf(theme)
+    const palette = paletteOf(chain, fonts)
     const key = JSON.stringify(palette)
     if (!paletteKeys.includes(key)) {
       paletteKeys.push(key)
@@ -368,7 +373,6 @@ export function readTraits(parts: ReadonlyMap<string, Uint8Array>): DeckTraits {
     }
     slides.set(slide, paletteKeys.indexOf(key))
     const styles = stylesOf(theme)
-    const fonts = fontsOf(theme)
     for (const item of sheet.drawn) {
       const owners = ownersOf(item, chain)
       const reads: Partial<Record<DesignKey, Read<unknown>>> = {}

@@ -136,11 +136,12 @@ describe("index format", () => {
   const palette = {
     slots: { dk1: "000000", lt1: "FFFFFF", accent1: "4472C4" },
     map: { tx1: "dk1", bg1: "lt1" },
+    fonts: { major: "Calibri Light", minor: "Calibri" },
   } as const
   const titled = {
     ...page.elements[0]!,
     role: "title",
-    design: { fill: ["accent1", "style"], "text.size": [36, "master"], "box.flipH": [true] },
+    design: { fill: ["accent1", "style"], "text.size": [36, "master"], "text.font": ["+mj-lt", "master"], "box.flipH": [true] },
     kept: ["geometry"],
     placed: { x: 1, y: 2, cx: 3, cy: 4 },
   } as const
@@ -154,7 +155,7 @@ describe("index format", () => {
     elements: [element as IndexElement],
   })
 
-  it("reads each element's role, design, kept and placed fields, and the page's format and palettes", () => {
+  it("reads each element's role, design, kept and placed fields, and the page's format and palettes with their theme fonts", () => {
     const read = readIndexPage(resent(0, titled))
     expect(read).toEqual(resent(0, titled))
     for (const element of [
@@ -175,6 +176,9 @@ describe("index format", () => {
       { format: format + 1 },
       { palettes: [] },
       { palettes: [{ ...palette, slots: { accent1: "blue" } }] },
+      { palettes: [{ ...palette, fonts: { major: "" } }] },
+      { palettes: [{ ...palette, fonts: { heading: "Georgia" } }] },
+      { palettes: [{ ...palette, fonts: { minor: "x".repeat(65) } }] },
       { slides: [{ ...page.slides[0], palette: 1 }, page.slides[1]] },
     ])
       expect(readIndexPage({ ...resent(0, titled), ...changed })).toBeNull()
@@ -242,7 +246,7 @@ describe("index format", () => {
   })
 
   it("sends the index again when none is stored, it is incomplete, or its format is below this build's", () => {
-    expect(format).toBe(28)
+    expect(format).toBe(29)
     expect(indexDue(undefined)).toBe(true)
     const first = appendIndex(undefined, page)
     if (!first.ok) throw new Error(first.refusal)
@@ -258,9 +262,10 @@ describe("index format", () => {
 
   it("names every key the index stores, so a new key raises the index stamp", () => {
     expect({ stamp: stamps.index, keys: indexKeys }).toEqual({
-      stamp: 6,
+      stamp: 7,
       keys: {
         page: ["format", "once", "offset", "total", "palettes", "slides", "elements"],
+        palette: ["slots", "map", "fonts"],
         slide: ["id", "position", "size", "free", "animated", "layout", "palette"],
         element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept", "placed", "group", "frame"],
         design: designKeys,

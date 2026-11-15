@@ -14,7 +14,7 @@ import {
 import { describe, expect, it } from "vitest"
 import * as z from "zod/v4"
 import { agentColor, colorPattern, readAgentColor } from "./agent-color.js"
-import { agentSchema, designOf, flat, foldDesign, readAgent, shownDesign } from "./agent-form.js"
+import { agentSchema, designOf, flat, foldDesign, readAgent, shownDesign, themedDesign } from "./agent-form.js"
 
 const navy = "1F4E79"
 const black = "000000"
@@ -312,4 +312,30 @@ describe("foldDesign shows a text box's layout as its rows set it", () => {
 it("shows the font face of the first run once a change lands on the text", () => {
   const value = '[{"from":0,"runs":[{"from":0,"text":"a","font":"Georgia"}]}]'
   expect(shownDesign({ "text.font": ["Calibri", "master"] }, value)).toEqual({ "text.font": ["Georgia"] })
+})
+
+describe("a text that shows a theme font", () => {
+  it("keeps the theme font's place in the index rather than its name", () => {
+    const read = (theme: "major" | "minor"): ElementRead => ({
+      reads: { "text.font": { value: "Calibri", source: "master", theme } },
+      kept: [],
+    })
+    expect(designOf(read("major")).design).toEqual({ "text.font": ["+mj-lt", "master"] })
+    expect(designOf(read("minor")).design).toEqual({ "text.font": ["+mn-lt", "master"] })
+    expect(designOf({ reads: { "text.font": { value: "Abadi" } }, kept: [] }).design).toEqual({
+      "text.font": ["Abadi"],
+    })
+  })
+
+  it("names the theme font its palette gives now, and leaves a font named in the file as it is", () => {
+    const fonts = { major: "Georgia", minor: "Calibri" }
+    expect(themedDesign({ "text.font": ["+mj-lt", "master"], "text.size": [44] }, fonts)).toEqual({
+      "text.font": ["Georgia", "master"],
+      "text.size": [44],
+    })
+    expect(themedDesign({ "text.font": ["+mn-lt", "style"] }, fonts)).toEqual({ "text.font": ["Calibri", "style"] })
+    const named: Design = { "text.font": ["Calibri Light", "master"] }
+    expect(themedDesign(named, fonts)).toBe(named)
+    expect(themedDesign({ "text.font": ["+mj-lt"], "text.size": [44] }, {})).toEqual({ "text.size": [44] })
+  })
 })

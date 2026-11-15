@@ -64,6 +64,7 @@ export type DeckIndex = BuiltIndex & { readonly next?: BuiltIndex }
 
 export const indexKeys = {
   page: ["format", "once", "offset", "total", "palettes", "slides", "elements"],
+  palette: ["slots", "map", "fonts"],
   slide: ["id", "position", "size", "free", "animated", "layout", "palette"],
   element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept", "placed", "group", "frame"],
   design: designKeys,
