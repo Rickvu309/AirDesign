@@ -55,9 +55,7 @@ async function zoomTo(page: Page, step: string): Promise<void> {
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
-test("Grid and Shapes are enabled, a shape not built yet looks off, and Actions offers only Table", async ({
-  page,
-}) => {
+test("Grid and Shapes are enabled, every shape in the tray is on, and Actions offers only Table", async ({ page }) => {
   await openClean(page)
   await expect(page.getByRole("button", { name: "Grid", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Add text box", exact: true })).toBeEnabled()
@@ -70,10 +68,8 @@ test("Grid and Shapes are enabled, a shape not built yet looks off, and Actions 
   await expect(page.getByRole("button", { name: "Move", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Move", exact: true })).toHaveAttribute("aria-pressed", "true")
   await page.getByRole("button", { name: "Shapes", exact: true }).click()
-  const look = await page
-    .getByRole("button", { name: "Arrow", exact: true })
-    .evaluate((tool) => [getComputedStyle(tool).opacity, getComputedStyle(tool).pointerEvents])
-  expect(look).toEqual(["0.4", "none"])
+  await expect(page.locator("[data-shape-tray] button:disabled")).toHaveCount(0)
+  await expect(page.getByRole("button", { name: "Arrow", exact: true })).toBeEnabled()
 })
 
 test("the tool menu lists Move and Hand with their keys, and Hand pans the zoomed canvas without moving a box", async ({

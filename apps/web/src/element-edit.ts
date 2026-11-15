@@ -1,4 +1,5 @@
 import {
+  lineGeometries,
   nextElementId,
   openingTable,
   placeNewBox,
@@ -108,7 +109,7 @@ export function elementCommand(
     return { slide: "element-add", id: slide.id, element: { node, kind: "table", value, box, grouped: false } }
   }
   if (change.change === "shape") {
-    const line = change.geometry === "line"
+    const line = lineGeometries.includes(change.geometry)
     const side = Math.round(change.size.height * shapeShare)
     const wanted = line ? { cx: Math.round(change.size.width * lineShare), cy: 0 } : { cx: side, cy: side }
     const box = placeNewBox(change.size, taken, wanted)

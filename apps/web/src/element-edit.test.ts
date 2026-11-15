@@ -1,4 +1,12 @@
-import { decide, elementId, openRegister, slideId, type Register, type SlideCommand } from "@airdesign/document"
+import {
+  decide,
+  elementId,
+  openRegister,
+  slideId,
+  type Geometry,
+  type Register,
+  type SlideCommand,
+} from "@airdesign/document"
 import { readShapes } from "@airdesign/pptx"
 import type { PaintBox } from "@airdesign/render"
 import { expect, it } from "vitest"
@@ -140,8 +148,7 @@ it("brings a shape to the front of its siblings and refuses a move that changes 
 it("adds a rectangle, an ellipse and a line on the slide under the next free id, each in the theme's style", () => {
   const parts = onSlide(xml(twoBoxSlide))
   const register = openRegister("", "")
-  const shape = (geometry: "rect" | "ellipse" | "line") =>
-    elementCommand(parts, register, { change: "shape", geometry, index: 0, size })
+  const shape = (geometry: Geometry) => elementCommand(parts, register, { change: "shape", geometry, index: 0, size })
   expect(shape("rect")).toEqual({
     slide: "element-add",
     id: "256",
@@ -155,8 +162,17 @@ it("adds a rectangle, an ellipse and a line on the slide under the next free id,
     element: { node: "256.4", kind: "connector", value: null, box: { x: 350, y: 250, cx: 300, cy: 0 }, grouped: false },
     geometry: "line",
   })
-  for (const geometry of ["rect", "ellipse", "line"] as const) {
+  expect(shape("straightConnector1")).toMatchObject({
+    element: { kind: "connector", box: { cx: 300, cy: 0 } },
+    geometry: "straightConnector1",
+  })
+  expect(shape("star5")).toMatchObject({
+    element: { kind: "shape", box: { cx: 100, cy: 100 } },
+    geometry: "star5",
+  })
+  for (const geometry of ["rect", "ellipse", "line", "straightConnector1", "star5"] as const) {
     const shown = readShapes(exportedParts(parts, landed(register, shape(geometry))))
-    expect(shown.find((each) => each.shape === "4")?.kind).toBe(geometry === "line" ? "p:cxnSp" : "p:sp")
+    const connector = geometry === "line" || geometry === "straightConnector1"
+    expect(shown.find((each) => each.shape === "4")?.kind).toBe(connector ? "p:cxnSp" : "p:sp")
   }
 })

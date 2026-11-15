@@ -3,6 +3,7 @@ import {
   orderKeyAfter,
   presentSlides,
   readSlideId,
+  type Geometry,
   type SlideCommand,
   type SlideId,
 } from "@airdesign/document"
@@ -72,12 +73,26 @@ function addedFromLayouts(parts: ReadonlyMap<string, Uint8Array>): RouteRun | nu
   }
 }
 
+const drawnGeometries: readonly Geometry[] = [
+  "rect",
+  "ellipse",
+  "line",
+  "straightConnector1",
+  "diamond",
+  "triangle",
+  "star5",
+  "plus",
+  "leftArrow",
+  "rightArrow",
+  "wedgeRectCallout",
+]
+
 const drawnBox = { x: 914400, y: 914400, cx: 1828800, cy: 914400 }
 
 export function drawnRuns(parts: ReadonlyMap<string, Uint8Array>): readonly RouteRun[] {
   const slide = slideAddresses(parts)[0]?.part
   if (slide === undefined) return []
-  return (["rect", "ellipse", "line"] as const).map((geometry) => {
+  return drawnGeometries.map((geometry) => {
     const edit = { name: "spTree.add", part: slide, text: "", geometry, ...drawnBox } as const
     const route = routeName["spTree.add"]
     try {

@@ -20,7 +20,7 @@ export {
   type PaintBox,
 } from "./record.js"
 export { holdKeys, type HeldKeys } from "./held-keys.js"
-export { adjustDefaults } from "./preset-path.js"
+export { adjustDefaults, presetOutline } from "./preset-path.js"
 export { SlideCanvas, unshownFill, type Entering } from "./slide-canvas.js"
 export type { TableBar } from "./table-paint.js"
 export { paintStore, type PaintStore } from "./store.js"

@@ -5,32 +5,46 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { shapeCopy } from "@/copy/shape-copy"
 import { floatShadow } from "@/editor/editor-chrome"
 import { EditorIcon } from "@/editor/editor-icons"
+import { ShapeGrid } from "@/editor/shape-grid"
 import { basicShapes, LineArt, ShapeSvg, trayShapes } from "@/editor/tool-panels"
 import { cn } from "@/lib/class-names"
 
-const drawn: Readonly<Record<string, Geometry>> = { square: "rect", circle: "ellipse" }
+const trayNames: Readonly<Record<string, Geometry>> = {
+  square: "rect",
+  circle: "ellipse",
+  diamond: "diamond",
+  triangle: "triangle",
+  star: "star5",
+  plus: "plus",
+  arrowl: "leftArrow",
+  arrowr: "rightArrow",
+  bubble: "wedgeRectCallout",
+}
 
-const itemClass = "size-9 rounded-md p-0 hover:bg-line active:translate-y-0 disabled:opacity-40"
+export const trayGeometries: Readonly<Record<string, Geometry>> = {
+  [shapeCopy.line]: "line",
+  [shapeCopy.arrow]: "straightConnector1",
+  ...Object.fromEntries(trayShapes.map((name) => [shapeCopy.shapes[name] ?? name, trayNames[name]])),
+}
+
+const itemClass = "size-9 rounded-md p-0 hover:bg-line active:translate-y-0"
 
 function TrayItem({
   label,
-  geometry,
   onShape,
   children,
 }: {
   label: string
-  geometry: Geometry | undefined
-  onShape: ((geometry: Geometry) => void) | undefined
+  onShape: (geometry: Geometry) => void
   children: ReactNode
 }) {
-  const run = geometry === undefined || onShape === undefined ? undefined : () => onShape(geometry)
+  const geometry = trayGeometries[label]
   return (
     <Button
       type="button"
       variant="ghost"
       aria-label={label}
-      disabled={run === undefined}
-      {...(run === undefined ? {} : { onClick: run })}
+      onClick={() => geometry !== undefined && onShape(geometry)}
       className={itemClass}
     >
       {children}
@@ -38,28 +52,31 @@ function TrayItem({
   )
 }
 
-export function ShapeTrayItems({ onShape }: { onShape?: (geometry: Geometry) => void }) {
+export function ShapeTrayItems({ onShape, onMore }: { onShape: (geometry: Geometry) => void; onMore: () => void }) {
   return (
     <div className={cn("flex items-center gap-0.5 rounded-xl bg-white p-1.5", floatShadow)} data-shape-tray>
-      <TrayItem label={shapeCopy.line} geometry="line" onShape={onShape}>
+      <TrayItem label={shapeCopy.line} onShape={onShape}>
         <LineArt arrow={false} size={22} />
       </TrayItem>
-      <TrayItem label={shapeCopy.arrow} geometry={undefined} onShape={onShape}>
+      <TrayItem label={shapeCopy.arrow} onShape={onShape}>
         <LineArt arrow size={22} />
       </TrayItem>
       <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />
-      {trayShapes.map((name) => (
-        <TrayItem key={name} label={shapeCopy.shapes[name] ?? name} geometry={drawn[name]} onShape={onShape}>
-          <ShapeSvg markup={basicShapes[name] ?? ""} size={26} />
-        </TrayItem>
-      ))}
+      {trayShapes.map((name) => {
+        const label = shapeCopy.shapes[name] ?? name
+        return (
+          <TrayItem key={name} label={label} onShape={onShape}>
+            <ShapeSvg markup={basicShapes[name] ?? ""} size={26} />
+          </TrayItem>
+        )
+      })}
       <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />
       <Button
         type="button"
         variant="ghost"
         aria-label={shapeCopy.more}
-        disabled
-        className="h-8 shrink-0 rounded-lg px-2.5 text-xs font-medium text-foreground disabled:opacity-40"
+        onClick={onMore}
+        className="h-8 shrink-0 rounded-lg px-2.5 text-xs font-medium text-foreground"
       >
         {shapeCopy.more}
       </Button>
@@ -69,12 +86,17 @@ export function ShapeTrayItems({ onShape }: { onShape?: (geometry: Geometry) => 
 
 export function ShapeTool({ onShape }: { onShape: (geometry: Geometry) => void }) {
   const [open, setOpen] = useState(false)
+  const [more, setMore] = useState(false)
+  const change = (next: boolean) => {
+    setOpen(next)
+    setMore(false)
+  }
   const pick = (geometry: Geometry) => {
-    setOpen(false)
+    change(false)
     onShape(geometry)
   }
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={change}>
       <PopoverTrigger
         render={
           <Button
@@ -89,7 +111,7 @@ export function ShapeTool({ onShape }: { onShape: (geometry: Geometry) => void }
         <EditorIcon name="shape" size={18} />
       </PopoverTrigger>
       <PopoverContent side="top" sideOffset={12} className="w-auto bg-transparent p-0 shadow-none ring-0 duration-0">
-        <ShapeTrayItems onShape={pick} />
+        {more ? <ShapeGrid onShape={pick} /> : <ShapeTrayItems onShape={pick} onMore={() => setMore(true)} />}
       </PopoverContent>
     </Popover>
   )

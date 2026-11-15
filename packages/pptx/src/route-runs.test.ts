@@ -32,23 +32,33 @@ for (const name of ["blank.pptx", "nasa-1d-cnn.pptx"]) {
 }
 
 for (const name of ["blank.pptx", "nasa-1d-cnn.pptx"]) {
-  it(`judges a rectangle, an ellipse and a line added to the first slide of ${name}, each touching only that slide`, async () => {
+  it(`judges every shape the tray inserts, added to the first slide of ${name}, each touching only that slide`, async () => {
     const parts = await readParts(readFileSync(`${folder}/${name}`))
     const runs = drawnRuns(parts)
-    expect(runs.map((run) => (run.edit?.name === "spTree.add" ? run.edit.geometry : null))).toEqual([
+    const geometries = [
       "rect",
       "ellipse",
       "line",
-    ])
+      "straightConnector1",
+      "diamond",
+      "triangle",
+      "star5",
+      "plus",
+      "leftArrow",
+      "rightArrow",
+      "wedgeRectCallout",
+    ]
+    expect(runs.map((run) => (run.edit?.name === "spTree.add" ? run.edit.geometry : null))).toEqual(geometries)
     expect(
       routeRuns(parts).filter((run) => run.edit?.name === "spTree.add" && run.edit.geometry !== undefined),
-    ).toHaveLength(3)
+    ).toHaveLength(geometries.length)
     for (const run of runs) {
       if (run.parts == null || run.touch === null) throw new Error(run.error ?? "run")
       expect(touchMatches(parts, run.parts, run.touch)).toBe(true)
       const before = new Set(readShapes(parts).map((shape) => `${shape.part}#${shape.shape}`))
       const added = readShapes(run.parts).filter((shape) => !before.has(`${shape.part}#${shape.shape}`))
-      expect(added.map((shape) => shape.kind)).toEqual([run === runs[2] ? "p:cxnSp" : "p:sp"])
+      const connector = run === runs[2] || run === runs[3]
+      expect(added.map((shape) => shape.kind)).toEqual([connector ? "p:cxnSp" : "p:sp"])
     }
   })
 }
