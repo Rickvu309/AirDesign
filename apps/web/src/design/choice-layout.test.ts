@@ -25,20 +25,20 @@ it("names autofit's choices in PowerPoint's words", () => {
 })
 
 it("lists autofit's choices, since its words are too long for a segment", () => {
-  expect(choiceLayout("autofit", ["none", "shrink", "grow"], false)).toBe("list")
+  expect(choiceLayout("autofit", ["none", "shrink", "grow"])).toBe("list")
 })
 
 it("keeps short choices as segments and long lists as a list", () => {
-  expect(choiceLayout("anchor", ["t", "ctr", "b"], false)).toBe("segments")
-  expect(choiceLayout("vertical", ["horz", "vert", "vert270"], false)).toBe("segments")
-  expect(choiceLayout("dash", ["solid", "dot", "dash", "lgDash", "dashDot"], false)).toBe("list")
+  expect(choiceLayout("anchor", ["t", "ctr", "b"])).toBe("segments")
+  expect(choiceLayout("vertical", ["horz", "vert", "vert270"])).toBe("segments")
+  expect(choiceLayout("dash", ["solid", "dot", "dash", "lgDash", "dashDot"])).toBe("list")
 })
 
 it("puts every segmented word inside its segment", () => {
   const segmented = traitNames.flatMap((trait) =>
     [...Object.entries(traits[trait].fields), ...Object.entries(traits[trait].inputs)].flatMap(([field, kind]) =>
       choices((kind as { readonly desc: Desc }).desc, field).filter(
-        ([name, options]) => choiceLayout(name, options, false) !== "list",
+        ([name, options]) => choiceLayout(name, options) !== "list",
       ),
     ),
   )

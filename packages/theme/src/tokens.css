@@ -31,6 +31,9 @@
   --ink: #181818;
   --blue-tint: #eef4fe;
   --field-edge: #d7d7d6;
+  --pressed: var(--blue-tint);
+  --pressed-foreground: color-mix(in oklch, var(--primary-strong), var(--navy) 30%);
+  --pressed-edge: var(--primary);
   --primary-top: #93b8ef;
   --primary-strong: #2d6fcd;
   --strong-hover: color-mix(in oklch, var(--primary-strong), black 15%);
@@ -204,6 +207,9 @@
   --color-ink: var(--ink);
   --color-blue-tint: var(--blue-tint);
   --color-field-edge: var(--field-edge);
+  --color-pressed: var(--pressed);
+  --color-pressed-foreground: var(--pressed-foreground);
+  --color-pressed-edge: var(--pressed-edge);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

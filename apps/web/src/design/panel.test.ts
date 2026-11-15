@@ -184,3 +184,33 @@ it("sizes a table by Width and Height beside X and Y, and offers no rotation for
     box: { w: 9_144_000 },
   })
 })
+
+function boxRows(view: ScopedElement, fields: Readonly<Record<string, ShownField>>) {
+  const panel = panelOf(view, { reads: {}, moves: true, fields })
+  return panel.sections.find((section) => section.trait === "box")?.rows ?? []
+}
+
+it("draws Align and Distribute as actions and every other box row as itself", () => {
+  const rows = boxRows(shape, {})
+  expect(rows.filter((row) => row.control === "action").map((row) => row.field)).toEqual(["align", "distribute"])
+  expect(rows.filter((row) => row.control !== "action").map((row) => row.field)).toEqual([
+    "x",
+    "y",
+    "w",
+    "h",
+    "rot",
+    "flipH",
+    "flipV",
+  ])
+})
+
+it("leaves Flip to the route of a connector that is bound to a shape", () => {
+  const bound = { value: { shape: { node: "258.2", site: 1 } }, own: true }
+  const free = { value: { none: true }, own: true }
+  expect(boxRows(connector, { "connection.end": bound }).map((row) => row.field)).not.toContain("flipH")
+  expect(boxRows(connector, { "connection.start": bound }).map((row) => row.field)).not.toContain("flipV")
+  expect(boxRows(connector, { "connection.start": free, "connection.end": free }).map((row) => row.field)).toContain(
+    "flipH",
+  )
+  expect(boxRows(connector, {}).map((row) => row.field)).toContain("flipV")
+})
