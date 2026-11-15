@@ -144,6 +144,60 @@ it("leaves a group out, since its children carry their own boxes", () => {
   expect(canvas?.elements.map((each) => each.key)).toEqual([`${part}#2`])
 })
 
+it("paints a group's effects over everything it holds, a group inside it included", () => {
+  const shapes = new Map([
+    ["9", { id: elementId("256.9"), kind: "group" as const, editable: false, movable: true }],
+    ["7", { id: elementId("256.7"), kind: "group" as const, editable: false, movable: false }],
+    ["2", { id, kind: "shape" as const, editable: true, movable: false }],
+    ["3", { id: elementId("256.3"), kind: "shape" as const, editable: true, movable: false }],
+    ["4", { id: elementId("256.4"), kind: "shape" as const, editable: true, movable: false }],
+  ])
+  const glow = { radius: 63_500, color: { hex: "FF0000", alpha: 1 } }
+  const canvas = slideCanvases(
+    reader({
+      ...size,
+      elements: [
+        row({ shape: "9", kind: "p:grpSp", effects: { glow } }),
+        row({ shape: "7", kind: "p:grpSp", group: "9" }),
+        row({ shape: "2", group: "7" }),
+        row({ shape: "3", group: "9" }),
+        row({ shape: "4" }),
+      ],
+    }),
+    [{ part, shapes }],
+  )(0)
+  expect(canvas?.elements.map((each) => [each.key, each.held ?? 0])).toEqual([
+    [`${part}#9`, 3],
+    [`${part}#7`, 1],
+    [`${part}#2`, 0],
+    [`${part}#3`, 0],
+    [`${part}#4`, 0],
+  ])
+  expect(canvas?.elements[0]?.effects).toEqual({ glow: { radius: 63_500, color: css("FF0000") } })
+})
+
+it("counts what a group holds through a group inside it that has no element", () => {
+  const shapes = new Map([
+    ["9", { id: elementId("256.9"), kind: "group" as const, editable: false, movable: true }],
+    ["2", { id, kind: "shape" as const, editable: true, movable: false }],
+  ])
+  const canvas = slideCanvases(
+    reader({
+      ...size,
+      elements: [
+        row({ shape: "9", kind: "p:grpSp", effects: { softEdge: { radius: 1 } } }),
+        row({ shape: "7", kind: "p:grpSp", group: "9" }),
+        row({ shape: "2", group: "7" }),
+      ],
+    }),
+    [{ part, shapes }],
+  )(0)
+  expect(canvas?.elements.map((each) => [each.key, each.held ?? 0])).toEqual([
+    [`${part}#9`, 1],
+    [`${part}#2`, 0],
+  ])
+})
+
 it("gives two rows that share a shape number different keys", () => {
   const canvas = slideCanvases(reader({ ...size, elements: [row(), row()] }), [source])(0)
   expect(canvas?.elements.map((each) => each.key)).toEqual([`${part}#2`, `${part}#2#1`])

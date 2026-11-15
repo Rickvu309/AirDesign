@@ -3,6 +3,7 @@ import type { Bound, Box, ElementId, StackMove, TableChange } from "@airdesign/d
 import { ConnectorEnds } from "./connector-ends.js"
 import type { End } from "./connector-drag.js"
 import { PaintedElement } from "./element-kind.js"
+import { GroupEffects, layered } from "./group-effects.js"
 import type { HeldKeys } from "./held-keys.js"
 import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.js"
 import { ChosenFrame, SelectionFrame } from "./selection-frame.js"
@@ -105,20 +106,28 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
       }}
       {...(moving === null ? {} : { tabIndex: -1, ...moving.slide })}
     >
-      {slide.elements.map((element) => (
-        <PaintedElement
-          key={element.key}
-          element={element}
-          formatting={props.formatting}
-          moves={moving}
-          onEdit={props.onEdit}
-          onTable={props.onTable}
-          tableBar={props.tableBar}
-          quiet={quiet}
-          scaled={scaled}
-          store={props.store}
-        />
-      ))}
+      {layered(
+        slide.elements,
+        (element) => (
+          <PaintedElement
+            key={element.key}
+            element={element}
+            formatting={props.formatting}
+            moves={moving}
+            onEdit={props.onEdit}
+            onTable={props.onTable}
+            tableBar={props.tableBar}
+            quiet={quiet}
+            scaled={scaled}
+            store={props.store}
+          />
+        ),
+        (group, members) => (
+          <GroupEffects key={`${group.key} effects`} element={group} scaled={scaled}>
+            {members}
+          </GroupEffects>
+        ),
+      )}
       {moving === null ? null : (
         <div role="status" aria-live="polite" aria-atomic="true" style={visuallyHidden}>
           {props.notice !== undefined && props.notice !== "" ? props.notice : moving.message}

@@ -153,15 +153,57 @@ describe("soft edge paint", () => {
     expect(host.querySelector<HTMLElement>("[data-thumb-element]")?.style.background).toBe("")
   })
 
-  it("leaves a fill drawn by css alone", async () => {
+  it("softens a gradient fill's edge, as PowerPoint does", async () => {
     const host = await painted(element({ softEdge: { radius: 20 } }, { fill: "linear-gradient(90deg, red, blue)" }))
-    expect(host.querySelector("[data-effect-soft]")).toBeNull()
-    expect(host.querySelector<HTMLElement>("[data-thumb-element]")?.style.background).toContain("linear-gradient")
+    const soft = host.querySelector("[data-effect-soft]")
+    expect(soft?.querySelector<HTMLElement>("foreignObject div")?.style.background).toContain("linear-gradient")
+    expect(host.querySelector<HTMLElement>("[data-thumb-element]")?.style.background).toBe("")
   })
 
-  it.fails("softens a gradient fill's edge, as PowerPoint does", async () => {
-    const host = await painted(element({ softEdge: { radius: 20 } }, { fill: "linear-gradient(90deg, red, blue)" }))
-    expect(host.querySelector("[data-effect-soft]")).not.toBeNull()
+  it("softens a gradient the svg draws with that gradient", async () => {
+    const gradient = { angle: 0, stops: [{ position: 0, color: "red" }] }
+    const host = await painted(
+      element(
+        { softEdge: { radius: 20 } },
+        { fill: "linear-gradient(90deg, red, red)", geometry: { preset: "rect", adjusts: {}, gradient } },
+      ),
+    )
+    const soft = host.querySelector("[data-effect-soft]")
+    expect(soft?.getAttribute("fill")).toMatch(/^url\(#.+-gradient\)$/)
+    expect(host.querySelector("rect:not([data-effect-soft])")?.getAttribute("fill")).toBe("none")
+  })
+
+  it("softens a gradient that runs from the sides to the middle and leaves its outline unfilled", async () => {
+    const gradient = {
+      angle: null,
+      path: { kind: "rect" as const, focus: null },
+      stops: [{ position: 0, color: "red" }],
+    }
+    const host = await painted(
+      element(
+        { softEdge: { radius: 20 } },
+        { fill: "radial-gradient(red, red)", geometry: { preset: "rect", adjusts: {}, gradient } },
+      ),
+    )
+    expect(host.querySelector("[data-effect-soft]")?.getAttribute("fill")).toMatch(/^url\(#.+-gradient\)$/)
+    expect(host.querySelector("rect:not([data-effect-soft])")?.getAttribute("fill")).toBe("none")
+  })
+
+  it("softens a picture's edge, the round of an oval picture included", async () => {
+    const fill = 'url("blob:1") 0% 0% / 100% 100% no-repeat'
+    const host = await painted(element({ softEdge: { radius: 20 } }, { kind: "picture", fill, outline: "ellipse" }))
+    const layer = host.querySelector("[data-effect-soft] foreignObject div")
+    expect(layer?.getAttribute("style")).toContain("blob:1")
+    expect(layer?.getAttribute("style")).toContain("border-radius: 50%")
+    expect(host.querySelector<HTMLElement>("[data-thumb-element]")?.style.background).toBe("")
+  })
+
+  it("softens a preset shape's picture fill along its path", async () => {
+    const fill = 'url("blob:1") 0% 0% / 100% 100% no-repeat'
+    const host = await painted(
+      element({ softEdge: { radius: 20 } }, { fill, geometry: { preset: "triangle", adjusts: {} } }),
+    )
+    expect(host.querySelector("[data-effect-soft] foreignObject")?.getAttribute("clip-path")).toMatch(/^url\(#/)
   })
 
   it("paints a rounded box's soft fill with its corners", async () => {

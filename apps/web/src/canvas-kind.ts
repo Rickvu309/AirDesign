@@ -1,7 +1,7 @@
 import type { PaintElement } from "@airdesign/pptx"
 import type { CanvasElement } from "@airdesign/render"
 import { paintFrame } from "@/canvas-frame"
-import { groupsOf, paintGroup } from "@/canvas-group"
+import { groupsOf, paintGroup, withHeld } from "@/canvas-group"
 import { paintPicture } from "@/canvas-picture"
 import { paintPreset } from "@/preset-paint"
 import type { CanvasSource } from "@/canvas-source"
@@ -37,7 +37,7 @@ export function paintElements(
   src: PictureSource,
 ): readonly CanvasElement[] {
   const seen = new Map<string, number>()
-  const elements: CanvasElement[] = []
+  const elements: (readonly [CanvasElement, PaintElement])[] = []
   const tops = groupsOf(rows, source)
   for (const row of rows) {
     const kind = paintKindOf(row)
@@ -49,16 +49,16 @@ export function paintElements(
     const carried = group === undefined ? {} : { group }
     if (kind === "group") {
       const painted = paintGroup(row, source, key)
-      if (painted !== null) elements.push({ ...painted, ...carried })
+      if (painted !== null) elements.push([{ ...painted, ...carried }, row])
       continue
     }
     const shape = row.from === "slide" ? source.shapes.get(row.shape) : undefined
     const painted = painters[kind]({ row, shape, key, src })
     if (painted === null) continue
     const diagram = row.diagram === undefined ? {} : { diagram: diagramOf(row.diagram, key, src) }
-    elements.push({ ...painted, ...diagram, ...carried })
+    elements.push([{ ...painted, ...diagram, ...carried }, row])
   }
-  return elements
+  return withHeld(elements, rows)
 }
 
 function diagramOf(rows: readonly PaintElement[], key: string, src: PictureSource): readonly CanvasElement[] {
