@@ -2,6 +2,7 @@ import path from "node:path"
 import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
+import { unfold } from "../look/unfold.mjs"
 
 export default async function drive({ repo, origin, page, signIn, post, capture, note, deckRoutes }) {
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
@@ -93,6 +94,8 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await slide(7)
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await page.locator(`[data-slide-paint] [data-canvas-element="${glowing}#4"]`).click({ position: { x: 4, y: 4 } })
+  await expect(page.locator("[data-design-element]")).toBeVisible()
+  await unfold(page.locator("[data-design-element]"), "Effects")
   const section = page
     .locator("[data-design-element] section")
     .filter({ has: page.getByRole("heading", { name: "Effects", exact: true }) })

@@ -1,7 +1,7 @@
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { openDeck, settled } from "./design-panel"
+import { openDeck, settled, unfold } from "./design-panel"
 import { partsOf } from "./shape-fills"
 
 const deck = "doe-heat-pumps.pptx"
@@ -45,6 +45,7 @@ async function effectsOfGroup(page: Page): Promise<Locator> {
   if ((await design.getAttribute("aria-pressed")) !== "true") await design.click()
   await page.locator(`[data-slide-paint] [data-canvas-element="${held[0]!}"]`).click({ force: true })
   await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveAttribute("data-selection", /\.18$/)
+  await unfold(page.locator("[data-design-element]"), "Effects")
   const effects = page
     .locator("[data-design-element] section")
     .filter({ has: page.getByRole("heading", { name: "Effects", exact: true }) })

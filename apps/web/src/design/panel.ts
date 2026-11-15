@@ -1,5 +1,4 @@
 import {
-  alphaKeys,
   inheritable,
   keptRefuses,
   readTextValue,
@@ -20,6 +19,7 @@ import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
 import { cropChange } from "./crop-change"
 import { opacitySection } from "./opacity-row"
+import { hidden, panelKind, panelOrder, type PanelKind } from "./panel-order"
 import { traitControls } from "./trait-controls"
 
 export const controlKinds = [
@@ -121,9 +121,18 @@ export function partRow(row: PanelRow, name: string, desc: Desc, value: unknown)
   }
 }
 
-export type PanelSection = { readonly trait: SectionName; readonly label: string; readonly rows: readonly PanelRow[] }
+export type PanelSection = {
+  readonly trait: SectionName
+  readonly label: string
+  readonly open: boolean
+  readonly rows: readonly PanelRow[]
+}
 
-export type PanelModel = { readonly node: ElementId; readonly sections: readonly PanelSection[] }
+export type PanelModel = {
+  readonly node: ElementId
+  readonly kind: PanelKind | null
+  readonly sections: readonly PanelSection[]
+}
 
 type Loose = Readonly<Record<string, { readonly desc: Desc }>>
 
@@ -243,15 +252,27 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       ]
     })
     const visible = lineless(trait, rows) ? rows.filter((row) => row.field === "fill") : rows
-    return visible.length === 0 ? [] : [{ trait, label: labels.section ?? "", rows: visible }]
+    return visible.length === 0 ? [] : [{ trait, label: labels.section ?? "", open: true, rows: visible }]
   })
-  const ordered = [
-    ...sections.filter(({ trait }) => trait !== "identity"),
-    ...sections.filter(({ trait }) => trait === "identity"),
-  ]
   const opacity = opacitySection(view, shown)
-  if (opacity === null) return { node: view.node, sections: ordered }
-  const faded = new Set(alphaKeys.map((key) => key.split(".")[0]))
-  const at = ordered.findIndex((section) => faded.has(section.trait))
-  return { node: view.node, sections: ordered.toSpliced(at < 0 ? ordered.length : at, 0, opacity) }
+  const kind = panelKind(view, shown)
+  return {
+    node: view.node,
+    kind,
+    sections: ordered(kind, [...sections, ...(opacity === null ? [] : [opacity])], shown),
+  }
+}
+
+function ordered(
+  kind: PanelKind | null,
+  sections: readonly PanelSection[],
+  shown: PanelReads,
+): readonly PanelSection[] {
+  if (kind === null) return sections
+  const places = panelOrder[kind]
+  const left = hidden(kind, shown)
+  return places.flatMap((place) => {
+    const section = sections.find(({ trait }) => trait === place.section)
+    return section === undefined || left.includes(place.section) ? [] : [{ ...section, open: place.open }]
+  })
 }

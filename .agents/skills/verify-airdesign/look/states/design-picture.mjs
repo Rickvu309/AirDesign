@@ -1,6 +1,7 @@
 import path from "node:path"
 import { expect } from "@playwright/test"
 import { openDeck } from "../open-deck.mjs"
+import { unfold } from "../unfold.mjs"
 
 async function drive(kit) {
   await kit.signIn()
@@ -18,6 +19,7 @@ async function drive(kit) {
   if ((await picture.count()) === 0) return
   await picture.getByRole("group", { name: "Recolor", exact: true }).getByRole("button", { name: "Grayscale" }).click()
   await expect(kit.page.getByRole("button", { name: "Undo picture", exact: true })).toBeVisible()
+  await unfold(panel, "Name and alt text")
   await panel.getByRole("heading", { name: "Name and alt text", exact: true }).scrollIntoViewIfNeeded()
 }
 

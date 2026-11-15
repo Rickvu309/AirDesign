@@ -1,7 +1,7 @@
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
-import { openDeck, settled } from "./design-panel"
+import { openDeck, settled, unfold } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { partsOf, shapeAt } from "./shape-fills"
 
@@ -94,6 +94,7 @@ test("a person sets a text box's font, spacing, margins, anchor, wrap, direction
   const type = await exported(page, testInfo.outputPath(typeExport), judgedType)
   expect(type).toContain(typed)
 
+  await unfold(page.locator("[data-design-element]"), "Text box")
   const body = section(page, "Text box")
   const margins = body.getByRole("group", { name: "Margins", exact: true })
   await expect(margins.getByRole("textbox", { name: "Left", exact: true })).toHaveValue("7.2")

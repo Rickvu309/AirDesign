@@ -4,6 +4,7 @@ import { expect } from "@playwright/test"
 import { blankParts } from "../../../../../scripts/pptx-fixtures/blank-deck.mjs"
 import { storedZip } from "../../../../../scripts/stored-zip.mjs"
 import { openDeck } from "../open-deck.mjs"
+import { unfold } from "../unfold.mjs"
 
 const lines = Array.from(
   { length: 8 },
@@ -33,6 +34,8 @@ async function drive(kit) {
   await kit.page
     .locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#10"]')
     .click({ position: { x: 4, y: 4 } })
+  await expect(kit.page.locator("[data-design-element]")).toBeVisible()
+  await unfold(kit.page.locator("[data-design-element]"), "Text box")
   const section = kit.page
     .locator("[data-design-element] section")
     .filter({ has: kit.page.getByRole("heading", { name: "Text box", exact: true }) })

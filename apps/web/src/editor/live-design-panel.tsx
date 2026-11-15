@@ -229,7 +229,6 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
   return (
     <ElementDesign
       model={design.model}
-      kind={design.view.facts.kind}
       palette={palette}
       onChange={(row, value) =>
         changeDesign(deck, () => rebasedChange(rowsOf(elementDesign(deck, node)?.model.sections), row, value))

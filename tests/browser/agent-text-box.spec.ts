@@ -2,6 +2,7 @@ import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect } from "@playwright/test"
 import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { unfold } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { partsOf, shapeAt } from "./shape-fills"
 
@@ -44,6 +45,7 @@ test("an agent sets a text box's autofit, anchor and font, which the person sees
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await shapeAt(page, "2").click({ position: { x: 4, y: 4 } })
   const panel = page.locator("[data-design-element]")
+  await unfold(panel, "Text box")
   const autofit = panel.getByRole("combobox", { name: "Autofit", exact: true })
   await expect(autofit).toHaveText(/^Shrink text on overflow/)
   await expect(autofit).toBeEnabled()

@@ -1,5 +1,5 @@
-import type { Kind } from "@airdesign/document"
 import type { PaintFill } from "@airdesign/pptx"
+import type { PanelKind } from "@/design/panel-order"
 
 type Named = Exclude<PaintFill["type"], "solid" | "none">
 
@@ -14,21 +14,13 @@ export const designCopy = {
   backgroundColor: (name: string) => `Background color, ${name}`,
   white: "White",
   fills: { gradient: "Gradient", pattern: "Pattern", picture: "Picture" },
-  kinds: {
-    deck: "Deck",
-    theme: "Theme",
-    master: "Slide master",
-    layout: "Layout",
-    section: "Section",
-    slide: "Slide",
-    notes: "Speaker notes",
+  panels: {
+    text: "Text box",
     shape: "Shape",
     picture: "Picture",
     connector: "Line",
     group: "Group",
     table: "Table",
-    row: "Table row",
-    cell: "Table cell",
     chart: "Chart",
     kept: "Element",
   },
@@ -45,6 +37,6 @@ export const designCopy = {
   cell: (row: number, column: number) => `Row ${String(row)}, column ${String(column)}`,
 } as const satisfies {
   readonly fills: Record<Named, string>
-  readonly kinds: Record<Kind, string>
+  readonly panels: Record<PanelKind, string>
   readonly [key: string]: unknown
 }

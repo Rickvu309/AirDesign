@@ -1,10 +1,11 @@
-import type { Kind } from "@airdesign/document"
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { designCopy } from "@/copy/design-copy"
 import { controlViews } from "@/design/control-views"
 import type { Palette } from "@/design/color-choices"
 import type { ControlKind, ControlProps, PanelModel, PanelRow } from "@/design/panel"
+import { foldOpen, setFold, useFolds } from "@/design/panel-folds"
 import { haldenMist, haldenTeal, swatchMist, swatchNavy, swatchTeal, swatchWhite } from "@/editor/design-panel-art"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
@@ -53,26 +54,37 @@ export function DesignHead({ children }: { children: ReactNode }) {
   )
 }
 
+type Fold = { readonly open: boolean; readonly onOpen: (open: boolean) => void }
+
 export function DesignSection({
   title,
   id,
   last = false,
   action = null,
+  fold = null,
   children,
 }: {
   title: string
   id?: string
   last?: boolean
   action?: ReactNode
+  fold?: Fold | null
   children: ReactNode
 }) {
+  const edge = last ? null : "border-b border-line"
+  if (fold !== null)
+    return (
+      <FoldedSection title={title} edge={edge} action={action} fold={fold}>
+        {children}
+      </FoldedSection>
+    )
   const heading = (
     <h2 id={id} className="text-[length:var(--type-dense)] font-semibold text-foreground">
       {title}
     </h2>
   )
   return (
-    <section className={cn("flex flex-col gap-3 px-4 py-4", last ? null : "border-b border-line")}>
+    <section className={cn("flex flex-col gap-3 px-4 py-4", edge)}>
       {action === null ? (
         heading
       ) : (
@@ -83,6 +95,46 @@ export function DesignSection({
       )}
       {children}
     </section>
+  )
+}
+
+function FoldedSection({
+  title,
+  edge,
+  action,
+  fold,
+  children,
+}: {
+  title: string
+  edge: string | null
+  action: ReactNode
+  fold: Fold
+  children: ReactNode
+}) {
+  return (
+    <Collapsible
+      open={fold.open}
+      onOpenChange={fold.onOpen}
+      render={<section />}
+      className={cn("flex flex-col gap-3 px-4", fold.open ? "py-4" : "py-2", edge)}
+      data-design-section={title}
+    >
+      <div className="flex min-h-6 items-center justify-between gap-2">
+        <h2 className="min-w-0 flex-1 text-[length:var(--type-dense)] font-semibold text-foreground">
+          <CollapsibleTrigger className="group/fold -mx-1 flex w-[calc(100%+0.5rem)] items-center gap-1.5 rounded-[var(--shape-control)] px-1 py-1 text-left">
+            <EditorIcon
+              name="chevr"
+              size={12}
+              strokeWidth={2}
+              className="shrink-0 text-faint [transition:transform_var(--ease-micro)] group-data-[panel-open]/fold:rotate-90 motion-reduce:transition-none"
+            />
+            <span className="truncate">{title}</span>
+          </CollapsibleTrigger>
+        </h2>
+        {fold.open ? action : null}
+      </div>
+      <CollapsibleContent className="flex flex-col gap-3">{children}</CollapsibleContent>
+    </Collapsible>
   )
 }
 
@@ -214,16 +266,16 @@ export function SectionRows({
 
 export function ElementDesign({
   model,
-  kind,
   palette,
   onChange,
 }: {
   model: PanelModel
-  kind: Kind
   palette: Palette
   onChange: (row: PanelRow, value: unknown) => void
 }) {
   const last = model.sections.length - 1
+  const folds = useFolds()
+  const { kind } = model
   return (
     <div
       className="flex min-h-0 flex-1 flex-col overflow-y-auto outline-none"
@@ -232,7 +284,7 @@ export function ElementDesign({
       data-keeps-selection
       tabIndex={-1}
     >
-      <DesignHead>{designCopy.kinds[kind]}</DesignHead>
+      <DesignHead>{kind === null ? designCopy.panels.kept : designCopy.panels[kind]}</DesignHead>
       {model.sections.length === 0 ? (
         <p className="px-4 py-4 text-[length:var(--type-dense)] text-quiet">{designCopy.nothing}</p>
       ) : null}
@@ -244,6 +296,14 @@ export function ElementDesign({
             title={section.label}
             last={at === last}
             action={reset === undefined ? null : <SectionReset row={reset} onChange={onChange} />}
+            fold={
+              kind === null
+                ? null
+                : {
+                    open: foldOpen(folds, kind, section.trait, section.open),
+                    onOpen: (open) => setFold(kind, section.trait, open),
+                  }
+            }
           >
             <SectionRows rows={section.rows} palette={palette} onChange={onChange} />
           </DesignSection>

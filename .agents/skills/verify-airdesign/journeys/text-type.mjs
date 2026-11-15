@@ -2,6 +2,7 @@ import path from "node:path"
 import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
+import { unfold } from "../look/unfold.mjs"
 
 export default async function drive({ repo, origin, page, signIn, post, capture, note, deckRoutes }) {
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
@@ -102,6 +103,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   }
   await fill(text.getByRole("textbox", { name: "Line spacing", exact: true }), "120")
   await fill(text.getByRole("textbox", { name: "Space before", exact: true }), "6")
+  await unfold(panel, "Text box")
   const box = section("Text box")
   await box
     .getByRole("group", { name: "Vertical alignment", exact: true })
