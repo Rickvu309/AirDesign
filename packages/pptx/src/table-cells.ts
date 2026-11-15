@@ -31,7 +31,7 @@ const dashTags = ["a:prstDash", "a:custDash"]
 function fillOf(held: Held | undefined): CellFill | null {
   const fill = fillIn(held)
   const value = fill === undefined ? null : fillValueOf(fill, null)
-  return value === null || "group" in value ? null : value
+  return value === null || "group" in value || "picture" in value ? null : value
 }
 
 function borderOf(line: Held): Border {
