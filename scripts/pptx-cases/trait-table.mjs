@@ -3,6 +3,7 @@ import { slideExportLines } from "../slide-export.mjs"
 export const tableExportName = "exported-table.pptx"
 export const tableCellsExportName = "exported-table-cells.pptx"
 export const tableResizedExportName = "exported-table-resized.pptx"
+export const tableReadableExportName = "exported-table-readable.pptx"
 
 const original = "blank.pptx"
 const cellsOriginal = "table-added.pptx"
@@ -88,8 +89,9 @@ export default {
     "tests/browser/table-edits.spec.ts",
     "tests/browser/table-cells.spec.ts",
     "tests/browser/gesture-size.spec.ts",
+    "tests/browser/table-readable.spec.ts",
   ],
-  exports: [tableExportName, tableCellsExportName, tableResizedExportName],
+  exports: [tableExportName, tableCellsExportName, tableResizedExportName, tableReadableExportName],
   originals: [cellsOriginal],
   covers: ["table.value"],
   lines(answers) {
@@ -110,6 +112,8 @@ export default {
     lines.push(...keptLines(answers, original, tableResizedExportName, "table resize export", styledParts))
     lines.push(...styledLines(parts.get(tableResizedExportName), "table resize export"))
     lines.push(...sizedLines(pptx, parts.get(tableResizedExportName)))
+    lines.push(...keptLines(answers, original, tableReadableExportName, "table readable export", styledParts))
+    lines.push(...styledLines(parts.get(tableReadableExportName), "table readable export"))
     return lines
   },
 }

@@ -155,7 +155,7 @@ Where a person picks any color a field takes: a fill, line, effect, text, table 
 _Avoid_: palette, swatches, color menu
 
 **table style**:
-The look a table takes from its deck: a header row, banded rows, borders and the text color on each, all in theme colors. A new table gets the deck's own default table style, or PowerPoint's own default, Medium Style 2 - Accent 1, when the deck has none. A table imported with its own style keeps it.
+The look a table takes from its deck: a header row, banded rows, borders and the text color on each, all in theme colors. A new table gets the deck's own default table style, or PowerPoint's own default, Medium Style 2 - Accent 1, when the deck has none. A table imported with its own style keeps it. When a person or an agent fills a cell, the cell's text turns to the theme's light or dark text color, whichever reads better on the fill, unless the text has a color of its own.
 _Avoid_: table theme, table format, table preset
 
 **icon**:

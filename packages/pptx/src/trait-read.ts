@@ -346,6 +346,15 @@ export function ownersOf(item: Drawn, chain: Chain): readonly Held[] {
   return owners
 }
 
+export function slidePalette(parts: ReadonlyMap<string, Uint8Array>, part: string): Palette | null {
+  const sheet = sheetOf(parts, part)
+  if (sheet === null) return null
+  const layout = sheetOf(parts, linkedPart(parts, part, "slideLayout"))
+  const master = layout === null ? null : sheetOf(parts, linkedPart(parts, layout.part, "slideMaster"))
+  const theme = master === null ? null : sheetOf(parts, linkedPart(parts, master.part, "theme"))
+  return paletteOf({ sheet, layout, master, theme }, new Map())
+}
+
 export function readTraits(parts: ReadonlyMap<string, Uint8Array>): DeckTraits {
   const sheets = new Map<string, Sheet | null>()
   const cached = (part: string | null) => {

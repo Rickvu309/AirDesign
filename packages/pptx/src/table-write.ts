@@ -2,7 +2,9 @@ import { tableColumns, type TableValue, type TextValue } from "@airdesign/docume
 import { spliceBytes, type MarkupElement } from "./element-span.js"
 import { partBytes } from "./part-markup.js"
 import { applyStructuralRoute } from "./structural-route.js"
+import { themeSlot, type ThemeSlot } from "./cell-text.js"
 import { cellEdits, cellRead, type CellRead } from "./table-cells.js"
+import { slidePalette } from "./trait-read.js"
 import { cellsOf, gridOf, type Grid } from "./table-grid.js"
 import { shapeTextValue, textValueEdits } from "./text-value-route.js"
 
@@ -92,7 +94,15 @@ export function writeTable(parts: Parts, part: string, shape: string, value: Tab
     }),
   )
   const typed = edits.length === 0 ? bytes : spliceBytes(bytes, edits)
-  const formatted = cellEdits(edits.length === 0 ? grid : gridOf(typed, shape), typed, value.rows)
+  let slots: ThemeSlot | null | undefined
+  const theme = () => {
+    if (slots === undefined) {
+      const palette = slidePalette(next, part)
+      slots = palette === null ? null : themeSlot(palette)
+    }
+    return slots
+  }
+  const formatted = cellEdits(edits.length === 0 ? grid : gridOf(typed, shape), typed, value.rows, theme)
   if (edits.length === 0 && formatted === null) return next
   const written = new Map(next)
   written.set(part, formatted ?? typed)
