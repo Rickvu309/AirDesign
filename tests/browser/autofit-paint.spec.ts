@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
-import { settled } from "./design-panel"
+import { settled, unfold } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { partsOf, shapeAt } from "./shape-fills"
 
@@ -149,6 +149,7 @@ test("the canvas anchors text in columns, shrinks text to fit and grows a box to
 
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await shapeAt(page, "25").click({ position: { x: 4, y: 4 } })
+  await unfold(page.locator("[data-design-element]"), "Text box")
   const autofit = page
     .locator("[data-design-element] section")
     .filter({ has: page.getByRole("heading", { name: "Text box", exact: true }) })

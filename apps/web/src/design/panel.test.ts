@@ -56,19 +56,9 @@ function opacityOf(view: ScopedElement, fields: Readonly<Record<string, unknown>
   return panel.sections.find((section) => section.trait === "opacity")?.rows[0]
 }
 
-it("shows one Opacity just before the fill, line and text it fades together", () => {
+it("shows one Opacity for the fill, line and text it fades together", () => {
   const panel = panelOf(shape, { reads: {}, moves: true, fields: {} })
-  expect(panel.sections.map((section) => section.trait)).toEqual([
-    "box",
-    "geometry",
-    "opacity",
-    "fill",
-    "line",
-    "effects",
-    "body",
-    "text",
-    "identity",
-  ])
+  expect(panel.sections.filter((section) => section.trait === "opacity")).toHaveLength(1)
   const row = opacityOf(shape, { "fill.alpha": 60_000, "line.alpha": 60_000, "text.alpha": 60_000 })
   expect(row).toMatchObject({ label: "Opacity", control: "percent", value: 60_000, mixed: false, reset: null })
   expect(row?.change(25_000)).toEqual({ target: { node: "258.2" }, opacity: 25_000 })

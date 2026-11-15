@@ -1,6 +1,7 @@
 import path from "node:path"
 import { expect } from "@playwright/test"
 import { openDeck } from "../open-deck.mjs"
+import { unfold } from "../unfold.mjs"
 
 async function drive(kit) {
   await kit.signIn()
@@ -12,6 +13,7 @@ async function drive(kit) {
     .click({ position: { x: 4, y: 4 } })
   const panel = kit.page.locator("[data-design-element]")
   await expect(panel).toBeVisible()
+  await unfold(panel, "Effects")
   const effects = panel
     .locator("section")
     .filter({ has: kit.page.getByRole("heading", { name: "Effects", exact: true }) })

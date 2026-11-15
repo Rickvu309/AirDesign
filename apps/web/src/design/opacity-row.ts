@@ -37,5 +37,5 @@ export function opacitySection(view: ScopedElement, shown: PanelReads): PanelSec
     reset: null,
     change,
   } as const
-  return { trait: "opacity", label: opacityCopy.section, rows: [row] }
+  return { trait: "opacity", label: opacityCopy.section, open: true, rows: [row] }
 }

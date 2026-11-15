@@ -2,6 +2,7 @@ import path from "node:path"
 import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
+import { unfold } from "../look/unfold.mjs"
 
 export default async function drive({ repo, origin, page, signIn, post, capture, note, deckRoutes }) {
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
@@ -89,6 +90,8 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await otherShape.click({ position: { x: 4, y: 4 } })
   const panel = page.locator("[data-design-element]")
+  await expect(panel).toBeVisible()
+  await unfold(panel, "Shape type")
   const rotation = panel.getByRole("textbox", { name: "Rotation", exact: true })
   await rotation.fill("30")
   await rotation.press("Enter")

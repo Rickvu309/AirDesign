@@ -50,7 +50,6 @@ export function DesignElementArt() {
           "geometry.shape": { value: { preset: "rect", adjust: {} }, own: true },
         },
       })}
-      kind="shape"
       palette={palette}
       onChange={() => undefined}
     />

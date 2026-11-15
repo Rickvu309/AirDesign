@@ -6,6 +6,8 @@ import { caseSeed, firstColor, seedOf } from "@/design/control-seed"
 import { partRow, type ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
+const rowCases = 5
+
 function heldOf(row: ControlProps["row"]): Readonly<Record<string, unknown>> | null {
   return !row.mixed && typeof row.value === "object" && row.value !== null
     ? (row.value as Readonly<Record<string, unknown>>)
@@ -55,7 +57,14 @@ export function UnionControl({ row, palette, onChange, inner }: ControlProps) {
           {row.label}
         </span>
       )}
-      <div role="group" aria-labelledby={label} className="flex h-8 items-center rounded-lg bg-line p-0.5">
+      <div
+        role="group"
+        aria-labelledby={label}
+        className={cn(
+          "rounded-lg bg-line p-0.5",
+          Object.keys(cases).length > rowCases ? "grid grid-cols-3 gap-0.5" : "flex h-8 items-center",
+        )}
+      >
         {Object.keys(cases).map((name) => {
           const pressed = name === chosen
           return (

@@ -2,7 +2,7 @@ import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { openDeck, settled } from "./design-panel"
+import { openDeck, settled, unfold } from "./design-panel"
 import { partsOf } from "./shape-fills"
 
 const exportName = "exported-picture.pptx"
@@ -82,6 +82,7 @@ test("a person crops, recolours, fades, describes and hides a picture, adds an i
   await typed(section(page, panel, "Opacity").getByRole("textbox", { name: "Opacity", exact: true }), "60")
   await expect.poll(async () => (await look(photo)).opacity).toBe("0.6")
 
+  await unfold(panel, "Name and alt text")
   const named = section(page, panel, "Name and alt text")
   const name = named.getByRole("textbox", { name: "Name", exact: true })
   await expect(name).toHaveValue("Picture 4")
@@ -100,6 +101,7 @@ test("a person crops, recolours, fades, describes and hides a picture, adds an i
 
   const subtitle = canvas(page, `${slidePart}#3`)
   const shown = await designing(page, subtitle, "3")
+  await unfold(shown, "Name and alt text")
   await section(page, shown, "Name and alt text").getByRole("button", { name: "Hide on slide", exact: true }).click()
   await expect(subtitle).toHaveCount(0)
 

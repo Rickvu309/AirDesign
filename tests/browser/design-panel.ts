@@ -28,6 +28,12 @@ export async function designing(page: Page, element: Locator): Promise<Locator> 
   return panel
 }
 
+export async function unfold(panel: Locator, title: string): Promise<void> {
+  const fold = panel.getByRole("heading", { name: title, exact: true }).getByRole("button")
+  if ((await fold.getAttribute("aria-expanded")) === "false") await fold.click()
+  await expect(fold).toHaveAttribute("aria-expanded", "true")
+}
+
 export async function storedRows(page: Page): Promise<StoredRow[]> {
   return page.evaluate(
     () =>

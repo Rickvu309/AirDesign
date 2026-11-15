@@ -10,20 +10,23 @@ const picture: ScopedElement = {
   box: { x: 0, y: 0, cx: 914_400, cy: 914_400 },
 }
 
-it("shows a picture's icon, recolour and crop, its Opacity before its line, and its name and alt text last", () => {
+it("shows a picture's icon, recolour and crop first, and its name and alt text last", () => {
   const panel = panelOf(picture, {
     reads: {},
     moves: true,
-    fields: { "image.source": { value: "rocket", own: true }, "image.alpha": { value: 60_000, own: true } },
+    fields: {
+      "image.source": { value: "rocket", own: true },
+      "image.alpha": { value: 60_000, own: true },
+      "geometry.shape": { value: { preset: "rect", adjust: {} }, own: true },
+    },
   })
   expect(panel.sections.map((section) => section.trait)).toEqual([
+    "image",
+    "crop",
     "box",
-    "geometry",
     "opacity",
     "line",
     "effects",
-    "image",
-    "crop",
     "identity",
   ])
   const image = panel.sections.find((section) => section.trait === "image")

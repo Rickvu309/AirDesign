@@ -2,7 +2,7 @@ import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { openDeck, pickColor, settled, shownColor } from "./design-panel"
+import { openDeck, pickColor, settled, shownColor, unfold } from "./design-panel"
 import { partsOf, shapeAt } from "./shape-fills"
 
 const deck = "corpus/nasa-cots-electronics.pptx"
@@ -50,6 +50,7 @@ async function pick(page: Page, shape: Locator): Promise<Locator> {
   const button = page.getByRole("button", { name: "Design", exact: true })
   if ((await button.getAttribute("aria-pressed")) !== "true") await button.click()
   await shape.click({ position: { x: 4, y: 4 } })
+  await unfold(page.locator("[data-design-element]"), "Effects")
   await expect(effectsSection(page)).toBeVisible()
   return effectsSection(page)
 }

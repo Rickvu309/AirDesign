@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test"
 import { fixtureDeck } from "../fixture-deck.mjs"
+import { unfold } from "../unfold.mjs"
 
 async function drive(kit) {
   await fixtureDeck(kit, "shapes-added.pptx")
@@ -9,6 +10,7 @@ async function drive(kit) {
     .click({ position: { x: 4, y: 4 } })
   const panel = kit.page.locator("[data-design-element]")
   await expect(panel).toBeVisible()
+  await unfold(panel, "Shape type")
   const rotation = panel.getByRole("textbox", { name: "Rotation", exact: true })
   if ((await rotation.count()) === 0) return
   await rotation.fill("30")
