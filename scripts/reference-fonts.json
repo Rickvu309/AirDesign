@@ -1,0 +1,13 @@
+{
+  "packages": [
+    {
+      "file": "pool/universe/f/fonts-crosextra-carlito/fonts-crosextra-carlito_20230309-2_all.deb",
+      "sha256": "c238087a909a4f1d1c5c1a5e1ed42ab9cb522f09ea2715e8deab6ee2751b9a01"
+    },
+    {
+      "file": "pool/universe/f/fonts-crosextra-caladea/fonts-crosextra-caladea_20200211-2_all.deb",
+      "sha256": "1a85651d71331a0e07dafa5d54e9aa54b445c29ae0dacb8c7cd224b1b7baaf82"
+    }
+  ],
+  "aliases": [{ "family": "Calibri Light", "prefer": "Carlito" }]
+}
