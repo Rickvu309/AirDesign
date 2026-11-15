@@ -154,6 +154,10 @@ _Avoid_: palette, color scheme, template (a template is a whole design, not avai
 Where a person picks any color a field takes: a fill, line, effect, text, table cell, gradient stop, background or theme color. It shows the theme's colors by name, each with PowerPoint's lighter and darker rows (a theme tint), the RGB colors already in the deck, and a custom color set by area, hue, hex or the screen's eyedropper. A theme tint is stored as the theme color with `lumMod` and `lumOff`, so it follows a theme change. An agent sends the same colors as words, such as `accent1 lumMod 60 lumOff 40` or `#1F4E79`.
 _Avoid_: palette, swatches, color menu
 
+**table style**:
+The look a table takes from its deck: a header row, banded rows, borders and the text color on each, all in theme colors. A new table gets the deck's own default table style, or PowerPoint's own default, Medium Style 2 - Accent 1, when the deck has none. A table imported with its own style keeps it.
+_Avoid_: table theme, table format, table preset
+
 **icon**:
 A Lucide drawing a person or an agent adds by its name, such as rocket. It paints as a vector and exports as an SVG with a PNG beside it for older PowerPoint. The code calls it an icon source of a picture's `image`.
 _Avoid_: symbol, glyph, clip art, sticker

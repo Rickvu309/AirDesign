@@ -50,15 +50,18 @@ function tableAdded(original: ReadonlyMap<string, Uint8Array>, changes: readonly
   return { shape, added, written: writeTable(added, part, shape, value) }
 }
 
-it("adds a table under its own id with a frame as tall as its rows, changing only that slide's part", async () => {
+const styleParts = [part, "[Content_Types].xml", "ppt/_rels/presentation.xml.rels"]
+
+it("adds a table under its own id with a frame as tall as its rows, changing only that slide's part and the table style", async () => {
   const original = await fixture("blank.pptx")
   const { shape, added, written } = tableAdded(original)
   expect(readShapes(added).find((each) => each.shape === shape)).toMatchObject({ kind: "p:graphicFrame", box })
   expect(readTable(added, part, shape)).toEqual(openingTable(3, 3))
   for (const [name, bytes] of original) {
-    if (name === part) expect(written.get(name)).not.toEqual(bytes)
+    if (styleParts.includes(name)) expect(written.get(name)).not.toEqual(bytes)
     else expect(written.get(name)).toBe(bytes)
   }
+  expect([...written.keys()].filter((name) => !original.has(name))).toEqual(["ppt/tableStyles.xml"])
   expect(newTableBreaks(original, written)).toEqual([])
   const table = readTable(written, part, shape)!
   expect(
@@ -70,9 +73,10 @@ it("adds a table under its own id with a frame as tall as its rows, changing onl
   ])
 })
 
-it("writes the same slide part the validator judges in the table-added case", async () => {
+it("writes the same parts the validator judges in the table-styled case", async () => {
   const { written } = tableAdded(await fixture("blank.pptx"))
-  expect(written.get(part)).toEqual((await fixture("table-added.pptx")).get(part))
+  const judged = await fixture("table-styled.pptx")
+  for (const name of [...styleParts, "ppt/tableStyles.xml"]) expect(written.get(name)).toEqual(judged.get(name))
 })
 
 it("adds and deletes columns of a new table, widening the frame by each column's width", async () => {
@@ -89,10 +93,11 @@ it("adds and deletes columns of a new table, widening the frame by each column's
   ])
   expect(readShapes(written).find((each) => each.shape === shape)?.box).toMatchObject({ cx: 9753600, cy: 1483360 })
   expect(newTableBreaks(original, written)).toEqual([])
-  for (const [name, bytes] of original) if (name !== part) expect(written.get(name)).toBe(bytes)
+  for (const [name, bytes] of original) if (!styleParts.includes(name)) expect(written.get(name)).toBe(bytes)
 })
 
-it("writes the same slide part the validator judges in the table-columns case", async () => {
+it("writes the same parts the validator judges in the table-columns case", async () => {
   const { written } = tableAdded(await fixture("blank.pptx"), columnChanges)
-  expect(written.get(part)).toEqual((await fixture("table-columns.pptx")).get(part))
+  const judged = await fixture("table-columns.pptx")
+  for (const name of [...styleParts, "ppt/tableStyles.xml"]) expect(written.get(name)).toEqual(judged.get(name))
 })

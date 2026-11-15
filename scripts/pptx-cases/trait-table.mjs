@@ -7,6 +7,8 @@ export const tableResizedExportName = "exported-table-resized.pptx"
 const original = "blank.pptx"
 const cellsOriginal = "table-added.pptx"
 const slidePart = "ppt/slides/slide1.xml"
+const styledParts = [slidePart, "[Content_Types].xml", "ppt/_rels/presentation.xml.rels"]
+const office = "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"
 const typed = [
   ["Region", "Sales", ""],
   ["", "", ""],
@@ -24,8 +26,8 @@ const cellsWanted = [
 
 const words = (cell) => cell.map((paragraph) => paragraph.runs.map((run) => run.text).join("")).join("\n")
 
-function keptLines(answers, before, after, name) {
-  const kept = [...(answers.parts.get(before)?.keys() ?? [])].filter((part) => part !== slidePart)
+function keptLines(answers, before, after, name, changed = [slidePart]) {
+  const kept = [...(answers.parts.get(before)?.keys() ?? [])].filter((part) => !changed.includes(part))
   return slideExportLines({ ...answers, original: before, exported: after, kept }).map((line) =>
     line.replace(/^slide export/, name),
   )
@@ -57,6 +59,18 @@ function cellLines(pptx, exported) {
   return lines
 }
 
+function styledLines(exported, name) {
+  const decoded = (part) => new TextDecoder().decode(exported?.get(part) ?? new Uint8Array())
+  const lines = []
+  if (!decoded(slidePart).includes(`<a:tableStyleId>${office}</a:tableStyleId>`))
+    lines.push(`${name} table has no default table style`)
+  if (
+    !decoded("ppt/tableStyles.xml").includes(`<a:tblStyle styleId="${office}" styleName="Medium Style 2 - Accent 1">`)
+  )
+    lines.push(`${name} does not define the default table style`)
+  return lines
+}
+
 function sizedLines(pptx, exported) {
   const found = onlyTable(pptx, exported, "table resize export")
   if (found.table === undefined) return found.lines
@@ -80,8 +94,9 @@ export default {
   covers: ["table.value"],
   lines(answers) {
     const { pptx, parts } = answers
-    const lines = keptLines(answers, original, tableExportName, "table export")
+    const lines = keptLines(answers, original, tableExportName, "table export", styledParts)
     const exported = parts.get(tableExportName)
+    lines.push(...styledLines(exported, "table export"))
     const found = onlyTable(pptx, exported, "table export")
     lines.push(...found.lines)
     if (found.table !== undefined) {
@@ -92,7 +107,8 @@ export default {
     }
     lines.push(...keptLines(answers, cellsOriginal, tableCellsExportName, "table cells export"))
     lines.push(...cellLines(pptx, parts.get(tableCellsExportName)))
-    lines.push(...keptLines(answers, original, tableResizedExportName, "table resize export"))
+    lines.push(...keptLines(answers, original, tableResizedExportName, "table resize export", styledParts))
+    lines.push(...styledLines(parts.get(tableResizedExportName), "table resize export"))
     lines.push(...sizedLines(pptx, parts.get(tableResizedExportName)))
     return lines
   },

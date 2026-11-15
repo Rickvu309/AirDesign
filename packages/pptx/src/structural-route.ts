@@ -7,7 +7,8 @@ import { cloneShape, orderShape } from "./shape-route.js"
 import { addDrawnShape, addTextShape, type ShapeBox } from "./shape-write.js"
 import { addSlide, orderSlide, removeSlide } from "./slide-list-route.js"
 import { removeShape, type RouteResult } from "./slide-route.js"
-import { defaultTableStyle, type TableShape } from "./table-frame.js"
+import type { TableShape } from "./table-frame.js"
+import { newTableStyle } from "./table-style-list.js"
 import { addColumn, removeColumn } from "./table-column-route.js"
 import { addRow, addTable, orderRow, removeRow } from "./table-route.js"
 
@@ -85,9 +86,11 @@ export function writeStructuralRoute(parts: ReadonlyMap<string, Uint8Array>, rou
     case "sectionLst.order":
       editPart(next, presentationPart, (bytes) => orderSection(bytes, route.section, route.before))
       return { parts: next, id: null }
-    case "graphicFrame.addTable":
-      editPart(next, route.part, (bytes) => addTable(bytes, route, defaultTableStyle(next)))
+    case "graphicFrame.addTable": {
+      const style = newTableStyle(next)
+      editPart(next, route.part, (bytes) => addTable(bytes, route, style))
       return { parts: next, id: null }
+    }
     case "tbl.addRow":
       editPart(next, route.part, (bytes) => addRow(bytes, route.row))
       return { parts: next, id: null }

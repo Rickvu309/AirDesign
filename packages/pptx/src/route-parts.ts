@@ -1,6 +1,5 @@
 import { owns, shapeById } from "./shape-tree.js"
 import { elementId, type TextValue } from "@airdesign/document"
-import { sameBytes } from "./package-bytes.js"
 import { exportElements } from "./element-export.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { contentTypesPart, presentationPart, presentationRels, relsOf, slidePart } from "./package-address.js"
@@ -19,7 +18,9 @@ import { probedValue } from "./text-probe.js"
 import { formatRuns } from "./text-format-runs.js"
 import { writeTrait } from "./trait-xml.js"
 import { tableEdits } from "./route-table-host.js"
+import { tableStyleTouch } from "./table-style-list.js"
 export { routeOperations } from "./route-operations.js"
+export { touchMatches } from "./slide-touch.js"
 
 export type RouteRun = {
   readonly operation: (typeof routeOperations)[number]
@@ -113,13 +114,16 @@ export function partTouch(parts: ReadonlyMap<string, Uint8Array>, route: SlideRo
     case "spTree.remove":
     case "spTree.order":
     case "spTree.clone":
-    case "graphicFrame.addTable":
     case "tbl.addRow":
     case "tbl.removeRow":
     case "tbl.orderRow":
     case "tbl.addColumn":
     case "tbl.removeColumn":
       return slideTouch(route.part)
+    case "graphicFrame.addTable": {
+      const style = tableStyleTouch(parts)
+      return { ...style, changed: [route.part, ...style.changed] }
+    }
     case "sldIdLst.order":
     case "sectionLst.add":
     case "sectionLst.remove":
@@ -132,38 +136,6 @@ export function partTouch(parts: ReadonlyMap<string, Uint8Array>, route: SlideRo
     case "sldIdLst.remove":
       return removedSlideTouch(parts, slideFile(parts, route.slide))
   }
-}
-
-export function touchMatches(
-  before: ReadonlyMap<string, Uint8Array>,
-  after: ReadonlyMap<string, Uint8Array>,
-  touch: PartTouch,
-): boolean {
-  const changed = new Set(touch.changed)
-  const added = new Set(touch.added)
-  const removed = new Set(touch.removed)
-  const names = new Set([...before.keys(), ...after.keys()])
-  for (const name of names) {
-    const left = before.get(name)
-    const right = after.get(name)
-    if (left === undefined && right !== undefined) {
-      if (!added.has(name)) return false
-      continue
-    }
-    if (right === undefined && left !== undefined) {
-      if (!removed.has(name)) return false
-      continue
-    }
-    if (left !== undefined && right !== undefined && !sameBytes(left, right) && !changed.has(name)) return false
-  }
-  for (const name of changed) {
-    const left = before.get(name)
-    const right = after.get(name)
-    if (left === undefined || right === undefined || sameBytes(left, right)) return false
-  }
-  for (const name of added) if (before.has(name) || !after.has(name)) return false
-  for (const name of removed) if (!before.has(name) || after.has(name)) return false
-  return true
 }
 
 function owned(elements: readonly MarkupElement[], shape: MarkupElement, kind: string): MarkupElement[] {

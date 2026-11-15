@@ -1,6 +1,9 @@
 import { expect, it } from "vitest"
 import { paintReader, readParts, readShapes } from "./index.js"
 import { encodeUtf8 } from "./package-bytes.js"
+import { applyStructuralRoute } from "./structural-route.js"
+import { readTable, writeTable } from "./table-write.js"
+import { changedTable } from "@airdesign/document"
 
 declare const process: {
   cwd(): string
@@ -145,4 +148,27 @@ it("reads the styled merged corpus table without writing any package part and lo
   expect(row?.table?.rows[0]?.cells[0]?.fill).toMatchObject({ type: "solid", color: { hex: "4F81BD" } })
   expect(readShapes(original).find((each) => each.part === part && each.shape === row?.shape)?.locked).toBe(true)
   expect([...original].map(([name, bytes]) => [name, [...bytes]])).toEqual(before)
+})
+
+it("paints a new table on a blank deck with a theme header whose text is light and bold, and banded rows", async () => {
+  const file = process.getBuiltinModule("node:fs").readFileSync(`${process.cwd()}/scripts/pptx-fixtures/blank.pptx`)
+  const blank = await readParts(file)
+  const box = { x: 100, y: 200, cx: 3000000, cy: 900000, rows: 3, columns: 2 }
+  const added = applyStructuralRoute(blank, { name: "graphicFrame.addTable", part: slide, id: 9, ...box })
+  const typed = changedTable(readTable(added, slide, "9")!, { change: "cell", row: 0, column: 0, text: "Region" })
+  const body = changedTable(typed!, { change: "cell", row: 1, column: 0, text: "North" })
+  const rows = paintReader(writeTable(added, slide, "9", body!))
+    .slide(slide)
+    .elements.find((each) => each.table !== undefined)?.table?.rows
+  expect(rows?.[0]?.cells[0]?.fill).toMatchObject({ type: "solid", color: { hex: "2D6FCD" } })
+  expect(rows?.[0]?.cells[0]?.text?.paragraphs[0]?.runs[0]).toMatchObject({
+    text: "Region",
+    bold: true,
+    color: { hex: "FFFFFF" },
+  })
+  expect(rows?.[1]?.cells[0]?.fill).toMatchObject({ type: "solid", color: { hex: "CDD4EC" } })
+  expect(rows?.[1]?.cells[0]?.text?.paragraphs[0]?.runs[0]).toMatchObject({
+    text: "North",
+    color: { hex: "202020" },
+  })
 })

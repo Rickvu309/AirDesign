@@ -341,10 +341,6 @@ describe("applyStructuralRoute", () => {
       [shapeDeck, { name: "spTree.clone", part: "ppt/slides/slide1.xml", shape: "2" }],
       [shapeDeck, { name: "spTree.remove", part: "ppt/slides/slide1.xml", shape: "2" }],
       [shapeDeck, { name: "spTree.add", part: "ppt/slides/slide1.xml", text: "New", x: 0, y: 0, cx: 1, cy: 1 }],
-      [
-        shapeDeck,
-        { name: "graphicFrame.addTable", part: "ppt/slides/slide1.xml", x: 0, y: 0, cx: 9, cy: 9, rows: 3, columns: 3 },
-      ],
       [tableDeck, { name: "tbl.addRow", part: "ppt/slides/slide1.xml", row: 1 }],
       [tableDeck, { name: "tbl.removeRow", part: "ppt/slides/slide1.xml", row: 2 }],
       [tableDeck, { name: "tbl.orderRow", part: "ppt/slides/slide1.xml", row: 2, before: 1 }],
