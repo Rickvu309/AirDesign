@@ -13,6 +13,7 @@ import { readSignInMail } from "./sign-in-mail.js"
 
 const entry = path.join(process.cwd(), "apps/api/src/start.ts")
 const sourceHooks = path.join(process.cwd(), "apps/api/src/source-hooks.ts")
+const compileCache = path.join(process.cwd(), "node_modules/.cache/airdesign-api-compile")
 
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -49,6 +50,7 @@ function childEnv(values: Record<string, string | undefined>): NodeJS.ProcessEnv
     MCP_RESOURCE: "https://mcp.example/mcp",
     RESEND_API_KEY: "test-key",
     RESEND_FROM: "sign-in@localhost",
+    NODE_COMPILE_CACHE: compileCache,
   }
   delete env.FORCE_COLOR
   delete env.NO_COLOR

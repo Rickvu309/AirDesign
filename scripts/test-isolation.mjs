@@ -213,6 +213,14 @@ export const renderTestFiles = (root) =>
     })
     .sort()
 
+export const apiTestFiles = (root) =>
+  fs
+    .globSync("apps/api/**/*.test.ts", {
+      cwd: root,
+      exclude: (name) => name === "node_modules" || name === "dist",
+    })
+    .sort()
+
 export const splitTests = (root, files) => {
   const shared = files.filter(
     (file) => isolationReasons(fs.readFileSync(path.join(root, file), "utf8"), file).length === 0,

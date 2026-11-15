@@ -1,6 +1,6 @@
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { isolationReasons, renderTestFiles, splitTests, splitUnitTests } from "./test-isolation.mjs"
+import { apiTestFiles, isolationReasons, renderTestFiles, splitTests, splitUnitTests } from "./test-isolation.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const fail = (message) => {
@@ -87,6 +87,23 @@ for (const name of ["render", "render-shared"]) {
   if (project.environment !== "jsdom") fail(`the ${name} project does not paint in jsdom`)
   if (!project.setupFiles.includes("scripts/vitest-act-environment.mjs"))
     fail(`the ${name} project does not tell React it runs under act`)
+}
+
+const apiSplit = splitTests(root, apiTestFiles(root))
+if (apiSplit.shared.length < 50) fail(`only ${apiSplit.shared.length} api files share workers`)
+if (asList(included("api-shared")) !== asList(apiSplit.shared))
+  fail("vitest.config.mts does not run the shared api files this scan chose")
+if (asList(included("api")) !== asList(apiSplit.isolated))
+  fail("vitest.config.mts does not isolate the api files this scan chose")
+const apiShared = projects.find((project) => project.test.name === "api-shared").test
+if (apiShared.isolate !== false) fail("the shared api project isolates")
+if (!apiShared.setupFiles.includes("scripts/vitest-kept-globals.mjs"))
+  fail("the shared api project does not put back the globals each file leaves")
+for (const name of ["api", "api-shared"]) {
+  const project = projects.find((candidate) => candidate.test.name === name).test
+  if (!project.globalSetup.includes("apps/api/src/postgres-setup.ts")) fail(`the ${name} project starts no Postgres`)
+  if (!project.setupFiles.includes("scripts/vitest-api-database.mjs"))
+    fail(`the ${name} project does not give each file its own database`)
 }
 
 console.log("test isolation tests passed")
