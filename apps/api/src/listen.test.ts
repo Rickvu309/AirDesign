@@ -13,9 +13,10 @@ import { readSignInMail } from "./sign-in-mail.js"
 
 const entry = path.join(process.cwd(), "apps/api/src/start.ts")
 const sourceHooks = path.join(process.cwd(), "apps/api/src/source-hooks.ts")
+const requestedPort = "8080"
 const compileCache = path.join(process.cwd(), "node_modules/.cache/airdesign-api-compile")
 
-function freePort(): Promise<number> {
+function closedPort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = createServer()
     server.on("error", reject)
@@ -35,6 +36,17 @@ function freePort(): Promise<number> {
   })
 }
 
+const reportPort = `
+import net from "node:net"
+const listen = net.Server.prototype.listen
+net.Server.prototype.listen = function (requested, ...rest) {
+  this.once("listening", () => {
+    process.stdout.write("listening " + String(this.address().port) + " requested " + String(requested) + "\\n")
+  })
+  return listen.call(this, 0, ...rest)
+}
+`
+
 const resendStub = `
 globalThis.fetch = async (address, init) => {
   const sent = String(address) === "https://api.resend.com/emails" && init.headers.authorization === "Bearer test-key"
@@ -50,6 +62,7 @@ function childEnv(values: Record<string, string | undefined>): NodeJS.ProcessEnv
     MCP_RESOURCE: "https://mcp.example/mcp",
     RESEND_API_KEY: "test-key",
     RESEND_FROM: "sign-in@localhost",
+    PORT: requestedPort,
     NODE_COMPILE_CACHE: compileCache,
   }
   delete env.FORCE_COLOR
@@ -63,11 +76,15 @@ function childEnv(values: Record<string, string | undefined>): NodeJS.ProcessEnv
 }
 
 function spawnEntry(env: NodeJS.ProcessEnv, args: string[] = []): ChildProcess {
-  return spawn(process.execPath, ["--import", sourceHooks, ...args, entry], {
-    cwd: process.cwd(),
-    env,
-    stdio: ["ignore", "pipe", "pipe"],
-  })
+  return spawn(
+    process.execPath,
+    ["--import", sourceHooks, `--import=data:text/javascript,${encodeURIComponent(reportPort)}`, ...args, entry],
+    {
+      cwd: process.cwd(),
+      env,
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  )
 }
 
 async function stopped(child: ChildProcess): Promise<{ code: number | null; stderr: string }> {
@@ -78,6 +95,24 @@ async function stopped(child: ChildProcess): Promise<{ code: number | null; stde
     })
     child.on("error", reject)
     child.on("exit", (code) => resolve({ code, stderr }))
+  })
+}
+
+function reportedPort(child: ChildProcess): Promise<{ readonly port: number; readonly requested: number }> {
+  return new Promise((resolve, reject) => {
+    let out = ""
+    let stderr = ""
+    child.stderr?.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString()
+    })
+    child.stdout?.on("data", (chunk: Buffer) => {
+      out += chunk.toString()
+      const line = /^listening (\d+) requested (\d+)$/m.exec(out)
+      if (line !== null) resolve({ port: Number(line[1]), requested: Number(line[2]) })
+    })
+    child.on("exit", (code) => {
+      reject(new Error(`start exited ${String(code)} before it listened: ${stderr}`))
+    })
   })
 }
 
@@ -127,14 +162,12 @@ describe("start entry", () => {
 
   it("starts on a port and answers a sign-in request", async () => {
     const info = await postgresInfo()
-    const port = await freePort()
     const preload = path.join(os.tmpdir(), "airdesign-resend-listen.mjs")
     await mkdir(path.dirname(preload), { recursive: true })
     await writeFile(preload, ['globalThis.fetch = async () => new Response("{}", { status: 200 })', ""].join("\n"))
     const email = `person${randomBytes(4).toString("hex")}@example.com`
     child = spawnEntry(
       childEnv({
-        PORT: String(port),
         SESSION_DATABASE_URL: info.session,
         DECK_DATABASE_URL: info.deck,
         LISTEN_DATABASE_URL: info.listen,
@@ -143,10 +176,44 @@ describe("start entry", () => {
       }),
       ["--import", preload],
     )
+    const { port } = await reportedPort(child)
     await untilHealth(port, child)
     const response = await ask(`http://127.0.0.1:${String(port)}`, "POST", "/sign-in/email", { email })
     expect(response.status).toBe(202)
     expect(response.json).toEqual({ ok: true })
+  }, 20_000)
+
+  it("asks to listen on the port in PORT", async () => {
+    const info = await postgresInfo()
+    child = spawnEntry(
+      childEnv({
+        PORT: "8123",
+        SESSION_DATABASE_URL: info.session,
+        DECK_DATABASE_URL: info.deck,
+        LISTEN_DATABASE_URL: info.listen,
+      }),
+    )
+    const { requested } = await reportedPort(child)
+    expect(requested).toBe(8123)
+  }, 20_000)
+
+  it("holds the port it reports, so no other server can take it", async () => {
+    const info = await postgresInfo()
+    child = spawnEntry(
+      childEnv({
+        SESSION_DATABASE_URL: info.session,
+        DECK_DATABASE_URL: info.deck,
+        LISTEN_DATABASE_URL: info.listen,
+      }),
+    )
+    const { port } = await reportedPort(child)
+    const taker = createServer()
+    const taken = await new Promise<string>((resolve) => {
+      taker.once("error", (error: NodeJS.ErrnoException) => resolve(error.code ?? "none"))
+      taker.listen(port, "127.0.0.1", () => resolve("bound"))
+    })
+    taker.close()
+    expect(taken).toBe("EADDRINUSE")
   }, 20_000)
 
   it("serves mcp on the hosts in API_HOSTS and keeps localhost without them", async () => {
@@ -189,10 +256,8 @@ describe("start entry", () => {
         req.end(payload)
       })
     const started = async (hosts: string | undefined): Promise<number> => {
-      const port = await freePort()
       child = spawnEntry(
         childEnv({
-          PORT: String(port),
           SESSION_DATABASE_URL: info.session,
           DECK_DATABASE_URL: info.deck,
           LISTEN_DATABASE_URL: info.listen,
@@ -201,6 +266,7 @@ describe("start entry", () => {
           API_HOSTS: hosts,
         }),
       )
+      const { port } = await reportedPort(child)
       await untilHealth(port, child)
       return port
     }
@@ -216,17 +282,16 @@ describe("start entry", () => {
   }, 20_000)
 
   it("answers health when the database cannot be reached", async () => {
-    const port = await freePort()
-    const closed = await freePort()
+    const closed = await closedPort()
     const database = `postgres://closed:closed@127.0.0.1:${String(closed)}/api`
     child = spawnEntry(
       childEnv({
-        PORT: String(port),
         SESSION_DATABASE_URL: database,
         DECK_DATABASE_URL: database,
         LISTEN_DATABASE_URL: database,
       }),
     )
+    const { port } = await reportedPort(child)
     await untilHealth(port, child)
     const health = await ask(`http://127.0.0.1:${String(port)}`, "GET", "/health")
     const opened = await ask(
@@ -287,15 +352,14 @@ describe("start entry", () => {
 
   it("exits on SIGINT", async () => {
     const info = await postgresInfo()
-    const port = await freePort()
     child = spawnEntry(
       childEnv({
-        PORT: String(port),
         SESSION_DATABASE_URL: info.session,
         DECK_DATABASE_URL: info.deck,
         LISTEN_DATABASE_URL: info.listen,
       }),
     )
+    const { port } = await reportedPort(child)
     await untilHealth(port, child)
     const done = stopped(child)
     child.kill("SIGINT")
@@ -306,15 +370,14 @@ describe("start entry", () => {
 
   it("exits on SIGTERM", async () => {
     const info = await postgresInfo()
-    const port = await freePort()
     child = spawnEntry(
       childEnv({
-        PORT: String(port),
         SESSION_DATABASE_URL: info.session,
         DECK_DATABASE_URL: info.deck,
         LISTEN_DATABASE_URL: info.listen,
       }),
     )
+    const { port } = await reportedPort(child)
     await untilHealth(port, child)
     await holdWatch(port)
     const started = Date.now()
@@ -328,17 +391,16 @@ describe("start entry", () => {
 
   it("sends the sign-in mail through resend", async () => {
     const info = await postgresInfo()
-    const port = await freePort()
     const email = `person${randomBytes(4).toString("hex")}@example.com`
     child = spawnEntry(
       childEnv({
-        PORT: String(port),
         SESSION_DATABASE_URL: info.session,
         DECK_DATABASE_URL: info.deck,
         LISTEN_DATABASE_URL: info.listen,
       }),
       [`--import=data:text/javascript,${encodeURIComponent(resendStub)}`],
     )
+    const { port } = await reportedPort(child)
     await untilHealth(port, child)
     const response = await ask(`http://127.0.0.1:${String(port)}`, "POST", "/sign-in/email", { email })
     expect(response.status).toBe(202)
@@ -346,16 +408,15 @@ describe("start entry", () => {
 
   it("starts with an empty cookie domain", async () => {
     const info = await postgresInfo()
-    const port = await freePort()
     child = spawnEntry(
       childEnv({
-        PORT: String(port),
         SESSION_DATABASE_URL: info.session,
         DECK_DATABASE_URL: info.deck,
         LISTEN_DATABASE_URL: info.listen,
         COOKIE_DOMAIN: "",
       }),
     )
+    const { port } = await reportedPort(child)
     await untilHealth(port, child)
     const health = await ask(`http://127.0.0.1:${String(port)}`, "GET", "/health")
     expect(health.status).toBe(200)
@@ -364,7 +425,6 @@ describe("start entry", () => {
 
   it("sets the cookie domain and link origin from the environment", async () => {
     const info = await postgresInfo()
-    const port = await freePort()
     const stem = path.join(os.tmpdir(), `airdesign-resend-${randomBytes(4).toString("hex")}`)
     const preload = `${stem}.mjs`
     const capture = `${stem}.json`
@@ -384,7 +444,6 @@ describe("start entry", () => {
     try {
       child = spawnEntry(
         childEnv({
-          PORT: String(port),
           SESSION_DATABASE_URL: info.session,
           DECK_DATABASE_URL: info.deck,
           LISTEN_DATABASE_URL: info.listen,
@@ -396,6 +455,7 @@ describe("start entry", () => {
         }),
         ["--import", preload],
       )
+      const { port } = await reportedPort(child)
       await untilHealth(port, child)
       const base = `http://127.0.0.1:${String(port)}`
       const response = await ask(base, "POST", "/sign-in/email", { email })
