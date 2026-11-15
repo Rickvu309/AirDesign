@@ -10,6 +10,7 @@ import {
   currentSlidePart,
 } from "../../scripts/slide-subset.mjs"
 import { newBlankDeck } from "./new-deck"
+import { holdDevice, holdableDevice, openDevice } from "./slow-device"
 
 type ZipEntry = {
   readonly filename: string
@@ -174,9 +175,10 @@ test("the dialog keeps focus inside, Escape closes it and focus returns to Expor
 })
 
 test("Cancel while exporting closes the dialog and downloads nothing", async ({ page }) => {
+  await holdableDevice(page)
   await openFile(page, join(fixtures, "nasa-1d-cnn.pptx"))
-  await page.route("**/decks/commit", () => undefined)
   await page.getByRole("button", { name: "Expand speaker notes" }).first().click()
+  await holdDevice(page)
   await page.getByRole("textbox", { name: "Speaker notes", exact: true }).fill("Held note")
   let downloads = 0
   page.on("download", () => {
@@ -187,7 +189,7 @@ test("Cancel while exporting closes the dialog and downloads nothing", async ({ 
   await expect(dialog(page).getByRole("button", { name: "Exporting…" })).toBeDisabled()
   await dialog(page).getByRole("button", { name: "Cancel" }).click()
   await expect(dialog(page)).toHaveCount(0)
-  await page.unroute("**/decks/commit")
+  await openDevice(page)
   await page.waitForTimeout(500)
   expect(downloads).toBe(0)
 })
