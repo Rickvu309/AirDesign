@@ -1,4 +1,5 @@
 import { trait, type NoInputs } from "./trait-decl.js"
+import { asset } from "./trait-image.js"
 import { alphaOver, angle, choice, color, flag, fraction, list, mark, record, union } from "./value-kind.js"
 
 export const patternPresets = [
@@ -79,8 +80,8 @@ const noInputs: NoInputs = {}
 
 export const fill = trait(
   "whole",
-  { version: 2, shape: "7ae321c1" },
-  { value: union({ ...fillCases, group: mark }, "solid"), alpha: alphaOver("value") },
+  { version: 3, shape: "a06873f9" },
+  { value: union({ ...fillCases, picture: asset, group: mark }, "solid"), alpha: alphaOver("value") },
   noInputs,
   ["value"],
 )

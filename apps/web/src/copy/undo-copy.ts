@@ -8,6 +8,7 @@ export type UndoName =
   | "add-table"
   | "add-shape"
   | "add-picture"
+  | "add-icon"
   | "delete-element"
   | "new"
   | "duplicate"
@@ -26,6 +27,11 @@ export type UndoName =
   | "rotate"
   | "flip"
   | "opacity"
+  | "picture"
+  | "crop"
+  | "rename"
+  | "alt-text"
+  | "hide"
   | "add-row"
   | "delete-row"
   | "add-column"
@@ -44,6 +50,7 @@ export const undoCopy = {
     "add-table": "Undo add table",
     "add-shape": "Undo add shape",
     "add-picture": "Undo add picture",
+    "add-icon": "Undo add icon",
     "delete-element": "Undo delete element",
     new: "Undo new slide",
     duplicate: "Undo duplicate slide",
@@ -62,6 +69,11 @@ export const undoCopy = {
     rotate: "Undo rotate",
     flip: "Undo flip",
     opacity: "Undo opacity",
+    picture: "Undo picture",
+    crop: "Undo crop",
+    rename: "Undo rename",
+    "alt-text": "Undo alt text",
+    hide: "Undo hide",
     "add-row": "Undo add row",
     "delete-row": "Undo delete row",
     "add-column": "Undo add column",
@@ -77,6 +89,7 @@ export const undoCopy = {
     "add-table": "Redo add table",
     "add-shape": "Redo add shape",
     "add-picture": "Redo add picture",
+    "add-icon": "Redo add icon",
     "delete-element": "Redo delete element",
     new: "Redo new slide",
     duplicate: "Redo duplicate slide",
@@ -95,6 +108,11 @@ export const undoCopy = {
     rotate: "Redo rotate",
     flip: "Redo flip",
     opacity: "Redo opacity",
+    picture: "Redo picture",
+    crop: "Redo crop",
+    rename: "Redo rename",
+    "alt-text": "Redo alt text",
+    hide: "Redo hide",
     "add-row": "Redo add row",
     "delete-row": "Redo delete row",
     "add-column": "Redo add column",

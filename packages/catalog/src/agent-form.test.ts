@@ -13,17 +13,8 @@ import {
 } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import * as z from "zod/v4"
-import {
-  agentColor,
-  agentSchema,
-  colorPattern,
-  designOf,
-  flat,
-  foldDesign,
-  readAgent,
-  readAgentColor,
-  shownDesign,
-} from "./agent-form.js"
+import { agentColor, colorPattern, readAgentColor } from "./agent-color.js"
+import { agentSchema, designOf, flat, foldDesign, readAgent, shownDesign } from "./agent-form.js"
 
 const navy = "1F4E79"
 const black = "000000"

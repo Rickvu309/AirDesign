@@ -14,10 +14,13 @@ import {
   readSlides,
   readTraits,
   shownAlphas,
+  shownCrop,
   shownEffects,
   shownBody,
   shownFill,
   shownGeometry,
+  shownIdentity,
+  shownImage,
   shownLine,
   shownTurn,
   themeSwatches,
@@ -87,7 +90,22 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
       { value, own: true },
     ])
     const effects = Object.entries(shownEffects(parts, at) ?? {}).map(([field, shown]) => [`effects.${field}`, shown])
+    const image = shownImage(parts, at)
+    const crop = shownCrop(parts, at)
+    const identity = Object.entries(shownIdentity(parts, at) ?? {}).map(([field, value]) => [
+      `identity.${field}`,
+      { value, own: true },
+    ])
     return {
+      ...(image === null
+        ? {}
+        : {
+            "image.source": { value: image.source, own: true },
+            "image.recolor": { value: image.recolor, own: true },
+            "image.alpha": { value: image.alpha, own: true },
+          }),
+      ...(crop === null ? {} : { "crop.rect": { value: crop, own: true } }),
+      ...Object.fromEntries(identity),
       ...(fill === null ? {} : { "fill.value": fill }),
       ...(geometry === null ? {} : { "geometry.shape": geometry }),
       "box.rot": { value: turn.rot, own: true },

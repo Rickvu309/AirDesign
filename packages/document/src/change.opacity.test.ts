@@ -52,7 +52,7 @@ describe("opacity fades every fill, line and text an element takes, at once", ()
     })
     expect(plan({ target: { node: elementId("258.4") }, opacity: alpha(60_000) })).toEqual({
       ok: true,
-      rows: [{ node: "258.4", row: { v: format, patch: { line: { alpha: faded } } } }],
+      rows: [{ node: "258.4", row: { v: format, patch: { line: { alpha: faded }, image: { alpha: faded } } } }],
     })
   })
 

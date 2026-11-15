@@ -44,12 +44,9 @@ export type ElementInputs = HasAlpha extends true ? { readonly opacity?: Alpha }
 
 export type SetChange = { readonly target: Target } & ElementInputs & TraitInputs
 
-export type AddChange = {
-  readonly kind: "shape"
-  readonly slide: SlideId
-  readonly box?: Box
-  readonly text?: TraitInput<"text">
-}
+export type AddChange =
+  | { readonly kind: "shape"; readonly slide: SlideId; readonly box?: Box; readonly text?: TraitInput<"text"> }
+  | { readonly kind: "picture"; readonly slide: SlideId; readonly box?: Box; readonly icon: string }
 
 export type ScopedElement = {
   readonly node: ElementId

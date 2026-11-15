@@ -1,4 +1,4 @@
-import type { Media } from "@airdesign/document"
+import { assetIcon, type Media } from "@airdesign/document"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { contentTypesPart, partOf, relsOf } from "./package-address.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
@@ -8,8 +8,7 @@ import { appendShape, shapeBox, type ShapeBox } from "./shape-write.js"
 export type AddedPicture = {
   readonly id: number
   readonly box: ShapeBox
-  readonly media: Media
-  readonly bytes: Uint8Array | undefined
+  readonly source: { readonly media: Media; readonly bytes: Uint8Array | undefined } | { readonly icon: string }
 }
 
 const imageType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
@@ -27,19 +26,29 @@ function value(element: MarkupElement, name: string): string | null {
 }
 
 const addedPrefix = "ppt/media/picture-"
+const iconPrefix = "ppt/media/icon-"
 
 export function addedPicturePart(part: string): boolean {
-  return part.startsWith(addedPrefix)
+  return part.startsWith(addedPrefix) || part.startsWith(iconPrefix)
 }
 
-function mediaName(parts: ReadonlyMap<string, Uint8Array>, picture: AddedPicture): string {
-  const extension = extensions[picture.media.type]
-  const stem = `${addedPrefix}${picture.media.sha256.slice(0, 16)}`
+export function iconParts(name: string): { readonly svg: string; readonly png: string } {
+  return { svg: `${iconPrefix}${name}.svg`, png: `${iconPrefix}${name}.png` }
+}
+
+export function iconOfPart(part: string): string | null {
+  const name = part.startsWith(iconPrefix) && part.endsWith(".svg") ? part.slice(iconPrefix.length, -".svg".length) : ""
+  return assetIcon(name)
+}
+
+export function mediaName(parts: ReadonlyMap<string, Uint8Array>, media: Media, bytes: Uint8Array | undefined): string {
+  const extension = extensions[media.type]
+  const stem = `${addedPrefix}${media.sha256.slice(0, 16)}`
   for (let copy = 1; ; copy += 1) {
     const name = copy === 1 ? `${stem}.${extension}` : `${stem}-${String(copy)}.${extension}`
     const held = parts.get(name)
     if (held === undefined) return name
-    if (picture.bytes !== undefined && sameBytes(held, picture.bytes)) return name
+    if (bytes === undefined || sameBytes(held, bytes)) return name
   }
 }
 
@@ -51,7 +60,7 @@ function relativeTarget(slide: string, part: string): string {
   return [...from.slice(shared).map(() => ".."), ...to.slice(shared)].join("/")
 }
 
-function linked(parts: Map<string, Uint8Array>, slide: string, media: string): string {
+export function imageLink(parts: Map<string, Uint8Array>, slide: string, media: string): string {
   const name = relsOf(slide)
   const rels = parts.get(name) ?? encodeUtf8(emptyRels)
   const document = requireMarkup(rels)
@@ -72,26 +81,59 @@ function linked(parts: Map<string, Uint8Array>, slide: string, media: string): s
   return id
 }
 
-function typed(parts: Map<string, Uint8Array>, media: Media) {
-  const extension = extensions[media.type]
+export function mediaTyped(parts: Map<string, Uint8Array>, extension: string, contentType: string) {
   const types = partBytes(parts, contentTypesPart)
   const document = requireMarkup(types)
   const known = document.elements.some(
     (element) => element.kind === "Default" && value(element, "Extension")?.toLowerCase() === extension,
   )
   if (known) return
-  const row = `<Default Extension="${extension}" ContentType="${media.type}"/>`
+  const row = `<Default Extension="${extension}" ContentType="${contentType}"/>`
   parts.set(contentTypesPart, insertAt(types, rootClose(document, "Types", "types"), encodeUtf8(row)))
 }
 
-function declaresRelationships(slideXml: string): boolean {
+export function declaresRelationships(slideXml: string): boolean {
   const root = markupDocument(encodeUtf8(slideXml)).elements.find((element) => element.parent < 0)
   return root !== undefined && value(root, "xmlns:r") === relationshipsNamespace
 }
 
-function pictureMarkup(id: string, embed: string, box: ShapeBox, declared: boolean): string {
-  const namespace = declared ? "" : ` xmlns:r="${relationshipsNamespace}"`
-  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="Picture ${id}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip${namespace} r:embed="${embed}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr>${shapeBox(box)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`
+export const svgExtension = "{96DAC541-7B7A-43D3-8B79-37D633B846F1}"
+
+export function svgExt(embed: string): string {
+  return `<a:ext uri="${svgExtension}"><asvg:svgBlip xmlns:asvg="http://schemas.microsoft.com/office/drawing/2016/SVG/main" r:embed="${embed}"/></a:ext>`
+}
+
+export function relationshipsAttribute(declared: boolean): string {
+  return declared ? "" : ` xmlns:r="${relationshipsNamespace}"`
+}
+
+export type LinkedSource = { readonly embed: string; readonly svg: string | null }
+
+export function linkedSource(
+  parts: Map<string, Uint8Array>,
+  slide: string,
+  source: AddedPicture["source"],
+): LinkedSource {
+  if ("icon" in source) {
+    const named = iconParts(source.icon)
+    mediaTyped(parts, "png", "image/png")
+    mediaTyped(parts, "svg", "image/svg+xml")
+    return { embed: imageLink(parts, slide, named.png), svg: imageLink(parts, slide, named.svg) }
+  }
+  const media = mediaName(parts, source.media, source.bytes)
+  mediaTyped(parts, extensions[source.media.type], source.media.type)
+  if (source.bytes !== undefined && !parts.has(media)) parts.set(media, source.bytes)
+  return { embed: imageLink(parts, slide, media), svg: null }
+}
+
+export function blipMarkup(linked: LinkedSource, declared: boolean): string {
+  const namespace = relationshipsAttribute(declared)
+  if (linked.svg === null) return `<a:blip${namespace} r:embed="${linked.embed}"/>`
+  return `<a:blip${namespace} r:embed="${linked.embed}"><a:extLst>${svgExt(linked.svg)}</a:extLst></a:blip>`
+}
+
+function pictureMarkup(id: string, blip: string, box: ShapeBox): string {
+  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="Picture ${id}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill>${blip}<a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr>${shapeBox(box)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`
 }
 
 export function addPicture(
@@ -101,15 +143,29 @@ export function addPicture(
 ): ReadonlyMap<string, Uint8Array> {
   const next = new Map(parts)
   const slideXml = decodeUtf8(partBytes(next, slide))
-  const media = mediaName(next, picture)
-  const embed = linked(next, slide, media)
-  const written = appendShape(
-    slideXml,
-    (id) => pictureMarkup(id, embed, picture.box, declaresRelationships(slideXml)),
-    picture.id,
-  )
+  const blip = blipMarkup(linkedSource(next, slide, picture.source), declaresRelationships(slideXml))
+  const written = appendShape(slideXml, (id) => pictureMarkup(id, blip, picture.box), picture.id)
   next.set(slide, encodeUtf8(written.xml))
-  typed(next, picture.media)
-  if (picture.bytes !== undefined && !next.has(media)) next.set(media, picture.bytes)
   return next
+}
+
+export function withMedia(
+  parts: ReadonlyMap<string, Uint8Array>,
+  bytes: (part: string) => Uint8Array | undefined,
+): ReadonlyMap<string, Uint8Array> {
+  let next: Map<string, Uint8Array> | null = null
+  for (const [name, rels] of parts) {
+    if (!name.endsWith(".rels")) continue
+    const source = name.replace(/_rels\/([^/]+)\.rels$/, "$1")
+    for (const element of markupDocument(rels).elements) {
+      const target = element.kind === "Relationship" ? value(element, "Target") : null
+      if (target === null || value(element, "TargetMode") === "External") continue
+      const part = partOf(source, target)
+      const held = addedPicturePart(part) && !parts.has(part) ? bytes(part) : undefined
+      if (held === undefined) continue
+      next ??= new Map(parts)
+      next.set(part, held)
+    }
+  }
+  return next ?? parts
 }

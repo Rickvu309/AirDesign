@@ -14,7 +14,7 @@ import {
   type Row,
   type SetChange,
 } from "@airdesign/document"
-import { addTextBox } from "./agent-elements.js"
+import { addIcon, addTextBox } from "./agent-elements.js"
 import { readFresh } from "./agent-slides.js"
 import type { Deck } from "./call.js"
 
@@ -82,6 +82,8 @@ function addedNode(register: Register): ElementId | undefined {
 }
 
 function applyAdd(deck: Deck, change: WireAdd, runId: string, base: number): Applied {
+  if (change.kind === "picture")
+    return addIcon({ deck: deck.id, base }, deck, change.slide, change.icon, change.box, runId)
   const added = addTextBox({ deck: deck.id, base }, deck, change.slide, change.box, runId)
   if (!added.ok) return added
   const node = addedNode(added.register)

@@ -38,6 +38,8 @@ export {
   type ElementRead,
   type FillRead,
   type GlowRead,
+  type RecolorRead,
+  type CropRead,
   type Palette,
   type Read,
   type Role,
@@ -126,6 +128,9 @@ export { foldSections, type FileSection } from "./section-order.js"
 export { floorFor, floorNodes, floorOpening, newSlideElement, openingElement } from "./slide-floor.js"
 export { widestEffect } from "./trait-effects.js"
 export { patternPresets } from "./trait-fill.js"
+export { recolors } from "./trait-image.js"
+export { altBytes, nameBytes } from "./trait-identity.js"
+export { assetIcon, iconNamePattern, readAsset } from "./asset-ref.js"
 export { arrowheads, arrowSizes, dashPresets, lineCaps, lineCompounds, lineJoins, widestLine } from "./trait-line.js"
 export { anchors, autofits, mostColumns, verticals } from "./trait-body.js"
 export { adjustLimit, presetAdjusts, presets, type Preset } from "./trait-geometry.js"
@@ -137,6 +142,7 @@ export {
   elementGone,
   mediaTypes,
   nextElementId,
+  openingIcon,
   type ElementCommand,
   type Geometry,
   type Media,

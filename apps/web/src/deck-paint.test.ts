@@ -147,7 +147,13 @@ it("paints a picture once its bytes arrive after the slide was painted without t
   const sha256 = "a".repeat(64)
   const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])
   const register = openRegister("", "clean")
-  const edit = pictureCommand(parts, register, 1, { sha256, type: "image/png" }, { x: 0, y: 0, cx: 9525, cy: 9525 })
+  const edit = pictureCommand(
+    parts,
+    register,
+    1,
+    { media: { sha256, type: "image/png" } },
+    { x: 0, y: 0, cx: 9525, cy: 9525 },
+  )
   if (edit === null) throw new Error("refused")
   const added = { ...register, file: fileSlides(parts, register), order: [edit] }
   const waiting = paint(store, parts, added, busy)

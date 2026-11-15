@@ -64,8 +64,11 @@ describe("the one table of traits", () => {
     })
   })
 
-  it("holds only the fields that are live: the box, the geometry, the fill, the line, the effects, the text, notes and table values, and alpha", () => {
+  it("holds only the fields that are live: identity, the box, the geometry, the fill, the line, the effects, the text, the picture, its crop, notes and table values, and alpha", () => {
     expect(traitNames.flatMap(fieldKeys)).toEqual([
+      "identity.name",
+      "identity.alt",
+      "identity.hidden",
       "box.x",
       "box.y",
       "box.w",
@@ -96,10 +99,14 @@ describe("the one table of traits", () => {
       "body.columns",
       "text.value",
       "text.alpha",
+      "image.source",
+      "image.alpha",
+      "image.recolor",
+      "crop.rect",
       "table.value",
       "notes.value",
     ])
-    expect(alphaKeys).toEqual(["fill.alpha", "line.alpha", "text.alpha"])
+    expect(alphaKeys).toEqual(["fill.alpha", "line.alpha", "text.alpha", "image.alpha"])
   })
 
   it("lets only a declared field go back to the value its layout, master or style gives", () => {

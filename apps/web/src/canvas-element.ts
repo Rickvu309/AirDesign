@@ -3,7 +3,7 @@ import type { CanvasElement, CanvasLine, CanvasOutline, CanvasTable, CanvasText 
 import type { CanvasShape } from "@/canvas-source"
 import type { PictureSource } from "@/picture-fill"
 import { canvasEffects } from "@/canvas-effects"
-import { visibleFill } from "@/paint-css"
+import { cssColor, visibleFill } from "@/paint-css"
 import { unshownText } from "@/unshown-text"
 
 export type RowPaint = {
@@ -30,11 +30,34 @@ export function movableRow(ctx: RowPaint): boolean {
   return (ctx.shape?.movable ?? false) && ctx.row.group === null && ctx.row.box !== null
 }
 
+type Picture = NonNullable<CanvasElement["picture"]>
+
+function pictureOf(row: PaintElement): { readonly picture?: Picture } {
+  const image = row.image
+  if (image === null || (image.alpha === undefined && image.recolor === undefined)) return {}
+  const recolor = image.recolor
+  const picture: Picture = {
+    ...(image.alpha === undefined ? {} : { opacity: image.alpha }),
+    ...(recolor !== undefined && "grayscale" in recolor ? { grayscale: true } : {}),
+    ...(recolor !== undefined && "duotone" in recolor
+      ? { duotone: [cssColor(recolor.duotone[0]), cssColor(recolor.duotone[1])] as const }
+      : {}),
+  }
+  return { picture }
+}
+
+function labelOf(row: PaintElement): { readonly label?: string } {
+  const label = row.alt ?? (row.kind === "p:pic" ? row.name : undefined)
+  return label === undefined ? {} : { label }
+}
+
 export function elementFrom(ctx: RowPaint, spec: DrawnSpec): CanvasElement {
   const { key, row, shape } = ctx
   const unshown = unshownText(row, ctx.src)
   const effects = canvasEffects(row.effects)
   return {
+    ...labelOf(row),
+    ...pictureOf(row),
     key,
     id: shape?.id ?? null,
     kind: shape?.kind ?? paintKind(row.kind),

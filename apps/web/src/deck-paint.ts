@@ -113,7 +113,7 @@ export function paint(
   const base = sameIdentity(register === null ? parts : slideBase(parts, register, pictureBytes), earlier?.base)
   const edited =
     register !== null && (register.order.length > 0 || tableEdited(register) || designRows(register).length > 0)
-      ? editedParts(base, register)
+      ? editedParts(base, register, pictureBytes)
       : base
   const display = sameIdentity(edited, earlier?.display)
   const read = readSlides(display)

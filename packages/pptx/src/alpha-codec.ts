@@ -58,7 +58,9 @@ export function colorsOf(fill: Fill): readonly Color[] {
   return []
 }
 
-export function fadedFill(fill: Fill, alpha: Alpha): FieldValue<"fill", "value"> {
+export function fadedFill(fill: FieldValue<"line", "fill">, alpha: Alpha): FieldValue<"line", "fill">
+export function fadedFill(fill: Fill, alpha: Alpha): Fill
+export function fadedFill(fill: Fill, alpha: Alpha): Fill {
   if ("solid" in fill) return { solid: fadedColor(fill.solid, alpha) }
   if ("gradient" in fill) {
     const stops = fill.gradient.stops.map((stop) => ({ ...stop, color: fadedColor(stop.color, alpha) }))

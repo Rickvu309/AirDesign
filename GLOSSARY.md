@@ -135,15 +135,31 @@ Software that works on a person's decks over MCP, such as Claude or Codex. A per
 _Avoid_: bot, integration, app
 
 **Aira**:
-The agent built into AirDesign. It reads a deck, changes what a person can change in the design panel except a table's cells, adds, duplicates, deletes and reorders slides, sets a slide's background color, adds text boxes and deletes elements.
+The agent built into AirDesign. It reads a deck, changes what a person can change in the design panel except a table's cells, adds, duplicates, deletes and reorders slides, sets a slide's background color, adds text boxes and icons and deletes elements.
 _Avoid_: the assistant, the AI
 
 **design panel**:
-The panel beside the slide that sets the selected element's position, size, rotation, flips, alignment, shape, opacity, fill, line, effects and text, or the slide's background color when nothing is selected.
+The panel beside the slide that sets the selected element's position, size, rotation, flips, alignment, shape, opacity, fill, line, effects, text, a picture's icon, recolor and crop, and the element's name and alt text, or the slide's background color when nothing is selected.
 _Avoid_: inspector, properties, format pane
 
+**icon**:
+A Lucide drawing a person or an agent adds by its name, such as rocket. It paints as a vector and exports as an SVG with a PNG beside it for older PowerPoint. The code calls it an icon source of a picture's `image`.
+_Avoid_: symbol, glyph, clip art, sticker
+
+**recolor**:
+Repainting a picture in gray tones, or in two colors that replace its dark and light tones (Grayscale and Duotone in the design panel).
+_Avoid_: tint, filter, colorize
+
+**crop**:
+How much of a picture is cut from each side, in percent. The frame keeps its size.
+_Avoid_: trim, clip, mask
+
+**alt text**:
+The words a screen reader reads for an element, shown beside its name in the design panel's Name and alt text section. An element can also be hidden on its slide there.
+_Avoid_: description, caption, alternative text
+
 **opacity**:
-How solid an element is, in percent: one value that fades its fill, line and text together. A group, a table and a slide's background have none. The code stores it as the alpha of each colour.
+How solid an element is, in percent: one value that fades its fill, line, text and picture together. A group, a table and a slide's background have none. The code stores it as the alpha of each colour.
 _Avoid_: transparency, alpha (in product copy)
 
 **effects**:

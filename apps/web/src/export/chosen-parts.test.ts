@@ -35,7 +35,7 @@ it("keeps a picture added to the chosen slide, with its media part", async () =>
   const media = { sha256: "c".repeat(64), type: "image/png" } as const
   const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0])
   const opened = openRegister("", "tall")
-  const edit = pictureCommand(parts, opened, 1, media, { x: 10, y: 20, cx: 300, cy: 200 })
+  const edit = pictureCommand(parts, opened, 1, { media }, { x: 10, y: 20, cx: 300, cy: 200 })
   if (edit === null) throw new Error("picture")
   const decision = decide(opened, { command: "slide", file: fileSlides(parts, opened), edit })
   if (decision.decision !== "apply") throw new Error(decision.code)

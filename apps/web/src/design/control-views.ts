@@ -1,6 +1,7 @@
 import type { ComponentType } from "react"
 import { AdjustControl } from "@/design/controls/adjust"
 import { AngleControl } from "@/design/controls/angle"
+import { AssetControl } from "@/design/controls/asset"
 import { ChoiceControl } from "@/design/controls/choice"
 import { ColorControl } from "@/design/controls/color"
 import { CountControl } from "@/design/controls/count"
@@ -28,4 +29,5 @@ export const controlViews: Partial<Readonly<Record<ControlKind, ComponentType<Co
   list: ListControl,
   text: TextControl,
   table: TableControl,
+  asset: AssetControl,
 }

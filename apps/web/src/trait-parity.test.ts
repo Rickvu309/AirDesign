@@ -13,12 +13,8 @@ import {
   traits,
   undoOf,
   writeTableValue,
-  type AlphaField,
   type Command,
   type Desc,
-  type FieldName,
-  type FieldValue,
-  type InheritableField,
   type Kind,
   type Register,
   type TextValue,
@@ -53,25 +49,9 @@ import {
   sameParts,
   type At,
   type Parts,
+  type Probe,
 } from "./parity-probe"
-
-type FieldProbe<T extends TraitName, F extends FieldName<T>> = {
-  readonly file: (parts: Parts, at: At) => unknown
-  readonly shows: (value: FieldValue<T, F>) => unknown
-} & (F extends InheritableField<T> ? { readonly inherited: (parts: Parts, at: At) => boolean } : unknown)
-
-type Shown<T extends TraitName> = Exclude<FieldName<T>, AlphaField<T>>
-
-type Probe<T extends TraitName> = [FieldName<T>] extends [never]
-  ? { readonly fields: Readonly<Record<never, never>> }
-  : {
-      readonly deck: string
-      readonly kind: Kind
-      readonly node?: string
-      readonly opening: (parts: Parts, at: At) => Value
-      readonly edit: (opening: Value, field: Shown<T>, value: FieldValue<T, Shown<T>>) => Value
-      readonly fields: { readonly [F in Shown<T>]-?: FieldProbe<T, F> }
-    }
+import { pictureProbes } from "./picture-probes"
 
 type Layer = "change" | "wire" | "control" | "round-trip" | "paint-change" | "undo" | "inherit" | "pptx-case"
 
@@ -125,7 +105,7 @@ function grid(parts: Parts, at: At): readonly (readonly string[])[] | undefined 
 }
 
 const probes: { readonly [T in TraitName]: Probe<T> } = {
-  identity: { fields: {} },
+  identity: pictureProbes.identity,
   geometry: {
     deck: "clean.pptx",
     kind: "shape",
@@ -221,8 +201,8 @@ const probes: { readonly [T in TraitName]: Probe<T> } = {
       columns: bodyProbe("columns"),
     },
   },
-  image: { fields: {} },
-  crop: { fields: {} },
+  image: pictureProbes.image,
+  crop: pictureProbes.crop,
   connection: { fields: {} },
   box: {
     deck: "clean.pptx",

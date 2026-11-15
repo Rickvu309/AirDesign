@@ -29,7 +29,7 @@ test("a person fills a shape whose fill comes from its style with a color and an
   const accentOne = await filled(rectangle)
   const panel = await fillPanel(page, rectangle)
   const kinds = panel.getByRole("group", { name: "Fill", exact: true })
-  await expect(kinds.getByRole("button")).toHaveText(["None", "Color", "Gradient", "Pattern"])
+  await expect(kinds.getByRole("button")).toHaveText(["None", "Color", "Gradient", "Pattern", "Icon"])
   await expect(kinds.getByRole("button", { name: "Color", exact: true })).toHaveAttribute("aria-pressed", "true")
   await expect(panel.getByRole("button", { name: "Reset fill", exact: true })).toHaveCount(0)
   const colors = panel.getByRole("group", { name: "Color", exact: true })

@@ -53,6 +53,7 @@ export function ThinDeck({ id }: { id: string }) {
             onTable: deck.tables.insert,
             onPicture: deck.pictureTool.pick,
             onShape: deck.inserts.addShape,
+            onIcon: deck.inserts.addIcon,
             size: shown.canvases.current(shown.current),
             slides: slideCommands(deck),
             slide: editableSlide(deck),

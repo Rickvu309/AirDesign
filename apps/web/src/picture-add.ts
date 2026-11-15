@@ -17,6 +17,7 @@ import { freeShapeId, readSlides } from "@airdesign/pptx"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { takenBoxes, type SlideRoom } from "@/element-edit"
 import { slideBase } from "@/exported-parts"
+import { iconBytes } from "@/icon-fallback"
 import { fileSlides } from "@/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -66,11 +67,13 @@ export function placedPicture(natural: { readonly width: number; readonly height
   return placeNewBox(slide, takenBoxes(slide), { cx, cy })
 }
 
+export type AddedSource = { readonly media: Media } | { readonly icon: string }
+
 export function pictureCommand(
   parts: Parts,
   register: Register,
   index: number,
-  media: Media,
+  source: AddedSource,
   box: Box,
 ): SlideCommand | null {
   const base = slideBase(parts, register)
@@ -78,7 +81,16 @@ export function pictureCommand(
   const id = slide === undefined ? undefined : readSlideId(slide.slide)
   if (slide === undefined || id === undefined) return null
   const node = nextElementId(register, id, freeShapeId(base, slide.part))
-  return { slide: "element-add", id, element: { node, kind: "picture", value: null, box, grouped: false }, media }
+  const element = { node, kind: "picture", value: null, box, grouped: false } as const
+  if ("media" in source) return { slide: "element-add", id, element, media: source.media }
+  const opening = { image: { source: { set: source.icon } } }
+  return { slide: "element-add", id, element: { ...element, opening } }
+}
+
+export const iconSide = 914_400
+
+export function placedIcon(slide: SlideRoom): Box {
+  return placeNewBox(slide, takenBoxes(slide), { cx: iconSide, cy: iconSide })
 }
 
 export async function readPicture(file: Blob): Promise<PictureFile | PictureRefusal> {
@@ -109,7 +121,7 @@ export async function commitPicture(
   const sha256 = await keepMedia(deckId, picture.bytes)
   at.keep(sha256, picture.bytes)
   const box = placedPicture(picture, at.slide)
-  const edit = pictureCommand(parts, register, at.index, { sha256, type: picture.type }, box)
+  const edit = pictureCommand(parts, register, at.index, { media: { sha256, type: picture.type } }, box)
   if (edit === null || edit.slide !== "element-add") return "refused"
   const file = fileSlides(parts, register)
   const undoable = slideUndoable(register, file, edit)
@@ -119,4 +131,27 @@ export async function commitPicture(
   const outcome = await flushPending(connect, deckId)
   await flushMedia(deckId)
   return outcome
+}
+
+export async function commitIcon(
+  deckId: string,
+  parts: Parts,
+  name: string,
+  at: PictureAt,
+  paint: (added: ElementId, undoable: Undoable | null) => void | Promise<void>,
+): Promise<CommitOutcome> {
+  const made = await iconBytes(name)
+  if (made === null) return "refused"
+  for (const [part, bytes] of made) at.keep(part, bytes)
+  const opened = await connect(memoryRemote()).openDeck(deckId)
+  if (!opened.ok) return "refused"
+  const register = opened.register
+  const edit = pictureCommand(parts, register, at.index, { icon: name }, placedIcon(at.slide))
+  if (edit === null || edit.slide !== "element-add") return "refused"
+  const file = fileSlides(parts, register)
+  const undoable = slideUndoable(register, file, edit)
+  const kept = await connect(memoryRemote()).enqueueSlide(deckId, file, edit)
+  if (!kept.ok) return "refused"
+  await paint(edit.element.node, undoable)
+  return flushPending(connect, deckId)
 }

@@ -183,7 +183,8 @@ export function kindInstructions(): string {
     'airdesign_edit_deck sets fields with { "op": "set", "target": ..., "<trait>": { "<field>": value } }. The target is an element id, <slide> for the slide itself, whose fill is its background, <slide>.<role> for the element with that role on one slide, or *.<role> for it on every slide. One call lands on every element it names, or on none.',
     "What each kind of element takes:",
     ...instructedKinds.map(([kind, named]) => `${named} takes ${traitWords(kind) ?? "no field yet"}.`),
-    'opacity sits beside the target, { "op": "set", "target": ..., "opacity": 60 }, in percent from 0, invisible, to 100, solid. It fades the element\'s fill, line and text together.',
+    'opacity sits beside the target, { "op": "set", "target": ..., "opacity": 60 }, in percent from 0, invisible, to 100, solid. It fades the element\'s fill, line, text and picture together.',
+    'Add a Lucide icon with { "op": "add", "kind": "picture", "slide": ..., "icon": "rocket" }; an unknown name is refused with close names. Give it alt text with { "identity": { "alt": "..." } }.',
     "An element inside a group takes no box, and a shape that holds no text takes no text. Any other field cannot be set yet.",
   ].join("\n")
 }

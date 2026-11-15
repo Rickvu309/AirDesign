@@ -159,24 +159,33 @@ describe("the server admits only the edits the device can write onto an element 
     const body = ["insets", "anchor", "wrap", "autofit", "vertical", "columns"].map((field) => `body.${field}`)
     const text = [...body, "text.value", "text.alpha"]
     const effects = ["effects.shadow", "effects.glow", "effects.softEdge"]
-    expect(takes({ ...facts, kind: "shape" })).toEqual([...drawn, ...fill, ...line, ...effects, ...text])
-    expect(takes({ ...facts, kind: "shape", text: false })).toEqual([...drawn, ...fill, ...line, ...effects])
-    expect(takes({ ...facts, kind: "picture" })).toEqual([...drawn, ...line, ...effects])
-    expect(takes({ ...facts, kind: "connector" })).toEqual([...drawn, ...line, ...effects])
-    expect(takes({ ...facts, kind: "table" })).toEqual(["box.x", "box.y", "table.value"])
-    expect(takes({ ...facts, kind: "chart" })).toEqual(["box.x", "box.y", "box.w", "box.h"])
-    expect(takes({ ...facts, kind: "group" })).toEqual([...box, ...effects])
+    const named = ["identity.name", "identity.alt", "identity.hidden"]
+    const picture = ["image.source", "image.alpha", "image.recolor", "crop.rect"]
+    expect(takes({ ...facts, kind: "shape" })).toEqual([...named, ...drawn, ...fill, ...line, ...effects, ...text])
+    expect(takes({ ...facts, kind: "shape", text: false })).toEqual([...named, ...drawn, ...fill, ...line, ...effects])
+    expect(takes({ ...facts, kind: "picture" })).toEqual([...named, ...drawn, ...line, ...effects, ...picture])
+    expect(takes({ ...facts, kind: "connector" })).toEqual([...named, ...drawn, ...line, ...effects])
+    expect(takes({ ...facts, kind: "table" })).toEqual([...named, "box.x", "box.y", "table.value"])
+    expect(takes({ ...facts, kind: "chart" })).toEqual([...named, "box.x", "box.y", "box.w", "box.h"])
+    expect(takes({ ...facts, kind: "group" })).toEqual([...named, ...box, ...effects])
     expect(takes({ ...facts, kind: "kept" })).toEqual([])
     expect(takes({ ...facts, kind: "slide" })).toEqual(["fill.value"])
     expect(takes({ ...facts, kind: "notes" })).toEqual(["notes.value"])
     expect(takes({ ...facts, kind: "shape", grouped: true })).toEqual([
+      ...named,
       "geometry.shape",
       ...fill,
       ...line,
       ...effects,
       ...text,
     ])
-    expect(takes({ ...facts, kind: "picture", animated: true })).toEqual([...drawn, ...line, ...effects])
+    expect(takes({ ...facts, kind: "picture", animated: true })).toEqual([
+      ...named,
+      ...drawn,
+      ...line,
+      ...effects,
+      ...picture,
+    ])
     for (const kind of kinds) {
       const traits: readonly string[] = kindTraits[kind]
       for (const field of takes({ ...facts, kind })) expect(traits).toContain(field.split(".")[0])

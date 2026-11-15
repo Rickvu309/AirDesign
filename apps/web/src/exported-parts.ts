@@ -1,5 +1,5 @@
 import { addedPictures, writeTextValue, type Register, type TextValue } from "@airdesign/document"
-import { exportParts, orderedParts } from "@airdesign/pptx"
+import { exportParts, orderedParts, withMedia } from "@airdesign/pptx"
 
 export { newSlideElement } from "@airdesign/document"
 
@@ -23,10 +23,11 @@ export function missingPictures(register: Register, pictures: PictureBytes): rea
     .filter((sha256) => !pictures.has(sha256))
 }
 
-export function editedParts(base: Parts, register: Register): Parts {
-  return exportParts(base, register)
+export function editedParts(base: Parts, register: Register, pictures: PictureBytes = noPictures): Parts {
+  const edited = exportParts(base, register)
+  return pictures.size === 0 ? edited : withMedia(edited, (part) => pictures.get(part))
 }
 
 export function exportedParts(parts: Parts, register: Register, pictures: PictureBytes = noPictures): Parts {
-  return exportParts(slideBase(parts, register, pictures), register)
+  return editedParts(slideBase(parts, register, pictures), register, pictures)
 }

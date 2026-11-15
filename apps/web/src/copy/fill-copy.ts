@@ -66,6 +66,7 @@ export const fillWords: Readonly<Record<string, string>> = {
   solid: "Color",
   gradient: "Gradient",
   pattern: "Pattern",
+  picture: "Icon",
   group: "Group",
   stops: "Stops",
   pos: "Position",

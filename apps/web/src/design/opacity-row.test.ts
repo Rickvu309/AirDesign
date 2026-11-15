@@ -10,7 +10,7 @@ import {
   type Register,
   type Row,
 } from "@airdesign/document"
-import { exportParts, shownAlphas } from "@airdesign/pptx"
+import { exportParts, shownAlphas, shownImage } from "@airdesign/pptx"
 import { beforeAll, expect, it } from "vitest"
 import { opacityCopy } from "@/copy/opacity-copy"
 import { ensureMarkup } from "@/markup"
@@ -42,7 +42,7 @@ const probes: Partial<Readonly<Record<Kind, { readonly deck: string; readonly no
 const opacity = opacityWire.example.opacity * 1000
 
 function unfaded(parts: Parts, at: At, keys: readonly string[]): readonly string[] {
-  const shown = shownAlphas(parts, at) as Readonly<Record<string, unknown>>
+  const shown: Readonly<Record<string, unknown>> = { ...shownAlphas(parts, at), image: shownImage(parts, at)?.alpha }
   return keys.filter((key) => shown[key.split(".")[0] ?? ""] !== opacity)
 }
 

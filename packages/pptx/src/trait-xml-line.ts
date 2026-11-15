@@ -75,7 +75,7 @@ function field<F extends LineField>(
   return whole(codec(name, write), (parts, at) => lineEdited(parts, at, inherit))
 }
 
-function filled(value: FieldValue<"fill", "value">): Slot {
+function filled(value: FieldValue<"line", "fill">): Slot {
   const written = fillMarkup(value)
   return lineChild(fillTags, written.tag as LineChild, written.xml)
 }

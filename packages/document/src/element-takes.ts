@@ -16,6 +16,7 @@ const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
   table: ["box.w", "box.h", ...turns],
   chart: turns,
   slide: ["fill.alpha"],
+  kept: ["identity.name", "identity.alt", "identity.hidden"],
 }
 
 const textFields: readonly FieldKey[] = ["text.value", "text.alpha", "notes.value"]
