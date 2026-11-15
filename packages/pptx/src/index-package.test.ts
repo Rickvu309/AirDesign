@@ -79,11 +79,14 @@ it("reads each part's markup once while it indexes a deck", () => {
   indexPackage(fresh)
   const counts = new Map<string, number>()
   for (const read of reads.parts) {
-    const name = [...fresh].find(([, bytes]) => bytes === read)?.[0]
-    if (name !== undefined) counts.set(name, (counts.get(name) ?? 0) + 1)
+    const name = [...fresh].find(([, bytes]) => bytes === read)?.[0] ?? "a copy of a part"
+    counts.set(name, (counts.get(name) ?? 0) + 1)
   }
-  expect(Object.fromEntries(counts)).toEqual(Object.fromEntries([...counts.keys()].map((name) => [name, 1])))
-  expect(counts.get("ppt/slides/slide1.xml")).toBe(1)
+  expect(Object.fromEntries(counts)).toEqual({
+    "ppt/presentation.xml": 1,
+    "ppt/_rels/presentation.xml.rels": 1,
+    "ppt/slides/slide1.xml": 1,
+  })
 })
 
 it("indexes a shape that shares its id with a fallback copy as kept, so no edit reaches it", () => {

@@ -48,6 +48,9 @@ const unicodePathExtra = 0x7075
 const directoryAttribute = 0x10
 const unixTypeMask = 0xf000
 const unixDirectory = 0x4000
+const growthHintExtra = 0xa220
+const printableName = /^[\x20-\x7e]+$/
+const escapingName = /^[/\\]|^[a-zA-Z]:|(^|[/\\])\.\.([/\\]|$)/
 
 export type ContainerRecord = {
   readonly name: string
@@ -271,11 +274,53 @@ export function readContainer(file: Uint8Array): readonly ContainerRecord[] {
   return records
 }
 
-function unpacked(record: ContainerRecord): Uint8Array {
+function secondEnd(file: Uint8Array): boolean {
+  const view = recordView(file)
+  const last = file.length - endSize
+  for (let at = last - 1; at >= 0 && at >= last - most16; at -= 1) {
+    if (view.getUint32(at, true) === endSignature && at + endSize + view.getUint16(at + 20, true) === file.length) {
+      return true
+    }
+  }
+  return false
+}
+
+function onlyGrowthHints(head: Uint8Array, fixed: number, lengths: number): boolean {
+  const view = recordView(head)
+  let cursor = fixed + view.getUint16(lengths, true)
+  const end = cursor + view.getUint16(lengths + 2, true)
+  while (cursor < end) {
+    if (view.getUint16(cursor, true) !== growthHintExtra) return false
+    cursor += 4 + view.getUint16(cursor + 2, true)
+  }
+  return true
+}
+
+function plainRecord(record: ContainerRecord): boolean {
+  return (
+    !record.directory &&
+    printableName.test(record.name) &&
+    !escapingName.test(record.name) &&
+    onlyGrowthHints(record.header, localSize, 26) &&
+    onlyGrowthHints(record.central, centralSize, 28)
+  )
+}
+
+export function plainContainer(file: Uint8Array): readonly ContainerRecord[] | undefined {
+  let records: readonly ContainerRecord[]
+  try {
+    records = readContainer(file)
+  } catch (error) {
+    if (error instanceof ContainerError) return undefined
+    throw error
+  }
+  if (records.length === 0 || secondEnd(file) || !records.every(plainRecord)) return undefined
+  return records
+}
+
+export function partData(record: ContainerRecord): Uint8Array | undefined {
   const data = record.method === stored ? record.stream.slice() : inflate(record.stream, record.size)
-  if (data === undefined || data.length !== record.size || crc32(data) !== record.crc)
-    throw new ContainerError("content")
-  return data
+  return data !== undefined && data.length === record.size && crc32(data) === record.crc ? data : undefined
 }
 
 export async function readParts(bytes: Uint8Array): Promise<ReadonlyMap<string, Uint8Array>> {
@@ -283,7 +328,9 @@ export async function readParts(bytes: Uint8Array): Promise<ReadonlyMap<string, 
   const parts = new Map<string, Uint8Array>()
   for (const record of readContainer(file)) {
     if (record.directory) throw new ContainerError("directory")
-    parts.set(record.name, unpacked(record))
+    const data = partData(record)
+    if (data === undefined) throw new ContainerError("content")
+    parts.set(record.name, data)
   }
   return parts
 }
