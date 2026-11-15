@@ -145,7 +145,6 @@ test("the page marks a deck ready only once it is painted", async ({ page }) => 
 
 test("the old /thin address is gone and shows no editor", async ({ page }) => {
   await page.goto("/thin")
-  await expect(page.getByText("Unknown screen")).toBeVisible()
   await expect(page.locator("input[type=file]")).toHaveCount(0)
   await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
 })

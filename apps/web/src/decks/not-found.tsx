@@ -13,13 +13,15 @@ export function NotFound({
   kind,
   account,
   onSignOut,
+  live = false,
 }: {
   kind: NotFoundKind
   account?: { email: string }
   onSignOut?: () => void
+  live?: boolean
 }) {
   return (
-    <div className="screen-frame reflow-frame" data-not-found={kind}>
+    <div className="screen-frame reflow-frame" data-not-found={kind} data-not-found-live={live || undefined}>
       <DecksShell account={account} onSignOut={onSignOut}>
         <h1 className="h-[39px] text-[26px] leading-[var(--leading-body)] font-semibold tracking-[-0.5px] text-foreground">
           {words[kind].title}

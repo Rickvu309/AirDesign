@@ -17,5 +17,5 @@ export function NotFoundPage({ kind }: { kind: NotFoundKind }) {
       live = false
     }
   }, [])
-  return <NotFound kind={kind} account={{ email }} onSignOut={() => void signOut()} />
+  return <NotFound live kind={kind} account={{ email }} onSignOut={() => void signOut()} />
 }
