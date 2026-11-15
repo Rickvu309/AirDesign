@@ -78,7 +78,12 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
     .first()
     .getByRole("button", { name: "Accent 2" })
     .click()
-  await expect.poll(() => fillOf("1.1")).not.toBe(plain)
+  await expect
+    .poll(async () => {
+      const fill = await fillOf("1.1")
+      return fill !== plain && fill !== header
+    })
+    .toBe(true)
   await panel.getByRole("combobox", { name: "Borders", exact: true }).click()
   await page.getByRole("option", { name: "Bottom", exact: true }).click()
   await panel.getByRole("group", { name: "Border color", exact: true }).getByRole("button", { name: "Color" }).click()
