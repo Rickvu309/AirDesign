@@ -2,14 +2,12 @@ import { readDeckId, type DeckId, type WireEdit, type WireSlide, type WireRefusa
 import {
   currentBox,
   currentValue,
-  format,
   limits,
   readBox,
   readElementId,
   readRow,
   refusals,
   readSlideState,
-  slideNode,
   storedValue,
   unsent,
   type Box,
@@ -21,6 +19,7 @@ import {
   type Value,
 } from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
+import { backgroundFill } from "./background-fill.js"
 import { queueIndex, sendIndex } from "./deck-index.js"
 import { accountKey, markNewer, storeNewer } from "./device.js"
 import { rowsFromRegister, view, type DeckView, type LivePhase } from "./deck-view.js"
@@ -65,10 +64,6 @@ export type EnqueueResult<Painted = string> =
 
 function wireOf(row: PendingRow): WireEdit | WireSlide {
   const edit = row.slideEdit
-  if (edit?.slide === "background") {
-    const value = edit.color === null ? "opening" : { set: { solid: edit.color } }
-    return { v: format, patch: { fill: { value } }, node: slideNode(edit.id, "slide"), floor: "" }
-  }
   if (edit !== undefined && row.slideFile !== undefined) return { ...edit, file: row.slideFile }
   if (row.node === undefined) throw new Error("missing node")
   if (row.floor === undefined) return { ...storedValue(row), node: row.node }
@@ -311,6 +306,8 @@ export function connect(remote: Remote, options: Options = {}) {
   }
 
   function replayUnsaved(deck: DeckId, entry: Unsaved): Promise<unknown> {
+    const fill = entry.kind === "slide" ? backgroundFill(entry.edit) : undefined
+    if (fill !== undefined) return writeValue(deck, storedValue(fill.row), fill.node, "", entry.id)
     if (entry.kind === "slide") return writeSlide(deck, entry.file, entry.edit, entry.id)
     const node = readElementId(entry.node)
     if (node === undefined) return Promise.resolve()

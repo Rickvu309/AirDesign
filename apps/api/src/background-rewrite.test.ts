@@ -1,0 +1,209 @@
+import { deckRoutes } from "@airdesign/catalog"
+import {
+  answeredRegister,
+  decide,
+  elementId,
+  landedPatch,
+  openRegister,
+  openingElement,
+  orderKeyBetween,
+  slideId,
+  type Register,
+} from "@airdesign/document"
+import { Client, type Notification } from "pg"
+import { afterAll, beforeAll, expect, it } from "vitest"
+
+import { migrations } from "./migrations.js"
+import { startEmptyCluster, type EmptyCluster } from "./postgres-setup.js"
+import { createRole } from "./provision.js"
+import { applySchema } from "./schema.js"
+
+const owner = "owner@example.com"
+const file = [slideId("256"), slideId("257")]
+const navy = { rgb: "0F2433" } as const
+const accent = { scheme: "accent1" } as const
+const first = orderKeyBetween(null, null)
+const second = orderKeyBetween(first, null)
+const third = orderKeyBetween(second, null)
+const fourth = orderKeyBetween(third, null)
+const fifth = orderKeyBetween(fourth, null)
+const ownNode = { node: "904.slide", kind: "slide", value: null, box: null, grouped: false }
+
+let cluster: EmptyCluster
+let db: Client
+let listener: Client
+const heard: string[] = []
+
+function stored(order: readonly unknown[], base: Register = openRegister("", "deck")): string {
+  return JSON.stringify({ ...base, file, order })
+}
+
+function withSlideRow(): Register {
+  const node = elementId("256.slide")
+  const opened = decide({ ...openRegister("", "deck"), file }, { command: "add", node, floor: "", route: "deck" })
+  if (opened.decision !== "apply") throw new Error(opened.code)
+  const patch = { fill: { value: { set: { solid: accent } } } }
+  const filled = decide(opened.register, { command: "person", node, v: 28, patch })
+  if (filled.decision !== "apply") throw new Error(filled.code)
+  return filled.register
+}
+
+async function insert(id: string, register: string | null, extra = ""): Promise<void> {
+  const deleted = register === null ? "now()" : "null"
+  await db.query(
+    `insert into deck.saved (id, revision, register, owner, deleted) values ($1, 5, $2::jsonb, $3, ${deleted}) ${extra}`,
+    [id, register, owner],
+  )
+}
+
+async function read(id: string): Promise<{ revision: number; register: Register }> {
+  const found = await db.query<{ revision: number; register: unknown }>(
+    "select revision, register from deck.saved where id = $1",
+    [id],
+  )
+  const row = found.rows[0]
+  if (row === undefined) throw new Error(id)
+  const register = answeredRegister(row.register as Register)
+  const answer = deckRoutes.open.result({ ok: true, deck: id, revision: row.revision, register })
+  if (!answer.ok) throw new Error(`${id} does not open: ${answer.refusal}`)
+  return { revision: row.revision, register: answer.register }
+}
+
+function fillOf(register: Register, node: string) {
+  const body = register.elements[elementId(node)]
+  return body === undefined ? undefined : landedPatch(body, "text").fill?.value
+}
+
+function row(color: unknown, runId?: string) {
+  const value = color === null ? "opening" : { set: { solid: color } }
+  const actor = runId === undefined ? { actor: "person" } : { actor: "agent", runId }
+  return { ...actor, visible: true, v: 28, patch: { fill: { value } } }
+}
+
+beforeAll(async () => {
+  cluster = await startEmptyCluster()
+  db = new Client({ connectionString: `postgres://postgres@127.0.0.1:${String(cluster.port)}/postgres` })
+  await db.connect()
+  for (const role of ["session", "deck", "listen"]) await createRole(db, role, "local-test")
+  expect(await applySchema(db, migrations.slice(0, 13))).toEqual({ applied: 13, at: 13 })
+  await db.query("insert into session.account (email) values ($1)", [owner])
+  listener = new Client({ connectionString: `postgres://postgres@127.0.0.1:${String(cluster.port)}/postgres` })
+  await listener.connect()
+  listener.on("notification", (message: Notification) => heard.push(message.payload ?? ""))
+  await listener.query("listen deck")
+})
+
+afterAll(async () => {
+  await listener.end()
+  await db.end()
+  await cluster.stop()
+})
+
+it("rewrites each stored background command into fill rows once, in batches, keeping every changed row", async () => {
+  const painted = stored([
+    { slide: "background", id: "256", color: navy },
+    { slide: "clone", id: "900", source: "256", key: first },
+    { slide: "background", id: "256", color: null },
+    { slide: "clone", id: "901", source: "900", key: second },
+    { slide: "background", id: "900", color: accent },
+    { slide: "background", id: "900", color: null },
+    { slide: "background", id: "257", color: accent, runId: "run" },
+    { slide: "clone", id: "902", source: "257", key: third, runId: "run" },
+    { slide: "clone", id: "903", source: "256", key: fourth },
+    { slide: "remove", id: "903" },
+    { slide: "clone", id: "904", source: "256", key: fifth, floor: [ownNode] },
+  ])
+  await insert("painted", painted)
+  await insert("kept", stored([{ slide: "background", id: "256", color: navy }], withSlideRow()))
+  await insert("plain", stored([{ slide: "clone", id: "900", source: "256", key: first }]))
+  await insert("trashed", stored([{ slide: "background", id: "257", color: navy }]))
+  await db.query("update deck.saved set trashed = now() where id = 'trashed'")
+  await insert("gone", null)
+  for (let at = 0; at < 120; at += 1) {
+    await insert(`bulk-${String(at)}`, stored([{ slide: "background", id: "256", color: accent }]))
+  }
+
+  expect(await applySchema(db)).toEqual({ applied: migrations.length - 13, at: migrations.length })
+
+  const view = await read("painted")
+  expect(view.revision).toBe(6)
+  expect(view.register.order).toEqual([
+    {
+      slide: "clone",
+      id: "900",
+      source: "256",
+      key: first,
+      floor: [{ ...ownNode, node: "900.slide", opening: { fill: { value: { set: { solid: navy } } } } }],
+    },
+    {
+      slide: "clone",
+      id: "901",
+      source: "900",
+      key: second,
+      floor: [{ ...ownNode, node: "901.slide", opening: { fill: { value: { set: { solid: navy } } } } }],
+    },
+    {
+      slide: "clone",
+      id: "902",
+      source: "257",
+      key: third,
+      runId: "run",
+      floor: [{ ...ownNode, node: "902.slide", opening: { fill: { value: { set: { solid: accent } } } } }],
+    },
+    { slide: "clone", id: "903", source: "256", key: fourth },
+    { slide: "remove", id: "903" },
+    { slide: "clone", id: "904", source: "256", key: fifth, floor: [ownNode] },
+  ])
+  expect(view.register.nodes).toEqual([...openRegister("", "deck").nodes, "256.slide", "900.slide", "257.slide"])
+  expect(view.register.elements[elementId("256.slide")]?.landed).toEqual([row(navy), row(null)])
+  expect(view.register.elements[elementId("900.slide")]?.landed).toEqual([row(accent), row(null)])
+  expect(view.register.elements[elementId("257.slide")]).toEqual({
+    route: "deck",
+    floor: "",
+    landed: [row(accent, "run")],
+    phase: "idle",
+    runId: null,
+    readAt: null,
+    guarded: false,
+    claimed: null,
+    stoppedAt: null,
+    slides: 1,
+    bytes: 0,
+  })
+  expect(fillOf(view.register, "256.slide")).toBe("opening")
+  expect(fillOf(view.register, "257.slide")).toEqual({ set: { solid: accent } })
+  expect(openingElement(view.register, elementId("903.slide"))).toBeUndefined()
+
+  const kept = await read("kept")
+  expect(kept.register.nodes).toEqual(withSlideRow().nodes)
+  expect(kept.register.elements[elementId("256.slide")]?.landed).toEqual([row(navy), row(accent)])
+  expect(fillOf(kept.register, "256.slide")).toEqual({ set: { solid: accent } })
+  expect(fillOf((await read("trashed")).register, "257.slide")).toEqual({ set: { solid: navy } })
+  expect(await read("plain")).toEqual({
+    revision: 5,
+    register: JSON.parse(stored([{ slide: "clone", id: "900", source: "256", key: first }])),
+  })
+
+  const backup = await db.query<{ id: string; revision: number; register: unknown }>(
+    "select id, revision, register from deck.background_backup where id in ('painted', 'plain', 'gone') order by id",
+  )
+  expect(backup.rows).toEqual([{ id: "painted", revision: 5, register: JSON.parse(painted) }])
+  const batches = await db.query<{ rows: number; batches: number }>(
+    "select count(*)::integer as rows, count(distinct rewritten)::integer as batches from deck.background_backup",
+  )
+  expect(batches.rows).toEqual([{ rows: 123, batches: 2 }])
+  const left = await db.query("select id from deck.saved where register->'order' @> '[{\"slide\": \"background\"}]'")
+  expect(left.rows).toEqual([])
+  await listener.query("select 1")
+  expect(heard).toContain("painted:6")
+  expect(heard).not.toContain("plain:6")
+
+  const before = await db.query("select id, revision, register from deck.saved order by id")
+  expect(await applySchema(db)).toEqual({ applied: 0, at: migrations.length })
+  expect((await db.query("select deck.rewrite_backgrounds(100) as done")).rows).toEqual([{ done: 0 }])
+  expect((await db.query("select id, revision, register from deck.saved order by id")).rows).toEqual(before.rows)
+  expect((await db.query("select count(*)::integer as rows from deck.background_backup")).rows).toEqual([{ rows: 123 }])
+
+  await db.query("select session.delete_account($1)", [owner])
+  expect((await db.query("select count(*)::integer as rows from deck.background_backup")).rows).toEqual([{ rows: 0 }])
+}, 60_000)

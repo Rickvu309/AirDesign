@@ -6,7 +6,6 @@ import { groupCommand, groupFormed, groupNode, type GroupCommand } from "./eleme
 import { rowsKept } from "./group-place.js"
 import { ungroupTurn } from "./group-turn.js"
 import type { OrderKey } from "./order-key.js"
-import { backgroundUndone } from "./background-upgrade.js"
 import { foldSlides, type SlideCommand, type SlideState } from "./slide-order.js"
 import { format } from "./format.js"
 import { formatOne, shows, type ElementPatch, type ValueHolder } from "./row.js"
@@ -69,7 +68,7 @@ function stackUndoable(edit: ElementOrder, file: readonly SlideId[]): Undoable |
 
 export function slideUndoable(register: Register, file: readonly SlideId[], edit: SlideCommand): Undoable | null {
   const decision = decide(register, { command: "slide", file, edit })
-  if (decision.decision !== "apply" || edit.slide === "background") return null
+  if (decision.decision !== "apply") return null
   if (edit.slide === "element-order") return stackUndoable(edit, file)
   if (groupCommand(edit)) {
     const group = groupNode(edit)
@@ -247,12 +246,6 @@ export function undoSlides(register: Register, runId: string): Register | null {
   for (let at = register.order.length - 1; at >= 0; at -= 1) {
     const edit = register.order[at]
     if (edit === undefined || edit.runId !== runId) continue
-    if (edit.slide === "background") {
-      const turned = backgroundUndone(current, register.order.slice(0, at), edit)
-      if (turned === null) return null
-      current = turned
-      continue
-    }
     if (groupCommand(edit)) {
       const turned = groupUndone(current, edit)
       if (turned === null) return null

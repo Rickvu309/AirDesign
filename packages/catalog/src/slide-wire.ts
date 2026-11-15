@@ -2,7 +2,7 @@ import { readSlideState, type SlideCommand, type SlideId } from "@airdesign/docu
 
 import { fieldRefusal, knownKeys, recordOf, type FieldRefusal } from "./wire.js"
 
-export type WireSlide = Exclude<SlideCommand, { readonly slide: "background" }> & { readonly file: readonly SlideId[] }
+export type WireSlide = SlideCommand & { readonly file: readonly SlideId[] }
 
 const keysFor = {
   "element-add": ["slide", "id", "element", "media", "geometry", "file"],
@@ -42,7 +42,7 @@ export function readSlideEdit(raw: unknown): { ok: true; edit: WireSlide } | Fie
   if (keys === undefined || !knownKeys(body, keys)) return fieldRefusal
   const state = readSlideState({ file: body.file, order: [body] })
   const edit = state?.order[0]
-  if (state === undefined || edit === undefined || edit.slide === "background") return fieldRefusal
+  if (state === undefined || edit === undefined) return fieldRefusal
   return { ok: true, edit: { ...edit, file: state.file } }
 }
 

@@ -1,4 +1,4 @@
-export type Migration = { readonly id: number; readonly sql: string }
+export type Migration = { readonly id: number; readonly sql: string; readonly batch?: string }
 
 export const migrations: readonly Migration[] = [
   {
@@ -285,5 +285,104 @@ alter table session.agent_turn add column agent text not null default '';
 alter table session.agent_turn drop constraint agent_turn_pkey;
 alter table session.agent_turn add primary key (email, deck, agent);
 `,
+  },
+  {
+    id: 14,
+    sql: `
+create table deck.background_backup (
+  id text not null references deck.saved (id) on delete cascade,
+  revision integer not null,
+  register jsonb not null,
+  rewritten timestamptz not null default now(),
+  primary key (id, revision)
+);
+create function deck.slide_backgrounds(register jsonb) returns jsonb
+language plpgsql immutable as $$
+declare
+  command jsonb;
+  edit jsonb;
+  copied jsonb;
+  slide text;
+  node text;
+  shown jsonb := '{}';
+  opened jsonb := '{}';
+  rows jsonb := '{}';
+  added jsonb := '[]';
+  kept jsonb := '[]';
+  nodes jsonb := register->'nodes';
+  elements jsonb := register->'elements';
+begin
+  for command in select value from jsonb_array_elements(register->'order') loop
+    slide := command->>'id';
+    if command->>'slide' = 'background' then
+      node := slide || '.slide';
+      edit := case when jsonb_typeof(command->'color') = 'null' then to_jsonb('opening'::text)
+        else jsonb_build_object('set', jsonb_build_object('solid', command->'color')) end;
+      shown := shown || jsonb_build_object(slide, edit);
+      if not rows ? node then
+        added := added || jsonb_build_array(node);
+        rows := rows || jsonb_build_object(node, '[]'::jsonb);
+      end if;
+      rows := rows || jsonb_build_object(node, (rows->node) || jsonb_build_array(
+        jsonb_build_object('actor', 'person', 'visible', true, 'v', 28,
+          'patch', jsonb_build_object('fill', jsonb_build_object('value', edit)))
+        || case when command ? 'runId' then jsonb_build_object('actor', 'agent', 'runId', command->'runId')
+          else '{}'::jsonb end));
+      continue;
+    end if;
+    if command->>'slide' = 'clone'
+      and not coalesce(command->'floor', '[]') @> jsonb_build_array(jsonb_build_object('node', slide || '.slide')) then
+      copied := case when jsonb_typeof(shown->(command->>'source')) = 'object'
+        then shown->(command->>'source')->'set' else opened->(command->>'source') end;
+      if copied is not null then
+        opened := opened || jsonb_build_object(slide, copied);
+        command := command || jsonb_build_object('floor', coalesce(command->'floor', '[]') || jsonb_build_array(
+          jsonb_build_object('node', slide || '.slide', 'kind', 'slide', 'value', null, 'box', null,
+            'grouped', false, 'opening', jsonb_build_object('fill', jsonb_build_object('value',
+              jsonb_build_object('set', copied))))));
+      end if;
+    end if;
+    kept := kept || jsonb_build_array(command);
+  end loop;
+  for node in select value from jsonb_array_elements_text(added) loop
+    if elements ? node then
+      elements := elements || jsonb_build_object(node,
+        (elements->node) || jsonb_build_object('landed', (rows->node) || (elements->node->'landed')));
+    else
+      elements := elements || jsonb_build_object(node, jsonb_build_object('route', register->'route',
+        'floor', '', 'landed', rows->node, 'phase', 'idle', 'runId', null, 'readAt', null,
+        'guarded', false, 'claimed', null, 'stoppedAt', null, 'slides', 1, 'bytes', 0));
+    end if;
+    if not nodes @> jsonb_build_array(node) then
+      nodes := nodes || jsonb_build_array(node);
+    end if;
+  end loop;
+  return register || jsonb_build_object('order', kept, 'nodes', nodes, 'elements', elements);
+end
+$$;
+create function deck.rewrite_backgrounds(size integer) returns integer
+language plpgsql as $$
+declare
+  picked record;
+  done integer := 0;
+begin
+  for picked in
+    select id, revision, register from deck.saved
+    where register->'order' @> '[{"slide": "background"}]'
+    limit size
+    for update skip locked
+  loop
+    insert into deck.background_backup (id, revision, register)
+      values (picked.id, picked.revision, picked.register);
+    update deck.saved set revision = picked.revision + 1, register = deck.slide_backgrounds(picked.register)
+      where id = picked.id;
+    perform pg_notify('deck', picked.id || ':' || (picked.revision + 1));
+    done := done + 1;
+  end loop;
+  return done;
+end
+$$;
+`,
+    batch: "select deck.rewrite_backgrounds(100) as done",
   },
 ]
