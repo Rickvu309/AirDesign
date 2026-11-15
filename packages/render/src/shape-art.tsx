@@ -3,7 +3,15 @@ import { presetOutline } from "./preset-path.js"
 import type { CanvasElement, CanvasLine } from "./record.js"
 import type { CanvasArrowSize } from "./line-record.js"
 import type { Scaled } from "./text-look.js"
-import { EffectDefs, EffectLayers, paintsEffects, SoftFill, softAttributes, softensFill } from "./effect-art.js"
+import {
+  CssFill,
+  EffectDefs,
+  EffectLayers,
+  paintsEffects,
+  SoftFill,
+  softAttributes,
+  softensFill,
+} from "./effect-art.js"
 import { ShapeGradient, sidesGradient } from "./shape-gradient.js"
 
 type Arrowhead = NonNullable<CanvasLine["head"]>
@@ -147,14 +155,15 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
   const masked = compound !== undefined && !translated
   const maskId = `${id}-compound`
   const effect = { id, element, paths, scaled, width, height, weight }
-  const softened = element.effects?.softEdge !== undefined && fill !== null
+  const softened = softensFill(element)
+  const soft = softened ? softAttributes(id) : {}
   const shape = {
     ...(line?.cap === undefined ? {} : { strokeLinecap: line.cap }),
     ...(line?.join === undefined ? {} : { strokeLinejoin: line.join.kind }),
     ...(line?.join?.limit === undefined ? {} : { strokeMiterlimit: line.join.limit }),
   }
   const edge = {
-    fill: sidesFill ? (fill ?? "none") : "none",
+    fill: sidesFill && !softened ? (fill ?? "none") : "none",
     stroke: line?.color ?? "none",
     strokeWidth: weight,
     ...(props.grab === true ? { style: { pointerEvents: "visibleStroke", cursor: "move" } as const } : {}),
@@ -248,24 +257,17 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
         : paths.map((path, index) => (
             <g key={index}>
               {path.fill && fill !== null && element.outline !== "line" ? (
-                <path d={path.d} fill={fill} {...(softened ? softAttributes(id) : {})} />
+                <path d={path.d} fill={fill} {...soft} />
               ) : null}
               {path.fill && fill === null && element.fill !== null && element.outline !== "line" ? (
-                <foreignObject
-                  x={0}
-                  y={0}
-                  width={Math.max(width, 1)}
-                  height={Math.max(height, 1)}
-                  overflow="visible"
-                  clipPath={`url(#${id}-fill-${index})`}
-                >
-                  <div style={{ width: "100%", height: "100%", background: element.fill }} />
-                </foreignObject>
+                <g {...soft}>
+                  <CssFill element={element} width={width} height={height} clip={`url(#${id}-fill-${index})`} />
+                </g>
               ) : null}
               {path.stroke ? <path d={path.d} {...stroke} /> : null}
             </g>
           ))}
-      <SoftFill {...effect} />
+      <SoftFill {...effect} paint={fill} />
       {paths !== null ? null : translated ? (
         compoundBands[compound].map(([from, to], index) => {
           const offset = ((from + to) / 2) * weight

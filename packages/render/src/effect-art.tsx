@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import type { CanvasShadow } from "./effect-record.js"
 import type { presetOutline } from "./preset-path.js"
-import type { CanvasElement } from "./record.js"
+import type { CanvasElement, PaintBox } from "./record.js"
 import type { Scaled } from "./text-look.js"
 
 export type OutlinePaths = NonNullable<ReturnType<typeof presetOutline>> | null
@@ -21,11 +21,12 @@ const anchors: Readonly<Record<string, Anchor>> = {
 }
 
 const radiansPerDegree = Math.PI / 180
-const blurDeviation = 2
-const edgeDeviation = 4
+export const blurDeviation = 2
+export const edgeDeviation = 4
 const reachSpread = 3
+const roundCorner = 0.16667
 
-const tidy = (value: number) => Math.round(value * 1000) / 1000 + 0
+export const tidy = (value: number) => Math.round(value * 1000) / 1000 + 0
 
 export function silhouetteOf(element: CanvasElement): "fill" | "line" | "both" | null {
   const filled = (element.fill !== null && element.outline !== "line") || element.kind === "picture"
@@ -34,14 +35,7 @@ export function silhouetteOf(element: CanvasElement): "fill" | "line" | "both" |
 }
 
 export function softensFill(element: CanvasElement): boolean {
-  return (
-    element.effects?.softEdge !== undefined &&
-    element.outline !== "line" &&
-    element.fill !== null &&
-    !element.fill.includes("gradient(") &&
-    !element.fill.includes("url(") &&
-    element.geometry?.gradient === undefined
-  )
+  return element.effects?.softEdge !== undefined && element.outline !== "line" && element.fill !== null
 }
 
 function shadowOffset(shadow: CanvasShadow, rotation: number, mirrorX: boolean, mirrorY: boolean, distance: number) {
@@ -59,6 +53,20 @@ function shadowOffset(shadow: CanvasShadow, rotation: number, mirrorX: boolean, 
     if (mirrorY) y = -y
   }
   return { x, y }
+}
+
+export function slideShift(shadow: CanvasShadow, box: PaintBox, distance: number) {
+  const direction = shadow.direction * radiansPerDegree
+  const x = Math.cos(direction) * distance
+  const y = Math.sin(direction) * distance
+  if (!shadow.rotateWithShape) return { x, y }
+  const mirroredX = box.flipH ? -x : x
+  const mirroredY = box.flipV ? -y : y
+  const turn = box.rotation * radiansPerDegree
+  return {
+    x: mirroredX * Math.cos(turn) - mirroredY * Math.sin(turn),
+    y: mirroredX * Math.sin(turn) + mirroredY * Math.cos(turn),
+  }
 }
 
 export function shadowTransform(element: CanvasElement, shadow: CanvasShadow, scaled: Scaled): string {
@@ -136,7 +144,7 @@ function Silhouette(props: SilhouetteProps) {
     <rect
       width={width}
       height={height}
-      {...(element.outline === "round" ? { rx: Math.min(width, height) * 0.16667 } : {})}
+      {...(element.outline === "round" ? { rx: Math.min(width, height) * roundCorner } : {})}
       {...own}
     />
   )
@@ -256,20 +264,55 @@ export function EffectLayers(props: EffectProps) {
   )
 }
 
-export function SoftFill(props: EffectProps) {
-  const { element, height, id, width } = props
+export function SoftFill(props: EffectProps & { readonly paint: string | null }) {
+  const { element, height, id, paint, width } = props
   if (!softensFill(element) || props.paths !== null) return null
+  if (paint === null)
+    return (
+      <g {...softAttributes(id)}>
+        <CssFill element={element} width={width} height={height} />
+      </g>
+    )
   return (
     <Silhouette
       element={element}
       paths={null}
       width={width}
       height={height}
-      fill={element.fill ?? "none"}
+      fill={paint}
       stroke="none"
       strokeWidth={0}
       extra={softAttributes(id)}
     />
+  )
+}
+
+export function CssFill(props: {
+  readonly element: CanvasElement
+  readonly width: number
+  readonly height: number
+  readonly clip?: string
+}) {
+  const { element, height, width } = props
+  const radius =
+    props.clip !== undefined
+      ? {}
+      : element.outline === "ellipse"
+        ? { borderRadius: "50%" }
+        : element.outline === "round"
+          ? { borderRadius: Math.min(width, height) * roundCorner }
+          : {}
+  return (
+    <foreignObject
+      x={0}
+      y={0}
+      width={Math.max(width, 1)}
+      height={Math.max(height, 1)}
+      overflow="visible"
+      {...(props.clip === undefined ? {} : { clipPath: props.clip })}
+    >
+      <div style={{ width: "100%", height: "100%", background: element.fill ?? "none", ...radius }} />
+    </foreignObject>
   )
 }
 

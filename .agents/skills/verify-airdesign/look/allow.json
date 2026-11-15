@@ -64,5 +64,11 @@
     "detector": "empty-region",
     "selector": "[data-design-panel] > section:nth-of-type(4)",
     "reason": "The design panel is scrolled down to the Connector section, so the Line section above it sits outside the window and only its last few pixels show. It is full of controls when scrolled into view."
+  },
+  {
+    "page": "slide-group-effects",
+    "detector": "invisible-control",
+    "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#12\"], [data-canvas-element=\"ppt/slides/slide1.xml#20\"], [data-canvas-element=\"ppt/slides/slide1.xml#30\"], [data-canvas-element=\"ppt/slides/slide1.xml#40\"]",
+    "reason": "A group's frame is where a person grabs the group, so it paints nothing of its own. The shapes it holds paint under it with plain fills, which the detector does not count as a sign that something is there."
   }
 ]
