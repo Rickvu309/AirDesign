@@ -140,7 +140,6 @@ describe("database migrations", () => {
     )
     const sessionTables = "access account agent_turn aira_ask aira_ledger aira_turn caller_log code oauth_client"
     const named = [
-      "deck.background_backup",
       "deck.media",
       "deck.once",
       "deck.original_delete",

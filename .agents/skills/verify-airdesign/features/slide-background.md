@@ -7,7 +7,7 @@ On an open deck, the Design panel shows the current slide's background and the d
 - `background-set` a theme colour from the Colors group. The server's `register.elements["<slide>.slide"]` gets a row `{ fill: { value: { set: { solid: { scheme } } } } }`. The Background row names the colour, and that colour's button is pressed.
 - `background-undo` `Undo background color` and `Redo background color`. Undo sends a row with the fill before, `"opening"` when the slide showed the background it opened with.
 - `agent-background` `airdesign_edit_deck` `set` with the slide id as target and a fill value, through the same run as every other agent change. The person's Undo for the run takes it back. `airdesign_read_deck` lists `<slide>.slide` with its fill.
-- PR 478 stored backgrounds as `slide: "background"` commands in `register.order`. Migration 14 rewrote each one into fill rows on `<slide>.slide` and kept the old register in `deck.background_backup`. A device that still holds one from an older build reads it as a fill row (`packages/live/src/background-fill.ts`), and the commit route refuses it.
+- PR 478 stored backgrounds as `slide: "background"` commands in `register.order`. Migration 14 rewrote each one into fill rows on `<slide>.slide`. Migration 15 rewrites any it missed and drops the backup migration 14 kept. A device that still holds one from an older build reads it as a fill row (`packages/live/src/background-fill.ts`), and the commit route refuses it.
 - `background-export` the export changes only that slide's part, with `<p:bg><p:bgPr><a:solidFill>…</a:solidFill><a:effectLst/></p:bgPr></p:bg>` first in `p:cSld`.
 
 ## How to get to it (user POV)

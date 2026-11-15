@@ -43,19 +43,11 @@ async function applyMigration(db: Client, migration: Migration): Promise<boolean
   return true
 }
 
-async function drain(db: Client, batch: string): Promise<void> {
-  for (;;) {
-    const result = await underLock(db, () => db.query<{ done: number }>(batch))
-    if ((result.rows[0]?.done ?? 0) === 0) return
-  }
-}
-
 export async function applySchema(db: Client, list: readonly Migration[] = migrations): Promise<Applied> {
   await underLock(db, () => prepareRecord(db))
   let applied = 0
   for (const migration of list) {
     if (await underLock(db, () => applyMigration(db, migration))) applied += 1
-    if (migration.batch !== undefined) await drain(db, migration.batch)
   }
   const counted = await db.query<{ at: number }>("select count(*)::integer as at from setup.migration")
   return { applied, at: counted.rows[0]?.at ?? 0 }

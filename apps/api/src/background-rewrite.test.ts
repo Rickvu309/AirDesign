@@ -32,7 +32,12 @@ const ownNode = { node: "904.slide", kind: "slide", value: null, box: null, grou
 let cluster: EmptyCluster
 let db: Client
 let listener: Client
-const heard: string[] = []
+let heard: string[] = []
+const opened: Client[] = []
+let counter = 0
+const latest = migrations.length
+const atBackup = 14
+const backgroundCommand = "select id from deck.saved where register->'order' @> '[{\"slide\": \"background\"}]'"
 
 function stored(order: readonly unknown[], base: Register = openRegister("", "deck")): string {
   return JSON.stringify({ ...base, file, order })
@@ -80,26 +85,29 @@ function row(color: unknown, runId?: string) {
   return { ...actor, visible: true, v: 28, patch: { fill: { value } } }
 }
 
-beforeAll(async () => {
-  cluster = await startEmptyCluster()
-  db = new Client({ connectionString: `postgres://postgres@127.0.0.1:${String(cluster.port)}/postgres` })
-  await db.connect()
-  for (const role of ["session", "deck", "listen"]) await createRole(db, role, "local-test")
-  expect(await applySchema(db, migrations.slice(0, 13))).toEqual({ applied: 13, at: 13 })
-  await db.query("insert into session.account (email) values ($1)", [owner])
-  listener = new Client({ connectionString: `postgres://postgres@127.0.0.1:${String(cluster.port)}/postgres` })
-  await listener.connect()
+async function open(database: string): Promise<Client> {
+  const client = new Client({ connectionString: `postgres://postgres@127.0.0.1:${String(cluster.port)}/${database}` })
+  await client.connect()
+  opened.push(client)
+  return client
+}
+
+async function useDatabase(applied: number): Promise<void> {
+  counter += 1
+  const database = `rewrite_${String(counter)}`
+  await (await open("postgres")).query(`create database ${database}`)
+  db = await open(database)
+  if (applied > 0) {
+    expect(await applySchema(db, migrations.slice(0, applied))).toEqual({ applied, at: applied })
+    await db.query("insert into session.account (email) values ($1)", [owner])
+  }
+  heard = []
+  listener = await open(database)
   listener.on("notification", (message: Notification) => heard.push(message.payload ?? ""))
   await listener.query("listen deck")
-})
+}
 
-afterAll(async () => {
-  await listener.end()
-  await db.end()
-  await cluster.stop()
-})
-
-it("rewrites each stored background command into fill rows once, in batches, keeping every changed row", async () => {
+async function storeOldDecks(): Promise<string> {
   const painted = stored([
     { slide: "background", id: "256", color: navy },
     { slide: "clone", id: "900", source: "256", key: first },
@@ -119,11 +127,53 @@ it("rewrites each stored background command into fill rows once, in batches, kee
   await insert("trashed", stored([{ slide: "background", id: "257", color: navy }]))
   await db.query("update deck.saved set trashed = now() where id = 'trashed'")
   await insert("gone", null)
-  for (let at = 0; at < 120; at += 1) {
+  for (let at = 0; at < 3; at += 1) {
     await insert(`bulk-${String(at)}`, stored([{ slide: "background", id: "256", color: accent }]))
   }
+  return painted
+}
 
-  expect(await applySchema(db)).toEqual({ applied: migrations.length - 13, at: migrations.length })
+async function decks(): Promise<unknown[]> {
+  return (await db.query("select id, revision, register from deck.saved order by id")).rows
+}
+
+async function schemaOf(client: Client): Promise<unknown[]> {
+  const queries = [
+    `select table_schema, table_name, column_name, data_type, is_nullable, column_default
+     from information_schema.columns where table_schema in ('session', 'deck', 'setup')
+     order by table_schema, table_name, column_name`,
+    `select schemaname, tablename, indexdef from pg_indexes where schemaname in ('session', 'deck', 'setup')
+     order by schemaname, indexname`,
+    `select n.nspname, c.conrelid::regclass::text as on_table, c.conname, pg_get_constraintdef(c.oid) as definition
+     from pg_constraint c join pg_namespace n on n.oid = c.connamespace
+     where n.nspname in ('session', 'deck', 'setup') order by n.nspname, on_table, c.conname`,
+    `select n.nspname, p.proname, pg_get_function_identity_arguments(p.oid) as arguments, md5(p.prosrc) as body
+     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname in ('session', 'deck', 'setup') order by n.nspname, p.proname, arguments`,
+    `select grantee, table_schema, table_name, privilege_type from information_schema.role_table_grants
+     where grantee in ('session', 'deck', 'listen') order by grantee, table_schema, table_name, privilege_type`,
+  ]
+  const all: unknown[] = []
+  for (const query of queries) all.push((await client.query(query)).rows)
+  return all
+}
+
+beforeAll(async () => {
+  cluster = await startEmptyCluster()
+  const admin = await open("postgres")
+  for (const role of ["session", "deck", "listen"]) await createRole(admin, role, "local-test")
+})
+
+afterAll(async () => {
+  await Promise.all(opened.map((client) => client.end().catch(() => undefined)))
+  await cluster.stop()
+})
+
+it("rewrites each stored background command into fill rows on a database that never had migration 14", async () => {
+  await useDatabase(13)
+  await storeOldDecks()
+
+  expect(await applySchema(db)).toEqual({ applied: latest - 13, at: latest })
 
   const view = await read("painted")
   expect(view.revision).toBe(6)
@@ -183,27 +233,56 @@ it("rewrites each stored background command into fill rows once, in batches, kee
     revision: 5,
     register: JSON.parse(stored([{ slide: "clone", id: "900", source: "256", key: first }])),
   })
-
-  const backup = await db.query<{ id: string; revision: number; register: unknown }>(
-    "select id, revision, register from deck.background_backup where id in ('painted', 'plain', 'gone') order by id",
-  )
-  expect(backup.rows).toEqual([{ id: "painted", revision: 5, register: JSON.parse(painted) }])
-  const batches = await db.query<{ rows: number; batches: number }>(
-    "select count(*)::integer as rows, count(distinct rewritten)::integer as batches from deck.background_backup",
-  )
-  expect(batches.rows).toEqual([{ rows: 123, batches: 2 }])
-  const left = await db.query("select id from deck.saved where register->'order' @> '[{\"slide\": \"background\"}]'")
-  expect(left.rows).toEqual([])
+  expect((await db.query(backgroundCommand)).rows).toEqual([])
   await listener.query("select 1")
   expect(heard).toContain("painted:6")
+  expect(heard).toContain("bulk-2:6")
   expect(heard).not.toContain("plain:6")
+  expect(heard).not.toContain("gone:6")
 
-  const before = await db.query("select id, revision, register from deck.saved order by id")
-  expect(await applySchema(db)).toEqual({ applied: 0, at: migrations.length })
-  expect((await db.query("select deck.rewrite_backgrounds(100) as done")).rows).toEqual([{ done: 0 }])
-  expect((await db.query("select id, revision, register from deck.saved order by id")).rows).toEqual(before.rows)
-  expect((await db.query("select count(*)::integer as rows from deck.background_backup")).rows).toEqual([{ rows: 123 }])
+  const before = await decks()
+  expect(await applySchema(db)).toEqual({ applied: 0, at: latest })
+  expect(await decks()).toEqual(before)
+}, 60_000)
+
+it("drops the background backup from a database at migration 14 without rewriting a deck again", async () => {
+  await useDatabase(atBackup)
+  const painted = await storeOldDecks()
+  for (;;) {
+    const batch = await db.query<{ done: number }>("select deck.rewrite_backgrounds(2) as done")
+    if (batch.rows[0]?.done === 0) break
+  }
+  expect((await db.query("select count(*)::integer as rows from deck.background_backup")).rows).toEqual([{ rows: 6 }])
+  expect((await db.query("select register from deck.background_backup where id = 'painted'")).rows).toEqual([
+    { register: JSON.parse(painted) },
+  ])
+  const rewritten = await decks()
+  await listener.query("select 1")
+  heard = []
+
+  expect(await applySchema(db)).toEqual({ applied: latest - atBackup, at: latest })
+
+  expect(await decks()).toEqual(rewritten)
+  await listener.query("select 1")
+  expect(heard).toEqual([])
+  const left = await db.query<{ backup: string | null; rewrite: string | null; upgrade: string | null }>(
+    `select to_regclass('deck.background_backup')::text as backup,
+       to_regprocedure('deck.rewrite_backgrounds(integer)')::text as rewrite,
+       to_regprocedure('deck.slide_backgrounds(jsonb)')::text as upgrade`,
+  )
+  expect(left.rows).toEqual([{ backup: null, rewrite: null, upgrade: null }])
+
+  expect(await applySchema(db)).toEqual({ applied: 0, at: latest })
+  expect(await decks()).toEqual(rewritten)
 
   await db.query("select session.delete_account($1)", [owner])
-  expect((await db.query("select count(*)::integer as rows from deck.background_backup")).rows).toEqual([{ rows: 0 }])
+  expect((await db.query("select count(*)::integer as rows from deck.saved where owner = $1", [owner])).rows).toEqual([
+    { rows: 0 },
+  ])
+  expect((await db.query("select count(*)::integer as rows from session.account")).rows).toEqual([{ rows: 0 }])
+
+  const upgraded = await schemaOf(db)
+  await useDatabase(0)
+  expect(await applySchema(db)).toEqual({ applied: latest, at: latest })
+  expect(await schemaOf(db)).toEqual(upgraded)
 }, 60_000)
