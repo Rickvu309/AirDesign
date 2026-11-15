@@ -15,6 +15,7 @@ import { slideListCopy } from "@/copy/slide-list-copy"
 import { EditorIcon } from "@/editor/editor-icons"
 import { hairlineShadow, SidebarHead, surfaceShadow } from "@/editor/editor-chrome"
 import { slideKey, type SlideKey } from "@/editor/slide-keys"
+import type { SaveStatus } from "@/editor/use-deck-status"
 import { SlideMenu, slideChangeAllowed } from "@/editor/slide-menu"
 import { NewSlideMenu } from "@/editor/new-slide-menu"
 import { SlideThumb } from "@/editor/slide-thumb"
@@ -64,12 +65,14 @@ export function SlideSidebar({
   strip,
   onRename,
   onGrid,
+  save = null,
 }: {
   run: SidebarRun
   title: string
   strip?: SlideStrip
   onRename?: (name: string) => void
   onGrid?: () => void
+  save?: SaveStatus | null
 }) {
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white" data-editor-sidebar>
@@ -83,6 +86,7 @@ export function SlideSidebar({
           <SidebarHead
             title={title}
             homeHref="/"
+            save={save}
             {...(onGrid === undefined ? { gridOff: true } : { onGrid })}
             {...(onRename === undefined ? {} : { onRename })}
           />

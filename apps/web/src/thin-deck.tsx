@@ -46,6 +46,7 @@ export function ThinDeck({ id }: { id: string }) {
         <EditorShell
           deck={{
             onExport: exported.onExport,
+            save: deck.save,
             undo: undoButtons,
             onText: deck.inserts.addText,
             onRename: deck.rename,

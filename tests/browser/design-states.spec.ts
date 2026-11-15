@@ -131,6 +131,12 @@ test("the offline notice shows its whole sentence", () => {
   expect(seen(["editor-offline"], "truncated-text"), "the offline notice is cut by an ellipsis").toEqual([])
 })
 
+test("the save status beside the deck name shows its whole words in readable ink", () => {
+  const saveStates = ["editor-saving", "editor-went-offline", "editor-unreached", "editor-reached-again"]
+  expect(seen(saveStates, "truncated-text"), "the save status is cut by an ellipsis").toEqual([])
+  expect(seen(saveStates, "text-contrast"), "the save status is too faint to read").toEqual([])
+})
+
 test("an empty placeholder on a blank slide shows that it is there", () => {
   expect(seen(["blank-deck"], "invisible-control"), "an empty placeholder paints nothing").toEqual([])
 })

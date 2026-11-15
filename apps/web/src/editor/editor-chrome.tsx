@@ -2,6 +2,8 @@ import type { ReactNode, Ref } from "react"
 import { Button } from "@/components/ui/button"
 import { AirdesignMark } from "@/decks/airdesign-mark"
 import { DeckTitleEdit } from "@/editor/deck-title-edit"
+import { SaveStatusLine } from "@/editor/save-status"
+import type { SaveStatus } from "@/editor/use-deck-status"
 import { EditorIcon } from "@/editor/editor-icons"
 import { productCopy } from "@/copy/product-copy"
 import { cn } from "@/lib/class-names"
@@ -90,6 +92,7 @@ export function SidebarHead({
   onGrid,
   onRename,
   homeHref,
+  save = null,
 }: {
   title: string
   trailing?: ReactNode
@@ -97,21 +100,22 @@ export function SidebarHead({
   onGrid?: () => void
   onRename?: (name: string) => void
   homeHref?: string
+  save?: SaveStatus | null
 }) {
   return (
-    <div className="flex h-14 shrink-0 items-center justify-between pr-2 pl-3">
-      <span className="flex items-center gap-2">
-        {homeHref === undefined ? (
+    <div className="grid h-14 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] content-center items-center gap-x-2 pr-2 pl-3">
+      {homeHref === undefined ? (
+        <AirdesignMark size={20} />
+      ) : (
+        <a
+          href={homeHref}
+          aria-label={productCopy.goToDecks}
+          className="flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-black/4"
+        >
           <AirdesignMark size={20} />
-        ) : (
-          <a
-            href={homeHref}
-            aria-label={productCopy.goToDecks}
-            className="flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-black/4"
-          >
-            <AirdesignMark size={20} />
-          </a>
-        )}
+        </a>
+      )}
+      <span className="flex min-w-0">
         <DeckTitle title={title} {...(onRename === undefined ? {} : { onRename })} />
       </span>
       {trailing ?? (
@@ -127,6 +131,7 @@ export function SidebarHead({
           <EditorIcon name="grid" size={16} />
         </Button>
       )}
+      {save === null ? null : <SaveStatusLine status={save} className="col-span-2 col-start-2 px-1.5" />}
     </div>
   )
 }
