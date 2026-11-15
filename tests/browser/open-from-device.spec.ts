@@ -1,10 +1,11 @@
 import { join } from "node:path"
 import { expect, test, type Page, type Route } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
+import { productCopy } from "../../apps/web/src/copy/product-copy"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const deckAddress = /\/deck\/[A-Za-z0-9_-]{1,64}$/
-const refusedWords = "Unable to open this deck"
+const refusedWords = productCopy.deckNotFoundTitle
 
 type Server = {
   mode: "answer" | "hold" | "refuse"

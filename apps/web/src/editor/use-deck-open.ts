@@ -83,6 +83,11 @@ export function useDeckOpen(deck: OpeningDeck) {
         window.location.assign(signInAddress(window.location))
         return
       }
+      if (stored === "refused") {
+        setPaintedDeck(undefined)
+        setRefused(true)
+        return
+      }
       if (stored === null) {
         setFailure("import-failed")
         return

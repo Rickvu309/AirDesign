@@ -30,7 +30,10 @@ export async function deckParts(deck: string) {
   const stored = await getParts(deck)
   if (stored.ok) return stored
   const original = await fetchOriginal(deck)
-  if (!original.ok) return original.refusal === "session" ? "signed-out" : null
+  if (!original.ok) {
+    if (original.refusal === "session") return "signed-out"
+    return gone.has(original.refusal) ? "refused" : null
+  }
   const read = await readPackage(original.file)
   if (!read.ok) return null
   const name = await listedName(deck)
@@ -60,6 +63,8 @@ export async function deviceCopy(deck: string, server: Remote) {
 }
 
 const closing: ReadonlySet<string> = new Set(["owner", "deleted", "deck"])
+
+const gone: ReadonlySet<string> = new Set([...closing, "missing"])
 
 export function closesDeck(refusal: string): boolean {
   return closing.has(refusal)

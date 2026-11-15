@@ -10,6 +10,8 @@ export const deckRoutes = {
   deckMoved: "/screens/s33-01-decks-trash-deck-moved-toast",
   trash: "/screens/s33-02-decks-trash-list",
   emptyTrashConfirm: "/screens/s33-03-decks-trash-empty-trash-confirm",
+  deckNotFound: "/screens/s34-01-decks-not-found-deck",
+  addressNotFound: "/screens/s34-02-decks-not-found-address",
   settings: "/screens/s81-01-settings-settings-usage-tab",
   connectAgent: "/screens/s71-01-agents-connect-approve-claude",
 } as const

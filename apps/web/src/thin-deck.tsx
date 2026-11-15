@@ -1,5 +1,6 @@
 import { storeNewer, watchNewer } from "@airdesign/live"
 import { useState, useSyncExternalStore } from "react"
+import { NotFoundPage } from "@/decks/not-found-page"
 import { DownloadedNotice, ThinNoticeView } from "@/thin-notice"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
@@ -25,11 +26,19 @@ export function ThinDeck({ id }: { id: string }) {
   const currentSlide = shown.store.current.slides()[shown.current]?.id
   const currentNotes = notesBar.notes.find((notes) => notes.slide === currentSlide)
 
-  if (deck.refused || newer) {
+  if (newer) {
     return (
       <div className="thin-page" data-deck-refused>
-        <ThinNoticeView notice={newer ? "newer" : "import-failed"} onTryAgain={exported.tryAgain} />
+        <ThinNoticeView notice="newer" onTryAgain={exported.tryAgain} />
         <EditorFrame fills>{null}</EditorFrame>
+      </div>
+    )
+  }
+
+  if (deck.refused) {
+    return (
+      <div className="thin-page" data-deck-refused>
+        <NotFoundPage kind="deck" />
       </div>
     )
   }

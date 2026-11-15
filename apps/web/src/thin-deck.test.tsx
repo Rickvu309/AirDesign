@@ -20,12 +20,12 @@ const live = vi.hoisted(() => {
     parts: { ok: true; parts: ReadonlyMap<string, Uint8Array>; name?: string } | { ok: false; refusal: "absent" }
     opened: { ok: true; register: unknown } | { ok: false; refusal: "deck" }
     refuse: boolean
-    original: { ok: true; file: Uint8Array } | { ok: false; refusal: "missing" }
+    original: { ok: true; file: Uint8Array } | { ok: false; refusal: "storage" }
   } = {
     parts: { ok: false, refusal: "absent" },
     opened: { ok: false, refusal: "deck" },
     refuse: false,
-    original: { ok: false, refusal: "missing" },
+    original: { ok: false, refusal: "storage" },
   }
   const counts = { openDeck: 0, flush: 0, fetchOriginal: 0 }
   type Counted = keyof typeof counts
@@ -43,7 +43,7 @@ const live = vi.hoisted(() => {
     state,
     reset() {
       Object.assign(counts, { fetchOriginal: 0, openDeck: 0, flush: 0 })
-      state.original = { ok: false, refusal: "missing" }
+      state.original = { ok: false, refusal: "storage" }
       for (const list of [sent, reads, saved, flushed]) list.length = 0
       waiters = []
       state.parts = { ok: false, refusal: "absent" }

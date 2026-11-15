@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test"
 import { join } from "node:path"
 import { first, now, second, store } from "./home-store.ts"
 import { accountCopy } from "../../apps/web/src/copy/account-copy.ts"
+import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -178,17 +179,17 @@ test("deck without an id returns home and rejects invalid ids", async ({ page })
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByRole("heading", { name: first.name })).toBeVisible()
   await page.goto("/deck/invalid.id")
-  await expect(page.getByText("Unknown screen")).toBeVisible()
+  await expect(page.getByRole("heading", { name: productCopy.addressNotFoundTitle })).toBeVisible()
 })
 
 test("a deck id of 64 characters opens and one of 65 never reaches the API", async ({ page }) => {
   const { calls } = await store(page)
   await page.goto(`/deck/${"a".repeat(65)}`)
-  await expect(page.getByText("Unknown screen")).toBeVisible()
+  await expect(page.getByRole("heading", { name: productCopy.addressNotFoundTitle })).toBeVisible()
   expect(calls).toEqual([])
   await page.goto(`/deck/${"a".repeat(64)}`)
   await expect(page.locator(".thin-page")).toBeVisible()
-  await expect(page.getByText("Unknown screen")).toHaveCount(0)
+  await expect(page.getByRole("heading", { name: productCopy.addressNotFoundTitle })).toHaveCount(0)
 })
 
 test("the Undo toast leaves on its own", async ({ page }) => {

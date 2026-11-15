@@ -15,11 +15,13 @@ test("a deck address opened signed out and with nothing on the device goes to si
 
 test("a deck address a signed-in person may not open keeps the refusal and stays on the address", async ({ page }) => {
   await page.route("**/decks/original", (route) =>
-    route.fulfill({ status: 404, json: { ok: false, refusal: "missing" } }),
+    route.fulfill({ status: 404, json: { ok: false, refusal: "owner" } }),
   )
   await page.route("**/sign-in?*", (route) => route.fulfill({ body: "Sign in" }))
   await page.goto("/deck/someone-elses")
-  await expect(page.getByText(productCopy.deckOpenFailed)).toBeVisible()
+  await expect(page.getByText(productCopy.deckNotFoundTitle)).toBeVisible()
+  await expect(page.getByRole("link", { name: productCopy.goToDecks })).toHaveAttribute("href", "/")
+  await expect(page.getByRole("button", { name: "Export" })).toHaveCount(0)
   expect(new URL(page.url()).pathname).toBe("/deck/someone-elses")
 })
 
