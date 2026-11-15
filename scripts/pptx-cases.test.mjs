@@ -43,6 +43,7 @@ assert.deepEqual(
     "trait-picture.mjs",
     "trait-table.mjs",
     "trait-text.mjs",
+    "trait-theme.mjs",
   ],
 )
 for (const spec of caseSpecs(entries)) assert.ok(fs.existsSync(path.join(root, spec)), `${spec} is not a spec file`)

@@ -1,4 +1,4 @@
-import { colorPattern } from "./agent-color.js"
+import { colorPattern, hexPattern } from "./agent-color.js"
 import { elementReaders } from "./agent-element-wire.js"
 import { slideReaders } from "./agent-slide-wire.js"
 import * as z from "zod/v4"
@@ -142,20 +142,23 @@ export const catalog = {
     runsOn: "server",
     read: readDeckQuery,
     description:
-      "Read one deck this account owns. Send revision as base to airdesign_edit_deck and each element's version as readAt. slides lists slide ids in position order. Indexed elements include node, slide, kind, opening or edited value and box, and version (0 before edits). role names a placeholder: title, subtitle, body, date, footer, number, picture, chart, table or object. design is one line of the element's look as it opened, field by field, each followed by (layout), (master) or (style) when that part shows it rather than the element itself; once a change lands on an element, its text fields follow its first run as it is now. Colors name a theme slot or hex; palettes give each slot's hex, and a slide uses palette 0 unless it names another. closed means a person's newer edit or another run holds it. grouped elements refuse box edits. index is ready, pending, or missing; pending or missing means the owner must open the deck in AirDesign to finish indexing. Send slide or cursor to read the rest.",
+      "Read one deck this account owns. Send revision as base to airdesign_edit_deck and each element's version as readAt. slides lists slide ids in position order. Indexed elements include node, slide, kind, opening or edited value and box, and version (0 before edits). role names a placeholder: title, subtitle, body, date, footer, number, picture, chart, table or object. design is one line of the element's look as it opened, field by field, each followed by (layout), (master) or (style) when that part shows it rather than the element itself; once a change lands on an element, its text fields follow its first run as it is now. Colors name a theme slot or hex; palettes give each slot's hex, and a slide uses palette 0 unless it names another; theme lists what deck.theme changed. closed means a person's newer edit or another run holds it. grouped elements refuse box edits. index is ready, pending, or missing; pending or missing means the owner must open the deck in AirDesign to finish indexing. Send slide or cursor to read the rest.",
   },
 } as const satisfies Readonly<Record<string, OpRow>>
 
-const colorRef = "#/$defs/color"
-const colorSchema = { type: "string", pattern: `^${colorPattern}$` } as const
+const colorSchemas = {
+  color: { type: "string", pattern: `^${colorPattern}$` },
+  hex: { type: "string", pattern: `^${hexPattern}$` },
+} as const
 
 function sharedColors(schema: unknown): unknown {
   if (Array.isArray(schema)) return schema.map(sharedColors)
   if (typeof schema !== "object" || schema === null) return schema
   const node = schema as Readonly<Record<string, unknown>>
-  if (node.type === colorSchema.type && node.pattern === colorSchema.pattern) {
+  for (const [name, shared] of Object.entries(colorSchemas)) {
+    if (node.type !== shared.type || node.pattern !== shared.pattern) continue
     const { type: _type, pattern: _pattern, ...rest } = node
-    return { $ref: colorRef, ...rest }
+    return { $ref: `#/$defs/${name}`, ...rest }
   }
   return Object.fromEntries(Object.entries(node).map(([key, value]) => [key, sharedColors(value)]))
 }
@@ -163,8 +166,9 @@ function sharedColors(schema: unknown): unknown {
 export function toolInputSchema(op: AgentOp): Readonly<Record<string, unknown>> {
   const schema = z.toJSONSchema(catalog[op].read.input, { io: "input" })
   const shared = sharedColors(schema) as Readonly<Record<string, unknown>>
-  const colored = JSON.stringify(shared).includes(colorRef) ? { ...shared, $defs: { color: colorSchema } } : shared
-  return sharedSchemas(colored)
+  const text = JSON.stringify(shared)
+  const used = Object.entries(colorSchemas).filter(([name]) => text.includes(`"#/$defs/${name}"`))
+  return sharedSchemas(used.length === 0 ? shared : { ...shared, $defs: Object.fromEntries(used) })
 }
 
 function toolOrder(left: AgentTool<string>, right: AgentTool<string>): number {

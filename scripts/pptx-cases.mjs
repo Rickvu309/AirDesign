@@ -6,7 +6,7 @@ export const browserExportTag = "@export"
 
 const exportName = /^exported-[a-z0-9-]+\.pptx$/
 const specFile = /^tests\/browser\/[a-z0-9-]+\.spec\.ts$/
-const fieldKey = /^[a-z]+\.[a-zA-Z]+$/
+const fieldKey = /^[a-z]+\.[a-zA-Z][a-zA-Z0-9]*$/
 
 export const casesFolder = (root) => path.join(root, "scripts/pptx-cases")
 

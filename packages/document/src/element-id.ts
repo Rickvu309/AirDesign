@@ -8,8 +8,10 @@ export const slideKinds = ["notes", "slide"] as const
 
 export type SlideKind = (typeof slideKinds)[number]
 
+export const themeNode = "deck.theme" as ElementId
+
 export const elementPattern = new RegExp(
-  `^(?:[0-9]{1,10}|n[0-9a-z]{12})\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${slideKinds.join("|")})$`,
+  `^(?:(?:[0-9]{1,10}|n[0-9a-z]{12})\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${slideKinds.join("|")})|deck\\.theme)$`,
 )
 
 export const rootElement = "a" as ElementId

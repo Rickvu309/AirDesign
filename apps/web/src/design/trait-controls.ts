@@ -12,6 +12,7 @@ import { lineControls } from "./trait-controls-line"
 import { notesControls } from "./trait-controls-notes"
 import { tableControls } from "./trait-controls-table"
 import { textControls } from "./trait-controls-text"
+import { themeControls } from "./trait-controls-theme"
 
 export type FieldCopy = {
   readonly label: string
@@ -36,4 +37,5 @@ export const traitControls: { readonly [T in TraitName]: TraitControls<T> } = {
   connection: connectionControls,
   table: tableControls,
   notes: notesControls,
+  theme: themeControls,
 }

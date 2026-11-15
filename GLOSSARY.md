@@ -139,8 +139,12 @@ The agent built into AirDesign. It reads a deck, changes what a person can chang
 _Avoid_: the assistant, the AI
 
 **design panel**:
-The panel beside the slide that sets the selected element's position, size, rotation, flips, alignment, shape, opacity, fill, line, effects, text, a picture's icon, recolor and crop, and the element's name and alt text, or the slide's background color when nothing is selected.
+The panel beside the slide that sets the selected element's position, size, rotation, flips, alignment, shape, opacity, fill, line, effects, text, a picture's icon, recolor and crop, and the element's name and alt text, or the slide's background color and the deck's theme when nothing is selected.
 _Avoid_: inspector, properties, format pane
+
+**theme**:
+The deck's twelve colors and its heading and body fonts. Every shape, line, text, background and table that names a theme color or font follows a change to it. A person changes it in the design panel's Theme section with nothing selected; an agent sends `set` with target `deck.theme`.
+_Avoid_: palette, color scheme, template (a template is a whole design, not available yet)
 
 **icon**:
 A Lucide drawing a person or an agent adds by its name, such as rocket. It paints as a vector and exports as an SVG with a PNG beside it for older PowerPoint. The code calls it an icon source of a picture's `image`.

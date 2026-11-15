@@ -5,6 +5,7 @@ import { AssetControl } from "@/design/controls/asset"
 import { ChoiceControl } from "@/design/controls/choice"
 import { ColorControl } from "@/design/controls/color"
 import { CountControl } from "@/design/controls/count"
+import { HexControl } from "@/design/controls/hex"
 import { LengthControl } from "@/design/controls/length"
 import { ListControl } from "@/design/controls/list"
 import { PercentControl } from "@/design/controls/percent"
@@ -24,6 +25,7 @@ export const controlViews: Partial<Readonly<Record<ControlKind, ComponentType<Co
   toggle: ToggleControl,
   choice: ChoiceControl,
   color: ColorControl,
+  hex: HexControl,
   record: RecordControl,
   union: UnionControl,
   list: ListControl,

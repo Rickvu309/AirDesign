@@ -16,6 +16,7 @@ const recorded: Readonly<Record<TraitName, readonly string[]>> = {
   connection: ["5465b825"],
   table: ["248ba3f0", "248ba3f0"],
   notes: ["d772d0d9"],
+  theme: ["5465b825", "fd31b1bd"],
 }
 
 function canonical(value: unknown): unknown {

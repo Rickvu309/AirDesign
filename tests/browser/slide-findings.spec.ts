@@ -7,15 +7,12 @@ import {
   layText,
   slideFindings,
   type Finding,
-  type FontWidths,
   type ResolvedElement,
   type ResolvedSlide,
   type SlideFindings,
 } from "../../packages/document/src/index.ts"
 import { agreementTable, openDeck, showSlide, within, worst, type Row } from "./fit-truth.ts"
-import { cssFamily, measureFaces, paintedHeights } from "./font-widths.ts"
-
-const pageFont = "Geist Variable"
+import { paintedHeights, slideWidths } from "./font-widths.ts"
 
 const point = 12_700
 const truthDecks = ["doe-heat-pumps.pptx", "nasa-cots-parts-nesc.pptx", "census-updating-spm.pptx"]
@@ -33,30 +30,6 @@ function readDecks(): readonly Deck[] {
   return JSON.parse(run.stdout) as Deck[]
 }
 
-async function deckWidths(page: Page, decks: readonly Deck[]): Promise<FontWidths> {
-  const fonts = new Set<string>([pageFont])
-  const chars = new Set<string>("x")
-  for (const deck of decks)
-    for (const slide of deck.slides)
-      for (const element of slide.elements)
-        for (const paragraph of element.text?.paragraphs ?? []) {
-          fonts.add(paragraph.end.font)
-          if (paragraph.bullet !== null) {
-            fonts.add(paragraph.bullet.font)
-            for (const char of paragraph.bullet.text) chars.add(char)
-          }
-          for (const run of paragraph.runs) {
-            fonts.add(run.font)
-            for (const char of run.text) chars.add(char)
-          }
-        }
-  const sans = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--font-sans"))
-  const families = [...fonts].map((font) =>
-    cssFamily(font === pageFont ? null : font).replace("var(--font-sans)", sans.trim()),
-  )
-  return measureFaces(page, families, [...chars].join(""))
-}
-
 function median(values: readonly number[]): number {
   const sorted = [...values].sort((a, b) => a - b)
   return sorted[Math.floor(sorted.length / 2)] ?? 0
@@ -66,7 +39,10 @@ test("findings over every fixture deck, counted by kind and timed with no device
   test.setTimeout(10 * 60_000)
   const decks = await readDecks()
   await page.goto("/")
-  const widths = await deckWidths(page, decks)
+  const widths = await slideWidths(
+    page,
+    decks.flatMap((deck) => deck.slides),
+  )
   const totals = new Map<string, number>()
   const reasons = new Map<string, number>()
   const flagged: string[] = []
@@ -125,7 +101,7 @@ test("text fit agrees with the painter on the text of real decks", async ({ page
   const verdicts = { agree: 0, missed: 0, alarms: 0 }
   for (const deck of decks) {
     await openDeck(page, deck.name, readFileSync(deck.path))
-    const widths = await deckWidths(page, [deck])
+    const widths = await slideWidths(page, deck.slides)
     for (const [at, slide] of deck.slides.entries()) {
       await showSlide(page, at + 1)
       const judged = slide.elements.flatMap((element) => {

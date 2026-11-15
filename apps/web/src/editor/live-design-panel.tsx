@@ -1,9 +1,10 @@
-import { useId, useMemo, useSyncExternalStore } from "react"
+import { useId, useMemo, useSyncExternalStore, type ReactNode } from "react"
 import { toast } from "sonner"
 import {
   openRegister,
   readTableValue,
   shapeOf,
+  themeNode,
   type ElementId,
   type SchemeName,
   type SetChange,
@@ -22,6 +23,7 @@ import {
   shownIdentity,
   shownImage,
   shownLine,
+  shownTheme,
   shownTurn,
   themeSwatches,
   type DeckTraits,
@@ -30,10 +32,18 @@ import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
 import { formatCopy } from "@/copy/format-copy"
-import { panelOf, type PanelReads, type Swatch as PaletteSwatch } from "@/design/panel"
+import { panelOf, type PanelReads, type PanelSection, type Swatch as PaletteSwatch } from "@/design/panel"
 import { applyChange, deviceScope, valueFits, type ChangingDeck } from "@/design/trait-edit"
 import { designShown, type DesignShown } from "@/design-shown"
-import { BackgroundKind, DesignHead, DesignSection, ElementDesign, Swatch, SwatchButton } from "@/editor/design-panel"
+import {
+  BackgroundKind,
+  DesignHead,
+  DesignSection,
+  ElementDesign,
+  SectionRows,
+  Swatch,
+  SwatchButton,
+} from "@/editor/design-panel"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import type { UndoList } from "@/editor/use-undo"
 import { fileTableValue } from "@/table-edit"
@@ -217,11 +227,46 @@ function LiveSlideDesign({ deck }: { deck: DesigningDeck }) {
     <DesignView
       shown={view}
       onColor={(scheme) => changed(deck, { target: { slide: view.slide }, fill: { value: { solid: { scheme } } } })}
-    />
+    >
+      <LiveThemeDesign deck={deck} />
+    </DesignView>
   )
 }
 
-export function DesignView({ shown, onColor }: { shown: DesignShown; onColor: (scheme: SchemeName) => void }) {
+function themeSection(deck: DesigningDeck): PanelSection | null {
+  const { shown } = deck
+  const parts = shown.displayParts.current
+  const part = readSlides(parts)[shown.current]?.part
+  const view = deviceScope(shown.shownParts.current, shown.shownRegister.current ?? openRegister("", "")).view(
+    themeNode,
+  )
+  if (part === undefined || view === undefined) return null
+  const read = Object.entries(shownTheme(parts, part))
+  const fields = Object.fromEntries(read.map(([field, value]) => [`theme.${field}`, { value, own: true }]))
+  return panelOf(view, { reads: {}, moves: false, fields }).sections.find(({ trait }) => trait === "theme") ?? null
+}
+
+function LiveThemeDesign({ deck }: { deck: DesigningDeck }) {
+  const section = themeSection(deck)
+  if (section === null) return null
+  return (
+    <DesignSection title={section.label} last>
+      <div className="flex flex-col gap-2" data-design-theme>
+        <SectionRows rows={section.rows} palette={[]} onChange={(row, value) => changed(deck, row.change(value))} />
+      </div>
+    </DesignSection>
+  )
+}
+
+export function DesignView({
+  shown,
+  onColor,
+  children = null,
+}: {
+  shown: DesignShown
+  onColor: (scheme: SchemeName) => void
+  children?: ReactNode
+}) {
   const heading = useId()
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto" data-design-panel>
@@ -243,7 +288,7 @@ export function DesignView({ shown, onColor }: { shown: DesignShown; onColor: (s
         </BackgroundKind>
         <Swatch color={shown.background.css} name={shown.background.name} edged={light(shown.background.css)} />
       </DesignSection>
-      <DesignSection title={designCopy.colors} id={heading} last>
+      <DesignSection title={designCopy.colors} id={heading} last={children === null}>
         <div role="group" aria-labelledby={heading} className="grid grid-cols-2 gap-2">
           {shown.colors.map((color) => (
             <SwatchButton
@@ -259,6 +304,7 @@ export function DesignView({ shown, onColor }: { shown: DesignShown; onColor: (s
           ))}
         </div>
       </DesignSection>
+      {children}
     </div>
   )
 }

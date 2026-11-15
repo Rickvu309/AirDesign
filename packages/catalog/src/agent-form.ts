@@ -28,7 +28,7 @@ import {
   type Shown,
   type TraitReads,
 } from "@airdesign/document"
-import { agentColor, agentPercent, colorPattern, readAgentColor } from "./agent-color.js"
+import { agentColor, agentPercent, colorPattern, hexPattern, readAgentColor, readAgentHex } from "./agent-color.js"
 import { knownIcon } from "./icon-names.js"
 import { storableText } from "./storable-text.js"
 
@@ -348,6 +348,8 @@ export function agentSchema(desc: Desc): JsonSchema {
       return { type: "string", enum: desc.options }
     case "color":
       return { type: "string", pattern: `^${colorPattern}$` }
+    case "hex":
+      return { type: "string", pattern: `^${hexPattern}$` }
     case "alpha":
       throw new Error("an alpha field is never on the wire")
     case "record":
@@ -452,6 +454,10 @@ export function readAgent(desc: Desc, raw: unknown): AgentRead {
     case "color": {
       const color = readAgentColor(raw)
       return color === null ? refused : { ok: true, value: color }
+    }
+    case "hex": {
+      const hex = readAgentHex(raw)
+      return hex === null ? refused : { ok: true, value: hex }
     }
     case "alpha":
       return refused

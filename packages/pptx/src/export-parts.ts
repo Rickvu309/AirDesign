@@ -10,6 +10,7 @@ import {
   slideGone,
   slideKind,
   takes,
+  themeNode,
   upgradeBackgrounds,
   type ElementId,
   type ElementPatch,
@@ -23,6 +24,7 @@ import {
 import { slidePart } from "./package-address.js"
 import { readShapes, shapeKind, type ReadShape } from "./read-shapes.js"
 import { writeTrait } from "./trait-xml.js"
+import { slideThemes } from "./trait-xml-theme.js"
 import type { Parts } from "./xml-codec.js"
 
 type Fields = Record<string, FieldEdit<unknown>>
@@ -80,6 +82,14 @@ function writtenSlide(
   return writeTrait(parts, { slide, part, shape: "slide" }, "fill", fields)
 }
 
+function writtenTheme(parts: Parts, body: NodeRegister | undefined): Parts {
+  const fields = body === undefined ? undefined : landedPatch(body, "text").theme
+  if (fields === undefined) return parts
+  let next = parts
+  for (const part of slideThemes(parts)) next = writeTrait(next, { slide: "", part, shape: "theme" }, "theme", fields)
+  return next
+}
+
 function writtenElement(
   parts: Parts,
   shapes: readonly ReadShape[],
@@ -125,11 +135,13 @@ export function exportParts(parts: Parts, stored: Register): Parts {
     const opening = newSlideElement(register, node)
     const kind = slideKind(node)
     next =
-      kind === "notes"
-        ? writtenNotes(next, node, body, opening)
-        : kind === "slide"
-          ? writtenSlide(next, node, body, opening)
-          : writtenElement(next, shapes, node, body, opening)
+      node === themeNode
+        ? writtenTheme(next, body)
+        : kind === "notes"
+          ? writtenNotes(next, node, body, opening)
+          : kind === "slide"
+            ? writtenSlide(next, node, body, opening)
+            : writtenElement(next, shapes, node, body, opening)
   }
   return next
 }

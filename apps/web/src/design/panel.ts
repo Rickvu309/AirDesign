@@ -30,6 +30,7 @@ export const controlKinds = [
   "toggle",
   "choice",
   "color",
+  "hex",
   "record",
   "union",
   "list",
@@ -57,6 +58,8 @@ export function controlOf(desc: Desc): ControlKind {
       return "choice"
     case "color":
       return "color"
+    case "hex":
+      return "hex"
     case "alpha":
       return "percent"
     case "record":
@@ -176,7 +179,7 @@ function shownOf(view: ScopedElement, trait: TraitName, field: string, shown: Pa
     }
     return { value: sides[field], mixed: false }
   }
-  if (trait === "geometry") return { value: undefined, mixed: false }
+  if (trait === "geometry" || trait === "theme") return { value: undefined, mixed: false }
   if (field === "value") return { value: view.value ?? "", mixed: false }
   const text = readTextValue(view.value ?? "") ?? []
   return textShown(text, field, reads)

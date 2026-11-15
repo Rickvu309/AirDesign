@@ -53,6 +53,7 @@ import {
   type Probe,
 } from "./parity-probe"
 import { pictureProbes } from "./picture-probes"
+import { themeProbe } from "./theme-probe"
 
 type Layer = "change" | "wire" | "control" | "round-trip" | "paint-change" | "undo" | "inherit" | "pptx-case"
 
@@ -274,6 +275,7 @@ const probes: { readonly [T in TraitName]: Probe<T> } = {
       value: { file: grid, shows: gridShown },
     },
   },
+  theme: themeProbe,
 }
 
 function fromAgent(desc: Desc, raw: unknown): unknown {
@@ -336,6 +338,7 @@ type Loose = {
       }
     >
   >
+  readonly painted?: (parts: Parts, at: At, field: string) => string
 }
 
 type LooseWire = {
@@ -382,7 +385,8 @@ async function fieldProblems(
   ])
   const exported = person === null ? parts : exportParts(parts, person)
   if (person === null || !shown(exported)) problems.push({ field: key, missing: "round-trip" })
-  if (probe.kind !== "slide" && painted(exported, at) === painted(parts, at)) {
+  const paint = probe.painted ?? painted
+  if (probe.kind !== "slide" && paint(exported, at, field) === paint(parts, at, field)) {
     problems.push({ field: key, missing: "paint-change" })
   }
   const holder = trait === "notes" || trait === "table" ? trait : "text"

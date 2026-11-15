@@ -46,7 +46,7 @@ export type Derived = [
 ]
 
 describe("the one table of traits", () => {
-  it("declares the thirteen slots with the rule PowerPoint inherits each by", () => {
+  it("declares the fourteen slots with the rule PowerPoint inherits each by", () => {
     expect(Object.fromEntries(traitNames.map((name) => [name, traits[name].inherits]))).toEqual({
       identity: "own",
       box: "whole",
@@ -61,10 +61,11 @@ describe("the one table of traits", () => {
       connection: "own",
       table: "own",
       notes: "own",
+      theme: "own",
     })
   })
 
-  it("holds only the fields that are live: identity, the box, the geometry, the fill, the line, the effects, the text, the picture, its crop, notes and table values, and alpha", () => {
+  it("holds only the fields that are live: identity, the box, the geometry, the fill, the line, the effects, the text, the picture, its crop, notes and table values, the theme's colours and fonts, and alpha", () => {
     expect(traitNames.flatMap(fieldKeys)).toEqual([
       "identity.name",
       "identity.alt",
@@ -105,6 +106,20 @@ describe("the one table of traits", () => {
       "crop.rect",
       "table.value",
       "notes.value",
+      "theme.dk1",
+      "theme.lt1",
+      "theme.dk2",
+      "theme.lt2",
+      "theme.accent1",
+      "theme.accent2",
+      "theme.accent3",
+      "theme.accent4",
+      "theme.accent5",
+      "theme.accent6",
+      "theme.hlink",
+      "theme.folHlink",
+      "theme.major",
+      "theme.minor",
     ])
     expect(alphaKeys).toEqual(["fill.alpha", "line.alpha", "text.alpha", "image.alpha"])
   })

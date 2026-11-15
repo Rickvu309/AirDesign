@@ -48,6 +48,14 @@ export const colorPattern = `(?:#[0-9A-Fa-f]{6}|${slotPattern([...themeSlots, ..
 
 const colorExact = new RegExp(`^${colorPattern}$`)
 
+export const hexPattern = "#[0-9A-Fa-f]{6}"
+
+const hexExact = new RegExp(`^${hexPattern}$`)
+
+export function readAgentHex(raw: unknown): string | null {
+  return typeof raw === "string" && hexExact.test(raw) ? raw.slice(1).toUpperCase() : null
+}
+
 function bareWord(word: string): boolean {
   return (bareTransforms as readonly string[]).includes(word)
 }
