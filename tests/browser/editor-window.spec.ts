@@ -97,15 +97,76 @@ test("fit zoom refits when the window changes, and a fixed zoom stays", async ({
   expect((await boxOf(page, "[data-slide-paint]")).width).toBe(640)
 })
 
-test.fail(
-  "with a text box selected in a 1280x720 window, the toolbar stays inside the canvas column",
-  async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 })
+for (const window of windows) {
+  test(`with a text box selected in a ${String(window.width)}x${String(window.height)} window, every toolbar control stays inside the canvas column`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(window)
     await openDeck(page, "clean.pptx")
     await designing(page, page.locator("[data-slide-paint]").getByRole("group", { name: "Hello" }))
-    const toolbar = await boxOf(page, "[data-editor-toolbar]")
+    await page.locator('[data-slide-paint] [contenteditable="true"]').first().click()
+    await expect(page.locator("[data-editor-toolbar] [data-text-format]")).toBeVisible()
     const canvas = await boxOf(page, "[data-editor-canvas]")
+    const list = await boxOf(page, "[data-slide-list]")
+    const panel = await boxOf(page, "[data-editor-panel]")
+    const toolbar = await boxOf(page, "[data-editor-toolbar]")
     expect(toolbar.x, "toolbar left").toBeGreaterThanOrEqual(canvas.x)
     expect(toolbar.x + toolbar.width, "toolbar right").toBeLessThanOrEqual(canvas.x + canvas.width)
-  },
-)
+    expect(toolbar.x, "toolbar clear of the slide list").toBeGreaterThanOrEqual(list.x + list.width)
+    expect(toolbar.x + toolbar.width, "toolbar clear of the panel").toBeLessThanOrEqual(panel.x)
+    const controls = page.locator("[data-editor-toolbar] button")
+    for (const control of await controls.all()) {
+      const box = await control.boundingBox()
+      if (box === null) throw new Error("a toolbar control has no box")
+      expect(box.x, "control left").toBeGreaterThanOrEqual(canvas.x)
+      expect(box.x + box.width, "control right").toBeLessThanOrEqual(canvas.x + canvas.width)
+    }
+    for (const name of ["Agent", "Design"]) {
+      await expect(page.locator("[data-editor-toolbar]").getByRole("button", { name, exact: true })).toBeInViewport({
+        ratio: 1,
+      })
+    }
+  })
+}
+
+test("in a 1280x720 window the controls that do not fit sit in More, reached and used by keyboard", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await openDeck(page, "clean.pptx")
+  const text = page.locator('[data-slide-paint] [contenteditable="true"]').first()
+  await text.click()
+  await text.press("ControlOrMeta+a")
+  const toolbar = page.locator("[data-editor-toolbar]")
+  await expect(toolbar.getByRole("button", { name: "Bold" })).toBeVisible()
+  await expect(toolbar.getByRole("button", { name: "Bullets" })).toHaveCount(0)
+  await toolbar.getByRole("button", { name: "More", exact: true }).focus()
+  await page.keyboard.press("Enter")
+  const more = page.locator("[data-toolbar-more]")
+  await expect(more).toBeVisible()
+  await page.screenshot({ path: test.info().outputPath("more-open.png") })
+  const order = await more.getByRole("button").evaluateAll((all) => all.map((each) => each.getAttribute("aria-label")))
+  expect(order.at(-1)).toBe("Bullets")
+  const bullets = more.getByRole("button", { name: "Bullets" })
+  for (const _ of order) {
+    if (await bullets.evaluate((each) => each === document.activeElement)) break
+    await page.keyboard.press("Tab")
+  }
+  await expect(bullets).toBeFocused()
+  await page.keyboard.press("Enter")
+  await expect(bullets).toHaveAttribute("aria-pressed", "true")
+  await page.keyboard.press("Escape")
+  await expect(more).toBeHidden()
+})
+
+test("in a 1280x720 window a shape added through More while text is aimed lands on the slide", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await openDeck(page, "clean.pptx")
+  await page.locator('[data-slide-paint] [contenteditable="true"]').first().click()
+  const elements = page.locator("[data-slide-paint] [data-canvas-element]")
+  const before = await elements.count()
+  await page.locator("[data-editor-toolbar]").getByRole("button", { name: "More", exact: true }).click()
+  await page.locator("[data-toolbar-more]").getByRole("button", { name: "Shapes", exact: true }).click()
+  await page.locator("[data-shape-tray]").getByRole("button", { name: "Rectangle", exact: true }).click()
+  await expect(elements).toHaveCount(before + 1)
+})

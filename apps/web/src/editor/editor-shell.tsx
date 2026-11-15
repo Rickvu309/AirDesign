@@ -174,7 +174,7 @@ export function EditorShell({
               <span className="block h-3" />
             </>
           )}
-          <div className="pointer-events-auto">
+          <div className="w-full px-4">
             <EditorToolbar
               activeTool={activeTool}
               menuOpen={toolMenu}
