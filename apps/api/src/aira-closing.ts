@@ -103,19 +103,16 @@ export class Closing {
     })
   }
 
-  async closed(account: string, own: Followed): Promise<boolean> {
+  async closed(account: string, own: Followed): Promise<void> {
     const turn = this.stopping.get(account)
     if (turn !== undefined) {
       await this.within(turn)
-      return true
+      return
     }
-    const open = async (): Promise<boolean> => {
+    await this.settled(async () => {
       const found = await this.shared.db.query(openStopSql, [account, own.id])
       return found.rows.length > 0
-    }
-    if (!(await open())) return false
-    await this.settled(open)
-    return true
+    })
   }
 
   private async mark(id: string): Promise<void> {
