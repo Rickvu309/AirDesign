@@ -244,8 +244,10 @@ function promptLook(text: CanvasText, look: TextLook, scaled: Scaled): CSSProper
     }
   }
   const base = look.paragraph(0, false)
+  const hung = base["--bullet"] !== "none" && (paragraph.indent ?? 0) < 0
   return {
     ...base,
+    ...(hung ? { textIndent: 0 } : {}),
     "--bullet": "none",
     margin: 0,
   } as CSSProperties
@@ -337,6 +339,7 @@ function PlacedText(props: {
               style={{
                 ...promptLook(text, look, scaled),
                 color: "var(--placeholder-prompt)",
+                whiteSpace: "pre-line",
               }}
             >
               {element.prompt}

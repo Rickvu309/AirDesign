@@ -8,9 +8,17 @@ function shapeText(element: MarkupElement, children: MarkupChildren, bytes: Uint
   const body = sourceBody(children, bytes, element)
   if (body === null) return ""
   return body
-    .flatMap((paragraph) => paragraph.inlines.map((inline) => (inline.text === "\n" ? "" : inline.text)))
-    .join("")
+    .map((paragraph) => paragraph.inlines.map((inline) => (inline.text === "\n" ? "" : inline.text)).join(""))
+    .join("\n")
     .trim()
+}
+
+function customPrompt(item: Drawn, sheet: Sheet): boolean {
+  const mark = sheet.elements.find(
+    (element) => element.kind === "p:ph" && element.start > item.element.start && element.end <= item.element.end,
+  )
+  const value = mark?.attributes.find((attribute) => attribute.name === "hasCustomPrompt")?.value
+  return value === "1" || value === "true"
 }
 
 function hasOwnText(element: MarkupElement, children: MarkupChildren, bytes: Uint8Array): boolean {
@@ -29,7 +37,7 @@ export function placeholderPrompt(
   if (hasOwnText(item.element, sheet.children, sheet.bytes)) return null
   const above = layout === null ? undefined : layoutMatch(layout, item.placeholder)
   if (notTyped.has(above?.placeholder?.type ?? item.placeholder.type)) return null
-  if (above !== undefined && layout !== null) {
+  if (above !== undefined && layout !== null && customPrompt(above, layout)) {
     const layoutText = shapeText(above.element, layout.children, layout.bytes)
     if (layoutText.length > 0) return layoutText
   }
