@@ -8,6 +8,7 @@ import {
   type TableRow,
   type TableSide,
 } from "@airdesign/document"
+import { readableEdits, type ThemeSlot } from "./cell-text.js"
 import { fillIn } from "./color-read.js"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { fillValueOf } from "./fill-read.js"
@@ -119,14 +120,23 @@ function cellEdit(grid: Grid, bytes: Uint8Array, cell: MarkupElement, slot: Slot
   return decodeUtf8(next) === "<a:tcPr/>" ? null : { start: at, end: at, next }
 }
 
-export function cellEdits(grid: Grid, bytes: Uint8Array, rows: readonly TableRow[]): Uint8Array | null {
+export function cellEdits(
+  grid: Grid,
+  bytes: Uint8Array,
+  rows: readonly TableRow[],
+  theme: () => ThemeSlot | null,
+): Uint8Array | null {
   const edits = grid.rows.flatMap((element, at) => {
     const row = rows[at]
     if (row === undefined || (row.fills === undefined && row.borders === undefined)) return []
     return cellsOf(grid, element).flatMap((cell, column) => {
-      const slot = propertiesSlot(row, column, cellRead(grid, cell))
+      const shown = cellRead(grid, cell)
+      const slot = propertiesSlot(row, column, shown)
       const edit = slot === null ? null : cellEdit(grid, bytes, cell, slot)
-      return edit === null ? [] : [edit]
+      const fill = row.fills?.[column] ?? null
+      const slots = fill === null || same(fill, shown.fill) ? null : theme()
+      const text = fill === null || slots === null ? [] : readableEdits(grid, bytes, cell, fill, slots)
+      return edit === null ? text : [edit, ...text]
     })
   })
   return edits.length === 0 ? null : spliceBytes(bytes, edits)

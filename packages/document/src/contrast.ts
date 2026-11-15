@@ -11,3 +11,8 @@ export function contrast(left: string, right: string): number {
   const b = luminance(right)
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
 }
+
+export function readableText(behind: readonly string[], dark: string, light: string): "dk1" | "lt1" {
+  const worst = (text: string) => Math.min(...behind.map((each) => contrast(text, each)))
+  return worst(light) > worst(dark) ? "lt1" : "dk1"
+}
