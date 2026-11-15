@@ -54,6 +54,42 @@ describe("paintStore boxes", () => {
     expect(store.getBox(id)).toEqual(box)
   })
 
+  it("holds a box placed while a gesture grips it, and lands the latest one when the gesture lets go", () => {
+    const store = paintStore()
+    store.placeBox(id, box)
+    const grip = store.gripBox(id)
+    grip.place({ ...box, x: 10 })
+    store.placeBox(id, null)
+    store.placeBox(id, { ...box, x: 20 })
+    expect(store.getBox(id)).toEqual({ ...box, x: 10 })
+    grip.release()
+    expect(store.getBox(id)).toEqual({ ...box, x: 20 })
+    grip.place({ ...box, x: 30 })
+    expect(store.getBox(id)).toEqual({ ...box, x: 20 })
+  })
+
+  it("puts back the box from before the grip when nothing was placed meanwhile", () => {
+    const store = paintStore()
+    store.placeBox(id, box)
+    const grip = store.gripBox(id)
+    grip.place({ ...box, x: 10 })
+    grip.release()
+    expect(store.getBox(id)).toEqual(box)
+  })
+
+  it("keeps the gesture's box over a box placed during the grip, and places normally afterwards", () => {
+    const store = paintStore()
+    const grip = store.gripBox(id)
+    store.placeBox(other, box)
+    grip.place({ ...box, x: 10 })
+    store.placeBox(id, box)
+    grip.keep()
+    expect(store.getBox(id)).toEqual({ ...box, x: 10 })
+    expect(store.getBox(other)).toEqual(box)
+    store.placeBox(id, box)
+    expect(store.getBox(id)).toEqual(box)
+  })
+
   it("gives one subscribe function per element", () => {
     const store = paintStore()
     expect(store.boxSubscribe(id)).toBe(store.boxSubscribe(id))
