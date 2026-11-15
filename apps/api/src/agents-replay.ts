@@ -19,15 +19,9 @@ import {
 } from "./agents-drive.js"
 import { pathsFrom, specGraph, walks, type Graph, type Path, type SpecState } from "./spec-graph.js"
 
-let stop = async () => {}
+export const shareCount = 3
 
-beforeAll(async () => {
-  stop = await startAgents()
-})
-
-afterAll(async () => {
-  await stop()
-})
+export type Numbered = { readonly walk: Path; readonly index: number }
 
 type Name = "a" | "b"
 
@@ -200,22 +194,43 @@ async function replayWalk(graph: Graph, walk: Path, pairing: Pairing): Promise<s
   return null
 }
 
-describe("agents replay", () => {
-  it("drives every edge of the agents model through POST /mcp, with two agents and with Aira and an agent", async () => {
-    const graph = await specGraph("agents", "Agents")
-    const paths = pathsFrom(graph, (state) => state.ver === 0 && state.holder === "none" && state.out === "none")
-    expect(paths.size).toBe(graph.states.size)
-    const outs = new Set([...graph.states.values()].map((state) => state.out))
-    expect([...outs].toSorted()).toEqual(["held", "landed", "none", "run-fenced", "stale"])
-    const covering = walks(graph, paths)
-    const failures: string[] = []
-    for (let at = 0; at < covering.length; at += 8) {
-      const batch = covering.slice(at, at + 8)
-      const told = await Promise.all(
-        batch.map((walk, index) => replayWalk(graph, walk, index % 2 === 0 ? "two agents" : "Aira and an agent")),
-      )
-      for (const line of told) if (line !== null) failures.push(line)
-    }
-    expect(failures.slice(0, 5)).toEqual([])
-  }, 300_000)
-})
+export function shareOf(covering: readonly Path[], share: number): readonly Numbered[] {
+  return covering.map((walk, index) => ({ walk, index })).filter(({ index }) => index % shareCount === share)
+}
+
+export async function agentsWalks(): Promise<{ readonly graph: Graph; readonly covering: readonly Path[] }> {
+  const graph = await specGraph("agents", "Agents")
+  const paths = pathsFrom(graph, (state) => state.ver === 0 && state.holder === "none" && state.out === "none")
+  expect(paths.size).toBe(graph.states.size)
+  const outs = new Set([...graph.states.values()].map((state) => state.out))
+  expect([...outs].toSorted()).toEqual(["held", "landed", "none", "run-fenced", "stale"])
+  return { graph, covering: walks(graph, paths) }
+}
+
+export function replayShare(share: number): void {
+  let stop = async () => {}
+
+  beforeAll(async () => {
+    stop = await startAgents()
+  })
+
+  afterAll(async () => {
+    await stop()
+  })
+
+  describe(`agents replay, share ${String(share)} of ${String(shareCount)}`, () => {
+    it("drives every edge of the agents model through POST /mcp, with two agents and with Aira and an agent", async () => {
+      const { graph, covering } = await agentsWalks()
+      const mine = shareOf(covering, share)
+      const failures: string[] = []
+      for (let at = 0; at < mine.length; at += 8) {
+        const batch = mine.slice(at, at + 8)
+        const told = await Promise.all(
+          batch.map(({ walk, index }) => replayWalk(graph, walk, index % 2 === 0 ? "two agents" : "Aira and an agent")),
+        )
+        for (const line of told) if (line !== null) failures.push(line)
+      }
+      expect(failures.slice(0, 5)).toEqual([])
+    }, 300_000)
+  })
+}

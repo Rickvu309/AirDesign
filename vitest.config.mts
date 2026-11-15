@@ -1,6 +1,7 @@
 import path from "node:path"
 import { defineConfig } from "vitest/config"
 import { sourceOnly } from "./scripts/source-only.mjs"
+import LongestFirst from "./scripts/vitest-longest-first.mjs"
 import { renderTestFiles, splitTests, splitUnitTests } from "./scripts/test-isolation.mjs"
 
 const root = import.meta.dirname
@@ -30,6 +31,7 @@ export default defineConfig({
   },
   test: {
     retry: 0,
+    sequence: { sequencer: LongestFirst },
     setupFiles: ["scripts/vitest-assertions.mjs"],
     reporters: ["default", "scripts/vitest-metrics.mjs"],
     projects: [
