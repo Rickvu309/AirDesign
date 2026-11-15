@@ -8,6 +8,7 @@ on:
       - main
 
 permissions:
+  actions: read
   contents: read
   issues: write
 
@@ -59,8 +60,16 @@ jobs:
           path: ~/.cache/airdesign/spec-results
           key: spec-results-${{ hashFiles('specs/**') }}
           restore-keys: spec-results-
+      - if: github.event_name == 'push' && matrix.part == 'side'
+        id: queued
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&event=merge_group&status=success" --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci.yml")] | length > 0')
+          echo "passed=$passed" >> "$GITHUB_OUTPUT"
+          if [ "$passed" = true ]; then echo "The merge queue passed ci on $GITHUB_SHA, so the side part does not run again."; fi
       - uses: ./.github/actions/postgres
-      - if: matrix.part != 'pptx'
+      - if: matrix.part != 'pptx' && steps.queued.outputs.passed != 'true'
         run: pnpm check --part=${{ matrix.part }}
       - if: matrix.part == 'main' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
