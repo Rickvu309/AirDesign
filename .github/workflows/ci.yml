@@ -154,6 +154,7 @@ jobs:
           path: ~/.cache/airdesign/pptx-renders
           key: pptx-renders-corpus-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
           restore-keys: pptx-renders-
+      - uses: ./.github/actions/postgres
       - run: pnpm check:pptx:corpus
         env:
           AIRDESIGN_WEB_BUILT: "1"
