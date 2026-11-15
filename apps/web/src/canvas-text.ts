@@ -60,5 +60,8 @@ export function canvasText(text: PaintText | null): CanvasText | null {
     anchor: text.anchor,
     insets: text.insets,
     wrap: text.wrap,
+    flow: text.flow,
+    columns: text.columns,
+    columnGap: text.columnGap,
   }
 }

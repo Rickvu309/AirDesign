@@ -90,9 +90,9 @@ describe("createServer", () => {
       const instructions = client.getInstructions() ?? ""
       expect(instructions).toContain('"op": "set"')
       expect(instructions).toContain(
-        "A shape takes box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape), fill (value), line (fill, width, dash, cap, compound, join, head, tail), effects (shadow, glow, softEdge), text (value, color, size",
+        "A shape takes box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape), fill (value), line (fill, width, dash, cap, compound, join, head, tail), effects (shadow, glow, softEdge), body (insets, anchor, wrap, autofit, vertical, columns), text (value, color, size, font",
       )
-      expect(instructions).toContain("bullet) and opacity.")
+      expect(instructions).toContain("bullet, lineSpacing, spaceBefore, spaceAfter) and opacity.")
       expect(instructions).toContain(
         "A line takes box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape), line (fill, width, dash",
       )

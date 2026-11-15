@@ -1,4 +1,11 @@
-import type { ParagraphAlign, Color, RunFormat, TextFormat } from "@airdesign/document"
+import {
+  spacingNames,
+  type ParagraphAlign,
+  type ParagraphSpacing,
+  type Color,
+  type RunFormat,
+  type TextFormat,
+} from "@airdesign/document"
 import type { CSSProperties } from "react"
 import { bulletLabel } from "./bullet-label.js"
 import { readFormat } from "./run-format-node.js"
@@ -20,13 +27,13 @@ const bulletProps = ["--bullet", "--bullet-font", "--bullet-color", "--bullet-si
 const bulletRule =
   "[data-paragraph]::before{content:var(--bullet);display:inline-block;min-width:var(--bullet-hang,auto);text-indent:0;pointer-events:none;user-select:none;white-space:pre;font-family:var(--bullet-font,inherit);color:var(--bullet-color,inherit);font-size:var(--bullet-size,1em);line-height:1}"
 
-export type RunPaint = RunFormat & { readonly size?: number; readonly color?: Color }
-export type ParagraphPaint = { readonly align?: ParagraphAlign; readonly bullet?: boolean }
+export type RunPaint = RunFormat & { readonly size?: number; readonly color?: Color; readonly font?: string }
+export type ParagraphPaint = { readonly align?: ParagraphAlign; readonly bullet?: boolean } & ParagraphSpacing
 
 export type TextLook = {
   readonly body: CSSProperties
   paragraph(from: number, filled: boolean, overlay?: ParagraphPaint): Look
-  run(paragraph: number, from: number, format?: RunPaint): Look
+  run(paragraph: number, from: number, format?: RunPaint, overlay?: ParagraphPaint): Look
   file(paragraph: number, from: number, format: TextFormat): boolean
   fileSize(paragraph: number, from: number): number | null
   fileColor(paragraph: number, from: number): Color | null
@@ -49,6 +56,8 @@ const openTwins = new Map([
   ["times new roman", "Tinos"],
 ])
 const loneRun = -1
+const emuPerHundredth = 127
+const wholePercent = 100_000
 
 function isElement(node: Node): node is HTMLElement {
   return node.nodeType === node.ELEMENT_NODE
@@ -232,7 +241,32 @@ function formatted(style: CanvasRunStyle, format: RunPaint, colors: readonly Can
     underline: format.underline ?? style.underline === true,
     ...(format.size === undefined ? {} : { size: format.size * 127, points: format.size }),
     ...(format.color === undefined ? {} : { color: paintedColor(format.color, colors, style.color) }),
+    ...(format.font === undefined ? {} : { font: format.font }),
   }
+}
+
+function spaced(paragraph: CanvasParagraph, overlay: ParagraphPaint | undefined): CanvasParagraph {
+  if (overlay === undefined) return paragraph
+  const { lineSpacing, spaceBefore, spaceAfter } = overlay
+  return {
+    ...paragraph,
+    ...(lineSpacing === undefined ? {} : { lineSpacing: { percent: lineSpacing / wholePercent } }),
+    ...(spaceBefore === undefined ? {} : { spaceBefore: { length: spaceBefore * emuPerHundredth } }),
+    ...(spaceAfter === undefined ? {} : { spaceAfter: { length: spaceAfter * emuPerHundredth } }),
+  }
+}
+
+export function paragraphPaint(dataset: DOMStringMap): ParagraphPaint {
+  const { align, bullet } = dataset
+  let paint: ParagraphPaint = {
+    ...(align === "left" || align === "center" || align === "right" ? { align } : {}),
+    ...(bullet === "true" || bullet === "false" ? { bullet: bullet === "true" } : {}),
+  }
+  for (const name of spacingNames) {
+    const kept = dataset[name]
+    if (kept !== undefined && /^\d+$/.test(kept)) paint = { ...paint, [name]: Number(kept) }
+  }
+  return paint
 }
 
 function paragraphOverlay(style: Look, paragraph: CanvasParagraph, overlay: ParagraphPaint | undefined): Look {
@@ -242,6 +276,36 @@ function paragraphOverlay(style: Look, paragraph: CanvasParagraph, overlay: Para
   return align
 }
 
+function bodyLook(text: CanvasText, scaled: Scaled): CSSProperties {
+  const whiteSpace = text.wrap ? "pre-wrap" : "pre"
+  const columns = text.columns ?? 1
+  if (columns > 1) {
+    return {
+      display: "block",
+      flexShrink: 0,
+      blockSize: "100%",
+      columnCount: columns,
+      columnGap: `${scaled(text.columnGap ?? 0)}px`,
+      columnFill: "auto",
+      whiteSpace,
+    }
+  }
+  return {
+    display: "flex",
+    flexDirection: "column",
+    flexShrink: 0,
+    justifyContent: anchored[text.anchor],
+    ...((text.flow ?? "horz") === "horz" ? { minHeight: "100%" } : { minBlockSize: "100%" }),
+    whiteSpace,
+  }
+}
+
+export const flowModes = {
+  horz: {},
+  vert: { writingMode: "vertical-rl", textOrientation: "sideways" },
+  vert270: { writingMode: "sideways-lr" },
+} as const satisfies Readonly<Record<NonNullable<CanvasText["flow"]>, CSSProperties>>
+
 export function textLook(text: CanvasText, scaled: Scaled): TextLook {
   const paragraphs = new Map(text.paragraphs.map((paragraph) => [paragraph.from, paragraph]))
   const colors = text.colors ?? []
@@ -250,22 +314,16 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
     return paragraph === undefined ? null : fileStyle(paragraph, run)
   }
   return {
-    body: {
-      display: "flex",
-      flexDirection: "column",
-      flexShrink: 0,
-      justifyContent: anchored[text.anchor],
-      minHeight: "100%",
-      whiteSpace: text.wrap ? "pre-wrap" : "pre",
-    },
+    body: bodyLook(text, scaled),
     paragraph(from, filled, overlay) {
       const paragraph = paragraphs.get(from)
       if (paragraph === undefined) return { lineHeight: filled ? noLine : singleLine, "--bullet": "none" }
-      return paragraphOverlay(paragraphStyle(paragraph, filled, scaled), paragraph, overlay)
+      return paragraphOverlay(paragraphStyle(spaced(paragraph, overlay), filled, scaled), paragraph, overlay)
     },
-    run(from, run, format = {}) {
-      const paragraph = paragraphs.get(from)
-      if (paragraph === undefined) return { lineHeight: singleLine }
+    run(from, run, format = {}, overlay) {
+      const found = paragraphs.get(from)
+      if (found === undefined) return { lineHeight: singleLine }
+      const paragraph = spaced(found, overlay)
       const style = formatted(fileStyle(paragraph, run), format, colors)
       const lineHeight = lineHeights(paragraph.lineSpacing, scaled, true).run
       const drawn = marks(style)
@@ -323,18 +381,12 @@ export function restyle(box: HTMLElement, look: TextLook): void {
   for (const block of box.children) {
     if (!isElement(block) || block.dataset.paragraph === undefined) continue
     const from = Number(block.dataset.paragraph)
-    const align = block.dataset.align
-    const bullet = block.dataset.bullet
-    applyStyle(
-      block,
-      look.paragraph(from, isFilled(block), {
-        ...(align === "left" || align === "center" || align === "right" ? { align } : {}),
-        ...(bullet === "true" || bullet === "false" ? { bullet: bullet === "true" } : {}),
-      }),
-    )
+    const overlay = paragraphPaint(block.dataset)
+    applyStyle(block, look.paragraph(from, isFilled(block), overlay))
     for (const span of runsOf(block)) {
       const [paragraph, run] = (span.dataset.run ?? "").split(".").map(Number)
-      applyStyle(span, look.run(from, paragraph === from && run !== undefined ? run : loneRun, readFormat(span)))
+      const at = paragraph === from && run !== undefined ? run : loneRun
+      applyStyle(span, look.run(from, at, readFormat(span), overlay))
     }
   }
 }

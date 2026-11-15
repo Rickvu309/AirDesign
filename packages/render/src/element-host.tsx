@@ -12,7 +12,7 @@ import { ChartArt } from "./chart-art.js"
 import type { TableBar } from "./table-paint.js"
 import { canMove, type Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
-import { anchored, textLook, type Scaled, type TextLook } from "./text-look.js"
+import { anchored, flowModes, textLook, type Scaled, type TextLook } from "./text-look.js"
 import { formatKey, keepsFormat, type TextFormatting } from "./text-formatting.js"
 import { unshownFill } from "./unshown-fill.js"
 import { UnshownLabel } from "./unshown-label.js"
@@ -70,6 +70,7 @@ export function textLayer(box: PaintBox | null, text: CanvasText, scaled: Scaled
     justifyContent: anchored[text.anchor],
     height: "100%",
     padding: `${scaled(top)}px ${scaled(right)}px ${scaled(bottom)}px ${scaled(left)}px`,
+    ...flowModes[text.flow ?? "horz"],
     ...(mirrored ? { transform: "scaleX(-1)" } : {}),
   }
 }

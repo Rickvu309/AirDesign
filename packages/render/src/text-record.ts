@@ -49,4 +49,7 @@ export type CanvasText = {
     readonly bottom: number
   }
   readonly wrap: boolean
+  readonly flow?: "horz" | "vert" | "vert270"
+  readonly columns?: number
+  readonly columnGap?: number
 }

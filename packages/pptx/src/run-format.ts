@@ -1,11 +1,13 @@
 import { formatNames, type TextFormat, type TextRun } from "@airdesign/document"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
-import { paintRunColor } from "./run-color.js"
+import { paintRunColor, withRunChild } from "./run-color.js"
+import { xmlAttribute } from "./shape-write.js"
 import type { SourceInline } from "./text-value-route.js"
 
 const propertiesKind = "a:rPr"
 const emptyBytes = new Uint8Array(0)
+const latinKinds = new Set(["a:latin"])
 const written: Readonly<Record<TextFormat, readonly [name: string, on: string, off: string]>> = {
   bold: ["b", "1", "0"],
   italic: ["i", "1", "0"],
@@ -31,13 +33,19 @@ function shifted(edits: readonly ByteEdit[], by: number): readonly ByteEdit[] {
 }
 
 function colored(slice: Uint8Array, run: TextRun): Uint8Array {
-  return run.color === undefined ? slice : paintRunColor(slice, run.color)
+  const painted = run.color === undefined ? slice : paintRunColor(slice, run.color)
+  if (run.font === undefined) return painted
+  return withRunChild(painted, latinKinds, "a:latin", encodeUtf8(`<a:latin typeface="${xmlAttribute(run.font)}"/>`))
+}
+
+function unformatted(run: TextRun): boolean {
+  return settings(run).length === 0 && run.color === undefined && run.font === undefined
 }
 
 export function runProperties(bytes: Uint8Array, source: MarkupElement | undefined, run: TextRun): Uint8Array {
   const set = settings(run)
   if (source === undefined) {
-    if (set.length === 0 && run.color === undefined) return emptyBytes
+    if (unformatted(run)) return emptyBytes
     return colored(encodeUtf8(`<${propertiesKind}${attributeText(set)}/>`), run)
   }
   const nameStart = source.start + 1
@@ -63,7 +71,7 @@ export function runProperties(bytes: Uint8Array, source: MarkupElement | undefin
 }
 
 export function formatEdits(bytes: Uint8Array, inline: SourceInline, run: TextRun): readonly ByteEdit[] {
-  if (settings(run).length === 0 && run.color === undefined) return []
+  if (unformatted(run)) return []
   const { element, format } = inline
   if (format !== undefined) return [{ start: format.start, end: format.end, next: runProperties(bytes, format, run) }]
   const added = runProperties(bytes, undefined, run)

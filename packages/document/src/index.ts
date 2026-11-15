@@ -127,6 +127,7 @@ export { floorFor, floorNodes, floorOpening, newSlideElement, openingElement } f
 export { widestEffect } from "./trait-effects.js"
 export { patternPresets } from "./trait-fill.js"
 export { arrowheads, arrowSizes, dashPresets, lineCaps, lineCompounds, lineJoins, widestLine } from "./trait-line.js"
+export { anchors, autofits, mostColumns, verticals } from "./trait-body.js"
 export { adjustLimit, presetAdjusts, presets, type Preset } from "./trait-geometry.js"
 export { alignments } from "./trait-box.js"
 export { slideMeasure } from "./slide-measure.js"
@@ -185,8 +186,10 @@ export {
   alignNames,
   formatNames,
   schemeNames,
+  spacingNames,
   writeTextValue,
   type ParagraphAlign,
+  type ParagraphSpacing,
   type RunFormat,
   type SchemeName,
   type TextFormat,

@@ -36,6 +36,9 @@ function text(bold: boolean): PaintText {
     wrap: true,
     fit: "none",
     vertical: false,
+    flow: "horz",
+    columns: 1,
+    columnGap: 0,
     fontScale: 1,
     spacingReduction: 0,
   }
@@ -104,4 +107,21 @@ it("paints the file's text with the alpha the export gives every run, so an elem
     paragraphs: [{ ...first, runs: [...first.runs, { ...first.runs[0]!, color: { hex: "112233", alpha: 0.2 } }] }],
   }
   expect(fileTexts([row("2", twoRuns)], file([row("2", colored(1))]))[0]?.text).toEqual(colored(1))
+})
+
+it("paints the file's runs inside the text frame the export gives, so margins, anchor, wrap, direction and columns show", () => {
+  const frame = {
+    anchor: "bottom",
+    insets: { left: 457200, top: 1, right: 2, bottom: 3 },
+    wrap: false,
+    fit: "shrink",
+    vertical: true,
+    flow: "vert",
+    columns: 2,
+    columnGap: 91440,
+    fontScale: 0.5,
+    spacingReduction: 0.1,
+  } as const
+  const painted = fileTexts([row("2", { ...text(true), ...frame })], file([row("2", text(false))]))
+  expect(painted[0]?.text).toEqual({ ...text(false), ...frame })
 })

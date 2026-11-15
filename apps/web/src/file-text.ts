@@ -21,11 +21,16 @@ function faded<S extends PaintRunStyle>(style: S, alpha: number): S {
   return { ...style, color }
 }
 
+function framed(file: PaintText, exported: PaintText): PaintText {
+  const { paragraphs: _paragraphs, ...frame } = exported
+  return { ...file, ...frame }
+}
+
 function fadedText(file: PaintText, exported: PaintText): PaintText {
   const alpha = exportedAlpha(exported)
-  if (alpha === null) return file
+  if (alpha === null) return framed(file, exported)
   return {
-    ...file,
+    ...framed(file, exported),
     paragraphs: file.paragraphs.map((paragraph) => ({
       ...paragraph,
       runs: paragraph.runs.map((run) => faded(run, alpha)),

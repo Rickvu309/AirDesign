@@ -87,6 +87,7 @@ export type PanelRow = {
   readonly mixed: boolean
   readonly caption: boolean
   readonly action?: boolean
+  readonly shownOnly?: boolean
   readonly reset: string | null
   readonly parent?: unknown
   readonly change: (value: unknown) => SetChange
@@ -127,11 +128,14 @@ type Labels = {
   readonly fields: Readonly<Record<string, { readonly label: string; readonly reset?: string }>>
 }
 
-const paragraphKeys = ["align", "bullet"] as const
+const paragraphKeys = ["align", "bullet", "lineSpacing", "spaceBefore", "spaceAfter"] as const
+
+export const shownOnly: readonly string[] = ["body.autofit"]
 
 function inherited(reads: TraitReads, key: string): unknown {
   if (key === "size") return reads["text.size"]?.value
   if (key === "color") return reads["text.color"]?.value
+  if (key === "font") return reads["text.font"]?.value
   if (key === "bold") return reads["text.bold"]?.value ?? false
   return key === "italic" || key === "underline" || key === "bullet" ? false : undefined
 }
@@ -215,7 +219,10 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       const label = copy?.label ?? ""
       const caption = label !== labels.section
       const action = Object.hasOwn(traits[trait].inputs, field) && held.value === undefined ? { action: true } : {}
-      return [{ trait, field, label, control: controlOf(desc), desc, ...held, caption, reset, ...action, change }]
+      const fixed = shownOnly.includes(key) ? { shownOnly: true, reset: null } : {}
+      return [
+        { trait, field, label, control: controlOf(desc), desc, ...held, caption, reset, ...action, ...fixed, change },
+      ]
     })
     const visible = lineless(trait, rows) ? rows.filter((row) => row.field === "fill") : rows
     return visible.length === 0 ? [] : [{ trait, label: labels.section ?? "", rows: visible }]

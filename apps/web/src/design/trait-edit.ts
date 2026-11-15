@@ -104,6 +104,7 @@ const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = {
   fill: "fill",
   line: "line",
   effects: "effects",
+  body: "text-box",
   geometry: "shape",
 }
 

@@ -221,6 +221,9 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch): Des
   next = folded(next, "effects.shadow", patch.effects?.shadow, shadowShown)
   next = folded(next, "effects.glow", patch.effects?.glow, glowShown)
   next = folded(next, "effects.softEdge", patch.effects?.softEdge, softEdgeShown)
+  next = folded(next, "body.anchor", patch.body?.anchor, (value) => (value === "t" ? null : value))
+  next = folded(next, "body.autofit", patch.body?.autofit, (value) => (value === "none" ? null : value))
+  next = folded(next, "body.vertical", patch.body?.vertical, (value) => (value === "horz" ? null : value))
   next = faded(next, before, "fill", patch.fill?.value, patch.fill?.alpha)
   next = faded(next, before, "line.fill", line?.fill, line?.alpha)
   next = faded(next, before, "text.color", undefined, patch.text?.alpha)
@@ -235,6 +238,7 @@ export function shownDesign(design: Design, value: string): Design {
     ...design,
     ...(run.size === undefined ? {} : { "text.size": [tenths(run.size / hundredthsPerPoint)] }),
     ...(run.color === undefined ? {} : { "text.color": [agentColor(run.color)] }),
+    ...(run.font === undefined ? {} : { "text.font": [run.font] }),
     ...(run.bold === undefined ? {} : { "text.bold": [run.bold] }),
   }
 }

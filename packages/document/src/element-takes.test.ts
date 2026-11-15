@@ -156,7 +156,8 @@ describe("the server admits only the edits the device can write onto an element 
       (field) => `line.${field}`,
     )
     const fill = ["fill.value", "fill.alpha"]
-    const text = ["text.value", "text.alpha"]
+    const body = ["insets", "anchor", "wrap", "autofit", "vertical", "columns"].map((field) => `body.${field}`)
+    const text = [...body, "text.value", "text.alpha"]
     const effects = ["effects.shadow", "effects.glow", "effects.softEdge"]
     expect(takes({ ...facts, kind: "shape" })).toEqual([...drawn, ...fill, ...line, ...effects, ...text])
     expect(takes({ ...facts, kind: "shape", text: false })).toEqual([...drawn, ...fill, ...line, ...effects])
