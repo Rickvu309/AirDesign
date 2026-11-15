@@ -1,4 +1,4 @@
-import { markupDocument, type MarkupElement } from "./element-span.js"
+import { decodedXmlText, markupDocument, type MarkupElement } from "./element-span.js"
 import { partOf, presentationPart, relsOf } from "./package-address.js"
 import { paintColor, type PaintFill, type PaintPalette } from "./paint-color.js"
 import { paintChild, paintFill } from "./paint-fill.js"
@@ -57,6 +57,8 @@ export type PaintElement = {
   table?: PaintTable
   diagram?: readonly PaintElement[]
   chart?: PaintChart
+  name?: string
+  alt?: string
 } & ShapePaint
 
 export type SlidePaint = {
@@ -84,6 +86,15 @@ type Above = {
 }
 
 const slideName = /^ppt\/slides\/[^/]+\.xml$/
+
+const labelOf = (item: Drawn): Pick<PaintElement, "name" | "alt"> => {
+  const name = attr(item.identity, "name")
+  const alt = attr(item.identity, "descr")
+  return {
+    ...(name === null || name === "" ? {} : { name: decodedXmlText(name) }),
+    ...(alt === null || alt === "" ? {} : { alt: decodedXmlText(alt) }),
+  }
+}
 
 const shownAbove = (sheet: Sheet): readonly Drawn[] =>
   sheet.drawn.filter((item) => !item.hidden && item.placeholder === null)
@@ -197,9 +208,12 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
     return held ? { part: target, contentType: contentType(target) } : null
   }
 
-  const imageOf = (sheet: Sheet, item: Drawn): PaintImage | null =>
-    paintImage(paintPictureFill(item.element, sheet.elements, sheet.children), sheet.children, (id) =>
-      picture(sheet.part, id),
+  const imageOf = (sheet: Sheet, item: Drawn, palette: PaintPalette | null = null): PaintImage | null =>
+    paintImage(
+      paintPictureFill(item.element, sheet.elements, sheet.children),
+      sheet.children,
+      (id) => picture(sheet.part, id),
+      palette,
     )
 
   const sheetAbove = (source: string, type: "slideLayout" | "slideMaster"): Above | null => {
@@ -441,7 +455,7 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
             shape: item.shape,
             from: "slide",
             kind: item.kind,
-            image: imageOf(sheet, item),
+            image: imageOf(sheet, item, context.palette),
             box,
             group: item.group,
             placeholder: item.placeholder,
@@ -450,6 +464,7 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
             ...tableOf(item, sheet, scope),
             ...diagramOf(item, box),
             ...frameChart(item.element, sheet.children, slidePart, charts),
+            ...labelOf(item),
             ...paints.get(item)!,
           }
         })

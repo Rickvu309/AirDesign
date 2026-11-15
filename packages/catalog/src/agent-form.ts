@@ -1,19 +1,15 @@
 import {
   alphaOf,
-  bareTransforms,
+  assetIcon,
   bytesOf,
   designBytes,
   designKeys,
   fadedColor,
-  mappedSlots,
+  iconNamePattern,
   namesAlpha,
-  readColor,
   readElementId,
   readTextValue,
-  themeSlots,
-  valuedTransforms,
   type Color,
-  type ColorTransform,
   type Desc,
   type NumberUnit,
   type Design,
@@ -26,10 +22,14 @@ import {
   type GlowRead,
   type IndexElement,
   type Read,
+  type CropRead,
+  type RecolorRead,
   type ShadowRead,
   type Shown,
   type TraitReads,
 } from "@airdesign/document"
+import { agentColor, agentPercent, colorPattern, readAgentColor } from "./agent-color.js"
+import { knownIcon } from "./icon-names.js"
 import { storableText } from "./storable-text.js"
 
 const emuPerPoint = 12_700
@@ -38,24 +38,6 @@ const hundredthsPerPoint = 100
 
 function tenths(value: number): number {
   return Math.round(value * 10) / 10
-}
-
-function percent(value: number): string {
-  return String(Math.round(value / 100) / 10)
-}
-
-function baseOf(color: Color): string {
-  if ("scheme" in color) return color.scheme
-  if ("rgb" in color) return `#${color.rgb}`
-  if ("system" in color) return `#${color.last}`
-  return color.preset
-}
-
-export function agentColor(color: Color): string {
-  const transforms = (color.transforms ?? []).map((transform) =>
-    "val" in transform ? `${transform.op} ${percent(transform.val)}` : transform.op,
-  )
-  return [baseOf(color), ...transforms].join(" ")
 }
 
 function agentFill(fill: FillRead): string {
@@ -77,6 +59,14 @@ function agentShadow(shadow: ShadowRead): string {
 function agentGlow(glow: GlowRead): string {
   const radius = `radius ${String(tenths(glow.radius / emuPerPoint))}`
   return glow.color === null ? radius : `${radius} ${agentColor(glow.color)}`
+}
+
+function agentRecolor(recolor: RecolorRead): string {
+  return recolor === "grayscale" ? recolor : `duotone ${agentColor(recolor.dark)}, ${agentColor(recolor.light)}`
+}
+
+function agentCrop(crop: CropRead): string {
+  return `l ${agentPercent(crop.l)} t ${agentPercent(crop.t)} r ${agentPercent(crop.r)} b ${agentPercent(crop.b)}`
 }
 
 type Agent = { readonly [Key in DesignKey]: (read: NonNullable<TraitReads[Key]>["value"]) => Shown[0] }
@@ -102,6 +92,11 @@ const agent: Agent = {
   "box.rot": (value) => tenths(value / anglePerDegree),
   "box.flipH": (value) => value,
   "box.flipV": (value) => value,
+  "image.source": (value) => value,
+  "image.recolor": agentRecolor,
+  crop: agentCrop,
+  "identity.alt": (value) => value,
+  "identity.hidden": (value) => value,
 }
 
 function shownOf<Key extends DesignKey>(key: Key, read: Read<NonNullable<TraitReads[Key]>["value"]>): Shown {
@@ -133,6 +128,7 @@ type Fill = FieldValue<"fill", "value">
 function agentFillValue(fill: Fill | FieldValue<"line", "fill">): string {
   if ("none" in fill) return "none"
   if ("group" in fill) return "group"
+  if ("picture" in fill) return "picture"
   if ("solid" in fill) return agentColor(fill.solid)
   if ("pattern" in fill) return `pattern ${fill.pattern.preset}`
   return `gradient ${fill.gradient.stops.map((stop) => agentColor(stop.color)).join(", ")}`
@@ -205,6 +201,18 @@ const shadowShown = (shadow: Shadow) => ("none" in shadow ? null : agentShadow(s
 const glowShown = (glow: Glow) => ("none" in glow ? null : agentGlow(glow.halo))
 const softEdgeShown = (soft: SoftEdge) => ("none" in soft ? null : tenths(soft.radius / emuPerPoint))
 
+type Recolor = FieldValue<"image", "recolor">
+
+const recolorShown = (recolor: Recolor) =>
+  "none" in recolor ? null : agentRecolor("grayscale" in recolor ? "grayscale" : recolor.duotone)
+
+const altLength = 60
+
+function altShown(alt: string): string {
+  const trimmed = alt.trim()
+  return trimmed.length > altLength ? `${trimmed.slice(0, altLength - 1)}…` : trimmed
+}
+
 export function foldDesign(design: Design | undefined, patch: ElementPatch): Design | undefined {
   const line = patch.line
   const before = design ?? {}
@@ -224,6 +232,13 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch): Des
   next = folded(next, "body.anchor", patch.body?.anchor, (value) => (value === "t" ? null : value))
   next = folded(next, "body.autofit", patch.body?.autofit, (value) => (value === "none" ? null : value))
   next = folded(next, "body.vertical", patch.body?.vertical, (value) => (value === "horz" ? null : value))
+  next = folded(next, "image.source", patch.image?.source, (value) => assetIcon(value))
+  next = folded(next, "image.recolor", patch.image?.recolor, recolorShown)
+  next = folded(next, "crop", patch.crop?.rect, (value) =>
+    value.l + value.t + value.r + value.b === 0 ? null : agentCrop(value),
+  )
+  next = folded(next, "identity.alt", patch.identity?.alt, (value) => (value.trim() === "" ? null : altShown(value)))
+  next = folded(next, "identity.hidden", patch.identity?.hidden, (value) => (value ? true : null))
   next = faded(next, before, "fill", patch.fill?.value, patch.fill?.alpha)
   next = faded(next, before, "line.fill", line?.fill, line?.alpha)
   next = faded(next, before, "text.color", undefined, patch.text?.alpha)
@@ -261,28 +276,6 @@ const powerPointWidestSlide = 51_206_400
 
 const refused: AgentRead = { ok: false }
 
-const agentNumber = "-?[0-9]+(?:\\.[0-9]+)?"
-function slotPattern(slots: readonly string[]): string {
-  const groups = new Map<string, string[]>()
-  for (const slot of slots) {
-    const [, stem = slot, digit = ""] = /^(.*?)([0-9]?)$/.exec(slot) ?? []
-    groups.set(stem, [...(groups.get(stem) ?? []), digit])
-  }
-  return [...groups]
-    .map(([stem, digits]) => (digits.length > 1 ? `${stem}[${digits.join("")}]` : `${stem}${digits.join("")}`))
-    .join("|")
-}
-
-function valuedPattern(ops: readonly string[]): string {
-  const stems = ops.filter((op) => ops.includes(`${op}Mod`) && ops.includes(`${op}Off`))
-  const single = ops.filter((op) => !stems.some((stem) => [stem, `${stem}Mod`, `${stem}Off`].includes(op)))
-  return [`(?:${stems.join("|")})(?:Mod|Off)?`, ...single].join("|")
-}
-
-export const colorPattern = `(?:#[0-9A-Fa-f]{6}|${slotPattern([...themeSlots, ...mappedSlots])})(?: (?:${valuedPattern(valuedTransforms)}) ${agentNumber}| (?:${bareTransforms.join("|")}))*`
-
-const colorExact = new RegExp(`^${colorPattern}$`)
-
 function plainObject(raw: unknown): raw is Readonly<Record<string, unknown>> {
   return typeof raw === "object" && raw !== null && !Array.isArray(raw)
 }
@@ -296,23 +289,6 @@ function agentRange(desc: NumberDesc): { readonly type: string; readonly minimum
   const low = desc.unit === "emu" ? Math.max(desc.min, -powerPointWidestSlide) : desc.min
   const high = desc.unit === "emu" ? Math.min(desc.max, powerPointWidestSlide) : desc.max
   return { type: desc.unit === "count" ? "integer" : "number", minimum: low / factor, maximum: high / factor }
-}
-
-function bareWord(word: string): boolean {
-  return (bareTransforms as readonly string[]).includes(word)
-}
-
-export function readAgentColor(raw: unknown): Color | null {
-  if (typeof raw !== "string" || !colorExact.test(raw)) return null
-  const [base = "", ...words] = raw.split(" ")
-  const transforms: ColorTransform[] = []
-  for (let at = 0; at < words.length; at += 1) {
-    const op = words[at] ?? ""
-    if (bareWord(op)) transforms.push({ op } as ColorTransform)
-    else transforms.push({ op, val: Math.round(Number(words[(at += 1)]) * 1_000) } as ColorTransform)
-  }
-  const color = base.startsWith("#") ? { rgb: base.slice(1).toUpperCase() } : { scheme: base }
-  return readColor(transforms.length === 0 ? color : { ...color, transforms }) ?? null
 }
 
 function escaped(word: string): string {
@@ -362,9 +338,10 @@ export function agentSchema(desc: Desc): JsonSchema {
       return { type: "boolean", const: true }
     case "words":
       return { type: "string", maxLength: desc.max }
+    case "asset":
+      return { type: "string", pattern: iconNamePattern }
     case "text":
     case "table":
-    case "asset":
     case "node":
       return { type: "string" }
     case "choice":
@@ -463,9 +440,10 @@ export function readAgent(desc: Desc, raw: unknown): AgentRead {
       return raw === true ? { ok: true, value: true } : refused
     case "words":
       return readString(raw, (text) => storableText(text) && bytesOf(text) <= desc.max)
+    case "asset":
+      return readString(raw, knownIcon)
     case "text":
     case "table":
-    case "asset":
       return readString(raw, storableText)
     case "node":
       return readString(raw, (text) => readElementId(text) !== undefined)

@@ -67,6 +67,7 @@ it("shows one Opacity just before the fill, line and text it fades together", ()
     "effects",
     "body",
     "text",
+    "identity",
   ])
   const row = opacityOf(shape, { "fill.alpha": 60_000, "line.alpha": 60_000, "text.alpha": 60_000 })
   expect(row).toMatchObject({ label: "Opacity", control: "percent", value: 60_000, mixed: false, reset: null })

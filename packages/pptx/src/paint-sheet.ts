@@ -40,6 +40,7 @@ export type Drawn = {
   readonly shape: string
   readonly kind: ShapeKind
   readonly hidden: boolean
+  readonly identity: MarkupElement
   readonly group: string | null
   readonly frames: Frames | null
   readonly own: Own
@@ -255,6 +256,7 @@ const drawnIn = (tree: MarkupElement | undefined, children: MarkupChildren): rea
       shape: identity.id,
       kind: element.kind,
       hidden,
+      identity,
       group: visit.group,
       frames: visit.frames,
       own: ownPlacement(children, xfrm),

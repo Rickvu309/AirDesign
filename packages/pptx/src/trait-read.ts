@@ -18,6 +18,7 @@ import {
 import { colorIn, fillIn, fillKinds, fillOf } from "./color-read.js"
 import { child, flag, inside, whole, type Held } from "./markup-held.js"
 import { linkedPart } from "./notes-part.js"
+import { pictureReads } from "./picture-read.js"
 import { paintAttribute } from "./paint-color.js"
 import { layoutMatch, masterMatch, sheetFrom, type Drawn, type Sheet } from "./paint-sheet.js"
 import { effectReads } from "./effect-reads.js"
@@ -363,6 +364,7 @@ export function readTraits(parts: ReadonlyMap<string, Uint8Array>): DeckTraits {
       const placed = transformReads(owners, reads)
       bodyReads(owners, reads)
       textReads(owners, item.placeholder?.type ?? null, chain, fonts, reads)
+      Object.assign(reads, pictureReads(parts, sheet, item))
       const type = item.placeholder?.type
       const role =
         type === undefined

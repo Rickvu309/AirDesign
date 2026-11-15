@@ -18,6 +18,7 @@ import {
 } from "@airdesign/document"
 import type { ReactNode } from "react"
 import { optionWord } from "@/copy/option-copy"
+import { cropChange } from "./crop-change"
 import { opacitySection } from "./opacity-row"
 import { traitControls } from "./trait-controls"
 
@@ -213,8 +214,11 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       const copy = labels.fields[field]
       const own = shown.fields?.[key]?.own === true
       const reset = own && inheritable(trait, field) ? (copy?.reset ?? null) : null
-      const change = (value: unknown) => ({ target: { node: view.node }, [trait]: { [field]: value } }) as SetChange
       const held = shownOf(view, trait, field, shown)
+      const change =
+        key === "crop.rect" && taken.includes("box.w")
+          ? cropChange(view, held.value)
+          : (value: unknown) => ({ target: { node: view.node }, [trait]: { [field]: value } }) as SetChange
       const desc = shownDesc(kind, view.facts.grouped, held.value)
       const label = copy?.label ?? ""
       const caption = label !== labels.section
@@ -227,9 +231,13 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     const visible = lineless(trait, rows) ? rows.filter((row) => row.field === "fill") : rows
     return visible.length === 0 ? [] : [{ trait, label: labels.section ?? "", rows: visible }]
   })
+  const ordered = [
+    ...sections.filter(({ trait }) => trait !== "identity"),
+    ...sections.filter(({ trait }) => trait === "identity"),
+  ]
   const opacity = opacitySection(view, shown)
-  if (opacity === null) return { node: view.node, sections }
+  if (opacity === null) return { node: view.node, sections: ordered }
   const faded = new Set(alphaKeys.map((key) => key.split(".")[0]))
-  const at = sections.findIndex((section) => faded.has(section.trait))
-  return { node: view.node, sections: sections.toSpliced(at < 0 ? sections.length : at, 0, opacity) }
+  const at = ordered.findIndex((section) => faded.has(section.trait))
+  return { node: view.node, sections: ordered.toSpliced(at < 0 ? ordered.length : at, 0, opacity) }
 }

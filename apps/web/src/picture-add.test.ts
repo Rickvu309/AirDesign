@@ -67,7 +67,7 @@ it("adds the picture under the next free id with its hash and media type, and ex
     ),
   )
   const box = { x: 10, y: 20, cx: 300, cy: 200 }
-  const added = pictureCommand(parts, openRegister("", ""), 0, media, box)
+  const added = pictureCommand(parts, openRegister("", ""), 0, { media }, box)
   expect(added).toEqual({
     slide: "element-add",
     id: "256",
@@ -81,5 +81,5 @@ it("adds the picture under the next free id with its hash and media type, and ex
   const shown = exportedParts(parts, register, bytes)
   expect(readShapes(shown).map((shape) => shape.kind)).toEqual(["p:sp", "p:sp", "p:pic"])
   expect([...shown.keys()].filter((name) => name.startsWith("ppt/media/"))).toHaveLength(1)
-  expect(pictureCommand(parts, openRegister("", ""), 3, media, box)).toBeNull()
+  expect(pictureCommand(parts, openRegister("", ""), 3, { media }, box)).toBeNull()
 })

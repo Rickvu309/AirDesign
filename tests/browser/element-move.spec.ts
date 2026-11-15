@@ -242,7 +242,10 @@ test("a picture moves by a drag anywhere on it and keeps the arrows once selecte
   await open(page, join(fixtures, "doe-heat-pumps.pptx"))
   await page.locator('[data-slide-entry="4"]').click()
   const picture = page.locator('[data-canvas-element="ppt/slides/slide4.xml#6"]')
-  await expect(picture).toHaveAttribute("aria-label", "Image")
+  await expect(picture).toHaveAttribute(
+    "aria-label",
+    "A picture containing object, clock\n\nDescription automatically generated",
+  )
   const before = await picture.evaluate((frame: HTMLElement) =>
     [frame.style.left, frame.style.top].map(Number.parseFloat),
   )

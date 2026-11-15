@@ -76,6 +76,12 @@ function colorOf(held: Held, placed: Color | null): Color | null {
   return kept.length === 0 ? base : { ...base, transforms: kept }
 }
 
+export function colorsIn(held: Held, placed: Color | null): readonly (Color | null)[] {
+  return inside(held)
+    .filter((item) => colorKinds.has(item.kind))
+    .map((element) => colorOf({ ...held, element }, placed))
+}
+
 export function colorIn(held: Held | undefined, placed: Color | null): Color | null {
   const element = held === undefined ? undefined : inside(held).find((item) => colorKinds.has(item.kind))
   return held === undefined || element === undefined ? null : colorOf({ ...held, element }, placed)

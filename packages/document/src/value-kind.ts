@@ -1,3 +1,4 @@
+import { readAsset } from "./asset-ref.js"
 import { readColor, type Color, type MappedSlot, type ThemeSlot } from "./color.js"
 import { coordinates } from "./box.js"
 import { readElementId } from "./element-id.js"
@@ -209,9 +210,10 @@ function readDesc(desc: Desc, raw: unknown): unknown {
       return readNamed(desc.item, raw, desc.max)
     case "node":
       return readElementId(raw) ?? unread
+    case "asset":
+      return readAsset(raw) ?? unread
     case "text":
     case "table":
-    case "asset":
       return typeof raw === "string" ? raw : unread
   }
 }

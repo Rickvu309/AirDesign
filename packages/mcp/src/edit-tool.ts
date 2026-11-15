@@ -1,4 +1,11 @@
-import { readAddChange, readAgentEdit, readSetChange, type AgentChange, type WireChange } from "@airdesign/catalog"
+import {
+  closeIcons,
+  readAddChange,
+  readAgentEdit,
+  readSetChange,
+  type AgentChange,
+  type WireChange,
+} from "@airdesign/catalog"
 import { registerScope, type ElementId, type Register } from "@airdesign/document"
 import { call } from "@airdesign/engine"
 import type { Session, ToolResult } from "./call-tool.js"
@@ -39,6 +46,16 @@ function addTurn(session: Session, base: number) {
   } as const
 }
 
+function iconHint(field: string, change: unknown): string {
+  const named = change as { readonly icon?: unknown; readonly image?: { readonly source?: unknown } }
+  const name = field === "icon" ? named.icon : field === "image.source" ? named.image?.source : undefined
+  if (typeof name !== "string") return ""
+  const close = closeIcons(name)
+  const quoted = JSON.stringify(name)
+  if (close.length === 0) return ` No Lucide icon is named ${quoted}, and none is close; try a plainer word.`
+  return ` No Lucide icon is named ${quoted}. Close names: ${close.join(", ")}.`
+}
+
 function fieldDetail(raw: unknown): string | undefined {
   const changes = typeof raw === "object" && raw !== null ? (raw as { readonly changes?: unknown }).changes : undefined
   if (!Array.isArray(changes)) return undefined
@@ -46,7 +63,7 @@ function fieldDetail(raw: unknown): string | undefined {
     const op = typeof change === "object" && change !== null ? (change as { readonly op?: unknown }).op : undefined
     const read = op === "set" ? readSetChange(change) : op === "add" ? readAddChange(change) : undefined
     if (read !== undefined && !read.ok)
-      return `Change ${String(at + 1)}: ${read.field} is missing or has the wrong form.`
+      return `Change ${String(at + 1)}: ${read.field} is missing or has the wrong form.${iconHint(read.field, change)}`
   }
   return undefined
 }

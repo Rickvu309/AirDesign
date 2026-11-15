@@ -1,10 +1,11 @@
-import { colorPattern } from "./agent-form.js"
+import { colorPattern } from "./agent-color.js"
 import { elementReaders } from "./agent-element-wire.js"
 import { slideReaders } from "./agent-slide-wire.js"
 import * as z from "zod/v4"
 
 import { readAgentEdit } from "./edit-wire.js"
 import { readDeckQuery, readListDecks } from "./read-wire.js"
+import { sharedSchemas } from "./shared-schema.js"
 import { readRun, type WireReader } from "./wire.js"
 
 type OpDetails = {
@@ -162,7 +163,8 @@ function sharedColors(schema: unknown): unknown {
 export function toolInputSchema(op: AgentOp): Readonly<Record<string, unknown>> {
   const schema = z.toJSONSchema(catalog[op].read.input, { io: "input" })
   const shared = sharedColors(schema) as Readonly<Record<string, unknown>>
-  return JSON.stringify(shared).includes(colorRef) ? { ...shared, $defs: { color: colorSchema } } : shared
+  const colored = JSON.stringify(shared).includes(colorRef) ? { ...shared, $defs: { color: colorSchema } } : shared
+  return sharedSchemas(colored)
 }
 
 function toolOrder(left: AgentTool<string>, right: AgentTool<string>): number {

@@ -11,6 +11,7 @@ const iconPaths = {
   text: '<path d="M5 6V4.5h14V6M12 4.5v15M9 19.5h6"/>',
   shape: '<rect x="3.5" y="3.5" width="10" height="10" rx="1.5"/><circle cx="15.5" cy="15.5" r="5"/>',
   image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-9 9"/>',
+  icon: '<path d="M12 3.5 14.6 9l5.9.6-4.5 3.9 1.3 5.8L12 16.3l-5.3 3 1.3-5.8-4.5-3.9 5.9-.6z"/>',
   actions:
     '<path d="m7 3 4 4-4 4-4-4z"/><circle cx="17" cy="7" r="3.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.2"/><path d="M17 14v7M13.5 17.5h7"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',

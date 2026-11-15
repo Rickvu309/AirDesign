@@ -3,6 +3,7 @@ import {
   elementStacks,
   foldSections,
   foldSlides,
+  openingIcon,
   presentSlides,
   readTableValue,
   shapeOf,
@@ -89,7 +90,9 @@ function elementAdded(
   if (element === undefined || box === null) throw new Error("box")
   const id = Number(shape)
   if (shown.media !== undefined)
-    return addPicture(parts, part, { id, box, media: shown.media, bytes: media(shown.media.sha256) })
+    return addPicture(parts, part, { id, box, source: { media: shown.media, bytes: media(shown.media.sha256) } })
+  const icon = element.kind === "picture" ? openingIcon(element) : null
+  if (icon !== null) return addPicture(parts, part, { id, box, source: { icon } })
   if (shown.geometry !== undefined)
     return applyStructuralRoute(parts, { name: "spTree.add", part, id, text: "", geometry: shown.geometry, ...box })
   if (element.kind !== "table") return applyRoute(parts, { name: "add", part, id, text: "", ...box })

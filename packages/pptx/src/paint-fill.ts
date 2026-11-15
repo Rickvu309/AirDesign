@@ -50,7 +50,7 @@ export const paintFill = (
     return color === null ? null : { type: "solid", color }
   }
   if (fill.kind === "a:blipFill") {
-    const image = paintImage(fill, children, picture)
+    const image = paintImage(fill, children, picture, palette)
     return image === null ? null : { type: "picture", ...image }
   }
   if (fill.kind === "a:pattFill") {

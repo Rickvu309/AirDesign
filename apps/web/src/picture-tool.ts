@@ -2,6 +2,7 @@ import type { Register } from "@airdesign/document"
 import { readMedia } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
 import { missingPictures, type PictureBytes } from "@/exported-parts"
+import { iconBytes, missingIcons } from "@/icon-fallback"
 import { readPicture, type PictureFile, type PictureRefusal } from "@/picture-add"
 import type { ThinNotice } from "@/thin-notice"
 
@@ -18,17 +19,28 @@ export class PicturesUploading extends Error {
   }
 }
 
-export function pictureStore(read: typeof readMedia = readMedia): PictureStore {
+async function loadIcons(register: Register, bytes: Map<string, Uint8Array>, made: typeof iconBytes): Promise<boolean> {
+  let more = false
+  for (const name of missingIcons(register, bytes)) {
+    const found = await made(name)
+    for (const [part, each] of found ?? []) bytes.set(part, each)
+    more ||= found !== null
+  }
+  return more
+}
+
+export function pictureStore(read: typeof readMedia = readMedia, made: typeof iconBytes = iconBytes): PictureStore {
   const bytes = new Map<string, Uint8Array>()
   return {
     bytes,
     async load(deck, register) {
       if (register === null) return false
+      const icons = await loadIcons(register, bytes, made)
       const missing = missingPictures(register, bytes)
-      if (missing.length === 0) return false
+      if (missing.length === 0) return icons
       const found = await read(deck, missing)
       for (const [sha256, each] of found) bytes.set(sha256, each)
-      return found.size > 0
+      return icons || found.size > 0
     },
     keep(sha256, each) {
       bytes.set(sha256, each)
@@ -38,7 +50,8 @@ export function pictureStore(read: typeof readMedia = readMedia): PictureStore {
 
 export async function exportablePictures(store: PictureStore, deck: string, register: Register): Promise<PictureBytes> {
   await store.load(deck, register)
-  if (missingPictures(register, store.bytes).length > 0) throw new PicturesUploading()
+  if (missingPictures(register, store.bytes).length > 0 || missingIcons(register, store.bytes).length > 0)
+    throw new PicturesUploading()
   return store.bytes
 }
 

@@ -242,7 +242,7 @@ describe("index format", () => {
   })
 
   it("sends the index again when none is stored, it is incomplete, or its format is below this build's", () => {
-    expect(format).toBe(17)
+    expect(format).toBe(22)
     expect(indexDue(undefined)).toBe(true)
     const first = appendIndex(undefined, page)
     if (!first.ok) throw new Error(first.refusal)
@@ -258,7 +258,7 @@ describe("index format", () => {
 
   it("names every key the index stores, so a new key raises the index stamp", () => {
     expect({ stamp: stamps.index, keys: indexKeys }).toEqual({
-      stamp: 3,
+      stamp: 4,
       keys: {
         page: ["format", "once", "offset", "total", "palettes", "slides", "elements"],
         slide: ["id", "position", "size", "free", "animated", "layout", "palette"],

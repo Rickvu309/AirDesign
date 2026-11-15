@@ -1,7 +1,8 @@
 import { elementId, slideId, traitNames, traits, type Desc, type TraitName } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import * as z from "zod/v4"
-import { colorPattern, flat } from "./agent-form.js"
+import { colorPattern } from "./agent-color.js"
+import { flat } from "./agent-form.js"
 import { readAgentEdit, toolInputSchema } from "./index.js"
 import { addChangeSchema, readAddChange, readSetChange, readTarget, setChangeSchema } from "./set-wire.js"
 import { opacityWire } from "./opacity-wire.js"
@@ -102,7 +103,10 @@ describe("readSetChange reads the agent form into a change in stored units", () 
     expect(refused({ box: { x: null } })).toEqual({ ok: false, refusal: "field", field: "box.x" })
     expect(refused({ effects: { glow: 1 } })).toEqual({ ok: false, refusal: "field", field: "effects.glow" })
     expect(refused({ effects: { softEdge: null } })).toEqual({ ok: false, refusal: "field", field: "effects.softEdge" })
-    expect(refused({ crop: { left: 1 } })).toEqual({ ok: false, refusal: "field", field: "crop" })
+    expect(refused({ connection: { start: 1 } })).toEqual({ ok: false, refusal: "field", field: "connection" })
+    expect(refused({ crop: { left: 1 } })).toEqual({ ok: false, refusal: "field", field: "crop.left" })
+    expect(refused({ image: { source: "rocketship" } })).toEqual({ ok: false, refusal: "field", field: "image.source" })
+    expect(refused({ image: { source: "Rocket" } })).toEqual({ ok: false, refusal: "field", field: "image.source" })
     expect(refused({ line: { width: 1585 } })).toEqual({ ok: false, refusal: "field", field: "line.width" })
     expect(refused({ line: { dash: "dotted" } })).toEqual({ ok: false, refusal: "field", field: "line.dash" })
     expect(refused({ box: {} })).toEqual({ ok: false, refusal: "field", field: "box" })
@@ -247,6 +251,10 @@ describe("readAddChange reads a new shape on one slide", () => {
       ok: true,
       change: { op: "add", kind: "shape", slide: slideId("258") },
     })
+    expect(readAddChange({ op: "add", kind: "picture", slide: "258", icon: "rocket" })).toEqual({
+      ok: true,
+      change: { op: "add", kind: "picture", slide: slideId("258"), icon: "rocket" },
+    })
   })
 
   it("wants all four box fields, a size above zero, and a kind it can build", () => {
@@ -257,7 +265,19 @@ describe("readAddChange reads a new shape on one slide", () => {
       refusal: "field",
       field: "box",
     })
-    expect(readAddChange({ ...add, kind: "picture" })).toEqual({ ok: false, refusal: "field", field: "kind" })
+    expect(readAddChange({ ...add, kind: "picture" })).toEqual({ ok: false, refusal: "field", field: "icon" })
+    expect(readAddChange({ ...add, kind: "picture", icon: "rocketship" })).toEqual({
+      ok: false,
+      refusal: "field",
+      field: "icon",
+    })
+    expect(readAddChange({ ...add, kind: "picture", icon: "rocket", text: { value: "x" } })).toEqual({
+      ok: false,
+      refusal: "field",
+      field: "text",
+    })
+    expect(readAddChange({ ...add, icon: "rocket" })).toEqual({ ok: false, refusal: "field", field: "icon" })
+    expect(readAddChange({ ...add, kind: "chart" })).toEqual({ ok: false, refusal: "field", field: "kind" })
     expect(readAddChange({ ...add, slide: "258.2" })).toEqual({ ok: false, refusal: "field", field: "slide" })
     expect(readAddChange({ ...add, line: { width: 1 } })).toEqual({ ok: false, refusal: "field", field: "line" })
     expect(readAddChange({ ...add, box: { x: 1, y: 1, w: 1, h: 1, rot: 90 } })).toEqual({
@@ -325,7 +345,7 @@ describe("the set and add schemas derive from the agent forms", () => {
       const node = value as Readonly<Record<string, unknown>>
       return [node, ...Object.values(node).flatMap(nodes)]
     }
-    expect(schema.$defs).toEqual({ color: { type: "string", pattern: `^${colorPattern}$` } })
+    expect(schema.$defs?.color).toEqual({ type: "string", pattern: `^${colorPattern}$` })
     expect(nodes(schema).filter((node) => node.pattern === `^${colorPattern}$`)).toHaveLength(1)
     expect(nodes(schema).filter((node) => node.$ref === "#/$defs/color").length).toBeGreaterThanOrEqual(10)
     const check = z.fromJSONSchema(schema as Parameters<typeof z.fromJSONSchema>[0])

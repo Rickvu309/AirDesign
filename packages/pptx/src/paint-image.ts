@@ -1,14 +1,45 @@
+import { svgEmbed } from "./blip-edit.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
-import { paintAttribute } from "./paint-color.js"
+import { paintAttribute, paintColor, type PaintColor, type PaintPalette } from "./paint-color.js"
 import type { MarkupChildren } from "./text-value-route.js"
 
 export type PaintCrop = { left: number; top: number; right: number; bottom: number }
+
+export type PaintRecolor = { grayscale: true } | { duotone: readonly [PaintColor, PaintColor] }
 
 export type PaintImage = {
   part: string
   contentType: string | null
   crop: PaintCrop
   tile: boolean
+  alpha?: number
+  recolor?: PaintRecolor
+}
+
+const opaque = 100000
+
+const colorKinds = new Set(["a:schemeClr", "a:srgbClr", "a:sysClr", "a:prstClr", "a:scrgbClr", "a:hslClr"])
+
+const recolorOf = (
+  blip: MarkupElement,
+  children: MarkupChildren,
+  palette: PaintPalette | null,
+): Pick<PaintImage, "recolor"> => {
+  const inside = children[blip.index] ?? []
+  if (inside.some((element) => element.kind === "a:grayscl")) return { recolor: { grayscale: true } }
+  const duotone = inside.find((element) => element.kind === "a:duotone")
+  if (duotone === undefined || palette === null) return {}
+  const colors = (children[duotone.index] ?? []).filter((element) => colorKinds.has(element.kind))
+  const [dark, light] = colors.map((element) => paintColor(element, children, palette))
+  return colors.length !== 2 || dark == null || light == null ? {} : { recolor: { duotone: [dark, light] } }
+}
+
+const alphaOf = (blip: MarkupElement, children: MarkupChildren): Pick<PaintImage, "alpha"> => {
+  const fixed = (children[blip.index] ?? []).find((element) => element.kind === "a:alphaModFix")
+  const amount = fixed === undefined ? null : paintAttribute(fixed, "amt")
+  if (fixed === undefined || (amount !== null && !/^\d+$/.test(amount))) return {}
+  const value = amount === null ? opaque : Math.min(opaque, Number(amount))
+  return value >= opaque ? {} : { alpha: value / opaque }
 }
 
 export type PaintPicture = (id: string) => Pick<PaintImage, "part" | "contentType"> | null
@@ -17,13 +48,15 @@ export const paintImage = (
   fill: MarkupElement | undefined,
   children: MarkupChildren,
   picture: PaintPicture,
+  palette: PaintPalette | null = null,
 ): PaintImage | null => {
   if (fill === undefined) return null
   const inside = children[fill.index] ?? []
   const blip = inside.find((element) => element.kind === "a:blip")
   const id = blip === undefined ? null : paintAttribute(blip, "r:embed")
-  const image = id === null ? null : picture(id)
-  if (image === null) return null
+  const svg = blip === undefined ? null : svgEmbed(children, blip)
+  const image = (svg === null ? null : picture(svg)) ?? (id === null ? null : picture(id))
+  if (image === null || blip === undefined) return null
   const rectangle = inside.find((element) => element.kind === "a:srcRect")
   const side = (name: string): number => {
     const value = rectangle === undefined ? null : paintAttribute(rectangle, name)
@@ -35,6 +68,8 @@ export const paintImage = (
     ...image,
     crop: { left: side("l"), top: side("t"), right: side("r"), bottom: side("b") },
     tile: inside.some((element) => element.kind === "a:tile"),
+    ...alphaOf(blip, children),
+    ...recolorOf(blip, children, palette),
   }
 }
 

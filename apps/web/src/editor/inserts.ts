@@ -5,7 +5,7 @@ import type { CommitOutcome } from "@/commit-edit"
 import type { UndoName } from "@/copy/undo-copy"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import { commitElement, type ElementChange } from "@/element-edit"
-import { commitPicture, type PictureFile } from "@/picture-add"
+import { commitIcon, commitPicture, type PictureFile } from "@/picture-add"
 import type { PictureStore } from "@/picture-tool"
 import type { UndoEntry } from "@/undo-list"
 import { elementNames, stackNames } from "@/undo-names"
@@ -61,5 +61,12 @@ export function deckInserts(deck: InsertingDeck) {
     settle(await commitPicture(id, shownParts.current, picture, at, recordAdded("add-picture")))
   }
 
-  return { changeElement, addText, addShape, addPicture }
+  async function addIcon(name: string) {
+    const slide = canvases.current(current)
+    if (slide === null) return
+    const at = { index: current, slide, keep: pictureTool.store.keep }
+    settle(await commitIcon(id, shownParts.current, name, at, recordAdded("add-icon")))
+  }
+
+  return { changeElement, addText, addShape, addPicture, addIcon }
 }

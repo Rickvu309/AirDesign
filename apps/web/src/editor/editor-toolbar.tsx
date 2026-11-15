@@ -11,10 +11,11 @@ import { cn } from "@/lib/class-names"
 import type { TextFormatting } from "@airdesign/render"
 import { pictureCopy } from "@/copy/picture-copy"
 import { pickPicture } from "@/editor/picture-picker"
+import { IconTool } from "@/editor/icon-tool"
 import { ShapeTool } from "@/editor/shape-tool"
 import type { Geometry } from "@airdesign/document"
 
-export type EditorTool = "move" | "text" | "shape" | "image" | "actions"
+export type EditorTool = "move" | "text" | "shape" | "image" | "icon" | "actions"
 
 export type EditorPanel = "agent" | "design" | "none"
 
@@ -22,6 +23,7 @@ const tools: { tool: Exclude<EditorTool, "move">; icon: EditorIconName }[] = [
   { tool: "text", icon: "text" },
   { tool: "shape", icon: "shape" },
   { tool: "image", icon: "image" },
+  { tool: "icon", icon: "icon" },
   { tool: "actions", icon: "actions" },
 ]
 
@@ -47,6 +49,7 @@ export function EditorToolbar({
   onTable,
   onPicture,
   onShape,
+  onIcon,
 }: {
   activeTool?: EditorTool
   menuOpen?: boolean
@@ -60,6 +63,7 @@ export function EditorToolbar({
   onTable?: () => void
   onPicture?: (file: File) => void
   onShape?: (geometry: Geometry) => void
+  onIcon?: (name: string) => void
 }) {
   const chosen = pointer?.tool ?? "move"
   const shown = pointerTools.find((each) => each.tool === chosen) ?? pointerTools[0]
@@ -122,6 +126,7 @@ export function EditorToolbar({
       {tools.map(({ tool, icon }) => {
         if (tool === "actions" && onTable !== undefined) return <ActionsTool key={tool} onTable={onTable} />
         if (tool === "shape" && onShape !== undefined) return <ShapeTool key={tool} onShape={onShape} />
+        if (tool === "icon" && onIcon !== undefined) return <IconTool key={tool} onIcon={onIcon} />
         const on = pointer === undefined && activeTool === tool
         const run =
           tool === "text"
@@ -129,7 +134,7 @@ export function EditorToolbar({
             : tool === "image" && onPicture !== undefined
               ? () => pickPicture(onPicture)
               : undefined
-        const label = tool === "text" ? "Add text box" : pictureCopy.add
+        const label = tool === "text" ? "Add text box" : tool === "icon" ? pictureCopy.addIcon : pictureCopy.add
         return (
           <Button
             key={tool}

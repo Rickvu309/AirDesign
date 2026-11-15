@@ -105,6 +105,31 @@ export function addTextBox(head: Head, deck: Deck, slide: SlideId, wanted: Box |
   return decided(register, opened.file, { slide: "element-add", id: slide, element, runId }, runId)
 }
 
+export const iconSide = 914_400
+
+export function addIcon(
+  head: Head,
+  deck: Deck,
+  slide: SlideId,
+  icon: string,
+  wanted: Box | undefined,
+  runId: string,
+): Built {
+  const register = deck.register
+  const opened = ready(head, deck, slide, runId)
+  if ("refusal" in opened) return { ok: false, refusal: opened.refusal }
+  const measure = slideMeasure(register, slide)
+  if (measure === undefined || (wanted === undefined && measure.size === undefined)) {
+    return { ok: false, refusal: "dead" }
+  }
+  const size = measure.size ?? { width: 0, height: 0 }
+  const box = wanted ?? placeNewBox(size, takenBoxes(register, slide), { cx: iconSide, cy: iconSide })
+  const node = nextElementId(register, slide, measure.free)
+  const opening = { image: { source: { set: icon } } }
+  const element = { node, kind: "picture", value: null, box, grouped: false, opening } as const
+  return decided(register, opened.file, { slide: "element-add", id: slide, element, runId }, runId)
+}
+
 export function agentElement(op: ElementOp, deck: Deck, caller: Caller, raw: unknown): Built {
   if (caller.actor !== "agent") return { ok: false, refusal: "field" }
   const register = deck.register

@@ -4,10 +4,16 @@ import {
   openRegister,
   planChange,
   registerScope,
+  type AlphaField,
   type Command,
+  type FieldName,
+  type FieldValue,
   type IndexElement,
+  type InheritableField,
   type Kind,
   type Register,
+  type TraitName,
+  type Value,
 } from "@airdesign/document"
 import { indexPackage, paintReader, readPackage, readSlides } from "@airdesign/pptx"
 
@@ -91,3 +97,21 @@ export function sameParts(left: Parts, right: Parts): boolean {
     return other !== undefined && other.length === bytes.length && other.every((byte, at) => byte === bytes[at])
   })
 }
+
+export type FieldProbe<T extends TraitName, F extends FieldName<T>> = {
+  readonly file: (parts: Parts, at: At) => unknown
+  readonly shows: (value: FieldValue<T, F>) => unknown
+} & (F extends InheritableField<T> ? { readonly inherited: (parts: Parts, at: At) => boolean } : unknown)
+
+export type Shown<T extends TraitName> = Exclude<FieldName<T>, AlphaField<T>>
+
+export type Probe<T extends TraitName> = [FieldName<T>] extends [never]
+  ? { readonly fields: Readonly<Record<never, never>> }
+  : {
+      readonly deck: string
+      readonly kind: Kind
+      readonly node?: string
+      readonly opening: (parts: Parts, at: At) => Value
+      readonly edit: (opening: Value, field: Shown<T>, value: FieldValue<T, Shown<T>>) => Value
+      readonly fields: { readonly [F in Shown<T>]-?: FieldProbe<T, F> }
+    }

@@ -39,6 +39,7 @@ export type EditorDeck = {
   readonly onTable?: () => void
   readonly onPicture?: (file: File) => void
   readonly onShape?: (geometry: Geometry) => void
+  readonly onIcon?: (name: string) => void
 }
 
 export type EditorShellProps = {
@@ -179,6 +180,7 @@ export function EditorShell({
               {...(deck?.onTable === undefined ? {} : { onTable: deck.onTable })}
               {...(deck?.onPicture === undefined ? {} : { onPicture: deck.onPicture })}
               {...(deck?.onShape === undefined ? {} : { onShape: deck.onShape })}
+              {...(deck?.onIcon === undefined ? {} : { onIcon: deck.onIcon })}
               {...(onPanel === undefined ? {} : { onPanel })}
             />
           </div>

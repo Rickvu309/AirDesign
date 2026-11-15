@@ -1,3 +1,7 @@
+import { pictureCopy } from "@/copy/picture-copy"
 import type { TraitControls } from "./trait-controls"
 
-export const imageControls: TraitControls<"image"> = { fields: {} }
+export const imageControls: TraitControls<"image"> = {
+  section: pictureCopy.section,
+  fields: { source: { label: pictureCopy.source }, recolor: { label: pictureCopy.recolor } },
+}

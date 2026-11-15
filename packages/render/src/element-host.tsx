@@ -14,6 +14,7 @@ import { canMove, type Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
 import { anchored, flowModes, textLook, type Scaled, type TextLook } from "./text-look.js"
 import { formatKey, keepsFormat, type TextFormatting } from "./text-formatting.js"
+import { PictureTone, pictureLook } from "./picture-tone.js"
 import { unshownFill } from "./unshown-fill.js"
 import { UnshownLabel } from "./unshown-label.js"
 
@@ -120,6 +121,7 @@ export function elementFrame(
     ...rounding(element, scaled),
     pointerEvents: pointer ? "auto" : "none",
     ...(background === null || paintsFillAsSvg(element, scaled) ? {} : { background }),
+    ...pictureLook(element),
   }
 }
 
@@ -144,6 +146,7 @@ function QuietElement(props: {
   return (
     <div data-thumb-element={element.key} style={elementFrame(element, scaled, false, unshown)}>
       <ShapeArt element={element} scaled={scaled} />
+      <PictureTone element={element} />
       <DiagramArt element={element} scaled={scaled} />
       <ChartArt box={element.box} chart={element.chart} described={false} scaled={scaled} />
       {text === null ? null : (
@@ -165,6 +168,7 @@ function SheetElement(props: { readonly element: CanvasElement; readonly scaled:
   return (
     <div data-canvas-element={element.key} style={elementFrame(element, scaled, false, unshown)}>
       <ShapeArt element={element} scaled={scaled} />
+      <PictureTone element={element} />
       <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
       <DiagramArt element={element} scaled={scaled} />
       <ChartArt box={element.box} chart={element.chart} described scaled={scaled} />
@@ -282,11 +286,12 @@ function PlacedText(props: {
             shown,
             moves,
             typing,
-            element.kind === "picture" ? fallbackName : (element.prompt ?? fallbackName),
+            element.label ?? (element.kind === "picture" ? fallbackName : (element.prompt ?? fallbackName)),
           ))}
       {...(typing ? formatReach(formatting, id, moves, element) : {})}
     >
       <ShapeArt element={element} grab={moves !== null && canMove(element)} scaled={scaled} />
+      <PictureTone element={element} />
       <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
       <DiagramArt element={element} scaled={scaled} />
       <ChartArt box={element.box} chart={element.chart} described scaled={scaled} />

@@ -7,6 +7,7 @@ import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { paintAttribute } from "./paint-color.js"
 import type { Sheet } from "./paint-sheet.js"
 import { requireMarkup } from "./part-markup.js"
+import { heldIcon } from "./picture-read.js"
 import { ownersOf, propertiesOf, sheetOf, stylesOf, type Chain } from "./trait-read.js"
 
 export type Fill = FieldValue<"fill", "value">
@@ -131,6 +132,10 @@ export function shownFill(parts: ReadonlyMap<string, Uint8Array>, at: FillAt): S
   const { chain, owners } = owned
   const filled = owners.findIndex((owner) => fillIn(propertiesOf(owner)) !== undefined)
   const held = fillIn(propertiesOf(owners[filled] ?? owners[0]!))
+  if (held !== undefined && held.element.kind === "a:blipFill") {
+    const icon = filled === 0 ? heldIcon(parts, at.part, held) : null
+    return { value: icon === null ? null : { picture: icon }, own: filled === 0 }
+  }
   if (held !== undefined) return { value: fillValueOf(held, null), own: filled === 0 }
   const style = styleReference(owners, chain.theme)
   if (style === "none") return { value: { none: true }, own: false }

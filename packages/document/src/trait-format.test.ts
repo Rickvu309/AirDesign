@@ -3,16 +3,16 @@ import { format, stamps } from "./format.js"
 import { traitNames, traits, type TraitName } from "./traits.js"
 
 const recorded: Readonly<Record<TraitName, readonly string[]>> = {
-  identity: ["5465b825"],
+  identity: ["5465b825", "5ca2d09f"],
   box: ["f180e7a7", "4f9a7811"],
   geometry: ["5465b825", "bd526818"],
-  fill: ["5465b825", "5b43a296", "7ae321c1"],
+  fill: ["5465b825", "5b43a296", "7ae321c1", "a06873f9"],
   line: ["5465b825", "118c2fdf", "db2c2c2c"],
   effects: ["5465b825", "20b46c0f"],
   body: ["5465b825", "fbdbb36e"],
   text: ["7bd8d0c1", "aaea7ede", "aaea7ede"],
-  image: ["5465b825"],
-  crop: ["5465b825"],
+  image: ["5465b825", "ceff7e39"],
+  crop: ["5465b825", "3c06b041"],
   connection: ["5465b825"],
   table: ["248ba3f0"],
   notes: ["d772d0d9"],

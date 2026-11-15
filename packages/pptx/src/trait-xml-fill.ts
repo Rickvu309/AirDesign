@@ -1,5 +1,6 @@
-import { namesAlpha, type Alpha } from "@airdesign/document"
+import { assetIcon, namesAlpha, type Alpha } from "@airdesign/document"
 import { alphaKept, colorsOf, fadedBytes, shownAlpha, type Faded } from "./alpha-codec.js"
+import { partDeclares } from "./blip-edit.js"
 import { insertChild } from "./child-order.js"
 import { colorXml, solidFillXml } from "./color-xml.js"
 import { fillKinds } from "./color-read.js"
@@ -7,10 +8,11 @@ import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.j
 import { inheritedFill, ownBackground, shownFill, type Fill } from "./fill-read.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
+import { blipMarkup, linkedSource } from "./picture-write.js"
 import { shapeById } from "./shape-tree.js"
 import { whole, type ElementAt, type Parts, type TraitXml } from "./xml-codec.js"
 
-type FillTag = "a:noFill" | "a:solidFill" | "a:gradFill" | "a:pattFill" | "a:grpFill"
+type FillTag = "a:noFill" | "a:solidFill" | "a:gradFill" | "a:pattFill" | "a:grpFill" | "a:blipFill"
 
 type Written = { readonly tag: FillTag; readonly xml: string }
 
@@ -27,7 +29,26 @@ function gradientXml(fill: Extract<Fill, { readonly gradient: unknown }>["gradie
   return `<a:gradFill rotWithShape="${flagText(fill.rotateWithShape)}"><a:gsLst>${stops}</a:gsLst>${shade}</a:gradFill>`
 }
 
-export function fillMarkup(fill: Fill): Written {
+type Drawn = Exclude<Fill, { readonly picture: unknown }>
+
+function pictureMarkup(parts: Map<string, Uint8Array>, at: ElementAt, ref: string): Written {
+  const icon = assetIcon(ref)
+  if (icon === null) throw new Error("fill-picture")
+  const linked = linkedSource(parts, at.part, { icon })
+  const blip = blipMarkup(linked, partDeclares(partBytes(parts, at.part)))
+  return {
+    tag: "a:blipFill",
+    xml: `<a:blipFill rotWithShape="1">${blip}<a:stretch><a:fillRect/></a:stretch></a:blipFill>`,
+  }
+}
+
+function writtenValue(parts: Parts, at: ElementAt, value: Fill): Parts {
+  if (!("picture" in value)) return writtenFill(parts, at, fillMarkup(value))
+  const next = new Map(parts)
+  return writtenFill(next, at, pictureMarkup(next, at, value.picture))
+}
+
+export function fillMarkup(fill: Drawn): Written {
   if ("none" in fill) return { tag: "a:noFill", xml: "<a:noFill/>" }
   if ("group" in fill) return { tag: "a:grpFill", xml: "<a:grpFill/>" }
   if ("solid" in fill) return { tag: "a:solidFill", xml: solidFillXml(fill.solid) }
@@ -130,11 +151,8 @@ export const fillXml: TraitXml<"fill"> = {
   slot: null,
   fields: {
     value: whole(
-      alphaKept(
-        { read: shownValue, write: (parts, at, value) => writtenFill(parts, at, fillMarkup(value)) },
-        fillAlpha,
-        fadedFill,
-        (value) => namesAlpha(colorsOf(value)),
+      alphaKept({ read: shownValue, write: writtenValue }, fillAlpha, fadedFill, (value) =>
+        namesAlpha(colorsOf(value)),
       ),
       (parts, at) => writtenFill(parts, at, null),
     ),

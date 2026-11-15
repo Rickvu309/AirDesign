@@ -31,7 +31,7 @@ const ownKinds = slideKinds.join("|")
 const targetPattern = `^(?:[0-9]{1,10}|${slidePart}\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${ownKinds}|${rolePart})|\\*\\.${rolePart})$`
 const roleTarget = new RegExp(`^(${slidePart}|\\*)\\.(${rolePart})$`)
 
-const addable = ["shape"] as const
+const addable = ["shape", "picture"] as const
 const boxSides = { x: "x", y: "y", w: "cx", h: "cy" } as const
 
 function refused(field: string): Refused {
@@ -137,16 +137,28 @@ function readBox(raw: unknown): Box | null {
   return cx > 0 && cy > 0 ? { x, y, cx, cy } : null
 }
 
+const addKeys = {
+  shape: ["op", "kind", "slide", "box", "text"],
+  picture: ["op", "kind", "slide", "box", "icon"],
+} as const
+
 export function readAddChange(raw: unknown): Read<WireAdd> {
   if (!plainObject(raw) || raw.op !== "add") return refused("op")
   const kind = addable.find((each) => each === raw.kind)
   if (kind === undefined) return refused("kind")
   const slide = readSlideId(raw.slide)
   if (slide === undefined) return refused("slide")
-  const extra = Object.keys(raw).find((key) => !["op", "kind", "slide", "box", "text"].includes(key))
+  const keys: readonly string[] = addKeys[kind]
+  const extra = Object.keys(raw).find((key) => !keys.includes(key))
   if (extra !== undefined) return refused(extra)
   const box = raw.box === undefined ? undefined : readBox(raw.box)
   if (box === null) return refused("box")
+  const placed = box === undefined ? {} : { box }
+  if (kind === "picture") {
+    const icon = readAgent(traits.image.fields.source.desc, raw.icon)
+    if (!icon.ok || typeof icon.value !== "string") return refused("icon")
+    return { ok: true, change: { op: "add", kind, slide, ...placed, icon: icon.value } }
+  }
   const text = raw.text === undefined ? undefined : readTrait("text", raw.text)
   if (text !== undefined && !text.ok) return text
   return {
@@ -155,7 +167,7 @@ export function readAddChange(raw: unknown): Read<WireAdd> {
       op: "add",
       kind,
       slide,
-      ...(box === undefined ? {} : { box }),
+      ...placed,
       ...(text === undefined ? {} : { text: text.change }),
     } as WireAdd,
   }
@@ -206,7 +218,7 @@ export function addChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "kind", "slide"],
     description:
-      "Add a text box to one slide. Leave box out to put it in the largest free area of the slide. Its id comes back in elements.",
+      "Add a text box, or with kind picture a Lucide icon, to one slide. Leave box out to put it in the largest free area of the slide. Its id comes back in elements.",
     properties: {
       op: { type: "string", const: "add" },
       kind: { type: "string", enum: addable },
@@ -216,6 +228,10 @@ export function addChangeSchema(): JsonSchema {
         description: "Where the box sits on the slide, in points. Send all four.",
       },
       text: traitSchema("text", null),
+      icon: {
+        ...agentSchema(traits.image.fields.source.desc),
+        description: "With kind picture, an icon name such as rocket.",
+      },
     },
   }
 }

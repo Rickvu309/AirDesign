@@ -3,6 +3,7 @@ import type { Color, Desc } from "@airdesign/document"
 const backdrop: Color = { scheme: "lt1" }
 const downward = 5_400_000
 const seen = { op: "alpha", val: 40_000 } as const
+const startingIcon = "star"
 
 export function caseSeed(key: string, color: Color): unknown {
   switch (key) {
@@ -12,6 +13,10 @@ export function caseSeed(key: string, color: Color): unknown {
       return { radius: 63_500, color: { ...color, transforms: [...(color.transforms ?? []), seen] } }
     case "effects.softEdge.radius":
       return 63_500
+    case "image.recolor.duotone":
+      return { dark: color, light: backdrop }
+    case "fill.value.picture":
+      return startingIcon
     default:
       return undefined
   }

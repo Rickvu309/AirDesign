@@ -1,3 +1,4 @@
+import { assetIcon } from "./asset-ref.js"
 import type { DeckIndex, IndexElement } from "./deck-index.js"
 import { elementId, readElementId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { onlyKeys, record } from "./plain-object.js"
@@ -103,7 +104,13 @@ function addable(command: ElementAdd): boolean {
   if (element.kind === "table") return media === undefined && openedTable(element.value)
   if (element.kind === "shape") return element.value === "" && media === undefined
   const sized = element.box !== null && element.box.cx > 0 && element.box.cy > 0
-  return element.kind === "picture" && element.value === null && sized && media !== undefined
+  const sourced = (media !== undefined) !== (openingIcon(element) !== null)
+  return element.kind === "picture" && element.value === null && sized && sourced
+}
+
+export function openingIcon(element: IndexElement): string | null {
+  const source = element.opening?.image?.source
+  return source !== undefined && typeof source === "object" ? assetIcon(source.set) : null
 }
 
 export function addedPictures(state: SlideState): readonly Media[] {
