@@ -288,10 +288,9 @@ function bodyLook(text: CanvasText, scaled: Scaled): CSSProperties {
     return {
       display: "block",
       flexShrink: 0,
-      maxBlockSize: "100%",
+      ...(text.overflow === true ? { columnFill: "balance" } : { maxBlockSize: "100%", columnFill: "auto" }),
       columnCount: columns,
       columnGap: `${scaled(text.columnGap ?? 0)}px`,
-      columnFill: "auto",
       whiteSpace,
     }
   }

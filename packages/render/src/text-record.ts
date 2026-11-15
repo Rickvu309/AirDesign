@@ -57,4 +57,5 @@ export type CanvasText = {
   readonly columns?: number
   readonly columnGap?: number
   readonly fit?: CanvasFit
+  readonly overflow?: boolean
 }

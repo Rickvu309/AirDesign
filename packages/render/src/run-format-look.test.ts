@@ -134,3 +134,9 @@ it("lets text in columns sit at the body's anchor until it fills the first colum
   expect(body).toMatchObject({ maxBlockSize: "100%", columnFill: "auto" })
   expect(body.blockSize).toBeUndefined()
 })
+
+it("balances text its columns cannot hold below the box instead of adding columns", () => {
+  const body = textLook({ ...text, columns: 2, overflow: true }, scaled).body
+  expect(body).toMatchObject({ columnCount: 2, columnFill: "balance" })
+  expect(body.maxBlockSize).toBeUndefined()
+})
