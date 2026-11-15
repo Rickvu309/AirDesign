@@ -2,6 +2,7 @@ import type { WireEdit, WireSlide } from "@airdesign/catalog"
 import { currentBox, currentValue, decide, version, type Register } from "@airdesign/document"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { installIndexedDb, node } from "./browser-fixtures.js"
+import { newPage } from "./device.js"
 import { connect, deleteDatabase, memoryRemote, type Remote } from "./index.js"
 
 const first = { x: 914400, y: 457200, cx: 1828800, cy: 914400 }
@@ -54,7 +55,18 @@ it("keeps a box on the device, joins successive moves of one box, replays it aft
   expect(shown(confirmed.register)).toEqual({ text: "typed", box: second, version: 2 })
 })
 
-it("stores an agent's box from the server and shows it after the device store is gone", async () => {
+it("keeps the file's text under a box moved on the device once the move is confirmed and the page opens again", async () => {
+  const cache = connect(memoryRemote())
+  expect(await cache.enqueueBox("deck", first, node, "file text")).toEqual({ ok: true, painted: first })
+  expect((await cache.flush("deck")).ok).toBe(true)
+  newPage()
+  const reopened = await cache.openDeck("deck")
+  if (!reopened.ok) throw new Error(reopened.refusal)
+  expect(reopened.phase).toBe("confirmed")
+  expect(shown(reopened.register)).toEqual({ text: "file text", box: first, version: 1 })
+})
+
+it("stores an agent's box from the server with the file's text under it and shows both after the device store is gone", async () => {
   const remote = memoryRemote()
   const opened = await remote.open({ deck: "deck" })
   if (!opened.ok) throw new Error(opened.refusal)
@@ -74,13 +86,14 @@ it("stores an agent's box from the server and shows it after the device store is
   const stored: Remote = { ...remote, open: async () => ({ ...opened, revision: 1, register: moved.register }) }
   const read = await connect(stored).openDeck("deck")
   if (!read.ok) throw new Error(read.refusal)
-  expect(shown(read.register).box).toEqual(first)
+  expect(shown(read.register)).toEqual({ text: "file text", box: first, version: 1 })
   expect(read.confirmed).toEqual([
-    { kind: "confirmed", deck: "deck", revision: 0, property: "box", value: first, node },
+    { kind: "confirmed", deck: "deck", revision: 0, property: "box", value: first, node, floor: "file text" },
   ])
+  newPage()
   const again = await connect(stored).openDeck("deck")
   if (!again.ok) throw new Error(again.refusal)
-  expect(shown(again.register).box).toEqual(first)
+  expect(shown(again.register)).toEqual({ text: "file text", box: first, version: 1 })
 })
 
 it("refuses a box that is not whole and keeps nothing on the device", async () => {

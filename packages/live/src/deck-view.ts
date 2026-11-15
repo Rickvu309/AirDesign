@@ -41,9 +41,11 @@ export function rowsFromRegister(deck: DeckId, register: Register): ConfirmedRow
     const body = register.elements[id]
     if (body === undefined) continue
     const node = id === rootElement ? undefined : id
+    const first = into.length
     for (const landed of body.landed) {
       if (!landed.visible) continue
-      revision = fitConfirmed(deck, revision, landed, node, into)
+      const floor = node !== undefined && into.length === first ? body.floor : ""
+      revision = fitConfirmed(deck, revision, landed, node, into, floor)
     }
   }
   for (const edit of register.order) {
@@ -70,7 +72,7 @@ export function played(deck: DeckId, confirmed: readonly ConfirmedRow[], pending
   const versions = new Map<string, number>()
   const seeded: Queued[] = []
   for (const row of logicalValues(confirmed)) {
-    register = opened(register, row.node, "")
+    register = opened(register, row.node, row.floor ?? "")
     if (row.node !== undefined && !register.nodes.includes(row.node)) continue
     const base = versions.get(row.node ?? "") ?? 0
     versions.set(row.node ?? "", base + 1)

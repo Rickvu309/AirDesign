@@ -38,7 +38,7 @@ function agentRows(): Register {
 it("keeps an agent's row of trait fields as one confirmed row and plays it back on the device", () => {
   const rows = rowsFromRegister(deck, agentRows())
   expect(rows).toEqual([
-    { kind: "confirmed", deck, revision: 0, node, v: format, patch: { box: { x: { set: 5 } } } },
+    { kind: "confirmed", deck, revision: 0, node, v: format, patch: { box: { x: { set: 5 } } }, floor: "file" },
     { kind: "confirmed", deck, revision: 1, node, v: format, patch: { text: { value: { set: "set" } } } },
   ])
   const index = agentRows().index
