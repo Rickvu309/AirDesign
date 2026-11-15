@@ -16,6 +16,7 @@ import {
   TemplatePickerScreen,
   TextFormatScreen,
   TextScreen,
+  Unreached,
 } from "@/editor/screens/slide-views"
 import { GridAddHold, GridAddHover, GridDefault, GridPasted } from "@/editor/screens/grid-views"
 
@@ -40,4 +41,5 @@ export const screens = {
   [editorRoutes.runFailed]: RunFailed,
   [editorRoutes.offline]: Offline,
   [editorRoutes.setAside]: SetAside,
+  [editorRoutes.unreached]: Unreached,
 }

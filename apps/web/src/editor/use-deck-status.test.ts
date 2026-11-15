@@ -1,16 +1,30 @@
 import { expect, it } from "vitest"
 import { shownNotice } from "@/editor/use-deck-status"
 
-const quiet = { failure: null, told: null, picture: null, offline: false, pending: false, aside: 0 } as const
+const quiet = {
+  failure: null,
+  told: null,
+  picture: null,
+  online: true,
+  offline: false,
+  pending: false,
+  aside: 0,
+} as const
 
 it("shows nothing when the deck is saved", () => {
   expect(shownNotice(quiet)).toBe(null)
 })
 
-it("says offline only while an edit waits to send", () => {
+it("says offline only while an edit waits to send with the browser offline", () => {
+  const away = { ...quiet, online: false }
+  expect(shownNotice({ ...away, offline: true })).toBe(null)
+  expect(shownNotice({ ...away, pending: true })).toBe(null)
+  expect(shownNotice({ ...away, offline: true, pending: true })).toBe("offline")
+})
+
+it("says AirDesign cannot be reached while an edit waits to send with the browser online", () => {
   expect(shownNotice({ ...quiet, offline: true })).toBe(null)
-  expect(shownNotice({ ...quiet, pending: true })).toBe(null)
-  expect(shownNotice({ ...quiet, offline: true, pending: true })).toBe("offline")
+  expect(shownNotice({ ...quiet, offline: true, pending: true })).toBe("unreached")
 })
 
 it("says which way undo changed nothing", () => {
@@ -27,6 +41,7 @@ it("puts a failure before undo, undo before a picture, a picture before set-asid
     failure: "export-failed",
     told: "undo",
     picture: "picture-type",
+    online: false,
     offline: true,
     pending: true,
     aside: 1,

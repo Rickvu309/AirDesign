@@ -1,7 +1,7 @@
 import { rootElement, type NodeRegister, type Register } from "@airdesign/document"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { installIndexedDb, node } from "./browser-fixtures.js"
-import { deleteDatabase, memoryRemote } from "./index.js"
+import { deleteDatabase, httpRemote, memoryRemote } from "./index.js"
 
 beforeEach(() => {
   installIndexedDb()
@@ -86,6 +86,26 @@ describe("live cache", () => {
     expect(settled).toBe(false)
     expect(await remote.open({ deck: "deck" })).toMatchObject({ ok: true, revision: 0 })
     expect(await waiting).toEqual({ ok: true, deck: "deck", revision: 0 })
+  })
+})
+
+describe("http remote", () => {
+  const sent = { deck: "deck", batch: [{ value: "hi", node }] }
+
+  it.each([502, 503, 504])(
+    "reads a %i answer as no answer from AirDesign, as when the network drops",
+    async (status) => {
+      vi.stubGlobal("fetch", async () => new Response("<html><body>Bad gateway</body></html>", { status }))
+      await expect(httpRemote().commit(sent)).rejects.toBeInstanceOf(TypeError)
+      await expect(httpRemote().watch({ deck: "deck", cursor: 0 })).rejects.toBeInstanceOf(TypeError)
+    },
+  )
+
+  it("reads any other failed answer as the server's answer", async () => {
+    vi.stubGlobal("fetch", async () => new Response("boom", { status: 500 }))
+    expect(await httpRemote().commit(sent)).toEqual({ ok: false, refusal: "payload" })
+    vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ ok: false, refusal: "server" }), { status: 500 }))
+    expect(await httpRemote().commit(sent)).toEqual({ ok: false, refusal: "server" })
   })
 })
 

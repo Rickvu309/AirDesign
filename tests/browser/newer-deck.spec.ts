@@ -61,7 +61,7 @@ test("a deck a newer build stored asks the person to reload and sends nothing", 
   await page.locator('[contenteditable="true"]').click()
   await page.keyboard.press("End")
   await page.keyboard.type(" there")
-  await expect(page.getByText("You're offline. Edits are saved on this device.")).toBeVisible()
+  await expect(page.getByText("Unable to reach AirDesign. Edits are saved on this device.")).toBeVisible()
 
   expect(await newerBuildQueues(page, format + 1)).toContain("258.slide")
   commits.length = 0

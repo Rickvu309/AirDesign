@@ -6,7 +6,7 @@ export const followPause = 2000
 
 const ending: ReadonlySet<string> = new Set(["session", "owner", "deleted", "deck"])
 
-function pause(ms: number, signal: AbortSignal): Promise<void> {
+export function pause(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
     const timer = setTimeout(resolve, ms)
     signal.addEventListener(

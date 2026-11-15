@@ -170,6 +170,31 @@ test("opening an existing deck from the deck list through the first typed edit o
   expect(asked.filter((path) => path === "/decks/open").slice(before)).toHaveLength(1)
 })
 
+test("an edit made while the server cannot be reached lands once it answers again, with no new edit", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  const deck = await openClean(page)
+  await typeOver(page, typed)
+  await confirmedText(page, typed)
+  const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
+  const before = await revision()
+  const unreachable = (url: URL) => url.pathname.startsWith("/decks/")
+  await page.route(unreachable, (route) => route.abort("connectionfailed"))
+  await typeOver(page, "Kept on this device")
+  await expect(page.getByText(/Edits are saved on this device/)).toBeVisible()
+  expect(await revision()).toBe(before)
+  await page.unroute(unreachable)
+  await expect.poll(revision, { timeout: 15_000 }).toBeGreaterThan(before)
+  await confirmedText(page, "Kept on this device")
+  expect(textsIn((await stack.saved(deck))?.register ?? { elements: {} })).toEqual(["Kept on this device"])
+  await expect(page.getByText(/Edits are saved on this device/)).toHaveCount(0)
+})
+
 test("a typed edit lands in Postgres and comes back from the server", async ({ page, context, stack }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
