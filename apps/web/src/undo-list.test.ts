@@ -14,7 +14,7 @@ import {
   type Undoable,
 } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { emptyUndo, recorded, recordsInFlight, turnBack, undoLabel, type UndoLink } from "./undo-list"
+import { emptyUndo, recorded, recordsInFlight, shownOf, turnBack, undoLabel, type UndoLink } from "./undo-list"
 
 const node = elementId("256.2")
 const file = [slideId("256"), slideId("257")] as const
@@ -109,7 +109,7 @@ describe("undo list", () => {
     const turned = await turnBack(deck.link, "deck", recorded(emptyUndo, both), "undo")
     expect(turned.outcome).toBe("turned")
     expect(deck.sent).toEqual(["text Old", "text Old"])
-    expect(undoLabel("redo", turned.list)).toBe("Redo text format")
+    expect(undoLabel("redo", shownOf(turned.list, null))).toBe("Redo text format")
   })
 
   it("sends a fill step through the row queue, back to the opening fill and forward again", async () => {
@@ -123,7 +123,7 @@ describe("undo list", () => {
     expect(undone.outcome).toBe("turned")
     await turnBack(deck.link, "deck", undone.list, "redo")
     expect(deck.sent).toEqual([`row {"fill":{"value":"opening"}}`, `row ${JSON.stringify(after)}`])
-    expect(undoLabel("undo", recorded(emptyUndo, fill))).toBe("Undo fill")
+    expect(undoLabel("undo", shownOf(recorded(emptyUndo, fill), null))).toBe("Undo fill")
   })
 
   it("has nothing to undo on an empty list", async () => {
@@ -191,12 +191,12 @@ describe("undo list", () => {
     const addBox = { name: "add-box", undoable: undoableOf(edited(), add) } as const
     const deleted = { name: "delete-element", undoable: undoableOf(added, remove) } as const
     const list = recorded(recorded(emptyUndo, addBox), deleted)
-    expect(undoLabel("undo", list)).toBe("Undo delete element")
+    expect(undoLabel("undo", shownOf(list, null))).toBe("Undo delete element")
     const first = await turnBack(deck.link, "deck", list, "undo")
-    expect(undoLabel("undo", first.list)).toBe("Undo add text box")
-    expect(undoLabel("redo", first.list)).toBe("Redo delete element")
+    expect(undoLabel("undo", shownOf(first.list, null))).toBe("Undo add text box")
+    expect(undoLabel("redo", shownOf(first.list, null))).toBe("Redo delete element")
     const second = await turnBack(deck.link, "deck", first.list, "undo")
-    expect(undoLabel("redo", second.list)).toBe("Redo add text box")
+    expect(undoLabel("redo", shownOf(second.list, null))).toBe("Redo add text box")
     const third = await turnBack(deck.link, "deck", second.list, "redo")
     expect(third.outcome).toBe("turned")
     expect(deck.sent).toEqual(["slide element-restore", "slide element-remove", "slide element-restore"])
@@ -226,11 +226,15 @@ describe("undo list", () => {
   })
 
   it("names the edit each button undoes or redoes", () => {
-    expect(undoLabel("undo", recorded(emptyUndo, { ...textEdit, name: "notes" }))).toBe("Undo speaker notes edit")
-    expect(undoLabel("undo", emptyUndo)).toBe("Undo")
-    expect(undoLabel("redo", emptyUndo)).toBe("Redo")
-    expect(undoLabel("undo", recorded(emptyUndo, textEdit))).toBe("Undo text edit")
-    expect(undoLabel("redo", { undo: [], redo: [{ ...textEdit, name: "delete" }] })).toBe("Redo delete slide")
+    expect(undoLabel("undo", shownOf(recorded(emptyUndo, { ...textEdit, name: "notes" }), null))).toBe(
+      "Undo speaker notes edit",
+    )
+    expect(undoLabel("undo", shownOf(emptyUndo, null))).toBe("Undo")
+    expect(undoLabel("redo", shownOf(emptyUndo, null))).toBe("Redo")
+    expect(undoLabel("undo", shownOf(recorded(emptyUndo, textEdit), null))).toBe("Undo text edit")
+    expect(undoLabel("redo", shownOf({ undo: [], redo: [{ ...textEdit, name: "delete" }] }, null))).toBe(
+      "Redo delete slide",
+    )
   })
 
   it("lands only once every edit still being recorded is recorded", async () => {
