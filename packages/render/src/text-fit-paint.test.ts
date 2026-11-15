@@ -34,11 +34,16 @@ const box = (text: CanvasText, height: number): CanvasElement => ({
   text,
 })
 
+let fontWidth = 1
+
 const laidOut = (node: HTMLElement): number => {
   if (node.dataset.textBody === undefined) return 0
-  return [...node.querySelectorAll<HTMLElement>("[data-paragraph] > span")].reduce(
-    (sum, span) => sum + Number.parseFloat(span.style.fontSize) * Number.parseFloat(span.style.lineHeight),
-    0,
+  return (
+    fontWidth *
+    [...node.querySelectorAll<HTMLElement>("[data-paragraph] > span")].reduce(
+      (sum, span) => sum + Number.parseFloat(span.style.fontSize) * Number.parseFloat(span.style.lineHeight),
+      0,
+    )
   )
 }
 
@@ -71,6 +76,8 @@ const roots: ReturnType<typeof createRoot>[] = []
 
 afterEach(async () => {
   for (const root of roots.splice(0)) await act(async () => root.unmount())
+  fontWidth = 1
+  Reflect.deleteProperty(document, "fonts")
 })
 
 async function painted(text: CanvasText, height = 100) {
@@ -125,4 +132,16 @@ it("grows a box to fit its text from the edge its text holds to", async () => {
   expect(frame(middle)?.style.top).toBe("190px")
   const bottom = await painted(lines({ kind: "grow" }, "bottom"))
   expect(frame(bottom)?.style.top).toBe("180px")
+})
+
+it("fits its text again once a font that was still loading arrives", async () => {
+  const fonts = new EventTarget()
+  Object.defineProperty(document, "fonts", { configurable: true, value: fonts })
+  fontWidth = 1.3
+  const host = await painted(lines({ kind: "shrink", scale: 1, reduction: 0 }))
+  expect(firstRun(host)?.style.fontSize).not.toBe("10px")
+  fontWidth = 1
+  await act(async () => fonts.dispatchEvent(new Event("loadingdone")))
+  expect(firstRun(host)?.style.fontSize).toBe("10px")
+  expect(firstRun(host)?.style.lineHeight).toBe("0.96")
 })

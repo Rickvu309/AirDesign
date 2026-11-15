@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react"
+import { useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type RefObject } from "react"
 import type { CanvasElement } from "./record.js"
 import type { CanvasFit, CanvasParagraph, CanvasRunStyle, CanvasSpacing, CanvasText } from "./text-record.js"
 import type { PaintBox } from "./paint-box.js"
@@ -68,8 +68,35 @@ export function measured(text: CanvasText | null): boolean {
   return text?.fit !== undefined && (text.flow ?? "horz") === "horz" && (text.columns ?? 1) === 1
 }
 
+let fontLoads = 0
+const fontWatchers = new Set<() => void>()
+
+function fontsLoaded(): void {
+  fontLoads += 1
+  for (const watcher of fontWatchers) watcher()
+}
+
+function fontSet(): FontFaceSet | undefined {
+  return typeof document === "undefined" ? undefined : (document.fonts as FontFaceSet | undefined)
+}
+
+function watchFonts(watcher: () => void): () => void {
+  const fonts = fontSet()
+  if (fonts === undefined) return () => {}
+  if (fontWatchers.size === 0) fonts.addEventListener("loadingdone", fontsLoaded)
+  fontWatchers.add(watcher)
+  return () => {
+    fontWatchers.delete(watcher)
+    if (fontWatchers.size === 0) fonts.removeEventListener("loadingdone", fontsLoaded)
+  }
+}
+
+const fontLoadsNow = () => fontLoads
+const noFontLoads = () => 0
+
 type Fitting = {
   readonly text: CanvasText | null
+  readonly fonts: number
   readonly written: string
   readonly width: number
   readonly height: number
@@ -81,6 +108,7 @@ const tolerance = 0.5
 
 const sameFor = (fitting: Fitting, other: Fitting) =>
   fitting.text === other.text &&
+  fitting.fonts === other.fonts &&
   fitting.written === other.written &&
   fitting.width === other.width &&
   fitting.height === other.height
@@ -108,8 +136,10 @@ export function useTextFit(
   const layer = useRef<HTMLDivElement>(null)
   const { box, text } = element
   const fit = text?.fit
+  const fonts = useSyncExternalStore(watchFonts, fontLoadsNow, noFontLoads)
   const now: Fitting = {
     text,
+    fonts,
     written,
     width: box === null ? 0 : scaled(box.width),
     height: box === null ? 0 : scaled(box.height),
