@@ -1,5 +1,6 @@
 import type { DeckIndex, IndexElement } from "./deck-index.js"
 import { readSlideId, slideId, type SlideId } from "./element-id.js"
+import { groupCommand, groupRefusal, readGroupCommand, type GroupCommand } from "./element-group.js"
 import { elementCommand, elementRefusal, readElementCommand, type ElementCommand } from "./element-order.js"
 import { readElementOrder, stackRefusal } from "./element-stack.js"
 import { limits } from "./limits.js"
@@ -50,6 +51,7 @@ export type SlideCommand = (
   | SlideRestore
   | SlideBackground
   | ElementCommand
+  | GroupCommand
 ) & {
   readonly runId?: string
 }
@@ -112,7 +114,7 @@ export function foldSlides(state: SlideState): readonly FoldedSlide[] {
     spots.set(id, { id, key, birth: { from: "file" }, present: true })
   }
   for (const command of state.order) {
-    if (elementCommand(command)) continue
+    if (elementCommand(command) || groupCommand(command)) continue
     if (command.slide === "add") {
       spots.set(command.id, {
         id: command.id,
@@ -197,6 +199,12 @@ export function applySlide(
     if (refusal !== null) return { ok: false, code: refusal }
     return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
   }
+  if (groupCommand(command)) {
+    if (!ids.has(command.id)) return { ok: false, code: "dead" }
+    const refusal = groupRefusal({ ...withFile, ...index(state) }, command)
+    if (refusal !== null) return { ok: false, code: refusal }
+    return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
+  }
   if (command.slide === "background") {
     if (!ids.has(command.id)) return { ok: false, code: "dead" }
     return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
@@ -251,6 +259,8 @@ function commandOf(raw: Record<string, unknown>): SlideCommand | undefined {
   if (raw.slide === "element-order") return readElementOrder(raw, id)
   if (raw.slide === "element-add" || raw.slide === "element-remove" || raw.slide === "element-restore")
     return readElementCommand(raw, id)
+  if (raw.slide === "element-group" || raw.slide === "element-ungroup" || raw.slide === "element-regroup")
+    return readGroupCommand(raw, id)
   if (raw.slide === "background") return readBackground(raw, id)
   if (raw.slide === "remove") return { slide: "remove", id }
   const key = readOrderKey(raw.key)

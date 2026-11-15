@@ -250,7 +250,9 @@ test("typing and a nudge on a new slide paint before the network and stay when i
   await expect(added).toHaveText("Offline line")
 })
 
-test("text inside a group on a duplicated slide shows no handles and does not move", async ({ page }) => {
+test("text inside a group on a duplicated slide picks its group first, then shows no handles and does not move", async ({
+  page,
+}) => {
   await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(join(fixtures, "census-updating-spm.pptx"))
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
@@ -263,6 +265,9 @@ test("text inside a group on a duplicated slide shows no handles and does not mo
   await expect(text).toHaveCount(1)
   await text.click()
   await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveCount(1)
+  await expect(page.locator("[data-slide-paint] [data-grip]")).not.toHaveCount(0)
+  await text.click()
+  await expect(text).toBeFocused()
   await expect(page.locator("[data-slide-paint] [data-grip]")).toHaveCount(0)
   await page.keyboard.press("Escape")
   await page.keyboard.press("ArrowRight")

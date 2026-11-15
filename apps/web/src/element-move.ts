@@ -3,7 +3,7 @@ import { applyRoute, type ReadShape } from "@airdesign/pptx"
 import { boxOf, type PaintBox } from "@airdesign/render"
 import { newSlideElement } from "@/exported-parts"
 
-const movableKinds: ReadonlySet<ReadShape["kind"]> = new Set(["p:sp", "p:pic", "p:cxnSp"])
+const movableKinds: ReadonlySet<ReadShape["kind"]> = new Set(["p:sp", "p:pic", "p:cxnSp", "p:grpSp"])
 
 export function boxStorable(parts: ReadonlyMap<string, Uint8Array>, shape: ReadShape): boolean {
   if (!movableKinds.has(shape.kind) || shape.locked || shape.grouped) return false

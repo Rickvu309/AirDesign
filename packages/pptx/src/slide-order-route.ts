@@ -3,11 +3,11 @@ import {
   elementStacks,
   foldSections,
   foldSlides,
+  groupCommand,
   openingIcon,
   presentSlides,
   readTableValue,
   shapeOf,
-  type DeckIndex,
   type ElementCommand,
   type Geometry,
   type IndexElement,
@@ -27,6 +27,7 @@ import { layoutPart, withLayoutPlaceholders } from "./slide-placeholders.js"
 import { arrangeSlide, stacksOf } from "./element-stack-route.js"
 import { applyRoute } from "./slide-route.js"
 import { applyStructuralRoute } from "./structural-route.js"
+import { groupsReplayed, type GroupedState } from "./group-route.js"
 
 function idsOf(parts: ReadonlyMap<string, Uint8Array>): string[] {
   return slideAddresses(parts).map((address) => address.slide)
@@ -114,19 +115,30 @@ function elementsShown(
   slide: string,
   shapes: ReadonlyMap<string, Shown> | undefined,
   media: MediaBytes,
+  now: boolean,
 ): ReadonlyMap<string, Uint8Array> {
   const part = slidePart(parts, slide)
   if (part === null) throw new Error("slide")
   let next = parts
   for (const [shape, shown] of shapes ?? []) {
-    if (shown.start === shown.now) continue
-    if (!shown.now) {
-      next = applyRoute(next, { name: "remove", part, shape })
-      continue
-    }
-    next = elementAdded(next, part, shape, shown, media)
+    if (shown.start === shown.now || shown.now !== now) continue
+    next = now ? elementAdded(next, part, shape, shown, media) : applyRoute(next, { name: "remove", part, shape })
   }
   return next
+}
+
+function slideShown(
+  parts: ReadonlyMap<string, Uint8Array>,
+  minted: string,
+  from: SlideId,
+  state: GroupedState,
+  upTo: number,
+  shapes: ReadonlyMap<string, Shown> | undefined,
+  media: MediaBytes,
+): ReadonlyMap<string, Uint8Array> {
+  const added = elementsShown(parts, minted, shapes, media, true)
+  const grouped = groupsReplayed(added, minted, from, state, upTo)
+  return elementsShown(grouped, minted, shapes, media, false)
 }
 
 function needed(state: SlideState): ReadonlySet<SlideId> {
@@ -175,7 +187,7 @@ const noMedia: MediaBytes = () => undefined
 
 export function orderedParts(
   parts: ReadonlyMap<string, Uint8Array>,
-  state: SlideState & { readonly index?: DeckIndex },
+  state: GroupedState,
   media: MediaBytes = noMedia,
 ): ReadonlyMap<string, Uint8Array> {
   if (state.order.length === 0) return parts
@@ -202,7 +214,7 @@ export function orderedParts(
     const id = createdId(before, idsOf(next))
     minted.set(command.id, id)
     if (command.slide === "clone") {
-      next = elementsShown(next, id, pending.get(command.source), media)
+      next = slideShown(next, id, command.source, state, at + 1, pending.get(command.source), media)
       const prefix = {
         file: state.file,
         order: state.order.slice(0, at + 1),
@@ -214,7 +226,12 @@ export function orderedParts(
     const born = slidePart(next, id)
     if (born !== null && layout !== null) next = withLayoutPlaceholders(next, born, layout)
   }
-  for (const [slide, shapes] of pending) next = elementsShown(next, minted.get(slide) ?? "", shapes, media)
+  const shaped = new Set<SlideId>([...pending.keys(), ...state.order.filter(groupCommand).map((command) => command.id)])
+  for (const slide of shaped) {
+    const id = minted.get(slide)
+    if (id === undefined || !kept.has(slide)) continue
+    next = slideShown(next, id, slide, state, state.order.length, pending.get(slide), media)
+  }
   if (state.order.some((command) => command.slide === "element-order")) {
     const stacks = elementStacks(state)
     for (const spot of presentSlides(state)) {

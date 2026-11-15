@@ -47,6 +47,7 @@ it("indexes stable slide ids, group children, table kinds, text floors, and open
       value: writeTextValue([{ from: 0, runs: [{ from: 0, text: "Title" }] }]),
       box: { x: 1, y: 2, cx: 3, cy: 4 },
       grouped: true,
+      group: elementId("258.2"),
     },
     { node: elementId("258.4"), kind: "table", value: null, box: null, grouped: false },
   ])

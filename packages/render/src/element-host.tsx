@@ -1,6 +1,6 @@
 import { type CSSProperties, type FocusEvent, type KeyboardEvent, type PointerEvent } from "react"
 import type { ElementId, TableChange } from "@airdesign/document"
-import { paintedAt } from "./box-gesture.js"
+import { followed, paintedAt } from "./box-gesture.js"
 import { useBox, useElement } from "./element-view.js"
 import { paragraphText, textValue } from "./paragraph-edit.js"
 import { framedOutline, Passage } from "./passage.js"
@@ -92,8 +92,12 @@ function nameOf(text: string, fallback: string): string {
   )
 }
 
+function grabbed(element: CanvasElement): boolean {
+  return canMove(element) || element.group !== undefined
+}
+
 function takesPointer(element: CanvasElement, text: string, moving: boolean, drawnWhenBlank: boolean): boolean {
-  const movable = moving && canMove(element)
+  const movable = moving && grabbed(element)
   if (!element.editable && !movable) return false
   const drawn = movable && drawnWhenBlank
   return drawn || element.placeholder || element.filled || element.box === null || !isBlank(text)
@@ -254,7 +258,10 @@ function PlacedText(props: {
 }) {
   const { drawnWhenBlank, fallbackName, formatting, id, moves, onEdit, scaled, store, unshown } = props
   const record = useElement(store, id)
-  const box = paintedAt(props.element.box, useBox(store, id))
+  const group = props.element.group
+  const carried = useBox(store, group?.id ?? id)
+  const own = paintedAt(props.element.box, useBox(store, id))
+  const box = group === undefined ? own : followed(own, group.box, carried)
   const element = box === props.element.box ? props.element : { ...props.element, box }
   const text = element.text ?? noText
   const look = textLook(text, scaled)
@@ -276,7 +283,7 @@ function PlacedText(props: {
       style={{
         ...elementFrame(element, scaled, takesPointer(element, shown, moves !== null, drawnWhenBlank), unshown),
         ...promptOutline,
-        ...(moves === null || typing || !canMove(element) ? {} : { cursor: "move", touchAction: "none" }),
+        ...(moves === null || typing || !grabbed(element) ? {} : { cursor: "move", touchAction: "none" }),
       }}
       {...(moves === null
         ? {}
@@ -290,7 +297,7 @@ function PlacedText(props: {
           ))}
       {...(typing ? formatReach(formatting, id, moves, element) : {})}
     >
-      <ShapeArt element={element} grab={moves !== null && canMove(element)} scaled={scaled} />
+      <ShapeArt element={element} grab={moves !== null && grabbed(element)} scaled={scaled} />
       <PictureTone element={element} />
       <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
       <DiagramArt element={element} scaled={scaled} />

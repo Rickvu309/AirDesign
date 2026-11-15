@@ -203,13 +203,18 @@ test("a move made offline is kept on the device and sent when the page comes bac
   expect(sent).toEqual([{ node: "256.2", property: "box", value: moved, floor: expect.any(String) }])
 })
 
-test("text inside a group can be typed in but shows no handles and does not move", async ({ page }) => {
+test("a first press on text inside a group picks the group, and the next types in it with no handles or move", async ({
+  page,
+}) => {
   await open(page, join(fixtures, "census-updating-spm.pptx"))
   await page.locator('[data-slide-entry="5"]').click()
   const text = page.locator('[contenteditable="true"]').filter({ hasText: /^2026$/ })
   await expect(text).toHaveCount(1)
   await text.click()
   await expect(page.locator("[data-selection]")).toHaveCount(1)
+  await expect(page.locator("[data-grip]")).not.toHaveCount(0)
+  await text.click()
+  await expect(text).toBeFocused()
   await expect(page.locator("[data-grip]")).toHaveCount(0)
   await page.keyboard.press("Escape")
   await page.keyboard.press("ArrowRight")

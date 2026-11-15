@@ -147,8 +147,9 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
         parts={editParts.current}
         slide={canvas}
         onOrder={orderElement}
+        onGroup={changeElement}
       >
-        {({ notice, order, clear }) => (
+        {({ notice, order, group, choose, clear }) => (
           <SlideCanvas
             className="overflow-clip rounded-[2px] focus-within:overflow-visible"
             entering={entering}
@@ -160,6 +161,15 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
             }}
             onOrder={order}
             onSelect={select}
+            onChoose={choose}
+            onGroup={(nodes) => {
+              clear()
+              group({ change: "group", nodes })
+            }}
+            onUngroup={(node) => {
+              clear()
+              group({ change: "ungroup", node })
+            }}
             onRemove={(target) => {
               clear()
               void holding(target, () => changeElement({ change: "remove", node: target }))

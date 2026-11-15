@@ -21,6 +21,7 @@ import { boxOf, type PaintBox } from "@airdesign/render"
 import { toast } from "sonner"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { elementCopy, type RemovalRefusal } from "@/copy/element-copy"
+import { commitGroup, type GroupChange } from "@/editor/group-actions"
 import { slideBase } from "@/exported-parts"
 import { fileSlides } from "@/slide-edit"
 
@@ -41,6 +42,7 @@ export type ElementChange =
   | { readonly change: "shape"; readonly geometry: Geometry; readonly index: number; readonly size: SlideRoom }
   | { readonly change: "remove"; readonly node: ElementId }
   | { readonly change: "order"; readonly node: ElementId; readonly move: StackMove }
+  | GroupChange
 
 export function takenBoxes(room: SlideRoom): readonly Box[] {
   return (room.elements ?? []).flatMap((each) => (each.box === null ? [] : [boxOf(each.box)]))
@@ -76,7 +78,11 @@ function orderCommand(base: Parts, change: Extract<ElementChange, { change: "ord
   return { slide: "element-order", id, node: change.node, before, among }
 }
 
-export function elementCommand(parts: Parts, register: Register, change: ElementChange): SlideCommand | null {
+export function elementCommand(
+  parts: Parts,
+  register: Register,
+  change: Exclude<ElementChange, GroupChange>,
+): SlideCommand | null {
   const base = slideBase(parts, register)
   if (change.change === "order") return orderCommand(base, change)
   if (change.change === "remove") {
@@ -121,6 +127,8 @@ export async function commitElement(
   change: ElementChange,
   paint: (added: ElementId | null, undoable: Undoable | null) => void | Promise<void>,
 ): Promise<CommitOutcome> {
+  if (change.change === "group" || change.change === "ungroup")
+    return commitGroup(deckId, parts, register, change, paint)
   const refusal = change.change === "remove" ? removalRefusal(parts, register, change.node) : null
   if (refusal !== null) {
     toast.error(elementCopy.removeRefusedTitle, { description: elementCopy.removeRefusedBody[refusal] })

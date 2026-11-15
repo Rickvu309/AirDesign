@@ -21,9 +21,12 @@ export type CanvasGeometry = {
   }
 }
 
+export type GroupOf = { readonly id: ElementId; readonly box: PaintBox | null }
+
 export type ElementPaint = {
   readonly key: string
   readonly id: ElementId | null
+  readonly group?: GroupOf
   readonly box: PaintBox | null
   readonly editable: boolean
   readonly movable?: boolean

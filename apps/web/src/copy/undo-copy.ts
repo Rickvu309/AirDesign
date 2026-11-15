@@ -18,6 +18,8 @@ export type UndoName =
   | "forward"
   | "backward"
   | "back"
+  | "group"
+  | "ungroup"
   | "background"
   | "theme-color"
   | "theme-font"
@@ -64,6 +66,8 @@ export const undoCopy = {
     forward: "Undo bring forward",
     backward: "Undo send backward",
     back: "Undo send to back",
+    group: "Undo group",
+    ungroup: "Undo ungroup",
     background: "Undo background color",
     "theme-color": "Undo theme color",
     "theme-font": "Undo theme font",
@@ -107,6 +111,8 @@ export const undoCopy = {
     forward: "Redo bring forward",
     backward: "Redo send backward",
     back: "Redo send to back",
+    group: "Redo group",
+    ungroup: "Redo ungroup",
     background: "Redo background color",
     "theme-color": "Redo theme color",
     "theme-font": "Redo theme font",

@@ -2,6 +2,7 @@ import {
   closeIcons,
   readAddChange,
   readAgentEdit,
+  readGroupChange,
   readSetChange,
   type AgentChange,
   type WireChange,
@@ -62,7 +63,14 @@ function fieldDetail(raw: unknown): string | undefined {
   if (!Array.isArray(changes)) return undefined
   for (const [at, change] of changes.entries()) {
     const op = typeof change === "object" && change !== null ? (change as { readonly op?: unknown }).op : undefined
-    const read = op === "set" ? readSetChange(change) : op === "add" ? readAddChange(change) : undefined
+    const read =
+      op === "set"
+        ? readSetChange(change)
+        : op === "add"
+          ? readAddChange(change)
+          : op === "group" || op === "ungroup"
+            ? readGroupChange(change)
+            : undefined
     if (read !== undefined && !read.ok)
       return `Change ${String(at + 1)}: ${read.field} is missing or has the wrong form.${iconHint(read.field, change)}`
   }
@@ -81,7 +89,14 @@ function setTexts(register: Register, changes: readonly AgentChange[]): readonly
 function addedNodes(before: Register, after: Register): readonly ElementId[] {
   return after.order
     .slice(before.order.length)
-    .flatMap((command) => (command.slide === "element-add" ? [command.element.node] : []))
+    .flatMap((command) =>
+      command.slide === "element-add" || command.slide === "element-group" ? [command.element.node] : [],
+    )
+}
+
+function groupDetail(changes: readonly AgentChange[], refusal: string): string | undefined {
+  if (refusal !== "kind" || !changes.some((change) => "elements" in change)) return undefined
+  return "Only shapes, pictures, lines, tables, charts and groups that are not placeholders can be grouped, and only a group can be ungrouped."
 }
 
 export function editDeck(raw: unknown, session: Session): ToolResult {
@@ -106,6 +121,7 @@ export function editDeck(raw: unknown, session: Session): ToolResult {
   if (!opened.ok) return editRefusal(before, opened.refusal, nodes)
   const deck = { id: before.id, revision: before.revision, register: opened.register }
   const result = call("edit_deck", deck, opened.caller, raw)
-  if (!result.ok) return { ...editRefusal(deck, result.refusal, nodes), deck: before }
+  if (!result.ok)
+    return { ...editRefusal(deck, result.refusal, nodes, groupDetail(parsed.changes, result.refusal)), deck: before }
   return editLanded(result.deck, [...nodes, ...addedNodes(deck.register, result.deck.register)], opened.caller.runId)
 }

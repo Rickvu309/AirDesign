@@ -7,6 +7,7 @@ import { slideMeasure } from "./slide-measure.js"
 import type { SlideState } from "./slide-order.js"
 import { openedTable } from "./table-value.js"
 import { indexFacts, removable } from "./element-takes.js"
+import { groupedNow } from "./element-group.js"
 
 export const mediaTypes = ["image/png", "image/jpeg", "image/gif"] as const
 
@@ -61,11 +62,22 @@ type Indexed = SlideState & { readonly index?: DeckIndex }
 
 const highestShape = 4294967295
 
-export function elementGone(state: SlideState, node: ElementId): boolean {
+function removedNow(state: SlideState, node: ElementId): boolean {
   let gone = false
   for (const command of state.order) {
     if (command.slide === "element-remove" && command.node === node) gone = true
     if (command.slide === "element-restore" && command.node === node) gone = false
+  }
+  return gone
+}
+
+export function elementGone(state: SlideState, node: ElementId): boolean {
+  let gone = false
+  for (const command of state.order) {
+    if ((command.slide === "element-remove" || command.slide === "element-ungroup") && command.node === node)
+      gone = true
+    if ((command.slide === "element-restore" || command.slide === "element-regroup") && command.node === node)
+      gone = false
   }
   return gone
 }
@@ -78,7 +90,8 @@ export function nextElementId(state: SlideState, slide: SlideId, free: number): 
   let next = free
   for (const command of state.order) {
     if (command.id !== slide) continue
-    if (command.slide === "element-add") next = Math.max(next, shapeNumber(command.element.node) + 1)
+    if (command.slide === "element-add" || command.slide === "element-group")
+      next = Math.max(next, shapeNumber(command.element.node) + 1)
     if (command.slide === "element-remove" || command.slide === "element-restore")
       next = Math.max(next, shapeNumber(command.node) + 1)
   }
@@ -144,12 +157,13 @@ export function elementRefusal(
     if (opening !== undefined || elementGone(state, node)) return "present"
     return addable(command) ? null : "dead"
   }
-  if (command.slide === "element-restore") return elementGone(state, node) ? null : "dead"
+  if (command.slide === "element-restore") return removedNow(state, node) ? null : "dead"
   if (elementGone(state, node)) return "dead"
   if (opening === undefined) return indexComplete(state) ? "dead" : null
   const animated = slideMeasure(state, command.id)?.animated.includes(shapeOf(node).shape) === true
-  if (removable(indexFacts(opening, animated))) return null
-  if (opening.grouped || opening.kind === "group") return "group-box"
+  const grouped = groupedNow(state, node)
+  if (removable({ ...indexFacts(opening, animated), grouped })) return null
+  if (grouped || opening.kind === "group") return "group-box"
   return animated ? "locked" : "kind"
 }
 

@@ -1,4 +1,12 @@
-import { bytesOf, elementId, limits, writeTableValue, writeTextValue, type DeckIndex } from "@airdesign/document"
+import {
+  bytesOf,
+  elementId,
+  limits,
+  writeTableValue,
+  writeTextValue,
+  type DeckIndex,
+  type IndexElement,
+} from "@airdesign/document"
 import { readNotes } from "./notes-body.js"
 import { readShapes, readSlides, shapeKind } from "./read-shapes.js"
 import { presentationPart } from "./package-address.js"
@@ -47,12 +55,14 @@ export function indexPackage(parts: ReadonlyMap<string, Uint8Array>): Pick<DeckI
     }
   })
   const order = new Map(slides.map((slide) => [slide.id, slide.position]))
-  const elements = readShapes(parts).map((shape) => ({
+  const elements: IndexElement[] = readShapes(parts).map((shape) => ({
     node: elementId(`${shape.slide}.${shape.shape}`),
     kind: shapeKind(shape),
     value: valueOf(parts, shape),
     box: shape.box,
     grouped: shape.grouped === true,
+    ...(shape.group === undefined ? {} : { group: elementId(`${shape.slide}.${shape.group}`) }),
+    ...(shape.frame === undefined ? {} : { frame: shape.frame }),
   }))
   elements.push(
     ...readNotes(parts).map((notes) => ({

@@ -15,6 +15,8 @@ export type ReadShape = {
   readonly text: TextValue
   readonly locked: boolean
   readonly grouped?: true
+  readonly group?: string
+  readonly frame?: ShapeBox
   readonly contentKind?: Kind
 }
 
@@ -34,6 +36,9 @@ type ShapeParts = {
   id: string | null
   off: MarkupElement | null
   ext: MarkupElement | null
+  childOff: MarkupElement | null
+  childExt: MarkupElement | null
+  above: number
   contentKind: Kind | null
 }
 
@@ -41,6 +46,24 @@ type SlideShapes = {
   readonly parts: ReadonlyMap<number, ShapeParts>
   readonly fallback: Uint8Array
   readonly grouped: Uint8Array
+}
+
+const emptyParts = (): ShapeParts => ({
+  id: null,
+  off: null,
+  ext: null,
+  childOff: null,
+  childExt: null,
+  above: -1,
+  contentKind: null,
+})
+
+const boxOf = (off: MarkupElement | null, ext: MarkupElement | null): ShapeBox | null => {
+  const x = emu(off === null ? null : attr(off, "x"))
+  const y = emu(off === null ? null : attr(off, "y"))
+  const cx = emu(ext === null ? null : attr(ext, "cx"))
+  const cy = emu(ext === null ? null : attr(ext, "cy"))
+  return x === null || y === null || cx === null || cy === null ? null : { x, y, cx, cy }
 }
 
 const slideShapes = (elements: readonly MarkupElement[]): SlideShapes => {
@@ -57,15 +80,20 @@ const slideShapes = (elements: readonly MarkupElement[]): SlideShapes => {
     fallback[element.index] = covered
     below[element.index] = isShapeTag(element.kind) ? element.index : shape
     hidden[element.index] = element.kind === fallbackKind ? 1 : covered
+    if (isShapeTag(element.kind) && shape >= 0 && elements[shape]?.kind === "p:grpSp") {
+      parts.set(element.index, { ...emptyParts(), above: shape })
+    }
     if (shape < 0) continue
     let found = parts.get(shape)
     if (found === undefined) {
-      found = { id: null, off: null, ext: null, contentKind: null }
+      found = emptyParts()
       parts.set(shape, found)
     }
     if (found.id === null && element.kind === "p:cNvPr") found.id = element.id
     if (found.off === null && element.kind === "a:off") found.off = element
     if (found.ext === null && element.kind === "a:ext" && attr(element, "cx") !== null) found.ext = element
+    if (found.childOff === null && element.kind === "a:chOff") found.childOff = element
+    if (found.childExt === null && element.kind === "a:chExt") found.childExt = element
     if (element.kind === "a:tbl") found.contentKind = "table"
     if (element.kind === "c:chart") found.contentKind = "chart"
   }
@@ -104,25 +132,26 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
     const { parts: found, fallback, grouped } = slideShapes(elements)
     for (const shape of elements) {
       if (!isShapeTag(shape.kind)) continue
-      const { id = null, off = null, ext = null, contentKind = null } = found.get(shape.index) ?? {}
+      const held = found.get(shape.index) ?? emptyParts()
+      const { id, contentKind } = held
       if (id === null) continue
       if (fallback[shape.index] === 1) {
         fallbackIds.add(id)
         continue
       }
-      const x = emu(off === null ? null : attr(off, "x"))
-      const y = emu(off === null ? null : attr(off, "y"))
-      const cx = emu(ext === null ? null : attr(ext, "cx"))
-      const cy = emu(ext === null ? null : attr(ext, "cy"))
+      const group = held.above < 0 ? null : (found.get(held.above)?.id ?? null)
+      const frame = shape.kind === "p:grpSp" ? boxOf(held.childOff, held.childExt) : null
       kept.push({
         slide,
         part,
         shape: id,
         kind: shape.kind,
-        box: x === null || y === null || cx === null || cy === null ? null : { x, y, cx, cy },
+        box: boxOf(held.off, held.ext),
         text: shapeTextValue(children, bytes, shape),
         locked: tableIn(shape, children) !== undefined,
         ...(grouped[shape.index] === 1 ? { grouped: true } : {}),
+        ...(group === null ? {} : { group }),
+        ...(frame === null ? {} : { frame }),
         ...(shape.kind === "p:graphicFrame" ? { contentKind: contentKind ?? "kept" } : {}),
       })
     }

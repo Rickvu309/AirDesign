@@ -39,6 +39,8 @@ export type IndexElement = {
   readonly design?: Design
   readonly kept?: readonly DesignKey[]
   readonly placed?: Box
+  readonly group?: ElementId
+  readonly frame?: Box
   readonly opening?: ElementPatch
 }
 export type IndexPage = {
@@ -63,7 +65,7 @@ export type DeckIndex = BuiltIndex & { readonly next?: BuiltIndex }
 export const indexKeys = {
   page: ["format", "once", "offset", "total", "palettes", "slides", "elements"],
   slide: ["id", "position", "size", "free", "animated", "layout", "palette"],
-  element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept", "placed"],
+  element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept", "placed", "group", "frame"],
   design: designKeys,
   roles,
   sources,
@@ -147,7 +149,10 @@ function readSlide(raw: unknown, position: number, palettes: number): IndexSlide
 const elementKeys: readonly string[] = indexKeys.element
 const openingKeys = 5
 
-function readDerived(row: Record<string, unknown>): Pick<IndexElement, "role" | "design" | "kept" | "placed"> | null {
+type Derived = Pick<IndexElement, "role" | "design" | "kept" | "placed">
+type Tree = Pick<IndexElement, "group" | "frame">
+
+function readDerived(row: Record<string, unknown>): Derived | null {
   const role = row.role === undefined ? undefined : readRole(row.role)
   const design = row.design === undefined ? undefined : readDesign(row.design)
   const kept = row.kept === undefined ? undefined : readKept(row.kept)
@@ -159,6 +164,15 @@ function readDerived(row: Record<string, unknown>): Pick<IndexElement, "role" | 
     ...(kept === undefined ? {} : { kept }),
     ...(placed === undefined ? {} : { placed }),
   }
+}
+
+function readTree(row: Record<string, unknown>, node: ElementId, kind: Kind): Tree | null {
+  const group = row.group === undefined ? undefined : readElementId(row.group)
+  const frame = row.frame === undefined ? undefined : readBox(row.frame)
+  if (row.group !== undefined && (group === undefined || row.grouped !== true || group === node)) return null
+  if (group !== undefined && shapeOf(group).slide !== shapeOf(node).slide) return null
+  if (frame === null || (frame !== undefined && kind !== "group")) return null
+  return { ...(group === undefined ? {} : { group }), ...(frame === undefined ? {} : { frame }) }
 }
 
 export function readElement(raw: unknown, slides: ReadonlySet<string>): IndexElement | null {
@@ -173,8 +187,9 @@ export function readElement(raw: unknown, slides: ReadonlySet<string>): IndexEle
   const box = row.box === null ? null : readBox(row.box)
   if (row.box !== null && box === null) return null
   const derived = readDerived(row)
-  if (derived === null) return null
-  return { node, kind, value: row.value, box, grouped: row.grouped, ...derived }
+  const tree = readTree(row, node, kind)
+  if (derived === null || tree === null) return null
+  return { node, kind, value: row.value, box, grouped: row.grouped, ...derived, ...tree }
 }
 
 function readPalettes(raw: unknown): readonly Palette[] | null {

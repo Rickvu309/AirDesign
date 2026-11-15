@@ -3,8 +3,15 @@ import { shapeSiblings } from "@airdesign/pptx"
 import type { CanvasSlide } from "@airdesign/render"
 import { useState, type MouseEvent, type ReactNode } from "react"
 import type { CommitOutcome } from "@/commit-edit"
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu"
-import { arrangeCopy, arrangeMoves } from "@/copy/arrange-copy"
+import type { GroupChange } from "@/editor/group-actions"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
+import { arrangeCopy, arrangeMoves, groupCopy } from "@/copy/arrange-copy"
 
 type MenuEvent = MouseEvent<HTMLDivElement> & { preventBaseUIHandler?: () => void }
 
@@ -21,20 +28,31 @@ function elementUnder(target: EventTarget | null, slide: CanvasSlide): ElementId
   return found?.id ?? null
 }
 
+function unitOf(slide: CanvasSlide, node: ElementId) {
+  const found = slide.elements.find((each) => each.id === node)
+  const top = found?.group?.id
+  return (top === undefined ? found : slide.elements.find((each) => each.id === top)) ?? null
+}
+
 export function ArrangeMenu(props: {
   readonly className: string
   readonly slide: CanvasSlide
   readonly parts: ReadonlyMap<string, Uint8Array>
   readonly onOrder: (node: ElementId, move: StackMove) => Promise<CommitOutcome | "closed">
+  readonly onGroup: (change: GroupChange) => Promise<CommitOutcome | "closed">
   readonly children: (band: {
     readonly notice: string
     readonly order: (node: ElementId, move: StackMove) => void
+    readonly group: (change: GroupChange) => void
+    readonly choose: (ids: readonly ElementId[]) => void
     readonly clear: () => void
   }) => ReactNode
 }) {
   const [notice, setNotice] = useState("")
   const [node, setNode] = useState<ElementId | null>(null)
   const [among, setAmong] = useState<readonly ElementId[] | null>(null)
+  const [chosen, choose] = useState<readonly ElementId[]>([])
+  const unit = node === null ? null : unitOf(props.slide, node)
 
   function clear() {
     setNotice("")
@@ -44,6 +62,13 @@ export function ArrangeMenu(props: {
     setNotice("")
     void props.onOrder(target, move).then((outcome) => {
       if (outcome !== "refused" && outcome !== "closed") setNotice(arrangeCopy.said[move])
+    })
+  }
+
+  function group(change: GroupChange) {
+    setNotice("")
+    void props.onGroup(change).then((outcome) => {
+      if (outcome !== "refused" && outcome !== "closed") setNotice(groupCopy.said[change.change])
     })
   }
 
@@ -62,9 +87,9 @@ export function ArrangeMenu(props: {
   return (
     <ContextMenu>
       <ContextMenuTrigger className={props.className} onContextMenu={onContextMenu}>
-        {props.children({ notice, order, clear })}
+        {props.children({ notice, order, group, choose, clear })}
       </ContextMenuTrigger>
-      <ContextMenuContent>
+      <ContextMenuContent data-keeps-selection>
         {arrangeMoves.map((move) => (
           <ContextMenuItem
             key={move}
@@ -77,6 +102,20 @@ export function ArrangeMenu(props: {
             <span className="ml-auto text-xs text-muted-foreground">{arrangeCopy.shortcut[move]}</span>
           </ContextMenuItem>
         ))}
+        <ContextMenuSeparator />
+        <ContextMenuItem disabled={chosen.length < 2} onClick={() => group({ change: "group", nodes: chosen })}>
+          <span>{groupCopy.label.group}</span>
+          <span className="ml-auto text-xs text-muted-foreground">{groupCopy.shortcut.group}</span>
+        </ContextMenuItem>
+        <ContextMenuItem
+          disabled={unit === null || unit.kind !== "group" || unit.id === null}
+          onClick={() => {
+            if (unit?.id != null) group({ change: "ungroup", node: unit.id })
+          }}
+        >
+          <span>{groupCopy.label.ungroup}</span>
+          <span className="ml-auto text-xs text-muted-foreground">{groupCopy.shortcut.ungroup}</span>
+        </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
   )

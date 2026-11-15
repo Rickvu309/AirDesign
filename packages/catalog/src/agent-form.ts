@@ -104,9 +104,12 @@ function shownOf<Key extends DesignKey>(key: Key, read: Read<NonNullable<TraitRe
   return read.source === undefined ? [value] : [value, read.source]
 }
 
+const turnKeys: readonly DesignKey[] = ["box.rot", "box.flipH", "box.flipV"]
+const keptFirst: readonly DesignKey[] = [...turnKeys, ...designKeys.filter((key) => !turnKeys.includes(key))]
+
 export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design" | "kept" | "placed"> {
   const design: Partial<Record<DesignKey, Shown>> = {}
-  for (const key of designKeys) {
+  for (const key of keptFirst) {
     const field = read.reads[key] as Read<never> | undefined
     if (field === undefined) continue
     const shown = shownOf(key, field)

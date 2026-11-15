@@ -1,4 +1,5 @@
 import { applyAgentChange, openedRegister } from "./apply-change.js"
+import { applyGroup } from "./agent-groups.js"
 import { agentElement } from "./agent-elements.js"
 import { agentSlide } from "./agent-slides.js"
 import {
@@ -109,7 +110,9 @@ function applyAgentEdits(deck: Deck, edits: readonly AgentChange[], runId: strin
   let register = deck.register
   for (const edit of edits) {
     if ("op" in edit) {
-      const applied = applyAgentChange({ ...deck, register }, edit, runId, base)
+      const current = { ...deck, register }
+      const applied =
+        "elements" in edit ? applyGroup(current, edit, runId, base) : applyAgentChange(current, edit, runId, base)
       if (!applied.ok) return refused(applied.refusal)
       register = applied.register
       continue

@@ -25,6 +25,7 @@ assert.deepEqual(
     "color-transforms.mjs",
     "diagram-edits.mjs",
     "element-order.mjs",
+    "group.mjs",
     "notes.mjs",
     "paragraphs.mjs",
     "shapes.mjs",

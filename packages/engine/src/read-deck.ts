@@ -7,6 +7,7 @@ import {
   currentBox,
   currentValue,
   floorNodes,
+  groupedNow,
   history,
   landedPatch,
   netPatch,
@@ -109,6 +110,11 @@ function closedTo(body: NodeRegister, runId: string | null): boolean {
   return body.runId !== runId
 }
 
+function foldedElement(register: Register, node: ElementId): IndexElement | undefined {
+  const opening = openingElement(register, node)
+  return opening === undefined ? undefined : { ...opening, grouped: groupedNow(register, node) }
+}
+
 function elementOf(
   node: ElementId,
   body: NodeRegister | undefined,
@@ -168,8 +174,8 @@ function knownNodes(register: Register): readonly ElementId[] {
   }
   const removed = new Set<ElementId>()
   for (const command of register.order) {
-    if (command.slide === "element-remove") removed.add(command.node)
-    if (command.slide === "element-restore") removed.delete(command.node)
+    if (command.slide === "element-remove" || command.slide === "element-ungroup") removed.add(command.node)
+    if (command.slide === "element-restore" || command.slide === "element-regroup") removed.delete(command.node)
   }
   nodes.sort(byId)
   const present = nodes.filter((node) => !removed.has(node))
@@ -285,7 +291,7 @@ export function readDeckPage(
       const slide = shapeOf(node).slide
       return !goneSlides.has(slide) && (query.slide === undefined || slide === query.slide)
     },
-    (node) => elementOf(node, deck.register.elements[node], query.runId, openingElement(deck.register, node)),
+    (node) => elementOf(node, deck.register.elements[node], query.runId, foldedElement(deck.register, node)),
   )
 }
 

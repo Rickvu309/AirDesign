@@ -59,18 +59,6 @@ Bounds: one element, run ids `s` and `t`, one write, two generations. Run: `pnpm
 
 Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
 
-## structure
-
-Adding and removing an element, and a run's read of the element list.
-
-- `StructuralRecord`: an add or remove changes only the named element.
-- `ReadSetHeld`: a read keeps the element list it saw.
-- `AbsentEditLeavesCounts`: an edit naming an absent element changes no counts.
-
-Bounds: two elements, `a` always present. Run: `pnpm check:specs structure`. Replay: `replayStructure` through `decide` `add`, `remove` and `read`. Leaves out: product code adds a register with `add` (`openedRegister` in `call.ts`, `opened` in `packages/live/src/cache.ts`) and uses `remove` only to put a restored register back (`decideOnElement`). `read` has no product caller. A person's element add and remove go through slide commands, covered by element.
-
-Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
-
 ## offline
 
 The browser's queue of person edits: send, acknowledge, crash, wipe and replay.
