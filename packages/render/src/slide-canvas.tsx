@@ -9,7 +9,7 @@ import type { HeldKeys } from "./held-keys.js"
 import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.js"
 import { ChosenFrame, SelectionFrame } from "./selection-frame.js"
 import { slideBackground } from "./slide-background.js"
-import { canDrag, canResize, enterElement, useMoves } from "./slide-moves.js"
+import { canDrag, enterElement, useMoves } from "./slide-moves.js"
 import type { CanvasSlide } from "./record.js"
 import type { TableBar } from "./table-paint.js"
 import type { PaintStore } from "./store.js"
@@ -148,7 +148,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
           id={selected.id}
           movable={canDrag(selected)}
           onPress={(event, grip) => moving.press(event, selected, grip)}
-          resizable={canResize(selected) && onConnect === undefined}
+          resizable={canDrag(selected) && onConnect === undefined}
           scaled={scaled}
           store={props.store}
         />

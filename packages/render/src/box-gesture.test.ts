@@ -10,6 +10,8 @@ import {
   nudgeStep,
   paintedAt,
   resizedBox,
+  resizedByKey,
+  type Corner,
   type Drag,
 } from "./box-gesture.js"
 import type { PaintBox } from "./record.js"
@@ -116,6 +118,84 @@ describe("resizedBox", () => {
     const line = { x: 0, y: 0, cx: 3_000_000, cy: 0 }
     expect(resizedBox(line, "bottom-right", 0, -5_000)).toEqual(line)
     expect(resizedBox(line, "bottom-right", 0, 5_000)).toEqual({ ...line, cy: 5_000 })
+  })
+})
+
+describe("resizedBox on a turned box", () => {
+  function onScreen(box: typeof start, corner: Corner, degrees: number) {
+    const turn = (degrees * Math.PI) / 180
+    const across = (corner.endsWith("left") ? -1 : 1) * (box.cx / 2)
+    const down = (corner.startsWith("top") ? -1 : 1) * (box.cy / 2)
+    return {
+      x: box.x + box.cx / 2 + across * Math.cos(turn) - down * Math.sin(turn),
+      y: box.y + box.cy / 2 + across * Math.sin(turn) + down * Math.cos(turn),
+    }
+  }
+
+  const opposite: Readonly<Record<Corner, Corner>> = {
+    "top-left": "bottom-right",
+    "top-right": "bottom-left",
+    "bottom-left": "top-right",
+    "bottom-right": "top-left",
+  }
+
+  it("grows a box turned 90 degrees along its own sides and keeps the opposite corner on screen", () => {
+    expect(resizedBox(start, "bottom-right", -100_000, 200_000, false, 90)).toEqual({
+      x: 307_200,
+      y: 507_200,
+      cx: 5_686_400,
+      cy: 1_928_800,
+    })
+  })
+
+  it.each([
+    ["bottom-right", { x: 452_296, y: 538_899, cx: 5_796_208, cy: 1_765_403 }],
+    ["top-left", { x: 762_104, y: 475_502, cx: 5_176_592, cy: 1_892_197 }],
+  ] as const)("resizes a box turned 30 degrees from its %s corner", (corner, box) => {
+    expect(resizedBox(start, corner, 300_000, 100_000, false, 30)).toEqual(box)
+  })
+
+  it.each(["top-left", "top-right", "bottom-left", "bottom-right"] as const)(
+    "keeps the corner opposite %s where it was on screen and moves the pressed one with the pointer",
+    (corner) => {
+      const box = resizedBox(start, corner, 300_000, -150_000, false, 30)
+      const kept = onScreen(start, opposite[corner], 30)
+      const now = onScreen(box, opposite[corner], 30)
+      expect(Math.abs(now.x - kept.x)).toBeLessThanOrEqual(1)
+      expect(Math.abs(now.y - kept.y)).toBeLessThanOrEqual(1)
+      const pressed = onScreen(start, corner, 30)
+      const followed = onScreen(box, corner, 30)
+      expect(Math.abs(followed.x - pressed.x - 300_000)).toBeLessThanOrEqual(2)
+      expect(Math.abs(followed.y - pressed.y + 150_000)).toBeLessThanOrEqual(2)
+    },
+  )
+
+  it("keeps the opposite corner on screen when a turned box stops at a quarter inch", () => {
+    const box = resizedBox(start, "top-left", 20_000_000, 20_000_000, false, 30)
+    expect([box.cx, box.cy]).toEqual([minimumSide, minimumSide])
+    const kept = onScreen(start, "bottom-right", 30)
+    const now = onScreen(box, "bottom-right", 30)
+    expect(Math.abs(now.x - kept.x)).toBeLessThanOrEqual(1)
+    expect(Math.abs(now.y - kept.y)).toBeLessThanOrEqual(1)
+  })
+
+  it("grows a turned box by a key along its own width and keeps its top-left corner on screen", () => {
+    const box = resizedByKey(start, "ArrowRight", 30)
+    expect(box).toEqual({ x: 456_349, y: 460_375, cx: start.cx + nudgeStep, cy: start.cy })
+    const kept = onScreen(start, "top-left", 30)
+    const now = box === null ? kept : onScreen(box, "top-left", 30)
+    expect(Math.abs(now.x - kept.x)).toBeLessThanOrEqual(1)
+    expect(Math.abs(now.y - kept.y)).toBeLessThanOrEqual(1)
+  })
+
+  it("resizes a turned box from a drag by the pointer's travel on screen", () => {
+    const turned = { ...pressed("bottom-right"), rotation: 90 }
+    expect(draggedBox(turned, { x: 95, y: 110 }, 800, wide)).toEqual({
+      x: 342_900,
+      y: 495_300,
+      cx: 5_638_800,
+      cy: 1_905_000,
+    })
   })
 })
 

@@ -16,10 +16,24 @@ const bands: readonly CSSProperties[] = [
 ]
 
 const handles: Readonly<Record<Corner, CSSProperties>> = {
-  "top-left": { left: 0, top: 0, cursor: "nwse-resize" },
-  "top-right": { left: "100%", top: 0, cursor: "nesw-resize" },
-  "bottom-left": { left: 0, top: "100%", cursor: "nesw-resize" },
-  "bottom-right": { left: "100%", top: "100%", cursor: "nwse-resize" },
+  "top-left": { left: 0, top: 0 },
+  "top-right": { left: "100%", top: 0 },
+  "bottom-left": { left: 0, top: "100%" },
+  "bottom-right": { left: "100%", top: "100%" },
+}
+
+const pointing: Readonly<Record<Corner, number>> = {
+  "bottom-right": 45,
+  "bottom-left": 135,
+  "top-left": 225,
+  "top-right": 315,
+}
+
+const cursors = ["ew-resize", "nwse-resize", "ns-resize", "nesw-resize"] as const
+
+function cursorOf(corner: Corner, rotation: number): string {
+  const across = (((pointing[corner] + rotation) % 180) + 180) % 180
+  return cursors[Math.round(across / 45) % cursors.length] ?? "move"
 }
 
 const gripped: CSSProperties = { position: "absolute", pointerEvents: "auto", touchAction: "none" }
@@ -75,7 +89,7 @@ export function SelectionFrame(props: {
             <span
               key={corner}
               data-grip={corner}
-              style={{ ...handle, ...handles[corner] }}
+              style={{ ...handle, ...handles[corner], cursor: cursorOf(corner, box.rotation) }}
               onPointerDown={(event) => onPress(event, corner)}
             />
           ))

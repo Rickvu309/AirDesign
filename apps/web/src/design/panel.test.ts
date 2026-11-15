@@ -161,3 +161,26 @@ it("leaves a field empty and not inherited when nothing paints it", () => {
   const rows = shownRows(shape, { ...untouched, "text.lineSpacing": { value: null, own: false } })
   expect(rows["text.lineSpacing"]).toEqual([undefined, false])
 })
+
+it("sizes a table by Width and Height beside X and Y, and offers no rotation for it", () => {
+  const table: ScopedElement = {
+    node: elementId("258.4"),
+    facts: { kind: "table", text: false, grouped: false, animated: false },
+    kept: [],
+    value: null,
+    box: { x: 457_200, y: 914_400, cx: 7_315_200, cy: 1_112_520 },
+  }
+  const panel = panelOf(table, { reads: {}, moves: true, fields: {} })
+  const rows = panel.sections.find((section) => section.trait === "box")?.rows ?? []
+  expect(rows.filter((row) => row.control === "length").map((row) => [row.label, row.value])).toEqual([
+    ["X", 457_200],
+    ["Y", 914_400],
+    ["Width", 7_315_200],
+    ["Height", 1_112_520],
+  ])
+  expect(rows.map((row) => row.field)).not.toContain("rot")
+  expect(rows.find((row) => row.field === "w")?.change(9_144_000)).toEqual({
+    target: { node: "258.4" },
+    box: { w: 9_144_000 },
+  })
+})

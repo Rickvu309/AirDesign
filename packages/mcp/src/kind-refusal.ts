@@ -79,9 +79,7 @@ function textNext(node: ElementId, { facts }: Missing): string {
   return `To put words beside it, call airdesign_add_text_box on slide ${shapeOf(node).slide}.`
 }
 
-function boxNext({ facts, box }: Missing): string {
-  if (facts.kind === "table" && box !== null)
-    return `A table moves but does not resize. Send its box with cx ${String(box.cx)} and cy ${String(box.cy)}.`
+function boxNext({ facts }: Missing): string {
   if (facts.kind === "notes") return "Notes have no box. Send their text only."
   if (facts.kind === "slide") return "Send the slide's fill only."
   return "Leave it, or tell the person."

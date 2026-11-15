@@ -151,26 +151,91 @@ describe("exportParts on every fixture and corpus deck", () => {
   }, 120_000)
 })
 
+function gridOfPart(
+  parts: Parts,
+  part: string,
+): { readonly widths: readonly number[]; readonly heights: readonly number[] } {
+  const xml = decodeUtf8(parts.get(part) ?? empty)
+  return {
+    widths: [...xml.matchAll(/<a:gridCol w="(\d+)"/g)].map((match) => Number(match[1])),
+    heights: [...xml.matchAll(/<a:tr h="(\d+)"/g)].map((match) => Number(match[1])),
+  }
+}
+
 describe("exportParts on a table", () => {
-  it("writes a person's table value and moves the frame without resizing it", async () => {
+  async function opened() {
     const parts = await deckParts("table-added.pptx")
     const table = readShapes(parts).find((shape) => shape.contentKind === "table")
     if (table === undefined || table.box === null) throw new Error("table")
-    const node = idOf(table)
     const read = readTable(parts, table.part, table.shape)
-    const changed = read === null ? null : changedTable(read, { change: "cell", row: 0, column: 0, text: "Typed" })
+    if (read === null) throw new Error("table value")
+    const node = idOf(table)
+    const exported = (commands: readonly Command[]) => {
+      const next = exportParts(
+        parts,
+        landed(openRegister("", "clean"), [{ command: "add", node, floor: "", route: "clean" }, ...commands]),
+      )
+      const shape = readShapes(next).find((each) => each.slide === table.slide && each.shape === table.shape)
+      return { parts: next, box: shape?.box, grid: gridOfPart(next, table.part) }
+    }
+    const column = changedTable(read, { change: "column", column: 2, place: "after" })
+    if (column === null) throw new Error("column")
+    return { parts, table, box: table.box, node, read, exported, column: writeTableValue(column) }
+  }
+
+  it("writes a person's table value and moves the frame", async () => {
+    const { table, box, node, read, exported } = await opened()
+    const changed = changedTable(read, { change: "cell", row: 0, column: 0, text: "Typed" })
     if (changed === null) throw new Error("table value")
-    const value = writeTableValue(changed)
-    const exported = exportParts(
-      parts,
-      landed(openRegister("", "clean"), [
-        { command: "add", node, floor: "", route: "clean" },
-        { command: "person", node, value },
-        { command: "person", node, property: "box", value: { x: 12700, y: 25400, cx: 1, cy: 2 } },
-      ]),
-    )
-    const moved = readShapes(exported).find((shape) => shape.slide === table.slide && shape.shape === table.shape)
-    expect(moved?.box).toEqual({ x: 12700, y: 25400, cx: table.box.cx, cy: table.box.cy })
-    expect(decodeUtf8(exported.get(table.part) ?? new Uint8Array())).toContain("<a:t>Typed</a:t>")
+    const done = exported([
+      { command: "person", node, value: writeTableValue(changed) },
+      { command: "person", node, property: "box", value: { ...box, x: 12700, y: 25400 } },
+    ])
+    expect(done.box).toEqual({ ...box, x: 12700, y: 25400 })
+    expect(decodeUtf8(done.parts.get(table.part) ?? empty)).toContain("<a:t>Typed</a:t>")
+  })
+
+  it("leaves the columns and rows byte for byte when a box only moves the table", async () => {
+    const { parts, table, box, node, exported } = await opened()
+    const done = exported([{ command: "person", node, property: "box", value: { ...box, x: 12700 } }])
+    const before = decodeUtf8(parts.get(table.part) ?? empty)
+    const after = decodeUtf8(done.parts.get(table.part) ?? empty)
+    expect(after.slice(after.indexOf("<a:tbl>"))).toBe(before.slice(before.indexOf("<a:tbl>")))
+  })
+
+  it("scales every column and row by the frame's new size, as PowerPoint does", async () => {
+    const { box, node, exported } = await opened()
+    expect(box).toMatchObject({ cx: 7_315_200, cy: 1_112_520 })
+    const done = exported([
+      { command: "person", node, property: "box", value: { ...box, cx: 9_144_000, cy: 1_668_780 } },
+    ])
+    expect(done.box).toEqual({ ...box, cx: 9_144_000, cy: 1_668_780 })
+    expect(done.grid).toEqual({ widths: [3_048_000, 3_048_000, 3_048_000], heights: [556_260, 556_260, 556_260] })
+  })
+
+  it("keeps the width a person dragged to after adding a column, and a later move keeps it too", async () => {
+    const { box, node, exported, column } = await opened()
+    const dragged = exported([
+      { command: "person", node, value: column },
+      { command: "person", node, property: "box", value: { ...box, cx: 4_876_800 } },
+    ])
+    expect(dragged.box?.cx).toBe(4_876_800)
+    expect(dragged.grid.widths).toEqual([1_219_200, 1_219_200, 1_219_200, 1_219_200])
+    const moved = exported([
+      { command: "person", node, value: column },
+      { command: "person", node, property: "box", value: { ...box, x: 12700, cx: 9_753_600 } },
+    ])
+    expect(moved.box).toEqual({ ...box, x: 12700, cx: 9_753_600 })
+    expect(moved.grid.widths).toEqual([2_438_400, 2_438_400, 2_438_400, 2_438_400])
+  })
+
+  it("widens a resized table by its new column when the column comes after the resize", async () => {
+    const { box, node, exported, column } = await opened()
+    const done = exported([
+      { command: "person", node, property: "box", value: { ...box, cx: 3_657_600 } },
+      { command: "person", node, value: column },
+    ])
+    expect(done.box?.cx).toBe(4_876_800)
+    expect(done.grid.widths).toEqual([1_219_200, 1_219_200, 1_219_200, 1_219_200])
   })
 })

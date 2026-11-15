@@ -184,11 +184,7 @@ export function TableEdit(props: {
   const stored = storedCells(useElement(props.store, id)?.text, table)
   const pending = useRef<Spot | null>(null)
   const frame = useRef<HTMLDivElement>(null)
-  const moved = paintedAt(element.box, useBox(props.store, id))
-  const box =
-    moved === null || element.box === null
-      ? element.box
-      : { ...moved, width: element.box.width, height: element.box.height }
+  const box = paintedAt(element.box, useBox(props.store, id))
 
   useEffect(() => {
     const wanted = pending.current

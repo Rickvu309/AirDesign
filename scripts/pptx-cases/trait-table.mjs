@@ -2,6 +2,7 @@ import { slideExportLines } from "../slide-export.mjs"
 
 export const tableExportName = "exported-table.pptx"
 export const tableCellsExportName = "exported-table-cells.pptx"
+export const tableResizedExportName = "exported-table-resized.pptx"
 
 const original = "blank.pptx"
 const cellsOriginal = "table-added.pptx"
@@ -56,9 +57,25 @@ function cellLines(pptx, exported) {
   return lines
 }
 
+function sizedLines(pptx, exported) {
+  const found = onlyTable(pptx, exported, "table resize export")
+  if (found.table === undefined) return found.lines
+  const xml = new TextDecoder().decode(exported.get(found.table.part))
+  const sum = (pattern) => [...xml.matchAll(pattern)].reduce((total, match) => total + Number(match[1]), 0)
+  const { cx, cy } = found.table.box ?? { cx: -1, cy: -1 }
+  const lines = []
+  if (sum(/<a:gridCol w="(\d+)"/g) !== cx) lines.push(`table resize export columns do not add up to ${cx}`)
+  if (sum(/<a:tr h="(\d+)"/g) !== cy) lines.push(`table resize export rows do not add up to ${cy}`)
+  return lines
+}
+
 export default {
-  specs: ["tests/browser/table-edits.spec.ts", "tests/browser/table-cells.spec.ts"],
-  exports: [tableExportName, tableCellsExportName],
+  specs: [
+    "tests/browser/table-edits.spec.ts",
+    "tests/browser/table-cells.spec.ts",
+    "tests/browser/gesture-size.spec.ts",
+  ],
+  exports: [tableExportName, tableCellsExportName, tableResizedExportName],
   originals: [cellsOriginal],
   covers: ["table.value"],
   lines(answers) {
@@ -75,6 +92,8 @@ export default {
     }
     lines.push(...keptLines(answers, cellsOriginal, tableCellsExportName, "table cells export"))
     lines.push(...cellLines(pptx, parts.get(tableCellsExportName)))
+    lines.push(...keptLines(answers, original, tableResizedExportName, "table resize export"))
+    lines.push(...sizedLines(pptx, parts.get(tableResizedExportName)))
     return lines
   },
 }

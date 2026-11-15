@@ -101,16 +101,15 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
           changes: [
             { node: "256.2", readAt: 0, value: text },
             { node: "256.4", readAt: 0, value: text },
-            { node: "256.6", readAt: 0, property: "box", value: { ...box, cx: 1 } },
+            { node: "256.8", readAt: 0, property: "box", value: { ...box, cx: 1 } },
           ],
         },
       })
       expect(refused.structuredContent).toMatchObject({ ok: false, refusal: "kind" })
       const words = said(refused)
       expect(words).toContain("Change 2 (256.4)")
-      expect(words).toContain("Change 3 (256.6)")
+      expect(words).toContain("Change 3 (256.8)")
       expect(words).not.toContain("Change 1")
-      expect(words).toContain(`cx ${String(box.cx)} and cy ${String(box.cy)}`)
     })
     expect(held.deck.register.elements[elementId("256.2")]).toBeUndefined()
   })

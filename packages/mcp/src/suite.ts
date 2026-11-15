@@ -1,4 +1,5 @@
-import { elementId, limits, type Box, type Kind, type Register } from "@airdesign/document"
+import { elementId, limits, type Register } from "@airdesign/document"
+import { bodyIs, boxed, placed } from "./body-fixture.js"
 import { fixture } from "./fixture.js"
 import { edit, elements, type Attempt, type ElementName, type Reason, type Task } from "./score.js"
 
@@ -35,29 +36,6 @@ function fullElements(register: Register): Register {
   const missing = limits.elements - register.nodes.length
   const filler = Array.from({ length: missing }, (_, index) => elementId(`${String(index)}.99`))
   return { ...register, nodes: [...register.nodes, ...filler] }
-}
-
-const placed: Box = { x: 914_400, y: 914_400, cx: 3_657_600, cy: 2_743_200 }
-
-function bodyIs(kind: Kind): (register: Register) => Register {
-  const rows = [
-    { node: elements.title, kind: "shape" as const, value: "Title", box: placed, grouped: false },
-    { node: elements.body, kind, value: null, box: placed, grouped: false },
-  ]
-  return (register) => ({
-    ...register,
-    index: { total: rows.length, slides: [{ id: "258", position: 0 }], elements: rows, pages: [] },
-  })
-}
-
-function boxed(deck: string, box: Box): Attempt {
-  const call = edit(deck, [])
-  return [
-    {
-      name: call.name,
-      raw: { deck, base: 0, changes: [{ node: elements.body, readAt: 0, property: "box", value: box }] },
-    },
-  ]
 }
 
 const longNote = "n".repeat(4000)
@@ -623,9 +601,9 @@ export const suite: readonly SuiteRow[] = [
       id: "resize-table",
       prompt: "Make the table that is the body of deck widened twice as wide.",
       deck: () => fixture("widened", [{ element: "title", before: ["Results"] }, { element: "body" }], bodyIs("table")),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "kind" }], elements: { body: [] } },
+      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { body: [] } },
     },
     reference: boxed("widened", { ...placed, cx: placed.cx * 2 }),
-    wrong: { attempt: boxed("widened", { ...placed, x: 0 }), reason: "tool" },
+    wrong: { attempt: boxed("widened", { ...placed, cx: placed.cx * 2 }, elements.title, 1), reason: "touched" },
   },
 ]

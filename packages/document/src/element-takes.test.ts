@@ -110,7 +110,7 @@ describe("the server admits only the edits the device can write onto an element 
     ])
   })
 
-  it("admits a move where the device writes one, and a resize except on a table", () => {
+  it("admits a move and a resize where the device writes one", () => {
     expect(rows.map(([node]) => [node, agentBox(node, moved), agentBox(node, grown)])).toEqual([
       ["256.2", "apply", "apply"],
       ["256.3", "apply", "apply"],
@@ -118,7 +118,7 @@ describe("the server admits only the edits the device can write onto an element 
       ["256.5", "apply", "apply"],
       ["256.6", "apply", "apply"],
       ["256.7", "group-box", "group-box"],
-      ["256.8", "apply", "kind"],
+      ["256.8", "apply", "apply"],
       ["256.9", "apply", "apply"],
       ["256.10", "kind", "kind"],
       ["256.11", "apply", "apply"],
@@ -172,7 +172,7 @@ describe("the server admits only the edits the device can write onto an element 
       "connection.start",
       "connection.end",
     ])
-    expect(takes({ ...facts, kind: "table" })).toEqual([...named, "box.x", "box.y", "table.value"])
+    expect(takes({ ...facts, kind: "table" })).toEqual([...named, "box.x", "box.y", "box.w", "box.h", "table.value"])
     expect(takes({ ...facts, kind: "chart" })).toEqual([...named, "box.x", "box.y", "box.w", "box.h"])
     expect(takes({ ...facts, kind: "group" })).toEqual([...named, ...box, ...effects])
     expect(takes({ ...facts, kind: "kept" })).toEqual([])
