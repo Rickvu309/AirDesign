@@ -1,12 +1,15 @@
 import {
+  changedTable,
   decide,
   elementId,
+  openingTable,
   openRegister,
   readTableValue,
   slideId,
   type Command,
   type Register,
   type SlideCommand,
+  writeTableValue,
 } from "@airdesign/document"
 import { newTableBreaks, readShapes, readTable } from "@airdesign/pptx"
 import { expect, it } from "vitest"
@@ -14,7 +17,7 @@ import { elementCommand } from "./element-edit"
 import { exportedParts, slideBase } from "./exported-parts"
 import { onSlide, twoBoxSlide, xml } from "./slide-fixtures"
 import { shownValue } from "./live-repaint"
-import { tableEditable, tableValue } from "./table-edit"
+import { tableEditName, tableEditable, tableValue } from "./table-edit"
 
 const size = { width: 12192000, height: 6858000 }
 const file = [slideId("256")]
@@ -154,4 +157,18 @@ it("exports a table with an added and a deleted column, its frame as wide as its
       value: tableValue(base, shape, shownValue(edited, node, ""), last)!,
     })
   expect(tableValue(base, shape, shownValue(edited, node, ""), last)).toBeNull()
+})
+
+it("names a table edit by what it changed: the text, a cell's fill or a border", () => {
+  const table = openingTable(2, 2)
+  const cells = { rows: [0, 0], columns: [0, 1] } as const
+  const accent = { solid: { scheme: "accent1" } } as const
+  const written = (change: Parameters<typeof changedTable>[1]) => writeTableValue(changedTable(table, change)!)
+  const before = writeTableValue(table)
+  expect(tableEditName(before, written({ change: "cell", row: 0, column: 0, text: "Q3" }))).toBe("text")
+  expect(tableEditName(before, written({ change: "fill", cells, fill: accent }))).toBe("cell-fill")
+  expect(tableEditName(before, written({ change: "border", cells, sides: "bottom", border: { width: 12700 } }))).toBe(
+    "border",
+  )
+  expect(tableEditName(before, "Q3")).toBeNull()
 })

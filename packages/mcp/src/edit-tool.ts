@@ -21,6 +21,7 @@ import {
   setNodes,
   stopForNewTurn,
 } from "./run.js"
+import { tableProblem } from "./table-from.js"
 import { textProblem } from "./text-from.js"
 import { heldRun, holders } from "./turn.js"
 
@@ -71,7 +72,7 @@ function fieldDetail(raw: unknown): string | undefined {
 function setTexts(register: Register, changes: readonly AgentChange[]): readonly WireChange[] {
   const scope = registerScope(register)
   return changes.flatMap((change) => {
-    const value = "op" in change && change.op === "set" ? change.text?.value : undefined
+    const value = "op" in change && change.op === "set" ? (change.text?.value ?? change.table?.value) : undefined
     const nodes = value === undefined || !("op" in change) || change.op !== "set" ? [] : scope.expand(change.target)
     return value === undefined || nodes === "indexing" ? [] : nodes.map((node) => ({ node, value, readAt: 0 }))
   })
@@ -98,7 +99,7 @@ export function editDeck(raw: unknown, session: Session): ToolResult {
   const checked = [...named, ...setTexts(before.register, parsed.changes)]
   const floors = elementFloors(before.register, checked)
   if (!floors.ok) return editRefusal(before, floors.refusal, nodes)
-  const problem = textProblem(floors.floors, checked)
+  const problem = tableProblem(floors.floors, checked) ?? textProblem(floors.floors, checked)
   if (problem !== undefined) return editRefusal(before, problem.code, nodes, problem.detail)
   const holds = runElements(before.register, parsed.changes).length > 0
   const opened = holds ? startedTurn(raw, session) : addTurn(session, parsed.base)

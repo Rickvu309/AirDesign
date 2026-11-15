@@ -2,6 +2,7 @@ import { tableColumns, type TableValue, type TextValue } from "@airdesign/docume
 import { spliceBytes, type MarkupElement } from "./element-span.js"
 import { partBytes } from "./part-markup.js"
 import { applyStructuralRoute } from "./structural-route.js"
+import { cellEdits, cellRead, type CellRead } from "./table-cells.js"
 import { cellsOf, gridOf, type Grid } from "./table-grid.js"
 import { shapeTextValue, textValueEdits } from "./text-value-route.js"
 
@@ -22,6 +23,11 @@ export function readTable(parts: Parts, part: string, shape: string): TableValue
       cells: cellsOf(grid, row).map((cell) => cellValue(grid, bytes, cell)),
     })),
   }
+}
+
+export function readCells(parts: Parts, part: string, shape: string): readonly (readonly CellRead[])[] {
+  const grid = gridOf(partBytes(parts, part), shape)
+  return grid.rows.map((row) => cellsOf(grid, row).map((cell) => cellRead(grid, cell)))
 }
 
 function sameText(left: TextValue, right: TextValue): boolean {
@@ -85,8 +91,10 @@ export function writeTable(parts: Parts, part: string, shape: string, value: Tab
       return sameText(cellValue(grid, bytes, cell), wanted) ? [] : textValueEdits(grid.children, bytes, cell, wanted)
     }),
   )
-  if (edits.length === 0) return next
+  const typed = edits.length === 0 ? bytes : spliceBytes(bytes, edits)
+  const formatted = cellEdits(edits.length === 0 ? grid : gridOf(typed, shape), typed, value.rows)
+  if (edits.length === 0 && formatted === null) return next
   const written = new Map(next)
-  written.set(part, spliceBytes(bytes, edits))
+  written.set(part, formatted ?? typed)
   return written
 }

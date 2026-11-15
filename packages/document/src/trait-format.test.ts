@@ -14,7 +14,7 @@ const recorded: Readonly<Record<TraitName, readonly string[]>> = {
   image: ["5465b825", "ceff7e39"],
   crop: ["5465b825", "3c06b041"],
   connection: ["5465b825"],
-  table: ["248ba3f0"],
+  table: ["248ba3f0", "248ba3f0"],
   notes: ["d772d0d9"],
 }
 

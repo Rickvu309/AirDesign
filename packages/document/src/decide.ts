@@ -4,7 +4,7 @@ import { legacyElement, rootElement, shapeOf, slideKind, type ElementId, type Sl
 import { limits, overLimit } from "./limits.js"
 import { floorFits, openingElement } from "./slide-floor.js"
 import { elementGone } from "./element-order.js"
-import { agentTakes, boxFields, boxOnly, indexFacts, takes, type ElementFacts, type Wanted } from "./element-takes.js"
+import { boxFields, boxOnly, indexFacts, takes, type ElementFacts, type Wanted } from "./element-takes.js"
 import { applySlide, openSlides, slideGone, type SlideCommand } from "./slide-order.js"
 import {
   fieldsOf,
@@ -441,7 +441,7 @@ export function editMissing(
         ? boxFields(box, edit.value)
         : fieldsOf(rowOf(edit, holder).patch)
       : changedFields(edit.patch, box)
-  const taken = edit.command === "person" ? takes(facts) : agentTakes(facts)
+  const taken = takes(facts)
   const missing = wanted.filter((each) => !taken.includes(each))
   return missing.length === 0 ? null : { facts, missing, box }
 }

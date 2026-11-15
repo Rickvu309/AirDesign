@@ -51,6 +51,7 @@ for (const name of [
   "shape-effects",
   "shape-geometry",
   "opacity",
+  "table-fill",
   "text-type",
   "picture-icon",
   "commit-once",

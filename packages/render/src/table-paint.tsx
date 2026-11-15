@@ -77,6 +77,8 @@ function landing(change: TableChange, spot: Spot, rows: number, columns: number)
     case "remove-column":
       return { row: spot.row, column: Math.min(change.column, columns - 2) }
     case "cell":
+    case "fill":
+    case "border":
       return spot
   }
 }

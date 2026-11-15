@@ -23,6 +23,7 @@ import {
 } from "@airdesign/document"
 import {
   exportParts,
+  readCells,
   readNotes,
   readTable,
   shownEffects,
@@ -100,8 +101,26 @@ function words(text: TextValue): string {
   return text.map((paragraph) => paragraph.runs.map((run) => run.text).join("")).join("\n")
 }
 
-function grid(parts: Parts, at: At): readonly (readonly string[])[] | undefined {
-  return readTable(parts, at.part, at.shape)?.rows.map((row) => row.cells.map(words))
+const openingBorder = { width: 12700, fill: { solid: { scheme: "tx1" } } }
+
+function grid(parts: Parts, at: At): readonly (readonly unknown[])[] | undefined {
+  const cells = readCells(parts, at.part, at.shape)
+  return readTable(parts, at.part, at.shape)?.rows.map((row, line) =>
+    row.cells.map((cell, column) => {
+      const read = cells[line]?.[column]
+      return [words(cell), read?.fill ?? null, read?.borders.bottom ?? null]
+    }),
+  )
+}
+
+function gridShown(value: string): readonly (readonly unknown[])[] | undefined {
+  return readTableValue(value)?.rows.map((row) =>
+    row.cells.map((cell, column) => [
+      words(cell),
+      row.fills?.[column] ?? null,
+      { ...openingBorder, ...row.borders?.[column]?.bottom },
+    ]),
+  )
 }
 
 const probes: { readonly [T in TraitName]: Probe<T> } = {
@@ -252,7 +271,7 @@ const probes: { readonly [T in TraitName]: Probe<T> } = {
     },
     edit: (_, __, value) => ({ value }),
     fields: {
-      value: { file: grid, shows: (value) => readTableValue(value)?.rows.map((row) => row.cells.map(words)) },
+      value: { file: grid, shows: gridShown },
     },
   },
 }
@@ -447,9 +466,6 @@ async function parityProblems(): Promise<readonly Problem[]> {
   return problems
 }
 
-const agentRefused = (problem: Problem) =>
-  "field" in problem && problem.field === "table.value" && problem.missing === "wire"
-
 let found: readonly Problem[] = []
 
 beforeAll(async () => {
@@ -459,11 +475,7 @@ beforeAll(async () => {
 
 describe("every live trait field reaches every layer", () => {
   it("lands each field's example as an agent and as a person, exports it, reads it, paints it, undoes it and judges it", () => {
-    expect(found.filter((problem) => !agentRefused(problem))).toEqual([])
-  })
-
-  it.fails("lets an agent set a table's cells", () => {
-    expect(found.filter(agentRefused)).toEqual([])
+    expect(found).toEqual([])
   })
 
   it("walks every option and case word of a field's kind for its copy", () => {
