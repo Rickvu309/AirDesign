@@ -65,7 +65,7 @@ describe("a slide's fill is its background", () => {
     const next = filled(parts, [[node, accent]])
     expect(changedParts(parts, next)).toEqual([first.part])
     expect(text(next.get(first.part))).toContain(`<p:cSld>${written('<a:schemeClr val="accent1"/>')}<p:spTree>`)
-    expect(shown(next, first.part)).toEqual({ type: "solid", color: { hex: "505050", alpha: 1 } })
+    expect(shown(next, first.part)).toEqual({ type: "solid", color: { hex: "2D6FCD", alpha: 1 } })
     expect(filled(next, [[node, accent]])).toEqual(next)
   })
 
@@ -143,7 +143,7 @@ describe("a slide's fill is its background", () => {
     const next = filled(parts, [[node, accent]], [clone])
     const cloned = readSlides(next).find((each) => each.slide === "900")
     if (cloned === undefined) throw new Error("clone")
-    expect(shown(next, first.part)).toEqual({ type: "solid", color: { hex: "505050", alpha: 1 } })
+    expect(shown(next, first.part)).toEqual({ type: "solid", color: { hex: "2D6FCD", alpha: 1 } })
     expect(shown(next, cloned.part)).toEqual({ type: "solid", color: { hex: "0F2433", alpha: 1 } })
     const back = filled(
       parts,

@@ -21,8 +21,8 @@ const slidePart = "ppt/slides/slide1.xml"
 const exportName = "exported-color-transforms.pptx"
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/blank.pptx")
 const judged = join(process.cwd(), "tests/browser", exportName)
-const darkTwo = "rgb(64, 64, 64)"
-const accentDarker = "rgb(60, 60, 60)"
+const darkTwo = "rgb(31, 58, 95)"
+const accentDarker = "rgb(34, 83, 154)"
 const darker = { scheme: "accent1", transforms: [{ op: "lumMod", val: 75000 }] }
 const written =
   '<p:cSld><p:bg><p:bgPr><a:solidFill><a:schemeClr val="accent1"><a:lumMod val="75000"/></a:schemeClr></a:solidFill><a:effectLst/></p:bgPr></p:bg>'
