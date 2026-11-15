@@ -146,6 +146,10 @@ _Avoid_: inspector, properties, format pane
 The deck's twelve colors and its heading and body fonts. Every shape, line, text, background and table that names a theme color or font follows a change to it. A person changes it in the design panel's Theme section with nothing selected; an agent sends `set` with target `deck.theme`.
 _Avoid_: palette, color scheme, template (a template is a whole design, not available yet)
 
+**color picker**:
+Where a person picks any color a field takes: a fill, line, effect, text, table cell, gradient stop, background or theme color. It shows the theme's colors by name, each with PowerPoint's lighter and darker rows (a theme tint), the RGB colors already in the deck, and a custom color set by area, hue, hex or the screen's eyedropper. A theme tint is stored as the theme color with `lumMod` and `lumOff`, so it follows a theme change. An agent sends the same colors as words, such as `accent1 lumMod 60 lumOff 40` or `#1F4E79`.
+_Avoid_: palette, swatches, color menu
+
 **icon**:
 A Lucide drawing a person or an agent adds by its name, such as rocket. It paints as a vector and exports as an SVG with a PNG beside it for older PowerPoint. The code calls it an icon source of a picture's `image`.
 _Avoid_: symbol, glyph, clip art, sticker

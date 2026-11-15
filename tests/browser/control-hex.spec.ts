@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { openDeck, settled } from "./design-panel"
+import { openDeck, settled, typeColor } from "./design-panel"
 import { filled, shapeAt } from "./shape-fills"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -14,18 +14,24 @@ test("a theme colour takes a picked hex colour, every shape that names it repain
   await openDeck(page, "shapes-added.pptx")
   await page.getByRole("button", { name: "Design", exact: true }).click()
   const theme = page.locator("[data-design-theme]")
-  const accent = theme.getByLabel("Accent 1", { exact: true })
+  const accent = theme.getByRole("button", { name: "Accent 1", exact: true })
   await expect(theme.locator('[data-control="hex"]')).toHaveCount(12)
-  await expect(accent).toHaveValue(`#${grey}`)
+  await expect(accent).toHaveAttribute("title", new RegExp(`#${grey}`, "i"))
   const rectangle = shapeAt(page, "4")
   const before = await filled(rectangle)
   expect(before).not.toBe(painted)
-  await accent.fill(`#${red}`)
+  await typeColor(page, accent, `#${red}`)
   await expect.poll(() => filled(rectangle)).toBe(painted)
-  await expect(theme.getByLabel("Accent 1", { exact: true })).toHaveValue(`#${red}`)
+  await expect(theme.getByRole("button", { name: "Accent 1", exact: true })).toHaveAttribute(
+    "title",
+    new RegExp(`#${red}`, "i"),
+  )
   await page.getByRole("button", { name: "Undo theme color", exact: true }).click()
   await expect.poll(() => filled(rectangle)).toBe(before)
-  await expect(theme.getByLabel("Accent 1", { exact: true })).toHaveValue(`#${grey}`)
+  await expect(theme.getByRole("button", { name: "Accent 1", exact: true })).toHaveAttribute(
+    "title",
+    new RegExp(`#${grey}`, "i"),
+  )
   await page.getByRole("button", { name: "Redo theme color", exact: true }).click()
   await expect.poll(() => filled(rectangle)).toBe(painted)
   await page.reload()

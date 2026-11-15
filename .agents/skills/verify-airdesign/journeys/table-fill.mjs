@@ -73,11 +73,9 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await panel.getByRole("textbox", { name: "Row 2, column 1" }).focus()
   await panel.getByRole("group", { name: "Apply to", exact: true }).getByRole("button", { name: "Row" }).click()
   await panel.getByRole("group", { name: "Cell fill", exact: true }).getByRole("button", { name: "Color" }).click()
-  await panel
-    .getByRole("group", { name: "Color", exact: true })
-    .first()
-    .getByRole("button", { name: "Accent 2" })
-    .click()
+  await panel.getByRole("group", { name: "Color", exact: true }).first().getByRole("button").first().click()
+  await page.locator("[data-color-picker]").getByRole("button", { name: "Accent 2", exact: true }).click()
+  await page.keyboard.press("Escape")
   await expect
     .poll(async () => {
       const fill = await fillOf("1.1")

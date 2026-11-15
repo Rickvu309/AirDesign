@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { openDeck } from "./design-panel"
+import { openDeck, pickColor } from "./design-panel"
 import { fillPanel, filled, shapeAt } from "./shape-fills"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -18,10 +18,11 @@ test("a list adds an item and removes one within its bounds, and Undo brings the
   await panel.getByRole("button", { name: "Add stop", exact: true }).click()
   await expect(stops).toHaveCount(3)
   await expect.poll(() => filled(shape)).not.toBe(two)
-  await panel
-    .getByRole("group", { name: "Stop 2", exact: true })
-    .getByRole("button", { name: "Accent 3", exact: true })
-    .click()
+  await pickColor(
+    page,
+    panel.getByRole("group", { name: "Stop 2", exact: true }).locator('[data-control="color"]'),
+    "Accent 6",
+  )
   await expect.poll(() => filled(shape)).not.toBe(two)
   const three = await filled(shape)
   await panel.getByRole("button", { name: "Remove stop 2", exact: true }).click()

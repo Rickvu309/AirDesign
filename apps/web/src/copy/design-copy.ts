@@ -11,7 +11,7 @@ export const designCopy = {
   color: "Color",
   picture: "Picture",
   pictureOff: "Picture, not available yet",
-  colors: "Colors",
+  backgroundColor: (name: string) => `Background color, ${name}`,
   white: "White",
   fills: { gradient: "Gradient", pattern: "Pattern", picture: "Picture" },
   kinds: {

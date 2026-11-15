@@ -50,18 +50,17 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   }
   await design.click()
   const panel = page.locator("[data-design-panel]")
-  const colors = panel.getByRole("group", { name: "Colors" })
+  const background = panel.getByRole("button", { name: /^Background color/ })
   await expect(panel.getByText("Slide 1", { exact: true })).toBeVisible()
-  await expect(colors.getByRole("button")).toHaveCount(10)
+  await expect(background).toHaveText("Light 1")
   await capture("design-panel")
-  const accent = colors.getByRole("button", { name: "Accent 1", exact: true })
-  const chip = await accent
-    .locator("span")
-    .first()
-    .evaluate((node) => getComputedStyle(node).backgroundColor)
+  await background.click()
+  const accent = page.locator("[data-color-picker]").getByRole("button", { name: "Accent 1", exact: true })
+  const chip = await accent.evaluate((node) => getComputedStyle(node).backgroundColor)
   await accent.click()
   await painted(chip)
-  await expect(accent).toHaveAttribute("aria-pressed", "true")
+  await page.keyboard.press("Escape")
+  await expect(background).toHaveText("Accent 1")
   await capture("background-set")
   const fills = async () => {
     const { register } = (await post(deckRoutes.open, { deck }, cookie)).json

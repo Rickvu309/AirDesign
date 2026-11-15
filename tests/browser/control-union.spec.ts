@@ -14,7 +14,7 @@ test("a union picks one case of a field, shows the pick and its own controls, an
   const kinds = panel.getByRole("group", { name: "Fill", exact: true })
   const kind = (name: string) => kinds.getByRole("button", { name, exact: true })
   await expect(kind("Color")).toHaveAttribute("aria-pressed", "true")
-  await expect(panel.getByRole("group", { name: "Color", exact: true }).getByRole("button")).toHaveCount(10)
+  await expect(panel.getByRole("group", { name: "Color", exact: true }).getByRole("button")).toHaveText("Accent 1")
   await kind("None").click()
   await expect.poll(() => filled(shape)).toBe("rgba(0, 0, 0, 0)")
   await expect(kind("None")).toHaveAttribute("aria-pressed", "true")

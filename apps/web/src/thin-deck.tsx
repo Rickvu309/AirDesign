@@ -12,7 +12,7 @@ import { useNetwork } from "@/editor/use-network"
 import { useUndoTurn } from "@/editor/use-undo"
 export { elementIds, valueStorable } from "@/deck-paint"
 import { AiraPanel } from "@/aira-panel"
-import { LiveDesignPanel } from "@/editor/live-design-panel"
+import { colorsIn, LiveDesignPanel } from "@/editor/live-design-panel"
 
 export function ThinDeck({ id }: { id: string }) {
   const deck = useEditorDeck(id)
@@ -50,6 +50,7 @@ export function ThinDeck({ id }: { id: string }) {
             onText: deck.inserts.addText,
             onRename: deck.rename,
             formatting: deck.undo.formatting.current,
+            deckColors: colorsIn(shown.displayParts.current),
             onTable: deck.tables.insert,
             onPicture: deck.pictureTool.pick,
             onShape: deck.inserts.addShape,

@@ -18,7 +18,7 @@ export function UnionControl({ row, palette, onChange, inner }: ControlProps) {
   const held = heldOf(row)
   const chosen = held === null ? undefined : Object.keys(held).find((name) => Object.hasOwn(cases, name))
   const chosenDesc = chosen === undefined ? undefined : cases[chosen]
-  const accent = palette.find((swatch) => swatch.scheme === "accent1")
+  const accent = palette.theme.find((swatch) => swatch.scheme === "accent1")
   const color: Color = firstColor(held) ?? { scheme: accent?.scheme ?? "accent1" }
 
   function pick(name: string) {

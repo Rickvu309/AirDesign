@@ -11,7 +11,9 @@ async function drive(kit) {
   await x.fill("96")
   await x.press("Enter")
   await panel.getByRole("button", { name: "Bold", exact: true }).click()
-  await panel.getByRole("group", { name: "Text color" }).getByRole("button", { name: "Accent 2", exact: true }).click()
+  await panel.getByRole("group", { name: "Text color" }).getByRole("button").first().click()
+  await kit.page.locator("[data-color-picker]").getByRole("button", { name: "Accent 2", exact: true }).click()
+  await kit.page.keyboard.press("Escape")
   await panel
     .getByRole("group", { name: "Alignment", exact: true })
     .getByRole("button", { name: "Center", exact: true })

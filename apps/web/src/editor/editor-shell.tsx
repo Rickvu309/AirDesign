@@ -37,6 +37,7 @@ export type EditorDeck = {
   readonly onText?: () => void
   readonly onRename?: (name: string) => void
   readonly formatting?: TextFormatting
+  readonly deckColors?: readonly string[]
   readonly onTable?: () => void
   readonly onPicture?: (file: File) => void
   readonly onShape?: (geometry: Geometry) => void
@@ -182,6 +183,7 @@ export function EditorShell({
               {...(deck === undefined ? {} : { undo: deck.undo })}
               {...(deck?.onText === undefined ? {} : { onText: deck.onText })}
               {...(deck?.formatting === undefined ? {} : { formatting: deck.formatting })}
+              {...(deck?.deckColors === undefined ? {} : { deckColors: deck.deckColors })}
               {...(formats === undefined ? {} : { formats })}
               {...(deck?.onTable === undefined ? {} : { onTable: deck.onTable })}
               {...(deck?.onPicture === undefined ? {} : { onPicture: deck.onPicture })}
