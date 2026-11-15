@@ -124,6 +124,8 @@ function faded(row: Row): boolean {
 
 function rowName(node: ElementId, row: Row): UndoName {
   if (slideKind(node) === "slide") return "background"
+  const theme = row.patch.theme
+  if (theme !== undefined) return theme.major === undefined && theme.minor === undefined ? "theme-color" : "theme-font"
   if (faded(row)) return "opacity"
   const box = row.patch.box
   if (box?.rot !== undefined) return "rotate"

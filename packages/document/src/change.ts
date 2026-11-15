@@ -2,7 +2,7 @@ import type { Box } from "./box.js"
 import { currentBox, currentValue, elementFacts, type Register } from "./decide.js"
 import type { SlideSize } from "./deck-index.js"
 import type { DesignKey, Role } from "./design.js"
-import { shapeOf, slideKind, slideNode, type ElementId, type SlideId } from "./element-id.js"
+import { shapeOf, slideKind, slideNode, themeNode, type ElementId, type SlideId } from "./element-id.js"
 import { elementGone } from "./element-order.js"
 import { opacityFields, takes, type ElementFacts } from "./element-takes.js"
 import { format } from "./format.js"
@@ -317,6 +317,7 @@ function expandRole(register: Register, role: Role, slide: SlideId | "every"): r
 }
 
 function slideOwned(register: Register, node: ElementId): boolean {
+  if (node === themeNode) return true
   return slideKind(node) !== null && slideOrder(register).includes(shapeOf(node).slide)
 }
 

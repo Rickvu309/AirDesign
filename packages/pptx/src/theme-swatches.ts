@@ -23,11 +23,16 @@ function related(parts: ReadonlyMap<string, Uint8Array>, part: string, type: str
   return null
 }
 
-function themePart(parts: ReadonlyMap<string, Uint8Array>, slide: string | null): string | null {
-  const layout = slide === null ? null : related(parts, slide, "slideLayout")
+export function slideTheme(parts: ReadonlyMap<string, Uint8Array>, slide: string): string | null {
+  const layout = related(parts, slide, "slideLayout")
   const master = layout === null ? null : related(parts, layout, "slideMaster")
   const theme = master === null ? null : related(parts, master, "theme")
-  if (theme !== null && parts.has(theme)) return theme
+  return theme !== null && parts.has(theme) ? theme : null
+}
+
+function themePart(parts: ReadonlyMap<string, Uint8Array>, slide: string | null): string | null {
+  const theme = slide === null ? null : slideTheme(parts, slide)
+  if (theme !== null) return theme
   return [...parts.keys()].filter((name) => themeFile.test(name)).sort()[0] ?? null
 }
 

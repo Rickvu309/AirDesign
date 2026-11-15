@@ -4,6 +4,7 @@ import {
   openRegister,
   planChange,
   registerScope,
+  themeNode,
   type AlphaField,
   type Command,
   type FieldName,
@@ -61,13 +62,15 @@ export function landed(register: Register, commands: readonly Command[]): Regist
 }
 
 export function placed(parts: Parts, kind: Kind, node?: string): At {
+  const deck = kind === "deck"
   const found = indexPackage(parts).elements.find(
-    (each) => each.kind === kind && !each.grouped && (node === undefined || each.node === node),
+    (each) =>
+      each.kind === (deck ? "shape" : kind) && !each.grouped && (deck || node === undefined || each.node === node),
   )
   if (found === undefined) throw new Error(kind)
   const [slide = "", shape = ""] = found.node.split(".")
   const part = readSlides(parts).find((each) => each.slide === slide)?.part ?? ""
-  return { node: found.node, slide, part, shape }
+  return { node: deck ? themeNode : found.node, slide, part, shape }
 }
 
 export function agentRegister(register: Register, at: At, example: object): Register | null {
@@ -114,4 +117,5 @@ export type Probe<T extends TraitName> = [FieldName<T>] extends [never]
       readonly opening: (parts: Parts, at: At) => Value
       readonly edit: (opening: Value, field: Shown<T>, value: FieldValue<T, Shown<T>>) => Value
       readonly fields: { readonly [F in Shown<T>]-?: FieldProbe<T, F> }
+      readonly painted?: (parts: Parts, at: At, field: string) => string
     }

@@ -101,6 +101,13 @@ function shownOf(register: Register | null, id: ElementId, file: string): string
   return JSON.stringify([shownValue(register, id, file), landedBox(register, id)])
 }
 
+const themePart = /^ppt\/theme\/theme\d+\.xml$/
+
+function themed(base: Parts, display: Parts): Parts {
+  const shown = [...display].filter(([name, bytes]) => themePart.test(name) && base.get(name) !== bytes)
+  return shown.length === 0 ? base : new Map([...base, ...shown])
+}
+
 export function paint(
   store: PaintStore,
   parts: Parts,
@@ -160,7 +167,7 @@ export function paint(
     if (painted === undefined) return null
     if (painted.canvas !== null) return painted.canvas.slide
     reader ??= paintReader(display, { fallbackPrompt })
-    const fileTexts = () => (texts ??= paintReader(base, { fallbackPrompt }))
+    const fileTexts = () => (texts ??= paintReader(themed(base, display), { fallbackPrompt }))
     const swatches = themeSwatches(display, painted.shapes.part)
     painted.canvas = paintCanvas(painted.shapes, reader, fileTexts, pictures.src, display, swatches)
     return painted.canvas.slide

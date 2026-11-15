@@ -1,7 +1,9 @@
 import {
   decide,
   elementId,
+  format,
   openRegister,
+  themeNode,
   writeTextValue,
   type Box,
   type Command,
@@ -193,4 +195,19 @@ it("paints the rows and columns a person changed in a table the deck was importe
   const table = painted.canvases(0)?.elements.find((element) => element.id === tableNode)?.table
   expect(table?.columns).toHaveLength(3)
   expect(table?.rows).toHaveLength(3)
+})
+
+it("paints a slide's typed title in the theme's new heading font, as it paints an untouched slide", () => {
+  const typed = person(openRegister("", "doe"), "256.2", "Heat pumps")
+  const opened = decide(typed, { command: "add", node: themeNode, floor: "", route: "doe" })
+  if (opened.decision === "refuse") throw new Error(opened.code)
+  const patch = { theme: { major: { set: "Georgia" } } }
+  const themed = decide(opened.register, { command: "person", node: themeNode, v: format, patch })
+  if (themed.decision === "refuse") throw new Error(themed.code)
+  const painted = paint(paintStore(), parts, themed.register, busyElements())
+  const title = (index: number) =>
+    JSON.stringify(painted.canvases(index)?.elements.find((element) => element.key.endsWith("#2"))?.text)
+  expect(title(0)).toContain('"font":"Georgia"')
+  expect(title(0)).not.toContain('"font":"Calibri Light"')
+  expect(title(1)).toContain('"font":"Georgia"')
 })

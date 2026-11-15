@@ -19,6 +19,8 @@ export type UndoName =
   | "backward"
   | "back"
   | "background"
+  | "theme-color"
+  | "theme-font"
   | "fill"
   | "line"
   | "effects"
@@ -63,6 +65,8 @@ export const undoCopy = {
     backward: "Undo send backward",
     back: "Undo send to back",
     background: "Undo background color",
+    "theme-color": "Undo theme color",
+    "theme-font": "Undo theme font",
     fill: "Undo fill",
     "cell-fill": "Undo cell fill",
     border: "Undo border",
@@ -104,6 +108,8 @@ export const undoCopy = {
     backward: "Redo send backward",
     back: "Redo send to back",
     background: "Redo background color",
+    "theme-color": "Redo theme color",
+    "theme-font": "Redo theme font",
     fill: "Redo fill",
     "cell-fill": "Redo cell fill",
     border: "Redo border",

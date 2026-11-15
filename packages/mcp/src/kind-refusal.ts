@@ -47,6 +47,7 @@ const takenWords: readonly (readonly [FieldKey | "remove", string])[] = [
   ["fill.value", "a fill"],
   ["box.x", "a move"],
   ["box.w", "a resize"],
+  ["theme.accent1", "theme colors and fonts"],
   ["remove", "a delete"],
 ]
 
@@ -87,6 +88,7 @@ function boxNext({ facts, box }: Missing): string {
 }
 
 function nextStep(node: ElementId, found: Missing): string {
+  if (found.missing.some((edit) => edit.startsWith("theme."))) return "Send theme with target deck.theme."
   if (found.missing.some((edit) => valueFields.includes(edit))) return textNext(node, found)
   if (found.missing.includes("remove")) return "Leave it, or tell the person."
   return boxNext(found)

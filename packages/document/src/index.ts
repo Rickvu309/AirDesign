@@ -11,6 +11,7 @@ export {
   slideKind,
   slideKinds,
   storedElements,
+  themeNode,
   type ElementId,
   type SlideId,
 } from "./element-id.js"
@@ -118,6 +119,7 @@ export {
   type FieldName,
   type FieldValue,
   type TraitName,
+  type TraitValue,
   type WireAgent,
   type WireField,
 } from "./traits.js"

@@ -12,6 +12,7 @@ import { line } from "./trait-line.js"
 import { notes } from "./trait-notes.js"
 import { table } from "./trait-table.js"
 import { text } from "./trait-text.js"
+import { theme } from "./trait-theme.js"
 import type { AgentOf, Alpha, Fields, ValueOf } from "./value-kind.js"
 
 export const traits = {
@@ -28,6 +29,7 @@ export const traits = {
   connection,
   table,
   notes,
+  theme,
 } as const
 
 export type TraitName = keyof typeof traits
@@ -58,7 +60,7 @@ export type WireAgent<T extends TraitName, F extends WireField<T>> =
 export const traitNames = Object.keys(traits) as readonly TraitName[]
 
 export const kindTraits = {
-  deck: [],
+  deck: ["theme"],
   theme: [],
   master: [],
   layout: [],

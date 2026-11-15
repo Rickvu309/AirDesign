@@ -54,6 +54,7 @@ for (const name of [
   "table-fill",
   "text-type",
   "picture-icon",
+  "theme",
   "commit-once",
   "deck-list-trash",
   "deck-stars",

@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test"
-import { fontFace, type FontWidths } from "../../packages/document/src/index.ts"
+import { fontFace, type FontWidths, type ResolvedSlide } from "../../packages/document/src/index.ts"
 
 const substitutes = new Map([
   ["calibri", "Carlito"],
@@ -111,4 +111,29 @@ export async function paintedHeights(
       }),
     [...boxes],
   )
+}
+
+export const pageFont = "Geist Variable"
+
+export async function slideWidths(page: Page, slides: readonly ResolvedSlide[]): Promise<FontWidths> {
+  const fonts = new Set<string>([pageFont])
+  const chars = new Set<string>("x")
+  for (const slide of slides)
+    for (const element of slide.elements)
+      for (const paragraph of element.text?.paragraphs ?? []) {
+        fonts.add(paragraph.end.font)
+        if (paragraph.bullet !== null) {
+          fonts.add(paragraph.bullet.font)
+          for (const char of paragraph.bullet.text) chars.add(char)
+        }
+        for (const run of paragraph.runs) {
+          fonts.add(run.font)
+          for (const char of run.text) chars.add(char)
+        }
+      }
+  const sans = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--font-sans"))
+  const families = [...fonts].map((font) =>
+    cssFamily(font === pageFont ? null : font).replace("var(--font-sans)", sans.trim()),
+  )
+  return measureFaces(page, families, [...chars].join(""))
 }

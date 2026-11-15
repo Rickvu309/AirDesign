@@ -28,7 +28,7 @@ type Inputs = Readonly<Record<string, unknown>>
 const slidePart = "(?:[0-9]{1,10}|n[0-9a-z]{12})"
 const rolePart = `(?:${roles.join("|")})`
 const ownKinds = slideKinds.join("|")
-const targetPattern = `^(?:[0-9]{1,10}|${slidePart}\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${ownKinds}|${rolePart})|\\*\\.${rolePart})$`
+const targetPattern = `^(?:[0-9]{1,10}|${slidePart}\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${ownKinds}|${rolePart})|\\*\\.${rolePart}|deck\\.theme)$`
 const roleTarget = new RegExp(`^(${slidePart}|\\*)\\.(${rolePart})$`)
 
 const addable = ["shape", "picture"] as const
@@ -204,7 +204,7 @@ export function setChangeSchema(): JsonSchema {
       target: {
         type: "string",
         pattern: targetPattern,
-        description: `An element id such as 258.7 or 258.notes; a slide id such as 258 for the slide itself, whose fill is the slide's background; <slide>.<role> such as 258.title for the element with that role on one slide; or *.<role> such as *.title for it on every slide. Roles: ${roles.join(", ")}.`,
+        description: `An element id such as 258.7 or 258.notes; a slide id such as 258 for the slide itself, whose fill is the slide's background; <slide>.<role> such as 258.title for the element with that role on one slide; *.<role> such as *.title for it on every slide; or deck.theme. Roles: ${roles.join(", ")}.`,
       },
       opacity: { ...agentSchema(opacityWire.desc), description: opacityWire.description },
       ...Object.fromEntries(wired.map((trait) => [trait, traitSchema(trait, null)])),

@@ -15,6 +15,7 @@ export type Desc =
   | { readonly kind: "choice"; readonly options: readonly string[] }
   | { readonly kind: "mark" }
   | { readonly kind: "color" }
+  | { readonly kind: "hex" }
   | { readonly kind: "alpha"; readonly over: string }
   | { readonly kind: "record"; readonly fields: Readonly<Record<string, Desc>> }
   | { readonly kind: "union"; readonly cases: Readonly<Record<string, Desc>>; readonly plain: string | null }
@@ -58,6 +59,7 @@ export const typeSize = whole("hundredth-point", sizeFloor, sizeCeiling)
 export const flag = kind<boolean, boolean>({ kind: "flag" })
 export const mark: MarkKind = kind<true, MarkAgent>({ kind: "mark" })
 export const color = kind<Color, AgentColor>({ kind: "color" })
+export const hex = kind<string, `#${string}`>({ kind: "hex" })
 
 export function sizeUpTo(max: number): ValueKind<number, number> {
   return whole("emu", 0, max)
@@ -137,6 +139,8 @@ export function custom<V, A>(name: "text" | "table" | "asset" | "node"): ValueKi
 
 const unread = Symbol("unread")
 
+const hexDigits = /^[0-9A-F]{6}$/
+
 function readWhole(raw: unknown, min: number, max: number): number | typeof unread {
   if (typeof raw !== "number" || !Number.isSafeInteger(raw) || raw < min || raw > max) return unread
   return Object.is(raw, -0) ? 0 : raw
@@ -200,6 +204,8 @@ function readDesc(desc: Desc, raw: unknown): unknown {
       return typeof raw === "string" && desc.options.includes(raw) ? raw : unread
     case "color":
       return readColor(raw) ?? unread
+    case "hex":
+      return typeof raw === "string" && hexDigits.test(raw) ? raw : unread
     case "record":
       return readFields(desc.fields, raw)
     case "union":

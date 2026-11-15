@@ -166,7 +166,7 @@ export function SwatchButton({
 
 type Run = { readonly control: ControlKind; readonly rows: readonly PanelRow[] }
 
-const paired: readonly ControlKind[] = ["length", "toggle"]
+const paired: readonly ControlKind[] = ["length", "toggle", "hex"]
 
 function runsOf(rows: readonly PanelRow[]): readonly Run[] {
   const runs: Run[] = []
@@ -182,6 +182,33 @@ function runsOf(rows: readonly PanelRow[]): readonly Run[] {
 function RowView({ row, palette, onChange }: ControlProps) {
   const View = controlViews[row.control]
   return View === undefined ? null : <View row={row} palette={palette} onChange={onChange} inner={RowView} />
+}
+
+export function SectionRows({
+  rows,
+  palette,
+  onChange,
+}: {
+  rows: readonly PanelRow[]
+  palette: readonly PaletteSwatch[]
+  onChange: (row: PanelRow, value: unknown) => void
+}) {
+  return runsOf(rows).map((run) => (
+    <div
+      key={run.rows.map((row) => row.field).join(" ")}
+      className={
+        run.control === "length" || run.control === "hex"
+          ? "grid grid-cols-2 gap-2"
+          : run.control === "toggle"
+            ? "grid grid-cols-3 gap-2"
+            : "flex flex-col"
+      }
+    >
+      {run.rows.map((row) => (
+        <RowView key={row.field} row={row} palette={palette} onChange={(value) => onChange(row, value)} />
+      ))}
+    </div>
+  ))
 }
 
 export function ElementDesign({
@@ -217,22 +244,7 @@ export function ElementDesign({
             last={at === last}
             action={reset === undefined ? null : <SectionReset row={reset} onChange={onChange} />}
           >
-            {runsOf(section.rows).map((run) => (
-              <div
-                key={run.rows.map((row) => row.field).join(" ")}
-                className={
-                  run.control === "length"
-                    ? "grid grid-cols-2 gap-2"
-                    : run.control === "toggle"
-                      ? "grid grid-cols-3 gap-2"
-                      : "flex flex-col"
-                }
-              >
-                {run.rows.map((row) => (
-                  <RowView key={row.field} row={row} palette={palette} onChange={(value) => onChange(row, value)} />
-                ))}
-              </div>
-            ))}
+            <SectionRows rows={section.rows} palette={palette} onChange={onChange} />
           </DesignSection>
         )
       })}

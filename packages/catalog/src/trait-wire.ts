@@ -12,6 +12,7 @@ import { lineWire } from "./trait-wire-line.js"
 import { notesWire } from "./trait-wire-notes.js"
 import { tableWire } from "./trait-wire-table.js"
 import { textWire } from "./trait-wire-text.js"
+import { themeWire } from "./trait-wire-theme.js"
 
 export type FieldWire<T extends TraitName, F extends WireField<T>> = {
   readonly description: string
@@ -39,4 +40,5 @@ export const traitWire: { readonly [T in TraitName]: TraitWire<T> } = {
   connection: connectionWire,
   table: tableWire,
   notes: notesWire,
+  theme: themeWire,
 }

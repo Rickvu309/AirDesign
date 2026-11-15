@@ -14,6 +14,8 @@ import {
   readElementId,
   shapeOf,
   slideKind,
+  themeNode,
+  themeSlots,
   upgradeBackgrounds,
   version,
   type Box,
@@ -50,6 +52,7 @@ export type ReadDeckAnswer = {
   readonly elements: readonly ReadElement[]
   readonly slides: readonly Pick<IndexSlide, "id" | "position" | "palette">[]
   readonly palettes?: readonly Palette[]
+  readonly theme?: Readonly<Record<string, string>>
   readonly index: "missing" | "pending" | "ready"
   readonly cursor?: string
 }
@@ -158,7 +161,8 @@ function knownNodes(register: Register): readonly ElementId[] {
     listed.add(node)
   }
   for (const node of register.nodes) {
-    if (readElementId(node) === undefined || register.elements[node] === undefined || listed.has(node)) continue
+    if (node === themeNode || readElementId(node) === undefined || register.elements[node] === undefined) continue
+    if (listed.has(node)) continue
     nodes.push(node)
     listed.add(node)
   }
@@ -185,7 +189,28 @@ function firstAfter(nodes: readonly ElementId[], cursor: string): number {
   return low
 }
 
-type ReadHead = Pick<ReadDeckAnswer, "revision" | "slides" | "palettes" | "index">
+type ReadHead = Pick<ReadDeckAnswer, "revision" | "slides" | "palettes" | "theme" | "index">
+
+function themeSet(register: Register): Readonly<Record<string, string>> {
+  const body = register.nodes.includes(themeNode) ? register.elements[themeNode] : undefined
+  const edits = body === undefined ? {} : (landedPatch(body, "text").theme ?? {})
+  return Object.fromEntries(
+    Object.entries(edits).flatMap(([field, edit]) => (typeof edit === "object" ? [[field, edit.set]] : [])),
+  )
+}
+
+function themedHead(palettes: readonly Palette[] | undefined, set: Readonly<Record<string, string>>) {
+  const slots = Object.fromEntries(themeSlots.flatMap((slot) => (set[slot] === undefined ? [] : [[slot, set[slot]]])))
+  const theme = Object.fromEntries(
+    Object.entries(set).map(([field, value]) => [field, Object.hasOwn(slots, field) ? `#${value}` : value]),
+  )
+  return {
+    ...(palettes === undefined
+      ? {}
+      : { palettes: palettes.map((each) => ({ ...each, slots: { ...each.slots, ...slots } })) }),
+    ...(Object.keys(theme).length === 0 ? {} : { theme }),
+  }
+}
 
 function readAnswer(head: ReadHead, elements: readonly ReadElement[], cursor?: string): ReadDeckAnswer {
   if (cursor === undefined) return { ok: true, ...head, elements }
@@ -251,7 +276,7 @@ export function readDeckPage(
         deck.register.order.length === 0
           ? (index?.slides ?? []).map(({ id, position }) => slideOf(id, position))
           : presentSlides(deck.register).map(({ id }, position) => slideOf(id, position)),
-      ...(index?.palettes === undefined ? {} : { palettes: index.palettes }),
+      ...themedHead(index?.palettes, themeSet(deck.register)),
       index: index === undefined ? "missing" : index.elements.length === index.total ? "ready" : "pending",
     },
     nodes,

@@ -7,6 +7,7 @@ import {
   shapeOf,
   slideKind,
   registerScope,
+  themeNode,
   valueBytes,
   version,
   type ElementId,
@@ -23,6 +24,7 @@ export type Applied =
   | { readonly ok: false; readonly refusal: CallRefusal }
 
 function slideOwned(register: Register, node: ElementId): boolean {
+  if (node === themeNode) return true
   if (slideKind(node) === null) return false
   const slide = shapeOf(node).slide
   return (
