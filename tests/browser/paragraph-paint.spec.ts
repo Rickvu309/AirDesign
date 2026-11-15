@@ -50,3 +50,18 @@ test("an underlined run paints its line", async ({ page }) => {
     )
   expect(lined).toBe(true)
 })
+
+test("an empty paragraph paints no bullet until someone types in its box, as PowerPoint does", async ({ page }) => {
+  await open(page)
+  await showSlide(page, 13)
+  const body = page.locator('[data-slide-paint] [contenteditable="true"]', { hasText: "Declared by the manufacturer" })
+  const emptyBullets = () =>
+    body.evaluate((box) =>
+      [...box.querySelectorAll<HTMLElement>("[data-paragraph]")]
+        .filter((block) => (block.textContent ?? "") === "")
+        .map((block) => getComputedStyle(block, "::before").content),
+    )
+  expect(await emptyBullets()).toEqual(["none", "none"])
+  await body.focus()
+  expect(await emptyBullets()).toEqual(['"•"', '"•"'])
+})
