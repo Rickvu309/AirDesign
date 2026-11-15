@@ -90,6 +90,10 @@ describe("projectTools", () => {
     })
   })
 
+  it("builds each tool's JSON schema once, since the MCP server is built again for every request", () => {
+    for (const tool of projectTools(catalog)) expect(toolInputSchema(tool.op)).toBe(toolInputSchema(tool.op))
+  })
+
   it("omits a web row", () => {
     expect(
       projectTools({ commit_edits: { kind: "command", exposure: "web", runsOn: "server", description: "x" } }),
