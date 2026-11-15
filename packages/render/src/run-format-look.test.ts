@@ -128,3 +128,9 @@ it("lays a text box's columns and direction out from the export", () => {
   })
   expect(textLook({ ...text, flow: "vert" }, scaled).body).toMatchObject({ minBlockSize: "100%" })
 })
+
+it("lets text in columns sit at the body's anchor until it fills the first column, as PowerPoint does", () => {
+  const body = textLook({ ...text, anchor: "bottom", columns: 2 }, scaled).body
+  expect(body).toMatchObject({ maxBlockSize: "100%", columnFill: "auto" })
+  expect(body.blockSize).toBeUndefined()
+})

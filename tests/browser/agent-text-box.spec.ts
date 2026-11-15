@@ -46,7 +46,7 @@ test("an agent sets a text box's autofit, anchor and font, which the person sees
   const panel = page.locator("[data-design-element]")
   const autofit = panel.getByRole("group", { name: "Autofit", exact: true })
   await expect(autofit.getByRole("button", { name: "Shrink" })).toHaveAttribute("aria-pressed", "true")
-  await expect(autofit.getByRole("button", { name: "Off" })).toBeDisabled()
+  await expect(autofit.getByRole("button", { name: "Off" })).toBeEnabled()
 
   const file = testInfo.outputPath(exportName)
   const saving = page.waitForEvent("download")

@@ -91,7 +91,7 @@ it("offers no Opacity on a group, or on a shape whose fill the index keeps", () 
   expect(opacityOf({ ...shape, kept: ["fill"] }, {})).toBeUndefined()
 })
 
-it("lays out a text box's body field by field, and shows its autofit without letting it change", () => {
+it("lays out a text box's body field by field, autofit included", () => {
   const panel = panelOf(shape, {
     reads: { "text.font": { value: "Calibri", source: "master" } },
     moves: true,
@@ -107,11 +107,10 @@ it("lays out a text box's body field by field, and shows its autofit without let
     ["insets", "record", undefined, null],
     ["anchor", "choice", "ctr", "Reset vertical alignment"],
     ["wrap", "toggle", undefined, null],
-    ["autofit", "choice", "shrink", null],
+    ["autofit", "choice", "shrink", "Reset autofit"],
     ["vertical", "choice", undefined, null],
     ["columns", "count", 1, null],
   ])
-  expect(body?.rows.filter((row) => row.shownOnly === true).map((row) => row.field)).toEqual(["autofit"])
   const text = panel.sections.find((section) => section.trait === "text")
   const typed = text?.rows.filter((row) => ["font", "lineSpacing", "spaceBefore", "spaceAfter"].includes(row.field))
   expect(typed?.map((row) => [row.label, row.control, row.value])).toEqual([

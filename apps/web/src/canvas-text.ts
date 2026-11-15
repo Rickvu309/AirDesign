@@ -53,9 +53,15 @@ function canvasParagraph(paragraph: PaintParagraph, scale: number, reduction: nu
   }
 }
 
+function fitOf(text: PaintText): Pick<CanvasText, "fit"> {
+  if (text.fit === "shrink") return { fit: { kind: "shrink", scale: text.fontScale, reduction: text.spacingReduction } }
+  return text.fit === "grow" ? { fit: { kind: "grow" } } : {}
+}
+
 export function canvasText(text: PaintText | null): CanvasText | null {
   if (text === null) return null
   return {
+    ...fitOf(text),
     paragraphs: text.paragraphs.map((paragraph) => canvasParagraph(paragraph, text.fontScale, text.spacingReduction)),
     anchor: text.anchor,
     insets: text.insets,

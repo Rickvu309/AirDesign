@@ -1,5 +1,9 @@
 import type { SchemeName } from "@airdesign/document"
 
+export type CanvasFit =
+  | { readonly kind: "shrink"; readonly scale: number; readonly reduction: number }
+  | { readonly kind: "grow" }
+
 export type CanvasSpacing = { readonly percent: number } | { readonly length: number }
 
 export type CanvasThemeColor = { readonly scheme: SchemeName; readonly css: string }
@@ -52,4 +56,5 @@ export type CanvasText = {
   readonly flow?: "horz" | "vert" | "vert270"
   readonly columns?: number
   readonly columnGap?: number
+  readonly fit?: CanvasFit
 }

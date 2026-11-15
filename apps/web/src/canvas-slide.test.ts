@@ -445,7 +445,7 @@ it("keeps a paragraph's bullet, gaps and run marks, and reduces its line spacing
   expect(painted({ text: tightened }).text?.paragraphs[0]?.lineSpacing).toEqual({ percent: 0.75 })
 })
 
-it("turns a paragraph's points into the slide's units, shrunk by the box's font scale", () => {
+it("turns a paragraph's points into the slide's units, shrunk by the box's font scale, and names the scale for the canvas to fit from", () => {
   expect(painted({ text }).text).toEqual({
     anchor: "middle",
     insets: { left: 1, top: 2, right: 3, bottom: 4 },
@@ -453,6 +453,7 @@ it("turns a paragraph's points into the slide's units, shrunk by the box's font 
     flow: "horz",
     columns: 1,
     columnGap: 0,
+    fit: { kind: "shrink", scale: 0.5, reduction: 0 },
     paragraphs: [
       {
         from: 2,
@@ -494,6 +495,11 @@ it("turns a paragraph's points into the slide's units, shrunk by the box's font 
       },
     ],
   })
+})
+
+it("asks the canvas to grow a box whose file resizes it to fit, and to fit nothing when the file says none", () => {
+  expect(painted({ text: { ...text, fit: "grow" } }).text?.fit).toEqual({ kind: "grow" })
+  expect(painted({ text: { ...text, fit: "none" } }).text).not.toHaveProperty("fit")
 })
 
 it("lets a slide shape move when the host can keep its box", () => {

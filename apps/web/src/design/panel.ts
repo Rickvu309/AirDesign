@@ -91,7 +91,6 @@ export type PanelRow = {
   readonly mixed: boolean
   readonly caption: boolean
   readonly action?: boolean
-  readonly shownOnly?: boolean
   readonly reset: string | null
   readonly parent?: unknown
   readonly nodes?: readonly NodeChoice[]
@@ -136,8 +135,6 @@ type Labels = {
 }
 
 const paragraphKeys = ["align", "bullet", "lineSpacing", "spaceBefore", "spaceAfter"] as const
-
-export const shownOnly: readonly string[] = ["body.autofit"]
 
 function inherited(reads: TraitReads, key: string): unknown {
   if (key === "size") return reads["text.size"]?.value
@@ -230,7 +227,6 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       const label = copy?.label ?? ""
       const caption = label !== labels.section
       const action = Object.hasOwn(traits[trait].inputs, field) && held.value === undefined ? { action: true } : {}
-      const fixed = shownOnly.includes(key) ? { shownOnly: true, reset: null } : {}
       const nodes = trait === "connection" && shown.nodes !== undefined ? { nodes: shown.nodes } : {}
       return [
         {
@@ -243,7 +239,6 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
           caption,
           reset,
           ...action,
-          ...fixed,
           ...nodes,
           change,
         },
