@@ -96,11 +96,18 @@ export function painted(parts: Parts, at: At): string {
   return JSON.stringify(drawn.filter((each) => each.from === "slide" && each.shape === at.shape))
 }
 
+function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
+  if (left === right) return true
+  if (left.length !== right.length) return false
+  for (let at = 0; at < left.length; at += 1) if (left[at] !== right[at]) return false
+  return true
+}
+
 export function sameParts(left: Parts, right: Parts): boolean {
   if (left.size !== right.size) return false
   return [...left].every(([name, bytes]) => {
     const other = right.get(name)
-    return other !== undefined && other.length === bytes.length && other.every((byte, at) => byte === bytes[at])
+    return other !== undefined && sameBytes(other, bytes)
   })
 }
 

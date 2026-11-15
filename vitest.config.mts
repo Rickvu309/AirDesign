@@ -43,6 +43,7 @@ export default defineConfig({
           name: "shared",
           include: sharedTests,
           isolate: false,
+          setupFiles: ["scripts/vitest-assertions.mjs", "scripts/vitest-kept-globals.mjs"],
         },
       },
       {

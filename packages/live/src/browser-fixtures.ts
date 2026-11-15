@@ -99,6 +99,15 @@ export function installSlowIndexedDb(slow: SlowStore): void {
   signInAs(firstAccount)
 }
 
+function nextTask(run: () => void): void {
+  const channel = new MessageChannel()
+  channel.port1.onmessage = () => {
+    channel.port1.close()
+    run()
+  }
+  channel.port2.postMessage(undefined)
+}
+
 function installStore(slow?: SlowStore): void {
   type Running = { mode: string; started: boolean; start: () => void }
   type Fake = {
@@ -246,10 +255,10 @@ function installStore(slow?: SlowStore): void {
                   queueMicrotask(pump)
                 }
                 if (slow?.closed !== true) {
-                  setTimeout(pump, 0)
+                  nextTask(pump)
                   return
                 }
-                slow.waiting.push(() => setTimeout(pump, 0))
+                slow.waiting.push(() => nextTask(pump))
               },
             }
             slow?.alive.add(() => {
