@@ -1,4 +1,4 @@
-import type { PaintElement } from "@airdesign/pptx"
+import { drawablePicture, type PaintElement } from "@airdesign/pptx"
 
 export type PictureImage = NonNullable<PaintElement["image"]>
 
@@ -30,6 +30,18 @@ const browserAddress: PictureAddress = {
 
 type Made = { readonly bytes: Uint8Array; readonly url: string }
 
+function copied(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
+  const copy = new Uint8Array(bytes.byteLength)
+  copy.set(bytes)
+  return copy
+}
+
+function drawnBlob(bytes: Uint8Array): Blob | null {
+  const drawn = drawablePicture(bytes)
+  if (drawn === null) return null
+  return new Blob([typeof drawn.data === "string" ? drawn.data : copied(drawn.data)], { type: drawn.contentType })
+}
+
 export function pictureSources(
   parts: ReadonlyMap<string, Uint8Array>,
   address: PictureAddress = browserAddress,
@@ -42,10 +54,10 @@ export function pictureSources(
       if (known !== undefined) return known.url
       const type = image.contentType?.toLowerCase() ?? ""
       const bytes = parts.get(image.part)
-      if (!drawable.has(type) || bytes === undefined) return null
-      const copy = new Uint8Array(bytes.byteLength)
-      copy.set(bytes)
-      const url = address.create(new Blob([copy], { type }))
+      if (bytes === undefined) return null
+      const blob = drawable.has(type) ? new Blob([copied(bytes)], { type }) : drawnBlob(bytes)
+      if (blob === null) return null
+      const url = address.create(blob)
       made.set(image.part, { bytes, url })
       return url
     },

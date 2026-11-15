@@ -28,6 +28,19 @@ function urls() {
   return { made, revoked, sources, parts }
 }
 
+function rectangleEmf(): Uint8Array {
+  const words = (values: readonly number[]) => new Uint8Array(Int32Array.from(values).buffer)
+  const header = words([1, 88, 0, 0, 99, 49, 0, 0, 999, 499, 0x464d4520, 0x10000, 0, 3, 0, 0, 0, 0, 100, 50, 10, 5])
+  const records = [words([43, 24, 10, 10, 60, 40]), words([14, 20, 0, 16, 20])]
+  const bytes = new Uint8Array(header.length + records.reduce((sum, record) => sum + record.length, 0))
+  let at = 0
+  for (const piece of [header, ...records]) {
+    bytes.set(piece, at)
+    at += piece.length
+  }
+  return bytes
+}
+
 describe("pictureSources", () => {
   it("makes one address per picture part however often a slide asks for it", () => {
     const { made, sources } = urls()
@@ -42,10 +55,29 @@ describe("pictureSources", () => {
     ["a WMF", "image/x-wmf"],
     ["a TIFF", "image/tiff"],
     ["an unknown type", null],
-  ])("makes no address for %s, which the browser cannot draw", (_, contentType) => {
+  ])("makes no address for %s whose bytes it cannot read", (_, contentType) => {
     const { made, sources } = urls()
     expect(sources.src(image({ part: "ppt/media/image3.emf", contentType }))).toBeNull()
     expect(made).toEqual([])
+  })
+
+  it("draws an EMF the browser cannot show as an SVG picture and keeps the file's bytes", async () => {
+    const made: Blob[] = []
+    const emf = rectangleEmf()
+    const parts = new Map([["ppt/media/image9.emf", emf]])
+    const sources = pictureSources(parts, {
+      create: (blob) => {
+        made.push(blob)
+        return `blob:${made.length}`
+      },
+      revoke: () => undefined,
+    })
+    const url = sources.src(image({ part: "ppt/media/image9.emf", contentType: "image/x-emf" }))
+    expect(url).toBe("blob:1")
+    expect(made[0]?.type).toBe("image/svg+xml")
+    expect(await made[0]?.text()).toContain('d="M10 10L60 10L60 40L10 40Z"')
+    expect(parts.get("ppt/media/image9.emf")).toBe(emf)
+    expect([...emf]).toEqual([...rectangleEmf()])
   })
 
   it("makes no address for a part the deck does not hold", () => {
