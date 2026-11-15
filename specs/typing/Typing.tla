@@ -101,7 +101,8 @@ UploadText ==
   /\ tUp' = tUp + 1
   /\ UNCHANGED <<Notes, tTyped, tRec, list, redo, ask, deckT, deckN, shownT, shownN, done, turned, missing>>
 
-\* Ctrl+Z outside a form field, in the box or on the slide, asks for the person's undo.
+\* Ctrl+Z where the person typed last, in the speaker notes field (NotesBar in
+\* apps/web/src/editor/notes-bar.tsx) or in the box, asks for the person's undo, never the field's own.
 KeyUndo ==
   /\ Typing
   /\ nTyped + tTyped > 0
@@ -114,10 +115,11 @@ KeyRedo ==
   /\ ask' = "redo"
   /\ UNCHANGED <<Notes, Text, list, redo, deckT, deckN, shownT, shownN, done, turned, missing>>
 
-\* Undo from the browser's own menu while the caret is in the box: the box refuses it.
+\* Undo from the browser's own menu while the caret is where the person typed last, in the
+\* notes field or in the box: both refuse it.
 MenuUndo ==
   /\ Typing
-  /\ tTyped > 0
+  /\ nTyped + tTyped > 0
   /\ UNCHANGED vars
 
 \* The undo waits for every keystroke's and notes edit's record, never for the server, then reads the list.
