@@ -65,7 +65,10 @@ function keptGradient(xml: string, previous: Uint8Array | null): string {
   const flipped =
     flip === undefined
       ? xml
-      : xml.replace("<a:gradFill ", `<a:gradFill flip="${decodeUtf8(previous.subarray(flip.valueStart, flip.valueEnd))}" `)
+      : xml.replace(
+          "<a:gradFill ",
+          `<a:gradFill flip="${decodeUtf8(previous.subarray(flip.valueStart, flip.valueEnd))}" `,
+        )
   if (tile === undefined) return flipped
   return `${flipped.slice(0, -"</a:gradFill>".length)}${decodeUtf8(previous.subarray(tile.start, tile.end))}</a:gradFill>`
 }
