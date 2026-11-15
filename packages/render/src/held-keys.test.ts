@@ -4,8 +4,6 @@ import { createRoot, type Root } from "react-dom/client"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { holdKeys, paintStore, SlideCanvas, type CanvasElement, type Entering } from "./index.js"
 
-Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true)
-
 const hosts: { host: HTMLElement; root: Root }[] = []
 const typed: { readonly into: Element | null; readonly command: string; readonly value: string }[] = []
 

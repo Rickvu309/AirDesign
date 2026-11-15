@@ -3,8 +3,6 @@ import { createRoot } from "react-dom/client"
 import { afterAll, afterEach, beforeAll, expect, it } from "vitest"
 import { paintStore, SlideCanvas, type CanvasElement, type CanvasText } from "./index.js"
 
-Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true)
-
 const style = { font: "Arial", size: 10, points: 1_000, bold: false, italic: false, color: null }
 
 const lines = (fit: CanvasText["fit"], anchor: CanvasText["anchor"] = "top", count = 10): CanvasText => ({

@@ -203,10 +203,19 @@ export const isolationReasons = (text, fileName = "file.test.ts") => {
   return [...reasons].sort()
 }
 
-export const splitUnitTests = (root) => {
-  const files = unitTestFiles(root)
+export const renderTestFiles = (root) =>
+  fs
+    .globSync("packages/render/**/*.test.ts", {
+      cwd: root,
+      exclude: (name) => name === "node_modules" || name === "dist",
+    })
+    .sort()
+
+export const splitTests = (root, files) => {
   const shared = files.filter(
     (file) => isolationReasons(fs.readFileSync(path.join(root, file), "utf8"), file).length === 0,
   )
   return { shared, isolated: files.filter((file) => !shared.includes(file)) }
 }
+
+export const splitUnitTests = (root) => splitTests(root, unitTestFiles(root))

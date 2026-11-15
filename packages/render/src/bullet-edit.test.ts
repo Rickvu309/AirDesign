@@ -6,8 +6,6 @@ import type { CanvasText } from "./record.js"
 import { SlideCanvas } from "./slide-canvas.js"
 import { paintStore } from "./store.js"
 
-Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true)
-
 const hosts: { host: HTMLDivElement; root: Root }[] = []
 
 afterEach(async () => {

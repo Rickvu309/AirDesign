@@ -4,8 +4,6 @@ import { createRoot } from "react-dom/client"
 import { expect, it, vi } from "vitest"
 import { paintStore, SlideCanvas, type CanvasElement, type CanvasText } from "./index.js"
 
-Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true)
-
 const text: CanvasText = {
   paragraphs: [
     {

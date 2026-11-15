@@ -1,6 +1,6 @@
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { isolationReasons, splitUnitTests } from "./test-isolation.mjs"
+import { isolationReasons, renderTestFiles, splitTests, splitUnitTests } from "./test-isolation.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const fail = (message) => {
@@ -68,5 +68,22 @@ if (
     .test.setupFiles.includes("scripts/vitest-kept-globals.mjs")
 )
   fail("the shared project does not put back the globals each file leaves")
+
+const renderSplit = splitTests(root, renderTestFiles(root))
+if (renderSplit.shared.length < 30) fail(`only ${renderSplit.shared.length} render files share workers`)
+if (asList(included("render-shared")) !== asList(renderSplit.shared))
+  fail("vitest.config.mts does not run the shared render files this scan chose")
+if (asList(included("render")) !== asList(renderSplit.isolated))
+  fail("vitest.config.mts does not isolate the render files this scan chose")
+const renderShared = projects.find((project) => project.test.name === "render-shared").test
+if (renderShared.isolate !== false) fail("the shared render project isolates")
+if (!renderShared.setupFiles.includes("scripts/vitest-kept-globals.mjs"))
+  fail("the shared render project does not put back the globals each file leaves")
+for (const name of ["render", "render-shared"]) {
+  const project = projects.find((candidate) => candidate.test.name === name).test
+  if (project.environment !== "jsdom") fail(`the ${name} project does not paint in jsdom`)
+  if (!project.setupFiles.includes("scripts/vitest-act-environment.mjs"))
+    fail(`the ${name} project does not tell React it runs under act`)
+}
 
 console.log("test isolation tests passed")

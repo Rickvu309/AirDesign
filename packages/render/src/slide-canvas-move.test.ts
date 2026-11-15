@@ -12,8 +12,6 @@ import {
   type PaintStore,
 } from "./index.js"
 
-Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true)
-
 const hosts: { host: HTMLDivElement; root: Root }[] = []
 
 afterEach(async () => {

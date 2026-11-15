@@ -4,8 +4,6 @@ import { createRoot, type Root } from "react-dom/client"
 import { afterEach, expect, it } from "vitest"
 import { paintStore, SlideCanvas, unshownFill, type CanvasElement, type CanvasSlide } from "./index.js"
 
-Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true)
-
 const hosts: { host: HTMLDivElement; root: Root }[] = []
 
 afterEach(async () => {

@@ -1,10 +1,11 @@
 import path from "node:path"
 import { defineConfig } from "vitest/config"
-import { splitUnitTests } from "./scripts/test-isolation.mjs"
+import { renderTestFiles, splitTests, splitUnitTests } from "./scripts/test-isolation.mjs"
 
 const root = import.meta.dirname
 
 const { shared: sharedTests, isolated: isolatedTests } = splitUnitTests(root)
+const { shared: sharedRenderTests, isolated: isolatedRenderTests } = splitTests(root, renderTestFiles(root))
 
 const alias = [
   {
@@ -64,9 +65,26 @@ export default defineConfig({
           name: "render",
           retry: 0,
           environment: "jsdom",
-          setupFiles: ["scripts/vitest-assertions.mjs"],
-          include: ["packages/render/**/*.test.ts"],
-          exclude: ["**/node_modules/**", "**/dist/**"],
+          setupFiles: ["scripts/vitest-assertions.mjs", "scripts/vitest-act-environment.mjs"],
+          include: isolatedRenderTests,
+        },
+      },
+      {
+        extends: false,
+        resolve: {
+          alias,
+        },
+        test: {
+          name: "render-shared",
+          retry: 0,
+          environment: "jsdom",
+          isolate: false,
+          setupFiles: [
+            "scripts/vitest-assertions.mjs",
+            "scripts/vitest-act-environment.mjs",
+            "scripts/vitest-kept-globals.mjs",
+          ],
+          include: sharedRenderTests,
         },
       },
     ],
