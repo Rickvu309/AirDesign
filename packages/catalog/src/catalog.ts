@@ -163,12 +163,22 @@ function sharedColors(schema: unknown): unknown {
   return Object.fromEntries(Object.entries(node).map(([key, value]) => [key, sharedColors(value)]))
 }
 
-export function toolInputSchema(op: AgentOp): Readonly<Record<string, unknown>> {
+const inputSchemas = new Map<AgentOp, Readonly<Record<string, unknown>>>()
+
+function builtInputSchema(op: AgentOp): Readonly<Record<string, unknown>> {
   const schema = z.toJSONSchema(catalog[op].read.input, { io: "input" })
   const shared = sharedColors(schema) as Readonly<Record<string, unknown>>
   const text = JSON.stringify(shared)
   const used = Object.entries(colorSchemas).filter(([name]) => text.includes(`"#/$defs/${name}"`))
   return sharedSchemas(used.length === 0 ? shared : { ...shared, $defs: Object.fromEntries(used) })
+}
+
+export function toolInputSchema(op: AgentOp): Readonly<Record<string, unknown>> {
+  const known = inputSchemas.get(op)
+  if (known !== undefined) return known
+  const built = builtInputSchema(op)
+  inputSchemas.set(op, built)
+  return built
 }
 
 function toolOrder(left: AgentTool<string>, right: AgentTool<string>): number {
