@@ -102,6 +102,21 @@ describe("shape paint", () => {
     expect(own(partsOf(sp(String(markup)))).fill).toEqual(fill)
   })
 
+  it("reads gradient stops in position order whatever order the file lists them in, as PowerPoint paints them", () => {
+    const stop = (position: string, hex: string) => `<a:gs pos="${position}"><a:srgbClr val="${hex}"/></a:gs>`
+    const stops = `${stop("75000", "8A91BB")}${stop("0", "19387A")}${stop("100000", "CBCDE2")}`
+    expect(own(partsOf(sp(`<a:gradFill><a:gsLst>${stops}</a:gsLst><a:lin ang="0"/></a:gradFill>`))).fill).toEqual({
+      type: "gradient",
+      stops: [
+        { position: 0, color: { hex: "19387A", alpha: 1 } },
+        { position: 0.75, color: { hex: "8A91BB", alpha: 1 } },
+        { position: 1, color: { hex: "CBCDE2", alpha: 1 } },
+      ],
+      angle: 0,
+      path: null,
+    })
+  })
+
   it("reads only direct fill children, not lines, runs or nested shapes", () => {
     const nested = `${ln(solid("FF0000"))}<a:rPr>${solid("00FF00")}</a:rPr><a:extLst>${sp(solid("0000FF"), "", "", "9")}</a:extLst>`
     expect(own(partsOf(sp(nested))).fill).toBeNull()
