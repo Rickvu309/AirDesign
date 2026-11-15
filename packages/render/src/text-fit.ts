@@ -65,7 +65,8 @@ export function grownBox(box: PaintBox, anchor: CanvasText["anchor"], extra: num
 }
 
 export function measured(text: CanvasText | null): boolean {
-  return text?.fit !== undefined && (text.flow ?? "horz") === "horz" && (text.columns ?? 1) === 1
+  if (text === null || (text.flow ?? "horz") !== "horz") return false
+  return text.fit !== undefined || (text.columns ?? 1) > 1
 }
 
 let fontLoads = 0
@@ -102,6 +103,7 @@ type Fitting = {
   readonly height: number
   readonly step: number
   readonly grown: number
+  readonly overflow: boolean
 }
 
 const tolerance = 0.5
@@ -113,19 +115,24 @@ const sameFor = (fitting: Fitting, other: Fitting) =>
   fitting.width === other.width &&
   fitting.height === other.height
 
-export function nextFitting(fitting: Fitting, fit: CanvasFit, over: number, steps: number): Fitting {
-  if (!(over > tolerance)) return fitting
-  if (fit.kind === "grow") return { ...fitting, grown: fitting.grown + over }
-  return fitting.step + 1 < steps ? { ...fitting, step: fitting.step + 1 } : fitting
+type Over = { readonly down: number; readonly across: number }
+
+export function nextFitting(fitting: Fitting, fit: CanvasFit | undefined, over: Over, steps: number): Fitting {
+  const smaller = fit?.kind === "shrink" && fitting.step + 1 < steps
+  if (over.across > tolerance && !fitting.overflow)
+    return smaller ? { ...fitting, step: fitting.step + 1 } : { ...fitting, overflow: true }
+  if (!(over.down > tolerance) || fit === undefined) return fitting
+  if (fit.kind === "grow") return { ...fitting, grown: fitting.grown + over.down }
+  return smaller ? { ...fitting, step: fitting.step + 1 } : fitting
 }
 
-function overflowOf(layer: HTMLElement): number | null {
+function overflowOf(layer: HTMLElement, columns: number): Over | null {
   const body = layer.querySelector<HTMLElement>(":scope > [data-text-body]")
   if (body === null) return null
   const style = getComputedStyle(layer)
   const room =
     layer.clientHeight - (Number.parseFloat(style.paddingTop) || 0) - (Number.parseFloat(style.paddingBottom) || 0)
-  return body.offsetHeight - room
+  return { down: body.offsetHeight - room, across: columns > 1 ? body.scrollWidth - body.clientWidth : 0 }
 }
 
 export function useTextFit(
@@ -145,15 +152,16 @@ export function useTextFit(
     height: box === null ? 0 : scaled(box.height),
     step: 0,
     grown: 0,
+    overflow: false,
   }
   const [held, hold] = useState(now)
   const fitting = sameFor(held, now) ? held : now
   const steps = useMemo(() => (fit?.kind === "shrink" ? shrinkSteps(fit) : []), [fit])
   useLayoutEffect(() => {
     const shown = layer.current
-    if (shown === null || fit === undefined || !measured(text)) return
+    if (shown === null || !measured(text)) return
     const measure = () => {
-      const over = overflowOf(shown)
+      const over = overflowOf(shown, text?.columns ?? 1)
       if (over !== null) hold((before) => nextFitting(sameFor(before, now) ? before : now, fit, over, steps.length))
     }
     measure()
@@ -164,7 +172,8 @@ export function useTextFit(
   })
   const step = steps[fitting.step]
   const shrunk = text !== null && step !== undefined && fitting.step > 0 ? fitted(text, step) : text
+  const shown = shrunk !== null && fitting.overflow ? { ...shrunk, overflow: true } : shrunk
   const grown =
     box !== null && text !== null && fitting.grown > 0 ? grownBox(box, text.anchor, fitting.grown / scaled(1)) : box
-  return { element: shrunk === text && grown === box ? element : { ...element, text: shrunk, box: grown }, layer }
+  return { element: shown === text && grown === box ? element : { ...element, text: shown, box: grown }, layer }
 }
