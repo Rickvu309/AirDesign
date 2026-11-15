@@ -187,7 +187,7 @@ A line whose ends can attach to sites on the shapes and pictures of its slide, s
 _Avoid_: link, edge, arrow (an arrow is a line's end)
 
 **site**:
-A numbered point on a shape or picture where a connector's end attaches, numbered as PowerPoint numbers them: a rectangle has 0 at the top, 1 left, 2 bottom and 3 right. A shape's sites show as dots while a person drags a connector's end over it. PowerPoint calls them connection points.
+A numbered point on a shape or picture where a connector's end attaches, numbered as PowerPoint numbers them: a rectangle has 0 at the top, 1 left, 2 bottom and 3 right. The design panel names a site by the side it sits on, Top, Left, Bottom or Right, or Top left and the like at a corner, and Point and its number when two sites would share a name. A shape's sites show as dots while a person drags a connector's end over it. PowerPoint calls them connection points.
 _Avoid_: anchor, port, handle
 
 **diagram**:

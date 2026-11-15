@@ -152,7 +152,7 @@ export {
   type Outline,
   type Tie,
 } from "./connector.js"
-export { siteCount, type Spot } from "./preset-sites.js"
+export { siteCount, siteSpot, type Spot } from "./preset-sites.js"
 export { presetGuides } from "./preset-guides.js"
 export { alignments } from "./trait-box.js"
 export { slideMeasure } from "./slide-measure.js"

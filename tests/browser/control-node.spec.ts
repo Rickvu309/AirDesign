@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test"
-import { openDeck } from "./design-panel"
+import { openDeck, settled } from "./design-panel"
+import { newBlankDeck } from "./new-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -41,7 +42,7 @@ test("a node control names the shape a connector's end attaches to, moves the en
   await expect(start.getByRole("button", { name: "Shape", exact: true })).toHaveAttribute("aria-pressed", "true")
   await expect(start.getByRole("combobox", { name: "Attached to", exact: true })).toHaveText(/^Content Placeholder 5/)
   await expect(end.getByRole("combobox", { name: "Attached to", exact: true })).toHaveText(/^Graphic 14/)
-  await expect(end.getByRole("textbox", { name: "Site", exact: true })).toHaveValue("0")
+  await expect(end.getByRole("combobox", { name: "Site", exact: true })).toHaveText(/^Top/)
   const before = await placement(frame(page, "26"))
 
   await attached(end, "Graphic 22")
@@ -58,4 +59,31 @@ test("a node control names the shape a connector's end attaches to, moves the en
   await end.getByRole("button", { name: "None", exact: true }).click()
   await expect(end.getByRole("combobox", { name: "Attached to", exact: true })).toHaveCount(0)
   await expect.poll(() => placement(frame(page, "26"))).toEqual(before)
+})
+
+test("a node control reads a blank deck's placeholders as Title and Subtitle, never as their file ids", async ({
+  page,
+}) => {
+  await page.goto("/")
+  await newBlankDeck(page)
+  await settled(page)
+  for (const name of ["Rectangle", "Line"]) {
+    await page.getByRole("button", { name: "Shapes", exact: true }).click()
+    await page.getByRole("button", { name, exact: true }).click()
+  }
+  const design = page.getByRole("button", { name: "Design", exact: true })
+  if ((await design.getAttribute("aria-pressed")) !== "true") await design.click()
+  const line = await page.locator("[data-slide-paint] [data-canvas-line]").last().boundingBox()
+  if (line === null) throw new Error("no line")
+  await page.mouse.click(line.x + line.width / 2, line.y + line.height / 2)
+  const section = page
+    .locator("[data-design-element] section")
+    .filter({ has: page.getByRole("heading", { name: "Connector", exact: true }) })
+  await section
+    .locator('[data-control="union"]')
+    .filter({ hasText: "Start" })
+    .getByRole("button", { name: "Shape", exact: true })
+    .click()
+  await section.getByRole("combobox", { name: "Attached to", exact: true }).first().click()
+  await expect(page.getByRole("option")).toHaveText(["Title", "Subtitle", /^Rectangle/])
 })

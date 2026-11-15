@@ -40,6 +40,7 @@ export const controlKinds = [
   "table",
   "asset",
   "node",
+  "site",
 ] as const
 
 export type ControlKind = (typeof controlKinds)[number]
@@ -98,7 +99,11 @@ export type PanelRow = {
   readonly change: (value: unknown) => SetChange
 }
 
-export type NodeChoice = { readonly node: ElementId; readonly name: string }
+export type NodeChoice = {
+  readonly node: ElementId
+  readonly name: string
+  readonly sites: readonly string[]
+}
 
 export type ControlProps = {
   readonly row: PanelRow
@@ -114,7 +119,7 @@ export function partRow(row: PanelRow, name: string, desc: Desc, value: unknown)
     parent: row.value,
     field: `${row.field}.${name}`,
     label,
-    control: controlOf(desc),
+    control: row.trait === "connection" && name === "site" ? "site" : controlOf(desc),
     desc,
     value,
     caption: true,
