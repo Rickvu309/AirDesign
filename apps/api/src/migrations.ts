@@ -1,4 +1,4 @@
-export type Migration = { readonly id: number; readonly sql: string; readonly batch?: string }
+export type Migration = { readonly id: number; readonly sql: string }
 
 export const migrations: readonly Migration[] = [
   {
@@ -383,6 +383,19 @@ begin
 end
 $$;
 `,
-    batch: "select deck.rewrite_backgrounds(100) as done",
+  },
+  {
+    id: 15,
+    sql: `
+with rewritten as (
+  update deck.saved set revision = revision + 1, register = deck.slide_backgrounds(register)
+  where register->'order' @> '[{"slide": "background"}]'
+  returning id, revision
+)
+select pg_notify('deck', id || ':' || revision) from rewritten;
+drop function if exists deck.rewrite_backgrounds(integer);
+drop function if exists deck.slide_backgrounds(jsonb);
+drop table if exists deck.background_backup;
+`,
   },
 ]
