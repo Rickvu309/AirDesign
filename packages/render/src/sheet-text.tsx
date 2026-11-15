@@ -62,7 +62,7 @@ export function SheetText(props: {
 }) {
   const { look, text } = props
   return (
-    <div style={look.body}>
+    <div data-text-body="" style={look.body}>
       {text.paragraphs.map((paragraph, index) => {
         const filled = paragraph.runs.some((run) => run.text !== "")
         const align = placed(paragraph.align)

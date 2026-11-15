@@ -676,7 +676,7 @@ test("typing past the bottom of a styled box shows the words below it", async ({
   const parts = await partsOf(nesc)
   await open(page, nesc)
   await showSlide(page, slideNumber(parts, nescSlide))
-  const element = page.locator(`[data-canvas-element="${nescSlide}#3"]`)
+  const element = page.locator(`[data-canvas-element="${nescSlide}#2"]`)
   const box = element.locator('[contenteditable="true"]')
   await box.focus()
   await page.keyboard.press("Control+End")

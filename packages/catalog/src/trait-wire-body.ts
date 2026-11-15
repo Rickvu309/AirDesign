@@ -10,7 +10,7 @@ export const bodyWire: TraitWire<"body"> = {
     anchor: { description: "Where the text sits: t top, ctr middle, b bottom.", example: { body: { anchor: "b" } } },
     wrap: { description: "false keeps each line on one line.", example: { body: { wrap: false } } },
     autofit: {
-      description: "shrink and grow are kept for PowerPoint; AirDesign does not resize the text.",
+      description: "shrink makes overflowing text smaller; grow makes the box taller to hold it.",
       example: { body: { autofit: "grow" } },
     },
     vertical: {

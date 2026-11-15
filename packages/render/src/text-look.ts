@@ -233,13 +233,18 @@ function paintedColor(color: Color, colors: readonly CanvasThemeColor[], file: s
   return alpha === undefined || !/^#[\da-f]{6}$/i.test(css) ? css : `${css}${alpha}`
 }
 
-function formatted(style: CanvasRunStyle, format: RunPaint, colors: readonly CanvasThemeColor[]): CanvasRunStyle {
+function formatted(
+  style: CanvasRunStyle,
+  format: RunPaint,
+  colors: readonly CanvasThemeColor[],
+  scale: number,
+): CanvasRunStyle {
   return {
     ...style,
     bold: format.bold ?? style.bold,
     italic: format.italic ?? style.italic,
     underline: format.underline ?? style.underline === true,
-    ...(format.size === undefined ? {} : { size: format.size * 127, points: format.size }),
+    ...(format.size === undefined ? {} : { size: format.size * emuPerHundredth * scale, points: format.size }),
     ...(format.color === undefined ? {} : { color: paintedColor(format.color, colors, style.color) }),
     ...(format.font === undefined ? {} : { font: format.font }),
   }
@@ -283,7 +288,7 @@ function bodyLook(text: CanvasText, scaled: Scaled): CSSProperties {
     return {
       display: "block",
       flexShrink: 0,
-      blockSize: "100%",
+      maxBlockSize: "100%",
       columnCount: columns,
       columnGap: `${scaled(text.columnGap ?? 0)}px`,
       columnFill: "auto",
@@ -309,6 +314,7 @@ export const flowModes = {
 export function textLook(text: CanvasText, scaled: Scaled): TextLook {
   const paragraphs = new Map(text.paragraphs.map((paragraph) => [paragraph.from, paragraph]))
   const colors = text.colors ?? []
+  const scale = text.fit?.kind === "shrink" ? text.fit.scale : 1
   const styleAt = (from: number, run: number) => {
     const paragraph = paragraphs.get(from)
     return paragraph === undefined ? null : fileStyle(paragraph, run)
@@ -324,7 +330,7 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
       const found = paragraphs.get(from)
       if (found === undefined) return { lineHeight: singleLine }
       const paragraph = spaced(found, overlay)
-      const style = formatted(fileStyle(paragraph, run), format, colors)
+      const style = formatted(fileStyle(paragraph, run), format, colors, scale)
       const lineHeight = lineHeights(paragraph.lineSpacing, scaled, true).run
       const drawn = marks(style)
       const plain =

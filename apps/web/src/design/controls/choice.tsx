@@ -14,7 +14,6 @@ function ChoiceList({ row, onChange, label, options }: ControlProps & { label: s
   return (
     <Select
       value={value}
-      disabled={row.shownOnly === true}
       onValueChange={(next) => {
         if (typeof next === "string" && next !== value && options.includes(next)) onChange(next)
       }}
@@ -66,7 +65,6 @@ export function ChoiceControl(props: ControlProps) {
                 type="button"
                 variant="ghost"
                 aria-pressed={chosen}
-                disabled={row.shownOnly === true}
                 onClick={() => {
                   if (!chosen) onChange(option)
                 }}

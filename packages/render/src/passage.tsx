@@ -296,6 +296,7 @@ export function Passage(props: {
   return (
     <div
       ref={box}
+      data-text-body=""
       contentEditable={props.onEdit !== undefined}
       aria-placeholder={props.prompt}
       style={{ whiteSpace: "pre-wrap", ...(props.framed === true ? framedOutline : {}), ...look?.body }}

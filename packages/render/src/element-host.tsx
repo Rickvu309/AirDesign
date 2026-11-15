@@ -16,6 +16,7 @@ import { anchored, flowModes, textLook, type Scaled, type TextLook } from "./tex
 import { formatKey, keepsFormat, type TextFormatting } from "./text-formatting.js"
 import { PictureTone, pictureLook } from "./picture-tone.js"
 import { unshownFill } from "./unshown-fill.js"
+import { useTextFit } from "./text-fit.js"
 import { UnshownLabel } from "./unshown-label.js"
 
 const defaultInsetX = 91_440
@@ -129,23 +130,26 @@ export function elementFrame(
   }
 }
 
-function LiveText(props: {
-  readonly store: PaintStore
-  readonly id: ElementId
-  readonly text: CanvasText
-  readonly scaled: Scaled
-}) {
-  const record = useElement(props.store, props.id)
-  return <SheetText look={textLook(props.text, props.scaled)} text={{ paragraphs: textValue(record?.text ?? "") }} />
-}
-
-function QuietElement(props: {
+type QuietProps = {
   readonly store: PaintStore
   readonly element: CanvasElement
   readonly scaled: Scaled
   readonly unshown: boolean
-}) {
-  const { element, scaled, store, unshown } = props
+}
+
+function QuietElement(props: QuietProps) {
+  const id = props.element.id
+  return id === null ? <QuietFrame {...props} written="" /> : <QuietLive {...props} id={id} />
+}
+
+function QuietLive(props: QuietProps & { readonly id: ElementId }) {
+  const record = useElement(props.store, props.id)
+  return <QuietFrame {...props} written={record?.text ?? ""} />
+}
+
+function QuietFrame(props: QuietProps & { readonly written: string }) {
+  const { scaled, unshown } = props
+  const { element, layer } = useTextFit(props.element, scaled, props.written)
   const text = element.text
   return (
     <div data-thumb-element={element.key} style={elementFrame(element, scaled, false, unshown)}>
@@ -154,11 +158,11 @@ function QuietElement(props: {
       <DiagramArt element={element} scaled={scaled} />
       <ChartArt box={element.box} chart={element.chart} described={false} scaled={scaled} />
       {text === null ? null : (
-        <div style={textLayer(element.box, text, scaled)}>
+        <div ref={layer} style={textLayer(element.box, text, scaled)}>
           {element.id === null ? (
             <SheetText look={textLook(text, scaled)} text={text} />
           ) : (
-            <LiveText id={element.id} scaled={scaled} store={store} text={text} />
+            <SheetText look={textLook(text, scaled)} text={{ paragraphs: textValue(props.written) }} />
           )}
         </div>
       )}
@@ -167,7 +171,8 @@ function QuietElement(props: {
 }
 
 function SheetElement(props: { readonly element: CanvasElement; readonly scaled: Scaled; readonly unshown: boolean }) {
-  const { element, scaled, unshown } = props
+  const { scaled, unshown } = props
+  const { element, layer } = useTextFit(props.element, scaled, "")
   const text = element.text
   return (
     <div data-canvas-element={element.key} style={elementFrame(element, scaled, false, unshown)}>
@@ -177,7 +182,7 @@ function SheetElement(props: { readonly element: CanvasElement; readonly scaled:
       <DiagramArt element={element} scaled={scaled} />
       <ChartArt box={element.box} chart={element.chart} described scaled={scaled} />
       {text === null ? null : (
-        <div style={textLayer(element.box, text, scaled)}>
+        <div ref={layer} style={textLayer(element.box, text, scaled)}>
           <SheetText look={textLook(text, scaled)} text={text} />
         </div>
       )}
@@ -262,10 +267,14 @@ function PlacedText(props: {
   const carried = useBox(store, group?.id ?? id)
   const own = paintedAt(props.element.box, useBox(store, id))
   const box = group === undefined ? own : followed(own, group.box, carried)
-  const element = box === props.element.box ? props.element : { ...props.element, box }
+  const shown = record?.text ?? ""
+  const { element, layer } = useTextFit(
+    box === props.element.box ? props.element : { ...props.element, box },
+    scaled,
+    shown,
+  )
   const text = element.text ?? noText
   const look = textLook(text, scaled)
-  const shown = record?.text ?? ""
   const typing = element.editable && onEdit !== undefined
   const empty = isBlank(shown)
   const isSelected = moves !== null && moves.selected === id
@@ -302,7 +311,7 @@ function PlacedText(props: {
       <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
       <DiagramArt element={element} scaled={scaled} />
       <ChartArt box={element.box} chart={element.chart} described scaled={scaled} />
-      <div style={textLayer(element.box, text, scaled)}>
+      <div ref={layer} style={textLayer(element.box, text, scaled)}>
         {showPrompt ? (
           <div
             aria-hidden="true"
