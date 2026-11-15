@@ -142,6 +142,10 @@ _Avoid_: the assistant, the AI
 The panel beside the slide that sets the selected element's position, size, rotation, flips, alignment, shape, opacity, fill, line, effects, text, a picture's icon, recolor and crop, a connector's ends, and the element's name and alt text, or the slide's background color and the deck's theme when nothing is selected.
 _Avoid_: inspector, properties, format pane
 
+**inherited**:
+A value an element paints with but does not set itself: it comes from the element's layout, master or theme, or from PowerPoint's own default, such as 18 pt in the theme's body font. The design panel shows it in quiet ink; a value the person or an agent sets shows in full ink, and a reset returns the field to the inherited value.
+_Avoid_: default, placeholder value, unset
+
 **theme**:
 The deck's twelve colors and its heading and body fonts. Every shape, line, text, background and table that names a theme color or font follows a change to it. A person changes it in the design panel's Theme section with nothing selected; an agent sends `set` with target `deck.theme`.
 _Avoid_: palette, color scheme, template (a template is a whole design, not available yet)

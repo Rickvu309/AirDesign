@@ -88,7 +88,7 @@ test("a person sets a text box's font, spacing, margins, anchor, wrap, direction
   await expect.poll(async () => (await shown(shape)).top).toBeGreaterThan(opening.top)
   const spaced = await shown(shape)
   await page.getByRole("button", { name: "Undo text format", exact: true }).click()
-  await expect(text.getByRole("textbox", { name: "Space after", exact: true })).toHaveValue("")
+  await expect(text.getByRole("textbox", { name: "Space after", exact: true })).toHaveValue("0")
   await page.getByRole("button", { name: "Redo text format", exact: true }).click()
   await expect(text.getByRole("textbox", { name: "Space after", exact: true })).toHaveValue("6")
   const type = await exported(page, testInfo.outputPath(typeExport), judgedType)

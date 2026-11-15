@@ -89,6 +89,7 @@ export type PanelRow = {
   readonly desc: Desc
   readonly value: unknown
   readonly mixed: boolean
+  readonly inherited: boolean
   readonly caption: boolean
   readonly action?: boolean
   readonly reset: string | null
@@ -143,36 +144,53 @@ type Labels = {
 
 const paragraphKeys = ["align", "bullet", "lineSpacing", "spaceBefore", "spaceAfter"] as const
 
-function inherited(reads: TraitReads, key: string): unknown {
-  if (key === "size") return reads["text.size"]?.value
-  if (key === "color") return reads["text.color"]?.value
-  if (key === "font") return reads["text.font"]?.value
-  if (key === "bold") return reads["text.bold"]?.value ?? false
-  return key === "italic" || key === "underline" || key === "bullet" ? false : undefined
+type Held = { readonly value: unknown; readonly mixed: boolean; readonly inherited: boolean }
+
+const ownHeld = (value: unknown): Held => ({ value, mixed: false, inherited: false })
+
+function fallbackOf(reads: TraitReads, key: string, read: ShownField | undefined): Held {
+  if (read !== undefined)
+    return { value: read.value ?? undefined, mixed: false, inherited: !read.own && read.value !== null }
+  const named = key === "size" || key === "color" || key === "font" || key === "bold" ? reads[`text.${key}`] : undefined
+  if (named !== undefined) return { value: named.value, mixed: false, inherited: named.source !== undefined }
+  if (key === "color") return { value: { scheme: "tx1" }, mixed: false, inherited: true }
+  const off = key === "bold" || key === "italic" || key === "underline" || key === "bullet"
+  return ownHeld(off ? false : undefined)
 }
 
-function agreed(values: readonly unknown[]): { readonly value: unknown; readonly mixed: boolean } {
-  const [first, ...rest] = values
+function agreed(values: readonly unknown[], fallback: Held): Held {
+  const [first, ...rest] = values.map((value) => value ?? fallback.value)
   const mixed = rest.some((each) => JSON.stringify(each) !== JSON.stringify(first))
-  return { value: mixed ? undefined : first, mixed }
+  const inherited = fallback.inherited && values.every((value) => value === undefined)
+  return { value: mixed ? undefined : first, mixed, inherited: inherited && !mixed }
 }
 
-function textShown(text: TextValue, key: string, reads: TraitReads) {
-  const fallback = inherited(reads, key)
+function textShown(text: TextValue, key: string, fallback: Held): Held {
   if ((paragraphKeys as readonly string[]).includes(key)) {
-    return agreed(text.map((paragraph) => (paragraph as Readonly<Record<string, unknown>>)[key] ?? fallback))
+    return agreed(
+      text.map((paragraph) => (paragraph as Readonly<Record<string, unknown>>)[key]),
+      fallback,
+    )
   }
   const runs = text.flatMap((paragraph) => paragraph.runs).filter((run) => run.text !== "")
-  if (runs.length === 0) return { value: fallback, mixed: false }
-  return agreed(runs.map((run) => (run as Readonly<Record<string, unknown>>)[key] ?? fallback))
+  if (runs.length === 0) return fallback
+  return agreed(
+    runs.map((run) => (run as Readonly<Record<string, unknown>>)[key]),
+    fallback,
+  )
 }
 
 export type ShownField = { readonly value: unknown; readonly own: boolean }
 
-function shownOf(view: ScopedElement, trait: TraitName, field: string, shown: PanelReads) {
+function shownOf(view: ScopedElement, trait: TraitName, field: string, shown: PanelReads): Held {
   const read = shown.fields?.[`${trait}.${field}`]
-  if (read !== undefined) return { value: read.value ?? undefined, mixed: false }
   const reads = shown.reads
+  if (trait === "text" && field !== "value") {
+    const text = readTextValue(view.value ?? "") ?? []
+    return textShown(text, field, fallbackOf(reads, field, read))
+  }
+  if (read !== undefined)
+    return { value: read.value ?? undefined, mixed: false, inherited: !read.own && read.value !== null }
   if (trait === "box") {
     const box = view.box
     const sides: Readonly<Record<string, unknown>> = {
@@ -184,12 +202,10 @@ function shownOf(view: ScopedElement, trait: TraitName, field: string, shown: Pa
       flipH: reads["box.flipH"]?.value ?? false,
       flipV: reads["box.flipV"]?.value ?? false,
     }
-    return { value: sides[field], mixed: false }
+    return ownHeld(sides[field])
   }
-  if (trait === "geometry" || trait === "theme" || trait === "connection") return { value: undefined, mixed: false }
-  if (field === "value") return { value: view.value ?? "", mixed: false }
-  const text = readTextValue(view.value ?? "") ?? []
-  return textShown(text, field, reads)
+  if (trait === "geometry" || trait === "theme" || trait === "connection") return ownHeld(undefined)
+  return ownHeld(field === "value" ? (view.value ?? "") : undefined)
 }
 
 function wireFields(trait: TraitName): readonly (readonly [string, Desc])[] {

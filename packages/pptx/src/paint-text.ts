@@ -231,6 +231,7 @@ const runStyle = (
       first(near, (layer) => fontOf(layer, scope)) ??
       reference.font ??
       first(levels.farRuns, (layer) => fontOf(layer, scope)) ??
+      scope.fonts.get("+mn-lt") ??
       null,
     size: first(all, sizeOf) ?? defaultSize,
     bold:

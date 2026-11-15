@@ -7,7 +7,17 @@ import { ColorPicker, lightCss } from "@/design/color-picker"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
-export function ColorField({ id, css, name }: { id: string; css: string | null; name: string }) {
+export function ColorField({
+  id,
+  css,
+  name,
+  inherited = false,
+}: {
+  id: string
+  css: string | null
+  name: string
+  inherited?: boolean
+}) {
   return (
     <>
       <span
@@ -18,7 +28,10 @@ export function ColorField({ id, css, name }: { id: string; css: string | null; 
         style={css === null ? undefined : { background: css }}
         aria-hidden
       />
-      <span id={id} className="truncate text-[length:var(--type-dense)] text-foreground">
+      <span
+        id={id}
+        className={cn("truncate text-[length:var(--type-dense)]", inherited ? "text-quiet" : "text-foreground")}
+      >
         {name}
       </span>
     </>
@@ -38,7 +51,13 @@ export function ColorControl({ row, palette, onChange }: ControlProps) {
   const css = shown === undefined ? null : `#${shownHex(shown, palette.theme)}`
   const name = row.mixed ? designCopy.mixed : shown === undefined ? "" : shownName(shown, palette.theme)
   return (
-    <div role="group" aria-labelledby={label} className="flex flex-col gap-1.5" data-control="color">
+    <div
+      role="group"
+      aria-labelledby={label}
+      className="flex flex-col gap-1.5"
+      data-control="color"
+      data-inherited={row.inherited ? "" : undefined}
+    >
       <span id={label} className="text-[length:var(--type-caption)] text-quiet">
         {row.label}
       </span>
@@ -49,7 +68,7 @@ export function ColorControl({ row, palette, onChange }: ControlProps) {
         onPick={(color) => onChange(picked(color))}
         trigger={<Button type="button" variant="ghost" aria-labelledby={`${label} ${named}`} className={fieldLook} />}
       >
-        <ColorField id={named} css={css} name={name} />
+        <ColorField id={named} css={css} name={name} inherited={row.inherited} />
       </ColorPicker>
     </div>
   )

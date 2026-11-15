@@ -17,7 +17,10 @@ function ChoiceList({ row, onChange, label, options }: ControlProps & { label: s
     >
       <SelectTrigger
         aria-labelledby={label}
-        className="h-8 w-full rounded-lg border-0 bg-white text-[length:var(--type-dense)] shadow-[0px_0px_0px_1px_var(--field-edge)]"
+        className={cn(
+          "h-8 w-full rounded-lg border-0 bg-white text-[length:var(--type-dense)] shadow-[0px_0px_0px_1px_var(--field-edge)]",
+          row.inherited ? "text-quiet" : null,
+        )}
       >
         <SelectValue>
           {(selected: string | null) => (selected === null ? "" : optionWord(row.field, selected))}
@@ -40,7 +43,7 @@ export function ChoiceControl(props: ControlProps) {
   const options = row.desc.kind === "choice" ? row.desc.options : []
   const layout = choiceLayout(row.field, options, row.action === true)
   return (
-    <div className="flex flex-col gap-1.5" data-control="choice">
+    <div className="flex flex-col gap-1.5" data-control="choice" data-inherited={row.inherited ? "" : undefined}>
       <span id={label} className="text-[length:var(--type-caption)] text-quiet">
         {row.label}
       </span>
@@ -69,7 +72,10 @@ export function ChoiceControl(props: ControlProps) {
                 className={cn(
                   "h-7 flex-1 rounded-[var(--shape-control)] text-xs font-normal active:translate-y-0",
                   chosen
-                    ? "bg-white font-medium text-foreground shadow-[0px_1px_2px_var(--black-10)] hover:bg-white"
+                    ? cn(
+                        "bg-white font-medium shadow-[0px_1px_2px_var(--black-10)] hover:bg-white",
+                        row.inherited ? "text-quiet" : "text-foreground",
+                      )
                     : "text-quiet hover:bg-transparent hover:text-foreground",
                 )}
               >
