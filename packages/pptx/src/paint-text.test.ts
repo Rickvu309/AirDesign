@@ -121,7 +121,7 @@ const otherStyle = (inner: string) => `<p:otherStyle>${inner}</p:otherStyle>`
 const bodyStyle = (inner: string) => `<p:bodyStyle>${inner}</p:bodyStyle>`
 const titleStyle = (inner: string) => `<p:titleStyle>${inner}</p:titleStyle>`
 
-const chain = ["run", "paragraph", "own", "layout", "master", "styles", "presentation"] as const
+const chain = ["run", "paragraph", "own", "layout", "master", "styles"] as const
 type Link = (typeof chain)[number]
 
 const chained = (nearest: Link): Deck => {
@@ -152,7 +152,6 @@ const chained = (nearest: Link): Deck => {
     layout: shape({ id: "10", ph: title, list: lvl("layout") }),
     master: shape({ id: "20", ph: title, list: lvl("master") }),
     styles: titleStyle(lvl("styles")),
-    defaults: lvl("presentation"),
   }
 }
 
