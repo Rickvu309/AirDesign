@@ -7,7 +7,7 @@ import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { isShapeTag, shapeById, shapeTags } from "./shape-tree.js"
 import { openTag, slotRoot, withAttribute, withChild as childIn, type Slot } from "./slot-edit.js"
-import { fillMarkup } from "./trait-xml-fill.js"
+import { filledChild } from "./trait-xml-fill.js"
 import { whole, type ElementAt, type FieldXml, type PartCodec, type Parts, type TraitXml } from "./xml-codec.js"
 
 type LineChild = ChildOf<"a:ln">
@@ -76,8 +76,7 @@ function field<F extends LineField>(
 }
 
 function filled(value: FieldValue<"line", "fill">): Slot {
-  const written = fillMarkup(value)
-  return lineChild(fillTags, written.tag as LineChild, written.xml)
+  return filledChild("a:ln", fillTags, value)
 }
 
 export function lineAlpha(parts: Parts, at: ElementAt): Faded {

@@ -8,7 +8,6 @@ import {
   type TableRow,
   type TableSide,
 } from "@airdesign/document"
-import type { ChildOf } from "./child-order.js"
 import { fillIn } from "./color-read.js"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { fillValueOf } from "./fill-read.js"
@@ -18,7 +17,7 @@ import { paintAttribute } from "./paint-color.js"
 import { requireMarkup } from "./part-markup.js"
 import { slotRoot, withAttribute, withChild, type Slot } from "./slot-edit.js"
 import { cellsOf, type Grid } from "./table-grid.js"
-import { fillMarkup } from "./trait-xml-fill.js"
+import { filledChild } from "./trait-xml-fill.js"
 
 export type CellRead = { readonly fill: CellFill | null; readonly borders: Borders }
 
@@ -74,8 +73,7 @@ function borderSlot(tag: SideTag, wanted: Border, shown: Border | undefined): Sl
   const slots: Slot[] = []
   if (wanted.width !== undefined && wanted.width !== shown?.width) slots.push(withAttribute("w", String(wanted.width)))
   if (wanted.fill !== undefined && !same(wanted.fill, shown?.fill)) {
-    const written = fillMarkup(wanted.fill)
-    slots.push(withChild(tag, fillTags, written.tag as ChildOf<SideTag>, written.xml))
+    slots.push(filledChild(tag, fillTags, wanted.fill))
   }
   if (wanted.dash !== undefined && wanted.dash !== shown?.dash)
     slots.push(withChild(tag, dashTags, "a:prstDash", `<a:prstDash val="${wanted.dash}"/>`))
@@ -102,8 +100,7 @@ function propertiesSlot(row: TableRow, column: number, shown: CellRead): Slot | 
   }
   const fill = row.fills?.[column] ?? null
   if (fill !== null && !same(fill, shown.fill)) {
-    const written = fillMarkup(fill)
-    slots.push(withChild("a:tcPr", fillTags, written.tag, written.xml))
+    slots.push(filledChild("a:tcPr", fillTags, fill))
   }
   return slots.length === 0 ? null : (properties) => slots.reduce((next, slot) => slot(next), properties)
 }
