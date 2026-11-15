@@ -1,19 +1,32 @@
 export function encodeUtf8(text: string): Uint8Array {
-  const units: number[] = []
+  const bytes = new Uint8Array(text.length * 3)
+  let at = 0
   for (let index = 0; index < text.length; index += 1) {
     let code = text.charCodeAt(index)
+    if (code < 0x80) {
+      bytes[at++] = code
+      continue
+    }
     const next = text.charCodeAt(index + 1)
     if (code >= 0xd800 && code <= 0xdbff && next >= 0xdc00 && next <= 0xdfff) {
       code = 0x10000 + ((code - 0xd800) << 10) + (next - 0xdc00)
       index += 1
     }
-    if (code < 0x80) units.push(code)
-    else if (code < 0x800) units.push(0xc0 | (code >> 6), 0x80 | (code & 0x3f))
-    else if (code < 0x10000) units.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f))
-    else
-      units.push(0xf0 | (code >> 18), 0x80 | ((code >> 12) & 0x3f), 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f))
+    if (code < 0x800) {
+      bytes[at++] = 0xc0 | (code >> 6)
+      bytes[at++] = 0x80 | (code & 0x3f)
+    } else if (code < 0x10000) {
+      bytes[at++] = 0xe0 | (code >> 12)
+      bytes[at++] = 0x80 | ((code >> 6) & 0x3f)
+      bytes[at++] = 0x80 | (code & 0x3f)
+    } else {
+      bytes[at++] = 0xf0 | (code >> 18)
+      bytes[at++] = 0x80 | ((code >> 12) & 0x3f)
+      bytes[at++] = 0x80 | ((code >> 6) & 0x3f)
+      bytes[at++] = 0x80 | (code & 0x3f)
+    }
   }
-  return Uint8Array.from(units)
+  return bytes.slice(0, at)
 }
 
 export function decodeLatin1(bytes: Uint8Array): string {
@@ -33,11 +46,16 @@ export function decodeLatin1(bytes: Uint8Array): string {
 
 export function decodeUtf8(bytes: Uint8Array): string {
   let text = ""
+  const units: number[] = []
   for (let index = 0; index < bytes.length;) {
+    if (units.length >= 4096) {
+      text += String.fromCharCode(...units)
+      units.length = 0
+    }
     const first = bytes[index]
     if (first === undefined) throw new Error("byte")
     if (first < 0x80) {
-      text += String.fromCharCode(first)
+      units.push(first)
       index += 1
       continue
     }
@@ -48,10 +66,14 @@ export function decodeUtf8(bytes: Uint8Array): string {
       if (next === undefined || (next & 0xc0) !== 0x80) throw new Error("utf8")
       code = (code << 6) | (next & 0x3f)
     }
-    text += String.fromCodePoint(code)
+    if (code < 0x10000) units.push(code)
+    else {
+      const pair = String.fromCodePoint(code)
+      units.push(pair.charCodeAt(0), pair.charCodeAt(1))
+    }
     index += width
   }
-  return text
+  return text + String.fromCharCode(...units)
 }
 
 export function sameBytes(left: Uint8Array, right: Uint8Array): boolean {

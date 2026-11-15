@@ -31,6 +31,40 @@ describe("utf8", () => {
     expect(decodeUtf8(Uint8Array.from([0xf0, 0x9f, 0x98, 0x80]))).toBe("😀")
     expect(decodeUtf8(encodeUtf8("a😀b"))).toBe("a😀b")
   })
+
+  it("keeps a lone surrogate as three bytes and reads it back", () => {
+    expect(Array.from(encodeUtf8("\ud800"))).toEqual([0xed, 0xa0, 0x80])
+    expect(Array.from(encodeUtf8("a\udfffb"))).toEqual([0x61, 0xed, 0xbf, 0xbf, 0x62])
+    expect(Array.from(encodeUtf8("\udc00\ud800"))).toEqual([0xed, 0xb0, 0x80, 0xed, 0xa0, 0x80])
+    expect(decodeUtf8(Uint8Array.from([0xed, 0xa0, 0x80]))).toBe("\ud800")
+  })
+
+  it("encodes the edges of each width", () => {
+    expect(Array.from(encodeUtf8("\u007f\u0080\u07ff\u0800\uffff"))).toEqual([
+      0x7f, 0xc2, 0x80, 0xdf, 0xbf, 0xe0, 0xa0, 0x80, 0xef, 0xbf, 0xbf,
+    ])
+    expect(Array.from(encodeUtf8("\u{10ffff}"))).toEqual([0xf4, 0x8f, 0xbf, 0xbf])
+    expect(encodeUtf8("")).toEqual(new Uint8Array())
+  })
+
+  it("refuses a cut sequence and a code point past the last one", () => {
+    expect(() => decodeUtf8(Uint8Array.from([0xe2, 0x82]))).toThrow("utf8")
+    expect(() => decodeUtf8(Uint8Array.from([0xe2, 0x41, 0xac]))).toThrow("utf8")
+    expect(() => decodeUtf8(Uint8Array.from([0xf7, 0xbf, 0xbf, 0xbf]))).toThrow(RangeError)
+  })
+
+  it("reads back every code unit and every plane it writes, lone surrogates and all", () => {
+    const units = String.fromCharCode(...Array.from({ length: 0x10000 }, (_, code) => code).reverse())
+    expect(decodeUtf8(encodeUtf8(units))).toBe(units)
+    const planes = Array.from({ length: 0x110 }, (_, plane) => String.fromCodePoint(plane * 0x1000 + 0x123)).join("")
+    expect(decodeUtf8(encodeUtf8(planes))).toBe(planes)
+  })
+
+  it("reads a text longer than one chunk", () => {
+    const text = "ab€😀".repeat(5000)
+    expect(decodeUtf8(encodeUtf8(text))).toBe(text)
+    expect(encodeUtf8(text).length).toBe(5000 * 9)
+  })
 })
 
 describe("sameBytes", () => {

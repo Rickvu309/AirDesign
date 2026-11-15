@@ -203,13 +203,10 @@ export const isolationReasons = (text, fileName = "file.test.ts") => {
   return [...reasons].sort()
 }
 
-const readsGlobals = (file) => file.startsWith("apps/web/") || file.startsWith("apps/site/")
-
 export const splitUnitTests = (root) => {
   const files = unitTestFiles(root)
   const shared = files.filter(
-    (file) =>
-      !readsGlobals(file) && isolationReasons(fs.readFileSync(path.join(root, file), "utf8"), file).length === 0,
+    (file) => isolationReasons(fs.readFileSync(path.join(root, file), "utf8"), file).length === 0,
   )
   return { shared, isolated: files.filter((file) => !shared.includes(file)) }
 }

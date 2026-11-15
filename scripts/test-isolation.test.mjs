@@ -62,5 +62,11 @@ if (asList(included("unit")) !== asList(isolatedFiles))
   fail("vitest.config.mts does not isolate the files this scan chose")
 if (projects.find((project) => project.test.name === "shared").test.isolate !== false)
   fail("the shared project isolates")
+if (
+  !projects
+    .find((project) => project.test.name === "shared")
+    .test.setupFiles.includes("scripts/vitest-kept-globals.mjs")
+)
+  fail("the shared project does not put back the globals each file leaves")
 
 console.log("test isolation tests passed")
