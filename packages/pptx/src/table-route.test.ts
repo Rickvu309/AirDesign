@@ -4,6 +4,13 @@ import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { applyStructuralRoute } from "./structural-route.js"
 import { newTableBreaks } from "./table-check.js"
 import { readTable, writeTable } from "./table-write.js"
+import { readParts } from "./package-container.js"
+import { partTouch, touchMatches } from "./route-parts.js"
+
+declare const process: {
+  cwd(): string
+  getBuiltinModule(name: "node:fs"): { readFileSync(path: string): Uint8Array }
+}
 
 const part = "ppt/slides/slide1.xml"
 const tree = `<p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr><p:sp><p:nvSpPr><p:cNvPr id="2" name="A"/></p:nvSpPr><p:txBody><a:p><a:r><a:t>One</a:t></a:r></a:p></p:txBody></p:sp>`
@@ -12,6 +19,19 @@ const box = { x: 100, y: 200, cx: 3000, cy: 900, rows: 3, columns: 3 }
 const cell = (text: string, size = "1800") =>
   `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="en-US" sz="${size}" b="1"/><a:t>${text}</a:t></a:r></a:p><a:p><a:r><a:t>more</a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc>`
 const imported = `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="7" name="Table 7"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="0" y="0"/><a:ext cx="200" cy="350"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr/><a:tblGrid><a:gridCol w="100"/><a:gridCol w="100"/></a:tblGrid><a:tr h="100">${cell("A")}${cell("B")}</a:tr><a:tr h="200">${cell("C", "1200")}${cell("D")}</a:tr></a:tbl></a:graphicData></a:graphic></p:graphicFrame>`
+
+const office = "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"
+const stylesPart = "ppt/tableStyles.xml"
+
+async function fixture(name: string): Promise<Map<string, Uint8Array>> {
+  const file = process.getBuiltinModule("node:fs").readFileSync(`${process.cwd()}/scripts/pptx-fixtures/${name}`)
+  return new Map(await readParts(file))
+}
+
+async function powerPointStyle(): Promise<string> {
+  const styles = decodeUtf8((await fixture("nasa-1d-cnn.pptx")).get(stylesPart)!)
+  return /<a:tblStyle styleId="\{5C22544A[^>]*>.*?<\/a:tblStyle>/s.exec(styles)![0]
+}
 
 function deck(shapes: string = tree, styles?: string): Map<string, Uint8Array> {
   const parts = new Map([[part, encodeUtf8(`<p:sld><p:cSld><p:spTree>${shapes}</p:spTree></p:cSld></p:sld>`)]])
@@ -44,17 +64,51 @@ describe("table routes", () => {
     expect(added.indexOf("<a:txBody")).toBeLessThan(added.indexOf("<a:tcPr"))
   })
 
-  it("draws its own borders when the deck has no table style, and refuses a taken id or a box too small", () => {
-    const plain = xml(applyStructuralRoute(deck(), { name: "graphicFrame.addTable", part, ...box }))
-    expect(plain).toContain('<p:cNvPr id="3" name="Table 3"/>')
-    expect(plain).toContain("<a:tblPr/>")
-    expect(plain.match(/<a:tcPr><a:lnL w="12700">/g)).toHaveLength(9)
-    const missing = `<a:tblStyleLst def="{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"/>`
-    expect(xml(applyStructuralRoute(deck(tree, missing), { name: "graphicFrame.addTable", part, ...box }))).toContain(
-      "<a:tblPr/>",
+  it("gives a deck with no table styles PowerPoint's own default style, as PowerPoint saves it", async () => {
+    const before = await fixture("blank.pptx")
+    const route = { name: "graphicFrame.addTable", part, ...box } as const
+    const after = applyStructuralRoute(before, route)
+    expect(xml(after)).toContain(`<a:tblPr firstRow="1" bandRow="1"><a:tableStyleId>${office}</a:tableStyleId>`)
+    expect(xml(after)).not.toContain("<a:lnL")
+    const styles = decodeUtf8(after.get(stylesPart)!)
+    expect(styles).toBe(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n<a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" def="${office}">${await powerPointStyle()}</a:tblStyleLst>`,
     )
-    expect(() => applyStructuralRoute(deck(), { name: "graphicFrame.addTable", part, id: 2, ...box })).toThrow()
-    expect(() => applyStructuralRoute(deck(), { name: "graphicFrame.addTable", part, ...box, cy: 2 })).toThrow()
+    expect(decodeUtf8(after.get("[Content_Types].xml")!)).toContain(
+      '<Override PartName="/ppt/tableStyles.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.tableStyles+xml"/>',
+    )
+    expect(decodeUtf8(after.get("ppt/_rels/presentation.xml.rels")!)).toMatch(
+      /Type="http:\/\/schemas\.openxmlformats\.org\/officeDocument\/2006\/relationships\/tableStyles" Target="tableStyles\.xml"/,
+    )
+    expect(touchMatches(before, after, partTouch(before, route))).toBe(true)
+    const again = applyStructuralRoute(after, { ...route, x: 4000 })
+    expect(again.get(stylesPart)).toBe(after.get(stylesPart))
+    expect(touchMatches(after, again, partTouch(after, { ...route, x: 4000 }))).toBe(true)
+  })
+
+  it("adds the default style to a deck that names it but does not define it, and keeps a deck's own default", async () => {
+    const named = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n<a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" def="{073A0DAA-6AF3-43AB-8588-CEC1D06C72B9}"/>`
+    const before = await fixture("blank.pptx")
+    before.set(stylesPart, encodeUtf8(named))
+    const route = { name: "graphicFrame.addTable", part, ...box } as const
+    const after = applyStructuralRoute(before, route)
+    expect(decodeUtf8(after.get(stylesPart)!)).toBe(named.replace("/>", `>${await powerPointStyle()}</a:tblStyleLst>`))
+    expect(xml(after)).toContain(`<a:tableStyleId>${office}</a:tableStyleId>`)
+    expect(touchMatches(before, after, partTouch(before, route))).toBe(true)
+    const own = await fixture("nasa-1d-cnn.pptx")
+    const slide = [...own.keys()].find((name) => /^ppt\/slides\/slide\d+\.xml$/.test(name))!
+    const kept = applyStructuralRoute(own, { ...route, part: slide })
+    expect(kept.get(stylesPart)).toBe(own.get(stylesPart))
+    expect(touchMatches(own, kept, partTouch(own, { ...route, part: slide }))).toBe(true)
+  })
+
+  it("refuses a taken id or a box too small", () => {
+    expect(() =>
+      applyStructuralRoute(deck(tree, styled), { name: "graphicFrame.addTable", part, id: 2, ...box }),
+    ).toThrow()
+    expect(() =>
+      applyStructuralRoute(deck(tree, styled), { name: "graphicFrame.addTable", part, ...box, cy: 2 }),
+    ).toThrow()
   })
 
   it("adds an empty row that keeps the row's look, grows the frame by its height, and removing it restores the part", () => {
@@ -149,7 +203,7 @@ describe("table routes", () => {
     expect(newTableBreaks(parts, short)).toEqual([{ part, shape: "7", reason: "cells" }])
     const tall = new Map([[part, encodeUtf8(xml(parts).replace('<a:tr h="100">', '<a:tr h="150">'))]])
     expect(newTableBreaks(parts, tall)).toEqual([{ part, shape: "7", reason: "height" }])
-    const fresh = applyStructuralRoute(deck(), { name: "graphicFrame.addTable", part, ...box })
-    expect(newTableBreaks(deck(), fresh)).toEqual([])
+    const fresh = applyStructuralRoute(deck(tree, styled), { name: "graphicFrame.addTable", part, ...box })
+    expect(newTableBreaks(deck(tree, styled), fresh)).toEqual([])
   })
 })

@@ -7,7 +7,9 @@ export function xml(text: string): Uint8Array {
 export function onSlide(slide: Uint8Array): Map<string, Uint8Array> {
   const presentation = `<p:presentation><p:sldIdLst><p:sldId id="256" r:id="rId2"/></p:sldIdLst></p:presentation>`
   const rels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>`
+  const types = `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>`
   return new Map([
+    ["[Content_Types].xml", xml(types)],
     ["ppt/presentation.xml", xml(presentation)],
     ["ppt/_rels/presentation.xml.rels", xml(rels)],
     ["ppt/slides/slide1.xml", slide],

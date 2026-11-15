@@ -130,6 +130,16 @@
     "pages": true
   },
   {
+    "name": "table-styled",
+    "before": "blank.pptx",
+    "after": "table-styled.pptx",
+    "visible": true,
+    "targeted": [1],
+    "errors": 0,
+    "dupes": 0,
+    "pages": true
+  },
+  {
     "name": "shapes-added",
     "before": "blank.pptx",
     "after": "shapes-added.pptx",

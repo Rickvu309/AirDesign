@@ -1,3 +1,4 @@
+import { sameBytes } from "./package-bytes.js"
 import { contentTypesPart, presentationPart, presentationRels, relsOf } from "./package-address.js"
 import { copyOwnedParts } from "./owned-parts.js"
 import { nextSlideFile } from "./slide-list-route.js"
@@ -30,4 +31,36 @@ export function removedSlideTouch(parts: ReadonlyMap<string, Uint8Array>, part: 
   const notes = onlyNotes(parts, part)
   const dropped = notes === null ? [] : [notes, ...(parts.has(relsOf(notes)) ? [relsOf(notes)] : [])]
   return { changed: listed, added: [], removed: [part, relsOf(part), ...dropped] }
+}
+
+export function touchMatches(
+  before: ReadonlyMap<string, Uint8Array>,
+  after: ReadonlyMap<string, Uint8Array>,
+  touch: PartTouch,
+): boolean {
+  const changed = new Set(touch.changed)
+  const added = new Set(touch.added)
+  const removed = new Set(touch.removed)
+  const names = new Set([...before.keys(), ...after.keys()])
+  for (const name of names) {
+    const left = before.get(name)
+    const right = after.get(name)
+    if (left === undefined && right !== undefined) {
+      if (!added.has(name)) return false
+      continue
+    }
+    if (right === undefined && left !== undefined) {
+      if (!removed.has(name)) return false
+      continue
+    }
+    if (left !== undefined && right !== undefined && !sameBytes(left, right) && !changed.has(name)) return false
+  }
+  for (const name of changed) {
+    const left = before.get(name)
+    const right = after.get(name)
+    if (left === undefined || right === undefined || sameBytes(left, right)) return false
+  }
+  for (const name of added) if (before.has(name) || !after.has(name)) return false
+  for (const name of removed) if (!before.has(name) || after.has(name)) return false
+  return true
 }

@@ -112,7 +112,7 @@ export function freePart(parts: Parts, prefix: string): string {
   return `${prefix}${max + 1}.xml`
 }
 
-function link(parts: Map<string, Uint8Array>, source: string, type: string, target: string): string {
+export function link(parts: Map<string, Uint8Array>, source: string, type: string, target: string): string {
   const name = relsOf(source)
   const rels = partBytes(parts, name)
   const document = requireMarkup(rels)
@@ -122,7 +122,7 @@ function link(parts: Map<string, Uint8Array>, source: string, type: string, targ
   return id
 }
 
-function typed(parts: Map<string, Uint8Array>, part: string, contentType: string) {
+export function typed(parts: Map<string, Uint8Array>, part: string, contentType: string) {
   const types = partBytes(parts, contentTypesPart)
   const row = `<Override PartName="/${part}" ContentType="${contentType}"/>`
   replacePart(

@@ -120,7 +120,7 @@ function tableOf(elements: readonly MarkupElement[], row: MarkupElement): Markup
   return table
 }
 
-export function addTable(bytes: Uint8Array, shape: TableShape & { readonly id?: number }, style: string | null) {
+export function addTable(bytes: Uint8Array, shape: TableShape & { readonly id?: number }, style: string) {
   const document = requireMarkup(bytes)
   const tree = document.elements.find((element) => element.kind === "p:spTree")
   if (tree === undefined || tree.selfClosing || tree.closeStart < 0) throw new Error("p:spTree")
