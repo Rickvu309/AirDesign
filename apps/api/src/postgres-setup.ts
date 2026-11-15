@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto"
 import { spawn } from "node:child_process"
-import { access, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises"
-import { constants } from "node:fs"
+import { access, mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from "node:fs/promises"
+import { constants, watch } from "node:fs"
 import { createServer } from "node:net"
 import os from "node:os"
 import path from "node:path"
@@ -10,7 +10,7 @@ import { Client } from "pg"
 import { createRole } from "./provision.js"
 import { applySchema } from "./schema.js"
 
-const cacheFile = () => path.join(process.cwd(), "node_modules/.cache/airdesign-api-postgres.json")
+export const clusterFile = () => path.join(process.cwd(), "node_modules/.cache/airdesign-api-postgres.json")
 
 type Info = {
   readonly dir: string
@@ -243,22 +243,65 @@ async function stop(info: Info): Promise<void> {
 }
 
 async function stopLeftover(): Promise<void> {
-  try {
-    const info = JSON.parse(await readFile(cacheFile(), "utf8")) as Info
-    await stop(info)
-  } catch {
-    return
-  }
-  await rm(cacheFile(), { force: true })
+  const leftover = await readFile(clusterFile(), "utf8")
+    .then((text) => JSON.parse(text) as Partial<Info>)
+    .catch(() => undefined)
+  if (leftover?.bin !== undefined && leftover.dir !== undefined) await stop(leftover as Info)
+  await rm(clusterFile(), { force: true })
 }
+
+export async function publishCluster(file: string, cluster: object): Promise<void> {
+  const draft = `${file}.${String(process.pid)}.draft`
+  await writeFile(draft, `${JSON.stringify(cluster)}\n`)
+  await rename(draft, file)
+}
+
+export function publishedCluster<T>(file: string, limitMs: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    let settled = false
+    const watcher = watch(path.dirname(file), () => look())
+    const timer = setTimeout(
+      () => settle(() => reject(new Error(`No Postgres cluster was published in ${file}.`))),
+      limitMs,
+    )
+    function settle(then: () => void): void {
+      if (settled) return
+      settled = true
+      watcher.close()
+      clearTimeout(timer)
+      then()
+    }
+    function look(): void {
+      readFile(file, "utf8").then(
+        (text) => {
+          const cluster = JSON.parse(text) as T | { readonly error: string }
+          settle(() =>
+            typeof cluster === "object" && cluster !== null && "error" in cluster
+              ? reject(new Error(cluster.error))
+              : resolve(cluster),
+          )
+        },
+        () => undefined,
+      )
+    }
+    look()
+  })
+}
+
+let starting: Promise<void> = Promise.resolve()
 
 export async function setup(): Promise<void> {
   await stopLeftover()
-  const info = await start()
-  await mkdir(path.dirname(cacheFile()), { recursive: true })
-  await writeFile(cacheFile(), `${JSON.stringify(info)}\n`)
+  await mkdir(path.dirname(clusterFile()), { recursive: true })
+  starting = start()
+    .then(
+      (info) => publishCluster(clusterFile(), info),
+      (error: unknown) => publishCluster(clusterFile(), { error: error instanceof Error ? error.message : "postgres" }),
+    )
+    .catch(() => undefined)
 }
 
 export async function teardown(): Promise<void> {
+  await starting
   await stopLeftover()
 }

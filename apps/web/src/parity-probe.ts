@@ -37,11 +37,21 @@ export const judgedCases: readonly { readonly covers?: readonly string[] }[] = O
   }),
 )
 
-export function element(parts: Parts, at: At): IndexElement | undefined {
-  return indexPackage(parts).elements.find((each) => each.node === at.node)
+const indexes = new WeakMap<Parts, ReturnType<typeof indexPackage>>()
+
+function packageIndex(parts: Parts): ReturnType<typeof indexPackage> {
+  const known = indexes.get(parts)
+  if (known !== undefined) return known
+  const index = indexPackage(parts)
+  indexes.set(parts, index)
+  return index
 }
 
-export async function deckParts(name: string): Promise<Parts> {
+export function element(parts: Parts, at: At): IndexElement | undefined {
+  return packageIndex(parts).elements.find((each) => each.node === at.node)
+}
+
+async function readDeck(name: string): Promise<Parts> {
   const fsName = "node:fs/promises"
   const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
   const read = await readPackage(await fs.readFile(new URL(`../../../scripts/pptx-fixtures/${name}`, import.meta.url)))
@@ -49,8 +59,18 @@ export async function deckParts(name: string): Promise<Parts> {
   return read.parts
 }
 
+const decks = new Map<string, Promise<Parts>>()
+
+export function deckParts(name: string): Promise<Parts> {
+  const known = decks.get(name)
+  if (known !== undefined) return known
+  const read = readDeck(name)
+  decks.set(name, read)
+  return read
+}
+
 export function indexed(parts: Parts): Register {
-  const index = indexPackage(parts)
+  const index = packageIndex(parts)
   return { ...openRegister("", "clean"), index: { ...index, total: index.elements.length, pages: [] } }
 }
 
@@ -66,7 +86,7 @@ export function landed(register: Register, commands: readonly Command[]): Regist
 
 export function placed(parts: Parts, kind: Kind, node?: string): At {
   const deck = kind === "deck"
-  const found = indexPackage(parts).elements.find(
+  const found = packageIndex(parts).elements.find(
     (each) =>
       each.kind === (deck ? "shape" : kind) && !each.grouped && (deck || node === undefined || each.node === node),
   )
