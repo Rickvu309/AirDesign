@@ -11,7 +11,7 @@ const judged = join(process.cwd(), "tests/browser", exportName)
 const slidePart = "ppt/slides/slide1.xml"
 const element = "ppt/slides/slide1.xml#2"
 
-test.use({ viewport: { width: 1600, height: 1000 } })
+test.use({ viewport: { width: 1470, height: 923 } })
 
 test("a person rotates, flips, reshapes, adjusts and centres a shape, and it survives Undo, a reload, the export and a new import @export", async ({
   page,

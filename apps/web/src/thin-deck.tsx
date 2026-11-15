@@ -29,7 +29,7 @@ export function ThinDeck({ id }: { id: string }) {
     return (
       <div className="thin-page" data-deck-refused>
         <ThinNoticeView notice={newer ? "newer" : "import-failed"} onTryAgain={exported.tryAgain} />
-        <EditorFrame>{null}</EditorFrame>
+        <EditorFrame fills>{null}</EditorFrame>
       </div>
     )
   }
@@ -42,7 +42,7 @@ export function ThinDeck({ id }: { id: string }) {
       {exported.downloaded !== null && notice === null && (
         <DownloadedNotice name={exported.downloaded} onDone={() => exported.setDownloaded(null)} />
       )}
-      <EditorFrame>
+      <EditorFrame fills>
         <EditorShell
           deck={{
             onExport: exported.onExport,

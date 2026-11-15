@@ -61,21 +61,31 @@ html:has(.screen-frame) {
   overflow: auto;
 }
 
-@media (max-width: 1469px) {
-  html:has(.reflow-frame),
-  html:has(.reflow-frame) body,
-  html:has(.reflow-frame) #root {
-    width: auto;
-    height: auto;
-    overflow: visible;
-  }
+.window-frame {
+  width: 100%;
+  height: 100dvh;
+  min-width: 1280px;
+  min-height: 720px;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+}
 
-  .reflow-frame {
-    width: auto;
-    height: auto;
-    min-height: 100dvh;
-    overflow: visible;
-  }
+html:has(.reflow-frame),
+html:has(.reflow-frame) body,
+html:has(.reflow-frame) #root {
+  width: auto;
+  height: auto;
+  overflow: visible;
+}
+
+.reflow-frame {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: auto;
+  height: auto;
+  min-height: 100dvh;
+  overflow: visible;
 }
 
 @keyframes aira-shimmer {

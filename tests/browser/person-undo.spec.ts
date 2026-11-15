@@ -5,7 +5,7 @@ const element = "ppt/slides/slide1.xml#2"
 const start = [30, 30, 360, 120]
 const moved = [60, 90, 360, 120]
 
-test.use({ viewport: { width: 1600, height: 1000 } })
+test.use({ viewport: { width: 1470, height: 923 } })
 
 function entry(page: Page, number: number) {
   return page.locator(`[data-slide-entry="${number}"]`)

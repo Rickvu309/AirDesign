@@ -87,7 +87,7 @@ async function open(page: Page, file: string): Promise<string> {
   return page.url()
 }
 
-test.use({ viewport: { width: 1600, height: 1000 } })
+test.use({ viewport: { width: 1470, height: 923 } })
 
 test("edit to Hello! survives reload, exports @export", async ({ page }, testInfo) => {
   await rm(exported, { force: true })

@@ -47,7 +47,7 @@ async function partText(file: string, name: string): Promise<string> {
   return new TextDecoder().decode(bytes)
 }
 
-test.use({ viewport: { width: 1600, height: 1000 } })
+test.use({ viewport: { width: 1470, height: 923 } })
 
 async function settled(page: Page): Promise<void> {
   await page.waitForFunction(() => {

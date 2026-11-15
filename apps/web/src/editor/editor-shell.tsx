@@ -21,6 +21,7 @@ import {
   TemplatePicker,
   TextPanel,
 } from "@/editor/tool-panels"
+import { useCanvasRoom } from "@/editor/use-canvas-room"
 import { ZoomMenu } from "@/editor/zoom-menu"
 import { ExportControl } from "@/export/export-control"
 import type { ExportRequest } from "@/export/export-deck"
@@ -83,7 +84,8 @@ export function EditorShell({
   formats,
   deck,
 }: EditorShellProps) {
-  const room = slideRoom(rail === "slides" ? 800 : 720)
+  const canvas = useCanvasRoom()
+  const room = (deck === undefined ? null : canvas.room) ?? slideRoom(rail === "slides" ? 800 : 720)
   const [zoom, setZoom] = useState<Zoom>("fit")
   const [gridOpen, setGridOpen] = useState(false)
   const pointer = usePointerTool(deck !== undefined)
@@ -142,7 +144,11 @@ export function EditorShell({
           <SlideColumn />
         </>
       ) : null}
-      <div className="relative min-w-0 flex-1" data-editor-canvas>
+      <div
+        ref={deck === undefined ? undefined : canvas.onCanvas}
+        className="relative min-w-0 flex-1"
+        data-editor-canvas
+      >
         <CanvasStage hand={deck !== undefined && pointer.tool === "hand"} width={width}>
           <div className="flex flex-col gap-3" style={{ width }}>
             <span className="text-[length:var(--type-dense)] text-faint" data-slide-label>

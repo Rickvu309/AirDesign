@@ -17,7 +17,7 @@ const connectorFaded =
 const textFaded =
   '<a:solidFill><a:schemeClr val="accent1"><a:alpha val="50000"/></a:schemeClr></a:solidFill></p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr/><a:r><a:rPr lang="en-US" sz="3200"><a:solidFill><a:schemeClr val="dk1"><a:alpha val="50000"/></a:schemeClr></a:solidFill></a:rPr>'
 
-test.use({ viewport: { width: 1600, height: 1000 } })
+test.use({ viewport: { width: 1470, height: 923 } })
 
 function stroke(shape: Locator): Promise<string | null> {
   return shape.evaluate(

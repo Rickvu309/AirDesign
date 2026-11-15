@@ -4,7 +4,7 @@ import { PNG } from "pngjs"
 import { shapeDeck } from "./shape-deck"
 import { exportFromDialog } from "./export-dialog.ts"
 
-test.use({ viewport: { width: 1600, height: 1000 } })
+test.use({ viewport: { width: 1470, height: 923 } })
 
 test("a preset arrow selects, moves and resizes by its box, and a connector drags by its stroke", async ({ page }) => {
   await page.goto("/")

@@ -10,7 +10,7 @@ const typedTitle = "Typed on a new slide"
 const typedNotes = "Remember the result & the next step."
 const emuPerPixel = 15_240
 
-test.use({ viewport: { width: 1600, height: 1000 } })
+test.use({ viewport: { width: 1470, height: 923 } })
 
 test.beforeEach(async ({ page }) => {
   await holdableDevice(page)

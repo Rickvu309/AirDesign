@@ -43,7 +43,7 @@ async function settled(page: Page): Promise<void> {
   })
 }
 
-test.use({ viewport: { width: 1600, height: 1000 } })
+test.use({ viewport: { width: 1470, height: 923 } })
 
 async function drag(page: Page, from: { x: number; y: number }, by: { x: number; y: number }): Promise<void> {
   await page.mouse.move(from.x, from.y)
