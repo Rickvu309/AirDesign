@@ -132,6 +132,19 @@ export function elementFrame(
   }
 }
 
+function usePlaced(
+  store: PaintStore,
+  element: CanvasElement,
+  id: ElementId,
+  targets: Targets | undefined,
+): CanvasElement {
+  const group = element.group
+  const carried = useBox(store, group?.id ?? id)
+  const own = ownBox(element, useBox(store, id))
+  const box = group === undefined ? own : followed(own, group.box, carried)
+  return useFollowed(store, box === element.box ? element : { ...element, box }, targets)
+}
+
 type QuietProps = {
   readonly store: PaintStore
   readonly element: CanvasElement
@@ -139,14 +152,15 @@ type QuietProps = {
   readonly unshown: boolean
 }
 
-function QuietElement(props: QuietProps) {
+function QuietElement(props: QuietProps & { readonly targets: Targets | undefined }) {
   const id = props.element.id
   return id === null ? <QuietFrame {...props} written="" /> : <QuietLive {...props} id={id} />
 }
 
-function QuietLive(props: QuietProps & { readonly id: ElementId }) {
+function QuietLive(props: QuietProps & { readonly id: ElementId; readonly targets: Targets | undefined }) {
   const record = useElement(props.store, props.id)
-  return <QuietFrame {...props} written={record?.text ?? ""} />
+  const element = usePlaced(props.store, props.element, props.id, props.targets)
+  return <QuietFrame {...props} element={element} written={record?.text ?? ""} />
 }
 
 function QuietFrame(props: QuietProps & { readonly written: string }) {
@@ -268,16 +282,8 @@ function PlacedText(props: {
 }) {
   const { drawnWhenBlank, fallbackName, formatting, id, moves, onEdit, scaled, store, unshown } = props
   const record = useElement(store, id)
-  const group = props.element.group
-  const carried = useBox(store, group?.id ?? id)
-  const own = ownBox(props.element, useBox(store, id))
-  const box = group === undefined ? own : followed(own, group.box, carried)
   const shown = record?.text ?? ""
-  const placed = useFollowed(
-    store,
-    box === props.element.box ? props.element : { ...props.element, box },
-    props.targets,
-  )
+  const placed = usePlaced(store, props.element, id, props.targets)
   const { element, layer } = useTextFit(placed, scaled, shown)
   const text = element.text ?? noText
   const look = textLook(text, scaled)
@@ -373,7 +379,7 @@ export function ElementHost(
 ) {
   const { drawnWhenBlank, element, fallbackName, formatting, moves, onEdit, quiet, scaled, store, targets, unshown } =
     props
-  if (quiet) return <QuietElement element={element} scaled={scaled} store={store} unshown={unshown} />
+  if (quiet) return <QuietElement element={element} scaled={scaled} store={store} targets={targets} unshown={unshown} />
   if (element.id === null) return <SheetElement element={element} scaled={scaled} unshown={unshown} />
   return (
     <PlacedText
