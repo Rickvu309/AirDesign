@@ -77,9 +77,12 @@ test("an agent fills a table's header row, a person fills and borders the next r
     .first()
     .getByRole("button", { name: "Accent 2" })
     .click()
-  await expect.poll(() => cellFill(page, "1.2")).not.toBe(before)
+  const second = async () => {
+    const fill = await cellFill(page, "1.2")
+    return fill === before || fill === header ? null : fill
+  }
+  await expect.poll(second).not.toBeNull()
   const filled = await cellFill(page, "1.2")
-  expect(filled).not.toBe(header)
   await panel.getByRole("combobox", { name: "Borders", exact: true }).click()
   await page.getByRole("option", { name: "Bottom", exact: true }).click()
   const bottom = () =>
