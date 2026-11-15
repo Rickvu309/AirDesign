@@ -51,7 +51,8 @@ function cell(properties: string): Map<string, Uint8Array> {
 
 function cellWritten(before: Map<string, Uint8Array>, fill: Gradient): string {
   const opened = readTable(before, part, "7")
-  const value = opened === null ? null : changedTable(opened, { change: "fill", cells: { rows: [0, 0], columns: [0, 0] }, fill })
+  const value =
+    opened === null ? null : changedTable(opened, { change: "fill", cells: { rows: [0, 0], columns: [0, 0] }, fill })
   if (value === null) throw new Error("table")
   return text(writeTable(before, part, "7", value))
 }
@@ -62,7 +63,9 @@ describe("a gradient a change rewrites keeps the flip and tile rectangle its val
     const at = { slide: "256", part, shape: "2" }
     const written = text(writeTrait(before, at, "fill", { value: { set: gradient } }))
     expect(written).toBe(text(parts(shape(kept))))
-    expect(text(writeTrait(before, at, "fill", { value: { set: solid } }))).toBe(text(parts(shape(fillMarkup(solid).xml))))
+    expect(text(writeTrait(before, at, "fill", { value: { set: solid } }))).toBe(
+      text(parts(shape(fillMarkup(solid).xml))),
+    )
   })
 
   it("keeps them on a slide's own background", () => {
