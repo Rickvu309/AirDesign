@@ -7,14 +7,13 @@ ppm="$root/usr/bin/pdftoppm"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 dotnet="$(node "$here/dotnet-sdk.mjs")" || exit 1
 fonts="$root/fonts"
+stamp="$fonts/installed-$(sha256sum "$here/reference-fonts.json" | cut -c1-16)"
 
 reference_fonts() {
   local mirrors="http://archive.ubuntu.com/ubuntu https://mirrors.kernel.org/ubuntu https://mirror.math.princeton.edu/pub/ubuntu"
-  local packages=(
-    "pool/universe/f/fonts-crosextra-carlito/fonts-crosextra-carlito_20230309-2_all.deb c238087a909a4f1d1c5c1a5e1ed42ab9cb522f09ea2715e8deab6ee2751b9a01"
-    "pool/universe/f/fonts-crosextra-caladea/fonts-crosextra-caladea_20200211-2_all.deb 1a85651d71331a0e07dafa5d54e9aa54b445c29ae0dacb8c7cd224b1b7baaf82"
-  )
-  if [ ! -f "$fonts/installed" ]; then
+  local packages
+  mapfile -t packages < <(node -e 'for (const p of require(process.argv[1]).packages) console.log(p.file, p.sha256)' "$here/reference-fonts.json")
+  if [ ! -f "$stamp" ]; then
     local work
     work="$(mktemp -d)"
     rm -rf "$fonts"
@@ -43,18 +42,18 @@ reference_fonts() {
       dpkg-deb -x "$work/font.deb" "$fonts"
     done
     rm -rf "$work"
-    touch "$fonts/installed"
+    touch "$stamp"
   fi
   local base="${FONTCONFIG_FILE:-/etc/fonts/fonts.conf}"
   if [ "$base" = "$fonts/fonts.conf" ]; then
     base=/etc/fonts/fonts.conf
   fi
-  printf '%s\n' '<?xml version="1.0"?>' \
-    '<!DOCTYPE fontconfig SYSTEM "fonts.dtd">' \
-    "<fontconfig><include>${base}</include><dir>${fonts}/usr/share/fonts</dir>" \
-    '<alias binding="same"><family>Calibri Light</family><prefer><family>Carlito</family></prefer></alias>' \
-    '</fontconfig>' \
-    > "$fonts/fonts.conf"
+  {
+    printf '%s\n' '<?xml version="1.0"?>' '<!DOCTYPE fontconfig SYSTEM "fonts.dtd">'
+    printf '%s' "<fontconfig><include>${base}</include><dir>${fonts}/usr/share/fonts</dir>"
+    node -e 'for (const a of require(process.argv[1]).aliases) process.stdout.write(`<alias binding="same"><family>${a.family}</family><prefer><family>${a.prefer}</family></prefer></alias>`)' "$here/reference-fonts.json"
+    printf '%s\n' '</fontconfig>'
+  } > "$fonts/fonts.conf"
   export FONTCONFIG_FILE="$fonts/fonts.conf"
 }
 

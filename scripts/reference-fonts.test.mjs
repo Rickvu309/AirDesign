@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
+import { renderSettings } from "./pptx-render.mjs"
 
 const fail = (message) => {
   console.error(message)
@@ -9,12 +10,17 @@ const fail = (message) => {
 }
 
 const script = new URL("./pptx-tools.sh", import.meta.url).pathname
-const source = fs.readFileSync(script, "utf8")
 
+const pins = JSON.parse(fs.readFileSync(new URL("./reference-fonts.json", import.meta.url), "utf8"))
 for (const family of ["carlito", "caladea"]) {
-  const pinned = source.match(new RegExp(`fonts-crosextra-${family}_[^ ]+\\.deb ([0-9a-f]{64})`))
-  if (pinned === null) fail(`pptx-tools.sh does not pin fonts-crosextra-${family} to a sha256`)
+  const pinned = pins.packages.find((entry) => entry.file.includes(`fonts-crosextra-${family}_`))
+  if (pinned === undefined || !/^[0-9a-f]{64}$/.test(pinned.sha256))
+    fail(`reference-fonts.json does not pin fonts-crosextra-${family} to a sha256`)
 }
+if (JSON.stringify(renderSettings.fonts) !== JSON.stringify(pins))
+  fail(
+    "the render cache key does not carry the pinned reference fonts, so renders made with other fonts would be reused",
+  )
 
 const run = fs.readFileSync(new URL("./paint-fidelity-run.mjs", import.meta.url), "utf8")
 if (/chromium\.launch\(/.test(run)) fail("paint-fidelity-run.mjs launches Chromium without its library folder")
@@ -34,7 +40,8 @@ const result = spawnSync("/usr/bin/bash", [script, "true"], {
   encoding: "utf8",
   timeout: 30000,
 })
-const kept = fs.existsSync(path.join(tools, "fonts", "installed"))
+const fontFolder = path.join(tools, "fonts")
+const kept = fs.existsSync(fontFolder) && fs.readdirSync(fontFolder).some((name) => name.startsWith("installed"))
 fs.rmSync(home, { recursive: true, force: true })
 if (result.status === 0) fail("pptx-tools.sh accepted a font package that does not match its pinned checksum")
 if (!result.stderr.includes("does not match its pinned checksum"))
