@@ -36,10 +36,6 @@ export function opacityFields(facts: ElementFacts): readonly FieldKey[] {
   return takes(facts).filter((field) => alphaKeys.includes(field))
 }
 
-export function agentTakes(facts: ElementFacts): readonly FieldKey[] {
-  return takes(facts).filter((field) => field !== "table.value")
-}
-
 export function removable(facts: ElementFacts): boolean {
   return removes.includes(facts.kind) && !facts.grouped && !facts.animated
 }

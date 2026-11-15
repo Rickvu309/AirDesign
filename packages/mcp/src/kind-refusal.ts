@@ -1,6 +1,5 @@
 import { traitWire, type AgentChange, type WireSet } from "@airdesign/catalog"
 import {
-  agentTakes,
   alphaKeys,
   boxOnly,
   editMissing,
@@ -74,7 +73,7 @@ function textNext(node: ElementId, { facts }: Missing): string {
   if (facts.kind === "group")
     return "Edit the text of the elements inside it: airdesign_read_deck lists them with grouped true."
   if (facts.kind === "chart") return `No tool edits a chart's data yet. Tell the person, or ${beside}.`
-  if (facts.kind === "table") return `No agent tool edits a table's cells yet. Tell the person, or ${beside}.`
+  if (facts.kind === "table") return `Set its cells with table's value, as airdesign_read_deck lists it, or ${beside}.`
   if (facts.kind === "kept") return "Leave it, or tell the person."
   return `To put words beside it, call airdesign_add_text_box on slide ${shapeOf(node).slide}.`
 }
@@ -106,7 +105,7 @@ function setLines(register: Register, change: WireSet, at: number): readonly str
     const view = scope.view(node)
     if (view === undefined) return []
     const faded = change.opacity !== undefined && opacityFields(view.facts).length === 0 ? alphaKeys : []
-    const missing = [...namedFields(change).filter((field) => !agentTakes(view.facts).includes(field)), ...faded]
+    const missing = [...namedFields(change).filter((field) => !takes(view.facts).includes(field)), ...faded]
     if (missing.length === 0 || (view.facts.grouped && boxOnly(missing))) return []
     const found = { facts: view.facts, missing, box: openingElement(register, node)?.box ?? null }
     return [`Change ${String(at + 1)} (${node}): ${kindSentence(node, found)}`]
@@ -167,7 +166,7 @@ const instructedKinds: readonly (readonly [Kind, string])[] = [
 ]
 
 function traitWords(kind: Kind): string | undefined {
-  const taken = agentTakes({ kind, text: true, grouped: false, animated: false })
+  const taken = takes({ kind, text: true, grouped: false, animated: false })
   const traits = kindTraits[kind].flatMap((trait: TraitName) => {
     const fields = Object.keys(traitWire[trait].fields).filter((field) => taken.includes(writtenField(trait, field)))
     return fields.length === 0 ? [] : [`${trait} (${fields.join(", ")})`]

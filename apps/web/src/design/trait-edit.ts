@@ -25,6 +25,7 @@ import { indexPackage, type ReadShape } from "@airdesign/pptx"
 import { textValue } from "@airdesign/render"
 import type { UndoName } from "@/copy/undo-copy"
 import { valueStorable } from "@/slide-paint"
+import { tableEditName } from "@/table-edit"
 import type { UndoEntry } from "@/undo-list"
 import { boxName } from "@/undo-names"
 
@@ -80,6 +81,8 @@ function nameOf(view: ScopedElement, values: readonly FormatOneValue[]): UndoNam
   if (value === undefined) return "text"
   if (value.property === "box") return (view.box === null ? null : boxName(view.box, value.value)) ?? "move"
   if (slideKind(view.node) === "notes") return "notes"
+  const table = view.facts.kind === "table" ? tableEditName(view.value ?? "", value.value) : null
+  if (table !== null) return table
   return plainOf(value.value) === plainOf(view.value ?? "") ? "format" : "text"
 }
 

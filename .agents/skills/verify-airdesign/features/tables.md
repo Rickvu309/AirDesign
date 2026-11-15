@@ -12,6 +12,7 @@ In an open deck, `Actions` > `Table` inserts a three by three table in clear spa
 - `table-reload` text typed in a cell and reloaded at once is all there: each keystroke reaches the journal in its own task, as a text box's does (`tests/browser/keep-typed-text.spec.ts`).
 - `table-size` a table is not resizable, by pointer or by keys.
 - `table-export` the export writes the table's rows and cells; the frame's height is the sum of its rows.
+- `table-fill` the Design panel's Table section picks a cell by focusing it in `group "Cells"`, then `group "Apply to"` (Cell, Row, Column, All), `group "Cell fill"` (None, Color, Gradient, Pattern), `combobox "Borders"` (All, Outside, Inside, Top, Bottom, Left, Right), `group "Border color"`, `Border width` and `Border dash`. A border on an edge between two cells is written on both. Undo names `Undo cell fill` and `Undo border`. An agent sends the whole table value with `set`, `{ "table": { "value": "{\"rows\":[{\"from\":0,\"cells\":[...],\"fills\":[...]}]}" } }`; each `from` is checked against the file. The export writes `a:tcPr` fills and `a:lnL`, `a:lnR`, `a:lnT`, `a:lnB` borders, changing only the fields sent.
 
 ## How to get to it (user POV)
 
@@ -23,6 +24,7 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
+- **Journey.** `table-fill` imports `table-added.pptx`, has an agent fill the header row with `set` over `/mcp`, has the person fill row 2 and give it a bottom border in the panel, reads the server copy, exports, checks the cells with `readCells`, and opens the export again.
 - **Specs.** No shipped journey inserts a table; `tests/browser/table-edits.spec.ts` inserts one, types in two cells, adds and deletes rows, undoes and redoes the insert, and checks a reload, the export and a new import. `tests/browser/table-paint.spec.ts` paints imported tables.
 - **Live.** Driven on 2026-11-13 with scratch journeys run by path (`$V journey <run> ~/tmp/<file>.mjs`): insert, type and undo at once; insert, type slowly and undo in the cell; insert and reload once the server had it; type `Cell` and reload at once; insert from the keyboard, type `Key`, Tab, type `Board`, Escape; export the current slide with the table. Each case and what it showed is in the sub-features above.
 - **States for look.** `table-cells` (an imported table, `scripts/pptx-fixtures/corpus/nasa-roman-thermal-runtime.pptx` slide 10).

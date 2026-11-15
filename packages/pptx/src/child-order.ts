@@ -2,6 +2,21 @@ import { markupDocument } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { shapePart } from "./shape-id.js"
 
+const lineChildren = [
+  "a:noFill",
+  "a:solidFill",
+  "a:gradFill",
+  "a:pattFill",
+  "a:prstDash",
+  "a:custDash",
+  "a:round",
+  "a:bevel",
+  "a:miter",
+  "a:headEnd",
+  "a:tailEnd",
+  "a:extLst",
+] as const
+
 export const childOrder = {
   "p:sp": ["p:nvSpPr", "p:spPr", "p:style", "p:txBody", "p:extLst"],
   "p:spPr": [
@@ -21,18 +36,27 @@ export const childOrder = {
     "a:sp3d",
     "a:extLst",
   ],
-  "a:ln": [
+  "a:ln": lineChildren,
+  "a:lnL": lineChildren,
+  "a:lnR": lineChildren,
+  "a:lnT": lineChildren,
+  "a:lnB": lineChildren,
+  "a:tc": ["a:txBody", "a:tcPr", "a:extLst"],
+  "a:tcPr": [
+    "a:lnL",
+    "a:lnR",
+    "a:lnT",
+    "a:lnB",
+    "a:lnTlToBr",
+    "a:lnBlToTr",
+    "a:cell3D",
     "a:noFill",
     "a:solidFill",
     "a:gradFill",
+    "a:blipFill",
     "a:pattFill",
-    "a:prstDash",
-    "a:custDash",
-    "a:round",
-    "a:bevel",
-    "a:miter",
-    "a:headEnd",
-    "a:tailEnd",
+    "a:grpFill",
+    "a:headers",
     "a:extLst",
   ],
   "p:grpSpPr": [

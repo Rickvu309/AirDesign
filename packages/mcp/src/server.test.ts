@@ -98,7 +98,7 @@ describe("createServer", () => {
       )
       expect(instructions).toContain("join, head, tail), effects (shadow, glow, softEdge) and opacity.")
       expect(instructions).toContain('"opacity": 60')
-      expect(instructions).toContain("A table takes identity (name, alt, hidden) and box (x, y, align, distribute).")
+      expect(instructions).toContain("A table takes identity (name, alt, hidden), box (x, y, align, distribute) and table (value).")
       expect(instructions).toContain(
         "A group takes identity (name, alt, hidden), box (x, y, w, h, rot, flipH, flipV, align, distribute) and effects (shadow, glow, softEdge).",
       )

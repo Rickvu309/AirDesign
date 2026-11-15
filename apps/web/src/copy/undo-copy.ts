@@ -32,6 +32,8 @@ export type UndoName =
   | "rename"
   | "alt-text"
   | "hide"
+  | "cell-fill"
+  | "border"
   | "add-row"
   | "delete-row"
   | "add-column"
@@ -62,6 +64,8 @@ export const undoCopy = {
     back: "Undo send to back",
     background: "Undo background color",
     fill: "Undo fill",
+    "cell-fill": "Undo cell fill",
+    border: "Undo border",
     line: "Undo line",
     effects: "Undo effects",
     "text-box": "Undo text box",
@@ -101,6 +105,8 @@ export const undoCopy = {
     back: "Redo send to back",
     background: "Redo background color",
     fill: "Redo fill",
+    "cell-fill": "Redo cell fill",
+    border: "Redo border",
     line: "Redo line",
     effects: "Redo effects",
     "text-box": "Redo text box",

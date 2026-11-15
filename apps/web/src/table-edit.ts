@@ -8,8 +8,10 @@ import {
   writeTableValue,
   type Register,
   type TableChange,
+  type TableValue,
 } from "@airdesign/document"
 import { readTable, writeTable, type ReadShape } from "@airdesign/pptx"
+import type { UndoName } from "@/copy/undo-copy"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -43,6 +45,16 @@ export function tableValue(parts: Parts, shape: ReadShape, shown: string | null,
   } catch {
     return null
   }
+}
+
+export function tableEditName(before: string, after: string): UndoName | null {
+  const was = readTableValue(before)
+  const next = readTableValue(after)
+  if (was === null || next === null) return null
+  const of = (table: TableValue, pick: (row: TableValue["rows"][number]) => unknown) =>
+    JSON.stringify([table.columns, table.rows.map((row) => [row.from, pick(row)])])
+  if (of(was, (row) => row.cells) !== of(next, (row) => row.cells)) return "text"
+  return of(was, (row) => row.fills ?? null) === of(next, (row) => row.fills ?? null) ? "border" : "cell-fill"
 }
 
 export function tableEdited(register: Register): boolean {

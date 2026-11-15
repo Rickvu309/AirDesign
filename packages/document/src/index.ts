@@ -103,7 +103,7 @@ export {
   type Row,
   type TraitPatch,
 } from "./row.js"
-export { agentTakes, boxOnly, indexFacts, opacityFields, removable, takes } from "./element-takes.js"
+export { boxOnly, indexFacts, opacityFields, removable, takes } from "./element-takes.js"
 export {
   alphaKeys,
   type AlphaField,
@@ -168,8 +168,21 @@ export {
   tableColumns,
   writeTableValue,
   type TableChange,
+  type TableRow,
   type TableValue,
 } from "./table-value.js"
+export {
+  borderKinds,
+  borderSides,
+  cellFill,
+  tableSides,
+  type Border,
+  type Borders,
+  type BorderSides,
+  type CellFill,
+  type CellRange,
+  type TableSide,
+} from "./table-cells.js"
 export {
   alphaOf,
   bareTransforms,

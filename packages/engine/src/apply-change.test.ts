@@ -1,11 +1,14 @@
 import { readDeckId } from "@airdesign/catalog"
 import {
+  changedTable,
   currentBox,
   currentValue,
   elementGone,
   elementId,
   format,
+  openingTable,
   readTextValue,
+  writeTableValue,
   writeTextValue,
   type DeckIndex,
   type IndexElement,
@@ -151,13 +154,19 @@ describe("edit_deck refuses a set change it cannot land, and lands nothing", () 
     })
   })
 
-  it("refuses a table's cells from an agent, as before", () => {
-    const table = element("259.3", { kind: "table", value: "{}", role: "table" })
+  it("lands an agent's table value that fills the header row", () => {
+    const opening = writeTableValue(openingTable(2, 2))
+    const table = element("259.3", { kind: "table", value: opening, role: "table" })
     const deck = started(indexed({ elements: [...elements, table], total: elements.length + 1 }), "259.3")
-    expect(edit(deck, { op: "set", target: "259.3", table: { value: '{"rows":[]}' } })).toEqual({
-      ok: false,
-      refusal: "kind",
+    const accent = { solid: { scheme: "accent1" } } as const
+    const filled = changedTable(openingTable(2, 2), {
+      change: "fill",
+      cells: { rows: [0, 0], columns: [0, 1] },
+      fill: accent,
     })
+    const value = writeTableValue(filled!)
+    const landedDeck = landed(edit(deck, { op: "set", target: "259.3", table: { value } }))
+    expect(currentValue(nodeBody(landedDeck.register, elementId("259.3")))).toBe(value)
   })
 })
 

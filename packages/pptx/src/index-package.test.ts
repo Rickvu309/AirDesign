@@ -1,6 +1,7 @@
 import { expect, it, vi } from "vitest"
-import { elementId, writeTextValue } from "@airdesign/document"
+import { elementId, readTableValue, writeTextValue } from "@airdesign/document"
 import { indexPackage } from "./index.js"
+import { decodeUtf8 } from "./package-bytes.js"
 
 const reads = vi.hoisted(() => ({ parts: [] as Uint8Array[] }))
 
@@ -95,5 +96,22 @@ it("indexes a shape that shares its id with a fallback copy as kept, so no edit 
   expect(indexPackage(fallback).elements.map(({ node, kind }) => [node, kind])).toEqual([
     ["258.5", "kept"],
     ["258.6", "shape"],
+  ])
+})
+
+it("indexes a table's value, so an agent reads its cells and sends them back with set", () => {
+  const cell = (text: string) =>
+    `<a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:t>${text}</a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc>`
+  const table = `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="5"/></p:nvGraphicFramePr><p:xfrm><a:off x="0" y="0"/><a:ext cx="200" cy="100"/></p:xfrm><a:graphic><a:graphicData><a:tbl><a:tblGrid><a:gridCol w="100"/><a:gridCol w="100"/></a:tblGrid><a:tr h="100">${cell("Region")}${cell("Sales")}</a:tr></a:tbl></a:graphicData></a:graphic></p:graphicFrame>`
+  const slide = parts.get("ppt/slides/slide1.xml")!
+  const tabled = new Map(parts)
+  tabled.set("ppt/slides/slide1.xml", xml(decodeUtf8(slide).replace("</p:spTree>", `${table}</p:spTree>`)))
+  const indexed = indexPackage(tabled).elements.find((each) => each.node === elementId("258.5"))
+  expect(indexed?.kind).toBe("table")
+  expect(readTableValue(indexed?.value ?? "")?.rows).toEqual([
+    {
+      from: 0,
+      cells: [[{ from: 0, runs: [{ from: 0, text: "Region" }] }], [{ from: 0, runs: [{ from: 0, text: "Sales" }] }]],
+    },
   ])
 })

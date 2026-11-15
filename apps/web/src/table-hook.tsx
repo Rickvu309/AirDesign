@@ -49,6 +49,8 @@ const editNames: Readonly<Record<TableChange["change"], UndoName>> = {
   "remove-row": "delete-row",
   column: "add-column",
   "remove-column": "delete-column",
+  fill: "cell-fill",
+  border: "border",
 }
 
 export type TableEdit = (value: string, name: UndoName) => Promise<CommitOutcome>

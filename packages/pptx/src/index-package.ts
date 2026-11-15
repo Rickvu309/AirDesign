@@ -1,9 +1,27 @@
-import { elementId, writeTextValue, type DeckIndex } from "@airdesign/document"
+import { bytesOf, elementId, limits, writeTableValue, writeTextValue, type DeckIndex } from "@airdesign/document"
 import { readNotes } from "./notes-body.js"
 import { readShapes, readSlides, shapeKind } from "./read-shapes.js"
 import { presentationPart } from "./package-address.js"
 import { markupDocument } from "./element-span.js"
 import { animatedShapeIds, freeShapeId } from "./shape-id.js"
+import { readTable } from "./table-write.js"
+
+type Shape = ReturnType<typeof readShapes>[number]
+
+function tableValue(parts: ReadonlyMap<string, Uint8Array>, shape: Shape): string | null {
+  try {
+    const table = readTable(parts, shape.part, shape.shape)
+    const value = table === null ? null : writeTableValue(table)
+    return value !== null && bytesOf(value) <= limits.valueBytes ? value : null
+  } catch {
+    return null
+  }
+}
+
+function valueOf(parts: ReadonlyMap<string, Uint8Array>, shape: Shape): string | null {
+  if (shapeKind(shape) === "table") return tableValue(parts, shape)
+  return shape.text.length === 0 ? null : writeTextValue(shape.text)
+}
 
 function slideSize(parts: ReadonlyMap<string, Uint8Array>): { readonly width: number; readonly height: number } | null {
   const bytes = parts.get(presentationPart)
@@ -32,7 +50,7 @@ export function indexPackage(parts: ReadonlyMap<string, Uint8Array>): Pick<DeckI
   const elements = readShapes(parts).map((shape) => ({
     node: elementId(`${shape.slide}.${shape.shape}`),
     kind: shapeKind(shape),
-    value: shape.text.length === 0 ? null : writeTextValue(shape.text),
+    value: valueOf(parts, shape),
     box: shape.box,
     grouped: shape.grouped === true,
   }))

@@ -1,6 +1,12 @@
 export const tableCopy = {
   section: "Table",
   cells: "Cells",
+  apply: "Apply to",
+  cellFill: "Cell fill",
+  borders: "Borders",
+  borderFill: "Border color",
+  borderWidth: "Border width",
+  borderDash: "Border dash",
   rows: "Table rows",
   columns: "Table columns",
   rowAbove: "Add row above",
@@ -16,3 +22,17 @@ export const tableCopy = {
   columnRightOf: (column: number) => `Add column right of column ${column}`,
   deleteColumnOf: (column: number) => `Delete column ${column}`,
 } as const
+
+export const tableWords: Readonly<Record<string, string>> = {
+  "cells.cell": "Cell",
+  "cells.row": "Row",
+  "cells.column": "Column",
+  "cells.table": "All",
+  "borders.all": "All",
+  "borders.outside": "Outside",
+  "borders.inside": "Inside",
+  "borders.top": "Top",
+  "borders.bottom": "Bottom",
+  "borders.left": "Left",
+  "borders.right": "Right",
+}
