@@ -3,8 +3,6 @@ import { createRoot } from "react-dom/client"
 import { afterEach, describe, expect, it } from "vitest"
 import { paintStore, SlideCanvas, type CanvasEffects, type CanvasElement, type PaintBox } from "./index.js"
 
-Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true)
-
 const shadow = {
   blur: 20,
   distance: 10,

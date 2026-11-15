@@ -4,8 +4,6 @@ import { elementId, readTextValue, writeTextValue, type TextValue } from "@airde
 import { afterEach, describe, expect, it } from "vitest"
 import { Passage, paintStore } from "./index.js"
 
-Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true)
-
 const hosts: { host: HTMLDivElement; root: Root }[] = []
 
 afterEach(async () => {

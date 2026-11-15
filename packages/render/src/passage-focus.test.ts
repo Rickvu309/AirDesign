@@ -4,8 +4,6 @@ import { elementId } from "@airdesign/document"
 import { afterEach, expect, it, vi } from "vitest"
 import { Passage, paintStore } from "./index.js"
 
-Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true)
-
 afterEach(() => {
   vi.restoreAllMocks()
   document.body.replaceChildren()

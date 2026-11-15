@@ -3,8 +3,6 @@ import { createRoot } from "react-dom/client"
 import { afterEach, describe, expect, it } from "vitest"
 import { paintStore, SlideCanvas, type CanvasElement, type CanvasLine } from "./index.js"
 
-Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true)
-
 const base: CanvasLine = { color: "black", width: 10, dash: null }
 const element = (line: CanvasLine, extra: Partial<CanvasElement> = {}): CanvasElement => ({
   key: "line",

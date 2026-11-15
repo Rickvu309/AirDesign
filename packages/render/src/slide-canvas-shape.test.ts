@@ -3,8 +3,6 @@ import { createRoot } from "react-dom/client"
 import { afterEach, expect, it } from "vitest"
 import { paintStore, SlideCanvas, type CanvasElement } from "./index.js"
 
-Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true)
-
 const shape: CanvasElement = {
   key: "arrow",
   id: null,
