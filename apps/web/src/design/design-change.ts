@@ -52,9 +52,9 @@ export function endChange(node: ElementId, end: "start" | "end", to: Bound | Pla
   }
 }
 
-export function changeDesign(deck: DesignDeck, change: SetChange) {
+export function changeDesign(deck: DesignDeck, change: () => SetChange) {
   deck.undo.turnAfter(async () => {
-    if (await applyChange(changingDeck(deck), change)) {
+    if (await applyChange(changingDeck(deck), change())) {
       void flushPending(connect, deck.id).then(deck.settle)
       return
     }

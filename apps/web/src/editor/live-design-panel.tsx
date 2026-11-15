@@ -35,8 +35,16 @@ import { designCopy } from "@/copy/design-copy"
 import type { Palette, Swatch } from "@/design/color-choices"
 import { ColorPicker } from "@/design/color-picker"
 import { ColorField, fieldLook } from "@/design/controls/color"
-import { panelOf, type NodeChoice, type PanelReads, type PanelSection } from "@/design/panel"
+import {
+  panelOf,
+  type NodeChoice,
+  type PanelModel,
+  type PanelReads,
+  type PanelRow,
+  type PanelSection,
+} from "@/design/panel"
 import { changeDesign, fileValue } from "@/design/design-change"
+import { rebasedChange } from "@/design/rebase"
 import { deviceScope } from "@/design/trait-edit"
 import { backgroundHex, designShown, themeOf, type DesignShown } from "@/design-shown"
 import { BackgroundKind, DesignHead, DesignSection, ElementDesign, SectionRows } from "@/editor/design-panel"
@@ -178,22 +186,13 @@ function nodeChoices(deck: DesigningDeck, connector: ScopedElement): readonly No
   })
 }
 
-function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementId }) {
+function elementDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement; model: PanelModel } | null {
   const { shown } = deck
-  const { current } = shown
   const store = shown.store.current
-  const text = useSyncExternalStore(store.elementSubscribe(node), () => store.getElement(node)?.text ?? null)
-  const box = useSyncExternalStore(store.boxSubscribe(node), () => store.getBox(node))
-  const parts = shown.shownParts.current
+  const text = store.getElement(node)?.text ?? null
+  const box = store.getBox(node)
   const edited = shown.editParts.current
-  const opening = deviceScope(parts, shown.shownRegister.current ?? openRegister("", "")).view(node)
-  const theme = useMemo(() => themeAt(edited, current), [edited, current])
-  const display = shown.displayParts.current
-  const palette: Palette = {
-    theme,
-    deck: colorsIn(display),
-    behind: behindOf(display, current, node, theme),
-  }
+  const opening = deviceScope(shown.shownParts.current, shown.shownRegister.current ?? openRegister("", "")).view(node)
   if (opening === undefined) return null
   const held = opening.value ?? fileValue(shown, node)
   const value = opening.facts.kind === "table" && readTableValue(text ?? "") === null ? held : (text ?? held)
@@ -204,12 +203,37 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
     fields: fieldsOf(shown.displayParts.current, node),
     ...(view.facts.kind === "connector" ? { nodes: nodeChoices(deck, view) } : {}),
   })
+  return { view, model }
+}
+
+function rowsOf(sections: readonly PanelSection[] | undefined): readonly PanelRow[] {
+  return (sections ?? []).flatMap((section) => section.rows)
+}
+
+function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementId }) {
+  const { shown } = deck
+  const { current } = shown
+  const store = shown.store.current
+  useSyncExternalStore(store.elementSubscribe(node), () => store.getElement(node)?.text ?? null)
+  useSyncExternalStore(store.boxSubscribe(node), () => store.getBox(node))
+  const edited = shown.editParts.current
+  const theme = useMemo(() => themeAt(edited, current), [edited, current])
+  const display = shown.displayParts.current
+  const palette: Palette = {
+    theme,
+    deck: colorsIn(display),
+    behind: behindOf(display, current, node, theme),
+  }
+  const design = elementDesign(deck, node)
+  if (design === null) return null
   return (
     <ElementDesign
-      model={model}
-      kind={view.facts.kind}
+      model={design.model}
+      kind={design.view.facts.kind}
       palette={palette}
-      onChange={(row, value) => changeDesign(deck, row.change(value))}
+      onChange={(row, value) =>
+        changeDesign(deck, () => rebasedChange(rowsOf(elementDesign(deck, node)?.model.sections), row, value))
+      }
     />
   )
 }
@@ -234,7 +258,9 @@ function LiveSlideDesign({ deck }: { deck: DesigningDeck }) {
     <DesignView
       shown={view}
       deck={colorsIn(parts)}
-      onColor={(color) => changeDesign(deck, { target: { slide: view.slide }, fill: { value: { solid: color } } })}
+      onColor={(color) =>
+        changeDesign(deck, () => ({ target: { slide: view.slide }, fill: { value: { solid: color } } }))
+      }
     >
       <LiveThemeDesign deck={deck} />
     </DesignView>
@@ -263,7 +289,7 @@ function LiveThemeDesign({ deck }: { deck: DesigningDeck }) {
         <SectionRows
           rows={section.rows}
           palette={{ theme: [], deck: colorsIn(deck.shown.displayParts.current), behind: null }}
-          onChange={(row, value) => changeDesign(deck, row.change(value))}
+          onChange={(row, value) => changeDesign(deck, () => rebasedChange(themeSection(deck)?.rows ?? [], row, value))}
         />
       </div>
     </DesignSection>
