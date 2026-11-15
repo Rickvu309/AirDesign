@@ -6,8 +6,11 @@ import {
   openRegister,
   presentSlides,
   slideId,
+  slideUndoable,
   type Command,
   type Register,
+  type SlideCommand,
+  type Undoable,
 } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { emptyUndo, recorded, recordsInFlight, turnBack, undoLabel, type UndoLink } from "./undo-list"
@@ -19,6 +22,12 @@ function landed(register: Register, command: Command): Register {
   const decision = decide(register, command)
   if (decision.decision !== "apply") throw new Error(decision.code)
   return decision.register
+}
+
+function undoableOf(register: Register, edit: SlideCommand): Undoable {
+  const undoable = slideUndoable(register, file, edit)
+  if (undoable === null) throw new Error("undoable")
+  return undoable
 }
 
 function deckLink(start: Register) {
@@ -173,21 +182,13 @@ describe("undo list", () => {
       box: { x: 0, y: 0, cx: 1, cy: 1 },
       grouped: false,
     }
-    const added = landed(edited(), {
-      command: "slide",
-      file,
-      edit: { slide: "element-add", id: file[0], element: box },
-    })
-    const removed = landed(added, { command: "slide", file, edit: { slide: "element-remove", id: file[0], node } })
+    const add: SlideCommand = { slide: "element-add", id: file[0], element: box }
+    const remove: SlideCommand = { slide: "element-remove", id: file[0], node }
+    const added = landed(edited(), { command: "slide", file, edit: add })
+    const removed = landed(added, { command: "slide", file, edit: remove })
     const deck = deckLink(removed)
-    const addBox = {
-      name: "add-box",
-      undoable: { element: box.node, slide: file[0], file, before: false, after: true },
-    } as const
-    const deleted = {
-      name: "delete-element",
-      undoable: { element: node, slide: file[0], file, before: true, after: false },
-    } as const
+    const addBox = { name: "add-box", undoable: undoableOf(edited(), add) } as const
+    const deleted = { name: "delete-element", undoable: undoableOf(added, remove) } as const
     const list = recorded(recorded(emptyUndo, addBox), deleted)
     expect(undoLabel("undo", list)).toBe("Undo delete element")
     const first = await turnBack(deck.link, "deck", list, "undo")

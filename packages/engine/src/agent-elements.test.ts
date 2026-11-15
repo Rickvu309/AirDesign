@@ -188,6 +188,36 @@ describe("Undo of a run that added or deleted an element", () => {
     expect(undo({ ...added, register: typed.register })).toEqual({ ok: false, refusal: "run-fenced" })
   })
 
+  it("takes back a box the run added and wrote in", () => {
+    const added = landed(add(opened())).deck
+    const node = elementId("256.6")
+    const started = landed(call("start_run", added, actor, { deck: "deck", runId: "run", elements: [{ node }] })).deck
+    const wrote = landed(
+      call("edit_deck", started, actor, {
+        deck: "deck",
+        base: started.revision,
+        changes: [{ node, value: "Mine", readAt: 0 }],
+      }),
+    ).deck
+    const { deck } = landed(undo(wrote))
+    expect(elementGone(deck.register, node)).toBe(true)
+  })
+
+  it("refuses, and changes nothing, when another run wrote in the box the run added", () => {
+    const added = landed(add(opened())).deck
+    const node = elementId("256.6")
+    const other = { actor: "agent", runId: "other" } as const
+    const started = landed(call("start_run", added, other, { deck: "deck", runId: "other", elements: [{ node }] })).deck
+    const wrote = landed(
+      call("edit_deck", started, other, {
+        deck: "deck",
+        base: started.revision,
+        changes: [{ node, value: "Theirs", readAt: 0 }],
+      }),
+    ).deck
+    expect(undo(wrote)).toEqual({ ok: false, refusal: "run-fenced" })
+  })
+
   it("refuses when a person brought back the element the run deleted", () => {
     const removed = landed(remove(opened(), "256.2")).deck
     const restored = decide(removed.register, {

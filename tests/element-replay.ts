@@ -8,6 +8,7 @@ import {
   readSlideId,
   redoOf,
   slideId,
+  slideUndoable,
   takes,
   undoOf,
   writeTableValue,
@@ -37,6 +38,7 @@ const kinds = {
     typed: writeTableValue(grown),
   },
 }
+const wroteTable = writeTableValue(changedTable(opening, { change: "cell", row: 0, column: 0, text: "Aira" })!)
 let kind: keyof typeof kinds = "box"
 const media = { sha256: "d".repeat(64), type: "image/png" }
 const picture = { node, kind: "picture", value: null, box, grouped: false }
@@ -70,7 +72,9 @@ function exportable(register: Register, uploaded: boolean): boolean {
   return addedPictures(register).every((each) => uploaded && each.sha256 === media.sha256)
 }
 const refusedBy: Record<string, string> = { AgentRemoveRefused: "person-protected", UndoRunRefused: "run-fenced" }
+const personSteps = new Set(["Add", "AddPicture", "Remove"])
 type Answer = ReturnType<typeof call> | "told"
+type Held = { readonly deck: Deck; readonly undoable: Undoable | null }
 
 function opened(): Deck {
   const size = { width: 12_192_000, height: 6_858_000 }
@@ -87,15 +91,8 @@ function opened(): Deck {
   return result.deck
 }
 
-function turned(current: Deck, source: Spec, action: string): Answer {
-  const added = source.kind === "add"
-  const undoable: Undoable = {
-    element: node,
-    slide: slideId("256"),
-    file: [slideId("256")],
-    before: !added,
-    after: added,
-  }
+function turned(current: Deck, undoable: Undoable | null, action: string): Answer {
+  if (undoable === null) throw new Error(`${action} with no step`)
   const turn = action === "Undo" ? undoOf(current.register, undoable) : redoOf(current.register, undoable)
   const [command] = turn.ok ? turn.commands : []
   if (command === undefined) return "told"
@@ -104,8 +101,31 @@ function turned(current: Deck, source: Spec, action: string): Answer {
   return call("commit_edits", current, person, { deck, batch })
 }
 
-function act(current: Deck, source: Spec, action: string): Answer {
-  if (action === "Undo" || action === "Redo") return turned(current, source, action)
+function agentWrote(current: Deck): Answer {
+  const runId = `write-${current.revision}`
+  const caller = { actor: "agent", runId } as const
+  const started = call("start_run", current, caller, { deck, runId, elements: [{ node }] })
+  if (!started.ok) return started
+  const readAt = started.deck.register.elements[node]?.readAt ?? 0
+  const change =
+    kind === "table"
+      ? { op: "set", target: node, table: { value: wroteValue() } }
+      : { node, value: wroteValue(), readAt }
+  const wrote = call("edit_deck", started.deck, caller, { deck, base: started.deck.revision, changes: [change] })
+  if (!wrote.ok) return wrote
+  return call("stop_run", wrote.deck, caller, { deck, runId })
+}
+
+function writeUndone(current: Deck): Answer {
+  const row = current.register.elements[node]?.landed.find((each) => each.actor === "agent" && each.visible)
+  if (row?.runId === undefined) throw new Error("no agent row to undo")
+  return call("undo_run", current, person, { deck, runId: row.runId })
+}
+
+function act(current: Deck, source: Spec, action: string, undoable: Undoable | null = null): Answer {
+  if (action === "Undo" || action === "Redo") return turned(current, undoable, action)
+  if (action === "AgentWrite") return agentWrote(current)
+  if (action === "UndoWrite") return writeUndone(current)
   if (action === "AgentAdd") {
     return call("add_text_box", current, agent, { deck, base: current.revision, slide: "256", box })
   }
@@ -117,9 +137,24 @@ function act(current: Deck, source: Spec, action: string): Answer {
   return call("commit_edits", current, person, { deck, batch: [batch(source, action)] })
 }
 
-function shown(current: Deck, state: Spec): { readonly added: boolean; readonly typed: boolean } | null {
+function wroteValue(): string {
+  return kind === "table" ? wroteTable : "Aira"
+}
+
+function shown(current: Deck, state: Spec) {
   const read = readDeckPage(current, { runId: null }).elements.find((each) => each.node === node)
-  return read === undefined ? null : { added: true, typed: read.value === typedValue(state) }
+  if (read === undefined) return null
+  const shows = read.value === typedValue(state) ? "typed" : read.value === wroteValue() ? "aira" : "opening"
+  const rows = current.register.elements[node]?.landed ?? []
+  return { added: true, shows, agent: rows.some((row) => row.actor === "agent" && row.visible) }
+}
+
+function heldAfter(from: Held, answer: Answer, action: string): Held {
+  if (answer === "told" || !answer.ok) return from
+  if (!personSteps.has(action)) return { deck: answer.deck, undoable: from.undoable }
+  const edit = answer.deck.register.order.at(-1)
+  if (edit === undefined) throw new Error(`${action} landed no slide edit`)
+  return { deck: answer.deck, undoable: slideUndoable(from.deck.register, [slideId("256")], edit) }
 }
 
 function initialId(graph: Graph): string {
@@ -130,8 +165,8 @@ function initialId(graph: Graph): string {
   return found[0]
 }
 
-function reached(graph: Graph, failures: string[]): Map<string, Deck> {
-  const decks = new Map<string, Deck>([[initialId(graph), opened()]])
+function reached(graph: Graph, failures: string[]): Map<string, Held> {
+  const decks = new Map<string, Held>([[initialId(graph), { deck: opened(), undoable: null }]])
   const queue = [...decks.keys()]
   while (queue.length > 0) {
     const from = queue.shift()
@@ -145,15 +180,15 @@ function reached(graph: Graph, failures: string[]): Map<string, Deck> {
         queue.push(edge.to)
         continue
       }
-      const answer = act(current, source, edge.action)
+      const answer = act(current.deck, source, edge.action, current.undoable)
       const refused = answer === "told" || !answer.ok
       if (refused && refusedBy[edge.action] === undefined && answer !== "told") continue
-      decks.set(edge.to, answer === "told" || !answer.ok ? current : answer.deck)
+      decks.set(edge.to, heldAfter(current, answer, edge.action))
       queue.push(edge.to)
     }
   }
   for (const [id, state] of graph.states) {
-    if (decks.has(id) || (state.typed === true && holdsNoText(state))) continue
+    if (decks.has(id) || ((state.typed === true || state.agent !== "none") && holdsNoText(state))) continue
     failures.push(`element state ${JSON.stringify(state)} was not reached`)
   }
   return decks
@@ -193,8 +228,9 @@ function replayKind(graph: Graph, failures: string[]): number {
   for (const edge of graph.edges) {
     const target = graph.states.get(edge.to)
     const source = graph.states.get(edge.from)
-    const current = decks.get(edge.from)
-    if (source === undefined || target === undefined || current === undefined) continue
+    const held = decks.get(edge.from)
+    if (source === undefined || target === undefined || held === undefined) continue
+    const current = held.deck
     if (edge.action === "Upload") {
       if (addedPictures(current.register).length !== 1) failures.push("element Upload has no picture to send")
       continue
@@ -204,10 +240,10 @@ function replayKind(graph: Graph, failures: string[]): number {
         failures.push("element ExportElsewhere refused a deck whose pictures all uploaded")
       continue
     }
-    const answer = act(current, source, edge.action)
-    if (edge.action === "Type" && holdsNoText(source)) {
+    const answer = act(current, source, edge.action, held.undoable)
+    if ((edge.action === "Type" || edge.action === "AgentWrite") && holdsNoText(source)) {
       if (answer === "told" || answer.ok || answer.refusal !== "kind")
-        failures.push(`element ${kind} Type on a drawn shape was not refused kind ${JSON.stringify(source)}`)
+        failures.push(`element ${kind} ${edge.action} on a drawn shape was not refused kind ${JSON.stringify(source)}`)
       continue
     }
     const refusal = refusedBy[edge.action]
@@ -233,24 +269,25 @@ function replayKind(graph: Graph, failures: string[]): number {
       failures.push(`element ${kind} ${edge.action} refused ${answer.refusal} from ${JSON.stringify(source)}`)
       continue
     }
-    const expected = target.added === true && target.removed !== true ? { added: true, typed: target.typed } : null
+    const shows = { added: true, shows: target.shows, agent: target.agent === "before" || target.agent === "since" }
+    const expected = target.added === true && target.removed !== true ? shows : null
     if (JSON.stringify(shown(answer.deck, target)) !== JSON.stringify(expected))
       failures.push(`element ${kind} ${edge.action} reads ${JSON.stringify(shown(answer.deck, target))}`)
   }
   const slide = readSlideId("256")
   if (slide === undefined) throw new Error("slide")
   for (const [id, state] of graph.states) {
-    const current = decks.get(id)
+    const current = decks.get(id)?.deck
     if (current === undefined) continue
     if (state.added === true && nextElementId(current.register, slide, 9) === node) {
       failures.push("element id handed out again after it was added")
     }
     const forbidden =
       state.removed === true
-        ? ["Add", "AddPicture", "Type", "Remove", "AgentRemove"]
+        ? ["Add", "AddPicture", "Type", "Remove", "AgentRemove", "AgentWrite"]
         : state.added === true
-          ? ["Add", "AddPicture", "OtherRestore", ...(state.picture === true ? ["Type"] : [])]
-          : ["OtherRestore"]
+          ? ["Add", "AddPicture", "OtherRestore", ...(state.picture === true ? ["Type", "AgentWrite"] : [])]
+          : ["OtherRestore", "AgentWrite"]
     if (state.added === true) {
       const another = call(
         "add_text_box",
