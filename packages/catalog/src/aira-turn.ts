@@ -1,4 +1,5 @@
 import { catalog, projectTools, toolInputSchema } from "./catalog.js"
+import { inlinedSchema } from "./shared-schema.js"
 import { deckPattern, readDeckId, type DeckId } from "./wire.js"
 
 export const airaTextCap = 8000
@@ -52,7 +53,7 @@ export type StopRead = { readonly ok: true; readonly ask: string; readonly call?
 export const airaTools: readonly ModelTool[] = projectTools(catalog).map((tool) => ({
   name: tool.name,
   description: tool.description,
-  input_schema: toolInputSchema(tool.op),
+  input_schema: inlinedSchema(toolInputSchema(tool.op)),
 }))
 
 const toolNames: ReadonlySet<string> = new Set(airaTools.map((tool) => tool.name))

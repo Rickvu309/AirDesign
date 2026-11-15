@@ -62,3 +62,23 @@ export function sharedSchemas(schema: Schema): Schema {
   )
   return { ...(referenced(body, names, null) as Schema), $defs: { ...held, ...defs } }
 }
+
+const local = "#/$defs/"
+
+function inlined(value: unknown, defs: Schema): unknown {
+  if (Array.isArray(value)) return value.map((item) => inlined(item, defs))
+  if (!plain(value)) return value
+  const reference = value.$ref
+  const body = Object.fromEntries(
+    Object.entries(value).flatMap(([key, item]) => (key === "$ref" ? [] : [[key, inlined(item, defs)]])),
+  )
+  const target =
+    typeof reference === "string" && reference.startsWith(local) ? defs[reference.slice(local.length)] : undefined
+  if (plain(target)) return { ...(inlined(target, defs) as Schema), ...body }
+  return reference === undefined ? body : { $ref: reference, ...body }
+}
+
+export function inlinedSchema(schema: Schema): Schema {
+  const { $defs: given, ...body } = schema
+  return inlined(body, plain(given) ? given : {}) as Schema
+}

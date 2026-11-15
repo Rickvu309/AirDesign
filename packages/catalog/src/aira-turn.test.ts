@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { airaMessageCap, airaTextCap, airaTools, readStop, readTurn } from "./aira-turn.js"
 import { catalog, projectTools, toolInputSchema } from "./catalog.js"
+import { inlinedSchema } from "./shared-schema.js"
 
 const deck = "airadeck"
 const ask = { role: "user", content: "Retitle slide one." }
@@ -40,14 +41,15 @@ function refused(messages: unknown): void {
 }
 
 describe("Aira's tools", () => {
-  it("are the catalog's agent tools with the description and input schema an outside agent gets", () => {
+  it("are the catalog's agent tools with the description an outside agent gets, and its input schema with each reference put back in place", () => {
     expect(airaTools).toEqual(
       projectTools(catalog).map((tool) => ({
         name: tool.name,
         description: tool.description,
-        input_schema: toolInputSchema(tool.op),
+        input_schema: inlinedSchema(toolInputSchema(tool.op)),
       })),
     )
+    expect(JSON.stringify(airaTools)).not.toMatch(/"\$ref"|"\$defs"/)
     expect(airaTools.map((tool) => tool.name)).toEqual([
       "airdesign_add_slide",
       "airdesign_add_text_box",
