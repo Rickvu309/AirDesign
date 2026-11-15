@@ -192,7 +192,7 @@ export function connect(remote: Remote, options: Options = {}) {
           revision += 1
           continue
         }
-        revision = fitConfirmed(deck, revision, row, row.node, stored)
+        revision = fitConfirmed(deck, revision, row, row.node, stored, row.floor)
       }
       await writeDeckRows(
         deck,

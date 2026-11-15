@@ -14,6 +14,7 @@ export type ConfirmedRow = Value & {
   readonly deck: DeckId
   readonly revision: number
   readonly node?: ElementId
+  readonly floor?: string
   readonly slideFile?: readonly SlideId[]
   readonly slideEdit?: SlideCommand
 }
@@ -72,6 +73,22 @@ export function fitConfirmed(
   edit: Value,
   node: ElementId | undefined,
   into: ConfirmedRow[],
+  floor = "",
+): number {
+  const first = into.length
+  const next = fitRows(deck, revision, edit, node, into)
+  const added = into[first]
+  if (floor !== "" && added !== undefined && rowBytes({ ...added, floor }) < limits.row)
+    into[first] = { ...added, floor }
+  return next
+}
+
+function fitRows(
+  deck: DeckId,
+  revision: number,
+  edit: Value,
+  node: ElementId | undefined,
+  into: ConfirmedRow[],
 ): number {
   if (edit.v !== undefined || edit.property === "box") {
     const row = confirmedRow(deck, revision, edit, node)
@@ -104,7 +121,7 @@ export function fitConfirmed(
   return revision
 }
 
-export type LogicalValue = Value & { readonly node?: ElementId }
+export type LogicalValue = Value & { readonly node?: ElementId; readonly floor?: string }
 
 export function logicalValues(rows: readonly ConfirmedRow[]): LogicalValue[] {
   const values: LogicalValue[] = []
@@ -122,7 +139,8 @@ export function logicalValues(rows: readonly ConfirmedRow[]): LogicalValue[] {
       values[values.length - 1] = { ...last, value: `${last.value}${row.value.slice(1)}` }
       continue
     }
-    values.push(row.node === undefined ? storedValue(row) : { ...storedValue(row), node: row.node })
+    if (row.node === undefined) values.push(storedValue(row))
+    else values.push({ ...storedValue(row), node: row.node, ...(row.floor === undefined ? {} : { floor: row.floor }) })
   }
   return values
 }
