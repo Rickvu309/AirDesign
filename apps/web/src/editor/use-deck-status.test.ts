@@ -1,5 +1,5 @@
 import { expect, it } from "vitest"
-import { shownNotice } from "@/editor/use-deck-status"
+import { saveStatus, shownNotice } from "@/editor/use-deck-status"
 
 const quiet = {
   failure: null,
@@ -51,4 +51,24 @@ it("puts a failure before undo, undo before a picture, a picture before set-asid
   expect(shownNotice({ ...all, failure: null, told: null })).toBe("picture-type")
   expect(shownNotice({ ...all, failure: null, told: null, picture: null })).toBe("set-aside")
   expect(shownNotice({ ...all, failure: null, told: null, picture: null, aside: 0 })).toBe("offline")
+})
+
+const landed = { online: true, offline: false, pending: false } as const
+
+it("says saved once every edit has landed", () => {
+  expect(saveStatus(landed)).toBe("saved")
+  expect(saveStatus({ ...landed, offline: true })).toBe("saved")
+})
+
+it("says saving while an edit waits for the server and the server can be reached", () => {
+  expect(saveStatus({ ...landed, pending: true })).toBe("saving")
+})
+
+it("says offline as soon as the browser goes offline, before any edit", () => {
+  expect(saveStatus({ ...landed, online: false })).toBe("offline")
+  expect(saveStatus({ online: false, offline: true, pending: true })).toBe("offline")
+})
+
+it("says AirDesign cannot be reached while an edit waits with the browser online", () => {
+  expect(saveStatus({ ...landed, offline: true, pending: true })).toBe("unreached")
 })

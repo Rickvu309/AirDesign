@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { AirdesignMark } from "@/decks/airdesign-mark"
 import { zoomPercent, type SlideSize } from "@/editor/canvas-zoom"
+import { SaveStatusLine } from "@/editor/save-status"
+import type { SaveStatus } from "@/editor/use-deck-status"
 import { DeckTitle, ExportButton, hairlineShadow, Island, surfaceShadow, ZoomReadout } from "@/editor/editor-chrome"
 import { EditorIcon } from "@/editor/editor-icons"
 import { gridCommand, gridMove, type GridCommand } from "@/editor/editor-grid-keys"
@@ -60,6 +62,7 @@ export function EditorGrid({
   onTable,
   onPicture,
   faded = false,
+  save = null,
 }: {
   title: string
   strip: SlideStrip
@@ -78,6 +81,7 @@ export function EditorGrid({
   formats?: FormatShown
   onTable?: () => void
   onPicture?: (file: File) => void
+  save?: SaveStatus | null
   faded?: boolean
 }) {
   const list = useRef<HTMLDivElement>(null)
@@ -259,6 +263,7 @@ export function EditorGrid({
             <AirdesignMark size={20} />
           </span>
           <DeckTitle title={title} className="pr-2 pl-0.5" {...(onRename === undefined ? {} : { onRename })} />
+          {save === null ? null : <SaveStatusLine status={save} className="pr-2" />}
           <Button
             type="button"
             variant="ghost"

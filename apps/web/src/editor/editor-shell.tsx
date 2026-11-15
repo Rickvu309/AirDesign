@@ -12,6 +12,7 @@ import type { UndoButtonsState } from "@/editor/undo-buttons"
 import type { FormatShown } from "@/editor/format-buttons"
 import type { TextFormatting } from "@airdesign/render"
 import type { Geometry } from "@airdesign/document"
+import type { SaveStatus } from "@/editor/use-deck-status"
 import {
   ActionsMenu,
   ImagesPanel,
@@ -42,6 +43,7 @@ export type EditorDeck = {
   readonly onPicture?: (file: File) => void
   readonly onShape?: (geometry: Geometry) => void
   readonly onIcon?: (name: string) => void
+  readonly save?: SaveStatus | null
 }
 
 export type EditorShellProps = {
@@ -107,6 +109,7 @@ export function EditorShell({
         activeTool={activeTool}
         toolMenu={toolMenu}
         faded={run === "offline"}
+        save={deck.save ?? null}
         {...(deck.onRename === undefined ? {} : { onRename: deck.onRename })}
         {...(deck.onText === undefined ? {} : { onText: deck.onText })}
         {...(deck.formatting === undefined ? {} : { formatting: deck.formatting })}
@@ -123,7 +126,9 @@ export function EditorShell({
         <SlideSidebar
           run={run}
           title={title}
-          {...(deck === undefined ? {} : { strip: deck.slides, onGrid: () => setGridOpen(true) })}
+          {...(deck === undefined
+            ? {}
+            : { strip: deck.slides, onGrid: () => setGridOpen(true), save: deck.save ?? null })}
           {...(deck?.onRename === undefined ? {} : { onRename: deck.onRename })}
         />
       ) : null}

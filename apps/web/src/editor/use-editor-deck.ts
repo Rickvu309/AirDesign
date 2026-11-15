@@ -2,7 +2,8 @@ import type { ElementId } from "@airdesign/document"
 import { useState } from "react"
 import { deckInserts } from "@/editor/inserts"
 import { useDeckPaint } from "@/editor/use-deck-paint"
-import { useDeckStatus } from "@/editor/use-deck-status"
+import { saveStatus, useDeckStatus } from "@/editor/use-deck-status"
+import { useShownSave } from "@/editor/save-status"
 import { useDeckTitle } from "@/editor/use-deck-title"
 import { useExport } from "@/editor/use-export"
 import { useUndoList } from "@/editor/use-undo"
@@ -14,6 +15,7 @@ export type EditorDeck = ReturnType<typeof useEditorDeck>
 
 export function useEditorDeck(id: string) {
   const status = useDeckStatus()
+  const save = useShownSave(saveStatus(status))
   const { settle, setPending } = status
   const [title, setTitle] = useState("")
   const [designing, select] = useState<ElementId | null>(null)
@@ -31,6 +33,7 @@ export function useEditorDeck(id: string) {
   const exported = useExport({ id, records, pictureTool, setFailure: status.setFailure })
   return {
     ...status,
+    save: status.paintedDeck === id ? save : null,
     id,
     title,
     setTitle,

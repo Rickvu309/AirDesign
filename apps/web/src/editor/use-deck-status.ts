@@ -5,6 +5,8 @@ import type { UndoDirection } from "@/undo-list"
 
 export type DeckFailure = "import-failed" | "export-failed" | "picture-uploading"
 
+export type SaveStatus = "saved" | "saving" | "offline" | "unreached"
+
 function watchNetwork(change: () => void): () => void {
   window.addEventListener("online", change)
   window.addEventListener("offline", change)
@@ -71,4 +73,14 @@ export function shownNotice(shown: {
   const asideNotice: ThinNotice | null = shown.aside > 0 ? "set-aside" : null
   const unsentNotice: ThinNotice | null = offline && pending ? (shown.online ? "unreached" : "offline") : null
   return failure ?? toldNotice ?? shown.picture ?? asideNotice ?? unsentNotice
+}
+
+export function saveStatus(shown: {
+  readonly online: boolean
+  readonly offline: boolean
+  readonly pending: boolean
+}): SaveStatus {
+  if (!shown.online) return "offline"
+  if (!shown.pending) return "saved"
+  return shown.offline ? "unreached" : "saving"
 }
