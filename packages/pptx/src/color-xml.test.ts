@@ -117,10 +117,10 @@ describe("the writers keep a theme colour's transforms", () => {
       '<p:cSld><p:bg><p:bgPr><a:solidFill><a:schemeClr val="accent1"><a:lumMod val="75000"/></a:schemeClr></a:solidFill><a:effectLst/></p:bgPr></p:bg>',
     )
     const slot = paintReader(filled({ scheme: "accent1" })).slide(first.part).background
-    expect(slot).toEqual({ type: "solid", color: { hex: "505050", alpha: 1 } })
+    expect(slot).toEqual({ type: "solid", color: { hex: "2D6FCD", alpha: 1 } })
     expect(paintReader(next).slide(first.part).background).toEqual({
       type: "solid",
-      color: { hex: "3C3C3C", alpha: 1 },
+      color: { hex: "22539A", alpha: 1 },
     })
   })
 

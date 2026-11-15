@@ -52,16 +52,16 @@ const font = '<a:latin typeface="Arial"/><a:ea typeface=""/><a:cs typeface=""/>'
 const colors = [
   ["dk1", "202020"],
   ["lt1", "FFFFFF"],
-  ["dk2", "404040"],
-  ["lt2", "F2F2F2"],
-  ["accent1", "505050"],
-  ["accent2", "606060"],
-  ["accent3", "707070"],
-  ["accent4", "808080"],
-  ["accent5", "909090"],
-  ["accent6", "A0A0A0"],
-  ["hlink", "404040"],
-  ["folHlink", "606060"],
+  ["dk2", "1F3A5F"],
+  ["lt2", "EEF2F6"],
+  ["accent1", "2D6FCD"],
+  ["accent2", "E07A2E"],
+  ["accent3", "2F9E62"],
+  ["accent4", "7A4FC4"],
+  ["accent5", "D2455B"],
+  ["accent6", "1E9AA8"],
+  ["hlink", "2D6FCD"],
+  ["folHlink", "7A4FC4"],
 ]
 const theme = `<a:theme xmlns:a="${a}" name="Neutral"><a:themeElements><a:clrScheme name="Neutral">${colors.map(([name, value]) => `<a:${name}><a:srgbClr val="${value}"/></a:${name}>`).join("")}</a:clrScheme><a:fontScheme name="Arial"><a:majorFont>${font}</a:majorFont><a:minorFont>${font}</a:minorFont></a:fontScheme><a:fmtScheme name="Neutral"><a:fillStyleLst>${solid.repeat(3)}</a:fillStyleLst><a:lnStyleLst>${[6350, 12700, 19050].map((width) => `<a:ln w="${width}">${solid}<a:prstDash val="solid"/></a:ln>`).join("")}</a:lnStyleLst><a:effectStyleLst>${"<a:effectStyle><a:effectLst/></a:effectStyle>".repeat(3)}</a:effectStyleLst><a:bgFillStyleLst>${solid.repeat(3)}</a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`
 

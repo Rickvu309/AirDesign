@@ -2,7 +2,7 @@
   "blank.pptx": {
     "parts": 22,
     "elements": 578,
-    "digest": "4a3bac119f5938679d4a8c1b0c623256060b5be5c11476ca1af6e81bc20ab332"
+    "digest": "a729f79d5ecca1dce4728601d23ab749e42db7a3456fd2f5c19e9a8c8ca01119"
   },
   "broken-order.pptx": {
     "parts": 16,
@@ -137,22 +137,22 @@
   "picture-jpeg.pptx": {
     "parts": 22,
     "elements": 596,
-    "digest": "a99950d45f6242755ccc6dd3d8f5af0ca2e9a770fd7fdd14ce61fee823d05dd7"
+    "digest": "9b1892c9fed23583c5bd78234f6d50c040e472d83e6ac1b95cd2b9d426a588a8"
   },
   "picture-missing.pptx": {
     "parts": 22,
     "elements": 596,
-    "digest": "d40bf70ae6104ea1a9f313fcaff5c7e20ec6770c589a554924c914aec228cb15"
+    "digest": "298b9f3c43568a74c003e181947184f01a062d5922f0bf0c7012c9e6a62396e7"
   },
   "picture-png.pptx": {
     "parts": 22,
     "elements": 596,
-    "digest": "d40bf70ae6104ea1a9f313fcaff5c7e20ec6770c589a554924c914aec228cb15"
+    "digest": "298b9f3c43568a74c003e181947184f01a062d5922f0bf0c7012c9e6a62396e7"
   },
   "pictures-jpeg.pptx": {
     "parts": 22,
     "elements": 614,
-    "digest": "f82cdae8b24a25d598a6214b42b684e218a5e9eb6794ab7606473acb41d2d08f"
+    "digest": "dd8f286a1f6baf2cbf08d410d2564c69c6591d2b48790c2cc79a231b6cb7ae02"
   },
   "sections-after.pptx": {
     "parts": 20,

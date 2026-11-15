@@ -22,7 +22,7 @@ const exportName = "exported-slide-background.pptx"
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/blank.pptx")
 const judged = join(process.cwd(), "tests/browser", exportName)
 const white = "rgb(255, 255, 255)"
-const darkTwo = "rgb(64, 64, 64)"
+const darkTwo = "rgb(31, 58, 95)"
 const written =
   '<p:cSld><p:bg><p:bgPr><a:solidFill><a:schemeClr val="dk2"/></a:solidFill><a:effectLst/></p:bgPr></p:bg>'
 
