@@ -1,4 +1,4 @@
-import { decide, shownPatch, valueHolder, type Command, type Register } from "./decide.js"
+import { decide, landedPatch, shownPatch, valueHolder, type Command, type Register } from "./decide.js"
 import type { ElementId, SlideId } from "./element-id.js"
 import { elementCommand, elementGone, type ElementCommand, type ElementOrder } from "./element-order.js"
 import { elementStacks, sitsBefore } from "./element-stack.js"
@@ -6,9 +6,21 @@ import { groupCommand, groupFormed, groupNode, type GroupCommand } from "./eleme
 import { rowsKept } from "./group-place.js"
 import { ungroupTurn } from "./group-turn.js"
 import type { OrderKey } from "./order-key.js"
+import { openingElement } from "./slide-floor.js"
+import { readTextValue } from "./text-value.js"
 import { foldSlides, type SlideCommand, type SlideState } from "./slide-order.js"
 import { format } from "./format.js"
-import { formatOne, shows, type ElementPatch, type ValueHolder } from "./row.js"
+import {
+  boxPatch,
+  formatOne,
+  netPatch,
+  rowOf,
+  shownOver,
+  shows,
+  type ElementPatch,
+  type Row,
+  type ValueHolder,
+} from "./row.js"
 
 const valueHolders: readonly ValueHolder[] = ["notes", "table", "text"]
 
@@ -30,6 +42,7 @@ export type Undoable =
       readonly file: readonly SlideId[]
       readonly before: boolean
       readonly after: boolean
+      readonly shown: ElementPatch
     }
   | {
       readonly stack: ElementId
@@ -54,6 +67,37 @@ function spotOf(register: Register, file: readonly SlideId[], id: SlideId): Slid
   const known = register.file.length > 0 ? register.file : file
   const spot = foldSlides({ file: known, order: register.order }).find((each) => each.id === id)
   return spot === undefined ? undefined : { present: spot.present, key: spot.key }
+}
+
+function openingOf(register: Register, node: ElementId): ElementPatch {
+  const opening = openingElement(register, node)
+  const rows: Row[] = []
+  if (typeof opening?.value === "string")
+    rows.push(rowOf({ value: opening.value }, valueHolder(register, node, "person")))
+  if (opening?.box !== undefined && opening.box !== null) rows.push({ v: 1, patch: boxPatch(opening.box) })
+  return netPatch(rows)
+}
+
+function noCharacters(value: string): boolean {
+  const text = readTextValue(value)
+  return text === null ? value === "" : text.every((paragraph) => paragraph.runs.every((run) => run.text === ""))
+}
+
+function shownWith(register: Register, node: ElementId, landed: ElementPatch): ElementPatch {
+  const shown = shownOver(openingOf(register, node), landed)
+  const text = shown.text?.value
+  if (typeof text !== "object" || !noCharacters(text.set)) return shown
+  return { ...shown, text: { ...shown.text, value: { set: "" } } }
+}
+
+function shownOn(register: Register, node: ElementId): ElementPatch {
+  const body = register.elements[node]
+  return shownWith(register, node, body === undefined ? {} : landedPatch(body, valueHolder(register, node, "person")))
+}
+
+function stillShows(register: Register, node: ElementId, shown: ElementPatch): boolean {
+  const now = shownOn(register, node)
+  return shows(now, shown) && shows(shown, now)
 }
 
 function elementOf(edit: Exclude<ElementCommand, ElementOrder>): ElementId {
@@ -89,6 +133,7 @@ export function slideUndoable(register: Register, file: readonly SlideId[], edit
       file,
       before: edit.slide !== "element-add" && shown(register),
       after: shown(decision.register),
+      shown: shownOn(decision.register, element),
     }
   }
   const after = spotOf(decision.register, file, edit.id)
@@ -175,6 +220,7 @@ function turn(register: Register, undoable: Undoable, from: "before" | "after"):
   if ("element" in undoable) {
     const { element, slide } = undoable
     if (elementGone(register, element) === undoable[from] || undoable[from] === undoable[to]) return changed
+    if (!undoable[to] && !stillShows(register, element, undoable.shown)) return changed
     const edit: SlideCommand = undoable[to]
       ? { slide: "element-restore", id: slide, node: element }
       : { slide: "element-remove", id: slide, node: element }
@@ -216,6 +262,7 @@ function undoableAt(register: Register, at: number, edit: SlideCommand): Undoabl
       file: register.file,
       before: edit.slide !== "element-add" && !elementGone({ file: register.file, order: before }, node),
       after: !elementGone({ file: register.file, order: upTo }, node),
+      shown: shownWith(register, node, {}),
     }
   }
   const after = spotIn({ file: register.file, order: register.order.slice(0, at + 1) }, edit.id)

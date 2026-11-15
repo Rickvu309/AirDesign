@@ -124,6 +124,15 @@ export function netPatch(rows: readonly Row[]): ElementPatch {
   return net as ElementPatch
 }
 
+export function shownOver(opening: ElementPatch, landed: ElementPatch): ElementPatch {
+  const net: Record<string, Readonly<Record<string, FieldEdit<unknown>>> | undefined> = { ...loose(opening) }
+  for (const [trait, fields] of Object.entries(loose(landed))) {
+    const set = Object.entries(fields ?? {}).filter(([, edit]) => edit !== "opening")
+    if (set.length > 0) net[trait] = { ...net[trait], ...Object.fromEntries(set) }
+  }
+  return net as ElementPatch
+}
+
 function held(net: ElementPatch, trait: string, field: string): FieldEdit<unknown> {
   return loose(net)[trait]?.[field] ?? "opening"
 }

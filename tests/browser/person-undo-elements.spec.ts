@@ -85,6 +85,53 @@ test("a person undoes and redoes an added text box and a deleted element, and th
   await expect(texts.last()).toHaveText("Added")
 })
 
+test("an undo of an added text box an agent wrote in changes nothing, says so and keeps the agent's text", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  const deck = await openClean(page)
+  const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
+  await page.getByRole("button", { name: "Add text box", exact: true }).click()
+  await expect(texts).toHaveCount(2)
+  await page.keyboard.press("Escape")
+  await expect(page.getByRole("button", { name: "Undo add text box" })).toBeEnabled()
+  await expect.poll(async () => (await serverOrder(stack, deck, cookie)).order.length).toBe(1)
+  const [add] = (await serverOrder(stack, deck, cookie)).order
+  if (add?.slide !== "element-add") throw new Error("add")
+  const node = add.element.node
+
+  await expect
+    .poll(async () => (await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)).index)
+    .toBe("ready")
+  const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
+  const read = (await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)) as {
+    elements: { node: string; version: number }[]
+  }
+  const readAt = read.elements.find((each) => each.node === node)?.version
+  const value = '[{"from":0,"runs":[{"from":0,"text":"Agent"}]}]'
+  const wrote = await stack.callTool("airdesign_edit_deck", { deck, base, changes: [{ node, readAt, value }] }, cookie)
+  expect(wrote).toMatchObject({ ok: true })
+  await expect(texts.last()).toHaveText("Agent")
+
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(page.getByText("Unable to undo. This changed after your edit, so it stays as it is.")).toBeVisible()
+  await expect(texts).toHaveCount(2)
+  await expect(texts.last()).toHaveText("Agent")
+  await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeDisabled()
+  await expect(page.getByRole("button", { name: "Redo", exact: true })).toBeDisabled()
+  const state = await serverOrder(stack, deck, cookie)
+  expect(state.order.map((command) => command.slide)).toEqual(["element-add"])
+  expect(elementGone(state, node)).toBe(false)
+  await page.reload()
+  await settled(page)
+  await expect(texts).toHaveCount(2)
+  await expect(texts.last()).toHaveText("Agent")
+})
+
 test("one visit to the speaker notes is one undo step", async ({ page, context, stack }) => {
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
