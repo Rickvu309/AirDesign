@@ -102,7 +102,7 @@ export function useMoves(
   size: SlideSize & { readonly elements?: readonly CanvasElement[] },
   width: number,
   onBox: ((id: ElementId, box: Box) => void) | undefined,
-  onRemove?: (id: ElementId) => void,
+  onRemove?: (ids: readonly ElementId[]) => void,
   onOrder?: (id: ElementId, move: StackMove) => void,
   onSelect?: (id: Selection) => void,
   grouping?: Grouping,
@@ -276,10 +276,14 @@ export function useMoves(
     const now = gesture.current
     const start = startOf(element)
     const chord = event.altKey || event.ctrlKey || event.metaKey
-    if ((event.key === "Delete" || event.key === "Backspace") && !chord && now === null && canMove(element)) {
-      if (onRemove === undefined) return
+    if ((event.key === "Delete" || event.key === "Backspace") && !chord && now === null) {
+      const removable = (chosen.includes(id) ? chosen : [id]).filter((each) => {
+        const found = elementOf(each)
+        return found !== undefined && canMove(found)
+      })
+      if (onRemove === undefined || removable.length === 0) return
       event.preventDefault()
-      onRemove(id)
+      onRemove(removable)
       return
     }
     const resizing = event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey

@@ -13,7 +13,7 @@ import { readPackage, readParts, readShapes } from "@airdesign/pptx"
 import { paintStore, type PaintStore } from "@airdesign/render"
 import { beforeAll, expect, it } from "vitest"
 import { paint } from "./deck-paint"
-import { elementCommand } from "./element-edit"
+import { elementCommand, removals } from "./element-edit"
 import { busyElements, shownValue } from "./live-repaint"
 import { pictureCommand } from "./picture-add"
 import { fileSlides } from "./slide-edit"
@@ -80,8 +80,8 @@ function elementOn(store: PaintStore, slide: number, offered: ReadonlyMap<string
 
 function removed(register: Register, store: PaintStore, slide: number): Register {
   for (const node of store.slides()[slide]?.elements ?? []) {
-    const edit = elementCommand(parts, register, { change: "remove", node: elementId(node) })
-    if (edit !== null) return { ...register, file: fileSlides(parts, register), order: [...register.order, edit] }
+    const [edit] = removals(parts, register, [elementId(node)]).edits
+    if (edit !== undefined) return { ...register, file: fileSlides(parts, register), order: [...register.order, edit] }
   }
   throw new Error("nothing to remove")
 }

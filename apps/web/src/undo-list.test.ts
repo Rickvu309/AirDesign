@@ -2,6 +2,7 @@ import {
   boxPatch,
   decide,
   elementId,
+  elementsUndoable,
   format,
   openRegister,
   presentSlides,
@@ -199,6 +200,29 @@ describe("undo list", () => {
     const third = await turnBack(deck.link, "deck", second.list, "redo")
     expect(third.outcome).toBe("turned")
     expect(deck.sent).toEqual(["slide element-restore", "slide element-remove", "slide element-restore"])
+  })
+
+  it("keeps for the other list only the elements a turn took back, so one an agent deleted in between stays gone", async () => {
+    const other = elementId("256.3")
+    const opened = landed(edited(), { command: "add", node: other, floor: "Old", route: "" })
+    const edits = [node, other].map((each) => ({ slide: "element-remove", id: file[0], node: each }) as const)
+    const undoable = elementsUndoable(opened, file, edits)
+    if (undoable === null) throw new Error("undoable")
+    const deck = deckLink(edits.reduce((register, edit) => landed(register, { command: "slide", file, edit }), opened))
+    const list = recorded(emptyUndo, { name: "delete-element", undoable })
+    const undone = await turnBack(deck.link, "deck", list, "undo")
+    expect(undone.outcome).toBe("turned")
+    deck.write({ command: "slide", file, edit: edits[0]! })
+    const redone = await turnBack(deck.link, "deck", undone.list, "redo")
+    expect(redone.outcome).toBe("turned")
+    const again = await turnBack(deck.link, "deck", redone.list, "undo")
+    expect(again.outcome).toBe("turned")
+    expect(deck.sent).toEqual([
+      "slide element-restore",
+      "slide element-restore",
+      "slide element-remove",
+      "slide element-restore",
+    ])
   })
 
   it("names the edit each button undoes or redoes", () => {

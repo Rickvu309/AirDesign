@@ -1,4 +1,5 @@
 import {
+  elementsUndoable,
   lineGeometries,
   nextElementId,
   openingTable,
@@ -8,6 +9,7 @@ import {
   shapeOf,
   slideUndoable,
   stackTarget,
+  type ElementCommand,
   type StackMove,
   type Box,
   type ElementId,
@@ -41,7 +43,7 @@ export type SlideRoom = {
 export type ElementChange =
   | { readonly change: "text" | "table"; readonly index: number; readonly size: SlideRoom }
   | { readonly change: "shape"; readonly geometry: Geometry; readonly index: number; readonly size: SlideRoom }
-  | { readonly change: "remove"; readonly node: ElementId }
+  | { readonly change: "remove"; readonly nodes: readonly ElementId[] }
   | { readonly change: "order"; readonly node: ElementId; readonly move: StackMove }
   | GroupChange
 
@@ -79,25 +81,45 @@ function orderCommand(base: Parts, change: Extract<ElementChange, { change: "ord
   return { slide: "element-order", id, node: change.node, before, among }
 }
 
+type Removal = Extract<ElementCommand, { readonly slide: "element-remove" }>
+
+function removeCommand(base: Parts, node: ElementId): Removal | null {
+  const { slide, shape } = shapeOf(node)
+  const found = readSlides(base).find((each) => each.slide === slide)
+  const id = readSlideId(slide)
+  if (found === undefined || id === undefined) return null
+  try {
+    applyRoute(base, { name: "remove", part: found.part, shape })
+  } catch {
+    return null
+  }
+  return { slide: "element-remove", id, node }
+}
+
+export function removals(
+  parts: Parts,
+  register: Register,
+  nodes: readonly ElementId[],
+): { readonly edits: readonly Removal[]; readonly refused: readonly RemovalRefusal[] } {
+  const base = slideBase(parts, register)
+  const edits: Removal[] = []
+  const refused: RemovalRefusal[] = []
+  for (const node of nodes) {
+    const refusal = removalRefusal(parts, register, node)
+    const edit = refusal === null ? removeCommand(base, node) : null
+    if (refusal !== null && !refused.includes(refusal)) refused.push(refusal)
+    if (edit !== null) edits.push(edit)
+  }
+  return { edits, refused }
+}
+
 export function elementCommand(
   parts: Parts,
   register: Register,
-  change: Exclude<ElementChange, GroupChange>,
+  change: Exclude<ElementChange, GroupChange | { readonly change: "remove" }>,
 ): SlideCommand | null {
   const base = slideBase(parts, register)
   if (change.change === "order") return orderCommand(base, change)
-  if (change.change === "remove") {
-    const { slide, shape } = shapeOf(change.node)
-    const found = readSlides(base).find((each) => each.slide === slide)
-    const id = readSlideId(slide)
-    if (found === undefined || id === undefined) return null
-    try {
-      applyRoute(base, { name: "remove", part: found.part, shape })
-    } catch {
-      return null
-    }
-    return { slide: "element-remove", id, node: change.node }
-  }
   const slide = slideAt(base, change.index)
   if (slide === null) return null
   const node = nextElementId(register, slide.id, freeShapeId(base, slide.part))
@@ -130,11 +152,7 @@ export async function commitElement(
 ): Promise<CommitOutcome> {
   if (change.change === "group" || change.change === "ungroup")
     return commitGroup(deckId, parts, register, change, paint)
-  const refusal = change.change === "remove" ? removalRefusal(parts, register, change.node) : null
-  if (refusal !== null) {
-    toast.error(elementCopy.removeRefusedTitle, { description: elementCopy.removeRefusedBody[refusal] })
-    return "refused"
-  }
+  if (change.change === "remove") return commitRemovals(deckId, parts, register, change.nodes, paint)
   const edit = elementCommand(parts, register, change)
   if (edit === null) return "refused"
   const file = fileSlides(parts, register)
@@ -142,5 +160,23 @@ export async function commitElement(
   const kept = await connect(memoryRemote()).enqueueSlide(deckId, file, edit)
   if (!kept.ok) return "refused"
   await paint(edit.slide === "element-add" ? edit.element.node : null, undoable)
+  return flushPending(connect, deckId)
+}
+
+async function commitRemovals(
+  deckId: string,
+  parts: Parts,
+  register: Register,
+  nodes: readonly ElementId[],
+  paint: (added: ElementId | null, undoable: Undoable | null) => void | Promise<void>,
+): Promise<CommitOutcome> {
+  const { edits, refused } = removals(parts, register, nodes)
+  for (const refusal of refused)
+    toast.error(elementCopy.removeRefusedTitle, { description: elementCopy.removeRefusedBody[refusal] })
+  const file = fileSlides(parts, register)
+  const went: Removal[] = []
+  for (const edit of edits) if ((await connect(memoryRemote()).enqueueSlide(deckId, file, edit)).ok) went.push(edit)
+  if (went.length === 0) return "refused"
+  await paint(null, elementsUndoable(register, file, went))
   return flushPending(connect, deckId)
 }

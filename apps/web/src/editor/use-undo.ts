@@ -96,7 +96,7 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
   }, [told, setTold])
 
   function slideOf(undoable: Undoable): SlideId | null {
-    if (!("slide" in undoable) || "element" in undoable) return null
+    if (!("slide" in undoable) || "elements" in undoable) return null
     return undoable.slide
   }
 

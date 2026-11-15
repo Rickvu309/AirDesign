@@ -42,7 +42,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly quiet?: boolean
   readonly onEdit?: (id: ElementId, value: string) => void
   readonly onBox?: (id: ElementId, box: Box) => void
-  readonly onRemove?: (id: ElementId) => void
+  readonly onRemove?: (ids: readonly ElementId[]) => void
   readonly onOrder?: (id: ElementId, move: StackMove) => void
   readonly onSelect?: (id: ElementId | null) => void
   readonly onGroup?: (ids: readonly ElementId[]) => void

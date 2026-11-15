@@ -10,7 +10,7 @@ import {
 import { readShapes } from "@airdesign/pptx"
 import type { PaintBox } from "@airdesign/render"
 import { expect, it } from "vitest"
-import { elementCommand, removalRefusal } from "./element-edit"
+import { elementCommand, removalRefusal, removals } from "./element-edit"
 import { exportedParts } from "./exported-parts"
 import { onSlide, twoBoxSlide, xml } from "./slide-fixtures"
 
@@ -45,12 +45,31 @@ it("centres a new text box on the slide under the next free id, and never reuses
 it("removes an element from the slide it is on and refuses one the slide does not hold", () => {
   const parts = onSlide(xml(twoBoxSlide))
   const register = openRegister("", "")
-  const removed = elementCommand(parts, register, { change: "remove", node: elementId("256.3") })
-  expect(removed).toEqual({ slide: "element-remove", id: "256", node: "256.3" })
-  const shown = exportedParts(parts, landed(register, removed))
+  const removed = removals(parts, register, [elementId("256.3")])
+  expect(removed).toEqual({ edits: [{ slide: "element-remove", id: "256", node: "256.3" }], refused: [] })
+  const shown = exportedParts(parts, removed.edits.reduce(landed, register))
   expect(readShapes(shown).map((shape) => shape.shape)).toEqual(["2"])
-  expect(elementCommand(parts, register, { change: "remove", node: elementId("256.7") })).toBeNull()
-  expect(elementCommand(parts, register, { change: "remove", node: elementId("257.2") })).toBeNull()
+  expect(removals(parts, register, [elementId("256.7"), elementId("257.2")])).toEqual({ edits: [], refused: [] })
+})
+
+it("removes every element it can of several and says why it cannot remove an animated one", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const register = openRegister("", "")
+  const both = removals(parts, register, [elementId("256.2"), elementId("256.3")])
+  expect(both.edits.map((edit) => edit.slide === "element-remove" && edit.node)).toEqual(["256.2", "256.3"])
+  expect(readShapes(exportedParts(parts, both.edits.reduce(landed, register)))).toEqual([])
+  const animated = onSlide(
+    xml(
+      twoBoxSlide.replace(
+        "</p:cSld>",
+        '</p:cSld><p:timing><p:tnLst><p:par><p:cTn><p:childTnLst><p:set><p:cBhvr><p:tgtEl><p:spTgt spid="3"/></p:tgtEl></p:cBhvr></p:set></p:childTnLst></p:cTn></p:par></p:tnLst></p:timing>',
+      ),
+    ),
+  )
+  expect(removals(animated, register, [elementId("256.3"), elementId("256.2")])).toEqual({
+    edits: [{ slide: "element-remove", id: "256", node: "256.2" }],
+    refused: ["animated"],
+  })
 })
 
 it("exports a slide whose typed element was then removed", () => {

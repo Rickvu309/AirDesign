@@ -123,9 +123,11 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     settle(outcome)
   }
 
-  function holding<T>(target: ElementId, work: () => Promise<T>): Promise<T> {
-    const release = busy.current.hold(target)
-    return work().finally(release)
+  function holding<T>(targets: readonly ElementId[], work: () => Promise<T>): Promise<T> {
+    const releases = targets.map((target) => busy.current.hold(target))
+    return work().finally(() => {
+      for (const release of releases) release()
+    })
   }
 
   function orderElement(node: ElementId, move: StackMove) {
@@ -152,7 +154,7 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
             notice={notice}
             onBox={(target, box) => {
               clear()
-              void holding(target, () => onBox(target, box))
+              void holding([target], () => onBox(target, box))
             }}
             onOrder={order}
             onSelect={select}
@@ -169,16 +171,16 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
               clear()
               group({ change: "ungroup", node })
             }}
-            onRemove={(target) => {
+            onRemove={(targets) => {
               clear()
-              void holding(target, () => changeElement({ change: "remove", node: target }))
+              void holding(targets, () => changeElement({ change: "remove", nodes: targets }))
             }}
             onEdit={(target, value) => {
               clear()
-              void holding(target, () => onEdit(target, value))
+              void holding([target], () => onEdit(target, value))
             }}
             onTable={(target, change) =>
-              tables.change(target, change, (value, name) => holding(target, () => onEdit(target, value, name)))
+              tables.change(target, change, (value, name) => holding([target], () => onEdit(target, value, name)))
             }
             slide={canvas}
             slideName={slideCount > 0 ? slideListCopy.slideName(current + 1, slideCount) : undefined}

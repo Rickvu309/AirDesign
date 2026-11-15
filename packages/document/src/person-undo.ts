@@ -37,12 +37,11 @@ export type Undoable =
       readonly after: SlideSpot
     }
   | {
-      readonly element: ElementId
+      readonly elements: readonly { readonly node: ElementId; readonly shown: ElementPatch }[]
       readonly slide: SlideId
       readonly file: readonly SlideId[]
       readonly before: boolean
       readonly after: boolean
-      readonly shown: ElementPatch
     }
   | {
       readonly stack: ElementId
@@ -59,7 +58,13 @@ export type Undoable =
       readonly after: boolean
     }
 
-export type Turns = { readonly ok: true; readonly commands: readonly Command[] } | { readonly ok: false }
+type ElementsUndoable = Extract<Undoable, { readonly elements: unknown }>
+
+type ElementEdit = Exclude<ElementCommand, ElementOrder>
+
+export type Turns =
+  | { readonly ok: true; readonly commands: readonly Command[]; readonly undoable: Undoable }
+  | { readonly ok: false }
 
 const changed: Turns = { ok: false }
 
@@ -100,7 +105,7 @@ function stillShows(register: Register, node: ElementId, shown: ElementPatch): b
   return shows(now, shown) && shows(shown, now)
 }
 
-function elementOf(edit: Exclude<ElementCommand, ElementOrder>): ElementId {
+function elementOf(edit: ElementEdit): ElementId {
   return edit.slide === "element-add" ? edit.element.node : edit.node
 }
 
@@ -124,22 +129,34 @@ export function slideUndoable(register: Register, file: readonly SlideId[], edit
       after: groupFormed(decision.register, group),
     }
   }
-  if (elementCommand(edit)) {
-    const element = elementOf(edit)
-    const shown = (state: Register) => !elementGone(state, element)
-    return {
-      element,
-      slide: edit.id,
-      file,
-      before: edit.slide !== "element-add" && shown(register),
-      after: shown(decision.register),
-      shown: shownOn(decision.register, element),
-    }
-  }
+  if (elementCommand(edit)) return elementsUndoable(register, file, [edit])
   const after = spotOf(decision.register, file, edit.id)
   if (after === undefined) return null
   const before = spotOf(register, file, edit.id) ?? { present: false, key: after.key }
   return { slide: edit.id, file, before, after }
+}
+
+export function elementsUndoable(
+  register: Register,
+  file: readonly SlideId[],
+  edits: readonly ElementEdit[],
+): Undoable | null {
+  let current = register
+  let first: { readonly edit: ElementEdit; readonly before: boolean; readonly after: boolean } | null = null
+  const nodes: ElementId[] = []
+  for (const edit of edits) {
+    if (first !== null && (edit.id !== first.edit.id || edit.slide !== first.edit.slide)) continue
+    const decision = decide(current, { command: "slide", file, edit })
+    if (decision.decision !== "apply") continue
+    const node = elementOf(edit)
+    const before: boolean = edit.slide !== "element-add" && !elementGone(current, node)
+    first ??= { edit, before, after: !elementGone(decision.register, node) }
+    nodes.push(node)
+    current = decision.register
+  }
+  if (first === null) return null
+  const elements = nodes.map((node) => ({ node, shown: shownOn(current, node) }))
+  return { elements, slide: first.edit.id, file, before: first.before, after: first.after }
 }
 
 function holderOf(register: Register, step: NodeStep): ValueHolder {
@@ -160,16 +177,15 @@ function stepCommands(register: Register, steps: readonly NodeStep[], from: "bef
   return commands
 }
 
-function stepTurn(register: Register, steps: readonly NodeStep[], from: "before" | "after"): Turns {
-  const commands = stepCommands(register, steps, from)
-  if (commands === null) return changed
+function applying(register: Register, commands: readonly Command[] | null): readonly Command[] | null {
+  if (commands === null) return null
   let current = register
   for (const command of commands) {
     const decision = decide(current, command)
-    if (decision.decision !== "apply") return changed
+    if (decision.decision !== "apply") return null
     current = decision.register
   }
-  return { ok: true, commands }
+  return commands
 }
 
 function sits(spot: SlideSpot | undefined, wanted: SlideSpot): boolean {
@@ -184,21 +200,44 @@ function slideTurn(from: SlideSpot, to: SlideSpot, id: SlideId): SlideCommand | 
   return null
 }
 
-function landing(register: Register, command: Command): Turns {
-  return decide(register, command).decision === "apply" ? { ok: true, commands: [command] } : changed
+function elementsTurn(register: Register, undoable: ElementsUndoable, from: "before" | "after"): Turns {
+  const to = from === "before" ? "after" : "before"
+  if (undoable[from] === undoable[to]) return changed
+  const turning = undoable.elements.filter((each) => elementGone(register, each.node) !== undoable[from])
+  if (turning.length === 0) return changed
+  if (!undoable[to] && turning.some((each) => !stillShows(register, each.node, each.shown))) return changed
+  const file = register.file.length > 0 ? register.file : undoable.file
+  const commands = applying(
+    register,
+    turning.map(({ node }): Command => {
+      const edit: SlideCommand = undoable[to]
+        ? { slide: "element-restore", id: undoable.slide, node }
+        : { slide: "element-remove", id: undoable.slide, node }
+      return { command: "slide", file, edit }
+    }),
+  )
+  return commands === null ? changed : { ok: true, commands, undoable: { ...undoable, elements: turning } }
 }
 
-function turn(register: Register, undoable: Undoable, from: "before" | "after"): Turns {
+function landing(register: Register, command: Command): readonly Command[] | null {
+  return applying(register, [command])
+}
+
+function turnCommands(
+  register: Register,
+  undoable: Exclude<Undoable, ElementsUndoable>,
+  from: "before" | "after",
+): readonly Command[] | null {
   const to = from === "before" ? "after" : "before"
-  if ("steps" in undoable) return stepTurn(register, undoable.steps, from)
+  if ("steps" in undoable) return applying(register, stepCommands(register, undoable.steps, from))
   const file = register.file.length > 0 ? register.file : undoable.file
   if ("stack" in undoable) {
     const chain = elementStacks(register).find(
       (stack) => stack.slide === undoable.slide && stack.ids.includes(undoable.stack),
     )
-    if (chain === undefined) return changed
+    if (chain === undefined) return null
     const place = sitsBefore(chain.ids, undoable.stack)
-    if (place !== undoable[from] || undoable[from] === undoable[to]) return changed
+    if (place !== undoable[from] || undoable[from] === undoable[to]) return null
     const edit: SlideCommand = {
       slide: "element-order",
       id: undoable.slide,
@@ -209,27 +248,23 @@ function turn(register: Register, undoable: Undoable, from: "before" | "after"):
     return landing(register, { command: "slide", file, edit })
   }
   if ("group" in undoable) {
-    if (groupFormed(register, undoable.group) !== undoable[from] || undoable[from] === undoable[to]) return changed
+    if (groupFormed(register, undoable.group) !== undoable[from] || undoable[from] === undoable[to]) return null
     if (undoable[to]) {
       const edit: SlideCommand = { slide: "element-regroup", id: undoable.slide, node: undoable.group }
       return landing(register, { command: "slide", file, edit })
     }
-    const commands = ungroupTurn(register, file, undoable.slide, undoable.group)
-    return commands === null ? changed : { ok: true, commands }
+    return ungroupTurn(register, file, undoable.slide, undoable.group)
   }
-  if ("element" in undoable) {
-    const { element, slide } = undoable
-    if (elementGone(register, element) === undoable[from] || undoable[from] === undoable[to]) return changed
-    if (!undoable[to] && !stillShows(register, element, undoable.shown)) return changed
-    const edit: SlideCommand = undoable[to]
-      ? { slide: "element-restore", id: slide, node: element }
-      : { slide: "element-remove", id: slide, node: element }
-    return landing(register, { command: "slide", file, edit })
-  }
-  if (!sits(spotOf(register, undoable.file, undoable.slide), undoable[from])) return changed
+  if (!sits(spotOf(register, undoable.file, undoable.slide), undoable[from])) return null
   const edit = slideTurn(undoable[from], undoable[to], undoable.slide)
-  if (edit === null) return changed
+  if (edit === null) return null
   return landing(register, { command: "slide", file, edit })
+}
+
+function turn(register: Register, undoable: Undoable, from: "before" | "after"): Turns {
+  if ("elements" in undoable) return elementsTurn(register, undoable, from)
+  const commands = turnCommands(register, undoable, from)
+  return commands === null ? changed : { ok: true, commands, undoable }
 }
 
 export function undoOf(register: Register, undoable: Undoable): Turns {
@@ -257,12 +292,11 @@ function undoableAt(register: Register, at: number, edit: SlideCommand): Undoabl
     const before = register.order.slice(0, at)
     const upTo = register.order.slice(0, at + 1)
     return {
-      element: node,
+      elements: [{ node, shown: shownWith(register, node, {}) }],
       slide: edit.id,
       file: register.file,
       before: edit.slide !== "element-add" && !elementGone({ file: register.file, order: before }, node),
       after: !elementGone({ file: register.file, order: upTo }, node),
-      shown: shownWith(register, node, {}),
     }
   }
   const after = spotIn({ file: register.file, order: register.order.slice(0, at + 1) }, edit.id)

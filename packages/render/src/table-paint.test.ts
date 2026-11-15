@@ -95,7 +95,7 @@ async function mounted(entering: ElementId | null, overrides: Partial<CanvasElem
           entering: entering === null ? null : { id: entering },
           onEdit: () => undefined,
           onBox: () => undefined,
-          onRemove: (target: ElementId) => removed.push(target),
+          onRemove: (targets: readonly ElementId[]) => removed.push(...targets),
           onTable: (_: ElementId, change: TableChange) => changes.push(change),
           tableBar: bar,
         }),
