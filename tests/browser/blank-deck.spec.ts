@@ -83,7 +83,7 @@ test("Blank deck subtitle prompt shows, typing replaces it, deleting brings it b
   await page.goto("/")
   await newBlankDeck(page)
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  const prompt = page.locator("[data-slide-paint] [data-placeholder-prompt='Add a subtitle']")
+  const prompt = page.locator("[data-slide-paint] [data-placeholder-prompt='Click to add subtitle']")
   await expect(prompt).toBeVisible()
   const subtitle = page.locator('[contenteditable="true"]').nth(1)
   await subtitle.click()
@@ -103,8 +103,8 @@ test("Blank deck subtitle prompt shows, typing replaces it, deleting brings it b
   for (const [name, buffer] of parts) {
     if (name.startsWith("ppt/slides/")) {
       const xml = buffer.toString("utf8")
-      expect(xml).not.toContain("Add a subtitle")
-      expect(xml).not.toContain("Add a title")
+      expect(xml).not.toContain("Click to add subtitle")
+      expect(xml).not.toContain("Click to add title")
     }
   }
 })

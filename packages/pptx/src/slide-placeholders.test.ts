@@ -1,7 +1,17 @@
+declare const process: {
+  cwd(): string
+  getBuiltinModule(name: "node:fs"): { readFileSync(path: string): Uint8Array }
+}
+
+const { readFileSync } = process.getBuiltinModule("node:fs")
+import { nextSlideId, orderKeyAfter, presentSlides, slideId } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
+import { slideAddresses } from "./package-address.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
+import { readParts } from "./package-container.js"
 import { paintReader } from "./paint-reader.js"
 import { withLayoutPlaceholders } from "./slide-placeholders.js"
+import { orderedParts } from "./slide-order-route.js"
 import { applyRoute } from "./slide-route.js"
 
 const xml = (value: string) => encodeUtf8(value)
@@ -78,5 +88,56 @@ describe("withLayoutPlaceholders", () => {
       .elements.find((element) => element.placeholder?.type === "ctrTitle")?.text
     expect(text?.anchor).toBe("middle")
     expect(text?.paragraphs[0]).toMatchObject({ align: "center", endStyle: { size: 44 } })
+  })
+})
+
+const fixtures = `${process.cwd()}/scripts/pptx-fixtures`
+
+const prompts = (type: string | null | undefined) => {
+  if (type === "title" || type === "ctrTitle") return "Click to add title"
+  if (type === "subTitle") return "Click to add subtitle"
+  return "Click to add text"
+}
+
+async function newSlide(deck: string, layout: string) {
+  const original = await readParts(readFileSync(`${fixtures}/${deck}`))
+  const file = slideAddresses(original).map((address) => slideId(address.slide))
+  const first = file[0]
+  if (first === undefined) throw new Error("slide")
+  const key = orderKeyAfter(presentSlides({ file, order: [] }), first)
+  if (key === null) throw new Error("key")
+  const id = nextSlideId(file)
+  const parts = orderedParts(original, {
+    file,
+    order: [{ slide: "add", id, after: first, key, layout: first, layoutPart: layout }],
+  })
+  const part = slideAddresses(parts)[1]?.part
+  if (part === undefined) throw new Error("slide")
+  return { parts, part, xml: decodeUtf8(parts.get(part) ?? new Uint8Array()) }
+}
+
+const types = (xml: string) => [...xml.matchAll(/<p:ph(?: type="(\w+)")?/g)].map((found) => found[1] ?? "obj")
+
+describe("a new slide from a deck's layout", () => {
+  it("starts Title and Content with one empty first-level paragraph and PowerPoint's prompts", async () => {
+    const { parts, part, xml } = await newSlide("doe-heat-pumps.pptx", "ppt/slideLayouts/slideLayout2.xml")
+    expect(types(xml)).toEqual(["title", "obj"])
+    expect(xml).not.toContain("Click to edit Master")
+    expect(xml).not.toMatch(/lvl="[1-8]"/)
+    expect(xml.match(/<a:p[ >/]/g)).toHaveLength(2)
+    const elements = paintReader(parts, { fallbackPrompt: prompts }).slide(part).elements
+    expect(elements.map((element) => element.prompt)).toEqual(["Click to add title", "Click to add text"])
+    expect(elements.map((element) => element.text?.paragraphs.length)).toEqual([1, 1])
+  })
+
+  it("adds the footer boxes the slide master shows, with the slide's own number", async () => {
+    const { xml } = await newSlide("corpus/nasa-cots-parts-nesc.pptx", "ppt/slideLayouts/slideLayout2.xml")
+    expect(types(xml)).toEqual(["title", "obj", "dt", "ftr", "sldNum"])
+    expect(xml).toMatch(/<a:fld [^>]*type="slidenum"><a:rPr[^>]*\/><a:t>2<\/a:t><\/a:fld>/)
+  })
+
+  it("leaves out a footer box the slide master's header and footer settings turn off", async () => {
+    const { xml } = await newSlide("corpus/nasa-class-d-mar.pptx", "ppt/slideLayouts/slideLayout1.xml")
+    expect(types(xml)).toEqual(["obj", "title"])
   })
 })

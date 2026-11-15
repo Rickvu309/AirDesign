@@ -38,10 +38,23 @@ const fallback = (type: string | null | undefined) => {
 }
 
 describe("placeholderPrompt in paintReader", () => {
-  it("carries layout prompt when a slide placeholder has no text", () => {
-    const parts = deck(shape("2", `type="title"`), shape("10", `type="title"`, "Add project title"))
-    const slide = paintReader(parts).slide(slidePart)
+  it("carries the layout's custom prompt when the layout sets hasCustomPrompt", () => {
+    const parts = deck(shape("2", `type="title"`), shape("10", `type="title" hasCustomPrompt="1"`, "Add project title"))
+    const slide = paintReader(parts, { fallbackPrompt: fallback }).slide(slidePart)
     expect(slide.elements[0]?.prompt).toBe("Add project title")
+  })
+
+  it("shows the built-in prompt, not the layout's master text, when the layout sets no custom prompt", () => {
+    const parts = deck(shape("2", `type="title"`), shape("10", `type="title"`, "Click to edit Master title style"))
+    const slide = paintReader(parts, { fallbackPrompt: fallback }).slide(slidePart)
+    expect(slide.elements[0]?.prompt).toBe("Add a title")
+  })
+
+  it("keeps each paragraph of a custom prompt on its own line", () => {
+    const layout = `<p:sp><p:nvSpPr><p:cNvPr id="10" name="s"/><p:cNvSpPr/><p:nvPr><p:ph idx="1" hasCustomPrompt="1"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Name the risk</a:t></a:r></a:p><a:p><a:pPr lvl="1"/><a:r><a:t>Say who owns it</a:t></a:r></a:p></p:txBody></p:sp>`
+    const parts = deck(shape("2", `idx="1"`), layout)
+    const slide = paintReader(parts, { fallbackPrompt: fallback }).slide(slidePart)
+    expect(slide.elements[0]?.prompt).toBe("Name the risk\nSay who owns it")
   })
 
   it("falls back to standard table prompt when layout has no prompt and master has boilerplate", () => {

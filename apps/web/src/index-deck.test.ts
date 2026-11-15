@@ -10,7 +10,7 @@ import {
   type SlideId,
 } from "@airdesign/document"
 import { indexPages } from "@airdesign/live"
-import { orderedParts, readPackage } from "@airdesign/pptx"
+import { orderedParts, readPackage, slideLayouts } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { indexedParts } from "./index-deck"
 import { onSlide, twoBoxSlide, xml } from "./slide-fixtures"
@@ -41,6 +41,25 @@ it("indexes the layouts of a 41-slide deck before the import waits too long", as
   const index = indexedParts(read.parts)
   expect(index.slides).toHaveLength(41)
   expect(index.slides.every((row) => (row.layout?.length ?? 0) > 0)).toBe(true)
+})
+it("gives an agent's new Title and Content slide an empty title and body and no footer boxes", async () => {
+  const fsName = "node:fs/promises"
+  const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
+  const read = await readPackage(
+    await fs.readFile(new URL("../../../scripts/pptx-fixtures/doe-heat-pumps.pptx", import.meta.url)),
+  )
+  if (!read.ok) throw new Error(read.reason)
+  const layouts = slideLayouts(read.parts)
+  const index = indexedParts(read.parts)
+  const floors = index.slides.filter((row) => layouts.get(row.id) === "ppt/slideLayouts/slideLayout2.xml")
+  expect(floors.length).toBeGreaterThan(0)
+  const empty = JSON.stringify([{ from: 0, runs: [] }])
+  for (const row of floors) {
+    expect(row.layout?.map((element) => [element.kind, element.value])).toEqual([
+      ["shape", empty],
+      ["shape", empty],
+    ])
+  }
 })
 it("keeps a readable deck index when a layout has more placeholders than an index row may hold", async () => {
   const fsName = "node:fs/promises"

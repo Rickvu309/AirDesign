@@ -107,4 +107,27 @@ describe("placeholder prompt in SlideCanvas", () => {
     expect(host.querySelector("[data-placeholder-prompt]")).toBeNull()
     expect(host.querySelector("[aria-placeholder]")).toBeNull()
   })
+
+  it("starts a bulleted prompt where typed text starts, after the bullet's hang, and keeps its lines", async () => {
+    const bulleted: CanvasText = {
+      ...emptySheet,
+      paragraphs: [
+        {
+          from: 0,
+          align: "left",
+          runs: [],
+          endStyle: style,
+          marginLeft: 228_600,
+          indent: -228_600,
+          bullet: { char: "•", font: null, color: null, size: null },
+        },
+      ],
+    }
+    const element = { ...placeholderShape(id, "Name the risk\nSay who owns it"), text: bulleted }
+    const host = await mount({ ...wide, elements: [element] }, paintStore(), false)
+    const words = host.querySelector<HTMLElement>("[data-placeholder-prompt] > div")
+    expect(words?.style.paddingLeft).toBe("15px")
+    expect(words?.style.textIndent).toBe("0px")
+    expect(words?.style.whiteSpace).toBe("pre-line")
+  })
 })

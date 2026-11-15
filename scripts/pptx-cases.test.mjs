@@ -28,6 +28,7 @@ assert.deepEqual(
     "element-order.mjs",
     "gradient-kept.mjs",
     "group.mjs",
+    "new-slide-prompts.mjs",
     "notes.mjs",
     "paragraphs.mjs",
     "shapes.mjs",
