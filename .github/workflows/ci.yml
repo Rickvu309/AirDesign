@@ -44,16 +44,7 @@ jobs:
           key: playwright-chromium-shell-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
       - if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --only-shell chromium
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        id: tla
-        with:
-          path: ~/.local/tla/tla2tools.jar
-          key: tla2tools-936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88
-      - if: steps.tla.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p "$HOME/.local/tla"
-          curl -fsSL -o "$HOME/.local/tla/tla2tools.jar" https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar
-          echo "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88  $HOME/.local/tla/tla2tools.jar" | sha256sum -c
+      - uses: ./.github/actions/tla
       - if: matrix.part == 'main'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
@@ -216,6 +207,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - uses: ./.github/actions/postgres
+      - uses: ./.github/actions/tla
       - name: Report planted faults on changed code
         run: |
           code=0
