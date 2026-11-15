@@ -5,8 +5,8 @@ import { fixtureDeck } from "../fixture-deck.mjs"
 async function drive(kit) {
   const { page } = kit
   await fixtureDeck(kit)
-  await page.getByRole("button", { name: "Actions", exact: true }).click()
-  await page.getByRole("menuitem", { name: "Table", exact: true }).click()
+  await page.getByRole("button", { name: "Insert table", exact: true }).click()
+  await page.getByRole("button", { name: "3 rows, 3 columns", exact: true }).click()
   const cell = page.locator('[data-slide-paint] [data-canvas-table] [data-table-text="0.0"]')
   await expect(cell).toBeFocused()
   await page.keyboard.type("Region", { delay: 50 })

@@ -7,6 +7,7 @@ import { pickColor } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { newBlankDeck } from "./new-deck"
 import { partsOf } from "./shape-fills"
+import { insertTable } from "./insert-table"
 
 const judged = join(process.cwd(), "tests/browser", tableReadableExportName)
 const office = "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"
@@ -66,8 +67,7 @@ test("a new table has a theme header, and text stays readable on any fill a pers
   await newBlankDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
-  await page.getByRole("button", { name: "Actions", exact: true }).click()
-  await page.getByRole("menuitem", { name: "Table", exact: true }).click()
+  await insertTable(page, 4, 3)
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
   const cell = (spot: string) => table.locator(`[data-table-text="${spot}"]`)
   await expect(cell("0.0")).toBeFocused()

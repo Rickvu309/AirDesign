@@ -1,6 +1,6 @@
 import { editorRoutes } from "@/editor/editor-routes"
 import {
-  ActionsScreen,
+  TableScreen,
   AgentComplete,
   AgentLong,
   AgentOwn,
@@ -35,7 +35,7 @@ export const screens = {
   [editorRoutes.shapes]: ShapesScreen,
   [editorRoutes.shapesExpanded]: ShapesExpandedScreen,
   [editorRoutes.text]: TextScreen,
-  [editorRoutes.actions]: ActionsScreen,
+  [editorRoutes.table]: TableScreen,
   [editorRoutes.textFormat]: TextFormatScreen,
   [editorRoutes.designElement]: DesignElementScreen,
   [editorRoutes.runFailed]: RunFailed,

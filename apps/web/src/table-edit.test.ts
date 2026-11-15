@@ -38,7 +38,13 @@ function inserted() {
   const parts = onSlide(xml(twoBoxSlide))
   const top = { x: 0, y: 0, width: size.width, height: 3000000, rotation: 0, flipH: false, flipV: false }
   const room = { ...size, elements: [{ box: top }] }
-  const edit = elementCommand(parts, openRegister("", ""), { change: "table", index: 0, size: room })
+  const edit = elementCommand(parts, openRegister("", ""), {
+    change: "table",
+    index: 0,
+    size: room,
+    rows: 3,
+    columns: 3,
+  })
   return { parts, edit, register: slide(openRegister("", ""), edit) }
 }
 
@@ -48,6 +54,21 @@ it("puts a new three by three table in clear space under the next free id, empty
   if (edit?.slide !== "element-add") throw new Error("element-add")
   expect(edit.element.box).toEqual({ x: 2438400, y: 4235580, cx: 7315200, cy: 1112520 })
   expect(readTableValue(edit.element.value ?? "")?.rows.map((row) => row.cells.length)).toEqual([3, 3, 3])
+})
+
+it("puts a table of the picked size in clear space, one row height per row", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const room = { ...size, elements: [] }
+  const edit = elementCommand(parts, openRegister("", ""), {
+    change: "table",
+    index: 0,
+    size: room,
+    rows: 4,
+    columns: 5,
+  })
+  if (edit?.slide !== "element-add") throw new Error("element-add")
+  expect(edit.element.box?.cy).toBe(4 * 370840)
+  expect(readTableValue(edit.element.value ?? "")?.rows.map((row) => row.cells.length)).toEqual([5, 5, 5, 5])
 })
 
 it("exports a typed table with an added and a removed row, and a table as it was opened changes nothing", () => {

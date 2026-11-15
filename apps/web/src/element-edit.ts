@@ -40,8 +40,11 @@ export type SlideRoom = {
   readonly elements?: readonly { readonly box: PaintBox | null }[]
 }
 
+export type TableSize = { readonly rows: number; readonly columns: number }
+
 export type ElementChange =
-  | { readonly change: "text" | "table"; readonly index: number; readonly size: SlideRoom }
+  | { readonly change: "text"; readonly index: number; readonly size: SlideRoom }
+  | ({ readonly change: "table"; readonly index: number; readonly size: SlideRoom } & TableSize)
   | { readonly change: "shape"; readonly geometry: Geometry; readonly index: number; readonly size: SlideRoom }
   | { readonly change: "remove"; readonly nodes: readonly ElementId[] }
   | { readonly change: "order"; readonly node: ElementId; readonly move: StackMove }
@@ -125,9 +128,9 @@ export function elementCommand(
   const node = nextElementId(register, slide.id, freeShapeId(base, slide.part))
   const taken = takenBoxes(change.size)
   if (change.change === "table") {
-    const size = { cx: Math.round(change.size.width * 0.6), cy: 3 * tableRow }
+    const size = { cx: Math.round(change.size.width * 0.6), cy: change.rows * tableRow }
     const box = placeNewBox(change.size, taken, size)
-    const value = writeTableValue(openingTable(3, 3))
+    const value = writeTableValue(openingTable(change.rows, change.columns))
     return { slide: "element-add", id: slide.id, element: { node, kind: "table", value, box, grouped: false } }
   }
   if (change.change === "shape") {

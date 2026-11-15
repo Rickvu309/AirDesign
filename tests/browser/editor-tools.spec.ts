@@ -55,16 +55,14 @@ async function zoomTo(page: Page, step: string): Promise<void> {
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
-test("Grid and Shapes are enabled, every shape in the tray is on, and Actions offers only Table", async ({ page }) => {
+test("Grid, Shapes and Insert table are enabled, and every shape in the tray is on", async ({ page }) => {
   await openClean(page)
   await expect(page.getByRole("button", { name: "Grid", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Add text box", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Shapes", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Add picture", exact: true })).toBeEnabled()
-  await page.getByRole("button", { name: "Actions", exact: true }).click()
-  await expect(page.getByRole("menuitem", { name: "Table", exact: true })).toBeEnabled()
-  await expect(page.getByRole("menuitem")).toHaveCount(1)
-  await page.keyboard.press("Escape")
+  await expect(page.getByRole("button", { name: "Insert table", exact: true })).toBeEnabled()
+  await expect(page.getByRole("button", { name: "Actions", exact: true })).toHaveCount(0)
   await expect(page.getByRole("button", { name: "Move", exact: true })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Move", exact: true })).toHaveAttribute("aria-pressed", "true")
   await page.getByRole("button", { name: "Shapes", exact: true }).click()

@@ -52,8 +52,8 @@ export function TextFormatScreen() {
   return <EditorView {...galleryDeck} run="done" formats={{ bold: "on", italic: "off", underline: "mixed" }} />
 }
 
-export function ActionsScreen() {
-  return <EditorView {...galleryDeck} run="done" activeTool="actions" actionsMenu />
+export function TableScreen() {
+  return <EditorView {...galleryDeck} run="done" activeTool="table" tablePicker />
 }
 
 export function RunFailed() {
