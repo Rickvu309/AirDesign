@@ -95,7 +95,9 @@ const loadsVitest = (node) => {
 const bindingsOf = (program) => {
   const viNames = new Set(["vi"])
   const moduleNames = new Set()
+  const declarators = []
   walk(program, (node) => {
+    if (node.type === "VariableDeclarator" && node.id.type === "Identifier" && node.init) declarators.push(node)
     if (node.type === "ImportDeclaration" && isVitestSource(node.source)) {
       for (const specifier of node.specifiers) {
         if (specifier.type === "ImportSpecifier" && nameOf(specifier.imported) === "vi")
@@ -118,8 +120,7 @@ const bindingsOf = (program) => {
   let grew = true
   while (grew) {
     grew = false
-    walk(program, (node) => {
-      if (node.type !== "VariableDeclarator" || node.id.type !== "Identifier" || !node.init) return
+    for (const node of declarators) {
       const init = unwrap(node.init)
       const alias = init.type === "Identifier" && viNames.has(init.name)
       const picked = memberOf(init) === "vi" && init.object.type === "Identifier" && moduleNames.has(init.object.name)
@@ -127,7 +128,7 @@ const bindingsOf = (program) => {
         viNames.add(node.id.name)
         grew = true
       }
-    })
+    }
   }
   return { viNames, moduleNames }
 }
@@ -159,7 +160,10 @@ const touchesGlobal = (target) => {
   return undefined
 }
 
+const mayIsolate = new RegExp(`\\b(${["vi", "process", ...globalNames].join("|")})\\b|\\\\u`)
+
 export const isolationReasons = (text, fileName = "file.test.ts") => {
+  if (!mayIsolate.test(text)) return []
   const { program } = parseSync(fileName, text)
   const bindings = bindingsOf(program)
   const reasons = new Set()

@@ -31,13 +31,13 @@ export const stages = [
     ["specs", "pnpm", ["check:specs"], { AIRDESIGN_SPEC_CACHE: specCache }],
     ["spec-replays", "node", ["scripts/spec-replays.mjs"]],
     ["browser", "pnpm", ["test:browser"]],
-    ["site", "pnpm", ["--filter", "@airdesign/site...", "run", "build"]],
-    ["bar", "node", ["scripts/bar.mjs", "local"]],
-  ],
-  [["typecheck", "pnpm", ["typecheck"]]],
-  [
     ["boundaries", "pnpm", ["check:boundaries"]],
-    ["build", "pnpm", ["--filter", "!@airdesign/site", "-r", "--if-present", "run", "build"]],
+    [
+      ["typecheck", "pnpm", ["typecheck"]],
+      ["build", "pnpm", ["--filter", "!@airdesign/site", "-r", "--if-present", "run", "build"]],
+      ["site", "pnpm", ["--filter", "@airdesign/site...", "run", "build"]],
+    ],
+    ["bar", "node", ["scripts/bar.mjs", "local"]],
   ],
   [
     ["metrics", "node", ["scripts/metrics.mjs"]],
@@ -59,18 +59,28 @@ export const localSteps = new Set(["bar"])
 
 export const onCi = (env) => env.CI === "true" || env.CI === "1"
 
-export const stagesFor = (part, ci = onCi(process.env)) =>
-  stages
-    .map((stage) => stage.filter(([name]) => !(ci && localSteps.has(name))))
-    .map((stage) => stage.filter(([name]) => part === "all" || (part === "side") === sideSteps.has(name)))
+const isLane = (entry) => Array.isArray(entry[0])
+
+export const stepsOf = (entry) => (isLane(entry) ? entry : [entry])
+
+const keepSteps = (chosen, keep) =>
+  chosen
+    .map((stage) =>
+      stage
+        .map((entry) => (isLane(entry) ? entry.filter(keep) : keep(entry) ? entry : []))
+        .filter((kept) => kept.length > 0),
+    )
     .filter((stage) => stage.length > 0)
+
+export const stagesFor = (part, ci = onCi(process.env)) =>
+  keepSteps(
+    stages,
+    ([name]) => !(ci && localSteps.has(name)) && (part === "all" || (part === "side") === sideSteps.has(name)),
+  )
 
 export const ciOnlySteps = new Set(["browser", "design-findings"])
 
-export const stepsToRun = (chosen, ci) =>
-  ci
-    ? chosen
-    : chosen.map((stage) => stage.filter(([name]) => !ciOnlySteps.has(name))).filter((stage) => stage.length > 0)
+export const stepsToRun = (chosen, ci) => (ci ? chosen : keepSteps(chosen, ([name]) => !ciOnlySteps.has(name)))
 
 export const judgedOnCi = new Set(["test", "browser"])
 
@@ -134,8 +144,14 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
 
   let ranSteps = true
   const chosen = stepsToRun(stagesFor(part), onCi(process.env))
+  const runLane = async (entry) => {
+    for (const step of stepsOf(entry)) {
+      await run(step)
+      if (failed.includes(step[0]) && !all) return
+    }
+  }
   for (const [index, stage] of chosen.entries()) {
-    await Promise.all(stage.map(run))
+    await Promise.all(stage.map(runLane))
     if (failed.length > 0 && !all && !mayPush(failed, true)) {
       ranSteps = index === chosen.length - 1
       break

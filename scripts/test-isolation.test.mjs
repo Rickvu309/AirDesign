@@ -28,6 +28,9 @@ const isolated = {
   "an env assigned": `process.env.A = "1"\n`,
   "an env deleted": `delete process.env.A\n`,
   "a global defined": `Object.defineProperty(globalThis, "x", { value: 1 })\n`,
+  "an escaped vi": `import { vi } from "vitest"\n\\u0076i.mock("./a")\n`,
+  "an escaped global": `\\u0067lobalThis.fetch = () => 1\n`,
+  "an escaped alias": `import { \\u0076i as v } from "vitest"\nv.mock("./a")\n`,
 }
 for (const [name, text] of Object.entries(isolated)) {
   if (isolationReasons(text).length === 0) fail(`${name} would share workers`)
