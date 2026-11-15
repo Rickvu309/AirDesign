@@ -126,13 +126,21 @@ export function nextFitting(fitting: Fitting, fit: CanvasFit | undefined, over: 
   return smaller ? { ...fitting, step: fitting.step + 1 } : fitting
 }
 
+const lengthOf = (value: string): number => Number.parseFloat(value) || 0
+
+function roomOf(layer: HTMLElement): number {
+  const style = getComputedStyle(layer)
+  const height = lengthOf(style.height)
+  return style.boxSizing === "border-box" ? height - lengthOf(style.paddingTop) - lengthOf(style.paddingBottom) : height
+}
+
 function overflowOf(layer: HTMLElement, columns: number): Over | null {
   const body = layer.querySelector<HTMLElement>(":scope > [data-text-body]")
   if (body === null) return null
-  const style = getComputedStyle(layer)
-  const room =
-    layer.clientHeight - (Number.parseFloat(style.paddingTop) || 0) - (Number.parseFloat(style.paddingBottom) || 0)
-  return { down: body.offsetHeight - room, across: columns > 1 ? body.scrollWidth - body.clientWidth : 0 }
+  return {
+    down: lengthOf(getComputedStyle(body).height) - roomOf(layer),
+    across: columns > 1 ? body.scrollWidth - body.clientWidth : 0,
+  }
 }
 
 export function useTextFit(
