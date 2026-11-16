@@ -316,7 +316,7 @@ export function UsagePop({ id, usage }: { id: string; usage: WeekUsage }) {
       id={id}
       role="region"
       aria-label={productCopy.usageTitle}
-      className="absolute top-11 right-3 z-10 flex w-[220px] flex-col gap-2 rounded-[var(--shape-card)] bg-white p-3 shadow-[0px_0px_0px_1px_var(--black-8),0px_8px_24px_var(--black-10)]"
+      className="absolute top-11 right-3 z-10 flex w-[220px] origin-top-right transition-[opacity,scale] duration-150 ease-out starting:opacity-0 starting:scale-95 flex-col gap-2 rounded-[var(--shape-card)] bg-white p-3 shadow-[0px_0px_0px_1px_var(--black-8),0px_8px_24px_var(--black-10)]"
     >
       <span className="flex items-center justify-between text-xs font-medium text-foreground">
         {productCopy.usageTitle}
