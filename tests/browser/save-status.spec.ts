@@ -140,3 +140,32 @@ test("going offline reads Offline before any edit, and Saved again when the brow
   await context.setOffline(false)
   await expect(saveStatus(page)).toHaveText(saved)
 })
+
+for (const [step, button] of [
+  ["an added slide", "Add slide"],
+  ["an added text box", "Add text box"],
+] as const) {
+  test(`${step} reads Saving while its commit waits and Saved once the server takes it`, async ({
+    page,
+    context,
+    stack,
+  }) => {
+    await signInBrowser(context, await stack.signIn())
+    await forward(page, stack)
+    await openClean(page)
+    await expect(saveStatus(page)).toHaveText(saved)
+    let release = () => undefined as void
+    const released = new Promise<void>((resolve) => (release = resolve))
+    await page.route(
+      (url) => url.pathname === "/decks/commit",
+      async (route) => {
+        await released
+        await route.fallback()
+      },
+    )
+    await page.getByRole("button", { name: button, exact: true }).click()
+    await expect(saveStatus(page)).toHaveText(saving)
+    release()
+    await expect(saveStatus(page)).toHaveText(saved)
+  })
+}

@@ -39,7 +39,7 @@ function Panel(props: { readonly node: ElementId | null; readonly exposed: (show
   const nothing = () => undefined
   const pictures = { store: { bytes: new Map(), load: async () => false, keep: nothing } }
   const undo = editor.useUndoList()
-  const shown = editor.useDeckPaint(deck, pictures, { show: nothing }, nothing)
+  const shown = editor.useDeckPaint(deck, pictures, { show: nothing })
   props.exposed(shown)
   return createElement(editor.LiveDesignPanel, {
     deck: { id: deck, shown, undo, designing: props.node, record: nothing, settle: nothing, setPending: nothing },
