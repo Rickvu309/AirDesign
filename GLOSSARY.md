@@ -86,7 +86,11 @@ _Avoid_: evidence, verification, validation
 
 **judge**:
 To compare an exported PowerPoint file with its original and report every difference no edit asked for.
-_Avoid_: validate, verify, diff
+_Avoid_: validate, verify
+
+**diff**:
+The parts an exported PowerPoint file changed, added or removed against its original, with each changed XML line and its shape path. It gives no verdict; `--allow` names the parts an edit may change.
+_Avoid_: delta, comparison
 
 **planted fault**:
 A break put into code on purpose, to see whether a check catches it.
@@ -240,7 +244,7 @@ _Avoid_: property, attribute, setting
 
 **row**:
 One stored edit of one node: the format it was written in, `v`, and a `patch` of the trait fields it changes. Each field in a patch is set to a value or sent back to `inherit` or `opening`. Rows stack in order, and a node shows its rows folded field by field. A table's own rows are a kind, `row`; say table row when the two could be mixed up.
-_Avoid_: edit record, change record, delta, diff
+_Avoid_: edit record, change record, delta
 
 **format**:
 The one number that says which stored shape a build writes: 1 plus every stamp. A row, an index page and a command carry the format they were written in. A build refuses a stored format newer than its own, and an older tab reloads before it reads one.

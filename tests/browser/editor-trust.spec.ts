@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, type Locator, type Page, type TestInfo } from "@playwright/test"
+import type { DeckDiff } from "../../packages/pptx/src/index.ts"
 import { forward, settled, signInBrowser, test, type Stack } from "./api-stack"
 import { savedExport } from "./export-dialog.ts"
 import { newBlankDeck } from "./new-deck"
@@ -40,6 +41,14 @@ async function partsOf(file: string): Promise<Map<string, string>> {
 function slideParts(parts: Map<string, string>): string[] {
   return [...parts.keys()].filter((name) => /^ppt\/slides\/slide\d+\.xml$/.test(name)).sort()
 }
+
+async function changedFromDoe(testInfo: TestInfo, name: string): Promise<DeckDiff> {
+  const { deckDiff, readParts } = await import("../../packages/pptx/src/index.ts")
+  const read = async (file: string) => readParts(new Uint8Array(await readFile(file)))
+  return deckDiff(await read(doe), await read(testInfo.outputPath(name)))
+}
+
+const typedSlide = "ppt/slides/slide1.xml"
 
 async function openFile(page: Page, file: string | undefined): Promise<{ address: string; slides: number }> {
   await page.goto("/")
@@ -129,6 +138,13 @@ test("doe-heat-pumps keeps every typed letter across a reload taken before undo,
   expect(slides).toHaveLength(doeSlides)
   const body = slides.map((name) => parts.get(name) ?? "").join("\n")
   expect(body).toContain(`<a:t>${typed}</a:t>`)
+  expect(parts.get(typedSlide)).toContain(`<a:t>${typed}</a:t>`)
+  expect(await changedFromDoe(testInfo, "doe-before-undo.pptx")).toMatchObject({
+    changed: [typedSlide],
+    added: [],
+    removed: [],
+    orderMoved: false,
+  })
   expect(body).toContain("<a:t>Introduction to Heat Pumps</a:t>")
   expect(body).toContain("<a:t>How do heat pumps work?</a:t>")
   await stillOpen(page, opened.address, doeSlides)
@@ -153,6 +169,12 @@ test("doe-heat-pumps undo restores the text from before typing, and the reload a
   expect(slides).toHaveLength(doeSlides)
   const body = slides.map((name) => parts.get(name) ?? "").join("\n")
   expect(body).not.toContain(typed)
+  expect(await changedFromDoe(testInfo, "doe-after-undo.pptx")).toMatchObject({
+    changed: [typedSlide],
+    added: [],
+    removed: [],
+    orderMoved: false,
+  })
   expect(body).toContain("<a:t>Introduction to Heat Pumps</a:t>")
   expect(body).toContain("<a:t>How do heat pumps work?</a:t>")
   await stillOpen(page, opened.address, doeSlides)

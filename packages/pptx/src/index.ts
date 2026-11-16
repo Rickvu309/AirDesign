@@ -28,6 +28,7 @@ export {
 } from "./shape-id.js"
 export { applyRoute, oneRunValue } from "./slide-route.js"
 export { routeOperations, touchMatches } from "./route-parts.js"
+export { deckDiff, partDiff, type DeckDiff, type PartDiff, type XmlChange } from "./deck-diff.js"
 export { routeRuns } from "./route-runs.js"
 export { newSharedOwnedParts, partCopies, sharedOwnedParts, type SharedOwnedPart } from "./owned-parts.js"
 export { newTableBreaks } from "./table-check.js"

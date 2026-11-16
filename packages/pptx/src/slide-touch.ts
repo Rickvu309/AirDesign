@@ -1,4 +1,4 @@
-import { sameBytes } from "./package-bytes.js"
+import { deckDiff } from "./deck-diff.js"
 import { contentTypesPart, presentationPart, presentationRels, relsOf } from "./package-address.js"
 import { copyOwnedParts } from "./owned-parts.js"
 import { nextSlideFile } from "./slide-list-route.js"
@@ -38,29 +38,12 @@ export function touchMatches(
   after: ReadonlyMap<string, Uint8Array>,
   touch: PartTouch,
 ): boolean {
-  const changed = new Set(touch.changed)
-  const added = new Set(touch.added)
-  const removed = new Set(touch.removed)
-  const names = new Set([...before.keys(), ...after.keys()])
-  for (const name of names) {
-    const left = before.get(name)
-    const right = after.get(name)
-    if (left === undefined && right !== undefined) {
-      if (!added.has(name)) return false
-      continue
-    }
-    if (right === undefined && left !== undefined) {
-      if (!removed.has(name)) return false
-      continue
-    }
-    if (left !== undefined && right !== undefined && !sameBytes(left, right) && !changed.has(name)) return false
+  const found = deckDiff(before, after)
+  const sameSet = (left: readonly string[], right: readonly string[]) => {
+    const named = new Set(right)
+    return new Set(left).size === named.size && left.every((name) => named.has(name))
   }
-  for (const name of changed) {
-    const left = before.get(name)
-    const right = after.get(name)
-    if (left === undefined || right === undefined || sameBytes(left, right)) return false
-  }
-  for (const name of added) if (before.has(name) || !after.has(name)) return false
-  for (const name of removed) if (!before.has(name) || after.has(name)) return false
-  return true
+  return (
+    sameSet(found.changed, touch.changed) && sameSet(found.added, touch.added) && sameSet(found.removed, touch.removed)
+  )
 }

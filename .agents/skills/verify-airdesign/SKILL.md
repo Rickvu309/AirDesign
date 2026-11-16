@@ -171,6 +171,7 @@ Proof standards:
 - Capture the action and the result, not only the last screen.
 - Prove side effects through a second view: after a UI action, read the server copy with `deckRoutes.open` or `deckRoutes.list`. A UI that looks right while the server disagrees is a failure.
 - The only stand-ins are the mail sender (writes a file instead of calling Resend), the original store (in memory instead of R2, its signed URLs served by the front server under `/verify-original/`), Aira's model (`bin/scripted-aira.mjs` plays recorded streams instead of calling Claude), the country header (the front server adds `visitor-country: US` as the web worker would from Cloudflare's `request.cf.country`), and production pages (the journey kit answers any `airdesign.app` address, such as the sign-in redirect, with a stand-in page). Each sits behind a production seam. The stack sends no forward secret, so the API's forward-secret check is not exercised.
+- Prove an export against its original with `node scripts/deck-diff.mjs original.pptx export.pptx --allow <part>`: it counts the byte-identical parts, shows each changed part's XML lines with their shape paths, and exits 1 when a part outside `--allow` changed, was added or removed, or the part order moved. `--json` prints the same as data. Run `pnpm build` first.
 - Put the run id, the journey and the evidence path in your PR or review comment.
 
 ## Cleanup
@@ -185,10 +186,7 @@ Run `stop` after every run, passed or failed. A failed `launch` prints the run i
 
 ## Isolation and load
 
-- Every run has its own ports, Postgres cluster, scratch dir and evidence dir. Two runs, from two agents or two worktrees, do not see each other.
-- The machine's cores are shared by many agents. Run one journey at a time, stop as soon as you have the proof, and do not run this while your own `pnpm check` runs.
-- `launch` writes the load average into `proof.md`, and every journey's PASSED or FAILED line says the load it finished under. Quote it with a result: "passed at load 42 on 16 cores".
-- `pnpm check` takes a machine lock; `$V suites --run` takes the same lock; the other commands do not.
+Each run is isolated, and the machine is shared: read [isolation-and-load.md](isolation-and-load.md) before you run anything heavy.
 
 ## Which suites to run
 
