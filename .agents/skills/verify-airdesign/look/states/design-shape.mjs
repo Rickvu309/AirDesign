@@ -16,8 +16,11 @@ async function drive(kit) {
   await rotation.fill("30")
   await rotation.press("Enter")
   await panel.getByRole("button", { name: "Flip vertically", exact: true }).click()
-  await panel.getByRole("combobox", { name: "Type", exact: true }).click()
-  await kit.page.getByRole("option", { name: "Right arrow", exact: true }).click()
+  await panel
+    .locator('[data-control="preset"]')
+    .getByRole("button", { name: /^Type\b/ })
+    .click()
+  await kit.page.locator("[data-shape-grid]").getByRole("button", { name: "Right arrow", exact: true }).click()
   await expect(panel.getByRole("textbox", { name: "Adjust 2", exact: true })).toHaveValue("50000")
   await expect(kit.page.getByRole("button", { name: "Undo shape", exact: true })).toBeVisible()
 }

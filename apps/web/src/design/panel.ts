@@ -41,6 +41,7 @@ export const controlKinds = [
   "asset",
   "node",
   "site",
+  "preset",
 ] as const
 
 export type ControlKind = (typeof controlKinds)[number]
@@ -119,7 +120,12 @@ export function partRow(row: PanelRow, name: string, desc: Desc, value: unknown)
     parent: row.value,
     field: `${row.field}.${name}`,
     label,
-    control: row.trait === "connection" && name === "site" ? "site" : controlOf(desc),
+    control:
+      row.trait === "connection" && name === "site"
+        ? "site"
+        : row.trait === "geometry" && name === "preset"
+          ? "preset"
+          : controlOf(desc),
     desc,
     value,
     caption: true,

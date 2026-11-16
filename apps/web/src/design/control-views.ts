@@ -11,6 +11,7 @@ import { LengthControl } from "@/design/controls/length"
 import { ListControl } from "@/design/controls/list"
 import { NodeControl } from "@/design/controls/node"
 import { PercentControl } from "@/design/controls/percent"
+import { PresetControl } from "@/design/controls/preset"
 import { RecordControl } from "@/design/controls/record"
 import { TableControl } from "@/design/controls/table"
 import { TextControl } from "@/design/controls/text"
@@ -38,4 +39,5 @@ export const controlViews: Partial<Readonly<Record<ControlKind, ComponentType<Co
   asset: AssetControl,
   node: NodeControl,
   site: SiteControl,
+  preset: PresetControl,
 }
