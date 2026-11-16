@@ -29,13 +29,13 @@
       "file": "packages/render/src/passage.tsx",
       "names": ["Passage"],
       "digest": "316dbc33ec11",
-      "blob": "185ac096c9783a6de0c7b28c7f1939ee5809d3a3"
+      "blob": "3668b5b69a5f2bd99555ceb31d891526df43c2d2"
     },
     {
       "file": "apps/web/src/editor/notes-bar.tsx",
       "names": ["NotesBar"],
-      "digest": "b6479b3a8c92",
-      "blob": "9c1e86e8d9779bddd21d2f3188317e47fa0f19d4"
+      "digest": "43b49c5f7f0d",
+      "blob": "03eef65abc5e17b920019dcd72185db672aceca3"
     },
     {
       "file": "apps/web/src/editor/use-undo.ts",
