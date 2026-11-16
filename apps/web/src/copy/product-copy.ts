@@ -10,6 +10,10 @@ export function noMatchTitleOf(query: string): string {
   return `No decks match “${query}”`
 }
 
+export function decksFoundOf(count: number): string {
+  return count === 1 ? "1 deck found" : `${new Intl.NumberFormat("en").format(count)} decks found`
+}
+
 export function nameTooLongOf(limit: number): string {
   return `Use ${new Intl.NumberFormat("en").format(limit)} characters or fewer.`
 }

@@ -5,7 +5,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { noMatchTitleOf, productCopy, starredOf, unstarredOf } from "@/copy/product-copy"
+import { decksFoundOf, noMatchTitleOf, productCopy, starredOf, unstarredOf } from "@/copy/product-copy"
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { clearGridShift, gridShift } from "@/decks/grid-shift"
@@ -263,11 +263,7 @@ export function Home({
     searched.current = true
     const timer = window.setTimeout(() => {
       setSaid(
-        searching && resultCount === 0
-          ? noMatchTitleOf(query.trim())
-          : resultCount === 1
-            ? "1 deck found"
-            : `${new Intl.NumberFormat().format(resultCount)} decks found`,
+        searching && resultCount === 0 ? noMatchTitleOf(query.trim()) : decksFoundOf(resultCount),
       )
     }, 300)
     return () => window.clearTimeout(timer)
