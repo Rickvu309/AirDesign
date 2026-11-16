@@ -7,7 +7,7 @@ export function EditorMenuContent({
   ...place
 }: { children: ReactNode } & Pick<
   ComponentProps<typeof DropdownMenuContent>,
-  "side" | "align" | "sideOffset" | "alignOffset"
+  "side" | "align" | "sideOffset" | "alignOffset" | "anchor"
 >) {
   return (
     <DropdownMenuContent
