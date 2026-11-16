@@ -63,6 +63,18 @@ describe("a step Aira takes", () => {
   })
 })
 
+describe("a step that is running", () => {
+  it("shows the spinner as its one working signal and leaves its words still", () => {
+    const steps: AiraStep[] = [
+      { kind: "tool", id: "t1", name: "airdesign_read_deck", state: "done" },
+      { kind: "tool", id: "t2", name: "airdesign_edit_deck", state: "working" },
+    ]
+    const markup = view(exchange(steps, "working"))
+    expect(marks(markup)).toContain("progress")
+    expect(markup).not.toContain("shimmer")
+  })
+})
+
 describe("a request that could not finish", () => {
   it("offers Try again when it failed and a retry can work", () => {
     expect(view(exchange([], "failed"), () => undefined)).toContain(airaCopy.retry)
