@@ -17,14 +17,17 @@ export function DeckTitleEdit({
   const [words, setWords] = useState<string | null>(null)
   const trigger = useRef<HTMLButtonElement>(null)
   const closed = useRef(false)
-  const wasEditing = useRef(false)
+  const returnFocus = useRef(false)
 
   useEffect(() => {
-    if (wasEditing.current && draft === null) trigger.current?.focus()
-    wasEditing.current = draft !== null
+    if (draft === null && returnFocus.current) {
+      returnFocus.current = false
+      trigger.current?.focus()
+    }
   }, [draft])
 
-  function close() {
+  function close(restoreFocus = false) {
+    returnFocus.current = restoreFocus
     closed.current = true
     setDraft(null)
     setWords(null)
@@ -38,7 +41,7 @@ export function DeckTitleEdit({
       else setWords(reading.words)
       return
     }
-    close()
+    close(!quiet)
     if (reading.name !== title) onRename(reading.name)
   }
 
@@ -80,7 +83,7 @@ export function DeckTitleEdit({
           }
           if (event.key === "Escape") {
             event.preventDefault()
-            close()
+            close(true)
           }
         }}
         className="h-8 min-w-0 flex-1 rounded-md bg-background px-1.5 text-[length:var(--type-dense)] font-medium text-foreground shadow-[0_0_0_1px_var(--field-edge)] aria-invalid:shadow-[0_0_0_2px_var(--destructive)]"

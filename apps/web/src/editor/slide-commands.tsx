@@ -2,6 +2,7 @@ import { type Undoable } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { SlideCanvas } from "@airdesign/render"
 import type { CommitOutcome } from "@/commit-edit"
+import { slideListCopy } from "@/copy/slide-list-copy"
 import type { SlideStrip } from "@/editor/slide-sidebar"
 import { showSlideDeleted, type UndoOf } from "@/editor/slide-toast"
 import type { DeckPaint } from "@/editor/use-deck-paint"
@@ -37,6 +38,7 @@ export function slideCommands(deck: CommandedDeck, undo: () => void): SlideStrip
         }
         setPending(true)
         await showEdited(currentIndex)
+        if (change === "add") deck.shown.saySlide.current(slideListCopy.added(currentIndex + 1))
       }
       settle(await commitSlideChange(id, shownParts.current, opened.register, change, index, painted, to, layoutPart))
     })
