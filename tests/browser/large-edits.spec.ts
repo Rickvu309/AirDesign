@@ -33,7 +33,7 @@ function largeText(index: number): string {
   return `${'"'.repeat(3_700)}${String(index)}`
 }
 
-function keepLargeEdits(page: Page, count: number, once: string | null): Promise<number> {
+function keepLargeEdits(page: Page, count: number, once: string | null, width = 3_700): Promise<number> {
   return page.evaluate(
     ({ count, once, quotes }) =>
       new Promise<number>((resolve, reject) => {
@@ -84,7 +84,7 @@ function keepLargeEdits(page: Page, count: number, once: string | null): Promise
           }
         }
       }),
-    { count, once, quotes: '"'.repeat(3_700) },
+    { count, once, quotes: '"'.repeat(width) },
   )
 }
 
@@ -172,4 +172,29 @@ test("a device stuck on a sealed batch the server refused as too large saves it 
       return after === undefined ? undefined : lastText(after.register)
     })
     .toBe(`${largeText(kept - 1)}?`)
+})
+
+test("an edit too large for any request is set aside, and the editor says it was too large to save", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  const deck = await openClean(page)
+  await keptOnDevice(page)
+  expect(await keepLargeEdits(page, 1, "stuck-batch", requestLimit)).toBe(1)
+  await page.unroute(committing)
+  await page.reload()
+  await expect(
+    page.getByText("Unable to save an edit. It was too large to save, so an export of this deck does not include it."),
+  ).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByText("The deck changed")).toHaveCount(0)
+  await expect
+    .poll(async () => {
+      const saved = await stack.saved(deck)
+      return saved === undefined ? undefined : lastText(saved.register)
+    })
+    .not.toContain('"'.repeat(1000))
 })
