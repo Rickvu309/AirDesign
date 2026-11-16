@@ -109,7 +109,7 @@ function FoldedSection({
               name="chevr"
               size={12}
               strokeWidth={2}
-              className="shrink-0 text-faint [transition:transform_var(--ease-micro)] group-data-[panel-open]/fold:rotate-90 motion-reduce:transition-none"
+              className="shrink-0 text-faint [transition:transform_var(--ease-micro)] group-data-[panel-open]/fold:rotate-90"
             />
             <span className="truncate">{title}</span>
           </CollapsibleTrigger>

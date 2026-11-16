@@ -113,7 +113,7 @@ function UndoLink({ onUndo }: { onUndo: (() => void) | undefined }) {
   return (
     <button
       type="button"
-      className="-ml-1.5 flex h-6 items-center gap-1.5 self-start rounded-[var(--shape-control)] px-1.5 text-xs text-muted-foreground outline-hidden [transition:color_var(--ease-micro)] hover:text-foreground disabled:opacity-50 motion-reduce:transition-none"
+      className="-ml-1.5 flex h-6 items-center gap-1.5 self-start rounded-[var(--shape-control)] px-1.5 text-xs text-muted-foreground outline-hidden [transition:color_var(--ease-micro)] hover:text-foreground disabled:opacity-50"
       disabled={onUndo === undefined}
       onClick={onUndo}
     >
