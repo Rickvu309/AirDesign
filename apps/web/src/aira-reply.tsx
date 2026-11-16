@@ -174,10 +174,12 @@ function StuckCard({
   body,
   changed,
   onUndo,
+  onNewChat,
 }: {
   title: string
   body: string
   changed: boolean
+  onNewChat?: (() => void) | undefined
   onUndo: (() => void) | undefined
 }) {
   return (
@@ -187,11 +189,18 @@ function StuckCard({
         <span className={cardTitle}>{title}</span>
       </span>
       <p className={cardBody}>{changed ? `${body} ${airaCopy.keptNote}` : body}</p>
-      {onUndo === undefined ? null : (
+      {onUndo === undefined && onNewChat === undefined ? null : (
         <span className="flex items-center gap-2">
-          <Button type="button" variant="ghost" className={cardButton} onClick={onUndo}>
-            {productCopy.undo}
-          </Button>
+          {onNewChat === undefined ? null : (
+            <Button type="button" variant="ghost" className={cardButton} onClick={onNewChat}>
+              {airaCopy.newChat}
+            </Button>
+          )}
+          {onUndo === undefined ? null : (
+            <Button type="button" variant="ghost" className={cardButton} onClick={onUndo}>
+              {productCopy.undo}
+            </Button>
+          )}
         </span>
       )}
     </div>
@@ -227,6 +236,7 @@ function endingOf(
   resets: string | undefined,
   onUndo: (() => void) | undefined,
   onRetry: (() => void) | undefined,
+  onNewChat: (() => void) | undefined,
 ): ReactNode | null {
   const undoable = exchange.runs.length > 0
   const refused = exchange.undoRefused === true
@@ -238,7 +248,13 @@ function endingOf(
   }
   if (exchange.end === "malformed") {
     return (
-      <StuckCard title={airaCopy.malformedTitle} body={airaCopy.malformedBody} changed={undoable} onUndo={undoOffer} />
+      <StuckCard
+        title={airaCopy.malformedTitle}
+        body={airaCopy.malformedBody}
+        changed={undoable}
+        onUndo={undoOffer}
+        onNewChat={onNewChat}
+      />
     )
   }
   if (exchange.end === "failed") {
@@ -281,14 +297,16 @@ export function ExchangeView({
   resets,
   onUndo,
   onRetry,
+  onNewChat,
 }: {
   exchange: AiraExchange
   resets: string | undefined
   onUndo: (() => void) | undefined
+  onNewChat?: (() => void) | undefined
   onRetry: (() => void) | undefined
 }) {
   const parts = segments(exchange)
-  const ending = endingOf(exchange, resets, onUndo, onRetry)
+  const ending = endingOf(exchange, resets, onUndo, onRetry, onNewChat)
   const endsWithReply = parts.at(-1)?.from === "assistant"
   return (
     <>
