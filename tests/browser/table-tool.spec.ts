@@ -44,6 +44,7 @@ test("arrows to four rows by three columns and Enter inserts that table through 
   await openBlank(page)
   await page.getByRole("button", { name: "Insert table", exact: true }).focus()
   await page.keyboard.press("Enter")
+  await expect(page.getByRole("button", { name: "1 row, 1 column", exact: true })).toBeFocused()
   for (const key of ["ArrowDown", "ArrowDown", "ArrowDown", "ArrowRight", "ArrowRight"]) await page.keyboard.press(key)
   await expect(page.getByRole("button", { name: "4 rows, 3 columns", exact: true })).toBeFocused()
   await page.keyboard.press("Enter")
