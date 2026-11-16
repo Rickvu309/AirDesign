@@ -7,10 +7,12 @@ async function drive(kit) {
   await unfold(kit.page.locator("[data-design-element]"), "Name and alt text")
   const name = kit.page.locator("[data-design-element]").getByRole("textbox", { name: "Name", exact: true })
   await name.scrollIntoViewIfNeeded()
-  await name.fill("é".repeat(101))
-  await expect(name).toHaveValue("é".repeat(100))
+  const typed = "Quarterly revenue by region ".repeat(8).trim()
+  await name.fill(typed)
   await name.press("Enter")
-  await expect(name).toHaveValue("é".repeat(100))
+  await expect(name).toHaveValue(typed)
+  await expect(name).toHaveAttribute("aria-invalid", "true")
+  await expect(name).toHaveAccessibleDescription("Use 200 characters or fewer.")
   await expect(kit.page.locator("[data-sonner-toast]")).toHaveCount(0)
 }
 

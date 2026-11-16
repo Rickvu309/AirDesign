@@ -260,23 +260,67 @@ it("tells a person how to continue when a design-panel edit is refused", async (
   }
 }, 20_000)
 
+function problem(input: HTMLInputElement): string | null {
+  if (input.getAttribute("aria-invalid") !== "true") return null
+  const id = input.getAttribute("aria-describedby")
+  return id === null ? "" : (input.ownerDocument.getElementById(id)?.textContent ?? "")
+}
+
+it("keeps text typed before the end of a full Name and saves only once it fits", async () => {
+  const picture = await pictureDeck()
+  const full = "A".repeat(199) + "Z"
+  try {
+    await act(async () => picture.unfold())
+    const name = picture.side("Name")
+    await act(async () => picture.entered("Name", full))
+    await act(async () => name.dispatchEvent(new window.Event("focusout", { bubbles: true })))
+    await picture.answered()
+    expect(picture.landed().identity?.name).toEqual({ set: full })
+
+    await act(async () => picture.entered("Name", "X" + full))
+    expect(name.value).toBe("X" + full)
+    expect(problem(name)).toBe("Use 200 characters or fewer.")
+    await act(async () => {
+      name.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }))
+      name.dispatchEvent(new window.Event("focusout", { bubbles: true }))
+    })
+    await picture.answered()
+    expect(name.value).toBe("X" + full)
+    expect(picture.landed().identity?.name).toEqual({ set: full })
+
+    await act(async () => picture.entered("Name", "X" + full.slice(1)))
+    expect(problem(name)).toBeNull()
+    await act(async () => name.dispatchEvent(new window.Event("focusout", { bubbles: true })))
+    await picture.answered()
+    expect(picture.landed().identity?.name).toEqual({ set: "X" + full.slice(1) })
+  } finally {
+    await picture.close()
+  }
+}, 20_000)
+
 it.each([
-  ["Name", "A".repeat(200), "A".repeat(200)],
-  ["Name", "A".repeat(201), "A".repeat(200)],
-  ["Name", "é".repeat(101), "é".repeat(100)],
-  ["Name", "A".repeat(197) + "😀", "A".repeat(197)],
-  ["Alt text", "😀".repeat(1001), "😀".repeat(1000)],
+  ["Name", "A".repeat(200), null],
+  ["Name", "A".repeat(201), "Use 200 characters or fewer."],
+  ["Name", "é".repeat(101), "Use 200 characters or fewer. Some letters and emoji count as 2 to 4."],
+  ["Name", "A".repeat(197) + "😀", "Use 200 characters or fewer. Some letters and emoji count as 2 to 4."],
+  ["Alt text", "😀".repeat(1000), null],
+  ["Alt text", "😀".repeat(1001), "Use 4,000 characters or fewer. Some letters and emoji count as 2 to 4."],
 ])(
-  "limits %s input to its document byte limit",
-  async (label, typed, accepted) => {
+  "keeps %s input whole and says when it is over its document byte limit",
+  async (label, typed, said) => {
     const picture = await pictureDeck()
     try {
       await act(async () => picture.unfold())
+      const field = picture.side(label)
       await act(async () => picture.entered(label, typed))
-      expect(picture.side(label).value).toBe(accepted)
-      await act(async () => picture.side(label).dispatchEvent(new window.Event("focusout", { bubbles: true })))
+      expect(field.value).toBe(typed)
+      expect(problem(field)).toBe(said)
+      await act(async () => field.dispatchEvent(new window.Event("focusout", { bubbles: true })))
       await picture.answered()
-      expect(picture.side(label).value).toBe(accepted)
+      expect(field.value).toBe(typed)
+      expect(picture.landed().identity?.[label === "Name" ? "name" : "alt"]).toEqual(
+        said === null ? { set: typed } : undefined,
+      )
     } finally {
       await picture.close()
     }
