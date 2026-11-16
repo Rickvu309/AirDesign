@@ -12,6 +12,7 @@ import {
 } from "@airdesign/document"
 import { readParts, readSlides } from "@airdesign/pptx"
 import { act, createElement } from "react"
+import { toast } from "sonner"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import type { DeckPaint } from "./use-deck-paint"
 
@@ -81,7 +82,7 @@ async function slidePanel() {
   }
 }
 
-async function pictureDeck() {
+async function pictureDeck(refused = false) {
   const parts = await readParts(await fixtureFile("picture-png.pptx"))
   const slide = readSlides(parts)[0]?.slide
   if (slide === undefined) throw new Error("slide")
@@ -90,6 +91,7 @@ async function pictureDeck() {
   const held: (() => void)[] = []
   device.link = {
     enqueueRow(_deck: string, row: Row, at: ElementId, floor: string) {
+      if (refused) return Promise.resolve({ ok: false, refusal: "field" })
       if (register.elements[at] === undefined)
         register = applied(register, { command: "add", node: at, floor, route: "deck" })
       register = applied(register, { command: "person", node: at, ...row })
@@ -227,4 +229,20 @@ it("draws a fill that names a theme colour in that colour once the theme changes
   expect(swatch).toBe("rgb(192, 0, 0)")
   await act(async () => root.unmount())
   host.remove()
+}, 20_000)
+
+it("tells a person how to continue when a design-panel edit is refused", async () => {
+  const error = vi.spyOn(toast, "error")
+  const picture = await pictureDeck(true)
+  try {
+    await act(async () => picture.typed("Left", "10"))
+    await picture.answered()
+    expect(error).toHaveBeenCalledExactlyOnceWith(
+      "Unable to make that change. Reopen the deck to check its current design before editing again.",
+    )
+    expect(picture.landed()).toEqual({})
+  } finally {
+    error.mockRestore()
+    await picture.close()
+  }
 }, 20_000)
