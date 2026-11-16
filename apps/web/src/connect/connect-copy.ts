@@ -10,7 +10,7 @@ export const claudeConnect = {
   title: "Claude wants to use AirDesign",
   subtitle: "It can work on your decks for you.",
   ability: "Claude will be able to",
-  footer: "Returns you to claude.ai. Disconnect anytime in Settings.",
+  footer: "Returns you to Claude. Disconnect anytime in Settings.",
   connectedTitle: "Connected",
   connectedSubtitle: "Taking you back to Claude",
   approveTitle: "S71.01 Agents / Connect / Approve Claude",
