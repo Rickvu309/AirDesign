@@ -149,3 +149,37 @@ test("a person fades a shape's fill and text together, the text paints faded, an
   expect(saved.get(slidePart)?.toString("utf8") ?? "").toContain(textFaded)
   await copyFile(file, judged)
 })
+
+test("a colour picked after Reset fill keeps the opacity shown, through a reload and export", async ({
+  page,
+}, testInfo) => {
+  await openDeck(page, "shapes-added.pptx")
+  await opacity(await pick(page, "4"), "60")
+  const saving = page.waitForEvent("download")
+  await exportFromDialog(page)
+  const file = testInfo.outputPath("own-alpha.pptx")
+  await (await saving).saveAs(file)
+  await page.goto("/")
+  await page.locator("input[type=file]").setInputFiles(file)
+  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  await settled(page)
+  const rectangle = shapeAt(page, "4")
+  const panel = await fillPanel(page, rectangle)
+  await expect(panel.getByRole("textbox", { name: "Opacity", exact: true })).toHaveValue("60")
+  await panel.getByRole("button", { name: "Reset fill", exact: true }).click()
+  await expect.poll(() => filled(rectangle)).not.toMatch(/0\.6\)$/)
+  await pickColor(page, panel.getByRole("group", { name: "Color", exact: true }), "Accent 2")
+  await expect.poll(() => filled(rectangle)).toMatch(/^rgb\(/)
+  const after = await filled(rectangle)
+  await page.reload()
+  await settled(page)
+  await expect.poll(() => filled(shapeAt(page, "4"))).toBe(after)
+  const exported = page.waitForEvent("download")
+  await exportFromDialog(page)
+  const result = testInfo.outputPath("reset-picked.pptx")
+  await (await exported).saveAs(result)
+  const parts = await partsOf(result)
+  expect(parts.get(slidePart)?.toString("utf8")).toContain(
+    '<a:schemeClr val="accent2"><a:alpha val="100000"/></a:schemeClr>',
+  )
+})

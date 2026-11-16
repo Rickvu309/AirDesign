@@ -4,7 +4,7 @@ export const colorPickerExport = "exported-color-picker.pptx"
 
 export const colorPickerWritten = [
   '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent1"><a:lumMod val="60000"/><a:lumOff val="40000"/></a:schemeClr></a:solidFill></p:spPr>',
-  '<a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="1F4E79"/></a:solidFill></p:spPr>',
+  '<a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="1F4E79"><a:alpha val="100000"/></a:srgbClr></a:solidFill></p:spPr>',
 ]
 
 const original = "shapes-added.pptx"
