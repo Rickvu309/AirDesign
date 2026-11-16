@@ -198,14 +198,19 @@ async function doctor(run) {
   if (!ok) process.exit(1)
 }
 
+export function mailsIn(text) {
+  return text
+    .slice(0, text.lastIndexOf("\n") + 1)
+    .split("\n")
+    .filter((line) => line !== "")
+    .map((line) => JSON.parse(line))
+}
+
 async function signIn(state, email = `verify${randomBytes(4).toString("hex")}@example.com`) {
   const { signInRoutes } = await catalog(state)
   const asked = await call(state.origin, signInRoutes.email.method, signInRoutes.email.path, { email })
   if (asked.status !== 202) throw new Error(`sign-in email answered ${String(asked.status)}`)
-  const mails = readFileSync(state.mail, "utf8")
-    .trim()
-    .split("\n")
-    .map((line) => JSON.parse(line))
+  const mails = mailsIn(readFileSync(state.mail, "utf8"))
   const { readSignInMail } = await import(pathToFileURL(path.join(apiDist, "sign-in-mail.js")).href)
   const { code } = readSignInMail(mails.filter((mail) => mail.to === email).at(-1)?.text ?? "")
   const signed = await call(state.origin, signInRoutes.code.method, signInRoutes.code.path, { email, code })
@@ -260,11 +265,7 @@ export async function journeyKit({ run, name, page, context }) {
       writeFileSync(airaPath(run), JSON.stringify({ at: Date.now(), scripts }))
     },
     mail(to) {
-      const mails = readFileSync(state.mail, "utf8")
-        .trim()
-        .split("\n")
-        .map((line) => JSON.parse(line))
-        .filter((mail) => mail.to === to)
+      const mails = mailsIn(readFileSync(state.mail, "utf8")).filter((mail) => mail.to === to)
       const last = mails.at(-1)
       if (last !== undefined) writeFileSync(path.join(out, "mail.json"), JSON.stringify(last, null, 2))
       return last
