@@ -50,6 +50,53 @@ same("checks are sorted into passed, failed and running", read.checks, {
   failed: ["check (side)"],
   running: ["check (pptx)", "legacy"],
 })
+const replaced = parsePull(
+  answer({
+    contexts: [
+      { __typename: "CheckRun", databaseId: 11, name: "bar", conclusion: "CANCELLED", status: "COMPLETED" },
+      { __typename: "CheckRun", databaseId: 12, name: "bar", conclusion: "SUCCESS", status: "COMPLETED" },
+      { __typename: "CheckRun", databaseId: 13, name: "ci", conclusion: "SUCCESS", status: "COMPLETED" },
+    ],
+  }),
+)
+same("a cancelled check followed by a passing run of it reads as passed", replaced.checks, {
+  passed: ["bar", "ci"],
+  failed: [],
+  running: [],
+})
+same(
+  "a passing check followed by a newer cancelled run of it does not read as passed",
+  parsePull(
+    answer({
+      contexts: [
+        { __typename: "CheckRun", databaseId: 22, name: "bar", conclusion: "CANCELLED", status: "COMPLETED" },
+        { __typename: "CheckRun", databaseId: 21, name: "bar", conclusion: "SUCCESS", status: "COMPLETED" },
+      ],
+    }),
+  ).checks,
+  { passed: [], failed: ["bar"], running: [] },
+)
+same(
+  "a cancelled check with no newer run reads as failed",
+  parsePull(
+    answer({
+      contexts: [{ __typename: "CheckRun", databaseId: 31, name: "bar", conclusion: "CANCELLED", status: "COMPLETED" }],
+    }),
+  ).checks,
+  { passed: [], failed: ["bar"], running: [] },
+)
+same(
+  "a cancelled check followed by a running run of it reads as running",
+  parsePull(
+    answer({
+      contexts: [
+        { __typename: "CheckRun", databaseId: 41, name: "bar", conclusion: "CANCELLED", status: "COMPLETED" },
+        { __typename: "CheckRun", databaseId: 42, name: "bar", conclusion: null, status: "IN_PROGRESS" },
+      ],
+    }),
+  ).checks,
+  { passed: [], failed: [], running: ["bar"] },
+)
 same(
   "a pull request with no entry and no auto-merge is neither queued nor armed",
   [read.queued, read.armed],

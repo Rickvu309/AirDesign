@@ -1,4 +1,4 @@
-const pullQuery = `query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){state merged baseRefName headRefOid mergeable mergeStateStatus isInMergeQueue mergeQueueEntry{position state} timelineItems(last:30,itemTypes:[REMOVED_FROM_MERGE_QUEUE_EVENT,HEAD_REF_FORCE_PUSHED_EVENT,PULL_REQUEST_COMMIT]){nodes{__typename ... on RemovedFromMergeQueueEvent{createdAt reason}}} autoMergeRequest{enabledAt mergeMethod} commits(last:1){nodes{commit{statusCheckRollup{state contexts(first:100){nodes{__typename ... on CheckRun{name conclusion status} ... on StatusContext{context state}}}}}}}} mergeQueue(branch:"main"){entries(first:50){nodes{position pullRequest{number}}}}}}`
+const pullQuery = `query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){state merged baseRefName headRefOid mergeable mergeStateStatus isInMergeQueue mergeQueueEntry{position state} timelineItems(last:30,itemTypes:[REMOVED_FROM_MERGE_QUEUE_EVENT,HEAD_REF_FORCE_PUSHED_EVENT,PULL_REQUEST_COMMIT]){nodes{__typename ... on RemovedFromMergeQueueEvent{createdAt reason}}} autoMergeRequest{enabledAt mergeMethod} commits(last:1){nodes{commit{statusCheckRollup{state contexts(first:100){nodes{__typename ... on CheckRun{databaseId name conclusion status} ... on StatusContext{context state}}}}}}}} mergeQueue(branch:"main"){entries(first:50){nodes{position pullRequest{number}}}}}}`
 
 export const pullArgs = (repository, number) => {
   const [owner, name] = repository.split("/")
@@ -18,11 +18,20 @@ export const pullArgs = (repository, number) => {
 
 const passedConclusions = new Set(["SUCCESS", "SKIPPED", "NEUTRAL"])
 
+const newestPerName = (contexts) => {
+  const newest = new Map()
+  for (const context of contexts) {
+    const name = context.__typename === "CheckRun" ? context.name : context.context
+    const held = newest.get(name)
+    if (held === undefined || (context.databaseId ?? 0) >= (held.databaseId ?? 0)) newest.set(name, context)
+  }
+  return newest
+}
+
 const sortChecks = (contexts) => {
   const checks = { passed: [], failed: [], running: [] }
-  for (const context of contexts) {
+  for (const [name, context] of newestPerName(contexts)) {
     const run = context.__typename === "CheckRun"
-    const name = run ? context.name : context.context
     if (run ? context.status !== "COMPLETED" : ["PENDING", "EXPECTED"].includes(context.state))
       checks.running.push(name)
     else if (run ? passedConclusions.has(context.conclusion) : context.state === "SUCCESS") checks.passed.push(name)
