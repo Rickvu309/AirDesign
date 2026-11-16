@@ -110,6 +110,14 @@ it("prints roman numerals and a positive indent has no hang", () => {
   expect(paintedRun.style.textDecoration).toBe("")
 })
 
+it("marks a paragraph that ends in a line break so its empty last line paints at the run's line height", () => {
+  const ended = painted(paragraph(), "Item\n").block
+  const plain = painted(paragraph(), "Item").block
+  expect(ended.hasAttribute("data-end-break")).toBe(true)
+  expect(ended.style.getPropertyValue("--end-line")).toBe("1.08")
+  expect(plain.hasAttribute("data-end-break")).toBe(false)
+})
+
 it("spaces lines by a share of PowerPoint's single line, which is 1.2 times the font size", () => {
   expect(painted(paragraph({ lineSpacing: { percent: 0.9 } })).run.style.lineHeight).toBe("1.08")
   expect(painted(paragraph({ lineSpacing: { percent: 1.5 } })).run.style.lineHeight).toBe("1.8")

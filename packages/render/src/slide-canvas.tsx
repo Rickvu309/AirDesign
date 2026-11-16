@@ -14,7 +14,7 @@ import type { CanvasSlide } from "./record.js"
 import type { TableBar } from "./table-paint.js"
 import type { PaintStore } from "./store.js"
 import type { TextEditKind } from "./passage.js"
-import { ensureBulletRule, type Scaled } from "./text-look.js"
+import { ensureTextRule, type Scaled } from "./text-look.js"
 import type { TextFormatting } from "./text-formatting.js"
 
 const defaultTextSize = 203_200
@@ -61,7 +61,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   const quiet = props.quiet === true
   const scaled: Scaled = (emu) => (emu * width) / slide.width
   useLayoutEffect(() => {
-    ensureBulletRule(document)
+    ensureTextRule(document)
   }, [])
   const moves = useMoves(props.store, slide, width, props.onBox, props.onRemove, props.onOrder, props.onSelect, {
     ...(props.onGroup === undefined ? {} : { onGroup: props.onGroup }),
