@@ -109,3 +109,58 @@ test("Get a new link and Use a different email keep the email the person typed",
   await page.getByRole("link", { name: "Use a different email" }).click()
   await expect(page.getByLabel("Email")).toHaveValue("ada@example.com")
 })
+
+for (const reducedMotion of ["no-preference", "reduce"] as const) {
+  test(`sending email disables repeat submissions and recovers after failure (${reducedMotion})`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion })
+    let release: () => void = () => undefined
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    let requests = 0
+    await page.route(`${site.origin}/sign-in/email`, async (route) => {
+      requests += 1
+      await held
+      await route.fulfill({ status: 500, contentType: "application/json", body: "{}" })
+    })
+    await page.goto(`${site.origin}/sign-in`)
+    await page.getByLabel("Email").fill("ada@example.com")
+    const button = page.getByRole("button", { name: "Continue with email" })
+    const before = await button.boundingBox()
+    expect(
+      await button.evaluate((el) => {
+        if (!(el instanceof HTMLButtonElement)) throw new Error("Expected the email button")
+        el.click()
+        return { disabled: el.disabled, label: el.textContent }
+      }),
+    ).toEqual({ disabled: true, label: "Sending email…" })
+    const sending = page.getByRole("button", { name: "Sending email…" })
+    await expect(sending).toBeDisabled()
+    expect(await sending.boundingBox()).toEqual(before)
+    await page.locator("form").evaluate((form) => {
+      if (!(form instanceof HTMLFormElement)) throw new Error("Expected the sign-in form")
+      form.requestSubmit()
+      form.requestSubmit()
+    })
+    const transition = await sending.locator("[data-sign-in-label]").evaluate((el) => ({
+      property: getComputedStyle(el).transitionProperty,
+      duration: getComputedStyle(el).transitionDuration,
+      easing: getComputedStyle(el).transitionTimingFunction,
+    }))
+    expect(transition).toEqual(
+      reducedMotion === "reduce"
+        ? { property: "none", duration: "0s", easing: "ease" }
+        : { property: "opacity", duration: "0.15s", easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+    )
+    if (reducedMotion === "reduce") {
+      expect(await sending.evaluate((el) => el.getAnimations({ subtree: true }).length)).toBe(0)
+    }
+    release()
+    await expect(page.locator("[data-sign-in-error]")).toHaveText(signInCopy.emailFailed)
+    await expect(button).toBeEnabled()
+    expect(requests).toBe(1)
+    await button.click()
+    await expect(page.locator("[data-sign-in-error]")).toHaveText(signInCopy.emailFailed)
+    expect(requests).toBe(2)
+  })
+}

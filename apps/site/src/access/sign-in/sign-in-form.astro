@@ -21,7 +21,7 @@ import { signInCopy } from "../sign-in-copy";
   <p id="sign-in-error" class="reserved-line mt-1.5 text-[length:var(--type-dense)] leading-[1.31] text-danger-text" role="alert" data-sign-in-error>
     <span data-failure hidden>{signInCopy.emailFailed}</span>
   </p>
-  <button class="primary-button mt-3 h-11 w-full cursor-pointer rounded-lg text-[length:var(--type-section)]" type="submit">Continue with email</button>
+  <button class="primary-button mt-3 h-11 w-full cursor-pointer rounded-lg text-[length:var(--type-section)]" type="submit"><span data-sign-in-label>Continue with email</span></button>
   <p class="mt-5 text-center text-[length:var(--type-dense)] leading-[1.31] text-muted-foreground">New email? The same link creates your account.</p>
 </form>
 
@@ -36,6 +36,8 @@ import { signInCopy } from "../sign-in-copy";
   const form = document.querySelector<HTMLFormElement>("[data-sign-in-form]");
   const emailInput = form?.querySelector<HTMLInputElement>("input[name=email]");
   const failure = form?.querySelector<HTMLElement>("[data-sign-in-error]");
+  const button = form?.querySelector<HTMLButtonElement>("button[type=submit]");
+  const label = button?.querySelector<HTMLElement>("[data-sign-in-label]");
   const pendingEmail = readPendingEmail();
   if (emailInput && pendingEmail !== null && emailInput.value === "") emailInput.value = pendingEmail;
 
@@ -46,11 +48,17 @@ import { signInCopy } from "../sign-in-copy";
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const email = new FormData(event.currentTarget as HTMLFormElement).get("email");
-    if (typeof email !== "string" || !emailInput || !failure) {
+    if (typeof email !== "string" || !emailInput || !failure || !button || !label || button.disabled) {
       return;
     }
     clearSignInFailure(failure, emailInput);
+    button.disabled = true;
+    button.dataset.pending = "";
+    label.textContent = signInCopy.sendingEmail;
     await startEmailSignIn("", email, (path) => location.assign(path), (why) => {
+      button.disabled = false;
+      delete button.dataset.pending;
+      label.textContent = "Continue with email";
       showSignInFailure(failure, emailInput, why === "refused" ? signInCopy.emailRefused : signInCopy.emailFailed);
     });
   });
