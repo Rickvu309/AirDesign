@@ -21,6 +21,19 @@ import editorDemoMarkup from "./editor-demo-art.html?raw";
       >
         <div class="fit-frame-content" data-editor-demo set:html={editorDemoMarkup} />
       </div>
+      <button
+        type="button"
+        class="touch-target pressable group absolute top-full right-0 mt-2 rounded-full"
+        aria-label="Pause demo"
+        aria-pressed="false"
+        data-demo-pause
+        hidden
+      >
+        <span class="flex size-8 items-center justify-center rounded-full bg-background text-muted-foreground shadow-[0px_0px_0px_1px_var(--black-10),0px_2px_6px_var(--navy-5)]">
+          <svg class="group-aria-pressed:hidden" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M4 2.5h2.6a.6.6 0 0 1 .6.6v9.8a.6.6 0 0 1-.6.6H4a.6.6 0 0 1-.6-.6V3.1a.6.6 0 0 1 .6-.6Zm5.4 0H12a.6.6 0 0 1 .6.6v9.8a.6.6 0 0 1-.6.6H9.4a.6.6 0 0 1-.6-.6V3.1a.6.6 0 0 1 .6-.6Z"></path></svg>
+          <svg class="hidden group-aria-pressed:block" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M5 2.8v10.4L13 8Z"></path></svg>
+        </span>
+      </button>
     </div>
   </div>
 </section>
@@ -28,5 +41,9 @@ import editorDemoMarkup from "./editor-demo-art.html?raw";
 <script>
   import { playEditorDemoAnimation } from "./editor-demo-animation";
 
-  document.querySelectorAll("[data-editor-demo]").forEach((demo) => playEditorDemoAnimation(demo));
+  document
+    .querySelectorAll("[data-editor-demo]")
+    .forEach((demo) =>
+      playEditorDemoAnimation(demo, demo.closest("section")?.querySelector<HTMLButtonElement>("[data-demo-pause]") ?? null),
+    );
 </script>

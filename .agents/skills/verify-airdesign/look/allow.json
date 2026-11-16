@@ -24,6 +24,12 @@
     "reason": "The send-again button gets its click handler from connectSendAgain with addEventListener, which the detector cannot see; send-again.test.ts clicks it."
   },
   {
+    "page": "landing-product*",
+    "detector": "dead-control",
+    "selector": "[data-demo-pause]",
+    "reason": "The demo's pause button gets its click handler from playEditorDemoAnimation with addEventListener, which the detector cannot see; product-demo-pause.spec.ts clicks it."
+  },
+  {
     "page": "table-cell-undone",
     "detector": "invisible-control",
     "selector": "[data-table-text]",
