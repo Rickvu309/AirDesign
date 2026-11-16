@@ -6,6 +6,7 @@ export type CanvasShape = {
   readonly kind: Kind
   readonly editable: boolean
   readonly movable: boolean
+  readonly refit?: true
 }
 
 export type CanvasSource = { readonly part: string; readonly shapes: ReadonlyMap<string, CanvasShape> }

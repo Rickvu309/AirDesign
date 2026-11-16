@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { CanvasText, PaintBox } from "./record.js"
-import { fitted, grownBox, shrinkSteps } from "./text-fit.js"
+import { fitted, grownBox, heldFit, shrinkSteps } from "./text-fit.js"
 
 const style = { font: "Arial", size: 254_000, points: 2_000, bold: false, italic: false, color: null }
 
@@ -38,6 +38,21 @@ describe("shrink steps", () => {
       [0.9, 0.2],
       [0.85, 0],
     ])
+  })
+
+  it("keeps only the stored scale while the file's fit is held, as PowerPoint paints it until the text or box changes", () => {
+    expect(shrinkSteps({ kind: "shrink", scale: 0.775, reduction: 0.2, held: true })).toEqual([[0.775, 0.2]])
+  })
+
+  it("lets go of the stored fit once the text a person sees differs from the text it was painted with", () => {
+    const held = { kind: "shrink", scale: 0.775, reduction: 0.2, held: true } as const
+    expect(heldFit(held, "Limiting resupply", "Limiting resupply")).toBe(held)
+    expect(heldFit(held, "Limiting resupply.", "Limiting resupply")).toEqual({
+      kind: "shrink",
+      scale: 0.775,
+      reduction: 0.2,
+    })
+    expect(heldFit({ kind: "grow" }, "a", "b")).toEqual({ kind: "grow" })
   })
 })
 

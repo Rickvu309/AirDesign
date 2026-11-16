@@ -510,7 +510,7 @@ it("turns a paragraph's points into the slide's units, shrunk by the box's font 
     flow: "horz",
     columns: 1,
     columnGap: 0,
-    fit: { kind: "shrink", scale: 0.5, reduction: 0 },
+    fit: { kind: "shrink", scale: 0.5, reduction: 0, held: true },
     paragraphs: [
       {
         from: 2,
