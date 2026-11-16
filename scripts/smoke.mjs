@@ -23,7 +23,7 @@ function failure(step, got) {
   return { ok: false, line: `smoke failed at ${step}: ${got}` }
 }
 
-async function fetched(url, init) {
+export async function fetched(url, init) {
   try {
     const reply = await fetch(url, { ...init, signal: AbortSignal.timeout(requestTimeoutMs), redirect: "manual" })
     const text = await reply.text()
@@ -50,12 +50,12 @@ function describe(reply) {
   return `status ${String(reply.status)}`
 }
 
-function liveCommitOf(reply) {
+export function liveCommitOf(reply) {
   const commit = reply.json?.commit
   return reply.status === 200 && typeof commit === "string" ? commit : undefined
 }
 
-function checkLiveCommit({ git, live, settled }) {
+export function checkLiveCommit({ git, live, settled }) {
   if (live === undefined || !hexCommit.test(live)) {
     return failure("version", `the API reports ${live === undefined ? "no commit" : "commit unknown"}`)
   }
