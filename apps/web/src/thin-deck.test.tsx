@@ -323,6 +323,7 @@ it("reports a refused flush as kept, not as sent", async () => {
     () => ({
       enqueue: async () => ({ ok: true }),
       flush: async () => refusal,
+      pending: async () => ["row"],
     }),
     "any-deck",
     "Hello!",
