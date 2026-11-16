@@ -11,7 +11,9 @@ import {
   formatWhole,
   sizeRange,
   sizeState,
+  steppedSize,
   stepSize,
+  typedSize,
   type FileAlign,
   type FileBullet,
   type FileColor,
@@ -189,7 +191,7 @@ describe("size, colour, alignment and bullets", () => {
     })
   })
 
-  it("steps each covered run from its own size and clamps the ends", () => {
+  it("steps each covered run from its own size to the next size on PowerPoint's list and clamps the ends", () => {
     const value: TextValue = [
       {
         from: 0,
@@ -199,21 +201,53 @@ describe("size, colour, alignment and bullets", () => {
         ],
       },
     ]
-    expect(stepSize(value, null, 100, sizedFile)).toEqual([
+    expect(stepSize(value, null, 1, sizedFile)).toEqual([
       {
         from: 0,
         runs: [
-          { from: 0, text: "a", size: 2100 },
-          { from: 1, text: "b", size: 1900 },
+          { from: 0, text: "a", size: 2400 },
+          { from: 1, text: "b", size: 2000 },
         ],
       },
     ])
     const floor: TextValue = [{ from: 0, runs: [{ from: 0, text: "a", size: 100 }] }]
     const ceiling: TextValue = [{ from: 0, runs: [{ from: 0, text: "a", size: 400000 }] }]
-    expect(stepSize(floor, null, -100, noSize)).toEqual(floor)
-    expect(stepSize(ceiling, null, 100, noSize)).toEqual(ceiling)
+    expect(stepSize(floor, null, -1, noSize)).toEqual(floor)
+    expect(stepSize(ceiling, null, 1, noSize)).toEqual(ceiling)
     expect(sizeState(value, null, sizedFile)).toBe("mixed")
     expect(sizeState(floor, null, noSize)).toBe(100)
+  })
+
+  it("steps through PowerPoint's size list, by a point below it and by ten points above it", () => {
+    const climb = (from: number, steps: number) =>
+      Array.from({ length: steps }).reduce<number[]>((sizes) => [...sizes, steppedSize(sizes.at(-1) ?? from, 1)], [])
+    expect(climb(1800, 4)).toEqual([2000, 2400, 2800, 3200])
+    expect(climb(4000, 8)).toEqual([4400, 4800, 5400, 6000, 6600, 7200, 8000, 8800])
+    expect(climb(600, 6)).toEqual([700, 800, 900, 1000, 1050, 1100])
+    expect(climb(9600, 2)).toEqual([10000, 11000])
+    expect(steppedSize(1900, 1)).toBe(2000)
+    expect(steppedSize(1900, -1)).toBe(1800)
+    expect(steppedSize(3300, -1)).toBe(3200)
+    expect(steppedSize(1050, -1)).toBe(1000)
+    expect(steppedSize(800, -1)).toBe(700)
+    expect(steppedSize(750, -1)).toBe(700)
+    expect(steppedSize(10600, -1)).toBe(10000)
+    expect(steppedSize(10000, -1)).toBe(9600)
+    expect(steppedSize(100, -1)).toBe(100)
+    expect(steppedSize(400000, 1)).toBe(400000)
+  })
+
+  it("reads a typed size in points to the tenth and refuses one outside 1 to 4000", () => {
+    expect(typedSize("24")).toBe(2400)
+    expect(typedSize(" 10.5 ")).toBe(1050)
+    expect(typedSize("11.26")).toBe(1130)
+    expect(typedSize("4000")).toBe(400000)
+    expect(typedSize("1")).toBe(100)
+    expect(typedSize("0.5")).toBeNull()
+    expect(typedSize("4001")).toBeNull()
+    expect(typedSize("")).toBeNull()
+    expect(typedSize("big")).toBeNull()
+    expect(typedSize("12pt")).toBeNull()
   })
 
   it("omits alignment or bullets that match the file, including an empty paragraph", () => {

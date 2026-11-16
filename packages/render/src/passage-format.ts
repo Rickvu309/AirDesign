@@ -8,6 +8,7 @@ import {
   formatRange,
   formatState,
   formatWhole,
+  sizeRange,
   sizeState,
   stepSize,
   writeTextValue,
@@ -80,10 +81,15 @@ export function formatTarget(
       const read = readNow()
       return read === null ? null : sizeState(read.value, range(editing), fileSize)
     },
-    resize(delta, editing) {
+    resize(step, editing) {
       const read = readNow()
       if (read === null) return
-      commit(read.value, stepSize(read.value, range(editing), delta * 100, fileSize), editing)
+      commit(read.value, stepSize(read.value, range(editing), step, fileSize), editing)
+    },
+    sizeTo(size, editing) {
+      const read = readNow()
+      if (read === null) return
+      commit(read.value, sizeRange(read.value, range(editing), size, fileSize), editing)
     },
     color(editing) {
       const read = readNow()

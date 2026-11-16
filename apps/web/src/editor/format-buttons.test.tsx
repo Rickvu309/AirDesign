@@ -16,7 +16,7 @@ it("names each button by its action and says its state for the selection", () =>
   expect(markup).toContain('role="radiogroup"')
   expect(markup).toContain('aria-label="Alignment"')
   expect(markup).toContain("data-text-format")
-  expect(markup).toContain(">18<")
+  expect(markup).toMatch(/<input[^>]*aria-label="Font size"[^>]*value="18"/)
   const tags = buttons(markup)
   expect(tags.map((tag) => /aria-label="([^"]*)"/.exec(tag)?.[1])).toEqual([
     "Bold",
@@ -48,7 +48,16 @@ it("draws only the parts a narrow toolbar keeps, so the rest can sit in More", (
   const row = renderToStaticMarkup(<FormatButtons shown={shown} parts={["styles", "size"]} />)
   const more = renderToStaticMarkup(<FormatButtons shown={shown} parts={["color", "align", "bullets"]} />)
   expect(labels(row)).toEqual(["Bold", "Italic", "Underline", "Smaller", "Larger"])
-  expect(row).toContain(">18<")
+  expect(row).toMatch(/<input[^>]*value="18"/)
   expect(labels(more)).toEqual(["Text color", "Align left", "Align center", "Align right", "Bullets"])
   expect(more).not.toContain("data-text-format")
+})
+
+it("shows a mixed size as an empty box that still takes a typed size", () => {
+  const shown = { bold: "off", italic: "off", underline: "off" } as const
+  const markup = renderToStaticMarkup(<FormatButtons shown={shown} size="mixed" parts={["size"]} />)
+  expect(markup).toContain('aria-label="Font size, mixed"')
+  expect(markup).toMatch(/<input[^>]*value=""/)
+  expect(markup).toContain('inputMode="decimal"')
+  expect(markup).toContain("data-keeps-format")
 })

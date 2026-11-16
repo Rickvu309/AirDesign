@@ -1,4 +1,4 @@
-import type { ElementId, FormatState, ParagraphAlign, Color, TextFormat } from "@airdesign/document"
+import type { ElementId, FormatState, ParagraphAlign, Color, SizeStep, TextFormat } from "@airdesign/document"
 import type { CanvasThemeColor } from "./record.js"
 
 export type FormatTarget = {
@@ -6,7 +6,8 @@ export type FormatTarget = {
   readonly state: (format: TextFormat, editing: boolean) => FormatState
   readonly apply: (format: TextFormat, editing: boolean) => void
   readonly size: (editing: boolean) => number | "mixed" | null
-  readonly resize: (points: number, editing: boolean) => void
+  readonly resize: (step: SizeStep, editing: boolean) => void
+  readonly sizeTo: (size: number, editing: boolean) => void
   readonly color: (editing: boolean) => Color | "mixed" | null
   readonly choose: (color: Color, editing: boolean) => void
   readonly align: (editing: boolean) => ParagraphAlign | "mixed" | null
@@ -22,7 +23,8 @@ export type TextFormatting = {
   readonly state: (format: TextFormat) => FormatState | null
   readonly toggle: (format: TextFormat) => void
   readonly size: () => number | "mixed" | null
-  readonly resize: (points: number) => void
+  readonly resize: (step: SizeStep) => void
+  readonly sizeTo: (size: number) => void
   readonly color: () => Color | "mixed" | null
   readonly choose: (color: Color) => void
   readonly align: () => ParagraphAlign | "mixed" | null
@@ -109,8 +111,11 @@ export function textFormatting(fresh: () => void = () => undefined): TextFormatt
       const found = target()
       return found === undefined ? null : found.size(editing(found))
     },
-    resize(points) {
-      act((found, on) => found.resize(points, on))
+    resize(step) {
+      act((found, on) => found.resize(step, on))
+    },
+    sizeTo(size) {
+      act((found, on) => found.sizeTo(size, on))
     },
     color() {
       const found = target()

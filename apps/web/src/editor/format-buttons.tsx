@@ -1,15 +1,17 @@
 import {
   alignNames,
   formatNames,
+  typedSize,
   type FormatState,
   type ParagraphAlign,
   type Color,
   type SchemeName,
+  type SizeStep,
   type TextFormat,
 } from "@airdesign/document"
 import type { TextFormatting } from "@airdesign/render"
 import type { KeyboardEvent, MouseEvent } from "react"
-import { useSyncExternalStore } from "react"
+import { useRef, useState, useSyncExternalStore } from "react"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { formatCopy } from "@/copy/format-copy"
 import { shownHex } from "@/design/color-choices"
@@ -49,6 +51,49 @@ function sizeText(size: number): string {
   return Number.isInteger(points) ? String(points) : points.toFixed(1)
 }
 
+function SizeBox({
+  size,
+  label,
+  onSize,
+}: {
+  size: number | "mixed" | null
+  label: string
+  onSize: ((size: number) => void) | undefined
+}) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const justFocused = useRef(false)
+  const shown = typeof size === "number" ? sizeText(size) : ""
+  function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter" && event.key !== "Escape") return
+    event.preventDefault()
+    event.stopPropagation()
+    const typed = event.key === "Enter" && draft !== null ? typedSize(draft.replace(",", ".")) : null
+    setDraft(null)
+    if (typed !== null) onSize?.(typed)
+  }
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      aria-label={label}
+      data-keeps-format=""
+      className="h-7 w-10 rounded-md bg-transparent text-center text-[length:var(--type-dense)] text-foreground tabular-nums hover:bg-canvas focus-visible:bg-canvas"
+      value={draft ?? shown}
+      onFocus={(event) => {
+        justFocused.current = true
+        event.currentTarget.select()
+      }}
+      onMouseUp={(event) => {
+        if (justFocused.current) event.preventDefault()
+        justFocused.current = false
+      }}
+      onChange={(event) => setDraft(event.target.value)}
+      onBlur={() => setDraft(null)}
+      onKeyDown={onKeyDown}
+    />
+  )
+}
+
 function moveAlign(
   event: KeyboardEvent<HTMLElement>,
   align: ParagraphAlign | "mixed" | null,
@@ -73,7 +118,8 @@ export type FormatProps = {
   shown: FormatShown
   onToggle?: (format: TextFormat) => void
   size?: number | "mixed" | null
-  onResize?: (points: number) => void
+  onResize?: (step: SizeStep) => void
+  onSize?: (size: number) => void
   color?: Color | "mixed" | null
   onColor?: (color: Color) => void
   align?: ParagraphAlign | "mixed" | null
@@ -90,6 +136,7 @@ export function FormatButtons({
   onToggle,
   size,
   onResize,
+  onSize,
   color,
   onColor,
   align,
@@ -150,12 +197,7 @@ export function FormatButtons({
           >
             <EditorIcon name="minus" size={18} />
           </Button>
-          <span
-            className="min-w-8 text-center text-[length:var(--type-dense)] text-foreground tabular-nums"
-            aria-hidden
-          >
-            {typeof sizeShown === "number" ? sizeText(sizeShown) : "–"}
-          </span>
+          <SizeBox size={sizeShown} label={formatCopy.sizeGroup} onSize={onSize} />
           <Button
             type="button"
             variant="ghost"
@@ -269,6 +311,7 @@ export function useLiveFormat(
         onToggle: formatting.toggle,
         size: formatting.size(),
         onResize: formatting.resize,
+        onSize: formatting.sizeTo,
         color: formatting.color(),
         onColor: formatting.choose,
         align: formatting.align(),
