@@ -10,20 +10,20 @@
     {
       "file": "packages/document/src/deck-index.ts",
       "names": ["appendIndex", "indexDue", "answeredRegister"],
-      "digest": "5ed9a8f4ebe8",
-      "blob": "99623392e749831b98558ffaf9a5d6ffa39e55b6"
+      "digest": "0d12494471f4",
+      "blob": "afab095d4528967e51e978114e80d0e8f5a8bf21"
     },
     {
       "file": "packages/live/src/deck-index.ts",
       "names": ["keepIndex", "sendIndex"],
-      "digest": "7ef229b2d81c",
-      "blob": "62602bd6b7f1096d1badb02c3faeb14a9becec6d"
+      "digest": "16c4eb1ac932",
+      "blob": "ee631b85e9d93255c49101fd42dfcccbb619e5ff"
     },
     {
       "file": "packages/live/src/store.ts",
       "names": ["swapSlot", "putSlots"],
-      "digest": "964a51a1c52c",
-      "blob": "65f55917c53ecae99cc65ca2a46f9d65cfbb641c"
+      "digest": "2f937e4ede39",
+      "blob": "0acd9fd0c1c508c66220ac8b8042623df44d0cd2"
     }
   ]
 }

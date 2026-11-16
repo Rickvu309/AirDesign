@@ -9,21 +9,21 @@
     },
     {
       "file": "packages/live/src/deck-edit.ts",
-      "names": ["valueChange"],
-      "digest": "e3b0c44298fc",
-      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+      "names": ["valueChange", "joins"],
+      "digest": "02d197351ed8",
+      "blob": "3838d3e755dab66c27ae42eaa6a893fe2dce2b6c"
     },
     {
       "file": "packages/live/src/deck-view.ts",
       "names": ["joinable"],
-      "digest": "e3b0c44298fc",
-      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+      "digest": "8361fa2f8d19",
+      "blob": "80e985714c6ed288785cf04da6855476f7e59461"
     },
     {
       "file": "packages/live/src/held.ts",
       "names": ["sealRows"],
-      "digest": "e3b0c44298fc",
-      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+      "digest": "130395e867bc",
+      "blob": "78eb2cb1f22957e8c72173ed3c3bcf9539993593"
     }
   ]
 }
