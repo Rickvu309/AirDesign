@@ -1,5 +1,6 @@
 import { Filmstrip, type TextFormatting } from "@airdesign/render"
 import { useCallback, useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react"
+import { flushSync } from "react-dom"
 import { Announcer, type Announcement } from "@/components/ui/announcer"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu"
@@ -177,10 +178,14 @@ export function EditorGrid({
     announce(slideListCopy.added(index + 2))
   }
 
+  function open(index: number) {
+    flushSync(() => strip.onSelect(index))
+    onSlides()
+  }
+
   function act(command: GridCommand, index: number) {
     if (command === "open") {
-      strip.onSelect(index)
-      onSlides()
+      open(index)
       return
     }
     if (command === "remove") {
@@ -293,10 +298,7 @@ export function EditorGrid({
           index === current && "shadow-[0_0_0_2px_var(--ring)]",
           index === dragging && "opacity-40",
         )}
-        onClick={() => {
-          strip.onSelect(index)
-          onSlides()
-        }}
+        onClick={() => open(index)}
         onContextMenu={(event) => {
           event.preventDefault()
           event.currentTarget.focus()
