@@ -5,12 +5,14 @@ export type TextBox = { readonly id: ElementId; readonly file: string }
 
 type FlushLink = { flush(deck: string): Promise<unknown> }
 
+type Kept = { readonly ok: boolean; readonly refusal?: string }
+
 type EditLink = FlushLink & {
-  enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<{ readonly ok: boolean }>
+  enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<Kept>
 }
 
 type BoxLink = FlushLink & {
-  enqueueBox(deck: string, box: Box, node: ElementId, floor: string): Promise<{ readonly ok: boolean }>
+  enqueueBox(deck: string, box: Box, node: ElementId, floor: string): Promise<Kept>
 }
 
 export const server = httpRemote()
@@ -19,7 +21,7 @@ export type SaveRefusal = "storage" | "size"
 
 export type FlushOutcome = "sent" | "offline" | "signed-out" | "kept" | "set-aside" | SaveRefusal
 
-export type CommitOutcome = FlushOutcome | "refused"
+export type CommitOutcome = FlushOutcome | "refused" | "too-large"
 
 export async function flushPending(open: (remote: Remote) => FlushLink, deckId: string): Promise<FlushOutcome> {
   try {
@@ -68,13 +70,14 @@ export function commitBox(
 export async function commitKept(
   open: (remote: Remote) => FlushLink,
   deckId: string,
-  kept: Promise<{ readonly ok: boolean }>,
+  kept: Promise<Kept>,
   paint?: Paint,
   refused?: () => Promise<void> | void,
 ): Promise<CommitOutcome> {
-  if (!(await kept).ok) {
+  const result = await kept
+  if (!result.ok) {
     await refused?.()
-    return "refused"
+    return result.refusal === "size" ? "too-large" : "refused"
   }
   await paint?.()
   return flushPending(open, deckId)

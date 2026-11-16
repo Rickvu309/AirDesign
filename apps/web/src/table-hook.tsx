@@ -94,7 +94,7 @@ export function useTables(deck: TableDeck) {
       }
       void edit(value, editNames[change.change]).then((outcome) => {
         window.clearTimeout(repaint.current)
-        if (outcome === "refused") showLatest("whole")
+        if (outcome === "refused" || outcome === "too-large") showLatest("whole")
         else if (change.change !== "cell") showLatest()
         else repaint.current = window.setTimeout(() => showLatest(), typedRepaint)
       })

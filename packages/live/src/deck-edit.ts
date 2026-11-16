@@ -12,6 +12,7 @@ import {
   type SlideId,
   type Value,
 } from "@airdesign/document"
+import { fitsAlone } from "./commit-body.js"
 import { joinable } from "./deck-view.js"
 import type { Change, Held } from "./held.js"
 import { pendingRow, rowKey, type PendingRow } from "./store.js"
@@ -23,6 +24,8 @@ export type Enqueued =
 export type SlideEnqueued =
   | { ok: true; readonly painted: readonly string[] }
   | { ok: false; readonly refusal: WireRefusal }
+
+const tooLarge = { ok: false, refusal: "size" } as const
 
 function refused<Result>(result: Result): Change<Result> {
   return { puts: [], result }
@@ -61,6 +64,7 @@ export function valueChange(deck: DeckId, held: Held, edit: Value, node: Element
     const made = edited(held.before, edit, node, joined.floor ?? floor)
     if (!("editing" in made)) return refused(made)
     const row = pendingRow(deck, joined.order, joined.base, edit, node, joined.floor)
+    if (!fitsAlone(deck, row)) return refused(tooLarge)
     return {
       next: { ...held, pending: [...held.pending.slice(0, -1), row], register: made.after },
       puts: [{ key: rowKey(deck, "pending", row.order), row }],
@@ -79,6 +83,7 @@ export function valueChange(deck: DeckId, held: Held, edit: Value, node: Element
     node,
     made.added ? floor : undefined,
   )
+  if (!fitsAlone(deck, row)) return refused(tooLarge)
   return {
     next: { ...held, pending: [...held.pending, row], register: made.after, before: held.register },
     puts: [{ key: rowKey(deck, "pending", order), row }],
@@ -96,6 +101,7 @@ export function slideChange(
   if (decision.decision === "refuse") return refused({ ok: false, refusal: decision.code })
   const order = (held.pending.at(-1)?.order ?? -1) + 1
   const row: PendingRow = { kind: "pending", deck, order, base: 0, value: "", slideFile: file, slideEdit: command }
+  if (!fitsAlone(deck, row)) return refused(tooLarge)
   return {
     next: { ...held, pending: [...held.pending, row], register: decision.register, before: undefined },
     puts: [{ key: rowKey(deck, "pending", order), row }],

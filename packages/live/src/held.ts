@@ -231,6 +231,20 @@ export async function sealRows(deck: DeckId, keys: readonly string[], once: stri
   return sealed
 }
 
+export async function unsealRows(deck: DeckId, keys: readonly string[], once: string): Promise<void> {
+  await changeHeld(deck, (held) => {
+    const puts: Put[] = []
+    for (const key of keys) {
+      const row = heldRow(held, deck, key)
+      if (row === undefined || row.kind !== "pending" || row.once !== once) continue
+      const { once: _sealed, ...open } = row
+      puts.push({ key, row: open })
+    }
+    if (puts.length === 0) return { puts, result: undefined }
+    return { next: moved(held, deck, puts, []), puts, result: undefined }
+  })
+}
+
 export async function heldView(deck: DeckId): Promise<DeckView | null> {
   const account = signedIn()
   const reading = await transaction("readonly")

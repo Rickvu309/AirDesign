@@ -1,5 +1,7 @@
 import { useCallback, useState, useSyncExternalStore } from "react"
+import { toast } from "sonner"
 import type { CommitOutcome, SaveRefusal } from "@/commit-edit"
+import { productCopy } from "@/copy/product-copy"
 import { signInAddress, type ThinNotice } from "@/thin-notice"
 import type { UndoDirection } from "@/undo-list"
 
@@ -17,6 +19,10 @@ function watchNetwork(change: () => void): () => void {
 }
 
 const browserOnline = () => navigator.onLine !== false
+
+export function tellRefusal(outcome: CommitOutcome): void {
+  if (outcome === "too-large") toast.error(productCopy.editTooLarge)
+}
 
 export function useDeckStatus() {
   const [paintedDeck, setPaintedDeck] = useState<string | undefined>(undefined)
@@ -38,8 +44,10 @@ export function useDeckStatus() {
       setAside((count) => count + 1)
     }
     if (outcome === "offline") setPending(true)
-    if (outcome !== "refused") setOffline(outcome === "offline")
-    if (outcome !== "refused") setRefusal(outcome === "storage" || outcome === "size" ? outcome : null)
+    tellRefusal(outcome)
+    if (outcome === "refused" || outcome === "too-large") return
+    setOffline(outcome === "offline")
+    setRefusal(outcome === "storage" || outcome === "size" ? outcome : null)
     if (outcome === "signed-out") window.location.assign(signInAddress(window.location))
   }, [])
   const leftNetwork = useCallback(() => setOffline(true), [])

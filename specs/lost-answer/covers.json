@@ -4,8 +4,8 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect"],
-      "digest": "cd365e211ae9",
-      "blob": "f108ea709387e5efe20b616f415d72c6b45bec65"
+      "digest": "6e362b0f43eb",
+      "blob": "c39ee2e683f4d542af2817faf861f6242af5edc8"
     },
     {
       "file": "packages/live/src/slide-replay.ts",
@@ -15,9 +15,15 @@
     },
     {
       "file": "packages/live/src/held.ts",
-      "names": ["sealRows", "setAside", "takeAside"],
-      "digest": "773acae20523",
-      "blob": "78eb2cb1f22957e8c72173ed3c3bcf9539993593"
+      "names": ["sealRows", "unsealRows", "setAside", "takeAside"],
+      "digest": "aa929276408c",
+      "blob": "ac9e4f141d0e7c66ddc80ba2182e77f900e4e822"
+    },
+    {
+      "file": "packages/live/src/commit-body.ts",
+      "names": ["nextBatch", "bodyBytes"],
+      "digest": "f1f65238e407",
+      "blob": "c4aaa2490305f4d2918290bddd90482264d12355"
     },
     {
       "file": "apps/api/src/saved.ts",
@@ -35,13 +41,13 @@
       "file": "packages/live/src/remote.ts",
       "names": ["post", "httpRemote"],
       "digest": "b076ba62b968",
-      "blob": "5eeaa0864068dfb69f80726487ef814072508fb8"
+      "blob": "4e4c1f5773b65c0a90ed95c20516dbcd2a999a25"
     },
     {
       "file": "apps/web/src/commit-edit.ts",
       "names": ["flushPending"],
-      "digest": "62c3238a74c4",
-      "blob": "dced227b406ba7fda3cf0d084759cb3cc2325681"
+      "digest": "92abe64643fb",
+      "blob": "e28d007627a3a99b73507b87b6f6f547da088533"
     }
   ]
 }

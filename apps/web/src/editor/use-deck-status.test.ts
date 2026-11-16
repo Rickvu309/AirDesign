@@ -1,5 +1,7 @@
-import { expect, it } from "vitest"
-import { saveStatus, shownNotice } from "@/editor/use-deck-status"
+import { toast } from "sonner"
+import { expect, it, vi } from "vitest"
+import { productCopy } from "@/copy/product-copy"
+import { saveStatus, shownNotice, tellRefusal } from "@/editor/use-deck-status"
 
 const quiet = {
   failure: null,
@@ -89,4 +91,13 @@ it("says unable to save, not saving, while the server refused an edit that waits
   expect(saveStatus({ ...landed, pending: true, refusal: "size" })).toBe("unsaved")
   expect(saveStatus({ ...landed, refusal: "size" })).toBe("saved")
   expect(saveStatus({ ...landed, pending: true, offline: true, refusal: "size" })).toBe("unreached")
+})
+
+it("tells the person an edit too large to send was not saved, and stays quiet for other outcomes", () => {
+  const told = vi.spyOn(toast, "error").mockImplementation(() => "")
+  for (const outcome of ["refused", "sent", "size", "set-aside"] as const) tellRefusal(outcome)
+  expect(told).not.toHaveBeenCalled()
+  tellRefusal("too-large")
+  expect(told).toHaveBeenCalledExactlyOnceWith(productCopy.editTooLarge)
+  told.mockRestore()
 })
