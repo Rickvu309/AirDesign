@@ -6,6 +6,7 @@ import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
 import { editableSlide } from "@/editor/editable-slide"
 import { slideCommands } from "@/editor/slide-commands"
+import { SlideToaster } from "@/editor/slide-toast"
 import { useDeckOpen } from "@/editor/use-deck-open"
 import { shownNotice } from "@/editor/use-deck-status"
 import { useEditorDeck } from "@/editor/use-editor-deck"
@@ -48,6 +49,7 @@ export function ThinDeck({ id }: { id: string }) {
   return (
     <div className="thin-page" data-deck-ready={deck.paintedDeck}>
       <ThinNoticeView notice={notice} onTryAgain={exported.tryAgain} />
+      <SlideToaster list={deck.undo.undoList} />
       {exported.downloaded !== null && notice === null && (
         <DownloadedNotice name={exported.downloaded} onDone={() => exported.setDownloaded(null)} />
       )}
@@ -66,7 +68,7 @@ export function ThinDeck({ id }: { id: string }) {
             onShape: deck.inserts.addShape,
             onIcon: deck.inserts.addIcon,
             size: shown.canvases.current(shown.current),
-            slides: slideCommands(deck),
+            slides: slideCommands(deck, undoButtons.onUndo),
             slide: editableSlide(deck),
           }}
           notes={currentNotes?.text ?? ""}
