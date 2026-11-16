@@ -78,7 +78,7 @@ it("does not paint consent before the client rule answers", () => {
   expect(renderToStaticMarkup(<OAuthAuthorize />)).toBe("")
 })
 it.each([
-  ["claude", "claude.ai"],
+  ["claude", "Claude"],
   ["codex", "Codex on this computer"],
   ["claude-code", "Claude Code on this computer"],
   ["other", "agent.example"],
@@ -90,19 +90,19 @@ it.each([
   expect(host.textContent).toContain(`Returns you to ${destination}.`)
   expect(host.textContent).toContain("Disconnect anytime in Settings.")
 })
-it.each(["network", "server", "malformed", "refusal"])("recovers from a %s consent lookup", async (failure) => {
+it.each(["network", "server", "rate", "malformed", "refusal"])("recovers from a %s consent lookup", async (failure) => {
   if (failure === "network") fetcher.mockRejectedValueOnce(new TypeError("offline"))
   else
     fetcher.mockResolvedValueOnce(
       reply(
         failure === "refusal" ? { ok: false, refusal: "client" } : {},
-        failure === "server" ? 503 : failure === "refusal" ? 400 : 200,
+        failure === "server" ? 503 : failure === "rate" ? 429 : failure === "refusal" ? 400 : 200,
       ),
     )
   await mount()
-  recovery(failure === "network" || failure === "server")
+  recovery(failure === "network" || failure === "server" || failure === "rate")
 })
-it.each(["network", "server", "malformed", "refusal", "unsafe redirect"])(
+it.each(["network", "server", "rate", "malformed", "refusal", "unsafe redirect"])(
   "does not replay an approval after a %s answer",
   async (failure) => {
     consent()
@@ -116,11 +116,11 @@ it.each(["network", "server", "malformed", "refusal", "unsafe redirect"])(
             : failure === "unsafe redirect"
               ? { ok: true, redirect: "javascript:alert(1)" }
               : {},
-          failure === "server" ? 503 : failure === "refusal" ? 400 : 200,
+          failure === "server" ? 503 : failure === "rate" ? 429 : failure === "refusal" ? 400 : 200,
         ),
       )
     await allow()
-    recovery(failure === "network" || failure === "server")
+    recovery(failure === "network" || failure === "server" || failure === "rate")
     expect(fetcher.mock.calls.map(([path]) => path)).toEqual([
       oauthRoutes.client.path,
       deckRoutes.list.path,
@@ -128,10 +128,10 @@ it.each(["network", "server", "malformed", "refusal", "unsafe redirect"])(
     ])
   },
 )
-it.each(["network", "server", "malformed"])("recovers from a %s account lookup", async (failure) => {
+it.each(["network", "server", "rate", "malformed"])("recovers from a %s account lookup", async (failure) => {
   fetcher.mockResolvedValueOnce(reply({ ok: true, screen: "claude", redirect_host: "claude.ai" }))
   if (failure === "network") fetcher.mockRejectedValueOnce(new TypeError("offline"))
-  else fetcher.mockResolvedValueOnce(reply({}, failure === "server" ? 503 : 200))
+  else fetcher.mockResolvedValueOnce(reply({}, failure === "server" ? 503 : failure === "rate" ? 429 : 200))
   await mount()
-  recovery(failure === "network" || failure === "server")
+  recovery(failure === "network" || failure === "server" || failure === "rate")
 })
