@@ -95,3 +95,16 @@ test("the presenter view shows the speaker notes, the next slide and the time", 
   await expect(presenter).toHaveCount(0)
   await expect(current(page)).toHaveAttribute("data-slide-entry", "3")
 })
+
+test("presenter buttons respond to Enter and Space", async ({ page }) => {
+  await opened(page)
+  await page.getByRole("button", { name: "Present", exact: true }).click()
+  await page.keyboard.press("p")
+  const pause = page.getByRole("button", { name: "Pause timer" })
+  await pause.focus()
+  await page.keyboard.press("Space")
+  await expect(page.getByRole("button", { name: "Resume timer" })).toBeVisible()
+  await page.getByRole("button", { name: "Stop presenting" }).focus()
+  await page.keyboard.press("Enter")
+  await expect(page.locator("[data-presenter-view]")).toHaveCount(0)
+})
