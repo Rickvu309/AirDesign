@@ -75,7 +75,7 @@ export function AddCreditsDialog({
                       className={cn(
                         "flex h-11 items-center rounded-lg px-3 text-[length:var(--type-dense)] leading-[17px] font-medium",
                         on
-                          ? "bg-[var(--blue-tint)] text-[var(--primary-strong)] shadow-[inset_0_0_0_1px_var(--primary)]"
+                          ? "bg-[var(--blue-tint)] text-tint-text shadow-[inset_0_0_0_1px_var(--primary)]"
                           : "bg-white text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-canvas",
                       )}
                     >

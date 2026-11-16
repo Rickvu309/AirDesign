@@ -113,14 +113,14 @@ export function WaitingBanner() {
             clipPath="url(#credits-wait-dash)"
           />
         </svg>
-        <span className="truncate text-[length:var(--type-dense)] leading-[17px] font-medium text-[var(--primary-strong)]">
+        <span className="truncate text-[length:var(--type-dense)] leading-[17px] font-medium text-tint-text">
           {creditsCopy.waiting}
         </span>
       </span>
       <span className="flex shrink-0 items-center gap-3.5">
         <button
           type="button"
-          className="text-[length:var(--type-dense)] leading-[17px] font-medium text-[var(--primary-strong)] hover:underline"
+          className="text-[length:var(--type-dense)] leading-[17px] font-medium text-tint-text hover:underline"
         >
           {productCopy.payOpen}
         </button>
