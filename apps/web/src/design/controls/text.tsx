@@ -1,4 +1,4 @@
-import { cellText, readTextValue, writeTextValue, type TextRun, type TextValue } from "@airdesign/document"
+import { bytesOf, cellText, readTextValue, writeTextValue, type TextRun, type TextValue } from "@airdesign/document"
 import { useId, useState, type KeyboardEvent } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import type { ControlProps } from "@/design/panel"
@@ -30,7 +30,18 @@ function wordsOf(row: ControlProps["row"]): string {
   return row.desc.kind === "text" ? cellText(readTextValue(value) ?? []) : value
 }
 
-function WordsField({ row, onChange }: ControlProps) {
+function limitedWords(value: string, max: number): string {
+  let size = 0
+  let end = 0
+  for (const letter of value) {
+    size += bytesOf(letter)
+    if (size > max) break
+    end += letter.length
+  }
+  return value.slice(0, end)
+}
+
+function WordsField({ row, onChange, max }: ControlProps & { readonly max: number }) {
   const shown = typeof row.value === "string" ? row.value : ""
   const [draft, setDraft] = useState<string | null>(null)
 
@@ -55,7 +66,7 @@ function WordsField({ row, onChange }: ControlProps) {
         )}
         aria-label={row.label}
         value={draft ?? shown}
-        onChange={(event) => setDraft(event.target.value)}
+        onChange={(event) => setDraft(limitedWords(event.target.value, max))}
         onBlur={(event) => {
           if (draft !== null) commit(event.currentTarget.value)
         }}
@@ -69,7 +80,11 @@ function WordsField({ row, onChange }: ControlProps) {
 }
 
 export function TextControl(props: ControlProps) {
-  return props.row.desc.kind === "words" ? <WordsField {...props} /> : <PassageField {...props} />
+  return props.row.desc.kind === "words" ? (
+    <WordsField {...props} max={props.row.desc.max} />
+  ) : (
+    <PassageField {...props} />
+  )
 }
 
 function PassageField({ row, onChange }: ControlProps) {

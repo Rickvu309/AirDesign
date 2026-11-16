@@ -116,6 +116,19 @@ async function pictureDeck(refused = false) {
     return input
   }
   return {
+    side,
+    unfold() {
+      const button = [...host.querySelectorAll("button")].find((button) =>
+        button.textContent?.includes("Name and alt text"),
+      )
+      if (button === undefined) throw new Error("Name and alt text")
+      if (button.getAttribute("aria-expanded") !== "true") button.click()
+    },
+    entered(name: string, text: string) {
+      const input = side(name)
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(input, text)
+      input.dispatchEvent(new window.Event("input", { bubbles: true }))
+    },
     typed(name: string, text: string) {
       const input = side(name)
       Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(input, text)
@@ -238,7 +251,7 @@ it("tells a person how to continue when a design-panel edit is refused", async (
     await act(async () => picture.typed("Left", "10"))
     await picture.answered()
     expect(error).toHaveBeenCalledExactlyOnceWith(
-      "Unable to make that change. Reopen the deck to check its current design before editing again.",
+      "Unable to make that change. Select the element and try again, or reload the deck if it keeps happening.",
     )
     expect(picture.landed()).toEqual({})
   } finally {
@@ -246,3 +259,27 @@ it("tells a person how to continue when a design-panel edit is refused", async (
     await picture.close()
   }
 }, 20_000)
+
+it.each([
+  ["Name", "A".repeat(200), "A".repeat(200)],
+  ["Name", "A".repeat(201), "A".repeat(200)],
+  ["Name", "é".repeat(101), "é".repeat(100)],
+  ["Name", "A".repeat(197) + "😀", "A".repeat(197)],
+  ["Alt text", "😀".repeat(1001), "😀".repeat(1000)],
+])(
+  "limits %s input to its document byte limit",
+  async (label, typed, accepted) => {
+    const picture = await pictureDeck()
+    try {
+      await act(async () => picture.unfold())
+      await act(async () => picture.entered(label, typed))
+      expect(picture.side(label).value).toBe(accepted)
+      await act(async () => picture.side(label).dispatchEvent(new window.Event("focusout", { bubbles: true })))
+      await picture.answered()
+      expect(picture.side(label).value).toBe(accepted)
+    } finally {
+      await picture.close()
+    }
+  },
+  20_000,
+)
