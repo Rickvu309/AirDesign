@@ -231,9 +231,8 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
   const store = shown.store.current
   useSyncExternalStore(store.elementSubscribe(node), () => store.getElement(node)?.text ?? null)
   useSyncExternalStore(store.boxSubscribe(node), () => store.getBox(node))
-  const edited = shown.editParts.current
-  const theme = useMemo(() => themeAt(edited, current), [edited, current])
   const display = shown.displayParts.current
+  const theme = useMemo(() => themeAt(display, current), [display, current])
   const palette: Palette = {
     theme,
     deck: colorsIn(display),

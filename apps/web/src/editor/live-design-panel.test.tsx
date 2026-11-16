@@ -198,7 +198,7 @@ it("shows a slide's background and theme once each, with no section or button th
   await slide.close()
 }, 20_000)
 
-it.fails("draws a fill that names a theme colour in that colour once the theme changes it, as the canvas paints it", async () => {
+it("draws a fill that names a theme colour in that colour once the theme changes it, as the canvas paints it", async () => {
   const parts = await readParts(await fixtureFile("clean.pptx"))
   const slide = readSlides(parts)[0]?.slide
   if (slide === undefined) throw new Error("slide")
