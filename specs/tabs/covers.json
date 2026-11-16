@@ -4,14 +4,14 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect", "unlessNewer", "heard"],
-      "digest": "529c9d45a715",
-      "blob": "63cb76f91f9c23f4c26198bf8fefa82c3f39fc24"
+      "digest": "b6a6d56982c6",
+      "blob": "de80abb98be8a71f55a91c355f13eb0742c0c71f"
     },
     {
       "file": "packages/live/src/held.ts",
-      "names": ["changeHeld", "writeDeckRows", "sealRows", "heldView"],
-      "digest": "5f097aad8023",
-      "blob": "78eb2cb1f22957e8c72173ed3c3bcf9539993593"
+      "names": ["changeHeld", "editHeld", "takeEdits", "adoptRows", "confirmRows", "sealRows", "heldView"],
+      "digest": "6da1fd7eb501",
+      "blob": "656d1944449f16e26028a318cd9506dd48f24c6b"
     },
     {
       "file": "packages/live/src/deck-view.ts",
@@ -23,7 +23,7 @@
       "file": "packages/live/src/store.ts",
       "names": ["fitConfirmed", "logicalValues"],
       "digest": "c511aab30e59",
-      "blob": "0acd9fd0c1c508c66220ac8b8042623df44d0cd2"
+      "blob": "87f4db659db472750c6c8d629e0e48d084e22d2c"
     },
     {
       "file": "packages/live/src/slide-replay.ts",
@@ -33,9 +33,9 @@
     },
     {
       "file": "packages/live/src/device.ts",
-      "names": ["markNewer", "connectDatabase", "openDatabase", "transaction"],
-      "digest": "6452189696e1",
-      "blob": "81069219a9370252b6c8d0dafc042f5218cb3a58"
+      "names": ["markNewer", "pageEdits", "connectDatabase", "openDatabase", "transaction"],
+      "digest": "521f8dae7f3a",
+      "blob": "66fbcf6dcd60666d76aa7401fa3c961f211e93a5"
     },
     {
       "file": "apps/web/src/editor/use-deck-open.ts",

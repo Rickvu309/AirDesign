@@ -1,11 +1,13 @@
 import type { DeckId } from "@airdesign/catalog"
 import { newerFormat, type Register } from "@airdesign/document"
-import { finished, heldDecks, markNewer, scoped, storeName, storeNewer, transaction } from "./device.js"
+import { finished, heldDecks, markNewer, pageEdits, scoped, storeName, storeNewer, transaction } from "./device.js"
 import { filledRow } from "./background-fill.js"
 import { deckView, joinable, newerRow, played, readable, split, storedKey, type DeckView } from "./deck-view.js"
 import {
   asideKey,
+  confirmedRange,
   headKey,
+  revisionKey,
   rowKey,
   rowRange,
   signedIn,
@@ -143,27 +145,20 @@ function moved(held: Held, deck: string, puts: readonly Put[], deletes: readonly
   }
 }
 
-export async function writeDeckRows(
-  deck: DeckId,
-  puts: readonly Put[],
-  deletes: readonly string[],
-  register: "same" | "stale",
-): Promise<void> {
-  if (puts.length === 0 && deletes.length === 0) return
+export async function dropRows(deck: DeckId, keys: readonly string[]): Promise<void> {
   const account = signedIn()
   const writing = await transaction("readwrite")
   const store = writing.objectStore(storeName)
   const head = scoped(account, headKey(deck))
   const known = memory(account, deck)
   remember(account, deck, undefined)
-  for (const key of deletes) store.delete(scoped(account, key))
-  for (const put of puts) store.put(put.row, scoped(account, put.key))
+  for (const key of keys) store.delete(scoped(account, key))
   const stored = store.get(head)
   stored.onsuccess = () => {
     const now = headOf(stored.result)
     store.put(now + 1, head)
-    if (register === "same" && known !== undefined && known.head === now)
-      remember(account, deck, { ...moved(known, deck, puts, deletes), head: now + 1 })
+    if (known !== undefined && known.head === now)
+      remember(account, deck, { ...moved(known, deck, [], keys), head: now + 1 })
   }
   try {
     await finished(writing, () => undefined)
@@ -171,6 +166,110 @@ export async function writeDeckRows(
     remember(account, deck, undefined)
     throw error
   }
+}
+
+function revisionOf(raw: unknown): number {
+  return typeof raw === "number" ? raw : -1
+}
+
+function lastConfirmed(keys: readonly IDBValidKey[]): number {
+  const last = keys.at(-1)
+  return typeof last === "string" ? Number(last.slice(-12)) : -1
+}
+
+export async function adoptRows(deck: DeckId, revision: number, rows: readonly ConfirmedRow[]): Promise<boolean> {
+  const account = signedIn()
+  const writing = await transaction("readwrite")
+  const store = writing.objectStore(storeName)
+  const head = scoped(account, headKey(deck))
+  const slot = scoped(account, revisionKey(deck))
+  remember(account, deck, undefined)
+  let adopted = false
+  const stored = store.get(head)
+  const holds = store.get(slot)
+  holds.onsuccess = () => {
+    if (revisionOf(holds.result) > revision) return
+    adopted = true
+    store.delete(confirmedRange(scoped(account, deck)))
+    for (const row of rows) store.put(row, scoped(account, rowKey(deck, "confirmed", row.revision)))
+    store.put(revision, slot)
+    store.put(headOf(stored.result) + 1, head)
+  }
+  try {
+    await finished(writing, () => undefined)
+  } catch (error) {
+    remember(account, deck, undefined)
+    throw error
+  }
+  return adopted
+}
+
+export async function confirmRows(
+  deck: DeckId,
+  revision: number,
+  rows: readonly ConfirmedRow[],
+  sent: readonly string[],
+): Promise<void> {
+  const account = signedIn()
+  const writing = await transaction("readwrite")
+  const store = writing.objectStore(storeName)
+  const head = scoped(account, headKey(deck))
+  const slot = scoped(account, revisionKey(deck))
+  const known = memory(account, deck)
+  remember(account, deck, undefined)
+  const stored = store.get(head)
+  const holds = store.get(slot)
+  const keys = store.getAllKeys(confirmedRange(scoped(account, deck)))
+  keys.onsuccess = () => {
+    const now = headOf(stored.result)
+    for (const key of sent) store.delete(scoped(account, key))
+    store.put(now + 1, head)
+    if (revisionOf(holds.result) >= revision) return
+    const from = lastConfirmed(keys.result) + 1
+    const puts = rows.map((row) => {
+      const next = { ...row, revision: from + row.revision }
+      return { key: rowKey(deck, "confirmed", next.revision), row: next }
+    })
+    for (const put of puts) store.put(put.row, scoped(account, put.key))
+    store.put(revision, slot)
+    if (known !== undefined && known.head === now)
+      remember(account, deck, { ...moved(known, deck, puts, sent), head: now + 1 })
+  }
+  try {
+    await finished(writing, () => undefined)
+  } catch (error) {
+    remember(account, deck, undefined)
+    throw error
+  }
+}
+
+function editOf(row: PendingRow): string {
+  const { once: _sealed, ...edit } = row
+  return JSON.stringify(edit)
+}
+
+export async function editHeld<Result>(deck: DeckId, change: (held: Held) => Change<Result>): Promise<Result> {
+  let puts: readonly Put[] = []
+  const result = await changeHeld(deck, (held) => {
+    const planned = change(held)
+    puts = planned.puts
+    return planned
+  })
+  const account = signedIn()
+  for (const { key, row } of puts) if (row.kind === "pending") pageEdits().set(scoped(account, key), editOf(row))
+  return result
+}
+
+export function takeEdits(deck: DeckId, rows: readonly PendingRow[]): boolean {
+  const account = signedIn()
+  const edits = pageEdits()
+  let all = true
+  for (const row of rows) {
+    const key = scoped(account, rowKey(deck, "pending", row.order))
+    if (edits.get(key) === editOf(row)) edits.delete(key)
+    else all = false
+  }
+  return all
 }
 
 type AsideRow = PendingRow & { readonly tooLarge?: true }
@@ -283,6 +382,6 @@ export async function heldView(deck: DeckId): Promise<DeckView | null> {
   await finished(reading, () => undefined)
   if (storeNewer()) throw new Error("newer")
   if (held === undefined) return null
-  if (dropped.length > 0) await writeDeckRows(deck, [], dropped, "same")
+  if (dropped.length > 0) await dropRows(deck, dropped)
   return deckView(held.register, [...held.confirmed], [...held.pending])
 }

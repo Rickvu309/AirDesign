@@ -155,8 +155,16 @@ export function rowRange(deck: string): IDBKeyRange {
   return IDBKeyRange.bound(`${deck}\u0000`, `${deck}\u0000\uffff`)
 }
 
+export function confirmedRange(deck: string): IDBKeyRange {
+  return IDBKeyRange.bound(`${deck}\u0000c\u0000`, `${deck}\u0000c\u0000\uffff`)
+}
+
 export function headKey(deck: string): string {
   return `${deck}\u0002head`
+}
+
+export function revisionKey(deck: string): string {
+  return `${deck}\u0002revision`
 }
 
 export function asideKey(deck: string): string {
