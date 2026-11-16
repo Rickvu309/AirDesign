@@ -70,6 +70,16 @@ export function SetAside() {
   )
 }
 
+export function SetAsideTooLarge() {
+  return (
+    <EditorView
+      {...galleryDeck}
+      run="done"
+      toast={<EditorToast kind="info" text={productCopy.editSetAsideTooLarge} place="canvas" />}
+    />
+  )
+}
+
 export function Offline() {
   return (
     <EditorView
