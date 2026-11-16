@@ -4,6 +4,7 @@ import { partOf, sideSteps, stagesFor } from "./check.mjs"
 import { judgedOnCi, mayPush, stampable } from "./check.mjs"
 import { localSteps, onCi, stepsOf } from "./check.mjs"
 import { recordFailure, warnSteps } from "./check.mjs"
+import { shardOf } from "./check.mjs"
 
 const requiredSteps = [
   "format",
@@ -155,3 +156,51 @@ if (
 ) {
   throw new Error("the test step runs vitest itself, the command test:unit names, without pnpm starting first")
 }
+
+if (shardOf([]) !== undefined) throw new Error("a check with no --shard is not a shard")
+if (JSON.stringify(shardOf(["--part=side", "--shard=2/3"])) !== JSON.stringify({ current: 2, total: 3 }))
+  throw new Error("--shard does not choose its shard")
+for (const shard of ["0/3", "4/3", "2", "a/b", "1/0"]) {
+  let shardRefused = ""
+  try {
+    shardOf([`--shard=${shard}`])
+  } catch (error) {
+    shardRefused = error.message
+  }
+  if (shardRefused !== `--shard must be a part of a whole, such as 1/3, and it is ${shard}.`)
+    throw new Error(`--shard=${shard} is not refused`)
+}
+const shardSteps = (current) => stepsToRun(stagesFor("side", true, { current, total: 3 }), true).flat()
+const browserOf = (current) =>
+  shardSteps(current)
+    .flatMap(stepsOf)
+    .find(([name]) => name === "browser")
+for (const current of [1, 2, 3]) {
+  if (browserOf(current)?.[2].join(" ") !== `test:browser --shard=${current}/3`)
+    throw new Error(`shard ${current} does not run its share of the browser tests`)
+}
+if (
+  shardSteps(1)
+    .flatMap(stepsOf)
+    .map(([name]) => name)
+    .sort()
+    .join() !== [...sideSteps].sort().join()
+)
+  throw new Error("the first shard must run every side step")
+for (const current of [2, 3]) {
+  if (
+    shardSteps(current)
+      .flatMap(stepsOf)
+      .map(([name]) => name)
+      .join() !== "browser"
+  )
+    throw new Error(`shard ${current} must run only its share of the browser tests`)
+}
+if (
+  stagesFor("side", true)
+    .flat()
+    .flatMap(stepsOf)
+    .find(([name]) => name === "browser")?.[2]
+    .join(" ") !== "test:browser"
+)
+  throw new Error("a check with no shard runs every browser test")
