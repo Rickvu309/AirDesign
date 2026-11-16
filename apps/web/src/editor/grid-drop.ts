@@ -18,3 +18,33 @@ export function edgeScroll(y: number, list: { readonly top: number; readonly hei
   if (fromBottom < edge) return Math.ceil((fastest * (edge - Math.max(fromBottom, 0))) / edge)
   return 0
 }
+
+export type GridSlot = {
+  readonly index: number
+  readonly left: number
+  readonly top: number
+  readonly width: number
+  readonly height: number
+}
+
+const halfGap = 16
+
+const below = 48
+
+export function previewSlot(index: number, from: number, to: number | null): number {
+  if (to === null) return index
+  if (index === from) return to
+  if (from < to && index > from && index <= to) return index - 1
+  if (to < from && index >= to && index < from) return index + 1
+  return index
+}
+
+export function slotUnder(x: number, y: number, slots: readonly GridSlot[]): GridSlot | undefined {
+  return slots.find(
+    (slot) =>
+      x >= slot.left - halfGap &&
+      x < slot.left + slot.width + halfGap &&
+      y >= slot.top - halfGap &&
+      y < slot.top + slot.height + below,
+  )
+}
