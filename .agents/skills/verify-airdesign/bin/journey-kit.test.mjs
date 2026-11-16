@@ -1,7 +1,7 @@
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { browserCookies } from "./browser-cookies.mjs"
-import { journeyFile, journeyName } from "./verify-airdesign.mjs"
+import { journeyFile, journeyName, mailsIn } from "./verify-airdesign.mjs"
 
 const shipped = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../journeys")
 
@@ -24,5 +24,15 @@ describe("sign-in cookies", () => {
       expect.objectContaining({ name: "airdesign.session", value: "abc", httpOnly: true, domain: "127.0.0.1" }),
       expect.objectContaining({ name: "airdesign.account", value: "d1", httpOnly: false, domain: "127.0.0.1" }),
     ])
+  })
+})
+
+describe("stack mail", () => {
+  it("reads each whole mail line and leaves the line the stack is still appending", () => {
+    const whole = JSON.stringify({ to: "a@example.com", text: "Your code is 123456" })
+    const writing = JSON.stringify({ to: "b@example.com", text: "Your code is 654321" }).slice(0, 20)
+    expect(mailsIn(`${whole}\n${writing}`)).toEqual([{ to: "a@example.com", text: "Your code is 123456" }])
+    expect(mailsIn(`${whole}\n`)).toHaveLength(1)
+    expect(mailsIn("")).toEqual([])
   })
 })
