@@ -195,3 +195,14 @@ it("adds a rectangle, an ellipse and a line on the slide under the next free id,
     expect(shown.find((each) => each.shape === "4")?.kind).toBe(connector ? "p:cxnSp" : "p:sp")
   }
 })
+
+it("puts a new shape clear of a line the slide paints", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const line = { x: 350, y: 250, width: 300, height: 0, rotation: 0, flipH: false, flipV: false }
+  const room = { ...size, elements: [{ box: line }] }
+  const added = elementCommand(parts, openRegister("", ""), { change: "shape", geometry: "rect", index: 0, size: room })
+  if (added === null || added.slide !== "element-add" || added.element.box === null) throw new Error("no shape")
+  const { x, y, cx, cy } = added.element.box
+  const clear = x + cx <= line.x || x >= line.x + line.width || y + cy <= line.y || y >= line.y + line.height
+  expect(clear).toBe(true)
+})

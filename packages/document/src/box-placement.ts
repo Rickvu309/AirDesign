@@ -6,6 +6,7 @@ const widthShare = 0.4
 const heightShare = 0.12
 const marginShare = 0.04
 const stepShare = 0.03
+const strokeReachShare = 0.02
 
 function ascending(left: number, right: number): number {
   return left - right
@@ -75,12 +76,19 @@ function offsetFromTaken(area: PlacementArea, start: Box, taken: readonly Box[])
   return placed
 }
 
+function reaching(box: Box, reach: number): Box {
+  const cx = Math.max(box.cx, reach)
+  const cy = Math.max(box.cy, reach)
+  return { x: box.x - Math.round((cx - box.cx) / 2), y: box.y - Math.round((cy - box.cy) / 2), cx, cy }
+}
+
 export function placeNewBox(
   area: PlacementArea,
   taken: readonly Box[],
   size: Pick<Box, "cx" | "cy"> = { cx: Math.round(area.width * widthShare), cy: Math.round(area.height * heightShare) },
 ): Box {
-  const present = taken.filter((box) => box.cx > 0 && box.cy > 0)
+  const reach = Math.round(area.height * strokeReachShare)
+  const present = taken.filter((box) => box.cx > 0 || box.cy > 0).map((box) => reaching(box, reach))
   const marginX = Math.round(area.width * marginShare)
   const marginY = Math.round(area.height * marginShare)
   const usable = { x: marginX, y: marginY, cx: area.width - 2 * marginX, cy: area.height - 2 * marginY }

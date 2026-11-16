@@ -11,7 +11,7 @@ const slidePart = "ppt/slides/slide1.xml"
 const rectangleLine =
   '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:ln w="76200"><a:prstDash val="lgDash"/></a:ln></p:spPr><p:style><a:lnRef idx="2"><a:schemeClr val="accent1"><a:shade val="15000"/></a:schemeClr></a:lnRef>'
 const connectorLine =
-  '<a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln><a:tailEnd type="triangle" w="lg" len="med"/></a:ln></p:spPr><p:style><a:lnRef idx="1">'
+  '<a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln w="28575"><a:tailEnd type="triangle" w="lg" len="med"/></a:ln></p:spPr><p:style><a:lnRef idx="1">'
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 

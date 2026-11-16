@@ -6,7 +6,7 @@ const slide = "ppt/slides/slide1.xml"
 const rectangle =
   '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:ln w="76200"><a:prstDash val="lgDash"/></a:ln></p:spPr>'
 const connector =
-  '<a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln><a:tailEnd type="triangle" w="lg" len="med"/></a:ln></p:spPr>'
+  '<a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln w="28575"><a:tailEnd type="triangle" w="lg" len="med"/></a:ln></p:spPr>'
 const styles = /<p:style>.*?<\/p:style>/g
 const styleColor = { solid: { scheme: "accent1", transforms: [{ op: "shade", val: 15000 }] } }
 

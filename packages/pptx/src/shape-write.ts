@@ -123,10 +123,12 @@ const drawnNames: Readonly<Partial<Record<Geometry, string>>> = {
   straightConnector1: "Straight Arrow Connector",
 }
 
-const arrowEnd = '<a:ln w="28575"><a:tailEnd type="triangle"/></a:ln>'
+const lineWeight = 28575
+const lineStroke = `<a:ln w="${String(lineWeight)}"/>`
+const arrowEnd = `<a:ln w="${String(lineWeight)}"><a:tailEnd type="triangle"/></a:ln>`
 
 function drawnProperties(geometry: Geometry, box: ShapeBox): string {
-  const end = geometry === "straightConnector1" ? arrowEnd : ""
+  const end = geometry === "straightConnector1" ? arrowEnd : geometry === "line" ? lineStroke : ""
   return `<p:spPr>${shapeBox(box)}<a:prstGeom prst="${geometry}"><a:avLst/></a:prstGeom>${end}</p:spPr>`
 }
 
