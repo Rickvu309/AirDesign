@@ -80,32 +80,22 @@ function painted(color: Color, theme: readonly Swatch[]): string {
 }
 
 export function themeColumns(theme: readonly Swatch[]): readonly ThemeColumn[] {
-  const seen = new Set<string>()
-  return theme.flatMap((swatch) => {
+  return theme.map((swatch) => {
     const css = bare(swatch.css)
-    if (seen.has(css)) return []
-    seen.add(css)
     const shades = shadesOf(css).map((shade) => {
       const color: Color = { scheme: swatch.scheme, transforms: shade.transforms }
       return { color, css: painted(color, theme), name: shadeName(swatch.name, shade) }
     })
-    return [{ swatch: { color: { scheme: swatch.scheme }, css: `#${css}`, name: swatch.name }, shades }]
+    return { swatch: { color: { scheme: swatch.scheme }, css: `#${css}`, name: swatch.name }, shades }
   })
 }
 
-function slotCss(scheme: string, theme: readonly Swatch[]): string | null {
-  const slot = usualSlots[scheme] ?? scheme
-  const found = theme.find((swatch) => swatch.scheme === slot)
-  return found === undefined ? null : bare(found.css)
+function normalized(color: Color): Color {
+  return "scheme" in color ? { ...color, scheme: usualSlots[color.scheme] ?? color.scheme } : color
 }
 
-export function matches(choice: Color, value: Color, theme: readonly Swatch[]): boolean {
-  const shown = fadedColor(value, opaque)
-  if (sameColor(choice, shown)) return true
-  if (!("scheme" in choice) || !("scheme" in shown)) return false
-  const same = JSON.stringify(choice.transforms ?? []) === JSON.stringify(shown.transforms ?? [])
-  const css = slotCss(choice.scheme, theme)
-  return same && css !== null && css === slotCss(shown.scheme, theme)
+export function matches(choice: Color, value: Color): boolean {
+  return sameColor(normalized(choice), normalized(fadedColor(value, opaque)))
 }
 
 export function deckChoices(palette: Palette): readonly Choice[] {
@@ -169,7 +159,7 @@ export function shownHex(value: Color, theme: readonly Swatch[]): string {
 
 export function shownName(value: Color, theme: readonly Swatch[]): string {
   for (const column of themeColumns(theme)) {
-    for (const choice of [column.swatch, ...column.shades]) if (matches(choice.color, value, theme)) return choice.name
+    for (const choice of [column.swatch, ...column.shades]) if (matches(choice.color, value)) return choice.name
   }
   const named = theme.find((swatch) => "scheme" in value && swatch.scheme === value.scheme && !value.transforms)
   if (named !== undefined) return named.name
