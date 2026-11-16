@@ -1,3 +1,5 @@
+import { cursorKeyframes } from "./editor-demo-cursor"
+
 type DemoMotion = "fade" | "rise" | "reveal-up" | "draw"
 
 interface DemoCue {
@@ -5,18 +7,13 @@ interface DemoCue {
   startMs: number
   durationMs: number
   motion: DemoMotion
-  exitStartMs?: number
+  exit?: { startMs: number; durationMs: number }
 }
 
 interface DemoEasings {
   micro: string
   panel: string
-}
-
-interface CursorStop {
-  ms: number
-  x: number
-  y: number
+  travel: string
 }
 
 interface OpacityPoint {
@@ -24,10 +21,10 @@ interface OpacityPoint {
   opacity: number
 }
 
-const loopMs = 18000
-const resetStartMs = 16800
-const resetDurationMs = 320
-const resetEndMs = resetStartMs + resetDurationMs
+const loopMs = 16000
+const resetStartMs = 15250
+const resetDurationMs = 240
+const resetEndMs = resetStartMs + 240 + resetDurationMs
 const visibleInViewThreshold = 0.35
 
 const composerExpandMs = 1400
@@ -46,7 +43,7 @@ const typingPauseExtraMs = 26
 
 const agentStartMs = 6300
 const titleSwapStartMs = agentStartMs + 3000
-const titleSwapOutMs = 200
+const titleSwapOutMs = 160
 const draftFrameStartMs = agentStartMs + 2200
 const columnStartsMs = [3500, 3610, 3710, 3795, 3865].map((ms) => agentStartMs + ms)
 const segmentOffsetsMs = [0, 90, 180]
@@ -55,6 +52,7 @@ const tableRowStartsMs = [5620, 5740, 5840].map((ms) => agentStartMs + ms)
 
 const glowSettleStartMs = agentStartMs + 6350
 const glowSettleDurationMs = 600
+const posterMs = glowSettleStartMs + glowSettleDurationMs
 const blankStageFadeMs = 500
 const glowSpinMs = 3200
 
@@ -76,37 +74,6 @@ const sparkSlots = [
   { delayMs: logSummaryDelayMs, y: 73.12 },
   { delayMs: logBuiltDelayMs, y: 99.02 },
   { delayMs: logBuildingDelayMs, y: 124.9 },
-]
-
-const cursorTip = 4
-const plusButton = { x: 975.5, y: 753 }
-const promptField = { x: 1040, y: 690 }
-const typingRestSpot = { x: 1172, y: 626 }
-const sendButton = { x: 1219, y: 753 }
-const cursorStops: CursorStop[] = [
-  { ms: 0, x: 600, y: 500 },
-  { ms: 700, x: 600, y: 500 },
-  { ms: 1300, ...plusButton },
-  { ms: 1900, ...plusButton },
-  { ms: 2340, ...promptField },
-  { ms: 2480, ...promptField },
-  { ms: 2950, ...typingRestSpot },
-  { ms: 5650, ...typingRestSpot },
-  { ms: 6050, ...sendButton },
-  { ms: 6350, ...sendButton },
-  { ms: 6950, x: 1120, y: 560 },
-]
-const cursorPressesMs = [1320, 2360, 6080]
-const cursorPressDownMs = 70
-const cursorPressUpMs = 110
-const cursorPressScale = 0.86
-const cursorOpacityPoints: OpacityPoint[] = [
-  { ms: 0, opacity: 0 },
-  { ms: 300, opacity: 0 },
-  { ms: 500, opacity: 1 },
-  { ms: 7000, opacity: 1 },
-  { ms: 7200, opacity: 0 },
-  { ms: loopMs, opacity: 0 },
 ]
 
 const hiddenFrames: Record<DemoMotion, Keyframe> = {
@@ -146,11 +113,11 @@ const cues: DemoCue[] = [
     startMs: agentStartMs,
     durationMs: blankStageFadeMs,
     motion: "fade",
-    exitStartMs: glowSettleStartMs,
+    exit: { startMs: glowSettleStartMs, durationMs: glowSettleDurationMs },
   },
   { part: "draft-frame", startMs: draftFrameStartMs, durationMs: 300, motion: "fade" },
-  { part: "answer-title", startMs: titleSwapStartMs, durationMs: 300, motion: "rise" },
-  { part: "unit", startMs: titleSwapStartMs + 80, durationMs: 300, motion: "fade" },
+  { part: "answer-title", startMs: titleSwapStartMs + 100, durationMs: 300, motion: "rise" },
+  { part: "unit", startMs: titleSwapStartMs + 180, durationMs: 300, motion: "fade" },
   { part: "legend", startMs: columnStartsMs[0], durationMs: 300, motion: "fade" },
   ...columnStartsMs.flatMap((columnStartMs, column): DemoCue[] => [
     ...segmentOffsetsMs.map((offsetMs, segment): DemoCue => ({
@@ -180,12 +147,20 @@ function offsetAt(ms: number): number {
   return ms / loopMs
 }
 
+function resetDelayMs(part: string): number {
+  if (/^(table-|source$)/.test(part)) return 0
+  if (part.startsWith("cagr-")) return 60
+  if (/^(bar-|growth-|total-|legend$)/.test(part)) return 120
+  if (/^(answer-title$|unit$|draft-frame$)/.test(part)) return 180
+  return 240
+}
+
 function cueKeyframes(cue: DemoCue, easings: DemoEasings): Keyframe[] {
   const hidden = hiddenFrames[cue.motion]
   const shown = shownFrames[cue.motion]
   const enterEasing = cue.motion === "draw" ? easings.panel : easings.micro
-  const exitStartMs = cue.exitStartMs ?? resetStartMs
-  const exitEndMs = cue.exitStartMs === undefined ? resetEndMs : cue.exitStartMs + glowSettleDurationMs
+  const exitStartMs = cue.exit?.startMs ?? resetStartMs + resetDelayMs(cue.part)
+  const exitEndMs = exitStartMs + (cue.exit?.durationMs ?? resetDurationMs)
   return [
     { ...hidden, offset: 0 },
     { ...hidden, offset: offsetAt(cue.startMs), easing: enterEasing },
@@ -202,17 +177,14 @@ function opacityKeyframes(points: OpacityPoint[], easing: string): Keyframe[] {
 }
 
 function draftTitleKeyframes(easings: DemoEasings): Keyframe[] {
-  return opacityKeyframes(
-    [
-      { ms: 0, opacity: 0 },
-      { ms: draftFrameStartMs, opacity: 0 },
-      { ms: draftFrameStartMs + 300, opacity: 1 },
-      { ms: titleSwapStartMs, opacity: 1 },
-      { ms: titleSwapStartMs + titleSwapOutMs, opacity: 0 },
-      { ms: loopMs, opacity: 0 },
-    ],
-    easings.micro,
-  )
+  return [
+    { opacity: 0, transform: "translateY(0)", offset: 0 },
+    { opacity: 0, transform: "translateY(0)", offset: offsetAt(draftFrameStartMs), easing: easings.micro },
+    { opacity: 1, transform: "translateY(0)", offset: offsetAt(draftFrameStartMs + 300) },
+    { opacity: 1, transform: "translateY(0)", offset: offsetAt(titleSwapStartMs), easing: easings.micro },
+    { opacity: 0, transform: "translateY(-4px)", offset: offsetAt(titleSwapStartMs + titleSwapOutMs) },
+    { opacity: 0, transform: "translateY(-4px)", offset: 1 },
+  ]
 }
 
 function composerPlaceholderKeyframes(easings: DemoEasings): Keyframe[] {
@@ -221,7 +193,7 @@ function composerPlaceholderKeyframes(easings: DemoEasings): Keyframe[] {
       { ms: 0, opacity: 1 },
       { ms: caretShowMs, opacity: 1 },
       { ms: caretShowMs + 120, opacity: 0 },
-      { ms: resetStartMs, opacity: 0 },
+      { ms: resetStartMs + 240, opacity: 0 },
       { ms: resetEndMs, opacity: 1 },
       { ms: loopMs, opacity: 1 },
     ],
@@ -237,28 +209,10 @@ function composerDraftKeyframes(easings: DemoEasings): Keyframe[] {
     { opacity: 1, clipPath: composerTallClip, offset: offsetAt(composerCollapseMs), easing: easings.panel },
     { opacity: 1, clipPath: composerShortClip, offset: offsetAt(composerCollapseMs + composerMotionMs) },
     { opacity: 0, clipPath: composerShortClip, offset: offsetAt(composerFadeEndMs) },
-    { opacity: 0, clipPath: composerShortClip, offset: offsetAt(resetStartMs), easing: easings.micro },
+    { opacity: 0, clipPath: composerShortClip, offset: offsetAt(resetStartMs + 240), easing: easings.micro },
     { opacity: 1, clipPath: composerShortClip, offset: offsetAt(resetEndMs) },
     { opacity: 1, clipPath: composerShortClip, offset: 1 },
   ]
-}
-
-function cursorMoveKeyframes(easings: DemoEasings): Keyframe[] {
-  const lastStop = cursorStops[cursorStops.length - 1]
-  return [...cursorStops, { ...lastStop, ms: loopMs }].map(({ ms, x, y }) => ({
-    transform: `translate(${x - cursorTip}px, ${y - cursorTip}px)`,
-    offset: offsetAt(ms),
-    easing: easings.panel,
-  }))
-}
-
-function cursorPressKeyframes(easings: DemoEasings): Keyframe[] {
-  const pressFrames = cursorPressesMs.flatMap((pressMs): Keyframe[] => [
-    { transform: "scale(1)", offset: offsetAt(pressMs), easing: easings.micro },
-    { transform: `scale(${cursorPressScale})`, offset: offsetAt(pressMs + cursorPressDownMs), easing: easings.micro },
-    { transform: "scale(1)", offset: offsetAt(pressMs + cursorPressDownMs + cursorPressUpMs) },
-  ])
-  return [{ transform: "scale(1)", offset: 0 }, ...pressFrames, { transform: "scale(1)", offset: 1 }]
 }
 
 function typingTimesMs(characters: string[]): number[] {
@@ -324,7 +278,7 @@ function blankStageKeyframes(easings: DemoEasings): Keyframe[] {
       { ms: 0, opacity: 1 },
       { ms: agentStartMs, opacity: 1 },
       { ms: agentStartMs + blankStageFadeMs, opacity: 0 },
-      { ms: resetStartMs, opacity: 0 },
+      { ms: resetStartMs + 240, opacity: 0 },
       { ms: resetEndMs, opacity: 1 },
       { ms: loopMs, opacity: 1 },
     ],
@@ -399,7 +353,7 @@ function sparkMoveKeyframes(easings: DemoEasings): Keyframe[] {
   const moves = sparkSlots.flatMap(({ delayMs, y }): Keyframe[] => {
     const leaveMs = agentStartMs + delayMs - sparkMoveLeadMs
     const frames: Keyframe[] = [
-      { transform: at(currentY), offset: offsetAt(leaveMs), easing: easings.panel },
+      { transform: at(currentY), offset: offsetAt(leaveMs), easing: easings.travel },
       { transform: at(y), offset: offsetAt(leaveMs + sparkMoveMs) },
     ]
     currentY = y
@@ -456,12 +410,14 @@ function readEasings(): DemoEasings {
   return {
     micro: bezierEasing(rootStyle.getPropertyValue("--ease-micro").trim()),
     panel: bezierEasing(rootStyle.getPropertyValue("--ease-panel").trim()),
+    travel: bezierEasing(rootStyle.getPropertyValue("--ease-travel").trim()),
   }
 }
 
 function startPaused(element: Element, keyframes: Keyframe[]): Animation {
   const animation = element.animate(keyframes, { duration: loopMs, iterations: Infinity })
   animation.pause()
+  animation.currentTime = posterMs
   return animation
 }
 
@@ -495,6 +451,7 @@ export async function playEditorDemoAnimation(demo: Element): Promise<void> {
   await document.fonts.ready
 
   const easings = readEasings()
+  const cursor = cursorKeyframes(loopMs, easings)
   const animations = [
     ...animateCue(demo, "draft-title", draftTitleKeyframes(easings)),
     ...animateCue(demo, "composer-draft", composerDraftKeyframes(easings)),
@@ -506,9 +463,9 @@ export async function playEditorDemoAnimation(demo: Element): Promise<void> {
     ...animateShimmer(demo, "log-built", [agentStartMs + logBuiltDelayMs + 120]),
     ...animateShimmer(demo, "log-building", buildingShimmerStartsMs()),
     ...animateAgentPresence(demo, easings),
-    ...animateAll(demo, "[data-demo-cursor]", cursorMoveKeyframes(easings)),
-    ...animateAll(demo, "[data-demo-cursor]", opacityKeyframes(cursorOpacityPoints, "linear")),
-    ...animateAll(demo, "[data-demo-cursor-press]", cursorPressKeyframes(easings)),
+    ...animateAll(demo, "[data-demo-cursor]", cursor.move),
+    ...animateAll(demo, "[data-demo-cursor]", cursor.opacity),
+    ...animateAll(demo, "[data-demo-cursor-press]", cursor.press),
   ]
 
   new IntersectionObserver(
