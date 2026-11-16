@@ -97,6 +97,12 @@ export function usePresent(deck: PresentDeck | null): Present {
     if (!presenting) return
     function listen(event: KeyboardEvent) {
       if (event.key === "Tab") return
+      if (
+        (event.key === "Enter" || event.key === " ") &&
+        event.target instanceof HTMLElement &&
+        event.target.closest("button") !== null
+      )
+        return
       event.stopPropagation()
       const key = showKey(event)
       if (key === null) return
