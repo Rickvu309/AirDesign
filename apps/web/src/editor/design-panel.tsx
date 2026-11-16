@@ -6,7 +6,7 @@ import { controlViews } from "@/design/control-views"
 import type { Palette } from "@/design/color-choices"
 import type { ControlKind, ControlProps, PanelModel, PanelRow } from "@/design/panel"
 import { foldOpen, setFold, useFolds } from "@/design/panel-folds"
-import { haldenMist, haldenTeal, swatchMist, swatchNavy, swatchTeal, swatchWhite } from "@/editor/design-panel-art"
+import { swatchMist, swatchNavy, swatchTeal, swatchWhite } from "@/editor/design-panel-art"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 
@@ -14,27 +14,10 @@ export function DesignPanel() {
   return (
     <>
       <DesignHead>Slide 3</DesignHead>
-      <DesignSection title="Template">
-        <div className="flex items-center gap-3 rounded-[var(--shape-card)] bg-white p-2 shadow-[0px_0px_0px_1px_var(--field-edge)]">
-          <span className="flex h-10 w-10 shrink-0 overflow-hidden rounded-[var(--shape-control)]">
-            <span className="block flex-1 bg-navy" />
-            <span className="block flex-1" style={{ backgroundColor: haldenTeal }} />
-            <span className="block flex-1" style={{ backgroundColor: haldenMist }} />
-          </span>
-          <span className="flex flex-1 flex-col gap-0.5">
-            <span className="text-[length:var(--type-dense)] font-medium text-foreground">Halden</span>
-            <span className="text-xs text-faint">Geist</span>
-          </span>
-          <EditorIcon name="chev" size={14} className="text-faint" />
-        </div>
-      </DesignSection>
       <DesignSection title="Background">
-        <BackgroundKind>
-          <span className="flex h-7 flex-1 items-center justify-center text-xs text-quiet">Image</span>
-        </BackgroundKind>
         <Swatch color={swatchWhite} name="White" edged />
       </DesignSection>
-      <DesignSection title="Colors" last>
+      <DesignSection title="Theme" last>
         <div className="grid grid-cols-2 gap-2">
           <Swatch color={swatchNavy} name="Navy" />
           <Swatch color={swatchTeal} name="Teal" />
@@ -150,17 +133,6 @@ function SectionReset({ row, onChange }: { row: PanelRow; onChange: (row: PanelR
     >
       {row.reset}
     </Button>
-  )
-}
-
-export function BackgroundKind({ color = "Color", children }: { color?: string; children: ReactNode }) {
-  return (
-    <div className="flex h-8 items-center rounded-lg bg-line p-0.5">
-      <span className="flex h-7 flex-1 items-center justify-center rounded-[var(--shape-control)] bg-white text-xs font-medium text-foreground shadow-[0px_1px_2px_var(--black-10)]">
-        {color}
-      </span>
-      {children}
-    </div>
   )
 }
 

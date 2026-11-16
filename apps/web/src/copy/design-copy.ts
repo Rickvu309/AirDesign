@@ -5,12 +5,7 @@ type Named = Exclude<PaintFill["type"], "solid" | "none">
 
 export const designCopy = {
   slide: (number: number) => `Slide ${String(number)}`,
-  template: "Template",
-  templateOff: "Templates are not available yet",
   background: "Background",
-  color: "Color",
-  picture: "Picture",
-  pictureOff: "Picture, not available yet",
   backgroundColor: (name: string) => `Background color, ${name}`,
   white: "White",
   fills: { gradient: "Gradient", pattern: "Pattern", picture: "Picture" },

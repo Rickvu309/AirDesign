@@ -35,7 +35,7 @@ function applied(register: Register, command: Command): Register {
   return decision.register
 }
 
-function Panel(props: { readonly node: ElementId; readonly exposed: (shown: DeckPaint) => void }) {
+function Panel(props: { readonly node: ElementId | null; readonly exposed: (shown: DeckPaint) => void }) {
   const nothing = () => undefined
   const pictures = { store: { bytes: new Map(), load: async () => false, keep: nothing } }
   const undo = editor.useUndoList()
@@ -46,14 +46,41 @@ function Panel(props: { readonly node: ElementId; readonly exposed: (shown: Deck
   })
 }
 
-async function pictureFile(): Promise<Uint8Array> {
+async function fixtureFile(name: string): Promise<Uint8Array> {
   const fsName = "node:fs/promises"
   const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
-  return fs.readFile(new URL("../../../../scripts/pptx-fixtures/picture-png.pptx", import.meta.url))
+  return fs.readFile(new URL(`../../../../scripts/pptx-fixtures/${name}`, import.meta.url))
+}
+
+async function slidePanel() {
+  const parts = await readParts(await fixtureFile("blank.pptx"))
+  const register = openRegister("", "")
+  device.link = {
+    enqueueRow: async () => ({ ok: true }),
+    flush: async () => ({ ok: true }),
+    openDeck: async () => ({ ok: true, register }),
+  }
+  const exposed: { current: DeckPaint | null } = { current: null }
+  const host = window.document.createElement("div")
+  window.document.body.append(host)
+  const root = editor.createRoot(host)
+  await act(async () => root.render(createElement(Panel, { node: null, exposed: (now) => (exposed.current = now) })))
+  const shown = exposed.current
+  if (shown === null) throw new Error("not rendered")
+  await act(async () => {
+    shown.showOpened(parts, register)
+  })
+  return {
+    host,
+    close: async () => {
+      await act(async () => root.unmount())
+      host.remove()
+    },
+  }
 }
 
 async function pictureDeck() {
-  const parts = await readParts(await pictureFile())
+  const parts = await readParts(await fixtureFile("picture-png.pptx"))
   const slide = readSlides(parts)[0]?.slide
   if (slide === undefined) throw new Error("slide")
   const node = elementId(`${slide}.4`)
@@ -153,4 +180,19 @@ it("keeps both crop sides a person types one after another while the first is st
   expect(crop?.rect).toEqual({ set: { l: 10_000, t: 0, r: 10_000, b: 0 } })
   expect([box?.x, box?.w]).toEqual([{ set: 4_267_200 }, { set: 3_657_600 }])
   await picture.close()
+}, 20_000)
+
+it("shows a slide's background and theme once each, with no section or button that does nothing", async () => {
+  const slide = await slidePanel()
+  const panel = slide.host.querySelector("[data-design-panel]")
+  const text = panel?.textContent ?? ""
+  expect(text).toContain("Background")
+  expect(text).toContain("Theme")
+  expect(text).not.toContain("Template")
+  expect(text).not.toContain("not available")
+  expect(panel?.querySelectorAll("button:disabled")).toHaveLength(0)
+  expect(panel?.querySelectorAll("button[aria-label^='Background color']")).toHaveLength(1)
+  for (const name of ["Dark 1", "Accent 1", "Accent 6"])
+    expect(text.split(name)).toHaveLength(2)
+  await slide.close()
 }, 20_000)
