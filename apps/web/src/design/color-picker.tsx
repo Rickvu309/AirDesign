@@ -1,5 +1,5 @@
 import type { Color } from "@airdesign/document"
-import type { KeyboardEvent, ReactElement, ReactNode } from "react"
+import { useState, type KeyboardEvent, type ReactElement, type ReactNode } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { colorCopy } from "@/copy/color-copy"
 import { contrastOf, deckChoices, matches, themeColumns, type Choice, type Palette } from "@/design/color-choices"
@@ -157,17 +157,23 @@ export function PickerBody({
   theme = true,
   contrast = false,
   onPick,
+  onSwatch,
 }: {
   value: Color | undefined
   palette: Palette
   theme?: boolean
   contrast?: boolean
   onPick: (color: Color) => void
+  onSwatch?: () => void
 }) {
+  const swatch = (color: Color) => {
+    onPick(color)
+    onSwatch?.()
+  }
   return (
     <>
-      {theme && palette.theme.length > 0 ? <ThemeGrid value={value} palette={palette} onPick={onPick} /> : null}
-      <DeckRow value={value} palette={palette} onPick={onPick} />
+      {theme && palette.theme.length > 0 ? <ThemeGrid value={value} palette={palette} onPick={swatch} /> : null}
+      <DeckRow value={value} palette={palette} onPick={swatch} />
       <CustomColor value={value} palette={palette} onPick={onPick} />
       {contrast && value !== undefined ? <Contrast value={value} palette={palette} /> : null}
     </>
@@ -180,6 +186,7 @@ export function ColorPicker({
   theme = true,
   contrast = false,
   keepsFormat = false,
+  closesOnSwatch = false,
   side = "bottom",
   align = "start",
   trigger,
@@ -191,23 +198,33 @@ export function ColorPicker({
   theme?: boolean
   contrast?: boolean
   keepsFormat?: boolean
+  closesOnSwatch?: boolean
   side?: "top" | "bottom" | "left" | "right"
   align?: "start" | "center" | "end"
   trigger: ReactElement
   children: ReactNode
   onPick: (color: Color) => void
 }) {
+  const [open, setOpen] = useState(false)
   return (
-    <Popover modal={false}>
+    <Popover modal={false} open={open} onOpenChange={setOpen}>
       <PopoverTrigger render={trigger}>{children}</PopoverTrigger>
       <PopoverContent
         side={side}
         align={align}
         className="gap-3 p-3"
         data-color-picker
+        data-keeps-selection
         {...(keepsFormat ? { "data-keeps-format": "" } : {})}
       >
-        <PickerBody value={value} palette={palette} theme={theme} contrast={contrast} onPick={onPick} />
+        <PickerBody
+          value={value}
+          palette={palette}
+          theme={theme}
+          contrast={contrast}
+          onPick={onPick}
+          {...(closesOnSwatch ? { onSwatch: () => setOpen(false) } : {})}
+        />
       </PopoverContent>
     </Popover>
   )

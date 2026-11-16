@@ -174,6 +174,7 @@ export function FormatButtons({
           value={value}
           palette={{ theme, deck: deckColors, behind: null }}
           keepsFormat
+          closesOnSwatch
           side="top"
           onPick={(picked) => onColor?.(picked)}
           trigger={
