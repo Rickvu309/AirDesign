@@ -95,6 +95,21 @@ for (const path of paths) {
   })
 }
 
+test("the ticker label clears a landscape notch", async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 })
+  const client = await page.context().newCDPSession(page)
+  await client.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, right: 47, bottom: 21, left: 47 } })
+  await open(page, "/")
+  const label = page.getByText("GOOD DECK", { exact: true })
+  const textLeft = await label.evaluate((element) => {
+    const range = document.createRange()
+    range.selectNodeContents(element)
+    return range.getBoundingClientRect().left
+  })
+  expect(textLeft).toBeGreaterThanOrEqual(47)
+  expect((await label.boundingBox())?.x).toBe(0)
+})
+
 test("every link and button on the landing page and the sign-in pages is at least 44 by 44 px", async ({ page }) => {
   for (const path of ["/", "/sign-in", "/sign-in/check", "/sign-in/expired"]) {
     await open(page, path)
