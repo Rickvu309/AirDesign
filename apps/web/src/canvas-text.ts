@@ -69,5 +69,6 @@ export function canvasText(text: PaintText | null): CanvasText | null {
     flow: text.flow,
     columns: text.columns,
     columnGap: text.columnGap,
+    ...(text.edgeSpacing === true ? { edgeSpacing: true } : {}),
   }
 }

@@ -61,7 +61,7 @@ function painted(text: CanvasText, words = "Item") {
 }
 
 it("paints a hanging bullet, the gaps around a paragraph, and the marks on a run", () => {
-  const { block, run: paintedRun } = painted(paragraph())
+  const { block, run: paintedRun } = painted({ ...paragraph(), edgeSpacing: true })
   expect(Number.parseFloat(block.style.paddingLeft)).toBeCloseTo(scaled(margin), 4)
   expect(Number.parseFloat(block.style.textIndent)).toBeCloseTo(scaled(-margin), 4)
   expect(Number.parseFloat(block.style.marginTop)).toBeCloseTo(scaled(63_500), 4)
@@ -154,4 +154,27 @@ it("paints a theme tint and shade a person picks before the file has them", () =
   expect(look.run(0, 0, { color: { scheme: "accent1", transforms: [{ op: "lumMod", val: 75_000 }] } }).color).toBe(
     `${hash}2F5597`,
   )
+})
+
+it("leaves out the space before the first paragraph and after the last unless the body keeps them", () => {
+  const two = (edgeSpacing: boolean): CanvasText => {
+    const text = paragraph()
+    const first = text.paragraphs[0]!
+    return { ...text, paragraphs: [first, { ...first, from: 1 }], ...(edgeSpacing ? { edgeSpacing } : {}) }
+  }
+  const gaps = (text: CanvasText) => {
+    const look = textLook(text, scaled)
+    return [0, 1].map((from) => {
+      const style = look.paragraph(from, true)
+      return [style.marginTop !== undefined, style.marginBottom !== undefined]
+    })
+  }
+  expect(gaps(two(false))).toEqual([
+    [false, true],
+    [true, false],
+  ])
+  expect(gaps(two(true))).toEqual([
+    [true, true],
+    [true, true],
+  ])
 })

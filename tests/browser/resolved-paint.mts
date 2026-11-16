@@ -80,6 +80,7 @@ export function textOf(text: PaintText): ResolvedText {
     fontScale: text.fontScale,
     lineReduction: text.spacingReduction,
     vertical: text.vertical,
+    ...(text.edgeSpacing === true ? { edgeSpacing: true } : {}),
   }
 }
 

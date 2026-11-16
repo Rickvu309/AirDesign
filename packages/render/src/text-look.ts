@@ -324,8 +324,22 @@ export const flowModes = {
   vert270: { writingMode: "sideways-lr" },
 } as const satisfies Readonly<Record<NonNullable<CanvasText["flow"]>, CSSProperties>>
 
+function edged(style: Look, edges: { readonly first: number; readonly last: number } | null, from: number): Look {
+  if (edges === null || (from !== edges.first && from !== edges.last)) return style
+  const { marginTop, marginBottom, ...rest } = style
+  return {
+    ...rest,
+    ...(from === edges.first || marginTop === undefined ? {} : { marginTop }),
+    ...(from === edges.last || marginBottom === undefined ? {} : { marginBottom }),
+  }
+}
+
 export function textLook(text: CanvasText, scaled: Scaled): TextLook {
   const paragraphs = new Map(text.paragraphs.map((paragraph) => [paragraph.from, paragraph]))
+  const edges = {
+    first: text.paragraphs[0]?.from ?? 0,
+    last: text.paragraphs[text.paragraphs.length - 1]?.from ?? 0,
+  }
   const colors = text.colors ?? []
   const scale = text.fit?.kind === "shrink" ? text.fit.scale : 1
   const styleAt = (from: number, run: number) => {
@@ -337,7 +351,11 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
     paragraph(from, filled, overlay) {
       const paragraph = paragraphs.get(from)
       if (paragraph === undefined) return { lineHeight: filled ? noLine : singleLine, "--bullet": "none" }
-      const style = paragraphOverlay(paragraphStyle(spaced(paragraph, overlay), filled, scaled), paragraph, overlay)
+      const style = edged(
+        paragraphOverlay(paragraphStyle(spaced(paragraph, overlay), filled, scaled), paragraph, overlay),
+        text.edgeSpacing === true ? null : edges,
+        from,
+      )
       return filled || overlay?.bullet === true ? style : { ...style, "--bullet-unfocused": "none" }
     },
     run(from, run, format = {}, overlay) {
