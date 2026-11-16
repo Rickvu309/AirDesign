@@ -1,0 +1,35 @@
+{
+  "check": "checks-connection.md#connection",
+  "covers": [
+    {
+      "file": "apps/web/src/editor/use-network.ts",
+      "names": ["useNetwork"],
+      "digest": "db897a48738d",
+      "blob": "336e01be464dfe0d65784e51eb317448df781cee"
+    },
+    {
+      "file": "apps/web/src/editor/use-deck-status.ts",
+      "names": ["useDeckStatus", "saveStatus", "watchNetwork", "browserOnline"],
+      "digest": "10fc34f83b4f",
+      "blob": "dfeae89fdb2463fba718b54811b555b91ebf9fcc"
+    },
+    {
+      "file": "apps/web/src/deck-resend.ts",
+      "names": ["resendPending"],
+      "digest": "cc5743d8ebdd",
+      "blob": "a9cdf6f5ebbfc0f9eaa8af542084ff21a59c5d2a"
+    },
+    {
+      "file": "apps/web/src/commit-edit.ts",
+      "names": ["flushPending", "commitKept"],
+      "digest": "404be329a6f8",
+      "blob": "9632f717c3a0a7b280d538d0801f9aba997b892c"
+    },
+    {
+      "file": "packages/live/src/cache.ts",
+      "names": ["serial", "connect"],
+      "digest": "4c962eb4090c",
+      "blob": "805068052137b36ac4773009939ec0150bfbd90f"
+    }
+  ]
+}
