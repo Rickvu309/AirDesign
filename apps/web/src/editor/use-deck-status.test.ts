@@ -54,6 +54,7 @@ it("puts a failure before undo, undo before a picture, a picture before set-asid
     offline: true,
     pending: true,
     aside: 1,
+    asideTooLarge: false,
     refusal: "storage",
   } as const
   expect(shownNotice(all)).toBe("export-failed")
