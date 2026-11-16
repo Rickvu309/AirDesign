@@ -69,7 +69,7 @@ async function allow() {
 function recovery(transient: boolean) {
   expect(host.textContent).toContain(transient ? "Check your connection" : "Start connecting again from your agent")
   const link = host.querySelector("a")
-  expect(link?.textContent).toBe(transient ? "Reload consent" : "Back to AirDesign")
+  expect(link?.textContent).toBe(transient ? "Try again" : "Back to AirDesign")
   expect(link?.getAttribute("href")).toBe(transient ? address : "/")
   expect(host.querySelector("button")).toBeNull()
 }
