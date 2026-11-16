@@ -7,14 +7,20 @@ import { movedDeckCards } from "@/decks/sample-decks"
 
 const toastWidth = "322.07px"
 
-export function MovedToast({ name = "Pricing Strategy Review", onUndo }: { name?: string; onUndo?: () => void }) {
+export function MovedToast({
+  name = "Pricing Strategy Review",
+  onUndo,
+}: {
+  name?: string
+  onUndo?: (pointer: boolean) => void
+}) {
   return (
     <div
       className="flex h-10 items-center rounded-[var(--shape-card)] bg-foreground pr-4 pl-4 text-[length:var(--type-dense)] leading-[17px] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]"
       style={{ width: toastWidth }}
     >
       <span className="min-w-0 flex-1 truncate">{name} moved to Trash</span>
-      <button type="button" onClick={onUndo} className="font-medium text-white">
+      <button type="button" onClick={(event) => onUndo?.(event.detail > 0)} className="font-medium text-white">
         Undo
       </button>
     </div>

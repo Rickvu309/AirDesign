@@ -4,7 +4,7 @@ import { deckActionsOf, productCopy } from "@/copy/product-copy"
 import { DeckGlyph } from "@/decks/deck-glyph"
 import { StarButton } from "@/decks/star-button"
 
-export function DeckMenu({ name, onTrash }: { name: string; onTrash: () => void }) {
+export function DeckMenu({ name, onTrash }: { name: string; onTrash: (pointer: boolean) => void }) {
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger
@@ -20,7 +20,7 @@ export function DeckMenu({ name, onTrash }: { name: string; onTrash: () => void 
         <DeckGlyph name="more" size={16} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-auto">
-        <DropdownMenuItem onClick={onTrash}>{productCopy.moveToTrash}</DropdownMenuItem>
+        <DropdownMenuItem onClick={(event) => onTrash(event.detail > 0)}>{productCopy.moveToTrash}</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -35,7 +35,7 @@ export function DeckActions({
   name: string
   starred: boolean
   onStar: () => void
-  onTrash: () => void
+  onTrash: (pointer: boolean) => void
 }) {
   return (
     <div className="flex items-center gap-0.5">

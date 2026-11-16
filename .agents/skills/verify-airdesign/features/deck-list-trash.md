@@ -33,6 +33,7 @@ Preconditions:
 - `$V doctor <run>` is ok.
 - The person owns at least one deck. The journey imports `clean.pptx` to make one.
 
+- **Grid motion.** `deck-grid-motion` drives pointer Trash and Undo against the real API, checks 220 ms neighbour transforms, the fading exit, return to the original slot, focus, and a second Trash and Undo during a paused shift. It also checks no motion on load, search, keyboard actions, list view or reduced motion, including the last card and its first return. Proven 2026-11-16.
 - **Run it.** `$V journey <run> deck-list-trash`. Prints `"passed":true`.
 - **Make a deck.** Import `clean.pptx` from Home. Poll `post(deckRoutes.list, {})` until the deck's name is `clean`, the file name without `.pptx`.
 - **Listed.** Open `/`. `heading "clean"` is visible. Evidence `NN-home-lists-deck`.

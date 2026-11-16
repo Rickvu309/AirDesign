@@ -57,6 +57,7 @@ for (const name of [
   "theme",
   "commit-once",
   "deck-list-trash",
+  "deck-grid-motion",
   "deck-stars",
   "slide-paint",
   "cleared-browser",

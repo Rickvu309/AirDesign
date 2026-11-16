@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { noMatchTitleOf, productCopy, starredOf, unstarredOf } from "@/copy/product-copy"
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
+import { clearGridShift, gridShift } from "@/decks/grid-shift"
 import { DeckActions } from "@/decks/deck-menu"
 import { DeckPreview } from "@/decks/deck-preview"
 import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
@@ -126,11 +127,28 @@ export function Home({
   const listFailed = useRef(false)
   const [query, setQuery] = useState(() => addressRead(window.location.search).query)
   const listView = addressRead(window.location.search).list
-  async function refresh() {
+  const grid = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)")
+    const clear = () => clearGridShift(grid.current)
+    reduce.addEventListener("change", clear)
+    return () => {
+      reduce.removeEventListener("change", clear)
+      clear()
+    }
+  }, [query, listView, section])
+
+  async function refresh(shiftAt?: string) {
     try {
       const result = await post(deckRoutes.list.path, {})
       if (result.ok) {
-        setListing(await withDevice(result))
+        const next = await withDevice(result)
+        const change = () => setListing(next)
+        if (shiftAt === window.location.href && (!listView || trash)) gridShift(() => grid.current, change)
+        else {
+          clearGridShift(grid.current)
+          change()
+        }
         setUnavailable(false)
       } else if (result.refusal !== "session") setUnavailable(true)
     } catch {
@@ -178,24 +196,26 @@ export function Home({
     heading.focus()
   }
 
-  async function restore(deck: Deck) {
-    const held = onDeck()
+  async function restore(deck: Deck, pointer = false) {
+    const shiftAt = pointer ? window.location.href : undefined
+    const held = onDeck() || document.activeElement?.closest("[data-sonner-toast]") != null
     if ((await post(deckRoutes.restore.path, { deck: deck.deck })).ok) {
-      await refresh()
+      await refresh(shiftAt)
       if (held) keepFocus()
     }
   }
 
-  async function move(deck: Deck, held = onDeck()) {
+  async function move(deck: Deck, held = onDeck(), pointer = false) {
+    const shiftAt = pointer ? window.location.href : undefined
     if (!(await post(deckRoutes.trash.path, { deck: deck.deck })).ok) return
-    await refresh()
+    await refresh(shiftAt)
     if (held) keepFocus()
     toast.custom(
       (id) => (
         <MovedToast
           name={deck.name}
-          onUndo={() => {
-            void restore(deck).then(() => toast.dismiss(id))
+          onUndo={(pointer) => {
+            void restore(deck, pointer).then(() => toast.dismiss(id))
           }}
         />
       ),
@@ -315,7 +335,7 @@ export function Home({
         </div>
       )}
       {(listing !== null || importing !== null) && !noDecks && !noMatch && (
-        <DeckGrid className={trash ? "mt-6" : undefined}>
+        <DeckGrid ref={grid} className={trash ? "mt-6" : undefined}>
           {importing &&
             (importing.failed ? (
               <div role="alert">
@@ -341,6 +361,7 @@ export function Home({
             ? decks.map((deck) => (
                 <DeckCard
                   key={deck.deck}
+                  deck={deck.deck}
                   name={deck.name}
                   edited={
                     trash ? deckTime(deck.trashed ?? deck.edited, now()).trash : deckTime(deck.edited, now()).card
@@ -350,13 +371,13 @@ export function Home({
                   preview={<DeckPreview deck={deck.deck} name={deck.name} edited={deck.edited} />}
                   action={
                     trash ? (
-                      <RestoreButton onClick={() => void restore(deck)} />
+                      <RestoreButton onClick={(pointer) => void restore(deck, pointer)} />
                     ) : (
                       <DeckActions
                         name={deck.name}
                         starred={deck.starred === true}
                         onStar={() => star(deck)}
-                        onTrash={() => void move(deck, true)}
+                        onTrash={(pointer) => void move(deck, true, pointer)}
                       />
                     )
                   }

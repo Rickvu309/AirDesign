@@ -6,11 +6,11 @@ import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { trashDeckCards } from "@/decks/sample-decks"
 import { SampleSlide } from "@/decks/screens/sample-slide"
 
-export function RestoreButton({ onClick }: { onClick?: () => void }) {
+export function RestoreButton({ onClick }: { onClick?: (pointer: boolean) => void }) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(event) => onClick?.(event.detail > 0)}
       className="flex h-7 items-center rounded-md bg-background px-2.5 text-[length:var(--type-caption)] leading-none font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)]"
     >
       Restore
