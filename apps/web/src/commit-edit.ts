@@ -19,6 +19,8 @@ export type FlushOutcome = "sent" | "offline" | "signed-out" | "kept" | "set-asi
 
 export type CommitOutcome = FlushOutcome | "refused"
 
+const unread: ReadonlySet<unknown> = new Set(["payload", "server"])
+
 export async function flushPending(open: (remote: Remote) => FlushLink, deckId: string): Promise<FlushOutcome> {
   try {
     const flushed = await open(server).flush(deckId)
@@ -26,6 +28,7 @@ export async function flushPending(open: (remote: Remote) => FlushLink, deckId: 
     if ("aside" in flushed && typeof flushed.aside === "number" && flushed.aside > 0) return "set-aside"
     if ("ok" in flushed && flushed.ok === true) return "sent"
     if ("refusal" in flushed && flushed.refusal === "session") return "signed-out"
+    if ("refusal" in flushed && unread.has(flushed.refusal)) return "offline"
     return "kept"
   } catch (error) {
     return error instanceof TypeError ? "offline" : "kept"

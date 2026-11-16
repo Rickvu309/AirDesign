@@ -64,6 +64,65 @@ test("a server that cannot be reached reads the unreached words, then Saved once
   await expect(saveStatus(page)).toHaveText(saved, { timeout: 15_000 })
 })
 
+const unreadable = [
+  { name: "an error page from the proxy", status: 500, contentType: "text/html", body: "<html>Error</html>" },
+  {
+    name: "the server's own failure",
+    status: 500,
+    contentType: "application/json",
+    body: '{"ok":false,"refusal":"server"}',
+  },
+]
+
+for (const answer of unreadable) {
+  test(`${answer.name} reads the unreached words, then Saved once the server answers with no new edit`, async ({
+    page,
+    context,
+    stack,
+  }) => {
+    const cookie = await stack.signIn()
+    await signInBrowser(context, cookie)
+    await forward(page, stack)
+    const deck = await openClean(page)
+    const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
+    const before = await revision()
+    const commit = (url: URL) => url.pathname === "/decks/commit"
+    await page.route(commit, (route) =>
+      route.fulfill({ status: answer.status, contentType: answer.contentType, body: answer.body }),
+    )
+    await typeAtEnd(page, "!")
+    await expect(saveStatus(page)).toHaveText(unreached)
+    await page.unroute(commit)
+    await expect(saveStatus(page)).toHaveText(saved, { timeout: 15_000 })
+    expect(await revision()).toBe(before + 1)
+  })
+}
+
+test("an edit that landed but whose answer came back cut off lands once when it is sent again", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  const deck = await openClean(page)
+  const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
+  const before = await revision()
+  const commit = (url: URL) => url.pathname === "/decks/commit"
+  let cut = 0
+  await page.route(commit, async (route) => {
+    if (cut > 0) return route.fallback()
+    cut += 1
+    const landed = await route.fetch()
+    return route.fulfill({ response: landed, body: (await landed.text()).slice(0, 10) })
+  })
+  await typeAtEnd(page, "!")
+  await expect(saveStatus(page)).toHaveText(saved, { timeout: 15_000 })
+  expect(cut).toBe(1)
+  expect(await revision()).toBe(before + 1)
+})
+
 test("going offline reads Offline before any edit, and Saved again when the browser is back", async ({
   page,
   context,
