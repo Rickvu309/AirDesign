@@ -1,8 +1,10 @@
 import {
   decide,
   elementId,
+  format,
   landedPatch,
   openRegister,
+  themeNode,
   type Command,
   type ElementId,
   type Register,
@@ -194,4 +196,35 @@ it("shows a slide's background and theme once each, with no section or button th
   expect(panel?.querySelectorAll("button[aria-label^='Background color']")).toHaveLength(1)
   for (const name of ["Dark 1", "Accent 1", "Accent 6"]) expect(text.split(name)).toHaveLength(2)
   await slide.close()
+}, 20_000)
+
+it.fails("draws a fill that names a theme colour in that colour once the theme changes it, as the canvas paints it", async () => {
+  const parts = await readParts(await fixtureFile("clean.pptx"))
+  const slide = readSlides(parts)[0]?.slide
+  if (slide === undefined) throw new Error("slide")
+  const node = elementId(`${slide}.2`)
+  const opened = applied(openRegister("", "deck"), { command: "add", node: themeNode, floor: "", route: "deck" })
+  const red = "C00000"
+  const patch = { theme: { accent1: { set: red } } }
+  const register = applied(opened, { command: "person", node: themeNode, v: format, patch })
+  device.link = { flush: async () => ({ ok: true }), openDeck: async () => ({ ok: true, register }) }
+  const exposed: { current: DeckPaint | null } = { current: null }
+  const host = window.document.createElement("div")
+  window.document.body.append(host)
+  const root = editor.createRoot(host)
+  await act(async () => root.render(createElement(Panel, { node, exposed: (now) => (exposed.current = now) })))
+  const shown = exposed.current
+  if (shown === null) throw new Error("not rendered")
+  await act(async () => {
+    shown.showOpened(parts, register)
+  })
+  const painted = shown.canvases.current(0)?.elements.find((element) => element.id === node)?.fill
+  const fill = [...host.querySelectorAll("[data-control='union']")].find(
+    (control) => control.firstElementChild?.textContent === "Fill",
+  )
+  const swatch = fill?.querySelector<HTMLElement>("[data-control='color'] span[aria-hidden]")?.style.background
+  expect(painted).toBe(`#${red}`)
+  expect(swatch).toBe("rgb(192, 0, 0)")
+  await act(async () => root.unmount())
+  host.remove()
 }, 20_000)
