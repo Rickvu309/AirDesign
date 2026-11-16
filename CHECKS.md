@@ -18,6 +18,7 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | Two builds never run at once: each `tsc -b` writes the `dist` of every package it references, so two at once leave each other half-written declarations and fail with type errors the source does not have | `scripts/build-order.test.mjs` fails a `pnpm` command in `package.json` or a workflow that builds two projects with `--filter` and no `--workspace-concurrency=1`. The `journeys` build failed this way on main at a83f2535 |
 | A state machine keeps its invariants | `pnpm check:specs` |
 | Every spec in `specs/` is replayed against the code by a test, or listed with a reason | `scripts/spec-replays.mjs`, the `spec-replays` step of `pnpm check`. It warns for now and blocks nothing |
+| A spec is checked again when the code it describes moves: `specs/<topic>/covers.json` names the declarations its model describes, with their digest at the last sync | `scripts/spec-sync.mjs`, the `spec-sync` step of `pnpm check`, names each spec whose covered declarations changed or went since its sync. `--sync <topic>` records a new sync only after `pnpm check:specs <topic>` passed. It warns for now and blocks nothing |
 | A spec property the code breaks today is kept in `<Module>.known.cfg` beside an `it.fails` test | `pnpm check:specs` fails when a known config stops failing |
 | An edit changes only its PowerPoint parts and adds no validator error | `pnpm check:pptx` |
 | Every lint rule has a test and is switched on | `scripts/bug-rule.mjs` |

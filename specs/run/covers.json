@@ -1,0 +1,11 @@
+{
+  "check": "checks-document.md#run",
+  "covers": [
+    {
+      "file": "packages/document/src/decide.ts",
+      "names": ["decide", "startRun", "agentEdit", "stopRun", "decideUndo", "version"],
+      "digest": "f3c809bbace1",
+      "blob": "1286a8b0c599880d213a2dbad374e086d31fad28"
+    }
+  ]
+}

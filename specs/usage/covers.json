@@ -1,0 +1,11 @@
+{
+  "check": "checks-server.md#usage",
+  "covers": [
+    {
+      "file": "packages/usage/src/index.ts",
+      "names": ["usage"],
+      "digest": "3ad6bf738f77",
+      "blob": "b0eb8bdaf001f73581852b6ae1e620b1a03bf084"
+    }
+  ]
+}

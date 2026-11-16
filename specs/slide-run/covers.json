@@ -1,0 +1,53 @@
+{
+  "check": "checks-slides.md#slide-run",
+  "covers": [
+    {
+      "file": "packages/mcp/src/server.ts",
+      "names": ["settledCall", "createServer"],
+      "digest": "e977fe9b18bd",
+      "blob": "4637389522fdfb6b0fbfd9239f884f3947e17ea5"
+    },
+    {
+      "file": "packages/mcp/src/slide-tool.ts",
+      "names": ["slideTool"],
+      "digest": "d1fe186636c5",
+      "blob": "2246598cec2b80873fc73d5a0b646b8353e28aef"
+    },
+    {
+      "file": "packages/engine/src/agent-slides.ts",
+      "names": ["agentSlide", "runFence", "runFenced", "readFresh"],
+      "digest": "d2422d232592",
+      "blob": "86763b79697691b90c06acb61f1779fadeac38b4"
+    },
+    {
+      "file": "packages/mcp/src/call-tool.ts",
+      "names": ["stopRun"],
+      "digest": "740a684615f5",
+      "blob": "ef0ae0c8bacc2b93cb27792f19c5c1ce15456a03"
+    },
+    {
+      "file": "packages/engine/src/call.ts",
+      "names": ["endOnTouched", "endSlides", "landed"],
+      "digest": "4d32375cfed1",
+      "blob": "dd18b3c9b390b1f9b79f9a0dc9cd496a326f02b1"
+    },
+    {
+      "file": "packages/mcp/src/turn.ts",
+      "names": ["settleTurn", "liveTurn", "heldRun"],
+      "digest": "ef6e580ae36b",
+      "blob": "513bce6502f59a9a375927e78111b5a6978a097d"
+    },
+    {
+      "file": "apps/api/src/agent-turn.ts",
+      "names": ["storedTurns"],
+      "digest": "1c000aa5b3ef",
+      "blob": "5e9abb8a943b40f29b5d6ae38771ef781fd32e83"
+    },
+    {
+      "file": "apps/api/src/mcp.ts",
+      "names": ["serveMcp", "commitEdit"],
+      "digest": "32ee6874a154",
+      "blob": "2a8e85d7b76537a63057bac4dda698e88d9bc1bf"
+    }
+  ]
+}

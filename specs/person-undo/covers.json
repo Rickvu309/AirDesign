@@ -1,0 +1,29 @@
+{
+  "check": "checks-undo.md#person-undo",
+  "covers": [
+    {
+      "file": "packages/document/src/person-undo.ts",
+      "names": ["undoOf", "redoOf", "turn", "stepCommands", "applying", "holderOf"],
+      "digest": "48ed855be86d",
+      "blob": "bbaae48a47c8aad7f74e5617646addfdfb317121"
+    },
+    {
+      "file": "packages/document/src/decide.ts",
+      "names": ["decide", "shownPatch"],
+      "digest": "b3c76d98a698",
+      "blob": "1286a8b0c599880d213a2dbad374e086d31fad28"
+    },
+    {
+      "file": "packages/document/src/row.ts",
+      "names": ["netPatch", "formatOne"],
+      "digest": "6e340b9cffb3",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "file": "apps/web/src/undo-list.ts",
+      "names": ["turnBack", "sent", "sentCommand"],
+      "digest": "33b46bd0e1de",
+      "blob": "4183192269112ab5af5714ec036d2230949aff18"
+    }
+  ]
+}

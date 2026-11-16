@@ -14,7 +14,7 @@ Bounds: one account, one deck, two elements, one turn at a time. A turn starts w
 
 With no live turn, `slideTool` checks the agent's `base` against the deck it read, stops any live run, then sends the stopped revision as `base`; the last trace replays a slide call after the idle window.
 
-Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
+Sync: `specs/turn/covers.json`.
 
 ## agents
 
@@ -27,7 +27,7 @@ Two agents of one account edit one element of one deck. The server names the age
 
 Bounds: agents a and b, one element, two runs each, `MaxVer = 2`. 259 states. Each call is one step; one agent's calls that interleave are slide-run's and slide-sibling's. Run: `pnpm check:specs agents`. Replay: `apps/api/src/agents-replay.ts` covers every edge with walks from the start, through `POST /mcp` on the real server and Postgres, half with two grants and half with Aira's cookie and a grant, and compares the element's run and version, each agent's turn row and whether its window is open, the answer, and the run ids each agent was answered against the agent's key. Its walks are split by index modulo three across `agents-replay-0.test.ts` to `agents-replay-2.test.ts`, so they run on three workers, and `agents-replay-shares.test.ts` fails unless the shares together hold every walk once. Idle ages that agent's row by ten minutes. `apps/api/src/agents.test.ts` holds the scenarios with a call paused at its deck write, one grant from two connections (one agent), and the limits. Code: `heldRun`, `holders` and `settleTurn` in `packages/mcp/src/turn.ts`; `freed`, `joinRun`, `openRun`, `stopForNewTurn` and `stopLiveRuns` in `packages/mcp/src/run.ts`; `stopRun` in `packages/mcp/src/call-tool.ts`; `slideTool` and `elementTool`; `storedTurns` in `apps/api/src/agent-turn.ts`; `caller` and `mcpRoute` in `apps/api/src/server.ts`; `admit` in `packages/mcp/src/admit.ts`. Leaves out: the person, whose edits close an element as the turn model says; slide and element tools, which check `base` against the deck's `lastRun`, now one agent's run; a run whose agent's turn row was never saved, which stays held until that agent's next call ends it; two Aira asks of one account, which are one agent. Plants that the replay and the scenarios catch: the bearer keyed by account instead of grant, `freed` treating another agent's run as its own, `stop_run` accepting another agent's run, and `heldRun` joining a live run that is not its agent's.
 
-Sync: the commit that keyed turns and runs by agent.
+Sync: `specs/agents/covers.json`.
 
 ## stop
 
@@ -45,7 +45,7 @@ Bounds: one ask, one stop, one next ask, a listen connection that can drop and r
 
 Known bug: `StopBeforeAskIsHeeded` in `Stop.known.cfg`. A stop that reaches the server before it followed the ask finds no row and is answered at once. The ask then runs and is charged. It matters when the browser's cut of the turn fetch does not reach the server. `aira-stop-order.test.ts` pins it with `it.fails` ("before the server followed the ask").
 
-Sync: `dd181eadbeb66ceedc9c44a22a874960d804499f`.
+Sync: `specs/stop/covers.json`.
 
 ## aira-loop
 
@@ -59,7 +59,7 @@ One Aira ask in the browser asks for one edit while the person may press Stop an
 
 Bounds: one edit call, one Stop, one next ask or one Try again after a failed next turn (`Fail`, `Retry`). The edit call carries its once, `<ask>-<call number>`, as `app.airdesign/once` in the request's `_meta`. Stop cuts a waiting edit call at once, and the stop then names the cut call's deck and once (`Spend`): `spendOnce` writes the once's row in `deck.once`, or finds the call's row and answers its run. The call's deck write and its once's row are one statement (`revisionOnceSql`), so a write after the spend fails on the primary key and goes back to read, where `prepare` finds the spent once and refuses the call `run-fenced`. Run: `pnpm check:specs aira-loop`. Replay: `tests/aira-loop-replay.test.ts` drives every edge through the real `askAira` with a scripted `fetch`, and checks that the stop names the once the edit carried, and that a Try again sends the model only the tool answer it waits for (`retryAira`). `apps/api/src/agent-once.test.ts` drives `Land` and `Spend` in both orders through the real `serveMcp` on Postgres: the call held at its deck read or deck write while the stop spends its once, and a stop after the call landed. Code: `askAira`, `retryAira`, `converse`, `callTool`, `stopAsk`, `continues`, `landedIn` and `closeRuns` in `apps/web/src/aira-loop.ts`; the panel's `run` in `apps/web/src/aira-panel.tsx`, which drops a superseded ask's updates and keeps New chat, history and Undo off until the ask resolved; the stop route in `apps/api/src/aira-route.ts`; `spendOnce`, `readStoredOnce` and `writeRevision` in `apps/api/src/saved.ts`; `prepare` and `commitEdit` in `apps/api/src/mcp.ts`. Leaves out: a stop that never reaches the server, after which the cut call may still land and its run stays live until the idle window; a refused or failed edit, which writes no run; a read, whose fetch Stop cuts at once. Plants: the browser leaving the cut call out of its stop fails the replay on `settled`; the browser keeping the edit's fetch after Stop fails it on `answer`; a `Land` on a spent once fails `StoppedRunUndoable` in three steps (Stop, Spend, Land); a server that never reads or never writes the once fails `agent-once.test.ts`; a Try again that sends the request's words again after the tool answer fails the replay on the retried turn.
 
-Sync: the commit that retries a failed request in place, on `6e974d23`.
+Sync: `specs/aira-loop/covers.json`.
 
 ## usage
 
@@ -72,7 +72,7 @@ The weekly Claude spend ledger and its hold for an open turn.
 
 Bounds: one account, one turn, the holds named in `Usage.tla`, two weeks. Run: `pnpm check:specs usage`. Replay: `tests/usage-replay.ts` through `usage` in `packages/usage/src/index.ts`. Leaves out: the read-only usage route's `available` answer in `apps/api/src/aira-usage-route.ts`.
 
-Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
+Sync: `specs/usage/covers.json`.
 
 ## oauth
 
@@ -86,7 +86,7 @@ One OAuth grant: code exchange, calls, refresh rotation and revocation.
 
 Bounds: one grant, generations up to 2, two exchanges. Run: `pnpm check:specs oauth`. Replay: `tests/oauth-replay.ts` through `oauth` in `packages/oauth/src/index.ts`. Its callers are `apps/api/src/grants.ts` and `apps/api/src/tokens.ts`. Leaves out: the web Worker's forward secret (`apps/web/worker/api-forward.ts`, `filterForwardedHeaders` in `apps/api/src/forward-secret.ts`). It needs no model: each request is judged alone, by comparing one header with the server's secret, with no state kept between requests, so no order of steps can break it. `apps/api/src/forward-secret.test.ts` covers it: a matching secret keeps the visitor headers, a missing or wrong one drops them, and the health route needs none. One case is by design and worth knowing: with no secret set on the server, it trusts the visitor headers from anyone.
 
-Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
+Sync: `specs/oauth/covers.json`.
 
 ## owner
 
@@ -96,4 +96,4 @@ Only a deck's owner acts on it through a tool call.
 
 Bounds: two accounts, two decks and one deck not yet made, grant generations up to 2. Run: `pnpm check:specs owner`. Replay: `apps/api/src/owner.test.ts` through `POST /mcp` and the OAuth routes. Code: `deckAccess` in `apps/api/src/saved.ts`, `prepare` in `serveMcp` in `apps/api/src/mcp.ts`, `bearerPrincipal` in `apps/api/src/tokens.ts`.
 
-Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
+Sync: `specs/owner/covers.json`.

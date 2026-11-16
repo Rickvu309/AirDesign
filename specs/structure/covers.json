@@ -1,0 +1,29 @@
+{
+  "check": "checks-structure.md#structure",
+  "covers": [
+    {
+      "file": "packages/document/src/element-group.ts",
+      "names": ["*"],
+      "digest": "e3b0c44298fc",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "file": "packages/document/src/group-place.ts",
+      "names": ["*"],
+      "digest": "e3b0c44298fc",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "file": "packages/document/src/group-turn.ts",
+      "names": ["*"],
+      "digest": "e3b0c44298fc",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "file": "packages/document/src/person-undo.ts",
+      "names": ["slideUndoable", "turn", "undoSlides"],
+      "digest": "0fa136f9fdb8",
+      "blob": "bbaae48a47c8aad7f74e5617646addfdfb317121"
+    }
+  ]
+}

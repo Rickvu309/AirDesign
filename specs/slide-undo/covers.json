@@ -1,0 +1,35 @@
+{
+  "check": "checks-slides.md#slide-undo",
+  "covers": [
+    {
+      "file": "packages/document/src/person-undo.ts",
+      "names": ["undoSlides", "undoOf"],
+      "digest": "96292dbf1154",
+      "blob": "bbaae48a47c8aad7f74e5617646addfdfb317121"
+    },
+    {
+      "file": "packages/engine/src/call.ts",
+      "names": ["undoRun", "endSlides"],
+      "digest": "5b5b135f164e",
+      "blob": "a3bc320b5bcdc4cdd77753da22e9aeac8de918e6"
+    },
+    {
+      "file": "packages/engine/src/agent-slides.ts",
+      "names": ["runFenced"],
+      "digest": "d3359390b599",
+      "blob": "81a936faf30216148e1946bcb38af93c62baf499"
+    },
+    {
+      "file": "packages/mcp/src/turn.ts",
+      "names": ["liveTurn"],
+      "digest": "62d6ba092862",
+      "blob": "513bce6502f59a9a375927e78111b5a6978a097d"
+    },
+    {
+      "file": "apps/api/src/undo.ts",
+      "names": ["undoRun"],
+      "digest": "bf7404f3090a",
+      "blob": "5eec071868fb9f02ecfed821e15619580da1b83a"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Checks on the edit register, slides, the index and offline replay
 
-Each entry: what the check promises, the code it covers, its bounds, how to run it alone, its replay, what it leaves out, and the sync commit where the model was last confirmed against the code. Replays live in `tests/spec-replay.test.ts` and the `tests/*-replay.ts` files it calls. Run them with `pnpm vitest run tests/spec-replay.test.ts`.
+Each entry: what the check promises, the code it covers, its bounds, how to run it alone, its replay, what it leaves out, and its sync: the `covers.json` that records the code the model was last confirmed against, or for sections, the commit. Replays live in `tests/spec-replay.test.ts` and the `tests/*-replay.ts` files it calls. Run them with `pnpm vitest run tests/spec-replay.test.ts`.
 
 The register code is `packages/document/src/decide.ts`: `decide` and, per element, `personEdit`, `startRun`, `agentEdit`, `stopRun`, `decideUndo`, `version`. Its product callers are `packages/engine/src/call.ts` (`applyPersonEdits`, `applyEdits`, `startRun`, `stopRun`, `undoRun`, `endOnTouched`, `decideOnElement`, `liveRuns`) and `packages/mcp/src/run.ts` (`openRun`, `joinRun`, `stopLiveRuns`). Text and box rows share one register per element, so "one property" in a model means one element's register.
 
@@ -16,7 +16,7 @@ One run edits one element while a person edits it too.
 
 Bounds: one element, one run, two agent rows, one person edit before and one after the run's first row. Assumes the element and its slide are present and its kind takes the edit (a box edit on a grouped element is refused `group-box`, and any other edit its kind cannot take is refused `kind`, before this model starts). Run: `pnpm check:specs edit`. Replay: `replayEdit` drives every edge through `decide`. Edit, undo and run replays land later agent rows as trait field rows (`set`). Leaves out: agent slide commands under a run (`packages/engine/src/agent-slides.ts`). `agentSlide` refuses `run-fenced` once every element the run touched has ended, and refuses `person-protected` for deleting a slide that holds an element guarded against the run (`packages/engine/src/slide-run-fence.test.ts`). A run with slide rows that stop_run or run Undo ended is recorded in the register's `ended` list, so `agentSlide` refuses its later slide commands `run-fenced` too. slide-run, slide-sibling and slide-undo in [checks-slides.md](checks-slides.md) model them. Speaker notes need no model of their own: a note is the element `<slide>.notes` (`openedRegister` in `packages/engine/src/call.ts`), so a person or agent edit of it goes through `decide` like text, and this model and run, undo and rerun cover it per element. `packages/engine/src/notes.test.ts` checks that both actors use that path. Writing a first note's parts on export is a PowerPoint question for `pnpm check:pptx`, not an order one.
 
-Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
+Sync: `specs/edit/covers.json`.
 
 ## undo
 
@@ -30,7 +30,7 @@ Undo of a run hides only that run's rows.
 
 Bounds: one element, one person row, two runs with one row each. Run: `pnpm check:specs undo`. Replay: `replayUndo` through `decide`, `decideUndo` and `compactChain`. Leaves out: `compactChain` has no product caller, so the compaction half verifies library code nothing runs. Run Undo of slide rows goes through `undoSlides` in `packages/document/src/person-undo.ts`; slide-undo covers it.
 
-Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
+Sync: `specs/undo/covers.json`.
 
 ## rerun
 
@@ -44,7 +44,7 @@ Two runs on one element in turn: the guard, the claim and the stop mark of each.
 
 Bounds: one element, two runs, the second starting from a stopped or undone first. Run: `pnpm check:specs rerun`. Replay: `replayRerun` through `decide`. Leaves out: as in edit.
 
-Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
+Sync: `specs/rerun/covers.json`.
 
 ## run
 
@@ -57,7 +57,7 @@ A run's lifecycle: start, stop, undo, a later run, and reads.
 
 Bounds: one element, run ids `s` and `t`, one write, two generations. Run: `pnpm check:specs run`. Replay: `replayRun` through `decide`. Leaves out: `Limit` and `Resume` have no code; the replay counts them as unconnected. The `read` command (`readNodes`) has no product caller. Agent slide rows, as in edit.
 
-Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
+Sync: `specs/run/covers.json`.
 
 ## offline
 
@@ -71,7 +71,7 @@ The browser's queue of person edits: send, acknowledge, crash, wipe and replay.
 
 Bounds: two queued edits and one stale edit. Run: `pnpm check:specs offline`. Replay: `replayOffline` checks queue edges with `unsent` and land edges with `replay` from `packages/document/src/replay.ts`; a `Join` edge keeps the row's base and replaces its value. The join itself is `valueChange` and `joinable` in `packages/live/src/deck-edit.ts` and `deck-view.ts`, and `sealRows` in `packages/live/src/held.ts` seals the row as stored when sending starts; `packages/live/src/held.test.ts` covers those. Leaves out: the real queue in `packages/live/src/cache.ts` (`sendRows`, `played`) and the server's once key, which [lost-answer](checks-lost-answer.md) models; `Crash`, `Wipe` and `Undo` are unconnected. The device trust stamp of PR 384 is gone: every device row and journal entry lives under the signed-in account's key (`accountKey` in `packages/live/src/device.ts`), so the next person to sign in on a browser reads none of the first person's rows, whichever way the first session ended. `replay` throws on a refused person edit; `played` applies slide commands after it, so a `dead` refusal cannot reach it today. A tab whose store a newer build opened, or that reads a row or a register answer at a newer `format`, refuses every call with `newer` and writes, sends and deletes nothing; the model has no second build, and `packages/live/src/format.test.ts` covers it.
 
-Sync: `6be7cad84aa47f389c95207dc57fd5cab2b2fd21`.
+Sync: `specs/offline/covers.json`.
 
 ## index
 
@@ -86,7 +86,7 @@ The import index: the browser's page queue, the server's stored pages, and the o
 
 Bounds: two pages, one crash, one edit, one re-send, which starts once the older index is complete and either keeps or changes every opening value (`drift`). Run: `pnpm check:specs index`. Replay: `tests/index-replay.ts` drives `Store` and `Edit` through `indexDeck` and `readDeckPage`, with format 1 pages from the older queue and format 2 pages with roles, design and layouts from the re-sent one; it checks the stored format, the pages built beside (`next`), refusals, and that no opening value or stored page changes. Code: `indexDeck` in `packages/engine/src/index-deck.ts`, `appendIndex` and `indexDue` in `packages/document/src/deck-index.ts`, `keepIndex` and `sendIndex` in `packages/live/src/deck-index.ts`, and `answeredRegister` (the stored format in the open answer) in `apps/api/src/saved.ts`. `Ack` advances the count only if the queue slot still holds the queue its send loop read (`swapSlot` with the queue's `once`); an answer to a page sent before the re-send leaves the new queue alone, and the loop reads it again. A refused page ends its queue (`sendIndex` writes `sent = count`), so the rows behind it still send. The slot is found under the signed-in account's key (`scoped` in `packages/live/src/device.ts`), and the read and the write are one readwrite transaction on the page's long-lived connection (`putSlots` in `packages/live/src/store.ts`). `Ack` needs the page in flight to have landed (`landed`), since the browser hears back only after the server stored it. Leaves out: a re-send that starts before the older index is complete (`deck-index.test.ts` covers building beside a partial index), a re-send whose pages drift only in part, and that a refused re-send ends its queue, which is a liveness promise: `packages/live/src/deck-index-upgrade.test.ts` covers it, and the in-flight re-send race, against `packages/live`.
 
-Sync: `8eef931306bc47b21b66b33dc5d7dc14634b9f4f`.
+Sync: `specs/index/covers.json`.
 
 ## sections
 
