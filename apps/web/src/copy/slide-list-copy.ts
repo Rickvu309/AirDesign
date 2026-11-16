@@ -17,6 +17,8 @@ export const slideListCopy = {
   moved: (from: number, to: number) => `Moved slide ${String(from)} to position ${String(to)}`,
   sectionRange: (range: string) => `slides ${range}`,
   actions: (number: number) => `Slide ${String(number)} actions`,
+  open: "Open",
+  openKey: "Enter",
   duplicate: "Duplicate",
   delete: "Delete",
   moveUp: "Move up",

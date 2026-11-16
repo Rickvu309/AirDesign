@@ -6,7 +6,7 @@ import { hairlineShadow } from "@/editor/editor-chrome"
 import type { SlideKey } from "@/editor/slide-keys"
 import { cn } from "@/lib/class-names"
 
-const item =
+export const slideMenuItem =
   "h-8 gap-2.5 rounded-md py-0 pr-2.5 pl-2 text-[length:var(--type-dense)] text-white focus:bg-quiet focus:text-white not-data-[variant=destructive]:focus:**:text-white"
 
 const keys: Record<SlideKey, { readonly label: string; readonly shown: string; readonly shortcuts: string }> = {
@@ -129,22 +129,34 @@ export function SlideMenu({
         sideOffset={8}
         className="flex w-[188px] min-w-0 flex-col rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0 duration-0"
       >
-        {order.map((change) => (
-          <DropdownMenuItem
-            key={change}
-            disabled={!slideChangeAllowed(change, index, count)}
-            aria-keyshortcuts={keys[change].shortcuts}
-            className={item}
-            onClick={() => onChoose(change)}
-          >
-            <span className="min-w-0 flex-1">{keys[change].label}</span>
-            <span className="text-xs text-[var(--shortcut)]">{keys[change].shown}</span>
-          </DropdownMenuItem>
-        ))}
+        <SlideMenuRows index={index} count={count} onChoose={onChoose} />
       </DropdownMenuContent>
     </DropdownMenu>
   )
   return host === null ? menu : createPortal(menu, host)
+}
+
+export function SlideMenuRows({
+  index,
+  count,
+  onChoose,
+}: {
+  index: number
+  count: number
+  onChoose: (change: SlideKey) => void
+}) {
+  return order.map((change) => (
+    <DropdownMenuItem
+      key={change}
+      disabled={!slideChangeAllowed(change, index, count)}
+      aria-keyshortcuts={keys[change].shortcuts}
+      className={slideMenuItem}
+      onClick={() => onChoose(change)}
+    >
+      <span className="min-w-0 flex-1">{keys[change].label}</span>
+      <span className="text-xs text-[var(--shortcut)]">{keys[change].shown}</span>
+    </DropdownMenuItem>
+  ))
 }
 
 function ActionsMark() {

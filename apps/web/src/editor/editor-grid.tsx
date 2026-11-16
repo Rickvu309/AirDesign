@@ -2,6 +2,7 @@ import { Filmstrip, type TextFormatting } from "@airdesign/render"
 import { useCallback, useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react"
 import { Announcer, type Announcement } from "@/components/ui/announcer"
 import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Slider } from "@/components/ui/slider"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { AirdesignMark } from "@/decks/airdesign-mark"
@@ -10,11 +11,14 @@ import { SaveStatusLine } from "@/editor/save-status"
 import type { SaveStatus } from "@/editor/use-deck-status"
 import { DeckTitle, ExportButton, hairlineShadow, Island, surfaceShadow } from "@/editor/editor-chrome"
 import { EditorIcon } from "@/editor/editor-icons"
+import { EditorMenuContent } from "@/editor/editor-menu"
 import { gridCommand, gridMove, type GridCommand } from "@/editor/editor-grid-keys"
 import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
 import { gridFit, gridGap, gridSizes, steppedGridSize, useKeptGridSize } from "@/editor/grid-size"
 import type { FormatShown } from "@/editor/format-buttons"
 import type { ToolPick } from "@/editor/pointer-tool"
+import type { SlideKey } from "@/editor/slide-keys"
+import { slideMenuItem, SlideMenuRows } from "@/editor/slide-menu"
 import { slideThumbWidth, useSlideSay, type SlideStrip, type StripSection } from "@/editor/slide-sidebar"
 import type { UndoButtonsState } from "@/editor/undo-buttons"
 import { useZoomKeys } from "@/editor/zoom-keys"
@@ -28,6 +32,16 @@ const thumbFace = cn("block overflow-hidden rounded-[2px] bg-white", hairlineSha
 const noSections: readonly StripSection[] = []
 
 const listInset = 48
+
+const gridChange: Record<SlideKey, GridCommand> = { clone: "clone", remove: "remove", up: "earlier", down: "later" }
+
+type MenuAnchor = { readonly getBoundingClientRect: () => DOMRect }
+
+type GridMenu = { readonly index: number; readonly anchor: MenuAnchor; readonly pointer: boolean }
+
+function pointAt(x: number, y: number): MenuAnchor {
+  return { getBoundingClientRect: () => new DOMRect(x, y, 0, 0) }
+}
 
 function gridThumbHeight(width: number, height: number): number {
   if (height <= 0) return Math.round((width * 9) / 16)
@@ -97,6 +111,7 @@ export function EditorGrid({
   const [message, setMessage] = useState<Announcement | null>(null)
   const [room, setRoom] = useState<number | null>(null)
   const [zoom, setZoom] = useKeptGridSize(id)
+  const [menu, setMenu] = useState<GridMenu | null>(null)
   const { current, count } = strip
   const announce = useCallback(
     (text: string) => setMessage((held) => ({ text, odd: held === null ? false : !held.odd })),
@@ -182,7 +197,27 @@ export function EditorGrid({
     }
   }
 
+  function openMenu(index: number, anchor: MenuAnchor, pointer: boolean) {
+    setStop(index)
+    strip.onSelect(index)
+    setMenu({ index, anchor, pointer })
+  }
+
+  function closeMenu() {
+    const shown = menu
+    setMenu(null)
+    if (shown === null) return
+    list.current?.querySelector<HTMLElement>(`[data-slide-entry="${shown.index + 1}"]`)?.focus()
+  }
+
   function onListKey(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
+      const card = document.activeElement?.closest<HTMLElement>("[data-slide-entry]")
+      if (card === null || card === undefined) return
+      event.preventDefault()
+      openMenu(Number(card.dataset.slideEntry) - 1, card, false)
+      return
+    }
     const command = gridCommand({
       key: event.key,
       altKey: event.altKey,
@@ -235,6 +270,11 @@ export function EditorGrid({
         onClick={() => {
           strip.onSelect(index)
           onSlides()
+        }}
+        onContextMenu={(event) => {
+          event.preventDefault()
+          event.currentTarget.focus()
+          openMenu(index, pointAt(event.clientX, event.clientY), true)
         }}
         onDragStart={(event) => {
           event.dataTransfer.setData("text/plain", String(index))
@@ -351,6 +391,35 @@ export function EditorGrid({
         </Island>
       </header>
       <Announcer message={message} />
+      {menu === null ? null : (
+        <DropdownMenu
+          open
+          onOpenChange={(next) => {
+            if (!next) closeMenu()
+          }}
+        >
+          <EditorMenuContent
+            anchor={menu.anchor}
+            side={menu.pointer ? "bottom" : "right"}
+            align="start"
+            sideOffset={menu.pointer ? 2 : 8}
+          >
+            <DropdownMenuItem
+              aria-keyshortcuts="Enter"
+              className={slideMenuItem}
+              onClick={() => act("open", menu.index)}
+            >
+              <span className="min-w-0 flex-1">{slideListCopy.open}</span>
+              <span className="text-xs text-[var(--shortcut)]">{slideListCopy.openKey}</span>
+            </DropdownMenuItem>
+            <SlideMenuRows
+              index={menu.index}
+              count={count}
+              onChoose={(change) => act(gridChange[change], menu.index)}
+            />
+          </EditorMenuContent>
+        </DropdownMenu>
+      )}
       <div
         ref={list}
         role="group"
