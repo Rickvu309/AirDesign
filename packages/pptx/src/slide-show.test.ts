@@ -68,6 +68,8 @@ it("keeps a hidden slide hidden and its transition through an edit and an export
   const written = applyRoute(parts, { name: "text", part, shape: "2", value })
   const exported = await readPackage(await exportPackage(original, written))
   if (!exported.ok) throw new Error("export")
+  expect(exported.parts.get(part)).toEqual(written.get(part))
+  expect(decodeUtf8(exported.parts.get(part)!)).toContain('show="0"')
   expect(readShows(exported.parts)).toEqual([
     expect.objectContaining({ part, hidden: true, transition: { kind: "push", direction: "r", duration: 750 } }),
   ])
