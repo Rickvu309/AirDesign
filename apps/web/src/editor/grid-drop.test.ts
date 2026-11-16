@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { dropPlace, dropTarget, edgeScroll } from "@/editor/grid-drop"
+import { dropPlace, dropTarget, edgeScroll, previewSlot, slotUnder } from "@/editor/grid-drop"
 
 const card = { left: 100, width: 300 }
 
@@ -30,5 +30,22 @@ describe("grid drop", () => {
     expect(edgeScroll(690, list)).toBeGreaterThan(0)
     expect(Math.abs(edgeScroll(101, list))).toBeGreaterThan(Math.abs(edgeScroll(150, list)))
     expect(edgeScroll(160, list)).toBe(0)
+  })
+})
+
+describe("drag preview", () => {
+  const slots = [0, 1, 2, 3, 4].map((index) => ({ index, left: index * 332, top: 0, width: 300, height: 169 }))
+
+  it("shows each slide at the slot it takes after the move, and leaves the others where they are", () => {
+    expect([0, 1, 2, 3, 4].map((index) => previewSlot(index, 1, 3))).toEqual([0, 3, 1, 2, 4])
+    expect([0, 1, 2, 3, 4].map((index) => previewSlot(index, 3, 0))).toEqual([1, 2, 3, 0, 4])
+    expect([0, 1, 2].map((index) => previewSlot(index, 1, null))).toEqual([0, 1, 2])
+  })
+
+  it("finds the slot under the pointer, counting half of each gap to its nearer slide", () => {
+    expect(slotUnder(150, 80, slots)?.index).toBe(0)
+    expect(slotUnder(310, 80, slots)?.index).toBe(0)
+    expect(slotUnder(322, 80, slots)?.index).toBe(1)
+    expect(slotUnder(150, 400, slots)).toBeUndefined()
   })
 })

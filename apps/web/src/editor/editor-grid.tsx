@@ -1,5 +1,5 @@
 import { Filmstrip, type TextFormatting } from "@airdesign/render"
-import { useCallback, useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react"
+import { useCallback, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react"
 import { flushSync } from "react-dom"
 import { Announcer, type Announcement } from "@/components/ui/announcer"
 import { Button } from "@/components/ui/button"
@@ -23,7 +23,7 @@ import {
   type GridPick,
 } from "@/editor/grid-selection"
 import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
-import { dropPlace, dropTarget, edgeScroll } from "@/editor/grid-drop"
+import { useGridDrag } from "@/editor/use-grid-drag"
 import { gridFit, gridGap, gridSizes, steppedGridSize, useKeptGridSize } from "@/editor/grid-size"
 import type { FormatShown } from "@/editor/format-buttons"
 import type { ToolPick } from "@/editor/pointer-tool"
@@ -104,8 +104,6 @@ export function EditorGrid({
 }) {
   const list = useRef<HTMLDivElement>(null)
   const bar = useRef<HTMLDivElement>(null)
-  const place = useRef<number | null>(null)
-  const [dragging, setDragging] = useState<number | null>(null)
   const following = useRef(true)
   const [stop, setStop] = useState(strip.current)
   const [message, setMessage] = useState<Announcement | null>(null)
@@ -145,31 +143,17 @@ export function EditorGrid({
   const height = gridThumbHeight(width, strip.thumbHeight)
   const step = gridSizes.indexOf(zoom)
   const rows = rowsOf(strip)
-
-  function endDrag() {
-    place.current = null
-    setDragging(null)
-    const mark = bar.current
-    if (mark !== null) mark.hidden = true
-  }
-
-  function showBar(anchor: HTMLElement, x: number, index: number) {
-    const mark = bar.current
-    const scroller = list.current
-    if (mark === null || scroller === null) return
-    const listBox = scroller.getBoundingClientRect()
-    const at = dropPlace(x, anchor.getBoundingClientRect(), index)
-    place.current = at
-    const after = at !== index || rows.some((row) => row.start === at && at > 0)
-    const card = !after || at - 1 === index ? anchor : scroller.querySelector<HTMLElement>(`[data-slide-entry="${at}"]`)
-    if (card === null) return
-    const box = card.getBoundingClientRect()
-    const left = after ? box.right + gridGap / 2 : box.left - gridGap / 2
-    mark.hidden = false
-    mark.dataset.dropPlace = String(at + 1)
-    mark.style.height = `${box.height}px`
-    mark.style.transform = `translate(${left - listBox.left + scroller.scrollLeft - 2}px, ${box.top - listBox.top + scroller.scrollTop}px)`
-  }
+  const drag = useGridDrag({
+    list,
+    bar,
+    rows,
+    onMove: (from, to) => {
+      following.current = true
+      strip.onMove?.(from, to)
+      announce(slideListCopy.moved(from + 1, to + 1))
+    },
+  })
+  const dragging = drag.dragging
 
   function addAfter(index: number) {
     following.current = true
@@ -277,29 +261,8 @@ export function EditorGrid({
     strip.onSelect(slide)
   }
 
-  function onDrop(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault()
-    const from = Number(event.dataTransfer.getData("text/plain"))
-    const at = place.current
-    endDrag()
-    if (!Number.isInteger(from) || at === null) return
-    const to = dropTarget(from, at)
-    if (to === null) return
-    following.current = true
-    strip.onMove?.(from, to)
-    announce(slideListCopy.moved(from + 1, to + 1))
-  }
-
-  function onListDragOver(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault()
-    const scroller = event.currentTarget
-    const box = scroller.getBoundingClientRect()
-    const step = edgeScroll(event.clientY, { top: box.top, height: box.height })
-    if (step !== 0) scroller.scrollTop += step
-  }
-
   const card = (index: number) => (
-    <div key={index} className="group relative flex flex-col items-start gap-2">
+    <div key={index} className="group relative flex flex-col items-start gap-2" style={drag.shift(index)}>
       <button
         type="button"
         draggable
@@ -314,7 +277,7 @@ export function EditorGrid({
         className={cn(
           "relative rounded-sm text-left",
           selected.has(index) && "shadow-[0_0_0_2px_var(--ring)]",
-          index === dragging && "opacity-40",
+          index === dragging && "pointer-events-none opacity-40",
         )}
         onClick={(event) => {
           if (!event.shiftKey && !event.metaKey && !event.ctrlKey) {
@@ -332,12 +295,9 @@ export function EditorGrid({
           openMenu(index, pointAt(event.clientX, event.clientY), true)
         }}
         onDragStart={(event) => {
-          event.dataTransfer.setData("text/plain", String(index))
-          event.dataTransfer.effectAllowed = "move"
           setPick(null)
-          setDragging(index)
+          drag.start(index, event)
         }}
-        onDragOver={(event) => showBar(event.currentTarget, event.clientX, index)}
       >
         <Filmstrip className={thumbFace} height={height} paint={() => strip.thumb(index, width)} width={width} />
       </button>
@@ -358,8 +318,8 @@ export function EditorGrid({
           tabIndex={-1}
           aria-label={slideListCopy.addAfter(index + 1)}
           className={cn(
-            "hidden size-4 self-center rounded-full p-0 hover:bg-primary-strong",
-            dragging === null && "group-hover:flex",
+            "invisible relative flex size-4 scale-75 self-center rounded-full p-0 opacity-0 transition-[opacity,scale,visibility] duration-[var(--duration-micro)] ease-[var(--ease-out)] after:absolute after:-inset-1 hover:bg-primary-strong",
+            dragging === null && "group-hover:visible group-hover:scale-100 group-hover:opacity-100",
           )}
           onClick={() => addAfter(index)}
         >
@@ -463,9 +423,9 @@ export function EditorGrid({
         style={{ paddingInline: listInset }}
         data-slide-list
         onKeyDown={onListKey}
-        onDragOver={onListDragOver}
-        onDrop={onDrop}
-        onDragEnd={endDrag}
+        onDragOver={drag.over}
+        onDrop={drag.drop}
+        onDragEnd={drag.end}
         onClick={(event) => {
           if (picked !== null && (event.target as Element).closest("[data-slide-entry]") === null) setPick(null)
         }}
