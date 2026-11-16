@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest"
+import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { addDrawnShape, addTextShape, type ShapeBox } from "./shape-write.js"
+import { applyRoute, writeRoute } from "./slide-route.js"
 
 const slide = `<p:sld><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld></p:sld>`
 const box: ShapeBox = { x: 0, y: 0, cx: 914400, cy: 457200 }
@@ -48,5 +50,31 @@ describe("addDrawnShape", () => {
 
   it("leaves a rectangle to its theme outline", () => {
     expect(addDrawnShape(slide, "rect", box).xml).not.toMatch(/<a:ln[ >]/)
+  })
+})
+
+describe("a new text box with no opening text", () => {
+  const kept = `<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t></a:t></a:r><a:endParaRPr lang="en-US"/></a:p>`
+  const shape = (body: string) =>
+    `<p:sp><p:nvSpPr><p:cNvPr id="2" name="S"/></p:nvSpPr><p:txBody><a:bodyPr/><a:lstStyle/>${body}</p:txBody></p:sp>`
+  const part = "ppt/slides/slide1.xml"
+  const original = `<p:spTree>${shape(`${kept}<a:p><a:r><a:t>Old</a:t></a:r></a:p>`)}</p:spTree>`
+
+  it("takes typed text into its empty run and leaves an empty run the original wrote", () => {
+    const added = writeRoute(new Map([[part, encodeUtf8(original)]]), { name: "add", part, text: "", ...box })
+    const typed = applyRoute(added.parts, {
+      name: "text",
+      part,
+      shape: added.id ?? "",
+      value: [{ from: 0, runs: [{ from: 0, text: "Typed" }] }],
+    })
+    const value = [
+      { from: 0, runs: [{ from: 0, text: "" }] },
+      { from: 1, runs: [{ from: 0, text: "New" }] },
+    ]
+    const next = decodeUtf8(applyRoute(typed, { name: "text", part, shape: "2", value }).get(part) ?? new Uint8Array())
+    expect(next.startsWith(`<p:spTree>${shape(`${kept}<a:p><a:r><a:t>New</a:t></a:r></a:p>`)}<p:sp>`)).toBe(true)
+    expect(next).toContain(`<a:p><a:pPr algn="ctr"/><a:r><a:t>Typed</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>`)
+    expect(next.match(/<a:r>/g)).toHaveLength(3)
   })
 })
