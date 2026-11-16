@@ -1,0 +1,53 @@
+{
+  "check": "checks-undo.md#typing",
+  "covers": [
+    {
+      "file": "apps/web/src/undo-list.ts",
+      "names": ["recordsInFlight", "recorded", "turnBack"],
+      "digest": "585d76551648",
+      "blob": "79595f35cb7982cfb61a9e387b2708a5b612d027"
+    },
+    {
+      "file": "apps/web/src/live-repaint.ts",
+      "names": ["liveRepaint", "busyElements"],
+      "digest": "32490101d00b",
+      "blob": "ac24102eb14fd1cd9b0c838f4aa75bd181a2218e"
+    },
+    {
+      "file": "apps/web/src/notes-edit.ts",
+      "names": ["useNotes"],
+      "digest": "2021c88d1830",
+      "blob": "c21c3936828484499c339a5f1d196ed6fbab5575"
+    },
+    {
+      "file": "apps/web/src/editor/undo-keys.ts",
+      "names": ["undoKey", "useUndoKeys"],
+      "digest": "d47198d9f323",
+      "blob": "e1082be22efc14fd7c204ea0b36e9194196c6411"
+    },
+    {
+      "file": "packages/render/src/passage.tsx",
+      "names": ["Passage"],
+      "digest": "909117b020df",
+      "blob": "b563627205d201c443619caea9e3329bbca0b154"
+    },
+    {
+      "file": "apps/web/src/editor/notes-bar.tsx",
+      "names": ["NotesBar"],
+      "digest": "8143ee57a6ba",
+      "blob": "6d911614f7332348578b4216e41c012ed9ebe231"
+    },
+    {
+      "file": "apps/web/src/editor/use-undo.ts",
+      "names": ["useUndoTurn"],
+      "digest": "1a5ff58d64d2",
+      "blob": "bdac5e517fb527860baad8c2b376c56a00b0213e"
+    },
+    {
+      "file": "apps/web/src/editor/editable-slide.tsx",
+      "names": ["editableSlide"],
+      "digest": "e9ade2fc919c",
+      "blob": "38b7ba13cb467c1b59c973f1d868eafef2a29578"
+    }
+  ]
+}

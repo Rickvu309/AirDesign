@@ -1,0 +1,47 @@
+{
+  "check": "checks-server.md#turn",
+  "covers": [
+    {
+      "file": "packages/mcp/src/turn.ts",
+      "names": ["liveTurn", "heldRun", "settleTurn", "dropGoneTurn"],
+      "digest": "8c96c5a8e6e8",
+      "blob": "742127702628b1a88893026ada4d6d4cfccdd4b5"
+    },
+    {
+      "file": "packages/engine/src/agent-slides.ts",
+      "names": ["runFenced"],
+      "digest": "e3b0c44298fc",
+      "blob": "a1596c9ce8a852e0a2d2cdc5249726d21e4d51dc"
+    },
+    {
+      "file": "packages/mcp/src/run.ts",
+      "names": ["openRun", "joinRun", "stopLiveRuns"],
+      "digest": "fa03c98c5c16",
+      "blob": "0148baf3b580c0c4250030771c40e7547206335e"
+    },
+    {
+      "file": "packages/mcp/src/slide-tool.ts",
+      "names": ["slideTool"],
+      "digest": "f1ce205eb57a",
+      "blob": "1835706799e635ed9900e5cae8281ba9b10c1afe"
+    },
+    {
+      "file": "packages/mcp/src/element-tool.ts",
+      "names": ["elementTool"],
+      "digest": "e3b0c44298fc",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "file": "apps/api/src/agent-turn.ts",
+      "names": ["storedTurns"],
+      "digest": "1c000aa5b3ef",
+      "blob": "5e9abb8a943b40f29b5d6ae38771ef781fd32e83"
+    },
+    {
+      "file": "packages/document/src/decide.ts",
+      "names": ["personEdit"],
+      "digest": "73292e0d73e7",
+      "blob": "1286a8b0c599880d213a2dbad374e086d31fad28"
+    }
+  ]
+}

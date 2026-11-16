@@ -1,0 +1,35 @@
+{
+  "check": "checks-server.md#aira-loop",
+  "covers": [
+    {
+      "file": "apps/web/src/aira-loop.ts",
+      "names": ["askAira", "retryAira", "converse", "callTool", "stopAsk", "continues", "landedIn", "closeRuns"],
+      "digest": "74e7d0322d75",
+      "blob": "a2ed23857b6e44bcfb281483ac345ee2965bb18c"
+    },
+    {
+      "file": "apps/web/src/aira-panel.tsx",
+      "names": ["AiraPanel"],
+      "digest": "2cf4235c95ca",
+      "blob": "6b77ba245d69c44d0b799a6b042eb22eb8950fbc"
+    },
+    {
+      "file": "apps/api/src/aira-route.ts",
+      "names": ["airaRouteList"],
+      "digest": "7d3ce1d791cf",
+      "blob": "92675c52a53c6f71c5cf45523f00051a4ca39db8"
+    },
+    {
+      "file": "apps/api/src/saved.ts",
+      "names": ["spendOnce", "readStoredOnce", "writeRevision"],
+      "digest": "02d33fc8b2d6",
+      "blob": "3cb8a055dcc5b3a2d2cef0e04f08e9b8c27b1ef8"
+    },
+    {
+      "file": "apps/api/src/mcp.ts",
+      "names": ["serveMcp", "commitEdit"],
+      "digest": "84e5b7ca5292",
+      "blob": "3ee8743b089bab3410defbe5cb7084574c7d7b83"
+    }
+  ]
+}

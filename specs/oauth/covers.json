@@ -1,0 +1,11 @@
+{
+  "check": "checks-server.md#oauth",
+  "covers": [
+    {
+      "file": "packages/oauth/src/index.ts",
+      "names": ["oauth"],
+      "digest": "1cd41c120233",
+      "blob": "dee6ffbd3a7b84d00436c2227c47c8055463e8d7"
+    }
+  ]
+}

@@ -33,9 +33,9 @@ const distinctStates = (output) => {
   return Number(matches[matches.length - 1][1])
 }
 
-const cacheRoot = () => process.env.AIRDESIGN_SPEC_CACHE ?? path.join(os.tmpdir(), "airdesign-tlc-cache")
+export const cacheRoot = () => process.env.AIRDESIGN_SPEC_CACHE ?? path.join(os.tmpdir(), "airdesign-tlc-cache")
 
-const specKey = (directory, spec, config) => {
+export const specKey = (directory, spec, config) => {
   const hash = createHash("sha256")
   hash.update(spec)
   hash.update("\0")

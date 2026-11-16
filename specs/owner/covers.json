@@ -1,0 +1,23 @@
+{
+  "check": "checks-server.md#owner",
+  "covers": [
+    {
+      "file": "apps/api/src/saved.ts",
+      "names": ["deckAccess"],
+      "digest": "fbd496cd9f3b",
+      "blob": "0547aef3b25645835eac865318b6c324c4913b6a"
+    },
+    {
+      "file": "apps/api/src/mcp.ts",
+      "names": ["serveMcp"],
+      "digest": "48ab97fb517b",
+      "blob": "9c3aa6b51fcc362cf8a8360fec39a103f03af16c"
+    },
+    {
+      "file": "apps/api/src/tokens.ts",
+      "names": ["bearerPrincipal"],
+      "digest": "116b33daac1a",
+      "blob": "f40e283af4514c0ee6038fb8817c910a10f3cd8d"
+    }
+  ]
+}

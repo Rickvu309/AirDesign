@@ -7,17 +7,16 @@ description: "Check AirDesign's 22 TLA+ specs under specs/ and their replays aga
 
 Each folder in `specs/<topic>` holds a TLA+ model (`<Module>.tla`), its bounds and checked properties (`<Module>.cfg`), and a reader view (`view.mjs`) that turns a model state and step into words. TLC checks every reachable state of the model. A replay then drives the model's edges through the real functions, so a model that drifts from the code fails a test. A pass covers the model under its bounds and the code the replay drives. It does not cover code outside them.
 
-The coverage record has one entry per check: the properties, the code it covers, the bounds, the command, the replay, the gaps, the known bugs and the sync commit. [checks-document.md](checks-document.md) holds edit, undo, rerun, run, offline, index and sections. [checks-element.md](checks-element.md) holds element. [checks-structure.md](checks-structure.md) holds structure. [checks-lost-answer.md](checks-lost-answer.md) holds lost-answer. [checks-server.md](checks-server.md) holds turn, agents, stop, aira-loop, usage, oauth and owner. [checks-slides.md](checks-slides.md) holds slide-run, slide-sibling and slide-undo. [checks-undo.md](checks-undo.md) holds person-undo, multi-step and typing. Read the entry for every check your change touches before you trust a pass.
+The coverage record has one entry per check: the properties, the code it covers, the bounds, the command, the replay, the gaps and the known bugs. Each spec's `specs/<topic>/covers.json` names the declarations its model describes, file by file, with a digest of their source at the last sync. [checks-document.md](checks-document.md) holds edit, undo, rerun, run, offline, index and sections. [checks-element.md](checks-element.md) holds element. [checks-structure.md](checks-structure.md) holds structure. [checks-lost-answer.md](checks-lost-answer.md) holds lost-answer. [checks-server.md](checks-server.md) holds turn, agents, stop, aira-loop, usage, oauth and owner. [checks-slides.md](checks-slides.md) holds slide-run, slide-sibling and slide-undo. [checks-undo.md](checks-undo.md) holds person-undo, multi-step and typing. Read the entry for every check your change touches before you trust a pass.
 
 ## 1. Find the checks your change touches
 
-Every entry lists the files it covers and its sync commit. For each entry, run:
-
 ```sh
-git diff --stat <sync commit>..HEAD -- <covered files>
+node scripts/spec-sync.mjs                     # every spec whose covered declarations moved since its sync
+node scripts/spec-sync.mjs --since origin/main # the specs whose covered declarations this branch moved
 ```
 
-Any output means the check needs a look. Also look for new code that writes the state a check guards, even in a file the entry does not list: a new op that writes run rows, a new path to a register, a new writer of the index queue. That is how the slide tools reached the turn model.
+The first is the `spec-sync` step of `pnpm check`. Each line names the spec, the declarations and the file, and gives the `git diff` of what moved since the sync. A spec it names needs a look. A declaration that no longer exists is named too: rename it in that spec's `covers.json`. A name inside a declaration is covered by naming the declaration that holds it, and `"*"` covers a whole file. Also look for new code that writes the state a check guards, even in a file the entry does not list: a new op that writes run rows, a new path to a register, a new writer of the index queue. That is how the slide tools reached the turn model.
 
 ## 2. Run the check
 
@@ -59,6 +58,6 @@ Change the model or replay from the code, before you rerun. One indivisible step
 
 After a pass, break the code the way the property guards against, for example remove a refusal or reorder a step, and see the replay or TLC fail. Then drop the break. A check you have never seen fail proves nothing.
 
-Then update its entry: the covered code, the bounds, the gaps, the replay and the sync commit. Move the sync commit forward only for a check whose model you confirmed against the code at that commit. Leave it for a check you could not confirm, and say why.
+Then update its entry: the covered code, the bounds, the gaps and the replay, and the names in its `covers.json`. Once `pnpm check:specs <topic>` passed and the replay passed, record the sync with `node scripts/spec-sync.mjs --sync <topic>`. It rewrites the digests and refuses a spec with no passing TLC result. Sync only a check whose model you confirmed against the code. Leave one you could not confirm, and say why.
 
 Finish with `pnpm check`. A change to a spec or replay changes what `ci` judges, and the `bar` check may label the PR.

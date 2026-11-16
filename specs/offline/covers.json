@@ -1,0 +1,29 @@
+{
+  "check": "checks-document.md#offline",
+  "covers": [
+    {
+      "file": "packages/document/src/replay.ts",
+      "names": ["replay", "unsent"],
+      "digest": "4c073638cf71",
+      "blob": "1c76816c50b3b499011aa54fa397bc2176cd784b"
+    },
+    {
+      "file": "packages/live/src/deck-edit.ts",
+      "names": ["valueChange"],
+      "digest": "e3b0c44298fc",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "file": "packages/live/src/deck-view.ts",
+      "names": ["joinable"],
+      "digest": "e3b0c44298fc",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "file": "packages/live/src/held.ts",
+      "names": ["sealRows"],
+      "digest": "e3b0c44298fc",
+      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    }
+  ]
+}

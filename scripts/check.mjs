@@ -35,6 +35,7 @@ export const stages = [
     ["stale-tree", "node", ["scripts/stale-tree.mjs"]],
     ["specs", "pnpm", ["check:specs"], { AIRDESIGN_SPEC_CACHE: specCache }],
     ["spec-replays", "node", ["scripts/spec-replays.mjs"]],
+    ["spec-sync", "node", ["scripts/spec-sync.mjs"]],
     ["browser", "pnpm", ["test:browser"]],
     ["boundaries", "pnpm", ["check:boundaries"]],
     [
@@ -97,6 +98,7 @@ export const warnSteps = new Set([
   "interface-width",
   "design-findings",
   "spec-replays",
+  "spec-sync",
   "conflict-markers",
   "migration-numbers",
   "stale-tree",

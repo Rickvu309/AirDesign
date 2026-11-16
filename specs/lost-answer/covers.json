@@ -1,0 +1,35 @@
+{
+  "check": "checks-lost-answer.md#lost-answer",
+  "covers": [
+    {
+      "file": "packages/live/src/cache.ts",
+      "names": ["connect"],
+      "digest": "e7896fa47681",
+      "blob": "9176091cc90df9ac5b43ab79a6def8550b6853c5"
+    },
+    {
+      "file": "packages/live/src/slide-replay.ts",
+      "names": ["withSlides", "landed", "refusedRows"],
+      "digest": "112cebacbd48",
+      "blob": "20db9b6017d6fd6addd54c9b1f394eb56f18eb34"
+    },
+    {
+      "file": "packages/live/src/held.ts",
+      "names": ["sealRows", "setAside", "takeAside"],
+      "digest": "773acae20523",
+      "blob": "78eb2cb1f22957e8c72173ed3c3bcf9539993593"
+    },
+    {
+      "file": "apps/api/src/saved.ts",
+      "names": ["commitEdits"],
+      "digest": "77d9d4d8dc66",
+      "blob": "3cb8a055dcc5b3a2d2cef0e04f08e9b8c27b1ef8"
+    },
+    {
+      "file": "apps/web/src/deck-resend.ts",
+      "names": ["resendPending"],
+      "digest": "cc5743d8ebdd",
+      "blob": "a9cdf6f5ebbfc0f9eaa8af542084ff21a59c5d2a"
+    }
+  ]
+}

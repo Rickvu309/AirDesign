@@ -29,7 +29,7 @@ Planted faults that the replay catches: stop_run of a run with no element not wr
 
 One open turn per deck per agent holds by the table's primary key `(email, deck, agent)`. The model has one agent; a second agent's runs and turn are the agents model's. A person's protection lives in the deck's register, and every write to it is a compare-and-swap on `deck.saved.revision`, so a call on another server decides on the deck it read or does not land. edit and this replay cover that.
 
-Sync: the commit that added `lastRun`, on `67aad691`.
+Sync: `specs/slide-run/covers.json`.
 
 ## slide-sibling
 
@@ -46,7 +46,7 @@ Bounds: two calls, one person edit, `Tries = 3`, the base's revision written by 
 
 Planted faults: TLC fails `TurnCallsBothLand` with `Fresh == Base = rev`, `SlideOnOwnRead` with a `lastRun` that has no `since`, `SlideOnOwnRead` when a person's edit leaves `lastRun` standing, and `AppliesOnce` and `SentTwiceLandsOnce` when the once is never spent, as before the once: the second send lands a second slide in four steps. The replay fails on the first two in the code, and on a `prepare` that never reads the once or a `commitEdit` that never writes it.
 
-Sync: the commit that added the once, on `3392d4bb`.
+Sync: `specs/slide-sibling/covers.json`.
 
 ## slide-undo
 
@@ -63,4 +63,4 @@ Bounds: two agent slide calls, one stop, one person move, two Undo tries. 62 sta
 
 Fixed bug, from `30244817`: run Undo left the turn naming r, and `runFence` passed a run that holds no element, so the agent's next slide landed under the undone run, and every later run Undo of r was refused. Planted faults that the replay catches: run Undo not writing r ended, and `liveTurn` taking a fenced run as the turn's run.
 
-Sync: the commit that added the `ended` record, on `feb5fd65`.
+Sync: `specs/slide-undo/covers.json`.

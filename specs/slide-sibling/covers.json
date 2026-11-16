@@ -1,0 +1,41 @@
+{
+  "check": "checks-slides.md#slide-sibling",
+  "covers": [
+    {
+      "file": "packages/engine/src/agent-slides.ts",
+      "names": ["readFresh", "agentSlide"],
+      "digest": "3038a07991bd",
+      "blob": "420fb3a46c589b91eb3822e2c3fcb0b2268e7d29"
+    },
+    {
+      "file": "packages/engine/src/agent-elements.ts",
+      "names": ["agentElement"],
+      "digest": "2a5376ec725f",
+      "blob": "3c037f52aaf149be09986eedd326a7b309eeee4e"
+    },
+    {
+      "file": "packages/engine/src/call.ts",
+      "names": ["landed", "wroteBy"],
+      "digest": "900b9d918b02",
+      "blob": "0738f69c25b79e6858f0e80064510f5701d590dd"
+    },
+    {
+      "file": "packages/mcp/src/server.ts",
+      "names": ["settledCall"],
+      "digest": "cc984009b4d9",
+      "blob": "c361a7266e55831cf6772dc126454937c5b87a55"
+    },
+    {
+      "file": "apps/api/src/mcp.ts",
+      "names": ["serveMcp", "commitEdit"],
+      "digest": "e31b711d810a",
+      "blob": "b19c706515540f1b7eedf0d0f253b9920188f5f1"
+    },
+    {
+      "file": "apps/api/src/saved.ts",
+      "names": ["commitEdits", "readStoredOnce", "writeRevision"],
+      "digest": "cd5b762b8239",
+      "blob": "ce8b6d4ad96ce05e37b969fd997a7362d75c6c64"
+    }
+  ]
+}

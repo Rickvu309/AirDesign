@@ -1,0 +1,29 @@
+{
+  "check": "checks-document.md#index",
+  "covers": [
+    {
+      "file": "packages/engine/src/index-deck.ts",
+      "names": ["indexDeck"],
+      "digest": "205fb4d60ff8",
+      "blob": "e1e47ed13faa4471069dd7de7ccd2f4f2612f571"
+    },
+    {
+      "file": "packages/document/src/deck-index.ts",
+      "names": ["appendIndex", "indexDue", "answeredRegister"],
+      "digest": "5ed9a8f4ebe8",
+      "blob": "99623392e749831b98558ffaf9a5d6ffa39e55b6"
+    },
+    {
+      "file": "packages/live/src/deck-index.ts",
+      "names": ["keepIndex", "sendIndex"],
+      "digest": "7ef229b2d81c",
+      "blob": "62602bd6b7f1096d1badb02c3faeb14a9becec6d"
+    },
+    {
+      "file": "packages/live/src/store.ts",
+      "names": ["swapSlot", "putSlots"],
+      "digest": "964a51a1c52c",
+      "blob": "65f55917c53ecae99cc65ca2a46f9d65cfbb641c"
+    }
+  ]
+}

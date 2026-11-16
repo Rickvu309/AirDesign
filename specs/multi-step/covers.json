@@ -1,0 +1,29 @@
+{
+  "check": "checks-undo.md#multi-step",
+  "covers": [
+    {
+      "file": "packages/document/src/person-undo.ts",
+      "names": ["elementsUndoable", "turn", "stillShows"],
+      "digest": "bb2a1eab43eb",
+      "blob": "3472ea2a43d2158d31b2cb41733ae1a5ce48a4c2"
+    },
+    {
+      "file": "apps/web/src/undo-list.ts",
+      "names": ["turnBack"],
+      "digest": "377b0d9510ba",
+      "blob": "79595f35cb7982cfb61a9e387b2708a5b612d027"
+    },
+    {
+      "file": "apps/web/src/element-edit.ts",
+      "names": ["removals", "commitElement"],
+      "digest": "a0810172c5cd",
+      "blob": "760619b9e49e2e2d74055c46ee8d1e22f3362ab8"
+    },
+    {
+      "file": "packages/render/src/slide-moves.ts",
+      "names": ["useMoves"],
+      "digest": "c671f4e6a5ce",
+      "blob": "9b47d69fca5180bcdcd1e34b5515174332a269cc"
+    }
+  ]
+}
