@@ -47,7 +47,8 @@ function collectRuns(nodes: NodeListOf<ChildNode> | readonly Node[], from: numbe
     if (isText(node)) {
       if (node.data === "") continue
       const last = runs.at(-1)
-      if (loose && last !== undefined) runs[runs.length - 1] = { from: -1, text: last.text + node.data }
+      if (last !== undefined && (loose || last.text === ""))
+        runs[runs.length - 1] = { ...last, text: last.text + node.data }
       else runs.push({ from: -1, text: node.data })
       loose = true
       continue

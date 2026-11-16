@@ -48,6 +48,17 @@ async function changedFromDoe(testInfo: TestInfo, name: string): Promise<DeckDif
   return deckDiff(await read(doe), await read(testInfo.outputPath(name)))
 }
 
+async function runsAddedToDoe(testInfo: TestInfo, name: string, part: string): Promise<string[]> {
+  const { partDiff, readParts } = await import("../../packages/pptx/src/index.ts")
+  const read = async (file: string) => (await readParts(new Uint8Array(await readFile(file)))).get(part)
+  const before = await read(doe)
+  const after = await read(testInfo.outputPath(name))
+  if (before === undefined || after === undefined) throw new Error(part)
+  return partDiff(part, before, after)
+    .lines.filter((line) => /\/a:r(\[\d+\])?(\/a:t)?$/.test(line.at))
+    .map((line) => `${line.op} ${line.text}`)
+}
+
 const typedSlide = "ppt/slides/slide1.xml"
 
 async function openFile(page: Page, file: string | undefined): Promise<{ address: string; slides: number }> {
@@ -100,6 +111,7 @@ test("a blank deck keeps every typed letter across a reload taken before undo, a
   const parts = await exportedSlides(page, testInfo, "blank-before-undo.pptx")
   expect(slideParts(parts)).toHaveLength(1)
   expect(parts.get("ppt/slides/slide1.xml")).toContain(`<a:t>${typed}</a:t>`)
+  expect(parts.get("ppt/slides/slide1.xml")).not.toContain("<a:t></a:t>")
   await stillOpen(page, opened.address, opened.slides)
 })
 
@@ -139,6 +151,12 @@ test("doe-heat-pumps keeps every typed letter across a reload taken before undo,
   const body = slides.map((name) => parts.get(name) ?? "").join("\n")
   expect(body).toContain(`<a:t>${typed}</a:t>`)
   expect(parts.get(typedSlide)).toContain(`<a:t>${typed}</a:t>`)
+  expect(parts.get(typedSlide)).not.toContain("<a:t></a:t>")
+  expect(await runsAddedToDoe(testInfo, "doe-before-undo.pptx", typedSlide)).toEqual([
+    "+ <a:r>",
+    "+ <a:t>",
+    `+ ${typed}`,
+  ])
   expect(await changedFromDoe(testInfo, "doe-before-undo.pptx")).toMatchObject({
     changed: [typedSlide],
     added: [],
