@@ -123,6 +123,7 @@ export function Home({
   const [deleteFailed, setDeleteFailed] = useState(false)
   const [importing, setImporting] = useState<Importing | null>(null)
   const [said, setSaid] = useState("")
+  const searched = useRef(false)
   const picker = useRef<HTMLInputElement>(null)
   const listFailed = useRef(false)
   const [query, setQuery] = useState(() => addressRead(window.location.search).query)
@@ -181,6 +182,7 @@ export function Home({
   }, [unavailable])
 
   function search(next: string) {
+    setSaid("")
     setQuery(next)
     window.history.replaceState(null, "", addressOf(window.location.pathname, { list: listView, query: next }))
   }
@@ -253,6 +255,23 @@ export function Home({
   const firstVisit =
     listing !== null && section === "recents" && held.length === 0 && listing.trash.length === 0 && importing === null
   const noDecks = listing !== null && !trash && held.length === 0 && importing === null
+  const showGrid = !listView || trash || importing !== null
+  const resultCount = decks.length
+  const loaded = listing !== null
+  useEffect(() => {
+    if (!loaded || unavailable || (!searching && !searched.current)) return
+    searched.current = true
+    const timer = window.setTimeout(() => {
+      setSaid(
+        searching && resultCount === 0
+          ? noMatchTitleOf(query.trim())
+          : resultCount === 1
+            ? "1 deck found"
+            : `${new Intl.NumberFormat().format(resultCount)} decks found`,
+      )
+    }, 300)
+    return () => window.clearTimeout(timer)
+  }, [query, searching, resultCount, loaded, unavailable])
   return (
     <DeckBrowser
       title={sectionTitles[section]}
@@ -334,8 +353,8 @@ export function Home({
           />
         </div>
       )}
-      {(listing !== null || importing !== null) && !noDecks && !noMatch && (
-        <DeckGrid ref={grid} className={trash ? "mt-6" : undefined}>
+      {(listing !== null || importing !== null) && showGrid && !noDecks && !noMatch && (
+        <DeckGrid ref={grid} className={section !== "recents" ? "mt-6" : undefined}>
           {importing &&
             (importing.failed ? (
               <div role="alert">
@@ -367,7 +386,7 @@ export function Home({
                     trash ? deckTime(deck.trashed ?? deck.edited, now()).trash : deckTime(deck.edited, now()).card
                   }
                   href={trash ? undefined : `/deck/${deck.deck}`}
-                  previewClassName={trash ? "h-[180px]" : undefined}
+                  previewClassName={section !== "recents" ? "h-[180px]" : undefined}
                   preview={<DeckPreview deck={deck.deck} name={deck.name} edited={deck.edited} />}
                   action={
                     trash ? (
