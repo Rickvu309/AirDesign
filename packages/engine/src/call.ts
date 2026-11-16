@@ -11,6 +11,7 @@ import {
   storedValue,
   limits,
   openRegister,
+  openingElement,
   valueBytes,
   type Command,
   type Decision,
@@ -83,6 +84,11 @@ function landed(deck: Deck, register: Register, runId?: string): CallResult {
   return { ok: true, deck: { id: deck.id, revision, register: written }, key: notified.key }
 }
 
+function floorOver(register: Register, element: WireRunElement): boolean {
+  if (element.floor === undefined || bytesOf(element.floor) <= limits.valueBytes) return false
+  return openingElement(register, element.node)?.value !== element.floor
+}
+
 function applyPersonEdits(deck: Deck, edits: readonly (WireEdit | WireSlide)[]): CallResult {
   let register = deck.register
   for (const edit of edits) {
@@ -94,7 +100,7 @@ function applyPersonEdits(deck: Deck, edits: readonly (WireEdit | WireSlide)[]):
     }
     const bytes = valueBytes(edit)
     if (bytes > limits.valueBytes) return refused("limit")
-    if (edit.floor !== undefined && bytesOf(edit.floor) > limits.valueBytes) return refused("limit")
+    if (floorOver(register, edit)) return refused("limit")
     const opened = openedRegister(register, edit)
     if (!opened.ok) return refused(opened.refusal)
     register = opened.register
@@ -124,7 +130,7 @@ function applyAgentEdits(deck: Deck, edits: readonly AgentChange[], runId: strin
     }
     const bytes = valueBytes(edit)
     if (bytes > limits.valueBytes) return refused("limit")
-    if (edit.floor !== undefined && bytesOf(edit.floor) > limits.valueBytes) return refused("limit")
+    if (floorOver(register, edit)) return refused("limit")
     const opened = openedRegister(register, edit)
     if (!opened.ok) return refused(opened.refusal)
     register = opened.register
@@ -219,7 +225,7 @@ function startRun(deck: Deck, requested: string, elements: readonly WireRunEleme
   const runId = liveRun(deck.register, elements) ?? requested
   let register = deck.register
   for (const element of elements) {
-    if (element.floor !== undefined && bytesOf(element.floor) > limits.valueBytes) return refused("limit")
+    if (floorOver(register, element)) return refused("limit")
     const opened = openedRegister(register, element)
     if (!opened.ok) return refused(opened.refusal)
     register = opened.register
