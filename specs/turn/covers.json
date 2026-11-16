@@ -4,44 +4,44 @@
     {
       "file": "packages/mcp/src/turn.ts",
       "names": ["liveTurn", "heldRun", "settleTurn", "dropGoneTurn"],
-      "digest": "8c96c5a8e6e8",
-      "blob": "742127702628b1a88893026ada4d6d4cfccdd4b5"
+      "digest": "d7dddbc880f0",
+      "blob": "cf44ccb491249fed1a66f0ba3f5a63e6c59b79e3"
     },
     {
       "file": "packages/engine/src/agent-slides.ts",
       "names": ["runFenced"],
-      "digest": "e3b0c44298fc",
-      "blob": "a1596c9ce8a852e0a2d2cdc5249726d21e4d51dc"
+      "digest": "d3359390b599",
+      "blob": "e710e807ea98451f201b2f2b2c7d5d295faacfc8"
     },
     {
       "file": "packages/mcp/src/run.ts",
-      "names": ["openRun", "joinRun", "stopLiveRuns"],
-      "digest": "fa03c98c5c16",
-      "blob": "0148baf3b580c0c4250030771c40e7547206335e"
+      "names": ["openRun", "joinRun", "stopLiveRuns", "stopForNewTurn"],
+      "digest": "894f15dc7920",
+      "blob": "b8ba8cce8637137691707b645117529f4ca7f41b"
     },
     {
       "file": "packages/mcp/src/slide-tool.ts",
       "names": ["slideTool"],
-      "digest": "f1ce205eb57a",
-      "blob": "1835706799e635ed9900e5cae8281ba9b10c1afe"
+      "digest": "eaa6365748f8",
+      "blob": "94ba467e549a139f70a0a9a49a6037aaf5292efa"
     },
     {
       "file": "packages/mcp/src/element-tool.ts",
       "names": ["elementTool"],
-      "digest": "e3b0c44298fc",
-      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+      "digest": "f9394798125f",
+      "blob": "199dcded529b16b668498cda9e8cc316fff41911"
     },
     {
       "file": "apps/api/src/agent-turn.ts",
       "names": ["storedTurns"],
-      "digest": "1c000aa5b3ef",
-      "blob": "5e9abb8a943b40f29b5d6ae38771ef781fd32e83"
+      "digest": "679177026d58",
+      "blob": "15f5bbeae83d94b8bcf9d6e2ef95c82858ecc0d8"
     },
     {
       "file": "packages/document/src/decide.ts",
       "names": ["personEdit"],
       "digest": "73292e0d73e7",
-      "blob": "1286a8b0c599880d213a2dbad374e086d31fad28"
+      "blob": "90cdf9ca572b8b1ade104decd785c82027b56fec"
     }
   ]
 }

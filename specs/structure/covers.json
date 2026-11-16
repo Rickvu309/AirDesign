@@ -4,26 +4,26 @@
     {
       "file": "packages/document/src/element-group.ts",
       "names": ["*"],
-      "digest": "e3b0c44298fc",
-      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+      "digest": "4447d48a4d85",
+      "blob": "008732c00f56a274249f088c514593288e37aff9"
     },
     {
       "file": "packages/document/src/group-place.ts",
       "names": ["*"],
-      "digest": "e3b0c44298fc",
-      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+      "digest": "94abc4041a6d",
+      "blob": "7342c9149c5bc699f35fc19ee6cea47f0381f518"
     },
     {
       "file": "packages/document/src/group-turn.ts",
       "names": ["*"],
-      "digest": "e3b0c44298fc",
-      "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+      "digest": "75880761416b",
+      "blob": "3a847072ae40ea167503ce28e4fe8b43c67a0580"
     },
     {
       "file": "packages/document/src/person-undo.ts",
-      "names": ["slideUndoable", "turn", "undoSlides"],
-      "digest": "0fa136f9fdb8",
-      "blob": "bbaae48a47c8aad7f74e5617646addfdfb317121"
+      "names": ["slideUndoable", "turn", "undoSlides", "turnCommands", "groupUndone"],
+      "digest": "91deadb1dc31",
+      "blob": "00e96a29d533542d7c0eaba4bd44f54df62147d2"
     }
   ]
 }

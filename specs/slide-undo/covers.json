@@ -3,27 +3,27 @@
   "covers": [
     {
       "file": "packages/document/src/person-undo.ts",
-      "names": ["undoSlides", "undoOf"],
-      "digest": "96292dbf1154",
-      "blob": "bbaae48a47c8aad7f74e5617646addfdfb317121"
+      "names": ["undoSlides", "undoOf", "undoableAt", "turnCommands"],
+      "digest": "a020b5ed43bf",
+      "blob": "fb60c8320e69d0e23250cbecdf291838e7c60cc6"
     },
     {
       "file": "packages/engine/src/call.ts",
       "names": ["undoRun", "endSlides"],
       "digest": "5b5b135f164e",
-      "blob": "a3bc320b5bcdc4cdd77753da22e9aeac8de918e6"
+      "blob": "bb21d1808ecaeb2a2e58004989ea4a710f6421bb"
     },
     {
       "file": "packages/engine/src/agent-slides.ts",
       "names": ["runFenced"],
       "digest": "d3359390b599",
-      "blob": "81a936faf30216148e1946bcb38af93c62baf499"
+      "blob": "e710e807ea98451f201b2f2b2c7d5d295faacfc8"
     },
     {
       "file": "packages/mcp/src/turn.ts",
       "names": ["liveTurn"],
       "digest": "62d6ba092862",
-      "blob": "513bce6502f59a9a375927e78111b5a6978a097d"
+      "blob": "cf44ccb491249fed1a66f0ba3f5a63e6c59b79e3"
     },
     {
       "file": "apps/api/src/undo.ts",
