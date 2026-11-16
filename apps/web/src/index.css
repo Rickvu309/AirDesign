@@ -88,6 +88,21 @@ html:has(.reflow-frame) #root {
   overflow: visible;
 }
 
+[data-editor-canvas] [data-slide-label] + *,
+[data-editor-grid] [data-slide-entry][aria-current="true"] {
+  view-transition-name: slide-opening;
+}
+
+::view-transition-group(slide-opening) {
+  animation-duration: var(--duration-panel);
+  animation-timing-function: var(--curve-panel);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--duration-micro);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,

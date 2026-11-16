@@ -11,6 +11,7 @@ import {
   type Zoom,
 } from "@/editor/canvas-zoom"
 import { PanelHead, ZoomReadout } from "@/editor/editor-chrome"
+import { openWith } from "@/editor/slide-opening"
 import { EditorGrid } from "@/editor/editor-grid"
 import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
 import { TableSizeGrid } from "@/editor/table-tool"
@@ -111,7 +112,7 @@ export function EditorShell({
         title={title}
         strip={deck.slides}
         size={size}
-        onSlides={() => setGridOpen(false)}
+        onSlides={() => openWith(() => setGridOpen(false))}
         onExport={deck.onExport}
         undo={deck.undo}
         pointer={pointer}
@@ -138,7 +139,7 @@ export function EditorShell({
           title={title}
           {...(deck === undefined
             ? {}
-            : { strip: deck.slides, onGrid: () => setGridOpen(true), save: deck.save ?? null })}
+            : { strip: deck.slides, onGrid: () => openWith(() => setGridOpen(true)), save: deck.save ?? null })}
           {...(deck?.onRename === undefined ? {} : { onRename: deck.onRename })}
         />
       ) : null}

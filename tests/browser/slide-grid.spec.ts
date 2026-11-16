@@ -1,119 +1,21 @@
-import { readFile } from "node:fs/promises"
-import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import {
+  clean,
+  entry,
+  fifty,
+  fixtures,
+  manySlides,
+  mark,
+  openFile,
+  openGrid,
+  sectioned,
+  settled,
+} from "./slide-grid-deck"
 
-const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
-const sectioned = join(fixtures, "sections-before.pptx")
-const clean = join(fixtures, "clean.pptx")
-const deckAddress = /\/deck\/[A-Za-z0-9_-]{1,64}$/
-const fifty = 50
 const hundred = 100
 
-type ZipEntry = {
-  readonly filename: string
-  readonly directory: boolean
-  getData(writer: unknown): Promise<Uint8Array>
-}
-
-type ZipLibrary = {
-  readonly ZipReader: new (reader: unknown) => {
-    getEntries(): Promise<ZipEntry[]>
-    close(): Promise<void>
-  }
-  readonly ZipWriter: new (writer: unknown) => {
-    add(name: string, reader: unknown): Promise<unknown>
-    close(): Promise<Uint8Array>
-  }
-  readonly Uint8ArrayReader: new (bytes: Uint8Array) => unknown
-  readonly Uint8ArrayWriter: new () => unknown
-}
-
-const zip = createRequire(join(process.cwd(), "packages/pptx/package.json"))("@zip.js/zip.js") as ZipLibrary
-
-function mark(number: number, count: number): string {
-  return `Mark ${String(number).padStart(String(count).length, "0")}`
-}
-
-async function manySlides(count: number): Promise<Buffer> {
-  const reader = new zip.ZipReader(new zip.Uint8ArrayReader(new Uint8Array(await readFile(clean))))
-  const files = new Map<string, Uint8Array>()
-  for (const entry of await reader.getEntries()) {
-    if (!entry.directory) files.set(entry.filename, await entry.getData(new zip.Uint8ArrayWriter()))
-  }
-  await reader.close()
-  const slide = Buffer.from(files.get("ppt/slides/slide1.xml") ?? new Uint8Array()).toString("utf8")
-  const rels = files.get("ppt/slides/_rels/slide1.xml.rels")
-  if (rels === undefined || !slide.includes("<a:t>Hello</a:t>")) throw new Error("clean slide")
-  for (let number = 1; number <= count; number += 1) {
-    files.set(
-      `ppt/slides/slide${number}.xml`,
-      Buffer.from(slide.replace("<a:t>Hello</a:t>", `<a:t>${mark(number, count)}</a:t>`)),
-    )
-    files.set(`ppt/slides/_rels/slide${number}.xml.rels`, rels)
-  }
-  const ids = Array.from({ length: count }, (_, index) => `<p:sldId id="${256 + index}" r:id="rId${index + 2}"/>`).join(
-    "",
-  )
-  files.set(
-    "ppt/presentation.xml",
-    Buffer.from(
-      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst>${ids}</p:sldIdLst><p:sldSz cx="12192000" cy="6858000"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`,
-    ),
-  )
-  const relationships = [
-    `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>`,
-    ...Array.from(
-      { length: count },
-      (_, index) =>
-        `<Relationship Id="rId${index + 2}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${index + 1}.xml"/>`,
-    ),
-    `<Relationship Id="rId${count + 2}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/presProps" Target="presProps.xml"/>`,
-    `<Relationship Id="rId${count + 3}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/viewProps" Target="viewProps.xml"/>`,
-    `<Relationship Id="rId${count + 4}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/tableStyles" Target="tableStyles.xml"/>`,
-  ].join("")
-  files.set(
-    "ppt/_rels/presentation.xml.rels",
-    Buffer.from(
-      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relationships}</Relationships>`,
-    ),
-  )
-  const types = Buffer.from(files.get("[Content_Types].xml") ?? new Uint8Array()).toString("utf8")
-  const slideType = `<Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`
-  if (!types.includes(slideType)) throw new Error("content type")
-  const overrides = Array.from({ length: count }, (_, index) =>
-    slideType.replace("/ppt/slides/slide1.xml", `/ppt/slides/slide${index + 1}.xml`),
-  ).join("")
-  files.set("[Content_Types].xml", Buffer.from(types.replace(slideType, overrides)))
-  const writer = new zip.ZipWriter(new zip.Uint8ArrayWriter())
-  for (const [name, bytes] of files) await writer.add(name, new zip.Uint8ArrayReader(bytes))
-  return Buffer.from(await writer.close())
-}
-
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
-
-async function settled(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
-  })
-}
-
-async function openFile(page: Page, file: string | { name: string; mimeType: string; buffer: Buffer }): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(file)
-  await expect(page).toHaveURL(deckAddress)
-  await settled(page)
-}
-
-function entry(page: Page, number: number) {
-  return page.locator(`[data-slide-entry="${number}"]`)
-}
-
-async function openGrid(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Grid" }).click()
-  await expect(page.locator("[data-editor-grid]")).toBeVisible()
-}
 
 async function ringed(page: Page): Promise<boolean> {
   return page.evaluate(() => {
