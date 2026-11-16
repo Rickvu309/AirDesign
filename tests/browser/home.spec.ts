@@ -202,6 +202,23 @@ test("the Undo toast leaves on its own", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toHaveCount(0)
 })
 
+for (const reducedMotion of ["no-preference", "reduce"] as const) {
+  test(`the moved-to-Trash toast ${reducedMotion === "reduce" ? "does not move" : "slides"} under ${reducedMotion}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion })
+    await store(page, [first])
+    await page.goto("/")
+    await page.getByRole("button", { name: `${first.name} actions` }).click()
+    await page.getByRole("menuitem", { name: "Move to Trash" }).click()
+    const toast = page.locator("[data-sonner-toast]")
+    await expect(toast.getByRole("button", { name: "Undo", exact: true })).toBeVisible()
+    const property = await toast.evaluate((element) => getComputedStyle(element).transitionProperty)
+    if (reducedMotion === "reduce") expect(property).toBe("none")
+    else expect(property).toContain("transform")
+  })
+}
+
 test("home with the only deck in Trash shows the empty state pointing forward and no sample decks", async ({
   page,
 }) => {
