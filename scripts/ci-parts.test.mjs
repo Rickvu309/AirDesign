@@ -21,7 +21,7 @@ const onlyOn = (step, part) => (step.if ?? "").includes(`matrix.part == '${part}
 
 same("the check job runs three parts side by side", check.strategy.matrix.part, ["main", "side", "pptx"])
 same("one failing part does not stop the others", check.strategy["fail-fast"], false)
-same("ci waits for every part", workflow.jobs.ci.needs, "check")
+same("ci waits for every part and the corpus", workflow.jobs.ci.needs, ["check", "corpus"])
 
 const partCheck = steps.filter((step) => (step.run ?? "").startsWith("pnpm check --part="))
 same("one step runs pnpm check for a part", partCheck.length, 1)
@@ -110,4 +110,28 @@ same(
   "a slow queue run warns with both numbers",
   slow.out.includes("::warning title=ci-duration::ci-duration is 50.0 and its limit is 40."),
   true,
+)
+
+const corpus = workflow.jobs.corpus
+same(
+  "the corpus job runs in the merge queue and ci waits for it",
+  corpus.if,
+  "github.event_name == 'push' || github.event_name == 'merge_group'",
+)
+const verdict = ciSteps[0].run
+const passes = (check, corpusResult) =>
+  spawnSync("bash", [
+    "-e",
+    "-c",
+    verdict.replaceAll("${{ needs.check.result }}", check).replaceAll("${{ needs.corpus.result }}", corpusResult),
+  ]).status === 0
+same("ci passes when every part passed and the corpus passed", passes("success", "success"), true)
+same("ci passes on a pull request, where the corpus is skipped", passes("success", "skipped"), true)
+same("ci fails when the corpus failed", passes("success", "failure"), false)
+same("ci fails when the corpus was cancelled", passes("success", "cancelled"), false)
+same("ci fails when a part failed", passes("failure", "success"), false)
+same(
+  "only a failure on main opens the main is red issue",
+  corpus.steps.filter((step) => (step.run ?? "").includes("red-main.sh")).map((step) => step.if),
+  ["failure() && github.event_name == 'push'"],
 )

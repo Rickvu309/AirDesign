@@ -120,7 +120,7 @@ jobs:
         run: bash scripts/red-main.sh
   corpus:
     name: corpus
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'merge_group'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -167,18 +167,20 @@ jobs:
         with:
           path: ~/.cache/airdesign/pptx-renders
           key: pptx-renders-corpus-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-4
-      - if: failure()
+      - if: failure() && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/red-main.sh
   ci:
     name: ci
-    needs: check
+    needs: [check, corpus]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - run: test "${{ needs.check.result }}" = success
+      - run: |
+          test "${{ needs.check.result }}" = success
+          test "${{ needs.corpus.result }}" = success || test "${{ needs.corpus.result }}" = skipped
       - if: github.event_name == 'push'
         continue-on-error: true
         env:
