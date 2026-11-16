@@ -94,6 +94,9 @@
   --row: #e8f1fe;
   --mist: #eef1f5;
   --mist-edge: #e6e8eb;
+  --stage: #000000;
+  --stage-hover: #ffffff1a;
+  --stage-quiet: #ffffffa6;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -214,6 +217,7 @@
   --color-negative: var(--negative);
   --color-claude: var(--claude);
   --color-ink: var(--ink);
+  --color-stage: var(--stage);
   --color-blue-tint: var(--blue-tint);
   --color-field-edge: var(--field-edge);
   --color-pressed: var(--pressed);
