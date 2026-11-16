@@ -32,9 +32,9 @@ function read(args) {
 const gitIn = (root) => (args) =>
   execFileSync("git", ["-C", root, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim()
 
-function launchAt(repo, build) {
+function launchAt(repo, build, args = []) {
   try {
-    const said = execFileSync(process.execPath, [self, "launch", ...(build ? [] : ["--no-build"])], {
+    const said = execFileSync(process.execPath, [self, "launch", ...(build ? [] : ["--no-build"]), ...args], {
       cwd: repo,
       encoding: "utf8",
       env: { ...process.env, VERIFY_AIRDESIGN_REPO: repo },
@@ -77,10 +77,10 @@ function treeAt(repo, commit) {
   return { dir, built }
 }
 
-export function stackFor({ run, ref, runtime, cleanup }) {
+export function stackFor({ run, ref, runtime, cleanup, args }) {
   if (run !== undefined) return run
   let at
-  if (ref === undefined) at = launchAt(runtime.repo, true)
+  if (ref === undefined) at = launchAt(runtime.repo, true, args)
   else {
     const commit = gitIn(runtime.repo)(["rev-parse", "--verify", `${ref}^{commit}`])
     const tree = treeAt(runtime.repo, commit)

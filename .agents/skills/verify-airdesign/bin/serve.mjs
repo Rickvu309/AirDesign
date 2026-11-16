@@ -3,6 +3,7 @@ import { request as httpRequest, createServer } from "node:http"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { randomBytes } from "node:crypto"
+import { countedTransport } from "./aira-counts.mjs"
 import { scriptedAira } from "./scripted-aira.mjs"
 import { fakeOrigins, moveLocation, siteFile, withAppOrigin } from "./site.mjs"
 
@@ -127,6 +128,17 @@ export async function serve(
   const deck = openPool(environment.DECK_DATABASE_URL, "verify-deck")
   const listen = new DeckListen(environment.LISTEN_DATABASE_URL)
   const mailFile = path.join(scratchDir(run), "mail.jsonl")
+  const airaCounts = path.join(scratchDir(run), "aira-counts.jsonl")
+  const aira =
+    choice.keyEnv === undefined
+      ? scriptedAira({ Replay, repo, file: airaPath(run), log })
+      : {
+          on: true,
+          key: process.env[choice.keyEnv],
+          secret: randomBytes(32).toString("hex"),
+          transport: anthropicTransport(),
+          log,
+        }
   const originals = new LocalOriginalStore(Date.now, originalBase)
   const api = createApi({
     session,
@@ -141,15 +153,10 @@ export async function serve(
       appendFileSync(mailFile, `${JSON.stringify(mail)}\n`)
     },
     aira: {
-      ...(choice.keyEnv === undefined
-        ? scriptedAira({ Replay, repo, file: airaPath(run), log })
-        : {
-            on: true,
-            key: process.env[choice.keyEnv],
-            secret: randomBytes(32).toString("hex"),
-            transport: anthropicTransport(),
-            log,
-          }),
+      ...aira,
+      transport: countedTransport(aira.transport, (counts) =>
+        appendFileSync(airaCounts, `${JSON.stringify({ at: Date.now(), ...counts })}\n`),
+      ),
       model: state.aira.model,
       effort: state.aira.effort,
     },
@@ -205,7 +212,11 @@ export async function serve(
   process.on("unhandledRejection", (error) => stop(`unhandled ${String(error?.stack ?? error)}`))
   writeFileSync(
     statePath(run),
-    JSON.stringify({ ...state, apiPort, origin, siteOrigin: origins.site, mail: mailFile, ready: true }, null, 2),
+    JSON.stringify(
+      { ...state, apiPort, origin, siteOrigin: origins.site, mail: mailFile, airaCounts, ready: true },
+      null,
+      2,
+    ),
   )
   log(`ready ${origin}`)
 }

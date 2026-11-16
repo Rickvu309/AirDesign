@@ -1,0 +1,124 @@
+[
+  {
+    "id": "restyle-theme-census-16",
+    "family": "restyle to theme",
+    "deck": "census-updating-spm.pptx",
+    "prompt": "Make slides 16 to 18 use the deck's theme colours and fonts instead of fixed colours.",
+    "may": { "slides": [16, 17, 18] },
+    "want": [
+      { "kind": "theme-colors", "slides": [16, 17, 18] },
+      { "kind": "text-kept", "slides": [16, 17, 18] },
+      { "kind": "no-new-findings" }
+    ],
+    "limit": { "calls": 25, "seconds": 240 }
+  },
+  {
+    "id": "restyle-theme-gram-11",
+    "family": "restyle to theme",
+    "deck": "nasa-earth-gram-overview.pptx",
+    "prompt": "Make slide 11 use the deck's theme colours and fonts instead of fixed colours.",
+    "may": { "slides": [11] },
+    "want": [
+      { "kind": "theme-colors", "slides": [11] },
+      { "kind": "text-kept", "slides": [11] },
+      { "kind": "no-new-findings" }
+    ],
+    "limit": { "calls": 15, "seconds": 180 }
+  },
+  {
+    "id": "diagram-doe-15",
+    "family": "list to diagram",
+    "deck": "doe-heat-pumps.pptx",
+    "prompt": "Turn the bullet list on slide 15 into a diagram of shapes joined by connectors.",
+    "may": { "slides": [15] },
+    "want": [
+      { "kind": "joined", "slide": 15, "shapes": 4 },
+      { "kind": "text-kept", "slides": [15] },
+      { "kind": "no-new-findings" }
+    ],
+    "limit": { "calls": 30, "seconds": 300 }
+  },
+  {
+    "id": "diagram-classd-2",
+    "family": "list to diagram",
+    "deck": "nasa-class-d-mar.pptx",
+    "prompt": "Turn the outline on slide 2 into a flow diagram: one shape per item, joined in order by connectors.",
+    "may": { "slides": [2] },
+    "want": [
+      { "kind": "joined", "slide": 2, "shapes": 4 },
+      { "kind": "text-kept", "slides": [2] },
+      { "kind": "no-new-findings" }
+    ],
+    "limit": { "calls": 30, "seconds": 300 }
+  },
+  {
+    "id": "overflow-hera-8",
+    "family": "fix overflow",
+    "deck": "nasa-hera-analog-lessons.pptx",
+    "prompt": "Fix the text that runs out of its box on slide 8. Keep every word.",
+    "may": { "slides": [8] },
+    "want": [
+      { "kind": "finding-gone", "slide": 8, "code": "overflow" },
+      { "kind": "text-kept", "slides": [8] },
+      { "kind": "no-new-findings" }
+    ],
+    "limit": { "calls": 15, "seconds": 180 }
+  },
+  {
+    "id": "overflow-roman-3",
+    "family": "fix overflow",
+    "deck": "nasa-roman-thermal-runtime.pptx",
+    "prompt": "The text on slide 3 runs out of its box. Make it fit without cutting any words.",
+    "may": { "slides": [3] },
+    "want": [
+      { "kind": "finding-gone", "slide": 3, "code": "overflow" },
+      { "kind": "text-kept", "slides": [3] },
+      { "kind": "no-new-findings" }
+    ],
+    "limit": { "calls": 15, "seconds": 180 }
+  },
+  {
+    "id": "notes-doe-3",
+    "family": "slides from notes",
+    "deck": "doe-heat-pumps.pptx",
+    "prompt": "Add 3 slides at the end of the deck from these notes, each with a title: Maintenance. Clean or replace filters every one to three months. Keep the outdoor unit clear of snow, leaves and ice. Book a yearly check of refrigerant charge and electrical parts. Common faults: a unit that runs constantly often has low refrigerant; ice that stays on the coil points to a failed defrost cycle; short cycling usually means the unit is oversized. Talking to customers: explain that a heat pump moves heat rather than making it, show the yearly running cost next to their current system, and mention the rebates in their state.",
+    "may": { "slides": "new" },
+    "want": [{ "kind": "slides-added", "count": 3 }, { "kind": "no-new-findings" }],
+    "limit": { "calls": 30, "seconds": 300 }
+  },
+  {
+    "id": "notes-ixpe-4",
+    "family": "slides from notes",
+    "deck": "nasa-ixpe-science-ops.pptx",
+    "prompt": "Make 4 new slides at the end from my notes, one title per slide: Week one: power on the instrument, check the detectors, confirm the star trackers. Week two: point at the calibration source and compare counts with the ground data. Weeks three and four: first science targets, a bright pulsar and a supernova remnant, with daily quick-look plots. After launch review: what went to plan, what took longer, and what the team changes for the next campaign.",
+    "may": { "slides": "new" },
+    "want": [{ "kind": "slides-added", "count": 4 }, { "kind": "no-new-findings" }],
+    "limit": { "calls": 30, "seconds": 300 }
+  },
+  {
+    "id": "translate-vi-census-2",
+    "family": "translate",
+    "deck": "census-updating-spm.pptx",
+    "prompt": "Translate slides 2 and 3 into Vietnamese.",
+    "may": { "slides": [2, 3] },
+    "want": [
+      { "kind": "text-changed", "slides": [2, 3], "lengthRatio": [0.6, 2] },
+      { "kind": "script", "slides": [2, 3], "script": "Latin-vi" },
+      { "kind": "no-new-findings" }
+    ],
+    "limit": { "calls": 20, "seconds": 240 }
+  },
+  {
+    "id": "translate-vi-aqua-4",
+    "family": "translate",
+    "deck": "nasa-aqua-senior-review.pptx",
+    "prompt": "Translate slide 4 into Vietnamese and keep the layout.",
+    "may": { "slides": [4] },
+    "want": [
+      { "kind": "text-changed", "slides": [4], "lengthRatio": [0.6, 2] },
+      { "kind": "script", "slides": [4], "script": "Latin-vi" },
+      { "kind": "no-new-findings" }
+    ],
+    "limit": { "calls": 15, "seconds": 180 }
+  }
+]

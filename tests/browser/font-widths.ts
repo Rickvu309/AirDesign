@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test"
-import { fontFace, type FontWidths, type ResolvedSlide } from "../../packages/document/src/index.ts"
+import type { FontWidths, ResolvedSlide } from "../../packages/document/src/index.ts"
+import { fontFace } from "../../packages/document/dist/index.js"
 
 const substitutes = new Map([
   ["calibri", "Carlito"],

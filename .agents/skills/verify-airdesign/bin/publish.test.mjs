@@ -155,6 +155,32 @@ describe("publish", () => {
     ).toThrow("shot.png is not one of .pdf")
   })
 
+  it("puts a bench summary on the bench release under its own name and extension", () => {
+    const commands = []
+    const summary = path.join(folder, "2c036f24-claude-sonnet-5-5-low-2026-11-16.json")
+    writeFileSync(summary, "{}")
+    const placed = publish({
+      files: [summary],
+      prefix: "agent-bench",
+      release: "bench",
+      kinds: [".json"],
+      about: { title: "bench results", notes: "Results measured by hand. Not a product release." },
+      scratch: folder,
+      repository: "Rickvu309/AirDesign",
+      runGh: (args) => {
+        commands.push(args)
+        if (args[1] === "view") throw Object.assign(new Error("release not found"), { stderr: "release not found" })
+        return ""
+      },
+    })
+    const asset = placed.placed[path.basename(summary)]
+    expect(asset).toMatch(/^agent-bench-2c036f24-claude-sonnet-5-5-low-2026-11-16-[0-9a-f]{10}\.json$/)
+    expect(placed.links[path.basename(summary)]).toContain("/releases/download/bench/agent-bench-")
+    const created = commands.find((args) => args[1] === "create")
+    expect(created).toContain("bench")
+    expect(created).not.toContain("Proof images")
+  })
+
   it("refuses files that are not PNG and two files with one name", () => {
     expect(() =>
       publish({
