@@ -211,3 +211,41 @@ it("paints a slide's typed title in the theme's new heading font, as it paints a
   expect(title(0)).not.toContain('"font":"Calibri Light"')
   expect(title(1)).toContain('"font":"Georgia"')
 })
+
+it("holds the fit the file stored on a box until its text, its size or its text layout changes", () => {
+  const subtitle = elementId("256.3")
+  const fitOf = (register: Register) =>
+    paint(paintStore(), parts, register, busyElements())
+      .canvases(0)
+      ?.elements.find((element) => element.id === subtitle)?.text?.fit
+  const opened = openRegister("", "doe")
+  const box = { x: 1_143_000, y: 3_429_000, cx: 6_858_000, cy: 1_042_516 }
+  expect(fitOf(opened)).toEqual({ kind: "shrink", scale: 0.775, reduction: 0.2, held: true })
+  expect(fitOf(person(opened, subtitle, { ...box, x: 0 }))).toEqual({
+    kind: "shrink",
+    scale: 0.775,
+    reduction: 0.2,
+    held: true,
+  })
+  expect(fitOf(person(opened, subtitle, { ...box, cy: 900_000 }))).toEqual({
+    kind: "shrink",
+    scale: 0.775,
+    reduction: 0.2,
+  })
+  const typed = writeTextValue([{ from: 0, runs: [{ from: -1, text: "Typed" }] }])
+  expect(fitOf(person(opened, subtitle, typed))).toEqual({ kind: "shrink", scale: 0.775, reduction: 0.2 })
+  const designed = (patch: Extract<Command, { readonly v: number }>["patch"]) => {
+    const added = decide(opened, { command: "add", node: subtitle, floor: "", route: "doe" })
+    if (added.decision === "refuse") throw new Error(added.code)
+    const edited = decide(added.register, { command: "person", node: subtitle, v: format, patch })
+    if (edited.decision === "refuse") throw new Error(edited.code)
+    return edited.register
+  }
+  expect(fitOf(designed({ fill: { value: { set: { solid: { scheme: "accent2" } } } } }))).toEqual({
+    kind: "shrink",
+    scale: 0.775,
+    reduction: 0.2,
+    held: true,
+  })
+  expect(fitOf(designed({ body: { columns: { set: 2 } } }))).toEqual({ kind: "shrink", scale: 0.775, reduction: 0.2 })
+}, 120_000)

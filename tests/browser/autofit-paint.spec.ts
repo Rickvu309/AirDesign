@@ -122,7 +122,7 @@ async function opened(page: Page, file: string | Buffer): Promise<void> {
   await page.evaluate(() => document.fonts.ready.then(() => undefined))
 }
 
-test("the canvas anchors text in columns, shrinks text to fit and grows a box to fit as its file says, and a person chooses each autofit through Undo, a reload, the export and a new import @export", async ({
+test("the canvas anchors text in columns, keeps the fit a file stored until its text changes and grows a box to fit as its file says, and a person chooses each autofit through Undo, a reload, the export and a new import @export", async ({
   page,
 }, testInfo) => {
   await opened(page, await fitDeck())
@@ -136,10 +136,9 @@ test("the canvas anchors text in columns, shrinks text to fit and grows a box to
 
   const loose = await laid(shapeAt(page, "25"))
   expect(loose.textBottom).toBeGreaterThan(loose.bottom)
-  await expect.poll(async () => (await laid(shapeAt(page, "22"))).font).toBeLessThan(loose.font)
-  const shrunk = await laid(shapeAt(page, "22"))
-  expect(shrunk.textBottom).toBeLessThanOrEqual(shrunk.bottom + 1)
-  expect(shrunk.font).toBeGreaterThan(loose.font / 4)
+  const held = await laid(shapeAt(page, "22"))
+  expect(held.font).toBe(loose.font)
+  expect(held.textBottom).toBeGreaterThan(held.bottom)
   const grown = await laid(shapeAt(page, "23"))
   expect(grown.height).toBeGreaterThan(loose.height / 2)
   expect(grown.textBottom).toBeLessThanOrEqual(grown.bottom + 1)
@@ -198,7 +197,8 @@ test("the canvas anchors text in columns, shrinks text to fit and grows a box to
     await page.keyboard.press("Enter")
     await page.keyboard.type("One more line")
   }
-  await expect.poll(async () => (await laid(shapeAt(page, "22"))).font).toBeLessThan(shrunk.font)
+  await expect.poll(async () => (await laid(shapeAt(page, "22"))).font).toBeLessThan(held.font)
   const typed = await laid(shapeAt(page, "22"))
   expect(typed.textBottom).toBeLessThanOrEqual(typed.bottom + 1)
+  expect(typed.font).toBeGreaterThan(loose.font / 4)
 })

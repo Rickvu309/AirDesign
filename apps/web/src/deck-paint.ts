@@ -11,7 +11,7 @@ import type { ElementRecord, PaintStore } from "@airdesign/render"
 import type { SlideCanvases } from "@/canvas-slide"
 import type { TextBox } from "@/commit-edit"
 import { landedBox } from "@/element-move"
-import { editedParts, slideBase, type PictureBytes } from "@/exported-parts"
+import { editedParts, newSlideElement, slideBase, type PictureBytes } from "@/exported-parts"
 import { pictureSources, type PictureSources } from "@/picture-fill"
 import { shownValue, type BusyElements } from "@/live-repaint"
 import { fallbackPrompt } from "@/copy/placeholder-copy"
@@ -25,6 +25,7 @@ import {
   slideRels,
   slideShapes,
   type PaintedCanvas,
+  type SlideShape,
   type SlideShapes,
 } from "@/slide-paint"
 
@@ -95,6 +96,18 @@ function sameRecord(current: ElementRecord | null, next: ElementRecord): boolean
   return (
     current !== null && current.kind === next.kind && current.text === next.text && current.picture === next.picture
   )
+}
+
+function laidOut(register: Register | null, id: ElementId): boolean {
+  const rows = register?.elements[id]?.landed ?? []
+  return rows.some((row) => row.visible && row.v !== undefined && (row.patch.body ?? row.patch.text) !== undefined)
+}
+
+function refitted(register: Register | null, { id, file, opening }: SlideShape): boolean {
+  const box = landedBox(register, id)
+  const resized = box !== null && (box.cx !== opening?.cx || box.cy !== opening?.cy)
+  if (resized || laidOut(register, id) || newSlideElement(register, id) !== undefined) return true
+  return shownValue(register, id, file) !== file
 }
 
 function shownOf(register: Register | null, id: ElementId, file: string): string {
@@ -169,7 +182,8 @@ export function paint(
     reader ??= paintReader(display, { fallbackPrompt })
     const fileTexts = () => (texts ??= paintReader(themed(base, display), { fallbackPrompt }))
     const swatches = themeSwatches(display, painted.shapes.part)
-    painted.canvas = paintCanvas(painted.shapes, reader, fileTexts, pictures.src, display, swatches)
+    const refit = new Set(painted.shapes.shapes.filter((shape) => refitted(register, shape)).map((shape) => shape.id))
+    painted.canvas = paintCanvas(painted.shapes, reader, fileTexts, pictures.src, display, swatches, refit)
     return painted.canvas.slide
   }
   return {

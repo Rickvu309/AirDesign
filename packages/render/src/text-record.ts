@@ -1,7 +1,7 @@
 import type { SchemeName } from "@airdesign/document"
 
 export type CanvasFit =
-  | { readonly kind: "shrink"; readonly scale: number; readonly reduction: number }
+  | { readonly kind: "shrink"; readonly scale: number; readonly reduction: number; readonly held?: true }
   | { readonly kind: "grow" }
 
 export type CanvasSpacing = { readonly percent: number } | { readonly length: number }
