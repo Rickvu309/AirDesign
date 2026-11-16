@@ -526,14 +526,14 @@ describe("live cache", () => {
     expect((await cache.pending("clean")).map((row) => row.value)).toEqual(["Hello!"])
   })
 
-  it("refuses a commit answered 500 with a null JSON body as payload and keeps the row", async () => {
+  it("reads a commit answered 500 with a null JSON body as no answer and keeps the row", async () => {
     vi.stubGlobal(
       "fetch",
       async () => new Response("null", { status: 500, headers: { "content-type": "application/json" } }),
     )
     const cache = connect(memoryRemote())
     await cache.enqueue("clean", "Hello!", node, "Hello")
-    expect(await connect(httpRemote()).flush("clean")).toEqual({ ok: false, refusal: "payload" })
+    await expect(connect(httpRemote()).flush("clean")).rejects.toBeInstanceOf(TypeError)
     expect((await cache.pending("clean")).map((row) => row.value)).toEqual(["Hello!"])
   })
 

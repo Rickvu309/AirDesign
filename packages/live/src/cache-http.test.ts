@@ -9,11 +9,8 @@ afterEach(async () => {
   await deleteDatabase()
 })
 
-it("decodes HTTP size and server refusals and keeps pending rows", async () => {
-  for (const [status, refusal] of [
-    [413, "size"],
-    [500, "server"],
-  ] as const) {
+it("decodes an HTTP size refusal and keeps pending rows", async () => {
+  for (const [status, refusal] of [[413, "size"]] as const) {
     vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ ok: false, refusal }), { status }))
     const cache = connect(httpRemote())
     await cache.enqueue("http-refusal", "pending", node, "")
@@ -119,17 +116,19 @@ it("refuses malformed HTTP watch answers and keeps every pending row", async () 
   }
 })
 
-it("refuses unreadable JSON for all HTTP answers and keeps the pending rows", async () => {
-  vi.stubGlobal("fetch", async () => new Response("not JSON"))
+it.each([
+  { status: 200, body: "not JSON" },
+  { status: 500, body: JSON.stringify({ ok: false, refusal: "server" }) },
+])("reads a $status answer it cannot use as no answer and keeps the pending rows", async ({ status, body }) => {
+  vi.stubGlobal("fetch", async () => new Response(body, { status }))
   const remote = httpRemote()
   const cache = connect(remote)
   await cache.enqueue("unreadable", "pending", node, "")
   const before = await cache.pending("unreadable")
-  expect(await cache.flush("unreadable")).toEqual({ ok: false, refusal: "payload" })
-  expect(await remote.commit({ deck: "unreadable", batch: [{ node, value: "pending" }] })).toEqual({
-    ok: false,
-    refusal: "payload",
-  })
-  expect(await cache.watch("unreadable", null)).toEqual({ ok: false, refusal: "payload" })
+  await expect(cache.flush("unreadable")).rejects.toBeInstanceOf(TypeError)
+  await expect(remote.commit({ deck: "unreadable", batch: [{ node, value: "pending" }] })).rejects.toBeInstanceOf(
+    TypeError,
+  )
+  await expect(cache.watch("unreadable", null)).rejects.toBeInstanceOf(TypeError)
   expect(await cache.pending("unreadable")).toEqual(before)
 })

@@ -80,18 +80,15 @@ it("reports a signed-out person when the flush is refused for the session", asyn
   expect(outcome).toBe("signed-out")
 })
 
-it.each(["payload", "server"])(
-  "reads a %s answer as no answer from AirDesign, so the edit is sent again",
-  async (refusal) => {
-    const outcome = await commitEdit(
-      linkAnswering(() => Promise.resolve({ ok: false, refusal })),
-      "any-deck",
-      "Hello!",
-      { id: elementId("256.2"), file: "Hello" },
-    )
-    expect(outcome).toBe("offline")
-  },
-)
+it("keeps the edit without a word when the answer body is not JSON", async () => {
+  const outcome = await commitEdit(
+    linkAnswering(() => Promise.reject(new SyntaxError("Unexpected token '<'"))),
+    "any-deck",
+    "Hello!",
+    { id: elementId("256.2"), file: "Hello" },
+  )
+  expect(outcome).toBe("kept")
+})
 
 it("reports sent when the flush lands", async () => {
   const outcome = await commitEdit(

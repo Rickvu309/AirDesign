@@ -14,9 +14,10 @@
 \* after the person's edit, when a page opens, and after a send whose fetch threw, which
 \* resendPending in apps/web/src/deck-resend.ts sends again with backoff. A fetch throws when
 \* the browser is offline and when the server cannot be reached with the browser online; the
-\* code cannot tell the two apart, so the model has one Lose for both. flushPending in
-\* apps/web/src/commit-edit.ts reads an answer the page cannot read, such as a proxy's error
-\* page or a cut-off body, and the server's own failure as the same Lose.
+\* code cannot tell the two apart, so the model has one Lose for both. post in
+\* packages/live/src/remote.ts reads a 5xx answer, such as the server's own failure or a
+\* proxy's error page, and a 2xx answer cut off before its end as the same Lose. A 4xx is
+\* the server's answer.
 EXTENDS Integers
 
 VARIABLES lands, landedAt, rev, wire, orphan, pending, mirror, known, reloads, other, due
