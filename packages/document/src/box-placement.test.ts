@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { placeNewBox } from "./box-placement.js"
+import { fitNewBox, placeNewBox } from "./box-placement.js"
 import type { Box } from "./box.js"
 
 const slide = { width: 12_192_000, height: 6_858_000 }
@@ -104,5 +104,33 @@ describe("placing a new text box", () => {
       const placed = placeNewBox(slide, [stroke], { cx: 1_371_600, cy: 1_371_600 })
       expect(overlaps(placed, { ...stroke, cx: Math.max(stroke.cx, 1), cy: Math.max(stroke.cy, 1) })).toBe(false)
     }
+  })
+})
+
+describe("fitting a new picture", () => {
+  const title = { x: 914_400, y: 1_828_800, cx: 10_363_200, cy: 1_371_600 }
+  const subtitle = { x: 914_400, y: 3_429_000, cx: 10_363_200, cy: 1_371_600 }
+
+  it("places a picture that fits clear space at its own size, as a new box", () => {
+    const icon = { cx: 914_400, cy: 914_400 }
+    expect(fitNewBox(slide, [title, subtitle], icon)).toEqual(placeNewBox(slide, [title, subtitle], icon))
+  })
+
+  it("shrinks a picture at its ratio into the largest clear area of a new title slide", () => {
+    const picture = { cx: 4_572_000, cy: 3_048_000 }
+    const placed = fitNewBox(slide, [title, subtitle], picture)
+    expect(overlaps(placed, title)).toBe(false)
+    expect(overlaps(placed, subtitle)).toBe(false)
+    expect(placed.cx / placed.cy).toBeCloseTo(1.5, 2)
+    expect(placed.y - (subtitle.y + subtitle.cy)).toBeGreaterThanOrEqual(Math.round(slide.height * 0.02))
+    expect(placed.y + placed.cy).toBeLessThanOrEqual(slide.height - Math.round(slide.height * 0.04))
+    expect(placed.x).toBe(Math.round((slide.width - placed.cx) / 2))
+  })
+
+  it("covers the slide's middle when the clear space would leave the picture smaller than a fifth of the slide's height", () => {
+    const content = { x: 838_200, y: 1_825_625, cx: 10_515_600, cy: 4_351_338 }
+    const heading = { x: 838_200, y: 365_125, cx: 10_515_600, cy: 1_325_563 }
+    const picture = { cx: 4_572_000, cy: 3_048_000 }
+    expect(fitNewBox(slide, [heading, content], picture)).toEqual(placeNewBox(slide, [heading, content], picture))
   })
 })

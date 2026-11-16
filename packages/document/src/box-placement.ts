@@ -7,6 +7,7 @@ const heightShare = 0.12
 const marginShare = 0.04
 const stepShare = 0.03
 const strokeReachShare = 0.02
+const fittedShare = 0.2
 
 function ascending(left: number, right: number): number {
   return left - right
@@ -82,26 +83,50 @@ function reaching(box: Box, reach: number): Box {
   return { x: box.x - Math.round((cx - box.cx) / 2), y: box.y - Math.round((cy - box.cy) / 2), cx, cy }
 }
 
-export function placeNewBox(
-  area: PlacementArea,
-  taken: readonly Box[],
-  size: Pick<Box, "cx" | "cy"> = { cx: Math.round(area.width * widthShare), cy: Math.round(area.height * heightShare) },
-): Box {
+type Size = Pick<Box, "cx" | "cy">
+
+function present(area: PlacementArea, taken: readonly Box[]): readonly Box[] {
   const reach = Math.round(area.height * strokeReachShare)
-  const present = taken.filter((box) => box.cx > 0 || box.cy > 0).map((box) => reaching(box, reach))
+  return taken.filter((box) => box.cx > 0 || box.cy > 0).map((box) => reaching(box, reach))
+}
+
+function clearAreas(area: PlacementArea, taken: readonly Box[]): readonly Box[] {
   const marginX = Math.round(area.width * marginShare)
   const marginY = Math.round(area.height * marginShare)
   const usable = { x: marginX, y: marginY, cx: area.width - 2 * marginX, cy: area.height - 2 * marginY }
-  const fitting = freeAreas(usable, present)
-    .filter((free) => free.cx >= size.cx && free.cy >= size.cy)
-    .sort(larger)
-  const best = fitting[0]
-  if (best !== undefined) {
-    return {
-      x: best.x + Math.round((best.cx - size.cx) / 2),
-      y: best.y + Math.round((best.cy - size.cy) / 2),
-      ...size,
-    }
-  }
-  return offsetFromTaken(area, centred(area, size), present)
+  return [...freeAreas(usable, present(area, taken))].sort(larger)
+}
+
+function centredIn(free: Box, size: Size): Box {
+  return { x: free.x + Math.round((free.cx - size.cx) / 2), y: free.y + Math.round((free.cy - size.cy) / 2), ...size }
+}
+
+export function placeNewBox(
+  area: PlacementArea,
+  taken: readonly Box[],
+  size: Size = { cx: Math.round(area.width * widthShare), cy: Math.round(area.height * heightShare) },
+): Box {
+  const best = clearAreas(area, taken).find((free) => free.cx >= size.cx && free.cy >= size.cy)
+  if (best !== undefined) return centredIn(best, size)
+  return offsetFromTaken(area, centred(area, size), present(area, taken))
+}
+
+function shrunk(free: Box, size: Size): Size {
+  const scale = Math.min(1, free.cx / size.cx, free.cy / size.cy)
+  return { cx: Math.max(1, Math.floor(size.cx * scale)), cy: Math.max(1, Math.floor(size.cy * scale)) }
+}
+
+export function fitNewBox(area: PlacementArea, taken: readonly Box[], size: Size): Box {
+  const areas = clearAreas(area, taken)
+  if (areas.some((free) => free.cx >= size.cx && free.cy >= size.cy)) return placeNewBox(area, taken, size)
+  const smallest = Math.round(area.height * fittedShare)
+  const gap = Math.round(area.height * strokeReachShare)
+  const fits = areas
+    .map((each) => ({ x: each.x + gap, y: each.y + gap, cx: each.cx - 2 * gap, cy: each.cy - 2 * gap }))
+    .filter((free) => free.cx > 0 && free.cy > 0)
+    .map((free) => ({ free, fitted: shrunk(free, size) }))
+    .filter(({ fitted }) => Math.min(fitted.cx, fitted.cy) >= smallest)
+    .sort((left, right) => right.fitted.cx * right.fitted.cy - left.fitted.cx * left.fitted.cy)[0]
+  if (fits === undefined) return placeNewBox(area, taken, size)
+  return centredIn(fits.free, fits.fitted)
 }

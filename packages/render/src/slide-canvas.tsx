@@ -114,6 +114,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
           <PaintedElement
             key={element.key}
             element={element}
+            slideHeight={slide.height}
             formatting={props.formatting}
             moves={moving}
             onEdit={props.onEdit}
