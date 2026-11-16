@@ -1,7 +1,6 @@
-import { Dialog as BaseDialog } from "@base-ui/react/dialog"
 import { useId, useRef, type FormEvent, type ReactNode, type RefObject } from "react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogClose, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogClose, DialogOverlay, DialogPopup, DialogPortal, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { rangeProblem, type ExportChoice, type SlideChoice } from "@/export/export-choice"
 import { exportCopy, formatNames, slideNames, type ExportFormat } from "@/export/export-options"
@@ -145,11 +144,8 @@ export function ExportDialog({
       }}
     >
       <DialogPortal>
-        <DialogOverlay
-          className="bg-black/30 duration-0 data-open:animate-none"
-          style={{ backdropFilter: "none", animation: "none" }}
-        />
-        <BaseDialog.Popup
+        <DialogOverlay className="bg-black/30" />
+        <DialogPopup
           initialFocus={exportButton}
           {...(finalFocus === undefined ? {} : { finalFocus })}
           data-export-dialog={exporting ? "exporting" : "choosing"}
@@ -247,7 +243,7 @@ export function ExportDialog({
               </div>
             </div>
           </form>
-        </BaseDialog.Popup>
+        </DialogPopup>
       </DialogPortal>
     </Dialog>
   )
