@@ -40,17 +40,38 @@ export const tableStyles = (parts: ReadonlyMap<string, Uint8Array>) => {
   }
 }
 
+export type TableSpot = {
+  readonly row: number
+  readonly column: number
+  readonly rows: number
+  readonly columns: number
+}
+
+const band = (at: number, skipped: boolean, side: "H" | "V"): string =>
+  `a:band${(at - (skipped ? 1 : 0)) % 2 === 0 ? 1 : 2}${side}`
+
 export const tableLayers = (
   style: TableStyle | null,
   properties: MarkupElement | undefined,
-  row: number,
+  spot: TableSpot,
 ): readonly PaintTextHolder[] => {
   if (style === null) return []
+  const on = (name: string) => tableFlag(properties, name)
+  const firstRow = on("firstRow") && spot.row === 0
+  const lastRow = on("lastRow") && spot.row === spot.rows - 1
+  const firstCol = on("firstCol") && spot.column === 0
+  const lastCol = on("lastCol") && spot.column === spot.columns - 1
   const names = [
-    ...(row === 0 && tableFlag(properties, "firstRow") ? ["a:firstRow"] : []),
-    ...(tableFlag(properties, "bandRow") && (row > 0 || !tableFlag(properties, "firstRow"))
-      ? [`a:band${(row - (tableFlag(properties, "firstRow") ? 1 : 0)) % 2 === 0 ? 1 : 2}H`]
-      : []),
+    ...(firstRow && firstCol ? ["a:nwCell"] : []),
+    ...(firstRow && lastCol ? ["a:neCell"] : []),
+    ...(lastRow && firstCol ? ["a:swCell"] : []),
+    ...(lastRow && lastCol ? ["a:seCell"] : []),
+    ...(lastCol ? ["a:lastCol"] : []),
+    ...(firstCol ? ["a:firstCol"] : []),
+    ...(lastRow ? ["a:lastRow"] : []),
+    ...(firstRow ? ["a:firstRow"] : []),
+    ...(on("bandCol") && !firstCol && !lastCol ? [band(spot.column, on("firstCol"), "V")] : []),
+    ...(on("bandRow") && !firstRow && !lastRow ? [band(spot.row, on("firstRow"), "H")] : []),
     "a:wholeTbl",
   ]
   return names.flatMap((kind) => {

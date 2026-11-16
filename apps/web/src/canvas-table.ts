@@ -9,6 +9,7 @@ import type { PictureSource } from "@/picture-fill"
 export function canvasTable(table: PaintTable | undefined, src: PictureSource): CanvasTable | undefined {
   if (table === undefined) return undefined
   return {
+    frame: table.frame,
     columns: table.columns,
     rows: table.rows.map((row) => ({
       height: row.height,
