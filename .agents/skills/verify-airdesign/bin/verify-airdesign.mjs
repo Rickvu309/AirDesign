@@ -414,6 +414,9 @@ try {
     process.stdout.write(
       `${JSON.stringify(await proofCommand(command, rest, { repo, readState, evidenceDir, journeyKit }))}\n`,
     )
+  } else if (command === "bench") {
+    const { benchCommand } = await import("./bench.mjs")
+    process.stdout.write(`${JSON.stringify(await benchCommand(rest, { repo, readState, evidenceDir, journeyKit }))}\n`)
   } else if (command === "suites") {
     const { suitesCommand } = await import("./suites.mjs")
     process.stdout.write(`${JSON.stringify(await suitesCommand(rest, { repo, evidenceRoot }))}\n`)

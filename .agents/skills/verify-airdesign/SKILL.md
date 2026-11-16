@@ -200,6 +200,10 @@ pnpm prove --plan     # print the plan as JSON and run nothing
 
 It runs the unit tests the changed sources reach, the tooling tests that import a changed script, the TLA+ specs whose covered code moved and their replays, a changed browser spec five times under a CPU limit, and `sheet` on the states of each touched screen area. Quote its `proof.md` in the PR's `## Proof`. [prove-and-suites.md](prove-and-suites.md) has the rules, the flags, the lanes, and `$V suites` for the whole suites `ci` runs.
 
+## Bench
+
+`$V bench` times what a person feels in the editor (Add text box to the first letter painted, frame time while dragging, reopening a 41-slide deck, importing decks) on the merge base and on this checkout, interleaved, under CPU throttle 4, and says `slower` only when the gap beats both spreads and 5 %. A PR that touches the editor's gestures pastes its table in `## Proof`. [bench.md](bench.md) has the cases, flags, verdict rule and output.
+
 ## Feature map
 
 `features/README.md` indexes the user features and how to prove each. Read it before driving.
