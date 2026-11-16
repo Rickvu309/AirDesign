@@ -1,6 +1,6 @@
 import type { ParagraphAlign, ParagraphSpacing, Color, TextFormat } from "@airdesign/document"
 import type { CanvasBullet } from "./text-record.js"
-import type { RunPaint, TextLook } from "./text-look.js"
+import { endsInBreak, type RunPaint, type TextLook } from "./text-look.js"
 
 type ShownAlign = ParagraphAlign | "justify"
 
@@ -75,7 +75,12 @@ export function SheetText(props: {
         const style = look.paragraph(paragraph.from, filled, overlay)
         const shown = filled || paragraph.bullet === true ? style : { ...style, "--bullet": "none" }
         return (
-          <div key={index} data-paragraph={paragraph.from} style={shown}>
+          <div
+            key={index}
+            data-paragraph={paragraph.from}
+            data-end-break={endsInBreak(paragraph.runs.map((run) => run.text).join("")) ? "" : undefined}
+            style={shown}
+          >
             {paragraph.runs.map((run, at) => (
               <span key={at} style={look.run(paragraph.from, run.from, overlayOf(run), overlay)}>
                 {run.text}

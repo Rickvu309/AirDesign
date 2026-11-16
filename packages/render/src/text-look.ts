@@ -21,26 +21,28 @@ import type {
 
 export type Scaled = (emu: number) => number
 
-type BulletProp =
+type PaintProp =
   | "--bullet"
   | "--bullet-font"
   | "--bullet-color"
   | "--bullet-size"
   | "--bullet-hang"
   | "--bullet-unfocused"
+  | "--end-line"
 
-type Look = CSSProperties & Partial<Record<BulletProp, string>>
+type Look = CSSProperties & Partial<Record<PaintProp, string>>
 
-const bulletProps: readonly BulletProp[] = [
+const paintProps: readonly PaintProp[] = [
   "--bullet",
   "--bullet-font",
   "--bullet-color",
   "--bullet-size",
   "--bullet-hang",
   "--bullet-unfocused",
+  "--end-line",
 ]
-const bulletRule =
-  "[data-paragraph]::before{content:var(--bullet);display:inline-block;min-width:var(--bullet-hang,auto);text-indent:0;pointer-events:none;user-select:none;white-space:pre;font-family:var(--bullet-font,inherit);color:var(--bullet-color,inherit);font-size:var(--bullet-size,1em);line-height:1}[data-text-body]:not(:focus-within)>[data-paragraph]::before{content:var(--bullet-unfocused,var(--bullet))}"
+const textRule =
+  '[data-paragraph]::before{content:var(--bullet);display:inline-block;min-width:var(--bullet-hang,auto);text-indent:0;pointer-events:none;user-select:none;white-space:pre;font-family:var(--bullet-font,inherit);color:var(--bullet-color,inherit);font-size:var(--bullet-size,1em);line-height:1}[data-text-body]:not(:focus-within)>[data-paragraph]::before{content:var(--bullet-unfocused,var(--bullet))}[data-paragraph][data-end-break]::after{content:"\\200b";line-height:var(--end-line)}'
 
 export type RunPaint = RunFormat & { readonly size?: number; readonly color?: Color; readonly font?: string }
 export type ParagraphPaint = { readonly align?: ParagraphAlign; readonly bullet?: boolean } & ParagraphSpacing
@@ -176,6 +178,7 @@ function paragraphStyle(paragraph: CanvasParagraph, filled: boolean, scaled: Sca
     ...styleOf(paragraph.endStyle, scaled),
     textAlign: paragraph.align,
     lineHeight: lineHeights(paragraph.lineSpacing, scaled, filled).paragraph,
+    "--end-line": lineHeights(paragraph.lineSpacing, scaled, true).run,
     ...(margin === 0 ? {} : { paddingLeft: `${scaled(margin)}px` }),
     ...(indent === 0 ? {} : { textIndent: `${scaled(indent)}px` }),
     ...(before === undefined ? {} : { marginTop: before }),
@@ -185,16 +188,16 @@ function paragraphStyle(paragraph: CanvasParagraph, filled: boolean, scaled: Sca
   }
 }
 
-export function ensureBulletRule(doc: Document): void {
-  if (doc.head.querySelector("style[data-bullet-rule]") !== null) return
+export function ensureTextRule(doc: Document): void {
+  if (doc.head.querySelector("style[data-text-rule]") !== null) return
   const style = doc.createElement("style")
-  style.dataset.bulletRule = ""
-  style.textContent = bulletRule
+  style.dataset.textRule = ""
+  style.textContent = textRule
   doc.head.append(style)
 }
 
 function applyStyle(node: HTMLElement, style: Look): void {
-  for (const name of bulletProps) node.style.removeProperty(name)
+  for (const name of paintProps) node.style.removeProperty(name)
   const plain: Record<string, string | number> = {}
   for (const [key, value] of Object.entries(style)) {
     if (value === undefined || value === null) continue
@@ -415,9 +418,14 @@ function isFilled(block: HTMLElement): boolean {
   return !looseText && runsOf(block).some((run) => run.textContent !== "")
 }
 
+export function endsInBreak(text: string): boolean {
+  return text.endsWith("\n")
+}
+
 export function restyle(box: HTMLElement, look: TextLook): void {
   for (const block of box.children) {
     if (!isElement(block) || block.dataset.paragraph === undefined) continue
+    block.toggleAttribute("data-end-break", endsInBreak(block.textContent ?? ""))
     const from = Number(block.dataset.paragraph)
     const overlay = paragraphPaint(block.dataset)
     applyStyle(block, look.paragraph(from, isFilled(block), overlay))
