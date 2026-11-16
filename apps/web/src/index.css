@@ -88,36 +88,6 @@ html:has(.reflow-frame) #root {
   overflow: visible;
 }
 
-@keyframes aira-shimmer {
-  from {
-    background-position: 100% 0;
-  }
-  to {
-    background-position: 0 0;
-  }
-}
-
-.aira-shimmer {
-  background-image: linear-gradient(
-    90deg,
-    var(--muted-foreground) 35%,
-    var(--foreground) 50%,
-    var(--muted-foreground) 65%
-  );
-  background-size: 300% 100%;
-  background-clip: text;
-  color: transparent;
-  animation: aira-shimmer var(--ease-loop) infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .aira-shimmer {
-    animation: none;
-    background-image: none;
-    color: var(--muted-foreground);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,

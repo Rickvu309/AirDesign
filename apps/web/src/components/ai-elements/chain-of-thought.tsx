@@ -34,8 +34,8 @@ function StepMark({ status }: { status: StepStatus | undefined }) {
   )
 }
 
-function StepTitle({ status, children }: { status?: StepStatus | undefined; children: ReactNode }) {
-  return <span className={cn("min-w-0 truncate", status === "running" && "aira-shimmer")}>{children}</span>
+function StepTitle({ children }: { children: ReactNode }) {
+  return <span className="min-w-0 truncate">{children}</span>
 }
 
 export function ChainOfThoughtLine({
@@ -47,7 +47,7 @@ export function ChainOfThoughtLine({
   return (
     <div data-status={status} className={cn(lineClass, className)} {...props}>
       <StepMark status={status} />
-      <StepTitle status={status}>{children}</StepTitle>
+      <StepTitle>{children}</StepTitle>
     </div>
   )
 }
@@ -72,7 +72,7 @@ export function ChainOfThoughtHeader({
       {...props}
     >
       <StepMark status={status} />
-      <StepTitle status={status}>{children}</StepTitle>
+      <StepTitle>{children}</StepTitle>
       <svg
         viewBox="0 0 10 10"
         width={10}
@@ -106,7 +106,7 @@ export function ChainOfThoughtStep({
   return (
     <li data-status={status} className={cn(lineClass, className)} {...props}>
       <StepMark status={status} />
-      <StepTitle status={status}>{children}</StepTitle>
+      <StepTitle>{children}</StepTitle>
     </li>
   )
 }
