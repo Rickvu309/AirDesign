@@ -19,7 +19,6 @@ export function useDeckPaint(
   id: string,
   pictureTool: { readonly store: PictureStore },
   notesBar: { readonly show: (notes: readonly ShownNotes[]) => void },
-  setPending: (pending: boolean) => void,
 ) {
   const store = useRef(paintStore())
   const boxes = useRef<ReadonlyMap<ElementId, TextBox>>(new Map())
@@ -79,7 +78,6 @@ export function useDeckPaint(
     if (!next.ok) return
     showRegister(next.register, whole)
     setCurrent(Math.max(0, Math.min(currentIndex, store.current.slides().length - 1)))
-    setPending(true)
   }
 
   return {

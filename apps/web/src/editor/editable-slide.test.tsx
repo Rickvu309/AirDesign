@@ -14,6 +14,7 @@ import { createRoot } from "react-dom/client"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import { editableSlide } from "./editable-slide"
 import { useDeckPaint, type DeckPaint } from "./use-deck-paint"
+import { saveStatus, useDeckStatus, type SaveStatus } from "./use-deck-status"
 import { useUndoList, useUndoTurn, type UndoList } from "./use-undo"
 import { elementCommand } from "../element-edit"
 import { onSlide, twoBoxSlide, xml } from "../slide-fixtures"
@@ -27,7 +28,7 @@ vi.mock("@airdesign/live", async () => ({
 }))
 
 type Answer = { readonly resolve: (value: { ok: boolean }) => void }
-type Exposed = { readonly shown: DeckPaint; readonly undo: UndoList }
+type Exposed = { readonly shown: DeckPaint; readonly undo: UndoList; readonly status: SaveStatus }
 
 const deck = "table-deck"
 const size = { width: 12192000, height: 6858000 }
@@ -59,20 +60,22 @@ function Deck(props: { readonly exposed: (deck: Exposed) => void }) {
   const notes = { show: nothing }
   const pictures = { store: { bytes: new Map(), load: async () => false, keep: nothing } }
   const undo = useUndoList()
-  const shown = useDeckPaint(deck, pictures, notes, nothing)
+  const status = useDeckStatus()
+  const { settle, setPending } = status
+  const shown = useDeckPaint(deck, pictures, notes)
   const changeElement = async () => "kept" as const
   const { store, shapes, editParts, canvases, current, showEdited } = shown
   const tables = useTables({ current, store, shapes, editParts, canvases, showEdited, changeElement })
   useUndoTurn({ id: deck, paintedDeck: deck, undo, shown, notesBar: notes, settle: nothing, setPending: nothing })
-  props.exposed({ shown, undo })
+  props.exposed({ shown, undo, status: saveStatus(status) })
   return editableSlide({
     id: deck,
     shown,
     undo,
     tables,
     record: nothing,
-    settle: nothing,
-    setPending: nothing,
+    settle,
+    setPending,
     changeElement,
     select: nothing,
   })(800)
@@ -117,6 +120,7 @@ async function tableDeck() {
     sent,
     undo,
     shown,
+    status: () => exposed.current?.status,
     typed(text: string) {
       cell.textContent = text
       cell.dispatchEvent(new window.InputEvent("input", { bubbles: true }))
@@ -249,5 +253,17 @@ it("redoes a cell's typing straight after its undo while the undo is still on it
   await table.answered()
   expect(table.deckCell()).toBe("Region")
   expect(table.undo.undoList.current.undo.map((entry) => entry.name)).toEqual(["text"])
+  await table.close()
+}, 20_000)
+
+it("keeps a saved table cell reading Saved when the deck repaints after the save", async () => {
+  const table = await tableDeck()
+  await act(async () => table.typed("Q"))
+  await table.answered()
+  expect(table.status()).toBe("saving")
+  await table.flushed()
+  expect(table.status()).toBe("saved")
+  await act(async () => table.shown.showEdited(0))
+  expect(table.status()).toBe("saved")
   await table.close()
 }, 20_000)

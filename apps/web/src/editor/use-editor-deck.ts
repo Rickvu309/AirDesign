@@ -24,8 +24,8 @@ export function useEditorDeck(id: string) {
   const { typed, sessions, records, record } = undo
   const pictures = { store: usePictureStore() }
   const notesBar = useNotes({ id, typed, sessions, records, record, settle, sending: () => setPending(true) })
-  const shown = useDeckPaint(id, pictures, notesBar, setPending)
-  const inserts = deckInserts({ id, shown, pictureTool: pictures, record, settle })
+  const shown = useDeckPaint(id, pictures, notesBar)
+  const inserts = deckInserts({ id, shown, pictureTool: pictures, record, settle, setPending })
   const pictureTool = usePictureTool(status.paintedDeck === id, pictures.store, inserts.addPicture)
   const { current, store, shapes, editParts, canvases, showEdited } = shown
   const { changeElement } = inserts

@@ -16,10 +16,11 @@ export type CommandedDeck = {
   readonly record: (entry: UndoEntry) => void
   readonly settle: (outcome: CommitOutcome) => void
   readonly undo: { readonly undoList: UndoOf["list"] }
+  readonly setPending: (pending: boolean) => void
 }
 
 export function slideCommands(deck: CommandedDeck, undo: () => void): SlideStrip {
-  const { id, record, settle } = deck
+  const { id, record, settle, setPending } = deck
   const { store, shownParts, canvases, slideCount, sections, current, setCurrent, layouts, showEdited } = deck.shown
 
   let pending = Promise.resolve()
@@ -34,6 +35,7 @@ export function slideCommands(deck: CommandedDeck, undo: () => void): SlideStrip
           record(entry)
           if (change === "remove") showSlideDeleted(index + 1, entry, { list: deck.undo.undoList, undo })
         }
+        setPending(true)
         await showEdited(currentIndex)
       }
       settle(await commitSlideChange(id, shownParts.current, opened.register, change, index, painted, to, layoutPart))
