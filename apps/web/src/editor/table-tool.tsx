@@ -95,7 +95,12 @@ export function TableTool({ onTable }: { onTable: (size: TableSize) => void }) {
       >
         <EditorIcon name="table" size={18} />
       </PopoverTrigger>
-      <PopoverContent side="top" sideOffset={12} className="w-auto bg-transparent p-0 shadow-none ring-0 duration-0">
+      <PopoverContent
+        side="top"
+        sideOffset={12}
+        className="w-auto bg-transparent p-0 shadow-none ring-0 duration-0"
+        data-keeps-format
+      >
         <TableSizeGrid picked={picked} onPick={setPicked} onSize={insert} />
       </PopoverContent>
     </Popover>

@@ -172,3 +172,18 @@ test("bold and Larger while typing are each one text format step that undoes onl
   await expect(editor).toHaveText("Hello world")
   await expect(page.getByRole("button", { name: "Undo text edit" })).toBeEnabled()
 })
+
+test("the text format controls stay in the toolbar while focus is in a tool tray", async ({ page }) => {
+  await open(page, fixture)
+  const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
+  await editor.click()
+  await expect(formatButton(page, "Bold")).toBeVisible()
+  await page.getByRole("button", { name: "Shapes" }).click()
+  const tray = page.locator("[data-shape-tray]")
+  await expect(tray).toBeVisible()
+  await tray.getByRole("button", { name: "Line" }).focus()
+  await expect(tray.getByRole("button", { name: "Line" })).toBeFocused()
+  await expect(formatButton(page, "Bold")).toBeVisible()
+  await page.keyboard.press("Tab")
+  await expect(formatButton(page, "Bold")).toBeVisible()
+})
