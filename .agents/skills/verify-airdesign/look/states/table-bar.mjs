@@ -6,7 +6,7 @@ async function drive(kit) {
   await kit.signIn()
   await page.goto("/")
   await page.getByRole("button", { name: "New deck", exact: true }).click()
-  await page.getByRole("group", { name: "New deck" }).getByRole("button", { name: "Blank deck", exact: true }).click()
+  await page.getByRole("menu", { name: "New deck" }).getByRole("menuitem", { name: "Blank deck", exact: true }).click()
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await page.getByRole("button", { name: "Insert table", exact: true }).click()
   await page.getByRole("button", { name: "3 rows, 3 columns", exact: true }).click()
