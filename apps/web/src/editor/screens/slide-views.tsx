@@ -65,7 +65,7 @@ export function SetAside() {
     <EditorView
       {...galleryDeck}
       run="done"
-      toast={<EditorToast kind="info" text={productCopy.editsSetAside} place="canvas" />}
+      toast={<EditorToast still kind="info" text={productCopy.editsSetAside} place="canvas" />}
     />
   )
 }
@@ -75,7 +75,7 @@ export function Offline() {
     <EditorView
       {...galleryDeck}
       run="offline"
-      toast={<EditorToast kind="info" text="You're offline. Edits are saved on this device." place="canvas" />}
+      toast={<EditorToast still kind="info" text="You're offline. Edits are saved on this device." place="canvas" />}
     />
   )
 }
@@ -85,7 +85,7 @@ export function Unreached() {
     <EditorView
       {...galleryDeck}
       run="offline"
-      toast={<EditorToast kind="info" text={productCopy.editorUnreached} place="canvas" />}
+      toast={<EditorToast still kind="info" text={productCopy.editorUnreached} place="canvas" />}
     />
   )
 }

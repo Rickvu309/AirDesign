@@ -3,7 +3,7 @@ import { toast } from "sonner"
 import { Toaster } from "@/components/ui/sonner"
 import { StatusPill } from "@/components/ui/status-pill"
 import { downloadedOf, productCopy } from "@/copy/product-copy"
-import { EditorToast } from "@/editor/agent-panel"
+import { EditorToast, EditorToaster } from "@/editor/agent-panel"
 import { pictureCopy } from "@/copy/picture-copy"
 import { undoCopy } from "@/copy/undo-copy"
 import { exportCopy } from "@/export/export-options"
@@ -69,30 +69,32 @@ function FailureNotice({ text, action, onAct }: { text: string; action: string; 
       id: noticeId,
       duration: Number.POSITIVE_INFINITY,
       unstyled: true,
-      style: { left: 0, width: noticeWidth, opacity: 1, transform: "translateY(0)", transition: "none" },
+      style: {
+        left: 0,
+        width: noticeWidth,
+        transition: "transform var(--ease-micro), opacity var(--ease-micro)",
+      },
     })
-    return () => {
-      toast.dismiss(noticeId)
-    }
-  }, [text])
-  return (
-    <Toaster
-      position="top-center"
-      offset={{ top: 12 }}
-      visibleToasts={1}
-      style={{ "--width": noticeWidth } as CSSProperties}
-    />
-  )
-}
-
-function StatusNotice({ text, kind = "info" }: { text: string; kind?: "info" | "success" }) {
+  }, [text, action])
   useEffect(
     () => () => {
-      toast.dismiss("editor-status")
+      toast.dismiss(noticeId)
     },
     [],
   )
-  return <EditorToast kind={kind} text={text} place="canvas" />
+  return null
+}
+
+function StatusNotice({
+  text,
+  kind = "info",
+  still = false,
+}: {
+  text: string
+  kind?: "info" | "success"
+  still?: boolean
+}) {
+  return <EditorToast kind={kind} text={text} place="canvas" still={still} host={false} />
 }
 
 export function DownloadedNotice({ name, onDone }: { name: string; onDone: () => void }) {
@@ -114,6 +116,27 @@ export function ThinNoticeView({
   notice: ThinNotice | null
   onTryAgain: (notice: ThinNotice) => void
 }) {
+  return (
+    <>
+      <EditorToaster />
+      <Toaster
+        position="top-center"
+        offset={{ top: 12 }}
+        visibleToasts={1}
+        style={{ "--width": noticeWidth } as CSSProperties}
+      />
+      <NoticeContent notice={notice} onTryAgain={onTryAgain} />
+    </>
+  )
+}
+
+function NoticeContent({
+  notice,
+  onTryAgain,
+}: {
+  notice: ThinNotice | null
+  onTryAgain: (notice: ThinNotice) => void
+}) {
   if (notice === null) return null
   if (notice === "offline") return <StatusNotice text={productCopy.editorOffline} />
   if (notice === "unreached") return <StatusNotice text={productCopy.editorUnreached} />
@@ -121,8 +144,8 @@ export function ThinNoticeView({
   if (notice === "set-aside-too-large") return <StatusNotice text={productCopy.editSetAsideTooLarge} />
   if (notice === "storage-failed") return <StatusNotice text={productCopy.storageFailed} />
   if (notice === "too-large") return <StatusNotice text={productCopy.editsTooLarge} />
-  if (notice === "undo-changed") return <StatusNotice text={undoCopy.undoChanged} />
-  if (notice === "redo-changed") return <StatusNotice text={undoCopy.redoChanged} />
+  if (notice === "undo-changed") return <StatusNotice still text={undoCopy.undoChanged} />
+  if (notice === "redo-changed") return <StatusNotice still text={undoCopy.redoChanged} />
   if (notice === "picture-type" || notice === "picture-size" || notice === "picture-unread")
     return <StatusNotice text={pictureCopy[notice]} />
   if (notice === "newer") {
