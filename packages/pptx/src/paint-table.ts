@@ -27,6 +27,7 @@ export type PaintTableCell = {
 }
 
 export type PaintTable = {
+  readonly frame: { readonly width: number; readonly height: number } | null
   readonly columns: readonly number[]
   readonly rows: readonly { readonly height: number; readonly cells: readonly PaintTableCell[] }[]
 }
@@ -57,7 +58,11 @@ export const paintTable = (
     .map((each) => tableNumber(each, "w", 0))
   const rows = (children[table.index] ?? []).filter((each) => each.kind === "a:tr")
   const style = styleOf(properties, children, bytes)
+  const extent = paintChild(children, paintChild(children, element, "p:xfrm"), "a:ext")
+  const width = tableNumber(extent, "cx", 0)
+  const height = tableNumber(extent, "cy", 0)
   return {
+    frame: width > 0 && height > 0 ? { width, height } : null,
     columns,
     rows: rows.map((row, at) => ({
       height: tableNumber(row, "h", 0),
@@ -65,7 +70,7 @@ export const paintTable = (
         .filter((each) => each.kind === "a:tc")
         .map((cell, column): PaintTableCell => {
           const cellProperties = paintChild(children, cell, "a:tcPr")
-          const layers = tableLayers(style, properties, at)
+          const layers = tableLayers(style, properties, { row: at, column, rows: rows.length, columns: columns.length })
           const gridSpan = Math.max(1, Math.min(tableNumber(cell, "gridSpan", 1), columns.length - column))
           const rowSpan = Math.max(1, Math.min(tableNumber(cell, "rowSpan", 1), rows.length - at))
           const text = paintText(

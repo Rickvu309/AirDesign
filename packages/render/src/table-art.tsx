@@ -101,8 +101,10 @@ export function TableArt(props: {
   const { table, box, scaled, edit } = props
   const width = table.columns.reduce((sum, column) => sum + column, 0)
   const height = table.rows.reduce((sum, row) => sum + row.height, 0)
-  const sx = (value: number) => scaled(width === 0 ? 0 : (value * (box?.width ?? width)) / width)
-  const sy = (value: number) => scaled(height === 0 ? 0 : (value * (box?.height ?? height)) / height)
+  const across = table.frame?.width ?? width
+  const down = table.frame?.height ?? height
+  const sx = (value: number) => scaled(across === 0 ? 0 : (value * (box?.width ?? across)) / across)
+  const sy = (value: number) => scaled(down === 0 ? 0 : (value * (box?.height ?? down)) / down)
   return (
     <div
       data-canvas-element={props.elementKey}

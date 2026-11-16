@@ -3,6 +3,7 @@ import { act, createElement } from "react"
 import { createRoot } from "react-dom/client"
 import { expect, it, vi } from "vitest"
 import { paintStore, SlideCanvas, type CanvasElement, type CanvasText } from "./index.js"
+import { TableArt } from "./table-art.js"
 
 const text: CanvasText = {
   paragraphs: [
@@ -90,6 +91,54 @@ it("paints merged cell sizes, fill, borders and the existing text look without a
     expect(painted?.querySelector("line")?.getAttribute("stroke-dasharray")).toBe("15 5")
     expect(host.querySelectorAll('[contenteditable="true"],[tabindex="0"]').length).toBe(0)
     expect(edit).not.toHaveBeenCalled()
+  } finally {
+    await act(async () => root.unmount())
+    host.remove()
+  }
+})
+
+it("paints each row at its stored height when the frame is the file's own, as PowerPoint grows rows to their text", async () => {
+  const cell = {
+    gridSpan: 1,
+    rowSpan: 1,
+    hMerge: false,
+    vMerge: false,
+    fill: null,
+    text: null,
+    borders: { left: null, right: null, top: null, bottom: null },
+  }
+  const table = {
+    columns: [400, 600],
+    frame: { width: 1000, height: 1200 },
+    rows: [
+      { height: 200, cells: [cell, cell] },
+      { height: 100, cells: [cell, cell] },
+    ],
+  }
+  const box = { x: 0, y: 0, width: 1000, height: 1200, rotation: 0, flipH: false, flipV: false }
+  const host = document.createElement("div")
+  document.body.append(host)
+  const root = createRoot(host)
+  const half = (value: number) => value / 2
+  try {
+    await act(async () =>
+      root.render(createElement(TableArt, { table, box, scaled: half, style: {}, elementKey: "table" })),
+    )
+    const painted = host.querySelector<HTMLElement>("[data-canvas-table]")
+    expect(painted?.style.gridTemplateRows).toBe("minmax(100px, auto) minmax(50px, auto)")
+    await act(async () =>
+      root.render(
+        createElement(TableArt, {
+          table,
+          box: { ...box, width: 2000, height: 2400 },
+          scaled: half,
+          style: {},
+          elementKey: "table",
+        }),
+      ),
+    )
+    expect(painted?.style.gridTemplateColumns).toBe("400px 600px")
+    expect(painted?.style.gridTemplateRows).toBe("minmax(200px, auto) minmax(100px, auto)")
   } finally {
     await act(async () => root.unmount())
     host.remove()

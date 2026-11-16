@@ -2,6 +2,7 @@ import type { CanvasLine } from "./line-record.js"
 import type { CanvasText } from "./text-record.js"
 
 export type CanvasTable = {
+  readonly frame?: { readonly width: number; readonly height: number } | null
   readonly columns: readonly number[]
   readonly rows: readonly {
     readonly height: number
