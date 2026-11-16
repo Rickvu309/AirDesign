@@ -188,3 +188,55 @@ test("a malformed chat blocks asking until New chat restores the composer", asyn
   await ask(page, "Suggest a title")
   await expect(side.getByText("Lead with the claim. Then show the evidence.", { exact: true })).toBeVisible()
 })
+
+test("a malformed ending moves focus from the composer to New chat, and New chat back to the composer", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const { side } = await openDeck(page, context, stack)
+  await page.route(
+    (url) => url.pathname === "/aira/turn",
+    (route) => route.fulfill({ status: 400, json: { ok: false, refusal: "body" } }),
+    { times: 1 },
+  )
+  await ask(page, asked)
+  const newChat = side.locator("[data-aira-stuck]").getByRole("button", { name: "New chat", exact: true })
+  await expect(newChat).toBeFocused()
+  await page.keyboard.press("Enter")
+  await expect(side.getByText(airaCopy.malformedTitle, { exact: true })).toHaveCount(0)
+  await expect(side.getByRole("textbox", { name: "Ask Aira", exact: true })).toBeFocused()
+  stack.aira({ name: "turn.sse" })
+  await page.keyboard.type("Suggest a title")
+  await page.keyboard.press("Enter")
+  await expect(side.getByText("Lead with the claim. Then show the evidence.", { exact: true })).toBeVisible()
+})
+
+test("a malformed ending leaves focus alone when the person was not in the composer", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const { side } = await openDeck(page, context, stack)
+  let open = () => {}
+  const gate = new Promise<void>((resolve) => {
+    open = resolve
+  })
+  await page.route(
+    (url) => url.pathname === "/aira/turn",
+    async (route) => {
+      await gate
+      await route.fulfill({ status: 400, json: { ok: false, refusal: "body" } })
+    },
+    { times: 1 },
+  )
+  await ask(page, asked)
+  const field = side.getByRole("textbox", { name: airaCopy.addToRequest, exact: true })
+  await field.evaluate((element) => element.blur())
+  await expect(field).not.toBeFocused()
+  open()
+  const newChat = side.locator("[data-aira-stuck]").getByRole("button", { name: "New chat", exact: true })
+  await expect(newChat).toBeVisible()
+  await expect(newChat).not.toBeFocused()
+  expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true)
+})

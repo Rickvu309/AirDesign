@@ -46,6 +46,10 @@ export function AiraPanel({
   const stopper = useRef<AbortController | null>(null)
   const finishing = useRef<Promise<AiraChat | undefined>>(Promise.resolve(undefined))
   const popId = useId()
+  const field = useRef<HTMLTextAreaElement>(null)
+  const panel = useRef<HTMLDivElement>(null)
+  const inComposer = useRef(false)
+  const returnToComposer = useRef(false)
   const usageButton = useRef<HTMLButtonElement>(null)
   const last = chat.exchanges.at(-1)
   const working = last?.end === "working"
@@ -67,7 +71,21 @@ export function AiraPanel({
   })
   const title = history.current?.title ?? (asked === undefined ? airaCopy.newChat : chatTitle(asked))
 
+  const malformed = last?.end === "malformed"
+
   useEffect(() => () => stopper.current?.abort(), [])
+
+  useEffect(() => {
+    if (!malformed || !inComposer.current) return
+    inComposer.current = false
+    panel.current?.querySelector<HTMLElement>("[data-aira-stuck] [data-aira-new-chat]")?.focus()
+  }, [malformed])
+
+  useEffect(() => {
+    if (!returnToComposer.current || blocked !== undefined) return
+    returnToComposer.current = false
+    field.current?.focus()
+  }, [chat, blocked])
 
   function display(next: AiraChat) {
     latest.current = next
@@ -154,6 +172,11 @@ export function AiraPanel({
     display({ ...airaChat(deck), usage: latest.current.usage })
   }
 
+  function newChatFromCard() {
+    returnToComposer.current = true
+    newChat()
+  }
+
   function pick(id: string) {
     if (busy) return
     const picked = history.pick(id)
@@ -166,6 +189,7 @@ export function AiraPanel({
 
   return (
     <div
+      ref={panel}
       className="relative flex min-h-0 flex-1 flex-col"
       hidden={hidden}
       data-aira-panel
@@ -239,7 +263,7 @@ export function AiraPanel({
                   key={index}
                   exchange={exchange}
                   resets={usage?.resets}
-                  onNewChat={busy ? undefined : newChat}
+                  onNewChat={busy ? undefined : newChatFromCard}
                   onUndo={busy ? undefined : () => void undo(index)}
                   onRetry={
                     index === chat.exchanges.length - 1 &&
@@ -264,6 +288,10 @@ export function AiraPanel({
         draft={draft}
         working={working}
         blocked={blocked}
+        field={field}
+        onFocusChange={(focused) => {
+          inComposer.current = focused
+        }}
         onDraft={setDraft}
         onSend={send}
         onStop={() => stopper.current?.abort()}

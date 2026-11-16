@@ -192,7 +192,7 @@ function StuckCard({
       {onUndo === undefined && onNewChat === undefined ? null : (
         <span className="flex items-center gap-2">
           {onNewChat === undefined ? null : (
-            <Button type="button" variant="ghost" className={cardButton} onClick={onNewChat}>
+            <Button type="button" variant="ghost" className={cardButton} data-aira-new-chat onClick={onNewChat}>
               {airaCopy.newChat}
             </Button>
           )}

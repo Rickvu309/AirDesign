@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent } from "react"
+import { useRef, type KeyboardEvent, type RefObject } from "react"
 import { PromptInput, PromptInputButton, PromptInputTextarea } from "@/components/ai-elements/prompt-input"
 import { airaCopy } from "@/copy/aira-copy"
 import { surfaceShadow } from "@/editor/editor-chrome"
@@ -11,18 +11,21 @@ export function AiraComposer({
   draft,
   working,
   blocked,
+  field,
   onDraft,
   onSend,
   onStop,
+  onFocusChange,
 }: {
   draft: string
   working: boolean
   blocked: string | undefined
+  field: RefObject<HTMLTextAreaElement | null>
   onDraft: (text: string) => void
   onSend: () => void
   onStop: () => void
+  onFocusChange: (focused: boolean) => void
 }) {
-  const field = useRef<HTMLTextAreaElement>(null)
   const composing = useRef(false)
   const waiting = blocked !== undefined
   const hint = blocked ?? (working ? airaCopy.addToRequest : airaCopy.askAira)
@@ -55,6 +58,10 @@ export function AiraComposer({
           className="py-1.5 outline-hidden placeholder:text-muted-foreground"
           onChange={(event) => onDraft(event.target.value)}
           onKeyDown={onKey}
+          onFocus={() => onFocusChange(true)}
+          onBlur={(event) => {
+            if (!event.currentTarget.disabled) onFocusChange(false)
+          }}
           onCompositionStart={() => {
             composing.current = true
           }}
