@@ -58,4 +58,5 @@ export type CanvasText = {
   readonly columnGap?: number
   readonly fit?: CanvasFit
   readonly overflow?: boolean
+  readonly edgeSpacing?: boolean
 }

@@ -282,6 +282,15 @@ function placeParagraph(
   return { lines, height: y + gapOf(paragraph.spaceAfter, largest) }
 }
 
+function edged(paragraph: ResolvedParagraph, at: number, text: ResolvedText): ResolvedParagraph {
+  if (text.edgeSpacing === true) return paragraph
+  return {
+    ...paragraph,
+    ...(at === 0 ? { spaceBefore: null } : {}),
+    ...(at === text.paragraphs.length - 1 ? { spaceAfter: null } : {}),
+  }
+}
+
 export function layText(
   text: ResolvedText,
   box: { readonly cx: number; readonly cy: number },
@@ -293,8 +302,8 @@ export function layText(
   const room = (box.cy - insets.top - insets.bottom) / emuPerPoint
   const lines: TextLine[] = []
   let height = 0
-  for (const paragraph of text.paragraphs) {
-    const placed = placeParagraph(paragraph, text, widths, inner)
+  for (const [at, paragraph] of text.paragraphs.entries()) {
+    const placed = placeParagraph(edged(paragraph, at, text), text, widths, inner)
     if (typeof placed === "string") return placed
     for (const line of placed.lines)
       lines.push({

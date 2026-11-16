@@ -56,6 +56,7 @@ export type PaintText = {
   columnGap: number
   fontScale: number
   spacingReduction: number
+  edgeSpacing?: true
 }
 
 export type PaintTextMarkup = {
@@ -373,6 +374,7 @@ const textFrame = (
   | "columnGap"
   | "fontScale"
   | "spacingReduction"
+  | "edgeSpacing"
 > => {
   const frames = present(
     [shape, ...shape.above].map((holder) => {
@@ -413,6 +415,7 @@ const textFrame = (
     columnGap: Math.max(first(frames, (frame) => whole(frame, "spcCol")) ?? 0, 0),
     fontScale: between((fit === undefined || fit === null ? undefined : fraction(fit, "fontScale")) ?? 1),
     spacingReduction: between((fit === undefined || fit === null ? undefined : fraction(fit, "lnSpcReduction")) ?? 0),
+    ...(first(frames, (frame) => flag(frame, "spcFirstLastPara")) === true ? { edgeSpacing: true } : {}),
   }
 }
 

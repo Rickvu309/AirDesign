@@ -112,7 +112,7 @@ it("paints a chosen colour with the alpha the exported file paints on that run, 
 })
 
 it("paints a chosen font face, line spacing and paragraph spacing over the file", () => {
-  const look = textLook(text, scaled)
+  const look = textLook({ ...text, edgeSpacing: true }, scaled)
   expect(look.run(0, 0, { font: "Georgia" }).fontFamily).toMatch(/^"Georgia", /)
   const overlay = { lineSpacing: 150_000, spaceBefore: 1_200, spaceAfter: 600 }
   expect(look.paragraph(0, true, overlay)).toMatchObject({ marginTop: "12px", marginBottom: "6px" })

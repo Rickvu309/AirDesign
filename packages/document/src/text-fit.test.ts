@@ -106,7 +106,13 @@ describe("layText", () => {
       spaceBefore: { percent: 0.5 },
       spaceAfter: { points: 6 },
     })
-    expect(laid(text([spaced]), 100).height).toBeCloseTo(10 + 24 + 6)
+    expect(laid(text([spaced], { edgeSpacing: true }), 100).height).toBeCloseTo(10 + 24 + 6)
+  })
+
+  it("leaves out the first paragraph's space before and the last one's space after, as PowerPoint does by default", () => {
+    const spaced = paragraph([run("aa", 10)], { spaceBefore: { points: 4 }, spaceAfter: { points: 6 } })
+    expect(laid(text([spaced]), 100).height).toBeCloseTo(12)
+    expect(laid(text([spaced, spaced]), 100).height).toBeCloseTo(12 + 6 + 4 + 12)
   })
 
   it("gives an empty paragraph one line at its end size", () => {
