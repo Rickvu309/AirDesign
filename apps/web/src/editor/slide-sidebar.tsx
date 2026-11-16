@@ -18,6 +18,7 @@ import { slideKey, type SlideKey } from "@/editor/slide-keys"
 import type { SaveStatus } from "@/editor/use-deck-status"
 import { SlideMenu, slideChangeAllowed } from "@/editor/slide-menu"
 import { NewSlideMenu } from "@/editor/new-slide-menu"
+import { sectionAt } from "@/editor/collapsed-sections"
 import { SlideThumb } from "@/editor/slide-thumb"
 import type { LayoutChoice } from "@/slide-layout"
 import { cn } from "@/lib/class-names"
@@ -278,14 +279,6 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
       </div>
     </>
   )
-}
-
-function sectionAt(sections: readonly StripSection[], index: number): number {
-  let found = -1
-  for (const [number, section] of sections.entries()) {
-    if (section.start <= index) found = number
-  }
-  return found
 }
 
 function rangeOf(start: number, end: number): string {
