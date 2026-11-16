@@ -66,7 +66,7 @@ export function ChainOfThoughtHeader({
     <CollapsibleTrigger
       className={cn(
         lineClass,
-        "group/steps -mx-1 w-fit rounded-[var(--shape-control)] px-1 text-left outline-hidden [transition:color_var(--ease-micro)] hover:text-foreground motion-reduce:transition-none",
+        "group/steps -mx-1 w-fit rounded-[var(--shape-control)] px-1 text-left outline-hidden [transition:color_var(--ease-micro)] hover:text-foreground",
         className,
       )}
       {...props}
@@ -77,7 +77,7 @@ export function ChainOfThoughtHeader({
         viewBox="0 0 10 10"
         width={10}
         height={10}
-        className="shrink-0 [transition:transform_var(--ease-micro)] group-data-[panel-open]/steps:rotate-90 motion-reduce:transition-none"
+        className="shrink-0 [transition:transform_var(--ease-micro)] group-data-[panel-open]/steps:rotate-90"
         aria-hidden="true"
       >
         <path d="M3.5 2.5 7 5l-3.5 2.5z" fill="currentColor" />
@@ -89,7 +89,7 @@ export function ChainOfThoughtHeader({
 export function ChainOfThoughtContent({ className, children, ...props }: ComponentProps<typeof CollapsibleContent>) {
   return (
     <CollapsibleContent
-      className="h-(--collapsible-panel-height) overflow-hidden [transition:height_var(--ease-micro)] data-[ending-style]:h-0 data-[starting-style]:h-0 motion-reduce:transition-none"
+      className="h-(--collapsible-panel-height) overflow-hidden [transition:height_var(--ease-micro)] data-[ending-style]:h-0 data-[starting-style]:h-0"
       {...props}
     >
       <ul className={cn("mt-1 ml-1 flex flex-col gap-0.5 border-l border-line pl-3", className)}>{children}</ul>

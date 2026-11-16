@@ -34,6 +34,18 @@ test("under reduced motion the editor's color picker opens and closes in its fin
   await expect(picker).toHaveCount(0)
 })
 
+test("under reduced motion a design section chevron changes state without a transition", async ({ page }) => {
+  await openDeck(page, "shapes-added.pptx")
+  const panel = await fillPanel(page, shapeAt(page, "4"))
+  const section = panel.locator('[data-design-section="Fill"]')
+  const trigger = section.getByRole("button", { name: "Fill", exact: true })
+  const chevron = trigger.locator("svg")
+  await still(chevron)
+  await trigger.click()
+  await expect(trigger).toHaveAttribute("aria-expanded", "false")
+  await still(chevron)
+})
+
 test("under reduced motion a deck home menu, dialog and toast open and close in their finished state", async ({
   page,
 }) => {
