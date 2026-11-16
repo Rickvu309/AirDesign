@@ -9,9 +9,9 @@
 \* flushPending in apps/web/src/commit-edit.ts, and settle reads its outcome into the flags.
 \* The device's queue is one flag, rows: some rows wait on the device or none. Every send joins
 \* one lane per deck (serial in packages/live/src/cache.ts) and the first in the lane is the only
-\* one on the wire. It carries every row the device holds when it starts. It answers kept when it
-\* carried none, without asking the server; otherwise sent when the server answered, and offline
-\* when the browser or the server was down. The lane is a number whose digits are its sends, the first one first:
+\* one on the wire. It carries every row the device holds when it starts. When it carried none it
+\* asks no server, and answers sent if no row waits on the device and kept if one does; otherwise
+\* it answers sent when the server answered, and offline when the browser or the server was down. The lane is a number whose digits are its sends, the first one first:
 \* 1 the online event's, 2 the resend loop's, 3 an edit's or the deck's opening, 4 a send of a
 \* resend loop that was stopped, whose answer nobody reads.
 EXTENDS Integers
@@ -149,7 +149,7 @@ Send ==
 \* before the next try on offline.
 Answer ==
   /\ started
-  /\ LET outcome == IF ~carry THEN "kept" ELSE IF net /\ up THEN "sent" ELSE "offline"
+  /\ LET outcome == IF ~carry THEN (IF rows THEN "kept" ELSE "sent") ELSE IF net /\ up THEN "sent" ELSE "offline"
          caller == First(lane)
          heard == (caller \in {Event, Edit} /\ open) \/ caller = Resend
          pending2 == IF ~heard THEN pending

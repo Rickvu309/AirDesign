@@ -3,7 +3,10 @@ import { httpRemote, memoryRemote, type Remote } from "@airdesign/live"
 
 export type TextBox = { readonly id: ElementId; readonly file: string }
 
-type FlushLink = { flush(deck: string): Promise<unknown> }
+type FlushLink = {
+  flush(deck: string): Promise<unknown>
+  pending(deck: string): Promise<readonly unknown[]>
+}
 
 type Kept = { readonly ok: boolean; readonly refusal?: string }
 
@@ -32,7 +35,8 @@ export type CommitOutcome = FlushOutcome | "refused" | "too-large"
 
 export async function flushPending(open: (remote: Remote) => FlushLink, deckId: string): Promise<FlushOutcome> {
   try {
-    const flushed = await open(server).flush(deckId)
+    const link = open(server)
+    const flushed = await link.flush(deckId)
     if (typeof flushed !== "object" || flushed === null) return "kept"
     if ("aside" in flushed && typeof flushed.aside === "number" && flushed.aside > 0) {
       const allTooLarge = "asideTooLarge" in flushed && flushed.asideTooLarge === flushed.aside
@@ -41,7 +45,7 @@ export async function flushPending(open: (remote: Remote) => FlushLink, deckId: 
     if ("ok" in flushed && flushed.ok === true) return "sent"
     if ("refusal" in flushed && flushed.refusal === "session") return "signed-out"
     if ("refusal" in flushed && (flushed.refusal === "storage" || flushed.refusal === "size")) return flushed.refusal
-    return "kept"
+    return (await link.pending(deckId)).length === 0 ? "sent" : "kept"
   } catch (error) {
     return error instanceof TypeError ? "offline" : "kept"
   }

@@ -33,14 +33,37 @@ it("paints before the commit is sent", async () => {
   expect(order).toEqual(["enqueue", "paint", "flush"])
 })
 
-function linkAnswering(flush: () => Promise<unknown>) {
+function linkAnswering(flush: () => Promise<unknown>, waiting: readonly unknown[] = ["row"]) {
   return () => ({
     async enqueue() {
       return { ok: true }
     },
     flush,
+    async pending() {
+      return waiting
+    },
   })
 }
+
+it("reports sent when the send carried nothing and nothing waits on the device", async () => {
+  const outcome = await commitEdit(
+    linkAnswering(() => Promise.resolve({ ok: false, refusal: "batch" }), []),
+    "any-deck",
+    "Hello!",
+    { id: elementId("256.2"), file: "Hello" },
+  )
+  expect(outcome).toBe("sent")
+})
+
+it("keeps the edit when the send carried nothing but rows still wait on the device", async () => {
+  const outcome = await commitEdit(
+    linkAnswering(() => Promise.resolve({ ok: false, refusal: "batch" })),
+    "any-deck",
+    "Hello!",
+    { id: elementId("256.2"), file: "Hello" },
+  )
+  expect(outcome).toBe("kept")
+})
 
 it("reports an offline device when the flush cannot reach the network", async () => {
   const outcome = await commitEdit(

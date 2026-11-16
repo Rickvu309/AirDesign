@@ -20,6 +20,7 @@ const world = vi.hoisted(() => ({
   net: true,
   lane: [] as Send[],
   rests: [] as Rest[],
+  waiting: false,
   status: null as Status | null,
 }))
 
@@ -33,6 +34,7 @@ vi.mock("@airdesign/live", async () => {
           const signal = world.caller === 2 ? (world.rests.at(-1)?.signal ?? null) : null
           world.lane.push({ caller: world.caller, signal, resolve, reject, started: false })
         }),
+      pending: () => Promise.resolve(world.waiting ? ["row"] : []),
     }),
     flushOriginal: () => Promise.resolve({ ok: true }),
   }
@@ -106,8 +108,8 @@ function shownBy(v: Spec): Value {
   return v.offline === true ? "unreached" : "saving"
 }
 
-function outcomeOf(v: Spec): "sent" | "kept" | "offline" {
-  if (v.carry !== true) return "kept"
+function answerOf(v: Spec): "sent" | "empty" | "offline" {
+  if (v.carry !== true) return "empty"
   return v.net === true && v.up === true ? "sent" : "offline"
 }
 
@@ -137,6 +139,7 @@ async function openEditor(): Promise<World> {
   world.net = true
   world.lane = []
   world.rests = []
+  world.waiting = false
   world.status = null
   let open = true
   const host = window.document.createElement("div")
@@ -176,9 +179,10 @@ async function openEditor(): Promise<World> {
       settled(() => {
         const first = world.lane.shift()
         if (first === undefined) throw new Error("no send in the lane")
-        const outcome = outcomeOf(source)
-        if (outcome === "offline") first.reject(new TypeError("Failed to fetch"))
-        else first.resolve(outcome === "sent" ? { ok: true } : { ok: false, refusal: "batch" })
+        const answer = answerOf(source)
+        world.waiting = source.rows === true
+        if (answer === "offline") first.reject(new TypeError("Failed to fetch"))
+        else first.resolve(answer === "sent" ? { ok: true } : { ok: false, refusal: "batch" })
       }),
     Retry: () =>
       settled(() => {
@@ -312,6 +316,17 @@ async function replayed(): Promise<{ walks: number; edges: number; failures: str
   return { walks, edges: graph.edges.length - left.size, failures }
 }
 
+function followed(actions: readonly string[]): Edge[] {
+  const outgoing = outgoingOf()
+  let at = startOf()
+  return actions.map((action) => {
+    const edge = (outgoing.get(at) ?? []).find((each) => each.action === action)
+    if (edge === undefined) throw new Error(`no ${action} after ${view.state(graph.states.get(at) ?? {})}`)
+    at = edge.to
+    return edge
+  })
+}
+
 function settledButNotSaved(v: Spec): boolean {
   return (
     v.open === true && v.net === true && v.rows !== true && v.lane === 0 && v.loop === "off" && shownBy(v) !== "saved"
@@ -351,9 +366,22 @@ it("replays every edge of the connection spec through the editor's network hook,
   expect(graph.states.size).toBeLessThan(500)
 }, 600_000)
 
-it.fails("reads Saved once every send was answered and nothing waits on the device", async () => {
-  const walk = shortestTo(settledButNotSaved, null)
-  if (walk === undefined) throw new Error("the spec reaches no settled state that reads otherwise")
+it("reads Saved once a stopped loop's send carried the rows and the online event's send found none", async () => {
+  expect(shortestTo(settledButNotSaved, null)).toBeUndefined()
+  const walk = followed([
+    "ServerDown",
+    "EditRow",
+    "Send",
+    "Answer",
+    "ServerUp",
+    "Retry",
+    "GoOffline",
+    "GoOnline",
+    "Send",
+    "Answer",
+    "Send",
+    "Answer",
+  ])
   const failures: string[] = []
   const seen = await walked(walk, failures, () => undefined)
   expect(failures).toEqual([])
