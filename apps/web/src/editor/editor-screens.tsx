@@ -11,6 +11,7 @@ import {
   Offline,
   RunFailed,
   SetAside,
+  SetAsideTooLarge,
   ShapesExpandedScreen,
   ShapesScreen,
   TemplatePickerScreen,
@@ -41,5 +42,6 @@ export const screens = {
   [editorRoutes.runFailed]: RunFailed,
   [editorRoutes.offline]: Offline,
   [editorRoutes.setAside]: SetAside,
+  [editorRoutes.setAsideTooLarge]: SetAsideTooLarge,
   [editorRoutes.unreached]: Unreached,
 }

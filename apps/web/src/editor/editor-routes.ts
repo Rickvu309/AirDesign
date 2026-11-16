@@ -20,4 +20,5 @@ export const editorRoutes = {
   offline: "/screens/s49-02-editor-errors-offline",
   setAside: "/screens/s49-03-editor-errors-edits-set-aside",
   unreached: "/screens/s49-04-editor-errors-unreached",
+  setAsideTooLarge: "/screens/s49-05-editor-errors-edit-set-aside-too-large",
 } as const
