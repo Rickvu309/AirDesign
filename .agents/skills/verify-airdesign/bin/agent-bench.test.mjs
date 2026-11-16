@@ -279,9 +279,17 @@ describe("agent-tasks.json", () => {
     }
   })
 
+  it("holds thirty tasks, five in each of the six families, each family on at least three decks", () => {
+    expect(tasks).toHaveLength(30)
+    for (const family of families) {
+      const inside = tasks.filter((task) => task.family === family)
+      expect(inside, family).toHaveLength(5)
+      expect(new Set(inside.map((task) => task.deck)).size, family).toBeGreaterThanOrEqual(3)
+    }
+  })
+
   it("chooses tasks by a comma list of globs", () => {
-    expect(chosenTasks(tasks, "overflow-*,notes-doe-3").map((task) => task.id)).toEqual([
-      "overflow-hera-8",
+    expect(chosenTasks(tasks, "overflow-r*,notes-doe-3").map((task) => task.id)).toEqual([
       "overflow-roman-3",
       "notes-doe-3",
     ])
