@@ -81,7 +81,7 @@ function ThemeGrid({
   const cells = columns.flatMap((column, x) =>
     [column.swatch, ...column.shades].map((choice, y) => ({ choice, at: `${String(x)},${String(y)}` })),
   )
-  const held = value === undefined ? undefined : cells.find(({ choice }) => matches(choice.color, value, palette.theme))
+  const held = value === undefined ? undefined : cells.find(({ choice }) => matches(choice.color, value))
   const focus = held?.at ?? "0,0"
   return (
     <div className="flex flex-col gap-1.5">
@@ -115,7 +115,7 @@ function DeckRow({
 }) {
   const choices = deckChoices(palette)
   if (choices.length === 0) return null
-  const held = value === undefined ? -1 : choices.findIndex((choice) => matches(choice.color, value, palette.theme))
+  const held = value === undefined ? -1 : choices.findIndex((choice) => matches(choice.color, value))
   return (
     <div className="flex flex-col gap-1.5">
       <Caption>{colorCopy.deck}</Caption>

@@ -7,6 +7,7 @@ import {
   matches,
   shadesOf,
   shownName,
+  shownHex,
   themeColumns,
   typedColor,
   type Palette,
@@ -75,16 +76,17 @@ describe("PowerPoint's tint and shade rows", () => {
 })
 
 describe("the theme colours a person picks from", () => {
-  it("keeps one column per distinct colour, each a slot with its shades painted as the canvas paints them", () => {
+  it("keeps equal-looking slots and paints their shades as the canvas does", () => {
     const columns = themeColumns(theme)
     expect(columns.map((column) => column.swatch.name)).toEqual([
       "Dark 1",
       "Light 1",
+      "Dark 2",
       "Light 2",
       "Accent 1",
       "Accent 2",
     ])
-    const accent = columns[3]
+    const accent = columns[4]
     expect(accent?.swatch.color).toEqual({ scheme: "accent1" })
     expect(accent?.shades[2]).toEqual({
       color: {
@@ -99,13 +101,45 @@ describe("the theme colours a person picks from", () => {
     })
   })
 
-  it("presses the cell of a colour that names a dropped duplicate or a mapped slot", () => {
+  it("presses only the named slot or its real alias", () => {
     const [dark] = themeColumns(theme)
-    expect(dark !== undefined && matches(dark.swatch.color, { scheme: "dk2" }, theme)).toBe(true)
-    expect(dark !== undefined && matches(dark.swatch.color, { scheme: "tx1" }, theme)).toBe(true)
-    expect(dark !== undefined && matches(dark.swatch.color, { rgb: "000000" }, theme)).toBe(false)
+    expect(dark !== undefined && matches(dark.swatch.color, { scheme: "dk2" })).toBe(false)
+    expect(dark !== undefined && matches(dark.swatch.color, { scheme: "tx1" })).toBe(true)
+    expect(dark !== undefined && matches(dark.swatch.color, { rgb: "000000" })).toBe(false)
     const faded = { scheme: "dk1", transforms: [{ op: "alpha", val: 40_000 }] } as const
-    expect(dark !== undefined && matches(dark.swatch.color, faded, theme)).toBe(true)
+    expect(dark !== undefined && matches(dark.swatch.color, faded)).toBe(true)
+  })
+
+  it("offers all ten PowerPoint picker slots even when several have the same colour", () => {
+    const full = [
+      ...theme,
+      ...(["accent3", "accent4", "accent5", "accent6"] as const).map((scheme) => ({
+        scheme,
+        css: "000000",
+        name: scheme,
+      })),
+    ]
+    expect(themeColumns(full).map(({ swatch }) => swatch.color)).toEqual(
+      ["dk1", "lt1", "dk2", "lt2", "accent1", "accent2", "accent3", "accent4", "accent5", "accent6"].map((scheme) => ({
+        scheme,
+      })),
+    )
+  })
+
+  it("keeps equal slots' names and transforms distinct as the theme changes", () => {
+    const transforms = [{ op: "lumMod", val: 50_000 }] as const
+    const dark2 = { scheme: "dk2", transforms } as const
+    expect(matches({ scheme: "dk1", transforms }, dark2)).toBe(false)
+    expect(matches({ scheme: "tx2", transforms }, dark2)).toBe(true)
+    expect(matches({ scheme: "dk2" }, dark2)).toBe(false)
+    expect(matches({ scheme: "lt1" }, { scheme: "bg1" })).toBe(true)
+    expect(matches({ scheme: "lt2" }, { scheme: "bg2" })).toBe(true)
+    expect(shownName({ scheme: "dk2" }, theme)).toBe("Dark 2")
+    const changed = theme.map((swatch) => (swatch.scheme === "dk2" ? { ...swatch, css: "4472C4" } : swatch))
+    expect(shownHex({ scheme: "dk2" }, theme)).toBe("000000")
+    expect(shownHex({ scheme: "dk2" }, changed)).toBe("4472C4")
+    expect(shownHex({ scheme: "dk1" }, changed)).toBe("000000")
+    expect(shownName({ scheme: "dk2" }, changed)).toBe("Dark 2")
   })
 })
 
