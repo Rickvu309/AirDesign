@@ -55,6 +55,24 @@ export function pageKit(options) {
       range.selectNodeContents(node)
       return [...range.getClientRects()].filter((rect) => rect.width > 0 && rect.height > 0)
     })
+  const shownRects = (element) => {
+    const clips = []
+    for (let at = element.parentElement; at && at !== document.body; at = at.parentElement) {
+      const { overflowX, overflowY } = style(at)
+      const clipX = overflowX !== "visible"
+      const clipY = overflowY !== "visible"
+      if (!clipX && !clipY) continue
+      const edge = box(at)
+      clips.push({ clipX, clipY, edge })
+    }
+    return textRects(element).filter((rect) =>
+      clips.every(
+        ({ clipX, clipY, edge }) =>
+          (!clipX || (rect.right > edge.x && rect.left < edge.x + edge.width)) &&
+          (!clipY || (rect.bottom > edge.y && rect.top < edge.y + edge.height)),
+      ),
+    )
+  }
   const sides = ["Top", "Right", "Bottom", "Left"]
   const closedBorder = (element) =>
     sides.every((side) => {
@@ -193,6 +211,7 @@ export function pageKit(options) {
     ownText,
     text,
     textRects,
+    shownRects,
     frameBox,
     fill,
     graphic,

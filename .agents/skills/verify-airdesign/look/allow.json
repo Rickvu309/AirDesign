@@ -48,18 +48,6 @@
     "reason": "An empty table cell shows the cell's own borders, as in PowerPoint. The text area inside the cell has no frame of its own, so the detector sees an empty editable area."
   },
   {
-    "page": "design-picture",
-    "detector": "overflowing-text",
-    "selector": "[data-editor-panel] > div:nth-of-type(1) > button:nth-of-type(2)",
-    "reason": "The state scrolls the design panel to a picture's last sections, so the Line section's buttons sit under the panel's header. The scroll area clips them, and the finding's own crop shows Export alone."
-  },
-  {
-    "page": "design-theme",
-    "detector": "overflowing-text",
-    "selector": "[data-editor-panel] > div:nth-of-type(1)",
-    "reason": "The state scrolls the design panel down to the Theme section, so the Slide head sits under the panel's top bar. The scroll area clips it, and the finding's own crop shows the zoom alone."
-  },
-  {
     "page": "connector-*",
     "detector": "empty-region",
     "selector": "[data-design-panel] > section:nth-of-type(4)",
