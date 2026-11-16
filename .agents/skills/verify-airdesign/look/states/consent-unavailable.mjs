@@ -5,6 +5,7 @@ async function drive(kit) {
   await consent.drive(kit)
   await kit.page.route(`**${kit.oauthRoutes.approve.path}`, (route) => route.abort("failed"))
   await kit.page.getByRole("button", { name: "Allow", exact: true }).click()
+  await expect(kit.page.getByText("Try again in a moment.")).toBeVisible()
   await expect(kit.page.getByRole("link", { name: "Try again" })).toBeVisible()
 }
 

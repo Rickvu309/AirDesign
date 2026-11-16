@@ -40,7 +40,7 @@ export const refusedConnect = {
 
 export const unavailableConnect = {
   title: "Unable to finish connecting",
-  body: "Check your connection, then try again.",
+  body: "Try again in a moment.",
   action: "Try again",
 } as const
 
