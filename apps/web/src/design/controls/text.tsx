@@ -1,6 +1,7 @@
 import { bytesOf, cellText, readTextValue, writeTextValue, type TextRun, type TextValue } from "@airdesign/document"
 import { useId, useState, type KeyboardEvent } from "react"
 import { Textarea } from "@/components/ui/textarea"
+import { designCopy } from "@/copy/design-copy"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
@@ -30,52 +31,60 @@ function wordsOf(row: ControlProps["row"]): string {
   return row.desc.kind === "text" ? cellText(readTextValue(value) ?? []) : value
 }
 
-function limitedWords(value: string, max: number): string {
-  let size = 0
-  let end = 0
-  for (const letter of value) {
-    size += bytesOf(letter)
-    if (size > max) break
-    end += letter.length
-  }
-  return value.slice(0, end)
+function sizeOf(words: string): { readonly bytes: number; readonly wide: boolean } {
+  let bytes = 0
+  for (const letter of words) bytes += bytesOf(letter)
+  return { bytes, wide: bytes > [...words].length }
 }
 
 function WordsField({ row, onChange, max }: ControlProps & { readonly max: number }) {
   const shown = typeof row.value === "string" ? row.value : ""
   const [draft, setDraft] = useState<string | null>(null)
+  const problemId = useId()
+  const size = sizeOf((draft ?? shown).trim())
+  const problem = size.bytes > max ? designCopy.tooLong(max, size.wide) : null
 
   function commit(words: string) {
+    if (problem !== null) return
     setDraft(null)
     const typed = words.trim()
     if (typed !== "" && (typed !== shown || row.inherited)) onChange(typed)
   }
 
   return (
-    <label
-      className="flex h-8 min-w-0 items-center gap-2 rounded-lg bg-white px-2.5 shadow-[0px_0px_0px_1px_var(--field-edge)]"
-      data-control="words"
-      data-inherited={row.inherited ? "" : undefined}
-      data-focus-ring
-    >
-      <span className="shrink-0 truncate text-[length:var(--type-caption)] text-quiet">{row.label}</span>
-      <input
-        className={cn(
-          "min-w-0 flex-1 bg-transparent text-right text-[length:var(--type-dense)] outline-none",
-          row.inherited && draft === null ? "text-quiet" : "text-foreground",
-        )}
-        aria-label={row.label}
-        value={draft ?? shown}
-        onChange={(event) => setDraft(limitedWords(event.target.value, max))}
-        onBlur={(event) => {
-          if (draft !== null) commit(event.currentTarget.value)
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") commit(event.currentTarget.value)
-          if (event.key === "Escape") setDraft(null)
-        }}
-      />
-    </label>
+    <div className="flex min-w-0 flex-col gap-1">
+      <label
+        className="flex h-8 min-w-0 items-center gap-2 rounded-lg bg-white px-2.5 shadow-[0px_0px_0px_1px_var(--field-edge)] has-[[aria-invalid=true]]:shadow-[0px_0px_0px_2px_var(--destructive)]"
+        data-control="words"
+        data-inherited={row.inherited ? "" : undefined}
+        data-focus-ring
+      >
+        <span className="shrink-0 truncate text-[length:var(--type-caption)] text-quiet">{row.label}</span>
+        <input
+          className={cn(
+            "min-w-0 flex-1 bg-transparent text-right text-[length:var(--type-dense)] outline-none",
+            row.inherited && draft === null ? "text-quiet" : "text-foreground",
+          )}
+          aria-label={row.label}
+          aria-invalid={problem !== null ? true : undefined}
+          aria-describedby={problem !== null ? problemId : undefined}
+          value={draft ?? shown}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={(event) => {
+            if (draft !== null) commit(event.currentTarget.value)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") commit(event.currentTarget.value)
+            if (event.key === "Escape") setDraft(null)
+          }}
+        />
+      </label>
+      {problem === null ? null : (
+        <p id={problemId} className="text-[length:var(--type-caption)] leading-[var(--leading-body)] text-danger-text">
+          {problem}
+        </p>
+      )}
+    </div>
   )
 }
 
