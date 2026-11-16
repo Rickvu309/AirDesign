@@ -10,7 +10,12 @@ export const quantile = (sorted, share) => {
 
 export const summary = (ms) => {
   const sorted = [...ms].sort((left, right) => left - right)
-  return { ms, median: quantile(sorted, 0.5), spread: [quantile(sorted, 0.25), quantile(sorted, 0.75)] }
+  return {
+    ms,
+    median: quantile(sorted, 0.5),
+    p95: quantile(sorted, 0.95),
+    spread: [quantile(sorted, 0.25), quantile(sorted, 0.75)],
+  }
 }
 
 const range = ({ spread }) => spread[1] - spread[0]

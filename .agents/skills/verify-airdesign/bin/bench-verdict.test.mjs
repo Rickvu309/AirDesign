@@ -83,3 +83,9 @@ describe("benchTable", () => {
     )
   })
 })
+
+it("reports p95 across runs without sorting the original samples", () => {
+  const ms = [100, 10, 20, 30, 40]
+  expect(summary(ms).p95).toBeCloseTo(88)
+  expect(ms).toEqual([100, 10, 20, 30, 40])
+})
