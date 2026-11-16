@@ -19,7 +19,14 @@ export const server = httpRemote()
 
 export type SaveRefusal = "storage" | "size"
 
-export type FlushOutcome = "sent" | "offline" | "signed-out" | "kept" | "set-aside" | SaveRefusal
+export type FlushOutcome =
+  | "sent"
+  | "offline"
+  | "signed-out"
+  | "kept"
+  | "set-aside"
+  | "set-aside-too-large"
+  | SaveRefusal
 
 export type CommitOutcome = FlushOutcome | "refused" | "too-large"
 
@@ -27,7 +34,10 @@ export async function flushPending(open: (remote: Remote) => FlushLink, deckId: 
   try {
     const flushed = await open(server).flush(deckId)
     if (typeof flushed !== "object" || flushed === null) return "kept"
-    if ("aside" in flushed && typeof flushed.aside === "number" && flushed.aside > 0) return "set-aside"
+    if ("aside" in flushed && typeof flushed.aside === "number" && flushed.aside > 0) {
+      const allTooLarge = "asideTooLarge" in flushed && flushed.asideTooLarge === flushed.aside
+      return allTooLarge ? "set-aside-too-large" : "set-aside"
+    }
     if ("ok" in flushed && flushed.ok === true) return "sent"
     if ("refusal" in flushed && flushed.refusal === "session") return "signed-out"
     if ("refusal" in flushed && (flushed.refusal === "storage" || flushed.refusal === "size")) return flushed.refusal

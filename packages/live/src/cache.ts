@@ -57,7 +57,7 @@ export type FollowResult =
   | { ok: true; readonly deck: DeckId; readonly revision: number; readonly changed: boolean }
   | Extract<WatchResult, { ok: false }>
 
-export type FlushResult = CommitResult & { readonly aside?: number }
+export type FlushResult = CommitResult & { readonly aside?: number; readonly asideTooLarge?: number }
 
 export type EnqueueResult<Painted = string> =
   | { ok: true; readonly painted: Painted }
@@ -154,7 +154,7 @@ export function connect(remote: Remote, options: Options = {}) {
       result = heard(await remote.commit({ deck, batch: rowsInBatch.map(wireOf), once }))
       if (!result.ok && result.refusal === "size" && bodyBytes(deck, rowsInBatch, once) > limits.body) {
         if (rowsInBatch.length === 1) {
-          await setAside(deck, rowsInBatch)
+          await setAside(deck, rowsInBatch, true)
           start += 1
           continue
         }
@@ -399,8 +399,9 @@ export function connect(remote: Remote, options: Options = {}) {
         await recovered(parsed.deck)
         return serial(parsed.deck, async () => {
           const result = await sendRows(parsed.deck)
-          const aside = await takeAside(parsed.deck)
-          return aside === 0 ? result : { ...result, aside }
+          const { aside, tooLarge } = await takeAside(parsed.deck)
+          if (aside === 0) return result
+          return tooLarge === 0 ? { ...result, aside } : { ...result, aside, asideTooLarge: tooLarge }
         })
       })
     },

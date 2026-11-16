@@ -70,6 +70,23 @@ it("reports edits set aside whether the rest of the flush landed or not", async 
   }
 })
 
+it("reports edits set aside as too large only when every one of them was too large", async () => {
+  const outcomeFor = async (answer: object) =>
+    commitEdit(
+      linkAnswering(() => Promise.resolve(answer)),
+      "any-deck",
+      "Hello!",
+      {
+        id: elementId("256.2"),
+        file: "Hello",
+      },
+    )
+  const landed = { ok: true, deck: "any-deck", revision: 2, key: "any-deck:2" }
+  expect(await outcomeFor({ ...landed, aside: 1, asideTooLarge: 1 })).toBe("set-aside-too-large")
+  expect(await outcomeFor({ ok: false, refusal: "dead", aside: 2, asideTooLarge: 2 })).toBe("set-aside-too-large")
+  expect(await outcomeFor({ ...landed, aside: 2, asideTooLarge: 1 })).toBe("set-aside")
+})
+
 it("reports a signed-out person when the flush is refused for the session", async () => {
   const outcome = await commitEdit(
     linkAnswering(() => Promise.resolve({ ok: false, refusal: "session" })),

@@ -115,7 +115,7 @@ it("sets aside a pending edit too large for any request, says so once, and saves
   await writeRows([{ key: rowKey("deck", "pending", 1), row: tooLarge }], [])
   signInAs(firstAccount)
   await cache.enqueue("deck", "after", other, "")
-  expect(await connect(remote).flush("deck")).toMatchObject({ ok: true, aside: 1 })
+  expect(await connect(remote).flush("deck")).toMatchObject({ ok: true, aside: 1, asideTooLarge: 1 })
   expect(values).toEqual(["before", "after"])
   expect(await cache.pending("deck")).toEqual([])
   expect(await connect(remote).flush("deck")).not.toHaveProperty("aside")

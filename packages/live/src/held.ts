@@ -173,11 +173,13 @@ export async function writeDeckRows(
   }
 }
 
-function asideOf(raw: unknown): PendingRow[] {
-  return Array.isArray(raw) ? (raw as PendingRow[]) : []
+type AsideRow = PendingRow & { readonly tooLarge?: true }
+
+function asideOf(raw: unknown): AsideRow[] {
+  return Array.isArray(raw) ? (raw as AsideRow[]) : []
 }
 
-export async function setAside(deck: DeckId, rows: readonly PendingRow[]): Promise<void> {
+export async function setAside(deck: DeckId, rows: readonly PendingRow[], tooLarge = false): Promise<void> {
   if (rows.length === 0) return
   const account = signedIn()
   const writing = await transaction("readwrite")
@@ -188,7 +190,8 @@ export async function setAside(deck: DeckId, rows: readonly PendingRow[]): Promi
   const kept = store.get(slot)
   const stored = store.get(head)
   stored.onsuccess = () => {
-    store.put([...asideOf(kept.result), ...rows], slot)
+    const marked: AsideRow[] = tooLarge ? rows.map((row) => ({ ...row, tooLarge: true })) : [...rows]
+    store.put([...asideOf(kept.result), ...marked], slot)
     for (const row of rows) store.delete(scoped(account, rowKey(deck, "pending", row.order)))
     store.put(headOf(stored.result) + 1, head)
   }
@@ -200,7 +203,7 @@ export async function setAside(deck: DeckId, rows: readonly PendingRow[]): Promi
   }
 }
 
-export async function takeAside(deck: DeckId): Promise<number> {
+export async function takeAside(deck: DeckId): Promise<{ readonly aside: number; readonly tooLarge: number }> {
   const account = signedIn()
   const writing = await transaction("readwrite")
   const store = writing.objectStore(storeName)
@@ -209,7 +212,10 @@ export async function takeAside(deck: DeckId): Promise<number> {
   kept.onsuccess = () => {
     if (kept.result !== undefined) store.delete(slot)
   }
-  return finished(writing, () => asideOf(kept.result).length)
+  return finished(writing, () => {
+    const rows = asideOf(kept.result)
+    return { aside: rows.length, tooLarge: rows.filter((row) => row.tooLarge === true).length }
+  })
 }
 
 export async function sealRows(deck: DeckId, keys: readonly string[], once: string): Promise<PendingRow[]> {

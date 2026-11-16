@@ -20,6 +20,7 @@ export type ThinNotice =
   | "undo-changed"
   | "redo-changed"
   | "set-aside"
+  | "set-aside-too-large"
   | "storage-failed"
   | "too-large"
   | "newer"
@@ -117,6 +118,7 @@ export function ThinNoticeView({
   if (notice === "offline") return <StatusNotice text={productCopy.editorOffline} />
   if (notice === "unreached") return <StatusNotice text={productCopy.editorUnreached} />
   if (notice === "set-aside") return <StatusNotice text={productCopy.editsSetAside} />
+  if (notice === "set-aside-too-large") return <StatusNotice text={productCopy.editSetAsideTooLarge} />
   if (notice === "storage-failed") return <StatusNotice text={productCopy.storageFailed} />
   if (notice === "too-large") return <StatusNotice text={productCopy.editsTooLarge} />
   if (notice === "undo-changed") return <StatusNotice text={undoCopy.undoChanged} />
