@@ -130,6 +130,18 @@ _Avoid_: upload, open, convert
 To save a deck as a PowerPoint or PDF file.
 _Avoid_: download, save as
 
+**present**:
+To show a deck full screen, one slide at a time, to an audience. Stop presenting leaves and lands on the slide shown last.
+_Avoid_: slideshow, play, run
+
+**presenter view**:
+What the person presenting sees: the current slide, the next one, the speaker notes, a timer and the slide count.
+_Avoid_: speaker view, notes view
+
+**speaker notes**:
+The words a person keeps under a slide for themselves. They are shown in the presenter view and never to the audience.
+_Avoid_: notes page, comments
+
 **Trash**:
 Where a deck goes when a person moves it out of their decks. It can be restored for 30 days. Its actions are Move to Trash, Restore and Delete for good.
 _Avoid_: bin, archive, remove
