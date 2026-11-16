@@ -46,7 +46,7 @@ drag       16.9 ms [16.8-17.1]  16.8 ms [16.7-17.0]  no difference shown
 load max 27.1 on 16 cores (2 runs above the core count)
 ```
 
-The table goes to stderr and to `~/tmp/verify-airdesign/bench-<time>/bench.md`; `bench.json` beside it keeps every run's milliseconds, the medians and spreads (`[p25, p75]`), the verdicts and the load. Each case's row is also appended to `~/.cache/airdesign/bench.jsonl`, so a case can be followed across PRs.
+The table goes to stderr and to `~/tmp/verify-airdesign/bench-<time>/bench.md`; `bench.json` beside it keeps every run's milliseconds, the medians, p95 across runs and spreads (`[p25, p75]`), the verdicts and the load. Each case's row is also appended to `~/.cache/airdesign/bench.jsonl`, so a case can be followed across PRs.
 
 ## When it runs
 
