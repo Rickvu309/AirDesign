@@ -189,7 +189,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   console.log(checkSeconds.line)
   if (checkSeconds.over !== undefined) console.error(checkSeconds.over)
   fs.rmSync(ownTemp, { recursive: true, force: true })
-  release()
+  release({ status: failed.length === 0 ? "passed" : `failed ${failed.join(" ")}` })
 
   if (checkedTree !== undefined && stampable(failed, ranSteps)) {
     stampChecked(root, checkedTree)

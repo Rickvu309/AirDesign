@@ -9,6 +9,13 @@ const onCi = (env) => env.CI === "true" || env.CI === "1"
 export const machineLockFolder = path.join(os.homedir(), ".cache", "airdesign")
 export const queueLogName = "check-queue.jsonl"
 
+const lanes = {
+  full: { file: "machine.lock", queue: "queue", holder: "Another check holds the machine." },
+  small: { file: "small.lock", queue: "small-queue", holder: "Another small job holds the small lane." },
+}
+
+export const smallLaneCommand = (command, args) => ["nice", ["-n", "10", command, ...args]]
+
 const hold = (file) =>
   new Promise((resolve) => {
     const holder = spawn("flock", ["-n", file, "sh", "-c", "echo held; exec cat"], {
@@ -68,14 +75,16 @@ const nextTicket = (folder) => {
   return taken.stdout.trim().padStart(12, "0")
 }
 
-export const recentRunSeconds = (log, count = 20) => {
+export const recentRunSeconds = (log, count = 20, lane = "full") => {
   try {
     const runs = fs
       .readFileSync(log, "utf8")
       .trim()
       .split("\n")
+      .map((line) => JSON.parse(line))
+      .filter((row) => (row.lane ?? "full") === lane)
       .slice(-count)
-      .map((line) => JSON.parse(line).ran)
+      .map((row) => row.ran)
       .filter((ran) => typeof ran === "number")
       .sort((left, right) => left - right)
     return runs.length === 0 ? undefined : runs[Math.floor(runs.length / 2)]
@@ -84,8 +93,8 @@ export const recentRunSeconds = (log, count = 20) => {
   }
 }
 
-export const waitLine = (place, typical) => {
-  const line = `Another check holds the machine. This one is number ${place} in line.`
+export const waitLine = (place, typical, lane = "full") => {
+  const line = `${lanes[lane].holder} This one is number ${place} in line.`
   if (typical === undefined) return line
   const minutes = Math.max(1, Math.round((place * typical) / 60))
   return `${line} Expect about ${minutes} min: a recent run took ${Math.round(typical)} s.`
@@ -96,6 +105,7 @@ const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 export const takeMachineLock = async ({
   folder = machineLockFolder,
   job = "check",
+  lane = "full",
   env = process.env,
   say = console.error,
   poll = 500,
@@ -103,10 +113,10 @@ export const takeMachineLock = async ({
   date = () => new Date(),
 } = {}) => {
   const free = () => {}
-  const file = path.join(folder, "machine.lock")
-  if (onCi(env) || env[held] === file) return free
+  const file = path.join(folder, lanes[lane].file)
+  if (onCi(env) || env[held] === file || env[held] === path.join(folder, lanes.full.file)) return free
   if (spawnSync("flock", ["--version"]).status !== 0) return free
-  const queue = path.join(folder, "queue")
+  const queue = path.join(folder, lanes[lane].queue)
   fs.mkdirSync(queue, { recursive: true })
   const queued = clock()
   const queuedAt = date().toISOString()
@@ -121,7 +131,7 @@ export const takeMachineLock = async ({
     const ahead = liveTickets(queue).indexOf(path.basename(ticket))
     if (ahead === 0) holder = await hold(file)
     if (holder) break
-    if (told !== ahead + 1) say(waitLine(ahead + 1, recentRunSeconds(log)))
+    if (told !== ahead + 1) say(waitLine(ahead + 1, recentRunSeconds(log, 20, lane), lane))
     told = ahead + 1
     await pause(poll)
   }
@@ -130,12 +140,14 @@ export const takeMachineLock = async ({
   const started = clock()
   env[held] = file
   let recorded = false
-  const record = () => {
+  const record = (status = "exited") => {
     if (recorded) return
     recorded = true
     const seconds = (from, to) => Math.round((to - from) / 100) / 10
     const row = {
       job,
+      lane,
+      status,
       cwd: process.cwd(),
       queued: queuedAt,
       waited: seconds(queued, started),
@@ -143,10 +155,11 @@ export const takeMachineLock = async ({
     }
     fs.appendFileSync(log, `${JSON.stringify(row)}\n`)
   }
-  process.once("exit", record)
-  return () => {
-    record()
-    process.removeListener("exit", record)
+  const exited = () => record()
+  process.once("exit", exited)
+  return ({ status = "done" } = {}) => {
+    record(status)
+    process.removeListener("exit", exited)
     delete env[held]
     return letGo(holder)
   }

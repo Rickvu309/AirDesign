@@ -1,5 +1,5 @@
 import fs from "node:fs"
-import { judgeCheck } from "./land-check.mjs"
+import { aloneRun, judgeCheck } from "./land-check.mjs"
 
 const same = (what, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -83,3 +83,9 @@ const two = await judged({
 })
 same("one file load and one fault is a fault", two.verdict.passed, false)
 same("every failed file is rerun", two.asked, [file, "packages/live/src/x.test.ts"])
+
+same(
+  "a file rerun alone runs niced on two workers in the small lane",
+  aloneRun(["test", "node", ["node_modules/vitest/vitest.mjs", "run"], { A: "1" }], file),
+  ["nice", ["-n", "10", "node", "node_modules/vitest/vitest.mjs", "run", "--maxWorkers=2", file], { A: "1" }],
+)
