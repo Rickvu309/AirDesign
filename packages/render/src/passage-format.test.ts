@@ -121,19 +121,39 @@ it("changes size, colour, alignment and bullets as separate edits and keeps the 
       bullet: true,
       runs: [
         { from: 0, text: "He" },
-        { from: 0, text: "llo w", size: 1900, color: { scheme: "accent1" } },
+        { from: 0, text: "llo w", size: 2000, color: { scheme: "accent1" } },
         { from: 0, text: "orld" },
       ],
     },
   ])
-  expect(editor.querySelector("[data-size='1900']")?.textContent).toBe("llo w")
+  expect(editor.querySelector("[data-size='2000']")?.textContent).toBe("llo w")
   expect(editor.querySelector("[data-color='scheme:accent1']")).not.toBeNull()
   expect(editor.querySelector("[data-align='center']")).not.toBeNull()
   expect(editor.querySelector("[data-bullet='true']")).not.toBeNull()
   expect(window.getSelection()?.toString()).toBe("llo w")
-  expect(formatting.size()).toBe(1900)
+  expect(formatting.size()).toBe(2000)
   expect(formatting.align()).toBe("center")
   expect(formatting.bullet()).toBe("on")
+})
+
+it("sets a typed size on the selection as one edit and keeps the selection", async () => {
+  const { editor, formatting, edits, fresh } = await mounted()
+  await select(editor, 2, 7)
+  formatting.aim(id, editor)
+  await act(async () => formatting.sizeTo(1050))
+  expect(fresh()).toBe(2)
+  expect(readTextValue(edits.at(-1) ?? "")).toEqual([
+    {
+      from: 0,
+      runs: [
+        { from: 0, text: "He" },
+        { from: 0, text: "llo w", size: 1050 },
+        { from: 0, text: "orld" },
+      ],
+    },
+  ])
+  expect(window.getSelection()?.toString()).toBe("llo w")
+  expect(formatting.size()).toBe(1050)
 })
 
 it("gives no state when no box is aimed at", async () => {

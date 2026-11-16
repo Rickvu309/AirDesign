@@ -11,7 +11,17 @@ export type FileColor = (paragraph: number, run: number) => Color | null
 export type FileAlign = (paragraph: number) => ParagraphAlign | null
 export type FileBullet = (paragraph: number) => boolean
 
+export type SizeStep = 1 | -1
+
 type Piece = { readonly run: TextRun; readonly covered: boolean }
+
+const sizeSteps = [
+  800, 900, 1000, 1050, 1100, 1200, 1400, 1600, 1800, 2000, 2400, 2800, 3200, 3600, 4000, 4400, 4800, 5400, 6000, 6600,
+  7200, 8000, 8800, 9600,
+] as const
+const smallStep = 100
+const largeStep = 1000
+const typedPoints = /^\d+(\.\d+)?$/
 
 function setFormat(run: TextRun, paragraph: number, format: TextFormat, on: boolean, file: FileFormat): TextRun {
   const { [format]: _dropped, ...rest } = run
@@ -169,11 +179,33 @@ export function sizeRange(value: TextValue, range: TextRange | null, size: numbe
   return applyRuns(value, range, (paragraph, run) => setSize(run, paragraph.from, size, file))
 }
 
-export function stepSize(value: TextValue, range: TextRange | null, delta: number, file: FileSize): TextValue {
+function stepUp(size: number): number {
+  const least = sizeSteps[0]
+  if (size < least) return Math.min(least, Math.floor(size / smallStep) * smallStep + smallStep)
+  return sizeSteps.find((listed) => listed > size) ?? Math.floor(size / largeStep) * largeStep + largeStep
+}
+
+function stepDown(size: number): number {
+  const most = sizeSteps[sizeSteps.length - 1] ?? sizeFloor
+  if (size > most) return Math.max(most, Math.ceil(size / largeStep) * largeStep - largeStep)
+  return sizeSteps.findLast((listed) => listed < size) ?? Math.ceil(size / smallStep) * smallStep - smallStep
+}
+
+export function steppedSize(size: number, step: SizeStep): number {
+  return Math.min(sizeCeiling, Math.max(sizeFloor, step > 0 ? stepUp(size) : stepDown(size)))
+}
+
+export function typedSize(text: string): number | null {
+  const trimmed = text.trim()
+  if (!typedPoints.test(trimmed)) return null
+  const size = Math.round(Number(trimmed) * 10) * 10
+  return size < sizeFloor || size > sizeCeiling ? null : size
+}
+
+export function stepSize(value: TextValue, range: TextRange | null, step: SizeStep, file: FileSize): TextValue {
   return applyRuns(value, range, (paragraph, run) => {
     const current = run.size ?? file(paragraph.from, run.from) ?? sizeDefault
-    const next = Math.min(sizeCeiling, Math.max(sizeFloor, current + delta))
-    return setSize(run, paragraph.from, next, file)
+    return setSize(run, paragraph.from, steppedSize(current, step), file)
   })
 }
 

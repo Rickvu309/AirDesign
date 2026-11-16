@@ -264,9 +264,12 @@ export {
   formatState,
   formatWhole,
   sameFormats,
+  sizeRange,
   sizeState,
   stepSize,
+  typedSize,
   type Caret,
+  type SizeStep,
   type FormatState,
   type TextRange,
 } from "./text-format.js"
