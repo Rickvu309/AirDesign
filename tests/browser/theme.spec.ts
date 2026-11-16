@@ -102,3 +102,19 @@ test("a person changes accent 1 and the heading font of a deck with two themes, 
     new RegExp(`#${red}`, "i"),
   )
 })
+
+test("a shape filled with accent 1 shows the theme's new accent 1 in its fill swatch, as the canvas paints it", async ({
+  page,
+}) => {
+  await openDeck(page, "clean.pptx")
+  const theme = await themePanel(page)
+  await typeColor(page, theme.getByRole("button", { name: "Accent 1", exact: true }), `#${red}`)
+  const shape = painted(page, "ppt/slides/slide1.xml#2")
+  await shape.click()
+  await page.keyboard.press("Escape")
+  const panel = page.locator("[data-design-element]")
+  await expect(panel).toBeVisible()
+  const fill = panel.locator("[data-control='union']").filter({ has: page.getByText("Fill", { exact: true }) })
+  const swatch = fill.locator("[data-control='color'] span[aria-hidden]").first()
+  await expect.poll(() => swatch.evaluate((node: HTMLElement) => node.style.background)).toBe("rgb(192, 0, 0)")
+})
