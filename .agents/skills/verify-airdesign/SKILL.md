@@ -189,28 +189,16 @@ Run `stop` after every run, passed or failed. A failed `launch` prints the run i
 
 Each run is isolated, and the machine is shared: read [isolation-and-load.md](isolation-and-load.md) before you run anything heavy.
 
-## Which suites to run
+## Prove
 
-`pnpm check` skips the browser tests on this machine, and `ci` runs them. A change that passes only its own new spec can still break others. Before you push, run what your change needs:
-
-| Changed paths                                                                   | Suites                                       |
-| ------------------------------------------------------------------------------- | -------------------------------------------- |
-| anything                                                                        | `pnpm check`                                 |
-| `apps/web`, a package `apps/web` imports, `tests/browser`, this skill's `look/` | the whole browser suite, `pnpm test:browser` |
-| `apps/web`, `apps/api`, any package they import, `tests/journeys`, this skill   | every journey, `pnpm test:journeys`          |
-| what `ci`'s `pptx` job watches (`packages/pptx`, `apps/web`, ...)               | `pnpm check:pptx`                            |
-
-`pnpm check:pptx` finds the .NET 8 SDK itself: `PPTX_DOTNET`, then `dotnet` on PATH, then `$DOTNET_ROOT/dotnet`, then `~/.dotnet/dotnet`. It adds Chromium's library folder itself too. Set nothing; when no SDK is found it lists the places it tried.
-
-One command reads the branch's changes against `origin/main` and does it:
+`pnpm check` skips the browser tests on this machine, and `ci` runs them. Before `pnpm check` and `pnpm land`, run the proof your diff needs:
 
 ```sh
-$V suites            # which suites this branch needs, and why
-$V suites --run      # run them in order under the machine lock, with Chromium's libraries set
-$V suites --run browser -- tests/browser/home.spec.ts:12   # one suite, one test
+pnpm prove            # read the diff against origin/main, run what fits, write proof.md
+pnpm prove --plan     # print the plan as JSON and run nothing
 ```
 
-`--run` writes `suites.md` under `~/tmp/verify-airdesign/suites-<time>/` with each suite's result, time and the load it ran under. When a suite fails it lists the failed tests and prints the command that reruns only them; run it before you call a failure real. The rules read `apps/web` and `apps/api`'s workspace dependencies and `ci.yml`, so they follow the repo.
+It runs the unit tests the changed sources reach, the tooling tests that import a changed script, the TLA+ specs whose covered code moved and their replays, a changed browser spec five times under a CPU limit, and `sheet` on the states of each touched screen area. Quote its `proof.md` in the PR's `## Proof`. [prove-and-suites.md](prove-and-suites.md) has the rules, the flags, the lanes, and `$V suites` for the whole suites `ci` runs.
 
 ## Feature map
 
@@ -218,8 +206,8 @@ $V suites --run browser -- tests/browser/home.spec.ts:12   # one suite, one test
 
 ## Helpers
 
-- `bin/verify-airdesign.mjs`: the entry point for every command. `$V` with no command prints usage.
+- `bin/verify-airdesign.mjs`: the entry point for every command. `$V` with no command prints the usage in `bin/usage.mjs`.
 - `look/`: the design commands' parts: the detectors, the state list, compare, the sheet, and the callouts, placement and drawing behind `before-after` and `annotate`. See `look/README.md`.
 - `bin/proof.mjs`, `bin/publish.mjs` and `bin/comment.mjs`: `before-after`, `annotate`, `publish` and `comment`.
-- `bin/suites.mjs`: `suites`. `bin/load.mjs`: the load line. `bin/browser.mjs`: Chromium's launch, with its library folder.
+- `bin/prove.mjs` and `bin/prove-plan.mjs`: `prove`. `bin/suites.mjs`: `suites`. `bin/load.mjs`: the load line. `bin/browser.mjs`: Chromium's launch, with its library folder.
 - `journeys/*.mjs`: run by `$V journey <run> <name>` and by `pnpm test:journeys`.

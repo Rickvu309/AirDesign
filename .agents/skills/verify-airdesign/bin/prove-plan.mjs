@@ -1,0 +1,130 @@
+import path from "node:path"
+import { suitesFor } from "./suites.mjs"
+
+const skillPath = ".agents/skills/verify-airdesign/"
+const code = /\.(ts|tsx|mts|mjs|js)$/
+const testFile = (file) => /\.(test|spec)\.[a-z]+$/.test(file)
+export const repeatLimit = 6
+
+const readOutsideGraph = (file) =>
+  file === "vitest.config.mts" ||
+  file === "pnpm-lock.yaml" ||
+  file === "scripts/test-isolation.mjs" ||
+  path.basename(file) === "package.json" ||
+  file.startsWith("scripts/pptx-fixtures/") ||
+  (/\.(json|sql)$/.test(file) && /^(apps|packages|tests)\//.test(file))
+
+const unitSource = (file) =>
+  code.test(file) &&
+  (/^(apps|packages)\/[^/]+\/(src|worker)\//.test(file) ||
+    file.startsWith(skillPath) ||
+    (file.startsWith("tests/") && !file.startsWith("tests/browser/") && !file.startsWith("tests/journeys/")))
+
+const appCode = (file) => file.startsWith("apps/web/src/") && !testFile(file)
+
+export const importersOf = (graph, targets) => {
+  const found = new Set(targets)
+  for (let grew = true; grew;) {
+    grew = false
+    for (const [file, imports] of Object.entries(graph)) {
+      if (found.has(file) || !imports.some((imported) => found.has(imported))) continue
+      found.add(file)
+      grew = true
+    }
+  }
+  return [...found].sort()
+}
+
+const lookAreas = (changed) =>
+  new Set(
+    changed
+      .filter((file) => !testFile(file))
+      .flatMap((file) => {
+        if (file.startsWith("packages/render/") || file.startsWith("apps/web/src/components/")) return ["editor"]
+        if (/^apps\/web\/src\/[^/]+$/.test(file)) return ["editor"]
+        const area = file.match(/^apps\/web\/src\/([^/]+)\//)?.[1]
+        return area === undefined ? [] : [area]
+      }),
+  )
+
+const unitStep = (changed) => {
+  const outside = changed.filter(readOutsideGraph)
+  if (outside.length > 0)
+    return { kind: "unit", files: outside, tests: "all", because: `${outside[0]} is read outside the import graph` }
+  const sources = changed.filter(unitSource)
+  if (sources.length === 0) return undefined
+  return { kind: "unit", files: sources, tests: "related", because: `${String(sources.length)} changed sources` }
+}
+
+const toolingStep = (changed, scripts) => {
+  const touched = changed.filter((file) => /^scripts\/[^/]+\.mjs$/.test(file))
+  const files = importersOf(scripts, touched).filter((file) => file.endsWith(".test.mjs") && file in scripts)
+  if (files.length === 0) return undefined
+  return { kind: "tooling", files, because: `${touched.join(", ")} changed` }
+}
+
+const specsStep = (changed, moved, replays) => {
+  const touched = changed.flatMap((file) => file.match(/^specs\/([^/]+)\//)?.[1] ?? [])
+  const topics = [...new Set([...moved, ...touched])].sort()
+  if (topics.length === 0) return undefined
+  const files = [...new Set(replays.filter(({ name }) => topics.includes(name)).flatMap(({ by }) => by))].sort()
+  const why = moved.length > 0 ? `covered code moved for ${moved.join(", ")}` : `specs changed: ${touched.join(", ")}`
+  return { kind: "specs", topics, replays: files, because: why }
+}
+
+const browserStep = (changed, browser) => {
+  const touched = changed.filter((file) => /^tests\/browser\/[^/]+\.(ts|mts)$/.test(file))
+  const specs = importersOf(browser, touched).filter((file) => file.endsWith(".spec.ts"))
+  if (specs.length === 0) return undefined
+  const repeat = specs.length > repeatLimit ? 1 : 5
+  const because =
+    repeat === 1
+      ? `${String(specs.length)} specs import the changed files, more than ${String(repeatLimit)}, so each runs once`
+      : `${touched.join(", ")} changed`
+  return { kind: "browser", specs, repeat, workers: 1, cpu: "200%", because }
+}
+
+const lookStep = (changed, screens, states) => {
+  const areas = lookAreas(changed)
+  const named = changed.flatMap((file) => file.match(/look\/states\/([^/]+)\.mjs$/)?.[1] ?? [])
+  const picked = states
+    .filter((state) => named.includes(state.name) || (state.design && areas.has(screens[state.design])))
+    .map((state) => state.name)
+    .sort()
+  if (picked.length === 0) return undefined
+  const because = areas.size > 0 ? `touched ${[...areas].sort().join(", ")}` : `changed ${named.join(", ")}`
+  return { kind: "look", states: picked, because }
+}
+
+export const proofPlan = ({
+  base,
+  head,
+  changed,
+  moved = [],
+  screens = {},
+  states = [],
+  replays = [],
+  scripts = {},
+  browser = {},
+  rules = [],
+}) => {
+  const browserRun = browserStep(changed, browser)
+  const pptx = suitesFor(
+    changed,
+    rules.filter((rule) => rule.name === "pptx"),
+  )[0]
+  const note =
+    browserRun === undefined && changed.some(appCode)
+      ? { kind: "note", text: "App code a person sees changed and no browser spec did. Write the failing spec first." }
+      : undefined
+  const steps = [
+    unitStep(changed),
+    toolingStep(changed, scripts),
+    specsStep(changed, moved, replays),
+    browserRun,
+    note,
+    lookStep(changed, screens, states),
+    pptx && { kind: "pptx", because: `${pptx.because} is in what ci's pptx job watches` },
+  ].filter(Boolean)
+  return { base, head, changed, steps, ciAlso: suitesFor(changed, rules).map((suite) => suite.name) }
+}
