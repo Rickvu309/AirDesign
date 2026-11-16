@@ -6,8 +6,8 @@ soffice="$brand/program/soffice"
 ppm="$root/usr/bin/pdftoppm"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 dotnet="$(node "$here/dotnet-sdk.mjs")" || exit 1
-fonts="$root/fonts"
-stamp="$fonts/installed-$(sha256sum "$here/reference-fonts.json" | cut -c1-16)"
+fonts="$root/fonts/$(sha256sum "$here/reference-fonts.json" | cut -c1-16)"
+stamp="$fonts/installed"
 
 reference_fonts() {
   local mirrors="http://archive.ubuntu.com/ubuntu https://mirrors.kernel.org/ubuntu https://mirror.math.princeton.edu/pub/ubuntu"
@@ -45,16 +45,23 @@ reference_fonts() {
     touch "$stamp"
   fi
   local base="${FONTCONFIG_FILE:-/etc/fonts/fonts.conf}"
-  if [ "$base" = "$fonts/fonts.conf" ]; then
-    base=/etc/fonts/fonts.conf
-  fi
-  {
+  case "$base" in
+    "$root"/fonts/*/fonts-*.conf) base=/etc/fonts/fonts.conf ;;
+  esac
+  local config
+  config="$({
     printf '%s\n' '<?xml version="1.0"?>' '<!DOCTYPE fontconfig SYSTEM "fonts.dtd">'
     printf '%s' "<fontconfig><include>${base}</include><dir>${fonts}/usr/share/fonts</dir>"
     node -e 'for (const a of require(process.argv[1]).aliases) process.stdout.write(`<alias binding="same"><family>${a.family}</family><prefer><family>${a.prefer}</family></prefer></alias>`)' "$here/reference-fonts.json"
     printf '%s\n' '</fontconfig>'
-  } > "$fonts/fonts.conf"
-  export FONTCONFIG_FILE="$fonts/fonts.conf"
+  })"
+  local file
+  file="$fonts/fonts-$(printf '%s' "$config" | sha256sum | cut -c1-16).conf"
+  if [ ! -f "$file" ]; then
+    printf '%s\n' "$config" > "$file.$$"
+    mv "$file.$$" "$file"
+  fi
+  export FONTCONFIG_FILE="$file"
 }
 
 if [ ! -f "$root/installed" ] && command -v soffice > /dev/null && command -v pdftoppm > /dev/null; then

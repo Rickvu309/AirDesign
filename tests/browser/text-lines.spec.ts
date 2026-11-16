@@ -102,3 +102,27 @@ test("a click on a word on a later line puts the caret in that word, and typing 
   await page.keyboard.type("Q")
   await expect(run).toContainText(/docQumented|docuQmented/)
 })
+
+test("an Arial Narrow run paints in Liberation Sans Narrow, an open font of its widths, when Arial Narrow is missing", async ({
+  page,
+}) => {
+  await page.goto("/")
+  await page
+    .locator("input[type=file]")
+    .setInputFiles(join(process.cwd(), "scripts/pptx-fixtures/corpus/nasa-ixpe-science-ops.pptx"))
+  const entry = page.locator('[data-slide-entry="5"]')
+  await entry.click()
+  await expect(entry).toHaveAttribute("aria-current", "true")
+  await page.evaluate(() => document.fonts.ready)
+  const families = await page
+    .locator("[data-slide-paint] [data-run]")
+    .evaluateAll((runs) => runs.map((run) => getComputedStyle(run).fontFamily))
+  expect(families.filter((family) => /^"?Arial Narrow"?,/.test(family))).not.toEqual([])
+  expect(families.filter((family) => /^"?Arial Narrow"?,/.test(family))[0]).toMatch(
+    /^"?Arial Narrow"?, "?Liberation Sans Narrow"?,/,
+  )
+  const loaded = await page.evaluate(() =>
+    [...document.fonts].filter((face) => face.status === "loaded").map((face) => face.family.replace(/"/g, "")),
+  )
+  expect(loaded).toContain("Liberation Sans Narrow")
+})

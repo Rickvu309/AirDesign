@@ -73,6 +73,7 @@ const openTwins = new Map([
   ["cambria", "Caladea"],
   ["arial", "Arimo"],
   ["helvetica", "Arimo"],
+  ["arial narrow", "Liberation Sans Narrow"],
   ["times new roman", "Tinos"],
 ])
 const loneRun = -1

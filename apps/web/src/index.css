@@ -18,6 +18,7 @@
 @import "@fontsource/tinos/400-italic.css";
 @import "@fontsource/tinos/700.css";
 @import "@fontsource/tinos/700-italic.css";
+@import "./fonts/liberation-sans-narrow.css";
 @import "@airdesign/theme/tokens.css";
 
 @custom-variant dark (&:is(.dark *));

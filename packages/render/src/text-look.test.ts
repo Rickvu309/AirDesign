@@ -146,6 +146,7 @@ it.each([
   ["Cambria", "Caladea"],
   ["Arial", "Arimo"],
   ["Helvetica", "Arimo"],
+  ["Arial Narrow", "Liberation Sans Narrow"],
   ["Times New Roman", "Tinos"],
 ])("follows %s with %s, an open font of the same widths", (font, twin) => {
   const text = paragraph({
