@@ -99,7 +99,7 @@ export function DangerDialog({
                 type="button"
                 disabled={busy || !ready}
                 onClick={onConfirm}
-                className="h-9 border-0 bg-destructive px-4 text-sm font-medium text-white shadow-[inset_0_0_0_1px_var(--danger-edge)] hover:bg-destructive"
+                className="h-9 border-0 bg-danger-solid px-4 text-sm font-medium text-white shadow-[inset_0_0_0_1px_var(--danger-edge)] hover:bg-danger-solid"
               >
                 {action}
               </Button>

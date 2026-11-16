@@ -32,7 +32,8 @@
   --blue-tint: #eef4fe;
   --field-edge: #d7d7d6;
   --pressed: var(--blue-tint);
-  --pressed-foreground: color-mix(in oklch, var(--primary-strong), var(--navy) 30%);
+  --tint-text: color-mix(in oklch, var(--primary-strong), var(--navy) 30%);
+  --pressed-foreground: var(--tint-text);
   --pressed-edge: var(--primary);
   --primary-top: #93b8ef;
   --primary-strong: #2d6fcd;
@@ -41,8 +42,9 @@
   --danger-light: #f29a9a;
   --danger-edge: #b92f2f;
   --danger-text: #b92f2f;
-  --faint-foreground: #909090;
+  --danger-solid: #d03a3a;
   --positive: #16a34a;
+  --positive-text: #15803d;
   --negative: #dc2626;
   --black-3: #00000008;
   --black-4: #0000000a;
@@ -178,10 +180,10 @@
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-danger-text: var(--danger-text);
+  --color-danger-solid: var(--danger-solid);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
-  --color-faint-foreground: var(--faint-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary-hover: var(--secondary-hover);
@@ -203,6 +205,7 @@
   --color-faint: var(--faint);
   --color-navy: var(--navy);
   --color-positive: var(--positive);
+  --color-positive-text: var(--positive-text);
   --color-negative: var(--negative);
   --color-claude: var(--claude);
   --color-ink: var(--ink);
@@ -210,6 +213,7 @@
   --color-field-edge: var(--field-edge);
   --color-pressed: var(--pressed);
   --color-pressed-foreground: var(--pressed-foreground);
+  --color-tint-text: var(--tint-text);
   --color-pressed-edge: var(--pressed-edge);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);

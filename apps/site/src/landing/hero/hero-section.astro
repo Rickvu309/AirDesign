@@ -66,7 +66,7 @@ const quarters = ["Q3 24", "Q4 24", "Q1 25", "Q2 25", "Q3 25"];
             <div class="flex h-full shrink-0 items-center gap-2.5 border-r border-[var(--parchment)] px-6">
               <span class="font-mono text-[length:var(--type-caption)] tracking-[0.6px] whitespace-nowrap text-quiet">{tick.label}</span>
               <span class="text-[length:var(--type-dense)] font-medium whitespace-nowrap">{tick.value}</span>
-              <span class:list={["text-[9px]", tick.direction === "up" ? "text-positive" : "text-negative"]}>{tick.direction === "up" ? "▲" : "▼"}</span>
+              <span class:list={["text-[9px]", tick.direction === "up" ? "text-positive-text" : "text-negative"]}>{tick.direction === "up" ? "▲" : "▼"}</span>
             </div>
           ))}
         </div>

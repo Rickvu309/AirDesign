@@ -12,7 +12,7 @@ export function ImportFailed() {
         <DeckCard
           name="Brightwater board review"
           edited="Unable to import"
-          editedClassName="text-destructive"
+          editedClassName="text-danger-text"
           previewClassName="bg-background"
           preview={<ImportFailedPreview />}
         />

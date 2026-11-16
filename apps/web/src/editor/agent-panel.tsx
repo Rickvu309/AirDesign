@@ -155,7 +155,7 @@ function Composer({ run }: { run: SidebarRun }) {
               Slide 3
               <EditorIcon name="x" size={11} className="text-faint" />
             </PromptInputChip>
-            <PromptInputChip className="bg-blue-tint text-[var(--primary-strong)]">
+            <PromptInputChip className="bg-blue-tint text-tint-text">
               <EditorIcon name="chart" size={12} />
               Bar chart
               <EditorIcon name="x" size={11} />

@@ -8,7 +8,7 @@
   "import-parse": { "now": 141, "goal": 100 },
   "slides-repainted": { "goal": 1 },
   "eval-coverage": { "now": 49, "goal": 49 },
-  "design-findings": { "now": 50, "goal": 0 },
+  "design-findings": { "now": 33, "goal": 0 },
   "paint-fidelity": { "now": 162, "goal": 190 },
   "check-duration": { "limit": 40 },
   "ci-duration": { "limit": 40 },
