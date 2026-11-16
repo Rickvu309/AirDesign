@@ -12,6 +12,7 @@ export type ExportTarget = {
   readonly size: PrintSize | null
   readonly slide: (index: number, width: number) => ReactNode
   readonly onExport: (request: ExportRequest) => Promise<void> | void
+  readonly selected?: readonly number[]
 }
 
 function everySlide(count: number): readonly number[] {
@@ -42,7 +43,7 @@ function ExportFlow({ faded, target }: { faded: boolean; target: ExportTarget })
   }
 
   function start() {
-    const slides = chosenSlides(choice, target.count, target.current)
+    const slides = chosenSlides(choice, target.count, target.current, target.selected)
     if (slides === null || running.current !== null) return
     const controller = new AbortController()
     running.current = controller
@@ -62,7 +63,7 @@ function ExportFlow({ faded, target }: { faded: boolean; target: ExportTarget })
         ref={button}
         faded={faded}
         onClick={() => {
-          setChoice(firstChoice(target.count))
+          setChoice(firstChoice(target.count, target.selected))
           setOpen(true)
         }}
       />
@@ -70,6 +71,7 @@ function ExportFlow({ faded, target }: { faded: boolean; target: ExportTarget })
         open={open}
         choice={choice}
         count={target.count}
+        selected={target.selected?.length ?? 0}
         exporting={exporting}
         finalFocus={button}
         onChoice={setChoice}

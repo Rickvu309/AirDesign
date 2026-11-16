@@ -35,4 +35,12 @@ describe("export choice", () => {
     expect(rangeProblem({ ...firstChoice(9), slides: "range", from: "2", to: "3" }, 9)).toBeNull()
     expect(rangeProblem({ ...firstChoice(9), slides: "all", from: "", to: "" }, 9)).toBeNull()
   })
+
+  it("starts on the selected slides when a person selected several, and exports them in deck order", () => {
+    const choice = firstChoice(9, [6, 1, 3])
+    expect(choice.slides).toBe("selected")
+    expect(chosenSlides(choice, 9, 0, [6, 1, 3])).toEqual([1, 3, 6])
+    expect(firstChoice(9, [4]).slides).toBe("all")
+    expect(chosenSlides({ ...firstChoice(9), slides: "selected" }, 9, 4, [])).toEqual([4])
+  })
 })

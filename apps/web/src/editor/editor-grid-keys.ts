@@ -56,3 +56,19 @@ export function gridCommand(event: {
   if (event.altKey && !event.metaKey && !event.ctrlKey && !event.shiftKey && event.key === "ArrowRight") return "later"
   return null
 }
+
+const moveKeys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"]
+
+export function focusMove(list: HTMLElement, key: string): number | null {
+  if (!moveKeys.includes(key)) return null
+  const buttons = [...list.querySelectorAll<HTMLElement>("[data-slide-entry]")]
+  const at = buttons.findIndex((button) => button === document.activeElement)
+  if (at === -1) return null
+  const boxes = buttons.map((button) => {
+    const rect = button.getBoundingClientRect()
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+  })
+  const next = gridMove(key, boxes, at)
+  buttons[next]?.focus()
+  return Number(buttons[next]?.dataset.slideEntry ?? next + 1) - 1
+}
