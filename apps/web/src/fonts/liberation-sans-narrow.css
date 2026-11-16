@@ -1,0 +1,31 @@
+@font-face {
+  font-family: "Liberation Sans Narrow";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./LiberationSansNarrow-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Liberation Sans Narrow";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./LiberationSansNarrow-Italic.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Liberation Sans Narrow";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./LiberationSansNarrow-Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Liberation Sans Narrow";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./LiberationSansNarrow-BoldItalic.ttf") format("truetype");
+}
