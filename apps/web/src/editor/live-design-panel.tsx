@@ -50,7 +50,7 @@ import { rebasedChange } from "@/design/rebase"
 import { siteNames } from "@/design/site-names"
 import { deviceScope } from "@/design/trait-edit"
 import { backgroundHex, designShown, themeOf, type DesignShown } from "@/design-shown"
-import { BackgroundKind, DesignHead, DesignSection, ElementDesign, SectionRows } from "@/editor/design-panel"
+import { DesignHead, DesignSection, ElementDesign, SectionRows } from "@/editor/design-panel"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import type { UndoList } from "@/editor/use-undo"
 import type { UndoEntry } from "@/undo-list"
@@ -326,21 +326,7 @@ export function DesignView({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto" data-design-panel>
       <DesignHead>{designCopy.slide(shown.number)}</DesignHead>
-      <DesignSection title={designCopy.template}>
-        <p className="text-[length:var(--type-dense)] text-quiet">{designCopy.templateOff}</p>
-      </DesignSection>
       <DesignSection title={designCopy.background} last={children === null}>
-        <BackgroundKind color={designCopy.color}>
-          <Button
-            type="button"
-            variant="ghost"
-            disabled
-            aria-label={designCopy.pictureOff}
-            className="h-7 flex-1 rounded-[var(--shape-control)] text-xs font-normal text-quiet"
-          >
-            {designCopy.picture}
-          </Button>
-        </BackgroundKind>
         <ColorPicker
           value={background.value}
           palette={{ theme: shown.theme, deck, behind: null }}
