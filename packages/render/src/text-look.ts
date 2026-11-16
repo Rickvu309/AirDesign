@@ -65,6 +65,7 @@ export const anchored = { top: "flex-start", middle: "center", bottom: "flex-end
 const pageFont = "var(--font-sans)"
 const pageColor = "black"
 const singleLineHeight = 1.2
+const shiftedShare = 0.58
 const noLine = "0"
 const openTwins = new Map([
   ["calibri", "Carlito"],
@@ -98,10 +99,14 @@ function lineShare(percent: number): string {
 
 const singleLine = lineShare(1)
 
+function shift(run: CanvasRunStyle): number {
+  return run.baseline ?? 0
+}
+
 function styleOf(run: CanvasRunStyle, scaled: Scaled): Look {
   return {
     fontFamily: familyOf(run.font),
-    fontSize: `${scaled(run.size)}px`,
+    fontSize: `${scaled(shift(run) === 0 ? run.size : run.size * shiftedShare)}px`,
     fontStyle: run.italic ? "italic" : "normal",
     fontWeight: run.bold ? "700" : "400",
     color: run.color ?? pageColor,
@@ -110,14 +115,14 @@ function styleOf(run: CanvasRunStyle, scaled: Scaled): Look {
   }
 }
 
-function marks(run: CanvasRunStyle): Look {
+function marks(run: CanvasRunStyle, scaled: Scaled): Look {
   const drawn = [run.underline === true ? "underline" : "", run.strike === true ? "line-through" : ""].filter(
     (mark) => mark !== "",
   )
   return {
     ...(drawn.length === 0 ? {} : { textDecoration: drawn.join(" ") }),
     ...(run.highlight == null ? {} : { backgroundColor: run.highlight }),
-    ...(run.baseline == null || run.baseline === 0 ? {} : { verticalAlign: `${run.baseline}em` }),
+    ...(shift(run) === 0 ? {} : { verticalAlign: `${scaled(run.size * shift(run))}px` }),
   }
 }
 
@@ -192,7 +197,7 @@ function paragraphStyle(paragraph: CanvasParagraph, filled: boolean, scaled: Sca
     ...(indent === 0 ? {} : { textIndent: `${scaled(indent)}px` }),
     ...(before === undefined ? {} : { marginTop: before }),
     ...(after === undefined ? {} : { marginBottom: after }),
-    ...(filled ? {} : marks(paragraph.endStyle)),
+    ...(filled ? {} : marks(paragraph.endStyle, scaled)),
     ...bulletVars(paragraph, scaled),
   }
 }
@@ -376,7 +381,7 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
       const paragraph = spaced(found, overlay)
       const style = formatted(fileStyle(paragraph, run), format, colors, scale)
       const lineHeight = lineHeights(paragraph.lineSpacing, scaled, true).run
-      const drawn = marks(style)
+      const drawn = marks(style, scaled)
       const plain =
         format.underline === undefined || drawn.textDecoration !== undefined ? {} : { textDecoration: "none" }
       return { ...styleOf(style, scaled), ...drawn, ...plain, lineHeight }
