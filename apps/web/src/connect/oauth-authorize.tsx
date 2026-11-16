@@ -1,8 +1,9 @@
 import { deckRoutes, oauthRoutes, signOutRoutes } from "@airdesign/catalog"
 import { useEffect, useRef, useState } from "react"
+import { ConnectError } from "@/connect/connect-error"
 import { ApproveAgent } from "@/connect/approve-agent"
 import { ClaudeConnected } from "@/connect/screens/claude-connected"
-import { claudeCodeConnect, claudeConnect, codexConnect, otherConnect, refusedConnect } from "@/connect/connect-copy"
+import { claudeCodeConnect, claudeConnect, codexConnect, otherConnect } from "@/connect/connect-copy"
 import { authorizationError, navigableAddress, oauthErrorRedirect } from "@/connect/oauth-request"
 
 type Agent = "claude" | "codex" | null
@@ -27,6 +28,7 @@ type Consent = {
 type View =
   | { kind: "loading" }
   | { kind: "refused" }
+  | { kind: "unavailable" }
   | { kind: "consent"; consent: Consent }
   | { kind: "connected"; consent: Consent }
 
@@ -113,7 +115,7 @@ function clientScreen(body: unknown): { screen: Screen; host: string } | null {
 }
 
 async function consentRequest(): Promise<
-  { kind: "redirect"; address: string } | { kind: "refused" } | { kind: "consent"; consent: Consent }
+  { kind: "redirect"; address: string } | Exclude<View, { kind: "loading" | "connected" }>
 > {
   const current = new URL(window.location.href)
   const query = current.searchParams
@@ -124,7 +126,8 @@ async function consentRequest(): Promise<
   }
   if (resource !== undefined) clientBody.resource = resource
   const clientReply = await post(oauthRoutes.client.path, clientBody)
-  if (clientReply === null) return { kind: "refused" }
+  if (clientReply === null || clientReply.response.status >= 500 || clientReply.response.status === 429)
+    return { kind: "unavailable" }
   const clientRefusal = refusal(clientReply.body)
   if (clientReply.response.status === 401) {
     if (clientRefusal === "session") return { kind: "redirect", address: signInAddress() }
@@ -149,7 +152,8 @@ async function consentRequest(): Promise<
   }
 
   const listReply = await post(deckRoutes.list.path, {})
-  if (listReply === null) return { kind: "refused" }
+  if (listReply === null || listReply.response.status >= 500 || listReply.response.status === 429)
+    return { kind: "unavailable" }
   if (listReply.response.status === 401) return { kind: "redirect", address: signInAddress() }
   if (!listReply.response.ok || !isRecord(listReply.body) || listReply.body.ok !== true) return { kind: "refused" }
   const account = listReply.body.account
@@ -203,10 +207,6 @@ export function OAuthAuthorize() {
         leave(answer.address, setView)
         return
       }
-      if (answer.kind === "refused") {
-        setView({ kind: "refused" })
-        return
-      }
       setView(answer)
     })
   }, [])
@@ -238,8 +238,8 @@ export function OAuthAuthorize() {
     if (consent.resource !== undefined) body.resource = consent.resource
 
     const answer = await post(oauthRoutes.approve.path, body)
-    if (answer === null) {
-      setView({ kind: "refused" })
+    if (answer === null || answer.response.status >= 500 || answer.response.status === 429) {
+      setView({ kind: "unavailable" })
       return
     }
     const approveRefusal = refusal(answer.body)
@@ -261,13 +261,10 @@ export function OAuthAuthorize() {
   }
 
   if (view.kind === "loading") return null
-  if (view.kind === "refused") {
-    return (
-      <main className="screen-frame grid place-items-center">
-        <p className="text-[length:var(--type-dense)] text-foreground">{refusedConnect}</p>
-      </main>
-    )
+  if (view.kind === "refused" || view.kind === "unavailable") {
+    return <ConnectError kind={view.kind} />
   }
+
   if (view.kind === "connected") {
     return (
       <ClaudeConnected
