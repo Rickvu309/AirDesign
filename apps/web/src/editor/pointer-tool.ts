@@ -1,10 +1,9 @@
+import { gestureFor } from "@airdesign/render"
 import { useEffect, useState } from "react"
 
 export type PointerTool = "move" | "hand"
 
 export type ToolPick = { readonly tool: PointerTool; readonly pick: (tool: PointerTool) => void }
-
-const toolKeys: Readonly<Record<string, PointerTool>> = { v: "move", h: "hand" }
 
 export function typing(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
@@ -12,8 +11,10 @@ export function typing(target: EventTarget | null): boolean {
 }
 
 function toolForKey(event: KeyboardEvent): PointerTool | null {
-  if (event.metaKey || event.ctrlKey || event.altKey || typing(event.target)) return null
-  return toolKeys[event.key.toLowerCase()] ?? null
+  if (typing(event.target)) return null
+  const gesture = gestureFor(event, "editor")
+  if (gesture === "tool-move") return "move"
+  return gesture === "tool-hand" ? "hand" : null
 }
 
 export function usePointerTool(working: boolean): ToolPick {

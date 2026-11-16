@@ -14,6 +14,7 @@ import {
   type Selection,
   type SlideSize,
 } from "./box-gesture.js"
+import { gestureFor } from "./gestures.js"
 import { typeHeld } from "./held-keys.js"
 import type { CanvasElement } from "./record.js"
 import type { BoxGrip, PaintStore } from "./store.js"
@@ -61,18 +62,6 @@ function frameOf(from: HTMLElement, element: CanvasElement): HTMLElement | null 
   return from.closest(slidePaint)?.querySelector<HTMLElement>(`[data-canvas-element="${element.key}"]`) ?? null
 }
 
-function groupKey(event: KeyboardEvent<HTMLElement>): "group" | "ungroup" | undefined {
-  if ((!event.ctrlKey && !event.metaKey) || event.altKey || event.code !== "KeyG") return undefined
-  return event.shiftKey ? "ungroup" : "group"
-}
-
-function stackMove(event: KeyboardEvent<HTMLElement>): StackMove | undefined {
-  if ((!event.ctrlKey && !event.metaKey) || event.altKey) return undefined
-  if (event.code === "BracketRight") return event.shiftKey ? "front" : "forward"
-  if (event.code === "BracketLeft") return event.shiftKey ? "back" : "backward"
-  return undefined
-}
-
 function enterText(frame: HTMLElement): boolean {
   const text = frame.querySelector<HTMLElement>(editableText)
   if (text === null) return false
@@ -114,7 +103,7 @@ export function useMoves(
   }, [onChoose, chosen])
   const [message, setMessage] = useState("")
   const keyed = useRef({ verb: "", label: "" })
-  const gesture = useRef<Gesture | null>(null)
+  const held = useRef<Gesture | null>(null)
   const grip = useRef<BoxGrip | null>(null)
   const cancelling = useRef<(() => void) | null>(null)
   const pressedFrame = useRef<HTMLElement | null>(null)
@@ -143,12 +132,12 @@ export function useMoves(
   }
 
   function hold(next: Gesture) {
-    gesture.current = next
+    held.current = next
     grip.current = store.gripBox(next.id)
   }
 
   function letGo(changed: boolean) {
-    gesture.current = null
+    held.current = null
     if (changed) grip.current?.keep()
     else grip.current?.release()
     grip.current = null
@@ -163,11 +152,11 @@ export function useMoves(
 
   function follow(pressed: Drag, document: Document) {
     function move(event: globalThis.PointerEvent) {
-      const now = gesture.current
+      const now = held.current
       if (now?.by !== "pointer" || event.pointerId !== now.pointer) return
       const at = { x: event.clientX, y: event.clientY }
       if (!now.moved && !travelled(now.from, at)) return
-      gesture.current = { ...now, moved: true }
+      held.current = { ...now, moved: true }
       grip.current?.place(draggedBox(now, at, width, size))
     }
     function stop() {
@@ -183,7 +172,7 @@ export function useMoves(
     function end(event: globalThis.PointerEvent) {
       if (event.pointerId !== pressed.pointer) return
       stop()
-      const now = gesture.current
+      const now = held.current
       if (now !== null) finish(now)
       if (now?.by === "pointer" && !now.moved && now.enter !== undefined) entered(now)
     }
@@ -237,7 +226,7 @@ export function useMoves(
   }
 
   function press(event: PointerEvent<HTMLElement>, element: CanvasElement, grip: Grip) {
-    if (element.id === null || event.button !== 0 || gesture.current !== null) return
+    if (element.id === null || event.button !== 0 || held.current !== null) return
     const group = elementOf(element.group?.id)
     if (grip === "move" && event.shiftKey) {
       chooseOn(event, group ?? element)
@@ -260,7 +249,8 @@ export function useMoves(
     if (id === null || event.nativeEvent.isComposing) return
     const frame = event.currentTarget
     const onFrame = event.target === frame
-    if (event.key === "Escape") {
+    const gesture = gestureFor(event, onFrame ? "element" : "text")
+    if (gesture === "deselect") {
       event.preventDefault()
       const cancel = cancelling.current
       if (cancel !== null) cancel()
@@ -269,34 +259,30 @@ export function useMoves(
       return
     }
     if (!onFrame) return
-    const grouped = groupKey(event)
-    if (grouped !== undefined) {
-      if (gesture.current !== null) return
-      if (grouped === "group" && chosen.length >= 2 && grouping?.onGroup !== undefined) {
+    const now = held.current
+    if (gesture === "group" || gesture === "ungroup") {
+      if (now !== null) return
+      if (gesture === "group" && chosen.length >= 2 && grouping?.onGroup !== undefined) {
         event.preventDefault()
         grouping.onGroup(chosen)
       }
-      if (grouped === "ungroup" && element.kind === "group" && grouping?.onUngroup !== undefined) {
+      if (gesture === "ungroup" && element.kind === "group" && grouping?.onUngroup !== undefined) {
         event.preventDefault()
         grouping.onUngroup(id)
       }
       return
     }
-    if (event.key === "Enter") {
+    if (gesture === "edit-text") {
       if (enterText(frame)) event.preventDefault()
       return
     }
-    const stacking = stackMove(event)
-    if (stacking !== undefined) {
-      if (onOrder === undefined || gesture.current !== null) return
+    if (gesture === "front" || gesture === "forward" || gesture === "backward" || gesture === "back") {
+      if (onOrder === undefined || now !== null) return
       event.preventDefault()
-      onOrder(id, stacking)
+      onOrder(id, gesture)
       return
     }
-    const now = gesture.current
-    const start = startOf(element)
-    const chord = event.altKey || event.ctrlKey || event.metaKey
-    if ((event.key === "Delete" || event.key === "Backspace") && !chord && now === null) {
+    if (gesture === "delete" && now === null) {
       const removable = (chosen.includes(id) ? chosen : [id]).filter((each) => {
         const found = elementOf(each)
         return found !== undefined && canMove(found)
@@ -306,8 +292,9 @@ export function useMoves(
       onRemove(removable)
       return
     }
-    const resizing = event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey
-    if (resizing && start !== null && canDrag(element) && now?.by !== "pointer") {
+    const start = startOf(element)
+    if (start === null || !canDrag(element) || now?.by === "pointer") return
+    if (gesture === "resize-keys") {
       const grown = resizedByKey(start, event.key, element.box?.rotation ?? 0)
       if (grown === null) return
       event.preventDefault()
@@ -316,8 +303,8 @@ export function useMoves(
       grip.current?.place(grown)
       return
     }
-    if (start === null || chord || !canDrag(element) || now?.by === "pointer") return
-    const next = nudgedBox(start, event.key, event.shiftKey, size)
+    if (gesture !== "nudge" && gesture !== "nudge-far") return
+    const next = nudgedBox(start, event.key, gesture === "nudge-far", size)
     if (next === null) return
     event.preventDefault()
     if (now === null) hold({ by: "keys", id, start })
@@ -335,14 +322,14 @@ export function useMoves(
       if (event.target === event.currentTarget) only(null)
     },
     onBlur(event: FocusEvent<HTMLDivElement>) {
-      const now = gesture.current
+      const now = held.current
       if (now?.by === "keys") finish(now)
       const next = event.relatedTarget
       if (next instanceof Element && next.closest(keepsSelection) !== null) return
       if (!(next instanceof Node) || !event.currentTarget.contains(next)) only(null)
     },
     onKeyUp(event: KeyboardEvent<HTMLDivElement>) {
-      const now = gesture.current
+      const now = held.current
       if (now?.by === "keys" && isArrow(event.key)) {
         finish(now)
         setMessage(`${keyed.current.verb} ${keyed.current.label}`)

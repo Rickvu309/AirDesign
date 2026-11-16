@@ -3,6 +3,7 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
+import { covers } from "./gesture"
 
 type ZipEntry = {
   readonly filename: string
@@ -118,6 +119,7 @@ async function openBack(page: Page): Promise<void> {
 test("a rectangle moves in front of an ellipse, and back, and the export changes only that slide @export", async ({
   page,
 }, testInfo) => {
+  covers("backward")
   await rm(judged, { force: true })
   await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(fixture)

@@ -1,5 +1,6 @@
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { covers } from "./gesture"
 
 const clean = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const start = { x: 457_200, y: 457_200, cx: 5_486_400, cy: 1_828_800 }
@@ -100,6 +101,7 @@ test("the tool menu lists Move and Hand with their keys, and Hand pans the zoome
 })
 
 test("V and H pick the tool, but not while typing in a text box", async ({ page }) => {
+  covers("tool-move", "tool-hand")
   await openClean(page)
   const text = page.locator('[contenteditable="true"]')
   await text.click()

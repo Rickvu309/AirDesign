@@ -3,6 +3,7 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
+import { covers } from "./gesture"
 
 type ZipEntry = {
   readonly filename: string
@@ -80,6 +81,7 @@ async function changedParts(original: string, saved: string): Promise<string[]> 
 test("two shapes group in place, move together, ungroup in place, and the export keeps the group @export", async ({
   page,
 }, testInfo) => {
+  covers("ungroup")
   const part = "ppt/slides/slide1.xml"
   const judged = join(process.cwd(), "tests/browser", groupName)
   await rm(judged, { force: true })

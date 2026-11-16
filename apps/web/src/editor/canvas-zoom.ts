@@ -1,3 +1,5 @@
+import { gestureFor } from "@airdesign/render"
+
 export type SlideSize = { readonly width: number; readonly height: number }
 
 export type Zoom = "fit" | (typeof zoomSteps)[number]
@@ -44,11 +46,11 @@ export function zoomKey(event: {
   readonly shiftKey: boolean
   readonly field: boolean
 }): ZoomKey | null {
-  if (event.field || event.altKey || !(event.metaKey || event.ctrlKey)) return null
-  if (event.key === "=" || event.key === "+") return "in"
-  if (event.key === "-" || event.key === "_") return "out"
-  if (event.key === "0") return "fit"
-  return null
+  if (event.field) return null
+  const gesture = gestureFor(event, "editor")
+  if (gesture === "zoom-in") return "in"
+  if (gesture === "zoom-out") return "out"
+  return gesture === "zoom-fit" ? "fit" : null
 }
 
 export function steppedZoom(direction: "in" | "out", percent: number): Zoom {

@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { covers } from "./gesture"
 
 const blank = join(process.cwd(), "scripts/pptx-fixtures/blank.pptx")
 
@@ -76,6 +77,7 @@ test("the slide list is one Tab stop, the arrows move through it, and a slide co
   context,
   stack,
 }) => {
+  covers("slide-down")
   await signedIn(page, context, stack)
   await openBlankDeck(page)
   const entry = (number: number) => page.locator(`[data-slide-entry="${String(number)}"]`)
@@ -113,6 +115,7 @@ test("the canvas can be reached, moved, resized, left with Escape and cleared fr
   context,
   stack,
 }) => {
+  covers("resize-keys", "edit-text")
   await signedIn(page, context, stack)
   await openBlankDeck(page)
   const text = page.locator('[data-slide-paint] [contenteditable="true"]').first()
@@ -226,6 +229,7 @@ test("duplicating, moving, selecting and deleting a slide says the slide, and so
   context,
   stack,
 }) => {
+  covers("slide-duplicate", "slide-up", "slide-delete")
   await signedIn(page, context, stack)
   await openClean(page)
   const canvas = page.locator('[data-slide-paint] [role="status"]')

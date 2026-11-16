@@ -1,3 +1,4 @@
+import { gestureFor } from "@airdesign/render"
 import { useEffect, useRef } from "react"
 
 export type UndoKey = "undo" | "redo"
@@ -15,11 +16,9 @@ export function undoKey(event: {
   readonly shiftKey: boolean
   readonly field: boolean
 }): UndoKey | null {
-  if (event.field || event.altKey || !(event.metaKey || event.ctrlKey)) return null
-  const key = event.key.toLowerCase()
-  if (key === "z") return event.shiftKey ? "redo" : "undo"
-  if (key === "y" && event.ctrlKey && !event.metaKey && !event.shiftKey) return "redo"
-  return null
+  if (event.field) return null
+  const gesture = gestureFor(event, "editor")
+  return gesture === "undo" || gesture === "redo" ? gesture : null
 }
 
 export function useUndoKeys(working: boolean, onKey: (key: UndoKey) => void) {
