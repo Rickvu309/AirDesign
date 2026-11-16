@@ -35,7 +35,6 @@ export type TextFormatting = {
   readonly swatches: () => readonly CanvasThemeColor[]
   readonly changed: () => void
   readonly subscribe: (listener: () => void) => () => void
-  readonly version: () => number
 }
 
 export const keepsFormat = "[data-keeps-format]"
@@ -51,9 +50,7 @@ export function textFormatting(fresh: () => void = () => undefined): TextFormatt
   const listeners = new Set<() => void>()
   let aimed: ElementId | null = null
   let returnTo: HTMLElement | null = null
-  let count = 0
   const changed = () => {
-    count += 1
     for (const listener of listeners) listener()
   }
   const target = () => (aimed === null ? undefined : targets.get(aimed))
@@ -147,6 +144,5 @@ export function textFormatting(fresh: () => void = () => undefined): TextFormatt
         document?.removeEventListener("focusin", left)
       }
     },
-    version: () => count,
   }
 }
