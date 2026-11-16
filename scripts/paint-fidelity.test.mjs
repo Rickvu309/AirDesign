@@ -147,21 +147,46 @@ same(
 )
 
 const row = { deck: "a.pptx", slide: 1, difference: 2, match: true }
+const judged = { rows: [row], skipped: [], outcome: "finished", now: 1 }
 same(
-  "a run that judged no deck fails",
-  fidelityFailure({ rows: [], outcome: "finished" }),
+  "no measured deck fails the run",
+  fidelityFailure({ ...judged, rows: [], now: 0 }),
   "paint-fidelity judged 0 decks, so its count says nothing. Read the lines above for why.",
 )
 same(
   "a run that crashed fails, even with some slides compared",
-  fidelityFailure({ rows: [row], outcome: "failed" }),
+  fidelityFailure({ ...judged, outcome: "failed" }),
   "paint-fidelity crashed before it finished, so its count is not the corpus. Read the lines above for why.",
 )
-same("a finished run that compared slides passes", fidelityFailure({ rows: [row], outcome: "finished" }), undefined)
+same("a finished run that compared slides passes", fidelityFailure(judged), undefined)
 same(
-  "a run stopped at its limit passes with what finished",
-  fidelityFailure({ rows: [row], outcome: "stopped" }),
-  undefined,
+  "a run stopped at its limit fails",
+  fidelityFailure({ ...judged, outcome: "stopped" }),
+  "paint-fidelity stopped at its limit, so its count is not the corpus. Read the lines above for why.",
+)
+same(
+  "a skipped deck fails the run and is named",
+  fidelityFailure({ ...judged, skipped: [{ deck: "c.pptx", reason: "no painted slide on the page" }] }),
+  "paint-fidelity skipped c.pptx, so its count is not the corpus. Read the lines above for why.",
+)
+same(
+  "a count below the recorded one fails and names both numbers",
+  fidelityFailure({ ...judged, rows: [row, { ...row, slide: 2, match: false }], now: 2 }),
+  "paint-fidelity is 1 and metrics.json says 2. A change painted a slide further from its reference render; find it in the worst lines above.",
+)
+same("a count above the recorded one passes", fidelityFailure({ ...judged, now: 0 }), undefined)
+same(
+  "a count above the recorded one prints the record",
+  fidelityLines({ rows: [row], skipped: [], decks: 1, goal: 190, now: 0, cap: 12, bar: 10, worst: 0 }),
+  [
+    "metric paint-fidelity  now 1  goal 190  1 slides compared, at most 12 per deck, 1 of 1 decks, bar 10 of 255",
+    "paint-fidelity record 1. Record now 1 in metrics.json.",
+  ],
+)
+same(
+  "the recorded count prints no record",
+  fidelityLines({ rows: [row], skipped: [], decks: 1, goal: 190, now: 1, cap: 12, bar: 10, worst: 0 }).length,
+  1,
 )
 
 const said = []

@@ -59,6 +59,7 @@ export const fidelityLines = ({
   skipped,
   decks,
   goal,
+  now = Number.POSITIVE_INFINITY,
   cap = slidesPerDeck,
   bar = matchBar,
   worst = worstShown,
@@ -72,14 +73,22 @@ export const fidelityLines = ({
       (row) => `paint-fidelity worst ${row.deck} slide ${row.slide} difference ${row.difference.toFixed(1)}`,
     ),
     ...skipped.map((row) => `paint-fidelity skipped ${row.deck}: ${row.reason}`),
+    ...(matching > now ? [`paint-fidelity record ${matching}. Record now ${matching} in metrics.json.`] : []),
   ]
 }
 
-export const fidelityFailure = ({ rows, outcome }) => {
+export const fidelityFailure = ({ rows, skipped, outcome, now }) => {
   if (outcome === "failed")
     return "paint-fidelity crashed before it finished, so its count is not the corpus. Read the lines above for why."
   if (rows.length === 0)
     return "paint-fidelity judged 0 decks, so its count says nothing. Read the lines above for why."
+  if (outcome === "stopped")
+    return "paint-fidelity stopped at its limit, so its count is not the corpus. Read the lines above for why."
+  if (skipped.length > 0)
+    return `paint-fidelity skipped ${skipped.map((row) => row.deck).join(", ")}, so its count is not the corpus. Read the lines above for why.`
+  const matching = rows.filter((row) => row.match).length
+  if (matching < now)
+    return `paint-fidelity is ${matching} and metrics.json says ${now}. A change painted a slide further from its reference render; find it in the worst lines above.`
   return undefined
 }
 
