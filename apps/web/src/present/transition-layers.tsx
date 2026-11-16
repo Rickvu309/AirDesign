@@ -27,7 +27,7 @@ export function TransitionLayers({
     if (leaving === null) return
     const { frames } = leaving
     const entered = play(incoming.current, frames.incoming, frames.duration)
-    play(outgoing.current, frames.outgoing, frames.duration)
+    const exited = play(outgoing.current, frames.outgoing, frames.duration)
     if (entered === null) {
       onDone()
       return
@@ -41,6 +41,8 @@ export function TransitionLayers({
     )
     return () => {
       live = false
+      entered.cancel()
+      exited?.cancel()
     }
   }, [leaving, onDone])
   return (
