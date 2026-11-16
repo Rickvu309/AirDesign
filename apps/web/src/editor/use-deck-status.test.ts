@@ -11,6 +11,7 @@ const quiet = {
   offline: false,
   pending: false,
   aside: 0,
+  asideTooLarge: false,
   refusal: null,
 } as const
 
@@ -37,6 +38,11 @@ it("says which way undo changed nothing", () => {
 
 it("says when edits on this device were set aside", () => {
   expect(shownNotice({ ...quiet, aside: 1 })).toBe("set-aside")
+})
+
+it("says an edit set aside as too large was too large, not that the deck changed", () => {
+  expect(shownNotice({ ...quiet, aside: 1, asideTooLarge: true })).toBe("set-aside-too-large")
+  expect(shownNotice({ ...quiet, aside: 0, asideTooLarge: true })).toBe(null)
 })
 
 it("puts a failure before undo, undo before a picture, a picture before set-aside edits, and those before offline", () => {

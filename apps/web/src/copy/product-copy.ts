@@ -110,6 +110,8 @@ export const productCopy = {
   editsTooLarge:
     "Unable to save. These edits are larger than a deck allows, so they stay on this device. Export to keep a copy.",
   editsSetAside: "Unable to save some edits. The deck changed, so make them again if you need them.",
+  editSetAsideTooLarge:
+    "Unable to save an edit. It was too large to save, so an export of this deck does not include it.",
   editTooLarge: "Unable to save edits to this element. It is too large to send, so it stays as it was.",
   trashEmptyBody: "This can't be undone.",
   trashEmptyAction: "Delete for good",

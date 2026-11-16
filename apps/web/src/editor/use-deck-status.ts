@@ -32,16 +32,19 @@ export function useDeckStatus() {
   const [failure, setFailure] = useState<DeckFailure | null>(null)
   const [refused, setRefused] = useState(false)
   const [aside, setAside] = useState(0)
+  const [asideTooLarge, setAsideTooLarge] = useState(false)
   const [refusal, setRefusal] = useState<SaveRefusal | null>(null)
 
   const settle = useCallback((outcome: CommitOutcome) => {
     if (outcome === "sent") {
       setPending(false)
       setAside(0)
+      setAsideTooLarge(false)
     }
-    if (outcome === "set-aside") {
+    if (outcome === "set-aside" || outcome === "set-aside-too-large") {
       setPending(false)
       setAside((count) => count + 1)
+      setAsideTooLarge(outcome === "set-aside-too-large")
     }
     if (outcome === "offline") setPending(true)
     tellRefusal(outcome)
@@ -64,6 +67,7 @@ export function useDeckStatus() {
     refused,
     setRefused,
     aside,
+    asideTooLarge,
     refusal,
     settle,
     leftNetwork,
@@ -78,11 +82,13 @@ export function shownNotice(shown: {
   readonly offline: boolean
   readonly pending: boolean
   readonly aside: number
+  readonly asideTooLarge: boolean
   readonly refusal: SaveRefusal | null
 }): ThinNotice | null {
   const { failure, told, offline, pending } = shown
   const toldNotice: ThinNotice | null = told === null ? null : told === "undo" ? "undo-changed" : "redo-changed"
-  const asideNotice: ThinNotice | null = shown.aside > 0 ? "set-aside" : null
+  const asideNotice: ThinNotice | null =
+    shown.aside === 0 ? null : shown.asideTooLarge ? "set-aside-too-large" : "set-aside"
   const unsentNotice: ThinNotice | null = offline && pending ? (shown.online ? "unreached" : "offline") : null
   const refusedNotice: ThinNotice | null =
     pending && shown.refusal !== null ? (shown.refusal === "size" ? "too-large" : "storage-failed") : null
