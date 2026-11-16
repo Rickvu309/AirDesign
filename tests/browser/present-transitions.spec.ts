@@ -102,3 +102,17 @@ test("starting from the beginning skips a hidden first slide", async ({ page }) 
   await page.keyboard.press("F5")
   await expect(shown(page)).toHaveAttribute("data-present-slide", "2")
 })
+
+test("going back during a transition finishes on the previous slide", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" })
+  await presented(page)
+  await page.keyboard.press("ArrowRight")
+  await expect(leaving(page)).toHaveCount(1)
+  await shown(page).evaluate((node) => {
+    for (const animation of node.getAnimations({ subtree: true })) animation.pause()
+  })
+  await page.keyboard.press("ArrowLeft")
+  await expect(shown(page)).toHaveAttribute("data-present-slide", "2")
+  await expect(leaving(page)).toHaveCount(0)
+  expect(await shown(page).evaluate((node) => node.getAnimations({ subtree: true }).length)).toBe(0)
+})
