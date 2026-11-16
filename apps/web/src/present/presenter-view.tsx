@@ -39,7 +39,7 @@ export function PresenterView(props: PresenterViewProps) {
       data-presenter-view
       className="fixed inset-0 z-50 flex flex-col bg-ink text-[var(--white-80)]"
     >
-      <header className="grid h-14 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 border-b border-[var(--stage-hover)] px-4">
+      <header className="grid shrink-0 grid-cols-1 py-2 md:h-14 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:py-0 items-center gap-4 border-b border-[var(--stage-hover)] px-4">
         <div className="flex min-w-0 items-center gap-3">
           <span className="truncate text-[length:var(--type-dense)] font-medium text-[var(--white-88)]">
             {props.title}
@@ -72,7 +72,7 @@ export function PresenterView(props: PresenterViewProps) {
           <StageTextButton label={presentCopy.stop} {...on(props.onStop)} />
         </div>
       </header>
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] gap-8 p-6">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-auto p-4 md:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] md:gap-8 md:p-6">
         <section className="flex min-h-0 flex-col gap-2" data-present-current>
           <Caption>{presentCopy.current}</Caption>
           <FittedSlide index={props.at} size={props.size} paint={props.paint} top className="flex-1" />
