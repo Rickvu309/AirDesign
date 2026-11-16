@@ -10,8 +10,8 @@
     {
       "file": "packages/live/src/deck-edit.ts",
       "names": ["valueChange", "joins"],
-      "digest": "02d197351ed8",
-      "blob": "3838d3e755dab66c27ae42eaa6a893fe2dce2b6c"
+      "digest": "3b938f3e8cb8",
+      "blob": "df2b60c2099056df272ab95d0305d64105445355"
     },
     {
       "file": "packages/live/src/deck-view.ts",
@@ -23,7 +23,7 @@
       "file": "packages/live/src/held.ts",
       "names": ["sealRows"],
       "digest": "130395e867bc",
-      "blob": "78eb2cb1f22957e8c72173ed3c3bcf9539993593"
+      "blob": "ac9e4f141d0e7c66ddc80ba2182e77f900e4e822"
     }
   ]
 }

@@ -16,7 +16,9 @@ import {
 import {
   answeredRegister,
   appendIndex,
+  bytesOf,
   decide,
+  limits,
   openRegister,
   storedValue,
   type IndexPage,
@@ -94,6 +96,7 @@ export function memoryRemote(): Remote {
       return { ok: true, deck: parsed.deck, revision: stored.revision, register: answeredRegister(stored.register) }
     },
     async commit(body) {
+      if (bytesOf(JSON.stringify(body)) > limits.body) return { ok: false, refusal: "size" }
       const parsed = readCommit(body)
       if (!parsed.ok) return { ok: false, refusal: parsed.refusal }
       const stored = decks.get(parsed.deck)

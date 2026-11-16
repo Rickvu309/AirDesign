@@ -1,4 +1,4 @@
-import { readDeckId, type DeckId, type WireEdit, type WireSlide, type WireRefusal } from "@airdesign/catalog"
+import { readDeckId, type DeckId, type WireRefusal } from "@airdesign/catalog"
 import {
   currentBox,
   currentValue,
@@ -24,7 +24,8 @@ import { queueIndex, sendIndex } from "./deck-index.js"
 import { accountKey, markNewer, storeNewer } from "./device.js"
 import { rowsFromRegister, view, type DeckView, type LivePhase } from "./deck-view.js"
 import { slideChange, valueChange, type Enqueued } from "./deck-edit.js"
-import { changeHeld, heldView, sealRows, setAside, takeAside, writeDeckRows } from "./held.js"
+import { changeHeld, heldView, sealRows, setAside, takeAside, unsealRows, writeDeckRows } from "./held.js"
+import { bodyBytes, nextBatch, wireOf } from "./commit-body.js"
 import { refusedRows } from "./slide-replay.js"
 import { idleDays, markSeen, sweepIdle } from "./device-sweep.js"
 import {
@@ -61,14 +62,6 @@ export type FlushResult = CommitResult & { readonly aside?: number }
 export type EnqueueResult<Painted = string> =
   | { ok: true; readonly painted: Painted }
   | { ok: false; readonly refusal: WireRefusal }
-
-function wireOf(row: PendingRow): WireEdit | WireSlide {
-  const edit = row.slideEdit
-  if (edit !== undefined && row.slideFile !== undefined) return { ...edit, file: row.slideFile }
-  if (row.node === undefined) throw new Error("missing node")
-  if (row.floor === undefined) return { ...storedValue(row), node: row.node }
-  return { ...storedValue(row), node: row.node, floor: row.floor }
-}
 
 const flushing = new Map<string, Promise<unknown>>()
 type OpenOnceResult = { ok: true; index?: DeckIndex } | Extract<OpenResult, { ok: false }>
@@ -147,25 +140,28 @@ export function connect(remote: Remote, options: Options = {}) {
   }
 
   async function sendBatches(deck: DeckId, held: DeckView): Promise<CommitResult> {
-    const sending = unsent(held.pending, 0)
+    const sending = [...unsent(held.pending, 0)]
     let revision = held.confirmed.reduce((max, row) => Math.max(max, row.revision + 1), 0)
     let result: CommitResult = { ok: false, refusal: "batch" }
     for (let start = 0; start < sending.length;) {
       const first = sending[start]
       if (first === undefined) break
-      const planned: PendingRow[] = []
-      for (const row of sending.slice(start, start + limits.batch)) {
-        if (row.once !== first.once) break
-        planned.push(row)
-      }
       const once = first.once ?? nextOnce()
-      const rowsInBatch = await sealRows(
-        deck,
-        planned.map((row) => rowKey(deck, "pending", row.order)),
-        once,
-      )
+      const planned = nextBatch(deck, sending.slice(start), once)
+      const keys = planned.map((row) => rowKey(deck, "pending", row.order))
+      const rowsInBatch = await sealRows(deck, keys, once)
       if (rowsInBatch.length === 0) return result
       result = heard(await remote.commit({ deck, batch: rowsInBatch.map(wireOf), once }))
+      if (!result.ok && result.refusal === "size" && bodyBytes(deck, rowsInBatch, once) > limits.body) {
+        if (rowsInBatch.length === 1) {
+          await setAside(deck, rowsInBatch)
+          start += 1
+          continue
+        }
+        await unsealRows(deck, keys, once)
+        sending.splice(start, rowsInBatch.length, ...rowsInBatch.map(({ once: _sealed, ...open }) => open))
+        continue
+      }
       if (!result.ok) return result
       if (result.deck !== deck || result.key !== `${deck}:${result.revision}`) {
         return { ok: false, refusal: "payload" }

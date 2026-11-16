@@ -160,3 +160,28 @@ it("puts a refused box back and sends nothing", async () => {
   expect(order).toEqual(["refused"])
   expect(outcome).toBe("refused")
 })
+
+it("reports an edit too large to send as too-large, puts the element back and sends nothing", async () => {
+  let flushed = 0
+  let restored = 0
+  const outcome = await commitEdit(
+    () => ({
+      async enqueue() {
+        return { ok: false, refusal: "size" }
+      },
+      async flush() {
+        flushed += 1
+      },
+    }),
+    "any-deck",
+    "Hello!",
+    { id: elementId("256.2"), file: "Hello" },
+    undefined,
+    () => {
+      restored += 1
+    },
+  )
+  expect(outcome).toBe("too-large")
+  expect(flushed).toBe(0)
+  expect(restored).toBe(1)
+})
