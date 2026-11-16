@@ -1,6 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { parse } from "yaml"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -118,3 +119,41 @@ same(
   true,
 )
 same("the api deploys every commit, so no watch path can skip one", /watchPatterns/.test(railway), false)
+
+const journey = parse(fs.readFileSync(path.join(root, ".github/workflows/production-journey.yml"), "utf8"))
+const journeyJob = journey.jobs["production-journey"]
+const journeySteps = journeyJob.steps
+same("the production journey runs after each successful deploy and waits for the deployed commit", journey.on, {
+  workflow_dispatch: null,
+  workflow_run: { workflows: ["deploy"], types: ["completed"], branches: ["main"] },
+})
+same(
+  "the production journey runs only after a deploy that succeeded, or by hand",
+  journeyJob.if,
+  "github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'",
+)
+same("the production journey tests the deployed commit", journeySteps[0].with, {
+  ref: "${{ github.event.workflow_run.head_sha || github.sha }}",
+  "fetch-depth": 0,
+})
+const waitStep = journeySteps.findIndex((step) => (step.run ?? "").includes("scripts/production-commit.mjs"))
+same(
+  "the production journey waits until the API serves the deployed commit before it runs",
+  waitStep !== -1 && waitStep < journeySteps.findIndex((step) => step.run === "pnpm test:production"),
+  true,
+)
+same(
+  "the wait reads the deployed commit from its environment, not the event",
+  [journeySteps[waitStep].env?.WANTED, /\$\{\{/.test(journeySteps[waitStep].run)],
+  ["${{ github.event.workflow_run.head_sha || github.sha }}", false],
+)
+same("deploys in a row queue their journeys", journey.concurrency, {
+  group: "production-journey",
+  "cancel-in-progress": false,
+})
+const alarm = journeySteps.find((step) => (step.run ?? "").includes("red-main.sh"))
+same(
+  "a failed journey after a deploy opens or comments on its issue",
+  [alarm?.if, alarm?.env?.RED_TITLE, journey.permissions.issues],
+  ["failure() && github.event_name == 'workflow_run'", "production journey failed", "write"],
+)
