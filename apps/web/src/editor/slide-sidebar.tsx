@@ -541,13 +541,15 @@ function SectionHead({
   range?: string
   onToggle?: () => void
 }) {
-  const look = "flex h-8 items-center gap-2 px-2"
+  const look = "flex min-h-8 shrink-0 items-start gap-2 px-2 py-1.5"
   const body = (
     <>
-      <EditorIcon name={open ? "chev" : "chevr"} size={14} className="text-faint" />
-      <span className="min-w-0 truncate text-[length:var(--type-dense)] font-semibold text-foreground">{name}</span>
+      <EditorIcon name={open ? "chev" : "chevr"} size={14} className="mt-0.5 shrink-0 text-faint" />
+      <span className="min-w-0 text-[length:var(--type-dense)] leading-[var(--leading-dense)] font-semibold wrap-break-word text-foreground">
+        {name}
+      </span>
       {range ? (
-        <span className="flex h-5 shrink-0 items-center rounded-sm px-1.5 text-[length:var(--type-caption)] text-muted-foreground shadow-[0px_0px_0px_1px_var(--field-edge)]">
+        <span className="flex h-5 shrink-0 items-center rounded-sm px-1.5 text-[length:var(--type-caption)] whitespace-nowrap text-muted-foreground shadow-[0px_0px_0px_1px_var(--field-edge)]">
           {range}
         </span>
       ) : null}
