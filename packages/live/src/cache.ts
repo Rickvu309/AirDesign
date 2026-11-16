@@ -101,9 +101,9 @@ async function unlessNewer<Result>(work: () => Promise<Result>): Promise<Result 
   }
 }
 
-function heard<Answer extends OpenResult>(opened: Answer): Answer {
-  if (!opened.ok && opened.refusal === "newer") markNewer()
-  return opened
+function heard<Answer extends OpenResult | CommitResult>(answer: Answer): Answer {
+  if (!answer.ok && answer.refusal === "newer") markNewer()
+  return answer
 }
 
 const decided: ReadonlySet<string> = new Set(refusals)
@@ -165,7 +165,7 @@ export function connect(remote: Remote, options: Options = {}) {
         once,
       )
       if (rowsInBatch.length === 0) return result
-      result = await remote.commit({ deck, batch: rowsInBatch.map(wireOf), once })
+      result = heard(await remote.commit({ deck, batch: rowsInBatch.map(wireOf), once }))
       if (!result.ok) return result
       if (result.deck !== deck || result.key !== `${deck}:${result.revision}`) {
         return { ok: false, refusal: "payload" }

@@ -15,7 +15,9 @@ type BoxLink = FlushLink & {
 
 export const server = httpRemote()
 
-export type FlushOutcome = "sent" | "offline" | "signed-out" | "kept" | "set-aside"
+export type SaveRefusal = "storage" | "size"
+
+export type FlushOutcome = "sent" | "offline" | "signed-out" | "kept" | "set-aside" | SaveRefusal
 
 export type CommitOutcome = FlushOutcome | "refused"
 
@@ -26,6 +28,7 @@ export async function flushPending(open: (remote: Remote) => FlushLink, deckId: 
     if ("aside" in flushed && typeof flushed.aside === "number" && flushed.aside > 0) return "set-aside"
     if ("ok" in flushed && flushed.ok === true) return "sent"
     if ("refusal" in flushed && flushed.refusal === "session") return "signed-out"
+    if ("refusal" in flushed && (flushed.refusal === "storage" || flushed.refusal === "size")) return flushed.refusal
     return "kept"
   } catch (error) {
     return error instanceof TypeError ? "offline" : "kept"

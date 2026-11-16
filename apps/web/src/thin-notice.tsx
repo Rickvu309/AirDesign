@@ -20,6 +20,8 @@ export type ThinNotice =
   | "undo-changed"
   | "redo-changed"
   | "set-aside"
+  | "storage-failed"
+  | "too-large"
   | "newer"
 
 const noticeId = "thin-notice"
@@ -115,6 +117,8 @@ export function ThinNoticeView({
   if (notice === "offline") return <StatusNotice text={productCopy.editorOffline} />
   if (notice === "unreached") return <StatusNotice text={productCopy.editorUnreached} />
   if (notice === "set-aside") return <StatusNotice text={productCopy.editsSetAside} />
+  if (notice === "storage-failed") return <StatusNotice text={productCopy.storageFailed} />
+  if (notice === "too-large") return <StatusNotice text={productCopy.editsTooLarge} />
   if (notice === "undo-changed") return <StatusNotice text={undoCopy.undoChanged} />
   if (notice === "redo-changed") return <StatusNotice text={undoCopy.redoChanged} />
   if (notice === "picture-type" || notice === "picture-size" || notice === "picture-unread")

@@ -105,6 +105,10 @@ export const productCopy = {
   saving: "Saving…",
   savedOffline: "Offline, saved on this device",
   savedUnreached: "Unable to reach AirDesign",
+  unsaved: "Unable to save",
+  storageFailed: "Unable to save. AirDesign's storage failed, so edits are saved on this device. Reload to try again.",
+  editsTooLarge:
+    "Unable to save. These edits are larger than a deck allows, so they stay on this device. Export to keep a copy.",
   editsSetAside: "Unable to save some edits. The deck changed, so make them again if you need them.",
   trashEmptyBody: "This can't be undone.",
   trashEmptyAction: "Delete for good",
