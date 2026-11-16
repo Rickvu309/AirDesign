@@ -1,9 +1,9 @@
-import { boxPatch, type Box, type ElementId, type StackMove } from "@airdesign/document"
+import { boxPatch, type ElementId, type StackMove } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
-import { SlideCanvas, type Selection } from "@airdesign/render"
+import { SlideCanvas, type Moved, type Selection } from "@airdesign/render"
 import type { ReactNode } from "react"
 import { ArrangeMenu } from "@/editor/arrange-menu"
-import { commitBox, commitEdit, type CommitOutcome } from "@/commit-edit"
+import { commitBoxes, commitEdit, type CommitOutcome } from "@/commit-edit"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { changeDesign, endChange, type DesignDeck } from "@/design/design-change"
 import { valueFits } from "@/design/trait-edit"
@@ -94,30 +94,40 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
     return outcome
   }
 
-  async function onBox(target: ElementId, box: Box) {
-    async function refused() {
+  async function onBoxes(moved: readonly Moved[]) {
+    const opening = connect(memoryRemote()).openDeck(id)
+    async function refused(target: ElementId) {
       store.current.placeBox(target, landedBox(await deviceRegister(id), target))
     }
-    const element = movables.current.get(target)
-    if (element === undefined) {
-      await refused()
-      return
-    }
-    const opening = connect(memoryRemote()).openDeck(id)
-    const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
-    const outcome = await commitBox(
+    const boxes = moved.flatMap(({ id: target, box }) => {
+      const element = movables.current.get(target)
+      return element === undefined ? [] : [{ box, element }]
+    })
+    for (const { id: target } of moved) if (!movables.current.has(target)) await refused(target)
+    const outcome = await commitBoxes(
       connect,
       id,
-      box,
-      element,
-      async () => {
+      boxes,
+      async (kept) => {
         const opened = await opening
-        const before = shownBox(opened.ok ? opened.register : null, target, file)
         setPending(true)
-        const name = before === null ? null : boxName(before, box)
-        if (bound.current.has(target)) void deck.shown.showEdited(current)
-        if (before === null || name === null) return
-        record({ name, undoable: { steps: [{ node: target, before: boxPatch(before), after: boxPatch(box) }] } })
+        const steps = boxes.flatMap(({ box, element }) => {
+          const target = element.id
+          if (!kept.includes(target)) return []
+          if (bound.current.has(target)) void deck.shown.showEdited(current)
+          const file = shapes.current.get(target)?.box ?? paintedBox(canvases.current(current), target)
+          const before = shownBox(opened.ok ? opened.register : null, target, file)
+          const name = before === null ? null : boxName(before, box)
+          return before === null || name === null
+            ? []
+            : [{ name, step: { node: target, before: boxPatch(before), after: boxPatch(box) } }]
+        })
+        const [first] = steps
+        if (first === undefined) return
+        record({
+          name: steps.length > 1 ? "move" : first.name,
+          undoable: { steps: steps.map((each) => each.step) },
+        })
       },
       refused,
     )
@@ -154,9 +164,12 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
             entering={entering}
             formatting={formatting.current}
             notice={notice}
-            onBox={(target, box) => {
+            onBoxes={(moved) => {
               clear()
-              void holding([target], () => onBox(target, box))
+              void holding(
+                moved.map((each) => each.id),
+                () => onBoxes(moved),
+              )
             }}
             onOrder={order}
             selection={selection}

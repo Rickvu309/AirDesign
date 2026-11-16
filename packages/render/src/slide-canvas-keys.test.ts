@@ -71,7 +71,7 @@ async function mounted(removed: ElementId[] = [], removes = true) {
           store,
           slide,
           width: 800,
-          onBox: (_target: ElementId, box: Box) => boxes.push(box),
+          onBoxes: (moved: readonly { id: ElementId; box: Box }[]) => boxes.push(...moved.map(({ box }) => box)),
           onRemove: (targets: readonly ElementId[]) => {
             removed.push(...targets)
             if (removes) void paint([])
@@ -206,7 +206,7 @@ describe("canvas keyboard", () => {
           store,
           slide,
           width: 800,
-          onBox: () => undefined,
+          onBoxes: () => undefined,
           onOrder: order,
           notice: "Brought to front",
         }),
@@ -231,7 +231,7 @@ describe("canvas keyboard", () => {
           store,
           slide: { ...slide, elements: [{ ...shape, editable: true }] },
           width: 800,
-          onBox: () => undefined,
+          onBoxes: () => undefined,
           onEdit: () => undefined,
           onOrder: order,
         }),

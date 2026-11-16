@@ -71,21 +71,28 @@ export function commitEdit(
   return commitKept(open, deckId, kept, paint, refused)
 }
 
-export function commitBox(
+export type BoxCommit = { readonly box: Box; readonly element: TextBox }
+
+export async function commitBoxes(
   open: (remote: Remote) => BoxLink,
   deckId: string,
-  box: Box,
-  element: TextBox,
-  paint?: Paint,
-  refused?: () => Promise<void> | void,
+  boxes: readonly BoxCommit[],
+  paint: (kept: readonly ElementId[]) => Promise<void> | void,
+  refused: (node: ElementId) => Promise<void> | void,
 ): Promise<CommitOutcome> {
-  return commitKept(
-    open,
-    deckId,
-    open(memoryRemote()).enqueueBox(deckId, box, element.id, element.file),
-    paint,
-    refused,
-  )
+  const kept: ElementId[] = []
+  let refusal: CommitOutcome = "refused"
+  for (const { box, element } of boxes) {
+    const result = await open(memoryRemote()).enqueueBox(deckId, box, element.id, element.file)
+    if (result.ok) kept.push(element.id)
+    else {
+      if (result.refusal === "size") refusal = "too-large"
+      await refused(element.id)
+    }
+  }
+  if (kept.length === 0) return refusal
+  await paint(kept)
+  return flushPending(open, deckId)
 }
 
 export async function commitKept(

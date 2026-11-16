@@ -38,7 +38,7 @@ async function mounted(onSelection: (selection: Selection) => void): Promise<HTM
   hosts.push({ host, root })
   const slide = { width: 12_192_000, height: 6_858_000, background: null, elements: [element] }
   await act(async () => {
-    root.render(createElement(SlideCanvas, { store, slide, width: 800, onBox: () => undefined, onSelection }))
+    root.render(createElement(SlideCanvas, { store, slide, width: 800, onBoxes: () => undefined, onSelection }))
   })
   return host
 }

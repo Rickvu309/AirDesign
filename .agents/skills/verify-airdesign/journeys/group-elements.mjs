@@ -71,7 +71,7 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   }
   await element(4).click()
   await element(5).click({ modifiers: ["Shift"] })
-  await expect(canvas.locator("[data-chosen]")).toHaveCount(1)
+  await expect(canvas.locator("[data-chosen]")).toHaveCount(2)
   await page.keyboard.press("Control+g")
   await expect(status).toHaveText("Grouped")
   const group = (await saved()).register.order.at(-1)

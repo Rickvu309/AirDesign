@@ -63,7 +63,8 @@ async function mounted(
         store,
         slide,
         width,
-        onBox: (id: ElementId, box: unknown) => moved.push([id, box]),
+        onBoxes: (each: readonly { id: ElementId; box: unknown }[]) =>
+          moved.push(...each.map(({ id, box }) => [id, box] as [ElementId, unknown])),
         onConnect: (id: ElementId, end: string, to: Bound | Place) => bound.push([id, end, to]),
       }),
     )

@@ -5,23 +5,28 @@ import {
   emuOf,
   largeNudgeStep,
   minimumSide,
+  frameOf,
   movedBox,
+  movedBoxes,
   nudgedBox,
+  nudgedBoxes,
   nudgeStep,
   paintedAt,
   resizedBox,
   resizedByKey,
   type Corner,
-  type Drag,
+  type Pull,
 } from "./box-gesture.js"
 import type { PaintBox } from "./record.js"
 
 const wide = { width: 12_192_000, height: 6_858_000 }
 const start = { x: 457_200, y: 457_200, cx: 5_486_400, cy: 1_828_800 }
 const id = elementId("256.2")
+const other = elementId("256.3")
+const beside = { ...start, x: 6_400_800, y: 3_200_400 }
 
-function pressed(grip: Drag["grip"], from = { x: 100, y: 100 }): Drag {
-  return { by: "pointer", id, grip, pointer: 1, from, start, moved: true }
+function pressed(grip: Pull["grip"], from = { x: 100, y: 100 }): Pull {
+  return { grip, from, start }
 }
 
 describe("emuOf", () => {
@@ -260,5 +265,34 @@ describe("paintedAt", () => {
       flipH: false,
       flipV: false,
     })
+  })
+})
+
+describe("movedBoxes", () => {
+  it("moves every box by one distance and stops them all where their frame meets the slide's edge", () => {
+    const starts = new Map([
+      [id, start],
+      [other, beside],
+    ])
+    const frame = frameOf([start, beside])
+    expect(frame).toEqual({ x: 457_200, y: 457_200, cx: 11_430_000, cy: 4_572_000 })
+    const moved = movedBoxes(starts, 50_000_000, 127_000, wide)
+    const across = (moved.get(id)?.x ?? 0) - start.x
+    expect(moved.get(other)).toEqual({ ...beside, x: beside.x + across, y: beside.y + 127_000 })
+    expect(moved.get(id)).toEqual({ ...start, x: start.x + across, y: start.y + 127_000 })
+    expect(movedBox(frame ?? start, 50_000_000, 127_000, wide).x).toBe(start.x + across)
+  })
+
+  it("nudges every box with the arrows, ten times as far with Shift", () => {
+    const starts = new Map([
+      [id, start],
+      [other, beside],
+    ])
+    expect(nudgedBoxes(starts, "ArrowLeft", true, wide)?.get(other)).toEqual({
+      ...beside,
+      x: beside.x - largeNudgeStep,
+    })
+    expect(nudgedBoxes(starts, "ArrowDown", false, wide)?.get(id)).toEqual({ ...start, y: start.y + nudgeStep })
+    expect(nudgedBoxes(starts, "Enter", false, wide)).toBeNull()
   })
 })

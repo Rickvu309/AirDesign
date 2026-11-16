@@ -54,7 +54,7 @@ async function mounted(elements: readonly CanvasElement[], entering: ElementId |
         width: 800,
         entering: entering === null ? null : { id: entering },
         onEdit: () => undefined,
-        onBox: () => undefined,
+        onBoxes: () => undefined,
         onRemove: (targets: readonly ElementId[]) => removed.push(targets),
       }),
     )

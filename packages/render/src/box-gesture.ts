@@ -7,22 +7,36 @@ export type Grip = "move" | Corner
 
 export type Point = { readonly x: number; readonly y: number }
 
+export type Pull = {
+  readonly grip: Grip
+  readonly from: Point
+  readonly start: Box
+  readonly keepRatio?: boolean
+  readonly rotation?: number
+}
+
 export type Drag = {
   readonly by: "pointer"
-  readonly id: ElementId
+  readonly ids: readonly ElementId[]
   readonly grip: Grip
   readonly pointer: number
   readonly from: Point
-  readonly start: Box
+  readonly starts: ReadonlyMap<ElementId, Box>
   readonly moved: boolean
   readonly keepRatio?: boolean
   readonly rotation?: number
   readonly enter?: ElementId
 }
 
-export type Nudge = { readonly by: "keys"; readonly id: ElementId; readonly start: Box }
+export type Nudge = {
+  readonly by: "keys"
+  readonly ids: readonly ElementId[]
+  readonly starts: ReadonlyMap<ElementId, Box>
+}
 
-export type Gesture = Drag | Nudge
+export type Held = Drag | Nudge
+
+export type Moved = { readonly id: ElementId; readonly box: Box }
 
 export type SlideSize = { readonly width: number; readonly height: number }
 
@@ -113,6 +127,29 @@ export function resizedBox(start: Box, corner: Corner, dx: number, dy: number, k
   return turnedResize(start, corner, Math.round(own.x), Math.round(own.y), keepRatio, rotation)
 }
 
+export function frameOf(boxes: readonly Box[]): Box | null {
+  if (boxes.length === 0) return null
+  const left = Math.min(...boxes.map((box) => box.x))
+  const top = Math.min(...boxes.map((box) => box.y))
+  const right = Math.max(...boxes.map((box) => box.x + box.cx))
+  const bottom = Math.max(...boxes.map((box) => box.y + box.cy))
+  return { x: left, y: top, cx: right - left, cy: bottom - top }
+}
+
+export function movedBoxes(
+  starts: ReadonlyMap<ElementId, Box>,
+  dx: number,
+  dy: number,
+  slide: SlideSize,
+): ReadonlyMap<ElementId, Box> {
+  const frame = frameOf([...starts.values()])
+  if (frame === null) return starts
+  const placedFrame = movedBox(frame, dx, dy, slide)
+  const across = placedFrame.x - frame.x
+  const down = placedFrame.y - frame.y
+  return new Map([...starts].map(([id, start]) => [id, { ...start, x: start.x + across, y: start.y + down }]))
+}
+
 export function isArrow(key: string): boolean {
   return arrows.has(key)
 }
@@ -124,18 +161,42 @@ export function nudgedBox(start: Box, key: string, large: boolean, slide: SlideS
   return movedBox(start, arrow.x * step, arrow.y * step, slide)
 }
 
+export function nudgedBoxes(
+  starts: ReadonlyMap<ElementId, Box>,
+  key: string,
+  large: boolean,
+  slide: SlideSize,
+): ReadonlyMap<ElementId, Box> | null {
+  const arrow = arrows.get(key)
+  if (arrow === undefined) return null
+  const step = large ? largeNudgeStep : nudgeStep
+  return movedBoxes(starts, arrow.x * step, arrow.y * step, slide)
+}
+
 export function resizedByKey(start: Box, key: string, rotation = 0): Box | null {
   const arrow = arrows.get(key)
   if (arrow === undefined) return null
   return turnedResize(start, "bottom-right", arrow.x * nudgeStep, arrow.y * nudgeStep, false, rotation)
 }
 
-export function draggedBox(gesture: Drag, at: Point, width: number, slide: SlideSize): Box {
+export function draggedBox(gesture: Pull, at: Point, width: number, slide: SlideSize): Box {
   const dx = emuOf(at.x - gesture.from.x, width, slide)
   const dy = emuOf(at.y - gesture.from.y, width, slide)
   return gesture.grip === "move"
     ? movedBox(gesture.start, dx, dy, slide)
     : resizedBox(gesture.start, gesture.grip, dx, dy, gesture.keepRatio === true, gesture.rotation ?? 0)
+}
+
+export function draggedBoxes(drag: Drag, at: Point, width: number, slide: SlideSize): ReadonlyMap<ElementId, Box> {
+  if (drag.grip === "move") {
+    const dx = emuOf(at.x - drag.from.x, width, slide)
+    const dy = emuOf(at.y - drag.from.y, width, slide)
+    return movedBoxes(drag.starts, dx, dy, slide)
+  }
+  const [id] = drag.ids
+  const start = id === undefined ? undefined : drag.starts.get(id)
+  if (id === undefined || start === undefined) return new Map()
+  return new Map([[id, draggedBox({ ...drag, start }, at, width, slide)]])
 }
 
 export function travelled(from: Point, at: Point): boolean {

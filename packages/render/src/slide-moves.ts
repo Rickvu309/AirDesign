@@ -10,15 +10,16 @@ import {
 } from "react"
 import {
   boxOf,
-  draggedBox,
+  draggedBoxes,
   isArrow,
-  nudgedBox,
+  nudgedBoxes,
   resizedByKey,
   sameBox,
   travelled,
   type Drag,
-  type Gesture,
   type Grip,
+  type Held,
+  type Moved,
 } from "./box-gesture.js"
 import { gestureFor } from "./gestures.js"
 import { typeHeld } from "./held-keys.js"
@@ -107,7 +108,7 @@ export function useMoves(
   store: PaintStore,
   size: CanvasSlide,
   width: number,
-  onBox: ((id: ElementId, box: Box) => void) | undefined,
+  onBoxes: ((moved: readonly Moved[]) => void) | undefined,
   onRemove?: (ids: readonly ElementId[]) => void,
   onOrder?: (id: ElementId, move: StackMove) => void,
   picking?: Picking,
@@ -126,11 +127,23 @@ export function useMoves(
   }, [given, selection, onSelection])
   const [message, setMessage] = useState("")
   const keyed = useRef({ verb: "", label: "" })
-  const held = useRef<Gesture | null>(null)
-  const grip = useRef<BoxGrip | null>(null)
+  const held = useRef<Held | null>(null)
+  const grips = useRef(new Map<ElementId, BoxGrip>())
   const cancelling = useRef<(() => void) | null>(null)
   const pressedFrame = useRef<HTMLElement | null>(null)
-  useEffect(() => () => letGo(false), [])
+  useEffect(() => () => letGo([]), [])
+  useLayoutEffect(() => {
+    const now = held.current
+    if (now === null) return
+    const shown = now.ids.filter((id) => size.elements.some((each) => each.id === id))
+    if (shown.length === now.ids.length) return
+    for (const id of now.ids.filter((each) => !shown.includes(each))) {
+      grips.current.get(id)?.release()
+      grips.current.delete(id)
+    }
+    const starts = new Map([...now.starts].filter(([id]) => shown.includes(id)))
+    held.current = { ...now, ids: shown, starts }
+  }, [size])
 
   function elementOf(id: ElementId | null | undefined): CanvasElement | undefined {
     return id === undefined || id === null ? undefined : size.elements.find((each) => each.id === id)
@@ -156,23 +169,47 @@ export function useMoves(
     return store.getBox(element.id) ?? (element.box === null ? null : boxOf(element.box))
   }
 
-  function hold(next: Gesture) {
+  function hold(next: Held) {
     held.current = next
-    grip.current = store.gripBox(next.id)
+    grips.current = new Map(next.ids.map((id) => [id, store.gripBox(id)]))
   }
 
-  function letGo(changed: boolean) {
+  function place(boxes: ReadonlyMap<ElementId, Box>) {
+    for (const [id, box] of boxes) grips.current.get(id)?.place(box)
+  }
+
+  function letGo(changed: readonly ElementId[]) {
     held.current = null
-    if (changed) grip.current?.keep()
-    else grip.current?.release()
-    grip.current = null
+    for (const [id, grip] of grips.current) {
+      if (changed.includes(id)) grip.keep()
+      else grip.release()
+    }
+    grips.current = new Map()
   }
 
-  function finish(done: Gesture) {
-    const box = store.getBox(done.id)
-    const changed = box !== null && !sameBox(box, done.start)
-    letGo(changed)
-    if (changed) onBox?.(done.id, box)
+  function finish(done: Held) {
+    const moved = done.ids.flatMap((id): Moved[] => {
+      const box = store.getBox(id)
+      const start = done.starts.get(id)
+      return box === null || start === undefined || sameBox(box, start) ? [] : [{ id, box }]
+    })
+    letGo(moved.map((each) => each.id))
+    if (moved.length > 0) onBoxes?.(moved)
+  }
+
+  function startsOf(ids: readonly ElementId[]): ReadonlyMap<ElementId, Box> {
+    return new Map(
+      ids.flatMap((id): [ElementId, Box][] => {
+        const element = elementOf(id)
+        const start = element === undefined || !canDrag(element) ? null : startOf(element)
+        return start === null ? [] : [[id, start]]
+      }),
+    )
+  }
+
+  function movingWith(id: ElementId): readonly ElementId[] {
+    const ids = latest.current.ids
+    return ids.length > 1 && ids.includes(id) ? [id, ...ids.filter((each) => each !== id)] : [id]
   }
 
   function follow(pressed: Drag, document: Document) {
@@ -182,7 +219,7 @@ export function useMoves(
       const at = { x: event.clientX, y: event.clientY }
       if (!now.moved && !travelled(now.from, at)) return
       held.current = { ...now, moved: true }
-      grip.current?.place(draggedBox(now, at, width, size))
+      place(draggedBoxes(now, at, width, size))
     }
     function stop() {
       document.removeEventListener("pointermove", move)
@@ -192,14 +229,16 @@ export function useMoves(
     }
     function cancel() {
       stop()
-      letGo(false)
+      letGo([])
     }
     function end(event: globalThis.PointerEvent) {
       if (event.pointerId !== pressed.pointer) return
       stop()
       const now = held.current
       if (now !== null) finish(now)
-      if (now?.by === "pointer" && !now.moved && now.enter !== undefined) entered(now)
+      if (now?.by !== "pointer" || now.moved) return
+      if (now.enter !== undefined) entered(now)
+      else if (now.ids.length > 1 && now.ids[0] !== undefined) choose(alone(size, now.ids[0]))
     }
     function lost(event: globalThis.PointerEvent) {
       if (event.pointerId === pressed.pointer) cancel()
@@ -219,19 +258,20 @@ export function useMoves(
     event.preventDefault()
     pressedFrame.current = frame
     frame.focus()
-    choose(alone(size, id))
-    const start = startOf(element)
-    if (start === null || !canDrag(element)) return
+    const ids = grip === "move" ? movingWith(id) : [id]
+    if (ids.length === 1) choose(alone(size, id))
+    const starts = startsOf(ids)
+    if (!starts.has(id)) return
     const from = { x: event.clientX, y: event.clientY }
     const keepRatio = element.kind === "picture"
     const rotation = element.box?.rotation ?? 0
     const drag: Drag = {
       by: "pointer",
-      id,
+      ids: ids.filter((each) => starts.has(each)),
       grip,
       pointer: event.pointerId,
       from,
-      start,
+      starts,
       moved: false,
       keepRatio,
       rotation,
@@ -319,24 +359,28 @@ export function useMoves(
       onRemove(removable)
       return
     }
-    const start = startOf(element)
-    if (start === null || !canDrag(element) || now?.by === "pointer") return
+    if (now?.by === "pointer") return
+    const ids = now?.by === "keys" ? now.ids : movingWith(id)
     if (gesture === "resize-keys") {
+      const start = startOf(element)
+      if (ids.length > 1 || start === null || !canDrag(element)) return
       const grown = resizedByKey(start, event.key, element.box?.rotation ?? 0)
       if (grown === null) return
       event.preventDefault()
-      if (now === null) hold({ by: "keys", id, start })
+      if (now === null) hold({ by: "keys", ids, starts: new Map([[id, start]]) })
       keyed.current = { verb: "Resized", label: frame.getAttribute("aria-label") ?? "" }
-      grip.current?.place(grown)
+      place(new Map([[id, grown]]))
       return
     }
     if (gesture !== "nudge" && gesture !== "nudge-far") return
-    const next = nudgedBox(start, event.key, gesture === "nudge-far", size)
-    if (next === null) return
+    const starts = startsOf(ids)
+    const next = nudgedBoxes(starts, event.key, gesture === "nudge-far", size)
+    if (next === null || starts.size === 0) return
     event.preventDefault()
-    if (now === null) hold({ by: "keys", id, start })
-    keyed.current = { verb: "Moved", label: frame.getAttribute("aria-label") ?? "" }
-    grip.current?.place(next)
+    if (now === null) hold({ by: "keys", ids: [...starts.keys()], starts })
+    const label = starts.size > 1 ? `${String(starts.size)} elements` : (frame.getAttribute("aria-label") ?? "")
+    keyed.current = { verb: "Moved", label }
+    place(next)
   }
 
   const slide = {
