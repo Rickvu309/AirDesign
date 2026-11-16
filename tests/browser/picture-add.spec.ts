@@ -134,3 +134,34 @@ test("Undo takes back an added picture and Redo paints it again, through a reloa
   await settled(page)
   await painted(picture)
 })
+
+test("a picture added to a new title slide lands clear of the empty title and subtitle", async ({ page }) => {
+  await page.goto("/")
+  await newBlankDeck(page)
+  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  await settled(page)
+  const placeholders = page.locator("[data-slide-paint] [data-canvas-element]")
+  await expect(placeholders).toHaveCount(2)
+  const empty = await placeholders.evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const box = node.getBoundingClientRect()
+      return { left: box.left, top: box.top, right: box.right, bottom: box.bottom }
+    }),
+  )
+  const choosing = page.waitForEvent("filechooser")
+  await page.getByRole("button", { name: "Add picture", exact: true }).click()
+  await (await choosing).setFiles(pictureFile)
+  const picture = page.locator(`[data-canvas-element="${pictureKey}"]`)
+  await painted(picture)
+  const placed = await picture.boundingBox()
+  if (placed === null) throw new Error("no picture box")
+  expect(placed.width / placed.height).toBeCloseTo(1.5, 1)
+  for (const held of empty) {
+    const crossing =
+      placed.x < held.right &&
+      held.left < placed.x + placed.width &&
+      placed.y < held.bottom &&
+      held.top < placed.y + placed.height
+    expect(crossing).toBe(false)
+  }
+})

@@ -81,7 +81,7 @@ export {
   type Refusal,
 } from "./decide.js"
 export { coordinates, readBox, type Box } from "./box.js"
-export { placeNewBox } from "./box-placement.js"
+export { fitNewBox, placeNewBox } from "./box-placement.js"
 export { storedValue, valueBytes, type FormatOneValue, type Value } from "./value.js"
 export {
   namedFields,

@@ -34,6 +34,7 @@ const noText: CanvasText = {
 export type ElementPaintProps = {
   readonly store: PaintStore
   readonly element: CanvasElement
+  readonly slideHeight: number
   readonly scaled: Scaled
   readonly quiet: boolean
   readonly onEdit?: ((id: ElementId, value: string, kind: TextEditKind) => void) | undefined

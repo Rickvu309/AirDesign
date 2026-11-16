@@ -58,6 +58,24 @@ it("places a picture in the same clear space as a text box or a table, away from
   expect(placed.y).toBeGreaterThanOrEqual(slide.height / 2)
 })
 
+it("places a picture on a new title slide clear of the empty title and subtitle, smaller and at its ratio", () => {
+  const box = (y: number) => ({
+    x: 914_400,
+    y,
+    width: 10_363_200,
+    height: 1_371_600,
+    rotation: 0,
+    flipH: false,
+    flipV: false,
+  })
+  const title = box(1_828_800)
+  const subtitle = box(3_429_000)
+  const placed = placedPicture({ width: 480, height: 320 }, { ...slide, elements: [{ box: title }, { box: subtitle }] })
+  expect(placed.y).toBeGreaterThanOrEqual(subtitle.y + subtitle.height)
+  expect(placed.y + placed.cy).toBeLessThanOrEqual(slide.height)
+  expect(placed.cx / placed.cy).toBeCloseTo(1.5, 2)
+})
+
 it("adds the picture under the next free id with its hash and media type, and export refuses it until its bytes are here", () => {
   const parts = onSlide(xml(twoBoxSlide))
   parts.set(

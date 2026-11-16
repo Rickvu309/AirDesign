@@ -172,6 +172,7 @@ export function TableEdit(props: {
   readonly element: CanvasElement
   readonly id: ElementId
   readonly table: CanvasTable
+  readonly slideHeight: number
   readonly scaled: Scaled
   readonly moves: Moves
   readonly onTable: (id: ElementId, change: TableChange) => void
@@ -185,6 +186,7 @@ export function TableEdit(props: {
   const pending = useRef<Spot | null>(null)
   const frame = useRef<HTMLDivElement>(null)
   const box = paintedAt(element.box, useBox(props.store, id))
+  const barBelow = box !== null && box.y + box.height / 2 > props.slideHeight / 2
 
   useEffect(() => {
     const wanted = pending.current
@@ -278,7 +280,14 @@ export function TableEdit(props: {
         {props.bar === undefined || shown === null ? null : (
           <div
             data-table-bar
-            style={{ position: "absolute", left: 0, bottom: "100%", paddingBottom: "var(--space-8)", cursor: "auto" }}
+            style={{
+              position: "absolute",
+              left: 0,
+              cursor: "auto",
+              ...(barBelow
+                ? { top: "100%", paddingTop: "var(--space-8)" }
+                : { bottom: "100%", paddingBottom: "var(--space-8)" }),
+            }}
             onPointerDown={(event) => event.stopPropagation()}
           >
             {props.bar({
@@ -310,6 +319,7 @@ export function TablePaint(props: ElementPaintProps) {
         moves={moves}
         onTable={onTable}
         scaled={scaled}
+        slideHeight={props.slideHeight}
         store={props.store}
         table={element.table}
       />

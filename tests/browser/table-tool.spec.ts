@@ -79,3 +79,32 @@ test("pointing at a size shows it, and a click inserts it", async ({ page }) => 
   await expect(rows).toHaveCount(2)
   await expect(rows.first().locator("[data-table-cell]")).toHaveCount(5)
 })
+
+test("a table added to a new title slide and its row and column bar stay clear of the empty title and subtitle", async ({
+  page,
+}) => {
+  await openBlank(page)
+  const placeholders = page.locator("[data-slide-paint] [data-canvas-element]")
+  await expect(placeholders).toHaveCount(2)
+  const empty = await placeholders.evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const box = node.getBoundingClientRect()
+      return { left: box.left, top: box.top, right: box.right, bottom: box.bottom }
+    }),
+  )
+  await page.getByRole("button", { name: "Insert table", exact: true }).click()
+  await page.getByRole("button", { name: "3 rows, 3 columns", exact: true }).click()
+  const table = page.locator("[data-slide-paint] [data-canvas-table]")
+  await expect(table.locator('[data-table-text="0.0"]')).toBeFocused()
+  const bar = page.locator("[data-table-bar]")
+  await expect(bar).toBeVisible()
+  for (const part of [table, bar.getByRole("toolbar", { name: "Table rows", exact: true })]) {
+    const box = await part.boundingBox()
+    if (box === null) throw new Error("no box")
+    for (const held of empty) {
+      const crossing =
+        box.x < held.right && held.left < box.x + box.width && box.y < held.bottom && held.top < box.y + box.height
+      expect(crossing).toBe(false)
+    }
+  }
+})

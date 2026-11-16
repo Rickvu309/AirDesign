@@ -1,7 +1,7 @@
 import {
+  fitNewBox,
   limits,
   nextElementId,
-  placeNewBox,
   readSlideId,
   slideUndoable,
   type Box,
@@ -64,7 +64,7 @@ export function placedPicture(natural: { readonly width: number; readonly height
   const scale = Math.min(1, (slide.width * margin) / width, (slide.height * margin) / height)
   const cx = Math.max(1, Math.round(width * scale))
   const cy = Math.max(1, Math.round(height * scale))
-  return placeNewBox(slide, takenBoxes(slide), { cx, cy })
+  return fitNewBox(slide, takenBoxes(slide), { cx, cy })
 }
 
 export type AddedSource = { readonly media: Media } | { readonly icon: string }
@@ -90,7 +90,7 @@ export function pictureCommand(
 export const iconSide = 914_400
 
 export function placedIcon(slide: SlideRoom): Box {
-  return placeNewBox(slide, takenBoxes(slide), { cx: iconSide, cy: iconSide })
+  return fitNewBox(slide, takenBoxes(slide), { cx: iconSide, cy: iconSide })
 }
 
 export async function readPicture(file: Blob): Promise<PictureFile | PictureRefusal> {
