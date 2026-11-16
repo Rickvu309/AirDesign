@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import type { SlideSize } from "@/editor/canvas-zoom"
 import { presentCopy } from "@/copy/present-copy"
 import { clockText } from "@/present/present-clock"
+import { focusOnOpen } from "@/present/present-focus"
 import { EndOfDeck } from "@/present/present-show"
 import { FittedSlide, StageButton, StageTextButton, type SlidePaint } from "@/present/present-stage"
 
@@ -37,7 +38,9 @@ export function PresenterView(props: PresenterViewProps) {
     <section
       aria-label={presentCopy.presenter}
       data-presenter-view
-      className="fixed inset-0 z-50 flex flex-col bg-ink text-[var(--white-80)]"
+      tabIndex={-1}
+      ref={focusOnOpen}
+      className="fixed inset-0 z-50 flex flex-col bg-ink outline-none text-[var(--white-80)]"
     >
       <header className="grid shrink-0 grid-cols-1 py-2 md:h-14 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:py-0 items-center gap-4 border-b border-[var(--stage-hover)] px-4">
         <div className="flex min-w-0 items-center gap-3">
