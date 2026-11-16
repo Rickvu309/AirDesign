@@ -89,6 +89,27 @@ describe("slide grid", () => {
     expect(html).toContain('data-slide-list="true"')
   })
 
+  it("counts the slides of each section beside its name", () => {
+    const html = grid()
+    expect(html).toMatch(/>Opening<\/h2><span[^>]*>2 slides</)
+    expect(html).toMatch(/>Results<\/h2><span[^>]*>2 slides</)
+    expect(grid({ count: 3 })).toMatch(/>Results<\/h2><span[^>]*>1 slide</)
+  })
+
+  it("puts each slide's number under its thumbnail, not over the slide", () => {
+    const html = grid()
+    const entries = tags(html, /<button[^>]*data-slide-entry="\d"[^>]*>[\s\S]*?<\/button>/g)
+    expect(entries).toHaveLength(4)
+    for (const entry of entries) expect(entry).not.toMatch(/>\d<\/span>/)
+    expect(html).toMatch(/<\/button><span[^>]*data-slide-number[^>]*>3<\/span>/)
+  })
+
+  it("offers a zoom that sets how many slides fit in a row", () => {
+    const html = grid()
+    expect(html).toContain("data-grid-zoom")
+    expect(html).not.toContain(">23%<")
+  })
+
   it("offers to add a slide after each one", () => {
     const html = grid()
     expect(html).toContain('aria-label="Add slide after slide 1"')

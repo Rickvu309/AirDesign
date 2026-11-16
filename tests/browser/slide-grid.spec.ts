@@ -137,7 +137,7 @@ test("the grid shows every slide, and the keyboard opens one", async ({ page }) 
   await expect(entry(page, 1)).toHaveAccessibleName("Slide 1 of 2")
   await expect(entry(page, 2)).toHaveAccessibleName("Slide 2 of 2")
   await expect(page.getByRole("button", { name: "Grid" })).toHaveAttribute("aria-pressed", "true")
-  await expect(page.getByText("23%", { exact: true })).toBeVisible()
+  await expect(page.getByRole("slider", { name: "Zoom" })).toHaveAttribute("aria-valuetext", "4 slides per row")
   const motions = await page
     .locator("[data-editor-grid]")
     .evaluate((root) =>
@@ -222,6 +222,63 @@ test("a 50-slide deck paints grid thumbnails as they come into view", async ({ p
   const list = await page.locator("[data-editor-grid] [data-slide-list]").innerText()
   expect(list).toContain(mark(1, fifty))
   expect(list).not.toContain(mark(fifty, fifty))
+})
+
+async function perRow(page: Page): Promise<number> {
+  return page.locator("[data-editor-grid] [data-slide-entry]").evaluateAll((entries) => {
+    const tops = entries.map((entry) => Math.round(entry.getBoundingClientRect().top))
+    return tops.filter((top) => top === tops[0]).length
+  })
+}
+
+test("the grid fills the window, zooms with the keyboard and the slider, and keeps the zoom for the deck", async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await openFile(page, {
+    name: "fifty.pptx",
+    mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    buffer: await manySlides(fifty),
+  })
+  await openGrid(page)
+  const zoom = page.getByRole("slider", { name: "Zoom" })
+  expect(await perRow(page)).toBe(4)
+  const list = page.locator("[data-editor-grid] [data-slide-list]")
+  const room = await list.evaluate((element) => {
+    const first = element.querySelector('[data-slide-entry="1"]')?.getBoundingClientRect()
+    const fourth = element.querySelector('[data-slide-entry="4"]')?.getBoundingClientRect()
+    const box = element.getBoundingClientRect()
+    return {
+      left: Math.round((first?.left ?? 0) - box.left),
+      right: Math.round(box.left + element.clientWidth - (fourth?.right ?? 0)),
+      overflow: element.scrollWidth - element.clientWidth,
+    }
+  })
+  expect(room.left).toBe(48)
+  expect(room.right).toBeGreaterThanOrEqual(48)
+  expect(room.right).toBeLessThanOrEqual(48 + 4)
+  expect(room.overflow).toBe(0)
+  await page.setViewportSize({ width: 1920, height: 923 })
+  await expect.poll(() => perRow(page)).toBe(5)
+  await page.setViewportSize({ width: 1470, height: 923 })
+  await expect.poll(() => perRow(page)).toBe(4)
+  await entry(page, 1).focus()
+  await page.keyboard.press("ControlOrMeta+Equal")
+  await expect.poll(() => perRow(page)).toBe(3)
+  await expect(zoom).toHaveAttribute("aria-valuetext", "3 slides per row")
+  await page.keyboard.press("ControlOrMeta+Minus")
+  await page.keyboard.press("ControlOrMeta+Minus")
+  await expect.poll(() => perRow(page)).toBe(5)
+  await zoom.focus()
+  await page.keyboard.press("ArrowLeft")
+  await expect.poll(() => perRow(page)).toBe(7)
+  await page.reload()
+  await settled(page)
+  await openGrid(page)
+  await expect.poll(() => perRow(page)).toBe(7)
+  await entry(page, 1).focus()
+  await page.keyboard.press("ControlOrMeta+0")
+  await expect.poll(() => perRow(page)).toBe(4)
 })
 
 test("a 100-slide deck is refused before it opens", async ({ page }) => {

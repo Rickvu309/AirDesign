@@ -35,6 +35,7 @@ const shownSize = { rows: 4, columns: 3 }
 export type EditorRail = "slides" | "images" | "shapes" | "text"
 
 export type EditorDeck = {
+  readonly id?: string
   readonly slides: SlideStrip
   readonly size: SlideSize | null
   readonly slide: (width: number) => ReactNode
@@ -106,6 +107,7 @@ export function EditorShell({
   if (deck !== undefined && gridOpen) {
     return (
       <EditorGrid
+        id={deck.id ?? null}
         title={title}
         strip={deck.slides}
         size={size}

@@ -1,4 +1,13 @@
+const plural = new Intl.PluralRules("en")
+
+function slidesOf(count: number): string {
+  return plural.select(count) === "one" ? `${String(count)} slide` : `${String(count)} slides`
+}
+
 export const slideListCopy = {
+  sectionCount: slidesOf,
+  zoom: "Zoom",
+  perRow: (count: number) => `${slidesOf(count)} per row`,
   listName: "Slides",
   slideName: (number: number, count: number) => `Slide ${String(number)} of ${String(count)}`,
   added: (number: number) => `Added slide ${String(number)}`,
