@@ -33,3 +33,27 @@ export function zoomPercent(width: number, slide: SlideSize): number {
   if (slide.width <= 0) return 100
   return Math.round((width * emuPerPixel * 100) / slide.width)
 }
+
+export type ZoomKey = "in" | "out" | "fit"
+
+export function zoomKey(event: {
+  readonly key: string
+  readonly metaKey: boolean
+  readonly ctrlKey: boolean
+  readonly altKey: boolean
+  readonly shiftKey: boolean
+  readonly field: boolean
+}): ZoomKey | null {
+  if (event.field || event.altKey || !(event.metaKey || event.ctrlKey)) return null
+  if (event.key === "=" || event.key === "+") return "in"
+  if (event.key === "-" || event.key === "_") return "out"
+  if (event.key === "0") return "fit"
+  return null
+}
+
+export function steppedZoom(direction: "in" | "out", percent: number): Zoom {
+  const first = zoomSteps[0]
+  const last = zoomSteps[zoomSteps.length - 1] ?? first
+  if (direction === "in") return zoomSteps.find((step) => step > percent) ?? last
+  return [...zoomSteps].reverse().find((step) => step < percent) ?? first
+}

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { BrowseHeader } from "@/decks/browse-header"
+import type { NewDeckActions } from "@/decks/new-deck-menu"
 import { DecksShell } from "@/decks/decks-shell"
 import type { DeckSection } from "@/decks/deck-routes"
 
@@ -9,15 +10,13 @@ export function DeckBrowser({
   view,
   scope,
   firstVisit = false,
-  menu,
+  newDeck,
   trailing,
   children,
   account,
   links,
-  onNewDeck,
   onSignOut,
   onNavigate,
-  menuOpen,
   search,
   starred,
 }: {
@@ -26,15 +25,13 @@ export function DeckBrowser({
   view?: "grid" | "list"
   scope?: "recents" | "all"
   firstVisit?: boolean
-  menu?: ReactNode
+  newDeck?: NewDeckActions
   trailing?: ReactNode
   children: ReactNode
   account?: { email: string }
   links?: { grid: string; list: string }
-  onNewDeck?: () => void
   onSignOut?: () => void
   onNavigate?: (path: string) => void
-  menuOpen?: boolean
   search?: { value: string; onChange: (value: string) => void }
   starred?: readonly { readonly deck: string; readonly name: string }[]
 }) {
@@ -53,12 +50,10 @@ export function DeckBrowser({
           title={title}
           view={view}
           scope={scope}
-          menu={menu}
+          newDeck={newDeck}
           trailing={trailing}
           compact={firstVisit}
           links={links}
-          onNewDeck={onNewDeck}
-          menuOpen={menuOpen}
         />
         {children}
       </DecksShell>

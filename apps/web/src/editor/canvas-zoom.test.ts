@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest"
-import { canvasRoom, fitWidth, slideRoom, zoomPercent, zoomSteps, zoomWidth } from "@/editor/canvas-zoom"
+import {
+  canvasRoom,
+  fitWidth,
+  slideRoom,
+  steppedZoom,
+  zoomKey,
+  zoomPercent,
+  zoomSteps,
+  zoomWidth,
+} from "@/editor/canvas-zoom"
 
 const wide = { width: 12_192_000, height: 6_858_000 }
 const standard = { width: 9_144_000, height: 6_858_000 }
@@ -44,5 +53,36 @@ describe("canvas zoom", () => {
     expect(fitWidth(canvasRoom({ width: 1312, height: 1080 }), wide)).toBe(1250)
     expect(fitWidth(canvasRoom({ width: 1312, height: 600 }), wide)).toBe(645)
     expect(fitWidth(canvasRoom({ width: 0, height: 0 }), wide)).toBe(0)
+  })
+})
+
+const plain = { metaKey: false, ctrlKey: false, altKey: false, shiftKey: false, field: false }
+
+describe("zoom keys", () => {
+  it("zooms in with Ctrl or Cmd and = or +, out with -, and fits with 0", () => {
+    expect(zoomKey({ ...plain, key: "=", ctrlKey: true })).toBe("in")
+    expect(zoomKey({ ...plain, key: "+", metaKey: true, shiftKey: true })).toBe("in")
+    expect(zoomKey({ ...plain, key: "-", ctrlKey: true })).toBe("out")
+    expect(zoomKey({ ...plain, key: "_", metaKey: true, shiftKey: true })).toBe("out")
+    expect(zoomKey({ ...plain, key: "0", metaKey: true })).toBe("fit")
+  })
+
+  it("leaves the keys to the browser inside a text field, without a modifier, or with Alt", () => {
+    expect(zoomKey({ ...plain, key: "=", ctrlKey: true, field: true })).toBeNull()
+    expect(zoomKey({ ...plain, key: "=" })).toBeNull()
+    expect(zoomKey({ ...plain, key: "0" })).toBeNull()
+    expect(zoomKey({ ...plain, key: "=", ctrlKey: true, altKey: true })).toBeNull()
+    expect(zoomKey({ ...plain, key: "z", ctrlKey: true })).toBeNull()
+  })
+
+  it("steps to the next zoom above or below the percent on show, and stops at the ends", () => {
+    expect(steppedZoom("in", 83)).toBe(100)
+    expect(steppedZoom("in", 100)).toBe(200)
+    expect(steppedZoom("in", 200)).toBe(200)
+    expect(steppedZoom("out", 83)).toBe(50)
+    expect(steppedZoom("out", 200)).toBe(100)
+    expect(steppedZoom("out", 50)).toBe(50)
+    expect(steppedZoom("in", 250)).toBe(200)
+    expect(steppedZoom("out", 30)).toBe(50)
   })
 })
