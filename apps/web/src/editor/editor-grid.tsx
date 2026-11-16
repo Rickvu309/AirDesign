@@ -175,7 +175,6 @@ export function EditorGrid({
   function addAfter(index: number) {
     following.current = true
     strip.onAdd?.(undefined, index)
-    announce(slideListCopy.added(index + 2))
   }
 
   function open(index: number) {

@@ -208,7 +208,6 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
             layouts={strip.onAdd === undefined ? [] : (strip.layouts ?? [])}
             onChoose={(part) => {
               strip.onAdd?.(part)
-              announce(slideListCopy.added(strip.count + 1))
             }}
           />
           <span className="block h-8 w-px bg-[var(--field-edge)]" />
@@ -220,7 +219,6 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
             onClick={() => {
               following.current = true
               strip.onAdd?.()
-              announce(slideListCopy.added(strip.count + 1))
             }}
           >
             <EditorIcon name="plus" size={15} />
