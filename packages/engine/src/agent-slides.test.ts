@@ -75,7 +75,7 @@ it("refuses Undo of a run once a person moved the slide the run added", () => {
   )
   expect(undone).toEqual({ ok: false, refusal: "run-fenced" })
 })
-it.fails("refuses a second Undo of a run once a person deleted again the slide the first brought back", () => {
+it("refuses a second Undo of a run once a person deleted again the slide the first brought back", () => {
   const removed = call("delete_slide", opened(), actor, { deck: "deck", base: 0, slide: "256" })
   if (!removed.ok) throw new Error(removed.refusal)
   const back = call("undo_run", removed.deck, { actor: "person" }, { deck: "deck", runId: "run" })

@@ -284,13 +284,13 @@ function personEdited(register: Register, node: ElementId): boolean {
   return register.elements[node]?.landed.some((row) => row.actor === "person" && row.visible) === true
 }
 
-function fencedSince(register: Register, at: number, node: ElementId, runId: string | undefined): boolean {
-  return register.order
-    .slice(at + 1)
-    .some(
-      (row) =>
-        row.runId !== runId && (row.slide === "element-remove" || row.slide === "element-restore") && row.node === node,
-    )
+function fencedSince(
+  register: Register,
+  at: number,
+  edit: SlideCommand,
+  turns: (row: SlideCommand) => boolean,
+): boolean {
+  return register.order.slice(at + 1).some((row) => row.runId !== edit.runId && turns(row))
 }
 
 function undoableAt(register: Register, at: number, edit: SlideCommand): Undoable | null {
@@ -298,7 +298,9 @@ function undoableAt(register: Register, at: number, edit: SlideCommand): Undoabl
   if (elementCommand(edit)) {
     const node = elementOf(edit)
     if (edit.slide === "element-add" && personEdited(register, node)) return null
-    if (fencedSince(register, at, node, edit.runId)) return null
+    const turnsNode = (row: SlideCommand) =>
+      (row.slide === "element-remove" || row.slide === "element-restore") && row.node === node
+    if (fencedSince(register, at, edit, turnsNode)) return null
     const before = register.order.slice(0, at)
     const upTo = register.order.slice(0, at + 1)
     return {
@@ -309,6 +311,8 @@ function undoableAt(register: Register, at: number, edit: SlideCommand): Undoabl
       after: !elementGone({ file: register.file, order: upTo }, node),
     }
   }
+  const turnsSlide = (row: SlideCommand) => (row.slide === "remove" || row.slide === "restore") && row.id === edit.id
+  if (fencedSince(register, at, edit, turnsSlide)) return null
   const after = spotIn({ file: register.file, order: register.order.slice(0, at + 1) }, edit.id)
   if (after === undefined) return null
   const before = spotIn({ file: register.file, order: register.order.slice(0, at) }, edit.id) ?? {

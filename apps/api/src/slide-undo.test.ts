@@ -1,6 +1,6 @@
 import { createServer } from "node:http"
 
-import { orderKeyBetween, presentSlides, readSlideId } from "@airdesign/document"
+import { orderKeyBetween, presentSlides, readSlideId, type Register } from "@airdesign/document"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { postgresInfo } from "./harness.js"
@@ -29,7 +29,13 @@ type Live = Owned & {
   told: string
   adds: number
   undos: number
+  dropped: boolean
+  added: boolean
 }
+
+type Path = { readonly start: SpecState; readonly steps: readonly { readonly action: string; readonly to: string }[] }
+
+const dropping = "257"
 
 let stores: Stores
 let steps: McpSteps
@@ -40,16 +46,30 @@ async function saved(live: Live) {
   return { revision: row.revision, register: row.register }
 }
 
-async function opened(): Promise<Live> {
+async function opened(dropped = false): Promise<Live> {
   const owned = await indexedDeck(stores, "slide-undo")
-  const added = await wholeCall(steps, owned, "r", "add_slide", {
-    deck: owned.deck,
-    base: owned.revision,
-    after: "256",
-    layout: "256",
-  })
-  const live = { ...owned, offset: revisionOf(added) - 1, minted: 0, moved: false, undone: false, afterUndo: 0 }
-  return { ...live, told: "none", adds: 0, undos: 0 }
+  const first = dropped
+    ? await wholeCall(steps, owned, "r", "delete_slide", { deck: owned.deck, base: owned.revision, slide: dropping })
+    : await wholeCall(steps, owned, "r", "add_slide", {
+        deck: owned.deck,
+        base: owned.revision,
+        after: "256",
+        layout: "256",
+      })
+  const live = { ...owned, offset: revisionOf(first) - 1, minted: 0, moved: false, undone: false, afterUndo: 0 }
+  return { ...live, told: "none", adds: 0, undos: 0, dropped, added: !dropped }
+}
+
+function shows(register: Register, slide: string): boolean {
+  return presentSlides({ file: register.file, order: register.order }).some((spot) => spot.id === readSlideId(slide))
+}
+
+function fenced(register: Register): boolean {
+  const first = register.order.findIndex((row) => row.runId === "r")
+  const own = new Set(register.order.flatMap((row) => (row.runId === "r" ? [row.id] : [])))
+  return register.order
+    .slice(first + 1)
+    .some((row) => row.runId !== "r" && (row.slide === "remove" || row.slide === "restore") && own.has(row.id))
 }
 
 async function act(live: Live, action: string): Promise<void> {
@@ -61,6 +81,7 @@ async function act(live: Live, action: string): Promise<void> {
     const added = await wholeCall(steps, live, fresh, "add_slide", args)
     revisionOf(added)
     if (added.body?.runId === "r" && live.undone) live.afterUndo += 1
+    if (added.body?.runId === "r") live.added = true
     live.adds += 1
   } else if (action === "AgentStops") {
     const stopped = await wholeCall(steps, live, fresh, "stop_run", { deck: live.deck, runId: "r" })
@@ -77,6 +98,13 @@ async function act(live: Live, action: string): Promise<void> {
     const moved = await commitEdits(stores.deck, { deck: live.deck, batch }, live.email)
     if (!moved.ok) throw new Error(moved.refusal)
     live.moved = true
+  } else if (action === "PersonDeletes") {
+    const row = await saved(live)
+    const slide = readSlideId(dropping)
+    if (slide === undefined) throw new Error("delete")
+    const batch = [{ slide: "remove" as const, id: slide, file: row.register.file }]
+    const deleted = await commitEdits(stores.deck, { deck: live.deck, batch }, live.email)
+    if (!deleted.ok) throw new Error(deleted.refusal)
   } else if (action === "PersonUndoes") {
     const undone = await undoRun(stores.deck, { deck: live.deck, runId: "r" }, live.email)
     live.told = undone.ok ? "applied" : "refused"
@@ -100,13 +128,18 @@ async function observed(live: Live): Promise<SpecState> {
     undone: live.undone,
     afterUndo: live.afterUndo,
     told: live.told,
+    dropped: live.dropped,
+    dShows: shows(row.register, dropping),
+    added: live.added,
+    fenced: fenced(row.register),
   }
 }
 
-function pathsFrom(graph: Graph): Map<string, readonly { readonly action: string; readonly to: string }[]> {
-  const paths = new Map<string, readonly { readonly action: string; readonly to: string }[]>()
+function pathsFrom(graph: Graph): Map<string, Path> {
+  const paths = new Map<string, Path>()
   for (const [id, state] of graph.states)
-    if (state.adds === 0 && state.undos === 0 && state.rev === 1 && state.turn === "r") paths.set(id, [])
+    if (state.adds === 0 && state.undos === 0 && state.rev === 1 && state.turn === "r")
+      paths.set(id, { start: state, steps: [] })
   const order = [...paths.keys()]
   for (let at = 0; at < order.length; at += 1) {
     const from = order[at]
@@ -114,16 +147,16 @@ function pathsFrom(graph: Graph): Map<string, readonly { readonly action: string
     if (path === undefined) continue
     for (const edge of graph.edges) {
       if (edge.from !== from || paths.has(edge.to)) continue
-      paths.set(edge.to, [...path, { action: edge.action, to: edge.to }])
+      paths.set(edge.to, { start: path.start, steps: [...path.steps, { action: edge.action, to: edge.to }] })
       order.push(edge.to)
     }
   }
   return paths
 }
 
-async function replayEdge(graph: Graph, path: readonly { readonly action: string; readonly to: string }[]) {
-  const live = await opened()
-  for (const step of path) {
+async function replayEdge(graph: Graph, path: Path) {
+  const live = await opened(path.start.dropped === true)
+  for (const step of path.steps) {
     const target = graph.states.get(step.to)
     if (target === undefined) return "no target"
     await act(live, step.action)
@@ -157,12 +190,29 @@ describe("slide-undo replay", () => {
     for (let at = 0; at < edges.length; at += 8) {
       const batch = edges.slice(at, at + 8)
       const told = await Promise.all(
-        batch.map((edge) => replayEdge(graph, [...(paths.get(edge.from) ?? []), { action: edge.action, to: edge.to }])),
+        batch.map((edge) => {
+          const path = paths.get(edge.from)
+          if (path === undefined) return Promise.resolve(`no path to ${edge.from}`)
+          return replayEdge(graph, { start: path.start, steps: [...path.steps, { action: edge.action, to: edge.to }] })
+        }),
       )
       for (const line of told) if (line !== null) failures.push(line)
     }
     expect(failures.slice(0, 5)).toEqual([])
+    expect(new Set(edges.map((edge) => edge.action))).toEqual(
+      new Set(["AgentAddsSlide", "AgentStops", "PersonMoves", "PersonDeletes", "PersonUndoes"]),
+    )
   }, 300_000)
+
+  it("brings back a slide the run deleted once, and refuses a second Undo after a person deleted it again", async () => {
+    const live = await opened(true)
+    await act(live, "PersonUndoes")
+    expect(shows((await saved(live)).register, dropping)).toBe(true)
+    await act(live, "PersonDeletes")
+    await act(live, "PersonUndoes")
+    expect(live.told).toBe("refused")
+    expect(shows((await saved(live)).register, dropping)).toBe(false)
+  })
 
   it("lands no slide of a run after a person's run Undo took it back", async () => {
     const live = await opened()
