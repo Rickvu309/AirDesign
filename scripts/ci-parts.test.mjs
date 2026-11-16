@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process"
+import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
@@ -19,7 +20,36 @@ const steps = check.steps
 const text = (step) => `${step.run ?? ""} ${step.uses ?? ""} ${JSON.stringify(step.with ?? {})}`
 const onlyOn = (step, part) => (step.if ?? "").includes(`matrix.part == '${part}'`)
 
-same("the check job runs three parts side by side", check.strategy.matrix.part, ["main", "side", "pptx"])
+const entries = check.strategy.matrix.include
+same(
+  "the check job runs the main part, the side part in three shards and the pptx part side by side",
+  entries.map((entry) => [entry.part, entry.shard ?? ""].join(" ").trim()),
+  ["main", "side 1/3", "side 2/3", "side 3/3", "pptx"],
+)
+same(
+  "pnpm check gets the shard of its side part",
+  steps.find((step) => (step.run ?? "").startsWith("pnpm check --part="))?.run,
+  "pnpm check --part=${{ matrix.part }}${{ matrix.shard && format(' --shard={0}', matrix.shard) || '' }}",
+)
+same("each shard is a job of its own name", check.name.includes("matrix.shard"), true)
+same(
+  "each job keeps its failed test results under a name of its own",
+  steps
+    .find((step) => (step.uses ?? "").startsWith("actions/upload-artifact"))
+    ?.with.name.includes("strategy.job-index"),
+  true,
+)
+const firstShard = entries.find((entry) => entry.shard?.startsWith("1/")).shard
+const listed = execFileSync(
+  process.execPath,
+  ["node_modules/@playwright/test/cli.js", "test", "--list", `--shard=${firstShard}`],
+  { cwd: root, encoding: "utf8", env: { ...process.env, CI: "" } },
+)
+same(
+  "the first shard, which runs design-findings, runs both design scans whose reports it judges",
+  ["design-states.spec.ts", "every-screen.spec.ts"].map((file) => listed.includes(` ${file}:`)),
+  [true, true],
+)
 same("one failing part does not stop the others", check.strategy["fail-fast"], false)
 same("ci waits for every part and the corpus", workflow.jobs.ci.needs, ["check", "corpus"])
 

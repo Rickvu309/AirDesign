@@ -61,6 +61,16 @@ export const partOf = (argv) => {
   return part
 }
 
+export const shardOf = (argv) => {
+  const given = argv.find((word) => word.startsWith("--shard="))
+  if (given === undefined) return undefined
+  const value = given.slice("--shard=".length)
+  const [current, total] = /^[1-9]\d*\/[1-9]\d*$/.test(value) ? value.split("/").map(Number) : []
+  if (current === undefined || current > total)
+    throw new Error(`--shard must be a part of a whole, such as 1/3, and it is ${value}.`)
+  return { current, total }
+}
+
 export const localSteps = new Set(["bar"])
 
 export const onCi = (env) => env.CI === "true" || env.CI === "1"
@@ -78,11 +88,21 @@ const keepSteps = (chosen, keep) =>
     )
     .filter((stage) => stage.length > 0)
 
-export const stagesFor = (part, ci = onCi(process.env)) =>
+const sharded =
+  (shard) =>
+  ([name, command, args, ...rest]) =>
+    shard !== undefined && name === "browser"
+      ? [name, command, [...args, `--shard=${shard.current}/${shard.total}`], ...rest]
+      : [name, command, args, ...rest]
+
+export const stagesFor = (part, ci = onCi(process.env), shard = undefined) =>
   keepSteps(
     stages,
-    ([name]) => !(ci && localSteps.has(name)) && (part === "all" || (part === "side") === sideSteps.has(name)),
-  )
+    ([name]) =>
+      !(ci && localSteps.has(name)) &&
+      (part === "all" || (part === "side") === sideSteps.has(name)) &&
+      (shard === undefined || shard.current === 1 || name === "browser"),
+  ).map((stage) => stage.map((entry) => (isLane(entry) ? entry.map(sharded(shard)) : sharded(shard)(entry))))
 
 export const ciOnlySteps = new Set(["browser", "design-findings"])
 
@@ -150,7 +170,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   process.env.TMPDIR = ownTemp
 
   let ranSteps = true
-  const chosen = stepsToRun(stagesFor(part), onCi(process.env))
+  const chosen = stepsToRun(stagesFor(part, onCi(process.env), shardOf(process.argv)), onCi(process.env))
   const runLane = async (entry) => {
     for (const step of stepsOf(entry)) {
       await run(step)
