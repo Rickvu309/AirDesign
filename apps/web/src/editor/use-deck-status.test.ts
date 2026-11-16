@@ -9,6 +9,7 @@ const quiet = {
   offline: false,
   pending: false,
   aside: 0,
+  refusal: null,
 } as const
 
 it("shows nothing when the deck is saved", () => {
@@ -45,15 +46,25 @@ it("puts a failure before undo, undo before a picture, a picture before set-asid
     offline: true,
     pending: true,
     aside: 1,
+    refusal: "storage",
   } as const
   expect(shownNotice(all)).toBe("export-failed")
   expect(shownNotice({ ...all, failure: null })).toBe("undo-changed")
   expect(shownNotice({ ...all, failure: null, told: null })).toBe("picture-type")
   expect(shownNotice({ ...all, failure: null, told: null, picture: null })).toBe("set-aside")
   expect(shownNotice({ ...all, failure: null, told: null, picture: null, aside: 0 })).toBe("offline")
+  expect(shownNotice({ ...all, failure: null, told: null, picture: null, aside: 0, offline: false })).toBe(
+    "storage-failed",
+  )
 })
 
-const landed = { online: true, offline: false, pending: false } as const
+it("says why the server refused an edit while it waits on this device", () => {
+  expect(shownNotice({ ...quiet, pending: true, refusal: "storage" })).toBe("storage-failed")
+  expect(shownNotice({ ...quiet, pending: true, refusal: "size" })).toBe("too-large")
+  expect(shownNotice({ ...quiet, refusal: "size" })).toBe(null)
+})
+
+const landed = { online: true, offline: false, pending: false, refusal: null } as const
 
 it("says saved once every edit has landed", () => {
   expect(saveStatus(landed)).toBe("saved")
@@ -66,9 +77,16 @@ it("says saving while an edit waits for the server and the server can be reached
 
 it("says offline as soon as the browser goes offline, before any edit", () => {
   expect(saveStatus({ ...landed, online: false })).toBe("offline")
-  expect(saveStatus({ online: false, offline: true, pending: true })).toBe("offline")
+  expect(saveStatus({ ...landed, online: false, offline: true, pending: true })).toBe("offline")
 })
 
 it("says AirDesign cannot be reached while an edit waits with the browser online", () => {
   expect(saveStatus({ ...landed, offline: true, pending: true })).toBe("unreached")
+})
+
+it("says unable to save, not saving, while the server refused an edit that waits on this device", () => {
+  expect(saveStatus({ ...landed, pending: true, refusal: "storage" })).toBe("unsaved")
+  expect(saveStatus({ ...landed, pending: true, refusal: "size" })).toBe("unsaved")
+  expect(saveStatus({ ...landed, refusal: "size" })).toBe("saved")
+  expect(saveStatus({ ...landed, pending: true, offline: true, refusal: "size" })).toBe("unreached")
 })

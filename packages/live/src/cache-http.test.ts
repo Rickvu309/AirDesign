@@ -1,7 +1,8 @@
 import { openRegister } from "@airdesign/document"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { installIndexedDb, node } from "./browser-fixtures.js"
-import { connect, deleteDatabase, httpRemote } from "./index.js"
+import { newPage } from "./device.js"
+import { connect, deleteDatabase, httpRemote, storeNewer } from "./index.js"
 
 beforeEach(installIndexedDb)
 afterEach(async () => {
@@ -23,6 +24,30 @@ it("decodes an HTTP size refusal and keeps pending rows", async () => {
     })
     expect(await cache.pending("http-refusal")).toEqual(before)
   }
+})
+
+it("marks this page newer when the server answers a commit with newer, so it sends nothing more and keeps the rows", async () => {
+  const sent: string[] = []
+  vi.stubGlobal("fetch", async (url: string) => {
+    sent.push(url)
+    return new Response(
+      JSON.stringify(
+        url === "/decks/open"
+          ? { ok: true, deck: "newer-commit", revision: 0, register: openRegister("", "") }
+          : { ok: false, refusal: "newer" },
+      ),
+    )
+  })
+  const cache = connect(httpRemote())
+  await cache.enqueue("newer-commit", "pending", node, "")
+  const before = await cache.pending("newer-commit")
+  expect(await cache.flush("newer-commit")).toEqual({ ok: false, refusal: "newer" })
+  expect(storeNewer()).toBe(true)
+  const commits = sent.filter((url) => url === "/decks/commit").length
+  expect(await cache.flush("newer-commit")).toEqual({ ok: false, refusal: "newer" })
+  expect(sent.filter((url) => url === "/decks/commit")).toHaveLength(commits)
+  newPage()
+  expect(await connect(httpRemote()).pending("newer-commit")).toMatchObject(before)
 })
 
 it("decodes the API's unreadable request sentence as payload and keeps pending rows", async () => {

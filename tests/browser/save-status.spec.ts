@@ -169,3 +169,72 @@ for (const [step, button] of [
     await expect(saveStatus(page)).toHaveText(saved)
   })
 }
+
+const refusals = [
+  {
+    refusal: "storage",
+    status: 200,
+    says: "Unable to save. AirDesign's storage failed, so edits are saved on this device. Reload to try again.",
+  },
+  {
+    refusal: "size",
+    status: 413,
+    says: "Unable to save. These edits are larger than a deck allows, so they stay on this device. Export to keep a copy.",
+  },
+]
+
+for (const answer of refusals) {
+  test(`a commit the server refuses with ${answer.refusal} says why it is not saved and is not sent again`, async ({
+    page,
+    context,
+    stack,
+  }) => {
+    const cookie = await stack.signIn()
+    await signInBrowser(context, cookie)
+    await forward(page, stack)
+    const deck = await openClean(page)
+    const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
+    const before = await revision()
+    let sent = 0
+    await page.route(
+      (url) => url.pathname === "/decks/commit",
+      (route) => {
+        sent += 1
+        return route.fulfill({ status: answer.status, json: { ok: false, refusal: answer.refusal } })
+      },
+    )
+    await typeAtEnd(page, "!")
+    await expect(saveStatus(page)).toHaveText("Unable to save")
+    await expect(page.getByText(answer.says)).toBeVisible()
+    const refused = sent
+    await page.waitForTimeout(2500)
+    expect(sent).toBe(refused)
+    await expect(saveStatus(page)).toHaveText("Unable to save")
+    expect(await revision()).toBe(before)
+  })
+}
+
+test("a commit answered newer shows that AirDesign has a new version with Reload, and sends nothing more", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await signInBrowser(context, await stack.signIn())
+  await forward(page, stack)
+  await openClean(page)
+  let sent = 0
+  await page.route(
+    (url) => url.pathname === "/decks/commit",
+    (route) => {
+      sent += 1
+      return route.fulfill({ status: 200, json: { ok: false, refusal: "newer" } })
+    },
+  )
+  await typeAtEnd(page, "!")
+  await expect(page.getByText("AirDesign has a new version")).toBeVisible()
+  await expect(page.getByRole("button", { name: "Reload" })).toBeVisible()
+  await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
+  const refused = sent
+  await page.waitForTimeout(2500)
+  expect(sent).toBe(refused)
+})

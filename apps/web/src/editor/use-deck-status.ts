@@ -1,11 +1,11 @@
 import { useCallback, useState, useSyncExternalStore } from "react"
-import type { CommitOutcome } from "@/commit-edit"
+import type { CommitOutcome, SaveRefusal } from "@/commit-edit"
 import { signInAddress, type ThinNotice } from "@/thin-notice"
 import type { UndoDirection } from "@/undo-list"
 
 export type DeckFailure = "import-failed" | "export-failed" | "picture-uploading"
 
-export type SaveStatus = "saved" | "saving" | "offline" | "unreached"
+export type SaveStatus = "saved" | "saving" | "offline" | "unreached" | "unsaved"
 
 function watchNetwork(change: () => void): () => void {
   window.addEventListener("online", change)
@@ -26,6 +26,7 @@ export function useDeckStatus() {
   const [failure, setFailure] = useState<DeckFailure | null>(null)
   const [refused, setRefused] = useState(false)
   const [aside, setAside] = useState(0)
+  const [refusal, setRefusal] = useState<SaveRefusal | null>(null)
 
   const settle = useCallback((outcome: CommitOutcome) => {
     if (outcome === "sent") {
@@ -38,6 +39,7 @@ export function useDeckStatus() {
     }
     if (outcome === "offline") setPending(true)
     if (outcome !== "refused") setOffline(outcome === "offline")
+    if (outcome !== "refused") setRefusal(outcome === "storage" || outcome === "size" ? outcome : null)
     if (outcome === "signed-out") window.location.assign(signInAddress(window.location))
   }, [])
   const leftNetwork = useCallback(() => setOffline(true), [])
@@ -54,6 +56,7 @@ export function useDeckStatus() {
     refused,
     setRefused,
     aside,
+    refusal,
     settle,
     leftNetwork,
   }
@@ -67,20 +70,25 @@ export function shownNotice(shown: {
   readonly offline: boolean
   readonly pending: boolean
   readonly aside: number
+  readonly refusal: SaveRefusal | null
 }): ThinNotice | null {
   const { failure, told, offline, pending } = shown
   const toldNotice: ThinNotice | null = told === null ? null : told === "undo" ? "undo-changed" : "redo-changed"
   const asideNotice: ThinNotice | null = shown.aside > 0 ? "set-aside" : null
   const unsentNotice: ThinNotice | null = offline && pending ? (shown.online ? "unreached" : "offline") : null
-  return failure ?? toldNotice ?? shown.picture ?? asideNotice ?? unsentNotice
+  const refusedNotice: ThinNotice | null =
+    pending && shown.refusal !== null ? (shown.refusal === "size" ? "too-large" : "storage-failed") : null
+  return failure ?? toldNotice ?? shown.picture ?? asideNotice ?? unsentNotice ?? refusedNotice
 }
 
 export function saveStatus(shown: {
   readonly online: boolean
   readonly offline: boolean
   readonly pending: boolean
+  readonly refusal: SaveRefusal | null
 }): SaveStatus {
   if (!shown.online) return "offline"
   if (!shown.pending) return "saved"
-  return shown.offline ? "unreached" : "saving"
+  if (shown.offline) return "unreached"
+  return shown.refusal === null ? "saving" : "unsaved"
 }

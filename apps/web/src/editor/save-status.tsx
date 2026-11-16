@@ -10,6 +10,7 @@ const words: Record<SaveStatus, string> = {
   saving: productCopy.saving,
   offline: productCopy.savedOffline,
   unreached: productCopy.savedUnreached,
+  unsaved: productCopy.unsaved,
 }
 
 export function useShownSave(status: SaveStatus): SaveStatus {
