@@ -27,6 +27,7 @@ type PaintProp =
   | "--bullet-color"
   | "--bullet-size"
   | "--bullet-hang"
+  | "--bullet-line"
   | "--bullet-unfocused"
   | "--end-line"
 
@@ -38,11 +39,12 @@ const paintProps: readonly PaintProp[] = [
   "--bullet-color",
   "--bullet-size",
   "--bullet-hang",
+  "--bullet-line",
   "--bullet-unfocused",
   "--end-line",
 ]
 const textRule =
-  '[data-paragraph]::before{content:var(--bullet);display:inline-block;min-width:var(--bullet-hang,auto);text-indent:0;pointer-events:none;user-select:none;white-space:pre;font-family:var(--bullet-font,inherit);color:var(--bullet-color,inherit);font-size:var(--bullet-size,1em);line-height:1}[data-text-body]:not(:focus-within)>[data-paragraph]::before{content:var(--bullet-unfocused,var(--bullet))}[data-paragraph][data-end-break]::after{content:"\\200b";line-height:var(--end-line)}'
+  '[data-paragraph]::before{content:var(--bullet);display:inline-block;min-width:var(--bullet-hang,auto);text-indent:0;pointer-events:none;user-select:none;white-space:pre;font-family:var(--bullet-font,inherit);color:var(--bullet-color,inherit);font-size:var(--bullet-size,1em);line-height:var(--bullet-line,1)}[data-text-body]:not(:focus-within)>[data-paragraph]::before{content:var(--bullet-unfocused,var(--bullet))}[data-paragraph][data-end-break]::after{content:"\\200b";line-height:var(--end-line)}'
 
 export type RunPaint = RunFormat & { readonly size?: number; readonly color?: Color; readonly font?: string }
 export type ParagraphPaint = { readonly align?: ParagraphAlign; readonly bullet?: boolean } & ParagraphSpacing
@@ -153,6 +155,12 @@ function cssQuote(value: string): string {
   return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`
 }
 
+function bulletLine(spacing: CanvasSpacing | null | undefined, scaled: Scaled): Look {
+  if (spacing == null) return {}
+  if ("length" in spacing) return { "--bullet-line": `min(1em, ${scaled(spacing.length)}px)` }
+  return spacing.percent * singleLineHeight < 1 ? { "--bullet-line": lineShare(spacing.percent) } : {}
+}
+
 function bulletVars(paragraph: CanvasParagraph, scaled: Scaled): Look {
   const bullet: CanvasBullet | null | undefined = paragraph.bullet
   if (bullet == null) return { "--bullet": "none" }
@@ -163,6 +171,7 @@ function bulletVars(paragraph: CanvasParagraph, scaled: Scaled): Look {
   return {
     "--bullet": cssQuote(bulletLabel(bullet)),
     "--bullet-size": `${scaled((source.size || paragraph.endStyle.size) * (bullet.size ?? 1))}px`,
+    ...bulletLine(paragraph.lineSpacing, scaled),
     ...(font === null ? {} : { "--bullet-font": familyOf(font) }),
     ...(color === null ? {} : { "--bullet-color": color }),
     ...(indent < 0 ? { "--bullet-hang": `${scaled(-indent)}px` } : {}),

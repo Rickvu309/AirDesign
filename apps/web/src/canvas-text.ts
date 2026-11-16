@@ -5,10 +5,16 @@ import { cssColor } from "@/paint-css"
 const emuPerPoint = 12_700
 const aligned = { left: "left", center: "center", right: "right", justify: "justify", distributed: "justify" } as const
 
-function spacingOf(spacing: PaintText["paragraphs"][number]["lineSpacing"], factor: number) {
-  if (spacing === null) return factor === 1 ? null : { percent: factor }
-  if ("percent" in spacing) return { percent: spacing.percent * factor }
-  return { length: spacing.points * emuPerPoint * factor }
+type Spacing = PaintText["paragraphs"][number]["lineSpacing"]
+
+function spacingOf(spacing: Spacing) {
+  if (spacing === null) return null
+  return "percent" in spacing ? { percent: spacing.percent } : { length: spacing.points * emuPerPoint }
+}
+
+function reducedLines(spacing: Spacing, reduction: number) {
+  if (spacing === null) return reduction === 0 ? null : { percent: 1 - reduction }
+  return "percent" in spacing ? { percent: spacing.percent - reduction } : spacingOf(spacing)
 }
 
 function canvasBullet(bullet: PaintParagraph["bullet"]) {
@@ -44,9 +50,9 @@ function canvasParagraph(paragraph: PaintParagraph, scale: number, reduction: nu
     align: aligned[paragraph.align],
     marginLeft: paragraph.marginLeft,
     indent: paragraph.indent,
-    lineSpacing: spacingOf(paragraph.lineSpacing, 1 - reduction),
-    spaceBefore: spacingOf(paragraph.spaceBefore, 1),
-    spaceAfter: spacingOf(paragraph.spaceAfter, 1),
+    lineSpacing: reducedLines(paragraph.lineSpacing, reduction),
+    spaceBefore: spacingOf(paragraph.spaceBefore),
+    spaceAfter: spacingOf(paragraph.spaceAfter),
     bullet: canvasBullet(paragraph.bullet),
     runs: paragraph.runs.map((run) => ({ from: run.from, text: run.text, ...runStyle(run, scale) })),
     endStyle: runStyle(paragraph.endStyle, scale),

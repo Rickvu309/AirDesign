@@ -42,14 +42,19 @@ describe("shrink steps", () => {
 })
 
 describe("fitted text", () => {
-  it("scales each size from the stored scale and narrows the lines from the stored reduction", () => {
-    const shown = fitted(text({ kind: "shrink", scale: 0.5, reduction: 0.1 }, { percent: 0.9 }), [0.25, 0.2])
+  it("scales each size from the stored scale and takes the further reduction off the line spacing, as ECMA-376 subtracts it", () => {
+    const shown = fitted(text({ kind: "shrink", scale: 0.5, reduction: 0.1 }, { percent: 0.7 }), [0.25, 0.2])
     const paragraph = shown.paragraphs[0]
     expect(paragraph?.runs[0]?.size).toBe(127_000)
     expect(paragraph?.runs[0]?.points).toBe(2_000)
     expect(paragraph?.endStyle.size).toBe(127_000)
-    expect(paragraph?.lineSpacing).toEqual({ percent: 0.8 })
+    expect(paragraph?.lineSpacing).toEqual({ percent: 0.6 })
     expect(shown.fit).toEqual({ kind: "shrink", scale: 0.25, reduction: 0.2 })
+  })
+
+  it("keeps line spacing set in points, which the reduction does not apply to", () => {
+    const shown = fitted(text({ kind: "shrink", scale: 1, reduction: 0 }, { length: 254_000 }), [1, 0.2])
+    expect(shown.paragraphs[0]?.lineSpacing).toEqual({ length: 254_000 })
   })
 
   it("narrows single lines that the file leaves at their standard spacing", () => {

@@ -120,6 +120,14 @@ describe("layText", () => {
     expect(laid(text([paragraph([run("aa")]), empty]), 100).height).toBeCloseTo(12 + 24)
   })
 
+  it("keeps a bullet's line within its paragraph's tight line spacing, as PowerPoint does", () => {
+    const bulleted = (lineSpacing: ResolvedParagraph["lineSpacing"]) =>
+      paragraph([run("aaaa")], { lineSpacing, bullet: { text: "•", font: "Plain", size: 10 } })
+    expect(laid(text([bulleted({ percent: 0.7 })]), 100).height).toBeCloseTo(8.4)
+    expect(laid(text([bulleted({ points: 7 })]), 100).height).toBeCloseTo(7)
+    expect(laid(text([bulleted(null)]), 100).height).toBeCloseTo(12)
+  })
+
   it("hangs a bullet in the indent and wraps the rest at the margin", () => {
     const bulleted = paragraph([run("aaaa bbbb cccc")], {
       marginLeft: 20 * point,
@@ -136,6 +144,13 @@ describe("layText", () => {
     const shrunk = laid(text([paragraph([run("aaaa bbbb cccc")])], { fontScale: 0.5, lineReduction: 0.2 }), 50)
     expect(shrunk.lines).toHaveLength(1)
     expect(shrunk.height).toBeCloseTo(6 * 0.8)
+  })
+
+  it("subtracts the line reduction from percentage spacing and leaves spacing in points, as ECMA-376 says", () => {
+    const tight = (lineSpacing: ResolvedParagraph["lineSpacing"]) =>
+      laid(text([paragraph([run("aaaa")], { lineSpacing })], { lineReduction: 0.2 }), 100).height
+    expect(tight({ percent: 0.9 })).toBeCloseTo(12 * 0.7)
+    expect(tight({ points: 15 })).toBeCloseTo(15)
   })
 
   it("measures bold text with the bold face", () => {

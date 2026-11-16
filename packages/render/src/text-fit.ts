@@ -29,10 +29,10 @@ export function shrinkSteps(fit: Shrink): readonly FitStep[] {
   ]
 }
 
-function spaced(spacing: CanvasSpacing | null | undefined, factor: number): CanvasSpacing | null {
-  if (spacing == null) return near(factor, 1) ? null : { percent: tidy(factor) }
-  if ("percent" in spacing) return { percent: tidy(spacing.percent * factor) }
-  return { length: spacing.length * factor }
+function reduced(spacing: CanvasSpacing | null | undefined, by: number): CanvasSpacing | null {
+  if (spacing == null) return near(by, 0) ? null : { percent: tidy(1 - by) }
+  if ("percent" in spacing) return { percent: tidy(spacing.percent - by) }
+  return spacing
 }
 
 function sized<Style extends CanvasRunStyle>(style: Style, factor: number): Style {
@@ -43,10 +43,9 @@ export function fitted(text: CanvasText, [scale, reduction]: FitStep): CanvasTex
   const fit = text.fit
   if (fit?.kind !== "shrink") return text
   const size = scale / fit.scale
-  const lines = (1 - reduction) / (1 - fit.reduction)
   const paragraph = (each: CanvasParagraph): CanvasParagraph => ({
     ...each,
-    lineSpacing: spaced(each.lineSpacing, lines),
+    lineSpacing: reduced(each.lineSpacing, reduction - fit.reduction),
     runs: each.runs.map((run) => sized(run, size)),
     endStyle: sized(each.endStyle, size),
   })

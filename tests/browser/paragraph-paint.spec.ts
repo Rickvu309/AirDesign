@@ -2,10 +2,11 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 
 const deck = join(process.cwd(), "scripts/pptx-fixtures/corpus/nasa-cots-electronics.pptx")
+const heraDeck = join(process.cwd(), "scripts/pptx-fixtures/corpus/nasa-hera-analog-lessons.pptx")
 
-async function open(page: Page): Promise<void> {
+async function open(page: Page, file = deck): Promise<void> {
   await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(deck)
+  await page.locator("input[type=file]").setInputFiles(file)
   await page.waitForFunction(() => {
     const id = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
     return id !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === id
@@ -64,4 +65,24 @@ test("an empty paragraph paints no bullet until someone types in its box, as Pow
   expect(await emptyBullets()).toEqual(["none", "none"])
   await body.focus()
   expect(await emptyBullets()).toEqual(['"•"', '"•"'])
+})
+
+test("a bullet keeps its line as tall as its paragraph's tight line spacing, as PowerPoint does", async ({ page }) => {
+  await open(page, heraDeck)
+  await showSlide(page, 7)
+  const body = page.locator('[data-slide-paint] [contenteditable="true"]', { hasText: "Limiting resupply" })
+  const heights = await body.evaluate((box) => {
+    const block = [...box.querySelectorAll<HTMLElement>("[data-paragraph]")].find(
+      (each) => (each.textContent ?? "") === "Limiting resupply",
+    )
+    const run = block?.querySelector<HTMLElement>("[data-run]")
+    return {
+      bullet: block === undefined ? "" : getComputedStyle(block, "::before").content,
+      line: run === null || run === undefined ? 0 : Number.parseFloat(getComputedStyle(run).lineHeight),
+      paragraph: block?.getBoundingClientRect().height ?? 0,
+    }
+  })
+  expect(heights.bullet).toBe('"•"')
+  expect(heights.line).toBeGreaterThan(0)
+  expect(Math.abs(heights.paragraph - heights.line)).toBeLessThan(0.5)
 })
