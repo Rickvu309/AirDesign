@@ -1,4 +1,4 @@
-import type { Box, ElementId } from "@airdesign/document"
+import { bytesOf, limits, type Box, type ElementId } from "@airdesign/document"
 import { httpRemote, memoryRemote, type Remote } from "@airdesign/live"
 
 export type TextBox = { readonly id: ElementId; readonly file: string }
@@ -57,7 +57,14 @@ export function commitEdit(
   paint?: Paint,
   refused?: () => Promise<void> | void,
 ): Promise<CommitOutcome> {
-  return commitKept(open, deckId, open(memoryRemote()).enqueue(deckId, value, box.id, box.file), paint, refused)
+  const kept = open(memoryRemote())
+    .enqueue(deckId, value, box.id, box.file)
+    .then((result) =>
+      !result.ok && result.refusal === "limit" && bytesOf(value) > limits.valueBytes
+        ? { ...result, refusal: "size" }
+        : result,
+    )
+  return commitKept(open, deckId, kept, paint, refused)
 }
 
 export function commitBox(

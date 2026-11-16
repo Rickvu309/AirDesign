@@ -1,4 +1,4 @@
-import { elementId } from "@airdesign/document"
+import { elementId, limits } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { commitBox, commitEdit, server } from "./commit-edit"
 
@@ -178,20 +178,20 @@ it("puts a refused box back and sends nothing", async () => {
   expect(outcome).toBe("refused")
 })
 
-it("reports an edit too large to send as too-large, puts the element back and sends nothing", async () => {
+it.each(["size", "limit"])("reports %s as too-large, puts the element back and sends nothing", async (refusal) => {
   let flushed = 0
   let restored = 0
   const outcome = await commitEdit(
     () => ({
       async enqueue() {
-        return { ok: false, refusal: "size" }
+        return { ok: false, refusal }
       },
       async flush() {
         flushed += 1
       },
     }),
     "any-deck",
-    "Hello!",
+    "x".repeat(limits.valueBytes + 1),
     { id: elementId("256.2"), file: "Hello" },
     undefined,
     () => {
@@ -201,4 +201,21 @@ it("reports an edit too large to send as too-large, puts the element back and se
   expect(outcome).toBe("too-large")
   expect(flushed).toBe(0)
   expect(restored).toBe(1)
+})
+
+it("keeps a limit on a small edit distinct from the value-size refusal", async () => {
+  const outcome = await commitEdit(
+    () => ({
+      async enqueue() {
+        return { ok: false, refusal: "limit" }
+      },
+      async flush() {
+        throw new Error("must not flush")
+      },
+    }),
+    "deck",
+    "Short",
+    { id: elementId("256.2"), file: "Hello" },
+  )
+  expect(outcome).toBe("refused")
 })
