@@ -10,7 +10,8 @@ import { changedFiles, failedTests, rerunCommand, suiteRules } from "./suites.mj
 const cli = fileURLToPath(new URL("./verify-airdesign.mjs", import.meta.url))
 const vitest = "node_modules/vitest/vitest.mjs"
 const smallUnitLimit = 40
-const kinds = ["unit", "tooling", "specs", "browser", "look", "pptx"]
+const kinds = ["unit", "tooling", "specs", "browser", "look", "pptx", "bench"]
+const optIn = { pptx: "run it with --pptx, it takes 1 to 2 minutes", bench: "bench suggested: pnpm prove --bench" }
 
 const git = (repo, args) => execFileSync("git", args, { cwd: repo, encoding: "utf8" }).trim()
 const fromRepo = (repo, file) => import(pathToFileURL(path.join(repo, file)).href)
@@ -232,6 +233,20 @@ export const proveCommand = async (args, { repo, evidenceRoot }) => {
         }
       },
     }),
+    bench: async (step, log) => ({
+      lane: "full",
+      what: "bench of this branch against its merge base, CPU throttle 4",
+      go: async () => {
+        const ran = await exec(repo, ["node", [cli, "bench", "--base", plan.base]], {}, log)
+        const answer = lastJson(ran.output)
+        const said = answer.slower?.length > 0 ? `SLOWER ${answer.slower.join(", ")}` : "FAILED"
+        return {
+          passed: ran.status === 0,
+          result: `${ran.status === 0 ? "no case slower" : said}, ${answer.report ?? log}`,
+          rerun: ran.status === 0 ? undefined : "pnpm prove --bench --only bench",
+        }
+      },
+    }),
     pptx: async (step, log) => ({
       lane: "full",
       what: "pnpm check:pptx",
@@ -264,9 +279,9 @@ export const proveCommand = async (args, { repo, evidenceRoot }) => {
         notRun.push(step.text)
         continue
       }
-      if (!only.includes(step.kind) || (step.kind === "pptx" && !args.includes("--pptx"))) {
-        const why = step.kind === "pptx" ? "run it with --pptx, it takes 1 to 2 minutes" : "left out by --only"
-        say(`${step.kind.padEnd(9)} not run: ${why}`)
+      if (!only.includes(step.kind) || (step.kind in optIn && !args.includes(`--${step.kind}`))) {
+        const why = only.includes(step.kind) ? optIn[step.kind] : "left out by --only"
+        say(why === optIn.bench ? why : `${step.kind.padEnd(9)} not run: ${why}`)
         notRun.push(`${step.kind} (${why})`)
         continue
       }

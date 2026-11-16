@@ -96,6 +96,14 @@ const lookStep = (changed, screens, states) => {
   return { kind: "look", states: picked, because }
 }
 
+const benchStep = (changed) => {
+  const touched = changed.filter(
+    (file) => /^(packages\/render|apps\/web\/src\/editor)\//.test(file) && code.test(file) && !testFile(file),
+  )
+  if (touched.length === 0) return undefined
+  return { kind: "bench", because: `${touched[0]} changed` }
+}
+
 export const proofPlan = ({
   base,
   head,
@@ -125,6 +133,7 @@ export const proofPlan = ({
     note,
     lookStep(changed, screens, states),
     pptx && { kind: "pptx", because: `${pptx.because} is in what ci's pptx job watches` },
+    benchStep(changed),
   ].filter(Boolean)
   return { base, head, changed, steps, ciAlso: suitesFor(changed, rules).map((suite) => suite.name) }
 }

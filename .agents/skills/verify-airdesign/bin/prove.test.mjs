@@ -95,6 +95,15 @@ describe("proofPlan", () => {
     expect(step(["apps/web/src/decks/home.test.tsx"], "look")).toBeUndefined()
   })
 
+  it("suggests the speed bench when the editor or the painter changes", () => {
+    expect(step(["packages/render/src/slide-canvas.tsx"], "bench").because).toBe(
+      "packages/render/src/slide-canvas.tsx changed",
+    )
+    expect(step(["apps/web/src/editor/editor-grid.tsx"], "bench")).toBeDefined()
+    expect(step(["apps/web/src/editor/editor-grid.test.tsx"], "bench")).toBeUndefined()
+    expect(step(["apps/web/src/decks/home.tsx"], "bench")).toBeUndefined()
+  })
+
   it("names the suites ci also runs and runs nothing for a change outside code", () => {
     const words = plan(["GLOSSARY.md"])
     expect(words.steps).toEqual([])

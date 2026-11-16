@@ -77,19 +77,38 @@ function treeAt(repo, commit) {
   return { dir, built }
 }
 
-async function sideOf({ key, label, missing, run, ref, runtime, cleanup }) {
-  let at = run
-  if (at === undefined) {
-    if (ref === undefined) at = launchAt(runtime.repo, true)
-    else {
-      const commit = gitIn(runtime.repo)(["rev-parse", "--verify", `${ref}^{commit}`])
-      const tree = treeAt(runtime.repo, commit)
-      at = launchAt(tree.dir, !existsSync(tree.built))
-      writeFileSync(tree.built, commit)
-      cleanup.trees.push(tree)
-    }
-    cleanup.runs.push(at)
+export function stackFor({ run, ref, runtime, cleanup }) {
+  if (run !== undefined) return run
+  let at
+  if (ref === undefined) at = launchAt(runtime.repo, true)
+  else {
+    const commit = gitIn(runtime.repo)(["rev-parse", "--verify", `${ref}^{commit}`])
+    const tree = treeAt(runtime.repo, commit)
+    at = launchAt(tree.dir, !existsSync(tree.built))
+    writeFileSync(tree.built, commit)
+    cleanup.trees.push(tree)
   }
+  cleanup.runs.push(at)
+  return at
+}
+
+export function cleanUp(cleanup, keep, runtime) {
+  if (keep) {
+    if (cleanup.runs.length > 0)
+      process.stderr.write(`kept runs ${cleanup.runs.join(" ")}; stop each with verify-airdesign stop\n`)
+    return
+  }
+  for (const run of cleanup.runs) stopRun(run)
+  for (const tree of cleanup.trees) {
+    gitIn(runtime.repo)(["worktree", "remove", "--force", tree.dir])
+    rmSync(tree.built, { force: true })
+  }
+}
+
+export const mergeBase = (runtime) => gitIn(runtime.repo)(["merge-base", "HEAD", "origin/main"])
+
+async function sideOf({ key, label, missing, run, ref, runtime, cleanup }) {
+  const at = stackFor({ run, ref, runtime, cleanup })
   const state = runtime.readState(at)
   const repo = state.repo ?? runtime.repo
   return {
@@ -145,7 +164,7 @@ async function beforeAfter(command, values, flags, runtime) {
   const out = path.resolve(flags.out ?? runtime.evidenceDir(`${command}-${String(Date.now())}`))
   mkdirSync(out, { recursive: true })
   const cleanup = { runs: [], trees: [] }
-  const base = flags.base ?? gitIn(runtime.repo)(["merge-base", "HEAD", "origin/main"])
+  const base = flags.base ?? mergeBase(runtime)
   const labels = { before: flags.base ? `${flags.base}` : "main", after: flags.head ?? "this PR" }
   try {
     const sides = annotate
@@ -196,14 +215,7 @@ async function beforeAfter(command, values, flags, runtime) {
       next: "Open every annotated image and check each arrow and note before you publish.",
     }
   } finally {
-    if (flags.keep) process.stderr.write(`kept runs ${cleanup.runs.join(" ")}; stop each with verify-airdesign stop\n`)
-    else {
-      for (const run of cleanup.runs) stopRun(run)
-      for (const tree of cleanup.trees) {
-        gitIn(runtime.repo)(["worktree", "remove", "--force", tree.dir])
-        rmSync(tree.built, { force: true })
-      }
-    }
+    cleanUp(cleanup, flags.keep, runtime)
   }
 }
 

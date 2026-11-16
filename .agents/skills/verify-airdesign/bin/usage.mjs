@@ -13,6 +13,8 @@ export const usage = [
   "verify-airdesign states                     list the named states and their design screens",
   "verify-airdesign before-after <callouts.json> [--base ref] [--head ref] [--before-run run] [--after-run run] [--keep] [--out dir]",
   "                                            the same states on the base and on this change; annotated image and table",
+  "verify-airdesign bench [--cases add-text,drag,open-41,import-<deck>|all] [--runs 7] [--base ref] [--before-run run] [--after-run run] [--keep] [--out dir]",
+  "                                            time the editor on the base and on this change, interleaved, CPU throttle 4",
   "verify-airdesign annotate <run> <callouts.json> [--out dir]  numbered callouts on one run's states",
   "verify-airdesign publish <dir> [--pr n]     upload images to the proof release; prints links and the PR fragment",
   "verify-airdesign comment <pr> <file>       post a PR comment with the agent header; refuses an empty file",
