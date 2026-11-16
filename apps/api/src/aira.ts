@@ -12,6 +12,9 @@ import { play, type AiraEvent, type Counts, type Played, type Reported } from ".
 import type { Sql } from "./pool.js"
 
 export const airaModel = "claude-sonnet-5-5"
+export const airaEfforts = ["low", "medium", "high", "xhigh", "max"] as const
+export type AiraEffort = (typeof airaEfforts)[number]
+export const airaEffort: AiraEffort = "low"
 export const airaMaxTokens = 8192
 export const airaBodyCap = 262_144
 export const staleTurn = 900_000
@@ -46,7 +49,7 @@ export type ModelCall = {
   readonly tools: readonly ModelTool[]
   readonly messages: readonly ModelMessage[]
   readonly metadata: { readonly user_id: string }
-  readonly output_config: { readonly effort: "low" }
+  readonly output_config: { readonly effort: AiraEffort }
 }
 
 export type ModelOpen =
@@ -67,6 +70,8 @@ export type AiraSettings = {
   readonly secret: string | undefined
   readonly transport: Transport
   readonly log?: (line: string) => void
+  readonly model?: string
+  readonly effort?: AiraEffort
 }
 
 export type AiraHost = {
@@ -405,13 +410,13 @@ async function admitted(
     })
   const user = accountId(settings.secret, account)
   const call: ModelCall = {
-    model: airaModel,
+    model: settings.model ?? airaModel,
     max_tokens: airaMaxTokens,
     system,
     tools: airaTools,
     messages: parsed.messages,
     metadata: { user_id: user },
-    output_config: { effort: "low" },
+    output_config: { effort: settings.effort ?? airaEffort },
   }
   const asked = { account, user, id, input, key: settings.key, transport: settings.transport, call }
   return { status: 200, lines: answered(host, asked, settings.log ?? writeLine, followed) }
