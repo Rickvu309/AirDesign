@@ -446,6 +446,16 @@ function SlideItem({
 }) {
   const entry = useRef<HTMLButtonElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const latest = useRef({ onSelect, onChoose })
+  useLayoutEffect(() => {
+    latest.current = { onSelect, onChoose }
+  })
+  const onMenuChoose = useCallback((change: SlideKey) => latest.current.onChoose?.(change), [])
+  const onMenuOpenChange = useCallback((next: boolean) => {
+    setMenuOpen(next)
+    if (next) latest.current.onSelect?.()
+    else if (entry.current?.isConnected) entry.current.focus()
+  }, [])
   const look = cn("flex items-start gap-2 rounded-[var(--shape-card)] p-2", active && "bg-[var(--row)]")
   const number = (
     <span className="flex w-4 flex-col items-center gap-1.5 pt-0.5">
@@ -512,12 +522,8 @@ function SlideItem({
           anchor={anchor}
           anchorRef={entry}
           open={menuOpen}
-          onOpenChange={(next) => {
-            setMenuOpen(next)
-            if (next) onSelect?.()
-            else if (entry.current?.isConnected) entry.current.focus()
-          }}
-          onChoose={onChoose}
+          onOpenChange={onMenuOpenChange}
+          onChoose={onMenuChoose}
         />
       )}
     </>
