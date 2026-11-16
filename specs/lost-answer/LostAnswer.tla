@@ -14,7 +14,9 @@
 \* after the person's edit, when a page opens, and after a send whose fetch threw, which
 \* resendPending in apps/web/src/deck-resend.ts sends again with backoff. A fetch throws when
 \* the browser is offline and when the server cannot be reached with the browser online; the
-\* code cannot tell the two apart, so the model has one Lose for both.
+\* code cannot tell the two apart, so the model has one Lose for both. flushPending in
+\* apps/web/src/commit-edit.ts reads an answer the page cannot read, such as a proxy's error
+\* page or a cut-off body, and the server's own failure as the same Lose.
 EXTENDS Integers
 
 VARIABLES lands, landedAt, rev, wire, orphan, pending, mirror, known, reloads, other, due
@@ -74,8 +76,8 @@ Land ==
   /\ wire' = "answered"
   /\ UNCHANGED <<orphan, pending, mirror, known, reloads, other, due>>
 
-\* The request or its answer is lost: the fetch throws, the row stays pending, and a resend
-\* is due.
+\* The request or its answer is lost: the fetch throws or the answer cannot be read, the row
+\* stays pending, and a resend is due.
 Lose ==
   /\ wire \in {"sent", "answered"}
   /\ wire' = "none"
