@@ -15,6 +15,7 @@ export function DeckInitial({ name }: { name: string }) {
 
 export function DeckCard({
   name,
+  deck,
   edited,
   preview,
   action,
@@ -24,6 +25,7 @@ export function DeckCard({
   href,
 }: {
   name: string
+  deck?: string
   edited: string
   preview?: ReactNode
   action?: ReactNode
@@ -34,7 +36,7 @@ export function DeckCard({
 }) {
   const title = useId()
   return (
-    <article className="relative rounded-[var(--shape-dialog)] bg-canvas p-1.5">
+    <article data-deck={deck} className="relative rounded-[var(--shape-dialog)] bg-canvas p-1.5">
       {href ? (
         <a href={href} aria-labelledby={title} className="absolute inset-0 rounded-[var(--shape-dialog)]"></a>
       ) : null}

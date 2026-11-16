@@ -38,7 +38,7 @@ Each feature file starts with an H1 title and one paragraph describing what the 
 ## Features
 
 - [Open a PowerPoint or a blank deck and edit its text](./open-edit-save.md): import from Home or start a blank deck, type in the slide, make it bold, italic or underlined, the server keeps the text, reopening shows it. Journeys `open-edit-save`, `blank-deck`, `commit-once`, `element-index`.
-- [Deck list and Trash](./deck-list-trash.md): Recents' six newest decks, `No decks yet`, a deck left before its editor opened, Move to Trash, Restore, Empty Trash, starring a deck and the sidebar's Starred list. Journeys `deck-list-trash` and `deck-stars`.
+- [Deck list and Trash](./deck-list-trash.md): Recents' six newest decks, `No decks yet`, a deck left before its editor opened, Move to Trash, Restore, Empty Trash, starring a deck and the sidebar's Starred list. Journeys `deck-list-trash`, `deck-grid-motion` and `deck-stars`.
 - [Deck names, search and All decks](./deck-names.md): `All decks`, the sidebar search, renaming from the editor title, a name queued on the device and sent from Home, the exported file's name and its toast, the disabled Design tab. Journey `deck-names`.
 - [Keep typed text and paint from the device](./keep-typed-text.md): the keystroke journal through a reload or a closed tab, a lost commit answer, the device copy kept per account and painting before the server answers, a refused deck closing. Journey `typed-reload`.
 - [Move and resize an element](./move-resize.md): select an element, drag it, resize it from a corner, nudge it with the arrows; the server keeps the box and the export writes it. Journey `move-resize`.
