@@ -90,3 +90,27 @@ export async function typeColor(page: Page, trigger: Locator, hex: string): Prom
 export function shownColor(field: Locator): Locator {
   return field.getByRole("button").first()
 }
+
+const field = /^(\s*)- (textbox|combobox|slider|spinbutton|checkbox|switch|radiogroup|group) "([^"]+)"/
+
+export async function unfoldAll(panel: Locator): Promise<void> {
+  const folded = panel.getByRole("heading").getByRole("button", { expanded: false })
+  while ((await folded.count()) > 0) {
+    const title = await folded.first().textContent()
+    await folded.first().click()
+    await expect(
+      panel.getByRole("heading", { name: title ?? "", exact: true }).getByRole("button", { expanded: true }),
+    ).toBeVisible()
+  }
+}
+
+export async function sharedNames(panel: Locator): Promise<string[]> {
+  const lines = (await panel.ariaSnapshot()).split("\n")
+  const names = lines.flatMap((line, at) => {
+    const [, indent = "", role, name] = field.exec(line) ?? []
+    if (name === undefined) return []
+    const choices = (lines[at + 1] ?? "").startsWith(`${indent}  - button`)
+    return role === "group" && !choices ? [] : [name]
+  })
+  return [...new Set(names.filter((name, at) => names.indexOf(name) !== at))]
+}

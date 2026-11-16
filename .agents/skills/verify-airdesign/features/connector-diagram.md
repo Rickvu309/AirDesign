@@ -6,7 +6,7 @@ A connector's ends attach to numbered sites on the shapes and pictures of its sl
 
 - `connector-ends` a selected connector shows two round grips at its ends instead of corner grips. Dragging one shows the sites of the shape under the pointer and marks the nearest within 12 px; letting go there lands one `connection` row on the connector. Letting go on an empty part of the slide lands one row that frees that end and moves it there. `Undo connector` takes either back. An attached connector does not move by its body or the arrow keys.
 - `connector-follows` while a person drags or resizes a shape a connector attaches to, the canvas routes the connector from the shape's live box, so it follows during the drag; after the drop, or a turn in the panel, it repaints from the export with the network off; `Undo move` puts both back. An elbow's route writes its turn, flips and `adj` values: the bend sits midway, or 0.25 in past both shapes when the two sites face the same way.
-- `connector-panel` the Connector section has Start and End, each None or Shape, with Attached to (the slide's shapes and pictures by name) and Site.
+- `connector-panel` the Connector section has Start and End, each None or Shape, with Start shape or End shape (the slide's shapes and pictures by name) and Start site or End site.
 - `agent-diagram` an agent sends `{op: "diagram", slide, labels: [...]}` in `airdesign_edit_deck`: one rounded shape per label, left to right, each joined to the next by an arrow attached right site to left site, then one group. The panel's Undo for the run takes it all back.
 
 ## How to get to it (user POV)

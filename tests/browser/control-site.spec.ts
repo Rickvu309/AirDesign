@@ -33,8 +33,8 @@ test("a site control names each site in plain words, moves the end to the one pi
   const section = await connectorPanel(page)
   const start = section.locator('[data-control="union"]').filter({ hasText: "Start" })
   const end = section.locator('[data-control="union"]').filter({ hasText: "End" })
-  await expect(start.getByRole("combobox", { name: "Site", exact: true })).toHaveText(/^Bottom/)
-  const site = end.getByRole("combobox", { name: "Site", exact: true })
+  await expect(start.getByRole("combobox", { name: "Start site", exact: true })).toHaveText(/^Bottom/)
+  const site = end.getByRole("combobox", { name: "End site", exact: true })
   await expect(site).toHaveText(/^Top/)
   const before = await placement(frame(page, "26"))
 

@@ -98,7 +98,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
     .filter({ has: page.getByRole("heading", { name: "Line", exact: true }) })
   await expect(line).toBeVisible()
   const rectangleBefore = await stroke("4")
-  const width = line.getByRole("textbox", { name: "Width", exact: true })
+  const width = line.getByRole("textbox", { name: "Line width", exact: true })
   await width.fill("6")
   await width.press("Enter")
   await line.getByRole("group", { name: "Join", exact: true }).getByRole("button", { name: "Bevel" }).click()

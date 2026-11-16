@@ -71,7 +71,7 @@ test("a person widens and dashes a line that comes from its style and puts an ar
   const connector = shapeAt(page, "6")
   const before = await stroked(rectangle)
   const line = await pickShape(page, rectangle)
-  const width = line.getByRole("textbox", { name: "Width", exact: true })
+  const width = line.getByRole("textbox", { name: "Line width", exact: true })
   await expect(width).toHaveValue("1")
   await expect(line.getByRole("group", { name: "Line", exact: true }).getByRole("button")).toHaveText([
     "None",
@@ -96,10 +96,10 @@ test("a person widens and dashes a line that comes from its style and puts an ar
   const ends = await pickConnector(page, connector)
   const tail = ends.getByRole("group", { name: "End arrow", exact: true })
   await expect(tail.getByText("End arrow", { exact: true })).toBeVisible()
-  await expect(tail.getByRole("combobox", { name: "Arrowhead", exact: true })).toHaveText(/^None/)
-  await choose(tail, "Arrowhead", "Triangle")
+  await expect(tail.getByRole("combobox", { name: "End arrowhead", exact: true })).toHaveText(/^None/)
+  await choose(tail, "End arrowhead", "Triangle")
   await expect.poll(async () => (await stroked(connector)).tail).toMatch(/url\(#.+-tail\)/)
-  const large = tail.getByRole("group", { name: "Width", exact: true }).getByRole("button", { name: "Large" })
+  const large = tail.getByRole("group", { name: "End arrow width", exact: true }).getByRole("button", { name: "Large" })
   await large.click()
   await expect(large).toHaveAttribute("aria-pressed", "true")
   await page.getByRole("button", { name: "Undo line", exact: true }).click()
