@@ -28,8 +28,8 @@
     {
       "file": "apps/web/src/commit-edit.ts",
       "names": ["flushPending"],
-      "digest": "92abe64643fb",
-      "blob": "cd69477bda0edbc6397400988fdb4c25c1f770c6"
+      "digest": "58e4a45aad60",
+      "blob": "9632f717c3a0a7b280d538d0801f9aba997b892c"
     },
     {
       "file": "apps/web/src/editor/use-deck-open.ts",
@@ -46,14 +46,14 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect"],
-      "digest": "d90aef375b4d",
-      "blob": "63cb76f91f9c23f4c26198bf8fefa82c3f39fc24"
+      "digest": "61c4d85cc98f",
+      "blob": "de80abb98be8a71f55a91c355f13eb0742c0c71f"
     },
     {
       "file": "packages/live/src/held.ts",
-      "names": ["sealRows", "writeDeckRows", "setAside", "takeAside"],
-      "digest": "ac3fce1afe77",
-      "blob": "78eb2cb1f22957e8c72173ed3c3bcf9539993593"
+      "names": ["sealRows", "confirmRows", "setAside", "takeAside"],
+      "digest": "a3e2231cd5e0",
+      "blob": "656d1944449f16e26028a318cd9506dd48f24c6b"
     },
     {
       "file": "packages/live/src/slide-replay.ts",

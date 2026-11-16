@@ -1,10 +1,11 @@
 ---- MODULE Tabs ----
 \* Two tabs of one browser have the same deck open. They share one copy of it in IndexedDB
-\* (packages/live): pending rows, the confirmed rows that mirror the server, and a head that
-\* changeHeld in held.ts reads in the same transaction as its write, so a tab whose memory
-\* missed the other tab's write reads the copy again before it writes. A tab learns of the
-\* other tab's edits only through the server: its follow sees a newer revision, reads the deck
-\* and writes it into the copy (adopt in cache.ts), then paints the copy.
+\* (packages/live): pending rows, the confirmed rows that mirror the server, the revision those
+\* rows hold, and a head that changeHeld in held.ts reads in the same transaction as its write,
+\* so a tab whose memory missed the other tab's write reads the copy again before it writes. A
+\* tab learns of the other tab's edits only through the server: its follow sees a newer
+\* revision, reads the deck and writes it into the copy (adopt in cache.ts), then paints the
+\* copy.
 \* The deck holds one text box with the file's words. The first tab moves it; the second tab
 \* then makes its words bold in the design panel, planned against the copy. A row that adds the
 \* box to the copy carries the file's words under it, its floor. Kept says a confirmed row keeps
@@ -20,22 +21,24 @@
 \* fmc say the copy holds them as confirmed rows. together says one once sealed both. words is
 \* what the bold row sets: bold words, or none when it was planned against an empty box.
 \* floored says the bold row carries the floor, as it does when the copy did not hold the box.
-\* older says the older tab wrote to the copy after a newer build opened it.
+\* older says the older tab wrote to the copy after a newer build opened it. crev is the
+\* revision the copy says it holds. wrote2 says the second tab's page wrote the bold row that is
+\* still pending (pageEdits in device.ts); a reload forgets it.
 \* mvAt and fmAt are the revisions they landed at on the server, 0 before. knownN is the
 \* revision tab N's mirror holds by its own account (known in connect), -1 on a page that has
 \* not read the deck. asked2 is the server's answer to a page's open that the page has not
 \* written into the copy yet. shownN is what tab N's canvas paints, "" for the notice.
 EXTENDS Integers
 
-VARIABLES made, mv, mvc, fm, fmc, together, words, floored, older,
+VARIABLES made, mv, mvc, fm, fmc, together, words, floored, older, crev,
           rev, mvAt, fmAt, version, reloads,
           stopped1, wire1, batch1, known1, shown1,
-          build2, wire2, batch2, known2, asked2, shown2
+          build2, wire2, batch2, known2, asked2, shown2, wrote2
 
-Rows == <<made, mv, mvc, fm, fmc, together, words, floored, older>>
+Rows == <<made, mv, mvc, fm, fmc, together, words, floored, older, crev>>
 Server == <<rev, mvAt, fmAt>>
 One == <<stopped1, wire1, batch1, known1, shown1>>
-Two == <<build2, wire2, batch2, known2, asked2, shown2>>
+Two == <<build2, wire2, batch2, known2, asked2, shown2, wrote2>>
 vars == <<Rows, Server, version, reloads, One, Two>>
 
 Reloads == 1
@@ -95,6 +98,7 @@ TypeOK ==
   /\ words \in Texts
   /\ floored \in BOOLEAN
   /\ older \in BOOLEAN
+  /\ crev \in 0..2
   /\ rev \in 0..2
   /\ mvAt \in 0..2
   /\ fmAt \in 0..2
@@ -111,6 +115,7 @@ TypeOK ==
   /\ build2 \in 1..2
   /\ shown1 \in Shown
   /\ shown2 \in Shown
+  /\ wrote2 \in BOOLEAN
 
 \* Both tabs opened the deck at revision 0 on the older build. The copy holds no rows yet.
 Init ==
@@ -123,6 +128,7 @@ Init ==
   /\ words = "file"
   /\ floored = FALSE
   /\ older = FALSE
+  /\ crev = 0
   /\ rev = 0
   /\ mvAt = 0
   /\ fmAt = 0
@@ -139,6 +145,7 @@ Init ==
   /\ known2 = 0
   /\ asked2 = -1
   /\ shown2 = "file"
+  /\ wrote2 = FALSE
 
 \* The older tab meets the newer build: it shows the newer-version notice instead of the deck
 \* and writes nothing more.
@@ -147,18 +154,31 @@ Stop ==
   /\ known1' = -1
   /\ shown1' = ""
 
-\* The answer to a batch: its pending rows go, and the rows become confirmed rows unless the
-\* tab's mirror already holds that revision. The mirror moves on when the revision is the next.
-Confirm(batch, known) ==
+\* The answer to a batch (confirmRows), in one transaction: its pending rows go, and the rows
+\* become confirmed rows, numbered after the copy's last one, unless the copy already holds that
+\* revision or a newer one. The tab's mirror moves on when the revision is the next and the tab
+\* wrote every row of the batch itself, so it painted them (takeEdits).
+Confirm(batch, known, own) ==
   LET at == LandedAt(batch) IN
   /\ mv' = IF HasMove(batch) THEN "none" ELSE mv
   /\ fm' = IF HasBold(batch) THEN "none" ELSE IF batch = "m+" THEN "sealed" ELSE fm
-  /\ IF known >= at
-     THEN UNCHANGED <<mvc, fmc, known>>
+  /\ IF crev >= at
+     THEN UNCHANGED <<mvc, fmc, crev>>
      ELSE /\ mvc' = (mvc \/ HasMove(batch))
           /\ fmc' = (fmc \/ HasBold(batch))
-          /\ known' = IF known = at - 1 THEN at ELSE known
+          /\ crev' = at
+  /\ known' = IF own /\ known = at - 1 THEN at ELSE known
+  /\ wrote2' = (wrote2 /\ ~HasBold(batch))
   /\ UNCHANGED <<made, together, words, floored>>
+
+\* adoptRows writes the deck at revision r into the copy as its confirmed rows, in one
+\* transaction, unless the copy holds a newer revision.
+Adopt(r) ==
+  IF r >= crev
+  THEN /\ mvc' = MovedAt(r)
+       /\ fmc' = BoldAt(r)
+       /\ crev' = r
+  ELSE UNCHANGED <<mvc, fmc, crev>>
 
 \* The server decides a batch: a spent once answers where it landed, a new one lands now.
 Apply(wire, batch) ==
@@ -179,7 +199,7 @@ Move ==
      ELSE /\ made' = 1
           /\ mv' = "row"
           /\ older' = (older \/ version = 2)
-          /\ UNCHANGED <<mvc, fm, fmc, together, words, floored, stopped1, wire1, batch1, known1>>
+          /\ UNCHANGED <<mvc, fm, fmc, together, words, floored, crev, stopped1, wire1, batch1, known1>>
           /\ shown1' = Copy'
   /\ UNCHANGED <<Server, version, reloads, Two>>
 
@@ -192,7 +212,8 @@ Format ==
   /\ fm' = "row"
   /\ words' = Bold(CopyText)
   /\ floored' = ~Moves
-  /\ UNCHANGED <<mv, mvc, fmc, together, older, build2, wire2, batch2, known2, asked2>>
+  /\ wrote2' = TRUE
+  /\ UNCHANGED <<mv, mvc, fmc, together, older, crev, build2, wire2, batch2, known2, asked2>>
   /\ shown2' = Copy'
   /\ UNCHANGED <<Server, version, reloads, One>>
 
@@ -210,7 +231,7 @@ SendOne ==
           /\ batch1' = First
           /\ Seal
           /\ older' = (older \/ version = 2)
-          /\ UNCHANGED <<made, mvc, fmc, words, floored, stopped1, known1, shown1>>
+          /\ UNCHANGED <<made, mvc, fmc, words, floored, crev, stopped1, known1, shown1>>
   /\ UNCHANGED <<Server, version, reloads, Two>>
 
 SendTwo ==
@@ -222,27 +243,27 @@ SendTwo ==
   /\ wire2' = "sent"
   /\ batch2' = IF First = "m" /\ fm = "row" THEN "m+" ELSE First
   /\ Seal
-  /\ UNCHANGED <<made, mvc, fmc, words, floored, older, build2, known2, asked2, shown2>>
+  /\ UNCHANGED <<made, mvc, fmc, words, floored, older, crev, build2, known2, asked2, shown2, wrote2>>
   /\ UNCHANGED <<Server, version, reloads, One>>
 
 ApplyOne == Apply(wire1, batch1) /\ UNCHANGED <<stopped1, known1, shown1, Two>>
 
-ApplyTwo == Apply(wire2, batch2) /\ UNCHANGED <<build2, known2, asked2, shown2, One>>
+ApplyTwo == Apply(wire2, batch2) /\ UNCHANGED <<build2, known2, asked2, shown2, wrote2, One>>
 
 AnswerOne ==
   /\ wire1 = "applied"
   /\ wire1' = "none"
   /\ batch1' = ""
   /\ IF stopped1 \/ version = 2
-     THEN Stop /\ UNCHANGED Rows
-     ELSE /\ Confirm(batch1, known1)
+     THEN Stop /\ UNCHANGED <<Rows, wrote2>>
+     ELSE /\ Confirm(batch1, known1, batch1 = "m")
           /\ older' = (older \/ version = 2)
           /\ UNCHANGED <<stopped1, shown1>>
-  /\ UNCHANGED <<Server, version, reloads, Two>>
+  /\ UNCHANGED <<Server, version, reloads, build2, wire2, batch2, known2, asked2, shown2>>
 
 AnswerTwo ==
   /\ wire2 = "applied"
-  /\ Confirm(batch2, known2)
+  /\ Confirm(batch2, known2, batch2 = "f" /\ wrote2)
   /\ IF batch2 = "m+"
      THEN /\ wire2' = "sent"
           /\ batch2' = "f"
@@ -252,9 +273,8 @@ AnswerTwo ==
 
 \* follow: the server has a revision the tab's mirror does not; the tab reads the deck, writes
 \* it into the copy as its confirmed rows, and paints the copy. It waits for the tab's own send,
-\* and the model has no tab write confirmed rows while a request is on its way: sendBatches
-\* numbers the rows an answer confirms from the view it read when the flush began, which the
-\* model does not track.
+\* and the model has no tab write confirmed rows while a request is on its way: it does not
+\* track the row keys confirmRows numbers an answer's rows by.
 FollowOne ==
   /\ ~stopped1
   /\ wire1 = "none"
@@ -262,8 +282,7 @@ FollowOne ==
   /\ known1 < rev
   /\ IF version = 2
      THEN Stop /\ UNCHANGED <<Rows, wire1, batch1>>
-     ELSE /\ mvc' = MovedAt(rev)
-          /\ fmc' = BoldAt(rev)
+     ELSE /\ Adopt(rev)
           /\ known1' = rev
           /\ older' = (older \/ version = 2)
           /\ UNCHANGED <<made, mv, fm, together, words, floored, stopped1, wire1, batch1>>
@@ -276,10 +295,9 @@ FollowTwo ==
   /\ asked2 = -1
   /\ known2 # -1
   /\ known2 < rev
-  /\ mvc' = MovedAt(rev)
-  /\ fmc' = BoldAt(rev)
+  /\ Adopt(rev)
   /\ known2' = rev
-  /\ UNCHANGED <<made, mv, fm, together, words, floored, older, build2, wire2, batch2, asked2>>
+  /\ UNCHANGED <<made, mv, fm, together, words, floored, older, build2, wire2, batch2, asked2, wrote2>>
   /\ shown2' = Copy'
   /\ UNCHANGED <<Server, version, reloads, One>>
 
@@ -294,6 +312,7 @@ ReloadTwo ==
   /\ known2' = -1
   /\ asked2' = -1
   /\ shown2' = Copy
+  /\ wrote2' = FALSE
   /\ UNCHANGED <<Rows, Server, wire2, batch2, One>>
 
 \* The opening page's open: the server answers with the deck as it is now, and the page keeps
@@ -302,19 +321,19 @@ ReadTwo ==
   /\ known2 = -1
   /\ asked2 = -1
   /\ asked2' = rev
-  /\ UNCHANGED <<Rows, Server, version, reloads, build2, wire2, batch2, known2, shown2, One>>
+  /\ UNCHANGED <<Rows, Server, version, reloads, build2, wire2, batch2, known2, shown2, wrote2, One>>
 
 \* openDeck, or the first send, writes the kept answer into the copy as its confirmed rows
-\* (adoptOpening and adopt) and the page paints the copy.
+\* (adoptOpening and adopt) unless the copy holds a newer revision, and the page paints the
+\* copy. Its mirror takes the answer's revision either way, so a newer one is followed.
 AdoptTwo ==
   /\ asked2 # -1
   /\ wire1 = "none"
   /\ wire2 = "none"
-  /\ mvc' = MovedAt(asked2)
-  /\ fmc' = BoldAt(asked2)
+  /\ Adopt(asked2)
   /\ known2' = asked2
   /\ asked2' = -1
-  /\ UNCHANGED <<made, mv, fm, together, words, floored, older, build2, wire2, batch2>>
+  /\ UNCHANGED <<made, mv, fm, together, words, floored, older, build2, wire2, batch2, wrote2>>
   /\ shown2' = Copy'
   /\ UNCHANGED <<Server, version, reloads, One>>
 
@@ -342,9 +361,9 @@ OlderStaysOut == ~older
 
 \* Once no row is pending, no answer is on its way and each tab's mirror holds the server's
 \* revision, each tab that shows the deck paints the server's deck. Harm if broken: a tab shows
-\* an old deck and its follow never paints it again. Today's code breaks it (Tabs.known.cfg): a
-\* tab that sends the other tab's pending row moves its mirror past a revision it never painted,
-\* Move, SendTwo, ApplyTwo, AnswerTwo, FollowOne.
+\* an old deck and its follow never paints it again. Main broke it until a tab moved its mirror
+\* on only for rows it wrote: a tab that sent the other tab's pending row moved its mirror past a
+\* revision it never painted, Move, SendTwo, ApplyTwo, AnswerTwo, FollowOne.
 Quiet1 == stopped1 \/ (wire1 = "none" /\ known1 = rev)
 Quiet2 == wire2 = "none" /\ asked2 = -1 /\ known2 = rev
 
@@ -354,8 +373,8 @@ SettledShowsServer ==
 
 \* The copy never loses a confirmed row: no tab writes an older view of the deck over it. Harm if
 \* broken: the other tab plans its next edit against a deck without a saved edit and writes over
-\* it. Today's code breaks it (Tabs.known.cfg): an opening page adopts the answer it kept while
-\* the other tab's answer confirmed a newer revision, Move, SendOne, ReloadTwo, ReadTwo, ApplyOne,
-\* AnswerOne, AdoptTwo.
+\* it. Main broke it until the copy kept its revision: an opening page adopted the answer it kept
+\* while the other tab's answer confirmed a newer revision, Move, SendOne, ReloadTwo, ReadTwo,
+\* ApplyOne, AnswerOne, AdoptTwo.
 NoOlderView == [][(mvc => mvc') /\ (fmc => fmc')]_vars
 ====

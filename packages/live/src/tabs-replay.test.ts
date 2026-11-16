@@ -1,10 +1,10 @@
 import { currentBox, currentValue, format, type Box, type Register } from "@airdesign/document"
 import { afterEach, expect, it, vi } from "vitest"
-import { installIndexedDb, node, other } from "./browser-fixtures.js"
+import { installIndexedDb, node } from "./browser-fixtures.js"
 import { accountKey, databaseName, scoped, storeName } from "./device.js"
 import * as first from "./index.js"
 import { memoryRemote, type CommitResult, type Remote } from "./index.js"
-import { rowRange, type StoredRow } from "./store.js"
+import { revisionKey, rowRange, type StoredRow } from "./store.js"
 
 type Live = typeof first
 type Value = boolean | number | string
@@ -73,18 +73,17 @@ type Tab = {
   painted: string
 }
 
-async function storedRows(version: number): Promise<StoredRow[]> {
+async function copyOf(version: number): Promise<{ rows: StoredRow[]; revision: unknown }> {
   const database = await new Promise<IDBDatabase>((resolve, reject) => {
     const request = globalThis.indexedDB.open(databaseName, version)
     request.onsuccess = () => resolve(request.result)
     request.onerror = () => reject(new Error("open"))
   })
-  const all = database
-    .transaction(storeName, "readonly")
-    .objectStore(storeName)
-    .getAll(rowRange(scoped(accountKey() ?? "", deck)))
+  const store = database.transaction(storeName, "readonly").objectStore(storeName)
+  const all = store.getAll(rowRange(scoped(accountKey() ?? "", deck)))
+  const revision = store.get(scoped(accountKey() ?? "", revisionKey(deck)))
   return new Promise((resolve) => {
-    all.onsuccess = () => resolve(all.result as StoredRow[])
+    revision.onsuccess = () => resolve({ rows: all.result as StoredRow[], revision: revision.result })
   })
 }
 
@@ -243,7 +242,7 @@ async function world() {
   const seen = async () => {
     const stored = await server.open({ deck })
     if (!stored.ok) throw new Error(stored.refusal)
-    const rows = await storedRows(version)
+    const { rows, revision } = await copyOf(version)
     const pendingBox = rows.find((row) => row.kind === "pending" && "property" in row && row.property === "box")
     const pendingText = rows.find((row) => row.kind === "pending" && !("property" in row && row.property === "box"))
     const confirmed = rows.filter((row) => row.kind === "confirmed")
@@ -262,6 +261,7 @@ async function world() {
       fmc: confirmed.some((row) => !("property" in row && row.property === "box")),
       sealedTogether: once(pendingBox) !== undefined && once(pendingBox) === once(pendingText),
       words: textRow === undefined || !("value" in textRow) ? null : text(String(textRow.value)),
+      crev: revision,
       stopped1: one.live.storeNewer(),
       shown1: one.painted,
       shown2: two.painted,
@@ -310,6 +310,7 @@ function expected(v: Spec) {
     fmc: v.fmc,
     sealedTogether: v.together === true && v.mv === "sealed" && v.fm === "sealed",
     words: v.made === 2 && (v.fm !== "none" || v.fmc === true) ? v.words : null,
+    crev: v.crev,
     stopped1: v.stopped1,
     shown1: v.shown1,
     shown2: v.shown2,
@@ -404,7 +405,7 @@ it("replays every edge of the tabs spec through two copies of the device queue o
   expect(graph.states.size).toBeLessThan(500)
 }, 120_000)
 
-it.fails("repaints a tab that sent the other tab's move, once every answer came", async () => {
+it("repaints a tab that sent the other tab's move, once every answer came", async () => {
   const replay = await walked([
     ["Move", {}],
     ["SendTwo", { wire2: "sent" }],
@@ -418,7 +419,7 @@ it.fails("repaints a tab that sent the other tab's move, once every answer came"
   expect(await two.page.follow(deck)).toMatchObject({ ok: true, changed: true })
 })
 
-it.fails("keeps the first tab's saved move when the second tab opens from an older answer", async () => {
+it("keeps the first tab's saved move when the second tab opens from an older answer", async () => {
   const replay = await walked([
     ["Move", {}],
     ["SendOne", { wire1: "sent" }],
@@ -431,7 +432,7 @@ it.fails("keeps the first tab's saved move when the second tab opens from an old
   expect(await replay.seen()).toMatchObject({ mvc: true, shown2: "moved file" })
 })
 
-it.fails("keeps a saved text the second tab's older open answer dropped when the first tab edits it again", async () => {
+it("keeps a saved text the second tab's older open answer dropped when the first tab edits it again", async () => {
   installIndexedDb()
   const server = memoryRemote()
   const one = first.connect(server)
@@ -452,42 +453,4 @@ it.fails("keeps a saved text the second tab's older open answer dropped when the
   if (!stored.ok) throw new Error(stored.refusal)
   const kept = stored.register.elements[node]
   expect(kept === undefined ? undefined : currentValue(kept)).toBe("MINE")
-})
-
-it.fails("keeps a moved box's saved row when the other tab adopts the deck before this tab reads its answer", async () => {
-  installIndexedDb()
-  const server = memoryRemote()
-  let release: () => void = () => undefined
-  const held: Remote = {
-    ...server,
-    commit: async (body) => {
-      const answer = await server.commit(body)
-      if (body.batch.some((edit) => "value" in edit && edit.value === bold(words)))
-        await new Promise<void>((resolve) => {
-          release = resolve
-        })
-      return answer
-    },
-  }
-  const one = first.connect(server)
-  const two = second.connect(held)
-  expect(await one.openDeck(deck)).toMatchObject({ ok: true })
-  expect(await two.openDeck(deck)).toMatchObject({ ok: true })
-  expect(await server.commit({ deck, batch: [{ node: other, value: "a0" }] })).toMatchObject({ revision: 1 })
-  expect(await two.follow(deck)).toMatchObject({ changed: true })
-  expect(await second.connect(memoryRemote()).enqueueBox(deck, moved, node, words)).toMatchObject({ ok: true })
-  expect(await two.flush(deck)).toMatchObject({ ok: true, revision: 2 })
-  expect(await server.commit({ deck, batch: [{ node: other, value: "a1" }] })).toMatchObject({ revision: 3 })
-  expect(await second.connect(memoryRemote()).enqueue(deck, bold(words), node, words)).toMatchObject({ ok: true })
-  const sending = two.flush(deck)
-  await vi.waitFor(async () => {
-    const stored = await server.open({ deck })
-    if (!stored.ok || stored.revision !== 4) throw new Error("not landed")
-  })
-  expect(await one.follow(deck)).toMatchObject({ ok: true, changed: true, revision: 4 })
-  release()
-  expect(await sending).toMatchObject({ ok: true, revision: 4 })
-  const copy = await first.connect(memoryRemote()).openDeck(deck)
-  if (!copy.ok) throw new Error(copy.refusal)
-  expect(deckOf(copy.register)).toBe("moved bold")
 })

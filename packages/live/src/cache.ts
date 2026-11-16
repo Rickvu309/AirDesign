@@ -24,7 +24,17 @@ import { queueIndex, sendIndex } from "./deck-index.js"
 import { accountKey, markNewer, storeNewer } from "./device.js"
 import { rowsFromRegister, view, type DeckView, type LivePhase } from "./deck-view.js"
 import { slideChange, valueChange, type Enqueued } from "./deck-edit.js"
-import { changeHeld, heldView, sealRows, setAside, takeAside, unsealRows, writeDeckRows } from "./held.js"
+import {
+  adoptRows,
+  confirmRows,
+  editHeld,
+  heldView,
+  sealRows,
+  setAside,
+  takeAside,
+  takeEdits,
+  unsealRows,
+} from "./held.js"
 import { bodyBytes, nextBatch, wireOf } from "./commit-body.js"
 import { refusedRows } from "./slide-replay.js"
 import { idleDays, markSeen, sweepIdle } from "./device-sweep.js"
@@ -39,15 +49,7 @@ import {
   type Shelf,
   type Unsaved,
 } from "./unsaved.js"
-import {
-  fitConfirmed,
-  isConfirmed,
-  readRows,
-  rowKey,
-  type ConfirmedRow,
-  type PendingRow,
-  type StoredRow,
-} from "./store.js"
+import { fitConfirmed, rowKey, type ConfirmedRow, type PendingRow, type StoredRow } from "./store.js"
 
 export type { LivePhase } from "./deck-view.js"
 
@@ -141,7 +143,6 @@ export function connect(remote: Remote, options: Options = {}) {
 
   async function sendBatches(deck: DeckId, held: DeckView): Promise<CommitResult> {
     const sending = [...unsent(held.pending, 0)]
-    let revision = held.confirmed.reduce((max, row) => Math.max(max, row.revision + 1), 0)
     let result: CommitResult = { ok: false, refusal: "batch" }
     for (let start = 0; start < sending.length;) {
       const first = sending[start]
@@ -166,15 +167,9 @@ export function connect(remote: Remote, options: Options = {}) {
       if (result.deck !== deck || result.key !== `${deck}:${result.revision}`) {
         return { ok: false, refusal: "payload" }
       }
-      const sent = rowsInBatch.map((row) => rowKey(deck, "pending", row.order))
-      const mirror = known.get(deck)
       start += rowsInBatch.length
-      if (mirror !== undefined && result.revision <= mirror) {
-        await writeDeckRows(deck, [], sent, "stale")
-        continue
-      }
-      if (mirror === result.revision - 1) known.set(deck, result.revision)
       const stored: ConfirmedRow[] = []
+      let revision = 0
       for (const row of rowsInBatch) {
         if (row.slideEdit !== undefined && row.slideFile !== undefined) {
           stored.push({
@@ -190,12 +185,9 @@ export function connect(remote: Remote, options: Options = {}) {
         }
         revision = fitConfirmed(deck, revision, row, row.node, stored, row.floor)
       }
-      await writeDeckRows(
-        deck,
-        stored.map((row) => ({ key: rowKey(deck, "confirmed", row.revision), row })),
-        sent,
-        "same",
-      )
+      const sent = rowsInBatch.map((row) => rowKey(deck, "pending", row.order))
+      await confirmRows(deck, result.revision, stored, sent)
+      if (takeEdits(deck, rowsInBatch) && known.get(deck) === result.revision - 1) known.set(deck, result.revision)
     }
     return result
   }
@@ -237,16 +229,7 @@ export function connect(remote: Remote, options: Options = {}) {
   }
 
   async function adopt(deck: DeckId, opened: Extract<OpenResult, { ok: true }>): Promise<void> {
-    if (accountKey() !== undefined) {
-      const confirmed = rowsFromRegister(deck, opened.register)
-      const existing = await readRows(deck)
-      await writeDeckRows(
-        deck,
-        confirmed.map((row) => ({ key: rowKey(deck, "confirmed", row.revision), row })),
-        existing.filter(isConfirmed).map((row) => rowKey(deck, "confirmed", row.revision)),
-        "stale",
-      )
-    }
+    if (accountKey() !== undefined) await adoptRows(deck, opened.revision, rowsFromRegister(deck, opened.register))
     openingDecks.set(deck, Promise.resolve(opened))
     known.set(deck, opened.revision)
   }
@@ -279,7 +262,7 @@ export function connect(remote: Remote, options: Options = {}) {
   ): Promise<Enqueued> {
     const account = accountKey()
     if (account === undefined) return Promise.resolve(signedOut)
-    return changeHeld<Enqueued>(deck, (held) => {
+    return editHeld<Enqueued>(deck, (held) => {
       if (replaying !== undefined && !holdsUnsaved(shelf, account, deck, replaying))
         return { puts: [], result: { ok: true, body: undefined } }
       return valueChange(deck, held, edit, named, floor)
@@ -294,7 +277,7 @@ export function connect(remote: Remote, options: Options = {}) {
   ): Promise<EnqueueResult<readonly string[]>> {
     const account = accountKey()
     if (account === undefined) return Promise.resolve(signedOut)
-    return changeHeld<EnqueueResult<readonly string[]>>(deck, (held) => {
+    return editHeld<EnqueueResult<readonly string[]>>(deck, (held) => {
       if (replaying !== undefined && !holdsUnsaved(shelf, account, deck, replaying))
         return { puts: [], result: { ok: true, painted: [] } }
       return slideChange(deck, held, file, command)
@@ -421,14 +404,11 @@ export function connect(remote: Remote, options: Options = {}) {
         const opened = await openOnce(parsed.deck)
         if (!opened.ok) return opened
         const confirmed = rowsFromRegister(parsed.deck, opened.register)
-        await writeDeckRows(
-          parsed.deck,
-          confirmed.map((row) => ({ key: rowKey(parsed.deck, "confirmed", row.revision), row })),
-          [],
-          "stale",
-        )
+        const adopted = await adoptRows(parsed.deck, opened.revision, confirmed)
         if (!known.has(parsed.deck)) known.set(parsed.deck, opened.revision)
-        return { ok: true, ...view(parsed.deck, confirmed) }
+        if (adopted) return { ok: true, ...view(parsed.deck, confirmed) }
+        const newer = await readRecovered(parsed.deck)
+        return newer === null ? signedOut : { ok: true, ...newer }
       })
     },
     async phase(deck: string): Promise<LivePhase> {

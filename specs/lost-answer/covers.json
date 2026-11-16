@@ -4,8 +4,8 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect"],
-      "digest": "6e362b0f43eb",
-      "blob": "c39ee2e683f4d542af2817faf861f6242af5edc8"
+      "digest": "61c4d85cc98f",
+      "blob": "de80abb98be8a71f55a91c355f13eb0742c0c71f"
     },
     {
       "file": "packages/live/src/slide-replay.ts",
@@ -15,9 +15,9 @@
     },
     {
       "file": "packages/live/src/held.ts",
-      "names": ["sealRows", "unsealRows", "setAside", "takeAside"],
-      "digest": "aa929276408c",
-      "blob": "ac9e4f141d0e7c66ddc80ba2182e77f900e4e822"
+      "names": ["sealRows", "confirmRows", "takeEdits", "unsealRows", "setAside", "takeAside"],
+      "digest": "4ab7dde1de44",
+      "blob": "656d1944449f16e26028a318cd9506dd48f24c6b"
     },
     {
       "file": "packages/live/src/commit-body.ts",
@@ -46,8 +46,8 @@
     {
       "file": "apps/web/src/commit-edit.ts",
       "names": ["flushPending"],
-      "digest": "92abe64643fb",
-      "blob": "e28d007627a3a99b73507b87b6f6f547da088533"
+      "digest": "58e4a45aad60",
+      "blob": "9632f717c3a0a7b280d538d0801f9aba997b892c"
     }
   ]
 }

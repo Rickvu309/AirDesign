@@ -9,7 +9,8 @@
 \* every answer to it names landedAt. wire is the live page's request; orphan is a request a
 \* reloaded page sent and never hears back from. known is the revision the device's mirror
 \* holds, -1 on a page that has not read the deck yet. mirror counts the command in the
-\* mirror, and pending says the pending row is still on the device. other says another
+\* mirror, and pending says the pending row is still on the device. mine says the live page
+\* wrote the pending row itself (pageEdits in device.ts), so it painted it; a reload forgets. other says another
 \* writer, an agent or another tab, wrote once. due says the page will send the pending row:
 \* after the person's edit, when a page opens, and after a send whose fetch threw, which
 \* resendPending in apps/web/src/deck-resend.ts sends again with backoff. A fetch throws when
@@ -20,9 +21,9 @@
 \* the server's answer.
 EXTENDS Integers
 
-VARIABLES lands, landedAt, rev, wire, orphan, pending, mirror, known, reloads, other, due
+VARIABLES lands, landedAt, rev, wire, orphan, pending, mirror, known, reloads, other, due, mine
 
-vars == <<lands, landedAt, rev, wire, orphan, pending, mirror, known, reloads, other, due>>
+vars == <<lands, landedAt, rev, wire, orphan, pending, mirror, known, reloads, other, due, mine>>
 
 Reloads == 2
 
@@ -38,6 +39,7 @@ TypeOK ==
   /\ reloads \in 0..Reloads
   /\ other \in 0..1
   /\ due \in BOOLEAN
+  /\ mine \in BOOLEAN
 
 \* The person added a slide on a deck the device read at revision 0.
 Init ==
@@ -52,6 +54,7 @@ Init ==
   /\ reloads = 0
   /\ other = 0
   /\ due = TRUE
+  /\ mine = TRUE
 
 \* The server decides a send: a spent once answers where it landed, a new one lands now.
 Lands ==
@@ -69,13 +72,13 @@ Send ==
   /\ known # -1
   /\ wire' = "sent"
   /\ due' = FALSE
-  /\ UNCHANGED <<lands, landedAt, rev, orphan, pending, mirror, known, reloads, other>>
+  /\ UNCHANGED <<lands, landedAt, rev, orphan, pending, mirror, known, reloads, other, mine>>
 
 Land ==
   /\ wire = "sent"
   /\ Lands
   /\ wire' = "answered"
-  /\ UNCHANGED <<orphan, pending, mirror, known, reloads, other, due>>
+  /\ UNCHANGED <<orphan, pending, mirror, known, reloads, other, due, mine>>
 
 \* The request or its answer is lost: the fetch throws or the answer cannot be read, the row
 \* stays pending, and a resend is due.
@@ -83,18 +86,22 @@ Lose ==
   /\ wire \in {"sent", "answered"}
   /\ wire' = "none"
   /\ due' = TRUE
-  /\ UNCHANGED <<lands, landedAt, rev, orphan, pending, mirror, known, reloads, other>>
+  /\ UNCHANGED <<lands, landedAt, rev, orphan, pending, mirror, known, reloads, other, mine>>
 
-\* sendRows reads the answer. A revision the mirror already holds means the mirror holds the
-\* command: the row goes and nothing is added. Otherwise the row becomes a confirmed row.
+\* sendRows reads the answer (confirmRows). A revision the copy already holds means the mirror
+\* holds the command: the row goes and nothing is added. Otherwise the row becomes a confirmed
+\* row. The copy stores the revision it holds; with one page it equals known whenever an answer
+\* comes, since only an answer that ends the pending row moves it past known. The mirror moves
+\* on to the revision when it is the next one and the page wrote the row itself.
 Answer ==
   /\ wire = "answered"
   /\ wire' = "none"
   /\ pending' = FALSE
+  /\ mine' = FALSE
   /\ IF known # -1 /\ landedAt <= known
      THEN UNCHANGED <<mirror, known>>
      ELSE /\ mirror' = mirror + 1
-          /\ known' = IF known = landedAt - 1 THEN landedAt ELSE known
+          /\ known' = IF mine /\ known = landedAt - 1 THEN landedAt ELSE known
   /\ UNCHANGED <<lands, landedAt, rev, orphan, reloads, other, due>>
 
 \* A reload drops the page's memory. A request on its way stays on its way, unheard. The page
@@ -107,18 +114,19 @@ Reload ==
   /\ wire' = "none"
   /\ orphan' = IF wire = "sent" THEN "sent" ELSE "none"
   /\ due' = TRUE
+  /\ mine' = FALSE
   /\ UNCHANGED <<lands, landedAt, rev, pending, mirror, other>>
 
 OrphanLands ==
   /\ orphan = "sent"
   /\ orphan' = "none"
   /\ Lands
-  /\ UNCHANGED <<wire, pending, mirror, known, reloads, other, due>>
+  /\ UNCHANGED <<wire, pending, mirror, known, reloads, other, due, mine>>
 
 OrphanLost ==
   /\ orphan = "sent"
   /\ orphan' = "none"
-  /\ UNCHANGED <<lands, landedAt, rev, wire, pending, mirror, known, reloads, other, due>>
+  /\ UNCHANGED <<lands, landedAt, rev, wire, pending, mirror, known, reloads, other, due, mine>>
 
 \* adopt replaces the mirror with the server's deck: opening the deck on a new page, or a
 \* follow that saw a newer revision. Both wait for the page's own send (serial).
@@ -127,13 +135,13 @@ Adopt ==
   /\ known = -1 \/ known < rev
   /\ known' = rev
   /\ mirror' = lands
-  /\ UNCHANGED <<lands, landedAt, rev, wire, orphan, pending, reloads, other, due>>
+  /\ UNCHANGED <<lands, landedAt, rev, wire, orphan, pending, reloads, other, due, mine>>
 
 Other ==
   /\ other = 0
   /\ other' = 1
   /\ rev' = rev + 1
-  /\ UNCHANGED <<lands, landedAt, wire, orphan, pending, mirror, known, reloads, due>>
+  /\ UNCHANGED <<lands, landedAt, wire, orphan, pending, mirror, known, reloads, due, mine>>
 
 Next == Send \/ Land \/ Lose \/ Answer \/ Reload \/ OrphanLands \/ OrphanLost \/ Adopt \/ Other
 
