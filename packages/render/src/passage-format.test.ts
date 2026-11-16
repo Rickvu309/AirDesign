@@ -24,19 +24,21 @@ async function mounted() {
     fresh += 1
   })
   const edits: string[] = []
+  const kinds: string[] = []
   const host = document.createElement("div")
   host.tabIndex = 0
   document.body.append(host)
   const root = createRoot(host)
   roots.push({ host, root })
-  const onEdit = (value: string) => {
+  const onEdit = (value: string, kind: string) => {
     edits.push(value)
+    kinds.push(kind)
     store.publish({ id, kind: "shape", text: value, picture: null })
   }
   await act(async () => root.render(createElement(Passage, { store, id, onEdit, formatting })))
   const editor = host.querySelector("[contenteditable]")
   if (!(editor instanceof HTMLElement)) throw new Error("missing passage")
-  return { host, editor, formatting, edits, fresh: () => fresh }
+  return { host, editor, formatting, edits, kinds, fresh: () => fresh }
 }
 
 async function select(editor: HTMLElement, from: number, to: number) {
@@ -71,6 +73,15 @@ it("makes the selected range bold as one text edit and keeps it selected", async
   expect(editor.querySelectorAll("[data-bold=true]")).toHaveLength(1)
   expect(window.getSelection()?.toString()).toBe("llo w")
   expect(formatting.state("bold")).toBe("on")
+})
+
+it("reports bold and Larger as format edits, never as text edits", async () => {
+  const { editor, formatting, kinds } = await mounted()
+  await select(editor, 2, 7)
+  formatting.aim(id, editor)
+  await act(async () => formatting.toggle("bold"))
+  await act(async () => formatting.resize(1))
+  expect(kinds).toEqual(["format", "format"])
 })
 
 it("turns a range back to the value it started from", async () => {

@@ -13,6 +13,7 @@ import { canDrag, enterElement, useMoves } from "./slide-moves.js"
 import type { CanvasSlide } from "./record.js"
 import type { TableBar } from "./table-paint.js"
 import type { PaintStore } from "./store.js"
+import type { TextEditKind } from "./passage.js"
 import { ensureBulletRule, type Scaled } from "./text-look.js"
 import type { TextFormatting } from "./text-formatting.js"
 
@@ -40,7 +41,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly width: number
   readonly className?: string
   readonly quiet?: boolean
-  readonly onEdit?: (id: ElementId, value: string) => void
+  readonly onEdit?: (id: ElementId, value: string, kind: TextEditKind) => void
   readonly onBox?: (id: ElementId, box: Box) => void
   readonly onRemove?: (ids: readonly ElementId[]) => void
   readonly onOrder?: (id: ElementId, move: StackMove) => void

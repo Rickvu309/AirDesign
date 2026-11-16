@@ -4,7 +4,7 @@ import { followed, ownBox } from "./box-gesture.js"
 import { useFollowed, type Targets } from "./connector-follow.js"
 import { useBox, useElement } from "./element-view.js"
 import { paragraphText, textValue } from "./paragraph-edit.js"
-import { framedOutline, Passage } from "./passage.js"
+import { framedOutline, Passage, type TextEditKind } from "./passage.js"
 import type { CanvasElement, CanvasText, PaintBox } from "./record.js"
 import { paintsFillAsSvg, ShapeArt } from "./shape-art.js"
 import { SheetText } from "./sheet-text.js"
@@ -36,7 +36,7 @@ export type ElementPaintProps = {
   readonly element: CanvasElement
   readonly scaled: Scaled
   readonly quiet: boolean
-  readonly onEdit?: ((id: ElementId, value: string) => void) | undefined
+  readonly onEdit?: ((id: ElementId, value: string, kind: TextEditKind) => void) | undefined
   readonly onTable?: ((id: ElementId, change: TableChange) => void) | undefined
   readonly tableBar?: TableBar | undefined
   readonly moves: Moves | null
@@ -272,7 +272,7 @@ function PlacedText(props: {
   readonly element: CanvasElement
   readonly id: ElementId
   readonly scaled: Scaled
-  readonly onEdit?: ((id: ElementId, value: string) => void) | undefined
+  readonly onEdit?: ((id: ElementId, value: string, kind: TextEditKind) => void) | undefined
   readonly moves: Moves | null
   readonly unshown: boolean
   readonly drawnWhenBlank: boolean
@@ -358,7 +358,7 @@ function PlacedText(props: {
             framed={moves !== null}
             id={id}
             look={look}
-            onEdit={(value) => onEdit(id, value)}
+            onEdit={(value, kind) => onEdit(id, value, kind)}
             prompt={showPrompt ? (element.prompt ?? undefined) : undefined}
             store={store}
           />

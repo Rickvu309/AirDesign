@@ -200,12 +200,14 @@ export function refusedInput(event: InputEvent): boolean {
   return event.inputType.startsWith("format") || event.inputType.startsWith("history")
 }
 
+export type TextEditKind = "text" | "format"
+
 export const framedOutline = { outlineStyle: "solid", outlineWidth: 2, outlineColor: "transparent" } as const
 
 export function Passage(props: {
   readonly store: PaintStore
   readonly id: ElementId
-  readonly onEdit?: (value: string) => void
+  readonly onEdit?: (value: string, kind: TextEditKind) => void
   readonly look?: TextLook | undefined
   readonly framed?: boolean
   readonly prompt?: string | undefined
@@ -237,16 +239,16 @@ export function Passage(props: {
     const shown = box.current
     if (shown !== null && look !== undefined && !composing.current) restyle(shown, look)
   })
-  function report(value: string) {
+  function report(value: string, kind: TextEditKind = "text") {
     if (value === reported.current) return
     reported.current = value
     if (props.onEdit === undefined) return
     pending.current.push(value)
-    props.onEdit(value)
+    props.onEdit(value, kind)
   }
-  function edit(shown: HTMLElement, value: TextValue, caret: Caret, end: Caret = caret) {
+  function edit(shown: HTMLElement, value: TextValue, caret: Caret, end: Caret = caret, kind: TextEditKind = "text") {
     showValue(shown, value, { start: caret, end }, look)
-    report(writeTextValue(value))
+    report(writeTextValue(value), kind)
   }
   const formats = useRef<FormatEdit | null>(null)
   formats.current = {
@@ -255,7 +257,7 @@ export function Passage(props: {
       const read = readBox(shown)
       return { value: read.value, carets: selectionCarets(shown, read.units) }
     },
-    edit,
+    edit: (shown, value, start, end) => edit(shown, value, start, end, "format"),
   }
   const { formatting, id } = props
   useLayoutEffect(() => {
