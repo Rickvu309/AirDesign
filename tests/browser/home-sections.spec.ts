@@ -43,3 +43,65 @@ test("All decks with no decks shows the empty state", async ({ page }) => {
   await page.goto("/all")
   await expect(page.getByRole("heading", { name: "No decks yet" })).toBeVisible()
 })
+
+test("the loaded list header stays in the loading header's position", async ({ page }) => {
+  let release = () => {}
+  const pending = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await store(page, many)
+  await page.route("**/decks/list", async (route) => {
+    await pending
+    await route.fallback()
+  })
+  await page.goto("/?view=list")
+  const header = page.getByText("Name", { exact: true })
+  await expect(header).toBeVisible()
+  const before = await header.boundingBox()
+  release()
+  await expect(cards(page)).toHaveCount(6)
+  const after = await header.boundingBox()
+  expect(after?.y).toBe(before?.y)
+})
+
+test("All decks uses the compact design while Recents keeps its previews", async ({ page }) => {
+  await store(page, many)
+  for (const [address, gap, height] of [
+    ["/all", 24, 180],
+    ["/", 32, 200],
+  ] as const) {
+    await page.goto(address)
+    await expect(cards(page)).toHaveCount(address === "/all" ? 8 : 6)
+    const geometry = await page
+      .locator("[data-decks-main] article")
+      .first()
+      .evaluate((card) => {
+        const grid = card.parentElement
+        const header = document.querySelector("[data-decks-header]")
+        return {
+          gap: grid && header ? grid.getBoundingClientRect().top - header.getBoundingClientRect().bottom : null,
+          height: card.lastElementChild?.getBoundingClientRect().height,
+        }
+      })
+    expect(geometry).toEqual({ gap, height })
+  }
+})
+
+test("list mode keeps the importing card visible", async ({ page }) => {
+  await store(page)
+  await page.goto("/?view=list")
+  await expect(cards(page)).toHaveCount(2)
+  await page.evaluate(() => {
+    File.prototype.arrayBuffer = () => new Promise(() => {})
+  })
+  await page
+    .locator("input[type=file]")
+    .setInputFiles({
+      name: "Report.pptx",
+      mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      buffer: Buffer.from("held"),
+    })
+  await expect(page.getByText("Importing", { exact: true })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Report.pptx" })).toBeVisible()
+  await expect(page.getByText("Name", { exact: true })).toBeVisible()
+})
