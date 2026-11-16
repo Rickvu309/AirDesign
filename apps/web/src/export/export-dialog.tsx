@@ -81,6 +81,7 @@ function SlideNumber({
   value,
   count,
   invalid,
+  problemId,
   disabled,
   onValue,
 }: {
@@ -88,6 +89,7 @@ function SlideNumber({
   value: string
   count: number
   invalid: boolean
+  problemId: string
   disabled: boolean
   onValue: (value: string) => void
 }) {
@@ -99,6 +101,7 @@ function SlideNumber({
       max={count}
       aria-label={label}
       aria-invalid={invalid}
+      aria-describedby={invalid ? problemId : undefined}
       disabled={disabled}
       value={value}
       onChange={(event) => onValue(event.target.value)}
@@ -190,6 +193,7 @@ export function ExportDialog({
                     value={choice.from}
                     count={count}
                     invalid={problem !== null}
+                    problemId={problemId}
                     disabled={exporting}
                     onValue={(from) => onChoice({ ...choice, from })}
                   />
@@ -201,6 +205,7 @@ export function ExportDialog({
                     value={choice.to}
                     count={count}
                     invalid={problem !== null}
+                    problemId={problemId}
                     disabled={exporting}
                     onValue={(to) => onChoice({ ...choice, to })}
                   />
