@@ -20,6 +20,7 @@ import type { Palette } from "./color-choices"
 import { cropChange } from "./crop-change"
 import { opacitySection } from "./opacity-row"
 import { hidden, loneRows, panelKind, panelOrder, type PanelKind } from "./panel-order"
+import { alphaFieldOver, atShownAlpha } from "./shown-alpha"
 import { traitControls } from "./trait-controls"
 
 export const controlKinds = [
@@ -267,10 +268,16 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       const own = shown.fields?.[key]?.own === true
       const reset = own && inheritable(trait, field) ? (copy?.reset ?? null) : null
       const held = shownOf(view, trait, field, shown)
+      const over = held.inherited ? alphaFieldOver(trait, field) : undefined
+      const seen = over === undefined ? undefined : shown.fields?.[`${trait}.${over}`]?.value
       const change =
         key === "crop.rect" && taken.includes("box.w")
           ? cropChange(view, held.value)
-          : (value: unknown) => ({ target: { node: view.node }, [trait]: { [field]: value } }) as SetChange
+          : (value: unknown) =>
+              ({
+                target: { node: view.node },
+                [trait]: { [field]: typeof seen === "number" ? atShownAlpha(value, seen) : value },
+              }) as SetChange
       const desc = shownDesc(kind, view.facts.grouped, held.value)
       const label = copy?.label ?? ""
       const caption = label !== labels.section
