@@ -29,9 +29,7 @@ describe("slideTurnSaid", () => {
   })
 
   it("says the slide was deleted when that delete is redone", () => {
-    expect(slideTurnSaid("redo", "delete", turn({ before: 1, after: -1, count: 1, held: 1 }))).toBe(
-      "Deleted slide 2. Press Control+Z to undo",
-    )
+    expect(slideTurnSaid("redo", "delete", turn({ before: 1, after: -1, count: 1, held: 1 }))).toBe("Slide 2 deleted")
   })
 
   it("says where a slide moved when that move is undone or redone", () => {

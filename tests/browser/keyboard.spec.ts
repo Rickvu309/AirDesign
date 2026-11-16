@@ -105,7 +105,7 @@ test("the slide list is one Tab stop, the arrows move through it, and a slide co
   await expect(entry(4)).toBeFocused()
   await page.keyboard.press("Delete")
   await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
-  await expect(said).toHaveText("Deleted slide 4. Press Control+Z to undo")
+  await expect(said).toHaveText("Slide 4 deleted")
 })
 
 test("the canvas can be reached, moved, resized, left with Escape and cleared from the keyboard, each said aloud", async ({
@@ -259,7 +259,7 @@ test("duplicating, moving, selecting and deleting a slide says the slide, and so
   await entry(1).focus()
   await page.keyboard.press("Delete")
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
-  await expect(said).toHaveText("Deleted slide 1. Press Control+Z to undo")
+  await expect(said).toHaveText("Slide 1 deleted")
   await expect(canvas).toHaveText("Slide 1 of 1")
 
   await entry(1).focus()
@@ -269,7 +269,7 @@ test("duplicating, moving, selecting and deleting a slide says the slide, and so
   await expect(canvas).toHaveText("Slide 1 of 2")
   await page.keyboard.press("ControlOrMeta+Shift+z")
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
-  await expect(said).toHaveText("Deleted slide 1. Press Control+Z to undo")
+  await expect(said).toHaveText("Slide 1 deleted")
   await expect(canvas).toHaveText("Slide 1 of 1")
 
   await page.getByRole("button", { name: "Add slide" }).click()

@@ -197,7 +197,7 @@ test("the grid adds, reorders, duplicates and deletes a slide without a mouse", 
   await expect(entry(page, 4)).toBeFocused()
   await page.keyboard.press("Delete")
   await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
-  await expect(said).toHaveText("Deleted slide 4. Press Control+Z to undo")
+  await expect(said).toHaveText("Slide 4 deleted")
   await page.keyboard.press("Home")
   await page.keyboard.press("Delete")
   await page.keyboard.press("Delete")

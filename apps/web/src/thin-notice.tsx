@@ -31,32 +31,43 @@ export function signInAddress(page: { readonly pathname: string; readonly search
   return `${base}?next=${encodeURIComponent(`${page.pathname}${page.search}`)}`
 }
 
+export function ActionPill({
+  text,
+  action,
+  onAct,
+  width,
+}: {
+  text: string
+  action: string
+  onAct: () => void
+  width: string
+}) {
+  return (
+    <StatusPill className="gap-2.5 pr-1.5 pl-3.5" style={{ width }}>
+      <span className="min-w-0 flex-1 truncate">{text}</span>
+      <button
+        type="button"
+        className="flex h-7 shrink-0 items-center rounded-md px-2.5 font-medium whitespace-nowrap"
+        onClick={onAct}
+      >
+        {action}
+      </button>
+    </StatusPill>
+  )
+}
+
 function FailureNotice({ text, action, onAct }: { text: string; action: string; onAct: () => void }) {
   const retry = useRef(onAct)
   useEffect(() => {
     retry.current = onAct
   })
   useEffect(() => {
-    toast.custom(
-      () => (
-        <StatusPill className="gap-2.5 pr-1.5 pl-3.5" style={{ width: noticeWidth }}>
-          <span className="min-w-0 flex-1 truncate">{text}</span>
-          <button
-            type="button"
-            className="flex h-7 shrink-0 items-center rounded-md px-2.5 font-medium whitespace-nowrap"
-            onClick={() => retry.current()}
-          >
-            {action}
-          </button>
-        </StatusPill>
-      ),
-      {
-        id: noticeId,
-        duration: Number.POSITIVE_INFINITY,
-        unstyled: true,
-        style: { left: 0, width: noticeWidth, opacity: 1, transform: "translateY(0)", transition: "none" },
-      },
-    )
+    toast.custom(() => <ActionPill text={text} action={action} onAct={() => retry.current()} width={noticeWidth} />, {
+      id: noticeId,
+      duration: Number.POSITIVE_INFINITY,
+      unstyled: true,
+      style: { left: 0, width: noticeWidth, opacity: 1, transform: "translateY(0)", transition: "none" },
+    })
     return () => {
       toast.dismiss(noticeId)
     }
