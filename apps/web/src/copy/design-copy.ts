@@ -20,7 +20,7 @@ export const designCopy = {
     kept: "Element",
   },
   nothing: "Nothing on this element can be changed here yet.",
-  refused: "Unable to make that change. Reopen the deck to check its current design before editing again.",
+  refused: "Unable to make that change. Select the element and try again, or reload the deck if it keeps happening.",
   mixed: "Mixed",
   points: "pt",
   percent: "%",
