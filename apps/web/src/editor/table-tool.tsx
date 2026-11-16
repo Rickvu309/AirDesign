@@ -39,7 +39,7 @@ export function TableSizeGrid({
         ref={grid}
         role="group"
         aria-label={tableCopy.size}
-        className="grid grid-cols-10 gap-0.75"
+        className="grid grid-cols-10 gap-1.5"
         onKeyDown={onKeyDown}
       >
         {counts(most.rows).flatMap((row) =>

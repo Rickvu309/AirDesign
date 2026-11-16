@@ -68,6 +68,32 @@ test("an arrow key pressed while the picker opens, before it takes focus, still 
   await expect(page.getByRole("button", { name: "2 rows, 1 column", exact: true })).toBeFocused()
 })
 
+test("table size targets have 24 px spacing and the picker fits the viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await openBlank(page)
+  await page.getByRole("button", { name: "Insert table", exact: true }).click()
+  const picker = page.locator("[data-table-picker]")
+  await expect(picker).toBeVisible()
+  const cells = await picker.getByRole("button").evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const box = node.getBoundingClientRect()
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    }),
+  )
+  expect(cells).toHaveLength(80)
+  for (const [index, cell] of cells.entries()) {
+    for (const other of cells.slice(index + 1)) {
+      expect(Math.hypot(cell.x - other.x, cell.y - other.y)).toBeGreaterThanOrEqual(24)
+    }
+  }
+  const box = await picker.boundingBox()
+  if (box === null) throw new Error("no picker box")
+  expect(box.x).toBeGreaterThanOrEqual(0)
+  expect(box.y).toBeGreaterThanOrEqual(0)
+  expect(box.x + box.width).toBeLessThanOrEqual(1280)
+  expect(box.y + box.height).toBeLessThanOrEqual(720)
+})
+
 test("pointing at a size shows it, and a click inserts it", async ({ page }) => {
   await openBlank(page)
   await page.getByRole("button", { name: "Insert table", exact: true }).click()
