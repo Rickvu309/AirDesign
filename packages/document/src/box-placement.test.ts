@@ -96,4 +96,13 @@ describe("placing a new text box", () => {
       ...picture,
     })
   })
+
+  it("counts a line, which has no height, as taken", () => {
+    const line = { x: 3_000_000, y: 3_429_000, cx: 6_000_000, cy: 0 }
+    const upright = { x: 6_096_000, y: 500_000, cx: 0, cy: 5_800_000 }
+    for (const stroke of [line, upright]) {
+      const placed = placeNewBox(slide, [stroke], { cx: 1_371_600, cy: 1_371_600 })
+      expect(overlaps(placed, { ...stroke, cx: Math.max(stroke.cx, 1), cy: Math.max(stroke.cy, 1) })).toBe(false)
+    }
+  })
 })

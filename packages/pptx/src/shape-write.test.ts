@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { addTextShape, type ShapeBox } from "./shape-write.js"
+import { addDrawnShape, addTextShape, type ShapeBox } from "./shape-write.js"
 
 const slide = `<p:sld><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld></p:sld>`
 const box: ShapeBox = { x: 0, y: 0, cx: 914400, cy: 457200 }
@@ -30,5 +30,23 @@ describe("addTextShape", () => {
   it("refuses a slide with no shape tree and a box that is not an integer", () => {
     expect(() => addTextShape("<p:sld></p:sld>", "A", box)).toThrow(/p:spTree/)
     expect(() => addTextShape(slide, "A", { ...box, cx: 1.5 })).toThrow(/emu/)
+  })
+})
+
+describe("addDrawnShape", () => {
+  const weight = '<a:ln w="28575"'
+
+  it("draws a line and an arrow with the same visible weight", () => {
+    const line = addDrawnShape(slide, "line", box).xml
+    const arrow = addDrawnShape(slide, "straightConnector1", box).xml
+    expect(line).toContain(weight)
+    expect(arrow).toContain(weight)
+    expect(arrow).toContain('<a:tailEnd type="triangle"/>')
+    expect(line.indexOf("<a:prstGeom")).toBeLessThan(line.indexOf("<a:ln"))
+    expect(line.indexOf(weight)).toBeLessThan(line.indexOf("</p:spPr>"))
+  })
+
+  it("leaves a rectangle to its theme outline", () => {
+    expect(addDrawnShape(slide, "rect", box).xml).not.toMatch(/<a:ln[ >]/)
   })
 })

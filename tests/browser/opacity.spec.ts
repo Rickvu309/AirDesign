@@ -13,7 +13,7 @@ const styleFaded =
 const ovalFaded =
   '<a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent1"><a:alpha val="60000"/></a:schemeClr></a:solidFill><a:ln><a:solidFill><a:schemeClr val="accent1"><a:shade val="15000"/><a:alpha val="60000"/></a:schemeClr></a:solidFill></a:ln></p:spPr><p:style>'
 const connectorFaded =
-  '<a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln><a:solidFill><a:schemeClr val="accent1"><a:alpha val="40000"/></a:schemeClr></a:solidFill></a:ln></p:spPr>'
+  '<a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln w="28575"><a:solidFill><a:schemeClr val="accent1"><a:alpha val="40000"/></a:schemeClr></a:solidFill></a:ln></p:spPr>'
 const textFaded =
   '<a:solidFill><a:schemeClr val="accent1"><a:alpha val="50000"/></a:schemeClr></a:solidFill></p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr/><a:r><a:rPr lang="en-US" sz="3200"><a:solidFill><a:schemeClr val="dk1"><a:alpha val="50000"/></a:schemeClr></a:solidFill></a:rPr>'
 
