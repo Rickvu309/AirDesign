@@ -75,7 +75,7 @@ it("paints a hanging bullet, the gaps around a paragraph, and the marks on a run
   expect(paintedRun.style.lineHeight).toBe("1.08")
   expect(paintedRun.style.textDecoration).toBe("underline line-through")
   expect(paintedRun.style.backgroundColor).toBe("rgb(9, 8, 7)")
-  expect(paintedRun.style.verticalAlign).toBe("0.3em")
+  expect(Number.parseFloat(paintedRun.style.verticalAlign)).toBeCloseTo(scaled(font * 0.3), 4)
 })
 
 it("numbers a list and keeps an exact line spacing on an empty paragraph", () => {
@@ -106,7 +106,7 @@ it("prints roman numerals and a positive indent has no hang", () => {
   expect(block.style.getPropertyValue("--bullet")).toBe('"IV."')
   expect(block.style.getPropertyValue("--bullet-hang")).toBe("")
   expect(paintedRun.style.lineHeight).toBe("1.2")
-  expect(paintedRun.style.verticalAlign).toBe("-0.25em")
+  expect(Number.parseFloat(paintedRun.style.verticalAlign)).toBeCloseTo(scaled(font * -0.25), 4)
   expect(paintedRun.style.textDecoration).toBe("")
 })
 
@@ -116,6 +116,19 @@ it("marks a paragraph that ends in a line break so its empty last line paints at
   expect(ended.hasAttribute("data-end-break")).toBe(true)
   expect(ended.style.getPropertyValue("--end-line")).toBe("1.08")
   expect(plain.hasAttribute("data-end-break")).toBe(false)
+})
+
+it("paints a superscript or subscript run at 58% of its size, raised or lowered by a share of its full size", () => {
+  const plain = { ...run, underline: false, strike: false, highlight: null }
+  const raised = painted(paragraph({ runs: [{ from: 0, text: "2", ...plain, baseline: 0.3 }] })).run
+  const lowered = painted(paragraph({ runs: [{ from: 0, text: "2", ...plain, baseline: -0.25 }] })).run
+  const level = painted(paragraph({ runs: [{ from: 0, text: "2", ...plain, baseline: 0 }] })).run
+  expect(Number.parseFloat(raised.style.fontSize)).toBeCloseTo(scaled(font * 0.58), 4)
+  expect(Number.parseFloat(raised.style.verticalAlign)).toBeCloseTo(scaled(font * 0.3), 4)
+  expect(Number.parseFloat(lowered.style.fontSize)).toBeCloseTo(scaled(font * 0.58), 4)
+  expect(Number.parseFloat(lowered.style.verticalAlign)).toBeCloseTo(scaled(font * -0.25), 4)
+  expect(Number.parseFloat(level.style.fontSize)).toBeCloseTo(scaled(font), 4)
+  expect(level.style.verticalAlign).toBe("")
 })
 
 it("spaces lines by a share of PowerPoint's single line, which is 1.2 times the font size", () => {
