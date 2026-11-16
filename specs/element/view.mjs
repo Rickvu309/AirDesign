@@ -3,7 +3,10 @@ const ran = {
   remove: "an agent's run removed it",
   both: "an agent's run added and removed it",
 }
-const run = (value) => (value.run === "none" ? "" : `, ${ran[value.run]}`)
+const run = (value) =>
+  value.run === "none"
+    ? ""
+    : `, ${ran[value.run]}${value.fenced ? ", and someone removed or brought it back since" : ""}`
 const kind = (value) => (value.picture ? "picture" : "text box")
 const said = { opening: "showing its opening text", typed: "showing typed text", aira: "showing an agent's text" }
 const typing = (value) =>
@@ -27,7 +30,9 @@ export const state = (value) =>
           ? "told nothing changed"
           : value.run === "none"
             ? `can ${value.held} the ${value.kind}`
-            : "run in the list"
+            : value.fenced
+              ? "run fenced"
+              : "run in the list"
       }`
 export const step = (action) =>
   ({
@@ -43,20 +48,14 @@ export const step = (action) =>
     AgentRemove: "an agent removes the element",
     AgentRemoveRefused: "an agent tries to remove a box a person typed in and is refused",
     UndoRun: "the person undoes the agent's run",
-    UndoRunRefused: "the person undoes the agent's run and is told it changed",
+    UndoRunRefused: "the person undoes the agent's run and is refused, since the element changed or the run was undone",
     AgentWrite: "another agent's run writes in the text box",
     UndoWrite: "the person undoes the run that wrote in the text box",
     Upload: "upload the picture's bytes",
     ExportElsewhere: "export the deck on another device",
   })[action] ?? null
 export const group = (value) =>
-  !value.added
-    ? "None"
-    : value.held === "dropped" || (value.told && value.run !== "none")
-      ? "Told"
-      : value.removed
-        ? "Removed"
-        : "Shown"
+  !value.added ? "None" : value.held === "dropped" ? "Told" : value.removed ? "Removed" : "Shown"
 export const colors = { None: "gray", Shown: "blue", Removed: "purple", Told: "orange" }
 export const title =
-  "A person's undo, or the undo of an agent's run, brings back or removes an element only while nothing else changed it, takes a box away only while it shows what the person's edit left, and a picture exports only with its bytes"
+  "A person's undo, or the undo of an agent's run, brings back or removes an element only while nothing else changed it, a run's Undo lands once, a person's takes a box away only while it shows what the person's edit left, and a picture exports only with its bytes"

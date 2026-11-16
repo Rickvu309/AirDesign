@@ -1,12 +1,12 @@
 ---- MODULE Element ----
 \* A person adds one text box or picture, or removes it. Their undo puts back whether it shows, only while their own edit still shows, and someone else may remove or bring it back in between.
 \* Someone types in the text box, and another agent's run writes in it once, which the person may undo. A person's undo or redo that would take the box away lands only while the box shows what the person's edit left, so it never hides an agent's text written since.
-\* An agent's run adds the box or removes it. The run's Undo puts the box back as it was before the run, all or nothing, and is refused once a person changed the box since.
+\* An agent's run adds the box or removes it. The run's Undo puts the box back as it was before the run, all or nothing, and is refused once anyone but the run removed or brought back the box since, the run's own Undo among them, so it lands once.
 \* A picture's bytes upload after its add, and another device exports the deck only once every added picture's bytes are there.
 EXTENDS Naturals
 
-VARIABLES added, removed, typed, held, kind, told, last, run, picture, uploaded, exported, agent, shows, left
-vars == <<added, removed, typed, held, kind, told, last, run, picture, uploaded, exported, agent, shows, left>>
+VARIABLES added, removed, typed, held, kind, told, last, run, fenced, picture, uploaded, exported, agent, shows, left
+vars == <<added, removed, typed, held, kind, told, last, run, fenced, picture, uploaded, exported, agent, shows, left>>
 
 Bytes == <<picture, uploaded>>
 
@@ -34,6 +34,7 @@ Init ==
   /\ told = FALSE
   /\ last = "none"
   /\ run = "none"
+  /\ fenced = FALSE
   /\ picture = FALSE
   /\ uploaded = FALSE
   /\ exported = FALSE
@@ -48,7 +49,7 @@ Add ==
   /\ kind' = "add"
   /\ last' = "none"
   /\ exported' = FALSE
-  /\ UNCHANGED <<removed, typed, told, run>>
+  /\ UNCHANGED <<removed, typed, told, run, fenced>>
   /\ UNCHANGED Text
   /\ UNCHANGED Bytes
 
@@ -60,7 +61,7 @@ AddPicture ==
   /\ kind' = "add"
   /\ last' = "none"
   /\ exported' = FALSE
-  /\ UNCHANGED <<removed, typed, told, run, uploaded>>
+  /\ UNCHANGED <<removed, typed, told, run, fenced, uploaded>>
   /\ UNCHANGED Text
 
 \* Someone types in the box: another tab, another person, or this person in a step of their own, which sits above the add in their undo list and is undone before it, so the one undo entry here never covers it.
@@ -71,7 +72,7 @@ Type ==
   /\ typed' = TRUE
   /\ shows' = "typed"
   /\ exported' = FALSE
-  /\ UNCHANGED <<added, removed, held, kind, told, last, run, agent, left>>
+  /\ UNCHANGED <<added, removed, held, kind, told, last, run, fenced, agent, left>>
   /\ UNCHANGED Bytes
 
 Remove ==
@@ -83,15 +84,18 @@ Remove ==
   /\ last' = "none"
   /\ agent' = IF agent = "since" THEN "before" ELSE agent
   /\ left' = shows
-  /\ UNCHANGED <<added, typed, told, run, shows>>
+  /\ UNCHANGED <<added, typed, told, run, fenced, shows>>
   /\ exported' = FALSE
   /\ UNCHANGED Bytes
 
-\* Another tab or person removes the box, or brings a removed one back.
+\* Another tab or person removes the box, or brings a removed one back. Once the run's row is in, that fences the run: its Undo refuses from then on.
+Moved == fenced' = (fenced \/ run # "none")
+
 OtherRemove ==
   /\ Shown
   /\ removed' = TRUE
   /\ last' = "none"
+  /\ Moved
   /\ UNCHANGED <<added, typed, held, kind, told, run>>
   /\ UNCHANGED Text
   /\ exported' = FALSE
@@ -102,19 +106,20 @@ OtherRestore ==
   /\ removed
   /\ removed' = FALSE
   /\ last' = "none"
+  /\ Moved
   /\ UNCHANGED <<added, typed, held, kind, told, run>>
   /\ UNCHANGED Text
   /\ exported' = FALSE
   /\ UNCHANGED Bytes
 
-\* An agent's run adds the box, or removes a box that shows. A person's typing during the run closes the box to the agent's removal.
+\* An agent's run adds the box, or removes a box that shows. A person's typing during the run closes the box to the agent's removal, and the run's Undo ends the run.
 AgentAdd ==
   /\ ~added
   /\ run = "none"
   /\ added' = TRUE
   /\ run' = "add"
   /\ last' = "none"
-  /\ UNCHANGED <<removed, typed, held, kind, told>>
+  /\ UNCHANGED <<removed, typed, held, kind, told, fenced>>
   /\ UNCHANGED Text
   /\ exported' = FALSE
   /\ UNCHANGED Bytes
@@ -122,12 +127,13 @@ AgentAdd ==
 AgentRemove ==
   /\ Shown
   /\ run \in {"none", "add"}
+  /\ ~fenced
   /\ agent = "none"
   /\ ~(run \in {"add", "both"} /\ typed)
   /\ removed' = TRUE
   /\ run' = IF run = "add" THEN "both" ELSE "remove"
   /\ last' = "none"
-  /\ UNCHANGED <<added, typed, held, kind, told>>
+  /\ UNCHANGED <<added, typed, held, kind, told, fenced>>
   /\ UNCHANGED Text
   /\ exported' = FALSE
   /\ UNCHANGED Bytes
@@ -149,7 +155,7 @@ AgentWrite ==
   /\ shows' = "aira"
   /\ last' = "none"
   /\ exported' = FALSE
-  /\ UNCHANGED <<added, removed, typed, held, kind, told, run, left>>
+  /\ UNCHANGED <<added, removed, typed, held, kind, told, run, fenced, left>>
   /\ UNCHANGED Bytes
 
 \* The person undoes that run, which hides its row whether or not the box shows. The box then shows what was under the row.
@@ -159,30 +165,27 @@ UndoWrite ==
   /\ shows' = IF shows = "aira" THEN IF typed THEN "typed" ELSE "opening" ELSE shows
   /\ last' = "none"
   /\ exported' = FALSE
-  /\ UNCHANGED <<added, removed, typed, held, kind, told, run, left>>
+  /\ UNCHANGED <<added, removed, typed, held, kind, told, run, fenced, left>>
   /\ UNCHANGED Bytes
 
-\* The run's Undo takes back everything the run did, or nothing: it is refused once a person typed in a box the run added, or removed or brought back a box, so the box no longer shows as the run left it.
-RunUndoable == run # "none" /\ Shown = (run = "add") /\ ~(run \in {"add", "both"} /\ typed)
+\* The run's Undo takes back everything the run did, or nothing: it is refused once a person typed in a box the run added, once the box no longer shows as the run left it, and once anyone but the run removed or brought back the box since, the run's own Undo among them.
+RunUndoable == run # "none" /\ ~fenced /\ Shown = (run = "add") /\ ~(run \in {"add", "both"} /\ typed)
 
 UndoRun ==
   /\ RunUndoable
   /\ removed' = (run # "remove")
   /\ last' = "runundone"
+  /\ fenced' = TRUE
   /\ UNCHANGED <<added, typed, held, kind, told, run>>
   /\ UNCHANGED Text
   /\ exported' = FALSE
   /\ UNCHANGED Bytes
 
+\* A refused run Undo changes nothing in the deck; the person sees the refusal.
 UndoRunRefused ==
   /\ run # "none"
   /\ ~RunUndoable
-  /\ told' = TRUE
-  /\ last' = "none"
-  /\ UNCHANGED <<added, removed, typed, held, kind, run>>
-  /\ UNCHANGED Text
-  /\ exported' = FALSE
-  /\ UNCHANGED Bytes
+  /\ UNCHANGED vars
 
 \* What the person's own edit left: the box shows after an add, and is gone after a removal.
 EditShows == IF kind = "add" THEN Shown ELSE added /\ removed
@@ -202,7 +205,7 @@ Undo ==
             /\ told' = TRUE
             /\ last' = "none"
             /\ UNCHANGED removed
-  /\ UNCHANGED <<added, typed, kind, run>>
+  /\ UNCHANGED <<added, typed, kind, run, fenced>>
   /\ UNCHANGED Text
   /\ exported' = FALSE
   /\ UNCHANGED Bytes
@@ -219,7 +222,7 @@ Redo ==
             /\ told' = TRUE
             /\ last' = "none"
             /\ UNCHANGED removed
-  /\ UNCHANGED <<added, typed, kind, run>>
+  /\ UNCHANGED <<added, typed, kind, run, fenced>>
   /\ UNCHANGED Text
   /\ exported' = FALSE
   /\ UNCHANGED Bytes
@@ -230,7 +233,7 @@ Upload ==
   /\ ~uploaded
   /\ uploaded' = TRUE
   /\ exported' = FALSE
-  /\ UNCHANGED <<added, removed, typed, held, kind, told, last, run, picture>>
+  /\ UNCHANGED <<added, removed, typed, held, kind, told, last, run, fenced, picture>>
   /\ UNCHANGED Text
 
 \* Another device exports the deck as it is now. An export describes that moment, so every later step clears it. Only a picture's bytes hold an export back, so the model exports only a deck whose element is a picture, or before anything was added.
@@ -239,7 +242,7 @@ ExportElsewhere ==
   /\ (picture => uploaded)
   /\ (picture \/ ~added)
   /\ exported' = TRUE
-  /\ UNCHANGED <<added, removed, typed, held, kind, told, last, run, picture, uploaded>>
+  /\ UNCHANGED <<added, removed, typed, held, kind, told, last, run, fenced, picture, uploaded>>
   /\ UNCHANGED Text
 
 Next ==
@@ -258,6 +261,7 @@ TypeOK ==
   /\ told \in BOOLEAN
   /\ last \in {"none", "undone", "redone", "runundone"}
   /\ run \in {"none", "add", "remove", "both"}
+  /\ fenced \in BOOLEAN
   /\ picture \in BOOLEAN
   /\ uploaded \in BOOLEAN
   /\ exported \in BOOLEAN
@@ -284,9 +288,13 @@ UndoKeepsAgentRow == last \in {"undone", "redone"} /\ ~Shown => agent # "since"
 \* A run's Undo leaves the box as it was before the run: shown after a removal, gone after an add.
 RunUndoRestores == last = "runundone" => Shown = (run = "remove")
 
-\* A run's Undo never lands over a change a person made to the box since, and only while the box still shows as the run left it.
+\* A run's Undo never lands over a change a person made to the box since, only while the box still shows as the run left it, and only once.
 RunUndoOnlyUnchanged ==
   [][(last' = "runundone" /\ last # "runundone") => RunUndoable]_vars
+
+\* Once a run's Undo landed, no Undo of that run lands again, whatever happens to the box after.
+RunUndoOnce ==
+  [][(fenced /\ last' = "runundone") => last = "runundone"]_vars
 
 \* An undo or redo that changed nothing is always told.
 DroppedIsTold == held = "dropped" => told

@@ -75,6 +75,27 @@ it("refuses Undo of a run once a person moved the slide the run added", () => {
   )
   expect(undone).toEqual({ ok: false, refusal: "run-fenced" })
 })
+it.fails("refuses a second Undo of a run once a person deleted again the slide the first brought back", () => {
+  const removed = call("delete_slide", opened(), actor, { deck: "deck", base: 0, slide: "256" })
+  if (!removed.ok) throw new Error(removed.refusal)
+  const back = call("undo_run", removed.deck, { actor: "person" }, { deck: "deck", runId: "run" })
+  if (!back.ok) throw new Error(back.refusal)
+  const slide = readSlideId("256")
+  if (slide === undefined) throw new Error("slide")
+  const deleted = decide(back.deck.register, {
+    command: "slide",
+    file: back.deck.register.file,
+    edit: { slide: "remove", id: slide },
+  })
+  if (deleted.decision !== "apply") throw new Error(deleted.code)
+  const again = call(
+    "undo_run",
+    { ...back.deck, register: deleted.register },
+    { actor: "person" },
+    { deck: "deck", runId: "run" },
+  )
+  expect(again).toEqual({ ok: false, refusal: "run-fenced" })
+})
 it("uses the requested layout's package relationships when inserting after a different slide", () => {
   const result = call("add_slide", opened(), actor, { deck: "deck", base: 0, after: "256", layout: "257" })
   expect(result.ok).toBe(true)

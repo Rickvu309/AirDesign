@@ -1,5 +1,5 @@
 import { readDeckId } from "@airdesign/catalog"
-import { decide, elementGone, elementId, type Box, type Register } from "@airdesign/document"
+import { decide, elementGone, elementId, slideId, type Box, type ElementId, type Register } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { call, indexDeck, openDeck, type Deck } from "./index.js"
 
@@ -227,6 +227,37 @@ describe("Undo of a run that added or deleted an element", () => {
     })
     if (restored.decision !== "apply") throw new Error(restored.code)
     expect(undo({ ...removed, register: restored.register })).toEqual({ ok: false, refusal: "run-fenced" })
+  })
+
+  function shown(deck: Deck, node: ElementId, edit: "element-remove" | "element-restore"): Deck {
+    const decision = decide(deck.register, {
+      command: "slide",
+      file: deck.register.file,
+      edit: { slide: edit, id: slideId("256"), node },
+    })
+    if (decision.decision !== "apply") throw new Error(decision.code)
+    return { ...deck, register: decision.register }
+  }
+
+  it("refuses a second Undo once a person deleted again the element the first brought back", () => {
+    const node = elementId("256.2")
+    const back = landed(undo(landed(remove(opened(), node)).deck)).deck
+    const deleted = shown(back, node, "element-remove")
+    expect(undo(deleted)).toEqual({ ok: false, refusal: "run-fenced" })
+    expect(elementGone(deleted.register, node)).toBe(true)
+  })
+
+  it("refuses a second Undo once another tab brought back the box the first took away", () => {
+    const node = elementId("256.6")
+    const gone = landed(undo(landed(add(opened())).deck)).deck
+    expect(undo(shown(gone, node, "element-restore"))).toEqual({ ok: false, refusal: "run-fenced" })
+  })
+
+  it("refuses once another tab removed the box the run added and brought it back", () => {
+    const node = elementId("256.6")
+    const added = landed(add(opened())).deck
+    const back = shown(shown(added, node, "element-remove"), node, "element-restore")
+    expect(undo(back)).toEqual({ ok: false, refusal: "run-fenced" })
   })
 })
 
