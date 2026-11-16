@@ -394,3 +394,21 @@
     height: var(--target-size);
   }
 }
+
+[data-sign-in-label] {
+  transition: opacity var(--ease-micro);
+}
+
+[data-sign-in-form] button:disabled {
+  cursor: wait;
+}
+
+[data-sign-in-form] [data-pending] [data-sign-in-label] {
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-sign-in-label] {
+    transition: none;
+  }
+}
