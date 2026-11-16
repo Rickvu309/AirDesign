@@ -11,7 +11,7 @@ async function drive(kit) {
   await expect(panel).toBeVisible()
   const width = panel.locator("section").filter({ has: kit.page.getByRole("heading", { name: "Line", exact: true }) })
   if ((await width.count()) === 0) return
-  const field = width.getByRole("textbox", { name: "Width", exact: true })
+  const field = width.getByRole("textbox", { name: "Line width", exact: true })
   await field.fill("6")
   await field.press("Enter")
   await expect(kit.page.getByRole("button", { name: "Undo line", exact: true })).toBeVisible()

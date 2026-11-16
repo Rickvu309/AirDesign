@@ -27,8 +27,8 @@ async function connectorPanel(page: Page): Promise<Locator> {
     .filter({ has: page.getByRole("heading", { name: "Connector", exact: true }) })
 }
 
-async function attached(row: Locator, name: string) {
-  await row.getByRole("combobox", { name: "Attached to", exact: true }).click()
+async function attached(row: Locator, end: string, name: string) {
+  await row.getByRole("combobox", { name: `${end} shape`, exact: true }).click()
   await row.page().getByRole("option", { name, exact: true }).click()
 }
 
@@ -40,24 +40,24 @@ test("a node control names the shape a connector's end attaches to, moves the en
   const start = section.locator('[data-control="union"]').filter({ hasText: "Start" })
   const end = section.locator('[data-control="union"]').filter({ hasText: "End" })
   await expect(start.getByRole("button", { name: "Shape", exact: true })).toHaveAttribute("aria-pressed", "true")
-  await expect(start.getByRole("combobox", { name: "Attached to", exact: true })).toHaveText(/^Content Placeholder 5/)
-  await expect(end.getByRole("combobox", { name: "Attached to", exact: true })).toHaveText(/^Graphic 14/)
-  await expect(end.getByRole("combobox", { name: "Site", exact: true })).toHaveText(/^Top/)
+  await expect(start.getByRole("combobox", { name: "Start shape", exact: true })).toHaveText(/^Content Placeholder 5/)
+  await expect(end.getByRole("combobox", { name: "End shape", exact: true })).toHaveText(/^Graphic 14/)
+  await expect(end.getByRole("combobox", { name: "End site", exact: true })).toHaveText(/^Top/)
   const before = await placement(frame(page, "26"))
 
-  await attached(end, "Graphic 22")
-  await expect(end.getByRole("combobox", { name: "Attached to", exact: true })).toHaveText(/^Graphic 22/)
+  await attached(end, "End", "Graphic 22")
+  await expect(end.getByRole("combobox", { name: "End shape", exact: true })).toHaveText(/^Graphic 22/)
   await expect.poll(() => placement(frame(page, "26"))).not.toEqual(before)
   const moved = await placement(frame(page, "26"))
 
   await page.getByRole("button", { name: "Undo connector", exact: true }).click()
   await expect.poll(() => placement(frame(page, "26"))).toEqual(before)
-  await expect(end.getByRole("combobox", { name: "Attached to", exact: true })).toHaveText(/^Graphic 14/)
+  await expect(end.getByRole("combobox", { name: "End shape", exact: true })).toHaveText(/^Graphic 14/)
   await page.getByRole("button", { name: "Redo connector", exact: true }).click()
   await expect.poll(() => placement(frame(page, "26"))).toEqual(moved)
 
   await end.getByRole("button", { name: "None", exact: true }).click()
-  await expect(end.getByRole("combobox", { name: "Attached to", exact: true })).toHaveCount(0)
+  await expect(end.getByRole("combobox", { name: "End shape", exact: true })).toHaveCount(0)
   await expect.poll(() => placement(frame(page, "26"))).toEqual(before)
 })
 
@@ -84,6 +84,6 @@ test("a node control reads a blank deck's placeholders as Title and Subtitle, ne
     .filter({ hasText: "Start" })
     .getByRole("button", { name: "Shape", exact: true })
     .click()
-  await section.getByRole("combobox", { name: "Attached to", exact: true }).first().click()
+  await section.getByRole("combobox", { name: "Start shape", exact: true }).click()
   await expect(page.getByRole("option")).toHaveText(["Title", "Subtitle", /^Rectangle/])
 })
