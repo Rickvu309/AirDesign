@@ -1,7 +1,15 @@
 import { useState, type ReactNode } from "react"
 import { NotesBar } from "@/editor/notes-bar"
 import { CanvasStage } from "@/editor/canvas-stage"
-import { fitWidth, slideRoom, zoomPercent, zoomWidth, type SlideSize, type Zoom } from "@/editor/canvas-zoom"
+import {
+  fitWidth,
+  slideRoom,
+  steppedZoom,
+  zoomPercent,
+  zoomWidth,
+  type SlideSize,
+  type Zoom,
+} from "@/editor/canvas-zoom"
 import { PanelHead, ZoomReadout } from "@/editor/editor-chrome"
 import { EditorGrid } from "@/editor/editor-grid"
 import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
@@ -17,6 +25,7 @@ import type { Geometry } from "@airdesign/document"
 import type { SaveStatus } from "@/editor/use-deck-status"
 import { ImagesPanel, ShapesPanel, ShapeTray, SlideColumn, TemplatePicker, TextPanel } from "@/editor/tool-panels"
 import { useCanvasRoom } from "@/editor/use-canvas-room"
+import { useZoomKeys } from "@/editor/zoom-keys"
 import { ZoomMenu } from "@/editor/zoom-menu"
 import { ExportControl } from "@/export/export-control"
 import type { ExportRequest } from "@/export/export-deck"
@@ -91,6 +100,9 @@ export function EditorShell({
   const size = deck?.size ?? null
   const width = size === null ? room.width : zoomWidth(zoom, room, size)
   const working = run === "working" || run === "own"
+  useZoomKeys(deck !== undefined && size !== null && !gridOpen, (key) =>
+    setZoom(key === "fit" || size === null ? "fit" : steppedZoom(key, zoomPercent(width, size))),
+  )
   if (deck !== undefined && gridOpen) {
     return (
       <EditorGrid

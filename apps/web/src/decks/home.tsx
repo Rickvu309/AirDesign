@@ -13,7 +13,6 @@ import { DeckPreview } from "@/decks/deck-preview"
 import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
 import { ImportingPreview, ImportFailedPreview } from "@/decks/deck-status-preview"
 import { importFailureWords, type ImportFailureReason } from "@/copy/import-failure-words"
-import { NewDeckMenu } from "@/decks/new-deck-menu"
 import { StarButton } from "@/decks/star-button"
 import { blankDeck } from "@/decks/blank-deck"
 import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/deck-moved-toast"
@@ -118,7 +117,6 @@ export function Home({
   const trash = section === "trash"
   const [listing, setListing] = useState<Listing | null>(null)
   const [unavailable, setUnavailable] = useState(false)
-  const [menu, setMenu] = useState(false)
   const [deleting, setDeleting] = useState<Deck[] | null>(null)
   const [busy, setBusy] = useState(false)
   const [deleteFailed, setDeleteFailed] = useState(false)
@@ -213,7 +211,6 @@ export function Home({
   }
 
   async function choose(file: File) {
-    setMenu(false)
     setImporting({ name: file.name, failed: false })
     try {
       const imported = await importDeck(file)
@@ -249,11 +246,7 @@ export function Home({
       }}
       search={{ value: query, onChange: search }}
       starred={listing?.decks.filter((deck) => deck.starred === true)}
-      menu={
-        menu && <NewDeckMenu onImport={() => picker.current?.click()} onBlank={() => void blankDeck().then(choose)} />
-      }
-      menuOpen={menu}
-      onNewDeck={() => setMenu(!menu)}
+      newDeck={{ onImport: () => picker.current?.click(), onBlank: () => void blankDeck().then(choose) }}
       onSignOut={() => void signOut()}
       onNavigate={navigate}
       trailing={

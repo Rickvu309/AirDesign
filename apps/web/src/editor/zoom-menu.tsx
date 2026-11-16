@@ -44,7 +44,7 @@ export function ZoomMenu({
             if (next !== null) onZoom(next)
           }}
         >
-          <EditorMenuRow value="fit" icon="slide" label={`${String(fitPercent)}%`} checked={zoom === "fit"} />
+          <EditorMenuRow value="fit" icon="slide" label={`Fit (${String(fitPercent)}%)`} checked={zoom === "fit"} />
           {zoomSteps.map((step) => (
             <EditorMenuRow key={step} value={String(step)} label={`${String(step)}%`} checked={zoom === step} />
           ))}
