@@ -80,7 +80,7 @@ function serveOriginal(originals, pathname, req, res) {
 
 export async function serve(
   run,
-  { repo, apiDist, webDist, siteDist, catalogDist, scratchDir, statePath, airaPath, head },
+  { repo, apiDist, webDist, siteDist, catalogDist, scratchDir, statePath, airaPath, head, choice },
 ) {
   const log = (line) => appendFileSync(process.env.VERIFY_AIRDESIGN_LOG ?? "/dev/null", `${line}\n`)
   const load = (name) => import(pathToFileURL(path.join(apiDist, name)).href)
@@ -91,6 +91,8 @@ export async function serve(
   const { createApi, routes } = await load("server.js")
   const { LocalOriginalStore } = await load("local-original-store.js")
   const { Replay } = await load("aira-replay.js")
+  const { airaModel, airaEffort } = await load("aira.js")
+  const { anthropicTransport } = await load("anthropic-transport.js")
   const cluster = await startEmptyCluster()
   const role = (name) => `postgres://${name}:${randomBytes(18).toString("hex")}@127.0.0.1:${String(cluster.port)}/api`
   const environment = {
@@ -110,6 +112,11 @@ export async function serve(
     pid: process.pid,
     repo,
     commit: head(),
+    aira: {
+      streams: choice.keyEnv === undefined ? "recorded" : "real",
+      model: choice.model ?? airaModel,
+      effort: choice.effort ?? airaEffort,
+    },
     postgres: { pid: postgresPid, dataDir, port: cluster.port },
     ready: false,
   }
@@ -133,7 +140,19 @@ export async function serve(
     send: async (mail) => {
       appendFileSync(mailFile, `${JSON.stringify(mail)}\n`)
     },
-    aira: scriptedAira({ Replay, repo, file: airaPath(run), log }),
+    aira: {
+      ...(choice.keyEnv === undefined
+        ? scriptedAira({ Replay, repo, file: airaPath(run), log })
+        : {
+            on: true,
+            key: process.env[choice.keyEnv],
+            secret: randomBytes(32).toString("hex"),
+            transport: anthropicTransport(),
+            log,
+          }),
+      model: state.aira.model,
+      effort: state.aira.effort,
+    },
   })
   await new Promise((resolve) => api.listen(0, "127.0.0.1", resolve))
   const apiPort = api.address().port

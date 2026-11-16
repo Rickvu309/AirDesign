@@ -6,7 +6,7 @@ import { kindInstructions } from "@airdesign/mcp"
 import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
-import { airaMaxTokens, airaModel, airaSystem, settleTurn, staleTurn } from "./aira.js"
+import { airaMaxTokens, airaSystem, settleTurn, staleTurn, type AiraSettings } from "./aira.js"
 import { Replay } from "./aira-replay.js"
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
@@ -36,11 +36,12 @@ let clock = wednesday
 let main = ""
 let off = ""
 let keyless = ""
+let chosen = ""
 let session: Sql = openPool("postgres://session@127.0.0.1/api")
 let admin = new Client()
 let close = async () => {}
 
-function serveWith(listen: DeckListen, deck: Sql, aira: { on: boolean; key: string | undefined }) {
+function serveWith(listen: DeckListen, deck: Sql, aira: Pick<AiraSettings, "on" | "key" | "model" | "effort">) {
   return serve({
     ...origins,
     session,
@@ -71,13 +72,21 @@ beforeAll(async () => {
   const served = await serveWith(listen, deck, { on: true, key: fakeKey })
   const offServed = await serveWith(listen, deck, { on: false, key: fakeKey })
   const keylessServed = await serveWith(listen, deck, { on: true, key: undefined })
+  const chosenServed = await serveWith(listen, deck, {
+    on: true,
+    key: fakeKey,
+    model: "claude-opus-5-5",
+    effort: "high",
+  })
   main = served.base
   off = offServed.base
   keyless = keylessServed.base
+  chosen = chosenServed.base
   close = async () => {
     await served.close()
     await offServed.close()
     await keylessServed.close()
+    await chosenServed.close()
     await listen.close()
     await admin.end()
     await session.end()
@@ -420,7 +429,7 @@ describe("POST /aira/turn pins the call and logs no person data", () => {
     const sent = replay.calls.at(-1)
     expect(sent?.key).toBe(fakeKey)
     expect(sent?.call).toEqual({
-      model: airaModel,
+      model: "claude-sonnet-5-5",
       max_tokens: airaMaxTokens,
       system: airaSystem(deck),
       tools: airaTools,
@@ -437,6 +446,15 @@ describe("POST /aira/turn pins the call and logs no person data", () => {
     expect(lines[0]).not.toContain(words)
     expect(lines.join("")).not.toContain(fakeKey)
     expect(lines.join("")).not.toContain(secret)
+  })
+})
+
+describe("POST /aira/turn asks for the model and effort its settings choose", () => {
+  it("sends the chosen model and effort instead of Sonnet 5.5 at low", async () => {
+    const account = await signIn()
+    const reply = await turn(account, { deck, messages: asked }, vietnam, chosen)
+    expect(reply.status).toBe(200)
+    expect(replay.calls.at(-1)?.call).toMatchObject({ model: "claude-opus-5-5", output_config: { effort: "high" } })
   })
 })
 

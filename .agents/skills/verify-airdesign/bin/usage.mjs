@@ -1,5 +1,6 @@
 export const usage = [
   "verify-airdesign launch [--no-build]        start web + api + postgres on free ports; prints run id",
+  "                [--model-key-env NAME] [--model m] [--effort e]  real Aira with the key in $NAME; model and effort",
   "verify-airdesign doctor <run>               read-only health check of that run",
   "verify-airdesign sign-in <run> [--email e]  sign in through the real email code; prints the cookie",
   "verify-airdesign api <run> <route> [json] [--cookie c]  POST a deckRoutes entry; saves the answer",

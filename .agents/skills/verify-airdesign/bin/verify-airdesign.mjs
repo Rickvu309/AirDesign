@@ -6,6 +6,7 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
+import { airaArgs, airaChoice, airaFlags } from "./aira-choice.mjs"
 import { serve } from "./serve.mjs"
 import { browserCookies } from "./browser-cookies.mjs"
 import { designContext, openBrowser, settle } from "./browser.mjs"
@@ -111,9 +112,12 @@ async function launch(args) {
   for (const built of [webDist, apiDist, catalogDist]) {
     if (!existsSync(built)) fail(`missing build output ${built}; run launch without --no-build`)
   }
+  const { airaEfforts } = await import(pathToFileURL(path.join(apiDist, "aira.js")).href)
+  const chosen = airaChoice(args, process.env, airaEfforts)
+  if (!chosen.ok) fail(chosen.message)
   const site = builtSite(repo)
   const log = path.join(scratchDir(run), "stack.log")
-  const child = spawn(process.execPath, [fileURLToPath(import.meta.url), "serve", run], {
+  const child = spawn(process.execPath, [fileURLToPath(import.meta.url), "serve", run, ...airaArgs(chosen.choice)], {
     cwd: repo,
     detached: true,
     stdio: ["ignore", "ignore", "ignore"],
@@ -126,10 +130,10 @@ async function launch(args) {
       if (state.ready) {
         proof(
           run,
-          `# verify-airdesign run ${run}\n\n- commit ${state.commit}\n- origin ${state.origin}\n- site origin ${state.siteOrigin}, build ${site.built ? "made" : "reused"} at ${site.dist}\n- launched at ${loadLine()}`,
+          `# verify-airdesign run ${run}\n\n- commit ${state.commit}\n- origin ${state.origin}\n- site origin ${state.siteOrigin}, build ${site.built ? "made" : "reused"} at ${site.dist}\n- Aira: ${state.aira.streams} streams, ${state.aira.model} at ${state.aira.effort} effort\n- launched at ${loadLine()}`,
         )
         process.stdout.write(
-          `${JSON.stringify({ run, origin: state.origin, siteOrigin: state.siteOrigin, evidence: evidenceDir(run), pid: state.pid })}\n`,
+          `${JSON.stringify({ run, origin: state.origin, siteOrigin: state.siteOrigin, aira: state.aira, evidence: evidenceDir(run), pid: state.pid })}\n`,
         )
         return
       }
@@ -438,6 +442,7 @@ try {
       statePath,
       airaPath,
       head,
+      choice: airaFlags(rest.slice(1)),
     })
   else if (command === "doctor") await doctor(rest[0])
   else if (command === "sign-in") {
