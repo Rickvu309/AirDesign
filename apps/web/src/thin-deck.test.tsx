@@ -174,6 +174,9 @@ it("flushes the http remote for the given deck after Hello! on its element", asy
           calls.push({ op: "flush", remote, deck })
           return { ok: true }
         },
+        async pending() {
+          return []
+        },
       }
     },
     "different-deck",
