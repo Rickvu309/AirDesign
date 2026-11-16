@@ -179,9 +179,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/red-main.sh
+  journeys:
+    name: journeys
+    if: github.event_name == 'merge_group'
+    uses: ./.github/workflows/journeys.yml
   ci:
     name: ci
-    needs: [check, corpus]
+    needs: [check, corpus, journeys]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -189,6 +193,7 @@ jobs:
       - run: |
           test "${{ needs.check.result }}" = success
           test "${{ needs.corpus.result }}" = success || test "${{ needs.corpus.result }}" = skipped
+          test "${{ needs.journeys.result }}" = success || test "${{ needs.journeys.result }}" = skipped
       - if: github.event_name == 'push'
         continue-on-error: true
         env:

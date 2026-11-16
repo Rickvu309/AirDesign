@@ -51,7 +51,7 @@ same(
   [true, true],
 )
 same("one failing part does not stop the others", check.strategy["fail-fast"], false)
-same("ci waits for every part and the corpus", workflow.jobs.ci.needs, ["check", "corpus"])
+same("ci waits for every part, the corpus and the journeys", workflow.jobs.ci.needs, ["check", "corpus", "journeys"])
 
 const partCheck = steps.filter((step) => (step.run ?? "").startsWith("pnpm check --part="))
 same("one step runs pnpm check for a part", partCheck.length, 1)
@@ -149,11 +149,14 @@ same(
   "github.event_name == 'push' || github.event_name == 'merge_group'",
 )
 const verdict = ciSteps[0].run
-const passes = (check, corpusResult) =>
+const passes = (check, corpusResult, journeysResult = "skipped") =>
   spawnSync("bash", [
     "-e",
     "-c",
-    verdict.replaceAll("${{ needs.check.result }}", check).replaceAll("${{ needs.corpus.result }}", corpusResult),
+    verdict
+      .replaceAll("${{ needs.check.result }}", check)
+      .replaceAll("${{ needs.corpus.result }}", corpusResult)
+      .replaceAll("${{ needs.journeys.result }}", journeysResult),
   ]).status === 0
 same("ci passes when every part passed and the corpus passed", passes("success", "success"), true)
 same("ci passes on a pull request, where the corpus is skipped", passes("success", "skipped"), true)
@@ -164,4 +167,20 @@ same(
   "only a failure on main opens the main is red issue",
   corpus.steps.filter((step) => (step.run ?? "").includes("red-main.sh")).map((step) => step.if),
   ["failure() && github.event_name == 'push'"],
+)
+
+const journeys = workflow.jobs.journeys
+same("the journeys run in the merge queue", journeys.if, "github.event_name == 'merge_group'")
+same("the queue runs the same journeys workflow main runs", journeys.uses, "./.github/workflows/journeys.yml")
+same("ci passes when the journeys passed in the queue", passes("success", "success", "success"), true)
+same("ci fails when a journey failed in the queue", passes("success", "success", "failure"), false)
+same("ci fails when the journeys were cancelled", passes("success", "success", "cancelled"), false)
+const journeysFile = parse(fs.readFileSync(path.join(root, ".github/workflows/journeys.yml"), "utf8"))
+same("the journeys workflow can be called from ci", "workflow_call" in journeysFile.on, true)
+same(
+  "only a journey failure on main opens its issue",
+  journeysFile.jobs.journeys.steps
+    .filter((step) => (step.run ?? "").includes("red-main.sh"))
+    .map((step) => step.if.includes("github.ref == 'refs/heads/main'")),
+  [true],
 )
