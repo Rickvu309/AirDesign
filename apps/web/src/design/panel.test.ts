@@ -214,3 +214,25 @@ it("leaves Flip to the route of a connector that is bound to a shape", () => {
   )
   expect(boxRows(connector, {}).map((row) => row.field)).toContain("flipV")
 })
+
+function pickedOver(own: boolean, alpha: number) {
+  const fields = { "line.fill": { value: { solid: { scheme: "accent2" } }, own }, "line.alpha": { value: alpha, own } }
+  const panel = panelOf(connector, { reads: {}, moves: true, fields })
+  const row = panel.sections.find((section) => section.trait === "line")?.rows.find((each) => each.field === "fill")
+  if (row === undefined) throw new Error("line fill")
+  return row.change({ solid: { rgb: "C00000" } })
+}
+
+it("writes a colour picked over an inherited line color at the opacity the line showed, so the file's own alpha does not come back", () => {
+  expect(pickedOver(false, 100_000)).toEqual({
+    target: { node: connector.node },
+    line: { fill: { solid: { rgb: "C00000", transforms: [{ op: "alpha", val: 100_000 }] } } },
+  })
+})
+
+it("writes a colour picked over the line's own color as picked, so the export keeps the alpha it showed", () => {
+  expect(pickedOver(true, 60_000)).toEqual({
+    target: { node: connector.node },
+    line: { fill: { solid: { rgb: "C00000" } } },
+  })
+})

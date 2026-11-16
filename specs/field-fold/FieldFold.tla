@@ -51,9 +51,18 @@ DeviceRows == Cat(Prefix(log, seen), pending)
 
 \* What the export writes, so what the panel and the canvas show. A reset fill is the inherited
 \* fill as a whole, so its transparency is the inherited one unless a row sets the transparency.
-\* A new colour keeps the transparency of the bytes it is written over, which are the file's.
+\* An agent's colour keeps the transparency of the bytes it is written over, which are the file's.
+\* The person's colour picked over the inherited fill is written at the transparency the panel
+\* showed, so it keeps the inherited one; picked over the agent's colour it keeps the file's.
 ShownColour(c) == CASE c = 1 -> "file" [] c = 2 -> "inherited" [] c = 3 -> "person" [] OTHER -> "agent"
-ShownAlpha(a, c) == CASE a = 6 -> "person" [] a = 7 -> "agent" [] c = 2 -> "inherited" [] OTHER -> "file"
+ShownAlpha(a, c, under) ==
+  CASE a = 6 -> "person" [] a = 7 -> "agent" [] c = 2 \/ (c = 3 /\ under = 2) -> "inherited" [] OTHER -> "file"
+
+\* The colour the person's colour step replaced, read from the undo list. While the device shows
+\* the person's colour, that step is still on the list.
+RECURSIVE ColourUnder(_)
+ColourUnder(list) ==
+  IF list = 0 THEN 0 ELSE IF list % 10 = 3 THEN (list % 100) \div 10 ELSE ColourUnder(list \div 100)
 ShownSize(s) == IF s = 9 THEN "person" ELSE "inherited"
 
 Show ==
@@ -68,7 +77,7 @@ Show ==
      /\ sAlpha' = Fold(log', 2)
      /\ sSize' = Fold(log', 3)
      /\ colour' = ShownColour(c)
-     /\ alpha' = ShownAlpha(a, c)
+     /\ alpha' = ShownAlpha(a, c, ColourUnder(undo'))
      /\ size' = ShownSize(s)
      /\ quiet' = (c = 2 /\ a = 5)
      /\ bytes' = (c = 1 /\ a = 5 /\ s = 8)
