@@ -1,5 +1,5 @@
 import { agentNumberOf, readAgent } from "@airdesign/catalog"
-import { useState, type KeyboardEvent } from "react"
+import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
 import { designCopy } from "@/copy/design-copy"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
@@ -14,6 +14,22 @@ function stepOf(event: KeyboardEvent<HTMLInputElement>, unit: number): number {
   return (event.key === "ArrowUp" ? 1 : -1) * (event.shiftKey ? 10 : 1) * unit
 }
 
+export type Scrub = { readonly value: number; readonly x: number }
+
+const scrubPixels = 2
+
+export function scrubbed(
+  scrub: Scrub,
+  x: number,
+  keys: { readonly shiftKey: boolean; readonly altKey: boolean },
+  step: number,
+): Scrub {
+  const steps = Math.trunc((x - scrub.x) / scrubPixels)
+  if (steps === 0) return scrub
+  const each = keys.shiftKey ? step * 10 : keys.altKey ? step / 10 : step
+  return { value: Math.round((scrub.value + steps * each) * 10) / 10, x: scrub.x + steps * scrubPixels }
+}
+
 export function NumberField({
   row,
   onChange,
@@ -23,6 +39,8 @@ export function NumberField({
 }: ControlProps & { unit: string; kind: string; step?: number }) {
   const [draft, setDraft] = useState<string | null>(null)
   const shown = shownNumber(row)
+  const field = useRef<HTMLInputElement>(null)
+  const scrub = useRef<Scrub | null>(null)
 
   function commit(text: string) {
     setDraft(null)
@@ -42,6 +60,29 @@ export function NumberField({
     commit(String((Number.isFinite(from) ? from : 0) + moved))
   }
 
+  function startScrub(event: PointerEvent<HTMLSpanElement>) {
+    if (event.button !== 0 || shown === "") return
+    event.preventDefault()
+    field.current?.blur()
+    field.current?.focus()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    scrub.current = { value: Number(shown), x: event.clientX }
+  }
+
+  function moveScrub(event: PointerEvent<HTMLSpanElement>) {
+    const from = scrub.current
+    if (from === null) return
+    const to = scrubbed(from, event.clientX, event, step)
+    if (to === from) return
+    const read = readAgent(row.desc, to.value)
+    scrub.current = read.ok ? to : { ...from, x: to.x }
+    if (read.ok) onChange(read.value)
+  }
+
+  function endScrub() {
+    scrub.current = null
+  }
+
   return (
     <label
       className="flex h-8 min-w-0 items-center gap-2 rounded-lg bg-white px-2.5 shadow-[0px_0px_0px_1px_var(--field-edge)]"
@@ -49,8 +90,20 @@ export function NumberField({
       data-inherited={row.inherited ? "" : undefined}
       data-focus-ring
     >
-      <span className="shrink-0 truncate text-[length:var(--type-caption)] text-quiet">{row.label}</span>
+      <span
+        className={cn(
+          "shrink-0 truncate text-[length:var(--type-caption)] text-quiet",
+          shown !== "" && "cursor-ew-resize touch-none select-none",
+        )}
+        onPointerDown={startScrub}
+        onPointerMove={moveScrub}
+        onPointerUp={endScrub}
+        onPointerCancel={endScrub}
+      >
+        {row.label}
+      </span>
       <input
+        ref={field}
         className={cn(
           "min-w-0 flex-1 bg-transparent text-right text-[length:var(--type-dense)] tabular-nums outline-none placeholder:text-quiet",
           row.inherited && draft === null ? "text-quiet" : "text-foreground",

@@ -63,6 +63,38 @@ test("five arrow presses in one visit to a field are one undo step, and a press 
   await expect.poll(() => placed(page, element)).toEqual([30, 30, 360, 120])
 })
 
+test("dragging a field's label scrubs it in steps, Shift scrubs tens, and one Undo takes the whole scrub back", async ({
+  page,
+}) => {
+  await openDeck(page, "clean.pptx")
+  const panel = await designing(page, page.locator('[contenteditable="true"]'))
+  const width = panel.getByRole("textbox", { name: "Width", exact: true })
+  await expect(width).toHaveValue("432")
+  const label = width.locator("..").getByText("Width", { exact: true })
+  const box = await label.boundingBox()
+  if (box === null) throw new Error("the Width label has no box")
+  const y = box.y + box.height / 2
+  const x = box.x + box.width / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x + 10, y, { steps: 5 })
+  await expect(width).toHaveValue("437")
+  await page.keyboard.down("Shift")
+  await page.mouse.move(x + 14, y, { steps: 2 })
+  await page.keyboard.up("Shift")
+  await page.mouse.up()
+  await expect(width).toHaveValue("457")
+  await expect(width).toBeFocused()
+  await expect
+    .poll(() => pendingValues(page, "256.2"))
+    .toEqual([{ x: 36 * point, y: 36 * point, cx: 457 * point, cy: 144 * point }])
+  await width.blur()
+  await page.keyboard.press("Control+z")
+  await expect(width).toHaveValue("432")
+  await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeDisabled()
+  await expect.poll(() => placed(page, element)).toEqual([30, 30, 360, 120])
+})
+
 test("a length the slide cannot hold leaves the element where it was", async ({ page }) => {
   await openDeck(page, "clean.pptx")
   const panel = await designing(page, page.locator('[contenteditable="true"]'))

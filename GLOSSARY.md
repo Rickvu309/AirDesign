@@ -154,6 +154,10 @@ _Avoid_: inspector, properties, format pane
 A value an element paints with but does not set itself: it comes from the element's layout, master or theme, or from PowerPoint's own default, such as 18 pt in the theme's body font. The design panel shows it in quiet ink; a value the person or an agent sets shows in full ink, and a reset returns the field to the inherited value.
 _Avoid_: default, placeholder value, unset
 
+**scrub**:
+A drag on a number field's label in the design panel that steps its value as the pointer moves left or right: Shift steps by tens and Alt by tenths. One scrub is one undo step.
+_Avoid_: slider, drag to change
+
 **theme**:
 The deck's twelve colors and its heading and body fonts. Every shape, line, text, background and table that names a theme color or font follows a change to it. A person changes it in the design panel's Theme section with nothing selected; an agent sends `set` with target `deck.theme`.
 _Avoid_: palette, color scheme, template (a template is a whole design, not available yet)
