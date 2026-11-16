@@ -170,8 +170,9 @@ Proof standards:
 - Drive the user's path: the file input on Home, typing in the slide, the buttons on Home and Trash. Never call internal setters or test-only routes.
 - Capture the action and the result, not only the last screen.
 - Prove side effects through a second view: after a UI action, read the server copy with `deckRoutes.open` or `deckRoutes.list`. A UI that looks right while the server disagrees is a failure.
-- The only stand-ins are the mail sender (writes a file instead of calling Resend), the original store (in memory instead of R2, its signed URLs served by the front server under `/verify-original/`), Aira's model (`bin/scripted-aira.mjs` plays recorded streams instead of calling Claude), the country header (the front server adds `visitor-country: US` as the web worker would from Cloudflare's `request.cf.country`), and production pages (the journey kit answers any `airdesign.app` address, such as the sign-in redirect, with a stand-in page). Each sits behind a production seam. The stack sends no forward secret, so the API's forward-secret check is not exercised.
+- The stack has a few stand-ins, each behind a production seam. [stand-ins.md](stand-ins.md) lists them.
 - Prove an export against its original with `node scripts/deck-diff.mjs original.pptx export.pptx --allow <part>`: it counts the byte-identical parts, shows each changed part's XML lines with their shape paths, and exits 1 when a part outside `--allow` changed, was added or removed, or the part order moved. `--json` prints the same as data. Run `pnpm build` first.
+- Score a painted slide against its reference image with `node scripts/slide-diff.mjs reference.png painted.png [--heatmap out.png] [--json]`: it prints the mean similarity, the worst 32 by 32 tile with its position, and the share of changed pixels, and exits 1 when the slide does not match. The heatmap tints each region red where the paint differs and boxes the worst tile. The painted image is scaled to the reference's size first.
 - Put the run id, the journey and the evidence path in your PR or review comment.
 
 ## Cleanup

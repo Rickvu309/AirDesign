@@ -1,0 +1,3 @@
+# Stand-ins
+
+The stack's only stand-ins are the mail sender (writes a file instead of calling Resend), the original store (in memory instead of R2, its signed URLs served by the front server under `/verify-original/`), Aira's model (`bin/scripted-aira.mjs` plays recorded streams instead of calling Claude), the country header (the front server adds `visitor-country: US` as the web worker would from Cloudflare's `request.cf.country`), and production pages (the journey kit answers any `airdesign.app` address, such as the sign-in redirect, with a stand-in page). Each sits behind a production seam. The stack sends no forward secret, so the API's forward-secret check is not exercised.

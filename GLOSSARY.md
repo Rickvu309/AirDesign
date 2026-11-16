@@ -92,6 +92,10 @@ _Avoid_: validate, verify
 The parts an exported PowerPoint file changed, added or removed against its original, with each changed XML line and its shape path. It gives no verdict; `--allow` names the parts an edit may change.
 _Avoid_: delta, comparison
 
+**slide-diff**:
+The score of a painted slide against its reference image: the mean similarity, the lowest similarity of any 32 by 32 pixel tile, and the share of pixels that changed. The lowest tile catches one missing element on a mostly white slide.
+_Avoid_: image diff, visual diff, screenshot comparison
+
 **planted fault**:
 A break put into code on purpose, to see whether a check catches it.
 _Avoid_: mutant, planted break, injected bug
