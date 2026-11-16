@@ -1,5 +1,5 @@
 import { storeNewer, watchNewer } from "@airdesign/live"
-import { useState, useSyncExternalStore } from "react"
+import { useSyncExternalStore } from "react"
 import { NotFoundPage } from "@/decks/not-found-page"
 import { DownloadedNotice, ThinNoticeView } from "@/thin-notice"
 import { EditorFrame } from "@/editor/editor-frame"
@@ -7,6 +7,7 @@ import { EditorShell } from "@/editor/editor-shell"
 import { editableSlide } from "@/editor/editable-slide"
 import { slideCommands } from "@/editor/slide-commands"
 import { useDeckOpen } from "@/editor/use-deck-open"
+import { useKeptPanel } from "@/editor/kept-panel"
 import { shownNotice } from "@/editor/use-deck-status"
 import { useEditorDeck } from "@/editor/use-editor-deck"
 import { useNetwork } from "@/editor/use-network"
@@ -17,7 +18,7 @@ import { colorsIn, LiveDesignPanel } from "@/editor/live-design-panel"
 
 export function ThinDeck({ id }: { id: string }) {
   const deck = useEditorDeck(id)
-  const [panel, setPanel] = useState<"agent" | "design">("agent")
+  const [panel, setPanel] = useKeptPanel(id)
   useDeckOpen(deck)
   useNetwork(deck)
   const undoButtons = useUndoTurn(deck)
