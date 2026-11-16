@@ -40,8 +40,14 @@
     {
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
-      "digest": "349ba0f42871",
-      "blob": "8247a0638751415ad4431852e1a02c014aeae66a"
+      "digest": "f73e5f944016",
+      "blob": "518609559ad6ca8104c909458eb764d6c09933c1"
+    },
+    {
+      "file": "apps/web/src/design/shown-alpha.ts",
+      "names": ["alphaFieldOver", "atShownAlpha"],
+      "digest": "8c06709070c7",
+      "blob": "4d622a68fe9c4b9055d8509d9ccef9ddfcd42f72"
     },
     {
       "file": "apps/web/src/editor/live-design-panel.tsx",

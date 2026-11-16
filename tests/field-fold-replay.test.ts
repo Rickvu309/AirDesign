@@ -211,6 +211,7 @@ function colourCode(edit: unknown): number {
   if (edit === undefined || edit === "opening") return 1
   if (edit === "inherit") return 2
   if (same(edit, { set: { solid: personColour } })) return 3
+  if (same(edit, { set: { solid: { ...personColour, transforms: [{ op: "alpha", val: opaque }] } } })) return 3
   if (same(edit, { set: { solid: { rgb: agentHex } } })) return 4
   throw new Error(`not a colour ${JSON.stringify(edit)}`)
 }
@@ -416,7 +417,7 @@ describe("field-fold replay", () => {
     expect(graph.states.size).toBeLessThan(500)
   }, 600_000)
 
-  it.fails("keeps the transparency Reset fill showed when the person then picks a colour", async () => {
+  it("keeps the transparency Reset fill showed when the person then picks a colour", async () => {
     held.world = { server: opened(), read: opened().register, pending: [], list: { undo: [], redo: [] }, told: 0 }
     await actions.Reset?.()
     const reset = painted(deviceRegister()).fields["fill.alpha"]?.value
