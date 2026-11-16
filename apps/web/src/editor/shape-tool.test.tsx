@@ -2,7 +2,7 @@ import { presets, type Geometry } from "@airdesign/document"
 import { renderToStaticMarkup } from "react-dom/server"
 import { expect, it } from "vitest"
 import { geometryWords } from "@/copy/geometry-copy"
-import { ShapeGrid } from "@/editor/shape-grid"
+import { gridColumns, gridStep, ShapeGrid } from "@/editor/shape-grid"
 import { ShapeTrayItems, trayGeometries } from "@/editor/shape-tool"
 
 function tagsOf(markup: string) {
@@ -55,4 +55,23 @@ it("lists every preset in the More shapes grid, each one on and named as the Sha
   expect(tags.map(labelOf)).toEqual(presets.map((preset) => geometryWords[preset]))
   expect(tags.filter((tag) => / disabled=""/.test(tag))).toEqual([])
   expect(picked).toEqual([])
+})
+
+it("marks the chosen preset pressed and lets Tab reach only it, so arrows move from there", () => {
+  const tags = tagsOf(renderToStaticMarkup(<ShapeGrid onShape={() => undefined} label="Type" chosen="diamond" />))
+  expect(tags.filter((tag) => / aria-pressed="true"/.test(tag)).map(labelOf)).toEqual([geometryWords.diamond])
+  expect(tags.filter((tag) => / tabindex="0"/.test(tag)).map(labelOf)).toEqual([geometryWords.diamond])
+})
+
+it("steps through the grid by row and column and stops at its edges", () => {
+  const count = presets.length
+  expect(gridStep("ArrowRight", 0, count)).toBe(1)
+  expect(gridStep("ArrowLeft", 0, count)).toBe(0)
+  expect(gridStep("ArrowDown", 2, count)).toBe(2 + gridColumns)
+  expect(gridStep("ArrowUp", 2, count)).toBe(2)
+  expect(gridStep("ArrowDown", count - 1, count)).toBe(count - 1)
+  expect(gridStep("ArrowRight", count - 1, count)).toBe(count - 1)
+  expect(gridStep("End", 0, count)).toBe(count - 1)
+  expect(gridStep("Home", 9, count)).toBe(0)
+  expect(gridStep("Enter", 9, count)).toBeNull()
 })
