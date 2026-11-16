@@ -9,6 +9,7 @@ import {
   type ElementId,
   type Register,
 } from "@airdesign/document"
+import { noSelection } from "@airdesign/render"
 import { act, createElement } from "react"
 import { createRoot } from "react-dom/client"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
@@ -77,6 +78,7 @@ function Deck(props: { readonly exposed: (deck: Exposed) => void }) {
     settle,
     setPending,
     changeElement,
+    selection: noSelection,
     select: nothing,
   })(800)
 }

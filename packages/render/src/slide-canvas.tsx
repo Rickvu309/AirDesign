@@ -10,6 +10,7 @@ import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.j
 import { ChosenFrame, SelectionFrame } from "./selection-frame.js"
 import { slideBackground } from "./slide-background.js"
 import { canDrag, enterElement, useMoves } from "./slide-moves.js"
+import { leadOf, type Selection } from "./selection.js"
 import type { CanvasSlide } from "./record.js"
 import type { TableBar } from "./table-paint.js"
 import type { PaintStore } from "./store.js"
@@ -45,10 +46,10 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onBox?: (id: ElementId, box: Box) => void
   readonly onRemove?: (ids: readonly ElementId[]) => void
   readonly onOrder?: (id: ElementId, move: StackMove) => void
-  readonly onSelect?: (id: ElementId | null) => void
+  readonly selection?: Selection
+  readonly onSelection?: (selection: Selection) => void
   readonly onGroup?: (ids: readonly ElementId[]) => void
   readonly onUngroup?: (id: ElementId) => void
-  readonly onChoose?: (ids: readonly ElementId[]) => void
   readonly onConnect?: (id: ElementId, end: End, to: EndDrop) => void
   readonly notice?: string
   readonly onTable?: (id: ElementId, change: TableChange) => void
@@ -63,13 +64,17 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   useLayoutEffect(() => {
     ensureTextRule(document)
   }, [])
-  const moves = useMoves(props.store, slide, width, props.onBox, props.onRemove, props.onOrder, props.onSelect, {
+  const picking = {
+    ...(props.selection === undefined ? {} : { selection: props.selection }),
+    ...(props.onSelection === undefined ? {} : { onSelection: props.onSelection }),
+  }
+  const moves = useMoves(props.store, slide, width, props.onBox, props.onRemove, props.onOrder, picking, {
     ...(props.onGroup === undefined ? {} : { onGroup: props.onGroup }),
     ...(props.onUngroup === undefined ? {} : { onUngroup: props.onUngroup }),
-    ...(props.onChoose === undefined ? {} : { onChoose: props.onChoose }),
   })
   const moving = props.onBox === undefined ? null : moves
-  const selected = moving === null ? undefined : slide.elements.find((each) => each.id === moving.selected)
+  const lead = moving === null ? null : leadOf(moving.selection)
+  const selected = lead === null ? undefined : slide.elements.find((each) => each.id === lead)
   const onConnect = selected?.kind === "connector" ? props.onConnect : undefined
   const surface = useRef<HTMLDivElement>(null)
   const entered = useRef<ElementId | null>(null)
@@ -140,7 +145,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
       {moving === null
         ? null
         : slide.elements.flatMap((each) =>
-            each.id === null || each.id === moving.selected || !moving.chosen.includes(each.id)
+            each.id === null || each.id === lead || !moving.selection.ids.includes(each.id)
               ? []
               : [<ChosenFrame key={each.key} id={each.id} element={each} scaled={scaled} store={props.store} />],
           )}

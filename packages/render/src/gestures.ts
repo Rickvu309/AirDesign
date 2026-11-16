@@ -8,13 +8,14 @@ export type Pointing = {
   readonly on: "element" | "corner"
   readonly drag: boolean
   readonly shift?: true
+  readonly mod?: true
 }
 
 export type GestureRow = {
   readonly id: string
   readonly group: "select" | "move" | "size" | "arrange" | "view" | "history" | "text" | "slides"
   readonly keys: readonly Keys[]
-  readonly pointing?: Pointing
+  readonly pointing?: readonly Pointing[]
   readonly where: readonly Where[]
 }
 
@@ -30,20 +31,23 @@ export type KeyLike = {
 const arrows = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"] as const
 
 export const gestures = [
-  { id: "select", group: "select", keys: [], pointing: { on: "element", drag: false }, where: ["slide"] },
+  { id: "select", group: "select", keys: [], pointing: [{ on: "element", drag: false }], where: ["slide"] },
   {
     id: "select-add",
     group: "select",
     keys: [],
-    pointing: { on: "element", drag: false, shift: true },
+    pointing: [
+      { on: "element", drag: false, shift: true },
+      { on: "element", drag: false, mod: true },
+    ],
     where: ["slide"],
   },
   { id: "select-next", group: "select", keys: [{ key: "Tab" }, { key: "Tab", shift: true }], where: ["element"] },
-  { id: "step-in", group: "select", keys: [], pointing: { on: "element", drag: false }, where: ["slide"] },
+  { id: "step-in", group: "select", keys: [], pointing: [{ on: "element", drag: false }], where: ["slide"] },
   { id: "deselect", group: "select", keys: [{ key: "Escape" }], where: ["element", "text"] },
   { id: "edit-text", group: "select", keys: [{ key: "Enter" }], where: ["element"] },
   { id: "delete", group: "select", keys: [{ key: "Delete" }, { key: "Backspace" }], where: ["element"] },
-  { id: "move", group: "move", keys: [], pointing: { on: "element", drag: true }, where: ["slide"] },
+  { id: "move", group: "move", keys: [], pointing: [{ on: "element", drag: true }], where: ["slide"] },
   { id: "nudge", group: "move", keys: arrows.map((key) => ({ key })), where: ["element"] },
   {
     id: "nudge-far",
@@ -51,7 +55,7 @@ export const gestures = [
     keys: arrows.map((key) => ({ key, shift: true }) as const),
     where: ["element"],
   },
-  { id: "resize", group: "size", keys: [], pointing: { on: "corner", drag: true }, where: ["slide"] },
+  { id: "resize", group: "size", keys: [], pointing: [{ on: "corner", drag: true }], where: ["slide"] },
   {
     id: "resize-keys",
     group: "size",

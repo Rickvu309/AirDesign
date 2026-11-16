@@ -1,6 +1,6 @@
 import { boxPatch, type Box, type ElementId, type StackMove } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
-import { SlideCanvas } from "@airdesign/render"
+import { SlideCanvas, type Selection } from "@airdesign/render"
 import type { ReactNode } from "react"
 import { ArrangeMenu } from "@/editor/arrange-menu"
 import { commitBox, commitEdit, type CommitOutcome } from "@/commit-edit"
@@ -20,11 +20,12 @@ import { boxName } from "@/undo-names"
 export type EditableDeck = DesignDeck & {
   readonly tables: ReturnType<typeof useTables>
   readonly changeElement: (change: ElementChange) => Promise<CommitOutcome | "closed">
-  readonly select: (id: ElementId | null) => void
+  readonly selection: Selection
+  readonly select: (selection: Selection) => void
 }
 
 export function editableSlide(deck: EditableDeck): (width: number) => ReactNode {
-  const { id, tables, settle, setPending, changeElement, select } = deck
+  const { id, tables, settle, setPending, changeElement, selection, select } = deck
   const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount, bound } = deck.shown
   const { typed, sessions, records, formatting, record } = deck.undo
 
@@ -143,10 +144,11 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
         className={cn(slideFrame, "block shrink-0")}
         parts={editParts.current}
         slide={canvas}
+        selection={selection}
         onOrder={orderElement}
         onGroup={changeElement}
       >
-        {({ notice, order, group, choose, clear }) => (
+        {({ notice, order, group, clear }) => (
           <SlideCanvas
             className="overflow-clip rounded-[2px] focus-within:overflow-visible"
             entering={entering}
@@ -157,8 +159,8 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
               void holding([target], () => onBox(target, box))
             }}
             onOrder={order}
-            onSelect={select}
-            onChoose={choose}
+            selection={selection}
+            onSelection={select}
             onConnect={(node, end, to) => {
               clear()
               changeDesign(deck, () => endChange(node, end, to))
