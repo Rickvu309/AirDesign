@@ -236,6 +236,7 @@ export async function journeyKit({ run, name, page, context }) {
     expect,
     origin: state.origin,
     siteOrigin: state.siteOrigin,
+    airaCounts: state.airaCounts,
     page,
     context,
     deckRoutes,
@@ -399,6 +400,11 @@ try {
   } else if (command === "bench") {
     const { benchCommand } = await import("./bench.mjs")
     process.stdout.write(`${JSON.stringify(await benchCommand(rest, { repo, readState, evidenceDir, journeyKit }))}\n`)
+  } else if (command === "agent-bench") {
+    const { agentBenchCommand } = await import("./agent-bench.mjs")
+    process.stdout.write(
+      `${JSON.stringify(await agentBenchCommand(rest, { repo, readState, evidenceDir, journeyKit }))}\n`,
+    )
   } else if (command === "suites") {
     const { suitesCommand } = await import("./suites.mjs")
     process.stdout.write(`${JSON.stringify(await suitesCommand(rest, { repo, evidenceRoot }))}\n`)
