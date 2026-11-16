@@ -1,8 +1,14 @@
 import { failedSteps, failedTests } from "./failed-tests.mjs"
+import { smallLaneCommand } from "./machine-lock.mjs"
 
 const dependsOnLoad = new Set(["test"])
 
 const filesOf = (tests) => [...new Set(tests.map((test) => test.file))]
+
+export const aloneRun = ([, command, args, env], file) => [
+  ...smallLaneCommand(command, [...args, "--maxWorkers=2", file]),
+  env,
+]
 
 const fault = (how) => ({ passed: false, how })
 

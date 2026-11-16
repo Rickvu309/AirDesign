@@ -6,7 +6,7 @@ import { stages } from "./check.mjs"
 import { stampChecked } from "./checked.mjs"
 import { filesWithMarkers, markerFault } from "./conflict-markers.mjs"
 import { readWithRetry } from "./github-read.mjs"
-import { judgeCheck } from "./land-check.mjs"
+import { aloneRun, judgeCheck } from "./land-check.mjs"
 import { followPull } from "./land-follow.mjs"
 import { behindMain, conflictsWithMain, currentBranch, dirtyFiles, runner, succeeds } from "./land-git.mjs"
 import { statusLines } from "./land-status.mjs"
@@ -273,11 +273,15 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
     gh: runner("gh", root),
     check: () => tee("pnpm", ["check"], process.env, root),
     rerun: async (file) => {
-      const release = await takeMachineLock({ job: "rerun", say: console.error })
+      const release = await takeMachineLock({ job: "rerun", lane: "small", say: console.error })
+      let status = "exited"
       try {
-        return await tee(testStep[1], [...testStep[2], file], { ...process.env, ...testStep[3] }, root)
+        const [command, args, env] = aloneRun(testStep, file)
+        const ran = await tee(command, args, { ...process.env, ...env }, root)
+        status = ran.status === 0 ? "passed" : "failed"
+        return ran
       } finally {
-        await release()
+        await release({ status })
       }
     },
     stamp: () => stampChecked(root),

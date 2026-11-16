@@ -3,7 +3,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { queueLogName, takeMachineLock, waitLine } from "./machine-lock.mjs"
+import { queueLogName, recentRunSeconds, takeMachineLock, waitLine } from "./machine-lock.mjs"
 
 const fail = (message) => {
   console.error(message)
@@ -21,14 +21,14 @@ const within = (promise, what) => {
   return promise.finally(() => clearTimeout(timer))
 }
 
-const waiter = (job = "check") => {
+const waiter = (job = "check", lane = "full") => {
   const child = spawn(
     process.execPath,
     [
       "--input-type=module",
       "-e",
       `import { takeMachineLock } from ${JSON.stringify(module)}
-       const release = await takeMachineLock({ folder: ${JSON.stringify(folder)}, env: {}, poll: 50, job: ${JSON.stringify(job)} })
+       const release = await takeMachineLock({ folder: ${JSON.stringify(folder)}, env: {}, poll: 50, job: ${JSON.stringify(job)}, lane: ${JSON.stringify(lane)} })
        console.log("started")
        process.stdin.once("data", async (word) => {
          if (String(word).startsWith("go")) await release()
@@ -65,6 +65,21 @@ await inside()
 const onCi = await takeMachineLock({ folder, env: { CI: "true" }, say })
 await onCi()
 if (said.length !== 0) fail("a check inside a check, or ci, waited for the lock")
+
+const releaseSmall = await within(
+  takeMachineLock({ folder, env: {}, say, job: "rerun", lane: "small" }),
+  "a small job waited while only a full check held the machine",
+)
+if (said.length !== 0) fail("a small job beside a full check said it was waiting")
+const smallSecond = waiter("rerun", "small")
+await smallSecond.until(placed(1), "a second small job did not queue behind the first")
+if (!smallSecond.seen.err.includes("small lane")) fail("a waiting small job did not name its lane")
+await settle()
+if (started(smallSecond.seen)) fail("two small jobs ran at once")
+await releaseSmall({ status: "failed" })
+await smallSecond.until(started, "the next small job did not start when the small lane freed")
+smallSecond.finish()
+await smallSecond.closed
 
 const second = waiter()
 await second.until(placed(1))
@@ -104,12 +119,21 @@ if (!log.every((row) => typeof row.waited === "number" && typeof row.ran === "nu
 }
 if (!log.some((row) => row.job === "pptx" && row.waited > 0))
   fail("the queue log missed a job that waited and exited without releasing")
-if (log.length !== 3)
-  fail(`the queue log has ${log.length} rows, not one per job that held the machine and exited cleanly`)
+const full = log.filter((row) => row.lane === "full")
+const small = log.filter((row) => row.lane === "small")
+if (full.length !== 3)
+  fail(`the queue log has ${full.length} full rows, not one per check that held the machine and exited cleanly`)
+if (small.length !== 2) fail(`the queue log has ${small.length} small rows, not one per small job`)
+if (small[0].status !== "failed" || small[1].status !== "done") fail("the queue log lacks a small job's status")
+if (!log.some((row) => row.job === "pptx" && row.status === "exited"))
+  fail("a job that exited without releasing is not logged as exited")
+if (recentRunSeconds(path.join(folder, queueLogName), 20, "small") === undefined)
+  fail("the expected wait of the small lane reads no small runs")
+if (!waitLine(1, undefined, "small").includes("small lane")) fail("the small lane's wait line does not name it")
 if (!waitLine(3, 90).includes("Expect about 5 min")) fail("the expected wait does not count the checks ahead")
 if (waitLine(1, undefined).includes("Expect")) fail("an empty queue log still promised a wait")
 
-const leftover = fs.readdirSync(path.join(folder, "queue"))
+const leftover = [...fs.readdirSync(path.join(folder, "queue")), ...fs.readdirSync(path.join(folder, "small-queue"))]
 if (leftover.length !== 0) fail(`the queue kept tickets: ${leftover.join(", ")}`)
 fs.rmSync(folder, { recursive: true, force: true })
 console.log("machine lock tests passed")
