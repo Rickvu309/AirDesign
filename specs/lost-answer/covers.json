@@ -4,8 +4,8 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect"],
-      "digest": "e7896fa47681",
-      "blob": "9176091cc90df9ac5b43ab79a6def8550b6853c5"
+      "digest": "cd365e211ae9",
+      "blob": "f108ea709387e5efe20b616f415d72c6b45bec65"
     },
     {
       "file": "packages/live/src/slide-replay.ts",
@@ -30,6 +30,18 @@
       "names": ["resendPending"],
       "digest": "cc5743d8ebdd",
       "blob": "a9cdf6f5ebbfc0f9eaa8af542084ff21a59c5d2a"
+    },
+    {
+      "file": "packages/live/src/remote.ts",
+      "names": ["post", "httpRemote"],
+      "digest": "b076ba62b968",
+      "blob": "5eeaa0864068dfb69f80726487ef814072508fb8"
+    },
+    {
+      "file": "apps/web/src/commit-edit.ts",
+      "names": ["flushPending"],
+      "digest": "62c3238a74c4",
+      "blob": "dced227b406ba7fda3cf0d084759cb3cc2325681"
     }
   ]
 }

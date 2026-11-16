@@ -3,7 +3,7 @@ import { elementId, orderKeyAfter, presentSlides, slideId } from "@airdesign/doc
 import { afterEach, expect, it, vi } from "vitest"
 import { installIndexedDb } from "./browser-fixtures.js"
 import { newPage } from "./device.js"
-import { connect, deleteDatabase, memoryRemote, type CommitResult, type Remote } from "./index.js"
+import { connect, deleteDatabase, httpRemote, memoryRemote, type CommitResult, type Remote } from "./index.js"
 
 type Value = boolean | number | string
 type Spec = Record<string, Value>
@@ -34,10 +34,27 @@ async function specGraph(name: string, module: string): Promise<Graph> {
 
 type Wire = {
   readonly body: Body
-  readonly resolve: (answer: CommitResult) => void
+  readonly resolve: (response: Response) => void
   readonly reject: (error: Error) => void
   answer?: CommitResult
 }
+
+const page = (status: number, text: string) => new Response(text, { status, headers: { "content-type": "text/html" } })
+const json = (status: number, text: string) =>
+  new Response(text, { status, headers: { "content-type": "application/json" } })
+
+const lostSends: readonly ((wire: Wire) => void)[] = [
+  (wire) => wire.reject(new TypeError("Failed to fetch")),
+  (wire) => wire.resolve(page(502, "<html><body>Bad gateway</body></html>")),
+  (wire) => wire.resolve(json(500, JSON.stringify({ error: "internal" }))),
+]
+
+const lostAnswers: readonly ((wire: Wire) => void)[] = [
+  (wire) => wire.resolve(json(200, JSON.stringify(wire.answer).slice(0, 12))),
+  (wire) => wire.resolve(page(504, "<html><body>Gateway timeout</body></html>")),
+]
+
+let losses = 0
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -50,25 +67,34 @@ async function world() {
   let orphan: Body | undefined
   let flushing: Promise<unknown> = Promise.resolve()
   let reached: () => void = () => undefined
-  const page = (): Remote => ({
-    ...server,
-    commit: (body) =>
-      new Promise<CommitResult>((resolve, reject) => {
-        wire = { body, resolve, reject }
+  vi.stubGlobal(
+    "fetch",
+    (_path: string, init: RequestInit) =>
+      new Promise<Response>((resolve, reject) => {
+        wire = { body: JSON.parse(String(init.body)) as Body, resolve, reject }
         reached()
       }),
-  })
-  let cache = connect(page())
+  )
+  const tab = (): Remote => ({ ...server, commit: httpRemote().commit })
+  let cache = connect(tab())
   expect(await cache.openDeck(deck)).toMatchObject({ ok: true })
   expect(await cache.enqueueSlide(deck, file, added)).toMatchObject({ ok: true })
   const held = (): Wire => {
     if (wire === undefined) throw new Error("no request on its way")
     return wire
   }
-  const lose = async () => {
-    held().reject(new TypeError("lost"))
+  const drop = async () => {
+    held().reject(new TypeError("closed"))
     wire = undefined
     await flushing
+  }
+  const lose = async (ways: readonly ((wire: Wire) => void)[]) => {
+    const way = ways[losses % ways.length]
+    if (way === undefined) throw new Error("no way to lose")
+    losses += 1
+    way(held())
+    wire = undefined
+    expect(await flushing).toBeInstanceOf(TypeError)
   }
   const steps: Record<string, (from: Spec) => Promise<void>> = {
     Send: async () => {
@@ -82,21 +108,21 @@ async function world() {
       const request = held()
       request.answer = await server.commit(request.body)
     },
-    Lose: lose,
+    Lose: (from) => lose(from.wire === "answered" ? lostAnswers : lostSends),
     Answer: async () => {
       const request = held()
       if (request.answer === undefined) throw new Error("no answer")
-      request.resolve(request.answer)
+      request.resolve(json(200, JSON.stringify(request.answer)))
       wire = undefined
-      await flushing
+      expect(await flushing).toMatchObject({ ok: true })
     },
     Reload: async () => {
       if (wire !== undefined) {
         if (wire.answer === undefined) orphan = wire.body
-        await lose()
+        await drop()
       }
       newPage()
-      cache = connect(page())
+      cache = connect(tab())
     },
     OrphanLands: async () => {
       if (orphan === undefined) throw new Error("no old request")
@@ -132,7 +158,7 @@ async function world() {
     }
   }
   const close = async () => {
-    if (wire !== undefined) await lose()
+    if (wire !== undefined) await drop()
     await deleteDatabase()
   }
   return { steps, seen, close }
