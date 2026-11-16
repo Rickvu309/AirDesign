@@ -32,9 +32,9 @@ describe("the published cluster", () => {
 
   it("fails with the reason a cluster could not start", async () => {
     const file = await clusterFile()
-    const waiting = publishedCluster(file, 10_000)
+    const failed = expect(publishedCluster(file, 10_000)).rejects.toThrow("PostgreSQL 18 was not found.")
     await publishCluster(file, { error: "PostgreSQL 18 was not found." })
-    await expect(waiting).rejects.toThrow("PostgreSQL 18 was not found.")
+    await failed
   })
 
   it("fails when no cluster is published in time", async () => {

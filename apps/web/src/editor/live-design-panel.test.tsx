@@ -192,7 +192,6 @@ it("shows a slide's background and theme once each, with no section or button th
   expect(text).not.toContain("not available")
   expect(panel?.querySelectorAll("button:disabled")).toHaveLength(0)
   expect(panel?.querySelectorAll("button[aria-label^='Background color']")).toHaveLength(1)
-  for (const name of ["Dark 1", "Accent 1", "Accent 6"])
-    expect(text.split(name)).toHaveLength(2)
+  for (const name of ["Dark 1", "Accent 1", "Accent 6"]) expect(text.split(name)).toHaveLength(2)
   await slide.close()
 }, 20_000)
