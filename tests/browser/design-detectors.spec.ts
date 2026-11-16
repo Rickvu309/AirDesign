@@ -44,6 +44,13 @@ const cases = [
       '<div style="position:relative;width:500px;height:80px"><span style="position:absolute;left:0;top:0;font-size:20px">50.6 9 3.06 4.99</span><span style="position:absolute;left:0;top:30px;font-size:20px">Green: within 1%</span></div>',
   },
   {
+    detector: "overflowing-text",
+    fires:
+      '<div style="position:relative;width:300px"><p style="margin:0;height:40px;font-size:20px">63%</p><div style="position:relative;height:100px"><span style="position:absolute;left:0;top:-30px;font-size:20px">End arrow</span></div></div>',
+    spares:
+      '<div style="position:relative;width:300px"><p style="margin:0;height:40px;font-size:20px">63%</p><div style="position:relative;height:100px;overflow:auto"><span style="position:absolute;left:0;top:-30px;font-size:20px">End arrow</span></div></div>',
+  },
+  {
     detector: "stacked-frames",
     fires:
       '<div style="margin:40px;width:360px;height:120px;box-shadow:0 0 0 2px rgb(45,111,205);position:relative"><div contenteditable="true" style="position:absolute;left:6px;top:3px;width:348px;height:114px;outline:1px solid rgba(80,120,220,0.5)">Hello</div></div>',

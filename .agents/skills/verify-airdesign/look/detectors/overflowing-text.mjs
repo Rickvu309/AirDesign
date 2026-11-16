@@ -51,16 +51,17 @@ export const overflowingText = {
         if (cover) return `Text "${quote}" is painted under ${page.describe(cover)}, so part of it is hidden.`
       }
     }
+    const shown = page.shownRects(element)
     const texts = page.memo("texts", () =>
       page.elements
         .filter((each) => !page.thumbnail(each) && page.ownText(each) !== "")
-        .map((each) => ({ each, rects: page.textRects(each) })),
+        .map((each) => ({ each, rects: page.shownRects(each) })),
     )
     for (const { each, rects: others } of texts) {
       if (each === element || each.contains(element) || element.contains(each)) continue
       if (!(element.compareDocumentPosition(each) & Node.DOCUMENT_POSITION_FOLLOWING) || page.raised(each, element))
         continue
-      const hit = rects.some((rect) =>
+      const hit = shown.some((rect) =>
         others.some((other) => {
           const wide = Math.min(rect.right, other.right) - Math.max(rect.left, other.left)
           const tall = Math.min(rect.bottom, other.bottom) - Math.max(rect.top, other.top)
