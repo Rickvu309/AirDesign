@@ -14,6 +14,7 @@ import { EditorIcon } from "@/editor/editor-icons"
 import { EditorMenuContent } from "@/editor/editor-menu"
 import { gridCommand, gridMove, type GridCommand } from "@/editor/editor-grid-keys"
 import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
+import { dropPlace, dropTarget, edgeScroll } from "@/editor/grid-drop"
 import { gridFit, gridGap, gridSizes, steppedGridSize, useKeptGridSize } from "@/editor/grid-size"
 import type { FormatShown } from "@/editor/format-buttons"
 import type { ToolPick } from "@/editor/pointer-tool"
@@ -105,7 +106,9 @@ export function EditorGrid({
   faded?: boolean
 }) {
   const list = useRef<HTMLDivElement>(null)
-  const ghost = useRef<HTMLDivElement>(null)
+  const bar = useRef<HTMLDivElement>(null)
+  const place = useRef<number | null>(null)
+  const [dragging, setDragging] = useState<number | null>(null)
   const following = useRef(true)
   const [stop, setStop] = useState(strip.current)
   const [message, setMessage] = useState<Announcement | null>(null)
@@ -141,23 +144,31 @@ export function EditorGrid({
   const width = fit.width
   const height = gridThumbHeight(width, strip.thumbHeight)
   const step = gridSizes.indexOf(zoom)
+  const rows = rowsOf(strip)
 
-  function hideGhost() {
-    const mark = ghost.current
-    if (mark === null) return
-    mark.hidden = true
+  function endDrag() {
+    place.current = null
+    setDragging(null)
+    const mark = bar.current
+    if (mark !== null) mark.hidden = true
   }
 
-  function showGhost(anchor: HTMLElement) {
-    const mark = ghost.current
+  function showBar(anchor: HTMLElement, x: number, index: number) {
+    const mark = bar.current
     const scroller = list.current
     if (mark === null || scroller === null) return
     const listBox = scroller.getBoundingClientRect()
-    const box = anchor.getBoundingClientRect()
+    const at = dropPlace(x, anchor.getBoundingClientRect(), index)
+    place.current = at
+    const after = at !== index || rows.some((row) => row.start === at && at > 0)
+    const card = !after || at - 1 === index ? anchor : scroller.querySelector<HTMLElement>(`[data-slide-entry="${at}"]`)
+    if (card === null) return
+    const box = card.getBoundingClientRect()
+    const left = after ? box.right + gridGap / 2 : box.left - gridGap / 2
     mark.hidden = false
-    mark.style.width = `${box.width}px`
+    mark.dataset.dropPlace = String(at + 1)
     mark.style.height = `${box.height}px`
-    mark.style.transform = `translate(${box.left - listBox.left + scroller.scrollLeft}px, ${box.top - listBox.top + scroller.scrollTop}px)`
+    mark.style.transform = `translate(${left - listBox.left + scroller.scrollLeft - 2}px, ${box.top - listBox.top + scroller.scrollTop}px)`
   }
 
   function addAfter(index: number) {
@@ -247,14 +258,25 @@ export function EditorGrid({
     strip.onSelect(next)
   }
 
-  function onDrop(event: DragEvent<HTMLButtonElement>, index: number) {
+  function onDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault()
     const from = Number(event.dataTransfer.getData("text/plain"))
-    hideGhost()
-    if (!Number.isInteger(from) || from === index) return
+    const at = place.current
+    endDrag()
+    if (!Number.isInteger(from) || at === null) return
+    const to = dropTarget(from, at)
+    if (to === null) return
     following.current = true
-    strip.onMove?.(from, index)
-    announce(slideListCopy.moved(from + 1, index + 1))
+    strip.onMove?.(from, to)
+    announce(slideListCopy.moved(from + 1, to + 1))
+  }
+
+  function onListDragOver(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+    const scroller = event.currentTarget
+    const box = scroller.getBoundingClientRect()
+    const step = edgeScroll(event.clientY, { top: box.top, height: box.height })
+    if (step !== 0) scroller.scrollTop += step
   }
 
   const card = (index: number) => (
@@ -266,7 +288,11 @@ export function EditorGrid({
         aria-label={slideListCopy.slideName(index + 1, count)}
         tabIndex={index === reachable ? 0 : -1}
         data-slide-entry={index + 1}
-        className={cn("relative rounded-sm text-left", index === current && "shadow-[0_0_0_2px_var(--ring)]")}
+        className={cn(
+          "relative rounded-sm text-left",
+          index === current && "shadow-[0_0_0_2px_var(--ring)]",
+          index === dragging && "opacity-40",
+        )}
         onClick={() => {
           strip.onSelect(index)
           onSlides()
@@ -279,12 +305,9 @@ export function EditorGrid({
         onDragStart={(event) => {
           event.dataTransfer.setData("text/plain", String(index))
           event.dataTransfer.effectAllowed = "move"
+          setDragging(index)
         }}
-        onDragOver={(event) => {
-          event.preventDefault()
-          showGhost(event.currentTarget)
-        }}
-        onDrop={(event) => onDrop(event, index)}
+        onDragOver={(event) => showBar(event.currentTarget, event.clientX, index)}
       >
         <Filmstrip className={thumbFace} height={height} paint={() => strip.thumb(index, width)} width={width} />
       </button>
@@ -304,7 +327,10 @@ export function EditorGrid({
           variant="default"
           tabIndex={-1}
           aria-label={slideListCopy.addAfter(index + 1)}
-          className="hidden size-4 self-center rounded-full p-0 hover:bg-primary-strong group-hover:flex"
+          className={cn(
+            "hidden size-4 self-center rounded-full p-0 hover:bg-primary-strong",
+            dragging === null && "group-hover:flex",
+          )}
           onClick={() => addAfter(index)}
         >
           <EditorIcon name="plus" size={10} strokeWidth={3.2} />
@@ -428,20 +454,22 @@ export function EditorGrid({
         style={{ paddingInline: listInset }}
         data-slide-list
         onKeyDown={onListKey}
-        onDragEnd={hideGhost}
+        onDragOver={onListDragOver}
+        onDrop={onDrop}
+        onDragEnd={endDrag}
         onFocus={(event) => {
           const entry = event.target.closest("[data-slide-entry]")?.getAttribute("data-slide-entry")
           if (entry !== null && entry !== undefined) setStop(Number(entry) - 1)
         }}
       >
         <div
-          ref={ghost}
+          ref={bar}
           hidden
-          data-drop-ghost
-          className="pointer-events-none absolute top-0 left-0 rounded-sm border-2 border-dashed border-[var(--placeholder)]"
+          data-drop-bar
+          className="pointer-events-none absolute top-0 left-0 z-10 w-1 rounded-full bg-primary"
         />
         <div className="flex w-full flex-col gap-8">
-          {rowsOf(strip).map((row) => (
+          {rows.map((row) => (
             <section key={`${row.start}:${row.name ?? ""}`} className="flex flex-col gap-4">
               {row.name === null ? null : (
                 <div className="flex h-5 items-center gap-2">
