@@ -123,10 +123,11 @@ export function Home({
   const [deleteFailed, setDeleteFailed] = useState(false)
   const [importing, setImporting] = useState<Importing | null>(null)
   const [said, setSaid] = useState("")
-  const searched = useRef(false)
+  const result = useRef("")
   const picker = useRef<HTMLInputElement>(null)
   const listFailed = useRef(false)
   const [query, setQuery] = useState(() => addressRead(window.location.search).query)
+  const [typed, setTyped] = useState<string | null>(() => (query.trim() === "" ? null : query))
   const listView = addressRead(window.location.search).list
   const grid = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -184,6 +185,7 @@ export function Home({
   function search(next: string) {
     setSaid("")
     setQuery(next)
+    setTyped(next)
     window.history.replaceState(null, "", addressOf(window.location.pathname, { list: listView, query: next }))
   }
 
@@ -256,18 +258,13 @@ export function Home({
     listing !== null && section === "recents" && held.length === 0 && listing.trash.length === 0 && importing === null
   const noDecks = listing !== null && !trash && held.length === 0 && importing === null
   const showGrid = !listView || trash || importing !== null
-  const resultCount = decks.length
+  result.current = searching && decks.length === 0 ? noMatchTitleOf(query.trim()) : decksFoundOf(decks.length)
   const loaded = listing !== null
   useEffect(() => {
-    if (!loaded || unavailable || (!searching && !searched.current)) return
-    searched.current = true
-    const timer = window.setTimeout(() => {
-      setSaid(
-        searching && resultCount === 0 ? noMatchTitleOf(query.trim()) : decksFoundOf(resultCount),
-      )
-    }, 300)
+    if (typed === null || !loaded || unavailable) return
+    const timer = window.setTimeout(() => setSaid(result.current), 300)
     return () => window.clearTimeout(timer)
-  }, [query, searching, resultCount, loaded, unavailable])
+  }, [typed, loaded, unavailable])
   return (
     <DeckBrowser
       title={sectionTitles[section]}
