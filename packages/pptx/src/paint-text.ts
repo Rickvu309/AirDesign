@@ -1,7 +1,7 @@
 import type { MarkupElement } from "./element-span.js"
 import { paintAttribute, paintColor, type PaintColor, type PaintPalette } from "./paint-color.js"
 import { paintChild, paintFill } from "./paint-fill.js"
-import { defaultColor, highlightOf } from "./text-color.js"
+import { defaultColor, highlightOf, linkColor } from "./text-color.js"
 import { sourceBody, type MarkupChildren, type SourceParagraph } from "./text-value-route.js"
 
 export type PaintRunStyle = {
@@ -219,13 +219,16 @@ const runStyle = (
 ): PaintRunStyle => {
   const near = format === undefined ? levels.nearRuns : [format, ...levels.nearRuns]
   const all = [...near, ...levels.farRuns]
+  const link = linkColor(format, scope)
   const nearColor = first(near, (layer) => colorOf(layer, scope))
   const color =
-    nearColor !== undefined
-      ? nearColor
-      : reference.color !== undefined
-        ? reference.color
-        : first(levels.farRuns, (layer) => colorOf(layer, scope))
+    link !== undefined
+      ? link
+      : nearColor !== undefined
+        ? nearColor
+        : reference.color !== undefined
+          ? reference.color
+          : first(levels.farRuns, (layer) => colorOf(layer, scope))
   return {
     font:
       first(near, (layer) => fontOf(layer, scope)) ??
@@ -244,7 +247,7 @@ const runStyle = (
       reference.italic ??
       first(levels.farRuns, (layer) => flag(layer, "i")) ??
       false,
-    underline: first(all, (layer) => presence(layer, "u", "none")) ?? false,
+    underline: link !== undefined || (first(all, (layer) => presence(layer, "u", "none")) ?? false),
     strike: first(all, (layer) => presence(layer, "strike", "noStrike")) ?? false,
     baseline: first(all, (layer) => fraction(layer, "baseline")) ?? 0,
     color: color === undefined ? defaultColor(scope) : color,
