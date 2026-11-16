@@ -119,8 +119,9 @@ html:has(.reflow-frame) #root {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .thin-page,
-  .thin-page * {
+  *,
+  ::before,
+  ::after {
     animation-duration: 0s;
     animation-delay: 0s;
     transition-duration: 0s;
