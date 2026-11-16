@@ -3,9 +3,9 @@
   "covers": [
     {
       "file": "apps/web/src/undo-list.ts",
-      "names": ["recordsInFlight", "recorded", "turnBack"],
-      "digest": "585d76551648",
-      "blob": "79595f35cb7982cfb61a9e387b2708a5b612d027"
+      "names": ["recordsInFlight", "joined", "recorded", "turnBack"],
+      "digest": "b0e6fe2566b1",
+      "blob": "3422414c48c6564c5d4b5417bf897b50a9af3b3d"
     },
     {
       "file": "apps/web/src/live-repaint.ts",
@@ -16,38 +16,38 @@
     {
       "file": "apps/web/src/notes-edit.ts",
       "names": ["useNotes"],
-      "digest": "2021c88d1830",
-      "blob": "c21c3936828484499c339a5f1d196ed6fbab5575"
+      "digest": "2004aea80ccf",
+      "blob": "025572400862bde9353112282e43a3e029fb6588"
     },
     {
       "file": "apps/web/src/editor/undo-keys.ts",
       "names": ["undoKey", "useUndoKeys"],
       "digest": "d47198d9f323",
-      "blob": "e1082be22efc14fd7c204ea0b36e9194196c6411"
+      "blob": "0b59cc6a94c4388bbff0c7bd4436b0ec4f92e988"
     },
     {
       "file": "packages/render/src/passage.tsx",
       "names": ["Passage"],
-      "digest": "909117b020df",
-      "blob": "b563627205d201c443619caea9e3329bbca0b154"
+      "digest": "316dbc33ec11",
+      "blob": "185ac096c9783a6de0c7b28c7f1939ee5809d3a3"
     },
     {
       "file": "apps/web/src/editor/notes-bar.tsx",
       "names": ["NotesBar"],
-      "digest": "8143ee57a6ba",
-      "blob": "6d911614f7332348578b4216e41c012ed9ebe231"
+      "digest": "b6479b3a8c92",
+      "blob": "9c1e86e8d9779bddd21d2f3188317e47fa0f19d4"
     },
     {
       "file": "apps/web/src/editor/use-undo.ts",
       "names": ["useUndoTurn"],
-      "digest": "1a5ff58d64d2",
-      "blob": "bdac5e517fb527860baad8c2b376c56a00b0213e"
+      "digest": "2bd8a7f06a00",
+      "blob": "eb6821a8cb6765c878e9147e35fef6757d014117"
     },
     {
       "file": "apps/web/src/editor/editable-slide.tsx",
       "names": ["editableSlide"],
-      "digest": "e9ade2fc919c",
-      "blob": "38b7ba13cb467c1b59c973f1d868eafef2a29578"
+      "digest": "48461446fbfb",
+      "blob": "7b05a28b4ccb79cff18b307439d37d30705bdd32"
     }
   ]
 }

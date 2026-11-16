@@ -4,8 +4,8 @@
     {
       "file": "packages/document/src/decide.ts",
       "names": ["decide", "decideUndo", "version", "compactChain"],
-      "digest": "45870a39799c",
-      "blob": "1286a8b0c599880d213a2dbad374e086d31fad28"
+      "digest": "af8d07c2fdf5",
+      "blob": "90cdf9ca572b8b1ade104decd785c82027b56fec"
     }
   ]
 }
