@@ -23,6 +23,11 @@ export function MovedToast({ name = "Pricing Strategy Review", onUndo }: { name?
 
 export const movedToastOptions = {
   unstyled: true,
+  style: { left: 0, width: toastWidth },
+}
+
+export const stillMovedToastOptions = {
+  unstyled: true,
   className: "!animate-none",
   style: { left: 0, width: toastWidth, opacity: 1, transform: "translateY(0)", transition: "none" },
 }
@@ -40,7 +45,7 @@ export function MovedToaster() {
 
 export function DeckMovedToast() {
   useEffect(() => {
-    toast.custom(() => <MovedToast />, { id: "deck-moved", duration: Infinity, ...movedToastOptions })
+    toast.custom(() => <MovedToast />, { id: "deck-moved", duration: Infinity, ...stillMovedToastOptions })
   }, [])
   return (
     <DeckBrowser title="Recents" active="recents" view="grid" scope="recents">
