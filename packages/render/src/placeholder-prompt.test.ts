@@ -79,6 +79,17 @@ describe("placeholder prompt in SlideCanvas", () => {
     expect(input?.getAttribute("aria-placeholder")).toBe("Add a subtitle")
   })
 
+  it("paints the prompt in the colour typed text would take", async () => {
+    const light: CanvasText = {
+      ...emptySheet,
+      paragraphs: [{ from: 0, align: "center", runs: [], endStyle: { ...style, color: "rgb(255, 255, 255)" } }],
+    }
+    const element = { ...placeholderShape(id, "Click to add title"), text: light }
+    const host = await mount({ ...wide, elements: [element] }, paintStore(), false)
+    const words = host.querySelector<HTMLElement>("[data-placeholder-prompt] > div")
+    expect(words?.style.color).toBe("rgb(255, 255, 255)")
+  })
+
   it("placeholder with text does not paint prompt or quiet outline", async () => {
     const store = paintStore()
     store.publish({ id, kind: "shape", text: stored("My subtitle"), picture: null })

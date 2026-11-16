@@ -344,7 +344,6 @@ function PlacedText(props: {
             <div
               style={{
                 ...promptLook(text, look, scaled),
-                color: "var(--placeholder-prompt)",
                 whiteSpace: "pre-line",
               }}
             >

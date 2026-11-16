@@ -51,7 +51,7 @@ async function titleAndContent(page: Page): Promise<void> {
   await expect(page.locator('[data-slide-entry="2"]')).toHaveAttribute("aria-current", "true")
 }
 
-test("a new Title and Content slide shows grey prompts, types at the first level, and exports one paragraph @export", async ({
+test("a new Title and Content slide shows prompts in its text colour, types at the first level, and exports one paragraph @export", async ({
   page,
 }, testInfo) => {
   await imported(page, join(process.cwd(), "scripts/pptx-fixtures/doe-heat-pumps.pptx"))
@@ -59,27 +59,18 @@ test("a new Title and Content slide shows grey prompts, types at the first level
   await expect(canvas(page)).toHaveCount(2)
   await expect(prompts(page)).toHaveText(["Click to add title", "Click to add text"])
   await expect(page.getByText("Click to edit Master")).toHaveCount(0)
-  const grey = await page.evaluate(() =>
-    getComputedStyle(document.documentElement).getPropertyValue("--placeholder-prompt"),
-  )
   const ink = await prompts(page)
     .nth(1)
     .locator("div")
     .evaluate((element) => getComputedStyle(element).color)
-  const probe = await page.evaluate((value) => {
-    const element = document.createElement("span")
-    element.style.color = value
-    document.body.append(element)
-    const color = getComputedStyle(element).color
-    element.remove()
-    return color
-  }, grey.trim())
-  expect(ink).toBe(probe)
   const body = canvas(page).nth(1).locator('[contenteditable="true"]')
   await body.click()
   await body.pressSequentially("First point", { delay: 20 })
   await expect(body).toHaveText("First point")
   await expect(prompts(page)).toHaveText(["Click to add title"])
+  expect(
+    await body.getByText("First point", { exact: true }).evaluate((element) => getComputedStyle(element).color),
+  ).toBe(ink)
   await stored(page, "First point")
   await page.keyboard.press("Escape")
   const saving = page.waitForEvent("download")
