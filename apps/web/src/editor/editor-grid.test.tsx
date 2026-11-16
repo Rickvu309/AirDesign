@@ -91,9 +91,9 @@ describe("slide grid", () => {
 
   it("counts the slides of each section beside its name", () => {
     const html = grid()
-    expect(html).toMatch(/>Opening<\/h2><span[^>]*>2 slides</)
-    expect(html).toMatch(/>Results<\/h2><span[^>]*>2 slides</)
-    expect(grid({ count: 3 })).toMatch(/>Results<\/h2><span[^>]*>1 slide</)
+    expect(html).toMatch(/>Opening<\/span><span[^>]*>2 slides<\/span><\/button><\/h2>/)
+    expect(html).toMatch(/>Results<\/span><span[^>]*>2 slides<\/span><\/button><\/h2>/)
+    expect(grid({ count: 3 })).toMatch(/>Results<\/span><span[^>]*>1 slide<\/span><\/button><\/h2>/)
   })
 
   it("puts each slide's number under its thumbnail, not over the slide", () => {

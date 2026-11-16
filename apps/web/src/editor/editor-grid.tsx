@@ -27,6 +27,8 @@ import { useGridDrag } from "@/editor/use-grid-drag"
 import { gridFit, gridGap, gridSizes, steppedGridSize, useKeptGridSize } from "@/editor/grid-size"
 import type { FormatShown } from "@/editor/format-buttons"
 import type { ToolPick } from "@/editor/pointer-tool"
+import { gridRows, GridSectionHead } from "@/editor/grid-section"
+import { sectionAt, useKeptCollapsed } from "@/editor/collapsed-sections"
 import { slideThumbWidth, useSlideSay, type SlideStrip, type StripSection } from "@/editor/slide-sidebar"
 import type { UndoButtonsState } from "@/editor/undo-buttons"
 import { useZoomKeys } from "@/editor/zoom-keys"
@@ -44,19 +46,6 @@ const listInset = 48
 function gridThumbHeight(width: number, height: number): number {
   if (height <= 0) return Math.round((width * 9) / 16)
   return Math.round((height * width) / slideThumbWidth)
-}
-
-function rowsOf(strip: SlideStrip): { readonly name: string | null; readonly start: number; readonly end: number }[] {
-  const sections = strip.sections ?? noSections
-  if (sections.length === 0) return [{ name: null, start: 0, end: strip.count }]
-  const rows: { name: string | null; start: number; end: number }[] = sections.map((section, index) => ({
-    name: section.name,
-    start: section.start,
-    end: sections[index + 1]?.start ?? strip.count,
-  }))
-  const first = sections[0]
-  if (first !== undefined && first.start > 0) rows.unshift({ name: null, start: 0, end: first.start })
-  return rows
 }
 
 export function EditorGrid({
@@ -114,6 +103,14 @@ export function EditorGrid({
   const { current, count } = strip
   const picked = prunedPick(pick, count)
   const selected = new Set(pickedSlides(picked, current))
+  const sections = strip.sections ?? noSections
+  const collapsed = useKeptCollapsed(id, sections, current)
+  const [seen, setSeen] = useState(current)
+  if (seen !== current) {
+    setSeen(current)
+    collapsed.open(sectionAt(sections, current))
+  }
+  const shown = (index: number) => !collapsed.held.has(sectionAt(sections, index))
   const announce = useCallback(
     (text: string) => setMessage((held) => ({ text, odd: held === null ? false : !held.odd })),
     [],
@@ -137,12 +134,12 @@ export function EditorGrid({
     return () => observer.disconnect()
   }, [])
   useZoomKeys(true, (key) => setZoom(steppedGridSize(key, zoom)))
-  const reachable = stop >= 0 && stop < count ? stop : current
+  const reachable = stop >= 0 && stop < count && shown(stop) ? stop : current
   const fit = room === null ? { columns: 0, width: zoom } : gridFit(room, zoom)
   const width = fit.width
   const height = gridThumbHeight(width, strip.thumbHeight)
   const step = gridSizes.indexOf(zoom)
-  const rows = rowsOf(strip)
+  const rows = gridRows(strip)
   const drag = useGridDrag({
     list,
     bar,
@@ -443,27 +440,30 @@ export function EditorGrid({
         <div className="flex w-full flex-col gap-8">
           {rows.map((row) => (
             <section key={`${row.start}:${row.name ?? ""}`} className="flex flex-col gap-4">
-              {row.name === null ? null : (
-                <div className="flex h-5 items-center gap-2">
-                  <h2 className="text-[length:var(--type-caption)] font-semibold text-foreground">{row.name}</h2>
-                  <span className="text-[length:var(--type-caption)] text-quiet tabular-nums">
-                    {slideListCopy.sectionCount(row.end - row.start)}
-                  </span>
-                  <span className="ml-1 block h-px flex-1 bg-line" />
+              {row.name === null || row.number === null ? null : (
+                <GridSectionHead
+                  name={row.name}
+                  count={row.end - row.start}
+                  open={!collapsed.held.has(row.number)}
+                  onToggle={() => {
+                    if (row.number !== null) collapsed.toggle(row.number)
+                  }}
+                />
+              )}
+              {row.number !== null && collapsed.held.has(row.number) ? null : (
+                <div
+                  className="grid gap-y-6"
+                  style={{
+                    columnGap: gridGap,
+                    gridTemplateColumns:
+                      fit.columns === 0
+                        ? `repeat(auto-fill, ${String(width)}px)`
+                        : `repeat(${String(fit.columns)}, ${String(width)}px)`,
+                  }}
+                >
+                  {Array.from({ length: row.end - row.start }, (_, offset) => card(row.start + offset))}
                 </div>
               )}
-              <div
-                className="grid gap-y-6"
-                style={{
-                  columnGap: gridGap,
-                  gridTemplateColumns:
-                    fit.columns === 0
-                      ? `repeat(auto-fill, ${String(width)}px)`
-                      : `repeat(${String(fit.columns)}, ${String(width)}px)`,
-                }}
-              >
-                {Array.from({ length: row.end - row.start }, (_, offset) => card(row.start + offset))}
-              </div>
             </section>
           ))}
         </div>
