@@ -16,19 +16,24 @@ type Running = { readonly stop: AbortController; readonly closed: Promise<void> 
 
 const followSql = `
 with stale as (delete from session.aira_ask where email = $1 and started < now() - interval '15 minutes')
-insert into session.aira_ask (email, ask) values ($1, $2) returning id`
+insert into session.aira_ask (email, ask) values ($1, $2)
+on conflict (email, ask) do update set id = default, started = now(), followed = true
+returning id, stopped is not null as stopped`
 
 const stoppedSql = "select stopped is not null as stopped from session.aira_ask where id = $1"
 
 const liveSql = "select exists (select 1 from session.aira_ask where id = $1 and stopped is null) as live"
 
 const stopSql = `
-update session.aira_ask set stopped = coalesce(stopped, now())
-where email = $1 and ask = $2 and started >= now() - interval '15 minutes' returning id`
+insert into session.aira_ask (email, ask, stopped, followed) values ($1, $2, now(), false)
+on conflict (email, ask) do update set stopped = coalesce(aira_ask.stopped, now())
+where aira_ask.started >= now() - interval '15 minutes'
+returning id, followed`
 
 const openStopSql = `
 select id from session.aira_ask
-where email = $1 and id <> $2 and stopped is not null and started >= now() - interval '15 minutes' limit 1`
+where email = $1 and id <> $2 and stopped is not null and followed and started >= now() - interval '15 minutes'
+limit 1`
 
 export class Closing {
   private readonly stopping = new Map<string, Promise<void>>()
@@ -42,10 +47,12 @@ export class Closing {
   }
 
   async follow(account: string, ask: string | undefined, left: AbortSignal): Promise<Followed> {
-    const found = await this.shared.db.query<{ id: string }>(followSql, [account, ask ?? null])
-    const id = found.rows[0]?.id
-    if (id === undefined) throw new Error("aira ask")
+    const found = await this.shared.db.query<{ id: string; stopped: boolean }>(followSql, [account, ask ?? null])
+    const row = found.rows[0]
+    if (row === undefined) throw new Error("aira ask")
+    const { id } = row
     const stop = new AbortController()
+    if (row.stopped) stop.abort()
     const finished = new AbortController()
     const signal = AbortSignal.any([left, stop.signal])
     let close = (): void => undefined
@@ -93,12 +100,12 @@ export class Closing {
       return
     }
     const { db } = this.shared
-    const marked = await db.query<{ id: string }>(stopSql, [account, ask])
-    const ids = marked.rows.map((row) => row.id)
-    if (ids.length === 0) return
+    const marked = await db.query<{ id: string; followed: boolean }>(stopSql, [account, ask])
+    const row = marked.rows[0]
+    if (row?.followed !== true) return
     await db.query("select pg_notify('aira', '')")
     await this.settled(async () => {
-      const left = await db.query("select 1 from session.aira_ask where id = any($1::bigint[])", [ids])
+      const left = await db.query("select 1 from session.aira_ask where id = $1", [row.id])
       return left.rows.length > 0
     })
   }

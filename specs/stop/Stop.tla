@@ -7,7 +7,9 @@ EXTENDS Integers
 \* wake, which a dropped listen connection can lose until it reconnects.
 \* call is the ask on A: none, running, aborted, or closed once settled or
 \* released.
-\* row is the stored ask row: none, live, stopped, or gone once A forgets it.
+\* row is the stored ask row: none, noted when a stop came before the ask, live,
+\* stopped, or gone once A forgets it. A follow takes a note over and starts
+\* stopped.
 \* stop is B's stop request; reached says it found the row; late says its wait
 \* passed the bound. next is a new ask on B while the turn may still be open.
 \* model is A's model call after the reserve: unsent, sent, or skipped when A
@@ -19,7 +21,7 @@ vars == <<call, row, charges, stop, reached, late, wake, next, model>>
 
 TypeOK ==
   /\ call \in {"none", "running", "aborted", "closed"}
-  /\ row \in {"none", "live", "stopped", "gone"}
+  /\ row \in {"none", "noted", "live", "stopped", "gone"}
   /\ charges \in 0..2
   /\ stop \in {"idle", "waiting", "answered"}
   /\ reached \in BOOLEAN
@@ -54,8 +56,8 @@ Init ==
 
 Follow ==
   /\ call = "none"
-  /\ call' = "running"
-  /\ row' = "live"
+  /\ call' = IF row = "noted" THEN "aborted" ELSE "running"
+  /\ row' = IF row = "noted" THEN "stopped" ELSE "live"
   /\ UNCHANGED <<charges, stop, reached, late, wake, next, model>>
 
 Leave ==
@@ -77,7 +79,8 @@ StopSent ==
           /\ stop' = "waiting"
           /\ reached' = TRUE
      ELSE /\ stop' = "answered"
-          /\ UNCHANGED <<row, wake, reached>>
+          /\ row' = IF row = "none" THEN "noted" ELSE row
+          /\ UNCHANGED <<wake, reached>>
   /\ UNCHANGED <<call, charges, late, next, model>>
 
 Drop ==

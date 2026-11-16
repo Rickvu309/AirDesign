@@ -182,7 +182,7 @@ async function releasedUncharged(account: Account, calls: number): Promise<void>
 }
 
 describe("a stop and its ask in each order, held at the server", () => {
-  it.fails("before the server followed the ask: no model call and nothing charged", async () => {
+  it("before the server followed the ask: no model call and nothing charged", async () => {
     const account = await signIn()
     const calls = replay.calls.length
     const admit = held.hold(followed)

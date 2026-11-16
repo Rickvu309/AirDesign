@@ -398,4 +398,16 @@ drop function if exists deck.slide_backgrounds(jsonb);
 drop table if exists deck.background_backup;
 `,
   },
+  {
+    id: 16,
+    sql: `
+lock table session.aira_ask in access exclusive mode;
+update session.aira_ask older set ask = null
+from session.aira_ask newer
+where older.email = newer.email and older.ask = newer.ask and older.id < newer.id;
+alter table session.aira_ask add column followed boolean not null default true;
+drop index session.aira_ask_email;
+create unique index aira_ask_email on session.aira_ask (email, ask);
+`,
+  },
 ]

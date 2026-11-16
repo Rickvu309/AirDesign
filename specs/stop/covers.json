@@ -3,9 +3,9 @@
   "covers": [
     {
       "file": "apps/api/src/aira-closing.ts",
-      "names": ["Closing"],
-      "digest": "ad4caf443ca1",
-      "blob": "b200c333eb5efff1951d2b1c0cd54efc059b790a"
+      "names": ["followSql", "stopSql", "openStopSql", "Closing"],
+      "digest": "f6772127a6d3",
+      "blob": "bb49606e9145fd00a5d70d1afb0d36850c710844"
     },
     {
       "file": "apps/api/src/aira.ts",
