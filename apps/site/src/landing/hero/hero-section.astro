@@ -72,5 +72,21 @@ const quarters = ["Q3 24", "Q4 24", "Q1 25", "Q2 25", "Q3 25"];
         </div>
       ))}
     </div>
+    <button type="button" class="ticker-pause touch-target pressable absolute right-0 bottom-0 z-10 h-10 min-h-0 bg-background text-faint-foreground" aria-pressed="false" aria-label="Pause the ticker" data-ticker-pause>
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+        <path class="ticker-pause-bars" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"></path>
+        <path class="ticker-pause-play" d="M8 5.5v13l11-6.5z"></path>
+      </svg>
+    </button>
   </div>
 </section>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>("[data-ticker-pause]").forEach((button) => {
+    const track = button.parentElement?.querySelector<HTMLElement>(".ticker-track");
+    button.addEventListener("click", () => {
+      const paused = track?.toggleAttribute("data-paused") ?? false;
+      button.setAttribute("aria-pressed", String(paused));
+    });
+  });
+</script>
