@@ -165,7 +165,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     }
   }
 
-  const checkSeconds = timeMetric(root, "ci-duration", checkStarted)
+  const checkSeconds = timeMetric(root, "check-duration", checkStarted)
   console.log(checkSeconds.line)
   if (checkSeconds.over !== undefined) console.error(checkSeconds.over)
   fs.rmSync(ownTemp, { recursive: true, force: true })

@@ -3,7 +3,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { measures, overLimit, readMetrics as readEvery, timeMetric } from "./metrics.mjs"
+import { measures, overLimit, readMetrics as readEvery, timeMetric, timedMetrics, timedOnCi } from "./metrics.mjs"
 
 const offline = Object.fromEntries(Object.entries(measures).filter(([name]) => name !== "import-parse"))
 const readMetrics = (at) => readEvery(at, offline)
@@ -34,6 +34,7 @@ const record = (faults, tests = 2) => {
       "fault-detection": { now: 1, goal: 2 },
       "long-titles": { goal: 0 },
       "slides-repainted": { goal: 1 },
+      "check-duration": { limit: 40 },
       "ci-duration": { limit: 40 },
       "pptx-check-duration": { limit: 90 },
     }),
@@ -86,8 +87,17 @@ if (unmeasured !== "Vitest did not measure slides-repainted. Run pnpm test:unit,
   throw new Error(`a missing measure passed: ${unmeasured}`)
 
 cache(2, 2)
-if (steady.rows.find((row) => row.name === "ci-duration")?.limit !== 40)
+if (steady.rows.find((row) => row.name === "check-duration")?.limit !== 40)
   throw new Error("a limit metric was not listed")
+
+if (timedMetrics["check-duration"] !== "scripts/check.mjs" || "ci-duration" in timedMetrics)
+  throw new Error("check-duration is the local check's seconds, timed by scripts/check.mjs")
+if (timedOnCi["ci-duration"] !== ".github/workflows/ci.yml" || "check-duration" in timedOnCi)
+  throw new Error("ci-duration is the merge queue's minutes, timed by the ci workflow")
+if (!fs.readFileSync(path.join(repoRoot, "scripts/check.mjs"), "utf8").includes('timeMetric(root, "check-duration"'))
+  throw new Error("scripts/check.mjs must time check-duration")
+if (steady.rows.find((row) => row.name === "ci-duration")?.limit !== 40)
+  throw new Error("a metric timed on ci was not listed with its limit")
 
 const capabilities = steady.rows.find((row) => row.name === "export-coverage")
 if (capabilities?.now !== 2 || capabilities.goal !== 3)
@@ -97,20 +107,20 @@ const planted = steady.rows.find((row) => row.name === "fault-detection")
 if (planted?.now !== 1 || planted.goal !== 2)
   throw new Error(`caught kinds were not counted: ${JSON.stringify(planted)}`)
 
-const slow = overLimit({ name: "ci-duration", now: 41.2, limit: 40 })
-if (slow !== "ci-duration is 41.2 and its limit is 40. Make it faster.") throw new Error(`${slow}`)
-if (overLimit({ name: "ci-duration", now: 40, limit: 40 }) !== undefined)
+const slow = overLimit({ name: "check-duration", now: 41.2, limit: 40 })
+if (slow !== "check-duration is 41.2 and its limit is 40. Make it faster.") throw new Error(`${slow}`)
+if (overLimit({ name: "check-duration", now: 40, limit: 40 }) !== undefined)
   throw new Error("a time at the limit was reported")
-const timed = timeMetric(root, "ci-duration", Date.now() - 41_200)
-if (!/^metric ci-duration  now 41\.\d  limit 40$/.test(timed.line)) throw new Error(timed.line)
-if (!timed.over?.startsWith("ci-duration is 41.")) throw new Error(`${timed.over}`)
-if (timeMetric(root, "ci-duration", Date.now()).over !== undefined) throw new Error("a fast run was reported")
+const timed = timeMetric(root, "check-duration", Date.now() - 41_200)
+if (!/^metric check-duration  now 41\.\d  limit 40$/.test(timed.line)) throw new Error(timed.line)
+if (!timed.over?.startsWith("check-duration is 41.")) throw new Error(`${timed.over}`)
+if (timeMetric(root, "check-duration", Date.now()).over !== undefined) throw new Error("a fast run was reported")
 const ciBefore = process.env.CI
 for (const value of ["true", "1", "", "false"]) {
   process.env.CI = value
-  const late = timeMetric(root, "ci-duration", Date.now() - 81_200)
+  const late = timeMetric(root, "check-duration", Date.now() - 81_200)
   if (late.fails !== undefined) throw new Error(`a time over its limit must only warn, with CI=${value}`)
-  if (!late.over?.startsWith("ci-duration is 81.")) throw new Error(`a late run was not reported: ${late.over}`)
+  if (!late.over?.startsWith("check-duration is 81.")) throw new Error(`a late run was not reported: ${late.over}`)
 }
 if (ciBefore === undefined) delete process.env.CI
 else process.env.CI = ciBefore
@@ -172,7 +182,9 @@ if (loose.includes("export-coverage has goal")) throw new Error(loose)
 if (!loose.includes("fault-detection has goal 2 and metrics.json says 3. Record goal 2 in metrics.json."))
   throw new Error(loose)
 if (!loose.includes("nobody times has a limit in metrics.json and no runner times it.")) throw new Error(loose)
-if (!loose.includes("ci-duration is timed by scripts/check.mjs and has no limit in metrics.json."))
+if (!loose.includes("check-duration is timed by scripts/check.mjs and has no limit in metrics.json."))
+  throw new Error(loose)
+if (!loose.includes("ci-duration is timed by .github/workflows/ci.yml and has no limit in metrics.json."))
   throw new Error(loose)
 if (!loose.includes("nobody measures is in metrics.json and nothing measures it.")) throw new Error(loose)
 if (!loose.includes("corpus-size is measured and missing from metrics.json.")) throw new Error(loose)
