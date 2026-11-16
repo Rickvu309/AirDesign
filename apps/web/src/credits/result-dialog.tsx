@@ -1,7 +1,6 @@
 import type { ReactNode } from "react"
-import { Dialog as BaseDialog } from "@base-ui/react/dialog"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogOverlay, DialogPortal } from "@/components/ui/dialog"
+import { Dialog, DialogOverlay, DialogPopup, DialogPortal } from "@/components/ui/dialog"
 import { productCopy } from "@/copy/product-copy"
 import { CloseGlyph } from "@/credits/dialog-glyphs"
 
@@ -21,10 +20,10 @@ export function ResultDialog({
   return (
     <Dialog open>
       <DialogPortal>
-        <DialogOverlay className="bg-black/25 duration-0 data-open:animate-none" style={{ backdropFilter: "none" }} />
-        <BaseDialog.Popup
+        <DialogOverlay className="bg-black/25" />
+        <DialogPopup
           initialFocus={false}
-          className="fixed top-1/2 left-1/2 z-50 flex h-[207.5px] w-[400px] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-3xl bg-white p-6 shadow-[inset_0_0_0_1px_rgb(0_0_0/8%),0_24px_48px_rgb(0_0_0/16%)] outline-none data-open:animate-none"
+          className="fixed top-1/2 left-1/2 z-50 flex h-[207.5px] w-[400px] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-3xl bg-white p-6 shadow-[inset_0_0_0_1px_rgb(0_0_0/8%),0_24px_48px_rgb(0_0_0/16%)] outline-none"
         >
           <div className="flex h-10 items-start justify-between">
             {icon}
@@ -60,7 +59,7 @@ export function ResultDialog({
               {primary}
             </Button>
           </div>
-        </BaseDialog.Popup>
+        </DialogPopup>
       </DialogPortal>
     </Dialog>
   )

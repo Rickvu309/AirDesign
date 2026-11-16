@@ -214,3 +214,87 @@ test("PDF prints every chosen slide on its own page, painted, through the browse
   expect(pages).toHaveLength(2)
   expect(pages[0]).toMatch(/\bBT\b[\s\S]*\bT[jJ]\b/)
 })
+
+type Motion = { property: string; duration: string; running: number }
+
+function motionOf(page: Page, selector: string): Promise<Motion> {
+  return page.locator(selector).evaluate((node) => {
+    const style = getComputedStyle(node)
+    return {
+      property: style.transitionProperty,
+      duration: style.transitionDuration,
+      running: node.getAnimations().length,
+    }
+  })
+}
+
+function boxOf(page: Page) {
+  return dialog(page).evaluate((node) => {
+    const box = node.getBoundingClientRect()
+    return {
+      width: Math.round(box.width * 10) / 10,
+      centerX: Math.round(box.left + box.width / 2),
+      centerY: Math.round(box.top + box.height / 2),
+      opacity: getComputedStyle(node).opacity,
+    }
+  })
+}
+
+test("the dialog fades and scales in from the middle of the window and fades out", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" })
+  await page.goto("/")
+  await newBlankDeck(page)
+  await settled(page)
+  const client = await page.context().newCDPSession(page)
+  await client.send("Animation.enable")
+  await client.send("Animation.setPlaybackRate", { playbackRate: 0 })
+  await page.getByRole("button", { name: "Export", exact: true }).click()
+  await expect(dialog(page)).toHaveAttribute("data-open", "")
+  await expect.poll(() => dialog(page).evaluate((node) => node.getAnimations().length)).toBe(2)
+  const popup = await motionOf(page, "[data-export-dialog]")
+  expect(popup.property).toBe("opacity, scale")
+  expect(popup.duration).toBe("0.2s")
+  const overlay = await motionOf(page, "[data-slot=dialog-overlay]")
+  expect(overlay.property).toBe("opacity")
+  expect(overlay.duration).toBe("0.15s")
+  expect(
+    await page.locator("[data-slot=dialog-overlay]").evaluate((node) => getComputedStyle(node).backdropFilter),
+  ).toBe("none")
+  expect(await boxOf(page)).toEqual({ width: 460.8, centerX: 800, centerY: 500, opacity: "0" })
+  await dialog(page).evaluate((node) => {
+    for (const animation of node.getAnimations()) animation.currentTime = 100
+  })
+  const middle = await boxOf(page)
+  expect(middle.centerX).toBe(800)
+  expect(middle.centerY).toBe(500)
+  expect(middle.width).toBeGreaterThan(460.8)
+  expect(middle.width).toBeLessThan(480)
+  await client.send("Animation.setPlaybackRate", { playbackRate: 1 })
+  await expect.poll(() => boxOf(page)).toEqual({ width: 480, centerX: 800, centerY: 500, opacity: "1" })
+  await client.send("Animation.setPlaybackRate", { playbackRate: 0 })
+  await page.keyboard.press("Escape")
+  await expect(dialog(page)).toHaveAttribute("data-ending-style", "")
+  expect((await motionOf(page, "[data-export-dialog]")).duration).toBe("0.15s")
+  await client.send("Animation.setPlaybackRate", { playbackRate: 1 })
+  await expect(dialog(page)).toHaveCount(0)
+})
+
+test("with reduced motion the dialog opens and closes in its finished state", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  await page.goto("/")
+  await newBlankDeck(page)
+  await settled(page)
+  await openDialog(page)
+  expect(await motionOf(page, "[data-export-dialog]")).toEqual({
+    property: "opacity, scale",
+    duration: "0s",
+    running: 0,
+  })
+  expect(await motionOf(page, "[data-slot=dialog-overlay]")).toEqual({
+    property: "opacity",
+    duration: "0s",
+    running: 0,
+  })
+  await page.keyboard.press("Escape")
+  await expect(dialog(page)).toHaveCount(0)
+})

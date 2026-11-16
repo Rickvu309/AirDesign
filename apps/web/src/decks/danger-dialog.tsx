@@ -1,5 +1,4 @@
 import { useRef, type ReactNode } from "react"
-import { Dialog as BaseDialog } from "@base-ui/react/dialog"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -7,6 +6,7 @@ import {
   DialogDescription,
   DialogOverlay,
   DialogPortal,
+  DialogPopup,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { productCopy } from "@/copy/product-copy"
@@ -42,8 +42,8 @@ export function DangerDialog({
       }}
     >
       <DialogPortal>
-        <DialogOverlay className="bg-black/25 duration-0 data-open:animate-none" style={{ backdropFilter: "none" }} />
-        <BaseDialog.Popup
+        <DialogOverlay className="bg-black/25" />
+        <DialogPopup
           initialFocus={cancel}
           className={cn(
             "fixed top-1/2 left-1/2 z-50 w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-background shadow-[inset_0_0_0_1px_rgb(0_0_0/8%),0_24px_48px_rgb(0_0_0/16%)] outline-none",
@@ -105,7 +105,7 @@ export function DangerDialog({
               </Button>
             </div>
           </div>
-        </BaseDialog.Popup>
+        </DialogPopup>
       </DialogPortal>
     </Dialog>
   )
