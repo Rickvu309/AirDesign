@@ -114,12 +114,15 @@ test("an edit that landed but whose answer came back cut off lands once when it 
   await page.route(commit, async (route) => {
     if (cut > 0) return route.fallback()
     cut += 1
-    const landed = await route.fetch()
+    const landed = await route.fetch({
+      url: `${stack.origin}/decks/commit`,
+      headers: await route.request().allHeaders(),
+    })
     return route.fulfill({ response: landed, body: (await landed.text()).slice(0, 10) })
   })
   await typeAtEnd(page, "!")
+  await expect.poll(() => cut).toBe(1)
   await expect(saveStatus(page)).toHaveText(saved, { timeout: 15_000 })
-  expect(cut).toBe(1)
   expect(await revision()).toBe(before + 1)
 })
 

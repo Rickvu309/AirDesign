@@ -92,20 +92,31 @@ describe("live cache", () => {
 describe("http remote", () => {
   const sent = { deck: "deck", batch: [{ value: "hi", node }] }
 
-  it.each([502, 503, 504])(
-    "reads a %i answer as no answer from AirDesign, as when the network drops",
-    async (status) => {
-      vi.stubGlobal("fetch", async () => new Response("<html><body>Bad gateway</body></html>", { status }))
-      await expect(httpRemote().commit(sent)).rejects.toBeInstanceOf(TypeError)
-      await expect(httpRemote().watch({ deck: "deck", cursor: 0 })).rejects.toBeInstanceOf(TypeError)
-    },
-  )
+  it.each([
+    { status: 500, body: "boom" },
+    { status: 500, body: JSON.stringify({ ok: false, refusal: "server" }) },
+    { status: 502, body: "<html><body>Bad gateway</body></html>" },
+    { status: 503, body: "<html><body>Unavailable</body></html>" },
+    { status: 504, body: "<html><body>Timed out</body></html>" },
+    { status: 522, body: "<html><body>Connection timed out</body></html>" },
+  ])("reads a $status answer as no answer from AirDesign, as when the network drops", async ({ status, body }) => {
+    vi.stubGlobal("fetch", async () => new Response(body, { status }))
+    await expect(httpRemote().commit(sent)).rejects.toBeInstanceOf(TypeError)
+    await expect(httpRemote().watch({ deck: "deck", cursor: 0 })).rejects.toBeInstanceOf(TypeError)
+  })
 
-  it("reads any other failed answer as the server's answer", async () => {
-    vi.stubGlobal("fetch", async () => new Response("boom", { status: 500 }))
+  it("reads a 200 answer cut off before its end as no answer from AirDesign", async () => {
+    vi.stubGlobal("fetch", async () => new Response('{"ok":true,"deck":', { status: 200 }))
+    await expect(httpRemote().commit(sent)).rejects.toBeInstanceOf(TypeError)
+  })
+
+  it("reads a 4xx answer as the server's answer, whatever its body", async () => {
+    vi.stubGlobal("fetch", async () => new Response("<html><body>Not found</body></html>", { status: 404 }))
     expect(await httpRemote().commit(sent)).toEqual({ ok: false, refusal: "payload" })
-    vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ ok: false, refusal: "server" }), { status: 500 }))
-    expect(await httpRemote().commit(sent)).toEqual({ ok: false, refusal: "server" })
+    vi.stubGlobal("fetch", async () => new Response(null, { status: 404 }))
+    expect(await httpRemote().commit(sent)).toEqual({ ok: false, refusal: "payload" })
+    vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ ok: false, refusal: "stale" }), { status: 409 }))
+    expect(await httpRemote().commit(sent)).toEqual({ ok: false, refusal: "stale" })
   })
 })
 

@@ -157,8 +157,6 @@ export function ownerRemote(): Remote {
   }
 }
 
-const unreached: ReadonlySet<number> = new Set([502, 503, 504])
-
 export async function post(path: string, body: unknown): Promise<unknown> {
   const response = await fetch(path, {
     method: "POST",
@@ -167,9 +165,11 @@ export async function post(path: string, body: unknown): Promise<unknown> {
     body: JSON.stringify(body),
   })
   if (response.status === 401) return { ok: false, refusal: "session" }
-  if (unreached.has(response.status)) throw new TypeError(`AirDesign was not reached: ${String(response.status)}`)
-  const answer: unknown = await response.json().catch(() => null)
-  return answer
+  if (response.status >= 500) throw new TypeError(`AirDesign did not answer: ${String(response.status)}`)
+  const answer: unknown = await response.json().catch(() => undefined)
+  if (answer !== undefined) return answer
+  if (response.ok) throw new TypeError(`AirDesign's answer was cut off: ${String(response.status)}`)
+  return null
 }
 
 export function httpRemote(): Remote {
