@@ -188,12 +188,11 @@ const outcome = await reported({
 })
 
 const recorded = JSON.parse(fs.readFileSync(path.join(root, "metrics.json"), "utf8"))["paint-fidelity"]
-for (const line of fidelityLines({ rows, skipped, decks: names.length, goal: recorded.goal })) say(line)
-const matching = rows.filter((row) => row.match).length
-if (matching !== recorded.now) say(`paint-fidelity is ${matching} and metrics.json says ${recorded.now}.`)
+for (const line of fidelityLines({ rows, skipped, decks: names.length, goal: recorded.goal, now: recorded.now }))
+  say(line)
 await browser?.close().catch(() => undefined)
 if (stack !== undefined)
   await run("node", [verify, "stop", stack.run]).catch(() => say("paint-fidelity stack was already gone"))
-const failure = fidelityFailure({ rows, outcome })
+const failure = fidelityFailure({ rows, skipped, outcome, now: recorded.now })
 if (failure !== undefined) console.error(failure)
 process.exit(failure === undefined ? 0 : 1)
