@@ -17,8 +17,11 @@ export function ImportingPreview() {
   return (
     <div className="relative flex h-full flex-col items-center justify-center gap-3 bg-background">
       <PptxMark />
-      <span className="block h-1 w-40 overflow-hidden rounded-sm bg-line">
-        <span className="block h-full w-[93px] rounded-sm bg-[linear-gradient(90deg,var(--primary-top),var(--primary))]" />
+      <span className="@container block h-1 w-40 overflow-hidden rounded-sm bg-line">
+        <span
+          data-import-progress
+          className="motion-safe:animate-[import-sweep_var(--ease-loop)_infinite] block h-full w-[93px] rounded-sm bg-[linear-gradient(90deg,var(--primary-top),var(--primary))]"
+        />
       </span>
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full"

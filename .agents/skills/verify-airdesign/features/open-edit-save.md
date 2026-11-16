@@ -31,6 +31,7 @@ Preconditions:
 - **Run it.** `$V journey <run> open-edit-save`. Prints `"passed":true` and the evidence dir.
 - **Agent read.** `$V journey <run> element-index` imports from Home, reads the untouched deck over MCP, edits using `readAt: 0`, then checks the same ids, boxes and edited text after clearing device storage.
 - **Sign in.** `signIn()` signs a new account in through the emailed code. Home shows `button "New deck"`. Evidence `01-home-signed-in`.
+- **Import progress.** `decks-importing` holds the file read on real Home for still design captures. On 2026-11-16, a real 1.4 MB census deck imported at 6× CPU throttle: compositor frames showed the transform sweep advancing during a 631 ms main-thread call; reduced-motion captures held the original fill still. `tests/browser/import-progress.spec.ts` guards normal and reduced motion on Home and its design screen.
 - **Import.** `page.locator("input[type=file]").setInputFiles(<repo>/scripts/pptx-fixtures/clean.pptx)`. The URL becomes `/deck/<id>` and `[contenteditable="true"]` reads `Hello`. Evidence `02-imported`.
 - **Type.** Click the text box, select all, type `Saved on the server`. The box shows it. Evidence `03-typed`.
 - **Server copy.** Poll `post(deckRoutes.open, { deck })` until the register's visible text is `["Saved on the server"]`. Evidence `NN-api-decks-open.json`.
