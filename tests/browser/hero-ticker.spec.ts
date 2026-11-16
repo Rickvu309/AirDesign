@@ -45,7 +45,9 @@ test.describe("with motion allowed", () => {
     expect(await tickerState(page)).toEqual({ paused: false, playState: ["running"], animationName: "ticker-run" })
   })
 
-  test("the pause button keeps its name, sits at the right end of the strip and is a touch target", async ({ page }) => {
+  test("the pause button keeps its name, sits at the right end of the strip and is a touch target", async ({
+    page,
+  }) => {
     await openHero(page)
     const pause = page.getByRole("button", { name: "Pause the ticker" })
     const strip = page.locator(".ticker-track").locator("xpath=..")
