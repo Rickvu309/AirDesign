@@ -72,7 +72,7 @@ export function RevenueSlide({
         ) : null}
         {selected ? <SelectionHandles /> : null}
       </div>
-      <span className="text-[length:var(--type-caption)] text-faint">Source: Q3 board notes, unaudited</span>
+      <span className="text-[length:var(--type-caption)] text-quiet">Source: Q3 board notes, unaudited</span>
     </div>
   )
   return slide

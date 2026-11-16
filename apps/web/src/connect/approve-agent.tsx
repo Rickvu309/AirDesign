@@ -44,7 +44,7 @@ export function ApproveAgent({
           >
             {title}
           </h1>
-          <p className={`flex h-[var(--space-16)] items-center text-[length:var(--type-dense)] text-faint ${trimmed}`}>
+          <p className={`flex h-[var(--space-16)] items-center text-[length:var(--type-dense)] text-quiet ${trimmed}`}>
             {subtitle}
           </p>
         </header>
@@ -58,7 +58,7 @@ export function ApproveAgent({
             <span className="block text-[length:var(--type-dense)] leading-[17px] font-medium text-foreground">
               {account.name}
             </span>
-            <span className="block text-[length:var(--type-caption)] leading-4 text-faint">{account.email}</span>
+            <span className="block text-[length:var(--type-caption)] leading-4 text-quiet">{account.email}</span>
           </span>
           <button
             type="button"
@@ -111,7 +111,7 @@ export function ApproveAgent({
             Allow
           </Button>
         </div>
-        <p className="w-full text-center text-[length:var(--type-caption)] leading-[var(--leading-body)] text-faint">
+        <p className="w-full text-center text-[length:var(--type-caption)] leading-[var(--leading-body)] text-quiet">
           {footer}
         </p>
       </section>

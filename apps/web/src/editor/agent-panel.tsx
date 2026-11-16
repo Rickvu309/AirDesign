@@ -137,7 +137,7 @@ function AgentTurn({ run }: { run: SidebarRun }) {
         <ToolHeader title="Read 1 file, built 8 slides" />
       </Tool>
       <MessageResponse>Your deck is ready. Eight slides, every number from your notes.</MessageResponse>
-      <span className="flex items-center gap-1.5 text-xs text-faint">
+      <span className="flex items-center gap-1.5 text-xs text-quiet">
         <EditorIcon name="undo" size={13} />
         Undo
       </span>
@@ -263,7 +263,7 @@ function UsagePop() {
         <span className="block h-1 w-[38%] rounded-full bg-primary" />
       </span>
       <span className="flex items-center justify-between">
-        <span className="text-[length:var(--type-caption)] text-faint">Resets Mon 8:00 AM</span>
+        <span className="text-[length:var(--type-caption)] text-quiet">Resets Mon 8:00 AM</span>
         <span className="flex items-center gap-0.5 text-[length:var(--type-caption)] font-medium text-foreground">
           See all
           <EditorIcon name="arrowr" size={11} />

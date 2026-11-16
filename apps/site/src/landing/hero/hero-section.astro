@@ -52,7 +52,7 @@ const quarters = ["Q3 24", "Q4 24", "Q1 25", "Q2 25", "Q3 25"];
   <div class="absolute top-[464.5px] left-[calc(1182/1440*100%-11px)] size-[var(--space-24)] rounded-full opacity-35 shadow-[0_0_0_0.5px_var(--primary-strong),inset_0_0_0_0.5px_var(--primary-strong)] max-lg:hidden"></div>
 
   <div class="absolute inset-x-0 bottom-[50px]">
-    <div class="page-column flex justify-between font-mono text-[length:var(--type-caption)] tracking-[0.6px] text-faint-foreground">
+    <div class="page-column flex justify-between font-mono text-[length:var(--type-caption)] tracking-[0.6px] text-quiet">
       {quarters.map((quarter) => <span>{quarter}</span>)}
     </div>
   </div>
@@ -64,7 +64,7 @@ const quarters = ["Q3 24", "Q4 24", "Q1 25", "Q2 25", "Q3 25"];
         <div class="flex h-full shrink-0 items-center" aria-hidden={copy === 0 ? undefined : "true"}>
           {ticks.map((tick) => (
             <div class="flex h-full shrink-0 items-center gap-2.5 border-r border-[var(--parchment)] px-6">
-              <span class="font-mono text-[length:var(--type-caption)] tracking-[0.6px] whitespace-nowrap text-faint-foreground">{tick.label}</span>
+              <span class="font-mono text-[length:var(--type-caption)] tracking-[0.6px] whitespace-nowrap text-quiet">{tick.label}</span>
               <span class="text-[length:var(--type-dense)] font-medium whitespace-nowrap">{tick.value}</span>
               <span class:list={["text-[9px]", tick.direction === "up" ? "text-positive" : "text-negative"]}>{tick.direction === "up" ? "▲" : "▼"}</span>
             </div>

@@ -52,7 +52,7 @@ export function NumberField({
       <span className="shrink-0 truncate text-[length:var(--type-caption)] text-quiet">{row.label}</span>
       <input
         className={cn(
-          "min-w-0 flex-1 bg-transparent text-right text-[length:var(--type-dense)] tabular-nums outline-none placeholder:text-faint",
+          "min-w-0 flex-1 bg-transparent text-right text-[length:var(--type-dense)] tabular-nums outline-none placeholder:text-quiet",
           row.inherited && draft === null ? "text-quiet" : "text-foreground",
         )}
         inputMode="decimal"

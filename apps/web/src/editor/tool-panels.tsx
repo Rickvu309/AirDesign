@@ -100,7 +100,7 @@ function MediaChrome({ title, heading, search }: { title: string; heading: strin
         <span className="text-sm font-semibold text-foreground">{heading}</span>
       </div>
       <div className="flex border-b border-line px-3 pb-3">
-        <span className="flex h-8 flex-1 items-center gap-2 rounded-lg bg-line px-2.5 text-[length:var(--type-dense)] text-faint">
+        <span className="flex h-8 flex-1 items-center gap-2 rounded-lg bg-line px-2.5 text-[length:var(--type-dense)] text-quiet">
           <EditorIcon name="search" size={14} />
           {search}
         </span>
@@ -328,7 +328,7 @@ export function TemplatePicker() {
       )}
     >
       <div className="border-b border-line p-3">
-        <span className="flex h-10 items-center gap-2 rounded-[var(--shape-card)] bg-line px-3 text-[length:var(--type-dense)] text-faint">
+        <span className="flex h-10 items-center gap-2 rounded-[var(--shape-card)] bg-line px-3 text-[length:var(--type-dense)] text-quiet">
           <EditorIcon name="search" size={15} />
           Search templates
         </span>

@@ -51,7 +51,7 @@ export function PricingDefault() {
             <p className="text-[56px] leading-none font-semibold tracking-[-1.5px] text-foreground">
               {pricingCopy.price}
             </p>
-            <p className="flex h-[var(--space-32)] items-start text-[length:var(--type-section)] leading-[1.5] text-faint">
+            <p className="flex h-[var(--space-32)] items-start text-[length:var(--type-section)] leading-[1.5] text-quiet">
               {pricingCopy.forever}
             </p>
           </div>
@@ -74,7 +74,7 @@ export function PricingDefault() {
             {pricingCopy.startFree}
           </Button>
         </section>
-        <p className="mt-8 text-[length:var(--type-dense)] leading-[1.31] text-faint">{pricingCopy.note}</p>
+        <p className="mt-8 text-[length:var(--type-dense)] leading-[1.31] text-quiet">{pricingCopy.note}</p>
       </main>
     </div>
   )
