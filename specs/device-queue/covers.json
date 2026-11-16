@@ -1,0 +1,71 @@
+{
+  "check": "checks-device-queue.md#device-queue",
+  "covers": [
+    {
+      "file": "apps/web/src/design/design-change.ts",
+      "names": ["changeDesign", "changingDeck"],
+      "digest": "3f78ff2f15dd",
+      "blob": "a0ffe771a407d460ec3e8a631f5ba4853269ff56"
+    },
+    {
+      "file": "apps/web/src/design/trait-edit.ts",
+      "names": ["applyChange", "planned", "stored", "landedBefore"],
+      "digest": "541b6f31e547",
+      "blob": "b45581dd6d2ae36d633581e64e895d69175e3d35"
+    },
+    {
+      "file": "apps/web/src/editor/use-undo.ts",
+      "names": ["useUndoList", "useUndoTurn"],
+      "digest": "6d7885837ca2",
+      "blob": "eb6821a8cb6765c878e9147e35fef6757d014117"
+    },
+    {
+      "file": "apps/web/src/undo-list.ts",
+      "names": ["turnBack", "sent", "sentCommand", "recorded"],
+      "digest": "ef1369ded206",
+      "blob": "3422414c48c6564c5d4b5417bf897b50a9af3b3d"
+    },
+    {
+      "file": "apps/web/src/commit-edit.ts",
+      "names": ["flushPending"],
+      "digest": "92abe64643fb",
+      "blob": "cd69477bda0edbc6397400988fdb4c25c1f770c6"
+    },
+    {
+      "file": "apps/web/src/editor/use-deck-open.ts",
+      "names": ["useDeckOpen"],
+      "digest": "aec38e714da8",
+      "blob": "ddd51641987071965da25e9b57853b3bcf7ce9d6"
+    },
+    {
+      "file": "packages/document/src/person-undo.ts",
+      "names": ["undoOf", "redoOf"],
+      "digest": "7e4cd4c8fc38",
+      "blob": "4ca54e86e0e943bec38162ef65b5dc7760c77a79"
+    },
+    {
+      "file": "packages/live/src/cache.ts",
+      "names": ["connect"],
+      "digest": "d90aef375b4d",
+      "blob": "63cb76f91f9c23f4c26198bf8fefa82c3f39fc24"
+    },
+    {
+      "file": "packages/live/src/held.ts",
+      "names": ["sealRows", "writeDeckRows", "setAside", "takeAside"],
+      "digest": "ac3fce1afe77",
+      "blob": "78eb2cb1f22957e8c72173ed3c3bcf9539993593"
+    },
+    {
+      "file": "packages/live/src/slide-replay.ts",
+      "names": ["refusedRows", "withSlides", "landed"],
+      "digest": "aad7271a462f",
+      "blob": "20db9b6017d6fd6addd54c9b1f394eb56f18eb34"
+    },
+    {
+      "file": "apps/api/src/saved.ts",
+      "names": ["commitEdits"],
+      "digest": "77d9d4d8dc66",
+      "blob": "3cb8a055dcc5b3a2d2cef0e04f08e9b8c27b1ef8"
+    }
+  ]
+}

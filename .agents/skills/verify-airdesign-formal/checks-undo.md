@@ -1,6 +1,6 @@
 # Checks on a person's own Undo and Redo
 
-Same fields as [checks-document.md](checks-document.md). person-undo is replayed in `tests/spec-replay.test.ts`; multi-step in `tests/multi-step-replay.test.ts`; typing in `apps/web/src/typing.test.tsx`, which renders the editor's undo parts in jsdom: `pnpm vitest run apps/web/src/typing.test.tsx`. The undo of an added or removed element is element in [checks-element.md](checks-element.md), and a run's own Undo is undo there and slide-undo in [checks-slides.md](checks-slides.md).
+Same fields as [checks-document.md](checks-document.md). person-undo is replayed in `tests/spec-replay.test.ts`; multi-step in `tests/multi-step-replay.test.ts`; typing in `apps/web/src/typing.test.tsx`, which renders the editor's undo parts in jsdom: `pnpm vitest run apps/web/src/typing.test.tsx`. A design panel change, Undo or Redo made before the server answers is device-queue in [checks-device-queue.md](checks-device-queue.md). The undo of an added or removed element is element in [checks-element.md](checks-element.md), and a run's own Undo is undo there and slide-undo in [checks-slides.md](checks-slides.md).
 
 ## person-undo
 
