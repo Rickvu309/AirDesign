@@ -70,13 +70,13 @@ afterAll(async () => {
 })
 
 async function rowOf(run: Run): Promise<string> {
-  if (run.followed === undefined) return "none"
-  const found = await admin.query<{ stopped: boolean }>(
-    "select stopped is not null as stopped from session.aira_ask where id = $1",
-    [run.followed.id],
+  const found = await admin.query<{ stopped: boolean; followed: boolean }>(
+    "select stopped is not null as stopped, followed from session.aira_ask where email = $1 and ask = 'ask'",
+    [run.email],
   )
   const row = found.rows[0]
-  if (row === undefined) return "gone"
+  if (row === undefined) return run.followed === undefined ? "none" : "gone"
+  if (!row.followed) return "noted"
   return row.stopped ? "stopped" : "live"
 }
 
@@ -165,6 +165,15 @@ const follow: Step = {
       expect(held.times(stoppedRead)).toBeGreaterThan(reads)
     })
   },
+}
+
+function followFrom(closing: Closing): Step {
+  return {
+    actions: ["Follow"],
+    act: async (run) => {
+      run.followed = await closing.follow(run.email, "ask", run.left.signal)
+    },
+  }
 }
 
 function decide(actions: readonly string[]): Step {
@@ -275,13 +284,31 @@ describe("a stop replays the stop spec through two servers on one database", () 
     ])
   })
 
-  it("answers at once a stop for an ask no server holds yet, and the ask then runs", async () => {
+  it("answers at once a stop from B for an ask no server holds yet, and A's follow starts stopped", async () => {
     await replay([
       stopFrom(b, ["StopSent"], async (run) => run.stop?.answered === true),
-      follow,
-      send,
-      settle,
+      followFrom(a),
+      skip,
       forget(["Forget"]),
+    ])
+  })
+
+  it("heeds a stop that reached A before A followed its ask", async () => {
+    await replay([
+      stopFrom(a, ["StopSent"], async (run) => run.stop?.answered === true),
+      followFrom(a),
+      skip,
+      forget(["Forget"]),
+    ])
+  })
+
+  it("holds a new ask on B until A closed the ask a stop came before", async () => {
+    await replay([
+      stopFrom(b, ["StopSent"], async (run) => run.stop?.answered === true),
+      followFrom(a),
+      nextAsk,
+      skip,
+      forget(["Forget", "NextRetry"]),
     ])
   })
 
@@ -340,5 +367,32 @@ describe("a stop replays the stop spec through two servers on one database", () 
 
   it("skips the model call when the person left A before it sent", async () => {
     await replay([follow, leave, skip, forget(["Forget"])])
+  })
+})
+
+describe("one ask's row outside the replay", () => {
+  it("never holds a new ask on a stop's note whose ask never comes", async () => {
+    const email = `noted${randomBytes(6).toString("hex")}@example.com`
+    await admin.query("insert into session.account (email) values ($1)", [email])
+    const [, second] = listens
+    if (second === undefined) throw new Error("listen")
+    const patient = new Closing({ db: session, listen: second }, 600_000)
+    await b.stop(email, "never")
+    const own = await patient.follow(email, "next", new AbortController().signal)
+    await patient.closed(email, own)
+    expect(own.signal.aborted).toBe(false)
+    await own.done()
+    const rows = await admin.query("select ask, followed from session.aira_ask where email = $1", [email])
+    expect(rows.rows).toEqual([{ ask: "never", followed: false }])
+  })
+
+  it("keeps the next model turn's row when the turn before it forgets its row late", async () => {
+    const email = `turns${randomBytes(6).toString("hex")}@example.com`
+    await admin.query("insert into session.account (email) values ($1)", [email])
+    const first = await a.follow(email, "ask", new AbortController().signal)
+    const second = await b.follow(email, "ask", new AbortController().signal)
+    await first.done()
+    expect(await second.stopped()).toBe(false)
+    await second.done()
   })
 })

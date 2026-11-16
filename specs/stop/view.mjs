@@ -1,8 +1,9 @@
 const steps = {
-  Follow: "server A starts the ask and stores its row",
+  Follow: "server A starts the ask and stores its row, or takes over a stop's note and starts stopped",
   Leave: "the person leaves server A, which aborts the call",
   Mark: "server A marks the row stopped after the person left",
-  StopSent: "server B marks the row stopped and notifies, or answers at once when no row runs",
+  StopSent:
+    "server B marks the row stopped and notifies, leaves a stopped note before the ask, or answers at once after it",
   Drop: "the listen connection drops a wake",
   Reconnect: "the listen connection comes back and wakes the watcher",
   Watch: "server A reads the row and aborts a stopped call",
