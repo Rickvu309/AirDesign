@@ -188,6 +188,21 @@ jobs:
           if [ -n "$open" ]; then
             gh issue close "$open" --repo "$GITHUB_REPOSITORY" --comment "ci passed on main at ${GITHUB_SHA::7}. $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           fi
+      - name: ci-duration
+        if: github.event_name == 'merge_group'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          created=$(gh run view "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --json createdAt --jq .createdAt)
+          limit=$(gh api "repos/$GITHUB_REPOSITORY/contents/metrics.json?ref=$GITHUB_SHA" -H "Accept: application/vnd.github.raw" --jq '."ci-duration".limit')
+          minutes=$(awk -v seconds="$(( $(date +%s) - $(date -d "$created" +%s) ))" 'BEGIN { printf "%.1f", seconds / 60 }')
+          line="metric ci-duration  now $minutes  limit $limit"
+          echo "$line"
+          echo "$line" >> "$GITHUB_STEP_SUMMARY"
+          if awk -v now="$minutes" -v limit="$limit" 'BEGIN { exit !(now > limit) }'; then
+            echo "::warning title=ci-duration::ci-duration is $minutes and its limit is $limit. The merge queue's ci run took $minutes minutes."
+          fi
   mutation:
     name: mutation
     if: ${{ github.event_name == 'pull_request' }}

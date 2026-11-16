@@ -29,7 +29,7 @@ same(
 )
 same(
   "a slow run",
-  failureClass(line("Run pnpm check", "ci-duration is 41.2 and its limit is 40. Make it faster.")),
+  failureClass(line("Run pnpm check", "check-duration is 41.2 and its limit is 40. Make it faster.")),
   "a timed metric went over its limit",
 )
 same(
