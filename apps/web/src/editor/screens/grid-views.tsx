@@ -19,7 +19,7 @@ export function GridPasted() {
     <SlideGrid
       state="pasted"
       title={galleryDeck.title}
-      toast={<EditorToast kind="success" text="2 slides pasted from PowerPoint" action="Undo" />}
+      toast={<EditorToast still kind="success" text="2 slides pasted from PowerPoint" action="Undo" />}
     />
   )
 }

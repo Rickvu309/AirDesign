@@ -285,13 +285,17 @@ export function EditorToast({
   text,
   action,
   place = "screen",
+  still = false,
+  host = true,
 }: {
   kind: "success" | "info"
   text: string
   action?: string
   place?: "screen" | "canvas"
+  still?: boolean
+  host?: boolean
 }) {
-  const { width, shift } = toastMetrics[place]
+  const { width } = toastMetrics[place]
   useEffect(() => {
     toast.custom(
       () => (
@@ -325,21 +329,34 @@ export function EditorToast({
       ),
       {
         id: "editor-status",
+        toasterId: "editor-status",
         duration: Number.POSITIVE_INFINITY,
         unstyled: true,
         style: {
           left: 0,
           right: 0,
-          opacity: 1,
-          transform: "translateY(0)",
-          transition: "none",
+          ...(still
+            ? { opacity: 1, transform: "translateY(0)", transition: "none" }
+            : { transition: "transform var(--ease-micro), opacity var(--ease-micro)" }),
           pointerEvents: "none",
         },
       },
     )
-  }, [action, kind, text, width])
+  }, [action, kind, text, width, still])
+  useEffect(
+    () => () => {
+      toast.dismiss("editor-status")
+    },
+    [],
+  )
+  return host ? <EditorToaster place={place} /> : null
+}
+
+export function EditorToaster({ place = "canvas" }: { place?: "screen" | "canvas" }) {
+  const { shift } = toastMetrics[place]
   return (
     <Toaster
+      id="editor-status"
       position="top-center"
       offset={{ top: 12 }}
       visibleToasts={1}
