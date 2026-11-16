@@ -22,7 +22,7 @@ export function IconTool({ onIcon }: { readonly onIcon: (name: string) => void }
       >
         <EditorIcon name="icon" size={18} />
       </PopoverTrigger>
-      <PopoverContent side="top" sideOffset={12} className="w-64" data-icon-tool>
+      <PopoverContent side="top" sideOffset={12} className="w-64" data-icon-tool data-keeps-format>
         <IconSearch
           label={pictureCopy.addIcon}
           current={null}

@@ -110,7 +110,12 @@ export function ShapeTool({ onShape }: { onShape: (geometry: Geometry) => void }
       >
         <EditorIcon name="shape" size={18} />
       </PopoverTrigger>
-      <PopoverContent side="top" sideOffset={12} className="w-auto bg-transparent p-0 shadow-none ring-0 duration-0">
+      <PopoverContent
+        side="top"
+        sideOffset={12}
+        className="w-auto bg-transparent p-0 shadow-none ring-0 duration-0"
+        data-keeps-format
+      >
         {more ? <ShapeGrid onShape={pick} /> : <ShapeTrayItems onShape={pick} onMore={() => setMore(true)} />}
       </PopoverContent>
     </Popover>
