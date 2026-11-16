@@ -162,6 +162,44 @@ test("a range of a blank deck's slides exports only those slides @export", async
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
 })
 
+for (const format of ["PowerPoint", "PDF"]) {
+  test(`${format} range fields describe the error until the range is corrected`, async ({ page }) => {
+    await page.goto("/")
+    await newBlankDeck(page)
+    await settled(page)
+    await page.getByRole("button", { name: "Add slide" }).click()
+    await page.getByRole("button", { name: "Add slide" }).click()
+    await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
+    await openDialog(page)
+    await choose(page, "File type", format)
+    await choose(page, "Slides", "Range")
+    const first = dialog(page).getByRole("spinbutton", { name: "First slide" })
+    const last = dialog(page).getByRole("spinbutton", { name: "Last slide" })
+    const action = dialog(page).getByRole("button", { name: "Export" })
+    for (const value of ["4", "", "0"]) {
+      await first.fill(value)
+      for (const field of [first, last]) {
+        await field.focus()
+        await expect(field).toHaveAttribute("aria-invalid", "true")
+        await expect(field).toHaveAccessibleDescription("Choose slides from 1 to 3, first slide before last.")
+      }
+      await expect(action).toBeDisabled()
+    }
+    await first.fill("3")
+    await last.fill("2")
+    for (const field of [first, last]) {
+      await expect(field).toHaveAccessibleDescription("Choose slides from 1 to 3, first slide before last.")
+    }
+    await first.fill("1")
+    for (const field of [first, last]) {
+      await expect(field).toHaveAttribute("aria-invalid", "false")
+      await expect(field).toHaveAccessibleDescription("")
+    }
+    await expect(dialog(page).getByRole("alert")).toHaveCount(0)
+    await expect(action).toBeEnabled()
+  })
+}
+
 test("the dialog keeps focus inside, Escape closes it and focus returns to Export", async ({ page }) => {
   await openFile(page, join(fixtures, "clean.pptx"))
   await openDialog(page)
