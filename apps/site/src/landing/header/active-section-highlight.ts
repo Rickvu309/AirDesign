@@ -1,9 +1,15 @@
 const activeSectionBand = "-45% 0px -50% 0px"
-const pillMoveMs = 280
+const fallbackPillMoveMs = 280
 
-function bezierEasing(token: string): string {
-  const match = /cubic-bezier\([^)]*\)/.exec(token)
-  return match === null ? token : match[0]
+type PillMotion = { duration: number; easing: string }
+
+function pillMotionOf(token: string): PillMotion {
+  const easing = /cubic-bezier\([^)]*\)/.exec(token)
+  const duration = /(\d+)ms/.exec(token)
+  return {
+    duration: duration === null ? fallbackPillMoveMs : Number(duration[1]),
+    easing: easing === null ? token : easing[0],
+  }
 }
 
 function sectionIdOf(link: HTMLAnchorElement): string {
@@ -31,12 +37,12 @@ function lockTabWidths(links: HTMLAnchorElement[], activeLink: HTMLAnchorElement
   markActive(links, activeLink)
 }
 
-function placePill(pill: HTMLElement, activeLink: HTMLAnchorElement, moveEasing: string | null): void {
+function placePill(pill: HTMLElement, activeLink: HTMLAnchorElement, motion: PillMotion | null): void {
   const from = pill.getBoundingClientRect()
   pill.getAnimations().forEach((animation) => animation.cancel())
   pill.style.left = `${activeLink.offsetLeft}px`
   pill.style.width = `${activeLink.offsetWidth}px`
-  if (moveEasing === null || from.width === 0) {
+  if (motion === null || from.width === 0) {
     return
   }
   const to = pill.getBoundingClientRect()
@@ -45,7 +51,7 @@ function placePill(pill: HTMLElement, activeLink: HTMLAnchorElement, moveEasing:
       { transform: `translateX(${from.left - to.left}px) scaleX(${from.width / to.width})` },
       { transform: "translateX(0) scaleX(1)" },
     ],
-    { duration: pillMoveMs, easing: moveEasing },
+    motion,
   )
 }
 
@@ -58,7 +64,7 @@ export async function highlightActiveSection(tabs: HTMLElement): Promise<void> {
   }
 
   const showsMotion = !matchMedia("(prefers-reduced-motion: reduce)").matches
-  const moveEasing = bezierEasing(getComputedStyle(document.documentElement).getPropertyValue("--ease-panel").trim())
+  const motion = pillMotionOf(getComputedStyle(document.documentElement).getPropertyValue("--ease-panel").trim())
 
   await document.fonts.ready
 
@@ -87,7 +93,7 @@ export async function highlightActiveSection(tabs: HTMLElement): Promise<void> {
       activeLink = nextLink
       markActive(links, activeLink)
       if (showsMotion) {
-        placePill(pill, activeLink, moveEasing)
+        placePill(pill, activeLink, motion)
       }
     },
     { rootMargin: activeSectionBand },

@@ -173,7 +173,7 @@
     color: var(--muted-foreground);
     font-size: 14px;
     transition:
-      color var(--transition-micro),
+      color 150ms ease,
       transform var(--transition-micro);
   }
 
@@ -229,6 +229,19 @@
     animation: ticker-run 60s linear infinite;
   }
 
+  .ticker-track[data-paused] {
+    animation-play-state: paused;
+  }
+
+  .ticker-pause-play,
+  .ticker-pause[aria-pressed="true"] .ticker-pause-bars {
+    display: none;
+  }
+
+  .ticker-pause[aria-pressed="true"] .ticker-pause-play {
+    display: block;
+  }
+
   @media (hover: hover) and (pointer: fine) {
     .ticker-track:hover {
       animation-play-state: paused;
@@ -267,11 +280,13 @@
     .pressable:active {
       transform: none;
     }
-  }
 
-  @media (prefers-reduced-motion: reduce) {
     .ticker-track {
       animation: none;
+    }
+
+    .ticker-pause {
+      display: none;
     }
   }
 
@@ -301,7 +316,7 @@
 
   .text-link {
     transition:
-      color var(--transition-micro),
+      color 150ms ease,
       transform var(--transition-micro);
   }
 
