@@ -4,50 +4,50 @@
     {
       "file": "packages/mcp/src/server.ts",
       "names": ["settledCall", "createServer"],
-      "digest": "e977fe9b18bd",
-      "blob": "4637389522fdfb6b0fbfd9239f884f3947e17ea5"
+      "digest": "fdd3b8e26cb7",
+      "blob": "edc2bcd5427a52b25bd8788b0f5a269a6714b6b0"
     },
     {
       "file": "packages/mcp/src/slide-tool.ts",
       "names": ["slideTool"],
-      "digest": "d1fe186636c5",
-      "blob": "2246598cec2b80873fc73d5a0b646b8353e28aef"
+      "digest": "eaa6365748f8",
+      "blob": "94ba467e549a139f70a0a9a49a6037aaf5292efa"
     },
     {
       "file": "packages/engine/src/agent-slides.ts",
       "names": ["agentSlide", "runFence", "runFenced", "readFresh"],
-      "digest": "d2422d232592",
-      "blob": "86763b79697691b90c06acb61f1779fadeac38b4"
+      "digest": "d9fc389bc4d5",
+      "blob": "e710e807ea98451f201b2f2b2c7d5d295faacfc8"
     },
     {
       "file": "packages/mcp/src/call-tool.ts",
       "names": ["stopRun"],
-      "digest": "740a684615f5",
-      "blob": "ef0ae0c8bacc2b93cb27792f19c5c1ce15456a03"
+      "digest": "280d7a16b2fd",
+      "blob": "bab33eb866ac4306913e60169dcb0ec43e96aca4"
     },
     {
       "file": "packages/engine/src/call.ts",
       "names": ["endOnTouched", "endSlides", "landed"],
       "digest": "4d32375cfed1",
-      "blob": "dd18b3c9b390b1f9b79f9a0dc9cd496a326f02b1"
+      "blob": "bb21d1808ecaeb2a2e58004989ea4a710f6421bb"
     },
     {
       "file": "packages/mcp/src/turn.ts",
       "names": ["settleTurn", "liveTurn", "heldRun"],
-      "digest": "ef6e580ae36b",
-      "blob": "513bce6502f59a9a375927e78111b5a6978a097d"
+      "digest": "69d5c7606e69",
+      "blob": "cf44ccb491249fed1a66f0ba3f5a63e6c59b79e3"
     },
     {
       "file": "apps/api/src/agent-turn.ts",
       "names": ["storedTurns"],
-      "digest": "1c000aa5b3ef",
-      "blob": "5e9abb8a943b40f29b5d6ae38771ef781fd32e83"
+      "digest": "679177026d58",
+      "blob": "15f5bbeae83d94b8bcf9d6e2ef95c82858ecc0d8"
     },
     {
       "file": "apps/api/src/mcp.ts",
       "names": ["serveMcp", "commitEdit"],
-      "digest": "32ee6874a154",
-      "blob": "2a8e85d7b76537a63057bac4dda698e88d9bc1bf"
+      "digest": "84e5b7ca5292",
+      "blob": "3ee8743b089bab3410defbe5cb7084574c7d7b83"
     }
   ]
 }

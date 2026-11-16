@@ -4,38 +4,38 @@
     {
       "file": "packages/engine/src/agent-slides.ts",
       "names": ["readFresh", "agentSlide"],
-      "digest": "3038a07991bd",
-      "blob": "420fb3a46c589b91eb3822e2c3fcb0b2268e7d29"
+      "digest": "2db515876448",
+      "blob": "e710e807ea98451f201b2f2b2c7d5d295faacfc8"
     },
     {
       "file": "packages/engine/src/agent-elements.ts",
-      "names": ["agentElement"],
-      "digest": "2a5376ec725f",
-      "blob": "3c037f52aaf149be09986eedd326a7b309eeee4e"
+      "names": ["agentElement", "addTextBox", "ready"],
+      "digest": "e66d02df2e4e",
+      "blob": "398534c60f1355e866b8aa171a7d304bd2eb09ce"
     },
     {
       "file": "packages/engine/src/call.ts",
       "names": ["landed", "wroteBy"],
       "digest": "900b9d918b02",
-      "blob": "0738f69c25b79e6858f0e80064510f5701d590dd"
+      "blob": "bb21d1808ecaeb2a2e58004989ea4a710f6421bb"
     },
     {
       "file": "packages/mcp/src/server.ts",
       "names": ["settledCall"],
       "digest": "cc984009b4d9",
-      "blob": "c361a7266e55831cf6772dc126454937c5b87a55"
+      "blob": "edc2bcd5427a52b25bd8788b0f5a269a6714b6b0"
     },
     {
       "file": "apps/api/src/mcp.ts",
       "names": ["serveMcp", "commitEdit"],
-      "digest": "e31b711d810a",
-      "blob": "b19c706515540f1b7eedf0d0f253b9920188f5f1"
+      "digest": "84e5b7ca5292",
+      "blob": "3ee8743b089bab3410defbe5cb7084574c7d7b83"
     },
     {
       "file": "apps/api/src/saved.ts",
       "names": ["commitEdits", "readStoredOnce", "writeRevision"],
       "digest": "cd5b762b8239",
-      "blob": "ce8b6d4ad96ce05e37b969fd997a7362d75c6c64"
+      "blob": "3cb8a055dcc5b3a2d2cef0e04f08e9b8c27b1ef8"
     }
   ]
 }
