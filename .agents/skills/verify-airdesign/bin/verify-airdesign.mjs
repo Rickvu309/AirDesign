@@ -11,6 +11,7 @@ import { browserCookies } from "./browser-cookies.mjs"
 import { designContext, openBrowser, settle } from "./browser.mjs"
 import { loadLine } from "./load.mjs"
 import { builtSite, fakeOrigins } from "./site.mjs"
+import { usage } from "./usage.mjs"
 
 const skill = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const repo = process.env.VERIFY_AIRDESIGN_REPO
@@ -416,6 +417,9 @@ try {
   } else if (command === "suites") {
     const { suitesCommand } = await import("./suites.mjs")
     process.stdout.write(`${JSON.stringify(await suitesCommand(rest, { repo, evidenceRoot }))}\n`)
+  } else if (command === "prove") {
+    const { proveCommand } = await import("./prove.mjs")
+    process.stdout.write(`${JSON.stringify(await proveCommand(rest, { repo, evidenceRoot }))}\n`)
   } else if (command === "comment") {
     const { comment: postComment } = await import("./comment.mjs")
     process.stdout.write(`${JSON.stringify(await postComment({ pr: rest[0], file: rest[1] }))}\n`)
@@ -440,31 +444,7 @@ try {
   else if (command === "journey") await journey(rest[0], rest[1])
   else if (command === "stop") await stop(rest[0])
   else if (command !== "library") {
-    process.stdout.write(
-      [
-        "verify-airdesign launch [--no-build]        start web + api + postgres on free ports; prints run id",
-        "verify-airdesign doctor <run>               read-only health check of that run",
-        "verify-airdesign sign-in <run> [--email e]  sign in through the real email code; prints the cookie",
-        "verify-airdesign api <run> <route> [json] [--cookie c]  POST a deckRoutes entry; saves the answer",
-        "verify-airdesign journey <run> <name|file>  run journeys/<name>.mjs, or a scratch .mjs by its path; saves screenshots",
-        "verify-airdesign look <run> <state-or-path> [--import deck.pptx [--slide n]] [--off-token] [--cookie c] [--out dir]",
-        "                                            capture one page at 1470x923 x2; boxes and ranks design faults",
-        "verify-airdesign compare <run> <state-or-path> [design-screen] [--import deck.pptx [--slide n]] [--out dir]",
-        "                                            the design screen beside the real page; region deltas",
-        "verify-airdesign sheet <run> [--only glob] [--off-token] [--out dir]",
-        "                                            every named state: look, compare, one contact sheet",
-        "verify-airdesign states                     list the named states and their design screens",
-        "verify-airdesign before-after <callouts.json> [--base ref] [--head ref] [--before-run run] [--after-run run] [--keep] [--out dir]",
-        "                                            the same states on the base and on this change; annotated image and table",
-        "verify-airdesign annotate <run> <callouts.json> [--out dir]  numbered callouts on one run's states",
-        "verify-airdesign publish <dir> [--pr n]     upload images to the proof release; prints links and the PR fragment",
-        "verify-airdesign comment <pr> <file>       post a PR comment with the agent header; refuses an empty file",
-        "verify-airdesign suites [--run] [check|browser|journeys|pptx...] [-- args]",
-        "                                            the test suites this branch's changes need; --run runs them under the machine lock",
-        "verify-airdesign stop <run>                 stop only this run's processes; keeps evidence",
-        "",
-      ].join("\n"),
-    )
+    process.stdout.write(usage)
   }
 } catch (error) {
   fail(`verify-airdesign ${command}: ${String(error.message ?? error)}`)

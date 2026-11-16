@@ -78,7 +78,7 @@ export async function designCommand(command, args, runtime) {
   }
   try {
     if (command === "sheet") {
-      const selected = matching(flags.only)
+      const selected = [...new Set((flags.only ?? "*").split(",").flatMap((pattern) => matching(pattern)))]
       if (selected.length === 0) throw new Error(`no state matches ${flags.only}`)
       const rows = new Map()
       const used = new Set()
