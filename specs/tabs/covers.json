@@ -1,0 +1,59 @@
+{
+  "check": "checks-tabs.md#tabs",
+  "covers": [
+    {
+      "file": "packages/live/src/cache.ts",
+      "names": ["connect", "unlessNewer", "heard"],
+      "digest": "529c9d45a715",
+      "blob": "63cb76f91f9c23f4c26198bf8fefa82c3f39fc24"
+    },
+    {
+      "file": "packages/live/src/held.ts",
+      "names": ["changeHeld", "writeDeckRows", "sealRows", "heldView"],
+      "digest": "5f097aad8023",
+      "blob": "78eb2cb1f22957e8c72173ed3c3bcf9539993593"
+    },
+    {
+      "file": "packages/live/src/deck-view.ts",
+      "names": ["rowsFromRegister", "played"],
+      "digest": "d2b011c0c691",
+      "blob": "80e985714c6ed288785cf04da6855476f7e59461"
+    },
+    {
+      "file": "packages/live/src/store.ts",
+      "names": ["fitConfirmed", "logicalValues"],
+      "digest": "c511aab30e59",
+      "blob": "0acd9fd0c1c508c66220ac8b8042623df44d0cd2"
+    },
+    {
+      "file": "packages/live/src/slide-replay.ts",
+      "names": ["withSlides", "landed", "staleText"],
+      "digest": "08d2e75fef0a",
+      "blob": "20db9b6017d6fd6addd54c9b1f394eb56f18eb34"
+    },
+    {
+      "file": "packages/live/src/device.ts",
+      "names": ["markNewer", "connectDatabase", "openDatabase", "transaction"],
+      "digest": "6452189696e1",
+      "blob": "81069219a9370252b6c8d0dafc042f5218cb3a58"
+    },
+    {
+      "file": "apps/web/src/editor/use-deck-open.ts",
+      "names": ["useDeckOpen"],
+      "digest": "aec38e714da8",
+      "blob": "ddd51641987071965da25e9b57853b3bcf7ce9d6"
+    },
+    {
+      "file": "apps/web/src/device-copy.ts",
+      "names": ["deviceCopy"],
+      "digest": "22e573bd728a",
+      "blob": "77ba425c171a341e0587352aa003da16ff80bb9e"
+    },
+    {
+      "file": "apps/web/src/design/trait-edit.ts",
+      "names": ["applyChange"],
+      "digest": "f07b65a0c841",
+      "blob": "b45581dd6d2ae36d633581e64e895d69175e3d35"
+    }
+  ]
+}
