@@ -40,8 +40,8 @@ export const refusedConnect = {
 
 export const unavailableConnect = {
   title: "Unable to finish connecting",
-  body: "Check your connection and reload the consent page.",
-  action: "Reload consent",
+  body: "Check your connection, then try again.",
+  action: "Try again",
 } as const
 
 export function otherConnect(host: string) {
