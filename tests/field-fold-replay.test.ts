@@ -425,4 +425,15 @@ describe("field-fold replay", () => {
     await actions.SetColour?.()
     expect(painted(deviceRegister()).fields["fill.alpha"]?.value).toBe(reset)
   })
+
+  it.fails("keeps the reset fill opacity when an agent then sets the colour", async () => {
+    held.world = { server: opened(), read: opened().register, pending: [], list: { undo: [], redo: [] }, told: 0 }
+    await actions.Reset?.()
+    await actions.Sync?.()
+    const reset = painted(deviceRegister()).fields["fill.alpha"]?.value
+    expect(reset).toBe(opaque)
+    await actions.AgentColour?.()
+    await actions.Sync?.()
+    expect(painted(deviceRegister()).fields["fill.alpha"]?.value).toBe(reset)
+  })
 })
