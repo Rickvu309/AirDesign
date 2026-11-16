@@ -244,6 +244,70 @@ test("a right click or the menu key on a slide offers the slide commands, and ea
   await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
 })
 
+async function dragOnto(page: Page, from: number, to: number, side: "left" | "right", place: number): Promise<void> {
+  const source = await entry(page, from).boundingBox()
+  const target = await entry(page, to).boundingBox()
+  if (source === null || target === null) throw new Error("no slide to drag")
+  await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2)
+  await page.mouse.down()
+  const x = side === "left" ? target.x + target.width * 0.2 : target.x + target.width * 0.8
+  await page.mouse.move(x, target.y + target.height / 2, { steps: 8 })
+  const bar = page.locator("[data-drop-bar]")
+  await expect(bar).toBeVisible()
+  await expect(bar).toHaveAttribute("data-drop-place", String(place))
+  const mark = await bar.boundingBox()
+  const gap = side === "left" ? target.x - (mark?.x ?? 0) : (mark?.x ?? 0) - (target.x + target.width)
+  expect(gap).toBeGreaterThan(0)
+  expect(gap).toBeLessThan(32)
+  await expect(entry(page, from)).toHaveCSS("opacity", "0.4")
+  await expect(page.locator(`[aria-label="Add slide after slide ${String(from)}"]`)).toBeHidden()
+  await page.mouse.up()
+  await expect(bar).toBeHidden()
+}
+
+test("a slide dragged onto half of another lands on that side of it, where the drop bar showed", async ({ page }) => {
+  await openFile(page, clean)
+  await openGrid(page)
+  const said = page.locator("[data-editor-grid] [data-announcer]")
+  for (const count of [2, 3, 4]) {
+    await page.getByRole("button", { name: "New slide", exact: true }).click()
+    await expect(page.locator("[data-slide-entry]")).toHaveCount(count)
+  }
+  await dragOnto(page, 1, 3, "right", 4)
+  await expect(said).toHaveText("Moved slide 1 to position 3")
+  await expect(entry(page, 3)).toHaveAttribute("aria-current", "true")
+  await dragOnto(page, 3, 1, "left", 1)
+  await expect(said).toHaveText("Moved slide 3 to position 1")
+  await dragOnto(page, 2, 3, "left", 3)
+  await expect(said).toHaveText("Moved slide 3 to position 1")
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(4)
+})
+
+test("a slide dropped at the start of a section shows and lands at the end of the section before it", async ({
+  page,
+}) => {
+  await openFile(page, join(fixtures, "sections-after.pptx"))
+  await openGrid(page)
+  const opening = page.locator("section", { has: page.getByRole("heading", { name: "Opening" }) })
+  await expect(opening.getByText("1 slide", { exact: true })).toBeVisible()
+  const source = await entry(page, 3).boundingBox()
+  const target = await entry(page, 2).boundingBox()
+  const previous = await entry(page, 1).boundingBox()
+  if (source === null || target === null || previous === null) throw new Error("no slide to drag")
+  await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(target.x + target.width * 0.2, target.y + target.height / 2, { steps: 8 })
+  const bar = page.locator("[data-drop-bar]")
+  await expect(bar).toHaveAttribute("data-drop-place", "2")
+  const mark = await bar.boundingBox()
+  expect(Math.abs((mark?.y ?? 0) - previous.y)).toBeLessThan(2)
+  expect((mark?.x ?? 0) - (previous.x + previous.width)).toBeGreaterThan(0)
+  expect((mark?.x ?? 0) - (previous.x + previous.width)).toBeLessThan(32)
+  await page.mouse.up()
+  await expect(page.locator("[data-editor-grid] [data-announcer]")).toHaveText("Moved slide 3 to position 2")
+  await expect(opening.getByText("2 slides", { exact: true })).toBeVisible()
+})
+
 test("a 50-slide deck paints grid thumbnails as they come into view", async ({ page }) => {
   test.setTimeout(120_000)
   await openFile(page, {
