@@ -212,7 +212,7 @@ export function ColorPicker({
       <PopoverContent
         side={side}
         align={align}
-        className="gap-3 p-3"
+        className="gap-3 p-3 duration-0"
         data-color-picker
         data-keeps-selection
         {...(keepsFormat ? { "data-keeps-format": "" } : {})}

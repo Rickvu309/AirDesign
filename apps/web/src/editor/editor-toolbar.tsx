@@ -162,7 +162,7 @@ function MoreTools({
         side="top"
         align="end"
         sideOffset={12}
-        className={cn("w-auto flex-row items-center gap-1 ring-0", toolbarLook)}
+        className={cn("w-auto flex-row items-center gap-1 ring-0 duration-0", toolbarLook)}
         data-keeps-format
         data-toolbar-more
       >
