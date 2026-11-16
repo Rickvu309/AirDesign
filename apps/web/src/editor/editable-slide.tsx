@@ -175,9 +175,9 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
               clear()
               void holding(targets, () => changeElement({ change: "remove", nodes: targets }))
             }}
-            onEdit={(target, value) => {
+            onEdit={(target, value, kind) => {
               clear()
-              void holding([target], () => onEdit(target, value))
+              void holding([target], () => onEdit(target, value, kind))
             }}
             onTable={(target, change) =>
               tables.change(target, change, (value, name) => holding([target], () => onEdit(target, value, name)))
