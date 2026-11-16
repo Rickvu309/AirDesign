@@ -13,6 +13,7 @@ import { shownNotice } from "@/editor/use-deck-status"
 import { useEditorDeck } from "@/editor/use-editor-deck"
 import { useNetwork } from "@/editor/use-network"
 import { useUndoTurn } from "@/editor/use-undo"
+import { notesOn } from "@/present/notes-on"
 export { elementIds, valueStorable } from "@/deck-paint"
 import { AiraPanel } from "@/aira-panel"
 import { colorsIn, LiveDesignPanel } from "@/editor/live-design-panel"
@@ -26,7 +27,6 @@ export function ThinDeck({ id }: { id: string }) {
   const newer = useSyncExternalStore(watchNewer, storeNewer)
   const { shown, notesBar, exported } = deck
   const currentSlide = shown.store.current.slides()[shown.current]?.id
-  const currentNotes = notesBar.notes.find((notes) => notes.slide === currentSlide)
 
   if (newer) {
     return (
@@ -72,8 +72,9 @@ export function ThinDeck({ id }: { id: string }) {
             size: shown.canvases.current(shown.current),
             slides: slideCommands(deck, undoButtons.onUndo),
             slide: editableSlide(deck),
+            notesOf: (index) => notesOn(notesBar.notes, shown.store.current.slides()[index]?.id),
           }}
-          notes={currentNotes?.text ?? ""}
+          notes={notesOn(notesBar.notes, currentSlide)}
           onNotes={(value) => notesBar.edit(currentSlide, value)}
           panel={panel}
           onPanel={setPanel}

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react"
+import { useRef, useState, type ReactNode } from "react"
 import { NotesBar } from "@/editor/notes-bar"
 import { CanvasStage } from "@/editor/canvas-stage"
 import {
@@ -30,6 +30,10 @@ import { useZoomKeys } from "@/editor/zoom-keys"
 import { ZoomMenu } from "@/editor/zoom-menu"
 import { ExportControl } from "@/export/export-control"
 import type { ExportRequest } from "@/export/export-deck"
+import { PresentButton } from "@/present/present-button"
+import { usePresentKeys } from "@/present/present-keys"
+import { PresentLayer } from "@/present/present-layer"
+import { usePresent } from "@/present/use-present"
 
 const shownSize = { rows: 4, columns: 3 }
 
@@ -51,6 +55,7 @@ export type EditorDeck = {
   readonly onShape?: (geometry: Geometry) => void
   readonly onIcon?: (name: string) => void
   readonly save?: SaveStatus | null
+  readonly notesOf?: (index: number) => string
 }
 
 export type EditorShellProps = {
@@ -102,6 +107,34 @@ export function EditorShell({
   const size = deck?.size ?? null
   const width = size === null ? room.width : zoomWidth(zoom, room, size)
   const working = run === "working" || run === "own"
+  const strip = deck?.slides
+  const presentButton = useRef<HTMLButtonElement>(null)
+  const present = usePresent(
+    strip === undefined
+      ? null
+      : {
+          count: strip.count,
+          current: strip.current,
+          onLand: (at) => {
+            strip.onSelect(at)
+            setTimeout(() => presentButton.current?.focus({ preventScroll: true }))
+          },
+        },
+  )
+  usePresentKeys(strip !== undefined && !gridOpen && present.show === null, (from) =>
+    present.start(from === "first" ? 0 : (strip?.current ?? 0)),
+  )
+  const presenting =
+    deck === undefined ? null : (
+      <PresentLayer
+        present={present}
+        title={title}
+        count={deck.slides.count}
+        size={size}
+        paint={deck.slides.thumb}
+        {...(deck.notesOf === undefined ? {} : { notesOf: deck.notesOf })}
+      />
+    )
   useZoomKeys(deck !== undefined && size !== null && !gridOpen, (key) =>
     setZoom(key === "fit" || size === null ? "fit" : steppedZoom(key, zoomPercent(width, size))),
   )
@@ -132,7 +165,7 @@ export function EditorShell({
     )
   }
   return (
-    <div className="relative flex h-full min-h-0">
+    <div className="relative flex h-full min-h-0" inert={present.show !== null}>
       {rail === "slides" ? (
         <SlideSidebar
           run={run}
@@ -232,27 +265,34 @@ export function EditorShell({
               onZoom={setZoom}
             />
           )}
-          <ExportControl
-            faded={run === "offline"}
-            {...(deck === undefined
-              ? {}
-              : {
-                  target: {
-                    name: title,
-                    count: deck.slides.count,
-                    current: deck.slides.current,
-                    size,
-                    slide: deck.slides.thumb,
-                    onExport: deck.onExport,
-                  },
-                })}
-          />
+          <span className="flex items-center gap-1">
+            <PresentButton
+              ref={presentButton}
+              {...(deck === undefined ? {} : { onClick: () => present.start(deck.slides.current) })}
+            />
+            <ExportControl
+              faded={run === "offline"}
+              {...(deck === undefined
+                ? {}
+                : {
+                    target: {
+                      name: title,
+                      count: deck.slides.count,
+                      current: deck.slides.current,
+                      size,
+                      slide: deck.slides.thumb,
+                      onExport: deck.onExport,
+                    },
+                  })}
+            />
+          </span>
         </PanelHead>
         {side}
       </aside>
       {templatePicker ? <TemplatePicker /> : null}
       {toast}
       {overlay}
+      {presenting}
     </div>
   )
 }

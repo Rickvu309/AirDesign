@@ -2,6 +2,7 @@ import type { MouseEvent } from "react"
 import type { SlideSize } from "@/editor/canvas-zoom"
 import { presentCopy } from "@/copy/present-copy"
 import { cn } from "@/lib/class-names"
+import { focusOnOpen } from "@/present/present-focus"
 import { FittedSlide, StageButton, type SlidePaint } from "@/present/present-stage"
 
 export type PresentShowProps = {
@@ -17,6 +18,7 @@ export type PresentShowProps = {
   readonly onNext?: () => void
   readonly onStop?: () => void
   readonly onPresenter?: () => void
+  readonly onWake?: () => void
 }
 
 function held(event: MouseEvent) {
@@ -108,8 +110,11 @@ export function PresentShow(props: PresentShowProps) {
       aria-label={props.title}
       data-present-show
       data-controls={props.controls}
-      className={cn("fixed inset-0 z-50 bg-stage select-none", !props.controls && "cursor-none")}
+      className={cn("fixed inset-0 z-50 bg-stage outline-none select-none", !props.controls && "cursor-none")}
+      tabIndex={-1}
+      ref={focusOnOpen}
       {...(onStage === undefined ? {} : { onClick: onStage })}
+      {...(props.onWake === undefined ? {} : { onPointerMove: props.onWake })}
     >
       {props.ended ? (
         <div className="flex size-full items-center justify-center">
