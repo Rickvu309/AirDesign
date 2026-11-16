@@ -166,3 +166,25 @@ test("a long chat title in the history menu is cut with an ellipsis on one line 
   })
   expect(style).toEqual({ textOverflow: "ellipsis", whiteSpace: "nowrap", cut: true })
 })
+
+test("a malformed chat blocks asking until New chat restores the composer", async ({ page, context, stack }) => {
+  const { side } = await openDeck(page, context, stack)
+  await page.route(
+    (url) => url.pathname === "/aira/turn",
+    (route) => route.fulfill({ status: 400, json: { ok: false, refusal: "body" } }),
+    { times: 1 },
+  )
+  await ask(page, asked)
+  await expect(side.getByText(airaCopy.malformedTitle, { exact: true })).toBeVisible()
+  const blocked = side.getByRole("textbox", { name: "Start a new chat to ask Aira", exact: true })
+  await expect(blocked).toBeDisabled()
+  await expect(blocked).toHaveAttribute("placeholder", "Start a new chat to ask Aira")
+  await expect(side.getByRole("button", { name: "Send", exact: true })).toBeDisabled()
+  await side.locator("[data-aira-stuck]").getByRole("button", { name: "New chat", exact: true }).click()
+  await expect(side.getByText(airaCopy.malformedTitle, { exact: true })).toHaveCount(0)
+  await expect(side.getByText(airaCopy.welcome, { exact: true })).toBeVisible()
+  await expect(side.getByRole("textbox", { name: "Ask Aira", exact: true })).toBeEditable()
+  stack.aira({ name: "turn.sse" })
+  await ask(page, "Suggest a title")
+  await expect(side.getByText("Lead with the claim. Then show the evidence.", { exact: true })).toBeVisible()
+})

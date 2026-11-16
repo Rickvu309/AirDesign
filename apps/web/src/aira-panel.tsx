@@ -53,7 +53,7 @@ export function AiraPanel({
   const { usage, available, refresh: refreshUsage } = useWeekUsage(chat.usage)
   const limit = last?.end === "out-of-usage" && usage !== null ? airaBackOn(resetsWhen(usage.resets)) : undefined
   const notOffered = !available || last?.end === "country"
-  const blocked = notOffered ? airaCopy.notOffered : limit
+  const blocked = notOffered ? airaCopy.notOffered : last?.end === "malformed" ? airaCopy.malformedBlocked : limit
   const empty = chat.exchanges.length === 0
   const asked = chat.exchanges[0]?.asked
   const { viewport, content, away, toLatest, onScroll } = useConversationFollow(empty)
@@ -239,6 +239,7 @@ export function AiraPanel({
                   key={index}
                   exchange={exchange}
                   resets={usage?.resets}
+                  onNewChat={busy ? undefined : newChat}
                   onUndo={busy ? undefined : () => void undo(index)}
                   onRetry={
                     index === chat.exchanges.length - 1 &&

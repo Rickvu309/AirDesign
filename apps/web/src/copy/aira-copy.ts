@@ -138,6 +138,7 @@ export const airaCopy = {
   offBody: "Asking again won't change that. You can keep editing this deck yourself.",
   malformedTitle: "Aira couldn't take this chat",
   malformedBody: "Asking again in this chat will fail the same way. Start a new chat and ask there.",
+  malformedBlocked: "Start a new chat to ask Aira",
   keptNote: "Its changes so far are kept.",
   notOffered: "Aira isn't available in your country or region yet.",
   notOfferedBody: "You can keep editing this deck yourself.",
