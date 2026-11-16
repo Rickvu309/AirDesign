@@ -87,7 +87,9 @@ export function usePresent(deck: PresentDeck | null): Present {
     if (count === 0 || held.current !== null) return
     read.current = latest.current?.shows?.() ?? []
     setSlides(read.current)
-    place(firstShow(Math.min(Math.max(0, from), count - 1)))
+    const slides = shown()
+    const initial = firstShow(Math.min(Math.max(0, from), count - 1))
+    place(slides.hidden[initial.at] === true ? stepShow(initial, "next", slides) : initial)
     const started = performance.now()
     setClock({ since: started, banked: 0 })
     setNow(started)

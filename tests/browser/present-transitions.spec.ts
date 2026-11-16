@@ -22,6 +22,7 @@ type ZipLibrary = {
 const zip = createRequire(join(process.cwd(), "packages/pptx/package.json"))("@zip.js/zip.js") as ZipLibrary
 
 const changes: Readonly<Record<string, (xml: string) => string>> = {
+  "ppt/slides/slide1.xml": (xml) => xml.replace(/<p:sld\b/, '<p:sld show="0"'),
   "ppt/slides/slide3.xml": (xml) => xml.replace(/<p:sld\b/, '<p:sld show="0"'),
   "ppt/slides/slide4.xml": (xml) =>
     xml.replace("</p:sld>", '<p:transition spd="slow"><p:push dir="u"/></p:transition></p:sld>'),
@@ -93,4 +94,11 @@ test("with reduced motion the next slide comes in with no transition", async ({ 
   await page.keyboard.press("ArrowRight")
   await expect(shown(page)).toHaveAttribute("data-present-slide", "4")
   expect(await leaving(page).count()).toBe(0)
+})
+
+test("starting from the beginning skips a hidden first slide", async ({ page }) => {
+  await presented(page)
+  await page.keyboard.press("Escape")
+  await page.keyboard.press("F5")
+  await expect(shown(page)).toHaveAttribute("data-present-slide", "2")
 })
