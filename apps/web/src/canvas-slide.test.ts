@@ -457,7 +457,7 @@ const text: PaintText = {
   spacingReduction: 0,
 }
 
-it("keeps a paragraph's bullet, gaps and run marks, and reduces its line spacing", () => {
+it("keeps a paragraph's bullet, gaps, run marks and line spacing in points, and takes the reduction off percentage line spacing", () => {
   const marked: PaintText = {
     ...text,
     fontScale: 1,
@@ -489,7 +489,7 @@ it("keeps a paragraph's bullet, gaps and run marks, and reduces its line spacing
   expect(painted({ text: marked }).text?.paragraphs[0]).toMatchObject({
     marginLeft: 285_750,
     indent: -285_750,
-    lineSpacing: { length: 63_500 },
+    lineSpacing: { length: 127_000 },
     spaceBefore: { length: 76_200 },
     spaceAfter: { percent: 0.2 },
     bullet: { autoNumber: "arabicPeriod", number: 2, font: null, color: null, size: null },
@@ -497,6 +497,9 @@ it("keeps a paragraph's bullet, gaps and run marks, and reduces its line spacing
   })
   const tightened: PaintText = { ...text, spacingReduction: 0.25 }
   expect(painted({ text: tightened }).text?.paragraphs[0]?.lineSpacing).toEqual({ percent: 0.75 })
+  const narrowed: PaintText = { ...tightened, paragraphs: [{ ...paragraph, lineSpacing: { percent: 0.9 } }] }
+  const spacing = painted({ text: narrowed }).text?.paragraphs[0]?.lineSpacing
+  expect(spacing !== undefined && spacing !== null && "percent" in spacing ? spacing.percent : null).toBeCloseTo(0.65)
 })
 
 it("turns a paragraph's points into the slide's units, shrunk by the box's font scale, and names the scale for the canvas to fit from", () => {

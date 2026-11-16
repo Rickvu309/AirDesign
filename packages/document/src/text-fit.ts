@@ -59,9 +59,9 @@ function share(percent: number): number {
   return Math.round(percent * singleLine * 10_000) / 10_000
 }
 
-function reduced(spacing: Spacing | null, factor: number): Spacing | null {
-  if (spacing === null) return factor === 1 ? null : { percent: factor }
-  return "percent" in spacing ? { percent: spacing.percent * factor } : { points: spacing.points * factor }
+function reduced(spacing: Spacing | null, by: number): Spacing | null {
+  if (spacing === null) return by === 0 ? null : { percent: 1 - by }
+  return "percent" in spacing ? { percent: spacing.percent - by } : spacing
 }
 
 function lineOf(spacing: Spacing | null, size: number): number {
@@ -115,7 +115,7 @@ type Paragraph = {
 }
 
 function glyphsOf(paragraph: ResolvedParagraph, text: ResolvedText, widths: FontWidths): Paragraph | Unjudged {
-  const spacing = reduced(paragraph.lineSpacing, 1 - text.lineReduction)
+  const spacing = reduced(paragraph.lineSpacing, text.lineReduction)
   const sized: Sized[] = []
   const glyphs: Glyph[] = []
   const empties: { run: number; at: number }[] = []
@@ -230,7 +230,7 @@ function placeParagraph(
   const spans = spansOf(glyphs, inner - margin - lead, inner - margin)
   const endSize = paragraph.end.size * text.fontScale
   const endFace = widths[fontFace(paragraph.end.font, false, false)]
-  const spacing = reduced(paragraph.lineSpacing, 1 - text.lineReduction)
+  const spacing = reduced(paragraph.lineSpacing, text.lineReduction)
   const strut = extent(filled ? 0 : lineOf(spacing, endSize), endFace, endSize)
   const largest = Math.max(endSize, ...sized.map((run) => run.size))
   let y = gapOf(paragraph.spaceBefore, largest)
@@ -254,7 +254,7 @@ function placeParagraph(
       descent = Math.max(descent, (style.face?.descent ?? 0) * style.size)
     }
     if (index === 0 && bullet !== null) {
-      const band = extent(bulletSize, bulletFace, bulletSize)
+      const band = extent(Math.min(bulletSize, lineOf(spacing, bulletSize)), bulletFace, bulletSize)
       top = Math.max(top, band.top)
       bottom = Math.max(bottom, band.bottom)
     }
