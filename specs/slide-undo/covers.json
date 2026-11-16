@@ -3,9 +3,9 @@
   "covers": [
     {
       "file": "packages/document/src/person-undo.ts",
-      "names": ["undoSlides", "undoOf", "undoableAt", "turnCommands"],
-      "digest": "a020b5ed43bf",
-      "blob": "fb60c8320e69d0e23250cbecdf291838e7c60cc6"
+      "names": ["undoSlides", "undoOf", "undoableAt", "turnCommands", "fencedSince"],
+      "digest": "aa8214bb0086",
+      "blob": "4ca54e86e0e943bec38162ef65b5dc7760c77a79"
     },
     {
       "file": "packages/engine/src/call.ts",

@@ -20,8 +20,8 @@
         "shownOn",
         "stillShows"
       ],
-      "digest": "f06c37f05f27",
-      "blob": "fb60c8320e69d0e23250cbecdf291838e7c60cc6"
+      "digest": "fb09a86ac15c",
+      "blob": "4ca54e86e0e943bec38162ef65b5dc7760c77a79"
     },
     {
       "file": "packages/document/src/row.ts",
