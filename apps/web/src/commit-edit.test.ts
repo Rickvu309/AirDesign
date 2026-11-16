@@ -20,6 +20,9 @@ it("paints before the commit is sent", async () => {
           sentFlush()
           return new Promise(() => undefined)
         },
+        async pending() {
+          return []
+        },
       }
     },
     "any-deck",
@@ -163,6 +166,9 @@ it("keeps a box with the element's floor, paints it, then sends it on the text's
         order.push(`flush ${remote === server ? "server" : "device"} ${deck}`)
         return { ok: true }
       },
+      async pending() {
+        return []
+      },
     }),
     "any-deck",
     box,
@@ -185,6 +191,9 @@ it("puts a refused box back and sends nothing", async () => {
       async flush() {
         order.push("flush")
         return { ok: true }
+      },
+      async pending() {
+        return []
       },
     }),
     "any-deck",
@@ -211,6 +220,9 @@ it.each(["size", "limit"])("reports %s as too-large, puts the element back and s
       },
       async flush() {
         flushed += 1
+      },
+      async pending() {
+        return []
       },
     }),
     "any-deck",
