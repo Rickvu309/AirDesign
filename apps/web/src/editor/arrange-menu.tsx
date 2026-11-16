@@ -1,6 +1,6 @@
 import { stackTarget, type ElementId, type StackMove } from "@airdesign/document"
 import { shapeSiblings } from "@airdesign/pptx"
-import type { CanvasSlide } from "@airdesign/render"
+import type { CanvasSlide, Selection } from "@airdesign/render"
 import { useState, type MouseEvent, type ReactNode } from "react"
 import type { CommitOutcome } from "@/commit-edit"
 import type { GroupChange } from "@/editor/group-actions"
@@ -37,6 +37,7 @@ function unitOf(slide: CanvasSlide, node: ElementId) {
 export function ArrangeMenu(props: {
   readonly className: string
   readonly slide: CanvasSlide
+  readonly selection: Selection
   readonly parts: ReadonlyMap<string, Uint8Array>
   readonly onOrder: (node: ElementId, move: StackMove) => Promise<CommitOutcome | "closed">
   readonly onGroup: (change: GroupChange) => Promise<CommitOutcome | "closed">
@@ -44,14 +45,12 @@ export function ArrangeMenu(props: {
     readonly notice: string
     readonly order: (node: ElementId, move: StackMove) => void
     readonly group: (change: GroupChange) => void
-    readonly choose: (ids: readonly ElementId[]) => void
     readonly clear: () => void
   }) => ReactNode
 }) {
   const [notice, setNotice] = useState("")
   const [node, setNode] = useState<ElementId | null>(null)
   const [among, setAmong] = useState<readonly ElementId[] | null>(null)
-  const [chosen, choose] = useState<readonly ElementId[]>([])
   const unit = node === null ? null : unitOf(props.slide, node)
 
   function clear() {
@@ -87,7 +86,7 @@ export function ArrangeMenu(props: {
   return (
     <ContextMenu>
       <ContextMenuTrigger className={props.className} onContextMenu={onContextMenu}>
-        {props.children({ notice, order, group, choose, clear })}
+        {props.children({ notice, order, group, clear })}
       </ContextMenuTrigger>
       <ContextMenuContent data-keeps-selection>
         {arrangeMoves.map((move) => (
@@ -103,7 +102,10 @@ export function ArrangeMenu(props: {
           </ContextMenuItem>
         ))}
         <ContextMenuSeparator />
-        <ContextMenuItem disabled={chosen.length < 2} onClick={() => group({ change: "group", nodes: chosen })}>
+        <ContextMenuItem
+          disabled={props.selection.ids.length < 2}
+          onClick={() => group({ change: "group", nodes: props.selection.ids })}
+        >
           <span>{groupCopy.label.group}</span>
           <span className="ml-auto text-xs text-muted-foreground">{groupCopy.shortcut.group}</span>
         </ContextMenuItem>

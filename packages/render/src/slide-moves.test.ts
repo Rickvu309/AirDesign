@@ -2,7 +2,7 @@ import { elementId, type ElementId } from "@airdesign/document"
 import { act, createElement } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, expect, it } from "vitest"
-import { paintStore, SlideCanvas, type CanvasElement } from "./index.js"
+import { leadOf, paintStore, SlideCanvas, type CanvasElement, type Selection } from "./index.js"
 
 const hosts: { host: HTMLElement; root: Root }[] = []
 
@@ -29,7 +29,7 @@ const element: CanvasElement = {
   text: null,
 }
 
-async function mounted(onSelect: (selected: ElementId | null) => void): Promise<HTMLElement> {
+async function mounted(onSelection: (selection: Selection) => void): Promise<HTMLElement> {
   const store = paintStore()
   store.publish({ id, kind: "shape", text: "", picture: null })
   const host = document.createElement("div")
@@ -38,7 +38,7 @@ async function mounted(onSelect: (selected: ElementId | null) => void): Promise<
   hosts.push({ host, root })
   const slide = { width: 12_192_000, height: 6_858_000, background: null, elements: [element] }
   await act(async () => {
-    root.render(createElement(SlideCanvas, { store, slide, width: 800, onBox: () => undefined, onSelect }))
+    root.render(createElement(SlideCanvas, { store, slide, width: 800, onBox: () => undefined, onSelection }))
   })
   return host
 }
@@ -51,7 +51,7 @@ function query(host: HTMLElement, selector: string): HTMLElement {
 
 it("keeps the selection while focus is in a part that keeps it, and tells every change of selection", async () => {
   const told: (ElementId | null)[] = []
-  const host = await mounted((selected) => told.push(selected))
+  const host = await mounted((selection) => told.push(leadOf(selection)))
   const panel = document.createElement("div")
   panel.dataset.keepsSelection = ""
   const inside = document.createElement("button")
@@ -66,6 +66,6 @@ it("keeps the selection while focus is in a part that keeps it, and tells every 
     )
   })
   expect(host.querySelector("[data-selection]")).toBeNull()
-  expect(told).toEqual([null, id, null])
+  expect(told).toEqual([id, null])
   panel.remove()
 })

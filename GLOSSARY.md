@@ -187,8 +187,12 @@ How solid an element is, in percent: one value that fades its fill, line, text a
 _Avoid_: transparency, alpha (in product copy)
 
 **group**:
-Two or more elements of one slide that move and resize as one. A person chooses them with Shift+click and groups them with Group or Ctrl+G; Ungroup or Ctrl+Shift+G puts each one back on the slide where it showed. An agent sends `group` or `ungroup` in its edit: `group` takes two or more element ids of one slide, `ungroup` takes one or more group ids, and nothing moves. The first click on an element of a group selects the group, the next selects that element.
+Two or more elements of one slide that move and resize as one. A person selects them with Shift+click or Ctrl+click (Cmd+click on a Mac) and groups them with Group or Ctrl+G; Ungroup or Ctrl+Shift+G puts each one back on the slide where it showed. An agent sends `group` or `ungroup` in its edit: `group` takes two or more element ids of one slide, `ungroup` takes one or more group ids, and nothing moves. The first click on an element of a group selects the group, the next selects that element.
 _Avoid_: bundle, combine, merge, set
+
+**selection**:
+The elements of the slide in view that a person has selected. Click selects one, and Shift+click or Ctrl+click (Cmd+click on a Mac) adds one or takes it out. They all sit in the same place: on the slide, or inside the one group the person stepped into. The last one selected shows the handles. When an agent deletes a selected element, the rest stay selected.
+_Avoid_: chosen, picked, active element
 
 **connector**:
 A line whose ends can attach to sites on the shapes and pictures of its slide, so it follows them while they move, resize or turn. A person drags an end onto a site, or to any other point on the slide to free it, or picks the shape and site in the design panel's Connector section; an agent sends `connection` in its `set`. A connector keeps its own line form, straight, elbow or curved, and an elbow bends where PowerPoint would bend it. None frees an end. An attached connector moves only by its ends. The code calls a connector's ends its `connection`.
@@ -291,7 +295,7 @@ The change that puts a new element on one slide: a text box, or with kind `pictu
 _Avoid_: insert, create, new
 
 **gesture**:
-One thing a hand does in the editor, a key press or a pointer move, with its keys and where it works: Shift+click chooses one more element, Ctrl+G groups the chosen ones. `gestures` in `packages/render` lists each one once, `gestureFor` tells which one a key press is, and a browser test that calls `covers` with its id proves each one.
+One thing a hand does in the editor, a key press or a pointer move, with its keys and where it works: Shift+click adds an element to the selection, Ctrl+G groups the selection. `gestures` in `packages/render` lists each one once, `gestureFor` tells which one a key press is, and a browser test that calls `covers` with its id proves each one.
 _Avoid_: shortcut (a shortcut is a gesture's keys), hotkey, command
 
 ## Findings

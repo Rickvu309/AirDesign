@@ -1,4 +1,4 @@
-import type { ElementId } from "@airdesign/document"
+import { leadOf, noSelection, type Selection } from "@airdesign/render"
 import { useState } from "react"
 import { deckInserts } from "@/editor/inserts"
 import { useDeckPaint } from "@/editor/use-deck-paint"
@@ -18,7 +18,7 @@ export function useEditorDeck(id: string) {
   const save = useShownSave(saveStatus(status))
   const { settle, setPending } = status
   const [title, setTitle] = useState("")
-  const [designing, select] = useState<ElementId | null>(null)
+  const [selection, select] = useState<Selection>(noSelection)
   const rename = useDeckTitle(id, title, setTitle)
   const undo = useUndoList()
   const { typed, sessions, records, record } = undo
@@ -37,7 +37,8 @@ export function useEditorDeck(id: string) {
     id,
     title,
     setTitle,
-    designing,
+    selection,
+    designing: leadOf(selection),
     select,
     rename,
     undo,

@@ -1,8 +1,6 @@
 import type { Box, ElementId } from "@airdesign/document"
 import type { PaintBox } from "./record.js"
 
-export type Selection = ElementId | null
-
 export type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right"
 
 export type Grip = "move" | Corner

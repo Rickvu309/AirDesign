@@ -14,6 +14,7 @@ import type { TableBar } from "./table-paint.js"
 import { canDrag, canMove, type Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
 import { anchored, flowModes, textLook, type Scaled, type TextLook } from "./text-look.js"
+import { leadOf } from "./selection.js"
 import { formatKey, keepsFormat, type TextFormatting } from "./text-formatting.js"
 import { PictureTone, pictureLook } from "./picture-tone.js"
 import { unshownFill } from "./unshown-fill.js"
@@ -290,7 +291,7 @@ function PlacedText(props: {
   const look = textLook(text, scaled)
   const typing = element.editable && onEdit !== undefined
   const empty = isBlank(shown)
-  const isSelected = moves !== null && moves.selected === id
+  const isSelected = moves !== null && leadOf(moves.selection) === id
   const showPrompt = typing && element.placeholder && empty && Boolean(element.prompt)
   const filledFrame = element.diagram !== undefined || element.chart !== undefined
   const showQuietOutline = element.placeholder && empty && !isSelected && !filledFrame
