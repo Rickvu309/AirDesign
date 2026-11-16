@@ -1,5 +1,6 @@
-import { memo, useLayoutEffect, useRef } from "react"
-import type { Box, ElementId, StackMove, TableChange } from "@airdesign/document"
+import { memo, useLayoutEffect, useMemo, useRef } from "react"
+import type { ElementId, StackMove, TableChange } from "@airdesign/document"
+import type { Moved } from "./box-gesture.js"
 import { ConnectorEnds, type EndDrop } from "./connector-ends.js"
 import type { End } from "./connector-drag.js"
 import { targetsOf } from "./connector-follow.js"
@@ -7,7 +8,7 @@ import { PaintedElement } from "./element-kind.js"
 import { GroupEffects, layered } from "./group-effects.js"
 import type { HeldKeys } from "./held-keys.js"
 import { changeSaid, namedFrames, shownPart, type Named } from "./element-said.js"
-import { ChosenFrame, SelectionFrame } from "./selection-frame.js"
+import { AroundFrame, ChosenFrame, SelectionFrame } from "./selection-frame.js"
 import { slideBackground } from "./slide-background.js"
 import { canDrag, enterElement, useMoves } from "./slide-moves.js"
 import { leadOf, type Selection } from "./selection.js"
@@ -43,7 +44,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly className?: string
   readonly quiet?: boolean
   readonly onEdit?: (id: ElementId, value: string, kind: TextEditKind) => void
-  readonly onBox?: (id: ElementId, box: Box) => void
+  readonly onBoxes?: (moved: readonly Moved[]) => void
   readonly onRemove?: (ids: readonly ElementId[]) => void
   readonly onOrder?: (id: ElementId, move: StackMove) => void
   readonly selection?: Selection
@@ -68,12 +69,20 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
     ...(props.selection === undefined ? {} : { selection: props.selection }),
     ...(props.onSelection === undefined ? {} : { onSelection: props.onSelection }),
   }
-  const moves = useMoves(props.store, slide, width, props.onBox, props.onRemove, props.onOrder, picking, {
+  const moves = useMoves(props.store, slide, width, props.onBoxes, props.onRemove, props.onOrder, picking, {
     ...(props.onGroup === undefined ? {} : { onGroup: props.onGroup }),
     ...(props.onUngroup === undefined ? {} : { onUngroup: props.onUngroup }),
   })
-  const moving = props.onBox === undefined ? null : moves
-  const lead = moving === null ? null : leadOf(moving.selection)
+  const moving = props.onBoxes === undefined ? null : moves
+  const ids = moving?.selection.ids
+  const many = useMemo(
+    () =>
+      ids === undefined || ids.length < 2
+        ? []
+        : slide.elements.filter((each) => each.id !== null && ids.includes(each.id)),
+    [ids, slide.elements],
+  )
+  const lead = moving === null || many.length > 0 ? null : leadOf(moving.selection)
   const selected = lead === null ? undefined : slide.elements.find((each) => each.id === lead)
   const onConnect = selected?.kind === "connector" ? props.onConnect : undefined
   const surface = useRef<HTMLDivElement>(null)
@@ -142,13 +151,22 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
           {props.notice !== undefined && props.notice !== "" ? props.notice : moving.message}
         </div>
       )}
-      {moving === null
-        ? null
-        : slide.elements.flatMap((each) =>
-            each.id === null || each.id === lead || !moving.selection.ids.includes(each.id)
-              ? []
-              : [<ChosenFrame key={each.key} id={each.id} element={each} scaled={scaled} store={props.store} />],
-          )}
+      {many.flatMap((each) =>
+        each.id === null
+          ? []
+          : [<ChosenFrame key={each.key} id={each.id} element={each} scaled={scaled} store={props.store} />],
+      )}
+      {moving === null || many.length === 0 ? null : (
+        <AroundFrame
+          elements={many}
+          onPress={(event) => {
+            const pressed = many.find((each) => each.id === leadOf(moving.selection)) ?? many[0]
+            if (pressed !== undefined) moving.press(event, pressed, "move")
+          }}
+          scaled={scaled}
+          store={props.store}
+        />
+      )}
       {moving === null || selected === undefined || selected.id === null ? null : (
         <SelectionFrame
           element={selected}

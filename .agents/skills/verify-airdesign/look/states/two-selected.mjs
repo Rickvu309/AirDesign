@@ -28,8 +28,8 @@ export async function selectTwo(kit) {
   const [first, second] = (await shown(page)).filter((node) => !before.includes(node))
   await shapeFrame(page, first).click()
   await shapeFrame(page, second).click({ modifiers: ["ControlOrMeta"] })
-  await expect(page.locator("[data-slide-paint] [data-chosen]")).toHaveAttribute("data-chosen", first)
-  await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveAttribute("data-selection", second)
+  await expect(page.locator("[data-slide-paint] [data-chosen]")).toHaveCount(2)
+  await expect(page.locator("[data-slide-paint] [data-selection-around]")).toHaveAttribute("data-selection-around", "2")
   return { deck: page.url().split("/").at(-1), first, second }
 }
 

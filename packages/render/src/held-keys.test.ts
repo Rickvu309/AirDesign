@@ -60,7 +60,7 @@ async function painted() {
           width: 800,
           entering,
           onEdit: () => undefined,
-          onBox: () => undefined,
+          onBoxes: () => undefined,
         }),
       )
     })

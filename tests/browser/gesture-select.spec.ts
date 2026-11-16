@@ -38,8 +38,8 @@ test("Cmd or Ctrl+click adds a second shape, and when an agent deletes it the fi
   await frame(page, second).click({ modifiers: ["ControlOrMeta"] })
   const selected = page.locator("[data-slide-paint] [data-selection]")
   const chosen = page.locator("[data-slide-paint] [data-chosen]")
-  await expect(selected).toHaveAttribute("data-selection", second)
-  await expect(chosen).toHaveAttribute("data-chosen", first)
+  await expect(chosen).toHaveCount(2)
+  await expect(page.locator("[data-slide-paint] [data-selection-around]")).toHaveAttribute("data-selection-around", "2")
 
   await expect
     .poll(async () => JSON.stringify(await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)))

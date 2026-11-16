@@ -1,6 +1,6 @@
 import type { ElementId } from "@airdesign/document"
-import type { CSSProperties, PointerEvent } from "react"
-import { corners, ownBox, type Corner, type Grip } from "./box-gesture.js"
+import { useMemo, useSyncExternalStore, type CSSProperties, type PointerEvent } from "react"
+import { corners, frameOf, ownBox, type Corner, type Grip } from "./box-gesture.js"
 import { useBox } from "./element-view.js"
 import type { CanvasElement } from "./record.js"
 import type { PaintStore } from "./store.js"
@@ -118,9 +118,62 @@ export function ChosenFrame(props: {
         width: scaled(box.width),
         height: scaled(box.height),
         ...(box.rotation === 0 ? {} : { transform: `rotate(${box.rotation}deg)` }),
-        boxShadow: "0 0 0 2px var(--ring)",
+        boxShadow: "0 0 0 1px var(--ring)",
         pointerEvents: "none",
       }}
     />
+  )
+}
+
+export function AroundFrame(props: {
+  readonly store: PaintStore
+  readonly elements: readonly CanvasElement[]
+  readonly scaled: Scaled
+  readonly onPress: (event: PointerEvent<HTMLElement>) => void
+}) {
+  const { elements, scaled, store } = props
+  const subscribe = useMemo(
+    () => (listener: () => void) => {
+      const offs = elements.flatMap((each) => (each.id === null ? [] : [store.boxSubscribe(each.id)(listener)]))
+      return () => {
+        for (const off of offs) off()
+      }
+    },
+    [elements, store],
+  )
+  const read = () => {
+    const boxes = elements.flatMap((each) => {
+      const box = ownBox(each, each.id === null ? null : store.getBox(each.id))
+      return box === null ? [] : [{ x: box.x, y: box.y, cx: box.width, cy: box.height }]
+    })
+    const frame = frameOf(boxes)
+    return frame === null ? "" : [frame.x, frame.y, frame.cx, frame.cy].join(" ")
+  }
+  const shown = useSyncExternalStore(subscribe, read, read)
+  const [x = 0, y = 0, cx = 0, cy = 0] = shown.split(" ").map(Number)
+  if (shown === "") return null
+  return (
+    <div
+      data-selection-around={elements.length}
+      aria-hidden
+      style={{
+        position: "absolute",
+        left: scaled(x),
+        top: scaled(y),
+        width: scaled(cx),
+        height: scaled(cy),
+        boxShadow: "0 0 0 2px var(--ring)",
+        pointerEvents: "none",
+      }}
+    >
+      {bands.map((band, index) => (
+        <span
+          key={index}
+          data-grip="move"
+          style={{ ...gripped, ...band, cursor: "move" }}
+          onPointerDown={props.onPress}
+        />
+      ))}
+    </div>
   )
 }

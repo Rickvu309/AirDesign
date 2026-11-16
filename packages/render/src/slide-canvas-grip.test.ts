@@ -47,7 +47,8 @@ async function mounted() {
         store,
         slide: { width: 12_192_000, height: 6_858_000, background: null, elements: [element] },
         width: 800,
-        onBox: (target: ElementId, box: Box) => boxes.push([target, box]),
+        onBoxes: (moved: readonly { id: ElementId; box: Box }[]) =>
+          boxes.push(...moved.map(({ id, box }): [ElementId, Box] => [id, box])),
       }),
     )
   })

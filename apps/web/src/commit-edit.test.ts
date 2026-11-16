@@ -1,6 +1,6 @@
 import { elementId, limits } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { commitBox, commitEdit, server } from "./commit-edit"
+import { commitBoxes, commitEdit, server } from "./commit-edit"
 
 it("paints before the commit is sent", async () => {
   const order: string[] = []
@@ -166,7 +166,7 @@ it("keeps the edit without a word when the server answers another refusal", asyn
 it("keeps a box with the element's floor, paints it, then sends it on the text's flush path", async () => {
   const order: string[] = []
   const box = { x: 1, y: 2, cx: 3, cy: 4 }
-  const outcome = await commitBox(
+  const outcome = await commitBoxes(
     (remote) => ({
       async enqueueBox(deck, value, node, floor) {
         order.push(`keep ${remote === server ? "server" : "device"} ${deck} ${JSON.stringify(value)} ${node} ${floor}`)
@@ -181,10 +181,12 @@ it("keeps a box with the element's floor, paints it, then sends it on the text's
       },
     }),
     "any-deck",
-    box,
-    { id: elementId("256.2"), file: "Hello" },
+    [{ box, element: { id: elementId("256.2"), file: "Hello" } }],
     () => {
       order.push("paint")
+    },
+    () => {
+      order.push("refused")
     },
   )
   expect(order).toEqual([`keep device any-deck ${JSON.stringify(box)} 256.2 Hello`, "paint", "flush server any-deck"])
@@ -193,7 +195,7 @@ it("keeps a box with the element's floor, paints it, then sends it on the text's
 
 it("puts a refused box back and sends nothing", async () => {
   const order: string[] = []
-  const outcome = await commitBox(
+  const outcome = await commitBoxes(
     () => ({
       async enqueueBox() {
         return { ok: false }
@@ -207,8 +209,7 @@ it("puts a refused box back and sends nothing", async () => {
       },
     }),
     "any-deck",
-    { x: 1, y: 2, cx: 3, cy: 4 },
-    { id: elementId("256.2"), file: "Hello" },
+    [{ box: { x: 1, y: 2, cx: 3, cy: 4 }, element: { id: elementId("256.2"), file: "Hello" } }],
     () => {
       order.push("paint")
     },
@@ -266,4 +267,60 @@ it("keeps a limit on a small edit distinct from the value-size refusal", async (
     { id: elementId("256.2"), file: "Hello" },
   )
   expect(outcome).toBe("refused")
+})
+
+it("keeps every box it can, puts a refused one back, paints the kept ones once and flushes once", async () => {
+  const order: string[] = []
+  const refusedNode = elementId("256.3")
+  const outcome = await commitBoxes(
+    () => ({
+      async enqueueBox(_deck, _value, node) {
+        order.push(`keep ${node}`)
+        return node === refusedNode ? { ok: false } : { ok: true }
+      },
+      async flush() {
+        order.push("flush")
+        return { ok: true }
+      },
+    }),
+    "any-deck",
+    [elementId("256.2"), refusedNode, elementId("256.4")].map((id) => ({
+      box: { x: 1, y: 2, cx: 3, cy: 4 },
+      element: { id, file: "" },
+    })),
+    (kept) => {
+      order.push(`paint ${kept.join(" ")}`)
+    },
+    (node) => {
+      order.push(`refused ${node}`)
+    },
+  )
+  expect(order).toEqual(["keep 256.2", "keep 256.3", "refused 256.3", "keep 256.4", "paint 256.2 256.4", "flush"])
+  expect(outcome).toBe("sent")
+})
+
+it("reports boxes too large to send as too-large, puts them back and sends nothing", async () => {
+  let flushed = 0
+  const restored: string[] = []
+  const outcome = await commitBoxes(
+    () => ({
+      async enqueueBox() {
+        return { ok: false, refusal: "size" }
+      },
+      async flush() {
+        flushed += 1
+      },
+    }),
+    "any-deck",
+    [{ box: { x: 1, y: 2, cx: 3, cy: 4 }, element: { id: elementId("256.2"), file: "Hello" } }],
+    () => {
+      throw new Error("painted a refused box")
+    },
+    (node) => {
+      restored.push(node)
+    },
+  )
+  expect(outcome).toBe("too-large")
+  expect(flushed).toBe(0)
+  expect(restored).toEqual(["256.2"])
 })

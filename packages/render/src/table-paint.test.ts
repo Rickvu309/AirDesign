@@ -102,7 +102,7 @@ async function mounted(entering: ElementId | null, overrides: Partial<CanvasElem
           width: 800,
           entering: entering === null ? null : { id: entering },
           onEdit: () => undefined,
-          onBox: (_: ElementId, box: Box) => boxes.push(box),
+          onBoxes: (moved: readonly { id: ElementId; box: Box }[]) => boxes.push(...moved.map(({ box }) => box)),
           onRemove: (targets: readonly ElementId[]) => removed.push(...targets),
           onTable: (_: ElementId, change: TableChange) => changes.push(change),
           tableBar: bar,

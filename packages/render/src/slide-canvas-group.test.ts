@@ -75,7 +75,8 @@ async function mounted() {
         store,
         slide,
         width: 1200,
-        onBox: (target: ElementId, box: Box) => told.boxes.push([target, box]),
+        onBoxes: (moved: readonly { id: ElementId; box: Box }[]) =>
+          told.boxes.push(...moved.map(({ id, box }): [ElementId, Box] => [id, box])),
         onGroup: (ids: readonly ElementId[]) => told.grouped.push(ids),
         onUngroup: (id: ElementId) => told.ungrouped.push(id),
       }),
@@ -155,8 +156,12 @@ describe("SlideCanvas groups", () => {
     const { host, told } = await mounted()
     await click(frameOf(host, loose))
     await click(frameOf(host, first), true)
-    expect(selected(host)).toBe(group)
-    expect(host.querySelector("[data-chosen]")?.getAttribute("data-chosen")).toBe(loose)
+    expect(selected(host)).toBeNull()
+    expect([...host.querySelectorAll("[data-chosen]")].map((each) => each.getAttribute("data-chosen"))).toEqual([
+      group,
+      loose,
+    ])
+    expect(host.querySelector("[data-selection-around]")?.getAttribute("data-selection-around")).toBe("2")
     await chord(frameOf(host, group), false)
     expect(told.grouped).toEqual([[loose, group]])
   })

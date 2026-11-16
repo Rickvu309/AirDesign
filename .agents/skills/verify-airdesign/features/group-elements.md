@@ -4,7 +4,7 @@ On an open deck, Shift+click adds an element to the selection, and Group (in the
 
 ## Sub-features
 
-- `group` Shift+click chooses elements; each chosen one shows a ring. Group in the menu or Ctrl+G sends one `element-group` slide command whose new group's child frame equals its own box, so nothing moves. The status reads `Grouped`.
+- `group` Shift+click or Ctrl+click adds elements to the selection; each selected one shows a thin ring and one frame goes around them all. Group in the menu or Ctrl+G sends one `element-group` slide command whose new group's child frame equals its own box, so nothing moves. The status reads `Grouped`.
 - `group-move` the group is one movable element: a drag on any of its elements or on its selection frame moves all of them while the pointer moves, and lands one box row on the group. `Undo move` takes it back.
 - `ungroup` Ungroup or Ctrl+Shift+G sends `element-ungroup` and a box row for each element, mapped through the group's offset, scale, turn and flips, so nothing moves. `Undo ungroup` puts the same group back; the export then writes the file's group byte for byte.
 - `agent-group` an agent sends `{op: "group", elements: [...]}` or `{op: "ungroup", elements: [...]}` in `airdesign_edit_deck`; the new group's id comes back in elements. The panel's Undo for the run turns the group back.

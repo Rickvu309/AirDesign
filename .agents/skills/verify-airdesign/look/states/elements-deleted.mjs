@@ -20,7 +20,7 @@ async function drive(kit) {
   await expect(element(5)).toBeVisible()
   await element(4).click()
   await element(5).click({ modifiers: ["Shift"] })
-  await expect(page.locator("[data-slide-paint] [data-chosen]")).toHaveCount(1)
+  await expect(page.locator("[data-slide-paint] [data-chosen]")).toHaveCount(2)
   await page.keyboard.press("Delete")
   await expect(element(5)).toHaveCount(0)
   await expect(page.getByRole("button", { name: "Undo delete element", exact: true })).toBeEnabled()
