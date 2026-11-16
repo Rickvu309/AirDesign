@@ -1,9 +1,12 @@
 import type { MouseEvent } from "react"
+import type { SlideTransition } from "@airdesign/pptx"
 import type { SlideSize } from "@/editor/canvas-zoom"
 import { presentCopy } from "@/copy/present-copy"
 import { cn } from "@/lib/class-names"
 import { focusOnOpen } from "@/present/present-focus"
 import { FittedSlide, StageButton, type SlidePaint } from "@/present/present-stage"
+import { TransitionLayers } from "@/present/transition-layers"
+import { useLeaving } from "@/present/use-leaving"
 
 export type PresentShowProps = {
   readonly title: string
@@ -19,6 +22,7 @@ export type PresentShowProps = {
   readonly onStop?: () => void
   readonly onPresenter?: () => void
   readonly onWake?: () => void
+  readonly transitionOf?: (index: number) => SlideTransition | null
 }
 
 function held(event: MouseEvent) {
@@ -102,7 +106,12 @@ function GoTo({ typed }: { typed: string }) {
   )
 }
 
+function none() {
+  return null
+}
+
 export function PresentShow(props: PresentShowProps) {
+  const { leaving, done } = useLeaving(props.at, props.transitionOf ?? none)
   const onStage = props.ended ? props.onStop : props.onNext
   const said = props.ended ? presentCopy.end : presentCopy.position(props.at + 1, props.count)
   return (
@@ -121,7 +130,15 @@ export function PresentShow(props: PresentShowProps) {
           <EndOfDeck />
         </div>
       ) : (
-        <FittedSlide index={props.at} size={props.size} paint={props.paint} className="size-full">
+        <FittedSlide
+          index={props.at}
+          size={props.size}
+          paint={props.paint}
+          className="size-full"
+          layers={(width) => (
+            <TransitionLayers at={props.at} width={width} paint={props.paint} leaving={leaving} onDone={done} />
+          )}
+        >
           {props.typed === "" ? null : <GoTo typed={props.typed} />}
           <ShowControls {...props} />
         </FittedSlide>

@@ -14,6 +14,7 @@ import { useEditorDeck } from "@/editor/use-editor-deck"
 import { useNetwork } from "@/editor/use-network"
 import { useUndoTurn } from "@/editor/use-undo"
 import { notesOn } from "@/present/notes-on"
+import { showsIn } from "@/present/slide-shows"
 export { elementIds, valueStorable } from "@/deck-paint"
 import { AiraPanel } from "@/aira-panel"
 import { colorsIn, LiveDesignPanel } from "@/editor/live-design-panel"
@@ -73,6 +74,11 @@ export function ThinDeck({ id }: { id: string }) {
             slides: slideCommands(deck, undoButtons.onUndo),
             slide: editableSlide(deck),
             notesOf: (index) => notesOn(notesBar.notes, shown.store.current.slides()[index]?.id),
+            shows: () =>
+              showsIn(
+                shown.shownParts.current,
+                shown.store.current.slides().map((slide) => slide.id),
+              ),
           }}
           notes={notesOn(notesBar.notes, currentSlide)}
           onNotes={(value) => notesBar.edit(currentSlide, value)}

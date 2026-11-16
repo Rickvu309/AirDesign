@@ -58,6 +58,7 @@ export function FittedSlide({
   className,
   mark,
   top = false,
+  layers,
   children,
 }: {
   index: number
@@ -66,6 +67,7 @@ export function FittedSlide({
   className?: string
   mark?: string
   top?: boolean
+  layers?: (width: number) => ReactNode
   children?: ReactNode
 }) {
   const { room, onRoom } = useRoom()
@@ -82,7 +84,7 @@ export function FittedSlide({
           className="relative shrink-0 overflow-hidden bg-[var(--background)]"
           style={{ width, height }}
         >
-          {paint(index, width)}
+          {layers === undefined ? paint(index, width) : layers(width)}
           {children}
         </div>
       ) : null}

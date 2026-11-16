@@ -10,7 +10,6 @@ export function PresentLayer({
   present,
   title,
   count,
-  hidden = [],
   size,
   paint,
   notesOf,
@@ -18,7 +17,6 @@ export function PresentLayer({
   present: Present
   title: string
   count: number
-  hidden?: readonly boolean[]
   size: SlideSize | null
   paint: SlidePaint
   notesOf?: (index: number) => string
@@ -37,7 +35,7 @@ export function PresentLayer({
         {...shown}
         {...moves}
         at={show.at}
-        next={show.ended ? null : nextShown({ count, hidden }, show.at)}
+        next={show.ended ? null : nextShown({ count, hidden: present.hidden }, show.at)}
         notes={notesOf?.(show.at) ?? ""}
         elapsed={present.elapsed}
         running={present.running}
@@ -57,6 +55,7 @@ export function PresentLayer({
       ended={show.ended}
       onPresenter={() => present.step("presenter")}
       onWake={present.wake}
+      transitionOf={present.transitionOf}
     />,
     document.body,
   )
