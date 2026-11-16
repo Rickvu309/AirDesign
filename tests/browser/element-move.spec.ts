@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
+import { covers } from "./gesture"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const clean = join(fixtures, "clean.pptx")
@@ -107,6 +108,7 @@ test.use({ viewport: { width: 1470, height: 923 } })
 test("a click selects an element with a frame and four handles, and the empty slide or Escape clears it", async ({
   page,
 }) => {
+  covers("select", "deselect")
   await open(page, clean)
   const text = page.locator('[contenteditable="true"]')
   const frame = page.getByRole("group", { name: "Hello" })
@@ -144,6 +146,7 @@ test("typing still goes into the text after the element is selected and nudged",
 test("a drag follows the pointer, keeps one box edit when it ends, and the box stays after reload", async ({
   page,
 }) => {
+  covers("move")
   await open(page, clean)
   const origin = await corner(page)
   await page.locator('[contenteditable="true"]').click()
@@ -164,6 +167,7 @@ test("a drag follows the pointer, keeps one box edit when it ends, and the box s
 })
 
 test("a corner handle resizes, the arrows nudge, and Shift nudges ten times as far", async ({ page }) => {
+  covers("resize", "nudge", "nudge-far")
   await open(page, clean)
   const origin = await corner(page)
   await page.locator('[contenteditable="true"]').click()
@@ -206,6 +210,7 @@ test("a move made offline is kept on the device and sent when the page comes bac
 test("a first press on text inside a group picks the group, and the next types in it with no handles or move", async ({
   page,
 }) => {
+  covers("step-in")
   await open(page, join(fixtures, "census-updating-spm.pptx"))
   await page.locator('[data-slide-entry="5"]').click()
   const text = page.locator('[contenteditable="true"]').filter({ hasText: /^2026$/ })
@@ -225,6 +230,7 @@ test("a first press on text inside a group picks the group, and the next types i
 test("Tab reaches the slide number, which can move, and then the empty unfilled box the pointer passes through", async ({
   page,
 }) => {
+  covers("select-next")
   await open(page, join(fixtures, "doe-heat-pumps.pptx"))
   await page.locator('[data-slide-entry="29"]').click()
   const slide = "ppt/slides/slide29.xml"

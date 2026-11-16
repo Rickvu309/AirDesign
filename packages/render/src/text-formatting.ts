@@ -1,4 +1,5 @@
 import type { ElementId, FormatState, ParagraphAlign, Color, SizeStep, TextFormat } from "@airdesign/document"
+import { gestureFor, type KeyLike } from "./gestures.js"
 import type { CanvasThemeColor } from "./record.js"
 
 export type FormatTarget = {
@@ -40,17 +41,9 @@ export type TextFormatting = {
 export const keepsFormat = "[data-keeps-format]"
 const stillAimed = `${keepsFormat}, [data-canvas-element]`
 
-const formatKeys: Readonly<Record<string, TextFormat>> = { b: "bold", i: "italic", u: "underline" }
-
-export function formatKey(event: {
-  readonly key: string
-  readonly ctrlKey: boolean
-  readonly metaKey: boolean
-  readonly altKey: boolean
-  readonly shiftKey: boolean
-}): TextFormat | null {
-  if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) return null
-  return formatKeys[event.key.toLowerCase()] ?? null
+export function formatKey(event: KeyLike): TextFormat | null {
+  const gesture = gestureFor(event, "text")
+  return gesture === "bold" || gesture === "italic" || gesture === "underline" ? gesture : null
 }
 
 export function textFormatting(fresh: () => void = () => undefined): TextFormatting {

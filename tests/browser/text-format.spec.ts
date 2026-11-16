@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { stored, storedValues } from "./device-store"
 import { savedExport } from "./export-dialog.ts"
+import { covers } from "./gesture"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const slide = "ppt/slides/slide1.xml"
@@ -80,6 +81,7 @@ const unformatted = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Hello" }
 test.use({ viewport: { width: 1600, height: 1000 } })
 
 test("a word made bold, italic and underlined survives reload, export and import", async ({ page }, testInfo) => {
+  covers("italic")
   const download = testInfo.outputPath("formatted.pptx")
   await open(page, fixture)
   const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
@@ -131,6 +133,7 @@ test("a word made bold, italic and underlined survives reload, export and import
 test("bold turned on and off exports the file byte for byte, and each turn is one undo step", async ({
   page,
 }, testInfo) => {
+  covers("bold")
   const download = testInfo.outputPath("bold-twice.pptx")
   await open(page, fixture)
   const editor = page.locator('[data-slide-paint] [contenteditable="true"]')

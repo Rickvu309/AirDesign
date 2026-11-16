@@ -290,6 +290,10 @@ _Avoid_: update, modify, write
 The change that puts a new element on one slide: a text box, or with kind `picture` an icon. Without a `box` it takes the largest free area of the slide, and its id comes back in `elements`.
 _Avoid_: insert, create, new
 
+**gesture**:
+One thing a hand does in the editor, a key press or a pointer move, with its keys and where it works: Shift+click chooses one more element, Ctrl+G groups the chosen ones. `gestures` in `packages/render` lists each one once, `gestureFor` tells which one a key press is, and a browser test that calls `covers` with its id proves each one.
+_Avoid_: shortcut (a shortcut is a gesture's keys), hotkey, command
+
 ## Findings
 
 What a slide's data can say is wrong, or worth knowing.

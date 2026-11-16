@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import { forward, openClean, settled, signInBrowser, test } from "./api-stack"
+import { covers } from "./gesture"
 
 const element = "ppt/slides/slide1.xml#2"
 const start = [30, 30, 360, 120]
@@ -74,6 +75,7 @@ test("a person undoes a move, a text edit and a slide delete, redoes the move, a
   context,
   stack,
 }) => {
+  covers("undo", "redo")
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
   await openClean(page)

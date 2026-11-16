@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { store } from "./home-store.ts"
+import { covers } from "./gesture"
 
 const clean = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 
@@ -58,6 +59,7 @@ async function percent(page: Page): Promise<number> {
 }
 
 test("Ctrl+= and Ctrl+- zoom the canvas and Ctrl+0 returns to Fit", async ({ page }) => {
+  covers("zoom-in", "zoom-out", "zoom-fit")
   await open(page)
   const fit = await percent(page)
   await page.locator("[data-canvas-stage]").click({ position: { x: 5, y: 5 } })

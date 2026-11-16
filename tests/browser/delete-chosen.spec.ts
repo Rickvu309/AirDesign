@@ -3,6 +3,7 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
+import { covers } from "./gesture"
 
 type ZipEntry = {
   readonly filename: string
@@ -50,6 +51,7 @@ async function counted(shapes: readonly Locator[], count: number): Promise<void>
 test("Delete takes every chosen shape away as one step, one undo brings them all back, and the export keeps them", async ({
   page,
 }, testInfo) => {
+  covers("select-add", "delete")
   await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(blank)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
