@@ -5,19 +5,29 @@
       "file": "packages/document/src/element-order.ts",
       "names": ["elementRefusal", "elementGone", "nextElementId", "addedPictures"],
       "digest": "5cd699a48f7f",
-      "blob": "729d7313974ebb5ca8cb31c28598b93b6c1c2e4a"
+      "blob": "b1720be65b488aaccbc3248bbeaac09adaf102cb"
     },
     {
       "file": "packages/document/src/person-undo.ts",
-      "names": ["slideUndoable", "turn", "undoableAt", "shownOn", "stillShows"],
-      "digest": "12b51b194171",
-      "blob": "504d6f45023b0e59f311cd26c054507176a0f252"
+      "names": [
+        "slideUndoable",
+        "elementsUndoable",
+        "turn",
+        "elementsTurn",
+        "undoableAt",
+        "fencedSince",
+        "shownWith",
+        "shownOn",
+        "stillShows"
+      ],
+      "digest": "f06c37f05f27",
+      "blob": "fb60c8320e69d0e23250cbecdf291838e7c60cc6"
     },
     {
       "file": "packages/document/src/row.ts",
       "names": ["shownOver"],
-      "digest": "e3b0c44298fc",
-      "blob": "776182035793e72944b4665b4527fa8157f7eb90"
+      "digest": "6f194bdf1327",
+      "blob": "b2f90b3179a7dc1447eeaf305f5c5a290bac54e4"
     },
     {
       "file": "packages/document/src/slide-measure.ts",
@@ -59,7 +69,7 @@
       "file": "packages/document/src/element-takes.ts",
       "names": ["takes"],
       "digest": "e6de0b2cd8e7",
-      "blob": "40ab672694f92865ed7c98cd26d94850ed91c0ea"
+      "blob": "ef1168fc780c032d200f317b784c5a718f9d5c69"
     }
   ]
 }
