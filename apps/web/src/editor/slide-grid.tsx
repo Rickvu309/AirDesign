@@ -141,7 +141,7 @@ function GridCard({ item, label, state }: { item: number | string; label: string
         <span
           className={cn(
             "absolute top-[6px] left-[var(--space-8)] text-[length:var(--type-caption)]",
-            selected ? "font-semibold text-[var(--primary-strong)]" : dark ? "text-white/70" : "text-faint",
+            selected ? "font-semibold text-[var(--primary-strong)]" : dark ? "text-white/70" : "text-quiet",
           )}
         >
           {label}

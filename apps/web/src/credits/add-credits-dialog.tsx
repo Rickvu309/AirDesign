@@ -114,7 +114,7 @@ export function AddCreditsDialog({
               <ExternalArrow />
             </Button>
           </div>
-          <p className="text-right text-[length:var(--type-caption)] leading-4 text-faint">{productCopy.payNewTab}</p>
+          <p className="text-right text-[length:var(--type-caption)] leading-4 text-quiet">{productCopy.payNewTab}</p>
         </BaseDialog.Popup>
       </DialogPortal>
     </Dialog>

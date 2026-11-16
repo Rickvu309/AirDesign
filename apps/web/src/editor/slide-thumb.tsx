@@ -23,7 +23,7 @@ export function SlideThumb({ index, width, queued = false }: { index: number; wi
   if (queued) {
     return (
       <div
-        className="flex shrink-0 items-center justify-center rounded-[2px] bg-canvas text-[length:var(--type-caption)] text-faint shadow-[inset_0px_0px_0px_1px_var(--field-edge)]"
+        className="flex shrink-0 items-center justify-center rounded-[2px] bg-canvas text-[length:var(--type-caption)] text-quiet shadow-[inset_0px_0px_0px_1px_var(--field-edge)]"
         style={{ width, height }}
       >
         Queued

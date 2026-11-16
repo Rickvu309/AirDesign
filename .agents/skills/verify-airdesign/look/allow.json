@@ -24,12 +24,6 @@
     "reason": "The send-again button gets its click handler from connectSendAgain with addEventListener, which the detector cannot see; send-again.test.ts clicks it."
   },
   {
-    "page": "slide-grid*",
-    "detector": "text-contrast",
-    "selector": "[data-editor-grid] [data-slide-entry] > span",
-    "reason": "An unselected slide number uses text-faint, the same token the designed grid uses on a light slide. The selected number uses primary-strong."
-  },
-  {
     "page": "table-cell-undone",
     "detector": "invisible-control",
     "selector": "[data-table-text]",

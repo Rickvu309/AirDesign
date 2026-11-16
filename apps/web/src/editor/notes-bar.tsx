@@ -45,7 +45,7 @@ export function NotesBar({ text, onEdit }: { readonly text: string; readonly onE
             <textarea
               ref={field}
               id="speaker-notes"
-              className="mt-2 block h-24 w-full resize-y bg-transparent text-[length:var(--type-dense)] text-ink outline-none placeholder:text-faint"
+              className="mt-2 block h-24 w-full resize-y bg-transparent text-[length:var(--type-dense)] text-ink outline-none placeholder:text-quiet"
               value={text}
               readOnly={onEdit === undefined}
               placeholder="Add speaker notes"

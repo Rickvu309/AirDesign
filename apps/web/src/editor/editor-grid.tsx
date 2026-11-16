@@ -235,7 +235,7 @@ export function EditorGrid({
         <span
           className={cn(
             "pointer-events-none absolute top-1.5 left-2 text-[length:var(--type-caption)]",
-            index === current ? "font-semibold text-primary-strong" : "text-faint",
+            index === current ? "font-semibold text-primary-strong" : "text-quiet",
           )}
         >
           {index + 1}

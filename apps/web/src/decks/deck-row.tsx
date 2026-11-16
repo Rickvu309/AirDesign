@@ -72,7 +72,7 @@ export function DeckRow({
 export function DeckTableHeader({ sortMarks = true }: { sortMarks?: boolean }) {
   return (
     <>
-      <div className="grid h-[var(--space-24)] grid-cols-[minmax(0,1fr)_150px_150px] items-start px-3 text-[length:var(--type-dense)] leading-[17px] text-faint">
+      <div className="grid h-[var(--space-24)] grid-cols-[minmax(0,1fr)_150px_150px] items-start px-3 text-[length:var(--type-dense)] leading-[17px] text-quiet">
         <SortLabel mark={sortMarks}>Name</SortLabel>
         <SortLabel mark={sortMarks}>Edited</SortLabel>
         <SortLabel mark={sortMarks}>Created</SortLabel>

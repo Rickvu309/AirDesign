@@ -165,7 +165,7 @@ export function EditorShell({
       >
         <CanvasStage hand={deck !== undefined && pointer.tool === "hand"} width={width}>
           <div className="flex flex-col gap-3" style={{ width }}>
-            <span className="text-[length:var(--type-dense)] text-faint" data-slide-label>
+            <span className="text-[length:var(--type-dense)] text-quiet" data-slide-label>
               {slideLabel}
             </span>
             {deck === undefined ? (

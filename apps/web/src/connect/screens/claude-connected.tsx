@@ -29,7 +29,7 @@ export function ClaudeConnected({
           >
             {copy.title}
           </h1>
-          <p className={`flex h-[var(--space-16)] items-center text-[length:var(--type-dense)] text-faint ${trimmed}`}>
+          <p className={`flex h-[var(--space-16)] items-center text-[length:var(--type-dense)] text-quiet ${trimmed}`}>
             {copy.subtitle}
           </p>
         </header>
