@@ -33,6 +33,7 @@ import type { ExportRequest } from "@/export/export-deck"
 import { PresentButton } from "@/present/present-button"
 import { usePresentKeys } from "@/present/present-keys"
 import { PresentLayer } from "@/present/present-layer"
+import type { ShownSlide } from "@/present/slide-shows"
 import { usePresent } from "@/present/use-present"
 
 const shownSize = { rows: 4, columns: 3 }
@@ -56,6 +57,7 @@ export type EditorDeck = {
   readonly onIcon?: (name: string) => void
   readonly save?: SaveStatus | null
   readonly notesOf?: (index: number) => string
+  readonly shows?: () => readonly ShownSlide[]
 }
 
 export type EditorShellProps = {
@@ -115,6 +117,7 @@ export function EditorShell({
       : {
           count: strip.count,
           current: strip.current,
+          ...(deck?.shows === undefined ? {} : { shows: deck.shows }),
           onLand: (at) => {
             strip.onSelect(at)
             setTimeout(() => presentButton.current?.focus({ preventScroll: true }))

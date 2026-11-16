@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react"
+import type { SlideTransition } from "@airdesign/pptx"
 import { firstShow, showKey, stepShow, type Show, type ShowKey, type ShownDeck } from "@/present/present-steps"
+import type { ShownSlide } from "@/present/slide-shows"
 
 export type PresentDeck = {
   readonly count: number
   readonly current: number
-  readonly hidden?: readonly boolean[]
+  readonly shows?: () => readonly ShownSlide[]
   readonly onLand: (index: number) => void
 }
 
@@ -20,6 +22,8 @@ export type Present = {
   readonly wake: () => void
   readonly pause: () => void
   readonly restart: () => void
+  readonly hidden: readonly boolean[]
+  readonly transitionOf: (index: number) => SlideTransition | null
 }
 
 const idle = 2500
@@ -43,6 +47,8 @@ export function usePresent(deck: PresentDeck | null): Present {
   const [controls, setControls] = useState(false)
   const [clock, setClock] = useState<Clock>({ since: null, banked: 0 })
   const [now, setNow] = useState(0)
+  const [slides, setSlides] = useState<readonly ShownSlide[]>([])
+  const read = useRef<readonly ShownSlide[]>([])
   const held = useRef<Show | null>(null)
   const latest = useRef(deck)
   const sleep = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -65,7 +71,7 @@ export function usePresent(deck: PresentDeck | null): Present {
   }
 
   function shown(): ShownDeck {
-    return { count: latest.current?.count ?? 0, hidden: latest.current?.hidden ?? [] }
+    return { count: latest.current?.count ?? 0, hidden: read.current.map((slide) => slide.hidden) }
   }
 
   function step(key: ShowKey) {
@@ -79,6 +85,8 @@ export function usePresent(deck: PresentDeck | null): Present {
   function start(from: number) {
     const count = latest.current?.count ?? 0
     if (count === 0 || held.current !== null) return
+    read.current = latest.current?.shows?.() ?? []
+    setSlides(read.current)
     place(firstShow(Math.min(Math.max(0, from), count - 1)))
     const started = performance.now()
     setClock({ since: started, banked: 0 })
@@ -132,6 +140,8 @@ export function usePresent(deck: PresentDeck | null): Present {
   return {
     show,
     controls,
+    hidden: slides.map((slide) => slide.hidden),
+    transitionOf: (index) => slides[index]?.transition ?? null,
     elapsed: secondsOf(clock, now),
     running: clock.since !== null,
     start,
