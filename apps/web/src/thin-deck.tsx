@@ -57,6 +57,7 @@ export function ThinDeck({ id }: { id: string }) {
       <EditorFrame fills>
         <EditorShell
           deck={{
+            id,
             onExport: exported.onExport,
             save: deck.save,
             undo: undoButtons,

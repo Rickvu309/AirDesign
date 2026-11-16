@@ -1,8 +1,10 @@
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider"
+import { slideListCopy } from "@/copy/slide-list-copy"
 import { AirdesignMark } from "@/decks/airdesign-mark"
 import { EditorFrame } from "@/editor/editor-frame"
-import { DeckTitle, ExportButton, Island, surfaceShadow, ZoomReadout } from "@/editor/editor-chrome"
+import { DeckTitle, ExportButton, Island, surfaceShadow } from "@/editor/editor-chrome"
 import { EditorIcon } from "@/editor/editor-icons"
 import { EditorToolbar } from "@/editor/editor-toolbar"
 import { PastedThumb, SlideThumb } from "@/editor/slide-thumb"
@@ -59,14 +61,25 @@ export function SlideGrid({ state, title, toast }: { state: GridState; title: st
             </Button>
           </Island>
           <Island>
-            <ZoomReadout value="36%" tone="ink" />
+            <span className="flex w-36 items-center gap-2 px-2 text-quiet" data-grid-zoom>
+              <EditorIcon name="grid" size={12} />
+              <Slider
+                label={slideListCopy.zoom}
+                valueText={() => slideListCopy.perRow(4)}
+                min={0}
+                max={4}
+                step={1}
+                value={2}
+              />
+              <EditorIcon name="slide" size={15} />
+            </span>
             <ExportButton />
           </Island>
         </header>
       }
     >
       <div className="flex h-full flex-col">
-        <div className="flex w-[1296px] flex-col gap-9 px-[87px]">
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-8 overflow-hidden px-12 py-6">
           {sections.map((section, index) => (
             <Section
               key={section.name}
@@ -76,7 +89,7 @@ export function SlideGrid({ state, title, toast }: { state: GridState; title: st
             />
           ))}
         </div>
-        <div className="mt-auto flex justify-center pb-6">
+        <div className="flex shrink-0 justify-center pb-6">
           <EditorToolbar />
         </div>
       </div>
@@ -96,13 +109,16 @@ function Section({ name, items, state }: { name: string; items: (number | string
   let number = startNumber(name, state)
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex h-5 items-center gap-3">
-        <h2 className="text-xs font-semibold text-foreground">{name}</h2>
-        <span className="block h-px flex-1 bg-line" />
+      <div className="flex h-5 items-center gap-2">
+        <h2 className="text-[length:var(--type-caption)] font-semibold text-foreground">{name}</h2>
+        <span className="text-[length:var(--type-caption)] text-quiet tabular-nums">
+          {slideListCopy.sectionCount(items.filter((item) => item !== "ghost").length)}
+        </span>
+        <span className="ml-1 block h-px flex-1 bg-line" />
       </div>
-      <div className="relative flex gap-8">
+      <div className="relative grid grid-cols-[repeat(4,300px)] gap-x-8 gap-y-6">
         {showHandle ? (
-          <span className="absolute top-1/2 left-[-26px] h-9 w-1.5 -translate-y-1/2 rounded-full bg-[var(--drop)]" />
+          <span className="absolute top-[84px] left-[-26px] h-9 w-1.5 -translate-y-1/2 rounded-full bg-[var(--drop)]" />
         ) : null}
         {state === "hover" && name === "Performance" ? <InsertMark className="left-[308px] size-4" /> : null}
         {state === "hold" && name === "Performance" ? <InsertMark className="left-[966px] size-7" large /> : null}
@@ -125,7 +141,6 @@ function startNumber(name: string, state: GridState) {
 function GridCard({ item, label, state }: { item: number | string; label: string; state: GridState }) {
   const pasted = item === "region" || item === "churn"
   const selected = state === "pasted" ? pasted : state === "idle" || state === "hover" ? item === 3 : false
-  const dark = item === 1 || item === 8
   const body =
     item === "ghost" ? (
       <div className="h-[169px] w-[300px] rounded-[2px] border-2 border-dashed border-[var(--placeholder)] bg-line" />
@@ -135,18 +150,16 @@ function GridCard({ item, label, state }: { item: number | string; label: string
       <SlideThumb index={item as number} width={300} />
     )
   return (
-    <div className={cn("relative rounded-sm", selected && "shadow-[0_0_0_2px_var(--ring)]")}>
-      {body}
-      {label ? (
-        <span
-          className={cn(
-            "absolute top-[6px] left-[var(--space-8)] text-[length:var(--type-caption)]",
-            selected ? "font-semibold text-[var(--primary-strong)]" : dark ? "text-white/70" : "text-quiet",
-          )}
-        >
-          {label}
-        </span>
-      ) : null}
+    <div className="flex flex-col items-start gap-2">
+      <div className={cn("relative rounded-sm", selected && "shadow-[0_0_0_2px_var(--ring)]")}>{body}</div>
+      <span
+        className={cn(
+          "h-4 text-[length:var(--type-caption)] leading-4 tabular-nums",
+          selected ? "font-semibold text-primary-strong" : "text-quiet",
+        )}
+      >
+        {label}
+      </span>
     </div>
   )
 }
@@ -155,7 +168,7 @@ function InsertMark({ className, large = false }: { className: string; large?: b
   return (
     <span
       className={cn(
-        "absolute top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full bg-primary-strong text-white",
+        "absolute top-[84px] flex -translate-y-1/2 items-center justify-center rounded-full bg-primary-strong text-white",
         className,
       )}
     >

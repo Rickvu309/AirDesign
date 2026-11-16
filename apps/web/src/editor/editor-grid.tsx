@@ -2,33 +2,36 @@ import { Filmstrip, type TextFormatting } from "@airdesign/render"
 import { useCallback, useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react"
 import { Announcer, type Announcement } from "@/components/ui/announcer"
 import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { AirdesignMark } from "@/decks/airdesign-mark"
-import { zoomPercent, type SlideSize } from "@/editor/canvas-zoom"
+import type { SlideSize } from "@/editor/canvas-zoom"
 import { SaveStatusLine } from "@/editor/save-status"
 import type { SaveStatus } from "@/editor/use-deck-status"
-import { DeckTitle, ExportButton, hairlineShadow, Island, surfaceShadow, ZoomReadout } from "@/editor/editor-chrome"
+import { DeckTitle, ExportButton, hairlineShadow, Island, surfaceShadow } from "@/editor/editor-chrome"
 import { EditorIcon } from "@/editor/editor-icons"
 import { gridCommand, gridMove, type GridCommand } from "@/editor/editor-grid-keys"
 import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
+import { gridFit, gridGap, gridSizes, steppedGridSize, useKeptGridSize } from "@/editor/grid-size"
 import type { FormatShown } from "@/editor/format-buttons"
 import type { ToolPick } from "@/editor/pointer-tool"
 import { slideThumbWidth, useSlideSay, type SlideStrip, type StripSection } from "@/editor/slide-sidebar"
 import type { UndoButtonsState } from "@/editor/undo-buttons"
+import { useZoomKeys } from "@/editor/zoom-keys"
 import { ExportControl } from "@/export/export-control"
 import type { ExportRequest } from "@/export/export-deck"
 import type { TableSize } from "@/element-edit"
 import { cn } from "@/lib/class-names"
 
-const gridThumbWidth = 300
-
 const thumbFace = cn("block overflow-hidden rounded-[2px] bg-white", hairlineShadow)
 
 const noSections: readonly StripSection[] = []
 
-function gridThumbHeight(height: number): number {
-  if (height <= 0) return Math.round((gridThumbWidth * 9) / 16)
-  return Math.round((height * gridThumbWidth) / slideThumbWidth)
+const listInset = 48
+
+function gridThumbHeight(width: number, height: number): number {
+  if (height <= 0) return Math.round((width * 9) / 16)
+  return Math.round((height * width) / slideThumbWidth)
 }
 
 function rowsOf(strip: SlideStrip): { readonly name: string | null; readonly start: number; readonly end: number }[] {
@@ -45,6 +48,7 @@ function rowsOf(strip: SlideStrip): { readonly name: string | null; readonly sta
 }
 
 export function EditorGrid({
+  id = null,
   title,
   strip,
   size = null,
@@ -65,6 +69,7 @@ export function EditorGrid({
   faded = false,
   save = null,
 }: {
+  id?: string | null
   title: string
   strip: SlideStrip
   size?: SlideSize | null
@@ -90,6 +95,8 @@ export function EditorGrid({
   const following = useRef(true)
   const [stop, setStop] = useState(strip.current)
   const [message, setMessage] = useState<Announcement | null>(null)
+  const [room, setRoom] = useState<number | null>(null)
+  const [zoom, setZoom] = useKeptGridSize(id)
   const { current, count } = strip
   const announce = useCallback(
     (text: string) => setMessage((held) => ({ text, odd: held === null ? false : !held.odd })),
@@ -103,9 +110,22 @@ export function EditorGrid({
     setStop(current)
     if (next !== null && next !== undefined && next !== document.activeElement) next.focus()
   }, [current, count])
+  useLayoutEffect(() => {
+    const scroller = list.current
+    if (scroller === null) return
+    const measure = () => setRoom(Math.max(0, scroller.clientWidth - 2 * listInset))
+    measure()
+    if (typeof ResizeObserver !== "function") return
+    const observer = new ResizeObserver(measure)
+    observer.observe(scroller)
+    return () => observer.disconnect()
+  }, [])
+  useZoomKeys(true, (key) => setZoom(steppedGridSize(key, zoom)))
   const reachable = stop >= 0 && stop < count ? stop : current
-  const height = gridThumbHeight(strip.thumbHeight)
-  const percent = size === null || size.width <= 0 ? null : zoomPercent(gridThumbWidth, size)
+  const fit = room === null ? { columns: 0, width: zoom } : gridFit(room, zoom)
+  const width = fit.width
+  const height = gridThumbHeight(width, strip.thumbHeight)
+  const step = gridSizes.indexOf(zoom)
 
   function hideGhost() {
     const mark = ghost.current
@@ -203,7 +223,7 @@ export function EditorGrid({
   }
 
   const card = (index: number) => (
-    <div key={index} className="group flex items-center pb-8">
+    <div key={index} className="group relative flex flex-col items-start gap-2">
       <button
         type="button"
         draggable
@@ -226,28 +246,25 @@ export function EditorGrid({
         }}
         onDrop={(event) => onDrop(event, index)}
       >
-        <Filmstrip
-          className={thumbFace}
-          height={height}
-          paint={() => strip.thumb(index, gridThumbWidth)}
-          width={gridThumbWidth}
-        />
-        <span
-          className={cn(
-            "pointer-events-none absolute top-1.5 left-2 text-[length:var(--type-caption)]",
-            index === current ? "font-semibold text-primary-strong" : "text-quiet",
-          )}
-        >
-          {index + 1}
-        </span>
+        <Filmstrip className={thumbFace} height={height} paint={() => strip.thumb(index, width)} width={width} />
       </button>
-      <span className="flex w-8 shrink-0 justify-center">
+      <span
+        aria-hidden="true"
+        data-slide-number
+        className={cn(
+          "h-4 text-[length:var(--type-caption)] leading-4 tabular-nums",
+          index === current ? "font-semibold text-primary-strong" : "text-quiet",
+        )}
+      >
+        {index + 1}
+      </span>
+      <span className="absolute top-0 -right-8 flex w-8 justify-center" style={{ height }}>
         <Button
           type="button"
           variant="default"
           tabIndex={-1}
           aria-label={slideListCopy.addAfter(index + 1)}
-          className="hidden size-4 rounded-full p-0 hover:bg-primary-strong group-hover:flex"
+          className="hidden size-4 self-center rounded-full p-0 hover:bg-primary-strong group-hover:flex"
           onClick={() => addAfter(index)}
         >
           <EditorIcon name="plus" size={10} strokeWidth={3.2} />
@@ -301,7 +318,22 @@ export function EditorGrid({
           </Button>
         </Island>
         <Island>
-          {percent === null ? null : <ZoomReadout value={`${String(percent)}%`} tone="ink" />}
+          <span className="flex w-36 items-center gap-2 px-2 text-quiet" data-grid-zoom>
+            <EditorIcon name="grid" size={12} />
+            <Slider
+              label={slideListCopy.zoom}
+              valueText={() => slideListCopy.perRow(fit.columns)}
+              min={0}
+              max={gridSizes.length - 1}
+              step={1}
+              value={step}
+              onValueChange={(value) => {
+                const next = gridSizes[value]
+                if (next !== undefined) setZoom(next)
+              }}
+            />
+            <EditorIcon name="slide" size={15} />
+          </span>
           {size === null ? (
             <ExportButton faded={faded} onClick={() => void onExport()} />
           ) : (
@@ -323,7 +355,8 @@ export function EditorGrid({
         ref={list}
         role="group"
         aria-label={slideListCopy.listName}
-        className="relative min-h-0 flex-1 overflow-auto px-12 py-6"
+        className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto py-6"
+        style={{ paddingInline: listInset }}
         data-slide-list
         onKeyDown={onListKey}
         onDragEnd={hideGhost}
@@ -338,16 +371,28 @@ export function EditorGrid({
           data-drop-ghost
           className="pointer-events-none absolute top-0 left-0 rounded-sm border-2 border-dashed border-[var(--placeholder)]"
         />
-        <div className="mx-auto flex w-full max-w-[1296px] flex-col gap-8">
+        <div className="flex w-full flex-col gap-8">
           {rowsOf(strip).map((row) => (
             <section key={`${row.start}:${row.name ?? ""}`} className="flex flex-col gap-4">
               {row.name === null ? null : (
-                <div className="flex h-5 items-center gap-3">
+                <div className="flex h-5 items-center gap-2">
                   <h2 className="text-[length:var(--type-caption)] font-semibold text-foreground">{row.name}</h2>
-                  <span className="block h-px flex-1 bg-line" />
+                  <span className="text-[length:var(--type-caption)] text-quiet tabular-nums">
+                    {slideListCopy.sectionCount(row.end - row.start)}
+                  </span>
+                  <span className="ml-1 block h-px flex-1 bg-line" />
                 </div>
               )}
-              <div className="flex flex-wrap">
+              <div
+                className="grid gap-y-6"
+                style={{
+                  columnGap: gridGap,
+                  gridTemplateColumns:
+                    fit.columns === 0
+                      ? `repeat(auto-fill, ${String(width)}px)`
+                      : `repeat(${String(fit.columns)}, ${String(width)}px)`,
+                }}
+              >
                 {Array.from({ length: row.end - row.start }, (_, offset) => card(row.start + offset))}
               </div>
             </section>
