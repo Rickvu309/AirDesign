@@ -1,5 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server"
-import { expect, it } from "vitest"
+import { act } from "react"
+import type { Root } from "react-dom/client"
+import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import { FormatButtons } from "@/editor/format-buttons"
 
 function buttons(markup: string): string[] {
@@ -60,4 +62,70 @@ it("shows a mixed size as an empty box that still takes a typed size", () => {
   expect(markup).toMatch(/<input[^>]*value=""/)
   expect(markup).toContain('inputMode="decimal"')
   expect(markup).toContain("data-keeps-format")
+})
+
+let window: Window & typeof globalThis
+let createRoot: typeof import("react-dom/client").createRoot
+
+beforeAll(async () => {
+  const jsdomName = "jsdom"
+  const jsdom = (await import(jsdomName)) as {
+    JSDOM: new (html: string) => { readonly window: Window & typeof globalThis }
+  }
+  window = new jsdom.JSDOM("<!doctype html><html><body></body></html>").window
+  for (const [name, value] of Object.entries({
+    window,
+    document: window.document,
+    HTMLElement: window.HTMLElement,
+    Element: window.Element,
+    IS_REACT_ACT_ENVIRONMENT: true,
+  }))
+    vi.stubGlobal(name, value)
+  createRoot = (await import("react-dom/client")).createRoot
+})
+
+afterAll(() => {
+  vi.unstubAllGlobals()
+  window.close()
+})
+
+it.each(["blur", "Enter", "Escape", "invalid"])("handles a typed size followed by %s and blur once", (action) => {
+  const host = window.document.createElement("div")
+  window.document.body.append(host)
+  const calls: number[] = []
+  const root: Root = createRoot(host)
+  try {
+    act(() =>
+      root.render(
+        <FormatButtons
+          shown={{ bold: "off", italic: "off", underline: "off" }}
+          parts={["size"]}
+          size={1800}
+          onSize={(size) => {
+            calls.push(size)
+            host.querySelector("input")?.blur()
+          }}
+        />,
+      ),
+    )
+    const field = host.querySelector("input")
+    if (field === null) throw new Error("missing font size")
+    act(() => field.focus())
+    act(() => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(
+        field,
+        action === "invalid" ? "big" : "24,5",
+      )
+      field.dispatchEvent(new window.Event("input", { bubbles: true }))
+    })
+    if (action === "Enter" || action === "Escape") {
+      act(() => field.dispatchEvent(new window.KeyboardEvent("keydown", { key: action, bubbles: true })))
+    }
+    act(() => field.blur())
+    expect(calls).toEqual(action === "Escape" || action === "invalid" ? [] : [2450])
+    expect(field.value).toBe("18")
+  } finally {
+    act(() => root.unmount())
+    host.remove()
+  }
 })

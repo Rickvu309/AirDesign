@@ -173,3 +173,36 @@ test("a size typed in the toolbar sets the selected words and puts the cursor ba
   await expect(word).toHaveAttribute("data-size", "1100")
   await expect(size).toHaveValue("11")
 })
+
+for (const leave of ["Tab", "canvas", "tray", "Enter", "Escape", "invalid"]) {
+  test(`a typed font size handles ${leave} without changing another word`, async ({ page }) => {
+    await open(page, fixture)
+    const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
+    await editor.click()
+    await page.keyboard.press("ControlOrMeta+a")
+    await editor.pressSequentially("Hello world")
+    const originalSize = await editor
+      .locator("[data-run]")
+      .first()
+      .evaluate((node) => getComputedStyle(node).fontSize)
+    await selectText(editor.locator("[data-run]").first(), 6, 11)
+    const size = page.getByRole("textbox", { name: "Font size" })
+    await size.fill(leave === "invalid" ? "big" : "24.5")
+    if (leave === "Tab" || leave === "Enter" || leave === "Escape") await size.press(leave)
+    if (leave === "tray") {
+      await page.getByRole("button", { name: "Shapes", exact: true }).click()
+      await expect(size).toBeVisible()
+      await page.keyboard.press("Escape")
+    } else {
+      await editor.click({ position: { x: 5, y: 5 } })
+    }
+    const committed = leave !== "Escape" && leave !== "invalid"
+    if (committed) {
+      await expect(editor.locator('[data-run][data-size="2450"]')).toHaveText("world")
+      await expect(editor.locator("[data-run]").filter({ hasText: /^Hello / })).toHaveCSS("font-size", originalSize)
+      await editor.press("ControlOrMeta+z")
+    }
+    await expect(editor.locator('[data-run][data-size="2450"]')).toHaveCount(0)
+    await expect(editor).toHaveText("Hello world")
+  })
+}

@@ -61,15 +61,22 @@ function SizeBox({
   onSize: ((size: number) => void) | undefined
 }) {
   const [draft, setDraft] = useState<string | null>(null)
+  const pending = useRef<string | null>(null)
   const justFocused = useRef(false)
   const shown = typeof size === "number" ? sizeText(size) : ""
+  function commit() {
+    const text = pending.current
+    pending.current = null
+    setDraft(null)
+    const typed = text === null ? null : typedSize(text.replace(",", "."))
+    if (typed !== null) onSize?.(typed)
+  }
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key !== "Enter" && event.key !== "Escape") return
     event.preventDefault()
     event.stopPropagation()
-    const typed = event.key === "Enter" && draft !== null ? typedSize(draft.replace(",", ".")) : null
-    setDraft(null)
-    if (typed !== null) onSize?.(typed)
+    if (event.key === "Escape") pending.current = null
+    commit()
   }
   return (
     <input
@@ -87,8 +94,11 @@ function SizeBox({
         if (justFocused.current) event.preventDefault()
         justFocused.current = false
       }}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={() => setDraft(null)}
+      onChange={(event) => {
+        pending.current = event.target.value
+        setDraft(event.target.value)
+      }}
+      onBlur={commit}
       onKeyDown={onKeyDown}
     />
   )
