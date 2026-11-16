@@ -71,14 +71,22 @@ export function TableSizeGrid({
 
 export function TableTool({ onTable }: { onTable: (size: TableSize) => void }) {
   const [open, setOpen] = useState(false)
+  const opened = useRef(false)
   const [picked, setPicked] = useState<TableSize>(first)
   const change = (next: boolean) => {
+    opened.current = next
     setOpen(next)
     setPicked(first)
   }
   const insert = (size: TableSize) => {
     change(false)
     onTable(size)
+  }
+  const earlyKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const key = event.key
+    if (!opened.current || movedSize(first, key) === null) return
+    event.preventDefault()
+    setPicked((at) => movedSize(at, key) ?? at)
   }
   return (
     <Popover open={open} onOpenChange={change}>
@@ -89,6 +97,7 @@ export function TableTool({ onTable }: { onTable: (size: TableSize) => void }) {
             variant="ghost"
             size="icon"
             aria-label={tableCopy.tool}
+            onKeyDown={earlyKey}
             className="size-9 rounded-lg text-quiet hover:bg-transparent active:translate-y-0 data-[popup-open]:bg-primary data-[popup-open]:text-primary-foreground"
           />
         }

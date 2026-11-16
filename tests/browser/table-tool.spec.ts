@@ -57,6 +57,17 @@ test("arrows to four rows by three columns and Enter inserts that table through 
   await expect(table).toHaveCount(0)
 })
 
+test("an arrow key pressed while the picker opens, before it takes focus, still moves the size", async ({ page }) => {
+  await openBlank(page)
+  await page.getByRole("button", { name: "Insert table", exact: true }).evaluate((tool) => {
+    if (!(tool instanceof HTMLElement)) return
+    tool.click()
+    tool.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true }))
+  })
+  await expect(page.locator("[data-table-picker]")).toContainText("2 rows, 1 column")
+  await expect(page.getByRole("button", { name: "2 rows, 1 column", exact: true })).toBeFocused()
+})
+
 test("pointing at a size shows it, and a click inserts it", async ({ page }) => {
   await openBlank(page)
   await page.getByRole("button", { name: "Insert table", exact: true }).click()
