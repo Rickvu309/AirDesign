@@ -4,6 +4,8 @@ import { geometryCopy } from "@/copy/geometry-copy"
 import { arrange, resolveControl } from "./panel-arrangement"
 import type { PanelReads, PanelSection } from "./panel"
 
+export const cornerSteps = [0, 4, 8, 16, 24, 32] as const
+
 export function cornersSection(view: ScopedElement, shown: PanelReads): PanelSection | null {
   if (view.facts.kind !== "shape" && view.facts.kind !== "picture") return null
   if (keptRefuses(view.kept, "geometry", "shape")) return null
@@ -17,7 +19,7 @@ export function cornersSection(view: ScopedElement, shown: PanelReads): PanelSec
     typeof adjusts === "object" && adjusts !== null && "adj" in adjusts && typeof adjusts.adj === "number"
       ? adjusts.adj
       : (adjustDefaults("roundRect").adj ?? 16667)
-  const control = resolveControl({
+  const resolved = resolveControl({
     trait: "corners",
     field: "corners",
     label: geometryCopy.corners,
@@ -39,5 +41,6 @@ export function cornersSection(view: ScopedElement, shown: PanelReads): PanelSec
       }
     },
   })
+  const control = { ...resolved, look: { ...resolved.look, steps: cornerSteps } }
   return { trait: "corners", label: geometryCopy.corners, open: true, strips: arrange("corners", [control]) }
 }

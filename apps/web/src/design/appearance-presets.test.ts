@@ -1,5 +1,14 @@
-import { elementId, type ScopedElement } from "@airdesign/document"
+import { alphaOf, elementId, type ScopedElement } from "@airdesign/document"
+import { Minus } from "lucide-react"
+import { createElement } from "react"
+import { renderToStaticMarkup } from "react-dom/server"
 import { expect, it } from "vitest"
+import { effectsWords } from "@/copy/effects-copy"
+import { lineCopy, lineWords } from "@/copy/line-copy"
+import { opacityCopy } from "@/copy/opacity-copy"
+import { optionWord } from "@/copy/option-copy"
+import { borderWidths } from "./appearance-presets"
+import { ChoiceControl } from "./controls/choice"
 import { panelOf } from "./panel"
 
 const view: ScopedElement = {
@@ -69,21 +78,93 @@ it("writes fixed outer shadow strengths, recognizes each and leaves custom shado
   expect(preset("shadow", { "effects.shadow": { outer: { blur: 999 } } }).value).toBeUndefined()
 })
 
-it("shows the Line color and width only for the supplied solid Border screenshot", () => {
-  for (const dash of ["solid", "dash", "dot"]) {
-    const connector = { ...view, facts: { ...view.facts, kind: "connector" as const } }
-    const sections = panelOf(connector, {
+function borderSection(kind: "shape" | "picture" | "connector", fill: unknown, dash: unknown) {
+  return panelOf(
+    { ...view, facts: { ...view.facts, kind } },
+    {
       reads: {},
       moves: true,
       fields: {
-        "line.fill": { value: { solid: { rgb: "000000" } }, own: true },
+        "line.fill": { value: fill, own: true },
         "line.dash": { value: dash, own: true },
       },
-    }).sections
-    const fields = sections
-      .find(({ trait }) => trait === "border")
-      ?.strips.flat()
-      .map(({ field }) => field)
-    expect(fields).toEqual(dash === "solid" ? ["border", "fill.solid", "width"] : ["border"])
+    },
+  ).sections.find(({ trait }) => trait === "border")
+}
+
+it("shows Color and Border width under solid, dashed and dotted for shapes, pictures and lines", () => {
+  for (const kind of ["shape", "picture", "connector"] as const) {
+    for (const dash of ["solid", "dash", "dot"] as const) {
+      const controls = borderSection(kind, { solid: { rgb: "000000" } }, dash)?.strips.flat() ?? []
+      expect(controls.map(({ field }) => field)).toEqual(["border", "fill.solid", "width"])
+      expect(controls[0]?.desc).toMatchObject({
+        options: kind === "connector" ? ["solid", "dash", "dot"] : ["none", "solid", "dash", "dot"],
+      })
+      expect(controls[1]?.label).toBe(lineCopy.color)
+      expect(controls[2]?.label).toBe(lineCopy.borderWidth)
+      expect(controls[2]?.look.glyph).toBe(Minus)
+      expect(controls[2]?.look.steps).toEqual([...borderWidths])
+      expect(controls[2]?.look.unit).toBe("")
+    }
+    expect(
+      borderSection(kind, { none: true }, "solid")
+        ?.strips.flat()
+        .map(({ field }) => field),
+    ).toEqual(["border"])
   }
+})
+
+it("writes shadow opacity into the shadow colour and keeps the strength pressed", () => {
+  const written = preset("shadow").change("medium")
+  const held = written.effects?.shadow
+  const controls = panel({ "effects.shadow": held })
+    .sections.find((section) => section.trait === "shadow")
+    ?.strips.flat()
+  const opacity = controls?.find((control) => control.field === "opacity")
+  expect(opacity?.label).toBe(opacityCopy.label)
+  expect(opacity?.look.slider).toBe(true)
+  if (opacity === undefined || typeof held !== "object" || held === null || !("outer" in held))
+    throw new Error("opacity")
+  const outer = held.outer
+  if (typeof outer !== "object" || outer === null || !("color" in outer)) throw new Error("outer")
+  expect(opacity.value).toBe(alphaOf(outer.color))
+  const next = opacity.change(40_000)
+  const faded = next.effects?.shadow
+  if (typeof faded !== "object" || faded === null || !("outer" in faded)) throw new Error("faded")
+  const again = faded.outer
+  if (typeof again !== "object" || again === null || !("color" in again) || !("blur" in again)) throw new Error("again")
+  expect(again.blur).toBe("blur" in outer ? outer.blur : undefined)
+  expect("distance" in again ? again.distance : undefined).toBe("distance" in outer ? outer.distance : undefined)
+  expect("direction" in again ? again.direction : undefined).toBe("direction" in outer ? outer.direction : undefined)
+  expect(alphaOf(again.color)).toBe(40_000)
+  expect(preset("shadow", { "effects.shadow": faded }).value).toBe("medium")
+  for (const shadow of [{ none: true }, { outer: { blur: 999 } }])
+    expect(
+      panel({ "effects.shadow": shadow })
+        .sections.find((section) => section.trait === "shadow")
+        ?.strips.flat()
+        .map((control) => control.field),
+    ).toEqual(["shadow"])
+})
+
+it("does not name the three shadow strengths soft, medium or hard", () => {
+  const words = ["subtle", "medium", "strong"].map((name) => optionWord("shadow", name))
+  expect(words).toEqual(["subtle", "medium", "strong"].map((name) => effectsWords[`shadow.${name}`]))
+  for (const word of words) expect(word.toLowerCase()).not.toMatch(/soft|medium|hard/)
+  expect(new Set(words).size).toBe(words.length)
+  const shadow = preset("shadow")
+  expect(shadow.look.unnamed).toBe(true)
+  const html = renderToStaticMarkup(
+    createElement(ChoiceControl, { control: shadow, palette: { theme: [], deck: [] }, onChange: () => {} }),
+  )
+  for (const word of words) expect(html).toContain(`aria-label="${word}"`)
+  expect(html).not.toContain("title=")
+  const border = renderToStaticMarkup(
+    createElement(ChoiceControl, {
+      control: preset("border"),
+      palette: { theme: [], deck: [] },
+      onChange: () => {},
+    }),
+  )
+  expect(border).toContain(`title="${lineWords["border.solid"]}"`)
 })

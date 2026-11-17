@@ -25,6 +25,13 @@ export const StrongShadow = createLucideIcon("StrongShadow", [
   ["rect", { x: 2, y: 2, width: 15, height: 15, rx: 1, fill: "var(--muted)", key: "shape" }],
 ])
 
+export const Checker = createLucideIcon("Checker", [
+  ["rect", { x: "4", y: "4", width: "7", height: "7", fill: "currentColor", stroke: "none", key: "a" }],
+  ["rect", { x: "13", y: "13", width: "7", height: "7", fill: "currentColor", stroke: "none", key: "b" }],
+  ["rect", { x: "13", y: "4", width: "7", height: "7", key: "c" }],
+  ["rect", { x: "4", y: "13", width: "7", height: "7", key: "d" }],
+])
+
 export const PatternFill = createLucideIcon("PatternFill", [
   ["rect", { x: 4, y: 3, width: 16, height: 18, rx: 1, key: "edge" }],
   [

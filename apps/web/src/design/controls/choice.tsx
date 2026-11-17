@@ -91,7 +91,7 @@ export function ChoiceControl(props: ControlProps) {
                 variant="ghost"
                 aria-pressed={chosen}
                 aria-label={word}
-                title={Icon ? word : undefined}
+                title={Icon && look.unnamed !== true ? word : undefined}
                 onClick={() => {
                   if (!chosen) onChange(option)
                 }}
