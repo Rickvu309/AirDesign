@@ -128,7 +128,7 @@ export async function captureSide({ browser, side, block, runtime }) {
     const broken = places.find((place) => place.error)
     if (broken) throw new Error(`${block.state}: ${broken.error}`)
     const [frame, ...boxes] = places.map((place, index) =>
-      index === 0 ? place.box : aimAt(place.box, place.ink ?? null),
+      index === 0 || block.callouts[index - 1].target === "element" ? place.box : aimAt(place.box, place.ink ?? null),
     )
     const texts = await textBoxes(page)
     return { full, frame, boxes, texts, skipped, viewport }
@@ -149,12 +149,24 @@ export function composeBlock(block, sides, shots) {
   const viewportOf = (shot) => shot.viewport ?? designViewport
   const first = reached[0] ? viewportOf(reached[0].shot) : designViewport
   const whole = { x: 0, y: 0, ...first }
-  const found = reached.map(({ shot }) => shot.frame).findLast((each) => each !== null)
-  const frame = relative(found ?? whole, whole) ?? whole
+  const frames = reached.map(({ shot }) => shot.frame ?? { x: 0, y: 0, ...viewportOf(shot) })
+  const x = Math.min(...frames.map((box) => box.x))
+  const y = Math.min(...frames.map((box) => box.y))
+  const right = Math.max(...frames.map((box) => box.x + box.width))
+  const bottom = Math.max(...frames.map((box) => box.y + box.height))
+  const frame = relative({ x, y, width: right - x, height: bottom - y }, whole) ?? whole
   if (block.crop !== null && reached.every(({ shot }) => shot.frame === null))
     warnings.push(`${block.state}: crop ${JSON.stringify(block.crop)} found nothing; showing the whole frame`)
   const drawn = reached.map(({ side, shot }) => {
     const image = PNG.sync.read(shot.full)
+    for (const [index, box] of shot.boxes.entries()) {
+      if (box === null) continue
+      const visible = relative(box, frame)
+      if (visible === null || visible.width < box.width || visible.height < box.height)
+        warnings.push(
+          `${block.state}: callout ${String(index + 1)} ${JSON.stringify(block.callouts[index]?.at)} is ${visible === null ? "outside" : "clipped by"} the crop on ${side.label || side.key}; widen the crop`,
+        )
+    }
     return {
       key: side.key,
       label: side.label,

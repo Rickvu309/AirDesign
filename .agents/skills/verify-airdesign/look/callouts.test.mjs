@@ -48,3 +48,11 @@ describe("callouts file", () => {
     expect(warnings).toEqual([`block 1 callout 1 note is ${String(note.length)} characters; keep it under 90`])
   })
 })
+
+it("lets a border callout target the element frame", () => {
+  const { blocks } = readCallouts(one({ at: "button", target: "element", note: "Blue border removed" }))
+  expect(blocks[0].callouts[0].target).toBe("element")
+  expect(() => readCallouts(one({ at: "button", target: "border", note: "x" }))).toThrow(
+    '"target" must be "text" or "element"',
+  )
+})

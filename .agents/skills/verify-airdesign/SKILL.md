@@ -1,6 +1,6 @@
 ---
 name: verify-airdesign
-description: "Drive the real AirDesign app (apps/web product UI served with the real apps/api server on its own Postgres) the way a user does, capture proof (screenshots, ARIA snapshots, API answers, proof.md under ~/tmp/verify-airdesign/<run>/), and look at it as a design: ranked design faults, the real page beside its design screen, a contact sheet of every state, and an annotated before and after image for the PR. Use to prove a change to the editor, import, save, deck list, Trash, sign-in or anything a person sees."
+description: "Drive the real AirDesign app (apps/web product UI served with the real apps/api server on its own Postgres) the way a user does, capture proof (screenshots, ARIA snapshots, API answers, proof.md under the run's ~/tmp/verify-airdesign/ folder), and look at it as a design: ranked design faults, the real page beside its design screen, a contact sheet of every state, and an annotated before and after image for the PR. Use to prove a change to the editor, import, save, deck list, Trash, sign-in or anything a person sees."
 ---
 
 # Verify AirDesign
@@ -119,7 +119,9 @@ $V api <run> open '{"deck":"<id>"}' --cookie '...'
 
 ## Look at it
 
-Working is not the same as looking right. For every change a person sees:
+For feedback about scale, alignment, names, or button borders, follow [the design review](look/design-review.md).
+
+For every change a person sees:
 
 1. Find the states your change touches with `$V states`. Run `$V look <run> <state>` on each, before your change and after. A page no state covers: `$V look <run> <path>`, with `--import deck.pptx --slide n` for a slide.
 2. Run `$V compare <run> <state>` to put the state beside its design screen under `/screens/`.
@@ -148,7 +150,7 @@ Every PR that changes what a person sees gets a `## Before / after` section. Whe
    ]
    ```
 
-   `crop` and `at` are CSS selectors, or a box `{"x","y","width","height"}` in CSS px. An arrow points at the words inside `at`'s element, or at the element when it holds none, so a centered heading in a wide block gets its arrow on the heading. `click` lists selectors to click after the state is reached. A note is one sentence that names what changed and by how much: "Card corners 22px to 16px", "Step reads Edited the deck, not airdesign_edit_deck". Never "Improved styling".
+   `crop` and `at` take CSS selectors or boxes in CSS px. `click` lists selectors to click after reaching the state. Set `"target": "element"` for a border or frame; text is the default. Name the measured change in each note. [Annotation details](look/README.md#before-after-and-annotate) and [design review](look/design-review.md) cover targeting, detail crops, and note examples.
 
 2. Run `$V before-after callouts.json`. It builds and launches the merge base with `origin/main` in a scratch worktree, launches this checkout, drives each state on both with that side's own journey, and writes `annotated-N.png`, each full screenshot, and `before-after.md`. `--base` and `--head` take other commits. `--keep` keeps both stacks and prints their runs, so the next try takes `--before-run` and `--after-run` and costs seconds. Stop them with `$V stop` when done.
 3. Open every `annotated-N.png`. Check each arrow points at the thing its note names on both sides, each note is true, and a stranger sees what changed in ten seconds. A selector missing on one side shows a grey number and says so in the legend; that is right only when the thing is new or gone.
