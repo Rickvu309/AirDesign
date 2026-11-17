@@ -24,6 +24,7 @@ it("leads a picture with Fill, Opacity, Border and Shadow, retaining its exact e
     "alignment",
     "pictureFill",
     "opacity",
+    "corners",
     "border",
     "shadow",
     "image",

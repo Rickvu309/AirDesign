@@ -1,3 +1,4 @@
+import { geometryCopy } from "../../apps/web/src/copy/geometry-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { boxCopy } from "../../apps/web/src/copy/box-copy"
@@ -64,6 +65,7 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
   await expect(shape.getByRole("heading")).toHaveText([
     "Fill",
     opacityCopy.label,
+    geometryCopy.corners,
     designCopy.border,
     designCopy.shadow,
     "Shape type",

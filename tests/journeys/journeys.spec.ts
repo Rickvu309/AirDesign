@@ -51,6 +51,7 @@ for (const name of [
   "shape-effects",
   "appearance-presets",
   "shape-geometry",
+  "corners",
   "opacity",
   "table-fill",
   "text-type",

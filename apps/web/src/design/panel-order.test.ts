@@ -25,7 +25,10 @@ it("places every trait each element kind takes, and its Opacity, exactly once in
       expect({
         panel,
         placed: placed
-          .filter((section) => section !== "border" && section !== "shadow" && section !== "pictureFill")
+          .filter(
+            (section) =>
+              section !== "border" && section !== "shadow" && section !== "pictureFill" && section !== "corners",
+          )
           .toSorted(),
       }).toEqual({ panel, placed: wanted })
     }
@@ -100,6 +103,7 @@ it("offers a picture no shape type while it is a plain rectangle", () => {
     "alignment",
     "pictureFill",
     "opacity",
+    "corners",
     "border",
     "shadow",
     "image",

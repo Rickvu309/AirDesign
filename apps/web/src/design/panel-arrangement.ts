@@ -142,6 +142,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
       }),
     ],
   ],
+  corners: [[placed("corners", { show: "beside" }, { kind: "corners" })]],
   opacity: [[placed("opacity", { show: "beside" })]],
   identity: [[placed("name", inside)], [placed("alt", inside)], [placed("hidden")]],
   geometry: [
@@ -249,6 +250,7 @@ export function choiceLayout(field: string, options: readonly string[]): "segmen
 }
 
 export const controlKinds = [
+  "corners",
   "length",
   "angle",
   "percent",
