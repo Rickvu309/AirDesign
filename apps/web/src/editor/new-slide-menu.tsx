@@ -4,14 +4,13 @@ import { EditorIcon } from "@/editor/editor-icons"
 import { EditorMenuContent } from "@/editor/editor-menu"
 import type { LayoutChoice } from "@/slide-layout"
 
-const label =
-  "flex flex-1 items-center justify-center gap-1 text-[length:var(--type-dense)] font-medium text-foreground"
+const label = "flex flex-1 items-center justify-center gap-1 text-[length:var(--type-dense)] text-foreground"
 
 function Label(): ReactNode {
   return (
     <>
       New slide
-      <EditorIcon name="chev" size={13} className="text-faint" />
+      <EditorIcon name="chev" size={13} className="text-quiet" />
     </>
   )
 }
@@ -33,7 +32,7 @@ export function NewSlideMenu({
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger
-        className={`${label} h-8 rounded-l-lg outline-none`}
+        className={`${label} h-7 rounded-l-lg hover:bg-black/4`}
         aria-label="Choose a layout for the new slide"
         data-new-slide-layouts
       >

@@ -93,3 +93,29 @@ test("a slide moved into a collapsed section opens it and keeps focus, across th
   await expect(entry(page, 1)).toHaveAttribute("aria-current", "true")
   await expect(entry(page, 1)).toBeFocused()
 })
+
+test("a slide row hugs the New slide button: its thumbnail ends on the button's edge and a hover tints it", async ({
+  page,
+}) => {
+  await open(page, clean)
+  await addSlides(page, 1)
+  await entry(page, 1).click()
+  const row = await page.locator("[data-new-slide-layouts]").locator("..").boundingBox()
+  const band = await entry(page, 1).boundingBox()
+  const thumb = await entry(page, 1).locator("> :last-child").boundingBox()
+  if (row === null || band === null || thumb === null) throw new Error("the slide rail is not laid out")
+  const right = (box: { x: number; width: number }) => box.x + box.width
+  expect(right(thumb)).toBe(right(row))
+  expect(row.x - band.x).toBe(right(band) - right(row))
+  expect(right(band) - right(thumb)).toBe(thumb.y - band.y)
+  expect(row.height).toBe(28)
+  await expect(page.locator("[data-new-slide-layouts]")).toHaveCSS("font-weight", "400")
+  const tint = () => entry(page, 2).evaluate((item) => getComputedStyle(item).backgroundColor)
+  const resting = await tint()
+  await entry(page, 2).hover()
+  expect(await tint()).not.toBe(resting)
+  await page.getByRole("button", { name: "Add slide" }).hover()
+  expect(
+    await page.getByRole("button", { name: "Add slide" }).evaluate((item) => getComputedStyle(item).backgroundColor),
+  ).not.toBe("rgba(0, 0, 0, 0)")
+})
