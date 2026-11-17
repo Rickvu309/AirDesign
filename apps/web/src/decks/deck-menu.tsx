@@ -40,7 +40,14 @@ export function DeckRowMenu({ children, name, starred, onStar, onTrash }: DeckAc
   return (
     <ContextMenu>
       <ContextMenuTrigger ref={trigger}>{children}</ContextMenuTrigger>
-      <ContextMenuContent finalFocus={() => trigger.current?.querySelector("a") ?? false}>
+      <ContextMenuContent
+        anchor={() => trigger.current?.querySelector("h2") ?? null}
+        side="bottom"
+        align="start"
+        sideOffset={4}
+        data-focus-edge
+        finalFocus={() => trigger.current?.querySelector("a") ?? false}
+      >
         <ContextMenuItem onClick={onStar}>{starred ? unstarOf(name) : starOf(name)}</ContextMenuItem>
         <ContextMenuItem onClick={(event) => onTrash(event.detail > 0)}>{productCopy.moveToTrash}</ContextMenuItem>
       </ContextMenuContent>
