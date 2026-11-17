@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect, test, type Page } from "@playwright/test"
+import { productCopy } from "../../apps/web/src/copy/product-copy"
 
 type Box = { x: number; y: number; width: number; height: number }
 type Callout = { at: string; note: string }
@@ -15,6 +16,17 @@ type Drawer = { blockHtml: (block: unknown) => string; pageHtml: (articles: stri
 
 const look = join(process.cwd(), ".agents/skills/verify-airdesign/look")
 const load = async <T>(name: string) => (await import(pathToFileURL(join(look, name)).href)) as T
+
+test("verification states share copy after a spec loads it through CommonJS", async () => {
+  const { states } = await load<{ states: { name: string }[] }>("states.mjs")
+  const copy = await load<{ productCopy: typeof productCopy }>("../bin/product-copy.mjs")
+  expect(copy.productCopy).toBe(productCopy)
+  for (const name of ["blank-deck", "move-resize", "open-edit-save", "sign-in-pages", "slide-background"]) {
+    const journey = await load<{ default: unknown }>(`../journeys/${name}.mjs`)
+    expect(journey.default).toBeInstanceOf(Function)
+  }
+  expect(states.some((state) => state.name === "new-deck-menu-focused")).toBe(true)
+})
 
 const fixture = `<body style="margin:0;font:16px sans-serif">
 <button id="save" style="position:absolute;left:40px;top:30px;width:90px;height:32px">Save</button>

@@ -1,4 +1,4 @@
-import { productCopy } from "../../../../../apps/web/src/copy/product-copy.ts"
+import { productCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 
 const heldStill = 1000

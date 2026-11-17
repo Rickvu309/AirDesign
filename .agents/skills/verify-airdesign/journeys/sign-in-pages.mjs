@@ -1,4 +1,4 @@
-import { productCopy } from "../../../../apps/web/src/copy/product-copy.ts"
+import { productCopy } from "../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 
 const phone = { width: 390, height: 844 }
