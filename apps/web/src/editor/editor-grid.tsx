@@ -1,3 +1,4 @@
+import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { noSelection, type Selection } from "@airdesign/render"
 import { limits } from "@airdesign/document"
 import { useCallback, useLayoutEffect, useReducer, useRef, useState, type KeyboardEvent, type ReactNode } from "react"
@@ -246,17 +247,13 @@ export function EditorGrid({
   }
 
   function onGridKey(event: KeyboardEvent<HTMLDivElement>) {
+    if (!editorOwnsKey(event)) return
     if (event.target instanceof Element && event.target.closest("[data-add-row], [data-add-gap]") !== null) return
-    if (menu !== null && event.key === "Escape" && !event.nativeEvent.isComposing) {
-      event.preventDefault()
-      event.stopPropagation()
-      closeMenu()
-      return
-    }
     edit.key(event)
   }
 
   function onListKey(event: KeyboardEvent<HTMLDivElement>) {
+    if (!editorOwnsKey(event)) return
     if (event.target instanceof Element && event.target.closest("[data-grid-edit], [data-add-gap]") !== null) return
     if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
       const card = document.activeElement?.closest<HTMLElement>("[data-slide-entry]")

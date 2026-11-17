@@ -1,3 +1,4 @@
+import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { gestureFor } from "@airdesign/render"
 import { useEffect, useRef } from "react"
 
@@ -29,6 +30,7 @@ export function useUndoKeys(working: boolean, onKey: (key: UndoKey) => void) {
   useEffect(() => {
     if (!working) return
     function listen(event: KeyboardEvent) {
+      if (!editorOwnsKey(event)) return
       const key = undoKey({
         key: event.key,
         metaKey: event.metaKey,

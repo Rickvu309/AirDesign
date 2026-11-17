@@ -1,3 +1,4 @@
+import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import {
   createElement,
   memo,
@@ -138,6 +139,7 @@ export function useGridViewport({
       setSpace(false)
     }
     function down(event: KeyboardEvent) {
+      if (!editorOwnsKey(event)) return
       if (event.ctrlKey || event.metaKey || event.altKey) return
       if (event.code === "Space") {
         if (!spacePans(event.target, viewport.current)) return
