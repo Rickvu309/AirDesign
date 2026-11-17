@@ -7,6 +7,7 @@ import {
   type PointerEvent,
   type RefObject,
 } from "react"
+import { flushSync } from "react-dom"
 import {
   zoomedGrid,
   pannedGrid,
@@ -192,11 +193,7 @@ export function useGridViewport({
     const host = viewport.current
     if (host === null) return
     const observer = new ResizeObserver(() => {
-      if (fits.current) {
-        fit()
-        return
-      }
-      if (document.activeElement instanceof Element) reveal(document.activeElement)
+      if (fits.current) flushSync(() => fit())
     })
     observer.observe(host)
     return () => observer.disconnect()

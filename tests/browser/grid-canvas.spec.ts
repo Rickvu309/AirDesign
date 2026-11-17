@@ -95,14 +95,18 @@ test("keeps rows fixed across resize and panel changes", async ({ page }) => {
     buffer: await manySlides(7),
   })
   await openGrid(page)
-  const first = await entry(page, 1).boundingBox()
-  const fourth = await entry(page, 4).boundingBox()
-  expect(fourth!.y).toBeCloseTo(first!.y)
+  const row = () =>
+    page.evaluate(() =>
+      [1, 4].map((number) => document.querySelector(`[data-slide-entry="${number}"]`)!.getBoundingClientRect().y),
+    )
+  const [first, fourth] = await row()
+  expect(fourth).toBeCloseTo(first!)
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await zoomTo(page, "fit")
   await expect(entry(page, 7)).toBeInViewport()
   await page.setViewportSize({ width: 1470, height: 923 })
-  expect((await entry(page, 4).boundingBox())!.y).toBeCloseTo((await entry(page, 1).boundingBox())!.y)
+  const [resizedFirst, resizedFourth] = await row()
+  expect(resizedFourth).toBeCloseTo(resizedFirst!)
 })
 test("selects without opening a side panel", async ({ page }) => {
   await openFile(page, clean)
@@ -140,4 +144,72 @@ test("numbers clear the preceding row at fit", async ({ page }) => {
   const first = await entry(page, 1).boundingBox()
   const fifth = await page.locator("[data-slide-number]").nth(4).boundingBox()
   expect(fifth!.y).toBeGreaterThan(first!.y + first!.height + 4)
+})
+
+async function resizedGrid(page: Page, resize: () => Promise<void>) {
+  const recording = await page.locator("[data-grid-viewport]").evaluateHandle((host) => {
+    const positions = () =>
+      [...host.querySelectorAll("[data-slide-entry]")].map((entry) => {
+        const { x, y, width, height } = entry.getBoundingClientRect()
+        return { x, y, width, height }
+      })
+    const width = host.clientWidth
+    const height = host.clientHeight
+    return {
+      before: positions(),
+      resized: new Promise<ReturnType<typeof positions>[]>((resolve) => {
+        const observer = new ResizeObserver(() => {
+          if (host.clientWidth === width && host.clientHeight === height) return
+          observer.disconnect()
+          const frames = [positions()]
+          const sample = () => {
+            frames.push(positions())
+            if (frames.length === 13) resolve(frames)
+            else requestAnimationFrame(sample)
+          }
+          requestAnimationFrame(sample)
+        })
+        observer.observe(host)
+      }),
+    }
+  })
+  await resize()
+  const result = await recording.evaluate(async ({ before, resized }) => ({ before, frames: await resized }))
+  await recording.dispose()
+  return result
+}
+
+test("refits in the resize paint without moving again on later frames", async ({ page }) => {
+  await openFile(page, { name: "resize.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
+  await openGrid(page)
+  for (const resize of [
+    () => page.setViewportSize({ width: 900, height: 923 }),
+    () => page.setViewportSize({ width: 1470, height: 923 }),
+    () => page.getByRole("button", { name: "Design", exact: true }).click(),
+    () => page.getByRole("button", { name: "Design", exact: true }).click(),
+  ]) {
+    const { before, frames } = await resizedGrid(page, resize)
+    expect(frames[0]).not.toEqual(before)
+    for (const frame of frames) {
+      expect(frame).toEqual(frames[0])
+      expect(frame[3]!.y).toEqual(frame[0]!.y)
+    }
+    await expect(entry(page, 7)).toBeInViewport()
+  }
+})
+
+test("keeps a chosen zoom and pan when the window or a panel resizes", async ({ page }) => {
+  await openFile(page, { name: "resize.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
+  await openGrid(page)
+  await zoomTo(page, 50)
+  await entry(page, 7).focus()
+  for (const resize of [
+    () => page.setViewportSize({ width: 900, height: 923 }),
+    () => page.setViewportSize({ width: 1470, height: 923 }),
+    () => page.getByRole("button", { name: "Design", exact: true }).click(),
+    () => page.getByRole("button", { name: "Design", exact: true }).click(),
+  ]) {
+    const { before, frames } = await resizedGrid(page, resize)
+    for (const frame of frames) expect(frame).toEqual(before)
+  }
 })
