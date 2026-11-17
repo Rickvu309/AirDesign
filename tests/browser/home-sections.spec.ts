@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test"
+import { identityCopy } from "../../apps/web/src/copy/identity-copy.ts"
+import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { many, store } from "./home-store.ts"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -55,7 +57,7 @@ test("the loaded list header stays in the loading header's position", async ({ p
     await route.fallback()
   })
   await page.goto("/?view=list")
-  const header = page.getByText("Name", { exact: true })
+  const header = page.getByText(identityCopy.name, { exact: true })
   await expect(header).toBeVisible()
   const before = await header.boundingBox()
   release()
@@ -99,7 +101,7 @@ test("list mode keeps the importing card visible", async ({ page }) => {
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: Buffer.from("held"),
   })
-  await expect(page.getByText("Importing", { exact: true })).toBeVisible()
+  await expect(page.getByText(productCopy.importing, { exact: true })).toBeVisible()
   await expect(page.getByRole("heading", { name: "Report.pptx" })).toBeVisible()
-  await expect(page.getByText("Name", { exact: true })).toBeVisible()
+  await expect(page.getByText(identityCopy.name, { exact: true })).toBeVisible()
 })
