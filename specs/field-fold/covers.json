@@ -40,8 +40,8 @@
     {
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
-      "digest": "88b26f6c1d41",
-      "blob": "4777751fc09d28b461e92d653701a7b46fc4dbb2"
+      "digest": "c214573120f9",
+      "blob": "4241ba2f4b64e0adae3ec9042424b4ab87373bdc"
     },
     {
       "file": "apps/web/src/design/shown-alpha.ts",
@@ -53,7 +53,7 @@
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["fieldsRead", "elementDesign"],
       "digest": "8f2efb7a9caf",
-      "blob": "49fb76293317fe30905bde0d66c19b2630a051d7"
+      "blob": "450420b5954c7ea13215360fa00f39a376c74866"
     },
     {
       "file": "apps/web/src/undo-list.ts",
