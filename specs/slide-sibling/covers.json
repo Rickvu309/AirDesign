@@ -4,20 +4,20 @@
     {
       "file": "packages/engine/src/agent-slides.ts",
       "names": ["readFresh", "agentSlide"],
-      "digest": "2db515876448",
-      "blob": "e710e807ea98451f201b2f2b2c7d5d295faacfc8"
+      "digest": "3c8f68f1fc8a",
+      "blob": "17f5e668a494f208ace1ba1bfa50a4910ae2703a"
     },
     {
       "file": "packages/engine/src/agent-elements.ts",
-      "names": ["agentElement", "addTextBox", "ready"],
-      "digest": "e66d02df2e4e",
-      "blob": "398534c60f1355e866b8aa171a7d304bd2eb09ce"
+      "names": ["deleteElement", "addTextBox", "ready"],
+      "digest": "9e28c800e39a",
+      "blob": "5503bf2b5da3b0979f97ec10bcad5a52c600eafa"
     },
     {
       "file": "packages/engine/src/call.ts",
       "names": ["landed", "wroteBy"],
       "digest": "900b9d918b02",
-      "blob": "bb21d1808ecaeb2a2e58004989ea4a710f6421bb"
+      "blob": "ab74f354045d0297fab15a542a875ae82a806853"
     },
     {
       "file": "packages/mcp/src/server.ts",

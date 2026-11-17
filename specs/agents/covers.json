@@ -17,25 +17,19 @@
       "file": "packages/mcp/src/run.ts",
       "names": ["freed", "joinRun", "openRun", "stopForNewTurn", "stopLiveRuns"],
       "digest": "94f3a301812c",
-      "blob": "678dcfbb482abf8e0c363df6f0dc207889acd4ac"
+      "blob": "b8ba8cce8637137691707b645117529f4ca7f41b"
     },
     {
       "file": "packages/mcp/src/call-tool.ts",
       "names": ["stopRun"],
       "digest": "280d7a16b2fd",
-      "blob": "bab33eb866ac4306913e60169dcb0ec43e96aca4"
+      "blob": "6999e942f139d71b5221bcc2497ee9417bb9bffc"
     },
     {
-      "file": "packages/mcp/src/slide-tool.ts",
-      "names": ["slideTool"],
-      "digest": "eaa6365748f8",
-      "blob": "94ba467e549a139f70a0a9a49a6037aaf5292efa"
-    },
-    {
-      "file": "packages/mcp/src/element-tool.ts",
-      "names": ["elementTool"],
-      "digest": "f9394798125f",
-      "blob": "199dcded529b16b668498cda9e8cc316fff41911"
+      "file": "packages/mcp/src/edit-tool.ts",
+      "names": ["editDeck", "addTurn"],
+      "digest": "36133ac79f7a",
+      "blob": "606b8fac78ce49fb1b08c1a8b778172353b4f015"
     },
     {
       "file": "apps/api/src/agent-turn.ts",

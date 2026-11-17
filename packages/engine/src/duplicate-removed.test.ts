@@ -34,10 +34,10 @@ it("leaves an element the person removed out of an agent's duplicate of its slid
   )
   if (!removed.ok) throw new Error(removed.refusal)
   const copied = call(
-    "duplicate_slide",
+    "edit_deck",
     removed.deck,
     { actor: "agent", runId: "run" },
-    { deck: "deck", base: removed.deck.revision, slide: "256" },
+    { deck: "deck", base: removed.deck.revision, changes: [{ op: "duplicate_slide", slide: "256" }] },
   )
   if (!copied.ok) throw new Error(copied.refusal)
   expect(readDeckPage(copied.deck, { runId: null }).elements.map((element) => element.node)).toEqual([])

@@ -1,7 +1,8 @@
+import { changeCall } from "./call-fixtures.js"
 import { readDeckId } from "@airdesign/catalog"
 import { decide, elementId, floorFor, orderKeyAfter, presentSlides, slideId } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { call, indexDeck, openDeck } from "./index.js"
+import { indexDeck, openDeck } from "./index.js"
 
 const actor = { actor: "agent", runId: "run" } as const
 const row = (node: string, value: string) =>
@@ -30,7 +31,7 @@ function opened() {
 }
 
 it("keeps the slide an agent adds after in the section of the slide it follows, whatever layout it names", () => {
-  const result = call("add_slide", opened(), actor, { deck: "deck", base: 0, after: "256", layout: "257" })
+  const result = changeCall("add_slide", opened(), actor, { deck: "deck", base: 0, after: "256", layout: "257" })
   if (!result.ok) throw new Error(result.refusal)
   expect(result.deck.register.order.at(-1)).toMatchObject({ slide: "add", after: "256", layout: "257" })
   expect(presentSlides(result.deck.register).map((slide) => slide.id)).toEqual(["256", "258", "257"])
@@ -57,7 +58,7 @@ it("gives a slide an agent adds from a slide a person added from an unused layou
     },
   })
   if (person.decision !== "apply") throw new Error(person.code)
-  const result = call("add_slide", { ...deck, register: person.register }, actor, {
+  const result = changeCall("add_slide", { ...deck, register: person.register }, actor, {
     deck: "deck",
     base: 0,
     after: "258",

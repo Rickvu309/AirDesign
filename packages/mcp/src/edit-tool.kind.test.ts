@@ -65,13 +65,13 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
     const held = session()
     await withClient(held, async (client) => {
       for (const [node, kind, next] of [
-        ["256.3", "a shape that holds no text", "airdesign_add_text_box"],
-        ["256.4", "a picture", "airdesign_add_text_box"],
+        ["256.3", "a shape that holds no text", "airdesign_edit_deck with op add and kind shape"],
+        ["256.4", "a picture", "airdesign_edit_deck with op add and kind shape"],
         ["256.5", "a chart", "Tell the person"],
         ["256.6", "a table", "Set its cells with table's value"],
         ["256.7", "a group", "grouped"],
         ["256.8", "kept exactly as the file has it", "Leave it"],
-        ["256.9", "a line", "airdesign_add_text_box"],
+        ["256.9", "a line", "airdesign_edit_deck with op add and kind shape"],
       ] as const) {
         const refused = await client.callTool({
           name: "airdesign_edit_deck",
@@ -118,8 +118,8 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
     const held = session()
     await withClient(held, async (client) => {
       const refused = await client.callTool({
-        name: "airdesign_delete_element",
-        arguments: { deck: "deck", base: 0, node: "256.7" },
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: 0, changes: [{ op: "delete", node: "256.7" }] },
       })
       expect(refused.structuredContent).toMatchObject({ ok: false, refusal: "group-box" })
       const words = said(refused)

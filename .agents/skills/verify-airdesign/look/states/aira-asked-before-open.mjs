@@ -17,8 +17,8 @@ async function drive(kit) {
   const call = {
     type: "tool_use",
     id: "toolu_before_open",
-    name: "airdesign_add_slide",
-    input: { deck, base: 0, after: "256", layout: "256" },
+    name: "airdesign_edit_deck",
+    input: { deck, base: 0, changes: [{ op: "add_slide", after: "256", layout: "256" }] },
   }
   const said = "I couldn't add the slide."
   const turns = [

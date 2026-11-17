@@ -6,12 +6,12 @@ import { describe, expect, it } from "vitest"
 import { admit, createServer, editNext, emptyLog, memoryTurns, type Host, type Session } from "./index.js"
 
 const slideCalls = [
-  ["airdesign_add_slide", { after: "256", layout: "256" }],
-  ["airdesign_duplicate_slide", { slide: "256" }],
-  ["airdesign_delete_slide", { slide: "256" }],
-  ["airdesign_move_slide", { slide: "256", after: null }],
-  ["airdesign_add_text_box", { slide: "256" }],
-  ["airdesign_delete_element", { node: "256.2" }],
+  ["add_slide", { after: "256", layout: "256" }],
+  ["duplicate_slide", { slide: "256" }],
+  ["delete_slide", { slide: "256" }],
+  ["move_slide", { slide: "256", after: null }],
+  ["add", { kind: "shape", slide: "256" }],
+  ["delete", { node: "256.2" }],
 ] as const
 
 function unindexed(): Deck {
@@ -67,7 +67,10 @@ describe("a slide call that arrives before the deck's index", () => {
     it(`${name} is refused as indexing, with words an agent can act on, and costs no tool call`, async () => {
       const session = sessionFor(unindexed())
       await withClient(session, undefined, async (client) => {
-        const refused = await client.callTool({ name, arguments: { deck: "deck", base: 0, ...input } })
+        const refused = await client.callTool({
+          name: "airdesign_edit_deck",
+          arguments: { deck: "deck", base: 0, changes: [{ op: name, ...input }] },
+        })
         expect(refused.isError).toBe(true)
         expect(refused.structuredContent).toMatchObject({ ok: false, refusal: "indexing" })
         expect(refused.content).toEqual([
@@ -85,13 +88,13 @@ describe("a slide call that arrives before the deck's index", () => {
   it("is sent again after the index lands, and that call lands", async () => {
     const session = sessionFor(unindexed())
     await withClient(session, undefined, async (client) => {
-      const arguments_ = { deck: "deck", base: 0, after: "256", layout: "256" }
-      const first = await client.callTool({ name: "airdesign_add_slide", arguments: arguments_ })
+      const arguments_ = { deck: "deck", base: 0, changes: [{ op: "add_slide", after: "256", layout: "256" }] }
+      const first = await client.callTool({ name: "airdesign_edit_deck", arguments: arguments_ })
       expect(first.isError).toBe(true)
       session.deck = indexed(session.deck)
-      const second = await client.callTool({ name: "airdesign_add_slide", arguments: arguments_ })
+      const second = await client.callTool({ name: "airdesign_edit_deck", arguments: arguments_ })
       expect(second.isError).not.toBe(true)
-      expect(second.structuredContent).toMatchObject({ ok: true, slide: "257" })
+      expect(second.structuredContent).toMatchObject({ ok: true, slides: ["257"] })
     })
     expect(session.log.events).toHaveLength(1)
   })
@@ -110,8 +113,8 @@ describe("a slide call that arrives before the deck's index", () => {
     }
     await withClient(session, host, async (client) => {
       await client.callTool({
-        name: "airdesign_add_slide",
-        arguments: { deck: "deck", base: 0, after: "256", layout: "256" },
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: 0, changes: [{ op: "add_slide", after: "256", layout: "256" }] },
       })
     })
     expect(counted).toEqual(["admit", "refund"])
@@ -121,8 +124,8 @@ describe("a slide call that arrives before the deck's index", () => {
     const session = sessionFor(unindexed())
     await withClient(session, undefined, async (client) => {
       await client.callTool({
-        name: "airdesign_add_slide",
-        arguments: { deck: "other", base: 0, after: "1", layout: "1" },
+        name: "airdesign_edit_deck",
+        arguments: { deck: "other", base: 0, changes: [{ op: "add_slide", after: "1", layout: "1" }] },
       })
     })
     expect(session.log.events).toHaveLength(1)

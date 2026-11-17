@@ -1,4 +1,4 @@
-import { elementReaders, type ElementOp, type CallRefusal } from "@airdesign/catalog"
+import type { CallRefusal, WireDelete } from "@airdesign/catalog"
 import {
   currentBox,
   decide,
@@ -19,7 +19,7 @@ import {
   type SlideId,
 } from "@airdesign/document"
 import { readFresh, runFence } from "./agent-slides.js"
-import type { Caller, Deck } from "./call.js"
+import type { Deck } from "./call.js"
 
 type Built =
   | { readonly ok: true; readonly register: Register; readonly runId: string }
@@ -130,26 +130,13 @@ export function addIcon(
   return decided(register, opened.file, { slide: "element-add", id: slide, element, runId }, runId)
 }
 
-export function agentElement(op: ElementOp, deck: Deck, caller: Caller, raw: unknown): Built {
-  if (caller.actor !== "agent") return { ok: false, refusal: "field" }
+export function deleteElement(deck: Deck, change: WireDelete, runId: string, base: number): Built {
   const register = deck.register
-  if (op === "add_text_box") {
-    const parsed = elementReaders.add_text_box(raw)
-    if (!parsed.ok) return parsed
-    return addTextBox(parsed, deck, parsed.slide, parsed.box, caller.runId)
-  }
-  const parsed = elementReaders.delete_element(raw)
-  if (!parsed.ok) return parsed
-  const slide = readSlideId(shapeOf(parsed.node).slide)
-  const opened = ready(parsed, deck, slide, caller.runId)
+  const slide = readSlideId(shapeOf(change.node).slide)
+  const opened = ready({ deck: deck.id, base }, deck, slide, runId)
   if ("refusal" in opened || slide === undefined)
     return { ok: false, refusal: "refusal" in opened ? opened.refusal : "dead" }
-  const refusal = protectedFrom(register, parsed.node, caller.runId)
+  const refusal = protectedFrom(register, change.node, runId)
   if (refusal !== null) return { ok: false, refusal }
-  return decided(
-    register,
-    opened.file,
-    { slide: "element-remove", id: slide, node: parsed.node, runId: caller.runId },
-    caller.runId,
-  )
+  return decided(register, opened.file, { slide: "element-remove", id: slide, node: change.node, runId }, runId)
 }

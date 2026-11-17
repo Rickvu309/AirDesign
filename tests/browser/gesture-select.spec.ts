@@ -45,7 +45,9 @@ test("Cmd or Ctrl+click adds a second shape, and when an agent deletes it the fi
     .poll(async () => JSON.stringify(await stack.callTool("airdesign_read_deck", { deck, slide: "256" }, cookie)))
     .toContain(second)
   const base = (await stack.post("/decks/open", { deck }, cookie)).json.revision
-  expect(await stack.callTool("airdesign_delete_element", { deck, base, node: second }, cookie)).toMatchObject({
+  expect(
+    await stack.callTool("airdesign_edit_deck", { deck, base, changes: [{ op: "delete", node: second }] }, cookie),
+  ).toMatchObject({
     ok: true,
   })
   await expect(frame(page, second)).toHaveCount(0)

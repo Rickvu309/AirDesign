@@ -1,3 +1,4 @@
+import { changeCall } from "./call-fixtures.js"
 import { readDeckId } from "@airdesign/catalog"
 import { elementId } from "@airdesign/document"
 import { expect, it } from "vitest"
@@ -41,7 +42,7 @@ for (const [op, input] of slideCalls) {
   it(`refuses ${op} from a run the agent stopped`, () => {
     const stopped = call("stop_run", running(), agent, { deck: "deck", runId: "run" })
     if (!stopped.ok) throw new Error(stopped.refusal)
-    expect(call(op, stopped.deck, agent, { deck: "deck", base: stopped.deck.revision, ...input })).toEqual({
+    expect(changeCall(op, stopped.deck, agent, { deck: "deck", base: stopped.deck.revision, ...input })).toEqual({
       ok: false,
       refusal: "run-fenced",
     })
@@ -51,7 +52,9 @@ for (const [op, input] of slideCalls) {
 it("refuses deleting a slide that holds an element a person protected from the run", () => {
   const typed = call("commit_edits", running(), { actor: "person" }, { deck: "deck", batch: [{ node, value: "Mine" }] })
   if (!typed.ok) throw new Error(typed.refusal)
-  expect(call("delete_slide", typed.deck, agent, { deck: "deck", base: typed.deck.revision, slide: "256" })).toEqual({
+  expect(
+    changeCall("delete_slide", typed.deck, agent, { deck: "deck", base: typed.deck.revision, slide: "256" }),
+  ).toEqual({
     ok: false,
     refusal: "person-protected",
   })
@@ -73,7 +76,7 @@ function slidesOnly(): Deck {
     },
   )
   if (!indexed.ok) throw new Error(indexed.refusal)
-  const added = call("add_slide", indexed.deck, agent, {
+  const added = changeCall("add_slide", indexed.deck, agent, {
     deck: "deck",
     base: indexed.deck.revision,
     ...slideCalls[0][1],
@@ -89,7 +92,7 @@ for (const end of ["stop_run", "undo_run"] as const) {
     if (!ended.ok) throw new Error(ended.refusal)
     expect(runFenced(ended.deck.register, "run")).toBe(true)
     expect(
-      call("add_slide", ended.deck, agent, { deck: "deck", base: ended.deck.revision, ...slideCalls[0][1] }),
+      changeCall("add_slide", ended.deck, agent, { deck: "deck", base: ended.deck.revision, ...slideCalls[0][1] }),
     ).toEqual({ ok: false, refusal: "run-fenced" })
   })
 }
@@ -115,7 +118,11 @@ it("keeps the record of a stopped run through a person's edit and another run's 
   )
   if (!typed.ok) throw new Error(typed.refusal)
   const next = { actor: "agent", runId: "next" } as const
-  const added = call("add_slide", typed.deck, next, { deck: "deck", base: typed.deck.revision, ...slideCalls[0][1] })
+  const added = changeCall("add_slide", typed.deck, next, {
+    deck: "deck",
+    base: typed.deck.revision,
+    ...slideCalls[0][1],
+  })
   if (!added.ok) throw new Error(added.refusal)
   expect(runFenced(added.deck.register, "run")).toBe(true)
   expect(runFenced(added.deck.register, "next")).toBe(false)

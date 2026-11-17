@@ -27,7 +27,9 @@ async function drive(kit) {
       return read.index === "ready" && read.elements.some((each) => each.node === second)
     })
     .toBe(true)
-  expect(await tool("airdesign_delete_element", { deck, base: read.revision, node: second })).toMatchObject({
+  expect(
+    await tool("airdesign_edit_deck", { deck, base: read.revision, changes: [{ op: "delete", node: second }] }),
+  ).toMatchObject({
     ok: true,
   })
   await expect(shapeFrame(kit.page, second)).toHaveCount(0)

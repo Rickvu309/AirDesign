@@ -1,3 +1,4 @@
+import { changeCall } from "./call-fixtures.js"
 import { readDeckId } from "@airdesign/catalog"
 import {
   decide,
@@ -367,7 +368,7 @@ describe("design lines", () => {
     expect(byNode(readDeckPage(red, { runId: "run" })).get("259.7")?.design).toBe(
       `geometry custom · fill #${crimson} · line.width 1 (style)`,
     )
-    const copied = call("duplicate_slide", red, actor, { deck: "designed", base: red.revision, slide: "259" })
+    const copied = changeCall("duplicate_slide", red, actor, { deck: "designed", base: red.revision, slide: "259" })
     if (!copied.ok) throw new Error(copied.refusal)
     const copy = readDeckPage(copied.deck, { runId: "run" }).elements.find(
       (element) => element.slide !== "258" && element.slide !== "259",
@@ -462,15 +463,10 @@ describe("design lines", () => {
   it("reads a slide added from a layout with the roles of its layout floor", () => {
     const deck = designed()
     const added = call(
-      "add_slide",
+      "edit_deck",
       deck,
       { actor: "agent", runId: "run" },
-      {
-        deck: "designed",
-        base: 0,
-        after: "258",
-        layout: "258",
-      },
+      { deck: "designed", base: 0, changes: [{ op: "add_slide", after: "258", layout: "258" }] },
     )
     if (!added.ok) throw new Error(added.refusal)
     const fresh = readDeckPage(added.deck, { runId: "run" }).elements.filter(

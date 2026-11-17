@@ -1,3 +1,4 @@
+import { changeCall } from "./call-fixtures.js"
 import { readDeckId } from "@airdesign/catalog"
 import { decide, elementGone, elementId, slideId, type Box, type ElementId, type Register } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
@@ -35,11 +36,21 @@ function opened(): Deck {
 }
 
 function add(deck: Deck, input: Record<string, unknown> = {}, as: typeof actor | typeof person = actor) {
-  return call("add_text_box", deck, as, { deck: "deck", base: deck.revision, slide: "256", ...input })
+  return call(
+    "edit_deck",
+    deck,
+    as,
+    (({ deck, base, ...change }) => ({ deck, base, changes: [{ op: "add", kind: "shape", ...change }] }))({
+      deck: "deck",
+      base: deck.revision,
+      slide: "256",
+      ...input,
+    }),
+  )
 }
 
 function remove(deck: Deck, node: string, as: typeof actor | typeof person = actor) {
-  return call("delete_element", deck, as, { deck: "deck", base: deck.revision, node })
+  return changeCall("delete", deck, as, { deck: "deck", base: deck.revision, node })
 }
 
 function landed<Result extends { ok: boolean }>(result: Result): Extract<Result, { ok: true }> {
@@ -56,7 +67,9 @@ function lastAdded(register: Register) {
 describe("add_text_box", () => {
   it("adds an empty box at the box the agent sends, under the agent's run, with the next free shape id", () => {
     const box = { x: 10, y: 20, cx: 300, cy: 40 }
-    const { deck } = landed(add(opened(), { box }))
+    const { deck } = landed(
+      add(opened(), { box: { x: box.x / 12700, y: box.y / 12700, w: box.cx / 12700, h: box.cy / 12700 } }),
+    )
     const added = lastAdded(deck.register)
     expect(added).toMatchObject({ id: "256", runId: "run" })
     expect(added.element).toEqual({ node: "256.6", kind: "shape", value: "", box, grouped: false })
@@ -87,13 +100,23 @@ describe("add_text_box", () => {
   })
 
   it("adds a box to a slide the run added, and one cloned from a slide", () => {
-    const born = landed(call("add_slide", opened(), actor, { deck: "deck", base: 0, after: "256", layout: "256" })).deck
+    const born = landed(
+      changeCall("add_slide", opened(), actor, { deck: "deck", base: 0, after: "256", layout: "256" }),
+    ).deck
     const slide = born.register.order.at(-1)?.id
     expect(slide).toBe("259")
-    const result = landed(call("add_text_box", born, actor, { deck: "deck", base: 1, slide }))
+    const result = landed(
+      call("edit_deck", born, actor, { deck: "deck", base: 1, changes: [{ op: "add", kind: "shape", slide }] }),
+    )
     expect(lastAdded(result.deck.register).element.node).toBe("259.2")
-    const cloned = landed(call("duplicate_slide", opened(), actor, { deck: "deck", base: 0, slide: "256" })).deck
-    const copy = landed(call("add_text_box", cloned, actor, { deck: "deck", base: 1, slide: "259" }))
+    const cloned = landed(changeCall("duplicate_slide", opened(), actor, { deck: "deck", base: 0, slide: "256" })).deck
+    const copy = landed(
+      call("edit_deck", cloned, actor, {
+        deck: "deck",
+        base: 1,
+        changes: [{ op: "add", kind: "shape", slide: "259" }],
+      }),
+    )
     expect(lastAdded(copy.deck.register).element.node).toBe("259.6")
   })
 
@@ -129,7 +152,7 @@ describe("delete_element", () => {
     expect(remove(gone, "256.2")).toEqual({ ok: false, refusal: "dead" })
     expect(remove(opened(), "256.2", person)).toEqual({ ok: false, refusal: "field" })
     expect(remove(opened(), "256.2", actor)).toMatchObject({ ok: true })
-    expect(call("delete_element", opened(), actor, { deck: "deck", base: 4, node: "256.2" })).toEqual({
+    expect(changeCall("delete", opened(), actor, { deck: "deck", base: 4, node: "256.2" })).toEqual({
       ok: false,
       refusal: "stale",
     })
@@ -272,7 +295,7 @@ describe("a box a person typed in", () => {
     const held = { ...added, register: typed.register }
     expect(remove(held, "256.6")).toEqual({ ok: false, refusal: "person-protected" })
     expect(
-      call("delete_element", held, { actor: "agent", runId: "later" }, { deck: "deck", base: 1, node: "256.6" }).ok,
+      changeCall("delete", held, { actor: "agent", runId: "later" }, { deck: "deck", base: 1, node: "256.6" }).ok,
     ).toBe(true)
   })
 })

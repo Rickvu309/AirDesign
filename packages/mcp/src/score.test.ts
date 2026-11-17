@@ -32,17 +32,7 @@ afterEach(() => {
 
 const title = elements.title
 
-const toolNames = {
-  add_slide: "airdesign_add_slide",
-  duplicate_slide: "airdesign_duplicate_slide",
-  delete_slide: "airdesign_delete_slide",
-  move_slide: "airdesign_move_slide",
-  add_text_box: "airdesign_add_text_box",
-  delete_element: "airdesign_delete_element",
-
-  edit_deck: edit("deck", []).name,
-  read_deck: "airdesign_read_deck",
-} as const
+const toolNames = { edit_deck: "airdesign_edit_deck", read_deck: "airdesign_read_deck" } as const
 
 function rowOf(id: string) {
   const row = suite.find((item) => item.task.id === id)
@@ -226,6 +216,7 @@ describe("score", () => {
     const starts = suite.map((row) => {
       const deck = row.task.deck()
       return JSON.stringify({
+        reference: row.reference,
         revision: deck.revision,
         register: deck.register,
         want: row.task.want,

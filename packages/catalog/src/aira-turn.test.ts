@@ -51,14 +51,8 @@ describe("Aira's tools", () => {
     )
     expect(JSON.stringify(airaTools)).not.toMatch(/"\$ref"|"\$defs"/)
     expect(airaTools.map((tool) => tool.name)).toEqual([
-      "airdesign_add_slide",
-      "airdesign_add_text_box",
-      "airdesign_delete_element",
-      "airdesign_delete_slide",
-      "airdesign_duplicate_slide",
       "airdesign_edit_deck",
       "airdesign_list_decks",
-      "airdesign_move_slide",
       "airdesign_read_deck",
       "airdesign_stop_run",
     ])

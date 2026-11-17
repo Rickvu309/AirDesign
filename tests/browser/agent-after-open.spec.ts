@@ -40,15 +40,15 @@ test("Aira asked at once adds the slide when the index lands, and the step stays
   stack.aira({ name: "add-slide.sse", fill: { deck, base: "0" } }, { name: "edited.sse" })
   await page.getByRole("textbox", { name: "Ask Aira" }).fill("Add a slide")
   await page.keyboard.press("Enter")
-  await expect(page.getByText("Adding a slide")).toBeVisible()
+  await expect(page.getByText("Editing slides")).toBeVisible()
   await page.waitForTimeout(2500)
-  await expect(page.getByText("Adding a slide")).toBeVisible()
-  await expect(page.getByText("Couldn't add a slide")).toHaveCount(0)
+  await expect(page.getByText("Editing slides")).toBeVisible()
+  await expect(page.getByText("Couldn't edit slides")).toHaveCount(0)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
   release()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
-  await expect(page.getByText("Added a slide")).toBeVisible()
-  await expect(page.getByText("Couldn't add a slide")).toHaveCount(0)
+  await expect(page.getByText("Edited slides")).toBeVisible()
+  await expect(page.getByText("Couldn't edit slides")).toHaveCount(0)
 })
 
 test("an outside agent's add_slide is refused with the reason while the index is held, then lands", async ({
@@ -63,13 +63,25 @@ test("an outside agent's add_slide is refused with the reason while the index is
   const deck = await importHeld(page)
   const call = { deck, base: 0, after: "256", layout: "256" }
   for (let n = 0; n < 35; n += 1) {
-    expect(await stack.callTool("airdesign_add_slide", call, cookie)).toMatchObject({ ok: false, refusal: "indexing" })
+    expect(
+      await stack.callTool(
+        "airdesign_edit_deck",
+        (({ deck, base, ...change }) => ({ deck, base, changes: [{ op: "add_slide", ...change }] }))(call),
+        cookie,
+      ),
+    ).toMatchObject({ ok: false, refusal: "indexing" })
   }
   release()
   await expect
     .poll(async () => (await stack.callTool("airdesign_read_deck", { deck }, cookie)).index, { timeout: 15_000 })
     .toBe("ready")
-  expect(await stack.callTool("airdesign_add_slide", call, cookie)).toMatchObject({ ok: true })
+  expect(
+    await stack.callTool(
+      "airdesign_edit_deck",
+      (({ deck, base, ...change }) => ({ deck, base, changes: [{ op: "add_slide", ...change }] }))(call),
+      cookie,
+    ),
+  ).toMatchObject({ ok: true })
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
 })
 
@@ -96,9 +108,9 @@ test("Aira asked before the server's first open of a new deck adds the slide onc
   stack.aira({ name: "add-slide.sse", fill: { deck, base: "0" } }, { name: "edited.sse" })
   await page.getByRole("textbox", { name: "Ask Aira" }).fill("Add a slide")
   await page.keyboard.press("Enter")
-  await expect(page.getByText("Adding a slide")).toBeVisible()
+  await expect(page.getByText("Editing slides")).toBeVisible()
   await page.waitForTimeout(1500)
   release()
-  await expect(page.getByText("Added a slide")).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText("Edited slides")).toBeVisible({ timeout: 10_000 })
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
 })

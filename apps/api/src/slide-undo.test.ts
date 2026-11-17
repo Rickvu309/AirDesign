@@ -49,12 +49,15 @@ async function saved(live: Live) {
 async function opened(dropped = false): Promise<Live> {
   const owned = await indexedDeck(stores, "slide-undo")
   const first = dropped
-    ? await wholeCall(steps, owned, "r", "delete_slide", { deck: owned.deck, base: owned.revision, slide: dropping })
-    : await wholeCall(steps, owned, "r", "add_slide", {
+    ? await wholeCall(steps, owned, "r", "edit_deck", {
         deck: owned.deck,
         base: owned.revision,
-        after: "256",
-        layout: "256",
+        changes: [{ op: "delete_slide", slide: dropping }],
+      })
+    : await wholeCall(steps, owned, "r", "edit_deck", {
+        deck: owned.deck,
+        base: owned.revision,
+        changes: [{ op: "add_slide", after: "256", layout: "256" }],
       })
   const live = { ...owned, offset: revisionOf(first) - 1, minted: 0, moved: false, undone: false, afterUndo: 0 }
   return { ...live, told: "none", adds: 0, undos: 0, dropped, added: !dropped }
@@ -78,7 +81,13 @@ async function act(live: Live, action: string): Promise<void> {
   if (action === "AgentAddsSlide") {
     const read = await wholeCall(steps, live, fresh, "read_deck", { deck: live.deck })
     const args = { deck: live.deck, base: revisionOf(read), after: "256", layout: "256" }
-    const added = await wholeCall(steps, live, fresh, "add_slide", args)
+    const added = await wholeCall(
+      steps,
+      live,
+      fresh,
+      "edit_deck",
+      (({ deck, base, ...change }) => ({ deck, base, changes: [{ op: "add_slide", ...change }] }))(args),
+    )
     revisionOf(added)
     if (added.body?.runId === "r" && live.undone) live.afterUndo += 1
     if (added.body?.runId === "r") live.added = true

@@ -70,13 +70,13 @@ function what(node: ElementId, { facts }: Missing): string {
 }
 
 function textNext(node: ElementId, { facts }: Missing): string {
-  const beside = `put words beside it with airdesign_add_text_box on slide ${shapeOf(node).slide}`
+  const beside = `put words beside it with airdesign_edit_deck with op add and kind shape on slide ${shapeOf(node).slide}`
   if (facts.kind === "group")
     return "Edit the text of the elements inside it: airdesign_read_deck lists them with grouped true."
   if (facts.kind === "chart") return `No tool edits a chart's data yet. Tell the person, or ${beside}.`
   if (facts.kind === "table") return `Set its cells with table's value, as airdesign_read_deck lists it, or ${beside}.`
   if (facts.kind === "kept") return "Leave it, or tell the person."
-  return `To put words beside it, call airdesign_add_text_box on slide ${shapeOf(node).slide}.`
+  return `To put words beside it, call airdesign_edit_deck with op add and kind shape on slide ${shapeOf(node).slide}.`
 }
 
 function boxNext({ facts }: Missing): string {

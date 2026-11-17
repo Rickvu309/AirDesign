@@ -27,26 +27,46 @@ export const elementSuite: readonly SuiteRow[] = [
   {
     task: {
       id: "add_text_box",
-      prompt: "Use airdesign_add_text_box to add an empty text box to slide 258.",
+      prompt: "Use airdesign_edit_deck with op add and kind shape to add an empty text box to slide 258.",
       deck,
-      want: { calls: 1, steps: [{ name: "add_text_box", outcome: "ok" }], elements: {}, added: ["258.9"] },
+      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: {}, added: ["258.9"] },
     },
-    reference: [{ name: "airdesign_add_text_box", raw: { deck: "elements", base: 0, slide: "258" } }],
+    reference: [
+      {
+        name: "airdesign_edit_deck",
+        raw: { deck: "elements", base: 0, changes: [{ op: "add", kind: "shape", slide: "258" }] },
+      },
+    ],
     wrong: {
-      attempt: [{ name: "airdesign_add_text_box", raw: { deck: "elements", base: 9, slide: "258" } }],
+      attempt: [
+        {
+          name: "airdesign_edit_deck",
+          raw: { deck: "elements", base: 9, changes: [{ op: "add", kind: "shape", slide: "258" }] },
+        },
+      ],
       reason: "tool",
     },
   },
   {
     task: {
       id: "delete_element",
-      prompt: "Use airdesign_delete_element to delete the body of slide 258.",
+      prompt: "Use airdesign_edit_deck with op delete to delete the body of slide 258.",
       deck,
-      want: { calls: 1, steps: [{ name: "delete_element", outcome: "ok" }], elements: {}, removed: ["258.7"] },
+      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: {}, removed: ["258.7"] },
     },
-    reference: [{ name: "airdesign_delete_element", raw: { deck: "elements", base: 0, node: elementId("258.7") } }],
+    reference: [
+      {
+        name: "airdesign_edit_deck",
+        raw: { deck: "elements", base: 0, changes: [{ op: "delete", node: elementId("258.7") }] },
+      },
+    ],
     wrong: {
-      attempt: [{ name: "airdesign_delete_element", raw: { deck: "elements", base: 0, node: elementId("258.8") } }],
+      attempt: [
+        {
+          name: "airdesign_edit_deck",
+          raw: { deck: "elements", base: 0, changes: [{ op: "delete", node: elementId("258.8") }] },
+        },
+      ],
       reason: "tool",
     },
   },

@@ -1,6 +1,4 @@
 import { colorPattern, hexPattern } from "./agent-color.js"
-import { elementReaders } from "./agent-element-wire.js"
-import { slideReaders } from "./agent-slide-wire.js"
 import * as z from "zod/v4"
 
 import { readAgentEdit } from "./edit-wire.js"
@@ -72,58 +70,7 @@ export const catalog = {
     destructive: true,
     read: readAgentEdit,
     description:
-      "Change one deck. Read it first with airdesign_read_deck and send that revision as base and each element's version as readAt; a change with op needs no readAt. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
-  },
-  add_slide: {
-    kind: "command",
-    exposure: "agent",
-    runsOn: "server",
-    destructive: true,
-    read: slideReaders.add_slide,
-    description:
-      "Add a slide after an existing slide, using the layout of the named slide. Returns the new slide id. Open the deck in AirDesign to index its layouts first.",
-  },
-  duplicate_slide: {
-    kind: "command",
-    exposure: "agent",
-    runsOn: "server",
-    destructive: true,
-    read: slideReaders.duplicate_slide,
-    description: "Duplicate a slide after itself, including its current text and boxes. Returns the new slide id.",
-  },
-  delete_slide: {
-    kind: "command",
-    exposure: "agent",
-    runsOn: "server",
-    destructive: true,
-    read: slideReaders.delete_slide,
-    description: "Delete the named slide. The last slide cannot be deleted.",
-  },
-  move_slide: {
-    kind: "command",
-    exposure: "agent",
-    runsOn: "server",
-    destructive: true,
-    read: slideReaders.move_slide,
-    description: "Move the named slide after another slide, or to the beginning with after: null.",
-  },
-  add_text_box: {
-    kind: "command",
-    exposure: "agent",
-    runsOn: "server",
-    destructive: true,
-    read: elementReaders.add_text_box,
-    description:
-      "Add a text box to a slide, with a box in EMU and opening text if you send them. Without a box it goes in the largest free area of the slide. Returns the new element id in elements. Open the deck in AirDesign to index its slides first.",
-  },
-  delete_element: {
-    kind: "command",
-    exposure: "agent",
-    runsOn: "server",
-    destructive: true,
-    read: elementReaders.delete_element,
-    description:
-      "Delete one element from its slide. A group, an element inside a group, and an element with an animation cannot be deleted. The person's Undo for your run brings the element back.",
+      "Change one deck: text, boxes, looks, elements and slides, all landing or none. Read it first with airdesign_read_deck and send that revision as base and each element's version as readAt; a change with op needs no readAt. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
   },
   list_decks: {
     kind: "query",

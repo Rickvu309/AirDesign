@@ -83,11 +83,10 @@ async function observed(live: Live): Promise<SpecState> {
 
 async function opened(element: string): Promise<Live> {
   const owned = await indexedDeck(stores, "slide-run")
-  const added = await wholeCall(steps, owned, "r", "add_slide", {
+  const added = await wholeCall(steps, owned, "r", "edit_deck", {
     deck: owned.deck,
     base: owned.revision,
-    after: "256",
-    layout: "256",
+    changes: [{ op: "add_slide", after: "256", layout: "256" }],
   })
   let base = revisionOf(added)
   if (element === "running") {
@@ -115,9 +114,9 @@ async function act(live: Live, action: string, target: SpecState): Promise<void>
       const args =
         target.aKind === "read"
           ? { deck: live.deck }
-          : { deck: live.deck, base: live.base, after: "256", layout: "256" }
+          : { deck: live.deck, base: live.base, changes: [{ op: "add_slide", after: "256", layout: "256" }] }
       live.reading = target.aKind === "read"
-      const op = live.reading ? "read_deck" : "add_slide"
+      const op = live.reading ? "read_deck" : "edit_deck"
       live.agent = await steps.start(live, `u${String(live.minted)}`, op, args)
       await live.agent.release()
     } else await agent.release()

@@ -1,4 +1,4 @@
-import { catalog, projectTools, type ElementOp, type SlideOp, type WireRefusal } from "@airdesign/catalog"
+import { catalog, projectTools, type WireRefusal } from "@airdesign/catalog"
 import {
   elementGone,
   elementId,
@@ -29,7 +29,7 @@ export const fixtureRun = "run"
 
 export type EditableName = Exclude<ElementName, "opened">
 
-export type Tool = "edit_deck" | "read_deck" | SlideOp | ElementOp
+export type Tool = "edit_deck" | "read_deck"
 
 export type AttemptCall = {
   readonly name: string
@@ -92,12 +92,6 @@ function toolName(op: Tool): string {
 const toolNames = {
   edit_deck: toolName("edit_deck"),
   read_deck: toolName("read_deck"),
-  add_slide: toolName("add_slide"),
-  duplicate_slide: toolName("duplicate_slide"),
-  delete_slide: toolName("delete_slide"),
-  move_slide: toolName("move_slide"),
-  add_text_box: toolName("add_text_box"),
-  delete_element: toolName("delete_element"),
 } as const
 
 export function edit(deck: string, writes: readonly Write[], base = 0): AttemptCall {

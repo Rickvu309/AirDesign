@@ -1,3 +1,4 @@
+import { changeCall } from "./call-fixtures.js"
 import { readDeckId } from "@airdesign/catalog"
 import { elementId } from "@airdesign/document"
 import { expect, it } from "vitest"
@@ -59,15 +60,15 @@ const slideCalls = [
   ["duplicate_slide", { slide: "256" }],
   ["delete_slide", { slide: "257" }],
   ["move_slide", { slide: "257", after: null }],
-  ["add_text_box", { slide: "256", box: { x: 0, y: 0, cx: 100, cy: 100 } }],
-  ["delete_element", { node: spare }],
+  ["add", { kind: "shape", slide: "256", box: { x: 0, y: 0, w: 1, h: 1 } }],
+  ["delete", { node: spare }],
 ] as const
 
 for (const [op, input] of slideCalls) {
   it(`lands ${op} on a base that only the caller's own run moved since`, () => {
     const read = indexed()
     const edited = agentEdit(read, agent)
-    const result = call(op, edited, agent, { deck: "deck", base: read.revision, ...input })
+    const result = changeCall(op, edited, agent, { deck: "deck", base: read.revision, ...input })
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.deck.revision).toBe(read.revision + 2)
   })
@@ -75,7 +76,7 @@ for (const [op, input] of slideCalls) {
   it(`refuses ${op} as stale on a base that another run moved since`, () => {
     const read = indexed()
     const edited = agentEdit(read, { actor: "agent", runId: "another" })
-    expect(call(op, edited, agent, { deck: "deck", base: read.revision, ...input })).toEqual({
+    expect(changeCall(op, edited, agent, { deck: "deck", base: read.revision, ...input })).toEqual({
       ok: false,
       refusal: "stale",
     })
@@ -85,20 +86,20 @@ for (const [op, input] of slideCalls) {
     const read = indexed()
     const typed = personEdit(read)
     const edited = agentEdit(typed, agent)
-    expect(call(op, edited, agent, { deck: "deck", base: read.revision, ...input })).toEqual({
+    expect(changeCall(op, edited, agent, { deck: "deck", base: read.revision, ...input })).toEqual({
       ok: false,
       refusal: "stale",
     })
-    expect(call(op, edited, agent, { deck: "deck", base: typed.revision, ...input }).ok).toBe(true)
+    expect(changeCall(op, edited, agent, { deck: "deck", base: typed.revision, ...input }).ok).toBe(true)
   })
 }
 
 it("lands two slide calls of one run sent at one base, in either order", () => {
   const read = indexed()
   const added = landed(
-    call("add_slide", read, agent, { deck: "deck", base: read.revision, after: "256", layout: "256" }),
+    changeCall("add_slide", read, agent, { deck: "deck", base: read.revision, after: "256", layout: "256" }),
   )
-  const moved = call("move_slide", added, agent, { deck: "deck", base: read.revision, slide: "257", after: null })
+  const moved = changeCall("move_slide", added, agent, { deck: "deck", base: read.revision, slide: "257", after: null })
   expect(moved.ok).toBe(true)
 })
 
@@ -106,7 +107,7 @@ it("refuses a slide call as stale on a base the deck has not reached", () => {
   const read = indexed()
   const edited = agentEdit(read, agent)
   expect(
-    call("add_slide", edited, agent, { deck: "deck", base: edited.revision + 1, after: "256", layout: "256" }),
+    changeCall("add_slide", edited, agent, { deck: "deck", base: edited.revision + 1, after: "256", layout: "256" }),
   ).toEqual({ ok: false, refusal: "stale" })
 })
 
@@ -115,11 +116,13 @@ it("refuses a slide call as stale on a base older than the run's first write sin
   const first = agentEdit(read, agent)
   const typed = personEdit(first, node)
   const again = agentEdit(typed, agent, other)
-  expect(call("add_slide", again, agent, { deck: "deck", base: first.revision, after: "256", layout: "256" })).toEqual({
+  expect(
+    changeCall("add_slide", again, agent, { deck: "deck", base: first.revision, after: "256", layout: "256" }),
+  ).toEqual({
     ok: false,
     refusal: "stale",
   })
-  expect(call("add_slide", again, agent, { deck: "deck", base: typed.revision, after: "256", layout: "256" }).ok).toBe(
-    true,
-  )
+  expect(
+    changeCall("add_slide", again, agent, { deck: "deck", base: typed.revision, after: "256", layout: "256" }).ok,
+  ).toBe(true)
 })

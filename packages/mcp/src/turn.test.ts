@@ -103,11 +103,10 @@ describe("the turn", () => {
     const first = sessionFor(indexed.deck, memoryTurns(), "one", 0)
     await edit(first, node, "a", 0)
     const slide = sessionFor(first.deck, memoryTurns(), "two", 0)
-    const answer = await called(slide, "airdesign_add_slide", {
+    const answer = await called(slide, "airdesign_edit_deck", {
       deck: "deck",
       base: first.deck.revision,
-      after: "258",
-      layout: "258",
+      changes: [{ op: "add_slide", after: "258", layout: "258" }],
     })
     expect(answer).toMatchObject({ ok: true, runId: "one" })
     expect(bodyOf(slide.deck.register).phase).toBe("running")
@@ -130,7 +129,13 @@ describe("the turn", () => {
     const turns = memoryTurns()
     const first = sessionFor(indexed.deck, turns, "one", 0)
     const slide = { deck: "deck", after: "258", layout: "258" }
-    expect(await called(first, "airdesign_add_slide", { ...slide, base: first.deck.revision })).toMatchObject({
+    expect(
+      await called(first, "airdesign_edit_deck", {
+        base: first.deck.revision,
+        deck: "deck",
+        changes: [{ op: "add_slide", after: slide.after, layout: slide.layout }],
+      }),
+    ).toMatchObject({
       runId: "one",
     })
     const undone = call("undo_run", first.deck, { actor: "person" }, { deck: "deck", runId: "one" })
@@ -138,7 +143,13 @@ describe("the turn", () => {
     const next = sessionFor(undone.deck, turns, "two", 1)
     expect(turns.read(next.deck.id)?.runId).toBe("one")
     expect(liveTurn(next, next.deck.id)).toBeUndefined()
-    expect(await called(next, "airdesign_add_slide", { ...slide, base: undone.deck.revision })).toMatchObject({
+    expect(
+      await called(next, "airdesign_edit_deck", {
+        base: undone.deck.revision,
+        deck: "deck",
+        changes: [{ op: "add_slide", after: slide.after, layout: slide.layout }],
+      }),
+    ).toMatchObject({
       ok: true,
       runId: "two",
     })

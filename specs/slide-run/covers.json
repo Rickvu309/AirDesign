@@ -8,28 +8,28 @@
       "blob": "edc2bcd5427a52b25bd8788b0f5a269a6714b6b0"
     },
     {
-      "file": "packages/mcp/src/slide-tool.ts",
-      "names": ["slideTool"],
-      "digest": "eaa6365748f8",
-      "blob": "94ba467e549a139f70a0a9a49a6037aaf5292efa"
+      "file": "packages/mcp/src/edit-tool.ts",
+      "names": ["editDeck", "addTurn"],
+      "digest": "36133ac79f7a",
+      "blob": "606b8fac78ce49fb1b08c1a8b778172353b4f015"
     },
     {
       "file": "packages/engine/src/agent-slides.ts",
       "names": ["agentSlide", "runFence", "runFenced", "readFresh"],
-      "digest": "d9fc389bc4d5",
-      "blob": "e710e807ea98451f201b2f2b2c7d5d295faacfc8"
+      "digest": "a0be157d4c35",
+      "blob": "17f5e668a494f208ace1ba1bfa50a4910ae2703a"
     },
     {
       "file": "packages/mcp/src/call-tool.ts",
       "names": ["stopRun"],
       "digest": "280d7a16b2fd",
-      "blob": "bab33eb866ac4306913e60169dcb0ec43e96aca4"
+      "blob": "6999e942f139d71b5221bcc2497ee9417bb9bffc"
     },
     {
       "file": "packages/engine/src/call.ts",
       "names": ["endOnTouched", "endSlides", "landed"],
       "digest": "4d32375cfed1",
-      "blob": "bb21d1808ecaeb2a2e58004989ea4a710f6421bb"
+      "blob": "ab74f354045d0297fab15a542a875ae82a806853"
     },
     {
       "file": "packages/mcp/src/turn.ts",
