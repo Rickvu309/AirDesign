@@ -42,6 +42,22 @@ for (const feature of ["strike", "letter-spacing", "numbers"] as const) {
       await editor.press("Enter")
       await page.keyboard.type("Second")
       await expect(editor.locator("[data-paragraph]")).toHaveCount(2)
+      const firstSize = await editor
+        .locator("[data-run]")
+        .first()
+        .evaluate((run) => getComputedStyle(run).fontSize)
+      await expect(editor.locator("[data-paragraph]").last().locator("[data-run]").first()).toHaveCSS(
+        "font-size",
+        firstSize,
+      )
+      await expect
+        .poll(() =>
+          editor
+            .locator("[data-paragraph]")
+            .last()
+            .evaluate((paragraph) => parseFloat(getComputedStyle(paragraph, "::before").marginInlineEnd)),
+        )
+        .toBeGreaterThan(0)
       await expect
         .poll(() =>
           editor

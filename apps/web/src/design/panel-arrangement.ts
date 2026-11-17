@@ -7,13 +7,11 @@ import {
   List,
   ListOrdered,
   Strikethrough,
-  MoveHorizontal,
   Underline,
   FlipHorizontal2,
   FlipVertical2,
   RotateCw,
   Type,
-  ArrowDownUp,
   ArrowUpToLine,
   ArrowDownToLine,
   Image,
@@ -33,6 +31,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { DottedBorder, SubtleShadow, MediumShadow, StrongShadow, PatternFill } from "./preset-icons"
+import { LineSpacingIcon, LetterSpacingIcon } from "./text-icons"
 import { optionWord } from "@/copy/option-copy"
 import type { Desc } from "@airdesign/document"
 import type { PanelControl, SectionName } from "./panel"
@@ -78,7 +77,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [placed("value", hidden, { control: "canvas" })],
     [placed("font", hidden)],
     [icon("size", Type)],
-    [icon("lineSpacing", ArrowDownUp), icon("letterSpacing", MoveHorizontal)],
+    [icon("lineSpacing", LineSpacingIcon), icon("letterSpacing", LetterSpacingIcon)],
     [icon("bold", Bold), icon("italic", Italic), icon("underline", Underline), icon("strike", Strikethrough)],
     [
       placed("align", hidden, {

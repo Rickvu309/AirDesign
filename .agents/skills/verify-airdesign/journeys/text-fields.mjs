@@ -39,6 +39,14 @@ export default async function drive(kit) {
       await editor.press("Enter")
       await page.keyboard.type("Second")
       await expect(editor.locator("[data-paragraph]")).toHaveCount(2)
+      const firstSize = await editor
+        .locator("[data-run]")
+        .first()
+        .evaluate((run) => getComputedStyle(run).fontSize)
+      await expect(editor.locator("[data-paragraph]").last().locator("[data-run]").first()).toHaveCSS(
+        "font-size",
+        firstSize,
+      )
       await expect
         .poll(() =>
           editor

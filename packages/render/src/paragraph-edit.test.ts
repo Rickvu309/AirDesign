@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { joinParagraph, replaceSelection } from "./paragraph-edit.js"
+import { joinParagraph, replaceSelection, splitParagraph } from "./paragraph-edit.js"
 
 const value = [
   {
@@ -81,4 +81,10 @@ describe("joinParagraph", () => {
     )
     expect(joined[0]?.runs.at(-1)?.from).toBe(1)
   })
+})
+
+it("continues a paragraph with the run style at the split", () => {
+  const run = { from: 0, text: "Hello", size: 3200, strike: true, letterSpacing: -64 }
+  const next = splitParagraph([{ from: 0, list: "numbers", runs: [run] }], { paragraph: 0, offset: 5 })
+  expect(next[1]).toEqual({ from: 0, list: "numbers", runs: [{ ...run, text: "" }] })
 })
