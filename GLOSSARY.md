@@ -11,7 +11,7 @@ One mechanical rule that passes or fails with no person and no paid model.
 _Avoid_: guard, validation
 
 **gate**:
-The checks a push needs on this machine, as `pnpm gate` runs them: the cheap checks, the build of what the diff changed, and the tests it reaches. It stamps the commit. ci still runs every step.
+The checks a push needs on this machine, as `pnpm gate` runs them: the cheap checks, the build of what the diff changed, and the unit and tooling tests selected from the diff. It stamps the commit. ci still runs every step.
 _Avoid_: pre-push check, quick check, fast check
 
 **step**:
