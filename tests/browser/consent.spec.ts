@@ -394,7 +394,7 @@ test("loading status offers no decision before the client is validated", async (
   await expect(page.locator("button")).toHaveCount(0)
   await expect(page.getByRole("heading", { name: "Connect an agent", exact: true })).toBeVisible()
   await expect(page.getByRole("status")).toHaveText("Loading connection request…")
-  await expect(page.getByText("Claude wants to use AirDesign")).toHaveCount(0)
+  await expect(page.getByText(claudeConnect.title)).toHaveCount(0)
 
   release()
 
@@ -484,7 +484,7 @@ for (const width of [320, 390, 1470]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
     await answerClient(page, { ok: false, refusal: "client" }, 400)
     await page.reload()
-    await expect(page.getByRole("link", { name: "Back to AirDesign" })).toBeInViewport()
+    await expect(page.getByRole("link", { name: refusedConnect.action })).toBeInViewport()
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
   })
 }
@@ -500,7 +500,7 @@ test("the account lookup shows loading status and approval prevents another deci
     await route.fulfill({ json: { ok: true, account: { email: accountEmail }, decks: [] } })
   })
   await page.goto(authorizePath())
-  await expect(page.getByRole("heading", { name: "Claude wants to use AirDesign" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: claudeConnect.title })).toBeVisible()
   await expect(page.getByRole("status")).toHaveText("Loading connection request…")
   releaseAccount()
   await expect(page.getByRole("button", { name: "Allow", exact: true })).toBeVisible()
