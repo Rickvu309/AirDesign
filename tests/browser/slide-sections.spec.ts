@@ -138,7 +138,7 @@ test("a new slide joins the section of the slide it comes after, and the section
         items.map((item) =>
           item.hasAttribute("data-section-head")
             ? (item.textContent ?? "")
-            : (item.firstElementChild?.textContent ?? ""),
+            : (item.querySelector("[data-slide-item]")?.firstElementChild?.textContent ?? ""),
         ),
       )
   expect(await rows()).toEqual(["Opening", "1", "2", "Numbers", "3"])
@@ -241,7 +241,7 @@ test("a person moves the first slide of a section into the section above and und
         items.map((item) =>
           item.hasAttribute("data-section-head")
             ? (item.textContent ?? "")
-            : (item.firstElementChild?.textContent ?? ""),
+            : (item.querySelector("[data-slide-item]")?.firstElementChild?.textContent ?? ""),
         ),
       )
   await page.locator("[data-slide-entry='2']").click()
