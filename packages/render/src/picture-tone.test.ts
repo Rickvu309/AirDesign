@@ -56,6 +56,21 @@ describe("picture tone", () => {
     expect(gray?.style.opacity).toBe("0.6")
   })
 
+  it("keeps a blur and an overlay off the frame so the border stays sharp", async () => {
+    const host = await painted(picture({ picture: { blur: 20, overlay: "#00000080", grayscale: true } }))
+    const style = host?.getAttribute("style") ?? ""
+    expect(style).toContain("overflow: hidden")
+    expect(style).not.toContain("grayscale")
+    expect(style).not.toContain("blob:picture")
+    const wash = host?.querySelector("[data-picture-wash]")
+    const overlay = host?.querySelector("[data-picture-overlay]")
+    expect(wash?.getAttribute("style")).toContain("grayscale(1)")
+    expect(wash?.getAttribute("style")).toContain("blur(")
+    expect(wash?.getAttribute("style")).toContain("blob:picture")
+    expect(overlay?.getAttribute("style")).toContain("rgba(0, 0, 0, 0.5)")
+    expect(overlay?.getAttribute("style") ?? "").not.toContain("blur(")
+  })
+
   it("maps a duotone's dark and light tones through a filter the picture names", async () => {
     const element = await painted(picture({ picture: { duotone: [`#${dark}`, `#${light}`] } }))
     const filter = element?.querySelector("filter")

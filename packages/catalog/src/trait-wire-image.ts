@@ -17,5 +17,13 @@ export const imageWire: TraitWire<"image"> = {
       description: "Gray tones, or two colors that replace its dark and light tones.",
       example: { image: { recolor: { duotone: { dark: "accent1", light: `#${white}` } } } },
     },
+    overlay: {
+      description: "A colour laid over the picture. The colour's own opacity is how strongly it covers the picture.",
+      example: { image: { overlay: { solid: "#000000 alpha 50" } } },
+    },
+    blur: {
+      description: "How soft the picture looks, in percent.",
+      example: { image: { blur: 40 } },
+    },
   },
 }

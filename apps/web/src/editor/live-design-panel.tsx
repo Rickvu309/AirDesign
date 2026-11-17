@@ -141,6 +141,8 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
             "image.source": { value: image.source, own: true },
             "image.recolor": { value: image.recolor, own: true },
             "image.alpha": { value: image.alpha, own: true },
+            "image.blur": { value: image.blur === null ? null : Math.min(image.blur, 100_000), own: true },
+            "image.overlay": { value: image.overlay, own: true },
           }),
       ...(crop === null ? {} : { "crop.rect": { value: crop, own: true } }),
       ...(connection === null
@@ -257,12 +259,13 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
   if (design === null) return null
   const at = shapeOf(node)
   const part = readSlides(deck.shown.displayParts.current).find((slide) => slide.slide === at.slide)?.part
-  const image =
-    design.model.kind === "picture" && part !== undefined
-      ? paintReader(deck.shown.displayParts.current)
+  const painted =
+    part === undefined
+      ? undefined
+      : paintReader(deck.shown.displayParts.current)
           .slide(part)
-          .elements.find((element) => element.shape === at.shape)?.image
-      : null
+          .elements.find((element) => element.shape === at.shape)
+  const image = painted?.image ?? (painted?.fill?.type === "picture" ? painted.fill : null)
   const src = image == null ? null : (deck.shown.pictures.current?.src(image) ?? null)
   return (
     <ElementDesign

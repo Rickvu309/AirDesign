@@ -30,9 +30,14 @@ export function pictureFill(bytes: Uint8Array, shape: string): PictureFill | nul
   const { elements } = requireMarkup(bytes)
   const children = markupChildren(elements)
   if (!elements.some((each) => each.kind === "p:cNvPr" && each.id === shape)) return null
-  const picture = shapeById(elements, shape)
-  if (picture.kind !== "p:pic") return null
-  const fill = children[picture.index]?.find((each) => each.kind === "p:blipFill")
+  const element = shapeById(elements, shape)
+  const props = children[element.index]?.find((each) => each.kind === "p:spPr")
+  const fill =
+    element.kind === "p:pic"
+      ? children[element.index]?.find((each) => each.kind === "p:blipFill")
+      : element.kind === "p:sp"
+        ? children[props?.index ?? -1]?.find((each) => each.kind === "a:blipFill")
+        : undefined
   if (fill === undefined) return null
   const blip = children[fill.index]?.find((each) => each.kind === "a:blip")
   return { bytes, elements, children, fill, blip }

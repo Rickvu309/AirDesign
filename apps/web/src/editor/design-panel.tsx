@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { designCopy } from "@/copy/design-copy"
 import { controlViews } from "@/design/control-views"
+import { BlurControl, OverlayControl } from "@/design/controls/picture-adjust"
+import { PictureFillKinds } from "@/design/controls/picture-kind"
 import type { Palette } from "@/design/color-choices"
 import type { ControlProps, PanelModel, PanelControl } from "@/design/panel"
 import { foldOpen, setFold, useFolds } from "@/design/panel-folds"
@@ -167,6 +169,10 @@ export function Swatch({ color, name, edged = false }: { color: string; name: st
 }
 
 export function ControlView({ control, palette, onChange }: ControlProps) {
+  if (control.trait === "image" && control.field === "overlay")
+    return <OverlayControl control={control} palette={palette} onChange={onChange} />
+  if (control.trait === "image" && control.field === "blur")
+    return <BlurControl control={control} palette={palette} onChange={onChange} />
   const View = controlViews[control.kind]
   return View === undefined ? null : (
     <View control={control} palette={palette} onChange={onChange} inner={ControlView} />
@@ -248,8 +254,9 @@ export function ElementDesign({
       ) : null}
       {model.sections.map((section, at) => {
         if (section.trait === "pictureFill")
-          return picture === null ? null : (
-            <DesignSection key={section.trait} title={section.label}>
+          return (
+            <DesignSection key={section.trait} title={section.label} last={at === last}>
+              <PictureFillKinds />
               {picture}
               <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
             </DesignSection>
@@ -303,7 +310,15 @@ export function ElementDesign({
                   }
             }
           >
-            <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
+            {section.trait === "fill" && section.strips.some((strip) => strip.some((row) => row.trait === "image")) ? (
+              <>
+                <SectionStrips strips={section.strips.slice(0, 1)} palette={palette} onChange={onChange} />
+                {picture}
+                <SectionStrips strips={section.strips.slice(1)} palette={palette} onChange={onChange} />
+              </>
+            ) : (
+              <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
+            )}
           </DesignSection>
         )
       })}

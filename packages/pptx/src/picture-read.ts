@@ -1,4 +1,5 @@
 import type { CropRead, FieldValue, RecolorRead } from "@airdesign/document"
+import { blurPercent } from "./picture-adjust.js"
 import { pictureAt, svgEmbed, linkTarget, embedded, type PictureFill } from "./blip-edit.js"
 import { colorsIn } from "./color-read.js"
 import { decodedXmlText, type MarkupElement } from "./element-span.js"
@@ -10,9 +11,16 @@ import type { MarkupChildren } from "./text-value-route.js"
 import type { ElementAt, Parts } from "./xml-codec.js"
 
 export type Recolor = FieldValue<"image", "recolor">
+export type Overlay = FieldValue<"image", "overlay">
 export type CropRect = FieldValue<"crop", "rect">
 
-export type ShownImage = { readonly source: string | null; readonly alpha: number; readonly recolor: Recolor }
+export type ShownImage = {
+  readonly source: string | null
+  readonly alpha: number
+  readonly recolor: Recolor
+  readonly blur: number | null
+  readonly overlay: Overlay | null
+}
 
 export type ShownIdentity = { readonly name: string; readonly alt: string; readonly hidden: boolean }
 
@@ -41,6 +49,28 @@ export function recolorOf(found: PictureFill, blip: MarkupElement): Recolor | nu
   return dark == null || light == null || rest.length > 0 ? null : { duotone: { dark, light } }
 }
 
+function named(element: MarkupElement, name: string): string | null {
+  const found = element.attributes.find((each) => each.name === name)
+  return found === undefined ? null : decodedXmlText(found.value)
+}
+
+export function blipBlur(found: PictureFill, blip: MarkupElement): number | null {
+  const blur = effect(found, blip, "a:blur")
+  if (blur === undefined) return 0
+  const radius = blur.attributes.some((each) => each.name === "rad") ? whole(blur, "rad") : 0
+  return radius === undefined || radius < 0 ? null : blurPercent(radius)
+}
+
+export function blipOverlay(found: PictureFill, blip: MarkupElement): Overlay | null {
+  const overlay = effect(found, blip, "a:fillOverlay")
+  if (overlay === undefined) return { none: true }
+  if (named(overlay, "blend") !== "over") return null
+  const solid = found.children[overlay.index]?.find((each) => each.kind === "a:solidFill")
+  if (solid === undefined) return null
+  const [color, ...rest] = colorsIn({ element: solid, children: found.children }, null)
+  return color == null || rest.length > 0 ? null : { solid: color }
+}
+
 export function blipAlpha(found: PictureFill, blip: MarkupElement): number | null {
   const fixed = effect(found, blip, "a:alphaModFix")
   if (fixed === undefined) return opaque
@@ -55,7 +85,13 @@ export function shownImage(parts: Parts, at: ElementAt): ShownImage | null {
   const recolor = recolorOf(found, blip)
   const alpha = blipAlpha(found, blip)
   if (recolor === null || alpha === null) return null
-  return { source: embedded(blip) === null ? null : iconOf(parts, at.part, found.children, blip), alpha, recolor }
+  return {
+    source: embedded(blip) === null ? null : iconOf(parts, at.part, found.children, blip),
+    alpha,
+    recolor,
+    blur: blipBlur(found, blip),
+    overlay: blipOverlay(found, blip),
+  }
 }
 
 function side(element: MarkupElement | undefined, name: string): number | null {

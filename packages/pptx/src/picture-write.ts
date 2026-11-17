@@ -1,5 +1,7 @@
 import { assetIcon, type Media } from "@airdesign/document"
-import { markupDocument, type MarkupElement } from "./element-span.js"
+import { fillWritten } from "./blip-edit.js"
+import { spliceBytes, markupDocument, type MarkupElement } from "./element-span.js"
+import type { ElementAt } from "./xml-codec.js"
 import { contentTypesPart, partOf, relsOf } from "./package-address.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { insertAt, partBytes, requireMarkup, rootClose } from "./part-markup.js"
@@ -124,6 +126,33 @@ export function linkedSource(
   mediaTyped(parts, extensions[source.media.type], source.media.type)
   if (source.bytes !== undefined && !parts.has(media)) parts.set(media, source.bytes)
   return { embed: imageLink(parts, slide, media), svg: null }
+}
+
+function digest(bytes: Uint8Array): string {
+  let hash = 0x811c9dc5
+  for (const byte of bytes) hash = Math.imul(hash ^ byte, 0x01000193) >>> 0
+  return hash.toString(16).padStart(8, "0").repeat(8)
+}
+
+function replacedFill(bytes: Uint8Array, fill: MarkupElement, inner: string): Uint8Array {
+  if (!fill.selfClosing)
+    return spliceBytes(bytes, [{ start: fill.openEnd, end: fill.closeStart, next: encodeUtf8(inner) }])
+  const open = decodeUtf8(bytes.subarray(fill.start, fill.end))
+    .trimEnd()
+    .replace(/\/\s*>$/, ">")
+  return spliceBytes(bytes, [{ start: fill.start, end: fill.end, next: encodeUtf8(`${open}${inner}</p:blipFill>`) }])
+}
+
+export function installedPicture(
+  parts: ReadonlyMap<string, Uint8Array>,
+  at: ElementAt,
+  png: Uint8Array,
+): ReadonlyMap<string, Uint8Array> {
+  const next = new Map(parts)
+  const linked = linkedSource(next, at.part, { media: { sha256: digest(png), type: "image/png" }, bytes: png })
+  const declared = declaresRelationships(decodeUtf8(partBytes(next, at.part)))
+  const inner = `${blipMarkup(linked, declared)}<a:stretch><a:fillRect/></a:stretch>`
+  return fillWritten(next, at, (found) => replacedFill(found.bytes, found.fill, inner))
 }
 
 export function blipMarkup(linked: LinkedSource, declared: boolean): string {

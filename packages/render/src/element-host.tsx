@@ -15,7 +15,7 @@ import type { PaintStore } from "./store.js"
 import { anchored, flowModes, textLook, type Scaled, type TextLook } from "./text-look.js"
 import { leadOf } from "./selection.js"
 import { formatKey, keepsFormat, type TextFormatting } from "./text-formatting.js"
-import { PictureTone, pictureLook } from "./picture-tone.js"
+import { PictureTone, PictureWash, pictureLook } from "./picture-tone.js"
 import { unshownFill } from "./unshown-fill.js"
 import { useTextFit } from "./text-fit.js"
 import { UnshownLabel } from "./unshown-label.js"
@@ -121,12 +121,14 @@ export function elementFrame(
   pointer: boolean,
   unshown: boolean,
 ): CSSProperties {
-  const background = unshown ? unshownFill : element.fill
+  const split = !unshown && (element.picture?.blur !== undefined || element.picture?.overlay !== undefined)
+  const background = unshown ? unshownFill : split ? null : element.fill
   return {
     ...placement(element.box, scaled),
     ...rounding(element, scaled),
     pointerEvents: pointer ? "auto" : "none",
     ...(background === null || paintsFillAsSvg(element, scaled) ? {} : { background }),
+    ...(split ? { overflow: "hidden" } : {}),
     ...pictureLook(element),
   }
 }
@@ -172,6 +174,7 @@ function QuietFrame(props: QuietProps & { readonly written: string }) {
       data-thumb-node={element.id ?? undefined}
       style={elementFrame(element, scaled, false, unshown)}
     >
+      <PictureWash element={element} scaled={scaled} fill={unshown ? null : element.fill} />
       <ShapeArt element={element} scaled={scaled} />
       <PictureTone element={element} />
       <DiagramArt element={element} scaled={scaled} />
@@ -195,6 +198,7 @@ function SheetElement(props: { readonly element: CanvasElement; readonly scaled:
   const text = element.text
   return (
     <div data-canvas-element={element.key} style={elementFrame(element, scaled, false, unshown)}>
+      <PictureWash element={element} scaled={scaled} fill={unshown ? null : element.fill} />
       <ShapeArt element={element} scaled={scaled} />
       <PictureTone element={element} />
       <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
@@ -321,6 +325,7 @@ function PlacedText(props: {
           ))}
       {...(typing ? formatReach(formatting, id, moves, element) : {})}
     >
+      <PictureWash element={element} scaled={scaled} fill={unshown ? null : element.fill} />
       <ShapeArt element={element} grab={moves !== null && grabbed(element)} scaled={scaled} />
       <PictureTone element={element} />
       <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />

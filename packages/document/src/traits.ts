@@ -69,7 +69,7 @@ export const kindTraits = {
   section: [],
   slide: ["fill"],
   notes: ["notes"],
-  shape: ["identity", "box", "geometry", "fill", "line", "effects", "body", "text", "link"],
+  shape: ["identity", "box", "geometry", "fill", "line", "effects", "body", "text", "link", "image"],
   picture: ["identity", "box", "geometry", "line", "effects", "image", "crop"],
   connector: ["identity", "box", "geometry", "line", "effects", "connection"],
   group: ["identity", "box", "effects"],

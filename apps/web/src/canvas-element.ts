@@ -32,18 +32,38 @@ export function movableRow(ctx: RowPaint): boolean {
 
 type Picture = NonNullable<CanvasElement["picture"]>
 
-function pictureOf(row: PaintElement): { readonly picture?: Picture } {
-  const image = row.image
-  if (image === null || (image.alpha === undefined && image.recolor === undefined)) return {}
+function toneOf(image: NonNullable<PaintElement["image"]>): Picture {
   const recolor = image.recolor
-  const picture: Picture = {
+  return {
     ...(image.alpha === undefined ? {} : { opacity: image.alpha }),
     ...(recolor !== undefined && "grayscale" in recolor ? { grayscale: true } : {}),
     ...(recolor !== undefined && "duotone" in recolor
       ? { duotone: [cssColor(recolor.duotone[0]), cssColor(recolor.duotone[1])] as const }
       : {}),
+    ...(image.blur === undefined ? {} : { blur: image.blur }),
+    ...(image.overlay === undefined ? {} : { overlay: cssColor(image.overlay) }),
   }
-  return { picture }
+}
+
+function pictureOf(row: PaintElement): { readonly picture?: Picture } {
+  const image = row.image
+  if (image !== null) {
+    const plain =
+      image.alpha === undefined &&
+      image.recolor === undefined &&
+      image.blur === undefined &&
+      image.overlay === undefined
+    if (plain) return {}
+    return { picture: toneOf(image) }
+  }
+  const fill = row.fill
+  if (fill?.type !== "picture" || (fill.blur === undefined && fill.overlay === undefined)) return {}
+  return {
+    picture: {
+      ...(fill.blur === undefined ? {} : { blur: fill.blur }),
+      ...(fill.overlay === undefined ? {} : { overlay: cssColor(fill.overlay) }),
+    },
+  }
 }
 
 function labelOf(row: PaintElement): { readonly label?: string } {
