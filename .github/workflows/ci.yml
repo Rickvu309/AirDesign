@@ -43,6 +43,7 @@ jobs:
           fetch-depth: 0
       - if: matrix.part == 'main'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        continue-on-error: true
         id: cache-lookup
         with:
           path: ~/.cache/airdesign/spec-results
@@ -51,7 +52,6 @@ jobs:
       - id: work
         uses: ./.github/actions/queued
         with:
-          cache-hit: ${{ steps.cache-lookup.outputs.cache-hit }}
           part: ${{ matrix.part }}
       - if: steps.work.outputs.needed == 'true'
         uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
@@ -67,6 +67,7 @@ jobs:
         run: echo "version=$(pnpm exec playwright --version | awk 'NF { print $NF }')" >> "$GITHUB_OUTPUT"
       - if: steps.work.outputs.needed == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        continue-on-error: true
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
@@ -77,6 +78,7 @@ jobs:
         uses: ./.github/actions/tla
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'main'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        continue-on-error: true
         id: work-cache
         with:
           path: ~/.cache/airdesign/spec-results
@@ -88,6 +90,33 @@ jobs:
         run: pnpm check --part=${{ matrix.part }}${{ matrix.shard && format(' --shard={0}', matrix.shard) || '' }}
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'main' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        continue-on-error: true
+        with:
+          path: ~/.cache/airdesign/spec-results
+          key: spec-results-${{ hashFiles('specs/**') }}
+      - if: github.event_name == 'merge_group' && matrix.part == 'main'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        continue-on-error: true
+        timeout-minutes: 2
+        with:
+          name: spec-results
+          path: ~/.cache/airdesign/spec-results
+          include-hidden-files: true
+          retention-days: 1
+      - if: matrix.part == 'main' && steps.work.outputs.passed == 'true' && steps.cache-lookup.outputs.cache-hit != 'true'
+        id: specs
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.work.outputs.run-id }}
+        run: |
+          gh run download "$RUN_ID" -n spec-results -D ~/.cache/airdesign/spec-results
+          test -n "$(find ~/.cache/airdesign/spec-results -type f -print -quit)"
+          echo "files=true" >> "$GITHUB_OUTPUT"
+      - if: steps.specs.outputs.files == 'true'
+        continue-on-error: true
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ~/.cache/airdesign/spec-results
           key: spec-results-${{ hashFiles('specs/**') }}
@@ -96,6 +125,7 @@ jobs:
         run: git diff --quiet ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }} HEAD -- packages/pptx packages/document pnpm-lock.yaml scripts/pptx-check.mjs scripts/pptx-cases scripts/pptx-cases.mjs scripts/pptx-memo.mjs scripts/pptx-phases.mjs scripts/pptx-validator.mjs scripts/keyed-cache.mjs scripts/local-image.mjs scripts/browser-export.mjs scripts/paragraph-export.mjs scripts/slide-export.mjs scripts/slide-edits.mjs scripts/blank-export.mjs scripts/diagram-edits.mjs scripts/chart-edits.mjs scripts/pptx-render.mjs scripts/judge.mjs scripts/judge-proof.mjs scripts/stored-zip.mjs scripts/pptx-tools.sh scripts/reference-fonts.json scripts/pptx-judge scripts/pptx-fixtures apps/web packages/live packages/render tests/browser scripts/pptx-route-judge.mjs scripts/pptx-corpus.mjs scripts/metrics.mjs metrics.json .github/workflows/ci.yml && echo "changed=0" >> "$GITHUB_OUTPUT" || echo "changed=1" >> "$GITHUB_OUTPUT"
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        continue-on-error: true
         id: pptx-tools
         with:
           path: ~/.cache/pptx-tools
@@ -105,12 +135,14 @@ jobs:
         run: echo "key=pptx-renders-${ImageOS}-${ImageVersion}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5" >> "$GITHUB_OUTPUT"
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        continue-on-error: true
         with:
           path: ~/.cache/airdesign/pptx-renders
           key: ${{ steps.runner-image.outputs.key }}
           restore-keys: pptx-renders-
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        continue-on-error: true
         with:
           path: ~/.cache/airdesign/pptx-validations
           key: pptx-validations-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-${{ github.run_id }}
@@ -123,11 +155,13 @@ jobs:
           AIRDESIGN_WEB_BUILT: "1"
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && steps.pptx.outputs.changed != '0' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        continue-on-error: true
         with:
           path: ~/.cache/airdesign/pptx-renders
           key: ${{ steps.runner-image.outputs.key }}
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && steps.pptx.outputs.changed != '0' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        continue-on-error: true
         with:
           path: ~/.cache/airdesign/pptx-validations
           key: pptx-validations-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-${{ github.run_id }}
@@ -157,16 +191,9 @@ jobs:
           fetch-depth: 0
       - id: renders
         run: echo "key=pptx-renders-corpus-${{ matrix.shard }}-${ImageOS}-${ImageVersion}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        id: cache-lookup
-        with:
-          path: ~/.cache/airdesign/pptx-renders
-          key: ${{ steps.renders.outputs.key }}
-          lookup-only: true
       - id: work
         uses: ./.github/actions/queued
         with:
-          cache-hit: ${{ steps.cache-lookup.outputs.cache-hit }}
           part: corpus
       - if: steps.work.outputs.needed == 'true'
         uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
@@ -182,6 +209,7 @@ jobs:
         run: echo "version=$(pnpm exec playwright --version | awk 'NF { print $NF }')" >> "$GITHUB_OUTPUT"
       - if: steps.work.outputs.needed == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        continue-on-error: true
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
@@ -192,11 +220,13 @@ jobs:
         run: pnpm --filter '!@airdesign/site' -r --if-present run build
       - if: steps.work.outputs.needed == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        continue-on-error: true
         with:
           path: ~/.cache/pptx-tools
           key: pptx-tools-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
       - if: steps.work.outputs.needed == 'true'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        continue-on-error: true
         id: work-cache
         with:
           path: ~/.cache/airdesign/pptx-renders
@@ -206,6 +236,7 @@ jobs:
         run: echo "prefix=pptx-validations-corpus-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-${{ matrix.shard }}-" >> "$GITHUB_OUTPUT"
       - if: steps.work.outputs.needed == 'true'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        continue-on-error: true
         with:
           path: ~/.cache/airdesign/pptx-validations
           key: ${{ steps.answers.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}
@@ -218,6 +249,8 @@ jobs:
           AIRDESIGN_WEB_BUILT: "1"
       - if: github.event_name == 'merge_group' && steps.work.outputs.needed == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        continue-on-error: true
+        timeout-minutes: 2
         with:
           name: corpus-validations-${{ matrix.shard }}
           path: ~/.cache/airdesign/pptx-validations
@@ -225,11 +258,13 @@ jobs:
           retention-days: 1
       - if: steps.work.outputs.needed == 'true' && github.event_name != 'merge_group' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        continue-on-error: true
         with:
           path: ~/.cache/airdesign/pptx-validations
           key: ${{ steps.answers.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}
-      - if: github.event_name == 'push' && steps.work.outputs.needed == 'false'
+      - if: github.event_name == 'push' && steps.work.outputs.passed == 'true'
         id: validations
+        timeout-minutes: 2
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -246,6 +281,7 @@ jobs:
           key: ${{ steps.answers.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}
       - if: steps.work.outputs.needed == 'true' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        continue-on-error: true
         with:
           path: ~/.cache/airdesign/pptx-renders
           key: ${{ steps.renders.outputs.key }}
