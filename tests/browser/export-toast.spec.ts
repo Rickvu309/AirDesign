@@ -1,3 +1,6 @@
+import { productCopy } from "../../apps/web/src/copy/product-copy"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
+import { presentCopy } from "../../apps/web/src/copy/present-copy"
 import { expect, test } from "@playwright/test"
 import { openFixture } from "./fixture-deck.ts"
 import { store } from "./home-store.ts"
@@ -22,7 +25,7 @@ test("a renamed deck is announced by its new file name", async ({ page }) => {
   await openFixture(page)
   await page.getByRole("button", { name: "Rename deck: clean" }).click()
   await page.getByRole("textbox", { name: "Deck name" }).fill("Q3 plan")
-  await page.getByRole("textbox", { name: "Deck name" }).press("Enter")
+  await page.getByRole("textbox", { name: "Deck name" }).press(slideListCopy.openKey)
   const download = page.waitForEvent("download")
   await exportFromDialog(page)
   await download
@@ -40,4 +43,25 @@ test("a failed export shows the failure and no download notice", async ({ page }
   await exportFromDialog(page)
   await expect(page.getByText("Unable to export. Your deck is unchanged.")).toBeVisible()
   await expect(page.getByText(/downloaded$/)).toHaveCount(0)
+})
+
+test("notes recovery errors persist and can be dismissed by pointer and keyboard", async ({ page }) => {
+  await store(page, [])
+  await openFixture(page)
+  await page.getByRole("button", { name: "Expand speaker notes" }).first().click()
+  const notes = page.getByRole("textbox", { name: presentCopy.notes, exact: true })
+  const error = page.locator("[data-sonner-toast]").filter({ hasText: "Unable to save speaker notes" })
+  await notes.fill("Keep these notes ".repeat(600))
+  await expect(error).toBeVisible()
+  await notes.pressSequentially("More detail")
+  await expect(error).toHaveCount(1)
+  await page.clock.fastForward(6000)
+  await expect(error).toContainText("Copy your notes, reload the deck and try again.")
+  await error.getByRole("button", { name: productCopy.close, exact: true }).click()
+  await expect(error).toHaveCount(0)
+  await notes.fill("Keep these notes too ".repeat(600))
+  await expect(error).toBeVisible()
+  await error.getByRole("button", { name: productCopy.close, exact: true }).focus()
+  await page.keyboard.press(slideListCopy.openKey)
+  await expect(error).toHaveCount(0)
 })

@@ -1,5 +1,5 @@
 import { useEffect, useRef, type CSSProperties } from "react"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import { Toaster } from "@/components/ui/sonner"
 import { StatusPill } from "@/components/ui/status-pill"
 import { downloadedOf, productCopy } from "@/copy/product-copy"
@@ -46,7 +46,7 @@ export function ActionPill({
   width: string
 }) {
   return (
-    <StatusPill className="gap-2.5 pr-1.5 pl-3.5" style={{ width }}>
+    <StatusPill className="max-w-full gap-2.5 pr-1.5 pl-3.5" style={{ width }}>
       <span className="min-w-0 flex-1 truncate">{text}</span>
       <button
         type="button"

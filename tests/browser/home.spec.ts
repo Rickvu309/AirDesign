@@ -1,3 +1,5 @@
+import { undoCopy } from "../../apps/web/src/copy/undo-copy"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { expect, test } from "@playwright/test"
 import { join } from "node:path"
 import { first, now, second, store } from "./home-store.ts"
@@ -142,7 +144,7 @@ test("move to Trash and Undo post trash and restore", async ({ page }) => {
   await page.getByRole("button", { name: `${first.name} actions` }).click()
   await page.getByRole("menuitem", { name: "Move to Trash" }).click()
   await expect(page.getByText(`${first.name} moved to Trash`, { exact: true })).toBeVisible()
-  await page.getByRole("button", { name: "Undo", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undo, exact: true }).click()
   await expect(page.getByRole("heading", { name: first.name })).toBeVisible()
   expect(calls.filter((call) => ["trash", "restore"].includes(call.path))).toEqual([
     { path: "trash", body: { deck: "first" } },
@@ -192,14 +194,18 @@ test("a deck id of 64 characters opens and one of 65 never reaches the API", asy
   await expect(page.getByRole("heading", { name: productCopy.addressNotFoundTitle })).toHaveCount(0)
 })
 
-test("the Undo toast leaves on its own", async ({ page }) => {
-  await store(page, [first])
+test("the Undo toast stays until keyboard dismissal without restoring the deck", async ({ page }) => {
+  const { state } = await store(page, [first])
   await page.goto("/")
   await page.getByRole("button", { name: `${first.name} actions` }).click()
   await page.getByRole("menuitem", { name: "Move to Trash" }).click()
-  await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: undoCopy.undo, exact: true })).toBeVisible()
   await page.clock.fastForward(10000)
-  await expect(page.getByRole("button", { name: "Undo", exact: true })).toHaveCount(0)
+  await expect(page.getByRole("button", { name: undoCopy.undo, exact: true })).toBeVisible()
+  await page.getByRole("button", { name: productCopy.close, exact: true }).focus()
+  await page.keyboard.press(slideListCopy.openKey)
+  await expect(page.getByRole("button", { name: undoCopy.undo, exact: true })).toHaveCount(0)
+  expect(state.trash.map((deck) => deck.deck)).toEqual([first.deck])
 })
 
 for (const reducedMotion of ["no-preference", "reduce"] as const) {
@@ -212,7 +218,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await page.getByRole("button", { name: `${first.name} actions` }).click()
     await page.getByRole("menuitem", { name: "Move to Trash" }).click()
     const toast = page.locator("[data-sonner-toast]")
-    await expect(toast.getByRole("button", { name: "Undo", exact: true })).toBeVisible()
+    await expect(toast.getByRole("button", { name: undoCopy.undo, exact: true })).toBeVisible()
     const property = await toast.evaluate((element) => getComputedStyle(element).transitionProperty)
     if (reducedMotion === "reduce") expect(property).toBe("none")
     else expect(property).toContain("transform")

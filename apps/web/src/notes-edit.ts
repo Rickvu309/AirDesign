@@ -1,7 +1,7 @@
 import { elementId, type Register } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { readNotes, type SlideNotes } from "@airdesign/pptx"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import { useState, type RefObject } from "react"
 import { commitKept, type CommitOutcome } from "@/commit-edit"
 import { exportedParts } from "@/exported-parts"
@@ -64,6 +64,7 @@ export function useNotes(deck: NotesDeck) {
       .then((outcome) => {
         if (outcome === "refused")
           toast.error("Unable to save speaker notes", {
+            id: "notes-refused",
             description: "Copy your notes, reload the deck and try again.",
           })
         deck.settle(outcome)

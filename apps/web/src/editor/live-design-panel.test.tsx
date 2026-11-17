@@ -12,7 +12,7 @@ import {
 } from "@airdesign/document"
 import { readParts, readSlides } from "@airdesign/pptx"
 import { act, createElement } from "react"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import type { DeckPaint } from "./use-deck-paint"
 

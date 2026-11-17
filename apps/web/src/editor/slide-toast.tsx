@@ -1,5 +1,5 @@
 import { useEffect, type CSSProperties, type RefObject } from "react"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import { Toaster } from "@/components/ui/sonner"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { undoCopy } from "@/copy/undo-copy"
@@ -9,14 +9,13 @@ import type { UndoEntry, UndoList } from "@/undo-list"
 const toasterId = "slides"
 const deletedId = "slide-deleted"
 const deletedWidth = "18rem"
-const deletedFor = 9_000
 const held: { entry: UndoEntry | null } = { entry: null }
 
 export type UndoOf = { readonly list: RefObject<UndoList>; readonly undo: () => void }
 
 export function showSlideDeleted(number: number, entry: UndoEntry, undoOf: UndoOf): void {
   held.entry = entry
-  toast.custom(
+  toast.notice(
     () => (
       <div data-slide-toast>
         <ActionPill
@@ -34,7 +33,6 @@ export function showSlideDeleted(number: number, entry: UndoEntry, undoOf: UndoO
     {
       id: deletedId,
       toasterId,
-      duration: deletedFor,
       unstyled: true,
       style: { left: 0, width: deletedWidth, opacity: 1, transform: "translateY(0)", transition: "none" },
     },

@@ -30,6 +30,8 @@ Preconditions:
 - **Notes in a range export.** Driven live on 2026-11-13 with a scratch journey: notes typed on slides 2 and 3 of a blank deck, the second just before Export, were both in a range 2 to 3 export and in its new import (see `export.md`).
 - **States for look.** `notes-closed`, `notes-open`, `notes-typed` (typed at once after the click, so lost keystrokes show).
 
+- **Recovery toast.** Driven live on 2026-11-17: notes beyond the 8,000-byte value limit show the real notes-edit error for more than 5.5 seconds; pointer Close dismisses it, a second refusal appears again, and keyboard Close dismisses it. Regression: `tests/browser/export-toast.spec.ts`.
+
 ## Gotchas
 
 - The notes live on the slide's notes part, keyed `<slide part>.notes` in the server register.

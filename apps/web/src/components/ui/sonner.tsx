@@ -1,3 +1,4 @@
+import { productCopy } from "@/copy/product-copy"
 import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
@@ -25,8 +26,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
         } as React.CSSProperties
       }
       toastOptions={{
+        closeButtonAriaLabel: productCopy.close,
         classNames: {
           toast: "cn-toast",
+          closeButton: "!size-6",
         },
       }}
       {...props}
