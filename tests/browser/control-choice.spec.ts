@@ -1,3 +1,4 @@
+import { appearanceCopy } from "../../apps/web/src/copy/appearance-copy"
 import { expect, test } from "@playwright/test"
 import { designing, openDeck, settled } from "./design-panel"
 import { fillPanel, shapeAt } from "./shape-fills"
@@ -42,7 +43,6 @@ test("a choice aligns every paragraph of the element, shows the pick, and Undo p
 })
 
 test("shadow glyphs keep the compact size of the reference", async ({ page }) => {
-  const { appearanceCopy } = await import("../../apps/web/src/copy/appearance-copy")
   await openDeck(page, "shapes-added.pptx")
   const panel = await fillPanel(page, shapeAt(page, "4"))
   const glyph = panel
