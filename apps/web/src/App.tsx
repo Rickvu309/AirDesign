@@ -9,6 +9,8 @@ import { AgentsPage } from "./settings/agents-page"
 import { settingsPaths } from "./settings/settings-routes"
 import { UsagePage } from "./settings/usage-page"
 
+import { AccountProfile } from "./settings/account-profile"
+
 type ScreenRegistry = { screens: Record<string, ComponentType> }
 
 const registries = import.meta.glob<ScreenRegistry>("./**/*-screens.tsx", { eager: true })
@@ -42,7 +44,7 @@ function currentPath(): string {
   return window.location.pathname.replace(/\/$/, "") || "/"
 }
 
-export default function App() {
+function AppRoutes() {
   const [path, setPath] = useState(currentPath)
   useEffect(() => {
     const reload = () => window.location.reload()
@@ -78,4 +80,14 @@ export default function App() {
     return <NotFoundPage kind="address" />
   }
   return <Screen />
+}
+
+export default function App() {
+  const path = currentPath()
+  if (path.startsWith("/screens") || path === "/live-proof" || path === "/oauth/authorize") return <AppRoutes />
+  return (
+    <AccountProfile>
+      <AppRoutes />
+    </AccountProfile>
+  )
 }

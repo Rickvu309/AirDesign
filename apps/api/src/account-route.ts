@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http"
 
 import {
   accountRoutes,
+  readAccountName,
   readEmail,
   readGrantId,
   readNoFields,
@@ -105,6 +106,32 @@ export async function sessionBody<Visit extends AccountVisit>(
   return { email, body }
 }
 
+async function profile<Visit extends AccountVisit>(
+  http: AccountHttp<Visit>,
+  visit: Visit,
+  save: boolean,
+): Promise<void> {
+  const session = await sessionBody(http, visit)
+  if (session === undefined) return
+  const raw = http.parsedJson(session.body)
+  const parsed = save ? readAccountName(raw) : readNoFields(raw)
+  if (!jsonBody(visit.req) || !parsed.ok) {
+    http.sendJson(visit.res, 400, { ok: false, refusal: "field" })
+    return
+  }
+  const result =
+    "name" in parsed
+      ? await visit.options.session.query<{ email: string; name: string | null }>(
+          "update session.account set name = $2 where email = $1 returning email, name",
+          [session.email, parsed.name],
+        )
+      : await visit.options.session.query<{ email: string; name: string | null }>(
+          "select email, name from session.account where email = $1",
+          [session.email],
+        )
+  http.sendJson(visit.res, 200, { ok: true, account: result.rows[0] })
+}
+
 async function listAgents<Visit extends AccountVisit>(http: AccountHttp<Visit>, visit: Visit): Promise<void> {
   const { options, req, res } = visit
   const session = await sessionBody(http, visit)
@@ -167,6 +194,8 @@ async function signOut<Visit extends AccountVisit>(http: AccountHttp<Visit>, vis
 
 export function accountRouteList<Visit extends AccountVisit>(http: AccountHttp<Visit>): readonly AccountRoute<Visit>[] {
   return [
+    { method: "POST", path: accountRoutes.profile.path, serve: (visit) => profile(http, visit, false) },
+    { method: "POST", path: accountRoutes.name.path, serve: (visit) => profile(http, visit, true) },
     { method: "POST", path: accountRoutes.delete.path, serve: (visit) => deleteAccount(http, visit) },
     { method: "POST", path: accountRoutes.agents.path, serve: (visit) => listAgents(http, visit) },
     { method: "POST", path: accountRoutes.revokeAgent.path, serve: (visit) => revokeAgent(http, visit) },

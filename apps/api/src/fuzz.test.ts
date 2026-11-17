@@ -4,6 +4,7 @@ import { connect, type AddressInfo } from "node:net"
 import type { Pool } from "pg"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
+import { accountFuzzGood } from "./account-fuzz.js"
 import { fuzzGood, fuzzAira } from "./aira-fuzz.js"
 import { attacks, hostileEscapes, hostileValues, indexFuzzGood, leaks, type Attack } from "./fuzz-attack.js"
 import { badTargets } from "./fuzz-target.js"
@@ -334,12 +335,8 @@ describe("hostile input over every route", () => {
       ],
       "POST /oauth/revoke": [{ shape: "form", answers: 200, fields: { token: "t" } }],
       ...fuzzGood(deck),
-      "POST /account/agents": [{ shape: "json", answers: 200, says: '"ok":true', fields: {} }],
-      "POST /account/agents/revoke": [
-        { shape: "json", answers: 403, says: '"refusal":"owner"', fields: { id: "missing" } },
-      ],
+      ...accountFuzzGood,
       ...indexFuzzGood,
-      "POST /account/delete": [{ shape: "json", answers: 400, fields: { email: "wrong@example.com" } }],
       "POST /sign-in/email": [{ shape: "json", answers: 202, fields: { email: "good@example.com" } }],
       "POST /sign-in/code": [{ shape: "json", answers: 401, fields: { email: "good@example.com", code: "000000" } }],
       "GET /sign-in/link": [{ shape: "query", answers: 302, fields: { token: "t" } }],

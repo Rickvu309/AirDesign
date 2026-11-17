@@ -212,6 +212,8 @@ export const signOutRoutes = {
 } as const
 
 export const accountRoutes = {
+  profile: { path: "/account/profile", method: "POST" },
+  name: { path: "/account/name", method: "POST" },
   delete: { path: "/account/delete", method: "POST" },
   agents: { path: "/account/agents", method: "POST" },
   revokeAgent: { path: "/account/agents/revoke", method: "POST" },

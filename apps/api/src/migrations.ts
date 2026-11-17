@@ -410,4 +410,12 @@ drop index session.aira_ask_email;
 create unique index aira_ask_email on session.aira_ask (email, ask);
 `,
   },
+  {
+    id: 17,
+    sql: `
+alter table session.account add column name text
+  check (name is null or (length(name) <= 100 and name !~ '[[:cntrl:]]'));
+update session.account set name = '';
+`,
+  },
 ]

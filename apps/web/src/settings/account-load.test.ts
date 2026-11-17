@@ -10,12 +10,14 @@ function answering(status: number, body: unknown, seen: Request[] = []): typeof 
 }
 
 describe("loading the signed-in account", () => {
-  it("posts an empty body to the connected agents route and reads the account email", async () => {
+  it("posts an empty body to the profile route and reads the saved name", async () => {
     const seen: Request[] = []
-    const loaded = await loadAccount(answering(200, { ok: true, account: { email: "ada@example.com" } }, seen))
-    expect(loaded).toEqual({ kind: "account", email: "ada@example.com" })
+    const loaded = await loadAccount(
+      answering(200, { ok: true, account: { email: "ada@example.com", name: "Ada Lovelace" } }, seen),
+    )
+    expect(loaded).toEqual({ kind: "account", email: "ada@example.com", name: "Ada Lovelace" })
     expect(seen.map((request) => [request.method, new URL(request.url).pathname])).toEqual([
-      ["POST", accountRoutes.agents.path],
+      ["POST", accountRoutes.profile.path],
     ])
     expect(await seen[0]?.json()).toEqual({})
   })

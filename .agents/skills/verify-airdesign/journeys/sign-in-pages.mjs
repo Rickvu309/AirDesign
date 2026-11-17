@@ -1,4 +1,4 @@
-import { productCopy } from "../bin/product-copy.mjs"
+import { productCopy, accountCopy } from "../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 
 const phone = { width: 390, height: 844 }
@@ -55,6 +55,19 @@ export default async function drive(kit) {
   const first = await mailParts(address)
   await (await codeEntry(page)).fill(`${first.code.slice(0, 3)} ${first.code.slice(3)}`)
   await expect(page).toHaveURL(`${origin}/`)
+  await expect(page.getByRole("heading", { name: accountCopy.nameTitle })).toBeVisible()
+  await capture("sign-up-name")
+  await page.getByLabel(accountCopy.name, { exact: true }).fill("   ")
+  await page.getByRole("button", { name: accountCopy.nameContinue, exact: true }).click()
+  await expect(page.getByRole("alert")).toHaveText(accountCopy.nameInvalid)
+  await page.reload()
+  await expect(page.getByRole("heading", { name: accountCopy.nameTitle })).toBeVisible()
+  await page.setViewportSize(phone)
+  await capture("sign-up-name-phone")
+  await page.setViewportSize(desktop)
+  await page.getByLabel(accountCopy.name, { exact: true }).fill("Nguyễn Quân")
+  await page.getByRole("button", { name: accountCopy.nameContinue, exact: true }).click()
+  await expect(page.locator("[data-account-name]")).toHaveText("Nguyễn Quân")
   await expect(page.getByRole("button", { name: productCopy.newDeck })).toBeVisible()
   await capture("signed-in-by-code")
   note(`${address} typed the emailed code with a space in it on ${siteOrigin} and landed on ${origin}/ signed in`)

@@ -143,7 +143,7 @@ export const test = base.extend<object, { stack: Stack; production: Production |
       const { createApi } = await import("../../apps/api/src/server.js")
       const { Replay } = await import("../../apps/api/src/aira-replay.js")
       const { readSignInMail } = await import("../../apps/api/src/sign-in-mail.js")
-      const { mcpRoutes, signInRoutes } = await import("../../packages/catalog/src/index.ts")
+      const { mcpRoutes, signInRoutes, accountRoutes } = await import("../../packages/catalog/src/index.ts")
       const { LocalOriginalStore } = await import("../../apps/api/src/local-original-store.js")
       const originals = new LocalOriginalStore(Date.now, "https://original.test")
       const { allowance } = await import("../../packages/usage/src/index.ts")
@@ -208,6 +208,7 @@ export const test = base.extend<object, { stack: Stack; production: Production |
           const signed = await post(signInRoutes.code.path, { email, code })
           expect(signed.status).toBe(200)
           if (signed.cookie === undefined) throw new Error("cookie")
+          expect((await post(accountRoutes.name.path, { name: "Person" }, signed.cookie)).status).toBe(200)
           owners.set(signed.cookie, email)
           return signed.cookie
         },

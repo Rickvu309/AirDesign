@@ -68,6 +68,31 @@ describe("connected agents routes", () => {
     return cookie
   }
 
+  it("requires a name for a new account and saves it only for its session", async () => {
+    const cookie = await signIn("name-owner@example.com")
+    const other = await signIn("name-other@example.com")
+    expect((await ask(base, "POST", "/account/profile", {}, cookie)).json).toEqual({
+      ok: true,
+      account: { email: "name-owner@example.com", name: null },
+    })
+    expect((await ask(base, "POST", "/account/name", { name: "  Nguyễn Quân  " }, cookie)).status).toBe(200)
+    expect((await ask(base, "POST", "/account/profile", {}, cookie)).json).toEqual({
+      ok: true,
+      account: { email: "name-owner@example.com", name: "Nguyễn Quân" },
+    })
+    expect((await ask(base, "POST", "/account/profile", {}, other)).json).toMatchObject({ account: { name: null } })
+    for (const name of ["", "  ", "x".repeat(101), "Ada\nLovelace"])
+      expect((await ask(base, "POST", "/account/name", { name }, cookie)).status).toBe(400)
+    expect((await ask(base, "POST", "/account/name", { name: "Intruder" })).status).toBe(401)
+    expect((await ask(base, "POST", "/account/profile", {}, cookie)).json).toMatchObject({
+      account: { name: "Nguyễn Quân" },
+    })
+    const again = await signIn("name-owner@example.com")
+    expect((await ask(base, "POST", "/account/profile", {}, again)).json).toMatchObject({
+      account: { name: "Nguyễn Quân" },
+    })
+  })
+
   async function registerClient(redirectUri: string, name?: string): Promise<string> {
     const registered = await ask(base, "POST", oauthRoutes.register.path, {
       redirect_uris: [redirectUri],
