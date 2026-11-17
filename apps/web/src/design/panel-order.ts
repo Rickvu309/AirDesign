@@ -34,6 +34,7 @@ export const panelOrder: Readonly<Record<PanelKind, readonly Place[]>> = {
     shut("effects"),
     shut("box"),
     shut("text"),
+    shut("link"),
     shut("body"),
     shut("identity"),
   ],

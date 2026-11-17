@@ -1,6 +1,6 @@
 import type { LinkTarget } from "@airdesign/document"
 import type { ReactNode } from "react"
-import { readShapes, readSlides, shownLink, paintReader } from "@airdesign/pptx"
+import { readSlides, shownLink, paintReader } from "@airdesign/pptx"
 
 function activate(target: LinkTarget, destination: number, go: (index: number) => void) {
   if (target.kind === "slide") go(destination)
@@ -28,9 +28,9 @@ export function PresentLinks({
   return (
     <div className="relative">
       {children}
-      {readShapes(parts).flatMap((shape) => {
-        if (shape.slide !== slide.slide || shape.kind !== "p:sp" || shape.grouped || shape.box === null) return []
-        const target = shownLink(parts, shape)
+      {size.elements.flatMap((shape) => {
+        if (shape.from !== "slide" || shape.kind !== "p:sp" || shape.box === null) return []
+        const target = shownLink(parts, { ...shape, slide: slide.slide })
         if (target === null || target.kind === "none" || target.kind === "unsupported") return []
         const destination = target.kind === "slide" ? slides.findIndex((each) => each.slide === target.slide) : -1
         if (target.kind === "slide" && destination < 0) return []
@@ -41,10 +41,11 @@ export function PresentLinks({
             aria-label={target.kind === "url" ? target.url : String(destination + 1)}
             className="absolute cursor-pointer bg-transparent focus-visible:outline-2 focus-visible:outline-primary"
             style={{
+              transform: `rotate(${String(shape.box.rotation)}deg)`,
               left: shape.box.x * scale,
               top: shape.box.y * scale,
-              width: shape.box.cx * scale,
-              height: shape.box.cy * scale,
+              width: shape.box.width * scale,
+              height: shape.box.height * scale,
             }}
             onClick={(event) => {
               event.stopPropagation()
