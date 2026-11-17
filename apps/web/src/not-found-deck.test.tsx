@@ -1,3 +1,4 @@
+import { ResizeObserverFixture, type JsdomModule } from "./deck-dom-fixtures"
 import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { afterEach, beforeAll, expect, it, vi } from "vitest"
@@ -21,10 +22,6 @@ vi.mock("@airdesign/live", async () => ({
   }),
 }))
 
-type JsdomModule = {
-  JSDOM: new (html: string, options?: { url?: string }) => { readonly window: Window & typeof globalThis }
-}
-
 let jsdom: JsdomModule | undefined
 
 beforeAll(async () => {
@@ -40,6 +37,7 @@ afterEach(async () => {
 })
 
 async function openedDeck(refusal: string) {
+  vi.stubGlobal("ResizeObserver", ResizeObserverFixture)
   live.refusal = refusal
   if (jsdom === undefined) throw new Error("jsdom")
   const { window } = new jsdom.JSDOM("<!doctype html><html><body><div id='root'></div></body></html>", {

@@ -193,14 +193,19 @@ export function EditorShell({
           <SlideColumn />
         </>
       ) : null}
-      <div
-        ref={deck === undefined ? undefined : canvas.onCanvas}
-        className="relative min-w-0 flex-1"
-        data-editor-canvas
-      >
-        <CanvasStage hand={deck !== undefined && pointer.tool === "hand"} width={width}>
-          <div className="flex flex-col gap-3" style={{ width }}>
-            <span className="text-[length:var(--type-dense)] text-quiet" data-slide-label>
+      <div ref={canvas.onCanvas} className="relative min-w-0 flex-1" data-editor-canvas>
+        <CanvasStage
+          hand={deck !== undefined && pointer.tool === "hand"}
+          width={width}
+          height={size === null ? (width * 9) / 16 : (width * size.height) / size.width}
+          canvasHeight={canvas.height}
+          overlay={canvas.overlay}
+        >
+          <div className="relative" style={{ width }}>
+            <span
+              className="absolute inset-x-0 bottom-full mb-3 text-[length:var(--type-dense)] text-quiet"
+              data-slide-label
+            >
               {slideLabel}
             </span>
             {deck === undefined ? (
@@ -210,7 +215,11 @@ export function EditorShell({
             )}
           </div>
         </CanvasStage>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center pb-4">
+        <div
+          ref={canvas.onOverlay}
+          data-canvas-overlay
+          className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center pb-4"
+        >
           {notes === undefined ? null : (
             <>
               <div style={{ width }}>

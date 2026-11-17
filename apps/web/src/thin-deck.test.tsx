@@ -1,3 +1,4 @@
+import { ResizeObserverFixture, type JsdomModule } from "./deck-dom-fixtures"
 import { elementId, writeTextValue, type Register } from "@airdesign/document"
 import type { Remote } from "@airdesign/live"
 import { readPackage } from "@airdesign/pptx"
@@ -121,10 +122,6 @@ const editedId = (async () => {
   return id
 })()
 
-type JsdomModule = {
-  JSDOM: new (html: string, options?: { url?: string }) => { readonly window: Window & typeof globalThis }
-}
-
 let jsdom: JsdomModule | undefined
 
 beforeAll(async () => {
@@ -221,10 +218,10 @@ async function renderedDeck(
   else if (parts !== null) live.state.parts = { ok: true, parts, ...(name === undefined ? {} : { name }) }
   if (register !== null) live.state.opened = { ok: true, register }
   if (jsdom === undefined) throw new Error("jsdom")
-  const dom = new jsdom.JSDOM("<!doctype html><html><body><div id='root'></div></body></html>", {
+  vi.stubGlobal("ResizeObserver", ResizeObserverFixture)
+  const { window } = new jsdom.JSDOM("<!doctype html><html><body><div id='root'></div></body></html>", {
     url: "http://localhost/",
   })
-  const { window } = dom
   const globals = globalThis as typeof globalThis & Record<string, unknown>
   const defined: [string, unknown][] = [
     ["window", window],

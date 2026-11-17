@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   canvasRoom,
+  slideTop,
   fitWidth,
   slideRoom,
   steppedZoom,
@@ -18,6 +19,18 @@ const portrait = { width: 6_858_000, height: 9_144_000 }
 const room = slideRoom(800)
 
 describe("canvas zoom", () => {
+  it("reserves the measured overlay and a 40 px gap at both ends", () => {
+    expect(canvasRoom({ width: 862, height: 923 }, 152)).toEqual({ width: 800, height: 691 })
+    expect(canvasRoom({ width: 862, height: 923 }, 352)).toEqual({ width: 800, height: 491 })
+    expect(canvasRoom({ width: 20, height: 50 }, 152)).toEqual({ width: 0, height: 0 })
+  })
+
+  it("centres the slide itself above the overlay, with a minimum gap when zoomed", () => {
+    expect(slideTop({ height: 923, overlay: 152, slide: 450 })).toBe(160.5)
+    expect(slideTop({ height: 923, overlay: 352, slide: 450 })).toBe(60.5)
+    expect(slideTop({ height: 923, overlay: 352, slide: 1440 })).toBe(40)
+  })
+
   it("fits a wide or a standard slide to the designed 800 px width", () => {
     expect(fitWidth(room, wide)).toBe(800)
     expect(fitWidth(room, standard)).toBe(800)
@@ -47,15 +60,15 @@ describe("canvas zoom", () => {
   })
 
   it("fits a wide slide to the designed 800 px in the canvas column of a 1470x923 window", () => {
-    expect(fitWidth(canvasRoom({ width: 862, height: 923 }), wide)).toBe(800)
-    expect(fitWidth(canvasRoom({ width: 862, height: 923 }), standard)).toBe(800)
+    expect(fitWidth(canvasRoom({ width: 862, height: 923 }, 152), wide)).toBe(800)
+    expect(fitWidth(canvasRoom({ width: 862, height: 923 }, 152), standard)).toBe(800)
   })
 
   it("grows and shrinks the fitted slide with the canvas column, by width or by height", () => {
-    expect(fitWidth(canvasRoom({ width: 672, height: 720 }), wide)).toBe(610)
-    expect(fitWidth(canvasRoom({ width: 1312, height: 1080 }), wide)).toBe(1250)
-    expect(fitWidth(canvasRoom({ width: 1312, height: 600 }), wide)).toBe(645)
-    expect(fitWidth(canvasRoom({ width: 0, height: 0 }), wide)).toBe(0)
+    expect(fitWidth(canvasRoom({ width: 672, height: 720 }, 152), wide)).toBe(610)
+    expect(fitWidth(canvasRoom({ width: 1312, height: 1080 }, 152), wide)).toBe(1250)
+    expect(fitWidth(canvasRoom({ width: 1312, height: 600 }, 152), wide)).toBe(654)
+    expect(fitWidth(canvasRoom({ width: 0, height: 0 }, 152), wide)).toBe(0)
   })
 })
 

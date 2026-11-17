@@ -1,5 +1,7 @@
 import { useLayoutEffect, useRef, type PointerEvent, type ReactNode, type WheelEvent } from "react"
 
+import { canvasInset, slideTop } from "@/editor/canvas-zoom"
+
 type Pan = {
   readonly pointer: number
   readonly x: number
@@ -8,8 +10,23 @@ type Pan = {
   readonly top: number
 }
 
-export function CanvasStage({ hand, width, children }: { hand: boolean; width: number; children: ReactNode }) {
+export function CanvasStage({
+  hand,
+  width,
+  height,
+  canvasHeight,
+  overlay,
+  children,
+}: {
+  hand: boolean
+  width: number
+  height: number
+  canvasHeight: number
+  overlay: number
+  children: ReactNode
+}) {
   const stage = useRef<HTMLDivElement>(null)
+  const top = slideTop({ height: canvasHeight, overlay, slide: height })
   const pan = useRef<Pan | null>(null)
 
   useLayoutEffect(() => {
@@ -17,7 +34,7 @@ export function CanvasStage({ hand, width, children }: { hand: boolean; width: n
     if (element === null) return
     element.scrollLeft = (element.scrollWidth - element.clientWidth) / 2
     element.scrollTop = (element.scrollHeight - element.clientHeight) / 2
-  }, [width])
+  }, [width, height, canvasHeight, overlay])
 
   function grab(event: PointerEvent<HTMLDivElement>) {
     const element = stage.current
@@ -51,7 +68,12 @@ export function CanvasStage({ hand, width, children }: { hand: boolean; width: n
   return (
     <>
       <div ref={stage} className="absolute inset-0 overflow-auto" data-canvas-stage>
-        <div className="flex w-max min-w-full flex-col items-center px-6 pt-14 pb-20">{children}</div>
+        <div
+          className="flex w-max min-w-full flex-col items-center"
+          style={{ paddingInline: canvasInset.side, paddingTop: top, paddingBottom: top + overlay }}
+        >
+          {children}
+        </div>
       </div>
       {hand ? (
         <div
