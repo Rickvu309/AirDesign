@@ -76,6 +76,7 @@ export async function pickColor(page: Page, field: Locator, name: string): Promi
   await picker(page).getByRole("button", { name, exact: true }).click()
   await page.keyboard.press("Escape")
   await expect(picker(page)).toHaveCount(0)
+  await expect(shownColor(field)).toHaveText(name)
 }
 
 export async function typeColor(page: Page, trigger: Locator, hex: string): Promise<void> {
