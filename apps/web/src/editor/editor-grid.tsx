@@ -39,7 +39,7 @@ import type { ExportRequest } from "@/export/export-deck"
 import type { TableSize } from "@/element-edit"
 import { cn } from "@/lib/class-names"
 
-const thumbFace = cn("block overflow-hidden rounded-[2px] bg-white", hairlineShadow)
+const thumbFace = "block overflow-hidden rounded-[2px] bg-white"
 
 const noSections: readonly StripSection[] = []
 
@@ -292,7 +292,8 @@ export function EditorGrid({
         tabIndex={index === reachable ? 0 : -1}
         data-slide-entry={index + 1}
         className={cn(
-          "relative rounded-sm text-left",
+          "relative rounded-[2px] text-left",
+          hairlineShadow,
           selected.has(index) && "shadow-[0_0_0_2px_var(--ring)]",
           index === dragging && "pointer-events-none opacity-40",
         )}
