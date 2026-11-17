@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { shapeExportName, shapeOriginalName, shapeSlidePart } from "../../scripts/shape-export.mjs"
 import { exportFromDialog } from "./export-dialog"
-import { newBlankDeck } from "./new-deck"
+import { importTitleDeck } from "./new-deck"
 
 type ZipEntry = {
   readonly filename: string
@@ -65,7 +65,7 @@ test("the Shapes tray has every shape on, and More shapes opens a grid of every 
   page,
 }) => {
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await settled(page)
   await page.getByRole("button", { name: "Shapes", exact: true }).click()
   const tray = page.locator("[data-shape-tray]")
@@ -90,7 +90,7 @@ test("the Shapes tray has every shape on, and More shapes opens a grid of every 
 
 test("a star, a triangle and an arrow are inserted, undone, redone and kept through a reload", async ({ page }) => {
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await settled(page)
   await insert(page, "Star")
   await insert(page, "Triangle")
@@ -174,7 +174,7 @@ test("a rectangle, an ellipse, a line, a star, a triangle and an arrow are inser
 
 test("Undo takes back an inserted shape and Redo brings it back, through a reload", async ({ page }) => {
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await settled(page)
   await insert(page, "Ellipse")
   await expect(painted(page, 4)).toBeVisible()

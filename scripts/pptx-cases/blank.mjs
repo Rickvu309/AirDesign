@@ -8,7 +8,8 @@ export default {
   specs: ["tests/browser/blank-deck.spec.ts"],
   exports: [blankExportName, blankSlidesName],
   cases: [blankCase],
-  renders: [blankExportName],
+  originals: [blankOriginalName],
+  renders: [blankOriginalName, blankExportName],
   lines: ({ pptx, parts, lists, ids, orders }) => [
     ...blankExportLines({ pptx, parts, lists }),
     ...slideExportLines({

@@ -6,7 +6,7 @@ A signed-in person chooses a PowerPoint file on Home, or starts a blank deck. Ai
 
 - `import-open` choosing a `.pptx` on Home shows an `Importing` card, then opens `/deck/<id>` and shows its text as soon as the deck's parts are saved in the browser. The server's copy, the name and the original file are sent from the editor afterwards (`flushOriginal` in `apps/web/src/thin-deck.tsx`).
 - `import-name` the new deck takes the file name without `.pptx` (`clean` for `clean.pptx`), queued on the device. The editor sends it with `deckRoutes.rename` after the deck opens; Home sends it too when the editor's request was cut off (see `deck-names.md`).
-- `blank-deck` `New deck` > `Blank deck` (in `menu "New deck"`, a `menuitem`, or the `No decks yet` card's own button) opens a one-slide deck named `Blank deck` with an empty title and subtitle, painted with the prompts `Add a title` and `Add a subtitle`. It works offline and reaches the server when the browser is back online. Journey `blank-deck`.
+- `blank-deck` `New deck` > `Blank deck` (in `menu "New deck"`, a `menuitem`, or the `No decks yet` card's own button) opens a one-slide deck named `Blank deck` whose slide has no elements and no prompts. It works offline and reaches the server when the browser is back online. Journey `blank-deck`.
 - `commit-once` when the server stores an edit but its answer is lost, a reload sends the same batch with the same `once` key and the revision rises once. Journey `commit-once`, for text. Known failure for a slide command: see `lost-answer` in `keep-typed-text.md`.
 - `import-index` an agent reads untouched element ids, kinds, text, boxes, slide order and version zero before making an edit.
 - `edit-text` typing replaces the text box's text on screen.
@@ -37,7 +37,7 @@ Preconditions:
 - **Server copy.** Poll `post(deckRoutes.open, { deck })` until the register's visible text is `["Saved on the server"]`. Evidence `NN-api-decks-open.json`.
 - **Listed.** `post(deckRoutes.list, {})` lists the deck. Evidence `NN-api-decks-list.json`.
 - **Reopen.** Go to `/version` on the same origin, delete every IndexedDB `airdesign` row that has a `kind` (the local edit rows), then open `/deck/<id>`. The text box reads `Saved on the server`. Evidence `NN-reloaded-from-server`.
-- **Blank deck.** `$V journey <run> blank-deck` creates a blank deck offline, types the title, reconnects, and checks the server copy, a reload, a cleared browser and the export.
+- **Blank deck.** `$V journey <run> blank-deck` creates a blank deck offline, adds a text box and types in it, reconnects, and checks the server copy, a reload, a cleared browser and the export.
 - **Commit once.** `$V journey <run> commit-once` drops the answer to one `deckRoutes.commit` and checks the resend after a reload.
 - **Refused import.** Not in the journey. In a scratch journey, set a file named `broken.pptx` with bytes `broken` on the Home file input. `Unable to open this file` is visible; `Remove` clears it.
 

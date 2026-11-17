@@ -13,8 +13,9 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await capture("blank-original")
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
-  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(2)
-  const out = path.dirname(await capture("layout-placeholders"))
+  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(0)
+  await expect(page.locator("[data-slide-paint] [data-placeholder-prompt]")).toHaveCount(0)
+  const out = path.dirname(await capture("empty-second-slide"))
   await expect.poll(async () => (await post(deckRoutes.open, { deck }, cookie)).json.register.order?.length).toBe(1)
   const saving = page.waitForEvent("download")
   await page.getByRole("button", { name: "Export", exact: true }).click()
@@ -23,7 +24,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   const file = path.join(out, "blank-slides.pptx")
   await (await saving).saveAs(file)
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
-  const before = await pptx.readParts(fs.readFileSync(path.join(repo, "scripts/pptx-fixtures/blank.pptx")))
+  const before = await pptx.readParts(fs.readFileSync(path.join(repo, "apps/web/src/decks/blank.pptx")))
   const after = await pptx.readParts(fs.readFileSync(file))
   expect(
     pptx.slideExportFailures(
@@ -38,6 +39,6 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
   await capture("saved-two-slides")
   note(
-    `Blank deck → New slide paints two layout placeholders, saves to the API, survives reload and exports to ${file}; untouched parts match. Placeholder editing is outside this proof.`,
+    `Blank deck → Add slide stays empty, saves to the API, survives reload and exports to ${file}; untouched parts match. Placeholder editing is outside this proof.`,
   )
 }

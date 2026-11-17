@@ -9,7 +9,7 @@ export default {
     await signIn()
     await page.goto("/")
     await newBlankDeck(page)
-    await expect(page.locator(editable)).toHaveCount(2)
+    await expect(page.locator(editable)).toHaveCount(0)
   },
   async measure({ page }) {
     await page.evaluate(

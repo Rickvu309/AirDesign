@@ -37,7 +37,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   const file = path.join(out, "slide-layouts.pptx")
   await (await saving).saveAs(file)
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
-  const before = await pptx.readParts(fs.readFileSync(path.join(repo, "scripts/pptx-fixtures/blank.pptx")))
+  const before = await pptx.readParts(fs.readFileSync(path.join(repo, "apps/web/src/decks/blank.pptx")))
   const after = await pptx.readParts(fs.readFileSync(file))
   expect(new TextDecoder().decode(after.get("ppt/slides/_rels/slide2.xml.rels"))).toContain("slideLayout4.xml")
   expect(

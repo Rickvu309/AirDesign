@@ -88,7 +88,9 @@ test("a person picks the layout of a new slide, types in its placeholders, and i
 test("the plus button adds the deck's content layout after a title slide and the same layout after any other", async ({
   page,
 }) => {
-  await blank(page)
+  await page.goto("/")
+  await page.locator("input[type=file]").setInputFiles("scripts/pptx-fixtures/blank.pptx")
+  await settled(page)
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
   await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(2)

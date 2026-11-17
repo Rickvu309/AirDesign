@@ -1,5 +1,5 @@
 import { useElementFonts } from "./element-fonts.js"
-import type { ReactNode } from "react"
+import { useLayoutEffect, useRef, type ReactNode } from "react"
 import type { ElementPaintProps } from "./element-host.js"
 import { FrameArt } from "./frame-art.js"
 import { GroupArt } from "./group-art.js"
@@ -32,8 +32,14 @@ export function elementKind(element: CanvasElement): ElementKind {
   return "text"
 }
 
-export function PaintedElement(props: ElementPaintProps) {
+export function PaintedElement(props: ElementPaintProps & { readonly onPaint?: (() => void) | undefined }) {
   const ready = useElementFonts(props.element, props.store)
+  const waited = useRef(!ready)
+  useLayoutEffect(() => {
+    if (!ready || !waited.current) return
+    waited.current = false
+    props.onPaint?.()
+  }, [ready, props.onPaint])
   if (!ready) return <span data-fonts-pending="" />
   const Paint = painters[elementKind(props.element)]
   return <Paint {...props} />

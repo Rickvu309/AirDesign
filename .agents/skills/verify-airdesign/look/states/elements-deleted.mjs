@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test"
-import { newBlankDeck } from "../../bin/new-deck.mjs"
+import { importTitleDeck } from "../../bin/new-deck.mjs"
 import { editor } from "../editor-screen.mjs"
 
 const slide = "ppt/slides/slide1.xml"
@@ -8,7 +8,7 @@ async function drive(kit) {
   const { page } = kit
   await kit.signIn()
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const deck = page.url().split("/").at(-1)
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)

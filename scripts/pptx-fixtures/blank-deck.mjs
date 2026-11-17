@@ -65,7 +65,7 @@ const colors = [
 ]
 const theme = `<a:theme xmlns:a="${a}" name="Neutral"><a:themeElements><a:clrScheme name="Neutral">${colors.map(([name, value]) => `<a:${name}><a:srgbClr val="${value}"/></a:${name}>`).join("")}</a:clrScheme><a:fontScheme name="Arial"><a:majorFont>${font}</a:majorFont><a:minorFont>${font}</a:minorFont></a:fontScheme><a:fmtScheme name="Neutral"><a:fillStyleLst>${solid.repeat(3)}</a:fillStyleLst><a:lnStyleLst>${[6350, 12700, 19050].map((width) => `<a:ln w="${width}">${solid}<a:prstDash val="solid"/></a:ln>`).join("")}</a:lnStyleLst><a:effectStyleLst>${"<a:effectStyle><a:effectLst/></a:effectStyle>".repeat(3)}</a:effectStyleLst><a:bgFillStyleLst>${solid.repeat(3)}</a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`
 
-export function blankParts() {
+export function blankParts({ empty = false } = {}) {
   const parts = new Map()
   const put = (name, text) => parts.set(name, Buffer.from(declaration + text))
   const types = [
@@ -115,15 +115,21 @@ export function blankParts() {
       relationships([[1, "slideMaster", "../slideMasters/slideMaster1.xml"]]),
     )
   }
-  put("ppt/slides/slide1.xml", `<p:sld ${namespaces}><p:cSld>${tree([centered, subtitle])}</p:cSld>${override}</p:sld>`)
-  put("ppt/slides/_rels/slide1.xml.rels", relationships([[1, "slideLayout", "../slideLayouts/slideLayout1.xml"]]))
+  put(
+    "ppt/slides/slide1.xml",
+    `<p:sld ${namespaces}><p:cSld>${tree(empty ? [] : [centered, subtitle])}</p:cSld>${override}</p:sld>`,
+  )
+  put(
+    "ppt/slides/_rels/slide1.xml.rels",
+    relationships([[1, "slideLayout", `../slideLayouts/slideLayout${empty ? 6 : 1}.xml`]]),
+  )
   return parts
 }
 
-export const blankDeck = () => storedZip(blankParts())
+export const blankDeck = (options) => storedZip(blankParts(options))
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  for (const file of ["blank.pptx", "../../apps/web/src/decks/blank.pptx"]) {
-    fs.writeFileSync(new URL(file, import.meta.url), blankDeck())
+  for (const file of ["blank.pptx", "empty.pptx", "../../apps/web/src/decks/blank.pptx"]) {
+    fs.writeFileSync(new URL(file, import.meta.url), blankDeck({ empty: file !== "blank.pptx" }))
   }
 }

@@ -1,11 +1,11 @@
 import { expect, test, type Page } from "@playwright/test"
-import { newBlankDeck } from "./new-deck"
+import { importTitleDeck } from "./new-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 }, reducedMotion: "reduce" })
 
 async function openBlank(page: Page): Promise<void> {
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await page.waitForFunction(() => {
     const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]

@@ -1,4 +1,4 @@
-export const blankOriginalName = "blank.pptx"
+export const blankOriginalName = "empty.pptx"
 export const blankExportName = "exported-blank.pptx"
 export const blankTitle = "My first deck"
 export const blankCase = {
@@ -24,15 +24,15 @@ export function blankExportLines({ pptx, parts, lists }) {
   }
   return [
     ...lines,
-    ...pptx
-      .routeExportFailures(before, after, [
-        {
-          name: "text",
-          part: "ppt/slides/slide1.xml",
-          shape: "2",
-          value: [{ from: 0, runs: [{ from: -1, text: blankTitle }] }],
-        },
-      ])
-      .map((line) => `blank export ${line}`),
+    ...pptx.slideExportFailures(
+      before,
+      after,
+      [...before.keys()].filter((name) => name !== "ppt/slides/slide1.xml"),
+    ),
+    ...(pptx
+      .readShapes(after)
+      .some((shape) => shape.text.some((paragraph) => paragraph.runs.some((run) => run.text === blankTitle)))
+      ? []
+      : ["blank export lost the added text box"]),
   ]
 }

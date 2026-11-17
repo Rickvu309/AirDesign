@@ -5,7 +5,7 @@ import { blankDeck, blankParts } from "./pptx-fixtures/blank-deck.mjs"
 const first = blankDeck()
 assert.deepEqual(blankDeck(), first)
 assert.ok(first.length < 32_768)
-for (const file of ["scripts/pptx-fixtures/blank.pptx", "apps/web/src/decks/blank.pptx"]) {
+for (const file of ["scripts/pptx-fixtures/blank.pptx"]) {
   assert.deepEqual(fs.readFileSync(new URL(`../${file}`, import.meta.url)), first, file)
 }
 console.log("blank deck bytes are reproducible")
@@ -29,3 +29,15 @@ assert.equal(new Set(accents).size, 6, "the blank theme's six accents differ")
 for (const accent of accents) assert.ok(saturation(accent) >= 0.4, `accent ${accent} is a colour, not a grey`)
 assert.ok(1.05 / (luminance(accents[0]) + 0.05) >= 4.5, "accent 1 reads as text on white")
 console.log("the blank theme has six distinct accent colours")
+
+const appParts = blankParts({ empty: true })
+assert.equal(
+  new TextDecoder().decode(appParts.get("ppt/slides/slide1.xml")).includes("<p:sp>"),
+  false,
+  "a new Blank deck has no elements",
+)
+assert.match(new TextDecoder().decode(appParts.get("ppt/slides/_rels/slide1.xml.rels")), /slideLayout6.xml/)
+assert.deepEqual(
+  fs.readFileSync(new URL("../apps/web/src/decks/blank.pptx", import.meta.url)),
+  blankDeck({ empty: true }),
+)
