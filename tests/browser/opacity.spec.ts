@@ -1,3 +1,6 @@
+import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
+import { formatCopy } from "../../apps/web/src/copy/format-copy"
+import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
@@ -46,9 +49,11 @@ async function pick(page: Page, id: string, connector = false): Promise<Locator>
     await page.mouse.click(box.x + box.width / 2, box.y)
   } else await shape.click({ position: { x: 4, y: 4 } })
   await expect(panel).toHaveAttribute("data-design-element", new RegExp(`\\.${id}$`))
-  const section = panel.locator("section").filter({ has: page.getByRole("heading", { name: "Opacity", exact: true }) })
+  const section = panel
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: opacityCopy.label, exact: true }) })
   await expect(section).toBeVisible()
-  return section.getByRole("textbox", { name: "Opacity", exact: true })
+  return section.getByRole("textbox", { name: opacityCopy.label, exact: true })
 }
 
 async function opacity(input: Locator, percent: string) {
@@ -82,7 +87,7 @@ test("a person fades a shape whose fill and line come from its style, and a line
   const accentOne = await filled(rectangle)
 
   const panel = await fillPanel(page, rectangle)
-  const colors = panel.getByRole("group", { name: "Color", exact: true })
+  const colors = panel.getByRole("group", { name: fillWords.color, exact: true })
   await expect(shownColor(colors)).toHaveText("Accent 1")
   await pickColor(page, colors, "Accent 2")
   await expect.poll(() => filled(rectangle)).not.toBe(accentOne)
@@ -165,10 +170,10 @@ test("a colour picked after Reset fill keeps the opacity shown, through a reload
   await settled(page)
   const rectangle = shapeAt(page, "4")
   const panel = await fillPanel(page, rectangle)
-  await expect(panel.getByRole("textbox", { name: "Opacity", exact: true })).toHaveValue("60")
-  await panel.getByRole("button", { name: "Reset fill", exact: true }).click()
+  await expect(panel.getByRole("textbox", { name: opacityCopy.label, exact: true })).toHaveValue("60")
+  await panel.getByRole("button", { name: fillCopy.reset, exact: true }).click()
   await expect.poll(() => filled(rectangle)).not.toMatch(/0\.6\)$/)
-  await pickColor(page, panel.getByRole("group", { name: "Color", exact: true }), "Accent 2")
+  await pickColor(page, panel.getByRole("group", { name: fillWords.color, exact: true }), formatCopy.colors.accent2)
   await expect.poll(() => filled(rectangle)).toMatch(/^rgb\(/)
   const after = await filled(rectangle)
   await page.reload()

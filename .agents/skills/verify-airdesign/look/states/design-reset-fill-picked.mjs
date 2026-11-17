@@ -1,3 +1,6 @@
+import { fillCopy, fillWords } from "../../../../../apps/web/src/copy/fill-copy.ts"
+import { formatCopy } from "../../../../../apps/web/src/copy/format-copy.ts"
+import { opacityCopy } from "../../../../../apps/web/src/copy/opacity-copy.ts"
 import path from "node:path"
 import { expect } from "@playwright/test"
 import { fixtureDeck } from "../fixture-deck.mjs"
@@ -10,7 +13,7 @@ async function drive(kit) {
   const shape = page.locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#4"]')
   await shape.click({ position: { x: 4, y: 4 } })
   const panel = page.locator("[data-design-element]")
-  const opacity = panel.getByRole("textbox", { name: "Opacity", exact: true })
+  const opacity = panel.getByRole("textbox", { name: opacityCopy.label, exact: true })
   await opacity.fill("60")
   await opacity.press("Enter")
   await expect(opacity).toHaveValue("60")
@@ -23,11 +26,14 @@ async function drive(kit) {
   await openDeck(page, file)
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await shape.click({ position: { x: 4, y: 4 } })
-  await panel.getByRole("button", { name: "Reset fill", exact: true }).click()
-  await panel.getByRole("group", { name: "Color", exact: true }).getByRole("button").first().click()
-  await page.locator("[data-color-picker]").getByRole("button", { name: "Accent 2", exact: true }).click()
+  await panel.getByRole("button", { name: fillCopy.reset, exact: true }).click()
+  await panel.getByRole("group", { name: fillWords.color, exact: true }).getByRole("button").first().click()
+  await page
+    .locator("[data-color-picker]")
+    .getByRole("button", { name: formatCopy.colors.accent2, exact: true })
+    .click()
   await page.keyboard.press("Escape")
-  const fold = panel.getByRole("heading", { name: "Opacity", exact: true }).getByRole("button")
+  const fold = panel.getByRole("heading", { name: opacityCopy.label, exact: true }).getByRole("button")
   await fold.click()
   await fold.click()
 }
