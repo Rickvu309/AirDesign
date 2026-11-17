@@ -1,3 +1,4 @@
+import { pictureCopy } from "../../apps/web/src/copy/picture-copy"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
@@ -63,9 +64,9 @@ test("a person crops, recolours, fades, describes and hides a picture, adds an i
   const plain = await look(photo)
   const panel = await designing(page, photo, "4")
 
-  await unfold(panel, "Crop")
-  await unfold(panel, "Picture")
-  const crop = section(page, panel, "Crop")
+  await unfold(panel, pictureCopy.crop)
+  await unfold(panel, pictureCopy.section)
+  const crop = section(page, panel, pictureCopy.crop)
   const framed = (await photo.boundingBox())?.width ?? 0
   await typed(crop.getByRole("textbox", { name: "Left", exact: true }), "10")
   await typed(crop.getByRole("textbox", { name: "Right", exact: true }), "10")
@@ -73,7 +74,7 @@ test("a person crops, recolours, fades, describes and hides a picture, adds an i
   await expect.poll(async () => Math.round((((await photo.boundingBox())?.width ?? 0) / framed) * 100)).toBe(80)
   await expect(page.getByRole("button", { name: "Undo crop", exact: true })).toBeVisible()
 
-  const recolor = section(page, panel, "Picture").getByRole("group", { name: "Recolor", exact: true })
+  const recolor = section(page, panel, pictureCopy.section).getByRole("group", { name: "Recolor", exact: true })
   await recolor.getByRole("button", { name: "Grayscale", exact: true }).click()
   await expect.poll(async () => (await look(photo)).filter).toContain("grayscale(1)")
   await page.getByRole("button", { name: "Undo picture", exact: true }).click()

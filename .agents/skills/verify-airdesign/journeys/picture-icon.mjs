@@ -1,3 +1,4 @@
+import { pictureCopy } from "../bin/product-copy.mjs"
 import { unfold } from "../look/unfold.mjs"
 import path from "node:path"
 import { readFile } from "node:fs/promises"
@@ -100,9 +101,9 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await canvas("4").click({ position: { x: 8, y: 8 } })
   const panel = page.locator("[data-design-element]")
   const section = (name) => panel.locator("section").filter({ has: page.getByRole("heading", { name, exact: true }) })
-  await unfold(panel, "Crop")
-  await unfold(panel, "Picture")
-  const crop = section("Crop")
+  await unfold(panel, pictureCopy.crop)
+  await unfold(panel, pictureCopy.section)
+  const crop = section(pictureCopy.crop)
   for (const [side, value] of [
     ["Left", "10"],
     ["Right", "10"],
@@ -112,12 +113,14 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
     await input.press("Enter")
   }
   await expect.poll(async () => (await look("4")).size).not.toBe(photo.size)
-  await section("Picture")
+  await section(pictureCopy.section)
     .getByRole("group", { name: "Recolor", exact: true })
     .getByRole("button", { name: "Grayscale" })
     .click()
   await expect.poll(async () => (await look("4")).filter).toBe("grayscale(1)")
-  await section("Picture").getByRole("heading", { name: "Picture", exact: true }).scrollIntoViewIfNeeded()
+  await section(pictureCopy.section)
+    .getByRole("heading", { name: pictureCopy.section, exact: true })
+    .scrollIntoViewIfNeeded()
   await capture("person-crop-recolor")
   note(
     `A person cropped 10 % from each side and chose Grayscale: ${JSON.stringify(photo)} -> ${JSON.stringify(await look("4"))}`,
