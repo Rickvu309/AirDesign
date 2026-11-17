@@ -60,6 +60,41 @@ const liveTickets = (queue) =>
       return false
     })
 
+const parentOf = (pid) => {
+  if (pid === process.pid) return process.ppid
+  try {
+    const stat = fs.readFileSync(`/proc/${pid}/stat`, "utf8")
+    return Number(stat.slice(stat.lastIndexOf(")") + 2).split(" ")[1])
+  } catch {
+    return undefined
+  }
+}
+
+const lineage = () => {
+  const links = []
+  for (let pid = process.pid, parent = parentOf(pid); parent > 1; pid = parent, parent = parentOf(pid)) {
+    links.push([pid, parent])
+  }
+  return links
+}
+
+const abandoned = (links) => links.some(([pid, parent]) => parentOf(pid) !== parent)
+
+const worktreeOf = (from) => {
+  for (let folder = from; ; folder = path.dirname(folder)) {
+    if (fs.existsSync(path.join(folder, ".git"))) return folder
+    if (path.dirname(folder) === folder) return from
+  }
+}
+
+const readTicket = (queue, name) => {
+  try {
+    return fs.readFileSync(path.join(queue, name), "utf8").trim()
+  } catch {
+    return undefined
+  }
+}
+
 const nextTicket = (folder) => {
   const counter = path.join(folder, "queue-number")
   const taken = spawnSync(
@@ -154,15 +189,33 @@ export const takeMachineLock = async ({
   const queued = clock()
   const queuedAt = date().toISOString()
   const ticket = path.join(queue, `${nextTicket(folder)}-${process.pid}`)
-  fs.writeFileSync(ticket, `${job} ${process.cwd()}\n`)
+  const mine = `${job} ${worktreeOf(process.cwd())}`
+  fs.writeFileSync(ticket, `${mine}\n`)
   const leave = () => fs.rmSync(ticket, { force: true })
   process.once("exit", leave)
+  const launchedBy = lineage()
+  const quit = (line) => {
+    say(line)
+    leave()
+    process.exit(1)
+  }
   const log = path.join(folder, queueLogName)
   let holder
   let file
   let told
   for (;;) {
-    const ahead = liveTickets(queue).indexOf(path.basename(ticket))
+    const tickets = liveTickets(queue)
+    const ahead = tickets.indexOf(path.basename(ticket))
+    const newer =
+      lane === "full" && ahead !== -1 && tickets.slice(ahead + 1).find((name) => readTicket(queue, name) === mine)
+    if (newer) {
+      const [number, pid] = newer.split("-")
+      quit(
+        `A newer ${job} from this worktree is in line as ticket ${Number(number)} (pid ${pid}), so this one leaves the line.`,
+      )
+    }
+    if (abandoned(launchedBy))
+      quit(`This ${job} was abandoned: a process that started it has exited, so it leaves the line.`)
     const open = ahead < slots ? files.filter((_, slot) => slot === 0 || load() < cores) : []
     for (const slot of open) {
       holder = await hold(slot)

@@ -21,22 +21,24 @@ const within = (promise, what) => {
   return promise.finally(() => clearTimeout(timer))
 }
 
-const waiter = (job = "check", lane = "full", slots = 1, where = folder, load = 0) => {
-  const child = spawn(
-    process.execPath,
-    [
-      "--input-type=module",
-      "-e",
-      `import { takeMachineLock } from ${JSON.stringify(module)}
-       const release = await takeMachineLock({ folder: ${JSON.stringify(where)}, env: { AIRDESIGN_CHECK_SLOTS: "${slots}" }, poll: 50, load: () => ${load}, cores: 8, job: ${JSON.stringify(job)}, lane: ${JSON.stringify(lane)} })
+const waiter = (
+  job = "check",
+  lane = "full",
+  { slots = 1, cwd = process.cwd(), into = folder, launcher = false, load = 0 } = {},
+) => {
+  const script = `import fs from "node:fs"
+       import net from "node:net"
+       import { takeMachineLock } from ${JSON.stringify(module)}
+       process.on("exit", (code) => fs.writeSync(2, "exit " + code + "\\n"))
+       const release = await takeMachineLock({ folder: ${JSON.stringify(into)}, env: { AIRDESIGN_CHECK_SLOTS: "${slots}" }, poll: 50, load: () => ${load}, cores: 8, job: ${JSON.stringify(job)}, lane: ${JSON.stringify(lane)} })
        console.log("started")
-       process.stdin.once("data", async (word) => {
+       new net.Socket({ fd: 3, readable: true, writable: false }).once("data", async (word) => {
          if (String(word).startsWith("go")) await release()
          process.exit(0)
-       })`,
-    ],
-    { stdio: ["pipe", "pipe", "pipe"] },
-  )
+       })`
+  const node = [process.execPath, "--input-type=module", "-e", script]
+  const run = launcher ? ["sh", "-c", 'sh -c \'"$@"; echo\' sh "$@"; echo', "sh", ...node] : node
+  const child = spawn(run[0], run.slice(1), { cwd, stdio: ["ignore", "pipe", "pipe", "pipe"] })
   const seen = { out: "", err: "" }
   child.stdout.on("data", (chunk) => (seen.out += chunk))
   child.stderr.on("data", (chunk) => (seen.err += chunk))
@@ -51,7 +53,7 @@ const waiter = (job = "check", lane = "full", slots = 1, where = folder, load = 
       look()
     })
   const closed = new Promise((resolve) => child.on("close", resolve))
-  return { child, seen, until, closed, finish: (word = "go") => child.stdin.write(`${word}\n`) }
+  return { child, seen, until, closed, finish: (word = "go") => child.stdio[3].write(`${word}\n`) }
 }
 const started = (seen) => seen.out.includes("started")
 const placed = (place) => (seen) => seen.err.includes(`number ${place} in line`)
@@ -140,11 +142,11 @@ if (checkSlots({}, 48, 47 * gib) !== 3) fail("48 cores and 47 GB did not run thr
 if (checkSlots({ AIRDESIGN_CHECK_SLOTS: "2" }, 48, 47 * gib) !== 2) fail("the owner's slot count was ignored")
 if (checkSlots({ AIRDESIGN_CHECK_SLOTS: "zero" }, 8, 16 * gib) !== 1) fail("a bad slot count was not ignored")
 
-const pairOne = waiter("check", "full", 2)
-const pairTwo = waiter("check", "full", 2)
+const pairOne = waiter("check", "full", { slots: 2 })
+const pairTwo = waiter("check", "full", { slots: 2 })
 await pairOne.until(started, "the first of two slots did not start")
 await pairTwo.until(started, "a second free slot kept a check waiting")
-const pairThird = waiter("check", "full", 2)
+const pairThird = waiter("check", "full", { slots: 2 })
 await pairThird.until(placed(1), "a third check with two slots did not say it is number 1 in line")
 await settle()
 if (started(pairThird.seen)) fail("three checks held two slots")
@@ -156,9 +158,9 @@ pairThird.finish()
 await pairTwo.closed
 await pairThird.closed
 
-const busyOne = waiter("check", "full", 2, folder, 100)
+const busyOne = waiter("check", "full", { slots: 2, load: 100 })
 await busyOne.until(started, "a busy machine kept the first slot from a check")
-const busyTwo = waiter("check", "full", 2, folder, 100)
+const busyTwo = waiter("check", "full", { slots: 2, load: 100 })
 await busyTwo.until(placed(1), "a check on a busy machine did not wait for its turn")
 await settle()
 if (started(busyTwo.seen)) fail("a second slot opened while the load was above the core count")
@@ -167,22 +169,73 @@ await busyOne.closed
 await busyTwo.until(started, "a freed first slot did not start the next check on a busy machine")
 busyTwo.finish()
 await busyTwo.closed
+const trees = fs.mkdtempSync(path.join(os.tmpdir(), "machine-lock-trees-"))
+const tree = (name) => {
+  const root = path.join(trees, name)
+  fs.mkdirSync(path.join(root, "apps"), { recursive: true })
+  fs.writeFileSync(path.join(root, ".git"), "gitdir: elsewhere\n")
+  return root
+}
+const one = tree("one")
+const two = tree("two")
+const exited = (seen) => /^exit \d+$/m.test(seen.err)
+const failed = (seen) => /^exit [1-9]\d*$/m.test(seen.err)
+
+const holding = waiter("check", "full", { cwd: one, launcher: true })
+await holding.until(started, "a check did not take a free machine")
+const older = waiter("check", "full", { cwd: one })
+await older.until(placed(1))
+const elsewhere = waiter("check", "full", { cwd: two })
+await elsewhere.until(placed(2))
+const otherKind = waiter("pptx", "full", { cwd: one })
+await otherKind.until(placed(3))
+const newer = waiter("check", "full", { cwd: path.join(one, "apps") })
+await within(older.closed, "an older waiting check from the same worktree kept its place when a newer one queued")
+if (!failed(older.seen)) fail("a check a newer one replaced did not exit non-zero")
+if (!older.seen.err.includes("newer check") || !older.seen.err.includes(String(newer.child.pid)))
+  fail(`a replaced check did not name the newer one: ${older.seen.err}`)
+await elsewhere.until(placed(1), "a check from another worktree did not move up when a replaced check left")
+await newer.until(placed(3), "a newer check did not keep its place behind the jobs ahead of it")
+await settle()
+if (exited(otherKind.seen)) fail("a newer check dropped a waiting job of another kind from the same worktree")
+if (exited(holding.seen)) fail("a newer check from the same worktree stopped the one holding the machine")
+
+const orphan = waiter("check", "full", { cwd: tree("three"), launcher: true })
+await orphan.until(placed(4))
+process.kill(orphan.child.pid, "SIGKILL")
+await within(orphan.closed, "a check whose launcher exited kept waiting in line")
+if (!failed(orphan.seen) || !orphan.seen.err.includes("abandoned"))
+  fail(`an abandoned check did not leave with a message and a non-zero exit: ${orphan.seen.err}`)
+
+process.kill(holding.child.pid, "SIGKILL")
+await settle()
+if (exited(holding.seen)) fail(`a check that holds the machine stopped when its launcher exited: ${holding.seen.err}`)
+holding.finish()
+await holding.until(exited, "a check whose launcher exited could not finish its run")
+for (const job of [elsewhere, otherKind, newer]) {
+  await job.until(started, "a job behind replaced and abandoned ones never started")
+  job.finish()
+  await job.closed
+}
+if ([elsewhere, otherKind, newer].some((job) => failed(job.seen)))
+  fail("a job behind replaced and abandoned ones failed")
+fs.rmSync(trees, { recursive: true, force: true })
 
 const leftover = [...fs.readdirSync(path.join(folder, "queue")), ...fs.readdirSync(path.join(folder, "small-queue"))]
 if (leftover.length !== 0) fail(`the queue kept tickets: ${leftover.join(", ")}`)
 if (!fs.existsSync(path.join(folder, `lane-protocol-${laneProtocol}`)))
   fail("a check did not record its lane protocol in the queue folder")
 
-const newer = fs.mkdtempSync(path.join(os.tmpdir(), "machine-lock-"))
-fs.writeFileSync(path.join(newer, `lane-protocol-${laneProtocol + 1}`), "")
-const stale = waiter("check", "full", 1, newer)
+const newerProtocol = fs.mkdtempSync(path.join(os.tmpdir(), "machine-lock-"))
+fs.writeFileSync(path.join(newerProtocol, `lane-protocol-${laneProtocol + 1}`), "")
+const stale = waiter("check", "full", { into: newerProtocol })
 await within(stale.closed, "a check with older queue code waited in line")
 if (stale.child.exitCode !== 1) fail("a check with older queue code did not fail")
 if (started(stale.seen)) fail("a check with older queue code started")
 if (!stale.seen.err.includes("git fetch origin && git rebase origin/main"))
   fail(`a check with older queue code did not say how to rebase: ${stale.seen.err}`)
-if (fs.existsSync(path.join(newer, "queue")) && fs.readdirSync(path.join(newer, "queue")).length !== 0)
+if (fs.existsSync(path.join(newerProtocol, "queue")) && fs.readdirSync(path.join(newerProtocol, "queue")).length !== 0)
   fail("a check with older queue code left a ticket")
-fs.rmSync(newer, { recursive: true, force: true })
+fs.rmSync(newerProtocol, { recursive: true, force: true })
 fs.rmSync(folder, { recursive: true, force: true })
 console.log("machine lock tests passed")
