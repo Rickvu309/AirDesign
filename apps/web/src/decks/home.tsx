@@ -258,10 +258,14 @@ export function Home({
     listing !== null && section === "recents" && held.length === 0 && listing.trash.length === 0 && importing === null
   const noDecks = listing !== null && !trash && held.length === 0 && importing === null
   const showGrid = !listView || trash || importing !== null
-  result.current = searching && decks.length === 0 ? noMatchTitleOf(query.trim()) : decksFoundOf(decks.length)
+  result.current = noDecks
+    ? productCopy.noDecksTitle
+    : noMatch
+      ? noMatchTitleOf(query.trim())
+      : decksFoundOf(decks.length)
   const loaded = listing !== null
   useEffect(() => {
-    if (typed === null || !loaded || unavailable) return
+    if (typed === null || typed.trim() === "" || !loaded || unavailable) return
     const timer = window.setTimeout(() => setSaid(result.current), 300)
     return () => window.clearTimeout(timer)
   }, [typed, loaded, unavailable])
