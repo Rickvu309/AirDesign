@@ -200,3 +200,26 @@ describe("edit_deck adds a text box from an add change", () => {
     expect(edit(indexed(), { op: "add", kind: "shape", slide: "300" })).toEqual({ ok: false, refusal: "dead" })
   })
 })
+
+for (const text of [{ strike: true }, { letterSpacing: -0.64 }, { list: "numbers" }]) {
+  it(`lets an agent set ${JSON.stringify(text)} through edit_deck`, () => {
+    const result = edit(started(indexed(), "258.2"), { op: "set", target: "258.2", text })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const value = readTextValue(currentValue(nodeBody(result.deck.register, elementId("258.2"))))
+    expect(value).toMatchObject([
+      {
+        from: 0,
+        ...(text.list ? { list: "numbers" } : {}),
+        runs: [
+          {
+            from: 0,
+            text: "Quarterly",
+            ...(text.strike ? { strike: true } : {}),
+            ...(text.letterSpacing ? { letterSpacing: -64 } : {}),
+          },
+        ],
+      },
+    ])
+  })
+}

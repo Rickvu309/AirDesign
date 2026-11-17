@@ -54,6 +54,7 @@ for (const name of [
   "opacity",
   "table-fill",
   "text-type",
+  "text-fields",
   "dynamic-fonts",
   "picture-icon",
   "theme",

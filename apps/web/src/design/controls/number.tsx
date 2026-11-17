@@ -6,7 +6,13 @@ import { cn } from "@/lib/class-names"
 
 function shownNumber(control: ControlProps["control"]): string {
   if (control.mixed || control.desc.kind !== "number" || typeof control.value !== "number") return ""
-  return String(agentNumberOf(control.desc.unit, control.value))
+  return String(
+    Math.round(
+      (control.numberScale === undefined
+        ? agentNumberOf(control.desc.unit, control.value)
+        : control.value / 100 / control.numberScale) * 10000,
+    ) / 10000,
+  )
 }
 
 function stepOf(event: KeyboardEvent<HTMLInputElement>, unit: number): number {
@@ -48,7 +54,7 @@ export function NumberField({
     setDraft(null)
     const typed = Number(text.trim().replace(",", "."))
     if (text.trim() === "" || !Number.isFinite(typed)) return
-    const read = readAgent(control.desc, typed)
+    const read = readAgent(control.desc, typed * (control.numberScale ?? 1))
     if (read.ok && (read.value !== control.value || control.inherited)) onChange(read.value)
   }
 
@@ -76,7 +82,7 @@ export function NumberField({
     if (from === null) return
     const to = scrubbed(from, event.clientX, event, step)
     if (to === from) return
-    const read = readAgent(control.desc, to.value)
+    const read = readAgent(control.desc, to.value * (control.numberScale ?? 1))
     scrub.current = read.ok ? to : { ...from, x: to.x }
     if (read.ok) onChange(read.value)
   }

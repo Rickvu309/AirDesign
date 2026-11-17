@@ -17,7 +17,7 @@
       "file": "packages/document/src/change.ts",
       "names": ["traitPatch", "planNode", "planChange"],
       "digest": "9bf63e76336f",
-      "blob": "78531a04401a611988ffa2c30e1bf9c493bdf390"
+      "blob": "6d63811f66cecf3d803fdadf9b7d42dbedbe911a"
     },
     {
       "file": "packages/document/src/person-undo.ts",
@@ -40,8 +40,8 @@
     {
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
-      "digest": "c214573120f9",
-      "blob": "4241ba2f4b64e0adae3ec9042424b4ab87373bdc"
+      "digest": "2cddfb1e9073",
+      "blob": "9cb44e2e1094e60ccce271fa1b3b750701fcc6d3"
     },
     {
       "file": "apps/web/src/design/shown-alpha.ts",

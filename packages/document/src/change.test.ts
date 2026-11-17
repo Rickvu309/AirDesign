@@ -119,20 +119,20 @@ describe("text inputs rewrite every run of the element's current text", () => {
   it("sets colour, size and format on every run and align and bullet on every paragraph", () => {
     const planned = plan({
       target: { node: elementId("258.2") },
-      text: { color: { scheme: "accent1" }, size: 3_600, italic: true, align: "center", bullet: false },
+      text: { color: { scheme: "accent1" }, size: 3_600, italic: true, align: "center", list: "none" },
     })
     const run = { color: { scheme: "accent1" }, size: 3_600, italic: true }
     expect(textOf(planned)).toEqual([
       {
         from: 0,
         align: "center",
-        bullet: false,
+        list: "none",
         runs: [
           { from: 0, text: "Quarterly", ...run },
           { from: 1, text: " review", bold: true, ...run },
         ],
       },
-      { from: 1, align: "center", bullet: false, runs: [{ from: 0, text: "Q3", ...run }] },
+      { from: 1, align: "center", list: "none", runs: [{ from: 0, text: "Q3", ...run }] },
     ])
   })
 

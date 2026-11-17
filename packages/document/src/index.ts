@@ -225,6 +225,7 @@ export {
   type SchemeName,
   type TextFormat,
   type TextParagraph,
+  type TextList,
   type TextRun,
   type TextValue,
 } from "./text-value.js"

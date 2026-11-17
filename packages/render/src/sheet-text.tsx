@@ -1,4 +1,4 @@
-import type { ParagraphAlign, ParagraphSpacing, Color, TextFormat } from "@airdesign/document"
+import type { TextList, ParagraphAlign, ParagraphSpacing, Color, TextFormat } from "@airdesign/document"
 import type { CanvasBullet } from "./text-record.js"
 import { endsInBreak, type RunPaint, type TextLook } from "./text-look.js"
 
@@ -10,6 +10,8 @@ type ShownRun = {
   readonly bold?: boolean
   readonly italic?: boolean
   readonly underline?: boolean
+  readonly strike?: boolean
+  readonly letterSpacing?: number
   readonly size?: number
   readonly color?: Color | string | null
   readonly font?: string | null
@@ -17,6 +19,7 @@ type ShownRun = {
 
 type ShownParagraph = {
   readonly from: number
+  readonly list?: TextList
   readonly align?: ShownAlign
   readonly bullet?: boolean | CanvasBullet | null
   readonly runs: readonly ShownRun[]
@@ -32,12 +35,13 @@ function placed(align: ShownAlign | undefined): ParagraphAlign | undefined {
 function overlayOf(run: ShownRun): RunPaint {
   if (typeof run.color === "string" || run.color === null) return {}
   const color = run.color
-  const flags: TextFormat[] = ["bold", "italic", "underline"]
+  const flags: TextFormat[] = ["bold", "italic", "underline", "strike"]
   let paint: RunPaint = {}
   for (const name of flags) {
     const set = run[name]
     if (set !== undefined) paint = { ...paint, [name]: set }
   }
+  if (run.letterSpacing !== undefined) paint = { ...paint, letterSpacing: run.letterSpacing }
   if (run.size !== undefined) paint = { ...paint, size: run.size }
   if (color !== undefined) paint = { ...paint, color }
   if (typeof run.font === "string") paint = { ...paint, font: run.font }
@@ -61,19 +65,23 @@ export function SheetText(props: {
   readonly look: TextLook
 }) {
   const { look, text } = props
+  let number: number | null = null
   return (
     <div data-text-body="" style={look.body}>
       {text.paragraphs.map((paragraph, index) => {
         const filled = paragraph.runs.some((run) => run.text !== "")
         const align = placed(paragraph.align)
-        const bullet = paragraph.bullet === true || paragraph.bullet === false ? paragraph.bullet : undefined
+        const list = paragraph.list
+        const numbered = list === "numbers" || (list === undefined && look.fileNumber(paragraph.from) !== null)
+        number = numbered ? (number === null ? (look.fileNumber(paragraph.from) ?? 1) : number + 1) : null
         const overlay = {
+          ...(number === null ? {} : { number }),
           ...(align === undefined ? {} : { align }),
-          ...(bullet === undefined ? {} : { bullet }),
+          ...(list === undefined ? {} : { list }),
           ...spacingOf(paragraph),
         }
         const style = look.paragraph(paragraph.from, filled, overlay)
-        const shown = filled || paragraph.bullet === true ? style : { ...style, "--bullet": "none" }
+        const shown = filled || list === "bullets" || list === "numbers" ? style : { ...style, "--bullet": "none" }
         return (
           <div
             key={index}

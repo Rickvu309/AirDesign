@@ -1,5 +1,5 @@
 import { sameColor, type Color } from "./color.js"
-import type { ParagraphAlign, TextFormat, TextParagraph, TextRun, TextValue } from "./text-value.js"
+import type { ParagraphAlign, TextList, TextFormat, TextParagraph, TextRun, TextValue } from "./text-value.js"
 import { formatNames, sizeCeiling, sizeDefault, sizeFloor } from "./text-value.js"
 
 export type Caret = { readonly paragraph: number; readonly offset: number }
@@ -9,7 +9,7 @@ export type FileFormat = (paragraph: number, run: number, format: TextFormat) =>
 export type FileSize = (paragraph: number, run: number) => number | null
 export type FileColor = (paragraph: number, run: number) => Color | null
 export type FileAlign = (paragraph: number) => ParagraphAlign | null
-export type FileBullet = (paragraph: number) => boolean
+export type FileList = (paragraph: number) => TextList
 
 export type SizeStep = 1 | -1
 
@@ -33,6 +33,7 @@ export function sameFormats(left: TextRun, right: TextRun): boolean {
     formatNames.every((format) => left[format] === right[format]) &&
     left.size === right.size &&
     left.font === right.font &&
+    left.letterSpacing === right.letterSpacing &&
     sameColor(left.color, right.color)
   )
 }
@@ -262,15 +263,16 @@ export function alignState(
   return uniform(aligns, (left, right) => left === right)
 }
 
-export function bulletRange(value: TextValue, range: TextRange | null, on: boolean, file: FileBullet): TextValue {
+export function bulletRange(value: TextValue, range: TextRange | null, on: boolean, file: FileList): TextValue {
   return applyParagraphs(value, range, (paragraph) => {
-    const { bullet: _dropped, ...rest } = paragraph
-    return on === file(paragraph.from) ? rest : { ...rest, bullet: on }
+    const { list: _dropped, ...rest } = paragraph
+    const list = on ? "bullets" : "none"
+    return list === file(paragraph.from) ? rest : { ...rest, list }
   })
 }
 
-export function bulletState(value: TextValue, range: TextRange | null, file: FileBullet): FormatState {
-  const flags = hit(value, range).map((paragraph) => paragraph.bullet ?? file(paragraph.from))
+export function bulletState(value: TextValue, range: TextRange | null, file: FileList): FormatState {
+  const flags = hit(value, range).map((paragraph) => (paragraph.list ?? file(paragraph.from)) === "bullets")
   const states = new Set(flags)
   if (states.size > 1) return "mixed"
   return states.has(true) ? "on" : "off"

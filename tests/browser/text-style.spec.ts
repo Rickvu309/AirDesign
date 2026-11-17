@@ -100,7 +100,7 @@ test("font size, theme colour, alignment and bullets survive reload, undo and ex
     .poll(async () =>
       (await storedValues(page)).some(
         (value) =>
-          value.includes('"size":3300') && value.includes('"scheme":"accent2"') && value.includes('"bullet":true'),
+          value.includes('"size":3300') && value.includes('"scheme":"accent2"') && value.includes('"list":"bullets"'),
       ),
     )
     .toBe(true)
@@ -110,7 +110,7 @@ test("font size, theme colour, alignment and bullets survive reload, undo and ex
   await expect(reloaded.locator("[data-run]").filter({ hasText: /^world$/ })).toHaveAttribute("data-size", "3300")
   await expect(reloaded.locator("[data-color='scheme:accent2']")).toHaveText("world")
   await expect(reloaded.locator("[data-align='center']")).toBeVisible()
-  await expect(reloaded.locator("[data-bullet='true']")).toBeVisible()
+  await expect(reloaded.locator("[data-list='bullets']")).toBeVisible()
   await savedExport(page, download)
   expect(await changedParts(fixture, download)).toEqual([slide])
   const saved = (await partsOf(download)).get(slide)?.toString("utf8") ?? ""

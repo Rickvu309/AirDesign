@@ -40,6 +40,7 @@ export type PanelControl = {
   readonly mixed: boolean
   readonly inherited: boolean
   readonly reset: string | null
+  readonly numberScale?: number
   readonly parent?: unknown
   readonly nodes?: readonly NodeChoice[]
   readonly change: (value: unknown) => SetChange
@@ -92,7 +93,7 @@ type Labels = {
   readonly fields: Readonly<Record<string, { readonly label: string; readonly reset?: string }>>
 }
 
-const paragraphKeys = ["align", "bullet", "lineSpacing", "spaceBefore", "spaceAfter"] as const
+const paragraphKeys = ["align", "list", "lineSpacing", "spaceBefore", "spaceAfter"] as const
 
 type Held = { readonly value: unknown; readonly mixed: boolean; readonly inherited: boolean }
 
@@ -104,7 +105,9 @@ function fallbackOf(reads: TraitReads, key: string, read: ShownField | undefined
   const named = key === "size" || key === "color" || key === "font" || key === "bold" ? reads[`text.${key}`] : undefined
   if (named !== undefined) return { value: named.value, mixed: false, inherited: named.source !== undefined }
   if (key === "color") return { value: { scheme: "tx1" }, mixed: false, inherited: true }
-  const off = key === "bold" || key === "italic" || key === "underline" || key === "bullet"
+  if (key === "list") return ownHeld("none")
+  if (key === "letterSpacing") return ownHeld(0)
+  const off = key === "bold" || key === "italic" || key === "underline" || key === "strike"
   return ownHeld(off ? false : undefined)
 }
 
@@ -183,6 +186,10 @@ function joined(shown: PanelReads): boolean {
   })
 }
 
+function readsSize(reads: TraitReads): number {
+  return reads["text.size"]?.value ?? 1800
+}
+
 export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
   const routed = view.facts.kind === "connector" && joined(shown)
   const taken = takes(view.facts).filter(
@@ -210,6 +217,15 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
               }) as SetChange
       const desc = shownDesc(kind, view.facts.grouped, held.value)
       const label = copy?.label ?? ""
+      const text = readTextValue(view.value ?? "")
+      const size =
+        text?.flatMap((paragraph) => paragraph.runs).find((run) => run.text !== "")?.size ??
+        shown.fields?.["text.size"]?.value ??
+        readsSize(shown.reads)
+      const number =
+        trait === "text" && field === "letterSpacing"
+          ? { numberScale: typeof size === "number" ? size / 10_000 : 0.18 }
+          : {}
       const nodes = trait === "connection" && shown.nodes !== undefined ? { nodes: shown.nodes } : {}
       return [
         resolveControl({
@@ -220,6 +236,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
           ...held,
           reset,
           ...nodes,
+          ...number,
           change,
         }),
       ]

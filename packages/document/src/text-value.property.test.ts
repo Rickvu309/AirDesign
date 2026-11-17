@@ -57,7 +57,7 @@ function textValue(): fc.Arbitrary<TextValue> {
     .record({
       from: fc.integer({ min: 0, max: 32 }),
       align: fc.option(fc.constantFrom(...alignNames), { nil: undefined }),
-      bullet: fc.option(fc.boolean(), { nil: undefined }),
+      list: fc.option(fc.constantFrom("none", "bullets", "numbers"), { nil: undefined }),
       runs: fc.array(run, { maxLength: 4 }),
     })
     .map((value) => kept(value) as TextParagraph)
