@@ -133,9 +133,8 @@ export { foldSections, type FileSection } from "./section-order.js"
 export { floorFor, floorNodes, floorOpening, newSlideElement, openingElement } from "./slide-floor.js"
 export { widestEffect } from "./trait-effects.js"
 export { patternPresets } from "./trait-fill.js"
-export { recolors } from "./trait-image.js"
-export { altBytes, nameBytes } from "./trait-identity.js"
-export { assetIcon, iconNamePattern, readAsset } from "./asset-ref.js"
+export { nameBytes } from "./trait-identity.js"
+export { assetIcon, iconNamePattern } from "./asset-ref.js"
 export { arrowheads, arrowSizes, dashPresets, lineCaps, lineCompounds, lineJoins, widestLine } from "./trait-line.js"
 export { anchors, autofits, mostColumns, verticals } from "./trait-body.js"
 export { adjustLimit, presetAdjusts, presets, type Preset } from "./trait-geometry.js"
@@ -170,21 +169,8 @@ export {
   type MediaType,
 } from "./element-order.js"
 export { elementStacks, stackTarget, type ElementStack, type StackMove } from "./element-stack.js"
-export {
-  groupChildren,
-  groupCommand,
-  groupedNow,
-  groupFormed,
-  groupNode,
-  groupParent,
-  madeGroup,
-  type ElementGroup,
-  type ElementRegroup,
-  type ElementUngroup,
-  type GroupCommand,
-  type Member,
-} from "./element-group.js"
-export { groupOf, placeOf, throughGroup, ungroupRows, type Place, type PlacedRow } from "./group-place.js"
+export { groupCommand, groupedNow, groupFormed, groupNode, madeGroup, type Member } from "./element-group.js"
+export { groupOf, placeOf, throughGroup, ungroupRows, type Place } from "./group-place.js"
 export { ungroupTurn } from "./group-turn.js"
 export {
   foldSlides,
@@ -232,7 +218,6 @@ export {
   themeSlots,
   valuedTransforms,
   type Color,
-  type ColorBase,
   type ColorTransform,
   type MappedSlot,
   type ThemeSlot,

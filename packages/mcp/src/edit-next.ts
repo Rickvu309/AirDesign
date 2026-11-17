@@ -1,9 +1,5 @@
-import type { readAgentEdit, EditRefusal } from "@airdesign/catalog"
+import type { EditRefusal } from "@airdesign/catalog"
 import { limits } from "@airdesign/document"
-
-type Refused<Result> = Result extends { readonly ok: false; readonly refusal: infer Code } ? Code : never
-
-export type ReadCode = Refused<ReturnType<typeof readAgentEdit>>
 
 export type EditCode = EditRefusal
 

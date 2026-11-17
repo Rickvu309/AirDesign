@@ -168,3 +168,5 @@ try {
 same("a gate that cannot choose its tests fails and stamps nothing", unchosen, "prove --plan crashed")
 
 console.log("gate tests passed")
+
+if (!named(cheapSteps).includes("interface-width")) throw new Error("unused package exports must stop the gate")
