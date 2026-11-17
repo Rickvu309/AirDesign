@@ -33,7 +33,16 @@ export const literals = (file, source) => {
   const parsed = parseSync(file, source)
   if (parsed.errors.length) throw new Error(`Cannot scan ${file}: ${parsed.errors[0].message}`)
   const found = []
+  const keys = new Set()
   walk(parsed.program, (node) => {
+    if (
+      node.type === "CallExpression" &&
+      node.callee.type === "MemberExpression" &&
+      !node.callee.computed &&
+      node.callee.property.name === "press"
+    )
+      keys.add(node.arguments[0])
+    if (keys.has(node)) return
     const value = valueOf(node)
     if (value) found.push({ value, start: node.start, end: node.end })
   })

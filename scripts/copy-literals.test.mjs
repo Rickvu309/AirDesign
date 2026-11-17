@@ -27,6 +27,14 @@ for (const target of [
 ]) {
   assert.equal(literalFaults(target, "", "page.getByText(`Undo fill`)", words).length, 1)
 }
+const keyWords = copyWords(file, 'export const connectionCopy = { end: "End" }')
+assert.deepEqual(literalFaults("tests/browser/keys.spec.ts", "", 'await text.press("End")', keyWords), [])
+assert.deepEqual(literalFaults("tests/browser/keys.spec.ts", "", "await page.keyboard.press(`End`)", keyWords), [])
+assert.equal(
+  literalFaults("tests/browser/keys.spec.ts", "", 'page.getByRole("button", { name: "End" }).press("End")', keyWords)
+    .length,
+  1,
+)
 const oldCopy = 'export const unavailableConnect = { body: "Check your connection, then try again." } as const'
 const newCopy = 'export const unavailableConnect = { body: "Try again in a moment." } as const'
 const connect = "apps/web/src/copy/connect-copy.ts"

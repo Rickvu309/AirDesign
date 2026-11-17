@@ -41,7 +41,7 @@ export async function expectNoSample(page: Page) {
       "Export",
       "New slide",
       "Add speaker notes",
-      airaCopy.newChat,
+      airaCopy.chatsTitle,
       productCopy.agentName,
       airaCopy.welcome,
       "Agent",

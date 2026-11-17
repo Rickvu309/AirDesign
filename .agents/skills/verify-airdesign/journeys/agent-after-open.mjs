@@ -1,3 +1,4 @@
+import { airaStepWords } from "../bin/product-copy.mjs"
 import path from "node:path"
 import { expect } from "@playwright/test"
 
@@ -126,7 +127,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await side.getByRole("button", { name: "Stop" }).click()
   answer()
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
-  await expect(log.getByText("Edited slides", { exact: true })).toBeVisible()
+  await expect(log.getByText(airaStepWords.edit_deck.done, { exact: true })).toBeVisible()
   await expect(title).toHaveText("Hello from Aira")
   await expect(side.getByRole("button", { name: "Undo", exact: true })).toBeEnabled()
   await page.unroute(calling)

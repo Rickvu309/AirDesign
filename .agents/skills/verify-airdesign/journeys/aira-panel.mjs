@@ -1,3 +1,4 @@
+import { airaCopy, undoCopy } from "../bin/product-copy.mjs"
 import path from "node:path"
 import { expect } from "@playwright/test"
 
@@ -65,7 +66,7 @@ export default async function drive(kit) {
   await expect(editor).toHaveText("Hello from Aira")
   await expect(log.getByText("The title now reads Hello from Aira.", { exact: true })).toBeVisible()
   await expect(log.locator('[data-tool-state="done"]')).toHaveText("Edited slides")
-  await expect(side.getByRole("button", { name: "Undo" })).toBeVisible()
+  await expect(side.getByRole("button", { name: undoCopy.undo })).toBeVisible()
   expect(lastText((await post(deckRoutes.open, { deck }, cookie)).json.register)).toBe("Hello from Aira")
   await capture("done")
   note(
@@ -81,18 +82,18 @@ export default async function drive(kit) {
 
   const undoing = `**${deckRoutes.undo.path}`
   await page.route(undoing, (route) => route.abort())
-  await side.getByRole("button", { name: "Undo" }).click()
-  await expect(side.getByText("Unable to undo. Check your connection and try again.", { exact: true })).toBeVisible()
-  await expect(side.getByRole("button", { name: "Undo" })).toBeEnabled()
+  await side.getByRole("button", { name: undoCopy.undo }).click()
+  await expect(side.getByText(airaCopy.undoFailed, { exact: true })).toBeVisible()
+  await expect(side.getByRole("button", { name: undoCopy.undo })).toBeEnabled()
   await expect(editor).toHaveText("Hello from Aira")
   await capture("undo-failed")
   note("an Undo that could not reach the server says so, keeps Aira's change on the slide, and offers Undo again")
   await page.unroute(undoing)
 
-  await side.getByRole("button", { name: "Undo" }).click()
+  await side.getByRole("button", { name: undoCopy.undo }).click()
   await expect(editor).toHaveText("Hello")
-  await expect(side.getByRole("button", { name: "Undo" })).toHaveCount(0)
-  await expect(side.getByText("Aira's changes from this request are undone.", { exact: true })).toBeVisible()
+  await expect(side.getByRole("button", { name: undoCopy.undo })).toHaveCount(0)
+  await expect(side.getByText(airaCopy.undone, { exact: true })).toBeVisible()
   expect(lastText((await post(deckRoutes.open, { deck }, cookie)).json.register)).not.toBe("Hello from Aira")
   expect(await page.evaluate(() => document.body.dataset.sameLoad)).toBe("yes")
   await capture("undone")
