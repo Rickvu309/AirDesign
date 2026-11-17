@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { toast } from "@/components/ui/toast"
+import { showStatus } from "@/decks/deck-notice"
 import { creditsCopy } from "@/copy/credits-copy"
 import { signInAddress } from "@/thin-notice"
 import { changeCredits, loadCredits, type CreditsChange, type CreditsLoad } from "@/credits/credits-load"
@@ -54,7 +54,7 @@ export function useCredits(onReset: () => Promise<void>) {
       if (command.kind === "reset") {
         setReset(null)
         await onReset()
-        toast.success(creditsCopy.done)
+        showStatus(creditsCopy.done, "credits-reset", 5000)
       }
     } else if (result.kind === "signed-out") keep(result)
     else setError(failure(result))

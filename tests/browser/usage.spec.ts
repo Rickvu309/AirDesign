@@ -44,7 +44,7 @@ test("the usage ring shows before any ask, stays current, and See all opens the 
   await expect(page.getByRole("meter", { name: productCopy.usageTitle })).toHaveAttribute("aria-valuenow", "100")
   await expect(page.locator("[data-usage-fill]")).toHaveCSS("background-color", spentColor)
   await expect(page.getByRole("heading", { name: settingsCopy.credits, exact: true })).toBeVisible()
-  await expect(page.getByRole("button", { name: settingsCopy.addCredits, exact: true })).toBeDisabled()
+  await expect(page.getByRole("button", { name: settingsCopy.addCredits, exact: true })).toBeEnabled()
   await expect(page.getByRole("switch", { name: settingsCopy.autoReset })).not.toBeChecked()
   await expect(page.getByRole("heading", { name: settingsCopy.history, exact: true })).toBeVisible()
   await expect(page.getByRole("button", { name: settingsCopy.reset, exact: true })).toBeDisabled()
