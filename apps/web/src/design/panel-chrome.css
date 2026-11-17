@@ -63,7 +63,7 @@
   background: var(--panel-track);
 }
 
-[data-design-panel] [data-design-section="Shadow"] [data-segments] svg {
+[data-design-panel] [data-design-section="Shadow"] [data-segments] button svg {
   width: 14px;
   height: 14px;
 }
