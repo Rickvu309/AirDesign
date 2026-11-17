@@ -1,6 +1,8 @@
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
+import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { colorPickerExport, colorPickerWritten } from "../../scripts/pptx-cases/color-picker.mjs"
 import { designing, openDeck, picker, pickColor, settled, shownColor, typeColor } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
@@ -85,22 +87,34 @@ test("a person picks a hex colour, a colour already in the deck and a theme tint
   await copyFile(file, judged)
 })
 
-test("a text colour shows its contrast against the fill behind it, and a theme tint paints the text at once", async ({
-  page,
-}) => {
-  await openDeck(page, "clean.pptx")
-  const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
-  const panel = await designing(page, editor)
-  const field = panel.getByRole("group", { name: "Text color" })
-  await shownColor(field).click()
-  await expect(picker(page).locator("[data-contrast]")).toHaveText(/^Contrast \d+\.\d\d:1(Passes|Fails) AA$/)
-  await picker(page).getByRole("button", { name: "Accent 2, darker 50%", exact: true }).click()
-  await expect(picker(page).locator("[data-contrast]")).toHaveAttribute("data-contrast", "passes")
-  await page.keyboard.press("Escape")
-  const run = page.locator("[data-slide-paint] [data-run]").first()
-  await expect(run).toHaveAttribute("data-color", "scheme:accent2 lumMod:50000")
-  await expect.poll(() => run.evaluate((node) => getComputedStyle(node).color)).toBe("rgb(26, 26, 77)")
-  await expect(shownColor(field)).toHaveText("Accent 2, darker 50%")
-  await page.getByRole("button", { name: "Undo text format", exact: true }).click()
-  await expect(run).not.toHaveAttribute("data-color")
-})
+for (const opacity of ["100", "10"]) {
+  test(`a ${opacity}% text colour picker omits unsupported contrast claims and a theme tint paints the text at once`, async ({
+    page,
+  }) => {
+    await openDeck(page, "clean.pptx")
+    const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
+    const panel = await designing(page, editor)
+    const opacityField = panel.getByRole("textbox", { name: opacityCopy.label, exact: true })
+    await opacityField.fill(opacity)
+    await opacityField.press(slideListCopy.openKey)
+    const field = panel.getByRole("group", { name: "Text color" })
+    await shownColor(field).click()
+    await expect(picker(page)).not.toContainText(/Contrast|Passes AA|Fails AA/)
+    const swatch = picker(page).getByRole("button", { name: "Accent 2, darker 50%", exact: true })
+    await swatch.focus()
+    await page.keyboard.press("ArrowRight")
+    await page.keyboard.press("ArrowLeft")
+    await expect(swatch).toBeFocused()
+    await page.keyboard.press(slideListCopy.openKey)
+    await expect(picker(page)).not.toContainText(/Contrast|Passes AA|Fails AA/)
+    await page.keyboard.press("Escape")
+    const run = page.locator("[data-slide-paint] [data-run]").first()
+    await expect(run).toHaveAttribute("data-color", new RegExp("^scheme:accent2 lumMod:50000"))
+    await expect
+      .poll(() => run.evaluate((node) => getComputedStyle(node).color))
+      .toBe(opacity === "100" ? "rgb(26, 26, 77)" : "rgba(26, 26, 77, 0.1)")
+    await expect(shownColor(field)).toHaveText("Accent 2, darker 50%")
+    await page.getByRole("button", { name: "Undo text format", exact: true }).click()
+    await expect(run).not.toHaveAttribute("data-color", /accent2/)
+  })
+}

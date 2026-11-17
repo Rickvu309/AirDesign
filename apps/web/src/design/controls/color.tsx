@@ -64,7 +64,6 @@ export function ColorControl({ row, palette, onChange }: ControlProps) {
       <ColorPicker
         value={shown}
         palette={palette}
-        contrast={row.trait === "text"}
         onPick={(color) => onChange(picked(color))}
         trigger={<Button type="button" variant="ghost" aria-labelledby={`${label} ${named}`} className={fieldLook} />}
       >

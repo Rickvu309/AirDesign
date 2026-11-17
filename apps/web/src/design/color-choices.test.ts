@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest"
 import {
-  contrastOf,
   deckChoices,
   hexOf,
   hsvOf,
@@ -185,11 +184,5 @@ describe("the shown value", () => {
     expect(shownName({ scheme: "accent1", transforms: [{ op: "satMod", val: 50_000 }] }, theme)).toMatch(
       /^#[0-9A-F]{6}$/,
     )
-  })
-
-  it("rates a text colour against what sits behind it with the slide findings' contrast", () => {
-    expect(contrastOf({ rgb: "767676" }, "FFFFFF", theme)).toEqual({ ratio: 4.54, passes: true })
-    expect(contrastOf({ rgb: "777777" }, "FFFFFF", theme)).toEqual({ ratio: 4.47, passes: false })
-    expect(contrastOf({ rgb: "777777" }, null, theme)).toBeNull()
   })
 })

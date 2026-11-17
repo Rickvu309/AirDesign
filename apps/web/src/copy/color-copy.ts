@@ -12,8 +12,5 @@ export const colorCopy = {
   hexName: (hex: string) => `#${hex}`,
   areaValue: (saturation: number, brightness: number) =>
     `Saturation ${String(saturation)}%, brightness ${String(brightness)}%`,
-  contrast: (ratio: string) => `Contrast ${ratio}:1`,
-  passes: "Passes AA",
-  fails: "Fails AA",
   none: "None",
 } as const

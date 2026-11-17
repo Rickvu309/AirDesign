@@ -1,12 +1,4 @@
-import {
-  contrast,
-  fadedColor,
-  findingLimits,
-  opaque,
-  sameColor,
-  type Color,
-  type SchemeName,
-} from "@airdesign/document"
+import { fadedColor, opaque, sameColor, type Color, type SchemeName } from "@airdesign/document"
 import { colorHex } from "@airdesign/pptx"
 import { colorCopy } from "@/copy/color-copy"
 
@@ -164,14 +156,4 @@ export function shownName(value: Color, theme: readonly Swatch[]): string {
   const named = theme.find((swatch) => "scheme" in value && swatch.scheme === value.scheme && !value.transforms)
   if (named !== undefined) return named.name
   return colorCopy.hexName(shownHex(value, theme))
-}
-
-export function contrastOf(
-  value: Color,
-  behind: string | null,
-  theme: readonly Swatch[],
-): { readonly ratio: number; readonly passes: boolean } | null {
-  if (behind === null) return null
-  const ratio = Math.floor(contrast(shownHex(value, theme), behind) * 100) / 100
-  return { ratio, passes: ratio >= findingLimits.contrast }
 }

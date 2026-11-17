@@ -65,17 +65,17 @@ describe("the colour picker", () => {
     expect(markup).toContain(`value="${hash}1F4E79"`)
   })
 
-  it("rates a text colour against what sits behind it", () => {
-    const fails = renderToStaticMarkup(
-      <PickerBody value={{ rgb: "AAAAAA" }} palette={palette} contrast onPick={() => undefined} />,
-    )
-    expect(fails).toContain('data-contrast="fails"')
-    expect(fails).toContain("Contrast 2.32:1")
-    const passes = renderToStaticMarkup(
-      <PickerBody value={{ scheme: "dk1" }} palette={palette} contrast onPick={() => undefined} />,
-    )
-    expect(passes).toContain('data-contrast="passes"')
-    expect(passes).toContain("Passes AA")
+  it.each([
+    { rgb: "000000", transforms: [{ op: "alpha", val: 10_000 }] },
+    { rgb: "777777" },
+    { scheme: "dk1" },
+    undefined,
+  ] as const)("offers colors without claiming text contrast for %j", (value) => {
+    const markup = renderToStaticMarkup(<PickerBody value={value} palette={palette} onPick={() => undefined} />)
+    expect(markup).not.toContain("Passes AA")
+    expect(markup).not.toContain("Fails AA")
+    expect(markup).not.toContain("Contrast ")
+    expect(markup).toContain('aria-label="Hex"')
   })
 })
 

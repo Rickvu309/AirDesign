@@ -2,7 +2,7 @@ import type { Color } from "@airdesign/document"
 import { useState, type KeyboardEvent, type ReactElement, type ReactNode } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { colorCopy } from "@/copy/color-copy"
-import { contrastOf, deckChoices, matches, themeColumns, type Choice, type Palette } from "@/design/color-choices"
+import { deckChoices, matches, themeColumns, type Choice, type Palette } from "@/design/color-choices"
 import { CustomColor } from "@/design/custom-color"
 import { cn } from "@/lib/class-names"
 
@@ -135,34 +135,16 @@ function DeckRow({
   )
 }
 
-function Contrast({ value, palette }: { value: Color; palette: Palette }) {
-  const rated = contrastOf(value, palette.behind, palette.theme)
-  if (rated === null) return null
-  return (
-    <p
-      className="flex items-center justify-between text-[length:var(--type-caption)] text-quiet"
-      data-contrast={rated.passes ? "passes" : "fails"}
-    >
-      <span>{colorCopy.contrast(rated.ratio.toFixed(2))}</span>
-      <span className={rated.passes ? "text-foreground" : "text-danger-text"}>
-        {rated.passes ? colorCopy.passes : colorCopy.fails}
-      </span>
-    </p>
-  )
-}
-
 export function PickerBody({
   value,
   palette,
   theme = true,
-  contrast = false,
   onPick,
   onSwatch,
 }: {
   value: Color | undefined
   palette: Palette
   theme?: boolean
-  contrast?: boolean
   onPick: (color: Color) => void
   onSwatch?: () => void
 }) {
@@ -175,7 +157,6 @@ export function PickerBody({
       {theme && palette.theme.length > 0 ? <ThemeGrid value={value} palette={palette} onPick={swatch} /> : null}
       <DeckRow value={value} palette={palette} onPick={swatch} />
       <CustomColor value={value} palette={palette} onPick={onPick} />
-      {contrast && value !== undefined ? <Contrast value={value} palette={palette} /> : null}
     </>
   )
 }
@@ -184,7 +165,6 @@ export function ColorPicker({
   value,
   palette,
   theme = true,
-  contrast = false,
   keepsFormat = false,
   closesOnSwatch = false,
   side = "bottom",
@@ -196,7 +176,6 @@ export function ColorPicker({
   value: Color | undefined
   palette: Palette
   theme?: boolean
-  contrast?: boolean
   keepsFormat?: boolean
   closesOnSwatch?: boolean
   side?: "top" | "bottom" | "left" | "right"
@@ -221,7 +200,6 @@ export function ColorPicker({
           value={value}
           palette={palette}
           theme={theme}
-          contrast={contrast}
           onPick={onPick}
           {...(closesOnSwatch ? { onSwatch: () => setOpen(false) } : {})}
         />
