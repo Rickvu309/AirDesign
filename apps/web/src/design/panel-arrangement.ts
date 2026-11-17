@@ -214,6 +214,7 @@ function fallbackName(kind: ControlKind, field: string): NameLook {
 export function resolveControl(control: Omit<PanelControl, "kind" | "look">): PanelControl {
   const place = placement(control.trait, control.field)
   const kind = place?.kind ?? controlOf(control.desc)
+  if (kind === null) throw new Error("Unsupported authoring control")
   const options = place?.options ?? {}
   const choices = control.desc.kind === "choice" ? control.desc.options : []
   return {
@@ -262,7 +263,6 @@ export const controlKinds = [
   "list",
   "adjust",
   "text",
-  "table",
   "asset",
   "node",
   "site",
@@ -271,7 +271,7 @@ export const controlKinds = [
 
 export type ControlKind = (typeof controlKinds)[number]
 
-export function controlOf(desc: Desc): ControlKind {
+export function controlOf(desc: Desc): ControlKind | null {
   switch (desc.kind) {
     case "number":
       if (desc.unit === "emu" || desc.unit === "hundredth-point") return "length"
@@ -299,7 +299,7 @@ export function controlOf(desc: Desc): ControlKind {
     case "named":
       return "adjust"
     case "table":
-      return "table"
+      return null
     case "asset":
       return "asset"
     case "node":

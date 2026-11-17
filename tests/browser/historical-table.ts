@@ -23,7 +23,7 @@ export async function historicalTable(page: Page, kind: "typed" | "cells" | "rea
           kind: "table",
           grouped: false,
           value: doc.writeTableValue(value),
-          box: { x: 2438400, y: 4235580, cx: 7315200, cy: 1112520 },
+          box: { x: 2438400, y: 4235450, cx: 7315200, cy: 1112520 },
         },
       },
     })

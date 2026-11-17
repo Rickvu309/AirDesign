@@ -1,5 +1,5 @@
 import { memo, useLayoutEffect, useMemo, useRef } from "react"
-import type { ElementId, StackMove, TableChange } from "@airdesign/document"
+import type { ElementId, StackMove } from "@airdesign/document"
 import type { Moved } from "./box-gesture.js"
 import { ConnectorEnds, type EndDrop } from "./connector-ends.js"
 import type { End } from "./connector-drag.js"
@@ -13,7 +13,6 @@ import { slideBackground } from "./slide-background.js"
 import { canDrag, enterElement, useMoves } from "./slide-moves.js"
 import { leadOf, type Selection } from "./selection.js"
 import type { CanvasSlide } from "./record.js"
-import type { TableBar } from "./table-paint.js"
 import type { PaintStore } from "./store.js"
 import type { TextEditKind } from "./passage.js"
 import { ensureTextRule, type Scaled } from "./text-look.js"
@@ -53,8 +52,6 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly onUngroup?: (id: ElementId) => void
   readonly onConnect?: (id: ElementId, end: End, to: EndDrop) => void
   readonly notice?: string
-  readonly onTable?: (id: ElementId, change: TableChange) => void
-  readonly tableBar?: TableBar
   readonly entering?: Entering | null
   readonly formatting?: TextFormatting
   readonly slideName?: string
@@ -135,8 +132,6 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
             formatting={props.formatting}
             moves={moving}
             onEdit={props.onEdit}
-            onTable={props.onTable}
-            tableBar={props.tableBar}
             quiet={quiet}
             scaled={scaled}
             store={props.store}
