@@ -57,9 +57,9 @@ const quarters = ["Q3 24", "Q4 24", "Q1 25", "Q2 25", "Q3 25"];
     </div>
   </div>
 
-  <div class="absolute inset-x-0 bottom-0 flex h-10 items-center overflow-clip border-t border-[var(--steel)] bg-background">
+  <div class="absolute inset-x-0 bottom-0 flex h-11 items-center overflow-clip border-t border-transparent pt-1 before:absolute before:inset-x-0 before:bottom-0 before:h-10 before:border-t before:border-[var(--steel)] before:bg-background">
     <div class="relative z-10 flex h-full shrink-0 items-center bg-navy pr-6 pl-[max(1.5rem,env(safe-area-inset-left,0px))] text-[length:var(--type-caption)] font-semibold tracking-[1px] whitespace-nowrap text-primary-foreground">GOOD DECK</div>
-    <div class="ticker-track flex h-full shrink-0">
+    <div class="ticker-track relative flex h-full shrink-0">
       {tickerCopies.map((copy) => (
         <div class="flex h-full shrink-0 items-center" aria-hidden={copy === 0 ? undefined : "true"}>
           {ticks.map((tick) => (
@@ -72,8 +72,8 @@ const quarters = ["Q3 24", "Q4 24", "Q1 25", "Q2 25", "Q3 25"];
         </div>
       ))}
     </div>
-    <button type="button" class="ticker-pause touch-target pressable absolute right-0 bottom-0 z-10 h-10 min-h-0 bg-background text-faint-foreground" aria-pressed="false" aria-label="Pause the ticker" data-ticker-pause>
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+    <button type="button" class="ticker-pause touch-target pressable absolute right-0 bottom-0 z-10 pt-1 text-faint-foreground before:absolute before:inset-x-0 before:bottom-0 before:h-10 before:border-t before:border-[var(--steel)] before:bg-background" aria-pressed="false" aria-label="Pause the ticker" data-ticker-pause>
+      <svg class="relative" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
         <path class="ticker-pause-bars" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"></path>
         <path class="ticker-pause-play" d="M8 5.5v13l11-6.5z"></path>
       </svg>
