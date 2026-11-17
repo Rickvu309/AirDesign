@@ -18,5 +18,15 @@ it("accepts same or new row placement only for add_slide and preserves its defau
     { op: "duplicate_slide", slide: "257", row: "new" },
   ])
     expect(readSlideChange(raw)).toMatchObject({ ok: false, field: "row" })
-  expect(slideChangeSchema().properties).toHaveProperty("row", expect.objectContaining({ enum: ["same", "new"] }))
+  expect(slideChangeSchema().properties).toHaveProperty(
+    "row",
+    expect.objectContaining({ enum: ["same", "new", "keep"] }),
+  )
+})
+
+it("reads an atomic group move and refuses malformed or empty groups", () => {
+  const command = { op: "move_slides", slides: ["258", "256"], after: "257", row: "new" }
+  expect(readSlideChange(command)).toEqual({ ok: true, change: command })
+  for (const slides of [[], ["256", "256"], ["bad"]])
+    expect(readSlideChange({ ...command, slides })).toMatchObject({ ok: false, field: "slides" })
 })

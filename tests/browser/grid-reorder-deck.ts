@@ -3,7 +3,13 @@ import type { ReadDeckAnswer } from "../../packages/engine/src/index.ts"
 import { forward, signInBrowser, type Stack } from "./api-stack"
 import { entry, manySlides, openFile, openGrid } from "./slide-grid-deck"
 
-export type Saved = { readonly deck: string; readonly ids: readonly string[]; readonly order: () => Promise<string[]> }
+export type Saved = {
+  readonly deck: string
+  readonly cookie: string
+  readonly ids: readonly string[]
+  readonly order: () => Promise<string[]>
+  readonly rows: () => Promise<string[][]>
+}
 
 type Box = { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
 
@@ -12,6 +18,7 @@ export async function openSaved(
   context: BrowserContext,
   stack: Stack,
   file: number | string,
+  sections = false,
 ): Promise<Saved> {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
@@ -20,12 +27,21 @@ export async function openSaved(
     page,
     typeof file === "string"
       ? file
-      : { name: "slides.pptx", mimeType: "application/octet-stream", buffer: await manySlides(file) },
+      : { name: "slides.pptx", mimeType: "application/octet-stream", buffer: await manySlides(file, sections) },
   )
   const deck = new URL(page.url()).pathname.slice("/deck/".length)
   const order = async () => {
     const read = (await stack.callTool("airdesign_read_deck", { deck }, cookie)) as ReadDeckAnswer
     return read.slides.map((slide) => slide.id)
+  }
+  const rows = async () => {
+    const read = (await stack.callTool("airdesign_read_deck", { deck }, cookie)) as ReadDeckAnswer
+    const partition: string[][] = []
+    for (const slide of read.slides) {
+      if (read.grid.starts.includes(slide.id) || partition.length === 0) partition.push([slide.id])
+      else partition.at(-1)?.push(slide.id)
+    }
+    return partition
   }
   const count = await page.locator("[data-slide-entry]").count()
   await expect.poll(async () => (await order()).length, { timeout: 15_000 }).toBe(count)
@@ -39,7 +55,7 @@ export async function openSaved(
       ),
     )
     .toBe(true)
-  return { deck, ids: await order(), order }
+  return { deck, cookie, ids: await order(), order, rows }
 }
 
 export function picked(ids: readonly string[], numbers: readonly number[]): string[] {
@@ -105,7 +121,7 @@ export async function hover(page: Page, number: number, across: number): Promise
 export function moveRequests(page: Page): () => number {
   let moves = 0
   page.on("request", (request) => {
-    if (request.postData()?.includes('"slide":"move"')) moves += 1
+    if (request.postData()?.match(/"slide":"move(?:-many)?"/)) moves += 1
   })
   return () => moves
 }

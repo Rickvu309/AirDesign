@@ -108,6 +108,8 @@ export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, b
       layout: parsed.layout,
       floor: floorFor(floor, id),
     }
+  } else if (parsed.op === "move_slides") {
+    edit = { slide: "move-many", ids: parsed.slides, after: parsed.after, grid: 1, row: parsed.row }
   } else if (parsed.op === "move_slide") {
     edit = { slide: "move", id: parsed.slide, after: parsed.after, grid: 1, row: "same" }
   } else if (parsed.op === "delete_slide") {

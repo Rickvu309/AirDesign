@@ -47,7 +47,10 @@ function canvasKeyTarget(target: EventTarget | null, host: HTMLElement | null): 
 function spacePans(target: EventTarget | null, host: HTMLElement | null): boolean {
   if (canvasKeyTarget(target, host)) return true
   if (!(target instanceof Element) || host === null || !host.contains(target) || typing(target)) return false
-  return target.closest("[data-slide-entry]") !== null || target.closest("button, a[href], [role=button]") === null
+  return (
+    target.closest("[data-slide-entry], [data-row-handle]") !== null ||
+    target.closest("button, a[href], [role=button]") === null
+  )
 }
 
 export function useGridViewport({
@@ -241,7 +244,8 @@ export function useGridViewport({
   function press(event: PointerEvent<HTMLDivElement>) {
     const target = event.target
     const blank =
-      target instanceof Element && target.closest("[data-grid-card], [data-section-head], [data-add-row]") === null
+      target instanceof Element &&
+      target.closest("[data-grid-card], [data-section-head], [data-add-row], [data-row-handle]") === null
     if (event.button !== 1 && !(event.button === 0 && (hand || heldSpace.current || blank))) return
     dragged.current = hand || heldSpace.current || event.button === 1
     if (blank) event.currentTarget.focus({ preventScroll: true })
@@ -269,7 +273,7 @@ export function useGridViewport({
 
   function reveal(target: Element) {
     const host = viewport.current
-    const card = target.closest("[data-grid-card]")
+    const card = target.closest("[data-grid-card], [data-row-handle]")
     if (host === null || card === null) return
     host.scrollLeft = 0
     host.scrollTop = 0
@@ -343,7 +347,7 @@ export function useGridViewport({
         if (event.target.matches("[data-slide-entry]")) {
           focused.current = Number(event.target.getAttribute("data-slide-entry")) - 1
           reveal(event.target)
-        }
+        } else if (event.target.matches("[data-row-handle]")) reveal(event.target)
       },
     },
   }

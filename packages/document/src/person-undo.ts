@@ -323,10 +323,11 @@ function undoableAt(register: Register, at: number, edit: SlideCommand): Undoabl
     }
   }
   if (edit.slide === "grid-turn") return null
+  const ids = edit.slide === "move-many" ? edit.ids : [edit.id]
   const turnsSlide = (row: SlideCommand) =>
-    ((row.slide === "remove" || row.slide === "restore") && row.id === edit.id) ||
+    ((row.slide === "remove" || row.slide === "restore") && ids.includes(row.id)) ||
     (row.slide === "grid-turn" &&
-      row.turn.spots.some((step) => step.id === edit.id && step.before.present !== step.after.present))
+      row.turn.spots.some((step) => ids.includes(step.id) && step.before.present !== step.after.present))
   if (fencedSince(register, at, edit, turnsSlide)) return null
   return gridUndoable(
     { ...register, order: register.order.slice(0, at) },

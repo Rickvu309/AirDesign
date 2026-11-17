@@ -122,3 +122,19 @@ it("keeps an entry that could not be replayed and stops there", async () => {
   await recoverUnsaved(shelf, account, "deck", () => Promise.reject(new Error("device")))
   expect(unsavedOf(shelf, account, "deck").map((entry) => entry.id)).toEqual(["a", "b"])
 })
+
+it("journals an entire row move and recovers exactly one command", async () => {
+  const shelf = memoryShelf()
+  const entry = {
+    kind: "slide",
+    file: [slideId("256"), slideId("257")],
+    edit: { slide: "move-many", grid: 1, row: "keep", ids: [slideId("256"), slideId("257")], after: null },
+  } as const
+  keepUnsaved(shelf, account, "deck", "move", entry)
+  const recovered: unknown[] = []
+  await recoverUnsaved(shelf, account, "deck", async (entry) => {
+    recovered.push(entry)
+  })
+  expect(recovered).toEqual([expect.objectContaining(entry)])
+  expect(unsavedOf(shelf, account, "deck")).toEqual([])
+})

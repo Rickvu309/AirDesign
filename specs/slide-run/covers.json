@@ -10,14 +10,14 @@
     {
       "file": "packages/mcp/src/edit-tool.ts",
       "names": ["editDeck", "addTurn"],
-      "digest": "36133ac79f7a",
-      "blob": "606b8fac78ce49fb1b08c1a8b778172353b4f015"
+      "digest": "4b3638ba4a9f",
+      "blob": "8623975a512d63bdc58df77d511cfbfc8c1e4d15"
     },
     {
       "file": "packages/engine/src/agent-slides.ts",
       "names": ["agentSlide", "runFence", "runFenced", "readFresh"],
-      "digest": "4032558e1df0",
-      "blob": "01b2450e6897c029c3d328788f2c534e86d1df73"
+      "digest": "8fce3c1f4f88",
+      "blob": "6ff7c2aa67668fea01c6db2cbae2cddb0219a25a"
     },
     {
       "file": "packages/mcp/src/call-tool.ts",

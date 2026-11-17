@@ -1,3 +1,4 @@
+import { groupRefusal as moveRefusal } from "./grid-move.js"
 import { foldGrid, orderedSpots, turnRefusal, readGridCommand, type V1Command } from "./grid-order.js"
 import type { DeckIndex, IndexElement } from "./deck-index.js"
 import { readSlideId, slideId, type SlideId } from "./element-id.js"
@@ -144,6 +145,11 @@ export function applySlide(
     if (refusal !== null) return { ok: false, code: refusal }
     return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
   }
+  if (command.slide === "move-many") {
+    const refusal = moveRefusal(withFile, command)
+    if (refusal !== null) return { ok: false, code: refusal }
+    return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
+  }
   if (command.slide === "grid-turn") {
     const refusal = turnRefusal(withFile, command.turn)
     if (refusal !== null) return { ok: false, code: refusal }
@@ -255,6 +261,7 @@ export function newerSlideCommand(raw: unknown): boolean {
       "move",
       "restore",
       "grid-turn",
+      "move-many",
       "element-add",
       "element-remove",
       "element-restore",

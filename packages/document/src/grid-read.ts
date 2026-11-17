@@ -54,21 +54,39 @@ function turn(raw: unknown): GridTurn | undefined {
 export function readGridCommand(raw: Record<string, unknown>): V1Command | undefined {
   if (raw.grid !== 1) return undefined
   const fields =
-    raw.slide === "grid-turn"
-      ? ["turn"]
-      : raw.slide === "remove"
-        ? ["id"]
-        : raw.slide === "move"
-          ? ["id", "after", "row"]
-          : raw.slide === "clone"
-            ? ["id", "source", "floor"]
-            : raw.slide === "add"
-              ? ["id", "after", "layout", "layoutPart", "floor", "row"]
-              : []
+    raw.slide === "move-many"
+      ? ["ids", "after", "row"]
+      : raw.slide === "grid-turn"
+        ? ["turn"]
+        : raw.slide === "remove"
+          ? ["id"]
+          : raw.slide === "move"
+            ? ["id", "after", "row"]
+            : raw.slide === "clone"
+              ? ["id", "source", "floor"]
+              : raw.slide === "add"
+                ? ["id", "after", "layout", "layoutPart", "floor", "row"]
+                : []
   if (Object.keys(raw).some((key) => !["slide", "grid", "runId", "file", ...fields].includes(key))) return undefined
   if (raw.slide === "grid-turn") {
     const parsed = turn(raw.turn)
     return parsed === undefined ? undefined : { slide: "grid-turn", grid: 1, turn: parsed }
+  }
+  if (raw.slide === "move-many") {
+    if (!Array.isArray(raw.ids) || raw.ids.length > limits.slides) return undefined
+    const ids = raw.ids.map((id: unknown) => readSlideId(id))
+    const first = ids[0]
+    const rest = ids.slice(1).filter((id): id is NonNullable<typeof id> => id !== undefined)
+    const after = raw.after === null ? null : readSlideId(raw.after)
+    if (
+      first === undefined ||
+      rest.length !== ids.length - 1 ||
+      new Set(ids).size !== ids.length ||
+      after === undefined
+    )
+      return undefined
+    if (raw.row !== "same" && raw.row !== "new" && raw.row !== "keep") return undefined
+    return { slide: "move-many", grid: 1, ids: [first, ...rest], after, row: raw.row }
   }
   const id = readSlideId(raw.id)
   if (id === undefined) return undefined

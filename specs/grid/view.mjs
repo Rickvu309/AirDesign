@@ -29,6 +29,19 @@ const names = [
   "Dead anchor refused",
   "Two rows added below",
   "Colliding birth refused",
+  "Group joins a row",
+  "Group move undone",
+  "Group starts a row",
+  "Whole row moved",
+  "Row move undone",
+  "Row move redone",
+  "Foreign slide fills moved row",
+  "Row undo refused",
+  "Stale row refused",
+  "Independent group gap filled",
+  "Group undo keeps foreign slide",
+  "Source row emptied",
+  "Selected anchor refused",
 ]
 export const state = (v) => names[v.stage] + ", device at " + names[v.cacheStage]
 export const step = (action) => (action === "Adopt" ? "the device adopts the accepted prefix" : action)

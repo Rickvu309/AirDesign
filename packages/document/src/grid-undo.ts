@@ -1,4 +1,4 @@
-import { foldGrid, orderedSpots, type GridUndoable } from "./grid-order.js"
+import { gridRows, foldGrid, orderedSpots, type GridUndoable } from "./grid-order.js"
 import type { Register } from "./decide.js"
 import type { SlideId } from "./element-id.js"
 import type { SlideCommand } from "./slide-order.js"
@@ -17,6 +17,7 @@ export function gridUndoable(
   const rightHeads = new Set(right.grid.starts)
   const affected = new Set<SlideId>()
   if ("id" in edit) affected.add(edit.id)
+  if (edit.slide === "move-many") for (const id of edit.ids) affected.add(id)
   if (edit.slide === "grid-turn") {
     for (const step of edit.turn.spots) affected.add(step.id)
     for (const step of edit.turn.heads) affected.add(step.id)
@@ -48,5 +49,9 @@ export function gridUndoable(
     ]
   })
   const heads = [...guards].map((id) => ({ id, before: leftHeads.has(id), after: rightHeads.has(id) }))
-  return { file, spots, heads, rowsBefore: [], rowsAfter: [] }
+  const rows = (register: Register) =>
+    gridRows({ file, order: register.order })
+      .filter((row) => edit.slide === "move-many" && edit.row === "keep" && row.some((id) => edit.ids.includes(id)))
+      .map((row) => ({ head: row[0], slides: row }))
+  return { file, spots, heads, rowsBefore: rows(before), rowsAfter: rows(after) }
 }

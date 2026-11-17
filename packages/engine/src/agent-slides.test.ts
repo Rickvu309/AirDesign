@@ -167,3 +167,26 @@ it("Undo of a run that added a slide and titled it removes the slide", () => {
   expect(undone).toMatchObject({ ok: true })
   if (undone.ok) expect(presentSlides(undone.deck.register).map((row) => row.id)).toEqual(["256"])
 })
+
+it("moves a complete row in one revision through edit and undoes the run", () => {
+  const result = changeCall("move_slides", opened(6), actor, {
+    deck: "deck",
+    base: 0,
+    slides: ["261", "260"],
+    after: null,
+    row: "keep",
+  })
+  if (!result.ok) throw new Error(result.refusal)
+  expect(result.deck.revision).toBe(1)
+  expect(result.deck.register.order).toHaveLength(1)
+  expect(gridRows(result.deck.register)).toEqual([
+    ["260", "261"],
+    ["256", "257", "258", "259"],
+  ])
+  const undone = call("undo_run", result.deck, { actor: "person" }, { deck: "deck", runId: "run" })
+  if (!undone.ok) throw new Error(undone.refusal)
+  expect(gridRows(undone.deck.register)).toEqual([
+    ["256", "257", "258", "259"],
+    ["260", "261"],
+  ])
+})

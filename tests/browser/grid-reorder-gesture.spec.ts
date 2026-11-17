@@ -41,7 +41,7 @@ test("several selected slides travel together in deck order, and the drag shows 
   await expect(ghost).toHaveCount(0)
   await expect(said(page)).toHaveText("Moved 2 slides to position 5")
   await expect.poll(saved.order).toEqual(picked(saved.ids, [1, 3, 5, 6, 2, 4, 7, 8]))
-  expect(moves()).toBe(2)
+  expect(moves()).toBe(1)
   await expect(page.locator("[data-grid-selected]")).toHaveText("2 slides selected")
   await expect(entry(page, 5)).toHaveAttribute("aria-label", /selected$/)
   await expect(entry(page, 6)).toHaveAttribute("aria-label", /selected$/)
