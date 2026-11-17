@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from "react"
+import type { HTMLAttributes } from "react"
 import { cn } from "@/lib/class-names"
 
 export function Tool({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
@@ -20,8 +20,4 @@ export function ToolHeader({ title, caret = true }: { title: string; caret?: boo
       ) : null}
     </>
   )
-}
-
-export function ToolOutput({ children }: { children: ReactNode }) {
-  return <div className="flex flex-col gap-3">{children}</div>
 }

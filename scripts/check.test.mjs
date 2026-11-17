@@ -7,6 +7,7 @@ import { recordFailure, warnSteps } from "./check.mjs"
 import { shardOf } from "./check.mjs"
 
 const requiredSteps = [
+  "interface-width",
   "format",
   "lint",
   "actionlint",

@@ -116,7 +116,6 @@ export const mayPush = (failed, ran) => ran && failed.every((name) => judgedOnCi
 export const stampable = (failed, ran) => ran && failed.every((name) => name === "browser")
 
 export const warnSteps = new Set([
-  "interface-width",
   "design-findings",
   "spec-replays",
   "spec-sync",
@@ -133,7 +132,16 @@ export const recordFailure = (failed, name, warned = warnSteps) => {
 }
 
 const showOnSuccess = new Set(["bug-rule", "commit-authors", "lint", "metrics", "specs", "worktrees", ...localSteps])
-export const preflight = ["format", "lint", "file-size", "references", "bug-rule", "commit-authors", "boundaries"]
+export const preflight = [
+  "format",
+  "lint",
+  "file-size",
+  "references",
+  "bug-rule",
+  "commit-authors",
+  "boundaries",
+  "interface-width",
+]
 
 export const runCheck = async ({ chosen, lock, run, all = false }) => {
   const failed = []

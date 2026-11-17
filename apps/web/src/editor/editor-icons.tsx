@@ -95,11 +95,3 @@ export function SparkIcon({ size = 14, className }: { size?: number; className?:
     </svg>
   )
 }
-
-export function ActivityCaret() {
-  return (
-    <svg viewBox="0 0 10 10" width={10} height={10} className="shrink-0 text-faint" aria-hidden="true">
-      <path d="M3.5 2.5 7 5l-3.5 2.5z" fill="currentColor" />
-    </svg>
-  )
-}

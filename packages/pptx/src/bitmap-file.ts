@@ -73,12 +73,6 @@ export function bitmapFile(info: Uint8Array, pixels: Uint8Array): Uint8Array {
   return file
 }
 
-export function dibFile(dib: Uint8Array): Uint8Array | null {
-  const infoBytes = bitmapInfoBytes(dib)
-  if (infoBytes === null || infoBytes > dib.length) return null
-  return bitmapFile(dib.subarray(0, infoBytes), dib.subarray(infoBytes))
-}
-
 export function rgbaFile(size: BitmapSize, rgba: Uint8Array): Uint8Array {
   const info = new Uint8Array(fourHeaderBytes)
   const data = view(info)

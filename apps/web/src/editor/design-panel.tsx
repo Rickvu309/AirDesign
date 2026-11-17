@@ -158,37 +158,6 @@ export function Swatch({ color, name, edged = false }: { color: string; name: st
   )
 }
 
-export function SwatchButton({
-  color,
-  name,
-  edged,
-  pressed,
-  onPick,
-}: {
-  color: string
-  name: string
-  edged: boolean
-  pressed: boolean
-  onPick: () => void
-}) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      aria-pressed={pressed}
-      onClick={onPick}
-      className={cn(
-        swatchShape,
-        "h-9 justify-start border-0 font-normal hover:bg-white active:translate-y-0",
-        pressed ? "shadow-[0_0_0_2px_var(--ring)]" : null,
-      )}
-    >
-      <Chip color={color} edged={edged} />
-      <span className="truncate text-[length:var(--type-dense)] text-foreground">{name}</span>
-    </Button>
-  )
-}
-
 type Run = { readonly control: ControlKind; readonly rows: readonly PanelRow[] }
 
 const paired: readonly ControlKind[] = ["length", "toggle", "hex"]
