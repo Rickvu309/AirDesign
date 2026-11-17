@@ -1,10 +1,12 @@
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
+import { colorCopy } from "../../apps/web/src/copy/color-copy"
+import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { colorPickerExport, colorPickerWritten } from "../../scripts/pptx-cases/color-picker.mjs"
-import { designing, openDeck, picker, pickColor, settled, shownColor, typeColor } from "./design-panel"
+import { designing, openDeck, picker, settled, shownColor, typeColor } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
 
@@ -13,7 +15,18 @@ const slidePart = "ppt/slides/slide1.xml"
 const deckParts = ["[Content_Types].xml", "ppt/_rels/presentation.xml.rels", "ppt/presentation.xml"]
 const hash = "#"
 const navy = "rgb(31, 78, 121)"
-const tint = "Accent 1, lighter 40%"
+const tint = colorCopy.lighter(formatCopy.colors.accent1, 40)
+const darker = colorCopy.darker(formatCopy.colors.accent2, 50)
+
+async function nudge(page: Page, swatch: Locator): Promise<void> {
+  const at = (await swatch.getAttribute("data-at")) ?? "0,0"
+  const column = Number(at.split(",")[0])
+  const [away, back] = column === 5 ? ["ArrowLeft", "ArrowRight"] : ["ArrowRight", "ArrowLeft"]
+  await swatch.focus()
+  await page.keyboard.press(away)
+  await page.keyboard.press(back)
+  await expect(swatch).toBeFocused()
+}
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -45,23 +58,30 @@ test("a person picks a hex colour, a colour already in the deck and a theme tint
   panel = await fillPanel(page, rectangle)
   field = panel.getByRole("group", { name: "Color", exact: true })
   await shownColor(field).click()
-  await expect(picker(page).getByRole("group", { name: "In this deck" }).getByRole("button")).toHaveCount(1)
-  await picker(page)
-    .getByRole("group", { name: "In this deck" })
-    .getByRole("button", { name: `${hash}1F4E79` })
-    .click()
+  const others = picker(page).getByRole("group", { name: colorCopy.others, exact: true })
+  const used = others.getByRole("button", { name: colorCopy.hexName("1F4E79"), exact: true })
+  await expect(used).toHaveCount(1)
+  await used.click()
   await page.keyboard.press("Escape")
+  await expect(shownColor(field)).toBeFocused()
   await expect.poll(() => filled(rectangle)).toBe(navy)
   await expect(shownColor(field)).toHaveText(`${hash}1F4E79`)
   await undone(page, rectangle, field, accent, "Accent 1")
   await expect.poll(() => filled(rectangle)).toBe(navy)
 
-  await pickColor(page, field, tint)
+  await shownColor(field).click()
+  await picker(page).getByRole("button", { name: colorCopy.add, exact: true }).click()
+  await picker(page).getByRole("button", { name: colorCopy.moreTints, exact: true }).click()
+  await picker(page).getByRole("button", { name: tint, exact: true }).click()
+  await page.keyboard.press("Escape")
+  await expect(picker(page)).toHaveCount(0)
   await expect.poll(() => filled(rectangle)).not.toBe(navy)
   const tinted = await filled(rectangle)
   expect(tinted).not.toBe(accent)
-  await expect(shownColor(field)).toHaveText(tint)
+  const tintHex = (await shownColor(field).innerText()).trim()
+  expect(tintHex).toMatch(/^#[0-9A-F]{6}$/)
   await shownColor(field).click()
+  await picker(page).getByRole("button", { name: colorCopy.add, exact: true }).click()
   await expect(picker(page).getByRole("button", { name: tint, exact: true })).toHaveAttribute("aria-pressed", "true")
   await page.keyboard.press("Escape")
   await undone(page, rectangle, field, navy, `${hash}1F4E79`)
@@ -72,7 +92,7 @@ test("a person picks a hex colour, a colour already in the deck and a theme tint
   await expect.poll(() => filled(shapeAt(page, "4"))).toBe(tinted)
   await expect.poll(() => filled(shapeAt(page, "5"))).toBe(navy)
   panel = await fillPanel(page, shapeAt(page, "4"))
-  await expect(shownColor(panel.getByRole("group", { name: "Color", exact: true }))).toHaveText(tint)
+  await expect(shownColor(panel.getByRole("group", { name: "Color", exact: true }))).toHaveText(tintHex)
 
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)
@@ -100,21 +120,36 @@ for (const opacity of ["100", "10"]) {
     const field = panel.getByRole("group", { name: "Text color" })
     await shownColor(field).click()
     await expect(picker(page)).not.toContainText(/Contrast|Passes AA|Fails AA/)
-    const swatch = picker(page).getByRole("button", { name: "Accent 2, darker 50%", exact: true })
-    await swatch.focus()
-    await page.keyboard.press("ArrowRight")
-    await page.keyboard.press("ArrowLeft")
-    await expect(swatch).toBeFocused()
+    await picker(page).getByRole("button", { name: colorCopy.add, exact: true }).click()
+    await picker(page).getByRole("button", { name: colorCopy.moreTints, exact: true }).click()
+    const swatch = picker(page).getByRole("button", { name: darker, exact: true })
+    await nudge(page, swatch)
     await page.keyboard.press(slideListCopy.openKey)
     await expect(picker(page)).not.toContainText(/Contrast|Passes AA|Fails AA/)
     await page.keyboard.press("Escape")
+    await expect(shownColor(field)).toBeFocused()
     const run = page.locator("[data-slide-paint] [data-run]").first()
     await expect(run).toHaveAttribute("data-color", new RegExp("^scheme:accent2 lumMod:50000"))
     await expect
       .poll(() => run.evaluate((node) => getComputedStyle(node).color))
       .toBe(opacity === "100" ? "rgb(26, 26, 77)" : "rgba(26, 26, 77, 0.1)")
-    await expect(shownColor(field)).toHaveText("Accent 2, darker 50%")
+    await expect(shownColor(field)).toHaveText(/^#[0-9A-F]{6}$/)
     await page.getByRole("button", { name: "Undo text format", exact: true }).click()
     await expect(run).not.toHaveAttribute("data-color", /accent2/)
   })
 }
+
+test("arrow keys move through the template colours and Escape returns focus to the row", async ({ page }) => {
+  await openDeck(page, "shapes-added.pptx")
+  const panel = await fillPanel(page, shapeAt(page, "5"))
+  const field = panel.getByRole("group", { name: "Color", exact: true })
+  const row = shownColor(field)
+  await row.click()
+  const accent = picker(page).getByRole("button", { name: formatCopy.colors.accent2, exact: true })
+  await nudge(page, accent)
+  await page.keyboard.press(slideListCopy.openKey)
+  await page.keyboard.press("Escape")
+  await expect(picker(page)).toHaveCount(0)
+  await expect(row).toBeFocused()
+  await expect(row).toHaveText(formatCopy.colors.accent2)
+})

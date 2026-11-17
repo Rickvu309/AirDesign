@@ -2,6 +2,7 @@ import path from "node:path"
 import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
+import { colorCopy } from "../bin/product-copy.mjs"
 
 const themes = ["ppt/theme/theme1.xml", "ppt/theme/theme2.xml"]
 
@@ -55,8 +56,11 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const oval = painted("ppt/slides/slide8.xml#7")
   const ovalBefore = await oval.innerHTML()
   await theme.getByRole("button", { name: "Accent 1", exact: true }).click()
-  await page.locator("[data-color-picker]").getByRole("textbox", { name: "Hex", exact: true }).fill("#c00000")
-  await page.locator("[data-color-picker]").getByRole("textbox", { name: "Hex", exact: true }).press("Enter")
+  const picker = page.locator("[data-color-picker]")
+  await picker.getByRole("button", { name: colorCopy.add, exact: true }).click()
+  const hex = picker.getByRole("textbox", { name: colorCopy.hex, exact: true })
+  await hex.fill("#c00000")
+  await hex.press("Enter")
   await page.keyboard.press("Escape")
   await expect.poll(() => oval.innerHTML()).not.toBe(ovalBefore)
   await capture("person-accent-1")

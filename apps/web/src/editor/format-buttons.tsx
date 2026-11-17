@@ -223,6 +223,7 @@ export function FormatButtons({
       ) : null}
       {showing("color") ? (
         <ColorPicker
+          title={formatCopy.color}
           value={value}
           palette={{ theme, deck: deckColors }}
           keepsFormat

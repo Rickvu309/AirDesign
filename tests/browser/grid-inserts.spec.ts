@@ -65,7 +65,7 @@ test("Grid's toolbar offers the shape tray, the icon search and the deck's colou
   const deckSwatches = async () => {
     await page.locator('[contenteditable="true"]').first().dblclick()
     await page.getByRole("button", { name: formatCopy.color, exact: true }).click()
-    const swatches = await page.getByRole("group", { name: colorCopy.deck, exact: true }).getByRole("button").count()
+    const swatches = await page.getByRole("group", { name: colorCopy.others, exact: true }).getByRole("button").count()
     await page.keyboard.press("Escape")
     return swatches
   }
@@ -79,7 +79,7 @@ test("Grid's toolbar offers the shape tray, the icon search and the deck's colou
   await page.keyboard.press("Escape")
   await card(page, 1).locator("[data-thumb-node]").first().dblclick({ force: true })
   await page.getByRole("button", { name: formatCopy.color, exact: true }).click()
-  await expect(page.getByRole("group", { name: colorCopy.deck, exact: true }).getByRole("button")).toHaveCount(
+  await expect(page.getByRole("group", { name: colorCopy.others, exact: true }).getByRole("button")).toHaveCount(
     slidesView,
   )
 })

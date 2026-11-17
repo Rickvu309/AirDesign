@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { colorCopy } from "@/copy/color-copy"
 import {
   deckChoices,
   hexOf,
@@ -8,6 +9,7 @@ import {
   shownName,
   shownHex,
   themeColumns,
+  tintChoices,
   typedColor,
   type Palette,
 } from "@/design/color-choices"
@@ -96,7 +98,7 @@ describe("the theme colours a person picks from", () => {
         ],
       },
       css: `${hash}8FAADC`,
-      name: "Accent 1, lighter 40%",
+      name: colorCopy.lighter("Accent 1", 40),
     })
   })
 
@@ -146,6 +148,24 @@ describe("the deck's colours", () => {
   it("offers the deck's rgb colours that are not theme colours, most used first", () => {
     expect(deckChoices(palette).map((choice) => choice.color)).toEqual([{ rgb: "C00000" }, { rgb: "1F4E79" }])
   })
+
+  it("keeps every rgb colour, including past the first ten", () => {
+    const many = Array.from({ length: 12 }, (_, index) => (index + 1).toString(16).padStart(6, "B").toUpperCase())
+    expect(deckChoices({ theme, deck: many })).toHaveLength(12)
+  })
+})
+
+describe("theme tints inside Add color", () => {
+  it("lists PowerPoint's lighter and darker rows, and a tint those rows do not already have", () => {
+    const odd = { scheme: "accent1" as const, transforms: [{ op: "lumMod" as const, val: 33_000 }] }
+    const choices = tintChoices(theme, odd)
+    expect(choices[0]?.color).toEqual(odd)
+    expect(choices.some((choice) => choice.name === colorCopy.lighter("Accent 1", 40))).toBe(true)
+    const standard = themeColumns(theme)[4]?.shades[2]?.color
+    const same =
+      standard === undefined ? [] : tintChoices(theme, standard).filter((choice) => matches(choice.color, standard))
+    expect(same).toHaveLength(1)
+  })
 })
 
 describe("a custom colour", () => {
@@ -165,8 +185,10 @@ describe("a custom colour", () => {
 })
 
 describe("the shown value", () => {
-  it("names a theme slot, a tint, an rgb colour and a colour the picker cannot write", () => {
+  it("names a theme slot, and shows a hex for a tint, an rgb colour and a colour the picker cannot write", () => {
     expect(shownName({ scheme: "accent1" }, theme)).toBe("Accent 1")
+    expect(shownName({ scheme: "tx1" }, theme)).toBe("Dark 1")
+    expect(shownName({ scheme: "accent1", transforms: [{ op: "alpha", val: 40_000 }] }, theme)).toBe("Accent 1")
     expect(
       shownName(
         {
@@ -178,7 +200,7 @@ describe("the shown value", () => {
         },
         theme,
       ),
-    ).toBe("Accent 1, lighter 40%")
+    ).toBe(`${hash}8FAADC`)
     expect(shownName({ rgb: "1F4E79" }, theme)).toBe(`${hash}1F4E79`)
     expect(shownName({ preset: "red" }, theme)).toBe(`${hash}FF0000`)
     expect(shownName({ scheme: "accent1", transforms: [{ op: "satMod", val: 50_000 }] }, theme)).toMatch(

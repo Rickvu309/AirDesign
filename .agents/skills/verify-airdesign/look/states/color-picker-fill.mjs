@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test"
+import { colorCopy } from "../../bin/product-copy.mjs"
 import { fixtureDeck } from "../fixture-deck.mjs"
 
 async function drive(kit) {
@@ -10,7 +11,7 @@ async function drive(kit) {
   const panel = kit.page.locator("[data-design-element]")
   await panel.getByRole("group", { name: "Fill", exact: true }).waitFor()
   await panel.locator('[data-control="color"]').first().getByRole("button").first().click()
-  await expect(kit.page.locator("[data-color-picker]").getByRole("group", { name: "Theme colors" })).toBeVisible()
+  await expect(kit.page.locator("[data-color-picker]").getByRole("group", { name: colorCopy.template })).toBeVisible()
 }
 
 export default { name: "color-picker-fill", design: "/screens/s43-09-editor-tools-design-element", drive }

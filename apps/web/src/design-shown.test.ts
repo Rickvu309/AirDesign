@@ -10,6 +10,7 @@ import {
 } from "@airdesign/document"
 import { readParts, readSlides } from "@airdesign/pptx"
 import { describe, expect, it } from "vitest"
+import { shownHex } from "@/design/color-choices"
 import { designShown } from "@/design-shown"
 import { exportedParts } from "@/exported-parts"
 
@@ -60,7 +61,7 @@ describe("design shown", () => {
     ])
   })
 
-  it("shows a colour set on the slide, a theme tint by its name, and an RGB colour by its hex", async () => {
+  it("shows a colour set on the slide by its theme name, a theme tint by its hex, and an RGB colour by its hex", async () => {
     const parts = await fixture("blank.pptx")
     const accent = designShown(painted(parts, { scheme: "accent2" }), 0)
     expect(accent?.background.name).toBe("Accent 2")
@@ -73,7 +74,7 @@ describe("design shown", () => {
       ],
     }
     const tinted = designShown(painted(parts, tint), 0)
-    expect(tinted?.background.name).toBe("Accent 1, lighter 40%")
+    expect(tinted?.background.name).toBe(`#${shownHex(tint, tinted?.theme ?? [])}`)
     expect(tinted?.background.value).toEqual(tint)
     const navy = designShown(painted(parts, { rgb: "0F2433" }), 0)
     expect(navy?.background.css.slice(1)).toBe("0F2433")

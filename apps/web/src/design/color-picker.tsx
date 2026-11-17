@@ -2,11 +2,16 @@ import type { Color } from "@airdesign/document"
 import { useState, type KeyboardEvent, type ReactElement, type ReactNode } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { colorCopy } from "@/copy/color-copy"
-import { deckChoices, matches, themeColumns, type Choice, type Palette } from "@/design/color-choices"
+import { productCopy } from "@/copy/product-copy"
+import { deckChoices, matches, themeColumns, tintChoices, type Choice, type Palette } from "@/design/color-choices"
 import { CustomColor } from "@/design/custom-color"
+import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 
 const lightest = 0xe0
+const columns = 6
+const tintLimit = columns * 2
+const otherLimit = columns * 3
 
 export function lightCss(css: string): boolean {
   const hex = /^#?([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})$/i.exec(css)
@@ -15,35 +20,10 @@ export function lightCss(css: string): boolean {
 
 const edged = "shadow-[0px_0px_0px_1px_var(--field-edge)]"
 const ringed = "shadow-[0_0_0_2px_var(--background),0_0_0_4px_var(--ring)]"
+const rainbow = "conic-gradient(from 90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)"
 
-function Cell({
-  choice,
-  pressed,
-  at,
-  focused,
-  onPick,
-}: {
-  choice: Choice
-  pressed: boolean
-  at: string
-  focused: boolean
-  onPick: (color: Color) => void
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={choice.name}
-      aria-pressed={pressed}
-      title={choice.name}
-      data-at={at}
-      tabIndex={focused ? 0 : -1}
-      onClick={() => {
-        if (!pressed) onPick(choice.color)
-      }}
-      className={cn("size-5 shrink-0 rounded-sm", lightCss(choice.css) ? edged : null, pressed ? ringed : null)}
-      style={{ background: choice.css }}
-    />
-  )
+function atOf(index: number): string {
+  return `${String(index % columns)},${String(Math.floor(index / columns))}`
 }
 
 function moveFocus(event: KeyboardEvent<HTMLElement>) {
@@ -64,104 +44,246 @@ function moveFocus(event: KeyboardEvent<HTMLElement>) {
   next.focus()
 }
 
-function Caption({ children }: { children: ReactNode }) {
-  return <span className="text-[length:var(--type-caption)] text-quiet">{children}</span>
+function visibleChoices(choices: readonly Choice[], pressed: number, open: boolean, limit: number): readonly Choice[] {
+  if (open || choices.length <= limit) return choices
+  if (pressed < 0 || pressed < limit) return choices.slice(0, limit)
+  const held = choices[pressed]
+  return held === undefined ? choices.slice(0, limit) : [held, ...choices.slice(0, limit - 1)]
 }
 
-function ThemeGrid({
-  value,
-  palette,
-  onPick,
+function Swatch({
+  name,
+  css,
+  pressed,
+  at,
+  focused,
+  onClick,
 }: {
-  value: Color | undefined
-  palette: Palette
-  onPick: (color: Color) => void
+  name: string
+  css: string
+  pressed: boolean
+  at: string
+  focused: boolean
+  onClick: () => void
 }) {
-  const columns = themeColumns(palette.theme)
-  const cells = columns.flatMap((column, x) =>
-    [column.swatch, ...column.shades].map((choice, y) => ({ choice, at: `${String(x)},${String(y)}` })),
-  )
-  const held = value === undefined ? undefined : cells.find(({ choice }) => matches(choice.color, value))
-  const focus = held?.at ?? "0,0"
   return (
-    <div className="flex flex-col gap-1.5">
-      <Caption>{colorCopy.theme}</Caption>
-      <div role="group" aria-label={colorCopy.theme} className="flex justify-between" onKeyDown={moveFocus}>
-        {columns.map((column, x) => (
-          <div key={column.swatch.name} className="flex flex-col gap-1">
-            {[column.swatch, ...column.shades].map((choice, y) => {
-              const at = `${String(x)},${String(y)}`
-              return (
-                <div key={choice.name} className={y === 1 ? "mt-1.5" : undefined}>
-                  <Cell choice={choice} pressed={held?.at === at} at={at} focused={focus === at} onPick={onPick} />
-                </div>
-              )
-            })}
-          </div>
-        ))}
-      </div>
+    <button
+      type="button"
+      aria-label={name}
+      aria-pressed={pressed}
+      title={name}
+      data-at={at}
+      tabIndex={focused ? 0 : -1}
+      onClick={onClick}
+      className={cn("aspect-square w-full rounded-md", lightCss(css) ? edged : null, pressed ? ringed : null)}
+      style={{ background: css }}
+    />
+  )
+}
+
+function More({ open, show, hide, onClick }: { open: boolean; show: string; hide: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-expanded={open}
+      aria-label={open ? hide : show}
+      onClick={onClick}
+      className="mx-auto flex size-6 items-center justify-center text-quiet"
+    >
+      <EditorIcon name="chev" size={14} className={open ? "rotate-180" : undefined} />
+    </button>
+  )
+}
+
+function Heading({ title, leading, onClose }: { title: string; leading?: ReactNode; onClose?: () => void }) {
+  return (
+    <div className="flex items-center gap-2">
+      {leading}
+      <span className="min-w-0 flex-1 text-[length:var(--type-dense)] font-medium text-foreground">{title}</span>
+      {onClose === undefined ? null : (
+        <button
+          type="button"
+          aria-label={productCopy.close}
+          onClick={onClose}
+          className="flex size-6 shrink-0 items-center justify-center text-quiet"
+        >
+          <EditorIcon name="x" size={14} />
+        </button>
+      )}
     </div>
   )
 }
 
-function DeckRow({
-  value,
-  palette,
+function ColorGrid({
+  label,
+  choices,
+  pressed,
   onPick,
 }: {
-  value: Color | undefined
-  palette: Palette
+  label: string
+  choices: readonly Choice[]
+  pressed: number
   onPick: (color: Color) => void
 }) {
-  const choices = deckChoices(palette)
-  if (choices.length === 0) return null
-  const held = value === undefined ? -1 : choices.findIndex((choice) => matches(choice.color, value))
+  const focus = pressed < 0 ? "0,0" : atOf(pressed)
   return (
-    <div className="flex flex-col gap-1.5">
-      <Caption>{colorCopy.deck}</Caption>
-      <div role="group" aria-label={colorCopy.deck} className="flex gap-1" onKeyDown={moveFocus}>
-        {choices.map((choice, x) => (
-          <Cell
+    <div role="group" aria-label={label} className="grid grid-cols-6 gap-2" onKeyDown={moveFocus}>
+      {choices.map((choice, index) => {
+        const at = atOf(index)
+        return (
+          <Swatch
             key={choice.name}
-            choice={choice}
-            pressed={held === x}
-            at={`${String(x)},0`}
-            focused={(held < 0 ? 0 : held) === x}
-            onPick={onPick}
+            name={choice.name}
+            css={choice.css}
+            pressed={pressed === index}
+            at={at}
+            focused={focus === at}
+            onClick={() => {
+              if (pressed !== index) onPick(choice.color)
+            }}
           />
-        ))}
-      </div>
+        )
+      })}
     </div>
   )
 }
 
 export function PickerBody({
+  title,
   value,
   palette,
   theme = true,
+  picking = false,
   onPick,
   onSwatch,
+  onAdd,
+  onBack,
+  onClose,
 }: {
+  title: string
   value: Color | undefined
   palette: Palette
   theme?: boolean
+  picking?: boolean
   onPick: (color: Color) => void
   onSwatch?: () => void
+  onAdd?: () => void
+  onBack?: () => void
+  onClose?: () => void
 }) {
+  const [moreOthers, setMoreOthers] = useState(false)
+  const [moreTints, setMoreTints] = useState(false)
   const swatch = (color: Color) => {
     onPick(color)
     onSwatch?.()
   }
+  const bases = themeColumns(palette.theme).map((column) => column.swatch)
+  const heldBase = value === undefined ? -1 : bases.findIndex((choice) => matches(choice.color, value))
+  const deck = deckChoices(palette)
+  const heldDeck = value === undefined ? -1 : deck.findIndex((choice) => matches(choice.color, value))
+  const deckShown = visibleChoices(deck, heldDeck, moreOthers, otherLimit - 1)
+  const deckPressed = deckShown.findIndex((choice) => value !== undefined && matches(choice.color, value))
+  const tints = tintChoices(palette.theme, value)
+  const heldTint = value === undefined ? -1 : tints.findIndex((choice) => matches(choice.color, value))
+  const tintShown = visibleChoices(tints, heldTint, moreTints, tintLimit)
+  const deckFocus = deckPressed < 0 ? "0,0" : atOf(deckPressed + 1)
+  const templateShown = theme && bases.length > 0
   return (
     <>
-      {theme && palette.theme.length > 0 ? <ThemeGrid value={value} palette={palette} onPick={swatch} /> : null}
-      <DeckRow value={value} palette={palette} onPick={swatch} />
-      <CustomColor value={value} palette={palette} onPick={onPick} />
+      <Heading
+        title={title}
+        {...(onClose === undefined ? {} : { onClose })}
+        leading={
+          picking && onBack !== undefined ? (
+            <button
+              type="button"
+              aria-label={colorCopy.back}
+              onClick={onBack}
+              className="flex size-6 shrink-0 items-center justify-center text-quiet"
+            >
+              <EditorIcon name="chevl" size={14} />
+            </button>
+          ) : null
+        }
+      />
+      {picking ? (
+        <>
+          <CustomColor value={value} palette={palette} onPick={onPick} />
+          {theme && tintShown.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              <span className="text-[length:var(--type-caption)] text-quiet">{colorCopy.tints}</span>
+              <ColorGrid
+                label={colorCopy.tints}
+                choices={tintShown}
+                pressed={tintShown.findIndex((choice) => value !== undefined && matches(choice.color, value))}
+                onPick={swatch}
+              />
+              {tints.length > tintLimit ? (
+                <More
+                  open={moreTints}
+                  show={colorCopy.moreTints}
+                  hide={colorCopy.fewerTints}
+                  onClick={() => setMoreTints((open) => !open)}
+                />
+              ) : null}
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <>
+          {templateShown ? (
+            <div className="flex flex-col gap-2">
+              <span className="text-[length:var(--type-caption)] text-quiet">{colorCopy.template}</span>
+              <ColorGrid label={colorCopy.template} choices={bases} pressed={heldBase} onPick={swatch} />
+            </div>
+          ) : null}
+          <div className={cn("flex flex-col gap-2", templateShown ? "border-t border-foreground/10 pt-3" : null)}>
+            <span className="text-[length:var(--type-caption)] text-quiet">{colorCopy.others}</span>
+            <div role="group" aria-label={colorCopy.others} className="grid grid-cols-6 gap-2" onKeyDown={moveFocus}>
+              <button
+                type="button"
+                aria-label={colorCopy.add}
+                title={colorCopy.add}
+                data-at="0,0"
+                tabIndex={deckFocus === "0,0" ? 0 : -1}
+                onClick={onAdd}
+                className="aspect-square w-full rounded-md"
+                style={{ background: rainbow }}
+              />
+              {deckShown.map((choice, index) => {
+                const at = atOf(index + 1)
+                return (
+                  <Swatch
+                    key={choice.name}
+                    name={choice.name}
+                    css={choice.css}
+                    pressed={deckPressed === index}
+                    at={at}
+                    focused={deckFocus === at}
+                    onClick={() => {
+                      if (deckPressed !== index) swatch(choice.color)
+                    }}
+                  />
+                )
+              })}
+            </div>
+            {deck.length + 1 > otherLimit ? (
+              <More
+                open={moreOthers}
+                show={colorCopy.moreOthers}
+                hide={colorCopy.fewerOthers}
+                onClick={() => setMoreOthers((open) => !open)}
+              />
+            ) : null}
+          </div>
+        </>
+      )}
     </>
   )
 }
 
 export function ColorPicker({
+  title,
   value,
   palette,
   theme = true,
@@ -173,6 +295,7 @@ export function ColorPicker({
   children,
   onPick,
 }: {
+  title: string
   value: Color | undefined
   palette: Palette
   theme?: boolean
@@ -185,23 +308,35 @@ export function ColorPicker({
   onPick: (color: Color) => void
 }) {
   const [open, setOpen] = useState(false)
+  const [picking, setPicking] = useState(false)
+  function setShown(next: boolean) {
+    setOpen(next)
+    if (!next) setPicking(false)
+  }
   return (
-    <Popover modal={false} open={open} onOpenChange={setOpen}>
+    <Popover modal={false} open={open} onOpenChange={setShown}>
       <PopoverTrigger render={trigger}>{children}</PopoverTrigger>
       <PopoverContent
         side={side}
         align={align}
-        className="gap-3 p-3 duration-0"
+        aria-label={title}
+        finalFocus
+        className="max-h-[min(36rem,70vh)] w-60 gap-3 overflow-y-auto p-3 duration-0"
         data-color-picker
         data-keeps-selection
         {...(keepsFormat ? { "data-keeps-format": "" } : {})}
       >
         <PickerBody
+          title={title}
           value={value}
           palette={palette}
           theme={theme}
+          picking={picking}
           onPick={onPick}
-          {...(closesOnSwatch ? { onSwatch: () => setOpen(false) } : {})}
+          onAdd={() => setPicking(true)}
+          onBack={() => setPicking(false)}
+          onClose={() => setShown(false)}
+          {...(closesOnSwatch ? { onSwatch: () => setShown(false) } : {})}
         />
       </PopoverContent>
     </Popover>
