@@ -23,7 +23,7 @@
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "turn", "stepCommands"],
       "digest": "4e0fd4a0c00c",
-      "blob": "4ca54e86e0e943bec38162ef65b5dc7760c77a79"
+      "blob": "5fcaf089d0926fd398ac333a6cd23a8cd33b82e4"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
@@ -40,8 +40,8 @@
     {
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
-      "digest": "c214573120f9",
-      "blob": "4241ba2f4b64e0adae3ec9042424b4ab87373bdc"
+      "digest": "86a0bcd5740a",
+      "blob": "a86eacc2735fe60ab8b36f5e6a254852530b5c87"
     },
     {
       "file": "apps/web/src/design/shown-alpha.ts",
@@ -53,7 +53,7 @@
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["fieldsRead", "elementDesign"],
       "digest": "8f2efb7a9caf",
-      "blob": "7b2311e5991ddb63afe8b1691b7bb94d6d4a2e2f"
+      "blob": "dea427a40808f6097a5ec5cbcbe8680435248f3e"
     },
     {
       "file": "apps/web/src/undo-list.ts",
