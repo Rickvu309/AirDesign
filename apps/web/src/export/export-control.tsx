@@ -20,7 +20,7 @@ function everySlide(count: number): readonly number[] {
   return Array.from({ length: count }, (_, index) => index)
 }
 
-function ExportFlow({ faded, target }: { faded: boolean; target: ExportTarget }) {
+function ExportFlow({ target }: { target: ExportTarget }) {
   const button = useRef<HTMLButtonElement>(null)
   const running = useRef<AbortController | null>(null)
   const [open, setOpen] = useState(false)
@@ -62,7 +62,6 @@ function ExportFlow({ faded, target }: { faded: boolean; target: ExportTarget })
     <>
       <ExportButton
         ref={button}
-        faded={faded}
         onClick={() => {
           setChoice(firstChoice(target.count, target.selected))
           setOpen(true)
@@ -98,6 +97,6 @@ function ExportFlow({ faded, target }: { faded: boolean; target: ExportTarget })
   )
 }
 
-export function ExportControl({ faded, target }: { faded: boolean; target?: ExportTarget }) {
-  return target === undefined ? <ExportButton faded={faded} /> : <ExportFlow faded={faded} target={target} />
+export function ExportControl({ target }: { target?: ExportTarget }) {
+  return target === undefined ? <ExportButton /> : <ExportFlow target={target} />
 }

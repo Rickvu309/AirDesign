@@ -288,7 +288,7 @@ export function EditorToast({
   still = false,
   host = true,
 }: {
-  kind: "success" | "info"
+  kind: "success" | "info" | "error"
   text: string
   action?: string
   place?: "screen" | "canvas"
@@ -301,6 +301,7 @@ export function EditorToast({
     toast.custom(
       () => (
         <StatusPill
+          error={kind === "error"}
           className="pointer-events-auto mx-auto h-auto min-h-10 w-max max-w-full gap-2.5 py-2 pr-4 pl-3.5"
           style={{ minWidth: width }}
         >

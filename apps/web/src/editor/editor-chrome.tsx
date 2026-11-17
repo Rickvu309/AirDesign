@@ -35,24 +35,13 @@ export function DeckTitle({
   )
 }
 
-export function ExportButton({
-  faded = false,
-  onClick,
-  ref,
-}: {
-  faded?: boolean
-  onClick?: () => void
-  ref?: Ref<HTMLButtonElement>
-}) {
+export function ExportButton({ onClick, ref }: { onClick?: () => void; ref?: Ref<HTMLButtonElement> }) {
   return (
     <Button
       {...(ref === undefined ? {} : { ref })}
       type="button"
       variant="default"
-      className={cn(
-        "h-8 rounded-lg px-3 text-[length:var(--type-dense)] font-medium active:translate-y-0",
-        faded && "opacity-40",
-      )}
+      className={cn("h-8 rounded-lg px-3 text-[length:var(--type-dense)] font-medium active:translate-y-0")}
       {...(onClick === undefined ? {} : { onClick })}
     >
       Export

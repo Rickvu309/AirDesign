@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test"
+import { expect, type Page, type Request } from "@playwright/test"
 import { forward, openClean, signInBrowser, test } from "./api-stack"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -119,17 +119,26 @@ test("an edit that landed but whose answer came back cut off lands once when it 
   const before = await revision()
   const commit = (url: URL) => url.pathname === "/decks/commit"
   let cut = 0
+  let first: Request | undefined
   await page.route(commit, async (route) => {
     if (cut > 0) return route.fallback()
     cut += 1
+    first = route.request()
     const landed = await route.fetch({
       url: `${stack.origin}/decks/commit`,
       headers: await route.request().allHeaders(),
     })
     return route.fulfill({ response: landed, body: (await landed.text()).slice(0, 10) })
   })
+  const acknowledged = page.waitForResponse(
+    (response) => commit(new URL(response.url())) && response.request() !== first,
+    { timeout: 15_000 },
+  )
   await typeAtEnd(page, "!")
   await expect.poll(() => cut).toBe(1)
+  const retried = await acknowledged
+  expect(retried.request().postData()).toBe(first?.postData())
+  expect(await retried.json()).toMatchObject({ ok: true, revision: before + 1 })
   await expect(saveStatus(page)).toHaveText(saved, { timeout: 15_000 })
   expect(await revision()).toBe(before + 1)
 })
