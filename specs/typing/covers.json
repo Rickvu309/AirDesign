@@ -22,8 +22,8 @@
     {
       "file": "apps/web/src/editor/undo-keys.ts",
       "names": ["undoKey", "useUndoKeys"],
-      "digest": "d47198d9f323",
-      "blob": "0b59cc6a94c4388bbff0c7bd4436b0ec4f92e988"
+      "digest": "8e2faa1fd11a",
+      "blob": "23d21733a5eea00ed570c0bfe3fb365585035556"
     },
     {
       "file": "packages/render/src/passage.tsx",
@@ -46,8 +46,8 @@
     {
       "file": "apps/web/src/editor/editable-slide.tsx",
       "names": ["editableSlide"],
-      "digest": "48461446fbfb",
-      "blob": "7b05a28b4ccb79cff18b307439d37d30705bdd32"
+      "digest": "fc5c27432b7f",
+      "blob": "968babcc66682d4a313db1d28b893bf6903403f1"
     }
   ]
 }
