@@ -34,7 +34,12 @@ runs:
         fi
         if [ -n "$run_id" ]; then passed=true; fi
         needed=true
-        if [ "$passed" = true ] && { [ "$PART" = side ] || [ "$CACHE_HIT" = true ]; }; then needed=false; fi
+        if [ "$passed" = true ]; then
+          case "$PART" in
+            side | design | browser) needed=false ;;
+            *) if [ "$CACHE_HIT" = true ]; then needed=false; fi ;;
+          esac
+        fi
         echo "passed=$passed" >> "$GITHUB_OUTPUT"
         echo "run-id=$run_id" >> "$GITHUB_OUTPUT"
         echo "needed=$needed" >> "$GITHUB_OUTPUT"

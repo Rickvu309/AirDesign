@@ -52,13 +52,25 @@ export const stages = [
   ],
 ]
 
-export const sideSteps = new Set(["browser", "site", "tooling", "design-findings"])
+export const designScans = ["tests/browser/design-states.spec.ts", "tests/browser/every-screen.spec.ts"]
+
+export const partSteps = {
+  side: new Set(["site", "tooling"]),
+  design: new Set(["browser", "design-findings"]),
+  browser: new Set(["browser"]),
+}
+
+const parts = ["main", ...Object.keys(partSteps)]
+
+const inPart = (part, name) =>
+  part === "all" ||
+  (part === "main" ? !Object.values(partSteps).some((steps) => steps.has(name)) : partSteps[part].has(name))
 
 export const partOf = (argv) => {
   const given = argv.find((word) => word.startsWith("--part="))
   if (given === undefined) return "all"
   const part = given.slice("--part=".length)
-  if (part !== "main" && part !== "side") throw new Error(`--part must be main or side, and it is ${part}.`)
+  if (!parts.includes(part)) throw new Error(`--part must be one of ${parts.join(", ")}, and it is ${part}.`)
   return part
 }
 
@@ -89,21 +101,30 @@ const keepSteps = (chosen, keep) =>
     )
     .filter((stage) => stage.length > 0)
 
-const sharded =
-  (shard) =>
+const exceptDesignScans = designScans.map((file) => path.basename(file).replaceAll(".", "\\.")).join("|")
+
+const browserArgs = (part, shard) =>
+  part === "design"
+    ? designScans
+    : part === "browser"
+      ? [
+          "--grep-invert",
+          exceptDesignScans,
+          ...(shard === undefined ? [] : [`--shard=${shard.current}/${shard.total}`]),
+        ]
+      : []
+
+const browserOf =
+  (part, shard) =>
   ([name, command, args, ...rest]) =>
-    shard !== undefined && name === "browser"
-      ? [name, command, [...args, `--shard=${shard.current}/${shard.total}`], ...rest]
+    name === "browser"
+      ? [name, command, [...args, ...browserArgs(part, shard)], ...rest]
       : [name, command, args, ...rest]
 
 export const stagesFor = (part, ci = onCi(process.env), shard = undefined) =>
-  keepSteps(
-    stages,
-    ([name]) =>
-      !(ci && localSteps.has(name)) &&
-      (part === "all" || (part === "side") === sideSteps.has(name)) &&
-      (shard === undefined || shard.current === 1 || name === "browser"),
-  ).map((stage) => stage.map((entry) => (isLane(entry) ? entry.map(sharded(shard)) : sharded(shard)(entry))))
+  keepSteps(stages, ([name]) => !(ci && localSteps.has(name)) && inPart(part, name)).map((stage) =>
+    stage.map((entry) => (isLane(entry) ? entry.map(browserOf(part, shard)) : browserOf(part, shard)(entry))),
+  )
 
 export const ciOnlySteps = new Set(["browser", "design-findings"])
 
