@@ -2,6 +2,7 @@ import { spawn } from "node:child_process"
 import { readdirSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { onCi } from "./check.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -13,24 +14,40 @@ export const toolingTests = (folder) => [
     .map((name) => `scripts/${name}`),
 ]
 
-const runOne = (test, cwd) =>
+export const ciSecondsLimit = 45
+
+export const limitFor = (env) => (onCi(env) ? ciSecondsLimit : Number.POSITIVE_INFINITY)
+
+export const timed = ({ test, status, output, seconds, limit }) =>
+  seconds <= limit
+    ? { test, status, output }
+    : {
+        test,
+        status: status || 1,
+        output: `${output}${test} ran ${seconds.toFixed(1)} s, over the limit of ${String(limit)} s. A process or timer it started is probably still open at its end.\n`,
+      }
+
+const runOne = (test, cwd, limit) =>
   new Promise((resolve) => {
+    const started = Date.now()
     const child = spawn(process.execPath, [test], { cwd })
     let output = ""
     child.stdout.on("data", (chunk) => (output += chunk))
     child.stderr.on("data", (chunk) => (output += chunk))
     child.on("error", (error) => resolve({ test, status: 1, output: `${output}${error.message}\n` }))
-    child.on("close", (status) => resolve({ test, status: status ?? 1, output }))
+    child.on("close", (status) =>
+      resolve(timed({ test, status: status ?? 1, output, seconds: (Date.now() - started) / 1000, limit })),
+    )
   })
 
-export const runToolingTests = async (tests, { width = 4, cwd = root } = {}) => {
+export const runToolingTests = async (tests, { width = 4, cwd = root, limit = limitFor(process.env) } = {}) => {
   const results = []
   let next = 0
   const worker = async () => {
     while (next < tests.length) {
       const test = tests[next]
       next += 1
-      results.push(await runOne(test, cwd))
+      results.push(await runOne(test, cwd, limit))
     }
   }
   await Promise.all(Array.from({ length: Math.min(width, tests.length) }, worker))

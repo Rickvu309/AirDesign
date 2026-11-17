@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process"
+import { once } from "node:events"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
@@ -101,5 +102,7 @@ same(
   true,
 )
 same("a live postgres was not signalled", postmaster.exitCode === null && postmaster.signalCode === null, true)
+postmaster.kill("SIGKILL")
+await once(postmaster, "exit")
 
 console.log("leftovers tests passed")
