@@ -72,6 +72,42 @@ test("the list view keeps actions in a context menu with keyboard access", async
   await expect(link).toBeVisible()
 })
 
+test("the list menu aligns to the deck name for right-click and keyboard, without a blue outline", async ({ page }) => {
+  await store(page, [first])
+  await page.goto("/?view=list")
+  const row = page.locator("[data-deck-row]")
+  const heading = row.getByRole("heading", { name: first.name })
+  const link = row.getByRole("link", { name: first.name })
+  const menu = page.getByRole("menu")
+  const nameBox = await heading.boundingBox()
+  const rowBox = await row.boundingBox()
+  expect(nameBox).not.toBeNull()
+  expect(rowBox).not.toBeNull()
+  if (nameBox === null || rowBox === null) throw new Error("The deck row must have a visible name")
+  for (const position of [{ x: 100, y: 12 }, { x: rowBox.width - 12, y: 48 }, null]) {
+    if (position) await row.click({ button: "right", position })
+    else {
+      await link.focus()
+      await page.keyboard.press("Shift+F10")
+    }
+    await expect(menu).toBeVisible()
+    const box = await menu.boundingBox()
+    expect(box?.x).toBeCloseTo(nameBox.x, 0)
+    expect(box?.y).toBeCloseTo(nameBox.y + nameBox.height + 4, 0)
+    await expect(menu).toHaveCSS("outline-style", "none")
+    await page.keyboard.press("ArrowDown")
+    const item = menu.locator('[role="menuitem"]:focus')
+    await expect(item).toHaveCount(1)
+    const [highlight, background] = await Promise.all([
+      item.evaluate((element) => getComputedStyle(element).backgroundColor),
+      menu.evaluate((element) => getComputedStyle(element).backgroundColor),
+    ])
+    expect(highlight).not.toBe("rgba(0, 0, 0, 0)")
+    expect(highlight).not.toBe(background)
+    await page.keyboard.press("Escape")
+  }
+})
+
 test("a star sent while the server is slow, then unreachable, shows at once and reaches the server once it answers", async ({
   page,
   context,
