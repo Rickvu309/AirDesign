@@ -37,6 +37,7 @@ assert.deepEqual(
     "slide-edits.mjs",
     "slide-subset.mjs",
     "slides.mjs",
+    "text-fields.mjs",
     "text-format.mjs",
     "text.mjs",
     "trait-body.mjs",
