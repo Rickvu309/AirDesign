@@ -72,5 +72,6 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | Extend before you build a parallel version, reduced motion shows the finished state | review |
 | Tests take product words from `apps/web/src/copy`; existing duplicate literals are counted and additions per file and value fail with the export to import | `scripts/copy-literals.mjs`, the `copy-literals` step of `pnpm check`, covers browser tests, journeys and verify-airdesign journeys and look states |
 | Product copy follows `better-writing`, uses the words in `GLOSSARY.md`, and is true of what the product does | review |
+| Product copy takes a limit from `limits` in `@airdesign/document`, never writes its number by hand | lint: `no-limit-in-copy` refuses a string in a `copy/` folder or a `*-copy.ts` file that holds a number equal to a limit, also in KB or MB. Its test fails when the limits it reads differ from the package |
 | How agents work here | review |
 | Every design screen and named state of the app shows no mechanical design fault: cut, covered or invisible text and controls, internal names, empty panels, stacked frames, low contrast | the `design-findings` step counts what the scanner finds in the browser tests into the `design-findings` metric. It warns for now and blocks nothing. Looking at the images is review |

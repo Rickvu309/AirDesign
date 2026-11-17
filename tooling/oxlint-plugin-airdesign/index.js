@@ -4,6 +4,7 @@ import noElementIdCast from "./rules/no-element-id-cast.js"
 import noEnvOutsideEntry from "./rules/no-env-outside-entry.js"
 import noHiddenInput from "./rules/no-hidden-input.js"
 import noHttpOutsideServer from "./rules/no-http-outside-server.js"
+import noLimitInCopy from "./rules/no-limit-in-copy.js"
 import noRaw from "./rules/no-raw.js"
 import noRouteLiteral from "./rules/no-route-literal.js"
 import noRunLiteral from "./rules/no-run-literal.js"
@@ -18,6 +19,7 @@ const plugin = {
     "no-env-outside-entry": noEnvOutsideEntry,
     "no-hidden-input": noHiddenInput,
     "no-http-outside-server": noHttpOutsideServer,
+    "no-limit-in-copy": noLimitInCopy,
     "no-raw": noRaw,
     "no-route-literal": noRouteLiteral,
     "no-run-literal": noRunLiteral,
