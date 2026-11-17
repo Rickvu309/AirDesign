@@ -52,5 +52,11 @@
     "detector": "stacked-frames",
     "selector": "[data-grid-halo]",
     "reason": "Grid keeps its existing hover halo outside the slide frame while a pointer reaches the add control. The halo identifies the source slide; it is not a second object selection."
+  },
+  {
+    "page": "grid-row-*",
+    "detector": "stacked-frames",
+    "selector": "[data-grid-halo]",
+    "reason": "The row hover frame intentionally surrounds each card edge, matching the supplied Figma row-handle reference. It indicates the whole row without changing the separate selected-slide ring."
   }
 ]

@@ -370,3 +370,24 @@ html:has(.reflow-frame) #root {
   --grid-radius: max(var(--grid-radius-min), calc(var(--grid-radius-canvas) * var(--grid-scale)));
   --grid-halo-radius: calc(var(--grid-radius) + var(--grid-halo-outset));
 }
+
+[data-row-handle] {
+  opacity: 0;
+  pointer-events: none;
+}
+[data-grid-row-frame]:is([data-row-hover], :has([data-row-handle]:focus-visible)):not([data-row-blocked])
+  > [data-row-handle] {
+  opacity: 1;
+  pointer-events: auto;
+}
+[data-grid-row-frame][data-row-hover="band"] [data-grid-card]:not([data-hover-disabled]) [data-grid-halo],
+[data-grid-row-frame]:has(> [data-row-handle]:focus-visible):not([data-row-blocked])
+  [data-grid-card]:not([data-hover-disabled])
+  [data-grid-halo] {
+  opacity: 1;
+}
+[data-grid-row-frame]:has([data-add-row]:is(:hover, :focus, :active)) > [data-row-handle],
+[data-row-blocked] > [data-row-handle],
+[data-grid-viewport][data-panning] [data-row-handle] {
+  visibility: hidden;
+}

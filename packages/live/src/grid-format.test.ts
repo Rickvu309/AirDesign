@@ -22,7 +22,7 @@ it("refuses an unknown structural envelope before splitting confirmed or pending
             value: "",
             format: format + 1,
             slideFile: [slideId("256")],
-            slideEdit: { slide: "remove" as const, id: slideId("256") },
+            slideEdit: { slide: "move-many", grid: 1, ids: [slideId("256")], after: null, row: "keep" },
           }
     expect(newerRow(row)).toBe(true)
     expect(() => split([row])).toThrow("newer")
@@ -32,7 +32,13 @@ it("keeps a newer structural journal entry without replaying or releasing it", a
   const shelf = memoryShelf()
   const key = "airdesign:unsaved:account:deck"
   const bytes = JSON.stringify([
-    { kind: "slide", id: "one", format: format + 1, file: ["256"], edit: { slide: "future-grid", grid: 2 } },
+    {
+      kind: "slide",
+      id: "one",
+      format: format + 1,
+      file: ["256"],
+      edit: { slide: "move-many", grid: 1, row: "keep", ids: ["256"], after: null },
+    },
   ])
   shelf.setItem(key, bytes)
   let called = false

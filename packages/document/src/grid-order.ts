@@ -1,6 +1,7 @@
 import { type SlideId } from "./element-id.js"
 import { elementCommand } from "./element-order.js"
 import { groupCommand } from "./element-group.js"
+import { moveGroup } from "./grid-move.js"
 import { limits } from "./limits.js"
 import { orderKeyBetween, type OrderKey } from "./order-key.js"
 import type { SlideSpot } from "./person-undo.js"
@@ -30,6 +31,12 @@ export type V1Command = (
   | Omit<Extract<LegacySlideCommand, { readonly slide: "clone" }>, "key" | "runId">
   | { readonly slide: "remove"; readonly id: SlideId }
   | { readonly slide: "move"; readonly id: SlideId; readonly after: SlideId | null; readonly row: "same" }
+  | {
+      readonly slide: "move-many"
+      readonly ids: readonly [SlideId, ...SlideId[]]
+      readonly after: SlideId | null
+      readonly row: GridSide | "keep"
+    }
   | { readonly slide: "grid-turn"; readonly turn: GridTurn }
 ) & { readonly grid: 1; readonly runId?: string }
 
@@ -80,7 +87,19 @@ export function foldGrid(state: SlideState): {
       heads = new Set(defaultGrid1(before.map((spot) => spot.id)).starts)
       initialized = true
     }
-    if (command.slide === "grid-turn") {
+    if (command.slide === "move-many") {
+      const moved = moveGroup(
+        before,
+        partition(
+          before.map((spot) => spot.id),
+          heads,
+        ),
+        command,
+      )
+      for (const spot of moved.spots) spots.set(spot.id, spot)
+      heads = moved.heads
+      effects.push(...moved.effects)
+    } else if (command.slide === "grid-turn") {
       for (const step of command.turn.spots) {
         if (step.before.present === step.after.present && step.before.key === step.after.key) continue
         const spot = spots.get(step.id)

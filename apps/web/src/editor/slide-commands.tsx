@@ -6,7 +6,7 @@ import { slideListCopy } from "@/copy/slide-list-copy"
 import type { SlideStrip } from "@/editor/slide-sidebar"
 import { showSlideDeleted, type UndoOf } from "@/editor/slide-toast"
 import type { DeckPaint } from "@/editor/use-deck-paint"
-import { fileSlides, commitSlideChange, type SlideChange } from "@/slide-edit"
+import { fileSlides, commitSlideChange, commitSlideMove, type SlideChange } from "@/slide-edit"
 import { thumbHeight } from "@/thumb-height"
 import type { UndoEntry } from "@/undo-list"
 import { slideNames } from "@/undo-names"
@@ -72,6 +72,7 @@ export function slideCommands(deck: CommandedDeck, undo: () => void): SlideStrip
   return {
     count: slideCount,
     gridStarts: gridRows(state).map((row) => sequence.indexOf(row[0])),
+    slideIds: sequence,
     sections,
     current,
     onSelect: setCurrent,
@@ -80,6 +81,39 @@ export function slideCommands(deck: CommandedDeck, undo: () => void): SlideStrip
     onClone: (index) => void changeSlide("clone", index),
     onRemove: (index) => void changeSlide("remove", index),
     onMove: (from, to) => void changeSlide("move", from, to),
+    onMoveMany: (held, at, row = "same") => {
+      const ids = sequence.filter((_, index) => held.includes(index))
+      const first = ids[0]
+      if (first === undefined) return
+      const after =
+        sequence
+          .slice(0, at)
+          .filter((id) => !ids.includes(id))
+          .at(-1) ?? null
+      const run = pending.then(async () => {
+        const opened = await connect(memoryRemote()).openDeck(id)
+        if (!opened.ok) return
+        settle(
+          await commitSlideMove(
+            id,
+            file,
+            opened.register,
+            [first, ...ids.slice(1)],
+            after,
+            row,
+            async (currentIndex, undoable) => {
+              if (undoable !== null) record({ name: slideNames.move, undoable })
+              setPending(true)
+              await showEdited(currentIndex)
+            },
+          ),
+        )
+      })
+      pending = run.then(
+        () => undefined,
+        () => undefined,
+      )
+    },
     say: deck.shown.saySlide,
     thumbHeight: thumbHeight(canvases.current(0)),
     thumb: (index, width) => {

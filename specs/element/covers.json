@@ -20,8 +20,8 @@
         "shownOn",
         "stillShows"
       ],
-      "digest": "6c5053f78b06",
-      "blob": "5fcaf089d0926fd398ac333a6cd23a8cd33b82e4"
+      "digest": "4a22ca05fae9",
+      "blob": "dd54fb16edd1d1787a1c6c6bb23687923ff0b8ca"
     },
     {
       "file": "packages/document/src/row.ts",
@@ -44,8 +44,8 @@
     {
       "file": "packages/document/src/slide-order.ts",
       "names": ["applySlide"],
-      "digest": "59758fc98738",
-      "blob": "6fcd4c11038b30bf1a45c5c3680f04831b0d309e"
+      "digest": "e2681262d992",
+      "blob": "edc548cdd88a0ea034de06d3adf182903a80e1f8"
     },
     {
       "file": "packages/document/src/decide.ts",

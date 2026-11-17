@@ -1,7 +1,9 @@
 import { defaultGrid1, slideId } from "@airdesign/document"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { EditorIcon } from "@/editor/editor-icons"
-import type { SlideStrip } from "@/editor/slide-sidebar"
+import type { ReactNode } from "react"
+import { sectionAt } from "@/editor/collapsed-sections"
+import type { SlideStrip, StripSection } from "@/editor/slide-sidebar"
 import { cn } from "@/lib/class-names"
 
 export type GridRow = {
@@ -71,6 +73,65 @@ export function GridSectionHead({
         </button>
       </h2>
       {marker ? null : <span aria-hidden="true" className="ml-1 block h-px flex-1 bg-line" />}
+    </div>
+  )
+}
+
+export function GridSectionCell({
+  row,
+  index,
+  sections,
+  count,
+  scale,
+  held,
+  onToggle,
+  shown,
+  height,
+  children,
+}: {
+  row: GridRow
+  index: number
+  sections: readonly StripSection[]
+  count: number
+  scale: number
+  held: ReadonlySet<number>
+  onToggle: (number: number) => void
+  shown: boolean
+  height: number
+  children: ReactNode
+}) {
+  const offset = index - row.start
+  const section = sections.find((section) => section.start === index)
+  const number = sectionAt(sections, index)
+  const marked = sections.some((section) => section.start >= row.start && section.start < row.end)
+  return (
+    <div className="contents">
+      {marked ? (
+        <div
+          style={{
+            gridColumn: `${offset + 1} / span ${section === undefined ? 1 : Math.min((sections[number + 1]?.start ?? row.end) - index, row.end - index)}`,
+            gridRow: 1,
+          }}
+        >
+          <div style={{ zoom: 1 / scale }}>
+            {section === undefined ? null : (
+              <GridSectionHead
+                marker
+                name={section.name}
+                count={(sections[number + 1]?.start ?? count) - section.start}
+                open={!held.has(number)}
+                onToggle={() => onToggle(number)}
+              />
+            )}
+          </div>
+        </div>
+      ) : null}
+      <div
+        style={{ gridColumn: offset + 1, gridRow: marked ? 2 : 1, visibility: shown ? "visible" : "hidden" }}
+        aria-hidden={!shown}
+      >
+        {shown ? children : <div style={{ height: height + 24 }} />}
+      </div>
     </div>
   )
 }

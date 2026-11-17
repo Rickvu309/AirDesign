@@ -1,4 +1,5 @@
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
+import type { SlideId } from "@airdesign/document"
 import {
   useEffect,
   useLayoutEffect,
@@ -18,6 +19,7 @@ type Range = { readonly start: number; readonly end: number }
 type Point = { readonly x: number; readonly y: number }
 
 type Preview = {
+  readonly row: boolean
   readonly from: number
   readonly to: number | null
   readonly moving: boolean
@@ -25,6 +27,8 @@ type Preview = {
 }
 
 type Press = {
+  readonly order: readonly SlideId[]
+  readonly row: boolean
   readonly pointer: number
   readonly index: number
   readonly start: Point
@@ -80,6 +84,7 @@ export function useGridDrag({
   viewport,
   rows,
   selected,
+  slideIds,
   panBy,
   onPanEnd,
   onMove,
@@ -91,10 +96,11 @@ export function useGridDrag({
   viewport: RefObject<HTMLDivElement | null>
   rows: readonly Range[]
   selected: readonly number[]
+  slideIds: readonly SlideId[]
   panBy: (delta: Point) => void
   onPanEnd: () => void
   onPick: (index: number, shift: boolean, toggle: boolean) => void
-  onMove: (held: readonly number[], at: number) => void
+  onMove: (held: readonly number[], at: number, row: boolean) => void
 }) {
   const press = useRef<Press | null>(null)
   const pointer = useRef<Point | null>(null)
@@ -130,6 +136,8 @@ export function useGridDrag({
     const gap = gridSpacing(slot.width, slot.height).column
     const scale = world.offsetWidth === 0 ? 1 : world.getBoundingClientRect().width / world.offsetWidth
     const left = after ? slot.left + slot.width + gap / 2 : slot.left - gap / 2
+    mark.removeAttribute("data-row-drop")
+    mark.style.width = `${4 / scale}px`
     mark.hidden = false
     mark.dataset.dropPlace = String(at + 1)
     mark.style.height = `${slot.height}px`
@@ -138,7 +146,17 @@ export function useGridDrag({
 
   function placeGhost(point: Point) {
     const image = ghost.current
-    if (image !== null) image.style.transform = `translate(${point.x + ghostOffset}px, ${point.y + ghostOffset}px)`
+    if (image !== null) {
+      const x = Math.max(
+        ghostOffset,
+        Math.min(point.x + ghostOffset, window.innerWidth - image.offsetWidth - ghostOffset),
+      )
+      const y = Math.max(
+        ghostOffset,
+        Math.min(point.y + ghostOffset, window.innerHeight - image.offsetHeight - ghostOffset),
+      )
+      image.style.transform = `translate(${x}px, ${y}px)`
+    }
   }
 
   function end() {
@@ -152,10 +170,12 @@ export function useGridDrag({
     hideBar()
   }
 
-  function grab(index: number, event: PointerEvent<HTMLElement>) {
+  function grab(index: number, event: PointerEvent<HTMLElement>, row = false) {
     if (event.button !== 0 || !event.isPrimary || press.current !== null) return
-    if (cardPress(event) !== "slide") return
+    if (!row && cardPress(event) !== "slide") return
     press.current = {
+      order: slideIds,
+      row,
       pointer: event.pointerId,
       index,
       start: { x: event.clientX, y: event.clientY },
@@ -165,14 +185,21 @@ export function useGridDrag({
     }
   }
 
-  function begin(index: number) {
+  function begin(index: number, row: boolean) {
+    if (press.current?.order.join(",") !== slideIds.join(",")) return
     const world = list.current
     slots.current = world === null ? [] : slotsIn(world)
-    const held = selected.includes(index) ? selected : [index]
+    const range = rowOf(rows, index)
+    const held =
+      row && range !== undefined
+        ? Array.from({ length: range.end - range.start }, (_, i) => range.start + i)
+        : selected.includes(index)
+          ? selected
+          : [index]
     const quiet = still()
     setSettling(false)
     setCalm(quiet)
-    show({ from: index, to: null, moving: !quiet && held.length === 1, held })
+    show({ row, from: index, to: null, moving: !row && !quiet && held.length === 1, held })
     clock.current = performance.now()
     frame.current = requestAnimationFrame((time) => latest.current.step(time))
   }
@@ -193,6 +220,41 @@ export function useGridDrag({
     const scale = world.offsetWidth === 0 ? 1 : box.width / world.offsetWidth
     const x = (point.x - box.left) / scale
     const y = (point.y - box.top) / scale
+    if (held.row) {
+      const bands = rows.flatMap((row) => {
+        const cells = slots.current.filter((slot) => slot.index >= row.start && slot.index < row.end)
+        return cells.length === 0
+          ? []
+          : [
+              {
+                ...row,
+                top: Math.min(...cells.map((cell) => cell.top)),
+                bottom: Math.max(...cells.map((cell) => cell.top + cell.height)),
+              },
+            ]
+      })
+      const next = bands.find((band, i) => y < band.top && y >= (bands[i - 1]?.bottom ?? band.top - 80 / scale))
+      const last = bands.at(-1)
+      const at =
+        next?.start ?? (last !== undefined && y >= last.bottom && y <= last.bottom + 80 / scale ? last.end : null)
+      const previous = bands.find((band) => band.end === at)
+      const top =
+        next === undefined ? last?.bottom : previous === undefined ? next.top : (previous.bottom + next.top) / 2
+      const mark = bar.current
+      if (at === null || top === undefined || mark === null) {
+        place.current = null
+        hideBar()
+        return
+      }
+      place.current = at
+      mark.hidden = false
+      mark.dataset.rowDrop = ""
+      mark.dataset.dropPlace = String(at + 1)
+      mark.style.width = `${world.offsetWidth}px`
+      mark.style.height = `${4 / scale}px`
+      mark.style.transform = `translate(0px, ${top - 2 / scale}px)`
+      return
+    }
     const slot = slotUnder(x, y, slots.current)
     if (slot === undefined) return
     const at = dropPlace(x, slot, slot.index)
@@ -232,7 +294,7 @@ export function useGridDrag({
     if (!held.dragged) {
       if (Math.hypot(point.x - held.start.x, point.y - held.start.y) < slop) return
       press.current = { ...held, dragged: true }
-      begin(held.index)
+      begin(held.index, held.row)
     }
     if (active.current === null) return
     document.getSelection()?.removeAllRanges()
@@ -247,7 +309,7 @@ export function useGridDrag({
     press.current = null
     swallowClick()
     if (!held.dragged) {
-      onPick(held.index, held.shift, held.toggle)
+      if (!held.row) onPick(held.index, held.shift, held.toggle)
       return
     }
     const drag = active.current
@@ -257,7 +319,7 @@ export function useGridDrag({
     const lands = at !== null && room !== undefined && inside({ x: event.clientX, y: event.clientY }, room)
     setSettling(lands)
     end()
-    if (lands) onMove(drag.held, at)
+    if (lands) onMove(drag.held, at, drag.row)
   }
 
   function escape(event: globalThis.KeyboardEvent) {
@@ -302,6 +364,12 @@ export function useGridDrag({
     }
   }, [])
 
+  useLayoutEffect(() => {
+    if (active.current === null || press.current?.order.join(",") === slideIds.join(",")) return
+    setSettling(false)
+    end()
+  }, [slideIds])
+
   const dragging = preview !== null
 
   useLayoutEffect(() => {
@@ -318,5 +386,5 @@ export function useGridDrag({
     return { transform: `translate(${there.left - here.left}px, ${there.top - here.top}px)`, transition }
   }
 
-  return { dragging: preview?.from ?? null, held: preview?.held ?? [], grab, shift }
+  return { row: preview?.row ?? false, dragging: preview?.from ?? null, held: preview?.held ?? [], grab, shift }
 }

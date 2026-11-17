@@ -8,10 +8,10 @@ Members(seq) == {seq[i] : i \in 1..Len(seq)}
 RowStart(i) == CHOOSE j \in 1..i : slides[j] \in heads /\
   \A k \in (j+1)..i : slides[k] \notin heads
 TypeOK ==
-  /\ stage \in 0..29
+  /\ stage \in 0..42
   /\ slides \in Seq(1..8)
   /\ heads \subseteq Members(slides)
-  /\ cacheStage \in 0..29
+  /\ cacheStage \in 0..42
   /\ cacheSlides \in Seq(1..8)
   /\ cacheHeads \subseteq Members(cacheSlides)
 Partition ==
@@ -68,10 +68,23 @@ RemoveAnchor == Land(0,26,<<2,3,4,5,6>>,{2,5})
 RefuseDeadBelow == Land(26,27,<<2,3,4,5,6>>,{2,5})
 TwoBelow == Land(15,28,<<1,2,3,4,8,7,5,6>>,{1,8,7,5})
 RefuseCollision == Land(15,29,<<1,2,3,4,7,5,6>>,{1,7,5})
+GroupSame == Land(0,30,<<2,4,5,1,3,6>>,{2,5})
+UndoGroup == Land(30,31,Opening,{1,5})
+GroupNew == Land(0,32,<<2,4,5,6,1,3>>,{2,5,1})
+RowKeep == Land(0,33,<<5,6,1,2,3,4>>,{5,1})
+UndoRow == Land(33,34,Opening,{1,5})
+RedoRow == Land(34,35,<<5,6,1,2,3,4>>,{5,1})
+ForeignRowInsert == Land(33,36,<<5,7,6,1,2,3,4>>,{5,1})
+RefuseRowUndo == Land(36,37,<<5,7,6,1,2,3,4>>,{5,1})
+RefuseStaleRow == Land(9,38,<<1,2,3,4,5,7,6>>,{1,5})
+ForeignGroupGap == Land(30,39,<<2,4,5,1,3,6,7>>,{2,5})
+UndoForeignGroup == Land(39,40,<<1,2,3,4,5,6,7>>,{1,5})
+EmptyRow == Land(0,41,<<1,2,5,6,3,4>>,{1})
+RefuseGroupAnchor == Land(0,42,Opening,{1,5})
 Adopt ==
   /\ cacheStage # stage
   /\ cacheStage' = stage /\ cacheSlides' = slides /\ cacheHeads' = heads
   /\ UNCHANGED <<stage, slides, heads, initialized>>
-Next == RemoveHead \/ InsertGap \/ RefuseHead \/ RemoveSingleton \/ UndoSingleton \/ MoveHead \/ UndoMove \/ Add \/ Clone \/ UndoAdd \/ UndoClone \/ RemoveNonHead \/ InsertNonHeadGap \/ UndoNonHead \/ BelowInterior \/ UndoBelow \/ RedoBelow \/ BelowFinal \/ TailAppend \/ BelowAfterAppend \/ UndoConcurrentBelow \/ ForeignFillNew \/ RefuseFilledUndo \/ AppendAfterUndo \/ RefuseRedo \/ RemoveAnchor \/ RefuseDeadBelow \/ TwoBelow \/ RefuseCollision \/ Adopt
+Next == RemoveHead \/ InsertGap \/ RefuseHead \/ RemoveSingleton \/ UndoSingleton \/ MoveHead \/ UndoMove \/ Add \/ Clone \/ UndoAdd \/ UndoClone \/ RemoveNonHead \/ InsertNonHeadGap \/ UndoNonHead \/ BelowInterior \/ UndoBelow \/ RedoBelow \/ BelowFinal \/ TailAppend \/ BelowAfterAppend \/ UndoConcurrentBelow \/ ForeignFillNew \/ RefuseFilledUndo \/ AppendAfterUndo \/ RefuseRedo \/ RemoveAnchor \/ RefuseDeadBelow \/ TwoBelow \/ RefuseCollision \/ GroupSame \/ UndoGroup \/ GroupNew \/ RowKeep \/ UndoRow \/ RedoRow \/ ForeignRowInsert \/ RefuseRowUndo \/ RefuseStaleRow \/ ForeignGroupGap \/ UndoForeignGroup \/ EmptyRow \/ RefuseGroupAnchor \/ Adopt
 Spec == Init /\ [][Next]_vars
 ====

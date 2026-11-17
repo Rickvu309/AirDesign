@@ -2,10 +2,16 @@ import { readElementId, readSlideId, type ElementId, type GridSide, type SlideId
 import type { JsonSchema } from "./agent-form.js"
 import { slideSchema } from "./set-wire.js"
 
-export const slideOps = ["add_slide", "duplicate_slide", "delete_slide", "move_slide"] as const
+export const slideOps = ["add_slide", "duplicate_slide", "delete_slide", "move_slide", "move_slides"] as const
 export type SlideOp = (typeof slideOps)[number]
 
 export type WireSlideChange =
+  | {
+      readonly op: "move_slides"
+      readonly slides: readonly [SlideId, ...SlideId[]]
+      readonly after: SlideId | null
+      readonly row: GridSide | "keep"
+    }
   | { readonly op: "add_slide"; readonly after: SlideId; readonly layout: SlideId; readonly row?: GridSide }
   | { readonly op: "duplicate_slide" | "delete_slide"; readonly slide: SlideId }
   | { readonly op: "move_slide"; readonly slide: SlideId; readonly after: SlideId | null }
@@ -21,6 +27,7 @@ const fieldsOf = {
   duplicate_slide: ["slide"],
   delete_slide: ["slide"],
   move_slide: ["slide", "after"],
+  move_slides: ["slides", "after", "row"],
 } as const satisfies Record<SlideOp, readonly string[]>
 
 function refused(field: string): { readonly ok: false; readonly refusal: "field"; readonly field: string } {
@@ -52,6 +59,18 @@ export function readSlideChange(raw: unknown): Read<WireSlideChange> {
     if (body.row !== undefined && body.row !== "same" && body.row !== "new") return refused("row")
     return { ok: true, change: { op, after, layout, ...(body.row === undefined ? {} : { row: body.row }) } }
   }
+  if (op === "move_slides") {
+    if (!Array.isArray(body.slides) || body.slides.length > 50) return refused("slides")
+    const ids = body.slides.map((id: unknown) => readSlideId(id))
+    const first = ids[0],
+      rest = ids.slice(1).filter((id): id is NonNullable<typeof id> => id !== undefined)
+    if (first === undefined || rest.length !== ids.length - 1 || new Set(ids).size !== ids.length)
+      return refused("slides")
+    const after = body.after === null ? null : readSlideId(body.after)
+    if (after === undefined) return refused("after")
+    if (body.row !== "same" && body.row !== "new" && body.row !== "keep") return refused("row")
+    return { ok: true, change: { op, slides: [first, ...rest], after, row: body.row } }
+  }
   const slide = readSlideId(body.slide)
   if (slide === undefined) return refused("slide")
   if (op !== "move_slide") return { ok: true, change: { op, slide } }
@@ -76,10 +95,11 @@ export function slideChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op"],
     description:
-      "add_slide takes after and layout, with optional row placement; duplicate_slide and delete_slide take slide; move_slide takes slide and after. New slide ids come back in slides. The last slide cannot be deleted.",
+      "add_slide takes after and layout, with optional row placement; duplicate_slide and delete_slide take slide; move_slide takes slide and after. move_slides takes slides, after and row (same, new or keep). It moves the group in presentation order in one edit; keep requires one complete current row. New slide ids come back in slides. The last slide cannot be deleted.",
     properties: {
       op: { type: "string", enum: slideOps },
       slide: slideSchema,
+      slides: { type: "array", items: slideSchema, minItems: 1, maxItems: 50, uniqueItems: true },
       after: {
         anyOf: [slideSchema, { type: "null" }],
         description: "Place it after this slide id; with move_slide, null for the beginning.",
@@ -87,8 +107,9 @@ export function slideChangeSchema(): JsonSchema {
       layout: { ...slideSchema, description: "Use the layout of this slide id." },
       row: {
         type: "string",
-        enum: ["same", "new"],
-        description: "add_slide only. Defaults to same. new adds a row below the anchor's current row.",
+        enum: ["same", "new", "keep"],
+        description:
+          "add_slide: same (default) or new. move_slides: same joins a row, new starts a row, keep moves a complete row. new/keep follow the anchor's remaining row; null moves to the front.",
       },
     },
   }
