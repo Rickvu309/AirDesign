@@ -174,7 +174,9 @@ test("a size typed in the toolbar sets the selected words and puts the cursor ba
   await expect(size).toHaveValue("11")
 })
 
-for (const leave of ["Tab", "canvas", "tray", "Enter", "Escape", "invalid"]) {
+const nextControl: Readonly<Record<string, string>> = { Tab: "Larger", "Shift+Tab": "Smaller" }
+
+for (const leave of ["Tab", "Shift+Tab", "canvas", "tray", "Enter", "Escape", "invalid"]) {
   test(`a typed font size handles ${leave} without changing another word`, async ({ page }) => {
     await open(page, fixture)
     const editor = page.locator('[data-slide-paint] [contenteditable="true"]')
@@ -188,17 +190,22 @@ for (const leave of ["Tab", "canvas", "tray", "Enter", "Escape", "invalid"]) {
     await selectText(editor.locator("[data-run]").first(), 6, 11)
     const size = page.getByRole("textbox", { name: "Font size" })
     await size.fill(leave === "invalid" ? "big" : "24.5")
-    if (leave === "Tab" || leave === "Enter" || leave === "Escape") await size.press(leave)
-    if (leave === "tray") {
-      await page.getByRole("button", { name: "Shapes", exact: true }).click()
-      await expect(size).toBeVisible()
-      await page.keyboard.press("Escape")
-    } else {
-      await editor.click({ position: { x: 5, y: 5 } })
-    }
+    if (leave === "Tab" || leave === "Shift+Tab" || leave === "Enter" || leave === "Escape") await size.press(leave)
+    if (leave === "tray") await page.getByRole("button", { name: "Shapes", exact: true }).click()
+    if (leave === "canvas") await editor.click({ position: { x: 5, y: 5 } })
+    const control = nextControl[leave]
+    if (control !== undefined) await expect(page.getByRole("button", { name: control, exact: true })).toBeFocused()
+    if (leave === "Enter") await expect(editor).toBeFocused()
     const committed = leave !== "Escape" && leave !== "invalid"
+    if (committed) await expect(editor.locator('[data-run][data-size="2450"]')).toHaveText("world")
+    if (leave === "tray") {
+      await expect(size).toBeVisible()
+      await expect(page.locator("[data-shape-tray]").getByRole("button", { name: "Line", exact: true })).toBeFocused()
+      await page.keyboard.press("Escape")
+    }
+    if (control !== undefined || leave === "tray" || leave === "Escape" || leave === "invalid")
+      await editor.click({ position: { x: 5, y: 5 } })
     if (committed) {
-      await expect(editor.locator('[data-run][data-size="2450"]')).toHaveText("world")
       await expect(editor.locator("[data-run]").filter({ hasText: /^Hello / })).toHaveCSS("font-size", originalSize)
       await editor.press("ControlOrMeta+z")
     }

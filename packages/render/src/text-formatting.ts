@@ -24,7 +24,7 @@ export type TextFormatting = {
   readonly toggle: (format: TextFormat) => void
   readonly size: () => number | "mixed" | null
   readonly resize: (step: SizeStep) => void
-  readonly sizeTo: (size: number) => void
+  readonly sizeTo: (size: number, focus?: boolean) => void
   readonly color: () => Color | "mixed" | null
   readonly choose: (color: Color) => void
   readonly align: () => ParagraphAlign | "mixed" | null
@@ -72,12 +72,12 @@ export function textFormatting(fresh: () => void = () => undefined): TextFormatt
     changed()
   }
   const editing = (found: FormatTarget) => returnTo !== null && found.edits(returnTo)
-  const act = (run: (found: FormatTarget, editing: boolean) => void) => {
+  const act = (run: (found: FormatTarget, editing: boolean) => void, focus = true) => {
     const found = target()
     if (found === undefined) return
-    const back = returnTo
-    if (back !== null && back.isConnected && back.ownerDocument.activeElement !== back) {
-      back.focus({ preventScroll: true })
+    const text = returnTo
+    if (focus && text !== null && text.isConnected && text.ownerDocument.activeElement !== text) {
+      text.focus({ preventScroll: true })
     }
     fresh()
     run(found, editing(found))
@@ -114,8 +114,8 @@ export function textFormatting(fresh: () => void = () => undefined): TextFormatt
     resize(step) {
       act((found, on) => found.resize(step, on))
     },
-    sizeTo(size) {
-      act((found, on) => found.sizeTo(size, on))
+    sizeTo(size, focus) {
+      act((found, on) => found.sizeTo(size, on), focus)
     },
     color() {
       const found = target()

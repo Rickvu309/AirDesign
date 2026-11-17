@@ -140,7 +140,11 @@ it("sets a typed size on the selection as one edit and keeps the selection", asy
   const { editor, formatting, edits, fresh } = await mounted()
   await select(editor, 2, 7)
   formatting.aim(id, editor)
-  await act(async () => formatting.sizeTo(1050))
+  const next = document.createElement("button")
+  editor.after(next)
+  next.focus()
+  await act(async () => formatting.sizeTo(1050, true))
+  expect(document.activeElement).toBe(editor)
   expect(fresh()).toBe(2)
   expect(readTextValue(edits.at(-1) ?? "")).toEqual([
     {
@@ -154,6 +158,28 @@ it("sets a typed size on the selection as one edit and keeps the selection", asy
   ])
   expect(window.getSelection()?.toString()).toBe("llo w")
   expect(formatting.size()).toBe(1050)
+})
+
+it("sets a typed size on the kept selection and leaves focus where the person moved it", async () => {
+  const { host, editor, formatting, edits } = await mounted()
+  await select(editor, 2, 7)
+  formatting.aim(id, editor)
+  const next = document.createElement("button")
+  host.after(next)
+  next.focus()
+  await act(async () => formatting.sizeTo(1050, false))
+  expect(document.activeElement).toBe(next)
+  expect(readTextValue(edits.at(-1) ?? "")).toEqual([
+    {
+      from: 0,
+      runs: [
+        { from: 0, text: "He" },
+        { from: 0, text: "llo w", size: 1050 },
+        { from: 0, text: "orld" },
+      ],
+    },
+  ])
+  next.remove()
 })
 
 it("gives no state when no box is aimed at", async () => {
