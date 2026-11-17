@@ -57,6 +57,7 @@ try {
   git("add", "CHECKS.md")
   const ignored = commit()
   assert.equal(ignored.status, 0, ignored.stderr)
+  assert.equal(git("show", "HEAD:CHECKS.md"), "| a  rule | its   check |\n")
   fs.unlinkSync(path.join(root, "node_modules"))
   fs.writeFileSync(path.join(root, "other.ts"), "const other=2\n")
   git("add", "other.ts")
