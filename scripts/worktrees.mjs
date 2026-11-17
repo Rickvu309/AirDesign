@@ -30,6 +30,39 @@ export const readWorktrees = (text) =>
       }
     })
 
+export const warnStashes = ({ root, say = console.warn }) => {
+  const listed = git(root, ["stash", "list", "--format=%gd%x00%H%x00%gs"])
+  const worktrees = git(root, ["worktree", "list", "--porcelain"])
+  if (listed === undefined || worktrees === undefined) return []
+  const held = new Set(
+    readWorktrees(worktrees)
+      .filter((worktree) => worktree.path !== undefined && fs.existsSync(worktree.path))
+      .map((worktree) => worktree.branch?.replace("refs/heads/", "")),
+  )
+  const warnings = []
+  for (const line of listed.split("\n").filter(Boolean)) {
+    const [entry, hash, subject] = line.split("\0")
+    const source = /^(?:On |WIP on )(.+?): (.*)$/.exec(subject ?? "")
+    if (source === null) continue
+    const [, branch, note] = source
+    const named =
+      /^leftover from (.+) \([^)]+\), saved /.exec(note)?.[1] ??
+      (note.startsWith("worktree: ") ? note.slice("worktree: ".length) : note)
+    const sourcePath = path.isAbsolute(named) ? named : undefined
+    const reason =
+      sourcePath !== undefined && !fs.existsSync(sourcePath)
+        ? `worktree ${sourcePath}, which is gone`
+        : branch !== "(no branch)" && !held.has(branch)
+          ? `branch ${branch}, which has no worktree`
+          : undefined
+    if (reason === undefined) continue
+    const warning = `${entry} was saved from ${reason}. The stash is shared. Inspect it with git stash show -p ${hash}; recover it on its branch only if it is yours. Leave other people's entries alone.`
+    say(warning)
+    warnings.push(warning)
+  }
+  return warnings
+}
+
 const ownCommits = (root, tip, base) => {
   const listed = git(root, ["cherry", base, tip])
   if (listed === undefined) return undefined
@@ -160,6 +193,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === new URL(import.meta.url
     const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..")
     removeStale({ root })
     removeStaleBranches({ root })
+    warnStashes({ root })
     if (bringMainUp({ root })) console.log("brought the main checkout up to origin/main")
   }
 }

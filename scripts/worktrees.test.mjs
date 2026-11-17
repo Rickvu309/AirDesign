@@ -11,6 +11,7 @@ import {
   removeStaleBranches,
   staleBranches,
   staleReason,
+  warnStashes,
 } from "./worktrees.mjs"
 
 const same = (name, actual, expected) => {
@@ -198,4 +199,43 @@ git(clone, "reset", "-q", "--hard", "HEAD~1")
 fs.writeFileSync(path.join(clone, "unsaved.txt"), "unsaved")
 same("a main checkout with unsaved work is left alone", bringMainUp({ root: clone }), false)
 
+same("an empty stash list stays quiet", warnStashes({ root, say: () => {} }), [])
+
+const saved = tree("saved")
+fs.writeFileSync(path.join(saved, "a.txt"), "saved work")
+git(saved, "stash", "push", "-m", `leftover from ${saved} (saved), saved 2026-11-16 cleanup`)
+const held = tree("held")
+fs.writeFileSync(path.join(held, "a.txt"), "held work")
+git(held, "stash", "push", "-m", held)
+const branchOnly = tree("branch-only")
+fs.writeFileSync(path.join(branchOnly, "a.txt"), "branch work")
+git(branchOnly, "stash", "push")
+git(root, "worktree", "remove", saved)
+git(root, "worktree", "remove", branchOnly)
+const beforeStashes = git(root, "stash", "list", "--format=%H %gs")
+const beforePatch = git(root, "stash", "show", "-p", "stash@{2}")
+const warnings = []
+const warned = warnStashes({ root, say: (line) => warnings.push(line) })
+same("removed source worktrees warn, while a held source stays quiet", warned.length, 2)
+same("a default WIP stash names its branch without a worktree", warnings[0].includes("branch-only"), true)
+same("the historical cleanup message names the gone source path", warnings[1].includes(saved), true)
+same("warnings identify the stash entry", warnings[1].includes("stash@{2}"), true)
+same("warnings offer a read-only way to inspect the saved patch", warnings[1].includes("git stash show -p"), true)
+same(
+  "warning leaves every stash hash and message unchanged",
+  git(root, "stash", "list", "--format=%H %gs"),
+  beforeStashes,
+)
+same("warning leaves the saved patch unchanged", git(root, "stash", "show", "-p", "stash@{2}"), beforePatch)
+git(root, "worktree", "add", "-q", saved, "saved")
+same("a restored source path and branch stops warning", warnStashes({ root, say: () => {} }).length, 1)
+git(root, "branch", "-D", "branch-only")
+same("a deleted source branch still warns", warnStashes({ root, say: () => {} }).length, 1)
+
+const missing = path.join(folder, "missing source")
+fs.writeFileSync(path.join(held, "a.txt"), "another patch")
+git(held, "stash", "push", "-m", `worktree: ${missing}`)
+const pathWarnings = warnStashes({ root, say: () => {} })
+same("a missing named path warns even when the branch has a worktree", pathWarnings.length, 2)
+same("a named path with spaces survives the stash message", pathWarnings[0].includes(missing), true)
 console.log("worktrees tests passed")
