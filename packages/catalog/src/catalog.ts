@@ -61,7 +61,7 @@ export const catalog = {
     runsOn: "server",
     read: readRun,
     description:
-      "Call this when your turn is finished, so a person's edits stop closing elements to you and other agents can change the elements your turn holds. Takes the runId your edit answers carried.",
+      "Call this when your turn is finished, so a person's changes stop closing elements to you and other agents can change the elements your turn holds. Takes the runId your edit answers carried.",
   },
   undo_run: { kind: "command", exposure: "web" },
   watch_deck: { kind: "stream", exposure: "web" },
@@ -72,7 +72,7 @@ export const catalog = {
     destructive: true,
     read: readAgentEdit,
     description:
-      "Write values on one deck. Read it first with airdesign_read_deck and send that revision as base and each element's version as readAt; a change with op needs no readAt. The server names the actor. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
+      "Change one deck. Read it first with airdesign_read_deck and send that revision as base and each element's version as readAt; a change with op needs no readAt. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
   },
   add_slide: {
     kind: "command",
@@ -81,7 +81,7 @@ export const catalog = {
     destructive: true,
     read: slideReaders.add_slide,
     description:
-      "Add a slide after an existing slide, using the layout of the named slide. Read the deck first and send its revision as base. Returns the new slide id. Open the deck in AirDesign to index its layouts first.",
+      "Add a slide after an existing slide, using the layout of the named slide. Returns the new slide id. Open the deck in AirDesign to index its layouts first.",
   },
   duplicate_slide: {
     kind: "command",
@@ -89,8 +89,7 @@ export const catalog = {
     runsOn: "server",
     destructive: true,
     read: slideReaders.duplicate_slide,
-    description:
-      "Duplicate a slide after itself, including its current text and boxes. Read the deck first and send its revision as base. Returns the new slide id.",
+    description: "Duplicate a slide after itself, including its current text and boxes. Returns the new slide id.",
   },
   delete_slide: {
     kind: "command",
@@ -98,8 +97,7 @@ export const catalog = {
     runsOn: "server",
     destructive: true,
     read: slideReaders.delete_slide,
-    description:
-      "Delete the named slide. The last slide cannot be deleted. Read the deck first and send its revision as base.",
+    description: "Delete the named slide. The last slide cannot be deleted.",
   },
   move_slide: {
     kind: "command",
@@ -107,8 +105,7 @@ export const catalog = {
     runsOn: "server",
     destructive: true,
     read: slideReaders.move_slide,
-    description:
-      "Move the named slide after another slide, or to the beginning with after: null. Read the deck first and send its revision as base.",
+    description: "Move the named slide after another slide, or to the beginning with after: null.",
   },
   add_text_box: {
     kind: "command",
@@ -117,7 +114,7 @@ export const catalog = {
     destructive: true,
     read: elementReaders.add_text_box,
     description:
-      "Add a text box to a slide, with a box in EMU and opening text if you send them. Without a box it goes in the largest free area of the slide. Read the deck first and send its revision as base. Returns the new element id in elements, and you can edit it next with airdesign_edit_deck. Open the deck in AirDesign to index its slides first.",
+      "Add a text box to a slide, with a box in EMU and opening text if you send them. Without a box it goes in the largest free area of the slide. Returns the new element id in elements. Open the deck in AirDesign to index its slides first.",
   },
   delete_element: {
     kind: "command",
@@ -126,15 +123,14 @@ export const catalog = {
     destructive: true,
     read: elementReaders.delete_element,
     description:
-      "Delete one element from its slide. A group, an element inside a group, and an element with an animation cannot be deleted. Read the deck first and send its revision as base. The person's Undo for your run brings the element back.",
+      "Delete one element from its slide. A group, an element inside a group, and an element with an animation cannot be deleted. The person's Undo for your run brings the element back.",
   },
   list_decks: {
     kind: "query",
     exposure: "agent",
     runsOn: "server",
     read: readListDecks,
-    description:
-      "List the decks this account owns. Each row has the deck id, its name, and trash when the deck is in Trash.",
+    description: "List the decks this account owns, each with its id, its name, and trash when it is in Trash.",
   },
   read_deck: {
     kind: "query",
@@ -142,7 +138,7 @@ export const catalog = {
     runsOn: "server",
     read: readDeckQuery,
     description:
-      "Read one deck this account owns. Send revision as base to airdesign_edit_deck and each element's version as readAt. slides lists slide ids in position order. Indexed elements include node, slide, kind, opening or edited value and box, and version (0 before edits). role names a placeholder. design is one line of the element's look, as the instructions say. closed means a person's newer edit or another run holds it. grouped elements refuse box edits. index is ready, pending, or missing; pending or missing means the owner must open the deck in AirDesign to finish indexing. Send slide or cursor to read the rest.",
+      "Read one deck this account owns. slides lists slide ids in position order. Indexed elements include node (element id), slide, kind, opening or changed value and box, and version (0 before any change). role names a placeholder. design is one line of the element's look, as the instructions say. closed means a person's newer change or another run holds it. grouped elements refuse box changes. index is ready, pending, or missing; pending or missing means the owner must open the deck in AirDesign to finish indexing. Send slide or cursor to read the rest.",
   },
 } as const satisfies Readonly<Record<string, OpRow>>
 

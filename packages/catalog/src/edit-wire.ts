@@ -166,7 +166,7 @@ const textChange = z.strictObject({
   value: textInput.describe("Text to write: plain text, or a JSON text value when the file's text is one."),
   node: nodeInput,
   readAt: readAtInput,
-  floor: textInput.exactOptional(),
+  floor: textInput.exactOptional().describe("Opening text of the element."),
 })
 const boxChange = z.strictObject({
   property: z.literal("box").describe("Moves or resizes the element instead of writing its text."),
@@ -180,7 +180,7 @@ const boxChange = z.strictObject({
     .describe("The element's box on the slide in EMU. 914400 EMU is one inch."),
   node: nodeInput,
   readAt: readAtInput,
-  floor: textInput.exactOptional(),
+  floor: textInput.exactOptional().describe("Opening text of the element."),
 })
 
 function agentForm<Change>(
@@ -213,7 +213,7 @@ export const readAgentEdit = readInput(
       .array(z.union([textChange, boxChange, setChange, addChange, groupChange, diagramChange]))
       .min(1)
       .max(limits.batch)
-      .describe("Edits to land."),
+      .describe("Changes to land."),
   }),
   (issues, raw): FieldRefusal | DeckRefusal | BaseRefusal | BatchRefusal => {
     if (issues.some((issue) => issue.path.length === 0 || issue.path[0] === "deck")) return inputRefusal(issues, raw)

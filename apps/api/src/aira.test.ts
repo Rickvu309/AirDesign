@@ -428,6 +428,7 @@ describe("POST /aira/turn pins the call and logs no person data", () => {
     expect(reply.status).toBe(200)
     const sent = replay.calls.at(-1)
     expect(sent?.key).toBe(fakeKey)
+    expect(JSON.stringify(sent?.call.tools)).not.toMatch(/"\$ref"|"\$defs"/)
     expect(sent?.call).toEqual({
       model: "claude-sonnet-5-5",
       max_tokens: airaMaxTokens,

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 
 import { airaMessageCap, airaTextCap, airaTools, readStop, readTurn } from "./aira-turn.js"
-import { catalog, projectTools, toolInputSchema } from "./catalog.js"
-import { inlinedSchema } from "./shared-schema.js"
+import { catalog, projectTools } from "./catalog.js"
+import * as z from "zod/v4"
 
 const deck = "airadeck"
 const ask = { role: "user", content: "Retitle slide one." }
@@ -46,7 +46,7 @@ describe("Aira's tools", () => {
       projectTools(catalog).map((tool) => ({
         name: tool.name,
         description: tool.description,
-        input_schema: inlinedSchema(toolInputSchema(tool.op)),
+        input_schema: z.toJSONSchema(catalog[tool.op].read.input, { io: "input" }),
       })),
     )
     expect(JSON.stringify(airaTools)).not.toMatch(/"\$ref"|"\$defs"/)
