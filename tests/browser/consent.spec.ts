@@ -126,7 +126,7 @@ for (const screen of [
 test("the consent account shows its email and first initial", async ({ page }) => {
   await openConsent(page)
 
-  await expect(page.getByText(accountEmail, { exact: true })).toHaveCount(2)
+  await expect(page.getByText(accountEmail, { exact: true })).toHaveCount(1)
   await expect(page.getByText("A", { exact: true })).toBeVisible()
 })
 
@@ -371,7 +371,7 @@ test("nothing is posted to approve before Allow", async ({ page }) => {
   await expect(page).toHaveURL(/\/oauth\/authorize/)
 })
 
-test("nothing paints and nothing can be clicked while the client rule is held", async ({ page }) => {
+test("loading status offers no decision before the client is validated", async ({ page }) => {
   let release = () => {}
   const held = new Promise<void>((resolve) => {
     release = resolve
@@ -391,7 +391,9 @@ test("nothing paints and nothing can be clicked while the client rule is held", 
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve))))
 
   await expect(page.locator("button")).toHaveCount(0)
-  await expect(page.locator("body")).toHaveText("", { useInnerText: true })
+  await expect(page.getByRole("heading", { name: "Connect an agent", exact: true })).toBeVisible()
+  await expect(page.getByRole("status")).toHaveText("Loading connection request…")
+  await expect(page.getByText("Claude wants to use AirDesign")).toHaveCount(0)
 
   release()
 
@@ -461,12 +463,66 @@ test("Switch signs out and returns to this consent request after sign-in", async
   expect(signOuts).toBe(1)
 })
 
-test("Switch stays on the consent request when sign-out fails", async ({ page }) => {
+test("Switch offers recovery when sign-out fails", async ({ page }) => {
   await openConsent(page)
   await page.route("**/sign-out", (route) => route.fulfill({ status: 500, json: { ok: false } }))
 
   await page.getByRole("button", { name: "Switch", exact: true }).click()
 
-  await expect(page.getByRole("button", { name: "Allow", exact: true })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Try again" })).toHaveAttribute("href", authorizePath())
   await expect(page).toHaveURL(/\/oauth\/authorize/)
+})
+
+for (const width of [320, 390, 1470]) {
+  test(`consent and recovery fit at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 })
+    await openConsent(page, { ok: true, screen: "other", redirect_host: "a-very-long-agent-hostname.example.com" })
+    for (const name of ["Cancel", "Allow", "Switch"]) {
+      await expect(page.getByRole("button", { name, exact: true })).toBeInViewport()
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
+    await answerClient(page, { ok: false, refusal: "client" }, 400)
+    await page.reload()
+    await expect(page.getByRole("link", { name: "Back to AirDesign" })).toBeInViewport()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
+  })
+}
+
+test("Switch failure offers a retry of the connection request", async ({ page }) => {
+  await openConsent(page)
+  await page.route("**/sign-out", (route) => route.abort("failed"))
+  await page.getByRole("button", { name: "Switch", exact: true }).click()
+  await expect(page.getByRole("link", { name: "Try again" })).toHaveAttribute("href", authorizePath())
+})
+
+test("the account lookup shows loading status and approval prevents another decision", async ({ page }) => {
+  let releaseAccount: () => void = () => {}
+  const accountWait = new Promise<void>((resolve) => {
+    releaseAccount = resolve
+  })
+  await answerClient(page, { ok: true, screen: "claude", redirect_host: "claude.ai" })
+  await page.route("**/decks/list", async (route) => {
+    await accountWait
+    await route.fulfill({ json: { ok: true, account: { email: accountEmail }, decks: [] } })
+  })
+  await page.goto(authorizePath())
+  await expect(page.getByRole("heading", { name: "Claude wants to use AirDesign" })).toBeVisible()
+  await expect(page.getByRole("status")).toHaveText("Loading connection request…")
+  releaseAccount()
+  await expect(page.getByRole("button", { name: "Allow", exact: true })).toBeVisible()
+  let releaseApproval: () => void = () => {}
+  const approvalWait = new Promise<void>((resolve) => {
+    releaseApproval = resolve
+  })
+  await page.route("**/oauth/approve", async (route) => {
+    await approvalWait
+    await route.fulfill({ status: 503, json: { ok: false } })
+  })
+  await page.getByRole("button", { name: "Allow", exact: true }).click()
+  await expect(page.getByRole("button", { name: "Allowing…" })).toBeDisabled()
+  await expect(page.getByRole("button", { name: "Allowing…" })).toHaveAttribute("aria-busy", "true")
+  await expect(page.getByRole("button", { name: "Cancel", exact: true })).toBeDisabled()
+  await expect(page.getByRole("button", { name: "Switch", exact: true })).toBeDisabled()
+  releaseApproval()
+  await expect(page.getByRole("link", { name: "Try again" })).toBeVisible()
 })

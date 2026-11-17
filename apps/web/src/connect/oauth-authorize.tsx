@@ -1,5 +1,6 @@
 import { deckRoutes, oauthRoutes, signOutRoutes } from "@airdesign/catalog"
 import { useEffect, useRef, useState } from "react"
+import { AgentPair } from "@/connect/agent-pair"
 import { ConnectError } from "@/connect/connect-error"
 import { ApproveAgent } from "@/connect/approve-agent"
 import { ClaudeConnected } from "@/connect/screens/claude-connected"
@@ -22,11 +23,11 @@ type Consent = {
   codeChallenge: string
   state: string | null
   resource: string | undefined
-  account: { initials: string; name: string; email: string }
+  account: { initials: string; email: string }
 }
 
 type View =
-  | { kind: "loading" }
+  | { kind: "loading"; agent?: Agent; title?: string }
   | { kind: "refused" }
   | { kind: "unavailable" }
   | { kind: "consent"; consent: Consent }
@@ -114,9 +115,9 @@ function clientScreen(body: unknown): { screen: Screen; host: string } | null {
   return { screen: body.screen, host: body.redirect_host }
 }
 
-async function consentRequest(): Promise<
-  { kind: "redirect"; address: string } | Exclude<View, { kind: "loading" | "connected" }>
-> {
+async function consentRequest(
+  onClient: (content: ReturnType<typeof presentation>) => void,
+): Promise<{ kind: "redirect"; address: string } | Exclude<View, { kind: "loading" | "connected" }>> {
   const current = new URL(window.location.href)
   const query = current.searchParams
   const resource = query.has("resource") ? (query.get("resource") ?? "") : undefined
@@ -137,6 +138,8 @@ async function consentRequest(): Promise<
   if (!clientReply.response.ok) return { kind: "refused" }
   const client = clientScreen(clientReply.body)
   if (client === null) return { kind: "refused" }
+
+  onClient(presentation(client.screen, client.host))
 
   const redirectUri = query.get("redirect_uri") ?? ""
   const requestError = authorizationError(query)
@@ -171,7 +174,6 @@ async function consentRequest(): Promise<
       resource,
       account: {
         initials: account.email.slice(0, 1).toUpperCase(),
-        name: account.email,
         email: account.email,
       },
     },
@@ -202,13 +204,15 @@ export function OAuthAuthorize() {
   useEffect(() => {
     if (started.current) return
     started.current = true
-    void consentRequest().then((answer) => {
-      if (answer.kind === "redirect") {
-        leave(answer.address, setView)
-        return
-      }
-      setView(answer)
-    })
+    void consentRequest((content) => setView({ kind: "loading", agent: content.agent, title: content.title })).then(
+      (answer) => {
+        if (answer.kind === "redirect") {
+          leave(answer.address, setView)
+          return
+        }
+        setView(answer)
+      },
+    )
   }, [])
 
   function deny(consent: Consent) {
@@ -222,6 +226,7 @@ export function OAuthAuthorize() {
   async function switchAccount() {
     const reply = await post(signOutRoutes.session.path, {})
     if (reply?.response.ok) window.location.assign(signInAddress())
+    else setView({ kind: "unavailable" })
   }
 
   async function allow(consent: Consent) {
@@ -260,7 +265,21 @@ export function OAuthAuthorize() {
     leave(answer.body.redirect, setView, consent)
   }
 
-  if (view.kind === "loading") return null
+  if (view.kind === "loading") {
+    return (
+      <main className="screen-frame reflow-frame grid place-items-center px-4 py-6">
+        <section className="flex w-full max-w-[360px] flex-col items-center gap-6 text-center">
+          <AgentPair agent={view.agent ?? null} />
+          <h1 className="text-balance [overflow-wrap:anywhere] text-[length:var(--type-title)] font-semibold text-foreground">
+            {view.title ?? "Connect an agent"}
+          </h1>
+          <p role="status" className="text-[length:var(--type-dense)] text-quiet">
+            Loading connection request…
+          </p>
+        </section>
+      </main>
+    )
+  }
   if (view.kind === "refused" || view.kind === "unavailable") {
     return <ConnectError kind={view.kind} />
   }
