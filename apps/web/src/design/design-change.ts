@@ -59,7 +59,7 @@ export function changeDesign(deck: DesignDeck, change: () => SetChange) {
       void flushPending(connect, deck.id).then(deck.settle)
       return
     }
-    toast.error(designCopy.refused)
+    toast.error(designCopy.refused, { duration: Infinity, closeButton: true })
     deck.settle("refused")
   })
 }

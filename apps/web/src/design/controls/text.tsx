@@ -74,7 +74,11 @@ function WordsField({ row, onChange, max }: ControlProps & { readonly max: numbe
             if (draft !== null) commit(event.currentTarget.value)
           }}
           onKeyDown={(event) => {
-            if (event.key === "Enter") commit(event.currentTarget.value)
+            if (event.nativeEvent.isComposing) return
+            if (event.key === "Enter") {
+              event.preventDefault()
+              commit(event.currentTarget.value)
+            }
             if (event.key === "Escape") setDraft(null)
           }}
         />
