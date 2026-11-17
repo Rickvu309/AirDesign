@@ -148,8 +148,9 @@
   --space-48: 48px;
   --shape-segment: 4px;
   --shape-swatch: 3px;
-  --ratio-picture-preview: 2 / 1;
-  --fill-transparency: repeating-conic-gradient(var(--line) 0% 25%, var(--background) 0% 50%) 0 / 24px 24px;
+  --ratio-picture-preview: 208 / 100;
+  --transparency-cell: #e2e2e2;
+  --fill-transparency: repeating-conic-gradient(var(--transparency-cell) 0% 25%, var(--background) 0% 50%) 0 / 20px 20px;
   --shape-control: 6px;
   --shape-card: 10px;
   --shape-dialog: 14px;
