@@ -2,11 +2,11 @@ import { useEffect, useRef, type CSSProperties } from "react"
 import { toast } from "@/components/ui/toast"
 import { Toaster } from "@/components/ui/sonner"
 import { StatusPill } from "@/components/ui/status-pill"
+import { cn } from "@/lib/class-names"
 import { downloadedOf, productCopy } from "@/copy/product-copy"
 import { EditorToast, EditorToaster } from "@/editor/agent-panel"
 import { pictureCopy } from "@/copy/picture-copy"
 import { undoCopy } from "@/copy/undo-copy"
-import { cn } from "@/lib/class-names"
 import { exportCopy } from "@/export/export-options"
 
 export type ThinNotice =

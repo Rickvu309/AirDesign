@@ -5,7 +5,19 @@ import { toast } from "@/components/ui/toast"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { decksFoundOf, noMatchTitleOf, productCopy, starredOf, unstarredOf } from "@/copy/product-copy"
+import { StatusPill } from "@/components/ui/status-pill"
+import {
+  decksFoundOf,
+  moveFailedOf,
+  movingOf,
+  noMatchTitleOf,
+  productCopy,
+  restoreFailedOf,
+  restoredOf,
+  restoringOf,
+  starredOf,
+  unstarredOf,
+} from "@/copy/product-copy"
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { clearGridShift, gridShift } from "@/decks/grid-shift"
@@ -23,7 +35,7 @@ import { addressOf, addressRead } from "@/decks/deck-address"
 import { allDecks, decksMatching, recentDecks, type ListedDeck } from "@/decks/deck-listing"
 import { server } from "@/commit-edit"
 import { importDeck } from "@/import-deck"
-import { signInAddress } from "@/thin-notice"
+import { ActionPill, signInAddress } from "@/thin-notice"
 
 type Deck = ListedDeck
 type Listing = { ok: true; account: { email: string }; decks: Deck[]; trash: Deck[] }
@@ -38,6 +50,49 @@ async function post(path: string, body: object) {
   const answer = await response.json()
   if (response.status === 401 && answer.refusal === "session") window.location.assign(signInAddress(window.location))
   return answer
+}
+
+async function answered(path: string, body: object): Promise<boolean> {
+  try {
+    return (await post(path, body)).ok === true
+  } catch {
+    return false
+  }
+}
+
+type ToastId = string | number
+
+const failures = new Map<string, ToastId>()
+
+function settle(key: string) {
+  const shown = failures.get(key)
+  if (shown === undefined) return
+  failures.delete(key)
+  toast.dismiss(shown)
+}
+
+function showFailed(key: string, text: string, retry: () => void, over?: ToastId) {
+  settle(key)
+  const shown = toast.notice(
+    () => (
+      <ActionPill
+        text={text}
+        action={productCopy.payTryAgain}
+        width={movedToastOptions.style.width}
+        onAct={retry}
+        error
+      />
+    ),
+    { ...movedToastOptions, ...(over === undefined ? {} : { id: over }) },
+  )
+  failures.set(key, shown)
+}
+
+function showStatus(text: string, id?: ToastId, duration = Number.POSITIVE_INFINITY) {
+  return toast.custom(
+    () => <StatusPill className="h-auto min-h-10 px-3.5 py-2 [overflow-wrap:anywhere]">{text}</StatusPill>,
+    { ...movedToastOptions, id, duration },
+  )
 }
 
 async function withDevice(listing: Listing): Promise<Listing> {
@@ -200,31 +255,38 @@ export function Home({
     heading.focus()
   }
 
-  async function restore(deck: Deck, pointer = false) {
+  async function restore(deck: Deck, pointer = false, moved?: ToastId) {
     const shiftAt = pointer ? window.location.href : undefined
     const held = onDeck() || document.activeElement?.closest("[data-sonner-toast]") != null
-    if ((await post(deckRoutes.restore.path, { deck: deck.deck })).ok) {
-      await refresh(shiftAt)
-      if (held) keepFocus()
+    const key = `restore-${deck.deck}`
+    if (moved === undefined) settle(key)
+    const pending = showStatus(restoringOf(deck.name), moved)
+    const ok = await answered(deckRoutes.restore.path, { deck: deck.deck })
+    if (!ok) {
+      showFailed(key, restoreFailedOf(deck.name), () => void restore(deck), pending)
+      return
     }
+    showStatus(restoredOf(deck.name), pending, 4000)
+    await refresh(shiftAt)
+    if (held) keepFocus()
   }
 
   async function move(deck: Deck, held = onDeck(), pointer = false) {
     const shiftAt = pointer ? window.location.href : undefined
-    if (!(await post(deckRoutes.trash.path, { deck: deck.deck })).ok) return
+    const key = `move-${deck.deck}`
+    settle(key)
+    const pending = showStatus(movingOf(deck.name))
+    const ok = await answered(deckRoutes.trash.path, { deck: deck.deck })
+    if (!ok) {
+      showFailed(key, moveFailedOf(deck.name), () => void move(deck, false), pending)
+      return
+    }
     await refresh(shiftAt)
     if (held) keepFocus()
-    toast.notice(
-      (id) => (
-        <MovedToast
-          name={deck.name}
-          onUndo={(pointer) => {
-            void restore(deck, pointer).then(() => toast.dismiss(id))
-          }}
-        />
-      ),
-      movedToastOptions,
-    )
+    toast.notice((id) => <MovedToast name={deck.name} onUndo={(pointer) => void restore(deck, pointer, id)} />, {
+      ...movedToastOptions,
+      id: pending,
+    })
   }
 
   function star(deck: Deck) {
@@ -336,21 +398,7 @@ export function Home({
           />
         </div>
       )}
-      {noMatch && (
-        <div className="mt-8">
-          <Card
-            className="w-full"
-            title={noMatchTitleOf(query.trim())}
-            description={productCopy.noMatchBody}
-            actions={
-              <Button variant="outline" size="sm" onClick={() => search("")}>
-                {productCopy.clearSearch}
-              </Button>
-            }
-          />
-        </div>
-      )}
-      {(listing !== null || importing !== null) && showGrid && !noDecks && !noMatch && (
+      {(listing !== null || importing !== null) && showGrid && !noDecks && (!noMatch || importing !== null) && (
         <DeckGrid ref={grid} className={section !== "recents" ? "mt-6" : undefined}>
           {importing &&
             (importing.failed ? (
@@ -401,6 +449,20 @@ export function Home({
               ))
             : null}
         </DeckGrid>
+      )}
+      {noMatch && (
+        <div className={importing === null ? "mt-8" : "mt-5"}>
+          <Card
+            className="w-full"
+            title={noMatchTitleOf(query.trim())}
+            description={productCopy.noMatchBody}
+            actions={
+              <Button variant="outline" size="sm" onClick={() => search("")}>
+                {productCopy.clearSearch}
+              </Button>
+            }
+          />
+        </div>
       )}
       {listView && !trash && listing !== null && !noDecks && !noMatch && (
         <div className="mt-8">
