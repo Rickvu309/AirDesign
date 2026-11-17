@@ -11,6 +11,7 @@ type Pan = {
 }
 
 export function CanvasStage({
+  fit = true,
   hand,
   width,
   height,
@@ -18,6 +19,7 @@ export function CanvasStage({
   overlay,
   children,
 }: {
+  fit?: boolean
   hand: boolean
   width: number
   height: number
@@ -34,7 +36,7 @@ export function CanvasStage({
     if (element === null) return
     element.scrollLeft = (element.scrollWidth - element.clientWidth) / 2
     element.scrollTop = (element.scrollHeight - element.clientHeight) / 2
-  }, [width, height, canvasHeight, overlay])
+  }, [width])
 
   function grab(event: PointerEvent<HTMLDivElement>) {
     const element = stage.current
@@ -67,7 +69,7 @@ export function CanvasStage({
 
   return (
     <>
-      <div ref={stage} className="absolute inset-0 overflow-auto" data-canvas-stage>
+      <div ref={stage} className="absolute inset-0 overflow-auto" data-canvas-stage data-canvas-fit={fit}>
         <div
           className="flex w-max min-w-full flex-col items-center"
           style={{ paddingInline: canvasInset.side, paddingTop: top, paddingBottom: top + overlay }}

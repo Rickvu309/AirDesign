@@ -6,6 +6,7 @@ import { useUndoKeys, type UndoKey } from "./undo-keys"
 
 let window: Window & typeof globalThis
 let root: Root | null = null
+let pointerAt = 0
 let createRoot: typeof import("react-dom/client").createRoot
 
 beforeAll(async () => {
@@ -23,6 +24,21 @@ beforeAll(async () => {
     ["InputEvent", window.InputEvent],
     ["Event", window.Event],
     ["IS_REACT_ACT_ENVIRONMENT", true],
+    [
+      "ResizeObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    ],
+    [
+      "requestAnimationFrame",
+      (callback: FrameRequestCallback) => {
+        callback(0)
+        return 1
+      },
+    ],
+    ["cancelAnimationFrame", () => undefined],
   ]
   for (const [name, value] of shared) vi.stubGlobal(name, value)
   createRoot = (await import("react-dom/client")).createRoot
@@ -31,6 +47,7 @@ beforeAll(async () => {
 afterEach(() => {
   act(() => root?.unmount())
   root = null
+  pointerAt = 0
   window.document.body.replaceChildren()
 })
 
@@ -50,6 +67,7 @@ function rendered(text: string, keys: UndoKey[] = []) {
   window.document.body.append(host)
   root = createRoot(host)
   act(() => root?.render(createElement(Notes, { text, keys })))
+  act(() => handle(host).click())
   return host
 }
 
@@ -115,8 +133,108 @@ it("shows the notes it is given while the field has the focus", () => {
   root = createRoot(host)
   const shown = (text: string) => root?.render(createElement(NotesBar, { text, onEdit: () => undefined }))
   act(() => shown("Talk"))
-  act(() => expand(host)[0]?.click())
+  expect(field(host).value).toBe("Talk")
+  field(host).focus()
   expect(window.document.activeElement).toBe(field(host))
   act(() => shown("Talk about savings"))
   expect(field(host).value).toBe("Talk about savings")
+})
+
+function handle(host: HTMLElement): HTMLButtonElement {
+  const button = host.querySelector("button")
+  if (!button) throw new Error("no notes handle")
+  return button
+}
+
+function pointer(host: HTMLElement, type: string, y: number) {
+  const button = handle(host)
+  button.setPointerCapture = () => undefined
+  act(() => {
+    const event = new window.MouseEvent(type, { clientY: y, button: 0, bubbles: true })
+    Object.defineProperty(event, "pointerId", { value: 1 })
+    pointerAt += 20
+    Object.defineProperty(event, "timeStamp", { value: pointerAt })
+    button.dispatchEvent(event)
+  })
+}
+
+it("distinguishes a click from a drag and keeps the chosen height through toggles", () => {
+  const host = rendered("")
+  act(() => handle(host).click())
+  pointer(host, "pointerdown", 400)
+  pointer(host, "pointermove", 280)
+  pointer(host, "pointerup", 280)
+  act(() => handle(host).click())
+  expect(field(host).closest("[data-notes-bar]")?.getAttribute("style")).toContain("280px")
+  act(() => handle(host).click())
+  act(() => handle(host).click())
+  expect(field(host).closest("[data-notes-bar]")?.getAttribute("style")).toContain("280px")
+})
+
+it("resizes with arrows and Home without moving focus into the field", () => {
+  const host = rendered("")
+  act(() => handle(host).click())
+  handle(host).focus()
+  act(() => handle(host).dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true })))
+  expect(field(host).closest("[data-notes-bar]")?.getAttribute("style")).toContain("184px")
+  expect(window.document.activeElement).toBe(handle(host))
+  act(() => handle(host).dispatchEvent(new window.KeyboardEvent("keydown", { key: "Home", bubbles: true })))
+  expect(field(host).closest("[data-notes-bar]")?.getAttribute("style")).toContain("160px")
+})
+
+it("opens in the same drag from collapsed and collapses past the minimum on release", () => {
+  const host = rendered("")
+  pointer(host, "pointerdown", 400)
+  pointer(host, "pointermove", 280)
+  expect(field(host).closest("[data-notes-bar]")?.getAttribute("style")).toContain("144px")
+  pointer(host, "pointerup", 280)
+  pointer(host, "pointerdown", 280)
+  pointer(host, "pointermove", 400)
+  pointer(host, "pointerup", 400)
+  expect(expand(host)).toHaveLength(1)
+})
+
+it("treats less than four pixels as a click and opens after a small upward drag", () => {
+  const host = rendered("")
+  pointer(host, "pointerdown", 400)
+  pointer(host, "pointermove", 398)
+  pointer(host, "pointerup", 398)
+  act(() => handle(host).click())
+  expect(field(host).readOnly).toBe(false)
+  act(() => handle(host).click())
+  pointer(host, "pointerdown", 400)
+  pointer(host, "pointermove", 390)
+  pointer(host, "pointerup", 390)
+  act(() => handle(host).click())
+  expect(field(host).closest("[data-notes-bar]")?.getAttribute("style")).toContain("160px")
+})
+
+it("keeps static notes read-only and cancels a drag without toggling", () => {
+  const host = window.document.createElement("div")
+  window.document.body.append(host)
+  root = createRoot(host)
+  act(() => root?.render(createElement(NotesBar, { text: "Read only" })))
+  expect(field(host).readOnly).toBe(true)
+  expect(field(host).hasAttribute("data-person-undo")).toBe(true)
+  pointer(host, "pointerdown", 400)
+  pointer(host, "pointermove", 280)
+  pointer(host, "pointercancel", 280)
+  expect(field(host).closest("[data-notes-bar]")?.getAttribute("style")).toContain("160px")
+  act(() => handle(host).click())
+  expect(expand(host)).toHaveLength(1)
+})
+
+it("leaves only the handle visible when collapsed", () => {
+  const host = rendered("Talk about savings")
+  expect(field(host).value).toBe("Talk about savings")
+  expect(host.querySelector("[data-notes-bar]")?.getAttribute("style")).toContain("24px")
+})
+
+it("starts with a compact notes field", () => {
+  const host = window.document.createElement("div")
+  window.document.body.append(host)
+  root = createRoot(host)
+  act(() => root?.render(createElement(NotesBar, { text: "" })))
+  expect(handle(host).ariaExpanded).toBe("true")
+  expect(field(host).closest("[data-notes-bar]")?.getAttribute("style")).toContain("160px")
 })

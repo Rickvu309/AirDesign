@@ -233,13 +233,14 @@ export function EditorShell({
       ) : null}
       <div ref={canvas.onCanvas} className="relative min-w-0 flex-1" data-editor-canvas>
         <CanvasStage
+          fit={zoom === "fit"}
           hand={deck !== undefined && pointer.tool === "hand"}
           width={width}
           height={size === null ? (width * 9) / 16 : (width * size.height) / size.width}
           canvasHeight={canvas.height}
           overlay={canvas.overlay}
         >
-          <div className="relative" style={{ width }}>
+          <div data-slide-wrapper className="relative" style={{ width }}>
             <span
               className="absolute inset-x-0 bottom-full mb-3 text-[length:var(--type-dense)] text-quiet"
               data-slide-label
@@ -260,7 +261,7 @@ export function EditorShell({
         >
           {notes === undefined ? null : (
             <>
-              <div style={{ width }}>
+              <div data-notes-width style={{ width }}>
                 <NotesBar
                   text={run === "working" ? "" : notes}
                   {...(onNotes === undefined ? {} : { onEdit: onNotes })}

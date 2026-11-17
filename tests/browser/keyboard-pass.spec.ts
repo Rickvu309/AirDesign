@@ -147,6 +147,7 @@ test("Ctrl+= inside a text box is left to the browser", async ({ page }) => {
 
 test("Expand speaker notes is one tab stop", async ({ page }) => {
   await open(page)
+  await page.getByRole("button", { name: "Collapse speaker notes" }).click()
   const expand = page.getByRole("button", { name: "Expand speaker notes" })
   await expect(expand).toHaveCount(1)
   await expand.focus()
