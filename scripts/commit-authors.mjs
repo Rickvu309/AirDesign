@@ -15,6 +15,12 @@ const attributionBot = /factory-droid/i
 const largeOutput = 64 * 1024 * 1024
 const eventsThatAddCommits = new Set(["pull_request", "merge_group"])
 
+export const attributionLine = (text) =>
+  text
+    .split(/\r?\n/)
+    .find((line) => generatedLine.test(line) || attributionBot.test(line))
+    ?.trim()
+
 export const commitFix =
   "Amend or rebase with the repo's git config and drop the trailer: git commit --amend --reset-author, or git rebase origin/main --exec 'git commit --amend --no-edit --reset-author'."
 
@@ -23,7 +29,7 @@ export const commitFaults = ({ authorName, authorEmail, message }) => [
     ? []
     : [`the author is ${authorName} <${authorEmail}>, and every commit is authored by ${ownerNames}`]),
   ...(coAuthorTrailer.test(message) ? ["the message has a Co-authored-by trailer"] : []),
-  ...(generatedLine.test(message) || attributionBot.test(message) ? ["the message has an AI attribution line"] : []),
+  ...(attributionLine(message) !== undefined ? ["the message has an AI attribution line"] : []),
 ]
 
 export const commitsIn = (root, revisions) => {
