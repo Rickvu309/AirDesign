@@ -4,6 +4,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { stages } from "./check.mjs"
 import { stampChecked } from "./checked.mjs"
+import { attributionLine } from "./commit-authors.mjs"
 import { filesWithMarkers, markerFault } from "./conflict-markers.mjs"
 import { readWithRetry } from "./github-read.mjs"
 import { aloneRun, judgeCheck } from "./land-check.mjs"
@@ -178,6 +179,14 @@ export const land = async (ctx) => {
     }
     const bodyFromFile = readBody(readText, args.bodyFile, stop)
     const body = bodyFromFile ?? pull?.body
+    const attribution = body === undefined ? undefined : attributionLine(body)
+    if (attribution !== undefined)
+      stop(
+        "body",
+        bodyFromFile === undefined
+          ? `the body of pull request ${pull.number} has the attribution line "${attribution}". Delete that line: write the body to a file without it and run pnpm land --body-file <file>.`
+          : `${args.bodyFile} has the attribution line "${attribution}". Delete that line, then run pnpm land again.`,
+      )
     if (body !== undefined && !hasProof(body))
       line("body", "warning: the body has no ## Proof heading. Say what you ran and what you saw, with counts.")
     const conflicts = conflictsWithMain(git)
