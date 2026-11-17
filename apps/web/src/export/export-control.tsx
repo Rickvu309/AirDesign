@@ -7,6 +7,7 @@ import { PrintSheet } from "@/export/export-print"
 import type { PrintSize } from "@/export/print-page"
 
 export type ExportTarget = {
+  readonly name: string
   readonly count: number
   readonly current: number
   readonly size: PrintSize | null
@@ -78,6 +79,7 @@ function ExportFlow({ faded, target }: { faded: boolean; target: ExportTarget })
       />
       {printing === null || target.size === null ? null : (
         <PrintSheet
+          name={target.name}
           size={target.size}
           slides={printing}
           slide={target.slide}

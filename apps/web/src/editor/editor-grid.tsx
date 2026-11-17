@@ -407,6 +407,7 @@ export function EditorGrid({
             <ExportControl
               faded={faded}
               target={{
+                name: title,
                 count: strip.count,
                 current: strip.current,
                 size,

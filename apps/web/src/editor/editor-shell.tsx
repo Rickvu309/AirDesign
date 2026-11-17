@@ -238,6 +238,7 @@ export function EditorShell({
               ? {}
               : {
                   target: {
+                    name: title,
                     count: deck.slides.count,
                     current: deck.slides.current,
                     size,
