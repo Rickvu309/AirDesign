@@ -10,7 +10,11 @@ async function usageGrowth(page: Page, side: ReturnType<Page["locator"]>) {
         if (!(animation instanceof CSSTransition)) return []
         const timing = animation.effect?.getTiming()
         return [
-          { property: animation.transitionProperty, duration: Number(timing?.duration), easing: String(timing?.easing) },
+          {
+            property: animation.transitionProperty,
+            duration: Number(timing?.duration),
+            easing: String(timing?.easing),
+          },
         ]
       })
       document.body.dataset.usageGrowth = JSON.stringify(seen)
@@ -18,14 +22,23 @@ async function usageGrowth(page: Page, side: ReturnType<Page["locator"]>) {
     const observer = new MutationObserver(() => {
       const box = document.querySelector(`[role="dialog"][aria-label="${name}"]`)
       if (box === null) return
-      observer.disconnect()
-      requestAnimationFrame(() => requestAnimationFrame(() => record(box)))
+      record(box)
+      if (box.getAnimations().length > 0 || matchMedia("(prefers-reduced-motion: reduce)").matches)
+        observer.disconnect()
     })
-    observer.observe(document.body, { childList: true, subtree: true })
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-starting-style"],
+    })
   }, productCopy.usageTitle)
   await side.getByRole("button", { name: productCopy.usageTitle }).click()
   await expect(page.getByRole("dialog", { name: productCopy.usageTitle })).toBeVisible()
-  await page.waitForFunction(() => document.body.dataset.usageGrowth !== undefined)
+  await page.waitForFunction(() => {
+    const seen = JSON.parse(document.body.dataset.usageGrowth ?? "[]")
+    return seen.length > 0 || matchMedia("(prefers-reduced-motion: reduce)").matches
+  })
   return page.evaluate(() => JSON.parse(document.body.dataset.usageGrowth ?? "[]"))
 }
 
@@ -59,6 +72,9 @@ test("the usage popover grows from its ring on the micro curve, holds still with
   await expect(page.getByRole("dialog", { name: productCopy.usageTitle })).toHaveCount(0)
   await expect(ring).toBeFocused()
   await ring.click()
-  await page.locator("[data-slide-paint]").first().click({ position: { x: 4, y: 4 } })
+  await page
+    .locator("[data-slide-paint]")
+    .first()
+    .click({ position: { x: 4, y: 4 } })
   await expect(page.getByRole("dialog", { name: productCopy.usageTitle })).toHaveCount(0)
 })
