@@ -77,7 +77,7 @@ test("the grid shows every slide, and the keyboard opens one", async ({ page }) 
   await expect(entry(page, 1)).toBeFocused()
   await page.keyboard.press("ArrowDown")
   await page.keyboard.press("Enter")
-  await expect(page.locator("[data-editor-grid]")).toHaveCount(0)
+  await expect(page.locator("[data-grid-edit]")).toHaveCount(1)
   await expect(page.locator("[data-slide-paint]")).toBeVisible()
   await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
   await openGrid(page)
@@ -158,7 +158,7 @@ test("a right click or the menu key on a slide offers the slide commands, and ea
   await expect(entry(page, 2)).toBeFocused()
   await page.keyboard.press("ContextMenu")
   await menu.getByRole("menuitem", { name: /^Open/ }).click()
-  await expect(page.locator("[data-editor-grid]")).toHaveCount(0)
+  await expect(page.locator("[data-grid-edit]")).toHaveCount(1)
   await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
 })
 
@@ -234,6 +234,8 @@ test("a 50-slide deck paints grid thumbnails as they come into view", async ({ p
     buffer: await manySlides(fifty),
   })
   await openGrid(page)
+  await page.locator("[data-zoom-readout]").click()
+  await page.getByRole("menuitemradio", { name: zoomToOf(50), exact: true }).click()
   await expect(page.locator("[data-editor-grid] [data-slide-entry]")).toHaveCount(fifty)
   await expect(page.locator("[data-editor-grid] [data-slide-thumb]")).toHaveCount(fifty)
   await expect.poll(async () => page.locator("[data-editor-grid] [data-thumb-paint]").count()).toBeGreaterThan(0)
@@ -271,55 +273,45 @@ test("the grid fits the deck by default, zooms by percent with the keyboard and 
     buffer: await manySlides(fifty),
   })
   await openGrid(page)
-  expect(await perRow(page)).toBe(7)
-  const list = page.locator("[data-editor-grid] [data-slide-list]")
-  const room = await list.evaluate((element) => {
-    const first = element.querySelector('[data-slide-entry="1"]')?.getBoundingClientRect()
-    const seventh = element.querySelector('[data-slide-entry="7"]')?.getBoundingClientRect()
-    const box = element.getBoundingClientRect()
-    return {
-      left: Math.round((first?.left ?? 0) - box.left),
-      right: Math.round(box.left + element.clientWidth - (seventh?.right ?? 0)),
-      overflow: element.scrollWidth - element.clientWidth,
-    }
-  })
-  expect(room.left).toBe(48)
-  expect(room.right).toBeGreaterThanOrEqual(48)
-  expect(room.right).toBeLessThanOrEqual(48 + 7)
-  expect(room.overflow).toBe(0)
+  expect(await perRow(page)).toBe(9)
+  const room = await page.locator("[data-grid-viewport]").boundingBox()
+  const last = await entry(page, 50).boundingBox()
+  expect(last!.y + last!.height).toBeLessThan(room!.y + room!.height)
   const fit = await percent(page)
   await entry(page, 1).focus()
   await page.keyboard.press("ControlOrMeta+Equal")
   await expect.poll(() => percent(page)).toBe(25)
   expect(await thumbWidth(page)).toBe(320)
-  await expect.poll(() => perRow(page)).toBe(3)
+  await expect.poll(() => perRow(page)).toBe(9)
   await page.keyboard.press("ControlOrMeta+Minus")
   await expect.poll(() => percent(page)).toBe(10)
   await page.locator("[data-zoom-readout]").click()
   await page.getByRole("menuitemradio", { name: zoomToOf(50), exact: true }).click()
   await expect(page.locator("[data-zoom-readout]")).toHaveText("50%")
   expect(await thumbWidth(page)).toBe(640)
-  await expect.poll(() => perRow(page)).toBe(2)
+  await expect.poll(() => perRow(page)).toBe(9)
   await page.reload()
   await settled(page)
   await openGrid(page)
   await expect(page.locator("[data-zoom-readout]")).toHaveText("50%")
-  await expect.poll(() => perRow(page)).toBe(2)
+  await expect.poll(() => perRow(page)).toBe(9)
   await entry(page, 1).focus()
   await page.keyboard.press("ControlOrMeta+0")
   await expect.poll(() => percent(page)).toBe(fit)
-  await expect.poll(() => perRow(page)).toBe(7)
+  await expect.poll(() => perRow(page)).toBe(9)
 })
 
 test("Zoom to fit shows every slide of a short deck as large as the window allows", async ({ page }) => {
   await openFile(page, sectioned)
   await openGrid(page)
-  const list = page.locator("[data-editor-grid] [data-slide-list]")
-  const fits = await list.evaluate((element) => ({
-    scroll: element.scrollHeight - element.clientHeight,
-    across: element.scrollWidth - element.clientWidth,
-  }))
-  expect(fits).toEqual({ scroll: 0, across: 0 })
+  const room = await page.locator("[data-grid-viewport]").boundingBox()
+  for (const number of [1, 2]) {
+    const card = await entry(page, number).boundingBox()
+    expect(card!.x).toBeGreaterThanOrEqual(room!.x)
+    expect(card!.y).toBeGreaterThanOrEqual(room!.y)
+    expect(card!.x + card!.width).toBeLessThanOrEqual(room!.x + room!.width)
+    expect(card!.y + card!.height).toBeLessThanOrEqual(room!.y + room!.height)
+  }
   expect(await thumbWidth(page)).toBeGreaterThan(300)
 })
 

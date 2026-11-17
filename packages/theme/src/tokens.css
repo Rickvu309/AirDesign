@@ -144,6 +144,9 @@
   --shape-card: 10px;
   --shape-dialog: 14px;
   --shadow-chrome: none;
+  --grid-radius: 2px;
+  --shadow-grid: 0 0 0 1px var(--line), 0 1px 3px rgb(15 36 51 / 8%);
+  --shadow-grid-selected: 0 0 0 2px var(--ring);
   --shadow-card: 0 0 0 1px var(--line);
   --shadow-dialog: 0 16px 48px rgb(15 36 51 / 16%);
   --shadow-toast: 0 8px 24px rgb(15 36 51 / 12%);

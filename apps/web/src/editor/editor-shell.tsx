@@ -98,6 +98,7 @@ export function EditorShell({
   const room = (deck === undefined ? null : canvas.room) ?? slideRoom(rail === "slides" ? 800 : 720)
   const [zoom, setZoom] = useState<Zoom>("fit")
   const [gridOpen, setGridOpen] = useState(false)
+  const [gridPanel, setGridPanel] = useState(false)
   const pointer = usePointerTool(deck !== undefined)
   const size = deck?.size ?? null
   const width = size === null ? room.width : zoomWidth(zoom, room, size)
@@ -136,33 +137,53 @@ export function EditorShell({
   )
   if (deck !== undefined && gridOpen) {
     return (
-      <>
-        <EditorGrid
-          id={deck.id ?? null}
-          title={title}
-          strip={deck.slides}
-          size={size}
-          onSlides={() => openWith(() => setGridOpen(false))}
-          onExport={deck.onExport}
-          onPresent={(from) => present.start(from)}
-          presenting={present.show !== null}
-          undo={deck.undo}
-          pointer={pointer}
-          panel={panel}
-          activeTool={activeTool}
-          toolMenu={toolMenu}
-          save={deck.save ?? null}
-          {...(deck.onTrash === undefined ? {} : { onTrash: deck.onTrash })}
-          {...(deck.onRename === undefined ? {} : { onRename: deck.onRename })}
-          {...(deck.onText === undefined ? {} : { onText: deck.onText })}
-          {...(deck.formatting === undefined ? {} : { formatting: deck.formatting })}
-          {...(formats === undefined ? {} : { formats })}
-          {...(deck.onTable === undefined ? {} : { onTable: deck.onTable })}
-          {...(deck.onPicture === undefined ? {} : { onPicture: deck.onPicture })}
-          {...(onPanel === undefined ? {} : { onPanel })}
-        />
+      <div className="relative flex h-full min-h-0">
+        <div className="min-w-0 flex-1">
+          <EditorGrid
+            slide={deck.slide}
+            id={deck.id ?? null}
+            title={title}
+            strip={deck.slides}
+            size={size}
+            onSlides={() => openWith(() => setGridOpen(false))}
+            onExport={deck.onExport}
+            onPresent={(from) => present.start(from)}
+            presenting={present.show !== null}
+            undo={deck.undo}
+            pointer={pointer}
+            panel={panel}
+            activeTool={activeTool}
+            toolMenu={toolMenu}
+            save={deck.save ?? null}
+            {...(deck.onTrash === undefined ? {} : { onTrash: deck.onTrash })}
+            {...(deck.onRename === undefined ? {} : { onRename: deck.onRename })}
+            {...(deck.onText === undefined ? {} : { onText: deck.onText })}
+            {...(deck.formatting === undefined ? {} : { formatting: deck.formatting })}
+            {...(formats === undefined ? {} : { formats })}
+            {...(deck.onTable === undefined ? {} : { onTable: deck.onTable })}
+            {...(deck.onPicture === undefined ? {} : { onPicture: deck.onPicture })}
+            {...(onPanel === undefined
+              ? {}
+              : {
+                  onPanel: (next: Exclude<EditorPanel, "none">) => {
+                    setGridPanel(next !== panel || !gridPanel)
+                    onPanel(next)
+                  },
+                })}
+          />
+        </div>
+        {!gridPanel || panel === "none" ? null : (
+          <aside
+            className="relative flex h-full w-[360px] shrink-0 flex-col border-l border-line bg-white"
+            data-editor-panel
+          >
+            {side}
+          </aside>
+        )}
+        {toast}
+        {overlay}
         {presenting}
-      </>
+      </div>
     )
   }
   return (
