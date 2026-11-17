@@ -18,7 +18,7 @@ test("home lists server decks instead of sample decks", async ({ page }) => {
   ])
   await expect(page.getByText("Edited just now", { exact: true })).toBeVisible()
   await expect(page.getByText("Edited 2 hours ago", { exact: true })).toBeVisible()
-  await expect(page.getByText("home@example.com")).toBeVisible()
+  await expect(page.locator("[data-account-name]")).toHaveText("Home")
   await page.getByRole("link", { name: first.name }).click()
   await expect(page).toHaveURL(/\/deck\/first$/)
   await page.goBack()
@@ -54,7 +54,7 @@ test("signed out goes to sign-in with the path and query", async ({ page }) => {
 test("empty home says there are no decks yet, lists no sample decks and offers the import menu", async ({ page }) => {
   await store(page, [])
   await page.goto("/")
-  await expect(page.getByText("home@example.com")).toBeVisible()
+  await expect(page.locator("[data-account-name]")).toHaveText("Home")
   await expect(page.getByRole("heading", { name: "No decks yet" })).toBeVisible()
   await expect(page.getByText("Scratchpad", { exact: true })).toHaveCount(0)
   await expect(page.getByText("Welcome to AirDesign", { exact: true })).toHaveCount(0)

@@ -25,7 +25,7 @@ export function SettingsFrame({
         <div className="-mx-14 max-md:-mx-4">
           <div data-settings-header className="border-b border-line">
             <div className="mx-auto w-full max-w-[860px] max-md:px-4">
-              <h1 className="text-[26px] leading-[34px] font-semibold tracking-[-0.5px] text-foreground">
+              <h1 className="text-[length:var(--type-title)] leading-8 font-medium tracking-[-0.4px] text-foreground">
                 {settingsCopy.title}
               </h1>
               <nav className="mt-6 flex h-[var(--space-32)] items-start gap-7" aria-label={settingsCopy.title}>

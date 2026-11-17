@@ -69,8 +69,8 @@ test("the loaded list header stays in the loading header's position", async ({ p
 test("All decks uses the compact design while Recents keeps its previews", async ({ page }) => {
   await store(page, many)
   for (const [address, gap, height] of [
-    ["/all", 24, 180],
-    ["/", 32, 200],
+    ["/all", 24, 136],
+    ["/", 32, 150],
   ] as const) {
     await page.goto(address)
     await expect(cards(page)).toHaveCount(address === "/all" ? 8 : 6)

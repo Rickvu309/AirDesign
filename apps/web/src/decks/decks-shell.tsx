@@ -3,6 +3,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input"
 import { DeckGlyph } from "@/decks/deck-glyph"
 import { DeleteAccountDialog } from "@/decks/delete-account"
+import { accountName } from "@/decks/account-name"
 import { AgentPromo } from "@/decks/agent-promo"
 import { account, starredFolders } from "@/decks/sample-decks"
 import { deckRoutes, type DeckSection } from "@/decks/deck-routes"
@@ -18,10 +19,10 @@ const sections: {
   glyph: "clock" | "decks" | "trash" | "gear"
   size: number
 }[] = [
-  { id: "recents", label: "Recents", href: deckRoutes.recentsGrid, glyph: "clock", size: 16 },
-  { id: "all-decks", label: "All decks", href: deckRoutes.allDecksGrid, glyph: "decks", size: 16 },
-  { id: "trash", label: "Trash", href: deckRoutes.trash, glyph: "trash", size: 15 },
-  { id: "settings", label: "Settings", href: deckRoutes.settings, glyph: "gear", size: 16 },
+  { id: "recents", label: "Recents", href: deckRoutes.recentsGrid, glyph: "clock", size: 15 },
+  { id: "all-decks", label: "All decks", href: deckRoutes.allDecksGrid, glyph: "decks", size: 15 },
+  { id: "trash", label: "Trash", href: deckRoutes.trash, glyph: "trash", size: 14 },
+  { id: "settings", label: "Settings", href: deckRoutes.settings, glyph: "gear", size: 15 },
 ]
 
 const settingsMenu = [
@@ -31,38 +32,42 @@ const settingsMenu = [
 ]
 
 const starredRow =
-  "flex h-8 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-left text-[length:var(--type-dense)] leading-[var(--leading-body)] text-quiet hover:bg-black/4"
+  "flex h-7 items-center gap-2 rounded-md px-2 text-left text-[length:var(--type-dense)] leading-[var(--leading-body)] text-quiet hover:bg-black/4"
 
 function StarredRow({ name }: { name: string }) {
   return (
     <>
       <span className="text-muted-foreground">
-        <DeckGlyph name="folder" size={15} />
+        <DeckGlyph name="folder" size={14} />
       </span>
       <span className="truncate">{name}</span>
     </>
   )
 }
 
-const accountButton = "flex h-10 w-full items-center gap-2.5 rounded-lg pr-2 pl-2 text-left hover:bg-black/4"
+const accountButton = "flex h-8 max-w-full items-center gap-2 rounded-md px-2 text-left hover:bg-black/4"
 
 function AccountFace({ account: realAccount }: { account?: { email: string } }) {
   const name =
-    realAccount === undefined ? account.name : realAccount.email === "" ? settingsCopy.account : realAccount.email
+    realAccount === undefined
+      ? account.name
+      : realAccount.email === ""
+        ? settingsCopy.account
+        : accountName(realAccount.email)
   return (
     <>
-      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] leading-none font-semibold text-white">
+      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] leading-none font-semibold text-white">
         {realAccount === undefined ? account.initials : name.charAt(0).toUpperCase()}
       </span>
       <span
         data-account-name
-        title={name}
-        className="min-w-0 flex-1 truncate text-[length:var(--type-body)] leading-[var(--leading-body)] font-medium text-foreground"
+        title={realAccount?.email || name}
+        className="min-w-0 truncate text-[length:var(--type-dense)] leading-[var(--leading-body)] font-medium text-foreground"
       >
         {name}
       </span>
       <span className="shrink-0 text-faint">
-        <DeckGlyph name="chevron" size={14} />
+        <DeckGlyph name="chevron" size={12} />
       </span>
     </>
   )
@@ -104,7 +109,7 @@ export function DecksShell({
     <div className="flex h-full w-full max-md:flex-col">
       <aside
         data-decks-sidebar
-        className="flex h-full w-[248px] shrink-0 flex-col bg-canvas px-3 pt-3 pb-3 max-md:h-auto max-md:w-full"
+        className="flex h-full w-[240px] shrink-0 flex-col bg-canvas px-3 pt-2.5 pb-3 max-md:h-auto max-md:w-full"
       >
         {realAccount && onSignOut ? (
           <>
@@ -112,10 +117,24 @@ export function DecksShell({
               <DeleteAccountDialog email={realAccount.email} onCancel={() => setDeletingAccount(false)} />
             )}
             <DropdownMenu>
-              <DropdownMenuTrigger type="button" className={accountButton}>
+              <DropdownMenuTrigger
+                type="button"
+                className={accountButton}
+                aria-label={
+                  realAccount.email === "" ? undefined : `${accountName(realAccount.email)}, ${realAccount.email}`
+                }
+              >
                 <AccountFace account={realAccount} />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
+                {realAccount.email !== "" && (
+                  <p
+                    data-account-email
+                    className="truncate px-2 py-1.5 text-[length:var(--type-caption)] leading-[var(--leading-body)] text-muted-foreground"
+                  >
+                    {realAccount.email}
+                  </p>
+                )}
                 {settingsMenu.map((item) => (
                   <DropdownMenuItem
                     key={item.path}
@@ -143,13 +162,13 @@ export function DecksShell({
           role="search"
           action="/"
           method="get"
-          className="relative mt-3 block"
+          className="relative mt-2 block"
           onSubmit={(event) => {
             if (search || !realAccount) event.preventDefault()
           }}
         >
-          <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-faint">
-            <DeckGlyph name="search" size={15} />
+          <span className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-faint">
+            <DeckGlyph name="search" size={14} />
           </span>
           <Input
             type="search"
@@ -167,14 +186,14 @@ export function DecksShell({
                   },
                 }
               : {})}
-            className="h-9 rounded-lg border-0 bg-background pl-[var(--space-32)] shadow-[0_0_0_1px_var(--line)] placeholder:text-quiet md:text-sm"
+            className="h-7 rounded-md border-0 bg-background pl-7 text-[length:var(--type-dense)] shadow-[0_0_0_1px_var(--line)] placeholder:text-quiet md:text-[length:var(--type-dense)]"
           />
         </form>
-        <nav className="mt-4" aria-label="Decks">
+        <nav className="mt-3" aria-label="Decks">
           <a
             href={primary.href}
             className={cn(
-              "flex h-9 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-[length:var(--type-body)] leading-[var(--leading-body)]",
+              "flex h-7 items-center gap-2 rounded-md px-2 text-[length:var(--type-dense)] leading-[var(--leading-body)]",
               active === primary.id ? "bg-line font-medium text-foreground" : "text-quiet hover:bg-black/4",
             )}
             aria-current={active === primary.id ? "page" : undefined}
@@ -183,13 +202,13 @@ export function DecksShell({
             {primary.label}
           </a>
           <div className="mt-3 h-px bg-line" />
-          <div className="mt-4 flex flex-col gap-0.5">
+          <div className="mt-3 flex flex-col gap-0.5">
             {rest.map((section) => (
               <a
                 key={section.id}
                 href={section.href}
                 className={cn(
-                  "flex h-9 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-[length:var(--type-body)] leading-[var(--leading-body)]",
+                  "flex h-7 items-center gap-2 rounded-md px-2 text-[length:var(--type-dense)] leading-[var(--leading-body)]",
                   active === section.id ? "bg-line font-medium text-foreground" : "text-quiet hover:bg-black/4",
                 )}
                 aria-current={active === section.id ? "page" : undefined}
@@ -201,10 +220,10 @@ export function DecksShell({
           </div>
         </nav>
         {(!realAccount || starred) && (
-          <nav aria-labelledby={starredLabel} className="mt-6 flex flex-col gap-0.5">
+          <nav aria-labelledby={starredLabel} className="mt-5 flex flex-col gap-0.5">
             <div
               id={starredLabel}
-              className="flex h-8 items-center gap-1.5 pr-2.5 pl-2.5 text-[length:var(--type-caption)] leading-[var(--leading-body)] font-medium text-muted-foreground"
+              className="flex h-7 items-center gap-1.5 px-2 text-[length:var(--type-caption)] leading-[var(--leading-body)] font-medium text-muted-foreground"
             >
               <span className="text-faint">
                 <DeckGlyph name="chevron" size={12} />
@@ -212,7 +231,7 @@ export function DecksShell({
               {productCopy.starred}
             </div>
             {empty ? (
-              <p className="px-2.5 pt-1 text-[length:var(--type-dense)] leading-[1.45] text-muted-foreground">
+              <p className="px-2 pt-1 text-[length:var(--type-dense)] leading-[1.45] text-muted-foreground">
                 {productCopy.starredEmpty}
               </p>
             ) : starred && realAccount ? (
@@ -246,7 +265,7 @@ export function DecksShell({
           )}
         </div>
       </aside>
-      <main data-decks-main className="min-w-0 flex-1 px-14 pt-10 max-md:px-4">
+      <main data-decks-main className="min-w-0 flex-1 px-20 pt-8 max-md:px-4 max-md:pt-6">
         {children}
       </main>
     </div>

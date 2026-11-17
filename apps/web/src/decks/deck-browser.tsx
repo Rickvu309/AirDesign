@@ -46,15 +46,7 @@ export function DeckBrowser({
         search={search}
         starred={starred}
       >
-        <BrowseHeader
-          title={title}
-          view={view}
-          scope={scope}
-          newDeck={newDeck}
-          trailing={trailing}
-          compact={firstVisit}
-          links={links}
-        />
+        <BrowseHeader title={title} view={view} scope={scope} newDeck={newDeck} trailing={trailing} links={links} />
         {children}
       </DecksShell>
     </div>

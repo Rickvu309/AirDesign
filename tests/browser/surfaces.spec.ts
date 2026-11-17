@@ -42,12 +42,9 @@ async function surfaces(page: Page): Promise<Surfaces> {
     const main = document.querySelector("[data-decks-main]")
     const sidebar = document.querySelector("[data-decks-sidebar]")
     const group = document.querySelector('[role="group"][aria-label="Layout"]')
-    const hairlineRow = (card: Element) => {
-      const style = getComputedStyle(card)
-      return !painted(card) && style.borderBottomWidth !== "0px"
-    }
+    const listRow = (card: Element) => !painted(card) && card.hasAttribute("data-deck-row")
     const cards = [...(main?.querySelectorAll("article, section") ?? [])]
-      .filter((card) => !hairlineRow(card))
+      .filter((card) => !listRow(card))
       .map((card) => ({
         name: card.querySelector("h2")?.textContent ?? "",
         own: getComputedStyle(card).backgroundColor,

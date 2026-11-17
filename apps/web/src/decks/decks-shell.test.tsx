@@ -10,10 +10,12 @@ const shell = (email: string) =>
   )
 
 describe("account row", () => {
-  it("names the account by its email once it is known", () => {
-    const html = shell("person@example.com")
-    expect(html).toContain(">person@example.com</span>")
-    expect(html).toContain(">P</span>")
+  it("names the account by the person's name, read from the email, and keeps the email as its title", () => {
+    const html = shell("quan.vu@example.com")
+    expect(html).toContain(">Quan Vu</span>")
+    expect(html).toContain('title="quan.vu@example.com"')
+    expect(html).toContain('aria-label="Quan Vu, quan.vu@example.com"')
+    expect(html).toContain(">Q</span>")
   })
 
   it("says Account with its own initial while the email is not known, never a blank circle", () => {

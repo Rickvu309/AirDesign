@@ -52,7 +52,7 @@ export function EmptyTrashButton({ disabled, onClick }: { disabled?: boolean; on
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="h-9 rounded-lg bg-background px-3.5 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)] disabled:opacity-50"
+      className="h-7 rounded-lg bg-background px-3 text-[length:var(--type-dense)] font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)] disabled:opacity-50"
     >
       Empty Trash
     </button>
@@ -60,21 +60,25 @@ export function EmptyTrashButton({ disabled, onClick }: { disabled?: boolean; on
 }
 
 export function TrashNote() {
-  return <p className="mt-6 text-sm leading-[18px] text-quiet">Decks here are removed for good after 30 days.</p>
+  return (
+    <p className="mt-6 text-[length:var(--type-dense)] leading-[18px] text-quiet">
+      Decks here are removed for good after 30 days.
+    </p>
+  )
 }
 
 export function TrashList({ confirm = false }: { confirm?: boolean }) {
   return (
     <DeckBrowser title="Trash" active="trash" trailing={<EmptyTrashButton />}>
       <TrashNote />
-      <DeckGrid className="mt-6">
+      <DeckGrid className="mt-6 grid-cols-3">
         {trashDeckCards.map((deck) => (
           <DeckCard
             key={deck.name}
             name={deck.name}
             edited={deck.edited}
             action={<RestoreButton />}
-            previewClassName="h-[180px]"
+            previewClassName="h-[136px]"
             preview={<SampleSlide name={deck.name} />}
           />
         ))}
