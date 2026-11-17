@@ -35,14 +35,12 @@ export function DeckRow({
   created,
   preview,
   href,
-  action,
 }: {
   name: string
   edited: string
   created?: string
   preview?: ReactNode
   href?: string
-  action?: ReactNode
 }) {
   return (
     <article data-deck-row>
@@ -55,7 +53,6 @@ export function DeckRow({
           >
             {href ? <a href={href}>{name}</a> : name}
           </h2>
-          {action}
         </div>
         <p className="text-[length:var(--type-dense)] leading-[18px] text-muted-foreground" style={trimmed}>
           {edited}

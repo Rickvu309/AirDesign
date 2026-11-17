@@ -1,6 +1,8 @@
 import { expect, type Page } from "@playwright/test"
 import { forward, openClean, signInBrowser, test, type Stack } from "./api-stack"
 import { first, store } from "./home-store.ts"
+import { productCopy, starOf, unstarOf } from "../../apps/web/src/copy/product-copy"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { holdableDevice, slowDevice } from "./slow-device"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -42,15 +44,32 @@ test("a person stars a deck from its card, sees it under Starred at once, and it
   await expect.poll(() => serverStar(stack, cookie, deck)).toBe(false)
 })
 
-test("the list view stars a deck the same way", async ({ page, context, stack }) => {
+test("the list view keeps actions in a context menu with keyboard access", async ({ page, context, stack }) => {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
   const deck = await openClean(page)
   await page.goto("/?view=list")
-  await page.getByRole("button", { name: "Star clean" }).click()
+  const row = page.locator("[data-deck-row]").filter({ hasText: "clean" })
+  const link = row.getByRole("link", { name: "clean", exact: true })
+  await expect(link).toBeVisible()
+  await expect(row.getByRole("button")).toHaveCount(0)
+  await row.click({ button: "right" })
+  await page.getByRole("menuitem", { name: starOf("clean"), exact: true }).click()
   await expect(starred(page).getByRole("link", { name: "clean" })).toBeVisible()
   await expect.poll(() => serverStar(stack, cookie, deck)).toBe(true)
+  await page.reload()
+  await expect(starred(page).getByRole("link", { name: "clean" })).toBeVisible()
+  await link.focus()
+  await page.keyboard.press("Shift+F10")
+  await page.getByRole("menuitem", { name: unstarOf("clean"), exact: true }).click()
+  await expect.poll(() => serverStar(stack, cookie, deck)).toBe(false)
+  await expect(link).toBeFocused()
+  await page.keyboard.press("Shift+F10")
+  await page.getByRole("menuitem", { name: productCopy.moveToTrash, exact: true }).click()
+  await expect(row).toHaveCount(0)
+  await page.getByRole("button", { name: undoCopy.undo, exact: true }).click()
+  await expect(link).toBeVisible()
 })
 
 test("a star sent while the server is slow, then unreachable, shows at once and reaches the server once it answers", async ({
@@ -145,6 +164,11 @@ test("a long deck name stops before its buttons in both views", async ({ page })
   for (const address of ["/", "/?view=list"]) {
     await page.goto(address)
     const title = page.locator("[data-decks-main]").getByRole("heading", { name, level: 2 })
+    if (address.includes("view=list")) {
+      await expect(page.locator("[data-deck-row]").getByRole("button")).toHaveCount(0)
+      await expect(title).toBeVisible()
+      continue
+    }
     const star = page.getByRole("button", { name: `Star ${name}` })
     const textEnd = await title.evaluate(
       (heading) => heading.getBoundingClientRect().right - Number.parseFloat(getComputedStyle(heading).paddingRight),
