@@ -274,6 +274,9 @@ it("keeps every box it can, puts a refused one back, paints the kept ones once a
   const refusedNode = elementId("256.3")
   const outcome = await commitBoxes(
     () => ({
+      async pending() {
+        return []
+      },
       async enqueueBox(_deck, _value, node) {
         order.push(`keep ${node}`)
         return node === refusedNode ? { ok: false } : { ok: true }
@@ -304,6 +307,9 @@ it("reports boxes too large to send as too-large, puts them back and sends nothi
   const restored: string[] = []
   const outcome = await commitBoxes(
     () => ({
+      async pending() {
+        return []
+      },
       async enqueueBox() {
         return { ok: false, refusal: "size" }
       },
