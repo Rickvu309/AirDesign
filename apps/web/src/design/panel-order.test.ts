@@ -21,7 +21,10 @@ it("places every trait each element kind takes, and its Opacity, exactly once in
     ].toSorted()
     for (const panel of panelsOf(kind)) {
       const placed = (panelOrder[panel] ?? []).map((place) => place.section)
-      expect({ panel, placed: placed.toSorted() }).toEqual({ panel, placed: wanted })
+      expect({
+        panel,
+        placed: placed.filter((section) => section !== "border" && section !== "shadow").toSorted(),
+      }).toEqual({ panel, placed: wanted })
     }
   }
 })
@@ -74,8 +77,10 @@ it("orders a drawn shape by its fill, line and shape type", () => {
     ["alignment", true],
     ["fill", true],
     ["opacity", true],
-    ["geometry", true],
-    ["line", true],
+    ["border", true],
+    ["shadow", true],
+    ["geometry", false],
+    ["line", false],
     ["effects", false],
     ["box", false],
     ["identity", false],

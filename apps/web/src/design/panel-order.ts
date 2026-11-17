@@ -25,8 +25,10 @@ export const panelOrder: Readonly<Record<PanelKind, readonly Place[]>> = {
     open("alignment"),
     open("fill"),
     open("opacity"),
-    open("geometry"),
-    open("line"),
+    open("border"),
+    open("shadow"),
+    shut("geometry"),
+    shut("line"),
     shut("effects"),
     shut("box"),
     shut("text"),
@@ -58,7 +60,17 @@ export const panelOrder: Readonly<Record<PanelKind, readonly Place[]>> = {
   table: [open("alignment"), open("table"), shut("box"), shut("identity")],
   chart: [open("alignment"), shut("box"), shut("identity")],
   kept: [open("identity")],
-  many: [open("alignment"), open("fill"), open("line"), open("opacity"), open("text"), shut("box"), shut("effects")],
+  many: [
+    open("alignment"),
+    open("fill"),
+    open("opacity"),
+    open("border"),
+    open("shadow"),
+    open("text"),
+    shut("box"),
+    shut("line"),
+    shut("effects"),
+  ],
 }
 
 export const loneRows: readonly string[] = [

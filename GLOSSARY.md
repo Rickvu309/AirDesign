@@ -235,7 +235,7 @@ Shapes joined by connectors and grouped, which an agent adds in one change with 
 _Avoid_: flowchart, SmartArt
 
 **effects**:
-An element's shadow, glow and soft edge, set together in the Effects section of the design panel or with `effects` in an agent's `set`. Changing one keeps the others. A group's effects paint once around everything it holds, as one shape.
+An element’s shadow, glow and soft edge. The Shadow presets are Subtle, Medium and Strong; Effects keeps the exact settings. A group’s effects paint once around its contents.
 _Avoid_: filters, shadow styles
 
 **request**:
@@ -372,3 +372,7 @@ _Avoid_: poor contrast, illegible
 **empty placeholder**:
 A placeholder that shows its prompt while someone edits and nothing in a slide show.
 _Avoid_: blank shape, missing text
+
+### Border
+
+The Design panel’s none, solid, dashed and dotted line presets. Line keeps the exact settings.

@@ -15,3 +15,14 @@ it("places every wire field exactly once, naming anything missing or repeated", 
   })
   expect(faults).toEqual([])
 })
+
+it("gives every control in a strip the same name placement", () => {
+  const faults = Object.entries(sectionStrips).flatMap(([trait, strips]) =>
+    strips.flatMap((strip) =>
+      new Set(strip.map((control) => control.name.show)).size > 1
+        ? [trait + "." + strip.map(({ field }) => field).join(",")]
+        : [],
+    ),
+  )
+  expect(faults).toEqual([])
+})

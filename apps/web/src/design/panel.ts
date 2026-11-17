@@ -18,6 +18,7 @@ import type { ReactNode } from "react"
 import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
 import { cropChange } from "./crop-change"
+import { appearanceSections } from "./appearance-presets"
 import { opacitySection } from "./opacity-control"
 import { hidden, loneRows, panelKind, panelOrder, type PanelKind } from "./panel-order"
 import { alphaFieldOver, atShownAlpha } from "./shown-alpha"
@@ -25,7 +26,7 @@ import { traitControls } from "./trait-controls"
 import { arrange, canvasControl, resolveControl, type ControlKind, type ControlLook } from "./panel-arrangement"
 export type { ControlKind } from "./panel-arrangement"
 
-export type SectionName = TraitName | "opacity" | "alignment"
+export type SectionName = TraitName | "opacity" | "alignment" | "border" | "shadow"
 
 export type PanelControl = {
   readonly trait: SectionName
@@ -174,11 +175,6 @@ function shownDesc(desc: Desc, grouped: boolean, value: unknown): Desc {
   return { ...desc, cases: Object.fromEntries(Object.entries(desc.cases).filter(([name]) => name !== "group")) }
 }
 
-function lineless(trait: TraitName, controls: readonly PanelControl[]): boolean {
-  const fill = controls.find((control) => control.field === "fill")?.value
-  return trait === "line" && typeof fill === "object" && fill !== null && "none" in fill
-}
-
 function joined(shown: PanelReads): boolean {
   return (["connection.start", "connection.end"] as const).some((key) => {
     const value = shown.fields?.[key]?.value
@@ -227,7 +223,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
         }),
       ]
     })
-    const visible = lineless(trait, controls) ? controls.filter((control) => control.field === "fill") : controls
+    const visible = controls
     return visible.length === 0
       ? []
       : [{ trait, label: labels.section ?? "", open: true, strips: arrange(trait, visible) }]
@@ -251,7 +247,11 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     node: view.node,
     nodes: [view.node],
     kind,
-    sections: ordered(kind, [...alignSection, ...content, ...(opacity === null ? [] : [opacity])], shown),
+    sections: ordered(
+      kind,
+      appearanceSections([...alignSection, ...content, ...(opacity === null ? [] : [opacity])]),
+      shown,
+    ),
   }
 }
 
