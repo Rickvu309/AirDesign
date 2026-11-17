@@ -86,6 +86,7 @@ export function airaChatsKeptOf(count: number): string {
 
 export const airaCopy = {
   askAira: "Ask Aira",
+  signIn: "Sign in",
   newChat: "New chat",
   attach: "Attach",
   microphone: "Microphone",
