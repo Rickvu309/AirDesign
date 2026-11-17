@@ -94,13 +94,11 @@ test("list mode keeps the importing card visible", async ({ page }) => {
   await page.evaluate(() => {
     File.prototype.arrayBuffer = () => new Promise(() => {})
   })
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "Report.pptx",
-      mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      buffer: Buffer.from("held"),
-    })
+  await page.locator("input[type=file]").setInputFiles({
+    name: "Report.pptx",
+    mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    buffer: Buffer.from("held"),
+  })
   await expect(page.getByText("Importing", { exact: true })).toBeVisible()
   await expect(page.getByRole("heading", { name: "Report.pptx" })).toBeVisible()
   await expect(page.getByText("Name", { exact: true })).toBeVisible()
