@@ -7,6 +7,7 @@ async function drive(kit) {
   await expect(button).toBeVisible()
   await button.focus()
   await kit.page.keyboard.press("Enter")
+  await expect(kit.page.getByRole("menuitem", { name: "Blank deck", exact: true })).toBeFocused()
   await kit.page.keyboard.press("ArrowDown")
   await expect(kit.page.getByRole("menuitem", { name: "Import PowerPoint" })).toBeFocused()
 }
