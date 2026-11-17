@@ -68,3 +68,22 @@ it("writes fixed outer shadow strengths, recognizes each and leaves custom shado
   expect(preset("shadow", { "effects.shadow": { none: true } }).value).toBe("none")
   expect(preset("shadow", { "effects.shadow": { outer: { blur: 999 } } }).value).toBeUndefined()
 })
+
+it("shows the Line color and width only for the supplied solid Border screenshot", () => {
+  for (const dash of ["solid", "dash", "dot"]) {
+    const connector = { ...view, facts: { ...view.facts, kind: "connector" as const } }
+    const sections = panelOf(connector, {
+      reads: {},
+      moves: true,
+      fields: {
+        "line.fill": { value: { solid: { rgb: "000000" } }, own: true },
+        "line.dash": { value: dash, own: true },
+      },
+    }).sections
+    const fields = sections
+      .find(({ trait }) => trait === "border")
+      ?.strips.flat()
+      .map(({ field }) => field)
+    expect(fields).toEqual(dash === "solid" ? ["border", "fill.solid", "width"] : ["border"])
+  }
+})
