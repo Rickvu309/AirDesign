@@ -96,7 +96,7 @@ export function ChoiceControl(props: ControlProps) {
                     : "text-quiet hover:bg-transparent hover:text-foreground",
                 )}
               >
-                {Icon ? <Icon size={14} strokeWidth={1.5} aria-hidden /> : word}
+                {Icon ? <Icon size={14} className="size-3.5" strokeWidth={1.5} aria-hidden /> : word}
               </Button>
             )
           })}

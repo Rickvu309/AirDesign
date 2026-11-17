@@ -95,7 +95,7 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
                 word
               ) : (
                 <>
-                  <Icon size={14} strokeWidth={1.5} aria-hidden />
+                  <Icon size={14} className="size-3.5" strokeWidth={1.5} aria-hidden />
                   <span className="sr-only">{word}</span>
                 </>
               )}

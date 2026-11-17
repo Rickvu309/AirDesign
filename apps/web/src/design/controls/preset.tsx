@@ -42,7 +42,7 @@ export function PresetControl({ control, onChange }: ControlProps) {
           <span id={shown} className="flex-1 truncate text-left">
             {chosen === null ? "" : optionWord(control.field, chosen)}
           </span>
-          <ChevronDownIcon className="pointer-events-none size-4 text-muted-foreground" />
+          <ChevronDownIcon className="pointer-events-none size-3 text-muted-foreground" />
         </PopoverTrigger>
         <PopoverContent
           side="bottom"

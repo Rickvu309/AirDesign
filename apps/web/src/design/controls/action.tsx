@@ -45,7 +45,7 @@ export function ActionControl({ control, onChange }: ControlProps) {
                   {Icon === undefined ? (
                     optionWord(control.field, option)
                   ) : (
-                    <Icon size={14} strokeWidth={1.5} aria-hidden />
+                    <Icon size={14} className="size-3.5" strokeWidth={1.5} aria-hidden />
                   )}
                 </Button>
               )

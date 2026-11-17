@@ -104,7 +104,7 @@ export function NumberField({
         onPointerCancel={endScrub}
       >
         {Icon ? (
-          <Icon size={14} strokeWidth={1.5} aria-hidden />
+          <Icon size={14} className="size-3.5" strokeWidth={1.5} aria-hidden />
         ) : look.name.show === "letter" ? (
           look.name.letter
         ) : look.name.show === "inside" ? (
