@@ -123,9 +123,11 @@ export function formatTarget(
   })
   const document = shown.ownerDocument
   shown.addEventListener("blur", keep)
+  shown.addEventListener("keydown", keep)
   document.addEventListener("selectionchange", keep)
   return () => {
     shown.removeEventListener("blur", keep)
+    shown.removeEventListener("keydown", keep)
     document.removeEventListener("selectionchange", keep)
     unregister()
   }
