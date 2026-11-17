@@ -81,8 +81,13 @@ export function freeShapeId(parts: ReadonlyMap<string, Uint8Array>, part: string
 export function newDuplicateShapeIds(
   original: readonly ShapeIdCount[],
   edited: readonly ShapeIdCount[],
+  copies: ReadonlyMap<string, string> = new Map(),
 ): readonly { readonly part: string; readonly id: string }[] {
-  const already = new Set(original.filter((row) => row.count > 1).map((row) => `${row.part}\0${row.id}`))
+  const doubled = original.filter((row) => row.count > 1)
+  const already = new Set(doubled.map((row) => `${row.part}\0${row.id}`))
+  for (const [copy, source] of copies) {
+    for (const row of doubled) if (row.part === source) already.add(`${copy}\0${row.id}`)
+  }
   const found: { part: string; id: string }[] = []
   for (const row of edited) {
     if (row.count <= 1) continue

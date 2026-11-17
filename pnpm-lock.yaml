@@ -320,6 +320,9 @@ importers:
       '@airdesign/document':
         specifier: workspace:*
         version: link:../../packages/document
+      '@airdesign/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
       '@airdesign/live':
         specifier: workspace:*
         version: link:../../packages/live
