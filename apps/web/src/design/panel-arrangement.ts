@@ -17,9 +17,8 @@ import {
   Minus,
   Square,
   SquareDashed,
-  PaintBucket,
+  SquareSquare,
   Blend,
-  Grid2X2,
   AlignCenterHorizontal,
   AlignCenterVertical,
   AlignEndHorizontal,
@@ -30,7 +29,7 @@ import {
   AlignVerticalDistributeCenter,
   type LucideIcon,
 } from "lucide-react"
-import { DottedBorder, SubtleShadow, MediumShadow, StrongShadow } from "./preset-icons"
+import { DottedBorder, SubtleShadow, MediumShadow, StrongShadow, PatternFill } from "./preset-icons"
 import { optionWord } from "@/copy/option-copy"
 import type { Desc } from "@airdesign/document"
 import type { PanelControl, SectionName } from "./panel"
@@ -62,7 +61,7 @@ type Strip = readonly Placed[]
 const above: NameLook = { show: "above" }
 const hidden: NameLook = { show: "hidden" }
 const inside: NameLook = { show: "inside" }
-const fills = { none: Minus, solid: PaintBucket, gradient: Blend, pattern: Grid2X2, picture: Image }
+const fills = { none: Minus, solid: SquareSquare, gradient: Blend, pattern: PatternFill, picture: Image }
 const placed = (field: string, name: NameLook = above, rest: Omit<Placed, "field" | "name"> = {}): Placed => ({
   field,
   name,
@@ -139,7 +138,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   shadow: [
     [
       placed("shadow", hidden, {
-        options: { none: Minus, subtle: SubtleShadow, medium: MediumShadow, strong: StrongShadow },
+        options: { none: Minus, subtle: SubtleShadow, medium: MediumShadow, strong: StrongShadow, PatternFill },
       }),
     ],
   ],
