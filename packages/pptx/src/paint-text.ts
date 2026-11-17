@@ -12,6 +12,7 @@ export type PaintRunStyle = {
   underline: boolean
   strike: boolean
   baseline: number
+  caps?: "all" | "small" | "none"
   color: PaintColor | null
   highlight: PaintColor | null
 }
@@ -124,6 +125,11 @@ const aligns = new Map<string, PaintParagraph["align"]>([
   ["dist", "distributed"],
   ["thaiDist", "distributed"],
 ])
+const caps = new Map<string, NonNullable<PaintRunStyle["caps"]>>([
+  ["all", "all"],
+  ["small", "small"],
+  ["none", "none"],
+])
 const fontReference = /^\+m[jn]-(lt|ea|cs)$/
 
 const inside = (holder: PaintTextHolder): readonly MarkupElement[] => holder.children[holder.element.index] ?? []
@@ -212,6 +218,11 @@ const referenceOf = (shape: PaintTextShape, scope: PaintTextScope): FontReferenc
   }
 }
 
+const capitalization = (layers: readonly PaintTextHolder[]): Pick<PaintRunStyle, "caps"> => {
+  const value = first(layers, (layer) => named(layer, "cap", caps))
+  return value === undefined ? {} : { caps: value }
+}
+
 const runStyle = (
   format: PaintTextHolder | undefined,
   levels: Levels,
@@ -251,6 +262,7 @@ const runStyle = (
     underline: link !== undefined || (first(all, (layer) => presence(layer, "u", "none")) ?? false),
     strike: first(all, (layer) => presence(layer, "strike", "noStrike")) ?? false,
     baseline: first(all, (layer) => fraction(layer, "baseline")) ?? 0,
+    ...capitalization(all),
     color: color === undefined ? defaultColor(scope) : color,
     highlight: first(all, (layer) => highlightOf(layer, scope)) ?? null,
   }

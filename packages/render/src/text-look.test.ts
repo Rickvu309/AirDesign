@@ -200,3 +200,11 @@ it("leaves out the space before the first paragraph and after the last unless th
     [true, true],
   ])
 })
+
+it.each(["all", "small", "none"] as const)("paints %s capitals without changing the editable text", (caps) => {
+  const text = paragraph({ runs: [{ from: 0, text: "Mixed Case", ...run, caps }] })
+  const { run: shown } = painted(text, "Mixed Case")
+  expect(shown.textContent).toBe("Mixed Case")
+  expect(shown.style.textTransform).toBe(caps === "all" ? "uppercase" : "none")
+  expect(shown.style.fontVariantCaps).toBe(caps === "small" ? "small-caps" : "normal")
+})
