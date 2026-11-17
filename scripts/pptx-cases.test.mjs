@@ -44,6 +44,7 @@ assert.deepEqual(
     "trait-fill.mjs",
     "trait-geometry.mjs",
     "trait-line.mjs",
+    "trait-link.mjs",
     "trait-opacity.mjs",
     "trait-picture.mjs",
     "trait-table.mjs",
