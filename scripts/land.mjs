@@ -14,6 +14,7 @@ import { statusLines } from "./land-status.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 import { awaitChecks, enqueue, queueLine, readPull } from "./merge-queue.mjs"
 import { migrationFault, recordFile } from "./migration-numbers.mjs"
+import { branchBodyFaults } from "./pr-body.mjs"
 import { baseFault } from "./pull-base.mjs"
 import { editLines, editPull, pullEdits } from "./pull-edit.mjs"
 import { restoredLimit, staleFault, staleFiles } from "./stale-tree.mjs"
@@ -187,6 +188,10 @@ export const land = async (ctx) => {
           ? `the body of pull request ${pull.number} has the attribution line "${attribution}". Delete that line: write the body to a file without it and run pnpm land --body-file <file>.`
           : `${args.bodyFile} has the attribution line "${attribution}". Delete that line, then run pnpm land again.`,
       )
+    const bodyFaults = body === undefined ? [] : branchBodyFaults({ body, git, repository })
+    if (bodyFaults.length > 0) stop("body", `${bodyFaults.join(" ")} Fix the body, then run pnpm land again.`)
+    if (body === undefined)
+      line("body", "not judged here: pass --body-file, or the bar check judges it on the pull request")
     if (body !== undefined && !hasProof(body))
       line("body", "warning: the body has no ## Proof heading. Say what you ran and what you saw, with counts.")
     const conflicts = conflictsWithMain(git)

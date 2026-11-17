@@ -8,7 +8,7 @@ What you ran and what you saw, with counts.
 
 ## Before / after
 
-Only when a person sees the change: the image from `verify-airdesign before-after` and its `| main | this PR |` table.
+Only when the change touches what a person sees: the image from `verify-airdesign before-after` and its `| main | this PR |` table, or the one line `No visible change: <why>`.
 
 ## Not done
 
