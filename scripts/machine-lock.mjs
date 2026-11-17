@@ -9,6 +9,7 @@ const onCi = (env) => env.CI === "true" || env.CI === "1"
 
 export const machineLockFolder = path.join(os.homedir(), ".cache", "airdesign")
 export const queueLogName = "check-queue.jsonl"
+export const laneProtocol = 1
 
 const lanes = {
   full: { file: "machine.lock", queue: "queue", holder: "Another check holds the machine." },
@@ -76,6 +77,20 @@ const nextTicket = (folder) => {
   return taken.stdout.trim().padStart(12, "0")
 }
 
+const protocolMark = /^lane-protocol-(\d+)$/
+
+const newestProtocol = (folder) =>
+  Math.max(
+    0,
+    ...fs
+      .readdirSync(folder)
+      .flatMap((name) => protocolMark.exec(name)?.[1] ?? [])
+      .map(Number),
+  )
+
+const staleLine = (mine, newest) =>
+  `This branch's check queue code is older than the code other checks on this machine run (lane protocol ${mine}, newest ${newest}), so it does not wait in line. Rebase onto main and run it again: git fetch origin && git rebase origin/main`
+
 export const recentRunSeconds = (log, count = 20, lane = "full") => {
   try {
     const runs = fs
@@ -130,6 +145,12 @@ export const takeMachineLock = async ({
   if (spawnSync("flock", ["--version"]).status !== 0) return free
   const queue = path.join(folder, lanes[lane].queue)
   fs.mkdirSync(queue, { recursive: true })
+  const newest = newestProtocol(folder)
+  if (newest > laneProtocol) {
+    say(staleLine(laneProtocol, newest))
+    process.exit(1)
+  }
+  if (newest < laneProtocol) fs.writeFileSync(path.join(folder, `lane-protocol-${laneProtocol}`), "")
   const queued = clock()
   const queuedAt = date().toISOString()
   const ticket = path.join(queue, `${nextTicket(folder)}-${process.pid}`)

@@ -21,5 +21,7 @@ same("AGENTS.md no longer holds the rule table", agents.includes("| Rule | Enfor
 same("the rule table sits in CHECKS.md", table.includes("| Rule | Enforced by |"), true)
 same("the file-size check covers CHECKS.md", authored("CHECKS.md"), true)
 same("a change to CHECKS.md is listed for the owner", guarded("CHECKS.md"), true)
+same("a change to CHECK-QUEUE.md is listed for the owner", guarded("CHECK-QUEUE.md"), true)
+same("the file-size check covers CHECK-QUEUE.md", authored("CHECK-QUEUE.md"), true)
 same("CHECKS.md is under the file-size limit", tokensOf(Buffer.byteLength(table)) <= tokenLimit, true)
 same("AGENTS.md has room to take a new rule", tokensOf(Buffer.byteLength(agents)) <= tokenLimit * 0.75, true)
