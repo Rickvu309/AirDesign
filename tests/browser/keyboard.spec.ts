@@ -1,3 +1,4 @@
+import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
 import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import { forward, openClean, settled, signInBrowser, test } from "./api-stack"
@@ -5,7 +6,13 @@ import { covers } from "./gesture"
 
 const blank = join(process.cwd(), "scripts/pptx-fixtures/blank.pptx")
 
-type Stop = { readonly tag: string; readonly name: string; readonly ringed: boolean; readonly framed: boolean }
+type Stop = {
+  readonly tag: string
+  readonly name: string
+  readonly ringed: boolean
+  readonly framed: boolean
+  readonly caret: boolean
+}
 
 async function signedIn(
   page: Page,
@@ -30,7 +37,7 @@ async function stopNow(page: Page): Promise<Stop> {
   return page.evaluate(() => {
     const el = document.activeElement
     if (!(el instanceof HTMLElement) || el === document.body)
-      return { tag: "body", name: "", ringed: false, framed: false }
+      return { tag: "body", name: "", ringed: false, framed: false, caret: false }
     const probe = document.createElement("span")
     probe.style.color = getComputedStyle(document.documentElement).getPropertyValue("--focus-ring")
     document.body.append(probe)
@@ -49,15 +56,16 @@ async function stopNow(page: Page): Promise<Stop> {
       ringed:
         wrapped || (style.outlineStyle === "solid" && style.outlineWidth === "2px" && style.outlineColor === ring),
       framed: el.closest("[data-slide-paint]") !== null && document.querySelector("[data-selection]") !== null,
+      caret:
+        el instanceof HTMLTextAreaElement &&
+        el.id === "speaker-notes" &&
+        style.caretColor === style.color &&
+        style.color !== "rgba(0, 0, 0, 0)",
     }
   })
 }
 
-test("every Tab stop in the editor draws the one focus ring, or the selection frame on the canvas", async ({
-  page,
-  context,
-  stack,
-}) => {
+test("every Tab stop shows a focus ring, a canvas frame or the notes caret", async ({ page, context, stack }) => {
   await signedIn(page, context, stack)
   await openBlankDeck(page)
   await page.locator("[data-slide-entry='1']").focus()
@@ -69,7 +77,8 @@ test("every Tab stop in the editor draws the one focus ring, or the selection fr
     stops.push(stop)
   }
   expect(stops.at(-1)?.name).toBe("Ask Aira")
-  expect(stops.filter((stop) => !stop.ringed && !stop.framed)).toEqual([])
+  expect(stops.find((stop) => stop.name === presentCopy.notes)).toMatchObject({ caret: true, ringed: false })
+  expect(stops.filter((stop) => !stop.ringed && !stop.framed && !stop.caret)).toEqual([])
   expect(stops.map((stop) => stop.name)).toEqual(expect.arrayContaining(["Add text box", "Agent", "Ask Aira"]))
 })
 

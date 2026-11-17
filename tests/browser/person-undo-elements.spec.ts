@@ -1,3 +1,4 @@
+import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
 import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import { elementGone, elementId, readSlideState } from "../../packages/document/src/index.ts"
@@ -136,8 +137,8 @@ test("one visit to the speaker notes is one undo step", async ({ page, context, 
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
   await open(page, "nasa-1d-cnn.pptx")
-  await page.getByRole("button", { name: "Expand speaker notes" }).first().click()
-  const field = page.getByRole("textbox", { name: "Speaker notes", exact: true })
+  await expect(page.getByRole("textbox", { name: presentCopy.notes, exact: true })).toBeVisible()
+  const field = page.getByRole("textbox", { name: presentCopy.notes, exact: true })
   const before = await field.inputValue()
   await field.click()
   await field.pressSequentially(" Typed", { delay: 20 })

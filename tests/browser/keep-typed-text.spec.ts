@@ -1,3 +1,4 @@
+import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { newBlankDeck } from "./new-deck"
@@ -103,15 +104,15 @@ test("speaker notes typed while the device write is slow are still there after a
   page,
 }) => {
   await openDeck(page, notesDeck)
-  await page.getByRole("button", { name: "Expand speaker notes" }).first().click()
-  const field = page.getByRole("textbox", { name: "Speaker notes", exact: true })
+  await expect(page.getByRole("textbox", { name: presentCopy.notes, exact: true })).toBeVisible()
+  const field = page.getByRole("textbox", { name: presentCopy.notes, exact: true })
   await expect(field).toBeEditable()
   await slowDevice(page)
   await field.fill(typedNotes)
   await page.reload()
   await settled(page)
-  await page.getByRole("button", { name: "Expand speaker notes" }).first().click()
-  await expect(page.getByRole("textbox", { name: "Speaker notes", exact: true })).toHaveValue(typedNotes)
+  await expect(page.getByRole("textbox", { name: presentCopy.notes, exact: true })).toBeVisible()
+  await expect(page.getByRole("textbox", { name: presentCopy.notes, exact: true })).toHaveValue(typedNotes)
   await expectNothingUnsaved(page)
 })
 

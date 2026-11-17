@@ -235,3 +235,30 @@ html:has(.reflow-frame) #root {
   [data-slide-entry] {
   box-shadow: var(--shadow-grid) !important;
 }
+
+.notes-bar[data-settling="true"] {
+  transition: height var(--ease-panel);
+}
+.notes-handle::before {
+  content: "";
+  position: absolute;
+  inset: -20px 0 0;
+}
+.notes-pill {
+  background: var(--dot);
+  transition: background-color var(--ease-micro);
+}
+.notes-bar[data-dragging] .notes-pill {
+  background: var(--faint);
+}
+@media (hover: hover) and (pointer: fine) {
+  .notes-handle:hover .notes-pill {
+    background: var(--faint);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .notes-bar[data-settling="true"],
+  .notes-pill {
+    transition: none;
+  }
+}

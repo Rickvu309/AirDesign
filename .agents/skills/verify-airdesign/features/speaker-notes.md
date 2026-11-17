@@ -4,7 +4,7 @@ Under the slide of an open deck, the speaker notes bar shows the current slide's
 
 ## Sub-features
 
-- `notes-open` `button "Expand speaker notes"` opens `textbox "Speaker notes"` (placeholder `Add speaker notes`); `Collapse speaker notes` closes it. Closed, the bar is one button and shows the notes' first line or `Add speaker notes`. A click or Enter on it opens the field with the cursor at the end of the notes and the theme focus ring around the card; `Collapse speaker notes` gives the focus back to the closed bar. The notes are in body ink, the placeholder quiet.
+- `notes-open` `button "Expand speaker notes"` opens `textbox "Speaker notes"` (placeholder `Add speaker notes`); `Collapse speaker notes` closes it. Notes start open in a compact card. Closed, only the handle is visible. A click or Enter on it opens the field with the cursor at the end of the notes; `Collapse speaker notes` gives the focus back to the closed bar. The notes are in body ink, the placeholder quiet.
 - `notes-edit` typed notes paint at once and reach the server as the slide's `.notes` element, on any slide, including one whose PowerPoint has no notes part.
 - `notes-undo` a visit's typing in the field is one `Undo speaker notes edit` step on the toolbar, and its undo repaints the bar. Inside the field Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z are the person's undo too (the field carries `data-person-undo`), and it refuses the browser's own undo from its menu.
 - `notes-offline` typed offline, the editor says `You're offline. Edits are saved on this device.` and sends them when the browser is back online.

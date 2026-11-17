@@ -16,6 +16,7 @@ test("Fit centres the slide above notes and follows their resized height", async
   await page.goto("/")
   await newBlankDeck(page)
   await expect(page.locator("[data-slide-paint]")).toBeVisible()
+  await page.getByRole("button", { name: "Collapse speaker notes" }).click()
   await expect
     .poll(async () => {
       const gap = await gaps(page)
@@ -26,9 +27,8 @@ test("Fit centres the slide above notes and follows their resized height", async
   await expect(page.getByRole("textbox", { name: presentCopy.notes })).toBeVisible()
   await expect.poll(async () => (await gaps(page)).below).toBeGreaterThanOrEqual(40)
   const opened = await gaps(page)
-  await page.locator("#speaker-notes").evaluate((field) => {
-    field.style.height = "280px"
-  })
+  await page.getByRole("button", { name: "Collapse speaker notes" }).focus()
+  await page.keyboard.press("End")
   await expect.poll(async () => (await gaps(page)).width).toBeLessThan(opened.width)
   await expect
     .poll(async () => {

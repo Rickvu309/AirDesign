@@ -425,6 +425,13 @@ beforeAll(async () => {
     ["InputEvent", window.InputEvent],
     ["Event", window.Event],
     ["IS_REACT_ACT_ENVIRONMENT", true],
+    [
+      "ResizeObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    ],
     ["requestAnimationFrame", (step: () => void) => setTimeout(step, 0)],
     ["cancelAnimationFrame", (handle: number) => clearTimeout(handle)],
   ]

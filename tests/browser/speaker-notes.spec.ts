@@ -1,3 +1,4 @@
+import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
@@ -42,8 +43,8 @@ async function settled(page: Page): Promise<void> {
 }
 
 async function openNotes(page: Page) {
-  await page.getByRole("button", { name: "Expand speaker notes" }).first().click()
-  return page.getByRole("textbox", { name: "Speaker notes", exact: true })
+  await expect(page.getByRole("textbox", { name: presentCopy.notes, exact: true })).toBeVisible()
+  return page.getByRole("textbox", { name: presentCopy.notes, exact: true })
 }
 
 test.use({ viewport: { width: 1600, height: 1000 } })

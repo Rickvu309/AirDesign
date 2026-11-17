@@ -5,6 +5,6 @@ export async function notesState(kit, open = false) {
   await kit.signIn()
   await kit.page.goto("/")
   await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/nasa-1d-cnn.pptx"))
-  const expand = kit.page.getByRole("button", { name: "Expand speaker notes" }).first()
-  if (open && (await expand.isVisible())) await expand.click()
+  await kit.page.getByRole("button", { name: "Collapse speaker notes" }).click()
+  if (open) await kit.page.getByRole("button", { name: "Expand speaker notes" }).click()
 }

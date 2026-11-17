@@ -1,3 +1,4 @@
+import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
 import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
@@ -215,9 +216,9 @@ test("the dialog keeps focus inside, Escape closes it and focus returns to Expor
 test("Cancel while exporting closes the dialog and downloads nothing", async ({ page }) => {
   await holdableDevice(page)
   await openFile(page, join(fixtures, "nasa-1d-cnn.pptx"))
-  await page.getByRole("button", { name: "Expand speaker notes" }).first().click()
+  await expect(page.getByRole("textbox", { name: presentCopy.notes, exact: true })).toBeVisible()
   await holdDevice(page)
-  await page.getByRole("textbox", { name: "Speaker notes", exact: true }).fill("Held note")
+  await page.getByRole("textbox", { name: presentCopy.notes, exact: true }).fill("Held note")
   let downloads = 0
   page.on("download", () => {
     downloads += 1

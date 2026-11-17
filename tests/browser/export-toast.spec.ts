@@ -48,7 +48,7 @@ test("a failed export shows the failure and no download notice", async ({ page }
 test("notes recovery errors persist and can be dismissed by pointer and keyboard", async ({ page }) => {
   await store(page, [])
   await openFixture(page)
-  await page.getByRole("button", { name: "Expand speaker notes" }).first().click()
+  await expect(page.getByRole("textbox", { name: presentCopy.notes, exact: true })).toBeVisible()
   const notes = page.getByRole("textbox", { name: presentCopy.notes, exact: true })
   const error = page.locator("[data-sonner-toast]").filter({ hasText: "Unable to save speaker notes" })
   await notes.fill("Keep these notes ".repeat(600))
@@ -69,7 +69,7 @@ test("notes recovery errors persist and can be dismissed by pointer and keyboard
 test("Sonner's close makes a native toast inert during its exit", async ({ page }) => {
   await store(page, [])
   await openFixture(page)
-  await page.getByRole("button", { name: "Expand speaker notes" }).first().click()
+  await expect(page.getByRole("textbox", { name: presentCopy.notes, exact: true })).toBeVisible()
   await page.getByRole("textbox", { name: presentCopy.notes, exact: true }).fill("Keep these notes ".repeat(600))
   const notice = page.locator("[data-sonner-toast]").filter({ hasText: "Unable to save speaker notes" })
   await expect(notice).toBeVisible()
