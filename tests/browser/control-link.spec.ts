@@ -20,7 +20,7 @@ test("a person saves and removes a whole text element URL @export", async ({ pag
   await exportFromDialog(page)
   const file = info.outputPath("element-link.pptx")
   await (await download).saveAs(file)
-  const { shownLink } = await import("@airdesign/pptx")
+  const { shownLink } = await import("../../packages/pptx/src/index")
   const bytes = await partsOf(file)
   const parts = new Map([...bytes].map(([name, value]) => [name, new Uint8Array(value)]))
   expect(shownLink(parts, { slide: "256", part: "ppt/slides/slide1.xml", shape: "2" })).toEqual({
@@ -28,6 +28,8 @@ test("a person saves and removes a whole text element URL @export", async ({ pag
     url: "https://example.com",
   })
   await copyFile(file, join(process.cwd(), "tests/browser/exported-element-link.pptx"))
+  await shapeAt(page, "2").click()
+  await page.keyboard.press("Escape")
   await field.fill("")
   await field.press("Enter")
   await expect(field).toHaveValue("")
