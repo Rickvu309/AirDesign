@@ -1,3 +1,4 @@
+import { optionCopy } from "@/copy/option-copy"
 import {
   decide,
   elementId,
@@ -217,6 +218,8 @@ it("shows a slide's background and theme once each, with no section or button th
   const slide = await slidePanel()
   const panel = slide.host.querySelector("[data-design-panel]")
   const text = panel?.textContent ?? ""
+  expect(panel?.querySelectorAll("button[aria-pressed]")).toHaveLength(3)
+  expect(panel?.querySelector("button[aria-pressed=true]")?.getAttribute("title")).toBe(optionCopy.solid)
   expect(text).toContain("Background")
   expect(text).toContain("Theme")
   expect(text).not.toContain("Template")

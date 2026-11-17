@@ -1,5 +1,5 @@
-import { readSlideId, type Color, type SlideId } from "@airdesign/document"
-import { ownBackground, paintReader, readSlides, themeSwatches, type PaintFill } from "@airdesign/pptx"
+import { readSlideId, type Color, type FieldValue, type SlideId } from "@airdesign/document"
+import { ownBackground, shownBackground, paintReader, readSlides, themeSwatches, type PaintFill } from "@airdesign/pptx"
 import { designCopy } from "@/copy/design-copy"
 import { formatCopy } from "@/copy/format-copy"
 import { shownName, type Swatch } from "@/design/color-choices"
@@ -11,6 +11,7 @@ export type DesignShown = {
   readonly slide: SlideId
   readonly number: number
   readonly background: { readonly css: string; readonly name: string; readonly value: Color | undefined }
+  readonly fill: FieldValue<"fill", "value"> | null
   readonly theme: readonly Swatch[]
 }
 
@@ -73,6 +74,7 @@ export function designShown(parts: Parts, index: number, painted: string | null 
     slide,
     number: index + 1,
     background: { css: painted ?? solid ?? "white", name, value },
+    fill: shownBackground(parts, found.part)?.value ?? null,
     theme,
   }
 }

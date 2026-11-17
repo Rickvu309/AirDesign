@@ -6,7 +6,8 @@ import {
   shapeOf,
   siteKinds,
   themeNode,
-  type Color,
+  traits,
+  type FieldValue,
   type ElementId,
   type ScopedElement,
   type TraitReads,
@@ -36,6 +37,10 @@ import type { CommitOutcome } from "@/commit-edit"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
 import type { Palette, Swatch } from "@/design/color-choices"
+import { UnionControl } from "@/design/controls/union"
+import { resolveControl } from "@/design/panel-arrangement"
+import { SquareSquare, Image } from "lucide-react"
+import { PatternFill } from "@/design/preset-icons"
 import { ColorPicker } from "@/design/color-picker"
 import { ColorField, fieldLook } from "@/design/controls/color"
 import {
@@ -54,7 +59,7 @@ import { siteNames } from "@/design/site-names"
 import { deviceScope } from "@/design/trait-edit"
 import { designShown, themeOf, type DesignShown } from "@/design-shown"
 import { PicturePreview } from "@/editor/picture-preview"
-import { DesignHead, DesignSection, ElementDesign, SectionStrips } from "@/editor/design-panel"
+import { ControlView, DesignHead, DesignSection, ElementDesign, SectionStrips } from "@/editor/design-panel"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import type { UndoList } from "@/editor/use-undo"
 import type { UndoEntry } from "@/undo-list"
@@ -321,9 +326,7 @@ function LiveSlideDesign({ deck }: { deck: DesigningDeck }) {
     <DesignView
       shown={view}
       deck={colorsIn(parts)}
-      onColor={(color) =>
-        changeDesign(deck, () => ({ target: { slide: view.slide }, fill: { value: { solid: color } } }))
-      }
+      onFill={(value) => changeDesign(deck, () => ({ target: { slide: view.slide }, fill: { value } }))}
     >
       <LiveThemeDesign deck={deck} />
     </DesignView>
@@ -364,36 +367,70 @@ function LiveThemeDesign({ deck }: { deck: DesigningDeck }) {
 export function DesignView({
   shown,
   deck = [],
-  onColor,
+  onFill,
   children = null,
 }: {
   shown: DesignShown
   deck?: readonly string[]
-  onColor: (color: Color) => void
+  onFill: (fill: FieldValue<"fill", "value">) => void
   children?: ReactNode
 }) {
   const { background } = shown
   const named = useId()
+  const desc = traits.fill.fields.value.desc
+  const cases = desc.kind === "union" ? desc.cases : {}
+  const base = resolveControl({
+    trait: "fill",
+    field: "value",
+    label: designCopy.background,
+    desc: {
+      kind: "union",
+      plain: null,
+      cases: Object.fromEntries(
+        Object.entries(cases).filter(([key]) => ["solid", "gradient", "picture"].includes(key)),
+      ),
+    },
+    value: shown.fill ?? (background.value === undefined ? { picture: null } : { solid: background.value }),
+    mixed: false,
+    inherited: false,
+    reset: null,
+    change: (value) => ({ target: { slide: shown.slide }, fill: { value: value as FieldValue<"fill", "value"> } }),
+  })
+  const control = {
+    ...base,
+    look: { ...base.look, options: { solid: SquareSquare, gradient: PatternFill, picture: Image } },
+  }
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto" data-design-panel>
       <DesignHead>{designCopy.slide(shown.number)}</DesignHead>
       <DesignSection title={designCopy.background} last={children === null}>
-        <ColorPicker
-          value={background.value}
+        <UnionControl
+          control={control}
           palette={{ theme: shown.theme, deck }}
-          onPick={onColor}
-          trigger={
-            <Button
-              type="button"
-              variant="ghost"
-              aria-label={designCopy.backgroundColor(background.name)}
-              data-design-swatch
-              className={fieldLook}
-            />
+          onChange={(value) => onFill(value as FieldValue<"fill", "value">)}
+          inner={(props) =>
+            props.control.field === "value.solid" ? (
+              <ColorPicker
+                value={background.value}
+                palette={{ theme: shown.theme, deck }}
+                onPick={(solid) => onFill({ solid })}
+                trigger={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    aria-label={designCopy.backgroundColor(background.name)}
+                    data-design-swatch
+                    className={fieldLook}
+                  />
+                }
+              >
+                <ColorField id={named} css={background.css} name={background.name} />
+              </ColorPicker>
+            ) : (
+              <ControlView {...props} />
+            )
           }
-        >
-          <ColorField id={named} css={background.css} name={background.name} />
-        </ColorPicker>
+        />
       </DesignSection>
       {children}
     </div>
