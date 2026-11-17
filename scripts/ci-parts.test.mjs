@@ -5,6 +5,7 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { parse } from "yaml"
+import { designScans, shardOf, stagesFor, stepsOf, stepsToRun } from "./check.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -24,12 +25,12 @@ const onlyOn = (step, part) => (step.if ?? "").includes(`matrix.part == '${part}
 
 const entries = check.strategy.matrix.include
 same(
-  "the check job runs the main part, the side part in three shards and the pptx part side by side",
+  "the check job runs the main, side, design and pptx parts and the browser tests in four shards side by side",
   entries.map((entry) => [entry.part, entry.shard ?? ""].join(" ").trim()),
-  ["main", "side 1/3", "side 2/3", "side 3/3", "pptx"],
+  ["main", "side", "design", "browser 1/4", "browser 2/4", "browser 3/4", "browser 4/4", "pptx"],
 )
 same(
-  "pnpm check gets the shard of its side part",
+  "pnpm check gets the shard of its browser part",
   steps.find((step) => (step.run ?? "").startsWith("pnpm check --part="))?.run,
   "pnpm check --part=${{ matrix.part }}${{ matrix.shard && format(' --shard={0}', matrix.shard) || '' }}",
 )
@@ -41,16 +42,33 @@ same(
     ?.with.name.includes("strategy.job-index"),
   true,
 )
-const firstShard = entries.find((entry) => entry.shard?.startsWith("1/")).shard
-const listed = execFileSync(
-  process.execPath,
-  ["node_modules/@playwright/test/cli.js", "test", "--list", `--shard=${firstShard}`],
-  { cwd: root, encoding: "utf8", env: { ...process.env, CI: "" } },
+const browserTests = (args) =>
+  execFileSync(process.execPath, ["node_modules/@playwright/test/cli.js", "test", "--list", ...args], {
+    cwd: root,
+    encoding: "utf8",
+    env: { ...process.env, CI: "" },
+  })
+    .split("\n")
+    .filter((line) => line.includes(" › "))
+    .map((line) => line.trim())
+const browserStep = (part, shard) =>
+  stepsToRun(stagesFor(part, true, shard), true)
+    .flat()
+    .flatMap(stepsOf)
+    .find(([name]) => name === "browser")[2]
+    .slice(1)
+const shards = entries.filter((entry) => entry.part === "browser").map((entry) => shardOf([`--shard=${entry.shard}`]))
+const scanned = browserTests(browserStep("design"))
+const sharded = shards.flatMap((shard) => browserTests(browserStep("browser", shard)))
+same(
+  "the design part runs both design scans whose reports design-findings judges",
+  designScans.map((file) => scanned.some((line) => line.includes(`${path.basename(file)}:`))),
+  [true, true],
 )
 same(
-  "the first shard, which runs design-findings, runs both design scans whose reports it judges",
-  ["design-states.spec.ts", "every-screen.spec.ts"].map((file) => listed.includes(` ${file}:`)),
-  [true, true],
+  "the design part and the browser shards run every browser test exactly once",
+  [...scanned, ...sharded].toSorted(),
+  browserTests([]).toSorted(),
 )
 same("one failing part does not stop the others", check.strategy["fail-fast"], false)
 same("ci waits for every part, corpus, paint fidelity and journeys", workflow.jobs.ci.needs, [
@@ -69,7 +87,7 @@ same(
 )
 
 const queued = steps.find((step) => step.id === "work")
-same("main and side ask whether the queue passed before setup", queued?.if, undefined)
+same("every part asks whether the queue passed before setup", queued?.if, undefined)
 same("the question uses the shared action", queued?.uses, "./.github/actions/queued")
 same(
   "the question comes before setup",
@@ -281,6 +299,9 @@ for (const [name, job] of [
     ...(name === "check"
       ? [
           ["side", "true", "", "false"],
+          ["design", "true", "", "false"],
+          ["browser", "true", "", "false"],
+          ["browser", "false", "", "true"],
           ["pptx", "", "", "true"],
         ]
       : []),

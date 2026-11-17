@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs"
 import { stages } from "./check.mjs"
-import { partOf, sideSteps, stagesFor } from "./check.mjs"
+import { designScans, partOf, partSteps, stagesFor } from "./check.mjs"
 import { judgedOnCi, mayPush, stampable } from "./check.mjs"
 import { localSteps, onCi, stepsOf } from "./check.mjs"
 import { recordFailure, warnSteps } from "./check.mjs"
@@ -40,13 +40,17 @@ if (stageOf("references") === -1) throw new Error("check lost the step reference
 
 const namesIn = (part) => stagesFor(part).flatMap(stepNames)
 const everyStep = namesIn("all")
-const split = [...namesIn("main"), ...namesIn("side")]
+const split = [...namesIn("main"), ...namesIn("side"), ...namesIn("design")]
 if (split.length !== everyStep.length || everyStep.some((name) => !split.includes(name))) {
-  throw new Error("the main and side parts must run every step exactly once")
+  throw new Error("the main, side and design parts must run every step exactly once")
 }
-for (const name of sideSteps) {
-  if (!everyStep.includes(name)) throw new Error(`the side part names ${name}, which check does not run`)
+for (const [part, names] of Object.entries(partSteps)) {
+  for (const name of names) {
+    if (!everyStep.includes(name)) throw new Error(`the ${part} part names ${name}, which check does not run`)
+  }
 }
+if (namesIn("side").toSorted().join() !== "site,tooling")
+  throw new Error("the side part must run only the site build and the tooling tests")
 for (const name of ["test", "build", "metrics", "specs", "typecheck"]) {
   if (!namesIn("main").includes(name)) throw new Error(`the main part must run ${name}`)
 }
@@ -56,7 +60,7 @@ for (const earlier of ["test", "build"]) {
   if (mainStageOf(earlier) >= mainStageOf("metrics"))
     throw new Error(`the main part measures before ${earlier} finishes`)
 }
-if (partOf([]) !== "all" || partOf(["--part=side"]) !== "side" || partOf(["--part=main"]) !== "main") {
+if (partOf([]) !== "all" || ["main", "side", "design", "browser"].some((part) => partOf([`--part=${part}`]) !== part)) {
   throw new Error("--part does not choose its part")
 }
 let refused = ""
@@ -65,7 +69,8 @@ try {
 } catch (error) {
   refused = error.message
 }
-if (refused !== "--part must be main or side, and it is everything.") throw new Error("an unknown part is not refused")
+if (refused !== "--part must be one of main, side, design, browser, and it is everything.")
+  throw new Error("an unknown part is not refused")
 const stepsWhen = (ci) => stagesFor("all", ci).flatMap(stepNames)
 for (const name of ["bar"]) {
   if (!localSteps.has(name)) throw new Error(`check does not run ${name} on this machine`)
@@ -105,7 +110,9 @@ import { ciOnlySteps, stepsToRun } from "./check.mjs"
 const ranWhen = (part, ci) => stepsToRun(stagesFor(part, ci), ci).flatMap(stepNames)
 if (ranWhen("all", false).includes("browser")) throw new Error("a local check runs the browser tests")
 if (!ranWhen("all", true).includes("browser")) throw new Error("ci lost the browser tests")
-if (!ranWhen("side", true).includes("browser")) throw new Error("the side part on ci lost the browser tests")
+if (!ranWhen("browser", true).includes("browser")) throw new Error("the browser part on ci lost the browser tests")
+if (ranWhen("side", true).includes("browser"))
+  throw new Error("the side part runs browser tests beside the site build and the tooling tests")
 if (!ciOnlySteps.has("browser")) throw new Error("the browser tests are not marked as ci only")
 for (const name of everyStep.filter((step) => !ciOnlySteps.has(step))) {
   if (!ranWhen("all", false).includes(name)) throw new Error(`a local check skips ${name}`)
@@ -129,9 +136,9 @@ if (!namesIn("main").includes("commit-authors")) throw new Error("the main part 
 if (!stepsWhen(true).includes("commit-authors")) throw new Error("ci must run commit-authors")
 if (warnSteps.has("commit-authors")) throw new Error("commit-authors blocks from the start")
 
-const sideStages = stagesFor("side", true)
-const sideStageOf = (name) => sideStages.findIndex((stage) => stepNames(stage).includes(name))
-if (sideStageOf("design-findings") <= sideStageOf("browser"))
+const designStages = stagesFor("design", true)
+const designStageOf = (name) => designStages.findIndex((stage) => stepNames(stage).includes(name))
+if (designStageOf("design-findings") <= designStageOf("browser"))
   throw new Error("design-findings reads what the browser tests wrote, so it must run after them")
 if (!ciOnlySteps.has("design-findings"))
   throw new Error("design-findings needs the browser tests, which run only on ci")
@@ -159,7 +166,7 @@ if (
 }
 
 if (shardOf([]) !== undefined) throw new Error("a check with no --shard is not a shard")
-if (JSON.stringify(shardOf(["--part=side", "--shard=2/3"])) !== JSON.stringify({ current: 2, total: 3 }))
+if (JSON.stringify(shardOf(["--part=browser", "--shard=2/3"])) !== JSON.stringify({ current: 2, total: 3 }))
   throw new Error("--shard does not choose its shard")
 for (const shard of ["0/3", "4/3", "2", "a/b", "1/0"]) {
   let shardRefused = ""
@@ -171,40 +178,26 @@ for (const shard of ["0/3", "4/3", "2", "a/b", "1/0"]) {
   if (shardRefused !== `--shard must be a part of a whole, such as 1/3, and it is ${shard}.`)
     throw new Error(`--shard=${shard} is not refused`)
 }
-const shardSteps = (current) => stepsToRun(stagesFor("side", true, { current, total: 3 }), true).flat()
-const browserOf = (current) =>
-  shardSteps(current)
-    .flatMap(stepsOf)
-    .find(([name]) => name === "browser")
-for (const current of [1, 2, 3]) {
-  if (browserOf(current)?.[2].join(" ") !== `test:browser --shard=${current}/3`)
-    throw new Error(`shard ${current} does not run its share of the browser tests`)
-}
-if (
-  shardSteps(1)
-    .flatMap(stepsOf)
-    .map(([name]) => name)
-    .sort()
-    .join() !== [...sideSteps].sort().join()
-)
-  throw new Error("the first shard must run every side step")
-for (const current of [2, 3]) {
-  if (
-    shardSteps(current)
-      .flatMap(stepsOf)
-      .map(([name]) => name)
-      .join() !== "browser"
-  )
-    throw new Error(`shard ${current} must run only its share of the browser tests`)
-}
-if (
-  stagesFor("side", true)
+const browserRun = (part, shard) =>
+  stepsToRun(stagesFor(part, true, shard), true)
     .flat()
     .flatMap(stepsOf)
     .find(([name]) => name === "browser")?.[2]
-    .join(" ") !== "test:browser"
-)
-  throw new Error("a check with no shard runs every browser test")
+    .join(" ")
+const exceptDesignScans = "--grep-invert design-states\\.spec\\.ts|every-screen\\.spec\\.ts"
+for (const current of [1, 2, 3]) {
+  if (browserRun("browser", { current, total: 3 }) !== `test:browser ${exceptDesignScans} --shard=${current}/3`)
+    throw new Error(`shard ${current} does not run its share of the browser tests outside the design scans`)
+  if (ranWhen("browser", true).join() !== "browser")
+    throw new Error(`shard ${current} must run only its share of the browser tests`)
+}
+if (browserRun("design") !== `test:browser ${designScans.join(" ")}`)
+  throw new Error("the design part must run the design scans and no other browser test")
+if (ranWhen("design", true).join() !== "browser,design-findings")
+  throw new Error("the design part must run the design scans and then judge their findings")
+if (browserRun("design", { current: 2, total: 3 }) !== browserRun("design"))
+  throw new Error("a shard must not split the design scans, which design-findings reads together")
+if (browserRun("all") !== "test:browser") throw new Error("a check with no part runs every browser test")
 
 const { preflight, runCheck } = await import("./check.mjs")
 if (preflight === undefined || runCheck === undefined) throw new Error("check needs a preflight before the lock")
