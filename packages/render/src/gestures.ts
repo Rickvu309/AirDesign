@@ -96,7 +96,16 @@ export const gestures = [
     ],
     where: ["editor"],
   },
-  { id: "zoom-fit", group: "view", keys: [{ key: "0", mod: true }], where: ["editor"] },
+  {
+    id: "zoom-fit",
+    group: "view",
+    keys: [
+      { key: "0", mod: true },
+      { code: "Digit1", shift: true },
+    ],
+    where: ["editor"],
+  },
+  { id: "zoom-selection", group: "view", keys: [{ code: "Digit2", shift: true }], where: ["editor"] },
   { id: "tool-move", group: "view", keys: [{ key: "v" }], where: ["editor"] },
   { id: "tool-hand", group: "view", keys: [{ key: "h" }], where: ["editor"] },
   { id: "bold", group: "text", keys: [{ key: "b", mod: true }], where: ["element", "text"] },

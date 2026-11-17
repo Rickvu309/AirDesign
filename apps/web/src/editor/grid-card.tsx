@@ -1,3 +1,4 @@
+import { gridNumbersFit } from "@/editor/grid-viewport"
 import { Filmstrip } from "@airdesign/render"
 import type { CSSProperties, ReactNode, MouseEventHandler, DragEventHandler } from "react"
 import { Button } from "@/components/ui/button"
@@ -57,7 +58,7 @@ export function GridCard({
       <span
         aria-hidden="true"
         data-slide-number
-        hidden={width * scale < 160}
+        hidden={!gridNumbersFit(width, height, scale)}
         style={{
           position: "absolute",
           bottom: `calc(100% - ${24 - 8 / scale}px)`,

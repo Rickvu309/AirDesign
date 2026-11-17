@@ -83,6 +83,12 @@ describe("zoom keys", () => {
     expect(zoomKey({ ...plain, key: "0", metaKey: true })).toBe("fit")
   })
 
+  it("fits with Shift+1 and zooms to the selection with Shift+2, but not while typing", () => {
+    expect(zoomKey({ ...plain, key: "!", code: "Digit1", shiftKey: true })).toBe("fit")
+    expect(zoomKey({ ...plain, key: "@", code: "Digit2", shiftKey: true })).toBe("selection")
+    expect(zoomKey({ ...plain, key: "@", code: "Digit2", shiftKey: true, field: true })).toBeNull()
+  })
+
   it("leaves the keys to the browser inside a text field, without a modifier, or with Alt", () => {
     expect(zoomKey({ ...plain, key: "=", ctrlKey: true, field: true })).toBeNull()
     expect(zoomKey({ ...plain, key: "=" })).toBeNull()

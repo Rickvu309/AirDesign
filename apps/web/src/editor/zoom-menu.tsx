@@ -50,7 +50,17 @@ function ZoomField({ percent, onZoom }: { percent: number; onZoom: (zoom: Zoom) 
   )
 }
 
-export function ZoomMenu({ zoom, percent, onZoom }: { zoom: Zoom; percent: number; onZoom: (zoom: Zoom) => void }) {
+export function ZoomMenu({
+  zoom,
+  percent,
+  onZoom,
+  onSelection,
+}: {
+  zoom: Zoom
+  percent: number
+  onZoom: (zoom: Zoom) => void
+  onSelection?: () => void
+}) {
   const [open, setOpen] = useState(false)
   const choose = (next: Zoom) => {
     onZoom(next)
@@ -86,6 +96,17 @@ export function ZoomMenu({ zoom, percent, onZoom }: { zoom: Zoom; percent: numbe
           keys="Control+- Meta+-"
           onClick={() => onZoom(steppedZoom("out", percent))}
         />
+        {onSelection === undefined ? null : (
+          <EditorMenuAction
+            label={zoomCopy.selection}
+            shortcut={zoomCopy.selectionKey}
+            keys="Shift+2"
+            onClick={() => {
+              onSelection()
+              setOpen(false)
+            }}
+          />
+        )}
         <DropdownMenuRadioGroup
           value={String(zoom)}
           onValueChange={(value) => {
@@ -97,7 +118,7 @@ export function ZoomMenu({ zoom, percent, onZoom }: { zoom: Zoom; percent: numbe
             value="fit"
             label={zoomCopy.fit}
             shortcut={zoomCopy.fitKey}
-            keys="Control+0 Meta+0"
+            keys="Control+0 Meta+0 Shift+1"
             checked={zoom === "fit"}
           />
           {zoomPresets.map((preset) => (

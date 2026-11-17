@@ -67,6 +67,15 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "0", ctrlKey: true, shiftKey: true }, "editor")).toBe("zoom-fit")
   })
 
+  it("fits the canvas with Shift+1 and the selection with Shift+2 on any layout", () => {
+    expect(gestureFor({ ...plain, key: "!", code: "Digit1", shiftKey: true }, "editor")).toBe("zoom-fit")
+    expect(gestureFor({ ...plain, key: "1", code: "Digit1", shiftKey: true }, "editor")).toBe("zoom-fit")
+    expect(gestureFor({ ...plain, key: "@", code: "Digit2", shiftKey: true }, "editor")).toBe("zoom-selection")
+    expect(gestureFor({ ...plain, key: '"', code: "Digit2", shiftKey: true }, "editor")).toBe("zoom-selection")
+    expect(gestureFor({ ...plain, key: "2", code: "Digit2" }, "editor")).toBeNull()
+    expect(gestureFor({ ...plain, key: "@", code: "Digit2", shiftKey: true, ctrlKey: true }, "editor")).toBeNull()
+  })
+
   it("reads the brackets and G by where they sit on the keyboard", () => {
     expect(gestureFor({ ...plain, key: "å", code: "BracketRight", ctrlKey: true }, "element")).toBe("forward")
     expect(gestureFor({ ...plain, key: "}", code: "BracketRight", ctrlKey: true, shiftKey: true }, "element")).toBe(

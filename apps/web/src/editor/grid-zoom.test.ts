@@ -1,13 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { gridLayout, keepGridZoom, keptGridZoom } from "@/editor/grid-zoom"
+import { gridLayout, keepGridViewport, keepGridZoom, keptGridViewport, keptGridZoom } from "@/editor/grid-zoom"
 
 const wide = { width: 12_192_000, height: 6_858_000 }
 
-function shelf(): Pick<Storage, "getItem" | "setItem"> {
+function shelf(): Pick<Storage, "getItem" | "setItem" | "removeItem"> {
   const held = new Map<string, string>()
   return {
     getItem: (key) => held.get(key) ?? null,
     setItem: (key, value) => void held.set(key, value),
+    removeItem: (key) => void held.delete(key),
   }
 }
 
@@ -46,5 +47,27 @@ describe("kept grid zoom", () => {
     vi.stubGlobal("localStorage", undefined)
     expect(keptGridZoom("one")).toBe("fit")
     expect(() => keepGridZoom("one", 50)).not.toThrow()
+  })
+})
+
+describe("kept grid place", () => {
+  it("reopens a deck at its kept place and zoom, and at Zoom to fit once the place is forgotten", () => {
+    vi.stubGlobal("localStorage", shelf())
+    expect(keptGridViewport("one")).toBeNull()
+    keepGridViewport("one", { x: -120, y: 800, scale: 0.04 })
+    expect(keptGridViewport("one")).toEqual({ x: -120, y: 800, scale: 0.04 })
+    expect(keptGridZoom("one")).toBe(4)
+    expect(keptGridViewport("two")).toBeNull()
+    keepGridViewport("one", null)
+    keepGridZoom("one", "fit")
+    expect(keptGridViewport("one")).toBeNull()
+    expect(keptGridZoom("one")).toBe("fit")
+  })
+
+  it("forgets nothing and throws nothing when storage is refused", () => {
+    vi.stubGlobal("localStorage", undefined)
+    expect(keptGridViewport("one")).toBeNull()
+    expect(() => keepGridViewport("one", { x: 0, y: 0, scale: 1 })).not.toThrow()
+    expect(() => keepGridViewport("one", null)).not.toThrow()
   })
 })

@@ -176,7 +176,7 @@ async function dragOnto(page: Page, from: number, to: number, side: "left" | "ri
   const mark = await bar.boundingBox()
   const gap = side === "left" ? target.x - (mark?.x ?? 0) : (mark?.x ?? 0) - (target.x + target.width)
   expect(gap).toBeGreaterThan(0)
-  expect(gap).toBeLessThan(32)
+  expect(gap).toBeLessThan(target.width * 0.13)
   await expect(entry(page, from)).toHaveCSS("opacity", "0.4")
   await expect(page.locator(`[aria-label="Add slide after slide ${String(from)}"]`)).toBeHidden()
   await page.mouse.up()
@@ -220,7 +220,7 @@ test("a slide dropped at the start of a section shows and lands at the end of th
   const mark = await bar.boundingBox()
   expect(Math.abs((mark?.y ?? 0) - previous.y)).toBeLessThan(2)
   expect((mark?.x ?? 0) - (previous.x + previous.width)).toBeGreaterThan(0)
-  expect((mark?.x ?? 0) - (previous.x + previous.width)).toBeLessThan(32)
+  expect((mark?.x ?? 0) - (previous.x + previous.width)).toBeLessThan(previous.width * 0.13)
   await page.mouse.up()
   await expect(page.locator("[data-editor-grid] [data-announcer]")).toHaveText("Moved slide 3 to position 2")
   await expect(opening.getByText("2 slides", { exact: true })).toBeVisible()
@@ -338,7 +338,10 @@ test("the slide view and the grid open the same zoom menu, hung from the zoom bu
   const slides = await zoomMenuOf(page)
   await openGrid(page)
   const grid = await zoomMenuOf(page)
-  expect(grid).toEqual(slides)
+  expect(grid).toEqual({
+    ...slides,
+    rows: [...slides.rows.slice(0, 2), `${zoomCopy.selection}${zoomCopy.selectionKey}`, ...slides.rows.slice(2)],
+  })
   expect(slides.rows).toHaveLength(6)
   expect(slides.rightEdge).toBe(0)
   expect(slides.below).toBe(true)

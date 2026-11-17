@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest"
-import { zoomedGrid, fittedGridCards, pannedGrid, boundedGridScale, fittedGrid, revealedGrid } from "./grid-viewport"
+import {
+  zoomedGrid,
+  fittedGridCards,
+  pannedGrid,
+  boundedGridScale,
+  fittedGrid,
+  revealedGrid,
+  gridSpacing,
+  gridNumbersFit,
+  gridSectionGap,
+  wheeledGrid,
+  gridScaleMoved,
+  arrowGrid,
+  readGridViewport,
+} from "./grid-viewport"
 
 describe("grid viewport", () => {
   it("keeps the canvas point under the zoom anchor in place", () => {
@@ -54,4 +68,81 @@ it("fits occupied cards after the canvas has already been panned and zoomed", ()
   })
   expect(view.x + 160 * view.scale).toBeCloseTo(735)
   expect(view.y + 102 * view.scale).toBeCloseTo(379.5)
+})
+
+describe("grid spacing", () => {
+  it("keeps gaps a share of the slide and numbers readable at fifty-slide fit", () => {
+    expect(gridSpacing(1280, 720)).toEqual({ column: 166.4, row: 410.4 })
+    expect(gridSpacing(960, 720).column).toBeCloseTo(124.8)
+    expect(gridNumbersFit(1280, 720, 0.1)).toBe(true)
+    expect(gridNumbersFit(1280, 720, 0.02)).toBe(false)
+  })
+
+  it("reserves a screen-space gutter between section headings and numbers", () => {
+    for (const scale of [0.1, 0.4, 1, 4]) expect(gridSectionGap(scale) * scale).toBe(32)
+  })
+})
+
+describe("grid wheel", () => {
+  const plain = { deltaX: 0, deltaY: 0, deltaMode: 0, shiftKey: false, ctrlKey: false, metaKey: false }
+
+  it("pans both axes, and Shift turns a vertical mouse wheel sideways", () => {
+    expect(wheeledGrid({ x: 40, y: 50, scale: 0.5 }, { ...plain, deltaX: 12, deltaY: 30 }, { x: 0, y: 0 })).toEqual({
+      x: 28,
+      y: 20,
+      scale: 0.5,
+    })
+    expect(wheeledGrid({ x: 40, y: 50, scale: 0.5 }, { ...plain, deltaY: 80, shiftKey: true }, { x: 0, y: 0 })).toEqual(
+      { x: -40, y: 50, scale: 0.5 },
+    )
+  })
+
+  it("reads a wheel that counts lines as lines of sixteen pixels", () => {
+    expect(wheeledGrid({ x: 0, y: 0, scale: 1 }, { ...plain, deltaY: 3, deltaMode: 1 }, { x: 0, y: 0 }).y).toBe(-48)
+  })
+
+  it("keeps the pinch anchor across thirty events", () => {
+    let view = { x: 40, y: 50, scale: 0.5 }
+    const point = (400 - view.x) / view.scale
+    for (let i = 0; i < 30; i++) view = wheeledGrid(view, { ...plain, deltaY: -1, ctrlKey: true }, { x: 400, y: 300 })
+    expect(view.scale).toBeCloseTo(0.5 * Math.exp(0.3))
+    expect((400 - view.x) / view.scale).toBeCloseTo(point)
+  })
+
+  it("zooms a mouse wheel notch in a small step instead of a jump", () => {
+    const view = { x: 0, y: 0, scale: 1 }
+    const notch = wheeledGrid(view, { ...plain, deltaY: -100, ctrlKey: true }, { x: 0, y: 0 })
+    const line = wheeledGrid(view, { ...plain, deltaY: -3, deltaMode: 1, metaKey: true }, { x: 0, y: 0 })
+    expect(notch.scale).toBeGreaterThan(1.05)
+    expect(notch.scale).toBeLessThan(1.15)
+    expect(line.scale).toBeCloseTo(notch.scale)
+  })
+
+  it("zooms in smoothly from a fit below the least zoom instead of jumping to it", () => {
+    const view = { x: 0, y: 0, scale: 0.06 }
+    expect(wheeledGrid(view, { ...plain, deltaY: -1, ctrlKey: true }, { x: 0, y: 0 }).scale).toBeCloseTo(
+      0.06 * Math.exp(0.01),
+    )
+    expect(wheeledGrid(view, { ...plain, deltaY: 1, ctrlKey: true }, { x: 0, y: 0 }).scale).toBe(0.06)
+  })
+
+  it("treats a percent that went through the zoom readout as the same scale", () => {
+    const scale = 0.5 * Math.exp(0.3)
+    expect(gridScaleMoved({ x: 0, y: 0, scale }, (scale * 100) / 100)).toBe(false)
+    expect(gridScaleMoved({ x: 0, y: 0, scale: 0.07 }, (0.07 * 100) / 100)).toBe(false)
+    expect(gridScaleMoved({ x: 0, y: 0, scale }, 0.5)).toBe(true)
+  })
+})
+
+describe("grid keys and storage", () => {
+  it("pans arrow keys in screen pixels independent of zoom", () => {
+    expect(arrowGrid({ x: 20, y: 40, scale: 0.2 }, "ArrowRight")).toEqual({ x: -60, y: 40, scale: 0.2 })
+    expect(arrowGrid({ x: 20, y: 40, scale: 3 }, "ArrowUp")).toEqual({ x: 20, y: 120, scale: 3 })
+  })
+
+  it("reads only finite valid kept places, including fit scales below ten percent", () => {
+    expect(readGridViewport('{"x":-120,"y":800,"scale":0.04}')).toEqual({ x: -120, y: 800, scale: 0.04 })
+    for (const raw of [null, "oops", "{}", '{"x":0,"y":0,"scale":0}', '{"x":0,"y":0,"scale":1e999}'])
+      expect(readGridViewport(raw)).toBeNull()
+  })
 })
