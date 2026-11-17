@@ -44,6 +44,7 @@ export type SlideStrip = {
   readonly sections?: readonly StripSection[]
   readonly current: number
   readonly selectionBoxes?: (ids: readonly ElementId[]) => readonly PaintBox[]
+  readonly onSelection?: (indices: readonly number[]) => void
   readonly onSelect: (index: number) => void
   readonly onAdd?: (layoutPart?: string, after?: number, row?: GridSide) => void
   readonly layouts?: readonly LayoutChoice[]
@@ -88,6 +89,11 @@ export function SlideSidebar({
   onGrid?: () => void
   save?: SaveStatus | null
 }) {
+  const onSelection = strip?.onSelection
+  const current = strip?.current
+  useLayoutEffect(() => {
+    if (current !== undefined) onSelection?.([current])
+  }, [onSelection, current])
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white" data-editor-sidebar>
       {strip === undefined ? (

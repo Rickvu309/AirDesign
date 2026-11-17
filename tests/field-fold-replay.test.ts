@@ -40,6 +40,7 @@ import { exportedParts } from "@/exported-parts"
 import { busyElements, shownValue } from "@/live-repaint"
 import { recorded, turnBack, type UndoEntry, type UndoList, type UndoLink } from "@/undo-list"
 import { dumpTopics } from "./spec-dump.js"
+import { agentSet, answered } from "./spec-agent.js"
 import { parseDot, type Graph } from "./spec-graph.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -127,24 +128,10 @@ const device: UndoLink = {
   enqueueSlide: () => Promise.reject(new Error("no slide commands here")),
 }
 
-function answered(result: ReturnType<typeof call>, said: string): Deck {
-  if (!result.ok) throw new Error(`${said} refused ${result.refusal}`)
-  return result.deck
-}
-
 function opened(): Deck {
   const index = indexPackage(file)
   const started = openDeck(deck)
   return { ...started, register: { ...started.register, index: { ...index, total: index.elements.length, pages: [] } } }
-}
-
-function agentSet(server: Deck, at: ElementId, change: object): Deck {
-  const runId = `agent-${server.revision}`
-  const caller = { actor: "agent", runId } as const
-  const started = answered(call("start_run", server, caller, { deck, runId, elements: [{ node: at }] }), "start")
-  const base = started.revision
-  const edited = answered(call("edit_deck", started, caller, { deck, base, changes: [change] }), "the agent's set")
-  return answered(call("stop_run", edited, caller, { deck, runId }), "stop")
 }
 
 function synced(): void {

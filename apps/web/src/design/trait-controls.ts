@@ -12,6 +12,7 @@ import { linkControls } from "./trait-controls-link"
 import { lineControls } from "./trait-controls-line"
 import { notesControls } from "./trait-controls-notes"
 import { textControls } from "./trait-controls-text"
+import { designCopy } from "@/copy/design-copy"
 import { themeControls } from "./trait-controls-theme"
 
 export type FieldCopy = {
@@ -39,4 +40,5 @@ export const traitControls: { readonly [T in TraitName]: TraitControls<T> } = {
   table: { fields: {} },
   notes: notesControls,
   theme: themeControls,
+  template: { section: designCopy.templateStyle, fields: { id: { label: designCopy.templateStyle } } },
 }

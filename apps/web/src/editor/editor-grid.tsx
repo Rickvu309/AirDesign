@@ -13,7 +13,7 @@ import { GridHead } from "@/editor/grid-head"
 import { GridRowFrame, moveGridRow, gridMoveMessage, useGridRowFocus } from "@/editor/grid-row-frame"
 import { gridAddFits } from "@/editor/grid-add-placement"
 import { GridRowAdd } from "@/editor/grid-row-add"
-import { gridSpacing } from "@/editor/grid-viewport"
+import { gridSpacing, gridThumbHeight } from "@/editor/grid-viewport"
 import { GridDragGhost } from "@/editor/grid-drag-ghost"
 import { dragMoves, landing } from "@/editor/grid-drop"
 import { gridLayout, keptGridViewport, useKeptGridZoom } from "@/editor/grid-zoom"
@@ -26,6 +26,7 @@ import { gridSlideActions } from "@/editor/grid-slide-actions"
 import { GridSlideMenu, pointAt, type GridMenu, type MenuAnchor } from "@/editor/grid-menu"
 import { pickAll, pickedSlides, pickRange, prunedPick } from "@/editor/grid-selection"
 import { useGridDrag } from "@/editor/use-grid-drag"
+import { useGridSelection } from "@/editor/use-grid-selection"
 import type { ToolPick } from "@/editor/pointer-tool"
 import { gridRows, GridSectionCell } from "@/editor/grid-section"
 import { sectionAt, useKeptCollapsed } from "@/editor/collapsed-sections"
@@ -38,11 +39,6 @@ import { cn } from "@/lib/class-names"
 const noSections: readonly StripSection[] = []
 
 const wideSlide = { width: 12_192_000, height: 6_858_000 }
-
-function gridThumbHeight(width: number, height: number): number {
-  if (height <= 0) return Math.round((width * 9) / 16)
-  return Math.round((height * width) / slideThumbWidth)
-}
 
 export function EditorGrid({
   id = null,
@@ -99,7 +95,7 @@ export function EditorGrid({
       sections: (strip.sections ?? []).map((section) => section.start),
       rowHandles: strip.onMoveMany !== undefined,
       width,
-      height: gridThumbHeight(width, strip.thumbHeight),
+      height: gridThumbHeight(width, strip.thumbHeight, slideThumbWidth),
     },
     deck: id,
     world: list,
@@ -125,6 +121,7 @@ export function EditorGrid({
   const selected = new Set(gridRinged(state, current, count, strip.slideIds))
   const selectedCount = selected.size
   useLayoutEffect(() => onSlideSelection?.(selectedCount), [onSlideSelection, selectedCount])
+  useGridSelection(strip.onSelection, selected, current)
   const sections = strip.sections ?? noSections
   const collapsed = useKeptCollapsed(id, sections, current)
   const [seen, setSeen] = useState(current)
@@ -161,7 +158,7 @@ export function EditorGrid({
     else chooseZoom(key === "fit" ? "fit" : steppedZoom(key, percent, zoomRanges.grid))
   })
   const reachable = stop >= 0 && stop < count && shown(stop) ? stop : current
-  const height = gridThumbHeight(width, strip.thumbHeight)
+  const height = gridThumbHeight(width, strip.thumbHeight, slideThumbWidth)
   const spacing = gridSpacing(width, height)
   const rows = gridRows(strip)
   const focusRow = useGridRowFocus(list, rows, strip.slideIds ?? [])

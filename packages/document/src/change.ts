@@ -3,7 +3,16 @@ import { outlineOf, siteKinds, type Outline } from "./connector.js"
 import { currentBox, currentValue, elementFacts, landedPatch, type Register } from "./decide.js"
 import type { SlideSize } from "./deck-index.js"
 import type { DesignKey, Role } from "./design.js"
-import { shapeOf, slideKind, slideNode, themeNode, type ElementId, type SlideId } from "./element-id.js"
+import {
+  shapeOf,
+  slideKind,
+  slideNode,
+  themeNode,
+  templateIndex,
+  templateNode,
+  type ElementId,
+  type SlideId,
+} from "./element-id.js"
 import { groupParent } from "./element-group.js"
 import { elementGone } from "./element-order.js"
 import { opacityFields, takes, type ElementFacts } from "./element-takes.js"
@@ -67,6 +76,7 @@ export type Scope = {
   readonly expand: (target: Target) => readonly ElementId[] | "indexing"
   readonly view: (node: ElementId) => ScopedElement | undefined
   readonly size: (slide: SlideId) => SlideSize | null
+  readonly templates?: readonly string[]
 }
 
 export type PlanRefusal = "kind" | "group-box" | "kept" | "site" | "indexing" | "dead"
@@ -277,6 +287,8 @@ function planNode(
   scope: Scope,
 ): NodeRow | readonly ChangeRefusal[] {
   const named = namedTraits(change)
+  if (change.template?.id !== undefined && !scope.templates?.includes(change.template.id))
+    return [{ node: view.node, trait: "template", code: "kind" }]
   const refusals: ChangeRefusal[] = named.flatMap(([trait, input]) => {
     const unplaced = trait === "box" && moves(input) && spot === undefined && refusalOf(view, trait, input) === null
     const code = unplaced ? "kind" : refusalOf(view, trait, input)
@@ -351,6 +363,8 @@ function expandRole(register: Register, role: Role, slide: SlideId | "every"): r
 
 function slideOwned(register: Register, node: ElementId): boolean {
   if (node === themeNode) return true
+  const index = templateIndex(node)
+  if (index !== null) return register.index?.templates?.[index] !== undefined
   return slideKind(node) !== null && slideOrder(register).includes(shapeOf(node).slide)
 }
 
@@ -361,6 +375,8 @@ function expanded(register: Register, target: Target): readonly ElementId[] | "i
     const node = slideNode(target.slide, "slide")
     return slideOwned(register, node) && present(register, node) ? [node] : []
   }
+  const templates = register.index?.templates ?? []
+  if (target.node === themeNode && templates.length > 0) return templates.map((_, index) => templateNode(index))
   return expandedNode(register, target.node)
 }
 
@@ -398,6 +414,7 @@ function outlineNow(
 export function registerScope(register: Register): Scope {
   return {
     expand: (target) => expanded(register, target),
+    templates: register.index?.templates?.map((style) => style.id) ?? [],
     size: (slide) => sizeOf(register, slide),
     view: (node) => {
       const opening = openingElement(register, node)

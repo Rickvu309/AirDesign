@@ -11,6 +11,7 @@ import {
   slideKind,
   takes,
   themeNode,
+  templateIndex,
   type ElementId,
   type ElementPatch,
   type FieldEdit,
@@ -26,6 +27,7 @@ import { partBytes } from "./part-markup.js"
 import { readShapes, shapeKind, type ReadShape } from "./read-shapes.js"
 import { frameSize, scaledGrid } from "./table-size.js"
 import { writeTrait } from "./trait-xml.js"
+import { templateStyles } from "./template-style.js"
 import { slideThemes } from "./trait-xml-theme.js"
 import type { ElementAt, Parts } from "./xml-codec.js"
 
@@ -99,14 +101,16 @@ function writtenSlide(
   body: NodeRegister | undefined,
   opening: IndexElement | undefined,
 ): Parts {
-  const opened: Readonly<Fields> = opening?.opening?.fill ?? {}
-  const rows: Readonly<Fields> = (body === undefined ? undefined : landedPatch(body, "text").fill) ?? {}
-  const fields = heldFields(opened, rows)
-  if (Object.keys(fields).length === 0) return parts
+  const patch = body === undefined ? {} : landedPatch(body, "text")
   const slide = shapeOf(node).slide
   const part = slidePart(parts, slide)
   if (part === null) throw new Error("fill-slide")
-  return writeTrait(parts, { slide, part, shape: "slide" }, "fill", fields)
+  let next = parts
+  for (const trait of ["template", "fill"] as const) {
+    const fields = heldFields(opening?.opening?.[trait] ?? {}, patch[trait] ?? {})
+    if (Object.keys(fields).length > 0) next = writeTrait(next, { slide, part, shape: "slide" }, trait, fields)
+  }
+  return next
 }
 
 function writtenTheme(parts: Parts, body: NodeRegister | undefined): Parts {
@@ -158,20 +162,28 @@ function writtenElement(
 
 export function exportParts(parts: Parts, register: Register, media?: ElementAt["media"]): Parts {
   const shapes = readShapes(parts)
-  let next = parts
+  let next = writtenTheme(parts, register.nodes.includes(themeNode) ? register.elements[themeNode] : undefined)
+  const templates = register.index?.templates ?? templateStyles(parts)
   for (const node of new Set([...register.nodes, ...floorNodes(register)])) {
+    if (node === themeNode) continue
     if (node.includes(".") && (slideGone(register, shapeOf(node).slide) || elementGone(register, node))) continue
     const body = register.nodes.includes(node) ? register.elements[node] : undefined
     const opening = newSlideElement(register, node)
     const kind = slideKind(node)
+    const index = templateIndex(node)
+    if (index !== null) {
+      const id = templates[index]?.id
+      const fields = body === undefined ? undefined : landedPatch(body, "text").theme
+      if (id !== undefined && fields !== undefined)
+        next = writeTrait(next, { slide: "", part: id, shape: "theme" }, "theme", fields)
+      continue
+    }
     next =
-      node === themeNode
-        ? writtenTheme(next, body)
-        : kind === "notes"
-          ? writtenNotes(next, node, body, opening)
-          : kind === "slide"
-            ? writtenSlide(next, node, body, opening)
-            : writtenElement(next, shapes, node, body, opening, media)
+      kind === "notes"
+        ? writtenNotes(next, node, body, opening)
+        : kind === "slide"
+          ? writtenSlide(next, node, body, opening)
+          : writtenElement(next, shapes, node, body, opening, media)
   }
   return routedParts(parts, next)
 }

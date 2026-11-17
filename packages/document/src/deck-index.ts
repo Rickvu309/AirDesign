@@ -14,6 +14,7 @@ import {
   type Role,
 } from "./design.js"
 import { readElementId, shapeOf, type ElementId } from "./element-id.js"
+import { readTemplateStyles, type TemplateStyle } from "./template-style.js"
 import { format } from "./format.js"
 import { bytesOf, limits } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
@@ -28,6 +29,7 @@ export type IndexSlide = {
   readonly free?: number
   readonly animated?: readonly string[]
   readonly layout?: readonly IndexElement[]
+  readonly template?: string
   readonly palette?: number
 }
 export type IndexElement = {
@@ -50,6 +52,7 @@ export type IndexPage = {
   readonly once: string
   readonly offset: number
   readonly total: number
+  readonly templates?: readonly TemplateStyle[]
   readonly palettes?: readonly Palette[]
   readonly slides: readonly IndexSlide[]
   readonly elements: readonly IndexElement[]
@@ -57,6 +60,7 @@ export type IndexPage = {
 type BuiltIndex = {
   readonly format?: number
   readonly total: number
+  readonly templates?: readonly TemplateStyle[]
   readonly palettes?: readonly Palette[]
   readonly slides: readonly IndexSlide[]
   readonly elements: readonly IndexElement[]
@@ -65,9 +69,9 @@ type BuiltIndex = {
 export type DeckIndex = BuiltIndex & { readonly next?: BuiltIndex }
 
 export const indexKeys = {
-  page: ["format", "once", "offset", "total", "palettes", "slides", "elements"],
+  page: ["format", "once", "offset", "total", "palettes", "templates", "slides", "elements"],
   palette: ["slots", "map", "fonts"],
-  slide: ["id", "position", "size", "free", "animated", "layout", "palette"],
+  slide: ["id", "position", "size", "free", "animated", "layout", "palette", "template"],
   element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept", "placed", "group", "frame", "link"],
   design: designKeys,
   roles,
@@ -137,7 +141,12 @@ function readSlide(raw: unknown, position: number, palettes: number): IndexSlide
   const read = readMeasures(row)
   if (read === null) return null
   if (row.palette !== undefined && (!whole(row.palette) || row.palette >= palettes)) return null
-  const measures = row.palette === undefined ? read : { ...read, palette: row.palette }
+  if (row.template !== undefined && (typeof row.template !== "string" || bytesOf(row.template) > 256)) return null
+  const measures = {
+    ...read,
+    ...(row.palette === undefined ? {} : { palette: row.palette }),
+    ...(row.template === undefined ? {} : { template: row.template }),
+  }
   if (row.layout === undefined) return { id: row.id, position, ...measures }
   if (!Array.isArray(row.layout) || row.layout.length > limits.batch) return null
   const layout: IndexElement[] = []
@@ -217,11 +226,15 @@ export function readIndexPage(raw: unknown): IndexPage | null {
   if (
     !onlyKeys(
       row,
-      pageKeys.filter((key) => (key !== "format" && key !== "palettes") || row[key] !== undefined),
+      pageKeys.filter(
+        (key) => (key !== "format" && key !== "palettes" && key !== "templates") || row[key] !== undefined,
+      ),
     )
   )
     return null
   if (row.format !== undefined && (!whole(row.format) || row.format < 1 || row.format > format)) return null
+  const templates = row.templates === undefined ? undefined : readTemplateStyles(row.templates)
+  if (templates === null) return null
   const palettes = row.palettes === undefined ? undefined : readPalettes(row.palettes)
   if (palettes === null) return null
   if (typeof row.once !== "string" || !oncePattern.test(row.once)) return null
@@ -231,6 +244,12 @@ export function readIndexPage(raw: unknown): IndexPage | null {
   for (const [position, raw] of row.slides.entries()) {
     const slide = readSlide(raw, position, palettes?.length ?? 0)
     if (slide === null || slides.some((kept) => kept.id === slide.id)) return null
+    if (
+      slide.template !== undefined &&
+      templates !== undefined &&
+      !templates.some((style) => style.id === slide.template)
+    )
+      return null
     slides.push(slide)
   }
   if (!Array.isArray(row.elements) || row.elements.length > limits.batch) return null
@@ -249,6 +268,7 @@ export function readIndexPage(raw: unknown): IndexPage | null {
     offset: row.offset,
     total: row.total,
     ...(palettes === undefined ? {} : { palettes }),
+    ...(templates === undefined ? {} : { templates }),
     slides,
     elements,
   }
@@ -345,6 +365,7 @@ function appendBuilt(current: BuiltIndex | undefined, page: IndexPage): Appended
       ...(page.format === undefined ? {} : { format: page.format }),
       total: page.total,
       ...(page.palettes === undefined ? {} : { palettes: page.palettes }),
+      ...(page.templates === undefined ? {} : { templates: page.templates }),
       slides: page.slides,
       elements: [...elements, ...page.elements],
       pages: [...(current?.pages ?? []), { once: page.once, offset: page.offset, count: page.elements.length }],

@@ -11,7 +11,7 @@
       "file": "packages/document/src/decide.ts",
       "names": ["landedPatch", "shownPatch"],
       "digest": "ef74e6ff3820",
-      "blob": "90cdf9ca572b8b1ade104decd785c82027b56fec"
+      "blob": "820998fb0e2ac7a1f33e39133bfa73319f7659ba"
     },
     {
       "file": "packages/document/src/change.ts",
@@ -29,7 +29,7 @@
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "landedBefore", "heldPatch"],
       "digest": "a022f6949f23",
-      "blob": "69c3d06e6720473dc4fb39206e78509408430335"
+      "blob": "6c9ef52fe885ff0e96a4573b00683e390e46569e"
     },
     {
       "file": "apps/web/src/design/rebase.ts",
@@ -101,7 +101,7 @@
       "file": "packages/engine/src/apply-change.ts",
       "names": ["applySet", "landRow"],
       "digest": "b3d2b91658cb",
-      "blob": "510664279a265a53defbc6f1e49f3b6df5af0280"
+      "blob": "77c27dfe95f81ad3cba8d6b5a6bc222339b39a24"
     }
   ]
 }

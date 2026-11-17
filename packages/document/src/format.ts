@@ -1,8 +1,8 @@
 import { traitNames, traits } from "./traits.js"
 
 export const stamps: { readonly row: number; readonly index: number; readonly command: number } = {
-  row: 1,
-  index: 8,
+  row: 2,
+  index: 9,
   command: 7,
 }
 

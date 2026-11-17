@@ -235,13 +235,16 @@ it("shows a slide's background and theme once each, with no section or button th
   expect(panel?.querySelector("[data-design-theme]")).toBeNull()
   const card = panel?.querySelector<HTMLButtonElement>("[data-template-style]")
   expect(card?.getAttribute("aria-expanded")).toBe("false")
-  await act(async () => card?.click())
-  expect(panel?.textContent).toContain(designCopy.deckThemeScope)
-  expect(card?.getAttribute("aria-expanded")).toBe("true")
+  await act(async () =>
+    panel?.querySelector<HTMLButtonElement>(`button[aria-label="${designCopy.editTemplateStyle}"]`)?.click(),
+  )
+  expect(window.document.querySelector("[data-design-theme]")?.textContent).toContain(designCopy.templateScope)
+  expect(card?.getAttribute("aria-expanded")).toBe("false")
   expect(text).not.toContain("not available")
   expect(panel?.querySelectorAll("button:disabled")).toHaveLength(0)
   expect(panel?.querySelectorAll("button[aria-label^='Background color']")).toHaveLength(1)
-  for (const name of ["Dark 1", "Accent 1", "Accent 6"]) expect((panel?.textContent ?? "").split(name)).toHaveLength(2)
+  for (const name of ["Dark 1", "Accent 1", "Accent 6"])
+    expect(window.document.querySelector(`[data-design-theme] button[aria-label="${name}"]`)).not.toBeNull()
   await slide.close()
 }, 20_000)
 

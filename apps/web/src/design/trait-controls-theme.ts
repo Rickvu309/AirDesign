@@ -4,6 +4,7 @@ import type { TraitControls } from "./trait-controls"
 export const themeControls: TraitControls<"theme"> = {
   section: themeCopy.section,
   fields: {
+    name: { label: themeCopy.name },
     dk1: { label: themeCopy.dk1 },
     lt1: { label: themeCopy.lt1 },
     dk2: { label: themeCopy.dk2 },

@@ -27,7 +27,7 @@ function traitsOf(parts: ReadonlyMap<string, Uint8Array>): DeckTraits | null {
 
 export function designedParts(
   parts: ReadonlyMap<string, Uint8Array>,
-): Pick<DeckIndex, "palettes" | "slides" | "elements"> {
+): Pick<DeckIndex, "palettes" | "templates" | "slides" | "elements"> {
   const opening = indexPackage(parts)
   const traits = traitsOf(parts)
   if (traits === null) return opening
@@ -39,7 +39,12 @@ export function designedParts(
     const palette = traits.slides.get(slide.id) ?? 0
     return palette === 0 ? slide : { ...slide, palette }
   })
-  return { ...(traits.palettes.length === 0 ? {} : { palettes: traits.palettes }), slides, elements }
+  return {
+    templates: opening.templates,
+    ...(traits.palettes.length === 0 ? {} : { palettes: traits.palettes }),
+    slides,
+    elements,
+  }
 }
 
 function layoutFloors(parts: ReadonlyMap<string, Uint8Array>, file: readonly SlideId[]) {

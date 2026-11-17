@@ -14,6 +14,7 @@ import { lineAlpha, lineXml } from "./trait-xml-line.js"
 import { notesXml } from "./trait-xml-notes.js"
 import { tableXml } from "./trait-xml-table.js"
 import { textAlpha, textXml } from "./trait-xml-text.js"
+import { templateXml } from "./trait-xml-template.js"
 import { themeXml } from "./trait-xml-theme.js"
 import { writeFields, type ElementAt, type Parts, type TraitXml } from "./xml-codec.js"
 
@@ -33,6 +34,7 @@ export const traitXml: { readonly [T in TraitName]: TraitXml<T> } = {
   table: tableXml,
   notes: notesXml,
   theme: themeXml,
+  template: templateXml,
 }
 
 export function writeTrait<T extends TraitName>(parts: Parts, at: ElementAt, trait: T, patch: TraitPatch<T>): Parts {

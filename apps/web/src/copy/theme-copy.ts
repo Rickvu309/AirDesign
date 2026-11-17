@@ -2,6 +2,7 @@ import { formatCopy } from "./format-copy"
 
 export const themeCopy = {
   section: "Theme",
+  name: "Name",
   ...formatCopy.colors,
   hlink: "Link",
   folHlink: "Visited link",

@@ -6,8 +6,9 @@ const typeface = words(typefaceBytes)
 
 export const theme = trait(
   "own",
-  { version: 1, shape: "fd31b1bd" },
+  { version: 2, shape: "3c85bab0" },
   {
+    name: words(256),
     dk1: hex,
     lt1: hex,
     dk2: hex,

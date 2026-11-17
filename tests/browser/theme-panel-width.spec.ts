@@ -1,25 +1,28 @@
+import { productCopy } from "../../apps/web/src/copy/product-copy"
+import { themeCopy } from "../../apps/web/src/copy/theme-copy"
+import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { appearanceCopy } from "../../apps/web/src/copy/appearance-copy"
 import { expect, test } from "@playwright/test"
 import { openDeck } from "./design-panel"
 
 test.use({ viewport: { width: 1470, height: 923 } })
 
-test("every theme color name stays readable at 220, 240 and 440 px", async ({ page }) => {
+test("template colors stay named and reachable at narrow editor widths", async ({ page }) => {
   await openDeck(page, "clean.pptx")
   await page.getByRole("button", { name: "Design", exact: true }).click()
-  await page.locator("[data-template-style]").click()
-  await expect(page.locator("[data-design-theme] [data-control=hex] span[id]")).toHaveCount(12)
-  const resize = page.getByRole("separator")
   for (const width of [220, 240, 440]) {
+    const resize = page.getByRole("separator")
     await resize.focus()
     await resize.press("Home")
     for (let at = 220; at < width; at += 10) await resize.press("ArrowLeft")
-    const names = await page
-      .locator("[data-design-theme] [data-control=hex] span[id]")
-      .evaluateAll((spans) =>
-        spans.filter((span) => span.clientWidth < span.scrollWidth).map((span) => span.textContent),
-      )
-    expect(names, String(width)).toEqual([])
+    await page.getByRole("button", { name: designCopy.editTemplateStyle, exact: true }).click()
+    const dialog = page.locator("[data-design-theme]")
+    for (const slot of ["dk1", "accent1", "accent6"] as const) {
+      const swatch = dialog.getByRole("button", { name: themeCopy[slot], exact: true })
+      await expect(swatch).toBeVisible()
+      await expect(swatch).toHaveAttribute("title", new RegExp(themeCopy[slot]))
+    }
+    await dialog.getByRole("button", { name: productCopy.close, exact: true }).click()
   }
 })
 

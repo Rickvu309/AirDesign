@@ -1,8 +1,9 @@
 import { format, themeSlots, type ThemeSlot } from "@airdesign/document"
-import { exportParts, paintReader, shownTheme } from "@airdesign/pptx"
+import { exportParts, paintReader, shownTheme, templateStyle } from "@airdesign/pptx"
 import { indexed, landed, type At, type Parts, type Probe } from "./parity-probe"
 
 const themeOpening = {
+  name: "opening",
   dk1: "opening",
   lt1: "opening",
   dk2: "opening",
@@ -41,8 +42,12 @@ export const themeProbe: Probe<"theme"> = {
   kind: "deck",
   opening: () => ({ v: format, patch: { theme: themeOpening } }),
   edit: (_, field, value) => ({ v: format, patch: { theme: { [field]: { set: value } } } }),
-  painted: (parts, at, field) => JSON.stringify(paintReader(named(parts, at, field)).slide(at.part).elements),
+  painted: (parts, at, field) =>
+    field === "name"
+      ? (templateStyle(parts, at.part).name ?? "")
+      : JSON.stringify(paintReader(named(parts, at, field)).slide(at.part).elements),
   fields: {
+    name: { file: (parts, at) => templateStyle(parts, at.part).name, shows: (value) => value },
     dk1: shown("dk1"),
     lt1: shown("lt1"),
     dk2: shown("dk2"),

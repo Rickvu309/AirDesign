@@ -19,6 +19,8 @@ import {
   slideKind,
   themeFonts,
   themeNode,
+  themeOwned,
+  templateNode,
   themeSlots,
   version,
   type Box,
@@ -30,6 +32,8 @@ import {
   type IndexSlide,
   type Kind,
   type Palette,
+  type TemplateStyle,
+  slideNode,
   type Role,
 } from "@airdesign/document"
 
@@ -56,7 +60,8 @@ export type ReadDeckAnswer = {
   readonly revision: number
   readonly grid: { readonly starts: readonly string[] }
   readonly elements: readonly ReadElement[]
-  readonly slides: readonly Pick<IndexSlide, "id" | "position" | "palette">[]
+  readonly slides: readonly Pick<IndexSlide, "id" | "position" | "palette" | "template">[]
+  readonly templates?: readonly TemplateStyle[]
   readonly palettes?: readonly Palette[]
   readonly theme?: Readonly<Record<string, string>>
   readonly index: "missing" | "pending" | "ready"
@@ -176,7 +181,7 @@ function knownNodes(register: Register): readonly ElementId[] {
     listed.add(node)
   }
   for (const node of register.nodes) {
-    if (node === themeNode || readElementId(node) === undefined || register.elements[node] === undefined) continue
+    if (themeOwned(node) || readElementId(node) === undefined || register.elements[node] === undefined) continue
     if (listed.has(node)) continue
     nodes.push(node)
     listed.add(node)
@@ -204,10 +209,10 @@ function firstAfter(nodes: readonly ElementId[], cursor: string): number {
   return low
 }
 
-type ReadHead = Pick<ReadDeckAnswer, "revision" | "grid" | "slides" | "palettes" | "theme" | "index">
+type ReadHead = Pick<ReadDeckAnswer, "revision" | "grid" | "slides" | "palettes" | "templates" | "theme" | "index">
 
-function themeSet(register: Register): Readonly<Record<string, string>> {
-  const body = register.nodes.includes(themeNode) ? register.elements[themeNode] : undefined
+function themeSet(register: Register, node = themeNode): Readonly<Record<string, string>> {
+  const body = register.nodes.includes(node) ? register.elements[node] : undefined
   const edits = body === undefined ? {} : (landedPatch(body, "text").theme ?? {})
   return Object.fromEntries(
     Object.entries(edits).flatMap(([field, edit]) => (typeof edit === "object" ? [[field, edit.set]] : [])),
@@ -285,14 +290,62 @@ export function readDeckPage(
   const goneSlides = new Set<string>(foldSlides(deck.register).flatMap((spot) => (spot.present ? [] : [spot.id])))
   const nodes = knownNodes(deck.register)
   const index = deck.register.index
+  const templates = index?.templates?.map((style, at) => {
+    const scoped = themeSet(deck.register, templateNode(at))
+    const palette =
+      themedHead([style.palette], { ...themeSet(deck.register), ...scoped }).palettes?.[0] ?? style.palette
+    return { ...style, name: scoped.name ?? themeSet(deck.register).name ?? style.name, palette }
+  })
   const palettes = new Map(
     (index?.slides ?? []).flatMap(({ id, palette }) => (palette === undefined ? [] : [[id, palette]])),
   )
   const slideOf = (id: string, position: number) => {
     const palette = palettes.get(id)
-    return palette === undefined || palette === 0 ? { id, position } : { id, position, palette }
+    const slide = readSlideId(id)
+    const node = slide === undefined ? undefined : slideNode(slide, "slide")
+    const body = node === undefined ? undefined : deck.register.elements[node]
+    const rows = body === undefined ? undefined : landedPatch(body, "text").template?.id
+    const source = node === undefined ? undefined : openingElement(deck.register, node)?.opening?.template?.id
+    const importedTemplate = (slide: string): string | undefined => {
+      const original = index?.slides.find((source) => source.id === slide)?.template
+      if (original !== undefined) return original
+      const command = deck.register.order.find(
+        (command) => (command.slide === "add" || command.slide === "clone") && command.id === slide,
+      )
+      return command?.slide === "clone"
+        ? importedTemplate(command.source)
+        : command?.slide === "add"
+          ? importedTemplate(command.layout)
+          : undefined
+    }
+    const template =
+      typeof rows === "object" ? rows.set : typeof source === "object" ? source.set : importedTemplate(id)
+    return {
+      id,
+      position,
+      ...(palette === undefined || palette === 0 ? {} : { palette }),
+      ...(template === undefined ? {} : { template }),
+    }
   }
   const themed = themedHead(index?.palettes, themeSet(deck.register))
+  if (templates !== undefined) {
+    const allPalettes: Palette[] = []
+    const slides =
+      deck.register.order.length === 0
+        ? (index?.slides ?? [])
+        : presentSlides(deck.register).map(({ id }, position) => ({ id, position }))
+    for (const slide of slides) {
+      const template = templates.find((template) => template.id === slideOf(slide.id, slide.position).template)
+      const opening = index?.palettes?.[palettes.get(slide.id) ?? 0]
+      const chosen = template?.palette ?? opening
+      if (chosen === undefined) continue
+      const palette: Palette = { ...chosen, map: opening?.map ?? chosen.map }
+      const found = allPalettes.findIndex((held) => JSON.stringify(held) === JSON.stringify(palette))
+      palettes.set(slide.id, found < 0 ? allPalettes.length : found)
+      if (found < 0) allPalettes.push(palette)
+    }
+    themed.palettes = allPalettes
+  }
   const fontsOf = (slide: string) => themed.palettes?.[palettes.get(slide) ?? 0]?.fonts ?? {}
   return packRead(
     {
@@ -307,6 +360,7 @@ export function readDeckPage(
               }),
         order: deck.register.order,
       }).grid,
+      ...(templates === undefined ? {} : { templates }),
       slides:
         deck.register.order.length === 0
           ? (index?.slides ?? []).map(({ id, position }) => slideOf(id, position))

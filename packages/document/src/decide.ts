@@ -5,7 +5,7 @@ import {
   rootElement,
   shapeOf,
   slideKind,
-  themeNode,
+  themeOwned,
   type ElementId,
   type SlideId,
 } from "./element-id.js"
@@ -395,7 +395,7 @@ function hostedSlide(id: ElementId): string | null {
 }
 
 export function elementFacts(register: Register, node: ElementId): ElementFacts | undefined {
-  if (node === themeNode) return { kind: "deck", text: false, grouped: false, animated: false }
+  if (themeOwned(node)) return { kind: "deck", text: false, grouped: false, animated: false }
   const kind = slideKind(node)
   if (kind !== null) return { kind, text: kind === "notes", grouped: false, animated: false }
   const opening = openingElement(register, node)

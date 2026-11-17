@@ -38,3 +38,4 @@ export const { creditsCopy } = createRequire(import.meta.url)("../../../../apps/
 export const { pictureCopy: pictureToolCopy } = createRequire(import.meta.url)(
   "../../../../apps/web/src/copy/picture-copy.ts",
 )
+export const { templateCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/template-copy.ts")

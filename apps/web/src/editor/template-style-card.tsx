@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react"
 import type { TemplateStyle } from "@airdesign/pptx"
 import { designCopy } from "@/copy/design-copy"
 
@@ -5,11 +6,14 @@ export function TemplateStyleCard({
   style,
   open,
   onOpen,
+  label = designCopy.chooseTemplateStyle,
+  ...button
 }: {
   style: TemplateStyle
   open: boolean
   onOpen: () => void
-}) {
+  label?: string
+} & Omit<ComponentProps<"button">, "style">) {
   const { name, major, minor, swatches } = style
   const fonts =
     major && minor
@@ -26,9 +30,10 @@ export function TemplateStyleCard({
     <button
       type="button"
       data-template-style
-      aria-label={designCopy.editDeckTheme}
+      aria-label={label}
       aria-expanded={open}
       onClick={onOpen}
+      {...button}
       className="flex w-full min-w-0 items-center gap-2 rounded border border-line p-2 text-left hover:bg-muted"
     >
       <span aria-hidden="true" className="flex h-8 w-8 shrink-0 overflow-hidden rounded-sm border border-line">

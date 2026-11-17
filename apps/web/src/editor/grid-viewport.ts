@@ -296,3 +296,7 @@ export function resizedGrid(view: GridViewport, box: GridRect, before: GridRect,
     y: delta(box.top, box.height, after.top, after.height),
   })
 }
+
+export function gridThumbHeight(width: number, height: number, reference: number): number {
+  return height <= 0 ? Math.round((width * 9) / 16) : Math.round((height * width) / reference)
+}

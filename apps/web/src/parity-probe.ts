@@ -6,6 +6,7 @@ import {
   planChange,
   registerScope,
   themeNode,
+  readElementId,
   type AlphaField,
   type Command,
   type FieldName,
@@ -86,25 +87,37 @@ export function landed(register: Register, commands: readonly Command[]): Regist
 
 export function placed(parts: Parts, kind: Kind, node?: string): At {
   const deck = kind === "deck"
+  const own = node?.endsWith(".slide") === true
   const found = packageIndex(parts).elements.find(
     (each) =>
-      each.kind === (deck ? "shape" : kind) && !each.grouped && (deck || node === undefined || each.node === node),
+      each.kind === (deck || own ? "shape" : kind) &&
+      !each.grouped &&
+      (deck || own || node === undefined || each.node === node),
   )
   if (found === undefined) throw new Error(kind)
   const [slide = "", shape = ""] = found.node.split(".")
   const part = readSlides(parts).find((each) => each.slide === slide)?.part ?? ""
-  return { node: deck ? themeNode : found.node, slide, part, shape }
+  return {
+    node: own ? (readElementId(node) ?? found.node) : deck ? themeNode : found.node,
+    slide,
+    part,
+    shape,
+  }
 }
 
 export function agentRegister(register: Register, at: At, example: object): Register | null {
   const read = readSetChange({ op: "set", target: at.node, ...example })
   if (!read.ok) return null
-  const opened = landed(register, [
-    { command: "add", node: at.node, floor: "", route: "clean" },
-    { command: "start", runId: "parity", node: at.node },
-  ])
-  const planned = opened === null ? null : planChange(read.change, registerScope(opened))
-  if (opened === null || planned === null || !planned.ok) return null
+  const planned = planChange(read.change, registerScope(register))
+  if (!planned.ok) return null
+  const opened = landed(
+    register,
+    planned.rows.flatMap(({ node }): Command[] => [
+      { command: "add", node, floor: "", route: "clean" },
+      { command: "start", runId: "parity", node },
+    ]),
+  )
+  if (opened === null) return null
   return landed(
     opened,
     planned.rows.map(({ node, row }) => ({ command: "agent", runId: "parity", readAt: 0, node, ...row })),
@@ -173,6 +186,9 @@ export function panelRegister(
   const commands = planned.rows.flatMap(({ node, row: planned }): Command[] =>
     (formatOne(planned.patch, holder) ?? [planned]).map((each) => ({ command: "person", node, ...each })),
   )
-  const opened = landed(register, [{ command: "add", node: at.node, floor: "", route: "clean" }])
+  const opened = landed(
+    register,
+    planned.rows.map(({ node }) => ({ command: "add", node, floor: "", route: "clean" })),
+  )
   return commands.length === 0 || opened === null ? null : landed(opened, commands)
 }

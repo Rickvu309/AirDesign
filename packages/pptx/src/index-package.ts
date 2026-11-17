@@ -7,6 +7,8 @@ import {
   type DeckIndex,
   type IndexElement,
 } from "@airdesign/document"
+import { templateStyles } from "./template-style.js"
+import { slideTheme } from "./theme-swatches.js"
 import { readNotes } from "./notes-body.js"
 import { readShapes, readSlides, shapeKind } from "./read-shapes.js"
 import { presentationPart } from "./package-address.js"
@@ -42,12 +44,16 @@ function slideSize(parts: ReadonlyMap<string, Uint8Array>): { readonly width: nu
     : null
 }
 
-export function indexPackage(parts: ReadonlyMap<string, Uint8Array>): Pick<DeckIndex, "slides" | "elements"> {
+export function indexPackage(
+  parts: ReadonlyMap<string, Uint8Array>,
+): Pick<DeckIndex, "slides" | "elements" | "templates"> {
   const size = slideSize(parts)
   const slides = readSlides(parts).map(({ slide, part }, position) => {
     const bytes = parts.get(part)
+    const template = slideTheme(parts, part)
     return {
       id: slide,
+      ...(template === null ? {} : { template }),
       position,
       ...(size === null ? {} : { size }),
       free: freeShapeId(parts, part),
@@ -77,5 +83,5 @@ export function indexPackage(parts: ReadonlyMap<string, Uint8Array>): Pick<DeckI
     const slide = (order.get(left.node.split(".")[0] ?? "") ?? 0) - (order.get(right.node.split(".")[0] ?? "") ?? 0)
     return slide || (left.node < right.node ? -1 : left.node > right.node ? 1 : 0)
   })
-  return { slides, elements }
+  return { slides, elements, templates: templateStyles(parts) }
 }
