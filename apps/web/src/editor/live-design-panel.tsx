@@ -1,4 +1,4 @@
-import { useCallback, useId, useMemo, useSyncExternalStore, type ReactNode } from "react"
+import { Fragment, useCallback, useId, useMemo, useSyncExternalStore, type ReactNode } from "react"
 import {
   keptRefuses,
   openRegister,
@@ -53,6 +53,7 @@ import {
   type PanelControl,
   type PanelSection,
 } from "@/design/panel"
+import { panelPlaces, type PanelMode } from "@/design/panel-order"
 import { changeDesign, fileValue, type DesignDeck } from "@/design/design-change"
 import { plainNames } from "@/design/node-names"
 import { rebasedChange } from "@/design/rebase"
@@ -234,7 +235,7 @@ export function usePalette(deck: DesigningDeck): Palette {
   return { theme, deck: colorsIn(display) }
 }
 
-function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementId }) {
+function LiveElementDesign({ deck, node, mode }: { deck: DesigningDeck; node: ElementId; mode: PanelMode }) {
   const store = deck.shown.store.current
   useSyncExternalStore(store.elementSubscribe(node), () => store.getElement(node)?.text ?? null)
   useSyncExternalStore(store.boxSubscribe(node), () => store.getBox(node))
@@ -260,23 +261,23 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
       picture={src === null ? null : <PicturePreview src={src} />}
       model={design.model}
       afterAlignment={liveSlideNumber(deck, node, design.view.value)}
+      mode={mode}
+      selectionColors={<LiveSelectionColors deck={deck} nodes={[node]} />}
       palette={palette}
       onChange={(control, value) =>
         changeDesign(deck, () => rebasedChange(controlsOf(elementDesign(deck, node)?.model.sections), control, value))
       }
-    >
-      <LiveSelectionColors deck={deck} nodes={[node]} />
-    </ElementDesign>
+    />
   )
 }
 
 type Several = readonly [ElementId, ...ElementId[]]
 
-function manyDesign(deck: DesigningDeck, nodes: Several) {
+function manyDesign(deck: DesigningDeck, nodes: Several, mode: PanelMode) {
   const [first, ...rest] = nodes.map((node) => elementDesign(deck, node))
   if (first == null || rest.some((design) => design === null)) return null
   const designs = [first, ...rest.filter((design) => design !== null)]
-  const model = panelOfMany([first.model, ...designs.slice(1).map((design) => design.model)])
+  const model = panelOfMany([first.model, ...designs.slice(1).map((design) => design.model)], mode)
   const views = designs.map(({ view }) => view)
   return { model, designs, views }
 }
@@ -304,10 +305,10 @@ function useElements(store: PaintStore, nodes: Several): void {
   useSyncExternalStore(subscribe, read, read)
 }
 
-function LiveManyDesign({ deck, nodes }: { deck: DesigningDeck; nodes: Several }) {
+function LiveManyDesign({ deck, nodes, mode }: { deck: DesigningDeck; nodes: Several; mode: PanelMode }) {
   useElements(deck.shown.store.current, nodes)
   const palette = usePalette(deck)
-  const design = manyDesign(deck, nodes)
+  const design = manyDesign(deck, nodes, mode)
   if (design === null) return null
   const text = editableText(design.views) ? (
     <DesignSection title={designCopy.multiEditText}>
@@ -317,7 +318,7 @@ function LiveManyDesign({ deck, nodes }: { deck: DesigningDeck; nodes: Several }
         rich
         onChange={(words) =>
           changeDesign(deck, () => {
-            const views = manyDesign(deck, nodes)?.views
+            const views = manyDesign(deck, nodes, mode)?.views
             if (views === undefined || !editableText(views)) return []
             return views.flatMap(({ node, value }) =>
               passageWords(value ?? "") === words
@@ -332,12 +333,14 @@ function LiveManyDesign({ deck, nodes }: { deck: DesigningDeck; nodes: Several }
   return (
     <ElementDesign
       model={design.model}
+      mode={mode}
+      selectionColors={<LiveSelectionColors deck={deck} nodes={nodes} />}
       palette={palette}
       titleActions={<ElementTitleActions onMatch={deck.selectMatching} />}
       afterTitle={text}
       onChange={(control, value) =>
         changeDesign(deck, () => {
-          const latest = manyDesign(deck, nodes)
+          const latest = manyDesign(deck, nodes, mode)
           if (latest === null) return []
           if (control.trait === "corners") {
             const corners = latest.designs.map(({ model }) =>
@@ -348,15 +351,18 @@ function LiveManyDesign({ deck, nodes }: { deck: DesigningDeck; nodes: Several }
           return rebasedChange(controlsOf(latest.model.sections), control, value)
         })
       }
-    >
-      {design.designs.every(({ model }) => model.kind === "text") ? null : (
-        <LiveSelectionColors deck={deck} nodes={nodes} />
-      )}
-    </ElementDesign>
+    />
   )
 }
 
-export function LiveDesignPanel({ deck, selectedSlides = 0 }: { deck: DesigningDeck; selectedSlides?: number }) {
+type PanelProps = {
+  deck: DesigningDeck
+  mode: PanelMode
+  onMode?: (mode: PanelMode) => void
+  selectedSlides?: number
+}
+
+export function LiveDesignPanel({ deck, selectedSlides = 0, mode }: PanelProps) {
   if (selectedSlides > 1)
     return (
       <div className="flex min-h-0 flex-1 flex-col" data-design-panel>
@@ -368,40 +374,48 @@ export function LiveDesignPanel({ deck, selectedSlides = 0 }: { deck: DesigningD
   const { shown, selection } = deck
   const ids = shown.store.current.slides()[shown.current]?.elements ?? []
   const [first, ...rest] = [...selection.ids.filter((id) => ids.includes(id)), ...(deck.matching ?? [])]
-  if (first === undefined) return <LiveSlideDesign deck={deck} />
-  if (rest.length === 0) return <LiveElementDesign key={first} deck={deck} node={first} />
+  if (first === undefined) return <LiveSlideDesign deck={deck} mode={mode} />
+  if (rest.length === 0) return <LiveElementDesign key={first} deck={deck} node={first} mode={mode} />
   const nodes: Several = [first, ...rest]
-  return <LiveManyDesign key={nodes.join(" ")} deck={deck} nodes={nodes} />
+  return <LiveManyDesign key={nodes.join(" ")} deck={deck} nodes={nodes} mode={mode} />
 }
 
-function LiveSlideDesign({ deck }: { deck: DesigningDeck }) {
+function LiveSlideDesign({ deck, mode }: { deck: DesigningDeck; mode: PanelMode }) {
   const { shown } = deck
   const parts = shown.displayParts.current
   const painted = shown.canvases.current(shown.current)?.background ?? null
   const view = useMemo(() => designShown(parts, shown.current, painted), [parts, shown.current, painted])
   if (view === null) return null
+  const sections = new Map<string, ReactNode>([
+    ["templateStyle", <LiveTemplateStyle deck={deck} />],
+    [
+      "background",
+      <SlideBackground
+        shown={view}
+        deck={colorsIn(parts)}
+        onFill={(value) => changeDesign(deck, () => ({ target: { slide: view.slide }, fill: { value } }))}
+      />,
+    ],
+    ["selectionColors", <LiveSelectionColors deck={deck} nodes={[]} />],
+  ])
   return (
-    <DesignView
-      shown={view}
-      deck={colorsIn(parts)}
-      onFill={(value) => changeDesign(deck, () => ({ target: { slide: view.slide }, fill: { value } }))}
-    >
-      <LiveTemplateStyle deck={deck} />
-      <LiveSelectionColors deck={deck} nodes={[]} />
-    </DesignView>
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto" data-design-panel>
+      <DesignHead>{designCopy.slide(view.number)}</DesignHead>
+      {panelPlaces("slide", mode).map(({ section }) => (
+        <Fragment key={section}>{sections.get(section)}</Fragment>
+      ))}
+    </div>
   )
 }
 
-export function DesignView({
+function SlideBackground({
   shown,
-  deck = [],
+  deck,
   onFill,
-  children = null,
 }: {
   shown: DesignShown
-  deck?: readonly string[]
+  deck: readonly string[]
   onFill: (fill: FieldValue<"fill", "value">) => void
-  children?: ReactNode
 }) {
   const { background } = shown
   const named = useId()
@@ -432,39 +446,35 @@ export function DesignView({
     },
   }
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto" data-design-panel>
-      <DesignHead>{designCopy.slide(shown.number)}</DesignHead>
-      {children}
-      <DesignSection title={designCopy.background} last={children === null}>
-        <UnionControl
-          control={control}
-          palette={{ theme: shown.theme, deck }}
-          onChange={(value) => onFill(value as FieldValue<"fill", "value">)}
-          inner={(props) =>
-            props.control.field === "value.solid" ? (
-              <ColorPicker
-                title={designCopy.background}
-                value={background.value}
-                palette={{ theme: shown.theme, deck }}
-                onPick={(solid) => onFill({ solid })}
-                trigger={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    aria-label={designCopy.backgroundColor(background.name)}
-                    data-design-swatch
-                    className={fieldLook}
-                  />
-                }
-              >
-                <ColorField id={named} css={background.css} name={background.name} />
-              </ColorPicker>
-            ) : (
-              <ControlView {...props} />
-            )
-          }
-        />
-      </DesignSection>
-    </div>
+    <DesignSection title={designCopy.background}>
+      <UnionControl
+        control={control}
+        palette={{ theme: shown.theme, deck }}
+        onChange={(value) => onFill(value as FieldValue<"fill", "value">)}
+        inner={(props) =>
+          props.control.field === "value.solid" ? (
+            <ColorPicker
+              title={designCopy.background}
+              value={background.value}
+              palette={{ theme: shown.theme, deck }}
+              onPick={(solid) => onFill({ solid })}
+              trigger={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  aria-label={designCopy.backgroundColor(background.name)}
+                  data-design-swatch
+                  className={fieldLook}
+                />
+              }
+            >
+              <ColorField id={named} css={background.css} name={background.name} />
+            </ColorPicker>
+          ) : (
+            <ControlView {...props} />
+          )
+        }
+      />
+    </DesignSection>
   )
 }

@@ -10,6 +10,7 @@ export const designCopy = {
   slide: (number: number) => `Slide ${String(number)}`,
   background: "Background",
   selectOneSlide: "Select one slide to change its design.",
+  designMode: "Design mode",
   ...templateCopy,
   backgroundColor: (name: string) => `Background color, ${name}`,
   ...appearanceCopy,

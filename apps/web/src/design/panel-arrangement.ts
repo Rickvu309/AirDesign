@@ -83,6 +83,8 @@ const placed = (field: string, name: NameLook = above, rest: Omit<Placed, "field
 const icon = (field: string, glyph: LucideIcon): Placed => placed(field, { show: "icon", icon: glyph })
 const letter = (field: string, text: string): Placed => placed(field, { show: "letter", letter: text })
 
+const paragraphSpacing = [icon("spaceBefore", ArrowUpToLine), icon("spaceAfter", ArrowDownToLine)]
+
 export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   show: [[placed("skipped", hidden, { control: "canvas" })]],
   link: [[placed("target", hidden)]],
@@ -102,8 +104,9 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     ],
     [placed("fill", hidden, { options: fills })],
     [placed("color", hidden, { control: "canvas" })],
-    [icon("spaceBefore", ArrowUpToLine), icon("spaceAfter", ArrowDownToLine)],
+    paragraphSpacing,
   ],
+  paragraphSpacing: [paragraphSpacing],
   box: [
     [letter("x", "X"), letter("y", "Y")],
     [letter("w", "W"), letter("h", "H")],
@@ -147,6 +150,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   pictureFill: [],
   textFill: [[placed("value", hidden, { options: fills })], [placed("value.solid", hidden)]],
   boxFill: [[placed("value", hidden, { options: fills })], [placed("value.solid", hidden)]],
+  fillDetails: [],
   border: [
     [
       placed("border", hidden, {

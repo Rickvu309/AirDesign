@@ -1,3 +1,4 @@
+import { geometryCopy } from "../../apps/web/src/copy/geometry-copy"
 import { expect, type Locator, type Page } from "@playwright/test"
 import { unfold } from "./design-panel"
 
@@ -16,7 +17,7 @@ export async function shapePanel(page: Page, shape: Locator): Promise<Locator> {
   if ((await design.getAttribute("aria-pressed")) !== "true") await design.click()
   await shape.click({ position: { x: 4, y: 4 } })
   const panel = page.locator("[data-design-element]")
-  await unfold(panel, "Shape type")
+  await unfold(panel, geometryCopy.shape)
   await expect(shapeType(panel)).toBeVisible()
   return panel
 }
@@ -30,6 +31,7 @@ export function typeGrid(page: Page): Locator {
 }
 
 export async function pickShape(page: Page, panel: Locator, name: string): Promise<void> {
+  await unfold(panel, geometryCopy.shape)
   await shapeType(panel).click()
   await typeGrid(page).getByRole("button", { name, exact: true }).click()
   await expect(shapeType(panel)).toHaveText(new RegExp(`^${name}`))
