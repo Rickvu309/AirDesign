@@ -4,8 +4,8 @@ import { designCopy } from "@/copy/design-copy"
 type Panel = "design" | "agent"
 type Drag = { readonly x: number; readonly width: number }
 
-const defaults: Readonly<Record<Panel, number>> = { design: 280, agent: 360 }
-const minimum = 260
+const defaults: Readonly<Record<Panel, number>> = { design: 240, agent: 360 }
+const minimum = 220
 const maximum = 440
 const bounded = (width: number) => Math.max(minimum, Math.min(maximum, width))
 

@@ -15,7 +15,7 @@ export function ToggleControl({ control, onChange }: ControlProps) {
       data-control="toggle"
       onClick={() => onChange(control.mixed ? true : !on)}
       className={cn(
-        "h-8 w-full rounded-[var(--shape-control)] border-0 px-2 font-normal active:translate-y-0",
+        "h-[var(--control-dense)] w-full rounded-[var(--shape-control)] border-0 px-2 font-normal active:translate-y-0",
         on
           ? "bg-pressed text-pressed-foreground hover:bg-pressed hover:text-pressed-foreground"
           : control.mixed
@@ -27,7 +27,7 @@ export function ToggleControl({ control, onChange }: ControlProps) {
         control.label
       ) : (
         <>
-          <Icon size={16} strokeWidth={1.5} aria-hidden />
+          <Icon size={14} strokeWidth={1.5} aria-hidden />
           <span className="sr-only">{control.label}</span>
         </>
       )}

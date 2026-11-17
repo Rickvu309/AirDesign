@@ -42,13 +42,13 @@ it("resizes with the keyboard, clamps widths and retains each panel's width", as
   const width = () => host.querySelector("aside")?.style.width
   try {
     await show("design")
-    expect(width()).toBe("280px")
+    expect(width()).toBe("240px")
     await key("ArrowLeft")
-    expect(width()).toBe("290px")
+    expect(width()).toBe("250px")
     await key("Home")
-    expect(width()).toBe("260px")
+    expect(width()).toBe("220px")
     await key("ArrowRight")
-    expect(width()).toBe("260px")
+    expect(width()).toBe("220px")
     await key("End")
     expect(width()).toBe("440px")
     await key("ArrowLeft")

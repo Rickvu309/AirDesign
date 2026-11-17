@@ -21,7 +21,7 @@ export function NodeControl({ control, onChange }: ControlProps) {
       >
         <SelectTrigger
           aria-labelledby={label}
-          className="h-8 w-full rounded-lg border-0 bg-white text-[length:var(--type-dense)] shadow-[0px_0px_0px_1px_var(--field-edge)]"
+          className="h-[var(--control-dense)] w-full rounded-[var(--shape-control)] border-0 bg-white text-[length:var(--type-caption)] shadow-[0px_0px_0px_1px_var(--field-edge)]"
         >
           <SelectValue>{(selected: string | null) => nameOf(selected)}</SelectValue>
         </SelectTrigger>

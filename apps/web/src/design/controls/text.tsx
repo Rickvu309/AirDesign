@@ -73,7 +73,7 @@ function WordsField({ control, onChange, max }: ControlProps & { readonly max: n
   return (
     <div className="flex min-w-0 flex-col gap-1">
       <label
-        className="flex h-8 min-w-0 items-center gap-2 rounded-lg bg-white px-2.5 shadow-[0px_0px_0px_1px_var(--field-edge)] has-[[aria-invalid=true]]:shadow-[0px_0px_0px_2px_var(--destructive)]"
+        className="flex h-[var(--control-dense)] min-w-0 items-center gap-2 rounded-[var(--shape-control)] bg-white px-2 shadow-[0px_0px_0px_1px_var(--field-edge)] has-[[aria-invalid=true]]:shadow-[0px_0px_0px_2px_var(--destructive)]"
         data-control="words"
         data-inherited={control.inherited ? "" : undefined}
         data-focus-ring
@@ -89,7 +89,7 @@ function WordsField({ control, onChange, max }: ControlProps & { readonly max: n
         </span>
         <input
           className={cn(
-            "min-w-0 flex-1 bg-transparent text-[length:var(--type-dense)] outline-none",
+            "min-w-0 flex-1 bg-transparent text-[length:var(--type-caption)] outline-none",
             control.look.name.show === "hidden" ? "text-left" : "text-right",
             control.inherited && draft === null ? "text-quiet" : "text-foreground",
           )}
@@ -159,7 +159,7 @@ function PassageField({ control, onChange }: ControlProps) {
         aria-invalid={problem !== null ? true : undefined}
         aria-describedby={problem !== null ? problemId : undefined}
         rows={2}
-        className="max-h-40 min-h-16 resize-none border-0 bg-white text-[length:var(--type-dense)] shadow-[0px_0px_0px_1px_var(--field-edge)] aria-invalid:shadow-[0px_0px_0px_2px_var(--destructive)] md:text-[length:var(--type-dense)]"
+        className="max-h-40 min-h-16 resize-none border-0 bg-white text-[length:var(--type-caption)] shadow-[0px_0px_0px_1px_var(--field-edge)] aria-invalid:shadow-[0px_0px_0px_2px_var(--destructive)] md:text-[length:var(--type-caption)]"
         value={draft ?? shown}
         onChange={(event) => setDraft(event.target.value)}
         onBlur={(event) => {

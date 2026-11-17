@@ -31,7 +31,7 @@ export function RecordControl({ control, palette, onChange, inner }: ControlProp
   return (
     <div role="group" aria-label={control.label} data-control="record" className="flex flex-col gap-2">
       {titled ? (
-        <span className="text-[length:var(--type-dense)] font-medium text-foreground">{control.label}</span>
+        <span className="text-[length:var(--type-caption)] font-medium text-foreground">{control.label}</span>
       ) : null}
       {strips.map((strip) => (
         <div
