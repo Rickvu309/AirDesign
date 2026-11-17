@@ -52,7 +52,14 @@ export const gateSteps = ({ tests, tooling, packages }) => {
 
 const noLine = async () => () => {}
 
-export const runGate = async ({ later, run: runStep, stamp, all = false, cheap = cheapSteps }) => {
+export const runGate = async ({
+  later,
+  run: runStep,
+  stamp,
+  all = false,
+  cheap = cheapSteps,
+  report = async () => {},
+}) => {
   const choosing = later().then(
     (chosen) => ({ chosen }),
     (error) => ({ error }),
@@ -61,6 +68,11 @@ export const runGate = async ({ later, run: runStep, stamp, all = false, cheap =
   if (first.failed.length > 0 && !all) return first
   const picked = await choosing
   if (picked.error !== undefined) throw picked.error
+  try {
+    await report()
+  } catch (error) {
+    console.error(`affected report incomplete: ${error.message}`)
+  }
   const second = await runCheck({ chosen: picked.chosen, run: runStep, all, lock: noLine })
   const failed = [...first.failed, ...second.failed]
   const ranSteps = first.ranSteps && second.ranSteps
@@ -87,6 +99,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   process.env.TMPDIR = ownTemp
   let left
   let result
+  let selection
   try {
     result = await runGate({
       all: process.argv.includes("--all"),
@@ -111,7 +124,27 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
         console.log(
           `gate: ${String(plan.changed.length)} changed files against ${against}, chosen in ${((Date.now() - started) / 1000).toFixed(1)}s: ${String(tests.files.length)} unit test files, ${String(tooling.length)} tooling test files, ${packages.length > 0 ? `the build of ${packages.join(", ")} and what depends on them` : "no build, since nothing under apps or packages changed"}`,
         )
+        selection = { base, plan, related, tests: tests.files, tooling, ci: tests.ci, limit: testLimit }
         return gateSteps({ tests: tests.files, tooling, packages })
+      },
+      report: async () => {
+        const started = performance.now()
+        const { affectedReport } = await import("./affected-report.mjs")
+        const { base, ...gate } = selection
+        const report = await affectedReport({ root, base, gate })
+        const folder = path.resolve(
+          root,
+          execFileSync("git", ["rev-parse", "--git-common-dir"], { cwd: root, encoding: "utf8" }).trim(),
+          "airdesign-checked",
+        )
+        fs.mkdirSync(folder, { recursive: true })
+        fs.writeFileSync(path.join(folder, `${tree}.affected-report.json`), `${JSON.stringify(report)}\n`)
+        console.log(
+          `affected report: unit reached ${report.unit.files?.length ?? "unknown (all)"}, gate plans ${gate.tests.length}, left out ${report.unit.leftOut?.length ?? "unknown"}; recorded left-out seconds ${report.unit.seconds?.leftOut.seconds.toFixed(3) ?? "unknown"} (${report.unit.seconds?.leftOut.missing ?? "unknown"} files untimed)`,
+        )
+        console.log(
+          `affected report: added ${((performance.now() - started) / 1000).toFixed(3)}s; browser and design computed only on ci; ${report.complete ? "complete" : "incomplete"}`,
+        )
       },
       stamp: () => {
         stampChecked(root, tree)
