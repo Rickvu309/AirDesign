@@ -1,7 +1,7 @@
 import { elementId, type ScopedElement } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { geometryCopy } from "@/copy/geometry-copy"
-import { cornersSection } from "./corners-control"
+import { cornerSteps, cornersSection } from "./corners-control"
 import { panelOf } from "./panel"
 
 const view: ScopedElement = {
@@ -24,6 +24,7 @@ it.each(["shape", "picture"] as const)(
     expect(section?.label).toBe(geometryCopy.corners)
     expect(panel.sections.map((section) => section.trait).slice(2, 5)).toEqual(["opacity", "corners", "border"])
     const control = section?.strips.flat()[0]
+    expect(control?.look.steps).toEqual([...cornerSteps])
     expect(control?.value).toBe(0)
     expect(control?.change(20 * 9525)).toEqual({
       target: { node: view.node },

@@ -1,10 +1,14 @@
-import type { SetChange } from "@airdesign/document"
+import { alphaOf, fadedColor, opaque, sameColor, type Color, type SetChange } from "@airdesign/document"
+import { Minus } from "lucide-react"
 import type { PanelKind } from "./panel-order"
 import { fillCopy } from "@/copy/fill-copy"
 import { lineCopy } from "@/copy/line-copy"
+import { opacityCopy } from "@/copy/opacity-copy"
 import { designCopy } from "@/copy/design-copy"
 import { resolveControl, arrange } from "./panel-arrangement"
 import { partControl, type PanelControl, type PanelSection } from "./panel"
+
+export const borderWidths = [1, 2, 4, 6, 8] as const
 
 export const shadowPresets = {
   subtle: {
@@ -39,16 +43,68 @@ function borderValue(fill: unknown, dash: unknown): string | undefined {
   return "solid" in fill && (dash === "solid" || dash === "dash" || dash === "dot") ? dash : undefined
 }
 
+type Outer = {
+  readonly blur: number
+  readonly distance: number
+  readonly direction: number
+  readonly color: Color
+}
+
+function readOuter(shadow: unknown): Outer | null {
+  if (typeof shadow !== "object" || shadow === null || !("outer" in shadow)) return null
+  const outer = shadow.outer
+  if (typeof outer !== "object" || outer === null) return null
+  const blur = "blur" in outer ? outer.blur : undefined
+  const distance = "distance" in outer ? outer.distance : undefined
+  const direction = "direction" in outer ? outer.direction : undefined
+  const color = "color" in outer ? outer.color : undefined
+  if (typeof blur !== "number" || typeof distance !== "number" || typeof direction !== "number") return null
+  if (typeof color !== "object" || color === null) return null
+  if (!("rgb" in color) && !("scheme" in color) && !("system" in color) && !("preset" in color)) return null
+  return { blur, distance, direction, color: color as Color }
+}
+
+function sameStrength(outer: Outer, expected: (typeof shadowPresets)[keyof typeof shadowPresets]["outer"]): boolean {
+  return (
+    outer.blur === expected.blur &&
+    outer.distance === expected.distance &&
+    outer.direction === expected.direction &&
+    sameColor(fadedColor(outer.color, opaque), fadedColor(expected.color, opaque))
+  )
+}
+
 function shadowValue(shadow: unknown): string | undefined {
   if (shadow === undefined || (typeof shadow === "object" && shadow !== null && "none" in shadow)) return "none"
-  return Object.entries(shadowPresets).find(([, value]) => {
-    if (typeof shadow !== "object" || shadow === null || !("outer" in shadow)) return false
-    const outer = shadow.outer
-    if (typeof outer !== "object" || outer === null) return false
-    return Object.entries(value.outer).every(
-      ([key, expected]) => key in outer && JSON.stringify(Reflect.get(outer, key)) === JSON.stringify(expected),
-    )
-  })?.[0]
+  const outer = readOuter(shadow)
+  if (outer === null) return undefined
+  return Object.entries(shadowPresets).find(([, preset]) => sameStrength(outer, preset.outer))?.[0]
+}
+
+function shadowOpacity(shadow: PanelControl): PanelControl | null {
+  const named = shadowValue(shadow.value)
+  const outer = readOuter(shadow.value)
+  if (outer === null || named === undefined || named === "none") return null
+  return resolveControl({
+    trait: "shadow",
+    field: "opacity",
+    label: opacityCopy.label,
+    desc: { kind: "number", unit: "fraction", min: 0, max: opaque },
+    value: alphaOf(outer.color),
+    mixed: false,
+    inherited: false,
+    reset: null,
+    change: (value) => {
+      const alpha = typeof value === "number" ? Math.max(0, Math.min(opaque, Math.round(value))) : alphaOf(outer.color)
+      return shadow.change({
+        outer: {
+          blur: outer.blur,
+          distance: outer.distance,
+          direction: outer.direction,
+          color: fadedColor(outer.color, alpha),
+        },
+      })
+    },
+  })
 }
 
 export function appearanceSections(sections: readonly PanelSection[], kind: PanelKind | null): readonly PanelSection[] {
@@ -103,9 +159,9 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
       },
     })
     const extra: PanelControl[] = []
+    const styled = dash.value === "solid" || dash.value === "dash" || dash.value === "dot"
     if (
-      kind === "connector" &&
-      dash.value === "solid" &&
+      styled &&
       fill.desc.kind === "union" &&
       typeof fill.value === "object" &&
       fill.value !== null &&
@@ -122,7 +178,12 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
         })
       }
       const width = controls.find((control) => control.trait === "line" && control.field === "width")
-      if (width !== undefined) extra.push({ ...width, label: lineCopy.borderWidth })
+      if (width !== undefined)
+        extra.push({
+          ...width,
+          label: lineCopy.borderWidth,
+          look: { ...width.look, name: { show: "above" }, glyph: Minus, steps: borderWidths, unit: "" },
+        })
     }
     added.push({
       trait: "border",
@@ -145,7 +206,13 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
           value === "subtle" || value === "medium" || value === "strong" ? shadowPresets[value] : { none: true },
         ),
     })
-    added.push({ trait: "shadow", label: designCopy.shadow, open: true, strips: arrange("shadow", [control]) })
+    const opacity = shadowOpacity(shadow)
+    added.push({
+      trait: "shadow",
+      label: designCopy.shadow,
+      open: true,
+      strips: arrange("shadow", opacity === null ? [control] : [control, opacity]),
+    })
   }
   const details = sections.map((section) => {
     if (section.trait === "image")

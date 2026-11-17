@@ -46,6 +46,11 @@ export type ControlLook = {
   readonly name: NameLook
   readonly options: Readonly<Record<string, LucideIcon | undefined>>
   readonly form: "segments" | "list"
+  readonly glyph?: LucideIcon
+  readonly steps?: readonly number[]
+  readonly slider?: boolean
+  readonly unnamed?: boolean
+  readonly unit?: string
 }
 
 type Placed = {
@@ -55,6 +60,10 @@ type Placed = {
   readonly kind?: ControlKind
   readonly options?: Readonly<Record<string, LucideIcon>>
   readonly form?: "segments" | "list"
+  readonly glyph?: LucideIcon
+  readonly steps?: readonly number[]
+  readonly slider?: boolean
+  readonly unnamed?: boolean
 }
 
 type Strip = readonly Placed[]
@@ -140,8 +149,10 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [
       placed("shadow", hidden, {
         options: { none: Minus, subtle: SubtleShadow, medium: MediumShadow, strong: StrongShadow, PatternFill },
+        unnamed: true,
       }),
     ],
+    [placed("opacity", above, { slider: true })],
   ],
   corners: [[placed("corners", { show: "beside" }, { kind: "corners" })]],
   opacity: [[placed("opacity", { show: "beside" })]],
@@ -226,6 +237,10 @@ export function resolveControl(control: Omit<PanelControl, "kind" | "look">): Pa
       name: place?.name ?? fallbackName(kind, control.field),
       options,
       form: place?.form ?? choiceLayout(control.field, choices),
+      ...(place?.glyph === undefined ? {} : { glyph: place.glyph }),
+      ...(place?.steps === undefined ? {} : { steps: place.steps }),
+      ...(place?.slider === undefined ? {} : { slider: true }),
+      ...(place?.unnamed === undefined ? {} : { unnamed: true }),
     },
   }
 }

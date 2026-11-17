@@ -7,8 +7,9 @@ export default async function drive(kit) {
   const { repo, page, expect, post, deckRoutes, capture, note } = kit
   const require = createRequire(import.meta.url)
   const { appearanceCopy: designCopy } = require(path.join(repo, "apps/web/src/copy/appearance-copy.ts"))
-  const { lineWords } = require(path.join(repo, "apps/web/src/copy/line-copy.ts"))
+  const { lineCopy, lineWords } = require(path.join(repo, "apps/web/src/copy/line-copy.ts"))
   const { effectsWords } = require(path.join(repo, "apps/web/src/copy/effects-copy.ts"))
+  const { opacityCopy } = require(path.join(repo, "apps/web/src/copy/opacity-copy.ts"))
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
   const signed = await kit.signIn()
   await page.goto("/")
@@ -37,6 +38,18 @@ export default async function drive(kit) {
     for (const [name, label] of choices) {
       const group = kind === "border" ? border : shadow
       await group.getByRole("button", { name: label, exact: true }).click()
+      if (kind === "border" && name !== "none") {
+        const borderSection = panel.locator(`[data-design-section="${designCopy.border}"]`)
+        await expect(borderSection.getByText(lineCopy.color, { exact: true })).toBeVisible()
+        await expect(borderSection.getByRole("textbox", { name: lineCopy.borderWidth, exact: true })).toBeVisible()
+      }
+      if (kind === "border" && name === "none") {
+        await expect(
+          panel
+            .locator(`[data-design-section="${designCopy.border}"]`)
+            .getByRole("textbox", { name: lineCopy.borderWidth, exact: true }),
+        ).toHaveCount(0)
+      }
       await expect(group.getByRole("button", { name: label, exact: true })).toHaveAttribute("aria-pressed", "true")
       await capture(`${kind}-${name}`)
       await expect
@@ -73,6 +86,24 @@ export default async function drive(kit) {
       note(`Saved and exported ${kind} ${name}: ${file}`)
     }
   }
+  await expect(panel.getByRole("button", { name: designCopy.list(opacityCopy.label), exact: true })).toBeVisible()
+  await shadow.getByRole("button", { name: effectsWords["shadow.subtle"], exact: true }).click()
+  const slider = panel.getByRole("slider", { name: opacityCopy.slider, exact: true })
+  await expect(slider).toBeVisible()
+  await slider.fill("40")
+  await expect
+    .poll(async () => {
+      const server = (await post(deckRoutes.open, { deck }, signed.cookie)).json.register
+      const element = server.elements[await panel.getAttribute("data-design-element")]
+      return JSON.stringify(element.landed.at(-1)?.patch)
+    })
+    .toContain('"val":40000')
+  await expect(shadow.getByRole("button", { name: effectsWords["shadow.subtle"], exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  )
+  await shadow.getByRole("button", { name: lineWords["border.none"], exact: true }).click()
+  await expect(slider).toHaveCount(0)
   const resize = page.getByRole("separator", { name: designCopy.resizePanel })
   for (const width of [220, 440, 240]) {
     await resize.focus()
