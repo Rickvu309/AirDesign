@@ -17,6 +17,7 @@ import { migrationFault, recordFile } from "./migration-numbers.mjs"
 import { baseFault } from "./pull-base.mjs"
 import { editLines, editPull, pullEdits } from "./pull-edit.mjs"
 import { restoredLimit, staleFault, staleFiles } from "./stale-tree.mjs"
+import { sweepLine } from "./sweep.mjs"
 import { hasProof, titleAdvice, titleLimit, titleVerdict } from "./title.mjs"
 
 const valueFlags = ["--pr", "--title", "--body-file"]
@@ -118,7 +119,7 @@ export const land = async (ctx) => {
       gh(["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"]),
       "could not name the repository",
     ).trim()
-  const follow = (number, branch) =>
+  const followed = (number, branch) =>
     followPull({
       number,
       branch,
@@ -133,6 +134,11 @@ export const land = async (ctx) => {
       graceMs: ctx.graceMs,
       limitMs: ctx.limitMs,
     })
+  const follow = async (number, branch) => {
+    const code = await followed(number, branch)
+    if (code === 0) say(sweepLine)
+    return code
+  }
   try {
     const branch = args.pr === undefined || !(args.status || args.watch) ? currentBranch(git) : "(by number)"
     succeeds(git(["fetch", "origin", "main"]), "could not fetch origin/main")

@@ -23,10 +23,9 @@ A rule with a check fails `pnpm gate`, `pnpm check`, `pnpm check:pptx` or the me
 | An edit changes only its PowerPoint parts and adds no validator error | `pnpm check:pptx` |
 | Every lint rule has a test and is switched on | `scripts/bug-rule.mjs` |
 | Rule code in `tooling/` stays under 10 percent of product code | `scripts/bug-rule.mjs` |
-| Remove clean, unused worktrees whose work is on `main` or whose upstream is gone; wait 12 idle hours for detached work or branches with no commits | `pnpm gate` and `pnpm check`: `scripts/worktrees.mjs` |
+| Finished worktrees and branches are swept safely | `pnpm sweep` lists merged, closed and scratch work; `--apply` removes it. `scripts/worktrees.mjs` guards live processes, dirty files and 3-hour activity; tests cover each |
 | Stashes are shared; recover only yours | `scripts/worktrees.mjs` warns on missing stash sources during `pnpm check`; read-only |
 | Killed verify runs and test clusters are removed before new ones start; live processes are kept | `leftover-runs.test.mjs` and `leftover-clusters.test.ts` |
-| A local branch with no worktree that holds nothing `main` lacks does not stay on the machine, and a clean main checkout follows `origin/main` | `pnpm gate` and `pnpm check` delete the branch and fast-forwards the checkout with `scripts/worktrees.mjs` |
 | The branch of a pull request closed without merging does not stay on GitHub | the `closed-branch` workflow deletes it when the pull request closes. The pull request page can restore it. It leaves `main` and `archive/` branches alone |
 | Staged files are formatted without staging a person's unstaged edits | `scripts/pre-commit.mjs`, installed beside `pre-push` by `scripts/install-hooks.mjs`; an unformatted partly staged file refuses the commit |
 | Cheap deterministic failures do not wait in the check line | `scripts/check.mjs` runs its `preflight` steps before `takeMachineLock`; `scripts/check.test.mjs` proves a failure takes no lock. `pnpm gate` takes none |
