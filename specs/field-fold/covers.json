@@ -53,7 +53,7 @@
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["fieldsRead", "elementDesign"],
       "digest": "8f2efb7a9caf",
-      "blob": "1fdc6b01f07d1be420789846951450c3b6df9278"
+      "blob": "c34b99c57a0e0f0feee5c104023225ec709eddae"
     },
     {
       "file": "apps/web/src/undo-list.ts",
