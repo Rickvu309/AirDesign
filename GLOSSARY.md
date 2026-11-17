@@ -8,7 +8,11 @@ The words this repo uses for how a change is checked and merged. One word per id
 
 **check**:
 One mechanical rule that passes or fails with no person and no paid model.
-_Avoid_: guard, gate, validation
+_Avoid_: guard, validation
+
+**gate**:
+The checks a push needs on this machine, as `pnpm gate` runs them: the cheap checks, the build of what the diff changed, and the tests it reaches. It stamps the commit. ci still runs every step.
+_Avoid_: pre-push check, quick check, fast check
 
 **step**:
 One check as `pnpm check` or CI runs it, with a name and a command.
@@ -20,7 +24,7 @@ _Avoid_: shard, job, matrix
 
 **ci**:
 The one result a pull request needs to merge. It passes when every part passes.
-_Avoid_: gate, pipeline, build
+_Avoid_: pipeline, build
 
 **owner**:
 The person who owns this repository and reads what the checks list.
@@ -275,7 +279,7 @@ The one number that says which stored shape a build writes: 1 plus every stamp. 
 _Avoid_: schema version, migration (a migration changes the API's database)
 
 **stamp**:
-A number that goes up when a stored shape changes. Each trait has one, with a hash of its fields, and the row, the index and the command have one each. The format adds them up, so raising one stamp raises the format. It is not the stamp `pnpm check` puts on a commit.
+A number that goes up when a stored shape changes. Each trait has one, with a hash of its fields, and the row, the index and the command have one each. The format adds them up, so raising one stamp raises the format. It is not the stamp `pnpm gate` puts on a commit.
 _Avoid_: schema version, migration number
 
 **kept**:

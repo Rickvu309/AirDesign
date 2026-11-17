@@ -38,7 +38,8 @@ export const runToolingTests = async (tests, { width = 4, cwd = root } = {}) => 
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const results = await runToolingTests(toolingTests(root))
+  const named = process.argv.slice(2)
+  const results = await runToolingTests(named.length > 0 ? named : toolingTests(root))
   const failures = results.filter((result) => result.status !== 0)
   for (const failure of failures) {
     process.stderr.write(failure.output)

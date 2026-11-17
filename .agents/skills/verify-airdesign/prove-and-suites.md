@@ -20,7 +20,7 @@ Each step takes the machine lock in its lane, and steps next to each other in th
 
 ## Which suites ci runs
 
-`pnpm check` skips the browser tests on this machine, and `ci` runs them. A change that passes only its own new spec can still break others. Before you push, run what your change needs:
+`ci` runs these suites on GitHub before the merge, and a push needs only `pnpm gate`. A change that passes only its own new spec can still break others, and ci finds that. To see a suite's answer before ci's, run it here:
 
 | Changed paths                                                                   | Suites                                       |
 | ------------------------------------------------------------------------------- | -------------------------------------------- |

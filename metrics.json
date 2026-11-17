@@ -11,6 +11,7 @@
   "design-findings": { "now": 33, "goal": 0 },
   "paint-fidelity": { "now": 172, "goal": 190 },
   "check-duration": { "limit": 40 },
+  "gate-duration": { "limit": 60 },
   "ci-duration": { "limit": 40 },
   "pptx-check-duration": { "limit": 90 }
 }

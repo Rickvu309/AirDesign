@@ -13,17 +13,17 @@ export const aloneRun = ([, command, args, env], file) => [
 const fault = (how) => ({ passed: false, how })
 
 export const judgeCheck = async ({ status, output, rerun, say }) => {
-  if (status === 0) return { passed: true, how: "the check passed" }
+  if (status === 0) return { passed: true, how: "the gate passed" }
   const steps = failedSteps(output)
-  if (steps.length === 0) return fault("pnpm check failed and named no step. Read its output above.")
+  if (steps.length === 0) return fault("the gate failed and named no step. Read its output above.")
   const stuck = steps.filter((step) => !dependsOnLoad.has(step))
-  if (stuck.length > 0) return fault(`pnpm check failed in ${stuck.join(", ")}. Fix it; load does not cause this.`)
+  if (stuck.length > 0) return fault(`the gate failed in ${stuck.join(", ")}. Fix it; load does not cause this.`)
   const failed = failedTests(output)
   if (failed.length === 0) return fault("the test step failed and named no test file. Read its output above.")
   const alone = []
   for (const file of filesOf(failed)) {
     for (const test of failed.filter((each) => each.file === file))
-      say(`test: ${file} failed in the full run: ${test.name}`)
+      say(`test: ${file} failed in the gate: ${test.name}`)
     const again = await rerun(file)
     const still = failedTests(again.output)
     if (again.status === 0) {

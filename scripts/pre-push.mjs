@@ -10,10 +10,10 @@ const refused = knowsMain(root) ? (await import("./commit-authors.mjs")).pushRef
 for (const line of refused) console.error(line)
 if (unchecked.length > 0) {
   for (const { ref, commit } of unchecked) {
-    console.error(`push refused: no passing pnpm check ran on ${ref} at ${commit.slice(0, 8)}.`)
+    console.error(`push refused: no gate passed on ${ref} at ${commit.slice(0, 8)}.`)
   }
   console.error(
-    "Run pnpm check with exactly what you commit, then push again. If a test failed, run pnpm land --check: it reruns each failed test file alone and stamps the commit when every file passes.",
+    "Run pnpm land: it runs the gate on exactly what you commit, stamps the commit, pushes it and follows ci. pnpm land --check stops after the stamp, and pnpm gate runs the gate on what you have not committed yet.",
   )
   process.exit(1)
 }
