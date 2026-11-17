@@ -24,6 +24,7 @@ export const designCopy = {
   refused: "Unable to make that change. Select the element and try again, or reload the deck if it keeps happening.",
   tooLong: (max: number, wide: boolean) =>
     wide ? `${nameTooLongOf(max)} Some letters and emoji count as 2 to 4.` : nameTooLongOf(max),
+  textTooLong: "Use less text. Text and formatting must fit within 8,000 bytes.",
   mixed: "Mixed",
   points: "pt",
   percent: "%",

@@ -1,4 +1,12 @@
-import { bytesOf, cellText, readTextValue, writeTextValue, type TextRun, type TextValue } from "@airdesign/document"
+import {
+  bytesOf,
+  cellText,
+  limits,
+  readTextValue,
+  writeTextValue,
+  type TextRun,
+  type TextValue,
+} from "@airdesign/document"
 import { useId, useState, type KeyboardEvent } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { designCopy } from "@/copy/design-copy"
@@ -37,12 +45,23 @@ function sizeOf(words: string): { readonly bytes: number; readonly wide: boolean
   return { bytes, wide: bytes > [...words].length }
 }
 
+function useTextProblem(words: string, max: number, message?: string) {
+  const problemId = useId()
+  const size = sizeOf(words)
+  const problem = size.bytes > max ? (message ?? designCopy.tooLong(max, size.wide)) : null
+  const correction =
+    problem === null ? null : (
+      <p id={problemId} className="text-[length:var(--type-caption)] leading-[var(--leading-body)] text-danger-text">
+        {problem}
+      </p>
+    )
+  return { problemId, problem, correction }
+}
+
 function WordsField({ row, onChange, max }: ControlProps & { readonly max: number }) {
   const shown = typeof row.value === "string" ? row.value : ""
   const [draft, setDraft] = useState<string | null>(null)
-  const problemId = useId()
-  const size = sizeOf((draft ?? shown).trim())
-  const problem = size.bytes > max ? designCopy.tooLong(max, size.wide) : null
+  const { problemId, problem, correction } = useTextProblem((draft ?? shown).trim(), max)
 
   function commit(words: string) {
     if (problem !== null) return
@@ -83,11 +102,7 @@ function WordsField({ row, onChange, max }: ControlProps & { readonly max: numbe
           }}
         />
       </label>
-      {problem === null ? null : (
-        <p id={problemId} className="text-[length:var(--type-caption)] leading-[var(--leading-body)] text-danger-text">
-          {problem}
-        </p>
-      )}
+      {correction}
     </div>
   )
 }
@@ -105,27 +120,37 @@ function PassageField({ row, onChange }: ControlProps) {
   const shown = wordsOf(row)
   const [draft, setDraft] = useState<string | null>(null)
 
+  const value = typeof row.value === "string" ? row.value : ""
+  const stored = (words: string) => (row.desc.kind === "text" ? typedText(value, words) : words)
+  const { problemId, problem, correction } = useTextProblem(
+    stored(draft ?? shown),
+    limits.valueBytes,
+    designCopy.textTooLong,
+  )
+
   function commit(words: string) {
+    if (problem !== null) return
     setDraft(null)
-    if (words === shown) return
-    const value = typeof row.value === "string" ? row.value : ""
-    onChange(row.desc.kind === "text" ? typedText(value, words) : words)
+    if (words !== shown) onChange(stored(words))
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.nativeEvent.isComposing) return
     if (event.key === "Escape") setDraft(null)
     if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) commit(event.currentTarget.value)
   }
 
   return (
-    <div className="flex flex-col" data-control="text">
+    <div className="flex flex-col gap-1" data-control="text">
       <label htmlFor={label} className="sr-only">
         {row.label}
       </label>
       <Textarea
         id={label}
+        aria-invalid={problem !== null ? true : undefined}
+        aria-describedby={problem !== null ? problemId : undefined}
         rows={2}
-        className="max-h-40 min-h-16 resize-none border-0 bg-white text-[length:var(--type-dense)] shadow-[0px_0px_0px_1px_var(--field-edge)] md:text-[length:var(--type-dense)]"
+        className="max-h-40 min-h-16 resize-none border-0 bg-white text-[length:var(--type-dense)] shadow-[0px_0px_0px_1px_var(--field-edge)] aria-invalid:shadow-[0px_0px_0px_2px_var(--destructive)] md:text-[length:var(--type-dense)]"
         value={draft ?? shown}
         onChange={(event) => setDraft(event.target.value)}
         onBlur={(event) => {
@@ -133,6 +158,7 @@ function PassageField({ row, onChange }: ControlProps) {
         }}
         onKeyDown={onKeyDown}
       />
+      {correction}
     </div>
   )
 }
