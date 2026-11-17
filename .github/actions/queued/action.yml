@@ -1,0 +1,16 @@
+name: queued
+description: Reports whether merge queue ci passed this exact commit.
+outputs:
+  passed:
+    description: Whether a successful merge queue ci run exists.
+    value: ${{ steps.queued.outputs.passed }}
+runs:
+  using: composite
+  steps:
+    - id: queued
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&event=merge_group&status=success" --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci.yml")] | length > 0')
+        echo "passed=$passed" >> "$GITHUB_OUTPUT"

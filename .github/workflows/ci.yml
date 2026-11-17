@@ -37,40 +37,59 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      - if: github.event_name == 'push' && matrix.part != 'pptx'
+        id: queued
+        uses: ./.github/actions/queued
+      - if: matrix.part == 'main'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        id: cache-lookup
+        with:
+          path: ~/.cache/airdesign/spec-results
+          key: spec-results-${{ hashFiles('specs/**') }}
+          lookup-only: true
+      - id: work
+        env:
+          PASSED: ${{ steps.queued.outputs.passed }}
+          CACHE_HIT: ${{ steps.cache-lookup.outputs.cache-hit }}
+          PART: ${{ matrix.part }}
+        run: |
+          needed=true
+          if [ "$PASSED" = true ] && { [ "$PART" = side ] || [ "$CACHE_HIT" = true ]; }; then needed=false; fi
+          echo "needed=$needed" >> "$GITHUB_OUTPUT"
+      - if: steps.work.outputs.needed == 'true'
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
+      - if: steps.work.outputs.needed == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - id: playwright-version
+      - if: steps.work.outputs.needed == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.work.outputs.needed == 'true'
+        id: playwright-version
         run: echo "version=$(pnpm exec playwright --version | awk 'NF { print $NF }')" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      - if: steps.work.outputs.needed == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-shell-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
-      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+      - if: steps.work.outputs.needed == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --only-shell chromium
-      - uses: ./.github/actions/tla
-      - if: matrix.part == 'main'
+      - if: steps.work.outputs.needed == 'true'
+        uses: ./.github/actions/tla
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'main'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        id: work-cache
         with:
           path: ~/.cache/airdesign/spec-results
           key: spec-results-${{ hashFiles('specs/**') }}
           restore-keys: spec-results-
-      - if: github.event_name == 'push' && matrix.part == 'side'
-        id: queued
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&event=merge_group&status=success" --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci.yml")] | length > 0')
-          echo "passed=$passed" >> "$GITHUB_OUTPUT"
-          if [ "$passed" = true ]; then echo "The merge queue passed ci on $GITHUB_SHA, so the side part does not run again."; fi
-      - uses: ./.github/actions/postgres
-      - if: matrix.part != 'pptx' && steps.queued.outputs.passed != 'true'
+      - if: steps.work.outputs.needed == 'true'
+        uses: ./.github/actions/postgres
+      - if: matrix.part != 'pptx' && steps.work.outputs.needed == 'true'
         run: pnpm check --part=${{ matrix.part }}${{ matrix.shard && format(' --shard={0}', matrix.shard) || '' }}
-      - if: matrix.part == 'main' && !cancelled()
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'main' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ~/.cache/airdesign/spec-results
@@ -135,42 +154,67 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      - if: github.event_name == 'push'
+        id: queued
+        uses: ./.github/actions/queued
+      - id: runner-image
+        run: echo "id=${ImageOS}-${ImageVersion}" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        id: cache-lookup
+        with:
+          path: ~/.cache/airdesign/pptx-renders
+          key: pptx-renders-corpus-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
+          lookup-only: true
+      - id: work
+        env:
+          PASSED: ${{ steps.queued.outputs.passed }}
+          CACHE_HIT: ${{ steps.cache-lookup.outputs.cache-hit }}
+          PART: corpus
+        run: |
+          needed=true
+          if [ "$PASSED" = true ] && { [ "$PART" = side ] || [ "$CACHE_HIT" = true ]; }; then needed=false; fi
+          echo "needed=$needed" >> "$GITHUB_OUTPUT"
+      - if: steps.work.outputs.needed == 'true'
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
+      - if: steps.work.outputs.needed == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - id: playwright-version
+      - if: steps.work.outputs.needed == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.work.outputs.needed == 'true'
+        id: playwright-version
         run: echo "version=$(pnpm exec playwright --version | awk 'NF { print $NF }')" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      - if: steps.work.outputs.needed == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-shell-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
-      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+      - if: steps.work.outputs.needed == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --only-shell chromium
-      - run: pnpm --filter '!@airdesign/site' -r --if-present run build
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      - if: steps.work.outputs.needed == 'true'
+        run: pnpm --filter '!@airdesign/site' -r --if-present run build
+      - if: steps.work.outputs.needed == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ~/.cache/pptx-tools
           key: pptx-tools-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
-      - id: runner-image
-        run: echo "id=${ImageOS}-${ImageVersion}" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      - if: steps.work.outputs.needed == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        id: work-cache
         with:
           path: ~/.cache/airdesign/pptx-renders
           key: pptx-renders-corpus-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
           restore-keys: pptx-renders-
-      - uses: ./.github/actions/postgres
-      - run: pnpm check:pptx:corpus
+      - if: steps.work.outputs.needed == 'true'
+        uses: ./.github/actions/postgres
+      - if: steps.work.outputs.needed == 'true'
+        run: pnpm check:pptx:corpus
         env:
           AIRDESIGN_WEB_BUILT: "1"
-      - name: paint-fidelity
-        if: ${{ !cancelled() }}
-        timeout-minutes: 20
-        run: pnpm metric:paint-fidelity
-      - if: ${{ !cancelled() }}
+      - if: steps.work.outputs.needed == 'true' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ~/.cache/airdesign/pptx-renders
@@ -179,13 +223,91 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/red-main.sh
+  paint-fidelity:
+    name: paint-fidelity
+    if: github.event_name == 'push' || github.event_name == 'merge_group'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - if: github.event_name == 'push'
+        id: queued
+        uses: ./.github/actions/queued
+      - id: runner-image
+        run: echo "id=${ImageOS}-${ImageVersion}" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        id: cache-lookup
+        with:
+          path: ~/.cache/airdesign/pptx-renders
+          key: pptx-renders-paint-fidelity-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
+          lookup-only: true
+      - id: work
+        env:
+          PASSED: ${{ steps.queued.outputs.passed }}
+          CACHE_HIT: ${{ steps.cache-lookup.outputs.cache-hit }}
+          PART: paint-fidelity
+        run: |
+          needed=true
+          if [ "$PASSED" = true ] && { [ "$PART" = side ] || [ "$CACHE_HIT" = true ]; }; then needed=false; fi
+          echo "needed=$needed" >> "$GITHUB_OUTPUT"
+      - if: steps.work.outputs.needed == 'true'
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
+      - if: steps.work.outputs.needed == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - if: steps.work.outputs.needed == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.work.outputs.needed == 'true'
+        id: playwright-version
+        run: echo "version=$(pnpm exec playwright --version | awk 'NF { print $NF }')" >> "$GITHUB_OUTPUT"
+      - if: steps.work.outputs.needed == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-shell-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+      - if: steps.work.outputs.needed == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --only-shell chromium
+      - if: steps.work.outputs.needed == 'true'
+        run: pnpm --filter '!@airdesign/site' -r --if-present run build
+      - if: steps.work.outputs.needed == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/pptx-tools
+          key: pptx-tools-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
+      - if: steps.work.outputs.needed == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        id: work-cache
+        with:
+          path: ~/.cache/airdesign/pptx-renders
+          key: pptx-renders-paint-fidelity-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
+          restore-keys: pptx-renders-
+      - if: steps.work.outputs.needed == 'true'
+        uses: ./.github/actions/postgres
+      - name: paint-fidelity
+        if: steps.work.outputs.needed == 'true'
+        timeout-minutes: 20
+        run: pnpm metric:paint-fidelity
+      - if: steps.work.outputs.needed == 'true' && !cancelled()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/airdesign/pptx-renders
+          key: pptx-renders-paint-fidelity-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
+      - if: failure() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/red-main.sh
   journeys:
     name: journeys
-    if: github.event_name == 'merge_group'
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
     uses: ./.github/workflows/journeys.yml
   ci:
     name: ci
-    needs: [check, corpus, journeys]
+    needs: [check, corpus, paint-fidelity, journeys]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -193,6 +315,7 @@ jobs:
       - run: |
           test "${{ needs.check.result }}" = success
           test "${{ needs.corpus.result }}" = success || test "${{ needs.corpus.result }}" = skipped
+          test "${{ needs.paint-fidelity.result }}" = success || test "${{ needs.paint-fidelity.result }}" = skipped
           test "${{ needs.journeys.result }}" = success || test "${{ needs.journeys.result }}" = skipped
       - if: github.event_name == 'push'
         continue-on-error: true

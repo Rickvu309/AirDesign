@@ -19,7 +19,8 @@ const workflows = fs
 const jobs = workflows.flatMap(({ name, jobs: found }) =>
   Object.entries(found).map(([job, { steps = [] }]) => ({ name: `${name} ${job}`, steps })),
 )
-const needsPostgres = (step) => /pnpm (check --part|check:pptx|test:journeys)|check-mutation\.mjs/.test(step.run ?? "")
+const needsPostgres = (step) =>
+  /pnpm (check --part|check:pptx|metric:paint-fidelity|test:journeys)|check-mutation\.mjs/.test(step.run ?? "")
 const action = "./.github/actions/postgres"
 
 same(
@@ -32,6 +33,7 @@ same("the jobs that run the database tests are found", served.map(({ name }) => 
   "ci.yml check",
   "ci.yml corpus",
   "ci.yml mutation",
+  "ci.yml paint-fidelity",
   "journeys.yml journeys",
 ])
 for (const { name, steps } of served) {

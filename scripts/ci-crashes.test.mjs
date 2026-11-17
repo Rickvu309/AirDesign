@@ -27,5 +27,6 @@ same("a mutation run that finished passes its step", exitOf(0), 0)
 same("a mutation run that crashed fails its step", exitOf(1), 1)
 same("a mutation run that hit its time limit warns and passes", [exitOf(124), exitOf(137)], [0, 0])
 
-const paint = workflow.jobs.corpus.steps.find((step) => step.name === "paint-fidelity")
-same("a paint-fidelity run that fails fails the corpus job", paint["continue-on-error"], undefined)
+const paint = workflow.jobs["paint-fidelity"].steps.find((step) => step.name === "paint-fidelity")
+same("a paint-fidelity run that fails fails its job", paint["continue-on-error"], undefined)
+same("a paint-fidelity job that fails fails ci", workflow.jobs["paint-fidelity"]["continue-on-error"], undefined)
