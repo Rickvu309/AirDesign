@@ -194,7 +194,7 @@ export {
   type TableRow,
   type TableValue,
 } from "./table-value.js"
-export { cellFill, tableSides, type Border, type Borders, type CellFill, type TableSide } from "./table-cells.js"
+export { tableSides, type Border, type Borders, type CellFill, type TableSide } from "./table-cells.js"
 export {
   alphaOf,
   bareTransforms,
