@@ -1,4 +1,4 @@
-import { creditsCopy } from "../../../../../apps/web/src/copy/credits-copy.ts"
+import { creditsCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 
 async function drive(kit) {
