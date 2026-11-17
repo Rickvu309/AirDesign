@@ -87,8 +87,17 @@ export function insertLines(value: TextValue, caret: Caret, lines: readonly stri
   let at = caret
   lines.forEach((line, index) => {
     if (index > 0) {
+      const anchor = splitRuns(next[at.paragraph]?.runs ?? [], at.offset)[0].at(-1)
       next = splitParagraph(next, at)
       at = { paragraph: at.paragraph + 1, offset: 0 }
+      const paragraph = next[at.paragraph]
+      if (anchor !== undefined && paragraph !== undefined && paragraph.runs.length === 0) {
+        next = [
+          ...next.slice(0, at.paragraph),
+          { ...paragraph, runs: [{ ...anchor, text: "" }] },
+          ...next.slice(at.paragraph + 1),
+        ]
+      }
     }
     const [head, tail] = splitRuns(next[at.paragraph]?.runs ?? [], at.offset)
     const paragraph = next[at.paragraph]
@@ -132,6 +141,48 @@ export function replaceSelection(
   const next = [...cut.slice(0, start.paragraph), { ...paragraph, runs: written }, ...cut.slice(start.paragraph + 1)]
   const at = { paragraph: start.paragraph, offset: start.offset + line.length }
   return lines.length === 1 ? [next, at] : insertLines(next, at, ["", ...lines.slice(1)])
+}
+
+function caretAt(value: TextValue, offset: number): Caret {
+  let left = offset
+  for (const [paragraph, line] of value.entries()) {
+    const length = paragraphText(line).length
+    if (left <= length) return { paragraph, offset: left }
+    left -= length + 1
+  }
+  return { paragraph: value.length - 1, offset: left }
+}
+
+function surrogate(code: number, low: boolean): boolean {
+  return code >= (low ? 0xdc00 : 0xd800) && code <= (low ? 0xdfff : 0xdbff)
+}
+
+export function typedValue(
+  value: TextValue,
+  words: string,
+  range?: { readonly start: number; readonly end: number },
+): TextValue {
+  const shown = value.map(paragraphText).join("\n")
+  if (range !== undefined) {
+    const inserted = words.length - (shown.length - (range.end - range.start))
+    const next = replaceSelection(
+      value,
+      caretAt(value, range.start),
+      caretAt(value, range.end),
+      words.slice(range.start, range.start + inserted).split("\n"),
+    )[0]
+    if (next.map(paragraphText).join("\n") === words) return next
+  }
+  if (shown === words) return value
+  const most = Math.min(shown.length, words.length)
+  let start = 0
+  while (start < most && shown[start] === words[start]) start += 1
+  if (start > 0 && surrogate(shown.charCodeAt(start - 1), false)) start -= 1
+  let end = 0
+  while (end < most - start && shown[shown.length - 1 - end] === words[words.length - 1 - end]) end += 1
+  if (end > 0 && surrogate(shown.charCodeAt(shown.length - end), true)) end -= 1
+  const lines = words.slice(start, words.length - end).split("\n")
+  return replaceSelection(value, caretAt(value, start), caretAt(value, shown.length - end), lines)[0]
 }
 
 export const lineBreak = /\r\n|[\r\n\u2028\u2029\u0085\v\f]/

@@ -1,7 +1,7 @@
 export { boxOf, sameBox } from "./box-gesture.js"
 export { ElementView, OpenSlide, useElement } from "./element-view.js"
 export { Filmstrip } from "./filmstrip.js"
-export { replaceSelection, textValue } from "./paragraph-edit.js"
+export { replaceSelection, textValue, typedValue } from "./paragraph-edit.js"
 export { Passage, type TextEditKind } from "./passage.js"
 export type { CanvasChart } from "./chart-record.js"
 export type { GroupOf } from "./element-paint.js"

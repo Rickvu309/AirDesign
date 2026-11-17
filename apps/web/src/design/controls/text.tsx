@@ -1,37 +1,13 @@
-import {
-  bytesOf,
-  cellText,
-  limits,
-  readTextValue,
-  writeTextValue,
-  type TextRun,
-  type TextValue,
-} from "@airdesign/document"
-import { useId, useState, type KeyboardEvent } from "react"
+import { bytesOf, cellText, limits, readTextValue, writeTextValue } from "@airdesign/document"
+import { textValue, typedValue } from "@airdesign/render"
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { designCopy } from "@/copy/design-copy"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
-function styleOf(run: TextRun | undefined): Omit<TextRun, "from" | "text"> {
-  if (run === undefined) return {}
-  const { from: _from, text: _text, ...style } = run
-  return style
-}
-
-export function typedText(value: string, words: string): string {
-  const before: TextValue = readTextValue(value) ?? []
-  const typed = words.split("\n").map((line, at) => {
-    const source = before[Math.min(at, before.length - 1)]
-    const { runs = [], ...paragraph } = source ?? { from: 0 }
-    const from = runs[0]?.from ?? -1
-    return {
-      ...paragraph,
-      from: source?.from ?? 0,
-      runs: line === "" ? [] : [{ ...styleOf(runs[0]), from, text: line }],
-    }
-  })
-  return writeTextValue(typed)
+export function typedText(value: string, words: string, range?: Parameters<typeof typedValue>[2]): string {
+  return writeTextValue(typedValue(textValue(value), words, range))
 }
 
 function wordsOf(row: ControlProps["row"]): string {
@@ -118,26 +94,47 @@ export function TextControl(props: ControlProps) {
 function PassageField({ row, onChange }: ControlProps) {
   const label = useId()
   const shown = wordsOf(row)
-  const [draft, setDraft] = useState<string | null>(null)
+  const [draft, setDraft] = useState<{ readonly words: string; readonly value: string } | null>(null)
+
+  const input = useRef<HTMLTextAreaElement>(null)
+  const pending = useRef<{ start: number; end: number; inputType: string } | null>(null)
+  const composition = useRef<{ start: number; end: number } | null>(null)
+  const history = useRef<{ words: string; value: string }[]>([])
+  const historyIndex = useRef(0)
+
+  useEffect(() => {
+    const field = input.current
+    if (field === null) return
+    function beforeInput(event: InputEvent) {
+      if (field === null) return
+      const range = event.isComposing ? composition.current : null
+      pending.current = {
+        start: range?.start ?? field.selectionStart,
+        end: range?.end ?? field.selectionEnd,
+        inputType: event.inputType,
+      }
+    }
+    field.addEventListener("beforeinput", beforeInput)
+    return () => field.removeEventListener("beforeinput", beforeInput)
+  }, [])
 
   const value = typeof row.value === "string" ? row.value : ""
-  const stored = (words: string) => (row.desc.kind === "text" ? typedText(value, words) : words)
   const { problemId, problem, correction } = useTextProblem(
-    stored(draft ?? shown),
+    draft?.value ?? value,
     limits.valueBytes,
     designCopy.textTooLong,
   )
 
-  function commit(words: string) {
+  function commit() {
     if (problem !== null) return
     setDraft(null)
-    if (words !== shown) onChange(stored(words))
+    if (draft !== null && draft.value !== value) onChange(draft.value)
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.nativeEvent.isComposing) return
     if (event.key === "Escape") setDraft(null)
-    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) commit(event.currentTarget.value)
+    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) commit()
   }
 
   return (
@@ -146,15 +143,64 @@ function PassageField({ row, onChange }: ControlProps) {
         {row.label}
       </label>
       <Textarea
+        ref={input}
         id={label}
         aria-invalid={problem !== null ? true : undefined}
         aria-describedby={problem !== null ? problemId : undefined}
         rows={2}
         className="max-h-40 min-h-16 resize-none border-0 bg-white text-[length:var(--type-dense)] shadow-[0px_0px_0px_1px_var(--field-edge)] aria-invalid:shadow-[0px_0px_0px_2px_var(--destructive)] md:text-[length:var(--type-dense)]"
-        value={draft ?? shown}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={(event) => {
-          if (draft !== null) commit(event.currentTarget.value)
+        value={draft?.words ?? shown}
+        onChange={(event) => {
+          const words = event.target.value
+          const operation = pending.current
+          pending.current = null
+          const before = draft ?? { words: shown, value }
+          if (draft === null && history.current[historyIndex.current]?.value !== value) {
+            history.current = [before]
+            historyIndex.current = 0
+          }
+          if (operation?.inputType === "historyUndo" || operation?.inputType === "historyRedo") {
+            const direction = operation.inputType === "historyUndo" ? -1 : 1
+            for (
+              let index = historyIndex.current + direction;
+              index >= 0 && index < history.current.length;
+              index += direction
+            ) {
+              const saved = history.current[index]
+              if (saved?.words !== words) continue
+              historyIndex.current = index
+              setDraft(saved)
+              return
+            }
+          }
+          let range = operation === null ? undefined : { start: operation.start, end: operation.end }
+          if (range !== undefined && operation?.inputType.startsWith("delete") && range.start === range.end) {
+            const removed = before.words.length - words.length
+            if (operation.inputType.endsWith("Backward")) range.start -= removed
+            else range.end += removed
+          }
+          const next = {
+            words,
+            value: row.desc.kind === "text" ? typedText(before.value, words, range) : words,
+          }
+          if (composition.current !== null && range !== undefined) {
+            composition.current = {
+              start: range.start,
+              end: words.length - before.words.length + range.end,
+            }
+          }
+          history.current = [...history.current.slice(0, historyIndex.current + 1), next]
+          historyIndex.current += 1
+          setDraft(next)
+        }}
+        onCompositionStart={(event) => {
+          composition.current = { start: event.currentTarget.selectionStart, end: event.currentTarget.selectionEnd }
+        }}
+        onCompositionEnd={() => {
+          composition.current = null
+        }}
+        onBlur={() => {
+          if (draft !== null) commit()
         }}
         onKeyDown={onKeyDown}
       />
