@@ -8,7 +8,7 @@ export const textWire: TraitWire<"text"> = {
   fields: {
     value: {
       description:
-        "Plain text replaces all of it and keeps the first run's look. A JSON text value, [{from, runs: [{from, text}]}], keeps the file's paragraphs and runs: each from is an index the file has, and -1 is a new one.",
+        "Plain text keeps the first run's look. JSON [{from,runs:[{from,text,link?}]}] keeps file indexes; -1 adds a run. Run link: {kind:'url',url:'https://…'}, {kind:'slide',slide:'ID'}, or {kind:'none'} to remove. Omit link to preserve it.",
       example: { text: { value: "Quarterly review" } },
     },
     color: {

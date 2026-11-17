@@ -1,3 +1,4 @@
+import { shownLink, writtenLink } from "./trait-xml-link.js"
 import { namesAlpha, readTextValue, writeTextValue, type Alpha, type Color, type TextValue } from "@airdesign/document"
 import { agreed, alphaKept, fadedBytes, fragmentAlpha, type Faded } from "./alpha-codec.js"
 import { fillIn } from "./color-read.js"
@@ -173,13 +174,30 @@ const textValue: PartCodec<string> = {
     if (bytes === undefined) return null
     try {
       const { elements } = requireMarkup(bytes)
-      return storedText(shapeTextValue(markupChildren(elements), bytes, shapeById(elements, at.shape)))
+      const value = shapeTextValue(markupChildren(elements), bytes, shapeById(elements, at.shape))
+      return storedText(
+        value.map((paragraph, i) => ({
+          ...paragraph,
+          runs: paragraph.runs.map((run, j) => {
+            const link = shownLink(parts, { ...at, paragraph: i, run: j })
+            return link === null || link.kind === "none" ? run : { ...run, link }
+          }),
+        })),
+      )
     } catch {
       return null
     }
   },
-  write: (parts, at, value) =>
-    applyRoute(parts, { name: "text", part: at.part, shape: at.shape, value: shownText(value) }),
+  write(parts, at, value) {
+    const text = shownText(value)
+    let next: Parts = applyRoute(parts, { name: "text", part: at.part, shape: at.shape, value: text })
+    for (const [paragraph, p] of text.entries())
+      for (const [run, r] of p.runs.entries()) {
+        if (r.link !== undefined && r.link.kind !== "unsupported")
+          next = writtenLink(next, { ...at, paragraph, run }, r.link)
+      }
+    return next
+  },
 }
 
 export const textXml: TraitXml<"text"> = {

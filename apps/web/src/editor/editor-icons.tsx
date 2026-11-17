@@ -1,6 +1,7 @@
 import { cn } from "@/lib/class-names"
 
 const iconPaths = {
+  link: '<path d="m10 13 4-4M8 15l-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0M16 9l1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0"/>',
   chev: '<path d="m6 9 6 6 6-6"/>',
   chevr: '<path d="m9 6 6 6-6 6"/>',
   chevl: '<path d="m15 6-6 6 6 6"/>',

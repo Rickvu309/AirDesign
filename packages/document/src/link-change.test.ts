@@ -33,3 +33,29 @@ it("writes a whole-element destination through the shared set path and refuses a
   })
   expect(planChange({ target: { node: picture }, link }, scope)).toMatchObject({ ok: false })
 })
+
+it("refuses a new phrase link to a slide outside the deck", () => {
+  const node = elementId("258.2")
+  const scope = registerScope({
+    ...openRegister("", "clean"),
+    index: {
+      total: 1,
+      pages: [],
+      slides: [{ id: "258", position: 0 }],
+      elements: [{ node, kind: "shape", value: "Hello", box: null, grouped: false }],
+    },
+  })
+  expect(
+    planChange(
+      {
+        target: { node },
+        text: {
+          value: JSON.stringify([
+            { from: 0, runs: [{ from: 0, text: "Hello", link: { kind: "slide", slide: "999" } }] },
+          ]),
+        },
+      },
+      scope,
+    ),
+  ).toMatchObject({ ok: false, refusals: [{ trait: "text", code: "dead" }] })
+})

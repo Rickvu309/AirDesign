@@ -1,4 +1,5 @@
 import { sameColor, type Color } from "./color.js"
+import type { ElementLink, LinkEdit } from "./link-target.js"
 import type { ParagraphAlign, TextFormat, TextParagraph, TextRun, TextValue } from "./text-value.js"
 import { formatNames, sizeCeiling, sizeDefault, sizeFloor } from "./text-value.js"
 
@@ -31,6 +32,7 @@ function setFormat(run: TextRun, paragraph: number, format: TextFormat, on: bool
 export function sameFormats(left: TextRun, right: TextRun): boolean {
   return (
     formatNames.every((format) => left[format] === right[format]) &&
+    JSON.stringify(left.link) === JSON.stringify(right.link) &&
     left.size === right.size &&
     left.font === right.font &&
     sameColor(left.color, right.color)
@@ -274,4 +276,19 @@ export function bulletState(value: TextValue, range: TextRange | null, file: Fil
   const states = new Set(flags)
   if (states.size > 1) return "mixed"
   return states.has(true) ? "on" : "off"
+}
+
+export function linkRange(value: TextValue, range: TextRange | null, link: LinkEdit): TextValue {
+  return applyRuns(value, range, (_paragraph, run) => ({
+    ...run,
+    link,
+    ...(link.kind === "none" ? {} : { underline: true }),
+  }))
+}
+
+export function linkState(value: TextValue, range: TextRange | null): ElementLink | "mixed" | null {
+  return uniform(
+    coveredRuns(value, range).map(({ run }) => run.link ?? ({ kind: "none" } as const)),
+    (a, b) => JSON.stringify(a) === JSON.stringify(b),
+  )
 }

@@ -261,6 +261,7 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
   const src = image == null ? null : (deck.shown.pictures.current?.src(image) ?? null)
   return (
     <ElementDesign
+      formatting={deck.undo.formatting.current}
       picture={src === null ? null : <PicturePreview src={src} />}
       model={design.model}
       palette={palette}

@@ -1,10 +1,11 @@
-import type { ParagraphAlign, ParagraphSpacing, Color, TextFormat } from "@airdesign/document"
+import type { ElementLink, ParagraphAlign, ParagraphSpacing, Color, TextFormat } from "@airdesign/document"
 import type { CanvasBullet } from "./text-record.js"
 import { endsInBreak, type RunPaint, type TextLook } from "./text-look.js"
 
 type ShownAlign = ParagraphAlign | "justify"
 
 type ShownRun = {
+  readonly link?: ElementLink
   readonly from: number
   readonly text: string
   readonly bold?: boolean
@@ -40,6 +41,13 @@ function overlayOf(run: ShownRun): RunPaint {
   }
   if (run.size !== undefined) paint = { ...paint, size: run.size }
   if (color !== undefined) paint = { ...paint, color }
+  if (
+    run.link !== undefined &&
+    run.link.kind !== "none" &&
+    run.link.kind !== "unsupported" &&
+    run.underline === undefined
+  )
+    paint = { ...paint, underline: true }
   if (typeof run.font === "string") paint = { ...paint, font: run.font }
   return paint
 }
@@ -81,11 +89,29 @@ export function SheetText(props: {
             data-end-break={endsInBreak(paragraph.runs.map((run) => run.text).join("")) ? "" : undefined}
             style={shown}
           >
-            {paragraph.runs.map((run, at) => (
-              <span key={at} style={look.run(paragraph.from, run.from, overlayOf(run), overlay)}>
-                {run.text}
-              </span>
-            ))}
+            {paragraph.runs.map((run, at) =>
+              run.link !== undefined && run.link.kind !== "none" && run.link.kind !== "unsupported" ? (
+                <a
+                  key={at}
+                  data-text-link
+                  href={run.link.kind === "url" ? run.link.url : `#slide-${run.link.slide}`}
+                  target={run.link.kind === "url" ? "_blank" : undefined}
+                  rel="noopener noreferrer"
+                  style={{
+                    ...look.run(paragraph.from, run.from, overlayOf(run), overlay),
+                    pointerEvents: "auto",
+                    position: "relative",
+                    zIndex: 1,
+                  }}
+                >
+                  {run.text}
+                </a>
+              ) : (
+                <span key={at} style={look.run(paragraph.from, run.from, overlayOf(run), overlay)}>
+                  {run.text}
+                </span>
+              ),
+            )}
             {filled ? null : <br />}
           </div>
         )

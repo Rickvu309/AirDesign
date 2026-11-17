@@ -2,6 +2,7 @@ import { readLinkTarget, readSlideId, type LinkEdit, type ElementLink } from "@a
 import { decodedXmlText, spliceBytes, type MarkupElement } from "./element-span.js"
 import { partOf, relativeTarget, relsOf, slideAddresses } from "./package-address.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
+import { withRunChild } from "./run-color.js"
 import { requireMarkup } from "./part-markup.js"
 import { shapeById } from "./shape-tree.js"
 import { markupChildren } from "./text-value-route.js"
@@ -14,13 +15,29 @@ const attr = (element: MarkupElement, name: string) => {
 const escape = (text: string) =>
   text.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
 
-function owner(parts: Parts, at: ElementAt) {
+export type LinkAt = ElementAt & { readonly paragraph?: number; readonly run?: number }
+
+function owner(parts: Parts, at: LinkAt) {
   const bytes = parts.get(at.part)
   if (bytes === undefined) return null
   const { elements } = requireMarkup(bytes)
   const children = markupChildren(elements)
   const shape = shapeById(elements, at.shape)
   if (shape.kind !== "p:sp") return null
+  if (at.paragraph !== undefined && at.run !== undefined) {
+    const body = children[shape.index]?.find((each) => each.kind === "p:txBody")
+    const paragraph =
+      body === undefined ? undefined : children[body.index]?.filter((each) => each.kind === "a:p")[at.paragraph]
+    const run =
+      paragraph === undefined
+        ? undefined
+        : children[paragraph.index]?.filter((each) => ["a:r", "a:br", "a:fld"].includes(each.kind))[at.run]
+    if (run === undefined) return null
+    const holder = children[run.index]?.find((each) => each.kind === "a:rPr")
+    if (holder === undefined) return { bytes, holder: run, held: [], click: undefined, missingProperties: true }
+    const held = children[holder.index] ?? []
+    return { bytes, holder, held, click: held.find((each) => each.kind === "a:hlinkClick") }
+  }
   const visual = children[shape.index]?.find((each) => each.kind === "p:nvSpPr")
   const holder = visual === undefined ? undefined : children[visual.index]?.find((each) => each.kind === "p:cNvPr")
   if (holder === undefined) return null
@@ -30,7 +47,7 @@ function owner(parts: Parts, at: ElementAt) {
 
 export type { ElementLink } from "@airdesign/document"
 
-export function shownLink(parts: Parts, at: ElementAt): ElementLink | null {
+export function shownLink(parts: Parts, at: LinkAt): ElementLink | null {
   const found = owner(parts, at)
   if (found === null) return null
   const click = found.click
@@ -63,7 +80,8 @@ export function shownLink(parts: Parts, at: ElementAt): ElementLink | null {
   return { kind: "unsupported" }
 }
 
-function writtenLink(parts: Parts, at: ElementAt, value: LinkEdit): Parts {
+export function writtenLink(parts: Parts, at: LinkAt, value: LinkEdit): Parts {
+  if (JSON.stringify(shownLink(parts, at)) === JSON.stringify(value)) return parts
   const found = owner(parts, at)
   if (found === null) throw new Error("link-owner")
   const next = new Map(parts)
@@ -108,12 +126,29 @@ function writtenLink(parts: Parts, at: ElementAt, value: LinkEdit): Parts {
         : decodeUtf8(found.bytes.subarray(found.click.openEnd, found.click.closeStart))
     xml = `<a:hlinkClick xmlns:r="${prefix}" r:id="${id}"${value.kind === "slide" ? ' action="ppaction://hlinksldjump"' : ""}${extras}>${inner}</a:hlinkClick>`
   }
+  if ("missingProperties" in found && xml !== "") xml = `<a:rPr>${xml}</a:rPr>`
   const { bytes, holder, click } = found
-  if (click !== undefined)
+  if (holder.kind === "a:rPr") {
+    next.set(
+      at.part,
+      spliceBytes(bytes, [
+        {
+          start: holder.start,
+          end: holder.end,
+          next: withRunChild(
+            bytes.subarray(holder.start, holder.end),
+            new Set(["a:hlinkClick"]),
+            "a:hlinkClick",
+            encodeUtf8(xml),
+          ),
+        },
+      ]),
+    )
+  } else if (click !== undefined)
     next.set(at.part, spliceBytes(bytes, [{ start: click.start, end: click.end, next: encodeUtf8(xml) }]))
   else if (xml !== "") {
     const edit = holder.selfClosing
-      ? { start: holder.openEnd - 2, end: holder.openEnd, next: encodeUtf8(`>${xml}</p:cNvPr>`) }
+      ? { start: holder.openEnd - 2, end: holder.openEnd, next: encodeUtf8(`>${xml}</${holder.kind}>`) }
       : { start: holder.openEnd, end: holder.openEnd, next: encodeUtf8(xml) }
     next.set(at.part, spliceBytes(bytes, [edit]))
   }

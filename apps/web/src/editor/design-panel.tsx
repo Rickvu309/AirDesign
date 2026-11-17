@@ -9,6 +9,9 @@ import { foldOpen, setFold, useFolds } from "@/design/panel-folds"
 import { swatchMist, swatchNavy, swatchTeal, swatchWhite } from "@/editor/design-panel-art"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
+import { LinkFormatting } from "@/design/controls/link"
+import type { TextFormatting } from "@airdesign/render"
+import { linkCopy } from "@/copy/link-copy"
 
 export function DesignPanel() {
   return (
@@ -216,8 +219,10 @@ export function ElementDesign({
   palette,
   onChange,
   picture = null,
+  formatting,
   children = null,
 }: {
+  formatting?: TextFormatting
   model: PanelModel
   picture?: ReactNode
   children?: ReactNode
@@ -228,77 +233,94 @@ export function ElementDesign({
   const folds = useFolds()
   const { kind } = model
   return (
-    <div
-      className="flex min-h-0 flex-1 flex-col overflow-y-auto outline-none"
-      data-design-panel
-      data-design-element={model.nodes.join(" ")}
-      data-keeps-selection
-      tabIndex={-1}
-    >
-      {model.sections.every((section) => section.label !== null) ? <DesignHead>{panelTitle(model)}</DesignHead> : null}
-      {model.sections.length === 0 ? (
-        <p className="px-4 py-4 text-[length:var(--type-caption)] text-quiet">{designCopy.nothing}</p>
-      ) : null}
-      {model.sections.map((section, at) => {
-        if (section.trait === "pictureFill")
-          return picture === null ? null : (
-            <DesignSection key={section.trait} title={section.label}>
-              {picture}
+    <LinkFormatting.Provider value={formatting}>
+      <div
+        data-keeps-format
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto outline-none"
+        data-design-panel
+        data-design-element={model.nodes.join(" ")}
+        data-keeps-selection
+        tabIndex={-1}
+      >
+        {model.sections.every((section) => section.label !== null) ? (
+          <DesignHead>{panelTitle(model)}</DesignHead>
+        ) : null}
+        {model.sections.length === 0 ? (
+          <p className="px-4 py-4 text-[length:var(--type-caption)] text-quiet">{designCopy.nothing}</p>
+        ) : null}
+        {model.sections.map((section, at) => {
+          if (section.trait === "pictureFill")
+            return picture === null ? null : (
+              <DesignSection key={section.trait} title={section.label}>
+                {picture}
+              </DesignSection>
+            )
+          if (section.label === null)
+            return (
+              <div key={section.trait}>
+                <DesignSection title={null}>
+                  <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
+                </DesignSection>
+                <DesignHead>{panelTitle(model)}</DesignHead>
+              </div>
+            )
+          const [strip, ...more] = section.strips
+          const [lone, ...beside] = strip ?? []
+          if (
+            section.open &&
+            lone !== undefined &&
+            more.length === 0 &&
+            beside.length === 0 &&
+            lone.look.name.show === "beside"
+          )
+            return (
+              <section
+                key={section.trait}
+                className={cn(
+                  "grid grid-cols-2 items-center gap-2 px-4 py-3",
+                  at === last ? null : "border-b border-line",
+                )}
+              >
+                <h2 className="text-[length:var(--type-caption)] font-medium text-foreground">{section.label}</h2>
+                <ControlView control={lone} palette={palette} onChange={(value) => onChange(lone, value)} />
+              </section>
+            )
+          const reset = section.strips
+            .flat()
+            .find((control) => control.reset !== null && control.look.name.show === "hidden")
+          return (
+            <DesignSection
+              key={section.trait}
+              title={section.label}
+              last={at === last && children === null}
+              action={
+                section.trait === "link" ? (
+                  <button
+                    type="button"
+                    aria-label={linkCopy.create}
+                    onClick={(event) => event.currentTarget.closest("section")?.querySelector("input")?.focus()}
+                  >
+                    <EditorIcon name="link" size={16} />
+                  </button>
+                ) : reset === undefined ? null : (
+                  <SectionReset control={reset} onChange={onChange} />
+                )
+              }
+              fold={
+                kind === null || section.trait === "link"
+                  ? null
+                  : {
+                      open: foldOpen(folds, kind, section.trait, section.open),
+                      onOpen: (open) => setFold(kind, section.trait, open),
+                    }
+              }
+            >
+              <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
             </DesignSection>
           )
-        if (section.label === null)
-          return (
-            <div key={section.trait}>
-              <DesignSection title={null}>
-                <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
-              </DesignSection>
-              <DesignHead>{panelTitle(model)}</DesignHead>
-            </div>
-          )
-        const [strip, ...more] = section.strips
-        const [lone, ...beside] = strip ?? []
-        if (
-          section.open &&
-          lone !== undefined &&
-          more.length === 0 &&
-          beside.length === 0 &&
-          lone.look.name.show === "beside"
-        )
-          return (
-            <section
-              key={section.trait}
-              className={cn(
-                "grid grid-cols-2 items-center gap-2 px-4 py-3",
-                at === last ? null : "border-b border-line",
-              )}
-            >
-              <h2 className="text-[length:var(--type-caption)] font-medium text-foreground">{section.label}</h2>
-              <ControlView control={lone} palette={palette} onChange={(value) => onChange(lone, value)} />
-            </section>
-          )
-        const reset = section.strips
-          .flat()
-          .find((control) => control.reset !== null && control.look.name.show === "hidden")
-        return (
-          <DesignSection
-            key={section.trait}
-            title={section.label}
-            last={at === last && children === null}
-            action={reset === undefined ? null : <SectionReset control={reset} onChange={onChange} />}
-            fold={
-              kind === null
-                ? null
-                : {
-                    open: foldOpen(folds, kind, section.trait, section.open),
-                    onOpen: (open) => setFold(kind, section.trait, open),
-                  }
-            }
-          >
-            <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
-          </DesignSection>
-        )
-      })}
-      {children}
-    </div>
+        })}
+        {children}
+      </div>
+    </LinkFormatting.Provider>
   )
 }

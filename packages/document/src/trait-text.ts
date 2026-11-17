@@ -4,7 +4,7 @@ import { alphaOver, choice, color, custom, flag, fractionWithin, pointsUpTo, typ
 
 export const text = trait(
   "run",
-  { version: 2, shape: "aaea7ede" },
+  { version: 3, shape: "aaea7ede" },
   { value: custom<string, string>("text"), alpha: alphaOver("value") },
   {
     color,

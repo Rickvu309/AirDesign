@@ -286,6 +286,12 @@ function planNode(
   const link = change.link?.target
   if (link?.kind === "slide" && scope.expand({ slide: link.slide }).length === 0)
     refusals.push({ node: view.node, trait: "link", code: "dead" })
+  const runLinks =
+    readTextValue(change.text?.value ?? "")?.flatMap((paragraph) =>
+      paragraph.runs.flatMap((run) => (run.link?.kind === "slide" ? [run.link.slide] : [])),
+    ) ?? []
+  if (runLinks.some((slide) => scope.expand({ slide }).length === 0))
+    refusals.push({ node: view.node, trait: "text", code: "dead" })
   if (change.opacity !== undefined) refusals.push(...opacityRefusals(view))
   if (refusals.length > 0) return refusals
   const patch: Record<string, Readonly<Record<string, FieldEdit<unknown>>>> = Object.fromEntries(

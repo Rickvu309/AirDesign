@@ -1,4 +1,5 @@
 import { readColor, writtenColor, type Color } from "./color.js"
+import { readElementLink, type ElementLink } from "./link-target.js"
 import { bytesOf } from "./limits.js"
 import { record } from "./plain-object.js"
 
@@ -34,6 +35,7 @@ export type TextRun = {
   readonly text: string
   readonly size?: number
   readonly color?: Color
+  readonly link?: ElementLink
   readonly font?: string
 } & RunFormat
 export type ParagraphSpacing = {
@@ -56,7 +58,7 @@ const spacingRange: Readonly<Record<(typeof spacingNames)[number], readonly [num
   spaceAfter: [0, spaceCeiling],
 }
 const paragraphKeys = new Set<string>(["from", "runs", "align", "bullet", ...spacingNames])
-const runKeys = new Set<string>(["from", "text", "size", "color", "font", ...formatNames])
+const runKeys = new Set<string>(["from", "text", "link", "size", "color", "font", ...formatNames])
 
 function named<T extends string>(names: readonly T[], value: string): T | null {
   for (const name of names) if (name === value) return name
@@ -112,6 +114,11 @@ function readRun(value: unknown): TextRun | null {
     if (set === undefined) continue
     if (typeof set !== "boolean") return null
     read = { ...read, [format]: set }
+  }
+  if (run.link !== undefined) {
+    const link = readElementLink(run.link)
+    if (link === null) return null
+    read = { ...read, link }
   }
   if (size !== undefined) read = { ...read, size }
   if (color !== undefined) read = { ...read, color }
@@ -178,6 +185,7 @@ export function readParagraphs(parsed: unknown): TextValue | null {
 function writtenRun(run: TextRun): Record<string, unknown> {
   const written: Record<string, unknown> = { from: run.from, text: run.text }
   for (const format of formatNames) if (run[format] !== undefined) written[format] = run[format]
+  if (run.link !== undefined) written.link = run.link
   if (run.size !== undefined) written.size = run.size
   if (run.color !== undefined) written.color = writtenColor(run.color)
   if (run.font !== undefined) written.font = run.font

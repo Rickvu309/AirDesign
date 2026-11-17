@@ -26,7 +26,20 @@ export function PresentLinks({
   const size = paintReader(parts).slide(slide.part)
   const scale = width / size.width
   return (
-    <div className="relative">
+    <div
+      className="relative"
+      onClickCapture={(event) => {
+        const node = event.target instanceof Element ? event.target.closest("a[data-text-link]") : null
+        if (!(node instanceof HTMLAnchorElement)) return
+        event.stopPropagation()
+        const href = node.getAttribute("href") ?? ""
+        if (href.startsWith("#slide-")) {
+          event.preventDefault()
+          const destination = slides.findIndex((slide) => slide.slide === href.slice(7))
+          if (destination >= 0) go(destination)
+        }
+      }}
+    >
       {children}
       {size.elements.flatMap((shape) => {
         if (shape.from !== "slide" || shape.kind !== "p:sp" || shape.box === null) return []

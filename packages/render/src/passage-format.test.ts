@@ -278,3 +278,23 @@ it("keeps the live selection on keydown before selectionchange is delivered", as
     },
   ])
 })
+
+it("keeps a phrase link through a panel focus change and text serialization", async () => {
+  const { editor, formatting, edits } = await mounted()
+  await select(editor, 6, 11)
+  formatting.aim(id, editor)
+  const panel = document.createElement("input")
+  panel.dataset.keepsFormat = ""
+  document.body.append(panel)
+  const unsubscribe = formatting.subscribe(() => undefined)
+  await act(async () => panel.focus())
+  expect(formatting.selection()).toBe(true)
+  await act(async () => formatting.linkTo({ kind: "url", url: "https://example.com" }))
+  expect(readTextValue(edits.at(-1) ?? "")?.[0]?.runs).toEqual([
+    { from: 0, text: "Hello " },
+    { from: 0, text: "world", link: { kind: "url", url: "https://example.com" }, underline: true },
+  ])
+  expect(formatting.link()).toEqual({ kind: "url", url: "https://example.com" })
+  unsubscribe()
+  panel.remove()
+})

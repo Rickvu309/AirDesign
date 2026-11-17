@@ -1,6 +1,19 @@
-import { formatNames, readColor, type Color, type ColorTransform, type RunFormat } from "@airdesign/document"
+import {
+  readElementLink,
+  type ElementLink,
+  formatNames,
+  readColor,
+  type Color,
+  type ColorTransform,
+  type RunFormat,
+} from "@airdesign/document"
 
-type RunPaint = RunFormat & { readonly size?: number; readonly color?: Color; readonly font?: string }
+type RunPaint = RunFormat & {
+  readonly link?: ElementLink
+  readonly size?: number
+  readonly color?: Color
+  readonly font?: string
+}
 
 const sizeFloor = 100
 const sizeCeiling = 400_000
@@ -59,6 +72,7 @@ export function writeFormat(span: HTMLElement, format: RunPaint): void {
   if (format.color !== undefined) {
     span.dataset.color = colorToken(format.color)
   }
+  if (format.link !== undefined) span.dataset.link = JSON.stringify(format.link)
   if (format.font !== undefined) span.dataset.font = format.font
 }
 
@@ -67,6 +81,13 @@ export function readFormat(span: HTMLElement): RunPaint {
   for (const name of formatNames) {
     const set = span.dataset[name]
     if (set === "true" || set === "false") format = { ...format, [name]: set === "true" }
+  }
+  const rawLink = span.dataset.link
+  if (rawLink !== undefined) {
+    try {
+      const link = readElementLink(JSON.parse(rawLink))
+      if (link !== null) format = { ...format, link }
+    } catch {}
   }
   const size = readSize(span.dataset.size)
   if (size !== null) format = { ...format, size }
