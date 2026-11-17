@@ -57,10 +57,6 @@ export function gridSpacing(width: number, height: number) {
   return { column: width * 0.13, row: height * 0.57 }
 }
 
-export function gridNumbersFit(width: number, height: number, scale: number): boolean {
-  return width * scale >= 32 && gridSpacing(width, height).row * scale >= 28
-}
-
 const wheelPixels = [1, 16, 800] as const
 
 const wheelZoomStep = 10
@@ -83,7 +79,7 @@ export function wheeledGrid(
   if (event.ctrlKey || event.metaKey) {
     const step = Math.max(-wheelZoomStep, Math.min(wheelZoomStep, y))
     const next = view.scale * Math.exp(-step * 0.01)
-    return zoomedGrid(view, Math.max(Math.min(view.scale, boundedGridScale(next)), Math.min(4, next)), anchor)
+    return zoomedGrid(view, Math.max(0.01, Math.min(4, next)), anchor)
   }
   return pannedGrid(view, event.shiftKey && x === 0 ? { x: -y, y: 0 } : { x: -x, y: -y })
 }

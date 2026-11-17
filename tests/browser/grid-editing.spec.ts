@@ -130,8 +130,12 @@ test("the slide number or a blank part of a slide selects the slide, and Shift o
   await slides(page, 4)
   await number(page, 2).click()
   await expect(entry(page, 2)).toHaveAttribute("data-selected", "")
-  await expect(number(page, 2)).toHaveClass(/text-primary-strong/)
-  await expect(number(page, 1)).not.toHaveClass(/text-primary-strong/)
+  await expect(number(page, 2)).toHaveCSS("color", "rgb(22, 91, 168)")
+  await page.mouse.move(1450, 80)
+  await expect(number(page, 2)).toHaveCSS(
+    "color",
+    await number(page, 1).evaluate((element) => getComputedStyle(element).color),
+  )
   await expect(live(page)).toHaveCount(0)
   await blank(page, 3)
   await expect(entry(page, 3)).toHaveAttribute("data-selected", "")

@@ -7,7 +7,6 @@ import {
   fittedGrid,
   revealedGrid,
   gridSpacing,
-  gridNumbersFit,
   gridSectionGap,
   wheeledGrid,
   gridScaleMoved,
@@ -74,8 +73,6 @@ describe("grid spacing", () => {
   it("keeps gaps a share of the slide and numbers readable at fifty-slide fit", () => {
     expect(gridSpacing(1280, 720)).toEqual({ column: 166.4, row: 410.4 })
     expect(gridSpacing(960, 720).column).toBeCloseTo(124.8)
-    expect(gridNumbersFit(1280, 720, 0.1)).toBe(true)
-    expect(gridNumbersFit(1280, 720, 0.02)).toBe(false)
   })
 
   it("reserves a screen-space gutter between section headings and numbers", () => {
@@ -118,12 +115,14 @@ describe("grid wheel", () => {
     expect(line.scale).toBeCloseTo(notch.scale)
   })
 
-  it("zooms in smoothly from a fit below the least zoom instead of jumping to it", () => {
+  it("zooms smoothly in both directions below ten percent", () => {
     const view = { x: 0, y: 0, scale: 0.06 }
     expect(wheeledGrid(view, { ...plain, deltaY: -1, ctrlKey: true }, { x: 0, y: 0 }).scale).toBeCloseTo(
       0.06 * Math.exp(0.01),
     )
-    expect(wheeledGrid(view, { ...plain, deltaY: 1, ctrlKey: true }, { x: 0, y: 0 }).scale).toBe(0.06)
+    expect(wheeledGrid(view, { ...plain, deltaY: 1, ctrlKey: true }, { x: 0, y: 0 }).scale).toBeCloseTo(
+      0.06 * Math.exp(-0.01),
+    )
   })
 
   it("treats a percent that went through the zoom readout as the same scale", () => {
@@ -145,4 +144,14 @@ describe("grid keys and storage", () => {
     for (const raw of [null, "oops", "{}", '{"x":0,"y":0,"scale":0}', '{"x":0,"y":0,"scale":1e999}'])
       expect(readGridViewport(raw)).toBeNull()
   })
+})
+
+it("can pinch down to the hidden-number overview below ten percent", () => {
+  const view = { x: 0, y: 0, scale: 0.05 }
+  const next = wheeledGrid(
+    view,
+    { deltaX: 0, deltaY: 10, deltaMode: 0, shiftKey: false, ctrlKey: true, metaKey: false },
+    { x: 0, y: 0 },
+  )
+  expect(next.scale).toBeLessThan(view.scale)
 })

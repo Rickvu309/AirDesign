@@ -145,6 +145,11 @@
   --shape-dialog: 14px;
   --shadow-chrome: none;
   --grid-radius: 2px;
+  --grid-halo-radius: 14px;
+  --grid-hover: #bfe4ff;
+  --grid-number-hover: #165ba8;
+  --grid-number: var(--quiet);
+  --grid-number-surface: var(--background);
   --shadow-grid: 0 0 0 1px var(--line), 0 1px 3px rgb(15 36 51 / 8%);
   --shadow-grid-selected: 0 0 0 2px var(--ring);
   --shadow-card: 0 0 0 1px var(--line);

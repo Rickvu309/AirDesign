@@ -5,6 +5,7 @@ import { Announcer, type Announcement } from "@/components/ui/announcer"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { steppedZoom, type SlideSize, type Zoom } from "@/editor/canvas-zoom"
 import { EditorToolbar } from "@/editor/editor-toolbar"
+import { cardPress } from "@/editor/grid-hit"
 import { GridCard } from "@/editor/grid-card"
 import { GridHead } from "@/editor/grid-head"
 import { gridSpacing, gridSectionGap } from "@/editor/grid-viewport"
@@ -101,6 +102,7 @@ export function EditorGrid({
     setZoom(next)
     if (next === "fit") viewport.reset()
   }
+  const [elementPressed, setElementPressed] = useState(false)
   const [menu, setMenu] = useState<GridMenu | null>(null)
   const { current, count } = strip
   const picked = prunedPick(gridPick(state), count)
@@ -315,6 +317,13 @@ export function EditorGrid({
       inert={presenting}
       data-editor-grid
       data-keeps-selection
+      onPointerDownCapture={(event) => {
+        const pressed = cardPress(event)
+        if (event.button === 0 && (pressed === "element" || pressed === "editor")) setElementPressed(true)
+      }}
+      onPointerUpCapture={() => setElementPressed(false)}
+      onPointerCancelCapture={() => setElementPressed(false)}
+      onLostPointerCapture={() => setElementPressed(false)}
       onKeyDownCapture={onGridKey}
       onFocusCapture={edit.focus}
       onDoubleClickCapture={edit.double}
@@ -359,6 +368,9 @@ export function EditorGrid({
         onClick={(event) => {
           if (event.target instanceof Element && event.target.closest("[data-grid-card]") === null) edit.clear()
         }}
+        data-hover-disabled={
+          viewport.space || pointer?.tool === "hand" || dragging !== null || elementPressed ? "true" : undefined
+        }
         data-grid-viewport
         data-slide-list
       >

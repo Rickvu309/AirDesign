@@ -199,3 +199,40 @@ test("a slide number, a slide's blank background and a touch drag reorder; an ob
   await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] })
   await expect.poll(saved.order).toEqual(picked(saved.ids, [4, 2, 3, 1]))
 })
+
+for (const [percent, placement] of [
+  [53, "above"],
+  [15, "inside"],
+  [4, "hidden"],
+] as const) {
+  test(`${placement} number placement keeps selection and pointer reorder`, async ({ page, context, stack }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" })
+    const saved = await openSaved(page, context, stack, 4)
+    await zoomTo(page, Math.max(10, percent))
+    if (percent < 10) {
+      await page.locator("[data-grid-viewport]").evaluate((host) => {
+        for (let delta = Math.log(10 / 4) * 100; delta > 0; delta -= 10)
+          host.dispatchEvent(
+            new WheelEvent("wheel", { deltaY: Math.min(10, delta), ctrlKey: true, bubbles: true, cancelable: true }),
+          )
+      })
+    }
+    const source = entry(page, 2).locator("..")
+    await expect(source).toHaveAttribute("data-number-placement", placement)
+    const handle = placement === "hidden" ? entry(page, 2) : source.locator("[data-slide-number]")
+    await handle.click({ modifiers: ["ControlOrMeta"] })
+    await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
+    await expect(entry(page, 2)).toHaveAttribute("aria-label", /selected$/)
+    await handle.click({ modifiers: ["ControlOrMeta"] })
+    const box = await handle.boundingBox()
+    if (box === null) throw new Error("no drag handle")
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.down()
+    const target = await boxOf(page, 1)
+    await page.mouse.move(target.x + target.width * 0.2, target.y + target.height / 2, { steps: 6 })
+    await expect(page.locator("[data-drag-ghost]")).toBeVisible()
+    for (const halo of await page.locator("[data-grid-halo]").all()) await expect(halo).toHaveCSS("opacity", "0")
+    await page.mouse.up()
+    await expect.poll(saved.order).toEqual(picked(saved.ids, [2, 1, 3, 4]))
+  })
+}

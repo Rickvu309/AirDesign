@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { gridElementPresses } from "@/editor/grid-number"
 import { gridHit, gridPress, type GridHit } from "@/editor/grid-hit"
 
 describe("grid hit", () => {
@@ -57,4 +58,14 @@ describe("grid press", () => {
       expect(gridPress("blank", false, modified)).toBe("slide")
     }
   })
+})
+
+it.each([
+  [87.99, 112, "slide"],
+  [88, 27.99, "slide"],
+  [88, 28, "element"],
+  [400, 111.99, "element"],
+  [400, 112, "element"],
+])("routes element presses at width %s and gap %s to %s", (width, gap, pressed) => {
+  expect(gridPress("element", false, false, !gridElementPresses({ width, gap }))).toBe(pressed)
 })
