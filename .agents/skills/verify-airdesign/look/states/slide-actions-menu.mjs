@@ -4,9 +4,7 @@ import { threeSlideDeck } from "../three-slide-deck.mjs"
 
 async function drive(kit) {
   await threeSlideDeck(kit)
-  const actions = kit.page.getByRole("button", { name: "Slide 2 actions" })
-  if ((await actions.count()) === 0) return
-  await actions.click()
+  await kit.page.locator('[data-slide-entry="2"]').click({ button: "right" })
   await expect(kit.page.getByRole("menu")).toBeVisible()
 }
 

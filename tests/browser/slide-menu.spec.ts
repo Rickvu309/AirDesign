@@ -21,10 +21,6 @@ function entry(page: Page, number: number) {
   return page.locator(`[data-slide-entry="${String(number)}"]`)
 }
 
-function actions(page: Page, number: number) {
-  return page.getByRole("button", { name: `Slide ${String(number)} actions` })
-}
-
 function item(page: Page, name: RegExp) {
   return page.getByRole("menuitem", { name })
 }
@@ -32,18 +28,8 @@ function item(page: Page, name: RegExp) {
 test("one slide can be duplicated from its menu, and move and delete are unavailable", async ({ page }) => {
   await open(page)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
-  await expect(actions(page, 1)).toBeVisible()
-  const row = await entry(page, 1).boundingBox()
-  const control = await actions(page, 1).boundingBox()
-  expect(row).not.toBeNull()
-  expect(control).not.toBeNull()
-  if (row !== null && control !== null) {
-    expect(control.x).toBeGreaterThan(row.x)
-    expect(control.x + control.width).toBeLessThanOrEqual(row.x + row.width + 1)
-    expect(control.y).toBeGreaterThanOrEqual(row.y - 1)
-    expect(control.y + control.height).toBeLessThanOrEqual(row.y + row.height + 1)
-  }
-  await actions(page, 1).click()
+  await expect(page.getByRole("button", { name: /Slide \d+ actions/ })).toHaveCount(0)
+  await entry(page, 1).click({ button: "right" })
   await expect(item(page, /Duplicate/)).toContainText("Ctrl+D")
   await expect(item(page, /Duplicate/)).toHaveAttribute("aria-keyshortcuts", "Control+D Meta+D")
   await expect(item(page, /Delete/)).toContainText("Delete")
@@ -61,7 +47,7 @@ test("the menu duplicates, moves and deletes, and undo brings the deleted slide 
   await open(page)
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
-  await actions(page, 1).click()
+  await entry(page, 1).click({ button: "right" })
   await item(page, /Move down/).click()
   await expect(entry(page, 2)).toContainText("Hello")
   await expect(entry(page, 1)).not.toContainText("Hello")
@@ -72,11 +58,11 @@ test("the menu duplicates, moves and deletes, and undo brings the deleted slide 
   await expect(item(page, /Delete/)).toBeEnabled()
   await item(page, /Move up/).click()
   await expect(entry(page, 1)).toContainText("Hello")
-  await actions(page, 2).click()
+  await entry(page, 2).click({ button: "right" })
   await item(page, /Duplicate/).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
   await expect(entry(page, 3)).toBeFocused()
-  await actions(page, 2).click()
+  await entry(page, 2).click({ button: "right" })
   await item(page, /Delete/).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
   await expect(entry(page, 1)).toContainText("Hello")
@@ -84,7 +70,7 @@ test("the menu duplicates, moves and deletes, and undo brings the deleted slide 
   await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
 })
 
-test("Shift+F10 opens the menu from the slide and Tab does not stop on its actions control", async ({ page }) => {
+test("Shift+F10 opens the menu from the slide and Tab leaves the slide list", async ({ page }) => {
   await open(page)
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(entry(page, 2)).toBeFocused()
@@ -95,7 +81,6 @@ test("Shift+F10 opens the menu from the slide and Tab does not stop on its actio
   await page.keyboard.press("Escape")
   await expect(entry(page, 2)).toBeFocused()
   await page.keyboard.press("Tab")
-  await expect(actions(page, 2)).not.toBeFocused()
   await expect(page.locator("[data-slide-list] :focus")).toHaveCount(0)
   await entry(page, 1).focus()
   await page.keyboard.press("Control+d")
@@ -107,7 +92,7 @@ test("deleting a slide shows a toast whose Undo brings the slide back at its pla
   await open(page)
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
-  await actions(page, 1).click()
+  await entry(page, 1).click({ button: "right" })
   await item(page, /Delete/).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
   const deleted = page.locator("[data-slide-toast]")
@@ -140,27 +125,16 @@ test("the delete toast leaves once another step is on top, so its Undo never tak
   await expect(deleted).toHaveCount(0)
 })
 
-test("slide actions scroll and clip with their row without anchored layout", async ({ page }) => {
+test("right-click opens the menu after scrolling to the last slide", async ({ page }) => {
   await open(page)
   for (let count = 2; count <= 8; count += 1) {
     await page.getByRole("button", { name: "Add slide" }).click()
     await expect(page.locator("[data-slide-entry]")).toHaveCount(count)
   }
   await entry(page, 1).scrollIntoViewIfNeeded()
-  await expect(actions(page, 1)).toBeVisible()
-  expect(await actions(page, 1).evaluate((node) => getComputedStyle(node).position)).toBe("absolute")
   await entry(page, 8).scrollIntoViewIfNeeded()
-  const last = await entry(page, 8).boundingBox()
-  const control = await actions(page, 8).boundingBox()
-  expect(last).not.toBeNull()
-  expect(control).not.toBeNull()
-  if (last !== null && control !== null) {
-    expect(control.y).toBeGreaterThanOrEqual(last.y)
-    expect(control.y + control.height).toBeLessThanOrEqual(last.y + last.height)
-  }
-  await actions(page, 8).click()
+  await entry(page, 8).click({ button: "right" })
   await expect(item(page, /Duplicate/)).toBeFocused()
   await page.keyboard.press("Escape")
   await expect(entry(page, 8)).toBeFocused()
-  await expect(page.locator('[style*="anchor("]')).toHaveCount(0)
 })

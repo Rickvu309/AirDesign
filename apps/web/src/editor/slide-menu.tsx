@@ -1,9 +1,7 @@
-import { memo, useEffect } from "react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { memo, useEffect, type RefObject } from "react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { slideListCopy } from "@/copy/slide-list-copy"
-import { hairlineShadow } from "@/editor/editor-chrome"
 import type { SlideKey } from "@/editor/slide-keys"
-import { cn } from "@/lib/class-names"
 
 export const slideMenuItem =
   "h-8 gap-2.5 rounded-md py-0 pr-2.5 pl-2 text-[length:var(--type-dense)] text-white focus:bg-quiet focus:text-white not-data-[variant=destructive]:focus:**:text-white"
@@ -25,14 +23,14 @@ export function slideChangeAllowed(change: SlideKey, index: number, count: numbe
 }
 
 export const SlideMenu = memo(function SlideMenu({
-  number,
+  anchor,
   index,
   count,
   open,
   onOpenChange,
   onChoose,
 }: {
-  number: number
+  anchor: RefObject<HTMLButtonElement | null>
   index: number
   count: number
   open: boolean
@@ -58,19 +56,8 @@ export const SlideMenu = memo(function SlideMenu({
   }, [open])
   return (
     <DropdownMenu modal={false} open={open} onOpenChange={onOpenChange}>
-      <DropdownMenuTrigger
-        type="button"
-        tabIndex={-1}
-        aria-label={slideListCopy.actions(number)}
-        data-slide-actions={number}
-        className={cn(
-          "absolute top-3 right-5 z-10 flex size-8 items-center justify-center rounded-[var(--shape-control)] bg-white text-foreground",
-          hairlineShadow,
-        )}
-      >
-        <ActionsMark />
-      </DropdownMenuTrigger>
       <DropdownMenuContent
+        anchor={anchor}
         finalFocus={false}
         side="right"
         align="start"
@@ -104,14 +91,4 @@ export function SlideMenuRows({
       <span className="text-xs text-[var(--shortcut)]">{keys[change].shown}</span>
     </DropdownMenuItem>
   ))
-}
-
-function ActionsMark() {
-  return (
-    <svg viewBox="0 0 24 24" width={16} height={16} fill="currentColor" aria-hidden="true" className="shrink-0">
-      <circle cx="5" cy="12" r="1.6" />
-      <circle cx="12" cy="12" r="1.6" />
-      <circle cx="19" cy="12" r="1.6" />
-    </svg>
-  )
 }

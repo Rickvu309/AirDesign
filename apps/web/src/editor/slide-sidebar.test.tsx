@@ -77,15 +77,10 @@ describe("slide list", () => {
     expect(entry("1")).not.toContain("text-index")
   })
 
-  it("names an actions control on every slide, outside the slide button and out of the tab order", () => {
+  it("has no separate actions button on a slide", () => {
     const html = markup()
-    for (const number of [1, 2, 3, 4]) {
-      const actions = tags(html, new RegExp(`<button[^>]*aria-label="Slide ${String(number)} actions"[^>]*>`, "g"))
-      expect(actions).toHaveLength(1)
-      expect(actions[0]).toContain('tabindex="-1"')
-      const entry = new RegExp(`<button[^>]*data-slide-entry="${String(number)}"[^>]*>[\\s\\S]*?</button>`).exec(html)
-      expect(entry?.[0] ?? "").not.toContain("actions")
-    }
+    expect(html).not.toContain("data-slide-actions")
+    expect(html).not.toMatch(/aria-label="Slide \d+ actions"/)
   })
 })
 
