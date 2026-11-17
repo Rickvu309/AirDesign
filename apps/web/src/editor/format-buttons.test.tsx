@@ -89,43 +89,47 @@ afterAll(() => {
   window.close()
 })
 
-it.each(["blur", "Enter", "Escape", "invalid"])("handles a typed size followed by %s and blur once", (action) => {
-  const host = window.document.createElement("div")
-  window.document.body.append(host)
-  const calls: number[] = []
-  const root: Root = createRoot(host)
-  try {
-    act(() =>
-      root.render(
-        <FormatButtons
-          shown={{ bold: "off", italic: "off", underline: "off" }}
-          parts={["size"]}
-          size={1800}
-          onSize={(size) => {
-            calls.push(size)
-            host.querySelector("input")?.blur()
-          }}
-        />,
-      ),
-    )
-    const field = host.querySelector("input")
-    if (field === null) throw new Error("missing font size")
-    act(() => field.focus())
-    act(() => {
-      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(
-        field,
-        action === "invalid" ? "big" : "24,5",
+it.each(["blur", "Enter", "Escape", "invalid", "unchanged"] as const)(
+  "handles a typed size followed by %s and blur once",
+  (action) => {
+    const host = window.document.createElement("div")
+    window.document.body.append(host)
+    const calls: (readonly [number, boolean | undefined])[] = []
+    const root: Root = createRoot(host)
+    try {
+      act(() =>
+        root.render(
+          <FormatButtons
+            shown={{ bold: "off", italic: "off", underline: "off" }}
+            parts={["size"]}
+            size={1800}
+            onSize={(size, focus) => {
+              calls.push([size, focus])
+              host.querySelector("input")?.blur()
+            }}
+          />,
+        ),
       )
-      field.dispatchEvent(new window.Event("input", { bubbles: true }))
-    })
-    if (action === "Enter" || action === "Escape") {
-      act(() => field.dispatchEvent(new window.KeyboardEvent("keydown", { key: action, bubbles: true })))
+      const field = host.querySelector("input")
+      if (field === null) throw new Error("missing font size")
+      act(() => field.focus())
+      act(() => {
+        Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(
+          field,
+          action === "invalid" ? "big" : action === "unchanged" ? "18" : "24,5",
+        )
+        field.dispatchEvent(new window.Event("input", { bubbles: true }))
+      })
+      if (action === "Enter" || action === "Escape") {
+        act(() => field.dispatchEvent(new window.KeyboardEvent("keydown", { key: action, bubbles: true })))
+      }
+      act(() => field.blur())
+      const commits = { blur: [[2450, false]], Enter: [[2450, true]], Escape: [], invalid: [], unchanged: [] }
+      expect(calls).toEqual(commits[action])
+      expect(field.value).toBe("18")
+    } finally {
+      act(() => root.unmount())
+      host.remove()
     }
-    act(() => field.blur())
-    expect(calls).toEqual(action === "Escape" || action === "invalid" ? [] : [2450])
-    expect(field.value).toBe("18")
-  } finally {
-    act(() => root.unmount())
-    host.remove()
-  }
-})
+  },
+)

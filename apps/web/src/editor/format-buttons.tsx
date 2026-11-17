@@ -58,25 +58,25 @@ function SizeBox({
 }: {
   size: number | "mixed" | null
   label: string
-  onSize: ((size: number) => void) | undefined
+  onSize: ((size: number, focus: boolean) => void) | undefined
 }) {
   const [draft, setDraft] = useState<string | null>(null)
   const pending = useRef<string | null>(null)
   const justFocused = useRef(false)
   const shown = typeof size === "number" ? sizeText(size) : ""
-  function commit() {
+  function commit(focus: boolean) {
     const text = pending.current
     pending.current = null
     setDraft(null)
     const typed = text === null ? null : typedSize(text.replace(",", "."))
-    if (typed !== null) onSize?.(typed)
+    if (typed !== null && typed !== size) onSize?.(typed, focus)
   }
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key !== "Enter" && event.key !== "Escape") return
     event.preventDefault()
     event.stopPropagation()
     if (event.key === "Escape") pending.current = null
-    commit()
+    commit(true)
   }
   return (
     <input
@@ -98,7 +98,7 @@ function SizeBox({
         pending.current = event.target.value
         setDraft(event.target.value)
       }}
-      onBlur={commit}
+      onBlur={() => commit(false)}
       onKeyDown={onKeyDown}
     />
   )
@@ -110,8 +110,8 @@ function moveAlign(
   onAlign?: (align: ParagraphAlign) => void,
 ) {
   const forward = event.key === "ArrowRight" || event.key === "ArrowDown"
-  const back = event.key === "ArrowLeft" || event.key === "ArrowUp"
-  if (!forward && !back) return
+  const focus = event.key === "ArrowLeft" || event.key === "ArrowUp"
+  if (!forward && !focus) return
   const target = event.target
   if (!(target instanceof HTMLElement)) return
   event.preventDefault()
@@ -129,7 +129,7 @@ export type FormatProps = {
   onToggle?: (format: TextFormat) => void
   size?: number | "mixed" | null
   onResize?: (step: SizeStep) => void
-  onSize?: (size: number) => void
+  onSize?: (size: number, focus: boolean) => void
   color?: Color | "mixed" | null
   onColor?: (color: Color) => void
   align?: ParagraphAlign | "mixed" | null
