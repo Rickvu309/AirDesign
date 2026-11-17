@@ -77,12 +77,26 @@ export const rendersOf = ({ cases, added }) => [
   ...new Set([...cases.flatMap((row) => [row.before, afterRender(row)]), ...added]),
 ]
 
+export const corpusPartition = ({ argv, listed, every, fixed }) => {
+  const shard = argv.filter((arg) => arg.startsWith("--shard="))
+  if (shard.length > 1 || (shard.length > 0 && (!argv.includes("--corpus") || !/^--shard=[12]\/2$/.test(shard[0])))) {
+    throw new Error("Use --corpus --shard=1/2 or --corpus --shard=2/2")
+  }
+  const routes = [...new Set([...fixed, ...every])]
+  const fixedWork = shard[0] !== "--shard=2/2"
+  return {
+    fixedWork,
+    routeDecks: shard.length === 0 ? routes : routes.filter((name) => listed.includes(name) !== fixedWork),
+  }
+}
+
 export const corpusDecision = ({ argv, seeds, listed, every, fixed, cases, browser, size = rotatingDecks }) => {
   const full = argv.includes("--corpus")
   const { seed, fresh } = seeds.at(-1)
-  const chosen = full ? every : rotatingSubset({ names: listed, size, seed })
+  const partition = corpusPartition({ argv, listed, every, fixed })
+  const chosen = full ? partition.routeDecks : rotatingSubset({ names: listed, size, seed })
   const added = chosen.filter((name) => listed.includes(name))
-  const routeDecks = [...new Set([...fixed, ...chosen])]
+  const routeDecks = [...new Set([...(partition.fixedWork ? fixed : []), ...chosen])]
   const hardDecks = routeDecks.filter((name) => !listed.includes(name))
   return {
     full,
@@ -97,7 +111,9 @@ export const corpusDecision = ({ argv, seeds, listed, every, fixed, cases, brows
       return { pages: [], line: `corpus render ${render}: ${error.message}` }
     },
     duration: (measure) => (full ? { line: "the corpus check has no duration limit", fails: false } : measure()),
-    renders: rendersOf({ cases, added: full ? added : [] }).filter((render) => renderName(render) !== browser),
+    renders: rendersOf({ cases: partition.fixedWork ? cases : [], added: full ? added : [] }).filter(
+      (render) => renderName(render) !== browser,
+    ),
     rendersAdded: full,
     excusable: !full && fresh,
     announce: full

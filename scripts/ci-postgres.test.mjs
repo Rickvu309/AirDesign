@@ -49,3 +49,11 @@ same("a changed install script makes a new copy", cache.with.key.includes("hashF
 const install = steps.find((step) => step.run === "bash scripts/postgres.sh")
 same("the action installs only when the copy is missing", install.if, "steps.postgres.outputs.cache-hit != 'true'")
 same("the cache step is the one the install reads", cache.id, "postgres")
+
+const corpus = parse(fs.readFileSync(path.join(folder, "ci.yml"), "utf8")).jobs.corpus
+same("both corpus shards get the database before judging", corpus.strategy.matrix.shard, [1, 2])
+same(
+  "corpus passes its shard to the judge",
+  corpus.steps.find(needsPostgres).run,
+  "pnpm check:pptx:corpus --shard=${{ matrix.shard }}/2",
+)

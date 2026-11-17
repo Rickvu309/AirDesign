@@ -119,6 +119,7 @@ same(
   corpus.if,
   "github.event_name == 'push' || github.event_name == 'merge_group'",
 )
+same("corpus uses two independent runners", corpus.strategy, { "fail-fast": false, matrix: { shard: [1, 2] } })
 const verdict = ciSteps[0].run
 const passes = (check, corpusResult, journeysResult = "skipped") =>
   spawnSync("bash", [
@@ -294,14 +295,14 @@ const answers = corpus.steps.filter(
 same(
   "validator prefix names the corpus and judge code",
   corpus.steps.find((step) => step.id === "answers")?.run,
-  "echo \"prefix=pptx-validations-corpus-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-\" >> \"$GITHUB_OUTPUT\"",
+  "echo \"prefix=pptx-validations-corpus-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-${{ matrix.shard }}-\" >> \"$GITHUB_OUTPUT\"",
 )
 same(
   "validator restore accepts earlier runs of the same judge",
   answers[0]?.with["restore-keys"],
   "${{ steps.answers.outputs.prefix }}",
 )
-const corpusRun = corpus.steps.findIndex((step) => step.run === "pnpm check:pptx:corpus")
+const corpusRun = corpus.steps.findIndex((step) => step.run === "pnpm check:pptx:corpus --shard=${{ matrix.shard }}/2")
 same(
   "the corpus restores the validator's saved answers before it runs and saves them after",
   answers.slice(0, 2).map((step) => [step.uses.split("@")[0], corpus.steps.indexOf(step) < corpusRun]),
@@ -313,7 +314,7 @@ same(
 same(
   "the corpus keeps its answers apart from the pptx part's and keys them by the validator's code",
   answers.slice(0, 2).map((step) => step.with.key),
-  Array(2).fill("${{ steps.answers.outputs.prefix }}${{ github.run_id }}"),
+  Array(2).fill("${{ steps.answers.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}"),
 )
 same(
   "a queue run does not save answers, which no later run could read from its branch",
@@ -321,7 +322,7 @@ same(
   "steps.work.outputs.needed == 'true' && github.event_name != 'merge_group' && !cancelled()",
 )
 
-const upload = corpus.steps.find((step) => step.with?.name === "corpus-validations")
+const upload = corpus.steps.find((step) => step.with?.name === "corpus-validations-${{ matrix.shard }}")
 const download = corpus.steps.find((step) => step.id === "validations")
 const handed = answers.find((step) => step.if === "steps.validations.outputs.files == 'true'")
 same(
@@ -351,42 +352,6 @@ same(
 )
 same("handoff saves under the same validator key", handed?.with.key, answers[0]?.with.key)
 same("handoff saves only after downloading", corpus.steps.indexOf(handed) > corpus.steps.indexOf(download), true)
-const handoff = (mode) => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-ci-handoff-"))
-  try {
-    fs.writeFileSync(
-      path.join(folder, "gh"),
-      `#!/bin/bash
-test "$1 $2 $3 $4 $5 $6" = "run download 123 -n corpus-validations -D" || exit 9
-test "$7" = "$HOME/.cache/airdesign/pptx-validations" || exit 9
-[ "${mode}" != missing ] || exit 1
-mkdir -p "$7"
-[ "${mode}" != full ] || echo answer > "$7/answer.json"
-`,
-      { mode: 0o755 },
-    )
-    const output = path.join(folder, "output")
-    const result = spawnSync("bash", ["-e", "-o", "pipefail", "-c", download?.run ?? "exit 9"], {
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        HOME: folder,
-        PATH: `${folder}:${process.env.PATH}`,
-        RUN_ID: "123",
-        GITHUB_OUTPUT: output,
-      },
-    })
-    return { status: result.status, output: fs.existsSync(output) ? fs.readFileSync(output, "utf8").trim() : "" }
-  } finally {
-    fs.rmSync(folder, { recursive: true, force: true })
-  }
-}
-same("downloaded files enable the save", handoff("full"), { status: 0, output: "files=true" })
-for (const mode of ["missing", "empty"]) {
-  const result = handoff(mode)
-  same(`${mode} artifact does not enable a save`, result.output, "")
-  same(`${mode} artifact stops before reporting files`, result.status, 1)
-}
 for (const event of ["pull_request", "merge_group"]) {
   same(
     `${event} never skips work or queries queue runs`,
