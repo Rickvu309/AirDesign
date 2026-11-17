@@ -21,12 +21,11 @@ import {
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { clearGridShift, gridShift } from "@/decks/grid-shift"
-import { DeckActions } from "@/decks/deck-menu"
+import { DeckActions, DeckRowMenu } from "@/decks/deck-menu"
 import { DeckPreview } from "@/decks/deck-preview"
 import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
 import { ImportingPreview, ImportFailedPreview } from "@/decks/deck-status-preview"
 import { importFailureWords, type ImportFailureReason } from "@/copy/import-failure-words"
-import { StarButton } from "@/decks/star-button"
 import { blankDeck } from "@/decks/blank-deck"
 import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/deck-moved-toast"
 import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/decks/screens/trash-list"
@@ -408,21 +407,20 @@ export function Home({
         <div className="mt-12">
           <DeckTableHeader sortMarks={false} />
           {decks.map((deck) => (
-            <DeckRow
+            <DeckRowMenu
               key={deck.deck}
               name={deck.name}
-              edited={deckTime(deck.edited, now()).row}
-              created={deckTime(deck.created, now()).created}
-              href={`/deck/${deck.deck}`}
-              action={
-                <>
-                  <StarButton name={deck.name} starred={deck.starred === true} onClick={() => star(deck)} />
-                  <Button variant="ghost" size="sm" aria-description={deck.name} onClick={() => void move(deck)}>
-                    {productCopy.moveToTrash}
-                  </Button>
-                </>
-              }
-            />
+              starred={deck.starred === true}
+              onStar={() => star(deck)}
+              onTrash={(pointer) => void move(deck, true, pointer)}
+            >
+              <DeckRow
+                name={deck.name}
+                edited={deckTime(deck.edited, now()).row}
+                created={deckTime(deck.created, now()).created}
+                href={`/deck/${deck.deck}`}
+              />
+            </DeckRowMenu>
           ))}
         </div>
       )}
