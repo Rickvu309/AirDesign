@@ -1,4 +1,4 @@
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import { fontCopy } from "./copy/font"
 
 export function fontNotices(): void {
@@ -14,6 +14,6 @@ export function fontNotices(): void {
     )
       return
     if (detail.refusal === "unknown" || detail.refusal === "unavailable")
-      toast.warning(fontCopy[detail.refusal](detail.family), { id: `font-${detail.family}` })
+      toast.error(fontCopy[detail.refusal](detail.family), { id: `font-${detail.family}` })
   })
 }

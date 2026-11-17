@@ -21,3 +21,5 @@ export type { OriginalStore, OriginalUpload, SignedOriginal } from "./original-s
 export { bearerPrincipal, type Bearer } from "./tokens.js"
 export { createApi, type ApiOptions } from "./server.js"
 export { sessionCookie } from "./session-cookie.js"
+
+export { fontMiddleware } from "./font-route.js"
