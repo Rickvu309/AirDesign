@@ -5,6 +5,6 @@ export default {
   name: "design-element-narrow",
   async drive(kit) {
     await element.drive(kit)
-    await kit.page.getByRole("separator", { name: "Resize panel", exact: true }).press("Home")
+    await kit.page.locator('[data-editor-panel] [role="separator"]').press("Home")
   },
 }

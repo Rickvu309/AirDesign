@@ -1,3 +1,4 @@
+import { lineWords } from "../../apps/web/src/copy/line-copy"
 import { actualSize } from "./paint-scale"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
@@ -99,8 +100,8 @@ test("a person widens and dashes a line that comes from its style and puts an ar
   await expect(tail.getByRole("combobox", { name: "End arrowhead", exact: true })).toHaveText(/^None/)
   await choose(tail, "End arrowhead", "Triangle")
   await expect.poll(async () => (await stroked(connector)).tail).toMatch(/url\(#.+-tail\)/)
-  const large = tail.getByRole("combobox", { name: "End arrow width", exact: true })
-  await choose(tail, "End arrow width", "Large")
+  const large = tail.getByRole("combobox", { name: lineWords["tail.width"], exact: true })
+  await choose(tail, lineWords["tail.width"], "Large")
   await expect(large).toHaveText(/^Large/)
   await page.getByRole("button", { name: "Undo line", exact: true }).click()
   await page.getByRole("button", { name: "Undo line", exact: true }).click()

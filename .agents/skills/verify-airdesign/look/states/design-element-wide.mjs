@@ -5,6 +5,6 @@ export default {
   name: "design-element-wide",
   async drive(kit) {
     await element.drive(kit)
-    await kit.page.getByRole("separator", { name: "Resize panel", exact: true }).press("End")
+    await kit.page.locator('[data-editor-panel] [role="separator"]').press("End")
   },
 }

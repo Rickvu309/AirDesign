@@ -123,8 +123,6 @@ export function linesOf(rows: readonly PanelRow[]): readonly (readonly PanelRow[
   return lines
 }
 
-export type ChoiceLayout = "segments" | "list"
-
 export function choiceLayout(field: string, options: readonly string[]): "segments" | "list" {
   return options.length > 4 || options.some((option) => optionWord(field, option).length > 12) ? "list" : "segments"
 }

@@ -9,11 +9,7 @@ async function drive(kit) {
     .click({ position: { x: 4, y: 4 } })
   const panel = kit.page.locator("[data-design-element]")
   await expect(panel).toBeVisible()
-  const section = panel
-    .locator("section")
-    .filter({ has: kit.page.getByRole("heading", { name: "Opacity", exact: true }) })
-  if ((await section.count()) === 0) return
-  const field = section.getByRole("textbox", { name: "Opacity", exact: true })
+  const field = panel.getByRole("textbox", { name: "Opacity", exact: true })
   await field.fill("60")
   await field.press("Enter")
   await expect(kit.page.getByRole("button", { name: "Undo opacity", exact: true })).toBeVisible()
