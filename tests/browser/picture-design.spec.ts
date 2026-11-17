@@ -1,4 +1,3 @@
-import { picturePanelCopy as pictureCopy } from "../../apps/web/src/copy/picture-panel-copy"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
@@ -55,6 +54,7 @@ async function typed(input: Locator, value: string) {
 test("a person crops, recolours, fades, describes and hides a picture, adds an icon, and the export keeps each @export", async ({
   page,
 }, testInfo) => {
+  const { picturePanelCopy: pictureCopy } = await import("../../apps/web/src/copy/picture-panel-copy.ts")
   test.setTimeout(90_000)
   const judged = join(process.cwd(), "tests/browser", exportName)
   await rm(judged, { force: true })
