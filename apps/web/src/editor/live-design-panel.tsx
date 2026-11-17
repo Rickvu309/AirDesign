@@ -26,6 +26,7 @@ import {
   shownFill,
   shownGeometry,
   shownIdentity,
+  shownPictureMode,
   shownImage,
   shownLine,
   shownTextStyle,
@@ -133,6 +134,7 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
       ...(image === null
         ? {}
         : {
+            "image.mode": { value: shownPictureMode(parts, at), own: true },
             "image.source": { value: image.source, own: true },
             "image.recolor": { value: image.recolor, own: true },
             "image.alpha": { value: image.alpha, own: true },

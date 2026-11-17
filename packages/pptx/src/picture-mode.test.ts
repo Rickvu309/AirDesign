@@ -21,3 +21,18 @@ it("covers or contains without distorting the picture", () => {
     b: 0,
   })
 })
+
+it("keeps zero-offset Fill and Fit distinguishable in native rectangles", () => {
+  expect(picturePlacement("fill", { width: 100, height: 100 }, { width: 100, height: 100 })).toEqual({
+    l: 0,
+    t: 0,
+    r: 0,
+    b: 0,
+  })
+  expect(picturePlacement("fit", { width: 100, height: 100 }, { width: 100, height: 100 })).toEqual({
+    l: 0,
+    t: 0,
+    r: 0,
+    b: 0,
+  })
+})
