@@ -5,7 +5,7 @@ A rule with a check fails `pnpm gate`, `pnpm check`, `pnpm check:pptx` or the me
 | Rule | Enforced by |
 | --- | --- |
 | No comments, no lint suppressions | lint: `no-comments` and the comment scan |
-| No raw hex, color mix, sized arbitrary class, blanket transition or destructive fill token on text | lint: `no-raw` |
+| No raw hex, color mix, sized arbitrary class, blanket transition or destructive fill on text | lint: `no-raw` |
 | No file or folder named `utils`, `helpers` or `common` | lint: the name scan |
 | One word per idea: a word listed in `tooling/oxlint-plugin-airdesign/glossary.json` is replaced by the word it names | lint: the name scan reads the glossary. A line kept on purpose is listed there with a reason. It warns for now and blocks nothing |
 | Product code takes the clock, random ids and temp folders as options: no read of `Date.now`, `Date()`, `new Date()`, `performance.now`, `Temporal.Now`, `Math.random`, `crypto.randomUUID`, `crypto.getRandomValues`, `tmpdir` or `TMPDIR`, except as the `??` or default-parameter fallback of an option | lint: `no-hidden-input`. It warns for now and blocks nothing |
