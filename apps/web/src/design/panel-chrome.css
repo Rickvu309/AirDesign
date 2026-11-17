@@ -33,7 +33,7 @@
   height: 16px;
 }
 
-[data-design-panel] [role="group"] > button[aria-pressed="false"] {
+[data-design-panel] [role="group"] > button[aria-pressed="false"]:has(svg) {
   color: var(--panel-icon);
 }
 
