@@ -96,6 +96,7 @@ test.describe("recorded Aira", () => {
     "aira-turn",
     "aira-panel",
     "aira-slides",
+    "adjust-tone",
     "aira-head",
     "agent-after-open",
     "group-elements",

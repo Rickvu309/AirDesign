@@ -21,7 +21,7 @@ An open deck shows the Agent panel on the right. The person types to Aira, watch
 - `indexing` an ask sent while the deck's index is still on its way keeps its step running (`Adding a slide`): Aira's loop sends a slide call refused `indexing` again, once a second, up to 15 more times, and stops early on Stop. An ask sent the moment a new deck appears waits for the editor's first `deckRoutes.open` before its first tool call (PR 430), so it is never refused as an unknown deck. Journey `agent-after-open`, state `aira-asked-before-open`.
 - `usage` the ring is always in the head and loads from `airaRoutes.usage` when the panel opens. `button "Weekly usage"` opens `region "Weekly usage"` with the percent used, `Resets <when>` in the person's clock, and `link "See all usage"` to `/settings/usage`. Opening it, and the end of a stop, refresh it.
 - `limit` a 402 from `airaRoutes.turn` shows `You've hit this week's limit` and `Your weekly usage resets <when>. Ask again then.`, and the composer reads `Available again <when>` until the reset.
-- `switch` the toolbar's Agent and Design buttons switch the panel. The conversation stays. The Design panel is empty in the real editor for now.
+- `switch` the toolbar's Agent and Design buttons switch the panel. The conversation stays.
 
 ## How to get to it (user POV)
 
@@ -45,6 +45,13 @@ Preconditions:
 - **Stop after a landed edit.** `agent-after-open` lets the edit reach the server and holds its answer until after `Stop`: the step reads `Stopped editing slides`, the slide shows the edit, `Undo` shows under the step and the server's element is `stopped`. State `aira-stopped-landed`. Driven live on 2026-11-13 with a scratch journey for `add-text-box.sse`: Stop after the box landed showed `Stopped adding a text box`, the box and `Undo`; that Undo took the box away on the screen and the server, and a reload kept it gone with the chat still saying stopped. With the call held in the browser and sent after Stop, the box landed, was painted with `Undo` under the stopped step, and that Undo took it back.
 - **Two accounts.** A scratch journey asked with `turn.sse`, signed out, signed in a second account (no chat on the deck's address, which is refused), and signed the first account in again with `kit.signIn(email)`: the chat was there.
 - **Slide tools.** `$V journey <run> aira-slides` plays `add-slide.sse` and `title-slide.sse`, checks the new slide on the canvas and the server, and undoes the run.
+
+### Adjust tone
+
+- Open Design and choose **Adjust tone** in the panel title. With no selection, the request covers the current slide. A text selection or group limits the request to its text.
+- Choose a preset or drag the dial. With the keyboard, move with the arrows and press Enter to send. The editor opens the Agent panel with the request.
+- In Design, **Try again** uses the same tone for another rewrite. **Reset** restores the text through Agent undo.
+- Run `$V journey <run> adjust-tone` to drive preset and dial rewrites, Reset after reload, availability checks, and PowerPoint export with recorded Aira streams.
 
 ## Gotchas
 

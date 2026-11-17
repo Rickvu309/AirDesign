@@ -65,6 +65,8 @@ import { ElementTitleActions } from "./element-title-actions"
 import { PicturePreview } from "@/editor/picture-preview"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { ControlView, DesignHead, DesignSection, ElementDesign } from "@/editor/design-panel"
+import { AdjustTone, type ToneControlFor } from "@/editor/adjust-tone"
+import { toneScope } from "@/editor/tone-scope"
 import { LiveSelectionColors } from "./live-selection-colors"
 import { liveSlideNumber } from "./live-slide-number"
 
@@ -235,7 +237,23 @@ export function usePalette(deck: DesigningDeck): Palette {
   return { theme, deck: colorsIn(display) }
 }
 
-function LiveElementDesign({ deck, node, mode }: { deck: DesigningDeck; node: ElementId; mode: PanelMode }) {
+function toneHead(deck: DesigningDeck, selection: readonly ElementId[], toneFor?: ToneControlFor) {
+  if (toneFor === undefined) return null
+  const scope = toneScope(deck.shown, selection)
+  return scope === null ? null : <AdjustTone key={[scope.slide, ...selection].join(" ")} action={toneFor(scope)} />
+}
+
+function LiveElementDesign({
+  deck,
+  node,
+  mode,
+  toneFor,
+}: {
+  deck: DesigningDeck
+  node: ElementId
+  mode: PanelMode
+  toneFor?: ToneControlFor
+}) {
   const store = deck.shown.store.current
   useSyncExternalStore(store.elementSubscribe(node), () => store.getElement(node)?.text ?? null)
   useSyncExternalStore(store.boxSubscribe(node), () => store.getBox(node))
@@ -255,7 +273,10 @@ function LiveElementDesign({ deck, node, mode }: { deck: DesigningDeck; node: El
   return (
     <ElementDesign
       titleActions={
-        <ElementTitleActions onMatch={deck.selectMatching} model={design.model} onReplace={deck.replacePicture} />
+        <div className="flex items-center gap-1">
+          {design.model.kind === "text" || design.model.kind === "group" ? toneHead(deck, [node], toneFor) : null}
+          <ElementTitleActions onMatch={deck.selectMatching} model={design.model} onReplace={deck.replacePicture} />
+        </div>
       }
       formatting={deck.undo.formatting.current}
       picture={src === null ? null : <PicturePreview src={src} />}
@@ -305,7 +326,17 @@ function useElements(store: PaintStore, nodes: Several): void {
   useSyncExternalStore(subscribe, read, read)
 }
 
-function LiveManyDesign({ deck, nodes, mode }: { deck: DesigningDeck; nodes: Several; mode: PanelMode }) {
+function LiveManyDesign({
+  deck,
+  nodes,
+  mode,
+  toneFor,
+}: {
+  deck: DesigningDeck
+  nodes: Several
+  mode: PanelMode
+  toneFor?: ToneControlFor
+}) {
   useElements(deck.shown.store.current, nodes)
   const palette = usePalette(deck)
   const design = manyDesign(deck, nodes, mode)
@@ -336,7 +367,12 @@ function LiveManyDesign({ deck, nodes, mode }: { deck: DesigningDeck; nodes: Sev
       mode={mode}
       selectionColors={<LiveSelectionColors deck={deck} nodes={nodes} />}
       palette={palette}
-      titleActions={<ElementTitleActions onMatch={deck.selectMatching} />}
+      titleActions={
+        <div className="flex items-center gap-1">
+          {toneHead(deck, nodes, toneFor)}
+          <ElementTitleActions onMatch={deck.selectMatching} />
+        </div>
+      }
       afterTitle={text}
       onChange={(control, value) =>
         changeDesign(deck, () => {
@@ -360,9 +396,10 @@ type PanelProps = {
   mode: PanelMode
   onMode?: (mode: PanelMode) => void
   selectedSlides?: number
+  toneFor?: ToneControlFor
 }
 
-export function LiveDesignPanel({ deck, selectedSlides = 0, mode }: PanelProps) {
+export function LiveDesignPanel({ deck, selectedSlides = 0, mode, toneFor }: PanelProps) {
   if (selectedSlides > 1)
     return (
       <div className="flex min-h-0 flex-1 flex-col" data-design-panel>
@@ -374,13 +411,13 @@ export function LiveDesignPanel({ deck, selectedSlides = 0, mode }: PanelProps) 
   const { shown, selection } = deck
   const ids = shown.store.current.slides()[shown.current]?.elements ?? []
   const [first, ...rest] = [...selection.ids.filter((id) => ids.includes(id)), ...(deck.matching ?? [])]
-  if (first === undefined) return <LiveSlideDesign deck={deck} mode={mode} />
-  if (rest.length === 0) return <LiveElementDesign key={first} deck={deck} node={first} mode={mode} />
+  if (first === undefined) return <LiveSlideDesign deck={deck} mode={mode} toneFor={toneFor} />
+  if (rest.length === 0) return <LiveElementDesign key={first} deck={deck} node={first} mode={mode} toneFor={toneFor} />
   const nodes: Several = [first, ...rest]
-  return <LiveManyDesign key={nodes.join(" ")} deck={deck} nodes={nodes} mode={mode} />
+  return <LiveManyDesign key={nodes.join(" ")} deck={deck} nodes={nodes} mode={mode} toneFor={toneFor} />
 }
 
-function LiveSlideDesign({ deck, mode }: { deck: DesigningDeck; mode: PanelMode }) {
+function LiveSlideDesign({ deck, mode, toneFor }: { deck: DesigningDeck; mode: PanelMode; toneFor?: ToneControlFor }) {
   const { shown } = deck
   const parts = shown.displayParts.current
   const painted = shown.canvases.current(shown.current)?.background ?? null
@@ -400,7 +437,7 @@ function LiveSlideDesign({ deck, mode }: { deck: DesigningDeck; mode: PanelMode 
   ])
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto" data-design-panel>
-      <DesignHead>{designCopy.slide(view.number)}</DesignHead>
+      <DesignHead actions={toneHead(deck, [], toneFor)}>{designCopy.slide(view.number)}</DesignHead>
       {panelPlaces("slide", mode).map(({ section }) => (
         <Fragment key={section}>{sections.get(section)}</Fragment>
       ))}
