@@ -84,6 +84,7 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
     const extra: PanelControl[] = []
     if (
       kind === "connector" &&
+      dash.value === "solid" &&
       fill.desc.kind === "union" &&
       typeof fill.value === "object" &&
       fill.value !== null &&
