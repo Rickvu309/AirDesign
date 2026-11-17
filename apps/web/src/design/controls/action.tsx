@@ -53,7 +53,7 @@ export function ActionControl({ control, onChange }: ControlProps) {
       >
         {control.label}
       </span>
-      <div role="group" aria-labelledby={label} className="flex gap-1.5">
+      <div role="group" aria-labelledby={label} className="flex gap-2">
         {cluster(options).map((members) => (
           <div
             key={members.join(" ")}
@@ -76,7 +76,7 @@ export function ActionControl({ control, onChange }: ControlProps) {
                   {Icon === undefined ? (
                     optionWord(control.field, option)
                   ) : (
-                    <Icon size={14} className="size-3.5" strokeWidth={3} aria-hidden />
+                    <Icon size={16} className="size-4" strokeWidth={3} aria-hidden />
                   )}
                 </Button>
               )

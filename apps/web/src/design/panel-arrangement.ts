@@ -10,7 +10,6 @@ import {
   FlipVertical2,
   RotateCw,
   Type,
-  ArrowDownUp,
   ArrowUpToLine,
   ArrowDownToLine,
   Image,
@@ -26,6 +25,7 @@ import {
   SubtleShadow,
   MediumShadow,
   StrongShadow,
+  LineSpacing,
   PatternFill,
   SolidFill,
   GradientFill,
@@ -81,7 +81,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   text: [
     [placed("value", hidden, { control: "canvas" })],
     [placed("font", hidden)],
-    [icon("size", Type), icon("lineSpacing", ArrowDownUp)],
+    [icon("size", Type), icon("lineSpacing", LineSpacing)],
     [icon("bold", Bold), icon("italic", Italic), icon("underline", Underline)],
     [
       placed("align", hidden, {
@@ -150,6 +150,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
           subtle: SubtleShadow,
           medium: MediumShadow,
           strong: StrongShadow,
+          LineSpacing,
           PatternFill,
           SolidFill,
           GradientFill,

@@ -132,7 +132,7 @@ export function NumberField({
           aria-hidden
           className="invisible col-start-1 row-start-1 whitespace-pre text-[length:var(--type-caption)] tabular-nums"
         >
-          {value || "   "}
+          {value || (control.mixed ? designCopy.mixed : "   ")}
         </span>
         <input
           ref={field}

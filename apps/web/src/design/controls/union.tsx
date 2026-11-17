@@ -132,7 +132,9 @@ export function FillDetails({ control, palette, onChange }: ControlProps) {
           variant="ghost"
           size="sm"
           aria-pressed={chosen !== null && "pattern" in chosen}
-          onClick={() => onChange(unionValue(control, palette, "pattern"))}
+          onClick={() => {
+            if (chosen === null || !("pattern" in chosen)) onChange(unionValue(control, palette, "pattern"))
+          }}
         >
           {optionCopy.pattern}
         </Button>
