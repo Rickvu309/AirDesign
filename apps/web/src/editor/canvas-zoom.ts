@@ -48,10 +48,11 @@ export function zoomPercent(width: number, slide: SlideSize): number {
   return Math.round((width * emuPerPixel * 100) / slide.width)
 }
 
-export type ZoomKey = "in" | "out" | "fit"
+export type ZoomKey = "in" | "out" | "fit" | "selection"
 
 export function zoomKey(event: {
   readonly key: string
+  readonly code?: string
   readonly metaKey: boolean
   readonly ctrlKey: boolean
   readonly altKey: boolean
@@ -62,6 +63,7 @@ export function zoomKey(event: {
   const gesture = gestureFor(event, "editor")
   if (gesture === "zoom-in") return "in"
   if (gesture === "zoom-out") return "out"
+  if (gesture === "zoom-selection") return "selection"
   return gesture === "zoom-fit" ? "fit" : null
 }
 

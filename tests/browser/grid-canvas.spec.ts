@@ -68,7 +68,7 @@ for (const count of [7, 50]) {
     await expect(entry(page, count)).toBeInViewport()
   })
 }
-test("keeps chrome constant and hides crowded numbers at minimum zoom", async ({ page }) => {
+test("keeps chrome constant and numbers visible while they fit", async ({ page }) => {
   await openFile(page, clean)
   await openGrid(page)
   const rim = async () =>
@@ -85,7 +85,7 @@ test("keeps chrome constant and hides crowded numbers at minimum zoom", async ({
   )
   expect(focusWidth).toBeCloseTo(2, 1)
   await zoomTo(page, 10)
-  await expect(page.locator("[data-slide-number]").first()).toBeHidden()
+  await expect(page.locator("[data-slide-number]").first()).toBeVisible()
 })
 test("keeps rows fixed across resize and panel changes", async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 923 })

@@ -1,6 +1,6 @@
 import { useRef, useState, type CSSProperties, type DragEvent, type RefObject } from "react"
 import { dropPlace, dropTarget, edgeScroll, previewSlot, slotUnder, type GridSlot } from "@/editor/grid-drop"
-import { gridGap } from "@/editor/grid-zoom"
+import { gridSpacing } from "@/editor/grid-viewport"
 import { still } from "@/editor/slide-opening"
 
 type Range = { readonly start: number; readonly end: number }
@@ -58,7 +58,8 @@ export function useGridDrag({
       hideBar()
       return
     }
-    const left = after ? slot.left + slot.width + gridGap / 2 : slot.left - gridGap / 2
+    const gap = gridSpacing(slot.width, slot.height).column
+    const left = after ? slot.left + slot.width + gap / 2 : slot.left - gap / 2
     mark.hidden = false
     mark.dataset.dropPlace = String(at + 1)
     mark.style.height = `${slot.height}px`

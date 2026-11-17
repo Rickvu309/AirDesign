@@ -133,7 +133,7 @@ export function EditorShell({
       />
     )
   useZoomKeys(deck !== undefined && size !== null && !gridOpen, (key) =>
-    setZoom(key === "fit" || size === null ? "fit" : steppedZoom(key, zoomPercent(width, size))),
+    setZoom(key === "fit" || key === "selection" || size === null ? "fit" : steppedZoom(key, zoomPercent(width, size))),
   )
   if (deck !== undefined && gridOpen) {
     return (

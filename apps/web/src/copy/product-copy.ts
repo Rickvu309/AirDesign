@@ -176,9 +176,11 @@ export const zoomCopy = {
   zoomIn: "Zoom in",
   zoomOut: "Zoom out",
   fit: "Zoom to fit",
+  selection: "Zoom to selection",
   inKey: "Ctrl+=",
   outKey: "Ctrl+-",
   fitKey: "Ctrl+0",
+  selectionKey: "Shift+2",
 } as const
 
 export function zoomToOf(percent: number): string {

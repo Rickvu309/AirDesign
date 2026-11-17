@@ -16,6 +16,7 @@ export function useZoomKeys(working: boolean, onKey: (key: ZoomKey) => void) {
     function listen(event: KeyboardEvent) {
       const key = zoomKey({
         key: event.key,
+        code: event.code,
         metaKey: event.metaKey,
         ctrlKey: event.ctrlKey,
         altKey: event.altKey,

@@ -7,7 +7,8 @@ import { slideListCopy } from "@/copy/slide-list-copy"
 import { AirdesignMark } from "@/decks/airdesign-mark"
 import { steppedZoom, type SlideSize, type Zoom } from "@/editor/canvas-zoom"
 import { GridCard } from "@/editor/grid-card"
-import { gridLayout, gridGap, useKeptGridZoom } from "@/editor/grid-zoom"
+import { gridSpacing, gridSectionGap } from "@/editor/grid-viewport"
+import { gridLayout, keptGridViewport, useKeptGridZoom } from "@/editor/grid-zoom"
 import { ZoomMenu } from "@/editor/zoom-menu"
 import { ViewBar } from "@/editor/view-bar"
 import { PresentButton } from "@/present/present-button"
@@ -102,7 +103,7 @@ export function EditorGrid({
   const list = useRef<HTMLDivElement>(null)
   const [editing, setEditing] = useState(false)
   const bar = useRef<HTMLDivElement>(null)
-  const following = useRef(true)
+  const following = useRef(keptGridViewport(id) === null)
   const [stop, setStop] = useState(strip.current)
   const [message, setMessage] = useState<Announcement | null>(null)
   const [zoom, setZoom] = useKeptGridZoom(id)
@@ -111,9 +112,11 @@ export function EditorGrid({
   const fit = gridLayout(100, size ?? wideSlide, strip.count)
   const width = fit.width
   const viewport = useGridViewport({
+    deck: id,
     world: list,
     scale: percent / 100,
     hand: pointer?.tool === "hand",
+    working: !presenting,
     onZoom: setZoom,
     onFit: setFitPercent,
     selected: strip.current,
@@ -150,10 +153,14 @@ export function EditorGrid({
     setStop(current)
     if (next !== null && next !== undefined && next !== document.activeElement) next.focus({ preventScroll: true })
   }, [current, count])
-  useZoomKeys(!presenting, (key) => chooseZoom(key === "fit" ? "fit" : steppedZoom(key, percent)))
+  useZoomKeys(!presenting, (key) => {
+    if (key === "selection") viewport.selection([...selected])
+    else chooseZoom(key === "fit" ? "fit" : steppedZoom(key, percent))
+  })
   const reachable = stop >= 0 && stop < count && shown(stop) ? stop : current
-  const layoutWidth = fit.columns * width + (fit.columns - 1) * gridGap
   const height = gridThumbHeight(width, strip.thumbHeight)
+  const spacing = gridSpacing(width, height)
+  const layoutWidth = fit.columns * width + (fit.columns - 1) * spacing.column
   const rows = gridRows(strip)
   const drag = useGridDrag({
     list,
@@ -373,7 +380,16 @@ export function EditorGrid({
         </Island>
         <Island>
           <ViewBar
-            zoom={size === null ? null : <ZoomMenu zoom={zoom} percent={Math.round(percent)} onZoom={chooseZoom} />}
+            zoom={
+              size === null ? null : (
+                <ZoomMenu
+                  zoom={zoom}
+                  percent={Math.round(percent)}
+                  onZoom={chooseZoom}
+                  onSelection={() => viewport.selection([...selected])}
+                />
+              )
+            }
           >
             <PresentButton {...(onPresent === undefined ? {} : { onClick: () => onPresent(reachable) })} />
             {size === null ? (
@@ -400,7 +416,7 @@ export function EditorGrid({
         {...viewport.handlers}
         className={cn(
           "relative min-h-0 flex-1 overflow-hidden touch-none",
-          pointer?.tool === "hand" && "cursor-grab active:cursor-grabbing",
+          (pointer?.tool === "hand" || viewport.space) && "cursor-grab active:cursor-grabbing [&_*]:cursor-[inherit]",
         )}
         onClick={(event) => {
           if (event.target instanceof Element && event.target.closest("[data-grid-card]") === null) {
@@ -435,7 +451,11 @@ export function EditorGrid({
           />
           <div className="flex w-full flex-col gap-8">
             {rows.map((row) => (
-              <section key={`${row.start}:${row.name ?? ""}`} className="flex flex-col gap-4">
+              <section
+                key={`${row.start}:${row.name ?? ""}`}
+                className="flex flex-col"
+                style={{ gap: gridSectionGap(percent / 100) }}
+              >
                 {row.name === null || row.number === null ? null : (
                   <GridSectionHead
                     name={row.name}
@@ -448,9 +468,10 @@ export function EditorGrid({
                 )}
                 {row.number !== null && collapsed.held.has(row.number) ? null : (
                   <div
-                    className="grid gap-y-48"
+                    className="grid"
                     style={{
-                      columnGap: gridGap,
+                      columnGap: spacing.column,
+                      rowGap: spacing.row,
                       gridTemplateColumns:
                         fit.columns === 0
                           ? `repeat(auto-fill, ${String(width)}px)`

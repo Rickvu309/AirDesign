@@ -52,3 +52,74 @@ export function fittedGridCards(view: GridViewport, cards: readonly GridRect[], 
     scale: fit.scale,
   }
 }
+
+export function gridSpacing(width: number, height: number) {
+  return { column: width * 0.13, row: height * 0.57 }
+}
+
+export function gridNumbersFit(width: number, height: number, scale: number): boolean {
+  return width * scale >= 32 && gridSpacing(width, height).row * scale >= 28
+}
+
+const wheelPixels = [1, 16, 800] as const
+
+const wheelZoomStep = 10
+
+export function wheeledGrid(
+  view: GridViewport,
+  event: {
+    readonly deltaX: number
+    readonly deltaY: number
+    readonly deltaMode: number
+    readonly shiftKey: boolean
+    readonly ctrlKey: boolean
+    readonly metaKey: boolean
+  },
+  anchor: GridDelta,
+): GridViewport {
+  const unit = wheelPixels[event.deltaMode] ?? 1
+  const x = event.deltaX * unit
+  const y = event.deltaY * unit
+  if (event.ctrlKey || event.metaKey) {
+    const step = Math.max(-wheelZoomStep, Math.min(wheelZoomStep, y))
+    const next = view.scale * Math.exp(-step * 0.01)
+    return zoomedGrid(view, Math.max(Math.min(view.scale, boundedGridScale(next)), Math.min(4, next)), anchor)
+  }
+  return pannedGrid(view, event.shiftKey && x === 0 ? { x: -y, y: 0 } : { x: -x, y: -y })
+}
+
+export function gridScaleMoved(view: GridViewport, scale: number): boolean {
+  return Math.abs(view.scale - scale) > view.scale * 1e-9
+}
+
+export function arrowGrid(view: GridViewport, key: string): GridViewport {
+  const x = key === "ArrowLeft" ? 80 : key === "ArrowRight" ? -80 : 0
+  const y = key === "ArrowUp" ? 80 : key === "ArrowDown" ? -80 : 0
+  return pannedGrid(view, { x, y })
+}
+
+export function readGridViewport(raw: string | null): GridViewport | null {
+  if (raw === null) return null
+  try {
+    const value: unknown = JSON.parse(raw)
+    if (typeof value !== "object" || value === null || !("x" in value) || !("y" in value) || !("scale" in value))
+      return null
+    const { x, y, scale } = value
+    return typeof x === "number" &&
+      Number.isFinite(x) &&
+      typeof y === "number" &&
+      Number.isFinite(y) &&
+      typeof scale === "number" &&
+      Number.isFinite(scale) &&
+      scale > 0 &&
+      scale <= 4
+      ? { x, y, scale }
+      : null
+  } catch {
+    return null
+  }
+}
+
+export function gridSectionGap(scale: number): number {
+  return 32 / scale
+}
