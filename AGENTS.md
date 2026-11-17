@@ -72,7 +72,7 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 
 - One agent builds, tests and proves its own change, then queues the PR. No review or verifier agent reads it, and no agent starts one. A bug that gets through is fixed later, together with a test or check that keeps it from coming back.
 - Prove the change before you push. Write the failing test first, then run `pnpm gate`. For anything a user sees or the API answers, also drive the real app with the `verify-airdesign` skill.
-- A PR that changes what a person sees carries a `## Before / after` section made with `verify-airdesign before-after` and `publish`: one annotated image and a `| main | this PR |` table, linked from the `proof` release. When nothing looks different, the section holds the one line `No visible change: <why>`.
+- A PR that changes what a person sees carries a `## Before / after` section made with `verify-airdesign before-after` and `publish`: one annotated image and a `| main | this PR |` table, linked from the `proof`, `proof-2`, … releases. When nothing looks different, the section holds the one line `No visible change: <why>`.
 - An agent's comment or review on a pull request or issue starts with `🤖 **AI Agent responding on behalf of Quan Vu**`.
 - For a change a person sees, look at it as a design: run `look` and `compare` from `verify-airdesign` on each state it touches, open the images, say what you see, and put the image links that `verify-airdesign publish` prints and the finding counts before and after in the PR body. A local path opens on no other machine.
 - A bug or a rule lands in the repo as a test, a check or a metric. A chat message fixes nothing.

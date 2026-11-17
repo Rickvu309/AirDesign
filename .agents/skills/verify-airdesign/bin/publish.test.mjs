@@ -16,6 +16,31 @@ function shots(name, files) {
   })
 }
 
+function releases(initial) {
+  const assets = new Map(Object.entries(initial))
+  const commands = []
+  const runGh = (args) => {
+    commands.push(args)
+    const [, command, tag] = args
+    if (command === "view") {
+      if (!assets.has(tag)) throw new Error("release not found")
+      return { assets: assets.get(tag).map((name) => ({ name })) }
+    }
+    if (command === "create") assets.set(tag, [])
+    if (command === "upload") {
+      const current = assets.get(tag)
+      if (current.length + args.length - 3 > 1000) {
+        throw new Error("HTTP 422: file_count limited to 1000 assets per release")
+      }
+      current.push(...args.slice(3).map((file) => path.basename(file)))
+    }
+    return ""
+  }
+  return { assets, commands, runGh }
+}
+
+const full = (count = 1000) => Array.from({ length: count }, (_, index) => `old-${index}.png`)
+
 describe("publish", () => {
   it("names assets by pull request, base name, and content hash", () => {
     const bytesA = Buffer.from("content-alpha")
@@ -118,6 +143,75 @@ describe("publish", () => {
           cmd.includes("Proof images"),
       ),
     ).toBe(true)
+  })
+
+  it.each([true, false])("rolls a full proof into proof-2, existing: %s", (exists) => {
+    const fake = releases({ proof: full(), ...(exists ? { "proof-2": [] } : {}) })
+    const files = shots(`rollover-${String(exists)}`, ["a.png", "b.png"])
+    const options = { files, prefix: "pr-673", scratch: folder, repository: "Rickvu309/AirDesign", runGh: fake.runGh }
+    const result = publish(options)
+    expect(result.release).toBe("proof-2")
+    expect(Object.values(result.links).every((link) => link.includes("/download/proof-2/"))).toBe(true)
+    expect(fake.assets.get("proof")).toHaveLength(1000)
+    expect(fake.assets.get("proof-2")).toHaveLength(2)
+    expect(fake.commands.filter((args) => args[1] === "create")).toEqual(
+      exists
+        ? []
+        : [
+            [
+              "release",
+              "create",
+              "proof-2",
+              "--prerelease",
+              "--title",
+              "Proof images",
+              "--notes",
+              "Screenshots attached to pull requests. Not a product release.",
+            ],
+          ],
+    )
+    fake.commands.length = 0
+    expect(publish(options)).toEqual(result)
+    expect(fake.commands.every((args) => args[1] === "view")).toBe(true)
+  })
+
+  it("keeps a batch together through multiple full releases", () => {
+    const fake = releases({ proof: full(999), "proof-2": full(), "proof-3": full(998) })
+    const result = publish({
+      files: shots("batch", ["a.png", "b.png"]),
+      prefix: "pr-1",
+      scratch: folder,
+      repository: "repo",
+      runGh: fake.runGh,
+    })
+    expect(result.release).toBe("proof-3")
+    expect(fake.assets.get("proof")).toHaveLength(999)
+    expect(fake.assets.get("proof-3")).toHaveLength(1000)
+    expect(fake.commands.filter((args) => args[1] === "upload")).toHaveLength(1)
+  })
+
+  it("counts existing file names as no-ops even at capacity", () => {
+    const files = shots("capacity", ["a.png", "b.png"])
+    const present = assetName({ prefix: "pr-1", file: files[0], bytes: Buffer.from("capacity a.png") })
+    const fake = releases({ proof: [...full(998), present] })
+    const options = { files, prefix: "pr-1", scratch: folder, repository: "repo", runGh: fake.runGh }
+    expect(publish(options).release).toBe("proof")
+    expect(fake.assets.get("proof")).toHaveLength(1000)
+    fake.commands.length = 0
+    expect(publish(options).release).toBe("proof")
+    expect(fake.commands.every((args) => args[1] === "view")).toBe(true)
+  })
+
+  it("refuses a batch larger than a release before calling GitHub", () => {
+    expect(() =>
+      publish({
+        files: Array.from({ length: 1001 }, (_, index) => `${index}.png`),
+        prefix: "pr-1",
+        runGh: () => {
+          throw new Error("unexpected GitHub call")
+        },
+      }),
+    ).toThrow("1000")
   })
 
   it("puts other kinds of file in a release that names them, keeping each extension", () => {

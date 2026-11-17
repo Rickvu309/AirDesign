@@ -127,3 +127,18 @@ same(
 )
 
 console.log("before-after tests passed")
+
+for (const release of ["proof-2", "proof-37"]) {
+  same(
+    `${release} holds valid proof images`,
+    hasBeforeAfter(`## Before / after\n${image.replace("/proof/", `/${release}/`)}`, repository),
+    true,
+  )
+}
+for (const release of ["proof-other", "proof-2-extra"]) {
+  same(
+    `${release} is outside the proof series`,
+    hasBeforeAfter(`## Before / after\n${image.replace("/proof/", `/${release}/`)}`, repository),
+    false,
+  )
+}
