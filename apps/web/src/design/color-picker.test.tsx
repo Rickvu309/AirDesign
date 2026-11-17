@@ -13,7 +13,6 @@ const palette: Palette = {
     { scheme: "accent1", css: "4472C4", name: "Accent 1" },
   ],
   deck: ["C00000", "4472C4"],
-  behind: "FFFFFF",
 }
 
 const tint = {
@@ -63,19 +62,6 @@ describe("the colour picker", () => {
         .map((button) => button.name),
     ).toEqual(["Custom color"])
     expect(markup).toContain(`value="${hash}1F4E79"`)
-  })
-
-  it.each([
-    { rgb: "000000", transforms: [{ op: "alpha", val: 10_000 }] },
-    { rgb: "777777" },
-    { scheme: "dk1" },
-    undefined,
-  ] as const)("offers colors without claiming text contrast for %j", (value) => {
-    const markup = renderToStaticMarkup(<PickerBody value={value} palette={palette} onPick={() => undefined} />)
-    expect(markup).not.toContain("Passes AA")
-    expect(markup).not.toContain("Fails AA")
-    expect(markup).not.toContain("Contrast ")
-    expect(markup).toContain('aria-label="Hex"')
   })
 })
 

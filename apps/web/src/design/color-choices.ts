@@ -7,7 +7,6 @@ export type Swatch = { readonly scheme: SchemeName; readonly css: string; readon
 export type Palette = {
   readonly theme: readonly Swatch[]
   readonly deck: readonly string[]
-  readonly behind: string | null
 }
 
 export type Choice = { readonly color: Color; readonly css: string; readonly name: string }

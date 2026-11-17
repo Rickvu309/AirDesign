@@ -224,7 +224,7 @@ export function FormatButtons({
       {showing("color") ? (
         <ColorPicker
           value={value}
-          palette={{ theme, deck: deckColors, behind: null }}
+          palette={{ theme, deck: deckColors }}
           keepsFormat
           closesOnSwatch
           side="top"

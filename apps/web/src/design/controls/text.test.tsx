@@ -54,7 +54,7 @@ it.each([
         throw new Error("unused")
       },
     },
-    palette: { theme: [], deck: [], behind: null },
+    palette: { theme: [], deck: [] },
     onChange,
   }
   try {
