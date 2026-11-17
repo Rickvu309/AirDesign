@@ -240,3 +240,58 @@ test("a malformed ending leaves focus alone when the person was not in the compo
   await expect(newChat).not.toBeFocused()
   expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true)
 })
+
+for (const moved of [false, true]) {
+  test(`a malformed ending after an edit ${moved ? "preserves focus moved elsewhere" : "hands focus to New chat"} after run cleanup`, async ({
+    page,
+    context,
+    stack,
+  }) => {
+    const { deck, base, side, log } = await openDeck(page, context, stack)
+    stack.aira({ name: "edit.sse", fill: { deck, base, node } })
+    let turns = 0
+    await page.route(
+      (url) => url.pathname === "/aira/turn",
+      async (route) => {
+        turns += 1
+        if (turns === 1) await route.fallback()
+        else await route.fulfill({ status: 400, json: { ok: false, refusal: "body" } })
+      },
+    )
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    await page.route(
+      (url) => url.pathname === stack.mcp,
+      async (route) => {
+        if (route.request().postDataJSON()?.params?.name === "airdesign_stop_run") await gate
+        await route.fallback()
+      },
+    )
+    try {
+      await ask(page, asked)
+      await expect(side.locator('[data-tool-state="done"]')).toHaveText("Edited slides")
+      await expect(side.getByText(airaCopy.malformedTitle, { exact: true })).toBeVisible()
+      const newChat = side.locator("[data-aira-stuck]").getByRole("button", { name: "New chat", exact: true })
+      await expect(newChat).toHaveCount(0)
+      await expect(side.getByRole("textbox", { name: airaCopy.malformedBlocked, exact: true })).toBeDisabled()
+      if (moved) {
+        await log.focus()
+        await expect(log).toBeFocused()
+      }
+      release()
+      await expect(newChat).toBeVisible()
+      if (moved) {
+        await expect(log).toBeFocused()
+      } else {
+        await expect(newChat).toBeFocused()
+        await page.keyboard.press("Enter")
+        await expect(side.getByRole("textbox", { name: "Ask Aira", exact: true })).toBeFocused()
+        await expect(side.getByRole("textbox", { name: "Ask Aira", exact: true })).toBeEditable()
+      }
+    } finally {
+      release()
+    }
+  })
+}
