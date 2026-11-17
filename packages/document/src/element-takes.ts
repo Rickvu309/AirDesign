@@ -19,7 +19,7 @@ const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
   kept: ["identity.name", "identity.alt", "identity.hidden"],
 }
 
-const textFields: readonly FieldKey[] = ["text.value", "text.alpha", "notes.value"]
+const textFields: readonly FieldKey[] = ["text.value", "text.alpha", "notes.value", "link.target"]
 
 const removes: readonly Kind[] = ["shape", "picture", "connector", "table", "chart", "kept"]
 

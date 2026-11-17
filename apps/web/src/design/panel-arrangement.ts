@@ -71,6 +71,7 @@ const icon = (field: string, glyph: LucideIcon): Placed => placed(field, { show:
 const letter = (field: string, text: string): Placed => placed(field, { show: "letter", letter: text })
 
 export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
+  link: [[placed("target", hidden)]],
   text: [
     [placed("value", hidden, { control: "canvas" })],
     [placed("font", hidden)],
@@ -269,6 +270,7 @@ export const controlKinds = [
   "node",
   "site",
   "preset",
+  "link",
 ] as const
 
 export type ControlKind = (typeof controlKinds)[number]
@@ -304,6 +306,8 @@ export function controlOf(desc: Desc): ControlKind | null {
       return null
     case "asset":
       return "asset"
+    case "link":
+      return "link"
     case "node":
       return "node"
   }

@@ -1,0 +1,35 @@
+import { expect, it } from "vitest"
+import { planChange, registerScope } from "./change.js"
+import { openRegister } from "./decide.js"
+import { elementId, slideId } from "./element-id.js"
+
+it("writes a whole-element destination through the shared set path and refuses a missing slide", () => {
+  const node = elementId("258.2")
+  const picture = elementId("258.4")
+  const scope = registerScope({
+    ...openRegister("", "clean"),
+    index: {
+      total: 2,
+      pages: [],
+      slides: [
+        { id: "258", position: 0 },
+        { id: "259", position: 1 },
+      ],
+      elements: [
+        { node, kind: "shape", value: "Hello", box: null, grouped: false },
+        { node: picture, kind: "picture", value: null, box: null, grouped: false },
+      ],
+    },
+  })
+  const target = { node }
+  const link = { target: { kind: "slide", slide: slideId("259") } } as const
+  expect(planChange({ target, link }, scope)).toMatchObject({
+    ok: true,
+    rows: [{ node, row: { patch: { link: { target: { set: link.target } } } } }],
+  })
+  expect(planChange({ target, link: { target: { kind: "slide", slide: slideId("999") } } }, scope)).toMatchObject({
+    ok: false,
+    refusals: [{ trait: "link", code: "dead" }],
+  })
+  expect(planChange({ target: { node: picture }, link }, scope)).toMatchObject({ ok: false })
+})

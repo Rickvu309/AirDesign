@@ -22,6 +22,7 @@ import {
   shownEffects,
   shownBody,
   shownConnection,
+  shownLink,
   shownFill,
   shownGeometry,
   shownIdentity,
@@ -121,12 +122,14 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
     const effects = Object.entries(shownEffects(parts, at) ?? {}).map(([field, shown]) => [`effects.${field}`, shown])
     const image = shownImage(parts, at)
     const crop = shownCrop(parts, at)
+    const link = shownLink(parts, at)
     const connection = shownConnection(parts, at)
     const identity = Object.entries(shownIdentity(parts, at) ?? {}).map(([field, value]) => [
       `identity.${field}`,
       { value, own: true },
     ])
     return {
+      "link.target": { value: link, own: true },
       ...(image === null
         ? {}
         : {
@@ -221,6 +224,7 @@ function elementDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElem
   const model = panelOf(view, {
     reads: readsOf(edited, node),
     moves: shown.movables.current.has(node),
+    slides: readSlides(shown.displayParts.current).map((each) => each.slide),
     fields: fieldsOf(shown.displayParts.current, node),
     ...(view.facts.kind === "connector" ? { nodes: nodeChoices(deck, view) } : {}),
   })

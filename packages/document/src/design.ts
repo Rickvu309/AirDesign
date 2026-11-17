@@ -1,3 +1,4 @@
+import type { ElementLink } from "./link-target.js"
 import { mappedSlots, themeSlots, type Color, type MappedSlot, type ThemeSlot } from "./color.js"
 import type { Box } from "./box.js"
 import { bytesOf } from "./limits.js"
@@ -114,6 +115,7 @@ export type TraitReads = {
   readonly "connection.end"?: Read<BoundRead>
 }
 export type ElementRead = {
+  readonly link?: ElementLink
   readonly role?: Role
   readonly reads: TraitReads
   readonly kept: readonly DesignKey[]

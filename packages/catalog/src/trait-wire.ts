@@ -8,6 +8,7 @@ import { fillWire } from "./trait-wire-fill.js"
 import { geometryWire } from "./trait-wire-geometry.js"
 import { identityWire } from "./trait-wire-identity.js"
 import { imageWire } from "./trait-wire-image.js"
+import { linkWire } from "./trait-wire-link.js"
 import { lineWire } from "./trait-wire-line.js"
 import { notesWire } from "./trait-wire-notes.js"
 import { textWire } from "./trait-wire-text.js"
@@ -27,6 +28,7 @@ export type TraitWire<T extends TraitName> = [T extends "table" ? never : WireFi
 
 export const traitWire: { readonly [T in TraitName]: TraitWire<T> } = {
   identity: identityWire,
+  link: linkWire,
   box: boxWire,
   geometry: geometryWire,
   fill: fillWire,

@@ -1,3 +1,4 @@
+import { readLinkTarget } from "./link-target.js"
 import { readAsset } from "./asset-ref.js"
 import { readColor, type Color, type MappedSlot, type ThemeSlot } from "./color.js"
 import { coordinates } from "./box.js"
@@ -25,6 +26,7 @@ export type Desc =
   | { readonly kind: "table" }
   | { readonly kind: "asset" }
   | { readonly kind: "node" }
+  | { readonly kind: "link" }
 
 declare const valueMark: unique symbol
 declare const agentMark: unique symbol
@@ -133,7 +135,7 @@ export function named<const I extends AnyKind>(
   return kind({ kind: "named", item: item.desc, max })
 }
 
-export function custom<V, A>(name: "text" | "table" | "asset" | "node"): ValueKind<V, A> {
+export function custom<V, A>(name: "text" | "table" | "asset" | "node" | "link"): ValueKind<V, A> {
   return kind({ kind: name })
 }
 
@@ -214,6 +216,8 @@ function readDesc(desc: Desc, raw: unknown): unknown {
       return readItems(desc.item, raw, desc.min, desc.max)
     case "named":
       return readNamed(desc.item, raw, desc.max)
+    case "link":
+      return readLinkTarget(raw) ?? unread
     case "node":
       return readElementId(raw) ?? unread
     case "asset":

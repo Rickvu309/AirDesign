@@ -1,3 +1,5 @@
+import { linkSchema } from "./link-schema.js"
+import { readLinkTarget } from "@airdesign/document"
 import {
   alphaOf,
   assetIcon,
@@ -119,7 +121,7 @@ function shownOf<Key extends DesignKey>(
 const firstKeys: readonly DesignKey[] = ["box.rot", "box.flipH", "box.flipV", "connection.start", "connection.end"]
 const keptFirst: readonly DesignKey[] = [...firstKeys, ...designKeys.filter((key) => !firstKeys.includes(key))]
 
-export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design" | "kept" | "placed"> {
+export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design" | "kept" | "placed" | "link"> {
   const design: Partial<Record<DesignKey, Shown>> = {}
   for (const key of keptFirst) {
     const field = read.reads[key] as Read<never> | undefined
@@ -131,6 +133,7 @@ export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design
   }
   const written: Design = design
   return {
+    ...(read.link === undefined ? {} : { link: read.link }),
     ...(read.role === undefined ? {} : { role: read.role }),
     ...(Object.keys(written).length === 0 ? {} : { design: written }),
     ...(read.kept.length === 0 ? {} : { kept: read.kept }),
@@ -361,6 +364,8 @@ export function agentSchema(desc: Desc): JsonSchema {
       return { type: "string", maxLength: desc.max }
     case "asset":
       return { type: "string", pattern: iconNamePattern }
+    case "link":
+      return linkSchema
     case "text":
     case "table":
     case "node":
@@ -468,6 +473,10 @@ export function readAgent(desc: Desc, raw: unknown): AgentRead {
     case "text":
     case "table":
       return readString(raw, storableText)
+    case "link": {
+      const value = readLinkTarget(raw)
+      return value === null ? refused : { ok: true, value }
+    }
     case "node":
       return readString(raw, (text) => readElementId(text) !== undefined)
     case "choice":

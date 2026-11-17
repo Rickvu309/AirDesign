@@ -12,6 +12,7 @@ export const panelOrder: Readonly<Record<PanelKind, readonly Place[]>> = {
   text: [
     open("alignment"),
     open("text"),
+    open("link"),
     open("fill"),
     open("opacity"),
     shut("box"),

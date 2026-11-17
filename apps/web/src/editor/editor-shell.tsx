@@ -49,6 +49,7 @@ export type EditorDeck = {
   readonly onIcon?: (name: string) => void
   readonly save?: SaveStatus | null
   readonly notesOf?: (index: number) => string
+  readonly presentPaint?: (index: number, width: number, go: (index: number) => void) => ReactNode
   readonly shows?: () => readonly ShownSlide[]
 }
 
@@ -125,7 +126,7 @@ export function EditorShell({
         title={title}
         count={deck.slides.count}
         size={size}
-        paint={deck.slides.thumb}
+        paint={(index, width) => deck.presentPaint?.(index, width, present.go) ?? deck.slides.thumb(index, width)}
         {...(deck.notesOf === undefined ? {} : { notesOf: deck.notesOf })}
       />
     )
