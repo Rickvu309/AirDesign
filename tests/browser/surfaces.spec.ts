@@ -85,3 +85,38 @@ test("a deck card's preview box is the line colour, not the card's", async ({ pa
   expect(previews.length).toBeGreaterThan(0)
   for (const preview of previews) expect(preview).toBe("rgb(234, 234, 231)")
 })
+
+test("New deck is the signature fill with no border or ring around it", async ({ page }) => {
+  await page.goto("/screens/s31-02-decks-browse-recents-grid")
+  const edge = await page
+    .locator("[data-decks-header] button")
+    .first()
+    .evaluate((button) => {
+      const style = getComputedStyle(button)
+      return {
+        border: style.borderTopWidth,
+        fill: style.backgroundImage.startsWith("linear-gradient"),
+        ring: style.boxShadow.includes("0px 0px 0px 1px"),
+      }
+    })
+  expect(edge).toEqual({ border: "0px", fill: true, ring: false })
+})
+
+test("the sidebar keeps its icons on one line and its words on another", async ({ page }) => {
+  await page.goto("/screens/s31-02-decks-browse-recents-grid")
+  const lefts = (selector: string) =>
+    page
+      .locator(`[data-decks-sidebar] ${selector}`)
+      .evaluateAll((nodes) => [...new Set(nodes.map((node) => Math.round(node.getBoundingClientRect().left)))])
+  const icons = await lefts("[data-sidebar-icon]")
+  const labels = await lefts("[data-sidebar-label]")
+  expect(await page.locator("[data-decks-sidebar] [data-sidebar-icon]").count()).toBeGreaterThanOrEqual(7)
+  expect(icons).toHaveLength(1)
+  expect(labels).toHaveLength(1)
+  const starred = await page.locator("[data-decks-sidebar] nav[aria-labelledby] > div").evaluate((node) => {
+    const range = document.createRange()
+    range.selectNodeContents(node)
+    return Math.round(range.getBoundingClientRect().left)
+  })
+  expect(starred).toBe(icons[0])
+})
