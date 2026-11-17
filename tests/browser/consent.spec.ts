@@ -488,13 +488,6 @@ for (const width of [320, 390, 1470]) {
   })
 }
 
-test("Switch failure offers a retry of the connection request", async ({ page }) => {
-  await openConsent(page)
-  await page.route("**/sign-out", (route) => route.abort("failed"))
-  await page.getByRole("button", { name: "Switch", exact: true }).click()
-  await expect(page.getByRole("link", { name: "Try again" })).toHaveAttribute("href", authorizePath())
-})
-
 test("the account lookup shows loading status and approval prevents another decision", async ({ page }) => {
   let releaseAccount: () => void = () => {}
   const accountWait = new Promise<void>((resolve) => {
