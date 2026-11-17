@@ -204,3 +204,47 @@ if (
     .join(" ") !== "test:browser"
 )
   throw new Error("a check with no shard runs every browser test")
+
+const { preflight, runCheck } = await import("./check.mjs")
+if (preflight === undefined || runCheck === undefined) throw new Error("check needs a preflight before the lock")
+for (const name of ["format", "file-size", "lint", "references", "bug-rule", "commit-authors", "boundaries"]) {
+  if (!preflight.includes(name) || !everyStep.includes(name)) throw new Error(`preflight lost ${name}`)
+}
+for (const name of ["test", "browser", "build", "typecheck", "tooling", "specs"]) {
+  if (preflight.includes(name)) throw new Error(`${name} must wait for the machine`)
+}
+for (const fail of [undefined, "format", "lint", "file-size"]) {
+  const events = []
+  const result = await runCheck({
+    chosen: [[["format"], ["lint"], ["file-size"], ["test"]]],
+    run: async ([name]) => {
+      events.push(name)
+      return name === fail ? 1 : 0
+    },
+    lock: async () => {
+      events.push("lock")
+      return () => events.push("release")
+    },
+  })
+  if (fail === undefined) {
+    if (events.join() !== "format,lint,file-size,lock,test,release") throw new Error(`wrong check order: ${events}`)
+    if (!stampable(result.failed, result.ranSteps)) throw new Error("passing check cannot stamp")
+  } else {
+    if (events.includes("lock") || events.includes("test")) throw new Error(`${fail} waited for the machine`)
+    if (stampable(result.failed, result.ranSteps)) throw new Error("preflight failure can stamp")
+  }
+}
+const allEvents = []
+await runCheck({
+  chosen: [[["format"], ["test"]]],
+  all: true,
+  run: async ([name]) => {
+    allEvents.push(name)
+    return 1
+  },
+  lock: async () => {
+    allEvents.push("lock")
+    return () => allEvents.push("release")
+  },
+})
+if (allEvents.join() !== "format,lock,test,release") throw new Error("--all must finish checks after preflight fails")

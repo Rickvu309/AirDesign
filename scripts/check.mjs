@@ -132,8 +132,43 @@ export const recordFailure = (failed, name, warned = warnSteps) => {
 }
 
 const showOnSuccess = new Set(["bug-rule", "commit-authors", "lint", "metrics", "specs", "worktrees", ...localSteps])
-const all = process.argv.includes("--all")
-const failed = []
+export const preflight = ["format", "lint", "file-size", "references", "bug-rule", "commit-authors", "boundaries"]
+
+export const runCheck = async ({ chosen, lock, run, all = false }) => {
+  const failed = []
+  const runStep = async (step) => {
+    if ((await run(step)) !== 0) recordFailure(failed, step[0])
+  }
+  const cheap = chosen.flatMap((stage) => stage.flatMap(stepsOf)).filter(([name]) => preflight.includes(name))
+  await Promise.all(cheap.map(runStep))
+  if (failed.length > 0 && !all) {
+    console.error(
+      `failed before the line: ${failed.join(", ")}. Nothing waited for the machine; fix it and run pnpm check again.`,
+    )
+    return { failed, ranSteps: false }
+  }
+  const remaining = keepSteps(chosen, ([name]) => !preflight.includes(name))
+  const release = await lock()
+  let ranSteps = true
+  try {
+    const runLane = async (entry) => {
+      for (const step of stepsOf(entry)) {
+        await runStep(step)
+        if (failed.includes(step[0]) && !all) return
+      }
+    }
+    for (const [index, stage] of remaining.entries()) {
+      await Promise.all(stage.map(runLane))
+      if (failed.length > 0 && !all && !mayPush(failed, true)) {
+        ranSteps = index === remaining.length - 1
+        break
+      }
+    }
+    return { failed, ranSteps }
+  } finally {
+    release({ status: failed.length === 0 ? "passed" : `failed ${failed.join(" ")}` })
+  }
+}
 
 const run = ([name, command, args, extra]) =>
   new Promise((resolve) => {
@@ -148,11 +183,12 @@ const run = ([name, command, args, extra]) =>
     const finish = (status) => {
       const seconds = ((Date.now() - started) / 1000).toFixed(1)
       if (status !== 0) {
-        process.stderr.write(`${output}${recordFailure(failed, name)} ${name} ${seconds}s\n`)
+        process.stderr.write(`${output}${warnSteps.has(name) ? "warn" : "fail"} ${name} ${seconds}s\n`)
       } else {
         process.stdout.write(`${showOnSuccess.has(name) ? output : ""}ok ${name} ${seconds}s\n`)
       }
-      resolve()
+      if (status !== 0 && name === "format") console.error("Run pnpm exec oxfmt <files> and commit again.")
+      resolve(status)
     }
     child.on("error", (error) => {
       output += `${error.message}\n`
@@ -162,34 +198,35 @@ const run = ([name, command, args, extra]) =>
   })
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const release = await takeMachineLock()
-  const checkStarted = Date.now()
   const part = partOf(process.argv)
   const checkedTree = part === "all" && !onCi(process.env) ? workingTree(root) : undefined
   const ownTemp = fs.mkdtempSync(path.join(os.tmpdir(), "check-"))
+  const previousTemp = process.env.TMPDIR
   process.env.TMPDIR = ownTemp
-
-  let ranSteps = true
-  const chosen = stepsToRun(stagesFor(part, onCi(process.env), shardOf(process.argv)), onCi(process.env))
-  const runLane = async (entry) => {
-    for (const step of stepsOf(entry)) {
-      await run(step)
-      if (failed.includes(step[0]) && !all) return
-    }
+  let checkStarted
+  let result
+  try {
+    result = await runCheck({
+      chosen: stepsToRun(stagesFor(part, onCi(process.env), shardOf(process.argv)), onCi(process.env)),
+      all: process.argv.includes("--all"),
+      run,
+      lock: async () => {
+        const release = await takeMachineLock()
+        checkStarted = Date.now()
+        return release
+      },
+    })
+  } finally {
+    fs.rmSync(ownTemp, { recursive: true, force: true })
+    if (previousTemp === undefined) delete process.env.TMPDIR
+    else process.env.TMPDIR = previousTemp
   }
-  for (const [index, stage] of chosen.entries()) {
-    await Promise.all(stage.map(runLane))
-    if (failed.length > 0 && !all && !mayPush(failed, true)) {
-      ranSteps = index === chosen.length - 1
-      break
-    }
+  const { failed, ranSteps } = result
+  if (checkStarted !== undefined) {
+    const checkSeconds = timeMetric(root, "check-duration", checkStarted)
+    console.log(checkSeconds.line)
+    if (checkSeconds.over !== undefined) console.error(checkSeconds.over)
   }
-
-  const checkSeconds = timeMetric(root, "check-duration", checkStarted)
-  console.log(checkSeconds.line)
-  if (checkSeconds.over !== undefined) console.error(checkSeconds.over)
-  fs.rmSync(ownTemp, { recursive: true, force: true })
-  release({ status: failed.length === 0 ? "passed" : `failed ${failed.join(" ")}` })
 
   if (checkedTree !== undefined && stampable(failed, ranSteps)) {
     stampChecked(root, checkedTree)
