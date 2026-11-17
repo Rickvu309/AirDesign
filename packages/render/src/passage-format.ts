@@ -122,8 +122,10 @@ export function formatTarget(
     swatches: () => look()?.swatches() ?? [],
   })
   const document = shown.ownerDocument
+  shown.addEventListener("blur", keep)
   document.addEventListener("selectionchange", keep)
   return () => {
+    shown.removeEventListener("blur", keep)
     document.removeEventListener("selectionchange", keep)
     unregister()
   }
