@@ -2,9 +2,7 @@ import { createRequire } from "node:module"
 import { expect } from "@playwright/test"
 import { largeTextBox } from "../large-text.mjs"
 
-const { connectionCopy } = createRequire(import.meta.url)(
-  "../../../../../apps/web/src/copy/connection-copy.ts",
-)
+const { connectionCopy } = createRequire(import.meta.url)("../../../../../apps/web/src/copy/connection-copy.ts")
 
 async function drive(kit) {
   const element = await largeTextBox(kit)
