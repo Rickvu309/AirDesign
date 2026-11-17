@@ -1,5 +1,7 @@
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { presentCopy } from "../../apps/web/src/copy/present-copy"
+import { zoomCopy, zoomToOf } from "../../apps/web/src/copy/product-copy"
 import {
   clean,
   entry,
@@ -39,7 +41,6 @@ test("the grid shows every slide, and the keyboard opens one", async ({ page }) 
   await expect(entry(page, 1)).toHaveAccessibleName("Slide 1 of 2")
   await expect(entry(page, 2)).toHaveAccessibleName("Slide 2 of 2")
   await expect(page.getByRole("button", { name: "Grid" })).toHaveAttribute("aria-pressed", "true")
-  await expect(page.getByRole("slider", { name: "Zoom" })).toHaveAttribute("aria-valuetext", "4 slides per row")
   const motions = await page
     .locator("[data-editor-grid]")
     .evaluate((root) =>
@@ -235,7 +236,17 @@ async function perRow(page: Page): Promise<number> {
   })
 }
 
-test("the grid fills the window, zooms with the keyboard and the slider, and keeps the zoom for the deck", async ({
+async function percent(page: Page): Promise<number> {
+  return Number.parseInt((await page.locator("[data-zoom-readout]").textContent()) ?? "", 10)
+}
+
+async function thumbWidth(page: Page): Promise<number> {
+  return page
+    .locator('[data-editor-grid] [data-slide-entry="1"]')
+    .evaluate((entry) => Math.round(entry.getBoundingClientRect().width))
+}
+
+test("the grid fits the deck by default, zooms by percent with the keyboard and the menu, and keeps the zoom for the deck", async ({
   page,
 }) => {
   test.setTimeout(120_000)
@@ -245,44 +256,100 @@ test("the grid fills the window, zooms with the keyboard and the slider, and kee
     buffer: await manySlides(fifty),
   })
   await openGrid(page)
-  const zoom = page.getByRole("slider", { name: "Zoom" })
-  expect(await perRow(page)).toBe(4)
+  expect(await perRow(page)).toBe(7)
   const list = page.locator("[data-editor-grid] [data-slide-list]")
   const room = await list.evaluate((element) => {
     const first = element.querySelector('[data-slide-entry="1"]')?.getBoundingClientRect()
-    const fourth = element.querySelector('[data-slide-entry="4"]')?.getBoundingClientRect()
+    const seventh = element.querySelector('[data-slide-entry="7"]')?.getBoundingClientRect()
     const box = element.getBoundingClientRect()
     return {
       left: Math.round((first?.left ?? 0) - box.left),
-      right: Math.round(box.left + element.clientWidth - (fourth?.right ?? 0)),
+      right: Math.round(box.left + element.clientWidth - (seventh?.right ?? 0)),
       overflow: element.scrollWidth - element.clientWidth,
     }
   })
   expect(room.left).toBe(48)
   expect(room.right).toBeGreaterThanOrEqual(48)
-  expect(room.right).toBeLessThanOrEqual(48 + 4)
+  expect(room.right).toBeLessThanOrEqual(48 + 7)
   expect(room.overflow).toBe(0)
-  await page.setViewportSize({ width: 1920, height: 923 })
-  await expect.poll(() => perRow(page)).toBe(5)
-  await page.setViewportSize({ width: 1470, height: 923 })
-  await expect.poll(() => perRow(page)).toBe(4)
+  const fit = await percent(page)
   await entry(page, 1).focus()
   await page.keyboard.press("ControlOrMeta+Equal")
+  await expect.poll(() => percent(page)).toBe(25)
+  expect(await thumbWidth(page)).toBe(320)
   await expect.poll(() => perRow(page)).toBe(3)
-  await expect(zoom).toHaveAttribute("aria-valuetext", "3 slides per row")
   await page.keyboard.press("ControlOrMeta+Minus")
-  await page.keyboard.press("ControlOrMeta+Minus")
-  await expect.poll(() => perRow(page)).toBe(5)
-  await zoom.focus()
-  await page.keyboard.press("ArrowLeft")
-  await expect.poll(() => perRow(page)).toBe(7)
+  await expect.poll(() => percent(page)).toBe(10)
+  await page.locator("[data-zoom-readout]").click()
+  await page.getByRole("menuitemradio", { name: zoomToOf(50), exact: true }).click()
+  await expect(page.locator("[data-zoom-readout]")).toHaveText("50%")
+  expect(await thumbWidth(page)).toBe(640)
+  await expect.poll(() => perRow(page)).toBe(2)
   await page.reload()
   await settled(page)
   await openGrid(page)
-  await expect.poll(() => perRow(page)).toBe(7)
+  await expect(page.locator("[data-zoom-readout]")).toHaveText("50%")
+  await expect.poll(() => perRow(page)).toBe(2)
   await entry(page, 1).focus()
   await page.keyboard.press("ControlOrMeta+0")
-  await expect.poll(() => perRow(page)).toBe(4)
+  await expect.poll(() => percent(page)).toBe(fit)
+  await expect.poll(() => perRow(page)).toBe(7)
+})
+
+test("Zoom to fit shows every slide of a short deck as large as the window allows", async ({ page }) => {
+  await openFile(page, sectioned)
+  await openGrid(page)
+  const list = page.locator("[data-editor-grid] [data-slide-list]")
+  const fits = await list.evaluate((element) => ({
+    scroll: element.scrollHeight - element.clientHeight,
+    across: element.scrollWidth - element.clientWidth,
+  }))
+  expect(fits).toEqual({ scroll: 0, across: 0 })
+  expect(await thumbWidth(page)).toBeGreaterThan(300)
+})
+
+async function zoomMenuOf(page: Page) {
+  await page.locator("[data-zoom-readout]").click()
+  const menu = page.getByRole("menu")
+  await expect(page.getByRole("textbox", { name: zoomCopy.field })).toBeFocused()
+  const rows = await menu.locator("[role=menuitem], [role=menuitemradio]").allTextContents()
+  const trigger = await page.locator("[data-zoom-readout]").boundingBox()
+  const popup = await menu.boundingBox()
+  await page.keyboard.press("Escape")
+  await expect(menu).toHaveCount(0)
+  return {
+    rows,
+    rightEdge: Math.round((popup?.x ?? 0) + (popup?.width ?? 0) - (trigger?.x ?? 0) - (trigger?.width ?? 0)),
+    below: (popup?.y ?? 0) > (trigger?.y ?? 0) + (trigger?.height ?? 0),
+  }
+}
+
+test("the slide view and the grid open the same zoom menu, hung from the zoom button's right edge", async ({
+  page,
+}) => {
+  await openFile(page, sectioned)
+  const slides = await zoomMenuOf(page)
+  await openGrid(page)
+  const grid = await zoomMenuOf(page)
+  expect(grid).toEqual(slides)
+  expect(slides.rows).toHaveLength(6)
+  expect(slides.rightEdge).toBe(0)
+  expect(slides.below).toBe(true)
+  await expect(page.locator("[data-view-bar] button")).toHaveText([/^\d+%$/, presentCopy.present, "Export"])
+})
+
+test("Present in the grid starts the show from the focused slide and lands back in the grid", async ({ page }) => {
+  await openFile(page, sectioned)
+  await openGrid(page)
+  await entry(page, 2).focus()
+  await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
+  await expect(page.locator("[data-present-show]")).toBeVisible()
+  await expect(page.locator("[data-present-show] [data-present-slide]")).toHaveAttribute("data-present-slide", "2")
+  await expect(page.locator("[data-editor-grid]")).toHaveAttribute("inert", "")
+  await page.keyboard.press("Escape")
+  await expect(page.locator("[data-present-show]")).toHaveCount(0)
+  await expect(page.locator("[data-editor-grid]")).toBeVisible()
+  await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
 })
 
 test("a 100-slide deck is refused before it opens", async ({ page }) => {

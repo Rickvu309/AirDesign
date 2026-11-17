@@ -76,7 +76,7 @@ test("editor menus and popovers that pass duration-0 open without motion", async
   await newBlankDeck(page)
   await expect(page.locator(".thin-page")).toBeVisible()
   await page.locator("[data-zoom-readout]").click()
-  const zoom = page.getByRole("menu").filter({ has: page.getByRole("menuitemradio", { name: "100%" }) })
+  const zoom = page.getByRole("menu").filter({ has: page.getByRole("menuitemradio", { name: "Zoom to 100%" }) })
   await expect(zoom).toBeVisible()
   expect(await motion(zoom)).toMatchObject({ animation: "none", property: "opacity, scale", duration: "0s" })
   await page.keyboard.press("Escape")

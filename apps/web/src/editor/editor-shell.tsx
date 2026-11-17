@@ -1,15 +1,7 @@
 import { useRef, useState, type ReactNode } from "react"
 import { NotesBar } from "@/editor/notes-bar"
 import { CanvasStage } from "@/editor/canvas-stage"
-import {
-  fitWidth,
-  slideRoom,
-  steppedZoom,
-  zoomPercent,
-  zoomWidth,
-  type SlideSize,
-  type Zoom,
-} from "@/editor/canvas-zoom"
+import { slideRoom, steppedZoom, zoomPercent, zoomWidth, type SlideSize, type Zoom } from "@/editor/canvas-zoom"
 import { PanelHead, ZoomReadout } from "@/editor/editor-chrome"
 import { openWith } from "@/editor/slide-opening"
 import { EditorGrid } from "@/editor/editor-grid"
@@ -143,27 +135,32 @@ export function EditorShell({
   )
   if (deck !== undefined && gridOpen) {
     return (
-      <EditorGrid
-        id={deck.id ?? null}
-        title={title}
-        strip={deck.slides}
-        size={size}
-        onSlides={() => openWith(() => setGridOpen(false))}
-        onExport={deck.onExport}
-        undo={deck.undo}
-        pointer={pointer}
-        panel={panel}
-        activeTool={activeTool}
-        toolMenu={toolMenu}
-        save={deck.save ?? null}
-        {...(deck.onRename === undefined ? {} : { onRename: deck.onRename })}
-        {...(deck.onText === undefined ? {} : { onText: deck.onText })}
-        {...(deck.formatting === undefined ? {} : { formatting: deck.formatting })}
-        {...(formats === undefined ? {} : { formats })}
-        {...(deck.onTable === undefined ? {} : { onTable: deck.onTable })}
-        {...(deck.onPicture === undefined ? {} : { onPicture: deck.onPicture })}
-        {...(onPanel === undefined ? {} : { onPanel })}
-      />
+      <>
+        <EditorGrid
+          id={deck.id ?? null}
+          title={title}
+          strip={deck.slides}
+          size={size}
+          onSlides={() => openWith(() => setGridOpen(false))}
+          onExport={deck.onExport}
+          onPresent={(from) => present.start(from)}
+          presenting={present.show !== null}
+          undo={deck.undo}
+          pointer={pointer}
+          panel={panel}
+          activeTool={activeTool}
+          toolMenu={toolMenu}
+          save={deck.save ?? null}
+          {...(deck.onRename === undefined ? {} : { onRename: deck.onRename })}
+          {...(deck.onText === undefined ? {} : { onText: deck.onText })}
+          {...(deck.formatting === undefined ? {} : { formatting: deck.formatting })}
+          {...(formats === undefined ? {} : { formats })}
+          {...(deck.onTable === undefined ? {} : { onTable: deck.onTable })}
+          {...(deck.onPicture === undefined ? {} : { onPicture: deck.onPicture })}
+          {...(onPanel === undefined ? {} : { onPanel })}
+        />
+        {presenting}
+      </>
     )
   }
   return (
@@ -260,12 +257,7 @@ export function EditorShell({
           ) : size === null ? (
             <span />
           ) : (
-            <ZoomMenu
-              zoom={zoom}
-              percent={zoomPercent(width, size)}
-              fitPercent={zoomPercent(fitWidth(room, size), size)}
-              onZoom={setZoom}
-            />
+            <ZoomMenu zoom={zoom} percent={zoomPercent(width, size)} onZoom={setZoom} />
           )}
           <span className="flex items-center gap-1">
             <PresentButton

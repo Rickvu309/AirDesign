@@ -3,10 +3,9 @@ import { useCallback, useLayoutEffect, useRef, useState, type KeyboardEvent } fr
 import { flushSync } from "react-dom"
 import { Announcer, type Announcement } from "@/components/ui/announcer"
 import { Button } from "@/components/ui/button"
-import { Slider } from "@/components/ui/slider"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { AirdesignMark } from "@/decks/airdesign-mark"
-import type { SlideSize } from "@/editor/canvas-zoom"
+import { steppedZoom, zoomPercent, type SlideSize } from "@/editor/canvas-zoom"
 import { SaveStatusLine } from "@/editor/save-status"
 import type { SaveStatus } from "@/editor/use-deck-status"
 import { DeckTitle, ExportButton, hairlineShadow, Island, surfaceShadow } from "@/editor/editor-chrome"
@@ -24,15 +23,18 @@ import {
 } from "@/editor/grid-selection"
 import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
 import { useGridDrag } from "@/editor/use-grid-drag"
-import { gridFit, gridGap, gridSizes, steppedGridSize, useKeptGridSize } from "@/editor/grid-size"
+import { gridGap, gridLayout, smallestThumb, useKeptGridZoom, type GridRoom } from "@/editor/grid-zoom"
 import type { FormatShown } from "@/editor/format-buttons"
 import type { ToolPick } from "@/editor/pointer-tool"
 import { gridRows, GridSectionHead } from "@/editor/grid-section"
 import { sectionAt, useKeptCollapsed } from "@/editor/collapsed-sections"
 import { slideThumbWidth, useSlideSay, type SlideStrip, type StripSection } from "@/editor/slide-sidebar"
 import type { UndoButtonsState } from "@/editor/undo-buttons"
+import { ViewBar } from "@/editor/view-bar"
 import { useZoomKeys } from "@/editor/zoom-keys"
+import { ZoomMenu } from "@/editor/zoom-menu"
 import { ExportControl } from "@/export/export-control"
+import { PresentButton } from "@/present/present-button"
 import type { ExportRequest } from "@/export/export-deck"
 import type { TableSize } from "@/element-edit"
 import { cn } from "@/lib/class-names"
@@ -42,6 +44,10 @@ const thumbFace = cn("block overflow-hidden rounded-[2px] bg-white", hairlineSha
 const noSections: readonly StripSection[] = []
 
 const listInset = 48
+
+const listPad = 24
+
+const wideSlide: SlideSize = { width: 12_192_000, height: 6_858_000 }
 
 function gridThumbHeight(width: number, height: number): number {
   if (height <= 0) return Math.round((width * 9) / 16)
@@ -56,6 +62,8 @@ export function EditorGrid({
   onSlides,
   onRename,
   onExport,
+  onPresent,
+  presenting = false,
   undo,
   pointer,
   panel = "none",
@@ -76,6 +84,8 @@ export function EditorGrid({
   onSlides: () => void
   onRename?: (name: string) => void
   onExport: (request?: ExportRequest) => Promise<void> | void
+  onPresent?: (from: number) => void
+  presenting?: boolean
   undo: UndoButtonsState
   pointer?: ToolPick
   panel?: EditorPanel
@@ -94,8 +104,8 @@ export function EditorGrid({
   const following = useRef(true)
   const [stop, setStop] = useState(strip.current)
   const [message, setMessage] = useState<Announcement | null>(null)
-  const [room, setRoom] = useState<number | null>(null)
-  const [zoom, setZoom] = useKeptGridSize(id)
+  const [room, setRoom] = useState<GridRoom | null>(null)
+  const [zoom, setZoom] = useKeptGridZoom(id)
   const [menu, setMenu] = useState<GridMenu | null>(null)
   const [pick, setPick] = useState<GridPick>(null)
   const { current, count } = strip
@@ -124,20 +134,30 @@ export function EditorGrid({
   useLayoutEffect(() => {
     const scroller = list.current
     if (scroller === null) return
-    const measure = () => setRoom(Math.max(0, scroller.clientWidth - 2 * listInset))
+    const measure = () => {
+      const width = Math.max(0, scroller.clientWidth - 2 * listInset)
+      const height = Math.max(0, scroller.clientHeight - 2 * listPad)
+      setRoom((last) => (last?.width === width && last.height === height ? last : { width, height }))
+    }
     measure()
     if (typeof ResizeObserver !== "function") return
     const observer = new ResizeObserver(measure)
     observer.observe(scroller)
     return () => observer.disconnect()
   }, [])
-  useZoomKeys(true, (key) => setZoom(steppedGridSize(key, zoom)))
   const reachable = stop >= 0 && stop < count && shown(stop) ? stop : current
-  const fit = room === null ? { columns: 0, width: zoom } : gridFit(room, zoom)
+  const rows = gridRows(strip)
+  const slide = size ?? wideSlide
+  const shape = {
+    counts: rows.map((row) => (row.number !== null && collapsed.held.has(row.number) ? 0 : row.end - row.start)),
+    heads: rows.filter((row) => row.name !== null && row.number !== null).length,
+    aspect: gridThumbHeight(1000, strip.thumbHeight) / 1000,
+  }
+  const fit = room === null ? { columns: 0, width: smallestThumb } : gridLayout(zoom, room, slide, shape)
   const width = fit.width
   const height = gridThumbHeight(width, strip.thumbHeight)
-  const step = gridSizes.indexOf(zoom)
-  const rows = gridRows(strip)
+  const percent = zoomPercent(width, slide)
+  useZoomKeys(!presenting, (key) => setZoom(key === "fit" ? "fit" : steppedZoom(key, percent)))
   const drag = useGridDrag({
     list,
     bar,
@@ -325,7 +345,7 @@ export function EditorGrid({
   )
 
   return (
-    <div className="flex h-full min-h-0 flex-col" data-editor-grid>
+    <div className="flex h-full min-h-0 flex-col" inert={presenting} data-editor-grid>
       <header className="flex h-24 shrink-0 items-start justify-between px-3 pt-3">
         <Island>
           <span className="flex size-8 items-center justify-center">
@@ -374,37 +394,24 @@ export function EditorGrid({
           )}
         </Island>
         <Island>
-          <span className="flex w-36 items-center gap-2 px-2 text-quiet" data-grid-zoom>
-            <EditorIcon name="grid" size={12} />
-            <Slider
-              label={slideListCopy.zoom}
-              valueText={() => slideListCopy.perRow(fit.columns)}
-              min={0}
-              max={gridSizes.length - 1}
-              step={1}
-              value={step}
-              onValueChange={(value) => {
-                const next = gridSizes[value]
-                if (next !== undefined) setZoom(next)
-              }}
-            />
-            <EditorIcon name="slide" size={15} />
-          </span>
-          {size === null ? (
-            <ExportButton onClick={() => void onExport()} />
-          ) : (
-            <ExportControl
-              target={{
-                name: title,
-                count: strip.count,
-                current: strip.current,
-                size,
-                slide: strip.thumb,
-                onExport,
-                ...(picked === null ? {} : { selected: pickedSlides(picked, current) }),
-              }}
-            />
-          )}
+          <ViewBar zoom={size === null ? null : <ZoomMenu zoom={zoom} percent={percent} onZoom={setZoom} />}>
+            <PresentButton {...(onPresent === undefined ? {} : { onClick: () => onPresent(reachable) })} />
+            {size === null ? (
+              <ExportButton onClick={() => void onExport()} />
+            ) : (
+              <ExportControl
+                target={{
+                  name: title,
+                  count: strip.count,
+                  current: strip.current,
+                  size,
+                  slide: strip.thumb,
+                  onExport,
+                  ...(picked === null ? {} : { selected: pickedSlides(picked, current) }),
+                }}
+              />
+            )}
+          </ViewBar>
         </Island>
       </header>
       <Announcer message={message} />

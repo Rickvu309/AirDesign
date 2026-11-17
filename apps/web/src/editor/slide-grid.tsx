@@ -1,15 +1,15 @@
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
-import { Slider } from "@/components/ui/slider"
-import { slideListCopy } from "@/copy/slide-list-copy"
 import { AirdesignMark } from "@/decks/airdesign-mark"
 import { EditorFrame } from "@/editor/editor-frame"
-import { DeckTitle, ExportButton, Island, surfaceShadow } from "@/editor/editor-chrome"
+import { DeckTitle, ExportButton, Island, surfaceShadow, ZoomReadout } from "@/editor/editor-chrome"
 import { EditorIcon } from "@/editor/editor-icons"
 import { EditorToolbar } from "@/editor/editor-toolbar"
 import { GridSectionHead } from "@/editor/grid-section"
 import { PastedThumb, SlideThumb } from "@/editor/slide-thumb"
+import { ViewBar } from "@/editor/view-bar"
 import { cn } from "@/lib/class-names"
+import { PresentButton } from "@/present/present-button"
 
 export type GridState = "idle" | "hover" | "hold" | "pasted"
 
@@ -62,19 +62,10 @@ export function SlideGrid({ state, title, toast }: { state: GridState; title: st
             </Button>
           </Island>
           <Island>
-            <span className="flex w-36 items-center gap-2 px-2 text-quiet" data-grid-zoom>
-              <EditorIcon name="grid" size={12} />
-              <Slider
-                label={slideListCopy.zoom}
-                valueText={() => slideListCopy.perRow(4)}
-                min={0}
-                max={4}
-                step={1}
-                value={2}
-              />
-              <EditorIcon name="slide" size={15} />
-            </span>
-            <ExportButton />
+            <ViewBar zoom={<ZoomReadout value="23%" />}>
+              <PresentButton />
+              <ExportButton />
+            </ViewBar>
           </Island>
         </header>
       }

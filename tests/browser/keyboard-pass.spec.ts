@@ -1,4 +1,4 @@
-import { productCopy, fitZoomOf } from "../../apps/web/src/copy/product-copy"
+import { productCopy, zoomCopy } from "../../apps/web/src/copy/product-copy"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { store } from "./home-store.ts"
@@ -74,16 +74,65 @@ test("Ctrl+= and Ctrl+- zoom the canvas and Ctrl+0 returns to Fit", async ({ pag
   await page.keyboard.press("ControlOrMeta+0")
   await expect.poll(() => percent(page)).toBe(fit)
   await page.locator("[data-zoom-readout]").click()
-  await expect(page.getByRole("menuitemradio", { name: fitZoomOf(fit) })).toBeChecked()
+  await expect(page.getByRole("menuitemradio", { name: zoomCopy.fit })).toBeChecked()
 })
 
-test("the zoom menu names its first item Fit with its percent", async ({ page }) => {
+test("the zoom menu opens on its percent field, then Zoom in, Zoom out, fit and the three presets", async ({
+  page,
+}) => {
   await open(page)
   const fit = await percent(page)
   await page.locator("[data-zoom-readout]").click()
-  const items = page.getByRole("menuitemradio")
-  await expect(items.first()).toHaveText(fitZoomOf(fit))
-  await expect(items.nth(1)).toHaveText("50%")
+  const field = page.getByRole("textbox", { name: zoomCopy.field })
+  await expect(field).toBeFocused()
+  await expect(field).toHaveValue(`${String(fit)}%`)
+  await expect(page.getByRole("menu").getByRole("menuitem")).toHaveText([
+    `${zoomCopy.zoomIn}${zoomCopy.inKey}`,
+    `${zoomCopy.zoomOut}${zoomCopy.outKey}`,
+  ])
+  await expect(page.getByRole("menuitemradio")).toHaveText([
+    `${zoomCopy.fit}${zoomCopy.fitKey}`,
+    "Zoom to 50%",
+    "Zoom to 100%",
+    "Zoom to 200%",
+  ])
+  await expect(page.getByRole("menuitemradio", { name: zoomCopy.fit })).toBeChecked()
+  const edge = await page.getByRole("menu").evaluate((menu) => {
+    const input = menu.querySelector("input")
+    const label = menu.querySelector("[role=menuitem] span:nth-child(2)")
+    if (input === null || label === null) return null
+    const style = getComputedStyle(input)
+    return {
+      outline: style.outlineStyle,
+      border: style.borderTopColor === style.borderLeftColor ? style.borderTopWidth : "uneven",
+      text: Math.round(
+        input.getBoundingClientRect().left + parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft),
+      ),
+      label: Math.round(label.getBoundingClientRect().left),
+    }
+  })
+  expect(edge?.outline).toBe("none")
+  expect(edge?.border).toBe("2px")
+  expect(edge?.text).toBe(edge?.label)
+})
+
+test("a percent typed into the zoom field sets the zoom, and text that is not a percent is put back", async ({
+  page,
+}) => {
+  await open(page)
+  const fit = await percent(page)
+  await page.locator("[data-zoom-readout]").click()
+  const field = page.getByRole("textbox", { name: zoomCopy.field })
+  await expect(field).toBeFocused()
+  await page.keyboard.type("big")
+  await page.keyboard.press("Enter")
+  await expect(field).toHaveValue(`${String(fit)}%`)
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.type("137")
+  await page.keyboard.press("Enter")
+  await expect(page.getByRole("menu")).toHaveCount(0)
+  await expect(page.locator("[data-zoom-readout]")).toHaveText("137%")
+  await expect(page.locator("[data-zoom-readout]")).toBeFocused()
 })
 
 test("Ctrl+= inside a text box is left to the browser", async ({ page }) => {

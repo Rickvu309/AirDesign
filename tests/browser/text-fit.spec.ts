@@ -15,7 +15,7 @@ function predicted(text: ResolvedText, width: number, widths: FontWidths): numbe
   return typeof laid === "string" ? null : laid.height
 }
 
-async function compare(page: Page, placed: readonly PlacedCase[], zoom: string | null): Promise<readonly Row[]> {
+async function compare(page: Page, placed: readonly PlacedCase[], zoom: number | null): Promise<readonly Row[]> {
   await openDeck(page, "fit.pptx", await fitDeck(placed))
   if (zoom !== null) await zoomTo(page, zoom)
   const painted = new Map<string, number>()
@@ -53,7 +53,7 @@ async function compare(page: Page, placed: readonly PlacedCase[], zoom: string |
 
 test("text fit lays text out as the painter does where sizes fall on whole pixels", async ({ page }) => {
   test.setTimeout(20 * 60_000)
-  const rows = await compare(page, placeCases(fitCases(counts, 3)), "100%")
+  const rows = await compare(page, placeCases(fitCases(counts, 3)), 100)
   console.log(`text fit against the painter at 100%, sizes on a 3 pt grid\n${agreementTable(rows)}\n${worst(rows, 8)}`)
   for (const group of groups) {
     expect(overflowAgreement(rows.filter((row) => row.group === group)), group).toBeGreaterThanOrEqual(0.99)

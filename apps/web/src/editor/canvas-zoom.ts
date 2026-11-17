@@ -2,9 +2,13 @@ import { gestureFor } from "@airdesign/render"
 
 export type SlideSize = { readonly width: number; readonly height: number }
 
-export type Zoom = "fit" | (typeof zoomSteps)[number]
+export type Zoom = "fit" | number
 
-export const zoomSteps = [50, 100, 200] as const
+export const zoomPresets = [50, 100, 200] as const
+
+const zoomStops = [10, 25, 50, 75, 100, 150, 200, 300, 400] as const
+
+export const zoomLimits = { least: 10, most: 400 } as const
 
 const emuPerPixel = 9525
 
@@ -26,9 +30,13 @@ export function fitWidth(room: SlideSize, slide: SlideSize): number {
   return Math.floor(Math.min(room.width, (room.height * slide.width) / slide.height))
 }
 
+export function percentWidth(percent: number, slide: SlideSize): number {
+  return Math.round(((slide.width / emuPerPixel) * percent) / 100)
+}
+
 export function zoomWidth(zoom: Zoom, room: SlideSize, slide: SlideSize): number {
   if (zoom === "fit") return fitWidth(room, slide)
-  return Math.round(((slide.width / emuPerPixel) * zoom) / 100)
+  return percentWidth(zoom, slide)
 }
 
 export function zoomPercent(width: number, slide: SlideSize): number {
@@ -53,9 +61,14 @@ export function zoomKey(event: {
   return gesture === "zoom-fit" ? "fit" : null
 }
 
-export function steppedZoom(direction: "in" | "out", percent: number): Zoom {
-  const first = zoomSteps[0]
-  const last = zoomSteps[zoomSteps.length - 1] ?? first
-  if (direction === "in") return zoomSteps.find((step) => step > percent) ?? last
-  return [...zoomSteps].reverse().find((step) => step < percent) ?? first
+export function steppedZoom(direction: "in" | "out", percent: number): number {
+  if (direction === "in") return zoomStops.find((stop) => stop > percent) ?? zoomLimits.most
+  return [...zoomStops].reverse().find((stop) => stop < percent) ?? zoomLimits.least
+}
+
+export function typedZoom(text: string): number | null {
+  const match = /^\s*(\d+(?:\.\d+)?)\s*%?\s*$/.exec(text)
+  if (match === null) return null
+  const percent = Math.round(Number(match[1]))
+  return Math.min(zoomLimits.most, Math.max(zoomLimits.least, percent))
 }

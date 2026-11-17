@@ -157,7 +157,8 @@
 :where(a[href], button, input, select, textarea, summary, [tabindex], [contenteditable="true"]):focus-visible:not(
     [role^="menuitem"],
     [role="option"],
-    [data-focus-ring] > :is(input, textarea)
+    [data-focus-ring] > :is(input, textarea),
+    [data-focus-edge]
   ),
 [data-focus-ring]:has(> :is(input, textarea):focus-visible) {
   outline: var(--focus-ring-width) solid var(--focus-ring);
