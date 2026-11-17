@@ -47,6 +47,12 @@ export default async function drive(kit) {
       await expect(
         editor.locator("[data-paragraph]").last().locator("[data-run]").filter({ hasText: "Second" }).first(),
       ).toHaveCSS("font-size", firstSize)
+      expect(
+        await editor
+          .locator("[data-paragraph]")
+          .last()
+          .evaluate((paragraph) => getComputedStyle(paragraph, "::before").fontSize),
+      ).toBe(firstSize)
       await expect
         .poll(() =>
           editor

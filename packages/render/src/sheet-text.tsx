@@ -73,7 +73,9 @@ export function SheetText(props: {
         const align = placed(paragraph.align)
         const list = paragraph.list
         const number = nextNumber(paragraph.from, list)
+        const first = paragraph.runs.find((run) => run.text !== "") ?? paragraph.runs[0]
         const overlay = {
+          ...(first === undefined ? {} : { firstRun: { ...overlayOf(first), from: first.from } }),
           ...(number === null ? {} : { number }),
           ...(align === undefined ? {} : { align }),
           ...(list === undefined ? {} : { list }),

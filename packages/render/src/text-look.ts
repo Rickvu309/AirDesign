@@ -60,6 +60,7 @@ export type ParagraphPaint = {
   readonly align?: ParagraphAlign
   readonly list?: TextList
   readonly number?: number
+  readonly firstRun?: RunPaint & { readonly from: number }
 } & ParagraphSpacing
 
 export type TextLook = {
@@ -309,8 +310,22 @@ export function paragraphPaint(dataset: DOMStringMap): ParagraphPaint {
   return paint
 }
 
-function paragraphOverlay(style: Look, paragraph: CanvasParagraph, overlay: ParagraphPaint | undefined): Look {
-  const align = overlay?.align === undefined ? style : { ...style, textAlign: overlay.align }
+function paragraphOverlay(
+  style: Look,
+  paragraph: CanvasParagraph,
+  overlay: ParagraphPaint | undefined,
+  source: CanvasRunStyle,
+  scaled: Scaled,
+): Look {
+  const font = paragraph.bullet?.font ?? source.font
+  const color = paragraph.bullet?.color ?? source.color
+  const align = {
+    ...style,
+    "--bullet-size": `${scaled(source.size * (paragraph.bullet?.size ?? 1))}px`,
+    ...(font === null ? {} : { "--bullet-font": familyOf(font) }),
+    ...(color === null ? {} : { "--bullet-color": color }),
+    ...(overlay?.align === undefined ? {} : { textAlign: overlay.align }),
+  }
   if (overlay?.list === "none") return { ...align, "--bullet": "none" }
   if (
     overlay?.list === "numbers" ||
@@ -385,8 +400,21 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
     paragraph(from, filled, overlay) {
       const paragraph = paragraphs.get(from)
       if (paragraph === undefined) return { lineHeight: filled ? noLine : singleLine, "--bullet": "none" }
+      const first = overlay?.firstRun
+      const source = formatted(
+        fileStyle(paragraph, first?.from ?? paragraph.runs[0]?.from ?? -1),
+        first ?? {},
+        colors,
+        scale,
+      )
       const style = edged(
-        paragraphOverlay(paragraphStyle(spaced(paragraph, overlay), filled, scaled), paragraph, overlay),
+        paragraphOverlay(
+          paragraphStyle(spaced(paragraph, overlay), filled, scaled),
+          paragraph,
+          overlay,
+          source,
+          scaled,
+        ),
         text.edgeSpacing === true ? null : edges,
         from,
       )
@@ -490,11 +518,18 @@ export function restyle(box: HTMLElement, look: TextLook): void {
     if (!isElement(block) || block.dataset.paragraph === undefined) continue
     block.toggleAttribute("data-end-break", endsInBreak(block.textContent ?? ""))
     const from = Number(block.dataset.paragraph)
-    const paint = paragraphPaint(block.dataset)
+    const spans = runsOf(block)
+    const first = spans.find((span) => span.textContent !== "") ?? spans[0]
+    const paint = {
+      ...paragraphPaint(block.dataset),
+      ...(first === undefined
+        ? {}
+        : { firstRun: { ...readFormat(first), from: Number(first.dataset.run?.split(".")[1] ?? -1) } }),
+    }
     const number = nextNumber(from, paint.list)
     const overlay = number === null ? paint : { ...paint, number }
     applyStyle(block, look.paragraph(from, isFilled(block), overlay))
-    for (const span of runsOf(block)) {
+    for (const span of spans) {
       const [paragraph, run] = (span.dataset.run ?? "").split(".").map(Number)
       const at = paragraph === from && run !== undefined ? run : loneRun
       applyStyle(span, look.run(from, at, readFormat(span), overlay))
