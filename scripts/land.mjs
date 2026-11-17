@@ -197,11 +197,11 @@ export const land = async (ctx) => {
     const early = markerFault(filesWithMarkers(git))
     if (early !== undefined) stop("markers", early)
     line("markers", "no conflict marker in the commit")
-    line("check", "running pnpm check. If another check holds this machine, its line below says so and this one waits.")
-    const verdict = await judgeCheck({ ...(await ctx.check()), rerun: ctx.rerun, say: (text) => line("check", text) })
-    if (!verdict.passed) stop("check", verdict.how)
+    line("gate", "running pnpm gate: the cheap checks, then the build and the tests this diff reaches")
+    const verdict = await judgeCheck({ ...(await ctx.check()), rerun: ctx.rerun, say: (text) => line("gate", text) })
+    if (!verdict.passed) stop("gate", verdict.how)
     ctx.stamp()
-    line("check", `${verdict.how}; the commit is stamped for the push guard`)
+    line("gate", `${verdict.how}; the commit is stamped for the push guard, and ci runs every step of pnpm check`)
     if (args.checkOnly) return 0
     const late = markerFault(filesWithMarkers(git))
     if (late !== undefined) stop("markers", late)
@@ -274,7 +274,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
     args: parseArgs(process.argv.slice(2)),
     git: runner("git", root),
     gh: runner("gh", root),
-    check: () => tee("pnpm", ["check"], process.env, root),
+    check: () => tee(process.execPath, ["scripts/gate.mjs"], process.env, root),
     rerun: async (file) => {
       const release = await takeMachineLock({ job: "rerun", lane: "small", say: console.error })
       let status = "exited"

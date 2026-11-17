@@ -26,14 +26,14 @@ const judged = async ({ status, output, alone = { status: 0, output: "" } }) => 
 }
 
 const passing = await judged({ status: 0, output: "ok lint 1s\n" })
-same("a check that passed is passed", passing.verdict, { passed: true, how: "the check passed" })
+same("a gate that passed is passed", passing.verdict, { passed: true, how: "the gate passed" })
 same("a passing check reruns nothing", passing.asked, [])
 
 const load = await judged({ status: 1, output: vitestOutput, alone: { status: 0, output: "1 passed" } })
-same("a test that fails in the full run and passes alone is load", load.verdict.passed, true)
+same("a test that fails in the gate and passes alone is load", load.verdict.passed, true)
 same("the file is rerun alone, once", load.asked, [file])
 same("both results are printed", load.said, [
-  `test: ${file} failed in the full run: an agent edit that meets a person's edit on another element while it is stored > lands once when the deck's index arrives between the read and the write, and counts one tool call`,
+  `test: ${file} failed in the gate: an agent edit that meets a person's edit on another element while it is stored > lands once when the deck's index arrives between the read and the write, and counts one tool call`,
   `test: ${file} passed alone. This looks like machine load, not a fault.`,
 ])
 if (!load.verdict.how.includes("passed alone")) throw new Error("the verdict does not say the file passed alone")

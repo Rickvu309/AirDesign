@@ -166,7 +166,7 @@ same(
 same(
   "a failed step stops nothing here: every step said one line",
   clean.said.filter((line) =>
-    /^(branch|fetch|base|conflicts|migrations|markers|check|push|pull request|queue|follow)/.test(line),
+    /^(branch|fetch|base|conflicts|migrations|markers|gate|push|pull request|queue|follow)/.test(line),
   ).length >= 10,
   true,
 )

@@ -35,6 +35,7 @@ const record = (faults, tests = 2) => {
       "long-titles": { goal: 0 },
       "slides-repainted": { goal: 1 },
       "check-duration": { limit: 40 },
+      "gate-duration": { limit: 60 },
       "ci-duration": { limit: 40 },
       "pptx-check-duration": { limit: 90 },
     }),
@@ -96,6 +97,11 @@ if (timedOnCi["ci-duration"] !== ".github/workflows/ci.yml" || "check-duration" 
   throw new Error("ci-duration is the merge queue's minutes, timed by the ci workflow")
 if (!fs.readFileSync(path.join(repoRoot, "scripts/check.mjs"), "utf8").includes('timeMetric(root, "check-duration"'))
   throw new Error("scripts/check.mjs must time check-duration")
+if (
+  timedMetrics["gate-duration"] !== "scripts/gate.mjs" ||
+  !fs.readFileSync(path.join(repoRoot, "scripts/gate.mjs"), "utf8").includes('timeMetric(root, "gate-duration"')
+)
+  throw new Error("gate-duration is the seconds of the gate before a push, timed by scripts/gate.mjs")
 if (steady.rows.find((row) => row.name === "ci-duration")?.limit !== 40)
   throw new Error("a metric timed on ci was not listed with its limit")
 

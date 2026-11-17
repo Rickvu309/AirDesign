@@ -147,12 +147,7 @@ export const runCheck = async ({ chosen, lock, run, all = false }) => {
   }
   const cheap = chosen.flatMap((stage) => stage.flatMap(stepsOf)).filter(([name]) => preflight.includes(name))
   await Promise.all(cheap.map(runStep))
-  if (failed.length > 0 && !all) {
-    console.error(
-      `failed before the line: ${failed.join(", ")}. Nothing waited for the machine; fix it and run pnpm check again.`,
-    )
-    return { failed, ranSteps: false }
-  }
+  if (failed.length > 0 && !all) return { failed, ranSteps: false, early: true }
   const remaining = keepSteps(chosen, ([name]) => !preflight.includes(name))
   const release = await lock()
   let ranSteps = true
@@ -253,6 +248,8 @@ export const stepRunner =
       child.on("close", (status) => finish(status ?? 1))
     })
 
+export const run = stepRunner({ limitOf: (name) => stepLimit(name, false) })
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   process.on("exit", stopEveryGroup)
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"])
@@ -281,7 +278,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     if (previousTemp === undefined) delete process.env.TMPDIR
     else process.env.TMPDIR = previousTemp
   }
-  const { failed, ranSteps } = result
+  const { failed, ranSteps, early } = result
+  if (early)
+    console.error(
+      `failed before the line: ${failed.join(", ")}. Nothing waited for the machine; fix it and run pnpm check again.`,
+    )
   if (checkStarted !== undefined) {
     const checkSeconds = timeMetric(root, "check-duration", checkStarted)
     console.log(checkSeconds.line)

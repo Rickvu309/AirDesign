@@ -73,6 +73,7 @@ export const measuredLive = new Set(["known-failures", "long-titles", "slides-re
 
 export const timedMetrics = {
   "check-duration": "scripts/check.mjs",
+  "gate-duration": "scripts/gate.mjs",
   "pptx-check-duration": "scripts/pptx-check.mjs",
 }
 

@@ -4,6 +4,7 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { isChecked, stampChecked, uncheckedPushes, workingTree } from "./checked.mjs"
+import { runGate } from "./gate.mjs"
 import { installHooks } from "./install-hooks.mjs"
 
 const same = (name, actual, expected) => {
@@ -73,15 +74,21 @@ const hooksPath = configured("core.hooksPath")
 const push = () => spawnSync("git", ["push", "-q", "origin", "HEAD:refs/heads/main"], { cwd: root, encoding: "utf8" })
 const refused = push()
 same("git push refuses the unchecked commit", refused.status === 0, false)
-same(
-  "the refusal says what to run",
-  refused.stderr.includes("Run pnpm check with exactly what you commit, then push again."),
-  true,
-)
-stampChecked(root, workingTree(root))
+same("the refusal says no gate passed on it", refused.stderr.includes("no gate passed on HEAD at"), true)
+same("and names pnpm land, which runs the gate and stamps", refused.stderr.includes("Run pnpm land"), true)
+const gateOn = (status) =>
+  runGate({
+    cheap: [[["format"]]],
+    later: async () => [[["test"]]],
+    run: async ([name]) => (name === "test" ? status : 0),
+    stamp: () => stampChecked(root, workingTree(root)),
+  })
+await gateOn(1)
+same("a gate whose test failed stamps nothing, so the push is refused", push().status === 0, false)
+await gateOn(0)
 const allowed = push()
 same(
-  `git push takes the checked commit${hooksPath ? ` (through ${hooksPath})` : ""}`,
+  `git push takes the commit the gate passed${hooksPath ? ` (through ${hooksPath})` : ""}`,
   [allowed.status, allowed.stderr.trim()],
   [0, ""],
 )

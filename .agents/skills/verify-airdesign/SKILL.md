@@ -191,7 +191,7 @@ Each run is isolated, and the machine is shared: read [isolation-and-load.md](is
 
 ## Prove
 
-`pnpm check` skips the browser tests on this machine, and `ci` runs them. Before `pnpm check` and `pnpm land`, run the proof your diff needs:
+`pnpm gate` and `pnpm check` skip the browser tests on this machine, and `ci` runs them. Before `pnpm land`, run the proof your diff needs:
 
 ```sh
 pnpm prove            # read the diff against origin/main, run what fits, write proof.md
