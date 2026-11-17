@@ -17,7 +17,11 @@ async function drive(kit) {
       !document.documentElement.matches(":active-view-transition") &&
       document.getAnimations().every((each) => each.playState !== "running"),
   )
-  const source = await kit.page.locator('[data-slide-entry="3"]').boundingBox()
+  const source = await kit.page
+    .locator('[data-slide-entry="3"]')
+    .locator("..")
+    .locator("[data-slide-number]")
+    .boundingBox()
   const target = await kit.page.locator('[data-slide-entry="5"]').boundingBox()
   await kit.page.mouse.move(source.x + source.width / 2, source.y + source.height / 2)
   await kit.page.mouse.down()

@@ -13,11 +13,12 @@ import { RevenueSlide } from "@/editor/revenue-slide"
 import { SlideSidebar, type SidebarRun, type SlideStrip } from "@/editor/slide-sidebar"
 import type { UndoButtonsState } from "@/editor/undo-buttons"
 import type { FormatShown } from "@/editor/format-buttons"
-import type { TextFormatting } from "@airdesign/render"
+import type { Selection, TextFormatting } from "@airdesign/render"
 import type { Geometry } from "@airdesign/document"
 import type { SaveStatus } from "@/editor/use-deck-status"
 import { ImagesPanel, ShapesPanel, ShapeTray, SlideColumn, TemplatePicker, TextPanel } from "@/editor/tool-panels"
 import { useCanvasRoom } from "@/editor/use-canvas-room"
+import type { ToolbarTools } from "@/editor/toolbar-tools"
 import { useZoomKeys } from "@/editor/zoom-keys"
 import { ZoomMenu } from "@/editor/zoom-menu"
 import { ExportControl } from "@/export/export-control"
@@ -39,6 +40,8 @@ export type EditorDeck = {
   readonly slide: (width: number) => ReactNode
   readonly onExport: (request?: ExportRequest) => Promise<void> | void
   readonly undo: UndoButtonsState
+  readonly selection?: Selection
+  readonly select?: (selection: Selection) => void
   readonly onText?: () => void
   readonly onTrash?: () => void
   readonly onRename?: (name: string) => void
@@ -135,6 +138,21 @@ export function EditorShell({
   useZoomKeys(deck !== undefined && size !== null && !gridOpen, (key) =>
     setZoom(key === "fit" || key === "selection" || size === null ? "fit" : steppedZoom(key, zoomPercent(width, size))),
   )
+  const tools: ToolbarTools = {
+    activeTool,
+    menuOpen: toolMenu,
+    panel,
+    ...(deck === undefined ? {} : { pointer, undo: deck.undo }),
+    ...(deck?.onText === undefined ? {} : { onText: deck.onText }),
+    ...(deck?.formatting === undefined ? {} : { formatting: deck.formatting }),
+    ...(deck?.deckColors === undefined ? {} : { deckColors: deck.deckColors }),
+    ...(formats === undefined ? {} : { formats }),
+    ...(deck?.onTable === undefined ? {} : { onTable: deck.onTable }),
+    ...(deck?.onPicture === undefined ? {} : { onPicture: deck.onPicture }),
+    ...(deck?.onShape === undefined ? {} : { onShape: deck.onShape }),
+    ...(deck?.onIcon === undefined ? {} : { onIcon: deck.onIcon }),
+    ...(onPanel === undefined ? {} : { onPanel }),
+  }
   if (deck !== undefined && gridOpen) {
     return (
       <div className="relative flex h-full min-h-0">
@@ -149,27 +167,23 @@ export function EditorShell({
             onExport={deck.onExport}
             onPresent={(from) => present.start(from)}
             presenting={present.show !== null}
-            undo={deck.undo}
             pointer={pointer}
-            panel={panel}
-            activeTool={activeTool}
-            toolMenu={toolMenu}
             save={deck.save ?? null}
+            tools={
+              onPanel === undefined
+                ? tools
+                : {
+                    ...tools,
+                    onPanel: (next) => {
+                      setGridPanel(next !== panel || !gridPanel)
+                      onPanel(next)
+                    },
+                  }
+            }
+            {...(deck.selection === undefined ? {} : { selection: deck.selection })}
+            {...(deck.select === undefined ? {} : { select: deck.select })}
             {...(deck.onTrash === undefined ? {} : { onTrash: deck.onTrash })}
             {...(deck.onRename === undefined ? {} : { onRename: deck.onRename })}
-            {...(deck.onText === undefined ? {} : { onText: deck.onText })}
-            {...(deck.formatting === undefined ? {} : { formatting: deck.formatting })}
-            {...(formats === undefined ? {} : { formats })}
-            {...(deck.onTable === undefined ? {} : { onTable: deck.onTable })}
-            {...(deck.onPicture === undefined ? {} : { onPicture: deck.onPicture })}
-            {...(onPanel === undefined
-              ? {}
-              : {
-                  onPanel: (next: Exclude<EditorPanel, "none">) => {
-                    setGridPanel(next !== panel || !gridPanel)
-                    onPanel(next)
-                  },
-                })}
           />
         </div>
         {!gridPanel || panel === "none" ? null : (
@@ -256,22 +270,7 @@ export function EditorShell({
             </>
           )}
           <div className="w-full px-4">
-            <EditorToolbar
-              activeTool={activeTool}
-              menuOpen={toolMenu}
-              panel={panel}
-              {...(deck === undefined ? {} : { pointer })}
-              {...(deck === undefined ? {} : { undo: deck.undo })}
-              {...(deck?.onText === undefined ? {} : { onText: deck.onText })}
-              {...(deck?.formatting === undefined ? {} : { formatting: deck.formatting })}
-              {...(deck?.deckColors === undefined ? {} : { deckColors: deck.deckColors })}
-              {...(formats === undefined ? {} : { formats })}
-              {...(deck?.onTable === undefined ? {} : { onTable: deck.onTable })}
-              {...(deck?.onPicture === undefined ? {} : { onPicture: deck.onPicture })}
-              {...(deck?.onShape === undefined ? {} : { onShape: deck.onShape })}
-              {...(deck?.onIcon === undefined ? {} : { onIcon: deck.onIcon })}
-              {...(onPanel === undefined ? {} : { onPanel })}
-            />
+            <EditorToolbar {...tools} />
           </div>
         </div>
         {shapeTray || tablePicker ? (

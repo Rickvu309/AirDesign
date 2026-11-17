@@ -23,7 +23,7 @@ test.beforeEach(async ({ page }) => {
 test("edits a slide in Grid view and keeps the text after reopening", async ({ page }) => {
   await openFile(page, clean)
   await openGrid(page)
-  await entry(page, 1).click()
+  await page.locator("[data-editor-grid] [data-thumb-node]").first().dblclick({ force: true })
   await expect(page.locator("[data-editor-grid]")).toBeVisible()
   const text = page.locator('[data-grid-edit] [contenteditable="true"]').first()
   await text.fill("Edited on the grid")
@@ -31,8 +31,7 @@ test("edits a slide in Grid view and keeps the text after reopening", async ({ p
   await page.reload()
   await settled(page)
   await openGrid(page)
-  await entry(page, 1).click()
-  await expect(page.locator('[data-grid-edit] [contenteditable="true"]').first()).toHaveText("Edited on the grid")
+  await expect(page.locator("[data-editor-grid] [data-thumb-node]").first()).toHaveText("Edited on the grid")
 })
 
 test("keeps slide numbers above the canvas", async ({ page }) => {

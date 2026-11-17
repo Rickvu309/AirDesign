@@ -9,7 +9,10 @@ async function drive(kit) {
   await kit.page.goto("/")
   await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/sections-after.pptx"))
   await kit.page.getByRole("button", { name: "Grid" }).click()
-  const source = await kit.page.locator('[data-slide-entry="2"]').boundingBox()
+  const source = await kit.page
+    .locator("[data-grid-card]", { has: kit.page.locator('[data-slide-entry="2"]') })
+    .locator("[data-slide-number]")
+    .boundingBox()
   const target = await kit.page.locator('[data-slide-entry="3"]').boundingBox()
   await kit.page.mouse.move(source.x + source.width / 2, source.y + source.height / 2)
   await kit.page.mouse.down()

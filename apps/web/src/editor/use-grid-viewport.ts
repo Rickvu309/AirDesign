@@ -31,7 +31,10 @@ function typing(target: Element): boolean {
 }
 
 function canvasKeyTarget(target: EventTarget | null, host: HTMLElement | null): boolean {
-  return target === document.body || (target !== null && target === host)
+  return (
+    target === document.body ||
+    (target !== null && (target === host || target === host?.querySelector("[data-focus-edge]")))
+  )
 }
 
 function spacePans(target: EventTarget | null, host: HTMLElement | null): boolean {
@@ -203,7 +206,7 @@ export function useGridViewport({
     const target = event.target
     const blank = target instanceof Element && target.closest("[data-grid-card], [data-section-head]") === null
     if (event.button !== 1 && !(event.button === 0 && (hand || heldSpace.current || blank))) return
-    dragged.current = false
+    dragged.current = hand || heldSpace.current || event.button === 1
     if (blank) event.currentTarget.focus({ preventScroll: true })
     event.preventDefault()
     event.stopPropagation()
@@ -277,7 +280,7 @@ export function useGridViewport({
       ref: viewport,
       tabIndex: -1,
       onClickCapture: (event: MouseEvent<HTMLDivElement>) => {
-        if (!dragged.current) return
+        if (pan.current === null && !dragged.current) return
         dragged.current = false
         event.preventDefault()
         event.stopPropagation()
@@ -287,7 +290,9 @@ export function useGridViewport({
       onPointerUp: release,
       onPointerCancel: release,
       onLostPointerCapture: release,
-      onFocusCapture: (event: FocusEvent<HTMLDivElement>) => reveal(event.target),
+      onFocusCapture: (event: FocusEvent<HTMLDivElement>) => {
+        if (event.target.matches("[data-slide-entry]")) reveal(event.target)
+      },
     },
   }
 }

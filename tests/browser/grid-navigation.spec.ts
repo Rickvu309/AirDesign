@@ -33,9 +33,8 @@ test("Space drag pans over a focused slide with a grab cursor, without picking t
 test("Space types a space into a grid text box being edited and does not pan", async ({ page }) => {
   await openFile(page, clean)
   await openGrid(page)
-  await entry(page, 1).click()
+  await page.locator("[data-grid-card] [data-thumb-node]").first().dblclick({ force: true })
   const text = page.locator('[data-grid-edit] [contenteditable="true"]').first()
-  await text.click()
   await page.keyboard.press("End")
   const before = (await entry(page, 1).boundingBox())!
   await page.keyboard.type(" there")
@@ -87,9 +86,8 @@ test("Shift+2 fills the canvas with the selected slide and Shift+1 fits the deck
 test("Shift+1 and Shift+2 leave typed digits alone in a grid text box", async ({ page }) => {
   await openFile(page, clean)
   await openGrid(page)
-  await entry(page, 1).click()
+  await page.locator("[data-grid-card] [data-thumb-node]").first().dblclick({ force: true })
   const text = page.locator('[data-grid-edit] [contenteditable="true"]').first()
-  await text.click()
   await page.keyboard.press("End")
   const before = (await entry(page, 1).boundingBox())!
   await page.keyboard.press("Shift+Digit1")

@@ -1,9 +1,9 @@
-import { gridNumbersFit } from "@/editor/grid-viewport"
 import { Filmstrip } from "@airdesign/render"
 import type { CSSProperties, ReactNode, MouseEventHandler, PointerEventHandler } from "react"
 import { Button } from "@/components/ui/button"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { EditorIcon } from "@/editor/editor-icons"
+import { gridNumbersFit } from "@/editor/grid-viewport"
 import { cn } from "@/lib/class-names"
 
 const thumbFace = "block overflow-hidden rounded-[inherit] bg-white"
@@ -24,9 +24,10 @@ export function GridCard({
   shift,
   thumb,
   slide,
+  onPress,
+  onPressed,
   onClick,
   onContextMenu,
-  onGrab,
   onAdd,
 }: {
   index: number
@@ -44,23 +45,24 @@ export function GridCard({
   shift: CSSProperties | undefined
   thumb: (width: number) => ReactNode
   slide: ((width: number) => ReactNode) | undefined
-  onClick: MouseEventHandler<HTMLButtonElement>
+  onPress: PointerEventHandler<HTMLDivElement>
+  onPressed: MouseEventHandler<HTMLDivElement>
+  onClick: MouseEventHandler<HTMLElement>
   onContextMenu: MouseEventHandler<HTMLButtonElement>
-  onGrab: PointerEventHandler<HTMLElement>
   onAdd: () => void
 }) {
   return (
     <div
       className="group relative flex flex-col items-start gap-2"
       data-grid-card
+      data-grid-small={!gridNumbersFit(width, height, scale) ? "" : undefined}
       style={{ ...shift, height: height + 24 }}
-      onDragStart={(event) => {
-        if (!(event.target instanceof Element && event.target.closest("[data-grid-edit]"))) event.preventDefault()
-      }}
+      onDragStart={(event) => event.preventDefault()}
+      onPointerDownCapture={onPress}
+      onClickCapture={onPressed}
     >
       <span
         aria-hidden="true"
-        onPointerDown={onGrab}
         data-slide-number
         hidden={!gridNumbersFit(width, height, scale)}
         style={{
@@ -70,9 +72,11 @@ export function GridCard({
           transformOrigin: "bottom left",
         }}
         className={cn(
-          "h-4 text-[length:var(--type-caption)] leading-4 tabular-nums select-none",
-          current ? "font-semibold text-primary-strong" : "text-quiet",
+          "h-4 text-[length:var(--type-caption)] leading-4 tabular-nums",
+          "cursor-default select-none",
+          selected ? "font-semibold text-primary-strong" : "text-quiet",
         )}
+        onClick={onClick}
       >
         {index + 1}
       </span>
@@ -86,6 +90,7 @@ export function GridCard({
         }
         tabIndex={reachable ? 0 : -1}
         data-slide-entry={index + 1}
+        data-selected={selected ? "" : undefined}
         className={cn("absolute top-6 left-0 overflow-hidden text-left", dragging && "pointer-events-none opacity-40")}
         style={{
           transform: `scale(${1 / scale})`,
@@ -95,7 +100,6 @@ export function GridCard({
         }}
         onClick={onClick}
         onContextMenu={onContextMenu}
-        onPointerDown={onGrab}
       >
         <Filmstrip
           className={cn(thumbFace, active && "invisible")}
@@ -106,12 +110,8 @@ export function GridCard({
       </button>
       {active ? (
         <div
-          className={cn(
-            "absolute top-6 left-0 overflow-hidden [&>div]:shadow-none",
-            dragging && "pointer-events-none opacity-40",
-          )}
+          className={cn("absolute top-6 left-0 [&>div]:shadow-none", dragging && "pointer-events-none opacity-40")}
           style={{ transform: `scale(${1 / scale})`, transformOrigin: "0 0", borderRadius: "var(--grid-radius)" }}
-          onPointerDown={onGrab}
           data-grid-edit
         >
           {slide?.(width * scale)}
