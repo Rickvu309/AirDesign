@@ -1,3 +1,4 @@
+import { creditsCopy } from "../../../../../apps/web/src/copy/credits-copy.ts"
 import { expect } from "@playwright/test"
 
 async function drive(kit) {
@@ -22,8 +23,8 @@ async function drive(kit) {
       }),
   )
   await kit.page.goto("/settings/usage")
-  await kit.page.getByRole("button", { name: "Reset", exact: true }).click()
-  await expect(kit.page.getByRole("dialog", { name: "Reset usage for $5?" })).toBeVisible()
+  await kit.page.getByRole("button", { name: creditsCopy.reset, exact: true }).click()
+  await expect(kit.page.getByRole("dialog", { name: creditsCopy.confirmTitle })).toBeVisible()
 }
 
 export default { name: "credits-reset", design: "/screens/s92-02-credits-out-of-usage-confirm-reset", drive }
