@@ -10,7 +10,7 @@ const picture: ScopedElement = {
   box: { x: 0, y: 0, cx: 914_400, cy: 914_400 },
 }
 
-it("shows a picture's icon, recolour and crop first, and its name and alt text last", () => {
+it("leads a picture with Fill, Opacity, Border and Shadow, retaining its exact editors", () => {
   const panel = panelOf(picture, {
     reads: {},
     moves: true,
@@ -22,9 +22,12 @@ it("shows a picture's icon, recolour and crop first, and its name and alt text l
   })
   expect(panel.sections.map((section) => section.trait)).toEqual([
     "alignment",
+    "pictureFill",
+    "opacity",
+    "border",
+    "shadow",
     "image",
     "crop",
-    "opacity",
     "box",
     "line",
     "effects",

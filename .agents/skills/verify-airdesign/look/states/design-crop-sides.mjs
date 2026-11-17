@@ -1,3 +1,5 @@
+import { unfold } from "../unfold.mjs"
+import { pictureCopy } from "../../bin/product-copy.mjs"
 import path from "node:path"
 import { expect } from "@playwright/test"
 import { openDeck } from "../open-deck.mjs"
@@ -11,6 +13,7 @@ async function drive(kit) {
   await page
     .locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#4"]')
     .click({ position: { x: 8, y: 8 } })
+  await unfold(page.locator("[data-design-element]"), pictureCopy.crop)
   const crop = page
     .locator("[data-design-element] section")
     .filter({ has: page.getByRole("heading", { name: "Crop", exact: true }) })

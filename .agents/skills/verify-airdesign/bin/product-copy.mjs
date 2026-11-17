@@ -14,3 +14,5 @@ export const { accountCopy } = createRequire(import.meta.url)("../../../../apps/
 export const { boxCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/box-copy.ts")
 
 export const { pictureCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/picture-copy.ts")
+
+export const { lineCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/line-copy.ts")
