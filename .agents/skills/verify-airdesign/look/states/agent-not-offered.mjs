@@ -12,9 +12,11 @@ async function drive(kit) {
   await kit.page.goto("/")
   await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/clean.pptx"))
   await expect(
-    kit.page.locator("[data-editor-panel]").getByText("Aira isn't available in your country or region yet. You can keep editing this deck yourself.", {
-      exact: true,
-    }),
+    kit.page
+      .locator("[data-editor-panel]")
+      .getByText("Aira isn't available in your country or region yet. You can keep editing this deck yourself.", {
+        exact: true,
+      }),
   ).toBeVisible()
 }
 

@@ -509,7 +509,11 @@ export async function undoExchange(
     return undefined
   }
   for (const [index, runId] of [...found.runs].reverse().entries()) {
-    const failed = airaStep(chat, { type: "undo-failed", exchange, runs: found.runs.slice(0, found.runs.length - index) })
+    const failed = airaStep(chat, {
+      type: "undo-failed",
+      exchange,
+      runs: found.runs.slice(0, found.runs.length - index),
+    })
     try {
       const response = await send(deckRoutes.undo.path, {
         method: "POST",

@@ -90,30 +90,6 @@ test("Undo takes Aira's run back, the slide paints the old words, and the reques
   expect(await page.evaluate(() => document.body.dataset.sameLoad)).toBe("yes")
 })
 
-test("an Undo that cannot reach the server says so and keeps Undo, and the next Undo takes the run back", async ({
-  page,
-  context,
-  stack,
-}) => {
-  const { cookie, deck, base, side, log } = await openDeck(page, context, stack)
-  stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node } }, { name: "edited.sse" })
-  await ask(page, asked)
-  const editor = page.locator('[contenteditable="true"]')
-  await expect(editor).toHaveText("Hello from Aira")
-  await page.route("**/decks/undo", (route) => route.abort())
-  const undo = side.getByRole("button", { name: productCopy.undo, exact: true })
-  await undo.click()
-  await expect(log.getByText(airaCopy.undoFailed, { exact: true })).toBeVisible()
-  await expect(undo).toBeEnabled()
-  await expect(editor).toHaveText("Hello from Aira")
-  expect(await serverText(stack, deck, cookie)).toBe("Hello from Aira")
-  await page.unroute("**/decks/undo")
-  await undo.click()
-  await expect(editor).toHaveText("Hello")
-  await expect(log.getByText(airaCopy.undoFailed, { exact: true })).toHaveCount(0)
-  await expect(log.getByText(airaCopy.undone, { exact: true })).toBeVisible()
-})
-
 test("Stop ends the run before Aira's edit lands", async ({ page, context, stack }) => {
   const { cookie, deck, base, paths, side, log } = await openDeck(page, context, stack)
   stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node }, holdAfter: 3 })

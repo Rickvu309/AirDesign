@@ -5,13 +5,13 @@
       "file": "apps/web/src/aira-loop.ts",
       "names": ["askAira", "retryAira", "converse", "callTool", "stopAsk", "continues", "landedIn", "closeRuns"],
       "digest": "0aa5d29c1a7c",
-      "blob": "33620fb972e9299919387e6af6d55c172646451e"
+      "blob": "3e06e502c548c69cf91a5b30026d13ceca2edf43"
     },
     {
       "file": "apps/web/src/aira-panel.tsx",
       "names": ["AiraPanel"],
-      "digest": "a1e51c188de6",
-      "blob": "5d6979d84df8e2a95bf1f0bad29b50c64c9181ca"
+      "digest": "645d025f8d10",
+      "blob": "2179c12284664d34857f446a00dcd24034ab038e"
     },
     {
       "file": "apps/api/src/aira-route.ts",

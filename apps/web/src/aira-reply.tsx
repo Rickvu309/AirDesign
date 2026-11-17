@@ -279,12 +279,7 @@ function cardOf(
   }
   if (exchange.end === "done" && refusedLast(exchange.steps)) {
     return (
-      <FailedCard
-        title={airaCopy.stepsFailedTitle}
-        body={airaCopy.stepsFailedBody}
-        onUndo={onUndo}
-        onRetry={onRetry}
-      />
+      <FailedCard title={airaCopy.stepsFailedTitle} body={airaCopy.stepsFailedBody} onUndo={onUndo} onRetry={onRetry} />
     )
   }
   return null

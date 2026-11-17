@@ -197,12 +197,7 @@ export function AiraPanel({
   }
 
   return (
-    <div
-      ref={panel}
-      className="relative flex min-h-0 flex-1 flex-col"
-      hidden={hidden}
-      data-aira-panel
-    >
+    <div ref={panel} className="relative flex min-h-0 flex-1 flex-col" hidden={hidden} data-aira-panel>
       <div data-slot="conversation-head" className="flex h-11 shrink-0 items-center justify-between gap-2 pr-3 pl-3">
         <span className="flex min-w-0 flex-1">
           <AiraHistoryMenu
