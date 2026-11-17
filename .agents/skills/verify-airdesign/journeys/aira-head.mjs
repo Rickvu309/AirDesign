@@ -111,9 +111,7 @@ export default async function drive({
   await expect(log.getByText(/Lead with the claim/)).toBeVisible()
   await newChat.click()
   await expect(side.locator("[data-aira-welcome]")).toContainText("Aira isn't available in your country or region yet.")
-  await expect(
-    side.getByRole("textbox", { name: "Unavailable in your region" }),
-  ).toBeDisabled()
+  await expect(side.getByRole("textbox", { name: "Unavailable in your region" })).toBeDisabled()
   await capture("not-offered")
   note("when the usage answer says Aira is not available, the welcome says so and the composer is off")
 }
