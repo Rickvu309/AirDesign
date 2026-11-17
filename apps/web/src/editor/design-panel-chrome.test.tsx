@@ -4,6 +4,7 @@ import { elementId, type ScopedElement } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { designCopy } from "@/copy/design-copy"
 import { optionWord } from "@/copy/option-copy"
+import { linkCopy } from "@/copy/link-copy"
 import { fillCopy } from "@/copy/fill-copy"
 import { panelOf } from "@/design/panel"
 import { ElementDesign } from "./design-panel"
@@ -44,4 +45,11 @@ it("keeps Figma appearance sections open with no fold trigger", () => {
   expect(fill.split("</section>")[0]).not.toContain('data-slot="collapsible-trigger"')
   expect(html).toContain(`>${optionWord("shape.preset", "ellipse")}</span>`)
   expect(html).toContain(fillCopy.reset)
+})
+
+it("keeps the text Link section open without a fold button", () => {
+  const html = panel("shape")
+  const start = html.indexOf(`data-design-section="${linkCopy.section}"`)
+  expect(start).toBeGreaterThan(-1)
+  expect(html.slice(start).split("</section>")[0]).not.toContain('data-slot="collapsible-trigger"')
 })

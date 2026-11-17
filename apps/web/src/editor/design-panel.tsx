@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { Link as LinkIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { designCopy } from "@/copy/design-copy"
@@ -74,7 +75,7 @@ export function DesignSection({
       {action === null ? (
         heading
       ) : (
-        <div className="flex min-h-6 items-center justify-between gap-2">
+        <div className="flex h-4 items-center justify-between gap-2">
           {heading}
           {action}
         </div>
@@ -311,9 +312,10 @@ export function ElementDesign({
             key={section.trait}
             title={section.trait === "text" && kind === "text" ? null : section.label}
             last={at === last && children === null}
-            action={null}
+            action={section.trait === "link" ? <LinkIcon className="size-3.5" aria-hidden /> : null}
             fold={
-              kind === null || (section.open && ["text", "fill", "border", "shadow", "opacity"].includes(section.trait))
+              kind === null ||
+              (section.open && ["text", "link", "fill", "border", "shadow", "opacity"].includes(section.trait))
                 ? null
                 : {
                     open: foldOpen(folds, kind, section.trait, section.open),

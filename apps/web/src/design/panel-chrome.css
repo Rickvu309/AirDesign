@@ -58,3 +58,7 @@
 [data-design-panel] [data-control="color"] button > svg {
   color: var(--foreground);
 }
+
+[data-design-panel] [data-design-section="Link"] input {
+  background: var(--panel-track);
+}
