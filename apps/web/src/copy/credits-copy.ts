@@ -8,7 +8,7 @@ export const creditsCopy = {
   autoResetBody: "When usage runs out, reset for $5 from your credits.",
   history: "History",
   emptyHistory: "No usage resets yet.",
-  historyLimit: "Your latest 100 resets.",
+  historyLimit: "Your most recent usage resets.",
   resetEntry: "Usage reset",
   loading: "Loading credits…",
   failed: "Unable to load your credits. Check your connection and try again.",
