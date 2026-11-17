@@ -29,7 +29,7 @@ export function TemplateStyleCard({
       aria-label={designCopy.editDeckTheme}
       aria-expanded={open}
       onClick={onOpen}
-      className="flex w-full min-w-0 items-center gap-2 rounded border border-line p-2 text-left hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+      className="flex w-full min-w-0 items-center gap-2 rounded border border-line p-2 text-left hover:bg-muted"
     >
       <span aria-hidden="true" className="flex h-8 w-8 shrink-0 overflow-hidden rounded-sm border border-line">
         {bars.map((bar, index) => (
