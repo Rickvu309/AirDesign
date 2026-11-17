@@ -204,7 +204,7 @@ It runs the unit tests the changed sources reach, the tooling tests that import 
 
 `$V bench` times what a person feels in the editor (Add text box to the first letter painted, frame time while dragging, reopening a 41-slide deck, importing decks) on the merge base and on this checkout, interleaved, under CPU throttle 4, and says `slower` only when the gap beats both spreads and 5 %. A PR that touches the editor's gestures pastes its table in `## Proof`. [bench.md](bench.md) has the cases, flags, verdict rule and output.
 
-`$V agent-bench run --model-key-env NAME` gives Aira tasks from `bench/agent-tasks.json` on a stack with the real model and scores each trial without a model: wants, new slide findings, deck-diff, the validator, calls, tokens and time. It spends the owner's key, so it runs only by hand, never in a check. [agent-bench.md](agent-bench.md) has the tasks, scoring, `compare` and `publish`.
+[agent-bench.md](agent-bench.md): run Aira’s deck tasks by hand, never in checks.
 
 ## Feature map
 
