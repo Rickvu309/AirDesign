@@ -7,7 +7,7 @@ import { partsOf } from "./shape-fills"
 const part = "ppt/slides/slide1.xml"
 
 test("a person changes a picture's fill mode and exports its native placement @export", async ({ page }) => {
-  const { pictureCopy, pictureWords } = await import("../../apps/web/src/copy/picture-copy")
+  const { picturePanelCopy: pictureCopy, pictureWords } = await import("../../apps/web/src/copy/picture-panel-copy")
   await openDeck(page, "picture-png.pptx")
   await page.getByRole("button", { name: "Design", exact: true }).click()
   const picture = page.locator(`[data-slide-paint] [data-canvas-element="${part}#4"]`)

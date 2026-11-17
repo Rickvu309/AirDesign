@@ -27,7 +27,9 @@ function ChoiceList({
         )}
       >
         <SelectValue>
-          {(selected: string | null) => (selected === null ? "" : optionWord(control.field, selected))}
+          {(selected: string | null) =>
+            (selected ?? value) === null ? "" : optionWord(control.field, selected ?? value ?? "")
+          }
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
