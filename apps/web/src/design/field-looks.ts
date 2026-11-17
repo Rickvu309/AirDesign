@@ -37,6 +37,7 @@ export type FieldLook = {
   readonly line?: string
   readonly beside?: true
   readonly quiet?: true
+  readonly list?: true
   readonly order?: number
   readonly options?: Readonly<Record<string, LucideIcon>>
 }
@@ -92,6 +93,10 @@ export const fieldLooks: Readonly<Record<string, FieldLook>> = {
   "line.cap": { line: "ends" },
   "line.compound": { line: "ends" },
   "line.join": { line: "join" },
+  "line.head.width": { list: true },
+  "line.head.length": { list: true },
+  "line.tail.width": { list: true },
+  "line.tail.length": { list: true },
   "line.head": { line: "arrows" },
   "line.tail": { line: "arrows" },
   "opacity.opacity": { beside: true },

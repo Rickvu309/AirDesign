@@ -58,5 +58,11 @@
     "detector": "invisible-control",
     "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#12\"], [data-canvas-element=\"ppt/slides/slide1.xml#20\"], [data-canvas-element=\"ppt/slides/slide1.xml#30\"], [data-canvas-element=\"ppt/slides/slide1.xml#40\"]",
     "reason": "A group's frame is where a person grabs the group, so it paints nothing of its own. The shapes it holds paint under it with plain fills, which the detector does not count as a sign that something is there."
+  },
+  {
+    "page": "/deck/*",
+    "detector": "stacked-frames",
+    "selector": "[data-canvas-element]:has([data-canvas-table])",
+    "reason": "The table border is its slide content. The nearby blue selection frame and handles show the selected table, so both frames are intentional."
   }
 ]

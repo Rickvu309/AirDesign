@@ -86,7 +86,8 @@ function WordsField({ row, onChange, max }: ControlProps & { readonly max: numbe
         </span>
         <input
           className={cn(
-            "min-w-0 flex-1 bg-transparent text-right text-[length:var(--type-dense)] outline-none",
+            "min-w-0 flex-1 bg-transparent text-[length:var(--type-dense)] outline-none",
+            lookOf(row).quiet ? "text-left" : "text-right",
             row.inherited && draft === null ? "text-quiet" : "text-foreground",
           )}
           aria-label={row.label}
