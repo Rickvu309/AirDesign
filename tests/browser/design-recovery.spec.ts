@@ -46,7 +46,9 @@ test("keeps over-limit Text until corrected without sending it or showing a retr
   const typed = "Long text ".repeat(900)
   await text.fill(typed)
   await expect(text).toHaveAttribute("aria-invalid", "true")
-  await expect(text).toHaveAccessibleDescription("Use less text. Text and formatting must fit within 8,000 bytes.")
+  await expect(text).toHaveAccessibleDescription(
+    "Use less text. This box holds up to 8,000 characters, including formatting.",
+  )
   await text.press("ControlOrMeta+Enter")
   await text.press("Tab")
   await expect(text).toHaveValue(typed)
