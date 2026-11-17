@@ -1,6 +1,7 @@
 import {
   legacyElement,
   newerFormat,
+  newerSlideCommand,
   readElementId,
   readRow,
   readSlideState,
@@ -106,7 +107,12 @@ export type RegisterRead =
   | { readonly ok: false; readonly refusal: "newer" | "payload" }
 
 export function readRegister(raw: unknown): RegisterRead {
-  if (newerFormat(raw) || holdsNewerRow(raw)) return { ok: false, refusal: "newer" }
+  if (
+    newerFormat(raw) ||
+    holdsNewerRow(raw) ||
+    (record(raw) && Array.isArray(raw.order) && raw.order.some(newerSlideCommand))
+  )
+    return { ok: false, refusal: "newer" }
   return isRegister(raw) ? { ok: true, register: raw } : { ok: false, refusal: "payload" }
 }
 

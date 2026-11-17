@@ -1,3 +1,4 @@
+import { foldGrid, orderedSpots, turnRefusal, readGridCommand, type V1Command } from "./grid-order.js"
 import type { DeckIndex, IndexElement } from "./deck-index.js"
 import { readSlideId, slideId, type SlideId } from "./element-id.js"
 import { groupCommand, groupRefusal, readGroupCommand, type GroupCommand } from "./element-group.js"
@@ -42,7 +43,7 @@ export type SlideRestore = {
   readonly key: OrderKey
 }
 
-export type SlideCommand = (
+export type LegacySlideCommand = (
   | SlideAdd
   | SlideClone
   | SlideRemove
@@ -53,6 +54,8 @@ export type SlideCommand = (
 ) & {
   readonly runId?: string
 }
+
+export type SlideCommand = (LegacySlideCommand & { readonly grid?: never }) | V1Command
 
 export type SlideBirth =
   | { readonly from: "file" }
@@ -85,74 +88,12 @@ function sameIds(left: readonly SlideId[], right: readonly SlideId[]): boolean {
   return true
 }
 
-function fileKeys(file: readonly SlideId[]): Map<SlideId, OrderKey> {
-  const keys = new Map<SlideId, OrderKey>()
-  let previous: OrderKey | null = null
-  for (const id of file) {
-    const key = orderKeyBetween(previous, null)
-    keys.set(id, key)
-    previous = key
-  }
-  return keys
-}
-
-function placed(spot: FoldedSlide, command: SlideCommand): FoldedSlide {
-  if (command.slide === "remove") return { ...spot, present: false }
-  if (command.slide === "move") return { ...spot, key: command.key }
-  if (command.slide === "restore") return { ...spot, key: command.key, present: true }
-  return spot
-}
-
 export function foldSlides(state: SlideState): readonly FoldedSlide[] {
-  const keys = fileKeys(state.file)
-  const spots = new Map<SlideId, FoldedSlide>()
-  for (const id of state.file) {
-    const key = keys.get(id)
-    if (key === undefined) throw new Error("slide")
-    spots.set(id, { id, key, birth: { from: "file" }, present: true })
-  }
-  for (const command of state.order) {
-    if (elementCommand(command) || groupCommand(command)) continue
-    if (command.slide === "add") {
-      spots.set(command.id, {
-        id: command.id,
-        key: command.key,
-        birth:
-          command.layoutPart === undefined
-            ? { from: "blank", layout: command.layout }
-            : { from: "blank", layout: command.layout, layoutPart: command.layoutPart },
-        present: true,
-      })
-      continue
-    }
-    if (command.slide === "clone") {
-      spots.set(command.id, {
-        id: command.id,
-        key: command.key,
-        birth: { from: "clone", source: command.source },
-        present: true,
-      })
-      continue
-    }
-    const spot = spots.get(command.id)
-    if (spot === undefined) throw new Error("slide")
-    spots.set(command.id, placed(spot, command))
-  }
-  return [...spots.values()]
-}
-
-function byKey(left: FoldedSlide, right: FoldedSlide): number {
-  if (left.key < right.key) return -1
-  if (left.key > right.key) return 1
-  if (left.id < right.id) return -1
-  if (left.id > right.id) return 1
-  return 0
+  return foldGrid(state).spots
 }
 
 export function presentSlides(state: SlideState): readonly FoldedSlide[] {
-  return foldSlides(state)
-    .filter((spot) => spot.present)
-    .sort(byKey)
+  return orderedSpots(foldSlides(state))
 }
 
 export function orderKeyAfter(present: readonly FoldedSlide[], after: SlideId): OrderKey | null {
@@ -203,12 +144,19 @@ export function applySlide(
     if (refusal !== null) return { ok: false, code: refusal }
     return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
   }
+  if (command.slide === "grid-turn") {
+    const refusal = turnRefusal(withFile, command.turn)
+    if (refusal !== null) return { ok: false, code: refusal }
+    return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
+  }
   if (command.slide === "remove") {
     if (!ids.has(command.id) || present.length === 1) return { ok: false, code: "dead" }
     return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
   }
   if (command.slide === "move") {
     if (!ids.has(command.id)) return { ok: false, code: "dead" }
+    if (command.grid === 1 && command.after !== null && (command.after === command.id || !ids.has(command.after)))
+      return { ok: false, code: "dead" }
     return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
   }
   if (command.slide === "restore") {
@@ -248,6 +196,7 @@ function readLayoutPart(raw: unknown): string | undefined {
 }
 
 function commandOf(raw: Record<string, unknown>): SlideCommand | undefined {
+  if (raw.grid !== undefined) return readGridCommand(raw)
   const id = readSlideId(raw.id)
   if (id === undefined) return undefined
   if (raw.slide === "element-order") return readElementOrder(raw, id)
@@ -292,4 +241,27 @@ export function readSlideState(raw: unknown): SlideState | undefined {
     order.push(item.runId === undefined ? command : { ...command, runId: item.runId })
   }
   return { file, order }
+}
+
+export function newerSlideCommand(raw: unknown): boolean {
+  if (typeof raw !== "object" || raw === null || !("slide" in raw)) return false
+  if ("grid" in raw && raw.grid !== undefined && raw.grid !== 1) return true
+  return (
+    typeof raw.slide === "string" &&
+    ![
+      "add",
+      "clone",
+      "remove",
+      "move",
+      "restore",
+      "grid-turn",
+      "element-add",
+      "element-remove",
+      "element-restore",
+      "element-order",
+      "element-group",
+      "element-ungroup",
+      "element-regroup",
+    ].includes(raw.slide)
+  )
 }

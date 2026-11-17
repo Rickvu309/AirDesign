@@ -39,7 +39,7 @@ function addedFromLayouts(parts: ReadonlyMap<string, Uint8Array>): RouteRun | nu
     if (key === null) return null
     order.push({
       slide: "add",
-      id: nextSlideId([...file, ...order.map((command) => command.id)]),
+      id: nextSlideId([...file, ...order.flatMap((command) => ("id" in command ? [command.id] : []))]),
       after: anchor,
       key,
       layout: anchor,

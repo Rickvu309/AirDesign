@@ -175,6 +175,7 @@ export { ungroupTurn } from "./group-turn.js"
 export {
   foldSlides,
   nextSlideId,
+  newerSlideCommand,
   orderKeyAfter,
   presentSlides,
   readSlideState,
@@ -272,3 +273,5 @@ export { findingLimits, type Finding } from "./finding.js"
 export { contrast, readableText } from "./contrast.js"
 export { colorPaint, gamma, hexRgb, hslRgb, paintSteps, presetColors, rgbHex, type Rgb } from "./color-paint.js"
 export { slideFindings, type SlideFindings } from "./slide-findings.js"
+
+export { defaultGrid1, gridRows, foldGrid } from "./grid-order.js"

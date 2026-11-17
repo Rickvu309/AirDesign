@@ -8,7 +8,7 @@ import { EditorToolbar } from "@/editor/editor-toolbar"
 import { cardPress } from "@/editor/grid-hit"
 import { GridCard } from "@/editor/grid-card"
 import { GridHead } from "@/editor/grid-head"
-import { gridSpacing, gridSectionGap } from "@/editor/grid-viewport"
+import { gridSpacing } from "@/editor/grid-viewport"
 import { GridDragGhost } from "@/editor/grid-drag-ghost"
 import { dragMoves, landing } from "@/editor/grid-drop"
 import { gridLayout, keptGridViewport, useKeptGridZoom } from "@/editor/grid-zoom"
@@ -96,7 +96,7 @@ export function EditorGrid({
     selected: strip.current,
     initialFit: zoom === "fit",
     fitting: zoom === "fit",
-    layout: `${strip.count}:${strip.sections?.map((section) => section.start).join(",") ?? ""}`,
+    layout: `${strip.count}:${strip.gridStarts?.join(",") ?? ""}:${strip.sections?.map((section) => section.start).join(",") ?? ""}`,
   })
   function chooseZoom(next: Zoom) {
     setZoom(next)
@@ -136,8 +136,9 @@ export function EditorGrid({
   const reachable = stop >= 0 && stop < count && shown(stop) ? stop : current
   const height = gridThumbHeight(width, strip.thumbHeight)
   const spacing = gridSpacing(width, height)
-  const layoutWidth = fit.columns * width + (fit.columns - 1) * spacing.column
   const rows = gridRows(strip)
+  const columns = Math.max(1, ...rows.map((row) => row.end - row.start))
+  const layoutWidth = columns * width + (columns - 1) * spacing.column
   const drag = useGridDrag({
     list,
     bar,
@@ -395,38 +396,58 @@ export function EditorGrid({
             className="pointer-events-none absolute top-0 left-0 z-10 rounded-full bg-primary"
             style={{ width: 4 / (percent / 100), borderRadius: 2 / (percent / 100) }}
           />
-          <div className="flex w-full flex-col gap-8">
+          <div className="flex w-full flex-col" style={{ gap: spacing.row }}>
             {rows.map((row) => (
               <section
-                key={`${row.start}:${row.name ?? ""}`}
-                className="flex flex-col"
-                style={{ gap: gridSectionGap(percent / 100) }}
+                key={row.start}
+                data-grid-row={row.start}
+                className="grid"
+                style={{
+                  gridTemplateColumns: `repeat(${row.end - row.start}, ${width}px)`,
+                  columnGap: spacing.column,
+                  rowGap: 24 / (percent / 100),
+                }}
               >
-                {row.name === null || row.number === null ? null : (
-                  <GridSectionHead
-                    name={row.name}
-                    count={row.end - row.start}
-                    open={!collapsed.held.has(row.number)}
-                    onToggle={() => {
-                      if (row.number !== null) collapsed.toggle(row.number)
-                    }}
-                  />
-                )}
-                {row.number !== null && collapsed.held.has(row.number) ? null : (
-                  <div
-                    className="grid"
-                    style={{
-                      columnGap: spacing.column,
-                      rowGap: spacing.row,
-                      gridTemplateColumns:
-                        fit.columns === 0
-                          ? `repeat(auto-fill, ${String(width)}px)`
-                          : `repeat(${String(fit.columns)}, ${String(width)}px)`,
-                    }}
-                  >
-                    {Array.from({ length: row.end - row.start }, (_, offset) => card(row.start + offset))}
-                  </div>
-                )}
+                {Array.from({ length: row.end - row.start }, (_, offset) => {
+                  const index = row.start + offset
+                  const section = sections.find((section) => section.start === index)
+                  const number = sectionAt(sections, index)
+                  const marked = sections.some((section) => section.start >= row.start && section.start < row.end)
+                  return (
+                    <div key={index} className="contents">
+                      {marked ? (
+                        <div
+                          style={{
+                            gridColumn: `${offset + 1} / span ${section === undefined ? 1 : Math.min((sections[number + 1]?.start ?? row.end) - index, row.end - index)}`,
+                            gridRow: 1,
+                          }}
+                        >
+                          <div style={{ zoom: 1 / (percent / 100) }}>
+                            {section === undefined ? null : (
+                              <GridSectionHead
+                                marker
+                                name={section.name}
+                                count={(sections[number + 1]?.start ?? count) - section.start}
+                                open={!collapsed.held.has(number)}
+                                onToggle={() => collapsed.toggle(number)}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      ) : null}
+                      <div
+                        style={{
+                          gridColumn: offset + 1,
+                          gridRow: marked ? 2 : 1,
+                          visibility: shown(index) ? "visible" : "hidden",
+                        }}
+                        aria-hidden={!shown(index)}
+                      >
+                        {shown(index) ? card(index) : <div style={{ height: height + 24 }} />}
+                      </div>
+                    </div>
+                  )
+                })}
               </section>
             ))}
           </div>

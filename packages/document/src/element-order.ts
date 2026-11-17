@@ -92,7 +92,7 @@ function shapeNumber(node: ElementId): number {
 export function nextElementId(state: SlideState, slide: SlideId, free: number): ElementId {
   let next = free
   for (const command of state.order) {
-    if (command.id !== slide) continue
+    if (!("id" in command) || command.id !== slide) continue
     if (command.slide === "element-add" || command.slide === "element-group")
       next = Math.max(next, shapeNumber(command.element.node) + 1)
     if (command.slide === "element-remove" || command.slide === "element-restore")

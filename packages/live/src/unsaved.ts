@@ -1,8 +1,21 @@
-import { limits, readBox, readRow, type Box, type Row, type SlideCommand, type SlideId } from "@airdesign/document"
+import { backgroundFill } from "./background-fill.js"
+import {
+  format,
+  newerFormat,
+  newerSlideCommand,
+  readSlideState,
+  limits,
+  readBox,
+  readRow,
+  type Box,
+  type Row,
+  type SlideCommand,
+  type SlideId,
+} from "@airdesign/document"
 
 export type Shelf = Pick<Storage, "getItem" | "setItem" | "removeItem" | "key" | "length">
 
-export type Unsaved =
+type Entry =
   | {
       readonly kind: "text"
       readonly id: string
@@ -18,6 +31,8 @@ export type Unsaved =
       readonly file: readonly SlideId[]
       readonly edit: SlideCommand
     }
+
+export type Unsaved = Entry & { readonly format?: number }
 
 type Without<Entry> = Entry extends Unsaved ? Omit<Entry, "id"> : never
 
@@ -120,7 +135,7 @@ export function adoptJournal(shelf: Shelf | undefined, account: string, deck: st
 export function keepUnsaved(shelf: Shelf | undefined, account: string, deck: string, id: string, entry: Kept): void {
   if (shelf === undefined) return
   const slot = slotOf(entry)
-  const next: Unsaved = { ...entry, id }
+  const next: Unsaved = { ...entry, id, format }
   if (JSON.stringify(next).length > limits.row) return
   const kept = unsavedOf(shelf, account, deck).filter((held) => slot === null || slotOf(held) !== slot)
   write(shelf, account, deck, [...kept, next])
@@ -154,6 +169,13 @@ export function recoverUnsaved(
   const entries = unsavedOf(shelf, account, deck)
   const done = (async () => {
     for (const entry of entries) {
+      if (
+        newerFormat(entry) ||
+        (entry.kind === "slide" &&
+          backgroundFill(entry.edit) === undefined &&
+          (newerSlideCommand(entry.edit) || readSlideState({ file: entry.file, order: [entry.edit] }) === undefined))
+      )
+        return
       try {
         await replay(entry)
       } catch {

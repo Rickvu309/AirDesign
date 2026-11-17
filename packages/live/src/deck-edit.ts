@@ -1,3 +1,4 @@
+import { format } from "@airdesign/document"
 import type { DeckId, WireRefusal } from "@airdesign/catalog"
 import {
   decide,
@@ -100,7 +101,16 @@ export function slideChange(
   const decision = decide(held.register, { command: "slide", file, edit: command })
   if (decision.decision === "refuse") return refused({ ok: false, refusal: decision.code })
   const order = (held.pending.at(-1)?.order ?? -1) + 1
-  const row: PendingRow = { kind: "pending", deck, order, base: 0, value: "", slideFile: file, slideEdit: command }
+  const row: PendingRow = {
+    kind: "pending",
+    deck,
+    order,
+    base: 0,
+    value: "",
+    format,
+    slideFile: file,
+    slideEdit: command,
+  }
   if (!fitsAlone(deck, row)) return refused(tooLarge)
   return {
     next: { ...held, pending: [...held.pending, row], register: decision.register, before: undefined },

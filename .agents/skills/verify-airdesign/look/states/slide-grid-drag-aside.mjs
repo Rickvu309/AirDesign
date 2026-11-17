@@ -10,28 +10,28 @@ async function drive(kit) {
   await kit.page.goto("/")
   await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/doe-heat-pumps.pptx"))
   await kit.page.getByRole("button", { name: "Grid" }).click()
-  await expect(kit.page.locator('[data-editor-grid] [data-slide-entry="3"]')).toBeVisible()
-  await expect(kit.page.locator('[data-editor-grid] [data-slide-entry="5"]')).toBeVisible()
+  await expect(kit.page.locator('[data-editor-grid] [data-slide-entry="18"]')).toBeVisible()
+  await expect(kit.page.locator('[data-editor-grid] [data-slide-entry="20"]')).toBeVisible()
   await kit.page.waitForFunction(
     () =>
       !document.documentElement.matches(":active-view-transition") &&
       document.getAnimations().every((each) => each.playState !== "running"),
   )
-  const card = kit.page.locator("[data-grid-card]", { has: kit.page.locator('[data-slide-entry="3"]') })
+  const card = kit.page.locator("[data-grid-card]", { has: kit.page.locator('[data-slide-entry="18"]') })
   const handle =
     (await card.getAttribute("data-number-placement")) === "hidden"
       ? card.locator("[data-slide-entry]")
       : card.locator("[data-slide-number]")
   const source = await handle.boundingBox()
-  const target = await kit.page.locator('[data-slide-entry="5"]').boundingBox()
+  const target = await kit.page.locator('[data-slide-entry="20"]').boundingBox()
   await kit.page.mouse.move(source.x + source.width / 2, source.y + source.height / 2)
   await kit.page.mouse.down()
   await kit.page.mouse.move(target.x + target.width * 0.8, target.y + target.height / 2, { steps: 8 })
-  await expect(kit.page.locator('[data-slide-entry="5"]').locator("..")).not.toHaveCSS("transform", "none")
+  await expect(kit.page.locator('[data-slide-entry="20"]').locator("..")).not.toHaveCSS("transform", "none")
   await kit.page.emulateMedia({ reducedMotion: "reduce" })
   await kit.page.mouse.move(target.x + target.width * 0.82, target.y + target.height / 2)
   await kit.page.waitForFunction(() => document.getAnimations().every((each) => each.playState !== "running"))
-  await expect(kit.page.locator('[data-slide-entry="5"]').locator("..")).not.toHaveCSS("transform", "none")
+  await expect(kit.page.locator('[data-slide-entry="20"]').locator("..")).not.toHaveCSS("transform", "none")
   await expect(kit.page.locator("[data-drop-bar]")).toBeHidden()
 }
 

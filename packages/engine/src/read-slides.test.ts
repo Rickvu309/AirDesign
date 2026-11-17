@@ -136,3 +136,25 @@ it("refuses backfill whose opening order disagrees with earlier slide commands",
     indexDeck(deck, person, { ...page, slides: [...file].reverse().map((id, position) => ({ id, position })) }),
   ).toEqual({ ok: false, refusal: "stale" })
 })
+
+it("reads the same default grid on every page without writing and freezes it on the first add", () => {
+  const file = Array.from({ length: 10 }, (_, i) => String(i + 256))
+  const loaded = indexDeck(initial, person, {
+    deck: initial.id,
+    once: "ten",
+    offset: 0,
+    total: 0,
+    elements: [],
+    slides: file.map((id, position) => ({ id, position })),
+  })
+  if (!loaded.ok) throw new Error(loaded.refusal)
+  const before = JSON.stringify(loaded.deck.register)
+  for (const query of [{ runId: null }, { runId: null, slide: "260" }]) {
+    expect(readDeckPage(loaded.deck, query).grid).toEqual({ starts: ["256", "260", "264"] })
+  }
+  expect(JSON.stringify(loaded.deck.register)).toBe(before)
+  const changed = edit(loaded.deck, [
+    { slide: "add", grid: 1, row: "same", id: "266", after: "265", layout: "256", file },
+  ])
+  expect(readDeckPage(changed, { runId: null }).grid).toEqual({ starts: ["256", "260", "264"] })
+})

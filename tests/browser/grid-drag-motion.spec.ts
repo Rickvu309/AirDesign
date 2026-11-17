@@ -1,6 +1,5 @@
-import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
-import { entry, fixtures, manySlides, openFile, openGrid } from "./slide-grid-deck"
+import { entry, manySlides, openFile, openGrid } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "no-preference" })
 
@@ -98,19 +97,19 @@ test("a drag keeps the motion setting it started with until the drop", async ({ 
   await expect(page.locator("[data-editor-grid] [data-announcer]")).toHaveText("Moved slide 1 to position 3")
 })
 
-test("a drag to the first place of a section keeps the slides still and shows the bar where the slide lands", async ({
+test("a drag to the first place of a grid row keeps the slides still and shows the bar where the slide lands", async ({
   page,
 }) => {
-  await openFile(page, join(fixtures, "sections-after.pptx"))
+  await openFile(page, { name: "eight.pptx", mimeType: "application/octet-stream", buffer: await manySlides(8) })
   await openGrid(page)
-  const second = await boxOf(page, 2)
-  await grab(page, 3)
-  await pointAt(page, second, 0.2)
-  await expect(page.locator("[data-drop-bar]")).toHaveAttribute("data-drop-place", "2")
-  expect(await shiftOf(page, 2)).toBe(0)
-  expect(await shiftOf(page, 3)).toBe(0)
+  const firstInRow = await boxOf(page, 5)
+  await grab(page, 7)
+  await pointAt(page, firstInRow, 0.2)
+  await expect(page.locator("[data-drop-bar]")).toHaveAttribute("data-drop-place", "5")
+  await expect.poll(() => shiftOf(page, 5)).toBe(0)
+  await expect.poll(() => shiftOf(page, 7)).toBe(0)
   await page.mouse.up()
-  await expect(page.locator("[data-editor-grid] [data-announcer]")).toHaveText("Moved slide 3 to position 2")
+  await expect(page.locator("[data-editor-grid] [data-announcer]")).toHaveText("Moved slide 7 to position 5")
 })
 
 test("the add mark between slides fades in on hover and stays still with reduced motion", async ({ page }) => {

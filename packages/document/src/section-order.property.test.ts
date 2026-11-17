@@ -97,15 +97,6 @@ describe("foldSections over any slide command log", () => {
           if (edit === null) continue
           const undoable = slideUndoable(register, file, edit)
           if (undoable === null) continue
-          if (
-            "slide" in undoable &&
-            !("elements" in undoable) &&
-            !("stack" in undoable) &&
-            !("group" in undoable) &&
-            undoable.before.present &&
-            undoable.before.key === undoable.after.key
-          )
-            continue
           const before = sectioned(register, base)
           const after = applied(register, edit)
           const undone = undoOf(after, undoable)
@@ -139,4 +130,30 @@ it("puts a moved slide back in its own section when a person undoes the move", (
   const back = decide(moved, undone.commands[0]!)
   if (back.decision !== "apply") throw new Error(back.code)
   expect(sectioned(back.register, base)).toEqual(sectioned(opened, base))
+})
+
+it("remembers the section at a restored key before a later move is undone", () => {
+  const base = [
+    { name: "Opening", slides: ["256", "257"] },
+    { name: "Numbers", slides: ["258", "259"] },
+  ]
+  const picks: Pick[] = [
+    { kind: "remove", at: 2, to: 0 },
+    { kind: "move", at: 2, to: 0 },
+    { kind: "add", at: 5, to: 0 },
+    { kind: "restore", at: 0, to: 0 },
+  ]
+  let register = openRegister("", "")
+  for (const [index, pick] of picks.entries()) {
+    const command = commandOf(register, pick, slideId(String(300 + index)))
+    if (command !== null) register = applied(register, command)
+  }
+  const move = commandOf(register, { kind: "move", at: 4, to: 0 }, slideId("304"))!
+  const undoable = slideUndoable(register, file, move)!
+  const changed = applied(register, move)
+  const undo = undoOf(changed, undoable)
+  if (!undo.ok) throw new Error("undo")
+  const restored = decide(changed, undo.commands[0]!)
+  if (restored.decision !== "apply") throw new Error(restored.code)
+  expect(sectioned(restored.register, base)).toEqual(sectioned(register, base))
 })

@@ -98,7 +98,7 @@ it("opens every clone as its source was when the clone landed, in server order a
         }
         const key = orderKeyAfter(present, target.id)
         if (key === null || present.length >= 50) continue
-        const id = nextSlideId([...file, ...server.order.map((command) => command.id)])
+        const id = nextSlideId([...file, ...server.order.flatMap((command) => ("id" in command ? [command.id] : []))])
         const source = nodes
           .filter((node) => shapeOf(node).slide === target.id)
           .map((node) => ({

@@ -1,4 +1,13 @@
-import { decide, storedValue, version, type Register, type SlideCommand, type SlideId } from "@airdesign/document"
+import {
+  newerFormat,
+  newerSlideCommand,
+  decide,
+  storedValue,
+  version,
+  type Register,
+  type SlideCommand,
+  type SlideId,
+} from "@airdesign/document"
 
 import type { ConfirmedRow, PendingRow } from "./store.js"
 
@@ -8,6 +17,7 @@ function slideRow(row: {
   readonly slideFile?: readonly SlideId[]
   readonly slideEdit?: SlideCommand
 }): SlideRow | null {
+  if (newerFormat(row) || newerSlideCommand(row.slideEdit)) throw new Error("newer")
   if (row.slideEdit === undefined || row.slideFile === undefined) return null
   return { slideFile: row.slideFile, slideEdit: row.slideEdit }
 }

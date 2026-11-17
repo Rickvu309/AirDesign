@@ -30,7 +30,7 @@ it("reads the layout part of a slide from the file, from the layout it was added
   const parts = await fixture("blank.pptx")
   const born = added(parts, contentPart)
   if (born.slide !== "add") throw new Error("add")
-  const clone: SlideCommand = { slide: "clone", id: slideId("259"), source: born.id, key: born.key }
+  const clone: SlideCommand = { slide: "clone", id: slideId("259"), source: born.id, grid: 1 }
   const register = registerOf([born, clone])
   expect(layoutOfSlide(parts, register, slideId("256"))).toBe("ppt/slideLayouts/slideLayout1.xml")
   expect(layoutOfSlide(parts, register, born.id)).toBe(contentPart)

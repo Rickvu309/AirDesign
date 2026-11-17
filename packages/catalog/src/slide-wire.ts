@@ -39,7 +39,20 @@ function slideKeys(slide: unknown): readonly string[] | undefined {
 export function readSlideEdit(raw: unknown): { ok: true; edit: WireSlide } | FieldRefusal {
   const body = recordOf(raw)
   if (body === undefined || !Object.hasOwn(body, "file")) return fieldRefusal
-  const keys = slideKeys(body.slide)
+  const keys =
+    body.grid === 1
+      ? body.slide === "grid-turn"
+        ? ["slide", "grid", "turn", "file"]
+        : body.slide === "move"
+          ? ["slide", "grid", "id", "after", "row", "file"]
+          : body.slide === "add"
+            ? ["slide", "grid", "id", "after", "row", "layout", "layoutPart", "floor", "file"]
+            : body.slide === "clone"
+              ? ["slide", "grid", "id", "source", "floor", "file"]
+              : body.slide === "remove"
+                ? ["slide", "grid", "id", "file"]
+                : undefined
+      : slideKeys(body.slide)
   if (keys === undefined || !knownKeys(body, keys)) return fieldRefusal
   const state = readSlideState({ file: body.file, order: [body] })
   const edit = state?.order[0]
@@ -48,6 +61,10 @@ export function readSlideEdit(raw: unknown): { ok: true; edit: WireSlide } | Fie
 }
 
 export function slideEditCommand(edit: WireSlide): SlideCommand {
+  if (edit.grid === 1) {
+    const { file: _file, ...command } = edit
+    return command
+  }
   if (edit.slide === "element-add") {
     const media = edit.media === undefined ? {} : { media: edit.media }
     const geometry = edit.geometry === undefined ? {} : { geometry: edit.geometry }

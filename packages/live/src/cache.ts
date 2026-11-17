@@ -180,6 +180,7 @@ export function connect(remote: Remote, options: Options = {}) {
             value: "",
             slideFile: row.slideFile,
             slideEdit: row.slideEdit,
+            ...(row.format === undefined ? {} : { format: row.format }),
           })
           revision += 1
           continue

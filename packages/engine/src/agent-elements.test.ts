@@ -103,7 +103,7 @@ describe("add_text_box", () => {
     const born = landed(
       changeCall("add_slide", opened(), actor, { deck: "deck", base: 0, after: "256", layout: "256" }),
     ).deck
-    const slide = born.register.order.at(-1)?.id
+    const slide = born.register.order.find((command) => command.slide === "add" || command.slide === "clone")?.id
     expect(slide).toBe("259")
     const result = landed(
       call("edit_deck", born, actor, { deck: "deck", base: 1, changes: [{ op: "add", kind: "shape", slide }] }),
@@ -246,7 +246,7 @@ describe("Undo of a run that added or deleted an element", () => {
     const restored = decide(removed.register, {
       command: "slide",
       file: removed.register.file,
-      edit: { slide: "element-restore", id: removed.register.order[0]!.id, node: elementId("256.2") },
+      edit: { slide: "element-restore", id: slideId("256"), node: elementId("256.2") },
     })
     if (restored.decision !== "apply") throw new Error(restored.code)
     expect(undo({ ...removed, register: restored.register })).toEqual({ ok: false, refusal: "run-fenced" })

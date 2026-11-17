@@ -4,20 +4,20 @@
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoSlides", "undoOf", "undoableAt", "turnCommands", "fencedSince"],
-      "digest": "aa8214bb0086",
-      "blob": "4ca54e86e0e943bec38162ef65b5dc7760c77a79"
+      "digest": "d49ad0609907",
+      "blob": "5fcaf089d0926fd398ac333a6cd23a8cd33b82e4"
     },
     {
       "file": "packages/engine/src/call.ts",
       "names": ["undoRun", "endSlides"],
       "digest": "5b5b135f164e",
-      "blob": "bb21d1808ecaeb2a2e58004989ea4a710f6421bb"
+      "blob": "8b1c66b8705c5a20c6de7e6795600ef0e8ce7ac0"
     },
     {
       "file": "packages/engine/src/agent-slides.ts",
       "names": ["runFenced"],
       "digest": "d3359390b599",
-      "blob": "e710e807ea98451f201b2f2b2c7d5d295faacfc8"
+      "blob": "8687d0af8d0007ce16d9b59dc11c7393919d4433"
     },
     {
       "file": "packages/mcp/src/turn.ts",

@@ -40,5 +40,11 @@
     "detector": "invisible-control",
     "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#12\"], [data-canvas-element=\"ppt/slides/slide1.xml#20\"], [data-canvas-element=\"ppt/slides/slide1.xml#30\"], [data-canvas-element=\"ppt/slides/slide1.xml#40\"]",
     "reason": "A group's frame is where a person grabs the group, so it paints nothing of its own. The shapes it holds paint under it with plain fills, which the detector does not count as a sign that something is there."
+  },
+  {
+    "page": "grid-rows-eleven",
+    "detector": "stacked-frames",
+    "selector": "[data-grid-halo]",
+    "reason": "The hover halo sits outside the card edge of slide 10 while the added slide 11 keeps its selection frame. The two frames show hover and the card surface, as designed."
   }
 ]
