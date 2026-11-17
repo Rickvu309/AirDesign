@@ -1,6 +1,6 @@
 # What enforces each rule
 
-Checks fail `pnpm gate`, `pnpm check`, `pnpm check:pptx` or merge. Review rules need judgment; skipping them fails nothing. Give recurring mistakes a check.
+Checks fail gate, check, check:pptx or merge. Review needs judgment. Give recurring mistakes a check.
 
 | Rule | Enforced by |
 | --- | --- |
@@ -17,9 +17,9 @@ Checks fail `pnpm gate`, `pnpm check`, `pnpm check:pptx` or merge. Review rules 
 | Unit tests run with nothing built: a test reads sources, never a package's `dist` | `scripts/source-only.mjs` makes vitest refuse to load any `apps/*/dist` or `packages/*/dist` file, so a test that reads built output fails even when a build ran first. `scripts/source-only.test.mjs` fails when a vitest project drops it. `pnpm check` runs typecheck, build and site one after another beside the tests, because all three write `dist` |
 | Builds run serially: concurrent `tsc -b` writes leave shared declarations incomplete | `scripts/build-order.test.mjs` fails a `pnpm` command in `package.json` or a workflow that builds two projects with `--filter` and no `--workspace-concurrency=1`. The `journeys` build failed this way on main at a83f2535 |
 | A state machine keeps its invariants | `pnpm check:specs` |
-| Every spec in `specs/` is replayed against the code by a test, or listed with a reason | `scripts/spec-replays.mjs`, the `spec-replays` step of `pnpm check`. It warns for now and blocks nothing |
+| Every spec has a code replay test or a listed exemption | `scripts/spec-replays.mjs`, the `spec-replays` step of `pnpm check`. It warns for now and blocks nothing |
 | Specs track covered declarations and their last synced digests in `specs/<topic>/covers.json` | `scripts/spec-sync.mjs`, the `spec-sync` step of `pnpm check`, names specs with changed or removed declarations. `--sync <topic>` records a new sync only after `pnpm check:specs <topic>` passed. It warns for now and blocks nothing |
-| A spec property the code breaks today is kept in `<Module>.known.cfg` beside an `it.fails` test | `pnpm check:specs` fails when a known config stops failing |
+| A broken spec property stays in `<Module>.known.cfg` beside an `it.fails` test | `pnpm check:specs` fails when a known config stops failing |
 | Untouched PowerPoint content survives byte for byte; edits change only their parts and add no validator error | `pnpm check:pptx`: untouched bytes; Microsoft validator against original |
 | Elements with no native PowerPoint form export as pictures; AirDesign looks come first | review; exporter and tests pending |
 | Every lint rule has a test and is switched on | `scripts/bug-rule.mjs` |
