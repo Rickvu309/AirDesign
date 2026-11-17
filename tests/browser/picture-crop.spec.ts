@@ -1,4 +1,3 @@
-import { picturePanelCopy as pictureCopy } from "../../apps/web/src/copy/picture-panel-copy"
 import { join } from "node:path"
 import { expect, type Locator, type Page } from "@playwright/test"
 import { elementId, landedPatch, type ElementId, type Register } from "../../packages/document/src/index.ts"
@@ -24,6 +23,7 @@ function width(photo: Locator): Promise<number> {
 }
 
 async function cropped(page: Page, photo: Locator): Promise<Locator> {
+  const { picturePanelCopy: pictureCopy } = await import("../../apps/web/src/copy/picture-panel-copy.ts")
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await photo.click({ position: { x: 8, y: 8 } })
   const panel = page.locator("[data-design-element]")

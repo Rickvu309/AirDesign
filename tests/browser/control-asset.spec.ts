@@ -1,4 +1,3 @@
-import { picturePanelCopy as pictureCopy } from "../../apps/web/src/copy/picture-panel-copy"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { openDeck, unfold } from "./design-panel"
 
@@ -15,6 +14,7 @@ function drawn(element: Locator): Promise<string> {
 }
 
 async function iconPanel(page: Page): Promise<Locator> {
+  const { picturePanelCopy: pictureCopy } = await import("../../apps/web/src/copy/picture-panel-copy.ts")
   const design = page.getByRole("button", { name: "Design", exact: true })
   if ((await design.getAttribute("aria-pressed")) !== "true") await design.click()
   await picture(page).click()
