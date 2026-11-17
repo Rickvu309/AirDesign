@@ -1,4 +1,4 @@
-import { useEffect, type CSSProperties } from "react"
+import { useEffect, useId, type CSSProperties } from "react"
 import { UsageRing } from "@/usage-ring"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -296,6 +296,7 @@ export function EditorToast({
   host?: boolean
 }) {
   const { width } = toastMetrics[place]
+  const id = useId()
   useEffect(() => {
     toast.custom(
       () => (
@@ -328,7 +329,7 @@ export function EditorToast({
         </StatusPill>
       ),
       {
-        id: "editor-status",
+        id,
         toasterId: "editor-status",
         duration: Number.POSITIVE_INFINITY,
         unstyled: true,
@@ -342,12 +343,12 @@ export function EditorToast({
         },
       },
     )
-  }, [action, kind, text, width, still])
+  }, [id, action, kind, text, width, still])
   useEffect(
     () => () => {
-      toast.dismiss("editor-status")
+      toast.dismiss(id)
     },
-    [],
+    [id],
   )
   return host ? <EditorToaster place={place} /> : null
 }
