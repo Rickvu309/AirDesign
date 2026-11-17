@@ -7,6 +7,7 @@ import {
   refusedConnect,
   unavailableConnect,
 } from "../../apps/web/src/copy/connect-copy"
+import { productCopy } from "../../apps/web/src/copy/product-copy"
 
 test.use({ reducedMotion: "reduce" })
 
@@ -315,7 +316,7 @@ test("Deny posts nothing and preserves the callback query and state", async ({ p
     await route.fulfill({ body: "returned" })
   })
   await page.goto(authorizePath({ redirect_uri: callbackWithQuery }))
-  await page.getByRole("button", { name: "Cancel", exact: true }).click()
+  await page.getByRole("button", { name: productCopy.cancel, exact: true }).click()
 
   await expect(page).toHaveURL((url) => {
     const current = new URL(url)
@@ -398,7 +399,7 @@ test("loading status offers no decision before the client is validated", async (
   release()
 
   await expect(page.getByRole("button", { name: "Allow", exact: true })).toBeVisible()
-  await expect(page.getByRole("button", { name: "Cancel", exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: productCopy.cancel, exact: true })).toBeVisible()
 })
 
 const hostileAddress = "javascript:window.__pwn=1"
@@ -427,7 +428,7 @@ test("Deny with a cleared address that is not http or https shows the refused wo
     authorizePath({ redirect_uri: `${hostileAddress};//` }),
   )
 
-  await page.getByRole("button", { name: "Cancel", exact: true }).click()
+  await page.getByRole("button", { name: productCopy.cancel, exact: true }).click()
 
   await expectRefusedInPlace(page)
 })
@@ -469,7 +470,7 @@ test("Switch offers recovery when sign-out fails", async ({ page }) => {
 
   await page.getByRole("button", { name: "Switch", exact: true }).click()
 
-  await expect(page.getByRole("link", { name: "Try again" })).toHaveAttribute("href", authorizePath())
+  await expect(page.getByRole("link", { name: unavailableConnect.action })).toHaveAttribute("href", authorizePath())
   await expect(page).toHaveURL(/\/oauth\/authorize/)
 })
 
@@ -477,7 +478,7 @@ for (const width of [320, 390, 1470]) {
   test(`consent and recovery fit at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })
     await openConsent(page, { ok: true, screen: "other", redirect_host: "a-very-long-agent-hostname.example.com" })
-    for (const name of ["Cancel", "Allow", "Switch"]) {
+    for (const name of [productCopy.cancel, "Allow", "Switch"]) {
       await expect(page.getByRole("button", { name, exact: true })).toBeInViewport()
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
@@ -514,8 +515,8 @@ test("the account lookup shows loading status and approval prevents another deci
   await page.getByRole("button", { name: "Allow", exact: true }).click()
   await expect(page.getByRole("button", { name: "Allowing…" })).toBeDisabled()
   await expect(page.getByRole("button", { name: "Allowing…" })).toHaveAttribute("aria-busy", "true")
-  await expect(page.getByRole("button", { name: "Cancel", exact: true })).toBeDisabled()
+  await expect(page.getByRole("button", { name: productCopy.cancel, exact: true })).toBeDisabled()
   await expect(page.getByRole("button", { name: "Switch", exact: true })).toBeDisabled()
   releaseApproval()
-  await expect(page.getByRole("link", { name: "Try again" })).toBeVisible()
+  await expect(page.getByRole("link", { name: unavailableConnect.action })).toBeVisible()
 })
