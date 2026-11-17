@@ -1,3 +1,5 @@
+import { zoomRanges } from "./canvas-zoom"
+
 export type GridViewport = { readonly x: number; readonly y: number; readonly scale: number }
 
 export function zoomedGrid(
@@ -18,11 +20,13 @@ export function pannedGrid(view: GridViewport, delta: GridDelta): GridViewport {
 }
 
 export function boundedGridScale(scale: number): number {
-  return Math.max(0.1, Math.min(4, scale))
+  return Math.max(zoomRanges.grid.least / 100, Math.min(zoomRanges.grid.most / 100, scale))
 }
 
 export function fittedGrid(bounds: GridBounds, room: GridBounds): GridViewport {
-  const scale = Math.min((room.width - 96) / Math.max(1, bounds.width), (room.height - 96) / Math.max(1, bounds.height))
+  const scale = boundedGridScale(
+    Math.min((room.width - 96) / Math.max(1, bounds.width), (room.height - 96) / Math.max(1, bounds.height)),
+  )
   return { x: (room.width - bounds.width * scale) / 2, y: (room.height - bounds.height * scale) / 2, scale }
 }
 
@@ -79,7 +83,7 @@ export function wheeledGrid(
   if (event.ctrlKey || event.metaKey) {
     const step = Math.max(-wheelZoomStep, Math.min(wheelZoomStep, y))
     const next = view.scale * Math.exp(-step * 0.01)
-    return zoomedGrid(view, Math.max(0.01, Math.min(4, next)), anchor)
+    return zoomedGrid(view, boundedGridScale(next), anchor)
   }
   return pannedGrid(view, event.shiftKey && x === 0 ? { x: -y, y: 0 } : { x: -x, y: -y })
 }
@@ -107,8 +111,7 @@ export function readGridViewport(raw: string | null): GridViewport | null {
       Number.isFinite(y) &&
       typeof scale === "number" &&
       Number.isFinite(scale) &&
-      scale > 0 &&
-      scale <= 4
+      scale === boundedGridScale(scale)
       ? { x, y, scale }
       : null
   } catch {

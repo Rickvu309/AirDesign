@@ -150,8 +150,15 @@
   --shadow-chrome: none;
   --grid-add-size: 24px;
   --grid-add-dot: 8px;
-  --grid-radius: 2px;
-  --grid-halo-radius: 14px;
+  --grid-radius-min: 2px;
+  --grid-radius-canvas: 13px;
+  --grid-radius: var(--grid-radius-min);
+  --grid-halo-outset: 6px;
+  --grid-number-inset-x: 4px;
+  --grid-number-inset-y: 2px;
+  --grid-number-tab-radius: 4px;
+  --grid-number-halo-width: 2px;
+  --grid-halo-radius: calc(var(--grid-radius) + var(--grid-halo-outset));
   --grid-hover: #bfe4ff;
   --grid-number-hover: #165ba8;
   --grid-number: var(--quiet);
