@@ -1,6 +1,13 @@
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogDescription, DialogOverlay, DialogPopup, DialogPortal, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogDescription,
+  DialogOverlay,
+  DialogPopup,
+  DialogPortal,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { productCopy } from "@/copy/product-copy"
 import { CloseGlyph } from "@/credits/dialog-glyphs"
 
