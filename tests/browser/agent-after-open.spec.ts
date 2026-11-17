@@ -1,3 +1,4 @@
+import { airaStepWords } from "../../apps/web/src/copy/aira-copy.ts"
 import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import { forward, signInBrowser, test } from "./api-stack"
@@ -40,15 +41,15 @@ test("Aira asked at once adds the slide when the index lands, and the step stays
   stack.aira({ name: "add-slide.sse", fill: { deck, base: "0" } }, { name: "edited.sse" })
   await page.getByRole("textbox", { name: "Ask Aira" }).fill("Add a slide")
   await page.keyboard.press("Enter")
-  await expect(page.getByText("Editing slides")).toBeVisible()
+  await expect(page.getByText(airaStepWords.edit_deck.working)).toBeVisible()
   await page.waitForTimeout(2500)
-  await expect(page.getByText("Editing slides")).toBeVisible()
-  await expect(page.getByText("Couldn't edit slides")).toHaveCount(0)
+  await expect(page.getByText(airaStepWords.edit_deck.working)).toBeVisible()
+  await expect(page.getByText(airaStepWords.edit_deck.refused)).toHaveCount(0)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
   release()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
-  await expect(page.getByText("Edited slides")).toBeVisible()
-  await expect(page.getByText("Couldn't edit slides")).toHaveCount(0)
+  await expect(page.getByText(airaStepWords.edit_deck.done)).toBeVisible()
+  await expect(page.getByText(airaStepWords.edit_deck.refused)).toHaveCount(0)
 })
 
 test("an outside agent's add_slide is refused with the reason while the index is held, then lands", async ({
@@ -108,9 +109,9 @@ test("Aira asked before the server's first open of a new deck adds the slide onc
   stack.aira({ name: "add-slide.sse", fill: { deck, base: "0" } }, { name: "edited.sse" })
   await page.getByRole("textbox", { name: "Ask Aira" }).fill("Add a slide")
   await page.keyboard.press("Enter")
-  await expect(page.getByText("Editing slides")).toBeVisible()
+  await expect(page.getByText(airaStepWords.edit_deck.working)).toBeVisible()
   await page.waitForTimeout(1500)
   release()
-  await expect(page.getByText("Edited slides")).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText(airaStepWords.edit_deck.done)).toBeVisible({ timeout: 10_000 })
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
 })
