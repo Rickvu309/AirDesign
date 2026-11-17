@@ -1,5 +1,6 @@
 import type { TraitWire } from "./trait-wire.js"
 
+const black = "000000"
 const white = "FFFFFF"
 
 export const imageWire: TraitWire<"image"> = {
@@ -19,7 +20,7 @@ export const imageWire: TraitWire<"image"> = {
     },
     overlay: {
       description: "A colour laid over the picture. The colour's own opacity is how strongly it covers the picture.",
-      example: { image: { overlay: { solid: "#000000 alpha 50" } } },
+      example: { image: { overlay: { solid: `#${black} alpha 50` } } },
     },
     blur: {
       description: "How soft the picture looks, in percent.",

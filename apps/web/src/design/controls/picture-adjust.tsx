@@ -15,7 +15,7 @@ const half = 50_000
 const black: Color = { rgb: "000000" }
 const checker: CSSProperties = {
   backgroundImage:
-    "linear-gradient(90deg, #000 0 50%, transparent 50%), repeating-conic-gradient(#d0d0d0 0% 25%, #fff 0% 50%)",
+    "linear-gradient(90deg, black 0 50%, transparent 50%), repeating-conic-gradient(rgb(208 208 208) 0% 25%, white 0% 50%)",
   backgroundSize: "auto, 8px 8px",
 }
 
