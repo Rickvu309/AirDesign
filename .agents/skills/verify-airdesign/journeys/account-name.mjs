@@ -7,10 +7,28 @@ export default async function drive(kit) {
   await page.goto("/settings/account")
   await expect(page.getByLabel(accountCopy.name, { exact: true })).toHaveValue("Verify")
   await capture("account-name-before")
+  const save = page.getByRole("button", { name: accountCopy.nameSave, exact: true })
+  await expect(save).toBeDisabled()
+  let release
+  const pending = new Promise((resolve) => {
+    release = resolve
+  })
+  await page.route(`**${accountRoutes.name.path}`, async (route) => {
+    await pending
+    await route.continue()
+  })
   await page.getByLabel(accountCopy.name, { exact: true }).fill("  Nguyễn Quân  ")
-  await page.getByRole("button", { name: accountCopy.nameSave, exact: true }).click()
+  await save.focus()
+  await save.press("Enter")
+  await expect(save).toHaveAttribute("aria-busy", "true")
+  await expect(save).toBeFocused()
+  await expect(save).toHaveText(accountCopy.nameSave)
+  await expect(page.getByLabel(accountCopy.name, { exact: true })).toHaveAttribute("readonly", "")
+  await capture("account-name-saving")
+  release()
   await expect(page.getByRole("status")).toHaveText(accountCopy.nameSaved)
   await expect(page.locator("[data-account-name]")).toHaveText("Nguyễn Quân")
+  await page.unroute(`**${accountRoutes.name.path}`)
   const saved = await post(accountRoutes.profile, {}, cookie)
   expect(saved.json.account.name).toBe("Nguyễn Quân")
   await capture("account-name-saved")
