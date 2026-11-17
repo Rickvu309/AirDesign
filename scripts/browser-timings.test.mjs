@@ -1,0 +1,80 @@
+import assert from "node:assert/strict"
+import { spawnSync } from "node:child_process"
+import fs from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+const folder = fs.mkdtempSync(path.join(os.tmpdir(), "browser-timings-"))
+try {
+  fs.symlinkSync(path.join(root, "node_modules"), path.join(folder, "node_modules"), "dir")
+  fs.symlinkSync(path.join(root, "scripts"), path.join(folder, "scripts"), "dir")
+  fs.writeFileSync(
+    path.join(folder, "playwright.config.ts"),
+    `
+import config from ${JSON.stringify(path.join(root, "playwright.config.ts"))}
+export default { ...config, testDir: '.', globalSetup: undefined, webServer: undefined, workers: 1 }
+`,
+  )
+  fs.writeFileSync(
+    path.join(folder, "a.spec.ts"),
+    `
+import { test } from '@playwright/test'
+test('passes', async () => {})
+test('also passes', async () => {})
+test('still passes', async () => {})
+test.skip('skips', async () => {})
+`,
+  )
+  fs.writeFileSync(
+    path.join(folder, "b.spec.ts"),
+    `
+import { test } from '@playwright/test'
+test('fails', async () => { throw new Error('deliberate failure') })
+test('expected failure', async () => { test.fail(); throw new Error('known failure') })
+`,
+  )
+  const reports = []
+  for (const current of [1, 2]) {
+    const summary = path.join(folder, `summary-${current}.md`)
+    const run = spawnSync(
+      process.execPath,
+      [path.join(root, "node_modules/@playwright/test/cli.js"), "test", `--shard=${current}/2`],
+      {
+        cwd: folder,
+        encoding: "utf8",
+        env: { ...process.env, GITHUB_STEP_SUMMARY: summary },
+      },
+    )
+    assert.equal(run.status, current === 1 ? 0 : 1, run.stdout + run.stderr)
+    const report = JSON.parse(fs.readFileSync(path.join(folder, "test-results/browser-timings.json"), "utf8"))
+    assert.deepEqual(report.shard, { current, total: 2 })
+    assert.equal(report.workers, 1)
+    assert.equal(report.scheduled, current === 1 ? 4 : 2)
+    assert.equal(report.status, current === 1 ? "passed" : "failed")
+    assert.ok(report.duration >= 0)
+    assert.ok(fs.readFileSync(summary, "utf8").includes(JSON.stringify(report)))
+    reports.push(report)
+  }
+  const tests = reports.flatMap((report) => report.tests)
+  assert.deepEqual(tests.map((test) => test.status).sort(), [
+    "failed",
+    "failed",
+    "passed",
+    "passed",
+    "passed",
+    "skipped",
+  ])
+  assert.equal(new Set(tests.map((test) => test.id)).size, 6)
+  assert.equal(tests.filter((test) => test.status !== test.expectedStatus).length, 1)
+  for (const test of tests) {
+    assert.ok(test.file.endsWith(".spec.ts"))
+    assert.ok(test.duration >= 0)
+    assert.equal(test.retry, 0)
+    assert.ok(test.title.length > 0)
+  }
+  console.log("browser-timings: passing, failing and skipped tests retain timings across shards")
+} finally {
+  fs.rmSync(folder, { recursive: true, force: true })
+}
