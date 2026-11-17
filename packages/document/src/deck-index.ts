@@ -1,3 +1,4 @@
+import { readElementLink, type ElementLink } from "./link-target.js"
 import { readBox, type Box } from "./box.js"
 import {
   designKeys,
@@ -30,6 +31,7 @@ export type IndexSlide = {
   readonly palette?: number
 }
 export type IndexElement = {
+  readonly link?: ElementLink
   readonly node: ElementId
   readonly kind: Kind
   readonly value: string | null
@@ -66,7 +68,7 @@ export const indexKeys = {
   page: ["format", "once", "offset", "total", "palettes", "slides", "elements"],
   palette: ["slots", "map", "fonts"],
   slide: ["id", "position", "size", "free", "animated", "layout", "palette"],
-  element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept", "placed", "group", "frame"],
+  element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept", "placed", "group", "frame", "link"],
   design: designKeys,
   roles,
   sources,
@@ -150,16 +152,19 @@ function readSlide(raw: unknown, position: number, palettes: number): IndexSlide
 const elementKeys: readonly string[] = indexKeys.element
 const openingKeys = 5
 
-type Derived = Pick<IndexElement, "role" | "design" | "kept" | "placed">
+type Derived = Pick<IndexElement, "role" | "design" | "kept" | "placed" | "link">
 type Tree = Pick<IndexElement, "group" | "frame">
 
 function readDerived(row: Record<string, unknown>): Derived | null {
+  const link = row.link === undefined ? undefined : readElementLink(row.link)
+  if (link === null) return null
   const role = row.role === undefined ? undefined : readRole(row.role)
   const design = row.design === undefined ? undefined : readDesign(row.design)
   const kept = row.kept === undefined ? undefined : readKept(row.kept)
   const placed = row.placed === undefined ? undefined : readBox(row.placed)
   if (design === null || kept === null || placed === null || (row.role !== undefined && role === undefined)) return null
   return {
+    ...(link === undefined ? {} : { link }),
     ...(role === undefined ? {} : { role }),
     ...(design === undefined ? {} : { design }),
     ...(kept === undefined ? {} : { kept }),

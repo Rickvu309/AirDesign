@@ -1,3 +1,4 @@
+import { PresentLinks } from "@/present/present-links"
 import { toast } from "@/components/ui/toast"
 import { moveDeck } from "@/decks/move-deck"
 import { useFontReady } from "@/editor/use-font-ready"
@@ -83,6 +84,11 @@ export function ThinDeck({ id }: { id: string }) {
             size: shown.canvases.current(shown.current),
             slides: slideCommands(deck, undoButtons.onUndo),
             slide: editableSlide(deck),
+            presentPaint: (index, width, go) => (
+              <PresentLinks parts={shown.displayParts.current} index={index} width={width} go={go}>
+                {slideCommands(deck, undoButtons.onUndo).thumb(index, width)}
+              </PresentLinks>
+            ),
             notesOf: (index) => notesOn(notesBar.notes, shown.store.current.slides()[index]?.id),
             shows: () =>
               showsIn(

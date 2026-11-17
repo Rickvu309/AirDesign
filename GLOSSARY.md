@@ -379,3 +379,7 @@ _Avoid_: blank shape, missing text
 ### Border
 
 The Design panel’s none, solid, dashed and dotted presets. Line keeps exact settings.
+
+## Link
+
+A click destination on an element. It opens a URL or goes to a slide. A link on a phrase is separate from the whole element’s link.

@@ -62,3 +62,5 @@ export { shownGeometry } from "./geometry-read.js"
 export { shownTurn } from "./turn-read.js"
 export { shownAlphas } from "./trait-xml.js"
 export { templateStyle, type TemplateStyle } from "./template-style.js"
+
+export { shownLink, type ElementLink } from "./trait-xml-link.js"

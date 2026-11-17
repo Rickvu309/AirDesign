@@ -1,3 +1,4 @@
+import { linkXml } from "./trait-xml-link.js"
 import type { TraitName, TraitPatch } from "@airdesign/document"
 import { bodyXml } from "./trait-xml-body.js"
 import { boxXml } from "./trait-xml-box.js"
@@ -18,6 +19,7 @@ import { writeFields, type ElementAt, type Parts, type TraitXml } from "./xml-co
 
 export const traitXml: { readonly [T in TraitName]: TraitXml<T> } = {
   identity: identityXml,
+  link: linkXml,
   box: boxXml,
   geometry: geometryXml,
   fill: fillXml,

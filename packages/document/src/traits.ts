@@ -8,6 +8,7 @@ import { fill } from "./trait-fill.js"
 import { geometry } from "./trait-geometry.js"
 import { identity } from "./trait-identity.js"
 import { image } from "./trait-image.js"
+import { link } from "./trait-link.js"
 import { line } from "./trait-line.js"
 import { notes } from "./trait-notes.js"
 import { table } from "./trait-table.js"
@@ -17,6 +18,7 @@ import type { AgentOf, Alpha, Fields, ValueOf } from "./value-kind.js"
 
 export const traits = {
   identity,
+  link,
   box,
   geometry,
   fill,
@@ -67,7 +69,7 @@ export const kindTraits = {
   section: [],
   slide: ["fill"],
   notes: ["notes"],
-  shape: ["identity", "box", "geometry", "fill", "line", "effects", "body", "text"],
+  shape: ["identity", "box", "geometry", "fill", "line", "effects", "body", "text", "link"],
   picture: ["identity", "box", "geometry", "line", "effects", "image", "crop"],
   connector: ["identity", "box", "geometry", "line", "effects", "connection"],
   group: ["identity", "box", "effects"],

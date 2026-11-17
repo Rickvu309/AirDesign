@@ -64,6 +64,7 @@ it("orders a text box Text first, with its rare sections and its shape type fold
   expect(sections(textBox, { "fill.value": { none: true } })).toEqual([
     ["alignment", true],
     ["text", true],
+    ["link", true],
     ["fill", true],
     ["opacity", true],
     ["box", false],

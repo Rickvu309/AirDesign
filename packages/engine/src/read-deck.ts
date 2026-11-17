@@ -22,6 +22,7 @@ import {
   themeSlots,
   version,
   type Box,
+  type ElementLink,
   type ElementId,
   type NodeRegister,
   type Register,
@@ -37,6 +38,7 @@ import type { Deck } from "./call.js"
 export const readTokens = 8000
 
 export type ReadElement = {
+  readonly link?: ElementLink
   readonly node: ElementId
   readonly slide: string
   readonly value: string | null
@@ -145,7 +147,10 @@ function elementOf(
   const rows = body === undefined ? [] : [{ v: 1, patch: landedPatch(body, "text") }]
   const design = foldDesign(typed, netPatch([...opening, ...rows]))
   const line = design === undefined ? "" : printDesign(themedDesign(design, fonts))
+  const linkEdit = body === undefined ? undefined : landedPatch(body, "text").link?.target
+  const link = typeof linkEdit === "object" ? linkEdit.set : indexed?.link
   const designed = {
+    ...(link === undefined ? {} : { link }),
     ...withBox,
     ...(indexed?.role === undefined ? {} : { role: indexed.role }),
     ...(line === "" ? {} : { design: line }),

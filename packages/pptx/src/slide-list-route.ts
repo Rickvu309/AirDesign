@@ -1,3 +1,4 @@
+import { withoutSlideLinks } from "./trait-xml-link.js"
 import type { MarkupElement } from "./element-span.js"
 import {
   contentTypesPart,
@@ -182,6 +183,7 @@ export function removeSlide(parts: Map<string, Uint8Array>, slide: string) {
   const relationship = relationshipById(relDocument.elements, rid)
   const part = partOf(presentationPart, attribute(relationship, "Target", "slide"))
   const override = overridePart(requireMarkup(types).elements, part)
+  withoutSlideLinks(parts, part)
   const notes = onlyNotes(parts, part)
   replacePart(parts, presentationPart, cut(presentation, source.start, source.end))
   replacePart(parts, presentationRels, cut(rels, relationship.start, relationship.end))

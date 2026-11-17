@@ -1,3 +1,4 @@
+import { shownLink } from "./trait-xml-link.js"
 import {
   elementId,
   type Box,
@@ -399,7 +400,9 @@ export function readTraits(parts: ReadonlyMap<string, Uint8Array>): DeckTraits {
           : type === "obj" && item.kind !== "p:sp"
             ? "object"
             : (roleOf.get(type) ?? "object")
+      const link = item.kind === "p:sp" ? shownLink(parts, { slide, part, shape: item.shape }) : null
       elements.set(elementId(`${slide}.${item.shape}`), {
+        ...(link === null || link.kind === "none" ? {} : { link }),
         ...(role === undefined ? {} : { role }),
         reads: reads as TraitReads,
         kept,

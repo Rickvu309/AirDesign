@@ -8,6 +8,7 @@ import { fillControls } from "./trait-controls-fill"
 import { geometryControls } from "./trait-controls-geometry"
 import { identityControls } from "./trait-controls-identity"
 import { imageControls } from "./trait-controls-image"
+import { linkControls } from "./trait-controls-link"
 import { lineControls } from "./trait-controls-line"
 import { notesControls } from "./trait-controls-notes"
 import { textControls } from "./trait-controls-text"
@@ -24,6 +25,7 @@ export type TraitControls<T extends TraitName> = [T extends "table" ? never : Wi
 
 export const traitControls: { readonly [T in TraitName]: TraitControls<T> } = {
   identity: identityControls,
+  link: linkControls,
   box: boxControls,
   geometry: geometryControls,
   fill: fillControls,

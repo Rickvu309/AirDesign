@@ -1,3 +1,4 @@
+import { shownLink } from "@airdesign/pptx"
 import {
   format,
   readTableValue,
@@ -89,6 +90,14 @@ function gridShown(value: string): readonly (readonly unknown[])[] | undefined {
 
 export const probes: { readonly [T in TraitName]: Probe<T> } = {
   identity: pictureProbes.identity,
+  link: {
+    painted: (parts, at) => JSON.stringify(shownLink(parts, at)),
+    deck: "clean.pptx",
+    kind: "shape",
+    opening: () => ({ v: format, patch: { link: { target: "opening" } } }),
+    edit: (_, __, value) => ({ v: format, patch: { link: { target: { set: value } } } }),
+    fields: { target: { file: (parts, at) => shownLink(parts, at), shows: (value) => value } },
+  },
   geometry: {
     deck: "clean.pptx",
     kind: "shape",

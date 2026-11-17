@@ -18,6 +18,7 @@ export type Present = {
   readonly elapsed: number
   readonly running: boolean
   readonly start: (from: number) => void
+  readonly go: (index: number) => void
   readonly step: (key: ShowKey) => void
   readonly wake: () => void
   readonly pause: () => void
@@ -143,6 +144,10 @@ export function usePresent(deck: PresentDeck | null): Present {
     show,
     controls,
     hidden: slides.map((slide) => slide.hidden),
+    go: (index) => {
+      if (held.current !== null && index >= 0 && index < shown().count)
+        place({ ...held.current, at: index, ended: false, typed: "" })
+    },
     transitionOf: (index) => slides[index]?.transition ?? null,
     elapsed: secondsOf(clock, now),
     running: clock.since !== null,

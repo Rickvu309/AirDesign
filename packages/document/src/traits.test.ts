@@ -46,9 +46,10 @@ export type Derived = [
 ]
 
 describe("the one table of traits", () => {
-  it("declares the fourteen slots with the rule PowerPoint inherits each by", () => {
+  it("declares the fifteen slots with the rule PowerPoint inherits each by", () => {
     expect(Object.fromEntries(traitNames.map((name) => [name, traits[name].inherits]))).toEqual({
       identity: "own",
+      link: "own",
       box: "whole",
       geometry: "whole",
       fill: "whole",
@@ -70,6 +71,7 @@ describe("the one table of traits", () => {
       "identity.name",
       "identity.alt",
       "identity.hidden",
+      "link.target",
       "box.x",
       "box.y",
       "box.w",

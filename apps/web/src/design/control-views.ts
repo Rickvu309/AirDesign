@@ -1,3 +1,4 @@
+import { LinkControl } from "./controls/link"
 import type { ComponentType } from "react"
 import { CornersControl } from "@/design/controls/corners"
 import { ActionControl } from "@/design/controls/action"
@@ -22,6 +23,7 @@ import type { ControlKind, ControlProps } from "@/design/panel"
 
 export const controlViews: Partial<Readonly<Record<ControlKind, ComponentType<ControlProps>>>> = {
   corners: CornersControl,
+  link: LinkControl,
   length: LengthControl,
   angle: AngleControl,
   percent: PercentControl,

@@ -42,6 +42,7 @@ export type PanelControl = {
   readonly inherited: boolean
   readonly reset: string | null
   readonly parent?: unknown
+  readonly slides?: readonly string[]
   readonly nodes?: readonly NodeChoice[]
   readonly change: (value: unknown) => SetChange
 }
@@ -169,6 +170,7 @@ export type PanelReads = {
   readonly reads: TraitReads
   readonly moves: boolean
   readonly fields?: Readonly<Record<string, ShownField | undefined>>
+  readonly slides?: readonly string[]
   readonly nodes?: readonly NodeChoice[]
 }
 
@@ -218,6 +220,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
           field,
           label,
           desc,
+          ...(shown.slides === undefined ? {} : { slides: shown.slides }),
           ...held,
           reset,
           ...nodes,
