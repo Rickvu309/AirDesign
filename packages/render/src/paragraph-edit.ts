@@ -38,14 +38,16 @@ function splitRuns(runs: readonly TextRun[], offset: number): readonly [TextRun[
   return [head, tail]
 }
 
-export function splitParagraph(value: TextValue, caret: Caret): TextValue {
+export function splitParagraph(value: TextValue, caret: Caret, carry = true): TextValue {
   const paragraph = value[caret.paragraph]
   if (paragraph === undefined) return value
   const [head, tail] = splitRuns(paragraph.runs, caret.offset)
+  const anchor = tail[0] ?? head.at(-1)
+  const empty = anchor === undefined ? [] : [{ ...anchor, text: "" }]
   return [
     ...value.slice(0, caret.paragraph),
-    { ...paragraph, runs: head },
-    { ...paragraph, runs: tail },
+    { ...paragraph, runs: carry && head.length === 0 ? empty : head },
+    { ...paragraph, runs: carry && tail.length === 0 ? empty : tail },
     ...value.slice(caret.paragraph + 1),
   ]
 }
@@ -65,8 +67,8 @@ export function joinParagraph(value: TextValue, index: number): TextValue {
 }
 
 export function cutValue(value: TextValue, start: Caret, end: Caret): TextValue {
-  const ended = splitParagraph(value, end)
-  const started = splitParagraph(ended, start)
+  const ended = splitParagraph(value, end, false)
+  const started = splitParagraph(ended, start, false)
   const kept = [...started.slice(0, start.paragraph + 1), ...started.slice(end.paragraph + 2)]
   const joined = joinParagraph(kept, start.paragraph + 1)
   const paragraph = joined[start.paragraph]

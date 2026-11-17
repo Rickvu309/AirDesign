@@ -24,6 +24,7 @@ import type {
 export type Scaled = (emu: number) => number
 
 type PaintProp =
+  | "--bullet-gap"
   | "--bullet"
   | "--bullet-font"
   | "--bullet-color"
@@ -36,6 +37,7 @@ type PaintProp =
 type Look = CSSProperties & Partial<Record<PaintProp, string>>
 
 const paintProps: readonly PaintProp[] = [
+  "--bullet-gap",
   "--bullet",
   "--bullet-font",
   "--bullet-color",
@@ -46,7 +48,7 @@ const paintProps: readonly PaintProp[] = [
   "--end-line",
 ]
 const textRule =
-  '[data-paragraph]::before{content:var(--bullet);display:inline-block;min-width:var(--bullet-hang,auto);text-indent:0;pointer-events:none;user-select:none;white-space:pre;font-family:var(--bullet-font,inherit);color:var(--bullet-color,inherit);font-size:var(--bullet-size,1em);line-height:var(--bullet-line,1)}[data-text-body]:not(:focus-within)>[data-paragraph]::before{content:var(--bullet-unfocused,var(--bullet))}[data-paragraph][data-end-break]::after{content:"\\200b";line-height:var(--end-line)}'
+  '[data-paragraph]::before{content:var(--bullet);display:inline-block;margin-inline-end:var(--bullet-gap,0);min-width:var(--bullet-hang,auto);text-indent:0;pointer-events:none;user-select:none;white-space:pre;font-family:var(--bullet-font,inherit);color:var(--bullet-color,inherit);font-size:var(--bullet-size,1em);line-height:var(--bullet-line,1)}[data-text-body]:not(:focus-within)>[data-paragraph]::before{content:var(--bullet-unfocused,var(--bullet))}[data-paragraph][data-end-break]::after{content:"\\200b";line-height:var(--end-line)}'
 
 export type RunPaint = RunFormat & {
   readonly size?: number
@@ -320,6 +322,7 @@ function paragraphOverlay(style: Look, paragraph: CanvasParagraph, overlay: Para
   )
     return {
       ...align,
+      "--bullet-gap": "0.35em",
       "--bullet": cssQuote(
         `${overlay?.number ?? (paragraph.bullet != null && "number" in paragraph.bullet ? paragraph.bullet.number : 1)}.`,
       ),
