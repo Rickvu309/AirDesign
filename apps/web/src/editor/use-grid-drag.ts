@@ -1,3 +1,4 @@
+import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import {
   useEffect,
   useLayoutEffect,
@@ -260,6 +261,7 @@ export function useGridDrag({
   }
 
   function escape(event: globalThis.KeyboardEvent) {
+    if (!editorOwnsKey(event)) return
     if (event.key !== "Escape" || active.current === null) return
     event.preventDefault()
     event.stopPropagation()

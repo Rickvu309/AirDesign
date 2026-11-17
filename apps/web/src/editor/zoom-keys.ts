@@ -1,3 +1,4 @@
+import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { useEffect, useRef } from "react"
 import { zoomKey, type ZoomKey } from "@/editor/canvas-zoom"
 
@@ -14,6 +15,7 @@ export function useZoomKeys(working: boolean, onKey: (key: ZoomKey) => void) {
   useEffect(() => {
     if (!working) return
     function listen(event: KeyboardEvent) {
+      if (!editorOwnsKey(event)) return
       const key = zoomKey({
         key: event.key,
         code: event.code,

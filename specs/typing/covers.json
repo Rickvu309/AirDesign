@@ -22,8 +22,8 @@
     {
       "file": "apps/web/src/editor/undo-keys.ts",
       "names": ["undoKey", "useUndoKeys"],
-      "digest": "8e2faa1fd11a",
-      "blob": "23d21733a5eea00ed570c0bfe3fb365585035556"
+      "digest": "283d3f95cb37",
+      "blob": "d0e830a63e52152f3c2e033c2800e1f89e84930f"
     },
     {
       "file": "packages/render/src/passage.tsx",

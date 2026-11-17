@@ -1,3 +1,4 @@
+import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { gestureFor } from "@airdesign/render"
 import { useEffect, useState } from "react"
 
@@ -22,6 +23,7 @@ export function usePointerTool(working: boolean): ToolPick {
   useEffect(() => {
     if (!working) return
     function onKey(event: KeyboardEvent) {
+      if (!editorOwnsKey(event)) return
       const next = toolForKey(event)
       if (next !== null) pick(next)
     }
