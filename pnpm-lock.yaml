@@ -502,6 +502,9 @@ importers:
       '@modelcontextprotocol/client':
         specifier: ^2.4.0
         version: 2.4.0
+      ajv:
+        specifier: 8.20.0
+        version: 8.20.0
       oxlint:
         specifier: ^1.90.0
         version: 1.92.0

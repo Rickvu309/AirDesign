@@ -49,7 +49,7 @@ describe("projectTools", () => {
       name: "airdesign_edit_deck",
       op: "edit_deck",
       description:
-        "Write values on one deck. Read it first with airdesign_read_deck and send that revision as base and each element's version as readAt; a change with op needs no readAt. The server names the actor. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
+        "Change one deck. Read it first with airdesign_read_deck and send that revision as base and each element's version as readAt; a change with op needs no readAt. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
       runsOn: "server",
       readOnlyHint: false,
       destructiveHint: true,
@@ -60,7 +60,7 @@ describe("projectTools", () => {
       name: "airdesign_read_deck",
       op: "read_deck",
       description:
-        "Read one deck this account owns. Send revision as base to airdesign_edit_deck and each element's version as readAt. slides lists slide ids in position order. Indexed elements include node, slide, kind, opening or edited value and box, and version (0 before edits). role names a placeholder. design is one line of the element's look, as the instructions say. closed means a person's newer edit or another run holds it. grouped elements refuse box edits. index is ready, pending, or missing; pending or missing means the owner must open the deck in AirDesign to finish indexing. Send slide or cursor to read the rest.",
+        "Read one deck this account owns. slides lists slide ids in position order. Indexed elements include node (element id), slide, kind, opening or changed value and box, and version (0 before any change). role names a placeholder. design is one line of the element's look, as the instructions say. closed means a person's newer change or another run holds it. grouped elements refuse box changes. index is ready, pending, or missing; pending or missing means the owner must open the deck in AirDesign to finish indexing. Send slide or cursor to read the rest.",
       runsOn: "server",
       readOnlyHint: true,
       destructiveHint: false,
@@ -70,8 +70,7 @@ describe("projectTools", () => {
     expect(tools.find((tool) => tool.name === "airdesign_list_decks")).toEqual({
       name: "airdesign_list_decks",
       op: "list_decks",
-      description:
-        "List the decks this account owns. Each row has the deck id, its name, and trash when the deck is in Trash.",
+      description: "List the decks this account owns, each with its id, its name, and trash when it is in Trash.",
       runsOn: "server",
       readOnlyHint: true,
       destructiveHint: false,
