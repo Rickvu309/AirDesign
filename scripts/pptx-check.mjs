@@ -48,6 +48,7 @@ import {
   readMachine,
 } from "./pptx-render.mjs"
 import { cloneEditsLines, writeCloneEdits } from "./clone-edits.mjs"
+import { corpusEditLines, writeCorpusEdits } from "./corpus-edits.mjs"
 import { storedZip } from "./stored-zip.mjs"
 import { browserEnv } from "../.agents/skills/verify-airdesign/bin/browser.mjs"
 
@@ -218,6 +219,13 @@ for (const name of decision.routeDecks) {
 }
 const cloneEditsFile = await writeCloneEdits({ pptx, root, parts, directory: routeDir })
 validate([cloneEditsFile])
+const corpusEdits = await writeCorpusEdits({
+  full: decision.full,
+  root,
+  decks: decision.routeDecks.map(fixturePath),
+  directory: routeDir,
+})
+validate(corpusEdits.rows.map((row) => row.file))
 const decks = cleanDecks.map((name) => ({ name, parts: parts.get(name) }))
 const samples = Number(process.env.JUDGE_SAMPLES ?? 3)
 const plantStarted = Date.now()
@@ -307,6 +315,14 @@ for (const line of cloneEditsLines({ pptx, parts, lists, ids, orders })) {
   failed += 1
   console.log(line)
 }
+for (const line of [
+  ...(corpusEdits.failure === null ? [] : [corpusEdits.failure]),
+  ...corpusEditLines({ pptx, rows: corpusEdits.rows, lists }),
+]) {
+  failed += 1
+  console.log(line)
+}
+if (decision.full) console.log(`corpus edits ${corpusEdits.rows.length} exports judged`)
 for (const row of cases) {
   const { errors, dupes, dangling } = judgeParts(
     pptx,

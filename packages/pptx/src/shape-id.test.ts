@@ -31,6 +31,14 @@ describe("newDuplicateShapeIds", () => {
     const edited = [{ part: "ppt/notesSlides/notesSlide1.xml", id: "2", count: 2 }]
     expect(newDuplicateShapeIds(original, edited)).toEqual([{ part: "ppt/notesSlides/notesSlide1.xml", id: "2" }])
   })
+
+  it("does not blame a copied slide for a duplicate its source already had", () => {
+    const original = [{ part: "ppt/slides/slide1.xml", id: "3", count: 2 }]
+    const edited = [...original, { part: "ppt/slides/slide9.xml", id: "3", count: 2 }]
+    const copies = new Map([["ppt/slides/slide9.xml", "ppt/slides/slide1.xml"]])
+    expect(newDuplicateShapeIds(original, edited, copies)).toEqual([])
+    expect(newDuplicateShapeIds(original, edited)).toEqual([{ part: "ppt/slides/slide9.xml", id: "3" }])
+  })
 })
 
 describe("shapeIdCounts", () => {

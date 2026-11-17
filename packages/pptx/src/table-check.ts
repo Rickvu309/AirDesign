@@ -76,11 +76,11 @@ function tableShapes(
 export function newTableBreaks(
   before: ReadonlyMap<string, Uint8Array>,
   after: ReadonlyMap<string, Uint8Array>,
+  copies: ReadonlyMap<string, string> = partCopies(before, after),
 ): readonly TableBreak[] {
   const changed = [...after].flatMap(([part, bytes]) =>
     slidePart.test(part) && !sameBytes(before.get(part) ?? new Uint8Array(), bytes) ? [part] : [],
   )
-  const copies = partCopies(before, after)
   const sources = changed.map((part) => copies.get(part) ?? part)
   const old = tableShapes(before, sources)
   const breaks: TableBreak[] = []
