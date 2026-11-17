@@ -33,7 +33,7 @@ export const claudeCodeConnect = {
 } as const
 
 export const refusedConnect = {
-  title: "This connection request is invalid",
+  title: "Unable to use this connection request",
   body: "Start connecting again from your agent, then approve its new request.",
   action: "Back to AirDesign",
 } as const
