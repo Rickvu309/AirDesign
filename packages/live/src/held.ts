@@ -1,6 +1,16 @@
 import type { DeckId } from "@airdesign/catalog"
 import { newerFormat, type Register } from "@airdesign/document"
-import { finished, heldDecks, markNewer, pageEdits, scoped, storeName, storeNewer, transaction } from "./device.js"
+import {
+  finished,
+  heldDecks,
+  markNewer,
+  pageAdopted,
+  pageEdits,
+  scoped,
+  storeName,
+  storeNewer,
+  transaction,
+} from "./device.js"
 import { filledRow } from "./background-fill.js"
 import { deckView, joinable, newerRow, played, readable, split, storedKey, type DeckView } from "./deck-view.js"
 import {
@@ -177,8 +187,16 @@ function lastConfirmed(keys: readonly IDBValidKey[]): number {
   return typeof last === "string" ? Number(last.slice(-12)) : -1
 }
 
+async function heldRevision(account: string, deck: DeckId): Promise<number> {
+  const reading = await transaction("readonly")
+  const holds = reading.objectStore(storeName).get(scoped(account, revisionKey(deck)))
+  return finished(reading, () => revisionOf(holds.result))
+}
+
 export async function adoptRows(deck: DeckId, revision: number, rows: readonly ConfirmedRow[]): Promise<boolean> {
   const account = signedIn()
+  const lane = scoped(account, deck)
+  if (pageAdopted().get(lane) === revision && (await heldRevision(account, deck)) === revision) return true
   const writing = await transaction("readwrite")
   const store = writing.objectStore(storeName)
   const head = scoped(account, headKey(deck))
@@ -201,6 +219,7 @@ export async function adoptRows(deck: DeckId, revision: number, rows: readonly C
     remember(account, deck, undefined)
     throw error
   }
+  if (adopted) pageAdopted().set(lane, revision)
   return adopted
 }
 

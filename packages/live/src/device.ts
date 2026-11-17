@@ -10,6 +10,7 @@ type Page = {
   database?: Promise<IDBDatabase> | undefined
   readonly decks: Map<string, unknown>
   readonly edits: Map<string, string>
+  readonly adopted: Map<string, number>
   readonly seen: Set<string>
   newer?: true
 }
@@ -21,7 +22,7 @@ const watching = new Set<() => void>()
 function current(): Page {
   const factory = globalThis.indexedDB
   if (page === undefined || page.factory !== factory)
-    page = { factory, decks: new Map(), edits: new Map(), seen: new Set() }
+    page = { factory, decks: new Map(), edits: new Map(), adopted: new Map(), seen: new Set() }
   return page
 }
 
@@ -60,6 +61,10 @@ export function heldDecks(): Map<string, unknown> {
 
 export function pageEdits(): Map<string, string> {
   return current().edits
+}
+
+export function pageAdopted(): Map<string, number> {
+  return current().adopted
 }
 
 export function firstOnPage(key: string): boolean {
