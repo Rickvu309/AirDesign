@@ -199,7 +199,7 @@ if (browserRun("design", { current: 2, total: 3 }) !== browserRun("design"))
   throw new Error("a shard must not split the design scans, which design-findings reads together")
 if (browserRun("all") !== "test:browser") throw new Error("a check with no part runs every browser test")
 
-const { preflight, runCheck } = await import("./check.mjs")
+const { preflight, runCheck, stepRunner } = await import("./check.mjs")
 if (preflight === undefined || runCheck === undefined) throw new Error("check needs a preflight before the lock")
 for (const name of ["format", "file-size", "lint", "references", "bug-rule", "commit-authors", "boundaries"]) {
   if (!preflight.includes(name) || !everyStep.includes(name)) throw new Error(`preflight lost ${name}`)
@@ -242,3 +242,29 @@ await runCheck({
   },
 })
 if (allEvents.join() !== "format,lock,test,release") throw new Error("--all must finish checks after preflight fails")
+
+for (const eventName of [undefined, "", "pull_request", "push", "merge_group"]) {
+  for (const name of everyStep) {
+    const warns = warnSteps.has(name) || (name === "file-size" && eventName === "merge_group")
+    const result = await runCheck({
+      eventName,
+      chosen: [[[name]]],
+      run: async () => 1,
+      lock: async () => () => {},
+    })
+    if (result.failed.join() !== (warns ? "" : name))
+      throw new Error(`${name} must ${warns ? "warn" : "fail"} on ${eventName ?? "this machine"}`)
+  }
+  const printed = []
+  const result = await runCheck({
+    eventName,
+    chosen: [[["file-size", process.execPath, ["-e", 'console.error("deck.ts is over the limit"); process.exit(1)']]]],
+    run: stepRunner({ eventName, limitOf: () => undefined, say: (line) => printed.push(line) }),
+    lock: async () => () => {},
+  })
+  const status = eventName === "merge_group" ? "warn" : "fail"
+  if (!printed.join("").includes(`deck.ts is over the limit\n${status} file-size `))
+    throw new Error(`file-size must print its diagnostic and ${status} on ${eventName}`)
+  if (stampable(result.failed, result.ranSteps) !== (status === "warn"))
+    throw new Error(`file-size must allow check to finish only in the merge queue`)
+}
