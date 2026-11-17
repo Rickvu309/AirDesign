@@ -3,6 +3,7 @@ import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { colorCopy } from "../../apps/web/src/copy/color-copy"
 import { formatCopy } from "../../apps/web/src/copy/format-copy"
+import { lineCopy } from "../../apps/web/src/copy/line-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { colorPickerExport, colorPickerWritten } from "../../scripts/pptx-cases/color-picker.mjs"
@@ -142,7 +143,7 @@ for (const opacity of ["100", "10"]) {
 test("arrow keys move through the template colours and Escape returns focus to the row", async ({ page }) => {
   await openDeck(page, "shapes-added.pptx")
   const panel = await fillPanel(page, shapeAt(page, "5"))
-  const field = panel.getByRole("group", { name: "Color", exact: true })
+  const field = panel.getByRole("group", { name: lineCopy.color, exact: true })
   const row = shownColor(field)
   await row.click()
   const accent = picker(page).getByRole("button", { name: formatCopy.colors.accent2, exact: true })
