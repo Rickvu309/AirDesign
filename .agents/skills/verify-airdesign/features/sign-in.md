@@ -4,6 +4,8 @@ A person enters their email on the site's sign-in page, gets an email with a lin
 
 ## Sub-features
 
+- `account-name` new accounts enter a name after email verification. The app shows the saved name in the sidebar and account menu. Settings → Account edits it. `accountRoutes.profile` reads the signed-in account; `accountRoutes.name` saves a trimmed name of up to 100 characters. Existing accounts can keep their email-derived display until they save a name.
+
 - `signin-email` `signInRoutes.email` with an email answers 202 and sends the mail `Sign in to AirDesign` with a text part (a heading, a blank line, then the code on line 3) and a designed HTML part with the code, a `Sign in to AirDesign` button and the expiry line. At most 5 mails per address in 15 minutes; past that it still answers 202 and sends nothing.
 - `signin-mail` the HTML part renders light and dark. Journey `sign-in-mail` captures both.
 - `signin-code` `signInRoutes.code` with the email and code answers 200 and sets `airdesign.session`. A wrong code answers 401 `code`.
@@ -31,6 +33,8 @@ Preconditions:
 - **The mail.** `kit.mail(email)` returns the last mail sent to that address and saves it as `mail.json` in the journey's evidence dir. `$V journey <run> sign-in-mail` renders its HTML with `page.setContent` and captures it light and dark.
 - **Signed out.** The journey kit answers every `airdesign.app` address with a stand-in page, so a sign-in redirect never reaches production. Assert the URL the app asked for, as `delete-account` does.
 - **Site pages.** `$V journey <run> sign-in-pages` walks the real path: `${siteOrigin}/sign-in` empty, with `a@b` (refused on the page by the API's own rule, `readEmail`), the code step on `/sign-in/check`, a wrong code, the emailed code typed with a space in it, the app home signed in, Sign out in Settings landing on the site's `/sign-in?next=%2Fsettings%2Faccount`, the emailed link signing in, the same link used twice landing on `/sign-in/expired`, and its Get a new link opening `/sign-in` with the address still in the field. Each page is captured at 1470 px and at 390 px, and every capture is a state for `look` and `sheet`: `sign-in-empty`, `sign-in-bad-email`, `check-email`, `code-wrong`, `signed-out`, `link-expired`, each with a `-phone` twin. A code or link that expired by the clock cannot be reached in a run; a used link and an expired one take the same API path.
+
+- **Names.** Journey `account-name` saves a Unicode name in Settings, reads it from `accountRoutes.profile`, reloads, and checks it on Home. It holds a save to check the button keeps its label and keyboard focus, and checks failed saves keep the previous name. `sign-in-pages` covers the required signup field, whitespace refusal, reload before naming, and phone layout. The kit’s `signIn()` saves a fixture name so unrelated journeys begin with signup complete.
 
 ## Gotchas
 

@@ -21,7 +21,8 @@ export function AccountNamePage({
           <h1
             tabIndex={-1}
             ref={(heading) => heading?.focus()}
-            className="mt-5 outline-none text-[26px] leading-[1.2] font-semibold tracking-[-0.5px]"
+            style={{ outline: "none" }}
+            className="mt-5 text-[26px] leading-[1.2] font-semibold tracking-[-0.5px]"
           >
             {accountCopy.nameTitle}
           </h1>
