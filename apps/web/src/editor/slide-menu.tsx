@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react"
+import { memo, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react"
 import { createPortal } from "react-dom"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { slideListCopy } from "@/copy/slide-list-copy"
@@ -38,7 +38,7 @@ function clipToList(anchor: HTMLElement, node: HTMLElement): void {
   node.style.pointerEvents = seen ? "auto" : "none"
 }
 
-export function SlideMenu({
+export const SlideMenu = memo(function SlideMenu({
   number,
   index,
   count,
@@ -134,7 +134,7 @@ export function SlideMenu({
     </DropdownMenu>
   )
   return host === null ? menu : createPortal(menu, host)
-}
+})
 
 export function SlideMenuRows({
   index,

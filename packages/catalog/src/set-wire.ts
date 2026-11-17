@@ -197,8 +197,7 @@ export function setChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "target"],
     minProperties: 3,
-    description:
-      "Set fields on every element the target names, in one step the person can undo. Each field is in the units its description gives.",
+    description: "Set fields on every element the target names, in one step the person can undo.",
     properties: {
       op: { type: "string", const: "set" },
       target: {

@@ -21,7 +21,7 @@ describe("a tool's input schema says each repeated subschema once", () => {
       type: "object",
       properties: {
         shadow: { type: "object", description: "Shadow", properties: { color } },
-        glow: { type: "object", description: "Glow", properties: { color } },
+        glow: { type: "object", description: "Glow", properties: { color, radius: { type: "number" } } },
         fill: { type: "object", properties: { solid: color } },
       },
     }
@@ -29,11 +29,43 @@ describe("a tool's input schema says each repeated subschema once", () => {
       type: "object",
       properties: {
         shadow: { type: "object", description: "Shadow", properties: { color: { $ref: "#/$defs/color" } } },
-        glow: { type: "object", description: "Glow", properties: { color: { $ref: "#/$defs/color" } } },
+        glow: {
+          type: "object",
+          description: "Glow",
+          properties: { color: { $ref: "#/$defs/color" }, radius: { type: "number" } },
+        },
         fill: { type: "object", properties: { solid: { $ref: "#/$defs/color" } } },
       },
       $defs: { color },
     })
+  })
+
+  it("shares a subschema that repeats under different descriptions, and keeps each description beside its reference", () => {
+    const arrow = {
+      type: "object",
+      required: ["type", "width", "length"],
+      properties: {
+        type: { type: "string", enum: ["none", "triangle", "stealth"] },
+        width: { type: "string", enum: ["sm", "med", "lg"] },
+        length: { type: "string", enum: ["sm", "med", "lg"] },
+      },
+    }
+    const schema = {
+      type: "object",
+      properties: {
+        head: { ...arrow, description: "The arrowhead at the start." },
+        tail: { ...arrow, description: "The arrowhead at the end." },
+      },
+    }
+    expect(sharedSchemas(schema)).toEqual({
+      type: "object",
+      properties: {
+        head: { $ref: "#/$defs/head", description: "The arrowhead at the start." },
+        tail: { $ref: "#/$defs/head", description: "The arrowhead at the end." },
+      },
+      $defs: { head: arrow },
+    })
+    expect(inlinedSchema(sharedSchemas(schema))).toEqual(schema)
   })
 
   it("leaves a schema with nothing repeated as it is, and never shares a properties map", () => {
@@ -63,6 +95,24 @@ describe("a tool's input schema says each repeated subschema once", () => {
 })
 
 describe("a schema for a caller that may not follow references", () => {
+  it("names the opening text carried by the legacy floor field", () => {
+    expect(inlinedSchema(toolInputSchema("edit_deck"))).toMatchObject({
+      properties: {
+        changes: {
+          items: {
+            anyOf: expect.arrayContaining([
+              expect.objectContaining({
+                properties: expect.objectContaining({
+                  floor: expect.objectContaining({ description: "Opening text of the element." }),
+                }),
+              }),
+            ]),
+          },
+        },
+      },
+    })
+  })
+
   it("puts each shared subschema back where it was used, keeps the words beside a reference, and drops $defs", () => {
     const leaf = { type: "string", pattern: "^[a-z]+$" }
     const pair = { type: "object", properties: { left: { $ref: "#/$defs/leaf" }, right: { $ref: "#/$defs/leaf" } } }

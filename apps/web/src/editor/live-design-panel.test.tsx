@@ -12,6 +12,7 @@ import {
 } from "@airdesign/document"
 import { readParts, readSlides } from "@airdesign/pptx"
 import { act, createElement } from "react"
+import { toast } from "sonner"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import type { DeckPaint } from "./use-deck-paint"
 
@@ -81,7 +82,7 @@ async function slidePanel() {
   }
 }
 
-async function pictureDeck() {
+async function pictureDeck(refused = false) {
   const parts = await readParts(await fixtureFile("picture-png.pptx"))
   const slide = readSlides(parts)[0]?.slide
   if (slide === undefined) throw new Error("slide")
@@ -90,6 +91,7 @@ async function pictureDeck() {
   const held: (() => void)[] = []
   device.link = {
     enqueueRow(_deck: string, row: Row, at: ElementId, floor: string) {
+      if (refused) return Promise.resolve({ ok: false, refusal: "field" })
       if (register.elements[at] === undefined)
         register = applied(register, { command: "add", node: at, floor, route: "deck" })
       register = applied(register, { command: "person", node: at, ...row })
@@ -114,6 +116,19 @@ async function pictureDeck() {
     return input
   }
   return {
+    side,
+    unfold() {
+      const button = [...host.querySelectorAll("button")].find((button) =>
+        button.textContent?.includes("Name and alt text"),
+      )
+      if (button === undefined) throw new Error("Name and alt text")
+      if (button.getAttribute("aria-expanded") !== "true") button.click()
+    },
+    entered(name: string, text: string) {
+      const input = side(name)
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(input, text)
+      input.dispatchEvent(new window.Event("input", { bubbles: true }))
+    },
     typed(name: string, text: string) {
       const input = side(name)
       Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(input, text)
@@ -227,4 +242,112 @@ it("draws a fill that names a theme colour in that colour once the theme changes
   expect(swatch).toBe("rgb(192, 0, 0)")
   await act(async () => root.unmount())
   host.remove()
+}, 20_000)
+
+it("tells a person how to continue when a design-panel edit is refused", async () => {
+  const error = vi.spyOn(toast, "error")
+  const picture = await pictureDeck(true)
+  try {
+    await act(async () => picture.typed("Left", "10"))
+    await picture.answered()
+    expect(error).toHaveBeenCalledExactlyOnceWith(
+      "Unable to make that change. Select the element and try again, or reload the deck if it keeps happening.",
+      { duration: Infinity, closeButton: true },
+    )
+    expect(picture.landed()).toEqual({})
+  } finally {
+    error.mockRestore()
+    await picture.close()
+  }
+}, 20_000)
+
+function problem(input: HTMLInputElement): string | null {
+  if (input.getAttribute("aria-invalid") !== "true") return null
+  const id = input.getAttribute("aria-describedby")
+  return id === null ? "" : (input.ownerDocument.getElementById(id)?.textContent ?? "")
+}
+
+it("keeps text typed before the end of a full Name and saves only once it fits", async () => {
+  const picture = await pictureDeck()
+  const full = "A".repeat(199) + "Z"
+  try {
+    await act(async () => picture.unfold())
+    const name = picture.side("Name")
+    await act(async () => picture.entered("Name", full))
+    await act(async () => name.dispatchEvent(new window.Event("focusout", { bubbles: true })))
+    await picture.answered()
+    expect(picture.landed().identity?.name).toEqual({ set: full })
+
+    await act(async () => picture.entered("Name", "X" + full))
+    expect(name.value).toBe("X" + full)
+    expect(problem(name)).toBe("Use 200 characters or fewer.")
+    await act(async () => {
+      name.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }))
+      name.dispatchEvent(new window.Event("focusout", { bubbles: true }))
+    })
+    await picture.answered()
+    expect(name.value).toBe("X" + full)
+    expect(picture.landed().identity?.name).toEqual({ set: full })
+
+    await act(async () => picture.entered("Name", "X" + full.slice(1)))
+    expect(problem(name)).toBeNull()
+    await act(async () => name.dispatchEvent(new window.Event("focusout", { bubbles: true })))
+    await picture.answered()
+    expect(picture.landed().identity?.name).toEqual({ set: "X" + full.slice(1) })
+  } finally {
+    await picture.close()
+  }
+}, 20_000)
+
+it.each([
+  ["Name", "A".repeat(200), null],
+  ["Name", "A".repeat(201), "Use 200 characters or fewer."],
+  ["Name", "é".repeat(101), "Use 200 characters or fewer. Some letters and emoji count as 2 to 4."],
+  ["Name", "A".repeat(197) + "😀", "Use 200 characters or fewer. Some letters and emoji count as 2 to 4."],
+  ["Alt text", "😀".repeat(1000), null],
+  ["Alt text", "😀".repeat(1001), "Use 4,000 characters or fewer. Some letters and emoji count as 2 to 4."],
+])(
+  "keeps %s input whole and says when it is over its document byte limit",
+  async (label, typed, said) => {
+    const picture = await pictureDeck()
+    try {
+      await act(async () => picture.unfold())
+      const field = picture.side(label)
+      await act(async () => picture.entered(label, typed))
+      expect(field.value).toBe(typed)
+      expect(problem(field)).toBe(said)
+      await act(async () => field.dispatchEvent(new window.Event("focusout", { bubbles: true })))
+      await picture.answered()
+      expect(field.value).toBe(typed)
+      expect(picture.landed().identity?.[label === "Name" ? "name" : "alt"]).toEqual(
+        said === null ? { set: typed } : undefined,
+      )
+    } finally {
+      await picture.close()
+    }
+  },
+  20_000,
+)
+
+it("keeps a Name draft while Enter confirms an input-method composition", async () => {
+  const picture = await pictureDeck()
+  try {
+    await act(async () => picture.unfold())
+    await act(async () => picture.entered("Name", "名前"))
+    await act(async () =>
+      picture.side("Name").dispatchEvent(
+        new window.KeyboardEvent("keydown", {
+          key: "Enter",
+          isComposing: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      ),
+    )
+    await picture.answered()
+    expect(picture.side("Name").value).toBe("名前")
+    expect(picture.landed()).toEqual({})
+  } finally {
+    await picture.close()
+  }
 }, 20_000)

@@ -1,4 +1,5 @@
 import type { PaintFill } from "@airdesign/pptx"
+import { nameTooLongOf } from "@/copy/product-copy"
 import type { PanelKind } from "@/design/panel-order"
 
 type Named = Exclude<PaintFill["type"], "solid" | "none">
@@ -20,7 +21,11 @@ export const designCopy = {
     kept: "Element",
   },
   nothing: "Nothing on this element can be changed here yet.",
-  refused: "Unable to make that change. The element stays as it was.",
+  refused: "Unable to make that change. Select the element and try again, or reload the deck if it keeps happening.",
+  tooLong: (max: number, wide: boolean) =>
+    wide ? `${nameTooLongOf(max)} Some letters and emoji count as 2 to 4.` : nameTooLongOf(max),
+  textTooLong: (max: number, wide: boolean) =>
+    `Use less text. This box holds up to ${new Intl.NumberFormat("en").format(max)} characters, including formatting.${wide ? " Some letters and emoji count as 2 to 4." : ""}`,
   mixed: "Mixed",
   points: "pt",
   percent: "%",

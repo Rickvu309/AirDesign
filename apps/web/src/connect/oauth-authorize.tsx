@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react"
 import { ConnectError } from "@/connect/connect-error"
 import { ApproveAgent } from "@/connect/approve-agent"
 import { ClaudeConnected } from "@/connect/screens/claude-connected"
-import { claudeCodeConnect, claudeConnect, codexConnect, otherConnect } from "@/connect/connect-copy"
+import { claudeCodeConnect, claudeConnect, codexConnect, otherConnect } from "@/copy/connect-copy"
 import { authorizationError, navigableAddress, oauthErrorRedirect } from "@/connect/oauth-request"
 
 type Agent = "claude" | "codex" | null

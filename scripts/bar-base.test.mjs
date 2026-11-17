@@ -37,6 +37,6 @@ const barOnPull = (number, baseRef) => {
 same("bar passes a pull request against main", barOnPull(406, "main").status, 0)
 const another = barOnPull(403, "agent-element-tools")
 same("bar fails a pull request against another pull request's branch", another.status, 1)
-if (!another.out.includes("gh pr edit 403 --base main")) {
+if (!another.out.includes("run pnpm land in its branch; it moves the base to main")) {
   throw new Error(`bar does not name the fix for a base that is not main: ${another.out}`)
 }

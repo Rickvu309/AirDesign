@@ -61,7 +61,7 @@ function listed(words: readonly string[]): string {
 function taken({ facts }: Missing): string {
   const all: readonly string[] = [...takes(facts), ...(removable(facts) ? ["remove"] : [])]
   const edits = takenWords.flatMap(([edit, word]) => (all.includes(edit) ? [word] : []))
-  return edits.length === 0 ? "It takes no edit from an agent." : `It takes ${listed(edits)}.`
+  return edits.length === 0 ? "It takes no change from an agent." : `It takes ${listed(edits)}.`
 }
 
 function what(node: ElementId, { facts }: Missing): string {

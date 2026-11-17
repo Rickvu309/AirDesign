@@ -443,7 +443,7 @@ function animateTyping(demo: Element): Animation[] {
   ]
 }
 
-export async function playEditorDemoAnimation(demo: Element): Promise<void> {
+export async function playEditorDemoAnimation(demo: Element, pauseButton: HTMLButtonElement | null): Promise<void> {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
     return
   }
@@ -468,10 +468,25 @@ export async function playEditorDemoAnimation(demo: Element): Promise<void> {
     ...animateAll(demo, "[data-demo-cursor-press]", cursor.press),
   ]
 
+  let inView = false
+  let paused = false
+  const playWhenWanted = () =>
+    animations.forEach((animation) => (inView && !paused ? animation.play() : animation.pause()))
+
   new IntersectionObserver(
     ([entry]) => {
-      animations.forEach((animation) => (entry.isIntersecting ? animation.play() : animation.pause()))
+      inView = entry.isIntersecting
+      playWhenWanted()
     },
     { threshold: visibleInViewThreshold },
   ).observe(demo)
+
+  if (pauseButton) {
+    pauseButton.hidden = false
+    pauseButton.addEventListener("click", () => {
+      paused = !paused
+      pauseButton.setAttribute("aria-pressed", String(paused))
+      playWhenWanted()
+    })
+  }
 }

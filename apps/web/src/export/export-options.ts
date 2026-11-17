@@ -1,4 +1,5 @@
 import { downloadedOf } from "@/copy/product-copy"
+import type { SlideChoice } from "@/export/export-choice"
 
 export type ExportFormat = "powerpoint" | "pdf"
 
@@ -12,6 +13,7 @@ export const exportCopy = {
   allSlides: "All slides",
   currentSlide: "Current slide",
   range: "Range",
+  selected: (count: number) => `${String(count)} selected slides`,
   from: "First slide",
   to: "Last slide",
   rangeOf: (count: number) => `Choose slides from 1 to ${count}, first slide before last.`,
@@ -29,8 +31,7 @@ export const formatNames: Record<ExportFormat, string> = {
   pdf: exportCopy.pdf,
 }
 
-export const slideNames = {
-  all: exportCopy.allSlides,
-  current: exportCopy.currentSlide,
-  range: exportCopy.range,
-} as const
+export function slideNames(selected: number): Readonly<Partial<Record<SlideChoice, string>>> {
+  const names = { all: exportCopy.allSlides, current: exportCopy.currentSlide, range: exportCopy.range }
+  return selected > 1 ? { ...names, selected: exportCopy.selected(selected) } : names
+}

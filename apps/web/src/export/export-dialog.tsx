@@ -46,7 +46,7 @@ function OptionSelect<T extends string>({
 }: {
   labelId: string
   value: T
-  names: Readonly<Record<T, string>>
+  names: Readonly<Partial<Record<T, string>>>
   disabled: boolean
   onValue: (value: T) => void
 }) {
@@ -63,7 +63,7 @@ function OptionSelect<T extends string>({
         aria-labelledby={labelId}
         className={`h-9 w-full rounded-lg border-0 bg-white pr-3 pl-3 data-[size=default]:h-9 ${fieldEdge} ${fieldText}`}
       >
-        <SelectValue>{(selected: T | null) => names[selected ?? value]}</SelectValue>
+        <SelectValue>{(selected: T | null) => names[selected ?? value] ?? ""}</SelectValue>
       </SelectTrigger>
       <SelectContent>
         {values.map((each) => (
@@ -113,6 +113,7 @@ function SlideNumber({
 export function ExportDialog({
   choice,
   count,
+  selected = 0,
   open = true,
   exporting = false,
   onChoice = () => undefined,
@@ -122,6 +123,7 @@ export function ExportDialog({
 }: {
   choice: ExportChoice
   count: number
+  selected?: number
   open?: boolean
   exporting?: boolean
   onChoice?: (choice: ExportChoice) => void
@@ -181,7 +183,7 @@ export function ExportDialog({
                 <OptionSelect<SlideChoice>
                   labelId={slidesId}
                   value={choice.slides}
-                  names={slideNames}
+                  names={slideNames(selected)}
                   disabled={exporting}
                   onValue={(slides) => onChoice({ ...choice, slides })}
                 />

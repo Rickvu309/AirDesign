@@ -1,4 +1,12 @@
 import { expect, test, type Page } from "@playwright/test"
+import {
+  claudeCodeConnect,
+  claudeConnect,
+  codexConnect,
+  otherConnect,
+  refusedConnect,
+  unavailableConnect,
+} from "../../apps/web/src/copy/connect-copy"
 
 test.use({ reducedMotion: "reduce" })
 
@@ -23,14 +31,12 @@ function authorizePath(overrides: Record<string, string | null> = {}) {
   return `/oauth/authorize?${new URLSearchParams(fields)}`
 }
 
-const refusedWords = "Unable to use this connection request"
+const refusedWords = refusedConnect.title
 
 async function expectRefusedInPlace(page: Page) {
   await expect(page.getByRole("heading", { name: refusedWords, exact: true })).toBeVisible()
-  await expect(
-    page.getByText("Start connecting again from your agent, then approve its new request.", { exact: true }),
-  ).toBeVisible()
-  await expect(page.getByRole("link", { name: "Back to AirDesign", exact: true })).toHaveAttribute("href", "/")
+  await expect(page.getByText(refusedConnect.body, { exact: true })).toBeVisible()
+  await expect(page.getByRole("link", { name: refusedConnect.action, exact: true })).toHaveAttribute("href", "/")
   await expect(page.locator("button")).toHaveCount(0)
   await expect(page).toHaveURL(/\/oauth\/authorize/)
   expect(await page.evaluate(() => Reflect.get(window, "__pwn"))).toBeUndefined()
@@ -63,37 +69,37 @@ async function openConsent(
 for (const screen of [
   {
     name: "Claude",
-    title: "Claude wants to use AirDesign",
-    subtitle: "It can work on your decks for you.",
-    ability: "Claude will be able to",
-    footer: "Returns you to Claude. Disconnect anytime in Settings.",
+    title: claudeConnect.title,
+    subtitle: claudeConnect.subtitle,
+    ability: claudeConnect.ability,
+    footer: claudeConnect.footer,
     screen: "claude",
     marks: 2,
   },
   {
     name: "Claude Code",
-    title: "Claude Code wants to use AirDesign",
-    subtitle: "It can work on your decks for you.",
-    ability: "Claude Code will be able to",
-    footer: "Returns you to Claude Code on this computer. Disconnect anytime in Settings.",
+    title: claudeCodeConnect.title,
+    subtitle: claudeConnect.subtitle,
+    ability: claudeCodeConnect.ability,
+    footer: claudeCodeConnect.footer,
     screen: "claude-code",
     marks: 2,
   },
   {
     name: "Codex",
-    title: "Codex wants to use AirDesign",
-    subtitle: "It can work on your decks for you.",
-    ability: "Codex will be able to",
-    footer: "Returns you to Codex on this computer. Disconnect anytime in Settings.",
+    title: codexConnect.title,
+    subtitle: claudeConnect.subtitle,
+    ability: codexConnect.ability,
+    footer: codexConnect.footer,
     screen: "codex",
     marks: 2,
   },
   {
     name: "other",
-    title: "tool.example wants to use AirDesign",
-    subtitle: "It can work on your decks for you.",
-    ability: "tool.example will be able to",
-    footer: "Returns you to tool.example. Disconnect anytime in Settings.",
+    title: otherConnect("tool.example").title,
+    subtitle: claudeConnect.subtitle,
+    ability: otherConnect("tool.example").ability,
+    footer: otherConnect("tool.example").footer,
     screen: "other",
     marks: 1,
   },
@@ -132,7 +138,7 @@ test("the other screen uses only its redirect host", async ({ page }) => {
     redirect_host: "tool.example",
   })
 
-  await expect(page.getByRole("heading", { name: "tool.example wants to use AirDesign", exact: true })).toBeVisible()
+  await expect(page.getByRole("heading", { name: otherConnect("tool.example").title, exact: true })).toBeVisible()
   await expect(page.getByText("Claude", { exact: true })).toHaveCount(0)
   await expect(page.locator("img")).toHaveCount(0)
   await expect(page.getByText("<img src=x onerror=alert(1)>", { exact: true })).toHaveCount(0)
@@ -221,8 +227,8 @@ test("Allow sends only the agreed fields and follows the answered redirect", asy
 
   await page.getByRole("button", { name: "Allow", exact: true }).click()
 
-  await expect(page.getByRole("heading", { name: "Connected", exact: true })).toBeVisible()
-  await expect(page.getByText("Taking you back to Claude", { exact: true })).toBeVisible()
+  await expect(page.getByRole("heading", { name: claudeConnect.connectedTitle, exact: true })).toBeVisible()
+  await expect(page.getByText(claudeConnect.connectedSubtitle, { exact: true })).toBeVisible()
   await expect(page).toHaveURL(target)
   expect(posts).toBe(1)
   expect(body).toEqual({
@@ -405,7 +411,7 @@ test("an approve answer that is not http or https shows the refused words and go
   await page.getByRole("button", { name: "Allow", exact: true }).click()
 
   await expectRefusedInPlace(page)
-  await expect(page.getByRole("heading", { name: "Connected", exact: true })).toHaveCount(0)
+  await expect(page.getByRole("heading", { name: claudeConnect.connectedTitle, exact: true })).toHaveCount(0)
   await page.clock.runFor(2000)
   await expectRefusedInPlace(page)
 })

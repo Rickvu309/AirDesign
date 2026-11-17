@@ -369,3 +369,36 @@ test("with reduced motion the dialog opens and closes in its finished state", as
   await page.keyboard.press("Escape")
   await expect(dialog(page)).toHaveCount(0)
 })
+
+for (const afterprint of [true, false]) {
+  test(`PDF uses the deck file name and restores the tab title ${afterprint ? "on afterprint" : "on cancel without afterprint"}`, async ({
+    page,
+  }) => {
+    await openFile(page, join(fixtures, "clean.pptx"))
+    await page.getByRole("button", { name: "Rename deck: clean" }).click()
+    await page.getByRole("textbox", { name: "Deck name" }).fill("Q3 / Board: final.")
+    await page.getByRole("textbox", { name: "Deck name" }).press("Enter")
+    await expect(page).toHaveTitle("Q3 / Board: final. - AirDesign")
+    await page.evaluate((sendAfterprint) => {
+      window.print = () => {
+        document.body.dataset.printTitle = document.title
+        if (sendAfterprint) window.dispatchEvent(new Event("afterprint"))
+        document.body.dataset.afterPrintTitle = document.title
+      }
+    }, afterprint)
+    await openDialog(page)
+    await choose(page, "File type", "PDF")
+    await dialog(page).getByRole("button", { name: "Export" }).click()
+    await expect(page.locator("body")).toHaveAttribute("data-print-title", "Q3 Board final")
+    await expect(page).toHaveTitle("Q3 / Board: final. - AirDesign")
+    if (afterprint) {
+      await expect(page.locator("body")).toHaveAttribute("data-after-print-title", "Q3 / Board: final. - AirDesign")
+      await expect(page.locator("[data-print-sheet]")).toHaveCount(0)
+    }
+    await expect(dialog(page)).toHaveCount(0)
+    const saving = page.waitForEvent("download")
+    await openDialog(page)
+    await dialog(page).getByRole("button", { name: "Export" }).click()
+    expect((await saving).suggestedFilename()).toBe("Q3 Board final.pptx")
+  })
+}

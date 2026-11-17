@@ -20,6 +20,7 @@ const scales = Array.from({ length: Math.round((1 - smallestScale) / scaleStep) 
 )
 
 export function shrinkSteps(fit: Shrink): readonly FitStep[] {
+  if (fit.held === true) return [[fit.scale, fit.reduction]]
   const narrower = reductions.filter((reduction) => reduction > fit.reduction + 1e-6)
   const smaller = scales.filter((scale) => scale < fit.scale - 1e-6)
   return [
@@ -27,6 +28,11 @@ export function shrinkSteps(fit: Shrink): readonly FitStep[] {
     ...narrower.map((reduction): FitStep => [fit.scale, reduction]),
     ...smaller.flatMap((scale) => reductions.map((reduction): FitStep => [scale, reduction])),
   ]
+}
+
+export function heldFit(fit: CanvasFit | undefined, written: string, painted: string): CanvasFit | undefined {
+  if (fit?.kind !== "shrink" || fit.held !== true || written === painted) return fit
+  return { kind: "shrink", scale: fit.scale, reduction: fit.reduction }
 }
 
 function reduced(spacing: CanvasSpacing | null | undefined, by: number): CanvasSpacing | null {
@@ -149,7 +155,10 @@ export function useTextFit(
 ): { readonly element: CanvasElement; readonly layer: RefObject<HTMLDivElement | null> } {
   const layer = useRef<HTMLDivElement>(null)
   const { box, text } = element
-  const fit = text?.fit
+  const [painted, paint] = useState({ text, written })
+  if (painted.text !== text) paint({ text, written })
+  const paintedWith = painted.text === text ? painted.written : written
+  const fit = useMemo(() => heldFit(text?.fit, written, paintedWith), [text, written, paintedWith])
   const fonts = useSyncExternalStore(watchFonts, fontLoadsNow, noFontLoads)
   const now: Fitting = {
     text,

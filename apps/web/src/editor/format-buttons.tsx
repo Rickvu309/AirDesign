@@ -303,16 +303,29 @@ function unsubscribed(): () => void {
   return () => undefined
 }
 
-function unchanged(): number {
-  return 0
+function noFormat(): string {
+  return ""
+}
+
+function formatSeen(formatting: TextFormatting): string {
+  const shown = shownOf(formatting)
+  if (shown === null) return ""
+  return JSON.stringify([
+    shown,
+    formatting.size(),
+    formatting.color(),
+    formatting.align(),
+    formatting.bullet(),
+    formatting.swatches(),
+  ])
 }
 
 export function useLiveFormat(
   formatting: TextFormatting | undefined,
   deckColors: readonly string[] = [],
 ): FormatProps | null {
-  const version = formatting?.version ?? unchanged
-  useSyncExternalStore(formatting?.subscribe ?? unsubscribed, version, version)
+  const seen = formatting === undefined ? noFormat : () => formatSeen(formatting)
+  useSyncExternalStore(formatting?.subscribe ?? unsubscribed, seen, noFormat)
   const shown = formatting === undefined ? null : shownOf(formatting)
   return formatting === undefined || shown === null
     ? null

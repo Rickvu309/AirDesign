@@ -2,7 +2,8 @@ import { mkdtemp, rm } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
-import { publishCluster, publishedCluster } from "./postgres-setup.js"
+import { Client } from "pg"
+import { publishCluster, publishedCluster, startEmptyCluster, testWorkerConnections } from "./postgres-setup.js"
 
 const folders: string[] = []
 
@@ -41,4 +42,21 @@ describe("the published cluster", () => {
     const file = await clusterFile()
     await expect(publishedCluster(file, 50)).rejects.toThrow(file)
   })
+})
+
+describe("the test cluster", () => {
+  it("lets every test worker this machine runs hold its connections at once", async () => {
+    const cluster = await startEmptyCluster()
+    try {
+      const admin = new Client({ connectionString: cluster.admin })
+      await admin.connect()
+      const answer = await admin.query<{ max_connections: string }>("show max_connections")
+      await admin.end()
+      expect(Number(answer.rows[0]?.max_connections)).toBeGreaterThanOrEqual(
+        testWorkerConnections(os.availableParallelism()),
+      )
+    } finally {
+      await cluster.stop()
+    }
+  }, 120_000)
 })

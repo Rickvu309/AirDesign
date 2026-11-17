@@ -1,3 +1,4 @@
+import { fitZoomOf } from "../../apps/web/src/copy/product-copy"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { covers } from "./gesture"
@@ -126,7 +127,7 @@ test("zoom fits by default, each step sets the slide width, and a drag at anothe
   await zoomTo(page, "100%")
   await expect(page.locator("[data-zoom-readout]")).toHaveText("100%")
   expect((await slideBox(page)).width).toBe(1280)
-  await zoomTo(page, "Fit (63%)")
+  await zoomTo(page, fitZoomOf(63))
   expect((await slideBox(page)).width).toBe(800)
   await zoomTo(page, "50%")
   const slide = await slideBox(page)

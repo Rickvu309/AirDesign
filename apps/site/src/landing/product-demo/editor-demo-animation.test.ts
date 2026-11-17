@@ -81,7 +81,7 @@ async function demoFixture(reducedMotion: boolean) {
       observe() {}
     },
   )
-  await playEditorDemoAnimation(demo)
+  await playEditorDemoAnimation(demo, null)
   const loopMs = Math.max(0, ...recorded.map((animation) => animation.durationMs))
   const loop = recorded.filter((animation) => animation.durationMs === loopMs)
   const animationOf = (selector: string, property: string) => {

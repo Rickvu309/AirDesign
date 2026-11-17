@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react"
 import { createPortal } from "react-dom"
+import { exportBaseName } from "@/export/export-file-name"
 import { pageRule, printWidth, type PrintSize } from "@/export/print-page"
 
 async function painted(sheet: HTMLElement): Promise<void> {
@@ -9,12 +10,14 @@ async function painted(sheet: HTMLElement): Promise<void> {
 }
 
 export function PrintSheet({
+  name,
   size,
   slides,
   slide,
   onReady,
   onPrinted,
 }: {
+  name: string
   size: PrintSize
   slides: readonly number[]
   slide: (index: number, width: number) => ReactNode
@@ -32,16 +35,33 @@ export function PrintSheet({
     const host = sheet.current
     if (host === null) return
     let live = true
-    const after = () => printed.current()
+    let title: string | undefined
+    const restore = () => {
+      if (title === undefined) return
+      document.title = title
+      title = undefined
+    }
+    const after = () => {
+      restore()
+      printed.current()
+    }
     window.addEventListener("afterprint", after, { once: true })
     void painted(host).then(() => {
-      if (live && ready.current()) window.print()
+      if (!live || !ready.current()) return
+      title = document.title
+      document.title = exportBaseName(name)
+      try {
+        window.print()
+      } finally {
+        restore()
+      }
     })
     return () => {
       live = false
+      restore()
       window.removeEventListener("afterprint", after)
     }
-  }, [])
+  }, [name])
   const width = printWidth(size)
   const height = Math.round((width * size.height) / size.width)
   return createPortal(

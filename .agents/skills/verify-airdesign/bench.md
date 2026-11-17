@@ -18,6 +18,7 @@ Each case is a file in `bench/` exporting `{ name, setup(kit), measure(kit, prep
 | case            | measures                                                                                                                                                                                                                                                                   |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `add-text`      | the click on `Add text box` to the first typed letter painted: the click event's time to the first frame after the letter shows in the new text box. The letter is typed straight after the click, the way a person types at once                                          |
+| `type-41`       | typing in a text box of the imported `doe-heat-pumps.pptx` (41 slides): for each of nine letters, the keydown's time to the first frame after the letter shows in the box; the run's answer is the median letter                                                           |
 | `drag`          | the 95th percentile of frame time, from `requestAnimationFrame`, while the `clean.pptx` text box is dragged 300 px in 30 moves                                                                                                                                             |
 | `open-41`       | reopening the imported `doe-heat-pumps.pptx` (41 slides): `page.goto("/deck/<id>")` to `.thin-page[data-deck-ready]` and a painted thumbnail (`[data-thumb-paint]`) in every slide list cell in view. Cells out of view paint when scrolled to, so they are not waited for |
 | `import-<deck>` | the file input on Home to the same painted state. The default set imports the largest (`doe-heat-pumps`, 41 slides), a middle (`nasa-cots-parts-nesc`, 17) and the smallest (`nasa-8ft-tunnel`, 4) judged deck                                                             |
@@ -45,7 +46,7 @@ drag       16.9 ms [16.8-17.1]  16.8 ms [16.7-17.0]  no difference shown
 load max 27.1 on 16 cores (2 runs above the core count)
 ```
 
-The table goes to stderr and to `~/tmp/verify-airdesign/bench-<time>/bench.md`; `bench.json` beside it keeps every run's milliseconds, the medians and spreads (`[p25, p75]`), the verdicts and the load. Each case's row is also appended to `~/.cache/airdesign/bench.jsonl`, so a case can be followed across PRs.
+The table goes to stderr and to `~/tmp/verify-airdesign/bench-<time>/bench.md`; `bench.json` beside it keeps every run's milliseconds, the medians, p95 across runs and spreads (`[p25, p75]`), the verdicts and the load. Each case's row is also appended to `~/.cache/airdesign/bench.jsonl`, so a case can be followed across PRs.
 
 ## When it runs
 

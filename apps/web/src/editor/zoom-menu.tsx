@@ -1,3 +1,4 @@
+import { fitZoomOf } from "@/copy/product-copy"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuRadioGroup, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import type { Zoom } from "@/editor/canvas-zoom"
@@ -44,7 +45,7 @@ export function ZoomMenu({
             if (next !== null) onZoom(next)
           }}
         >
-          <EditorMenuRow value="fit" icon="slide" label={`Fit (${String(fitPercent)}%)`} checked={zoom === "fit"} />
+          <EditorMenuRow value="fit" icon="slide" label={fitZoomOf(fitPercent)} checked={zoom === "fit"} />
           {zoomSteps.map((step) => (
             <EditorMenuRow key={step} value={String(step)} label={`${String(step)}%`} checked={zoom === step} />
           ))}

@@ -155,3 +155,10 @@ test("a table's text and the legend under it are never painted over each other",
 test("text in the real app meets WCAG AA contrast", () => {
   expect(seen([...swept.keys()], "text-contrast"), "text is below WCAG AA contrast").toEqual([])
 })
+
+test.fail("the landing header keeps its name clear beside the product demo", () => {
+  expect(
+    seen(["landing-product-playing", "landing-product-paused", "landing-product-reduced"], "overflowing-text"),
+    "the fixed header name is flagged as clipped beside the product demo",
+  ).toEqual([])
+})

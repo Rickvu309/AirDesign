@@ -12,7 +12,11 @@ type Parts = ReadonlyMap<string, Uint8Array>
 
 export type NamedShape = { readonly id: ElementId; readonly shape: ReadShape }
 
-export type SlideShape = NamedShape & { readonly kind: ReturnType<typeof paintKind>; readonly file: string }
+export type SlideShape = NamedShape & {
+  readonly kind: ReturnType<typeof paintKind>
+  readonly file: string
+  readonly opening: ReadShape["box"]
+}
 
 export type SlideShapes = {
   readonly slide: string
@@ -113,7 +117,7 @@ export function slideShapes(shared: Parts, slide: string, part: string, base: Pa
   for (const { id, shape: shown } of named) {
     const shape = based.get(id) ?? shown
     const file = storedText(shape.text)
-    shapes.push({ id, shape: shown, kind: paintKind(shown.kind), file })
+    shapes.push({ id, shape: shown, kind: paintKind(shown.kind), file, opening: shape.box })
     if (holding === null || seen.get(id) !== 1) continue
     const table = shape.contentKind === "table" && tableEditable(holding, shape)
     if (table || boxStorable(holding, shape)) movables.set(id, { id, file })
@@ -156,6 +160,7 @@ export function paintCanvas(
   src: PictureSource,
   display: Parts,
   swatches: readonly CanvasThemeColor[],
+  refit: ReadonlySet<ElementId>,
 ): PaintedCanvas {
   const media = new Map<string, Uint8Array | undefined>()
   const recorded: PictureSource = (image) => {
@@ -163,5 +168,9 @@ export function paintCanvas(
     return src(image)
   }
   const file = painted.base === painted.shown ? undefined : texts()
-  return { slide: slideCanvas(reader, painted.source, recorded, file, swatches), media }
+  const shapes = [...painted.source.shapes].map(([key, shape]) =>
+    refit.has(shape.id) ? ([key, { ...shape, refit: true }] as const) : ([key, shape] as const),
+  )
+  const source = refit.size === 0 ? painted.source : { ...painted.source, shapes: new Map(shapes) }
+  return { slide: slideCanvas(reader, source, recorded, file, swatches), media }
 }

@@ -51,6 +51,11 @@ function labelOf(row: PaintElement): { readonly label?: string } {
   return label === undefined ? {} : { label }
 }
 
+function heldText(text: CanvasText | null, shape: CanvasShape | undefined): CanvasText | null {
+  if (text?.fit?.kind !== "shrink" || shape?.refit === true) return text
+  return { ...text, fit: { ...text.fit, held: true } }
+}
+
 export function elementFrom(ctx: RowPaint, spec: DrawnSpec): CanvasElement {
   const { key, row, shape } = ctx
   const unshown = unshownText(row, ctx.src)
@@ -73,7 +78,7 @@ export function elementFrom(ctx: RowPaint, spec: DrawnSpec): CanvasElement {
     ...(effects === undefined ? {} : { effects }),
     outline: spec.outline,
     ...(spec.geometry === undefined ? {} : { geometry: spec.geometry }),
-    text: spec.text,
+    text: heldText(spec.text, shape),
     ...(spec.table === undefined ? {} : { table: spec.table }),
   }
 }
