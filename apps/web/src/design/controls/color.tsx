@@ -25,7 +25,7 @@ export function ColorField({
     <>
       <span
         className={cn(
-          "size-4 shrink-0 rounded-sm",
+          "size-3.5 shrink-0 rounded-[3px]",
           css === null || lightCss(css) ? "shadow-[0px_0px_0px_1px_var(--field-edge)]" : null,
         )}
         style={css === null ? undefined : { background: css }}
@@ -33,7 +33,7 @@ export function ColorField({
       />
       <span
         id={id}
-        className={cn("truncate text-[length:var(--type-dense)]", inherited ? "text-quiet" : "text-foreground")}
+        className={cn("truncate text-[length:var(--type-caption)]", inherited ? "text-quiet" : "text-foreground")}
       >
         {name}
       </span>
@@ -43,7 +43,7 @@ export function ColorField({
 }
 
 export const fieldLook =
-  "h-8 w-full min-w-0 justify-start gap-2 rounded-[var(--shape-control)] border-0 bg-white px-2.5 font-normal shadow-[0px_0px_0px_1px_var(--field-edge)] hover:bg-white active:translate-y-0"
+  "h-[var(--control-dense)] w-full min-w-0 justify-start gap-2 rounded-[var(--shape-control)] border-0 bg-white px-2 font-normal shadow-[0px_0px_0px_1px_var(--field-edge)] hover:bg-white active:translate-y-0"
 
 export function ColorControl({ control, palette, onChange }: ControlProps) {
   const label = useId()

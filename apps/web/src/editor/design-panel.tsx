@@ -31,7 +31,7 @@ export function DesignPanel() {
 
 export function DesignHead({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-10 shrink-0 items-center border-b border-line px-4">
+    <div className="flex h-9 shrink-0 items-center border-b border-line px-3">
       <span className="text-sm font-semibold text-foreground">{children}</span>
     </div>
   )
@@ -68,7 +68,7 @@ export function DesignSection({
       </h2>
     )
   return (
-    <section className={cn("flex flex-col gap-2.5 px-3 py-3", edge)}>
+    <section className={cn("flex flex-col gap-2 px-3 py-3", edge)}>
       {action === null ? (
         heading
       ) : (
@@ -100,7 +100,7 @@ function FoldedSection({
       open={fold.open}
       onOpenChange={fold.onOpen}
       render={<section />}
-      className={cn("flex flex-col gap-2.5 px-3", fold.open ? "py-3" : "py-1.5", edge)}
+      className={cn("flex flex-col gap-2 px-3", fold.open ? "py-3" : "py-1.5", edge)}
       data-design-section={title}
     >
       <div className="relative flex min-h-6 items-center">
@@ -117,7 +117,7 @@ function FoldedSection({
         </h2>
         {fold.open && action !== null ? <div className="absolute right-5 flex items-center">{action}</div> : null}
       </div>
-      <CollapsibleContent className="flex flex-col gap-2.5">{children}</CollapsibleContent>
+      <CollapsibleContent className="flex flex-col gap-2">{children}</CollapsibleContent>
     </Collapsible>
   )
 }
@@ -143,7 +143,8 @@ function SectionReset({
   )
 }
 
-const swatchShape = "flex h-9 items-center gap-2.5 rounded-lg bg-white px-3 shadow-[0px_0px_0px_1px_var(--field-edge)]"
+const swatchShape =
+  "flex h-7 items-center gap-2 rounded-[var(--shape-control)] bg-white px-2 shadow-[0px_0px_0px_1px_var(--field-edge)]"
 
 function Chip({ color, edged }: { color: string; edged: boolean }) {
   return (
@@ -160,7 +161,7 @@ export function Swatch({ color, name, edged = false }: { color: string; name: st
   return (
     <span className={swatchShape} data-design-swatch>
       <Chip color={color} edged={edged} />
-      <span className="truncate text-[length:var(--type-dense)] text-foreground">{name}</span>
+      <span className="truncate text-[length:var(--type-caption)] text-foreground">{name}</span>
     </span>
   )
 }

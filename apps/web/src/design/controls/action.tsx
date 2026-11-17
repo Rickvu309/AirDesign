@@ -40,12 +40,12 @@ export function ActionControl({ control, onChange }: ControlProps) {
                   aria-label={name}
                   title={name}
                   onClick={() => onChange(option)}
-                  className="h-7 min-w-0 flex-1 rounded-none border-0 bg-muted px-0 text-foreground hover:bg-line active:translate-y-0"
+                  className="h-[var(--control-dense)] min-w-0 flex-1 rounded-none border-0 bg-muted px-0 text-foreground hover:bg-line active:translate-y-0"
                 >
                   {Icon === undefined ? (
                     optionWord(control.field, option)
                   ) : (
-                    <Icon size={16} strokeWidth={1.5} aria-hidden />
+                    <Icon size={14} strokeWidth={1.5} aria-hidden />
                   )}
                 </Button>
               )
