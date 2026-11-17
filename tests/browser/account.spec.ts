@@ -81,7 +81,7 @@ test("follows the sidebar card to the Agents page", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/settings\/agents$/)
   await expect(page.getByRole("heading", { name: settingsCopy.agents, exact: true })).toBeVisible()
-  await expect(sidebar.getByText(accountCopy.agentCardBody)).toBeVisible()
+  await expect(sidebar.getByText(accountCopy.agentCardBody)).toHaveCount(0)
 })
 
 test("the account menu's delete dialog stays disabled while the email is unknown, and says what failed when the server refuses", async ({
