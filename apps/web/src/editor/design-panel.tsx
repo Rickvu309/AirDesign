@@ -255,7 +255,13 @@ export function ElementDesign({
           )
         const [strip, ...more] = section.strips
         const [lone, ...beside] = strip ?? []
-        if (lone !== undefined && more.length === 0 && beside.length === 0 && lone.look.name.show === "beside")
+        if (
+          section.open &&
+          lone !== undefined &&
+          more.length === 0 &&
+          beside.length === 0 &&
+          lone.look.name.show === "beside"
+        )
           return (
             <section
               key={section.trait}
