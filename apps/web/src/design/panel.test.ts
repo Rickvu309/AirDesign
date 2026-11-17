@@ -256,11 +256,11 @@ it("leaves out what only one element can hold, such as its text and its name", (
   const panel = panelOfMany([filled("258.2", null, 0), filled("258.3", null, 0)])
   expect(panel.sections.map((section) => section.trait)).toEqual([
     "alignment",
-    "box",
     "fill",
     "line",
     "opacity",
     "text",
+    "box",
     "effects",
   ])
   expect(panel.sections.find((section) => section.trait === "effects")?.open).toBe(false)
