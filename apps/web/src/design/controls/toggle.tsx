@@ -15,12 +15,12 @@ export function ToggleControl({ control, onChange }: ControlProps) {
       data-control="toggle"
       onClick={() => onChange(control.mixed ? true : !on)}
       className={cn(
-        "h-8 w-full rounded-lg px-2 font-normal shadow-[0px_0px_0px_1px_var(--field-edge)] active:translate-y-0",
+        "h-8 w-full rounded-[var(--shape-control)] border-0 px-2 font-normal active:translate-y-0",
         on
-          ? "bg-pressed text-pressed-foreground shadow-[0px_0px_0px_1px_var(--pressed-edge)] hover:bg-pressed hover:text-pressed-foreground"
+          ? "bg-pressed text-pressed-foreground hover:bg-pressed hover:text-pressed-foreground"
           : control.mixed
             ? "bg-canvas text-foreground"
-            : "bg-white text-quiet",
+            : "bg-white text-foreground shadow-[0px_0px_0px_1px_var(--line)]",
       )}
     >
       {Icon === undefined ? (
