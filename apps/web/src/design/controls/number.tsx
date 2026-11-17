@@ -6,15 +6,12 @@ import { cn } from "@/lib/class-names"
 
 function shownNumber(control: ControlProps["control"], scale?: number): string {
   if (control.mixed || control.desc.kind !== "number" || typeof control.value !== "number") return ""
-  return String(
-    Math.round(
-      (control.numberScale !== undefined
-        ? control.value / 100 / control.numberScale
-        : scale !== undefined
-          ? control.value / scale
-          : agentNumberOf(control.desc.unit, control.value)) * 10000,
-    ) / 10000,
-  )
+  if (scale !== undefined) return String(Math.round((control.value / scale) * 100) / 100)
+  const shown =
+    control.numberScale === undefined
+      ? agentNumberOf(control.desc.unit, control.value)
+      : control.value / 100 / control.numberScale
+  return String(Math.round(shown * 10000) / 10000)
 }
 
 function stepOf(event: KeyboardEvent<HTMLInputElement>, unit: number): number {
