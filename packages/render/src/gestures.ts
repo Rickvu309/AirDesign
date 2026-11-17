@@ -113,8 +113,24 @@ export const gestures = [
   { id: "underline", group: "text", keys: [{ key: "u", mod: true }], where: ["element", "text"] },
   { id: "slide-duplicate", group: "slides", keys: [{ key: "d", mod: true }], where: ["slides"] },
   { id: "slide-delete", group: "slides", keys: [{ key: "Delete" }, { key: "Backspace" }], where: ["slides"] },
-  { id: "slide-up", group: "slides", keys: [{ key: "ArrowUp", alt: true }], where: ["slides"] },
-  { id: "slide-down", group: "slides", keys: [{ key: "ArrowDown", alt: true }], where: ["slides"] },
+  {
+    id: "slide-up",
+    group: "slides",
+    keys: [
+      { key: "ArrowUp", alt: true },
+      { code: "BracketLeft", mod: true },
+    ],
+    where: ["slides"],
+  },
+  {
+    id: "slide-down",
+    group: "slides",
+    keys: [
+      { key: "ArrowDown", alt: true },
+      { code: "BracketRight", mod: true },
+    ],
+    where: ["slides"],
+  },
 ] as const satisfies readonly GestureRow[]
 
 export type GestureId = (typeof gestures)[number]["id"]

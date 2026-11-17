@@ -84,6 +84,13 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "G", code: "KeyG", metaKey: true, shiftKey: true }, "element")).toBe("ungroup")
   })
 
+  it("moves a slide earlier or later with command or control and a bracket", () => {
+    expect(gestureFor({ ...plain, key: "[", code: "BracketLeft", metaKey: true }, "slides")).toBe("slide-up")
+    expect(gestureFor({ ...plain, key: "]", code: "BracketRight", ctrlKey: true }, "slides")).toBe("slide-down")
+    expect(gestureFor({ ...plain, key: "}", code: "BracketRight", ctrlKey: true, shiftKey: true }, "slides")).toBeNull()
+    expect(gestureFor({ ...plain, key: "]", code: "BracketRight" }, "slides")).toBeNull()
+  })
+
   it("acts only where the gesture works", () => {
     expect(gestureFor({ ...plain, key: "Delete" }, "element")).toBe("delete")
     expect(gestureFor({ ...plain, key: "Delete" }, "slides")).toBe("slide-delete")

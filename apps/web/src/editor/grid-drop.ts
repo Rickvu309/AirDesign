@@ -11,12 +11,51 @@ export function dropTarget(from: number, place: number): number | null {
   return to === from ? null : to
 }
 
-export function edgeScroll(y: number, list: { readonly top: number; readonly height: number }): number {
-  const fromTop = y - list.top
-  const fromBottom = list.top + list.height - y
-  if (fromTop < edge) return -Math.ceil((fastest * (edge - Math.max(fromTop, 0))) / edge)
-  if (fromBottom < edge) return Math.ceil((fastest * (edge - Math.max(fromBottom, 0))) / edge)
+type Room = { readonly left: number; readonly top: number; readonly width: number; readonly height: number }
+
+function edgeSpeed(at: number, start: number, length: number): number {
+  const fromStart = at - start
+  const fromEnd = start + length - at
+  if (fromStart < edge) return Math.ceil((fastest * (edge - fromStart)) / edge)
+  if (fromEnd < edge) return -Math.ceil((fastest * (edge - fromEnd)) / edge)
   return 0
+}
+
+export function edgePan(
+  point: { readonly x: number; readonly y: number },
+  room: Room,
+): { readonly x: number; readonly y: number } {
+  const outside =
+    point.x < room.left || point.x > room.left + room.width || point.y < room.top || point.y > room.top + room.height
+  if (outside) return { x: 0, y: 0 }
+  return { x: edgeSpeed(point.x, room.left, room.width), y: edgeSpeed(point.y, room.top, room.height) }
+}
+
+export function landing(held: readonly number[], at: number): number {
+  return at - held.filter((index) => index < at).length
+}
+
+export function dragMoves(
+  held: readonly number[],
+  at: number,
+  count: number,
+): readonly { readonly from: number; readonly to: number }[] {
+  const order = Array.from({ length: count }, (_, index) => index)
+  const rest = order.filter((index) => !held.includes(index))
+  let anchor = rest[landing(held, at)]
+  const moves: { from: number; to: number }[] = []
+  for (const slide of [...held].sort((a, b) => b - a)) {
+    const from = order.indexOf(slide)
+    const before = anchor === undefined ? count : order.indexOf(anchor)
+    const to = before - (from < before ? 1 : 0)
+    if (from !== to) {
+      moves.push({ from, to })
+      order.splice(from, 1)
+      order.splice(to, 0, slide)
+    }
+    anchor = slide
+  }
+  return moves
 }
 
 export type GridSlot = {

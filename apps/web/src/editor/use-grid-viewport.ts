@@ -264,6 +264,15 @@ export function useGridViewport({
     reset: () => fit(),
     selection: (indices: readonly number[]) => fit(indices),
     space,
+    panBy: (delta: { readonly x: number; readonly y: number }) => {
+      paint(pannedGrid(view.current, delta))
+      stopTimer()
+      dirty.current = true
+      fits.current = false
+    },
+    panEnd: () => {
+      if (dirty.current) settle()
+    },
     handlers: {
       ref: viewport,
       tabIndex: -1,

@@ -16,6 +16,7 @@ export const slideListCopy = {
   duplicated: (number: number) => `Duplicated slide ${String(number)}. The copy is slide ${String(number + 1)}`,
   deleted: (number: number) => `Slide ${String(number)} deleted`,
   moved: (from: number, to: number) => `Moved slide ${String(from)} to position ${String(to)}`,
+  movedSeveral: (count: number, to: number) => `Moved ${slidesOf(count)} to position ${String(to)}`,
   sectionRange: (range: string) => `slides ${range}`,
   actions: (number: number) => `Slide ${String(number)} actions`,
   open: "Open",
