@@ -16,6 +16,7 @@ const guardedFiles = new Set([
   ".npmrc",
   ".oxfmtrc.json",
   "AGENTS.md",
+  "CHECK-QUEUE.md",
   "CHECKS.md",
   "pnpm-workspace.yaml",
 ])

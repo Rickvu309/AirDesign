@@ -3,7 +3,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { checkSlots, queueLogName, recentRunSeconds, takeMachineLock, waitLine } from "./machine-lock.mjs"
+import { checkSlots, laneProtocol, queueLogName, recentRunSeconds, takeMachineLock, waitLine } from "./machine-lock.mjs"
 
 const fail = (message) => {
   console.error(message)
@@ -21,14 +21,14 @@ const within = (promise, what) => {
   return promise.finally(() => clearTimeout(timer))
 }
 
-const waiter = (job = "check", lane = "full", slots = 1, load = 0) => {
+const waiter = (job = "check", lane = "full", slots = 1, where = folder, load = 0) => {
   const child = spawn(
     process.execPath,
     [
       "--input-type=module",
       "-e",
       `import { takeMachineLock } from ${JSON.stringify(module)}
-       const release = await takeMachineLock({ folder: ${JSON.stringify(folder)}, env: { AIRDESIGN_CHECK_SLOTS: "${slots}" }, poll: 50, load: () => ${load}, cores: 8, job: ${JSON.stringify(job)}, lane: ${JSON.stringify(lane)} })
+       const release = await takeMachineLock({ folder: ${JSON.stringify(where)}, env: { AIRDESIGN_CHECK_SLOTS: "${slots}" }, poll: 50, load: () => ${load}, cores: 8, job: ${JSON.stringify(job)}, lane: ${JSON.stringify(lane)} })
        console.log("started")
        process.stdin.once("data", async (word) => {
          if (String(word).startsWith("go")) await release()
@@ -156,9 +156,9 @@ pairThird.finish()
 await pairTwo.closed
 await pairThird.closed
 
-const busyOne = waiter("check", "full", 2, 100)
+const busyOne = waiter("check", "full", 2, folder, 100)
 await busyOne.until(started, "a busy machine kept the first slot from a check")
-const busyTwo = waiter("check", "full", 2, 100)
+const busyTwo = waiter("check", "full", 2, folder, 100)
 await busyTwo.until(placed(1), "a check on a busy machine did not wait for its turn")
 await settle()
 if (started(busyTwo.seen)) fail("a second slot opened while the load was above the core count")
@@ -170,5 +170,19 @@ await busyTwo.closed
 
 const leftover = [...fs.readdirSync(path.join(folder, "queue")), ...fs.readdirSync(path.join(folder, "small-queue"))]
 if (leftover.length !== 0) fail(`the queue kept tickets: ${leftover.join(", ")}`)
+if (!fs.existsSync(path.join(folder, `lane-protocol-${laneProtocol}`)))
+  fail("a check did not record its lane protocol in the queue folder")
+
+const newer = fs.mkdtempSync(path.join(os.tmpdir(), "machine-lock-"))
+fs.writeFileSync(path.join(newer, `lane-protocol-${laneProtocol + 1}`), "")
+const stale = waiter("check", "full", 1, newer)
+await within(stale.closed, "a check with older queue code waited in line")
+if (stale.child.exitCode !== 1) fail("a check with older queue code did not fail")
+if (started(stale.seen)) fail("a check with older queue code started")
+if (!stale.seen.err.includes("git fetch origin && git rebase origin/main"))
+  fail(`a check with older queue code did not say how to rebase: ${stale.seen.err}`)
+if (fs.existsSync(path.join(newer, "queue")) && fs.readdirSync(path.join(newer, "queue")).length !== 0)
+  fail("a check with older queue code left a ticket")
+fs.rmSync(newer, { recursive: true, force: true })
 fs.rmSync(folder, { recursive: true, force: true })
 console.log("machine lock tests passed")
