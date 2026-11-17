@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, openClean, settled, signInBrowser, test } from "./api-stack"
 import { covers } from "./gesture"
 
 const blank = join(process.cwd(), "scripts/pptx-fixtures/blank.pptx")
@@ -23,6 +23,7 @@ async function openBlankDeck(page: Page): Promise<void> {
   await page.locator("input[type=file]").setInputFiles(blank)
   await expect(page).toHaveURL(/\/deck\//)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
+  await settled(page)
 }
 
 async function stopNow(page: Page): Promise<Stop> {
