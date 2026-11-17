@@ -37,9 +37,7 @@ same(
 same("each shard is a job of its own name", check.name.includes("matrix.shard"), true)
 same(
   "each job keeps its failed test results under a name of its own",
-  steps
-    .find((step) => (step.uses ?? "").startsWith("actions/upload-artifact"))
-    ?.with.name.includes("strategy.job-index"),
+  steps.find((step) => step.with?.name?.startsWith("test-results-check"))?.with.name.includes("strategy.job-index"),
   true,
 )
 const browserTests = (args) =>
@@ -178,11 +176,7 @@ same(
   [true, true, true, true],
 )
 same("the shared action exposes its answer", action?.outputs.passed.value, "${{ steps.queued.outputs.passed }}")
-same(
-  "shared decision receives its inputs",
-  [question?.env.PART, question?.env.CACHE_HIT],
-  ["${{ inputs.part }}", "${{ inputs.cache-hit }}"],
-)
+same("shared decision receives its inputs", [question?.env.PART], ["${{ inputs.part }}"])
 const execute = (run, env, answer = "true") => {
   const folder = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-ci-work-"))
   try {
@@ -200,6 +194,7 @@ const execute = (run, env, answer = "true") => {
         GITHUB_OUTPUT: output,
         GITHUB_REPOSITORY: "a/b",
         GITHUB_SHA: "exact-sha",
+        GITHUB_REF: "refs/heads/main",
         GITHUB_EVENT_NAME: "push",
         ...env,
       },
@@ -221,30 +216,17 @@ for (const [name, job] of [
 ]) {
   const found = job?.steps ?? []
   const work = found.find((step) => step.id === "work")
-  const lookup = found.find((step) => step.id === "cache-lookup")
   const restore = found.find((step) => step.id === "work-cache")
   const save = found.find(
-    (step) => (step.uses ?? "").startsWith("actions/cache/save") && step.with.path === lookup?.with.path,
+    (step) => (step.uses ?? "").startsWith("actions/cache/save") && step.with.path === restore?.with.path,
   )
-  same(`${name} looks up the exact cache without downloading`, lookup?.with["lookup-only"], true)
-  same(
-    `${name} looks up before setup`,
-    found.indexOf(lookup) >= 0 &&
-      found.indexOf(lookup) < found.findIndex((step) => (step.uses ?? "").startsWith("pnpm/action-setup")),
-    true,
-  )
-  same(
-    `${name} restores and saves the key it looked up`,
-    [restore?.with.key, save?.with.key],
-    [lookup?.with.key, lookup?.with.key],
-  )
-  same(`${name} decision reads exact hit and part`, work?.with, {
-    "cache-hit": "${{ steps.cache-lookup.outputs.cache-hit }}",
+  same(`${name} restores and saves the same performance cache`, restore?.with.key, save?.with.key)
+  same(`${name} decision reads only the part`, work?.with, {
     part: name === "check" ? "${{ matrix.part }}" : name,
   })
   for (const [part, passed, hit, needed] of [
     [name === "check" ? "main" : name, "true", "true", "false"],
-    [name === "check" ? "main" : name, "true", "false", "true"],
+    [name === "check" ? "main" : name, "true", "false", "false"],
     [name === "check" ? "main" : name, "false", "true", "true"],
     [name === "check" ? "main" : name, "", "true", "true"],
     ...(name === "check"
@@ -263,7 +245,7 @@ for (const [name, job] of [
       execute(question?.run ?? "exit 1", { PART: part, CACHE_HIT: hit }, passed === "true" ? "123" : ""),
       {
         status: 0,
-        output: `passed=${passed === "true" && !["pptx", "design"].includes(part)}\nrun-id=${passed === "true" && !["pptx", "design"].includes(part) ? "123" : ""}\nneeded=${needed}`,
+        output: `passed=${passed === "true" && part !== "design"}\nrun-id=${passed === "true" && part !== "design" ? "123" : ""}\nneeded=${needed}`,
       },
     )
   }
@@ -334,14 +316,14 @@ same("upload follows corpus", corpus.steps.indexOf(upload) > corpusRun, true)
 same(
   "queue artifact uses the pinned uploader",
   upload?.uses,
-  steps.find((step) => (step.uses ?? "").startsWith("actions/upload-artifact"))?.uses,
+  steps.find((step) => step.with?.name?.startsWith("test-results-check"))?.uses,
 )
 same("queue artifact expires in one day", upload?.with["retention-days"], 1)
 same("queue artifact holds validator answers", upload?.with.path, "~/.cache/airdesign/pptx-validations")
 same(
-  "push downloads only when work was skipped",
+  "push downloads answers whenever the exact queue run passed",
   download?.if,
-  "github.event_name == 'push' && steps.work.outputs.needed == 'false'",
+  "github.event_name == 'push' && steps.work.outputs.passed == 'true'",
 )
 same("download uses the queue run id", download?.env.RUN_ID, "${{ steps.work.outputs.run-id }}")
 same("download may read actions", download?.env.GH_TOKEN, "${{ github.token }}")
@@ -367,11 +349,21 @@ for (const event of ["pull_request", "merge_group", "push"]) {
   for (const part of ["design", "pptx"]) {
     for (const hit of ["true", "false"]) {
       for (const answer of ["123", ""]) {
-        const needed = part === "design" ? event === "pull_request" : event !== "merge_group"
+        const passed = part === "pptx" && event === "push" && Boolean(answer)
+        const needed = part === "design" ? event === "pull_request" : event !== "merge_group" && !passed
         same(
           `${event} ${part} hit=${hit} queue=${answer} needed=${needed}`,
-          execute(question.run, { GITHUB_EVENT_NAME: event, PART: part, CACHE_HIT: hit, GH_FORBIDDEN: "1" }, answer),
-          { status: 0, output: `passed=false\nrun-id=\nneeded=${needed}` },
+          execute(
+            question.run,
+            {
+              GITHUB_EVENT_NAME: event,
+              PART: part,
+              CACHE_HIT: hit,
+              GH_FORBIDDEN: part === "design" || event !== "push" ? "1" : "",
+            },
+            answer,
+          ),
+          { status: 0, output: `passed=${passed}\nrun-id=${passed ? answer : ""}\nneeded=${needed}` },
         )
       }
     }

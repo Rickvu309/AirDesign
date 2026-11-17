@@ -4,9 +4,6 @@ inputs:
   part:
     description: The check part.
     required: true
-  cache-hit:
-    description: Whether the exact work cache exists.
-    required: true
 outputs:
   passed:
     description: Whether a successful merge queue ci run exists.
@@ -25,12 +22,13 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
         PART: ${{ inputs.part }}
-        CACHE_HIT: ${{ inputs.cache-hit }}
       run: |
         run_id=
         passed=false
-        if [ "$GITHUB_EVENT_NAME" = push ] && [ "$PART" != pptx ] && [ "$PART" != design ]; then
-          run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&event=merge_group&status=success" --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci.yml")][0].id // empty')
+        if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ] && [ "$PART" != design ]; then
+          if ! run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&event=merge_group&status=success" --jq "[.workflow_runs[] | select(.path == \".github/workflows/ci.yml\" and .head_sha == \"$GITHUB_SHA\" and .event == \"merge_group\" and .status == \"completed\" and .conclusion == \"success\")][0].id // empty"); then
+            run_id=
+          fi
         fi
         if [ -n "$run_id" ]; then passed=true; fi
         needed=true
@@ -39,8 +37,7 @@ runs:
           needed=false
         elif [ "$passed" = true ]; then
           case "$PART" in
-            side | browser) needed=false ;;
-            *) if [ "$CACHE_HIT" = true ]; then needed=false; fi ;;
+            main | side | browser | corpus | pptx) needed=false ;;
           esac
         fi
         echo "passed=$passed" >> "$GITHUB_OUTPUT"
