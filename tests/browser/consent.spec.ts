@@ -1,5 +1,12 @@
 import { expect, test, type Page } from "@playwright/test"
-import { claudeCodeConnect, claudeConnect, codexConnect, otherConnect, refusedConnect, unavailableConnect } from "../../apps/web/src/copy/connect-copy"
+import {
+  claudeCodeConnect,
+  claudeConnect,
+  codexConnect,
+  otherConnect,
+  refusedConnect,
+  unavailableConnect,
+} from "../../apps/web/src/copy/connect-copy"
 
 test.use({ reducedMotion: "reduce" })
 
@@ -28,9 +35,7 @@ const refusedWords = refusedConnect.title
 
 async function expectRefusedInPlace(page: Page) {
   await expect(page.getByRole("heading", { name: refusedWords, exact: true })).toBeVisible()
-  await expect(
-    page.getByText(refusedConnect.body, { exact: true }),
-  ).toBeVisible()
+  await expect(page.getByText(refusedConnect.body, { exact: true })).toBeVisible()
   await expect(page.getByRole("link", { name: refusedConnect.action, exact: true })).toHaveAttribute("href", "/")
   await expect(page.locator("button")).toHaveCount(0)
   await expect(page).toHaveURL(/\/oauth\/authorize/)

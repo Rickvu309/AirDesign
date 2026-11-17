@@ -1,5 +1,5 @@
 import { buttonVariants } from "@/components/ui/button"
-import { refusedConnect, unavailableConnect } from "@/connect/connect-copy"
+import { refusedConnect, unavailableConnect } from "@/copy/connect-copy"
 
 export function ConnectError({ kind }: { kind: "refused" | "unavailable" }) {
   const copy = kind === "unavailable" ? unavailableConnect : refusedConnect
