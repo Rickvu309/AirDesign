@@ -1,7 +1,7 @@
 import { deckRoutes, signOutRoutes } from "@airdesign/catalog"
 import { connect, dropDeck, memoryRemote, sendQueued, sendUnopened, starDeck } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -210,7 +210,7 @@ export function Home({
     if (!(await post(deckRoutes.trash.path, { deck: deck.deck })).ok) return
     await refresh(shiftAt)
     if (held) keepFocus()
-    toast.custom(
+    toast.notice(
       (id) => (
         <MovedToast
           name={deck.name}
@@ -219,7 +219,7 @@ export function Home({
           }}
         />
       ),
-      { ...movedToastOptions, duration: 9_000 },
+      movedToastOptions,
     )
   }
 

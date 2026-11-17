@@ -1,5 +1,5 @@
 import { useCallback, useState, useSyncExternalStore } from "react"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import type { CommitOutcome, SaveRefusal } from "@/commit-edit"
 import { productCopy } from "@/copy/product-copy"
 import { signInAddress, type ThinNotice } from "@/thin-notice"
@@ -21,7 +21,7 @@ function watchNetwork(change: () => void): () => void {
 const browserOnline = () => navigator.onLine !== false
 
 export function tellRefusal(outcome: CommitOutcome): void {
-  if (outcome === "too-large") toast.error(productCopy.editTooLarge)
+  if (outcome === "too-large") toast.error(productCopy.editTooLarge, { id: "edit-too-large" })
 }
 
 export function useDeckStatus() {

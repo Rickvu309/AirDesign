@@ -1,4 +1,4 @@
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import { expect, it, vi } from "vitest"
 import { productCopy } from "@/copy/product-copy"
 import { saveStatus, shownNotice, tellRefusal } from "@/editor/use-deck-status"
@@ -105,6 +105,6 @@ it("tells the person an edit too large to send was not saved, and stays quiet fo
   for (const outcome of ["refused", "sent", "size", "set-aside"] as const) tellRefusal(outcome)
   expect(told).not.toHaveBeenCalled()
   tellRefusal("too-large")
-  expect(told).toHaveBeenCalledExactlyOnceWith(productCopy.editTooLarge)
+  expect(told).toHaveBeenCalledExactlyOnceWith(productCopy.editTooLarge, expect.any(Object))
   told.mockRestore()
 })

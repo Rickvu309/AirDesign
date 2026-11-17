@@ -1,5 +1,5 @@
 import { useEffect, type CSSProperties, type ReactElement } from "react"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import { Toaster } from "@/components/ui/sonner"
 import { StatusPill } from "@/components/ui/status-pill"
 import { exportCopy } from "@/export/export-options"

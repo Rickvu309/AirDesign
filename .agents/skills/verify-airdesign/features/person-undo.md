@@ -31,6 +31,8 @@ Preconditions:
 - **Table seam.** Driven live on 2026-11-13 with a scratch journey: insert a table, type `Region` with no delay and press Ctrl/Cmd+Z at once: no table is left and only `Redo add table` is offered; its Redo paints the table with `R`. Typed at 60 ms a key and recorded first, Ctrl/Cmd+Z leaves `Region` painted in the focused cell while the buttons read `Undo add table` and `Redo text edit`; Escape repaints it empty, and a reload and a fresh device agree on the empty cell.
 - **Undo, then reload.** Typing ` again`, Ctrl/Cmd+Z once the box read the old text, and a reload with no wait kept the old text on the device and the server, five times out of five.
 
+- **Slide deletion toast.** Driven live on 2026-11-17: Undo remains after 10.5 seconds and restores the slide; Close dismisses without restoring it. Undo and Close fit without overlap at 320, 480 and 735 CSS px (200% reflow equivalent, not native browser zoom). Regression: `tests/browser/toast-layout.spec.ts`.
+
 ## Gotchas
 
 - Press Escape after typing to give the frame focus when you want the next key to act on the element, such as Delete or an arrow.

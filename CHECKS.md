@@ -1,6 +1,6 @@
 # What enforces each rule
 
-A rule with a check fails `pnpm gate`, `pnpm check`, `pnpm check:pptx` or the merge. A rule marked review is a judgment call, and nothing fails when you skip it. When a mistake repeats, give its rule a check and move the row.
+Checks fail `pnpm gate`, `pnpm check`, `pnpm check:pptx` or merge. Review rules need judgment; skipping them fails nothing. Give recurring mistakes a check.
 
 | Rule | Enforced by |
 | --- | --- |
@@ -15,7 +15,7 @@ A rule with a check fails `pnpm gate`, `pnpm check`, `pnpm check:pptx` or the me
 | A file an agent writes that is over 5,000 tokens does not grow, and no new file starts over it. A token is four bytes | `scripts/file-size.mjs`, the `file-size` step of `pnpm check`. Its message says how to split the file |
 | No hand-kept list of what a folder holds: `pnpm typecheck` reads `apps/` and `packages/`, `pnpm test:tooling` reads `scripts/`, and the spec replay reads `specs/` | the `references` step of `pnpm check` fails when the root `tsconfig.json` lists references |
 | Unit tests run with nothing built: a test reads sources, never a package's `dist` | `scripts/source-only.mjs` makes vitest refuse to load any `apps/*/dist` or `packages/*/dist` file, so a test that reads built output fails even when a build ran first. `scripts/source-only.test.mjs` fails when a vitest project drops it. `pnpm check` runs typecheck, build and site one after another beside the tests, because all three write `dist` |
-| Two builds never run at once: each `tsc -b` writes the `dist` of every package it references, so two at once leave each other half-written declarations and fail with type errors the source does not have | `scripts/build-order.test.mjs` fails a `pnpm` command in `package.json` or a workflow that builds two projects with `--filter` and no `--workspace-concurrency=1`. The `journeys` build failed this way on main at a83f2535 |
+| Builds run serially: concurrent `tsc -b` writes leave shared declarations incomplete | `scripts/build-order.test.mjs` fails a `pnpm` command in `package.json` or a workflow that builds two projects with `--filter` and no `--workspace-concurrency=1`. The `journeys` build failed this way on main at a83f2535 |
 | A state machine keeps its invariants | `pnpm check:specs` |
 | Every spec in `specs/` is replayed against the code by a test, or listed with a reason | `scripts/spec-replays.mjs`, the `spec-replays` step of `pnpm check`. It warns for now and blocks nothing |
 | A spec is checked again when the code it describes moves: `specs/<topic>/covers.json` names the declarations its model describes, with their digest at the last sync | `scripts/spec-sync.mjs`, the `spec-sync` step of `pnpm check`, names each spec whose covered declarations changed or went since its sync. `--sync <topic>` records a new sync only after `pnpm check:specs <topic>` passed. It warns for now and blocks nothing |
@@ -78,3 +78,4 @@ A rule with a check fails `pnpm gate`, `pnpm check`, `pnpm check:pptx` or the me
 | Copy: `better-writing`, `GLOSSARY.md`, current behavior | review; `no-limit-in-copy`: use `@airdesign/document` limits |
 | How agents work here | review |
 | Every design screen and named state of the app shows no mechanical design fault: cut, covered or invisible text and controls, internal names, empty panels, stacked frames, low contrast | the `design-findings` step counts what the scanner finds in the browser tests into the `design-findings` metric. It warns for now and blocks nothing. Looking at the images is review |
+| Action/error toasts persist with Close; plain successes expire | `toast.test.tsx` checks duration overrides; `toast-layout.spec.ts` checks fit/dismissal; `apps/web/.oxlintrc.json` requires the wrapper |

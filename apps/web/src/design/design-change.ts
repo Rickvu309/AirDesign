@@ -1,6 +1,6 @@
 import type { Bound, ElementId, Place, SetChange } from "@airdesign/document"
 import { connect } from "@airdesign/live"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { designCopy } from "@/copy/design-copy"
 import { applyChange, valueFits, type ChangingDeck } from "@/design/trait-edit"

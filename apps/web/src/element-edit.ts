@@ -21,7 +21,7 @@ import {
 import { connect, memoryRemote } from "@airdesign/live"
 import { applyRoute, freeShapeId, paintKind, readShapes, readSlides, shapeSiblings } from "@airdesign/pptx"
 import { boxOf, type PaintBox } from "@airdesign/render"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
 import { elementCopy, type RemovalRefusal } from "@/copy/element-copy"
 import { commitGroup, type GroupChange } from "@/editor/group-actions"
@@ -175,7 +175,10 @@ async function commitRemovals(
 ): Promise<CommitOutcome> {
   const { edits, refused } = removals(parts, register, nodes)
   for (const refusal of refused)
-    toast.error(elementCopy.removeRefusedTitle, { description: elementCopy.removeRefusedBody[refusal] })
+    toast.error(elementCopy.removeRefusedTitle, {
+      id: `remove-refused-${refusal}`,
+      description: elementCopy.removeRefusedBody[refusal],
+    })
   const file = fileSlides(parts, register)
   const went: Removal[] = []
   for (const edit of edits) if ((await connect(memoryRemote()).enqueueSlide(deckId, file, edit)).ok) went.push(edit)

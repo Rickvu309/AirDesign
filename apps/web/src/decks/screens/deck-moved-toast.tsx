@@ -1,5 +1,5 @@
 import { useEffect, type CSSProperties } from "react"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import { Toaster } from "@/components/ui/sonner"
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
@@ -44,14 +44,14 @@ export function MovedToaster() {
       position="top-center"
       offset={12}
       style={{ "--width": toastWidth } as CSSProperties}
-      className="![left:calc(50%+124px)]"
+      className="min-[601px]:![left:calc(50%+124px)]"
     />
   )
 }
 
 export function DeckMovedToast() {
   useEffect(() => {
-    toast.custom(() => <MovedToast />, { id: "deck-moved", duration: Infinity, ...stillMovedToastOptions })
+    toast.notice(() => <MovedToast />, { id: "deck-moved", duration: Infinity, ...stillMovedToastOptions })
   }, [])
   return (
     <DeckBrowser title="Recents" active="recents" view="grid" scope="recents">
