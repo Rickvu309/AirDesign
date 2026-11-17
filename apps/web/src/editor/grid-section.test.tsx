@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { afterEach, describe, expect, it, vi } from "vitest"
+import { GridSectionHead } from "./grid-section"
 import { EditorGrid } from "@/editor/editor-grid"
 import type { SlideStrip } from "@/editor/slide-sidebar"
 
@@ -60,4 +61,14 @@ describe("grid sections", () => {
     expect(html).toContain('data-slide-entry="4"')
     expect(html).toMatch(/data-slide-entry="4"[^>]*>|tabindex="0"[^>]*data-slide-entry="4"/)
   })
+})
+
+it("keeps overview section names on one line with a full accessible and pointer name", () => {
+  const html = renderToStaticMarkup(
+    <GridSectionHead marker name="Introduction" count={12} open onToggle={() => undefined} />,
+  )
+  expect(html).toContain('title="Introduction"')
+  expect(html).toContain('aria-label="Introduction')
+  expect(html).not.toContain("wrap-anywhere")
+  expect(html).toContain("truncate")
 })

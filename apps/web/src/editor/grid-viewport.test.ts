@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
+  fittedGridRows,
+  resizedGrid,
   zoomedGrid,
   fittedGridCards,
   pannedGrid,
@@ -165,4 +167,40 @@ it("shares the Grid range across gestures, fit and stored views", () => {
     expect(readGridViewport(JSON.stringify({ x: 0, y: 0, scale }))).toEqual({ x: 0, y: 0, scale })
   }
   expect(readGridViewport(JSON.stringify({ x: 0, y: 0, scale: 0.001 }))).toBeNull()
+})
+
+describe("scale-independent row fit", () => {
+  for (const count of [1, 7, 41, 50]) {
+    for (const width of [1470, 1280, 1110, 920]) {
+      for (const height of [759, 556]) {
+        for (const sections of [[], [0, 2, 5]]) {
+          it(`fits ${count} slides with ${sections.length} heads in ${width}x${height}`, () => {
+            const rows = Array.from({ length: Math.ceil(count / 4) }, (_, i) => ({
+              start: i * 4,
+              end: Math.min(count, i * 4 + 4),
+            }))
+            const geometry = { rows, sections: sections.filter((n) => n < count), width: 960, height: 720 }
+            const room = { width, height }
+            const fit = fittedGridRows(geometry, room)
+            const marked = rows.filter((row) => geometry.sections.some((n) => n >= row.start && n < row.end)).length
+            const worldHeight = rows.length * 744 + (rows.length - 1) * 410.4
+            expect(fit.y).toBeGreaterThanOrEqual(48 - 1e-8)
+            expect(fit.y + worldHeight * fit.scale + marked * 44).toBeLessThanOrEqual(height - 48 + 1e-8)
+            expect(fit.x).toBeGreaterThanOrEqual(48 - 1e-8)
+            expect(Array.from({ length: 6 }, () => fittedGridRows(geometry, room))).toEqual(Array(6).fill(fit))
+          })
+        }
+      }
+    }
+  }
+})
+
+it("pans only newly clipped previously visible slides by the minimum distance", () => {
+  const view = { x: 0, y: 0, scale: 0.5 }
+  const old = { left: 0, top: 96, width: 1470, height: 759 }
+  const next = { ...old, width: 1110 }
+  expect(resizedGrid(view, { left: 806, top: 132, width: 640, height: 360 }, old, next)).toEqual({ ...view, x: -336 })
+  expect(resizedGrid(view, { left: -1, top: 132, width: 640, height: 360 }, old, next)).toEqual(view)
+  expect(resizedGrid(view, { left: 100, top: 132, width: 640, height: 360 }, old, next)).toEqual(view)
+  expect(resizedGrid(view, { left: 806, top: 132, width: 640, height: 360 }, next, old)).toEqual(view)
 })

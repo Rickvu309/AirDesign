@@ -1,4 +1,7 @@
 import {
+  createElement,
+  memo,
+  type ReactNode,
   useLayoutEffect,
   useRef,
   useState,
@@ -14,6 +17,9 @@ import {
   wheeledGrid,
   arrowGrid,
   fittedGridCards,
+  fittedGridRows,
+  resizedGrid,
+  type GridGeometry,
   revealedGrid,
   gridScaleMoved,
   type GridViewport,
@@ -55,6 +61,7 @@ export function useGridViewport({
   fitting,
   onFit,
   selected,
+  geometry,
 }: {
   deck: string | null
   world: RefObject<HTMLDivElement | null>
@@ -67,7 +74,15 @@ export function useGridViewport({
   fitting: boolean
   initialFit: boolean
   selected: number
+  geometry: GridGeometry
 }) {
+  const focused = useRef(selected)
+  const previous = useRef(selected)
+  if (previous.current !== selected) focused.current = selected
+  previous.current = selected
+  const geometryRef = useRef(geometry)
+  geometryRef.current = geometry
+  const frame = useRef<number | null>(null)
   const viewport = useRef<HTMLDivElement>(null)
   const [restored] = useState(() => keptGridViewport(deck))
   const view = useRef<GridViewport>(restored ?? { x: 48, y: 24, scale })
@@ -112,6 +127,7 @@ export function useGridViewport({
     return () => {
       window.removeEventListener("pagehide", store)
       store()
+      if (frame.current !== null) cancelAnimationFrame(frame.current)
     }
   }, [])
 
@@ -187,6 +203,11 @@ export function useGridViewport({
       const box = host.getBoundingClientRect()
       paint(wheeledGrid(view.current, event, { x: event.clientX - box.left, y: event.clientY - box.top }))
       settle()
+      if (frame.current === null)
+        frame.current = requestAnimationFrame(() => {
+          frame.current = null
+          flushSync(() => zoom.current(view.current.scale * 100, false))
+        })
     }
     host.addEventListener("wheel", wheel, { passive: false })
     return () => host.removeEventListener("wheel", wheel)
@@ -195,8 +216,21 @@ export function useGridViewport({
   useLayoutEffect(() => {
     const host = viewport.current
     if (host === null) return
+    let before = host.getBoundingClientRect()
     const observer = new ResizeObserver(() => {
+      const after = host.getBoundingClientRect()
       if (fits.current) flushSync(() => fit())
+      else {
+        const card = world.current?.querySelector(`[data-slide-entry="${focused.current + 1}"]`)
+        if (card) {
+          const next = resizedGrid(view.current, card.getBoundingClientRect(), before, after)
+          if (next !== view.current) {
+            paint(next)
+            settle()
+          }
+        }
+      }
+      before = after
     })
     observer.observe(host)
     return () => observer.disconnect()
@@ -247,17 +281,23 @@ export function useGridViewport({
     const content = world.current
     if (!host || !content) return
     const wanted = indices === undefined ? null : new Set(indices.map((index) => String(index + 1)))
-    const cards = [...content.querySelectorAll("[data-grid-card]")]
-      .filter((card) => {
-        const entry = card.querySelector("[data-slide-entry]")?.getAttribute("data-slide-entry")
-        return wanted === null || (entry !== null && entry !== undefined && wanted.has(entry))
-      })
-      .map((card) => card.getBoundingClientRect())
-    if (wanted === null)
-      cards.push(...[...content.querySelectorAll("[data-section-head]")].map((head) => head.getBoundingClientRect()))
+    const cards =
+      wanted === null
+        ? []
+        : [...content.querySelectorAll("[data-grid-card]")]
+            .filter((card) => {
+              const entry = card.querySelector("[data-slide-entry]")?.getAttribute("data-slide-entry")
+              return entry !== null && entry !== undefined && wanted.has(entry)
+            })
+            .map((card) => card.getBoundingClientRect())
     if (wanted !== null && cards.length === 0) return
-    const next = fittedGridCards(view.current, cards, host.getBoundingClientRect())
+    const next =
+      wanted === null
+        ? fittedGridRows(geometryRef.current, host.getBoundingClientRect())
+        : fittedGridCards(view.current, cards, host.getBoundingClientRect())
     paint(next)
+    if (frame.current !== null) cancelAnimationFrame(frame.current)
+    frame.current = null
     stopTimer()
     dirty.current = false
     if (wanted === null) {
@@ -298,8 +338,41 @@ export function useGridViewport({
       onPointerCancel: release,
       onLostPointerCapture: release,
       onFocusCapture: (event: FocusEvent<HTMLDivElement>) => {
-        if (event.target.matches("[data-slide-entry]")) reveal(event.target)
+        if (event.target.matches("[data-slide-entry]")) {
+          focused.current = Number(event.target.getAttribute("data-slide-entry")) - 1
+          reveal(event.target)
+        }
       },
     },
   }
+}
+
+const GridThumbnailPaint = memo(function GridThumbnailPaint({
+  paint,
+  index,
+  width,
+}: {
+  paint: (index: number, width: number) => ReactNode
+  index: number
+  width: number
+}) {
+  return paint(index, width)
+})
+
+export function GridThumbnail({
+  paint,
+  index,
+  width,
+  scale,
+}: {
+  paint: (index: number, width: number) => ReactNode
+  index: number
+  width: number
+  scale: number
+}) {
+  return createElement(
+    "div",
+    { style: { width, transform: `scale(${scale})`, transformOrigin: "0 0" } },
+    createElement(GridThumbnailPaint, { paint, index, width }),
+  )
 }

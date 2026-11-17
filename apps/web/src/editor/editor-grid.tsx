@@ -15,7 +15,7 @@ import { GridDragGhost } from "@/editor/grid-drag-ghost"
 import { dragMoves, landing } from "@/editor/grid-drop"
 import { gridLayout, keptGridViewport, useKeptGridZoom } from "@/editor/grid-zoom"
 import { gridOpened, gridPick, gridRinged, gridStep } from "@/editor/grid-interaction"
-import { useGridViewport } from "@/editor/use-grid-viewport"
+import { GridThumbnail, useGridViewport } from "@/editor/use-grid-viewport"
 import { useGridEditing } from "@/editor/use-grid-editing"
 import type { SaveStatus } from "@/editor/use-deck-status"
 import { focusMove, gridCommand, type GridCommand } from "@/editor/editor-grid-keys"
@@ -88,6 +88,12 @@ export function EditorGrid({
   const fit = gridLayout(100, size ?? wideSlide, strip.count)
   const width = fit.width
   const viewport = useGridViewport({
+    geometry: {
+      rows: gridRows(strip),
+      sections: (strip.sections ?? []).map((section) => section.start),
+      width,
+      height: gridThumbHeight(width, strip.thumbHeight),
+    },
     deck: id,
     world: list,
     scale: percent / 100,
@@ -309,7 +315,9 @@ export function EditorGrid({
       width={width}
       height={height}
       shift={drag.shift(index)}
-      thumb={(width) => strip.thumb(index, width)}
+      thumb={(screenWidth) => (
+        <GridThumbnail paint={strip.thumb} index={index} width={width} scale={screenWidth / width} />
+      )}
       slide={slide}
       onPress={(event) => {
         drag.grab(index, event)
