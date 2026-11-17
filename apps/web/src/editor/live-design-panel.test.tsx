@@ -12,6 +12,7 @@ import {
 } from "@airdesign/document"
 import { readParts, readSlides } from "@airdesign/pptx"
 import { act, createElement } from "react"
+import { designCopy } from "@/copy/design-copy"
 import { pictureCopy } from "@/copy/picture-copy"
 import { toast } from "@/components/ui/toast"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
@@ -218,12 +219,17 @@ it("shows a slide's background and theme once each, with no section or button th
   const panel = slide.host.querySelector("[data-design-panel]")
   const text = panel?.textContent ?? ""
   expect(text).toContain("Background")
-  expect(text).toContain("Theme")
-  expect(text).not.toContain("Template")
+  expect(text).toContain(designCopy.templateStyle)
+  expect(panel?.querySelector("[data-design-theme]")).toBeNull()
+  const card = panel?.querySelector<HTMLButtonElement>("[data-template-style]")
+  expect(card?.getAttribute("aria-expanded")).toBe("false")
+  await act(async () => card?.click())
+  expect(panel?.textContent).toContain(designCopy.deckThemeScope)
+  expect(card?.getAttribute("aria-expanded")).toBe("true")
   expect(text).not.toContain("not available")
   expect(panel?.querySelectorAll("button:disabled")).toHaveLength(0)
   expect(panel?.querySelectorAll("button[aria-label^='Background color']")).toHaveLength(1)
-  for (const name of ["Dark 1", "Accent 1", "Accent 6"]) expect(text.split(name)).toHaveLength(2)
+  for (const name of ["Dark 1", "Accent 1", "Accent 6"]) expect((panel?.textContent ?? "").split(name)).toHaveLength(2)
   await slide.close()
 }, 20_000)
 

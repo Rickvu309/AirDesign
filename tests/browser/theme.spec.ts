@@ -15,6 +15,7 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 async function themePanel(page: Page): Promise<Locator> {
   const design = page.getByRole("button", { name: "Design", exact: true })
   if ((await design.getAttribute("aria-pressed")) !== "true") await design.click()
+  await page.locator("[data-template-style]").click()
   const theme = page.locator("[data-design-theme]")
   await expect(theme).toBeVisible()
   return theme
@@ -87,7 +88,9 @@ test("a person changes accent 1 and the heading font of a deck with two themes, 
   for (const part of themes) {
     const xml = saved.get(part)?.toString("utf8") ?? ""
     expect(xml).toContain('<a:accent1><a:srgbClr val="C00000"/></a:accent1>')
-    expect(xml).toContain('<a:majorFont><a:latin typeface="Georgia"/>')
+    const latin = /<a:majorFont>(<a:latin[^>]*>)/.exec(original.get(part)?.toString("utf8") ?? "")?.[1]
+    expect(latin).toBeDefined()
+    expect(xml).toContain(latin?.replace(/typeface="[^"]*"/, 'typeface="Georgia"') ?? "missing Latin font")
   }
   await copyFile(file, judged)
 

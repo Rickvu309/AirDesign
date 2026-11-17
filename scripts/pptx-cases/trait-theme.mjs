@@ -4,7 +4,7 @@ const original = "doe-heat-pumps.pptx"
 const exported = "exported-theme.pptx"
 const themes = ["ppt/theme/theme1.xml", "ppt/theme/theme2.xml"]
 const accent = '<a:accent1><a:srgbClr val="C00000"/></a:accent1>'
-const heading = '<a:majorFont><a:latin typeface="Georgia"/>'
+const heading = '<a:majorFont><a:latin typeface="Georgia" panose="020F0302020204030204"/>'
 
 export default {
   specs: ["tests/browser/theme.spec.ts"],

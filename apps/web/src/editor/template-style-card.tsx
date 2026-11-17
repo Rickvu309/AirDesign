@@ -1,0 +1,53 @@
+import type { TemplateStyle } from "@airdesign/pptx"
+import { designCopy } from "@/copy/design-copy"
+
+export function TemplateStyleCard({
+  style,
+  open,
+  onOpen,
+}: {
+  style: TemplateStyle
+  open: boolean
+  onOpen: () => void
+}) {
+  const { name, major, minor, swatches } = style
+  const fonts =
+    major && minor
+      ? major === minor
+        ? major
+        : designCopy.themeFonts(major, minor)
+      : major
+        ? designCopy.headingFont(major)
+        : minor
+          ? designCopy.bodyFont(minor)
+          : designCopy.themeFontsMissing
+  const bars = ["lt1", "dk1", "accent1"].map((slot) => swatches.find(({ scheme }) => scheme === slot))
+  return (
+    <button
+      type="button"
+      data-template-style
+      aria-label={designCopy.editDeckTheme}
+      aria-expanded={open}
+      onClick={onOpen}
+      className="flex w-full min-w-0 items-center gap-2 rounded border border-line p-2 text-left hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+    >
+      <span aria-hidden="true" className="flex h-8 w-8 shrink-0 overflow-hidden rounded-sm border border-line">
+        {bars.map((bar, index) => (
+          <span
+            key={index}
+            className="flex-1 bg-muted"
+            style={bar === undefined ? undefined : { backgroundColor: bar.css }}
+          />
+        ))}
+      </span>
+      <span className="flex min-w-0 flex-col text-[length:var(--type-caption)]">
+        <span className="truncate font-medium" title={name ?? designCopy.currentTheme}>
+          {name ?? designCopy.currentTheme}
+        </span>
+        <span className="truncate" title={fonts}>
+          {fonts}
+        </span>
+      </span>
+    </button>
+  )
+}
