@@ -35,13 +35,13 @@ it("formats created dates", () => {
 })
 
 it.each([
-  ["2026-10-12T12:00:00Z", "Oct 12, 2026"],
-  ["2026-10-11T12:00:00Z", "Oct 11, 2026"],
-  ["2026-08-11T12:00:00Z", "Aug 11, 2026"],
+  ["2026-10-12T12:00:00Z", "Oct 12"],
+  ["2026-10-11T12:00:00Z", "Oct 11"],
+  ["2026-08-11T12:00:00Z", "Aug 11"],
   ["2025-11-11T12:00:00Z", "Nov 11, 2025"],
   ["2024-11-11T12:00:00Z", "Nov 11, 2024"],
 ])("shows an absolute date for the older edit %s", (iso, date) => {
-  expect(deckTime(iso, now)).toMatchObject({ row: date, card: `Edited on ${date}` })
+  expect(deckTime(iso, now)).toMatchObject({ row: date, card: `Edited on ${date}`, created: date })
 })
 
 it.each([
