@@ -58,6 +58,20 @@ expectRejects(
   "10 MB is limits.media",
 )
 expectRejects(
+  "a compact megabyte limit fails",
+  source,
+  `export const big = "Pictures up to 10MB."\n`,
+  rule,
+  "10MB is limits.media",
+)
+expectRejects(
+  "a limit in kilobytes fails",
+  source,
+  `export const long = "Text must fit within 8 KB."\n`,
+  rule,
+  "8 KB is limits.valueBytes or limits.notify",
+)
+expectRejects(
   "a copy file outside the copy folder fails",
   "apps/web/src/connect/connect-copy.ts",
   `export const big = "Up to 100 rows."\n`,
