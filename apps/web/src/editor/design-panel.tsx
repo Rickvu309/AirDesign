@@ -184,26 +184,30 @@ export function SectionStrips({
   palette: Palette
   onChange: (control: PanelControl, value: unknown) => void
 }) {
-  return strips.map((strip) => (
-    <div
-      key={strip.map((control) => control.field).join(" ")}
-      className="grid items-start gap-2"
-      style={{
-        gridTemplateColumns: strip.every((control) => control.kind === "action")
-          ? strip.map((control) => (control.field === "distribute" ? "24px" : "minmax(0, 1fr)")).join(" ")
-          : `repeat(${strip.length}, minmax(0, 1fr))`,
-      }}
-    >
-      {strip.map((control) => (
-        <ControlView
-          key={control.field}
-          control={control}
-          palette={palette}
-          onChange={(value) => onChange(control, value)}
-        />
+  return (
+    <div className="flex flex-col gap-2">
+      {strips.map((strip) => (
+        <div
+          key={strip.map((control) => control.field).join(" ")}
+          className="grid items-start gap-2"
+          style={{
+            gridTemplateColumns: strip.every((control) => control.kind === "action")
+              ? strip.map((control) => (control.field === "distribute" ? "24px" : "minmax(0, 1fr)")).join(" ")
+              : `repeat(${strip.length}, minmax(0, 1fr))`,
+          }}
+        >
+          {strip.map((control) => (
+            <ControlView
+              key={control.field}
+              control={control}
+              palette={palette}
+              onChange={(value) => onChange(control, value)}
+            />
+          ))}
+        </div>
       ))}
     </div>
-  ))
+  )
 }
 
 function panelTitle({ kind, nodes, sections }: PanelModel): string {
