@@ -37,6 +37,9 @@ test("an edit reads Saving while its commit waits and Saved once it lands on the
   await forward(page, stack)
   const deck = await openClean(page)
   await expect(saveStatus(page)).toHaveText(saved)
+  const statusBox = await saveStatus(page).boundingBox()
+  expect(statusBox?.width).toBeLessThanOrEqual(1)
+  expect(statusBox?.height).toBeLessThanOrEqual(1)
   const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
   const before = await revision()
   let held = 0
