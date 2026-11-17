@@ -1,3 +1,4 @@
+import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { expect, test, type Locator, type Page } from "@playwright/test"
@@ -27,7 +28,7 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
   await expect(panel.getByRole("heading")).toHaveText([
     "Text",
     "Fill",
-    "Opacity",
+    opacityCopy.label,
     boxCopy.section,
     "Line",
     "Effects",
@@ -62,7 +63,7 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
   await expect(shape).toContainText(designCopy.panels.shape)
   await expect(shape.getByRole("heading")).toHaveText([
     "Fill",
-    "Opacity",
+    opacityCopy.label,
     designCopy.border,
     designCopy.shadow,
     "Shape type",
@@ -84,4 +85,16 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
   const again = await designing(page, shapeAt(page, "2"))
   await expect(fold(again, "Effects")).toHaveAttribute("aria-expanded", "true")
   await expect(fold(again, boxCopy.section)).toHaveAttribute("aria-expanded", "true")
+})
+
+test("a connector keeps the extra Opacity control in a closed section", async ({ page }) => {
+  await openDeck(page, "shapes-added.pptx")
+  await page.getByRole("button", { name: "Design", exact: true }).click()
+  const box = await shapeAt(page, "6").boundingBox()
+  if (box === null) throw new Error("connector")
+  await page.mouse.click(box.x + box.width / 2, box.y)
+  const panel = page.locator("[data-design-element]")
+  await expect(fold(panel, opacityCopy.label)).toHaveAttribute("aria-expanded", "false")
+  await fold(panel, opacityCopy.label).click()
+  await expect(panel.getByRole("textbox", { name: opacityCopy.label, exact: true })).toBeVisible()
 })
