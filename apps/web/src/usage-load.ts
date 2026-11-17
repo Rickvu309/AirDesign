@@ -27,33 +27,48 @@ export async function loadUsage(send: typeof fetch = fetch): Promise<UsageLoad> 
   }
 }
 
-type Fetched = { readonly usage: WeekUsage; readonly after: WeekUsage | null; readonly available: boolean }
+type Fetched = { readonly loaded: UsageLoad; readonly after: WeekUsage | null }
 
 export function useWeekUsage(
   fromTurn: WeekUsage | null,
+  online: boolean,
   load: () => Promise<UsageLoad> = loadUsage,
-): { readonly usage: WeekUsage | null; readonly available: boolean; readonly refresh: () => void } {
+): {
+  readonly usage: WeekUsage | null
+  readonly available: boolean
+  readonly loaded: UsageLoad | undefined
+  readonly refresh: () => Promise<UsageLoad>
+} {
   const [fetched, setFetched] = useState<Fetched | null>(null)
   const mounted = useRef(true)
   const turn = useRef(fromTurn)
+  const request = useRef(0)
   const keep = useCallback(
-    (after: WeekUsage | null) =>
-      void load().then((loaded) => {
-        if (mounted.current && loaded.kind === "usage")
-          setFetched({ usage: loaded.usage, after, available: loaded.available })
-      }),
+    async (after: WeekUsage | null) => {
+      const current = ++request.current
+      const loaded = await load()
+      if (mounted.current && request.current === current) setFetched({ loaded, after })
+      return loaded
+    },
     [load],
   )
   useEffect(() => {
     mounted.current = true
-    keep(null)
+    if (online) void keep(turn.current)
     return () => {
       mounted.current = false
     }
-  }, [keep])
+  }, [keep, online])
   useEffect(() => {
     turn.current = fromTurn
   }, [fromTurn])
-  const usage = fetched !== null && fetched.after === fromTurn ? fetched.usage : (fromTurn ?? fetched?.usage ?? null)
-  return { usage, available: fetched?.available ?? true, refresh: () => keep(turn.current) }
+  const loaded = fetched?.loaded
+  const reading = loaded?.kind === "usage" ? loaded.usage : null
+  const usage = fetched?.after === fromTurn ? (reading ?? fromTurn) : (fromTurn ?? reading)
+  return {
+    usage,
+    available: loaded?.kind === "usage" ? loaded.available : true,
+    loaded,
+    refresh: () => keep(turn.current),
+  }
 }

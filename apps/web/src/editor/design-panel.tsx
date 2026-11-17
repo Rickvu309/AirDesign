@@ -29,10 +29,11 @@ export function DesignPanel() {
   )
 }
 
-export function DesignHead({ children }: { children: ReactNode }) {
+export function DesignHead({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex h-9 shrink-0 items-center border-b border-line px-4">
       <span className="text-[length:var(--type-caption)] font-medium text-foreground">{children}</span>
+      {action == null ? null : <span className="ml-auto flex shrink-0 items-center">{action}</span>}
     </div>
   )
 }
@@ -216,10 +217,12 @@ export function ElementDesign({
   palette,
   onChange,
   picture = null,
+  headAction,
   children = null,
 }: {
   model: PanelModel
   picture?: ReactNode
+  headAction?: ReactNode
   children?: ReactNode
   palette: Palette
   onChange: (control: PanelControl, value: unknown) => void
@@ -235,7 +238,9 @@ export function ElementDesign({
       data-keeps-selection
       tabIndex={-1}
     >
-      {model.sections.every((section) => section.label !== null) ? <DesignHead>{panelTitle(model)}</DesignHead> : null}
+      {model.sections.every((section) => section.label !== null) ? (
+        <DesignHead action={headAction}>{panelTitle(model)}</DesignHead>
+      ) : null}
       {model.sections.length === 0 ? (
         <p className="px-4 py-4 text-[length:var(--type-caption)] text-quiet">{designCopy.nothing}</p>
       ) : null}
@@ -252,7 +257,7 @@ export function ElementDesign({
               <DesignSection title={null}>
                 <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
               </DesignSection>
-              <DesignHead>{panelTitle(model)}</DesignHead>
+              <DesignHead action={headAction}>{panelTitle(model)}</DesignHead>
             </div>
           )
         const [strip, ...more] = section.strips

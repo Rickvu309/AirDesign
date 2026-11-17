@@ -101,10 +101,14 @@ export function ThinDeck({ id }: { id: string }) {
           panel={panel}
           onPanel={setPanel}
           side={
-            <>
-              {panel === "design" ? <LiveDesignPanel deck={deck} /> : null}
-              <AiraPanel key={id} deck={id} hidden={panel !== "agent"} />
-            </>
+            <AiraPanel
+              key={id}
+              deck={id}
+              hidden={panel !== "agent"}
+              online={deck.online}
+              showAgent={() => setPanel("agent")}
+              design={(toneFor) => (panel === "design" ? <LiveDesignPanel deck={deck} toneFor={toneFor} /> : null)}
+            />
           }
           slideLabel={String(shown.current + 1)}
           title={deck.title}

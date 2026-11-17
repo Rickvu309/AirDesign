@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { connect } from "@airdesign/live"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger } from "@/components/ui/popover"
@@ -19,19 +19,37 @@ import { deviceChats, useChatHistory, type ChatStore } from "@/aira-history-hook
 import { AiraHistoryMenu } from "@/aira-history-menu"
 import { signInAddress } from "@/thin-notice"
 import { server } from "@/commit-edit"
-import { useWeekUsage } from "@/usage-load"
+import { useWeekUsage, type UsageLoad } from "@/usage-load"
+import { requestedTone, tonePrompt, type Tone, type ToneScope } from "@/aira-prompts"
+import { adjustToneCopy } from "@/copy/adjust-tone-copy"
+import type { ToneControlFor } from "@/editor/adjust-tone"
+
+function usageBlock(loaded: UsageLoad | undefined) {
+  if (loaded?.kind === "signed-out") return airaCopy.signIn
+  if (loaded?.kind === "unavailable") return airaCopy.failedNothing
+  if (loaded?.kind !== "usage") return undefined
+  if (!loaded.available) return airaCopy.unavailable
+  if (loaded.usage.used >= loaded.usage.allowed) return airaBackOn(resetsWhen(loaded.usage.resets))
+  return undefined
+}
 
 const headControl = "outline-hidden active:translate-y-0"
 
 export function AiraPanel({
   deck,
   hidden,
+  design,
+  showAgent,
+  online = true,
   now = Date.now,
   mint = () => crypto.randomUUID(),
   store = deviceChats,
 }: {
   deck: string
   hidden: boolean
+  design?: (toneFor: ToneControlFor) => ReactNode
+  showAgent?: () => void
+  online?: boolean
   now?: () => number
   mint?: () => string
   store?: ChatStore
@@ -41,6 +59,8 @@ export function AiraPanel({
   const [queued, setQueued] = useState<readonly string[]>([])
   const [undoing, setUndoing] = useState(false)
   const [settling, setSettling] = useState(false)
+  const [checkingTone, setCheckingTone] = useState(false)
+  const checking = useRef<AbortController | null>(null)
   const latest = useRef(chat)
   const waiting = useRef<string[]>([])
   const stopper = useRef<AbortController | null>(null)
@@ -51,8 +71,8 @@ export function AiraPanel({
   const returnToComposer = useRef(false)
   const last = chat.exchanges.at(-1)
   const working = last?.end === "working"
-  const busy = working || settling || undoing
-  const { usage, available, refresh: refreshUsage } = useWeekUsage(chat.usage)
+  const busy = working || settling || undoing || checkingTone
+  const { usage, available, loaded, refresh: refreshUsage } = useWeekUsage(chat.usage, online)
   const limit = last?.end === "out-of-usage" && usage !== null ? airaBackOn(resetsWhen(usage.resets)) : undefined
   const notOffered = !available || last?.end === "country"
   const blocked = notOffered ? airaCopy.unavailable : last?.end === "malformed" ? airaCopy.malformedBlocked : limit
@@ -71,7 +91,13 @@ export function AiraPanel({
 
   const malformed = last?.end === "malformed"
 
-  useEffect(() => () => stopper.current?.abort(), [])
+  useEffect(
+    () => () => {
+      checking.current?.abort()
+      stopper.current?.abort()
+    },
+    [],
+  )
 
   useEffect(() => {
     function moved(event: FocusEvent) {
@@ -144,7 +170,7 @@ export function AiraPanel({
 
   function ask(said: string) {
     const text = said.trim()
-    if (text === "" || blocked !== undefined || undoing) return false
+    if (text === "" || blocked !== undefined || undoing || checking.current !== null) return false
     toLatest()
     if (!working) {
       void run((chat, options) => askAira(chat, text, options))
@@ -156,7 +182,7 @@ export function AiraPanel({
   }
 
   function retry() {
-    if (working || undoing || blocked !== undefined) return
+    if (busy || blocked !== undefined) return
     toLatest()
     void run(retryAira)
   }
@@ -165,13 +191,65 @@ export function AiraPanel({
     if (ask(draft)) setDraft("")
   }
 
-  async function undo(exchange: number) {
+  async function undo(exchange: number, focus = true) {
     setUndoing(true)
     const next = await undoExchange(latest.current, exchange)
     setUndoing(false)
-    if (next === undefined) return
-    returnToComposer.current = document.activeElement === document.body
+    if (next === undefined) return false
+    returnToComposer.current = focus && document.activeElement === document.body
     shown(next)
+    return next.exchanges[exchange]?.end === "undone"
+  }
+
+  const toneBlocked =
+    (!online ? productCopy.editorOffline : undefined) ??
+    (last?.end === "off" ? airaCopy.offTitle : undefined) ??
+    blocked ??
+    usageBlock(loaded) ??
+    (usage !== null && usage.used >= usage.allowed ? airaBackOn(resetsWhen(usage.resets)) : undefined)
+
+  function toneFor(scope: ToneScope) {
+    const exchange = chat.exchanges.findLastIndex(({ asked }) => requestedTone(scope, asked) !== undefined)
+    const previous = chat.exchanges[exchange]
+    const active = previous !== undefined && previous.end !== "undone"
+    const choice = active ? requestedTone(scope, previous.asked) : undefined
+    const resettable = active && previous.runs.length > 0 && !previous.undoRefused
+
+    const connected = () => navigator.onLine !== false
+    async function adjust(tone: Tone | undefined) {
+      if (!connected() || toneBlocked !== undefined || busy || checking.current !== null) return
+      if (previous?.undoRefused === true || (tone === undefined && !resettable)) return
+      const controller = new AbortController()
+      checking.current = controller
+      setCheckingTone(true)
+      try {
+        const current = await refreshUsage()
+        if (controller.signal.aborted || !connected() || usageBlock(current) !== undefined) return
+        if (resettable && !(await undo(exchange, false))) return
+        if (tone !== undefined && !controller.signal.aborted && connected()) {
+          returnToComposer.current = true
+          showAgent?.()
+          toLatest()
+          void run((chat, options) => askAira(chat, tonePrompt(scope, tone), options))
+        }
+      } finally {
+        checking.current = null
+        if (!controller.signal.aborted) setCheckingTone(false)
+      }
+    }
+
+    return {
+      blocked: toneBlocked ?? (scope.text.length === 0 ? adjustToneCopy.nothing : undefined),
+      notice: previous?.undoRefused ? airaCopy.undoRefused : previous?.undoFailed ? airaCopy.undoFailed : undefined,
+      busy: busy || loaded === undefined || previous?.undoRefused === true,
+      choice,
+      resettable,
+      refresh: () => {
+        if (online) void refreshUsage()
+      },
+      choose: (tone: Tone) => void adjust(tone),
+      reset: () => void adjust(undefined),
+    }
   }
 
   function newChat() {
@@ -196,7 +274,7 @@ export function AiraPanel({
     shown({ ...picked, usage: latest.current.usage })
   }
 
-  return (
+  const agent = (
     <div ref={panel} className="relative flex min-h-0 flex-1 flex-col" hidden={hidden} data-aira-panel>
       <div data-slot="conversation-head" className="flex h-11 shrink-0 items-center justify-between gap-2 pr-3 pl-3">
         <span className="flex min-w-0 flex-1">
@@ -299,5 +377,11 @@ export function AiraPanel({
         onStop={() => stopper.current?.abort()}
       />
     </div>
+  )
+  return (
+    <>
+      {design?.(toneFor)}
+      {agent}
+    </>
   )
 }

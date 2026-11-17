@@ -68,6 +68,8 @@ import { LiveSelectionColors } from "./live-selection-colors"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import type { UndoList } from "@/editor/use-undo"
 import type { UndoEntry } from "@/undo-list"
+import { AdjustTone, type ToneControlFor } from "@/editor/adjust-tone"
+import { toneScope } from "@/editor/tone-scope"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -243,7 +245,15 @@ export function usePalette(deck: DesigningDeck): Palette {
   return { theme, deck: colorsIn(display) }
 }
 
-function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementId }) {
+function LiveElementDesign({
+  deck,
+  node,
+  toneFor,
+}: {
+  deck: DesigningDeck
+  node: ElementId
+  toneFor?: ToneControlFor
+}) {
   const store = deck.shown.store.current
   useSyncExternalStore(store.elementSubscribe(node), () => store.getElement(node)?.text ?? null)
   useSyncExternalStore(store.boxSubscribe(node), () => store.getBox(node))
@@ -263,6 +273,9 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
     <ElementDesign
       picture={src === null ? null : <PicturePreview src={src} />}
       model={design.model}
+      headAction={
+        design.model.kind === "text" || design.model.kind === "group" ? toneHead(deck, [node], toneFor) : null
+      }
       palette={palette}
       onChange={(control, value) =>
         changeDesign(deck, () => rebasedChange(controlsOf(elementDesign(deck, node)?.model.sections), control, value))
@@ -300,7 +313,7 @@ function useElements(store: PaintStore, nodes: Several): void {
   useSyncExternalStore(subscribe, read, read)
 }
 
-function LiveManyDesign({ deck, nodes }: { deck: DesigningDeck; nodes: Several }) {
+function LiveManyDesign({ deck, nodes, toneFor }: { deck: DesigningDeck; nodes: Several; toneFor?: ToneControlFor }) {
   useElements(deck.shown.store.current, nodes)
   const palette = usePalette(deck)
   const model = manyDesign(deck, nodes)
@@ -308,6 +321,7 @@ function LiveManyDesign({ deck, nodes }: { deck: DesigningDeck; nodes: Several }
   return (
     <ElementDesign
       model={model}
+      headAction={toneHead(deck, nodes, toneFor)}
       palette={palette}
       onChange={(control, value) =>
         changeDesign(deck, () => rebasedChange(controlsOf(manyDesign(deck, nodes)?.sections), control, value))
@@ -318,17 +332,23 @@ function LiveManyDesign({ deck, nodes }: { deck: DesigningDeck; nodes: Several }
   )
 }
 
-export function LiveDesignPanel({ deck }: { deck: DesigningDeck }) {
+function toneHead(deck: DesigningDeck, selection: readonly ElementId[], toneFor?: ToneControlFor) {
+  if (toneFor === undefined) return null
+  const scope = toneScope(deck.shown, selection)
+  return scope === null ? null : <AdjustTone key={[scope.slide, ...selection].join(" ")} action={toneFor(scope)} />
+}
+
+export function LiveDesignPanel({ deck, toneFor }: { deck: DesigningDeck; toneFor?: ToneControlFor }) {
   const { shown, selection } = deck
   const elements = shown.store.current.slides()[shown.current]?.elements ?? []
   const [first, ...rest] = selection.ids.filter((id) => elements.includes(id))
-  if (first === undefined) return <LiveSlideDesign deck={deck} />
-  if (rest.length === 0) return <LiveElementDesign key={first} deck={deck} node={first} />
+  if (first === undefined) return <LiveSlideDesign deck={deck} toneFor={toneFor} />
+  if (rest.length === 0) return <LiveElementDesign key={first} deck={deck} node={first} toneFor={toneFor} />
   const nodes: Several = [first, ...rest]
-  return <LiveManyDesign key={nodes.join(" ")} deck={deck} nodes={nodes} />
+  return <LiveManyDesign key={nodes.join(" ")} deck={deck} nodes={nodes} toneFor={toneFor} />
 }
 
-function LiveSlideDesign({ deck }: { deck: DesigningDeck }) {
+function LiveSlideDesign({ deck, toneFor }: { deck: DesigningDeck; toneFor?: ToneControlFor }) {
   const { shown } = deck
   const parts = shown.displayParts.current
   const painted = shown.canvases.current(shown.current)?.background ?? null
@@ -337,6 +357,7 @@ function LiveSlideDesign({ deck }: { deck: DesigningDeck }) {
   return (
     <DesignView
       shown={view}
+      headAction={toneHead(deck, [], toneFor)}
       deck={colorsIn(parts)}
       onFill={(value) => changeDesign(deck, () => ({ target: { slide: view.slide }, fill: { value } }))}
     >
@@ -406,11 +427,13 @@ export function DesignView({
   shown,
   deck = [],
   onFill,
+  headAction,
   children = null,
 }: {
   shown: DesignShown
   deck?: readonly string[]
   onFill: (fill: FieldValue<"fill", "value">) => void
+  headAction?: ReactNode
   children?: ReactNode
 }) {
   const { background } = shown
@@ -440,7 +463,7 @@ export function DesignView({
   }
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto" data-design-panel>
-      <DesignHead>{designCopy.slide(shown.number)}</DesignHead>
+      <DesignHead action={headAction}>{designCopy.slide(shown.number)}</DesignHead>
       {children}
       <DesignSection title={designCopy.background} last={children === null}>
         <UnionControl
