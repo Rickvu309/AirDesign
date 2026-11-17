@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { colorCopy } from "@/copy/color-copy"
 import { ColorPicker } from "@/design/color-picker"
 import { ColorField, fieldLook } from "@/design/controls/color"
+import { cn } from "@/lib/class-names"
 import type { ControlProps } from "@/design/panel"
 
 const hexDigits = /^#?([0-9A-Fa-f]{6})$/
@@ -25,7 +26,7 @@ export function HexControl({ control, palette, onChange }: ControlProps) {
             variant="ghost"
             aria-label={control.label}
             title={shown === null ? control.label : `${control.label} ${colorCopy.hexName(shown)}`}
-            className={fieldLook}
+            className={cn(fieldLook, "gap-1 px-1")}
           />
         }
       >
