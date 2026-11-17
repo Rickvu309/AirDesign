@@ -120,3 +120,15 @@ it("shows the notes it is given while the field has the focus", () => {
   act(() => shown("Talk about savings"))
   expect(field(host).value).toBe("Talk about savings")
 })
+
+it("closes notes on Escape and returns focus without changing their text", () => {
+  const host = rendered("Keep this note")
+  act(() => expand(host)[0]?.click())
+  const escape = new window.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })
+  act(() => field(host).dispatchEvent(escape))
+  expect(host.querySelector("textarea")).toBeNull()
+  expect(window.document.activeElement).toBe(expand(host)[0])
+  expect(escape.defaultPrevented).toBe(true)
+  act(() => expand(host)[0]?.click())
+  expect(field(host).value).toBe("Keep this note")
+})

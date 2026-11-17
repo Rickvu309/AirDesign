@@ -1,3 +1,4 @@
+import { shortcutCopy } from "@/copy/shortcut-copy"
 const plural = new Intl.PluralRules("en")
 
 function slidesOf(count: number): string {
@@ -26,7 +27,7 @@ export const slideListCopy = {
   delete: "Delete",
   moveUp: "Move up",
   moveDown: "Move down",
-  duplicateKey: "Ctrl+D",
+  duplicateKey: shortcutCopy("D"),
   deleteKey: "Delete",
   moveUpKey: "Alt+Up",
   moveDownKey: "Alt+Down",

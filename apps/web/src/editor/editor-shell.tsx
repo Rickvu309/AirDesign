@@ -178,10 +178,13 @@ export function EditorShell({
             )}
           </div>
         </CanvasStage>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center pb-4">
+        <div
+          data-canvas-chrome
+          className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center pb-4"
+        >
           {notes === undefined ? null : (
             <>
-              <div style={{ width }}>
+              <div style={{ width, maxWidth: "calc(100% - 32px)" }}>
                 <NotesBar
                   text={run === "working" ? "" : notes}
                   {...(onNotes === undefined ? {} : { onEdit: onNotes })}

@@ -1,3 +1,4 @@
+import { shortcutCopy } from "@/copy/shortcut-copy"
 import type { StackMove } from "@airdesign/document"
 
 export const arrangeCopy = {
@@ -14,10 +15,10 @@ export const arrangeCopy = {
     back: "Sent to back",
   },
   shortcut: {
-    front: "Ctrl+Shift+]",
-    forward: "Ctrl+]",
-    backward: "Ctrl+[",
-    back: "Ctrl+Shift+[",
+    front: shortcutCopy("Shift+]"),
+    forward: shortcutCopy("]"),
+    backward: shortcutCopy("["),
+    back: shortcutCopy("Shift+["),
   },
 } as const satisfies {
   readonly label: Record<StackMove, string>
@@ -30,5 +31,5 @@ export const arrangeMoves = ["front", "forward", "backward", "back"] as const sa
 export const groupCopy = {
   label: { group: "Group", ungroup: "Ungroup" },
   said: { group: "Grouped", ungroup: "Ungrouped" },
-  shortcut: { group: "Ctrl+G", ungroup: "Ctrl+Shift+G" },
+  shortcut: { group: shortcutCopy("G"), ungroup: shortcutCopy("Shift+G") },
 } as const

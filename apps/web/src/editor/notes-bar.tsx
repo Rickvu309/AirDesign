@@ -1,3 +1,4 @@
+import { EditorIcon } from "@/editor/editor-icons"
 import { useEffect, useRef, useState } from "react"
 
 export function NotesBar({ text, onEdit }: { readonly text: string; readonly onEdit?: (text: string) => void }) {
@@ -26,33 +27,42 @@ export function NotesBar({ text, onEdit }: { readonly text: string; readonly onE
     setOpen(next)
   }
   return (
-    <div className="pointer-events-auto" data-notes-bar>
+    <div
+      className="pointer-events-auto"
+      data-notes-bar
+      onKeyDown={(event) => {
+        if (!open || event.key !== "Escape") return
+        event.preventDefault()
+        event.stopPropagation()
+        toggle(false)
+      }}
+    >
       {open ? (
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            className="mx-auto flex h-3 w-12 items-center"
-            aria-label="Collapse speaker notes"
-            aria-expanded
-            onClick={() => toggle(false)}
-          >
-            <span className="block h-1 w-12 rounded-full bg-[var(--dot)]" />
-          </button>
-          <div className="rounded-[var(--shape-card)] bg-line p-4" data-focus-ring>
+        <div className="rounded-[var(--shape-card)] bg-line p-4" data-focus-ring>
+          <div className="flex items-center justify-between gap-2">
             <label className="block text-[length:var(--type-dense)] text-quiet" htmlFor="speaker-notes">
               Speaker notes
             </label>
-            <textarea
-              ref={field}
-              id="speaker-notes"
-              className="mt-2 block h-24 w-full resize-y bg-transparent text-[length:var(--type-dense)] text-ink outline-none placeholder:text-quiet"
-              value={text}
-              readOnly={onEdit === undefined}
-              placeholder="Add speaker notes"
-              data-person-undo
-              onChange={(event) => onEdit?.(event.target.value)}
-            />
+            <button
+              type="button"
+              className="flex size-8 items-center justify-center rounded-[var(--shape-control)] text-quiet hover:bg-muted"
+              aria-label="Collapse speaker notes"
+              aria-expanded
+              onClick={() => toggle(false)}
+            >
+              <EditorIcon name="chev" size={16} />
+            </button>
           </div>
+          <textarea
+            ref={field}
+            id="speaker-notes"
+            className="mt-2 block h-24 w-full resize-y bg-transparent text-[length:var(--type-dense)] text-ink outline-none placeholder:text-quiet"
+            value={text}
+            readOnly={onEdit === undefined}
+            placeholder="Add speaker notes"
+            data-person-undo
+            onChange={(event) => onEdit?.(event.target.value)}
+          />
         </div>
       ) : (
         <button
