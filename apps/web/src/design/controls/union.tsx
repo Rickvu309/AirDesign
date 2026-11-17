@@ -82,7 +82,7 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
               title={Icon === undefined ? undefined : word}
               onClick={() => pick(name)}
               className={cn(
-                "h-5 min-w-0 flex-1 rounded-[4px] px-1 text-xs font-normal active:translate-y-0",
+                "h-5 min-w-0 flex-1 rounded-[var(--shape-segment)] px-1 text-xs font-normal active:translate-y-0",
                 pressed
                   ? cn(
                       "bg-white font-medium shadow-[0px_1px_2px_var(--black-10)] hover:bg-white",

@@ -375,4 +375,4 @@ _Avoid_: blank shape, missing text
 
 ### Border
 
-The Design panel’s none, solid, dashed and dotted line presets. Line keeps the exact settings.
+The Design panel’s none, solid, dashed and dotted presets. Line keeps exact settings.

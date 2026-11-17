@@ -30,9 +30,11 @@ test("two selected shapes share one panel that reads Mixed, a colour picked ther
   await expect(panel).toContainText(designCopy.elements(2))
   await expect(panel.getByRole("heading")).toHaveText([
     fillCopy.value,
-    shapeCopy.line,
     opacityCopy.label,
+    designCopy.border,
+    designCopy.shadow,
     boxCopy.section,
+    shapeCopy.line,
     effectsCopy.section,
   ])
   await unfold(panel, boxCopy.section)

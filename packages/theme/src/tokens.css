@@ -140,6 +140,8 @@
   --space-24: 24px;
   --space-32: 32px;
   --space-48: 48px;
+  --shape-segment: 4px;
+  --shape-swatch: 3px;
   --shape-control: 6px;
   --shape-card: 10px;
   --shape-dialog: 14px;

@@ -49,6 +49,7 @@ for (const name of [
   "shape-fill",
   "line-style",
   "shape-effects",
+  "appearance-presets",
   "shape-geometry",
   "opacity",
   "table-fill",

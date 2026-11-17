@@ -38,6 +38,8 @@ export function folds(): Folds {
 
 export function setFold(kind: PanelKind, section: SectionName, open: boolean): void {
   held = new Map(held).set(`${kind}.${section}`, open)
+  if (section === "geometry" && (kind === "text" || kind === "shape"))
+    held = new Map(held).set(`${kind === "text" ? "shape" : "text"}.geometry`, open)
   keep(held)
   for (const listener of listeners) listener()
 }

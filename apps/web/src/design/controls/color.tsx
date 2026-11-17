@@ -25,7 +25,7 @@ export function ColorField({
     <>
       <span
         className={cn(
-          "size-3.5 shrink-0 rounded-[3px]",
+          "size-3.5 shrink-0 rounded-[var(--shape-swatch)]",
           css === null || lightCss(css) ? "shadow-[0px_0px_0px_1px_var(--field-edge)]" : null,
         )}
         style={css === null ? undefined : { background: css }}
@@ -72,7 +72,14 @@ export function ColorControl({ control, palette, onChange }: ControlProps) {
         value={shown}
         palette={palette}
         onPick={(color) => onChange(picked(color))}
-        trigger={<Button type="button" variant="ghost" aria-labelledby={`${label} ${named}`} className={fieldLook} />}
+        trigger={
+          <Button
+            type="button"
+            variant="ghost"
+            aria-labelledby={`${label} ${named}`}
+            className={cn(fieldLook, control.trait === "theme" ? "gap-1 px-1" : null)}
+          />
+        }
       >
         <ColorField id={named} css={css} name={name} inherited={control.inherited} />
       </ColorPicker>

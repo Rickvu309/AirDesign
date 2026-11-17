@@ -86,7 +86,7 @@ export function appearanceSections(sections: readonly PanelSection[]): readonly 
       ...shadow,
       trait: "shadow",
       field: "shadow",
-      label: designCopy.shadow,
+      label: designCopy.shadowPreset,
       desc: { kind: "choice", options: ["none", "subtle", "medium", "strong"] },
       value: shadowValue(shadow.value),
       reset: null,
