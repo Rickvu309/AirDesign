@@ -1,10 +1,11 @@
+import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { boxTurnedExportName, boxTurnedXfrm } from "../../scripts/pptx-cases/box.mjs"
 import { tableResizedExportName } from "../../scripts/pptx-cases/trait-table.mjs"
-import { designing, openDeck, settled, storedRows } from "./design-panel"
+import { designing, unfold, openDeck, settled, storedRows } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { importTitleDeck } from "./new-deck"
 import { insertTable } from "./insert-table"
@@ -62,6 +63,7 @@ test("a turned shape resizes by its corner, keeps the opposite corner on screen 
   await rm(judged, { force: true })
   await openDeck(page, "clean.pptx")
   const panel = await designing(page, page.locator('[contenteditable="true"]'))
+  await unfold(panel, boxCopy.section)
   const rotation = panel.getByRole("textbox", { name: "Rotation", exact: true })
   await rotation.fill("30")
   await rotation.press("Enter")
@@ -98,6 +100,7 @@ test("a table resizes by its corner and by Width, scales its columns and rows, a
   await page.keyboard.press("Escape")
   await expect(table).toBeFocused()
   const panel = await designing(page, table)
+  await unfold(panel, boxCopy.section)
   const slide = await page.locator("[data-slide-paint]").boundingBox()
   if (slide === null) throw new Error("no slide")
   const emu = (pixels: number) => Math.round((pixels * slideWidth) / slide.width)

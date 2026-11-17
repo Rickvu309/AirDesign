@@ -70,7 +70,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await page.locator('[data-slide-paint] [data-canvas-table] [data-table-text="1.0"]').click()
   await page.keyboard.press("Escape")
   const panel = page.locator("[data-design-element]")
-  await panel.getByRole("textbox", { name: "Row 2, column 1" }).focus()
+  await panel.getByRole("button", { name: "Row 2, column 1" }).click()
   await panel.getByRole("group", { name: "Apply to", exact: true }).getByRole("button", { name: "Row" }).click()
   await panel.getByRole("group", { name: "Cell fill", exact: true }).getByRole("button", { name: "Color" }).click()
   await panel.getByRole("group", { name: "Color", exact: true }).first().getByRole("button").first().click()

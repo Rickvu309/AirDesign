@@ -22,10 +22,10 @@ import { opacitySection } from "./opacity-control"
 import { hidden, loneRows, panelKind, panelOrder, type PanelKind } from "./panel-order"
 import { alphaFieldOver, atShownAlpha } from "./shown-alpha"
 import { traitControls } from "./trait-controls"
-import { arrange, resolveControl, type ControlKind, type ControlLook } from "./panel-arrangement"
+import { arrange, canvasControl, resolveControl, type ControlKind, type ControlLook } from "./panel-arrangement"
 export type { ControlKind } from "./panel-arrangement"
 
-export type SectionName = TraitName | "opacity"
+export type SectionName = TraitName | "opacity" | "alignment"
 
 export type PanelControl = {
   readonly trait: SectionName
@@ -71,7 +71,7 @@ export function partControl(control: PanelControl, name: string, desc: Desc, val
 
 export type PanelSection = {
   readonly trait: SectionName
-  readonly label: string
+  readonly label: string | null
   readonly open: boolean
   readonly strips: readonly (readonly PanelControl[])[]
 }
@@ -196,7 +196,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     const labels = traitControls[trait] as Labels
     const controls = wireFields(trait).flatMap(([field, kind]): PanelControl[] => {
       const key = writtenField(trait, field)
-      if (!taken.includes(key) || keptRefuses(view.kept, trait, field)) return []
+      if (canvasControl(trait, field) || !taken.includes(key) || keptRefuses(view.kept, trait, field)) return []
       const copy = labels.fields[field]
       const own = shown.fields?.[key]?.own === true
       const reset = own && inheritable(trait, field) ? (copy?.reset ?? null) : null
@@ -232,13 +232,26 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       ? []
       : [{ trait, label: labels.section ?? "", open: true, strips: arrange(trait, visible) }]
   })
+  const alignment = sections.flatMap((section) =>
+    section.trait === "box"
+      ? section.strips.flat().filter((control) => control.field === "align" || control.field === "distribute")
+      : [],
+  )
+  const content = sections.flatMap((section) => {
+    const strips = section.strips
+      .map((strip) => strip.filter((control) => !alignment.includes(control)))
+      .filter((strip) => strip.length > 0)
+    return strips.length === 0 ? [] : [{ ...section, strips }]
+  })
+  const alignSection: PanelSection[] =
+    alignment.length === 0 ? [] : [{ trait: "alignment", label: null, open: true, strips: [alignment] }]
   const opacity = opacitySection(view, shown)
   const kind = panelKind(view, shown)
   return {
     node: view.node,
     nodes: [view.node],
     kind,
-    sections: ordered(kind, [...sections, ...(opacity === null ? [] : [opacity])], shown),
+    sections: ordered(kind, [...alignSection, ...content, ...(opacity === null ? [] : [opacity])], shown),
   }
 }
 

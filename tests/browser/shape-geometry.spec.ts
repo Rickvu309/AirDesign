@@ -1,9 +1,10 @@
+import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { actualSize } from "./paint-scale"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { openDeck, placed, settled } from "./design-panel"
+import { openDeck, placed, settled, unfold } from "./design-panel"
 import { partsOf, shapeAt } from "./shape-fills"
 import { outline, pickShape, shapePanel, turned } from "./shape-turns"
 
@@ -22,6 +23,7 @@ test("a person rotates, flips, reshapes, adjusts and centres a shape, and it sur
   await actualSize(page)
   const shape = shapeAt(page, "2")
   const panel = await shapePanel(page, shape)
+  await unfold(panel, boxCopy.section)
   const rotation = panel.getByRole("textbox", { name: "Rotation", exact: true })
   await expect(rotation).toHaveValue("0")
   await rotation.fill("45")

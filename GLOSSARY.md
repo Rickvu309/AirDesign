@@ -167,7 +167,7 @@ The agent built into AirDesign. It reads a deck, changes what a person can chang
 _Avoid_: the assistant, the AI
 
 **design panel**:
-The panel beside a slide that sets the selection's design: position, size, rotation, flips, alignment, shape, opacity, fill, line, effects, text, pictures, crop, connector ends, names and alt text. With no selection it sets the slide background and deck theme. Several selected elements share the fields they take; a change sets them all in one undo step. Its title shows their count.
+The panel beside a slide that sets the selection's appearance and geometry. With no selection it sets the slide background and deck theme. Shared fields set every selected element in one undo step; the title shows their count.
 _Avoid_: inspector, properties, format pane
 
 **Mixed**:
@@ -286,8 +286,11 @@ _Avoid_: row (a row is a stored edit), input, widget
 Controls that share one horizontal line of a panel section, such as X and Y, or bold, italic and underline.
 _Avoid_: line (a line is a trait), row, group
 
+**alignment**:
+The untitled section above the design panel title, holding align and distribute.
+
 **panel section**:
-The titled part of the design panel that holds the controls of one trait, or Opacity.
+A part of the design panel that holds the controls of one trait, Opacity or Alignment. A section may have no title.
 _Avoid_: section (a section is a group of slides)
 
 **row**:

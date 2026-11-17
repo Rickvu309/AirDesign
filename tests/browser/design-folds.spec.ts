@@ -1,3 +1,5 @@
+import { designCopy } from "../../apps/web/src/copy/design-copy"
+import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { designing, openDeck, settled } from "./design-panel"
 import { shapeAt } from "./shape-fills"
@@ -20,15 +22,16 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
 }) => {
   await openDeck(page, "clean.pptx")
   const panel = await designing(page, shapeAt(page, "2"))
-  await expect(panel).toContainText(/^Text box/)
+  await expect(panel).toContainText(designCopy.panels.text)
+  await expect(panel.locator("section").first().getByRole("group", { name: boxCopy.align, exact: true })).toBeVisible()
   await expect(panel.getByRole("heading")).toHaveText([
     "Text",
-    "Position and size",
     "Fill",
     "Opacity",
+    boxCopy.section,
     "Line",
     "Effects",
-    "Text box",
+    designCopy.panels.text,
     "Shape type",
     "Name and alt text",
   ])
@@ -49,33 +52,34 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
   await page.keyboard.press("Space")
   await expect(fold(panel, "Effects")).toHaveAttribute("aria-expanded", "false")
   await page.keyboard.press("Space")
-  await fold(panel, "Position and size").click()
-  await expect(fold(panel, "Position and size")).toHaveAttribute("aria-expanded", "false")
+  await expect(fold(panel, boxCopy.section)).toHaveAttribute("aria-expanded", "false")
+  await fold(panel, boxCopy.section).click()
+  await expect(fold(panel, boxCopy.section)).toHaveAttribute("aria-expanded", "true")
 
   await page.getByRole("button", { name: "Shapes", exact: true }).click()
   await page.getByRole("button", { name: "Rectangle", exact: true }).click()
   const shape = page.locator("[data-design-element]")
-  await expect(shape).toContainText(/^Shape/)
+  await expect(shape).toContainText(designCopy.panels.shape)
   await expect(shape.getByRole("heading")).toHaveText([
     "Fill",
-    "Line",
-    "Shape type",
-    "Position and size",
     "Opacity",
+    "Shape type",
+    "Line",
     "Effects",
+    boxCopy.section,
     "Name and alt text",
   ])
   await expect(fold(shape, "Effects")).toHaveAttribute("aria-expanded", "false")
-  await expect(fold(shape, "Position and size")).toHaveAttribute("aria-expanded", "true")
+  await expect(fold(shape, boxCopy.section)).toHaveAttribute("aria-expanded", "false")
 
   const back = await pick(page, shapeAt(page, "2"))
-  await expect(back).toContainText(/^Text box/)
+  await expect(back).toContainText(designCopy.panels.text)
   await expect(fold(back, "Effects")).toHaveAttribute("aria-expanded", "true")
-  await expect(fold(back, "Position and size")).toHaveAttribute("aria-expanded", "false")
+  await expect(fold(back, boxCopy.section)).toHaveAttribute("aria-expanded", "true")
 
   await page.reload()
   await settled(page)
   const again = await designing(page, shapeAt(page, "2"))
   await expect(fold(again, "Effects")).toHaveAttribute("aria-expanded", "true")
-  await expect(fold(again, "Position and size")).toHaveAttribute("aria-expanded", "false")
+  await expect(fold(again, boxCopy.section)).toHaveAttribute("aria-expanded", "true")
 })

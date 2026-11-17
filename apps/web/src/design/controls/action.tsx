@@ -15,7 +15,7 @@ export function ActionControl({ control, onChange }: ControlProps) {
         {control.label}
       </span>
       <div role="group" aria-labelledby={label} className="flex gap-1">
-        {options.map((option) => {
+        {options.map((option, at) => {
           const Icon = control.look.options[option]
           const name = `${control.label} ${optionWord(control.field, option).toLowerCase()}`
           return (
@@ -26,6 +26,7 @@ export function ActionControl({ control, onChange }: ControlProps) {
               aria-label={name}
               title={name}
               onClick={() => onChange(option)}
+              style={{ marginLeft: at === 3 ? "0.25rem" : undefined }}
               className="h-8 min-w-0 flex-1 rounded-lg bg-white px-0 text-quiet shadow-[0px_0px_0px_1px_var(--field-edge)] hover:text-foreground active:translate-y-0"
             >
               {Icon === undefined ? (

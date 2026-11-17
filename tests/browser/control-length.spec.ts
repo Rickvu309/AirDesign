@@ -1,6 +1,7 @@
+import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { actualSize } from "./paint-scale"
 import { expect, test } from "@playwright/test"
-import { designing, openDeck, pendingValues, placed, settled } from "./design-panel"
+import { designing, unfold, openDeck, pendingValues, placed, settled } from "./design-panel"
 
 const element = "ppt/slides/slide1.xml#2"
 const point = 12_700
@@ -13,9 +14,10 @@ test("a length moves and sizes the selected element in points, Undo takes back e
   await openDeck(page, "clean.pptx")
   await actualSize(page)
   const panel = await designing(page, page.locator('[contenteditable="true"]'))
+  await unfold(panel, boxCopy.section)
   const x = panel.getByRole("textbox", { name: "X", exact: true })
   const width = panel.getByRole("textbox", { name: "Width", exact: true })
-  await expect(panel.getByRole("heading", { name: "Position and size" })).toBeVisible()
+  await expect(panel.getByRole("heading", { name: boxCopy.section })).toBeVisible()
   await expect(x).toHaveValue("36")
   await expect(width).toHaveValue("432")
   await x.fill("72")
@@ -49,6 +51,7 @@ test("five arrow presses in one visit to a field are one undo step, and a press 
   await openDeck(page, "clean.pptx")
   await actualSize(page)
   const panel = await designing(page, page.locator('[contenteditable="true"]'))
+  await unfold(panel, boxCopy.section)
   const width = panel.getByRole("textbox", { name: "Width", exact: true })
   await expect(width).toHaveValue("432")
   for (const shown of ["433", "434", "435", "436", "437"]) {
@@ -73,6 +76,7 @@ test("dragging a field's label scrubs it in steps, Shift scrubs tens, and one Un
   await openDeck(page, "clean.pptx")
   await actualSize(page)
   const panel = await designing(page, page.locator('[contenteditable="true"]'))
+  await unfold(panel, boxCopy.section)
   const width = panel.getByRole("textbox", { name: "Width", exact: true })
   await expect(width).toHaveValue("432")
   const label = width.locator("..").locator("span").first()
@@ -104,6 +108,7 @@ test("a length the slide cannot hold leaves the element where it was", async ({ 
   await openDeck(page, "clean.pptx")
   await actualSize(page)
   const panel = await designing(page, page.locator('[contenteditable="true"]'))
+  await unfold(panel, boxCopy.section)
   const x = panel.getByRole("textbox", { name: "X", exact: true })
   await x.fill("99999")
   await x.press("Enter")
