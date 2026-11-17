@@ -33,8 +33,8 @@ same("the jobs that run the database tests are found", served.map(({ name }) => 
   "ci.yml check",
   "ci.yml corpus",
   "ci.yml mutation",
-  "ci.yml paint-fidelity",
   "journeys.yml journeys",
+  "paint-fidelity.yml paint-fidelity",
 ])
 for (const { name, steps } of served) {
   const at = steps.findIndex((step) => step.uses === action)

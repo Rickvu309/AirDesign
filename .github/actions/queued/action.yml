@@ -29,14 +29,17 @@ runs:
       run: |
         run_id=
         passed=false
-        if [ "$GITHUB_EVENT_NAME" = push ] && [ "$PART" != pptx ]; then
+        if [ "$GITHUB_EVENT_NAME" = push ] && [ "$PART" != pptx ] && [ "$PART" != design ]; then
           run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&event=merge_group&status=success" --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci.yml")][0].id // empty')
         fi
         if [ -n "$run_id" ]; then passed=true; fi
         needed=true
-        if [ "$passed" = true ]; then
+        if { [ "$PART" = design ] && [ "$GITHUB_EVENT_NAME" != pull_request ]; } ||
+           { [ "$PART" = pptx ] && [ "$GITHUB_EVENT_NAME" = merge_group ]; }; then
+          needed=false
+        elif [ "$passed" = true ]; then
           case "$PART" in
-            side | design | browser) needed=false ;;
+            side | browser) needed=false ;;
             *) if [ "$CACHE_HIT" = true ]; then needed=false; fi ;;
           esac
         fi
