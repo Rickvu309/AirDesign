@@ -211,6 +211,7 @@ export function useGridViewport({
     event.preventDefault()
     event.stopPropagation()
     event.currentTarget.setPointerCapture(event.pointerId)
+    event.currentTarget.dataset.panning = "true"
     pan.current = { pointer: event.pointerId, x: event.clientX, y: event.clientY, view: view.current }
   }
 
@@ -223,7 +224,10 @@ export function useGridViewport({
   }
 
   function release(event: PointerEvent<HTMLDivElement>) {
-    if (pan.current?.pointer === event.pointerId) pan.current = null
+    if (pan.current?.pointer === event.pointerId) {
+      pan.current = null
+      delete event.currentTarget.dataset.panning
+    }
   }
 
   function reveal(target: Element) {
