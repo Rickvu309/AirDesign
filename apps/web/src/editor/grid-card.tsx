@@ -2,9 +2,8 @@ import { gridNumberPlacement, gridElementPresses } from "@/editor/grid-number"
 import { gridSpacing } from "@/editor/grid-viewport"
 import { Filmstrip } from "@airdesign/render"
 import type { CSSProperties, ReactNode, MouseEventHandler, PointerEventHandler } from "react"
-import { Button } from "@/components/ui/button"
+import { GridGapAdd } from "@/editor/grid-gap-add"
 import { slideListCopy } from "@/copy/slide-list-copy"
-import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 
 const thumbFace = "block overflow-hidden rounded-[inherit] bg-white"
@@ -30,6 +29,9 @@ export function GridCard({
   onClick,
   onContextMenu,
   onAdd,
+  rowEnd,
+  addBlocked,
+  addDisabled,
 }: {
   index: number
   count: number
@@ -50,6 +52,9 @@ export function GridCard({
   onPressed: MouseEventHandler<HTMLDivElement>
   onClick: MouseEventHandler<HTMLElement>
   onContextMenu: MouseEventHandler<HTMLButtonElement>
+  rowEnd: boolean
+  addBlocked: boolean
+  addDisabled: boolean
   onAdd: () => void
 }) {
   const screen = { width: width * scale, gap: gridSpacing(width, height).row * scale }
@@ -130,30 +135,17 @@ export function GridCard({
           {slide?.(width * scale)}
         </div>
       ) : null}
-      <span
-        className="absolute left-full flex items-center justify-center"
-        style={{
-          top: 24 + height / 2,
-          width: 32,
-          height: 0,
-          transform: `scale(${1 / scale})`,
-          transformOrigin: "left center",
-        }}
-      >
-        <Button
-          type="button"
-          variant="default"
-          tabIndex={-1}
-          aria-label={slideListCopy.addAfter(index + 1)}
-          className={cn(
-            "invisible relative flex size-4 scale-75 self-center rounded-full p-0 opacity-0 transition-[opacity,scale,visibility] duration-[var(--duration-micro)] ease-[var(--ease-out)] after:absolute after:-inset-1 hover:bg-primary-strong",
-            !busy && "group-hover:visible group-hover:scale-100 group-hover:opacity-100",
-          )}
-          onClick={onAdd}
-        >
-          <EditorIcon name="plus" size={10} strokeWidth={3.2} />
-        </Button>
-      </span>
+      <GridGapAdd
+        reachable={reachable}
+        index={index}
+        width={width}
+        height={height}
+        scale={scale}
+        end={rowEnd}
+        blocked={addBlocked}
+        disabled={addDisabled}
+        onAdd={onAdd}
+      />
     </div>
   )
 }

@@ -215,6 +215,7 @@ for (const gesture of ["move", "resize"] as const) {
     const other = (await entry(page, 2).boundingBox())!
     await page.mouse.move(other.x + other.width / 2, other.y + other.height / 2, { steps: 5 })
     for (const halo of await cards.locator("[data-grid-halo]").all()) await expect(halo).toHaveCSS("opacity", "0")
+    for (const add of await cards.locator("[data-add-gap]").all()) await expect(add).toBeHidden()
     await page.mouse.up()
   })
 }

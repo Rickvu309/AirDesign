@@ -46,5 +46,11 @@
     "detector": "stacked-frames",
     "selector": "[data-grid-halo]",
     "reason": "The hover halo sits outside the card edge of slide 10 while the added slide 11 keeps its selection frame. The two frames show hover and the card surface, as designed."
+  },
+  {
+    "page": "grid-gap-*",
+    "detector": "stacked-frames",
+    "selector": "[data-grid-halo]",
+    "reason": "Grid keeps its existing hover halo outside the slide frame while a pointer reaches the add control. The halo identifies the source slide; it is not a second object selection."
   }
 ]

@@ -45,6 +45,7 @@ export async function rowAddState(kit, state) {
   if (state === "keyboard") {
     await page.locator('[data-slide-entry="1"]').focus()
     await page.keyboard.press("Tab")
+    await page.keyboard.press("Tab")
     await expect(button).toBeFocused()
   } else await button.hover()
   await expect(page.locator("[data-row-placeholder]:visible")).toHaveCount(1)
