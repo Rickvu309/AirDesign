@@ -167,23 +167,23 @@ The agent built into AirDesign. It reads a deck, changes what a person can chang
 _Avoid_: the assistant, the AI
 
 **design panel**:
-The panel beside the slide that sets the selected element's position, size, rotation, flips, alignment, shape, opacity, fill, line, effects, text, a picture's icon, recolor and crop, a connector's ends, and the element's name and alt text, or the slide's background color and the deck's theme when nothing is selected. With several elements selected it is titled with their count and shows the fields they all take, and a change there sets every one of them in one undo step.
+The panel beside a slide that sets the selection's design: position, size, rotation, flips, alignment, shape, opacity, fill, line, effects, text, pictures, crop, connector ends, names and alt text. With no selection it sets the slide background and deck theme. Several selected elements share the fields they take; a change sets them all in one undo step. Its title shows their count.
 _Avoid_: inspector, properties, format pane
 
 **Mixed**:
-What a design panel field shows when the selected elements hold different values in it. Setting the field gives every selected element the one value.
+What a design panel control shows when selected elements hold different values. Changing it gives them all one value.
 _Avoid_: multiple, varies
 
 **inherited**:
-A value an element paints with but does not set itself: it comes from the element's layout, master or theme, or from PowerPoint's own default, such as 18 pt in the theme's body font. The design panel shows it in quiet ink; a value the person or an agent sets shows in full ink, and a reset returns the field to the inherited value.
+A value painted from an element's layout, master, theme or PowerPoint's default. It uses quiet ink in the design panel; a value set by a person or agent uses full ink. Reset returns the inherited value.
 _Avoid_: default, placeholder value, unset
 
 **scrub**:
-A drag on a number field's label in the design panel that steps its value as the pointer moves left or right: Shift steps by tens and Alt by tenths. One scrub is one undo step.
+Dragging a number control's name left or right to step its value. Shift steps by tens; Alt by tenths. One scrub is one undo step.
 _Avoid_: slider, drag to change
 
 **theme**:
-The deck's twelve colors and its heading and body fonts. Every shape, line, text, background and table that names a theme color or font follows a change to it. A person changes it in the design panel's Theme section with nothing selected; an agent sends `set` with target `deck.theme`.
+The deck's twelve colors and heading and body fonts. Anything that names a theme color or font follows its changes, including shapes, lines, text, backgrounds and tables.
 _Avoid_: palette, color scheme, template (a template is a whole design, not available yet)
 
 **color picker**:
@@ -279,7 +279,7 @@ One value of a trait, written `trait.field`, such as `box.x`, `line.width` or `t
 _Avoid_: property, attribute, setting
 
 **control**:
-What the design panel shows for one field: its name, the value the selection holds, whether that value is mixed or inherited, and the edit a change makes.
+One field in the design panel: its name, the selection's value, whether mixed or inherited, and the edit a change makes.
 _Avoid_: row (a row is a stored edit), input, widget
 
 **strip**:
