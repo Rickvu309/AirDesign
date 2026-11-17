@@ -68,12 +68,8 @@ same(
   "matrix.part != 'pptx' && steps.work.outputs.needed == 'true'",
 )
 
-const queued = steps.find((step) => step.id === "queued")
-same(
-  "main and side ask whether the queue passed before setup",
-  queued?.if,
-  "github.event_name == 'push' && matrix.part != 'pptx'",
-)
+const queued = steps.find((step) => step.id === "work")
+same("main and side ask whether the queue passed before setup", queued?.if, undefined)
 same("the question uses the shared action", queued?.uses, "./.github/actions/queued")
 same(
   "the question comes before setup",
@@ -199,6 +195,12 @@ const actionFile = path.join(root, ".github/actions/queued/action.yml")
 const action = fs.existsSync(actionFile) ? parse(fs.readFileSync(actionFile, "utf8")) : undefined
 const question = action?.runs.steps[0]
 same(
+  "the shared action exposes the queue run id",
+  action?.outputs["run-id"]?.value,
+  "${{ steps.queued.outputs.run-id }}",
+)
+same("the shared action exposes the decision", action?.outputs.needed?.value, "${{ steps.queued.outputs.needed }}")
+same(
   "one shared question reads successful queue ci runs for this exact commit",
   [/head_sha=\$GITHUB_SHA/, /event=merge_group/, /status=success/, /ci\.yml/].map((pattern) =>
     pattern.test(question?.run ?? ""),
@@ -206,10 +208,19 @@ same(
   [true, true, true, true],
 )
 same("the shared action exposes its answer", action?.outputs.passed.value, "${{ steps.queued.outputs.passed }}")
+same(
+  "shared decision receives its inputs",
+  [question?.env.PART, question?.env.CACHE_HIT],
+  ["${{ inputs.part }}", "${{ inputs.cache-hit }}"],
+)
 const execute = (run, env, answer = "true") => {
   const folder = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-ci-work-"))
   try {
-    fs.writeFileSync(path.join(folder, "gh"), `#!/bin/sh\nprintf '%s\\n' '${answer}'\n`, { mode: 0o755 })
+    fs.writeFileSync(
+      path.join(folder, "gh"),
+      `#!/bin/sh\n[ "$GH_FORBIDDEN" != 1 ] || exit 9\nprintf '%s\\n' '${answer}'\n`,
+      { mode: 0o755 },
+    )
     const output = path.join(folder, "output")
     const result = spawnSync("bash", ["-e", "-c", run], {
       encoding: "utf8",
@@ -219,6 +230,7 @@ const execute = (run, env, answer = "true") => {
         GITHUB_OUTPUT: output,
         GITHUB_REPOSITORY: "a/b",
         GITHUB_SHA: "exact-sha",
+        GITHUB_EVENT_NAME: "push",
         ...env,
       },
     })
@@ -227,10 +239,10 @@ const execute = (run, env, answer = "true") => {
     fs.rmSync(folder, { recursive: true, force: true })
   }
 }
-for (const answer of ["true", "false"]) {
+for (const answer of ["123", ""]) {
   same(`queue answer ${answer} is exposed`, execute(question?.run ?? "exit 1", {}, answer), {
     status: 0,
-    output: `passed=${answer}`,
+    output: `passed=${Boolean(answer)}\nrun-id=${answer}\nneeded=true`,
   })
 }
 for (const [name, job] of [
@@ -257,10 +269,9 @@ for (const [name, job] of [
     [restore?.with.key, save?.with.key],
     [lookup?.with.key, lookup?.with.key],
   )
-  same(`${name} decision reads queue, exact hit and part`, work?.env, {
-    PASSED: "${{ steps.queued.outputs.passed }}",
-    CACHE_HIT: "${{ steps.cache-lookup.outputs.cache-hit }}",
-    PART: name === "check" ? "${{ matrix.part }}" : name,
+  same(`${name} decision reads exact hit and part`, work?.with, {
+    "cache-hit": "${{ steps.cache-lookup.outputs.cache-hit }}",
+    part: name === "check" ? "${{ matrix.part }}" : name,
   })
   for (const [part, passed, hit, needed] of [
     [name === "check" ? "main" : name, "true", "true", "false"],
@@ -276,8 +287,11 @@ for (const [name, job] of [
   ]) {
     same(
       `${name} ${part} queue=${passed} exact-hit=${hit} needed=${needed}`,
-      execute(work?.run ?? "exit 1", { PART: part, PASSED: passed, CACHE_HIT: hit }),
-      { status: 0, output: `needed=${needed}` },
+      execute(question?.run ?? "exit 1", { PART: part, CACHE_HIT: hit }, passed === "true" ? "123" : ""),
+      {
+        status: 0,
+        output: `passed=${passed === "true" && part !== "pptx"}\nrun-id=${passed === "true" && part !== "pptx" ? "123" : ""}\nneeded=${needed}`,
+      },
     )
   }
   const expensive = found.filter(
@@ -293,12 +307,8 @@ for (const [name, job] of [
     true,
   )
   if (name !== "check") {
-    same(
-      `${name} uses the shared queue action on push`,
-      found.find((step) => step.id === "queued")?.uses,
-      "./.github/actions/queued",
-    )
-    same(`${name} asks only on push`, found.find((step) => step.id === "queued")?.if, "github.event_name == 'push'")
+    same(`${name} uses the shared queue action on push`, work?.uses, "./.github/actions/queued")
+    same(`${name} decides on every event`, work?.if, undefined)
     same(`${name} runs on queue and push`, job?.if, corpus.if)
     same(
       `${name} reports push failures`,
@@ -306,6 +316,116 @@ for (const [name, job] of [
       ["failure() && github.event_name == 'push'"],
     )
   }
+}
+const answers = corpus.steps.filter(
+  (step) => step.with?.path === "~/.cache/airdesign/pptx-validations" && (step.uses ?? "").startsWith("actions/cache/"),
+)
+same(
+  "validator prefix names the corpus and judge code",
+  corpus.steps.find((step) => step.id === "answers")?.run,
+  "echo \"prefix=pptx-validations-corpus-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-\" >> \"$GITHUB_OUTPUT\"",
+)
+same(
+  "validator restore accepts earlier runs of the same judge",
+  answers[0]?.with["restore-keys"],
+  "${{ steps.answers.outputs.prefix }}",
+)
+const corpusRun = corpus.steps.findIndex((step) => step.run === "pnpm check:pptx:corpus")
+same(
+  "the corpus restores the validator's saved answers before it runs and saves them after",
+  answers.slice(0, 2).map((step) => [step.uses.split("@")[0], corpus.steps.indexOf(step) < corpusRun]),
+  [
+    ["actions/cache/restore", true],
+    ["actions/cache/save", false],
+  ],
+)
+same(
+  "the corpus keeps its answers apart from the pptx part's and keys them by the validator's code",
+  answers.slice(0, 2).map((step) => step.with.key),
+  Array(2).fill("${{ steps.answers.outputs.prefix }}${{ github.run_id }}"),
+)
+same(
+  "a queue run does not save answers, which no later run could read from its branch",
+  answers[1]?.if,
+  "steps.work.outputs.needed == 'true' && github.event_name != 'merge_group' && !cancelled()",
+)
+
+const upload = corpus.steps.find((step) => step.with?.name === "corpus-validations")
+const download = corpus.steps.find((step) => step.id === "validations")
+const handed = answers.find((step) => step.if === "steps.validations.outputs.files == 'true'")
+same(
+  "queue uploads only after the corpus succeeds",
+  upload?.if,
+  "github.event_name == 'merge_group' && steps.work.outputs.needed == 'true'",
+)
+same("upload follows corpus", corpus.steps.indexOf(upload) > corpusRun, true)
+same(
+  "queue artifact uses the pinned uploader",
+  upload?.uses,
+  steps.find((step) => (step.uses ?? "").startsWith("actions/upload-artifact"))?.uses,
+)
+same("queue artifact expires in one day", upload?.with["retention-days"], 1)
+same("queue artifact holds validator answers", upload?.with.path, "~/.cache/airdesign/pptx-validations")
+same(
+  "push downloads only when work was skipped",
+  download?.if,
+  "github.event_name == 'push' && steps.work.outputs.needed == 'false'",
+)
+same("download uses the queue run id", download?.env.RUN_ID, "${{ steps.work.outputs.run-id }}")
+same("download may read actions", download?.env.GH_TOKEN, "${{ github.token }}")
+same(
+  "handoff failures cannot fail main",
+  [download, handed].map((step) => step?.["continue-on-error"]),
+  [true, true],
+)
+same("handoff saves under the same validator key", handed?.with.key, answers[0]?.with.key)
+same("handoff saves only after downloading", corpus.steps.indexOf(handed) > corpus.steps.indexOf(download), true)
+const handoff = (mode) => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-ci-handoff-"))
+  try {
+    fs.writeFileSync(
+      path.join(folder, "gh"),
+      `#!/bin/bash
+test "$1 $2 $3 $4 $5 $6" = "run download 123 -n corpus-validations -D" || exit 9
+test "$7" = "$HOME/.cache/airdesign/pptx-validations" || exit 9
+[ "${mode}" != missing ] || exit 1
+mkdir -p "$7"
+[ "${mode}" != full ] || echo answer > "$7/answer.json"
+`,
+      { mode: 0o755 },
+    )
+    const output = path.join(folder, "output")
+    const result = spawnSync("bash", ["-e", "-o", "pipefail", "-c", download?.run ?? "exit 9"], {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: folder,
+        PATH: `${folder}:${process.env.PATH}`,
+        RUN_ID: "123",
+        GITHUB_OUTPUT: output,
+      },
+    })
+    return { status: result.status, output: fs.existsSync(output) ? fs.readFileSync(output, "utf8").trim() : "" }
+  } finally {
+    fs.rmSync(folder, { recursive: true, force: true })
+  }
+}
+same("downloaded files enable the save", handoff("full"), { status: 0, output: "files=true" })
+for (const mode of ["missing", "empty"]) {
+  const result = handoff(mode)
+  same(`${mode} artifact does not enable a save`, result.output, "")
+  same(`${mode} artifact stops before reporting files`, result.status, 1)
+}
+for (const event of ["pull_request", "merge_group"]) {
+  same(
+    `${event} never skips work or queries queue runs`,
+    execute(
+      question?.run ?? "exit 9",
+      { GITHUB_EVENT_NAME: event, PART: "side", CACHE_HIT: "true", GH_FORBIDDEN: "1" },
+      "123",
+    ),
+    { status: 0, output: "passed=false\nrun-id=\nneeded=true" },
+  )
 }
 const paint = workflow.jobs["paint-fidelity"]
 same(
@@ -320,7 +440,12 @@ same(
   paint?.steps.some((step) => step.run === "pnpm metric:paint-fidelity"),
   true,
 )
-const cacheKey = (job) => job?.steps.find((step) => step.id === "cache-lookup")?.with.key
+const cacheKey = (job) => job?.steps.find((step) => step.id === "renders")?.run
+same(
+  "paint and corpus look up the render key their job names once",
+  [paint, corpus].map((job) => job?.steps.find((step) => step.id === "cache-lookup")?.with.key),
+  Array(2).fill("${{ steps.renders.outputs.key }}"),
+)
 same(
   "paint and corpus save distinct cache keys",
   cacheKey(paint) !== undefined && cacheKey(paint) !== cacheKey(corpus),
