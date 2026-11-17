@@ -1,3 +1,4 @@
+import { CircleAlert } from "lucide-react"
 import { useEffect, useState } from "react"
 import { productCopy } from "@/copy/product-copy"
 import type { SaveStatus } from "@/editor/use-deck-status"
@@ -31,8 +32,13 @@ export function SaveStatusLine({ status, className }: { status: SaveStatus; clas
     <span
       role="status"
       data-save-status={status}
-      className={cn("truncate text-[length:var(--type-caption)] leading-4 text-quiet", className)}
+      className={cn(
+        "flex items-center gap-1 truncate text-[length:var(--type-caption)] leading-4",
+        status === "unsaved" ? "text-danger-text" : "text-quiet",
+        className,
+      )}
     >
+      {status === "unsaved" ? <CircleAlert aria-hidden="true" className="size-3 shrink-0" /> : null}
       {words[status]}
     </span>
   )

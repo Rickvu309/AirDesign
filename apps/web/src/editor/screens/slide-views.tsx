@@ -65,7 +65,7 @@ export function SetAside() {
     <EditorView
       {...galleryDeck}
       run="done"
-      toast={<EditorToast still kind="info" text={productCopy.editsSetAside} place="canvas" />}
+      toast={<EditorToast still kind="error" text={productCopy.editsSetAside} place="canvas" />}
     />
   )
 }
@@ -75,7 +75,7 @@ export function SetAsideTooLarge() {
     <EditorView
       {...galleryDeck}
       run="done"
-      toast={<EditorToast kind="info" text={productCopy.editSetAsideTooLarge} place="canvas" />}
+      toast={<EditorToast kind="error" text={productCopy.editSetAsideTooLarge} place="canvas" />}
     />
   )
 }

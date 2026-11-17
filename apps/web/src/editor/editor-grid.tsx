@@ -67,7 +67,6 @@ export function EditorGrid({
   formats,
   onTable,
   onPicture,
-  faded = false,
   save = null,
 }: {
   id?: string | null
@@ -89,7 +88,6 @@ export function EditorGrid({
   onTable?: (size: TableSize) => void
   onPicture?: (file: File) => void
   save?: SaveStatus | null
-  faded?: boolean
 }) {
   const list = useRef<HTMLDivElement>(null)
   const bar = useRef<HTMLDivElement>(null)
@@ -393,10 +391,9 @@ export function EditorGrid({
             <EditorIcon name="slide" size={15} />
           </span>
           {size === null ? (
-            <ExportButton faded={faded} onClick={() => void onExport()} />
+            <ExportButton onClick={() => void onExport()} />
           ) : (
             <ExportControl
-              faded={faded}
               target={{
                 name: title,
                 count: strip.count,

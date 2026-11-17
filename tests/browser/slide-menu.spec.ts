@@ -1,3 +1,4 @@
+import { expectNoticeTint } from "./notice-tint"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 
@@ -111,7 +112,12 @@ test("deleting a slide shows a toast whose Undo brings the slide back at its pla
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
   const deleted = page.locator("[data-slide-toast]")
   await expect(deleted).toContainText("Slide 1 deleted")
-  await deleted.getByRole("button", { name: "Undo" }).click()
+  const undo = deleted.getByRole("button", { name: "Undo" })
+  await undo.hover()
+  await expectNoticeTint(undo, 26)
+  await page.mouse.down()
+  await expectNoticeTint(undo, 38)
+  await page.mouse.up()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
   await expect(entry(page, 1)).toContainText("Hello")
   await expect(entry(page, 2)).not.toContainText("Hello")

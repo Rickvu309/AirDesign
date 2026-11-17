@@ -155,7 +155,6 @@ export function EditorShell({
         panel={panel}
         activeTool={activeTool}
         toolMenu={toolMenu}
-        faded={run === "offline"}
         save={deck.save ?? null}
         {...(deck.onRename === undefined ? {} : { onRename: deck.onRename })}
         {...(deck.onText === undefined ? {} : { onText: deck.onText })}
@@ -274,7 +273,6 @@ export function EditorShell({
               {...(deck === undefined ? {} : { onClick: () => present.start(deck.slides.current) })}
             />
             <ExportControl
-              faded={run === "offline"}
               {...(deck === undefined
                 ? {}
                 : {

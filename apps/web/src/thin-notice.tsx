@@ -6,6 +6,7 @@ import { downloadedOf, productCopy } from "@/copy/product-copy"
 import { EditorToast, EditorToaster } from "@/editor/agent-panel"
 import { pictureCopy } from "@/copy/picture-copy"
 import { undoCopy } from "@/copy/undo-copy"
+import { cn } from "@/lib/class-names"
 import { exportCopy } from "@/export/export-options"
 
 export type ThinNotice =
@@ -39,18 +40,23 @@ export function ActionPill({
   action,
   onAct,
   width,
+  error = false,
 }: {
   text: string
   action: string
   onAct: () => void
   width: string
+  error?: boolean
 }) {
   return (
-    <StatusPill className="max-w-full gap-2.5 pr-1.5 pl-3.5" style={{ width }}>
-      <span className="min-w-0 flex-1 truncate">{text}</span>
+    <StatusPill error={error} className="h-auto min-h-10 max-w-full gap-2.5 py-1.5 pr-1.5 pl-3.5" style={{ width }}>
+      <span className="min-w-0 flex-1 text-pretty">{text}</span>
       <button
         type="button"
-        className="flex h-7 shrink-0 items-center rounded-md px-2.5 font-medium whitespace-nowrap"
+        className={cn(
+          "flex h-7 shrink-0 items-center rounded-md px-2.5 font-medium whitespace-nowrap",
+          error ? "hover:bg-black/4 active:bg-black/8" : "hover:bg-white/10 active:bg-white/15",
+        )}
         onClick={onAct}
       >
         {action}
@@ -59,23 +65,36 @@ export function ActionPill({
   )
 }
 
-function FailureNotice({ text, action, onAct }: { text: string; action: string; onAct: () => void }) {
+function FailureNotice({
+  text,
+  action,
+  onAct,
+  error,
+}: {
+  text: string
+  action: string
+  onAct: () => void
+  error: boolean
+}) {
   const retry = useRef(onAct)
   useEffect(() => {
     retry.current = onAct
   })
   useEffect(() => {
-    toast.custom(() => <ActionPill text={text} action={action} onAct={() => retry.current()} width={noticeWidth} />, {
-      id: noticeId,
-      duration: Number.POSITIVE_INFINITY,
-      unstyled: true,
-      style: {
-        left: 0,
-        width: noticeWidth,
-        transition: "transform var(--ease-micro), opacity var(--ease-micro)",
+    toast.custom(
+      () => <ActionPill error={error} text={text} action={action} onAct={() => retry.current()} width={noticeWidth} />,
+      {
+        id: noticeId,
+        duration: Number.POSITIVE_INFINITY,
+        unstyled: true,
+        style: {
+          left: 0,
+          width: noticeWidth,
+          transition: "transform var(--ease-micro), opacity var(--ease-micro)",
+        },
       },
-    })
-  }, [text, action])
+    )
+  }, [text, action, error])
   useEffect(
     () => () => {
       toast.dismiss(noticeId)
@@ -91,7 +110,7 @@ function StatusNotice({
   still = false,
 }: {
   text: string
-  kind?: "info" | "success"
+  kind?: "info" | "success" | "error"
   still?: boolean
 }) {
   return <EditorToast kind={kind} text={text} place="canvas" still={still} host={false} />
@@ -140,22 +159,44 @@ function NoticeContent({
   if (notice === null) return null
   if (notice === "offline") return <StatusNotice text={productCopy.editorOffline} />
   if (notice === "unreached") return <StatusNotice text={productCopy.editorUnreached} />
-  if (notice === "set-aside") return <StatusNotice text={productCopy.editsSetAside} />
-  if (notice === "set-aside-too-large") return <StatusNotice text={productCopy.editSetAsideTooLarge} />
-  if (notice === "storage-failed") return <StatusNotice text={productCopy.storageFailed} />
-  if (notice === "too-large") return <StatusNotice text={productCopy.editsTooLarge} />
+  if (notice === "set-aside") return <StatusNotice kind="error" text={productCopy.editsSetAside} />
+  if (notice === "set-aside-too-large") return <StatusNotice kind="error" text={productCopy.editSetAsideTooLarge} />
+  if (notice === "storage-failed")
+    return (
+      <FailureNotice
+        error
+        text={productCopy.storageFailed}
+        action={productCopy.reload}
+        onAct={() => onTryAgain(notice)}
+      />
+    )
+  if (notice === "too-large")
+    return (
+      <FailureNotice
+        error
+        text={productCopy.editsTooLarge}
+        action={exportCopy.action}
+        onAct={() => onTryAgain(notice)}
+      />
+    )
   if (notice === "undo-changed") return <StatusNotice still text={undoCopy.undoChanged} />
   if (notice === "redo-changed") return <StatusNotice still text={undoCopy.redoChanged} />
   if (notice === "picture-type" || notice === "picture-size" || notice === "picture-unread")
     return <StatusNotice text={pictureCopy[notice]} />
   if (notice === "newer") {
     return (
-      <FailureNotice text={productCopy.newerVersion} action={productCopy.reload} onAct={() => onTryAgain(notice)} />
+      <FailureNotice
+        error={false}
+        text={productCopy.newerVersion}
+        action={productCopy.reload}
+        onAct={() => onTryAgain(notice)}
+      />
     )
   }
   if (notice === "import-failed") {
     return (
       <FailureNotice
+        error
         text={productCopy.deckOpenFailed}
         action={productCopy.goToDecks}
         onAct={() => onTryAgain(notice)}
@@ -163,5 +204,5 @@ function NoticeContent({
     )
   }
   const text = notice === "picture-uploading" ? pictureCopy.exportWaiting : productCopy.exportFailed
-  return <FailureNotice text={text} action={exportCopy.tryAgain} onAct={() => onTryAgain(notice)} />
+  return <FailureNotice error text={text} action={exportCopy.tryAgain} onAct={() => onTryAgain(notice)} />
 }
