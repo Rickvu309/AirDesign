@@ -174,8 +174,8 @@ test("a colour picked after Reset fill keeps the opacity shown, through a reload
   await panel.getByRole("button", { name: fillCopy.reset, exact: true }).click()
   await expect.poll(() => filled(rectangle)).not.toMatch(/0\.6\)$/)
   await pickColor(page, panel.getByRole("group", { name: fillWords.color, exact: true }), formatCopy.colors.accent2)
-  await expect.poll(() => filled(rectangle)).toMatch(/^rgb\(/)
-  const after = await filled(rectangle)
+  const after = "rgb(96, 96, 96)"
+  await expect.poll(() => filled(rectangle)).toBe(after)
   await page.reload()
   await settled(page)
   await expect.poll(() => filled(shapeAt(page, "4"))).toBe(after)
