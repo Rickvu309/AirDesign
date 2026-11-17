@@ -2,6 +2,8 @@ import type { DeckId } from "@airdesign/catalog"
 import { foldDesign, printDesign, readDeckId, shownDesign, themedDesign } from "@airdesign/catalog"
 import {
   bytesOf,
+  foldGrid,
+  readSlideId,
   foldSlides,
   presentSlides,
   currentBox,
@@ -50,6 +52,7 @@ export type ReadElement = {
 export type ReadDeckAnswer = {
   readonly ok: true
   readonly revision: number
+  readonly grid: { readonly starts: readonly string[] }
   readonly elements: readonly ReadElement[]
   readonly slides: readonly Pick<IndexSlide, "id" | "position" | "palette">[]
   readonly palettes?: readonly Palette[]
@@ -196,7 +199,7 @@ function firstAfter(nodes: readonly ElementId[], cursor: string): number {
   return low
 }
 
-type ReadHead = Pick<ReadDeckAnswer, "revision" | "slides" | "palettes" | "theme" | "index">
+type ReadHead = Pick<ReadDeckAnswer, "revision" | "grid" | "slides" | "palettes" | "theme" | "index">
 
 function themeSet(register: Register): Readonly<Record<string, string>> {
   const body = register.nodes.includes(themeNode) ? register.elements[themeNode] : undefined
@@ -289,6 +292,16 @@ export function readDeckPage(
   return packRead(
     {
       revision: deck.revision,
+      grid: foldGrid({
+        file:
+          deck.register.file.length > 0
+            ? deck.register.file
+            : (index?.slides ?? []).flatMap((slide) => {
+                const id = readSlideId(slide.id)
+                return id === undefined ? [] : [id]
+              }),
+        order: deck.register.order,
+      }).grid,
       slides:
         deck.register.order.length === 0
           ? (index?.slides ?? []).map(({ id, position }) => slideOf(id, position))

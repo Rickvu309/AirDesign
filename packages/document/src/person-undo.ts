@@ -1,3 +1,5 @@
+import { gridUndoable } from "./grid-undo.js"
+import type { GridUndoable, GridTurn } from "./grid-order.js"
 import { decide, landedPatch, shownPatch, valueHolder, type Command, type Register } from "./decide.js"
 import type { ElementId, SlideId } from "./element-id.js"
 import { elementCommand, elementGone, type ElementCommand, type ElementOrder } from "./element-order.js"
@@ -8,7 +10,7 @@ import { ungroupTurn } from "./group-turn.js"
 import type { OrderKey } from "./order-key.js"
 import { openingElement } from "./slide-floor.js"
 import { readTextValue } from "./text-value.js"
-import { foldSlides, type SlideCommand, type SlideState } from "./slide-order.js"
+import { foldSlides, type SlideCommand } from "./slide-order.js"
 import { format } from "./format.js"
 import {
   boxPatch,
@@ -29,13 +31,14 @@ export type SlideSpot = { readonly present: boolean; readonly key: OrderKey }
 export type NodeStep = { readonly node: ElementId; readonly before: ElementPatch; readonly after: ElementPatch }
 
 export type Undoable =
-  | { readonly steps: readonly NodeStep[] }
   | {
       readonly slide: SlideId
       readonly file: readonly SlideId[]
       readonly before: SlideSpot
       readonly after: SlideSpot
     }
+  | GridUndoable
+  | { readonly steps: readonly NodeStep[] }
   | {
       readonly elements: readonly { readonly node: ElementId; readonly shown: ElementPatch }[]
       readonly slide: SlideId
@@ -67,12 +70,6 @@ export type Turns =
   | { readonly ok: false }
 
 const changed: Turns = { ok: false }
-
-function spotOf(register: Register, file: readonly SlideId[], id: SlideId): SlideSpot | undefined {
-  const known = register.file.length > 0 ? register.file : file
-  const spot = foldSlides({ file: known, order: register.order }).find((each) => each.id === id)
-  return spot === undefined ? undefined : { present: spot.present, key: spot.key }
-}
 
 function openingOf(register: Register, node: ElementId): ElementPatch {
   const opening = openingElement(register, node)
@@ -130,10 +127,7 @@ export function slideUndoable(register: Register, file: readonly SlideId[], edit
     }
   }
   if (elementCommand(edit)) return elementsUndoable(register, file, [edit])
-  const after = spotOf(decision.register, file, edit.id)
-  if (after === undefined) return null
-  const before = spotOf(register, file, edit.id) ?? { present: false, key: after.key }
-  return { slide: edit.id, file, before, after }
+  return gridUndoable(register, decision.register, file, edit)
 }
 
 export function elementsUndoable(
@@ -188,18 +182,6 @@ function applying(register: Register, commands: readonly Command[] | null): read
   return commands
 }
 
-function sits(spot: SlideSpot | undefined, wanted: SlideSpot): boolean {
-  if (spot === undefined || spot.present !== wanted.present) return false
-  return !wanted.present || spot.key === wanted.key
-}
-
-function slideTurn(from: SlideSpot, to: SlideSpot, id: SlideId): SlideCommand | null {
-  if (from.present && !to.present) return { slide: "remove", id }
-  if (!from.present && to.present) return { slide: "restore", id, key: to.key }
-  if (from.present && to.present && from.key !== to.key) return { slide: "move", id, key: to.key }
-  return null
-}
-
 function elementsTurn(register: Register, undoable: ElementsUndoable, from: "before" | "after"): Turns {
   const to = from === "before" ? "after" : "before"
   if (undoable[from] === undoable[to]) return changed
@@ -231,6 +213,15 @@ function turnCommands(
   const to = from === "before" ? "after" : "before"
   if ("steps" in undoable) return applying(register, stepCommands(register, undoable.steps, from))
   const file = register.file.length > 0 ? register.file : undoable.file
+  if ("spots" in undoable) {
+    const inverse = <T>(step: { readonly before: T; readonly after: T }) => ({ before: step[from], after: step[to] })
+    const turn: GridTurn = {
+      spots: undoable.spots.map((step) => ({ id: step.id, ...inverse(step) })),
+      heads: undoable.heads.map((step) => ({ id: step.id, ...inverse(step) })),
+      rows: from === "before" ? undoable.rowsBefore : undoable.rowsAfter,
+    }
+    return landing(register, { command: "slide", file, edit: { slide: "grid-turn", grid: 1, turn } })
+  }
   if ("stack" in undoable) {
     const chain = elementStacks(register).find(
       (stack) => stack.slide === undoable.slide && stack.ids.includes(undoable.stack),
@@ -255,10 +246,35 @@ function turnCommands(
     }
     return ungroupTurn(register, file, undoable.slide, undoable.group)
   }
-  if (!sits(spotOf(register, undoable.file, undoable.slide), undoable[from])) return null
-  const edit = slideTurn(undoable[from], undoable[to], undoable.slide)
+  const spot = foldSlides({ file, order: register.order }).find((spot) => spot.id === undoable.slide)
+  if (
+    (spot?.present ?? false) !== undoable[from].present ||
+    (undoable[from].present && spot?.key !== undoable[from].key)
+  )
+    return null
+  const before = undoable[from],
+    after = undoable[to]
+  const edit: SlideCommand | null =
+    before.present && !after.present
+      ? { slide: "remove", id: undoable.slide }
+      : !before.present && after.present
+        ? { slide: "restore", id: undoable.slide, key: after.key }
+        : before.present && after.present && before.key !== after.key
+          ? { slide: "move", id: undoable.slide, key: after.key }
+          : null
   if (edit === null) return null
-  return landing(register, { command: "slide", file, edit })
+  const projected = decide(register, { command: "slide", file, edit })
+  if (projected.decision !== "apply") return null
+  const planned = gridUndoable(register, projected.register, file, edit)
+  return landing(register, {
+    command: "slide",
+    file,
+    edit: {
+      slide: "grid-turn",
+      grid: 1,
+      turn: { spots: planned.spots, heads: planned.heads, rows: planned.rowsBefore },
+    },
+  })
 }
 
 function turn(register: Register, undoable: Undoable, from: "before" | "after"): Turns {
@@ -273,11 +289,6 @@ export function undoOf(register: Register, undoable: Undoable): Turns {
 
 export function redoOf(register: Register, undoable: Undoable): Turns {
   return turn(register, undoable, "before")
-}
-
-function spotIn(state: SlideState, id: SlideId): SlideSpot | undefined {
-  const spot = foldSlides(state).find((each) => each.id === id)
-  return spot === undefined ? undefined : { present: spot.present, key: spot.key }
 }
 
 function personEdited(register: Register, node: ElementId): boolean {
@@ -311,15 +322,18 @@ function undoableAt(register: Register, at: number, edit: SlideCommand): Undoabl
       after: !elementGone({ file: register.file, order: upTo }, node),
     }
   }
-  const turnsSlide = (row: SlideCommand) => (row.slide === "remove" || row.slide === "restore") && row.id === edit.id
+  if (edit.slide === "grid-turn") return null
+  const turnsSlide = (row: SlideCommand) =>
+    ((row.slide === "remove" || row.slide === "restore") && row.id === edit.id) ||
+    (row.slide === "grid-turn" &&
+      row.turn.spots.some((step) => step.id === edit.id && step.before.present !== step.after.present))
   if (fencedSince(register, at, edit, turnsSlide)) return null
-  const after = spotIn({ file: register.file, order: register.order.slice(0, at + 1) }, edit.id)
-  if (after === undefined) return null
-  const before = spotIn({ file: register.file, order: register.order.slice(0, at) }, edit.id) ?? {
-    present: false,
-    key: after.key,
-  }
-  return { slide: edit.id, file: register.file, before, after }
+  return gridUndoable(
+    { ...register, order: register.order.slice(0, at) },
+    { ...register, order: register.order.slice(0, at + 1) },
+    register.file,
+    edit,
+  )
 }
 
 function groupUndone(register: Register, edit: GroupCommand): Register | null {

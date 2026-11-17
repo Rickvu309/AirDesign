@@ -1,3 +1,4 @@
+import { foldGrid } from "@airdesign/document"
 import {
   elementCommand,
   elementStacks,
@@ -143,7 +144,7 @@ function slideShown(
 
 function needed(state: SlideState): ReadonlySet<SlideId> {
   const kept = new Set<SlideId>(presentSlides(state).map((spot) => spot.id))
-  for (const command of state.order.toReversed()) {
+  for (const command of foldGrid(state).effects.toReversed()) {
     if (!kept.has(command.id)) continue
     if (command.slide === "add") kept.add(command.after).add(command.layout)
     if (command.slide === "clone") kept.add(command.source)
@@ -196,7 +197,7 @@ export function orderedParts(
   const pending: Pending = new Map()
   let next: ReadonlyMap<string, Uint8Array> = parts
   for (const [at, command] of state.order.entries()) {
-    if (!kept.has(command.id)) continue
+    if (!("id" in command) || !kept.has(command.id)) continue
     if (elementCommand(command)) {
       pendingAfter(pending, command)
       continue

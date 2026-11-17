@@ -4,8 +4,8 @@
     {
       "file": "packages/document/src/element-order.ts",
       "names": ["elementRefusal", "elementGone", "nextElementId", "addedPictures"],
-      "digest": "5cd699a48f7f",
-      "blob": "b1720be65b488aaccbc3248bbeaac09adaf102cb"
+      "digest": "7d9c267d6a48",
+      "blob": "99140b7ed180e15bbf899daf35e8f40b022d0986"
     },
     {
       "file": "packages/document/src/person-undo.ts",
@@ -20,8 +20,8 @@
         "shownOn",
         "stillShows"
       ],
-      "digest": "fb09a86ac15c",
-      "blob": "4ca54e86e0e943bec38162ef65b5dc7760c77a79"
+      "digest": "6c5053f78b06",
+      "blob": "5fcaf089d0926fd398ac333a6cd23a8cd33b82e4"
     },
     {
       "file": "packages/document/src/row.ts",
@@ -33,7 +33,7 @@
       "file": "packages/document/src/slide-measure.ts",
       "names": ["slideMeasure"],
       "digest": "173356989bda",
-      "blob": "d1c2eb0b3bba9a8163549a3d99b7077caebad226"
+      "blob": "60dbbfdd214c20ed917a2182b1e9549c75aa88c8"
     },
     {
       "file": "packages/engine/src/agent-elements.ts",
@@ -44,8 +44,8 @@
     {
       "file": "packages/document/src/slide-order.ts",
       "names": ["applySlide"],
-      "digest": "3d303f098222",
-      "blob": "7e5f6f9c415e3871288c7e085bf530bbfaf3e433"
+      "digest": "59758fc98738",
+      "blob": "6fcd4c11038b30bf1a45c5c3680f04831b0d309e"
     },
     {
       "file": "packages/document/src/decide.ts",

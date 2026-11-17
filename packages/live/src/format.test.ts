@@ -108,3 +108,32 @@ it("stops writing once the register answer says a newer format", async () => {
   expect(calls).toEqual(["open deck"])
   expect(await storedNodes(format)).toEqual([])
 })
+
+for (const kind of ["pending", "confirmed"]) {
+  it(`keeps an unfamiliar ${kind} slide command on disk and refuses it as newer`, async () => {
+    const { remote, calls } = tracedRemote()
+    const raw = {
+      kind,
+      deck: "deck",
+      order: 1,
+      revision: 1,
+      base: 0,
+      value: "",
+      slideFile: ["256"],
+      slideEdit: { slide: "future-grid", grid: 2 },
+      once: "sealed",
+    }
+    await storeRow(format, raw)
+    expect(await connect(remote).openDeck("deck")).toEqual(newer)
+    expect(calls).not.toContain("commit deck")
+    const database = await opened(format)
+    const request = database
+      .transaction(storeName, "readonly")
+      .objectStore(storeName)
+      .get(scoped(accountKey() ?? "", rowKey("deck", "pending", 1)))
+    const stored = await new Promise((resolve) => {
+      request.onsuccess = () => resolve(request.result)
+    })
+    expect(stored).toEqual(raw)
+  })
+}

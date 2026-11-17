@@ -39,6 +39,7 @@ export function openingElement(state: Floored, node: ElementId): IndexElement | 
   const slide = shapeOf(node).slide
   for (const command of state.order) {
     if (
+      !("id" in command) ||
       command.id !== slide ||
       (command.slide !== "add" &&
         command.slide !== "clone" &&

@@ -84,10 +84,10 @@ it("refuses text on a slide and a slide that is not there", () => {
 it("gives a duplicate the background its source's fill row shows, and no opening when the source shows its layout's", () => {
   const rowed = landed(filled(indexed(), "256", `#${hex}`))
   const copy = landed(changeCall("duplicate_slide", rowed, agent, { deck: "deck", base: rowed.revision, slide: "256" }))
-  const minted = copy.register.order.at(-1)?.id ?? ""
+  const minted = copy.register.order.find((command) => command.slide === "clone")?.id ?? ""
   expect(openingElement(copy.register, elementId(`${minted}.slide`))?.opening).toEqual({ fill: { value: navy } })
   const plain = landed(changeCall("duplicate_slide", indexed(), agent, { deck: "deck", base: 0, slide: "257" }))
-  const blank = plain.register.order.at(-1)?.id ?? ""
+  const blank = plain.register.order.find((command) => command.slide === "clone")?.id ?? ""
   expect(openingElement(plain.register, elementId(`${blank}.slide`))).toEqual({
     node: `${blank}.slide`,
     kind: "slide",

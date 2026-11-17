@@ -14,7 +14,7 @@ type Measured = SlideState & { readonly index?: DeckIndex }
 function floorEnd(state: Measured, slide: SlideId): number {
   let end = 1
   for (const command of state.order) {
-    if (command.id !== slide) continue
+    if (!("id" in command) || command.id !== slide) continue
     for (const element of floorOf(command))
       if (slideKind(element.node) === null) end = Math.max(end, Number(shapeOf(element.node).shape))
   }

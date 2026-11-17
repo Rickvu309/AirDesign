@@ -1,6 +1,9 @@
 import type { DeckId } from "@airdesign/catalog"
 import {
   decide,
+  format,
+  newerFormat,
+  newerSlideCommand,
   legacyElement,
   openRegister,
   readElementId,
@@ -49,7 +52,7 @@ export function rowsFromRegister(deck: DeckId, register: Register): ConfirmedRow
     }
   }
   for (const edit of register.order) {
-    into.push({ kind: "confirmed", deck, revision, value: "", slideFile: register.file, slideEdit: edit })
+    into.push({ kind: "confirmed", deck, revision, value: "", format, slideFile: register.file, slideEdit: edit })
     revision += 1
   }
   return into
@@ -68,6 +71,7 @@ function opened(register: Register, node: ElementId | undefined, floor: string):
 }
 
 export function played(deck: DeckId, confirmed: readonly ConfirmedRow[], pending: readonly PendingRow[]): Register {
+  if ([...confirmed, ...pending].some(newerRow)) throw new Error("newer")
   let register = openRegister("", deck)
   const versions = new Map<string, number>()
   const seeded: Queued[] = []
@@ -86,6 +90,7 @@ export function played(deck: DeckId, confirmed: readonly ConfirmedRow[], pending
 }
 
 export function newerRow(row: StoredRow): boolean {
+  if (newerFormat(row) || newerSlideCommand(row.slideEdit)) return true
   const read = row.slideEdit === undefined ? readRow(row, "text") : null
   return read !== null && !read.ok && read.refusal === "newer"
 }
@@ -100,6 +105,7 @@ export function readable(row: StoredRow): boolean {
 }
 
 export function split(rows: readonly StoredRow[]): { confirmed: ConfirmedRow[]; pending: PendingRow[] } {
+  if (rows.some(newerRow)) throw new Error("newer")
   const confirmed = rows
     .filter(isConfirmed)
     .filter(readable)

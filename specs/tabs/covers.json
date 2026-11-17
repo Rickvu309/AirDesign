@@ -4,8 +4,8 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect", "unlessNewer", "heard"],
-      "digest": "b6a6d56982c6",
-      "blob": "de80abb98be8a71f55a91c355f13eb0742c0c71f"
+      "digest": "905c9a399ee4",
+      "blob": "4ad27345e95d272aa945dbb8a9e9cad98489f1bf"
     },
     {
       "file": "packages/live/src/held.ts",
@@ -16,20 +16,20 @@
     {
       "file": "packages/live/src/deck-view.ts",
       "names": ["rowsFromRegister", "played"],
-      "digest": "d2b011c0c691",
-      "blob": "80e985714c6ed288785cf04da6855476f7e59461"
+      "digest": "8eec2a7abaaf",
+      "blob": "f5eb59f7dd2c43bf0a3fc0f75fb14f8661c3a755"
     },
     {
       "file": "packages/live/src/store.ts",
       "names": ["fitConfirmed", "logicalValues"],
       "digest": "c511aab30e59",
-      "blob": "87f4db659db472750c6c8d629e0e48d084e22d2c"
+      "blob": "42bd06854a23e691948051d25f693b09d0ee5fc5"
     },
     {
       "file": "packages/live/src/slide-replay.ts",
       "names": ["withSlides", "landed", "staleText"],
       "digest": "08d2e75fef0a",
-      "blob": "20db9b6017d6fd6addd54c9b1f394eb56f18eb34"
+      "blob": "ebfb971ee339d0d36f3b44e6957d784132aee54d"
     },
     {
       "file": "packages/live/src/device.ts",

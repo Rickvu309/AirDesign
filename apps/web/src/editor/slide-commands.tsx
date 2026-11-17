@@ -1,4 +1,4 @@
-import { type Undoable } from "@airdesign/document"
+import { presentSlides, gridRows, type Undoable } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { SlideCanvas } from "@airdesign/render"
 import type { CommitOutcome } from "@/commit-edit"
@@ -6,7 +6,7 @@ import { slideListCopy } from "@/copy/slide-list-copy"
 import type { SlideStrip } from "@/editor/slide-sidebar"
 import { showSlideDeleted, type UndoOf } from "@/editor/slide-toast"
 import type { DeckPaint } from "@/editor/use-deck-paint"
-import { commitSlideChange, type SlideChange } from "@/slide-edit"
+import { fileSlides, commitSlideChange, type SlideChange } from "@/slide-edit"
 import { thumbHeight } from "@/thumb-height"
 import type { UndoEntry } from "@/undo-list"
 import { slideNames } from "@/undo-names"
@@ -49,8 +49,13 @@ export function slideCommands(deck: CommandedDeck, undo: () => void): SlideStrip
     await run
   }
 
+  const register = deck.shown.shownRegister.current
+  const file = fileSlides(shownParts.current, register ?? { file: [], order: [] })
+  const state = { file, order: register?.order ?? [] }
+  const sequence = presentSlides(state).map((spot) => spot.id)
   return {
     count: slideCount,
+    gridStarts: gridRows(state).map((row) => sequence.indexOf(row[0])),
     sections,
     current,
     onSelect: setCurrent,

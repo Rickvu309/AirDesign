@@ -1,6 +1,6 @@
 ---
 name: verify-airdesign-formal
-description: "Check AirDesign's 26 TLA+ specs under specs/ and their replays against the code they describe: run one spec or all with TLC, read a counterexample step by step, tell a code bug from a model error, and keep each spec in step with the code. Use when a change touches edit order, runs, undo, person undo, a Delete of several elements and its undo, undo straight after typing, a design panel change, a reset field and how fields fold, Undo or Redo before the server answers, slides and elements, the import index, offline replay, a lost answer to a person's command, two tabs or two builds sharing one deck in one browser, the editor following the network and its save status, agent turns, two agents on one account, a run's slide commands and their Stop and Undo, slide sections, Aira stop, Aira's loop in the browser, usage, OAuth or deck ownership, or when a spec or replay fails."
+description: "Check AirDesign's TLA+ specs under specs/ and their replays against the code they describe: run one spec or all with TLC, read a counterexample step by step, tell a code bug from a model error, and keep each spec in step with the code. Use when a change touches edit order, runs, undo, person undo, a Delete of several elements and its undo, undo straight after typing, a design panel change, a reset field and how fields fold, Undo or Redo before the server answers, slides and elements, stored grid rows, the import index, offline replay, a lost answer to a person's command, two tabs or two builds sharing one deck in one browser, the editor following the network and its save status, agent turns, two agents on one account, a run's slide commands and their Stop and Undo, slide sections, Aira stop, Aira's loop in the browser, usage, OAuth or deck ownership, or when a spec or replay fails."
 ---
 
 # Verify AirDesign formally
@@ -8,6 +8,8 @@ description: "Check AirDesign's 26 TLA+ specs under specs/ and their replays aga
 Each folder in `specs/<topic>` holds a TLA+ model (`<Module>.tla`), its bounds and checked properties (`<Module>.cfg`), and a reader view (`view.mjs`) that turns a model state and step into words. TLC checks every reachable state of the model. A replay then drives the model's edges through the real functions, so a model that drifts from the code fails a test. A pass covers the model under its bounds and the code the replay drives. It does not cover code outside them.
 
 The coverage record has one entry per check: the properties, the code it covers, the bounds, the command, the replay, the gaps and the known bugs. Each spec's `specs/<topic>/covers.json` names the declarations its model describes, file by file, with a digest of their source at the last sync. [checks-document.md](checks-document.md) holds edit, undo, rerun, run, offline, index and sections. [checks-element.md](checks-element.md) holds element. [checks-structure.md](checks-structure.md) holds structure. [checks-lost-answer.md](checks-lost-answer.md) holds lost-answer. [checks-server.md](checks-server.md) holds turn, agents, stop, aira-loop, usage, oauth and owner. [checks-slides.md](checks-slides.md) holds slide-run, slide-sibling and slide-undo. [checks-undo.md](checks-undo.md) holds person-undo, multi-step and typing. [checks-device-queue.md](checks-device-queue.md) holds device-queue. [checks-field-fold.md](checks-field-fold.md) holds field-fold. [checks-tabs.md](checks-tabs.md) holds tabs. [checks-connection.md](checks-connection.md) holds connection. Read the entry for every check your change touches before you trust a pass.
+
+For stored grid rows, read [checks-grid.md](checks-grid.md).
 
 ## 1. Find the checks your change touches
 
@@ -25,7 +27,7 @@ pnpm check:specs                 # every spec, then each known failure
 pnpm check:specs turn index      # only the named specs
 ```
 
-Each line says the distinct state count, the verdict and the time. TLC takes 1 to 5 s per spec, mostly JVM start, and about 40 s for all 26. A spec must stay under 500 distinct states. Results are cached by a hash of every `.tla` and `.cfg` file in the folder, so any edit to them reruns TLC, and an unchanged spec answers from the cache. `pnpm check` keeps its cache in `~/.cache/airdesign/spec-results`. To force a fresh run, set `AIRDESIGN_SPEC_CACHE` to an empty folder.
+Each line says the distinct state count, the verdict and the time. TLC takes 1 to 5 s per spec, mostly JVM start, and about 40 s for the full set. A spec must stay under 500 distinct states. Results are cached by a hash of every `.tla` and `.cfg` file in the folder, so any edit to them reruns TLC, and an unchanged spec answers from the cache. `pnpm check` keeps its cache in `~/.cache/airdesign/spec-results`. To force a fresh run, set `AIRDESIGN_SPEC_CACHE` to an empty folder.
 
 Then run the replays:
 

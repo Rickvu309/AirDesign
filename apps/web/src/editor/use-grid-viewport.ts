@@ -252,6 +252,8 @@ export function useGridViewport({
         return wanted === null || (entry !== null && entry !== undefined && wanted.has(entry))
       })
       .map((card) => card.getBoundingClientRect())
+    if (wanted === null)
+      cards.push(...[...content.querySelectorAll("[data-section-head]")].map((head) => head.getBoundingClientRect()))
     if (wanted !== null && cards.length === 0) return
     const next = fittedGridCards(view.current, cards, host.getBoundingClientRect())
     paint(next)

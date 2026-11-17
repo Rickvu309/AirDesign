@@ -9,8 +9,6 @@ import {
   openingElement,
   foldSlides,
   nextSlideId,
-  orderKeyBetween,
-  orderKeyAfter,
   presentSlides,
   readSlideId,
   shapeOf,
@@ -84,9 +82,9 @@ export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, b
   const id = nextSlideId(foldSlides(state).map((row) => row.id))
   let edit: SlideCommand
   if (parsed.op === "add_slide") {
-    const key = orderKeyAfter(spots, parsed.after)
     const layoutSpot = spots.find((row) => row.id === parsed.layout)
-    if (key === null || layoutSpot === undefined) return { ok: false, refusal: "dead" }
+    if (!spots.some((spot) => spot.id === parsed.after) || layoutSpot === undefined)
+      return { ok: false, refusal: "dead" }
     let layout = parsed.layout
     let floor: readonly IndexElement[] | undefined
     for (let count = 0; count <= register.order.length; count += 1) {
@@ -101,18 +99,21 @@ export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, b
     }
     floor ??= index.slides.find((row) => row.id === layout)?.layout
     if (floor === undefined) return { ok: false, refusal: "dead" }
-    edit = { slide: "add", id, after: parsed.after, key, layout: parsed.layout, floor: floorFor(floor, id) }
+    edit = {
+      slide: "add",
+      id,
+      after: parsed.after,
+      grid: 1,
+      row: "same",
+      layout: parsed.layout,
+      floor: floorFor(floor, id),
+    }
   } else if (parsed.op === "move_slide") {
-    const remaining = spots.filter((row) => row.id !== parsed.slide)
-    const key =
-      parsed.after === null ? orderKeyBetween(null, remaining[0]?.key ?? null) : orderKeyAfter(remaining, parsed.after)
-    if (key === null) return { ok: false, refusal: "dead" }
-    edit = { slide: "move", id: parsed.slide, key }
+    edit = { slide: "move", id: parsed.slide, after: parsed.after, grid: 1, row: "same" }
   } else if (parsed.op === "delete_slide") {
-    edit = { slide: "remove", id: parsed.slide }
+    edit = { slide: "remove", id: parsed.slide, grid: 1 }
   } else {
-    const key = orderKeyAfter(spots, parsed.slide)
-    if (key === null) return { ok: false, refusal: "dead" }
+    if (!spots.some((spot) => spot.id === parsed.slide)) return { ok: false, refusal: "dead" }
     const floor = openingRows(register, index, parsed.slide)
       .filter((row) => !elementGone(register, row.node) && slideKind(row.node) !== "slide")
       .map((row) => {
@@ -125,7 +126,7 @@ export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, b
       slide: "clone",
       id,
       source: parsed.slide,
-      key,
+      grid: 1,
       floor: floorFor([...floor, ownFloor(register, parsed.slide)], id),
     }
   }

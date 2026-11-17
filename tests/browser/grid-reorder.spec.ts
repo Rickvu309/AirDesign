@@ -130,9 +130,13 @@ test("drops land where the bar shows at 25% and 150%, after panning, at the firs
   await expect.poll(saved.order).toEqual(picked(saved.ids, [3, 2, 4, 5, 6, 7, 8, 1]))
 })
 
-test("a slide dropped into another section at 60% joins it where the bar shows", async ({ page, context, stack }) => {
+test("a slide dropped into another section in the shared row joins it where the bar shows", async ({
+  page,
+  context,
+  stack,
+}) => {
   const saved = await openSaved(page, context, stack, join(fixtures, "sections-after.pptx"))
-  await zoomTo(page, 60)
+  await zoomTo(page, 25)
   await entry(page, 1).focus()
   await grab(page, 1)
   await hover(page, 3, 0.7)

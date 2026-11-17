@@ -130,6 +130,9 @@ _Avoid_: presentation, project, file (a file is what a deck is imported from or 
 One page of a deck.
 _Avoid_: page, frame
 
+**grid row**:
+Slides kept together in Grid, separate from PowerPoint sections. Rows are not exported.
+
 **import**:
 To make a deck from a PowerPoint file.
 _Avoid_: upload, open, convert

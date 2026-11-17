@@ -85,7 +85,7 @@ export const catalog = {
     runsOn: "server",
     read: readDeckQuery,
     description:
-      "Read one deck this account owns. slides lists slide ids in position order. Indexed elements include node (element id), slide, kind, opening or changed value and box, and version (0 before any change). role names a placeholder. design is one line of the element's look, as the instructions say. closed means a person's newer change or another run holds it. grouped elements refuse box changes. index is ready, pending, or missing; pending or missing means the owner must open the deck in AirDesign to finish indexing. Send slide or cursor to read the rest.",
+      "Read one deck this account owns. slides lists slide ids in position order. Every page includes grid.starts, the ids that start grid rows. Added, duplicated and moved slides join their anchor's row. Indexed elements include node (element id), slide, kind, opening or changed value and box, and version (0 before any change). role names a placeholder. design is one line of the element's look, as the instructions say. closed means a person's newer change or another run holds it. grouped elements refuse box changes. index is ready, pending, or missing; pending or missing means the owner must open the deck in AirDesign to finish indexing. Send slide or cursor to read the rest.",
   },
 } as const satisfies Readonly<Record<string, OpRow>>
 
