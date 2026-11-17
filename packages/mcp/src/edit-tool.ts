@@ -27,7 +27,6 @@ import {
   stopForNewTurn,
 } from "./run.js"
 import { changeDetail } from "./change-detail.js"
-import { tableProblem } from "./table-from.js"
 import { textProblem } from "./text-from.js"
 import { heldRun, holders } from "./turn.js"
 
@@ -125,7 +124,7 @@ export function editDeck(raw: unknown, session: Session): ToolResult {
   const checked = [...named, ...setTexts(before.register, parsed.changes)]
   const floors = elementFloors(before.register, checked)
   if (!floors.ok) return editRefusal(before, floors.refusal, nodes)
-  const problem = tableProblem(floors.floors, checked) ?? textProblem(floors.floors, checked)
+  const problem = textProblem(floors.floors, checked)
   if (problem !== undefined) return editRefusal(before, problem.code, nodes, problem.detail)
   const holds = runElements(before.register, parsed.changes).length > 0
   const opened = holds ? startedTurn(raw, session) : addTurn(session, parsed.base)

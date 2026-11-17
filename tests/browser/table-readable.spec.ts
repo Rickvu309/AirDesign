@@ -3,7 +3,6 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { tableReadableExportName } from "../../scripts/pptx-cases/trait-table.mjs"
 import { historicalTable } from "./historical-table"
-import { contrast } from "../../packages/document/src/index.ts"
 import { settled } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 
@@ -23,6 +22,7 @@ async function shown(page: Page, spot: string): Promise<{ text: string; ink: str
       const holder = node?.parentElement ?? cell
       return [node?.textContent ?? "", hex(getComputedStyle(holder).color), hex(getComputedStyle(cell).backgroundColor)]
     })
+  const { contrast } = await import("../../packages/document/src/index.ts")
   return { text, ink, ground, ratio: contrast(ink, ground) }
 }
 
