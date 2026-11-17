@@ -1,3 +1,4 @@
+import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { actualSize } from "./paint-scale"
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
@@ -151,7 +152,7 @@ test("the canvas anchors text in columns, keeps the fit a file stored until its 
 
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await shapeAt(page, "25").click({ position: { x: 4, y: 4 } })
-  await unfold(page.locator("[data-design-element]"), "Text box")
+  await unfold(page.locator("[data-design-element]"), designCopy.panels.text)
   const autofit = page
     .locator("[data-design-element] section")
     .filter({ has: page.getByRole("heading", { name: "Text box", exact: true }) })
@@ -191,6 +192,7 @@ test("the canvas anchors text in columns, keeps the fit a file stored until its 
   await expect.poll(async () => (await laid(shapeAt(page, "25"))).height).toBeCloseTo(taller.height, 0)
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await shapeAt(page, "25").click({ position: { x: 4, y: 4 } })
+  await unfold(page.locator("[data-design-element]"), designCopy.panels.text)
   await expect(autofit).toHaveText(/^Resize shape to fit text/)
   await choose("Do not Autofit")
   await expect.poll(async () => (await laid(shapeAt(page, "25"))).height).toBeCloseTo(loose.height, 0)

@@ -1,7 +1,6 @@
 import type { Color } from "@airdesign/document"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
-import { designCopy } from "@/copy/design-copy"
 import { optionCopy } from "@/copy/option-copy"
 import { caseSeed, firstColor, seedOf } from "@/design/control-seed"
 import { partControl, type ControlProps } from "@/design/panel"
@@ -125,26 +124,23 @@ function unionValue(control: ControlProps["control"], palette: ControlProps["pal
 export function FillDetails({ control, palette, onChange }: ControlProps) {
   const chosen = heldOf(control)
   return (
-    <details className="border-t border-line px-4 py-3" data-fill-details>
-      <summary className="text-[length:var(--type-caption)] text-quiet">{designCopy.fillDetails}</summary>
-      <div className="flex items-center justify-between pt-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          aria-pressed={chosen !== null && "pattern" in chosen}
-          onClick={() => {
-            if (chosen === null || !("pattern" in chosen)) onChange(unionValue(control, palette, "pattern"))
-          }}
-        >
-          {optionCopy.pattern}
+    <div className="flex items-center justify-between">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        aria-pressed={chosen !== null && "pattern" in chosen}
+        onClick={() => {
+          if (chosen === null || !("pattern" in chosen)) onChange(unionValue(control, palette, "pattern"))
+        }}
+      >
+        {optionCopy.pattern}
+      </Button>
+      {control.reset === null ? null : (
+        <Button type="button" variant="ghost" size="sm" onClick={() => onChange(null)}>
+          {control.reset}
         </Button>
-        {control.reset === null ? null : (
-          <Button type="button" variant="ghost" size="sm" onClick={() => onChange(null)}>
-            {control.reset}
-          </Button>
-        )}
-      </div>
-    </details>
+      )}
+    </div>
   )
 }

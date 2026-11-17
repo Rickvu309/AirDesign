@@ -5,7 +5,7 @@ import { toast } from "@/components/ui/toast"
 import { moveDeck } from "@/decks/move-deck"
 import { useFontReady } from "@/editor/use-font-ready"
 import { storeNewer, watchNewer } from "@airdesign/live"
-import { useSyncExternalStore, useState } from "react"
+import { useState, useSyncExternalStore } from "react"
 import { NotFoundPage } from "@/decks/not-found-page"
 import { DownloadedNotice, ThinNoticeView } from "@/thin-notice"
 import { EditorFrame } from "@/editor/editor-frame"
@@ -26,11 +26,14 @@ import { AiraPanel } from "@/aira-panel"
 import { colorsIn } from "@/editor/deck-colors"
 import { LiveDesignPanel } from "@/editor/live-design-panel"
 
+import type { PanelMode } from "@/design/panel-order"
+
 export function ThinDeck({ id }: { id: string }) {
   const deck = useEditorDeck(id)
   const [selectedSlides, setSelectedSlides] = useState<readonly number[]>([])
   const paintedDeck = useFontReady(deck.paintedDeck)
   const [panel, setPanel] = useKeptPanel(id)
+  const [mode, setMode] = useState<PanelMode>("slides")
   useDeckOpen(deck)
   useNetwork(deck)
   const undoButtons = useUndoTurn(deck)
@@ -117,10 +120,16 @@ export function ThinDeck({ id }: { id: string }) {
           onNotes={(value) => notesBar.edit(currentSlide, value)}
           panel={panel}
           onPanel={setPanel}
+          designMode={{ value: mode, onChange: setMode }}
           side={(selectedCount) => (
             <>
               {panel === "design" ? (
-                <LiveDesignPanel deck={{ ...deck, selectedSlides }} selectedSlides={selectedCount} />
+                <LiveDesignPanel
+                  deck={{ ...deck, selectedSlides }}
+                  selectedSlides={selectedCount}
+                  mode={mode}
+                  onMode={setMode}
+                />
               ) : null}
               <AiraPanel key={id} deck={id} hidden={panel !== "agent"} />
             </>

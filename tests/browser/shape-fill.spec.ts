@@ -1,11 +1,10 @@
-import { openFillDetails } from "./design-panel"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { exportFromDialog } from "./export-dialog"
 import { boxFillPanel, fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
-import { openDeck, pickColor, settled, shownColor } from "./design-panel"
+import { openDeck, openFillDetails, pickColor, settled, setPanelMode, shownColor } from "./design-panel"
 
 const exportName = "exported-shape-fill.pptx"
 const judged = join(process.cwd(), "tests/browser", exportName)
@@ -31,6 +30,7 @@ test("a person fills a shape whose fill comes from its style with a color and an
   const accentOne = await filled(rectangle)
   const panel = await fillPanel(page, rectangle)
   const kinds = panel.getByRole("group", { name: "Fill", exact: true })
+  await setPanelMode(page, "slides")
   await expect(kinds.getByRole("button")).toHaveText(["None", "Color", "Gradient", "Icon"])
   await expect(kinds.getByRole("button", { name: "Color", exact: true })).toHaveAttribute("aria-pressed", "true")
   await expect(panel.getByRole("button", { name: fillCopy.reset, exact: true })).toHaveCount(0)

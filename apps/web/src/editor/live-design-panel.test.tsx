@@ -12,13 +12,14 @@ import {
   type Row,
 } from "@airdesign/document"
 import { readParts, readSlides } from "@airdesign/pptx"
-import { act, createElement } from "react"
+import { act, createElement, useState } from "react"
 import { designCopy } from "@/copy/design-copy"
 import { formatCopy } from "@/copy/format-copy"
 import { fillCopy } from "@/copy/fill-copy"
 import { pictureCopy } from "@/copy/picture-copy"
 import { toast } from "@/components/ui/toast"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
+import type { PanelMode } from "@/design/panel-order"
 import type { DeckPaint } from "./use-deck-paint"
 
 const device = vi.hoisted(() => ({ link: null as unknown }))
@@ -48,8 +49,11 @@ function Panel(props: { readonly node: ElementId | null; readonly exposed: (show
   const pictures = { store: { bytes: new Map(), load: async () => false, keep: nothing } }
   const undo = editor.useUndoList()
   const shown = editor.useDeckPaint(deck, pictures, { show: nothing })
+  const [mode, setMode] = useState<PanelMode>(props.node === null ? "slides" : "design")
   props.exposed(shown)
   return createElement(editor.LiveDesignPanel, {
+    mode,
+    onMode: setMode,
     deck: {
       id: deck,
       shown,

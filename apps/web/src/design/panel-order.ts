@@ -1,91 +1,133 @@
 import type { ScopedElement } from "@airdesign/document"
-import type { PanelReads, SectionName } from "./panel"
+import type { PanelReads, PanelSection, SectionName } from "./panel"
 
 export type PanelKind = "text" | "shape" | "picture" | "connector" | "group" | "table" | "chart" | "kept" | "many"
 
-export type Place = { readonly section: SectionName; readonly open: boolean }
+export type PanelMode = "slides" | "design"
 
-const open = (section: SectionName): Place => ({ section, open: true })
-const shut = (section: SectionName): Place => ({ section, open: false })
+type PanelSectionName = SectionName | "selectionColors" | "templateStyle" | "background"
 
-export const panelOrder: Readonly<Record<PanelKind, readonly Place[]>> = {
+export type Place = {
+  readonly section: PanelSectionName
+  readonly open: boolean
+  readonly mode: PanelMode
+}
+
+const slides = (section: PanelSectionName): Place => ({ section, open: true, mode: "slides" })
+const design = (section: PanelSectionName, open = false): Place => ({ section, open, mode: "design" })
+
+export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>> = {
   text: [
-    open("alignment"),
-    open("text"),
-    open("link"),
-    open("textFill"),
-    open("opacity"),
-    shut("boxFill"),
-    shut("box"),
-    shut("line"),
-    shut("effects"),
-    shut("body"),
-    shut("geometry"),
-    shut("identity"),
-    shut("image"),
+    slides("alignment"),
+    slides("text"),
+    slides("link"),
+    slides("textFill"),
+    slides("opacity"),
+    design("boxFill"),
+    design("paragraphSpacing"),
+    design("box"),
+    design("line"),
+    design("effects"),
+    design("body"),
+    design("geometry"),
+    design("identity"),
+    design("image"),
+    design("selectionColors", true),
   ],
   shape: [
-    open("alignment"),
-    open("fill"),
-    open("opacity"),
-    open("corners"),
-    open("border"),
-    open("shadow"),
-    shut("geometry"),
-    shut("line"),
-    shut("effects"),
-    shut("box"),
-    shut("text"),
-    shut("link"),
-    shut("body"),
-    shut("identity"),
-    shut("image"),
+    slides("alignment"),
+    slides("fill"),
+    slides("opacity"),
+    slides("corners"),
+    slides("border"),
+    slides("shadow"),
+    slides("selectionColors"),
+    design("geometry"),
+    design("line"),
+    design("effects"),
+    design("box"),
+    design("text"),
+    design("paragraphSpacing"),
+    design("link"),
+    design("body"),
+    design("identity"),
+    design("image"),
   ],
   picture: [
-    open("alignment"),
-    open("pictureFill"),
-    open("opacity"),
-    open("corners"),
-    open("border"),
-    open("shadow"),
-    shut("image"),
-    shut("crop"),
-    shut("box"),
-    shut("line"),
-    shut("effects"),
-    shut("geometry"),
-    shut("identity"),
+    slides("alignment"),
+    slides("pictureFill"),
+    slides("opacity"),
+    slides("corners"),
+    slides("border"),
+    slides("shadow"),
+    design("image"),
+    design("crop"),
+    design("box"),
+    design("line"),
+    design("effects"),
+    design("geometry"),
+    design("identity"),
+    design("selectionColors", true),
   ],
   connector: [
-    open("alignment"),
-    open("border"),
-    open("shadow"),
-    shut("line"),
-    shut("connection"),
-    shut("opacity"),
-    shut("box"),
-    shut("effects"),
-    shut("geometry"),
-    shut("identity"),
+    slides("alignment"),
+    slides("border"),
+    slides("shadow"),
+    design("line"),
+    design("connection"),
+    design("opacity"),
+    design("box"),
+    design("effects"),
+    design("geometry"),
+    design("identity"),
+    design("selectionColors", true),
   ],
-  group: [open("alignment"), shut("box"), shut("effects"), shut("identity")],
-  table: [open("alignment"), shut("box"), shut("identity")],
-  chart: [open("alignment"), shut("box"), shut("identity")],
-  kept: [open("identity")],
+  group: [slides("alignment"), slides("selectionColors"), design("box"), design("effects"), design("identity")],
+  table: [slides("alignment"), design("box"), design("identity"), design("selectionColors", true)],
+  chart: [slides("alignment"), design("box"), design("identity"), design("selectionColors", true)],
+  kept: [design("identity", true), design("selectionColors", true)],
   many: [
-    open("alignment"),
-    open("text"),
-    open("textFill"),
-    open("fill"),
-    open("opacity"),
-    shut("boxFill"),
-    open("corners"),
-    open("border"),
-    open("shadow"),
-    shut("box"),
-    shut("line"),
-    shut("effects"),
+    slides("alignment"),
+    slides("text"),
+    slides("textFill"),
+    slides("fill"),
+    slides("opacity"),
+    design("boxFill"),
+    slides("link"),
+    slides("corners"),
+    slides("border"),
+    slides("shadow"),
+    slides("selectionColors"),
+    design("paragraphSpacing"),
+    design("box"),
+    design("line"),
+    design("effects"),
   ],
+  slide: [slides("templateStyle"), slides("background"), slides("selectionColors"), design("theme", true)],
+}
+
+export function panelPlaces(
+  kind: PanelKind | "slide",
+  mode: PanelMode,
+  selection: readonly (PanelKind | null)[] = [],
+): readonly Place[] {
+  const places = panelOrder[kind].filter((place) => mode === "design" || place.mode === mode)
+  const offered = selection.map((kind) => (kind === null ? [] : panelPlaces(kind, mode)))
+  return places.filter(({ section }) => offered.every((places) => places.some((place) => place.section === section)))
+}
+
+export function sectionInMode(section: PanelSection, mode: PanelMode): PanelSection {
+  if (mode === "design" || section.trait !== "fill") return section
+  return {
+    ...section,
+    strips: section.strips.map((strip) =>
+      strip.map((control) => {
+        if (control.desc.kind !== "union") return control
+        const { pattern: _pattern, ...cases } = control.desc.cases
+        return { ...control, desc: { ...control.desc, cases } }
+      }),
+    ),
+  }
 }
 
 export const loneRows: readonly string[] = [
@@ -97,7 +139,7 @@ export const loneRows: readonly string[] = [
   "connection.end",
 ]
 
-const panelKinds: readonly string[] = Object.keys(panelOrder)
+const panelKinds: readonly string[] = Object.keys(panelOrder).filter((kind) => kind !== "slide" && kind !== "many")
 
 function rectangle(value: unknown): boolean {
   return typeof value === "object" && value !== null && "preset" in value && value.preset === "rect"
