@@ -69,7 +69,7 @@ it.each(["A".repeat(8001), "é".repeat(4001), '"'.repeat(4000)])(
       expect(input.getAttribute("aria-invalid")).toBe("true")
       const id = input.getAttribute("aria-describedby") ?? ""
       expect(window.document.getElementById(id)?.textContent).toBe(
-        "Use less text. Text and formatting must fit within 8,000 bytes.",
+        "Use less text. This box holds up to 8,000 characters, including formatting.",
       )
       await act(async () => {
         input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", ctrlKey: true, bubbles: true }))

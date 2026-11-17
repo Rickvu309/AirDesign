@@ -125,7 +125,7 @@ function PassageField({ row, onChange }: ControlProps) {
   const { problemId, problem, correction } = useTextProblem(
     stored(draft ?? shown),
     limits.valueBytes,
-    designCopy.textTooLong,
+    designCopy.textTooLong(limits.valueBytes),
   )
 
   function commit(words: string) {

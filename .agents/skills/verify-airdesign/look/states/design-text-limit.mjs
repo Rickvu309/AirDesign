@@ -8,7 +8,7 @@ async function drive(kit) {
   await text.press("ControlOrMeta+Enter")
   await expect(
     kit.page
-      .getByText("Use less text. Text and formatting must fit within 8,000 bytes.")
+      .getByText("Use less text. This box holds up to 8,000 characters, including formatting.")
       .or(kit.page.locator("[data-sonner-toast]")),
   ).toBeVisible()
 }
