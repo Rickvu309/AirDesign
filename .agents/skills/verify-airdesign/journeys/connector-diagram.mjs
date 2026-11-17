@@ -22,7 +22,13 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   const canvas = page.locator("[data-slide-paint]")
   const element = (shape) => canvas.locator(`[data-canvas-element="${slide}#${shape}"]`)
   const placement = (shape) =>
-    element(shape).evaluate((frame) => [frame.style.left, frame.style.top, frame.style.width, frame.style.height])
+    element(shape).evaluate((frame) => {
+      const paint = frame.closest("[data-slide-paint]")
+      const scale = Number.parseFloat(paint.style.width)
+      return [frame.style.left, frame.style.top, frame.style.width, frame.style.height].map((value) =>
+        Math.round((Number.parseFloat(value) / scale) * 1_000_000),
+      )
+    })
   const saved = async (id) => (await post(deckRoutes.open, { deck: id }, cookie)).json
   const point = async (x, y) => {
     const paint = await canvas.boundingBox()

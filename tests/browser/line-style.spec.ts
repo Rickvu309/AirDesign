@@ -1,3 +1,4 @@
+import { actualSize } from "./paint-scale"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
@@ -67,24 +68,21 @@ test("a person widens and dashes a line that comes from its style and puts an ar
 }, testInfo) => {
   await rm(judged, { force: true })
   await openDeck(page, "shapes-added.pptx")
+  await actualSize(page)
   const rectangle = shapeAt(page, "4")
   const connector = shapeAt(page, "6")
   const before = await stroked(rectangle)
   const line = await pickShape(page, rectangle)
   const width = line.getByRole("textbox", { name: "Line width", exact: true })
   await expect(width).toHaveValue("1")
-  await expect(line.getByRole("group", { name: "Line", exact: true }).getByRole("button")).toHaveText([
-    "None",
-    "Color",
-    "Gradient",
-    "Pattern",
-  ])
+  expect(
+    await line
+      .getByRole("group", { name: "Line", exact: true })
+      .getByRole("button")
+      .evaluateAll((buttons) => buttons.map((button) => button.getAttribute("title"))),
+  ).toEqual(["None", "Color", "Gradient", "Pattern"])
   await expect(line.getByRole("combobox", { name: "Dash", exact: true })).toHaveText(/^Solid/)
-  await expect(line.getByRole("group", { name: "Cap", exact: true }).getByRole("button")).toHaveText([
-    "Flat",
-    "Round",
-    "Square",
-  ])
+  await expect(line.getByRole("combobox", { name: "Cap", exact: true })).toHaveText(/^Flat/)
   await width.fill("6")
   await width.press("Enter")
   await expect.poll(async () => (await stroked(rectangle)).width).not.toBe(before.width)
@@ -113,6 +111,7 @@ test("a person widens and dashes a line that comes from its style and puts an ar
 
   await page.reload()
   await settled(page)
+  await actualSize(page)
   await expect.poll(() => stroked(shapeAt(page, "4"))).toEqual(styled)
   await expect.poll(async () => (await stroked(shapeAt(page, "6"))).tail).toMatch(/url\(#.+-tail\)/)
 
@@ -133,6 +132,7 @@ test("a person widens and dashes a line that comes from its style and puts an ar
   await page.locator("input[type=file]").setInputFiles(file)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
+  await actualSize(page)
   await expect.poll(() => stroked(shapeAt(page, "4"))).toEqual(styled)
   await expect.poll(async () => (await stroked(shapeAt(page, "6"))).tail).toMatch(/url\(#.+-tail\)/)
 })

@@ -1,3 +1,4 @@
+import { actualSize } from "./paint-scale"
 import { expect, test } from "@playwright/test"
 import { designing, openDeck, pendingValues, placed, settled } from "./design-panel"
 
@@ -10,6 +11,7 @@ test("a length moves and sizes the selected element in points, Undo takes back e
   page,
 }) => {
   await openDeck(page, "clean.pptx")
+  await actualSize(page)
   const panel = await designing(page, page.locator('[contenteditable="true"]'))
   const x = panel.getByRole("textbox", { name: "X", exact: true })
   const width = panel.getByRole("textbox", { name: "Width", exact: true })
@@ -18,7 +20,7 @@ test("a length moves and sizes the selected element in points, Undo takes back e
   await expect(width).toHaveValue("432")
   await x.fill("72")
   await x.press("Enter")
-  await expect.poll(() => placed(page, element)).toEqual([60, 30, 360, 120])
+  await expect.poll(() => placed(page, element)).toEqual([96, 48, 576, 192])
   await expect(x).toHaveValue("72")
   await expect(page.locator("[data-selection]")).toHaveCount(1)
   await width.press("ArrowUp")
@@ -31,19 +33,21 @@ test("a length moves and sizes the selected element in points, Undo takes back e
   await page.getByRole("button", { name: "Undo resize", exact: true }).click()
   await expect(width).toHaveValue("432")
   await page.getByRole("button", { name: "Undo move", exact: true }).click()
-  await expect.poll(() => placed(page, element)).toEqual([30, 30, 360, 120])
+  await expect.poll(() => placed(page, element)).toEqual([48, 48, 576, 192])
   await expect(x).toHaveValue("36")
   await page.getByRole("button", { name: "Redo move", exact: true }).click()
-  await expect.poll(() => placed(page, element)).toEqual([60, 30, 360, 120])
+  await expect.poll(() => placed(page, element)).toEqual([96, 48, 576, 192])
   await page.reload()
   await settled(page)
-  await expect.poll(() => placed(page, element)).toEqual([60, 30, 360, 120])
+  await actualSize(page)
+  await expect.poll(() => placed(page, element)).toEqual([96, 48, 576, 192])
 })
 
 test("five arrow presses in one visit to a field are one undo step, and a press after leaving it is the next", async ({
   page,
 }) => {
   await openDeck(page, "clean.pptx")
+  await actualSize(page)
   const panel = await designing(page, page.locator('[contenteditable="true"]'))
   const width = panel.getByRole("textbox", { name: "Width", exact: true })
   await expect(width).toHaveValue("432")
@@ -60,17 +64,18 @@ test("five arrow presses in one visit to a field are one undo step, and a press 
   await page.keyboard.press("Control+z")
   await expect(width).toHaveValue("432")
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeDisabled()
-  await expect.poll(() => placed(page, element)).toEqual([30, 30, 360, 120])
+  await expect.poll(() => placed(page, element)).toEqual([48, 48, 576, 192])
 })
 
 test("dragging a field's label scrubs it in steps, Shift scrubs tens, and one Undo takes the whole scrub back", async ({
   page,
 }) => {
   await openDeck(page, "clean.pptx")
+  await actualSize(page)
   const panel = await designing(page, page.locator('[contenteditable="true"]'))
   const width = panel.getByRole("textbox", { name: "Width", exact: true })
   await expect(width).toHaveValue("432")
-  const label = width.locator("..").getByText("Width", { exact: true })
+  const label = width.locator("..").locator("span").first()
   const box = await label.boundingBox()
   if (box === null) throw new Error("the Width label has no box")
   const y = box.y + box.height / 2
@@ -92,11 +97,12 @@ test("dragging a field's label scrubs it in steps, Shift scrubs tens, and one Un
   await page.keyboard.press("Control+z")
   await expect(width).toHaveValue("432")
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeDisabled()
-  await expect.poll(() => placed(page, element)).toEqual([30, 30, 360, 120])
+  await expect.poll(() => placed(page, element)).toEqual([48, 48, 576, 192])
 })
 
 test("a length the slide cannot hold leaves the element where it was", async ({ page }) => {
   await openDeck(page, "clean.pptx")
+  await actualSize(page)
   const panel = await designing(page, page.locator('[contenteditable="true"]'))
   const x = panel.getByRole("textbox", { name: "X", exact: true })
   await x.fill("99999")
@@ -105,6 +111,6 @@ test("a length the slide cannot hold leaves the element where it was", async ({ 
   await x.fill("wide")
   await x.press("Tab")
   await expect(x).toHaveValue("36")
-  expect(await placed(page, element)).toEqual([30, 30, 360, 120])
+  expect(await placed(page, element)).toEqual([48, 48, 576, 192])
   expect(await pendingValues(page, "256.2")).toEqual([])
 })

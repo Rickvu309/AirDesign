@@ -1,3 +1,4 @@
+import { actualSize } from "./paint-scale"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
@@ -64,6 +65,7 @@ test("a person adds glow to a shape whose shadow comes from its style and recolo
 }, testInfo) => {
   await rm(judged, { force: true })
   await openDeck(page, deck)
+  await actualSize(page)
   await slide(page, 7)
   const first = shapeAt(page, "4", glowing)
   await expect.poll(() => painted(first)).toEqual({ shadow: 1, glow: 0 })
@@ -106,6 +108,7 @@ test("a person adds glow to a shape whose shadow comes from its style and recolo
 
   await page.reload()
   await settled(page)
+  await actualSize(page)
   await slide(page, 8)
   await expect.poll(() => offset(shapeAt(page, "4", softened))).toBe(far)
   await expect(shapeAt(page, "4", softened).locator("[data-effect-soft]")).toHaveCount(1)
@@ -129,6 +132,7 @@ test("a person adds glow to a shape whose shadow comes from its style and recolo
   await page.locator("input[type=file]").setInputFiles(file)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
+  await actualSize(page)
   await slide(page, 7)
   await expect.poll(() => painted(shapeAt(page, "4", glowing))).toEqual({ shadow: 1, glow: 1 })
   await slide(page, 8)

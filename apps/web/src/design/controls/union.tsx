@@ -1,5 +1,5 @@
 import type { Color } from "@airdesign/document"
-import { Image, Minus, PaintBucket, Blend, Grid2X2, type LucideIcon } from "lucide-react"
+import { lookOf } from "@/design/field-looks"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import { optionCopy } from "@/copy/option-copy"
@@ -8,14 +8,6 @@ import { partRow, type ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
 const rowCases = 5
-
-const fillIcons: Readonly<Record<string, LucideIcon>> = {
-  none: Minus,
-  solid: PaintBucket,
-  gradient: Blend,
-  pattern: Grid2X2,
-  picture: Image,
-}
 
 function heldOf(row: ControlProps["row"]): Readonly<Record<string, unknown>> | null {
   return typeof row.value === "object" && row.value !== null ? (row.value as Readonly<Record<string, unknown>>) : null
@@ -74,7 +66,7 @@ export function UnionControl({ row, palette, onChange, inner }: ControlProps) {
       >
         {Object.keys(cases).map((name) => {
           const pressed = name === chosen
-          const Icon = row.trait === "fill" ? fillIcons[name] : undefined
+          const Icon = lookOf(row).options?.[name]
           const word = optionCopy[name] ?? name
           return (
             <Button

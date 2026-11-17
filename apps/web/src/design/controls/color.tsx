@@ -1,3 +1,4 @@
+import { lookOf } from "@/design/field-looks"
 import { alphaKeys, alphaOf, fadedColor, opaque, type Color } from "@airdesign/document"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
@@ -62,7 +63,7 @@ export function ColorControl({ row, palette, onChange }: ControlProps) {
       data-control="color"
       data-inherited={row.inherited ? "" : undefined}
     >
-      <span id={label} className="text-[length:var(--type-caption)] text-quiet">
+      <span id={label} className={lookOf(row).quiet ? "sr-only" : "text-[length:var(--type-caption)] text-quiet"}>
         {row.label}
       </span>
       <ColorPicker

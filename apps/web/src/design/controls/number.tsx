@@ -2,6 +2,7 @@ import { agentNumberOf, readAgent } from "@airdesign/catalog"
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
 import { designCopy } from "@/copy/design-copy"
 import type { ControlProps } from "@/design/panel"
+import { lookOf } from "@/design/field-looks"
 import { cn } from "@/lib/class-names"
 
 function shownNumber(row: ControlProps["row"]): string {
@@ -37,6 +38,8 @@ export function NumberField({
   kind,
   step = 1,
 }: ControlProps & { unit: string; kind: string; step?: number }) {
+  const look = lookOf(row)
+  const Icon = look.icon
   const [draft, setDraft] = useState<string | null>(null)
   const shown = shownNumber(row)
   const field = useRef<HTMLInputElement>(null)
@@ -83,16 +86,17 @@ export function NumberField({
     scrub.current = null
   }
 
-  return (
+  const fieldControl = (
     <label
-      className="flex h-8 min-w-0 items-center gap-2 rounded-[var(--shape-control)] bg-muted px-2.5"
+      className="flex h-8 min-w-0 items-center gap-0.5 rounded-[var(--shape-control)] bg-muted px-2.5"
+      title={row.label}
       data-control={kind}
       data-inherited={row.inherited ? "" : undefined}
       data-focus-ring
     >
       <span
         className={cn(
-          "min-w-0 truncate text-[length:var(--type-caption)] text-quiet",
+          "mr-2 min-w-0 shrink-0 truncate text-[length:var(--type-caption)] text-quiet",
           shown !== "" && "cursor-ew-resize touch-none select-none",
         )}
         onPointerDown={startScrub}
@@ -100,7 +104,7 @@ export function NumberField({
         onPointerUp={endScrub}
         onPointerCancel={endScrub}
       >
-        {row.label}
+        {Icon ? <Icon size={16} strokeWidth={1.5} aria-hidden /> : (look.short ?? (look.beside ? null : row.label))}
       </span>
       <input
         ref={field}
@@ -123,5 +127,13 @@ export function NumberField({
         {unit}
       </span>
     </label>
+  )
+  return look.beside ? (
+    <div className="grid grid-cols-2 items-center gap-2">
+      <span className="text-[length:var(--type-dense)] font-semibold">{row.label}</span>
+      {fieldControl}
+    </div>
+  ) : (
+    fieldControl
   )
 }
