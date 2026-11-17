@@ -332,7 +332,7 @@ export function EditorGrid({
             <AirdesignMark size={20} />
           </span>
           <DeckTitle title={title} className="pr-2 pl-0.5" {...(onRename === undefined ? {} : { onRename })} />
-          {save === null ? null : <SaveStatusLine status={save} className="pr-2" />}
+          {save === null ? null : <SaveStatusLine status={save} />}
           <Button
             type="button"
             variant="ghost"

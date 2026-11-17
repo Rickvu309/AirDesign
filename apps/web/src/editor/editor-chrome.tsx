@@ -120,7 +120,7 @@ export function SidebarHead({
           <EditorIcon name="grid" size={16} />
         </Button>
       )}
-      {save === null ? null : <SaveStatusLine status={save} className="col-span-2 col-start-2 px-1.5" />}
+      {save === null ? null : <SaveStatusLine status={save} />}
     </div>
   )
 }
