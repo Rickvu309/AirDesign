@@ -146,6 +146,8 @@ export const warnSteps = new Set([
   "commit-titles",
 ])
 
+const warnStepsFor = (eventName) => (eventName === "merge_group" ? new Set([...warnSteps, "file-size"]) : warnSteps)
+
 export const recordFailure = (failed, name, warned = warnSteps) => {
   if (warned.has(name)) return "warn"
   failed.push(name)
@@ -164,7 +166,8 @@ export const preflight = [
   "interface-width",
 ]
 
-export const runCheck = async ({ chosen, lock, run, all = false }) => {
+export const runCheck = async ({ chosen, lock, run, all = false, eventName = "" }) => {
+  const warned = warnStepsFor(eventName)
   const failed = []
   let hung = false
   const runStep = async (step) => {
@@ -172,7 +175,7 @@ export const runCheck = async ({ chosen, lock, run, all = false }) => {
     if (status === "hung") {
       hung = true
       failed.push(step[0])
-    } else if (status !== 0) recordFailure(failed, step[0])
+    } else if (status !== 0) recordFailure(failed, step[0], warned)
   }
   const cheap = chosen.flatMap((stage) => stage.flatMap(stepsOf)).filter(([name]) => preflight.includes(name))
   await Promise.all(cheap.map(runStep))
@@ -229,7 +232,7 @@ const hungLine = (name, command, args, limit, running) =>
 const print = (text, stream) => (stream === "error" ? process.stderr : process.stdout).write(text)
 
 export const stepRunner =
-  ({ limitOf, say = print }) =>
+  ({ limitOf, say = print, eventName = "" }) =>
   ([name, command, args, extra]) =>
     new Promise((resolve) => {
       const limit = limitOf(name)
@@ -263,7 +266,7 @@ export const stepRunner =
         groups.delete(child.pid)
         const seconds = ((Date.now() - started) / 1000).toFixed(1)
         if (status !== 0 || hung) {
-          say(`${output}${warnSteps.has(name) && !hung ? "warn" : "fail"} ${name} ${seconds}s\n`, "error")
+          say(`${output}${warnStepsFor(eventName).has(name) && !hung ? "warn" : "fail"} ${name} ${seconds}s\n`, "error")
         } else {
           say(`${showOnSuccess.has(name) ? output : ""}ok ${name} ${seconds}s\n`)
         }
@@ -284,6 +287,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"])
     process.once(signal, () => process.exit(128 + os.constants.signals[signal]))
   const ci = onCi(process.env)
+  const eventName = process.env.GITHUB_EVENT_NAME
   const part = partOf(process.argv)
   const checkedTree = part === "all" && !onCi(process.env) ? workingTree(root) : undefined
   const ownTemp = fs.mkdtempSync(path.join(os.tmpdir(), "check-"))
@@ -293,9 +297,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   let result
   try {
     result = await runCheck({
+      eventName,
       chosen: stepsToRun(stagesFor(part, ci, shardOf(process.argv)), ci),
       all: process.argv.includes("--all"),
-      run: stepRunner({ limitOf: (name) => stepLimit(name, ci) }),
+      run: stepRunner({ limitOf: (name) => stepLimit(name, ci), eventName }),
       lock: async () => {
         const release = await takeMachineLock()
         checkStarted = Date.now()
