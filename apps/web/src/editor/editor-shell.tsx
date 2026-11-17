@@ -40,6 +40,7 @@ export type EditorDeck = {
   readonly onExport: (request?: ExportRequest) => Promise<void> | void
   readonly undo: UndoButtonsState
   readonly onText?: () => void
+  readonly onTrash?: () => void
   readonly onRename?: (name: string) => void
   readonly formatting?: TextFormatting
   readonly deckColors?: readonly string[]
@@ -151,6 +152,7 @@ export function EditorShell({
           activeTool={activeTool}
           toolMenu={toolMenu}
           save={deck.save ?? null}
+          {...(deck.onTrash === undefined ? {} : { onTrash: deck.onTrash })}
           {...(deck.onRename === undefined ? {} : { onRename: deck.onRename })}
           {...(deck.onText === undefined ? {} : { onText: deck.onText })}
           {...(deck.formatting === undefined ? {} : { formatting: deck.formatting })}
@@ -172,6 +174,7 @@ export function EditorShell({
           {...(deck === undefined
             ? {}
             : { strip: deck.slides, onGrid: () => openWith(() => setGridOpen(true)), save: deck.save ?? null })}
+          {...(deck?.onTrash === undefined ? {} : { onTrash: deck.onTrash })}
           {...(deck?.onRename === undefined ? {} : { onRename: deck.onRename })}
         />
       ) : null}

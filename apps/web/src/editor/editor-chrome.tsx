@@ -20,13 +20,22 @@ export function DeckTitle({
   title,
   className,
   onRename,
+  onTrash,
 }: {
   title: string
   className?: string
+  onTrash?: () => void
   onRename?: (name: string) => void
 }) {
   if (onRename !== undefined)
-    return <DeckTitleEdit title={title} onRename={onRename} {...(className === undefined ? {} : { className })} />
+    return (
+      <DeckTitleEdit
+        title={title}
+        onRename={onRename}
+        {...(onTrash === undefined ? {} : { onTrash })}
+        {...(className === undefined ? {} : { className })}
+      />
+    )
   return (
     <span className={cn("flex min-w-0 items-center gap-1", className)}>
       <span className="truncate text-[length:var(--type-dense)] font-medium text-foreground">{title}</span>
@@ -78,6 +87,7 @@ export function SidebarHead({
   gridOff = false,
   onGrid,
   onRename,
+  onTrash,
   homeHref,
   save = null,
 }: {
@@ -85,12 +95,13 @@ export function SidebarHead({
   trailing?: ReactNode
   gridOff?: boolean
   onGrid?: () => void
+  onTrash?: () => void
   onRename?: (name: string) => void
   homeHref?: string
   save?: SaveStatus | null
 }) {
   return (
-    <div className="grid h-14 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] content-center items-center gap-x-2 pr-2 pl-3">
+    <div className="group/head grid h-14 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] content-center items-center gap-x-2 pr-2 pl-3">
       {homeHref === undefined ? (
         <AirdesignMark size={20} />
       ) : (
@@ -102,15 +113,19 @@ export function SidebarHead({
           <AirdesignMark size={20} />
         </a>
       )}
-      <span className="flex min-w-0">
-        <DeckTitle title={title} {...(onRename === undefined ? {} : { onRename })} />
+      <span className="flex min-w-0 group-has-[[data-deck-name-field]]/head:col-span-2 group-has-[[data-deck-name-field]]/head:mr-1.5">
+        <DeckTitle
+          title={title}
+          {...(onRename === undefined ? {} : { onRename })}
+          {...(onTrash === undefined ? {} : { onTrash })}
+        />
       </span>
       {trailing ?? (
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="size-8 rounded-md text-quiet active:translate-y-0"
+          className="size-8 rounded-md text-quiet active:translate-y-0 group-has-[[data-deck-name-field]]/head:hidden"
           aria-label="Grid"
           disabled={gridOff}
           {...(onGrid === undefined ? {} : { onClick: onGrid, "aria-pressed": false })}

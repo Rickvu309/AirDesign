@@ -324,3 +324,51 @@ stackTest(
     await expect.poll(() => serverName(stack, cookie, deck), { timeout: 5000 }).toBe("clean")
   },
 )
+
+test("the title menu renames with focus in a selected full-width field", async ({ page }) => {
+  await store(page, [])
+  await open(page)
+  await page.getByRole("button", { name: "clean actions" }).click()
+  await expect(page.getByRole("menuitem")).toHaveCount(2)
+  const chevron = await page.getByRole("button", { name: "clean actions" }).boundingBox()
+  const menu = await page.getByRole("menu").boundingBox()
+  expect(Math.abs((menu?.x ?? 0) - (chevron?.x ?? -100))).toBeLessThanOrEqual(1)
+  await page.getByRole("menuitem", { name: productCopy.rename, exact: true }).click()
+  await expect(field(page)).toBeFocused()
+  await expect(field(page)).toHaveClass(/w-full/)
+  await expect(field(page)).toHaveCSS("outline-offset", "0px")
+  await expect(page.getByRole("button", { name: "Grid", exact: true })).toBeHidden()
+  const box = await field(page).boundingBox()
+  const row = await page.locator("[data-new-slide-layouts]").locator("..").boundingBox()
+  expect(box?.height).toBe(28)
+  expect((box?.x ?? 0) + (box?.width ?? 0) + 2).toBe((row?.x ?? 0) + (row?.width ?? 0))
+  expect(await field(page).evaluate((input: HTMLInputElement) => [input.selectionStart, input.selectionEnd])).toEqual([
+    0, 5,
+  ])
+  await field(page).press("Escape")
+  await expect(title(page)).toBeFocused()
+  await expect(page.getByRole("button", { name: "Grid", exact: true })).toBeVisible()
+  await title(page).click()
+  expect(await field(page).evaluate((input: HTMLInputElement) => [input.selectionStart, input.selectionEnd])).toEqual([
+    0, 5,
+  ])
+})
+
+for (const ok of [true, false]) {
+  test(`moving from the title menu ${ok ? "goes home" : "stays with a failure notice"}`, async ({ page }) => {
+    await store(page, [])
+    await open(page)
+    const id = page.url().split("/").at(-1)
+    await page.route("**/decks/trash", async (route) => {
+      expect(route.request().postDataJSON()).toEqual({ deck: id })
+      await route.fulfill({ json: { ok } })
+    })
+    await page.getByRole("button", { name: "clean actions" }).click()
+    await page.getByRole("menuitem", { name: productCopy.moveToTrash }).click()
+    if (ok) await expect(page).toHaveURL(/\/$/)
+    else {
+      await expect(page).toHaveURL(new RegExp(`/deck/${id}$`))
+      await expect(page.getByText("Unable to move clean to Trash", { exact: true })).toBeVisible()
+    }
+  })
+}

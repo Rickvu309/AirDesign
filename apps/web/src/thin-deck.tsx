@@ -1,3 +1,5 @@
+import { toast } from "@/components/ui/toast"
+import { moveDeck } from "@/decks/move-deck"
 import { useFontReady } from "@/editor/use-font-ready"
 import { storeNewer, watchNewer } from "@airdesign/live"
 import { useSyncExternalStore } from "react"
@@ -66,6 +68,11 @@ export function ThinDeck({ id }: { id: string }) {
             undo: undoButtons,
             onText: deck.inserts.addText,
             onRename: deck.rename,
+            onTrash: () =>
+              void moveDeck({ deck: id, name: deck.title }, (pending) => {
+                toast.dismiss(pending)
+                window.location.assign("/")
+              }),
             formatting: deck.undo.formatting.current,
             deckColors: colorsIn(shown.displayParts.current),
             onTable: deck.tables.insert,

@@ -65,12 +65,14 @@ export function SlideSidebar({
   title,
   strip,
   onRename,
+  onTrash,
   onGrid,
   save = null,
 }: {
   run: SidebarRun
   title: string
   strip?: SlideStrip
+  onTrash?: () => void
   onRename?: (name: string) => void
   onGrid?: () => void
   save?: SaveStatus | null
@@ -90,6 +92,7 @@ export function SlideSidebar({
             save={save}
             {...(onGrid === undefined ? { gridOff: true } : { onGrid })}
             {...(onRename === undefined ? {} : { onRename })}
+            {...(onTrash === undefined ? {} : { onTrash })}
           />
           <DeckStrip strip={strip} />
         </>
