@@ -21,6 +21,10 @@ export const lineCopy = {
 } as const
 
 export const lineWords: Readonly<Record<string, string>> = {
+  "border.none": "None",
+  "border.solid": "Solid",
+  "border.dash": "Dashed",
+  "border.dot": "Dotted",
   "dash.solid": "Solid",
   "fill.solid": "Line color",
   dot: "Dot",

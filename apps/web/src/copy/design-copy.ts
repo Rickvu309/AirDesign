@@ -11,6 +11,7 @@ export const designCopy = {
   backgroundColor: (name: string) => `Background color, ${name}`,
   border: "Border",
   shadow: "Shadow",
+  shadowPreset: "Shadow preset",
   white: "White",
   fills: { gradient: "Gradient", pattern: "Pattern", picture: "Picture" },
   panels: {

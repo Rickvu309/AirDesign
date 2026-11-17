@@ -63,6 +63,8 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
   await expect(shape.getByRole("heading")).toHaveText([
     "Fill",
     "Opacity",
+    designCopy.border,
+    designCopy.shadow,
     "Shape type",
     "Line",
     "Effects",

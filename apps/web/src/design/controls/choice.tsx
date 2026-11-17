@@ -45,6 +45,7 @@ export function ChoiceControl(props: ControlProps) {
   const { control, onChange } = props
   const label = useId()
   const options = control.desc.kind === "choice" ? control.desc.options : []
+  const arrow = control.trait === "line" && /^(head|tail)\./.test(control.field)
   const look = control.look
   const layout = look.form
   return (
@@ -53,7 +54,14 @@ export function ChoiceControl(props: ControlProps) {
         id={label}
         className={look.name.show === "hidden" ? "sr-only" : "text-[length:var(--type-caption)] text-quiet"}
       >
-        {control.label}
+        {arrow ? (
+          <>
+            <span className="sr-only">{control.label}</span>
+            <span aria-hidden>{optionWord("", control.field.split(".").at(-1) ?? "")}</span>
+          </>
+        ) : (
+          control.label
+        )}
       </span>
       {layout === "list" ? (
         <ChoiceList {...props} label={label} options={options} />
@@ -79,7 +87,7 @@ export function ChoiceControl(props: ControlProps) {
                   if (!chosen) onChange(option)
                 }}
                 className={cn(
-                  "h-5 min-w-0 flex-1 rounded-[4px] px-0 text-xs font-normal active:translate-y-0",
+                  "h-5 min-w-0 flex-1 rounded-[var(--shape-segment)] px-0 text-xs font-normal active:translate-y-0",
                   chosen
                     ? cn(
                         "bg-white font-medium shadow-[0px_1px_2px_var(--black-10)] hover:bg-white",

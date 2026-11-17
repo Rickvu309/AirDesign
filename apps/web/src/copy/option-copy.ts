@@ -9,12 +9,6 @@ import { pictureWords } from "@/copy/picture-copy"
 import { tableWords } from "@/copy/table-copy"
 
 export const optionCopy: Readonly<Record<string, string>> = {
-  "border.solid": "Solid",
-  "border.dash": "Dashed",
-  "border.dot": "Dotted",
-  "shadow.subtle": "Subtle",
-  "shadow.medium": "Medium",
-  "shadow.strong": "Strong",
   left: "Left",
   center: "Center",
   right: "Right",

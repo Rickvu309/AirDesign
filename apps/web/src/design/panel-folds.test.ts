@@ -10,3 +10,10 @@ it("remembers a person's folding for each panel kind apart, and falls back to th
   expect(foldOpen(folds(), "shape", "fill", true)).toBe(false)
   expect(foldOpen(folds(), "picture", "fill", true)).toBe(true)
 })
+
+it("keeps Shape type open while a text rectangle becomes a drawn shape", () => {
+  setFold("text", "geometry", true)
+  expect(foldOpen(folds(), "shape", "geometry", false)).toBe(true)
+  setFold("shape", "geometry", false)
+  expect(foldOpen(folds(), "text", "geometry", true)).toBe(false)
+})
