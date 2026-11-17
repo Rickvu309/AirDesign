@@ -93,7 +93,7 @@ function GoTo({ typed }: { typed: string }) {
       className="absolute bottom-4 left-1/2 flex h-9 -translate-x-1/2 items-center gap-2 rounded-lg bg-ink px-3 text-[length:var(--type-dense)] text-[var(--white-80)] shadow-[0_0_0_1px_var(--stage-hover)]"
     >
       <span className="tabular-nums">{presentCopy.goTo(typed)}</span>
-      <kbd className="rounded-[4px] px-1.5 font-sans text-[length:var(--type-caption)] text-[var(--stage-quiet)] shadow-[inset_0_0_0_1px_var(--stage-hover)]">
+      <kbd className="rounded-sm px-1.5 font-sans text-[length:var(--type-caption)] text-[var(--stage-quiet)] shadow-[inset_0_0_0_1px_var(--stage-hover)]">
         {presentCopy.enter}
       </kbd>
     </div>
