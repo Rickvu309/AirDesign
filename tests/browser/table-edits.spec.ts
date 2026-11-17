@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { tableExportName } from "../../scripts/pptx-cases/trait-table.mjs"
 import { exportFromDialog } from "./export-dialog"
-import { newBlankDeck } from "./new-deck"
+import { importTitleDeck } from "./new-deck"
 import { insertTable } from "./insert-table"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
@@ -67,7 +67,7 @@ test("inserts a table, types in two cells, adds and deletes a row, and it all su
 }, testInfo) => {
   await rm(judged, { force: true })
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   await insertTable(page)
@@ -130,7 +130,7 @@ test("inserts a table, types in two cells, adds and deletes a row, and it all su
 
 test("Escape leaves the cell for the table and Delete removes the whole table", async ({ page }) => {
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   await insertTable(page)
@@ -149,7 +149,7 @@ test("Escape leaves the cell for the table and Delete removes the whole table", 
 
 test("Undo takes back the insert of a table and Redo brings it back, through a reload", async ({ page }) => {
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   await insertTable(page)
@@ -171,7 +171,7 @@ test("one Ctrl+Z straight after typing in a new table's cell takes back the typi
   page,
 }) => {
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   await insertTable(page)
@@ -187,7 +187,7 @@ test("one Ctrl+Z straight after typing in a new table's cell takes back the typi
 
 test("Ctrl+Z with the caret in a table cell paints the cell's text from before the edit", async ({ page }) => {
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   await insertTable(page)
@@ -205,7 +205,7 @@ test("adds and deletes columns with undo and redo, and they survive a reload, th
   page,
 }, testInfo) => {
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   await insertTable(page)

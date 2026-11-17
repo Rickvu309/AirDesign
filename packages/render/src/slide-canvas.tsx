@@ -100,12 +100,14 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
     named.current = { frames, part: shown ?? shownPart(frames, named.current.part) }
     if (said !== null) say(said)
   }, [slide, slide.part, say, props.slideName])
-  useLayoutEffect(() => {
+  function enterPainted() {
     const host = surface.current
     if (entering?.id === undefined || entering.id === null || host === null || entered.current === entering.id) return
+    if (host.querySelector(`[data-canvas-element="${entering.key}"]`) === null) return
     entered.current = entering.id
     enterElement(host, entering, keys?.take() ?? "")
-  }, [entering, keys])
+  }
+  useLayoutEffect(enterPainted, [entering, keys])
   return (
     <div
       ref={surface}
@@ -127,6 +129,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
         (element) => (
           <PaintedElement
             key={element.key}
+            onPaint={element === entering ? enterPainted : undefined}
             element={element}
             slideHeight={slide.height}
             formatting={props.formatting}

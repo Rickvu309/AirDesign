@@ -5,7 +5,7 @@ import { expect, test, type Page } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
 import { slideEditsExportName } from "../../scripts/slide-edits.mjs"
 import { exportFromDialog } from "./export-dialog.ts"
-import { newBlankDeck } from "./new-deck"
+import { importTitleDeck } from "./new-deck"
 
 const duplicate = process.platform === "darwin" ? "Meta+d" : "Control+d"
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
@@ -66,7 +66,7 @@ function title(page: Page, part: string) {
 
 async function blank(page: Page): Promise<void> {
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
 }

@@ -21,15 +21,15 @@ async function blankDeck(page: Page): Promise<void> {
 test("keys typed at once after Add text box land in the new box, before and after it paints", async ({ page }) => {
   await blankDeck(page)
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
-  await expect(texts).toHaveCount(2)
+  await expect(texts).toHaveCount(0)
   await holdDevice(page)
   await page.getByRole("button", { name: "Add text box", exact: true }).click()
   await page.keyboard.type("Big tx", { delay: 0 })
   await page.keyboard.press("Backspace")
-  await expect(texts).toHaveCount(2)
+  await expect(texts).toHaveCount(0)
   await openDevice(page)
   await page.keyboard.type("itle", { delay: 0 })
-  await expect(texts).toHaveCount(3)
+  await expect(texts).toHaveCount(1)
   await expect(texts.last()).toBeFocused()
   await expect(texts.last()).toHaveText("Big title")
   await expect(page.getByRole("button", { name: "Undo text edit" })).toBeEnabled()
@@ -50,4 +50,29 @@ test("keys typed at once after adding a table land in its first cell", async ({ 
   await expect(cell).toBeFocused()
   await expect(cell).toHaveText("Region")
   await expect(page.getByRole("group", { name: "Table size" })).toHaveCount(0)
+})
+
+test("the first text box waits for its font, then takes focus and the held keys", async ({ page }) => {
+  let release = () => {}
+  const ready = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  let requested = () => {}
+  const loading = new Promise<void>((resolve) => {
+    requested = resolve
+  })
+  await page.route("**/fonts/family?**", async (route) => {
+    requested()
+    await ready
+    await route.fulfill({ status: 404, body: "" })
+  })
+  await blankDeck(page)
+  await page.getByRole("button", { name: "Add text box", exact: true }).click()
+  await loading
+  const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
+  await expect(texts).toHaveCount(0)
+  await page.keyboard.type("Waited text", { delay: 0 })
+  release()
+  await expect(texts).toBeFocused()
+  await expect(texts).toHaveText("Waited text")
 })

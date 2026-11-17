@@ -37,10 +37,14 @@ test("Blank deck edits, reloads, exports and imports without an upload, even whe
   await newBlankDeck(page)
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const address = page.url()
+  await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", address.split("/").at(-1) ?? "")
   const title = page.locator('[contenteditable="true"]').first()
-  await expect(page.locator('[contenteditable="true"]')).toHaveCount(2)
+  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(0)
+  await expect(page.locator("[data-slide-paint] [data-placeholder-prompt]")).toHaveCount(0)
+  await page.getByRole("button", { name: "Add text box", exact: true }).click()
+  await expect(page.locator('[contenteditable="true"]')).toHaveCount(1)
   await expect(title).toHaveText("")
-  await title.click()
+  await expect(title).toBeFocused()
   await title.pressSequentially("My first deck", { delay: 50 })
   await expect(title).toHaveText("My first deck")
   await context.setOffline(false)
@@ -62,14 +66,15 @@ test("Blank deck edits, reloads, exports and imports without an upload, even whe
   await expect(title).toHaveText("My first deck")
 })
 
-test("New slide on a blank deck paints layout placeholders and exports @export", async ({ page }, testInfo) => {
+test("New slide on a blank deck stays empty and exports @export", async ({ page }, testInfo) => {
   await page.goto("/")
   await newBlankDeck(page)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
   await expect(page.locator('[data-slide-entry="2"]')).toHaveAttribute("aria-current", "true")
-  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(2)
+  await expect(page.locator("[data-slide-paint] [data-canvas-element]")).toHaveCount(0)
+  await expect(page.locator("[data-slide-paint] [data-placeholder-prompt]")).toHaveCount(0)
   const download = page.waitForEvent("download")
   await exportFromDialog(page)
   const file = testInfo.outputPath("exported-blank-slides.pptx")
@@ -77,11 +82,11 @@ test("New slide on a blank deck paints layout placeholders and exports @export",
   await copyFile(file, join(process.cwd(), "tests/browser/exported-blank-slides.pptx"))
 })
 
-test("Blank deck subtitle prompt shows, typing replaces it, deleting brings it back, thumbnail and export omit it", async ({
+test("Imported subtitle prompt shows, typing replaces it, deleting brings it back, thumbnail and export omit it", async ({
   page,
 }, testInfo) => {
   await page.goto("/")
-  await newBlankDeck(page)
+  await page.locator("input[type=file]").setInputFiles("scripts/pptx-fixtures/blank.pptx")
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const prompt = page.locator("[data-slide-paint] [data-placeholder-prompt='Click to add subtitle']")
   await expect(prompt).toBeVisible()

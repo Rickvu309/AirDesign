@@ -7,7 +7,10 @@ const parts = new Map([
 ])
 const lines = (before, after, failures = []) =>
   blankExportLines({
-    pptx: { routeExportFailures: () => failures },
+    pptx: {
+      slideExportFailures: () => failures,
+      readShapes: () => [{ text: [{ runs: [{ text: "My first deck" }] }] }],
+    },
     parts,
     lists: new Map([
       [blankOriginalName, before],

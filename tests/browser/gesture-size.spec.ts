@@ -6,7 +6,7 @@ import { boxTurnedExportName, boxTurnedXfrm } from "../../scripts/pptx-cases/box
 import { tableResizedExportName } from "../../scripts/pptx-cases/trait-table.mjs"
 import { designing, openDeck, settled, storedRows } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
-import { newBlankDeck } from "./new-deck"
+import { importTitleDeck } from "./new-deck"
 import { insertTable } from "./insert-table"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
@@ -85,7 +85,7 @@ test("a table resizes by its corner and by Width, scales its columns and rows, a
   const judged = join(process.cwd(), "tests/browser", tableResizedExportName)
   await rm(judged, { force: true })
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   await insertTable(page)

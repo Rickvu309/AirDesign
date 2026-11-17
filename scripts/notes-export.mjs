@@ -4,7 +4,7 @@ const shared = ["[Content_Types].xml", "ppt/presentation.xml", "ppt/_rels/presen
 
 export const notesExports = [
   {
-    original: "blank.pptx",
+    original: "empty.pptx",
     exported: "exported-notes.pptx",
     changed: [...shared, "ppt/slides/_rels/slide1.xml.rels"],
     notes: [

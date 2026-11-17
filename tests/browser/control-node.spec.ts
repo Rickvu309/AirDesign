@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { openDeck, settled } from "./design-panel"
-import { newBlankDeck } from "./new-deck"
+import { importTitleDeck } from "./new-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -61,11 +61,11 @@ test("a node control names the shape a connector's end attaches to, moves the en
   await expect.poll(() => placement(frame(page, "26"))).toEqual(before)
 })
 
-test("a node control reads a blank deck's placeholders as Title and Subtitle, never as their file ids", async ({
+test("a node control reads an imported deck's placeholders as Title and Subtitle, never as their file ids", async ({
   page,
 }) => {
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await settled(page)
   for (const name of ["Rectangle", "Line"]) {
     await page.getByRole("button", { name: "Shapes", exact: true }).click()

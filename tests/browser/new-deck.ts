@@ -8,3 +8,7 @@ export async function newBlankDeck(page: Page): Promise<void> {
     .getByRole("menuitem", { name: productCopy.blankDeck, exact: true })
     .click()
 }
+
+export async function importTitleDeck(page: Page): Promise<void> {
+  await page.locator("input[type=file]").setInputFiles("scripts/pptx-fixtures/blank.pptx")
+}

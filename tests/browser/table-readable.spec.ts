@@ -5,7 +5,7 @@ import { contrast } from "../../packages/document/src/index.ts"
 import { tableReadableExportName } from "../../scripts/pptx-cases/trait-table.mjs"
 import { pickColor } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
-import { newBlankDeck } from "./new-deck"
+import { importTitleDeck } from "./new-deck"
 import { partsOf } from "./shape-fills"
 import { insertTable } from "./insert-table"
 
@@ -64,7 +64,7 @@ test("a new table has a theme header, and text stays readable on any fill a pers
 }, testInfo) => {
   await rm(judged, { force: true })
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   await insertTable(page, 4, 3)

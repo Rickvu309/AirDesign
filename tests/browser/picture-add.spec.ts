@@ -3,7 +3,7 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { newBlankDeck } from "./new-deck"
+import { importTitleDeck } from "./new-deck"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
 
@@ -50,7 +50,7 @@ test("adds a PNG to a blank deck, moves and resizes it at its ratio, and keeps i
   page,
 }, testInfo) => {
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   const choosing = page.waitForEvent("filechooser")
@@ -100,7 +100,7 @@ test("adds a PNG to a blank deck, moves and resizes it at its ratio, and keeps i
 
 test("refuses a file that is not a PNG, JPEG or GIF and says what to choose", async ({ page }) => {
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   const choosing = page.waitForEvent("filechooser")
@@ -118,7 +118,7 @@ test("refuses a file that is not a PNG, JPEG or GIF and says what to choose", as
 
 test("Undo takes back an added picture and Redo paints it again, through a reload", async ({ page }) => {
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   const choosing = page.waitForEvent("filechooser")
@@ -137,7 +137,7 @@ test("Undo takes back an added picture and Redo paints it again, through a reloa
 
 test("a picture added to a new title slide lands clear of the empty title and subtitle", async ({ page }) => {
   await page.goto("/")
-  await newBlankDeck(page)
+  await importTitleDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   const placeholders = page.locator("[data-slide-paint] [data-canvas-element]")
