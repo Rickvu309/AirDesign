@@ -24,6 +24,7 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | Every lint rule has a test and is switched on | `scripts/bug-rule.mjs` |
 | Rule code in `tooling/` stays under 10 percent of product code | `scripts/bug-rule.mjs` |
 | A worktree whose work is on `main`, or whose branch is gone from GitHub, does not stay on the machine | `pnpm check` removes it with `scripts/worktrees.mjs` when it is clean and no process is using it. A worktree with no commits of its own, or on a detached commit, is removed only after 12 idle hours |
+| The stash is shared across worktrees; recover only your own saved work | `scripts/worktrees.mjs`, run by `pnpm check`, warns when a stash names a missing source path or a branch with no worktree. It reads the stash list only and names the stable hash to inspect; ownership remains a rule for the agent |
 | A local branch with no worktree that holds nothing `main` lacks does not stay on the machine, and a clean main checkout follows `origin/main` | `pnpm check` deletes the branch and fast-forwards the checkout with `scripts/worktrees.mjs` |
 | The branch of a pull request closed without merging does not stay on GitHub | the `closed-branch` workflow deletes it when the pull request closes. The pull request page can restore it. It leaves `main` and `archive/` branches alone |
 | Staged files are formatted without staging a person's unstaged edits | `scripts/pre-commit.mjs`, installed beside `pre-push` by `scripts/install-hooks.mjs`; an unformatted partly staged file refuses the commit |

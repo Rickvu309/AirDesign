@@ -29,6 +29,8 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 2. **Breaking production.** `studio.airdesign.app` serves `apps/web`, and its worker, `apps/web/worker/api-forward.ts`, forwards the API paths to the API origin. The MCP address is `https://studio.airdesign.app/mcp`. `mcp.airdesign.app` does not resolve. The site answers its retired paths with its own 404 and forwards nothing.
 3. **Mixing up screens and the app.** Pages under `/screens/` are static with sample data. The deck home (`src/decks/home.tsx`) and `src/thin-deck.tsx` call `apps/api` for real, and sign-in lives in `apps/site`.
 
+4. **The stash is shared.** Every worktree sees one `git stash` list. Keep work in progress as a commit on your branch. If you must stash, name your source with `git stash push -m "<absolute worktree path>"`. Read the message and hash before recovering your entry; stash positions can change while another worktree is working. Never drop, pop or apply an entry you did not make.
+
 ## Where code lives
 
 - `apps/site` is the marketing and sign-in site. Color, type, space and motion live in `packages/theme`. Site classes stay in `src/site/site-theme.css`.
