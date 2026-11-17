@@ -55,7 +55,9 @@ export default async function drive(kit) {
   })
   await expect(page.locator("[data-slide-paint] [data-fonts-pending]")).toBeAttached()
   await expect(page.locator("[data-slide-paint] [data-paragraph]")).toHaveCount(0)
+  const family = page.waitForResponse("**/fonts/family?family=Montserrat")
   release()
+  expect((await family).ok()).toBe(true)
   await expect(page.locator("[data-slide-paint] [data-fonts-pending]")).toHaveCount(0)
   const font = await page
     .locator("[data-slide-paint] [data-run]")

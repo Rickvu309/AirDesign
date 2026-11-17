@@ -95,6 +95,7 @@ test("the list menu aligns to the deck name for right-click and keyboard, withou
     expect(box?.x).toBeCloseTo(nameBox.x, 0)
     expect(box?.y).toBeCloseTo(nameBox.y + nameBox.height + 4, 0)
     await expect(menu).toHaveCSS("outline-style", "none")
+    await expect(menu).toBeFocused()
     await page.keyboard.press("ArrowDown")
     const item = menu.locator('[role="menuitem"]:focus')
     await expect(item).toHaveCount(1)
