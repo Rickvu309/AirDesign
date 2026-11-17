@@ -257,6 +257,9 @@ it("keeps a limit on a small edit distinct from the value-size refusal", async (
       async flush() {
         throw new Error("must not flush")
       },
+      async pending() {
+        return []
+      },
     }),
     "deck",
     "Short",
