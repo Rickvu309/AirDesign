@@ -209,14 +209,6 @@ _Avoid_: tint, filter, colorize
 How much of a picture is cut from each side, in percent. The frame keeps its size.
 _Avoid_: trim, clip, mask
 
-**overlay**:
-A colour laid over a picture, and how strongly that colour covers it.
-_Avoid_: tint, wash, filter
-
-**blur**:
-How soft a picture looks, in percent.
-_Avoid_: feather, defocus, gaussian
-
 **alt text**:
 The words a screen reader reads for an element, shown beside its name in the design panel's Name and alt text section. An element can also be hidden on its slide there.
 _Avoid_: description, caption, alternative text
