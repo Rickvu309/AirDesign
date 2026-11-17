@@ -252,3 +252,15 @@ it("exports exclusive native picture modes while preserving media and every othe
     expect(exportParts(after, openRegister("", "clean"))).toBe(after)
   }
 })
+
+it("reads Fill and Fit back even when a square picture has zero placement offsets", async () => {
+  const parts = await deck("doe-heat-pumps.pptx")
+  const picture = at(parts, "2883", "13")
+  for (const mode of ["fill", "fit"] as const) {
+    const after = exported(parts, picture.node, {
+      box: { w: { set: 1000000 }, h: { set: 1000000 } },
+      image: { source: { set: "rocket" }, mode: { set: mode } },
+    })
+    expect(shownPictureMode(after, picture)).toBe(mode)
+  }
+})
