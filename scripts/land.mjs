@@ -14,6 +14,7 @@ import { takeMachineLock } from "./machine-lock.mjs"
 import { awaitChecks, enqueue, queueLine, readPull } from "./merge-queue.mjs"
 import { migrationFault, recordFile } from "./migration-numbers.mjs"
 import { baseFault } from "./pull-base.mjs"
+import { editLines, editPull, pullEdits } from "./pull-edit.mjs"
 import { restoredLimit, staleFault, staleFiles } from "./stale-tree.mjs"
 import { hasProof, titleAdvice, titleLimit, titleVerdict } from "./title.mjs"
 
@@ -89,6 +90,8 @@ const readBody = (readText, file, stop) => {
   }
 }
 
+const openAdvice = `Open one against main: pnpm land --title "..." --body-file <file>.`
+
 const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
 
 export const land = async (ctx) => {
@@ -134,8 +137,7 @@ export const land = async (ctx) => {
     succeeds(git(["fetch", "origin", "main"]), "could not fetch origin/main")
     if (args.status || args.watch) {
       const pull = findPull({ gh, branch, number: args.pr })
-      if (pull === undefined)
-        stop("pull request", `${branch} has no open pull request. Push it and open one: gh pr create --base main`)
+      if (pull === undefined) stop("pull request", `${branch} has no open pull request. ${openAdvice}`)
       const state = readPull({ read, repository, number: pull.number })
       if (args.status) {
         succeeds(
@@ -160,21 +162,22 @@ export const land = async (ctx) => {
       )
     git(["fetch", "origin", branch])
     let pull = findPull({ gh, branch })
-    if (pull !== undefined) {
-      const wrong = baseFault(pull.number, pull.baseRefName)
-      if (wrong !== undefined) stop("base", wrong)
-      line("base", `pull request ${pull.number} targets main`)
-    } else line("base", "no pull request yet; it will open against main")
-    const title = pull === undefined ? args.title : pull.title
+    if (pull === undefined) {
+      if (!args.checkOnly && (args.title === undefined || args.bodyFile === undefined))
+        stop("pull request", `${branch} has no pull request. ${openAdvice}`)
+      line("base", "no pull request yet; it will open against main")
+    } else if (pull.baseRefName === "main") line("base", `pull request ${pull.number} targets main`)
+    else line("base", `pull request ${pull.number} targets ${pull.baseRefName}; land moves it to main before the push`)
+    const title = args.title ?? pull?.title
     if (title !== undefined) {
       const fault = titleVerdict(title)
-      const named = pull === undefined ? "--title" : `the title of pull request ${pull.number}`
-      const retitle =
-        pull === undefined ? "" : ` Retitle it: gh pr edit ${pull.number} --title "...", then run pnpm land again.`
+      const named = args.title === undefined ? `the title of pull request ${pull.number}` : "--title"
+      const retitle = args.title === undefined ? ` Retitle it: pnpm land --title "...".` : ""
       if (fault !== undefined) stop("title", `${named} is ${fault}. ${titleAdvice}${retitle}`)
       line("title", `${[...title].length} characters, within the limit of ${titleLimit}`)
     }
-    const body = pull === undefined ? readBody(readText, args.bodyFile, stop) : pull.body
+    const bodyFromFile = readBody(readText, args.bodyFile, stop)
+    const body = bodyFromFile ?? pull?.body
     if (body !== undefined && !hasProof(body))
       line("body", "warning: the body has no ## Proof heading. Say what you ran and what you saw, with counts.")
     const conflicts = conflictsWithMain(git)
@@ -202,16 +205,16 @@ export const land = async (ctx) => {
     if (args.checkOnly) return 0
     const late = markerFault(filesWithMarkers(git))
     if (late !== undefined) stop("markers", late)
+    const fields = pull === undefined ? {} : pullEdits({ pull, title: args.title, body: bodyFromFile })
+    if (Object.keys(fields).length > 0) {
+      editPull({ gh, repository, number: pull.number, fields })
+      for (const each of editLines(pull.number, fields)) line("edited", each)
+      pull = { ...pull, baseRefName: fields.base ?? pull.baseRefName }
+    }
     const pushed = git(["push", "--force-with-lease", "--set-upstream", "origin", branch])
     if (pushed.status !== 0) stop("push", `git push refused: ${(pushed.stderr || pushed.stdout).trim()}`)
     line("push", `${branch} pushed with a lease`)
     if (pull === undefined) {
-      if (args.title === undefined || args.bodyFile === undefined) {
-        stop(
-          "pull request",
-          `${branch} has no pull request. Open it against main: gh pr create --base main --title "..." --body-file body.md, then run pnpm land --watch. Or run pnpm land again with --title and --body-file.`,
-        )
-      }
       succeeds(
         gh(["pr", "create", "--base", "main", "--head", branch, "--title", args.title, "--body-file", args.bodyFile]),
         "could not open the pull request",

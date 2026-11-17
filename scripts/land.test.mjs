@@ -99,9 +99,14 @@ const harness = (options = {}) => {
     if (name === "log") return ok(command.includes("--raw") ? staleLog : "")
     throw new Error(`unexpected ${command.join(" ")}`)
   }
-  const gh = (command) => {
+  const edits = []
+  const gh = (command, input) => {
     log.push(`gh ${command.join(" ")}`)
     if (command[0] === "repo") return ok("Rickvu309/AirDesign\n")
+    if (command[0] === "api" && command.includes("PATCH")) {
+      edits.push({ path: command.find((word) => word.startsWith("repos/")), fields: JSON.parse(input) })
+      return ok("{}")
+    }
     if (command[0] === "pr" && command[1] === "list") return ok(pull === null ? "[]" : JSON.stringify([pull]))
     if (command[0] === "pr" && command[1] === "view") return ok(JSON.stringify(pull))
     if (command[0] === "pr" && command[1] === "create") return ok("https://github.com/Rickvu309/AirDesign/pull/394\n")
@@ -135,7 +140,13 @@ const harness = (options = {}) => {
     say: (line) => said.push(line),
   }
   const pullReads = () => reads[Math.min(readAt++, reads.length - 1)]
-  return { context, log, said, run: () => land(context) }
+  const run = async () => {
+    const code = await land(context)
+    const handEdit = said.find((line) => /gh pr (edit|create)/.test(line))
+    if (handEdit !== undefined) throw new Error(`land told the agent to run gh by hand: ${handEdit}`)
+    return code
+  }
+  return { context, log, said, edits, run }
 }
 
 const failedLoad = { status: 1, output: fixture("vitest-failed.log") }
@@ -171,17 +182,32 @@ same(
   true,
 )
 
-const wrongBase = harness({ pull: { number: 403, baseRefName: "agent-element-tools", url: "u" } })
-same("a pull request against another branch stops", await wrongBase.run(), 1)
+const wrongBase = harness({
+  pull: { number: 403, baseRefName: "agent-element-tools", url: "u", title: "Add land", body: "## Proof\n" },
+})
+wrongBase.context.gh = ((original) => (command, input) => {
+  if (command[0] === "pr" && command[1] === "list" && wrongBase.edits.length > 0) {
+    return ok(JSON.stringify([{ number: 403, baseRefName: "main", url: "u", title: "Add land", body: "## Proof\n" }]))
+  }
+  return original(command, input)
+})(wrongBase.context.gh)
+same("a pull request against another branch lands", await wrongBase.run(), 0)
+same("land moves its base to main through the REST endpoint", wrongBase.edits, [
+  { path: "repos/Rickvu309/AirDesign/pulls/403", fields: { base: "main" } },
+])
 same(
-  "and names the fix",
-  wrongBase.said.some((line) => line.includes("gh pr edit 403 --base main")),
+  "and says so",
+  wrongBase.said.some(
+    (line) => line.startsWith("base") && line.includes("agent-element-tools") && line.includes("main"),
+  ),
   true,
 )
 same(
-  "and pushes nothing",
-  wrongBase.log.some((line) => line.startsWith("git push")),
-  false,
+  "after the check, before the push",
+  wrongBase.log.indexOf("stamp") < wrongBase.log.findIndex((line) => line.startsWith("gh api -X PATCH")) &&
+    wrongBase.log.findIndex((line) => line.startsWith("gh api -X PATCH")) <
+      wrongBase.log.findIndex((line) => line.startsWith("git push")),
+  true,
 )
 
 const twice = harness({
@@ -278,12 +304,19 @@ same(
 )
 
 const noPull = harness({ pull: null })
-same("no pull request and no title stops after the push with the command", await noPull.run(), 1)
+same("no pull request and no title stops before the check", await noPull.run(), 1)
+same("and runs no check", noPull.log.includes("stamp"), false)
 same(
-  "and says how to open one against main",
-  noPull.said.some((line) => line.includes("gh pr create --base main")),
+  "and pushes nothing",
+  noPull.log.some((line) => line.startsWith("git push")),
+  false,
+)
+same(
+  "and names the land command that opens one",
+  noPull.said.at(-1).includes(`pnpm land --title "..." --body-file`),
   true,
 )
+same("--check needs no title", await harness({ pull: null, args: ["--check"] }).run(), 0)
 
 const created = harness({ pull: null, args: ["--title", "Add land", "--body-file", "/tmp/body.md", "--no-follow"] })
 created.context.gh = ((original) => (command) => {
@@ -324,10 +357,52 @@ same("before the check", oldTitle.log.includes("stamp"), false)
 same(
   "it names the pull request and how to retitle it",
   oldTitle.said.at(-1).includes("the title of pull request 412 is 18 characters, limit 72: it ends with a full stop") &&
-    oldTitle.said.at(-1).includes("gh pr edit 412 --title"),
+    oldTitle.said.at(-1).includes(`pnpm land --title "..."`),
   true,
 )
-same("an open pull request's title wins over --title", await harness({ args: ["--title", longTitle] }).run(), 0)
+const badRetitle = harness({ args: ["--title", longTitle] })
+same("a --title over the limit stops an open pull request too", await badRetitle.run(), 1)
+same("and edits nothing", badRetitle.edits, [])
+
+const retitled = harness({
+  pull: { number: 412, baseRefName: "main", url: "u", title: "Add the deck list.", body: "## Proof\n" },
+  args: ["--title", "Add the deck list"],
+})
+same("--title retitles an open pull request whose title breaks the rule", await retitled.run(), 0)
+same("through the REST endpoint, with only the title", retitled.edits, [
+  { path: "repos/Rickvu309/AirDesign/pulls/412", fields: { title: "Add the deck list" } },
+])
+same(
+  "and says no word about the bar check, since the body did not change",
+  retitled.said.some((line) => line.includes("bar")),
+  false,
+)
+
+const rebodied = harness({
+  pull: { number: 412, baseRefName: "main", url: "u", title: "Add land", body: "## Proof\n\nOld.\n" },
+  args: ["--body-file", "/tmp/body.md"],
+})
+same("--body-file rewrites an open pull request's body", await rebodied.run(), 0)
+same("with the file's text", rebodied.edits, [
+  { path: "repos/Rickvu309/AirDesign/pulls/412", fields: { body: "## What changes\n\nA.\n\n## Proof\n\nRan it.\n" } },
+])
+same(
+  "and says once that a body edit starts the bar check again",
+  rebodied.said.filter((line) => line.includes("bar")).length,
+  1,
+)
+
+const unchanged = harness({
+  pull: { number: 412, baseRefName: "main", url: "u", title: "Add land", body: "## Proof\n" },
+  bodyText: "## Proof\n",
+  args: ["--title", "Add land", "--body-file", "/tmp/body.md"],
+})
+same("a title and body the pull request already has land", await unchanged.run(), 0)
+same("and edit nothing", unchanged.edits, [])
+
+const checkedOnly = harness({ args: ["--title", "Add the deck list", "--check"] })
+same("--check with a new title passes", await checkedOnly.run(), 0)
+same("and edits nothing", checkedOnly.edits, [])
 
 const proofless = harness({
   pull: null,
