@@ -14,6 +14,8 @@ import { CreditsCards } from "@/credits/credits-cards"
 import { creditsCopy } from "@/copy/credits-copy"
 import { resetCents } from "@airdesign/catalog"
 
+import { MovedToaster } from "@/decks/screens/deck-moved-toast"
+
 const settingsAction =
   "h-[var(--space-32)] border-0 bg-background px-3.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
 
@@ -45,6 +47,7 @@ export function UsagePage({
   const percent = week === null ? 0 : usagePercent(week)
   return (
     <SettingsPage
+      overlay={<MovedToaster />}
       tab="usage"
       email={loaded?.kind === "usage" ? loaded.email : ""}
       navigate={navigate}

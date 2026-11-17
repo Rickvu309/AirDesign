@@ -6,6 +6,8 @@ import { creditsCopy, creditAmount, creditDate } from "@/copy/credits-copy"
 import { productCopy } from "@/copy/product-copy"
 import type { useCredits } from "@/credits/use-credits"
 
+import { showStatus } from "@/decks/deck-notice"
+
 type CreditsState = ReturnType<typeof useCredits>
 
 export function CreditsCards({ state }: { state: CreditsState }) {
@@ -18,14 +20,11 @@ export function CreditsCards({ state }: { state: CreditsState }) {
         description={creditsCopy.facts}
         align="end"
         actions={
-          <Button disabled aria-describedby="credits-purchases">
+          <Button variant="signature" onClick={() => showStatus(creditsCopy.purchases, "credits-purchases", 5000)}>
             {creditsCopy.add}
           </Button>
         }
       >
-        <p id="credits-purchases" className="mb-3.5 text-[length:var(--type-dense)] text-muted-foreground">
-          {creditsCopy.purchases}
-        </p>
         {credits === null ? (
           state.loaded === null ? (
             <p role="status">{creditsCopy.loading}</p>
