@@ -1,10 +1,12 @@
 import { useCallback, useId, useState, useMemo, useSyncExternalStore, type ReactNode } from "react"
 import {
+  keptRefuses,
   openRegister,
   readElementId,
   readTableValue,
   shapeOf,
   siteKinds,
+  takes,
   themeNode,
   traits,
   type FieldValue,
@@ -40,6 +42,7 @@ import { TemplateStyleCard } from "@/editor/template-style-card"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
 import type { Palette, Swatch } from "@/design/color-choices"
+import { PassageField, passageWords, typedText } from "@/design/controls/text"
 import { UnionControl } from "@/design/controls/union"
 import { resolveControl } from "@/design/panel-arrangement"
 import { SquareSquare, Image } from "lucide-react"
@@ -271,10 +274,17 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
 
 type Several = readonly [ElementId, ...ElementId[]]
 
-function manyDesign(deck: DesigningDeck, nodes: Several): PanelModel | null {
-  const [first, ...rest] = nodes.map((node) => elementDesign(deck, node)?.model)
-  if (first === undefined || rest.some((model) => model === undefined)) return null
-  return panelOfMany([first, ...rest.filter((model) => model !== undefined)])
+function manyDesign(deck: DesigningDeck, nodes: Several) {
+  const [first, ...rest] = nodes.map((node) => elementDesign(deck, node))
+  if (first == null || rest.some((design) => design === null)) return null
+  const designs = [first, ...rest.filter((design) => design !== null)]
+  const model = panelOfMany([first.model, ...designs.slice(1).map((design) => design.model)])
+  const views = designs.map(({ view }) => view)
+  return { model, designs, views }
+}
+
+function editableText(views: readonly ScopedElement[]): boolean {
+  return views.every((view) => takes(view.facts).includes("text.value") && !keptRefuses(view.kept, "text", "value"))
 }
 
 function useElements(store: PaintStore, nodes: Several): void {
@@ -299,17 +309,50 @@ function useElements(store: PaintStore, nodes: Several): void {
 function LiveManyDesign({ deck, nodes }: { deck: DesigningDeck; nodes: Several }) {
   useElements(deck.shown.store.current, nodes)
   const palette = usePalette(deck)
-  const model = manyDesign(deck, nodes)
-  if (model === null) return null
+  const design = manyDesign(deck, nodes)
+  if (design === null) return null
+  const text = editableText(design.views) ? (
+    <DesignSection title={designCopy.multiEditText}>
+      <PassageField
+        label={designCopy.multiEditText}
+        values={design.views.map((view) => view.value ?? "")}
+        rich
+        onChange={(words) =>
+          changeDesign(deck, () => {
+            const views = manyDesign(deck, nodes)?.views
+            if (views === undefined || !editableText(views)) return []
+            return views.flatMap(({ node, value }) =>
+              passageWords(value ?? "") === words
+                ? []
+                : [{ target: { node }, text: { value: typedText(value ?? "", words) } }],
+            )
+          })
+        }
+      />
+    </DesignSection>
+  ) : null
   return (
     <ElementDesign
-      model={model}
+      model={design.model}
       palette={palette}
+      afterTitle={text}
       onChange={(control, value) =>
-        changeDesign(deck, () => rebasedChange(controlsOf(manyDesign(deck, nodes)?.sections), control, value))
+        changeDesign(deck, () => {
+          const latest = manyDesign(deck, nodes)
+          if (latest === null) return []
+          if (control.trait === "corners") {
+            const corners = latest.designs.map(({ model }) =>
+              controlsOf(model.sections).find(({ trait }) => trait === "corners"),
+            )
+            return corners.every((corner) => corner !== undefined) ? corners.map((corner) => corner.change(value)) : []
+          }
+          return rebasedChange(controlsOf(latest.model.sections), control, value)
+        })
       }
     >
-      <LiveSelectionColors deck={deck} nodes={nodes} />
+      {design.designs.every(({ model }) => model.kind === "text") ? null : (
+        <LiveSelectionColors deck={deck} nodes={nodes} />
+      )}
     </ElementDesign>
   )
 }

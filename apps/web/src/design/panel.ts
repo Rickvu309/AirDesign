@@ -292,8 +292,19 @@ function caseOf(value: unknown): string | undefined {
 function manyControl(controls: readonly PanelControl[], lead: PanelControl, nodes: readonly ElementId[]): PanelControl {
   const mixed = !sameValue(controls)
   const shared = lead.desc.kind === "union" && controls.every((control) => caseOf(control.value) === caseOf(lead.value))
+  const desc = lead.desc
+  const choices =
+    desc.kind === "choice"
+      ? {
+          ...desc,
+          options: desc.options.filter((option) =>
+            controls.every((control) => control.desc.kind === "choice" && control.desc.options.includes(option)),
+          ),
+        }
+      : desc
   return {
     ...lead,
+    desc: choices,
     value: mixed && !shared ? undefined : lead.value,
     mixed,
     inherited: !mixed && controls.every((control) => control.inherited),
@@ -305,11 +316,14 @@ function manyControl(controls: readonly PanelControl[], lead: PanelControl, node
 export function panelOfMany(models: readonly [PanelModel, ...PanelModel[]]): PanelModel {
   const nodes = models.flatMap((model) => model.nodes)
   const sections = panelOrder.many.flatMap((place): PanelSection[] => {
+    if (place.section === "opacity" && models.some((model) => model.kind === "connector")) return []
     const found = present(models.map((model) => model.sections.find(({ trait }) => trait === place.section)))
     const [lead] = found ?? []
     if (found === null || lead === undefined) return []
     const controls = lead.strips.flat().flatMap((control): PanelControl[] => {
       if (loneRows.includes(`${control.trait}.${control.field}`)) return []
+      if (control.trait === "effects" && control.field === "shadow" && models.some((model) => model.kind === "text"))
+        return []
       const each = present(found.map((section) => section.strips.flat().find(({ field }) => field === control.field)))
       return each === null ? [] : [manyControl(each, control, nodes)]
     })

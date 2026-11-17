@@ -4,6 +4,8 @@ With the Design panel open, selecting an element shows its sections from the tra
 
 ## Sub-features
 
+- `design-many-text` shows Multi-edit text for two selected text boxes. The field shows Mixed for different words. Blur or Ctrl/Cmd+Enter replaces the words in one Undo step. Escape discards the draft.
+- `design-many-line` shows the shared panel for a rectangle and a line. It omits Opacity, Corners and the None border preset.
 - `design-element` a text box selected: `Position and size` with X, Y, Width and Height, `Text` with the words, `Text color`, `Font size`, `Bold`, `Italic`, `Underline`, `Alignment` and `Bullets`.
 - `design-element-changed` X, Bold, a theme colour and Center set from the panel. The canvas and the thumbnail paint each change at once, and the selection frame stays while focus is in the panel (`data-keeps-selection`).
 - `design-table` a table selected: X and Y only, and `Cells`, one field per cell.
@@ -24,6 +26,8 @@ With the Design panel open, selecting an element shows its sections from the tra
 - A change the element cannot take shows `Unable to make that change. The element stays as it was.`
 
 ## Driving it with verify-airdesign
+
+- On 2026-11-17 a scratch journey replaced both text boxes in `element-added.pptx` by tabbing out of Multi-edit text, read the saved values from `deckRoutes.open`, undid and redid the replacement, reloaded and exported. The export kept both boxes’ original text run properties and all 15 other archive parts. `tests/browser/design-many.spec.ts` checks Escape, Ctrl/Cmd+Enter, Undo, Redo and reload.
 
 Preconditions:
 

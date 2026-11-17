@@ -35,9 +35,8 @@ export function typedText(value: string, words: string): string {
   return writeTextValue(typed)
 }
 
-function wordsOf(control: ControlProps["control"]): string {
-  const value = typeof control.value === "string" ? control.value : ""
-  return control.desc.kind === "text" ? cellText(readTextValue(value) ?? []) : value
+export function passageWords(value: string): string {
+  return cellText(readTextValue(value) ?? [{ from: 0, runs: [{ from: 0, text: value }] }])
 }
 
 function sizeOf(words: string): { readonly bytes: number; readonly wide: boolean } {
@@ -98,6 +97,7 @@ function WordsField({ control, onChange, max }: ControlProps & { readonly max: n
           aria-invalid={problem !== null ? true : undefined}
           aria-describedby={problem !== null ? problemId : undefined}
           value={draft ?? shown}
+          placeholder={control.mixed ? designCopy.mixed : undefined}
           onChange={(event) => setDraft(event.target.value)}
           onBlur={(event) => {
             if (draft !== null) commit(event.currentTarget.value)
@@ -121,54 +121,73 @@ function WordsField({ control, onChange, max }: ControlProps & { readonly max: n
 }
 
 export function TextControl(props: ControlProps) {
-  return props.control.desc.kind === "words" ? (
-    <WordsField {...props} max={props.control.desc.max} />
-  ) : (
-    <PassageField {...props} />
+  const { control, onChange } = props
+  if (control.desc.kind === "words") return <WordsField {...props} max={control.desc.max} />
+  const value = typeof control.value === "string" ? control.value : ""
+  const rich = control.desc.kind === "text"
+  return (
+    <PassageField
+      label={control.label}
+      values={[value]}
+      rich={rich}
+      onChange={(words) => onChange(rich ? typedText(value, words) : words)}
+    />
   )
 }
 
-function PassageField({ control, onChange }: ControlProps) {
-  const label = useId()
-  const shown = wordsOf(control)
+export function PassageField({
+  label,
+  values,
+  rich,
+  onChange,
+}: {
+  readonly label: string
+  readonly values: readonly string[]
+  readonly rich: boolean
+  readonly onChange: (words: string) => void
+}) {
+  const id = useId()
   const [draft, setDraft] = useState<string | null>(null)
+  const shown = values.map((value) => (rich ? passageWords(value) : value))
+  const first = shown[0] ?? ""
+  const mixed = shown.some((value) => value !== first)
+  const words = draft ?? (mixed ? "" : first)
+  const largest = values.reduce((longest, value) => {
+    const stored = rich ? typedText(value, words) : words
+    return bytesOf(stored) > bytesOf(longest) ? stored : longest
+  }, "")
+  const { problemId, problem, correction } = useTextProblem(largest, limits.valueBytes, designCopy.textTooLong)
 
-  const value = typeof control.value === "string" ? control.value : ""
-  const stored = (words: string) => (control.desc.kind === "text" ? typedText(value, words) : words)
-  const { problemId, problem, correction } = useTextProblem(
-    stored(draft ?? shown),
-    limits.valueBytes,
-    designCopy.textTooLong,
-  )
-
-  function commit(words: string) {
-    if (problem !== null) return
+  function commit() {
+    if (draft === null || problem !== null) return
     setDraft(null)
-    if (words !== shown) onChange(stored(words))
+    if (mixed || draft !== first) onChange(draft)
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.nativeEvent.isComposing) return
     if (event.key === "Escape") setDraft(null)
-    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) commit(event.currentTarget.value)
+    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault()
+      commit()
+    }
   }
 
   return (
     <div className="flex flex-col gap-1" data-control="text">
-      <label htmlFor={label} className="sr-only">
-        {control.label}
+      <label htmlFor={id} className="sr-only">
+        {label}
       </label>
       <Textarea
-        id={label}
+        id={id}
         aria-invalid={problem !== null ? true : undefined}
         aria-describedby={problem !== null ? problemId : undefined}
         rows={2}
         className="max-h-40 min-h-16 resize-none border-0 bg-white text-[length:var(--type-caption)] shadow-[0px_0px_0px_1px_var(--field-edge)] aria-invalid:shadow-[0px_0px_0px_2px_var(--destructive)] md:text-[length:var(--type-caption)]"
-        value={draft ?? shown}
+        value={words}
+        placeholder={mixed ? designCopy.mixed : undefined}
         onChange={(event) => setDraft(event.target.value)}
-        onBlur={(event) => {
-          if (draft !== null) commit(event.currentTarget.value)
-        }}
+        onBlur={commit}
         onKeyDown={onKeyDown}
       />
       {correction}

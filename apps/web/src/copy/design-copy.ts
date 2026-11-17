@@ -30,7 +30,8 @@ export const designCopy = {
     chart: "Chart",
     kept: "Element",
   },
-  elements: (count: number) => `${String(count)} elements`,
+  selected: (count: number) => `${String(count)} selected`,
+  multiEditText: "Multi-edit text",
   nothing: "Nothing on this element can be changed here yet.",
   refused: "Unable to make that change. Select the element and try again, or reload the deck if it keeps happening.",
   tooLong: (max: number, wide: boolean) =>

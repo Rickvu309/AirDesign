@@ -207,7 +207,7 @@ export function SectionStrips({
 }
 
 function panelTitle({ kind, nodes }: PanelModel): string {
-  if (kind === "many") return designCopy.elements(nodes.length)
+  if (kind === "many") return designCopy.selected(nodes.length)
   return kind === null ? designCopy.panels.kept : designCopy.panels[kind]
 }
 
@@ -216,10 +216,12 @@ export function ElementDesign({
   palette,
   onChange,
   picture = null,
+  afterTitle = null,
   children = null,
 }: {
   model: PanelModel
   picture?: ReactNode
+  afterTitle?: ReactNode
   children?: ReactNode
   palette: Palette
   onChange: (control: PanelControl, value: unknown) => void
@@ -235,7 +237,12 @@ export function ElementDesign({
       data-keeps-selection
       tabIndex={-1}
     >
-      {model.sections.every((section) => section.label !== null) ? <DesignHead>{panelTitle(model)}</DesignHead> : null}
+      {model.sections.every((section) => section.label !== null) ? (
+        <>
+          <DesignHead>{panelTitle(model)}</DesignHead>
+          {afterTitle}
+        </>
+      ) : null}
       {model.sections.length === 0 ? (
         <p className="px-4 py-4 text-[length:var(--type-caption)] text-quiet">{designCopy.nothing}</p>
       ) : null}
@@ -253,6 +260,7 @@ export function ElementDesign({
                 <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
               </DesignSection>
               <DesignHead>{panelTitle(model)}</DesignHead>
+              {afterTitle}
             </div>
           )
         const [strip, ...more] = section.strips
