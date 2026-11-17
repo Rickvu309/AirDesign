@@ -15,6 +15,7 @@ export type ConfirmedRow = Value & {
   readonly revision: number
   readonly node?: ElementId
   readonly floor?: string
+  readonly format?: number
   readonly slideFile?: readonly SlideId[]
   readonly slideEdit?: SlideCommand
 }
@@ -27,6 +28,7 @@ export type PendingRow = Value & {
   readonly base: number
   readonly node?: ElementId
   readonly floor?: string
+  readonly format?: number
   readonly slideFile?: readonly SlideId[]
   readonly slideEdit?: SlideCommand
 }

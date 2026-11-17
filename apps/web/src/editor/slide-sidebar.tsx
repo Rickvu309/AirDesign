@@ -37,6 +37,7 @@ const noSections: readonly StripSection[] = []
 
 export type SlideStrip = {
   readonly count: number
+  readonly gridStarts?: readonly number[]
   readonly sections?: readonly StripSection[]
   readonly current: number
   readonly onSelect: (index: number) => void

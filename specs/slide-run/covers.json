@@ -16,8 +16,8 @@
     {
       "file": "packages/engine/src/agent-slides.ts",
       "names": ["agentSlide", "runFence", "runFenced", "readFresh"],
-      "digest": "a0be157d4c35",
-      "blob": "17f5e668a494f208ace1ba1bfa50a4910ae2703a"
+      "digest": "593905d91cb1",
+      "blob": "8687d0af8d0007ce16d9b59dc11c7393919d4433"
     },
     {
       "file": "packages/mcp/src/call-tool.ts",
@@ -29,7 +29,7 @@
       "file": "packages/engine/src/call.ts",
       "names": ["endOnTouched", "endSlides", "landed"],
       "digest": "4d32375cfed1",
-      "blob": "ab74f354045d0297fab15a542a875ae82a806853"
+      "blob": "8b1c66b8705c5a20c6de7e6795600ef0e8ce7ac0"
     },
     {
       "file": "packages/mcp/src/turn.ts",

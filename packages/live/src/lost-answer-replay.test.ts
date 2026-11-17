@@ -1,5 +1,5 @@
 import type { WireEdit, WireSlide } from "@airdesign/catalog"
-import { elementId, orderKeyAfter, presentSlides, slideId } from "@airdesign/document"
+import { elementId, presentSlides, slideId } from "@airdesign/document"
 import { afterEach, expect, it, vi } from "vitest"
 import { installIndexedDb } from "./browser-fixtures.js"
 import { newPage } from "./device.js"
@@ -14,9 +14,14 @@ type Body = { readonly deck: string; readonly batch: readonly (WireEdit | WireSl
 
 const deck = "replayed"
 const file = [slideId("256"), slideId("257")] as const
-const key = orderKeyAfter(presentSlides({ file, order: [] }), file[0])
-if (key === null) throw new Error("key")
-const added = { slide: "add" as const, id: slideId("258"), after: file[0], key, layout: file[0] }
+const added = {
+  slide: "add" as const,
+  grid: 1 as const,
+  row: "same" as const,
+  id: slideId("258"),
+  after: file[0],
+  layout: file[0],
+}
 const elsewhere = elementId("256.9")
 
 async function specGraph(name: string, module: string): Promise<Graph> {

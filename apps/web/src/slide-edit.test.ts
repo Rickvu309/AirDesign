@@ -21,8 +21,8 @@ it("refuses to delete the last slide", () => {
 })
 
 it("selects the next slide after a delete, and the previous slide when the last one goes", () => {
-  expect(slideCommand(file, [], "remove", 1)).toEqual({ edit: { slide: "remove", id: file[1] }, current: 1 })
-  expect(slideCommand(file, [], "remove", 2)).toEqual({ edit: { slide: "remove", id: file[2] }, current: 1 })
+  expect(slideCommand(file, [], "remove", 1)).toEqual({ edit: { grid: 1, slide: "remove", id: file[1] }, current: 1 })
+  expect(slideCommand(file, [], "remove", 2)).toEqual({ edit: { grid: 1, slide: "remove", id: file[2] }, current: 1 })
 })
 
 it("selects the slide a move lands on", () => {

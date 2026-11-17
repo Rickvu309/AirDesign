@@ -231,8 +231,11 @@ it("checks every register field and nested landed row before opening", () => {
     elements: { bad: register },
     b: {},
     file: ["slide"],
-    order: [{ slide: "nope" }],
   }
+  expect(deckRoutes.open.result({ ...opened, register: { ...register, order: [{ slide: "nope" }] } })).toEqual({
+    ok: false,
+    refusal: "newer",
+  })
   for (const [key, value] of Object.entries(bad)) {
     expect(deckRoutes.open.result({ ...opened, register: { ...register, [key]: value } })).toEqual(payload)
   }

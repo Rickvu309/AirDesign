@@ -1,0 +1,17 @@
+{
+  "check": "checks-grid.md",
+  "covers": [
+    {
+      "file": "packages/document/src/grid-order.ts",
+      "names": ["foldGrid", "turnRefusal", "defaultGrid1", "gridRows"],
+      "digest": "cece1ad9de85",
+      "blob": "bacfd0b6a9ed51d7d4cbec67f5d54a6ff9a31cf9"
+    },
+    {
+      "file": "packages/document/src/grid-undo.ts",
+      "names": ["gridUndoable"],
+      "digest": "b726284747fb",
+      "blob": "ca2f177a0719032ae45200ef6a1f0cae2b9556f0"
+    }
+  ]
+}

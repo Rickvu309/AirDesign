@@ -4,14 +4,14 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect"],
-      "digest": "61c4d85cc98f",
-      "blob": "de80abb98be8a71f55a91c355f13eb0742c0c71f"
+      "digest": "6451d697403b",
+      "blob": "4ad27345e95d272aa945dbb8a9e9cad98489f1bf"
     },
     {
       "file": "packages/live/src/slide-replay.ts",
       "names": ["withSlides", "landed", "refusedRows"],
       "digest": "112cebacbd48",
-      "blob": "20db9b6017d6fd6addd54c9b1f394eb56f18eb34"
+      "blob": "ebfb971ee339d0d36f3b44e6957d784132aee54d"
     },
     {
       "file": "packages/live/src/held.ts",
@@ -47,7 +47,7 @@
       "file": "apps/web/src/commit-edit.ts",
       "names": ["flushPending"],
       "digest": "12b444777221",
-      "blob": "af8c76fef1feefa00cc9c43536c8750aacb6d2d3"
+      "blob": "7e2fa27715631ce30e55511545cbfa34d0424d60"
     }
   ]
 }

@@ -204,7 +204,7 @@ describe("undo list", () => {
     const first = await turnBack(deck.link, "deck", list, "undo")
     const second = await turnBack(deck.link, "deck", first.list, "undo")
     expect(second.outcome).toBe("turned")
-    expect(deck.sent).toEqual(["slide restore", "box 1"])
+    expect(deck.sent).toEqual(["slide grid-turn", "box 1"])
   })
 
   it("takes back an added text box and a deleted element through the slide queue, and names each", async () => {

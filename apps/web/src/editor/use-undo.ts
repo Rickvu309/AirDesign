@@ -117,6 +117,7 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
   }, [told, show, undoList])
 
   function slideOf(undoable: Undoable): SlideId | null {
+    if ("spots" in undoable) return undoable.spots[0]?.id ?? null
     if (!("slide" in undoable) || "elements" in undoable) return null
     return undoable.slide
   }
@@ -128,7 +129,7 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     const before = slideId === null ? -1 : store.current.slides().findIndex((slide) => slide.id === slideId)
     const next = await connect(memoryRemote()).openDeck(id)
     if (!next.ok) return
-    if ("slide" in undoable || structure.current !== structureOf(next.register, bound.current))
+    if ("slide" in undoable || "spots" in undoable || structure.current !== structureOf(next.register, bound.current))
       showRegister(next.register)
     repaint.current(next.register, "person")
     const nodes = "steps" in undoable ? undoable.steps.map((step) => step.node) : []
@@ -138,8 +139,8 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     const said = slideTurnSaid(direction, entry.name, { before, after, count: slides.length, held })
     if (said !== null) shown.saySlide?.current(said)
     const shownSlide =
-      "slide" in undoable
-        ? slides.findIndex((slide) => slide.id === undoable.slide)
+      slideId !== null
+        ? slides.findIndex((slide) => slide.id === slideId)
         : slides.findIndex((slide) => nodes.some((node) => node.startsWith(`${slide.id}.`)))
     setCurrent((index) => (shownSlide >= 0 ? shownSlide : Math.max(0, Math.min(index, slides.length - 1))))
     setPending(true)

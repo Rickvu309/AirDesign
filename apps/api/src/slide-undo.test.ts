@@ -69,10 +69,16 @@ function shows(register: Register, slide: string): boolean {
 
 function fenced(register: Register): boolean {
   const first = register.order.findIndex((row) => row.runId === "r")
-  const own = new Set(register.order.flatMap((row) => (row.runId === "r" ? [row.id] : [])))
+  const own = new Set(register.order.flatMap((row) => (row.runId === "r" && "id" in row ? [row.id] : [])))
   return register.order
     .slice(first + 1)
-    .some((row) => row.runId !== "r" && (row.slide === "remove" || row.slide === "restore") && own.has(row.id))
+    .some(
+      (row) =>
+        row.runId !== "r" &&
+        (((row.slide === "remove" || row.slide === "restore") && own.has(row.id)) ||
+          (row.slide === "grid-turn" &&
+            row.turn.spots.some((step) => own.has(step.id) && step.before.present !== step.after.present))),
+    )
 }
 
 async function act(live: Live, action: string): Promise<void> {

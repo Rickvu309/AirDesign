@@ -1,3 +1,4 @@
+import { defaultGrid1, slideId } from "@airdesign/document"
 import { useState } from "react"
 import { percentWidth, zoomLimits, type SlideSize, type Zoom } from "@/editor/canvas-zoom"
 import { readGridViewport, type GridViewport } from "@/editor/grid-viewport"
@@ -64,5 +65,7 @@ export function useKeptGridZoom(deck: string | null): [Zoom, (zoom: Zoom, persis
 }
 
 export function gridColumns(count: number): number {
-  return Math.min(10, Math.max(4, Math.ceil(Math.sqrt(count * 1.5))))
+  const file = Array.from({ length: count }, (_, index) => slideId(String(index + 1)))
+  const second = defaultGrid1(file).starts[1]
+  return second === undefined ? 4 : file.indexOf(second)
 }

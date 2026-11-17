@@ -1,4 +1,4 @@
-import { format, readRow, readSlideId, slideNode, type ElementId, type Row } from "@airdesign/document"
+import { newerFormat, format, readRow, readSlideId, slideNode, type ElementId, type Row } from "@airdesign/document"
 
 import { confirmedRow, pendingRow, type StoredRow } from "./store.js"
 
@@ -13,6 +13,7 @@ export function backgroundFill(raw: unknown): { readonly node: ElementId; readon
 }
 
 export function filledRow(row: StoredRow): StoredRow {
+  if (newerFormat(row)) return row
   const fill = backgroundFill(row.slideEdit)
   if (fill === undefined) return row
   if (row.kind === "confirmed") return confirmedRow(row.deck, row.revision, fill.row, fill.node)
