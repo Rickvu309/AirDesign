@@ -12,6 +12,7 @@ import {
 import type { CSSProperties } from "react"
 import { bulletLabel } from "./bullet-label.js"
 import { readFormat } from "./run-format-node.js"
+import { listNumbers, type ListSource } from "./paragraph-list.js"
 import type {
   CanvasBullet,
   CanvasParagraph,
@@ -72,7 +73,7 @@ export type TextLook = {
   fileColor(paragraph: number, from: number): Color | null
   fileAlign(paragraph: number): ParagraphAlign | null
   fileList(paragraph: number): TextList
-  fileNumber(paragraph: number): { readonly level: number; readonly scheme: string; readonly start: number } | null
+  fileNumber(paragraph: number): ListSource | null
   swatches(): readonly CanvasThemeColor[]
 }
 
@@ -493,27 +494,8 @@ export function endsInBreak(text: string): boolean {
   return text.endsWith("\n")
 }
 
-export function listNumbers(look: TextLook): (from: number, list: TextList | undefined) => number | null {
-  const counts = new Map<number, { readonly scheme: string; readonly start: number; readonly number: number }>()
-  return (from, list) => {
-    const native = look.fileNumber(from)
-    const level = native?.level ?? 0
-    for (const known of counts.keys()) if (known > level) counts.delete(known)
-    if (list !== "numbers" && (list !== undefined || native === null)) {
-      counts.delete(level)
-      return null
-    }
-    const scheme = list === "numbers" ? "arabicPeriod" : (native?.scheme ?? "arabicPeriod")
-    const start = list === "numbers" ? 1 : (native?.start ?? 1)
-    const previous = counts.get(level)
-    const number = previous?.scheme === scheme && previous.start === start ? previous.number + 1 : start
-    counts.set(level, { scheme, start, number })
-    return number
-  }
-}
-
 export function restyle(box: HTMLElement, look: TextLook): void {
-  const nextNumber = listNumbers(look)
+  const nextNumber = listNumbers(look.fileNumber)
   for (const block of box.children) {
     if (!isElement(block) || block.dataset.paragraph === undefined) continue
     block.toggleAttribute("data-end-break", endsInBreak(block.textContent ?? ""))

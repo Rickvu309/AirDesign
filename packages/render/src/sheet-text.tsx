@@ -1,6 +1,7 @@
 import type { TextList, ParagraphAlign, ParagraphSpacing, Color, TextFormat } from "@airdesign/document"
 import type { CanvasBullet } from "./text-record.js"
-import { endsInBreak, listNumbers, type RunPaint, type TextLook } from "./text-look.js"
+import { endsInBreak, type RunPaint, type TextLook } from "./text-look.js"
+import { listNumbers } from "./paragraph-list.js"
 
 type ShownAlign = ParagraphAlign | "justify"
 
@@ -65,7 +66,7 @@ export function SheetText(props: {
   readonly look: TextLook
 }) {
   const { look, text } = props
-  const nextNumber = listNumbers(look)
+  const nextNumber = listNumbers(look.fileNumber)
   return (
     <div data-text-body="" style={look.body}>
       {text.paragraphs.map((paragraph, index) => {
