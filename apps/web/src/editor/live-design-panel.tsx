@@ -3,11 +3,6 @@ import {
   openRegister,
   readElementId,
   readTableValue,
-  readColor,
-  fadedColor,
-  readTextValue,
-  readSlideId,
-  slideNode,
   shapeOf,
   siteKinds,
   themeNode,
@@ -19,7 +14,6 @@ import {
 } from "@airdesign/document"
 import {
   deckColors,
-  ownBackground,
   paintReader,
   readSlides,
   readTraits,
@@ -45,7 +39,7 @@ import { SlidersHorizontal } from "lucide-react"
 import { TemplateStyleCard } from "@/editor/template-style-card"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
-import { shownHex, type Palette, type Swatch } from "@/design/color-choices"
+import type { Palette, Swatch } from "@/design/color-choices"
 import { UnionControl } from "@/design/controls/union"
 import { resolveControl } from "@/design/panel-arrangement"
 import { SquareSquare, Image } from "lucide-react"
@@ -69,8 +63,7 @@ import { deviceScope } from "@/design/trait-edit"
 import { designShown, themeOf, type DesignShown } from "@/design-shown"
 import { PicturePreview } from "@/editor/picture-preview"
 import { ControlView, DesignHead, DesignSection, ElementDesign, SectionStrips } from "@/editor/design-panel"
-import { SelectionColorsSection } from "./selection-colors-section"
-import { replaceSelectionColor, type ColorSource } from "@/design/selection-colors"
+import { LiveSelectionColors } from "./live-selection-colors"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import type { UndoList } from "@/editor/use-undo"
 import type { UndoEntry } from "@/undo-list"
@@ -89,7 +82,7 @@ export type DesigningDeck = {
 
 const deckTraits = new WeakMap<Parts, DeckTraits | null>()
 
-function readsOf(parts: Parts, node: ElementId): TraitReads {
+export function readsOf(parts: Parts, node: ElementId): TraitReads {
   if (!deckTraits.has(parts)) {
     try {
       deckTraits.set(parts, readTraits(parts))
@@ -102,7 +95,7 @@ function readsOf(parts: Parts, node: ElementId): TraitReads {
 
 const shownFields = new WeakMap<Parts, Map<ElementId, PanelReads["fields"]>>()
 
-function fieldsOf(parts: Parts, node: ElementId): PanelReads["fields"] {
+export function fieldsOf(parts: Parts, node: ElementId): PanelReads["fields"] {
   const read = shownFields.get(parts) ?? new Map<ElementId, PanelReads["fields"]>()
   shownFields.set(parts, read)
   if (!read.has(node)) read.set(node, fieldsRead(parts, node))
@@ -165,7 +158,7 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
   }
 }
 
-function themeAt(parts: Parts, index: number): readonly Swatch[] {
+export function themeAt(parts: Parts, index: number): readonly Swatch[] {
   const part = readSlides(parts)[index]?.part
   return part === undefined ? [] : themeOf(parts, part)
 }
@@ -238,7 +231,7 @@ function controlsOf(sections: readonly PanelSection[] | undefined): readonly Pan
   return (sections ?? []).flatMap((section) => section.strips.flat())
 }
 
-function usePalette(deck: DesigningDeck): Palette {
+export function usePalette(deck: DesigningDeck): Palette {
   const { shown } = deck
   const { current } = shown
   const display = shown.displayParts.current
@@ -346,87 +339,6 @@ function LiveSlideDesign({ deck }: { deck: DesigningDeck }) {
       <LiveThemeDesign deck={deck} />
       <LiveSelectionColors deck={deck} nodes={[]} />
     </DesignView>
-  )
-}
-
-function colorSources(deck: DesigningDeck, nodes: readonly ElementId[]): readonly ColorSource[] {
-  const { shown } = deck
-  const parts = shown.displayParts.current
-  const slide = readSlideId(readSlides(parts)[shown.current]?.slide)
-  if (slide === undefined) return []
-  const scope = deviceScope(shown.shownParts.current, shown.shownRegister.current ?? openRegister("", ""))
-  const all = shown.store.current.slides()[shown.current]?.elements ?? []
-  const included = new Set(nodes.length === 0 ? all : nodes)
-  for (const node of all) {
-    let parent = scope.view(node)?.parent
-    while (parent != null) {
-      if (included.has(parent)) {
-        included.add(node)
-        break
-      }
-      parent = scope.view(parent)?.parent
-    }
-  }
-  const sources = all
-    .filter((node) => included.has(node) && node !== slideNode(slide, "slide"))
-    .map((node): ColorSource => {
-      const fields = fieldsOf(parts, node) ?? {}
-      if (scope.view(node)?.facts.kind === "table") {
-        const table =
-          readTableValue(shown.store.current.getElement(node)?.text ?? "") ??
-          readTableValue(fileValue(shown, node) ?? "")
-        return table === null
-          ? { node, fields }
-          : { node, textColor: { scheme: "tx1" }, fields: { ...fields, "table.value": { value: table, own: true } } }
-      }
-      const text = readTextValue(shown.store.current.getElement(node)?.text ?? scope.view(node)?.value ?? "")
-      if (text === null) return { node, fields }
-      const textColor = readColor(readsOf(parts, node)["text.color"]?.value) ?? { scheme: "tx1" }
-      const at = shapeOf(node)
-      const part = readSlides(parts)[shown.current]?.part
-      const painted =
-        part === undefined
-          ? undefined
-          : paintReader(parts)
-              .slide(part)
-              .elements.find((element) => element.shape === at.shape)?.text
-      const textColors = (paragraph: number, run: number): Color | undefined => {
-        const color = painted?.paragraphs[paragraph]?.runs[run]?.color
-        if (color == null) return undefined
-        const nominal =
-          shownHex(textColor, themeAt(parts, shown.current)) === color.hex.toUpperCase()
-            ? textColor
-            : { rgb: color.hex.toUpperCase() }
-        return fadedColor(nominal, Math.round(color.alpha * 100000))
-      }
-      const { "text.color": _ignored, ...rest } = fields
-      return { node, textColor, textColors, fields: { ...rest, "text.value": { value: text, own: true } } }
-    })
-  if (nodes.length === 0) {
-    const part = readSlides(parts)[shown.current]?.part
-    const fill = part === undefined ? null : ownBackground(parts, part)
-    const background = fill === null ? undefined : { value: fill, own: true }
-    const fallback = designShown(parts, shown.current)?.background.value
-    sources.push({
-      node: slideNode(slide, "slide"),
-      fields: {
-        "fill.value": background ?? { value: fallback === undefined ? undefined : { solid: fallback }, own: false },
-      },
-    })
-  }
-  return sources
-}
-
-function LiveSelectionColors({ deck, nodes }: { deck: DesigningDeck; nodes: readonly ElementId[] }) {
-  const palette = usePalette(deck)
-  return (
-    <SelectionColorsSection
-      sources={colorSources(deck, nodes)}
-      palette={palette}
-      onPick={(hex, color) =>
-        changeDesign(deck, () => replaceSelectionColor(colorSources(deck, nodes), hex, color, palette))
-      }
-    />
   )
 }
 
