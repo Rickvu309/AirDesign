@@ -175,7 +175,7 @@ for (const follows of [
   "decision.deckPath(name)",
   "corpusResult({ decision, pptx, decks: writtenDecks, lists, rendered, freshFails })",
   "checkFails({ failed, routeFailures, duration: checkSeconds, corpus })",
-  "const browserSpec = freshBrowserExport({",
+  "const browserSpec = fixedWork",
   "validatorFiles({",
   "for (const name of exportNames) parts.set(",
   "for (const line of entry.lines({ pptx, parts, lists, ids, orders })) {",

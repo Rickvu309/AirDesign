@@ -35,7 +35,15 @@ import {
   validatorLists as validatedLists,
 } from "./pptx-validator.mjs"
 import { judgedWrites, timeMetric } from "./metrics.mjs"
-import { afterRender, checkFails, committedArgs, corpusDecision, corpusInputs, corpusResult } from "./pptx-corpus.mjs"
+import {
+  afterRender,
+  checkFails,
+  committedArgs,
+  corpusDecision,
+  corpusInputs,
+  corpusPartition,
+  corpusResult,
+} from "./pptx-corpus.mjs"
 import {
   committedBlobs,
   renderCache,
@@ -59,10 +67,11 @@ const phases = phaseClock()
 const dotnet = process.env.PPTX_DOTNET ?? "dotnet"
 const soffice = process.env.PPTX_SOFFICE ?? "soffice"
 const fixtures = path.join(root, "scripts/pptx-fixtures")
-const entries = await loadCases(root)
+const inputs = corpusInputs(root)
+const { fixedWork } = corpusPartition({ argv: process.argv, ...inputs })
+const entries = fixedWork ? await loadCases(root) : []
 const exportNames = caseExports(entries)
 const exportPath = (name) => path.join(root, "tests/browser", name)
-const inputs = corpusInputs(root)
 
 const run = (command, args) =>
   new Promise((resolve, reject) => {
@@ -111,17 +120,25 @@ const renderCacheReady = readMachine({ soffice, pdftoppm: "pdftoppm", env: proce
 
 await phases.time("build", () => run("pnpm", ["--filter", "@airdesign/pptx", "build"]))
 let specOutput = ""
-const browserSpec = freshBrowserExport({
-  file: exportPath(exportNames[0]),
-  also: exportNames.slice(1).map(exportPath),
-  run: () =>
-    phases.time("browser", async () => {
-      specOutput = await run("pnpm", ["exec", "playwright", "test", "--reporter=list", ...browserExportArgs(entries)])
-    }),
-})
+const browserSpec = fixedWork
+  ? freshBrowserExport({
+      file: exportPath(exportNames[0]),
+      also: exportNames.slice(1).map(exportPath),
+      run: () =>
+        phases.time("browser", async () => {
+          specOutput = await run("pnpm", [
+            "exec",
+            "playwright",
+            "test",
+            "--reporter=list",
+            ...browserExportArgs(entries),
+          ])
+        }),
+    })
+  : Promise.resolve({ ok: true, seconds: 0 })
 const quiet = besideBrowser({ cores: os.availableParallelism(), browser: browserSpec })
 const pptx = memoPptx(await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href))
-const cases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
+const cases = fixedWork ? JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8")) : []
 const names = [...new Set([...cases.flatMap((row) => [row.before, row.after]), ...caseOriginals(entries)])]
 const browserExports = new Map(exportNames.map((name) => [name, exportPath(name)]))
 const fixturePath = (name) => browserExports.get(name) ?? path.join(root, decision.deckPath(name))
@@ -181,7 +198,9 @@ const freshFails = freshMissFails({
   mergeBase: () => gitAnswer(["merge-base", "HEAD", "origin/main"]),
   changedSince: (base) => gitAnswer(changedSinceArgs(base))?.split("\n"),
 })
-const cleanDecks = ["clean.pptx", "nasa-1d-cnn.pptx", "doe-heat-pumps.pptx", "census-updating-spm.pptx"]
+const cleanDecks = fixedWork
+  ? ["clean.pptx", "nasa-1d-cnn.pptx", "doe-heat-pumps.pptx", "census-updating-spm.pptx"]
+  : []
 const validations = []
 const validate = (files) => {
   const done = phases.time("validate", () => validatorLists(files))
@@ -217,8 +236,10 @@ for (const name of decision.routeDecks) {
     }),
   )
 }
-const cloneEditsFile = await writeCloneEdits({ pptx, root, parts, directory: routeDir })
-validate([cloneEditsFile])
+if (fixedWork) {
+  const cloneEditsFile = await writeCloneEdits({ pptx, root, parts, directory: routeDir })
+  validate([cloneEditsFile])
+}
 const corpusEdits = await writeCorpusEdits({
   full: decision.full,
   root,
@@ -229,7 +250,10 @@ validate(corpusEdits.rows.map((row) => row.file))
 const decks = cleanDecks.map((name) => ({ name, parts: parts.get(name) }))
 const samples = Number(process.env.JUDGE_SAMPLES ?? 3)
 const plantStarted = Date.now()
-const runs = proofSeeds.map((run) => ({ ...run, planted: plantSamples({ pptx, decks, seed: run.seed, samples }) }))
+const runs = (fixedWork ? proofSeeds : []).map((run) => ({
+  ...run,
+  planted: plantSamples({ pptx, decks, seed: run.seed, samples }),
+}))
 const proofFolder = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-judge-proof-"))
 const sampleFile = (seed, index) => `judge-sample-${seed}-${index}.pptx`
 for (const run of runs) {
@@ -311,7 +335,7 @@ if (!spec.ok) {
     }
   }
 }
-for (const line of cloneEditsLines({ pptx, parts, lists, ids, orders })) {
+for (const line of fixedWork ? cloneEditsLines({ pptx, parts, lists, ids, orders }) : []) {
   failed += 1
   console.log(line)
 }
@@ -365,11 +389,11 @@ for (const deck of decision.hardOf(writtenDecks)) {
   }
 }
 const passedOperations = [...seen].filter(([, row]) => row.ok).map(([operation]) => operation)
-for (const operation of pptx.routeOperations) {
+for (const operation of fixedWork ? pptx.routeOperations : []) {
   if (!seen.has(operation)) routeFailures.push({ operation, missing: true })
 }
 const recordedWrites = JSON.parse(fs.readFileSync(path.join(root, "metrics.json"), "utf8"))[judgedWrites]?.now
-if (recordedWrites !== passedOperations.length) {
+if (fixedWork && recordedWrites !== passedOperations.length) {
   routeFailures.push({
     metric: judgedWrites,
     measured: passedOperations.length,
@@ -387,5 +411,5 @@ for (const failure of routeFailures) console.log(JSON.stringify(failure))
 if (failed > 0) console.log(`${failed} pptx checks failed`)
 else console.log(`${cases.length} pptx checks passed`)
 if (routeFailures.length > 0) console.log(`${routeFailures.length} route writes failed`)
-else console.log(`${pptx.routeOperations.length} route writes passed`)
+else console.log(`${passedOperations.length} route writes passed`)
 if (checkFails({ failed, routeFailures, duration: checkSeconds, corpus })) process.exit(1)
