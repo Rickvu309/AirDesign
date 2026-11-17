@@ -45,10 +45,10 @@ function sizeOf(words: string): { readonly bytes: number; readonly wide: boolean
   return { bytes, wide: bytes > [...words].length }
 }
 
-function useTextProblem(words: string, max: number, message?: string) {
+function useTextProblem(words: string, max: number, message = designCopy.tooLong) {
   const problemId = useId()
   const size = sizeOf(words)
-  const problem = size.bytes > max ? (message ?? designCopy.tooLong(max, size.wide)) : null
+  const problem = size.bytes > max ? message(max, size.wide) : null
   const correction =
     problem === null ? null : (
       <p id={problemId} className="text-[length:var(--type-caption)] leading-[var(--leading-body)] text-danger-text">
@@ -125,7 +125,7 @@ function PassageField({ row, onChange }: ControlProps) {
   const { problemId, problem, correction } = useTextProblem(
     stored(draft ?? shown),
     limits.valueBytes,
-    designCopy.textTooLong(limits.valueBytes),
+    designCopy.textTooLong,
   )
 
   function commit(words: string) {
