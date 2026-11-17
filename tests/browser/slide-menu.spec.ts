@@ -25,6 +25,18 @@ function item(page: Page, name: RegExp) {
   return page.getByRole("menuitem", { name })
 }
 
+test("the selected slide highlight hugs its thumbnail with a six pixel inset", async ({ page }) => {
+  await open(page)
+  const row = await entry(page, 1).boundingBox()
+  const thumb = await entry(page, 1).locator("[data-thumb-paint]").boundingBox()
+  expect(row).not.toBeNull()
+  expect(thumb).not.toBeNull()
+  if (row === null || thumb === null) throw new Error("Missing slide thumbnail")
+  expect(thumb.y - row.y).toBeCloseTo(6, 0)
+  expect(row.y + row.height - thumb.y - thumb.height).toBeCloseTo(6, 0)
+  expect(row.x + row.width - thumb.x - thumb.width).toBeCloseTo(6, 0)
+})
+
 test("one slide can be duplicated from its menu, and move and delete are unavailable", async ({ page }) => {
   await open(page)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)

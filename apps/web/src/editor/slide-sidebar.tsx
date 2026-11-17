@@ -449,7 +449,10 @@ function SlideItem({
     if (next) latest.current.onSelect?.()
     else if (entry.current?.isConnected) entry.current.focus()
   }, [])
-  const look = cn("flex items-start gap-2 rounded-[var(--shape-card)] p-2", active && "bg-[var(--row)]")
+  const look = cn(
+    "flex w-fit items-start gap-2 rounded-[var(--shape-card)] py-1.5 pr-1.5 pl-2",
+    active && "bg-[var(--row)]",
+  )
   const number = (
     <span className="flex w-4 flex-col items-center gap-1.5 pt-0.5">
       <span className={cn("text-xs", active ? "font-medium text-index" : "text-quiet")}>{index}</span>
@@ -477,7 +480,7 @@ function SlideItem({
         aria-current={active ? "true" : undefined}
         aria-label={slideListCopy.slideName(index, count)}
         tabIndex={reachable ? 0 : -1}
-        className={cn(look, "w-full text-left")}
+        className={cn(look, "text-left")}
         data-stop={`slide:${String(index - 1)}`}
         data-slide-entry={index}
         data-slide-item
