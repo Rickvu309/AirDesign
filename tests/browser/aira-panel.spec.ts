@@ -240,12 +240,14 @@ test("after Stop the usage ring shows what the stopped model call was charged", 
   await side.getByRole("button", { name: productCopy.usageTitle }).click()
   const usage = page.getByRole("dialog", { name: productCopy.usageTitle })
   await expect(usage).toContainText("0%")
+  await page.keyboard.press("Escape")
   stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node }, holdAfter: 3 })
   const reached = stack.hold()
   await ask(page, asked)
   await reached
   await side.getByRole("button", { name: "Stop" }).click()
   try {
+    await side.getByRole("button", { name: productCopy.usageTitle }).click()
     await expect(usage).toContainText(/[1-9]\d*%/)
   } finally {
     stack.release()
