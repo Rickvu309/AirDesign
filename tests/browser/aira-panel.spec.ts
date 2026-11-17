@@ -1,5 +1,5 @@
 import { expect, type BrowserContext, type Page } from "@playwright/test"
-import { airaBackOn, airaCopy, airaLimitBodyOn } from "../../apps/web/src/copy/aira-copy.ts"
+import { airaBackOn, airaCopy, airaLimitBodyOn, airaStepWords } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy, usageResetsOn } from "../../apps/web/src/copy/product-copy.ts"
 import { forward, openClean, signInBrowser, test, type Stack } from "./api-stack"
 
@@ -58,7 +58,7 @@ test("a person asks Aira, watches the reply stream, and sees the slide change wi
   stack.release()
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello from Aira")
   await expect(side.getByText("I will change the title on the first slide.", { exact: true })).toBeVisible()
-  await expect(side.getByText("Edited slides", { exact: true })).toBeVisible()
+  await expect(side.getByText(airaStepWords.edit_deck.done, { exact: true })).toBeVisible()
   await expect(side.getByText(/airdesign_/)).toHaveCount(0)
   await expect(side.getByText("The title now reads Hello from Aira.", { exact: true })).toBeVisible()
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
@@ -158,7 +158,7 @@ test("Stop after an edit reached the server ends its run, shows the step done an
   await ask(page, asked)
   await reached
   await side.getByRole("button", { name: "Stop" }).click()
-  await expect(side.locator('[data-tool-state="done"]')).toHaveText("Edited slides")
+  await expect(side.locator('[data-tool-state="done"]')).toHaveText(airaStepWords.edit_deck.done)
   await expect(side.getByText("Stopped editing slides", { exact: true })).toHaveCount(0)
   await expect(page.locator('[data-slide-paint] [contenteditable="true"]')).toHaveText("Hello from Aira")
   const undo = side.getByRole("button", { name: productCopy.undo, exact: true })
@@ -366,7 +366,7 @@ test("steps Aira takes one after another sum up in one line that opens to each s
   await summary.click()
   await expect(summary).toHaveAttribute("aria-expanded", "true")
   const steps = side.locator('li[data-tool-state="done"]')
-  await expect(steps).toHaveText(["Read the deck", "Edited slides"])
+  await expect(steps).toHaveText(["Read the deck", airaStepWords.edit_deck.done])
   await summary.click()
   await expect(steps).toHaveCount(0)
 })

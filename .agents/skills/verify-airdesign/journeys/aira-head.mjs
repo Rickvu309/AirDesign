@@ -1,3 +1,4 @@
+import { airaCopy } from "../bin/product-copy.mjs"
 import path from "node:path"
 import { expect } from "@playwright/test"
 
@@ -26,7 +27,7 @@ export default async function drive({
   const composer = side.getByRole("textbox", { name: "Ask Aira" })
   const newChat = side.getByRole("button", { name: "New chat", exact: true })
   await expect(newChat).toBeDisabled()
-  await side.getByRole("button", { name: "Chats on this deck", exact: true }).click()
+  await side.getByRole("button", { name: airaCopy.chatsTitle, exact: true }).click()
   await expect(page.getByText("Your chats with Aira on this deck show here.")).toBeVisible()
   await expect(page.getByText("This device keeps your last 20 chats.")).toBeVisible()
   await capture("history-empty")
@@ -111,7 +112,7 @@ export default async function drive({
   await expect(log.getByText(/Lead with the claim/)).toBeVisible()
   await newChat.click()
   await expect(side.locator("[data-aira-welcome]")).toContainText("Aira isn't available in your country or region yet.")
-  await expect(side.getByRole("textbox", { name: "Unavailable in your region" })).toBeDisabled()
+  await expect(side.getByRole("textbox", { name: airaCopy.unavailable })).toBeDisabled()
   await capture("not-offered")
   note("when the usage answer says Aira is not available, the welcome says so and the composer is off")
 }
