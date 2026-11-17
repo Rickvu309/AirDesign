@@ -7,20 +7,37 @@ export type FontFile = {
 }
 
 function field(text: string, name: string): string | undefined {
-  return new RegExp(`(?:^|\\n)\\s*${name}: "([^"\\n]+)"`).exec(text)?.[1]
+  return new RegExp(`(?:^|\\n)[ \t]*${name}: "([^"\\n]+)"`).exec(text)?.[1]
+}
+
+function blocks(metadata: string, name: string): readonly string[] {
+  const found: string[] = []
+  let current: string[] | null = null
+  for (const line of metadata.split("\n")) {
+    const trimmed = line.trim()
+    if (trimmed === `${name} {`) {
+      if (current !== null) throw new Error("font block")
+      current = []
+    } else if (current !== null && trimmed === "}") {
+      found.push(current.join("\n"))
+      current = null
+    } else if (current !== null) {
+      if (trimmed.endsWith("{")) throw new Error("font block")
+      current.push(line)
+    }
+  }
+  if (current !== null) throw new Error("font block")
+  return found
 }
 
 export function fontFaces(family: FontFamily, metadata: string): readonly FontFile[] {
   if (field(metadata, "name") !== family.family || field(metadata, "license") !== family.license)
     throw new Error("font metadata")
-  const weightAxis = [...metadata.matchAll(/axes\s*\{([^}]+)\}/g)].find(
-    (block) => field(block[1] ?? "", "tag") === "wght",
-  )?.[1]
+  const weightAxis = blocks(metadata, "axes").find((block) => field(block, "tag") === "wght")
   const minimum = weightAxis?.match(/min_value:\s*(\d+)/)?.[1]
   const maximum = weightAxis?.match(/max_value:\s*(\d+)/)?.[1]
   const faces: FontFile[] = []
-  for (const block of metadata.matchAll(/fonts\s*\{([^}]+)\}/g)) {
-    const text = block[1] ?? ""
+  for (const text of blocks(metadata, "fonts")) {
     const file = field(text, "filename")
     const style = field(text, "style")
     const weight = text.match(/weight:\s*(\d+)/)?.[1]
