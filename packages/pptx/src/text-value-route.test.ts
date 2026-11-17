@@ -494,6 +494,37 @@ describe("oneRunValue", () => {
     expect(() => oneRunValue(manyFirst, part, "2", "typed")).toThrow(/text-shape/)
   })
 
+  it("writes the words typed on a new line after a field as a run in the field's format", () => {
+    const box = boxOf(
+      `<a:p><a:r><a:rPr b="1"/><a:t>Page </a:t></a:r><a:fld id="{1}" type="slidenum"><a:rPr sz="1400"/><a:t>7</a:t></a:fld></a:p>`,
+    )
+    const written = decodeUtf8(
+      edited(box, [
+        {
+          from: 0,
+          runs: [
+            { from: 0, text: "Page " },
+            { from: 1, text: "7" },
+          ],
+        },
+        { from: 0, runs: [{ from: 1, text: "typed" }] },
+      ]),
+    )
+    expect(written).toContain(`<a:fld id="{1}" type="slidenum"><a:rPr sz="1400"/><a:t>7</a:t></a:fld>`)
+    expect(written).toContain(`<a:r><a:rPr sz="1400"/><a:t>typed</a:t></a:r>`)
+    expect(() =>
+      edited(box, [
+        {
+          from: 0,
+          runs: [
+            { from: 0, text: "Page " },
+            { from: 1, text: "8" },
+          ],
+        },
+      ]),
+    ).toThrow(/text-carried/)
+  })
+
   it("leaves a field box to be refused by the route with its bytes unchanged", () => {
     const box = boxOf(`<a:p><a:fld id="{1}" type="slidenum"><a:rPr/><a:t>7</a:t></a:fld></a:p>`)
     expect(textStorable(new Map([[part, box]]), part, "2")).toBe(false)
