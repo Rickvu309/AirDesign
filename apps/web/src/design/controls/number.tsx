@@ -97,7 +97,8 @@ export function NumberField({
   }
 
   const suffix =
-    (control.trait === "text" && control.field === "size") || (control.trait === "border" && control.field === "width")
+    (control.trait === "text" && control.field === "size") ||
+    (["border", "line"].includes(control.trait) && control.field === "width")
       ? ""
       : unit
   const value = draft ?? shown
