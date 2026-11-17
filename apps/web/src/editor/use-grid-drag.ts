@@ -1,6 +1,6 @@
 import { useRef, useState, type CSSProperties, type DragEvent, type RefObject } from "react"
 import { dropPlace, dropTarget, edgeScroll, previewSlot, slotUnder, type GridSlot } from "@/editor/grid-drop"
-import { gridGap } from "@/editor/grid-size"
+import { gridGap } from "@/editor/grid-zoom"
 import { still } from "@/editor/slide-opening"
 
 type Range = { readonly start: number; readonly end: number }

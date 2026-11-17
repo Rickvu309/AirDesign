@@ -170,6 +170,16 @@ export const productCopy = {
   presetFifty: "$50",
 } as const
 
-export function fitZoomOf(percent: number): string {
-  return `Fit (${String(percent)}%)`
+export const zoomCopy = {
+  field: "Zoom",
+  zoomIn: "Zoom in",
+  zoomOut: "Zoom out",
+  fit: "Zoom to fit",
+  inKey: "Ctrl+=",
+  outKey: "Ctrl+-",
+  fitKey: "Ctrl+0",
+} as const
+
+export function zoomToOf(percent: number): string {
+  return `Zoom to ${String(percent)}%`
 }

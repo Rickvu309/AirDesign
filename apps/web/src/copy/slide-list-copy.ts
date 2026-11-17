@@ -6,8 +6,6 @@ function slidesOf(count: number): string {
 
 export const slideListCopy = {
   sectionCount: slidesOf,
-  zoom: "Zoom",
-  perRow: (count: number) => `${slidesOf(count)} per row`,
   listName: "Slides",
   slideName: (number: number, count: number) => `Slide ${String(number)} of ${String(count)}`,
   selectedName: (number: number, count: number) => `Slide ${String(number)} of ${String(count)}, selected`,

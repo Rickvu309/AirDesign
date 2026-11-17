@@ -90,7 +90,7 @@ test("fit zoom refits when the window changes, and a fixed zoom stays", async ({
   await page.setViewportSize({ width: 1920, height: 1080 })
   await expect.poll(async () => (await boxOf(page, "[data-slide-paint]")).width).toBeGreaterThan(800)
   await page.locator("[data-zoom-readout]").click()
-  await page.getByRole("menuitemradio", { name: "50%", exact: true }).click()
+  await page.getByRole("menuitemradio", { name: "Zoom to 50%", exact: true }).click()
   await expect.poll(async () => (await boxOf(page, "[data-slide-paint]")).width).toBe(640)
   await page.setViewportSize({ width: 1280, height: 720 })
   await expect(page.locator("[data-zoom-readout]")).toHaveText("50%")

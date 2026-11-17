@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test"
+import { zoomCopy, zoomToOf } from "../../apps/web/src/copy/product-copy"
 
 export type Row = {
   readonly group: string
@@ -24,9 +25,9 @@ export async function openDeck(page: Page, name: string, buffer: Buffer): Promis
   )
 }
 
-export async function zoomTo(page: Page, step: string): Promise<void> {
+export async function zoomTo(page: Page, step: number | "fit"): Promise<void> {
   await page.locator("[data-zoom-readout]").click()
-  await page.getByRole("menuitemradio", { name: step, exact: true }).click()
+  await page.getByRole("menuitemradio", { name: step === "fit" ? zoomCopy.fit : zoomToOf(step), exact: true }).click()
   await expect(page.getByRole("menu")).toHaveCount(0)
 }
 

@@ -4,9 +4,10 @@ import {
   fitWidth,
   slideRoom,
   steppedZoom,
+  typedZoom,
   zoomKey,
   zoomPercent,
-  zoomSteps,
+  zoomPresets,
   zoomWidth,
 } from "@/editor/canvas-zoom"
 
@@ -39,8 +40,10 @@ describe("canvas zoom", () => {
 
   it("turns each step into the width that shows that percent", () => {
     expect(zoomWidth("fit", room, wide)).toBe(800)
-    expect(zoomSteps.map((step) => zoomWidth(step, room, wide))).toEqual([640, 1280, 2560])
-    for (const step of zoomSteps) expect(zoomPercent(zoomWidth(step, room, standard), standard)).toBe(step)
+    expect(zoomPresets.map((step) => zoomWidth(step, room, wide))).toEqual([640, 1280, 2560])
+    expect(zoomWidth(37, room, wide)).toBe(474)
+    for (const step of [...zoomPresets, 10, 37, 400])
+      expect(zoomPercent(zoomWidth(step, room, standard), standard)).toBe(step)
   })
 
   it("fits a wide slide to the designed 800 px in the canvas column of a 1470x923 window", () => {
@@ -75,14 +78,36 @@ describe("zoom keys", () => {
     expect(zoomKey({ ...plain, key: "z", ctrlKey: true })).toBeNull()
   })
 
-  it("steps to the next zoom above or below the percent on show, and stops at the ends", () => {
-    expect(steppedZoom("in", 83)).toBe(100)
-    expect(steppedZoom("in", 100)).toBe(200)
-    expect(steppedZoom("in", 200)).toBe(200)
-    expect(steppedZoom("out", 83)).toBe(50)
-    expect(steppedZoom("out", 200)).toBe(100)
-    expect(steppedZoom("out", 50)).toBe(50)
-    expect(steppedZoom("in", 250)).toBe(200)
-    expect(steppedZoom("out", 30)).toBe(50)
+  it("steps to the next stop above or below the percent on show, and stops at 10 and 400", () => {
+    expect(steppedZoom("in", 63)).toBe(75)
+    expect(steppedZoom("in", 100)).toBe(150)
+    expect(steppedZoom("in", 23)).toBe(25)
+    expect(steppedZoom("out", 63)).toBe(50)
+    expect(steppedZoom("out", 23)).toBe(10)
+    expect(steppedZoom("in", 400)).toBe(400)
+    expect(steppedZoom("out", 10)).toBe(10)
+    expect(steppedZoom("in", 900)).toBe(400)
+    expect(steppedZoom("out", 4)).toBe(10)
+  })
+})
+
+describe("typed zoom", () => {
+  it("reads a whole percent with or without the sign and rounds a fraction", () => {
+    expect(typedZoom("64")).toBe(64)
+    expect(typedZoom(" 120 % ")).toBe(120)
+    expect(typedZoom("33.6%")).toBe(34)
+  })
+
+  it("holds a typed percent between 10 and 400", () => {
+    expect(typedZoom("3")).toBe(10)
+    expect(typedZoom("0")).toBe(10)
+    expect(typedZoom("1200")).toBe(400)
+  })
+
+  it("refuses text that is not a percent", () => {
+    expect(typedZoom("")).toBeNull()
+    expect(typedZoom("fit")).toBeNull()
+    expect(typedZoom("-20")).toBeNull()
+    expect(typedZoom("5%%")).toBeNull()
   })
 })

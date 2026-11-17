@@ -1,4 +1,4 @@
-import { fitZoomOf } from "../../apps/web/src/copy/product-copy"
+import { zoomCopy, zoomToOf } from "../../apps/web/src/copy/product-copy"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { covers } from "./gesture"
@@ -49,9 +49,9 @@ async function scrolled(page: Page): Promise<{ left: number; top: number }> {
     .evaluate((stage) => ({ left: Math.round(stage.scrollLeft), top: Math.round(stage.scrollTop) }))
 }
 
-async function zoomTo(page: Page, step: string): Promise<void> {
+async function zoomTo(page: Page, step: number | "fit"): Promise<void> {
   await page.locator("[data-zoom-readout]").click()
-  await page.getByRole("menuitemradio", { name: step, exact: true }).click()
+  await page.getByRole("menuitemradio", { name: step === "fit" ? zoomCopy.fit : zoomToOf(step), exact: true }).click()
   await expect(page.getByRole("menu")).toHaveCount(0)
 }
 
@@ -89,7 +89,7 @@ test("the tool menu lists Move and Hand with their keys, and Hand pans the zoome
   await page.getByRole("menuitemradio", { name: "Hand tool" }).click()
   await expect(page.getByRole("button", { name: "Hand tool", exact: true })).toHaveAttribute("aria-pressed", "true")
 
-  await zoomTo(page, "200%")
+  await zoomTo(page, 200)
   expect((await slideBox(page)).width).toBe(2560)
   const before = await scrolled(page)
   await page.mouse.move(700, 450)
@@ -124,12 +124,12 @@ test("zoom fits by default, each step sets the slide width, and a drag at anothe
   await openClean(page)
   await expect(page.locator("[data-zoom-readout]")).toHaveText("63%")
   expect((await slideBox(page)).width).toBe(800)
-  await zoomTo(page, "100%")
+  await zoomTo(page, 100)
   await expect(page.locator("[data-zoom-readout]")).toHaveText("100%")
   expect((await slideBox(page)).width).toBe(1280)
-  await zoomTo(page, fitZoomOf(63))
+  await zoomTo(page, "fit")
   expect((await slideBox(page)).width).toBe(800)
-  await zoomTo(page, "50%")
+  await zoomTo(page, 50)
   const slide = await slideBox(page)
   expect(slide.width).toBe(640)
   await page.locator('[contenteditable="true"]').click()

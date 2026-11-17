@@ -49,13 +49,11 @@ export function ExportButton({ onClick, ref }: { onClick?: () => void; ref?: Ref
   )
 }
 
-export function ZoomReadout({ value, tone = "quiet" }: { value: string; tone?: "quiet" | "ink" }) {
+export function ZoomReadout({ value }: { value: string }) {
   return (
-    <span className={cn("flex h-8 items-center gap-0.5", tone === "ink" ? "gap-1 px-2" : "pr-1")}>
-      <span className={cn("text-[length:var(--type-dense)]", tone === "ink" ? "text-foreground" : "text-quiet")}>
-        {value}
-      </span>
-      <EditorIcon name="chev" size={tone === "ink" ? 13 : 12} className="text-faint" />
+    <span className="flex h-8 items-center gap-0.5 pr-1.5 pl-2.5 text-[length:var(--type-dense)] font-medium text-foreground tabular-nums">
+      {value}
+      <EditorIcon name="chev" size={12} className="text-faint" />
     </span>
   )
 }

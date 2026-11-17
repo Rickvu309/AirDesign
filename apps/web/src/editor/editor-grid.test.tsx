@@ -104,10 +104,22 @@ describe("slide grid", () => {
     expect(html).toMatch(/<\/button><span[^>]*data-slide-number[^>]*>3<\/span>/)
   })
 
-  it("offers a zoom that sets how many slides fit in a row", () => {
-    const html = grid()
-    expect(html).toContain("data-grid-zoom")
-    expect(html).not.toContain(">23%<")
+  it("carries the slide view's bar: the zoom percent, then Present, then Export", () => {
+    const html = renderToStaticMarkup(
+      <EditorGrid
+        title="Q3 update"
+        strip={strip}
+        size={{ width: 12_192_000, height: 6_858_000 }}
+        onSlides={() => undefined}
+        onExport={() => undefined}
+        undo={undo}
+      />,
+    )
+    const bar = tags(html, /<div[^>]*data-view-bar[^>]*>[\s\S]*?Export<\/button>/g)[0] ?? ""
+    expect(bar.indexOf("data-zoom-readout")).toBeGreaterThan(-1)
+    expect(bar.indexOf("data-zoom-readout")).toBeLessThan(bar.indexOf("data-present-button"))
+    expect(bar).toMatch(/data-zoom-readout[^>]*>13%/)
+    expect(html).not.toContain('role="slider"')
   })
 
   it("offers to add a slide after each one", () => {
