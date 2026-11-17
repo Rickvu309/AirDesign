@@ -134,27 +134,6 @@ describe("database migrations", () => {
     })
     const admin = await open(superUrl(database))
     expect(await recordedIds(admin)).toEqual(migrations.map((migration) => migration.id))
-    const tables = await admin.query<{ name: string; tableowner: string }>(
-      `select schemaname || '.' || tablename as name, tableowner from pg_tables
-       where schemaname in ('session', 'deck', 'setup') order by name`,
-    )
-    const sessionTables = "access account agent_turn aira_ask aira_ledger aira_turn caller_log code oauth_client"
-    const named = [
-      "deck.media",
-      "deck.once",
-      "deck.original_delete",
-      "deck.saved",
-      ...`${sessionTables} oauth_grant oauth_token sent`.split(" ").map((table) => `session.${table}`),
-      "setup.migration",
-    ]
-    expect(tables.rows).toEqual(named.map((name) => ({ name, tableowner: "migrator" })))
-    const grants = await admin.query<{ grantee: string; name: string; rights: string }>(
-      `select grantee, table_schema || '.' || table_name as name,
-         string_agg(privilege_type, ' ' order by privilege_type) as rights
-       from information_schema.role_table_grants
-       where grantee in ('session', 'deck', 'listen')
-       group by grantee, table_schema, table_name order by grantee, name`,
-    )
     const full = "DELETE INSERT SELECT UPDATE"
     const noDelete = "INSERT SELECT UPDATE"
     const sessionRights: readonly (readonly [string, string])[] = [
@@ -166,11 +145,33 @@ describe("database migrations", () => {
       ["aira_turn", noDelete],
       ["caller_log", full],
       ["code", full],
+      ["credit_history", "INSERT SELECT"],
+      ["credits", noDelete],
       ["oauth_client", noDelete],
       ["oauth_grant", noDelete],
       ["oauth_token", noDelete],
       ["sent", full],
     ]
+    const tables = await admin.query<{ name: string; tableowner: string }>(
+      `select schemaname || '.' || tablename as name, tableowner from pg_tables
+       where schemaname in ('session', 'deck', 'setup') order by name`,
+    )
+    const named = [
+      "deck.media",
+      "deck.once",
+      "deck.original_delete",
+      "deck.saved",
+      ...sessionRights.map(([table]) => `session.${table}`),
+      "setup.migration",
+    ]
+    expect(tables.rows).toEqual(named.map((name) => ({ name, tableowner: "migrator" })))
+    const grants = await admin.query<{ grantee: string; name: string; rights: string }>(
+      `select grantee, table_schema || '.' || table_name as name,
+         string_agg(privilege_type, ' ' order by privilege_type) as rights
+       from information_schema.role_table_grants
+       where grantee in ('session', 'deck', 'listen')
+       group by grantee, table_schema, table_name order by grantee, name`,
+    )
     expect(grants.rows).toEqual([
       { grantee: "deck", name: "deck.media", rights: "DELETE INSERT SELECT" },
       { grantee: "deck", name: "deck.once", rights: full },
