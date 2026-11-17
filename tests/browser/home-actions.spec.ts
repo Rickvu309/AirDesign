@@ -63,6 +63,51 @@ test("a move to Trash that fails says so and tries again", async ({ page }) => {
   expect(calls.filter((call) => call.path === "trash")).toEqual([{ path: "trash", body: { deck: "first" } }])
 })
 
+test("a dismissed retry is inert throughout the toast exit", async ({ page }) => {
+  await store(page, [first])
+  let attempts = 0
+  const release = Promise.withResolvers<void>()
+  await page.route("**/decks/trash", async (route) => {
+    attempts += 1
+    if (attempts === 1) return route.abort()
+    if (attempts === 2) {
+      await release.promise
+      return route.fulfill({ json: { ok: false, refusal: "missing" } })
+    }
+    return route.fallback()
+  })
+  await page.goto("/")
+  await page.getByRole("button", { name: `${first.name} actions` }).click()
+  await page.getByRole("menuitem", { name: productCopy.moveToTrash }).click()
+  const failed = page.locator("[data-sonner-toast]").filter({ hasText: moveFailedOf(first.name) })
+  await expect(failed).toBeVisible()
+  await page.clock.pauseAt(new Date(Date.now() + 1000))
+  const retry = page.getByRole("button", { name: productCopy.payTryAgain, exact: true })
+  await retry.click()
+  await expect.poll(() => attempts).toBe(2)
+  await page.clock.runFor(50)
+  const leaving = page.locator('[data-sonner-toast][data-removed="true"]')
+  await expect(leaving).toHaveCount(1)
+  await expect(failed).toHaveCount(1)
+  await expect(retry).toHaveCount(0)
+  await expect(leaving).toHaveJSProperty("inert", true)
+  await leaving
+    .locator("button")
+    .first()
+    .evaluate((button) => button.focus())
+  await expect(leaving.locator("button").first()).not.toBeFocused()
+  release.resolve()
+  await expect
+    .poll(async () => {
+      await page.clock.runFor(1)
+      return failed.count()
+    })
+    .toBe(2)
+  await expect(retry).toHaveCount(1)
+  await expect(leaving).toHaveCount(1)
+  expect(attempts).toBe(2)
+})
+
 test("Move and Restore show pending feedback until the server answers", async ({ page }) => {
   await store(page, [first])
   const release: (() => void)[] = []
@@ -147,4 +192,26 @@ test("a Restore in Trash that fails says so and tries again", async ({ page }) =
   await page.getByRole("button", { name: productCopy.payTryAgain, exact: true }).click()
   await expect(page.getByRole("heading", { name: first.name })).toHaveCount(0)
   await expect(failed).toHaveCount(0)
+})
+
+test("a rapid double click on retry sends one move", async ({ page }) => {
+  await store(page, [first])
+  let attempts = 0
+  const release = Promise.withResolvers<void>()
+  await page.route("**/decks/trash", async (route) => {
+    attempts += 1
+    if (attempts === 1) return route.abort()
+    await release.promise
+    return route.fallback()
+  })
+  await page.goto("/")
+  await page.getByRole("button", { name: `${first.name} actions` }).click()
+  await page.getByRole("menuitem", { name: productCopy.moveToTrash }).click()
+  const retry = page.getByRole("button", { name: productCopy.payTryAgain, exact: true })
+  await expect(retry).toBeVisible()
+  await retry.dblclick()
+  await expect.poll(() => attempts).toBe(2)
+  release.resolve()
+  await expect(page.getByText(`${first.name} moved to Trash`, { exact: true })).toBeVisible()
+  expect(attempts).toBe(2)
 })
