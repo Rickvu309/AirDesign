@@ -202,7 +202,7 @@ export function DecksShell({
                   },
                 }
               : {})}
-            className="h-7 rounded-md border-0 bg-background pl-9 text-[length:var(--type-dense)] shadow-[0_0_0_1px_var(--line)] placeholder:text-quiet md:text-[length:var(--type-dense)]"
+            className="h-7 rounded-md bg-background pl-9 text-[length:var(--type-dense)] placeholder:text-quiet md:text-[length:var(--type-dense)]"
           />
         </form>
         <nav className="mt-3" aria-label="Decks">

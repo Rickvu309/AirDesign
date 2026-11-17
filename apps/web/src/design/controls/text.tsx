@@ -183,7 +183,7 @@ export function PassageField({
         aria-invalid={problem !== null ? true : undefined}
         aria-describedby={problem !== null ? problemId : undefined}
         rows={2}
-        className="max-h-40 min-h-16 resize-none border-0 bg-white text-[length:var(--type-caption)] shadow-[0px_0px_0px_1px_var(--field-edge)] aria-invalid:shadow-[0px_0px_0px_2px_var(--destructive)] md:text-[length:var(--type-caption)]"
+        className="max-h-40 min-h-16 resize-none bg-white text-[length:var(--type-caption)] md:text-[length:var(--type-caption)]"
         value={words}
         placeholder={mixed ? designCopy.mixed : undefined}
         onChange={(event) => setDraft(event.target.value)}

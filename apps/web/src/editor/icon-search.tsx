@@ -69,7 +69,7 @@ export function IconSearch(props: {
         placeholder={pictureCopy.searchHint}
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        className="h-8 border-0 bg-white text-[length:var(--type-dense)] shadow-[0px_0px_0px_1px_var(--field-edge)] md:text-[length:var(--type-dense)]"
+        className="h-8 bg-white text-[length:var(--type-dense)] md:text-[length:var(--type-dense)]"
       />
       {found.length === 0 && query.trim() === "" ? null : found.length === 0 ? (
         <p className="text-[length:var(--type-dense)] text-quiet" role="status">

@@ -123,3 +123,37 @@ test("the account menu's delete dialog stays disabled while the email is unknown
   await expect(dialog.getByRole("alert")).toHaveText(accountCopy.deleteFailed)
   expect(posted).toEqual([{ email }, { email }])
 })
+
+test("the name field has one continuous focus edge in normal and invalid states", async ({ page }) => {
+  await mockApp(page)
+  await page.route("**/account/profile", (route) =>
+    route.fulfill({ json: { ok: true, account: { email: "person@example.com", name: "Person" } } }),
+  )
+  await page.goto("/settings/account")
+  const input = page.getByLabel(accountCopy.name, { exact: true })
+  await expect(input).toHaveValue("Person")
+  await page.keyboard.press("Tab")
+  await input.focus()
+  for (const invalid of [false, true]) {
+    if (invalid) {
+      await input.fill("   ")
+      await input.press("Enter")
+      await expect(page.getByRole("alert")).toHaveText(accountCopy.nameInvalid)
+    }
+    await expect(input).toBeFocused()
+    const edge = await input.evaluate((element) => {
+      const style = getComputedStyle(element)
+      return {
+        border: style.borderColor,
+        outline: style.outlineColor,
+        offset: Number.parseFloat(style.outlineOffset),
+        width: Number.parseFloat(style.outlineWidth),
+        shadow: style.boxShadow,
+      }
+    })
+    expect(edge.border).toBe(edge.outline)
+    expect(edge.offset).toBeLessThanOrEqual(0)
+    expect(edge.width).toBeGreaterThan(0)
+    expect(edge.shadow).toBe("none")
+  }
+})

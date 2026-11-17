@@ -183,11 +183,29 @@
     [role^="menuitem"],
     [role="option"],
     [data-focus-ring] > :is(input, textarea),
+    [data-slot="input"],
+    [data-slot="textarea"],
     [data-focus-edge]
   ),
 [data-focus-ring]:has(> :is(input, textarea):focus-visible) {
   outline: var(--focus-ring-width) solid var(--focus-ring);
   outline-offset: var(--focus-ring-offset);
+}
+
+:where([data-slot="input"], [data-slot="textarea"]) {
+  border: 1px solid var(--field-edge);
+  outline: none;
+}
+
+:where([data-slot="input"], [data-slot="textarea"]):focus-visible {
+  border-color: var(--focus-ring);
+  outline: var(--focus-ring-width) solid var(--focus-ring);
+  outline-offset: -1px;
+}
+
+:where([data-slot="input"], [data-slot="textarea"])[aria-invalid="true"] {
+  border-color: var(--danger-text);
+  outline-color: var(--danger-text);
 }
 
 @theme inline {

@@ -1,4 +1,15 @@
-import { createRequire } from "node:module"
+import { existsSync } from "node:fs"
+import { createRequire, registerHooks } from "node:module"
+
+registerHooks({
+  resolve(specifier, context, next) {
+    if (specifier.startsWith(".") && context.parentURL?.includes("/apps/web/src/copy/")) {
+      const typed = new URL(`${specifier}.ts`, context.parentURL)
+      if (existsSync(typed)) return { url: typed.href, shortCircuit: true }
+    }
+    return next(specifier, context)
+  },
+})
 
 export const { productCopy, starOf, unstarOf } = createRequire(import.meta.url)(
   "../../../../apps/web/src/copy/product-copy.ts",
@@ -20,3 +31,7 @@ export const { picturePanelCopy: pictureCopy } = createRequire(import.meta.url)(
 
 export const { lineCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/line-copy.ts")
 export const { creditsCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/credits-copy.ts")
+
+export const { pictureCopy: pictureToolCopy } = createRequire(import.meta.url)(
+  "../../../../apps/web/src/copy/picture-copy.ts",
+)
