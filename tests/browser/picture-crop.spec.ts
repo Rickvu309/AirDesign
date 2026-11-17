@@ -1,3 +1,4 @@
+import { pictureCopy } from "../../apps/web/src/copy/picture-copy"
 import { join } from "node:path"
 import { expect, type Locator, type Page } from "@playwright/test"
 import { elementId, landedPatch, type ElementId, type Register } from "../../packages/document/src/index.ts"
@@ -27,8 +28,8 @@ async function cropped(page: Page, photo: Locator): Promise<Locator> {
   await photo.click({ position: { x: 8, y: 8 } })
   const panel = page.locator("[data-design-element]")
   await expect(panel).toHaveAttribute("data-design-element", /\.4$/)
-  await unfold(panel, "Crop")
-  return panel.locator("section").filter({ has: page.getByRole("heading", { name: "Crop", exact: true }) })
+  await unfold(panel, pictureCopy.crop)
+  return panel.locator("section").filter({ has: page.getByRole("heading", { name: pictureCopy.crop, exact: true }) })
 }
 
 test("two crop sides typed one after another on a slow device both land, on the server and in the export @export", async ({

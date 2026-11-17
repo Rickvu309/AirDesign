@@ -8,7 +8,6 @@ type Named = Exclude<PaintFill["type"], "solid" | "none">
 export const designCopy = {
   slide: (number: number) => `Slide ${String(number)}`,
   background: "Background",
-  resizePanel: "Resize panel",
   backgroundColor: (name: string) => `Background color, ${name}`,
   ...appearanceCopy,
   white: "White",
