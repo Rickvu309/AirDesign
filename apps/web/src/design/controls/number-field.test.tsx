@@ -49,7 +49,9 @@ it("leads the opacity value with its glyph and keeps its percentage", () => {
     mixed: false,
     inherited: false,
     reset: null,
-    change: () => {},
+    change: () => {
+      throw new Error("unused")
+    },
   })
   const html = renderToStaticMarkup(
     createElement(NumberField, {
