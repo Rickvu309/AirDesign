@@ -42,7 +42,7 @@ export function ChoiceControl(props: ControlProps) {
   const label = useId()
   const options = row.desc.kind === "choice" ? row.desc.options : []
   const look = lookOf(row)
-  const layout = look.options ? "segments" : look.line ? "list" : choiceLayout(row.field, options)
+  const layout = look.options ? "segments" : look.line || look.list ? "list" : choiceLayout(row.field, options)
   return (
     <div className="flex flex-col gap-1.5" data-control="choice" data-inherited={row.inherited ? "" : undefined}>
       <span id={label} className={look.quiet ? "sr-only" : "text-[length:var(--type-caption)] text-quiet"}>
