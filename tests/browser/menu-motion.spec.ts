@@ -1,3 +1,4 @@
+import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { expect, test, type Locator } from "@playwright/test"
 import { store } from "./home-store.ts"
@@ -78,8 +79,15 @@ test("editor menus and popovers that pass duration-0 open without motion", async
   await expect(zoom).toBeVisible()
   expect(await motion(zoom)).toMatchObject({ animation: "none", property: "opacity, scale", duration: "0s" })
   await page.keyboard.press("Escape")
-  await page.getByRole("button", { name: "Shapes", exact: true }).click()
+  await page.getByRole("button", { name: shapeCopy.tool, exact: true }).click()
   const shapes = page.locator('[data-slot="popover-content"]')
   await expect(shapes).toBeVisible()
-  expect(await motion(shapes)).toMatchObject({ animation: "none", property: "opacity, scale", duration: "0s" })
+  expect(await motion(shapes)).toMatchObject({ animation: "none", duration: "0s" })
+  expect(await shapes.evaluate((element) => element.getAnimations().length)).toBe(0)
+  await page.keyboard.press("Escape")
+  await page.getByRole("button", { name: shapeCopy.tool, exact: true }).focus()
+  await page.keyboard.press("Enter")
+  await expect(shapes).toBeVisible()
+  expect(await motion(shapes)).toMatchObject({ animation: "none", duration: "0s" })
+  expect(await shapes.evaluate((element) => element.getAnimations().length)).toBe(0)
 })
