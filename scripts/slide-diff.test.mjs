@@ -43,7 +43,7 @@ same("the size is the reference's size", [itself.width, itself.height], [render.
 const full = slideWith(1920, 1080, box)
 const missing = slideDiff(full, slideWith(1920, 1080, { x: 0, y: 0, width: 0, height: 0 }))
 same(
-  "one missing 60x40 dark box on a white slide fails on the worst tile though the mean stays above 0.97",
+  "one missing 60x40 dark box on a white slide fails on the worst tile though the mean passes",
   [
     missing.score > slideBar.score,
     missing.worst.score < slideBar.worst,
@@ -57,7 +57,7 @@ same(
 same("the changed share counts the missing box's pixels", Math.round(missing.changed * 1920 * 1080), 60 * 40)
 same(
   "the line names the failing bar",
-  slideDiffLines(missing, "out.png")[0].endsWith("match no (worst tile under 0.80)"),
+  slideDiffLines(missing, "out.png")[0].endsWith(`match no (worst tile under ${slideBar.worst.toFixed(3)})`),
   true,
 )
 same("a match line says yes", slideDiffLines(itself, null)[0].endsWith("match yes"), true)
@@ -82,5 +82,26 @@ same(
   [marked.width, marked.height, red > green + 100, red > blue + 100, far0 === far1 && far1 === far2],
   [1920, 1080, true, true, true],
 )
+
+const colored = (color) =>
+  filled(160, 120, (x, y) => (inside(x, y, { x: 40, y: 30, width: 60, height: 40 }) ? color : white))
+const redFill = [255, 0, 0]
+const greenFill = [0, (255 * 0.2126) / 0.7152, 0]
+same("a changed hue at equal luminance fails", slideDiff(colored(redFill), colored(greenFill)).match, false)
+
+for (const [dx, dy] of [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+  [1, 1],
+  [-1, -1],
+  [-1, 1],
+  [1, -1],
+]) {
+  const original = slideWith(160, 120, { x: 40, y: 30, width: 60, height: 40 })
+  const shifted = slideWith(160, 120, { x: 40 + dx, y: 30 + dy, width: 60, height: 40 })
+  same(`a global shift of ${dx},${dy} pixels matches`, slideDiff(original, shifted).match, true)
+}
 
 console.log("slide-diff tests passed")

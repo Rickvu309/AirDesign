@@ -16,6 +16,8 @@ import {
   scaleDown,
 } from "./paint-fidelity.mjs"
 
+import { slideBar } from "./slide-diff.mjs"
+
 const same = (name, actual, expected) => {
   const left = JSON.stringify(actual)
   const right = JSON.stringify(expected)
@@ -196,7 +198,7 @@ const judgedRow = (deck, slide, score, worst, missing = []) => ({
   score,
   worst: { score: worst, x: 32, y: 64, size: 32 },
   changed: 0.01,
-  match: score >= 0.97 && worst >= 0.8,
+  match: score >= slideBar.score && worst >= slideBar.worst,
   missing,
 })
 const powerpointRows = [
@@ -209,7 +211,7 @@ same(
   "the PowerPoint lines count only matching slides whose fonts the browser had",
   powerpointLines({ rows: powerpointRows, skipped: [], decks: 2, goal: 3, now: 1, worst: 1 }),
   [
-    "metric paint-fidelity  now 1  goal 3  4 slides compared against PowerPoint, 2 with a font missing, 2 of 2 decks, bar score 0.97 worst tile 0.80",
+    `metric paint-fidelity  now 1  goal 3  4 slides compared against PowerPoint, 2 with a font missing, 2 of 2 decks, bar score ${slideBar.score.toFixed(3)} worst tile ${slideBar.worst.toFixed(3)}`,
     "paint-fidelity worst a.pptx slide 2 score 0.900 worst tile 0.500 at 32,64",
     "paint-fidelity font missing a.pptx slide 3: Wingdings",
     "paint-fidelity font missing b.pptx slide 4: Wingdings, Gill Sans",

@@ -104,7 +104,7 @@ export const powerpointLines = ({
     .sort((left, right) => left.worst.score - right.worst.score)
     .slice(0, worst)
   return [
-    `metric paint-fidelity  now ${matching}  goal ${goal}  ${rows.length} slides compared against PowerPoint, ${fontless.length} with a font missing, ${measured} of ${decks} decks, bar score ${bar.score.toFixed(2)} worst tile ${bar.worst.toFixed(2)}`,
+    `metric paint-fidelity  now ${matching}  goal ${goal}  ${rows.length} slides compared against PowerPoint, ${fontless.length} with a font missing, ${measured} of ${decks} decks, bar score ${bar.score.toFixed(3)} worst tile ${bar.worst.toFixed(3)}`,
     ...ranked.map(
       (row) =>
         `paint-fidelity worst ${row.deck} slide ${row.slide} score ${row.score.toFixed(3)} worst tile ${row.worst.score.toFixed(3)} at ${row.worst.x},${row.worst.y}`,
