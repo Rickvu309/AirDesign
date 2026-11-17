@@ -20,16 +20,16 @@ export function ClaudeConnected({
   }, [screenTitle])
 
   return (
-    <main className="screen-frame grid place-items-center">
-      <section className="flex w-[360px] flex-col items-center gap-6">
+    <main className="screen-frame reflow-frame grid place-items-center px-4 py-6">
+      <section className="flex w-full max-w-[360px] flex-col items-center gap-6">
         <AgentPair agent={agent} />
         <header className="flex flex-col items-center gap-1.5 text-center">
           <h1
-            className={`flex h-7 items-center text-[length:var(--type-title)] font-semibold tracking-[-0.3px] text-foreground ${trimmed}`}
+            className={`text-balance [overflow-wrap:anywhere] text-[length:var(--type-title)] font-semibold tracking-[-0.3px] text-foreground ${trimmed}`}
           >
             {copy.title}
           </h1>
-          <p className={`flex h-[var(--space-16)] items-center text-[length:var(--type-dense)] text-quiet ${trimmed}`}>
+          <p className={`text-balance [overflow-wrap:anywhere] text-[length:var(--type-dense)] text-quiet ${trimmed}`}>
             {copy.subtitle}
           </p>
         </header>
