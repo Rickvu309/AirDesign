@@ -1,3 +1,4 @@
+import { actualSize } from "./paint-scale"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test } from "@playwright/test"
@@ -18,6 +19,7 @@ test("a person rotates, flips, reshapes, adjusts and centres a shape, and it sur
 }, testInfo) => {
   await rm(judged, { force: true })
   await openDeck(page, "clean.pptx")
+  await actualSize(page)
   const shape = shapeAt(page, "2")
   const panel = await shapePanel(page, shape)
   const rotation = panel.getByRole("textbox", { name: "Rotation", exact: true })
@@ -42,7 +44,10 @@ test("a person rotates, flips, reshapes, adjusts and centres a shape, and it sur
   await corner.press("Enter")
   await expect(corner).toHaveValue("30000")
   const reshaped = await outline(shape)
-  expect(reshaped).toContain("A36 36")
+  const radius = await shape.evaluate(
+    (node: HTMLElement) => Math.round(Number.parseFloat(node.style.height) * 300) / 1000,
+  )
+  expect(reshaped).toContain(`A${radius} ${radius}`)
 
   const left = (await placed(page, element))[0]
   await panel.getByRole("group", { name: "Align", exact: true }).getByRole("button", { name: "Center" }).click()
@@ -52,6 +57,7 @@ test("a person rotates, flips, reshapes, adjusts and centres a shape, and it sur
 
   await page.reload()
   await settled(page)
+  await actualSize(page)
   await expect.poll(() => turned(shapeAt(page, "2"))).toBe("rotate(45deg) scale(-1, 1)")
   await expect.poll(() => outline(shapeAt(page, "2"))).toBe(reshaped)
   await expect.poll(() => placed(page, element)).toEqual(centred)
@@ -74,6 +80,7 @@ test("a person rotates, flips, reshapes, adjusts and centres a shape, and it sur
   await page.locator("input[type=file]").setInputFiles(file)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
+  await actualSize(page)
   await expect.poll(() => turned(shapeAt(page, "2"))).toBe("rotate(45deg) scale(-1, 1)")
   await expect.poll(() => outline(shapeAt(page, "2"))).toBe(reshaped)
 })

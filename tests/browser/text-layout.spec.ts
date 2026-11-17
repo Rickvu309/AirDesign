@@ -1,3 +1,4 @@
+import { actualSize } from "./paint-scale"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
@@ -73,6 +74,7 @@ test("a person sets a text box's font, spacing, margins, anchor, wrap, direction
   await rm(judgedType, { force: true })
   await rm(judgedLayout, { force: true })
   await openDeck(page, "clean.pptx")
+  await actualSize(page)
   const shape = shapeAt(page, "2")
   const opening = await shown(shape)
   await page.getByRole("button", { name: "Design", exact: true }).click()
@@ -122,6 +124,7 @@ test("a person sets a text box's font, spacing, margins, anchor, wrap, direction
 
   await page.reload()
   await settled(page)
+  await actualSize(page)
   await expect.poll(() => shown(shapeAt(page, "2"))).toEqual(laid)
   const layout = await exported(page, testInfo.outputPath(layoutExport), judgedLayout)
   expect(layout).toContain(laidOut)
@@ -131,5 +134,6 @@ test("a person sets a text box's font, spacing, margins, anchor, wrap, direction
   await page.locator("input[type=file]").setInputFiles(testInfo.outputPath(layoutExport))
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
+  await actualSize(page)
   await expect.poll(() => shown(shapeAt(page, "2"))).toEqual(laid)
 })

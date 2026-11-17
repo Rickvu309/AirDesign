@@ -2,9 +2,10 @@ import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { designCopy } from "@/copy/design-copy"
+import { linesOf } from "@/design/field-looks"
 import { controlViews } from "@/design/control-views"
 import type { Palette } from "@/design/color-choices"
-import type { ControlKind, ControlProps, PanelModel, PanelRow } from "@/design/panel"
+import type { ControlProps, PanelModel, PanelRow } from "@/design/panel"
 import { foldOpen, setFold, useFolds } from "@/design/panel-folds"
 import { swatchMist, swatchNavy, swatchTeal, swatchWhite } from "@/editor/design-panel-art"
 import { EditorIcon } from "@/editor/editor-icons"
@@ -105,13 +106,13 @@ function FoldedSection({
       <div className="flex min-h-6 items-center justify-between gap-2">
         <h2 className="min-w-0 flex-1 text-[length:var(--type-dense)] font-semibold text-foreground">
           <CollapsibleTrigger className="group/fold -mx-1 flex w-[calc(100%+0.5rem)] items-center gap-1.5 rounded-[var(--shape-control)] px-1 py-1 text-left">
+            <span className="truncate">{title}</span>
             <EditorIcon
               name="chevr"
               size={12}
               strokeWidth={2}
-              className="shrink-0 text-faint [transition:transform_var(--ease-micro)] group-data-[panel-open]/fold:rotate-90"
+              className="ml-auto shrink-0 text-faint [transition:transform_var(--ease-micro)] group-data-[panel-open]/fold:rotate-90"
             />
-            <span className="truncate">{title}</span>
           </CollapsibleTrigger>
         </h2>
         {fold.open ? action : null}
@@ -158,21 +159,6 @@ export function Swatch({ color, name, edged = false }: { color: string; name: st
   )
 }
 
-type Run = { readonly control: ControlKind; readonly rows: readonly PanelRow[] }
-
-const paired: readonly ControlKind[] = ["length", "toggle", "hex"]
-
-function runsOf(rows: readonly PanelRow[]): readonly Run[] {
-  const runs: Run[] = []
-  for (const row of rows) {
-    const last = runs.at(-1)
-    if (last !== undefined && last.control === row.control && paired.includes(row.control))
-      runs[runs.length - 1] = { ...last, rows: [...last.rows, row] }
-    else runs.push({ control: row.control, rows: [row] })
-  }
-  return runs
-}
-
 function RowView({ row, palette, onChange }: ControlProps) {
   const View = controlViews[row.control]
   return View === undefined ? null : <View row={row} palette={palette} onChange={onChange} inner={RowView} />
@@ -187,20 +173,13 @@ export function SectionRows({
   palette: Palette
   onChange: (row: PanelRow, value: unknown) => void
 }) {
-  return runsOf(rows).map((run) => (
+  return linesOf(rows).map((line) => (
     <div
-      key={run.rows.map((row) => row.field).join(" ")}
-      className={
-        run.control === "length" || run.control === "hex"
-          ? run.rows.length === 1 || run.rows.some((row) => row.field === "spaceBefore" || row.field === "spaceAfter")
-            ? "grid grid-cols-1 gap-2"
-            : "grid grid-cols-2 gap-2"
-          : run.control === "toggle"
-            ? "grid grid-cols-3 gap-2"
-            : "flex flex-col"
-      }
+      key={line.map((row) => row.field).join(" ")}
+      className="grid items-end gap-2"
+      style={{ gridTemplateColumns: `repeat(${line.length}, minmax(0, 1fr))` }}
     >
-      {run.rows.map((row) => (
+      {line.map((row) => (
         <RowView key={row.field} row={row} palette={palette} onChange={(value) => onChange(row, value)} />
       ))}
     </div>
@@ -237,6 +216,12 @@ export function ElementDesign({
         <p className="px-4 py-4 text-[length:var(--type-dense)] text-quiet">{designCopy.nothing}</p>
       ) : null}
       {model.sections.map((section, at) => {
+        if (section.trait === "opacity")
+          return (
+            <section key={section.trait} className="border-b border-line px-3 py-3">
+              <SectionRows rows={section.rows} palette={palette} onChange={onChange} />
+            </section>
+          )
         const reset = section.rows.find((row) => row.reset !== null && !row.caption)
         return (
           <DesignSection

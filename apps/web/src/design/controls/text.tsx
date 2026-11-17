@@ -1,3 +1,4 @@
+import { lookOf } from "@/design/field-looks"
 import {
   bytesOf,
   cellText,
@@ -78,7 +79,11 @@ function WordsField({ row, onChange, max }: ControlProps & { readonly max: numbe
         data-inherited={row.inherited ? "" : undefined}
         data-focus-ring
       >
-        <span className="shrink-0 truncate text-[length:var(--type-caption)] text-quiet">{row.label}</span>
+        <span
+          className={lookOf(row).quiet ? "sr-only" : "shrink-0 truncate text-[length:var(--type-caption)] text-quiet"}
+        >
+          {row.label}
+        </span>
         <input
           className={cn(
             "min-w-0 flex-1 bg-transparent text-right text-[length:var(--type-dense)] outline-none",

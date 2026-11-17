@@ -1,3 +1,4 @@
+import { actualSize } from "./paint-scale"
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
@@ -119,6 +120,7 @@ async function opened(page: Page, file: string | Buffer): Promise<void> {
   )
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
+  await actualSize(page)
   await page.evaluate(() => document.fonts.ready.then(() => undefined))
 }
 
@@ -126,6 +128,7 @@ test("the canvas anchors text in columns, keeps the fit a file stored until its 
   page,
 }, testInfo) => {
   await opened(page, await fitDeck())
+  await actualSize(page)
   const centred = await laid(shapeAt(page, "20"))
   expect(centred.lefts).toHaveLength(1)
   expect(Math.abs((centred.textTop + centred.textBottom) / 2 - (centred.top + centred.bottom) / 2)).toBeLessThan(3)
@@ -175,6 +178,7 @@ test("the canvas anchors text in columns, keeps the fit a file stored until its 
 
   await page.reload()
   await settled(page)
+  await actualSize(page)
   await expect.poll(async () => (await laid(shapeAt(page, "25"))).height).toBeCloseTo(taller.height, 0)
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)
@@ -183,6 +187,7 @@ test("the canvas anchors text in columns, keeps the fit a file stored until its 
   const xml = (await partsOf(file)).get(slidePart)?.toString("utf8") ?? ""
   expect(xml).toMatch(/<p:cNvPr id="25" name="Box 25"\/>.*?<a:bodyPr anchor="t"><a:spAutoFit\/><\/a:bodyPr>/)
   await opened(page, file)
+  await actualSize(page)
   await expect.poll(async () => (await laid(shapeAt(page, "25"))).height).toBeCloseTo(taller.height, 0)
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await shapeAt(page, "25").click({ position: { x: 4, y: 4 } })
