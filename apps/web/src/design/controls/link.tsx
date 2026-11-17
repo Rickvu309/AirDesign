@@ -46,7 +46,7 @@ export function LinkControl({ control, onChange }: ControlProps) {
       placeholder={unsupported ? linkCopy.unsupported : linkCopy.target}
       title={invalid ? linkCopy.invalid : control.label}
       aria-invalid={invalid || undefined}
-      className="h-[var(--control-dense)] w-full min-w-0 rounded-[var(--shape-control)] bg-muted px-2 text-[length:var(--type-caption)] focus:shadow-[0px_0px_0px_1px_var(--field-edge)]"
+      className="h-[var(--control-dense)] w-full min-w-0 rounded-[var(--shape-control)] bg-muted px-2 text-[length:var(--type-caption)]"
       value={draft ?? shown}
       onChange={(event) => {
         setDraft(event.target.value)

@@ -157,7 +157,7 @@ describe("the server admits only the edits the device can write onto an element 
     )
     const fill = ["fill.value", "fill.alpha"]
     const body = ["insets", "anchor", "wrap", "autofit", "vertical", "columns"].map((field) => `body.${field}`)
-    const text = [...body, "text.value", "text.alpha"]
+    const text = [...body, "text.value", "text.alpha", "link.target"]
     const effects = ["effects.shadow", "effects.glow", "effects.softEdge"]
     const named = ["identity.name", "identity.alt", "identity.hidden"]
     const picture = ["image.source", "image.alpha", "image.recolor", "crop.rect"]

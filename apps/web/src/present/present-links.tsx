@@ -39,7 +39,7 @@ export function PresentLinks({
             key={shape.shape}
             type="button"
             aria-label={target.kind === "url" ? target.url : String(destination + 1)}
-            className="absolute cursor-pointer bg-transparent focus-visible:outline-2 focus-visible:outline-primary"
+            className="absolute cursor-pointer bg-transparent"
             style={{
               transform: `rotate(${String(shape.box.rotation)}deg)`,
               left: shape.box.x * scale,

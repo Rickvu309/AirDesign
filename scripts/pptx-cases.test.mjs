@@ -53,6 +53,13 @@ assert.deepEqual(
   ],
 )
 for (const spec of caseSpecs(entries)) assert.ok(fs.existsSync(path.join(root, spec)), `${spec} is not a spec file`)
+for (const entry of entries) {
+  for (const row of entry.cases ?? []) {
+    assert.equal(typeof row.pages, "boolean", `${entry.file} ${row.name} needs an expected page comparison`)
+    if (entry.exports.includes(row.after))
+      assert.ok(entry.renders?.includes(row.after), `${entry.file} must render ${row.after} to compare its pages`)
+  }
+}
 assert.equal(new Set(caseExports(entries)).size, caseExports(entries).length)
 assert.deepEqual(browserExportArgs(entries).slice(-2), ["--grep", browserExportTag])
 assert.deepEqual(browserExportArgs(entries).slice(0, -2), [...new Set(browserExportArgs(entries).slice(0, -2))].sort())
