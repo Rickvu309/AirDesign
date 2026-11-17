@@ -1,0 +1,5 @@
+## Credits
+
+`NonnegativeCredits` and `OncePerReset` keep credits nonnegative and debit exactly $5 for each distinct successful reset. `NoChargeWhileOpen` prevents a reset from charging during an Aira turn. `WeeklyResetIsFree` and `PaidResetKeepsMonday` separate the free weekly renewal from a paid reset. `RecordedResetStaysRecorded` keeps a retried request from charging again after more usage.
+
+Bounds: one account with $10, two reset request IDs, usage in $1 steps up to $2, one open turn and one Monday renewal; 40 reachable states. Run `pnpm check:specs credits` and `pnpm exec vitest run apps/api/src/credits-replay.test.ts`. The replay drives every edge through `resetCredits`, the usage ledger functions and real Postgres, checking credits, usage, open turn, Monday and history after each step. Concurrent calls are serialized by the account lock; `credits.test.ts` also exercises simultaneous HTTP resets. This model leaves out automatic resets, purchases, account deletion, transaction failures and multiple accounts; their applicable behavior is covered by API tests, and purchases remain unavailable.
