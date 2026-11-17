@@ -172,7 +172,7 @@ export const runCheck = async ({ chosen, lock, run, all = false }) => {
     }
     return { failed, ranSteps }
   } finally {
-    release({ status: failed.length === 0 ? "passed" : `failed ${failed.join(" ")}` })
+    await release({ status: failed.length === 0 ? "passed" : `failed ${failed.join(" ")}` })
   }
 }
 
