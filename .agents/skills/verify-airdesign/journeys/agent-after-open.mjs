@@ -46,7 +46,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   aira([{ name: "add-slide.sse", fill: { deck, base: "0" } }, { name: "edited.sse" }])
   await composer.fill("Add a slide")
   await composer.press("Enter")
-  await expect(log.getByText("Editing slides")).toBeVisible()
+  await expect(log.getByText(airaStepWords.edit_deck.working)).toBeVisible()
   const outside = await tool("airdesign_edit_deck", {
     deck,
     base: 0,
@@ -54,11 +54,11 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   })
   expect(outside).toMatchObject({ ok: false, refusal: "indexing" })
   await page.waitForTimeout(2500)
-  await expect(log.getByText("Editing slides")).toBeVisible()
-  await expect(log.getByText("Couldn't edit slides")).toHaveCount(0)
+  await expect(log.getByText(airaStepWords.edit_deck.working)).toBeVisible()
+  await expect(log.getByText(airaStepWords.edit_deck.refused)).toHaveCount(0)
   await capture("adding-while-indexing")
   release()
-  await expect(log.getByText("Edited slides")).toBeVisible({ timeout: 30_000 })
+  await expect(log.getByText(airaStepWords.edit_deck.done)).toBeVisible({ timeout: 30_000 })
   await expect(entries).toHaveCount(2, { timeout: 30_000 })
   await page.unroute(indexing)
   await capture("added-after-indexing")
