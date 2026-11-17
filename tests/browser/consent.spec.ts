@@ -23,10 +23,14 @@ function authorizePath(overrides: Record<string, string | null> = {}) {
   return `/oauth/authorize?${new URLSearchParams(fields)}`
 }
 
-const refusedWords = "This app can't connect to AirDesign."
+const refusedWords = "This connection request is invalid"
 
 async function expectRefusedInPlace(page: Page) {
-  await expect(page.getByText(refusedWords, { exact: true })).toBeVisible()
+  await expect(page.getByRole("heading", { name: refusedWords, exact: true })).toBeVisible()
+  await expect(
+    page.getByText("Start connecting again from your agent, then approve its new request.", { exact: true }),
+  ).toBeVisible()
+  await expect(page.getByRole("link", { name: "Back to AirDesign", exact: true })).toHaveAttribute("href", "/")
   await expect(page.locator("button")).toHaveCount(0)
   await expect(page).toHaveURL(/\/oauth\/authorize/)
   expect(await page.evaluate(() => Reflect.get(window, "__pwn"))).toBeUndefined()
@@ -62,7 +66,7 @@ for (const screen of [
     title: "Claude wants to use AirDesign",
     subtitle: "It can work on your decks for you.",
     ability: "Claude will be able to",
-    footer: "Returns you to claude.ai. Uses your weekly usage. Disconnect anytime in Settings.",
+    footer: "Returns you to Claude. Disconnect anytime in Settings.",
     screen: "claude",
     marks: 2,
   },
@@ -71,7 +75,7 @@ for (const screen of [
     title: "Claude Code wants to use AirDesign",
     subtitle: "It can work on your decks for you.",
     ability: "Claude Code will be able to",
-    footer: "Returns you to Claude Code on this computer. Uses your weekly usage. Disconnect anytime in Settings.",
+    footer: "Returns you to Claude Code on this computer. Disconnect anytime in Settings.",
     screen: "claude-code",
     marks: 2,
   },
@@ -80,7 +84,7 @@ for (const screen of [
     title: "Codex wants to use AirDesign",
     subtitle: "It can work on your decks for you.",
     ability: "Codex will be able to",
-    footer: "Returns you to Codex on this computer. Uses your weekly usage. Disconnect anytime in Settings.",
+    footer: "Returns you to Codex on this computer. Disconnect anytime in Settings.",
     screen: "codex",
     marks: 2,
   },
@@ -89,7 +93,7 @@ for (const screen of [
     title: "tool.example wants to use AirDesign",
     subtitle: "It can work on your decks for you.",
     ability: "tool.example will be able to",
-    footer: "Returns you to tool.example. Uses your weekly usage. Disconnect anytime in Settings.",
+    footer: "Returns you to tool.example. Disconnect anytime in Settings.",
     screen: "other",
     marks: 1,
   },
@@ -106,6 +110,8 @@ for (const screen of [
     await expect(page.getByText(screen.subtitle, { exact: true })).toBeVisible()
     await expect(page.getByText(screen.ability, { exact: true })).toBeVisible()
     await expect(page.getByText(screen.footer, { exact: true })).toBeVisible()
+    await expect(page.getByRole("listitem")).toHaveText(["Read and edit all your decks"])
+    await expect(page.getByText(/Uses your weekly usage/)).toHaveCount(0)
     await expect(page.locator("main > section > div").first().locator("svg")).toHaveCount(screen.marks)
     if (screen.screen === "other") await expect(page.getByText("Claude", { exact: true })).toHaveCount(0)
   })
@@ -161,10 +167,8 @@ for (const refusal of ["client", "redirect", "resource", "field"]) {
     await answerClient(page, { ok: false, refusal }, 400)
     await page.goto(authorizePath())
 
-    await expect(page.getByText("This app can't connect to AirDesign.", { exact: true })).toBeVisible()
+    await expectRefusedInPlace(page)
     await expect(page.getByRole("button", { name: "Allow", exact: true })).toHaveCount(0)
-    await expect(page.locator("button")).toHaveCount(0)
-    await expect(page).toHaveURL(/\/oauth\/authorize/)
   })
 }
 
@@ -285,9 +289,7 @@ test("an approve refusal shows the refused words and does not navigate", async (
 
   await page.getByRole("button", { name: "Allow", exact: true }).click()
 
-  await expect(page.getByText("This app can't connect to AirDesign.", { exact: true })).toBeVisible()
-  await expect(page.locator("button")).toHaveCount(0)
-  await expect(page).toHaveURL(/\/oauth\/authorize/)
+  await expectRefusedInPlace(page)
 })
 
 test("Deny posts nothing and preserves the callback query and state", async ({ page }) => {
