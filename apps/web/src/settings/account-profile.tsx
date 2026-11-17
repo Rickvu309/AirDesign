@@ -13,7 +13,7 @@ export function AccountProfile({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<AccountLoad | null>(null)
   async function refresh() {
     const next = await loadAccount()
-    setAccount(next)
+    if (next.kind === "account") setAccount(next)
   }
   useEffect(() => {
     void Promise.resolve().then(refresh)
