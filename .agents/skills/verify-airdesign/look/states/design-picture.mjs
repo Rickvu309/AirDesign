@@ -13,6 +13,7 @@ async function drive(kit) {
     .click({ position: { x: 8, y: 8 } })
   const panel = kit.page.locator("[data-design-element]")
   await expect(panel).toBeVisible()
+  await unfold(panel, "Picture")
   const picture = panel
     .locator("section")
     .filter({ has: kit.page.getByRole("heading", { name: "Picture", exact: true }) })

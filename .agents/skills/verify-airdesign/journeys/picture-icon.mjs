@@ -1,3 +1,4 @@
+import { unfold } from "../look/unfold.mjs"
 import path from "node:path"
 import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
@@ -99,6 +100,8 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await canvas("4").click({ position: { x: 8, y: 8 } })
   const panel = page.locator("[data-design-element]")
   const section = (name) => panel.locator("section").filter({ has: page.getByRole("heading", { name, exact: true }) })
+  await unfold(panel, "Crop")
+  await unfold(panel, "Picture")
   const crop = section("Crop")
   for (const [side, value] of [
     ["Left", "10"],

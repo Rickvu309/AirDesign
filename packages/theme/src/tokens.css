@@ -142,6 +142,8 @@
   --space-48: 48px;
   --shape-segment: 4px;
   --shape-swatch: 3px;
+  --ratio-picture-preview: 2 / 1;
+  --fill-transparency: repeating-conic-gradient(var(--line) 0% 25%, var(--background) 0% 50%) 0 / 24px 24px;
   --shape-control: 6px;
   --shape-card: 10px;
   --shape-dialog: 14px;

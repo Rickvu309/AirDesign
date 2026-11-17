@@ -1,4 +1,6 @@
 export const lineCopy = {
+  color: "Color",
+  borderWidth: "Border width",
   section: "Line",
   fill: "Line",
   width: "Line width",
