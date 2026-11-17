@@ -89,7 +89,7 @@ afterAll(() => {
   window.close()
 })
 
-it.each(["blur", "Enter", "Escape", "invalid", "unchanged"] as const)(
+it.each(["blur", "Enter", "Escape", "invalid", "unchanged", "Enter unchanged"] as const)(
   "handles a typed size followed by %s and blur once",
   (action) => {
     const host = window.document.createElement("div")
@@ -113,18 +113,26 @@ it.each(["blur", "Enter", "Escape", "invalid", "unchanged"] as const)(
       const field = host.querySelector("input")
       if (field === null) throw new Error("missing font size")
       act(() => field.focus())
-      act(() => {
-        Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(
-          field,
-          action === "invalid" ? "big" : action === "unchanged" ? "18" : "24,5",
-        )
-        field.dispatchEvent(new window.Event("input", { bubbles: true }))
-      })
-      if (action === "Enter" || action === "Escape") {
-        act(() => field.dispatchEvent(new window.KeyboardEvent("keydown", { key: action, bubbles: true })))
+      const typed = action === "invalid" ? ["big"] : action.endsWith("unchanged") ? ["1", "18"] : ["24,5"]
+      for (const text of typed) {
+        act(() => {
+          Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(field, text)
+          field.dispatchEvent(new window.Event("input", { bubbles: true }))
+        })
+      }
+      if (action !== "blur" && action !== "invalid" && action !== "unchanged") {
+        const key = action === "Escape" ? "Escape" : "Enter"
+        act(() => field.dispatchEvent(new window.KeyboardEvent("keydown", { key, bubbles: true })))
       }
       act(() => field.blur())
-      const commits = { blur: [[2450, false]], Enter: [[2450, true]], Escape: [], invalid: [], unchanged: [] }
+      const commits = {
+        blur: [[2450, false]],
+        Enter: [[2450, true]],
+        Escape: [],
+        invalid: [],
+        unchanged: [],
+        "Enter unchanged": [[1800, true]],
+      }
       expect(calls).toEqual(commits[action])
       expect(field.value).toBe("18")
     } finally {
