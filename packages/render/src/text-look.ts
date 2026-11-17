@@ -1,4 +1,4 @@
-import { gradientLook, paintedColor, schemeOf } from "./text-fill-look.js"
+import { gradientLook, keptTextFill, paintedColor, schemeOf } from "./text-fill-look.js"
 import { fontFamily } from "@airdesign/fonts"
 import {
   spacingNames,
@@ -263,7 +263,7 @@ function formatted(
     ...(format.fill === undefined
       ? {}
       : {
-          fill: format.fill,
+          fill: keptTextFill(format.fill, style.color),
           ...("solid" in format.fill ? { color: paintedColor(format.fill.solid, colors, style.color) } : {}),
         }),
     ...(format.font === undefined ? {} : { font: format.font }),

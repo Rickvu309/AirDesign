@@ -1,4 +1,4 @@
-import { colorPaint, type Color, type TextFill } from "@airdesign/document"
+import { namesAlpha, colorPaint, type Color, type TextFill } from "@airdesign/document"
 import type { CSSProperties } from "react"
 import type { CanvasRunStyle, CanvasThemeColor } from "./text-record.js"
 
@@ -56,4 +56,20 @@ export function gradientLook(fill: TextFill | undefined, colors: readonly Canvas
       ? `linear-gradient(${gradient.shade.linear.angle / 60000 + 90}deg, ${stops})`
       : `radial-gradient(${stops})`
   return { backgroundImage, backgroundClip: "text", WebkitBackgroundClip: "text", color: "transparent" }
+}
+
+export function keptTextFill(fill: TextFill, source: string | null): TextFill {
+  if (!("gradient" in fill) || namesAlpha(fill.gradient.stops.map((stop) => stop.color))) return fill
+  const alpha = source === null ? undefined : /^#[\da-f]{6}([\da-f]{2})$/i.exec(source)?.[1]
+  if (alpha === undefined) return fill
+  const val = Math.round((Number.parseInt(alpha, 16) / 255) * 100000)
+  return {
+    gradient: {
+      ...fill.gradient,
+      stops: fill.gradient.stops.map((stop) => ({
+        ...stop,
+        color: { ...stop.color, transforms: [...(stop.color.transforms ?? []), { op: "alpha", val }] },
+      })),
+    },
+  }
 }

@@ -163,7 +163,11 @@ function fadedText(parts: Parts, at: ElementAt, alpha: Alpha): Parts {
 
 function runColors(stored: string): readonly Color[] {
   return shownText(stored).flatMap((paragraph) =>
-    paragraph.runs.flatMap((run) => (run.color === undefined ? [] : [run.color])),
+    paragraph.runs.flatMap((run) => {
+      if (run.fill !== undefined)
+        return "solid" in run.fill ? [run.fill.solid] : run.fill.gradient.stops.map((stop) => stop.color)
+      return run.color === undefined ? [] : [run.color]
+    }),
   )
 }
 
