@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test"
 import { settingsCopy } from "../../apps/web/src/copy/settings-copy"
 import { accountCopy } from "../../apps/web/src/copy/account-copy"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
+import { usageCopy } from "../../apps/web/src/copy/usage-copy"
 
 test.use({ reducedMotion: "reduce" })
 
@@ -99,7 +100,7 @@ test("the account menu's delete dialog stays disabled while the email is unknown
   })
 
   await page.goto("/settings/usage")
-  await expect(page.getByRole("alert")).toContainText("Unable to load your usage")
+  await expect(page.getByRole("alert").filter({ hasText: usageCopy.failed })).toBeVisible()
   await page.locator("[data-decks-sidebar]").getByRole("button").first().click()
   await page.getByRole("menuitem", { name: settingsCopy.deleteAccount, exact: true }).click()
   const dialog = page.getByRole("dialog", { name: accountCopy.deleteTitle })

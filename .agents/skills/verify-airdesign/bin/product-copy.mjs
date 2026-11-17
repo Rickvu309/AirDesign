@@ -18,3 +18,4 @@ export const { picturePanelCopy: pictureCopy } = createRequire(import.meta.url)(
 )
 
 export const { lineCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/line-copy.ts")
+export const { creditsCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/credits-copy.ts")
