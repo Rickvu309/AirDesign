@@ -10,6 +10,7 @@ test("credits start empty and auto reset persists through a reload", async ({ pa
   await page.goto("/settings/usage")
   await expect(page.getByText("$0.00", { exact: true })).toBeVisible()
   await expect(page.getByRole("button", { name: creditsCopy.reset, exact: true })).toBeDisabled()
+  await expect(page.getByRole("button", { name: creditsCopy.reset, exact: true })).toHaveCSS("opacity", "1")
   await expect(page.getByText(creditsCopy.purchases)).toHaveCount(0)
   const add = page.getByRole("button", { name: creditsCopy.add })
   await expect(add).toBeEnabled()
