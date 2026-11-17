@@ -11,6 +11,7 @@ const slideKeys: Partial<Record<GestureId, SlideKey>> = {
 
 export function slideKey(event: {
   readonly key: string
+  readonly code?: string
   readonly metaKey: boolean
   readonly ctrlKey: boolean
   readonly altKey: boolean

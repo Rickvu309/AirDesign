@@ -14,6 +14,12 @@ import { clean, entry, openFile, openGrid, settled, manySlides } from "./slide-g
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
+test.beforeEach(async ({ page }) => {
+  if (process.env.AIRDESIGN_GRID_CPU_RATE !== "4") return
+  const device = await page.context().newCDPSession(page)
+  await device.send("Emulation.setCPUThrottlingRate", { rate: 4 })
+})
+
 test("edits a slide in Grid view and keeps the text after reopening", async ({ page }) => {
   await openFile(page, clean)
   await openGrid(page)

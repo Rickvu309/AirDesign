@@ -7,6 +7,8 @@ import { slideListCopy } from "@/copy/slide-list-copy"
 import { AirdesignMark } from "@/decks/airdesign-mark"
 import { steppedZoom, type SlideSize, type Zoom } from "@/editor/canvas-zoom"
 import { GridCard } from "@/editor/grid-card"
+import { GridDragGhost } from "@/editor/grid-drag-ghost"
+import { dragMoves, landing } from "@/editor/grid-drop"
 import { gridSpacing, gridSectionGap } from "@/editor/grid-viewport"
 import { gridLayout, keptGridViewport, useKeptGridZoom } from "@/editor/grid-zoom"
 import { ZoomMenu } from "@/editor/zoom-menu"
@@ -103,6 +105,7 @@ export function EditorGrid({
   const list = useRef<HTMLDivElement>(null)
   const [editing, setEditing] = useState(false)
   const bar = useRef<HTMLDivElement>(null)
+  const ghost = useRef<HTMLDivElement>(null)
   const following = useRef(keptGridViewport(id) === null)
   const [stop, setStop] = useState(strip.current)
   const [message, setMessage] = useState<Announcement | null>(null)
@@ -165,11 +168,25 @@ export function EditorGrid({
   const drag = useGridDrag({
     list,
     bar,
+    ghost,
+    viewport: viewport.handlers.ref,
     rows,
-    onMove: (from, to) => {
+    selected: pickedSlides(picked, current),
+    panBy: viewport.panBy,
+    onPanEnd: viewport.panEnd,
+    onMove: (held, at) => {
+      const moves = dragMoves(held, at, count)
+      if (moves.length === 0) return
+      const first = landing(held, at)
       following.current = true
-      strip.onMove?.(from, to)
-      announce(slideListCopy.moved(from + 1, to + 1))
+      for (const { from, to } of moves) strip.onMove?.(from, to)
+      if (held.length === 1) {
+        setPick(null)
+        announce(slideListCopy.moved((held[0] ?? first) + 1, first + 1))
+        return
+      }
+      setPick({ anchor: first, slides: new Set(held.map((_, offset) => first + offset)) })
+      announce(slideListCopy.movedSeveral(held.length, first + 1))
     },
   })
   const dragging = drag.dragging
@@ -262,6 +279,7 @@ export function EditorGrid({
     }
     const command = gridCommand({
       key: event.key,
+      code: event.code,
       altKey: event.altKey,
       ctrlKey: event.ctrlKey,
       metaKey: event.metaKey,
@@ -292,7 +310,7 @@ export function EditorGrid({
       selected={selected.has(index)}
       multiple={picked !== null}
       reachable={index === reachable}
-      dragging={index === dragging}
+      dragging={drag.held.includes(index)}
       busy={dragging !== null}
       active={editing && index === current && slide !== undefined}
       scale={percent / 100}
@@ -316,10 +334,7 @@ export function EditorGrid({
         event.currentTarget.focus()
         openMenu(index, pointAt(event.clientX, event.clientY), true)
       }}
-      onDragStart={(event) => {
-        setPick(null)
-        drag.start(index, event)
-      }}
+      onGrab={(event) => drag.grab(index, event)}
       onAdd={() => addAfter(index)}
     />
   )
@@ -411,6 +426,15 @@ export function EditorGrid({
         </Island>
       </header>
       <Announcer message={message} />
+      {dragging === null ? null : (
+        <GridDragGhost
+          ref={ghost}
+          count={drag.held.length}
+          width={width}
+          height={height}
+          thumb={(size) => strip.thumb(dragging, size)}
+        />
+      )}
       {menu === null ? null : <GridSlideMenu menu={menu} count={count} onAct={act} onClose={closeMenu} />}
       <div
         {...viewport.handlers}
@@ -434,9 +458,6 @@ export function EditorGrid({
           className="absolute top-0 left-0"
           style={{ width: layoutWidth, transformOrigin: "0 0" }}
           onKeyDown={onListKey}
-          onDragOver={drag.over}
-          onDrop={drag.drop}
-          onDragEnd={drag.end}
           onFocus={(event) => {
             const entry = event.target.closest("[data-slide-entry]")?.getAttribute("data-slide-entry")
             if (entry !== null && entry !== undefined) setStop(Number(entry) - 1)

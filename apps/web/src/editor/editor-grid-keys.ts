@@ -42,6 +42,7 @@ export function gridMove(key: string, boxes: readonly GridBox[], from: number): 
 
 export function gridCommand(event: {
   readonly key: string
+  readonly code?: string
   readonly metaKey: boolean
   readonly ctrlKey: boolean
   readonly altKey: boolean

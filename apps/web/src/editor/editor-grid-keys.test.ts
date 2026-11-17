@@ -45,4 +45,10 @@ describe("grid keys", () => {
     expect(gridCommand(key("ArrowDown", { altKey: true }))).toBe("later")
     expect(gridCommand(key("ArrowRight", { altKey: true, shiftKey: true }))).toBeNull()
   })
+
+  it("reorders with command or control and a bracket, read by where the key sits", () => {
+    expect(gridCommand({ ...key("[", { metaKey: true }), code: "BracketLeft" })).toBe("earlier")
+    expect(gridCommand({ ...key("]", { ctrlKey: true }), code: "BracketRight" })).toBe("later")
+    expect(gridCommand({ ...key("ü", { ctrlKey: true }), code: "BracketLeft" })).toBe("earlier")
+  })
 })
