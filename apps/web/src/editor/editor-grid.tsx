@@ -223,6 +223,16 @@ export function EditorGrid({
     list.current?.querySelector<HTMLElement>(`[data-slide-entry="${shown.index + 1}"]`)?.focus()
   }
 
+  function onGridKey(event: KeyboardEvent<HTMLDivElement>) {
+    if (menu !== null && event.key === "Escape" && !event.nativeEvent.isComposing) {
+      event.preventDefault()
+      event.stopPropagation()
+      closeMenu()
+      return
+    }
+    edit.key(event)
+  }
+
   function onListKey(event: KeyboardEvent<HTMLDivElement>) {
     if (event.target instanceof Element && event.target.closest("[data-grid-edit]") !== null) return
     if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
@@ -305,7 +315,7 @@ export function EditorGrid({
       inert={presenting}
       data-editor-grid
       data-keeps-selection
-      onKeyDownCapture={edit.key}
+      onKeyDownCapture={onGridKey}
       onFocusCapture={edit.focus}
       onDoubleClickCapture={edit.double}
     >

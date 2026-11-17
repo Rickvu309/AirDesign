@@ -162,6 +162,18 @@ test("a right click or the menu key on a slide offers the slide commands, and ea
   await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
 })
 
+test("Escape closes the slide menu while focus is still on its slide", async ({ page }) => {
+  await openFile(page, sectioned)
+  await openGrid(page)
+  await entry(page, 2).click({ button: "right" })
+  const menu = page.getByRole("menu")
+  await expect(menu).toBeVisible()
+  await entry(page, 2).focus()
+  await page.keyboard.press("Escape")
+  await expect(menu).toBeHidden()
+  await expect(entry(page, 2)).toBeFocused()
+})
+
 async function dragOnto(page: Page, from: number, to: number, side: "left" | "right", place: number): Promise<void> {
   const source = await entry(page, from).boundingBox()
   const target = await entry(page, to).boundingBox()

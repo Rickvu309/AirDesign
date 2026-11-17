@@ -256,3 +256,25 @@ it("stays aimed while focus moves into the toolbar and lets go when it moves any
   toolbar.remove()
   elsewhere.remove()
 })
+
+it("keeps the live selection on keydown before selectionchange is delivered", async () => {
+  const { editor, formatting, edits } = await mounted()
+  await select(editor, 0, 0)
+  formatting.aim(id, editor)
+  const text = editor.querySelector("[data-run]")?.firstChild
+  if (!(text instanceof Text)) throw new Error("missing text")
+  await act(async () => {
+    window.getSelection()?.setBaseAndExtent(text, 6, text, 11)
+    editor.dispatchEvent(new KeyboardEvent("keydown", { key: "b", ctrlKey: true, bubbles: true }))
+    formatting.toggle("bold")
+  })
+  expect(readTextValue(edits.at(-1) ?? "")).toEqual([
+    {
+      from: 0,
+      runs: [
+        { from: 0, text: "Hello " },
+        { from: 0, text: "world", bold: true },
+      ],
+    },
+  ])
+})
