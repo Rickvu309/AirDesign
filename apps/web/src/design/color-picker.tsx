@@ -3,7 +3,15 @@ import { useState, type KeyboardEvent, type ReactElement, type ReactNode } from 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { colorCopy } from "@/copy/color-copy"
 import { productCopy } from "@/copy/product-copy"
-import { deckChoices, matches, themeColumns, tintChoices, type Choice, type Palette } from "@/design/color-choices"
+import {
+  deckChoices,
+  hexOf,
+  matches,
+  themeColumns,
+  tintChoices,
+  type Choice,
+  type Palette,
+} from "@/design/color-choices"
 import { CustomColor } from "@/design/custom-color"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
@@ -20,7 +28,9 @@ export function lightCss(css: string): boolean {
 
 const edged = "shadow-[0px_0px_0px_1px_var(--field-edge)]"
 const ringed = "shadow-[0_0_0_2px_var(--background),0_0_0_4px_var(--ring)]"
-const rainbow = "conic-gradient(from 90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)"
+const rainbow = `conic-gradient(from 90deg, ${[0, 60, 120, 180, 240, 300, 360]
+  .map((hue) => `#${hexOf({ hue, saturation: 1, value: 1 })}`)
+  .join(", ")})`
 
 function atOf(index: number): string {
   return `${String(index % columns)},${String(Math.floor(index / columns))}`
