@@ -3,7 +3,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { queueLogName, recentRunSeconds, takeMachineLock, waitLine } from "./machine-lock.mjs"
+import { checkSlots, queueLogName, recentRunSeconds, takeMachineLock, waitLine } from "./machine-lock.mjs"
 
 const fail = (message) => {
   console.error(message)
@@ -21,14 +21,14 @@ const within = (promise, what) => {
   return promise.finally(() => clearTimeout(timer))
 }
 
-const waiter = (job = "check", lane = "full") => {
+const waiter = (job = "check", lane = "full", slots = 1) => {
   const child = spawn(
     process.execPath,
     [
       "--input-type=module",
       "-e",
       `import { takeMachineLock } from ${JSON.stringify(module)}
-       const release = await takeMachineLock({ folder: ${JSON.stringify(folder)}, env: {}, poll: 50, job: ${JSON.stringify(job)}, lane: ${JSON.stringify(lane)} })
+       const release = await takeMachineLock({ folder: ${JSON.stringify(folder)}, env: { AIRDESIGN_CHECK_SLOTS: "${slots}" }, poll: 50, job: ${JSON.stringify(job)}, lane: ${JSON.stringify(lane)} })
        console.log("started")
        process.stdin.once("data", async (word) => {
          if (String(word).startsWith("go")) await release()
@@ -56,7 +56,7 @@ const waiter = (job = "check", lane = "full") => {
 const started = (seen) => seen.out.includes("started")
 const placed = (place) => (seen) => seen.err.includes(`number ${place} in line`)
 
-const first = {}
+const first = { AIRDESIGN_CHECK_SLOTS: "1" }
 const releaseFirst = await within(takeMachineLock({ folder, env: first, say }), "a free lock kept a check waiting")
 if (said.length !== 0) fail("a free lock said it was waiting")
 if (first.AIRDESIGN_MACHINE_LOCK === undefined) fail("the holder does not mark its own environment")
@@ -132,6 +132,29 @@ if (recentRunSeconds(path.join(folder, queueLogName), 20, "small") === undefined
 if (!waitLine(1, undefined, "small").includes("small lane")) fail("the small lane's wait line does not name it")
 if (!waitLine(3, 90).includes("Expect about 5 min")) fail("the expected wait does not count the checks ahead")
 if (waitLine(1, undefined).includes("Expect")) fail("an empty queue log still promised a wait")
+
+const gib = 2 ** 30
+if (checkSlots({}, 8, 16 * gib) !== 1) fail("a small machine ran more than one check at once")
+if (checkSlots({}, 32, 16 * gib) !== 1) fail("16 GB of memory ran more than one check at once")
+if (checkSlots({}, 48, 47 * gib) !== 3) fail("48 cores and 47 GB did not run three checks at once")
+if (checkSlots({ AIRDESIGN_CHECK_SLOTS: "2" }, 48, 47 * gib) !== 2) fail("the owner's slot count was ignored")
+if (checkSlots({ AIRDESIGN_CHECK_SLOTS: "zero" }, 8, 16 * gib) !== 1) fail("a bad slot count was not ignored")
+
+const pairOne = waiter("check", "full", 2)
+const pairTwo = waiter("check", "full", 2)
+await pairOne.until(started, "the first of two slots did not start")
+await pairTwo.until(started, "a second free slot kept a check waiting")
+const pairThird = waiter("check", "full", 2)
+await pairThird.until(placed(1), "a third check with two slots did not say it is number 1 in line")
+await settle()
+if (started(pairThird.seen)) fail("three checks held two slots")
+pairOne.finish()
+await pairOne.closed
+await pairThird.until(started, "a freed slot did not start the next in line")
+pairTwo.finish()
+pairThird.finish()
+await pairTwo.closed
+await pairThird.closed
 
 const leftover = [...fs.readdirSync(path.join(folder, "queue")), ...fs.readdirSync(path.join(folder, "small-queue"))]
 if (leftover.length !== 0) fail(`the queue kept tickets: ${leftover.join(", ")}`)
