@@ -341,7 +341,7 @@ The change that puts a new element on one slide: a text box, or with kind `pictu
 _Avoid_: insert, create, new
 
 **gesture**:
-One thing a hand does in the editor, a key press or a pointer move, with its keys and where it works: Shift+click adds an element to the selection, Ctrl+G groups the selection. `gestures` in `packages/render` lists each one once, `gestureFor` tells which one a key press is, and a browser test that calls `covers` with its id proves each one.
+One thing a hand does in the editor, a key press or a pointer move, with its keys and where it works: Shift+click adds an element to the selection, Ctrl+G groups the selection.
 _Avoid_: shortcut (a shortcut is a gesture's keys), hotkey, command
 
 ## Findings
