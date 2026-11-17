@@ -320,21 +320,6 @@ it("saves every edit under the id of the shape that was edited", async () => {
   expect(await committedNodes(shapedParts(), "Keep", ["Next", "Later"], "opened-deck", 2)).toEqual(["382.2", "382.2"])
 })
 
-it("reports a refused flush as kept, not as sent", async () => {
-  const refusal = { ok: false, refusal: "owner" }
-  const answer = await commitEdit(
-    () => ({
-      enqueue: async () => ({ ok: true }),
-      flush: async () => refusal,
-      pending: async () => ["row"],
-    }),
-    "any-deck",
-    "Hello!",
-    { id: await editedId, file: "Hello" },
-  )
-  expect(answer).toBe("kept")
-})
-
 it("saves every edit under the deck id in the address", async () => {
   await committedNodes(shapedParts(), "Keep", ["Next", "Later"], "address-deck", 2)
   expect(live.sent.map((edit) => edit.deck)).toEqual(["address-deck", "address-deck"])

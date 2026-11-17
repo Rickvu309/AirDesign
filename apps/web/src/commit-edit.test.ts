@@ -68,6 +68,16 @@ it("keeps the edit when the send carried nothing but rows still wait on the devi
   expect(outcome).toBe("kept")
 })
 
+it("reports a refused flush as kept, not as sent", async () => {
+  const outcome = await commitEdit(
+    linkAnswering(() => Promise.resolve({ ok: false, refusal: "owner" })),
+    "any-deck",
+    "Hello!",
+    { id: elementId("256.2"), file: "Hello" },
+  )
+  expect(outcome).toBe("kept")
+})
+
 it("reports an offline device when the flush cannot reach the network", async () => {
   const outcome = await commitEdit(
     linkAnswering(() => Promise.reject(new TypeError("Failed to fetch"))),
