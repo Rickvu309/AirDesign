@@ -1,4 +1,4 @@
-import { pictureCopy } from "../../apps/web/src/copy/picture-copy"
+import { picturePanelCopy as pictureCopy } from "../../apps/web/src/copy/picture-panel-copy"
 import { join } from "node:path"
 import { expect, type Locator, type Page } from "@playwright/test"
 import { elementId, landedPatch, type ElementId, type Register } from "../../packages/document/src/index.ts"

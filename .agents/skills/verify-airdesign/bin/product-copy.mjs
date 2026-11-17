@@ -13,6 +13,8 @@ export const { formatCopy } = createRequire(import.meta.url)("../../../../apps/w
 export const { accountCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/account-copy.ts")
 export const { boxCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/box-copy.ts")
 
-export const { pictureCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/picture-copy.ts")
+export const { picturePanelCopy: pictureCopy } = createRequire(import.meta.url)(
+  "../../../../apps/web/src/copy/picture-panel-copy.ts",
+)
 
 export const { lineCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/line-copy.ts")
