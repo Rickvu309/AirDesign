@@ -9,7 +9,7 @@
   "slides-repainted": { "goal": 1 },
   "eval-coverage": { "now": 49, "goal": 49 },
   "design-findings": { "now": 33, "goal": 0 },
-  "paint-fidelity": { "now": 172, "goal": 190 },
+  "paint-fidelity": { "now": 0, "goal": 85 },
   "check-duration": { "limit": 40 },
   "gate-duration": { "limit": 60 },
   "ci-duration": { "limit": 40 },

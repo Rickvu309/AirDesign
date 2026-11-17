@@ -120,6 +120,41 @@ describe("publish", () => {
     ).toBe(true)
   })
 
+  it("puts other kinds of file in a release that names them, keeping each extension", () => {
+    const commands = []
+    const runGh = (args) => {
+      commands.push(args)
+      if (args[0] === "release" && args[1] === "view")
+        throw Object.assign(new Error("x"), { stderr: "release not found" })
+      return ""
+    }
+    const files = shots("refs", ["deck.pptx", "deck.pdf"])
+    const res = publish({
+      files,
+      prefix: "fidelity",
+      scratch: folder,
+      release: "fidelity-refs",
+      kinds: [".pptx", ".pdf"],
+      about: { title: "Fidelity references", notes: "PowerPoint's own pictures of slides." },
+      repository: "Rickvu309/AirDesign",
+      runGh,
+    })
+    expect(res.placed["deck.pptx"]).toMatch(/^fidelity-deck-[0-9a-f]{10}\.pptx$/)
+    expect(res.placed["deck.pdf"]).toMatch(/^fidelity-deck-[0-9a-f]{10}\.pdf$/)
+    expect(commands.find((cmd) => cmd[1] === "create")).toContain("Fidelity references")
+    expect(() =>
+      publish({
+        files: shots("refs-png", ["shot.png"]),
+        prefix: "f",
+        scratch: folder,
+        release: "fidelity-refs",
+        kinds: [".pdf"],
+        repository: "repo",
+        runGh,
+      }),
+    ).toThrow("shot.png is not one of .pdf")
+  })
+
   it("refuses files that are not PNG and two files with one name", () => {
     expect(() =>
       publish({
