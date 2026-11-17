@@ -23,6 +23,14 @@ import {
 } from "./set-wire.js"
 import { diagramChangeSchema, readDiagramChange, type WireDiagram } from "./diagram-wire.js"
 import { groupChangeSchema, readGroupChange, type WireGroup } from "./group-wire.js"
+import {
+  deleteChangeSchema,
+  readDeleteChange,
+  readSlideChange,
+  slideChangeSchema,
+  type WireDelete,
+  type WireSlideChange,
+} from "./slide-change-wire.js"
 import { storableText } from "./storable-text.js"
 import { readSlideEdit, type WireSlide } from "./slide-wire.js"
 import {
@@ -75,7 +83,7 @@ export type WireEdit = (Edited | RowEdited) & Unnamed & { readonly readAt?: neve
 
 export type WireChange = Edited & Unnamed & { readonly readAt: number }
 
-export type AgentChange = WireChange | WireSet | WireAdd | WireGroup | WireDiagram
+export type AgentChange = WireChange | WireSet | WireAdd | WireGroup | WireDiagram | WireSlideChange | WireDelete
 
 function readBoxEdit(body: Record<string, unknown>): { ok: true; edit: WireEdit } | FieldRefusal {
   if (body.property !== "box" || !knownKeys(body, ["property", "value", "node", "floor"])) return fieldRefusal
@@ -204,13 +212,17 @@ const setChange = agentForm(readSetChange, setChangeSchema())
 const addChange = agentForm(readAddChange, addChangeSchema())
 const groupChange = agentForm(readGroupChange, groupChangeSchema())
 const diagramChange = agentForm(readDiagramChange, diagramChangeSchema())
+const slideChange = agentForm(readSlideChange, slideChangeSchema())
+const deleteChange = agentForm(readDeleteChange, deleteChangeSchema())
 
 export const readAgentEdit = readInput(
   z.strictObject({
     deck: deckInput,
     base: wholeInput.describe("Revision from airdesign_read_deck."),
     changes: z
-      .array(z.union([textChange, boxChange, setChange, addChange, groupChange, diagramChange]))
+      .array(
+        z.union([textChange, boxChange, setChange, addChange, groupChange, diagramChange, slideChange, deleteChange]),
+      )
       .min(1)
       .max(limits.batch)
       .describe("Changes to land."),

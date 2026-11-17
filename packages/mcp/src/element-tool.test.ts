@@ -57,8 +57,19 @@ describe("add_text_box through MCP", () => {
     const held = session()
     await withClient(held, async (client) => {
       const add = await client.callTool({
-        name: "airdesign_add_text_box",
-        arguments: { deck: "deck", base: 0, slide: "256", box: { x: 5, y: 6, cx: 700, cy: 80 } },
+        name: "airdesign_edit_deck",
+        arguments: {
+          deck: "deck",
+          base: 0,
+          changes: [
+            {
+              op: "add",
+              kind: "shape",
+              slide: "256",
+              box: { x: 5 / 12700, y: 6 / 12700, w: 700 / 12700, h: 80 / 12700 },
+            },
+          ],
+        },
       })
       expect(add.isError).not.toBe(true)
       expect(add.structuredContent).toEqual({
@@ -81,8 +92,12 @@ describe("add_text_box through MCP", () => {
     const held = session()
     await withClient(held, async (client) => {
       const add = await client.callTool({
-        name: "airdesign_add_text_box",
-        arguments: { deck: "deck", base: 0, slide: "256", text: "Hello" },
+        name: "airdesign_edit_deck",
+        arguments: {
+          deck: "deck",
+          base: 0,
+          changes: [{ op: "add", kind: "shape", slide: "256", text: { value: "Hello" } }],
+        },
       })
       expect(add.structuredContent).toMatchObject({
         ok: true,
@@ -101,15 +116,15 @@ describe("add_text_box through MCP", () => {
     const held = session()
     await withClient(held, async (client) => {
       const missing = await client.callTool({
-        name: "airdesign_add_text_box",
-        arguments: { deck: "deck", base: 0, slide: "999" },
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: 0, changes: [{ op: "add", kind: "shape", slide: "999" }] },
       })
       expect(missing.isError).toBe(true)
       expect(missing.structuredContent).toMatchObject({ ok: false, refusal: "dead" })
       expect(JSON.stringify(missing.content)).toContain("Slide 999: choose a present slide")
       const stale = await client.callTool({
-        name: "airdesign_add_text_box",
-        arguments: { deck: "deck", base: 3, slide: "256" },
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: 3, changes: [{ op: "add", kind: "shape", slide: "256" }] },
       })
       expect(stale.structuredContent).toMatchObject({ ok: false, refusal: "stale" })
     })
@@ -120,8 +135,12 @@ describe("add_text_box through MCP", () => {
     const held = session()
     await withClient(held, async (client) => {
       const refused = await client.callTool({
-        name: "airdesign_add_text_box",
-        arguments: { deck: "deck", base: 0, slide: "256", text: "x".repeat(2_000_000) },
+        name: "airdesign_edit_deck",
+        arguments: {
+          deck: "deck",
+          base: 0,
+          changes: [{ op: "add", kind: "shape", slide: "256", text: { value: "x".repeat(2_000_000) } }],
+        },
       })
       expect(refused.isError).toBe(true)
     })
@@ -135,8 +154,8 @@ describe("delete_element through MCP", () => {
     const held = session()
     await withClient(held, async (client) => {
       const removed = await client.callTool({
-        name: "airdesign_delete_element",
-        arguments: { deck: "deck", base: 0, node: "256.2" },
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: 0, changes: [{ op: "delete", node: "256.2" }] },
       })
       expect(removed.structuredContent).toEqual({ ok: true, revision: 1, runId: "run", elements: [] })
       expect(elementGone(held.deck.register, elementId("256.2"))).toBe(true)
@@ -147,8 +166,8 @@ describe("delete_element through MCP", () => {
         ["256.9", "dead", "Element 256.9: the deck has no such element"],
       ] as const) {
         const refused = await client.callTool({
-          name: "airdesign_delete_element",
-          arguments: { deck: "deck", base: held.deck.revision, node },
+          name: "airdesign_edit_deck",
+          arguments: { deck: "deck", base: held.deck.revision, changes: [{ op: "delete", node }] },
         })
         expect(refused.isError).toBe(true)
         expect(refused.structuredContent).toMatchObject({ ok: false, refusal })
@@ -161,12 +180,16 @@ describe("delete_element through MCP", () => {
     const held = session()
     await withClient(held, async (client) => {
       await client.callTool({
-        name: "airdesign_add_text_box",
-        arguments: { deck: "deck", base: 0, slide: "256", text: "A" },
+        name: "airdesign_edit_deck",
+        arguments: {
+          deck: "deck",
+          base: 0,
+          changes: [{ op: "add", kind: "shape", slide: "256", text: { value: "A" } }],
+        },
       })
       await client.callTool({
-        name: "airdesign_delete_element",
-        arguments: { deck: "deck", base: held.deck.revision, node: "256.2" },
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: held.deck.revision, changes: [{ op: "delete", node: "256.2" }] },
       })
     })
     const undone = call("undo_run", held.deck, { actor: "person" }, { deck: "deck", runId: "run" })

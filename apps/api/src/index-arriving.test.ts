@@ -72,10 +72,20 @@ it("answers an add_slide before the index as indexing, never counts it, and land
   await ask(base, "POST", deckRoutes.open.path, { deck }, cookie)
   const call = { deck, base: 0, after: "256", layout: "256" }
   for (let n = 0; n < 35; n += 1) {
-    const refused = await tool("airdesign_add_slide", call)
+    const refused = await tool(
+      "airdesign_edit_deck",
+      (({ deck, base, ...change }) => ({ deck, base, changes: [{ op: "add_slide", ...change }] }))(call),
+    )
     expect(refused.answer).toMatchObject({ ok: false, refusal: "indexing" })
     expect(refused.text).toContain("still being indexed")
   }
   expect((await ask(base, "POST", deckRoutes.index.path, page(deck), cookie)).json).toMatchObject({ ok: true })
-  expect((await tool("airdesign_add_slide", call)).answer).toMatchObject({ ok: true, slide: "257" })
+  expect(
+    (
+      await tool(
+        "airdesign_edit_deck",
+        (({ deck, base, ...change }) => ({ deck, base, changes: [{ op: "add_slide", ...change }] }))(call),
+      )
+    ).answer,
+  ).toMatchObject({ ok: true, slides: ["257"] })
 })

@@ -82,5 +82,11 @@ export { slideEditCommand, type WireSlide } from "./slide-wire.js"
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, readOnce } from "./mcp-routes.js"
 
-export { slideReaders, type SlideOp } from "./agent-slide-wire.js"
-export { elementReaders, type ElementOp } from "./agent-element-wire.js"
+export {
+  readDeleteChange,
+  readSlideChange,
+  slideOps,
+  type SlideOp,
+  type WireDelete,
+  type WireSlideChange,
+} from "./slide-change-wire.js"

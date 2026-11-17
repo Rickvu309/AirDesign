@@ -37,9 +37,9 @@
     },
     {
       "file": "packages/engine/src/agent-elements.ts",
-      "names": ["agentElement"],
-      "digest": "6b139366c5cf",
-      "blob": "398534c60f1355e866b8aa171a7d304bd2eb09ce"
+      "names": ["deleteElement"],
+      "digest": "9b56b13446a8",
+      "blob": "5503bf2b5da3b0979f97ec10bcad5a52c600eafa"
     },
     {
       "file": "packages/document/src/slide-order.ts",

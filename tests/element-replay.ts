@@ -127,10 +127,14 @@ function act(current: Deck, source: Spec, action: string, undoable: Undoable | n
   if (action === "AgentWrite") return agentWrote(current)
   if (action === "UndoWrite") return writeUndone(current)
   if (action === "AgentAdd") {
-    return call("add_text_box", current, agent, { deck, base: current.revision, slide: "256", box })
+    return call("edit_deck", current, agent, {
+      deck,
+      base: current.revision,
+      changes: [{ op: "add", kind: "shape", slide: "256", box: { x: 0, y: 0, w: box.cx / 12700, h: box.cy / 12700 } }],
+    })
   }
   if (action === "AgentRemove" || action === "AgentRemoveRefused") {
-    return call("delete_element", current, agent, { deck, base: current.revision, node })
+    return call("edit_deck", current, agent, { deck, base: current.revision, changes: [{ op: "delete", node }] })
   }
   if (action === "UndoRun" || action === "UndoRunRefused")
     return call("undo_run", current, person, { deck, runId: "run" })
@@ -290,14 +294,15 @@ function replayKind(graph: Graph, failures: string[]): number {
           : ["OtherRestore", "AgentWrite"]
     if (state.added === true) {
       const another = call(
-        "add_text_box",
+        "edit_deck",
         current,
         { actor: "agent", runId: "next" },
         {
           deck,
           base: current.revision,
-          slide: "256",
-          box,
+          changes: [
+            { op: "add", kind: "shape", slide: "256", box: { x: 0, y: 0, w: box.cx / 12700, h: box.cy / 12700 } },
+          ],
         },
       )
       const order = another === "told" || !another.ok ? [] : another.deck.register.order

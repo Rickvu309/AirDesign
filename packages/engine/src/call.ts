@@ -1,7 +1,7 @@
 import { applyAgentChange, openedRegister } from "./apply-change.js"
 import { applyDiagram } from "./agent-diagram.js"
 import { applyGroup } from "./agent-groups.js"
-import { agentElement } from "./agent-elements.js"
+import { deleteElement } from "./agent-elements.js"
 import { agentSlide } from "./agent-slides.js"
 import {
   bytesOf,
@@ -123,7 +123,11 @@ function applyAgentEdits(deck: Deck, edits: readonly AgentChange[], runId: strin
           ? applyGroup(current, edit, runId, base)
           : "labels" in edit
             ? applyDiagram(current, edit, runId, base)
-            : applyAgentChange(current, edit, runId, base)
+            : edit.op === "delete"
+              ? deleteElement(current, edit, runId, base)
+              : edit.op === "set" || edit.op === "add"
+                ? applyAgentChange(current, edit, runId, base)
+                : agentSlide(current, edit, runId, base)
       if (!applied.ok) return refused(applied.refusal)
       register = applied.register
       continue
@@ -285,14 +289,6 @@ function callEndRun(deck: Deck, caller: Caller, raw: unknown, end: typeof stopRu
 export function call(op: "start_run", deck: Deck, caller: Caller, raw: unknown): StartResult
 export function call(op: Exclude<CommandOp, "start_run">, deck: Deck, caller: Caller, raw: unknown): CallResult
 export function call(op: CommandOp, deck: Deck, caller: Caller, raw: unknown): CallResult | StartResult {
-  if (op === "add_slide" || op === "duplicate_slide" || op === "delete_slide" || op === "move_slide") {
-    const result = agentSlide(op, deck, caller, raw)
-    return result.ok ? landed(deck, result.register, result.runId) : result
-  }
-  if (op === "add_text_box" || op === "delete_element") {
-    const result = agentElement(op, deck, caller, raw)
-    return result.ok ? landed(deck, result.register, result.runId) : result
-  }
   if (op === "start_run") return callStartRun(deck, caller, raw)
   if (op === "undo_run") return callEndRun(deck, caller, raw, undoRun)
   if (op === "stop_run") {

@@ -40,11 +40,11 @@ it("adds, reads, titles, duplicates, moves and deletes through MCP with the same
   await client.connect(a)
   try {
     const add = await client.callTool({
-      name: "airdesign_add_slide",
-      arguments: { deck: "deck", base: 0, after: "256", layout: "256" },
+      name: "airdesign_edit_deck",
+      arguments: { deck: "deck", base: 0, changes: [{ op: "add_slide", after: "256", layout: "256" }] },
     })
     expect(add.isError).not.toBe(true)
-    expect(add.structuredContent).toMatchObject({ slide: "257", runId: "run" })
+    expect(add.structuredContent).toMatchObject({ slides: ["257"], runId: "run" })
     expect(readDeckPage(held.deck, { runId: "run", slide: "257" }).elements[0]?.node).toBe("257.2")
     const title = writeTextValue([{ from: 0, runs: [{ from: 0, text: "New title" }] }])
     expect(
@@ -58,11 +58,11 @@ it("adds, reads, titles, duplicates, moves and deletes through MCP with the same
     expect(
       (
         await client.callTool({
-          name: "airdesign_duplicate_slide",
-          arguments: { deck: "deck", base: held.deck.revision, slide: "257" },
+          name: "airdesign_edit_deck",
+          arguments: { deck: "deck", base: held.deck.revision, changes: [{ op: "duplicate_slide", slide: "257" }] },
         })
       ).structuredContent,
-    ).toMatchObject({ slide: "258", runId: "run" })
+    ).toMatchObject({ slides: ["258"], runId: "run" })
     expect(readDeckPage(held.deck, { runId: "run", slide: "258" }).elements[0]?.value).toBe(title)
     for (const [name, input] of [
       ["move_slide", { slide: "258", after: null }],
@@ -71,8 +71,8 @@ it("adds, reads, titles, duplicates, moves and deletes through MCP with the same
       expect(
         (
           await client.callTool({
-            name: `airdesign_${name}`,
-            arguments: { deck: "deck", base: held.deck.revision, ...input },
+            name: "airdesign_edit_deck",
+            arguments: { deck: "deck", base: held.deck.revision, changes: [{ op: name, ...input }] },
           })
         ).isError,
       ).not.toBe(true)
@@ -94,7 +94,13 @@ it("refuses stale, forged, missing slides and deletion of the last slide atomica
     ["move_slide", { slide: "256", after: "256" }, "dead"],
     ["add_slide", { after: "256", layout: "256", actor: "person" }, "field"],
   ] as const) {
-    expect(call(op, held.deck, held.caller, { deck: "deck", base: 0, ...input })).toEqual({ ok: false, refusal })
+    expect(
+      call("edit_deck", held.deck, held.caller, {
+        deck: "deck",
+        base: "base" in input ? input.base : 0,
+        changes: [{ op, ...Object.fromEntries(Object.entries(input).filter(([key]) => key !== "base")) }],
+      }),
+    ).toEqual({ ok: false, refusal })
   }
 })
 it("lands a slide call on a fresh base while an earlier run is still live, and stops that run", async () => {
@@ -120,16 +126,16 @@ it("lands a slide call on a fresh base while an earlier run is still live, and s
   try {
     const seen = held.deck.revision
     const stale = await client.callTool({
-      name: "airdesign_add_slide",
-      arguments: { deck: "deck", base: seen - 1, after: "256", layout: "256" },
+      name: "airdesign_edit_deck",
+      arguments: { deck: "deck", base: seen - 1, changes: [{ op: "add_slide", after: "256", layout: "256" }] },
     })
     expect(stale.structuredContent).toMatchObject({ ok: false, refusal: "stale" })
     expect(held.deck).toBe(started.deck)
     const add = await client.callTool({
-      name: "airdesign_add_slide",
-      arguments: { deck: "deck", base: seen, after: "256", layout: "256" },
+      name: "airdesign_edit_deck",
+      arguments: { deck: "deck", base: seen, changes: [{ op: "add_slide", after: "256", layout: "256" }] },
     })
-    expect(add.structuredContent).toMatchObject({ ok: true, slide: "257", runId: "run" })
+    expect(add.structuredContent).toMatchObject({ ok: true, slides: ["257"], runId: "run" })
     expect(liveRuns(held.deck)).toEqual([])
   } finally {
     await client.close()
@@ -171,6 +177,47 @@ it("fills a slide's background through edit_deck's set with a slide target, and 
       )
     expect(old).toContain("Tool airdesign_set_background not found")
     expect(held.deck.revision).toBe(1)
+  } finally {
+    await client.close()
+    await server.close()
+  }
+})
+
+it("lands mixed slide and element changes in one revision or none", async () => {
+  const held = session()
+  const server = createServer(held)
+  const [a, b] = InMemoryTransport.createLinkedPair()
+  const client = new Client({ name: "test", version: "1" })
+  await server.connect(b)
+  await client.connect(a)
+  try {
+    const before = held.deck
+    const changes = [
+      { op: "add_slide", after: "256", layout: "256" },
+      { op: "delete", node: "999.2" },
+    ]
+    const refused = await client.callTool({
+      name: "airdesign_edit_deck",
+      arguments: { deck: "deck", base: 0, changes },
+    })
+    expect(refused.isError).toBe(true)
+    expect(held.deck).toEqual(before)
+    const result = await client.callTool({
+      name: "airdesign_edit_deck",
+      arguments: {
+        deck: "deck",
+        base: 0,
+        changes: [changes[0], { op: "move_slide", slide: "257", after: null }, { op: "delete", node: "256.2" }],
+      },
+    })
+    expect(result.structuredContent).toMatchObject({ ok: true, revision: 1, slides: ["257"] })
+    expect(readDeckPage(held.deck, { runId: "run" }).slides.map((slide) => slide.id)).toEqual(["257", "256"])
+    expect((await client.listTools()).tools.map((tool) => tool.name).sort()).toEqual([
+      "airdesign_edit_deck",
+      "airdesign_list_decks",
+      "airdesign_read_deck",
+      "airdesign_stop_run",
+    ])
   } finally {
     await client.close()
     await server.close()

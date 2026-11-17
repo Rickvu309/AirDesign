@@ -32,21 +32,19 @@ afterAll(async () => {
 
 async function slideRun(): Promise<Owned & { readonly base: number }> {
   const owned = await indexedDeck(stores, "slide-stop")
-  const added = await wholeCall(steps, owned, "r", "add_slide", {
+  const added = await wholeCall(steps, owned, "r", "edit_deck", {
     deck: owned.deck,
     base: owned.revision,
-    after: "256",
-    layout: "256",
+    changes: [{ op: "add_slide", after: "256", layout: "256" }],
   })
   return { ...owned, base: revisionOf(added) }
 }
 
 async function addingSlide(owned: Owned & { readonly base: number }) {
-  const agent = await steps.start(owned, "u", "add_slide", {
+  const agent = await steps.start(owned, "u", "edit_deck", {
     deck: owned.deck,
     base: owned.base,
-    after: "256",
-    layout: "256",
+    changes: [{ op: "add_slide", after: "256", layout: "256" }],
   })
   await agent.release()
   await agent.release()

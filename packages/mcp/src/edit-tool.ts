@@ -5,6 +5,9 @@ import {
   readDiagramChange,
   readGroupChange,
   readSetChange,
+  readSlideChange,
+  readDeleteChange,
+  slideOps,
   type AgentChange,
   type WireChange,
 } from "@airdesign/catalog"
@@ -23,6 +26,7 @@ import {
   setNodes,
   stopForNewTurn,
 } from "./run.js"
+import { changeDetail } from "./change-detail.js"
 import { tableProblem } from "./table-from.js"
 import { textProblem } from "./text-from.js"
 import { heldRun, holders } from "./turn.js"
@@ -73,7 +77,11 @@ function fieldDetail(raw: unknown): string | undefined {
             ? readGroupChange(change)
             : op === "diagram"
               ? readDiagramChange(change)
-              : undefined
+              : op === "delete"
+                ? readDeleteChange(change)
+                : slideOps.some((each) => each === op)
+                  ? readSlideChange(change)
+                  : undefined
     if (read !== undefined && !read.ok)
       return `Change ${String(at + 1)}: ${read.field} is missing or has the wrong form.${iconHint(read.field, change)}`
   }
@@ -125,6 +133,22 @@ export function editDeck(raw: unknown, session: Session): ToolResult {
   const deck = { id: before.id, revision: before.revision, register: opened.register }
   const result = call("edit_deck", deck, opened.caller, raw)
   if (!result.ok)
-    return { ...editRefusal(deck, result.refusal, nodes, groupDetail(parsed.changes, result.refusal)), deck: before }
-  return editLanded(result.deck, [...nodes, ...addedNodes(deck.register, result.deck.register)], opened.caller.runId)
+    return {
+      ...editRefusal(
+        deck,
+        result.refusal,
+        nodes,
+        groupDetail(parsed.changes, result.refusal) ?? changeDetail(before, parsed.changes, result.refusal),
+      ),
+      deck: before,
+    }
+  const slides = result.deck.register.order
+    .slice(deck.register.order.length)
+    .flatMap((row) => (row.slide === "add" || row.slide === "clone" ? [row.id] : []))
+  return editLanded(
+    result.deck,
+    [...nodes, ...addedNodes(deck.register, result.deck.register)],
+    opened.caller.runId,
+    slides,
+  )
 }

@@ -40,21 +40,19 @@ type Turn = Owned & { readonly base: number }
 
 async function liveTurn(): Promise<Turn> {
   const owned = await indexedDeck(stores, "slide-sibling")
-  const added = await wholeCall(steps, owned, "r", "add_slide", {
+  const added = await wholeCall(steps, owned, "r", "edit_deck", {
     deck: owned.deck,
     base: owned.revision,
-    after: "256",
-    layout: "256",
+    changes: [{ op: "add_slide", after: "256", layout: "256" }],
   })
   return { ...owned, base: revisionOf(added) }
 }
 
 async function slideHeldAt(turn: Turn, gate: "deck" | "write"): Promise<Call> {
-  const slide = await steps.start(turn, "u1", "add_slide", {
+  const slide = await steps.start(turn, "u1", "edit_deck", {
     deck: turn.deck,
     base: turn.base,
-    after: "256",
-    layout: "256",
+    changes: [{ op: "add_slide", after: "256", layout: "256" }],
   })
   while (slide.at !== gate) await slide.release()
   return slide
@@ -91,18 +89,16 @@ for (const gate of ["deck", "write"] as const) {
 
 async function elementTurn(): Promise<Turn & { readonly slide: string; readonly box: string }> {
   const owned = await indexedDeck(stores, "slide-sibling")
-  const added = await wholeCall(steps, owned, "r", "add_slide", {
+  const added = await wholeCall(steps, owned, "r", "edit_deck", {
     deck: owned.deck,
     base: owned.revision,
-    after: "256",
-    layout: "256",
+    changes: [{ op: "add_slide", after: "256", layout: "256" }],
   })
-  const slide = String(added.body?.slide)
-  const boxed = await wholeCall(steps, owned, "r", "add_text_box", {
+  const slide = String((added.body?.slides as string[] | undefined)?.[0])
+  const boxed = await wholeCall(steps, owned, "r", "edit_deck", {
     deck: owned.deck,
     base: revisionOf(added),
-    slide,
-    box: { x: 0, y: 0, cx: 100, cy: 100 },
+    changes: [{ op: "add", kind: "shape", slide, box: { x: 0, y: 0, w: 1, h: 1 } }],
   })
   const rows = (boxed.body?.elements ?? []) as { node: string }[]
   const box = rows.at(-1)?.node
@@ -114,9 +110,18 @@ for (const op of ["add_text_box", "delete_element"] as const) {
   for (const gate of ["deck", "write"] as const) {
     it(`lands ${op} and an edit of one turn sent at one base when the edit lands while ${op} waits at its ${gate === "deck" ? "deck read" : "deck write"}`, async () => {
       const turn = await elementTurn()
-      const input =
-        op === "add_text_box" ? { slide: turn.slide, box: { x: 0, y: 200, cx: 100, cy: 100 } } : { node: turn.box }
-      const call = await steps.start(turn, "u1", op, { deck: turn.deck, base: turn.base, ...input })
+      const input = op === "add_text_box" ? { slide: turn.slide, box: { x: 0, y: 2, w: 1, h: 1 } } : { node: turn.box }
+      const call = await steps.start(turn, "u1", "edit_deck", {
+        deck: turn.deck,
+        base: turn.base,
+        changes: [
+          {
+            op: op === "add_text_box" ? "add" : "delete",
+            ...(op === "add_text_box" ? { kind: "shape" } : {}),
+            ...input,
+          },
+        ],
+      })
       while (call.at !== gate) await call.release()
       const edit = await siblingEdit(turn)
       expect(edit.body).toMatchObject({ ok: true, runId: "r", revision: turn.base + 1 })
@@ -235,14 +240,26 @@ async function act(live: Sibling, action: string): Promise<void> {
   const { deck, base } = live
   const added = { deck, base, after: "256", layout: "256" }
   if (action === "SlideReads") {
-    live.slide ??= await steps.start(live, "u1", "add_slide", added, once)
+    live.slide ??= await steps.start(
+      live,
+      "u1",
+      "edit_deck",
+      (({ deck, base, ...change }) => ({ deck, base, changes: [{ op: "add_slide", ...change }] }))(added),
+      once,
+    )
     await read(live.slide)
   } else if (action === "EditReads") {
     const changes = [{ node, value: "Agent", readAt: 0 }]
     live.edit ??=
       live.second === "edit"
         ? await steps.start(live, "u2", "edit_deck", { deck, base, changes })
-        : await steps.start(live, "u2", "add_slide", added, once)
+        : await steps.start(
+            live,
+            "u2",
+            "edit_deck",
+            (({ deck, base, ...change }) => ({ deck, base, changes: [{ op: "add_slide", ...change }] }))(added),
+            once,
+          )
     await read(live.edit)
   } else if (action === "SlideWrites" && live.slide !== undefined) await written(live.slide)
   else if (action === "EditWrites" && live.edit !== undefined) await written(live.edit)

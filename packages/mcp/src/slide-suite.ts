@@ -11,7 +11,7 @@ export const slideSuite: readonly SuiteRow[] = (
 ).map(([op, input, slides]) => ({
   task: {
     id: String(op),
-    prompt: `Use airdesign_${String(op)} to change the slide order.`,
+    prompt: `Use airdesign_edit_deck with ${String(op)} to change the slide order.`,
     deck: () =>
       fixture("slides", [], (register) => ({
         ...register,
@@ -25,8 +25,11 @@ export const slideSuite: readonly SuiteRow[] = (
           pages: [],
         },
       })),
-    want: { calls: 1, steps: [{ name: op, outcome: "ok" }], elements: {}, slides },
+    want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: {}, slides },
   },
-  reference: [{ name: `airdesign_${op}`, raw: { deck: "slides", base: 0, ...input } }],
-  wrong: { attempt: [{ name: `airdesign_${op}`, raw: { deck: "slides", base: 9, ...input } }], reason: "tool" },
+  reference: [{ name: "airdesign_edit_deck", raw: { deck: "slides", base: 0, changes: [{ op, ...input }] } }],
+  wrong: {
+    attempt: [{ name: "airdesign_edit_deck", raw: { deck: "slides", base: 9, changes: [{ op, ...input }] } }],
+    reason: "tool",
+  },
 }))

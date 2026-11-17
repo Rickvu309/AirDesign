@@ -81,10 +81,10 @@ describe("replyPieces", () => {
   it("lists three different steps in one sentence", () => {
     const [row] = replyPieces([
       tool("airdesign_read_deck", "done"),
-      tool("airdesign_add_slide", "done"),
+      tool("airdesign_list_decks", "done"),
       tool("airdesign_edit_deck", "done"),
     ])
-    expect(row).toMatchObject({ title: "Read the deck, added a slide, and edited slides" })
+    expect(row).toMatchObject({ title: "Read the deck, listed your decks, and edited slides" })
   })
 
   it("sums up steps taken one after another in one line that expands to each step", () => {

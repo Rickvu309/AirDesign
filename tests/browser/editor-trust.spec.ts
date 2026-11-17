@@ -281,7 +281,11 @@ async function agentTypesOnOpenDeck(page: Page, stack: Stack, file: string | und
   const slide = (read.slides as { id: string }[])[0]?.id
   expect(slide).toBeTruthy()
   faults.loseOne()
-  const add = await stack.callTool("airdesign_add_text_box", { deck, base: read.revision, slide }, cookie)
+  const add = await stack.callTool(
+    "airdesign_edit_deck",
+    { deck, base: read.revision, changes: [{ op: "add", kind: "shape", slide }] },
+    cookie,
+  )
   expect(add.ok).toBe(true)
   const node = (add.elements as { node: string }[])[0]?.node
   expect(node).toBeTruthy()

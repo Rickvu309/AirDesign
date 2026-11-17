@@ -23,42 +23,6 @@ export const airaStepWords: Readonly<Record<AgentOp, StepWords | null>> = {
     refused: "Couldn't list your decks",
     stopped: "Stopped listing your decks",
   },
-  add_slide: {
-    working: "Adding a slide",
-    done: "Added a slide",
-    refused: "Couldn't add a slide",
-    stopped: "Stopped adding a slide",
-  },
-  duplicate_slide: {
-    working: "Duplicating a slide",
-    done: "Duplicated a slide",
-    refused: "Couldn't duplicate a slide",
-    stopped: "Stopped duplicating a slide",
-  },
-  delete_slide: {
-    working: "Deleting a slide",
-    done: "Deleted a slide",
-    refused: "Couldn't delete a slide",
-    stopped: "Stopped deleting a slide",
-  },
-  add_text_box: {
-    working: "Adding a text box",
-    done: "Added a text box",
-    refused: "Couldn't add a text box",
-    stopped: "Stopped adding a text box",
-  },
-  delete_element: {
-    working: "Deleting an element",
-    done: "Deleted an element",
-    refused: "Couldn't delete an element",
-    stopped: "Stopped deleting an element",
-  },
-  move_slide: {
-    working: "Moving a slide",
-    done: "Moved a slide",
-    refused: "Couldn't move a slide",
-    stopped: "Stopped moving a slide",
-  },
   stop_run: null,
 }
 

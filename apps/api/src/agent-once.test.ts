@@ -49,20 +49,47 @@ function editTitle(owned: Owned & { readonly revision: number }) {
 
 it("lands an add_slide sent twice with one once a single time, and answers the second with the first's slide", async () => {
   const owned = await indexedDeck(stores, "agent-once")
-  const first = await wholeCall(steps, owned, "r", "add_slide", addSlide(owned), "add-1")
+  const first = await wholeCall(
+    steps,
+    owned,
+    "r",
+    "edit_deck",
+    (({ deck, base, ...change }) => ({ deck, base, changes: [{ op: "add_slide", ...change }] }))(addSlide(owned)),
+    "add-1",
+  )
   expect(first.body).toMatchObject({ ok: true, runId: "r", revision: owned.revision + 1 })
-  const again = await wholeCall(steps, owned, "u", "add_slide", addSlide(owned), "add-1")
+  const again = await wholeCall(
+    steps,
+    owned,
+    "u",
+    "edit_deck",
+    (({ deck, base, ...change }) => ({ deck, base, changes: [{ op: "add_slide", ...change }] }))(addSlide(owned)),
+    "add-1",
+  )
   expect(again).toEqual(first)
   const saved = await stored(owned)
   expect(saved.revision).toBe(owned.revision + 1)
-  expect(slidesAddedBy(saved.register, "r")).toEqual([first.body?.slide])
+  expect(slidesAddedBy(saved.register, "r")).toEqual([(first.body?.slides as string[] | undefined)?.[0]])
 })
 
 it("lands an add_slide once when its second send lands while the first waits at its deck write", async () => {
   const owned = await indexedDeck(stores, "agent-once")
-  const first = await steps.start(owned, "r", "add_slide", addSlide(owned), "add-1")
+  const first = await steps.start(
+    owned,
+    "r",
+    "edit_deck",
+    (({ deck, base, ...change }) => ({ deck, base, changes: [{ op: "add_slide", ...change }] }))(addSlide(owned)),
+    "add-1",
+  )
   while (first.at !== "write") await first.release()
-  const again = await wholeCall(steps, owned, "r", "add_slide", addSlide(owned), "add-1")
+  const again = await wholeCall(
+    steps,
+    owned,
+    "r",
+    "edit_deck",
+    (({ deck, base, ...change }) => ({ deck, base, changes: [{ op: "add_slide", ...change }] }))(addSlide(owned)),
+    "add-1",
+  )
   expect(again.body).toMatchObject({ ok: true, runId: "r", revision: owned.revision + 1 })
   expect(await finish(first)).toEqual(again)
   const saved = await stored(owned)
@@ -72,8 +99,22 @@ it("lands an add_slide once when its second send lands while the first waits at 
 
 it("adds two slides for two add_slide calls with different onces at one base", async () => {
   const owned = await indexedDeck(stores, "agent-once")
-  const first = await wholeCall(steps, owned, "r", "add_slide", addSlide(owned), "add-1")
-  const second = await wholeCall(steps, owned, "u", "add_slide", addSlide(owned), "add-2")
+  const first = await wholeCall(
+    steps,
+    owned,
+    "r",
+    "edit_deck",
+    (({ deck, base, ...change }) => ({ deck, base, changes: [{ op: "add_slide", ...change }] }))(addSlide(owned)),
+    "add-1",
+  )
+  const second = await wholeCall(
+    steps,
+    owned,
+    "u",
+    "edit_deck",
+    (({ deck, base, ...change }) => ({ deck, base, changes: [{ op: "add_slide", ...change }] }))(addSlide(owned)),
+    "add-2",
+  )
   expect(revisionOf(second)).toBe(revisionOf(first) + 1)
   expect(slidesAddedBy((await stored(owned)).register, "r")).toHaveLength(2)
 })

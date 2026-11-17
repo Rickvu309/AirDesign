@@ -1,4 +1,4 @@
-import { slideReaders, type SlideOp, type CallRefusal } from "@airdesign/catalog"
+import type { CallRefusal, WireSlideChange } from "@airdesign/catalog"
 import {
   decide,
   elementGone,
@@ -25,7 +25,7 @@ import {
   type SlideCommand,
   type SlideId,
 } from "@airdesign/document"
-import type { Caller, Deck } from "./call.js"
+import type { Deck } from "./call.js"
 
 type Built =
   | { readonly ok: true; readonly register: Deck["register"]; readonly runId: string }
@@ -68,14 +68,10 @@ export function readFresh(deck: Deck, runId: string, base: number): boolean {
   return last?.runId === runId && last.revision === deck.revision && last.since <= base && base < deck.revision
 }
 
-export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown): Built {
-  if (caller.actor !== "agent") return { ok: false, refusal: "field" }
-  const parsed = slideReaders[op](raw)
-  if (!parsed.ok) return parsed
-  if (parsed.deck !== deck.id) return { ok: false, refusal: "deck" }
-  if (!readFresh(deck, caller.runId, parsed.base)) return { ok: false, refusal: "stale" }
+export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, base: number): Built {
+  if (!readFresh(deck, runId, base)) return { ok: false, refusal: "stale" }
   const register = deck.register
-  const fenced = runFence(register, caller.runId, op === "delete_slide" && "slide" in parsed ? parsed.slide : null)
+  const fenced = runFence(register, runId, parsed.op === "delete_slide" ? parsed.slide : null)
   if (fenced !== null) return { ok: false, refusal: fenced }
   const index = register.index
   if (index === undefined || index.elements.length !== index.total) return { ok: false, refusal: "indexing" }
@@ -87,7 +83,7 @@ export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown
   const spots = presentSlides(state)
   const id = nextSlideId(foldSlides(state).map((row) => row.id))
   let edit: SlideCommand
-  if ("layout" in parsed) {
+  if (parsed.op === "add_slide") {
     const key = orderKeyAfter(spots, parsed.after)
     const layoutSpot = spots.find((row) => row.id === parsed.layout)
     if (key === null || layoutSpot === undefined) return { ok: false, refusal: "dead" }
@@ -106,18 +102,13 @@ export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown
     floor ??= index.slides.find((row) => row.id === layout)?.layout
     if (floor === undefined) return { ok: false, refusal: "dead" }
     edit = { slide: "add", id, after: parsed.after, key, layout: parsed.layout, floor: floorFor(floor, id) }
-  } else if ("after" in parsed) {
+  } else if (parsed.op === "move_slide") {
     const remaining = spots.filter((row) => row.id !== parsed.slide)
-    const after = readSlideId(parsed.after)
     const key =
-      parsed.after === null
-        ? orderKeyBetween(null, remaining[0]?.key ?? null)
-        : after === undefined
-          ? null
-          : orderKeyAfter(remaining, after)
+      parsed.after === null ? orderKeyBetween(null, remaining[0]?.key ?? null) : orderKeyAfter(remaining, parsed.after)
     if (key === null) return { ok: false, refusal: "dead" }
     edit = { slide: "move", id: parsed.slide, key }
-  } else if (op === "delete_slide") {
+  } else if (parsed.op === "delete_slide") {
     edit = { slide: "remove", id: parsed.slide }
   } else {
     const key = orderKeyAfter(spots, parsed.slide)
@@ -138,7 +129,7 @@ export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown
       floor: floorFor([...floor, ownFloor(register, parsed.slide)], id),
     }
   }
-  const result = decide(register, { command: "slide", file, edit: { ...edit, runId: caller.runId } })
+  const result = decide(register, { command: "slide", file, edit: { ...edit, runId } })
   if (result.decision === "refuse") return { ok: false, refusal: result.code }
-  return { ok: true, register: result.register, runId: caller.runId }
+  return { ok: true, register: result.register, runId }
 }

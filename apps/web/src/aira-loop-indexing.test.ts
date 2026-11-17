@@ -3,15 +3,20 @@ import { describe, expect, it } from "vitest"
 import { airaChat, askAira, type AiraChat } from "./aira-loop"
 
 const deck = "deck"
-const addSlide = projectTools(catalog).find((tool) => tool.op === "add_slide")?.name ?? ""
+const addSlide = projectTools(catalog).find((tool) => tool.op === "edit_deck")?.name ?? ""
 const usage = { used: 0.5, allowed: 2, resets: "2026-11-16T00:00:00.000Z" }
-const add = { type: "tool_use", id: "call_1", name: addSlide, input: { deck, base: 0, after: "256", layout: "256" } }
+const add = {
+  type: "tool_use",
+  id: "call_1",
+  name: addSlide,
+  input: { deck, base: 0, changes: [{ op: "add_slide", after: "256", layout: "256" }] },
+}
 const indexing = {
   isError: true,
   structuredContent: { ok: false, refusal: "indexing" },
   text: "The deck is still being indexed.",
 }
-const landed = { structuredContent: { ok: true, revision: 1, runId: "run-1", slide: "257" } }
+const landed = { structuredContent: { ok: true, revision: 1, runId: "run-1", slides: ["257"] } }
 const stale = { isError: true, structuredContent: { ok: false, refusal: "stale" }, text: "Changed." }
 
 function lines(content: readonly unknown[]) {

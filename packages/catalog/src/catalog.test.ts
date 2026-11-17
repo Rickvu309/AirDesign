@@ -8,34 +8,17 @@ describe("run operations in the catalog", () => {
     expect(catalog.undo_run).toEqual({ kind: "command", exposure: "web" })
     expect(catalog.list_decks).toMatchObject({ kind: "query", exposure: "agent", runsOn: "server" })
     expect(catalog.read_deck).toMatchObject({ kind: "query", exposure: "agent", runsOn: "server" })
-    expect(projectTools(catalog).map((tool) => tool.op)).toEqual([
-      "add_slide",
-      "add_text_box",
-      "delete_element",
-      "delete_slide",
-      "duplicate_slide",
-      "edit_deck",
-      "list_decks",
-      "move_slide",
-      "read_deck",
-      "stop_run",
-    ])
+    expect(projectTools(catalog).map((tool) => tool.op)).toEqual(["edit_deck", "list_decks", "read_deck", "stop_run"])
   })
 })
 
 describe("projectTools", () => {
   it("projects the agent tools in name order", () => {
     const tools = projectTools(catalog)
-    expect(tools).toHaveLength(10)
+    expect(tools).toHaveLength(4)
     expect(tools.map((tool) => tool.name)).toEqual([
-      "airdesign_add_slide",
-      "airdesign_add_text_box",
-      "airdesign_delete_element",
-      "airdesign_delete_slide",
-      "airdesign_duplicate_slide",
       "airdesign_edit_deck",
       "airdesign_list_decks",
-      "airdesign_move_slide",
       "airdesign_read_deck",
       "airdesign_stop_run",
     ])
@@ -49,7 +32,7 @@ describe("projectTools", () => {
       name: "airdesign_edit_deck",
       op: "edit_deck",
       description:
-        "Change one deck. Read it first with airdesign_read_deck and send that revision as base and each element's version as readAt; a change with op needs no readAt. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
+        "Change one deck: text, boxes, looks, elements and slides, all landing or none. Read it first with airdesign_read_deck and send that revision as base and each element's version as readAt; a change with op needs no readAt. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
       runsOn: "server",
       readOnlyHint: false,
       destructiveHint: true,
@@ -106,24 +89,10 @@ describe("projectTools", () => {
   })
 })
 
-describe("element tools", () => {
-  it("reads a text box with an optional box and text, and a delete with an element id", () => {
-    const add = catalog.add_text_box.read
-    const base = { deck: "d", base: 3, slide: "258" }
-    expect(add(base).ok).toBe(true)
-    expect(add({ ...base, text: "Hello", box: { x: 0, y: 0, cx: 10, cy: 10 } }).ok).toBe(true)
-    expect(add({ ...base, box: { x: 0, y: 0, cx: 0, cy: 10 } }).ok).toBe(false)
-    expect(add({ ...base, box: { x: 0, y: 0, cx: 10 } }).ok).toBe(false)
-    expect(add({ ...base, slide: "x" }).ok).toBe(false)
-    expect(add({ ...base, more: 1 }).ok).toBe(false)
-    const remove = catalog.delete_element.read
-    expect(remove({ deck: "d", base: 3, node: "258.7" }).ok).toBe(true)
-    expect(remove({ deck: "d", base: 3, node: "258" }).ok).toBe(false)
-  })
-
-  it("states the units and the free area in the schema", () => {
-    const schema = JSON.stringify(toolInputSchema("add_text_box"))
-    expect(schema).toContain("914400 EMU")
-    expect(schema).toContain("largest free area")
-  })
+it("reads element changes through edit_deck", () => {
+  const read = catalog.edit_deck.read
+  const base = { deck: "d", base: 3 }
+  expect(read({ ...base, changes: [{ op: "add", kind: "shape", slide: "258" }] }).ok).toBe(true)
+  expect(read({ ...base, changes: [{ op: "delete", node: "258.7" }] }).ok).toBe(true)
+  expect(read({ ...base, changes: [{ op: "delete", node: "258" }] }).ok).toBe(false)
 })

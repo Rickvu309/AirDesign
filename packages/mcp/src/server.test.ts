@@ -85,7 +85,7 @@ async function withClient(session: Session, use: (client: Client) => Promise<voi
 }
 
 describe("createServer", () => {
-  it("tells the agent what each kind of element takes", async () => {
+  it("describes each element kind", async () => {
     await withClient(sessionFor(opened()), async (client) => {
       const instructions = client.getInstructions() ?? ""
       expect(instructions).toContain('"op": "set"')
@@ -112,7 +112,7 @@ describe("createServer", () => {
     expect(createServer(session)).not.toBe(createServer(session))
   })
 
-  it("advertises the projected tools inside the budget", async () => {
+  it("lists tools within budget", async () => {
     const projected = projectTools(catalog)
     await withClient(sessionFor(opened()), async (client) => {
       expect(client.getServerVersion()?.name).toBe("airdesign")
@@ -144,6 +144,8 @@ describe("createServer", () => {
         ["op", "kind", "slide"],
         ["op", "elements"],
         ["op", "slide", "labels"],
+        ["op"],
+        ["op", "node"],
       ])
       const advertised = tools.map((tool) => ({
         name: tool.name,

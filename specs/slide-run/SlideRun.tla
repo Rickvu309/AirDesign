@@ -126,7 +126,7 @@ AgentLoadsTurn ==
 \* the base when it is the deck's revision, or when the deck's lastRun is the call's run and
 \* covers every revision after the base.
 \* A refused call ends and saves no turn.
-\* slideTool with no live turn joins a live run the turn row does not name (heldRun), or
+\* editDeck with slide changes and no live turn joins a live run the turn row does not name (heldRun), or
 \* else, on a fresh base, stops every live run. Both need a running element with no live
 \* turn, which NoTurnWhileRunning says this model never holds.
 RFenced == ended \/ element = "stopped"

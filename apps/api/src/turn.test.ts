@@ -37,7 +37,7 @@ type Stored = {
 type Reply = {
   readonly ok: boolean
   readonly runId?: string
-  readonly slide?: string
+  readonly slides?: readonly string[]
   readonly refusal?: string
 }
 type Seen = { readonly outcome: string; readonly landedOn: string; readonly runId?: string; readonly slide?: string }
@@ -270,17 +270,27 @@ describe("a person closes an element for the rest of a turn", () => {
         const base = stored?.revision ?? 0
         const inputs = {
           add_slide: { after: "258", layout: "258" },
-          add_text_box: { slide: "258", box: { x: 0, y: 0, cx: 100, cy: 100 } },
+          add_text_box: { slide: "258", box: { x: 0, y: 0, w: 1, h: 1 } },
           delete_element: { node: spare[deleted++] },
         }
-        const answer = await called(`airdesign_${tool}`, { deck: id, base, ...inputs[tool] })
+        const answer = await called("airdesign_edit_deck", {
+          deck: id,
+          base,
+          changes: [
+            {
+              op: tool === "add_text_box" ? "add" : tool === "delete_element" ? "delete" : tool,
+              ...(tool === "add_text_box" ? { kind: "shape" } : {}),
+              ...inputs[tool],
+            },
+          ],
+        })
         if (!answer.ok) return { outcome: answer.refusal ?? "none", landedOn: "none" }
         runId = answer.runId ?? ""
         return {
           outcome: "landed",
           landedOn: "none",
           runId,
-          ...(answer.slide === undefined ? {} : { slide: answer.slide }),
+          ...(answer.slides?.[0] === undefined ? {} : { slide: answer.slides[0] }),
         }
       }
       const name = step.element ?? "x"

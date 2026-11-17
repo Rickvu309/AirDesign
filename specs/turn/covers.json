@@ -11,7 +11,7 @@
       "file": "packages/engine/src/agent-slides.ts",
       "names": ["runFenced"],
       "digest": "d3359390b599",
-      "blob": "e710e807ea98451f201b2f2b2c7d5d295faacfc8"
+      "blob": "17f5e668a494f208ace1ba1bfa50a4910ae2703a"
     },
     {
       "file": "packages/mcp/src/run.ts",
@@ -20,16 +20,10 @@
       "blob": "b8ba8cce8637137691707b645117529f4ca7f41b"
     },
     {
-      "file": "packages/mcp/src/slide-tool.ts",
-      "names": ["slideTool"],
-      "digest": "eaa6365748f8",
-      "blob": "94ba467e549a139f70a0a9a49a6037aaf5292efa"
-    },
-    {
-      "file": "packages/mcp/src/element-tool.ts",
-      "names": ["elementTool"],
-      "digest": "f9394798125f",
-      "blob": "199dcded529b16b668498cda9e8cc316fff41911"
+      "file": "packages/mcp/src/edit-tool.ts",
+      "names": ["editDeck", "addTurn"],
+      "digest": "36133ac79f7a",
+      "blob": "606b8fac78ce49fb1b08c1a8b778172353b4f015"
     },
     {
       "file": "apps/api/src/agent-turn.ts",

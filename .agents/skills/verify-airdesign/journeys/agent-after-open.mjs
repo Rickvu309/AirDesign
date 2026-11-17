@@ -46,20 +46,24 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   aira([{ name: "add-slide.sse", fill: { deck, base: "0" } }, { name: "edited.sse" }])
   await composer.fill("Add a slide")
   await composer.press("Enter")
-  await expect(log.getByText("Adding a slide")).toBeVisible()
-  const outside = await tool("airdesign_add_slide", { deck, base: 0, after: "256", layout: "256" })
+  await expect(log.getByText("Editing slides")).toBeVisible()
+  const outside = await tool("airdesign_edit_deck", {
+    deck,
+    base: 0,
+    changes: [{ op: "add_slide", after: "256", layout: "256" }],
+  })
   expect(outside).toMatchObject({ ok: false, refusal: "indexing" })
   await page.waitForTimeout(2500)
-  await expect(log.getByText("Adding a slide")).toBeVisible()
-  await expect(log.getByText("Couldn't add a slide")).toHaveCount(0)
+  await expect(log.getByText("Editing slides")).toBeVisible()
+  await expect(log.getByText("Couldn't edit slides")).toHaveCount(0)
   await capture("adding-while-indexing")
   release()
-  await expect(log.getByText("Added a slide")).toBeVisible({ timeout: 30_000 })
+  await expect(log.getByText("Edited slides")).toBeVisible({ timeout: 30_000 })
   await expect(entries).toHaveCount(2, { timeout: 30_000 })
   await page.unroute(indexing)
   await capture("added-after-indexing")
   note(
-    "with the deck's index held, an outside add_slide was refused indexing and Aira's step stayed Adding a slide; once the index landed it read Added a slide and the deck had two slides",
+    "with the deck's index held, an outside add_slide was refused indexing and Aira's step stayed Editing slides; once the index landed it read Edited slides and the deck had two slides",
   )
 
   const read = await tool("airdesign_read_deck", { deck })
@@ -82,7 +86,11 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await expect(slide.getByText("Parallel 1")).toBeVisible()
   await expect(slide.getByText("Parallel 2")).toBeVisible()
   const pair = await Promise.all([
-    tool("airdesign_add_slide", { deck, base: read.revision + 2, after: first, layout: first }),
+    tool("airdesign_edit_deck", {
+      deck,
+      base: read.revision + 2,
+      changes: [{ op: "add_slide", after: first, layout: first }],
+    }),
     tool("airdesign_edit_deck", {
       deck,
       base: read.revision + 2,

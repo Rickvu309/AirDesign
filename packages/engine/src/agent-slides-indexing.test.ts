@@ -1,7 +1,8 @@
+import { changeCall } from "./call-fixtures.js"
 import { readDeckId } from "@airdesign/catalog"
 import { elementId, writeTextValue } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { call, indexDeck, openDeck } from "./index.js"
+import { indexDeck, openDeck } from "./index.js"
 
 const actor = { actor: "agent", runId: "run" } as const
 const inputs = [
@@ -53,7 +54,7 @@ function withPages(...pages: ReturnType<typeof page>[]) {
 
 for (const [op, input] of inputs) {
   it(`refuses ${op} as indexing while the deck has no index`, () => {
-    expect(call(op, openDeck(deckId()), actor, { deck: "deck", base: 0, ...input })).toEqual({
+    expect(changeCall(op, openDeck(deckId()), actor, { deck: "deck", base: 0, ...input })).toEqual({
       ok: false,
       refusal: "indexing",
     })
@@ -61,11 +62,11 @@ for (const [op, input] of inputs) {
 
   it(`refuses ${op} as indexing while the last index page has not arrived`, () => {
     const deck = withPages(page(0, 2, [title("256.2")]))
-    expect(call(op, deck, actor, { deck: "deck", base: 0, ...input })).toEqual({ ok: false, refusal: "indexing" })
+    expect(changeCall(op, deck, actor, { deck: "deck", base: 0, ...input })).toEqual({ ok: false, refusal: "indexing" })
   })
 
   it(`runs ${op} once the last index page has arrived`, () => {
     const deck = withPages(page(0, 2, [title("256.2")]), page(1, 2, [title("257.2")]))
-    expect(call(op, deck, actor, { deck: "deck", base: 0, ...input }).ok).toBe(true)
+    expect(changeCall(op, deck, actor, { deck: "deck", base: 0, ...input }).ok).toBe(true)
   })
 }
