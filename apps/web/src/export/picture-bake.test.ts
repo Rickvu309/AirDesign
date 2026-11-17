@@ -4,6 +4,7 @@ import { bakePixels, bakeTouchedPictures, type BakeBox } from "./picture-bake"
 import type { PictureImage } from "@/picture-fill"
 
 const box: BakeBox = { width: 4_572_000, height: 3_048_000 }
+const halfBlack = "00000080"
 
 function image(extra: Partial<PictureImage> = {}): PictureImage {
   return {
@@ -33,7 +34,7 @@ it("sizes a baked picture from the frame, then the source, and caps the long sid
     height: 1,
   })
   expect(blurred.blur).toBe(40)
-  expect(blurred.overlay).toBe("#00000080")
+  expect(blurred.overlay).toBe(`#${halfBlack}`)
   expect(blurred.alpha).toBe(0.6)
   const capped = bakePixels(image(), { width: 914_400, height: 914_400 }, { width: 10_000, height: 10_000 })
   expect(capped.width).toBe(4096)

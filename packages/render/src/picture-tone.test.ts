@@ -5,6 +5,7 @@ import { paintStore, SlideCanvas, type CanvasElement } from "./index.js"
 
 const dark = "336699"
 const light = "FFFFFF"
+const halfBlack = "00000080"
 
 const box = { x: 20, y: 10, width: 100, height: 50, rotation: 0, flipH: false, flipV: false }
 
@@ -57,7 +58,7 @@ describe("picture tone", () => {
   })
 
   it("keeps a blur and an overlay off the frame so the border stays sharp", async () => {
-    const host = await painted(picture({ picture: { blur: 20, overlay: "#00000080", grayscale: true } }))
+    const host = await painted(picture({ picture: { blur: 20, overlay: `#${halfBlack}`, grayscale: true } }))
     const style = host?.getAttribute("style") ?? ""
     expect(style).toContain("overflow: hidden")
     expect(style).not.toContain("grayscale")
