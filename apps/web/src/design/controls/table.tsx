@@ -45,7 +45,7 @@ function CellPick({
     <button
       type="button"
       className={cn(
-        "h-8 min-w-0 truncate rounded-[var(--shape-control)] bg-white px-2 text-[length:var(--type-dense)] text-foreground shadow-[0px_0px_0px_1px_var(--field-edge)]",
+        "h-[var(--control-dense)] min-w-0 truncate rounded-[var(--shape-control)] bg-white px-2 text-[length:var(--type-caption)] text-foreground shadow-[0px_0px_0px_1px_var(--field-edge)]",
         picked && "shadow-[0_0_0_2px_var(--ring)]",
       )}
       aria-label={designCopy.cell(at.row + 1, at.column + 1)}

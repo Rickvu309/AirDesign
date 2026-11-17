@@ -20,7 +20,7 @@ export function ListControl({ control, palette, onChange, inner }: ControlProps)
         {items.map((item, at) => (
           <li
             key={at}
-            className="flex flex-col gap-2 rounded-lg bg-white p-2 shadow-[0px_0px_0px_1px_var(--field-edge)]"
+            className="flex flex-col gap-2 rounded-[var(--shape-control)] bg-white p-2 shadow-[0px_0px_0px_1px_var(--field-edge)]"
           >
             <div className="flex min-h-6 items-center justify-between gap-2">
               <span className="text-[length:var(--type-caption)] font-medium text-foreground">

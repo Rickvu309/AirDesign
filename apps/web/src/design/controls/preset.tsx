@@ -32,7 +32,7 @@ export function PresetControl({ control, onChange }: ControlProps) {
               variant="ghost"
               aria-labelledby={`${label} ${shown}`}
               className={cn(
-                "h-8 w-full justify-start gap-2 rounded-lg bg-white px-2 text-[length:var(--type-dense)] font-normal shadow-[0px_0px_0px_1px_var(--field-edge)] hover:bg-white active:translate-y-0",
+                "h-[var(--control-dense)] w-full justify-start gap-2 rounded-[var(--shape-control)] bg-white px-2 text-[length:var(--type-caption)] font-normal shadow-[0px_0px_0px_1px_var(--field-edge)] hover:bg-white active:translate-y-0",
                 control.inherited ? "text-quiet" : "text-foreground",
               )}
             />

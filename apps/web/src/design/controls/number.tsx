@@ -87,7 +87,7 @@ export function NumberField({
 
   return (
     <label
-      className="flex h-8 min-w-0 items-center gap-0.5 rounded-[var(--shape-control)] bg-muted px-2.5"
+      className="flex h-[var(--control-dense)] min-w-0 items-center gap-0.5 rounded-[var(--shape-control)] bg-muted px-2"
       title={control.label}
       data-control={kind}
       data-inherited={control.inherited ? "" : undefined}
@@ -104,7 +104,7 @@ export function NumberField({
         onPointerCancel={endScrub}
       >
         {Icon ? (
-          <Icon size={16} strokeWidth={1.5} aria-hidden />
+          <Icon size={14} strokeWidth={1.5} aria-hidden />
         ) : look.name.show === "letter" ? (
           look.name.letter
         ) : look.name.show === "inside" ? (
@@ -114,7 +114,7 @@ export function NumberField({
       <input
         ref={field}
         className={cn(
-          "min-w-[3ch] flex-1 bg-transparent text-right text-[length:var(--type-dense)] tabular-nums outline-none placeholder:text-quiet",
+          "min-w-[3ch] flex-1 bg-transparent text-right text-[length:var(--type-caption)] tabular-nums outline-none placeholder:text-quiet",
           control.inherited && draft === null ? "text-quiet" : "text-foreground",
         )}
         inputMode="decimal"

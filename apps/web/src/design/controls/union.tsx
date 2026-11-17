@@ -63,8 +63,10 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
         role="group"
         aria-labelledby={label}
         className={cn(
-          "rounded-lg bg-line p-0.5",
-          Object.keys(cases).length > rowCases ? "grid grid-cols-3 gap-0.5" : "flex h-8 items-center",
+          "rounded-[var(--shape-control)] bg-line p-0.5",
+          Object.keys(cases).length > rowCases
+            ? "grid grid-cols-3 gap-0.5"
+            : "flex h-[var(--control-dense)] items-center",
         )}
       >
         {Object.keys(cases).map((name) => {
@@ -80,7 +82,7 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
               title={Icon === undefined ? undefined : word}
               onClick={() => pick(name)}
               className={cn(
-                "h-7 min-w-0 flex-1 rounded-[var(--shape-control)] px-1 text-xs font-normal active:translate-y-0",
+                "h-5 min-w-0 flex-1 rounded-[4px] px-1 text-xs font-normal active:translate-y-0",
                 pressed
                   ? cn(
                       "bg-white font-medium shadow-[0px_1px_2px_var(--black-10)] hover:bg-white",
@@ -93,7 +95,7 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
                 word
               ) : (
                 <>
-                  <Icon size={16} strokeWidth={1.5} aria-hidden />
+                  <Icon size={14} strokeWidth={1.5} aria-hidden />
                   <span className="sr-only">{word}</span>
                 </>
               )}

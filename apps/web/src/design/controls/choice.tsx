@@ -22,7 +22,7 @@ function ChoiceList({
       <SelectTrigger
         aria-labelledby={label}
         className={cn(
-          "h-8 w-full rounded-lg border-0 bg-white text-[length:var(--type-dense)] shadow-[0px_0px_0px_1px_var(--field-edge)]",
+          "h-[var(--control-dense)] w-full rounded-[var(--shape-control)] border-0 bg-white text-[length:var(--type-caption)] shadow-[0px_0px_0px_1px_var(--field-edge)]",
           control.inherited ? "text-quiet" : null,
         )}
       >
@@ -58,7 +58,11 @@ export function ChoiceControl(props: ControlProps) {
       {layout === "list" ? (
         <ChoiceList {...props} label={label} options={options} />
       ) : (
-        <div role="group" aria-labelledby={label} className="flex h-8 items-center rounded-lg bg-line p-0.5">
+        <div
+          role="group"
+          aria-labelledby={label}
+          className="flex h-[var(--control-dense)] items-center rounded-[var(--shape-control)] bg-line p-0.5"
+        >
           {options.map((option) => {
             const Icon = look.options[option]
             const word = optionWord(control.field, option)
@@ -75,7 +79,7 @@ export function ChoiceControl(props: ControlProps) {
                   if (!chosen) onChange(option)
                 }}
                 className={cn(
-                  "h-7 flex-1 rounded-[var(--shape-control)] text-xs font-normal active:translate-y-0",
+                  "h-5 min-w-0 flex-1 rounded-[4px] px-0 text-xs font-normal active:translate-y-0",
                   chosen
                     ? cn(
                         "bg-white font-medium shadow-[0px_1px_2px_var(--black-10)] hover:bg-white",
@@ -84,7 +88,7 @@ export function ChoiceControl(props: ControlProps) {
                     : "text-quiet hover:bg-transparent hover:text-foreground",
                 )}
               >
-                {Icon ? <Icon size={16} strokeWidth={1.5} aria-hidden /> : word}
+                {Icon ? <Icon size={14} strokeWidth={1.5} aria-hidden /> : word}
               </Button>
             )
           })}
