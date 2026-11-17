@@ -105,7 +105,11 @@ function act(held: Held, action: string, target: Spec) {
   if (action === "AgentWrite") return { answer: agentWrote(held.deck, nodes[on]), undoable: held.undoable }
   if (action !== "AgentDelete") throw new Error(`${action} is not connected`)
   const caller = { actor: "agent", runId: `delete-${held.deck.revision}` } as const
-  const answer = call("delete_element", held.deck, caller, { deck, base: held.deck.revision, node: nodes[on] })
+  const answer = call("edit_deck", held.deck, caller, {
+    deck,
+    base: held.deck.revision,
+    changes: [{ op: "delete", node: nodes[on] }],
+  })
   return { answer, undoable: held.undoable }
 }
 
