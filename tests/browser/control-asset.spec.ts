@@ -1,4 +1,4 @@
-import { pictureCopy } from "../../apps/web/src/copy/picture-copy"
+import { picturePanelCopy as pictureCopy } from "../../apps/web/src/copy/picture-panel-copy"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { openDeck, unfold } from "./design-panel"
 
