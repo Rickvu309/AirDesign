@@ -118,6 +118,8 @@ export const takeMachineLock = async ({
   poll = 500,
   clock = () => performance.now(),
   date = () => new Date(),
+  load = () => os.loadavg()[0],
+  cores = os.availableParallelism(),
 } = {}) => {
   const free = () => {}
   const first = path.join(folder, lanes[lane].file)
@@ -140,7 +142,8 @@ export const takeMachineLock = async ({
   let told
   for (;;) {
     const ahead = liveTickets(queue).indexOf(path.basename(ticket))
-    for (const slot of ahead < slots ? files : []) {
+    const open = ahead < slots ? files.filter((_, slot) => slot === 0 || load() < cores) : []
+    for (const slot of open) {
       holder = await hold(slot)
       if (holder) {
         file = slot

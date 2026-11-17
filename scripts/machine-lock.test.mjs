@@ -21,14 +21,14 @@ const within = (promise, what) => {
   return promise.finally(() => clearTimeout(timer))
 }
 
-const waiter = (job = "check", lane = "full", slots = 1) => {
+const waiter = (job = "check", lane = "full", slots = 1, load = 0) => {
   const child = spawn(
     process.execPath,
     [
       "--input-type=module",
       "-e",
       `import { takeMachineLock } from ${JSON.stringify(module)}
-       const release = await takeMachineLock({ folder: ${JSON.stringify(folder)}, env: { AIRDESIGN_CHECK_SLOTS: "${slots}" }, poll: 50, job: ${JSON.stringify(job)}, lane: ${JSON.stringify(lane)} })
+       const release = await takeMachineLock({ folder: ${JSON.stringify(folder)}, env: { AIRDESIGN_CHECK_SLOTS: "${slots}" }, poll: 50, load: () => ${load}, cores: 8, job: ${JSON.stringify(job)}, lane: ${JSON.stringify(lane)} })
        console.log("started")
        process.stdin.once("data", async (word) => {
          if (String(word).startsWith("go")) await release()
@@ -155,6 +155,18 @@ pairTwo.finish()
 pairThird.finish()
 await pairTwo.closed
 await pairThird.closed
+
+const busyOne = waiter("check", "full", 2, 100)
+await busyOne.until(started, "a busy machine kept the first slot from a check")
+const busyTwo = waiter("check", "full", 2, 100)
+await busyTwo.until(placed(1), "a check on a busy machine did not wait for its turn")
+await settle()
+if (started(busyTwo.seen)) fail("a second slot opened while the load was above the core count")
+busyOne.finish()
+await busyOne.closed
+await busyTwo.until(started, "a freed first slot did not start the next check on a busy machine")
+busyTwo.finish()
+await busyTwo.closed
 
 const leftover = [...fs.readdirSync(path.join(folder, "queue")), ...fs.readdirSync(path.join(folder, "small-queue"))]
 if (leftover.length !== 0) fail(`the queue kept tickets: ${leftover.join(", ")}`)
