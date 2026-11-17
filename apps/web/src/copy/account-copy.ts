@@ -1,4 +1,17 @@
 export const accountCopy = {
+  profile: "Profile",
+  name: "Name",
+  nameBody: "This is how you’ll appear in AirDesign.",
+  nameShown: "Shown in AirDesign.",
+  nameLater: "You can change this later in Settings.",
+  nameTitle: "What’s your name?",
+  nameSave: "Save name",
+  nameContinue: "Continue",
+  nameSaving: "Saving…",
+  nameSaved: "Name saved",
+  nameInvalid: "Enter a name.",
+  nameFailed: "Unable to save your name. Check your connection and try again.",
+
   deleteRowBody: "Deletes your decks, Trash and connected agents for good.",
   deleteTitle: "Delete your account?",
   deleteBody: "Your decks, Trash and connected agents are deleted for good. This can't be undone.",

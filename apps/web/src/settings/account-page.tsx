@@ -1,3 +1,5 @@
+import { useAccountProfile } from "@/settings/account-profile"
+import { NameForm } from "@/settings/name-form"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -17,6 +19,7 @@ export function AccountPage({
   navigate: (path: string) => void
   load?: () => Promise<AccountLoad>
 }) {
+  const profile = useAccountProfile()
   const [loaded, setLoaded] = useState<AccountLoad | null>(null)
   const [deleting, setDeleting] = useState(false)
 
@@ -40,6 +43,17 @@ export function AccountPage({
       onSignOut={() => void signOut()}
       overlay={deleting ? <DeleteAccountDialog email={email} onCancel={() => setDeleting(false)} /> : undefined}
     >
+      <Card title={accountCopy.profile}>
+        {loaded?.kind === "account" && (
+          <NameForm
+            name={loaded.name ?? ""}
+            onSave={(name) => {
+              setLoaded((current) => (current?.kind === "account" ? { ...current, name } : current))
+              profile?.save(name)
+            }}
+          />
+        )}
+      </Card>
       {loaded?.kind === "unavailable" ? (
         <Card title={settingsCopy.account}>
           <div role="alert" className="flex items-center justify-between gap-4">

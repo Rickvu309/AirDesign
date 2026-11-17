@@ -9,6 +9,7 @@ export {
   type ToolCall,
 } from "./aira-turn.js"
 export { catalog, projectTools, toolInputSchema, type AgentOp, type CommandOp } from "./catalog.js"
+export { readAccountName, accountNameLimit } from "./account-name.js"
 export { deckName, readDeckName } from "./deck-name.js"
 export { agentNumberOf, designOf, foldDesign, readAgent, shownDesign } from "./agent-form.js"
 export { themedDesign } from "./theme-font.js"

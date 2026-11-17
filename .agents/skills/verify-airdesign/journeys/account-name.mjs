@@ -1,0 +1,40 @@
+import { accountCopy } from "../bin/product-copy.mjs"
+import { expect } from "@playwright/test"
+
+export default async function drive(kit) {
+  const { page, capture, post, accountRoutes, note } = kit
+  const { cookie } = await kit.signIn()
+  await page.goto("/settings/account")
+  await expect(page.getByLabel(accountCopy.name, { exact: true })).toHaveValue("Verify")
+  await capture("account-name-before")
+  await page.getByLabel(accountCopy.name, { exact: true }).fill("  Nguyễn Quân  ")
+  await page.getByRole("button", { name: accountCopy.nameSave, exact: true }).click()
+  await expect(page.getByRole("status")).toHaveText(accountCopy.nameSaved)
+  await expect(page.locator("[data-account-name]")).toHaveText("Nguyễn Quân")
+  const saved = await post(accountRoutes.profile, {}, cookie)
+  expect(saved.json.account.name).toBe("Nguyễn Quân")
+  await capture("account-name-saved")
+  await page.reload()
+  await expect(page.getByLabel(accountCopy.name, { exact: true })).toHaveValue("Nguyễn Quân")
+  await page.goto("/")
+  await expect(page.locator("[data-account-name]")).toHaveText("Nguyễn Quân")
+  await capture("account-name-home")
+  await page.goto("/settings/account")
+  await page.route(`**${accountRoutes.name.path}`, (route) =>
+    route.fulfill({ status: 503, contentType: "application/json", body: "{}" }),
+  )
+  await page.getByLabel(accountCopy.name, { exact: true }).fill("Another name")
+  await page.getByRole("button", { name: accountCopy.nameSave, exact: true }).click()
+  await expect(page.getByRole("alert")).toHaveText(accountCopy.nameFailed)
+  await expect(page.locator("[data-account-name]")).toHaveText("Nguyễn Quân")
+  await capture("account-name-failed")
+  await page.unroute(`**${accountRoutes.name.path}`)
+  await page.getByLabel(accountCopy.name, { exact: true }).fill("林")
+  await page.getByRole("button", { name: accountCopy.nameSave, exact: true }).click()
+  await expect(page.locator("[data-account-name]")).toHaveText("林")
+  await page.setViewportSize({ width: 390, height: 844 })
+  await capture("account-name-phone")
+  note(
+    "Saved a trimmed Unicode name, read it back from the server, reloaded, and saw it on Home. A failed save kept the saved name. One-character names work at phone width.",
+  )
+}

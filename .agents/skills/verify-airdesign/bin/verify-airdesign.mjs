@@ -191,7 +191,7 @@ export function mailsIn(text) {
 }
 
 async function signIn(state, email = `verify${randomBytes(4).toString("hex")}@example.com`) {
-  const { signInRoutes } = await catalog(state)
+  const { signInRoutes, accountRoutes } = await catalog(state)
   const asked = await call(state.origin, signInRoutes.email.method, signInRoutes.email.path, { email })
   if (asked.status !== 202) throw new Error(`sign-in email answered ${String(asked.status)}`)
   const mails = mailsIn(readFileSync(state.mail, "utf8"))
@@ -200,6 +200,14 @@ async function signIn(state, email = `verify${randomBytes(4).toString("hex")}@ex
   const signed = await call(state.origin, signInRoutes.code.method, signInRoutes.code.path, { email, code })
   if (signed.status !== 200 || signed.cookie === undefined)
     throw new Error(`sign-in code answered ${String(signed.status)}`)
+  const profile =
+    accountRoutes.profile === undefined
+      ? undefined
+      : await call(state.origin, "POST", accountRoutes.profile.path, {}, signed.cookie)
+  if (profile?.status === 200 && profile.json.account.name === null) {
+    const named = await call(state.origin, "POST", accountRoutes.name.path, { name: "Verify" }, signed.cookie)
+    if (named.status !== 200) throw new Error(`name answered ${String(named.status)}`)
+  }
   return { email, cookie: signed.cookie, cookies: signed.cookies }
 }
 

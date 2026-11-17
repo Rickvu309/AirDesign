@@ -6,6 +6,7 @@ import { productCopy } from "../../apps/web/src/copy/product-copy"
 test.use({ reducedMotion: "reduce" })
 
 async function mockApp(page: Page, email = "person@example.com") {
+  await page.route("**/account/profile", (route) => route.fulfill({ json: { ok: true, account: { email, name: "" } } }))
   await page.route("**/decks/list", (route) =>
     route.fulfill({
       json: { ok: true, account: { email }, decks: [], trash: [] },

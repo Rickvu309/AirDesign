@@ -68,6 +68,7 @@ for (const name of [
   "slide-commands",
   "person-undo",
   "usage-page",
+  "account-name",
   "sign-in-mail",
   "sign-in-pages",
   "landing-pages",

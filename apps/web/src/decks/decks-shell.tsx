@@ -1,3 +1,4 @@
+import { useAccountProfile } from "@/settings/account-profile"
 import { useId, useState, type ReactNode } from "react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
@@ -52,19 +53,20 @@ function StarredRow({ name }: { name: string }) {
 const accountButton = "flex h-8 max-w-full items-center gap-2 rounded-md px-2 text-left hover:bg-black/4"
 
 function AccountFace({ account: realAccount }: { account?: { email: string } }) {
+  const profile = useAccountProfile()
   const name =
     realAccount === undefined
       ? account.name
       : realAccount.email === ""
         ? settingsCopy.account
-        : accountName(realAccount.email)
+        : profile?.name || accountName(realAccount.email)
   return (
     <>
       <span
         data-sidebar-icon
         className="flex size-5 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] leading-none font-semibold text-white"
       >
-        {realAccount === undefined ? account.initials : name.charAt(0).toUpperCase()}
+        {realAccount === undefined ? account.initials : [...name][0]?.toUpperCase()}
       </span>
       <span
         data-account-name
@@ -102,6 +104,7 @@ export function DecksShell({
   search?: { value: string; onChange: (value: string) => void }
   starred?: readonly { readonly deck: string; readonly name: string }[]
 }) {
+  const profile = useAccountProfile()
   const [deletingAccount, setDeletingAccount] = useState(false)
   const starredLabel = useId()
   const empty = realAccount ? starred?.length === 0 : firstVisit
@@ -129,7 +132,9 @@ export function DecksShell({
                 type="button"
                 className={accountButton}
                 aria-label={
-                  realAccount.email === "" ? undefined : `${accountName(realAccount.email)}, ${realAccount.email}`
+                  realAccount.email === ""
+                    ? undefined
+                    : `${profile?.name || accountName(realAccount.email)}, ${realAccount.email}`
                 }
               >
                 <AccountFace account={realAccount} />
