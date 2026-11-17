@@ -431,7 +431,7 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
       const paragraph = paragraphs.get(from)
       const bullet = paragraph?.bullet
       return bullet != null && "autoNumber" in bullet
-        ? { level: paragraph?.level ?? 0, scheme: bullet.autoNumber, start: bullet.start ?? 1 }
+        ? { level: paragraph?.level ?? 0, scheme: bullet.autoNumber, start: bullet.start ?? bullet.number }
         : null
     },
     swatches: () => colors,

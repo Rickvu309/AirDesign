@@ -49,7 +49,7 @@ function runStyle(run: PaintRunStyle, scale: number): CanvasRunStyle {
 function canvasParagraph(paragraph: PaintParagraph, scale: number, reduction: number): CanvasParagraph {
   return {
     from: paragraph.from,
-    level: paragraph.level,
+    ...(paragraph.level === 0 ? {} : { level: paragraph.level }),
     align: aligned[paragraph.align],
     marginLeft: paragraph.marginLeft,
     indent: paragraph.indent,
