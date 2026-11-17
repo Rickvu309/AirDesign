@@ -3,13 +3,17 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
-export const prePushHook = [
-  "#!/bin/sh",
-  'script="$(git rev-parse --show-toplevel)/scripts/pre-push.mjs"',
-  '[ -f "$script" ] || exit 0',
-  'exec node "$script" "$@"',
-  "",
-].join("\n")
+const hookFor = (name) =>
+  [
+    "#!/bin/sh",
+    `script="$(git rev-parse --show-toplevel)/scripts/${name}.mjs"`,
+    '[ -f "$script" ] || exit 0',
+    'exec node "$script" "$@"',
+    "",
+  ].join("\n")
+
+export const prePushHook = hookFor("pre-push")
+export const preCommitHook = hookFor("pre-commit")
 
 export const installHooks = (root) => {
   const common = path.resolve(
@@ -18,8 +22,14 @@ export const installHooks = (root) => {
   )
   const hook = path.join(common, "hooks", "pre-push")
   fs.mkdirSync(path.dirname(hook), { recursive: true })
-  fs.writeFileSync(hook, prePushHook, { mode: 0o755 })
-  fs.chmodSync(hook, 0o755)
+  for (const [name, content] of [
+    ["pre-push", prePushHook],
+    ["pre-commit", preCommitHook],
+  ]) {
+    const target = path.join(common, "hooks", name)
+    fs.writeFileSync(target, content, { mode: 0o755 })
+    fs.chmodSync(target, 0o755)
+  }
   return hook
 }
 
