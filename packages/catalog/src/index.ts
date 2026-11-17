@@ -95,3 +95,11 @@ export {
 export { fontRoutes } from "@airdesign/fonts"
 
 export { authorableTrait, authorableValue, authorableSlide } from "./authoring.js"
+export {
+  creditsRoutes,
+  resetCents,
+  readCredits,
+  readCreditReset,
+  readAutoReset,
+  type Credits,
+} from "./credits-routes.js"

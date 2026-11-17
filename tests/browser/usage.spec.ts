@@ -43,17 +43,11 @@ test("the usage ring shows before any ask, stays current, and See all opens the 
   await expect(page.getByText(usageUsedOf(100), { exact: true })).toBeVisible()
   await expect(page.getByRole("meter", { name: productCopy.usageTitle })).toHaveAttribute("aria-valuenow", "100")
   await expect(page.locator("[data-usage-fill]")).toHaveCSS("background-color", spentColor)
-  await expect(page.getByRole("heading", { name: usageCopy.runsOutTitle, exact: true })).toBeVisible()
-  for (const left of [
-    settingsCopy.credits,
-    settingsCopy.addCredits,
-    settingsCopy.autoReset,
-    settingsCopy.history,
-    settingsCopy.reset,
-  ]) {
-    await expect(page.getByText(left, { exact: true })).toHaveCount(0)
-  }
-  await expect(page.getByText(/\$/)).toHaveCount(0)
+  await expect(page.getByRole("heading", { name: settingsCopy.credits, exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: settingsCopy.addCredits, exact: true })).toBeDisabled()
+  await expect(page.getByRole("switch", { name: settingsCopy.autoReset })).not.toBeChecked()
+  await expect(page.getByRole("heading", { name: settingsCopy.history, exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: settingsCopy.reset, exact: true })).toBeDisabled()
 })
 
 test("the account menu opens Usage, and its tabs move between Usage and Agents", async ({ page }) => {
@@ -99,9 +93,10 @@ test("the Usage page says when it cannot load and tries again, and sends a signe
         }),
   )
   await page.goto("/settings/usage")
-  await expect(page.getByRole("alert")).toContainText(usageCopy.failed)
+  const usageAlert = page.getByRole("alert").filter({ hasText: usageCopy.failed })
+  await expect(usageAlert).toBeVisible()
   fail = false
-  await page.getByRole("button", { name: productCopy.payTryAgain, exact: true }).click()
+  await usageAlert.getByRole("button", { name: productCopy.payTryAgain, exact: true }).click()
   await expect(page.getByText(usageUsedOf(0), { exact: true })).toBeVisible()
   await page.unroute("**/aira/usage")
   await page.route("**/aira/usage", (route) => route.fulfill({ status: 401, json: { ok: false, refusal: "session" } }))

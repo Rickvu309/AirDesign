@@ -1,3 +1,4 @@
+import { creditsRoutes } from "./credits-routes.js"
 import { unreachable } from "@airdesign/device"
 import { foldRegister, refusals, type Register } from "@airdesign/document"
 import { readCommit } from "./edit-wire.js"
@@ -232,4 +233,6 @@ export const signOutPaths: readonly string[] = Object.values(signOutRoutes).map(
 export const accountPaths: readonly string[] = Object.values(accountRoutes).map((route) => route.path)
 export const deckPaths: readonly string[] = Object.values(deckRoutes).map((route) => route.path)
 export const oauthPaths: readonly string[] = Object.values(oauthRoutes).map((route) => route.path)
-export const airaPaths: readonly string[] = Object.values(airaRoutes).map((route) => route.path)
+export const airaPaths: readonly string[] = [...Object.values(airaRoutes), ...Object.values(creditsRoutes)].map(
+  (route) => route.path,
+)
