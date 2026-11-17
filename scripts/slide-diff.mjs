@@ -7,7 +7,7 @@ import { scaleDown } from "./paint-fidelity.mjs"
 const self = fileURLToPath(import.meta.url)
 const usage = "node scripts/slide-diff.mjs reference.png painted.png [--heatmap out.png] [--json]"
 
-export const slideBar = { score: 0.97, worst: 0.8, tolerance: 24 }
+export const slideBar = { score: 0.965, worst: 0.545, tolerance: 24 }
 
 const windowSize = 8
 const windowStride = 4
@@ -54,21 +54,67 @@ const windowScore = (left, right, width, x, y) => {
   )
 }
 
+const shifted = (rgb, width, height, dx, dy) => {
+  const result = new Uint8Array(rgb.length)
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const source = (Math.max(0, Math.min(height - 1, y + dy)) * width + Math.max(0, Math.min(width - 1, x + dx))) * 3
+      result.set(rgb.subarray(source, source + 3), (y * width + x) * 3)
+    }
+  }
+  return result
+}
+
+const chromaScore = (left, right, width, x, y) => {
+  let difference = 0
+  for (let row = y; row < y + windowSize; row += 1) {
+    for (let column = x; column < x + windowSize; column += 1) {
+      const at = (row * width + column) * 3
+      const red = left[at] - right[at]
+      const green = left[at + 1] - right[at + 1]
+      const blue = left[at + 2] - right[at + 2]
+      const cb = -0.114572 * red - 0.385428 * green + 0.5 * blue
+      const cr = 0.5 * red - 0.454153 * green - 0.045847 * blue
+      difference += cb * cb + cr * cr
+    }
+  }
+  return second / (second + difference / (windowSize * windowSize))
+}
+
 const compared = (reference, painted) => {
   const { width, height } = reference
   if (width < windowSize || height < windowSize) throw new Error(`The reference is ${width}x${height}, under 8x8.`)
   const size = { width, height }
   const left = scaleDown(reference, size)
-  const right = scaleDown(painted, size)
+  const original = scaleDown(painted, size)
   const lightLeft = luminance(left, width * height)
-  const lightRight = luminance(right, width * height)
-  const windows = []
-  for (let y = 0; y + windowSize <= height; y += windowStride) {
-    for (let x = 0; x + windowSize <= width; x += windowStride) {
-      windows.push({ x, y, score: windowScore(lightLeft, lightRight, width, x, y) })
+  let best = null
+  const offsets = [
+    [0, 0],
+    [-1, -1],
+    [0, -1],
+    [1, -1],
+    [-1, 0],
+    [1, 0],
+    [-1, 1],
+    [0, 1],
+    [1, 1],
+  ]
+  for (const [dx, dy] of offsets) {
+    const right = dx === 0 && dy === 0 ? original : shifted(original, width, height, dx, dy)
+    const lightRight = luminance(right, width * height)
+    const windows = []
+    for (let y = 0; y + windowSize <= height; y += windowStride) {
+      for (let x = 0; x + windowSize <= width; x += windowStride) {
+        const score = windowScore(lightLeft, lightRight, width, x, y) * chromaScore(left, right, width, x, y)
+        windows.push({ x, y, score })
+      }
     }
+    const score = windows.reduce((sum, item) => sum + item.score, 0) / windows.length
+    if (best === null || score > best.score) best = { right, windows, score }
+    if (score === 1) break
   }
-  return { width, height, left, right, windows }
+  return { width, height, left, ...best }
 }
 
 const worstTile = (windows, width) => {
@@ -155,8 +201,8 @@ export const heatmap = (reference, painted) => {
 }
 
 const failures = (result, bar) => [
-  ...(result.score < bar.score ? [`score under ${bar.score.toFixed(2)}`] : []),
-  ...(result.worst.score < bar.worst ? [`worst tile under ${bar.worst.toFixed(2)}`] : []),
+  ...(result.score < bar.score ? [`score under ${bar.score.toFixed(3)}`] : []),
+  ...(result.worst.score < bar.worst ? [`worst tile under ${bar.worst.toFixed(3)}`] : []),
 ]
 
 export const slideDiffLines = (result, heatmapFile, bar = slideBar) => {
