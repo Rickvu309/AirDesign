@@ -103,3 +103,15 @@ export const ImageFill = createLucideIcon("ImageFill", [
   ["circle", { cx: 17, cy: 7, r: 1.5, key: "sun" }],
   ["path", { d: "M5 16l5-5 6 6", key: "mountain" }],
 ])
+
+export const Opacity = createLucideIcon("Opacity", [
+  ["rect", { x: 3, y: 3, width: 18, height: 18, rx: 2, key: "edge" }],
+  [
+    "path",
+    {
+      d: "M16 7h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01",
+      strokeWidth: 1.5,
+      key: "dots",
+    },
+  ],
+])
