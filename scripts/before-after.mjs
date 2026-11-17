@@ -19,25 +19,38 @@ const section = (body) => {
   return lines.slice(start + 1, end === -1 ? undefined : end).join("\n")
 }
 
+export const noVisibleChange = (body) =>
+  (section(body) ?? "")
+    .split("\n")
+    .map((line) =>
+      line
+        .trim()
+        .match(/^No visible change: (.{12,})$/)?.[1]
+        .trim(),
+    )
+    .find((reason) => reason !== undefined)
+
 export const hasBeforeAfter = (body, repository) => {
   const text = section(body)
   if (text === undefined) return false
+  if (noVisibleChange(body) !== undefined) return true
   const place = repository.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
   return new RegExp(
-    `!\\[[^\\]]*\\]\\(https://github\\.com/${place}/releases/download/proof/[^)\\s]+\\.png\\)`,
+    `!\\[[^\\]]*\\]\\(https://github\\.com/${place}/releases/download/proof(?:-\\d+)?/[^)\\s]+\\.png\\)`,
     "i",
   ).test(text)
 }
 
 export const beforeAfterNeed = ({ changedFiles, body, repository }) => {
   const shown = [...new Set(changedFiles.filter(seen))]
-  return { shown, needed: shown.length > 0 && !hasBeforeAfter(body, repository) }
+  return { shown, needed: shown.length > 0 && !hasBeforeAfter(body, repository), unseen: noVisibleChange(body) }
 }
 
-export const beforeAfterLine = ({ shown, needed }) => {
+export const beforeAfterLine = ({ shown, needed, unseen }) => {
   if (shown.length === 0) return undefined
+  if (!needed && unseen !== undefined) return `Before / after: no visible change, says the body: ${unseen}`
   const named = `${shown.slice(0, 3).join(", ")}${shown.length > 3 ? ` and ${String(shown.length - 3)} more` : ""}`
   return needed
-    ? `Needs a Before / after section: this changes what a person sees (${named}). Run verify-airdesign before-after, open the image, publish it, and paste the fragment into the body.`
+    ? `Needs a Before / after section: this changes what a person sees (${named}). Run verify-airdesign before-after, open the image, publish it, and paste the fragment into the body, or write the one line "No visible change: <why>" under ## Before / after.`
     : `Has a Before / after section for what a person sees (${named}).`
 }

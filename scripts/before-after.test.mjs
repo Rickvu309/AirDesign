@@ -1,4 +1,4 @@
-import { beforeAfterLine, beforeAfterNeed, hasBeforeAfter, seen } from "./before-after.mjs"
+import { beforeAfterLine, beforeAfterNeed, hasBeforeAfter, noVisibleChange, seen } from "./before-after.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -92,6 +92,37 @@ same(
   beforeAfterLine({ shown: ["a.tsx", "b.tsx", "c.tsx", "d.tsx"], needed: true }).includes(
     "(a.tsx, b.tsx, c.tsx and 1 more)",
   ),
+  true,
+)
+
+for (const release of ["proof-2", "proof-13"])
+  same(
+    `an image from the rolled-over ${release} release passes`,
+    hasBeforeAfter(`## Before / after\n\n${image.replace("/proof/", `/${release}/`)}\n`, repository),
+    true,
+  )
+for (const release of ["proof-x", "proofs", "proof-"])
+  same(
+    `an image from another release does not pass: ${release}`,
+    hasBeforeAfter(`## Before / after\n\n${image.replace("/proof/", `/${release}/`)}\n`, repository),
+    false,
+  )
+
+const unseen = "## Before / after\n\nNo visible change: moves code between files; the editor paints the same.\n"
+same(
+  "a no-visible-change line is read from the section",
+  noVisibleChange(unseen),
+  "moves code between files; the editor paints the same.",
+)
+same("and counts as the section", beforeAfterNeed({ changedFiles: files, body: unseen, repository }).needed, false)
+same(
+  "and bar prints the reason, so the owner can audit the claim",
+  beforeAfterLine(beforeAfterNeed({ changedFiles: files, body: unseen, repository })),
+  "Before / after: no visible change, says the body: moves code between files; the editor paints the same.",
+)
+same(
+  "the line that asks for one names the no-visible-change way out",
+  beforeAfterLine({ shown: ["a.tsx"], needed: true }).includes("No visible change: <why>"),
   true,
 )
 

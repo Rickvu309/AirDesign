@@ -125,7 +125,7 @@ Working is not the same as looking right. For every change a person sees:
 2. Run `$V compare <run> <state>` to put the state beside its design screen under `/screens/`.
 3. Open `annotated.png`, `compare.png` and the crops, and read them. Then write two or three sentences on what you see, as a designer would: what draws the eye, what looks off, how it differs from the design.
 4. Fix every finding or explain it. A finding that is meant gets an entry in `look/allow.json` with a reason; a real fault you leave gets a `test.fail` in `tests/browser/design-states.spec.ts`. When you add a state a person can reach, add `look/states/<name>.mjs`, one file.
-5. Put the image paths, your sentences, and the finding counts before and after in the PR body.
+5. Publish the images with `$V publish <dir> --pr <number>`, which prints a `proof` release link for each PNG in the folder. Put those links, your sentences, and the finding counts before and after in the PR body. Never a local path: `pnpm land` and the `bar` check refuse a body that names one.
 
 `$V sheet <run>` does all states at once and writes a contact sheet a person can open.
 
@@ -133,7 +133,7 @@ Zero findings is not a design sign-off. The tool cannot judge taste, hierarchy, 
 
 ## Before / after in the PR
 
-Every PR that changes what a person sees gets a `## Before / after` section. The `bar` check labels a PR without one `needs-before-after`.
+Every PR that changes what a person sees gets a `## Before / after` section. When nothing looks different, the section holds one line instead, `No visible change: <why>`, and `bar` prints the reason for the owner. `pnpm land` stops, and the `bar` check fails and labels the PR `needs-before-after`, when the section has neither.
 
 1. Write a callouts file, one block per changed state from `$V states`:
 

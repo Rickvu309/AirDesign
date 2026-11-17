@@ -5,6 +5,7 @@ import { areasOf } from "./areas.mjs"
 import { beforeAfterLabel, beforeAfterLine, beforeAfterNeed, seen } from "./before-after.mjs"
 import { workingTree } from "./checked.mjs"
 import { ghApi, readWithRetry } from "./github-read.mjs"
+import { bodyFaults, githubOffBranch } from "./pr-body.mjs"
 import { baseFault } from "./pull-base.mjs"
 import { measuredLive } from "./metrics.mjs"
 import { titleVerdict } from "./title.mjs"
@@ -324,7 +325,21 @@ const readPull = (repository, number) => {
     changedFiles,
     title: pull.title,
     shown: beforeAfterNeed({ changedFiles, body: pull.body, repository }),
+    body: bodyFaults(pull.body, {
+      offBranch: githubOffBranch(githubCompare(repository, { head: pull.head, base: pull.baseRef })),
+      changedFiles,
+      repository,
+    }),
     wrongBase: baseFault(number, pull.baseRef),
+  }
+}
+
+const githubCompare = (repository, sides) => (sha, side) => {
+  try {
+    return github([`repos/${repository}/compare/${sha}...${sides[side]}?per_page=1`, "--jq", ".status"]).trim()
+  } catch (error) {
+    if (missing(error) || String(error.stderr ?? error.message).includes("HTTP 422")) return undefined
+    throw error
   }
 }
 
@@ -405,7 +420,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self && process.argv[2]
     const read = readPull(repository, number)
     const result = verdict(read)
     for (const line of result.lines) console.log(line)
-    if (beforeAfterLine(read.shown)) console.log(beforeAfterLine(read.shown))
+    if (beforeAfterLine(read.shown) && !read.shown.needed) console.log(beforeAfterLine(read.shown))
+    for (const fault of read.body) console.log(`Body: ${fault}`)
+    if (read.body.length > 0) process.exitCode = 1
     if (read.wrongBase !== undefined) {
       console.log(`Wrong base: ${read.wrongBase}`)
       process.exitCode = 1
