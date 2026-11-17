@@ -28,8 +28,8 @@
     {
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "landedBefore", "heldPatch"],
-      "digest": "a75a25ad34a4",
-      "blob": "b45581dd6d2ae36d633581e64e895d69175e3d35"
+      "digest": "a022f6949f23",
+      "blob": "69c3d06e6720473dc4fb39206e78509408430335"
     },
     {
       "file": "apps/web/src/design/rebase.ts",
@@ -40,8 +40,8 @@
     {
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
-      "digest": "d589aacdebf7",
-      "blob": "87c5a55524f4289d5dc3cfd313de631f2ffce73c"
+      "digest": "0c6ed6d60a84",
+      "blob": "2c3fbd5c092898067eab42c1236219d1c7ddd220"
     },
     {
       "file": "apps/web/src/design/shown-alpha.ts",
@@ -53,7 +53,7 @@
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["fieldsRead", "elementDesign"],
       "digest": "1e6aee631137",
-      "blob": "0b83c8c1c0a924deb5f93136e14f082185ae1a93"
+      "blob": "9841525bfd18a7b3800d7a752755627a4c6b9645"
     },
     {
       "file": "apps/web/src/undo-list.ts",
