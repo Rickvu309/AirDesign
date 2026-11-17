@@ -64,14 +64,18 @@ test("a person asks Aira, watches the reply stream, and sees the slide change wi
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
   await expect(side.getByRole("button", { name: productCopy.undo })).toBeVisible()
   await side.getByRole("button", { name: productCopy.usageTitle }).click()
-  const usage = side.getByRole("region", { name: productCopy.usageTitle })
+  const usage = page.getByRole("dialog", { name: productCopy.usageTitle })
   await expect(usage).toContainText(/\d+%/)
   await expect(usage).toContainText(usageResetsOn("Mon 7:00 AM"))
   expect(await page.evaluate(() => document.body.dataset.sameLoad)).toBe("yes")
 })
 
-test("Undo takes Aira's run back and the slide paints the old words", async ({ page, context, stack }) => {
-  const { cookie, deck, base, side } = await openDeck(page, context, stack)
+test("Undo takes Aira's run back, the slide paints the old words, and the request says its changes are undone", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const { cookie, deck, base, side, log } = await openDeck(page, context, stack)
   stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node } }, { name: "edited.sse" })
   await ask(page, asked)
   const editor = page.locator('[contenteditable="true"]')
@@ -80,8 +84,34 @@ test("Undo takes Aira's run back and the slide paints the old words", async ({ p
   await side.getByRole("button", { name: productCopy.undo }).click()
   await expect(editor).toHaveText("Hello")
   await expect(side.getByRole("button", { name: productCopy.undo })).toHaveCount(0)
+  await expect(log.getByText(airaCopy.undone, { exact: true })).toBeVisible()
+  await expect(side.getByRole("textbox", { name: airaCopy.askAira })).toBeFocused()
   expect(await serverText(stack, deck, cookie)).not.toBe("Hello from Aira")
   expect(await page.evaluate(() => document.body.dataset.sameLoad)).toBe("yes")
+})
+
+test("an Undo that cannot reach the server says so and keeps Undo, and the next Undo takes the run back", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const { cookie, deck, base, side, log } = await openDeck(page, context, stack)
+  stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node } }, { name: "edited.sse" })
+  await ask(page, asked)
+  const editor = page.locator('[contenteditable="true"]')
+  await expect(editor).toHaveText("Hello from Aira")
+  await page.route("**/decks/undo", (route) => route.abort())
+  const undo = side.getByRole("button", { name: productCopy.undo, exact: true })
+  await undo.click()
+  await expect(log.getByText(airaCopy.undoFailed, { exact: true })).toBeVisible()
+  await expect(undo).toBeEnabled()
+  await expect(editor).toHaveText("Hello from Aira")
+  expect(await serverText(stack, deck, cookie)).toBe("Hello from Aira")
+  await page.unroute("**/decks/undo")
+  await undo.click()
+  await expect(editor).toHaveText("Hello")
+  await expect(log.getByText(airaCopy.undoFailed, { exact: true })).toHaveCount(0)
+  await expect(log.getByText(airaCopy.undone, { exact: true })).toBeVisible()
 })
 
 test("Stop ends the run before Aira's edit lands", async ({ page, context, stack }) => {
@@ -121,7 +151,7 @@ test("Stop ends an edit call the server has not answered, and the step says it s
   await expect(side.getByText("Stopped editing slides", { exact: true })).toBeVisible()
 })
 
-test("Stop after an edit reached the server ends its run and offers Undo for the edit that landed, while its answer is still held", async ({
+test("Stop after an edit reached the server ends its run, shows the step done and offers Undo for the edit that landed, while its answer is still held", async ({
   page,
   context,
   stack,
@@ -152,7 +182,8 @@ test("Stop after an edit reached the server ends its run and offers Undo for the
   await ask(page, asked)
   await reached
   await side.getByRole("button", { name: "Stop" }).click()
-  await expect(side.getByText("Stopped editing slides", { exact: true })).toBeVisible()
+  await expect(side.locator('[data-tool-state="done"]')).toHaveText("Edited slides")
+  await expect(side.getByText("Stopped editing slides", { exact: true })).toHaveCount(0)
   await expect(page.locator('[data-slide-paint] [contenteditable="true"]')).toHaveText("Hello from Aira")
   const undo = side.getByRole("button", { name: productCopy.undo, exact: true })
   await expect(undo).toBeEnabled()
@@ -162,6 +193,7 @@ test("Stop after an edit reached the server ends its run and offers Undo for the
   expect(opened.register?.elements?.[node]?.phase).toBe("stopped")
   await undo.click()
   await expect(page.locator('[data-slide-paint] [contenteditable="true"]')).toHaveText("Hello")
+  await expect(side.getByText(airaCopy.undone, { exact: true })).toBeVisible()
   expect(await serverText(stack, deck, cookie)).not.toBe("Hello from Aira")
   answer()
 })
@@ -206,7 +238,7 @@ test("Stop before an edit reached the server keeps it from landing when it reach
 test("after Stop the usage ring shows what the stopped model call was charged", async ({ page, context, stack }) => {
   const { deck, base, side } = await openDeck(page, context, stack)
   await side.getByRole("button", { name: productCopy.usageTitle }).click()
-  const usage = side.getByRole("region", { name: productCopy.usageTitle })
+  const usage = page.getByRole("dialog", { name: productCopy.usageTitle })
   await expect(usage).toContainText("0%")
   stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node }, holdAfter: 3 })
   const reached = stack.hold()
@@ -233,7 +265,7 @@ test("a person out of weekly usage sees the limit from the server and when it re
   await expect(log.getByText(asked, { exact: true })).toBeVisible()
   await expect(side.getByRole("textbox", { name: airaBackOn("Mon 7:00 AM") })).toBeDisabled()
   await side.getByRole("button", { name: productCopy.usageTitle }).click()
-  await expect(side.getByRole("region", { name: productCopy.usageTitle })).toContainText("100%")
+  await expect(page.getByRole("dialog", { name: productCopy.usageTitle })).toContainText("100%")
   expect(paths).not.toContain("/mcp")
 })
 

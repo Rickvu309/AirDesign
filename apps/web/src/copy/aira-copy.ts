@@ -143,6 +143,9 @@ export const airaCopy = {
   notOffered: "Aira isn't available in your country or region yet.",
   notOfferedBody: "You can keep editing this deck yourself.",
   undoRefused: "Couldn't undo. Something Aira changed was changed again after its edit.",
+  undone: "Aira's changes from this request are undone.",
+  undoFailed: "Unable to undo. Check your connection and try again.",
+  unavailable: "Unavailable in your region",
   chatsTitle: "Chats on this deck",
   chatsEmpty: "Your chats with Aira on this deck show here.",
 } as const

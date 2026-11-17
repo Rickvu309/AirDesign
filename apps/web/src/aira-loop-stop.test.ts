@@ -49,14 +49,14 @@ describe("Aira's loop when Stop comes while a tool call is still waiting for the
     return link.sent.filter((each) => each.path === airaRoutes.stop.path).map((each) => each.body)
   }
 
-  it("cuts the edit call at once, names it in the stop, keeps the run it landed for Undo and stops that run", async () => {
+  it("cuts the edit call at once, names it in the stop, keeps the run it landed for Undo, shows its step done and stops that run", async () => {
     const { first, link } = await stoppedBeforeAnswer(true)
     const sent = link.sent.find((each) => each.path === mcpRoutes.mcp.path)?.body.params as { _meta?: unknown }
     expect(sent._meta).toEqual({ [onceMeta]: "ask-1-1" })
     const done = await first
     expect(stopsSent(link)).toEqual([{ ask: "ask-1", call: { deck, once: "ask-1-1" } }])
     expect(done.exchanges[0]).toMatchObject({ end: "stopped", runs: ["run-1"] })
-    expect(done.exchanges[0]?.steps).toEqual([{ kind: "tool", id: "call_1", name: edit, state: "stopped" }])
+    expect(done.exchanges[0]?.steps).toEqual([{ kind: "tool", id: "call_1", name: edit, state: "done" }])
     expect(link.toolsSent()).toEqual([edit, stop])
     const closing = link.sent.at(-1)?.body.params as { arguments: Record<string, unknown> }
     expect(closing.arguments).toEqual({ deck, runId: "run-1" })
@@ -68,6 +68,7 @@ describe("Aira's loop when Stop comes while a tool call is still waiting for the
     const done = await first
     expect(stopsSent(link)).toEqual([{ ask: "ask-1", call: { deck, once: "ask-1-1" } }])
     expect(done.exchanges[0]).toMatchObject({ end: "stopped", runs: [] })
+    expect(done.exchanges[0]?.steps).toEqual([{ kind: "tool", id: "call_1", name: edit, state: "stopped" }])
     expect(link.toolsSent()).toEqual([edit])
   })
 

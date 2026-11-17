@@ -373,4 +373,25 @@ describe("Aira's loop in the browser", () => {
     expect(refused === undefined ? "missing" : await undoExchange(refused, 0, link.send)).toBeUndefined()
     expect(link.sent).toHaveLength(asked)
   })
+
+  it("says an undo failed when the server cannot be reached, and undoes only the runs still left when the person tries again", async () => {
+    const reachable = new Set(["run-2"])
+    const asked: string[] = []
+    const send: typeof fetch = async (_input, init) => {
+      const { runId } = JSON.parse(String(init?.body)) as { runId: string }
+      asked.push(runId)
+      if (!reachable.has(runId)) throw new TypeError("Failed to fetch")
+      return Response.json({ ok: true, deck, revision: 4, key: `${deck}:4` })
+    }
+    const start: AiraChat = {
+      ...airaChat(deck),
+      exchanges: [{ asked: "Retitle", steps: [], end: "done", runs: ["run-1", "run-2"] }],
+    }
+    const failed = await undoExchange(start, 0, send)
+    expect(failed?.exchanges[0]).toEqual({ asked: "Retitle", steps: [], end: "done", runs: ["run-1"], undoFailed: true })
+    reachable.add("run-1")
+    const undone = failed === undefined ? undefined : await undoExchange(failed, 0, send)
+    expect(undone?.exchanges[0]).toEqual({ asked: "Retitle", steps: [], end: "undone", runs: ["run-1"] })
+    expect(asked).toEqual(["run-2", "run-1", "run-1"])
+  })
 })

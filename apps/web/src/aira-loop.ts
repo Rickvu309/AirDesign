@@ -45,6 +45,7 @@ export type AiraExchange = {
   readonly end: AiraEnd
   readonly runs: readonly string[]
   readonly undoRefused?: true
+  readonly undoFailed?: true
 }
 
 export type AiraChat = {
@@ -74,10 +75,11 @@ export type AiraEvent =
       readonly run: string | undefined
       readonly refusal?: string | undefined
     }
-  | { readonly type: "landed"; readonly run: string }
+  | { readonly type: "landed"; readonly run: string; readonly id: string }
   | { readonly type: "end"; readonly end: AiraEnd; readonly usage?: WeekUsage | undefined }
   | { readonly type: "undone"; readonly exchange: number }
   | { readonly type: "undo-refused"; readonly exchange: number }
+  | { readonly type: "undo-failed"; readonly exchange: number; readonly runs: readonly string[] }
 
 export type AskOptions = {
   readonly signal: AbortSignal
@@ -154,6 +156,14 @@ function settled(
   })
 }
 
+function changeAt(chat: AiraChat, at: number, change: (exchange: AiraExchange) => AiraExchange): AiraChat {
+  return { ...chat, exchanges: chat.exchanges.map((exchange, index) => (index === at ? change(exchange) : exchange)) }
+}
+
+function withoutFailure({ undoFailed: _, ...exchange }: AiraExchange): AiraExchange {
+  return exchange
+}
+
 function ended(steps: readonly AiraStep[]): readonly AiraStep[] {
   return steps.map((step) => (step.kind === "tool" && step.state === "working" ? { ...step, state: "stopped" } : step))
 }
@@ -192,25 +202,21 @@ export function airaStep(chat: AiraChat, event: AiraEvent): AiraChat {
       }))
     }
     case "landed":
-      return changeLast(chat, (last) => ({ ...last, runs: withRun(last.runs, event.run) }))
+      return changeLast(chat, (last) => ({
+        ...last,
+        steps: settled(last.steps, event.id, "done", undefined),
+        runs: withRun(last.runs, event.run),
+      }))
     case "end": {
       const next = event.usage === undefined ? chat : { ...chat, usage: event.usage }
       return changeLast(next, (last) => ({ ...last, end: event.end, steps: ended(last.steps) }))
     }
     case "undone":
-      return {
-        ...chat,
-        exchanges: chat.exchanges.map((exchange, index) =>
-          index === event.exchange ? { ...exchange, end: "undone" } : exchange,
-        ),
-      }
+      return changeAt(chat, event.exchange, (exchange) => ({ ...withoutFailure(exchange), end: "undone" }))
     case "undo-refused":
-      return {
-        ...chat,
-        exchanges: chat.exchanges.map((exchange, index) =>
-          index === event.exchange ? { ...exchange, undoRefused: true } : exchange,
-        ),
-      }
+      return changeAt(chat, event.exchange, (exchange) => ({ ...withoutFailure(exchange), undoRefused: true }))
+    case "undo-failed":
+      return changeAt(chat, event.exchange, (exchange) => ({ ...exchange, runs: event.runs, undoFailed: true }))
   }
 }
 
@@ -444,7 +450,7 @@ async function converse(
   const closed = new Set<string>(first.type === "retry" ? (chat.exchanges.at(-1)?.runs ?? []) : [])
   let rpc = 1
   let stopped: Promise<unknown> = Promise.resolve()
-  let cut: string | undefined
+  let cut: { readonly once: string; readonly id: string } | undefined
   for (;;) {
     const turned = await takeTurn(send, ask, chat.deck, [...chat.history, sent], signal, update)
     if (turned.kind === "ended") {
@@ -468,7 +474,7 @@ async function converse(
       rpc += 1
       const runId = call.input.runId
       if (called.ok && call.name === stopTool && typeof runId === "string") closed.add(runId)
-      cut = called.cut ?? cut
+      if (called.cut !== undefined) cut = { once: called.cut, id: call.id }
       const state = called.stopped === true ? "stopped" : called.ok ? "done" : "refused"
       update({ type: "answered", answer: called.answer, state, run: called.run, refusal: called.refusal })
     }
@@ -480,8 +486,8 @@ async function converse(
     if (more !== undefined) update({ type: "add", text: more })
     sent = userMessage(chat.answers, more)
   }
-  const landed = cut === undefined ? undefined : await stopAsk(send, ask, { deck: chat.deck, once: cut })
-  if (landed !== undefined) update({ type: "landed", run: landed })
+  const landed = cut === undefined ? undefined : await stopAsk(send, ask, { deck: chat.deck, once: cut.once })
+  if (landed !== undefined && cut !== undefined) update({ type: "landed", run: landed, id: cut.id })
   const open = (chat.exchanges.at(-1)?.runs ?? []).filter((runId) => !closed.has(runId))
   await Promise.all([stopped, closeRuns(send, chat.deck, open, rpc)])
   return chat
@@ -502,7 +508,8 @@ export async function undoExchange(
   ) {
     return undefined
   }
-  for (const runId of [...found.runs].reverse()) {
+  for (const [index, runId] of [...found.runs].reverse().entries()) {
+    const failed = airaStep(chat, { type: "undo-failed", exchange, runs: found.runs.slice(0, found.runs.length - index) })
     try {
       const response = await send(deckRoutes.undo.path, {
         method: "POST",
@@ -510,10 +517,9 @@ export async function undoExchange(
         body: JSON.stringify({ deck: chat.deck, runId }),
       })
       const undone = deckRoutes.undo.result(await response.json())
-      if (!undone.ok)
-        return lasting.has(undone.refusal) ? airaStep(chat, { type: "undo-refused", exchange }) : undefined
+      if (!undone.ok) return lasting.has(undone.refusal) ? airaStep(chat, { type: "undo-refused", exchange }) : failed
     } catch {
-      return undefined
+      return failed
     }
   }
   return airaStep(chat, { type: "undone", exchange })

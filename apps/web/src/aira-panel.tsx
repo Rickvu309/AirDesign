@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { connect } from "@airdesign/live"
 import { Button } from "@/components/ui/button"
+import { Popover, PopoverTrigger } from "@/components/ui/popover"
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation"
 import { useConversationFollow } from "@/components/ai-elements/conversation-follow"
 import { airaBackOn, airaCopy } from "@/copy/aira-copy"
@@ -38,26 +39,23 @@ export function AiraPanel({
   const [chat, setChat] = useState(() => airaChat(deck))
   const [draft, setDraft] = useState("")
   const [queued, setQueued] = useState<readonly string[]>([])
-  const [usageOpen, setUsageOpen] = useState(false)
   const [undoing, setUndoing] = useState(false)
   const [settling, setSettling] = useState(false)
   const latest = useRef(chat)
   const waiting = useRef<string[]>([])
   const stopper = useRef<AbortController | null>(null)
   const finishing = useRef<Promise<AiraChat | undefined>>(Promise.resolve(undefined))
-  const popId = useId()
   const field = useRef<HTMLTextAreaElement>(null)
   const panel = useRef<HTMLDivElement>(null)
   const inComposer = useRef(false)
   const returnToComposer = useRef(false)
-  const usageButton = useRef<HTMLButtonElement>(null)
   const last = chat.exchanges.at(-1)
   const working = last?.end === "working"
   const busy = working || settling || undoing
   const { usage, available, refresh: refreshUsage } = useWeekUsage(chat.usage)
   const limit = last?.end === "out-of-usage" && usage !== null ? airaBackOn(resetsWhen(usage.resets)) : undefined
   const notOffered = !available || last?.end === "country"
-  const blocked = notOffered ? airaCopy.notOffered : last?.end === "malformed" ? airaCopy.malformedBlocked : limit
+  const blocked = notOffered ? airaCopy.unavailable : last?.end === "malformed" ? airaCopy.malformedBlocked : limit
   const empty = chat.exchanges.length === 0
   const asked = chat.exchanges[0]?.asked
   const { viewport, content, away, toLatest, onScroll } = useConversationFollow(empty)
@@ -69,7 +67,7 @@ export function AiraPanel({
     onRestore: display,
     empty: () => latest.current.exchanges.length === 0,
   })
-  const title = history.current?.title ?? (asked === undefined ? airaCopy.newChat : chatTitle(asked))
+  const title = history.current?.title ?? (asked === undefined ? airaCopy.chatsTitle : chatTitle(asked))
 
   const malformed = last?.end === "malformed"
 
@@ -171,13 +169,14 @@ export function AiraPanel({
     setUndoing(true)
     const next = await undoExchange(latest.current, exchange)
     setUndoing(false)
-    if (next !== undefined) shown(next)
+    if (next === undefined) return
+    returnToComposer.current = document.activeElement === document.body
+    shown(next)
   }
 
   function newChat() {
     waiting.current = []
     setQueued([])
-    setUsageOpen(false)
     history.start()
     display({ ...airaChat(deck), usage: latest.current.usage })
   }
@@ -203,12 +202,6 @@ export function AiraPanel({
       className="relative flex min-h-0 flex-1 flex-col"
       hidden={hidden}
       data-aira-panel
-      onKeyDown={(event) => {
-        if (event.key !== "Escape" || !usageOpen) return
-        event.stopPropagation()
-        setUsageOpen(false)
-        usageButton.current?.focus()
-      }}
     >
       <div data-slot="conversation-head" className="flex h-11 shrink-0 items-center justify-between gap-2 pr-3 pl-3">
         <span className="flex min-w-0 flex-1">
@@ -224,22 +217,26 @@ export function AiraPanel({
         </span>
         <span className="flex shrink-0 items-center gap-0.5">
           {usage === null ? null : (
-            <Button
-              ref={usageButton}
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label={productCopy.usageTitle}
-              aria-expanded={usageOpen}
-              aria-controls={popId}
-              className={cn("size-6 rounded-[var(--shape-control)]", headControl, usageOpen && "bg-line")}
-              onClick={() => {
-                if (!usageOpen) refreshUsage()
-                setUsageOpen(!usageOpen)
+            <Popover
+              onOpenChange={(open) => {
+                if (open) refreshUsage()
               }}
             >
-              <UsageRing fraction={usagePercent(usage) / 100} />
-            </Button>
+              <PopoverTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={productCopy.usageTitle}
+                    className={cn("size-6 rounded-[var(--shape-control)] data-popup-open:bg-line", headControl)}
+                  />
+                }
+              >
+                <UsageRing fraction={usagePercent(usage) / 100} />
+              </PopoverTrigger>
+              <UsagePop usage={usage} />
+            </Popover>
           )}
           <Button
             type="button"
@@ -306,7 +303,6 @@ export function AiraPanel({
         onSend={send}
         onStop={() => stopper.current?.abort()}
       />
-      {usageOpen && usage !== null ? <UsagePop id={popId} usage={usage} /> : null}
     </div>
   )
 }

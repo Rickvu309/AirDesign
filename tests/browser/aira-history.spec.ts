@@ -101,7 +101,7 @@ test("a chat survives a reload, New chat keeps it in history, and picking it sho
 
   await side.getByRole("button", { name: "New chat", exact: true }).click()
   await expect(log).toHaveCount(0)
-  await side.getByRole("button", { name: airaHistoryNameOf("New chat") }).click()
+  await side.getByRole("button", { name: airaCopy.chatsTitle, exact: true }).click()
   const chats = page.locator("[data-aira-chats]")
   await expect(chats.getByRole("menuitemradio")).toHaveCount(1)
   await chats.getByRole("menuitemradio", { name: new RegExp(title) }).click()

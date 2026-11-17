@@ -9,7 +9,7 @@ export function AiraWelcome({ notOffered = false }: { notOffered?: boolean }) {
       <ConversationEmptyState
         icon={<AiraTile large />}
         title={productCopy.agentName}
-        description={notOffered ? airaCopy.notOffered : airaCopy.welcome}
+        description={notOffered ? `${airaCopy.notOffered} ${airaCopy.notOfferedBody}` : airaCopy.welcome}
       />
     </div>
   )

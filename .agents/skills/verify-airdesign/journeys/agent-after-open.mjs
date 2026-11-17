@@ -126,13 +126,13 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await side.getByRole("button", { name: "Stop" }).click()
   answer()
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
-  await expect(log.getByText("Stopped editing slides", { exact: true })).toBeVisible()
+  await expect(log.getByText("Edited slides", { exact: true })).toBeVisible()
   await expect(title).toHaveText("Hello from Aira")
   await expect(side.getByRole("button", { name: "Undo", exact: true })).toBeEnabled()
   await page.unroute(calling)
   const stored = (await post(deckRoutes.open, { deck: fresh }, cookie)).json.register.elements["256.2"]
   await capture("stopped-after-landing")
   note(
-    `Stop after the edit reached the server: the step reads Stopped editing slides, the title reads Hello from Aira, Undo is offered for the edit that landed, and the server's element is ${stored.phase}`,
+    `Stop after the edit reached the server: the step reads Edited slides, the title reads Hello from Aira, Undo is offered for the edit that landed, and the server's element is ${stored.phase}`,
   )
 }

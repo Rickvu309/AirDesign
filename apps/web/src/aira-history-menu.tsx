@@ -36,7 +36,7 @@ export function AiraHistoryMenu({
     <DropdownMenu>
       <DropdownMenuTrigger
         type="button"
-        aria-label={airaHistoryNameOf(title)}
+        aria-label={asked === undefined ? title : airaHistoryNameOf(title)}
         {...(asked === undefined ? {} : { title: asked })}
         data-aira-history
         className="flex h-6 max-w-full min-w-0 items-center gap-1.5 rounded-[var(--shape-control)] pr-1.5 pl-1 text-xs text-quiet outline-hidden hover:bg-line data-popup-open:bg-line"
