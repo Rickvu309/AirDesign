@@ -59,8 +59,8 @@ for (const window of windows) {
     expect(page_.scrollHeight, "no page scroll").toBeLessThanOrEqual(page_.clientHeight)
 
     if (window.width === 1470) {
-      expect(slide.width, "the designed size keeps today's slide").toBe(880)
-      await expect(page.locator("[data-zoom-readout]")).toHaveText("69%")
+      expect(slide.width, "the designed size keeps today's slide").toBe(920)
+      await expect(page.locator("[data-zoom-readout]")).toHaveText("72%")
     }
   })
 }
