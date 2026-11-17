@@ -96,12 +96,12 @@ describe("slide grid", () => {
     expect(grid({ count: 3 })).toMatch(/>Results<\/span><span[^>]*>1 slide<\/span><\/button><\/h2>/)
   })
 
-  it("puts each slide's number under its thumbnail, not over the slide", () => {
+  it("puts each slide's number above its thumbnail, outside the slide", () => {
     const html = grid()
     const entries = tags(html, /<button[^>]*data-slide-entry="\d"[^>]*>[\s\S]*?<\/button>/g)
     expect(entries).toHaveLength(4)
     for (const entry of entries) expect(entry).not.toMatch(/>\d<\/span>/)
-    expect(html).toMatch(/<\/button><span[^>]*data-slide-number[^>]*>3<\/span>/)
+    expect(html).toMatch(/<span[^>]*data-slide-number[^>]*>3<\/span><button[^>]*data-slide-entry="3"/)
   })
 
   it("carries the slide view's bar: the zoom percent, then Present, then Export", () => {
