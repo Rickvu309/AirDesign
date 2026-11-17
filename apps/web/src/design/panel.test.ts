@@ -273,5 +273,4 @@ it("writes a colour picked over the line's own color as picked, so the export ke
     target: { node: connector.node },
     line: { fill: { solid: { rgb: "C00000" } } },
   })
-
 })
