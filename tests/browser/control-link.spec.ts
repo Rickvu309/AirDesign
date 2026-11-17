@@ -78,7 +78,6 @@ test("a person links selected words, sees Mixed, and picks a stable slide @expor
   const { shownLink } = await import("../../packages/pptx/src/index.ts")
   const bytes = await partsOf(file)
   const parts = new Map([...bytes].map(([name, value]) => [name, new Uint8Array(value)]))
-  await copyFile(file, join(process.cwd(), "tests/browser/exported-phrase-link.pptx"))
   expect(shownLink(parts, { slide: "256", part: "ppt/slides/slide1.xml", shape: "2", paragraph: 0, run: 1 })).toEqual({
     kind: "url",
     url: "https://example.com/phrase",

@@ -16,8 +16,8 @@
     {
       "file": "packages/document/src/change.ts",
       "names": ["traitPatch", "planNode", "planChange"],
-      "digest": "bc49c6965447",
-      "blob": "013510dee11d4572b8aedf7f73165a02dfe86020"
+      "digest": "1ef7552f4737",
+      "blob": "331c4b5f7437118102f43614577905fd77b1ade4"
     },
     {
       "file": "packages/document/src/person-undo.ts",

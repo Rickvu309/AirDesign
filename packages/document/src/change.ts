@@ -290,7 +290,11 @@ function planNode(
     readTextValue(change.text?.value ?? "")?.flatMap((paragraph) =>
       paragraph.runs.flatMap((run) => (run.link?.kind === "slide" ? [run.link.slide] : [])),
     ) ?? []
-  if (runLinks.some((slide) => scope.expand({ slide }).length === 0))
+  const priorLinks =
+    readTextValue(view.value ?? "")?.flatMap((paragraph) =>
+      paragraph.runs.flatMap((run) => (run.link?.kind === "slide" ? [run.link.slide] : [])),
+    ) ?? []
+  if (runLinks.some((slide) => !priorLinks.includes(slide) && scope.expand({ slide }).length === 0))
     refusals.push({ node: view.node, trait: "text", code: "dead" })
   if (change.opacity !== undefined) refusals.push(...opacityRefusals(view))
   if (refusals.length > 0) return refusals
