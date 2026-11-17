@@ -25,7 +25,11 @@ it("places every trait each element kind takes, and its Opacity, exactly once in
       expect({
         panel,
         placed: placed
-          .filter((section) => section !== "border" && section !== "shadow" && section !== "pictureFill")
+          .filter(
+            (section) =>
+              section !== "border" && section !== "shadow" && section !== "pictureFill" && section !== "textFill",
+          )
+          .map((section) => (section === "boxFill" ? "fill" : section))
           .toSorted(),
       }).toEqual({ panel, placed: wanted })
     }
@@ -61,8 +65,9 @@ it("orders a text box Text first, with its rare sections and its shape type fold
   expect(sections(textBox, { "fill.value": { none: true } })).toEqual([
     ["alignment", true],
     ["text", true],
-    ["fill", true],
+    ["textFill", true],
     ["opacity", true],
+    ["boxFill", false],
     ["box", false],
     ["line", false],
     ["effects", false],
