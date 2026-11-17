@@ -32,6 +32,7 @@ it("shows a border width without a point suffix while keeping its stored value",
     }),
   )
   expect(html).toContain('value="4"')
+  expect(html).toContain("<svg")
   expect(html).not.toContain(`>${designCopy.points}</span>`)
   expect(control.value).toBe(value)
 })

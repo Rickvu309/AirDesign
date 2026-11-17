@@ -2,6 +2,7 @@ import { agentNumberOf, readAgent } from "@airdesign/catalog"
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
 import { designCopy } from "@/copy/design-copy"
 import type { ControlProps } from "@/design/panel"
+import { NoneFill } from "@/design/preset-icons"
 import { cn } from "@/lib/class-names"
 
 function shownNumber(control: ControlProps["control"], scale?: number): string {
@@ -43,7 +44,8 @@ export function NumberField({
   scale,
 }: ControlProps & { unit: string; kind: string; step?: number; scale?: number }) {
   const look = control.look
-  const Icon = look.name.show === "icon" ? look.name.icon : undefined
+  const borderWidth = ["border", "line"].includes(control.trait) && control.field === "width"
+  const Icon = look.name.show === "icon" ? look.name.icon : borderWidth ? NoneFill : undefined
   const [draft, setDraft] = useState<string | null>(null)
   const shown = shownNumber(control, scale)
   const field = useRef<HTMLInputElement>(null)
@@ -96,11 +98,7 @@ export function NumberField({
     scrub.current = null
   }
 
-  const suffix =
-    (control.trait === "text" && control.field === "size") ||
-    (["border", "line"].includes(control.trait) && control.field === "width")
-      ? ""
-      : unit
+  const suffix = (control.trait === "text" && control.field === "size") || borderWidth ? "" : unit
   const value = draft ?? shown
   const view = (
     <label
