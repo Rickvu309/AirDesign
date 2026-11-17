@@ -1,3 +1,4 @@
+import { undoCopy } from "../../apps/web/src/copy/undo-copy.js"
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
@@ -85,7 +86,7 @@ test("three selected shapes move by one drag and one nudge, each undone in one s
   await page.mouse.down()
   await page.mouse.move(grabbed.x + grabbed.width / 2 + 60, grabbed.y + grabbed.height / 2 + 30, { steps: 8 })
   await page.mouse.up()
-  await expect(page.getByRole("button", { name: "Undo move", exact: true })).toBeEnabled()
+  await expect(page.getByRole("button", { name: undoCopy.undoNamed.move, exact: true })).toBeEnabled()
   const dragged = await spots(shapes)
   expect(new Set(shifted(start, dragged)).size).toBe(1)
   expect(shifted(start, dragged)[0]).not.toBe("0 0")
@@ -95,11 +96,11 @@ test("three selected shapes move by one drag and one nudge, each undone in one s
   await expect.poll(async () => new Set(shifted(dragged, await spots(shapes))).size).toBe(1)
   expect(shifted(dragged, await spots(shapes))[0]).not.toBe("0 0")
 
-  await page.getByRole("button", { name: "Undo move", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed.move, exact: true }).click()
   await expect.poll(() => spots(shapes)).toEqual(dragged)
-  await page.getByRole("button", { name: "Undo move", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed.move, exact: true }).click()
   await expect.poll(() => spots(shapes)).toEqual(start)
-  await expect(page.getByRole("button", { name: "Redo move", exact: true })).toBeEnabled()
+  await expect(page.getByRole("button", { name: undoCopy.redoNamed.move, exact: true })).toBeEnabled()
 
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)

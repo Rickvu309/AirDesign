@@ -1,3 +1,4 @@
+import { undoCopy } from "../../../../../apps/web/src/copy/undo-copy.ts"
 import path from "node:path"
 import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
@@ -19,7 +20,7 @@ export async function moveThree(kit) {
   await page.mouse.down()
   await page.mouse.move(grabbed.x + grabbed.width / 2 + 80, grabbed.y + grabbed.height / 2 + 40, { steps: 8 })
   await page.mouse.up()
-  await expect(page.getByRole("button", { name: "Undo move", exact: true })).toBeEnabled()
+  await expect(page.getByRole("button", { name: undoCopy.undoNamed.move, exact: true })).toBeEnabled()
 }
 
 async function drive(kit) {
