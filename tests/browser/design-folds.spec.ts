@@ -1,6 +1,7 @@
 import { geometryCopy } from "../../apps/web/src/copy/geometry-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
+import { selectionColorsCopy } from "../../apps/web/src/copy/selection-colors-copy"
 import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { designing, openDeck, settled } from "./design-panel"
@@ -36,6 +37,7 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
     designCopy.panels.text,
     "Shape type",
     "Name and alt text",
+    selectionColorsCopy.section,
   ])
   await expect(fold(panel, "Text")).toHaveAttribute("aria-expanded", "true")
   await expect(fold(panel, "Effects")).toHaveAttribute("aria-expanded", "false")
@@ -73,6 +75,7 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
     "Effects",
     boxCopy.section,
     "Name and alt text",
+    selectionColorsCopy.section,
   ])
   await expect(fold(shape, "Effects")).toHaveAttribute("aria-expanded", "false")
   await expect(fold(shape, boxCopy.section)).toHaveAttribute("aria-expanded", "false")
