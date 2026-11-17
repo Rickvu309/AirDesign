@@ -40,17 +40,15 @@ const strip: SlideStrip = {
   thumb: () => null,
 }
 
-it("places slide actions in their row without anchored layout", async () => {
+it("keeps slide thumbnails free of separate actions buttons", async () => {
   const host = window.document.createElement("div")
   window.document.body.append(host)
   const root = createRoot(host)
   await act(async () => root.render(<SlideSidebar run="done" title="Deck" strip={strip} />))
 
-  for (let number = 1; number <= strip.count; number += 1) {
-    const control = host.querySelector<HTMLElement>(`[data-slide-actions="${String(number)}"]`)
-    expect(control?.parentElement?.querySelector(`:scope > [data-slide-entry="${String(number)}"]`)).not.toBeNull()
-    expect(control?.getAttribute("style") ?? "").not.toContain("anchor")
-  }
+  expect(host.querySelectorAll("[data-slide-entry]")).toHaveLength(strip.count)
+  expect(host.querySelectorAll("[data-slide-actions]")).toHaveLength(0)
+  expect(host.querySelectorAll("[data-slide-list] button:not([data-slide-entry])")).toHaveLength(0)
 
   await act(async () => root.unmount())
   host.remove()

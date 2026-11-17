@@ -507,7 +507,7 @@ function SlideItem({
       </button>
       {onChoose === undefined ? null : (
         <SlideMenu
-          number={index}
+          anchor={entry}
           index={index - 1}
           count={count}
           open={menuOpen}
