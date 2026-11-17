@@ -45,8 +45,8 @@ test("two crop sides typed one after another on a slow device both land, on the 
   await settled(page)
   const deck = new URL(page.url()).pathname.slice("/deck/".length)
   const photo = page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#4"]`)
-  const framed = await width(photo)
   const crop = await cropped(page, photo)
+  const framed = await width(photo)
   const node = elementId((await page.locator("[data-design-element]").getAttribute("data-design-element")) ?? "")
   await page.evaluate(() => {
     window.deviceDelay = 300
