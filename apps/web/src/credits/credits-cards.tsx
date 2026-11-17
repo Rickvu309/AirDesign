@@ -57,7 +57,7 @@ export function CreditsCards({ state }: { state: CreditsState }) {
           </div>
         )}
         {state.error && state.reset === null ? (
-          <p role="alert" className="mt-3 text-[length:var(--type-dense)] text-destructive">
+          <p role="alert" className="mt-3 text-[length:var(--type-dense)] text-danger-text">
             {state.error}
           </p>
         ) : null}
@@ -101,7 +101,7 @@ export function CreditsCards({ state }: { state: CreditsState }) {
           <DialogTitle>{creditsCopy.confirmTitle}</DialogTitle>
           <DialogDescription>{creditsCopy.confirmBody}</DialogDescription>
           {state.error ? (
-            <p role="alert" className="text-destructive">
+            <p role="alert" className="text-danger-text">
               {state.error}
             </p>
           ) : null}
