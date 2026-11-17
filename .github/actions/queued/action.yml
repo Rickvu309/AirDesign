@@ -1,9 +1,22 @@
 name: queued
-description: Reports whether merge queue ci passed this exact commit.
+description: Reuses merge queue ci for this exact commit.
+inputs:
+  part:
+    description: The check part.
+    required: true
+  cache-hit:
+    description: Whether the exact work cache exists.
+    required: true
 outputs:
   passed:
     description: Whether a successful merge queue ci run exists.
     value: ${{ steps.queued.outputs.passed }}
+  run-id:
+    description: The successful merge queue ci run.
+    value: ${{ steps.queued.outputs.run-id }}
+  needed:
+    description: Whether this part needs to run.
+    value: ${{ steps.queued.outputs.needed }}
 runs:
   using: composite
   steps:
@@ -11,6 +24,17 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
+        PART: ${{ inputs.part }}
+        CACHE_HIT: ${{ inputs.cache-hit }}
       run: |
-        passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&event=merge_group&status=success" --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci.yml")] | length > 0')
+        run_id=
+        passed=false
+        if [ "$GITHUB_EVENT_NAME" = push ] && [ "$PART" != pptx ]; then
+          run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&event=merge_group&status=success" --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci.yml")][0].id // empty')
+        fi
+        if [ -n "$run_id" ]; then passed=true; fi
+        needed=true
+        if [ "$passed" = true ] && { [ "$PART" = side ] || [ "$CACHE_HIT" = true ]; }; then needed=false; fi
         echo "passed=$passed" >> "$GITHUB_OUTPUT"
+        echo "run-id=$run_id" >> "$GITHUB_OUTPUT"
+        echo "needed=$needed" >> "$GITHUB_OUTPUT"

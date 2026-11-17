@@ -37,9 +37,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-      - if: github.event_name == 'push' && matrix.part != 'pptx'
-        id: queued
-        uses: ./.github/actions/queued
       - if: matrix.part == 'main'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         id: cache-lookup
@@ -48,14 +45,10 @@ jobs:
           key: spec-results-${{ hashFiles('specs/**') }}
           lookup-only: true
       - id: work
-        env:
-          PASSED: ${{ steps.queued.outputs.passed }}
-          CACHE_HIT: ${{ steps.cache-lookup.outputs.cache-hit }}
-          PART: ${{ matrix.part }}
-        run: |
-          needed=true
-          if [ "$PASSED" = true ] && { [ "$PART" = side ] || [ "$CACHE_HIT" = true ]; }; then needed=false; fi
-          echo "needed=$needed" >> "$GITHUB_OUTPUT"
+        uses: ./.github/actions/queued
+        with:
+          cache-hit: ${{ steps.cache-lookup.outputs.cache-hit }}
+          part: ${{ matrix.part }}
       - if: steps.work.outputs.needed == 'true'
         uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
       - if: steps.work.outputs.needed == 'true'
@@ -105,12 +98,12 @@ jobs:
           key: pptx-tools-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
       - if: matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
         id: runner-image
-        run: echo "id=${ImageOS}-${ImageVersion}" >> "$GITHUB_OUTPUT"
+        run: echo "key=pptx-renders-${ImageOS}-${ImageVersion}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5" >> "$GITHUB_OUTPUT"
       - if: matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ~/.cache/airdesign/pptx-renders
-          key: pptx-renders-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
+          key: ${{ steps.runner-image.outputs.key }}
           restore-keys: pptx-renders-
       - if: matrix.part == 'pptx' && steps.pptx.outputs.changed != '0'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
@@ -128,7 +121,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ~/.cache/airdesign/pptx-renders
-          key: pptx-renders-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
+          key: ${{ steps.runner-image.outputs.key }}
       - if: matrix.part == 'pptx' && steps.pptx.outputs.changed != '0' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
@@ -154,26 +147,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-      - if: github.event_name == 'push'
-        id: queued
-        uses: ./.github/actions/queued
-      - id: runner-image
-        run: echo "id=${ImageOS}-${ImageVersion}" >> "$GITHUB_OUTPUT"
+      - id: renders
+        run: echo "key=pptx-renders-corpus-${ImageOS}-${ImageVersion}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5" >> "$GITHUB_OUTPUT"
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         id: cache-lookup
         with:
           path: ~/.cache/airdesign/pptx-renders
-          key: pptx-renders-corpus-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
+          key: ${{ steps.renders.outputs.key }}
           lookup-only: true
       - id: work
-        env:
-          PASSED: ${{ steps.queued.outputs.passed }}
-          CACHE_HIT: ${{ steps.cache-lookup.outputs.cache-hit }}
-          PART: corpus
-        run: |
-          needed=true
-          if [ "$PASSED" = true ] && { [ "$PART" = side ] || [ "$CACHE_HIT" = true ]; }; then needed=false; fi
-          echo "needed=$needed" >> "$GITHUB_OUTPUT"
+        uses: ./.github/actions/queued
+        with:
+          cache-hit: ${{ steps.cache-lookup.outputs.cache-hit }}
+          part: corpus
       - if: steps.work.outputs.needed == 'true'
         uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
       - if: steps.work.outputs.needed == 'true'
@@ -206,19 +192,55 @@ jobs:
         id: work-cache
         with:
           path: ~/.cache/airdesign/pptx-renders
-          key: pptx-renders-corpus-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
+          key: ${{ steps.renders.outputs.key }}
           restore-keys: pptx-renders-
+      - id: answers
+        run: echo "prefix=pptx-validations-corpus-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-" >> "$GITHUB_OUTPUT"
+      - if: steps.work.outputs.needed == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/airdesign/pptx-validations
+          key: ${{ steps.answers.outputs.prefix }}${{ github.run_id }}
+          restore-keys: ${{ steps.answers.outputs.prefix }}
       - if: steps.work.outputs.needed == 'true'
         uses: ./.github/actions/postgres
       - if: steps.work.outputs.needed == 'true'
         run: pnpm check:pptx:corpus
         env:
           AIRDESIGN_WEB_BUILT: "1"
+      - if: github.event_name == 'merge_group' && steps.work.outputs.needed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: corpus-validations
+          path: ~/.cache/airdesign/pptx-validations
+          include-hidden-files: true
+          retention-days: 1
+      - if: steps.work.outputs.needed == 'true' && github.event_name != 'merge_group' && !cancelled()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/airdesign/pptx-validations
+          key: ${{ steps.answers.outputs.prefix }}${{ github.run_id }}
+      - if: github.event_name == 'push' && steps.work.outputs.needed == 'false'
+        id: validations
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.work.outputs.run-id }}
+        run: |
+          gh run download "$RUN_ID" -n corpus-validations -D ~/.cache/airdesign/pptx-validations
+          test -n "$(find ~/.cache/airdesign/pptx-validations -type f -print -quit)"
+          echo "files=true" >> "$GITHUB_OUTPUT"
+      - if: steps.validations.outputs.files == 'true'
+        continue-on-error: true
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/airdesign/pptx-validations
+          key: ${{ steps.answers.outputs.prefix }}${{ github.run_id }}
       - if: steps.work.outputs.needed == 'true' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ~/.cache/airdesign/pptx-renders
-          key: pptx-renders-corpus-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
+          key: ${{ steps.renders.outputs.key }}
       - if: failure() && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -232,26 +254,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-      - if: github.event_name == 'push'
-        id: queued
-        uses: ./.github/actions/queued
-      - id: runner-image
-        run: echo "id=${ImageOS}-${ImageVersion}" >> "$GITHUB_OUTPUT"
+      - id: renders
+        run: echo "key=pptx-renders-paint-fidelity-${ImageOS}-${ImageVersion}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5" >> "$GITHUB_OUTPUT"
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         id: cache-lookup
         with:
           path: ~/.cache/airdesign/pptx-renders
-          key: pptx-renders-paint-fidelity-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
+          key: ${{ steps.renders.outputs.key }}
           lookup-only: true
       - id: work
-        env:
-          PASSED: ${{ steps.queued.outputs.passed }}
-          CACHE_HIT: ${{ steps.cache-lookup.outputs.cache-hit }}
-          PART: paint-fidelity
-        run: |
-          needed=true
-          if [ "$PASSED" = true ] && { [ "$PART" = side ] || [ "$CACHE_HIT" = true ]; }; then needed=false; fi
-          echo "needed=$needed" >> "$GITHUB_OUTPUT"
+        uses: ./.github/actions/queued
+        with:
+          cache-hit: ${{ steps.cache-lookup.outputs.cache-hit }}
+          part: paint-fidelity
       - if: steps.work.outputs.needed == 'true'
         uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
       - if: steps.work.outputs.needed == 'true'
@@ -284,7 +299,7 @@ jobs:
         id: work-cache
         with:
           path: ~/.cache/airdesign/pptx-renders
-          key: pptx-renders-paint-fidelity-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
+          key: ${{ steps.renders.outputs.key }}
           restore-keys: pptx-renders-
       - if: steps.work.outputs.needed == 'true'
         uses: ./.github/actions/postgres
@@ -296,7 +311,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ~/.cache/airdesign/pptx-renders
-          key: pptx-renders-paint-fidelity-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
+          key: ${{ steps.renders.outputs.key }}
       - if: failure() && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
