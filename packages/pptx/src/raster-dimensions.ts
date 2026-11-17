@@ -1,6 +1,5 @@
 import { markupDocument } from "./element-span.js"
 import { paintAttribute } from "./paint-color.js"
-import { decodeUtf8 } from "./package-bytes.js"
 
 export function rasterDimensions(bytes: Uint8Array): { width: number; height: number } | null {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
@@ -9,7 +8,7 @@ export function rasterDimensions(bytes: Uint8Array): { width: number; height: nu
   if (bytes.length >= 24 && view.getUint32(0) === 0x89504e47) {
     width = view.getUint32(16)
     height = view.getUint32(20)
-  } else if (bytes.length >= 10 && decodeUtf8(bytes.subarray(0, 3)) === "GIF") {
+  } else if (bytes.length >= 10 && bytes[0] === 71 && bytes[1] === 73 && bytes[2] === 70) {
     width = view.getUint16(6, true)
     height = view.getUint16(8, true)
   } else if (bytes.length >= 4 && view.getUint16(0) === 0xffd8) {
@@ -29,7 +28,10 @@ export function rasterDimensions(bytes: Uint8Array): { width: number; height: nu
       }
       at += 2 + length
     }
-  } else {
+  } else if (bytes.length >= 26 && view.getUint16(0) === 0x424d) {
+    width = view.getInt32(18, true)
+    height = Math.abs(view.getInt32(22, true))
+  } else if (bytes.find((byte) => ![9, 10, 13, 32].includes(byte)) === 60) {
     const svg = markupDocument(bytes).elements.find((element) => element.kind === "svg")
     const box = svg === undefined ? [] : (paintAttribute(svg, "viewBox") ?? "").trim().split(/[ ,]+/).map(Number)
     width = box[2] ?? 0
