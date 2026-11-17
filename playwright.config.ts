@@ -17,7 +17,7 @@ export default defineConfig({
     ci: onCi(process.env),
     override: process.env[workerOverrideName],
   }),
-  reporter: "line",
+  reporter: [["line"], ["./scripts/browser-timings.mjs"]],
   use: {
     baseURL: origin,
     browserName: "chromium",
