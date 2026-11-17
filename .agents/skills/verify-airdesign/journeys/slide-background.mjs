@@ -1,7 +1,10 @@
-import { productCopy } from "../bin/product-copy.mjs"
+import { createRequire } from "node:module"
+import { productCopy, fillWords } from "../bin/product-copy.mjs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
+
+const { presentCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/present-copy.ts")
 
 const white = "rgb(255, 255, 255)"
 const agentColor = "rgb(31, 78, 121)"
@@ -118,4 +121,34 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
     color: { hex: "1F4E79", alpha: 1 },
   })
   note(`The export ${path.basename(exported)} reads back a solid 1F4E79 background on ${first.part}`)
+  if ((await panel.count()) === 0) await page.getByRole("button", { name: "Design", exact: true }).click()
+  const imageOf = (selector) => page.locator(selector).evaluate((node) => getComputedStyle(node).backgroundImage)
+  for (const [kind, button, expected] of [
+    ["gradient", fillWords.gradient, "linear-gradient"],
+    ["picture", fillWords.picture, "blob:"],
+  ]) {
+    await panel.getByRole("button", { name: button, exact: true }).click()
+    for (const selector of ["[data-slide-paint]", "[data-slide-entry='1'] [data-thumb-paint]"])
+      await expect.poll(() => imageOf(selector)).toContain(expected)
+    await capture(`background-${kind}`)
+    await page.reload()
+    await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
+    await expect.poll(() => imageOf("[data-slide-paint]")).toContain(expected)
+    const opened = (await post(deckRoutes.open, { deck }, cookie)).json
+    expect(JSON.stringify(opened.register)).toContain(`"${kind}"`)
+    await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
+    await expect.poll(() => imageOf("[data-slide-paint]")).toContain(expected)
+    await capture(`present-${kind}`)
+    await page.keyboard.press("Escape")
+    const download = page.waitForEvent("download")
+    await page.getByRole("button", { name: "Export", exact: true }).click()
+    await page.keyboard.press("Enter")
+    const file = path.join(out, `background-${kind}.pptx`)
+    await (await download).saveAs(file)
+    const exported = await pptx.readParts(await readFile(file))
+    const [first] = pptx.readSlides(exported)
+    expect(pptx.paintReader(exported).slide(first.part).background.type).toBe(kind)
+    note(`${kind} painted the canvas, thumbnail and Present, survived reload and exported as a native background`)
+    if ((await panel.count()) === 0) await page.getByRole("button", { name: "Design", exact: true }).click()
+  }
 }

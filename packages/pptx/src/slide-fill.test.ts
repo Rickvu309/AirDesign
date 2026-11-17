@@ -13,7 +13,7 @@ import {
   type SlideCommand,
 } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { exportParts, orderedParts, paintReader, readParts, readSlides } from "./index.js"
+import { exportParts, orderedParts, paintReader, shownBackground, readParts, readSlides } from "./index.js"
 import { decodeUtf8 } from "./package-bytes.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -120,6 +120,26 @@ describe("a slide's fill is its background", () => {
       '<p:cSld><p:bg><p:bgPr><a:gradFill rotWithShape="0"><a:gsLst><a:gs pos="0"><a:schemeClr val="accent1"/></a:gs><a:gs pos="100000"><a:srgbClr val="0F2433"/></a:gs></a:gsLst><a:lin ang="5400000" scaled="0"/></a:gradFill><a:effectLst/></p:bgPr></p:bg><p:spTree>',
     )
     expect(shown(next, first.part)?.type).toBe("gradient")
+    expect(shownBackground(next, first.part)).toEqual({
+      value: typeof gradient.fill?.value === "object" && "set" in gradient.fill.value ? gradient.fill.value.set : null,
+      own: true,
+    })
+  })
+
+  it("writes a native picture background and reads its existing fill control value", async () => {
+    const { parts, first, node } = await firstOf("blank.pptx")
+    const next = filled(parts, [[node, { fill: { value: { set: { picture: "star" } } } }]])
+    expect(text(next.get(first.part))).toContain("<p:bg><p:bgPr><a:blipFill")
+    expect(shown(next, first.part)?.type).toBe("picture")
+    expect(shownBackground(next, first.part)).toEqual({ value: { picture: "star" }, own: true })
+    expect(changedParts(next, filled(next, []))).toEqual([])
+  })
+
+  it("reads an inherited fill without adding a slide override", async () => {
+    const { parts, first } = await firstOf("blank.pptx")
+    const before = text(parts.get(first.part))
+    expect(shownBackground(parts, first.part)?.own).toBe(false)
+    expect(text(filled(parts, []).get(first.part))).toBe(before)
   })
 
   it("gives a duplicate the background its floor carries, and a later colour stays on its own slide", async () => {

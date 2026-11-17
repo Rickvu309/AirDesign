@@ -166,7 +166,7 @@ export function Swatch({ color, name, edged = false }: { color: string; name: st
   )
 }
 
-function ControlView({ control, palette, onChange }: ControlProps) {
+export function ControlView({ control, palette, onChange }: ControlProps) {
   const View = controlViews[control.kind]
   return View === undefined ? null : (
     <View control={control} palette={palette} onChange={onChange} inner={ControlView} />
