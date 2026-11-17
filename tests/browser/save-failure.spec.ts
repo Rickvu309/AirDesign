@@ -18,8 +18,8 @@ for (const refusal of ["storage", "size"] as const) {
     await text.press("x")
     const status = page.locator("[data-save-status]")
     await expect(status).toHaveText(productCopy.unsaved)
-    await expect(status).toHaveCSS("color", "rgb(185, 47, 47)")
-    await expect(status.locator("svg")).toBeVisible()
+    await expect(status).toHaveCSS("width", "1px")
+    await expect(status).toHaveCSS("height", "1px")
     const notice = page.locator("[data-sonner-toast]").filter({ hasText: "Unable to save." })
     await expect(notice.locator("svg")).toBeVisible()
     await expect(notice).not.toHaveCSS("background-color", "rgb(17, 17, 17)")
@@ -79,7 +79,11 @@ test("a new version uses a neutral pill with visible action feedback", async ({ 
   await navigated
 })
 
-test("a connection interruption stays neutral in the save line and notice", async ({ page, context, stack }) => {
+test("a connection interruption announces its status and keeps the notice neutral", async ({
+  page,
+  context,
+  stack,
+}) => {
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
   await openClean(page)
@@ -90,7 +94,8 @@ test("a connection interruption stays neutral in the save line and notice", asyn
   await text.press("x")
   const status = page.locator("[data-save-status]")
   await expect(status).toHaveText(productCopy.savedUnreached)
-  await expect(status).toHaveCSS("color", "rgb(91, 91, 91)")
+  await expect(status).toHaveCSS("width", "1px")
+  await expect(status).toHaveCSS("height", "1px")
   const pill = page.getByText(productCopy.editorUnreached, { exact: true }).locator("..")
   await expect(pill).toHaveCSS("background-color", "rgb(34, 34, 34)")
   await expect(pill).toHaveCSS("color", "rgb(255, 255, 255)")
