@@ -10,6 +10,8 @@ import { Client } from "pg"
 import { createRole } from "./provision.js"
 import { applySchema } from "./schema.js"
 
+export const testWorkerConnections = (cores: number) => Math.max(100, cores * 16)
+
 export const clusterFile = () => path.join(process.cwd(), "node_modules/.cache/airdesign-api-postgres.json")
 
 type Info = {
@@ -177,7 +179,7 @@ async function launch(
       "-w",
       "start",
       "-o",
-      `-p ${String(port)} -k ${dir} -c listen_addresses=127.0.0.1 -c synchronous_commit=on -c fsync=off -c full_page_writes=off`,
+      `-p ${String(port)} -k ${dir} -c listen_addresses=127.0.0.1 -c max_connections=${String(testWorkerConnections(os.availableParallelism()))} -c synchronous_commit=on -c fsync=off -c full_page_writes=off`,
     ],
     found.library,
   )
