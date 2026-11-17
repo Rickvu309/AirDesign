@@ -1,8 +1,8 @@
+import { Beside } from "@/design/controls/beside"
 import { agentNumberOf, readAgent } from "@airdesign/catalog"
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
 import { designCopy } from "@/copy/design-copy"
 import type { ControlProps } from "@/design/panel"
-import { lookOf } from "@/design/field-looks"
 import { cn } from "@/lib/class-names"
 
 function shownNumber(row: ControlProps["row"]): string {
@@ -37,9 +37,10 @@ export function NumberField({
   unit,
   kind,
   step = 1,
+  fold,
 }: ControlProps & { unit: string; kind: string; step?: number }) {
-  const look = lookOf(row)
-  const Icon = look.icon
+  const look = row.look
+  const Icon = look.name.show === "icon" ? look.name.icon : undefined
   const [draft, setDraft] = useState<string | null>(null)
   const shown = shownNumber(row)
   const field = useRef<HTMLInputElement>(null)
@@ -104,7 +105,13 @@ export function NumberField({
         onPointerUp={endScrub}
         onPointerCancel={endScrub}
       >
-        {Icon ? <Icon size={16} strokeWidth={1.5} aria-hidden /> : (look.short ?? (look.beside ? null : row.label))}
+        {Icon ? (
+          <Icon size={16} strokeWidth={1.5} aria-hidden />
+        ) : look.name.show === "letter" ? (
+          look.name.letter
+        ) : look.name.show === "inside" ? (
+          row.label
+        ) : null}
       </span>
       <input
         ref={field}
@@ -128,11 +135,10 @@ export function NumberField({
       </span>
     </label>
   )
-  return look.beside ? (
-    <div className="grid grid-cols-2 items-center gap-2">
-      <span className="text-[length:var(--type-dense)] font-semibold">{row.label}</span>
+  return look.name.show === "beside" ? (
+    <Beside label={row.label} fold={fold}>
       {fieldControl}
-    </div>
+    </Beside>
   ) : (
     fieldControl
   )

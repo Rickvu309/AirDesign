@@ -2,7 +2,6 @@ import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { designCopy } from "@/copy/design-copy"
-import { linesOf } from "@/design/field-looks"
 import { controlViews } from "@/design/control-views"
 import type { Palette } from "@/design/color-choices"
 import type { ControlProps, PanelModel, PanelRow } from "@/design/panel"
@@ -159,28 +158,32 @@ export function Swatch({ color, name, edged = false }: { color: string; name: st
   )
 }
 
-function RowView({ row, palette, onChange }: ControlProps) {
+function RowView({ row, palette, onChange, fold }: ControlProps) {
   const View = controlViews[row.control]
-  return View === undefined ? null : <View row={row} palette={palette} onChange={onChange} inner={RowView} />
+  return View === undefined ? null : (
+    <View row={row} palette={palette} onChange={onChange} inner={RowView} fold={fold} />
+  )
 }
 
 export function SectionRows({
-  rows,
+  strips,
+  fold,
   palette,
   onChange,
 }: {
-  rows: readonly PanelRow[]
+  fold?: ControlProps["fold"]
+  strips: readonly (readonly PanelRow[])[]
   palette: Palette
   onChange: (row: PanelRow, value: unknown) => void
 }) {
-  return linesOf(rows).map((line) => (
+  return strips.map((line) => (
     <div
       key={line.map((row) => row.field).join(" ")}
       className="grid items-end gap-2"
       style={{ gridTemplateColumns: `repeat(${line.length}, minmax(0, 1fr))` }}
     >
       {line.map((row) => (
-        <RowView key={row.field} row={row} palette={palette} onChange={(value) => onChange(row, value)} />
+        <RowView key={row.field} row={row} fold={fold} palette={palette} onChange={(value) => onChange(row, value)} />
       ))}
     </div>
   ))
@@ -219,10 +222,22 @@ export function ElementDesign({
         if (section.trait === "opacity")
           return (
             <section key={section.trait} className="border-b border-line px-3 py-3">
-              <SectionRows rows={section.rows} palette={palette} onChange={onChange} />
+              <SectionRows
+                strips={section.strips}
+                palette={palette}
+                onChange={onChange}
+                fold={
+                  kind === null
+                    ? undefined
+                    : {
+                        open: foldOpen(folds, kind, section.trait, section.open),
+                        onOpen: (open) => setFold(kind, section.trait, open),
+                      }
+                }
+              />
             </section>
           )
-        const reset = section.rows.find((row) => row.reset !== null && !row.caption)
+        const reset = section.strips.flat().find((row) => row.reset !== null && row.look.name.show === "hidden")
         return (
           <DesignSection
             key={section.trait}
@@ -238,7 +253,7 @@ export function ElementDesign({
                   }
             }
           >
-            <SectionRows rows={section.rows} palette={palette} onChange={onChange} />
+            <SectionRows strips={section.strips} palette={palette} onChange={onChange} />
           </DesignSection>
         )
       })}

@@ -2,7 +2,6 @@ import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { optionWord } from "@/copy/option-copy"
-import { choiceLayout, lookOf } from "@/design/field-looks"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
@@ -41,11 +40,14 @@ export function ChoiceControl(props: ControlProps) {
   const { row, onChange } = props
   const label = useId()
   const options = row.desc.kind === "choice" ? row.desc.options : []
-  const look = lookOf(row)
-  const layout = look.options ? "segments" : look.line || look.list ? "list" : choiceLayout(row.field, options)
+  const look = row.look
+  const layout = look.form
   return (
     <div className="flex flex-col gap-1.5" data-control="choice" data-inherited={row.inherited ? "" : undefined}>
-      <span id={label} className={look.quiet ? "sr-only" : "text-[length:var(--type-caption)] text-quiet"}>
+      <span
+        id={label}
+        className={look.name.show === "hidden" ? "sr-only" : "text-[length:var(--type-caption)] text-quiet"}
+      >
         {row.label}
       </span>
       {layout === "list" ? (
@@ -53,7 +55,7 @@ export function ChoiceControl(props: ControlProps) {
       ) : (
         <div role="group" aria-labelledby={label} className="flex h-8 items-center rounded-lg bg-line p-0.5">
           {options.map((option) => {
-            const Icon = look.options?.[option]
+            const Icon = look.options[option]
             const word = optionWord(row.field, option)
             const chosen = !row.mixed && row.value === option
             return (

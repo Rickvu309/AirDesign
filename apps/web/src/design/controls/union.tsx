@@ -1,5 +1,4 @@
 import type { Color } from "@airdesign/document"
-import { lookOf } from "@/design/field-looks"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import { optionCopy } from "@/copy/option-copy"
@@ -34,7 +33,7 @@ export function UnionControl({ row, palette, onChange, inner }: ControlProps) {
 
   return (
     <div className="flex flex-col gap-3" data-control="union" data-inherited={row.inherited ? "" : undefined}>
-      {row.caption ? (
+      {row.look.name.show === "above" ? (
         <div className="flex min-h-6 items-center justify-between gap-2">
           <span id={label} className="text-[length:var(--type-caption)] text-quiet">
             {row.label}
@@ -66,7 +65,7 @@ export function UnionControl({ row, palette, onChange, inner }: ControlProps) {
       >
         {Object.keys(cases).map((name) => {
           const pressed = name === chosen
-          const Icon = lookOf(row).options?.[name]
+          const Icon = row.look.options[name]
           const word = optionCopy[name] ?? name
           return (
             <Button

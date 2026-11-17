@@ -1,10 +1,9 @@
-import { lookOf } from "@/design/field-looks"
 import { Button } from "@/components/ui/button"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
 export function ToggleControl({ row, onChange }: ControlProps) {
-  const Icon = lookOf(row).icon
+  const Icon = row.look.name.show === "icon" ? row.look.name.icon : undefined
   const on = !row.mixed && row.value === true
   return (
     <Button

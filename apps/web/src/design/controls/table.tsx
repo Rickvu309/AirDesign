@@ -1,3 +1,4 @@
+import { resolveRow } from "@/design/panel-arrangement"
 import {
   borderKinds,
   borderSides,
@@ -18,7 +19,7 @@ import {
 import { useId, useState, type KeyboardEvent } from "react"
 import { designCopy } from "@/copy/design-copy"
 import { tableCopy } from "@/copy/table-copy"
-import { controlOf, type ControlProps, type PanelRow } from "@/design/panel"
+import { type ControlProps, type PanelRow } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
 type Cell = { readonly row: number; readonly column: number }
@@ -92,7 +93,7 @@ function shownSide(sides: BorderSides): TableSide {
 }
 
 function partOf(row: PanelRow, field: string, label: string, desc: Desc, value: unknown): PanelRow {
-  return { ...row, field, label, control: controlOf(desc), desc, value, mixed: false, caption: true, reset: null }
+  return resolveRow({ ...row, field, label, desc, value, mixed: false, reset: null })
 }
 
 export function TableControl({ row, palette, onChange, inner }: ControlProps) {

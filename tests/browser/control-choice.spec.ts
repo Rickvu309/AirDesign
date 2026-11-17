@@ -15,7 +15,10 @@ test("a choice aligns every paragraph of the element, shows the pick, and Undo p
       .locator("[data-paragraph]")
       .first()
       .evaluate((node) => getComputedStyle(node).textAlign)
-  await expect(alignment.getByRole("button")).toHaveText(["Left", "Center", "Right"])
+  for (const [at, name] of ["Left", "Center", "Right"].entries()) {
+    await expect(alignment.getByRole("button").nth(at)).toHaveAccessibleName(name)
+    await expect(alignment.getByRole("button").nth(at)).toHaveAttribute("title", name)
+  }
   await expect.poll(aligned).toBe("left")
   await alignment.getByRole("button", { name: "Center", exact: true }).click()
   await expect.poll(aligned).toBe("center")

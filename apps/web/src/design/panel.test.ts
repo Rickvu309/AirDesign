@@ -12,7 +12,12 @@ const connector: ScopedElement = {
 
 function lineRows(fill: unknown): readonly string[] {
   const panel = panelOf(connector, { reads: {}, moves: true, fields: { "line.fill": { value: fill, own: true } } })
-  return panel.sections.find((section) => section.trait === "line")?.rows.map((row) => row.field) ?? []
+  return (
+    panel.sections
+      .find((section) => section.trait === "line")
+      ?.strips.flat()
+      .map((row) => row.field) ?? []
+  )
 }
 
 it("shows only the line's kind while the line is none, and every line field once it has a color", () => {
@@ -35,7 +40,7 @@ it("names the line's own color apart from the fill's, so each swatch group has i
     moves: true,
     fields: { "line.fill": { value: { solid: { scheme: "accent1" } }, own: true } },
   })
-  const fill = panel.sections.find((section) => section.trait === "line")?.rows[0]
+  const fill = panel.sections.find((section) => section.trait === "line")?.strips.flat()[0]
   if (fill === undefined || fill.desc.kind !== "union") throw new Error("line fill")
   const solid = fill.desc.cases.solid
   if (solid === undefined) throw new Error("solid")
@@ -53,7 +58,7 @@ const shape: ScopedElement = {
 function opacityOf(view: ScopedElement, fields: Readonly<Record<string, unknown>>) {
   const shown = Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, { value, own: true }]))
   const panel = panelOf(view, { reads: {}, moves: true, fields: shown })
-  return panel.sections.find((section) => section.trait === "opacity")?.rows[0]
+  return panel.sections.find((section) => section.trait === "opacity")?.strips.flat()[0]
 }
 
 it("shows one Opacity for the fill, line and text it fades together", () => {
@@ -93,7 +98,7 @@ it("lays out a text box's body field by field, autofit included", () => {
   })
   const body = panel.sections.find((section) => section.trait === "body")
   expect(body?.label).toBe("Text box")
-  expect(body?.rows.map((row) => [row.field, row.control, row.value, row.reset])).toEqual([
+  expect(body?.strips.flat().map((row) => [row.field, row.control, row.value, row.reset])).toEqual([
     ["insets", "record", undefined, null],
     ["anchor", "choice", "ctr", "Reset vertical alignment"],
     ["wrap", "toggle", undefined, null],
@@ -102,7 +107,9 @@ it("lays out a text box's body field by field, autofit included", () => {
     ["columns", "count", 1, null],
   ])
   const text = panel.sections.find((section) => section.trait === "text")
-  const typed = text?.rows.filter((row) => ["font", "lineSpacing", "spaceBefore", "spaceAfter"].includes(row.field))
+  const typed = text?.strips
+    .flat()
+    .filter((row) => ["font", "lineSpacing", "spaceBefore", "spaceAfter"].includes(row.field))
   expect(typed?.map((row) => [row.label, row.control, row.value])).toEqual([
     ["Font", "text", "Calibri"],
     ["Line spacing", "percent", undefined],
@@ -127,7 +134,7 @@ function shownRows(view: ScopedElement, fields: Readonly<Record<string, ShownFie
   const panel = panelOf(view, { reads: {}, moves: true, fields })
   return Object.fromEntries(
     panel.sections.flatMap((section) =>
-      section.rows.map((row) => [`${row.trait}.${row.field}`, [row.value, row.inherited]]),
+      section.strips.flat().map((row) => [`${row.trait}.${row.field}`, [row.value, row.inherited]]),
     ),
   )
 }
@@ -171,7 +178,7 @@ it("sizes a table by Width and Height beside X and Y, and offers no rotation for
     box: { x: 457_200, y: 914_400, cx: 7_315_200, cy: 1_112_520 },
   }
   const panel = panelOf(table, { reads: {}, moves: true, fields: {} })
-  const rows = panel.sections.find((section) => section.trait === "box")?.rows ?? []
+  const rows = panel.sections.find((section) => section.trait === "box")?.strips.flat() ?? []
   expect(rows.filter((row) => row.control === "length").map((row) => [row.label, row.value])).toEqual([
     ["X", 457_200],
     ["Y", 914_400],
@@ -187,7 +194,7 @@ it("sizes a table by Width and Height beside X and Y, and offers no rotation for
 
 function boxRows(view: ScopedElement, fields: Readonly<Record<string, ShownField>>) {
   const panel = panelOf(view, { reads: {}, moves: true, fields })
-  return panel.sections.find((section) => section.trait === "box")?.rows ?? []
+  return panel.sections.find((section) => section.trait === "box")?.strips.flat() ?? []
 }
 
 it("draws Align and Distribute as actions and every other box row as itself", () => {
@@ -226,7 +233,10 @@ it("reads Mixed where two shapes differ and sets the fill of both in one change"
   const panel = panelOfMany([blue, green])
   expect(panel).toMatchObject({ nodes: ["258.2", "258.3"], node: "258.3", kind: "many" })
   const row = (trait: string, field: string) =>
-    panel.sections.find((section) => section.trait === trait)?.rows.find((each) => each.field === field)
+    panel.sections
+      .find((section) => section.trait === trait)
+      ?.strips.flat()
+      .find((each) => each.field === field)
   expect(row("fill", "value")).toMatchObject({ value: { solid: { scheme: "accent1" } }, mixed: true })
   expect(row("box", "x")).toMatchObject({ value: undefined, mixed: true })
   expect(row("box", "y")).toMatchObject({ value: 0, mixed: false })
@@ -241,7 +251,7 @@ it("leaves out what only one element can hold, such as its text and its name", (
   const panel = panelOfMany([filled("258.2", null, 0), filled("258.3", null, 0)])
   expect(panel.sections.map((section) => section.trait)).toEqual(["box", "fill", "line", "opacity", "text", "effects"])
   expect(panel.sections.find((section) => section.trait === "effects")?.open).toBe(false)
-  const fields = panel.sections.flatMap((section) => section.rows.map((row) => `${row.trait}.${row.field}`))
+  const fields = panel.sections.flatMap((section) => section.strips.flat().map((row) => `${row.trait}.${row.field}`))
   expect(fields).not.toContain("text.value")
   expect(fields).toContain("text.size")
 })
@@ -249,14 +259,19 @@ it("leaves out what only one element can hold, such as its text and its name", (
 it("keeps the fill kind two shapes share, and names no kind when their kinds differ", () => {
   const solid = filled("258.2", { solid: { scheme: "accent1" } }, 0)
   const none = filled("258.3", { none: true }, 0)
-  const fill = panelOfMany([solid, none]).sections.find((section) => section.trait === "fill")?.rows[0]
+  const fill = panelOfMany([solid, none])
+    .sections.find((section) => section.trait === "fill")
+    ?.strips.flat()[0]
   expect(fill).toMatchObject({ value: undefined, mixed: true })
 })
 
 function pickedOver(own: boolean, alpha: number) {
   const fields = { "line.fill": { value: { solid: { scheme: "accent2" } }, own }, "line.alpha": { value: alpha, own } }
   const panel = panelOf(connector, { reads: {}, moves: true, fields })
-  const row = panel.sections.find((section) => section.trait === "line")?.rows.find((each) => each.field === "fill")
+  const row = panel.sections
+    .find((section) => section.trait === "line")
+    ?.strips.flat()
+    .find((each) => each.field === "fill")
   if (row === undefined) throw new Error("line fill")
   return row.change({ solid: { rgb: "C00000" } })
 }
@@ -272,5 +287,78 @@ it("writes a colour picked over the line's own color as picked, so the export ke
   expect(pickedOver(true, 60_000)).toEqual({
     target: { node: connector.node },
     line: { fill: { solid: { rgb: "C00000" } } },
+  })
+})
+
+it("arranges a text box into strips with resolved names and choices", () => {
+  const panel = panelOf(shape, { reads: {}, moves: true })
+  const text = panel.sections.find((section) => section.trait === "text")
+  expect(text?.strips.map((strip) => strip.map((row) => row.field))).toEqual([
+    ["value"],
+    ["font"],
+    ["size", "lineSpacing"],
+    ["bold", "italic", "underline"],
+    ["align", "bullet"],
+    ["color"],
+    ["spaceBefore", "spaceAfter"],
+  ])
+  expect(text?.strips[1]?.[0]?.look.name).toEqual({ show: "hidden" })
+  expect(text?.strips[2]?.[0]?.look.name.show).toBe("icon")
+  expect(text?.strips[4]?.[0]?.look.form).toBe("segments")
+  expect(text?.strips[4]?.[0]?.look.options.left).toBeDefined()
+})
+
+it("resolves box actions and letter names in the shape's strips", () => {
+  const panel = panelOf(shape, { reads: {}, moves: true })
+  const box = panel.sections.find((section) => section.trait === "box")
+  expect(box?.strips.map((strip) => strip.map((row) => row.field))).toEqual([
+    ["x", "y"],
+    ["w", "h"],
+    ["rot", "flipH", "flipV"],
+    ["align"],
+    ["distribute"],
+  ])
+  expect(box?.strips[1]?.[0]?.look.name).toEqual({ show: "letter", letter: "W" })
+  expect(box?.strips[3]?.[0]).toMatchObject({ control: "action", look: { name: { show: "hidden" } } })
+  const geometry = panel.sections.find((section) => section.trait === "geometry")?.strips.flat()[0]
+  if (geometry === undefined || geometry.desc.kind !== "record") throw new Error("geometry")
+  const preset = geometry.desc.fields.preset
+  if (preset === undefined) throw new Error("preset")
+  expect(partRow(geometry, "preset", preset, "rect")).toMatchObject({
+    control: "preset",
+    look: { name: { show: "above" } },
+  })
+})
+
+it("resolves a connector's choice form explicitly and its site override", () => {
+  const panel = panelOf(connector, { reads: {}, moves: true })
+  const line = panel.sections.find((section) => section.trait === "line")
+  expect(line?.strips.map((strip) => strip.map((row) => row.field))).toEqual([
+    ["fill"],
+    ["width", "dash"],
+    ["cap", "compound"],
+    ["join"],
+    ["head", "tail"],
+  ])
+  expect(line?.strips[2]?.[0]?.look.form).toBe("list")
+  const connection = panel.sections.find((section) => section.trait === "connection")?.strips.flat()[0]
+  if (connection === undefined || connection.desc.kind !== "union") throw new Error("connection")
+  const attached = connection.desc.cases.shape
+  if (attached === undefined || attached.kind !== "record") throw new Error("attached")
+  const site = attached.fields.site
+  if (site === undefined) throw new Error("site")
+  const shapePart = partRow(connection, "shape", attached, {})
+  expect(partRow(shapePart, "site", site, 0)).toMatchObject({ control: "site", look: { name: { show: "above" } } })
+})
+
+it("keeps the same strips and looks for a many-selection", () => {
+  const first = panelOf(shape, { reads: {}, moves: true })
+  const second = panelOf({ ...shape, node: elementId("258.3") }, { reads: {}, moves: true })
+  const panel = panelOfMany([first, second])
+  expect(
+    panel.sections.find((section) => section.trait === "box")?.strips.map((strip) => strip.map((row) => row.field)),
+  ).toEqual([["x", "y"], ["w", "h"], ["rot", "flipH", "flipV"], ["align"], ["distribute"]])
+  expect(panel.sections.find((section) => section.trait === "opacity")?.strips[0]?.[0]?.look.name).toEqual({
+    show: "beside",
   })
 })

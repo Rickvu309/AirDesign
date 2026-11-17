@@ -1,4 +1,3 @@
-import { lookOf } from "@/design/field-looks"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import { optionWord } from "@/copy/option-copy"
@@ -9,12 +8,15 @@ export function ActionControl({ row, onChange }: ControlProps) {
   const options = row.desc.kind === "choice" ? row.desc.options : []
   return (
     <div className="flex flex-col gap-1.5" data-control="action">
-      <span id={label} className={lookOf(row).quiet ? "sr-only" : "text-[length:var(--type-caption)] text-quiet"}>
+      <span
+        id={label}
+        className={row.look.name.show === "hidden" ? "sr-only" : "text-[length:var(--type-caption)] text-quiet"}
+      >
         {row.label}
       </span>
       <div role="group" aria-labelledby={label} className="flex gap-1">
         {options.map((option) => {
-          const Icon = lookOf(row).options?.[option]
+          const Icon = row.look.options[option]
           const name = `${row.label} ${optionWord(row.field, option).toLowerCase()}`
           return (
             <Button
