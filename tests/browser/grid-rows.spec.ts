@@ -113,25 +113,37 @@ test("collapsing a whole first row keeps later rows in their cells", async ({ pa
   expect(after.x).toBeCloseTo(before.x, 1)
 })
 
-test("section markers keep their full names and counts at fit zoom", async ({ page }) => {
+test("section markers keep full accessible names and a fixed one-line height at fit zoom", async ({ page }) => {
   await openFile(page, `${fixtures}/doe-heat-pumps.pptx`)
   await openGrid(page)
   await page.evaluate(() => document.fonts.ready)
   await expect(page.locator("[data-section-head]")).toHaveCount(4)
+  const room = (await page.locator("[data-grid-viewport]").boundingBox())!
   for (const head of await page.locator("[data-section-head]").all()) {
-    await expect(head).toBeInViewport({ ratio: 1 })
+    const box = (await head.boundingBox())!
+    expect(box.x).toBeGreaterThanOrEqual(room.x + 47)
+    expect(box.y).toBeGreaterThanOrEqual(room.y + 47)
+    expect(box.x + box.width).toBeLessThanOrEqual(room.x + room.width - 47)
+    expect(box.y + box.height).toBeLessThanOrEqual(room.y + room.height - 47)
+    expect(box.height).toBeCloseTo(20, 1)
+    const name = await head.getAttribute("title")
+    expect(name).toBeTruthy()
+    await expect(head).toHaveAccessibleName(new RegExp(name!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
+    const label = head.locator("span").first()
+    await expect(label).toHaveCSS("white-space", "nowrap")
+    await expect(label).toHaveCSS("text-overflow", "ellipsis")
     const geometry = await head.evaluate((button) => {
       const label = button.children[1]
       const badge = button.children[2]
-      if (!(label instanceof HTMLElement) || badge === undefined) throw new Error("section marker")
+      if (!(label instanceof HTMLElement) || !(badge instanceof HTMLElement)) throw new Error("section marker")
       const text = label.getBoundingClientRect()
       const count = badge.getBoundingClientRect()
       return {
-        overflow: label.scrollWidth - label.clientWidth,
-        apart: text.right <= count.left + 1 || text.bottom <= count.top + 1,
+        apart:
+          getComputedStyle(badge).display === "none" ||
+          (text.right <= count.left + 1 && Math.abs(text.top - count.top) < 1),
       }
     })
-    expect(geometry.overflow).toBeLessThanOrEqual(1)
     expect(geometry.apart).toBe(true)
   }
 })

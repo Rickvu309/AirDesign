@@ -122,3 +122,42 @@ export function readGridViewport(raw: string | null): GridViewport | null {
 export function gridSectionGap(scale: number): number {
   return 32 / scale
 }
+
+export type GridGeometry = {
+  readonly rows: readonly { readonly start: number; readonly end: number }[]
+  readonly sections: readonly number[]
+  readonly width: number
+  readonly height: number
+}
+
+export function fittedGridRows(geometry: GridGeometry, room: GridBounds): GridViewport {
+  const { rows, sections, width, height } = geometry
+  const spacing = gridSpacing(width, height)
+  const columns = Math.max(1, ...rows.map((row) => row.end - row.start))
+  const bounds = {
+    width: columns * width + (columns - 1) * spacing.column,
+    height: rows.length * (height + 24) + Math.max(0, rows.length - 1) * spacing.row,
+  }
+  const heads = rows.filter((row) => sections.some((start) => start >= row.start && start < row.end)).length * 44
+  const scale = boundedGridScale(
+    Math.min((room.width - 96) / bounds.width, (room.height - 96 - heads) / Math.max(1, bounds.height)),
+  )
+  return { x: (room.width - bounds.width * scale) / 2, y: (room.height - bounds.height * scale - heads) / 2, scale }
+}
+
+export function resizedGrid(view: GridViewport, box: GridRect, before: GridRect, after: GridRect): GridViewport {
+  const inside = (room: GridRect) =>
+    box.left >= room.left &&
+    box.top >= room.top &&
+    box.left + box.width <= room.left + room.width &&
+    box.top + box.height <= room.top + room.height
+  if (!inside(before) || inside(after)) return view
+  const delta = (start: number, size: number, edge: number, length: number) =>
+    size > length
+      ? edge + (length - size) / 2 - start
+      : Math.max(edge - start, Math.min(0, edge + length - start - size))
+  return pannedGrid(view, {
+    x: delta(box.left, box.width, after.left, after.width),
+    y: delta(box.top, box.height, after.top, after.height),
+  })
+}

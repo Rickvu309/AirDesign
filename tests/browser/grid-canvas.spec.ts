@@ -152,6 +152,7 @@ test("numbers clear the preceding row at fit", async ({ page }) => {
 })
 
 async function resizedGrid(page: Page, resize: () => Promise<void>) {
+  const beforeRoom = (await page.locator("[data-grid-viewport]").boundingBox())!
   const recording = await page.locator("[data-grid-viewport]").evaluateHandle((host) => {
     const positions = () =>
       [...host.querySelectorAll("[data-slide-entry]")].map((entry) => {
@@ -181,7 +182,8 @@ async function resizedGrid(page: Page, resize: () => Promise<void>) {
   await resize()
   const result = await recording.evaluate(async ({ before, resized }) => ({ before, frames: await resized }))
   await recording.dispose()
-  return result
+  const afterRoom = (await page.locator("[data-grid-viewport]").boundingBox())!
+  return { ...result, beforeRoom, afterRoom }
 }
 
 test("refits in the resize paint without moving again on later frames", async ({ page }) => {
@@ -203,11 +205,47 @@ test("refits in the resize paint without moving again on later frames", async ({
   }
 })
 
-test("keeps a chosen zoom and pan when the window or a panel resizes", async ({ page }) => {
+test("keeps a chosen zoom and pans only when resize newly clips the working slide", async ({ page }) => {
   await openFile(page, { name: "resize.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
   await openGrid(page)
   await zoomTo(page, 50)
   await entry(page, 7).focus()
+  for (const resize of [
+    () => page.setViewportSize({ width: 900, height: 923 }),
+    () => page.setViewportSize({ width: 1470, height: 923 }),
+    () => page.getByRole("button", { name: "Design", exact: true }).click(),
+    () => page.getByRole("button", { name: "Design", exact: true }).click(),
+  ]) {
+    const { before, frames, beforeRoom, afterRoom } = await resizedGrid(page, resize)
+    const working = before[6]!
+    const visible =
+      working.x >= beforeRoom.x &&
+      working.y >= beforeRoom.y &&
+      working.x + working.width <= beforeRoom.x + beforeRoom.width &&
+      working.y + working.height <= beforeRoom.y + beforeRoom.height
+    const dx = visible
+      ? Math.max(afterRoom.x - working.x, Math.min(0, afterRoom.x + afterRoom.width - working.x - working.width))
+      : 0
+    const dy = visible
+      ? Math.max(afterRoom.y - working.y, Math.min(0, afterRoom.y + afterRoom.height - working.y - working.height))
+      : 0
+    for (const frame of frames) {
+      for (const [index, card] of frame.entries()) {
+        expect(card.width).toBe(before[index]!.width)
+        expect(card.height).toBe(before[index]!.height)
+        expect(card.x).toBeCloseTo(before[index]!.x + dx, 1)
+        expect(card.y).toBeCloseTo(before[index]!.y + dy, 1)
+      }
+    }
+  }
+})
+
+test("resize leaves a deliberately panned-off working slide alone", async ({ page }) => {
+  await openFile(page, { name: "resize.pptx", mimeType: "application/octet-stream", buffer: await manySlides(7) })
+  await openGrid(page)
+  await zoomTo(page, 50)
+  await entry(page, 7).focus()
+  await page.locator("[data-grid-viewport]").dispatchEvent("wheel", { deltaX: 2400, deltaY: 1200 })
   for (const resize of [
     () => page.setViewportSize({ width: 900, height: 923 }),
     () => page.setViewportSize({ width: 1470, height: 923 }),

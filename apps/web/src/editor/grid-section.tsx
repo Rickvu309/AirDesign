@@ -36,15 +36,17 @@ export function GridSectionHead({
   marker?: boolean
 }) {
   return (
-    <div className={cn("flex items-center gap-2", !marker && "h-5")}>
-      <h2 className="flex min-w-0">
+    <div className="flex h-5 min-w-0 items-center gap-2" style={marker ? { containerType: "inline-size" } : undefined}>
+      <h2 className="flex min-w-0 max-w-full">
         <button
           type="button"
           aria-expanded={open}
+          aria-label={`${name} ${slideListCopy.sectionCount(count)}`}
+          title={name}
           data-section-head
           className={cn(
-            "-ml-1.5 min-w-0 gap-1.5 rounded-md pr-2 pl-1 text-left hover:bg-line",
-            marker ? "grid grid-cols-[14px_minmax(0,1fr)] items-start py-1" : "-my-1 flex h-7 items-center",
+            "flex min-w-0 max-w-full items-center gap-1.5 rounded-md text-left hover:bg-line",
+            marker ? "h-5" : "-my-1 -ml-1.5 h-7 pr-2 pl-1",
           )}
           onClick={onToggle}
         >
@@ -52,7 +54,8 @@ export function GridSectionHead({
           <span
             className={cn(
               "min-w-0 text-[length:var(--type-caption)] font-semibold text-foreground",
-              marker ? "wrap-anywhere" : "truncate",
+              "truncate",
+              marker && "@max-[56px]:hidden",
             )}
           >
             {name}
@@ -60,7 +63,7 @@ export function GridSectionHead({
           <span
             className={cn(
               "shrink-0 text-[length:var(--type-caption)] text-quiet tabular-nums",
-              marker && "col-start-2",
+              marker && "@max-[160px]:hidden",
             )}
           >
             {slideListCopy.sectionCount(count)}
