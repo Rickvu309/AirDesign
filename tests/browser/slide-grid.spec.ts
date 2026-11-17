@@ -31,6 +31,21 @@ async function ringed(page: Page): Promise<boolean> {
   })
 }
 
+test("a selected slide has one frame that follows its thumbnail corners", async ({ page }) => {
+  await openFile(page, sectioned)
+  await openGrid(page)
+  const selected = entry(page, 1)
+  const thumb = selected.locator("[data-slide-thumb]")
+  const radius = await thumb.evaluate((element) => getComputedStyle(element).borderRadius)
+  await expect(selected).toHaveCSS("border-radius", radius)
+  await expect(thumb).toHaveCSS("box-shadow", "none")
+  await expect(selected).not.toHaveCSS("box-shadow", "none")
+  await selected.focus()
+  await page.keyboard.press("ArrowRight")
+  await expect(entry(page, 2)).toBeFocused()
+  expect(await ringed(page)).toBe(true)
+})
+
 test("the grid shows every slide, and the keyboard opens one", async ({ page }) => {
   await openFile(page, sectioned)
   await openGrid(page)
