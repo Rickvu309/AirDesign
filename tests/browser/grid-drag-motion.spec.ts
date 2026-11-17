@@ -9,7 +9,11 @@ function card(page: Page, number: number) {
 }
 
 async function shiftOf(page: Page, number: number): Promise<number> {
-  return card(page, number).evaluate((element) => new DOMMatrixReadOnly(getComputedStyle(element).transform).m41)
+  return card(page, number).evaluate((element) => {
+    const world = element.closest<HTMLElement>('[aria-label="Slides"]')
+    const scale = world === null ? 1 : world.getBoundingClientRect().width / world.offsetWidth
+    return new DOMMatrixReadOnly(getComputedStyle(element).transform).m41 * scale
+  })
 }
 
 type Box = { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
@@ -54,8 +58,8 @@ test("slides move aside to show where a dragged slide lands, go back when it goe
   await expect(page.locator("[data-zoom-readout]")).toHaveText(/^20/)
   const first = await boxOf(page, 1)
   const third = await boxOf(page, 3)
-  const width = await grab(page, 1)
-  const step = width + 32
+  await grab(page, 1)
+  const step = (third.x - first.x) / 2
   await pointAt(page, third, 0.8)
   await expect.poll(() => shiftOf(page, 2)).toBeCloseTo(-step, 0)
   await expect.poll(() => shiftOf(page, 3)).toBeCloseTo(-step, 0)
@@ -80,14 +84,16 @@ test("slides move aside to show where a dragged slide lands, go back when it goe
 test("a drag keeps the motion setting it started with until the drop", async ({ page }) => {
   await openFile(page, { name: "four.pptx", mimeType: "application/octet-stream", buffer: await manySlides(4) })
   await openGrid(page)
+  const first = await boxOf(page, 1)
   const third = await boxOf(page, 3)
-  const width = await grab(page, 1)
+  const step = (third.x - first.x) / 2
+  await grab(page, 1)
   await pointAt(page, third, 0.8)
-  await expect.poll(() => shiftOf(page, 2)).toBeCloseTo(-(width + 32), 0)
+  await expect.poll(() => shiftOf(page, 2)).toBeCloseTo(-step, 0)
   await page.emulateMedia({ reducedMotion: "reduce" })
   await pointAt(page, third, 0.82)
   await expect(page.locator("[data-drop-bar]")).toBeHidden()
-  expect(await shiftOf(page, 2)).toBeCloseTo(-(width + 32), 0)
+  expect(await shiftOf(page, 2)).toBeCloseTo(-step, 0)
   await page.mouse.up()
   await expect(page.locator("[data-editor-grid] [data-announcer]")).toHaveText("Moved slide 1 to position 3")
 })

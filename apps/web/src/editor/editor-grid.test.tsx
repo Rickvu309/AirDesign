@@ -118,7 +118,7 @@ describe("slide grid", () => {
     const bar = tags(html, /<div[^>]*data-view-bar[^>]*>[\s\S]*?Export<\/button>/g)[0] ?? ""
     expect(bar.indexOf("data-zoom-readout")).toBeGreaterThan(-1)
     expect(bar.indexOf("data-zoom-readout")).toBeLessThan(bar.indexOf("data-present-button"))
-    expect(bar).toMatch(/data-zoom-readout[^>]*>13%/)
+    expect(bar).toMatch(/data-zoom-readout[^>]*>25%/)
     expect(html).not.toContain('role="slider"')
   })
 

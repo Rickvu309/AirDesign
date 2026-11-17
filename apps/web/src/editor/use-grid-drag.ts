@@ -15,14 +15,15 @@ function rowOf(rows: readonly Range[], index: number): Range | undefined {
 
 function slotsIn(scroller: HTMLElement): readonly GridSlot[] {
   const box = scroller.getBoundingClientRect()
+  const scale = scroller.offsetWidth === 0 ? 1 : box.width / scroller.offsetWidth
   return [...scroller.querySelectorAll<HTMLElement>("[data-slide-entry]")].map((card) => {
     const rect = card.getBoundingClientRect()
     return {
       index: Number(card.dataset.slideEntry) - 1,
-      left: rect.left - box.left + scroller.scrollLeft,
-      top: rect.top - box.top + scroller.scrollTop,
-      width: rect.width,
-      height: rect.height,
+      left: (rect.left - box.left) / scale + scroller.scrollLeft,
+      top: (rect.top - box.top) / scale + scroller.scrollTop,
+      width: rect.width / scale,
+      height: rect.height / scale,
     }
   })
 }
@@ -87,8 +88,9 @@ export function useGridDrag({
     const step = edgeScroll(event.clientY, { top: box.top, height: box.height })
     if (step !== 0) scroller.scrollTop += step
     if (preview === null) return
-    const x = event.clientX - box.left + scroller.scrollLeft
-    const y = event.clientY - box.top + scroller.scrollTop
+    const scale = scroller.offsetWidth === 0 ? 1 : box.width / scroller.offsetWidth
+    const x = (event.clientX - box.left) / scale + scroller.scrollLeft
+    const y = (event.clientY - box.top) / scale + scroller.scrollTop
     const slot = slotUnder(x, y, slots.current)
     if (slot === undefined) return
     const at = dropPlace(x, slot, slot.index)
