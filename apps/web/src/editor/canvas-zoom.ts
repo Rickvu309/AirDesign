@@ -16,13 +16,17 @@ export function slideRoom(width: number): SlideSize {
   return { width, height: (width * 3) / 4 }
 }
 
-const canvasInset = { side: 31, top: 85, bottom: 152 } as const
+export const canvasInset = { side: 31, gap: 40 } as const
 
-export function canvasRoom(canvas: SlideSize): SlideSize {
+export function canvasRoom(canvas: SlideSize, overlay: number): SlideSize {
   return {
     width: Math.max(0, canvas.width - 2 * canvasInset.side),
-    height: Math.max(0, canvas.height - canvasInset.top - canvasInset.bottom),
+    height: Math.max(0, canvas.height - overlay - 2 * canvasInset.gap),
   }
+}
+
+export function slideTop({ height, overlay, slide }: { height: number; overlay: number; slide: number }): number {
+  return Math.max(canvasInset.gap, (height - overlay - slide) / 2)
 }
 
 export function fitWidth(room: SlideSize, slide: SlideSize): number {
