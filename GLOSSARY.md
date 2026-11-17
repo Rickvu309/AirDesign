@@ -1,6 +1,6 @@
 # AirDesign
 
-The words this repo uses for how a change is checked and merged. One word per idea: use the word in bold, and none of the words under Avoid.
+Use one word per idea: the bold term, never its Avoid terms.
 
 ## Language
 
@@ -131,7 +131,7 @@ One page of a deck.
 _Avoid_: page, frame
 
 **grid row**:
-Slides kept together in Grid, separate from PowerPoint sections. Rows are not exported.
+Slides kept together in Grid. Separate from sections; not exported.
 
 **import**:
 To make a deck from a PowerPoint file.

@@ -16,6 +16,13 @@ it("selects a clone of the current slide", () => {
   expect(built?.edit).toMatchObject({ slide: "clone", source: file[0] })
 })
 
+it("uses the shared fold to select a slide added below its source row", () => {
+  const built = slideCommand(file, [], "add", 0, 0, undefined, "new")
+  expect(built?.current).toBe(3)
+  expect(built?.edit).toEqual({ slide: "add", grid: 1, row: "new", id: "259", after: "256", layout: "256" })
+  expect(built?.edit).not.toHaveProperty("key")
+})
+
 it("refuses to delete the last slide", () => {
   expect(slideCommand([file[0]], [], "remove", 0)).toBeNull()
 })

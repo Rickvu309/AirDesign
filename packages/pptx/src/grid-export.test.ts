@@ -47,3 +47,32 @@ it("materializes modern anchored births and their guarded undo without grid part
   expect(out.get("ppt/slides/slide4.xml")).toBeDefined()
   expect([...out.keys()].filter((key) => key.includes("grid"))).toEqual([])
 })
+
+it("exports the same bytes for below-row and same-row additions with the same flat order", async () => {
+  const original = process
+    .getBuiltinModule("node:fs")
+    .readFileSync(process.cwd() + "/scripts/pptx-fixtures/sections-before.pptx")
+  const parts = await readParts(original)
+  const file = [slideId("256"), slideId("257")]
+  const below: SlideCommand = {
+    slide: "add",
+    grid: 1,
+    row: "new",
+    id: slideId("258"),
+    after: file[0]!,
+    layout: file[0]!,
+  }
+  const beside: SlideCommand = {
+    slide: "add",
+    grid: 1,
+    row: "same",
+    id: slideId("258"),
+    after: file[1]!,
+    layout: file[0]!,
+  }
+  const newRow = orderedParts(parts, { file, order: [below] })
+  const sameRow = orderedParts(parts, { file, order: [beside] })
+  expect(gridRows({ file, order: [below] })).toEqual([[...file], ["258"]])
+  expect([...newRow.keys()].some((path) => path.includes("grid"))).toBe(false)
+  expect(await exportPackage(original, newRow)).toEqual(await exportPackage(original, sameRow))
+})

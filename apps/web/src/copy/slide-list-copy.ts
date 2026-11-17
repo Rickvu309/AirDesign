@@ -15,6 +15,7 @@ export const slideListCopy = {
   selectOne: "Select one slide to duplicate, delete or move it",
   added: (number: number) => `Added slide ${String(number)}`,
   addAfter: (number: number) => `Add slide after slide ${String(number)}`,
+  addBelow: (row: number) => `Add slide in a new row below row ${String(row)}`,
   duplicated: (number: number) => `Duplicated slide ${String(number)}. The copy is slide ${String(number + 1)}`,
   deleted: (number: number) => `Slide ${String(number)} deleted`,
   moved: (from: number, to: number) => `Moved slide ${String(from)} to position ${String(to)}`,

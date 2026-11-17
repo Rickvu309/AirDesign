@@ -150,6 +150,8 @@
   --grid-number-hover: #165ba8;
   --grid-number: var(--quiet);
   --grid-number-surface: var(--background);
+  --grid-placeholder: var(--navy-4);
+  --grid-placeholder-edge: var(--quiet);
   --shadow-grid: 0 0 0 1px var(--line), 0 1px 3px rgb(15 36 51 / 8%);
   --shadow-grid-selected: 0 0 0 2px var(--ring);
   --shadow-card: 0 0 0 1px var(--line);

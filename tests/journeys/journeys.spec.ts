@@ -66,6 +66,7 @@ for (const name of [
   "move-resize",
   "connected-agents",
   "slide-commands",
+  "grid-row-add",
   "person-undo",
   "usage-page",
   "sign-in-mail",

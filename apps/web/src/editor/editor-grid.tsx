@@ -1,4 +1,5 @@
 import { noSelection, type Selection } from "@airdesign/render"
+import { limits } from "@airdesign/document"
 import { useCallback, useLayoutEffect, useReducer, useRef, useState, type KeyboardEvent, type ReactNode } from "react"
 import { flushSync } from "react-dom"
 import { Announcer, type Announcement } from "@/components/ui/announcer"
@@ -8,6 +9,7 @@ import { EditorToolbar } from "@/editor/editor-toolbar"
 import { cardPress } from "@/editor/grid-hit"
 import { GridCard } from "@/editor/grid-card"
 import { GridHead } from "@/editor/grid-head"
+import { GridRowAdd } from "@/editor/grid-row-add"
 import { gridSpacing } from "@/editor/grid-viewport"
 import { GridDragGhost } from "@/editor/grid-drag-ghost"
 import { dragMoves, landing } from "@/editor/grid-drop"
@@ -176,6 +178,13 @@ export function EditorGrid({
     strip.onAdd?.(undefined, index)
   }
 
+  function addBelow(index: number) {
+    following.current = true
+    edit.step({ kind: "pick", pick: null })
+    if (zoom === "fit") setZoom(percent)
+    strip.onAdd?.(undefined, index, "new")
+  }
+
   function act(command: GridCommand, index: number) {
     const target = picked?.slides.size === 1 ? (pickedSlides(picked, current)[0] ?? index) : index
     if (picked?.slides.size === 1) edit.step({ kind: "pick", pick: null })
@@ -227,6 +236,7 @@ export function EditorGrid({
   }
 
   function onGridKey(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.target instanceof Element && event.target.closest("[data-add-row]") !== null) return
     if (menu !== null && event.key === "Escape" && !event.nativeEvent.isComposing) {
       event.preventDefault()
       event.stopPropagation()
@@ -397,58 +407,74 @@ export function EditorGrid({
             style={{ width: 4 / (percent / 100), borderRadius: 2 / (percent / 100) }}
           />
           <div className="flex w-full flex-col" style={{ gap: spacing.row }}>
-            {rows.map((row) => (
-              <section
-                key={row.start}
-                data-grid-row={row.start}
-                className="grid"
-                style={{
-                  gridTemplateColumns: `repeat(${row.end - row.start}, ${width}px)`,
-                  columnGap: spacing.column,
-                  rowGap: 24 / (percent / 100),
-                }}
-              >
-                {Array.from({ length: row.end - row.start }, (_, offset) => {
-                  const index = row.start + offset
-                  const section = sections.find((section) => section.start === index)
-                  const number = sectionAt(sections, index)
-                  const marked = sections.some((section) => section.start >= row.start && section.start < row.end)
-                  return (
-                    <div key={index} className="contents">
-                      {marked ? (
+            {rows.map((row, number) => (
+              <div key={row.start} data-grid-row-frame>
+                <section
+                  data-grid-row={row.start}
+                  className="grid"
+                  style={{
+                    gridTemplateColumns: `repeat(${row.end - row.start}, ${width}px)`,
+                    columnGap: spacing.column,
+                    rowGap: 24 / (percent / 100),
+                  }}
+                >
+                  {Array.from({ length: row.end - row.start }, (_, offset) => {
+                    const index = row.start + offset
+                    const section = sections.find((section) => section.start === index)
+                    const number = sectionAt(sections, index)
+                    const marked = sections.some((section) => section.start >= row.start && section.start < row.end)
+                    return (
+                      <div key={index} className="contents">
+                        {marked ? (
+                          <div
+                            style={{
+                              gridColumn: `${offset + 1} / span ${section === undefined ? 1 : Math.min((sections[number + 1]?.start ?? row.end) - index, row.end - index)}`,
+                              gridRow: 1,
+                            }}
+                          >
+                            <div style={{ zoom: 1 / (percent / 100) }}>
+                              {section === undefined ? null : (
+                                <GridSectionHead
+                                  marker
+                                  name={section.name}
+                                  count={(sections[number + 1]?.start ?? count) - section.start}
+                                  open={!collapsed.held.has(number)}
+                                  onToggle={() => collapsed.toggle(number)}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        ) : null}
                         <div
                           style={{
-                            gridColumn: `${offset + 1} / span ${section === undefined ? 1 : Math.min((sections[number + 1]?.start ?? row.end) - index, row.end - index)}`,
-                            gridRow: 1,
+                            gridColumn: offset + 1,
+                            gridRow: marked ? 2 : 1,
+                            visibility: shown(index) ? "visible" : "hidden",
                           }}
+                          aria-hidden={!shown(index)}
                         >
-                          <div style={{ zoom: 1 / (percent / 100) }}>
-                            {section === undefined ? null : (
-                              <GridSectionHead
-                                marker
-                                name={section.name}
-                                count={(sections[number + 1]?.start ?? count) - section.start}
-                                open={!collapsed.held.has(number)}
-                                onToggle={() => collapsed.toggle(number)}
-                              />
-                            )}
-                          </div>
+                          {shown(index) ? card(index) : <div style={{ height: height + 24 }} />}
                         </div>
-                      ) : null}
-                      <div
-                        style={{
-                          gridColumn: offset + 1,
-                          gridRow: marked ? 2 : 1,
-                          visibility: shown(index) ? "visible" : "hidden",
-                        }}
-                        aria-hidden={!shown(index)}
-                      >
-                        {shown(index) ? card(index) : <div style={{ height: height + 24 }} />}
                       </div>
-                    </div>
-                  )
-                })}
-              </section>
+                    )
+                  })}
+                </section>
+                <GridRowAdd
+                  row={number + 1}
+                  width={width}
+                  height={height}
+                  gap={spacing.row}
+                  scale={percent / 100}
+                  blocked={viewport.space || pointer?.tool === "hand" || dragging !== null || elementPressed}
+                  disabled={strip.onAdd === undefined || count >= limits.slides}
+                  onAdd={() => addBelow(row.start)}
+                  onEscape={() =>
+                    list.current
+                      ?.querySelector<HTMLElement>(`[data-slide-entry="${row.start + 1}"]`)
+                      ?.focus({ preventScroll: true })
+                  }
+                />
+              </div>
             ))}
           </div>
         </div>

@@ -1,11 +1,19 @@
 import { changeCall } from "./call-fixtures.js"
 import { readDeckId } from "@airdesign/catalog"
-import { decide, elementId, orderKeyBetween, presentSlides, readSlideId, writeTextValue } from "@airdesign/document"
+import {
+  decide,
+  elementId,
+  gridRows,
+  orderKeyBetween,
+  presentSlides,
+  readSlideId,
+  writeTextValue,
+} from "@airdesign/document"
 import { expect, it } from "vitest"
 import { call, indexDeck, openDeck } from "./index.js"
 
 const actor = { actor: "agent", runId: "run" } as const
-function opened() {
+function opened(count = 2) {
   const id = readDeckId("deck")
   if (!id.ok) throw new Error("deck")
   const result = indexDeck(
@@ -16,16 +24,31 @@ function opened() {
       once: "index",
       offset: 0,
       total: 0,
-      slides: [
-        { id: "256", position: 0, layout: [] },
-        { id: "257", position: 1, layout: [] },
-      ],
+      slides: Array.from({ length: count }, (_, position) => ({ id: String(position + 256), position, layout: [] })),
       elements: [],
     },
   )
   if (!result.ok) throw new Error(result.refusal)
   return result.deck
 }
+it("adds below the source row through the existing agent change and undoes the run", () => {
+  const result = changeCall("add_slide", opened(6), actor, {
+    deck: "deck",
+    base: 0,
+    after: "257",
+    layout: "256",
+    row: "new",
+  })
+  if (!result.ok) throw new Error(result.refusal)
+  expect(gridRows(result.deck.register)).toEqual([["256", "257", "258", "259"], ["262"], ["260", "261"]])
+  expect(result.deck.register.order.at(-1)).toMatchObject({ grid: 1, row: "new", after: "257", runId: "run" })
+  const undone = call("undo_run", result.deck, { actor: "person" }, { deck: "deck", runId: "run" })
+  if (!undone.ok) throw new Error(undone.refusal)
+  expect(gridRows(undone.deck.register)).toEqual([
+    ["256", "257", "258", "259"],
+    ["260", "261"],
+  ])
+})
 for (const [op, input, ids] of [
   ["add_slide", { after: "256", layout: "256" }, ["256", "258", "257"]],
   ["duplicate_slide", { slide: "256" }, ["256", "258", "257"]],

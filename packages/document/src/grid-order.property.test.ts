@@ -15,6 +15,7 @@ it("partitions every accepted trace and reverses each immediate lifecycle edit",
           kind: fc.constantFrom("add", "clone", "remove", "move"),
           at: fc.nat(100),
           target: fc.nat(100),
+          row: fc.constantFrom("same", "new"),
         }),
         { maxLength: 35 },
       ),
@@ -29,7 +30,7 @@ it("partitions every accepted trace and reverses each immediate lifecycle edit",
           const id = slideId(String(next++))
           const edit: SlideCommand =
             operation.kind === "add"
-              ? { slide: "add", grid: 1, row: "same", id, after: anchor.id, layout: source.id }
+              ? { slide: "add", grid: 1, row: operation.row, id, after: anchor.id, layout: source.id }
               : operation.kind === "clone"
                 ? { slide: "clone", grid: 1, id, source: source.id }
                 : operation.kind === "remove"

@@ -4,8 +4,8 @@
     {
       "file": "packages/document/src/grid-order.ts",
       "names": ["foldGrid", "turnRefusal", "defaultGrid1", "gridRows"],
-      "digest": "cece1ad9de85",
-      "blob": "bacfd0b6a9ed51d7d4cbec67f5d54a6ff9a31cf9"
+      "digest": "0ae9dad6b180",
+      "blob": "552ac5a81fadcde8b5e635d67a8d5ef2e1e8ddba"
     },
     {
       "file": "packages/document/src/grid-undo.ts",
