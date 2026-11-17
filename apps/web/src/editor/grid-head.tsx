@@ -1,3 +1,4 @@
+import { zoomRanges } from "@/editor/canvas-zoom"
 import { Button } from "@/components/ui/button"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { AirdesignMark } from "@/decks/airdesign-mark"
@@ -105,7 +106,13 @@ export function GridHead({
         <ViewBar
           zoom={
             size === null ? null : (
-              <ZoomMenu zoom={zoom} percent={Math.round(percent)} onZoom={onZoom} onSelection={onSelection} />
+              <ZoomMenu
+                range={zoomRanges.grid}
+                zoom={zoom}
+                percent={Math.round(percent)}
+                onZoom={onZoom}
+                onSelection={onSelection}
+              />
             )
           }
         >

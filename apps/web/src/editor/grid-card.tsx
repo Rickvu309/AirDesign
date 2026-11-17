@@ -67,7 +67,7 @@ export function GridCard({
       data-grid-small={!gridElementPresses(screen) ? "" : undefined}
       data-number-placement={placement}
       data-hover-disabled={busy || active ? "true" : undefined}
-      style={{ ...shift, height: height + 24 }}
+      style={{ ...shift, height: height + 24, ...{ "--grid-scale": scale } }}
       onDragStart={(event) => event.preventDefault()}
       onPointerDownCapture={onPress}
       onClickCapture={onPressed}

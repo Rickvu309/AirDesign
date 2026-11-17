@@ -81,9 +81,9 @@ test("keeps chrome constant and numbers visible while they fit", async ({ page }
       (el) =>
         (Number.parseFloat(getComputedStyle(el).borderRadius) * el.getBoundingClientRect().width) / el.offsetWidth,
     )
-  const initial = await rim()
+  expect(await rim()).toBeGreaterThanOrEqual(2)
   await zoomTo(page, 200)
-  expect(await rim()).toBeCloseTo(initial, 1)
+  expect(await rim()).toBeCloseTo(26, 1)
   await entry(page, 1).focus()
   const focusWidth = await entry(page, 1).evaluate(
     (el) => (Number.parseFloat(getComputedStyle(el).outlineWidth) * el.getBoundingClientRect().width) / el.offsetWidth,
@@ -217,4 +217,20 @@ test("keeps a chosen zoom and pan when the window or a panel resizes", async ({ 
     const { before, frames } = await resizedGrid(page, resize)
     for (const frame of frames) expect(frame).toEqual(before)
   }
+})
+
+test("typed Grid zoom accepts low values and keeps them after reload", async ({ page }) => {
+  await openFile(page, clean)
+  await openGrid(page)
+  for (const percent of [1, 4, 5, 7, 9]) {
+    await zoomTo(page, percent)
+    await expect(page.locator("[data-zoom-readout]")).toContainText(`${percent}%`)
+  }
+  await zoomTo(page, 5)
+  await page.reload()
+  await settled(page)
+  await openGrid(page)
+  await expect(page.locator("[data-zoom-readout]")).toContainText("5%")
+  await page.keyboard.press("ControlOrMeta+Minus")
+  await expect(page.locator("[data-zoom-readout]")).toContainText("1%")
 })

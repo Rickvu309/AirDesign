@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   canvasRoom,
+  zoomRanges,
   slideTop,
   fitWidth,
   slideRoom,
@@ -129,4 +130,11 @@ describe("typed zoom", () => {
     expect(typedZoom("-20")).toBeNull()
     expect(typedZoom("5%%")).toBeNull()
   })
+})
+
+it("accepts every Grid percent and steps to its own floor", () => {
+  for (const percent of [1, 4, 5, 7, 9, 400]) expect(typedZoom(String(percent), zoomRanges.grid)).toBe(percent)
+  expect(steppedZoom("out", 10, zoomRanges.grid)).toBe(5)
+  expect(steppedZoom("out", 5, zoomRanges.grid)).toBe(1)
+  expect(steppedZoom("in", 1, zoomRanges.grid)).toBe(5)
 })

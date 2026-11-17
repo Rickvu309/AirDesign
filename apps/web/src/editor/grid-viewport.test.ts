@@ -36,7 +36,7 @@ it("pans without constraining the canvas", () => {
   expect(pannedGrid({ x: 1, y: 2, scale: 1 }, { x: -900, y: 700 })).toEqual({ x: -899, y: 702, scale: 1 })
 })
 it("bounds continuous zoom", () => {
-  expect(boundedGridScale(0)).toBe(0.1)
+  expect(boundedGridScale(0)).toBe(0.01)
   expect(boundedGridScale(100)).toBe(4)
 })
 it.each([7, 50])("fits and centres every slide of a %i slide deck", (count) => {
@@ -154,4 +154,15 @@ it("can pinch down to the hidden-number overview below ten percent", () => {
     { x: 0, y: 0 },
   )
   expect(next.scale).toBeLessThan(view.scale)
+})
+
+it("shares the Grid range across gestures, fit and stored views", () => {
+  const plain = { deltaX: 0, deltaY: 10, deltaMode: 0, shiftKey: false, ctrlKey: true, metaKey: false }
+  expect(wheeledGrid({ x: 0, y: 0, scale: 0.01 }, plain, { x: 0, y: 0 }).scale).toBe(0.01)
+  expect(fittedGrid({ width: 1e9, height: 1e9 }, { width: 1000, height: 800 }).scale).toBe(0.01)
+  for (const scale of [0.01, 0.04, 0.05, 0.07, 4]) {
+    expect(boundedGridScale(scale)).toBe(scale)
+    expect(readGridViewport(JSON.stringify({ x: 0, y: 0, scale }))).toEqual({ x: 0, y: 0, scale })
+  }
+  expect(readGridViewport(JSON.stringify({ x: 0, y: 0, scale: 0.001 }))).toBeNull()
 })

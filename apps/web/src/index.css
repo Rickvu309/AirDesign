@@ -194,9 +194,9 @@ html:has(.reflow-frame) #root {
   font-variant-numeric: tabular-nums;
 }
 [data-number-placement="inside"] [data-slide-number] {
-  padding: 2px 4px;
-  border-bottom-right-radius: 4px;
-  background: var(--grid-number-surface);
+  margin: var(--grid-number-inset-y) var(--grid-number-inset-x);
+  paint-order: stroke;
+  -webkit-text-stroke: var(--grid-number-halo-width) var(--grid-number-surface);
 }
 @media (hover: hover) and (pointer: fine) {
   [data-grid-card]:hover:not([data-hover-disabled]) [data-grid-halo] {
@@ -206,7 +206,11 @@ html:has(.reflow-frame) #root {
     color: var(--grid-number-hover);
   }
   [data-grid-card][data-number-placement="inside"]:hover:not([data-hover-disabled]) [data-slide-number] {
+    margin: 0;
+    padding: var(--grid-number-inset-y) var(--grid-number-inset-x);
+    border-bottom-right-radius: var(--grid-number-tab-radius);
     background: var(--grid-hover);
+    -webkit-text-stroke-width: 0;
   }
   [data-grid-card]:is([data-number-placement="above"], [data-number-placement="hidden"]):hover:not(
       [data-hover-disabled],
@@ -219,11 +223,16 @@ html:has(.reflow-frame) #root {
 [data-grid-viewport]:is([data-hover-disabled], [data-panning]) [data-grid-halo] {
   opacity: 0 !important;
 }
-[data-grid-viewport]:is([data-hover-disabled], [data-panning]) [data-slide-number] {
+[data-grid-viewport]:is([data-hover-disabled], [data-panning])
+  [data-grid-card]:not([data-selected])
+  [data-slide-number] {
   color: var(--grid-number) !important;
 }
 [data-grid-viewport]:is([data-hover-disabled], [data-panning]) [data-number-placement="inside"] [data-slide-number] {
-  background: var(--grid-number-surface) !important;
+  margin: var(--grid-number-inset-y) var(--grid-number-inset-x) !important;
+  padding: 0 !important;
+  background: transparent !important;
+  -webkit-text-stroke-width: var(--grid-number-halo-width) !important;
 }
 @media (prefers-reduced-motion: reduce) {
   [data-grid-halo] {
@@ -346,4 +355,18 @@ html:has(.reflow-frame) #root {
 [data-grid-viewport][data-panning] [data-gap-preview],
 [data-gap-insert][inert] [data-gap-preview] {
   display: none !important;
+}
+
+[data-grid-card] [data-thumb-paint],
+[data-grid-edit] > div,
+[data-grid-edit] [data-slide-paint] {
+  border-radius: var(--grid-radius);
+}
+[data-grid-card][data-selected] [data-slide-number] {
+  color: var(--ring);
+}
+
+[data-grid-card] {
+  --grid-radius: max(var(--grid-radius-min), calc(var(--grid-radius-canvas) * var(--grid-scale)));
+  --grid-halo-radius: calc(var(--grid-radius) + var(--grid-halo-outset));
 }

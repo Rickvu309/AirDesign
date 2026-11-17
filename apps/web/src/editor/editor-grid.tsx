@@ -4,7 +4,7 @@ import { useCallback, useLayoutEffect, useReducer, useRef, useState, type Keyboa
 import { flushSync } from "react-dom"
 import { Announcer, type Announcement } from "@/components/ui/announcer"
 import { slideListCopy } from "@/copy/slide-list-copy"
-import { steppedZoom, type SlideSize, type Zoom } from "@/editor/canvas-zoom"
+import { steppedZoom, zoomRanges, type SlideSize, type Zoom } from "@/editor/canvas-zoom"
 import { EditorToolbar } from "@/editor/editor-toolbar"
 import { cardPress } from "@/editor/grid-hit"
 import { GridCard } from "@/editor/grid-card"
@@ -133,7 +133,7 @@ export function EditorGrid({
   useZoomKeys(!presenting, (key) => {
     if (key === "selection")
       viewport.selection(state.kind === "elements" || state.kind === "text" ? [current] : [...selected])
-    else chooseZoom(key === "fit" ? "fit" : steppedZoom(key, percent))
+    else chooseZoom(key === "fit" ? "fit" : steppedZoom(key, percent, zoomRanges.grid))
   })
   const reachable = stop >= 0 && stop < count && shown(stop) ? stop : current
   const height = gridThumbHeight(width, strip.thumbHeight)

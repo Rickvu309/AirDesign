@@ -37,7 +37,7 @@ for (const [percent, placement] of [
         await card
           .locator("[data-grid-halo]")
           .evaluate((element) => getComputedStyle(element, "::before").borderRadius),
-      ).toBe("14px")
+      ).toBe("12.89px")
     }
     await slide.hover()
     await expect(card.locator("[data-grid-halo]")).toHaveCSS("opacity", "1")
@@ -129,7 +129,12 @@ test("inside numbers stay readable over a dark slide", async ({ page }) => {
   await zoom(page, 15)
   const card = page.locator("[data-grid-card]").first()
   await expect(card.locator("[data-thumb-paint]")).not.toHaveCSS("background-color", "rgb(255, 255, 255)")
-  await expect(card.locator("[data-slide-number]")).toHaveCSS("background-color", "rgb(255, 255, 255)")
+  await page.mouse.move(0, 0)
+  const number = card.locator("[data-slide-number]")
+  await expect(number).toHaveCSS("background-color", "rgba(0, 0, 0, 0)")
+  await expect(number).toHaveCSS("padding", "0px")
+  await expect(number).toHaveCSS("-webkit-text-stroke-width", "2px")
+  await expect(number).toHaveCSS("paint-order", "stroke")
   await entry(page, 1).hover()
   await expect(card.locator("[data-slide-number]")).toHaveCSS("background-color", "rgb(191, 228, 255)")
 })
@@ -232,3 +237,21 @@ test("Escape closes an open slide menu before clearing slide selection", async (
   await expect(slide).toBeFocused()
   await expect(slide).toHaveAttribute("data-selected", "")
 })
+
+for (const percent of [9, 53, 200]) {
+  test(`slide and selection share the scaled corner at ${percent}%`, async ({ page }) => {
+    await openFile(page, clean)
+    await openGrid(page)
+    await zoom(page, percent)
+    const card = page.locator("[data-grid-card]").first()
+    const radius = Math.max(2, (13 * percent) / 100)
+    await expect(entry(page, 1)).toHaveCSS("border-radius", `${radius}px`)
+    await expect(card.locator("[data-grid-halo]")).toHaveCSS("border-radius", `${radius}px`)
+    await expect(card.locator("[data-thumb-paint]")).toHaveCSS("border-radius", `${radius}px`)
+    await entry(page, 1).focus()
+    await page.keyboard.press("Enter")
+    await expect(card.locator("[data-grid-edit]")).toBeVisible()
+    await expect(card.locator("[data-slide-paint]")).toHaveCSS("border-radius", `${radius}px`)
+    await expect(entry(page, 1)).toHaveCSS("border-radius", `${radius}px`)
+  })
+}
