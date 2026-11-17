@@ -5,6 +5,7 @@ import { designCopy } from "@/copy/design-copy"
 import { shownHex, shownName } from "@/design/color-choices"
 import { ColorPicker, lightCss } from "@/design/color-picker"
 import type { ControlProps } from "@/design/panel"
+import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 
 export function ColorField({
@@ -12,11 +13,13 @@ export function ColorField({
   css,
   name,
   inherited = false,
+  disclosure = true,
 }: {
   id: string
   css: string | null
   name: string
   inherited?: boolean
+  disclosure?: boolean
 }) {
   return (
     <>
@@ -34,12 +37,13 @@ export function ColorField({
       >
         {name}
       </span>
+      {disclosure ? <EditorIcon name="chev" size={12} className="ml-auto shrink-0 text-quiet" /> : null}
     </>
   )
 }
 
 export const fieldLook =
-  "h-9 w-full min-w-0 justify-start gap-2.5 rounded-lg border-0 bg-white px-3 font-normal shadow-[0px_0px_0px_1px_var(--field-edge)] hover:bg-white active:translate-y-0"
+  "h-8 w-full min-w-0 justify-start gap-2 rounded-[var(--shape-control)] border-0 bg-white px-2.5 font-normal shadow-[0px_0px_0px_1px_var(--field-edge)] hover:bg-white active:translate-y-0"
 
 export function ColorControl({ row, palette, onChange }: ControlProps) {
   const label = useId()

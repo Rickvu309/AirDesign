@@ -31,7 +31,7 @@ export function DesignPanel() {
 
 export function DesignHead({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-12 shrink-0 items-center border-b border-line px-4">
+    <div className="flex h-10 shrink-0 items-center border-b border-line px-4">
       <span className="text-sm font-semibold text-foreground">{children}</span>
     </div>
   )
@@ -67,7 +67,7 @@ export function DesignSection({
     </h2>
   )
   return (
-    <section className={cn("flex flex-col gap-3 px-4 py-4", edge)}>
+    <section className={cn("flex flex-col gap-2.5 px-3 py-3", edge)}>
       {action === null ? (
         heading
       ) : (
@@ -99,7 +99,7 @@ function FoldedSection({
       open={fold.open}
       onOpenChange={fold.onOpen}
       render={<section />}
-      className={cn("flex flex-col gap-3 px-4", fold.open ? "py-4" : "py-2", edge)}
+      className={cn("flex flex-col gap-2.5 px-3", fold.open ? "py-3" : "py-1.5", edge)}
       data-design-section={title}
     >
       <div className="flex min-h-6 items-center justify-between gap-2">
@@ -116,7 +116,7 @@ function FoldedSection({
         </h2>
         {fold.open ? action : null}
       </div>
-      <CollapsibleContent className="flex flex-col gap-3">{children}</CollapsibleContent>
+      <CollapsibleContent className="flex flex-col gap-2.5">{children}</CollapsibleContent>
     </Collapsible>
   )
 }
@@ -192,7 +192,9 @@ export function SectionRows({
       key={run.rows.map((row) => row.field).join(" ")}
       className={
         run.control === "length" || run.control === "hex"
-          ? "grid grid-cols-2 gap-2"
+          ? run.rows.length === 1 || run.rows.some((row) => row.field === "spaceBefore" || row.field === "spaceAfter")
+            ? "grid grid-cols-1 gap-2"
+            : "grid grid-cols-2 gap-2"
           : run.control === "toggle"
             ? "grid grid-cols-3 gap-2"
             : "flex flex-col"

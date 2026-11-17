@@ -85,14 +85,14 @@ export function NumberField({
 
   return (
     <label
-      className="flex h-8 min-w-0 items-center gap-2 rounded-lg bg-white px-2.5 shadow-[0px_0px_0px_1px_var(--field-edge)]"
+      className="flex h-8 min-w-0 items-center gap-2 rounded-[var(--shape-control)] bg-muted px-2.5"
       data-control={kind}
       data-inherited={row.inherited ? "" : undefined}
       data-focus-ring
     >
       <span
         className={cn(
-          "shrink-0 truncate text-[length:var(--type-caption)] text-quiet",
+          "min-w-0 truncate text-[length:var(--type-caption)] text-quiet",
           shown !== "" && "cursor-ew-resize touch-none select-none",
         )}
         onPointerDown={startScrub}
@@ -105,7 +105,7 @@ export function NumberField({
       <input
         ref={field}
         className={cn(
-          "min-w-0 flex-1 bg-transparent text-right text-[length:var(--type-dense)] tabular-nums outline-none placeholder:text-quiet",
+          "min-w-[3ch] flex-1 bg-transparent text-right text-[length:var(--type-dense)] tabular-nums outline-none placeholder:text-quiet",
           row.inherited && draft === null ? "text-quiet" : "text-foreground",
         )}
         inputMode="decimal"

@@ -29,7 +29,7 @@ export function HexControl({ row, palette, onChange }: ControlProps) {
           />
         }
       >
-        <ColorField id={named} css={shown === null ? null : `#${shown}`} name={row.label} />
+        <ColorField id={named} css={shown === null ? null : `#${shown}`} name={row.label} disclosure={false} />
       </ColorPicker>
     </div>
   )

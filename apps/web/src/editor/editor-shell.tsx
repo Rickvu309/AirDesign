@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from "react"
+import { ResizablePanel } from "@/editor/resizable-panel"
 import { NotesBar } from "@/editor/notes-bar"
 import { CanvasStage } from "@/editor/canvas-stage"
 import { slideRoom, steppedZoom, zoomPercent, zoomWidth, type SlideSize, type Zoom } from "@/editor/canvas-zoom"
@@ -280,10 +281,7 @@ export function EditorShell({
           </div>
         ) : null}
       </div>
-      <aside
-        className="relative flex h-full w-[360px] shrink-0 flex-col border-l border-line bg-white"
-        data-editor-panel
-      >
+      <ResizablePanel panel={panel === "design" ? "design" : "agent"}>
         <PanelHead>
           {deck === undefined ? (
             <ZoomReadout value="64%" />
@@ -314,7 +312,7 @@ export function EditorShell({
           </span>
         </PanelHead>
         {side}
-      </aside>
+      </ResizablePanel>
       {templatePicker ? <TemplatePicker /> : null}
       {toast}
       {overlay}

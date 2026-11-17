@@ -1,8 +1,12 @@
+import { FlipHorizontal2, FlipVertical2, type LucideIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
+const icons: Readonly<Record<string, LucideIcon>> = { flipH: FlipHorizontal2, flipV: FlipVertical2 }
+
 export function ToggleControl({ row, onChange }: ControlProps) {
+  const Icon = row.trait === "box" ? icons[row.field] : undefined
   const on = !row.mixed && row.value === true
   return (
     <Button
@@ -10,6 +14,7 @@ export function ToggleControl({ row, onChange }: ControlProps) {
       variant="ghost"
       size="sm"
       aria-pressed={row.mixed ? "mixed" : on}
+      title={Icon === undefined ? undefined : row.label}
       data-control="toggle"
       onClick={() => onChange(row.mixed ? true : !on)}
       className={cn(
@@ -21,7 +26,14 @@ export function ToggleControl({ row, onChange }: ControlProps) {
             : "bg-white text-quiet",
       )}
     >
-      {row.label}
+      {Icon === undefined ? (
+        row.label
+      ) : (
+        <>
+          <Icon size={16} aria-hidden />
+          <span className="sr-only">{row.label}</span>
+        </>
+      )}
     </Button>
   )
 }
