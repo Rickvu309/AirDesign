@@ -1,21 +1,29 @@
 import type { TextList } from "@airdesign/document"
 
-export type ListSource = { readonly level: number; readonly scheme: string; readonly start: number }
+export type ListSource = { readonly level: number } & (
+  | { readonly scheme: null }
+  | { readonly scheme: string; readonly start: number }
+)
 
 export function listNumbers(
-  file: (from: number) => ListSource | null,
+  file: (from: number) => ListSource,
 ): (from: number, list: TextList | undefined) => number | null {
   const counts = new Map<number, { readonly scheme: string; readonly start: number; readonly number: number }>()
   return (from, list) => {
     const native = file(from)
-    const level = native?.level ?? 0
+    const level = native.level
     for (const known of counts.keys()) if (known > level) counts.delete(known)
-    if (list !== "numbers" && (list !== undefined || native === null)) {
+    const numbered =
+      list === "numbers"
+        ? { scheme: "arabicPeriod", start: 1 }
+        : list === undefined && native.scheme !== null
+          ? native
+          : null
+    if (numbered === null) {
       counts.delete(level)
       return null
     }
-    const scheme = list === "numbers" ? "arabicPeriod" : (native?.scheme ?? "arabicPeriod")
-    const start = list === "numbers" ? 1 : (native?.start ?? 1)
+    const { scheme, start } = numbered
     const previous = counts.get(level)
     const number = previous?.scheme === scheme && previous.start === start ? previous.number + 1 : start
     counts.set(level, { scheme, start, number })
