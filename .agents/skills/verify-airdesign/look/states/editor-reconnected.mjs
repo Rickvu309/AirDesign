@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test"
 import path from "node:path"
+import { productCopy } from "../../bin/product-copy.mjs"
 import { openDeck } from "../open-deck.mjs"
 import { editor } from "../editor-screen.mjs"
 
@@ -36,13 +37,13 @@ async function drive(kit) {
   await text.click()
   await text.press("End")
   await text.press("!")
-  await expect(status).toHaveText("Unable to reach AirDesign")
+  await expect(status).toHaveText(productCopy.savedUnreached)
   down = false
   await expect.poll(() => held, { timeout: 15_000 }).toBe(1)
   await network(page, false)
-  await expect(status).toHaveText("Offline, saved on this device")
+  await expect(status).toHaveText(productCopy.savedOffline)
   await network(page, true)
-  await expect(status).toHaveText("Unable to reach AirDesign")
+  await expect(status).toHaveText(productCopy.savedUnreached)
   release()
   await expect.poll(revision).toBe(before + 1)
   await page.waitForTimeout(1000)
