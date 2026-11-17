@@ -4,9 +4,9 @@ import { expect, test } from "@playwright/test"
 import { openDeck, designing } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { shapeAt, partsOf } from "./shape-fills"
+import { linkCopy } from "../../apps/web/src/copy/link-copy.ts"
 
 test("a person saves and removes a whole text element URL @export", async ({ page }, info) => {
-  const { linkCopy } = await import("../../apps/web/src/copy/link-copy")
   await openDeck(page, "clean.pptx")
   const panel = await designing(page, shapeAt(page, "2"))
   const field = panel.getByRole("textbox", { name: linkCopy.target })
@@ -20,7 +20,7 @@ test("a person saves and removes a whole text element URL @export", async ({ pag
   await exportFromDialog(page)
   const file = info.outputPath("element-link.pptx")
   await (await download).saveAs(file)
-  const { shownLink } = await import("../../packages/pptx/src/index")
+  const { shownLink } = await import("../../packages/pptx/src/index.ts")
   const bytes = await partsOf(file)
   const parts = new Map([...bytes].map(([name, value]) => [name, new Uint8Array(value)]))
   expect(shownLink(parts, { slide: "256", part: "ppt/slides/slide1.xml", shape: "2" })).toEqual({

@@ -9,8 +9,11 @@ export default {
   specs: ["tests/browser/control-link.spec.ts"],
   exports: [exported],
   originals: [original],
+  renders: [exported],
   covers: ["link.target"],
-  cases: [{ name: "whole-element-link", before: original, after: exported, errors: 0, dupes: 0 }],
+  cases: [
+    { name: "whole-element-link", before: original, after: exported, visible: false, errors: 0, dupes: 0, pages: true },
+  ],
   lines(answers) {
     const kept = [...(answers.parts.get(original)?.keys() ?? [])].filter((name) => name !== slide && name !== rels)
     const lines = slideExportLines({ ...answers, original, exported, kept })
