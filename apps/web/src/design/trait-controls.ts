@@ -10,7 +10,6 @@ import { identityControls } from "./trait-controls-identity"
 import { imageControls } from "./trait-controls-image"
 import { lineControls } from "./trait-controls-line"
 import { notesControls } from "./trait-controls-notes"
-import { tableControls } from "./trait-controls-table"
 import { textControls } from "./trait-controls-text"
 import { themeControls } from "./trait-controls-theme"
 
@@ -19,7 +18,7 @@ export type FieldCopy = {
   readonly reset?: string
 }
 
-export type TraitControls<T extends TraitName> = [WireField<T>] extends [never]
+export type TraitControls<T extends TraitName> = [T extends "table" ? never : WireField<T>] extends [never]
   ? { readonly fields: Readonly<Record<never, never>> }
   : { readonly section: string; readonly fields: { readonly [F in WireField<T>]-?: FieldCopy } }
 
@@ -35,7 +34,7 @@ export const traitControls: { readonly [T in TraitName]: TraitControls<T> } = {
   image: imageControls,
   crop: cropControls,
   connection: connectionControls,
-  table: tableControls,
+  table: { fields: {} },
   notes: notesControls,
   theme: themeControls,
 }
