@@ -1,5 +1,6 @@
 import path from "node:path"
 import { readFile } from "node:fs/promises"
+import { productCopy } from "../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 
 export default async function drive({ repo, page, signIn, post, deckRoutes, capture, note }) {
@@ -125,7 +126,8 @@ export default async function drive({ repo, page, signIn, post, deckRoutes, capt
   await capture("grid-reduced-motion")
   await page.goto("/?view=list")
   await expect(cards).toHaveCount(2)
-  await cards.first().getByRole("button", { name: "Move to Trash" }).click()
+  await cards.first().click({ button: "right" })
+  await page.getByRole("menuitem", { name: productCopy.moveToTrash, exact: true }).click()
   await expect(cards).toHaveCount(1)
   expect(await events()).toEqual([])
   await page.goto("/trash")

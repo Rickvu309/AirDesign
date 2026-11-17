@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test"
-import { productCopy } from "../../../../../apps/web/src/copy/product-copy.ts"
+import { productCopy } from "../../bin/product-copy.mjs"
 import { listDecks } from "../deck-listing.mjs"
 
 async function drive(kit) {
