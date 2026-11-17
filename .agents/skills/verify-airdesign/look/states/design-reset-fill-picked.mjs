@@ -36,9 +36,6 @@ async function drive(kit) {
     .getByRole("button", { name: formatCopy.colors.accent2, exact: true })
     .click()
   await page.keyboard.press("Escape")
-  const fold = panel.getByRole("heading", { name: opacityCopy.label, exact: true }).getByRole("button")
-  await fold.click()
-  await fold.click()
 }
 
 export default { name: "design-reset-fill-picked", design: "/screens/s43-09-editor-tools-design-element", drive }

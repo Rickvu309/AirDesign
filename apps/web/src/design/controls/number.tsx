@@ -1,4 +1,3 @@
-import { Beside } from "@/design/controls/beside"
 import { agentNumberOf, readAgent } from "@airdesign/catalog"
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
 import { designCopy } from "@/copy/design-copy"
@@ -37,7 +36,6 @@ export function NumberField({
   unit,
   kind,
   step = 1,
-  fold,
 }: ControlProps & { unit: string; kind: string; step?: number }) {
   const look = control.look
   const Icon = look.name.show === "icon" ? look.name.icon : undefined
@@ -87,7 +85,7 @@ export function NumberField({
     scrub.current = null
   }
 
-  const fieldControl = (
+  return (
     <label
       className="flex h-8 min-w-0 items-center gap-0.5 rounded-[var(--shape-control)] bg-muted px-2.5"
       title={control.label}
@@ -134,12 +132,5 @@ export function NumberField({
         {unit}
       </span>
     </label>
-  )
-  return look.name.show === "beside" ? (
-    <Beside label={control.label} fold={fold}>
-      {fieldControl}
-    </Beside>
-  ) : (
-    fieldControl
   )
 }
