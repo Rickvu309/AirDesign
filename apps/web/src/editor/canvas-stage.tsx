@@ -25,6 +25,7 @@ export function CanvasStage({ hand, width, children }: { hand: boolean; width: n
     if (chrome === null || chrome === undefined) return
     const reserve = () => setBottom(chrome.getBoundingClientRect().height + 16)
     reserve()
+    if (typeof ResizeObserver !== "function") return
     const observer = new ResizeObserver(reserve)
     observer.observe(chrome)
     return () => observer.disconnect()

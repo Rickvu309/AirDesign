@@ -1,3 +1,4 @@
+import { presentCopy } from "../../apps/web/src/copy/present-copy"
 import { join } from "node:path"
 import { expect, test } from "@playwright/test"
 
@@ -18,7 +19,7 @@ test("names zoom, offers its real shortcuts and keeps the slide above notes at m
   for (const open of [false, true]) {
     if (open) {
       await page.getByRole("button", { name: "Expand speaker notes" }).click()
-      await page.getByRole("textbox", { name: "Speaker notes", exact: true }).evaluate((element) => {
+      await page.getByRole("textbox", { name: presentCopy.notes, exact: true }).evaluate((element) => {
         element.style.height = "240px"
       })
     }
@@ -36,7 +37,7 @@ test("names zoom, offers its real shortcuts and keeps the slide above notes at m
     if (open) {
       const close = page.getByRole("button", { name: "Collapse speaker notes" })
       await expect(close).toBeInViewport()
-      const field = page.getByRole("textbox", { name: "Speaker notes", exact: true })
+      const field = page.getByRole("textbox", { name: presentCopy.notes, exact: true })
       await field.press("Escape")
       await expect(page.getByRole("button", { name: "Expand speaker notes" })).toBeFocused()
     }
