@@ -1,5 +1,8 @@
 import type { ReactNode } from "react"
 import type { DeckRowData } from "@/decks/sample-decks"
+import { cn } from "@/lib/class-names"
+
+const columns = "grid grid-cols-[80px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]"
 
 const trimmed = { textBox: "trim-both cap alphabetic" } as const
 
@@ -42,23 +45,23 @@ export function DeckRow({
   action?: ReactNode
 }) {
   return (
-    <article className="border-b border-line">
-      <div className="grid h-[60px] grid-cols-[64px_minmax(0,1fr)_150px_150px] items-center px-3">
-        <div className="h-9 w-16 rounded bg-line">{preview}</div>
-        <div className="flex min-w-0 items-center gap-1 pl-4">
+    <article data-deck-row>
+      <div className={cn("h-16 items-center", columns)}>
+        <div className="h-[45px] w-20 overflow-hidden rounded-md bg-line">{preview}</div>
+        <div className="flex min-w-0 items-center gap-1 pr-4 pl-4">
           <h2
-            className="min-w-0 truncate py-1 text-[length:var(--type-body)] leading-[18px] font-medium text-foreground"
+            className="min-w-0 truncate py-1 text-[length:var(--type-dense)] leading-[18px] font-medium text-foreground"
             style={trimmed}
           >
             {href ? <a href={href}>{name}</a> : name}
           </h2>
           {action}
         </div>
-        <p className="text-[length:var(--type-body)] leading-[18px] text-muted-foreground" style={trimmed}>
+        <p className="text-[length:var(--type-dense)] leading-[18px] text-muted-foreground" style={trimmed}>
           {edited}
         </p>
         {created ? (
-          <p className="text-[length:var(--type-body)] leading-[18px] text-muted-foreground" style={trimmed}>
+          <p className="text-[length:var(--type-dense)] leading-[18px] text-muted-foreground" style={trimmed}>
             {created}
           </p>
         ) : (
@@ -71,20 +74,19 @@ export function DeckRow({
 
 export function DeckTableHeader({ sortMarks = true }: { sortMarks?: boolean }) {
   return (
-    <>
-      <div className="grid h-[var(--space-24)] grid-cols-[minmax(0,1fr)_150px_150px] items-start px-3 text-[length:var(--type-dense)] leading-[17px] text-quiet">
+    <div className={cn("h-7 items-start text-[length:var(--type-dense)] leading-[17px] text-quiet", columns)}>
+      <span className="col-span-2">
         <SortLabel mark={sortMarks}>Name</SortLabel>
-        <SortLabel mark={sortMarks}>Edited</SortLabel>
-        <SortLabel mark={sortMarks}>Created</SortLabel>
-      </div>
-      <div className="h-px bg-line" />
-    </>
+      </span>
+      <SortLabel mark={sortMarks}>Edited</SortLabel>
+      <SortLabel mark={sortMarks}>Created</SortLabel>
+    </div>
   )
 }
 
 export function DeckTable({ rows }: { rows: DeckRowData[] }) {
   return (
-    <div className="mt-8">
+    <div className="mt-12">
       <DeckTableHeader />
       {rows.map((deck) => (
         <DeckRow key={deck.name} name={deck.name} edited={deck.edited} created={deck.created} />

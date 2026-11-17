@@ -13,7 +13,7 @@ export function AllDecksGrid() {
             key={deck.name}
             name={deck.name}
             edited={deck.edited}
-            previewClassName="h-[180px]"
+            previewClassName="h-[136px]"
             href="#"
             preview={<SampleSlide name={deck.name} />}
             action={<DeckActions name={deck.name} starred={false} onStar={() => undefined} onTrash={() => undefined} />}

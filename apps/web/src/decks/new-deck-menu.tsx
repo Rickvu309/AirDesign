@@ -9,7 +9,11 @@ export type NewDeckActions = { onImport?: () => void; onBlank?: () => void; open
 export function NewDeckMenu({ onImport, onBlank, open = false }: NewDeckActions) {
   return (
     <DropdownMenu modal={false} defaultOpen={open}>
-      <DropdownMenuTrigger render={<Button variant="default" className="h-9 gap-2 px-3.5" type="button" />}>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="signature" className="h-7 gap-1.5 px-3 text-[length:var(--type-dense)]" type="button" />
+        }
+      >
         <svg width="14" height="14" viewBox="0 0 14 14" className="size-3.5" aria-hidden="true">
           <path
             d="M7 2.92 V11.08 M2.92 7 H11.08"

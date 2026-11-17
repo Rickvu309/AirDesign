@@ -8,7 +8,6 @@ export function BrowseHeader({
   scope,
   newDeck,
   trailing,
-  compact = false,
   links,
 }: {
   title: string
@@ -16,25 +15,14 @@ export function BrowseHeader({
   scope?: "recents" | "all"
   newDeck?: NewDeckActions
   trailing?: ReactNode
-  compact?: boolean
   links?: { grid: string; list: string }
 }) {
   return (
     <header
       data-decks-header
-      className={
-        compact
-          ? "flex h-9 items-center justify-between max-md:h-auto max-md:flex-wrap max-md:gap-2"
-          : "flex h-[39px] items-center justify-between max-md:h-auto max-md:flex-wrap max-md:gap-2"
-      }
+      className="flex h-8 items-center justify-between max-md:h-auto max-md:flex-wrap max-md:gap-2"
     >
-      <h1
-        className={
-          compact
-            ? "h-[var(--space-32)] text-[26px] leading-[34px] font-semibold tracking-[-0.5px] text-foreground"
-            : "h-[39px] text-[26px] leading-[var(--leading-body)] font-semibold tracking-[-0.5px] text-foreground"
-        }
-      >
+      <h1 className="h-8 text-[length:var(--type-title)] leading-8 font-medium tracking-[-0.4px] text-foreground">
         {title}
       </h1>
       {trailing ?? (

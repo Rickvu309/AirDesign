@@ -76,7 +76,7 @@ function DeckGridSkeleton({ className }: { className?: string }) {
             <Skeleton className="h-4 w-3/5 bg-line" />
             <Skeleton className="h-3.5 w-2/5 bg-line" />
           </div>
-          <Skeleton className="h-[200px] w-full rounded-[var(--shape-card)] bg-line" />
+          <Skeleton className="h-[150px] w-full rounded-[var(--shape-card)] bg-line" />
         </article>
       ))}
     </DeckGrid>
@@ -85,7 +85,7 @@ function DeckGridSkeleton({ className }: { className?: string }) {
 
 function DeckTableSkeleton() {
   return (
-    <div className="mt-8 space-y-3" data-loading="true" aria-busy="true">
+    <div className="mt-12 space-y-3" data-loading="true" aria-busy="true">
       <DeckTableHeader sortMarks={false} />
       {[0, 1, 2].map((key) => (
         <div key={key} className="flex h-12 items-center justify-between rounded-lg bg-canvas px-4" aria-hidden="true">
@@ -317,7 +317,7 @@ export function Home({
           />
         </div>
       )}
-      {loading && (!listView || trash) && <DeckGridSkeleton className={trash ? "mt-6" : undefined} />}
+      {loading && (!listView || trash) && <DeckGridSkeleton className={trash ? "mt-6 grid-cols-3" : undefined} />}
       {loading && listView && !trash && <DeckTableSkeleton />}
       {noDecks && (
         <div className="mt-8">
@@ -339,7 +339,7 @@ export function Home({
         </div>
       )}
       {(listing !== null || importing !== null) && showGrid && !noDecks && (!noMatch || importing !== null) && (
-        <DeckGrid ref={grid} className={section !== "recents" ? "mt-6" : undefined}>
+        <DeckGrid ref={grid} className={trash ? "mt-6 grid-cols-3" : section !== "recents" ? "mt-6" : undefined}>
           {importing &&
             (importing.failed ? (
               <div role="alert">
@@ -347,7 +347,7 @@ export function Home({
                   name={importing.name}
                   edited={importFailureWords(importing.reason).title}
                   editedClassName="text-danger-text"
-                  previewClassName="bg-background"
+                  previewClassName="h-auto bg-background"
                   preview={
                     <ImportFailedPreview
                       detail={importFailureWords(importing.reason).detail}
@@ -371,7 +371,7 @@ export function Home({
                     trash ? deckTime(deck.trashed ?? deck.edited, now()).trash : deckTime(deck.edited, now()).card
                   }
                   href={trash ? undefined : `/deck/${deck.deck}`}
-                  previewClassName={section !== "recents" ? "h-[180px]" : undefined}
+                  previewClassName={section !== "recents" ? "h-[136px]" : undefined}
                   preview={<DeckPreview deck={deck.deck} name={deck.name} edited={deck.edited} />}
                   action={
                     trash ? (
@@ -405,7 +405,7 @@ export function Home({
         </div>
       )}
       {listView && !trash && listing !== null && !noDecks && !noMatch && (
-        <div className="mt-8">
+        <div className="mt-12">
           <DeckTableHeader sortMarks={false} />
           {decks.map((deck) => (
             <DeckRow

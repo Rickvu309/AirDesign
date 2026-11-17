@@ -45,7 +45,7 @@ export function DeckCard({
           <h2
             id={title}
             className={cn(
-              "h-[21px] truncate text-[length:var(--type-body)] leading-[var(--leading-body)] font-medium text-foreground",
+              "h-5 truncate text-[length:var(--type-dense)] leading-5 font-medium text-foreground",
               titleClassName,
             )}
           >
@@ -53,7 +53,7 @@ export function DeckCard({
           </h2>
           <p
             className={cn(
-              "h-[19.5px] truncate text-[length:var(--type-dense)] leading-[var(--leading-body)] text-muted-foreground",
+              "h-4.5 truncate text-[length:var(--type-caption)] leading-4.5 text-muted-foreground",
               editedClassName,
             )}
           >
@@ -62,7 +62,7 @@ export function DeckCard({
         </div>
         {action ? <div className="relative -mr-0.5 shrink-0 pt-1.5">{action}</div> : null}
       </div>
-      <div className={cn("h-[200px] overflow-hidden rounded-[var(--shape-card)] bg-line", previewClassName)}>
+      <div className={cn("h-[150px] overflow-hidden rounded-[var(--shape-card)] bg-line", previewClassName)}>
         {preview ?? (
           <span className="flex size-full items-center justify-center">
             <DeckInitial name={name} />
@@ -79,7 +79,7 @@ export function DeckGrid({
   ...props
 }: { children: ReactNode; className?: string } & ComponentProps<"div">) {
   return (
-    <div className={cn("mt-8 grid grid-cols-3 gap-5 max-md:grid-cols-1", className)} {...props}>
+    <div className={cn("mt-8 grid grid-cols-4 gap-4 max-md:grid-cols-1", className)} {...props}>
       {children}
     </div>
   )
