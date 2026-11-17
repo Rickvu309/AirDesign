@@ -3,9 +3,9 @@ import element from "./design-element.mjs"
 
 async function drive(kit) {
   await element.drive(kit)
-  const text = kit.page.locator("[data-design-element] textarea").first()
-  await text.fill("Long text ".repeat(900))
-  await text.press("ControlOrMeta+Enter")
+  await kit.page.locator('[data-slide-paint] [contenteditable="true"]').click()
+  await kit.page.keyboard.insertText("Long text ".repeat(900))
+  await kit.page.keyboard.press("Escape")
   await expect(
     kit.page
       .getByText("Use less text. This box holds up to 8,000 characters, including formatting.")

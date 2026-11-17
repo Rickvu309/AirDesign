@@ -1,5 +1,7 @@
 import { expect } from "@playwright/test"
+import { boxCopy } from "../../bin/product-copy.mjs"
 import { fixtureDeck } from "../fixture-deck.mjs"
+import { unfold } from "../unfold.mjs"
 
 async function drive(kit) {
   await fixtureDeck(kit)
@@ -7,6 +9,7 @@ async function drive(kit) {
   await kit.page.locator('[data-slide-paint] [contenteditable="true"]').click()
   await kit.page.keyboard.press("Escape")
   const panel = kit.page.locator("[data-design-element]")
+  await unfold(panel, boxCopy.section)
   const x = panel.getByRole("textbox", { name: "X", exact: true })
   await x.fill("96")
   await x.press("Enter")
