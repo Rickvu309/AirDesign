@@ -1,5 +1,5 @@
 import { ApproveAgent } from "@/connect/approve-agent"
-import { claudeConnect } from "@/connect/connect-copy"
+import { claudeConnect } from "@/copy/connect-copy"
 
 export function ApproveClaude() {
   return (

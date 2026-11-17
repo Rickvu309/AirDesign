@@ -1,3 +1,4 @@
+import { productCopy, fitZoomOf } from "../../apps/web/src/copy/product-copy"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { store } from "./home-store.ts"
@@ -12,13 +13,13 @@ test("New deck opens a menu that takes the focus, moves by arrow and gives the f
 }) => {
   await store(page)
   await page.goto("/")
-  const button = page.getByRole("button", { name: "New deck", exact: true })
+  const button = page.getByRole("button", { name: productCopy.newDeck, exact: true })
   await expect(button).toBeVisible()
   await button.focus()
   await page.keyboard.press("Enter")
-  const menu = page.getByRole("menu", { name: "New deck" })
+  const menu = page.getByRole("menu", { name: productCopy.newDeck })
   await expect(menu).toBeVisible()
-  const blank = menu.getByRole("menuitem", { name: "Blank deck", exact: true })
+  const blank = menu.getByRole("menuitem", { name: productCopy.blankDeck, exact: true })
   const importing = menu.getByRole("menuitem", { name: "Import PowerPoint", exact: true })
   await expect(blank).toBeFocused()
   await page.keyboard.press("ArrowDown")
@@ -33,7 +34,7 @@ test("New deck opens a menu that takes the focus, moves by arrow and gives the f
 test("Tab goes from Grid view and List view to the next control, not into New deck's items", async ({ page }) => {
   await store(page)
   await page.goto("/")
-  const button = page.getByRole("button", { name: "New deck", exact: true })
+  const button = page.getByRole("button", { name: productCopy.newDeck, exact: true })
   await expect(button).toBeVisible()
   await button.focus()
   await page.keyboard.press("Tab")
@@ -73,7 +74,7 @@ test("Ctrl+= and Ctrl+- zoom the canvas and Ctrl+0 returns to Fit", async ({ pag
   await page.keyboard.press("ControlOrMeta+0")
   await expect.poll(() => percent(page)).toBe(fit)
   await page.locator("[data-zoom-readout]").click()
-  await expect(page.getByRole("menuitemradio", { name: `Fit (${String(fit)}%)` })).toBeChecked()
+  await expect(page.getByRole("menuitemradio", { name: fitZoomOf(fit) })).toBeChecked()
 })
 
 test("the zoom menu names its first item Fit with its percent", async ({ page }) => {
@@ -81,7 +82,7 @@ test("the zoom menu names its first item Fit with its percent", async ({ page })
   const fit = await percent(page)
   await page.locator("[data-zoom-readout]").click()
   const items = page.getByRole("menuitemradio")
-  await expect(items.first()).toHaveText(`Fit (${String(fit)}%)`)
+  await expect(items.first()).toHaveText(fitZoomOf(fit))
   await expect(items.nth(1)).toHaveText("50%")
 })
 

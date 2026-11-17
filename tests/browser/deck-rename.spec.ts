@@ -1,3 +1,4 @@
+import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { expect, test, type Page } from "@playwright/test"
 import { openFixture as open } from "./fixture-deck.ts"
 import { store } from "./home-store.ts"
@@ -233,7 +234,7 @@ stackTest(
 
 for (const [kind, name, create] of [
   ["deck imported", "clean", (page: Page) => page.locator("input[type=file]").setInputFiles(cleanFixture)],
-  ["blank deck created", "Blank deck", newBlankDeck],
+  ["blank deck created", productCopy.blankDeck, newBlankDeck],
 ] as const) {
   stackTest(
     `a ${kind} and left at once shows on Home before its open reaches the server, then the server lists it`,

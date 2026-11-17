@@ -1,3 +1,4 @@
+import { productCopy } from "../../../../apps/web/src/copy/product-copy.ts"
 import path from "node:path"
 import { expect } from "@playwright/test"
 
@@ -46,7 +47,7 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   const { cookie, email } = await signIn()
   note(`signed in as ${email} through the emailed code`)
   await page.goto("/")
-  await expect(page.getByRole("button", { name: "New deck", exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: productCopy.newDeck, exact: true })).toBeVisible()
   await capture("home-signed-in")
   await page.locator("input[type=file]").setInputFiles(path.join(repo, "scripts/pptx-fixtures/clean.pptx"))
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)

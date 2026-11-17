@@ -1,5 +1,5 @@
 import { ApproveAgent } from "@/connect/approve-agent"
-import { codexConnect } from "@/connect/connect-copy"
+import { codexConnect } from "@/copy/connect-copy"
 
 export function ApproveCodex() {
   return (

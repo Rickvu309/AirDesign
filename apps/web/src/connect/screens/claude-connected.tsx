@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 import { AgentPair } from "@/connect/agent-pair"
-import { claudeConnect, connectedCopy } from "@/connect/connect-copy"
+import { claudeConnect, connectedCopy } from "@/copy/connect-copy"
 
 const trimmed = "[text-box:trim-both_cap_alphabetic]"
 

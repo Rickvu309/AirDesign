@@ -1,7 +1,7 @@
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { AgentPair } from "@/connect/agent-pair"
-import { connectPermissions, signedInAccount } from "@/connect/connect-copy"
+import { connectPermissions, signedInAccount } from "@/copy/connect-copy"
 
 const trimmed = "[text-box:trim-both_cap_alphabetic]"
 

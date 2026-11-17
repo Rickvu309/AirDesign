@@ -19,12 +19,12 @@ export function NewDeckMenu({ onImport, onBlank, open = false }: NewDeckActions)
             strokeLinecap="round"
           />
         </svg>
-        New deck
+        {productCopy.newDeck}
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
         sideOffset={4.5}
-        aria-label="New deck"
+        aria-label={productCopy.newDeck}
         className="w-[180px] rounded-[var(--shape-card)] bg-background shadow-[inset_0_0_0_1px_var(--sheet),0_12px_32px_rgb(0_0_0/12%)] ring-0"
       >
         <DropdownMenuItem onClick={onBlank} className={itemClass}>

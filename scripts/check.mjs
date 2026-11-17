@@ -15,6 +15,7 @@ export const stages = [
   [
     ["format", "pnpm", ["exec", "oxfmt", "--check"]],
     ["lint", "pnpm", ["lint"]],
+    ["copy-literals", "node", ["scripts/copy-literals.mjs"]],
     ["actionlint", "node", ["scripts/actionlint.mjs"]],
     [
       "test",
