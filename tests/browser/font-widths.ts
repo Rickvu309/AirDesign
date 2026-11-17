@@ -3,23 +3,8 @@ import { pathToFileURL } from "node:url"
 import type { Page } from "@playwright/test"
 import type { FontWidths, ResolvedSlide } from "../../packages/document/src/index.ts"
 
-const substitutes = new Map([
-  ["calibri", "Carlito"],
-  ["calibri light", "Carlito"],
-  ["cambria", "Caladea"],
-  ["arial", "Arimo"],
-  ["helvetica", "Arimo"],
-  ["arial narrow", "Liberation Sans Narrow"],
-  ["times new roman", "Tinos"],
-])
-
-export function cssFamily(font: string | null): string {
-  if (font === null) return "var(--font-sans)"
-  const quoted = `"${font.replace(/["\\]/g, "\\$&")}"`
-  const twin = substitutes.get(font.toLowerCase())
-  const standIn = twin === undefined ? "" : `, "${twin}"`
-  return `${quoted}${standIn}, var(--font-sans)`
-}
+export { fontFamily as cssFamily } from "../../packages/fonts/src/index.ts"
+import { fontFamily as cssFamily } from "../../packages/fonts/src/index.ts"
 
 export async function paintedFamilies(page: Page): Promise<readonly string[]> {
   return page.evaluate(() => {

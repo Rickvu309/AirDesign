@@ -13,5 +13,12 @@
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
-  "references": [{ "path": "../document" }]
+  "references": [
+    {
+      "path": "../document"
+    },
+    {
+      "path": "../fonts"
+    }
+  ]
 }

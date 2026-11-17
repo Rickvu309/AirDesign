@@ -14,11 +14,26 @@
   "include": ["src"],
   "exclude": ["src/source-hooks.ts"],
   "references": [
-    { "path": "../../packages/document" },
-    { "path": "../../packages/catalog" },
-    { "path": "../../packages/engine" },
-    { "path": "../../packages/mcp" },
-    { "path": "../../packages/oauth" },
-    { "path": "../../packages/usage" }
+    {
+      "path": "../../packages/document"
+    },
+    {
+      "path": "../../packages/catalog"
+    },
+    {
+      "path": "../../packages/engine"
+    },
+    {
+      "path": "../../packages/mcp"
+    },
+    {
+      "path": "../../packages/oauth"
+    },
+    {
+      "path": "../../packages/usage"
+    },
+    {
+      "path": "../../packages/fonts"
+    }
   ]
 }

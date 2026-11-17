@@ -4,6 +4,8 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import sourceFonts from "../packages/fonts/src/catalog.json" with { type: "json" }
+import twins from "../packages/fonts/src/twins.json" with { type: "json" }
 import referenceFonts from "./reference-fonts.json" with { type: "json" }
 
 export const renderCacheFolder = path.join(os.homedir(), ".cache", "airdesign", "pptx-renders")
@@ -21,7 +23,7 @@ export const renderSettings = {
     "{deck}",
   ],
   pdftoppm: ["-png", "-r", "150", "-aa", "no", "{pdf}", "{page}"],
-  fonts: referenceFonts,
+  fonts: { ...referenceFonts, aliases: twins, revision: sourceFonts.revision },
 }
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex")

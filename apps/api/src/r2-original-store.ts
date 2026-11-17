@@ -46,6 +46,23 @@ export class R2OriginalStore implements OriginalStore {
     return { url: request.url, expires: new Date(now + originalLifetime).toISOString() }
   }
 
+  async read(key: string): Promise<Uint8Array | undefined> {
+    const response = await this.signer.fetch(this.address(key), { signal: AbortSignal.timeout(30_000) })
+    if (response.status === 404) return undefined
+    if (!response.ok) throw new Error("storage")
+    return new Uint8Array(await response.arrayBuffer())
+  }
+
+  async write(key: string, bytes: Uint8Array): Promise<void> {
+    const response = await this.signer.fetch(this.address(key), {
+      method: "PUT",
+      headers: originalHeaders(bytes.length),
+      body: Buffer.from(bytes),
+      signal: AbortSignal.timeout(30_000),
+    })
+    if (!response.ok && response.status !== 412) throw new Error("storage")
+  }
+
   async upload(key: string, bytes: number): Promise<OriginalUpload> {
     const headers = originalHeaders(bytes)
     return { ...(await this.signed(key, "PUT", headers)), headers }

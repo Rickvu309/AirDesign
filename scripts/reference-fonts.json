@@ -12,15 +12,5 @@
       "file": "pool/main/f/fonts-liberation-sans-narrow/fonts-liberation-sans-narrow_1.07.6-4_all.deb",
       "sha256": "9c64f03daaa4b0eee8b36ba53e4ce8ac22ec12437951c699197344989c7dc2dc"
     }
-  ],
-  "aliases": [
-    {
-      "family": "Calibri Light",
-      "prefer": "Carlito"
-    },
-    {
-      "family": "Arial Narrow",
-      "prefer": "Liberation Sans Narrow"
-    }
   ]
 }

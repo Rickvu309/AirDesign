@@ -1,3 +1,4 @@
+import { referenceSource } from "./reference-source.mjs"
 import { execFile } from "node:child_process"
 import { createHash } from "node:crypto"
 import fs from "node:fs"
@@ -104,6 +105,7 @@ const shownSlide = async (page, number, aspect, size) => {
     number,
   )
   const slide = page.locator("[data-slide-paint]")
+  await slide.locator("[data-fonts-pending]").first().waitFor({ state: "detached" })
   await slide.evaluate(async (node, wanted) => {
     node.style.aspectRatio = wanted
     await document.fonts.ready
@@ -387,8 +389,14 @@ let browser
 const libreofficeWork = async () => {
   if (names.length === 0) names = readCorpus(root).map((deck) => deck.name)
   decks = names.length
-  const pages = await renderDecks({ names, skipped, say })
   const { origin, cookies } = await signedInStack()
+  const fonts = await referenceSource({
+    origin,
+    files: names.map((name) => path.join(corpus, name)),
+    folder: path.join(pagesFolder, "fonts"),
+  })
+  say(`reference fonts: ${fonts.families} requested; unknown: ${fonts.missing.join(", ")}`)
+  const pages = await renderDecks({ names, skipped, say })
   for (const [name, hashes] of pages) await compareDeck({ browser, origin, cookies, name, hashes, rows, skipped })
 }
 

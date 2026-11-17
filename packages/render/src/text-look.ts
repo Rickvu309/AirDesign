@@ -1,3 +1,4 @@
+import { fontFamily } from "@airdesign/fonts"
 import {
   colorPaint,
   spacingNames,
@@ -62,20 +63,10 @@ export type TextLook = {
 }
 
 export const anchored = { top: "flex-start", middle: "center", bottom: "flex-end" } as const
-const pageFont = "var(--font-sans)"
 const pageColor = "black"
 const singleLineHeight = 1.2
 const shiftedShare = 0.58
 const noLine = "0"
-const openTwins = new Map([
-  ["calibri", "Carlito"],
-  ["calibri light", "Carlito"],
-  ["cambria", "Caladea"],
-  ["arial", "Arimo"],
-  ["helvetica", "Arimo"],
-  ["arial narrow", "Liberation Sans Narrow"],
-  ["times new roman", "Tinos"],
-])
 const loneRun = -1
 const emuPerHundredth = 127
 const wholePercent = 100_000
@@ -84,15 +75,7 @@ function isElement(node: Node): node is HTMLElement {
   return node.nodeType === node.ELEMENT_NODE
 }
 
-function quotedFamily(font: string): string {
-  return `"${font.replace(/["\\]/g, "\\$&")}"`
-}
-
-export function familyOf(font: string | null): string {
-  if (font === null) return pageFont
-  const twin = openTwins.get(font.toLowerCase())
-  return [quotedFamily(font), ...(twin === undefined ? [] : [quotedFamily(twin)]), pageFont].join(", ")
-}
+export const familyOf = fontFamily
 
 function lineShare(percent: number): string {
   return String(Math.round(percent * singleLineHeight * 10_000) / 10_000)

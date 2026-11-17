@@ -1,3 +1,5 @@
+import { fontRevision, fontRoutes } from "@airdesign/fonts"
+
 const sha256 = "a".repeat(64)
 
 function storage(fields: Record<string, unknown>) {
@@ -6,6 +8,14 @@ function storage(fields: Record<string, unknown>) {
 
 export function storageFuzzGood(deck: string) {
   return {
+    [`GET ${fontRoutes.family.path}`]: [{ shape: "query" as const, answers: 404, fields: { family: "UnknownFont" } }],
+    [`GET ${fontRoutes.file.path}`]: [
+      {
+        shape: "query" as const,
+        answers: 404,
+        fields: { family: "UnknownFont", file: "unknown.ttf", v: fontRevision },
+      },
+    ],
     "POST /decks/original/upload": storage({ deck, bytes: 4, sha256 }),
     "POST /decks/original/done": storage({ deck }),
     "POST /decks/original": storage({ deck }),

@@ -6,6 +6,8 @@ export type SignedOriginal = {
 export type OriginalUpload = SignedOriginal & { readonly headers: Readonly<Record<string, string>> }
 
 export interface OriginalStore {
+  read(key: string): Promise<Uint8Array | undefined>
+  write(key: string, bytes: Uint8Array): Promise<void>
   upload(key: string, bytes: number): Promise<OriginalUpload>
   download(key: string): Promise<SignedOriginal>
   size(key: string): Promise<number | undefined>

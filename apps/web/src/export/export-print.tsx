@@ -1,10 +1,11 @@
 import { useEffect, useRef, type ReactNode } from "react"
 import { createPortal } from "react-dom"
+import { waitForFonts } from "@airdesign/render"
 import { exportBaseName } from "@/export/export-file-name"
 import { pageRule, printWidth, type PrintSize } from "@/export/print-page"
 
 async function painted(sheet: HTMLElement): Promise<void> {
-  await document.fonts.ready
+  await waitForFonts(document)
   await Promise.all([...sheet.querySelectorAll("img")].map((picture) => picture.decode().catch(() => undefined)))
   await new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done())))
 }

@@ -1,0 +1,54 @@
+import { expect, it } from "vitest"
+import { FontLoader } from "./font-load.js"
+
+it("waits for the requested face and shares one load across case variants", async () => {
+  let finish = () => {}
+  const installed = new Promise<void>((resolve) => {
+    finish = resolve
+  })
+  const requests: string[] = []
+  const network: typeof fetch = async (url) => {
+    requests.push(String(url))
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        family: "Montserrat",
+        faces: [{ url: "/fonts/file?montserrat", style: "normal", weight: "100 900" }],
+      }),
+    )
+  }
+  const loader = new FontLoader(document, network, async () => installed)
+  const loaded = loader.load("Montserrat")
+  expect(loader.load("montserrat")).toBe(loaded)
+  expect(loader.ready("Montserrat")).toBe(false)
+  finish()
+  expect(await loaded).toBeNull()
+  expect(loader.ready("Montserrat")).toBe(true)
+  expect(requests).toEqual(["/fonts/family?family=Montserrat"])
+})
+
+it("reports unknown names and failed loads, then permits fallback", async () => {
+  for (const status of [404, 503]) {
+    const loader = new FontLoader(document, async () => new Response(null, { status }))
+    expect(await loader.load("Missing")).toEqual({
+      family: "Missing",
+      refusal: status === 404 ? "unknown" : "unavailable",
+    })
+    expect(loader.ready("Missing")).toBe(true)
+  }
+})
+
+it("refuses a manifest that sends the browser off origin", async () => {
+  const loader = new FontLoader(
+    document,
+    async () =>
+      new Response(
+        JSON.stringify({
+          ok: true,
+          family: "Montserrat",
+          faces: [{ url: "https://fonts.gstatic.com/font.ttf", style: "normal", weight: "400" }],
+        }),
+      ),
+  )
+  expect(await loader.load("Montserrat")).toEqual({ family: "Montserrat", refusal: "unavailable" })
+})
