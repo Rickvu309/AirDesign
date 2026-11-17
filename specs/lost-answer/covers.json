@@ -17,7 +17,7 @@
       "file": "packages/live/src/held.ts",
       "names": ["sealRows", "confirmRows", "takeEdits", "unsealRows", "setAside", "takeAside"],
       "digest": "4ab7dde1de44",
-      "blob": "656d1944449f16e26028a318cd9506dd48f24c6b"
+      "blob": "5f57db5440e4b952a96ab11a451f17159de1b8c3"
     },
     {
       "file": "packages/live/src/commit-body.ts",
@@ -46,8 +46,8 @@
     {
       "file": "apps/web/src/commit-edit.ts",
       "names": ["flushPending"],
-      "digest": "58e4a45aad60",
-      "blob": "9632f717c3a0a7b280d538d0801f9aba997b892c"
+      "digest": "12b444777221",
+      "blob": "af8c76fef1feefa00cc9c43536c8750aacb6d2d3"
     }
   ]
 }
