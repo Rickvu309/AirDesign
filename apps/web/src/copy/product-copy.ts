@@ -135,6 +135,7 @@ export const productCopy = {
   agentsFailed: "Unable to load your agents. Check your connection and try again.",
   disconnect: "Disconnect",
   disconnectFailed: "Unable to disconnect. Check your connection and try again.",
+  newDeck: "New deck",
   blankDeck: "Blank deck",
   amount: "Amount",
   currentBalance: "Current balance",
@@ -144,3 +145,7 @@ export const productCopy = {
   presetTwentyFive: "$25",
   presetFifty: "$50",
 } as const
+
+export function fitZoomOf(percent: number): string {
+  return `Fit (${String(percent)}%)`
+}

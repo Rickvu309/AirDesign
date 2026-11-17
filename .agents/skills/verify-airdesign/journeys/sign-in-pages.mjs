@@ -1,3 +1,4 @@
+import { productCopy } from "../../../../apps/web/src/copy/product-copy.ts"
 import { expect } from "@playwright/test"
 
 const phone = { width: 390, height: 844 }
@@ -54,7 +55,7 @@ export default async function drive(kit) {
   const first = await mailParts(address)
   await (await codeEntry(page)).fill(`${first.code.slice(0, 3)} ${first.code.slice(3)}`)
   await expect(page).toHaveURL(`${origin}/`)
-  await expect(page.getByRole("button", { name: "New deck" })).toBeVisible()
+  await expect(page.getByRole("button", { name: productCopy.newDeck })).toBeVisible()
   await capture("signed-in-by-code")
   note(`${address} typed the emailed code with a space in it on ${siteOrigin} and landed on ${origin}/ signed in`)
 
@@ -72,7 +73,7 @@ export default async function drive(kit) {
   expect(second.code).not.toBe(first.code)
   await page.goto(second.link)
   await expect(page).toHaveURL(`${origin}/`)
-  await expect(page.getByRole("button", { name: "New deck" })).toBeVisible()
+  await expect(page.getByRole("button", { name: productCopy.newDeck })).toBeVisible()
   await capture("signed-in-by-link")
   note(`the emailed link signed ${address} in at ${origin}/`)
 

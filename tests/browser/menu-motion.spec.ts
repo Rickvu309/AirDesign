@@ -1,3 +1,4 @@
+import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { expect, test, type Locator } from "@playwright/test"
 import { store } from "./home-store.ts"
 import { newBlankDeck } from "./new-deck.ts"
@@ -25,8 +26,8 @@ test.beforeEach(async ({ page }) => {
 })
 
 test("a menu opened by a pointer grows from its trigger on the strong ease-out curve", async ({ page }) => {
-  await page.getByRole("button", { name: "New deck", exact: true }).click()
-  const menu = page.getByRole("menu", { name: "New deck" })
+  await page.getByRole("button", { name: productCopy.newDeck, exact: true }).click()
+  const menu = page.getByRole("menu", { name: productCopy.newDeck })
   await expect(menu).toBeVisible()
   await expect(menu).not.toHaveAttribute("data-instant")
   expect(await motion(menu)).toMatchObject({
@@ -38,9 +39,9 @@ test("a menu opened by a pointer grows from its trigger on the strong ease-out c
 })
 
 test("a menu opened with Enter and closed with Escape does not move", async ({ page }) => {
-  await page.getByRole("button", { name: "New deck", exact: true }).focus()
+  await page.getByRole("button", { name: productCopy.newDeck, exact: true }).focus()
   await page.keyboard.press("Enter")
-  const menu = page.getByRole("menu", { name: "New deck" })
+  const menu = page.getByRole("menu", { name: productCopy.newDeck })
   await expect(menu).toBeVisible()
   await expect(menu).toHaveAttribute("data-instant", "click")
   expect(await motion(menu)).toMatchObject({ animation: "none", property: "none" })

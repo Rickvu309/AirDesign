@@ -1,9 +1,10 @@
+import { productCopy } from "../../../../../apps/web/src/copy/product-copy.ts"
 import { expect } from "@playwright/test"
 
 async function drive(kit) {
   await kit.signIn()
   await kit.page.goto("/")
-  const button = kit.page.getByRole("button", { name: "New deck", exact: true })
+  const button = kit.page.getByRole("button", { name: productCopy.newDeck, exact: true })
   await expect(button).toBeVisible()
   await button.focus()
   await kit.page.keyboard.press("Enter")

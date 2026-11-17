@@ -1,3 +1,4 @@
+import { productCopy } from "../../../../../apps/web/src/copy/product-copy.ts"
 import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
 
@@ -7,8 +8,11 @@ async function drive(kit) {
   const { page } = kit
   const { cookie } = await kit.signIn()
   await page.goto("/")
-  await page.getByRole("button", { name: "New deck", exact: true }).click()
-  await page.getByRole("menu", { name: "New deck" }).getByRole("menuitem", { name: "Blank deck", exact: true }).click()
+  await page.getByRole("button", { name: productCopy.newDeck, exact: true }).click()
+  await page
+    .getByRole("menu", { name: productCopy.newDeck })
+    .getByRole("menuitem", { name: productCopy.blankDeck, exact: true })
+    .click()
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const deck = page.url().split("/").at(-1)
   await page.getByRole("button", { name: "Insert table", exact: true }).click()

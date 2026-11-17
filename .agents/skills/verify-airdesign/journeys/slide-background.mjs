@@ -1,3 +1,4 @@
+import { productCopy } from "../../../../apps/web/src/copy/product-copy.ts"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
@@ -35,8 +36,11 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
     await expect.poll(() => shown("[data-slide-entry='1'] [data-thumb-paint]")).toBe(color)
   }
   await page.goto("/")
-  await page.getByRole("button", { name: "New deck", exact: true }).click()
-  await page.getByRole("menu", { name: "New deck" }).getByRole("menuitem", { name: "Blank deck", exact: true }).click()
+  await page.getByRole("button", { name: productCopy.newDeck, exact: true }).click()
+  await page
+    .getByRole("menu", { name: productCopy.newDeck })
+    .getByRole("menuitem", { name: productCopy.blankDeck, exact: true })
+    .click()
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const deck = page.url().split("/").at(-1)
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
