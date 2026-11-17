@@ -16,8 +16,8 @@
     {
       "file": "packages/document/src/change.ts",
       "names": ["traitPatch", "planNode", "planChange"],
-      "digest": "9bf63e76336f",
-      "blob": "6d63811f66cecf3d803fdadf9b7d42dbedbe911a"
+      "digest": "40b3f13547a2",
+      "blob": "779a5d0b754499bf4cd10c008fa941d7af6851fe"
     },
     {
       "file": "packages/document/src/person-undo.ts",
@@ -40,8 +40,8 @@
     {
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
-      "digest": "ff679ad59f1b",
-      "blob": "170d8f0eee31c36ecebdc33d076a22b09e95d937"
+      "digest": "af22fbc22411",
+      "blob": "7661c9f732b8ba8082d52a7f5069f4dc11b7edf6"
     },
     {
       "file": "apps/web/src/design/shown-alpha.ts",
@@ -52,8 +52,8 @@
     {
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["fieldsRead", "elementDesign"],
-      "digest": "8f2efb7a9caf",
-      "blob": "e8b7edde0ca3b0002525dade54507c7eae3cd84f"
+      "digest": "1e6aee631137",
+      "blob": "e3e757478a5f0c3f72e4016f9956bdd4f2d7190a"
     },
     {
       "file": "apps/web/src/undo-list.ts",
