@@ -1,4 +1,4 @@
-import { readElementId, readSlideId, type ElementId, type SlideId } from "@airdesign/document"
+import { readElementId, readSlideId, type ElementId, type GridSide, type SlideId } from "@airdesign/document"
 import type { JsonSchema } from "./agent-form.js"
 import { slideSchema } from "./set-wire.js"
 
@@ -6,7 +6,7 @@ export const slideOps = ["add_slide", "duplicate_slide", "delete_slide", "move_s
 export type SlideOp = (typeof slideOps)[number]
 
 export type WireSlideChange =
-  | { readonly op: "add_slide"; readonly after: SlideId; readonly layout: SlideId }
+  | { readonly op: "add_slide"; readonly after: SlideId; readonly layout: SlideId; readonly row?: GridSide }
   | { readonly op: "duplicate_slide" | "delete_slide"; readonly slide: SlideId }
   | { readonly op: "move_slide"; readonly slide: SlideId; readonly after: SlideId | null }
 
@@ -38,7 +38,9 @@ export function readSlideChange(raw: unknown): Read<WireSlideChange> {
   const op = slideOps.find((each) => each === body?.op)
   if (body === undefined || op === undefined) return refused("op")
   const fields: readonly string[] = fieldsOf[op]
-  const extra = Object.keys(body).find((key) => key !== "op" && !fields.includes(key))
+  const extra = Object.keys(body).find(
+    (key) => key !== "op" && !fields.includes(key) && !(op === "add_slide" && key === "row"),
+  )
   if (extra !== undefined) return refused(extra)
   const missing = fields.find((key) => !Object.hasOwn(body, key))
   if (missing !== undefined) return refused(missing)
@@ -47,7 +49,8 @@ export function readSlideChange(raw: unknown): Read<WireSlideChange> {
     const layout = readSlideId(body.layout)
     if (after === undefined) return refused("after")
     if (layout === undefined) return refused("layout")
-    return { ok: true, change: { op, after, layout } }
+    if (body.row !== undefined && body.row !== "same" && body.row !== "new") return refused("row")
+    return { ok: true, change: { op, after, layout, ...(body.row === undefined ? {} : { row: body.row }) } }
   }
   const slide = readSlideId(body.slide)
   if (slide === undefined) return refused("slide")
@@ -73,7 +76,7 @@ export function slideChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op"],
     description:
-      "add_slide takes after and layout; duplicate_slide and delete_slide take slide; move_slide takes slide and after. New slide ids come back in slides. The last slide cannot be deleted.",
+      "add_slide takes after and layout, with optional row placement; duplicate_slide and delete_slide take slide; move_slide takes slide and after. New slide ids come back in slides. The last slide cannot be deleted.",
     properties: {
       op: { type: "string", enum: slideOps },
       slide: slideSchema,
@@ -82,6 +85,11 @@ export function slideChangeSchema(): JsonSchema {
         description: "Place it after this slide id; with move_slide, null for the beginning.",
       },
       layout: { ...slideSchema, description: "Use the layout of this slide id." },
+      row: {
+        type: "string",
+        enum: ["same", "new"],
+        description: "add_slide only. Defaults to same. new adds a row below the anchor's current row.",
+      },
     },
   }
 }

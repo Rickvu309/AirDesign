@@ -1,4 +1,4 @@
-import { presentSlides, gridRows, type Undoable } from "@airdesign/document"
+import { presentSlides, gridRows, type GridSide, type Undoable } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { SlideCanvas } from "@airdesign/render"
 import type { CommitOutcome } from "@/commit-edit"
@@ -26,7 +26,14 @@ export function slideCommands(deck: CommandedDeck, undo: () => void): SlideStrip
 
   let pending = Promise.resolve()
 
-  async function changeSlide(change: SlideChange, index: number, to = index, layoutPart?: string) {
+  async function changeSlide(
+    change: SlideChange,
+    index: number,
+    to = index,
+    layoutPart?: string,
+    row: GridSide = "same",
+  ) {
+    const anchor = row === "new" ? sequence[index] : null
     const run = pending.then(async () => {
       const opened = await connect(memoryRemote()).openDeck(id)
       if (!opened.ok) return
@@ -40,7 +47,16 @@ export function slideCommands(deck: CommandedDeck, undo: () => void): SlideStrip
         await showEdited(currentIndex)
         if (change === "add") deck.shown.saySlide.current(slideListCopy.added(currentIndex + 1))
       }
-      settle(await commitSlideChange(id, shownParts.current, opened.register, change, index, painted, to, layoutPart))
+      const target =
+        row === "new"
+          ? presentSlides({
+              file: fileSlides(shownParts.current, opened.register),
+              order: opened.register.order,
+            }).findIndex((slide) => slide.id === anchor)
+          : index
+      settle(
+        await commitSlideChange(id, shownParts.current, opened.register, change, target, painted, to, layoutPart, row),
+      )
     })
     pending = run.then(
       () => undefined,
@@ -59,7 +75,7 @@ export function slideCommands(deck: CommandedDeck, undo: () => void): SlideStrip
     sections,
     current,
     onSelect: setCurrent,
-    onAdd: (layoutPart, after = current) => void changeSlide("add", after, after, layoutPart),
+    onAdd: (layoutPart, after = current, row = "same") => void changeSlide("add", after, after, layoutPart, row),
     layouts,
     onClone: (index) => void changeSlide("clone", index),
     onRemove: (index) => void changeSlide("remove", index),

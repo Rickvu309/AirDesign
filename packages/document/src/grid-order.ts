@@ -7,7 +7,7 @@ import type { SlideSpot } from "./person-undo.js"
 import type { FoldedSlide, LegacySlideCommand, SlideState, SlideRefusal } from "./slide-order.js"
 export { readGridCommand } from "./grid-read.js"
 
-export type GridSide = "same"
+export type GridSide = "same" | "new"
 export type GridLayout = { readonly starts: readonly SlideId[] }
 export type GridRow = readonly [SlideId, ...SlideId[]]
 export type SlideStep = { readonly id: SlideId; readonly before: SlideSpot; readonly after: SlideSpot }
@@ -29,7 +29,7 @@ export type V1Command = (
   | (Omit<Extract<LegacySlideCommand, { readonly slide: "add" }>, "key" | "runId"> & { readonly row: GridSide })
   | Omit<Extract<LegacySlideCommand, { readonly slide: "clone" }>, "key" | "runId">
   | { readonly slide: "remove"; readonly id: SlideId }
-  | { readonly slide: "move"; readonly id: SlideId; readonly after: SlideId | null; readonly row: GridSide }
+  | { readonly slide: "move"; readonly id: SlideId; readonly after: SlideId | null; readonly row: "same" }
   | { readonly slide: "grid-turn"; readonly turn: GridTurn }
 ) & { readonly grid: 1; readonly runId?: string }
 
@@ -109,7 +109,9 @@ export function foldGrid(state: SlideState): {
       const remaining = before.filter((spot) => command.slide !== "move" || spot.id !== command.id)
       const anchor =
         command.slide === "add"
-          ? command.after
+          ? command.grid === 1 && command.row === "new"
+            ? sourceRows.find((row) => row.includes(command.after))?.at(-1)
+            : command.after
           : command.slide === "clone"
             ? command.source
             : command.slide === "move" && command.grid === 1
@@ -131,11 +133,12 @@ export function foldGrid(state: SlideState): {
               ? { from: "blank" as const, layout: command.layout }
               : { from: "blank" as const, layout: command.layout, layoutPart: command.layoutPart }
         spots.set(command.id, { id: command.id, key, birth, present: true })
+        if (command.slide === "add" && command.grid === 1 && command.row === "new") heads.add(command.id)
         if (command.slide === "add")
           effects.push({
             slide: "add",
             id: command.id,
-            after: command.after,
+            after: anchor ?? command.after,
             layout: command.layout,
             key,
             ...(command.layoutPart === undefined ? {} : { layoutPart: command.layoutPart }),

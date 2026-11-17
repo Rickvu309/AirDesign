@@ -16,8 +16,8 @@
     {
       "file": "packages/engine/src/agent-slides.ts",
       "names": ["agentSlide", "runFence", "runFenced", "readFresh"],
-      "digest": "593905d91cb1",
-      "blob": "8687d0af8d0007ce16d9b59dc11c7393919d4433"
+      "digest": "4032558e1df0",
+      "blob": "01b2450e6897c029c3d328788f2c534e86d1df73"
     },
     {
       "file": "packages/mcp/src/call-tool.ts",

@@ -204,7 +204,8 @@ export function useGridViewport({
 
   function press(event: PointerEvent<HTMLDivElement>) {
     const target = event.target
-    const blank = target instanceof Element && target.closest("[data-grid-card], [data-section-head]") === null
+    const blank =
+      target instanceof Element && target.closest("[data-grid-card], [data-section-head], [data-add-row]") === null
     if (event.button !== 1 && !(event.button === 0 && (hand || heldSpace.current || blank))) return
     dragged.current = hand || heldSpace.current || event.button === 1
     if (blank) event.currentTarget.focus({ preventScroll: true })

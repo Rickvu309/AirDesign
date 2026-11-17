@@ -4,8 +4,8 @@
     {
       "file": "packages/engine/src/agent-slides.ts",
       "names": ["readFresh", "agentSlide"],
-      "digest": "08602325c4f2",
-      "blob": "8687d0af8d0007ce16d9b59dc11c7393919d4433"
+      "digest": "f30055801265",
+      "blob": "01b2450e6897c029c3d328788f2c534e86d1df73"
     },
     {
       "file": "packages/engine/src/agent-elements.ts",

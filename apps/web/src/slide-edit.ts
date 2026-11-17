@@ -4,6 +4,7 @@ import {
   readSlideId,
   slideUndoable,
   type Register,
+  type GridSide,
   type SlideCommand,
   type SlideId,
   type Undoable,
@@ -45,6 +46,7 @@ export function slideCommand(
   index: number,
   to = index,
   layoutPart?: string,
+  row: GridSide = "same",
 ): { readonly edit: SlideCommand; readonly current: number } | null {
   const spots = presentSlides({ file, order })
   const spot = spots[index]
@@ -64,9 +66,10 @@ export function slideCommand(
   const id = nextSlideId(taken(file, order))
   if (change === "add") {
     const part = layoutPart === undefined ? {} : { layoutPart }
+    const edit: SlideCommand = { slide: "add", id, after: spot.id, grid: 1, row, layout: spot.id, ...part }
     return {
-      edit: { slide: "add", id, after: spot.id, grid: 1, row: "same", layout: spot.id, ...part },
-      current: index + 1,
+      edit,
+      current: presentSlides({ file, order: [...order, edit] }).findIndex((slide) => slide.id === id),
     }
   }
   return { edit: { slide: "clone", id, source: spot.id, grid: 1 }, current: index + 1 }
@@ -81,18 +84,20 @@ export async function commitSlideChange(
   paint: (current: number, undoable: Undoable | null) => void | Promise<void>,
   to = index,
   layoutPart?: string,
+  row: GridSide = "same",
 ): Promise<CommitOutcome> {
   const file = fileSlides(parts, register)
   const state = { file, order: register.order }
   const current = presentSlides(state)[index]
   const chosen =
     layoutPart ?? (change === "add" && current !== undefined ? newSlideLayout(parts, state, current.id) : undefined)
-  const built = slideCommand(file, register.order, change, index, to, chosen)
+  const built = slideCommand(file, register.order, change, index, to, chosen, row)
   if (built === null) return "refused"
   const edit = flooredEdit(parts, register, file, built.edit)
   const undoable = slideUndoable(register, file, edit)
   const kept = await connect(memoryRemote()).enqueueSlide(deckId, file, edit)
   if (!kept.ok) return "refused"
-  await paint(built.current, undoable)
+  const selected = edit.slide === "add" ? kept.painted.indexOf(edit.id) : built.current
+  await paint(selected, undoable)
   return flushPending(connect, deckId)
 }

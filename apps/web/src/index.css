@@ -262,3 +262,30 @@ html:has(.reflow-frame) #root {
     transition: none;
   }
 }
+
+[data-row-insert] {
+  height: 0;
+}
+[data-row-insert="ready"]:not([inert]):has([data-add-row]:is(:focus, :active):not(:disabled)) {
+  height: var(--grid-row-preview-space);
+}
+[data-row-insert="ready"]:not([inert]):has([data-add-row]:is(:focus, :active):not(:disabled)) [data-row-preview] {
+  display: block;
+}
+@media (hover: hover) and (pointer: fine) {
+  [data-row-insert="ready"]:not([inert]):has([data-add-row]:hover:not(:disabled)) {
+    height: var(--grid-row-preview-space);
+  }
+  [data-row-insert="ready"]:not([inert]):has([data-add-row]:hover:not(:disabled)) [data-row-preview] {
+    display: block;
+  }
+}
+[data-row-insert][inert] [data-add-row] {
+  visibility: hidden;
+}
+[data-row-insert][inert] {
+  height: 0;
+}
+[data-row-insert][inert] [data-row-preview] {
+  display: none;
+}

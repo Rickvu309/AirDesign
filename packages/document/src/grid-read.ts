@@ -78,11 +78,12 @@ export function readGridCommand(raw: Record<string, unknown>): V1Command | undef
     return after === undefined || raw.row !== "same" ? undefined : { slide: "move", id, after, row: "same", grid: 1 }
   }
   if (raw.slide !== "add" && raw.slide !== "clone") return undefined
-  if (raw.slide === "add" && raw.row !== "same") return undefined
+  if (raw.slide === "add" && raw.row !== "same" && raw.row !== "new") return undefined
   const parsed = readSlideState({ file: [], order: [{ ...raw, grid: undefined, key: "a0" }] })?.order[0]
   if (parsed?.slide === "add" && parsed.grid === undefined) {
     const { key: _key, ...birth } = parsed
-    return { ...birth, row: "same", grid: 1 }
+    if (raw.row !== "same" && raw.row !== "new") return undefined
+    return { ...birth, row: raw.row, grid: 1 }
   }
   if (parsed?.slide === "clone" && parsed.grid === undefined) {
     const { key: _key, ...birth } = parsed

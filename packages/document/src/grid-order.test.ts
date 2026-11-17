@@ -219,7 +219,10 @@ it("maintains source heads for keyed writers after initialization", () => {
 it("rejects modern commands with redundant keyed placement or an unshipped row mode", () => {
   const command = { slide: "add", grid: 1, row: "same", id: "266", after: "259", layout: "256" }
   expect(readSlideState({ file, order: [{ ...command, key: "a0" }] })).toBeUndefined()
-  expect(readSlideState({ file, order: [{ ...command, row: "new" }] })).toBeUndefined()
+  expect(readSlideState({ file, order: [{ ...command, row: "keep" }] })).toBeUndefined()
+  expect(
+    readSlideState({ file, order: [{ slide: "move", grid: 1, row: "new", id: "266", after: "259" }] }),
+  ).toBeUndefined()
   expect(readSlideState({ file, order: [{ ...command, grid: 2 }] })).toBeUndefined()
 })
 

@@ -1,4 +1,5 @@
 import { Filmstrip } from "@airdesign/render"
+import type { GridSide } from "@airdesign/document"
 import {
   useCallback,
   useLayoutEffect,
@@ -41,7 +42,7 @@ export type SlideStrip = {
   readonly sections?: readonly StripSection[]
   readonly current: number
   readonly onSelect: (index: number) => void
-  readonly onAdd?: (layoutPart?: string, after?: number) => void
+  readonly onAdd?: (layoutPart?: string, after?: number, row?: GridSide) => void
   readonly layouts?: readonly LayoutChoice[]
   readonly onClone?: (index: number) => void
   readonly onRemove?: (index: number) => void

@@ -104,7 +104,7 @@ export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, b
       id,
       after: parsed.after,
       grid: 1,
-      row: "same",
+      row: parsed.row ?? "same",
       layout: parsed.layout,
       floor: floorFor(floor, id),
     }

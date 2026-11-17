@@ -14,6 +14,21 @@ const names = [
   "Nonhead deleted",
   "Safe gap insert",
   "Nonhead restored",
+  "Row added below",
+  "Below add undone",
+  "Below add redone",
+  "Final row added below",
+  "Source tail extended",
+  "Below add follows current tail",
+  "Concurrent below add undone",
+  "Foreign slide fills new row",
+  "Filled row undo refused",
+  "Source tail extended after undo",
+  "Unsafe redo refused",
+  "Anchor deleted",
+  "Dead anchor refused",
+  "Two rows added below",
+  "Colliding birth refused",
 ]
 export const state = (v) => names[v.stage] + ", device at " + names[v.cacheStage]
 export const step = (action) => (action === "Adopt" ? "the device adopts the accepted prefix" : action)
