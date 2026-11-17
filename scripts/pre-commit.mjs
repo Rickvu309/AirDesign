@@ -54,7 +54,10 @@ export const formatStaged = (root) => {
     }
   }
   if (whole.length > 0) {
-    execFileSync("pnpm", ["exec", "oxfmt", ...whole], { cwd: root, stdio: "inherit" })
+    execFileSync("pnpm", ["exec", "oxfmt", "--no-error-on-unmatched-pattern", ...whole], {
+      cwd: root,
+      stdio: "inherit",
+    })
     git("add", "--", ...whole)
   }
 }
