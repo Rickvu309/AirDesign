@@ -50,7 +50,6 @@ export type NodeChoice = {
 }
 
 export type ControlProps = {
-  readonly fold?: { readonly open: boolean; readonly onOpen: (open: boolean) => void }
   readonly control: PanelControl
   readonly palette: Palette
   readonly onChange: (value: unknown) => void

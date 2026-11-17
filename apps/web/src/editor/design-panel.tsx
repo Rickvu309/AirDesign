@@ -102,7 +102,7 @@ function FoldedSection({
       className={cn("flex flex-col gap-2.5 px-3", fold.open ? "py-3" : "py-1.5", edge)}
       data-design-section={title}
     >
-      <div className="flex min-h-6 items-center justify-between gap-2">
+      <div className="relative flex min-h-6 items-center">
         <h2 className="min-w-0 flex-1 text-[length:var(--type-dense)] font-semibold text-foreground">
           <CollapsibleTrigger className="group/fold -mx-1 flex w-[calc(100%+0.5rem)] items-center gap-1.5 rounded-[var(--shape-control)] px-1 py-1 text-left">
             <span className="truncate">{title}</span>
@@ -114,7 +114,7 @@ function FoldedSection({
             />
           </CollapsibleTrigger>
         </h2>
-        {fold.open ? action : null}
+        {fold.open && action !== null ? <div className="absolute right-5 flex items-center">{action}</div> : null}
       </div>
       <CollapsibleContent className="flex flex-col gap-2.5">{children}</CollapsibleContent>
     </Collapsible>
@@ -164,20 +164,18 @@ export function Swatch({ color, name, edged = false }: { color: string; name: st
   )
 }
 
-function ControlView({ control, palette, onChange, fold }: ControlProps) {
+function ControlView({ control, palette, onChange }: ControlProps) {
   const View = controlViews[control.kind]
   return View === undefined ? null : (
-    <View control={control} palette={palette} onChange={onChange} inner={ControlView} fold={fold} />
+    <View control={control} palette={palette} onChange={onChange} inner={ControlView} />
   )
 }
 
 export function SectionStrips({
   strips,
-  fold,
   palette,
   onChange,
 }: {
-  fold?: ControlProps["fold"]
   strips: readonly (readonly PanelControl[])[]
   palette: Palette
   onChange: (control: PanelControl, value: unknown) => void
@@ -192,7 +190,6 @@ export function SectionStrips({
         <ControlView
           key={control.field}
           control={control}
-          fold={fold}
           palette={palette}
           onChange={(value) => onChange(control, value)}
         />
@@ -231,22 +228,19 @@ export function ElementDesign({
         <p className="px-4 py-4 text-[length:var(--type-dense)] text-quiet">{designCopy.nothing}</p>
       ) : null}
       {model.sections.map((section, at) => {
-        if (section.trait === "opacity")
+        const [strip, ...more] = section.strips
+        const [lone, ...beside] = strip ?? []
+        if (lone !== undefined && more.length === 0 && beside.length === 0 && lone.look.name.show === "beside")
           return (
-            <section key={section.trait} className="border-b border-line px-3 py-3">
-              <SectionStrips
-                strips={section.strips}
-                palette={palette}
-                onChange={onChange}
-                fold={
-                  kind === null
-                    ? undefined
-                    : {
-                        open: foldOpen(folds, kind, section.trait, section.open),
-                        onOpen: (open) => setFold(kind, section.trait, open),
-                      }
-                }
-              />
+            <section
+              key={section.trait}
+              className={cn(
+                "grid grid-cols-2 items-center gap-2 px-3 py-3",
+                at === last ? null : "border-b border-line",
+              )}
+            >
+              <h2 className="text-[length:var(--type-dense)] font-semibold text-foreground">{section.label}</h2>
+              <ControlView control={lone} palette={palette} onChange={(value) => onChange(lone, value)} />
             </section>
           )
         const reset = section.strips
