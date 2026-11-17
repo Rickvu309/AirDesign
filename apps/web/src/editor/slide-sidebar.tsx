@@ -25,7 +25,7 @@ import { cn } from "@/lib/class-names"
 
 export type SidebarRun = "working" | "done" | "own" | "compose" | "failed" | "offline"
 
-export const slideThumbWidth = 180
+export const slideThumbWidth = 197
 
 const thumbWidth = slideThumbWidth
 
@@ -207,18 +207,18 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
   return (
     <>
       <div className="flex px-3 pb-2">
-        <div className={cn("flex h-8 flex-1 items-center rounded-lg bg-white", surfaceShadow)}>
+        <div className={cn("flex h-7 flex-1 items-center rounded-lg bg-white", surfaceShadow)}>
           <NewSlideMenu
             layouts={strip.onAdd === undefined ? [] : (strip.layouts ?? [])}
             onChoose={(part) => {
               strip.onAdd?.(part)
             }}
           />
-          <span className="block h-8 w-px bg-[var(--field-edge)]" />
+          <span className="block h-7 w-px bg-[var(--field-edge)]" />
           <Button
             type="button"
             variant="ghost"
-            className="h-8 w-8 rounded-none px-0 text-foreground hover:bg-transparent active:translate-y-0"
+            className="h-7 w-8 rounded-l-none rounded-r-lg px-0 text-foreground hover:bg-black/4 active:translate-y-0"
             aria-label="Add slide"
             onClick={() => {
               following.current = true
@@ -234,7 +234,7 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
         ref={list}
         role="group"
         aria-label={slideListCopy.listName}
-        className="flex flex-col gap-1 overflow-y-auto px-2 py-1"
+        className="flex flex-col gap-1 overflow-y-auto px-1.5 py-1"
         data-slide-list
         onFocus={(event: FocusEvent<HTMLDivElement>) => {
           const key = event.target.getAttribute("data-stop")
@@ -321,10 +321,10 @@ function SectionBlock({
         children
       ) : (
         <div className="flex pt-1 pl-[var(--space-32)]" data-section-stack>
-          <div className="flex w-[180px] flex-col items-center">
+          <div className="flex w-[197px] flex-col items-center">
             {stack}
-            <span className="block h-1.5 w-[166px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
-            <span className="block h-1.5 w-[150px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
+            <span className="block h-1.5 w-[183px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
+            <span className="block h-1.5 w-[167px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
           </div>
         </div>
       )}
@@ -343,23 +343,23 @@ function SampleStrip({ run }: { run: SidebarRun }) {
   return (
     <>
       <div className="flex px-3 pb-2">
-        <div className={cn("flex h-8 flex-1 items-center rounded-lg bg-white", surfaceShadow)}>
-          <span className="flex flex-1 items-center justify-center gap-1 text-[length:var(--type-dense)] font-medium text-foreground">
+        <div className={cn("flex h-7 flex-1 items-center rounded-lg bg-white", surfaceShadow)}>
+          <span className="flex flex-1 items-center justify-center gap-1 text-[length:var(--type-dense)] text-foreground">
             New slide
-            <EditorIcon name="chev" size={13} className="text-faint" />
+            <EditorIcon name="chev" size={13} className="text-quiet" />
           </span>
-          <span className="block h-8 w-px bg-[var(--field-edge)]" />
+          <span className="block h-7 w-px bg-[var(--field-edge)]" />
           <Button
             type="button"
             variant="ghost"
-            className="h-8 w-8 rounded-none px-0 text-foreground hover:bg-transparent active:translate-y-0"
+            className="h-7 w-8 rounded-l-none rounded-r-lg px-0 text-foreground hover:bg-black/4 active:translate-y-0"
             aria-label="Add slide"
           >
             <EditorIcon name="plus" size={15} />
           </Button>
         </div>
       </div>
-      <div className="flex flex-col gap-1 overflow-hidden px-2 pb-2">
+      <div className="flex flex-col gap-1 overflow-hidden px-1.5 pb-2">
         <SectionHead name="Opening" open />
         {item(1)}
         {item(2)}
@@ -369,10 +369,10 @@ function SampleStrip({ run }: { run: SidebarRun }) {
         {item(5)}
         <SectionHead name="Outlook" range="6 to 8" />
         <div className="flex pt-1 pl-[var(--space-32)]" data-section-stack>
-          <div className="flex w-[180px] flex-col items-center">
+          <div className="flex w-[197px] flex-col items-center">
             <SlideThumb index={6} width={thumbWidth} queued={queuedFrom > 0 && 6 >= queuedFrom} />
-            <span className="block h-1.5 w-[166px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
-            <span className="block h-1.5 w-[150px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
+            <span className="block h-1.5 w-[183px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
+            <span className="block h-1.5 w-[167px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
           </div>
         </div>
       </div>
@@ -454,7 +454,7 @@ function SlideItem({
   }, [])
   const look = cn(
     "flex w-fit items-start gap-2 rounded-[var(--shape-card)] py-1.5 pr-1.5 pl-2",
-    active && "bg-[var(--row)]",
+    active ? "bg-[var(--row)]" : onSelect !== undefined && "hover:bg-black/4",
   )
   const number = (
     <span className="flex w-4 flex-col items-center gap-1.5 pt-0.5">

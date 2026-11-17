@@ -3,7 +3,7 @@ import { forward, openClean, signInBrowser, test } from "./api-stack"
 
 const element = "ppt/slides/slide1.xml#2"
 const emuPerPixel = 15_240
-const thumbScale = 180 / 800
+const thumbScale = 197 / 800
 const start = { x: 457_200, y: 457_200, cx: 5_486_400, cy: 1_828_800 }
 
 test.use({ viewport: { width: 1470, height: 923 } })
