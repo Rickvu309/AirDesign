@@ -1,6 +1,13 @@
 const dayLength = 86400000
 const hourLength = 3600000
 const trashDays = 30
+const monthDay = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
+const withYear = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+})
 
 function age(then: number, now: number) {
   const days = Math.max(0, Math.floor((now - then) / dayLength))
@@ -18,21 +25,14 @@ function age(then: number, now: number) {
 export function deckTime(iso: string, now: number) {
   const time = Date.parse(iso)
   const words = age(time, now)
-  const date = new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(time)
+  const format = new Date(time).getUTCFullYear() === new Date(now).getUTCFullYear() ? monthDay : withYear
+  const date = format.format(time)
   const older = now - time >= 30 * dayLength
   const left = Math.max(0, trashDays - Math.floor(Math.max(0, now - time) / dayLength))
   return {
     row: older ? date : `${words.charAt(0).toUpperCase()}${words.slice(1)}`,
     card: older ? `Edited on ${date}` : `Edited ${words}`,
-    created:
-      new Date(time).getUTCFullYear() === new Date(now).getUTCFullYear()
-        ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(time)
-        : date,
+    created: date,
     trash: `Deleted ${words}, ${left} ${left === 1 ? "day" : "days"} left`,
   }
 }
