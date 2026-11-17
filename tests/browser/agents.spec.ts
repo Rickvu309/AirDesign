@@ -187,6 +187,7 @@ test("explains how to connect and selects the address when clipboard access fail
     page.getByText("Copy the MCP server address below into Claude or Codex, then approve its request."),
   ).toBeVisible()
   await expect(page.getByRole("link", { name: "Connect an agent" })).toHaveCount(0)
+  await expect(page.getByRole("status")).toHaveText("")
   await page.getByRole("button", { name: "Copy", exact: true }).click()
   await expect(page.getByRole("button", { name: "Unable to copy", exact: true })).toBeVisible()
   await expect(page.getByRole("status")).toHaveText("Address selected. Copy it with your keyboard or selection menu.")

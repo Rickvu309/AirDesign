@@ -230,8 +230,7 @@ export function AgentsPage({ now = Date.now, navigate }: { now?: () => number; n
         </div>
         <p
           role="status"
-          className="mt-2 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-muted-foreground"
-          hidden={copyStatus !== "failed"}
+          className={`${copyStatus === "failed" ? "mt-2 " : ""}text-[length:var(--type-dense)] leading-[var(--leading-body)] text-muted-foreground`}
         >
           {copyStatus === "failed" ? settingsCopy.copyManually : ""}
         </p>
