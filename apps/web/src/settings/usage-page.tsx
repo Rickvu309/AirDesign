@@ -9,6 +9,11 @@ import { SettingsPage, signOut } from "@/settings/settings-page"
 import { signInAddress } from "@/thin-notice"
 import { loadUsage, type UsageLoad } from "@/usage-load"
 
+import { useCredits } from "@/credits/use-credits"
+import { CreditsCards } from "@/credits/credits-cards"
+import { creditsCopy } from "@/copy/credits-copy"
+import { resetCents } from "@airdesign/catalog"
+
 const settingsAction =
   "h-[var(--space-32)] border-0 bg-background px-3.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
 
@@ -27,6 +32,8 @@ export function UsagePage({
     else setLoaded(next)
   }
 
+  const credits = useCredits(refresh)
+
   useEffect(() => {
     void Promise.resolve().then(refresh)
     const focused = () => void refresh()
@@ -44,6 +51,23 @@ export function UsagePage({
       onSignOut={() => void signOut()}
     >
       <Card
+        actions={
+          <Button
+            type="button"
+            variant="outline"
+            className={settingsAction}
+            disabled={
+              credits.busy ||
+              week === null ||
+              week.used === 0 ||
+              credits.loaded?.kind !== "credits" ||
+              credits.loaded.credits.cents < resetCents
+            }
+            onClick={credits.openReset}
+          >
+            {creditsCopy.reset}
+          </Button>
+        }
         title={productCopy.usageTitle}
         {...(week === null ? {} : { description: usageResetsOn(resetsWhen(week.resets)) })}
       >
@@ -85,7 +109,7 @@ export function UsagePage({
           </div>
         )}
       </Card>
-      <Card title={usageCopy.runsOutTitle} description={usageCopy.runsOutBody} />
+      <CreditsCards state={credits} />
     </SettingsPage>
   )
 }

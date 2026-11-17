@@ -3,7 +3,9 @@ import { createHmac } from "node:crypto"
 import { airaTools, readTurn, type ModelMessage, type ModelTool, type ReplyBlock } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/document"
 import { admit, kindInstructions } from "@airdesign/mcp"
-import { allowance, usage, type Command, type Ledger } from "@airdesign/usage"
+import { usage } from "@airdesign/usage"
+import { readLedger, writeLedger, applied, turnOver, weekUsage, type Stored, type WeekUsage } from "./aira-ledger.js"
+import { autoResetCredits } from "./credits.js"
 
 import { withAddress } from "./account.js"
 import type { Closing, Followed } from "./aira-closing.js"
@@ -20,8 +22,6 @@ export const airaBodyCap = 262_144
 export const staleTurn = 900_000
 
 const framing = 64
-const weekLength = 604_800_000
-const nano = 1_000_000_000
 
 const instructions =
   "You are Aira, the AI agent inside AirDesign, where people make slide decks. You are an AI, not a person. The person watches the deck change as you edit it. Use the airdesign tools to read the deck before you edit it, edit only what the person asked for, and call airdesign_stop_run with your runId when your edits are done. Answer plainly and briefly. Say when a fact should be checked."
@@ -82,8 +82,6 @@ export type AiraHost = {
   readonly closing: Closing
 }
 
-export type WeekUsage = { readonly used: number; readonly allowed: number; readonly resets: string }
-
 export type AiraAnswer = { readonly status: number; readonly body: unknown }
 
 export type AiraLine =
@@ -109,8 +107,6 @@ type Asked = {
   readonly call: ModelCall
 }
 
-type Stored = Ledger & { readonly monday: number }
-
 type Reserved =
   | { readonly ok: true; readonly ledger: Stored }
   | { readonly ok: false; readonly refusal: "open" | "allowance"; readonly ledger: Stored }
@@ -122,90 +118,12 @@ export function accountId(secret: string, account: string): string {
   return createHmac("sha256", secret).update(account).digest("hex")
 }
 
-export function weekStart(now: number): number {
-  const day = new Date(now)
-  const back = (day.getUTCDay() + 6) % 7
-  return Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate() - back)
-}
-
 function inputCeiling(system: string, messages: readonly ModelMessage[]): number {
   return bytesOf(system) + bytesOf(JSON.stringify(airaTools)) + bytesOf(JSON.stringify(messages)) + framing
 }
 
-function weekUsage(ledger: Pick<Stored, "spent" | "monday">): WeekUsage {
-  return {
-    used: ledger.spent / nano,
-    allowed: allowance / nano,
-    resets: new Date(ledger.monday + weekLength).toISOString(),
-  }
-}
-
-export async function readUsage(db: Sql, account: string, now: number): Promise<WeekUsage> {
-  const found = await db.query<{ spent: string; monday: Date }>(
-    "select spent, monday from session.aira_ledger where email = $1",
-    [account],
-  )
-  const row = found.rows[0]
-  const current = weekStart(now)
-  if (row === undefined || row.monday.getTime() < current) return weekUsage({ spent: 0, monday: current })
-  return weekUsage({ spent: Number(row.spent), monday: row.monday.getTime() })
-}
-
 function refuse(status: number, refusal: string, extra: Record<string, unknown> = {}): AiraAnswer {
   return { status, body: { ok: false, refusal, ...extra } }
-}
-
-async function readLedger(db: Sql, account: string, now: number): Promise<Stored> {
-  await db.query("insert into session.aira_ledger (email, monday) values ($1, $2) on conflict (email) do nothing", [
-    account,
-    new Date(weekStart(now)),
-  ])
-  const found = await db.query<{
-    spent: string
-    hold: string
-    turn: string | null
-    week: number
-    outside: number
-    monday: Date
-  }>("select spent, hold, turn, week, outside, monday from session.aira_ledger where email = $1", [account])
-  const row = found.rows[0]
-  if (row === undefined) throw new Error("ledger")
-  return {
-    spent: Number(row.spent),
-    open: row.turn === null ? null : { turn: row.turn, hold: Number(row.hold) },
-    week: row.week,
-    outside: row.outside,
-    monday: row.monday.getTime(),
-  }
-}
-
-async function writeLedger(db: Sql, account: string, ledger: Stored): Promise<void> {
-  await db.query(
-    `update session.aira_ledger set spent = $2, hold = $3, turn = $4, week = $5, outside = $6, monday = $7
-     where email = $1`,
-    [
-      account,
-      ledger.spent,
-      ledger.open?.hold ?? 0,
-      ledger.open?.turn ?? null,
-      ledger.week,
-      ledger.outside,
-      new Date(ledger.monday),
-    ],
-  )
-}
-
-function applied(ledger: Stored, command: Command): { readonly accepted: boolean; readonly ledger: Stored } {
-  const result = usage(ledger, command)
-  return { accepted: result.accepted, ledger: { ...result.ledger, monday: ledger.monday } }
-}
-
-function turnOver(ledger: Stored, now: number): Stored {
-  const current = weekStart(now)
-  if (current <= ledger.monday) return ledger
-  const reset = applied(ledger, { command: "monday" })
-  if (!reset.accepted) return ledger
-  return { ...reset.ledger, monday: current }
 }
 
 async function closeTurn(
@@ -254,15 +172,27 @@ async function reserveTurn(db: Sql, account: string, id: string, input: number, 
     const admission = admit(await lockedLog(client, account), "turn", now)
     if (!admission.ok) return { ok: false, refusal: "rate", text: admission.text }
     const stored = await readLedger(client, account, now)
-    const ledger = turnOver(await dropStale(client, account, stored, now), now)
-    const result = applied(ledger, {
-      command: "reserve",
+    let ledger = turnOver(await dropStale(client, account, stored, now), now)
+    const command = {
+      command: "reserve" as const,
       id,
       input,
       maxTokens: airaMaxTokens,
       coldPrefix: 0,
       ...noUsage,
-    })
+    }
+    let result = applied(ledger, command)
+    if (
+      !result.accepted &&
+      ledger.open === null &&
+      ledger.spent > 0 &&
+      usage({ ...ledger, spent: 0 }, command).accepted
+    ) {
+      if (await autoResetCredits(client, account, now, `auto_${id}`)) {
+        ledger = { ...ledger, spent: 0 }
+        result = applied(ledger, command)
+      }
+    }
     if (!result.accepted) {
       if (ledger !== stored) await writeLedger(client, account, ledger)
       return { ok: false, refusal: ledger.open === null ? "allowance" : "open", ledger }

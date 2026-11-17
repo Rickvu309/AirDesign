@@ -418,4 +418,26 @@ alter table session.account add column name text
 update session.account set name = '';
 `,
   },
+  {
+    id: 18,
+    sql: `
+create table session.credits (
+  email text primary key references session.account(email) on delete cascade,
+  cents integer not null default 0 check (cents >= 0),
+  auto_reset boolean not null default false
+);
+create table session.credit_history (
+  id bigint generated always as identity primary key,
+  email text not null references session.account(email) on delete cascade,
+  once text not null,
+  at timestamptz not null,
+  cents integer not null check (cents = -500),
+  unique(email, once)
+);
+create index credit_history_account on session.credit_history(email, id desc);
+grant select, insert, update on session.credits to session;
+grant select, insert on session.credit_history to session;
+grant usage, select on sequence session.credit_history_id_seq to session;
+`,
+  },
 ]
