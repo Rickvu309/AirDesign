@@ -40,7 +40,9 @@ if (stageOf("references") === -1) throw new Error("check lost the step reference
 
 const namesIn = (part) => stagesFor(part).flatMap(stepNames)
 const everyStep = namesIn("all")
-const split = [...namesIn("main"), ...namesIn("side"), ...namesIn("design")]
+const split = [...namesIn("main"), ...namesIn("side"), ...namesIn("design")].filter(
+  (name, index, names) => name !== "browser-imports" || names.indexOf(name) === index,
+)
 if (split.length !== everyStep.length || everyStep.some((name) => !split.includes(name))) {
   throw new Error("the main, side and design parts must run every step exactly once")
 }
@@ -49,7 +51,7 @@ for (const [part, names] of Object.entries(partSteps)) {
     if (!everyStep.includes(name)) throw new Error(`the ${part} part names ${name}, which check does not run`)
   }
 }
-if (namesIn("side").toSorted().join() !== "site,tooling")
+if (namesIn("side").toSorted().join() !== "browser-imports,site,tooling")
   throw new Error("the side part must run only the site build and the tooling tests")
 for (const name of ["test", "build", "metrics", "specs", "typecheck"]) {
   if (!namesIn("main").includes(name)) throw new Error(`the main part must run ${name}`)
@@ -188,12 +190,12 @@ const exceptDesignScans = "--grep-invert design-states\\.spec\\.ts|every-screen\
 for (const current of [1, 2, 3]) {
   if (browserRun("browser", { current, total: 3 }) !== `test:browser ${exceptDesignScans} --shard=${current}/3`)
     throw new Error(`shard ${current} does not run its share of the browser tests outside the design scans`)
-  if (ranWhen("browser", true).join() !== "browser")
+  if (ranWhen("browser", true).join() !== "browser-imports,browser")
     throw new Error(`shard ${current} must run only its share of the browser tests`)
 }
 if (browserRun("design") !== `test:browser ${designScans.join(" ")}`)
   throw new Error("the design part must run the design scans and no other browser test")
-if (ranWhen("design", true).join() !== "browser,design-findings")
+if (ranWhen("design", true).join() !== "browser-imports,browser,design-findings")
   throw new Error("the design part must run the design scans and then judge their findings")
 if (browserRun("design", { current: 2, total: 3 }) !== browserRun("design"))
   throw new Error("a shard must not split the design scans, which design-findings reads together")

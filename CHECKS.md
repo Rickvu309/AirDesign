@@ -29,6 +29,7 @@ Checks fail gate, check, check:pptx or merge. Review needs judgment. Give recurr
 | Killed verify runs and test clusters are removed before new ones start; live processes are kept | `leftover-runs.test.mjs` and `leftover-clusters.test.ts` |
 | The branch of a pull request closed without merging does not stay on GitHub | the `closed-branch` workflow deletes it when the pull request closes. The pull request page can restore it. It leaves `main` and `archive/` branches alone |
 | Staged files are formatted without staging a person's unstaged edits | `scripts/pre-commit.mjs`, installed beside `pre-push` by `scripts/install-hooks.mjs`; an unformatted partly staged file refuses the commit |
+| Browser/support imports resolve | `browser-imports` preflight blocks after missing copy exports broke CI; `browser-imports.test.mjs` covers lazy entries. Computed targets remain runtime checks |
 | Cheap deterministic failures do not wait in the check line | `scripts/check.mjs` runs its `preflight` steps before `takeMachineLock`; `scripts/check.test.mjs` proves a failure takes no lock. `pnpm gate` takes none |
 | Run `pnpm gate` after your last edit, before every push | `pnpm gate` or `pnpm check` stamps it; `pre-push` refuses any other and names `pnpm land` (`scripts/checked.test.mjs`) |
 | The gate runs what the diff reaches and waits in no line | `scripts/gate.test.mjs`: cheap checks, changed builds and `pnpm prove --plan`. Past 40 unit files, only changed ones. ci runs every step |
