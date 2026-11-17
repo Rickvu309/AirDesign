@@ -9,7 +9,7 @@ const checksLine = ({ passed, running, failed }) =>
 
 export const statusLines = ({ number, branch, repository, pull, git, gh, ref = "HEAD" }) => {
   const lines = [
-    `pull request ${number} targets ${pull.base}${baseFault(number, pull.base) === undefined ? "" : ". Wrong base. Fix: gh pr edit " + number + " --base main"}`,
+    `pull request ${number} targets ${pull.base}${baseFault(number, pull.base) === undefined ? "" : ". Wrong base. Fix: run pnpm land in its branch; it moves the base to main"}`,
   ]
   if (pull.merged) lines.push("state       merged")
   lines.push(`mergeable   ${pull.mergeable} (merge state ${pull.mergeState})`)
