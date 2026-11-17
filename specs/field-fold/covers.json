@@ -47,7 +47,7 @@
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["fieldsRead", "elementDesign"],
       "digest": "8f2efb7a9caf",
-      "blob": "1fdc6b01f07d1be420789846951450c3b6df9278"
+      "blob": "a2186a8aff5641d93be132c9c31421d23b695c66"
     },
     {
       "file": "apps/web/src/undo-list.ts",
@@ -64,8 +64,8 @@
     {
       "file": "apps/web/src/deck-paint.ts",
       "names": ["paint"],
-      "digest": "4b5f9ad13718",
-      "blob": "f8ffa83be77e3d95adf4c03590c55387910b4648"
+      "digest": "69365851f783",
+      "blob": "9f9320654709d4cec2b71367c2e2984651407517"
     },
     {
       "file": "packages/pptx/src/export-parts.ts",

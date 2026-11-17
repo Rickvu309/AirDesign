@@ -9,7 +9,7 @@ In an open deck, `Add text box` in the toolbar puts a new text box in clear spac
 - `element-remove` Delete or Backspace on a selected frame, outside its text and with no modifier key, removes the element. The server gets one `slide: "element-remove"` row. While the caret is in the text, the keys edit the text instead. An animated shape or a group is not removed: a toast says why and no undo step is recorded.
 - `element-undo` `Undo add text box` takes the box away and `Undo delete element` brings the element back (see `person-undo.md`).
 - `element-said` after each paint the canvas's `[role="status"]` says `<name> added` or `<name> deleted`, by the name the keyboard uses, and nothing for a refused delete. A change of slide says `Slide N of M` and does not say the elements of the slide left behind were deleted.
-- `element-agent` `airdesign_add_text_box` and `airdesign_delete_element` land the same rows; run Undo takes them back (see `aira-turn.md`).
+- `element-agent` `airdesign_edit_deck` with `add` and `delete` changes land the same rows; run Undo takes them back (see `aira-turn.md`).
 - `element-export` the export keeps the added box and drops the deleted one, and a new import of that file shows the same slide.
 
 ## How to get to it (user POV)
