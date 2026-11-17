@@ -1,3 +1,4 @@
+import { authorableTrait } from "@airdesign/catalog"
 import { traitNames, traits, type Desc } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { controlKinds, controlOf } from "./design/panel-arrangement"
@@ -18,13 +19,14 @@ function inside(desc: Desc): readonly Desc[] {
 
 function kindsInUse(): readonly string[] {
   const descs = traitNames
+    .filter(authorableTrait)
     .flatMap((trait) => [
       ...Object.values(traits[trait].fields as Loose),
       ...Object.values(traits[trait].inputs as Loose),
     ])
     .flatMap((kind) => [kind.desc, ...inside(kind.desc)])
     .filter((desc) => desc.kind !== "alpha" && desc.kind !== "mark")
-  return [...new Set(descs.map(controlOf))].sort()
+  return [...new Set(descs.map(controlOf).filter((kind) => kind !== null))].sort()
 }
 
 describe("every control kind a field uses", () => {
@@ -56,6 +58,6 @@ describe("every control kind a field uses", () => {
         traits.notes.fields.value,
         traits.table.fields.value,
       ].map((kind) => controlOf(kind.desc)),
-    ).toEqual(["length", "length", "toggle", "color", "choice", "text", "table"])
+    ).toEqual(["length", "length", "toggle", "color", "choice", "text", null])
   })
 })

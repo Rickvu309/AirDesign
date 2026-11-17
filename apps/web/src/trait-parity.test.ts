@@ -1,4 +1,4 @@
-import { readAgent, traitWire } from "@airdesign/catalog"
+import { authorableTrait, readAgent, traitWire } from "@airdesign/catalog"
 import {
   inheritable,
   rowOf,
@@ -190,7 +190,7 @@ function alphaField(trait: TraitName, field: string): boolean {
 
 async function parityProblems(): Promise<readonly Problem[]> {
   const problems: Problem[] = []
-  for (const trait of traitNames) {
+  for (const trait of traitNames.filter(authorableTrait)) {
     if (Object.keys(traits[trait].fields).length === 0) continue
     const probe = probes[trait] as Loose
     const wire = traitWire[trait] as Partial<LooseWire>

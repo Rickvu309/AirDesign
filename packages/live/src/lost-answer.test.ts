@@ -1,15 +1,12 @@
 import {
-  changedTable,
   currentBox,
   currentValue,
   elementId,
-  openingTable,
   orderKeyAfter,
   orderKeyBetween,
   presentSlides,
   slideId,
   version,
-  writeTableValue,
   type IndexElement,
   type Register,
   type SlideId,
@@ -119,15 +116,11 @@ type Cache = ReturnType<typeof connect>
 
 const box = { x: 0, y: 0, cx: 10, cy: 5 }
 const shape = elementId("256.9")
-const table = elementId("256.10")
 const picture = elementId("256.11")
 const notes = elementId("256.notes")
-const opening = openingTable(2, 2)
 const ahead = orderKeyBetween(null, keyAfter(file, file[0]))
-const cell = changedTable(opening, { change: "cell", row: 0, column: 0, text: "Cell" })
 
-function element(node: IndexElement["node"], kind: "shape" | "table" | "picture"): IndexElement {
-  if (kind === "table") return { node, kind, value: writeTableValue(opening), box, grouped: false }
+function element(node: IndexElement["node"], kind: "shape" | "picture"): IndexElement {
   if (kind === "picture") return { node, kind, value: null, box, grouped: false }
   return { node, kind, value: "", box, grouped: false }
 }
@@ -147,13 +140,6 @@ const shapes: readonly {
     name: "speaker notes",
     edit: (cache) => cache.enqueue(deck, "Say this", notes, ""),
     later: { node: notes, value: "Say that" },
-  },
-  {
-    name: "a table cell",
-    before: (cache) =>
-      cache.enqueueSlide(deck, file, { slide: "element-add", id: file[0], element: element(table, "table") }),
-    edit: (cache) => cache.enqueue(deck, cell === null ? "" : writeTableValue(cell), table, ""),
-    later: { node: table, value: writeTableValue(opening) },
   },
   {
     name: "a moved text box",

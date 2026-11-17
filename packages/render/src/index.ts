@@ -22,7 +22,6 @@ export {
 export { holdKeys, type HeldKeys } from "./held-keys.js"
 export { adjustDefaults, presetOutline } from "./preset-path.js"
 export { SlideCanvas, unshownFill, type Entering } from "./slide-canvas.js"
-export type { TableBar } from "./table-paint.js"
 export { paintStore, type PaintStore } from "./store.js"
 export { textFormatting, type TextFormatting } from "./text-formatting.js"
 export { gestureFor, gestures, type GestureId } from "./gestures.js"
