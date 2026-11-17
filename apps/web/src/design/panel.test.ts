@@ -1,6 +1,6 @@
 import { elementId, writeTextValue, type ScopedElement } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { panelOf, panelOfMany, partRow, type ShownField } from "./panel"
+import { panelOf, panelOfMany, partControl, type ShownField } from "./panel"
 
 const connector: ScopedElement = {
   node: elementId("258.6"),
@@ -10,19 +10,19 @@ const connector: ScopedElement = {
   box: { x: 0, y: 0, cx: 914_400, cy: 0 },
 }
 
-function lineRows(fill: unknown): readonly string[] {
+function lineControls(fill: unknown): readonly string[] {
   const panel = panelOf(connector, { reads: {}, moves: true, fields: { "line.fill": { value: fill, own: true } } })
   return (
     panel.sections
       .find((section) => section.trait === "line")
       ?.strips.flat()
-      .map((row) => row.field) ?? []
+      .map((control) => control.field) ?? []
   )
 }
 
 it("shows only the line's kind while the line is none, and every line field once it has a color", () => {
-  expect(lineRows({ none: true })).toEqual(["fill"])
-  expect(lineRows({ solid: { scheme: "accent1" } })).toEqual([
+  expect(lineControls({ none: true })).toEqual(["fill"])
+  expect(lineControls({ solid: { scheme: "accent1" } })).toEqual([
     "fill",
     "width",
     "dash",
@@ -44,7 +44,7 @@ it("names the line's own color apart from the fill's, so each swatch group has i
   if (fill === undefined || fill.desc.kind !== "union") throw new Error("line fill")
   const solid = fill.desc.cases.solid
   if (solid === undefined) throw new Error("solid")
-  expect(partRow(fill, "solid", solid, { scheme: "accent1" }).label).toBe("Line color")
+  expect(partControl(fill, "solid", solid, { scheme: "accent1" }).label).toBe("Line color")
 })
 
 const shape: ScopedElement = {
@@ -64,9 +64,9 @@ function opacityOf(view: ScopedElement, fields: Readonly<Record<string, unknown>
 it("shows one Opacity for the fill, line and text it fades together", () => {
   const panel = panelOf(shape, { reads: {}, moves: true, fields: {} })
   expect(panel.sections.filter((section) => section.trait === "opacity")).toHaveLength(1)
-  const row = opacityOf(shape, { "fill.alpha": 60_000, "line.alpha": 60_000, "text.alpha": 60_000 })
-  expect(row).toMatchObject({ label: "Opacity", control: "percent", value: 60_000, mixed: false, reset: null })
-  expect(row?.change(25_000)).toEqual({ target: { node: "258.2" }, opacity: 25_000 })
+  const control = opacityOf(shape, { "fill.alpha": 60_000, "line.alpha": 60_000, "text.alpha": 60_000 })
+  expect(control).toMatchObject({ label: "Opacity", kind: "percent", value: 60_000, mixed: false, reset: null })
+  expect(control?.change(25_000)).toEqual({ target: { node: "258.2" }, opacity: 25_000 })
 })
 
 it("shows Mixed when the alphas differ, and full opacity when nothing shows a colour", () => {
@@ -98,7 +98,7 @@ it("lays out a text box's body field by field, autofit included", () => {
   })
   const body = panel.sections.find((section) => section.trait === "body")
   expect(body?.label).toBe("Text box")
-  expect(body?.strips.flat().map((row) => [row.field, row.control, row.value, row.reset])).toEqual([
+  expect(body?.strips.flat().map((control) => [control.field, control.kind, control.value, control.reset])).toEqual([
     ["insets", "record", undefined, null],
     ["anchor", "choice", "ctr", "Reset vertical alignment"],
     ["wrap", "toggle", undefined, null],
@@ -109,8 +109,8 @@ it("lays out a text box's body field by field, autofit included", () => {
   const text = panel.sections.find((section) => section.trait === "text")
   const typed = text?.strips
     .flat()
-    .filter((row) => ["font", "lineSpacing", "spaceBefore", "spaceAfter"].includes(row.field))
-  expect(typed?.map((row) => [row.label, row.control, row.value])).toEqual([
+    .filter((control) => ["font", "lineSpacing", "spaceBefore", "spaceAfter"].includes(control.field))
+  expect(typed?.map((control) => [control.label, control.kind, control.value])).toEqual([
     ["Font", "text", "Calibri"],
     ["Line spacing", "percent", undefined],
     ["Space before", "length", undefined],
@@ -130,43 +130,43 @@ const untouched = {
   "body.anchor": { value: "ctr", own: true },
 }
 
-function shownRows(view: ScopedElement, fields: Readonly<Record<string, ShownField>> = untouched) {
+function shownControls(view: ScopedElement, fields: Readonly<Record<string, ShownField>> = untouched) {
   const panel = panelOf(view, { reads: {}, moves: true, fields })
   return Object.fromEntries(
     panel.sections.flatMap((section) =>
-      section.strips.flat().map((row) => [`${row.trait}.${row.field}`, [row.value, row.inherited]]),
+      section.strips.flat().map((control) => [`${control.trait}.${control.field}`, [control.value, control.inherited]]),
     ),
   )
 }
 
 it("shows an untouched text box's painted size, font and spacing as inherited", () => {
-  const rows = shownRows({ ...shape, value: writeTextValue([{ from: 0, runs: [{ from: 0, text: "Hello" }] }]) })
-  expect(rows["text.size"]).toEqual([1800, true])
-  expect(rows["text.font"]).toEqual(["Arial", true])
-  expect(rows["text.color"]).toEqual([{ scheme: "tx1" }, true])
-  expect(rows["text.align"]).toEqual(["left", true])
-  expect(rows["text.lineSpacing"]).toEqual([100_000, true])
-  expect(rows["text.spaceBefore"]).toEqual([0, true])
-  expect(rows["text.spaceAfter"]).toEqual([0, true])
-  expect(rows["body.columns"]).toEqual([1, true])
-  expect(rows["body.anchor"]).toEqual(["ctr", false])
+  const controls = shownControls({ ...shape, value: writeTextValue([{ from: 0, runs: [{ from: 0, text: "Hello" }] }]) })
+  expect(controls["text.size"]).toEqual([1800, true])
+  expect(controls["text.font"]).toEqual(["Arial", true])
+  expect(controls["text.color"]).toEqual([{ scheme: "tx1" }, true])
+  expect(controls["text.align"]).toEqual(["left", true])
+  expect(controls["text.lineSpacing"]).toEqual([100_000, true])
+  expect(controls["text.spaceBefore"]).toEqual([0, true])
+  expect(controls["text.spaceAfter"]).toEqual([0, true])
+  expect(controls["body.columns"]).toEqual([1, true])
+  expect(controls["body.anchor"]).toEqual(["ctr", false])
 })
 
 it("shows a size or spacing the element sets as its own", () => {
   const value = writeTextValue([{ from: 0, lineSpacing: 150_000, runs: [{ from: 0, text: "Hello", size: 2400 }] }])
-  const rows = shownRows({ ...shape, value })
-  expect(rows["text.size"]).toEqual([2400, false])
-  expect(rows["text.lineSpacing"]).toEqual([150_000, false])
-  expect(rows["text.font"]).toEqual(["Arial", true])
-  expect(shownRows(shape, { ...untouched, "text.font": { value: "Abadi", own: true } })["text.font"]).toEqual([
+  const controls = shownControls({ ...shape, value })
+  expect(controls["text.size"]).toEqual([2400, false])
+  expect(controls["text.lineSpacing"]).toEqual([150_000, false])
+  expect(controls["text.font"]).toEqual(["Arial", true])
+  expect(shownControls(shape, { ...untouched, "text.font": { value: "Abadi", own: true } })["text.font"]).toEqual([
     "Abadi",
     false,
   ])
 })
 
 it("leaves a field empty and not inherited when nothing paints it", () => {
-  const rows = shownRows(shape, { ...untouched, "text.lineSpacing": { value: null, own: false } })
-  expect(rows["text.lineSpacing"]).toEqual([undefined, false])
+  const controls = shownControls(shape, { ...untouched, "text.lineSpacing": { value: null, own: false } })
+  expect(controls["text.lineSpacing"]).toEqual([undefined, false])
 })
 
 it("sizes a table by Width and Height beside X and Y, and offers no rotation for it", () => {
@@ -178,29 +178,34 @@ it("sizes a table by Width and Height beside X and Y, and offers no rotation for
     box: { x: 457_200, y: 914_400, cx: 7_315_200, cy: 1_112_520 },
   }
   const panel = panelOf(table, { reads: {}, moves: true, fields: {} })
-  const rows = panel.sections.find((section) => section.trait === "box")?.strips.flat() ?? []
-  expect(rows.filter((row) => row.control === "length").map((row) => [row.label, row.value])).toEqual([
+  const controls = panel.sections.find((section) => section.trait === "box")?.strips.flat() ?? []
+  expect(
+    controls.filter((control) => control.kind === "length").map((control) => [control.label, control.value]),
+  ).toEqual([
     ["X", 457_200],
     ["Y", 914_400],
     ["Width", 7_315_200],
     ["Height", 1_112_520],
   ])
-  expect(rows.map((row) => row.field)).not.toContain("rot")
-  expect(rows.find((row) => row.field === "w")?.change(9_144_000)).toEqual({
+  expect(controls.map((control) => control.field)).not.toContain("rot")
+  expect(controls.find((control) => control.field === "w")?.change(9_144_000)).toEqual({
     target: { node: "258.4" },
     box: { w: 9_144_000 },
   })
 })
 
-function boxRows(view: ScopedElement, fields: Readonly<Record<string, ShownField>>) {
+function boxControls(view: ScopedElement, fields: Readonly<Record<string, ShownField>>) {
   const panel = panelOf(view, { reads: {}, moves: true, fields })
   return panel.sections.find((section) => section.trait === "box")?.strips.flat() ?? []
 }
 
-it("draws Align and Distribute as actions and every other box row as itself", () => {
-  const rows = boxRows(shape, {})
-  expect(rows.filter((row) => row.control === "action").map((row) => row.field)).toEqual(["align", "distribute"])
-  expect(rows.filter((row) => row.control !== "action").map((row) => row.field)).toEqual([
+it("draws Align and Distribute as actions and every other box control as itself", () => {
+  const controls = boxControls(shape, {})
+  expect(controls.filter((control) => control.kind === "action").map((control) => control.field)).toEqual([
+    "align",
+    "distribute",
+  ])
+  expect(controls.filter((control) => control.kind !== "action").map((control) => control.field)).toEqual([
     "x",
     "y",
     "w",
@@ -214,12 +219,12 @@ it("draws Align and Distribute as actions and every other box row as itself", ()
 it("leaves Flip to the route of a connector that is bound to a shape", () => {
   const bound = { value: { shape: { node: "258.2", site: 1 } }, own: true }
   const free = { value: { none: true }, own: true }
-  expect(boxRows(connector, { "connection.end": bound }).map((row) => row.field)).not.toContain("flipH")
-  expect(boxRows(connector, { "connection.start": bound }).map((row) => row.field)).not.toContain("flipV")
-  expect(boxRows(connector, { "connection.start": free, "connection.end": free }).map((row) => row.field)).toContain(
-    "flipH",
-  )
-  expect(boxRows(connector, {}).map((row) => row.field)).toContain("flipV")
+  expect(boxControls(connector, { "connection.end": bound }).map((control) => control.field)).not.toContain("flipH")
+  expect(boxControls(connector, { "connection.start": bound }).map((control) => control.field)).not.toContain("flipV")
+  expect(
+    boxControls(connector, { "connection.start": free, "connection.end": free }).map((control) => control.field),
+  ).toContain("flipH")
+  expect(boxControls(connector, {}).map((control) => control.field)).toContain("flipV")
 })
 
 function filled(node: string, fill: unknown, x: number) {
@@ -232,26 +237,31 @@ it("reads Mixed where two shapes differ and sets the fill of both in one change"
   const green = filled("258.3", { solid: { scheme: "accent6" } }, 914_400)
   const panel = panelOfMany([blue, green])
   expect(panel).toMatchObject({ nodes: ["258.2", "258.3"], node: "258.3", kind: "many" })
-  const row = (trait: string, field: string) =>
+  const control = (trait: string, field: string) =>
     panel.sections
       .find((section) => section.trait === trait)
       ?.strips.flat()
       .find((each) => each.field === field)
-  expect(row("fill", "value")).toMatchObject({ value: { solid: { scheme: "accent1" } }, mixed: true })
-  expect(row("box", "x")).toMatchObject({ value: undefined, mixed: true })
-  expect(row("box", "y")).toMatchObject({ value: 0, mixed: false })
-  expect(row("fill", "value")?.change({ solid: { scheme: "accent2" } })).toEqual({
+  expect(control("fill", "value")).toMatchObject({ value: { solid: { scheme: "accent1" } }, mixed: true })
+  expect(control("box", "x")).toMatchObject({ value: undefined, mixed: true })
+  expect(control("box", "y")).toMatchObject({ value: 0, mixed: false })
+  expect(control("fill", "value")?.change({ solid: { scheme: "accent2" } })).toEqual({
     target: { nodes: ["258.2", "258.3"] },
     fill: { value: { solid: { scheme: "accent2" } } },
   })
-  expect(row("box", "align")?.change("left")).toEqual({ target: { nodes: ["258.2", "258.3"] }, box: { align: "left" } })
+  expect(control("box", "align")?.change("left")).toEqual({
+    target: { nodes: ["258.2", "258.3"] },
+    box: { align: "left" },
+  })
 })
 
 it("leaves out what only one element can hold, such as its text and its name", () => {
   const panel = panelOfMany([filled("258.2", null, 0), filled("258.3", null, 0)])
   expect(panel.sections.map((section) => section.trait)).toEqual(["box", "fill", "line", "opacity", "text", "effects"])
   expect(panel.sections.find((section) => section.trait === "effects")?.open).toBe(false)
-  const fields = panel.sections.flatMap((section) => section.strips.flat().map((row) => `${row.trait}.${row.field}`))
+  const fields = panel.sections.flatMap((section) =>
+    section.strips.flat().map((control) => `${control.trait}.${control.field}`),
+  )
   expect(fields).not.toContain("text.value")
   expect(fields).toContain("text.size")
 })
@@ -268,12 +278,12 @@ it("keeps the fill kind two shapes share, and names no kind when their kinds dif
 function pickedOver(own: boolean, alpha: number) {
   const fields = { "line.fill": { value: { solid: { scheme: "accent2" } }, own }, "line.alpha": { value: alpha, own } }
   const panel = panelOf(connector, { reads: {}, moves: true, fields })
-  const row = panel.sections
+  const control = panel.sections
     .find((section) => section.trait === "line")
     ?.strips.flat()
     .find((each) => each.field === "fill")
-  if (row === undefined) throw new Error("line fill")
-  return row.change({ solid: { rgb: "C00000" } })
+  if (control === undefined) throw new Error("line fill")
+  return control.change({ solid: { rgb: "C00000" } })
 }
 
 it("writes a colour picked over an inherited line color at the opacity the line showed, so the file's own alpha does not come back", () => {
@@ -293,7 +303,7 @@ it("writes a colour picked over the line's own color as picked, so the export ke
 it("arranges a text box into strips with resolved names and choices", () => {
   const panel = panelOf(shape, { reads: {}, moves: true })
   const text = panel.sections.find((section) => section.trait === "text")
-  expect(text?.strips.map((strip) => strip.map((row) => row.field))).toEqual([
+  expect(text?.strips.map((strip) => strip.map((control) => control.field))).toEqual([
     ["value"],
     ["font"],
     ["size", "lineSpacing"],
@@ -311,7 +321,7 @@ it("arranges a text box into strips with resolved names and choices", () => {
 it("resolves box actions and letter names in the shape's strips", () => {
   const panel = panelOf(shape, { reads: {}, moves: true })
   const box = panel.sections.find((section) => section.trait === "box")
-  expect(box?.strips.map((strip) => strip.map((row) => row.field))).toEqual([
+  expect(box?.strips.map((strip) => strip.map((control) => control.field))).toEqual([
     ["x", "y"],
     ["w", "h"],
     ["rot", "flipH", "flipV"],
@@ -319,13 +329,13 @@ it("resolves box actions and letter names in the shape's strips", () => {
     ["distribute"],
   ])
   expect(box?.strips[1]?.[0]?.look.name).toEqual({ show: "letter", letter: "W" })
-  expect(box?.strips[3]?.[0]).toMatchObject({ control: "action", look: { name: { show: "hidden" } } })
+  expect(box?.strips[3]?.[0]).toMatchObject({ kind: "action", look: { name: { show: "hidden" } } })
   const geometry = panel.sections.find((section) => section.trait === "geometry")?.strips.flat()[0]
   if (geometry === undefined || geometry.desc.kind !== "record") throw new Error("geometry")
   const preset = geometry.desc.fields.preset
   if (preset === undefined) throw new Error("preset")
-  expect(partRow(geometry, "preset", preset, "rect")).toMatchObject({
-    control: "preset",
+  expect(partControl(geometry, "preset", preset, "rect")).toMatchObject({
+    kind: "preset",
     look: { name: { show: "above" } },
   })
 })
@@ -333,7 +343,7 @@ it("resolves box actions and letter names in the shape's strips", () => {
 it("resolves a connector's choice form explicitly and its site override", () => {
   const panel = panelOf(connector, { reads: {}, moves: true })
   const line = panel.sections.find((section) => section.trait === "line")
-  expect(line?.strips.map((strip) => strip.map((row) => row.field))).toEqual([
+  expect(line?.strips.map((strip) => strip.map((control) => control.field))).toEqual([
     ["fill"],
     ["width", "dash"],
     ["cap", "compound"],
@@ -347,8 +357,8 @@ it("resolves a connector's choice form explicitly and its site override", () => 
   if (attached === undefined || attached.kind !== "record") throw new Error("attached")
   const site = attached.fields.site
   if (site === undefined) throw new Error("site")
-  const shapePart = partRow(connection, "shape", attached, {})
-  expect(partRow(shapePart, "site", site, 0)).toMatchObject({ control: "site", look: { name: { show: "above" } } })
+  const shapePart = partControl(connection, "shape", attached, {})
+  expect(partControl(shapePart, "site", site, 0)).toMatchObject({ kind: "site", look: { name: { show: "above" } } })
 })
 
 it("keeps the same strips and looks for a many-selection", () => {
@@ -356,7 +366,9 @@ it("keeps the same strips and looks for a many-selection", () => {
   const second = panelOf({ ...shape, node: elementId("258.3") }, { reads: {}, moves: true })
   const panel = panelOfMany([first, second])
   expect(
-    panel.sections.find((section) => section.trait === "box")?.strips.map((strip) => strip.map((row) => row.field)),
+    panel.sections
+      .find((section) => section.trait === "box")
+      ?.strips.map((strip) => strip.map((control) => control.field)),
   ).toEqual([["x", "y"], ["w", "h"], ["rot", "flipH", "flipV"], ["align"], ["distribute"]])
   expect(panel.sections.find((section) => section.trait === "opacity")?.strips[0]?.[0]?.look.name).toEqual({
     show: "beside",

@@ -7,9 +7,9 @@ import type { ControlProps } from "@/design/panel"
 
 const hexDigits = /^#?([0-9A-Fa-f]{6})$/
 
-export function HexControl({ row, palette, onChange }: ControlProps) {
+export function HexControl({ control, palette, onChange }: ControlProps) {
   const named = useId()
-  const shown = typeof row.value === "string" ? (hexDigits.exec(row.value)?.[1]?.toUpperCase() ?? null) : null
+  const shown = typeof control.value === "string" ? (hexDigits.exec(control.value)?.[1]?.toUpperCase() ?? null) : null
   return (
     <div className="min-w-0" data-control="hex">
       <ColorPicker
@@ -23,13 +23,13 @@ export function HexControl({ row, palette, onChange }: ControlProps) {
           <Button
             type="button"
             variant="ghost"
-            aria-label={row.label}
-            title={shown === null ? row.label : `${row.label} ${colorCopy.hexName(shown)}`}
+            aria-label={control.label}
+            title={shown === null ? control.label : `${control.label} ${colorCopy.hexName(shown)}`}
             className={fieldLook}
           />
         }
       >
-        <ColorField id={named} css={shown === null ? null : `#${shown}`} name={row.label} disclosure={false} />
+        <ColorField id={named} css={shown === null ? null : `#${shown}`} name={control.label} disclosure={false} />
       </ColorPicker>
     </div>
   )

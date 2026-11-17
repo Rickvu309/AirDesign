@@ -43,7 +43,7 @@ import {
   type NodeChoice,
   type PanelModel,
   type PanelReads,
-  type PanelRow,
+  type PanelControl,
   type PanelSection,
 } from "@/design/panel"
 import { changeDesign, fileValue } from "@/design/design-change"
@@ -52,7 +52,7 @@ import { rebasedChange } from "@/design/rebase"
 import { siteNames } from "@/design/site-names"
 import { deviceScope } from "@/design/trait-edit"
 import { designShown, themeOf, type DesignShown } from "@/design-shown"
-import { DesignHead, DesignSection, ElementDesign, SectionRows } from "@/editor/design-panel"
+import { DesignHead, DesignSection, ElementDesign, SectionStrips } from "@/editor/design-panel"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import type { UndoList } from "@/editor/use-undo"
 import type { UndoEntry } from "@/undo-list"
@@ -216,7 +216,7 @@ function elementDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElem
   return { view, model }
 }
 
-function rowsOf(sections: readonly PanelSection[] | undefined): readonly PanelRow[] {
+function controlsOf(sections: readonly PanelSection[] | undefined): readonly PanelControl[] {
   return (sections ?? []).flatMap((section) => section.strips.flat())
 }
 
@@ -239,8 +239,8 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
     <ElementDesign
       model={design.model}
       palette={palette}
-      onChange={(row, value) =>
-        changeDesign(deck, () => rebasedChange(rowsOf(elementDesign(deck, node)?.model.sections), row, value))
+      onChange={(control, value) =>
+        changeDesign(deck, () => rebasedChange(controlsOf(elementDesign(deck, node)?.model.sections), control, value))
       }
     />
   )
@@ -282,8 +282,8 @@ function LiveManyDesign({ deck, nodes }: { deck: DesigningDeck; nodes: Several }
     <ElementDesign
       model={model}
       palette={palette}
-      onChange={(row, value) =>
-        changeDesign(deck, () => rebasedChange(rowsOf(manyDesign(deck, nodes)?.sections), row, value))
+      onChange={(control, value) =>
+        changeDesign(deck, () => rebasedChange(controlsOf(manyDesign(deck, nodes)?.sections), control, value))
       }
     />
   )
@@ -337,11 +337,11 @@ function LiveThemeDesign({ deck }: { deck: DesigningDeck }) {
   return (
     <DesignSection title={section.label} last>
       <div className="flex flex-col gap-2" data-design-theme>
-        <SectionRows
+        <SectionStrips
           strips={section.strips}
           palette={{ theme: [], deck: colorsIn(deck.shown.displayParts.current) }}
-          onChange={(row, value) =>
-            changeDesign(deck, () => rebasedChange(themeSection(deck)?.strips.flat() ?? [], row, value))
+          onChange={(control, value) =>
+            changeDesign(deck, () => rebasedChange(themeSection(deck)?.strips.flat() ?? [], control, value))
           }
         />
       </div>

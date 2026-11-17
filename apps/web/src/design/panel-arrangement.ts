@@ -30,7 +30,7 @@ import {
 } from "lucide-react"
 import { optionWord } from "@/copy/option-copy"
 import type { Desc } from "@airdesign/document"
-import type { PanelRow, SectionName } from "./panel"
+import type { PanelControl, SectionName } from "./panel"
 
 export type NameLook =
   | { readonly show: "above" }
@@ -197,32 +197,32 @@ function fallbackName(kind: ControlKind, field: string): NameLook {
   return kind === "record" && field.includes(".") ? hidden : above
 }
 
-export function resolveRow(row: Omit<PanelRow, "control" | "look">): PanelRow {
-  const place = placement(row.trait, row.field)
-  const control = place?.kind ?? controlOf(row.desc)
+export function resolveControl(control: Omit<PanelControl, "kind" | "look">): PanelControl {
+  const place = placement(control.trait, control.field)
+  const kind = place?.kind ?? controlOf(control.desc)
   const options = place?.options ?? {}
-  const choices = row.desc.kind === "choice" ? row.desc.options : []
+  const choices = control.desc.kind === "choice" ? control.desc.options : []
   return {
-    ...row,
-    control,
+    ...control,
+    kind,
     look: {
-      name: place?.name ?? fallbackName(control, row.field),
+      name: place?.name ?? fallbackName(kind, control.field),
       options,
-      form: place?.form ?? choiceLayout(row.field, choices),
+      form: place?.form ?? choiceLayout(control.field, choices),
     },
   }
 }
 
-export function arrange(trait: SectionName, rows: readonly PanelRow[]): readonly (readonly PanelRow[])[] {
+export function arrange(trait: SectionName, controls: readonly PanelControl[]): readonly (readonly PanelControl[])[] {
   const strips = sectionStrips[trait]
-    .map((strip) => strip.flatMap((place) => rows.filter((row) => row.field === place.field)))
+    .map((strip) => strip.flatMap((place) => controls.filter((control) => control.field === place.field)))
     .filter((strip) => strip.length > 0)
-  const placed = new Set(strips.flat().map((row) => row.field))
-  return [...strips, ...fallbackStrips(rows.filter((row) => !placed.has(row.field)))]
+  const placed = new Set(strips.flat().map((control) => control.field))
+  return [...strips, ...fallbackStrips(controls.filter((control) => !placed.has(control.field)))]
 }
 
-function fallbackStrips(rows: readonly PanelRow[]): readonly (readonly PanelRow[])[] {
-  return rows.map((row) => [row])
+function fallbackStrips(controls: readonly PanelControl[]): readonly (readonly PanelControl[])[] {
+  return controls.map((control) => [control])
 }
 
 export function choiceLayout(field: string, options: readonly string[]): "segments" | "list" {

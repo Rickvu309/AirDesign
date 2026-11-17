@@ -1,4 +1,4 @@
-import { resolveRow } from "@/design/panel-arrangement"
+import { resolveControl } from "@/design/panel-arrangement"
 import { adjustDefaults } from "@airdesign/render"
 import { geometryCopy } from "@/copy/geometry-copy"
 import { NumberField } from "@/design/controls/number"
@@ -11,22 +11,24 @@ function presetOf(parent: unknown): string | null {
   return typeof parent.preset === "string" ? parent.preset : null
 }
 
-export function AdjustControl({ row, palette, onChange }: ControlProps) {
-  const preset = presetOf(row.parent)
+export function AdjustControl({ control, palette, onChange }: ControlProps) {
+  const preset = presetOf(control.parent)
   const defaults = preset === null ? {} : adjustDefaults(preset)
   const names = Object.keys(defaults)
   const held =
-    typeof row.value === "object" && row.value !== null ? (row.value as Readonly<Record<string, number>>) : {}
-  if (row.desc.kind !== "named" || names.length === 0) return null
-  const item = row.desc.item
+    typeof control.value === "object" && control.value !== null
+      ? (control.value as Readonly<Record<string, number>>)
+      : {}
+  if (control.desc.kind !== "named" || names.length === 0) return null
+  const item = control.desc.item
   return (
-    <div role="group" aria-label={row.label} data-control="adjust" className="grid grid-cols-2 gap-2">
+    <div role="group" aria-label={control.label} data-control="adjust" className="grid grid-cols-2 gap-2">
       {names.map((name) => (
         <NumberField
           key={name}
-          row={resolveRow({
-            ...row,
-            field: `${row.field}.${name}`,
+          control={resolveControl({
+            ...control,
+            field: `${control.field}.${name}`,
             label: geometryCopy.adjust(name),
             desc: item,
             value: held[name] ?? defaults[name],

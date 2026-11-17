@@ -2,15 +2,15 @@ import { useId } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { ControlProps } from "@/design/panel"
 
-export function NodeControl({ row, onChange }: ControlProps) {
+export function NodeControl({ control, onChange }: ControlProps) {
   const label = useId()
-  const choices = row.nodes ?? []
-  const value = !row.mixed && typeof row.value === "string" ? row.value : null
+  const choices = control.nodes ?? []
+  const value = !control.mixed && typeof control.value === "string" ? control.value : null
   const nameOf = (node: string | null) => choices.find((choice) => choice.node === node)?.name ?? node ?? ""
   return (
     <div className="flex flex-col gap-1.5" data-control="node">
       <span id={label} className="text-[length:var(--type-caption)] text-quiet">
-        {row.label}
+        {control.label}
       </span>
       <Select
         value={value}

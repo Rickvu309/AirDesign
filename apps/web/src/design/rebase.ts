@@ -1,5 +1,5 @@
 import type { Desc, SetChange } from "@airdesign/document"
-import type { PanelRow } from "./panel"
+import type { PanelControl } from "./panel"
 
 type Loose = Readonly<Record<string, unknown>>
 
@@ -44,7 +44,7 @@ export function rebased(desc: Desc, base: unknown, sent: unknown, latest: unknow
   return sent
 }
 
-export function rebasedChange(rows: readonly PanelRow[], row: PanelRow, value: unknown): SetChange {
-  const now = rows.find((each) => each.trait === row.trait && each.field === row.field)
-  return now === undefined ? row.change(value) : now.change(rebased(row.desc, row.value, value, now.value))
+export function rebasedChange(controls: readonly PanelControl[], control: PanelControl, value: unknown): SetChange {
+  const now = controls.find((each) => each.trait === control.trait && each.field === control.field)
+  return now === undefined ? control.change(value) : now.change(rebased(control.desc, control.value, value, now.value))
 }
