@@ -23,7 +23,7 @@ function authorizePath(overrides: Record<string, string | null> = {}) {
   return `/oauth/authorize?${new URLSearchParams(fields)}`
 }
 
-const refusedWords = "This connection request is invalid"
+const refusedWords = "Unable to use this connection request"
 
 async function expectRefusedInPlace(page: Page) {
   await expect(page.getByRole("heading", { name: refusedWords, exact: true })).toBeVisible()
