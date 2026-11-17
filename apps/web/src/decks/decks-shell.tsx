@@ -165,7 +165,7 @@ export function DecksShell({
                   },
                 }
               : {})}
-            className="h-9 rounded-lg border-0 bg-background pl-[var(--space-32)] text-sm shadow-[0_0_0_1px_var(--line)] placeholder:text-quiet md:text-sm"
+            className="h-9 rounded-lg border-0 bg-background pl-[var(--space-32)] shadow-[0_0_0_1px_var(--line)] placeholder:text-quiet md:text-sm"
           />
         </form>
         <nav className="mt-4" aria-label="Decks">
