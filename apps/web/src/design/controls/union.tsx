@@ -56,6 +56,7 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
       )}
       <div
         role="group"
+        data-segments
         aria-labelledby={label}
         className={cn(
           "rounded-[var(--shape-control)] bg-[var(--panel-track)] p-0",

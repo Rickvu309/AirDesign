@@ -70,6 +70,7 @@ export function ChoiceControl(props: ControlProps) {
       ) : (
         <div
           role="group"
+          data-segments
           aria-labelledby={label}
           className="flex h-[var(--control-dense)] items-center rounded-[var(--shape-control)] bg-[var(--panel-track)] p-0"
         >

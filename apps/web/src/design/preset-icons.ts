@@ -95,3 +95,5 @@ export const AlignBottomEdge = createLucideIcon("AlignBottomEdge", [
 export const LineSpacing = createLucideIcon("LineSpacing", [
   ["path", { d: "M3 3h18M3 21h18M6 17l6-11 6 11M8 14h8", key: "spacing" }],
 ])
+
+export const NoneFill = createLucideIcon("NoneFill", [["path", { d: "M3 12h18", key: "none" }]])

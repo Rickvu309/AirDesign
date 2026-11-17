@@ -13,7 +13,6 @@ import {
   ArrowUpToLine,
   ArrowDownToLine,
   Image,
-  Minus,
   Square,
   SquareDashed,
   AlignHorizontalDistributeCenter,
@@ -27,6 +26,7 @@ import {
   StrongShadow,
   LineSpacing,
   PatternFill,
+  NoneFill,
   SolidFill,
   GradientFill,
   AlignLeftEdge,
@@ -67,7 +67,7 @@ type Strip = readonly Placed[]
 const above: NameLook = { show: "above" }
 const hidden: NameLook = { show: "hidden" }
 const inside: NameLook = { show: "inside" }
-const fills = { none: Minus, solid: SolidFill, gradient: GradientFill, pattern: PatternFill, picture: Image }
+const fills = { none: NoneFill, solid: SolidFill, gradient: GradientFill, pattern: PatternFill, picture: Image }
 const placed = (field: string, name: NameLook = above, rest: Omit<Placed, "field" | "name"> = {}): Placed => ({
   field,
   name,
@@ -137,7 +137,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   border: [
     [
       placed("border", hidden, {
-        options: { none: Minus, solid: Square, dash: SquareDashed, dot: DottedBorder },
+        options: { none: NoneFill, solid: Square, dash: SquareDashed, dot: DottedBorder },
       }),
     ],
     [placed("fill.solid", above), placed("width", above)],
@@ -146,12 +146,13 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [
       placed("shadow", hidden, {
         options: {
-          none: Minus,
+          none: NoneFill,
           subtle: SubtleShadow,
           medium: MediumShadow,
           strong: StrongShadow,
           LineSpacing,
           PatternFill,
+          NoneFill,
           SolidFill,
           GradientFill,
           AlignLeftEdge,
