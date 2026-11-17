@@ -1,6 +1,6 @@
 import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
-import { afterEach, beforeAll, expect, it } from "vitest"
+import { afterEach, beforeAll, expect, it, vi } from "vitest"
 import { productCopy } from "./copy/product-copy"
 import { ThinNoticeView, type ThinNotice } from "./thin-notice"
 
@@ -19,6 +19,8 @@ const teardowns: (() => Promise<void> | void)[] = []
 
 afterEach(async () => {
   for (const teardown of teardowns.splice(0).reverse()) await teardown()
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
 })
 
 function openPage(): { readonly window: Window & typeof globalThis; readonly root: Root } {
@@ -26,7 +28,7 @@ function openPage(): { readonly window: Window & typeof globalThis; readonly roo
   const { window } = new jsdom.JSDOM("<!doctype html><html><body><div id='root'></div></body></html>", {
     url: "http://localhost/",
   })
-  const globals = globalThis as typeof globalThis & Record<string, unknown>
+  vi.useFakeTimers()
   const defined: [string, unknown][] = [
     ["window", window],
     ["document", window.document],
@@ -38,12 +40,10 @@ function openPage(): { readonly window: Window & typeof globalThis; readonly roo
     ["requestAnimationFrame", (step: () => void) => setTimeout(step, 0)],
     ["cancelAnimationFrame", (handle: number) => clearTimeout(handle)],
   ]
-  window.matchMedia = () =>
-    ({ matches: false, addEventListener() {}, removeEventListener() {} }) as unknown as MediaQueryList
-  const previous = defined.map(([name]) => [name, globals[name]] as const)
-  for (const [name, value] of defined) {
-    Object.defineProperty(globalThis, name, { value, configurable: true, writable: true })
-  }
+  Object.defineProperty(window, "matchMedia", {
+    value: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
+  })
+  for (const [name, value] of defined) vi.stubGlobal(name, value)
   const container = window.document.getElementById("root")
   if (container === null) throw new Error("root")
   const root = createRoot(container)
@@ -51,9 +51,7 @@ function openPage(): { readonly window: Window & typeof globalThis; readonly roo
     await act(async () => {
       root.unmount()
     })
-    for (const [name, value] of previous) {
-      Object.defineProperty(globalThis, name, { value, configurable: true, writable: true })
-    }
+    await vi.runOnlyPendingTimersAsync()
     window.close()
   })
   return { window, root }
@@ -64,7 +62,7 @@ async function show(root: Root, notice: ThinNotice | null, wait: number): Promis
     root.render(<ThinNoticeView notice={notice} onTryAgain={() => undefined} />)
   })
   await act(async () => {
-    await new Promise((done) => setTimeout(done, wait))
+    await vi.advanceTimersByTimeAsync(wait)
   })
 }
 
