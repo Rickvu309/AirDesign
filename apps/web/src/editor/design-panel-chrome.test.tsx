@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { elementId, type ScopedElement } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { designCopy } from "@/copy/design-copy"
+import { optionWord } from "@/copy/option-copy"
 import { fillCopy } from "@/copy/fill-copy"
 import { panelOf } from "@/design/panel"
 import { ElementDesign } from "./design-panel"
@@ -34,13 +35,13 @@ it("uses the element name as the single text title", () => {
   const html = panel("shape")
   expect(html).toContain(`data-design-head`)
   expect(html).toContain(`>${designCopy.titles.text}</span>`)
-  expect(html).not.toContain('data-design-section="Text"')
+  expect(html).not.toContain(`data-design-section="${designCopy.titles.text}"`)
 })
 
 it("keeps Figma appearance sections open with no fold trigger", () => {
   const html = panel("shape", { preset: "ellipse" })
-  const fill = html.slice(html.indexOf('data-design-section="Fill"'))
+  const fill = html.slice(html.indexOf(`data-design-section="${fillCopy.section}"`))
   expect(fill.split("</section>")[0]).not.toContain('data-slot="collapsible-trigger"')
-  expect(html).toContain(">Oval</span>")
+  expect(html).toContain(`>${optionWord("shape.preset", "ellipse")}</span>`)
   expect(html).toContain(fillCopy.reset)
 })

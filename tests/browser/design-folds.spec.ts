@@ -1,3 +1,4 @@
+import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { geometryCopy } from "../../apps/web/src/copy/geometry-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
@@ -41,7 +42,7 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
     selectionColorsCopy.section,
   ])
   await expect(panel.locator("[data-design-head]")).toHaveText(designCopy.titles.text)
-  await expect(fold(panel, "Fill")).toHaveCount(0)
+  await expect(fold(panel, fillCopy.section)).toHaveCount(0)
   await expect(fold(panel, "Effects")).toHaveAttribute("aria-expanded", "false")
   await expect(panel.getByRole("group", { name: "Shadow", exact: true })).toHaveCount(0)
 
