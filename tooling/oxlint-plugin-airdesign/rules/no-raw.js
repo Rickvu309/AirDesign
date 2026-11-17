@@ -107,6 +107,14 @@ export const rawFindings = (filename, source) => {
     if (word(source[index - 1]) || word(source[index + banned.length])) continue
     findings.push({ ...at(source, index), message: motionMessage })
   }
+  const danger = "text-" + "destructive"
+  for (let index = source.indexOf(danger); index !== -1; index = source.indexOf(danger, index + danger.length)) {
+    if (word(source[index - 1]) || word(source[index + danger.length])) continue
+    findings.push({
+      ...at(source, index),
+      message: "Use text-danger-text for danger text; destructive is a fill token.",
+    })
+  }
   return findings
 }
 

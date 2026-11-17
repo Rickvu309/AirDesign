@@ -110,7 +110,7 @@ test("reaches Agents from the Home account menu, copies the MCP address, disconn
   const secondDialog = page.getByRole("dialog", { name: "Disconnect 127.0.0.1:8124?" })
   await secondDialog.getByRole("button", { name: "Disconnect", exact: true }).click()
   expect(revoked).toEqual([{ id: "grant-claude" }, { id: "grant-other" }])
-  await expect(page.getByText("Not connected", { exact: true })).toBeVisible()
+  await expect(page.getByText("No agents connected yet", { exact: true })).toBeVisible()
 })
 
 test("renders empty, loading, failed, and signed-out states without a blank page", async ({ page }) => {
@@ -144,16 +144,16 @@ test("renders empty, loading, failed, and signed-out states without a blank page
   await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible()
   await expect(page.getByRole("heading", { name: "MCP server", exact: true })).toBeVisible()
   await expect(page.getByRole("button", { name: "Copy", exact: true })).toBeDisabled()
-  await expect(page.getByText("Not connected", { exact: true })).toHaveCount(0)
+  await expect(page.getByText("No agents connected yet", { exact: true })).toHaveCount(0)
 
   unblockLoad()
   const retry = page.getByRole("button", { name: "Try again", exact: true })
   await expect(retry).toBeVisible()
-  await expect(page.getByText("Not connected", { exact: true })).toHaveCount(0)
+  await expect(page.getByText("No agents connected yet", { exact: true })).toHaveCount(0)
 
   shouldFail = false
   await retry.click()
-  await expect(page.getByText("Not connected", { exact: true })).toBeVisible()
+  await expect(page.getByText("No agents connected yet", { exact: true })).toBeVisible()
   await expect(page.getByText(mcpAddress, { exact: true })).toBeVisible()
   await expect(page.getByRole("button", { name: "Copy", exact: true })).toBeEnabled()
 })
@@ -165,4 +165,32 @@ test("signed out on /settings/agents goes to sign-in with the path and query", a
   await page.route("**/sign-in?*", (route) => route.fulfill({ body: "Sign in" }))
   await page.goto("/settings/agents?source=menu")
   await expect(page).toHaveURL(/\/sign-in\?next=%2Fsettings%2Fagents%3Fsource%3Dmenu$/)
+})
+
+test("explains how to connect and selects the address when clipboard access fails", async ({ page }) => {
+  await mockHome(page)
+  await page.route("**/account/agents", (route) =>
+    route.fulfill({
+      json: { ok: true, account: { email: "person@example.com" }, mcp: mcpAddress, agents: [] },
+    }),
+  )
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      value: {
+        writeText: () => Promise.reject(new DOMException("Denied", "NotAllowedError")),
+      },
+    })
+  })
+  await page.goto("/settings/agents")
+  await expect(page.getByText("No agents connected yet", { exact: true })).toBeVisible()
+  await expect(
+    page.getByText("Copy the MCP server address below into Claude or Codex, then approve its request."),
+  ).toBeVisible()
+  await expect(page.getByRole("link", { name: "Connect an agent" })).toHaveCount(0)
+  await page.getByRole("button", { name: "Copy", exact: true }).click()
+  await expect(page.getByRole("button", { name: "Unable to copy", exact: true })).toBeVisible()
+  await expect(page.getByRole("status")).toHaveText("Address selected. Copy it with your keyboard or selection menu.")
+  expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(mcpAddress)
+  await page.getByRole("link", { name: "Usage", exact: true }).click()
+  await expect(page.getByRole("link", { name: "Connect an agent" })).toBeVisible()
 })

@@ -49,7 +49,7 @@ export function DeleteAccountDialog({ email, onCancel }: { email: string; onCanc
         />
       </label>
       {failed ? (
-        <p role="alert" className="mt-3 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-destructive">
+        <p role="alert" className="mt-3 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-danger-text">
           {accountCopy.deleteFailed}
         </p>
       ) : null}

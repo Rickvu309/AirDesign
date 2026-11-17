@@ -6,7 +6,7 @@ import { DeleteAccountDialog } from "@/decks/delete-account"
 import { AgentPromo } from "@/decks/agent-promo"
 import { account, starredFolders } from "@/decks/sample-decks"
 import { deckRoutes, type DeckSection } from "@/decks/deck-routes"
-import { settingsPaths } from "@/settings/settings-routes"
+import { settingsPaths, type SettingsPath } from "@/settings/settings-routes"
 import { settingsCopy } from "@/copy/settings-copy"
 import { productCopy } from "@/copy/product-copy"
 import { cn } from "@/lib/class-names"
@@ -77,7 +77,9 @@ export function DecksShell({
   onNavigate,
   search,
   starred,
+  settingsTab,
 }: {
+  settingsTab?: SettingsPath
   active?: DeckSection
   children: ReactNode
   firstVisit?: boolean
@@ -238,7 +240,9 @@ export function DecksShell({
               Connect an agent
             </a>
           ) : (
-            <AgentPromo {...(realAccount ? { href: settingsPaths.agents, ornaments: false } : {})} />
+            settingsTab !== "agents" && (
+              <AgentPromo {...(realAccount ? { href: settingsPaths.agents, ornaments: false } : {})} />
+            )
           )}
         </div>
       </aside>

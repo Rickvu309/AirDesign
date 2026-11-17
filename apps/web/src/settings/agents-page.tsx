@@ -68,7 +68,8 @@ function connectedStatus(iso: string, currentTime: number): string {
 export function AgentsPage({ now = Date.now, navigate }: { now?: () => number; navigate: (path: string) => void }) {
   const [listing, setListing] = useState<Listing | null>(null)
   const [unavailable, setUnavailable] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [copyStatus, setCopyStatus] = useState<"ready" | "copied" | "failed">("ready")
+  const address = useRef<HTMLSpanElement>(null)
   const [disconnecting, setDisconnecting] = useState<ConnectedAgent | null>(null)
   const [busy, setBusy] = useState(false)
   const [disconnectFailed, setDisconnectFailed] = useState(false)
@@ -100,10 +101,21 @@ export function AgentsPage({ now = Date.now, navigate }: { now?: () => number; n
 
   async function copyAddress() {
     if (listing === null) return
-    await navigator.clipboard.writeText(listing.mcp)
-    setCopied(true)
     if (copiedTimer.current !== null) clearTimeout(copiedTimer.current)
-    copiedTimer.current = setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(listing.mcp)
+      setCopyStatus("copied")
+      copiedTimer.current = setTimeout(() => setCopyStatus("ready"), 2000)
+    } catch {
+      setCopyStatus("failed")
+      if (address.current !== null) {
+        const range = document.createRange()
+        range.selectNodeContents(address.current)
+        const selection = window.getSelection()
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+      }
+    }
   }
 
   async function confirmDisconnect(item: ConnectedAgent) {
@@ -144,7 +156,7 @@ export function AgentsPage({ now = Date.now, navigate }: { now?: () => number; n
             {disconnectFailed ? (
               <p
                 role="alert"
-                className="mt-3 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-destructive"
+                className="mt-3 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-danger-text"
               >
                 {productCopy.disconnectFailed}
               </p>
@@ -167,8 +179,9 @@ export function AgentsPage({ now = Date.now, navigate }: { now?: () => number; n
             </Button>
           </div>
         ) : listing === null ? undefined : listing.agents.length === 0 ? (
-          <div className="py-3 text-[length:var(--type-body)] leading-[18px] text-muted-foreground shadow-[inset_0_1px_0_0_var(--line)]">
-            {settingsCopy.notConnected}
+          <div className="py-3 text-[length:var(--type-body)] leading-[var(--leading-body)] shadow-[inset_0_1px_0_0_var(--line)]">
+            <p className="font-medium text-foreground">{settingsCopy.noAgents}</p>
+            <p className="mt-1 text-muted-foreground">{settingsCopy.connectAgent}</p>
           </div>
         ) : (
           <div className="flex flex-col">
@@ -195,7 +208,10 @@ export function AgentsPage({ now = Date.now, navigate }: { now?: () => number; n
       </Card>
       <Card title={settingsCopy.mcp} description={settingsCopy.mcpBody}>
         <div className="flex h-10 w-full items-center rounded-lg bg-muted pr-1 pl-3">
-          <span className="min-w-0 flex-1 truncate text-[length:var(--type-dense)] leading-[17px] text-foreground">
+          <span
+            ref={address}
+            className="min-w-0 flex-1 truncate text-[length:var(--type-dense)] leading-[17px] text-foreground"
+          >
             {listing?.mcp ?? ""}
           </span>
           <Button
@@ -205,9 +221,20 @@ export function AgentsPage({ now = Date.now, navigate }: { now?: () => number; n
             className={settingsAction}
             onClick={() => void copyAddress()}
           >
-            {copied ? productCopy.done : settingsCopy.copy}
+            {copyStatus === "copied"
+              ? productCopy.done
+              : copyStatus === "failed"
+                ? settingsCopy.copyFailed
+                : settingsCopy.copy}
           </Button>
         </div>
+        <p
+          role="status"
+          className="mt-2 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-muted-foreground"
+          hidden={copyStatus !== "failed"}
+        >
+          {copyStatus === "failed" ? settingsCopy.copyManually : ""}
+        </p>
       </Card>
     </SettingsPage>
   )

@@ -437,7 +437,7 @@ export function Home({
           {deleteFailed ? (
             <p
               role="alert"
-              className="mt-3 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-destructive"
+              className="mt-3 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-danger-text"
             >
               {productCopy.deleteFailed}
             </p>
