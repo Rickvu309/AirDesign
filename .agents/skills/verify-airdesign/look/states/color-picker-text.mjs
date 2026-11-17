@@ -8,7 +8,7 @@ async function drive(kit) {
   await kit.page.keyboard.press("Escape")
   const panel = kit.page.locator("[data-design-element]")
   await panel.getByRole("group", { name: "Text color" }).getByRole("button").first().click()
-  await expect(kit.page.locator("[data-color-picker] [data-contrast]")).toBeVisible()
+  await expect(kit.page.locator("[data-color-picker]").getByRole("textbox")).toBeVisible()
 }
 
 export default { name: "color-picker-text", design: "/screens/s43-09-editor-tools-design-element", drive }
