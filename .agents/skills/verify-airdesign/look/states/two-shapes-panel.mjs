@@ -17,7 +17,8 @@ async function drive(kit) {
     .click()
   await kit.page.keyboard.press("Escape")
   await kit.page.locator(shape(5)).click({ position: { x: 4, y: 4 }, modifiers: ["Shift"] })
-  await expect(kit.page.locator("[data-chosen]")).toHaveCount(1)
+  await expect(kit.page.locator("[data-chosen]")).toHaveCount(2)
+  await expect(kit.page.locator("[data-selection-around]")).toHaveAttribute("data-selection-around", "2")
 }
 
 export default { name: "two-shapes-panel", design: "/screens/s43-09-editor-tools-design-element", drive }
