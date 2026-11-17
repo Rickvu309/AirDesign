@@ -5,6 +5,9 @@ import {
   Bold,
   Italic,
   List,
+  ListOrdered,
+  Strikethrough,
+  MoveHorizontal,
   Underline,
   FlipHorizontal2,
   FlipVertical2,
@@ -75,14 +78,15 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   text: [
     [placed("value", hidden, { control: "canvas" })],
     [placed("font", hidden)],
-    [icon("size", Type), icon("lineSpacing", ArrowDownUp)],
-    [icon("bold", Bold), icon("italic", Italic), icon("underline", Underline)],
+    [icon("size", Type)],
+    [icon("lineSpacing", ArrowDownUp), icon("letterSpacing", MoveHorizontal)],
+    [icon("bold", Bold), icon("italic", Italic), icon("underline", Underline), icon("strike", Strikethrough)],
     [
       placed("align", hidden, {
         form: "segments",
         options: { left: AlignLeft, center: AlignCenter, right: AlignRight },
       }),
-      placed("bullet", hidden, { options: { true: List } }),
+      placed("list", hidden, { form: "segments", options: { none: Minus, bullets: List, numbers: ListOrdered } }),
     ],
     [placed("color", hidden)],
     [icon("spaceBefore", ArrowUpToLine), icon("spaceAfter", ArrowDownToLine)],

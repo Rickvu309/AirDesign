@@ -65,7 +65,7 @@ function spacings(paragraph: TextParagraph): string {
 
 function created(paragraph: TextParagraph): Uint8Array {
   const align = paragraph.align === undefined ? "" : ` algn="${alignValue[paragraph.align]}"`
-  const bullet = paragraph.bullet === undefined ? "" : paragraph.bullet ? `<a:buChar char="•"/>` : `<a:buNone/>`
+  const bullet = paragraph.list === undefined ? "" : listXml(paragraph.list)
   const inner = spacings(paragraph) + bullet
   return encodeUtf8(inner === "" ? `<a:pPr${align}/>` : `<a:pPr${align}>${inner}</a:pPr>`)
 }
@@ -97,8 +97,16 @@ function slot(root: MarkupElement, children: readonly MarkupElement[], tag: stri
   return at
 }
 
-function bulletBytes(slice: Uint8Array, on: boolean): Uint8Array {
-  return childBytes(slice, bulletKinds, "a:buNone", encodeUtf8(on ? `<a:buChar char="•"/>` : `<a:buNone/>`))
+function listXml(list: NonNullable<TextParagraph["list"]>): string {
+  return list === "numbers"
+    ? `<a:buAutoNum type="arabicPeriod"/>`
+    : list === "bullets"
+      ? `<a:buChar char="•"/>`
+      : `<a:buNone/>`
+}
+
+function listBytes(slice: Uint8Array, list: NonNullable<TextParagraph["list"]>): Uint8Array {
+  return childBytes(slice, bulletKinds, "a:buNone", encodeUtf8(listXml(list)))
 }
 
 function childBytes(slice: Uint8Array, kinds: ReadonlySet<string>, tag: string, xml: Uint8Array): Uint8Array {
@@ -127,7 +135,7 @@ export function paragraphBytes(
   paragraph: TextParagraph,
 ): Uint8Array | null {
   const spaced = spacingNames.filter((name) => paragraph[name] !== undefined)
-  if (paragraph.align === undefined && paragraph.bullet === undefined && spaced.length === 0) return null
+  if (paragraph.align === undefined && paragraph.list === undefined && spaced.length === 0) return null
   if (properties === undefined) return created(paragraph)
   let slice = bytes.subarray(properties.start, properties.end)
   if (paragraph.align !== undefined) slice = alignBytes(slice, paragraph.align)
@@ -135,6 +143,6 @@ export function paragraphBytes(
     const tag = spacingTags[name]
     slice = childBytes(slice, new Set([tag]), tag, encodeUtf8(spacingXml[name](paragraph[name] ?? 0)))
   }
-  if (paragraph.bullet !== undefined) slice = bulletBytes(slice, paragraph.bullet)
+  if (paragraph.list !== undefined) slice = listBytes(slice, paragraph.list)
   return slice
 }

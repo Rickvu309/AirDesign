@@ -21,11 +21,11 @@ import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 import { formatParts, type FormatPart } from "@/editor/toolbar-fold"
 
-export type FormatShown = Readonly<Record<TextFormat, FormatState>>
+export type FormatShown = Readonly<Record<Exclude<TextFormat, "strike">, FormatState>>
 
 type Swatch = { readonly scheme: SchemeName; readonly css: string }
 
-const keys: Readonly<Record<TextFormat, string>> = { bold: "B", italic: "I", underline: "U" }
+const keys: Readonly<Record<Exclude<TextFormat, "strike">, string>> = { bold: "B", italic: "I", underline: "U" }
 const alignIcons: Readonly<Record<ParagraphAlign, EditorIconName>> = {
   left: "alignLeft",
   center: "alignCenter",
@@ -172,22 +172,24 @@ export function FormatButtons({
     <>
       {showing("styles") ? (
         <span role="group" aria-label={formatCopy.group} className="flex items-center gap-0.5" data-text-format>
-          {formatNames.map((format) => (
-            <Button
-              key={format}
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label={formatCopy.named[format]}
-              aria-pressed={pressed[shown[format]]}
-              aria-keyshortcuts={`Control+${keys[format]} Meta+${keys[format]}`}
-              className={cn("size-9 rounded-lg active:translate-y-0", looks[shown[format]])}
-              onMouseDown={holdCaret}
-              {...(onToggle === undefined ? {} : { onClick: () => onToggle(format) })}
-            >
-              <EditorIcon name={format} size={18} />
-            </Button>
-          ))}
+          {formatNames
+            .filter((format) => format !== "strike")
+            .map((format) => (
+              <Button
+                key={format}
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={formatCopy.named[format]}
+                aria-pressed={pressed[shown[format]]}
+                aria-keyshortcuts={`Control+${keys[format]} Meta+${keys[format]}`}
+                className={cn("size-9 rounded-lg active:translate-y-0", looks[shown[format]])}
+                onMouseDown={holdCaret}
+                {...(onToggle === undefined ? {} : { onClick: () => onToggle(format) })}
+              >
+                <EditorIcon name={format} size={18} />
+              </Button>
+            ))}
         </span>
       ) : null}
       {showing("size") ? (

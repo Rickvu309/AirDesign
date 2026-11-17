@@ -92,7 +92,8 @@ describe("createServer", () => {
       expect(instructions).toContain(
         "A shape takes identity (name, alt, hidden), box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape), fill (value), line (fill, width, dash, cap, compound, join, head, tail), effects (shadow, glow, softEdge), body (insets, anchor, wrap, autofit, vertical, columns), text (value, color, size, font",
       )
-      expect(instructions).toContain("bullet, lineSpacing, spaceBefore, spaceAfter), link (target) and opacity.")
+      expect(instructions).toContain("list, strike, letterSpacing, lineSpacing")
+      expect(instructions).toContain("link (target) and opacity.")
       expect(instructions).toContain(
         "A line takes identity (name, alt, hidden), box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape), line (fill, width, dash",
       )

@@ -3,6 +3,7 @@ import {
   writeTextValue,
   type ParagraphSpacing,
   type TextParagraph,
+  type TextList,
   type TextRun,
   type TextValue,
 } from "@airdesign/document"
@@ -72,7 +73,7 @@ function collectRuns(nodes: NodeListOf<ChildNode> | readonly Node[], from: numbe
 type ReadParagraph = {
   from: number
   align?: "left" | "center" | "right"
-  bullet?: boolean
+  list?: TextList
   runs: TextRun[]
 } & ParagraphSpacing
 
@@ -80,9 +81,8 @@ function readParagraph(node: HTMLElement, from: number, runs: TextRun[]): ReadPa
   let paragraph: ReadParagraph = { from, runs }
   const align = node.dataset.align
   if (align === "left" || align === "center" || align === "right") paragraph = { ...paragraph, align }
-  if (node.dataset.bullet === "true" || node.dataset.bullet === "false") {
-    paragraph = { ...paragraph, bullet: node.dataset.bullet === "true" }
-  }
+  const list = node.dataset.list
+  if (list === "none" || list === "bullets" || list === "numbers") paragraph = { ...paragraph, list }
   for (const name of spacingNames) {
     const kept = node.dataset[name]
     if (kept !== undefined && /^\d+$/.test(kept)) paragraph = { ...paragraph, [name]: Number(kept) }
@@ -164,7 +164,7 @@ function paragraphNode(document: Document, paragraph: TextParagraph): HTMLElemen
   const block = document.createElement("div")
   block.dataset.paragraph = String(paragraph.from)
   if (paragraph.align !== undefined) block.dataset.align = paragraph.align
-  if (paragraph.bullet !== undefined) block.dataset.bullet = String(paragraph.bullet)
+  if (paragraph.list !== undefined) block.dataset.list = paragraph.list
   for (const name of spacingNames) {
     const kept = paragraph[name]
     if (kept !== undefined) block.dataset[name] = String(kept)

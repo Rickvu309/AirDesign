@@ -50,7 +50,7 @@ export function formatTarget(
   const fileSize = (paragraph: number, run: number) => look()?.fileSize(paragraph, run) ?? null
   const fileColor = (paragraph: number, run: number) => look()?.fileColor(paragraph, run) ?? null
   const fileAlign = (paragraph: number) => look()?.fileAlign(paragraph) ?? null
-  const fileBullet = (paragraph: number) => look()?.fileBullet(paragraph) ?? false
+  const fileList = (paragraph: number) => look()?.fileList(paragraph) ?? "none"
   const readNow = () => {
     const current = formats.current
     return current === null ? null : { current, value: current.read(shown).value }
@@ -111,13 +111,13 @@ export function formatTarget(
     },
     bullet(editing) {
       const read = readNow()
-      return read === null ? "off" : bulletState(read.value, range(editing), fileBullet)
+      return read === null ? "off" : bulletState(read.value, range(editing), fileList)
     },
     bullets(editing) {
       const read = readNow()
       if (read === null) return
-      const on = bulletState(read.value, range(editing), fileBullet) !== "on"
-      commit(read.value, bulletRange(read.value, range(editing), on, fileBullet), editing)
+      const on = bulletState(read.value, range(editing), fileList) !== "on"
+      commit(read.value, bulletRange(read.value, range(editing), on, fileList), editing)
     },
     swatches: () => look()?.swatches() ?? [],
   })

@@ -38,6 +38,7 @@ function runStyle(run: PaintRunStyle, scale: number): CanvasRunStyle {
     italic: run.italic,
     underline: run.underline,
     strike: run.strike,
+    ...(run.letterSpacing === undefined ? {} : { letterSpacing: run.letterSpacing * scale }),
     baseline: run.baseline,
     ...(run.caps === undefined ? {} : { caps: run.caps }),
     color: run.color === null ? null : cssColor(run.color),

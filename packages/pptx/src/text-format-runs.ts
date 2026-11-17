@@ -79,7 +79,7 @@ function aligned(value: TextValue): TextValue | null {
 
 function bulleted(value: TextValue): TextValue | null {
   if (!filled(value)) return null
-  return value.map((paragraph) => ({ ...paragraph, bullet: true }))
+  return value.map((paragraph) => ({ ...paragraph, list: "bullets" as const }))
 }
 
 const builders: Readonly<Record<FormatOperation, (value: TextValue) => TextValue | null>> = {

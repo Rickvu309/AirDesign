@@ -3,6 +3,7 @@ import {
   colorPaint,
   spacingNames,
   type ParagraphAlign,
+  type TextList,
   type ParagraphSpacing,
   type Color,
   type RunFormat,
@@ -47,8 +48,17 @@ const paintProps: readonly PaintProp[] = [
 const textRule =
   '[data-paragraph]::before{content:var(--bullet);display:inline-block;min-width:var(--bullet-hang,auto);text-indent:0;pointer-events:none;user-select:none;white-space:pre;font-family:var(--bullet-font,inherit);color:var(--bullet-color,inherit);font-size:var(--bullet-size,1em);line-height:var(--bullet-line,1)}[data-text-body]:not(:focus-within)>[data-paragraph]::before{content:var(--bullet-unfocused,var(--bullet))}[data-paragraph][data-end-break]::after{content:"\\200b";line-height:var(--end-line)}'
 
-export type RunPaint = RunFormat & { readonly size?: number; readonly color?: Color; readonly font?: string }
-export type ParagraphPaint = { readonly align?: ParagraphAlign; readonly bullet?: boolean } & ParagraphSpacing
+export type RunPaint = RunFormat & {
+  readonly size?: number
+  readonly color?: Color
+  readonly font?: string
+  readonly letterSpacing?: number
+}
+export type ParagraphPaint = {
+  readonly align?: ParagraphAlign
+  readonly list?: TextList
+  readonly number?: number
+} & ParagraphSpacing
 
 export type TextLook = {
   readonly body: CSSProperties
@@ -58,7 +68,8 @@ export type TextLook = {
   fileSize(paragraph: number, from: number): number | null
   fileColor(paragraph: number, from: number): Color | null
   fileAlign(paragraph: number): ParagraphAlign | null
-  fileBullet(paragraph: number): boolean
+  fileList(paragraph: number): TextList
+  fileNumber(paragraph: number): number | null
   swatches(): readonly CanvasThemeColor[]
 }
 
@@ -91,6 +102,7 @@ function styleOf(run: CanvasRunStyle, scaled: Scaled): Look {
   return {
     fontFamily: familyOf(run.font),
     fontSize: `${scaled(shift(run) === 0 ? run.size : run.size * shiftedShare)}px`,
+    ...(run.letterSpacing === undefined ? {} : { letterSpacing: `${scaled(run.letterSpacing * emuPerHundredth)}px` }),
     fontStyle: run.italic ? "italic" : "normal",
     fontWeight: run.bold ? "700" : "400",
     color: run.color ?? pageColor,
@@ -197,6 +209,9 @@ export function ensureTextRule(doc: Document): void {
 }
 
 function applyStyle(node: HTMLElement, style: Look): void {
+  node.style.removeProperty("letter-spacing")
+  node.style.removeProperty("counter-increment")
+  node.style.removeProperty("letter-spacing")
   for (const name of paintProps) node.style.removeProperty(name)
   const plain: Record<string, string | number> = {}
   for (const [key, value] of Object.entries(style)) {
@@ -260,6 +275,8 @@ function formatted(
     ...style,
     bold: format.bold ?? style.bold,
     italic: format.italic ?? style.italic,
+    strike: format.strike ?? style.strike === true,
+    ...(format.letterSpacing === undefined ? {} : { letterSpacing: format.letterSpacing * scale }),
     underline: format.underline ?? style.underline === true,
     ...(format.size === undefined ? {} : { size: format.size * emuPerHundredth * scale, points: format.size }),
     ...(format.color === undefined ? {} : { color: paintedColor(format.color, colors, style.color) }),
@@ -279,10 +296,10 @@ function spaced(paragraph: CanvasParagraph, overlay: ParagraphPaint | undefined)
 }
 
 export function paragraphPaint(dataset: DOMStringMap): ParagraphPaint {
-  const { align, bullet } = dataset
+  const { align, list } = dataset
   let paint: ParagraphPaint = {
     ...(align === "left" || align === "center" || align === "right" ? { align } : {}),
-    ...(bullet === "true" || bullet === "false" ? { bullet: bullet === "true" } : {}),
+    ...(list === "none" || list === "bullets" || list === "numbers" ? { list } : {}),
   }
   for (const name of spacingNames) {
     const kept = dataset[name]
@@ -293,8 +310,21 @@ export function paragraphPaint(dataset: DOMStringMap): ParagraphPaint {
 
 function paragraphOverlay(style: Look, paragraph: CanvasParagraph, overlay: ParagraphPaint | undefined): Look {
   const align = overlay?.align === undefined ? style : { ...style, textAlign: overlay.align }
-  if (overlay?.bullet === false) return { ...align, "--bullet": "none" }
-  if (overlay?.bullet === true && paragraph.bullet == null) return { ...align, "--bullet": cssQuote("•") }
+  if (overlay?.list === "none") return { ...align, "--bullet": "none" }
+  if (
+    overlay?.list === "numbers" ||
+    (overlay?.list === undefined &&
+      paragraph.bullet != null &&
+      "autoNumber" in paragraph.bullet &&
+      paragraph.bullet.autoNumber === "arabicPeriod")
+  )
+    return {
+      ...align,
+      "--bullet": cssQuote(
+        `${overlay?.number ?? (paragraph.bullet != null && "number" in paragraph.bullet ? paragraph.bullet.number : 1)}.`,
+      ),
+    }
+  if (overlay?.list === "bullets") return { ...align, "--bullet": cssQuote("•") }
   return align
 }
 
@@ -359,7 +389,9 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
         text.edgeSpacing === true ? null : edges,
         from,
       )
-      return filled || overlay?.bullet === true ? style : { ...style, "--bullet-unfocused": "none" }
+      return filled || overlay?.list === "bullets" || overlay?.list === "numbers"
+        ? style
+        : { ...style, "--bullet-unfocused": "none" }
     },
     run(from, run, format = {}, overlay) {
       const found = paragraphs.get(from)
@@ -369,7 +401,9 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
       const lineHeight = lineHeights(paragraph.lineSpacing, scaled, true).run
       const drawn = marks(style, scaled)
       const plain =
-        format.underline === undefined || drawn.textDecoration !== undefined ? {} : { textDecoration: "none" }
+        (format.underline === undefined && format.strike === undefined) || drawn.textDecoration !== undefined
+          ? {}
+          : { textDecoration: "none" }
       return { ...styleOf(style, scaled), ...drawn, ...plain, lineHeight }
     },
     file(from, run, format) {
@@ -388,8 +422,13 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
       const align = paragraphs.get(from)?.align
       return align === "left" || align === "center" || align === "right" ? align : null
     },
-    fileBullet(from) {
-      return paragraphs.get(from)?.bullet != null
+    fileList(from) {
+      const bullet = paragraphs.get(from)?.bullet
+      return bullet == null ? "none" : "char" in bullet ? "bullets" : "numbers"
+    },
+    fileNumber(from) {
+      const bullet = paragraphs.get(from)?.bullet
+      return bullet != null && "autoNumber" in bullet && bullet.autoNumber === "arabicPeriod" ? bullet.number : null
     },
     swatches: () => colors,
   }
@@ -423,11 +462,15 @@ export function endsInBreak(text: string): boolean {
 }
 
 export function restyle(box: HTMLElement, look: TextLook): void {
+  let number: number | null = null
   for (const block of box.children) {
     if (!isElement(block) || block.dataset.paragraph === undefined) continue
     block.toggleAttribute("data-end-break", endsInBreak(block.textContent ?? ""))
     const from = Number(block.dataset.paragraph)
-    const overlay = paragraphPaint(block.dataset)
+    const paint = paragraphPaint(block.dataset)
+    const numbered = paint.list === "numbers" || (paint.list === undefined && look.fileNumber(from) !== null)
+    number = numbered ? (number === null ? (look.fileNumber(from) ?? 1) : number + 1) : null
+    const overlay = number === null ? paint : { ...paint, number }
     applyStyle(block, look.paragraph(from, isFilled(block), overlay))
     for (const span of runsOf(block)) {
       const [paragraph, run] = (span.dataset.run ?? "").split(".").map(Number)

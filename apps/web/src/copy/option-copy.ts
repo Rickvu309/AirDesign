@@ -1,3 +1,4 @@
+import { textWords } from "@/copy/text-copy"
 import { bodyWords } from "@/copy/body-copy"
 import { boxWords } from "@/copy/box-copy"
 import { connectionWords } from "@/copy/connection-copy"
@@ -8,6 +9,7 @@ import { geometryWords } from "@/copy/geometry-copy"
 import { pictureWords } from "@/copy/picture-copy"
 
 export const optionCopy: Readonly<Record<string, string>> = {
+  ...textWords,
   left: "Left",
   center: "Center",
   right: "Right",

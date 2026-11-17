@@ -185,6 +185,15 @@ _Avoid_: default, placeholder value, unset
 Dragging a number control's name left or right to step its value. Shift steps by tens; Alt by tenths. One scrub is one undo step.
 _Avoid_: slider, drag to change
 
+**strikethrough**:
+A line through text. The code calls its run flag `strike`; PowerPoint writes single strikethrough as `sngStrike`.
+
+**letter spacing**:
+Space between letters. The panel shows percent of the first run’s size; `letterSpacing` stores native `spc`, hundredths of a point.
+
+**list**:
+A paragraph’s one choice of No list, Bullets or Numbered list. The code stores `none`, `bullets` or `numbers`.
+
 **theme**:
 The deck's twelve colors and heading and body fonts. Anything that names a theme color or font follows its changes, including shapes, lines, text, backgrounds and tables.
 _Avoid_: palette, color scheme, template (a template is a whole design, not available yet)
@@ -297,7 +306,7 @@ A part of the design panel that holds the controls of one trait, Opacity or Alig
 _Avoid_: section (a section is a group of slides)
 
 **row**:
-One stored edit of one node: the format it was written in, `v`, and a `patch` of the trait fields it changes. Each field in a patch is set to a value or sent back to `inherit` or `opening`. Rows stack in order, and a node shows its rows folded field by field. A table's own rows are a kind, `row`; say table row when the two could be mixed up.
+One node’s stored edit: format `v` and a `patch`. Each field is set, inherited or returned to `opening`. Rows fold field by field in order. Say table row for kind `row`.
 _Avoid_: edit record, change record, delta
 
 **format**:
@@ -317,7 +326,7 @@ What a node showed when the deck was opened or the element was added: the values
 _Avoid_: original, initial, baseline, floor (the code's other word for an opening text and box)
 
 **inherit**:
-The edit that clears a node's own value so the field is inherited again. A row carries `"inherit"`, an agent's `set` sends `null`, and only fields a trait lists as `inheritable` take it. A trait's `inherits` names the rule PowerPoint inherits it by: `own` for never, `field` for each field alone, `whole` for all its fields at once, and `run` for each run of text. The design panel's Reset is the person's word for the same edit; the state it returns to is **inherited**.
+Clears an `inheritable` field: a row sends `"inherit"`, an agent sends `null`, the panel says Reset. The trait’s `inherits` follows PowerPoint: `own` never, `field` each field, `whole` all fields together, `run` each text run.
 _Avoid_: reset (in code and tools), unset, clear, default
 
 **role**:

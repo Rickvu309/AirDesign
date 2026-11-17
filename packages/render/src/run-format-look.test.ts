@@ -54,13 +54,13 @@ it("paints a chosen size and scheme colour over the file", () => {
 
 it("paints alignment and bullets over the paragraph", () => {
   const look = textLook(text, scaled)
-  expect(look.paragraph(0, true, { align: "center", bullet: true })).toMatchObject({
+  expect(look.paragraph(0, true, { align: "center", list: "bullets" })).toMatchObject({
     textAlign: "center",
     "--bullet": '"•"',
   })
-  expect(look.paragraph(0, true, { bullet: false })["--bullet"]).toBe("none")
+  expect(look.paragraph(0, true, { list: "none" })["--bullet"]).toBe("none")
   expect(look.fileAlign(0)).toBe("left")
-  expect(look.fileBullet(0)).toBe(false)
+  expect(look.fileList(0)).toBe("none")
 })
 
 it("reads a scheme colour when one theme swatch matches the painted colour", () => {
@@ -139,4 +139,16 @@ it("balances text its columns cannot hold below the box instead of adding column
   const body = textLook({ ...text, columns: 2, overflow: true }, scaled).body
   expect(body).toMatchObject({ columnCount: 2, columnFill: "balance" })
   expect(body.maxBlockSize).toBeUndefined()
+})
+
+it("paints set strikethrough and native letter spacing", () => {
+  const look = textLook(text, scaled)
+  expect(look.run(0, 0, { strike: true, letterSpacing: -64 })).toMatchObject({
+    textDecoration: "line-through",
+    letterSpacing: "-0.64px",
+  })
+})
+
+it("paints a numbered paragraph's label", () => {
+  expect(textLook(text, scaled).paragraph(0, true, { list: "numbers" })).toMatchObject({ "--bullet": '"1."' })
 })
