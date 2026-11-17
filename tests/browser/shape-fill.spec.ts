@@ -10,7 +10,7 @@ const judged = join(process.cwd(), "tests/browser", exportName)
 const slidePart = "ppt/slides/slide1.xml"
 const copyPart = "ppt/slides/slide2.xml"
 const deckParts = ["[Content_Types].xml", "ppt/_rels/presentation.xml.rels", "ppt/presentation.xml"]
-const accentTwoXml = '<a:solidFill><a:schemeClr val="accent2"/></a:solidFill>'
+const accentTwoXml = '<a:solidFill><a:schemeClr val="accent2"><a:alpha val="100000"/></a:schemeClr></a:solidFill>'
 const duplicate = process.platform === "darwin" ? "Meta+d" : "Control+d"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
