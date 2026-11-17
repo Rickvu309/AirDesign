@@ -4,8 +4,19 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { parse } from "yaml"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+const workflow = parse(fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8"))
+const upload = workflow.jobs.check.steps.find((step) => step.with?.path === "test-results/browser-timings.json")
+assert.ok(upload, "successful browser timings must be downloadable")
+assert.equal(
+  upload.if,
+  "!cancelled() && steps.work.outputs.needed == 'true' && (matrix.part == 'browser' || matrix.part == 'design')",
+)
+assert.equal(upload.with.name, "browser-timings-${{ matrix.part }}-${{ strategy.job-index }}")
+assert.equal(upload["continue-on-error"], true)
+assert.equal(upload["timeout-minutes"], 2)
 const folder = fs.mkdtempSync(path.join(os.tmpdir(), "browser-timings-"))
 try {
   fs.symlinkSync(path.join(root, "node_modules"), path.join(folder, "node_modules"), "dir")

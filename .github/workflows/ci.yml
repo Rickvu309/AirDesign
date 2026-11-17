@@ -165,6 +165,15 @@ jobs:
         with:
           path: ~/.cache/airdesign/pptx-validations
           key: pptx-validations-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-${{ github.run_id }}
+      - if: "!cancelled() && steps.work.outputs.needed == 'true' && (matrix.part == 'browser' || matrix.part == 'design')"
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        continue-on-error: true
+        timeout-minutes: 2
+        with:
+          name: browser-timings-${{ matrix.part }}-${{ strategy.job-index }}
+          path: test-results/browser-timings.json
+          retention-days: 7
+          if-no-files-found: ignore
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
