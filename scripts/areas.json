@@ -94,6 +94,7 @@
       ".github/",
       "AGENTS.md",
       "CHECKS.md",
+      "COMMANDS.md",
       "GLOSSARY.md",
       "metrics.json",
       "package.json",

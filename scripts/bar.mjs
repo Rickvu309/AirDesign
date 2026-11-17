@@ -19,6 +19,7 @@ const guardedFiles = new Set([
   "AGENTS.md",
   "CHECK-QUEUE.md",
   "CHECKS.md",
+  "COMMANDS.md",
   "pnpm-workspace.yaml",
 ])
 const guardedNames = [/^tsconfig.*\.json$/, /^\.oxlintrc\.json$/, /^vitest\./, /^playwright\.config\./]

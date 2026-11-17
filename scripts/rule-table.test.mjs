@@ -24,4 +24,26 @@ same("a change to CHECKS.md is listed for the owner", guarded("CHECKS.md"), true
 same("a change to CHECK-QUEUE.md is listed for the owner", guarded("CHECK-QUEUE.md"), true)
 same("the file-size check covers CHECK-QUEUE.md", authored("CHECK-QUEUE.md"), true)
 same("CHECKS.md is under the file-size limit", tokensOf(Buffer.byteLength(table)) <= tokenLimit, true)
-same("AGENTS.md has room to take a new rule", tokensOf(Buffer.byteLength(agents)) <= tokenLimit * 0.75, true)
+same(
+  "AGENTS.md stays short enough to read whole on every turn",
+  tokensOf(Buffer.byteLength(agents)) <= tokenLimit * 0.5,
+  true,
+)
+same("AGENTS.md names the file that holds each command's detail", agents.includes("`COMMANDS.md`"), true)
+same("AGENTS.md leaves each command's detail to COMMANDS.md", agents.includes("## Commands"), false)
+same(
+  "COMMANDS.md says what the gate, ci and land run",
+  ["`pnpm gate`", "`ci`", "`pnpm land`"].every((name) => read("COMMANDS.md").includes(name)),
+  true,
+)
+same("a change to COMMANDS.md is listed for the owner", guarded("COMMANDS.md"), true)
+same("the file-size check covers COMMANDS.md", authored("COMMANDS.md"), true)
+same(
+  "AGENTS.md says what every app and package is for",
+  ["apps", "packages"].flatMap((folder) =>
+    fs
+      .readdirSync(path.join(root, folder))
+      .filter((name) => !agents.includes(folder === "apps" ? `\`apps/${name}\` is` : `  - \`${name}\` `)),
+  ),
+  [],
+)
