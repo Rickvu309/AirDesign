@@ -69,7 +69,7 @@ function SizeBox({
     pending.current = null
     setDraft(null)
     const typed = text === null ? null : typedSize(text.replace(",", "."))
-    if (typed !== null && typed !== size) onSize?.(typed, focus)
+    if (typed !== null && (focus || typed !== size)) onSize?.(typed, focus)
   }
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key !== "Enter" && event.key !== "Escape") return
@@ -110,8 +110,8 @@ function moveAlign(
   onAlign?: (align: ParagraphAlign) => void,
 ) {
   const forward = event.key === "ArrowRight" || event.key === "ArrowDown"
-  const focus = event.key === "ArrowLeft" || event.key === "ArrowUp"
-  if (!forward && !focus) return
+  const back = event.key === "ArrowLeft" || event.key === "ArrowUp"
+  if (!forward && !back) return
   const target = event.target
   if (!(target instanceof HTMLElement)) return
   event.preventDefault()
