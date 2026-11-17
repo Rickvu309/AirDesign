@@ -8,9 +8,11 @@ import { parse } from "yaml"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
+let failures = 0
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-    throw new Error(`${name}\n${JSON.stringify(actual)}\n${JSON.stringify(expected)}`)
+    failures++
+    console.error(`FAIL ${name}\n${JSON.stringify(actual)}\n${JSON.stringify(expected)}`)
   }
 }
 
@@ -51,29 +53,32 @@ same(
   [true, true],
 )
 same("one failing part does not stop the others", check.strategy["fail-fast"], false)
-same("ci waits for every part, the corpus and the journeys", workflow.jobs.ci.needs, ["check", "corpus", "journeys"])
+same("ci waits for every part, corpus, paint fidelity and journeys", workflow.jobs.ci.needs, [
+  "check",
+  "corpus",
+  "paint-fidelity",
+  "journeys",
+])
 
 const partCheck = steps.filter((step) => (step.run ?? "").startsWith("pnpm check --part="))
 same("one step runs pnpm check for a part", partCheck.length, 1)
 same(
-  "the pptx part does not run pnpm check, and main does not run the side part again for a commit the merge queue passed",
+  "the pptx part does not run pnpm check, and other parts run only when needed",
   partCheck[0].if,
-  "matrix.part != 'pptx' && steps.queued.outputs.passed != 'true'",
+  "matrix.part != 'pptx' && steps.work.outputs.needed == 'true'",
 )
 
 const queued = steps.find((step) => step.id === "queued")
 same(
-  "only the side part on main asks whether the merge queue passed the commit",
+  "main and side ask whether the queue passed before setup",
   queued?.if,
-  "github.event_name == 'push' && matrix.part == 'side'",
+  "github.event_name == 'push' && matrix.part != 'pptx'",
 )
-same("the question comes before pnpm check", steps.indexOf(queued) < steps.indexOf(partCheck[0]), true)
+same("the question uses the shared action", queued?.uses, "./.github/actions/queued")
 same(
-  "the question reads ci runs of the merge queue for this exact commit",
-  [/head_sha=\$GITHUB_SHA/, /event=merge_group/, /status=success/, /ci\.yml/].map((pattern) =>
-    pattern.test(queued.run),
-  ),
-  [true, true, true, true],
+  "the question comes before setup",
+  steps.indexOf(queued) < steps.findIndex((step) => (step.uses ?? "").startsWith("pnpm/action-setup")),
+  true,
 )
 same("the question may read runs", workflow.permissions.actions, "read")
 
@@ -149,14 +154,15 @@ same(
   "github.event_name == 'push' || github.event_name == 'merge_group'",
 )
 const verdict = ciSteps[0].run
-const passes = (check, corpusResult, journeysResult = "skipped") =>
+const passes = (check, corpusResult, journeysResult = "skipped", paintResult = "skipped") =>
   spawnSync("bash", [
     "-e",
     "-c",
     verdict
       .replaceAll("${{ needs.check.result }}", check)
       .replaceAll("${{ needs.corpus.result }}", corpusResult)
-      .replaceAll("${{ needs.journeys.result }}", journeysResult),
+      .replaceAll("${{ needs.journeys.result }}", journeysResult)
+      .replaceAll("${{ needs.paint-fidelity.result }}", paintResult),
   ]).status === 0
 same("ci passes when every part passed and the corpus passed", passes("success", "success"), true)
 same("ci passes on a pull request, where the corpus is skipped", passes("success", "skipped"), true)
@@ -170,17 +176,162 @@ same(
 )
 
 const journeys = workflow.jobs.journeys
-same("the journeys run in the merge queue", journeys.if, "github.event_name == 'merge_group'")
-same("the queue runs the same journeys workflow main runs", journeys.uses, "./.github/workflows/journeys.yml")
+same(
+  "journeys run on pull requests and in the merge queue",
+  journeys.if,
+  "github.event_name == 'pull_request' || github.event_name == 'merge_group'",
+)
+same("ci calls the reusable journeys workflow", journeys.uses, "./.github/workflows/journeys.yml")
 same("ci passes when the journeys passed in the queue", passes("success", "success", "success"), true)
 same("ci fails when a journey failed in the queue", passes("success", "success", "failure"), false)
 same("ci fails when the journeys were cancelled", passes("success", "success", "cancelled"), false)
 const journeysFile = parse(fs.readFileSync(path.join(root, ".github/workflows/journeys.yml"), "utf8"))
 same("the journeys workflow can be called from ci", "workflow_call" in journeysFile.on, true)
+same("journeys no longer run on push", "push" in journeysFile.on, false)
+same("journeys keep manual dispatch", "workflow_dispatch" in journeysFile.on, true)
 same(
-  "only a journey failure on main opens its issue",
-  journeysFile.jobs.journeys.steps
-    .filter((step) => (step.run ?? "").includes("red-main.sh"))
-    .map((step) => step.if.includes("github.ref == 'refs/heads/main'")),
-  [true],
+  "journeys no longer open or close main issues",
+  journeysFile.jobs.journeys.steps.some((step) => /red-main|gh issue/.test(step.run ?? "")),
+  false,
 )
+
+const actionFile = path.join(root, ".github/actions/queued/action.yml")
+const action = fs.existsSync(actionFile) ? parse(fs.readFileSync(actionFile, "utf8")) : undefined
+const question = action?.runs.steps[0]
+same(
+  "one shared question reads successful queue ci runs for this exact commit",
+  [/head_sha=\$GITHUB_SHA/, /event=merge_group/, /status=success/, /ci\.yml/].map((pattern) =>
+    pattern.test(question?.run ?? ""),
+  ),
+  [true, true, true, true],
+)
+same("the shared action exposes its answer", action?.outputs.passed.value, "${{ steps.queued.outputs.passed }}")
+const execute = (run, env, answer = "true") => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-ci-work-"))
+  try {
+    fs.writeFileSync(path.join(folder, "gh"), `#!/bin/sh\nprintf '%s\\n' '${answer}'\n`, { mode: 0o755 })
+    const output = path.join(folder, "output")
+    const result = spawnSync("bash", ["-e", "-c", run], {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        PATH: `${folder}:${process.env.PATH}`,
+        GITHUB_OUTPUT: output,
+        GITHUB_REPOSITORY: "a/b",
+        GITHUB_SHA: "exact-sha",
+        ...env,
+      },
+    })
+    return { status: result.status, output: fs.existsSync(output) ? fs.readFileSync(output, "utf8").trim() : "" }
+  } finally {
+    fs.rmSync(folder, { recursive: true, force: true })
+  }
+}
+for (const answer of ["true", "false"]) {
+  same(`queue answer ${answer} is exposed`, execute(question?.run ?? "exit 1", {}, answer), {
+    status: 0,
+    output: `passed=${answer}`,
+  })
+}
+for (const [name, job] of [
+  ["check", check],
+  ["corpus", corpus],
+  ["paint-fidelity", workflow.jobs["paint-fidelity"]],
+]) {
+  const found = job?.steps ?? []
+  const work = found.find((step) => step.id === "work")
+  const lookup = found.find((step) => step.id === "cache-lookup")
+  const restore = found.find((step) => step.id === "work-cache")
+  const save = found.find(
+    (step) => (step.uses ?? "").startsWith("actions/cache/save") && step.with.path === lookup?.with.path,
+  )
+  same(`${name} looks up the exact cache without downloading`, lookup?.with["lookup-only"], true)
+  same(
+    `${name} looks up before setup`,
+    found.indexOf(lookup) >= 0 &&
+      found.indexOf(lookup) < found.findIndex((step) => (step.uses ?? "").startsWith("pnpm/action-setup")),
+    true,
+  )
+  same(
+    `${name} restores and saves the key it looked up`,
+    [restore?.with.key, save?.with.key],
+    [lookup?.with.key, lookup?.with.key],
+  )
+  same(`${name} decision reads queue, exact hit and part`, work?.env, {
+    PASSED: "${{ steps.queued.outputs.passed }}",
+    CACHE_HIT: "${{ steps.cache-lookup.outputs.cache-hit }}",
+    PART: name === "check" ? "${{ matrix.part }}" : name,
+  })
+  for (const [part, passed, hit, needed] of [
+    [name === "check" ? "main" : name, "true", "true", "false"],
+    [name === "check" ? "main" : name, "true", "false", "true"],
+    [name === "check" ? "main" : name, "false", "true", "true"],
+    [name === "check" ? "main" : name, "", "true", "true"],
+    ...(name === "check"
+      ? [
+          ["side", "true", "", "false"],
+          ["pptx", "", "", "true"],
+        ]
+      : []),
+  ]) {
+    same(
+      `${name} ${part} queue=${passed} exact-hit=${hit} needed=${needed}`,
+      execute(work?.run ?? "exit 1", { PART: part, PASSED: passed, CACHE_HIT: hit }),
+      { status: 0, output: `needed=${needed}` },
+    )
+  }
+  const expensive = found.filter(
+    (step) =>
+      /pnpm|postgres|actions\/tla|actions\/setup-node/.test(text(step)) &&
+      step.id !== "cache-lookup" &&
+      step.id !== "work-cache",
+  )
+  same(
+    `${name} gates expensive setup and work`,
+    expensive.length > 0 &&
+      expensive.every((step) => onlyOn(step, "pptx") || step.if?.includes("steps.work.outputs.needed == 'true'")),
+    true,
+  )
+  if (name !== "check") {
+    same(
+      `${name} uses the shared queue action on push`,
+      found.find((step) => step.id === "queued")?.uses,
+      "./.github/actions/queued",
+    )
+    same(`${name} asks only on push`, found.find((step) => step.id === "queued")?.if, "github.event_name == 'push'")
+    same(`${name} runs on queue and push`, job?.if, corpus.if)
+    same(
+      `${name} reports push failures`,
+      found.filter((step) => (step.run ?? "").includes("red-main.sh")).map((step) => step.if),
+      ["failure() && github.event_name == 'push'"],
+    )
+  }
+}
+const paint = workflow.jobs["paint-fidelity"]
+same(
+  "paint fidelity runs independently beside corpus",
+  paint !== undefined &&
+    paint.needs === undefined &&
+    !corpus.steps.some((step) => step.run === "pnpm metric:paint-fidelity"),
+  true,
+)
+same(
+  "paint fidelity keeps its metric command",
+  paint?.steps.some((step) => step.run === "pnpm metric:paint-fidelity"),
+  true,
+)
+const cacheKey = (job) => job?.steps.find((step) => step.id === "cache-lookup")?.with.key
+same(
+  "paint and corpus save distinct cache keys",
+  cacheKey(paint) !== undefined && cacheKey(paint) !== cacheKey(corpus),
+  true,
+)
+for (const result of ["success", "skipped", "failure", "cancelled"]) {
+  same(
+    `ci judges paint fidelity ${result}`,
+    passes("success", "success", "success", result),
+    ["success", "skipped"].includes(result),
+  )
+}
+if (failures > 0) process.exit(1)
+console.log("ci-parts: all assertions passed")
