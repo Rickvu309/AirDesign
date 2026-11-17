@@ -22,7 +22,7 @@ export function AdjustControl({ control, palette, onChange }: ControlProps) {
   if (control.desc.kind !== "named" || names.length === 0) return null
   const item = control.desc.item
   return (
-    <div role="group" aria-label={control.label} data-control="adjust" className="grid grid-cols-2 gap-2">
+    <div role="group" aria-label={control.label} data-control="adjust" className="grid grid-cols-1 gap-2">
       {names.map((name) => (
         <NumberField
           key={name}

@@ -3,7 +3,7 @@ import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
 export function ToggleControl({ control, onChange }: ControlProps) {
-  const Icon = control.look.name.show === "icon" ? control.look.name.icon : undefined
+  const Icon = control.look.name.show === "icon" ? control.look.name.icon : control.look.options.true
   const on = !control.mixed && control.value === true
   return (
     <Button

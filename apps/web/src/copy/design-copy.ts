@@ -9,6 +9,8 @@ export const designCopy = {
   background: "Background",
   resizePanel: "Resize panel",
   backgroundColor: (name: string) => `Background color, ${name}`,
+  border: "Border",
+  shadow: "Shadow",
   white: "White",
   fills: { gradient: "Gradient", pattern: "Pattern", picture: "Picture" },
   panels: {
