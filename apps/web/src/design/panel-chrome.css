@@ -62,3 +62,8 @@
 [data-design-panel] [data-design-section="Link"] input {
   background: var(--panel-track);
 }
+
+[data-design-panel] [data-design-section="Shadow"] [data-segments] svg {
+  width: 14px;
+  height: 14px;
+}

@@ -39,7 +39,7 @@ import {
 } from "@airdesign/pptx"
 import type { PaintStore, Selection } from "@airdesign/render"
 import type { CommitOutcome } from "@/commit-edit"
-import { SlidersHorizontal } from "lucide-react"
+import { SlidersVertical } from "lucide-react"
 import { TemplateStyleCard } from "@/editor/template-style-card"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
@@ -424,7 +424,7 @@ function LiveThemeDesign({ deck }: { deck: DesigningDeck }) {
           aria-expanded={open}
           onClick={() => setOpen(!open)}
         >
-          <SlidersHorizontal className="size-3.5" />
+          <SlidersVertical className="size-3.5" />
         </Button>
       }
     >

@@ -97,3 +97,9 @@ export const LineSpacing = createLucideIcon("LineSpacing", [
 ])
 
 export const NoneFill = createLucideIcon("NoneFill", [["path", { d: "M3 12h18", key: "none" }]])
+
+export const ImageFill = createLucideIcon("ImageFill", [
+  ["rect", { x: 3, y: 3, width: 18, height: 18, rx: 2, key: "edge" }],
+  ["circle", { cx: 17, cy: 7, r: 1.5, key: "sun" }],
+  ["path", { d: "M5 16l5-5 6 6", key: "mountain" }],
+])

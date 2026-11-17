@@ -12,7 +12,6 @@ import {
   Type,
   ArrowUpToLine,
   ArrowDownToLine,
-  Image,
   Square,
   SquareDashed,
   AlignHorizontalDistributeCenter,
@@ -27,6 +26,7 @@ import {
   LineSpacing,
   PatternFill,
   NoneFill,
+  ImageFill,
   SolidFill,
   GradientFill,
   AlignLeftEdge,
@@ -67,7 +67,7 @@ type Strip = readonly Placed[]
 const above: NameLook = { show: "above" }
 const hidden: NameLook = { show: "hidden" }
 const inside: NameLook = { show: "inside" }
-const fills = { none: NoneFill, solid: SolidFill, gradient: GradientFill, pattern: PatternFill, picture: Image }
+const fills = { none: NoneFill, solid: SolidFill, gradient: GradientFill, pattern: PatternFill, picture: ImageFill }
 const placed = (field: string, name: NameLook = above, rest: Omit<Placed, "field" | "name"> = {}): Placed => ({
   field,
   name,
@@ -153,6 +153,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
           LineSpacing,
           PatternFill,
           NoneFill,
+          ImageFill,
           SolidFill,
           GradientFill,
           AlignLeftEdge,
