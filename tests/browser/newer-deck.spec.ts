@@ -51,8 +51,8 @@ function newerBuildQueues(page: Page, version: number): Promise<string[]> {
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("a deck a newer build stored asks the person to reload and sends nothing", async ({ page }) => {
-  const commits = await serve(page)
+test("a deck a newer build stored asks the person to reload and sends nothing", async ({ page, context }) => {
+  await serve(page)
   await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(fixture)
   await expect(page).toHaveURL(deckAddress)
@@ -64,14 +64,15 @@ test("a deck a newer build stored asks the person to reload and sends nothing", 
   await expect(page.getByText("Unable to reach AirDesign. Edits are saved on this device.")).toBeVisible()
 
   expect(await newerBuildQueues(page, format + 1)).toContain("258.slide")
-  commits.length = 0
-  await page.goto(address)
+  const reopened = await context.newPage()
+  const commits = await serve(reopened)
+  await reopened.goto(address)
 
-  const line = page.locator("[data-deck-refused]")
+  const line = reopened.locator("[data-deck-refused]")
   await expect(line).toBeVisible()
-  await expect(page.getByText("AirDesign has a new version")).toBeVisible()
-  await expect(page.getByRole("button", { name: "Reload" })).toBeVisible()
-  await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
-  expect(await newerBuildQueues(page, format + 1)).toContain("258.slide")
+  await expect(reopened.getByText("AirDesign has a new version")).toBeVisible()
+  await expect(reopened.getByRole("button", { name: "Reload" })).toBeVisible()
+  await expect(reopened.locator('[contenteditable="true"]')).toHaveCount(0)
+  expect(await newerBuildQueues(reopened, format + 1)).toContain("258.slide")
   expect(commits).toEqual([])
 })
