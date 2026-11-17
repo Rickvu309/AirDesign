@@ -14,6 +14,7 @@ export function HexControl({ control, palette, onChange }: ControlProps) {
   return (
     <div className="min-w-0" data-control="hex">
       <ColorPicker
+        title={control.label}
         value={shown === null ? undefined : { rgb: shown }}
         palette={palette}
         theme={false}

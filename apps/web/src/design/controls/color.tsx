@@ -69,7 +69,8 @@ export function ColorControl({ control, palette, onChange }: ControlProps) {
         {control.label}
       </span>
       <ColorPicker
-        value={shown}
+        title={control.label}
+        value={held ?? undefined}
         palette={palette}
         onPick={(color) => onChange(picked(color))}
         trigger={<Button type="button" variant="ghost" aria-labelledby={`${label} ${named}`} className={fieldLook} />}

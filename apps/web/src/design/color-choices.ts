@@ -23,7 +23,6 @@ export type Shade = {
 
 export type Hsv = { readonly hue: number; readonly saturation: number; readonly value: number }
 
-const deckRow = 10
 const hexDigits = /^#?([0-9A-Fa-f]{6})$/
 const usualSlots: Readonly<Record<string, SchemeName>> = { tx1: "dk1", bg1: "lt1", tx2: "dk2", bg2: "lt2" }
 
@@ -93,8 +92,17 @@ export function deckChoices(palette: Palette): readonly Choice[] {
   const themed = new Set(palette.theme.map((swatch) => bare(swatch.css)))
   return palette.deck
     .filter((hex) => !themed.has(hex))
-    .slice(0, deckRow)
     .map((hex) => ({ color: { rgb: hex }, css: `#${hex}`, name: colorCopy.hexName(hex) }))
+}
+
+export function tintChoices(theme: readonly Swatch[], value: Color | undefined): readonly Choice[] {
+  const shades = themeColumns(theme).flatMap((column) => column.shades)
+  if (value === undefined) return shades
+  const plain = fadedColor(value, opaque)
+  if (!("scheme" in plain) || plain.transforms === undefined || plain.transforms.length === 0) return shades
+  if (shades.some((choice) => matches(choice.color, plain))) return shades
+  const hex = shownHex(plain, theme)
+  return [{ color: plain, css: `#${hex}`, name: colorCopy.hexName(hex) }, ...shades]
 }
 
 export function typedColor(text: string): Color | null {
@@ -149,10 +157,11 @@ export function shownHex(value: Color, theme: readonly Swatch[]): string {
 }
 
 export function shownName(value: Color, theme: readonly Swatch[]): string {
-  for (const column of themeColumns(theme)) {
-    for (const choice of [column.swatch, ...column.shades]) if (matches(choice.color, value)) return choice.name
+  const plain = fadedColor(value, opaque)
+  if ("scheme" in plain && (plain.transforms === undefined || plain.transforms.length === 0)) {
+    const scheme = usualSlots[plain.scheme] ?? plain.scheme
+    const named = theme.find((swatch) => swatch.scheme === scheme)
+    if (named !== undefined) return named.name
   }
-  const named = theme.find((swatch) => "scheme" in value && swatch.scheme === value.scheme && !value.transforms)
-  if (named !== undefined) return named.name
   return colorCopy.hexName(shownHex(value, theme))
 }

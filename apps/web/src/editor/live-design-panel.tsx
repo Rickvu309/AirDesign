@@ -450,6 +450,7 @@ export function DesignView({
           inner={(props) =>
             props.control.field === "value.solid" ? (
               <ColorPicker
+                title={designCopy.background}
                 value={background.value}
                 palette={{ theme: shown.theme, deck }}
                 onPick={(solid) => onFill({ solid })}
