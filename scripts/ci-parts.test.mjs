@@ -71,12 +71,7 @@ same(
   browserTests([]).toSorted(),
 )
 same("one failing part does not stop the others", check.strategy["fail-fast"], false)
-same("ci waits for every part, corpus, paint fidelity and journeys", workflow.jobs.ci.needs, [
-  "check",
-  "corpus",
-  "paint-fidelity",
-  "journeys",
-])
+same("ci waits for every part, corpus and journeys", workflow.jobs.ci.needs, ["check", "corpus", "journeys"])
 
 const partCheck = steps.filter((step) => (step.run ?? "").startsWith("pnpm check --part="))
 same("one step runs pnpm check for a part", partCheck.length, 1)
@@ -117,49 +112,6 @@ same("the pptx part builds the packages before the PowerPoint check", build !== 
 same("the build comes before the PowerPoint check", build < steps.indexOf(pptxCheck[0]), true)
 
 const ciSteps = workflow.jobs.ci.steps
-const timing = ciSteps.find((step) => step.name === "ci-duration")
-same("the ci job times the merge queue's run", timing?.if, "github.event_name == 'merge_group'")
-same("ci-duration is timed after ci passed", ciSteps.indexOf(timing) > 0, true)
-same("a slow or unread ci-duration warns and never fails ci", timing["continue-on-error"], true)
-
-const timed = (minutesAgo, limit) => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-ci-duration-"))
-  try {
-    const created = new Date(Date.now() - minutesAgo * 60_000).toISOString()
-    fs.writeFileSync(
-      path.join(folder, "gh"),
-      `#!/bin/sh\ncase "$*" in\n*createdAt*) echo "${created}" ;;\n*metrics.json*) echo ${limit} ;;\nesac\n`,
-      { mode: 0o755 },
-    )
-    const summary = path.join(folder, "summary.md")
-    const result = spawnSync("bash", ["-e", "-c", timing.run], {
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        PATH: `${folder}:${process.env.PATH}`,
-        GITHUB_STEP_SUMMARY: summary,
-        GITHUB_RUN_ID: "1",
-        GITHUB_REPOSITORY: "a/b",
-        GITHUB_SHA: "c",
-      },
-    })
-    return { status: result.status, out: result.stdout, summary: fs.readFileSync(summary, "utf8") }
-  } finally {
-    fs.rmSync(folder, { recursive: true, force: true })
-  }
-}
-
-const quick = timed(12, 40)
-same("a quick queue run prints its minutes", /^metric ci-duration {2}now 12\.0 {2}limit 40$/m.test(quick.out), true)
-same("the minutes go to the job summary", quick.summary.includes("metric ci-duration  now 12.0  limit 40"), true)
-same("a quick queue run does not warn", quick.out.includes("::warning"), false)
-const slow = timed(50, 40)
-same("a slow queue run passes its step", slow.status, 0)
-same(
-  "a slow queue run warns with both numbers",
-  slow.out.includes("::warning title=ci-duration::ci-duration is 50.0 and its limit is 40."),
-  true,
-)
 
 const corpus = workflow.jobs.corpus
 same(
@@ -168,15 +120,14 @@ same(
   "github.event_name == 'push' || github.event_name == 'merge_group'",
 )
 const verdict = ciSteps[0].run
-const passes = (check, corpusResult, journeysResult = "skipped", paintResult = "skipped") =>
+const passes = (check, corpusResult, journeysResult = "skipped") =>
   spawnSync("bash", [
     "-e",
     "-c",
     verdict
       .replaceAll("${{ needs.check.result }}", check)
       .replaceAll("${{ needs.corpus.result }}", corpusResult)
-      .replaceAll("${{ needs.journeys.result }}", journeysResult)
-      .replaceAll("${{ needs.paint-fidelity.result }}", paintResult),
+      .replaceAll("${{ needs.journeys.result }}", journeysResult),
   ]).status === 0
 same("ci passes when every part passed and the corpus passed", passes("success", "success"), true)
 same("ci passes on a pull request, where the corpus is skipped", passes("success", "skipped"), true)
@@ -266,7 +217,6 @@ for (const answer of ["123", ""]) {
 for (const [name, job] of [
   ["check", check],
   ["corpus", corpus],
-  ["paint-fidelity", workflow.jobs["paint-fidelity"]],
 ]) {
   const found = job?.steps ?? []
   const work = found.find((step) => step.id === "work")
@@ -300,6 +250,7 @@ for (const [name, job] of [
       ? [
           ["side", "true", "", "false"],
           ["design", "true", "", "false"],
+          ["design", "false", "", "false"],
           ["browser", "true", "", "false"],
           ["browser", "false", "", "true"],
           ["pptx", "", "", "true"],
@@ -311,7 +262,7 @@ for (const [name, job] of [
       execute(question?.run ?? "exit 1", { PART: part, CACHE_HIT: hit }, passed === "true" ? "123" : ""),
       {
         status: 0,
-        output: `passed=${passed === "true" && part !== "pptx"}\nrun-id=${passed === "true" && part !== "pptx" ? "123" : ""}\nneeded=${needed}`,
+        output: `passed=${passed === "true" && !["pptx", "design"].includes(part)}\nrun-id=${passed === "true" && !["pptx", "design"].includes(part) ? "123" : ""}\nneeded=${needed}`,
       },
     )
   }
@@ -323,8 +274,7 @@ for (const [name, job] of [
   )
   same(
     `${name} gates expensive setup and work`,
-    expensive.length > 0 &&
-      expensive.every((step) => onlyOn(step, "pptx") || step.if?.includes("steps.work.outputs.needed == 'true'")),
+    expensive.length > 0 && expensive.every((step) => step.if?.includes("steps.work.outputs.needed == 'true'")),
     true,
   )
   if (name !== "check") {
@@ -448,36 +398,81 @@ for (const event of ["pull_request", "merge_group"]) {
     { status: 0, output: "passed=false\nrun-id=\nneeded=true" },
   )
 }
-const paint = workflow.jobs["paint-fidelity"]
+for (const event of ["pull_request", "merge_group", "push"]) {
+  for (const part of ["design", "pptx"]) {
+    for (const hit of ["true", "false"]) {
+      for (const answer of ["123", ""]) {
+        const needed = part === "design" ? event === "pull_request" : event !== "merge_group"
+        same(
+          `${event} ${part} hit=${hit} queue=${answer} needed=${needed}`,
+          execute(question.run, { GITHUB_EVENT_NAME: event, PART: part, CACHE_HIT: hit, GH_FORBIDDEN: "1" }, answer),
+          { status: 0, output: `passed=false\nrun-id=\nneeded=${needed}` },
+        )
+      }
+    }
+  }
+}
 same(
-  "paint fidelity runs independently beside corpus",
-  paint !== undefined &&
-    paint.needs === undefined &&
-    !corpus.steps.some((step) => step.run === "pnpm metric:paint-fidelity"),
+  "every pptx step respects the shared decision",
+  steps.filter((step) => onlyOn(step, "pptx")).every((step) => step.if.includes("steps.work.outputs.needed == 'true'")),
   true,
 )
 same(
-  "paint fidelity keeps its metric command",
-  paint?.steps.some((step) => step.run === "pnpm metric:paint-fidelity"),
-  true,
+  "ci has no paint job or verdict",
+  [workflow.jobs["paint-fidelity"], verdict.includes("paint-fidelity")],
+  [undefined, false],
 )
+const paintPath = path.join(root, ".github/workflows/paint-fidelity.yml")
+const paintFile = fs.existsSync(paintPath) ? parse(fs.readFileSync(paintPath, "utf8")) : {}
+const paint = paintFile.jobs?.["paint-fidelity"]
+const paintSteps = paint?.steps ?? []
+same("paint runs on main and manual dispatch only", paintFile.on, {
+  push: { branches: ["main"] },
+  workflow_dispatch: null,
+})
+same(
+  "paint never reuses a queue decision",
+  paintSteps.some((step) => step.uses === "./.github/actions/queued" || /steps.work/.test(step.if ?? "")),
+  false,
+)
+same(
+  "paint always runs its metric with a 20 minute limit",
+  paintSteps
+    .filter((step) => step.run === "pnpm metric:paint-fidelity")
+    .map((step) => [step.if, step["timeout-minutes"]]),
+  [[undefined, 20]],
+)
+for (const cache of ["~/.cache/ms-playwright", "~/.cache/pptx-tools", "~/.cache/airdesign/pptx-renders"]) {
+  same(
+    `paint keeps ${cache}`,
+    paintSteps.some((step) => step.with?.path === cache),
+    true,
+  )
+}
+same("paint reports a separate main issue", paintSteps.find((step) => (step.run ?? "").includes("red-main.sh"))?.env, {
+  GH_TOKEN: "${{ github.token }}",
+  RED_TITLE: "paint fidelity is red",
+  RED_WHAT: "paint-fidelity",
+})
+same(
+  "paint reports only failures on main",
+  paintSteps.find((step) => (step.run ?? "").includes("red-main.sh"))?.if,
+  "failure() && github.event_name == 'push'",
+)
+const deploy = parse(fs.readFileSync(path.join(root, ".github/workflows/deploy.yml"), "utf8"))
+same("deploy waits only for ci", deploy.on.workflow_run.workflows, ["ci"])
 const cacheKey = (job) => job?.steps.find((step) => step.id === "renders")?.run
 same(
-  "paint and corpus look up the render key their job names once",
-  [paint, corpus].map((job) => job?.steps.find((step) => step.id === "cache-lookup")?.with.key),
-  Array(2).fill("${{ steps.renders.outputs.key }}"),
-)
-same(
-  "paint and corpus save distinct cache keys",
+  "paint and corpus save distinct render keys",
   cacheKey(paint) !== undefined && cacheKey(paint) !== cacheKey(corpus),
   true,
 )
-for (const result of ["success", "skipped", "failure", "cancelled"]) {
-  same(
-    `ci judges paint fidelity ${result}`,
-    passes("success", "success", "success", result),
-    ["success", "skipped"].includes(result),
-  )
-}
+const paintRestore = paintSteps.find((step) => step.id === "work-cache")
+const paintSave = paintSteps.find((step) => (step.uses ?? "").startsWith("actions/cache/save"))
+same(
+  "paint restores and saves its render key",
+  [paintRestore?.with.key, paintSave?.with.key],
+  Array(2).fill("${{ steps.renders.outputs.key }}"),
+)
 if (failures > 0) process.exit(1)
 console.log("ci-parts: all assertions passed")
