@@ -7,7 +7,6 @@ export const accountCopy = {
   nameTitle: "What’s your name?",
   nameSave: "Save name",
   nameContinue: "Continue",
-  nameSaving: "Saving…",
   nameSaved: "Name saved",
   nameInvalid: "Enter a name.",
   nameFailed: "Unable to save your name. Check your connection and try again.",

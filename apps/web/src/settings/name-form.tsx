@@ -1,4 +1,5 @@
-import { useId, useState } from "react"
+import { useId, useRef, useState } from "react"
+import { Loader2Icon } from "lucide-react"
 import { accountNameLimit, accountRoutes, readAccountName } from "@airdesign/catalog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,14 +16,17 @@ export function NameForm({
   joining?: boolean
 }) {
   const id = useId()
+  const input = useRef<HTMLInputElement>(null)
   const [value, setValue] = useState(name)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
   const [saved, setSaved] = useState(false)
+  const unchanged = !joining && value.trim() === name
   async function save() {
     const parsed = readAccountName({ name: value })
     if (!parsed.ok) {
       setError(accountCopy.nameInvalid)
+      input.current?.focus()
       return
     }
     setBusy(true)
@@ -52,7 +56,7 @@ export function NameForm({
       )}
       onSubmit={(event) => {
         event.preventDefault()
-        if (!busy) void save()
+        if (!busy && !unchanged) void save()
       }}
     >
       <div className={joining ? "" : "pt-2 max-sm:pt-0"}>
@@ -66,43 +70,57 @@ export function NameForm({
         )}
       </div>
       <div className="min-w-0">
-        <div className={cn("flex gap-2", joining && "flex-col gap-5")}>
-          <Input
-            id={id}
-            name="name"
-            autoComplete="name"
-            required
-            maxLength={accountNameLimit}
-            disabled={busy}
-            value={value}
-            className={cn(
-              "bg-background",
-              joining ? "h-11 px-3.5 text-base" : "h-9 text-[length:var(--type-body)] max-sm:h-11",
-            )}
-            aria-describedby={`${id}-error${joining ? "" : ` ${id}-hint`}`}
-            aria-invalid={error !== ""}
-            onChange={(event) => {
-              setValue(event.target.value)
-              setError("")
-              setSaved(false)
-            }}
-          />
+        <div className={cn("flex gap-2 max-sm:flex-col", joining && "flex-col gap-5")}>
+          <div className="min-w-0 flex-1">
+            <Input
+              ref={input}
+              id={id}
+              name="name"
+              autoComplete="name"
+              required
+              maxLength={accountNameLimit}
+              readOnly={busy}
+              value={value}
+              className={cn(
+                "bg-background",
+                joining ? "h-11 px-3.5 text-base" : "h-9 text-base sm:text-[length:var(--type-body)] max-sm:h-11",
+              )}
+              aria-describedby={`${id}-hint ${id}-error`}
+              aria-invalid={error !== ""}
+              onChange={(event) => {
+                setValue(event.target.value)
+                setError("")
+                setSaved(false)
+              }}
+            />
+            <div className="mt-2 min-h-5 text-[length:var(--type-dense)] leading-5">
+              {joining && (
+                <p id={`${id}-hint`} hidden={error !== ""} className="text-muted-foreground">
+                  {accountCopy.nameLater}
+                </p>
+              )}
+              <p id={`${id}-error`} role="alert" className="text-danger-text">
+                {error}
+              </p>
+              <p role="status" className="text-muted-foreground">
+                {saved ? accountCopy.nameSaved : ""}
+              </p>
+            </div>
+          </div>
           <Button
             type="submit"
-            variant={joining ? "default" : "outline"}
-            className={joining ? "h-11 w-full text-[length:var(--type-section)]" : "h-9 px-3.5 max-sm:h-11"}
-            disabled={busy || (!joining && value.trim() === name)}
+            variant="signature"
+            className={cn(
+              "relative aria-disabled:pointer-events-none",
+              unchanged && !busy && "opacity-50",
+              joining ? "h-11 w-full text-[length:var(--type-section)]" : "h-9 min-w-32 px-3.5 max-sm:h-11",
+            )}
+            aria-busy={busy}
+            aria-disabled={busy || unchanged}
           >
-            {busy ? accountCopy.nameSaving : joining ? accountCopy.nameContinue : accountCopy.nameSave}
+            {busy && <Loader2Icon aria-hidden="true" className="absolute start-3 size-4 motion-safe:animate-spin" />}
+            {joining ? accountCopy.nameContinue : accountCopy.nameSave}
           </Button>
-        </div>
-        <div className="mt-2 min-h-5 text-[length:var(--type-dense)] leading-5">
-          <p id={`${id}-error`} role="alert" className="text-danger-text">
-            {error}
-          </p>
-          <p role="status" className="text-muted-foreground">
-            {saved ? accountCopy.nameSaved : ""}
-          </p>
         </div>
       </div>
     </form>
