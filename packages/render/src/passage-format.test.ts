@@ -160,6 +160,36 @@ it("sets a typed size on the selection as one edit and keeps the selection", asy
   expect(formatting.size()).toBe(1050)
 })
 
+for (const focus of [true, false]) {
+  it(`sets a typed size only on the selected word before selectionchange with focus ${focus}`, async () => {
+    const { editor, formatting, edits } = await mounted()
+    await select(editor, 11, 11)
+    formatting.aim(id, editor)
+    const size = document.createElement("input")
+    size.dataset.keepsFormat = ""
+    editor.after(size)
+    await act(async () => {
+      const node = editor.querySelector("[data-run]")?.firstChild
+      if (!(node instanceof Text)) throw new Error("missing text")
+      window.getSelection()?.setBaseAndExtent(node, 6, node, 11)
+      size.focus()
+      window.getSelection()?.removeAllRanges()
+      formatting.sizeTo(2450, focus)
+    })
+    expect(readTextValue(edits.at(-1) ?? "")).toEqual([
+      {
+        from: 0,
+        runs: [
+          { from: 0, text: "Hello " },
+          { from: 0, text: "world", size: 2450 },
+        ],
+      },
+    ])
+    expect(document.activeElement).toBe(focus ? editor : size)
+    if (focus) expect(window.getSelection()?.toString()).toBe("world")
+  })
+}
+
 it("sets a typed size on the kept selection and leaves focus where the person moved it", async () => {
   const { host, editor, formatting, edits } = await mounted()
   await select(editor, 2, 7)
