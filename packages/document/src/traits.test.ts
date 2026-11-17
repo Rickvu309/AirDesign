@@ -103,6 +103,7 @@ describe("the one table of traits", () => {
       "text.value",
       "text.alpha",
       "image.source",
+      "image.mode",
       "image.alpha",
       "image.recolor",
       "crop.rect",

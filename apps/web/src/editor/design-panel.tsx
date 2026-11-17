@@ -244,6 +244,7 @@ export function ElementDesign({
           return picture === null ? null : (
             <DesignSection key={section.trait} title={section.label}>
               {picture}
+              <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
             </DesignSection>
           )
         if (section.label === null)

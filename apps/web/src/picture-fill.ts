@@ -81,18 +81,24 @@ function percent(value: number): string {
   return `${Number((value * 100).toFixed(4))}%`
 }
 
-function axis(before: number, after: number): { readonly size: string; readonly position: string } | null {
+function axis(
+  before: number,
+  after: number,
+  start = 0,
+  end = 0,
+): { readonly size: string; readonly position: string } | null {
   const shown = 1 - before - after
   if (shown <= 0) return null
-  const cut = before + after
-  return { size: percent(1 / shown), position: percent(cut === 0 ? 0 : before / cut) }
+  const size = (1 - start - end) / shown
+  const offset = start - before * size
+  return { size: percent(size), position: percent(size === 1 ? 0 : offset / (1 - size)) }
 }
 
 export function pictureLayer(image: PictureImage, src: string): string | null {
   const url = `url(${JSON.stringify(src)})`
   if (image.tile) return `${url} 0% 0% / auto repeat`
-  const across = axis(image.crop.left, image.crop.right)
-  const down = axis(image.crop.top, image.crop.bottom)
+  const across = axis(image.crop.left, image.crop.right, image.destination?.left, image.destination?.right)
+  const down = axis(image.crop.top, image.crop.bottom, image.destination?.top, image.destination?.bottom)
   if (across === null || down === null) return null
   return `${url} ${across.position} ${down.position} / ${across.size} ${down.size} no-repeat`
 }

@@ -56,8 +56,29 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
   const fill = controls.find((control) => control.trait === "line" && control.field === "fill")
   const dash = controls.find((control) => control.trait === "line" && control.field === "dash")
   const shadow = controls.find((control) => control.trait === "effects" && control.field === "shadow")
+  const mode = controls.find((control) => control.trait === "image" && control.field === "mode")
   const added: PanelSection[] =
-    kind === "picture" ? [{ trait: "pictureFill", label: fillCopy.section, open: true, strips: [] }] : []
+    kind === "picture"
+      ? [
+          {
+            trait: "pictureFill",
+            label: fillCopy.section,
+            open: true,
+            strips:
+              mode === undefined
+                ? []
+                : [
+                    [
+                      {
+                        ...mode,
+                        desc: { kind: "choice", options: ["fill", "fit", "crop", "tile"] },
+                        look: { ...mode.look, name: { show: "hidden" }, form: "list" },
+                      },
+                    ],
+                  ],
+          },
+        ]
+      : []
   if (fill !== undefined && dash !== undefined) {
     const border = resolveControl({
       ...fill,
@@ -127,6 +148,13 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
     added.push({ trait: "shadow", label: designCopy.shadow, open: true, strips: arrange("shadow", [control]) })
   }
   const details = sections.map((section) => {
+    if (section.trait === "image")
+      return {
+        ...section,
+        strips: section.strips
+          .map((strip) => strip.filter((control) => control.field !== "mode"))
+          .filter((strip) => strip.length > 0),
+      }
     const fill =
       section.trait === "line" ? section.strips.flat().find((control) => control.field === "fill") : undefined
     if (fill === undefined || typeof fill.value !== "object" || fill.value === null || !("none" in fill.value))

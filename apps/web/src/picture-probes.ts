@@ -1,5 +1,5 @@
 import { format } from "@airdesign/document"
-import { shownCrop, shownIdentity, shownImage } from "@airdesign/pptx"
+import { shownPictureMode, shownCrop, shownIdentity, shownImage } from "@airdesign/pptx"
 import type { Probe } from "./parity-probe"
 
 const picture = "2883.13"
@@ -27,9 +27,10 @@ export const pictureProbes: {
     deck: "doe-heat-pumps.pptx",
     kind: "picture",
     node: picture,
-    opening: () => ({ v: format, patch: { image: { source: "opening", recolor: "opening" } } }),
+    opening: () => ({ v: format, patch: { image: { mode: "opening", source: "opening", recolor: "opening" } } }),
     edit: (_, field, value) => ({ v: format, patch: { image: { [field]: { set: value } } } }),
     fields: {
+      mode: { file: (parts, at) => shownPictureMode(parts, at), shows: (value) => value },
       source: { file: (parts, at) => shownImage(parts, at)?.source, shows: (value) => value },
       recolor: { file: (parts, at) => shownImage(parts, at)?.recolor, shows: (value) => value },
     },

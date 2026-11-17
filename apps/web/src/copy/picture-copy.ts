@@ -4,6 +4,7 @@ import { limits } from "@airdesign/document"
 const largest = `${String(limits.media / 1_000_000)} MB`
 
 export const pictureCopy = {
+  mode: "Fill mode",
   add: "Add picture",
   "picture-type": "Unable to add picture. Choose a PNG, JPEG or GIF file.",
   "picture-size": `Unable to add picture. Choose one smaller than ${largest}.`,
@@ -20,6 +21,11 @@ export const pictureCopy = {
 } as const
 
 export const pictureWords: Readonly<Record<string, string>> = {
+  fill: "Fill",
+  fit: "Fit",
+  crop: "Crop",
+  tile: "Tile",
+  stretch: "Stretch",
   grayscale: "Grayscale",
   duotone: "Duotone",
   dark: "Dark",

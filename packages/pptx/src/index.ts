@@ -64,3 +64,4 @@ export { shownAlphas } from "./trait-xml.js"
 export { templateStyle, type TemplateStyle } from "./template-style.js"
 
 export { shownLink, type ElementLink } from "./trait-xml-link.js"
+export { shownPictureMode } from "./picture-mode.js"

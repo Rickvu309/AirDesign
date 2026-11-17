@@ -16,6 +16,7 @@ import { indexPackage } from "./index-package.js"
 import { readParts } from "./package-container.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { paintReader } from "./paint-reader.js"
+import { shownPictureMode } from "./picture-mode.js"
 import { shownCrop, shownIdentity, shownImage } from "./picture-read.js"
 import { iconParts, withMedia } from "./picture-write.js"
 import { readSlides } from "./read-shapes.js"
@@ -232,4 +233,22 @@ describe("a picture added with an icon opening", () => {
     const at = { slide: slide.slide, part: slide.part, shape: node.split(".")[1]! }
     expect(shownImage(added, at)?.source).toBe("rocket")
   })
+})
+
+it("exports exclusive native picture modes while preserving media and every other part", async () => {
+  const parts = await deck("doe-heat-pumps.pptx")
+  const picture = at(parts, "2883", "13")
+  for (const mode of ["fill", "fit", "crop", "tile"] as const) {
+    const after = exported(parts, picture.node, { image: { mode: { set: mode } } })
+    expect(changed(parts, after)).toEqual([picture.part])
+    expect(shownPictureMode(after, picture)).toBe(mode)
+    const painted = paintReader(after)
+      .slide(picture.part)
+      .elements.find((each) => each.shape === "13")
+    expect(painted?.image?.tile).toBe(mode === "tile")
+    const xml = text(after, picture.part)
+    expect(xml).toContain(mode === "tile" ? "<a:tile " : "<a:stretch>")
+    if (mode === "crop") expect(xml).toContain("<a:srcRect")
+    expect(exportParts(after, openRegister("", "clean"))).toBe(after)
+  }
 })
