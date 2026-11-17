@@ -1,3 +1,4 @@
+import { lineCopy } from "../../apps/web/src/copy/line-copy"
 import { lineWords } from "../../apps/web/src/copy/line-copy"
 import { actualSize } from "./paint-scale"
 import { copyFile, rm } from "node:fs/promises"
@@ -33,7 +34,9 @@ function stroked(shape: Locator): Promise<Stroke> {
 }
 
 function lineSection(panel: Locator): Locator {
-  return panel.locator("section").filter({ has: panel.page().getByRole("heading", { name: "Line", exact: true }) })
+  return panel
+    .locator("section")
+    .filter({ has: panel.page().getByRole("heading", { name: lineCopy.section, exact: true }) })
 }
 
 async function design(page: Page): Promise<Locator> {
@@ -46,9 +49,9 @@ async function design(page: Page): Promise<Locator> {
 async function pickShape(page: Page, shape: Locator): Promise<Locator> {
   const panel = await design(page)
   await shape.click({ position: { x: 4, y: 4 } })
-  await unfold(panel, "Line")
+  await unfold(panel, lineCopy.section)
   await expect(lineSection(panel)).toBeVisible()
-  await unfold(panel, "Line")
+  await unfold(panel, lineCopy.section)
   return lineSection(panel)
 }
 
@@ -58,7 +61,7 @@ async function pickConnector(page: Page, connector: Locator): Promise<Locator> {
   if (box === null) throw new Error("no connector")
   await page.mouse.click(box.x + box.width / 2, box.y)
   await expect(panel).toHaveAttribute("data-design-element", /\.6$/)
-  await unfold(panel, "Line")
+  await unfold(panel, lineCopy.section)
   return lineSection(panel)
 }
 
@@ -81,7 +84,7 @@ test("a person widens and dashes a line that comes from its style and puts an ar
   await expect(width).toHaveValue("1")
   expect(
     await line
-      .getByRole("group", { name: "Line", exact: true })
+      .getByRole("group", { name: lineCopy.section, exact: true })
       .getByRole("button")
       .evaluateAll((buttons) => buttons.map((button) => button.getAttribute("title"))),
   ).toEqual(["None", "Color", "Gradient", "Pattern"])

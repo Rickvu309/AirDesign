@@ -1,3 +1,4 @@
+import { connectionCopy } from "../../apps/web/src/copy/connection-copy"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { openDeck, unfold } from "./design-panel"
 
@@ -21,10 +22,10 @@ async function connectorPanel(page: Page): Promise<Locator> {
   if (line === null) throw new Error("no connector")
   await page.mouse.click(line.x + line.width / 2, line.y + line.height / 2)
   await expect(page.locator("[data-design-element]")).toHaveAttribute("data-design-element", /\.26$/)
-  await unfold(page.locator("[data-design-element]"), "Connector")
+  await unfold(page.locator("[data-design-element]"), connectionCopy.section)
   return page
     .locator("[data-design-element] section")
-    .filter({ has: page.getByRole("heading", { name: "Connector", exact: true }) })
+    .filter({ has: page.getByRole("heading", { name: connectionCopy.section, exact: true }) })
 }
 
 test("a site control names each site in plain words, moves the end to the one picked, and Undo puts it back", async ({

@@ -1,3 +1,4 @@
+import { pictureCopy } from "../../bin/product-copy.mjs"
 import path from "node:path"
 import { expect } from "@playwright/test"
 import { openDeck } from "../open-deck.mjs"
@@ -13,10 +14,10 @@ async function drive(kit) {
     .click({ position: { x: 8, y: 8 } })
   const panel = kit.page.locator("[data-design-element]")
   await expect(panel).toBeVisible()
-  await unfold(panel, "Picture")
+  await unfold(panel, pictureCopy.section)
   const picture = panel
     .locator("section")
-    .filter({ has: kit.page.getByRole("heading", { name: "Picture", exact: true }) })
+    .filter({ has: kit.page.getByRole("heading", { name: pictureCopy.section, exact: true }) })
   if ((await picture.count()) === 0) return
   await picture.getByRole("group", { name: "Recolor", exact: true }).getByRole("button", { name: "Grayscale" }).click()
   await expect(kit.page.getByRole("button", { name: "Undo picture", exact: true })).toBeVisible()

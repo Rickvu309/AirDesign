@@ -73,14 +73,11 @@ export default async function drive(kit) {
       note(`Saved and exported ${kind} ${name}: ${file}`)
     }
   }
-  const resize = page.getByRole("separator", { name: "Resize panel" })
-  for (const [key, width] of [
-    ["Home", 220],
-    ["End", 440],
-    ["Home", 220],
-  ]) {
+  const resize = page.getByRole("separator", { name: designCopy.resizePanel })
+  for (const width of [220, 440, 240]) {
     await resize.focus()
-    await resize.press(key)
+    await resize.press("Home")
+    for (let current = 220; current < width; current += 10) await resize.press("ArrowLeft")
     await expect(page.locator("[data-editor-panel]")).toHaveJSProperty("clientWidth", width - 1)
     await capture(`panel-${width}`)
   }

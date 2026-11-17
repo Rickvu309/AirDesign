@@ -1,3 +1,4 @@
+import { pictureCopy } from "../../apps/web/src/copy/picture-copy"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { openDeck, unfold } from "./design-panel"
 
@@ -19,8 +20,8 @@ async function iconPanel(page: Page): Promise<Locator> {
   await picture(page).click()
   const panel = page.locator("[data-design-element]")
   await expect(panel).toHaveAttribute("data-design-element", /\.5$/)
-  await unfold(panel, "Picture")
-  return panel.locator("section").filter({ has: page.getByRole("heading", { name: "Picture", exact: true }) })
+  await unfold(panel, pictureCopy.section)
+  return panel.locator("section").filter({ has: page.getByRole("heading", { name: pictureCopy.section, exact: true }) })
 }
 
 test("an asset control finds an icon by a word, swaps the picture's icon, and Undo puts the first one back", async ({
