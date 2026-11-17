@@ -9,8 +9,8 @@ export function boxStorable(parts: ReadonlyMap<string, Uint8Array>, shape: ReadS
   if (!movableKinds.has(shape.kind) || shape.locked || shape.grouped) return false
   const { part } = shape
   try {
-    const moved = applyRoute(parts, { name: "move", part, shape: shape.shape, x: 0, y: 0 })
-    applyRoute(moved, { name: "resize", part, shape: shape.shape, cx: 0, cy: 0 })
+    applyRoute(parts, { name: "move", part, shape: shape.shape, x: 0, y: 0 })
+    applyRoute(parts, { name: "resize", part, shape: shape.shape, cx: 0, cy: 0 })
     return true
   } catch {
     return false

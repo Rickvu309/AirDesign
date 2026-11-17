@@ -1,5 +1,5 @@
 import { decide, elementId, format, openRegister, type Command, type Register } from "@airdesign/document"
-import { readShapes } from "@airdesign/pptx"
+import { markupBytesRead, readShapes } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { boxStorable, landedBox, paintedBox } from "./element-move"
 import { onSlide, xml } from "./slide-fixtures"
@@ -25,6 +25,9 @@ const sp = (id: string, properties = `<p:spPr>${xfrm}</p:spPr>`) =>
 it.each([
   ["a shape with its own box", sp("2")],
   ["a placeholder that takes its box from the layout", sp("2", "<p:spPr/>")],
+  ["an empty transform", sp("2", "<p:spPr><a:xfrm/></p:spPr>")],
+  ["a transform with only an offset", sp("2", '<p:spPr><a:xfrm><a:off x="10" y="20"/></a:xfrm></p:spPr>')],
+  ["a transform with only an extent", sp("2", '<p:spPr><a:xfrm><a:ext cx="30" cy="40"/></a:xfrm></p:spPr>')],
   [
     "a picture",
     `<p:pic><p:nvPicPr><p:cNvPr id="2" name="p"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr><p:blipFill/><p:spPr>${xfrm}</p:spPr></p:pic>`,
@@ -57,6 +60,18 @@ it.each([
   ],
 ])("does not let %s keep a box", (_name, shapes) => {
   expect(storable(shapes, "2")).toBe(false)
+})
+
+it("probes every box on the original slide within one XML parse", () => {
+  const parts = slide(Array.from({ length: 20 }, (_, index) => sp(String(index + 2))).join(""))
+  const shapes = readShapes(parts)
+  const fresh = new Map([...parts].map(([name, bytes]) => [name, bytes.slice()]))
+  const before = markupBytesRead()
+  expect(shapes.map((shape) => boxStorable(fresh, shape))).toEqual(shapes.map(() => true))
+  const bytes = fresh.get("ppt/slides/slide1.xml")
+  if (bytes === undefined) throw new Error("missing slide")
+  expect(markupBytesRead() - before).toBeLessThanOrEqual(bytes.length)
+  expect(fresh).toEqual(parts)
 })
 
 const node = elementId("256.2")
