@@ -5,7 +5,7 @@ import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { openDeck, pickColor, settled, shownColor } from "./design-panel"
+import { openDeck, pickColor, settled, shownColor, unfold } from "./design-panel"
 import { fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
 
 const styleExport = "exported-opacity.pptx"
@@ -49,6 +49,7 @@ async function pick(page: Page, id: string, connector = false): Promise<Locator>
     await page.mouse.click(box.x + box.width / 2, box.y)
   } else await shape.click({ position: { x: 4, y: 4 } })
   await expect(panel).toHaveAttribute("data-design-element", new RegExp(`\\.${id}$`))
+  if (connector) await unfold(panel, opacityCopy.section)
   const field = panel.getByRole("textbox", { name: opacityCopy.label, exact: true })
   await expect(field).toBeVisible()
   return field

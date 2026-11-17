@@ -27,7 +27,7 @@ export function ToggleControl({ control, onChange }: ControlProps) {
         control.label
       ) : (
         <>
-          <Icon size={14} strokeWidth={1.5} aria-hidden />
+          <Icon size={14} className="size-3.5" strokeWidth={1.5} aria-hidden />
           <span className="sr-only">{control.label}</span>
         </>
       )}
