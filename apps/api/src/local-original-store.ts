@@ -33,6 +33,14 @@ export class LocalOriginalStore implements OriginalStore {
     return { url, headers, expires: new Date(until).toISOString() }
   }
 
+  async read(key: string): Promise<Uint8Array | undefined> {
+    return this.objects.get(key)?.slice()
+  }
+
+  async write(key: string, bytes: Uint8Array): Promise<void> {
+    if (!this.objects.has(key)) this.objects.set(key, bytes.slice())
+  }
+
   async upload(key: string, bytes: number): Promise<OriginalUpload> {
     return this.signed(key, "PUT", originalHeaders(bytes))
   }

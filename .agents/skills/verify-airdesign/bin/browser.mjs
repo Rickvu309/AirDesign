@@ -38,6 +38,7 @@ export async function openBrowser(
 
 export async function settle(page) {
   await page.emulateMedia({ reducedMotion: "reduce" })
+  await page.locator("[data-fonts-pending]").first().waitFor({ state: "detached" })
   await page.evaluate(async () => {
     await document.fonts.ready
     await Promise.all([...document.images].map((image) => image.decode().catch(() => undefined)))

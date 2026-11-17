@@ -1,5 +1,6 @@
 import {
   accountPaths,
+  fontRoutes,
   airaPaths,
   countryHeader,
   deckPaths,
@@ -17,6 +18,7 @@ type Env = {
 }
 
 const apiPaths = [
+  ...Object.values(fontRoutes).map((route) => route.path),
   ...accountPaths,
   ...signInPaths,
   ...signOutPaths,

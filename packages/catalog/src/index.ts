@@ -90,3 +90,5 @@ export {
   type WireDelete,
   type WireSlideChange,
 } from "./slide-change-wire.js"
+
+export { fontRoutes } from "@airdesign/fonts"

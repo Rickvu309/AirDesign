@@ -18,9 +18,11 @@ for (const name of ["fonts-crosextra-carlito", "fonts-crosextra-caladea", "fonts
   if (pinned === undefined || !/^[0-9a-f]{64}$/.test(pinned.sha256))
     fail(`reference-fonts.json does not pin ${name} to a sha256`)
 }
-if (!pins.aliases.some((alias) => alias.family === "Arial Narrow" && alias.prefer === "Liberation Sans Narrow"))
+const twins = JSON.parse(fs.readFileSync(new URL("../packages/fonts/src/twins.json", import.meta.url), "utf8"))
+const catalog = JSON.parse(fs.readFileSync(new URL("../packages/fonts/src/catalog.json", import.meta.url), "utf8"))
+if (!twins.some((alias) => alias.family === "Arial Narrow" && alias.prefer === "Liberation Sans Narrow"))
   fail("reference-fonts.json does not draw Arial Narrow in Liberation Sans Narrow, its metric twin")
-if (JSON.stringify(renderSettings.fonts) !== JSON.stringify(pins))
+if (JSON.stringify(renderSettings.fonts) !== JSON.stringify({ ...pins, aliases: twins, revision: catalog.revision }))
   fail(
     "the render cache key does not carry the pinned reference fonts, so renders made with other fonts would be reused",
   )

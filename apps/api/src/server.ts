@@ -1,3 +1,4 @@
+import { fontRouteList } from "./font-route.js"
 import { randomUUID } from "node:crypto"
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http"
 import { bytesOf, limits } from "@airdesign/document"
@@ -483,6 +484,7 @@ export const deckAnswers: DeckAnswers = {
 }
 
 export const routes: readonly Route[] = [
+  ...fontRouteList,
   { method: "GET", path: mcpRoutes.resourceMetadata.path, serve: resourceMetadataRoute },
   { method: "GET", path: mcpRoutes.authorizationMetadata.path, serve: authorizationMetadataRoute },
   { method: "GET", path: "/health", serve: healthRoute },

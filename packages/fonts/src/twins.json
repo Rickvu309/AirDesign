@@ -1,0 +1,9 @@
+[
+  { "family": "Calibri", "prefer": "Carlito", "license": "OFL" },
+  { "family": "Calibri Light", "prefer": "Carlito", "license": "OFL" },
+  { "family": "Cambria", "prefer": "Caladea", "license": "OFL" },
+  { "family": "Arial", "prefer": "Arimo", "license": "OFL" },
+  { "family": "Helvetica", "prefer": "Arimo", "license": "OFL" },
+  { "family": "Arial Narrow", "prefer": "Liberation Sans Narrow", "license": "GPL-2.0-with-font-exception" },
+  { "family": "Times New Roman", "prefer": "Tinos", "license": "OFL" }
+]

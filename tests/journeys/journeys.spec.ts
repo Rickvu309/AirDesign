@@ -53,6 +53,7 @@ for (const name of [
   "opacity",
   "table-fill",
   "text-type",
+  "dynamic-fonts",
   "picture-icon",
   "theme",
   "commit-once",

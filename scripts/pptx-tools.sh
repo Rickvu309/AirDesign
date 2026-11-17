@@ -52,7 +52,7 @@ reference_fonts() {
   config="$({
     printf '%s\n' '<?xml version="1.0"?>' '<!DOCTYPE fontconfig SYSTEM "fonts.dtd">'
     printf '%s' "<fontconfig><include>${base}</include><dir>${fonts}/usr/share/fonts</dir>"
-    node -e 'for (const a of require(process.argv[1]).aliases) process.stdout.write(`<alias binding="same"><family>${a.family}</family><prefer><family>${a.prefer}</family></prefer></alias>`)' "$here/reference-fonts.json"
+    node -e 'for (const a of require(process.argv[1])) process.stdout.write(`<alias binding="same"><family>${a.family}</family><prefer><family>${a.prefer}</family></prefer></alias>`)' "$here/../packages/fonts/src/twins.json"
     printf '%s\n' '</fontconfig>'
   })"
   local file

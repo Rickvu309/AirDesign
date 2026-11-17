@@ -20,7 +20,8 @@
   "dependencies": {
     "@airdesign/document": "workspace:*",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "@airdesign/fonts": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",

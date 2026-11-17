@@ -27,6 +27,8 @@ beforeAll(async () => {
       mails.push(mail)
     },
     originals: {
+      read: async () => undefined,
+      write: async () => {},
       upload: async () => ({ ...signed, headers: { "content-length": "5" } }),
       download: async () => signed,
       size: async () => 5,
