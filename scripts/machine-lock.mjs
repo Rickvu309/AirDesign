@@ -4,6 +4,7 @@ import os from "node:os"
 import path from "node:path"
 
 const held = "AIRDESIGN_MACHINE_LOCK"
+const slotsSetting = "AIRDESIGN_CHECK_SLOTS"
 const onCi = (env) => env.CI === "true" || env.CI === "1"
 
 export const machineLockFolder = path.join(os.homedir(), ".cache", "airdesign")
@@ -93,6 +94,12 @@ export const recentRunSeconds = (log, count = 20, lane = "full") => {
   }
 }
 
+export const checkSlots = (env = process.env, cores = os.availableParallelism(), memory = os.totalmem()) => {
+  const asked = Number(env[slotsSetting])
+  if (Number.isInteger(asked) && asked > 0) return asked
+  return Math.max(1, Math.min(Math.floor(cores / 16), Math.floor(memory / 2 ** 30 / 12)))
+}
+
 export const waitLine = (place, typical, lane = "full") => {
   const line = `${lanes[lane].holder} This one is number ${place} in line.`
   if (typical === undefined) return line
@@ -113,8 +120,11 @@ export const takeMachineLock = async ({
   date = () => new Date(),
 } = {}) => {
   const free = () => {}
-  const file = path.join(folder, lanes[lane].file)
-  if (onCi(env) || env[held] === file || env[held] === path.join(folder, lanes.full.file)) return free
+  const first = path.join(folder, lanes[lane].file)
+  const holds = (name) => env[held] === path.join(folder, name) || env[held]?.startsWith(`${path.join(folder, name)}.`)
+  if (onCi(env) || holds(lanes[lane].file) || holds(lanes.full.file)) return free
+  const slots = lane === "full" ? checkSlots(env) : 1
+  const files = Array.from({ length: slots }, (_, slot) => (slot === 0 ? first : `${first}.${slot}`))
   if (spawnSync("flock", ["--version"]).status !== 0) return free
   const queue = path.join(folder, lanes[lane].queue)
   fs.mkdirSync(queue, { recursive: true })
@@ -126,13 +136,21 @@ export const takeMachineLock = async ({
   process.once("exit", leave)
   const log = path.join(folder, queueLogName)
   let holder
+  let file
   let told
   for (;;) {
     const ahead = liveTickets(queue).indexOf(path.basename(ticket))
-    if (ahead === 0) holder = await hold(file)
+    for (const slot of ahead < slots ? files : []) {
+      holder = await hold(slot)
+      if (holder) {
+        file = slot
+        break
+      }
+    }
     if (holder) break
-    if (told !== ahead + 1) say(waitLine(ahead + 1, recentRunSeconds(log, 20, lane), lane))
-    told = ahead + 1
+    const place = Math.max(1, ahead - slots + 2)
+    if (told !== place) say(waitLine(place, recentRunSeconds(log, 20, lane), lane))
+    told = place
     await pause(poll)
   }
   leave()
