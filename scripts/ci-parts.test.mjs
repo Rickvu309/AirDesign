@@ -68,6 +68,17 @@ same(
   [...scanned, ...sharded].toSorted(),
   browserTests([]).toSorted(),
 )
+const thinDeckShards = [1, 2].map((shard) => browserTests(["thin-deck.spec.ts", `--shard=${shard}/2`]))
+same(
+  "independent thin-deck tests can cross a shard boundary",
+  thinDeckShards.every((tests) => tests.length > 0),
+  true,
+)
+same(
+  "splitting thin-deck keeps every test exactly once",
+  thinDeckShards.flat().toSorted(),
+  browserTests(["thin-deck.spec.ts"]).toSorted(),
+)
 same("one failing part does not stop the others", check.strategy["fail-fast"], false)
 same("ci waits for every part, corpus and journeys", workflow.jobs.ci.needs, ["check", "corpus", "journeys"])
 
