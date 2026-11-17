@@ -6,7 +6,6 @@ import { fillWords } from "@/copy/fill-copy"
 import { lineWords } from "@/copy/line-copy"
 import { geometryWords } from "@/copy/geometry-copy"
 import { pictureWords } from "@/copy/picture-copy"
-import { tableWords } from "@/copy/table-copy"
 
 export const optionCopy: Readonly<Record<string, string>> = {
   left: "Left",
@@ -19,7 +18,6 @@ export const optionCopy: Readonly<Record<string, string>> = {
   ...effectsWords,
   ...bodyWords,
   ...pictureWords,
-  ...tableWords,
   ...connectionWords,
 }
 
