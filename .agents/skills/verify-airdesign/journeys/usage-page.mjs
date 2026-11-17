@@ -1,4 +1,7 @@
+import { createRequire } from "node:module"
 import { expect } from "@playwright/test"
+
+const { settingsCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/settings-copy.ts")
 
 export default async function drive({ page, signIn, post, capture, note, airaRoutes }) {
   const { cookie, email } = await signIn()
@@ -19,7 +22,7 @@ export default async function drive({ page, signIn, post, capture, note, airaRou
   await capture("usage-loaded")
   await tabs.getByRole("link", { name: "Agents" }).click()
   await expect(page).toHaveURL(/\/settings\/agents$/)
-  await expect(page.getByText("Not connected")).toBeVisible()
+  await expect(page.getByText(settingsCopy.noAgents, { exact: true })).toBeVisible()
   await page.goto("/")
   await page.getByRole("link", { name: "Settings" }).click()
   await expect(page).toHaveURL(/\/settings\/usage$/)
