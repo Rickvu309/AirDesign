@@ -1,19 +1,21 @@
 import { deckRoutes } from "@airdesign/catalog"
 import { getPart, hex, owned, putPart } from "./part.js"
 import { post } from "./remote.js"
-import { readSlot, writeSlot } from "./store.js"
+import { changeSlot, readSlot } from "./store.js"
 
 const queueKey = (deck: string) => `${deck}\u0003media`
 const heldKey = (deck: string) => `${deck}\u0003pictures`
 
-async function hashes(key: string): Promise<readonly string[]> {
-  const stored = await readSlot(key)
+function hashList(stored: unknown): readonly string[] {
   return Array.isArray(stored) ? stored.filter((item): item is string => typeof item === "string") : []
 }
 
+async function hashes(key: string): Promise<readonly string[]> {
+  return hashList(await readSlot(key))
+}
+
 async function listed(key: string, sha256: string): Promise<void> {
-  const known = await hashes(key)
-  if (!known.includes(sha256)) await writeSlot(key, [...known, sha256])
+  await changeSlot(key, (stored) => [...new Set([...hashList(stored), sha256])])
 }
 
 const queued = (deck: string) => hashes(queueKey(deck))
@@ -40,11 +42,10 @@ async function sendMedia(deck: string, sha256: string): Promise<boolean> {
 
 export async function flushMedia(deck: string): Promise<{ readonly ok: boolean }> {
   try {
-    let waiting = await queued(deck)
+    const waiting = await queued(deck)
     for (const sha256 of waiting) {
       if (!(await sendMedia(deck, sha256))) return { ok: false }
-      waiting = waiting.filter((each) => each !== sha256)
-      await writeSlot(queueKey(deck), waiting)
+      await changeSlot(queueKey(deck), (stored) => hashList(stored).filter((each) => each !== sha256))
     }
     return { ok: true }
   } catch {
