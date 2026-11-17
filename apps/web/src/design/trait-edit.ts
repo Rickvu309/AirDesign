@@ -157,6 +157,8 @@ function planned(deck: ChangingDeck, register: Register, change: SetChange): rea
     if (view === undefined) return null
     if (values === null) {
       const before = landedBefore(opened, node, row.patch)
+      const text = row.patch.text?.value
+      if (text !== undefined && typeof text === "object" && !deck.fits(node, text.set)) return null
       rows.push({ node, row, step: { node, before, after: row.patch }, name: rowName(node, row) })
       continue
     }
@@ -182,11 +184,13 @@ async function stored(deck: ChangingDeck, row: Planned): Promise<boolean> {
   return true
 }
 
-export async function applyChange(deck: ChangingDeck, change: SetChange): Promise<boolean> {
+export async function applyChange(deck: ChangingDeck, change: SetChange | readonly SetChange[]): Promise<boolean> {
   const release = deck.hold()
   try {
     const opened = await connect(memoryRemote()).openDeck(deck.id)
-    const rows = opened.ok ? planned(deck, opened.register, change) : null
+    const changes = Array.isArray(change) ? change : [change]
+    const plans = opened.ok ? changes.map((each) => planned(deck, opened.register, each)) : [null]
+    const rows = plans.some((plan) => plan === null) ? null : plans.flatMap((plan) => plan ?? [])
     if (rows === null || rows.length === 0) return false
     const steps: NodeStep[] = []
     for (const row of rows) {

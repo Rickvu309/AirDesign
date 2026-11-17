@@ -216,9 +216,11 @@ export function ElementDesign({
   palette,
   onChange,
   picture = null,
+  children = null,
 }: {
   model: PanelModel
   picture?: ReactNode
+  children?: ReactNode
   palette: Palette
   onChange: (control: PanelControl, value: unknown) => void
 }) {
@@ -281,7 +283,7 @@ export function ElementDesign({
           <DesignSection
             key={section.trait}
             title={section.label}
-            last={at === last}
+            last={at === last && children === null}
             action={reset === undefined ? null : <SectionReset control={reset} onChange={onChange} />}
             fold={
               kind === null
@@ -296,6 +298,7 @@ export function ElementDesign({
           </DesignSection>
         )
       })}
+      {children}
     </div>
   )
 }
