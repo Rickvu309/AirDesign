@@ -14,7 +14,11 @@ function panelsOf(kind: Kind): readonly PanelKind[] {
 it("places every trait each element kind takes, and its Opacity, exactly once in each of its panels", () => {
   for (const kind of panelled) {
     const faded = opacityFields({ kind, text: true, grouped: false, animated: false }).length > 0
-    const wanted = [...kindTraits[kind], ...(faded ? ["opacity"] : [])].toSorted()
+    const wanted = [
+      ...kindTraits[kind],
+      ...(faded ? ["opacity"] : []),
+      ...(kind === "kept" ? [] : ["alignment"]),
+    ].toSorted()
     for (const panel of panelsOf(kind)) {
       const placed = (panelOrder[panel] ?? []).map((place) => place.section)
       expect({ panel, placed: placed.toSorted() }).toEqual({ panel, placed: wanted })
@@ -22,8 +26,8 @@ it("places every trait each element kind takes, and its Opacity, exactly once in
   }
 })
 
-it("puts Text first for a text box", () => {
-  expect(panelOrder.text[0]).toEqual({ section: "text", open: true })
+it("puts alignment first for a text box", () => {
+  expect(panelOrder.text[0]).toEqual({ section: "alignment", open: true })
 })
 
 const textBox: ScopedElement = {
@@ -49,10 +53,11 @@ function sections(view: ScopedElement, fields: Readonly<Record<string, unknown>>
 it("orders a text box Text first, with its rare sections and its shape type folded", () => {
   expect(panelKind(textBox, shown({}))).toBe("text")
   expect(sections(textBox, { "fill.value": { none: true } })).toEqual([
+    ["alignment", true],
     ["text", true],
-    ["box", true],
     ["fill", true],
     ["opacity", true],
+    ["box", false],
     ["line", false],
     ["effects", false],
     ["body", false],
@@ -66,12 +71,13 @@ it("orders a drawn shape by its fill, line and shape type", () => {
   const fields = { "geometry.shape": { preset: "ellipse", adjust: {} } }
   expect(panelKind(oval, shown(fields))).toBe("shape")
   expect(sections(oval, fields)).toEqual([
+    ["alignment", true],
     ["fill", true],
-    ["line", true],
-    ["geometry", true],
-    ["box", true],
     ["opacity", true],
+    ["geometry", true],
+    ["line", true],
     ["effects", false],
+    ["box", false],
     ["identity", false],
   ])
   const labelled = { ...textBox, value: "Go" }
@@ -82,7 +88,16 @@ it("orders a drawn shape by its fill, line and shape type", () => {
 it("offers a picture no shape type while it is a plain rectangle", () => {
   const picture = { ...textBox, facts: { ...textBox.facts, kind: "picture" as const, text: false }, value: null }
   const plain = sections(picture, { "geometry.shape": { preset: "rect", adjust: {} } })
-  expect(plain.map(([trait]) => trait)).toEqual(["image", "crop", "box", "opacity", "line", "effects", "identity"])
+  expect(plain.map(([trait]) => trait)).toEqual([
+    "alignment",
+    "image",
+    "crop",
+    "opacity",
+    "box",
+    "line",
+    "effects",
+    "identity",
+  ])
   const oval = sections(picture, { "geometry.shape": { preset: "ellipse", adjust: {} } })
   expect(oval).toContainEqual(["geometry", false])
 })
@@ -90,9 +105,9 @@ it("offers a picture no shape type while it is a plain rectangle", () => {
 it("leads a connector with its line and the shapes it joins", () => {
   const connector = { ...textBox, facts: { ...textBox.facts, kind: "connector" as const, text: false }, value: null }
   expect(sections(connector, {}).slice(0, 3)).toEqual([
+    ["alignment", true],
     ["line", true],
     ["connection", true],
-    ["box", true],
   ])
 })
 

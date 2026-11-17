@@ -154,9 +154,8 @@ function panelControl(register: Register, at: At, trait: TraitName, field: strin
   const view = registerScope(register).view(at.node)
   const sections = view === undefined ? undefined : panelOf(view, { reads: {}, moves: true }).sections
   return sections
-    ?.find((section) => section.trait === trait)
-    ?.strips.flat()
-    .find((each) => each.field === field)
+    ?.flatMap((section) => section.strips.flat())
+    .find((each) => each.trait === trait && each.field === field)
 }
 
 export function panelRegister(

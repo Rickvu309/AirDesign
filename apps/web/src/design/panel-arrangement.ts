@@ -49,6 +49,7 @@ export type ControlLook = {
 type Placed = {
   readonly field: string
   readonly name: NameLook
+  readonly control?: "canvas"
   readonly kind?: ControlKind
   readonly options?: Readonly<Record<string, LucideIcon>>
   readonly form?: "segments" | "list"
@@ -69,7 +70,7 @@ const letter = (field: string, text: string): Placed => placed(field, { show: "l
 
 export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   text: [
-    [placed("value", hidden)],
+    [placed("value", hidden, { control: "canvas" })],
     [placed("font", hidden)],
     [icon("size", Type), icon("lineSpacing", ArrowDownUp)],
     [icon("bold", Bold), icon("italic", Italic), icon("underline", Underline)],
@@ -122,6 +123,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [placed("tail.width", above, { form: "list" })],
     [placed("tail.length", above, { form: "list" })],
   ],
+  alignment: [[placed("align", hidden), placed("distribute", hidden)]],
   opacity: [[placed("opacity", { show: "beside" })]],
   identity: [[placed("name", inside)], [placed("alt", inside)], [placed("hidden")]],
   geometry: [
@@ -211,6 +213,10 @@ export function resolveControl(control: Omit<PanelControl, "kind" | "look">): Pa
       form: place?.form ?? choiceLayout(control.field, choices),
     },
   }
+}
+
+export function canvasControl(trait: SectionName, field: string): boolean {
+  return placement(trait, field)?.control === "canvas"
 }
 
 export function arrange(trait: SectionName, controls: readonly PanelControl[]): readonly (readonly PanelControl[])[] {

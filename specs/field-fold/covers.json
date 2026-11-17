@@ -40,8 +40,8 @@
     {
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
-      "digest": "7ec08a11f3be",
-      "blob": "bc2fe8eead86452a2a9c6a14f460bcd5a7d9b205"
+      "digest": "88b26f6c1d41",
+      "blob": "4777751fc09d28b461e92d653701a7b46fc4dbb2"
     },
     {
       "file": "apps/web/src/design/shown-alpha.ts",

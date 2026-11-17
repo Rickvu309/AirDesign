@@ -47,7 +47,7 @@ export function DesignSection({
   fold = null,
   children,
 }: {
-  title: string
+  title: string | null
   id?: string
   last?: boolean
   action?: ReactNode
@@ -55,17 +55,18 @@ export function DesignSection({
   children: ReactNode
 }) {
   const edge = last ? null : "border-b border-line"
-  if (fold !== null)
+  if (fold !== null && title !== null)
     return (
       <FoldedSection title={title} edge={edge} action={action} fold={fold}>
         {children}
       </FoldedSection>
     )
-  const heading = (
-    <h2 id={id} className="text-[length:var(--type-dense)] font-semibold text-foreground">
-      {title}
-    </h2>
-  )
+  const heading =
+    title === null ? null : (
+      <h2 id={id} className="text-[length:var(--type-dense)] font-semibold text-foreground">
+        {title}
+      </h2>
+    )
   return (
     <section className={cn("flex flex-col gap-2.5 px-3 py-3", edge)}>
       {action === null ? (
@@ -184,7 +185,11 @@ export function SectionStrips({
     <div
       key={strip.map((control) => control.field).join(" ")}
       className="grid items-end gap-2"
-      style={{ gridTemplateColumns: `repeat(${strip.length}, minmax(0, 1fr))` }}
+      style={{
+        gridTemplateColumns: strip.every((control) => control.kind === "action")
+          ? "3fr 1fr"
+          : `repeat(${strip.length}, minmax(0, 1fr))`,
+      }}
     >
       {strip.map((control) => (
         <ControlView
@@ -223,11 +228,20 @@ export function ElementDesign({
       data-keeps-selection
       tabIndex={-1}
     >
-      <DesignHead>{panelTitle(model)}</DesignHead>
+      {model.sections.every((section) => section.label !== null) ? <DesignHead>{panelTitle(model)}</DesignHead> : null}
       {model.sections.length === 0 ? (
         <p className="px-4 py-4 text-[length:var(--type-dense)] text-quiet">{designCopy.nothing}</p>
       ) : null}
       {model.sections.map((section, at) => {
+        if (section.label === null)
+          return (
+            <div key={section.trait}>
+              <DesignSection title={null}>
+                <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
+              </DesignSection>
+              <DesignHead>{panelTitle(model)}</DesignHead>
+            </div>
+          )
         const [strip, ...more] = section.strips
         const [lone, ...beside] = strip ?? []
         if (lone !== undefined && more.length === 0 && beside.length === 0 && lone.look.name.show === "beside")

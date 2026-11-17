@@ -1,3 +1,4 @@
+import { boxCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { fixtureDeck } from "../fixture-deck.mjs"
 import { unfold } from "../unfold.mjs"
@@ -11,6 +12,7 @@ async function drive(kit) {
   const panel = kit.page.locator("[data-design-element]")
   await expect(panel).toBeVisible()
   await unfold(panel, "Shape type")
+  await unfold(panel, boxCopy.section)
   const rotation = panel.getByRole("textbox", { name: "Rotation", exact: true })
   if ((await rotation.count()) === 0) return
   await rotation.fill("30")

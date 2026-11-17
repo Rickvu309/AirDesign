@@ -21,10 +21,11 @@ it("shows a picture's icon, recolour and crop first, and its name and alt text l
     },
   })
   expect(panel.sections.map((section) => section.trait)).toEqual([
+    "alignment",
     "image",
     "crop",
-    "box",
     "opacity",
+    "box",
     "line",
     "effects",
     "identity",
