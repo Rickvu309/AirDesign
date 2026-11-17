@@ -1,6 +1,6 @@
 import type { TextList, ParagraphAlign, ParagraphSpacing, Color, TextFormat } from "@airdesign/document"
 import type { CanvasBullet } from "./text-record.js"
-import { endsInBreak, type RunPaint, type TextLook } from "./text-look.js"
+import { endsInBreak, listNumbers, type RunPaint, type TextLook } from "./text-look.js"
 
 type ShownAlign = ParagraphAlign | "justify"
 
@@ -65,15 +65,14 @@ export function SheetText(props: {
   readonly look: TextLook
 }) {
   const { look, text } = props
-  let number: number | null = null
+  const nextNumber = listNumbers(look)
   return (
     <div data-text-body="" style={look.body}>
       {text.paragraphs.map((paragraph, index) => {
         const filled = paragraph.runs.some((run) => run.text !== "")
         const align = placed(paragraph.align)
         const list = paragraph.list
-        const numbered = list === "numbers" || (list === undefined && look.fileNumber(paragraph.from) !== null)
-        number = numbered ? (number === null ? (look.fileNumber(paragraph.from) ?? 1) : number + 1) : null
+        const number = nextNumber(paragraph.from, list)
         const overlay = {
           ...(number === null ? {} : { number }),
           ...(align === undefined ? {} : { align }),

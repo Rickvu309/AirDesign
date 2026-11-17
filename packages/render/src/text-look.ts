@@ -71,7 +71,7 @@ export type TextLook = {
   fileColor(paragraph: number, from: number): Color | null
   fileAlign(paragraph: number): ParagraphAlign | null
   fileList(paragraph: number): TextList
-  fileNumber(paragraph: number): number | null
+  fileNumber(paragraph: number): { readonly level: number; readonly scheme: string; readonly start: number } | null
   swatches(): readonly CanvasThemeColor[]
 }
 
@@ -213,7 +213,6 @@ export function ensureTextRule(doc: Document): void {
 function applyStyle(node: HTMLElement, style: Look): void {
   node.style.removeProperty("letter-spacing")
   node.style.removeProperty("counter-increment")
-  node.style.removeProperty("letter-spacing")
   for (const name of paintProps) node.style.removeProperty(name)
   const plain: Record<string, string | number> = {}
   for (const [key, value] of Object.entries(style)) {
@@ -315,16 +314,15 @@ function paragraphOverlay(style: Look, paragraph: CanvasParagraph, overlay: Para
   if (overlay?.list === "none") return { ...align, "--bullet": "none" }
   if (
     overlay?.list === "numbers" ||
-    (overlay?.list === undefined &&
-      paragraph.bullet != null &&
-      "autoNumber" in paragraph.bullet &&
-      paragraph.bullet.autoNumber === "arabicPeriod")
+    (overlay?.list === undefined && paragraph.bullet != null && "autoNumber" in paragraph.bullet)
   )
     return {
       ...align,
       ...((paragraph.indent ?? 0) < 0 ? {} : { "--bullet-gap": "0.35em" }),
       "--bullet": cssQuote(
-        `${overlay?.number ?? (paragraph.bullet != null && "number" in paragraph.bullet ? paragraph.bullet.number : 1)}.`,
+        overlay?.list === "numbers" || paragraph.bullet == null || !("autoNumber" in paragraph.bullet)
+          ? `${overlay?.number ?? 1}.`
+          : bulletLabel({ ...paragraph.bullet, number: overlay?.number ?? paragraph.bullet.number }),
       ),
     }
   if (overlay?.list === "bullets") return { ...align, "--bullet": cssQuote("•") }
@@ -430,8 +428,11 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
       return bullet == null ? "none" : "char" in bullet ? "bullets" : "numbers"
     },
     fileNumber(from) {
-      const bullet = paragraphs.get(from)?.bullet
-      return bullet != null && "autoNumber" in bullet && bullet.autoNumber === "arabicPeriod" ? bullet.number : null
+      const paragraph = paragraphs.get(from)
+      const bullet = paragraph?.bullet
+      return bullet != null && "autoNumber" in bullet
+        ? { level: paragraph?.level ?? 0, scheme: bullet.autoNumber, start: bullet.start ?? 1 }
+        : null
     },
     swatches: () => colors,
   }
@@ -464,15 +465,33 @@ export function endsInBreak(text: string): boolean {
   return text.endsWith("\n")
 }
 
+export function listNumbers(look: TextLook): (from: number, list: TextList | undefined) => number | null {
+  const counts = new Map<number, { readonly scheme: string; readonly start: number; readonly number: number }>()
+  return (from, list) => {
+    const native = look.fileNumber(from)
+    const level = native?.level ?? 0
+    for (const known of counts.keys()) if (known > level) counts.delete(known)
+    if (list !== "numbers" && (list !== undefined || native === null)) {
+      counts.delete(level)
+      return null
+    }
+    const scheme = list === "numbers" ? "arabicPeriod" : (native?.scheme ?? "arabicPeriod")
+    const start = list === "numbers" ? 1 : (native?.start ?? 1)
+    const previous = counts.get(level)
+    const number = previous?.scheme === scheme && previous.start === start ? previous.number + 1 : start
+    counts.set(level, { scheme, start, number })
+    return number
+  }
+}
+
 export function restyle(box: HTMLElement, look: TextLook): void {
-  let number: number | null = null
+  const nextNumber = listNumbers(look)
   for (const block of box.children) {
     if (!isElement(block) || block.dataset.paragraph === undefined) continue
     block.toggleAttribute("data-end-break", endsInBreak(block.textContent ?? ""))
     const from = Number(block.dataset.paragraph)
     const paint = paragraphPaint(block.dataset)
-    const numbered = paint.list === "numbers" || (paint.list === undefined && look.fileNumber(from) !== null)
-    number = numbered ? (number === null ? (look.fileNumber(from) ?? 1) : number + 1) : null
+    const number = nextNumber(from, paint.list)
     const overlay = number === null ? paint : { ...paint, number }
     applyStyle(block, look.paragraph(from, isFilled(block), overlay))
     for (const span of runsOf(block)) {
