@@ -1,9 +1,9 @@
 import { copyFile, readFile, rm, writeFile } from "node:fs/promises"
-import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { openRegister } from "../../packages/document/src/index.ts"
 import { stored } from "./device-store"
+import { partsOf, zip } from "./thin-deck-parts.ts"
 import { expectNoSample } from "./no-sample"
 import { exportFromDialog, savedExport } from "./export-dialog.ts"
 
@@ -11,37 +11,6 @@ const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const fixture = join(fixtures, "clean.pptx")
 const exported = join(process.cwd(), "tests/browser/exported-deck.pptx")
 const slide = "ppt/slides/slide1.xml"
-
-type ZipEntry = {
-  readonly filename: string
-  readonly directory: boolean
-  getData(writer: unknown): Promise<Uint8Array>
-}
-
-type ZipLibrary = {
-  readonly ZipWriter: new (writer: unknown) => {
-    add(name: string, reader: unknown): Promise<unknown>
-    close(): Promise<Uint8Array>
-  }
-  readonly ZipReader: new (reader: unknown) => {
-    getEntries(): Promise<ZipEntry[]>
-    close(): Promise<void>
-  }
-  readonly Uint8ArrayReader: new (bytes: Uint8Array) => unknown
-  readonly Uint8ArrayWriter: new () => unknown
-}
-
-const zip = createRequire(join(process.cwd(), "packages/pptx/package.json"))("@zip.js/zip.js") as ZipLibrary
-
-async function partsOf(file: string): Promise<Map<string, Buffer>> {
-  const reader = new zip.ZipReader(new zip.Uint8ArrayReader(new Uint8Array(await readFile(file))))
-  const parts = new Map<string, Buffer>()
-  for (const entry of await reader.getEntries()) {
-    if (!entry.directory) parts.set(entry.filename, Buffer.from(await entry.getData(new zip.Uint8ArrayWriter())))
-  }
-  await reader.close()
-  return parts
-}
 
 async function changedParts(before: string, after: string): Promise<string[]> {
   const original = await partsOf(before)
@@ -86,6 +55,8 @@ async function open(page: Page, file: string): Promise<string> {
   await settled(page)
   return page.url()
 }
+
+test.describe.configure({ mode: "parallel" })
 
 test.use({ viewport: { width: 1470, height: 923 } })
 
