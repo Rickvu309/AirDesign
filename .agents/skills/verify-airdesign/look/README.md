@@ -37,9 +37,11 @@ To add a state, add `states/<name>.mjs` that default-exports the state, named af
 
 ## before-after and annotate
 
-`callouts.mjs` reads the callouts file and refuses a bad one with the block and callout it means. `placement.mjs` is the rule: each numbered circle goes on the side of its target with the most free room, off every target and every other circle, in the frame's 30 px margin when the crop has no room, at the same spot on both sides; the arrow stops 3 px outside the target. `annotate.mjs` lays each block out as HTML with the `packages/theme` tokens and Geist, and the browser screenshots it at 850 CSS px and scale 2, a new image every 6000 px. Narrow crops sit side by side, wide ones stack. `before-after.mjs` drives a state on one stack and measures the selectors. A side runs its own `look/states.mjs` when it has the state, and otherwise this one with that side's own journey files.
+`callouts.mjs` reads the callouts file and refuses a bad one with the block and callout it means. `placement.mjs` is the rule: each numbered circle goes on the side of its target with the most free room, off every target and every other circle, in the frame's 30 px margin when the crop has no room, at the same spot on both sides; the arrow stops 3 px outside the target. `annotate.mjs` lays each block out as HTML with the `packages/theme` tokens and Geist, and the browser screenshots it at 850 CSS px and scale 2, a new image every 6000 px. Narrow crops sit side by side, wide ones stack. Callouts default to the text bounds. `"target": "element"` aims at the element frame for borders and geometry. Both sides use the union of their crop bounds, so a smaller new component cannot crop away the old edge. A warning names any target outside or clipped by that crop. `before-after.mjs` drives a state on one stack and measures the selectors. A side runs its own `look/states.mjs` when it has the state, and otherwise this one with that side's own journey files.
 
 `publish` uploads the PNGs to the `proof` prerelease as unique, content-hashed assets (`pr-<number>-<name>-<sha256:10>.png`). Uploading the same bytes twice is a no-op that returns the same link. The repo is private, so release assets display for signed-in readers of the repo. No workflow triggers on release or asset uploads.
+
+For reference-led changes and feedback about proportions, alignment, names, or button borders, follow [the design review](design-review.md).
 
 ## Detectors
 

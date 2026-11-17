@@ -1,7 +1,7 @@
 export const noteLimit = 90
 
 const blockKeys = new Set(["state", "title", "crop", "click", "callouts"])
-const calloutKeys = new Set(["at", "note"])
+const calloutKeys = new Set(["at", "note", "target"])
 
 const filled = (value) => typeof value === "string" && value.trim() !== ""
 
@@ -58,7 +58,13 @@ export function readCallouts(text, source = "the callouts file") {
       const note = callout.note.trim().replace(/\s+/g, " ")
       if (note.length > noteLimit)
         warnings.push(`${spot} note is ${String(note.length)} characters; keep it under ${String(noteLimit)}`)
-      return { at: readPlace(callout.at, `${spot} "at"`), note }
+      if (callout.target !== undefined && !["text", "element"].includes(callout.target))
+        throw new Error(`${spot} "target" must be "text" or "element"`)
+      return {
+        at: readPlace(callout.at, `${spot} "at"`),
+        note,
+        ...(callout.target === undefined ? {} : { target: callout.target }),
+      }
     })
     return {
       state: block.state.trim(),
