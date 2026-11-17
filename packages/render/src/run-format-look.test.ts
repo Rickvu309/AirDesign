@@ -162,7 +162,7 @@ it("sizes a new list marker from its first run's current size", () => {
 })
 
 function numberedLabels(
-  starts: readonly number[],
+  starts: readonly (number | null)[],
   list?: "numbers",
   levels: readonly number[] = [],
 ): readonly string[] {
@@ -172,7 +172,12 @@ function numberedLabels(
     align: "left" as const,
     runs: [{ from: 0, text: "Item", ...plain }],
     endStyle: plain,
-    bullet: { autoNumber: "arabicPeriod", number: start, start, font: null, color: null, size: null },
+    bullet: {
+      ...(start === null ? { char: "•" } : { autoNumber: "arabicPeriod", number: start, start }),
+      font: null,
+      color: null,
+      size: null,
+    },
   }))
   const box = document.createElement("div")
   const blocks = paragraphs.map((paragraph) => {
@@ -198,4 +203,5 @@ it("starts a chosen decimal list at one, as its native export does", () => {
 it("continues imported numbering and keeps its levels separate", () => {
   expect(numberedLabels([7, 7])).toEqual(['"7."', '"8."'])
   expect(numberedLabels([1, 1, 1], undefined, [0, 1, 0])).toEqual(['"1."', '"1."', '"2."'])
+  expect(numberedLabels([1, null, 1], undefined, [0, 1, 0])).toEqual(['"1."', '"•"', '"2."'])
 })

@@ -73,7 +73,7 @@ export type TextLook = {
   fileColor(paragraph: number, from: number): Color | null
   fileAlign(paragraph: number): ParagraphAlign | null
   fileList(paragraph: number): TextList
-  fileNumber(paragraph: number): ListSource | null
+  fileNumber(paragraph: number): ListSource
   swatches(): readonly CanvasThemeColor[]
 }
 
@@ -461,7 +461,7 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
       const bullet = paragraph?.bullet
       return bullet != null && "autoNumber" in bullet
         ? { level: paragraph?.level ?? 0, scheme: bullet.autoNumber, start: bullet.start ?? bullet.number }
-        : null
+        : { level: paragraph?.level ?? 0, scheme: null }
     },
     swatches: () => colors,
   }
