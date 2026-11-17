@@ -71,7 +71,7 @@ function percent(value: number): number {
 }
 
 function opacityTrack(hex: string): string {
-  return `linear-gradient(to right, transparent, #${hex}), repeating-conic-gradient(#d4d4d4 0% 25%, #fff 0% 50%)`
+  return `linear-gradient(to right, transparent, #${hex}), repeating-conic-gradient(rgb(212 212 212) 0% 25%, white 0% 50%)`
 }
 
 const areaSteps: Readonly<Record<string, readonly [number, number]>> = {
