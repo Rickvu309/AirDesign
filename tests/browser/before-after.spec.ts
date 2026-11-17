@@ -2,6 +2,7 @@ import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect, test, type Page } from "@playwright/test"
 import { fillCopy } from "../../apps/web/src/copy/fill-copy"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 
 type Box = { x: number; y: number; width: number; height: number }
@@ -20,8 +21,9 @@ const load = async <T>(name: string) => (await import(pathToFileURL(join(look, n
 
 test("verification states share copy after a spec loads it through CommonJS", async () => {
   const { states } = await load<{ states: { name: string }[] }>("states.mjs")
-  const copy = await load<{ productCopy: typeof productCopy }>("../bin/product-copy.mjs")
+  const copy = await load<{ productCopy: typeof productCopy; undoCopy: typeof undoCopy }>("../bin/product-copy.mjs")
   expect(copy.productCopy).toBe(productCopy)
+  expect(copy.undoCopy).toBe(undoCopy)
   for (const name of ["blank-deck", "move-resize", "open-edit-save", "sign-in-pages", "slide-background"]) {
     const journey = await load<{ default: unknown }>(`../journeys/${name}.mjs`)
     expect(journey.default).toBeInstanceOf(Function)
