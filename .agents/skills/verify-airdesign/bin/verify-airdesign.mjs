@@ -10,6 +10,7 @@ import { airaArgs, airaChoice, airaFlags } from "./aira-choice.mjs"
 import { serve } from "./serve.mjs"
 import { browserCookies } from "./browser-cookies.mjs"
 import { designContext, openBrowser, settle } from "./browser.mjs"
+import { alive, commandLine, newRun, ownsServe, removeLeftoverRuns } from "./leftover-runs.mjs"
 import { loadLine } from "./load.mjs"
 import { builtSite, fakeOrigins } from "./site.mjs"
 import { usage } from "./usage.mjs"
@@ -51,30 +52,6 @@ function readState(run) {
   return JSON.parse(readFileSync(statePath(run), "utf8"))
 }
 
-function alive(pid) {
-  if (!Number.isInteger(pid) || pid <= 0) return false
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch {
-    return false
-  }
-}
-
-function commandLine(pid) {
-  try {
-    return readFileSync(`/proc/${String(pid)}/cmdline`, "utf8")
-      .split("\0")
-      .join(" ")
-  } catch {
-    return ""
-  }
-}
-
-function ownsServe(state) {
-  return alive(state.pid) && commandLine(state.pid).includes(`serve ${state.run}`)
-}
-
 function ownsPostgres(state) {
   return alive(state.postgres.pid) && commandLine(state.postgres.pid).includes(state.postgres.dataDir)
 }
@@ -92,7 +69,9 @@ function pause(ms) {
 }
 
 async function launch(args) {
-  const run = `${new Date().toISOString().replace(/[:.]/g, "-")}-${randomBytes(3).toString("hex")}`
+  const leftover = await removeLeftoverRuns({ scratchRoot, stop: stopRun })
+  if (leftover.stopped.length + leftover.removed.length > 0) process.stderr.write(`${JSON.stringify({ leftover })}\n`)
+  const run = newRun()
   mkdirSync(evidenceDir(run), { recursive: true })
   mkdirSync(scratchDir(run), { recursive: true })
   if (!args.includes("--no-build")) {
@@ -365,13 +344,9 @@ async function journey(run, given) {
   if (!passed) process.exit(1)
 }
 
-async function stop(run) {
-  if (run === undefined) fail("name the run: verify-airdesign stop <run>")
+async function stopRun(run) {
   const stateFile = statePath(run)
-  if (!existsSync(stateFile)) {
-    process.stdout.write(`${JSON.stringify({ run, stopped: [], note: "no state; nothing of this run is running" })}\n`)
-    return
-  }
+  if (!existsSync(stateFile)) return { run, stopped: [], note: "no state; nothing of this run is running" }
   const state = JSON.parse(readFileSync(stateFile, "utf8"))
   const stopped = []
   if (ownsServe(state)) {
@@ -395,9 +370,12 @@ async function stop(run) {
     copyFileSync(stackLog, path.join(evidenceDir(run), "stack.log"))
   rmSync(scratchDir(run), { recursive: true, force: true })
   if (existsSync(evidenceDir(run))) proof(run, `- stopped: ${stopped.join(", ") || "nothing was running"}`)
-  process.stdout.write(
-    `${JSON.stringify({ run, stopped, left, evidence: evidenceDir(run), evidenceKept: existsSync(evidenceDir(run)) })}\n`,
-  )
+  return { run, stopped, left, evidence: evidenceDir(run), evidenceKept: existsSync(evidenceDir(run)) }
+}
+
+async function stop(run) {
+  if (run === undefined) fail("name the run: verify-airdesign stop <run>")
+  process.stdout.write(`${JSON.stringify(await stopRun(run))}\n`)
 }
 
 const invoked = process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)

@@ -183,7 +183,7 @@ $V stop <run>
 
 Stops only this run: it sends SIGTERM to the recorded `serve` PID after checking its command line names this run, which stops the API, the front server and Postgres. If Postgres outlives it, it signals the recorded postmaster PID after checking its command line names this run's data dir. It then removes the run's cluster dir and scratch dir (`~/tmp/verify-airdesign-scratch/<run>/`). It never kills by name and never touches a process another run or agent started. Before it removes the scratch dir it copies `stack.log` into the evidence dir. It prints `left: []` when nothing of the run is alive and `evidenceKept: true`.
 
-Run `stop` after every run, passed or failed. A failed `launch` prints the run id in its log path; stop that run too.
+Run `stop` after every run, passed or failed. A failed `launch` prints the run id in its log path; stop that run too. A run killed with its agent is cleaned up anyway: each `launch` first runs `stop` on every run whose `serve` process is gone, and removes run folders with no `state.json` after a day. It prints what it cleaned on stderr as `{"leftover": ...}` and never touches a run whose `serve` is alive.
 
 ## Isolation and load
 

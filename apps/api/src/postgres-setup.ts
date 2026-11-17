@@ -7,6 +7,7 @@ import os from "node:os"
 import path from "node:path"
 import { Client } from "pg"
 
+import { removeLeftoverClusters } from "./leftover-clusters.js"
 import { createRole } from "./provision.js"
 import { applySchema } from "./schema.js"
 
@@ -146,6 +147,7 @@ async function launch(
   const found = await findPostgres()
   const root = path.join(os.homedir(), "tmp")
   await mkdir(root, { recursive: true })
+  await removeLeftoverClusters(root)
   const dir = await mkdtemp(path.join(root, "airdesign-api-"))
   const port = await freePort()
   await capture(
