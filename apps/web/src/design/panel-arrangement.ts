@@ -17,19 +17,25 @@ import {
   Minus,
   Square,
   SquareDashed,
-  SquareSquare,
-  Blend,
-  AlignCenterHorizontal,
-  AlignCenterVertical,
-  AlignEndHorizontal,
-  AlignEndVertical,
   AlignHorizontalDistributeCenter,
-  AlignStartHorizontal,
-  AlignStartVertical,
   AlignVerticalDistributeCenter,
   type LucideIcon,
 } from "lucide-react"
-import { DottedBorder, SubtleShadow, MediumShadow, StrongShadow, PatternFill } from "./preset-icons"
+import {
+  DottedBorder,
+  SubtleShadow,
+  MediumShadow,
+  StrongShadow,
+  PatternFill,
+  SolidFill,
+  GradientFill,
+  AlignLeftEdge,
+  AlignHorizontalCenter,
+  AlignRightEdge,
+  AlignTopEdge,
+  AlignVerticalCenter,
+  AlignBottomEdge,
+} from "./preset-icons"
 import { optionWord } from "@/copy/option-copy"
 import type { Desc } from "@airdesign/document"
 import type { PanelControl, SectionName } from "./panel"
@@ -61,7 +67,7 @@ type Strip = readonly Placed[]
 const above: NameLook = { show: "above" }
 const hidden: NameLook = { show: "hidden" }
 const inside: NameLook = { show: "inside" }
-const fills = { none: Minus, solid: SquareSquare, gradient: Blend, pattern: PatternFill, picture: Image }
+const fills = { none: Minus, solid: SolidFill, gradient: GradientFill, pattern: PatternFill, picture: Image }
 const placed = (field: string, name: NameLook = above, rest: Omit<Placed, "field" | "name"> = {}): Placed => ({
   field,
   name,
@@ -95,12 +101,12 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
       placed("align", hidden, {
         kind: "action",
         options: {
-          left: AlignStartVertical,
-          center: AlignCenterVertical,
-          right: AlignEndVertical,
-          top: AlignStartHorizontal,
-          middle: AlignCenterHorizontal,
-          bottom: AlignEndHorizontal,
+          left: AlignLeftEdge,
+          center: AlignHorizontalCenter,
+          right: AlignRightEdge,
+          top: AlignTopEdge,
+          middle: AlignVerticalCenter,
+          bottom: AlignBottomEdge,
         },
       }),
     ],
@@ -139,7 +145,21 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   shadow: [
     [
       placed("shadow", hidden, {
-        options: { none: Minus, subtle: SubtleShadow, medium: MediumShadow, strong: StrongShadow, PatternFill },
+        options: {
+          none: Minus,
+          subtle: SubtleShadow,
+          medium: MediumShadow,
+          strong: StrongShadow,
+          PatternFill,
+          SolidFill,
+          GradientFill,
+          AlignLeftEdge,
+          AlignHorizontalCenter,
+          AlignRightEdge,
+          AlignTopEdge,
+          AlignVerticalCenter,
+          AlignBottomEdge,
+        },
       }),
     ],
   ],

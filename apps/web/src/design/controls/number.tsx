@@ -96,9 +96,14 @@ export function NumberField({
     scrub.current = null
   }
 
+  const suffix =
+    (control.trait === "text" && control.field === "size") || (control.trait === "border" && control.field === "width")
+      ? ""
+      : unit
+  const value = draft ?? shown
   const view = (
     <label
-      className="flex h-[var(--control-dense)] min-w-0 items-center gap-0.5 rounded-[var(--shape-control)] bg-muted px-2"
+      className="flex h-[var(--control-dense)] min-w-0 items-center gap-0 rounded-[var(--shape-control)] bg-[var(--panel-track)] px-2"
       title={control.label}
       data-control={kind}
       data-inherited={control.inherited ? "" : undefined}
@@ -122,26 +127,33 @@ export function NumberField({
           control.label
         ) : null}
       </span>
-      <input
-        ref={field}
-        className={cn(
-          "min-w-[3ch] flex-1 bg-transparent text-right text-[length:var(--type-caption)] tabular-nums outline-none placeholder:text-quiet",
-          kind === "corners" && "text-left",
-          control.inherited && draft === null ? "text-quiet" : "text-foreground",
-        )}
-        inputMode="decimal"
-        aria-label={control.label}
-        data-session
-        placeholder={control.mixed ? designCopy.mixed : ""}
-        value={draft ?? shown}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={(event) => {
-          if (draft !== null) commit(event.currentTarget.value)
-        }}
-        onKeyDown={onKeyDown}
-      />
-      <span className="shrink-0 text-[length:var(--type-caption)] text-quiet" aria-hidden>
-        {unit}
+      <span className="relative grid min-w-0 max-w-full">
+        <span
+          aria-hidden
+          className="invisible col-start-1 row-start-1 whitespace-pre text-[length:var(--type-caption)] tabular-nums"
+        >
+          {value || "   "}
+        </span>
+        <input
+          ref={field}
+          className={cn(
+            "absolute inset-0 w-full min-w-0 bg-transparent text-left text-[length:var(--type-caption)] tabular-nums outline-none placeholder:text-quiet",
+            control.inherited && draft === null ? "text-quiet" : "text-foreground",
+          )}
+          inputMode="decimal"
+          aria-label={control.label}
+          data-session
+          placeholder={control.mixed ? designCopy.mixed : ""}
+          value={value}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={(event) => {
+            if (draft !== null) commit(event.currentTarget.value)
+          }}
+          onKeyDown={onKeyDown}
+        />
+      </span>
+      <span className="shrink-0 text-[length:var(--type-caption)] text-foreground" aria-hidden>
+        {suffix}
       </span>
     </label>
   )

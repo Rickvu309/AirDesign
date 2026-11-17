@@ -30,6 +30,12 @@
   --claude: #d97757;
   --ink: #181818;
   --blue-tint: #eef4fe;
+  --panel-track: #f5f5f5;
+  --panel-edge: #e6e6e6;
+  --panel-icon: #808080;
+  --panel-title-size: 14px;
+  --panel-head-height: 49px;
+  --panel-segment-radius: 6px;
   --field-edge: #d7d7d6;
   --pressed: var(--blue-tint);
   --tint-text: color-mix(in oklch, var(--primary-strong), var(--navy) 30%);

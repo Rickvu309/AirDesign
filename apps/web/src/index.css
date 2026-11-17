@@ -4,6 +4,7 @@
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/inter";
 @import "@airdesign/theme/tokens.css";
+@import "./design/panel-chrome.css";
 
 @theme inline {
   --font-sans: "Inter Variable", system-ui, sans-serif;

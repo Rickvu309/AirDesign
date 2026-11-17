@@ -71,7 +71,7 @@ export function ChoiceControl(props: ControlProps) {
         <div
           role="group"
           aria-labelledby={label}
-          className="flex h-[var(--control-dense)] items-center rounded-[var(--shape-control)] bg-line p-0.5"
+          className="flex h-[var(--control-dense)] items-center rounded-[var(--shape-control)] bg-[var(--panel-track)] p-0"
         >
           {options.map((option) => {
             const Icon = look.options[option]
@@ -89,10 +89,10 @@ export function ChoiceControl(props: ControlProps) {
                   if (!chosen) onChange(option)
                 }}
                 className={cn(
-                  "h-5 min-w-0 flex-1 rounded-[var(--shape-segment)] px-0 text-xs font-normal active:translate-y-0",
+                  "h-[var(--control-dense)] min-w-0 flex-1 rounded-[var(--panel-segment-radius)] px-0 text-xs font-normal active:translate-y-0",
                   chosen
                     ? cn(
-                        "bg-white font-medium shadow-[0px_1px_2px_var(--black-10)] hover:bg-white",
+                        "bg-white font-medium shadow-[inset_0_0_0_1px_var(--panel-edge)] hover:bg-white",
                         control.inherited ? "text-quiet" : "text-foreground",
                       )
                     : "text-quiet hover:bg-transparent hover:text-foreground",

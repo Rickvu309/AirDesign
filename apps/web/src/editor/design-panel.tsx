@@ -2,12 +2,14 @@ import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { designCopy } from "@/copy/design-copy"
+import { FillDetails } from "@/design/controls/union"
 import { controlViews } from "@/design/control-views"
 import type { Palette } from "@/design/color-choices"
 import type { ControlProps, PanelModel, PanelControl } from "@/design/panel"
 import { foldOpen, setFold, useFolds } from "@/design/panel-folds"
 import { swatchMist, swatchNavy, swatchTeal, swatchWhite } from "@/editor/design-panel-art"
 import { EditorIcon } from "@/editor/editor-icons"
+import { optionWord } from "@/copy/option-copy"
 import { cn } from "@/lib/class-names"
 
 export function DesignPanel() {
@@ -31,8 +33,8 @@ export function DesignPanel() {
 
 export function DesignHead({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-9 shrink-0 items-center border-b border-line px-4">
-      <span className="text-[length:var(--type-caption)] font-medium text-foreground">{children}</span>
+    <div data-design-head className="flex h-[var(--panel-head-height)] shrink-0 items-center border-b border-line px-4">
+      <span className="text-[length:var(--panel-title-size)] font-medium text-foreground">{children}</span>
     </div>
   )
 }
@@ -68,7 +70,7 @@ export function DesignSection({
       </h2>
     )
   return (
-    <section className={cn("flex flex-col gap-2 px-4 py-3", edge)}>
+    <section data-design-section={title ?? undefined} className={cn("flex flex-col gap-4 px-4 py-3", edge)}>
       {action === null ? (
         heading
       ) : (
@@ -188,9 +190,7 @@ export function SectionStrips({
       className="grid items-start gap-2"
       style={{
         gridTemplateColumns: strip.every((control) => control.kind === "action")
-          ? strip
-              .map((control) => `${String(control.desc.kind === "choice" ? control.desc.options.length : 1)}fr`)
-              .join(" ")
+          ? strip.map((control) => (control.field === "distribute" ? "24px" : "minmax(0, 1fr)")).join(" ")
           : `repeat(${strip.length}, minmax(0, 1fr))`,
       }}
     >
@@ -206,7 +206,15 @@ export function SectionStrips({
   ))
 }
 
-function panelTitle({ kind, nodes }: PanelModel): string {
+function panelTitle({ kind, nodes, sections }: PanelModel): string {
+  if (kind === "shape") {
+    const shape = sections
+      .flatMap((section) => section.strips.flat())
+      .find((control) => control.trait === "geometry" && control.field === "shape")?.value
+    if (typeof shape === "object" && shape !== null && "preset" in shape && typeof shape.preset === "string")
+      return shape.preset === "rect" ? designCopy.square : optionWord("shape.preset", shape.preset)
+  }
+  if (kind === "text" || kind === "picture") return designCopy.titles[kind]
   if (kind === "many") return designCopy.selected(nodes.length)
   return kind === null ? designCopy.panels.kept : designCopy.panels[kind]
 }
@@ -229,9 +237,14 @@ export function ElementDesign({
   const last = model.sections.length - 1
   const folds = useFolds()
   const { kind } = model
+  const fill = model.sections
+    .find((section) => section.trait === "fill")
+    ?.strips.flat()
+    .find((control) => control.kind === "union")
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col overflow-y-auto outline-none"
+      className="design-panel-chrome flex min-h-0 flex-1 flex-col overflow-y-auto outline-none"
+      data-panel-kind={kind}
       data-design-panel
       data-design-element={model.nodes.join(" ")}
       data-keeps-selection
@@ -256,7 +269,7 @@ export function ElementDesign({
           )
         if (section.label === null)
           return (
-            <div key={section.trait}>
+            <div key={section.trait} data-design-alignment>
               <DesignSection title={null}>
                 <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
               </DesignSection>
@@ -276,6 +289,7 @@ export function ElementDesign({
           return (
             <section
               key={section.trait}
+              data-design-section={section.label}
               className={cn(
                 "grid grid-cols-2 items-center gap-2 px-4 py-3",
                 at === last ? null : "border-b border-line",
@@ -291,11 +305,11 @@ export function ElementDesign({
         return (
           <DesignSection
             key={section.trait}
-            title={section.label}
+            title={section.trait === "text" && kind === "text" ? null : section.label}
             last={at === last && children === null}
-            action={reset === undefined ? null : <SectionReset control={reset} onChange={onChange} />}
+            action={null}
             fold={
-              kind === null
+              kind === null || (section.open && ["text", "fill", "border", "shadow", "opacity"].includes(section.trait))
                 ? null
                 : {
                     open: foldOpen(folds, kind, section.trait, section.open),
@@ -304,10 +318,16 @@ export function ElementDesign({
             }
           >
             <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
+            {reset === undefined || section.trait === "fill" ? null : (
+              <SectionReset control={reset} onChange={onChange} />
+            )}
           </DesignSection>
         )
       })}
       {children}
+      {fill === undefined ? null : (
+        <FillDetails control={fill} palette={palette} onChange={(value) => onChange(fill, value)} />
+      )}
     </div>
   )
 }
