@@ -4,6 +4,7 @@ import { elementId, landedPatch, type ElementId, type Register } from "../../pac
 import { forward, settled, signInBrowser, test, type Stack } from "./api-stack"
 import { savedExport } from "./export-dialog"
 import { partsOf } from "./shape-fills"
+import { unfold } from "./design-panel"
 import { holdableDevice } from "./slow-device"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
@@ -26,6 +27,7 @@ async function cropped(page: Page, photo: Locator): Promise<Locator> {
   await photo.click({ position: { x: 8, y: 8 } })
   const panel = page.locator("[data-design-element]")
   await expect(panel).toHaveAttribute("data-design-element", /\.4$/)
+  await unfold(panel, "Crop")
   return panel.locator("section").filter({ has: page.getByRole("heading", { name: "Crop", exact: true }) })
 }
 

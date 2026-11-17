@@ -23,7 +23,9 @@ it("places every trait each element kind takes, and its Opacity, exactly once in
       const placed = (panelOrder[panel] ?? []).map((place) => place.section)
       expect({
         panel,
-        placed: placed.filter((section) => section !== "border" && section !== "shadow").toSorted(),
+        placed: placed
+          .filter((section) => section !== "border" && section !== "shadow" && section !== "pictureFill")
+          .toSorted(),
       }).toEqual({ panel, placed: wanted })
     }
   }
@@ -95,9 +97,12 @@ it("offers a picture no shape type while it is a plain rectangle", () => {
   const plain = sections(picture, { "geometry.shape": { preset: "rect", adjust: {} } })
   expect(plain.map(([trait]) => trait)).toEqual([
     "alignment",
+    "pictureFill",
+    "opacity",
+    "border",
+    "shadow",
     "image",
     "crop",
-    "opacity",
     "box",
     "line",
     "effects",
@@ -111,8 +116,8 @@ it("leads a connector with its line and the shapes it joins", () => {
   const connector = { ...textBox, facts: { ...textBox.facts, kind: "connector" as const, text: false }, value: null }
   expect(sections(connector, {}).slice(0, 3)).toEqual([
     ["alignment", true],
-    ["line", true],
-    ["connection", true],
+    ["border", true],
+    ["shadow", true],
   ])
 })
 

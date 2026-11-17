@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test"
-import { openDeck } from "./design-panel"
+import { openDeck, unfold } from "./design-panel"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -19,6 +19,7 @@ async function iconPanel(page: Page): Promise<Locator> {
   await picture(page).click()
   const panel = page.locator("[data-design-element]")
   await expect(panel).toHaveAttribute("data-design-element", /\.5$/)
+  await unfold(panel, "Picture")
   return panel.locator("section").filter({ has: page.getByRole("heading", { name: "Picture", exact: true }) })
 }
 

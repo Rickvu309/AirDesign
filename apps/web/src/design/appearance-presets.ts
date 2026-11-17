@@ -1,7 +1,10 @@
 import type { SetChange } from "@airdesign/document"
+import type { PanelKind } from "./panel-order"
+import { fillCopy } from "@/copy/fill-copy"
+import { lineCopy } from "@/copy/line-copy"
 import { designCopy } from "@/copy/design-copy"
 import { resolveControl, arrange } from "./panel-arrangement"
-import { type PanelSection } from "./panel"
+import { partControl, type PanelControl, type PanelSection } from "./panel"
 
 export const shadowPresets = {
   subtle: {
@@ -48,19 +51,23 @@ function shadowValue(shadow: unknown): string | undefined {
   })?.[0]
 }
 
-export function appearanceSections(sections: readonly PanelSection[]): readonly PanelSection[] {
+export function appearanceSections(sections: readonly PanelSection[], kind: PanelKind | null): readonly PanelSection[] {
   const controls = sections.flatMap((section) => section.strips.flat())
   const fill = controls.find((control) => control.trait === "line" && control.field === "fill")
   const dash = controls.find((control) => control.trait === "line" && control.field === "dash")
   const shadow = controls.find((control) => control.trait === "effects" && control.field === "shadow")
-  const added: PanelSection[] = []
+  const added: PanelSection[] =
+    kind === "picture" ? [{ trait: "pictureFill", label: fillCopy.section, open: true, strips: [] }] : []
   if (fill !== undefined && dash !== undefined) {
     const border = resolveControl({
       ...fill,
       trait: "border",
       field: "border",
       label: designCopy.border,
-      desc: { kind: "choice", options: ["none", "solid", "dash", "dot"] },
+      desc: {
+        kind: "choice",
+        options: kind === "connector" ? ["solid", "dash", "dot"] : ["none", "solid", "dash", "dot"],
+      },
       value: borderValue(fill.value, dash.value),
       reset: null,
       change: (value): SetChange => {
@@ -74,11 +81,32 @@ export function appearanceSections(sections: readonly PanelSection[]): readonly 
         return { ...change, line: { ...change.line, dash: value } }
       },
     })
+    const extra: PanelControl[] = []
+    if (
+      kind === "connector" &&
+      fill.desc.kind === "union" &&
+      typeof fill.value === "object" &&
+      fill.value !== null &&
+      "solid" in fill.value
+    ) {
+      const desc = fill.desc.cases.solid
+      if (desc !== undefined) {
+        const color = partControl(fill, "solid", desc, fill.value.solid)
+        extra.push({
+          ...color,
+          label: lineCopy.color,
+          look: { ...color.look, name: { show: "above" } },
+          change: (value) => fill.change({ solid: value }),
+        })
+      }
+      const width = controls.find((control) => control.trait === "line" && control.field === "width")
+      if (width !== undefined) extra.push({ ...width, label: lineCopy.borderWidth })
+    }
     added.push({
       trait: "border",
       label: designCopy.border,
       open: true,
-      strips: arrange("border", [border]),
+      strips: arrange("border", [border, ...extra]),
     })
   }
   if (shadow !== undefined) {

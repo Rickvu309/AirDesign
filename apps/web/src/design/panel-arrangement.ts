@@ -127,14 +127,14 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [placed("tail.length", above, { form: "list" })],
   ],
   alignment: [[placed("align", hidden), placed("distribute", hidden)]],
+  pictureFill: [],
   border: [
     [
       placed("border", hidden, {
         options: { none: Minus, solid: Square, dash: SquareDashed, dot: DottedBorder },
       }),
     ],
-    [placed("fill.solid", hidden)],
-    [placed("width", hidden)],
+    [placed("fill.solid", above), placed("width", above)],
   ],
   shadow: [
     [
