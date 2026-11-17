@@ -9,6 +9,7 @@ import {
 } from "@airdesign/document"
 import { useId, useState, type KeyboardEvent } from "react"
 import { Textarea } from "@/components/ui/textarea"
+import { ChevronDown } from "lucide-react"
 import { designCopy } from "@/copy/design-copy"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
@@ -110,6 +111,9 @@ function WordsField({ control, onChange, max }: ControlProps & { readonly max: n
             if (event.key === "Escape") setDraft(null)
           }}
         />
+        {control.trait === "text" && control.field === "font" ? (
+          <ChevronDown size={12} className="shrink-0 text-quiet" aria-hidden />
+        ) : null}
       </label>
       {correction}
     </div>

@@ -31,8 +31,8 @@ export function DesignPanel() {
 
 export function DesignHead({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-9 shrink-0 items-center border-b border-line px-3">
-      <span className="text-sm font-semibold text-foreground">{children}</span>
+    <div className="flex h-9 shrink-0 items-center border-b border-line px-4">
+      <span className="text-[length:var(--type-caption)] font-medium text-foreground">{children}</span>
     </div>
   )
 }
@@ -63,12 +63,12 @@ export function DesignSection({
     )
   const heading =
     title === null ? null : (
-      <h2 id={id} className="text-[length:var(--type-dense)] font-semibold text-foreground">
+      <h2 id={id} className="text-[length:var(--type-caption)] font-medium text-foreground">
         {title}
       </h2>
     )
   return (
-    <section className={cn("flex flex-col gap-2 px-3 py-3", edge)}>
+    <section className={cn("flex flex-col gap-2 px-4 py-3", edge)}>
       {action === null ? (
         heading
       ) : (
@@ -100,11 +100,11 @@ function FoldedSection({
       open={fold.open}
       onOpenChange={fold.onOpen}
       render={<section />}
-      className={cn("flex flex-col gap-2 px-3", fold.open ? "py-3" : "py-1.5", edge)}
+      className={cn("flex flex-col gap-2 px-4", fold.open ? "py-3" : "py-1.5", edge)}
       data-design-section={title}
     >
       <div className="relative flex min-h-6 items-center">
-        <h2 className="min-w-0 flex-1 text-[length:var(--type-dense)] font-semibold text-foreground">
+        <h2 className="min-w-0 flex-1 text-[length:var(--type-caption)] font-medium text-foreground">
           <CollapsibleTrigger className="group/fold -mx-1 flex w-[calc(100%+0.5rem)] items-center gap-1.5 rounded-[var(--shape-control)] px-1 py-1 text-left">
             <span className="truncate">{title}</span>
             <EditorIcon
@@ -185,7 +185,7 @@ export function SectionStrips({
   return strips.map((strip) => (
     <div
       key={strip.map((control) => control.field).join(" ")}
-      className="grid items-end gap-2"
+      className="grid items-start gap-2"
       style={{
         gridTemplateColumns: strip.every((control) => control.kind === "action")
           ? strip
@@ -233,7 +233,7 @@ export function ElementDesign({
     >
       {model.sections.every((section) => section.label !== null) ? <DesignHead>{panelTitle(model)}</DesignHead> : null}
       {model.sections.length === 0 ? (
-        <p className="px-4 py-4 text-[length:var(--type-dense)] text-quiet">{designCopy.nothing}</p>
+        <p className="px-4 py-4 text-[length:var(--type-caption)] text-quiet">{designCopy.nothing}</p>
       ) : null}
       {model.sections.map((section, at) => {
         if (section.label === null)
@@ -252,11 +252,11 @@ export function ElementDesign({
             <section
               key={section.trait}
               className={cn(
-                "grid grid-cols-2 items-center gap-2 px-3 py-3",
+                "grid grid-cols-2 items-center gap-2 px-4 py-3",
                 at === last ? null : "border-b border-line",
               )}
             >
-              <h2 className="text-[length:var(--type-dense)] font-semibold text-foreground">{section.label}</h2>
+              <h2 className="text-[length:var(--type-caption)] font-medium text-foreground">{section.label}</h2>
               <ControlView control={lone} palette={palette} onChange={(value) => onChange(lone, value)} />
             </section>
           )

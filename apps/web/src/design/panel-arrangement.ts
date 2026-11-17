@@ -4,8 +4,8 @@ import {
   AlignRight,
   Bold,
   Italic,
-  Underline,
   List,
+  Underline,
   FlipHorizontal2,
   FlipVertical2,
   RotateCw,
@@ -15,6 +15,8 @@ import {
   ArrowDownToLine,
   Image,
   Minus,
+  Square,
+  SquareDashed,
   PaintBucket,
   Blend,
   Grid2X2,
@@ -28,6 +30,7 @@ import {
   AlignVerticalDistributeCenter,
   type LucideIcon,
 } from "lucide-react"
+import { DottedBorder, SubtleShadow, MediumShadow, StrongShadow } from "./preset-icons"
 import { optionWord } from "@/copy/option-copy"
 import type { Desc } from "@airdesign/document"
 import type { PanelControl, SectionName } from "./panel"
@@ -79,7 +82,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
         form: "segments",
         options: { left: AlignLeft, center: AlignCenter, right: AlignRight },
       }),
-      icon("bullet", List),
+      placed("bullet", hidden, { options: { true: List } }),
     ],
     [placed("color", hidden)],
     [icon("spaceBefore", ArrowUpToLine), icon("spaceAfter", ArrowDownToLine)],
@@ -111,7 +114,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   fill: [[placed("value", hidden, { options: fills })], [placed("value.solid", hidden)]],
   line: [
     [placed("fill", hidden, { options: fills })],
-    [icon("width", Minus), placed("dash", above, { form: "list" })],
+    [placed("width", above), placed("dash", above, { form: "list" })],
     [placed("cap", above, { form: "list" }), placed("compound", above, { form: "list" })],
     [placed("join", above, { form: "list" })],
     [placed("head"), placed("tail")],
@@ -124,6 +127,22 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [placed("tail.length", above, { form: "list" })],
   ],
   alignment: [[placed("align", hidden), placed("distribute", hidden)]],
+  border: [
+    [
+      placed("border", hidden, {
+        options: { none: Minus, solid: Square, dash: SquareDashed, dot: DottedBorder },
+      }),
+    ],
+    [placed("fill.solid", hidden)],
+    [placed("width", hidden)],
+  ],
+  shadow: [
+    [
+      placed("shadow", hidden, {
+        options: { none: Minus, subtle: SubtleShadow, medium: MediumShadow, strong: StrongShadow },
+      }),
+    ],
+  ],
   opacity: [[placed("opacity", { show: "beside" })]],
   identity: [[placed("name", inside)], [placed("alt", inside)], [placed("hidden")]],
   geometry: [
@@ -173,18 +192,12 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   table: [[placed("value")]],
   notes: [[placed("value", hidden)]],
   theme: [
-    [placed("dk1")],
-    [placed("lt1")],
-    [placed("dk2")],
-    [placed("lt2")],
-    [placed("accent1")],
-    [placed("accent2")],
-    [placed("accent3")],
-    [placed("accent4")],
-    [placed("accent5")],
-    [placed("accent6")],
-    [placed("hlink")],
-    [placed("folHlink")],
+    [placed("dk1", hidden), placed("lt1", hidden)],
+    [placed("dk2", hidden), placed("lt2", hidden)],
+    [placed("accent1", hidden), placed("accent2", hidden)],
+    [placed("accent3", hidden), placed("accent4", hidden)],
+    [placed("accent5", hidden), placed("accent6", hidden)],
+    [placed("hlink", hidden), placed("folHlink", hidden)],
     [placed("major", inside)],
     [placed("minor", inside)],
   ],
