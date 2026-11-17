@@ -1,3 +1,4 @@
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { expect, test, type Locator } from "@playwright/test"
@@ -41,7 +42,7 @@ test("a menu opened by a pointer grows from its trigger on the strong ease-out c
 
 test("a menu opened with Enter and closed with Escape does not move", async ({ page }) => {
   await page.getByRole("button", { name: productCopy.newDeck, exact: true }).focus()
-  await page.keyboard.press("Enter")
+  await page.keyboard.press(slideListCopy.openKey)
   const menu = page.getByRole("menu", { name: productCopy.newDeck })
   await expect(menu).toBeVisible()
   await expect(menu).toHaveAttribute("data-instant", "click")
@@ -86,7 +87,7 @@ test("editor menus and popovers that pass duration-0 open without motion", async
   expect(await shapes.evaluate((element) => element.getAnimations().length)).toBe(0)
   await page.keyboard.press("Escape")
   await page.getByRole("button", { name: shapeCopy.tool, exact: true }).focus()
-  await page.keyboard.press("Enter")
+  await page.keyboard.press(slideListCopy.openKey)
   await expect(shapes).toBeVisible()
   expect(await motion(shapes)).toMatchObject({ animation: "none", duration: "0s" })
   expect(await shapes.evaluate((element) => element.getAnimations().length)).toBe(0)

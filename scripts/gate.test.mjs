@@ -61,6 +61,7 @@ const full = gateSteps({
 same("the cheap checks are the steps that wait for nothing, and the worktree sweep", named(cheapSteps), [
   ...preflight,
   "actionlint",
+  "copy-literals",
   "worktrees",
 ])
 same("then the gate builds and tests what the diff reaches", named(full), ["build", "test", "tooling"])
@@ -140,7 +141,7 @@ for (const failing of ["format", "lint", "file-size"]) {
     [...preflight].sort(),
   )
 }
-for (const failing of ["build", "test", "actionlint"]) {
+for (const failing of ["build", "test", "actionlint", "copy-literals"]) {
   const late = await gateOf(failing)
   same(`a ${failing} failure stamps nothing`, [late.stamped, late.failed], [0, [failing]])
 }

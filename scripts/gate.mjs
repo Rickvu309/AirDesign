@@ -20,7 +20,7 @@ const stepNamed = (name) =>
     .flatMap(stepsOf)
     .find(([each]) => each === name)
 
-export const cheapSteps = [[...preflight, "actionlint", "worktrees"].map(stepNamed)]
+export const cheapSteps = [[...preflight, "actionlint", "copy-literals", "worktrees"].map(stepNamed)]
 
 export const packagesFor = (changed) =>
   [...new Set(changed.flatMap((file) => file.match(/^(?:apps|packages)\/[^/]+(?=\/)/)?.[0] ?? []))].sort()
