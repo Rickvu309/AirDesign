@@ -412,3 +412,45 @@
     transition: none;
   }
 }
+
+@keyframes hero-chart-draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes hero-chart-mark {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes hero-chart-pill {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-chart-draw {
+    animation: hero-chart-draw var(--ease-travel) both;
+    animation-duration: 1200ms;
+  }
+
+  .hero-chart-annotation {
+    animation: hero-chart-mark var(--ease-micro) 600ms both;
+    animation-duration: 300ms;
+  }
+
+  .hero-chart-pill {
+    animation-name: hero-chart-pill;
+  }
+}
