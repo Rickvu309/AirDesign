@@ -22,5 +22,6 @@ it("reads PNG, GIF and JPEG dimensions without decoding pixels", () => {
 
 it("reads SVG dimensions through its native viewBox", () => {
   expect(rasterDimensions(encodeUtf8('<svg viewBox="0 0 200 100"/>'))).toEqual({ width: 200, height: 100 })
+  expect(rasterDimensions(encodeUtf8('<svg width="200" height="100"/>'))).toEqual({ width: 200, height: 100 })
   expect(rasterDimensions(new Uint8Array())).toBeNull()
 })

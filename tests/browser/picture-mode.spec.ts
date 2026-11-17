@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { expect, test } from "@playwright/test"
-import { openDeck } from "./design-panel"
+import { boxCopy } from "../../apps/web/src/copy/box-copy"
+import { openDeck, unfold } from "./design-panel"
 import { savedExport } from "./export-dialog"
 import { partsOf } from "./shape-fills"
 
@@ -13,12 +14,20 @@ test("a person changes a picture's fill mode and exports its native placement @e
   const picture = page.locator(`[data-slide-paint] [data-canvas-element="${part}#4"]`)
   await picture.click({ position: { x: 8, y: 8 } })
   const panel = page.locator("[data-design-element]")
+  await unfold(panel, boxCopy.section)
+  const width = panel.getByRole("textbox", { name: boxCopy.w, exact: true })
+  await width.fill("320")
+  await width.press("Enter")
+  let covered = ""
   for (const mode of ["fill", "fit", "crop", "tile"] as const) {
     await panel.getByRole("combobox", { name: pictureCopy.mode, exact: true }).click()
     await page.getByRole("option", { name: pictureWords[mode], exact: true }).click()
     await expect(panel.getByRole("combobox", { name: pictureCopy.mode, exact: true })).toContainText(
       pictureWords[mode]!,
     )
+    const size = () => picture.evaluate((node) => getComputedStyle(node).backgroundSize)
+    if (mode === "fill") covered = await size()
+    if (mode === "fit") await expect.poll(size).not.toBe(covered)
     const file = join(process.cwd(), "tests/browser", `exported-picture-${mode}.pptx`)
     await savedExport(page, file)
     const parts = await partsOf(file)
