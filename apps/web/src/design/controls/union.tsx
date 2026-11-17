@@ -1,4 +1,5 @@
 import type { Color } from "@airdesign/document"
+import { Image, Minus, PaintBucket, Blend, Grid2X2, type LucideIcon } from "lucide-react"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import { optionCopy } from "@/copy/option-copy"
@@ -7,6 +8,14 @@ import { partRow, type ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
 const rowCases = 5
+
+const fillIcons: Readonly<Record<string, LucideIcon>> = {
+  none: Minus,
+  solid: PaintBucket,
+  gradient: Blend,
+  pattern: Grid2X2,
+  picture: Image,
+}
 
 function heldOf(row: ControlProps["row"]): Readonly<Record<string, unknown>> | null {
   return typeof row.value === "object" && row.value !== null ? (row.value as Readonly<Record<string, unknown>>) : null
@@ -65,12 +74,15 @@ export function UnionControl({ row, palette, onChange, inner }: ControlProps) {
       >
         {Object.keys(cases).map((name) => {
           const pressed = name === chosen
+          const Icon = row.trait === "fill" ? fillIcons[name] : undefined
+          const word = optionCopy[name] ?? name
           return (
             <Button
               key={name}
               type="button"
               variant="ghost"
               aria-pressed={pressed}
+              title={Icon === undefined ? undefined : word}
               onClick={() => pick(name)}
               className={cn(
                 "h-7 min-w-0 flex-1 rounded-[var(--shape-control)] px-1 text-xs font-normal active:translate-y-0",
@@ -82,7 +94,14 @@ export function UnionControl({ row, palette, onChange, inner }: ControlProps) {
                   : "text-quiet hover:bg-transparent hover:text-foreground",
               )}
             >
-              {optionCopy[name] ?? name}
+              {Icon === undefined ? (
+                word
+              ) : (
+                <>
+                  <Icon size={16} strokeWidth={1.5} aria-hidden />
+                  <span className="sr-only">{word}</span>
+                </>
+              )}
             </Button>
           )
         })}
