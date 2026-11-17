@@ -18,16 +18,14 @@ export function PresentButton({
       {...(ref === undefined ? {} : { ref })}
       type="button"
       variant="ghost"
+      size="icon"
+      aria-label={presentCopy.present}
       aria-keyshortcuts="Meta+Enter Control+Enter F5"
       data-present-button
-      className={cn(
-        "h-8 gap-1.5 rounded-lg px-2.5 text-[length:var(--type-dense)] font-medium text-foreground active:translate-y-0",
-        faded && "opacity-40",
-      )}
+      className={cn("size-8 rounded-lg text-foreground active:translate-y-0", faded && "opacity-40")}
       {...(onClick === undefined ? {} : { onClick })}
     >
-      <EditorIcon name="play" size={14} />
-      {presentCopy.present}
+      <EditorIcon name="play" size={16} />
     </Button>
   )
 }
