@@ -65,3 +65,18 @@ test("notes recovery errors persist and can be dismissed by pointer and keyboard
   await page.keyboard.press(slideListCopy.openKey)
   await expect(error).toHaveCount(0)
 })
+
+test("Sonner's close makes a native toast inert during its exit", async ({ page }) => {
+  await store(page, [])
+  await openFixture(page)
+  await page.getByRole("button", { name: "Expand speaker notes" }).first().click()
+  await page.getByRole("textbox", { name: presentCopy.notes, exact: true }).fill("Keep these notes ".repeat(600))
+  const notice = page.locator("[data-sonner-toast]").filter({ hasText: "Unable to save speaker notes" })
+  await expect(notice).toBeVisible()
+  await page.clock.pauseAt(new Date(Date.now() + 1000))
+  await notice.getByRole("button", { name: productCopy.close, exact: true }).click()
+  await page.clock.runFor(50)
+  await expect(notice).toHaveCount(1)
+  await expect(notice).toHaveJSProperty("inert", true)
+  await expect(notice.getByRole("button")).toHaveCount(0)
+})
