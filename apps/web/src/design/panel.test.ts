@@ -1,6 +1,6 @@
 import { elementId, writeTextValue, type ScopedElement } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { panelOf, partRow, type ShownField } from "./panel"
+import { panelOf, panelOfMany, partRow, type ShownField } from "./panel"
 
 const connector: ScopedElement = {
   node: elementId("258.6"),
@@ -213,4 +213,42 @@ it("leaves Flip to the route of a connector that is bound to a shape", () => {
     "flipH",
   )
   expect(boxRows(connector, {}).map((row) => row.field)).toContain("flipV")
+})
+
+function filled(node: string, fill: unknown, x: number) {
+  const view = { ...shape, node: elementId(node), value: "", box: { x, y: 0, cx: 914_400, cy: 914_400 } }
+  return panelOf(view, { reads: {}, moves: true, fields: { "fill.value": { value: fill, own: true } } })
+}
+
+it("reads Mixed where two shapes differ and sets the fill of both in one change", () => {
+  const blue = filled("258.2", { solid: { scheme: "accent1" } }, 0)
+  const green = filled("258.3", { solid: { scheme: "accent6" } }, 914_400)
+  const panel = panelOfMany([blue, green])
+  expect(panel).toMatchObject({ nodes: ["258.2", "258.3"], node: "258.3", kind: "many" })
+  const row = (trait: string, field: string) =>
+    panel.sections.find((section) => section.trait === trait)?.rows.find((each) => each.field === field)
+  expect(row("fill", "value")).toMatchObject({ value: { solid: { scheme: "accent1" } }, mixed: true })
+  expect(row("box", "x")).toMatchObject({ value: undefined, mixed: true })
+  expect(row("box", "y")).toMatchObject({ value: 0, mixed: false })
+  expect(row("fill", "value")?.change({ solid: { scheme: "accent2" } })).toEqual({
+    target: { nodes: ["258.2", "258.3"] },
+    fill: { value: { solid: { scheme: "accent2" } } },
+  })
+  expect(row("box", "align")?.change("left")).toEqual({ target: { nodes: ["258.2", "258.3"] }, box: { align: "left" } })
+})
+
+it("leaves out what only one element can hold, such as its text and its name", () => {
+  const panel = panelOfMany([filled("258.2", null, 0), filled("258.3", null, 0)])
+  expect(panel.sections.map((section) => section.trait)).toEqual(["box", "fill", "line", "opacity", "text", "effects"])
+  expect(panel.sections.find((section) => section.trait === "effects")?.open).toBe(false)
+  const fields = panel.sections.flatMap((section) => section.rows.map((row) => `${row.trait}.${row.field}`))
+  expect(fields).not.toContain("text.value")
+  expect(fields).toContain("text.size")
+})
+
+it("keeps the fill kind two shapes share, and names no kind when their kinds differ", () => {
+  const solid = filled("258.2", { solid: { scheme: "accent1" } }, 0)
+  const none = filled("258.3", { none: true }, 0)
+  const fill = panelOfMany([solid, none]).sections.find((section) => section.trait === "fill")?.rows[0]
+  expect(fill).toMatchObject({ value: undefined, mixed: true })
 })

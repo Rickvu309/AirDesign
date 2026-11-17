@@ -1,7 +1,7 @@
 import type { ScopedElement } from "@airdesign/document"
 import type { PanelReads, SectionName } from "./panel"
 
-export type PanelKind = "text" | "shape" | "picture" | "connector" | "group" | "table" | "chart" | "kept"
+export type PanelKind = "text" | "shape" | "picture" | "connector" | "group" | "table" | "chart" | "kept" | "many"
 
 export type Place = { readonly section: SectionName; readonly open: boolean }
 
@@ -54,7 +54,18 @@ export const panelOrder: Readonly<Record<PanelKind, readonly Place[]>> = {
   table: [open("table"), open("box"), shut("identity")],
   chart: [open("box"), shut("identity")],
   kept: [open("identity")],
+  many: [open("box"), open("fill"), open("line"), open("opacity"), open("text"), shut("effects")],
 }
+
+export const loneRows: readonly string[] = [
+  "identity.name",
+  "identity.alt",
+  "text.value",
+  "table.value",
+  "crop.rect",
+  "connection.start",
+  "connection.end",
+]
 
 const panelKinds: readonly string[] = Object.keys(panelOrder)
 

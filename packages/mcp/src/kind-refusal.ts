@@ -128,7 +128,7 @@ export function setProblem(
   changes: readonly AgentChange[],
 ): { readonly code: "indexing" | "dead"; readonly detail: string } | undefined {
   for (const [at, change] of changes.entries()) {
-    if (!("op" in change) || change.op !== "set" || "node" in change.target) continue
+    if (!("op" in change) || change.op !== "set" || "node" in change.target || "nodes" in change.target) continue
     const planned = planChange(change, registerScope(register))
     const code = planned.ok ? undefined : planned.refusals.find((refusal) => refusal.node === null)?.code
     if (!("role" in change.target)) {

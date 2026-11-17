@@ -45,7 +45,15 @@ function Panel(props: { readonly node: ElementId | null; readonly exposed: (show
   const shown = editor.useDeckPaint(deck, pictures, { show: nothing })
   props.exposed(shown)
   return createElement(editor.LiveDesignPanel, {
-    deck: { id: deck, shown, undo, designing: props.node, record: nothing, settle: nothing, setPending: nothing },
+    deck: {
+      id: deck,
+      shown,
+      undo,
+      selection: { ids: props.node === null ? [] : [props.node], inside: null },
+      record: nothing,
+      settle: nothing,
+      setPending: nothing,
+    },
   })
 }
 

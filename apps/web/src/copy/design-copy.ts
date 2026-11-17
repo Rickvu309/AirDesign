@@ -20,6 +20,7 @@ export const designCopy = {
     chart: "Chart",
     kept: "Element",
   },
+  elements: (count: number) => `${String(count)} elements`,
   nothing: "Nothing on this element can be changed here yet.",
   refused: "Unable to make that change. Select the element and try again, or reload the deck if it keeps happening.",
   tooLong: (max: number, wide: boolean) =>
@@ -37,6 +38,6 @@ export const designCopy = {
   cell: (row: number, column: number) => `Row ${String(row)}, column ${String(column)}`,
 } as const satisfies {
   readonly fills: Record<Named, string>
-  readonly panels: Record<PanelKind, string>
+  readonly panels: Record<Exclude<PanelKind, "many">, string>
   readonly [key: string]: unknown
 }
