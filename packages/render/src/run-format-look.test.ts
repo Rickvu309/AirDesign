@@ -1,7 +1,7 @@
 import { expect, it } from "vitest"
 import type { CanvasRunStyle, CanvasText } from "./record.js"
 import { accentPaint, inkPaint } from "./run-format-look-art.js"
-import { textLook } from "./text-look.js"
+import { restyle, textLook } from "./text-look.js"
 
 const scaled = (emu: number) => emu / 12_700
 
@@ -151,4 +151,43 @@ it("paints set strikethrough and native letter spacing", () => {
 
 it("paints a numbered paragraph's label", () => {
   expect(textLook(text, scaled).paragraph(0, true, { list: "numbers" })).toMatchObject({ "--bullet": '"1."' })
+})
+
+function numberedLabels(
+  starts: readonly number[],
+  list?: "numbers",
+  levels: readonly number[] = [],
+): readonly string[] {
+  const paragraphs = starts.map((start, from) => ({
+    from,
+    level: levels[from] ?? 0,
+    align: "left" as const,
+    runs: [{ from: 0, text: "Item", ...plain }],
+    endStyle: plain,
+    bullet: { autoNumber: "arabicPeriod", number: start, start, font: null, color: null, size: null },
+  }))
+  const box = document.createElement("div")
+  const blocks = paragraphs.map((paragraph) => {
+    const block = document.createElement("div")
+    block.dataset.paragraph = String(paragraph.from)
+    if (list !== undefined) block.dataset.list = list
+    block.textContent = "Item"
+    return block
+  })
+  box.append(...blocks)
+  restyle(box, textLook({ ...text, paragraphs }, scaled))
+  return blocks.map((block) => block.style.getPropertyValue("--bullet"))
+}
+
+it("keeps each imported paragraph's number when no list format was set", () => {
+  expect(numberedLabels([1, 7])).toEqual(['"1."', '"7."'])
+})
+
+it("starts a chosen decimal list at one, as its native export does", () => {
+  expect(numberedLabels([7, 8], "numbers")).toEqual(['"1."', '"2."'])
+})
+
+it("continues imported numbering and keeps its levels separate", () => {
+  expect(numberedLabels([7, 7])).toEqual(['"7."', '"8."'])
+  expect(numberedLabels([1, 1, 1], undefined, [0, 1, 0])).toEqual(['"1."', '"1."', '"2."'])
 })

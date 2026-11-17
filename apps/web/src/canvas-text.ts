@@ -26,7 +26,7 @@ function canvasBullet(bullet: PaintParagraph["bullet"]) {
   }
   return "char" in bullet
     ? { char: bullet.char, ...look }
-    : { autoNumber: bullet.autoNumber, number: bullet.number, ...look }
+    : { autoNumber: bullet.autoNumber, number: bullet.number, start: bullet.start, ...look }
 }
 
 function runStyle(run: PaintRunStyle, scale: number): CanvasRunStyle {
@@ -49,6 +49,7 @@ function runStyle(run: PaintRunStyle, scale: number): CanvasRunStyle {
 function canvasParagraph(paragraph: PaintParagraph, scale: number, reduction: number): CanvasParagraph {
   return {
     from: paragraph.from,
+    level: paragraph.level,
     align: aligned[paragraph.align],
     marginLeft: paragraph.marginLeft,
     indent: paragraph.indent,

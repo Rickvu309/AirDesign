@@ -12,7 +12,7 @@ export type CanvasBullet = {
   readonly font: string | null
   readonly color: string | null
   readonly size: number | null
-} & ({ readonly char: string } | { readonly autoNumber: string; readonly number: number })
+} & ({ readonly char: string } | { readonly autoNumber: string; readonly number: number; readonly start?: number })
 
 export type CanvasRunStyle = {
   readonly font: string | null
@@ -33,6 +33,7 @@ export type CanvasRun = CanvasRunStyle & { readonly from: number; readonly text:
 
 export type CanvasParagraph = {
   readonly from: number
+  readonly level?: number
   readonly align: "left" | "center" | "right" | "justify"
   readonly marginLeft?: number
   readonly indent?: number
