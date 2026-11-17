@@ -257,10 +257,10 @@ it("leaves out what only one element can hold, such as its text and its name", (
   expect(panel.sections.map((section) => section.trait)).toEqual([
     "alignment",
     "fill",
-    "line",
     "opacity",
     "text",
     "box",
+    "line",
     "effects",
   ])
   expect(panel.sections.find((section) => section.trait === "effects")?.open).toBe(false)

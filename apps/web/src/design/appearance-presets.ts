@@ -97,5 +97,12 @@ export function appearanceSections(sections: readonly PanelSection[]): readonly 
     })
     added.push({ trait: "shadow", label: designCopy.shadow, open: true, strips: arrange("shadow", [control]) })
   }
-  return [...sections, ...added]
+  const details = sections.map((section) => {
+    const fill =
+      section.trait === "line" ? section.strips.flat().find((control) => control.field === "fill") : undefined
+    if (fill === undefined || typeof fill.value !== "object" || fill.value === null || !("none" in fill.value))
+      return section
+    return { ...section, strips: [[fill]] }
+  })
+  return [...details, ...added]
 }
