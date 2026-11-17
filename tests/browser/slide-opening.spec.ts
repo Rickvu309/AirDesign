@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { clean, entry, fifty, manySlides, openFile, openGrid } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
@@ -57,12 +58,25 @@ test.describe("with motion", () => {
     await openGrid(page)
     await expect.poll(() => openings(page)).toEqual([{ before: ["canvas"], after: ["2"], moved: [280] }])
     await entry(page, 1).click()
+    await expect(page.locator("[data-editor-grid]")).toBeVisible()
+    await page.getByRole("button", { name: slideListCopy.listName, exact: true }).click()
     await expect(page.locator("[data-editor-grid]")).toHaveCount(0)
     await expect
       .poll(() => openings(page))
       .toEqual([
         { before: ["canvas"], after: ["2"], moved: [280] },
         { before: ["1"], after: ["canvas"], moved: [280] },
+      ])
+    await expect(entry(page, 1)).toHaveAttribute("aria-current", "true")
+    await openGrid(page)
+    await expect(entry(page, 1)).toBeFocused()
+    await expect(entry(page, 1)).toBeInViewport()
+    await expect
+      .poll(() => openings(page))
+      .toEqual([
+        { before: ["canvas"], after: ["2"], moved: [280] },
+        { before: ["1"], after: ["canvas"], moved: [280] },
+        { before: ["canvas"], after: ["1"], moved: [280] },
       ])
   })
 })
@@ -81,6 +95,8 @@ test("with reduced motion the grid opens and closes with no transition, back on 
   await entry(page, 1).focus()
   await page.keyboard.press("End")
   await page.keyboard.press("Enter")
+  await expect(page.locator("[data-editor-grid]")).toBeVisible()
+  await page.getByRole("button", { name: slideListCopy.listName, exact: true }).click()
   await expect(page.locator("[data-editor-grid]")).toHaveCount(0)
   await expect(entry(page, fifty)).toHaveAttribute("aria-current", "true")
   await openGrid(page)
