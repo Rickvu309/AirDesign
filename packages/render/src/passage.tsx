@@ -157,7 +157,9 @@ function pointAt(box: HTMLElement, caret: Caret): readonly [Node, number] {
     left -= node.data.length
     last = node
   }
-  return last === null ? [paragraph, 0] : [last, last.data.length]
+  if (last !== null) return [last, last.data.length]
+  const run = paragraph.querySelector("[data-run]")
+  return run === null ? [paragraph, 0] : [run, 0]
 }
 
 function paragraphNode(document: Document, paragraph: TextParagraph): HTMLElement {
@@ -174,9 +176,11 @@ function paragraphNode(document: Document, paragraph: TextParagraph): HTMLElemen
     span.dataset.run = `${paragraph.from}.${run.from}`
     writeFormat(span, run)
     if (run.text !== "") span.append(run.text)
+    else if (paragraph.runs.every((each) => each.text === "") && block.children.length === 0)
+      span.append(document.createElement("br"))
     block.append(span)
   }
-  if (paragraphText(paragraph) === "") block.append(document.createElement("br"))
+  if (paragraph.runs.length === 0) block.append(document.createElement("br"))
   return block
 }
 
