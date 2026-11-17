@@ -219,7 +219,7 @@ Two or more elements of one slide that move and resize as one. A person selects 
 _Avoid_: bundle, combine, merge, set
 
 **selection**:
-The elements of the slide in view that a person has selected. Click selects one, and Shift+click or Ctrl+click (Cmd+click on a Mac) adds one or takes it out. They all sit in the same place: on the slide, or inside the one group the person stepped into. One selected element shows its handles. Several show a thin ring each and one frame around them all, and a drag, an arrow or Delete acts on all of them as one step that one Undo takes back. When an agent deletes a selected element, the rest stay selected.
+The elements a person selects on the slide or inside one group. Click selects one. Shift+click or Ctrl+click (Cmd+click on a Mac) adds or removes one. One has handles. Several have a ring each and one frame. Drag, arrows and Delete act on all as one undo step. An agent's delete drops that element from the selection.
 _Avoid_: chosen, picked, active element
 
 **connector**:
