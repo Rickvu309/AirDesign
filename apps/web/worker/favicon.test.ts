@@ -4,9 +4,13 @@ import worker from "./api-forward.js"
 
 const publicFile = (path: string) => readFileSync(new URL(`../public/${path}`, import.meta.url))
 
-it("uses the same AirDesign mark on the site and studio, including dark tabs", () => {
+it("gives the studio tab mark optical weight without thickening the site mark", () => {
   const mark = publicFile("favicon-art.svg").toString()
-  expect(mark).toBe(readFileSync(new URL("../../site/public/favicon-art.svg", import.meta.url), "utf8"))
+  const site = readFileSync(new URL("../../site/public/favicon-art.svg", import.meta.url), "utf8")
+  expect(mark).toContain('stroke-width="7"')
+  expect(mark).toContain('stroke-width="5"')
+  expect(site).toContain('stroke-width="3.063"')
+  expect(site).toContain('stroke-width="2.188"')
   expect(mark).toContain('d="M13 57l19-50 19 50"')
   expect(mark).toContain('d="M6 44l52-14"')
   expect(mark).toContain("prefers-color-scheme: dark")
