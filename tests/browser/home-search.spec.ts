@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { decksFoundOf, productCopy, starOf, starredOf } from "../../apps/web/src/copy/product-copy.ts"
 import { first, many, now, second, store } from "./home-store.ts"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -32,9 +33,9 @@ test("an account with no decks shows No decks yet for a query, never No decks ma
   await page.goto("/?q=quarterly")
   await expect(page.getByRole("heading", { name: "No decks yet" })).toBeVisible()
   await expect(page.getByRole("heading", { name: /No decks match/ })).toHaveCount(0)
-  await expect(page.getByRole("status")).toHaveText("No decks yet")
+  await expect(page.getByRole("status")).toHaveText(productCopy.noDecksTitle)
   await page.getByRole("searchbox", { name: "Search" }).fill("annual")
-  await expect(page.getByRole("status")).toHaveText("No decks yet")
+  await expect(page.getByRole("status")).toHaveText(productCopy.noDecksTitle)
 })
 
 test("an empty Trash query announces zero decks instead of a no-match page", async ({ page }) => {
@@ -51,8 +52,8 @@ test("a query with no match names the query and Clear search brings the decks ba
   await page.goto("/?q=quarterly")
   await expect(page.getByRole("heading", { name: "No decks match “quarterly”" })).toBeVisible()
   await expect(page.getByText("Check the spelling or search for another name.")).toBeVisible()
-  await expect(page.getByText("No decks yet")).toHaveCount(0)
-  await page.getByRole("button", { name: "Clear search" }).click()
+  await expect(page.getByText(productCopy.noDecksTitle)).toHaveCount(0)
+  await page.getByRole("button", { name: productCopy.clearSearch }).click()
   await expect(page.getByRole("searchbox", { name: "Search" })).toHaveValue("")
   await expect(page).toHaveURL(/\/$/)
   await expect(cards(page)).toHaveText([first.name, second.name])
@@ -118,7 +119,7 @@ test("settled search announces matches and no matches without moving focus", asy
   const box = page.getByRole("searchbox", { name: "Search" })
   const status = page.getByRole("status")
   await box.fill("another")
-  await expect(status).toHaveText("1 deck found")
+  await expect(status).toHaveText(decksFoundOf(1))
   await expect(box).toBeFocused()
   await box.fill("nothing")
   await expect(status).toHaveText("No decks match “nothing”")
@@ -135,12 +136,12 @@ test("moving a deck to Trash after a search announces nothing new", async ({ pag
   await expect(cards(page)).toHaveCount(2)
   const status = page.getByRole("status")
   await page.getByRole("searchbox", { name: "Search" }).fill("another")
-  await expect(status).toHaveText("1 deck found")
+  await expect(status).toHaveText(decksFoundOf(1))
   await page.getByRole("button", { name: `${second.name} actions` }).click()
-  await page.getByRole("menuitem", { name: "Move to Trash" }).click()
+  await page.getByRole("menuitem", { name: productCopy.moveToTrash }).click()
   await expect(page.getByText(`${second.name} moved to Trash`, { exact: true })).toBeVisible()
   await page.clock.runFor(1000)
-  await expect(status).toHaveText("1 deck found")
+  await expect(status).toHaveText(decksFoundOf(1))
 })
 
 test("starring a deck after a search keeps the star message", async ({ page }) => {
@@ -149,11 +150,11 @@ test("starring a deck after a search keeps the star message", async ({ page }) =
   await expect(cards(page)).toHaveCount(2)
   const status = page.getByRole("status")
   await page.getByRole("searchbox", { name: "Search" }).fill("another")
-  await expect(status).toHaveText("1 deck found")
-  await page.getByRole("button", { name: `Star ${second.name}` }).click()
-  await expect(status).toHaveText(`Starred ${second.name}`)
+  await expect(status).toHaveText(decksFoundOf(1))
+  await page.getByRole("button", { name: starOf(second.name) }).click()
+  await expect(status).toHaveText(starredOf(second.name))
   await page.clock.runFor(1000)
-  await expect(status).toHaveText(`Starred ${second.name}`)
+  await expect(status).toHaveText(starredOf(second.name))
 })
 
 test("clearing the search stays silent and later changes to the deck count announce nothing", async ({ page }) => {
@@ -163,25 +164,25 @@ test("clearing the search stays silent and later changes to the deck count annou
   const status = page.getByRole("status")
   const box = page.getByRole("searchbox", { name: "Search" })
   await box.fill("another")
-  await expect(status).toHaveText("1 deck found")
+  await expect(status).toHaveText(decksFoundOf(1))
   await box.press("Escape")
   await page.clock.runFor(1000)
   await expect(status).toHaveText("")
   await page.getByRole("button", { name: `${second.name} actions` }).click()
-  await page.getByRole("menuitem", { name: "Move to Trash" }).click()
+  await page.getByRole("menuitem", { name: productCopy.moveToTrash }).click()
   await expect(page.getByText(`${second.name} moved to Trash`, { exact: true })).toBeVisible()
   await page.clock.runFor(1000)
   await expect(status).toHaveText("")
 })
 
-for (const clear of ["Escape", "Clear search"]) {
+for (const clear of ["Escape", productCopy.clearSearch]) {
   test(`clearing Recents with ${clear} does not announce its six cards as search results`, async ({ page }) => {
     await store(page, many)
     await page.goto("/?q=nothing")
     const status = page.getByRole("status")
     await expect(status).toHaveText("No decks match “nothing”")
     if (clear === "Escape") await page.getByRole("searchbox", { name: "Search" }).press("Escape")
-    else await page.getByRole("button", { name: "Clear search" }).click()
+    else await page.getByRole("button", { name: productCopy.clearSearch }).click()
     await expect(cards(page)).toHaveCount(6)
     await page.clock.runFor(1000)
     await expect(status).toHaveText("")
