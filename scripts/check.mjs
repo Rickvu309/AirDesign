@@ -16,6 +16,7 @@ export const stages = [
     ["format", "pnpm", ["exec", "oxfmt", "--check"]],
     ["lint", "pnpm", ["lint"]],
     ["copy-literals", "node", ["scripts/copy-literals.mjs"]],
+    ["browser-imports", "node", ["scripts/browser-imports.mjs"]],
     ["actionlint", "node", ["scripts/actionlint.mjs"]],
     [
       "test",
@@ -63,6 +64,7 @@ export const partSteps = {
 const parts = ["main", ...Object.keys(partSteps)]
 
 const inPart = (part, name) =>
+  name === "browser-imports" ||
   part === "all" ||
   (part === "main" ? !Object.values(partSteps).some((steps) => steps.has(name)) : partSteps[part].has(name))
 
@@ -156,6 +158,7 @@ export const recordFailure = (failed, name, warned = warnSteps) => {
 
 const showOnSuccess = new Set(["bug-rule", "commit-authors", "lint", "metrics", "specs", "worktrees", ...localSteps])
 export const preflight = [
+  "browser-imports",
   "format",
   "lint",
   "file-size",
