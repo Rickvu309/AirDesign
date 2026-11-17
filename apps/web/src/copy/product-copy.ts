@@ -38,6 +38,26 @@ export function unstarredOf(name: string): string {
   return `Removed star from ${name}`
 }
 
+export function movingOf(name: string): string {
+  return `Moving ${name} to Trash`
+}
+
+export function restoringOf(name: string): string {
+  return `Restoring ${name}`
+}
+
+export function restoredOf(name: string): string {
+  return `Restored ${name}`
+}
+
+export function moveFailedOf(name: string): string {
+  return `Unable to move ${name} to Trash`
+}
+
+export function restoreFailedOf(name: string): string {
+  return `Unable to restore ${name}`
+}
+
 export function tabTitleOf(name: string): string {
   return `${name} - AirDesign`
 }
