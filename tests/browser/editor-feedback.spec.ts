@@ -22,7 +22,9 @@ for (const leave of ["Tab", "Shift+Tab", "click"] as const) {
       const target =
         leave === "Shift+Tab"
           ? page.getByRole("link", { name: "Go to your decks" })
-          : page.getByRole("button", { name: leave === "click" ? "Design" : "Grid", exact: true })
+          : leave === "click"
+            ? page.getByRole("button", { name: "Design", exact: true })
+            : page.locator("[data-new-slide-layouts]")
       if (leave === "click") await target.click()
       else await field.press(leave)
       await expect(target).toBeFocused()

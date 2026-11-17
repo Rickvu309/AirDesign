@@ -84,6 +84,7 @@ const sampleReset = "Mon 8:00 AM"
 export const productCopy = {
   noDecksTitle: "No decks yet",
   nameEmpty: "Enter a name for this deck.",
+  rename: "Rename",
   renameDeck: "Rename deck",
   deckName: "Deck name",
   noMatchBody: "Check the spelling or search for another name.",

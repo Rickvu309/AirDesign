@@ -61,6 +61,7 @@ export function EditorGrid({
   size = null,
   onSlides,
   onRename,
+  onTrash,
   onExport,
   onPresent,
   presenting = false,
@@ -82,6 +83,7 @@ export function EditorGrid({
   strip: SlideStrip
   size?: SlideSize | null
   onSlides: () => void
+  onTrash?: () => void
   onRename?: (name: string) => void
   onExport: (request?: ExportRequest) => Promise<void> | void
   onPresent?: (from: number) => void
@@ -351,7 +353,12 @@ export function EditorGrid({
           <span className="flex size-8 items-center justify-center">
             <AirdesignMark size={20} />
           </span>
-          <DeckTitle title={title} className="pr-2 pl-0.5" {...(onRename === undefined ? {} : { onRename })} />
+          <DeckTitle
+            title={title}
+            className="pr-2 pl-0.5"
+            {...(onRename === undefined ? {} : { onRename })}
+            {...(onTrash === undefined ? {} : { onTrash })}
+          />
           {save === null ? null : <SaveStatusLine status={save} />}
           <Button
             type="button"
