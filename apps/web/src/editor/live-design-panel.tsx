@@ -11,7 +11,6 @@ import {
   type TraitReads,
 } from "@airdesign/document"
 import {
-  colorHex,
   deckColors,
   readSlides,
   readTraits,
@@ -49,7 +48,7 @@ import { plainNames } from "@/design/node-names"
 import { rebasedChange } from "@/design/rebase"
 import { siteNames } from "@/design/site-names"
 import { deviceScope } from "@/design/trait-edit"
-import { backgroundHex, designShown, themeOf, type DesignShown } from "@/design-shown"
+import { designShown, themeOf, type DesignShown } from "@/design-shown"
 import { DesignHead, DesignSection, ElementDesign, SectionRows } from "@/editor/design-panel"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import type { UndoList } from "@/editor/use-undo"
@@ -165,13 +164,6 @@ export function colorsIn(parts: Parts): readonly string[] {
   return found
 }
 
-function behindOf(parts: Parts, index: number, node: ElementId, theme: readonly Swatch[]): string | null {
-  const fill = fieldsOf(parts, node)?.["fill.value"]?.value
-  if (typeof fill === "object" && fill !== null && "solid" in fill) return colorHex(fill.solid as Color, theme)
-  if (typeof fill === "object" && fill !== null && !("none" in fill)) return null
-  return backgroundHex(parts, index)
-}
-
 function nodeChoices(deck: DesigningDeck, connector: ScopedElement): readonly NodeChoice[] {
   const { shown } = deck
   const scope = deviceScope(shown.shownParts.current, shown.shownRegister.current ?? openRegister("", ""))
@@ -236,7 +228,6 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
   const palette: Palette = {
     theme,
     deck: colorsIn(display),
-    behind: behindOf(display, current, node, theme),
   }
   const design = elementDesign(deck, node)
   if (design === null) return null
@@ -301,7 +292,7 @@ function LiveThemeDesign({ deck }: { deck: DesigningDeck }) {
       <div className="flex flex-col gap-2" data-design-theme>
         <SectionRows
           rows={section.rows}
-          palette={{ theme: [], deck: colorsIn(deck.shown.displayParts.current), behind: null }}
+          palette={{ theme: [], deck: colorsIn(deck.shown.displayParts.current) }}
           onChange={(row, value) => changeDesign(deck, () => rebasedChange(themeSection(deck)?.rows ?? [], row, value))}
         />
       </div>
@@ -328,7 +319,7 @@ export function DesignView({
       <DesignSection title={designCopy.background} last={children === null}>
         <ColorPicker
           value={background.value}
-          palette={{ theme: shown.theme, deck, behind: null }}
+          palette={{ theme: shown.theme, deck }}
           onPick={onColor}
           trigger={
             <Button

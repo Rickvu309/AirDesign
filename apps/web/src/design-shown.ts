@@ -47,12 +47,6 @@ function valueOf(parts: Parts, part: string, solid: string | null, theme: readon
   return slot === undefined ? { rgb: hex } : { scheme: slot.scheme }
 }
 
-export function backgroundHex(parts: Parts, index: number): string | null {
-  const part = readSlides(parts)[index]?.part
-  const solid = part === undefined ? null : solidOf(fillOf(parts, part))
-  return solid === null ? null : solid.slice(1, 7)
-}
-
 export function themeOf(parts: Parts, part: string): readonly Swatch[] {
   return themeSwatches(parts, part).map((swatch) => ({
     ...swatch,

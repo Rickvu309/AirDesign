@@ -25,7 +25,6 @@ const palette: Palette = {
     name: formatCopy.colors[scheme as keyof typeof sampleColors],
   })),
   deck: [],
-  behind: swatchWhite.slice(1),
 }
 
 const title: ScopedElement = {

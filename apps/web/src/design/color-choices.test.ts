@@ -23,7 +23,7 @@ const theme = [
   { scheme: "accent2", css: "1A1A1A", name: "Accent 2" },
 ] as const
 
-const palette: Palette = { theme, deck: ["C00000", "4472C4", "1F4E79"], behind: "FFFFFF" }
+const palette: Palette = { theme, deck: ["C00000", "4472C4", "1F4E79"] }
 
 const written = (css: string) =>
   shadesOf(css).map(({ direction, percent, transforms }) => [
