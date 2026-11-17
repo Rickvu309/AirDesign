@@ -1,5 +1,8 @@
 import { createHash, randomBytes } from "node:crypto"
+import { createRequire } from "node:module"
 import { expect } from "@playwright/test"
+
+const { settingsCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/settings-copy.ts")
 
 function pkce() {
   const verifier = randomBytes(32).toString("base64url")
@@ -61,7 +64,7 @@ export default async function drive({
   await page.getByRole("menuitem", { name: "Agents" }).click()
   await expect(page).toHaveURL(/\/settings\/agents$/)
   await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible()
-  await expect(page.getByText("No agents connected yet", { exact: true })).toBeVisible()
+  await expect(page.getByText(settingsCopy.noAgents, { exact: true })).toBeVisible()
   await capture("agents-empty")
 
   const initial = await post(accountRoutes.agents, {}, cookie)
@@ -139,7 +142,7 @@ export default async function drive({
   await dialog.getByRole("button", { name: "Disconnect", exact: true }).click()
   await expect(dialog).toBeHidden()
   await expect(page.getByText("Claude", { exact: true })).toHaveCount(0)
-  await expect(page.getByText("No agents connected yet", { exact: true })).toBeVisible()
+  await expect(page.getByText(settingsCopy.noAgents, { exact: true })).toBeVisible()
   await capture("agents-disconnected")
 
   const afterRevoke = await post(accountRoutes.agents, {}, cookie)
