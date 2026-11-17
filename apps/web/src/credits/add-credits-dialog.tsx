@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogOverlay, DialogPopup, DialogPortal } from "@/components/ui/dialog"
+import { Dialog, DialogDescription, DialogOverlay, DialogPopup, DialogPortal, DialogTitle } from "@/components/ui/dialog"
 import { productCopy } from "@/copy/product-copy"
 import { CloseGlyph, ExternalArrow } from "@/credits/dialog-glyphs"
 import { cn } from "@/lib/class-names"
@@ -35,9 +35,9 @@ export function AddCreditsDialog({
           className="fixed top-1/2 left-1/2 z-50 flex w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col gap-5 rounded-3xl bg-white p-6 shadow-[inset_0_0_0_1px_rgb(0_0_0/8%),0_24px_48px_rgb(0_0_0/16%)] outline-none"
         >
           <div className="flex h-7 items-center justify-between">
-            <h2 className="text-[length:var(--type-section)] leading-[22px] font-semibold text-foreground">
+            <DialogTitle className="text-[length:var(--type-section)] leading-[22px] font-semibold text-foreground">
               {productCopy.creditsAdd}
-            </h2>
+            </DialogTitle>
             <button
               type="button"
               aria-label={productCopy.close}
@@ -46,9 +46,9 @@ export function AddCreditsDialog({
               <CloseGlyph />
             </button>
           </div>
-          <p className="text-[length:var(--type-dense)] leading-[var(--leading-body)] text-muted-foreground">
+          <DialogDescription className="text-[length:var(--type-dense)] leading-[var(--leading-body)] text-muted-foreground">
             {productCopy.creditsFacts}
-          </p>
+          </DialogDescription>
           <div>
             <div className="text-[length:var(--type-caption)] leading-4 font-medium text-muted-foreground">
               {productCopy.amount}
