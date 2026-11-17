@@ -72,14 +72,7 @@ export function ColorControl({ control, palette, onChange }: ControlProps) {
         value={shown}
         palette={palette}
         onPick={(color) => onChange(picked(color))}
-        trigger={
-          <Button
-            type="button"
-            variant="ghost"
-            aria-labelledby={`${label} ${named}`}
-            className={cn(fieldLook, control.trait === "theme" ? "gap-1 px-1" : null)}
-          />
-        }
+        trigger={<Button type="button" variant="ghost" aria-labelledby={`${label} ${named}`} className={fieldLook} />}
       >
         <ColorField id={named} css={css} name={name} inherited={control.inherited} />
       </ColorPicker>
