@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
+import { openDeck, settled } from "./design-panel"
 import { newBlankDeck } from "./new-deck"
 import { holdDevice, holdableDevice, openDevice } from "./slow-device"
 
@@ -37,19 +38,20 @@ test("keys typed at once after Add text box land in the new box, before and afte
   await expect(texts.last()).toHaveText("Big title")
 })
 
-test("keys typed at once after adding a table land in its first cell", async ({ page }) => {
-  await blankDeck(page)
-  const cell = page.locator('[data-slide-paint] [data-canvas-table] [data-table-text="0.0"]')
-  await page.getByRole("button", { name: "Insert table", exact: true }).click()
+test("typing after selecting an imported table leaves its cells unchanged", async ({ page }) => {
+  await openDeck(page, "table-added.pptx")
+  const table = page.locator("[data-slide-paint] [data-canvas-table]")
+  const before = await table.textContent()
+  await table.click()
   await holdDevice(page)
-  await page.getByRole("button", { name: "3 rows, 3 columns", exact: true }).click()
   await page.keyboard.type("Re", { delay: 0 })
-  await expect(cell).toHaveCount(0)
   await openDevice(page)
   await page.keyboard.type("gion", { delay: 0 })
-  await expect(cell).toBeFocused()
-  await expect(cell).toHaveText("Region")
-  await expect(page.getByRole("group", { name: "Table size" })).toHaveCount(0)
+  await expect(table).toHaveText(before ?? "")
+  await expect(table.locator('[contenteditable="true"]')).toHaveCount(0)
+  await page.reload()
+  await settled(page)
+  await expect(table).toHaveText(before ?? "")
 })
 
 test("the first text box waits for its font, then takes focus and the held keys", async ({ page }) => {

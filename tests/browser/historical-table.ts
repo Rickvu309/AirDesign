@@ -3,8 +3,8 @@ import type { Page } from "@playwright/test"
 import { settled } from "./design-panel"
 
 export async function historicalTable(page: Page, kind: "typed" | "cells" | "readable" = "typed") {
-  const doc = await import("../../packages/document/src/index.ts")
-  const pptx = await import("../../packages/pptx/src/index.ts")
+  const doc = await import("../../packages/document/dist/index.js")
+  const pptx = await import("../../packages/pptx/dist/index.js")
   const original = await readFile(`scripts/pptx-fixtures/${kind === "cells" ? "table-added" : "blank"}.pptx`)
   const read = await pptx.readPackage(original)
   if (!read.ok) throw new Error("package")

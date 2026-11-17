@@ -106,6 +106,8 @@ test("the list menu aligns to the deck name for right-click and keyboard, withou
     expect(highlight).not.toBe("rgba(0, 0, 0, 0)")
     expect(highlight).not.toBe(background)
     await page.keyboard.press("Escape")
+    await expect(menu).toBeHidden()
+    await expect(link).toBeFocused()
   }
 })
 

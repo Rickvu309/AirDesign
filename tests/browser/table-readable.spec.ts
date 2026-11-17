@@ -22,7 +22,7 @@ async function shown(page: Page, spot: string): Promise<{ text: string; ink: str
       const holder = node?.parentElement ?? cell
       return [node?.textContent ?? "", hex(getComputedStyle(holder).color), hex(getComputedStyle(cell).backgroundColor)]
     })
-  const { contrast } = await import("../../packages/document/src/index.ts")
+  const { contrast } = await import("../../packages/document/dist/index.js")
   return { text, ink, ground, ratio: contrast(ink, ground) }
 }
 
