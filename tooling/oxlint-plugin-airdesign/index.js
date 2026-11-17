@@ -2,6 +2,7 @@ import noComments from "./rules/no-comments.js"
 import noByteCounter from "./rules/no-byte-counter.js"
 import noElementIdCast from "./rules/no-element-id-cast.js"
 import noEnvOutsideEntry from "./rules/no-env-outside-entry.js"
+import noFieldEdge from "./rules/no-field-edge.js"
 import noHiddenInput from "./rules/no-hidden-input.js"
 import noHttpOutsideServer from "./rules/no-http-outside-server.js"
 import noLimitInCopy from "./rules/no-limit-in-copy.js"
@@ -17,6 +18,7 @@ const plugin = {
     "no-byte-counter": noByteCounter,
     "no-element-id-cast": noElementIdCast,
     "no-env-outside-entry": noEnvOutsideEntry,
+    "no-field-edge": noFieldEdge,
     "no-hidden-input": noHiddenInput,
     "no-http-outside-server": noHttpOutsideServer,
     "no-limit-in-copy": noLimitInCopy,

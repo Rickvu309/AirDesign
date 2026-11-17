@@ -19,6 +19,7 @@
     "airdesign/no-comments": "error",
     "airdesign/no-element-id-cast": "warn",
     "airdesign/no-env-outside-entry": "error",
+    "airdesign/no-field-edge": "error",
     "airdesign/no-hidden-input": "warn",
     "airdesign/no-http-outside-server": "error",
     "airdesign/no-limit-in-copy": "error",
