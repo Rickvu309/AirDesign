@@ -67,4 +67,18 @@ if (!cssMix[0].message.includes("color mix") || !upperMix[0].message.includes("c
   throw new Error("color mix walk failed")
 }
 
+const danger = "text-" + "destructive"
+const dangerMessage = "Use text-danger-text for danger text; destructive is a fill token."
+for (const prefix of ["", "focus:", "data-[variant=destructive]:", "data-[variant=destructive]:focus:"]) {
+  expectRejects(
+    "danger fill text fails",
+    "screen.tsx",
+    `export const style = "${prefix}${danger}"`,
+    rule,
+    dangerMessage,
+  )
+}
+expectAccepts("danger text token passes", "screen.tsx", 'export const style = "text-danger-text bg-destructive"', rule)
+expectAccepts("destructive foreground passes", "screen.tsx", `export const style = "${danger}-foreground"`, rule)
+
 console.log("no-raw tests passed")

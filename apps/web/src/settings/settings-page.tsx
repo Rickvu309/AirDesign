@@ -29,7 +29,7 @@ export function SettingsPage({
 }) {
   return (
     <div className="h-dvh w-full bg-background text-foreground">
-      <DecksShell active="settings" account={{ email }} onSignOut={onSignOut} onNavigate={navigate}>
+      <DecksShell settingsTab={tab} active="settings" account={{ email }} onSignOut={onSignOut} onNavigate={navigate}>
         <div className="-mx-14 -mt-10 h-full overflow-y-auto pt-10 pb-12 max-md:-mx-4">
           <div data-settings-header className="border-b border-line">
             <div className="mx-auto w-full max-w-[860px] max-md:px-4">
