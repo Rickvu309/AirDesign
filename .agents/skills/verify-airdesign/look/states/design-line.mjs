@@ -1,3 +1,5 @@
+import { unfold } from "../unfold.mjs"
+import { lineCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { fixtureDeck } from "../fixture-deck.mjs"
 
@@ -9,6 +11,7 @@ async function drive(kit) {
     .click({ position: { x: 4, y: 4 } })
   const panel = kit.page.locator("[data-design-element]")
   await expect(panel).toBeVisible()
+  await unfold(panel, lineCopy.section)
   const width = panel.locator("section").filter({ has: kit.page.getByRole("heading", { name: "Line", exact: true }) })
   if ((await width.count()) === 0) return
   const field = width.getByRole("textbox", { name: "Line width", exact: true })

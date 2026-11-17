@@ -12,6 +12,7 @@ import {
 } from "@airdesign/document"
 import { readParts, readSlides } from "@airdesign/pptx"
 import { act, createElement } from "react"
+import { pictureCopy } from "@/copy/picture-copy"
 import { toast } from "@/components/ui/toast"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import type { DeckPaint } from "./use-deck-paint"
@@ -117,6 +118,11 @@ async function pictureDeck(refused = false) {
   if (shown === null) throw new Error("not rendered")
   await act(async () => {
     shown.showOpened(parts, register)
+  })
+  await act(async () => {
+    const crop = [...host.querySelectorAll("button")].find((button) => button.textContent === pictureCopy.crop)
+    if (crop === undefined) throw new Error(pictureCopy.crop)
+    if (crop.getAttribute("aria-expanded") !== "true") crop.click()
   })
   const side = (name: string) => {
     const input = host.querySelector<HTMLInputElement>(`[data-design-element] input[aria-label="${name}"]`)
