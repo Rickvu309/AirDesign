@@ -20,7 +20,7 @@ export const usage = [
   "verify-airdesign agent-bench publish <run-dir>  puts summary.json on the bench release",
   "                                            time the editor on the base and on this change, interleaved, CPU throttle 4",
   "verify-airdesign annotate <run> <callouts.json> [--out dir]  numbered callouts on one run's states",
-  "verify-airdesign publish <dir> [--pr n]     upload images to the proof release; prints links and the PR fragment",
+  "verify-airdesign publish <dir> [--pr n]     upload images to a proof release with room; prints links and the PR fragment",
   "verify-airdesign comment <pr> <file>       post a PR comment with the agent header; refuses an empty file",
   "verify-airdesign suites [--run] [check|browser|journeys|pptx...] [-- args]",
   "                                            the test suites this branch's changes need; --run runs them under the machine lock",

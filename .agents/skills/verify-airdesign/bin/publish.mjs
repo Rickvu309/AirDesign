@@ -61,13 +61,14 @@ export function publish({
   prefix,
   folder,
   scratch,
-  release = "proof",
+  release: releaseBase = "proof",
   kinds = [".png"],
   about = proofRelease,
   repository,
   runGh = ghIn,
 }) {
   if (files.length === 0) throw new Error("nothing to publish: name a folder with PNG files")
+  if (files.length > 1000) throw new Error("one publish cannot exceed 1000 files; publish smaller folders")
   const names = files.map((file) => path.basename(file))
   const twice = names.find((name, index) => names.indexOf(name) !== index)
   if (twice) throw new Error(`two files are named ${twice}; publish puts every file in one folder`)
@@ -83,30 +84,35 @@ export function publish({
 
   const repo = repository ?? githubRepository(runGh)
 
-  let existingAssets = []
-  try {
-    const view = runGh(["release", "view", release, "--json", "assets"])
-    const parsed = typeof view === "object" ? view : JSON.parse(view)
-    existingAssets = (parsed.assets ?? []).map((asset) => asset.name)
-  } catch (error) {
-    const message = String(error.stderr ?? error.message)
-    if (message.includes("release not found") || message.includes("Not Found") || message.includes("404")) {
+  const placed = Object.fromEntries(
+    files.map((file) => [path.basename(file), assetName({ prefix: resolvedPrefix, file, bytes: readFileSync(file) })]),
+  )
+  let release
+  let existingSet
+  for (let number = 1; ; number += 1) {
+    release = number === 1 ? releaseBase : `${releaseBase}-${String(number)}`
+    let existingAssets = []
+    try {
+      const view = runGh(["release", "view", release, "--json", "assets"])
+      const parsed = typeof view === "object" ? view : JSON.parse(view)
+      existingAssets = (parsed.assets ?? []).map((asset) => asset.name)
+    } catch (error) {
+      const message = String(error.stderr ?? error.message)
+      if (!message.includes("release not found") && !message.includes("Not Found") && !message.includes("404")) {
+        throw error
+      }
       runGh(["release", "create", release, "--prerelease", "--title", about.title, "--notes", about.notes])
-    } else {
-      throw error
     }
+    existingSet = new Set(existingAssets)
+    const missing = Object.values(placed).filter((asset) => !existingSet.has(asset))
+    if (existingAssets.length + missing.length <= 1000) break
   }
 
-  const existingSet = new Set(existingAssets)
   const scratchDir = mkdtempSync(path.join(scratch ?? os.tmpdir(), "proof-upload-"))
-  const placed = {}
   const toUpload = []
   try {
     for (const file of files) {
-      const bytes = readFileSync(file)
-      const asset = assetName({ prefix: resolvedPrefix, file, bytes })
-      const base = path.basename(file)
-      placed[base] = asset
+      const asset = placed[path.basename(file)]
       if (!existingSet.has(asset)) {
         const stagePath = path.join(scratchDir, asset)
         copyFileSync(file, stagePath)
