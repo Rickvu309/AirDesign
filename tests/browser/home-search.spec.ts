@@ -32,6 +32,18 @@ test("an account with no decks shows No decks yet for a query, never No decks ma
   await page.goto("/?q=quarterly")
   await expect(page.getByRole("heading", { name: "No decks yet" })).toBeVisible()
   await expect(page.getByRole("heading", { name: /No decks match/ })).toHaveCount(0)
+  await expect(page.getByRole("status")).toHaveText("No decks yet")
+  await page.getByRole("searchbox", { name: "Search" }).fill("annual")
+  await expect(page.getByRole("status")).toHaveText("No decks yet")
+})
+
+test("an empty Trash query announces zero decks instead of a no-match page", async ({ page }) => {
+  await store(page)
+  await page.goto("/trash?q=quarterly")
+  await expect(page.getByRole("heading", { name: /No decks match/ })).toHaveCount(0)
+  await expect(page.getByRole("status")).toHaveText("0 decks found")
+  await page.getByRole("searchbox", { name: "Search" }).fill("annual")
+  await expect(page.getByRole("status")).toHaveText("0 decks found")
 })
 
 test("a query with no match names the query and Clear search brings the decks back", async ({ page }) => {
@@ -112,7 +124,8 @@ test("settled search announces matches and no matches without moving focus", asy
   await expect(status).toHaveText("No decks match “nothing”")
   await expect(box).toBeFocused()
   await box.press("Escape")
-  await expect(status).toHaveText("2 decks found")
+  await page.clock.runFor(1000)
+  await expect(status).toHaveText("")
   await expect(box).toBeFocused()
 })
 
@@ -143,7 +156,7 @@ test("starring a deck after a search keeps the star message", async ({ page }) =
   await expect(status).toHaveText(`Starred ${second.name}`)
 })
 
-test("clearing the search announces once and later changes to the deck count announce nothing", async ({ page }) => {
+test("clearing the search stays silent and later changes to the deck count announce nothing", async ({ page }) => {
   await store(page)
   await page.goto("/")
   await expect(cards(page)).toHaveCount(2)
@@ -152,10 +165,25 @@ test("clearing the search announces once and later changes to the deck count ann
   await box.fill("another")
   await expect(status).toHaveText("1 deck found")
   await box.press("Escape")
-  await expect(status).toHaveText("2 decks found")
+  await page.clock.runFor(1000)
+  await expect(status).toHaveText("")
   await page.getByRole("button", { name: `${second.name} actions` }).click()
   await page.getByRole("menuitem", { name: "Move to Trash" }).click()
   await expect(page.getByText(`${second.name} moved to Trash`, { exact: true })).toBeVisible()
   await page.clock.runFor(1000)
-  await expect(status).toHaveText("2 decks found")
+  await expect(status).toHaveText("")
 })
+
+for (const clear of ["Escape", "Clear search"]) {
+  test(`clearing Recents with ${clear} does not announce its six cards as search results`, async ({ page }) => {
+    await store(page, many)
+    await page.goto("/?q=nothing")
+    const status = page.getByRole("status")
+    await expect(status).toHaveText("No decks match “nothing”")
+    if (clear === "Escape") await page.getByRole("searchbox", { name: "Search" }).press("Escape")
+    else await page.getByRole("button", { name: "Clear search" }).click()
+    await expect(cards(page)).toHaveCount(6)
+    await page.clock.runFor(1000)
+    await expect(status).toHaveText("")
+  })
+}
