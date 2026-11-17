@@ -1,4 +1,4 @@
-import { undoCopy } from "../../../../../apps/web/src/copy/undo-copy.ts"
+import { undoCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
 import { moveThree } from "./three-moved.mjs"
