@@ -1,6 +1,7 @@
+import { join } from "node:path"
+import { pathToFileURL } from "node:url"
 import type { Page } from "@playwright/test"
 import type { FontWidths, ResolvedSlide } from "../../packages/document/src/index.ts"
-import { fontFace } from "../../packages/document/dist/index.js"
 
 const substitutes = new Map([
   ["calibri", "Carlito"],
@@ -44,6 +45,7 @@ function quotedName(family: string): string {
 }
 
 export async function measureFaces(page: Page, families: readonly string[], chars: string): Promise<FontWidths> {
+  const { fontFace } = await import(pathToFileURL(join(process.cwd(), "packages/document/dist/index.js")).href)
   const requests = families.flatMap((family) =>
     styles.map(({ bold, italic }) => ({
       family,
