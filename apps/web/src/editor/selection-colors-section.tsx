@@ -26,6 +26,7 @@ export function SelectionColorsSection({
         {rows.map(({ hex, color }) => (
           <ColorPicker
             key={hex}
+            title={selectionColorsCopy.section}
             value={color}
             palette={palette}
             onPick={(picked) => onPick(hex, picked)}
