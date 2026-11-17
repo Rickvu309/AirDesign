@@ -1,3 +1,4 @@
+import { useFontReady } from "@/editor/use-font-ready"
 import { storeNewer, watchNewer } from "@airdesign/live"
 import { useSyncExternalStore } from "react"
 import { NotFoundPage } from "@/decks/not-found-page"
@@ -21,6 +22,7 @@ import { colorsIn, LiveDesignPanel } from "@/editor/live-design-panel"
 
 export function ThinDeck({ id }: { id: string }) {
   const deck = useEditorDeck(id)
+  const paintedDeck = useFontReady(deck.paintedDeck)
   const [panel, setPanel] = useKeptPanel(id)
   useDeckOpen(deck)
   useNetwork(deck)
@@ -49,7 +51,7 @@ export function ThinDeck({ id }: { id: string }) {
   const notice = shownNotice({ ...deck, told: deck.undo.told, picture: deck.pictureTool.notice })
 
   return (
-    <div className="thin-page" data-deck-ready={deck.paintedDeck}>
+    <div className="thin-page" data-deck-ready={paintedDeck}>
       <ThinNoticeView notice={notice} onTryAgain={exported.tryAgain} />
       <SlideToaster list={deck.undo.undoList} />
       {exported.downloaded !== null && notice === null && (

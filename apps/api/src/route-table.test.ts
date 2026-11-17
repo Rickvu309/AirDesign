@@ -1,10 +1,14 @@
+import { execFileSync } from "node:child_process"
 import { readFile, readdir } from "node:fs/promises"
 import path from "node:path"
 import { parseSync } from "oxc-parser"
 import { describe, expect, it } from "vitest"
 
 describe("the route table is the only way in", () => {
-  const folder = import.meta.dirname
+  const folder = path.join(
+    execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: import.meta.dirname, encoding: "utf8" }).trim(),
+    "apps/api/src",
+  )
 
   type Tree = {
     readonly type: string

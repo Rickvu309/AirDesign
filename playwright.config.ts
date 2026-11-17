@@ -39,7 +39,7 @@ export default defineConfig({
     },
   },
   webServer: {
-    command: `${built ? "" : "pnpm --filter web build && "}pnpm --filter web exec vite preview --host 127.0.0.1 --port ${port} --strictPort`,
+    command: `pnpm --workspace-concurrency=1 --filter @airdesign/api ${built ? "" : "--filter web "}build && node tests/browser/font-preview.mjs ${port}`,
     url: origin,
     reuseExistingServer: false,
     timeout: 120_000,
