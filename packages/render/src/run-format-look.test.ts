@@ -153,6 +153,14 @@ it("paints a numbered paragraph's label", () => {
   expect(textLook(text, scaled).paragraph(0, true, { list: "numbers" })).toMatchObject({ "--bullet": '"1."' })
 })
 
+it("sizes a new list marker from its first run's current size", () => {
+  expect(
+    textLook(text, scaled).paragraph(0, true, { list: "numbers", firstRun: { from: 0, size: 3200 } }),
+  ).toMatchObject({
+    "--bullet-size": "32px",
+  })
+})
+
 function numberedLabels(
   starts: readonly number[],
   list?: "numbers",
