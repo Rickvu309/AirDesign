@@ -26,7 +26,7 @@ import { traitControls } from "./trait-controls"
 import { arrange, canvasControl, resolveControl, type ControlKind, type ControlLook } from "./panel-arrangement"
 export type { ControlKind } from "./panel-arrangement"
 
-export type SectionName = TraitName | "opacity" | "alignment" | "border" | "shadow"
+export type SectionName = TraitName | "opacity" | "alignment" | "border" | "shadow" | "pictureFill"
 
 export type PanelControl = {
   readonly trait: SectionName
@@ -249,7 +249,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     kind,
     sections: ordered(
       kind,
-      appearanceSections([...alignSection, ...content, ...(opacity === null ? [] : [opacity])]),
+      appearanceSections([...alignSection, ...content, ...(opacity === null ? [] : [opacity])], kind),
       shown,
     ),
   }

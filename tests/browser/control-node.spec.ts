@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test"
-import { openDeck, settled } from "./design-panel"
+import { openDeck, settled, unfold } from "./design-panel"
 import { importTitleDeck } from "./new-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -22,6 +22,7 @@ async function connectorPanel(page: Page): Promise<Locator> {
   if (line === null) throw new Error("no connector")
   await page.mouse.click(line.x + line.width / 2, line.y + line.height / 2)
   await expect(page.locator("[data-design-element]")).toHaveAttribute("data-design-element", /\.26$/)
+  await unfold(page.locator("[data-design-element]"), "Connector")
   return page
     .locator("[data-design-element] section")
     .filter({ has: page.getByRole("heading", { name: "Connector", exact: true }) })

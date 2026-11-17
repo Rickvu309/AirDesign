@@ -63,6 +63,8 @@ test("a person crops, recolours, fades, describes and hides a picture, adds an i
   const plain = await look(photo)
   const panel = await designing(page, photo, "4")
 
+  await unfold(panel, "Crop")
+  await unfold(panel, "Picture")
   const crop = section(page, panel, "Crop")
   const framed = (await photo.boundingBox())?.width ?? 0
   await typed(crop.getByRole("textbox", { name: "Left", exact: true }), "10")

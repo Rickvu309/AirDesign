@@ -215,8 +215,10 @@ export function ElementDesign({
   model,
   palette,
   onChange,
+  picture = null,
 }: {
   model: PanelModel
+  picture?: ReactNode
   palette: Palette
   onChange: (control: PanelControl, value: unknown) => void
 }) {
@@ -236,6 +238,12 @@ export function ElementDesign({
         <p className="px-4 py-4 text-[length:var(--type-caption)] text-quiet">{designCopy.nothing}</p>
       ) : null}
       {model.sections.map((section, at) => {
+        if (section.trait === "pictureFill")
+          return picture === null ? null : (
+            <DesignSection key={section.trait} title={section.label}>
+              {picture}
+            </DesignSection>
+          )
         if (section.label === null)
           return (
             <div key={section.trait}>

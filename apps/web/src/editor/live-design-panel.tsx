@@ -13,6 +13,7 @@ import {
 } from "@airdesign/document"
 import {
   deckColors,
+  paintReader,
   readSlides,
   readTraits,
   shownAlphas,
@@ -52,6 +53,7 @@ import { rebasedChange } from "@/design/rebase"
 import { siteNames } from "@/design/site-names"
 import { deviceScope } from "@/design/trait-edit"
 import { designShown, themeOf, type DesignShown } from "@/design-shown"
+import { PicturePreview } from "@/editor/picture-preview"
 import { DesignHead, DesignSection, ElementDesign, SectionStrips } from "@/editor/design-panel"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import type { UndoList } from "@/editor/use-undo"
@@ -235,8 +237,18 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
   const palette = usePalette(deck)
   const design = elementDesign(deck, node)
   if (design === null) return null
+  const at = shapeOf(node)
+  const part = readSlides(deck.shown.displayParts.current).find((slide) => slide.slide === at.slide)?.part
+  const image =
+    design.model.kind === "picture" && part !== undefined
+      ? paintReader(deck.shown.displayParts.current)
+          .slide(part)
+          .elements.find((element) => element.shape === at.shape)?.image
+      : null
+  const src = image == null ? null : (deck.shown.pictures.current?.src(image) ?? null)
   return (
     <ElementDesign
+      picture={src === null ? null : <PicturePreview src={src} />}
       model={design.model}
       palette={palette}
       onChange={(control, value) =>

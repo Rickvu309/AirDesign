@@ -4,7 +4,7 @@ import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { openDeck, settled } from "./design-panel"
+import { openDeck, settled, unfold } from "./design-panel"
 import { partsOf, shapeAt } from "./shape-fills"
 
 const exportName = "exported-line-style.pptx"
@@ -46,7 +46,9 @@ async function design(page: Page): Promise<Locator> {
 async function pickShape(page: Page, shape: Locator): Promise<Locator> {
   const panel = await design(page)
   await shape.click({ position: { x: 4, y: 4 } })
+  await unfold(panel, "Line")
   await expect(lineSection(panel)).toBeVisible()
+  await unfold(panel, "Line")
   return lineSection(panel)
 }
 
@@ -56,6 +58,7 @@ async function pickConnector(page: Page, connector: Locator): Promise<Locator> {
   if (box === null) throw new Error("no connector")
   await page.mouse.click(box.x + box.width / 2, box.y)
   await expect(panel).toHaveAttribute("data-design-element", /\.6$/)
+  await unfold(panel, "Line")
   return lineSection(panel)
 }
 
