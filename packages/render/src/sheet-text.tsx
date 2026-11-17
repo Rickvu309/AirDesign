@@ -1,4 +1,4 @@
-import type { TextList, ParagraphAlign, ParagraphSpacing, Color, TextFormat } from "@airdesign/document"
+import type { TextList, ParagraphAlign, ParagraphSpacing, Color, TextFill, TextFormat } from "@airdesign/document"
 import type { CanvasBullet } from "./text-record.js"
 import { endsInBreak, type RunPaint, type TextLook } from "./text-look.js"
 import { listNumbers } from "./paragraph-list.js"
@@ -14,6 +14,7 @@ type ShownRun = {
   readonly strike?: boolean
   readonly letterSpacing?: number
   readonly size?: number
+  readonly fill?: TextFill
   readonly color?: Color | string | null
   readonly font?: string | null
 }
@@ -37,7 +38,7 @@ function overlayOf(run: ShownRun): RunPaint {
   if (typeof run.color === "string" || run.color === null) return {}
   const color = run.color
   const flags: TextFormat[] = ["bold", "italic", "underline", "strike"]
-  let paint: RunPaint = {}
+  let paint: RunPaint = run.fill === undefined ? {} : { fill: run.fill }
   for (const name of flags) {
     const set = run[name]
     if (set !== undefined) paint = { ...paint, [name]: set }

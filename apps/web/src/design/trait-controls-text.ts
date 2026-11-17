@@ -1,4 +1,5 @@
 import { formatCopy } from "@/copy/format-copy"
+import { fillCopy } from "@/copy/fill-copy"
 import { textCopy } from "@/copy/text-copy"
 import type { TraitControls } from "./trait-controls"
 
@@ -6,6 +7,7 @@ export const textControls: TraitControls<"text"> = {
   section: textCopy.section,
   fields: {
     value: { label: textCopy.value },
+    fill: { label: fillCopy.value },
     color: { label: formatCopy.color },
     size: { label: formatCopy.sizeGroup },
     font: { label: textCopy.font },

@@ -1,4 +1,5 @@
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
+import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { expect, test, type Locator, type Page } from "@playwright/test"
@@ -29,6 +30,7 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
     "Text",
     "Fill",
     opacityCopy.label,
+    fillCopy.box,
     boxCopy.section,
     "Line",
     "Effects",

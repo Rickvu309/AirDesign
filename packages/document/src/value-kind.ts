@@ -4,7 +4,7 @@ import { coordinates } from "./box.js"
 import { readElementId } from "./element-id.js"
 import { bytesOf } from "./limits.js"
 import { record as plain } from "./plain-object.js"
-import { sizeCeiling, sizeFloor } from "./text-value.js"
+import { sizeCeiling, sizeFloor } from "./text-size.js"
 
 export type NumberUnit = "emu" | "angle" | "fraction" | "hundredth-point" | "count"
 

@@ -1,10 +1,16 @@
+import { runColor } from "./text-fill-read.js"
+import type { PaintImage, PaintPicture } from "./paint-image.js"
+import { runPicture } from "./text-fill-read.js"
+import { runFill } from "./text-fill-read.js"
 import type { MarkupElement } from "./element-span.js"
 import { paintAttribute, paintColor, type PaintColor, type PaintPalette } from "./paint-color.js"
-import { paintChild, paintFill } from "./paint-fill.js"
+import { paintChild } from "./paint-fill.js"
 import { defaultColor, highlightOf, linkColor } from "./text-color.js"
 import { sourceBody, type MarkupChildren, type SourceParagraph } from "./text-value-route.js"
 
 export type PaintRunStyle = {
+  fill?: ReturnType<typeof runFill>
+  picture?: PaintImage
   font: string | null
   size: number
   bold: boolean
@@ -79,6 +85,7 @@ export type PaintTextShape = PaintTextHolder & {
 }
 
 export type PaintTextScope = {
+  readonly picture?: PaintPicture
   readonly key: string
   readonly palette: PaintPalette
   readonly fonts: ReadonlyMap<string, string>
@@ -105,7 +112,6 @@ const defaultSize = 18
 const lastLevel = 8
 const titleTypes = new Set(["title", "ctrTitle"])
 const bodyTypes = new Set(["body", "subTitle", "obj"])
-const fillKinds = new Set(["a:noFill", "a:solidFill", "a:gradFill", "a:pattFill", "a:blipFill"])
 const bulletKinds = new Set(["a:buNone", "a:buChar", "a:buAutoNum", "a:buBlip"])
 const bulletFontKinds = new Set(["a:buFont", "a:buFontTx"])
 const bulletColorKinds = new Set(["a:buClr", "a:buClrTx"])
@@ -183,15 +189,6 @@ const typeface = (element: MarkupElement, scope: PaintTextScope): string | undef
   return fontReference.test(value) ? scope.fonts.get(value) : value
 }
 
-const colorOf = (layer: PaintTextHolder, scope: PaintTextScope): PaintColor | null | undefined => {
-  if (!inside(layer).some((element) => fillKinds.has(element.kind))) return undefined
-  const fill = paintFill(layer.element, layer.children, scope.palette, () => null)
-  if (fill === null) return null
-  if (fill.type === "solid") return fill.color
-  if (fill.type === "gradient") return fill.stops[0]?.color ?? null
-  return fill.type === "pattern" ? fill.foreground : null
-}
-
 const fontOf = (layer: PaintTextHolder, scope: PaintTextScope): string | undefined => {
   const latin = paintChild(layer.children, layer.element, "a:latin")
   return latin === undefined ? undefined : typeface(latin, scope)
@@ -232,9 +229,11 @@ const runStyle = (
 ): PaintRunStyle => {
   const near = format === undefined ? levels.nearRuns : [format, ...levels.nearRuns]
   const all = [...near, ...levels.farRuns]
+  const fill = runFill(all)
+  const picture = runPicture(all, scope)
   const link = linkColor(format, scope)
   const letterSpacing = first(all, (layer) => whole(layer, "spc"))
-  const nearColor = first(near, (layer) => colorOf(layer, scope))
+  const nearColor = first(near, (layer) => runColor(layer, scope))
   const color =
     link !== undefined
       ? link
@@ -242,7 +241,7 @@ const runStyle = (
         ? nearColor
         : reference.color !== undefined
           ? reference.color
-          : first(levels.farRuns, (layer) => colorOf(layer, scope))
+          : first(levels.farRuns, (layer) => runColor(layer, scope))
   return {
     font:
       first(near, (layer) => fontOf(layer, scope)) ??
@@ -267,6 +266,8 @@ const runStyle = (
     baseline: first(all, (layer) => fraction(layer, "baseline")) ?? 0,
     ...capitalization(all),
     color: color === undefined ? defaultColor(scope) : color,
+    ...(picture === undefined || link !== undefined ? {} : { picture }),
+    ...(fill !== undefined && "gradient" in fill && link === undefined ? { fill } : {}),
     highlight: first(all, (layer) => highlightOf(layer, scope)) ?? null,
   }
 }

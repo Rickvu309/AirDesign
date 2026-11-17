@@ -1,4 +1,4 @@
-import { alignNames, type ParagraphAlign } from "@airdesign/document"
+import { alignNames, type TextFill, type ParagraphAlign } from "@airdesign/document"
 import { child, inside, whole, type Held } from "./markup-held.js"
 import { paintAttribute } from "./paint-color.js"
 import { paintReader } from "./paint-reader.js"
@@ -6,6 +6,7 @@ import type { PaintParagraph, PaintRunStyle, PaintSpacing } from "./paint-text.j
 import { sheetOf } from "./trait-read.js"
 
 export type TextStyleValues = {
+  readonly fill: TextFill
   readonly size: number
   readonly font: string
   readonly strike: boolean
@@ -87,6 +88,12 @@ export function shownTextStyle(parts: ReadonlyMap<string, Uint8Array>, at: TextS
   const style = styleOf(paragraph)
   const { paragraphs, runs } = ownHolders(parts, at)
   return {
+    fill: {
+      value: style.fill ?? (style.color === null ? null : { solid: { rgb: style.color.hex } }),
+      own: runs.some((held) =>
+        inside(held).some((each) => ["a:solidFill", "a:gradFill", "a:blipFill"].includes(each.kind)),
+      ),
+    },
     size: { value: Math.round(style.size * 100), own: runs.some(attribute("sz")) },
     font: { value: style.font, own: runs.some(tagged("a:latin")) },
     strike: { value: style.strike, own: runs.some(attribute("strike")) },

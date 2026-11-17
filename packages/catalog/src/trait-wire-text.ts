@@ -11,6 +11,10 @@ export const textWire: TraitWire<"text"> = {
         "Plain text keeps the first run's look. JSON [{from,runs:[{from,text}]}] keeps runs: from is a file index, -1 a new run.",
       example: { text: { value: "Quarterly review" } },
     },
+    fill: {
+      description: "Letter fill: solid color or gradient, using the shape fill form.",
+      example: { text: { fill: { solid: "accent1" } } },
+    },
     color: {
       description: `Theme color, such as accent1 or tx1, or #${navy}; optional transforms: accent1 lumMod 75.`,
       example: { text: { color: "accent1" } },

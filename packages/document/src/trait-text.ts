@@ -1,3 +1,4 @@
+import { textFill } from "./text-fill.js"
 import { trait } from "./trait-decl.js"
 import {
   letterSpacingFloor,
@@ -22,9 +23,10 @@ import {
 
 export const text = trait(
   "run",
-  { version: 3, shape: "aaea7ede" },
+  { version: 4, shape: "aaea7ede" },
   { value: custom<string, string>("text"), alpha: alphaOver("value") },
   {
+    fill: textFill,
     color,
     size: typeSize,
     font: words(typefaceBytes),

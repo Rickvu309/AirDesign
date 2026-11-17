@@ -12,7 +12,7 @@ export function paintFrame(ctx: RowPaint): CanvasElement {
     outline,
     fill: paintedFill(ctx.row, outline, ctx.src),
     line: canvasLine(ctx.row.line),
-    text: canvasText(ctx.row.text),
+    text: canvasText(ctx.row.text, ctx.src),
     geometry: geometryOf(ctx.row),
     table: undefined,
     editable: ctx.shape?.editable ?? false,

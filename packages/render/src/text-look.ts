@@ -1,11 +1,12 @@
+import { gradientLook, paintedColor, schemeOf } from "./text-fill-look.js"
 import { fontFamily } from "@airdesign/fonts"
 import {
-  colorPaint,
   spacingNames,
   type ParagraphAlign,
   type TextList,
   type ParagraphSpacing,
   type Color,
+  type TextFill,
   type RunFormat,
   type TextFormat,
 } from "@airdesign/document"
@@ -53,6 +54,7 @@ const textRule =
 
 export type RunPaint = RunFormat & {
   readonly size?: number
+  readonly fill?: TextFill
   readonly color?: Color
   readonly font?: string
   readonly letterSpacing?: number
@@ -102,7 +104,7 @@ function shift(run: CanvasRunStyle): number {
   return run.baseline ?? 0
 }
 
-function styleOf(run: CanvasRunStyle, scaled: Scaled): Look {
+function styleOf(run: CanvasRunStyle, scaled: Scaled, colors: readonly CanvasThemeColor[] = []): Look {
   return {
     fontFamily: familyOf(run.font),
     fontSize: `${scaled(shift(run) === 0 ? run.size : run.size * shiftedShare)}px`,
@@ -110,6 +112,10 @@ function styleOf(run: CanvasRunStyle, scaled: Scaled): Look {
     fontStyle: run.italic ? "italic" : "normal",
     fontWeight: run.bold ? "700" : "400",
     color: run.color ?? pageColor,
+    ...gradientLook(run.fill, colors),
+    ...(run.picture === undefined
+      ? {}
+      : { background: run.picture, backgroundClip: "text", WebkitBackgroundClip: "text", color: "transparent" }),
     lineHeight: singleLine,
     textRendering: "geometricPrecision",
     textTransform: run.caps === "all" ? "uppercase" : "none",
@@ -236,46 +242,17 @@ function hundredths(style: CanvasRunStyle): number | null {
   return derived >= 100 && derived <= 400_000 ? derived : null
 }
 
-function cssHex(color: string | null): string | null {
-  if (color === null) return null
-  const hex = /^#([\da-f]{6})(?:[\da-f]{2})?$/i.exec(color)?.[1]
-  if (hex !== undefined) return hex.toUpperCase()
-  const rgb = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/.exec(color)
-  if (rgb === null) return null
-  return [rgb[1], rgb[2], rgb[3]]
-    .map((channel) => Number(channel).toString(16).padStart(2, "0"))
-    .join("")
-    .toUpperCase()
-}
-
-function schemeOf(style: CanvasRunStyle, colors: readonly CanvasThemeColor[]): Color | null {
-  const hex = cssHex(style.color)
-  if (hex === null) return null
-  const matches = colors.filter((swatch) => cssHex(swatch.css) === hex)
-  const found = matches.length === 1 ? matches[0] : undefined
-  return found === undefined ? null : { scheme: found.scheme }
-}
-
-function paintedColor(color: Color, colors: readonly CanvasThemeColor[], file: string | null): string | null {
-  const slot = (scheme: string) => cssHex(colors.find((swatch) => swatch.scheme === scheme)?.css ?? null)
-  const hex = colorPaint(
-    { ...color, transforms: (color.transforms ?? []).filter(({ op }) => !op.startsWith("alpha")) },
-    slot,
-  )?.hex
-  if (hex === undefined) return file
-  const css = `#${hex}`
-  const alpha = file === null ? undefined : /^#[\da-f]{6}([\da-f]{2})$/i.exec(file)?.[1]
-  return alpha === undefined || !/^#[\da-f]{6}$/i.test(css) ? css : `${css}${alpha}`
-}
-
 function formatted(
   style: CanvasRunStyle,
   format: RunPaint,
   colors: readonly CanvasThemeColor[],
   scale: number,
 ): CanvasRunStyle {
+  const { fill, picture, ...base } = style
   return {
-    ...style,
+    ...base,
+    ...(format.fill === undefined && format.color === undefined && picture !== undefined ? { picture } : {}),
+    ...(format.color === undefined && fill !== undefined ? { fill } : {}),
     bold: format.bold ?? style.bold,
     italic: format.italic ?? style.italic,
     strike: format.strike ?? style.strike === true,
@@ -283,6 +260,12 @@ function formatted(
     underline: format.underline ?? style.underline === true,
     ...(format.size === undefined ? {} : { size: format.size * emuPerHundredth * scale, points: format.size }),
     ...(format.color === undefined ? {} : { color: paintedColor(format.color, colors, style.color) }),
+    ...(format.fill === undefined
+      ? {}
+      : {
+          fill: format.fill,
+          ...("solid" in format.fill ? { color: paintedColor(format.fill.solid, colors, style.color) } : {}),
+        }),
     ...(format.font === undefined ? {} : { font: format.font }),
   }
 }
@@ -434,7 +417,7 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
         (format.underline === undefined && format.strike === undefined) || drawn.textDecoration !== undefined
           ? {}
           : { textDecoration: "none" }
-      return { ...styleOf(style, scaled), ...drawn, ...plain, lineHeight }
+      return { ...styleOf(style, scaled, colors), ...drawn, ...plain, lineHeight }
     },
     file(from, run, format) {
       const paragraph = paragraphs.get(from)
@@ -446,7 +429,7 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
     },
     fileColor(from, run) {
       const style = styleAt(from, run)
-      return style === null ? null : schemeOf(style, colors)
+      return style === null || style.fill !== undefined || style.picture !== undefined ? null : schemeOf(style, colors)
     },
     fileAlign(from) {
       const align = paragraphs.get(from)?.align

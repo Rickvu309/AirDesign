@@ -2,6 +2,8 @@ import { formatNames, type TextFormat, type TextRun } from "@airdesign/document"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { paintRunColor, withRunChild } from "./run-color.js"
+import { fillMarkup } from "./trait-xml-fill.js"
+import { withRunFill } from "./run-color.js"
 import { xmlAttribute } from "./shape-write.js"
 import type { SourceInline } from "./text-value-route.js"
 
@@ -38,13 +40,18 @@ function shifted(edits: readonly ByteEdit[], by: number): readonly ByteEdit[] {
 }
 
 function colored(slice: Uint8Array, run: TextRun): Uint8Array {
-  const painted = run.color === undefined ? slice : paintRunColor(slice, run.color)
+  const painted =
+    run.fill !== undefined
+      ? withRunFill(slice, encodeUtf8(fillMarkup(run.fill).xml))
+      : run.color === undefined
+        ? slice
+        : paintRunColor(slice, run.color)
   if (run.font === undefined) return painted
   return withRunChild(painted, latinKinds, "a:latin", encodeUtf8(`<a:latin typeface="${xmlAttribute(run.font)}"/>`))
 }
 
 function unformatted(run: TextRun): boolean {
-  return settings(run).length === 0 && run.color === undefined && run.font === undefined
+  return settings(run).length === 0 && run.fill === undefined && run.color === undefined && run.font === undefined
 }
 
 export function runProperties(bytes: Uint8Array, source: MarkupElement | undefined, run: TextRun): Uint8Array {

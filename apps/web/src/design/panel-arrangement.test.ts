@@ -35,6 +35,7 @@ it("places Figma's size, spacing, format and paragraph strips in order", () => {
     ["lineSpacing", "letterSpacing"],
     ["bold", "italic", "underline", "strike"],
     ["align", "list"],
+    ["fill"],
     ["color"],
     ["spaceBefore", "spaceAfter"],
   ])

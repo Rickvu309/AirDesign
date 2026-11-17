@@ -1,3 +1,4 @@
+import { formatCopy } from "@/copy/format-copy"
 import { authorableTrait } from "@airdesign/catalog"
 import {
   inheritable,
@@ -16,6 +17,7 @@ import {
   type TraitReads,
 } from "@airdesign/document"
 import type { ReactNode } from "react"
+import { fillCopy } from "@/copy/fill-copy"
 import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
 import { cropChange } from "./crop-change"
@@ -27,7 +29,15 @@ import { traitControls } from "./trait-controls"
 import { arrange, canvasControl, resolveControl, type ControlKind, type ControlLook } from "./panel-arrangement"
 export type { ControlKind } from "./panel-arrangement"
 
-export type SectionName = TraitName | "opacity" | "alignment" | "border" | "shadow" | "pictureFill"
+export type SectionName =
+  | TraitName
+  | "opacity"
+  | "alignment"
+  | "border"
+  | "shadow"
+  | "pictureFill"
+  | "textFill"
+  | "boxFill"
 
 export type PanelControl = {
   readonly trait: SectionName
@@ -60,7 +70,7 @@ export type ControlProps = {
 }
 
 export function partControl(control: PanelControl, name: string, desc: Desc, value: unknown): PanelControl {
-  const label = optionWord(control.field, name)
+  const label = control.trait === "textFill" && name === "solid" ? formatCopy.color : optionWord(control.field, name)
   return resolveControl({
     ...control,
     parent: control.value,
@@ -104,6 +114,8 @@ function fallbackOf(reads: TraitReads, key: string, read: ShownField | undefined
     return { value: read.value ?? undefined, mixed: false, inherited: !read.own && read.value !== null }
   const named = key === "size" || key === "color" || key === "font" || key === "bold" ? reads[`text.${key}`] : undefined
   if (named !== undefined) return { value: named.value, mixed: false, inherited: named.source !== undefined }
+  if (key === "fill")
+    return { value: { solid: reads["text.color"]?.value ?? { scheme: "tx1" } }, mixed: false, inherited: true }
   if (key === "color") return { value: { scheme: "tx1" }, mixed: false, inherited: true }
   if (key === "list") return ownHeld("none")
   if (key === "letterSpacing") return ownHeld(0)
@@ -128,7 +140,11 @@ function textShown(text: TextValue, key: string, fallback: Held): Held {
   const runs = text.flatMap((paragraph) => paragraph.runs).filter((run) => run.text !== "")
   if (runs.length === 0) return fallback
   return agreed(
-    runs.map((run) => (run as Readonly<Record<string, unknown>>)[key]),
+    runs.map((run) =>
+      key === "fill"
+        ? (run.fill ?? (run.color === undefined ? undefined : { solid: run.color }))
+        : (run as Readonly<Record<string, unknown>>)[key],
+    ),
     fallback,
   )
 }
@@ -200,7 +216,13 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     const labels = traitControls[trait] as Labels
     const controls = wireFields(trait).flatMap(([field, kind]): PanelControl[] => {
       const key = writtenField(trait, field)
-      if (canvasControl(trait, field) || !taken.includes(key) || keptRefuses(view.kept, trait, field)) return []
+      if (
+        (trait === "text" && field === "color") ||
+        canvasControl(trait, field) ||
+        !taken.includes(key) ||
+        keptRefuses(view.kept, trait, field)
+      )
+        return []
       const copy = labels.fields[field]
       const own = shown.fields?.[key]?.own === true
       const reset = own && inheritable(trait, field) ? (copy?.reset ?? null) : null
@@ -267,10 +289,32 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     kind,
     sections: ordered(
       kind,
-      appearanceSections([...alignSection, ...content, ...(opacity === null ? [] : [opacity])], kind),
+      appearanceSections(
+        textFillSections([...alignSection, ...content, ...(opacity === null ? [] : [opacity])], kind),
+        kind,
+      ),
       shown,
     ),
   }
+}
+
+function textFillSections(sections: readonly PanelSection[], kind: PanelKind | null): readonly PanelSection[] {
+  if (kind !== "text") return sections
+  return sections.flatMap((section): PanelSection[] => {
+    if (section.trait === "fill") return [{ ...section, trait: "boxFill", label: fillCopy.box, open: false }]
+    if (section.trait !== "text") return [section]
+    const controls = section.strips.flat()
+    const fill = controls.find((control) => control.field === "fill")
+    const strips = section.strips
+      .map((strip) => strip.filter((control) => control !== fill))
+      .filter((strip) => strip.length > 0)
+    if (fill === undefined) return [{ ...section, strips }]
+    const control = resolveControl({ ...fill, trait: "textFill", field: "value" })
+    return [
+      { ...section, strips },
+      { trait: "textFill", label: fillCopy.section, open: true, strips: [[control]] },
+    ]
+  })
 }
 
 function ordered(

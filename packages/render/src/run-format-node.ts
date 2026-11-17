@@ -1,7 +1,16 @@
-import { formatNames, readColor, type Color, type ColorTransform, type RunFormat } from "@airdesign/document"
+import {
+  readTextFill,
+  type TextFill,
+  formatNames,
+  readColor,
+  type Color,
+  type ColorTransform,
+  type RunFormat,
+} from "@airdesign/document"
 
 type RunPaint = RunFormat & {
   readonly size?: number
+  readonly fill?: TextFill
   readonly color?: Color
   readonly font?: string
   readonly letterSpacing?: number
@@ -61,6 +70,7 @@ export function writeFormat(span: HTMLElement, format: RunPaint): void {
     if (set !== undefined) span.dataset[name] = String(set)
   }
   if (format.letterSpacing !== undefined) span.dataset.letterSpacing = String(format.letterSpacing)
+  if (format.fill !== undefined) span.dataset.fill = JSON.stringify(format.fill)
   if (format.size !== undefined) span.dataset.size = String(format.size)
   if (format.color !== undefined) {
     span.dataset.color = colorToken(format.color)
@@ -81,6 +91,12 @@ export function readFormat(span: HTMLElement): RunPaint {
   if (size !== null) format = { ...format, size }
   const color = readColorToken(span.dataset.color)
   if (color !== null) format = { ...format, color }
+  if (span.dataset.fill !== undefined) {
+    try {
+      const fill = readTextFill(JSON.parse(span.dataset.fill))
+      if (fill !== null) format = { ...format, fill }
+    } catch {}
+  }
   const font = span.dataset.font
   if (font !== undefined && font.trim() !== "") format = { ...format, font }
   return format
