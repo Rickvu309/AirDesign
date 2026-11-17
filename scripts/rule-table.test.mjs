@@ -26,7 +26,7 @@ same("the file-size check covers CHECK-QUEUE.md", authored("CHECK-QUEUE.md"), tr
 same("CHECKS.md is under the file-size limit", tokensOf(Buffer.byteLength(table)) <= tokenLimit, true)
 same(
   "AGENTS.md stays short enough to read whole on every turn",
-  tokensOf(Buffer.byteLength(agents)) <= tokenLimit * 0.5,
+  tokensOf(Buffer.byteLength(agents)) <= tokenLimit * 0.4,
   true,
 )
 same("AGENTS.md names the file that holds each command's detail", agents.includes("`COMMANDS.md`"), true)
