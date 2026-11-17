@@ -28,7 +28,12 @@ it("sends the crop and the frame in one change, and the crop alone for an elemen
   expect(cropChange(view, { l: 0, t: 0, r: 0, b: 0 })(rect)).toEqual({
     target: { node: "256.4" },
     crop: { rect },
+    image: { mode: "crop" },
     box: { x: 1_000_000, y: 1_000_000, w: 4_000_000, h: 1_000_000 },
   })
-  expect(cropChange({ ...view, box: null }, undefined)(rect)).toEqual({ target: { node: "256.4" }, crop: { rect } })
+  expect(cropChange({ ...view, box: null }, undefined)(rect)).toEqual({
+    target: { node: "256.4" },
+    crop: { rect },
+    image: { mode: "crop" },
+  })
 })

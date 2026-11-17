@@ -1,5 +1,5 @@
 import { trait } from "./trait-decl.js"
-import { alphaOver, color, custom, mark, record, union } from "./value-kind.js"
+import { alphaOver, choice, color, custom, mark, record, union } from "./value-kind.js"
 
 export const asset = custom<string, string>("asset")
 
@@ -7,9 +7,10 @@ export const recolors = union({ none: mark, grayscale: mark, duotone: record({ d
 
 export const image = trait(
   "own",
-  { version: 1, shape: "ceff7e39" },
+  { version: 2, shape: "0d6da2f2" },
   {
     source: asset,
+    mode: choice(["fill", "fit", "crop", "tile", "stretch"]),
     alpha: alphaOver("source"),
     recolor: recolors,
   },

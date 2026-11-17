@@ -5,6 +5,8 @@ import { linkedSource, svgExt, svgExtension } from "./picture-write.js"
 import { shownImage, type Recolor } from "./picture-read.js"
 import { whole, type ElementAt, type Parts, type TraitXml } from "./xml-codec.js"
 
+import { shownPictureMode, writtenPictureMode } from "./picture-mode.js"
+
 const opaque = 100_000
 const recolorKinds: readonly string[] = ["a:grayscl", "a:duotone"]
 
@@ -60,6 +62,7 @@ function writtenRecolor(parts: Parts, at: ElementAt, recolor: Recolor): Parts {
 export const imageXml: TraitXml<"image"> = {
   slot: null,
   fields: {
+    mode: whole({ read: shownPictureMode, write: writtenPictureMode }),
     source: whole({ read: (parts, at) => shownImage(parts, at)?.source ?? null, write: writtenSource }),
     alpha: whole({
       read: (parts, at) => (shownImage(parts, at)?.alpha ?? null) as Alpha | null,

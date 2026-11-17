@@ -383,3 +383,4 @@ The Design panel’s none, solid, dashed and dotted presets. Line keeps exact se
 ## Link
 
 An element’s click destination, a URL or slide. Phrase links are separate.
+- **Fill mode**: one picture placement: Fill, Fit, Crop or Tile.

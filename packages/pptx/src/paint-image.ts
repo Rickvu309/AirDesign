@@ -11,6 +11,7 @@ export type PaintImage = {
   part: string
   contentType: string | null
   crop: PaintCrop
+  destination?: PaintCrop
   tile: boolean
   alpha?: number
   recolor?: PaintRecolor
@@ -64,8 +65,22 @@ export const paintImage = (
     const number = Number(value)
     return Number.isSafeInteger(number) ? number / 100000 : 0
   }
+  const stretch = inside.find((item) => item.kind === "a:stretch")
+  const rect = stretch === undefined ? undefined : children[stretch.index]?.find((item) => item.kind === "a:fillRect")
+  const destination = (name: string) => Number(rect === undefined ? 0 : (paintAttribute(rect, name) ?? 0)) / 100000
+  const placed = rect !== undefined && ["l", "t", "r", "b"].some((name) => destination(name) !== 0)
   return {
     ...image,
+    ...(placed
+      ? {
+          destination: {
+            left: destination("l"),
+            top: destination("t"),
+            right: destination("r"),
+            bottom: destination("b"),
+          },
+        }
+      : {}),
     crop: { left: side("l"), top: side("t"), right: side("r"), bottom: side("b") },
     tile: inside.some((element) => element.kind === "a:tile"),
     ...alphaOf(blip, children),

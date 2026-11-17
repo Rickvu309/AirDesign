@@ -149,7 +149,9 @@ function writtenElement(
   const at = { slide: shape.slide, part: shape.part, shape: shape.shape }
   if (shape.contentKind === "table") return writtenTable(parts, at, written, boxLast(body))
   let next = parts
-  for (const [trait, fields] of written) next = writeTrait(next, at, trait, fields)
+  for (const [trait, fields] of written) if (trait !== "image") next = writeTrait(next, at, trait, fields)
+  const image = written.get("image")
+  if (image !== undefined) next = writeTrait(next, at, "image", image)
   return next
 }
 

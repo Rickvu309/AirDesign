@@ -4,6 +4,8 @@ import { encodeUtf8 } from "./package-bytes.js"
 import { shownCrop, type CropRect } from "./picture-read.js"
 import { whole, type ElementAt, type Parts, type TraitXml } from "./xml-codec.js"
 
+import { writtenPictureMode } from "./picture-mode.js"
+
 const sides = ["l", "t", "r", "b"] as const
 
 function rectXml(rect: CropRect): string {
@@ -12,7 +14,7 @@ function rectXml(rect: CropRect): string {
 }
 
 function writtenCrop(parts: Parts, at: ElementAt, rect: CropRect): Parts {
-  return fillWritten(parts, at, (found) => {
+  return fillWritten(writtenPictureMode(parts, at, "crop"), at, (found) => {
     const inside = found.children[found.fill.index] ?? []
     const held = inside.find((each) => each.kind === "a:srcRect")
     const xml = encodeUtf8(rectXml(rect))
