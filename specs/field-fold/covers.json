@@ -28,8 +28,8 @@
     {
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "landedBefore", "heldPatch"],
-      "digest": "a75a25ad34a4",
-      "blob": "b45581dd6d2ae36d633581e64e895d69175e3d35"
+      "digest": "a022f6949f23",
+      "blob": "69c3d06e6720473dc4fb39206e78509408430335"
     },
     {
       "file": "apps/web/src/design/rebase.ts",
@@ -53,7 +53,7 @@
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["fieldsRead", "elementDesign"],
       "digest": "8f2efb7a9caf",
-      "blob": "450420b5954c7ea13215360fa00f39a376c74866"
+      "blob": "7b2311e5991ddb63afe8b1691b7bb94d6d4a2e2f"
     },
     {
       "file": "apps/web/src/undo-list.ts",

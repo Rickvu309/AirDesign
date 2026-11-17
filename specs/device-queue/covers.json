@@ -4,14 +4,14 @@
     {
       "file": "apps/web/src/design/design-change.ts",
       "names": ["changeDesign", "changingDeck"],
-      "digest": "e0062c984cac",
-      "blob": "4582315aa8d00559d0b82bb9bb81c99f8c0cc1be"
+      "digest": "69eedb6e3192",
+      "blob": "aeb35a744546662ac30d3e9401f57336e7ff878d"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "stored", "landedBefore"],
-      "digest": "541b6f31e547",
-      "blob": "b45581dd6d2ae36d633581e64e895d69175e3d35"
+      "digest": "b561187b2f9c",
+      "blob": "69c3d06e6720473dc4fb39206e78509408430335"
     },
     {
       "file": "apps/web/src/editor/use-undo.ts",
@@ -46,8 +46,8 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect"],
-      "digest": "6451d697403b",
-      "blob": "4ad27345e95d272aa945dbb8a9e9cad98489f1bf"
+      "digest": "8a4ce7df8c95",
+      "blob": "7987cb9d5e8760e968a365a18af90fe1ce529f6d"
     },
     {
       "file": "packages/live/src/held.ts",

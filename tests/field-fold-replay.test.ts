@@ -427,6 +427,25 @@ describe("field-fold replay", () => {
     expect(painted(deviceRegister()).fields["fill.alpha"]?.value).toBe(reset)
   })
 
+  it("undoes mixed color fields across nodes together", async () => {
+    held.world = { server: opened(), read: opened().register, pending: [], list: { undo: [], redo: [] }, told: 0 }
+    const typed = fileText.replace("Hello", "Already typed")
+    expect(await applyChange(changing, { target: { node }, text: { value: typed } })).toBe(true)
+    const recolored = typed.replace('"text":"Already typed"', '"text":"Already typed","color":{"rgb":"C00000"}')
+    expect(
+      await applyChange(changing, [
+        { target: { node }, text: { value: recolored }, fill: { value: { solid: personColour } } },
+        { target: { node: themeNode }, theme: { accent2: "FF0000" } },
+      ]),
+    ).toBe(true)
+    expect(world().list.undo).toHaveLength(2)
+    await actions.Undo?.()
+    expect(shownValue(deviceRegister(), node, fileText)).toBe(typed)
+    const turned = await turnBack(device, deck, world().list, "redo")
+    expect(turned.outcome).toBe("turned")
+    expect(shownValue(deviceRegister(), node, fileText)).toBe(recolored)
+  })
+
   it.fails("keeps the reset fill opacity when an agent then sets the colour", async () => {
     held.world = { server: opened(), read: opened().register, pending: [], list: { undo: [], redo: [] }, told: 0 }
     await actions.Reset?.()

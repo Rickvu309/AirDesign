@@ -52,7 +52,7 @@ export function endChange(node: ElementId, end: "start" | "end", to: Bound | Pla
   }
 }
 
-export function changeDesign(deck: DesignDeck, change: () => SetChange) {
+export function changeDesign(deck: DesignDeck, change: () => SetChange | readonly SetChange[]) {
   const session = deck.undo.focused.current
   deck.undo.turnAfter(async () => {
     if (await applyChange(changingDeck(deck, session), change())) {

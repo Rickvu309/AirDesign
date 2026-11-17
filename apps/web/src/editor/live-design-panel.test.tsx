@@ -14,6 +14,7 @@ import {
 import { readParts, readSlides } from "@airdesign/pptx"
 import { act, createElement } from "react"
 import { designCopy } from "@/copy/design-copy"
+import { formatCopy } from "@/copy/format-copy"
 import { pictureCopy } from "@/copy/picture-copy"
 import { toast } from "@/components/ui/toast"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
@@ -66,8 +67,10 @@ async function fixtureFile(name: string): Promise<Uint8Array> {
   return fs.readFile(new URL(`../../../../scripts/pptx-fixtures/${name}`, import.meta.url))
 }
 
-async function slidePanel() {
-  const parts = await readParts(await fixtureFile("blank.pptx"))
+async function slidePanel(fixture = "blank.pptx", selected = false) {
+  const parts = await readParts(await fixtureFile(fixture))
+  const slide = readSlides(parts)[0]?.slide
+  const node = selected && slide !== undefined ? elementId(`${slide}.4`) : null
   const register = openRegister("", "")
   device.link = {
     enqueueRow: async () => ({ ok: true }),
@@ -78,7 +81,7 @@ async function slidePanel() {
   const host = window.document.createElement("div")
   window.document.body.append(host)
   const root = editor.createRoot(host)
-  await act(async () => root.render(createElement(Panel, { node: null, exposed: (now) => (exposed.current = now) })))
+  await act(async () => root.render(createElement(Panel, { node, exposed: (now) => (exposed.current = now) })))
   const shown = exposed.current
   if (shown === null) throw new Error("not rendered")
   await act(async () => {
@@ -202,6 +205,12 @@ beforeAll(async () => {
 afterAll(() => {
   vi.unstubAllGlobals()
   window.close()
+})
+
+it("lists a table's inherited text color when its canvas value is plain text", async () => {
+  const panel = await slidePanel("table-added.pptx", true)
+  expect(panel.host.querySelector("[data-selection-colors]")?.textContent).toContain(formatCopy.colors.dk1)
+  await panel.close()
 })
 
 it("keeps both crop sides a person types one after another while the first is still landing", async () => {
