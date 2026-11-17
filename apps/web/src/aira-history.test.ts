@@ -78,6 +78,15 @@ describe("a saved chat", () => {
     expect(readSavedChat(JSON.parse(JSON.stringify(kept)), deck)).toEqual(kept)
   })
 
+  it("keeps a failed Undo and its remaining runs when the saved chat is restored", () => {
+    const chat = doneChat()
+    const exchange: AiraExchange = { ...chat.exchanges[0]!, undoFailed: true, runs: ["remaining"] }
+    const kept = saved({ ...chat, exchanges: [exchange] })
+    const read = readSavedChat(JSON.parse(JSON.stringify(kept)), deck)
+    expect(read?.exchanges).toEqual([exchange])
+    expect(read && restoredChat(read).exchanges).toEqual([exchange])
+  })
+
   it("keeps why a step was refused and where the request was tried again", () => {
     const chat = doneChat()
     const exchange: AiraExchange = {

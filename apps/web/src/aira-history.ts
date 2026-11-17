@@ -183,7 +183,11 @@ function readExchange(raw: unknown): AiraExchange | undefined {
   const runs = exchange.runs.filter((run): run is string => typeof run === "string")
   if (steps.some((step) => step === undefined) || runs.length !== exchange.runs.length) return undefined
   const read: AiraExchange = { asked: exchange.asked, steps: steps as AiraStep[], end: exchange.end as AiraEnd, runs }
-  return exchange.undoRefused === true ? { ...read, undoRefused: true } : read
+  return {
+    ...read,
+    ...(exchange.undoRefused === true ? { undoRefused: true } : {}),
+    ...(exchange.undoFailed === true ? { undoFailed: true } : {}),
+  }
 }
 
 function readModel(

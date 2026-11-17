@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test"
 import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
-import { forward, openClean, signInBrowser, test } from "./api-stack"
+import { forward, openClean, settled, signInBrowser, test } from "./api-stack"
 
 const node = "256.2"
 const asked = "Change the title to Hello from Aira"
@@ -37,6 +37,11 @@ test("an Undo that cannot reach the server says so and keeps Undo, and the next 
   await expect(editor).toHaveText("Hello from Aira")
   const kept = await stack.post(deckRoutes.open.path, { deck }, cookie)
   expect(JSON.stringify(kept.json)).toContain("Hello from Aira")
+  await page.reload()
+  await settled(page)
+  await expect(log.getByText(airaCopy.undoFailed, { exact: true })).toBeVisible()
+  await expect(undo).toBeEnabled()
+  await expect(editor).toHaveText("Hello from Aira")
   await page.unroute(`**${deckRoutes.undo.path}`)
   await undo.click()
   await expect(editor).toHaveText("Hello")
