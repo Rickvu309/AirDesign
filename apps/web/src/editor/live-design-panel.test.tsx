@@ -334,9 +334,16 @@ it("keeps a Name draft while Enter confirms an input-method composition", async 
   try {
     await act(async () => picture.unfold())
     await act(async () => picture.entered("Name", "名前"))
-    await act(async () => picture.side("Name").dispatchEvent(new window.KeyboardEvent("keydown", {
-      key: "Enter", isComposing: true, bubbles: true, cancelable: true,
-    })))
+    await act(async () =>
+      picture.side("Name").dispatchEvent(
+        new window.KeyboardEvent("keydown", {
+          key: "Enter",
+          isComposing: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      ),
+    )
     await picture.answered()
     expect(picture.side("Name").value).toBe("名前")
     expect(picture.landed()).toEqual({})
