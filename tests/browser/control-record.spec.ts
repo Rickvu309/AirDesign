@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { openDeck, pickColor, shownColor } from "./design-panel"
+import { openDeck, pickColor, shownColor, setPanelMode } from "./design-panel"
 import { fillPanel, filled, shapeAt } from "./shape-fills"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -8,6 +8,7 @@ test("a record changes one of its fields, keeps the others, and Undo puts that f
   await openDeck(page, "clean.pptx")
   const shape = shapeAt(page, "2")
   const panel = await fillPanel(page, shape)
+  await setPanelMode(page, "design")
   await panel.getByRole("group", { name: "Fill", exact: true }).getByRole("button", { name: "Pattern" }).click()
   const pattern = panel.getByRole("group", { name: "Pattern", exact: true })
   const foreground = pattern.getByRole("group", { name: "Foreground", exact: true })

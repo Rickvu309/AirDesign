@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page, type Route } from "@playwright/test"
-import { designing, openDeck, pendingValues, settled } from "./design-panel"
+import { designing, openDeck, pendingValues, settled, setPanelMode } from "./design-panel"
 import { holdableDevice } from "./slow-device"
 
 function looks(run: Locator): Promise<string[]> {
@@ -141,6 +141,7 @@ test("a connector bound to a shape offers no Flip, since its route decides the d
   if (line === null) throw new Error("no connector")
   await page.mouse.click(line.x + line.width / 2, line.y + line.height / 2)
   const panel = page.locator("[data-design-element]")
+  await setPanelMode(page, "design")
   await expect(panel.getByRole("heading", { name: "Connector", exact: true })).toBeVisible()
   await expect(panel.getByRole("group", { name: "Align", exact: true })).toBeVisible()
   await expect(panel.getByRole("button", { name: "Flip horizontally", exact: true })).toHaveCount(0)

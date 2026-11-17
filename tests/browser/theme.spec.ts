@@ -2,7 +2,7 @@ import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { openDeck, settled, typeColor } from "./design-panel"
+import { openDeck, settled, typeColor, setPanelMode } from "./design-panel"
 import { partsOf } from "./shape-fills"
 
 const exportName = "exported-theme.pptx"
@@ -15,7 +15,7 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 async function themePanel(page: Page): Promise<Locator> {
   const design = page.getByRole("button", { name: "Design", exact: true })
   if ((await design.getAttribute("aria-pressed")) !== "true") await design.click()
-  await page.locator("[data-template-style]").click()
+  await setPanelMode(page, "design")
   const theme = page.locator("[data-design-theme]")
   await expect(theme).toBeVisible()
   return theme

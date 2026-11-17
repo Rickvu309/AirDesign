@@ -70,6 +70,8 @@ const placed = (field: string, name: NameLook = above, rest: Omit<Placed, "field
 const icon = (field: string, glyph: LucideIcon): Placed => placed(field, { show: "icon", icon: glyph })
 const letter = (field: string, text: string): Placed => placed(field, { show: "letter", letter: text })
 
+const paragraphSpacing = [icon("spaceBefore", ArrowUpToLine), icon("spaceAfter", ArrowDownToLine)]
+
 export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   link: [[placed("target", hidden)]],
   text: [
@@ -85,8 +87,9 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
       placed("bullet", hidden, { options: { true: List } }),
     ],
     [placed("color", hidden)],
-    [icon("spaceBefore", ArrowUpToLine), icon("spaceAfter", ArrowDownToLine)],
+    paragraphSpacing,
   ],
+  paragraphSpacing: [paragraphSpacing],
   box: [
     [letter("x", "X"), letter("y", "Y")],
     [letter("w", "W"), letter("h", "H")],

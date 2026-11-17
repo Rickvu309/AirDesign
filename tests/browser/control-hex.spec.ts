@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { openDeck, settled, typeColor } from "./design-panel"
+import { openDeck, settled, typeColor, setPanelMode } from "./design-panel"
 import { filled, shapeAt } from "./shape-fills"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -13,7 +13,7 @@ test("a theme colour takes a picked hex colour, every shape that names it repain
 }) => {
   await openDeck(page, "shapes-added.pptx")
   await page.getByRole("button", { name: "Design", exact: true }).click()
-  await page.locator("[data-template-style]").click()
+  await setPanelMode(page, "design")
   const theme = page.locator("[data-design-theme]")
   const accent = theme.getByRole("button", { name: "Accent 1", exact: true })
   await expect(theme.locator('[data-control="hex"]')).toHaveCount(12)

@@ -1,3 +1,4 @@
+import { setPanelMode } from "../look/panel-mode.mjs"
 import path from "node:path"
 import { expect } from "@playwright/test"
 
@@ -44,6 +45,7 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await page.mouse.click(line.x + line.width / 2, line.y + line.height / 2)
   await expect(page.locator("[data-design-element]")).toHaveAttribute("data-design-element", /\.26$/)
   const file = await placement(26)
+  await setPanelMode(page, "design")
   const section = page
     .locator("[data-design-element] section")
     .filter({ has: page.getByRole("heading", { name: "Connector", exact: true }) })

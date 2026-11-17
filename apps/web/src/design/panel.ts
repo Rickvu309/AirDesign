@@ -16,19 +16,28 @@ import {
   type TraitReads,
 } from "@airdesign/document"
 import type { ReactNode } from "react"
+import { textCopy } from "@/copy/text-copy"
 import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
 import { cropChange } from "./crop-change"
 import { appearanceSections } from "./appearance-presets"
 import { cornersSection } from "./corners-control"
 import { opacitySection } from "./opacity-control"
-import { hidden, loneRows, panelKind, panelOrder, type PanelKind } from "./panel-order"
+import { hidden, loneRows, panelKind, panelOrder, panelPlaces, type PanelKind, type PanelMode } from "./panel-order"
 import { alphaFieldOver, atShownAlpha } from "./shown-alpha"
 import { traitControls } from "./trait-controls"
 import { arrange, canvasControl, resolveControl, type ControlKind, type ControlLook } from "./panel-arrangement"
 export type { ControlKind } from "./panel-arrangement"
 
-export type SectionName = TraitName | "opacity" | "alignment" | "border" | "shadow" | "pictureFill" | "corners"
+export type SectionName =
+  | TraitName
+  | "opacity"
+  | "alignment"
+  | "border"
+  | "shadow"
+  | "pictureFill"
+  | "corners"
+  | "paragraphSpacing"
 
 export type PanelControl = {
   readonly trait: SectionName
@@ -84,6 +93,7 @@ export type PanelModel = {
   readonly node: ElementId
   readonly nodes: readonly ElementId[]
   readonly kind: PanelKind | null
+  readonly selectionKinds?: readonly (PanelKind | null)[]
   readonly sections: readonly PanelSection[]
 }
 
@@ -228,10 +238,26 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
         }),
       ]
     })
-    const visible = controls
-    return visible.length === 0
-      ? []
-      : [{ trait, label: labels.section ?? "", open: true, strips: arrange(trait, visible) }]
+    if (controls.length === 0) return []
+    const strips = arrange(trait, controls)
+    const section = { trait, label: labels.section ?? "", open: true, strips }
+    if (trait !== "text") return [section]
+    const spacing = controls.filter(({ field }) => field === "spaceBefore" || field === "spaceAfter")
+    if (spacing.length === 0) return [section]
+    return [
+      {
+        trait,
+        label: labels.section ?? "",
+        open: true,
+        strips: strips.filter((strip) => !strip.some((control) => spacing.includes(control))),
+      },
+      {
+        trait: "paragraphSpacing",
+        label: textCopy.paragraphSpacing,
+        open: false,
+        strips: arrange("paragraphSpacing", spacing),
+      },
+    ]
   })
   const alignment = sections.flatMap((section) =>
     section.trait === "box"
@@ -274,7 +300,7 @@ function ordered(
   const left = hidden(kind, shown)
   return places.flatMap((place) => {
     const section = sections.find(({ trait }) => trait === place.section)
-    return section === undefined || left.includes(place.section) ? [] : [{ ...section, open: place.open }]
+    return section === undefined || left.includes(section.trait) ? [] : [{ ...section, open: place.open }]
   })
 }
 
@@ -316,22 +342,20 @@ function manyControl(controls: readonly PanelControl[], lead: PanelControl, node
   }
 }
 
-export function panelOfMany(models: readonly [PanelModel, ...PanelModel[]]): PanelModel {
+export function panelOfMany(models: readonly [PanelModel, ...PanelModel[]], mode: PanelMode): PanelModel {
   const nodes = models.flatMap((model) => model.nodes)
-  const sections = panelOrder.many.flatMap((place): PanelSection[] => {
-    if (place.section === "opacity" && models.some((model) => model.kind === "connector")) return []
+  const selectionKinds = models.map(({ kind }) => kind)
+  const sections = panelPlaces("many", mode, selectionKinds).flatMap((place): PanelSection[] => {
     const found = present(models.map((model) => model.sections.find(({ trait }) => trait === place.section)))
     const [lead] = found ?? []
     if (found === null || lead === undefined) return []
     const controls = lead.strips.flat().flatMap((control): PanelControl[] => {
       if (loneRows.includes(`${control.trait}.${control.field}`)) return []
-      if (control.trait === "effects" && control.field === "shadow" && models.some((model) => model.kind === "text"))
-        return []
       const each = present(found.map((section) => section.strips.flat().find(({ field }) => field === control.field)))
       return each === null ? [] : [manyControl(each, control, nodes)]
     })
     return controls.length === 0 ? [] : [{ ...lead, open: place.open, strips: arrange(lead.trait, controls) }]
   })
   const [first, ...rest] = models
-  return { node: (rest.at(-1) ?? first).node, nodes, kind: "many", sections }
+  return { node: (rest.at(-1) ?? first).node, nodes, kind: "many", selectionKinds, sections }
 }

@@ -1,3 +1,4 @@
+import { setPanelMode } from "../panel-mode.mjs"
 import { expect } from "@playwright/test"
 import { fixtureDeck } from "../fixture-deck.mjs"
 
@@ -5,7 +6,7 @@ async function drive(kit) {
   await fixtureDeck(kit, "clean.pptx")
   await kit.page.getByRole("button", { name: "Design", exact: true }).click()
   await expect(kit.page.locator("[data-design-panel]")).toBeVisible()
-  if (await kit.page.locator("[data-template-style]").count()) await kit.page.locator("[data-template-style]").click()
+  await setPanelMode(kit.page, "design")
   const theme = kit.page.locator("[data-design-theme]")
   if ((await theme.count()) === 0) return
   await theme.getByRole("button", { name: "Accent 1", exact: true }).click()

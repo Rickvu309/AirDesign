@@ -6,7 +6,7 @@ import { slideRoom, steppedZoom, zoomPercent, zoomWidth, type SlideSize, type Zo
 import { PanelHead, ZoomReadout } from "@/editor/editor-chrome"
 import { openWith } from "@/editor/slide-opening"
 import { EditorGrid } from "@/editor/editor-grid"
-import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
+import { EditorToolbar, type DesignMode, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
 import { usePointerTool } from "@/editor/pointer-tool"
 import { RevenueSlide } from "@/editor/revenue-slide"
 import { SlideSidebar, type SidebarRun, type SlideStrip } from "@/editor/slide-sidebar"
@@ -61,6 +61,7 @@ export type EditorShellProps = {
   run?: SidebarRun
   panel?: EditorPanel
   onPanel?: (panel: Exclude<EditorPanel, "none">) => void
+  designMode?: DesignMode
   side?: ReactNode
   rail?: EditorRail
   activeTool?: EditorTool
@@ -81,6 +82,7 @@ export function EditorShell({
   run = "done",
   panel = "none",
   onPanel,
+  designMode,
   side,
   rail = "slides",
   activeTool = "move",
@@ -146,6 +148,7 @@ export function EditorShell({
     ...(deck?.onShape === undefined ? {} : { onShape: deck.onShape }),
     ...(deck?.onIcon === undefined ? {} : { onIcon: deck.onIcon }),
     ...(onPanel === undefined ? {} : { onPanel }),
+    ...(designMode === undefined ? {} : { designMode }),
   }
   if (deck !== undefined && gridOpen) {
     return (

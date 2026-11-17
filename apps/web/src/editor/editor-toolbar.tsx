@@ -1,3 +1,4 @@
+import { Layers2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuRadioGroup, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
@@ -14,6 +15,8 @@ import { IconTool } from "@/editor/icon-tool"
 import { ShapeTool } from "@/editor/shape-tool"
 import type { Geometry } from "@airdesign/document"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { designCopy } from "@/copy/design-copy"
+import type { PanelMode } from "@/design/panel-order"
 import { toolbarCopy } from "@/copy/toolbar-copy"
 import {
   formatParts,
@@ -29,6 +32,8 @@ import { flushSync } from "react-dom"
 export type EditorTool = "move" | "text" | "shape" | "image" | "icon"
 
 export type EditorPanel = "agent" | "design" | "none"
+
+export type DesignMode = { readonly value: PanelMode; readonly onChange: (mode: PanelMode) => void }
 
 const toolIcons: Readonly<Record<InsertPart, EditorIconName>> = {
   text: "text",
@@ -205,6 +210,7 @@ export function EditorToolbar({
   pointer,
   undo,
   onPanel,
+  designMode,
   onText,
   formatting,
   deckColors,
@@ -219,6 +225,7 @@ export function EditorToolbar({
   pointer?: ToolPick
   undo?: UndoButtonsState
   onPanel?: (panel: Exclude<EditorPanel, "none">) => void
+  designMode?: DesignMode
   onText?: () => void
   formatting?: TextFormatting
   deckColors?: readonly string[]
@@ -301,6 +308,25 @@ export function EditorToolbar({
           <>
             <Divider />
             <PanelSwitch active={panel} {...(onPanel === undefined ? {} : { onPick: onPanel })} />
+          </>
+        )}
+        {designMode === undefined ? null : (
+          <>
+            <Divider />
+            <Button
+              type="button"
+              variant={designMode.value === "design" ? "secondary" : "ghost"}
+              size="icon"
+              className="size-9 rounded-lg active:translate-y-0"
+              aria-label={designCopy.designMode}
+              title={designCopy.designMode}
+              data-design-mode
+              data-keeps-selection
+              aria-pressed={designMode.value === "design"}
+              onClick={() => designMode.onChange(designMode.value === "slides" ? "design" : "slides")}
+            >
+              <Layers2 className="size-4" aria-hidden />
+            </Button>
           </>
         )}
       </div>

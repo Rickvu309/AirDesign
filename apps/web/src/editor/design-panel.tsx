@@ -1,10 +1,11 @@
-import type { ReactNode } from "react"
+import { Fragment, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { designCopy } from "@/copy/design-copy"
 import { controlViews } from "@/design/control-views"
 import type { Palette } from "@/design/color-choices"
-import type { ControlProps, PanelModel, PanelControl } from "@/design/panel"
+import type { ControlProps, PanelModel, PanelControl, PanelSection } from "@/design/panel"
+import { panelPlaces, sectionInMode, type PanelMode } from "@/design/panel-order"
 import { foldOpen, setFold, useFolds } from "@/design/panel-folds"
 import { swatchMist, swatchNavy, swatchTeal, swatchWhite } from "@/editor/design-panel-art"
 import { EditorIcon } from "@/editor/editor-icons"
@@ -217,18 +218,28 @@ export function ElementDesign({
   onChange,
   picture = null,
   afterTitle = null,
-  children = null,
+  selectionColors = null,
+  mode = "design",
 }: {
   model: PanelModel
   picture?: ReactNode
   afterTitle?: ReactNode
-  children?: ReactNode
+  selectionColors?: ReactNode
+  mode?: PanelMode
   palette: Palette
   onChange: (control: PanelControl, value: unknown) => void
 }) {
-  const last = model.sections.length - 1
   const folds = useFolds()
   const { kind } = model
+  const sections =
+    kind === null
+      ? model.sections
+      : panelPlaces(kind, mode, model.selectionKinds).flatMap<PanelSection | "selectionColors">(({ section }) => {
+          if (section === "selectionColors") return selectionColors === null ? [] : [section]
+          const modelSection = model.sections.find(({ trait }) => trait === section)
+          return modelSection === undefined ? [] : [sectionInMode(modelSection, mode)]
+        })
+  const last = sections.length - 1
   return (
     <div
       className="flex min-h-0 flex-1 flex-col overflow-y-auto outline-none"
@@ -237,16 +248,17 @@ export function ElementDesign({
       data-keeps-selection
       tabIndex={-1}
     >
-      {model.sections.every((section) => section.label !== null) ? (
+      {sections.every((section) => section === "selectionColors" || section.label !== null) ? (
         <>
           <DesignHead>{panelTitle(model)}</DesignHead>
           {afterTitle}
         </>
       ) : null}
-      {model.sections.length === 0 ? (
+      {sections.length === 0 ? (
         <p className="px-4 py-4 text-[length:var(--type-caption)] text-quiet">{designCopy.nothing}</p>
       ) : null}
-      {model.sections.map((section, at) => {
+      {sections.map((section, at) => {
+        if (section === "selectionColors") return <Fragment key={section}>{selectionColors}</Fragment>
         if (section.trait === "pictureFill")
           return picture === null ? null : (
             <DesignSection key={section.trait} title={section.label}>
@@ -292,7 +304,7 @@ export function ElementDesign({
           <DesignSection
             key={section.trait}
             title={section.label}
-            last={at === last && children === null}
+            last={at === last}
             action={reset === undefined ? null : <SectionReset control={reset} onChange={onChange} />}
             fold={
               kind === null
@@ -307,7 +319,6 @@ export function ElementDesign({
           </DesignSection>
         )
       })}
-      {children}
     </div>
   )
 }

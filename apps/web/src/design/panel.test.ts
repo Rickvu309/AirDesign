@@ -107,7 +107,8 @@ it("lays out a text box's body field by field, autofit included", () => {
     ["columns", "count", 1, null],
   ])
   const text = panel.sections.find((section) => section.trait === "text")
-  const typed = text?.strips
+  const spacing = panel.sections.find((section) => section.trait === "paragraphSpacing")
+  const typed = [...(text?.strips ?? []), ...(spacing?.strips ?? [])]
     .flat()
     .filter((control) => ["font", "lineSpacing", "spaceBefore", "spaceAfter"].includes(control.field))
   expect(typed?.map((control) => [control.label, control.kind, control.value])).toEqual([
@@ -232,7 +233,7 @@ function filled(node: string, fill: unknown, x: number) {
 it("reads Mixed where two shapes differ and sets the fill of both in one change", () => {
   const blue = filled("258.2", { solid: { scheme: "accent1" } }, 0)
   const green = filled("258.3", { solid: { scheme: "accent6" } }, 914_400)
-  const panel = panelOfMany([blue, green])
+  const panel = panelOfMany([blue, green], "design")
   expect(panel).toMatchObject({ nodes: ["258.2", "258.3"], node: "258.3", kind: "many" })
   const control = (trait: string, field: string) =>
     panel.sections
@@ -253,12 +254,14 @@ it("reads Mixed where two shapes differ and sets the fill of both in one change"
 })
 
 it("keeps text content out of the shared formatting controls", () => {
-  const panel = panelOfMany([filled("258.2", null, 0), filled("258.3", null, 0)])
+  const panel = panelOfMany([filled("258.2", null, 0), filled("258.3", null, 0)], "design")
   expect(panel.sections.map((section) => section.trait)).toEqual([
     "alignment",
     "text",
     "fill",
     "opacity",
+    "link",
+    "paragraphSpacing",
     "box",
     "line",
     "effects",
@@ -274,7 +277,7 @@ it("keeps text content out of the shared formatting controls", () => {
 it("keeps the fill kind two shapes share, and names no kind when their kinds differ", () => {
   const solid = filled("258.2", { solid: { scheme: "accent1" } }, 0)
   const none = filled("258.3", { none: true }, 0)
-  const fill = panelOfMany([solid, none])
+  const fill = panelOfMany([solid, none], "design")
     .sections.find((section) => section.trait === "fill")
     ?.strips.flat()[0]
   expect(fill).toMatchObject({ value: undefined, mixed: true })
@@ -314,8 +317,9 @@ it("arranges a text box into strips with resolved names and choices", () => {
     ["bold", "italic", "underline"],
     ["align", "bullet"],
     ["color"],
-    ["spaceBefore", "spaceAfter"],
   ])
+  const spacing = panel.sections.find((section) => section.trait === "paragraphSpacing")
+  expect(spacing?.strips.map((strip) => strip.map((control) => control.field))).toEqual([["spaceBefore", "spaceAfter"]])
   expect(text?.strips[0]?.[0]?.look.name).toEqual({ show: "hidden" })
   expect(text?.strips[1]?.[0]?.look.name.show).toBe("icon")
   expect(text?.strips[3]?.[0]?.look.form).toBe("segments")
@@ -376,7 +380,7 @@ it("resolves a connector's choice form explicitly and its site override", () => 
 it("keeps the same strips and looks for a many-selection", () => {
   const first = panelOf(shape, { reads: {}, moves: true })
   const second = panelOf({ ...shape, node: elementId("258.3") }, { reads: {}, moves: true })
-  const panel = panelOfMany([first, second])
+  const panel = panelOfMany([first, second], "design")
   expect(
     panel.sections
       .find((section) => section.trait === "box")
@@ -401,8 +405,18 @@ it("leaves text content to the canvas and omits alignment when moves are refused
   )
 })
 
+it("uses the selected elements' mode to decide which controls a text box and a line share", () => {
+  const line = panelOf(connector, { reads: {}, moves: true })
+  const text = filled("258.2", null, 0)
+  const slides = panelOfMany([text, line], "slides").sections.map(({ trait }) => trait)
+  expect(slides).toEqual(["alignment"])
+  const design = panelOfMany([text, line], "design").sections.map(({ trait }) => trait)
+  expect(design).toContain("opacity")
+  expect(design).toContain("effects")
+})
+
 it("shows text controls first for a text selection and hides corners and shadow", () => {
-  const text = panelOfMany([filled("258.2", null, 0), filled("258.3", null, 0)])
+  const text = panelOfMany([filled("258.2", null, 0), filled("258.3", null, 0)], "slides")
   const sections = text.sections.map(({ trait }) => trait)
   expect(sections.slice(0, 4)).toEqual(["alignment", "text", "fill", "opacity"])
   expect(sections).not.toContain("corners")
@@ -411,7 +425,7 @@ it("shows text controls first for a text selection and hides corners and shadow"
 
 it("hides opacity and text controls when a line joins the selection", () => {
   const line = panelOf(connector, { reads: {}, moves: true })
-  const mixed = panelOfMany([filled("258.2", null, 0), line])
+  const mixed = panelOfMany([filled("258.2", null, 0), line], "slides")
   expect(mixed.sections.map(({ trait }) => trait)).not.toContain("opacity")
   expect(mixed.sections.map(({ trait }) => trait)).not.toContain("text")
 })
@@ -427,7 +441,7 @@ it("shows corners when every selected shape supports it", () => {
       },
       { reads: {}, moves: true, fields: { "geometry.shape": { value: { preset: "rect" }, own: true } } },
     )
-  const panel = panelOfMany([rect("258.2", 914_400), rect("258.3", 457_200)])
+  const panel = panelOfMany([rect("258.2", 914_400), rect("258.3", 457_200)], "slides")
   expect(panel.sections.find(({ trait }) => trait === "corners")?.strips.flat()[0]).toMatchObject({
     value: 0,
     mixed: false,

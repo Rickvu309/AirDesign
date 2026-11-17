@@ -1,3 +1,4 @@
+import { textCopy } from "../../apps/web/src/copy/text-copy"
 import { actualSize } from "./paint-scale"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
@@ -79,20 +80,22 @@ test("a person sets a text box's font, spacing, margins, anchor, wrap, direction
   const opening = await shown(shape)
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await shape.click({ position: { x: 4, y: 4 } })
+  const panel = page.locator("[data-design-element]")
   const text = section(page, "Text")
   await expect(text).toBeVisible()
   await typeIn(text.getByRole("textbox", { name: "Font", exact: true }), "Georgia")
   await expect.poll(async () => (await shown(shape)).font).toMatch(/^"?Georgia"?,/)
   await typeIn(text.getByRole("textbox", { name: "Line spacing", exact: true }), "150")
   await expect.poll(async () => (await shown(shape)).lineHeight).not.toBe(opening.lineHeight)
-  await typeIn(text.getByRole("textbox", { name: "Space before", exact: true }), "12")
-  await typeIn(text.getByRole("textbox", { name: "Space after", exact: true }), "6")
+  await unfold(panel, textCopy.paragraphSpacing)
+  await typeIn(panel.getByRole("textbox", { name: textCopy.spaceBefore, exact: true }), "12")
+  await typeIn(panel.getByRole("textbox", { name: textCopy.spaceAfter, exact: true }), "6")
   await expect.poll(async () => (await shown(shape)).top).toBeGreaterThan(opening.top)
   const spaced = await shown(shape)
   await page.getByRole("button", { name: "Undo text format", exact: true }).click()
-  await expect(text.getByRole("textbox", { name: "Space after", exact: true })).toHaveValue("0")
+  await expect(panel.getByRole("textbox", { name: textCopy.spaceAfter, exact: true })).toHaveValue("0")
   await page.getByRole("button", { name: "Redo text format", exact: true }).click()
-  await expect(text.getByRole("textbox", { name: "Space after", exact: true })).toHaveValue("6")
+  await expect(panel.getByRole("textbox", { name: textCopy.spaceAfter, exact: true })).toHaveValue("6")
   const type = await exported(page, testInfo.outputPath(typeExport), judgedType)
   expect(type).toContain(typed)
 

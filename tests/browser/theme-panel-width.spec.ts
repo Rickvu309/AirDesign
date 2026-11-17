@@ -1,13 +1,13 @@
 import { appearanceCopy } from "../../apps/web/src/copy/appearance-copy"
 import { expect, test } from "@playwright/test"
-import { openDeck } from "./design-panel"
+import { openDeck, setPanelMode } from "./design-panel"
 
 test.use({ viewport: { width: 1470, height: 923 } })
 
 test("every theme color name stays readable at 220, 240 and 440 px", async ({ page }) => {
   await openDeck(page, "clean.pptx")
   await page.getByRole("button", { name: "Design", exact: true }).click()
-  await page.locator("[data-template-style]").click()
+  await setPanelMode(page, "design")
   await expect(page.locator("[data-design-theme] [data-control=hex] span[id]")).toHaveCount(12)
   const resize = page.getByRole("separator")
   for (const width of [220, 240, 440]) {

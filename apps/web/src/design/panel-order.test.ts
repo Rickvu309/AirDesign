@@ -2,7 +2,7 @@ import { authorableTrait } from "@airdesign/catalog"
 import { elementId, kindTraits, opacityFields, type Kind, type ScopedElement } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { panelOf, type PanelReads } from "./panel"
-import { panelKind, panelOrder, type PanelKind } from "./panel-order"
+import { panelKind, panelOrder, panelPlaces, type PanelKind } from "./panel-order"
 
 const panelled = (Object.keys(kindTraits) as Kind[]).filter((kind) =>
   (kindTraits[kind] as readonly string[]).includes("identity"),
@@ -27,7 +27,12 @@ it("places every trait each element kind takes, and its Opacity, exactly once in
         placed: placed
           .filter(
             (section) =>
-              section !== "border" && section !== "shadow" && section !== "pictureFill" && section !== "corners",
+              section !== "border" &&
+              section !== "shadow" &&
+              section !== "pictureFill" &&
+              section !== "corners" &&
+              section !== "paragraphSpacing" &&
+              section !== "selectionColors",
           )
           .toSorted(),
       }).toEqual({ panel, placed: wanted })
@@ -36,7 +41,7 @@ it("places every trait each element kind takes, and its Opacity, exactly once in
 })
 
 it("puts alignment first for a text box", () => {
-  expect(panelOrder.text[0]).toEqual({ section: "alignment", open: true })
+  expect(panelOrder.text[0]).toEqual({ section: "alignment", open: true, mode: "slides" })
 })
 
 const textBox: ScopedElement = {
@@ -67,6 +72,7 @@ it("orders a text box Text first, with its rare sections and its shape type fold
     ["link", true],
     ["fill", true],
     ["opacity", true],
+    ["paragraphSpacing", false],
     ["box", false],
     ["line", false],
     ["effects", false],
@@ -130,4 +136,25 @@ it("leads a connector with its line and the shapes it joins", () => {
 it.fails("keeps Position and size for a shape inside a group", () => {
   const child = { ...textBox, facts: { ...textBox.facts, grouped: true } }
   expect(sections(child, {}).map(([trait]) => trait)).toContain("box")
+})
+
+it("marks the simple sections separately from the exact PowerPoint controls", () => {
+  const slides = (kind: PanelKind | "slide") => panelPlaces(kind, "slides").map(({ section }) => section)
+
+  expect(slides("text")).toEqual(["alignment", "text", "link", "fill", "opacity"])
+  expect(slides("shape")).toEqual(["alignment", "fill", "opacity", "corners", "border", "shadow", "selectionColors"])
+  expect(slides("picture")).toEqual(["alignment", "pictureFill", "opacity", "corners", "border", "shadow"])
+  expect(slides("connector")).toEqual(["alignment", "border", "shadow"])
+  expect(slides("many")).toEqual([
+    "alignment",
+    "text",
+    "fill",
+    "opacity",
+    "link",
+    "corners",
+    "border",
+    "shadow",
+    "selectionColors",
+  ])
+  expect(slides("slide")).toEqual(["templateStyle", "background", "selectionColors"])
 })

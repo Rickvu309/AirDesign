@@ -1,6 +1,10 @@
 import { join } from "node:path"
 import { expect, type Locator, type Page } from "@playwright/test"
 
+import { setPanelMode } from "../../.agents/skills/verify-airdesign/look/panel-mode.mjs"
+
+export { setPanelMode }
+
 export const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 
 type StoredRow = { readonly kind: string; readonly node?: string; readonly property?: string; readonly value?: unknown }
@@ -29,6 +33,7 @@ export async function designing(page: Page, element: Locator): Promise<Locator> 
 }
 
 export async function unfold(panel: Locator, title: string): Promise<void> {
+  await setPanelMode(panel.page(), "design")
   const fold = panel.getByRole("heading", { name: title, exact: true }).getByRole("button")
   if ((await fold.getAttribute("aria-expanded")) === "false") await fold.click()
   await expect(fold).toHaveAttribute("aria-expanded", "true")
@@ -95,6 +100,7 @@ export function shownColor(field: Locator): Locator {
 const field = /^(\s*)- (textbox|combobox|slider|spinbutton|checkbox|switch|radiogroup|group) "([^"]+)"/
 
 export async function unfoldAll(panel: Locator): Promise<void> {
+  await setPanelMode(panel.page(), "design")
   const folded = panel.getByRole("heading").getByRole("button", { expanded: false })
   while ((await folded.count()) > 0) {
     const title = await folded.first().textContent()
