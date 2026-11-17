@@ -9,6 +9,7 @@
     "AGENTS.md",
     "CHECK-QUEUE.md",
     "CHECKS.md",
+    "COMMANDS.md",
     "pnpm-lock.yaml",
     "apps/site/src/landing/product-demo/editor-demo-art.html",
     "dist",
