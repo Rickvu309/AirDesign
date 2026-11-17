@@ -7,6 +7,7 @@ import {
   findStale,
   idleBefore,
   readWorktrees,
+  recentFor,
   removeStale,
   removeStaleBranches,
   staleBranches,
@@ -76,17 +77,49 @@ commit(closed, "closed.txt", "closed")
 git(closed, "push", "-q", "-u", "origin", "closed")
 git(root, "push", "-q", "origin", "--delete", "closed")
 git(root, "fetch", "-q", "--prune", "origin")
+const merged = tree("merged")
+const mergedHead = commit(merged, "merged.txt", "merged")
+commit(root, "merged.txt", "merged on main with a conflict fixed")
+const abandoned = tree("abandoned")
+const abandonedHead = commit(abandoned, "abandoned.txt", "abandoned")
+const reopened = tree("reopened")
+const reopenedOld = commit(reopened, "reopened.txt", "first try")
+commit(reopened, "reopened.txt", "second try")
+const scratchRoot = path.join(folder, "verify-airdesign-scratch")
+fs.mkdirSync(scratchRoot)
+const scratchTree = path.join(scratchRoot, "tree-abc")
+git(root, "worktree", "add", "-q", "--detach", scratchTree, "main~1")
+const pulls = new Map([
+  [mergedHead, { number: 700, state: "MERGED" }],
+  [abandonedHead, { number: 701, state: "CLOSED" }],
+  [reopenedOld, { number: 702, state: "CLOSED" }],
+])
 
 const isBusy = (where) => where === busy
+const later = Date.now() + recentFor + 60_000
 const names = (list) => list.map((worktree) => path.basename(worktree.path)).sort()
-same("only clean, idle work that is done counts as stale", names(findStale({ root, base: "main", busy: isBusy })), [
-  "closed",
-  "landed",
-])
+same(
+  "nothing touched in the last hours counts as stale, whatever it holds",
+  names(findStale({ root, base: "main", busy: isBusy, pulls })),
+  [],
+)
+same(
+  "only clean, idle work that is done counts as stale",
+  names(findStale({ root, base: "main", busy: isBusy, pulls, now: later, scratchRoot })),
+  ["abandoned", "closed", "landed", "merged", "tree-abc"],
+)
 same(
   "a worktree with no work of its own counts once it sat idle",
   names(findStale({ root, base: "main", busy: isBusy, now: Date.now() + idleBefore + 60_000 })),
-  ["closed", "fresh", "landed"],
+  ["closed", "fresh", "landed", "tree-abc"],
+)
+same(
+  "each reason names the pull request",
+  findStale({ root, base: "main", busy: isBusy, pulls, now: later, scratchRoot })
+    .filter((worktree) => ["merged", "abandoned", "tree-abc"].includes(path.basename(worktree.path)))
+    .map((worktree) => worktree.reason)
+    .sort(),
+  ["it is a verify-airdesign scratch tree", "its pull request 700 is merged", "its pull request 701 is closed"],
 )
 
 same(
@@ -117,25 +150,62 @@ same(
 )
 
 const said = []
-const removed = removeStale({ root, base: "main", busy: isBusy, say: (line) => said.push(line) })
+const dry = []
+same(
+  "a dry run removes nothing and says what would go",
+  removeStale({
+    root,
+    base: "main",
+    busy: isBusy,
+    pulls,
+    now: later,
+    scratchRoot,
+    say: (line) => dry.push(line),
+    apply: false,
+  }),
+  [],
+)
+same("it names each one", dry.length, 5)
+same(
+  "with would",
+  dry.every((line) => line.startsWith("would remove worktree ")),
+  true,
+)
+const removed = removeStale({
+  root,
+  base: "main",
+  busy: isBusy,
+  pulls,
+  now: later,
+  scratchRoot,
+  say: (line) => said.push(line),
+})
 same("removing takes away exactly the stale worktrees", removed.map((where) => path.basename(where)).sort(), [
+  "abandoned",
   "closed",
   "landed",
+  "merged",
+  "tree-abc",
 ])
-same("each removal says why", said.length, 2)
+same("each removal says why", said.length, 5)
 same(
   "the folders are gone",
-  [landed, closed].map((where) => fs.existsSync(where)),
-  [false, false],
+  [landed, closed, merged, abandoned, scratchTree].map((where) => fs.existsSync(where)),
+  [false, false, false, false, false],
 )
 same(
   "the kept folders stay",
-  [open, dirty, fresh, busy, locked].map((where) => fs.existsSync(where)),
-  [true, true, true, true, true],
+  [open, dirty, fresh, busy, locked, reopened].map((where) => fs.existsSync(where)),
+  [true, true, true, true, true, true],
 )
 const branches = git(root, "branch", "--format=%(refname:short)").split("\n").filter(Boolean).sort()
 same("a landed branch is deleted and a closed one is kept", branches.includes("landed"), false)
 same("a closed branch keeps its commits", branches.includes("closed"), true)
+same(
+  "the branch of a merged or closed pull request goes with its worktree, and GitHub keeps its head",
+  ["merged", "abandoned", "reopened"].map((branch) => branches.includes(branch)),
+  [false, false, true],
+)
 
 same(
   "a detached worktree on merged work stays while it is in use, like a verifier judging that commit",
@@ -158,18 +228,29 @@ git(root, "branch", "unfinished", "main")
 git(root, "checkout", "-q", "unfinished")
 commit(root, "unfinished.txt", "unfinished")
 git(root, "checkout", "-q", "main")
+git(root, "branch", "shipped", "main")
+git(root, "checkout", "-q", "shipped")
+const shippedHead = commit(root, "shipped.txt", "shipped")
+git(root, "checkout", "-q", "main")
+pulls.set(shippedHead, { number: 703, state: "MERGED" })
 same("a branch with no worktree is stale when it holds nothing main lacks", staleBranches({ root, base: "main" }), [
   "pointer",
+  "spent",
+])
+same("or when its tip is the head of a merged or closed pull request", staleBranches({ root, base: "main", pulls }), [
+  "pointer",
+  "shipped",
   "spent",
 ])
 const saidBranches = []
 same(
   "the stale branches are deleted",
-  removeStaleBranches({ root, base: "main", say: (line) => saidBranches.push(line) }),
-  ["pointer", "spent"],
+  removeStaleBranches({ root, base: "main", pulls, say: (line) => saidBranches.push(line) }),
+  ["pointer", "shipped", "spent"],
 )
 same("each deleted branch is named", saidBranches, [
   "deleted branch pointer, because it holds nothing main lacks",
+  "deleted branch shipped, because its pull request 703 is merged",
   "deleted branch spent, because it holds nothing main lacks",
 ])
 const left = git(root, "branch", "--format=%(refname:short)").split("\n").filter(Boolean).sort()
@@ -181,6 +262,7 @@ same("main, unfinished work and branches in a worktree stay", left, [
   "locked",
   "main",
   "open",
+  "reopened",
   "unfinished",
 ])
 

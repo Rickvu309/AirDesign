@@ -28,7 +28,7 @@ export const stages = [
     ["file-size", "node", ["scripts/file-size.mjs"]],
     ["references", "node", ["scripts/reference-order.mjs"]],
     ["interface-width", "node", ["scripts/interface-width.mjs"]],
-    ["worktrees", "node", ["scripts/worktrees.mjs"]],
+    ["worktrees", "node", ["scripts/sweep.mjs"]],
     ["commit-authors", "node", ["scripts/commit-authors.mjs"]],
     ["commit-titles", "node", ["scripts/commit-titles.mjs"]],
     ["conflict-markers", "node", ["scripts/conflict-markers.mjs"]],

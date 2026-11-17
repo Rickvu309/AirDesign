@@ -22,6 +22,9 @@ same(
   true,
 )
 
+same("after merged, land names the sweep once", clean.said.filter((line) => line.startsWith("sweep ")).length, 1)
+same("as its last line", clean.said.at(-1).includes("pnpm sweep"), true)
+
 const conflicted = harness({ conflicts: "apps/web/src/thin-deck.tsx" })
 same("a branch that conflicts with main stops before the check", await conflicted.run(), 1)
 same("and runs no check", conflicted.log.includes("stamp"), false)
@@ -293,6 +296,8 @@ same("before the check", unread.log.includes("stamp"), false)
 const watch = harness({ args: ["--watch"], reads: [pullAnswer({ merged: true })] })
 same("--watch only follows", await watch.run(), 0)
 same("and checks nothing", watch.log.includes("stamp"), false)
+
+same("--watch names the sweep after merged too", watch.said.at(-1).includes("pnpm sweep"), true)
 
 const status = harness({ args: ["--status"], reads: [pullAnswer({ armed: true })] })
 same("--status changes nothing and exits 0", await status.run(), 0)
