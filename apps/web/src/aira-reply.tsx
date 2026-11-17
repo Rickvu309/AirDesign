@@ -1,6 +1,7 @@
 import { cn } from "@/lib/class-names"
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
+import { PopoverContent } from "@/components/ui/popover"
 import {
   ChainOfThought,
   ChainOfThoughtContent,
@@ -123,6 +124,23 @@ function UndoLink({ onUndo }: { onUndo: (() => void) | undefined }) {
   )
 }
 
+function Undone() {
+  return (
+    <p className="flex min-h-6 items-center gap-1.5 text-xs text-muted-foreground" data-aira-undone>
+      <EditorIcon name="undo" size={13} className="shrink-0" />
+      {airaCopy.undone}
+    </p>
+  )
+}
+
+function UndoFailed() {
+  return (
+    <p className="flex min-h-6 items-center text-xs text-muted-foreground" data-undo-failed>
+      {airaCopy.undoFailed}
+    </p>
+  )
+}
+
 function UndoRefused() {
   return (
     <p className="flex min-h-6 items-center text-xs text-muted-foreground" data-undo-refused>
@@ -231,6 +249,53 @@ function LimitCard({ resets }: { resets: string | undefined }) {
   )
 }
 
+function cardOf(
+  exchange: AiraExchange,
+  resets: string | undefined,
+  onUndo: (() => void) | undefined,
+  onRetry: (() => void) | undefined,
+  onNewChat: (() => void) | undefined,
+): ReactNode | null {
+  const undoable = exchange.runs.length > 0
+  if (exchange.end === "out-of-usage") return <LimitCard resets={resets} />
+  if (exchange.end === "country") return <CountryCard />
+  if (exchange.end === "off") {
+    return <StuckCard title={airaCopy.offTitle} body={airaCopy.offBody} changed={undoable} onUndo={onUndo} />
+  }
+  if (exchange.end === "malformed") {
+    return (
+      <StuckCard
+        title={airaCopy.malformedTitle}
+        body={airaCopy.malformedBody}
+        changed={undoable}
+        onUndo={onUndo}
+        onNewChat={onNewChat}
+      />
+    )
+  }
+  if (exchange.end === "failed") {
+    const body = undoable ? airaCopy.failedKept : airaCopy.failedNothing
+    return <FailedCard title={airaCopy.failedTitle} body={body} onUndo={onUndo} onRetry={onRetry} />
+  }
+  if (exchange.end === "done" && refusedLast(exchange.steps)) {
+    return (
+      <FailedCard
+        title={airaCopy.stepsFailedTitle}
+        body={airaCopy.stepsFailedBody}
+        onUndo={onUndo}
+        onRetry={onRetry}
+      />
+    )
+  }
+  return null
+}
+
+function undoNoteOf(exchange: AiraExchange): ReactNode | null {
+  if (exchange.undoRefused === true) return <UndoRefused />
+  if (exchange.undoFailed === true) return <UndoFailed />
+  return null
+}
+
 function endingOf(
   exchange: AiraExchange,
   resets: string | undefined,
@@ -239,40 +304,29 @@ function endingOf(
   onNewChat: (() => void) | undefined,
 ): ReactNode | null {
   const undoable = exchange.runs.length > 0
-  const refused = exchange.undoRefused === true
-  if (exchange.end === "out-of-usage") return <LimitCard resets={resets} />
-  if (exchange.end === "country") return <CountryCard />
-  const undoOffer = undoable && !refused ? onUndo : undefined
-  if (exchange.end === "off") {
-    return <StuckCard title={airaCopy.offTitle} body={airaCopy.offBody} changed={undoable} onUndo={undoOffer} />
-  }
-  if (exchange.end === "malformed") {
-    return (
-      <StuckCard
-        title={airaCopy.malformedTitle}
-        body={airaCopy.malformedBody}
-        changed={undoable}
-        onUndo={undoOffer}
-        onNewChat={onNewChat}
-      />
+  const undoOffer = undoable && exchange.undoRefused !== true ? onUndo : undefined
+  const note = undoNoteOf(exchange)
+  const card = cardOf(exchange, resets, undoOffer, onRetry, onNewChat)
+  if (card !== null) {
+    return note === null ? (
+      card
+    ) : (
+      <>
+        {card}
+        {note}
+      </>
     )
   }
-  if (exchange.end === "failed") {
-    const body = undoable ? airaCopy.failedKept : airaCopy.failedNothing
-    return <FailedCard title={airaCopy.failedTitle} body={body} onUndo={undoOffer} onRetry={onRetry} />
-  }
-  if (exchange.end === "done" && refusedLast(exchange.steps)) {
-    return (
-      <FailedCard
-        title={airaCopy.stepsFailedTitle}
-        body={airaCopy.stepsFailedBody}
-        onUndo={undoOffer}
-        onRetry={onRetry}
-      />
-    )
-  }
+  if (exchange.end === "undone") return <Undone />
   if ((exchange.end === "done" || exchange.end === "stopped") && undoable) {
-    return refused ? <UndoRefused /> : <UndoLink onUndo={onUndo} />
+    if (exchange.undoRefused === true) return note
+    if (note === null) return <UndoLink onUndo={onUndo} />
+    return (
+      <div className="flex flex-col">
+        {note}
+        <UndoLink onUndo={onUndo} />
+      </div>
+    )
   }
   if (exchange.end === "working" && !running(exchange.steps)) return <Working />
   return null
@@ -327,14 +381,14 @@ export function ExchangeView({
   )
 }
 
-export function UsagePop({ id, usage }: { id: string; usage: WeekUsage }) {
+export function UsagePop({ usage }: { usage: WeekUsage }) {
   const percent = usagePercent(usage)
   return (
-    <div
-      id={id}
-      role="region"
+    <PopoverContent
+      align="end"
+      sideOffset={8}
       aria-label={productCopy.usageTitle}
-      className="absolute top-11 right-3 z-10 flex w-[220px] origin-top-right transition-[opacity,scale] duration-150 ease-out starting:opacity-0 starting:scale-95 flex-col gap-2 rounded-[var(--shape-card)] bg-white p-3 shadow-[0px_0px_0px_1px_var(--black-8),0px_8px_24px_var(--black-10)]"
+      className="w-[220px] gap-2 rounded-[var(--shape-card)] bg-white p-3 text-foreground shadow-[0px_0px_0px_1px_var(--black-8),0px_8px_24px_var(--black-10)] ring-0"
     >
       <span className="flex items-center justify-between text-xs font-medium text-foreground">
         {productCopy.usageTitle}
@@ -360,6 +414,6 @@ export function UsagePop({ id, usage }: { id: string; usage: WeekUsage }) {
           <EditorIcon name="arrowr" size={11} />
         </a>
       </span>
-    </div>
+    </PopoverContent>
   )
 }

@@ -73,19 +73,32 @@ export default async function drive(kit) {
   )
 
   await side.getByRole("button", { name: "Weekly usage" }).click()
-  const usage = side.getByRole("region", { name: "Weekly usage" })
+  const usage = page.getByRole("dialog", { name: "Weekly usage" })
   await expect(usage).toContainText(/\d+%/)
   await capture("usage")
   note(`the usage readout reads: ${(await usage.innerText()).replace(/\s+/g, " ")}`)
   await side.getByRole("button", { name: "Weekly usage" }).click()
 
+  const undoing = `**${deckRoutes.undo.path}`
+  await page.route(undoing, (route) => route.abort())
+  await side.getByRole("button", { name: "Undo" }).click()
+  await expect(side.getByText("Unable to undo. Check your connection and try again.", { exact: true })).toBeVisible()
+  await expect(side.getByRole("button", { name: "Undo" })).toBeEnabled()
+  await expect(editor).toHaveText("Hello from Aira")
+  await capture("undo-failed")
+  note("an Undo that could not reach the server says so, keeps Aira's change on the slide, and offers Undo again")
+  await page.unroute(undoing)
+
   await side.getByRole("button", { name: "Undo" }).click()
   await expect(editor).toHaveText("Hello")
   await expect(side.getByRole("button", { name: "Undo" })).toHaveCount(0)
+  await expect(side.getByText("Aira's changes from this request are undone.", { exact: true })).toBeVisible()
   expect(lastText((await post(deckRoutes.open, { deck }, cookie)).json.register)).not.toBe("Hello from Aira")
   expect(await page.evaluate(() => document.body.dataset.sameLoad)).toBe("yes")
   await capture("undone")
-  note("Undo took the run back: the slide reads Hello again in the same page load and the server copy agrees")
+  note(
+    "Undo took the run back: the slide reads Hello again in the same page load, the server copy agrees, and the request says its changes are undone",
+  )
 
   aira([{ name: "overloaded.sse" }])
   await composer.fill("Make the title bigger")

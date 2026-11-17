@@ -20,10 +20,10 @@ describe("Aira's welcome", () => {
     expect(markup).not.toContain("<button")
   })
 
-  it("says where Aira is not offered, in place of the line", () => {
+  it("says where Aira is not offered, in place of the line, and that the person can keep editing", () => {
     expect(shownText(renderToStaticMarkup(<AiraWelcome notOffered />))).toEqual([
       productCopy.agentName,
-      airaCopy.notOffered,
+      `${airaCopy.notOffered} ${airaCopy.notOfferedBody}`,
     ])
   })
 })

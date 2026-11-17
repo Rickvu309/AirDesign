@@ -3,35 +3,33 @@ import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { forward, openClean, signInBrowser, test } from "./api-stack"
 
 async function usageGrowth(page: Page, side: ReturnType<Page["locator"]>) {
-  await page.evaluate(() => {
-    const seen: { property: string; duration: number; easing: string }[] = []
-    document.body.dataset.usageGrowth = "[]"
-    const observer = new MutationObserver((records) => {
-      for (const record of records) {
-        for (const added of record.addedNodes) {
-          if (!(added instanceof HTMLElement) || added.getAttribute("role") !== "region") continue
-          observer.disconnect()
-          for (const animation of added.getAnimations()) {
-            if (!(animation instanceof CSSTransition)) continue
-            const timing = animation.effect?.getTiming()
-            seen.push({
-              property: animation.transitionProperty,
-              duration: Number(timing?.duration),
-              easing: String(timing?.easing),
-            })
-          }
-          document.body.dataset.usageGrowth = JSON.stringify(seen)
-        }
-      }
+  await page.evaluate((name) => {
+    delete document.body.dataset.usageGrowth
+    function record(box: Element) {
+      const seen = box.getAnimations().flatMap((animation) => {
+        if (!(animation instanceof CSSTransition)) return []
+        const timing = animation.effect?.getTiming()
+        return [
+          { property: animation.transitionProperty, duration: Number(timing?.duration), easing: String(timing?.easing) },
+        ]
+      })
+      document.body.dataset.usageGrowth = JSON.stringify(seen)
+    }
+    const observer = new MutationObserver(() => {
+      const box = document.querySelector(`[role="dialog"][aria-label="${name}"]`)
+      if (box === null) return
+      observer.disconnect()
+      requestAnimationFrame(() => requestAnimationFrame(() => record(box)))
     })
     observer.observe(document.body, { childList: true, subtree: true })
-  })
+  }, productCopy.usageTitle)
   await side.getByRole("button", { name: productCopy.usageTitle }).click()
-  await expect(side.getByRole("region", { name: productCopy.usageTitle })).toBeVisible()
+  await expect(page.getByRole("dialog", { name: productCopy.usageTitle })).toBeVisible()
+  await page.waitForFunction(() => document.body.dataset.usageGrowth !== undefined)
   return page.evaluate(() => JSON.parse(document.body.dataset.usageGrowth ?? "[]"))
 }
 
-test("the usage popover grows from its ring on the micro curve, and holds still with reduced motion", async ({
+test("the usage popover grows from its ring on the micro curve, holds still with reduced motion, and closes on Escape or a press outside", async ({
   page,
   context,
   stack,
@@ -48,15 +46,19 @@ test("the usage popover grows from its ring on the micro curve, and holds still 
     { property: "opacity", duration: 150, easing: micro },
     { property: "scale", duration: 150, easing: micro },
   ])
-  const origin = await side
-    .getByRole("region", { name: productCopy.usageTitle })
-    .evaluate((box) => ({ actual: getComputedStyle(box).transformOrigin, expected: `${box.clientWidth}px 0px` }))
+  const origin = await page
+    .getByRole("dialog", { name: productCopy.usageTitle })
+    .evaluate((box) => ({ actual: getComputedStyle(box).transformOrigin, expected: `${box.clientWidth}px -8px` }))
   expect(origin.actual).toBe(origin.expected)
   await ring.click()
-  await expect(side.getByRole("region", { name: productCopy.usageTitle })).toHaveCount(0)
+  await expect(page.getByRole("dialog", { name: productCopy.usageTitle })).toHaveCount(0)
   await page.emulateMedia({ reducedMotion: "reduce" })
   expect(await usageGrowth(page, side)).toEqual([])
-  await expect(side.getByRole("region", { name: productCopy.usageTitle })).toHaveCSS("opacity", "1")
+  await expect(page.getByRole("dialog", { name: productCopy.usageTitle })).toHaveCSS("opacity", "1")
   await page.keyboard.press("Escape")
-  await expect(side.getByRole("region", { name: productCopy.usageTitle })).toHaveCount(0)
+  await expect(page.getByRole("dialog", { name: productCopy.usageTitle })).toHaveCount(0)
+  await expect(ring).toBeFocused()
+  await ring.click()
+  await page.locator("[data-slide-paint]").first().click({ position: { x: 4, y: 4 } })
+  await expect(page.getByRole("dialog", { name: productCopy.usageTitle })).toHaveCount(0)
 })

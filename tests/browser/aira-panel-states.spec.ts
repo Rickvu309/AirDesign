@@ -32,10 +32,10 @@ test("where Aira is not offered, the panel says so as it opens and its composer 
   stack,
 }) => {
   const { side, paths } = await openDeck(page, context, stack, "CN")
-  await expect(side.getByText(airaCopy.notOffered, { exact: true })).toBeVisible()
-  const composer = side.getByRole("textbox", { name: airaCopy.notOffered })
+  await expect(side.getByText(`${airaCopy.notOffered} ${airaCopy.notOfferedBody}`, { exact: true })).toBeVisible()
+  const composer = side.getByRole("textbox", { name: airaCopy.unavailable })
   await expect(composer).toBeDisabled()
-  await expect(composer).toHaveAttribute("placeholder", airaCopy.notOffered)
+  await expect(composer).toHaveAttribute("placeholder", airaCopy.unavailable)
   await expect(side.getByRole("button", { name: "Send" })).toBeDisabled()
   await expect(side.getByRole("button", { name: airaCopy.retry })).toHaveCount(0)
   expect(paths).not.toContain("/aira/turn")

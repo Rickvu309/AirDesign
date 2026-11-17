@@ -26,13 +26,13 @@ export default async function drive({
   const composer = side.getByRole("textbox", { name: "Ask Aira" })
   const newChat = side.getByRole("button", { name: "New chat", exact: true })
   await expect(newChat).toBeDisabled()
-  await side.getByRole("button", { name: "New chat, chat history" }).click()
+  await side.getByRole("button", { name: "Chats on this deck", exact: true }).click()
   await expect(page.getByText("Your chats with Aira on this deck show here.")).toBeVisible()
   await expect(page.getByText("This device keeps your last 20 chats.")).toBeVisible()
   await capture("history-empty")
   await page.keyboard.press("Escape")
   await side.getByRole("button", { name: "Weekly usage" }).click()
-  const usage = page.getByRole("region", { name: "Weekly usage" })
+  const usage = page.getByRole("dialog", { name: "Weekly usage" })
   await expect(usage).toContainText(/\d+%/)
   await expect(usage).toContainText("Resets")
   await expect(page.getByRole("link", { name: "See all usage" })).toHaveAttribute("href", "/settings/usage")
@@ -112,7 +112,7 @@ export default async function drive({
   await newChat.click()
   await expect(side.locator("[data-aira-welcome]")).toContainText("Aira isn't available in your country or region yet.")
   await expect(
-    side.getByRole("textbox", { name: "Aira isn't available in your country or region yet." }),
+    side.getByRole("textbox", { name: "Unavailable in your region" }),
   ).toBeDisabled()
   await capture("not-offered")
   note("when the usage answer says Aira is not available, the welcome says so and the composer is off")

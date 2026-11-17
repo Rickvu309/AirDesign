@@ -124,3 +124,28 @@ describe("a request that could not finish", () => {
     expect(airaCopy.failedKept).toMatch(/try again/iu)
   })
 })
+
+describe("a request Aira's changes were undone from", () => {
+  function offered(of: AiraExchange) {
+    return plain(
+      renderToStaticMarkup(
+        <ExchangeView exchange={of} resets={undefined} onUndo={() => undefined} onRetry={undefined} />,
+      ),
+    )
+  }
+
+  const edited: AiraStep[] = [{ kind: "tool", id: "t1", name: "airdesign_edit_deck", state: "done" }]
+
+  it("says the changes are undone and offers Undo no more", () => {
+    const markup = offered(exchange(edited, "undone", ["r1"]))
+    expect(markup).toContain(airaCopy.undone)
+    expect(markup).not.toContain(`>${productCopy.undo}<`)
+  })
+
+  it("says an undo failed and offers Undo again", () => {
+    const markup = offered({ ...exchange(edited, "done", ["r1"]), undoFailed: true })
+    expect(markup).toContain(airaCopy.undoFailed)
+    expect(markup).toContain(productCopy.undo)
+    expect(markup).not.toMatch(/<button[^>]*\sdisabled=""/u)
+  })
+})

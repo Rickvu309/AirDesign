@@ -22,7 +22,7 @@ test("the usage ring shows before any ask, stays current, and See all opens the 
   const ring = side.getByRole("button", { name: productCopy.usageTitle })
   await expect(ring).toBeVisible()
   await ring.click()
-  const pop = side.getByRole("region", { name: productCopy.usageTitle })
+  const pop = page.getByRole("dialog", { name: productCopy.usageTitle })
   await expect(pop).toContainText("0%")
   await expect(pop).toContainText(usageResetsOn("Mon 7:00 AM"))
   await ring.click()

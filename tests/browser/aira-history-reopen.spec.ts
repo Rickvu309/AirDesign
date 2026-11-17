@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test"
-import { airaHistoryNameOf } from "../../apps/web/src/copy/aira-copy.ts"
+import { airaCopy, airaHistoryNameOf } from "../../apps/web/src/copy/aira-copy.ts"
 import { forward, openClean, settled, signInBrowser, test } from "./api-stack"
 
 test.use({ viewport: { width: 1600, height: 1000 }, locale: "en-US" })
@@ -28,7 +28,7 @@ test("the chat a person picked from history reopens after a reload, and an empty
   await ask(page, "Second chat question")
   await expect(log.getByText("Second chat question", { exact: true })).toBeVisible()
   await newChat.click()
-  await side.getByRole("button", { name: airaHistoryNameOf("New chat") }).click()
+  await side.getByRole("button", { name: airaCopy.chatsTitle, exact: true }).click()
   const chats = page.locator("[data-aira-chats]").getByRole("menuitemradio")
   await expect(chats).toHaveCount(2)
   await chats.filter({ hasText: "First chat question" }).click()
