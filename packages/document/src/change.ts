@@ -32,6 +32,7 @@ import type { Alpha, ValueOf } from "./value-kind.js"
 
 export type Target =
   | { readonly node: ElementId }
+  | { readonly nodes: readonly ElementId[] }
   | { readonly slide: SlideId }
   | { readonly role: Role; readonly slide: SlideId | "every" }
 
@@ -352,12 +353,24 @@ function slideOwned(register: Register, node: ElementId): boolean {
 
 function expanded(register: Register, target: Target): readonly ElementId[] | "indexing" {
   if ("role" in target) return expandRole(register, target.role, target.slide)
+  if ("nodes" in target) return expandedNodes(register, target.nodes)
   if (!("node" in target)) {
     const node = slideNode(target.slide, "slide")
     return slideOwned(register, node) && present(register, node) ? [node] : []
   }
-  const known = indexReady(register) || openingElement(register, target.node) !== undefined
-  return known || slideOwned(register, target.node) ? [target.node] : "indexing"
+  return expandedNode(register, target.node)
+}
+
+function expandedNode(register: Register, node: ElementId): readonly ElementId[] | "indexing" {
+  const known = indexReady(register) || openingElement(register, node) !== undefined
+  return known || slideOwned(register, node) ? [node] : "indexing"
+}
+
+function expandedNodes(register: Register, nodes: readonly ElementId[]): readonly ElementId[] | "indexing" {
+  const slides = new Set(nodes.map((node) => shapeOf(node).slide))
+  if (slides.size !== 1) return []
+  const each = nodes.map((node) => expandedNode(register, node))
+  return each.includes("indexing") ? "indexing" : nodes
 }
 
 function sizeOf(register: Register, slide: SlideId): SlideSize | null {

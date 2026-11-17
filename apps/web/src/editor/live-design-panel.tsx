@@ -1,6 +1,7 @@
-import { useId, useMemo, useSyncExternalStore, type ReactNode } from "react"
+import { useCallback, useId, useMemo, useSyncExternalStore, type ReactNode } from "react"
 import {
   openRegister,
+  readElementId,
   readTableValue,
   shapeOf,
   siteKinds,
@@ -29,6 +30,7 @@ import {
   shownTurn,
   type DeckTraits,
 } from "@airdesign/pptx"
+import type { PaintStore, Selection } from "@airdesign/render"
 import type { CommitOutcome } from "@/commit-edit"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
@@ -37,6 +39,7 @@ import { ColorPicker } from "@/design/color-picker"
 import { ColorField, fieldLook } from "@/design/controls/color"
 import {
   panelOf,
+  panelOfMany,
   type NodeChoice,
   type PanelModel,
   type PanelReads,
@@ -60,7 +63,7 @@ export type DesigningDeck = {
   readonly id: string
   readonly shown: DeckPaint
   readonly undo: UndoList
-  readonly designing: ElementId | null
+  readonly selection: Selection
   readonly record: (entry: UndoEntry) => void
   readonly settle: (outcome: CommitOutcome) => void
   readonly setPending: (pending: boolean) => void
@@ -217,18 +220,19 @@ function rowsOf(sections: readonly PanelSection[] | undefined): readonly PanelRo
   return (sections ?? []).flatMap((section) => section.rows)
 }
 
-function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementId }) {
+function usePalette(deck: DesigningDeck): Palette {
   const { shown } = deck
   const { current } = shown
-  const store = shown.store.current
-  useSyncExternalStore(store.elementSubscribe(node), () => store.getElement(node)?.text ?? null)
-  useSyncExternalStore(store.boxSubscribe(node), () => store.getBox(node))
   const display = shown.displayParts.current
   const theme = useMemo(() => themeAt(display, current), [display, current])
-  const palette: Palette = {
-    theme,
-    deck: colorsIn(display),
-  }
+  return { theme, deck: colorsIn(display) }
+}
+
+function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementId }) {
+  const store = deck.shown.store.current
+  useSyncExternalStore(store.elementSubscribe(node), () => store.getElement(node)?.text ?? null)
+  useSyncExternalStore(store.boxSubscribe(node), () => store.getBox(node))
+  const palette = usePalette(deck)
   const design = elementDesign(deck, node)
   if (design === null) return null
   return (
@@ -242,14 +246,57 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
   )
 }
 
-export function LiveDesignPanel({ deck }: { deck: DesigningDeck }) {
-  const { shown, designing } = deck
-  const elements = shown.store.current.slides()[shown.current]?.elements ?? []
-  return designing !== null && elements.includes(designing) ? (
-    <LiveElementDesign key={designing} deck={deck} node={designing} />
-  ) : (
-    <LiveSlideDesign deck={deck} />
+type Several = readonly [ElementId, ...ElementId[]]
+
+function manyDesign(deck: DesigningDeck, nodes: Several): PanelModel | null {
+  const [first, ...rest] = nodes.map((node) => elementDesign(deck, node)?.model)
+  if (first === undefined || rest.some((model) => model === undefined)) return null
+  return panelOfMany([first, ...rest.filter((model) => model !== undefined)])
+}
+
+function useElements(store: PaintStore, nodes: Several): void {
+  const key = nodes.join(" ")
+  const subscribe = useCallback(
+    (listener: () => void) => {
+      const stops = key
+        .split(" ")
+        .flatMap((raw) => readElementId(raw) ?? [])
+        .flatMap((id) => [store.elementSubscribe(id)(listener), store.boxSubscribe(id)(listener)])
+      return () => {
+        for (const stop of stops) stop()
+      }
+    },
+    [store, key],
   )
+  const read = () =>
+    nodes.map((node) => JSON.stringify([store.getElement(node)?.text ?? null, store.getBox(node)])).join(" ")
+  useSyncExternalStore(subscribe, read, read)
+}
+
+function LiveManyDesign({ deck, nodes }: { deck: DesigningDeck; nodes: Several }) {
+  useElements(deck.shown.store.current, nodes)
+  const palette = usePalette(deck)
+  const model = manyDesign(deck, nodes)
+  if (model === null) return null
+  return (
+    <ElementDesign
+      model={model}
+      palette={palette}
+      onChange={(row, value) =>
+        changeDesign(deck, () => rebasedChange(rowsOf(manyDesign(deck, nodes)?.sections), row, value))
+      }
+    />
+  )
+}
+
+export function LiveDesignPanel({ deck }: { deck: DesigningDeck }) {
+  const { shown, selection } = deck
+  const elements = shown.store.current.slides()[shown.current]?.elements ?? []
+  const [first, ...rest] = selection.ids.filter((id) => elements.includes(id))
+  if (first === undefined) return <LiveSlideDesign deck={deck} />
+  if (rest.length === 0) return <LiveElementDesign key={first} deck={deck} node={first} />
+  const nodes: Several = [first, ...rest]
+  return <LiveManyDesign key={nodes.join(" ")} deck={deck} nodes={nodes} />
 }
 
 function LiveSlideDesign({ deck }: { deck: DesigningDeck }) {

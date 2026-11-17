@@ -9,9 +9,7 @@ import { cn } from "@/lib/class-names"
 const rowCases = 5
 
 function heldOf(row: ControlProps["row"]): Readonly<Record<string, unknown>> | null {
-  return !row.mixed && typeof row.value === "object" && row.value !== null
-    ? (row.value as Readonly<Record<string, unknown>>)
-    : null
+  return typeof row.value === "object" && row.value !== null ? (row.value as Readonly<Record<string, unknown>>) : null
 }
 
 export function UnionControl({ row, palette, onChange, inner }: ControlProps) {

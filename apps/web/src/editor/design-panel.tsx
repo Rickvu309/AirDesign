@@ -236,6 +236,11 @@ export function SectionRows({
   ))
 }
 
+function panelTitle({ kind, nodes }: PanelModel): string {
+  if (kind === "many") return designCopy.elements(nodes.length)
+  return kind === null ? designCopy.panels.kept : designCopy.panels[kind]
+}
+
 export function ElementDesign({
   model,
   palette,
@@ -252,11 +257,11 @@ export function ElementDesign({
     <div
       className="flex min-h-0 flex-1 flex-col overflow-y-auto outline-none"
       data-design-panel
-      data-design-element={model.node}
+      data-design-element={model.nodes.join(" ")}
       data-keeps-selection
       tabIndex={-1}
     >
-      <DesignHead>{kind === null ? designCopy.panels.kept : designCopy.panels[kind]}</DesignHead>
+      <DesignHead>{panelTitle(model)}</DesignHead>
       {model.sections.length === 0 ? (
         <p className="px-4 py-4 text-[length:var(--type-dense)] text-quiet">{designCopy.nothing}</p>
       ) : null}

@@ -376,6 +376,23 @@ describe("box inputs align and distribute the elements a target names on each sl
     ])
   })
 
+  it("aligns the elements a nodes target names to the left edge of their own bounds", () => {
+    const target = { nodes: [elementId("260.2"), elementId("260.3"), elementId("260.4")] }
+    expect(placed(plan({ target, box: { align: "left" } }, sized(bodies)))).toEqual([
+      ["260.2", 100, 10],
+      ["260.3", 100, 200],
+      ["260.4", 100, 90],
+    ])
+  })
+
+  it("refuses a nodes target that names elements on two slides as dead", () => {
+    const target = { nodes: [elementId("260.2"), elementId("258.3")] }
+    expect(plan({ target, box: { align: "left" } }, sized(bodies))).toEqual({
+      ok: false,
+      refusals: [{ node: null, trait: null, code: "dead" }],
+    })
+  })
+
   it("spaces several elements with equal gaps between the outer two, and centres a lone one on its slide", () => {
     const target = { role: "body", slide: slideId("260") } as const
     expect(placed(plan({ target, box: { distribute: "horizontal" } }, sized(bodies)))).toEqual([

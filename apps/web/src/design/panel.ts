@@ -19,7 +19,7 @@ import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
 import { cropChange } from "./crop-change"
 import { opacitySection } from "./opacity-row"
-import { hidden, panelKind, panelOrder, type PanelKind } from "./panel-order"
+import { hidden, loneRows, panelKind, panelOrder, type PanelKind } from "./panel-order"
 import { traitControls } from "./trait-controls"
 
 export const controlKinds = [
@@ -142,6 +142,7 @@ export type PanelSection = {
 
 export type PanelModel = {
   readonly node: ElementId
+  readonly nodes: readonly ElementId[]
   readonly kind: PanelKind | null
   readonly sections: readonly PanelSection[]
 }
@@ -296,6 +297,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
   const kind = panelKind(view, shown)
   return {
     node: view.node,
+    nodes: [view.node],
     kind,
     sections: ordered(kind, [...sections, ...(opacity === null ? [] : [opacity])], shown),
   }
@@ -313,4 +315,48 @@ function ordered(
     const section = sections.find(({ trait }) => trait === place.section)
     return section === undefined || left.includes(place.section) ? [] : [{ ...section, open: place.open }]
   })
+}
+
+function present<T>(items: readonly (T | undefined)[]): readonly T[] | null {
+  const found = items.filter((item) => item !== undefined)
+  return found.length === items.length ? found : null
+}
+
+function sameValue(rows: readonly PanelRow[]): boolean {
+  const [first, ...rest] = rows.map((row) => JSON.stringify(row.value))
+  return rows.every((row) => !row.mixed) && rest.every((each) => each === first)
+}
+
+function caseOf(value: unknown): string | undefined {
+  return typeof value === "object" && value !== null ? Object.keys(value)[0] : undefined
+}
+
+function manyRow(rows: readonly PanelRow[], lead: PanelRow, nodes: readonly ElementId[]): PanelRow {
+  const mixed = !sameValue(rows)
+  const shared = lead.desc.kind === "union" && rows.every((row) => caseOf(row.value) === caseOf(lead.value))
+  return {
+    ...lead,
+    value: mixed && !shared ? undefined : lead.value,
+    mixed,
+    inherited: !mixed && rows.every((row) => row.inherited),
+    reset: null,
+    change: (value) => ({ ...lead.change(value), target: { nodes } }),
+  }
+}
+
+export function panelOfMany(models: readonly [PanelModel, ...PanelModel[]]): PanelModel {
+  const nodes = models.flatMap((model) => model.nodes)
+  const sections = panelOrder.many.flatMap((place): PanelSection[] => {
+    const found = present(models.map((model) => model.sections.find(({ trait }) => trait === place.section)))
+    const [lead] = found ?? []
+    if (found === null || lead === undefined) return []
+    const rows = lead.rows.flatMap((row): PanelRow[] => {
+      if (loneRows.includes(`${row.trait}.${row.field}`)) return []
+      const each = present(found.map((section) => section.rows.find(({ field }) => field === row.field)))
+      return each === null ? [] : [manyRow(each, row, nodes)]
+    })
+    return rows.length === 0 ? [] : [{ ...lead, open: place.open, rows }]
+  })
+  const [first, ...rest] = models
+  return { node: (rest.at(-1) ?? first).node, nodes, kind: "many", sections }
 }

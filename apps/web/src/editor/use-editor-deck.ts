@@ -1,4 +1,4 @@
-import { leadOf, noSelection, type Selection } from "@airdesign/render"
+import { noSelection, type Selection } from "@airdesign/render"
 import { useState } from "react"
 import { deckInserts } from "@/editor/inserts"
 import { useDeckPaint } from "@/editor/use-deck-paint"
@@ -38,7 +38,6 @@ export function useEditorDeck(id: string) {
     title,
     setTitle,
     selection,
-    designing: leadOf(selection),
     select,
     rename,
     undo,
