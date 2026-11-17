@@ -1,14 +1,16 @@
 import { assetIcon, type Alpha } from "@airdesign/document"
 import { blipPieces, blipWritten, blipXml, partDeclares, withEmbed, type BlipPieces } from "./blip-edit.js"
-import { colorXml } from "./color-xml.js"
+import { colorXml, solidFillXml } from "./color-xml.js"
+import { blurRadius } from "./picture-adjust.js"
 import { linkedSource, svgExt, svgExtension } from "./picture-write.js"
-import { shownImage, type Recolor } from "./picture-read.js"
+import { shownImage, type Overlay, type Recolor } from "./picture-read.js"
 import { whole, type ElementAt, type Parts, type TraitXml } from "./xml-codec.js"
 
 import { shownPictureMode, writtenPictureMode } from "./picture-mode.js"
 
 const opaque = 100_000
 const recolorKinds: readonly string[] = ["a:grayscl", "a:duotone"]
+const blipOrder = ["a:alphaModFix", "a:grayscl", "a:duotone", "a:blur", "a:fillOverlay"]
 
 function recolorXml(recolor: Recolor): string {
   if ("grayscale" in recolor) return "<a:grayscl/>"
@@ -19,7 +21,15 @@ function recolorXml(recolor: Recolor): string {
 
 function withEffect(pieces: BlipPieces, drop: readonly string[], kind: string, xml: string): BlipPieces {
   const kept = pieces.effects.filter((each) => !drop.includes(each.kind))
-  return { ...pieces, effects: xml === "" ? kept : [...kept, { kind, xml }] }
+  if (xml === "") return { ...pieces, effects: kept }
+  const next = { kind, xml }
+  const rank = blipOrder.indexOf(kind)
+  const index = kept.findIndex((each) => {
+    const other = blipOrder.indexOf(each.kind)
+    return rank !== -1 && other !== -1 && other > rank
+  })
+  const effects = index === -1 ? [...kept, next] : [...kept.slice(0, index), next, ...kept.slice(index)]
+  return { ...pieces, effects }
 }
 
 function writtenSource(parts: Parts, at: ElementAt, ref: string): Parts {
@@ -46,6 +56,20 @@ function writtenAlpha(parts: Parts, at: ElementAt, alpha: Alpha): Parts {
   )
 }
 
+function writtenBlur(parts: Parts, at: ElementAt, blur: number): Parts {
+  const xml = blur <= 0 ? "" : `<a:blur rad="${String(blurRadius(blur))}" grow="0"/>`
+  return blipWritten(parts, at, (found, blip) =>
+    blipXml(withEffect(blipPieces(found, blip), ["a:blur"], "a:blur", xml)),
+  )
+}
+
+function writtenOverlay(parts: Parts, at: ElementAt, overlay: Overlay): Parts {
+  const xml = "solid" in overlay ? `<a:fillOverlay blend="over">${solidFillXml(overlay.solid)}</a:fillOverlay>` : ""
+  return blipWritten(parts, at, (found, blip) =>
+    blipXml(withEffect(blipPieces(found, blip), ["a:fillOverlay"], "a:fillOverlay", xml)),
+  )
+}
+
 function writtenRecolor(parts: Parts, at: ElementAt, recolor: Recolor): Parts {
   return blipWritten(parts, at, (found, blip) =>
     blipXml(
@@ -69,5 +93,13 @@ export const imageXml: TraitXml<"image"> = {
       write: writtenAlpha,
     }),
     recolor: whole({ read: (parts, at) => shownImage(parts, at)?.recolor ?? null, write: writtenRecolor }),
+    blur: whole({
+      read: (parts, at) => {
+        const blur = shownImage(parts, at)?.blur
+        return blur == null || blur > opaque ? null : blur
+      },
+      write: writtenBlur,
+    }),
+    overlay: whole({ read: (parts, at) => shownImage(parts, at)?.overlay ?? null, write: writtenOverlay }),
   },
 }

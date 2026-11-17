@@ -7,5 +7,7 @@ export const imageControls: TraitControls<"image"> = {
     mode: { label: pictureCopy.mode },
     source: { label: pictureCopy.source },
     recolor: { label: pictureCopy.recolor },
+    overlay: { label: pictureCopy.overlay },
+    blur: { label: pictureCopy.blur },
   },
 }

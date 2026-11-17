@@ -21,6 +21,8 @@ const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
 
 const textFields: readonly FieldKey[] = ["text.value", "text.alpha", "notes.value", "link.target"]
 
+const shapePicture: readonly FieldKey[] = ["image.mode", "image.blur", "image.overlay"]
+
 const removes: readonly Kind[] = ["shape", "picture", "connector", "table", "chart", "kept"]
 
 export function takes(facts: ElementFacts): readonly FieldKey[] {
@@ -28,7 +30,8 @@ export function takes(facts: ElementFacts): readonly FieldKey[] {
   return fields.filter(
     (field) =>
       !(unwritten[facts.kind]?.includes(field) ?? false) &&
-      (facts.text || !(textFields.includes(field) || field.startsWith("body."))),
+      (facts.text || !(textFields.includes(field) || field.startsWith("body."))) &&
+      (facts.kind !== "shape" || !field.startsWith("image.") || shapePicture.includes(field)),
   )
 }
 

@@ -45,6 +45,7 @@ const iconPaths = {
   alignRight: '<path d="M4 6h16M10 12h10M4 18h16"/>',
   bullets:
     '<circle cx="6" cy="7" r="1.15" fill="currentColor" stroke="none"/><circle cx="6" cy="12" r="1.15" fill="currentColor" stroke="none"/><circle cx="6" cy="17" r="1.15" fill="currentColor" stroke="none"/><path d="M10 7h10M10 12h10M10 17h10"/>',
+  blur: '<g fill="currentColor" stroke="none"><circle cx="7" cy="7" r="1.15"/><circle cx="12" cy="7" r="1.15"/><circle cx="17" cy="7" r="1.15"/><circle cx="7" cy="12" r="1.15"/><circle cx="12" cy="12" r="1.15"/><circle cx="17" cy="12" r="1.15"/><circle cx="7" cy="17" r="1.15"/><circle cx="12" cy="17" r="1.15"/><circle cx="17" cy="17" r="1.15"/></g>',
 } as const
 
 export type EditorIconName = keyof typeof iconPaths

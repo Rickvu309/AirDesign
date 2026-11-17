@@ -18,7 +18,8 @@ import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { paintReader } from "./paint-reader.js"
 import { shownPictureMode } from "./picture-mode.js"
 import { shownCrop, shownIdentity, shownImage } from "./picture-read.js"
-import { iconParts, withMedia } from "./picture-write.js"
+import { blurRadius } from "./picture-adjust.js"
+import { installedPicture, iconParts, withMedia } from "./picture-write.js"
 import { readSlides } from "./read-shapes.js"
 import { freeShapeId } from "./shape-id.js"
 import { orderedParts } from "./slide-order-route.js"
@@ -98,7 +99,13 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
     )
     const types = text(after, "[Content_Types].xml")
     expect(types).toContain('<Default Extension="svg" ContentType="image/svg+xml"/>')
-    expect(shownImage(after, picture)).toEqual({ source: "rocket", alpha: 100_000, recolor: { none: true } })
+    expect(shownImage(after, picture)).toEqual({
+      source: "rocket",
+      alpha: 100_000,
+      recolor: { none: true },
+      blur: 0,
+      overlay: { none: true },
+    })
     expect(exportParts(after, openRegister("", "clean"))).toBe(after)
     const painted = paintReader(after)
       .slide(picture.part)
@@ -121,7 +128,13 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
     expect(text(gray, picture.part)).toContain(
       '<a:blip r:embed="rId9"><a:alphaModFix amt="60000"/><a:grayscl/></a:blip>',
     )
-    expect(shownImage(gray, picture)).toEqual({ source: null, alpha: 60_000, recolor: { grayscale: true } })
+    expect(shownImage(gray, picture)).toEqual({
+      source: null,
+      alpha: 60_000,
+      recolor: { grayscale: true },
+      blur: 0,
+      overlay: { none: true },
+    })
     const duotone = exported(gray, picture.node, { image: { recolor: { set: { duotone: { dark, light } } } } })
     expect(text(duotone, picture.part)).toContain(
       '<a:blip r:embed="rId9"><a:alphaModFix amt="60000"/><a:duotone><a:schemeClr val="accent1"/><a:srgbClr val="FFFFFF"/></a:duotone></a:blip>',
@@ -263,4 +276,79 @@ it("reads Fill and Fit back even when a square picture has zero placement offset
     })
     expect(shownPictureMode(after, picture)).toBe(mode)
   }
+})
+
+const black = { rgb: "000000", transforms: [{ op: "alpha" as const, val: 50_000 }] }
+
+function swapped(parts: Parts, from: string, to: string): Parts {
+  const part = "ppt/slides/slide1.xml"
+  const next = new Map(parts)
+  next.set(part, encodeUtf8(text(parts, part).replace(from, to)))
+  return next
+}
+
+const dot = new Uint8Array([
+  137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196, 137,
+  0, 0, 0, 13, 73, 68, 65, 84, 120, 218, 99, 252, 207, 192, 80, 15, 0, 4, 133, 1, 128, 132, 169, 140, 33, 0, 0, 0, 0,
+  73, 69, 78, 68, 174, 66, 96, 130,
+])
+
+it("writes a blur and a colour overlay on the picture and takes both away", async () => {
+  const parts = await deck("picture-png.pptx")
+  const picture = at(parts, "256", "4")
+  const media = "ppt/media/picture-008753c5d40023df.png"
+  expect(exportParts(parts, openRegister("", "clean"))).toBe(parts)
+  const carried = swapped(
+    parts,
+    '<a:blip r:embed="rId2"/>',
+    '<a:blip r:embed="rId2"><a:blur rad="95250" grow="0"/></a:blip>',
+  )
+  expect(exportParts(carried, openRegister("", "clean"))).toBe(carried)
+  expect(shownImage(carried, picture)?.blur).toBe(20_000)
+  expect(
+    paintReader(carried)
+      .slide(picture.part)
+      .elements.find((each) => each.shape === "4")?.image?.blur,
+  ).toBe(10)
+  const after = exported(parts, picture.node, {
+    image: { blur: { set: 40_000 }, overlay: { set: { solid: black } } },
+  })
+  const slide = text(after, picture.part)
+  const blur = `<a:blur rad="${String(blurRadius(40_000))}" grow="0"/>`
+  const overlay = `<a:fillOverlay blend="over"><a:solidFill><a:srgbClr val="000000"><a:alpha val="50000"/></a:srgbClr></a:solidFill></a:fillOverlay>`
+  expect(slide).toContain(`<a:blip r:embed="rId2">${blur}${overlay}</a:blip>`)
+  expect(slide.indexOf("<a:blur")).toBeLessThan(slide.indexOf("<a:fillOverlay"))
+  expect(shownImage(after, picture)).toMatchObject({ blur: 40_000, overlay: { solid: black } })
+  const painted = paintReader(after)
+    .slide(picture.part)
+    .elements.find((each) => each.shape === "4")?.image
+  expect(painted?.blur).toBe(20)
+  expect(painted?.overlay).toEqual({ hex: "000000", alpha: 0.5 })
+  expect(sameBytes(after.get(media)!, parts.get(media)!)).toBe(true)
+  const cleared = exported(after, picture.node, { image: { blur: { set: 0 }, overlay: { set: { none: true } } } })
+  expect(text(cleared, picture.part)).toBe(text(parts, picture.part))
+})
+
+it("installs a baked picture in the frame and leaves the original media bytes", async () => {
+  const parts = await deck("picture-png.pptx")
+  const picture = at(parts, "256", "4")
+  const media = "ppt/media/picture-008753c5d40023df.png"
+  const carried = swapped(
+    parts,
+    '<a:blip r:embed="rId2"/>',
+    '<a:blip r:embed="rId2"><a:blur rad="95250" grow="0"/><a:fillOverlay blend="over"><a:solidFill><a:srgbClr val="000000"><a:alpha val="50000"/></a:srgbClr></a:solidFill></a:fillOverlay></a:blip>',
+  )
+  const baked = installedPicture(carried, picture, dot)
+  const slide = text(baked, picture.part)
+  expect(slide).not.toContain("<a:blur")
+  expect(slide).not.toContain("<a:fillOverlay")
+  expect(slide).not.toContain("<a:srcRect")
+  expect(slide).toContain("<a:stretch><a:fillRect/></a:stretch>")
+  expect(slide).toContain('cx="4572000"')
+  expect(slide).toContain('cy="3048000"')
+  expect(sameBytes(baked.get(media)!, parts.get(media)!)).toBe(true)
+  const added = [...baked.keys()].filter((name) => name.startsWith("ppt/media/picture-") && name !== media)
+  expect(added).toHaveLength(1)
+  expect(sameBytes(baked.get(added[0]!)!, dot)).toBe(true)
+  expect(slide).toContain(`r:embed="rId3"`)
 })

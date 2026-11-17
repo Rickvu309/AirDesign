@@ -46,11 +46,11 @@ export function writtenPictureMode(parts: Parts, at: ElementAt, mode: Mode): Par
     const target = id === null ? null : linkTarget(parts, at.part, id)
     const bytes = target === null ? undefined : parts.get(target)
     const image = bytes === undefined ? null : rasterDimensions(bytes)
-    const picture = found.elements.find(
-      (item) => item.kind === "p:pic" && item.start < found.fill.start && item.end >= found.fill.end,
+    const host = found.elements.find(
+      (item) =>
+        (item.kind === "p:pic" || item.kind === "p:sp") && item.start < found.fill.start && item.end >= found.fill.end,
     )
-    const props =
-      picture === undefined ? undefined : found.children[picture.index]?.find((item) => item.kind === "p:spPr")
+    const props = host === undefined ? undefined : found.children[host.index]?.find((item) => item.kind === "p:spPr")
     const transform =
       props === undefined ? undefined : found.children[props.index]?.find((item) => item.kind === "a:xfrm")
     const ext =
@@ -67,6 +67,7 @@ export function writtenPictureMode(parts: Parts, at: ElementAt, mode: Mode): Par
         : `<a:stretch><a:fillRect l="${rect.l}" t="${rect.t}" r="${rect.r}" b="${rect.b}"/></a:stretch>`
   }
   return fillWritten(parts, at, (current) => {
+    if (current.fill.selfClosing) throw new Error("picture-fill")
     const inside = current.children[current.fill.index] ?? []
     const crop = inside.find((item) => item.kind === "a:srcRect")
     const kept = inside
@@ -82,7 +83,7 @@ export function writtenPictureMode(parts: Parts, at: ElementAt, mode: Mode): Par
     return spliceBytes(current.bytes, [
       {
         start: current.fill.openEnd,
-        end: current.fill.end - "</p:blipFill>".length,
+        end: current.fill.end - `</${current.fill.kind}>`.length,
         next: encodeUtf8(`${kept}${rect}${placement}`),
       },
     ])

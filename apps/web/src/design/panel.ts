@@ -196,7 +196,12 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     const labels = traitControls[trait] as Labels
     const controls = wireFields(trait).flatMap(([field, kind]): PanelControl[] => {
       const key = writtenField(trait, field)
-      if (canvasControl(trait, field) || !taken.includes(key) || keptRefuses(view.kept, trait, field)) return []
+      const unread =
+        (key === "image.overlay" || key === "image.blur") &&
+        shown.fields?.[key] !== undefined &&
+        shown.fields[key]?.value == null
+      if (canvasControl(trait, field) || unread || !taken.includes(key) || keptRefuses(view.kept, trait, field))
+        return []
       const copy = labels.fields[field]
       const own = shown.fields?.[key]?.own === true
       const reset = own && inheritable(trait, field) ? (copy?.reset ?? null) : null

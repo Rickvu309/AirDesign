@@ -81,17 +81,43 @@ function percent(value: number): string {
   return `${Number((value * 100).toFixed(4))}%`
 }
 
+function span(
+  before: number,
+  after: number,
+  start = 0,
+  end = 0,
+): { readonly size: number; readonly offset: number } | null {
+  const shown = 1 - before - after
+  if (shown <= 0) return null
+  const size = (1 - start - end) / shown
+  return { size, offset: start - before * size }
+}
+
 function axis(
   before: number,
   after: number,
   start = 0,
   end = 0,
 ): { readonly size: string; readonly position: string } | null {
-  const shown = 1 - before - after
-  if (shown <= 0) return null
-  const size = (1 - start - end) / shown
-  const offset = start - before * size
-  return { size: percent(size), position: percent(size === 1 ? 0 : offset / (1 - size)) }
+  const placed = span(before, after, start, end)
+  if (placed === null) return null
+  const position = placed.size === 1 ? 0 : placed.offset / (1 - placed.size)
+  return { size: percent(placed.size), position: percent(position) }
+}
+
+export function pictureFrame(
+  image: PictureImage,
+  canvas: { readonly width: number; readonly height: number },
+): { readonly x: number; readonly y: number; readonly width: number; readonly height: number } | null {
+  if (image.tile) return null
+  const across = span(image.crop.left, image.crop.right, image.destination?.left, image.destination?.right)
+  const down = span(image.crop.top, image.crop.bottom, image.destination?.top, image.destination?.bottom)
+  if (across === null || down === null) return null
+  const width = across.size * canvas.width
+  const height = down.size * canvas.height
+  const positionX = across.size === 1 ? 0 : across.offset / (1 - across.size)
+  const positionY = down.size === 1 ? 0 : down.offset / (1 - down.size)
+  return { x: positionX * (canvas.width - width), y: positionY * (canvas.height - height), width, height }
 }
 
 export function pictureLayer(image: PictureImage, src: string): string | null {

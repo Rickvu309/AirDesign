@@ -15,6 +15,8 @@ export type PaintImage = {
   tile: boolean
   alpha?: number
   recolor?: PaintRecolor
+  blur?: number
+  overlay?: PaintColor
 }
 
 const opaque = 100000
@@ -33,6 +35,35 @@ const recolorOf = (
   const colors = (children[duotone.index] ?? []).filter((element) => colorKinds.has(element.kind))
   const [dark, light] = colors.map((element) => paintColor(element, children, palette))
   return colors.length !== 2 || dark == null || light == null ? {} : { recolor: { duotone: [dark, light] } }
+}
+
+const emuPerPx = 9525
+
+const blurOf = (blip: MarkupElement, children: MarkupChildren): Pick<PaintImage, "blur"> => {
+  const blur = (children[blip.index] ?? []).find((element) => element.kind === "a:blur")
+  const radius = blur === undefined ? null : paintAttribute(blur, "rad")
+  if (blur === undefined || (radius !== null && !/^\d+$/.test(radius))) return {}
+  const value = radius === null ? 0 : Number(radius)
+  return value <= 0 ? {} : { blur: value / emuPerPx }
+}
+
+const overlayOf = (
+  blip: MarkupElement,
+  children: MarkupChildren,
+  palette: PaintPalette | null,
+): Pick<PaintImage, "overlay"> => {
+  const overlay = (children[blip.index] ?? []).find((element) => element.kind === "a:fillOverlay")
+  if (overlay === undefined || paintAttribute(overlay, "blend") !== "over") return {}
+  const solid = (children[overlay.index] ?? []).find((element) => element.kind === "a:solidFill")
+  const color =
+    solid === undefined ? undefined : (children[solid.index] ?? []).find((element) => colorKinds.has(element.kind))
+  if (color === undefined) return {}
+  const painted = paintColor(
+    color,
+    children,
+    palette ?? { children, slots: new Map(), mapping: new Map(), placeholder: null },
+  )
+  return painted === null ? {} : { overlay: painted }
 }
 
 const alphaOf = (blip: MarkupElement, children: MarkupChildren): Pick<PaintImage, "alpha"> => {
@@ -85,6 +116,8 @@ export const paintImage = (
     tile: inside.some((element) => element.kind === "a:tile"),
     ...alphaOf(blip, children),
     ...recolorOf(blip, children, palette),
+    ...blurOf(blip, children),
+    ...overlayOf(blip, children, palette),
   }
 }
 

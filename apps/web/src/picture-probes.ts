@@ -27,12 +27,17 @@ export const pictureProbes: {
     deck: "doe-heat-pumps.pptx",
     kind: "picture",
     node: picture,
-    opening: () => ({ v: format, patch: { image: { mode: "opening", source: "opening", recolor: "opening" } } }),
+    opening: () => ({
+      v: format,
+      patch: { image: { mode: "opening", source: "opening", recolor: "opening", blur: "opening", overlay: "opening" } },
+    }),
     edit: (_, field, value) => ({ v: format, patch: { image: { [field]: { set: value } } } }),
     fields: {
       mode: { file: (parts, at) => shownPictureMode(parts, at), shows: (value) => value },
       source: { file: (parts, at) => shownImage(parts, at)?.source, shows: (value) => value },
       recolor: { file: (parts, at) => shownImage(parts, at)?.recolor, shows: (value) => value },
+      blur: { file: (parts, at) => shownImage(parts, at)?.blur, shows: (value) => value },
+      overlay: { file: (parts, at) => shownImage(parts, at)?.overlay, shows: (value) => value },
     },
   },
   crop: {

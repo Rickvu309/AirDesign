@@ -39,6 +39,18 @@ function borderValue(fill: unknown, dash: unknown): string | undefined {
   return "solid" in fill && (dash === "solid" || dash === "dash" || dash === "dot") ? dash : undefined
 }
 
+function pictureValue(value: unknown): boolean {
+  return typeof value === "object" && value !== null && "picture" in value
+}
+
+function modeList(mode: PanelControl): PanelControl {
+  return {
+    ...mode,
+    desc: { kind: "choice", options: ["fill", "fit", "crop", "tile"] },
+    look: { ...mode.look, name: { show: "hidden" }, form: "list" },
+  }
+}
+
 function shadowValue(shadow: unknown): string | undefined {
   if (shadow === undefined || (typeof shadow === "object" && shadow !== null && "none" in shadow)) return "none"
   return Object.entries(shadowPresets).find(([, value]) => {
@@ -57,6 +69,12 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
   const dash = controls.find((control) => control.trait === "line" && control.field === "dash")
   const shadow = controls.find((control) => control.trait === "effects" && control.field === "shadow")
   const mode = controls.find((control) => control.trait === "image" && control.field === "mode")
+  const overlay = controls.find((control) => control.trait === "image" && control.field === "overlay")
+  const blur = controls.find((control) => control.trait === "image" && control.field === "blur")
+  const adjust = [overlay, blur].filter((control) => control !== undefined)
+  const fillValue = controls.find((control) => control.trait === "fill" && control.field === "value")?.value
+  const shapePanel = kind === "shape" || kind === "text"
+  const shapePicture = shapePanel && pictureValue(fillValue)
   const added: PanelSection[] =
     kind === "picture"
       ? [
@@ -64,18 +82,7 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
             trait: "pictureFill",
             label: fillCopy.section,
             open: true,
-            strips:
-              mode === undefined
-                ? []
-                : [
-                    [
-                      {
-                        ...mode,
-                        desc: { kind: "choice", options: ["fill", "fit", "crop", "tile"] },
-                        look: { ...mode.look, name: { show: "hidden" }, form: "list" },
-                      },
-                    ],
-                  ],
+            strips: mode === undefined ? [] : [[modeList(mode)], ...(adjust.length === 0 ? [] : [adjust])],
           },
         ]
       : []
@@ -152,8 +159,18 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
       return {
         ...section,
         strips: section.strips
-          .map((strip) => strip.filter((control) => control.field !== "mode"))
+          .map((strip) =>
+            strip.filter((control) => {
+              if (shapePanel) return false
+              return control.field !== "mode" && control.field !== "overlay" && control.field !== "blur"
+            }),
+          )
           .filter((strip) => strip.length > 0),
+      }
+    if (section.trait === "fill" && shapePicture && mode !== undefined)
+      return {
+        ...section,
+        strips: [...section.strips, [modeList(mode)], ...(adjust.length === 0 ? [] : [adjust])],
       }
     const fill =
       section.trait === "line" ? section.strips.flat().find((control) => control.field === "fill") : undefined
@@ -161,5 +178,5 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
       return section
     return { ...section, strips: [[fill]] }
   })
-  return [...details, ...added]
+  return [...details, ...added].filter((section) => section.trait !== "image" || section.strips.length > 0)
 }

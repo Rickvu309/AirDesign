@@ -21,6 +21,7 @@ export const panelOrder: Readonly<Record<PanelKind, readonly Place[]>> = {
     shut("body"),
     shut("geometry"),
     shut("identity"),
+    shut("image"),
   ],
   shape: [
     open("alignment"),
@@ -37,6 +38,7 @@ export const panelOrder: Readonly<Record<PanelKind, readonly Place[]>> = {
     shut("link"),
     shut("body"),
     shut("identity"),
+    shut("image"),
   ],
   picture: [
     open("alignment"),
