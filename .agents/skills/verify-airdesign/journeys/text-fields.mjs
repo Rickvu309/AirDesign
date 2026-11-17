@@ -9,6 +9,7 @@ export default async function drive(kit) {
   const { textCopy, textWords } = require(path.join(repo, "apps/web/src/copy/text-copy.ts"))
   const { formatCopy } = require(path.join(repo, "apps/web/src/copy/format-copy.ts"))
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
+  const document = await import(pathToFileURL(path.join(repo, "packages/document/dist/index.js")).href)
   const signed = await kit.signIn()
   for (const feature of ["strike", "letter-spacing", "numbers"]) {
     await page.goto("/")
@@ -54,7 +55,7 @@ export default async function drive(kit) {
     await expect
       .poll(async () => {
         const server = (await post(deckRoutes.open, { deck }, signed.cookie)).json.register
-        return JSON.stringify(server.elements[node])
+        return document.currentValue(server.elements[node])
       })
       .toContain(expected)
     await page.reload()
