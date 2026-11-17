@@ -278,6 +278,18 @@ _Avoid_: property, attribute, facet, section (a section is a group of slides), g
 One value of a trait, written `trait.field`, such as `box.x`, `line.width` or `text.size`. A field is the smallest thing a row sets, a reset returns to inherited, and a refusal names.
 _Avoid_: property, attribute, setting
 
+**control**:
+What the design panel shows for one field: its name, the value the selection holds, whether that value is mixed or inherited, and the edit a change makes.
+_Avoid_: row (a row is a stored edit), input, widget
+
+**strip**:
+Controls that share one horizontal line of a panel section, such as X and Y, or bold, italic and underline.
+_Avoid_: line (a line is a trait), row, group
+
+**panel section**:
+The titled part of the design panel that holds the controls of one trait, or Opacity.
+_Avoid_: section (a section is a group of slides)
+
 **row**:
 One stored edit of one node: the format it was written in, `v`, and a `patch` of the trait fields it changes. Each field in a patch is set to a value or sent back to `inherit` or `opening`. Rows stack in order, and a node shows its rows folded field by field. A table's own rows are a kind, `row`; say table row when the two could be mixed up.
 _Avoid_: edit record, change record, delta

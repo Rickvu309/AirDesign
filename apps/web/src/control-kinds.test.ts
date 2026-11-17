@@ -1,6 +1,6 @@
 import { traitNames, traits, type Desc } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { controlKinds, controlOf } from "./design/panel"
+import { controlKinds, controlOf } from "./design/panel-arrangement"
 import { controlViews } from "./design/control-views"
 
 type Loose = Readonly<Record<string, { readonly desc: Desc }>>

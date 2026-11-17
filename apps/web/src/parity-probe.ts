@@ -153,7 +153,10 @@ export type Probe<T extends TraitName> = [FieldName<T>] extends [never]
 function panelRow(register: Register, at: At, trait: TraitName, field: string) {
   const view = registerScope(register).view(at.node)
   const sections = view === undefined ? undefined : panelOf(view, { reads: {}, moves: true }).sections
-  return sections?.find((section) => section.trait === trait)?.rows.find((each) => each.field === field)
+  return sections
+    ?.find((section) => section.trait === trait)
+    ?.strips.flat()
+    .find((each) => each.field === field)
 }
 
 export function panelRegister(

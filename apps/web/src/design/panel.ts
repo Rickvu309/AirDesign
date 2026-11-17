@@ -22,66 +22,8 @@ import { opacitySection } from "./opacity-row"
 import { hidden, loneRows, panelKind, panelOrder, type PanelKind } from "./panel-order"
 import { alphaFieldOver, atShownAlpha } from "./shown-alpha"
 import { traitControls } from "./trait-controls"
-
-export const controlKinds = [
-  "length",
-  "angle",
-  "percent",
-  "count",
-  "toggle",
-  "choice",
-  "action",
-  "color",
-  "hex",
-  "record",
-  "union",
-  "list",
-  "adjust",
-  "text",
-  "table",
-  "asset",
-  "node",
-  "site",
-  "preset",
-] as const
-
-export type ControlKind = (typeof controlKinds)[number]
-
-export function controlOf(desc: Desc): ControlKind {
-  switch (desc.kind) {
-    case "number":
-      if (desc.unit === "emu" || desc.unit === "hundredth-point") return "length"
-      return desc.unit === "angle" ? "angle" : desc.unit === "fraction" ? "percent" : "count"
-    case "flag":
-    case "mark":
-      return "toggle"
-    case "words":
-    case "text":
-      return "text"
-    case "choice":
-      return "choice"
-    case "color":
-      return "color"
-    case "hex":
-      return "hex"
-    case "alpha":
-      return "percent"
-    case "record":
-      return "record"
-    case "union":
-      return "union"
-    case "list":
-      return "list"
-    case "named":
-      return "adjust"
-    case "table":
-      return "table"
-    case "asset":
-      return "asset"
-    case "node":
-      return "node"
-  }
-}
+import { arrange, resolveRow, type ControlKind, type ControlLook } from "./panel-arrangement"
+export type { ControlKind } from "./panel-arrangement"
 
 export type SectionName = TraitName | "opacity"
 
@@ -90,11 +32,11 @@ export type PanelRow = {
   readonly field: string
   readonly label: string
   readonly control: ControlKind
+  readonly look: ControlLook
   readonly desc: Desc
   readonly value: unknown
   readonly mixed: boolean
   readonly inherited: boolean
-  readonly caption: boolean
   readonly reset: string | null
   readonly parent?: unknown
   readonly nodes?: readonly NodeChoice[]
@@ -108,6 +50,7 @@ export type NodeChoice = {
 }
 
 export type ControlProps = {
+  readonly fold?: { readonly open: boolean; readonly onOpen: (open: boolean) => void }
   readonly row: PanelRow
   readonly palette: Palette
   readonly onChange: (value: unknown) => void
@@ -116,29 +59,22 @@ export type ControlProps = {
 
 export function partRow(row: PanelRow, name: string, desc: Desc, value: unknown): PanelRow {
   const label = optionWord(row.field, name)
-  return {
+  return resolveRow({
     ...row,
     parent: row.value,
     field: `${row.field}.${name}`,
     label,
-    control:
-      row.trait === "connection" && name === "site"
-        ? "site"
-        : row.trait === "geometry" && name === "preset"
-          ? "preset"
-          : controlOf(desc),
     desc,
     value,
-    caption: true,
     reset: null,
-  }
+  })
 }
 
 export type PanelSection = {
   readonly trait: SectionName
   readonly label: string
   readonly open: boolean
-  readonly rows: readonly PanelRow[]
+  readonly strips: readonly (readonly PanelRow[])[]
 }
 
 export type PanelModel = {
@@ -244,8 +180,6 @@ function lineless(trait: TraitName, rows: readonly PanelRow[]): boolean {
   return trait === "line" && typeof fill === "object" && fill !== null && "none" in fill
 }
 
-const actions = ["box.align", "box.distribute"]
-
 function joined(shown: PanelReads): boolean {
   return (["connection.start", "connection.end"] as const).some((key) => {
     const value = shown.fields?.[key]?.value
@@ -280,25 +214,24 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
               }) as SetChange
       const desc = shownDesc(kind, view.facts.grouped, held.value)
       const label = copy?.label ?? ""
-      const caption = label !== labels.section
       const nodes = trait === "connection" && shown.nodes !== undefined ? { nodes: shown.nodes } : {}
       return [
-        {
+        resolveRow({
           trait,
           field,
           label,
-          control: actions.includes(`${trait}.${field}`) ? "action" : controlOf(desc),
           desc,
           ...held,
-          caption,
           reset,
           ...nodes,
           change,
-        },
+        }),
       ]
     })
     const visible = lineless(trait, rows) ? rows.filter((row) => row.field === "fill") : rows
-    return visible.length === 0 ? [] : [{ trait, label: labels.section ?? "", open: true, rows: visible }]
+    return visible.length === 0
+      ? []
+      : [{ trait, label: labels.section ?? "", open: true, strips: arrange(trait, visible) }]
   })
   const opacity = opacitySection(view, shown)
   const kind = panelKind(view, shown)
@@ -357,12 +290,12 @@ export function panelOfMany(models: readonly [PanelModel, ...PanelModel[]]): Pan
     const found = present(models.map((model) => model.sections.find(({ trait }) => trait === place.section)))
     const [lead] = found ?? []
     if (found === null || lead === undefined) return []
-    const rows = lead.rows.flatMap((row): PanelRow[] => {
+    const rows = lead.strips.flat().flatMap((row): PanelRow[] => {
       if (loneRows.includes(`${row.trait}.${row.field}`)) return []
-      const each = present(found.map((section) => section.rows.find(({ field }) => field === row.field)))
+      const each = present(found.map((section) => section.strips.flat().find(({ field }) => field === row.field)))
       return each === null ? [] : [manyRow(each, row, nodes)]
     })
-    return rows.length === 0 ? [] : [{ ...lead, open: place.open, rows }]
+    return rows.length === 0 ? [] : [{ ...lead, open: place.open, strips: arrange(lead.trait, rows) }]
   })
   const [first, ...rest] = models
   return { node: (rest.at(-1) ?? first).node, nodes, kind: "many", sections }

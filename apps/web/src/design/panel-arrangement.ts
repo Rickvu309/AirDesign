@@ -1,0 +1,290 @@
+import {
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Bold,
+  Italic,
+  Underline,
+  List,
+  FlipHorizontal2,
+  FlipVertical2,
+  RotateCw,
+  Type,
+  ArrowDownUp,
+  ArrowUpToLine,
+  ArrowDownToLine,
+  Image,
+  Minus,
+  PaintBucket,
+  Blend,
+  Grid2X2,
+  AlignCenterHorizontal,
+  AlignCenterVertical,
+  AlignEndHorizontal,
+  AlignEndVertical,
+  AlignHorizontalDistributeCenter,
+  AlignStartHorizontal,
+  AlignStartVertical,
+  AlignVerticalDistributeCenter,
+  type LucideIcon,
+} from "lucide-react"
+import { optionWord } from "@/copy/option-copy"
+import type { Desc } from "@airdesign/document"
+import type { PanelRow, SectionName } from "./panel"
+
+export type NameLook =
+  | { readonly show: "above" }
+  | { readonly show: "beside" }
+  | { readonly show: "hidden" }
+  | { readonly show: "inside" }
+  | { readonly show: "icon"; readonly icon: LucideIcon }
+  | { readonly show: "letter"; readonly letter: string }
+
+export type ControlLook = {
+  readonly name: NameLook
+  readonly options: Readonly<Record<string, LucideIcon | undefined>>
+  readonly form: "segments" | "list"
+}
+
+type Placed = {
+  readonly field: string
+  readonly name: NameLook
+  readonly kind?: ControlKind
+  readonly options?: Readonly<Record<string, LucideIcon>>
+  readonly form?: "segments" | "list"
+}
+
+type Strip = readonly Placed[]
+const above: NameLook = { show: "above" }
+const hidden: NameLook = { show: "hidden" }
+const inside: NameLook = { show: "inside" }
+const fills = { none: Minus, solid: PaintBucket, gradient: Blend, pattern: Grid2X2, picture: Image }
+const placed = (field: string, name: NameLook = above, rest: Omit<Placed, "field" | "name"> = {}): Placed => ({
+  field,
+  name,
+  ...rest,
+})
+const icon = (field: string, glyph: LucideIcon): Placed => placed(field, { show: "icon", icon: glyph })
+const letter = (field: string, text: string): Placed => placed(field, { show: "letter", letter: text })
+
+export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
+  text: [
+    [placed("value", hidden)],
+    [placed("font", hidden)],
+    [icon("size", Type), icon("lineSpacing", ArrowDownUp)],
+    [icon("bold", Bold), icon("italic", Italic), icon("underline", Underline)],
+    [
+      placed("align", hidden, {
+        form: "segments",
+        options: { left: AlignLeft, center: AlignCenter, right: AlignRight },
+      }),
+      icon("bullet", List),
+    ],
+    [placed("color", hidden)],
+    [icon("spaceBefore", ArrowUpToLine), icon("spaceAfter", ArrowDownToLine)],
+  ],
+  box: [
+    [letter("x", "X"), letter("y", "Y")],
+    [letter("w", "W"), letter("h", "H")],
+    [icon("rot", RotateCw), icon("flipH", FlipHorizontal2), icon("flipV", FlipVertical2)],
+    [
+      placed("align", hidden, {
+        kind: "action",
+        options: {
+          left: AlignStartVertical,
+          center: AlignCenterVertical,
+          right: AlignEndVertical,
+          top: AlignStartHorizontal,
+          middle: AlignCenterHorizontal,
+          bottom: AlignEndHorizontal,
+        },
+      }),
+    ],
+    [
+      placed("distribute", hidden, {
+        kind: "action",
+        options: { horizontal: AlignHorizontalDistributeCenter, vertical: AlignVerticalDistributeCenter },
+      }),
+    ],
+  ],
+  fill: [[placed("value", hidden, { options: fills })], [placed("value.solid", hidden)]],
+  line: [
+    [placed("fill", hidden, { options: fills })],
+    [icon("width", Minus), placed("dash", above, { form: "list" })],
+    [placed("cap", above, { form: "list" }), placed("compound", above, { form: "list" })],
+    [placed("join", above, { form: "list" })],
+    [placed("head"), placed("tail")],
+    [placed("fill.solid", hidden)],
+    [placed("head.type", above, { form: "list" })],
+    [placed("head.width", above, { form: "list" })],
+    [placed("head.length", above, { form: "list" })],
+    [placed("tail.type", above, { form: "list" })],
+    [placed("tail.width", above, { form: "list" })],
+    [placed("tail.length", above, { form: "list" })],
+  ],
+  opacity: [[placed("opacity", { show: "beside" })]],
+  identity: [[placed("name", inside)], [placed("alt", inside)], [placed("hidden")]],
+  geometry: [
+    [placed("shape", hidden)],
+    [placed("shape.preset", above, { kind: "preset" })],
+    [placed("shape.adjust", hidden)],
+  ],
+  effects: [
+    [placed("shadow")],
+    [placed("glow")],
+    [placed("softEdge")],
+    [placed("shadow.outer", hidden)],
+    [placed("shadow.outer.blur", inside), placed("shadow.outer.distance", inside)],
+    [placed("shadow.outer.direction", inside)],
+    [placed("shadow.outer.color")],
+    [placed("glow.halo", hidden)],
+    [placed("glow.halo.radius", inside)],
+    [placed("glow.halo.color")],
+    [placed("softEdge.radius", inside)],
+  ],
+  body: [
+    [placed("insets")],
+    [placed("anchor")],
+    [placed("wrap")],
+    [placed("autofit")],
+    [placed("vertical")],
+    [placed("columns", inside)],
+    [placed("insets.left", inside), placed("insets.top", inside)],
+    [placed("insets.right", inside), placed("insets.bottom", inside)],
+  ],
+  image: [[placed("source")], [placed("recolor")]],
+  crop: [
+    [placed("rect", hidden)],
+    [placed("rect.l", inside), placed("rect.t", inside)],
+    [placed("rect.r", inside), placed("rect.b", inside)],
+  ],
+  connection: [
+    [placed("start")],
+    [placed("end")],
+    [placed("start.shape", hidden)],
+    [placed("start.shape.node")],
+    [placed("start.shape.site", above, { kind: "site" })],
+    [placed("end.shape", hidden)],
+    [placed("end.shape.node")],
+    [placed("end.shape.site", above, { kind: "site" })],
+  ],
+  table: [[placed("value")]],
+  notes: [[placed("value", hidden)]],
+  theme: [
+    [placed("dk1")],
+    [placed("lt1")],
+    [placed("dk2")],
+    [placed("lt2")],
+    [placed("accent1")],
+    [placed("accent2")],
+    [placed("accent3")],
+    [placed("accent4")],
+    [placed("accent5")],
+    [placed("accent6")],
+    [placed("hlink")],
+    [placed("folHlink")],
+    [placed("major", inside)],
+    [placed("minor", inside)],
+  ],
+}
+
+function placement(trait: SectionName, field: string): Placed | undefined {
+  return sectionStrips[trait].flat().find((place) => place.field === field)
+}
+
+function fallbackName(kind: ControlKind, field: string): NameLook {
+  if (["length", "angle", "percent", "count", "text"].includes(kind)) return inside
+  return kind === "record" && field.includes(".") ? hidden : above
+}
+
+export function resolveRow(row: Omit<PanelRow, "control" | "look">): PanelRow {
+  const place = placement(row.trait, row.field)
+  const control = place?.kind ?? controlOf(row.desc)
+  const options = place?.options ?? {}
+  const choices = row.desc.kind === "choice" ? row.desc.options : []
+  return {
+    ...row,
+    control,
+    look: {
+      name: place?.name ?? fallbackName(control, row.field),
+      options,
+      form: place?.form ?? choiceLayout(row.field, choices),
+    },
+  }
+}
+
+export function arrange(trait: SectionName, rows: readonly PanelRow[]): readonly (readonly PanelRow[])[] {
+  const strips = sectionStrips[trait]
+    .map((strip) => strip.flatMap((place) => rows.filter((row) => row.field === place.field)))
+    .filter((strip) => strip.length > 0)
+  const placed = new Set(strips.flat().map((row) => row.field))
+  return [...strips, ...fallbackStrips(rows.filter((row) => !placed.has(row.field)))]
+}
+
+function fallbackStrips(rows: readonly PanelRow[]): readonly (readonly PanelRow[])[] {
+  return rows.map((row) => [row])
+}
+
+export function choiceLayout(field: string, options: readonly string[]): "segments" | "list" {
+  return options.length > 4 || options.some((option) => optionWord(field, option).length > 12) ? "list" : "segments"
+}
+
+export const controlKinds = [
+  "length",
+  "angle",
+  "percent",
+  "count",
+  "toggle",
+  "choice",
+  "action",
+  "color",
+  "hex",
+  "record",
+  "union",
+  "list",
+  "adjust",
+  "text",
+  "table",
+  "asset",
+  "node",
+  "site",
+  "preset",
+] as const
+
+export type ControlKind = (typeof controlKinds)[number]
+
+export function controlOf(desc: Desc): ControlKind {
+  switch (desc.kind) {
+    case "number":
+      if (desc.unit === "emu" || desc.unit === "hundredth-point") return "length"
+      return desc.unit === "angle" ? "angle" : desc.unit === "fraction" ? "percent" : "count"
+    case "flag":
+    case "mark":
+      return "toggle"
+    case "words":
+    case "text":
+      return "text"
+    case "choice":
+      return "choice"
+    case "color":
+      return "color"
+    case "hex":
+      return "hex"
+    case "alpha":
+      return "percent"
+    case "record":
+      return "record"
+    case "union":
+      return "union"
+    case "list":
+      return "list"
+    case "named":
+      return "adjust"
+    case "table":
+      return "table"
+    case "asset":
+      return "asset"
+    case "node":
+      return "node"
+  }
+}

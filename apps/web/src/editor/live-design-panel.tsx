@@ -217,7 +217,7 @@ function elementDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElem
 }
 
 function rowsOf(sections: readonly PanelSection[] | undefined): readonly PanelRow[] {
-  return (sections ?? []).flatMap((section) => section.rows)
+  return (sections ?? []).flatMap((section) => section.strips.flat())
 }
 
 function usePalette(deck: DesigningDeck): Palette {
@@ -338,9 +338,11 @@ function LiveThemeDesign({ deck }: { deck: DesigningDeck }) {
     <DesignSection title={section.label} last>
       <div className="flex flex-col gap-2" data-design-theme>
         <SectionRows
-          rows={section.rows}
+          strips={section.strips}
           palette={{ theme: [], deck: colorsIn(deck.shown.displayParts.current) }}
-          onChange={(row, value) => changeDesign(deck, () => rebasedChange(themeSection(deck)?.rows ?? [], row, value))}
+          onChange={(row, value) =>
+            changeDesign(deck, () => rebasedChange(themeSection(deck)?.strips.flat() ?? [], row, value))
+          }
         />
       </div>
     </DesignSection>

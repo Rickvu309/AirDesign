@@ -1,3 +1,4 @@
+import { resolveRow } from "@/design/panel-arrangement"
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { expect, it } from "vitest"
@@ -13,21 +14,19 @@ it.each([
 ] satisfies readonly (readonly [PanelRow["trait"], string, string])[])(
   "keeps %s.%s named %s with an icon",
   (trait, field, label) => {
-    const row: PanelRow = {
+    const row: PanelRow = resolveRow({
       trait,
       field,
       label,
-      control: "toggle",
       desc: { kind: "flag" },
       value: true,
       mixed: false,
       inherited: false,
-      caption: true,
       reset: null,
       change: () => {
         throw new Error("unused")
       },
-    }
+    })
     const html = renderToStaticMarkup(
       createElement(ToggleControl, { row, palette: { theme: [], deck: [] }, onChange: () => {} }),
     )

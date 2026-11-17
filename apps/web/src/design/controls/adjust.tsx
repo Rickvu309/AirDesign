@@ -1,3 +1,4 @@
+import { resolveRow } from "@/design/panel-arrangement"
 import { adjustDefaults } from "@airdesign/render"
 import { geometryCopy } from "@/copy/geometry-copy"
 import { NumberField } from "@/design/controls/number"
@@ -23,14 +24,13 @@ export function AdjustControl({ row, palette, onChange }: ControlProps) {
       {names.map((name) => (
         <NumberField
           key={name}
-          row={{
+          row={resolveRow({
             ...row,
             field: `${row.field}.${name}`,
             label: geometryCopy.adjust(name),
             desc: item,
             value: held[name] ?? defaults[name],
-            control: "count",
-          }}
+          })}
           palette={palette}
           onChange={(next) => onChange({ ...held, [name]: next })}
           unit=""

@@ -30,18 +30,18 @@ it("shows a picture's icon, recolour and crop first, and its name and alt text l
     "identity",
   ])
   const image = panel.sections.find((section) => section.trait === "image")
-  expect(image?.rows.map((row) => [row.field, row.label, row.control])).toEqual([
+  expect(image?.strips.flat().map((row) => [row.field, row.label, row.control])).toEqual([
     ["source", "Icon", "asset"],
     ["recolor", "Recolor", "union"],
   ])
-  expect(image?.rows[0]?.value).toBe("rocket")
-  expect(image?.rows[0]?.change("star")).toEqual({ target: { node: "258.4" }, image: { source: "star" } })
+  expect(image?.strips.flat()[0]?.value).toBe("rocket")
+  expect(image?.strips.flat()[0]?.change("star")).toEqual({ target: { node: "258.4" }, image: { source: "star" } })
   const identity = panel.sections.find((section) => section.trait === "identity")
   expect(identity?.label).toBe("Name and alt text")
-  expect(identity?.rows.map((row) => [row.label, row.control])).toEqual([
+  expect(identity?.strips.flat().map((row) => [row.label, row.control])).toEqual([
     ["Name", "text"],
     ["Alt text", "text"],
     ["Hide on slide", "toggle"],
   ])
-  expect(panel.sections.find((section) => section.trait === "opacity")?.rows[0]?.value).toBe(60_000)
+  expect(panel.sections.find((section) => section.trait === "opacity")?.strips.flat()[0]?.value).toBe(60_000)
 })

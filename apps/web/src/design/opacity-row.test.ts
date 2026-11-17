@@ -50,7 +50,7 @@ function panelRegister(register: Register, at: At): { readonly register: Registe
   const scope = registerScope(register)
   const view = scope.view(at.node)
   const sections = view === undefined ? [] : panelOf(view, { reads: {}, moves: true }).sections
-  const control = sections.find((section) => section.trait === "opacity")?.rows[0]
+  const control = sections.find((section) => section.trait === "opacity")?.strips.flat()[0]
   const planned = control === undefined ? null : planChange(control.change(opacity), scope)
   const row = planned?.ok === true ? planned.rows[0]?.row : undefined
   if (row === undefined) return null
