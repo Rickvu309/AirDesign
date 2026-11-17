@@ -187,7 +187,9 @@ export function SectionStrips({
       className="grid items-end gap-2"
       style={{
         gridTemplateColumns: strip.every((control) => control.kind === "action")
-          ? "3fr 1fr"
+          ? strip
+              .map((control) => `${String(control.desc.kind === "choice" ? control.desc.options.length : 1)}fr`)
+              .join(" ")
           : `repeat(${strip.length}, minmax(0, 1fr))`,
       }}
     >
