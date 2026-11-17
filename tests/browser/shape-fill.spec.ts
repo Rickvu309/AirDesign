@@ -1,3 +1,4 @@
+import { openFillDetails } from "./design-panel"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
@@ -29,7 +30,7 @@ test("a person fills a shape whose fill comes from its style with a color and an
   const accentOne = await filled(rectangle)
   const panel = await fillPanel(page, rectangle)
   const kinds = panel.getByRole("group", { name: "Fill", exact: true })
-  await expect(kinds.getByRole("button")).toHaveText(["None", "Color", "Gradient", "Pattern", "Icon"])
+  await expect(kinds.getByRole("button")).toHaveText(["None", "Color", "Gradient", "Icon"])
   await expect(kinds.getByRole("button", { name: "Color", exact: true })).toHaveAttribute("aria-pressed", "true")
   await expect(panel.getByRole("button", { name: "Reset fill", exact: true })).toHaveCount(0)
   const colors = panel.getByRole("group", { name: "Color", exact: true })
@@ -38,6 +39,7 @@ test("a person fills a shape whose fill comes from its style with a color and an
   await expect.poll(() => filled(rectangle)).not.toBe(accentOne)
   const accentTwo = await filled(rectangle)
   await expect(shownColor(colors)).toHaveText("Accent 2")
+  await openFillDetails(panel)
   await expect(panel.getByRole("button", { name: "Reset fill", exact: true })).toBeVisible()
 
   const ovalPanel = await fillPanel(page, oval)
@@ -96,10 +98,12 @@ test("a person resets a shape's own fill to the one its style gives, and Undo br
   const shape = page.locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#2"]')
   const own = await filled(shape)
   const panel = await fillPanel(page, shape)
+  await openFillDetails(panel)
   await panel.getByRole("button", { name: "Reset fill", exact: true }).click()
   await expect.poll(() => filled(shape)).not.toBe(own)
   await expect(panel.getByRole("button", { name: "Reset fill", exact: true })).toHaveCount(0)
   await page.getByRole("button", { name: "Undo fill", exact: true }).click()
   await expect.poll(() => filled(shape)).toBe(own)
+  await openFillDetails(panel)
   await expect(panel.getByRole("button", { name: "Reset fill", exact: true })).toBeVisible()
 })

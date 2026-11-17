@@ -29,7 +29,6 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
   await expect(panel).toContainText(designCopy.panels.text)
   await expect(panel.locator("section").first().getByRole("group", { name: boxCopy.align, exact: true })).toBeVisible()
   await expect(panel.getByRole("heading")).toHaveText([
-    "Text",
     linkCopy.section,
     "Fill",
     opacityCopy.label,
@@ -41,7 +40,8 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
     "Name and alt text",
     selectionColorsCopy.section,
   ])
-  await expect(fold(panel, "Text")).toHaveAttribute("aria-expanded", "true")
+  await expect(panel.locator("[data-design-head]")).toHaveText(designCopy.titles.text)
+  await expect(fold(panel, "Fill")).toHaveCount(0)
   await expect(fold(panel, "Effects")).toHaveAttribute("aria-expanded", "false")
   await expect(panel.getByRole("group", { name: "Shadow", exact: true })).toHaveCount(0)
 
@@ -65,7 +65,7 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
   await page.getByRole("button", { name: "Shapes", exact: true }).click()
   await page.getByRole("button", { name: "Rectangle", exact: true }).click()
   const shape = page.locator("[data-design-element]")
-  await expect(shape).toContainText(designCopy.panels.shape)
+  await expect(shape.locator("[data-design-head]")).toHaveText(designCopy.square)
   await expect(shape.getByRole("heading")).toHaveText([
     "Fill",
     opacityCopy.label,

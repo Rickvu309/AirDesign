@@ -1,3 +1,4 @@
+import { openFillDetails } from "./design-panel"
 import { expect, test, type Locator } from "@playwright/test"
 import { designing, openDeck, unfold } from "./design-panel"
 
@@ -59,6 +60,7 @@ test("a margin the text box inherits is quiet until set, and Reset fill shows th
   await expect.poll(() => inherited(left)).toBe(false)
   const fill = panel.locator('[data-control="union"]').first()
   await expect(fill).not.toHaveAttribute("data-inherited")
+  await openFillDetails(panel)
   await panel.getByRole("button", { name: "Reset fill", exact: true }).click()
   await expect(fill).toHaveAttribute("data-inherited", "")
   await expect(panel.getByRole("button", { name: "Reset fill", exact: true })).toHaveCount(0)
