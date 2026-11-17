@@ -5,9 +5,9 @@ import { designCopy } from "@/copy/design-copy"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
-function shownNumber(row: ControlProps["row"]): string {
-  if (row.mixed || row.desc.kind !== "number" || typeof row.value !== "number") return ""
-  return String(agentNumberOf(row.desc.unit, row.value))
+function shownNumber(control: ControlProps["control"]): string {
+  if (control.mixed || control.desc.kind !== "number" || typeof control.value !== "number") return ""
+  return String(agentNumberOf(control.desc.unit, control.value))
 }
 
 function stepOf(event: KeyboardEvent<HTMLInputElement>, unit: number): number {
@@ -32,17 +32,17 @@ export function scrubbed(
 }
 
 export function NumberField({
-  row,
+  control,
   onChange,
   unit,
   kind,
   step = 1,
   fold,
 }: ControlProps & { unit: string; kind: string; step?: number }) {
-  const look = row.look
+  const look = control.look
   const Icon = look.name.show === "icon" ? look.name.icon : undefined
   const [draft, setDraft] = useState<string | null>(null)
-  const shown = shownNumber(row)
+  const shown = shownNumber(control)
   const field = useRef<HTMLInputElement>(null)
   const scrub = useRef<Scrub | null>(null)
 
@@ -50,8 +50,8 @@ export function NumberField({
     setDraft(null)
     const typed = Number(text.trim().replace(",", "."))
     if (text.trim() === "" || !Number.isFinite(typed)) return
-    const read = readAgent(row.desc, typed)
-    if (read.ok && (read.value !== row.value || row.inherited)) onChange(read.value)
+    const read = readAgent(control.desc, typed)
+    if (read.ok && (read.value !== control.value || control.inherited)) onChange(read.value)
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -78,7 +78,7 @@ export function NumberField({
     if (from === null) return
     const to = scrubbed(from, event.clientX, event, step)
     if (to === from) return
-    const read = readAgent(row.desc, to.value)
+    const read = readAgent(control.desc, to.value)
     scrub.current = read.ok ? to : { ...from, x: to.x }
     if (read.ok) onChange(read.value)
   }
@@ -90,9 +90,9 @@ export function NumberField({
   const fieldControl = (
     <label
       className="flex h-8 min-w-0 items-center gap-0.5 rounded-[var(--shape-control)] bg-muted px-2.5"
-      title={row.label}
+      title={control.label}
       data-control={kind}
-      data-inherited={row.inherited ? "" : undefined}
+      data-inherited={control.inherited ? "" : undefined}
       data-focus-ring
     >
       <span
@@ -110,19 +110,19 @@ export function NumberField({
         ) : look.name.show === "letter" ? (
           look.name.letter
         ) : look.name.show === "inside" ? (
-          row.label
+          control.label
         ) : null}
       </span>
       <input
         ref={field}
         className={cn(
           "min-w-[3ch] flex-1 bg-transparent text-right text-[length:var(--type-dense)] tabular-nums outline-none placeholder:text-quiet",
-          row.inherited && draft === null ? "text-quiet" : "text-foreground",
+          control.inherited && draft === null ? "text-quiet" : "text-foreground",
         )}
         inputMode="decimal"
-        aria-label={row.label}
+        aria-label={control.label}
         data-session
-        placeholder={row.mixed ? designCopy.mixed : ""}
+        placeholder={control.mixed ? designCopy.mixed : ""}
         value={draft ?? shown}
         onChange={(event) => setDraft(event.target.value)}
         onBlur={(event) => {
@@ -136,7 +136,7 @@ export function NumberField({
     </label>
   )
   return look.name.show === "beside" ? (
-    <Beside label={row.label} fold={fold}>
+    <Beside label={control.label} fold={fold}>
       {fieldControl}
     </Beside>
   ) : (

@@ -150,7 +150,7 @@ export type Probe<T extends TraitName> = [FieldName<T>] extends [never]
       readonly painted?: (parts: Parts, at: At, field: string) => string
     }
 
-function panelRow(register: Register, at: At, trait: TraitName, field: string) {
+function panelControl(register: Register, at: At, trait: TraitName, field: string) {
   const view = registerScope(register).view(at.node)
   const sections = view === undefined ? undefined : panelOf(view, { reads: {}, moves: true }).sections
   return sections
@@ -167,7 +167,7 @@ export function panelRegister(
   value: unknown,
 ): Register | null {
   const scope = registerScope(register)
-  const control = panelRow(register, at, trait, field)
+  const control = panelControl(register, at, trait, field)
   const planned = control === undefined ? null : planChange(control.change(value), scope)
   if (planned === null || !planned.ok) return null
   const holder = valueHolder(register, at.node, "person")

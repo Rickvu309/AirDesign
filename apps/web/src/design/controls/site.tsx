@@ -7,21 +7,23 @@ function attached(parent: unknown): string | null {
   return typeof parent.node === "string" ? parent.node : null
 }
 
-export function SiteControl({ row, onChange }: ControlProps) {
+export function SiteControl({ control, onChange }: ControlProps) {
   const label = useId()
-  const node = attached(row.parent)
-  const names = row.nodes?.find((choice) => choice.node === node)?.sites ?? []
-  const value = !row.mixed && typeof row.value === "number" && row.value in names ? String(row.value) : null
+  const node = attached(control.parent)
+  const names = control.nodes?.find((choice) => choice.node === node)?.sites ?? []
+  const value =
+    !control.mixed && typeof control.value === "number" && control.value in names ? String(control.value) : null
   return (
     <div className="flex flex-col gap-1.5" data-control="site">
       <span id={label} className="text-[length:var(--type-caption)] text-quiet">
-        {row.label}
+        {control.label}
       </span>
       <Select
         value={value}
         onValueChange={(next) => {
           const site = Number(next)
-          if (typeof next === "string" && Number.isInteger(site) && site !== row.value && site in names) onChange(site)
+          if (typeof next === "string" && Number.isInteger(site) && site !== control.value && site in names)
+            onChange(site)
         }}
       >
         <SelectTrigger

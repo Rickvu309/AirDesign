@@ -30,7 +30,7 @@ it("shows a picture's icon, recolour and crop first, and its name and alt text l
     "identity",
   ])
   const image = panel.sections.find((section) => section.trait === "image")
-  expect(image?.strips.flat().map((row) => [row.field, row.label, row.control])).toEqual([
+  expect(image?.strips.flat().map((row) => [row.field, row.label, row.kind])).toEqual([
     ["source", "Icon", "asset"],
     ["recolor", "Recolor", "union"],
   ])
@@ -38,7 +38,7 @@ it("shows a picture's icon, recolour and crop first, and its name and alt text l
   expect(image?.strips.flat()[0]?.change("star")).toEqual({ target: { node: "258.4" }, image: { source: "star" } })
   const identity = panel.sections.find((section) => section.trait === "identity")
   expect(identity?.label).toBe("Name and alt text")
-  expect(identity?.strips.flat().map((row) => [row.label, row.control])).toEqual([
+  expect(identity?.strips.flat().map((row) => [row.label, row.kind])).toEqual([
     ["Name", "text"],
     ["Alt text", "text"],
     ["Hide on slide", "toggle"],

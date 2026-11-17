@@ -18,20 +18,20 @@ import type { ReactNode } from "react"
 import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
 import { cropChange } from "./crop-change"
-import { opacitySection } from "./opacity-row"
+import { opacitySection } from "./opacity-control"
 import { hidden, loneRows, panelKind, panelOrder, type PanelKind } from "./panel-order"
 import { alphaFieldOver, atShownAlpha } from "./shown-alpha"
 import { traitControls } from "./trait-controls"
-import { arrange, resolveRow, type ControlKind, type ControlLook } from "./panel-arrangement"
+import { arrange, resolveControl, type ControlKind, type ControlLook } from "./panel-arrangement"
 export type { ControlKind } from "./panel-arrangement"
 
 export type SectionName = TraitName | "opacity"
 
-export type PanelRow = {
+export type PanelControl = {
   readonly trait: SectionName
   readonly field: string
   readonly label: string
-  readonly control: ControlKind
+  readonly kind: ControlKind
   readonly look: ControlLook
   readonly desc: Desc
   readonly value: unknown
@@ -51,18 +51,18 @@ export type NodeChoice = {
 
 export type ControlProps = {
   readonly fold?: { readonly open: boolean; readonly onOpen: (open: boolean) => void }
-  readonly row: PanelRow
+  readonly control: PanelControl
   readonly palette: Palette
   readonly onChange: (value: unknown) => void
   readonly inner?: (props: ControlProps) => ReactNode
 }
 
-export function partRow(row: PanelRow, name: string, desc: Desc, value: unknown): PanelRow {
-  const label = optionWord(row.field, name)
-  return resolveRow({
-    ...row,
-    parent: row.value,
-    field: `${row.field}.${name}`,
+export function partControl(control: PanelControl, name: string, desc: Desc, value: unknown): PanelControl {
+  const label = optionWord(control.field, name)
+  return resolveControl({
+    ...control,
+    parent: control.value,
+    field: `${control.field}.${name}`,
     label,
     desc,
     value,
@@ -74,7 +74,7 @@ export type PanelSection = {
   readonly trait: SectionName
   readonly label: string
   readonly open: boolean
-  readonly strips: readonly (readonly PanelRow[])[]
+  readonly strips: readonly (readonly PanelControl[])[]
 }
 
 export type PanelModel = {
@@ -175,8 +175,8 @@ function shownDesc(desc: Desc, grouped: boolean, value: unknown): Desc {
   return { ...desc, cases: Object.fromEntries(Object.entries(desc.cases).filter(([name]) => name !== "group")) }
 }
 
-function lineless(trait: TraitName, rows: readonly PanelRow[]): boolean {
-  const fill = rows.find((row) => row.field === "fill")?.value
+function lineless(trait: TraitName, controls: readonly PanelControl[]): boolean {
+  const fill = controls.find((control) => control.field === "fill")?.value
   return trait === "line" && typeof fill === "object" && fill !== null && "none" in fill
 }
 
@@ -195,7 +195,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
   )
   const sections = traitNames.flatMap((trait): PanelSection[] => {
     const labels = traitControls[trait] as Labels
-    const rows = wireFields(trait).flatMap(([field, kind]): PanelRow[] => {
+    const controls = wireFields(trait).flatMap(([field, kind]): PanelControl[] => {
       const key = writtenField(trait, field)
       if (!taken.includes(key) || keptRefuses(view.kept, trait, field)) return []
       const copy = labels.fields[field]
@@ -216,7 +216,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       const label = copy?.label ?? ""
       const nodes = trait === "connection" && shown.nodes !== undefined ? { nodes: shown.nodes } : {}
       return [
-        resolveRow({
+        resolveControl({
           trait,
           field,
           label,
@@ -228,7 +228,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
         }),
       ]
     })
-    const visible = lineless(trait, rows) ? rows.filter((row) => row.field === "fill") : rows
+    const visible = lineless(trait, controls) ? controls.filter((control) => control.field === "fill") : controls
     return visible.length === 0
       ? []
       : [{ trait, label: labels.section ?? "", open: true, strips: arrange(trait, visible) }]
@@ -262,23 +262,23 @@ function present<T>(items: readonly (T | undefined)[]): readonly T[] | null {
   return found.length === items.length ? found : null
 }
 
-function sameValue(rows: readonly PanelRow[]): boolean {
-  const [first, ...rest] = rows.map((row) => JSON.stringify(row.value))
-  return rows.every((row) => !row.mixed) && rest.every((each) => each === first)
+function sameValue(controls: readonly PanelControl[]): boolean {
+  const [first, ...rest] = controls.map((control) => JSON.stringify(control.value))
+  return controls.every((control) => !control.mixed) && rest.every((each) => each === first)
 }
 
 function caseOf(value: unknown): string | undefined {
   return typeof value === "object" && value !== null ? Object.keys(value)[0] : undefined
 }
 
-function manyRow(rows: readonly PanelRow[], lead: PanelRow, nodes: readonly ElementId[]): PanelRow {
-  const mixed = !sameValue(rows)
-  const shared = lead.desc.kind === "union" && rows.every((row) => caseOf(row.value) === caseOf(lead.value))
+function manyControl(controls: readonly PanelControl[], lead: PanelControl, nodes: readonly ElementId[]): PanelControl {
+  const mixed = !sameValue(controls)
+  const shared = lead.desc.kind === "union" && controls.every((control) => caseOf(control.value) === caseOf(lead.value))
   return {
     ...lead,
     value: mixed && !shared ? undefined : lead.value,
     mixed,
-    inherited: !mixed && rows.every((row) => row.inherited),
+    inherited: !mixed && controls.every((control) => control.inherited),
     reset: null,
     change: (value) => ({ ...lead.change(value), target: { nodes } }),
   }
@@ -290,12 +290,12 @@ export function panelOfMany(models: readonly [PanelModel, ...PanelModel[]]): Pan
     const found = present(models.map((model) => model.sections.find(({ trait }) => trait === place.section)))
     const [lead] = found ?? []
     if (found === null || lead === undefined) return []
-    const rows = lead.strips.flat().flatMap((row): PanelRow[] => {
-      if (loneRows.includes(`${row.trait}.${row.field}`)) return []
-      const each = present(found.map((section) => section.strips.flat().find(({ field }) => field === row.field)))
-      return each === null ? [] : [manyRow(each, row, nodes)]
+    const controls = lead.strips.flat().flatMap((control): PanelControl[] => {
+      if (loneRows.includes(`${control.trait}.${control.field}`)) return []
+      const each = present(found.map((section) => section.strips.flat().find(({ field }) => field === control.field)))
+      return each === null ? [] : [manyControl(each, control, nodes)]
     })
-    return rows.length === 0 ? [] : [{ ...lead, open: place.open, strips: arrange(lead.trait, rows) }]
+    return controls.length === 0 ? [] : [{ ...lead, open: place.open, strips: arrange(lead.trait, controls) }]
   })
   const [first, ...rest] = models
   return { node: (rest.at(-1) ?? first).node, nodes, kind: "many", sections }

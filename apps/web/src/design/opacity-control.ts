@@ -8,7 +8,7 @@ import {
   type TraitName,
 } from "@airdesign/document"
 import { opacityCopy } from "@/copy/opacity-copy"
-import { arrange, resolveRow } from "./panel-arrangement"
+import { arrange, resolveControl } from "./panel-arrangement"
 import type { PanelReads, PanelSection } from "./panel"
 
 function shownOf(values: readonly unknown[]): { readonly value: unknown; readonly mixed: boolean } {
@@ -27,7 +27,7 @@ export function opacitySection(view: ScopedElement, shown: PanelReads): PanelSec
   })
   if (fields.length === 0 || kept) return null
   const change = (value: unknown) => ({ target: { node: view.node }, opacity: value }) as SetChange
-  const row = resolveRow({
+  const control = resolveControl({
     trait: "opacity",
     field: "opacity",
     label: opacityCopy.label,
@@ -37,5 +37,5 @@ export function opacitySection(view: ScopedElement, shown: PanelReads): PanelSec
     reset: null,
     change,
   })
-  return { trait: "opacity", label: opacityCopy.section, open: true, strips: arrange("opacity", [row]) }
+  return { trait: "opacity", label: opacityCopy.section, open: true, strips: arrange("opacity", [control]) }
 }

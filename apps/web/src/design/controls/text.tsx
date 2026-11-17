@@ -34,9 +34,9 @@ export function typedText(value: string, words: string): string {
   return writeTextValue(typed)
 }
 
-function wordsOf(row: ControlProps["row"]): string {
-  const value = typeof row.value === "string" ? row.value : ""
-  return row.desc.kind === "text" ? cellText(readTextValue(value) ?? []) : value
+function wordsOf(control: ControlProps["control"]): string {
+  const value = typeof control.value === "string" ? control.value : ""
+  return control.desc.kind === "text" ? cellText(readTextValue(value) ?? []) : value
 }
 
 function sizeOf(words: string): { readonly bytes: number; readonly wide: boolean } {
@@ -58,8 +58,8 @@ function useTextProblem(words: string, max: number, message = designCopy.tooLong
   return { problemId, problem, correction }
 }
 
-function WordsField({ row, onChange, max }: ControlProps & { readonly max: number }) {
-  const shown = typeof row.value === "string" ? row.value : ""
+function WordsField({ control, onChange, max }: ControlProps & { readonly max: number }) {
+  const shown = typeof control.value === "string" ? control.value : ""
   const [draft, setDraft] = useState<string | null>(null)
   const { problemId, problem, correction } = useTextProblem((draft ?? shown).trim(), max)
 
@@ -67,7 +67,7 @@ function WordsField({ row, onChange, max }: ControlProps & { readonly max: numbe
     if (problem !== null) return
     setDraft(null)
     const typed = words.trim()
-    if (typed !== "" && (typed !== shown || row.inherited)) onChange(typed)
+    if (typed !== "" && (typed !== shown || control.inherited)) onChange(typed)
   }
 
   return (
@@ -75,25 +75,25 @@ function WordsField({ row, onChange, max }: ControlProps & { readonly max: numbe
       <label
         className="flex h-8 min-w-0 items-center gap-2 rounded-lg bg-white px-2.5 shadow-[0px_0px_0px_1px_var(--field-edge)] has-[[aria-invalid=true]]:shadow-[0px_0px_0px_2px_var(--destructive)]"
         data-control="words"
-        data-inherited={row.inherited ? "" : undefined}
+        data-inherited={control.inherited ? "" : undefined}
         data-focus-ring
       >
         <span
           className={
-            row.look.name.show === "hidden"
+            control.look.name.show === "hidden"
               ? "sr-only"
               : "shrink-0 truncate text-[length:var(--type-caption)] text-quiet"
           }
         >
-          {row.label}
+          {control.label}
         </span>
         <input
           className={cn(
             "min-w-0 flex-1 bg-transparent text-[length:var(--type-dense)] outline-none",
-            row.look.name.show === "hidden" ? "text-left" : "text-right",
-            row.inherited && draft === null ? "text-quiet" : "text-foreground",
+            control.look.name.show === "hidden" ? "text-left" : "text-right",
+            control.inherited && draft === null ? "text-quiet" : "text-foreground",
           )}
-          aria-label={row.label}
+          aria-label={control.label}
           aria-invalid={problem !== null ? true : undefined}
           aria-describedby={problem !== null ? problemId : undefined}
           value={draft ?? shown}
@@ -117,20 +117,20 @@ function WordsField({ row, onChange, max }: ControlProps & { readonly max: numbe
 }
 
 export function TextControl(props: ControlProps) {
-  return props.row.desc.kind === "words" ? (
-    <WordsField {...props} max={props.row.desc.max} />
+  return props.control.desc.kind === "words" ? (
+    <WordsField {...props} max={props.control.desc.max} />
   ) : (
     <PassageField {...props} />
   )
 }
 
-function PassageField({ row, onChange }: ControlProps) {
+function PassageField({ control, onChange }: ControlProps) {
   const label = useId()
-  const shown = wordsOf(row)
+  const shown = wordsOf(control)
   const [draft, setDraft] = useState<string | null>(null)
 
-  const value = typeof row.value === "string" ? row.value : ""
-  const stored = (words: string) => (row.desc.kind === "text" ? typedText(value, words) : words)
+  const value = typeof control.value === "string" ? control.value : ""
+  const stored = (words: string) => (control.desc.kind === "text" ? typedText(value, words) : words)
   const { problemId, problem, correction } = useTextProblem(
     stored(draft ?? shown),
     limits.valueBytes,
@@ -152,7 +152,7 @@ function PassageField({ row, onChange }: ControlProps) {
   return (
     <div className="flex flex-col gap-1" data-control="text">
       <label htmlFor={label} className="sr-only">
-        {row.label}
+        {control.label}
       </label>
       <Textarea
         id={label}

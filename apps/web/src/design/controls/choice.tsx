@@ -5,8 +5,13 @@ import { optionWord } from "@/copy/option-copy"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
-function ChoiceList({ row, onChange, label, options }: ControlProps & { label: string; options: readonly string[] }) {
-  const value = !row.mixed && typeof row.value === "string" ? row.value : null
+function ChoiceList({
+  control,
+  onChange,
+  label,
+  options,
+}: ControlProps & { label: string; options: readonly string[] }) {
+  const value = !control.mixed && typeof control.value === "string" ? control.value : null
   return (
     <Select
       value={value}
@@ -18,17 +23,17 @@ function ChoiceList({ row, onChange, label, options }: ControlProps & { label: s
         aria-labelledby={label}
         className={cn(
           "h-8 w-full rounded-lg border-0 bg-white text-[length:var(--type-dense)] shadow-[0px_0px_0px_1px_var(--field-edge)]",
-          row.inherited ? "text-quiet" : null,
+          control.inherited ? "text-quiet" : null,
         )}
       >
         <SelectValue>
-          {(selected: string | null) => (selected === null ? "" : optionWord(row.field, selected))}
+          {(selected: string | null) => (selected === null ? "" : optionWord(control.field, selected))}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (
           <SelectItem key={option} value={option}>
-            {optionWord(row.field, option)}
+            {optionWord(control.field, option)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -37,18 +42,18 @@ function ChoiceList({ row, onChange, label, options }: ControlProps & { label: s
 }
 
 export function ChoiceControl(props: ControlProps) {
-  const { row, onChange } = props
+  const { control, onChange } = props
   const label = useId()
-  const options = row.desc.kind === "choice" ? row.desc.options : []
-  const look = row.look
+  const options = control.desc.kind === "choice" ? control.desc.options : []
+  const look = control.look
   const layout = look.form
   return (
-    <div className="flex flex-col gap-1.5" data-control="choice" data-inherited={row.inherited ? "" : undefined}>
+    <div className="flex flex-col gap-1.5" data-control="choice" data-inherited={control.inherited ? "" : undefined}>
       <span
         id={label}
         className={look.name.show === "hidden" ? "sr-only" : "text-[length:var(--type-caption)] text-quiet"}
       >
-        {row.label}
+        {control.label}
       </span>
       {layout === "list" ? (
         <ChoiceList {...props} label={label} options={options} />
@@ -56,8 +61,8 @@ export function ChoiceControl(props: ControlProps) {
         <div role="group" aria-labelledby={label} className="flex h-8 items-center rounded-lg bg-line p-0.5">
           {options.map((option) => {
             const Icon = look.options[option]
-            const word = optionWord(row.field, option)
-            const chosen = !row.mixed && row.value === option
+            const word = optionWord(control.field, option)
+            const chosen = !control.mixed && control.value === option
             return (
               <Button
                 key={option}
@@ -74,7 +79,7 @@ export function ChoiceControl(props: ControlProps) {
                   chosen
                     ? cn(
                         "bg-white font-medium shadow-[0px_1px_2px_var(--black-10)] hover:bg-white",
-                        row.inherited ? "text-quiet" : "text-foreground",
+                        control.inherited ? "text-quiet" : "text-foreground",
                       )
                     : "text-quiet hover:bg-transparent hover:text-foreground",
                 )}

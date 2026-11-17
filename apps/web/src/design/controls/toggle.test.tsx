@@ -1,8 +1,8 @@
-import { resolveRow } from "@/design/panel-arrangement"
+import { resolveControl } from "@/design/panel-arrangement"
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { expect, it } from "vitest"
-import type { PanelRow } from "../panel"
+import type { PanelControl } from "../panel"
 import { ToggleControl } from "./toggle"
 
 it.each([
@@ -11,10 +11,10 @@ it.each([
   ["text", "underline", "Underline"],
   ["box", "flipH", "Flip horizontally"],
   ["box", "flipV", "Flip vertically"],
-] satisfies readonly (readonly [PanelRow["trait"], string, string])[])(
+] satisfies readonly (readonly [PanelControl["trait"], string, string])[])(
   "keeps %s.%s named %s with an icon",
   (trait, field, label) => {
-    const row: PanelRow = resolveRow({
+    const control: PanelControl = resolveControl({
       trait,
       field,
       label,
@@ -28,7 +28,7 @@ it.each([
       },
     })
     const html = renderToStaticMarkup(
-      createElement(ToggleControl, { row, palette: { theme: [], deck: [] }, onChange: () => {} }),
+      createElement(ToggleControl, { control, palette: { theme: [], deck: [] }, onChange: () => {} }),
     )
     expect(html).toContain(`title="${label}"`)
     expect(html).toContain(`class="sr-only">${label}</span>`)

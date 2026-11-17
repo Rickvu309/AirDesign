@@ -33,7 +33,7 @@ import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import * as view from "../specs/field-fold/view.mjs"
 import { paint } from "@/deck-paint"
 import { themeOf } from "@/design-shown"
-import { panelOf, type PanelRow, type ShownField } from "@/design/panel"
+import { panelOf, type PanelControl, type ShownField } from "@/design/panel"
 import { rebasedChange } from "@/design/rebase"
 import { applyChange, deviceScope, valueFits, type ChangingDeck } from "@/design/trait-edit"
 import { exportedParts } from "@/exported-parts"
@@ -188,21 +188,22 @@ function painted(register: Register) {
   const element = { ...scope, value: shownValue(register, node, fileText) }
   const reads = readTraits(shown.base).elements.get(node)?.reads ?? {}
   const model = panelOf(element, { reads, moves: false, fields })
-  const rows = model.sections.flatMap((section) => section.rows)
+  const controls = model.sections.flatMap((section) => section.strips.flat())
   const canvas = shown.canvases(0)?.elements.find((each) => each.id === node)
-  return { display, fields, rows, canvas, theme: themeOf(display, part) }
+  return { display, fields, controls, canvas, theme: themeOf(display, part) }
 }
 
-function rowOf(rows: readonly PanelRow[], trait: string, field: string): PanelRow {
-  const row = rows.find((each) => each.trait === trait && each.field === field)
-  if (row === undefined) throw new Error(`no ${trait}.${field} row`)
-  return row
+function controlOf(controls: readonly PanelControl[], trait: string, field: string): PanelControl {
+  const control = controls.find((each) => each.trait === trait && each.field === field)
+  if (control === undefined) throw new Error(`no ${trait}.${field} control`)
+  return control
 }
 
 async function changed(trait: string, field: string, value: unknown): Promise<void> {
-  const { rows } = painted(deviceRegister())
-  const row = rowOf(rows, trait, field)
-  if (!(await applyChange(changing, rebasedChange(rows, row, value)))) throw new Error(`${trait}.${field} refused`)
+  const { controls } = painted(deviceRegister())
+  const control = controlOf(controls, trait, field)
+  if (!(await applyChange(changing, rebasedChange(controls, control, value))))
+    throw new Error(`${trait}.${field} refused`)
 }
 
 const same = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right)
@@ -280,7 +281,7 @@ function judged(target: Spec, said: string, failures: string[]) {
   )
   expectSame("told", now.told, target.told)
   const shown = painted(device)
-  const fill = rowOf(shown.rows, "fill", "value")
+  const fill = controlOf(shown.controls, "fill", "value")
   const solid = (fill.value as { readonly solid?: Color } | undefined)?.solid
   const panelHex = solid === undefined ? null : colorHex(solid, shown.theme).toUpperCase()
   const fileTheme = themeOf(file, part)
@@ -304,7 +305,7 @@ function judged(target: Spec, said: string, failures: string[]) {
   const canvas = hexOf(shown.canvas?.fill)
   expectSame("canvas colour", canvas?.hex, colour)
   expectSame("canvas opacity", canvas?.alpha, Math.round(((alpha ?? 0) / opaque) * 255))
-  const size = rowOf(shown.rows, "text", "size")
+  const size = controlOf(shown.controls, "text", "size")
   const inheritedSize = painted(openedRegister()).fields["text.size"]?.value
   expectSame("panel size", size.value, target.size === "person" ? personSize : inheritedSize)
   expectSame("panel size inherited", size.inherited, target.size !== "person")

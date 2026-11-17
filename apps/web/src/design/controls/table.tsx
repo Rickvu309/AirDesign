@@ -1,4 +1,4 @@
-import { resolveRow } from "@/design/panel-arrangement"
+import { resolveControl } from "@/design/panel-arrangement"
 import {
   borderKinds,
   borderSides,
@@ -19,7 +19,7 @@ import {
 import { useId, useState, type KeyboardEvent } from "react"
 import { designCopy } from "@/copy/design-copy"
 import { tableCopy } from "@/copy/table-copy"
-import { type ControlProps, type PanelRow } from "@/design/panel"
+import { type ControlProps, type PanelControl } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
 type Cell = { readonly row: number; readonly column: number }
@@ -92,13 +92,13 @@ function shownSide(sides: BorderSides): TableSide {
   return sides === "top" || sides === "left" || sides === "right" ? sides : "bottom"
 }
 
-function partOf(row: PanelRow, field: string, label: string, desc: Desc, value: unknown): PanelRow {
-  return resolveRow({ ...row, field, label, desc, value, mixed: false, reset: null })
+function partOf(control: PanelControl, field: string, label: string, desc: Desc, value: unknown): PanelControl {
+  return resolveControl({ ...control, field, label, desc, value, mixed: false, reset: null })
 }
 
-export function TableControl({ row, palette, onChange, inner }: ControlProps) {
+export function TableControl({ control, palette, onChange, inner }: ControlProps) {
   const label = useId()
-  const table = readTableValue(typeof row.value === "string" ? row.value : "")
+  const table = readTableValue(typeof control.value === "string" ? control.value : "")
   const columns = table?.rows[0]?.cells.length ?? 0
   const [picked, setPicked] = useState<Cell>({ row: 0, column: 0 })
   const [scope, setScope] = useState<Scope>("cell")
@@ -125,28 +125,34 @@ export function TableControl({ row, palette, onChange, inner }: ControlProps) {
       ? []
       : [
           {
-            row: partOf(row, "cells", tableCopy.apply, { kind: "choice", options: scopes }, scope),
+            control: partOf(control, "cells", tableCopy.apply, { kind: "choice", options: scopes }, scope),
             onChange: (next: unknown) => setScope(next as Scope),
           },
           {
-            row: partOf(row, "cellFill", tableCopy.cellFill, cellFill.desc, table.rows[at.row]?.fills?.[at.column]),
+            control: partOf(
+              control,
+              "cellFill",
+              tableCopy.cellFill,
+              cellFill.desc,
+              table.rows[at.row]?.fills?.[at.column],
+            ),
             onChange: (next: unknown) =>
               changed({ change: "fill", cells: rangeOf(scope, at, table), fill: next as CellFill }),
           },
           {
-            row: partOf(row, "borders", tableCopy.borders, { kind: "choice", options: borderSides }, sides),
+            control: partOf(control, "borders", tableCopy.borders, { kind: "choice", options: borderSides }, sides),
             onChange: (next: unknown) => setSides(next as BorderSides),
           },
           {
-            row: partOf(row, "borderFill", tableCopy.borderFill, borderKinds.fill.desc, border?.fill),
+            control: partOf(control, "borderFill", tableCopy.borderFill, borderKinds.fill.desc, border?.fill),
             onChange: (next: unknown) => bordered({ fill: next as CellFill }),
           },
           {
-            row: partOf(row, "borderWidth", tableCopy.borderWidth, borderKinds.width.desc, border?.width),
+            control: partOf(control, "borderWidth", tableCopy.borderWidth, borderKinds.width.desc, border?.width),
             onChange: (next: unknown) => bordered({ width: next as number }),
           },
           {
-            row: partOf(row, "borderDash", tableCopy.borderDash, borderKinds.dash.desc, border?.dash),
+            control: partOf(control, "borderDash", tableCopy.borderDash, borderKinds.dash.desc, border?.dash),
             onChange: (next: unknown) => bordered({ dash: next as Border["dash"] }),
           },
         ]
@@ -155,7 +161,7 @@ export function TableControl({ row, palette, onChange, inner }: ControlProps) {
     <div className="flex flex-col gap-3" data-control="table">
       <div className="flex flex-col gap-1.5">
         <span id={label} className="text-[length:var(--type-caption)] text-quiet">
-          {row.label}
+          {control.label}
         </span>
         <div
           role="group"
@@ -178,7 +184,9 @@ export function TableControl({ row, palette, onChange, inner }: ControlProps) {
         </div>
       </div>
       {parts.map((part) => (
-        <div key={part.row.field}>{inner?.({ row: part.row, palette, onChange: part.onChange, inner })}</div>
+        <div key={part.control.field}>
+          {inner?.({ control: part.control, palette, onChange: part.onChange, inner })}
+        </div>
       ))}
     </div>
   )

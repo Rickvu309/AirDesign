@@ -1,4 +1,4 @@
-import { resolveRow } from "@/design/panel-arrangement"
+import { resolveControl } from "@/design/panel-arrangement"
 import { cellText, readTextValue, traits } from "@airdesign/document"
 import { act, createElement } from "react"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
@@ -40,7 +40,7 @@ it.each([
   const root = createRoot(host)
   const onChange = vi.fn()
   const props: ControlProps = {
-    row: resolveRow({
+    control: resolveControl({
       trait: "text",
       field: "value",
       label: "Text",

@@ -4,7 +4,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { designCopy } from "@/copy/design-copy"
 import { controlViews } from "@/design/control-views"
 import type { Palette } from "@/design/color-choices"
-import type { ControlProps, PanelModel, PanelRow } from "@/design/panel"
+import type { ControlProps, PanelModel, PanelControl } from "@/design/panel"
 import { foldOpen, setFold, useFolds } from "@/design/panel-folds"
 import { swatchMist, swatchNavy, swatchTeal, swatchWhite } from "@/editor/design-panel-art"
 import { EditorIcon } from "@/editor/editor-icons"
@@ -121,7 +121,13 @@ function FoldedSection({
   )
 }
 
-function SectionReset({ row, onChange }: { row: PanelRow; onChange: (row: PanelRow, value: unknown) => void }) {
+function SectionReset({
+  control,
+  onChange,
+}: {
+  control: PanelControl
+  onChange: (control: PanelControl, value: unknown) => void
+}) {
   return (
     <Button
       type="button"
@@ -129,9 +135,9 @@ function SectionReset({ row, onChange }: { row: PanelRow; onChange: (row: PanelR
       size="sm"
       data-section-reset
       className="-my-1 h-6 px-1.5 text-[length:var(--type-caption)] font-normal text-quiet hover:text-foreground active:translate-y-0"
-      onClick={() => onChange(row, null)}
+      onClick={() => onChange(control, null)}
     >
-      {row.reset}
+      {control.reset}
     </Button>
   )
 }
@@ -158,32 +164,38 @@ export function Swatch({ color, name, edged = false }: { color: string; name: st
   )
 }
 
-function RowView({ row, palette, onChange, fold }: ControlProps) {
-  const View = controlViews[row.control]
+function ControlView({ control, palette, onChange, fold }: ControlProps) {
+  const View = controlViews[control.kind]
   return View === undefined ? null : (
-    <View row={row} palette={palette} onChange={onChange} inner={RowView} fold={fold} />
+    <View control={control} palette={palette} onChange={onChange} inner={ControlView} fold={fold} />
   )
 }
 
-export function SectionRows({
+export function SectionStrips({
   strips,
   fold,
   palette,
   onChange,
 }: {
   fold?: ControlProps["fold"]
-  strips: readonly (readonly PanelRow[])[]
+  strips: readonly (readonly PanelControl[])[]
   palette: Palette
-  onChange: (row: PanelRow, value: unknown) => void
+  onChange: (control: PanelControl, value: unknown) => void
 }) {
-  return strips.map((line) => (
+  return strips.map((strip) => (
     <div
-      key={line.map((row) => row.field).join(" ")}
+      key={strip.map((control) => control.field).join(" ")}
       className="grid items-end gap-2"
-      style={{ gridTemplateColumns: `repeat(${line.length}, minmax(0, 1fr))` }}
+      style={{ gridTemplateColumns: `repeat(${strip.length}, minmax(0, 1fr))` }}
     >
-      {line.map((row) => (
-        <RowView key={row.field} row={row} fold={fold} palette={palette} onChange={(value) => onChange(row, value)} />
+      {strip.map((control) => (
+        <ControlView
+          key={control.field}
+          control={control}
+          fold={fold}
+          palette={palette}
+          onChange={(value) => onChange(control, value)}
+        />
       ))}
     </div>
   ))
@@ -201,7 +213,7 @@ export function ElementDesign({
 }: {
   model: PanelModel
   palette: Palette
-  onChange: (row: PanelRow, value: unknown) => void
+  onChange: (control: PanelControl, value: unknown) => void
 }) {
   const last = model.sections.length - 1
   const folds = useFolds()
@@ -222,7 +234,7 @@ export function ElementDesign({
         if (section.trait === "opacity")
           return (
             <section key={section.trait} className="border-b border-line px-3 py-3">
-              <SectionRows
+              <SectionStrips
                 strips={section.strips}
                 palette={palette}
                 onChange={onChange}
@@ -237,13 +249,15 @@ export function ElementDesign({
               />
             </section>
           )
-        const reset = section.strips.flat().find((row) => row.reset !== null && row.look.name.show === "hidden")
+        const reset = section.strips
+          .flat()
+          .find((control) => control.reset !== null && control.look.name.show === "hidden")
         return (
           <DesignSection
             key={section.trait}
             title={section.label}
             last={at === last}
-            action={reset === undefined ? null : <SectionReset row={reset} onChange={onChange} />}
+            action={reset === undefined ? null : <SectionReset control={reset} onChange={onChange} />}
             fold={
               kind === null
                 ? null
@@ -253,7 +267,7 @@ export function ElementDesign({
                   }
             }
           >
-            <SectionRows strips={section.strips} palette={palette} onChange={onChange} />
+            <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
           </DesignSection>
         )
       })}
