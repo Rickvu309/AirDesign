@@ -7,9 +7,17 @@ const saved = "Saved"
 const saving = "Saving…"
 const offline = "Offline, saved on this device"
 const unreached = "Unable to reach AirDesign"
+const pastSavingDelay = 1000
 
 function saveStatus(page: Page) {
   return page.locator("[data-save-status]")
+}
+
+async function browserNetwork(page: Page, online: boolean): Promise<void> {
+  await page.evaluate((online) => {
+    Object.defineProperty(navigator, "onLine", { configurable: true, value: online })
+    window.dispatchEvent(new Event(online ? "online" : "offline"))
+  }, online)
 }
 
 async function typeAtEnd(page: Page, text: string): Promise<void> {
@@ -138,6 +146,44 @@ test("going offline reads Offline before any edit, and Saved again when the brow
   await context.setOffline(true)
   await expect(saveStatus(page)).toHaveText(offline)
   await context.setOffline(false)
+  await expect(saveStatus(page)).toHaveText(saved)
+})
+
+test("going offline and back while a resend is on the wire reads Saved once it lands", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  const deck = await openClean(page)
+  const revision = async () => (await stack.post("/decks/open", { deck }, cookie)).json.revision as number
+  const before = await revision()
+  let down = true
+  let held = 0
+  let release = () => undefined as void
+  const released = new Promise<void>((resolve) => (release = resolve))
+  await page.route(
+    (url) => url.pathname === "/decks/commit",
+    async (route) => {
+      if (down) return route.abort("connectionfailed")
+      held += 1
+      await released
+      await route.fallback()
+    },
+  )
+  await typeAtEnd(page, "!")
+  await expect(saveStatus(page)).toHaveText(unreached)
+  down = false
+  await expect.poll(() => held, { timeout: 15_000 }).toBe(1)
+  await browserNetwork(page, false)
+  await expect(saveStatus(page)).toHaveText(offline)
+  await browserNetwork(page, true)
+  await expect(saveStatus(page)).toHaveText(unreached)
+  release()
+  await expect.poll(revision).toBe(before + 1)
+  await page.waitForTimeout(pastSavingDelay)
   await expect(saveStatus(page)).toHaveText(saved)
 })
 
