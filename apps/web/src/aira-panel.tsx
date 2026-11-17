@@ -76,10 +76,20 @@ export function AiraPanel({
   useEffect(() => () => stopper.current?.abort(), [])
 
   useEffect(() => {
-    if (!malformed || !inComposer.current) return
+    function moved(event: FocusEvent) {
+      if (event.target !== field.current) inComposer.current = false
+    }
+    document.addEventListener("focusin", moved)
+    return () => document.removeEventListener("focusin", moved)
+  }, [])
+
+  useEffect(() => {
+    if (!malformed || busy || !inComposer.current) return
+    const button = panel.current?.querySelector<HTMLElement>("[data-aira-stuck] [data-aira-new-chat]")
+    if (button === undefined || button === null) return
+    button.focus()
     inComposer.current = false
-    panel.current?.querySelector<HTMLElement>("[data-aira-stuck] [data-aira-new-chat]")?.focus()
-  }, [malformed])
+  }, [malformed, busy])
 
   useEffect(() => {
     if (!returnToComposer.current || blocked !== undefined) return
