@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 
 type ZipEntry = {
   readonly filename: string
@@ -61,7 +63,7 @@ async function presented(page: Page): Promise<void> {
     return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
   })
   await page.locator('[data-slide-entry="2"]').click()
-  await page.getByRole("button", { name: "Present", exact: true }).click()
+  await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
   await expect(shown(page)).toHaveAttribute("data-present-slide", "2")
 }
 
@@ -84,7 +86,7 @@ test("a show skips hidden slides, shows one asked for by number, and plays the f
   await expect(shown(page)).toHaveAttribute("data-present-slide", "2")
   await expect(leaving(page)).toHaveCount(0)
   await page.keyboard.press("3")
-  await page.keyboard.press("Enter")
+  await page.keyboard.press(slideListCopy.openKey)
   await expect(shown(page)).toHaveAttribute("data-present-slide", "3")
 })
 
