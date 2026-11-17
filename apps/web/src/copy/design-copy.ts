@@ -1,3 +1,4 @@
+import { appearanceCopy } from "./appearance-copy"
 import type { PaintFill } from "@airdesign/pptx"
 import { nameTooLongOf } from "@/copy/product-copy"
 import type { PanelKind } from "@/design/panel-order"
@@ -9,9 +10,7 @@ export const designCopy = {
   background: "Background",
   resizePanel: "Resize panel",
   backgroundColor: (name: string) => `Background color, ${name}`,
-  border: "Border",
-  shadow: "Shadow",
-  shadowPreset: "Shadow preset",
+  ...appearanceCopy,
   white: "White",
   fills: { gradient: "Gradient", pattern: "Pattern", picture: "Picture" },
   panels: {

@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url"
 export default async function drive(kit) {
   const { repo, page, expect, post, deckRoutes, capture, note } = kit
   const require = createRequire(import.meta.url)
-  const { designCopy } = require(path.join(repo, "apps/web/src/copy/design-copy.ts"))
+  const { appearanceCopy: designCopy } = require(path.join(repo, "apps/web/src/copy/appearance-copy.ts"))
   const { lineWords } = require(path.join(repo, "apps/web/src/copy/line-copy.ts"))
   const { effectsWords } = require(path.join(repo, "apps/web/src/copy/effects-copy.ts"))
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
@@ -29,8 +29,8 @@ export default async function drive(kit) {
     [
       "shadow",
       [
-        ["none", lineWords["border.none"]],
         ...["subtle", "medium", "strong"].map((name) => [name, effectsWords[`shadow.${name}`]]),
+        ["none", lineWords["border.none"]],
       ],
     ],
   ]) {
@@ -39,14 +39,19 @@ export default async function drive(kit) {
       await group.getByRole("button", { name: label, exact: true }).click()
       await expect(group.getByRole("button", { name: label, exact: true })).toHaveAttribute("aria-pressed", "true")
       await capture(`${kind}-${name}`)
-      const key = kind === "border" ? "line" : "effects"
       await expect
         .poll(async () => {
           const server = (await post(deckRoutes.open, { deck }, signed.cookie)).json.register
           const element = server.elements[await panel.getAttribute("data-design-element")]
-          return JSON.stringify(element)
+          return JSON.stringify(element.landed.at(-1)?.patch)
         })
-        .toContain(`"${key}"`)
+        .toContain(
+          name === "none"
+            ? '"none":true'
+            : kind === "border"
+              ? `"dash":{"set":"${name}"}`
+              : `"distance":${{ subtle: 12700, medium: 25400, strong: 50800 }[name]}`,
+        )
       const downloading = page.waitForEvent("download")
       await page.getByRole("button", { name: "Export", exact: true }).click()
       await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
@@ -68,4 +73,18 @@ export default async function drive(kit) {
       note(`Saved and exported ${kind} ${name}: ${file}`)
     }
   }
+  const resize = page.getByRole("separator", { name: "Resize panel" })
+  for (const [key, width] of [
+    ["Home", 220],
+    ["End", 440],
+    ["Home", 220],
+  ]) {
+    await resize.focus()
+    await resize.press(key)
+    await expect(page.locator("[data-editor-panel]")).toHaveJSProperty("clientWidth", width - 1)
+    await capture(`panel-${width}`)
+  }
+  await resize.dblclick()
+  await expect(resize).toHaveAttribute("aria-valuenow", "240")
+  await capture("panel-240")
 }

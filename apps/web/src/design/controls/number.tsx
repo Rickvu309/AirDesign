@@ -85,7 +85,7 @@ export function NumberField({
     scrub.current = null
   }
 
-  return (
+  const view = (
     <label
       className="flex h-[var(--control-dense)] min-w-0 items-center gap-0.5 rounded-[var(--shape-control)] bg-muted px-2"
       title={control.label}
@@ -132,5 +132,15 @@ export function NumberField({
         {unit}
       </span>
     </label>
+  )
+  return look.name.show === "above" ? (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <span aria-hidden className="text-[length:var(--type-caption)] text-quiet">
+        {control.label}
+      </span>
+      {view}
+    </div>
+  ) : (
+    view
   )
 }
