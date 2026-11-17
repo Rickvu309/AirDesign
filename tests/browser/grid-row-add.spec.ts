@@ -95,6 +95,7 @@ test("keyboard focus previews below and Escape returns to the row before Enter a
   await ten(page)
   await entry(page, 1).focus()
   await page.keyboard.press("Tab")
+  await page.keyboard.press("Tab")
   await expect(below(page, 1)).toBeFocused()
   expect(await below(page, 1).evaluate((button) => getComputedStyle(button).outlineStyle)).not.toBe("none")
   await expect(page.locator("[data-row-placeholder]:visible")).toHaveCount(1)

@@ -173,8 +173,12 @@ export function EditorGrid({
   })
   const dragging = drag.dragging
 
-  function addAfter(index: number) {
+  function addAfter(index: number, keep = false) {
     following.current = true
+    if (keep) {
+      edit.step({ kind: "pick", pick: null })
+      if (zoom === "fit") setZoom(percent)
+    }
     strip.onAdd?.(undefined, index)
   }
 
@@ -236,7 +240,7 @@ export function EditorGrid({
   }
 
   function onGridKey(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.target instanceof Element && event.target.closest("[data-add-row]") !== null) return
+    if (event.target instanceof Element && event.target.closest("[data-add-row], [data-add-gap]") !== null) return
     if (menu !== null && event.key === "Escape" && !event.nativeEvent.isComposing) {
       event.preventDefault()
       event.stopPropagation()
@@ -247,7 +251,7 @@ export function EditorGrid({
   }
 
   function onListKey(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.target instanceof Element && event.target.closest("[data-grid-edit]") !== null) return
+    if (event.target instanceof Element && event.target.closest("[data-grid-edit], [data-add-gap]") !== null) return
     if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
       const card = document.activeElement?.closest<HTMLElement>("[data-slide-entry]")
       if (card === null || card === undefined) return
@@ -318,7 +322,10 @@ export function EditorGrid({
         event.currentTarget.focus()
         openMenu(index, pointAt(event.clientX, event.clientY), true)
       }}
-      onAdd={() => addAfter(index)}
+      rowEnd={rows.some((row) => row.end === index + 1)}
+      addBlocked={viewport.space || pointer?.tool === "hand" || dragging !== null || elementPressed || edit.editing}
+      addDisabled={strip.onAdd === undefined || count >= limits.slides}
+      onAdd={() => addAfter(index, true)}
     />
   )
 

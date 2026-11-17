@@ -68,6 +68,7 @@ for (const name of [
   "connected-agents",
   "slide-commands",
   "grid-row-add",
+  "grid-gap-add",
   "person-undo",
   "usage-page",
   "account-name",

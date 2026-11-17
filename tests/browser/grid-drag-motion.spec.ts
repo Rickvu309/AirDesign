@@ -112,15 +112,15 @@ test("a drag to the first place of a grid row keeps the slides still and shows t
   await expect(page.locator("[data-editor-grid] [data-announcer]")).toHaveText("Moved slide 7 to position 5")
 })
 
-test("the add mark between slides fades in on hover and stays still with reduced motion", async ({ page }) => {
+test("the add mark between slides appears on hover and stays still with reduced motion", async ({ page }) => {
   await openFile(page, { name: "two.pptx", mimeType: "application/octet-stream", buffer: await manySlides(2) })
   await openGrid(page)
   const plus = page.getByRole("button", { name: "Add slide after slide 1" })
-  await expect(plus).toBeHidden()
+  await expect(plus).toHaveCSS("opacity", "0")
   await entry(page, 1).hover()
   await expect(plus).toBeVisible()
   await expect(plus).toHaveCSS("opacity", "1")
-  await expect(plus).toHaveCSS("transition-duration", /0\.15s/)
+  await expect(plus).toHaveCSS("transition-duration", "0s")
   await page.emulateMedia({ reducedMotion: "reduce" })
   await expect(plus).toHaveCSS("transition-duration", "0s")
 })

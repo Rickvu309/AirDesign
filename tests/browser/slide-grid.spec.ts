@@ -92,7 +92,7 @@ test("the grid adds, reorders, duplicates and deletes a slide without a mouse", 
   await openGrid(page)
   const said = page.locator("[data-editor-grid] [data-announcer]")
   const plus = page.locator('[aria-label="Add slide after slide 1"]')
-  await expect(plus).toBeHidden()
+  await expect(plus.locator("[data-add-mark]")).toHaveCSS("width", "8px")
   await entry(page, 1).hover()
   await expect(plus).toBeVisible()
   await plus.click()

@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react"
+import { useState, type ComponentProps, type CSSProperties } from "react"
 import { Button } from "@/components/ui/button"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { EditorIcon } from "@/editor/editor-icons"
@@ -31,7 +31,7 @@ export function GridRowAdd({
   }
   return (
     <div data-row-insert={state} style={space} inert={blocked}>
-      <Button
+      <GridAddButton
         type="button"
         variant="ghost"
         size="icon"
@@ -60,24 +60,56 @@ export function GridRowAdd({
           event.stopPropagation()
           onEscape()
         }}
-      >
-        <span className="flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <EditorIcon name="plus" size={14} strokeWidth={2.5} />
-        </span>
-      </Button>
+      />
       <div data-row-preview className="pointer-events-none absolute hidden" style={{ top: gap + 24 }}>
-        <div
-          data-row-placeholder
-          className="border border-dashed border-[var(--grid-placeholder-edge)] bg-[var(--grid-placeholder)]"
-          style={{
-            width: width * scale,
-            height: height * scale,
-            borderRadius: "var(--grid-radius)",
-            transform: `scale(${1 / scale})`,
-            transformOrigin: "top left",
-          }}
-        />
+        <GridPlaceholder width={width} height={height} scale={scale} />
       </div>
     </div>
+  )
+}
+
+export function GridAddMark() {
+  return (
+    <span
+      data-add-mark
+      className="flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground"
+    >
+      <EditorIcon name="plus" size={14} strokeWidth={2.5} />
+    </span>
+  )
+}
+
+export function GridPlaceholder({
+  width,
+  height,
+  scale,
+  gap = false,
+}: {
+  width: number
+  height: number
+  scale: number
+  gap?: boolean
+}) {
+  return (
+    <div
+      data-row-placeholder={gap ? undefined : ""}
+      data-gap-placeholder={gap ? "" : undefined}
+      className="border border-dashed border-[var(--grid-placeholder-edge)] bg-[var(--grid-placeholder)]"
+      style={{
+        width: width * scale,
+        height: height * scale,
+        borderRadius: "var(--grid-radius)",
+        transform: `scale(${1 / scale})`,
+        transformOrigin: "top left",
+      }}
+    />
+  )
+}
+
+export function GridAddButton(props: ComponentProps<typeof Button>) {
+  return (
+    <Button type="button" variant="ghost" size="icon" {...props}>
+      <GridAddMark />
+    </Button>
   )
 }

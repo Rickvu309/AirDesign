@@ -148,6 +148,8 @@
   --shape-card: 10px;
   --shape-dialog: 14px;
   --shadow-chrome: none;
+  --grid-add-size: 24px;
+  --grid-add-dot: 8px;
   --grid-radius: 2px;
   --grid-halo-radius: 14px;
   --grid-hover: #bfe4ff;
