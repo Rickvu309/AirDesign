@@ -1,14 +1,4 @@
-import {
-  cellText,
-  currentValue,
-  decide,
-  openRegister,
-  readTableValue,
-  slideId,
-  type Command,
-  type ElementId,
-  type Register,
-} from "@airdesign/document"
+import { decide, openRegister, slideId, type Command, type ElementId, type Register } from "@airdesign/document"
 import { noSelection } from "@airdesign/render"
 import { act, createElement } from "react"
 import { createRoot } from "react-dom/client"
@@ -19,7 +9,6 @@ import { saveStatus, useDeckStatus, type SaveStatus } from "./use-deck-status"
 import { useUndoList, useUndoTurn, type UndoList } from "./use-undo"
 import { elementCommand } from "../element-edit"
 import { onSlide, twoBoxSlide, xml } from "../slide-fixtures"
-import { useTables } from "../table-hook"
 
 const device = vi.hoisted(() => ({ link: null as unknown }))
 
@@ -65,15 +54,12 @@ function Deck(props: { readonly exposed: (deck: Exposed) => void }) {
   const { settle, setPending } = status
   const shown = useDeckPaint(deck, pictures, notes)
   const changeElement = async () => "kept" as const
-  const { store, shapes, editParts, canvases, current, showEdited } = shown
-  const tables = useTables({ current, store, shapes, editParts, canvases, showEdited, changeElement })
   useUndoTurn({ id: deck, paintedDeck: deck, undo, shown, notesBar: notes, settle: nothing, setPending: nothing })
   props.exposed({ shown, undo, status: saveStatus(status) })
   return editableSlide({
     id: deck,
     shown,
     undo,
-    tables,
     record: nothing,
     settle,
     setPending,
@@ -105,7 +91,7 @@ async function tableDeck() {
   window.document.body.append(host)
   const root = createRoot(host)
   await act(async () => root.render(createElement(Deck, { exposed: (now) => (exposed.current = now) })))
-  const { shown, undo } =
+  const { shown } =
     exposed.current ??
     (() => {
       throw new Error("not rendered")
@@ -115,35 +101,10 @@ async function tableDeck() {
     shown.showRegister(register)
   })
   const cell = host.querySelector<HTMLElement>('[data-table-text="0.0"]')
-  if (cell === null) throw new Error("no cell")
-  await act(async () => cell.focus())
+  expect(cell).toBeNull()
+  expect(host.querySelector("[data-canvas-table]")).not.toBeNull()
   return {
-    cell,
-    sent,
-    undo,
-    shown,
-    status: () => exposed.current?.status,
-    typed(text: string) {
-      cell.textContent = text
-      cell.dispatchEvent(new window.InputEvent("input", { bubbles: true }))
-    },
-    async answered() {
-      await act(async () => {
-        for (const answer of answers.splice(0)) answer.resolve({ ok: true })
-        await new Promise((done) => setTimeout(done, 0))
-      })
-    },
-    async flushed() {
-      await act(async () => {
-        for (const flush of flushes.splice(0)) flush.resolve({ ok: true })
-        await new Promise((done) => setTimeout(done, 0))
-      })
-    },
-    deckCell: () => {
-      const body = register.elements[opened.node]
-      const value = body === undefined ? null : readTableValue(currentValue(body))
-      return value === null ? "" : cellText(value.rows[0]?.cells[0] ?? [])
-    },
+    host,
     close: async () => {
       await act(async () => {
         for (const flush of flushes.splice(0)) flush.resolve({ ok: true })
@@ -181,91 +142,8 @@ afterAll(() => {
   window.close()
 })
 
-it("writes each keystroke in a table cell to the device in the keystroke's own task", async () => {
+it("paints a saved table without cell authoring", async () => {
   const table = await tableDeck()
-  await act(async () => {
-    table.typed("C")
-    table.typed("Ce")
-    expect(table.sent.map((value) => cellText(readTableValue(value)?.rows[0]?.cells[0] ?? []))).toEqual(["C", "Ce"])
-  })
+  expect(table.host.querySelector("[data-table-bar]")).toBeNull()
   await table.close()
-}, 20_000)
-
-it("takes back the typing in a table cell with one Ctrl+Z straight after it, and paints the focused cell", async () => {
-  const table = await tableDeck()
-  await act(async () => {
-    table.typed("R")
-    table.typed("Region")
-  })
-  const undo = new window.KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true, cancelable: true })
-  await act(async () => table.cell.dispatchEvent(undo))
-  await table.answered()
-  await table.answered()
-  expect(table.undo.undoList.current.redo.map((entry) => entry.name)).toEqual(["text"])
-  expect(table.deckCell()).toBe("")
-  expect(table.cell.ownerDocument.activeElement).toBe(table.cell)
-  expect(table.cell.textContent).toBe("")
-  await table.close()
-}, 20_000)
-
-it("paints the focused cell's text from before the edit on Ctrl+Z while its last keystroke is still sending", async () => {
-  const table = await tableDeck()
-  await act(async () => table.typed("Regio"))
-  await table.answered()
-  await table.flushed()
-  await act(async () => table.shown.showEdited(0))
-  await act(async () => table.typed("Region"))
-  await table.answered()
-  const undo = new window.KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true, cancelable: true })
-  await act(async () => table.cell.dispatchEvent(undo))
-  await table.answered()
-  expect(table.deckCell()).toBe("")
-  expect(table.cell.ownerDocument.activeElement).toBe(table.cell)
-  expect(table.cell.textContent).toBe("")
-  await table.close()
-}, 20_000)
-
-it("records a table's typed cell once the device takes it, while the cell is still sending", async () => {
-  const table = await tableDeck()
-  await act(async () => {
-    table.typed("N")
-    table.typed("No")
-  })
-  await table.answered()
-  expect(table.undo.undoList.current.undo.map((entry) => `${entry.name} ${entry.session ?? ""}`)).toEqual(["text 1"])
-  await table.close()
-}, 20_000)
-
-it("redoes a cell's typing straight after its undo while the undo is still on its way to the server", async () => {
-  const table = await tableDeck()
-  await act(async () => table.typed("Region"))
-  await table.answered()
-  const undo = new window.KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true, cancelable: true })
-  const redo = new window.KeyboardEvent("keydown", {
-    key: "z",
-    ctrlKey: true,
-    shiftKey: true,
-    bubbles: true,
-    cancelable: true,
-  })
-  await act(async () => table.cell.dispatchEvent(undo))
-  await table.answered()
-  expect(table.deckCell()).toBe("")
-  await act(async () => table.cell.dispatchEvent(redo))
-  await table.answered()
-  expect(table.deckCell()).toBe("Region")
-  expect(table.undo.undoList.current.undo.map((entry) => entry.name)).toEqual(["text"])
-  await table.close()
-}, 20_000)
-
-it("keeps a saved table cell reading Saved when the deck repaints after the save", async () => {
-  const table = await tableDeck()
-  await act(async () => table.typed("Q"))
-  await table.answered()
-  expect(table.status()).toBe("saving")
-  await table.flushed()
-  expect(table.status()).toBe("saved")
-  await act(async () => table.shown.showEdited(0))
-  expect(table.status()).toBe("saved")
-  await table.close()
-}, 20_000)
+})

@@ -1,5 +1,13 @@
 import { readDeckId } from "@airdesign/catalog"
-import { changedTable, elementId, openingTable, readTableValue, writeTableValue } from "@airdesign/document"
+import {
+  changedTable,
+  decide,
+  slideId,
+  elementId,
+  openingTable,
+  readTableValue,
+  writeTableValue,
+} from "@airdesign/document"
 import { expect, it } from "vitest"
 import { call, openDeck, readDeckPage, type Deck } from "./index.js"
 
@@ -20,18 +28,38 @@ function landed(result: ReturnType<typeof call>): Deck {
   return result.deck
 }
 
-it("lets a person add a table, type in a cell and add a row as edits of its value, and removes it whole", () => {
-  const typed = changedTable(openingTable(3, 3), { change: "cell", row: 0, column: 0, text: "Region" })!
-  const grown = writeTableValue(changedTable(typed, { change: "row", row: 0, place: "below" })!)
-  const added = landed(
+function saved(value: string): Deck {
+  const deck = opened()
+  const added = decide(deck.register, {
+    command: "slide",
+    file: [slideId("256")],
+    edit: {
+      slide: "element-add",
+      id: slideId("256"),
+      element: { ...element, kind: "table" },
+    },
+  })
+  if (added.decision !== "apply") throw new Error(added.code)
+  const openedNode = decide(added.register, { command: "add", node, floor: opening, route: "" })
+  if (openedNode.decision !== "apply") throw new Error(openedNode.code)
+  const edited = decide(openedNode.register, { command: "person", node, value })
+  if (edited.decision !== "apply") throw new Error(edited.code)
+  return { ...deck, register: edited.register }
+}
+
+it("refuses new table creation and edits while keeping saved tables removable as objects", () => {
+  expect(
     call("commit_edits", opened(), person, {
       deck: "deck",
-      batch: [
-        { slide: "element-add", id: "256", element, file },
-        { node, value: grown },
-      ],
+      batch: [{ slide: "element-add", id: "256", element, file }],
     }),
-  )
+  ).toMatchObject({ ok: false })
+  const typed = changedTable(openingTable(3, 3), { change: "cell", row: 0, column: 0, text: "Region" })!
+  const grown = writeTableValue(changedTable(typed, { change: "row", row: 0, place: "below" })!)
+  const added = saved(grown)
+  expect(call("commit_edits", added, person, { deck: "deck", batch: [{ node, value: opening }] })).toMatchObject({
+    ok: false,
+  })
   const shown = readDeckPage(added, { runId: null }).elements
   expect(shown).toMatchObject([{ node, kind: "table", box: element.box }])
   expect(readTableValue(shown[0]?.value ?? "")?.rows.map((row) => row.from)).toEqual([0, -1, 1, 2])
@@ -51,18 +79,10 @@ it("refuses a table added with text already in it", () => {
   ).toMatchObject({ ok: false })
 })
 
-it("keeps the columns a person added and deleted in the table's value", () => {
+it("keeps the columns previously added and deleted in the table's value", () => {
   const grown = changedTable(openingTable(3, 3), { change: "column", column: 0, place: "before" })!
   const value = writeTableValue(changedTable(grown, { change: "remove-column", column: 2 })!)
-  const added = landed(
-    call("commit_edits", opened(), person, {
-      deck: "deck",
-      batch: [
-        { slide: "element-add", id: "256", element, file },
-        { node, value },
-      ],
-    }),
-  )
+  const added = saved(value)
   const shown = readDeckPage(added, { runId: null }).elements[0]?.value ?? ""
   expect(readTableValue(shown)?.columns).toEqual([-1, 0, 2])
 })

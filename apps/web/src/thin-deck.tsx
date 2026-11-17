@@ -77,7 +77,6 @@ export function ThinDeck({ id }: { id: string }) {
               }),
             formatting: deck.undo.formatting.current,
             deckColors: colorsIn(shown.displayParts.current),
-            onTable: deck.tables.insert,
             onPicture: deck.pictureTool.pick,
             onShape: deck.inserts.addShape,
             onIcon: deck.inserts.addIcon,

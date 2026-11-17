@@ -9,7 +9,6 @@ import { useExport } from "@/editor/use-export"
 import { useUndoList } from "@/editor/use-undo"
 import { useNotes } from "@/notes-edit"
 import { usePictureStore, usePictureTool } from "@/picture-tool"
-import { useTables } from "@/table-hook"
 
 export type EditorDeck = ReturnType<typeof useEditorDeck>
 
@@ -27,9 +26,7 @@ export function useEditorDeck(id: string) {
   const shown = useDeckPaint(id, pictures, notesBar)
   const inserts = deckInserts({ id, shown, pictureTool: pictures, record, settle, setPending })
   const pictureTool = usePictureTool(status.paintedDeck === id, pictures.store, inserts.addPicture)
-  const { current, store, shapes, editParts, canvases, showEdited } = shown
   const { changeElement } = inserts
-  const tables = useTables({ current, store, shapes, editParts, canvases, showEdited, changeElement })
   const exported = useExport({ id, records, pictureTool, setFailure: status.setFailure })
   return {
     ...status,
@@ -47,7 +44,6 @@ export function useEditorDeck(id: string) {
     shown,
     inserts,
     changeElement,
-    tables,
     exported,
   }
 }

@@ -1,3 +1,4 @@
+import { authorableValue, authorableSlide } from "@airdesign/catalog"
 import { readDeckId, type DeckId, type WireRefusal } from "@airdesign/catalog"
 import {
   currentBox,
@@ -310,6 +311,7 @@ export function connect(remote: Remote, options: Options = {}) {
   }
 
   function enqueueValue(deck: string, edit: Value, node: ElementId, floor: string): Promise<Enqueued> {
+    if (!authorableValue(edit)) return Promise.resolve({ ok: false, refusal: "field" })
     const parsed = readDeckId(deck)
     if (!parsed.ok) return Promise.resolve({ ok: false, refusal: "deck" })
     const named = readElementId(node)
@@ -335,7 +337,8 @@ export function connect(remote: Remote, options: Options = {}) {
         if (!parsed.ok) return parsed
         const state = readSlideState({ file, order: [edit] })
         const command = state?.order[0]
-        if (state === undefined || command === undefined) return { ok: false, refusal: "field" }
+        if (state === undefined || command === undefined || !authorableSlide(command))
+          return { ok: false, refusal: "field" }
         return keepAndWrite(parsed.deck, { kind: "slide", file: state.file, edit: command }, () =>
           writeSlide(parsed.deck, state.file, command),
         )

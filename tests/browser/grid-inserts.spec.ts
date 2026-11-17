@@ -3,7 +3,6 @@ import { expect, test, type Page } from "@playwright/test"
 import { colorCopy } from "../../apps/web/src/copy/color-copy"
 import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
-import { tableCopy } from "../../apps/web/src/copy/table-copy"
 import { entry, fixtures, manySlides, openFile, openGrid } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
@@ -39,10 +38,6 @@ const tools: Record<string, (page: Page) => Promise<void>> = {
     const choosing = page.waitForEvent("filechooser")
     await page.getByRole("button", { name: pictureCopy.add, exact: true }).click()
     await (await choosing).setFiles(join(fixtures, "picture.png"))
-  },
-  table: async (page) => {
-    await page.getByRole("button", { name: tableCopy.tool, exact: true }).click()
-    await page.getByRole("button", { name: tableCopy.sizeOf(2, 2), exact: true }).click()
   },
 }
 

@@ -11,12 +11,12 @@ it("tells the agent what a picture takes and how to add a Lucide icon and its al
   expect(instructions).toContain("fades the element's fill, line, text and picture together")
 })
 
-it("gives the run format of a JSON text value, the form of a table value, and how a connector's ends attach", () => {
+it("gives the run format of a JSON text value, how a connector's ends attach", () => {
   const instructions = kindInstructions()
   expect(instructions).toContain("A run may set bold, italic or underline to true or false")
   expect(instructions).toContain("size to a whole number of hundredths of a point from 100 to 400000")
   expect(instructions).toContain("align to left, center or right, and bullet to true or false")
-  expect(instructions).toContain("A JSON table value is {rows: [{from, cells, fills, borders}]}")
+  expect(instructions).not.toContain("A JSON table value is")
   expect(instructions).toContain('attaches each end with { "shape": { "node": ..., "site": ... } }')
   expect(instructions).toContain(
     "join, head, tail), effects (shadow, glow, softEdge), connection (start, end) and opacity.",

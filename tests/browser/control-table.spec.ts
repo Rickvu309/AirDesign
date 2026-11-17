@@ -1,31 +1,20 @@
 import { expect, test } from "@playwright/test"
 import { openDeck, settled } from "./design-panel"
+import { tableCopy } from "../../apps/web/src/copy/table-copy"
 
-test.use({ viewport: { width: 1600, height: 1000 } })
-
-test("typing on the canvas writes one cell, the slide shows it, and Undo empties the cell again", async ({ page }) => {
+test("an imported table paints without insert, cell or table Design controls after reload", async ({ page }) => {
   await openDeck(page, "table-added.pptx")
-  await page.getByRole("button", { name: "Design", exact: true }).click()
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
-  await table.locator('[data-table-text="0.0"]').click()
-  await page.keyboard.press("Escape")
-  const panel = page.locator("[data-design-element]")
-  const cells = panel.getByRole("group", { name: "Cells" })
-  await expect(cells.getByRole("textbox")).toHaveCount(0)
-  await expect(cells.getByRole("button")).toHaveCount(9)
-  await expect(cells.getByRole("button", { name: "Row 1, column 1" })).toHaveText("Region")
-  const cell = table.locator('[data-table-text="1.0"]')
-  await cell.click()
-  await page.keyboard.insertText("North")
-  await cell.press("Enter")
-  await expect(table.locator('[data-table-text="1.0"]')).toHaveText("North")
-  await expect(cell).toHaveText("North")
-  await page.getByRole("button", { name: "Undo text edit", exact: true }).click()
-  await expect(table.locator('[data-table-text="1.0"]')).toHaveText("")
-  await expect(cell).toHaveText("")
-  await page.getByRole("button", { name: "Redo text edit", exact: true }).click()
-  await expect(table.locator('[data-table-text="1.0"]')).toHaveText("North")
+  await expect(table).toContainText("Region")
+  await expect(page.getByRole("button", { name: tableCopy.tool, exact: true })).toHaveCount(0)
+  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await table.click()
+  await expect(page.locator("[data-design-element]")).toBeVisible()
+  await expect(table.locator('[contenteditable="true"]')).toHaveCount(0)
+  await expect(page.locator("[data-table-bar], [data-table-picker]")).toHaveCount(0)
+  await expect(page.locator("[data-design-element]").getByRole("group", { name: tableCopy.cells })).toHaveCount(0)
   await page.reload()
   await settled(page)
-  await expect(page.locator('[data-slide-paint] [data-canvas-table] [data-table-text="1.0"]')).toHaveText("North")
+  await expect(table).toContainText("Region")
+  await expect(table.locator('[contenteditable="true"]')).toHaveCount(0)
 })

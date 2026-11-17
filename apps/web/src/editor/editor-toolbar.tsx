@@ -12,8 +12,6 @@ import { pictureCopy } from "@/copy/picture-copy"
 import { pickPicture } from "@/editor/picture-picker"
 import { IconTool } from "@/editor/icon-tool"
 import { ShapeTool } from "@/editor/shape-tool"
-import { TableTool } from "@/editor/table-tool"
-import type { TableSize } from "@/element-edit"
 import type { Geometry } from "@airdesign/document"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toolbarCopy } from "@/copy/toolbar-copy"
@@ -28,7 +26,7 @@ import {
 import { useLayoutEffect, useRef, useState, type MouseEvent } from "react"
 import { flushSync } from "react-dom"
 
-export type EditorTool = "move" | "text" | "shape" | "image" | "icon" | "table"
+export type EditorTool = "move" | "text" | "shape" | "image" | "icon"
 
 export type EditorPanel = "agent" | "design" | "none"
 
@@ -37,7 +35,6 @@ const toolIcons: Readonly<Record<InsertPart, EditorIconName>> = {
   shape: "shape",
   image: "image",
   icon: "icon",
-  table: "table",
 }
 
 const toolbarLook = "rounded-xl bg-white p-1 shadow-[0px_0px_0px_1px_var(--field-edge),0px_4px_12px_var(--black-6)]"
@@ -71,15 +68,13 @@ type Inserts = {
   readonly activeTool: EditorTool
   readonly pointer: ToolPick | undefined
   readonly onText: (() => void) | undefined
-  readonly onTable: ((size: TableSize) => void) | undefined
   readonly onPicture: ((file: File) => void) | undefined
   readonly onShape: ((geometry: Geometry) => void) | undefined
   readonly onIcon: ((name: string) => void) | undefined
 }
 
 function InsertTool({ tool, inserts }: { tool: InsertPart; inserts: Inserts }) {
-  const { activeTool, pointer, onText, onTable, onPicture, onShape, onIcon } = inserts
-  if (tool === "table" && onTable !== undefined) return <TableTool onTable={onTable} />
+  const { activeTool, pointer, onText, onPicture, onShape, onIcon } = inserts
   if (tool === "shape" && onShape !== undefined) return <ShapeTool onShape={onShape} />
   if (tool === "icon" && onIcon !== undefined) return <IconTool onIcon={onIcon} />
   const on = pointer === undefined && activeTool === tool
@@ -214,7 +209,6 @@ export function EditorToolbar({
   formatting,
   deckColors,
   formats,
-  onTable,
   onPicture,
   onShape,
   onIcon,
@@ -229,7 +223,6 @@ export function EditorToolbar({
   formatting?: TextFormatting
   deckColors?: readonly string[]
   formats?: FormatShown
-  onTable?: (size: TableSize) => void
   onPicture?: (file: File) => void
   onShape?: (geometry: Geometry) => void
   onIcon?: (name: string) => void
@@ -240,7 +233,7 @@ export function EditorToolbar({
   const live = useLiveFormat(formatting, deckColors)
   const format = live ?? (formats === undefined ? null : { shown: formats })
   const fold = useFold(format === null ? insertParts : [...insertParts, ...formatParts])
-  const inserts: Inserts = { activeTool, pointer, onText, onTable, onPicture, onShape, onIcon }
+  const inserts: Inserts = { activeTool, pointer, onText, onPicture, onShape, onIcon }
   return (
     <div ref={fold.room} className="flex w-full min-w-0 justify-center">
       <div

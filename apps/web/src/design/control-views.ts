@@ -13,7 +13,6 @@ import { NodeControl } from "@/design/controls/node"
 import { PercentControl } from "@/design/controls/percent"
 import { PresetControl } from "@/design/controls/preset"
 import { RecordControl } from "@/design/controls/record"
-import { TableControl } from "@/design/controls/table"
 import { TextControl } from "@/design/controls/text"
 import { ToggleControl } from "@/design/controls/toggle"
 import { UnionControl } from "@/design/controls/union"
@@ -35,7 +34,6 @@ export const controlViews: Partial<Readonly<Record<ControlKind, ComponentType<Co
   union: UnionControl,
   list: ListControl,
   text: TextControl,
-  table: TableControl,
   asset: AssetControl,
   node: NodeControl,
   site: SiteControl,

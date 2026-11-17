@@ -8,13 +8,13 @@ it("keeps every part in the row while nothing folds", () => {
 })
 
 it("folds the insert tools before the text controls, keeping the row's order in More", () => {
-  expect(toolbarFold(all, 3)).toEqual({
+  expect(toolbarFold(all, 2)).toEqual({
     row: ["text", "shape", "styles", "size", "color", "align", "bullets"],
-    more: ["table", "image", "icon"],
+    more: ["image", "icon"],
   })
-  expect(toolbarFold(all, 7)).toEqual({
+  expect(toolbarFold(all, 6)).toEqual({
     row: ["styles", "size", "color"],
-    more: ["text", "shape", "table", "image", "icon", "align", "bullets"],
+    more: ["text", "shape", "image", "icon", "align", "bullets"],
   })
 })
 
@@ -24,5 +24,5 @@ it("folds bold, italic and underline last", () => {
 })
 
 it("counts only the parts that show", () => {
-  expect(toolbarFold(insertParts, 2)).toEqual({ row: ["text", "shape", "image"], more: ["table", "icon"] })
+  expect(toolbarFold(insertParts, 2)).toEqual({ row: ["text", "shape"], more: ["image", "icon"] })
 })

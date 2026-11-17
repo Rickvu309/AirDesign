@@ -187,11 +187,11 @@ The deck's twelve colors and heading and body fonts. Anything that names a theme
 _Avoid_: palette, color scheme, template (a template is a whole design, not available yet)
 
 **color picker**:
-Where a person picks any color a field takes: a fill, line, effect, text, table cell, gradient stop, background or theme color. It shows the theme's colors by name, each with PowerPoint's lighter and darker rows (a theme tint), the RGB colors already in the deck, and a custom color set by area, hue, hex or the screen's eyedropper. A theme tint is stored as the theme color with `lumMod` and `lumOff`, so it follows a theme change. An agent sends the same colors as words, such as `accent1 lumMod 60 lumOff 40` or `#1F4E79`.
+Where a person picks any color a field takes: a fill, line, effect, text, gradient stop, background or theme color. It shows the theme's colors by name, each with PowerPoint's lighter and darker rows (a theme tint), the RGB colors already in the deck, and a custom color set by area, hue, hex or the screen's eyedropper. A theme tint is stored as the theme color with `lumMod` and `lumOff`, so it follows a theme change. An agent sends the same colors as words, such as `accent1 lumMod 60 lumOff 40` or `#1F4E79`.
 _Avoid_: palette, swatches, color menu
 
 **table style**:
-The look a table takes from its deck: a header row, banded rows, borders and the text color on each, all in theme colors. A new table gets the deck's own default table style, or PowerPoint's own default, Medium Style 2 - Accent 1, when the deck has none. A table imported with its own style keeps it. When a person or an agent fills a cell, the cell's text turns to the theme's light or dark text color, whichever reads better on the fill, unless the text has a color of its own.
+The look an imported or previously saved table takes from its deck: a header row, banded rows, borders and the text color on each, all in theme colors. The table keeps its style through import and export.
 _Avoid_: table theme, table format, table preset
 
 **icon**:

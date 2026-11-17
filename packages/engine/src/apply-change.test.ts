@@ -154,7 +154,7 @@ describe("edit_deck refuses a set change it cannot land, and lands nothing", () 
     })
   })
 
-  it("lands an agent's table value that fills the header row", () => {
+  it("refuses an agent's new table cell edits", () => {
     const opening = writeTableValue(openingTable(2, 2))
     const table = element("259.3", { kind: "table", value: opening, role: "table" })
     const deck = started(indexed({ elements: [...elements, table], total: elements.length + 1 }), "259.3")
@@ -165,8 +165,8 @@ describe("edit_deck refuses a set change it cannot land, and lands nothing", () 
       fill: accent,
     })
     const value = writeTableValue(filled!)
-    const landedDeck = landed(edit(deck, { op: "set", target: "259.3", table: { value } }))
-    expect(currentValue(nodeBody(landedDeck.register, elementId("259.3")))).toBe(value)
+    expect(edit(deck, { op: "set", target: "259.3", table: { value } })).toMatchObject({ ok: false })
+    expect(currentValue(nodeBody(deck.register, elementId("259.3")))).toBe(opening)
   })
 })
 
