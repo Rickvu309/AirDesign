@@ -1,47 +1,31 @@
-import { type TextFormatting } from "@airdesign/render"
-import { useCallback, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react"
+import { noSelection, type Selection } from "@airdesign/render"
+import { useCallback, useLayoutEffect, useReducer, useRef, useState, type KeyboardEvent, type ReactNode } from "react"
 import { flushSync } from "react-dom"
 import { Announcer, type Announcement } from "@/components/ui/announcer"
-import { Button } from "@/components/ui/button"
 import { slideListCopy } from "@/copy/slide-list-copy"
-import { AirdesignMark } from "@/decks/airdesign-mark"
 import { steppedZoom, type SlideSize, type Zoom } from "@/editor/canvas-zoom"
+import { EditorToolbar } from "@/editor/editor-toolbar"
 import { GridCard } from "@/editor/grid-card"
+import { GridHead } from "@/editor/grid-head"
+import { gridSpacing, gridSectionGap } from "@/editor/grid-viewport"
 import { GridDragGhost } from "@/editor/grid-drag-ghost"
 import { dragMoves, landing } from "@/editor/grid-drop"
-import { gridSpacing, gridSectionGap } from "@/editor/grid-viewport"
 import { gridLayout, keptGridViewport, useKeptGridZoom } from "@/editor/grid-zoom"
-import { ZoomMenu } from "@/editor/zoom-menu"
-import { ViewBar } from "@/editor/view-bar"
-import { PresentButton } from "@/present/present-button"
+import { gridOpened, gridPick, gridRinged, gridStep } from "@/editor/grid-interaction"
 import { useGridViewport } from "@/editor/use-grid-viewport"
-import { SaveStatusLine } from "@/editor/save-status"
+import { useGridEditing } from "@/editor/use-grid-editing"
 import type { SaveStatus } from "@/editor/use-deck-status"
-import { DeckTitle, ExportButton, Island, surfaceShadow } from "@/editor/editor-chrome"
-import { EditorIcon } from "@/editor/editor-icons"
 import { focusMove, gridCommand, type GridCommand } from "@/editor/editor-grid-keys"
 import { GridSlideMenu, pointAt, type GridMenu, type MenuAnchor } from "@/editor/grid-menu"
-import {
-  pickAll,
-  pickedSlides,
-  pickRange,
-  pickToggle,
-  prunedPick,
-  toggledCurrent,
-  type GridPick,
-} from "@/editor/grid-selection"
-import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
+import { pickAll, pickedSlides, pickRange, prunedPick } from "@/editor/grid-selection"
 import { useGridDrag } from "@/editor/use-grid-drag"
-import type { FormatShown } from "@/editor/format-buttons"
 import type { ToolPick } from "@/editor/pointer-tool"
 import { gridRows, GridSectionHead } from "@/editor/grid-section"
 import { sectionAt, useKeptCollapsed } from "@/editor/collapsed-sections"
 import { slideThumbWidth, useSlideSay, type SlideStrip, type StripSection } from "@/editor/slide-sidebar"
-import type { UndoButtonsState } from "@/editor/undo-buttons"
+import { insertsFirst, type ToolbarTools } from "@/editor/toolbar-tools"
 import { useZoomKeys } from "@/editor/zoom-keys"
-import { ExportControl } from "@/export/export-control"
 import type { ExportRequest } from "@/export/export-deck"
-import type { TableSize } from "@/element-edit"
 import { cn } from "@/lib/class-names"
 
 const noSections: readonly StripSection[] = []
@@ -64,17 +48,10 @@ export function EditorGrid({
   onExport,
   onPresent,
   presenting = false,
-  undo,
   pointer,
-  panel = "none",
-  onPanel,
-  activeTool = "move",
-  toolMenu = false,
-  onText,
-  formatting,
-  formats,
-  onTable,
-  onPicture,
+  tools = {},
+  selection = noSelection,
+  select = () => undefined,
   save = null,
   slide,
 }: {
@@ -88,22 +65,15 @@ export function EditorGrid({
   onExport: (request?: ExportRequest) => Promise<void> | void
   onPresent?: (from: number) => void
   presenting?: boolean
-  undo: UndoButtonsState
   pointer?: ToolPick
-  panel?: EditorPanel
-  onPanel?: (panel: Exclude<EditorPanel, "none">) => void
-  activeTool?: EditorTool
-  toolMenu?: boolean
-  onText?: () => void
-  formatting?: TextFormatting
-  formats?: FormatShown
-  onTable?: (size: TableSize) => void
-  onPicture?: (file: File) => void
+  tools?: ToolbarTools
+  selection?: Selection
+  select?: (selection: Selection) => void
   save?: SaveStatus | null
   slide?: (width: number) => ReactNode
 }) {
   const list = useRef<HTMLDivElement>(null)
-  const [editing, setEditing] = useState(false)
+  const [state, dispatch] = useReducer(gridStep, selection.ids.length > 0, gridOpened)
   const bar = useRef<HTMLDivElement>(null)
   const ghost = useRef<HTMLDivElement>(null)
   const following = useRef(keptGridViewport(id) === null)
@@ -132,10 +102,9 @@ export function EditorGrid({
     if (next === "fit") viewport.reset()
   }
   const [menu, setMenu] = useState<GridMenu | null>(null)
-  const [pick, setPick] = useState<GridPick>(null)
   const { current, count } = strip
-  const picked = prunedPick(pick, count)
-  const selected = new Set(pickedSlides(picked, current))
+  const picked = prunedPick(gridPick(state), count)
+  const selected = new Set(gridRinged(state, current, count))
   const sections = strip.sections ?? noSections
   const collapsed = useKeptCollapsed(id, sections, current)
   const [seen, setSeen] = useState(current)
@@ -148,6 +117,7 @@ export function EditorGrid({
     (text: string) => setMessage((held) => ({ text, odd: held === null ? false : !held.odd })),
     [],
   )
+  const edit = useGridEditing({ world: list, state, dispatch, current, select, onSelect: strip.onSelect, announce })
   useSlideSay(strip.say, announce)
   useLayoutEffect(() => {
     if (!following.current) return
@@ -157,7 +127,8 @@ export function EditorGrid({
     if (next !== null && next !== undefined && next !== document.activeElement) next.focus({ preventScroll: true })
   }, [current, count])
   useZoomKeys(!presenting, (key) => {
-    if (key === "selection") viewport.selection([...selected])
+    if (key === "selection")
+      viewport.selection(state.kind === "elements" || state.kind === "text" ? [current] : [...selected])
     else chooseZoom(key === "fit" ? "fit" : steppedZoom(key, percent))
   })
   const reachable = stop >= 0 && stop < count && shown(stop) ? stop : current
@@ -174,6 +145,12 @@ export function EditorGrid({
     selected: pickedSlides(picked, current),
     panBy: viewport.panBy,
     onPanEnd: viewport.panEnd,
+    onPick: (index, shift, toggle) => {
+      flushSync(() => edit.pick(index, shift, toggle, picked))
+      list.current
+        ?.querySelector<HTMLElement>(`[data-slide-entry="${String(index + 1)}"]`)
+        ?.focus({ preventScroll: true })
+    },
     onMove: (held, at) => {
       const moves = dragMoves(held, at, count)
       if (moves.length === 0) return
@@ -181,11 +158,11 @@ export function EditorGrid({
       following.current = true
       for (const { from, to } of moves) strip.onMove?.(from, to)
       if (held.length === 1) {
-        setPick(null)
+        edit.step({ kind: "pick", pick: null })
         announce(slideListCopy.moved((held[0] ?? first) + 1, first + 1))
         return
       }
-      setPick({ anchor: first, slides: new Set(held.map((_, offset) => first + offset)) })
+      edit.step({ kind: "pick", pick: { anchor: first, slides: new Set(held.map((_, offset) => first + offset)) } })
       announce(slideListCopy.movedSeveral(held.length, first + 1))
     },
   })
@@ -196,23 +173,11 @@ export function EditorGrid({
     strip.onAdd?.(undefined, index)
   }
 
-  function open(index: number) {
-    flushSync(() => {
-      strip.onSelect(index)
-      setEditing(true)
-    })
-  }
-
-  function choose(next: GridPick) {
-    setPick(next)
-    if (next !== null) announce(slideListCopy.selected(next.slides.size))
-  }
-
   function act(command: GridCommand, index: number) {
     const target = picked?.slides.size === 1 ? (pickedSlides(picked, current)[0] ?? index) : index
-    if (picked?.slides.size === 1) setPick(null)
+    if (picked?.slides.size === 1) edit.step({ kind: "pick", pick: null })
     if (command === "open") {
-      open(target)
+      edit.open(target)
       return
     }
     if (picked !== null && picked.slides.size > 1) {
@@ -245,7 +210,7 @@ export function EditorGrid({
   }
 
   function openMenu(index: number, anchor: MenuAnchor, pointer: boolean) {
-    setPick(null)
+    edit.step({ kind: "pick", pick: null })
     setStop(index)
     strip.onSelect(index)
     setMenu({ index, anchor, pointer })
@@ -269,12 +234,9 @@ export function EditorGrid({
     }
     if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "a") {
       event.preventDefault()
-      choose(pickAll(count, current))
-      return
-    }
-    if (event.key === "Escape" && picked !== null) {
-      event.preventDefault()
-      setPick(null)
+      const all = pickAll(count, current)
+      edit.step({ kind: "pick", pick: all })
+      if (all !== null) announce(slideListCopy.selected(all.slides.size))
       return
     }
     const command = gridCommand({
@@ -296,8 +258,11 @@ export function EditorGrid({
     const slide = focusMove(event.currentTarget, event.key)
     if (slide === null) return
     event.preventDefault()
-    if (event.shiftKey) choose(pickRange(picked, slide, current))
-    else setPick(null)
+    if (event.shiftKey) {
+      const next = pickRange(picked, slide, current)
+      edit.step({ kind: "pick", pick: next })
+      if (next !== null) announce(slideListCopy.selected(next.slides.size))
+    } else edit.step({ kind: "pick", pick: null })
     strip.onSelect(slide)
   }
 
@@ -312,119 +277,57 @@ export function EditorGrid({
       reachable={index === reachable}
       dragging={drag.held.includes(index)}
       busy={dragging !== null}
-      active={editing && index === current && slide !== undefined}
+      active={edit.editing && index === current && slide !== undefined}
       scale={percent / 100}
       width={width}
       height={height}
       shift={drag.shift(index)}
       thumb={(width) => strip.thumb(index, width)}
       slide={slide}
-      onClick={(event) => {
-        if (!event.shiftKey && !event.metaKey && !event.ctrlKey) {
-          setPick(null)
-          open(index)
-          return
-        }
-        const next = event.shiftKey ? pickRange(picked, index, current) : pickToggle(picked, index, current)
-        choose(next)
-        strip.onSelect(toggledCurrent(next, index))
+      onPress={(event) => {
+        drag.grab(index, event)
+        edit.press(index, event)
       }}
+      onPressed={(event) => edit.click(index, picked, event)}
+      onClick={(event) => edit.pick(index, event.shiftKey, event.metaKey || event.ctrlKey, picked)}
       onContextMenu={(event) => {
         event.preventDefault()
         event.currentTarget.focus()
         openMenu(index, pointAt(event.clientX, event.clientY), true)
       }}
-      onGrab={(event) => drag.grab(index, event)}
       onAdd={() => addAfter(index)}
     />
   )
 
   return (
-    <div className="flex h-full min-h-0 flex-col" inert={presenting} data-editor-grid>
-      <header className="flex h-24 shrink-0 items-start justify-between px-3 pt-3">
-        <Island>
-          <span className="flex size-8 items-center justify-center">
-            <AirdesignMark size={20} />
-          </span>
-          <DeckTitle
-            title={title}
-            className="pr-2 pl-0.5"
-            {...(onRename === undefined ? {} : { onRename })}
-            {...(onTrash === undefined ? {} : { onTrash })}
-          />
-          {save === null ? null : <SaveStatusLine status={save} />}
-          <Button
-            type="button"
-            variant="ghost"
-            className={cn(
-              "h-7 gap-1 rounded-md bg-white pr-2 pl-1.5 text-xs font-medium text-foreground hover:bg-white active:translate-y-0",
-              surfaceShadow,
-            )}
-            onClick={() => addAfter(reachable)}
-          >
-            <EditorIcon name="plus" size={13} />
-            New slide
-          </Button>
-          <span className="mx-1 block h-5 w-px bg-[var(--field-edge)]" />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8 rounded-md text-faint hover:bg-transparent active:translate-y-0"
-            aria-label="Slides"
-            onClick={onSlides}
-          >
-            <EditorIcon name="slide" size={16} />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8 rounded-md bg-line text-foreground hover:bg-line active:translate-y-0"
-            aria-label="Grid"
-            aria-pressed
-            onClick={() => undefined}
-          >
-            <EditorIcon name="grid" size={16} />
-          </Button>
-          {picked === null ? null : (
-            <span className="px-2 text-xs font-medium text-foreground tabular-nums" data-grid-selected>
-              {slideListCopy.selected(picked.slides.size)}
-            </span>
-          )}
-        </Island>
-        <Island>
-          <ViewBar
-            zoom={
-              size === null ? null : (
-                <ZoomMenu
-                  zoom={zoom}
-                  percent={Math.round(percent)}
-                  onZoom={chooseZoom}
-                  onSelection={() => viewport.selection([...selected])}
-                />
-              )
-            }
-          >
-            <PresentButton {...(onPresent === undefined ? {} : { onClick: () => onPresent(reachable) })} />
-            {size === null ? (
-              <ExportButton onClick={() => void onExport()} />
-            ) : (
-              <ExportControl
-                target={{
-                  name: title,
-                  count: strip.count,
-                  current: strip.current,
-                  size,
-                  slide: strip.thumb,
-                  onExport,
-                  ...(picked === null ? {} : { selected: pickedSlides(picked, current) }),
-                }}
-              />
-            )}
-          </ViewBar>
-        </Island>
-      </header>
+    <div
+      className="flex h-full min-h-0 flex-col"
+      inert={presenting}
+      data-editor-grid
+      data-keeps-selection
+      onKeyDownCapture={edit.key}
+      onFocusCapture={edit.focus}
+      onDoubleClickCapture={edit.double}
+    >
+      <GridHead
+        title={title}
+        strip={strip}
+        size={size}
+        zoom={zoom}
+        percent={percent}
+        picked={picked}
+        save={save}
+        onZoom={chooseZoom}
+        onSelection={() =>
+          viewport.selection(state.kind === "elements" || state.kind === "text" ? [current] : [...selected])
+        }
+        onAdd={() => addAfter(reachable)}
+        onSlides={onSlides}
+        onExport={onExport}
+        {...(onRename === undefined ? {} : { onRename })}
+        {...(onTrash === undefined ? {} : { onTrash })}
+        {...(onPresent === undefined ? {} : { onPresent: () => onPresent(reachable) })}
+      />
       <Announcer message={message} />
       {dragging === null ? null : (
         <GridDragGhost
@@ -439,23 +342,23 @@ export function EditorGrid({
       <div
         {...viewport.handlers}
         className={cn(
-          "relative min-h-0 flex-1 overflow-hidden touch-none",
+          "relative min-h-0 flex-1 overflow-hidden touch-none after:pointer-events-none after:absolute after:inset-0 after:content-['']",
+          "has-[>[data-focus-edge]:focus-visible]:after:shadow-[inset_0_0_0_var(--focus-ring-width)_var(--focus-ring)]",
           (pointer?.tool === "hand" || viewport.space) && "cursor-grab active:cursor-grabbing [&_*]:cursor-[inherit]",
         )}
         onClick={(event) => {
-          if (event.target instanceof Element && event.target.closest("[data-grid-card]") === null) {
-            setPick(null)
-            setEditing(false)
-          }
+          if (event.target instanceof Element && event.target.closest("[data-grid-card]") === null) edit.clear()
         }}
         data-grid-viewport
         data-slide-list
       >
         <div
           ref={list}
+          tabIndex={-1}
           role="group"
           aria-label={slideListCopy.listName}
-          className="absolute top-0 left-0"
+          className="absolute top-0 left-0 outline-none"
+          data-focus-edge
           style={{ width: layoutWidth, transformOrigin: "0 0" }}
           onKeyDown={onListKey}
           onFocus={(event) => {
@@ -508,26 +411,7 @@ export function EditorGrid({
         </div>
       </div>
       <div className="flex shrink-0 justify-center pb-6">
-        <EditorToolbar
-          activeTool={activeTool}
-          menuOpen={toolMenu}
-          panel={panel}
-          undo={undo}
-          {...(pointer === undefined ? {} : { pointer })}
-          {...(onText === undefined
-            ? {}
-            : {
-                onText: () => {
-                  setEditing(true)
-                  onText()
-                },
-              })}
-          {...(formatting === undefined ? {} : { formatting })}
-          {...(formats === undefined ? {} : { formats })}
-          {...(onTable === undefined ? {} : { onTable })}
-          {...(onPicture === undefined ? {} : { onPicture })}
-          {...(onPanel === undefined ? {} : { onPanel })}
-        />
+        <EditorToolbar {...insertsFirst(tools, edit.activate)} />
       </div>
     </div>
   )

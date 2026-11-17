@@ -164,7 +164,7 @@ test("a slide number, a slide's blank background and a touch drag reorder; an ob
   await hover(page, 2, 0.8)
   await page.mouse.up()
   await expect.poll(saved.order).toEqual(picked(saved.ids, [2, 1, 3, 4]))
-  await entry(page, 4).click()
+  await card(page, 4).locator("[data-thumb-node]").first().click({ force: true })
   const open = page.locator("[data-grid-edit]")
   await expect(open).toHaveCount(1)
   const shown = await open.boundingBox()

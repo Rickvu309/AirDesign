@@ -8,6 +8,7 @@ import {
   type RefObject,
 } from "react"
 import { dropPlace, dropTarget, edgePan, previewSlot, slotUnder, type GridSlot } from "@/editor/grid-drop"
+import { cardPress } from "@/editor/grid-hit"
 import { gridSpacing } from "@/editor/grid-viewport"
 import { still } from "@/editor/slide-opening"
 
@@ -22,7 +23,14 @@ type Preview = {
   readonly held: readonly number[]
 }
 
-type Press = { readonly pointer: number; readonly index: number; readonly start: Point; readonly dragged: boolean }
+type Press = {
+  readonly pointer: number
+  readonly index: number
+  readonly start: Point
+  readonly dragged: boolean
+  readonly shift: boolean
+  readonly toggle: boolean
+}
 
 const slideMotion = "transform var(--ease-panel)"
 
@@ -31,8 +39,6 @@ const slop = 4
 const frameTime = 1000 / 60
 
 const ghostOffset = 12
-
-const objects = "[data-grid-edit] :is([data-canvas-element], [data-selection], [data-grip], [contenteditable=true])"
 
 function rowOf(rows: readonly Range[], index: number): Range | undefined {
   return rows.find((row) => index >= row.start && index < row.end)
@@ -76,6 +82,7 @@ export function useGridDrag({
   panBy,
   onPanEnd,
   onMove,
+  onPick,
 }: {
   list: RefObject<HTMLDivElement | null>
   bar: RefObject<HTMLDivElement | null>
@@ -85,6 +92,7 @@ export function useGridDrag({
   selected: readonly number[]
   panBy: (delta: Point) => void
   onPanEnd: () => void
+  onPick: (index: number, shift: boolean, toggle: boolean) => void
   onMove: (held: readonly number[], at: number) => void
 }) {
   const press = useRef<Press | null>(null)
@@ -145,8 +153,15 @@ export function useGridDrag({
 
   function grab(index: number, event: PointerEvent<HTMLElement>) {
     if (event.button !== 0 || !event.isPrimary || press.current !== null) return
-    if (event.target instanceof Element && event.target.closest(objects) !== null) return
-    press.current = { pointer: event.pointerId, index, start: { x: event.clientX, y: event.clientY }, dragged: false }
+    if (cardPress(event) !== "slide") return
+    press.current = {
+      pointer: event.pointerId,
+      index,
+      start: { x: event.clientX, y: event.clientY },
+      dragged: false,
+      shift: event.shiftKey,
+      toggle: event.metaKey || event.ctrlKey,
+    }
   }
 
   function begin(index: number) {
@@ -229,8 +244,11 @@ export function useGridDrag({
     const held = press.current
     if (held === null || held.pointer !== event.pointerId) return
     press.current = null
-    if (!held.dragged) return
     swallowClick()
+    if (!held.dragged) {
+      onPick(held.index, held.shift, held.toggle)
+      return
+    }
     const drag = active.current
     if (drag === null) return
     const at = place.current

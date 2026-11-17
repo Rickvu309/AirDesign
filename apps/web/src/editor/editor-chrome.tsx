@@ -127,6 +127,7 @@ export function SidebarHead({
           size="icon"
           className="size-8 rounded-md text-quiet active:translate-y-0 group-has-[[data-deck-name-field]]/head:hidden"
           aria-label="Grid"
+          data-keeps-selection
           disabled={gridOff}
           {...(onGrid === undefined ? {} : { onClick: onGrid, "aria-pressed": false })}
         >

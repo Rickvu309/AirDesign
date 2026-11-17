@@ -170,7 +170,11 @@ function QuietFrame(props: QuietProps & { readonly written: string }) {
   const { element, layer } = useTextFit(props.element, scaled, props.written)
   const text = element.text
   return (
-    <div data-thumb-element={element.key} style={elementFrame(element, scaled, false, unshown)}>
+    <div
+      data-thumb-element={element.key}
+      data-thumb-node={element.id ?? undefined}
+      style={elementFrame(element, scaled, false, unshown)}
+    >
       <ShapeArt element={element} scaled={scaled} />
       <PictureTone element={element} />
       <DiagramArt element={element} scaled={scaled} />

@@ -81,4 +81,12 @@ describe("quiet SlideCanvas", () => {
     })
     expect(host.querySelector("[data-thumb-paint]")?.textContent).toContain("Hello!")
   })
+
+  it("marks the elements a person can select, and leaves layout art unmarked", async () => {
+    const host = await paint({ ...wide, elements: [{ ...shape(id), key: "art", id: null }, shape(id)] })
+    expect([...host.querySelectorAll("[data-thumb-node]")].map((each) => each.getAttribute("data-thumb-node"))).toEqual(
+      ["256.2"],
+    )
+    expect(host.querySelectorAll("[data-thumb-element]")).toHaveLength(2)
+  })
 })

@@ -2,16 +2,6 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { EditorGrid } from "@/editor/editor-grid"
 import type { SlideStrip } from "@/editor/slide-sidebar"
-import type { UndoButtonsState } from "@/editor/undo-buttons"
-
-const undo: UndoButtonsState = {
-  undoLabel: "Undo",
-  redoLabel: "Redo",
-  canUndo: false,
-  canRedo: false,
-  onUndo: () => undefined,
-  onRedo: () => undefined,
-}
 
 const strip: SlideStrip = {
   count: 4,
@@ -36,7 +26,6 @@ function grid(over: Partial<SlideStrip> = {}): string {
       strip={{ ...strip, ...over }}
       onSlides={() => undefined}
       onExport={() => undefined}
-      undo={undo}
     />,
   )
 }
@@ -112,7 +101,6 @@ describe("slide grid", () => {
         size={{ width: 12_192_000, height: 6_858_000 }}
         onSlides={() => undefined}
         onExport={() => undefined}
-        undo={undo}
       />,
     )
     const bar = tags(html, /<div[^>]*data-view-bar[^>]*>[\s\S]*?Export<\/button>/g)[0] ?? ""
