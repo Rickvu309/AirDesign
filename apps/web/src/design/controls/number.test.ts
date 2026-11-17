@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { scrubbed } from "@/design/controls/number"
+import { chosenStep, scrubbed } from "@/design/controls/number"
 
 const plain = { shiftKey: false, altKey: false }
 const shift = { shiftKey: true, altKey: false }
@@ -21,5 +21,18 @@ describe("scrubbing a number field", () => {
 
   it("steps by the field's own step", () => {
     expect(scrubbed({ value: 50, x: 0 }, 4, plain, 5)).toEqual({ value: 60, x: 4 })
+  })
+})
+
+describe("a preset list", () => {
+  const steps = [100, 75, 50, 25, 10, 0]
+
+  it("marks the preset that matches the field and marks nothing else", () => {
+    expect(chosenStep("75", steps)).toBe(75)
+    expect(chosenStep("10", steps)).toBe(10)
+    expect(chosenStep("37", steps)).toBeNull()
+    expect(chosenStep("", steps)).toBeNull()
+    expect(chosenStep("8", [0, 4, 8, 16])).toBe(8)
+    expect(chosenStep("80", [0, 4, 8, 16])).toBeNull()
   })
 })

@@ -183,6 +183,16 @@ export function ControlView({ control, palette, onChange }: ControlProps) {
   )
 }
 
+function stripColumns(strip: readonly PanelControl[]): string {
+  if (strip.length === 2 && strip[0]?.field === "fill.solid" && strip[1]?.field === "width")
+    return "minmax(0, 1fr) 5.25rem"
+  if (strip.every((control) => control.kind === "action"))
+    return strip
+      .map((control) => `${String(control.desc.kind === "choice" ? control.desc.options.length : 1)}fr`)
+      .join(" ")
+  return `repeat(${strip.length}, minmax(0, 1fr))`
+}
+
 export function SectionStrips({
   strips,
   palette,
@@ -196,21 +206,12 @@ export function SectionStrips({
     <div
       key={strip.map((control) => control.field).join(" ")}
       className="grid items-start gap-2"
-      style={{
-        gridTemplateColumns: strip.every((control) => control.kind === "action")
-          ? strip
-              .map((control) => `${String(control.desc.kind === "choice" ? control.desc.options.length : 1)}fr`)
-              .join(" ")
-          : `repeat(${strip.length}, minmax(0, 1fr))`,
-      }}
+      style={{ gridTemplateColumns: stripColumns(strip) }}
     >
       {strip.map((control) => (
-        <ControlView
-          key={control.field}
-          control={control}
-          palette={palette}
-          onChange={(value) => onChange(control, value)}
-        />
+        <div key={control.field} className="min-w-0">
+          <ControlView control={control} palette={palette} onChange={(value) => onChange(control, value)} />
+        </div>
       ))}
     </div>
   ))

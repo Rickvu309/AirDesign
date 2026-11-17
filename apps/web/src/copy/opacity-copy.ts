@@ -1,1 +1,6 @@
-export const opacityCopy = { section: "Opacity", label: "Opacity" } as const
+export const opacityCopy = {
+  section: "Opacity",
+  label: "Opacity",
+  slider: "Opacity slider",
+  shadow: "Shadow opacity",
+} as const

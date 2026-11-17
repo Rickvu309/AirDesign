@@ -48,7 +48,9 @@ Preconditions:
 
 ## Gotchas
 
-- Corners is a radius in pixels, with 9,525 EMU per pixel. It writes `geometry.shape`: `roundRect` with `adj = round(radius / shorter side × 100000)`, capped at 50000. Zero writes `rect`. Ellipses, arrows and custom geometry have no Corners row.
+- Corners is a radius in pixels, with 9,525 EMU per pixel. It writes `geometry.shape`: `roundRect` with `adj = round(radius / shorter side × 100000)`, capped at 50000. Zero writes `rect`. Ellipses, arrows and custom geometry have no Corners row. The field has a list of 0, 4, 8, 16, 24 and 32. A typed number that is not in the list stays in the field with nothing marked.
+
+- Opacity on a text box, shape or picture has a checkerboard in the field and a list of 100, 75, 50, 25, 10 and 0. A line's folded Opacity is the field only, and a slide has no Opacity row. Border shows Color and Border width once the style is solid, dashed or dotted. The width list is 1, 2, 4, 6 and 8, the field shows the number with a line glyph and no unit, and Color takes the room beside it. A line's Border has Solid, Dashed and Dotted; a shape or picture also has None, which hides Color and Border width. Shadow's three strengths have no names on the button face. While one is pressed, a caption reads Opacity, the slider is named Opacity slider, and the percent field is named Shadow opacity. Both write the shadow colour's alpha, and the strength stays pressed. None, or a shadow Effects has changed, hides that row. The lists and the three strength sizes are the panel's own stand-ins.
 
 - A shape inside a group has no `Position and size`: the engine refuses box edits on a grouped child (`group-box`), pinned as `it.fails` in `panel-order.test.ts`.
 

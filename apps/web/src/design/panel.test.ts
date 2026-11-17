@@ -1,5 +1,7 @@
 import { elementId, writeTextValue, type ScopedElement } from "@airdesign/document"
 import { expect, it } from "vitest"
+import { opacityCopy } from "@/copy/opacity-copy"
+import { opacitySteps } from "./opacity-control"
 import { panelOf, panelOfMany, partControl, type ShownField } from "./panel"
 
 const connector: ScopedElement = {
@@ -78,6 +80,20 @@ it("shows Mixed when the alphas differ, and full opacity when nothing shows a co
   })
   expect(opacityOf(shape, {})).toMatchObject({ value: 100_000, mixed: false })
   expect(opacityOf(connector, { "fill.alpha": 10_000, "line.alpha": 50_000 })).toMatchObject({ value: 50_000 })
+})
+
+it("lists Opacity percents on a text box, shape and picture, and not on a line or a slide", () => {
+  const picture = { ...shape, facts: { ...shape.facts, kind: "picture" as const }, value: null }
+  const drawn = { ...shape, facts: { ...shape.facts, text: false }, value: null }
+  const slide = { ...shape, facts: { ...shape.facts, kind: "slide" as const } }
+  expect(opacityOf(shape, {})?.label).toBe(opacityCopy.label)
+  expect(opacityOf(shape, {})?.look.steps).toEqual([...opacitySteps])
+  expect(opacityOf(drawn, {})?.look.steps).toEqual([...opacitySteps])
+  expect(opacityOf(picture, { "line.alpha": 100_000 })?.look.steps).toEqual([...opacitySteps])
+  expect(opacityOf(picture, { "line.alpha": 100_000 })?.look.glyph).toBeDefined()
+  expect(opacityOf(connector, { "line.alpha": 100_000 })?.look.steps).toBeUndefined()
+  expect(opacityOf(connector, { "line.alpha": 100_000 })?.look.glyph).toBeUndefined()
+  expect(opacityOf(slide, { "fill.alpha": 50_000 })).toBeUndefined()
 })
 
 it("offers no Opacity on a group, or on a shape whose fill the index keeps", () => {
