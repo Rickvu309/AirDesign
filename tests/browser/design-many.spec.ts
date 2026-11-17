@@ -28,7 +28,7 @@ test("two selected shapes share one panel that reads Mixed, a colour picked ther
   await oval.click({ position: { x: 4, y: 4 }, modifiers: ["Shift"] })
   const panel = page.locator("[data-design-element]")
   await expect(panel).toHaveAttribute("data-design-element", /^\d+\.4 \d+\.5$/)
-  await expect(panel).toContainText(designCopy.elements(2))
+  await expect(panel).toContainText(designCopy.selected(2))
   await expect(panel.getByRole("heading")).toHaveText([
     fillCopy.value,
     opacityCopy.label,
@@ -63,4 +63,37 @@ test("two selected shapes share one panel that reads Mixed, a colour picked ther
   await expect.poll(() => filled(oval)).toBe(accentOne)
   await page.getByRole("button", { name: undoCopy.undoNamed.fill, exact: true }).click()
   await expect.poll(() => filled(rectangle)).toBe(accentOne)
+})
+
+test("replaces two text boxes in one undo step and keeps each box's formatting", async ({ page }) => {
+  await openDeck(page, "element-added.pptx")
+  const first = shapeAt(page, "2")
+  const second = shapeAt(page, "3")
+  const runs = [first.locator("[data-run]").first(), second.locator("[data-run]").first()]
+
+  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await first.click({ position: { x: 4, y: 4 } })
+  await second.click({ position: { x: 4, y: 4 }, modifiers: ["Shift"] })
+  const panel = page.locator("[data-design-element]")
+  const field = panel.getByRole("textbox", { name: designCopy.multiEditText })
+  await expect(field).toHaveAttribute("placeholder", designCopy.mixed)
+  const styles = await Promise.all(runs.map((run) => run.evaluate((el) => getComputedStyle(el).fontSize)))
+  expect(new Set(styles).size).toBe(2)
+  await field.fill("Discard this")
+  await field.press("Escape")
+  await expect(field).toHaveValue("")
+  await field.fill("Shared footer")
+  await field.press("ControlOrMeta+Enter")
+  await expect(first).toHaveText("Shared footer")
+  await expect(second).toHaveText("Shared footer")
+  for (const [at, run] of runs.entries()) await expect(run).toHaveCSS("font-size", styles[at] ?? "")
+
+  await page.getByRole("button", { name: undoCopy.undoNamed.text, exact: true }).click()
+  await expect(first).toHaveText("Hello")
+  await expect(second).toHaveText("Added text")
+  await page.getByRole("button", { name: undoCopy.redoNamed.text, exact: true }).click()
+  await expect(second).toHaveText("Shared footer")
+  await page.reload()
+  await expect(first).toHaveText("Shared footer")
+  await expect(second).toHaveText("Shared footer")
 })

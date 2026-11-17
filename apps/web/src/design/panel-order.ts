@@ -71,11 +71,12 @@ export const panelOrder: Readonly<Record<PanelKind, readonly Place[]>> = {
   kept: [open("identity")],
   many: [
     open("alignment"),
+    open("text"),
     open("fill"),
     open("opacity"),
+    open("corners"),
     open("border"),
     open("shadow"),
-    open("text"),
     shut("box"),
     shut("line"),
     shut("effects"),

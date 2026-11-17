@@ -252,13 +252,13 @@ it("reads Mixed where two shapes differ and sets the fill of both in one change"
   })
 })
 
-it("leaves out what only one element can hold, such as its text and its name", () => {
+it("keeps text content out of the shared formatting controls", () => {
   const panel = panelOfMany([filled("258.2", null, 0), filled("258.3", null, 0)])
   expect(panel.sections.map((section) => section.trait)).toEqual([
     "alignment",
+    "text",
     "fill",
     "opacity",
-    "text",
     "box",
     "line",
     "effects",
@@ -399,4 +399,37 @@ it("leaves text content to the canvas and omits alignment when moves are refused
   expect(panelOf(shape, { reads: {}, moves: false }).sections.map((section) => section.trait)).not.toContain(
     "alignment",
   )
+})
+
+it("shows text controls first for a text selection and hides corners and shadow", () => {
+  const text = panelOfMany([filled("258.2", null, 0), filled("258.3", null, 0)])
+  const sections = text.sections.map(({ trait }) => trait)
+  expect(sections.slice(0, 4)).toEqual(["alignment", "text", "fill", "opacity"])
+  expect(sections).not.toContain("corners")
+  expect(sections).not.toContain("shadow")
+})
+
+it("hides opacity and text controls when a line joins the selection", () => {
+  const line = panelOf(connector, { reads: {}, moves: true })
+  const mixed = panelOfMany([filled("258.2", null, 0), line])
+  expect(mixed.sections.map(({ trait }) => trait)).not.toContain("opacity")
+  expect(mixed.sections.map(({ trait }) => trait)).not.toContain("text")
+})
+
+it("shows corners when every selected shape supports it", () => {
+  const rect = (node: string, size: number) =>
+    panelOf(
+      {
+        ...shape,
+        node: elementId(node),
+        facts: { ...shape.facts, text: false },
+        box: { x: 0, y: 0, cx: size, cy: size },
+      },
+      { reads: {}, moves: true, fields: { "geometry.shape": { value: { preset: "rect" }, own: true } } },
+    )
+  const panel = panelOfMany([rect("258.2", 914_400), rect("258.3", 457_200)])
+  expect(panel.sections.find(({ trait }) => trait === "corners")?.strips.flat()[0]).toMatchObject({
+    value: 0,
+    mixed: false,
+  })
 })

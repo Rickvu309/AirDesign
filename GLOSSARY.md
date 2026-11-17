@@ -170,7 +170,7 @@ The agent built into AirDesign. It reads a deck, changes what a person can chang
 _Avoid_: the assistant, the AI
 
 **design panel**:
-The panel beside a slide that sets the selection's appearance and geometry. With no selection it sets the slide background and deck theme. Shared fields set every selected element in one undo step; the title shows their count.
+The panel beside a slide that sets the selection's appearance and geometry. With no selection it sets the slide background and deck theme. Shared fields set every selected element in one undo step. The title shows how many are selected. Multi-edit text replaces the words of several selected text elements in one undo step.
 _Avoid_: inspector, properties, format pane
 
 **Mixed**:
