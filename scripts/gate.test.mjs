@@ -170,3 +170,30 @@ same("a gate that cannot choose its tests fails and stamps nothing", unchosen, "
 console.log("gate tests passed")
 
 if (!named(cheapSteps).includes("interface-width")) throw new Error("unused package exports must stop the gate")
+
+const reported = []
+let reportStamp = 0
+await runGate({
+  later: async () => full,
+  run: async (step) => {
+    reported.push(step)
+    return 0
+  },
+  stamp: () => {
+    reportStamp += 1
+  },
+  report: async () => {
+    throw new Error("deliberate report failure")
+  },
+})
+const unreported = []
+await runGate({
+  later: async () => full,
+  run: async (step) => {
+    unreported.push(step)
+    return 0
+  },
+  stamp: () => {},
+})
+same("even a crashed report changes no chosen step", reported, unreported)
+same("a crashed report cannot change push eligibility", reportStamp, 1)

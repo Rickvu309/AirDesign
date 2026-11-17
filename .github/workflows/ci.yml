@@ -88,6 +88,13 @@ jobs:
         uses: ./.github/actions/postgres
       - if: matrix.part != 'pptx' && steps.work.outputs.needed == 'true'
         run: pnpm check --part=${{ matrix.part }}${{ matrix.shard && format(' --shard={0}', matrix.shard) || '' }}
+      - if: always() && steps.work.outputs.needed == 'true' && (matrix.part == 'main' || matrix.part == 'browser' || matrix.part == 'design')
+        continue-on-error: true
+        uses: ./.github/actions/affected-report
+        with:
+          base: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+          part: ${{ matrix.part }}
+          shard: ${{ strategy.job-index }}
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'main' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         continue-on-error: true

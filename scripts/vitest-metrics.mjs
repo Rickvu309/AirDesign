@@ -54,7 +54,28 @@ export default class VitestMetrics {
     this.root = ctx.config.root
   }
 
-  onTestRunEnd(modules) {
+  onTestRunEnd(modules, errors = [], reason) {
     writeRun(this.root, countRun(modules))
+    try {
+      const tests = modules.map((mod) => ({
+        file: path.relative(this.root, mod.moduleId),
+        status: mod.state(),
+        duration: mod.diagnostic().duration,
+        failures: [...mod.children.allTests()]
+          .filter((test) => test.result().state === "failed")
+          .map((test) => test.fullName),
+      }))
+      const complete =
+        errors.length === 0 &&
+        reason !== "interrupted" &&
+        tests.every((test) => ["passed", "failed", "skipped"].includes(test.status))
+      fs.mkdirSync(path.join(this.root, "test-results"), { recursive: true })
+      fs.writeFileSync(
+        path.join(this.root, "test-results/affected-unit-results.json"),
+        `${JSON.stringify({ complete, tests })}\n`,
+      )
+    } catch (error) {
+      console.error(`affected unit results incomplete: ${error.message}`)
+    }
   }
 }
