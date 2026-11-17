@@ -1,4 +1,4 @@
-import { useCallback, useId, useMemo, useSyncExternalStore, type ReactNode } from "react"
+import { useCallback, useId, useState, useMemo, useSyncExternalStore, type ReactNode } from "react"
 import {
   openRegister,
   readElementId,
@@ -29,11 +29,14 @@ import {
   shownLine,
   shownTextStyle,
   shownTheme,
+  templateStyle,
   shownTurn,
   type DeckTraits,
 } from "@airdesign/pptx"
 import type { PaintStore, Selection } from "@airdesign/render"
 import type { CommitOutcome } from "@/commit-edit"
+import { SlidersHorizontal } from "lucide-react"
+import { TemplateStyleCard } from "@/editor/template-style-card"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
 import type { Palette, Swatch } from "@/design/color-choices"
@@ -347,19 +350,44 @@ function themeSection(deck: DesigningDeck): PanelSection | null {
 }
 
 function LiveThemeDesign({ deck }: { deck: DesigningDeck }) {
+  const [open, setOpen] = useState(false)
+  const parts = deck.shown.displayParts.current
+  const part = readSlides(parts)[deck.shown.current]?.part
+  const style = part === undefined ? null : templateStyle(parts, part)
   const section = themeSection(deck)
   if (section === null) return null
   return (
-    <DesignSection title={section.label} last>
-      <div className="flex flex-col gap-2" data-design-theme>
-        <SectionStrips
-          strips={section.strips}
-          palette={{ theme: [], deck: colorsIn(deck.shown.displayParts.current) }}
-          onChange={(control, value) =>
-            changeDesign(deck, () => rebasedChange(themeSection(deck)?.strips.flat() ?? [], control, value))
-          }
-        />
-      </div>
+    <DesignSection
+      title={designCopy.templateStyle}
+      action={
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-6"
+          aria-label={designCopy.editDeckTheme}
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+        >
+          <SlidersHorizontal className="size-3.5" />
+        </Button>
+      }
+    >
+      {style === null ? null : <TemplateStyleCard style={style} open={open} onOpen={() => setOpen(!open)} />}
+      {open ? (
+        <>
+          <p className="text-[length:var(--type-caption)] text-muted-foreground">{designCopy.deckThemeScope}</p>
+          <div className="flex flex-col gap-2" data-design-theme>
+            <SectionStrips
+              strips={section.strips}
+              palette={{ theme: [], deck: colorsIn(deck.shown.displayParts.current) }}
+              onChange={(control, value) =>
+                changeDesign(deck, () => rebasedChange(themeSection(deck)?.strips.flat() ?? [], control, value))
+              }
+            />
+          </div>
+        </>
+      ) : null}
     </DesignSection>
   )
 }
@@ -403,6 +431,7 @@ export function DesignView({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto" data-design-panel>
       <DesignHead>{designCopy.slide(shown.number)}</DesignHead>
+      {children}
       <DesignSection title={designCopy.background} last={children === null}>
         <UnionControl
           control={control}
@@ -432,7 +461,6 @@ export function DesignView({
           }
         />
       </DesignSection>
-      {children}
     </div>
   )
 }

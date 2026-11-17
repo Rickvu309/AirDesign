@@ -46,6 +46,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const fonts = (locator) =>
     locator.evaluate((node) => [...node.querySelectorAll("*")].map((each) => each.style.fontFamily).join(" | "))
   await page.getByRole("button", { name: "Design", exact: true }).click()
+  await page.locator("[data-template-style]").click()
   const theme = page.locator("[data-design-theme]")
   await expect(theme).toBeVisible()
   await capture("theme-panel")
@@ -120,11 +121,21 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   expect(changed.sort()).toEqual(themes)
   for (const part of themes) {
     const xml = new TextDecoder().decode(parts.get(part))
+    for (const [kind, font] of [
+      ["major", "Georgia"],
+      ["minor", "Verdana"],
+    ]) {
+      const latin = new RegExp(`<a:${kind}Font>(<a:latin[^>]*>)`).exec(
+        new TextDecoder().decode(original.get(part)),
+      )?.[1]
+      expect(latin).toBeDefined()
+      expect(xml).toContain(latin.replace(/typeface="[^"]*"/, `typeface="${font}"`))
+    }
     for (const written of [
       '<a:accent1><a:srgbClr val="C00000"/></a:accent1>',
       '<a:accent2><a:srgbClr val="00B050"/></a:accent2>',
-      '<a:majorFont><a:latin typeface="Georgia"/>',
-      '<a:minorFont><a:latin typeface="Verdana"/>',
+      '<a:majorFont><a:latin typeface="Georgia"',
+      '<a:minorFont><a:latin typeface="Verdana"',
     ])
       expect(xml).toContain(written)
   }
@@ -137,6 +148,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", page.url().split("/").at(-1))
   await page.getByRole("button", { name: "Design", exact: true }).click()
+  await page.locator("[data-template-style]").click()
   await expect(theme.getByRole("button", { name: "Accent 1", exact: true })).toHaveAttribute("title", /#C00000/)
   await expect(theme.getByRole("textbox", { name: "Heading font", exact: true })).toHaveValue("Georgia")
   await expect.poll(() => fonts(painted("ppt/slides/slide1.xml#2"))).toContain("Georgia")

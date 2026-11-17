@@ -13,6 +13,7 @@ test("a theme colour takes a picked hex colour, every shape that names it repain
 }) => {
   await openDeck(page, "shapes-added.pptx")
   await page.getByRole("button", { name: "Design", exact: true }).click()
+  await page.locator("[data-template-style]").click()
   const theme = page.locator("[data-design-theme]")
   const accent = theme.getByRole("button", { name: "Accent 1", exact: true })
   await expect(theme.locator('[data-control="hex"]')).toHaveCount(12)

@@ -72,12 +72,14 @@ describe("the deck's theme", () => {
       const before = text(parts, part)
       const after = text(exported, part)
       expect(after).toContain('<a:accent1><a:srgbClr val="C00000"/></a:accent1>')
-      expect(after).toContain('<a:majorFont><a:latin typeface="Georgia"/><a:ea typeface=""/><a:cs typeface=""/>')
+      expect(after).toContain(
+        '<a:majorFont><a:latin typeface="Georgia" panose="020F0302020204030204"/><a:ea typeface=""/><a:cs typeface=""/>',
+      )
       expect(after).toContain('<a:font script="Jpan" typeface="游ゴシック Light"/>')
       expect(after.replace('val="C00000"', 'val="4472C4"')).toBe(
         before.replace(
           '<a:latin typeface="Calibri Light" panose="020F0302020204030204"/>',
-          '<a:latin typeface="Georgia"/>',
+          '<a:latin typeface="Georgia" panose="020F0302020204030204"/>',
         ),
       )
     }
@@ -90,7 +92,9 @@ describe("the deck's theme", () => {
     const exported = exportParts(parts, themed({ lt1: { set: "FFF2CC" }, minor: { set: 'Fira "Sans" & Co' } }))
     const after = text(exported, "ppt/theme/theme1.xml")
     expect(after).toContain('<a:lt1><a:srgbClr val="FFF2CC"/></a:lt1>')
-    expect(after).toContain('<a:minorFont><a:latin typeface="Fira &quot;Sans&quot; &amp; Co"/>')
+    expect(after).toContain(
+      '<a:minorFont><a:latin typeface="Fira &quot;Sans&quot; &amp; Co" panose="020F0502020204030204"/>',
+    )
     expect(shownTheme(exported, "ppt/slides/slide1.xml")).toMatchObject({ lt1: "FFF2CC", minor: 'Fira "Sans" & Co' })
   })
 

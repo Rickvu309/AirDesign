@@ -3,6 +3,7 @@ import { decodedXmlText, spliceBytes, type MarkupElement } from "./element-span.
 import { encodeUtf8 } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { readSlides } from "./read-shapes.js"
+import { withAttribute } from "./slot-edit.js"
 import { xmlAttribute } from "./shape-write.js"
 import { markupChildren } from "./text-value-route.js"
 import { slideTheme } from "./theme-swatches.js"
@@ -58,7 +59,13 @@ function withSlot(bytes: Uint8Array, slot: ThemeSlot, hex: string): Uint8Array {
 function withFont(bytes: Uint8Array, font: Font, typeface: string): Uint8Array {
   const latin = encodeUtf8(`<a:latin typeface="${xmlAttribute(typeface)}"/>`)
   const held = found(bytes, fontPath(font))
-  if (held !== undefined) return spliceBytes(bytes, [{ start: held.start, end: held.end, next: latin }])
+  if (held !== undefined) {
+    const next = withAttribute(
+      "typeface",
+      xmlAttribute(typeface).replaceAll("'", "&apos;"),
+    )(bytes.subarray(held.start, held.end))
+    return spliceBytes(bytes, [{ start: held.start, end: held.end, next }])
+  }
   const scheme = found(bytes, fontPath(font).slice(0, -1))
   if (scheme === undefined || scheme.selfClosing) throw new Error("theme-font")
   return spliceBytes(bytes, [{ start: scheme.openEnd, end: scheme.openEnd, next: latin }])
