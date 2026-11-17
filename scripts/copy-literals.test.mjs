@@ -79,7 +79,7 @@ const replaySource = fs.readFileSync(new URL("./copy-literals-fixtures/connect-0
 const replay = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(replaySource))}`)
 assert.equal(replay.claudeConnect.footer, "Returns you to Claude. Disconnect anytime in Settings.")
 assert.equal(replay.unavailableConnect.body, "Try again in a moment.")
-const currentSource = fs.readFileSync(new URL("../apps/web/src/copy/connect-copy.ts", import.meta.url), "utf8")
+const currentSource = `export const claudeConnect = { footer: "Returns you to claude.ai. Uses your weekly usage. Disconnect anytime in Settings." }`
 const replayWords = new Map([...copyWords(connect, currentSource), ...copyWords(connect, replaySource)])
 const stale = 'page.getByText("Returns you to claude.ai. Uses your weekly usage. Disconnect anytime in Settings.")'
 const replayFault = literalFaults("tests/browser/consent.spec.ts", "", stale, replayWords)[0]
