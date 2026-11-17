@@ -93,3 +93,5 @@ export {
 } from "./slide-change-wire.js"
 
 export { fontRoutes } from "@airdesign/fonts"
+
+export { authorableTrait, authorableValue, authorableSlide } from "./authoring.js"

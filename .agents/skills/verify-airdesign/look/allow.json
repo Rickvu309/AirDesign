@@ -30,24 +30,6 @@
     "reason": "The demo's pause button gets its click handler from playEditorDemoAnimation with addEventListener, which the detector cannot see; product-demo-pause.spec.ts clicks it."
   },
   {
-    "page": "table-cell-undone",
-    "detector": "invisible-control",
-    "selector": "[data-table-text]",
-    "reason": "An empty table cell with the caret in it is drawn by the cell's borders, which sit on its parent. The text area inside has nothing of its own to paint, as a new table's first cell does."
-  },
-  {
-    "page": "table-bar",
-    "detector": "invisible-control",
-    "selector": "[data-table-text]",
-    "reason": "An empty table cell shows the cell's own borders and fill, as in PowerPoint. The text area inside the cell has no frame of its own, so the detector sees an empty editable area."
-  },
-  {
-    "page": "design-table",
-    "detector": "invisible-control",
-    "selector": "[data-table-text]",
-    "reason": "An empty table cell shows the cell's own borders, as in PowerPoint. The text area inside the cell has no frame of its own, so the detector sees an empty editable area."
-  },
-  {
     "page": "connector-*",
     "detector": "empty-region",
     "selector": "[data-design-panel] > section:nth-of-type(4)",

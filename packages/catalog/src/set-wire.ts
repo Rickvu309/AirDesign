@@ -1,3 +1,4 @@
+import { authorableTrait } from "./authoring.js"
 import {
   inheritable,
   presetAdjusts,
@@ -66,7 +67,9 @@ function descOf(trait: TraitName, field: string): Desc | undefined {
 }
 
 function wiredTrait(key: string): TraitName | undefined {
-  return traitNames.find((trait) => trait === key && Object.keys(wireFields(trait)).length > 0)
+  return traitNames.find(
+    (trait) => trait === key && authorableTrait(trait) && Object.keys(wireFields(trait)).length > 0,
+  )
 }
 
 function inherited(trait: TraitName, field: string): AgentRead {

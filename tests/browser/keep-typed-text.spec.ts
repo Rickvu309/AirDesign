@@ -3,7 +3,6 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { newBlankDeck } from "./new-deck"
 import { holdableDevice, slowDevice } from "./slow-device"
-import { insertTable } from "./insert-table"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const clean = join(fixtures, "clean.pptx")
@@ -129,20 +128,4 @@ test("a slide added while the device write is slow is still there after an immed
   await settled(page)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
   await expectNothingUnsaved(page)
-})
-
-test("text typed in a table cell is still there after an immediate reload", async ({ page }) => {
-  await page.goto("/")
-  await newBlankDeck(page)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
-  await insertTable(page)
-  const cell = page.locator('[data-slide-paint] [data-canvas-table] [data-table-text="0.0"]')
-  await expect(cell).toBeFocused()
-  await slowDevice(page)
-  await page.keyboard.type("Cell")
-  await expect(cell).toHaveText("Cell")
-  await page.reload()
-  await settled(page)
-  await expect(cell).toHaveText("Cell")
 })

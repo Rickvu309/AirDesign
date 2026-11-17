@@ -7,8 +7,6 @@ import { PanelHead, ZoomReadout } from "@/editor/editor-chrome"
 import { openWith } from "@/editor/slide-opening"
 import { EditorGrid } from "@/editor/editor-grid"
 import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
-import { TableSizeGrid } from "@/editor/table-tool"
-import type { TableSize } from "@/element-edit"
 import { usePointerTool } from "@/editor/pointer-tool"
 import { RevenueSlide } from "@/editor/revenue-slide"
 import { SlideSidebar, type SidebarRun, type SlideStrip } from "@/editor/slide-sidebar"
@@ -30,8 +28,6 @@ import { PresentLayer } from "@/present/present-layer"
 import type { ShownSlide } from "@/present/slide-shows"
 import { usePresent } from "@/present/use-present"
 
-const shownSize = { rows: 4, columns: 3 }
-
 export type EditorRail = "slides" | "images" | "shapes" | "text"
 
 export type EditorDeck = {
@@ -48,7 +44,6 @@ export type EditorDeck = {
   readonly onRename?: (name: string) => void
   readonly formatting?: TextFormatting
   readonly deckColors?: readonly string[]
-  readonly onTable?: (size: TableSize) => void
   readonly onPicture?: (file: File) => void
   readonly onShape?: (geometry: Geometry) => void
   readonly onIcon?: (name: string) => void
@@ -71,7 +66,6 @@ export type EditorShellProps = {
   toolMenu?: boolean
   templatePicker?: boolean
   shapeTray?: boolean
-  tablePicker?: boolean
   toast?: ReactNode
   overlay?: ReactNode
   formats?: FormatShown
@@ -92,7 +86,6 @@ export function EditorShell({
   toolMenu = false,
   templatePicker = false,
   shapeTray = false,
-  tablePicker = false,
   toast,
   overlay,
   formats,
@@ -148,7 +141,6 @@ export function EditorShell({
     ...(deck?.formatting === undefined ? {} : { formatting: deck.formatting }),
     ...(deck?.deckColors === undefined ? {} : { deckColors: deck.deckColors }),
     ...(formats === undefined ? {} : { formats }),
-    ...(deck?.onTable === undefined ? {} : { onTable: deck.onTable }),
     ...(deck?.onPicture === undefined ? {} : { onPicture: deck.onPicture }),
     ...(deck?.onShape === undefined ? {} : { onShape: deck.onShape }),
     ...(deck?.onIcon === undefined ? {} : { onIcon: deck.onIcon }),
@@ -275,9 +267,9 @@ export function EditorShell({
             <EditorToolbar {...tools} />
           </div>
         </div>
-        {shapeTray || tablePicker ? (
+        {shapeTray ? (
           <div className="absolute inset-x-0 bottom-[72px] flex justify-center">
-            {shapeTray ? <ShapeTray /> : <TableSizeGrid picked={shownSize} onPick={() => {}} onSize={() => {}} />}
+            <ShapeTray />
           </div>
         ) : null}
       </div>

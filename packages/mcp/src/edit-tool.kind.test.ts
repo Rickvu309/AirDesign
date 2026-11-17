@@ -68,7 +68,7 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
         ["256.3", "a shape that holds no text", "airdesign_edit_deck with op add and kind shape"],
         ["256.4", "a picture", "airdesign_edit_deck with op add and kind shape"],
         ["256.5", "a chart", "Tell the person"],
-        ["256.6", "a table", "Set its cells with table's value"],
+        ["256.6", "a table", "Table cells cannot be edited"],
         ["256.7", "a group", "grouped"],
         ["256.8", "kept exactly as the file has it", "Leave it"],
         ["256.9", "a line", "airdesign_edit_deck with op add and kind shape"],

@@ -8,7 +8,7 @@ import { tableResizedExportName } from "../../scripts/pptx-cases/trait-table.mjs
 import { designing, unfold, openDeck, settled, storedRows } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { importTitleDeck } from "./new-deck"
-import { insertTable } from "./insert-table"
+import { historicalTable } from "./historical-table"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
 
@@ -89,17 +89,12 @@ test("a table resizes by its corner and by Width, scales its columns and rows, a
 }, testInfo) => {
   const judged = join(process.cwd(), "tests/browser", tableResizedExportName)
   await rm(judged, { force: true })
-  await page.goto("/")
-  await importTitleDeck(page)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
-  await insertTable(page)
+  await historicalTable(page)
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
-  await expect(table.locator('[data-table-text="0.0"]')).toBeFocused()
-  await page.keyboard.type("Region")
-  await page.keyboard.press("Escape")
-  await expect(table).toBeFocused()
-  const panel = await designing(page, table)
+  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await table.click()
+  const panel = page.locator("[data-design-element]")
+  await expect(panel).toBeVisible()
   await unfold(panel, boxCopy.section)
   const slide = await page.locator("[data-slide-paint]").boundingBox()
   if (slide === null) throw new Error("no slide")

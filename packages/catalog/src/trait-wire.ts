@@ -10,7 +10,6 @@ import { identityWire } from "./trait-wire-identity.js"
 import { imageWire } from "./trait-wire-image.js"
 import { lineWire } from "./trait-wire-line.js"
 import { notesWire } from "./trait-wire-notes.js"
-import { tableWire } from "./trait-wire-table.js"
 import { textWire } from "./trait-wire-text.js"
 import { themeWire } from "./trait-wire-theme.js"
 
@@ -19,7 +18,7 @@ export type FieldWire<T extends TraitName, F extends WireField<T>> = {
   readonly example: { readonly [K in T]: { readonly [P in F]: WireAgent<T, F> } }
 }
 
-export type TraitWire<T extends TraitName> = [WireField<T>] extends [never]
+export type TraitWire<T extends TraitName> = [T extends "table" ? never : WireField<T>] extends [never]
   ? { readonly fields: Readonly<Record<never, never>> }
   : {
       readonly description: string
@@ -38,7 +37,7 @@ export const traitWire: { readonly [T in TraitName]: TraitWire<T> } = {
   image: imageWire,
   crop: cropWire,
   connection: connectionWire,
-  table: tableWire,
+  table: { fields: {} },
   notes: notesWire,
   theme: themeWire,
 }

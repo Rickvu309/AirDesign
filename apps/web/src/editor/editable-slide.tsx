@@ -13,19 +13,18 @@ import type { ElementChange } from "@/element-edit"
 import { landedBox, paintedBox, shownBox } from "@/element-move"
 import { cn } from "@/lib/class-names"
 import { showText, shownValue } from "@/live-repaint"
-import { shownTable, type useTables } from "@/table-hook"
+import { shownTable } from "@/table-hook"
 import type { UndoName } from "@/copy/undo-copy"
 import { boxName } from "@/undo-names"
 
 export type EditableDeck = DesignDeck & {
-  readonly tables: ReturnType<typeof useTables>
   readonly changeElement: (change: ElementChange) => Promise<CommitOutcome | "closed">
   readonly selection: Selection
   readonly select: (selection: Selection) => void
 }
 
 export function editableSlide(deck: EditableDeck): (width: number) => ReactNode {
-  const { id, tables, settle, setPending, changeElement, selection, select } = deck
+  const { id, settle, setPending, changeElement, selection, select } = deck
   const { store, boxes, movables, shapes, editParts, canvases, busy, entering, current, slideCount, bound } = deck.shown
   const { typed, sessions, records, formatting, record } = deck.undo
 
@@ -194,12 +193,8 @@ export function editableSlide(deck: EditableDeck): (width: number) => ReactNode 
               clear()
               void holding([target], () => onEdit(target, value, kind))
             }}
-            onTable={(target, change) =>
-              tables.change(target, change, (value, name) => holding([target], () => onEdit(target, value, name)))
-            }
             slide={canvas}
             slideName={slideCount > 0 ? slideListCopy.slideName(current + 1, slideCount) : undefined}
-            tableBar={tables.tableBar}
             store={store.current}
             width={width}
           />

@@ -13,7 +13,6 @@ export const editorRoutes = {
   shapes: "/screens/s43-04-editor-tools-shapes",
   shapesExpanded: "/screens/s43-05-editor-tools-shapes-expanded",
   text: "/screens/s43-06-editor-tools-text",
-  table: "/screens/s43-07-editor-tools-table",
   textFormat: "/screens/s43-08-editor-tools-text-format",
   designElement: "/screens/s43-09-editor-tools-design-element",
   runFailed: "/screens/s49-01-editor-errors-agent-run-failed",

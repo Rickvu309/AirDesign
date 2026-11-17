@@ -62,7 +62,7 @@ export const panelOrder: Readonly<Record<PanelKind, readonly Place[]>> = {
     shut("identity"),
   ],
   group: [open("alignment"), shut("box"), shut("effects"), shut("identity")],
-  table: [open("alignment"), open("table"), shut("box"), shut("identity")],
+  table: [open("alignment"), shut("box"), shut("identity")],
   chart: [open("alignment"), shut("box"), shut("identity")],
   kept: [open("identity")],
   many: [

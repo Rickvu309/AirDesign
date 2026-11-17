@@ -307,6 +307,36 @@ export function TableEdit(props: {
   )
 }
 
+function TableObject(
+  props: ElementPaintProps & { readonly id: ElementId; readonly moves: Moves; readonly table: CanvasTable },
+) {
+  const { element, id, moves, scaled, table } = props
+  const box = paintedAt(element.box, useBox(props.store, id))
+  return (
+    <TableArt
+      box={box}
+      elementKey={element.key}
+      scaled={scaled}
+      table={table}
+      frame={{
+        "aria-label": "Table",
+        tabIndex: 0,
+        onPointerDown: (event) => moves.press(event, element, "move"),
+        onKeyDown: (event) => moves.key(event, element),
+        onFocus: () => moves.select(id),
+      }}
+      style={{
+        ...(box === null
+          ? {}
+          : { position: "absolute", left: scaled(box.x), top: scaled(box.y), width: scaled(box.width) }),
+        pointerEvents: "auto",
+        cursor: "move",
+        touchAction: "none",
+      }}
+    />
+  )
+}
+
 export function TablePaint(props: ElementPaintProps) {
   const { element, moves, onTable, scaled } = props
   if (element.table === undefined) return null
@@ -324,6 +354,8 @@ export function TablePaint(props: ElementPaintProps) {
         table={element.table}
       />
     )
+  if (element.id !== null && moves !== null)
+    return <TableObject {...props} id={element.id} moves={moves} table={element.table} />
   return (
     <TableArt
       box={element.box}
