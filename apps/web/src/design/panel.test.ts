@@ -319,7 +319,8 @@ it("arranges a text box into strips with resolved names and choices", () => {
 })
 
 it("resolves box actions and letter names in the shape's strips", () => {
-  const panel = panelOf(shape, { reads: {}, moves: true })
+  const panel = panelOf({ ...shape, facts: { ...shape.facts, text: false } }, { reads: {}, moves: true })
+  expect(panel.kind).toBe("shape")
   const box = panel.sections.find((section) => section.trait === "box")
   expect(box?.strips.map((strip) => strip.map((control) => control.field))).toEqual([
     ["x", "y"],
