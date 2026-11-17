@@ -1,5 +1,8 @@
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { connectionCopy } from "../../apps/web/src/copy/connection-copy.ts"
+import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/nasa-1d-cnn.pptx")
 const notes = "Lead with the trend, then the number."
@@ -29,7 +32,7 @@ test("Present shows the deck full screen, steps with the keys a presenter uses a
 }) => {
   await opened(page)
   await page.locator('[data-slide-entry="2"]').click()
-  await page.getByRole("button", { name: "Present", exact: true }).click()
+  await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
   await expect(shown(page)).toHaveAttribute("data-present-slide", "2")
   await expect(shown(page).locator("[data-thumb-paint]")).toHaveCount(1)
   const box = await shown(page).boundingBox()
@@ -52,13 +55,13 @@ test("Present shows the deck full screen, steps with the keys a presenter uses a
   await page.keyboard.press("1")
   await page.keyboard.press("2")
   await expect(page.locator("[data-present-go-to]")).toHaveText(/Go to slide 12/)
-  await page.keyboard.press("Enter")
+  await page.keyboard.press(slideListCopy.openKey)
   await expect(shown(page)).toHaveAttribute("data-present-slide", "12")
-  await page.keyboard.press("Delete")
-  await page.keyboard.press("End")
+  await page.keyboard.press(slideListCopy.deleteKey)
+  await page.keyboard.press(connectionCopy.end)
   await expect(shown(page)).toHaveAttribute("data-present-slide", "15")
   await page.keyboard.press("ArrowRight")
-  await expect(page.locator("[data-present-show]")).toContainText("End of the deck")
+  await expect(page.locator("[data-present-show]")).toContainText(presentCopy.end)
   await page.keyboard.press("ArrowLeft")
   await expect(shown(page)).toHaveAttribute("data-present-slide", "15")
   await page.keyboard.press("Home")
@@ -68,16 +71,16 @@ test("Present shows the deck full screen, steps with the keys a presenter uses a
 
   await expect(page.locator("[data-present-show]")).toHaveCount(0)
   await expect(current(page)).toHaveAttribute("data-slide-entry", "2")
-  await expect(page.getByRole("button", { name: "Present", exact: true })).toBeFocused()
+  await expect(page.getByRole("button", { name: presentCopy.present, exact: true })).toBeFocused()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(15)
 })
 
 test("the presenter view shows the speaker notes, the next slide and the time", async ({ page }) => {
   await opened(page)
   await page.locator('[data-slide-entry="3"]').click()
-  if ((await page.getByRole("textbox", { name: "Speaker notes", exact: true }).count()) === 0)
+  if ((await page.getByRole("textbox", { name: presentCopy.notes, exact: true }).count()) === 0)
     await page.getByRole("button", { name: "Expand speaker notes" }).click()
-  await page.getByRole("textbox", { name: "Speaker notes", exact: true }).fill(notes)
+  await page.getByRole("textbox", { name: presentCopy.notes, exact: true }).fill(notes)
   await page.locator('[data-slide-entry="2"]').click()
   await page.keyboard.press("ControlOrMeta+Enter")
   await expect(shown(page)).toHaveAttribute("data-present-slide", "2")
@@ -87,10 +90,10 @@ test("the presenter view shows the speaker notes, the next slide and the time", 
   await expect(presenter).toContainText("Slide 2 of 15")
   await expect(presenter.locator('[data-present-slide="next-3"] [data-thumb-paint]')).toHaveCount(1)
   await expect(presenter.locator("[data-present-timer]")).toHaveText(/^00:0\d$/)
-  await page.getByRole("button", { name: "Next slide" }).click()
+  await page.getByRole("button", { name: presentCopy.next }).click()
   await expect(presenter).toContainText("Slide 3 of 15")
   await expect(presenter.locator("[data-present-notes]")).toContainText(notes)
-  await page.getByRole("button", { name: "Stop presenting" }).click()
+  await page.getByRole("button", { name: presentCopy.stop }).click()
 
   await expect(presenter).toHaveCount(0)
   await expect(current(page)).toHaveAttribute("data-slide-entry", "3")
@@ -98,13 +101,13 @@ test("the presenter view shows the speaker notes, the next slide and the time", 
 
 test("presenter buttons respond to Enter and Space", async ({ page }) => {
   await opened(page)
-  await page.getByRole("button", { name: "Present", exact: true }).click()
+  await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
   await page.keyboard.press("p")
-  const pause = page.getByRole("button", { name: "Pause timer" })
+  const pause = page.getByRole("button", { name: presentCopy.pause })
   await pause.focus()
   await page.keyboard.press("Space")
-  await expect(page.getByRole("button", { name: "Resume timer" })).toBeVisible()
-  await page.getByRole("button", { name: "Stop presenting" }).focus()
-  await page.keyboard.press("Enter")
+  await expect(page.getByRole("button", { name: presentCopy.resume })).toBeVisible()
+  await page.getByRole("button", { name: presentCopy.stop }).focus()
+  await page.keyboard.press(slideListCopy.openKey)
   await expect(page.locator("[data-presenter-view]")).toHaveCount(0)
 })
