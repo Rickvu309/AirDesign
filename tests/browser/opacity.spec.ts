@@ -49,11 +49,9 @@ async function pick(page: Page, id: string, connector = false): Promise<Locator>
     await page.mouse.click(box.x + box.width / 2, box.y)
   } else await shape.click({ position: { x: 4, y: 4 } })
   await expect(panel).toHaveAttribute("data-design-element", new RegExp(`\\.${id}$`))
-  const section = panel
-    .locator("section")
-    .filter({ has: page.getByRole("heading", { name: opacityCopy.label, exact: true }) })
-  await expect(section).toBeVisible()
-  return section.getByRole("textbox", { name: opacityCopy.label, exact: true })
+  const field = panel.getByRole("textbox", { name: opacityCopy.label, exact: true })
+  await expect(field).toBeVisible()
+  return field
 }
 
 async function opacity(input: Locator, percent: string) {

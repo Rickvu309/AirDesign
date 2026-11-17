@@ -81,10 +81,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await titleShape.click({ position: { x: 4, y: 4 } })
   await page.keyboard.press("Escape")
-  const section = page
-    .locator("[data-design-element] section")
-    .filter({ has: page.getByRole("heading", { name: "Opacity", exact: true }) })
-  const opacity = section.getByRole("textbox", { name: "Opacity", exact: true })
+  const opacity = page.locator("[data-design-element]").getByRole("textbox", { name: "Opacity", exact: true })
   await expect(opacity).toHaveValue("60")
   await opacity.fill("30")
   await opacity.press("Enter")

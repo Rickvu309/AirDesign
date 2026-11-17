@@ -1,7 +1,7 @@
 import { traitNames, traits, type Desc } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { optionWord } from "@/copy/option-copy"
-import { choiceLayout } from "./choice-layout"
+import { choiceLayout } from "./field-looks"
 
 function choices(desc: Desc, field: string): readonly (readonly [string, readonly string[]])[] {
   switch (desc.kind) {
