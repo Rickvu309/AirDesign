@@ -39,24 +39,44 @@ export function githubRepository(source = ghIn) {
 
 export function assetName({ prefix, file, bytes }) {
   const hash = createHash("sha256").update(bytes).digest("hex").slice(0, 10)
+  const kind = path.extname(file)
   const base = path
-    .basename(file, ".png")
+    .basename(file, kind)
     .replace(/[^A-Za-z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "")
-  return `${prefix}-${base}-${hash}.png`
+  return `${prefix}-${base}-${hash}${kind}`
 }
 
 export function imageLink(repository, asset, release = "proof") {
   return `https://github.com/${repository}/releases/download/${release}/${encodeURIComponent(asset)}`
 }
 
-export function publish({ files, prefix, folder, scratch, release = "proof", repository, runGh = ghIn }) {
+const proofRelease = {
+  title: "Proof images",
+  notes: "Screenshots attached to pull requests. Not a product release.",
+}
+
+export function publish({
+  files,
+  prefix,
+  folder,
+  scratch,
+  release = "proof",
+  kinds = [".png"],
+  about = proofRelease,
+  repository,
+  runGh = ghIn,
+}) {
   if (files.length === 0) throw new Error("nothing to publish: name a folder with PNG files")
   const names = files.map((file) => path.basename(file))
   const twice = names.find((name, index) => names.indexOf(name) !== index)
   if (twice) throw new Error(`two files are named ${twice}; publish puts every file in one folder`)
-  const strange = files.find((file) => !file.endsWith(".png"))
-  if (strange) throw new Error(`${strange} is not a PNG; the proof release holds only PNG images`)
+  const strange = files.find((file) => !kinds.includes(path.extname(file)))
+  if (strange) {
+    if (kinds.length === 1 && kinds[0] === ".png")
+      throw new Error(`${strange} is not a PNG; the proof release holds only PNG images`)
+    throw new Error(`${path.basename(strange)} is not one of ${kinds.join(", ")}`)
+  }
 
   const resolvedPrefix = prefix ?? (folder ? folder.split("/")[0] : undefined)
   if (!resolvedPrefix) throw new Error("publish requires a prefix or folder")
@@ -71,16 +91,7 @@ export function publish({ files, prefix, folder, scratch, release = "proof", rep
   } catch (error) {
     const message = String(error.stderr ?? error.message)
     if (message.includes("release not found") || message.includes("Not Found") || message.includes("404")) {
-      runGh([
-        "release",
-        "create",
-        release,
-        "--prerelease",
-        "--title",
-        "Proof images",
-        "--notes",
-        "Screenshots attached to pull requests. Not a product release.",
-      ])
+      runGh(["release", "create", release, "--prerelease", "--title", about.title, "--notes", about.notes])
     } else {
       throw error
     }

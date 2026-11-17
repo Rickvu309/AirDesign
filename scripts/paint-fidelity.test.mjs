@@ -11,6 +11,7 @@ import {
   fidelityLines,
   matchBar,
   paintSize,
+  powerpointLines,
   reported,
   scaleDown,
 } from "./paint-fidelity.mjs"
@@ -187,6 +188,42 @@ same(
   "the recorded count prints no record",
   fidelityLines({ rows: [row], skipped: [], decks: 1, goal: 190, now: 1, cap: 12, bar: 10, worst: 0 }).length,
   1,
+)
+
+const judgedRow = (deck, slide, score, worst, missing = []) => ({
+  deck,
+  slide,
+  score,
+  worst: { score: worst, x: 32, y: 64, size: 32 },
+  changed: 0.01,
+  match: score >= 0.97 && worst >= 0.8,
+  missing,
+})
+const powerpointRows = [
+  judgedRow("a.pptx", 1, 0.99, 0.9),
+  judgedRow("a.pptx", 2, 0.9, 0.5),
+  judgedRow("a.pptx", 3, 0.99, 0.95, ["Wingdings"]),
+  judgedRow("b.pptx", 4, 0.8, 0.3, ["Wingdings", "Gill Sans"]),
+]
+same(
+  "the PowerPoint lines count only matching slides whose fonts the browser had",
+  powerpointLines({ rows: powerpointRows, skipped: [], decks: 2, goal: 3, now: 1, worst: 1 }),
+  [
+    "metric paint-fidelity  now 1  goal 3  4 slides compared against PowerPoint, 2 with a font missing, 2 of 2 decks, bar score 0.97 worst tile 0.80",
+    "paint-fidelity worst a.pptx slide 2 score 0.900 worst tile 0.500 at 32,64",
+    "paint-fidelity font missing a.pptx slide 3: Wingdings",
+    "paint-fidelity font missing b.pptx slide 4: Wingdings, Gill Sans",
+  ],
+)
+same(
+  "a slide that matches with a font missing does not count",
+  fidelityFailure({ rows: powerpointRows, skipped: [], outcome: "finished", now: 2 }),
+  "paint-fidelity is 1 and metrics.json says 2. A change painted a slide further from its reference render; find it in the worst lines above.",
+)
+same(
+  "a higher PowerPoint count prints the record",
+  powerpointLines({ rows: powerpointRows.slice(0, 1), skipped: [], decks: 1, goal: 3, now: 0, worst: 0 }).at(-1),
+  "paint-fidelity record 1. Record now 1 in metrics.json.",
 )
 
 const said = []

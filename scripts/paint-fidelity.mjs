@@ -1,3 +1,5 @@
+import { slideBar } from "./slide-diff.mjs"
+
 export const paintSize = { width: 64, height: 36 }
 export const matchBar = 10
 export const slidesPerDeck = 12
@@ -55,6 +57,7 @@ export const chosenSlides = (count, cap = slidesPerDeck) => {
 }
 
 export const fidelityLines = ({
+  title = "metric paint-fidelity",
   rows,
   skipped,
   decks,
@@ -68,12 +71,47 @@ export const fidelityLines = ({
   const measured = new Set(rows.map((row) => row.deck)).size
   const ranked = [...rows].sort((left, right) => right.difference - left.difference).slice(0, worst)
   return [
-    `metric paint-fidelity  now ${matching}  goal ${goal}  ${rows.length} slides compared, at most ${cap} per deck, ${measured} of ${decks} decks, bar ${bar} of 255`,
+    `${title}  now ${matching}  goal ${goal}  ${rows.length} slides compared, at most ${cap} per deck, ${measured} of ${decks} decks, bar ${bar} of 255`,
     ...ranked.map(
       (row) => `paint-fidelity worst ${row.deck} slide ${row.slide} difference ${row.difference.toFixed(1)}`,
     ),
     ...skipped.map((row) => `paint-fidelity skipped ${row.deck}: ${row.reason}`),
-    ...(matching > now ? [`paint-fidelity record ${matching}. Record now ${matching} in metrics.json.`] : []),
+    ...recordLine(matching, now),
+  ]
+}
+
+const fontsShown = (row) => (row.missing ?? []).length === 0
+
+export const counted = (rows) => rows.filter((row) => row.match && fontsShown(row)).length
+
+const recordLine = (matching, now) =>
+  matching > now ? [`paint-fidelity record ${matching}. Record now ${matching} in metrics.json.`] : []
+
+export const powerpointLines = ({
+  rows,
+  skipped,
+  decks,
+  goal,
+  now = Number.POSITIVE_INFINITY,
+  worst = worstShown,
+  bar = slideBar,
+}) => {
+  const matching = counted(rows)
+  const measured = new Set(rows.map((row) => row.deck)).size
+  const fontless = rows.filter((row) => !fontsShown(row))
+  const ranked = rows
+    .filter((row) => fontsShown(row) && !row.match)
+    .sort((left, right) => left.worst.score - right.worst.score)
+    .slice(0, worst)
+  return [
+    `metric paint-fidelity  now ${matching}  goal ${goal}  ${rows.length} slides compared against PowerPoint, ${fontless.length} with a font missing, ${measured} of ${decks} decks, bar score ${bar.score.toFixed(2)} worst tile ${bar.worst.toFixed(2)}`,
+    ...ranked.map(
+      (row) =>
+        `paint-fidelity worst ${row.deck} slide ${row.slide} score ${row.score.toFixed(3)} worst tile ${row.worst.score.toFixed(3)} at ${row.worst.x},${row.worst.y}`,
+    ),
+    ...fontless.map((row) => `paint-fidelity font missing ${row.deck} slide ${row.slide}: ${row.missing.join(", ")}`),
+    ...skipped.map((row) => `paint-fidelity skipped ${row.deck}: ${row.reason}`),
+    ...recordLine(matching, now),
   ]
 }
 
@@ -86,7 +124,7 @@ export const fidelityFailure = ({ rows, skipped, outcome, now }) => {
     return "paint-fidelity stopped at its limit, so its count is not the corpus. Read the lines above for why."
   if (skipped.length > 0)
     return `paint-fidelity skipped ${skipped.map((row) => row.deck).join(", ")}, so its count is not the corpus. Read the lines above for why.`
-  const matching = rows.filter((row) => row.match).length
+  const matching = counted(rows)
   if (matching < now)
     return `paint-fidelity is ${matching} and metrics.json says ${now}. A change painted a slide further from its reference render; find it in the worst lines above.`
   return undefined

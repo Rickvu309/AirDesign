@@ -100,6 +100,10 @@ _Avoid_: delta, comparison
 The score of a painted slide against its reference image: the mean similarity, the lowest similarity of any 32 by 32 pixel tile, and the share of pixels that changed. The lowest tile catches one missing element on a mostly white slide.
 _Avoid_: image diff, visual diff, screenshot comparison
 
+**fidelity reference**:
+A picture PowerPoint itself drew of a slide: a page of the PDF PowerPoint saved of a deck, or the thumbnail of slide 1 PowerPoint keeps in a deck. paint-fidelity scores our painted slides against them.
+_Avoid_: golden image, ground truth
+
 **planted fault**:
 A break put into code on purpose, to see whether a check catches it.
 _Avoid_: mutant, planted break, injected bug

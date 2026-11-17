@@ -1,0 +1,209 @@
+{
+  "release": "fidelity-refs",
+  "repository": "Rickvu309/AirDesign",
+  "decks": [
+    {
+      "name": "nasa-stmd-game-changing.pptx",
+      "citation": "https://ntrs.nasa.gov/citations/20230011737",
+      "rights": "GOV_PUBLIC_USE_PERMITTED",
+      "slides": 17,
+      "width": 1280,
+      "height": 720,
+      "creator": "Acrobat PDFMaker 20 for PowerPoint",
+      "producer": "Adobe PDF Library 20.5.50",
+      "pptx": {
+        "source": "https://ntrs.nasa.gov/api/citations/20230011737/downloads/SPLICE_FY23%20GCD%20APR.pptx",
+        "sha256": "2b27df6b6bc153e25821731c86911aa7c5e02f27af9c1bf5d0d9c32b7f9929af",
+        "asset": "fidelity-nasa-stmd-game-changing-2b27df6b6b.pptx"
+      },
+      "pdf": {
+        "source": "https://ntrs.nasa.gov/api/citations/20230011737/downloads/SPLICE_FY23%20GCD%20APR.pdf",
+        "sha256": "c83eb3ae2ee3949c6c3495972a83801d1feaa9348c4cfeabcd1483add33a7148",
+        "pages": 17,
+        "asset": "fidelity-nasa-stmd-game-changing-c83eb3ae2e.pdf"
+      }
+    },
+    {
+      "name": "nasa-roman-optical-status.pptx",
+      "citation": "https://ntrs.nasa.gov/citations/20230016107",
+      "rights": "GOV_PUBLIC_USE_PERMITTED",
+      "slides": 38,
+      "width": 1280,
+      "height": 720,
+      "creator": "Acrobat PDFMaker 20 for PowerPoint",
+      "producer": "Adobe PDF Library 20.5.60",
+      "pptx": {
+        "source": "https://ntrs.nasa.gov/api/citations/20230016107/downloads/Bolcar551_SPIEMTD_RomanOpticalSystem_20231115_v3.pptx",
+        "sha256": "40fe0531deb4772440371bd7e594f9416acab6a8f4fbb895b757c18d8f45860f",
+        "asset": "fidelity-nasa-roman-optical-status-40fe0531de.pptx"
+      },
+      "pdf": {
+        "source": "https://ntrs.nasa.gov/api/citations/20230016107/downloads/20230016107.pdf",
+        "sha256": "4c8dc0f33231002ac88fae114f621b4c40eb41b33ed2993dd26203e4046d7b6e",
+        "pages": 38,
+        "asset": "fidelity-nasa-roman-optical-status-4c8dc0f332.pdf"
+      }
+    },
+    {
+      "name": "nasa-tilt-wing-propulsion.pptx",
+      "citation": "https://ntrs.nasa.gov/citations/20205010868",
+      "rights": "GOV_PUBLIC_USE_PERMITTED",
+      "slides": 15,
+      "width": 1280,
+      "height": 720,
+      "creator": "Acrobat PDFMaker 18 for PowerPoint",
+      "producer": "Adobe PDF Library 15.0",
+      "pptx": {
+        "source": "https://ntrs.nasa.gov/api/citations/20205010868/downloads/SciTech2021_TEEM_TiltWIng_Final.pptx",
+        "sha256": "acfc9ee13fba6efcf900b7b1dbd9cd494f63f00809b2488fa129a0672df42acd",
+        "asset": "fidelity-nasa-tilt-wing-propulsion-acfc9ee13f.pptx"
+      },
+      "pdf": {
+        "source": "https://ntrs.nasa.gov/api/citations/20205010868/downloads/SciTech2021_TEEM_TiltWIng_Final%20pdf.pdf",
+        "sha256": "c1f140cd1492627dea96a3c51fc86064f06d42bc5385d074b543e0635804f4ee",
+        "pages": 15,
+        "asset": "fidelity-nasa-tilt-wing-propulsion-c1f140cd14.pdf"
+      }
+    },
+    {
+      "name": "nasa-managing-failure.pptx",
+      "citation": "https://ntrs.nasa.gov/citations/20240005325",
+      "rights": "GOV_PUBLIC_USE_PERMITTED",
+      "slides": 23,
+      "width": 960,
+      "height": 540,
+      "creator": "Acrobat PDFMaker 20 for PowerPoint",
+      "producer": "Adobe PDF Library 20.5.110",
+      "pptx": {
+        "source": "https://ntrs.nasa.gov/api/citations/20240005325/downloads/Managing%20failure%20by%20design%2020240508%20v1.pptx",
+        "sha256": "d06800b1760fc8e8f7e198a41f0e8ad0dae78613c215d56a3e7b7d54a7aeecec",
+        "asset": "fidelity-nasa-managing-failure-d06800b176.pptx"
+      },
+      "pdf": {
+        "source": "https://ntrs.nasa.gov/api/citations/20240005325/downloads/Managing%20failure%20by%20design%2020240508%20v1.pdf",
+        "sha256": "b6870a926ef34acd6465d13ce375d72e7778b4d859dc3350e8d16040d63d01d6",
+        "pages": 23,
+        "asset": "fidelity-nasa-managing-failure-b6870a926e.pdf"
+      }
+    },
+    {
+      "name": "nasa-ppap-tutorial.pptx",
+      "citation": "https://ntrs.nasa.gov/citations/20230009572",
+      "rights": "GOV_PUBLIC_USE_PERMITTED",
+      "slides": 15,
+      "width": 1280,
+      "height": 720,
+      "creator": "Acrobat PDFMaker 20 for PowerPoint",
+      "producer": "Adobe PDF Library 20.5.3",
+      "pptx": {
+        "source": "https://ntrs.nasa.gov/api/citations/20230009572/downloads/PPAP-Tutorial-ETW2023.pptx",
+        "sha256": "4ad07871f95c55c2aaccd1d6e7c306b52cf84bc7a3a52ab37abb0df4c0afb9d7",
+        "asset": "fidelity-nasa-ppap-tutorial-4ad07871f9.pptx"
+      },
+      "pdf": {
+        "source": "https://ntrs.nasa.gov/api/citations/20230009572/downloads/PPAP-Tutorial-ETW2023.pdf",
+        "sha256": "eedbd29d56af7e9da6a8786cf6fd759ffd304e97ec9987b4b071c988a510ee80",
+        "pages": 15,
+        "asset": "fidelity-nasa-ppap-tutorial-eedbd29d56.pdf"
+      }
+    }
+  ],
+  "thumbnails": [
+    {
+      "deck": "nasa-8ft-tunnel.pptx",
+      "deckSha256": "e8aa92450ace775b1430062edcbfc1274ac73b0bed57937f258845dcff145cd9",
+      "application": "Microsoft Office PowerPoint",
+      "sha256": "eedc8f9d6b09e4b90d5c3b7ea14d00f5255742ebced61b32b2e2b248a3ed20c4",
+      "width": 256,
+      "height": 144
+    },
+    {
+      "deck": "nasa-accp-visualizations.pptx",
+      "deckSha256": "2918c5072fac29ac763248e09c5429ca551fbb9110e3c12cc6fa7bb14848a42d",
+      "application": "Microsoft Office PowerPoint",
+      "sha256": "e91e1d9ccceebc9a32fc5a1ab05e0c449fd10b0128f300478736903a30b0e1b5",
+      "width": 256,
+      "height": 144
+    },
+    {
+      "deck": "nasa-aqua-senior-review.pptx",
+      "deckSha256": "9f88a1aded611ab8f6b144dac9b44a4e28a02bf1464ae16a0174985b9ec26f2b",
+      "application": "Microsoft Macintosh PowerPoint",
+      "sha256": "412dfdcb3f07cc080c2302dec240cbb8e1f34134162355ff30920b06c8d41a3f",
+      "width": 256,
+      "height": 144
+    },
+    {
+      "deck": "nasa-collaborative-testing.pptx",
+      "deckSha256": "6764578bb7b7531dd9ed5ecda2bee02522b7b470357ed4fd989d05494b7ccc82",
+      "application": "Microsoft Macintosh PowerPoint",
+      "sha256": "78c8f8b283b092d2b7a630a097cd3d315b8e893b95b7b019e4a569e5361e222b",
+      "width": 256,
+      "height": 144
+    },
+    {
+      "deck": "nasa-cots-parts-nesc.pptx",
+      "deckSha256": "1f7d2ac9a75f109e8e1650b768ef4ea99f93d6741b8a181bf7bfa4c09f2324e2",
+      "application": "Microsoft Office PowerPoint",
+      "sha256": "89a6a04d2a1909c392570dddcc370b408dc4746f4333e146253dba5076421869",
+      "width": 256,
+      "height": 144
+    },
+    {
+      "deck": "nasa-earth-gram-overview.pptx",
+      "deckSha256": "9ec57495418000ea164c50a23d3e06c59f4d4e3a5565cebaa3574c4d9111aa32",
+      "application": "Microsoft Office PowerPoint",
+      "sha256": "08b6171fe90dcc921a6ef729f601f5486b0d8d333f86b42aa3f363e1da61b7ea",
+      "width": 256,
+      "height": 192
+    },
+    {
+      "deck": "nasa-earth-gram-rra.pptx",
+      "deckSha256": "54ad97d665420705d4db4584b51d348094649bd42a363d98a98a66dd3fad3222",
+      "application": "Microsoft Office PowerPoint",
+      "sha256": "24173e6eaa3463d10b91f7f71e5a424c89f1d7d69e719eeb628dbd4a62489f8c",
+      "width": 256,
+      "height": 144
+    },
+    {
+      "deck": "nasa-earth-gram-tutorial.pptx",
+      "deckSha256": "64b75a17fce80b48e7542f54ee6727391202fe61e104c20cd13683a7ac3644f9",
+      "application": "Microsoft Office PowerPoint",
+      "sha256": "b2bb87627dd28c03f9d44b711572a1f968f7206a5ac6f01c0121e082ab8abcb0",
+      "width": 256,
+      "height": 192
+    },
+    {
+      "deck": "nasa-hera-analog-lessons.pptx",
+      "deckSha256": "a4588b064bceca0715bff4de31b82408dffaf85828950ffa1a4e1f512f1acdce",
+      "application": "Microsoft Office PowerPoint",
+      "sha256": "c9e4ada0ba2f141c09689781e6d2bf50ad2333f82504d3b565af12c08cdf11fa",
+      "width": 256,
+      "height": 192
+    },
+    {
+      "deck": "nasa-hlpw4-turbulence.pptx",
+      "deckSha256": "29bcdfdff857d6ca8671d1bb163eeebbef0c73c0b62b83483d413c2f3932f019",
+      "application": "Microsoft Office PowerPoint",
+      "sha256": "2542dba03b72c71917f61f68ce8a627dcb9c0c3bcffebc6e7611109e81a1bf8a",
+      "width": 256,
+      "height": 144
+    },
+    {
+      "deck": "nasa-jwst-optics-lessons.pptx",
+      "deckSha256": "0eba99f78c193391ba519e726cb6e1ea1d3567164707447e2681909b79b2615e",
+      "application": "Microsoft Office PowerPoint",
+      "sha256": "89c1e97d71ffd41718c97cb79ed72aef4ad54a1e261634ee0736270069f05594",
+      "width": 256,
+      "height": 144
+    },
+    {
+      "deck": "nasa-roman-thermal-runtime.pptx",
+      "deckSha256": "10bbbb8507b38f184162622075baaba543dd2748dcf52625c2a4fee680930fb0",
+      "application": "Microsoft Office PowerPoint",
+      "sha256": "5160a1d7f962b222008babbe563f04497633993dc0b4be71c78ba842285fd96b",
+      "width": 256,
+      "height": 144
+    }
+  ]
+}
