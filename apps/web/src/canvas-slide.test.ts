@@ -480,6 +480,7 @@ it("keeps a paragraph's bullet, gaps, run marks and line spacing in points, and 
             underline: true,
             strike: true,
             baseline: 0.3,
+            caps: "all",
             highlight: { hex: "FFFF00", alpha: 1 },
           },
         ],
@@ -493,7 +494,7 @@ it("keeps a paragraph's bullet, gaps, run marks and line spacing in points, and 
     spaceBefore: { length: 76_200 },
     spaceAfter: { percent: 0.2 },
     bullet: { autoNumber: "arabicPeriod", number: 2, font: null, color: null, size: null },
-    runs: [{ underline: true, strike: true, baseline: 0.3, highlight: css("FFFF00"), size: 304_800 }],
+    runs: [{ underline: true, strike: true, baseline: 0.3, caps: "all", highlight: css("FFFF00"), size: 304_800 }],
   })
   const tightened: PaintText = { ...text, spacingReduction: 0.25 }
   expect(painted({ text: tightened }).text?.paragraphs[0]?.lineSpacing).toEqual({ percent: 0.75 })

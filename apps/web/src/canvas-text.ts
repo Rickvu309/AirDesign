@@ -39,6 +39,7 @@ function runStyle(run: PaintRunStyle, scale: number): CanvasRunStyle {
     underline: run.underline,
     strike: run.strike,
     baseline: run.baseline,
+    ...(run.caps === undefined ? {} : { caps: run.caps }),
     color: run.color === null ? null : cssColor(run.color),
     highlight: run.highlight === null ? null : cssColor(run.highlight),
   }

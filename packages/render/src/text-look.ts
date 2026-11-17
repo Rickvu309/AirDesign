@@ -113,6 +113,8 @@ function styleOf(run: CanvasRunStyle, scaled: Scaled): Look {
     color: run.color ?? pageColor,
     lineHeight: singleLine,
     textRendering: "geometricPrecision",
+    textTransform: run.caps === "all" ? "uppercase" : "none",
+    fontVariantCaps: run.caps === "small" ? "small-caps" : "normal",
   }
 }
 
