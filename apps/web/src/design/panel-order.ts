@@ -58,7 +58,7 @@ export const panelOrder: Readonly<Record<PanelKind, readonly Place[]>> = {
   table: [open("alignment"), open("table"), shut("box"), shut("identity")],
   chart: [open("alignment"), shut("box"), shut("identity")],
   kept: [open("identity")],
-  many: [open("alignment"), shut("box"), open("fill"), open("line"), open("opacity"), open("text"), shut("effects")],
+  many: [open("alignment"), open("fill"), open("line"), open("opacity"), open("text"), shut("box"), shut("effects")],
 }
 
 export const loneRows: readonly string[] = [
