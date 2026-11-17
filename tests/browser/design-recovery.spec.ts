@@ -37,25 +37,3 @@ test("keeps a pasted Name and its suffix until it fits, without sending a change
   await expect(name).not.toHaveAttribute("aria-invalid", "true")
   await expect.poll(async () => JSON.stringify(await storedRows(page))).toContain("Corrected name")
 })
-
-test("keeps over-limit Text until corrected without sending it or showing a retry toast", async ({ page }) => {
-  await openDeck(page, "clean.pptx")
-  const panel = await designing(page, page.locator('[data-slide-paint] [contenteditable="true"]'))
-  const text = panel.getByRole("textbox", { name: "Text", exact: true })
-  const before = await storedRows(page)
-  const typed = "Long text ".repeat(900)
-  await text.fill(typed)
-  await expect(text).toHaveAttribute("aria-invalid", "true")
-  await expect(text).toHaveAccessibleDescription(
-    "Use less text. This box holds up to 8,000 characters, including formatting.",
-  )
-  await text.press("ControlOrMeta+Enter")
-  await text.press("Tab")
-  await expect(text).toHaveValue(typed)
-  expect(await storedRows(page)).toEqual(before)
-  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0)
-  await text.fill("Corrected text")
-  await text.press("ControlOrMeta+Enter")
-  await expect(text).not.toHaveAttribute("aria-invalid", "true")
-  await expect.poll(async () => JSON.stringify(await storedRows(page))).toContain("Corrected text")
-})

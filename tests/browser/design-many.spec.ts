@@ -7,7 +7,7 @@ import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { openDeck, pickColor, shownColor } from "./design-panel"
+import { openDeck, unfold, pickColor, shownColor } from "./design-panel"
 import { fillPanel, filled, shapeAt } from "./shape-fills"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -35,6 +35,7 @@ test("two selected shapes share one panel that reads Mixed, a colour picked ther
     opacityCopy.label,
     effectsCopy.section,
   ])
+  await unfold(panel, boxCopy.section)
   await expect(panel.getByRole("textbox", { name: boxCopy.x, exact: true })).toHaveAttribute(
     "placeholder",
     designCopy.mixed,

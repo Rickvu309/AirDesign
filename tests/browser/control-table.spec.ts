@@ -3,7 +3,7 @@ import { openDeck, settled } from "./design-panel"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("a table control writes one cell, the slide shows it, and Undo empties the cell again", async ({ page }) => {
+test("typing on the canvas writes one cell, the slide shows it, and Undo empties the cell again", async ({ page }) => {
   await openDeck(page, "table-added.pptx")
   await page.getByRole("button", { name: "Design", exact: true }).click()
   const table = page.locator("[data-slide-paint] [data-canvas-table]")
@@ -11,16 +11,18 @@ test("a table control writes one cell, the slide shows it, and Undo empties the 
   await page.keyboard.press("Escape")
   const panel = page.locator("[data-design-element]")
   const cells = panel.getByRole("group", { name: "Cells" })
-  await expect(cells.getByRole("textbox")).toHaveCount(9)
-  await expect(cells.getByRole("textbox", { name: "Row 1, column 1" })).toHaveValue("Region")
-  const cell = cells.getByRole("textbox", { name: "Row 2, column 1" })
-  await cell.fill("North")
+  await expect(cells.getByRole("textbox")).toHaveCount(0)
+  await expect(cells.getByRole("button")).toHaveCount(9)
+  await expect(cells.getByRole("button", { name: "Row 1, column 1" })).toHaveText("Region")
+  const cell = table.locator('[data-table-text="1.0"]')
+  await cell.click()
+  await page.keyboard.insertText("North")
   await cell.press("Enter")
   await expect(table.locator('[data-table-text="1.0"]')).toHaveText("North")
-  await expect(cell).toHaveValue("North")
+  await expect(cell).toHaveText("North")
   await page.getByRole("button", { name: "Undo text edit", exact: true }).click()
   await expect(table.locator('[data-table-text="1.0"]')).toHaveText("")
-  await expect(cell).toHaveValue("")
+  await expect(cell).toHaveText("")
   await page.getByRole("button", { name: "Redo text edit", exact: true }).click()
   await expect(table.locator('[data-table-text="1.0"]')).toHaveText("North")
   await page.reload()

@@ -13,6 +13,7 @@ import {
 import { exportParts } from "@airdesign/pptx"
 import { beforeAll, describe, expect, it } from "vitest"
 import { optionCopy } from "./copy/option-copy"
+import { canvasControl } from "./design/panel-arrangement"
 import { traitControls } from "./design/trait-controls"
 import { ensureMarkup } from "./markup"
 import {
@@ -109,12 +110,12 @@ async function fieldProblems(
   const problems: Problem[] = shown(parts) ? [{ field: key, missing: "change" }] : []
   const agent = agentRegister(indexed(parts), at, sent)
   if (agent === null || !shown(exportParts(parts, agent))) problems.push({ field: key, missing: "wire" })
-  const panel = panelRegister(indexed(parts), at, trait, field, value)
-  if (panel === null || !shown(exportParts(parts, panel))) problems.push({ field: key, missing: "control" })
   const person = landed(indexed(parts), [
     { command: "add", node: at.node, floor: "", route: "clean" },
     { command: "person", node: at.node, ...edit },
   ])
+  const panel = canvasControl(trait, field) ? person : panelRegister(indexed(parts), at, trait, field, value)
+  if (panel === null || !shown(exportParts(parts, panel))) problems.push({ field: key, missing: "control" })
   const exported = person === null ? parts : exportParts(parts, person)
   if (person === null || !shown(exported)) problems.push({ field: key, missing: "round-trip" })
   const paint = probe.painted ?? painted

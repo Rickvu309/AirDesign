@@ -16,7 +16,7 @@ import {
   type TableSide,
   type TableValue,
 } from "@airdesign/document"
-import { useId, useState, type KeyboardEvent } from "react"
+import { useId, useState } from "react"
 import { designCopy } from "@/copy/design-copy"
 import { tableCopy } from "@/copy/table-copy"
 import { type ControlProps, type PanelControl } from "@/design/panel"
@@ -30,51 +30,31 @@ type Scope = (typeof scopes)[number]
 
 const thinBorder = 12_700
 
-function CellInput({
+function CellPick({
   table,
   at,
   picked,
   onPick,
-  onChange,
 }: {
   table: TableValue
   at: Cell
   picked: boolean
   onPick: (cell: Cell) => void
-  onChange: (value: unknown) => void
 }) {
-  const cell = table.rows[at.row]?.cells[at.column] ?? []
-  const shown = cellText(cell)
-  const [draft, setDraft] = useState<string | null>(null)
-
-  function commit(text: string) {
-    setDraft(null)
-    if (text === shown) return
-    const next = changedTable(table, { change: "cell", row: at.row, column: at.column, text })
-    if (next !== null) onChange(writeTableValue(next))
-  }
-
-  function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Enter") commit(event.currentTarget.value)
-    if (event.key === "Escape") setDraft(null)
-  }
-
   return (
-    <input
+    <button
+      type="button"
       className={cn(
-        "h-8 min-w-0 rounded-[var(--shape-control)] bg-white px-2 text-[length:var(--type-dense)] text-foreground shadow-[0px_0px_0px_1px_var(--field-edge)]",
+        "h-8 min-w-0 truncate rounded-[var(--shape-control)] bg-white px-2 text-[length:var(--type-dense)] text-foreground shadow-[0px_0px_0px_1px_var(--field-edge)]",
         picked && "shadow-[0_0_0_2px_var(--ring)]",
       )}
       aria-label={designCopy.cell(at.row + 1, at.column + 1)}
+      aria-pressed={picked}
       data-picked={picked ? "" : undefined}
-      value={draft ?? shown}
-      onFocus={() => onPick(at)}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={(event) => {
-        if (draft !== null) commit(event.currentTarget.value)
-      }}
-      onKeyDown={onKeyDown}
-    />
+      onClick={() => onPick(at)}
+    >
+      {cellText(table.rows[at.row]?.cells[at.column] ?? [])}
+    </button>
   )
 }
 
@@ -171,13 +151,12 @@ export function TableControl({ control, palette, onChange, inner }: ControlProps
         >
           {table?.rows.flatMap((each, rowAt) =>
             each.cells.map((_, column) => (
-              <CellInput
+              <CellPick
                 key={`${String(rowAt)}.${String(column)}`}
                 table={table}
                 at={{ row: rowAt, column }}
                 picked={at.row === rowAt && at.column === column}
                 onPick={setPicked}
-                onChange={onChange}
               />
             )),
           )}

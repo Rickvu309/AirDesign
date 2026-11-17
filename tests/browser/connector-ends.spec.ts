@@ -1,8 +1,9 @@
+import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
-import { fixtures, openDeck, settled } from "./design-panel"
+import { fixtures, openDeck, settled, unfold } from "./design-panel"
 import { partsOf } from "./shape-fills"
 import { outline } from "./shape-turns"
 
@@ -231,6 +232,7 @@ test("an elbow connector follows Build through a corner resize and a turn in the
   await expect.poll(() => placement(under)).toEqual(resizing)
 
   await page.getByRole("button", { name: "Design", exact: true }).click()
+  await unfold(page.locator("[data-design-element]"), boxCopy.section)
   const rotation = page.locator("[data-design-element]").getByRole("textbox", { name: "Rotation", exact: true })
   await expect(rotation).toBeVisible()
   const resized = await placement(under)

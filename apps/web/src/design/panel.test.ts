@@ -201,10 +201,7 @@ function boxControls(view: ScopedElement, fields: Readonly<Record<string, ShownF
 
 it("draws Align and Distribute as actions and every other box control as itself", () => {
   const controls = boxControls(shape, {})
-  expect(controls.filter((control) => control.kind === "action").map((control) => control.field)).toEqual([
-    "align",
-    "distribute",
-  ])
+  expect(controls.filter((control) => control.kind === "action")).toEqual([])
   expect(controls.filter((control) => control.kind !== "action").map((control) => control.field)).toEqual([
     "x",
     "y",
@@ -249,7 +246,7 @@ it("reads Mixed where two shapes differ and sets the fill of both in one change"
     target: { nodes: ["258.2", "258.3"] },
     fill: { value: { solid: { scheme: "accent2" } } },
   })
-  expect(control("box", "align")?.change("left")).toEqual({
+  expect(control("alignment", "align")?.change("left")).toEqual({
     target: { nodes: ["258.2", "258.3"] },
     box: { align: "left" },
   })
@@ -257,7 +254,15 @@ it("reads Mixed where two shapes differ and sets the fill of both in one change"
 
 it("leaves out what only one element can hold, such as its text and its name", () => {
   const panel = panelOfMany([filled("258.2", null, 0), filled("258.3", null, 0)])
-  expect(panel.sections.map((section) => section.trait)).toEqual(["box", "fill", "line", "opacity", "text", "effects"])
+  expect(panel.sections.map((section) => section.trait)).toEqual([
+    "alignment",
+    "box",
+    "fill",
+    "line",
+    "opacity",
+    "text",
+    "effects",
+  ])
   expect(panel.sections.find((section) => section.trait === "effects")?.open).toBe(false)
   const fields = panel.sections.flatMap((section) =>
     section.strips.flat().map((control) => `${control.trait}.${control.field}`),
@@ -304,7 +309,6 @@ it("arranges a text box into strips with resolved names and choices", () => {
   const panel = panelOf(shape, { reads: {}, moves: true })
   const text = panel.sections.find((section) => section.trait === "text")
   expect(text?.strips.map((strip) => strip.map((control) => control.field))).toEqual([
-    ["value"],
     ["font"],
     ["size", "lineSpacing"],
     ["bold", "italic", "underline"],
@@ -312,10 +316,10 @@ it("arranges a text box into strips with resolved names and choices", () => {
     ["color"],
     ["spaceBefore", "spaceAfter"],
   ])
-  expect(text?.strips[1]?.[0]?.look.name).toEqual({ show: "hidden" })
-  expect(text?.strips[2]?.[0]?.look.name.show).toBe("icon")
-  expect(text?.strips[4]?.[0]?.look.form).toBe("segments")
-  expect(text?.strips[4]?.[0]?.look.options.left).toBeDefined()
+  expect(text?.strips[0]?.[0]?.look.name).toEqual({ show: "hidden" })
+  expect(text?.strips[1]?.[0]?.look.name.show).toBe("icon")
+  expect(text?.strips[3]?.[0]?.look.form).toBe("segments")
+  expect(text?.strips[3]?.[0]?.look.options.left).toBeDefined()
 })
 
 it("resolves box actions and letter names in the shape's strips", () => {
@@ -326,11 +330,18 @@ it("resolves box actions and letter names in the shape's strips", () => {
     ["x", "y"],
     ["w", "h"],
     ["rot", "flipH", "flipV"],
-    ["align"],
-    ["distribute"],
   ])
   expect(box?.strips[1]?.[0]?.look.name).toEqual({ show: "letter", letter: "W" })
-  expect(box?.strips[3]?.[0]).toMatchObject({ kind: "action", look: { name: { show: "hidden" } } })
+  expect(panel.sections[0]).toMatchObject({
+    trait: "alignment",
+    label: null,
+    strips: [
+      [
+        { field: "align", trait: "box", kind: "action" },
+        { field: "distribute", trait: "box", kind: "action" },
+      ],
+    ],
+  })
   const geometry = panel.sections.find((section) => section.trait === "geometry")?.strips.flat()[0]
   if (geometry === undefined || geometry.desc.kind !== "record") throw new Error("geometry")
   const preset = geometry.desc.fields.preset
@@ -370,8 +381,22 @@ it("keeps the same strips and looks for a many-selection", () => {
     panel.sections
       .find((section) => section.trait === "box")
       ?.strips.map((strip) => strip.map((control) => control.field)),
-  ).toEqual([["x", "y"], ["w", "h"], ["rot", "flipH", "flipV"], ["align"], ["distribute"]])
+  ).toEqual([
+    ["x", "y"],
+    ["w", "h"],
+    ["rot", "flipH", "flipV"],
+  ])
   expect(panel.sections.find((section) => section.trait === "opacity")?.strips[0]?.[0]?.look.name).toEqual({
     show: "beside",
   })
+})
+
+it("leaves text content to the canvas and omits alignment when moves are refused", () => {
+  const panel = panelOf(shape, { reads: {}, moves: true })
+  expect(
+    panel.sections.flatMap((section) => section.strips.flat()).map((control) => `${control.trait}.${control.field}`),
+  ).not.toContain("text.value")
+  expect(panelOf(shape, { reads: {}, moves: false }).sections.map((section) => section.trait)).not.toContain(
+    "alignment",
+  )
 })

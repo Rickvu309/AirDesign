@@ -68,7 +68,7 @@ test("an agent fills a table's header row, a person fills and borders the next r
   await page.locator('[data-slide-paint] [data-canvas-table] [data-table-text="1.0"]').click()
   await page.keyboard.press("Escape")
   const panel = page.locator("[data-design-element]")
-  await panel.getByRole("textbox", { name: "Row 2, column 1" }).focus()
+  await panel.getByRole("button", { name: "Row 2, column 1" }).click()
   await panel.getByRole("group", { name: "Apply to", exact: true }).getByRole("button", { name: "Row" }).click()
   const fill = panel.getByRole("group", { name: "Cell fill", exact: true })
   await fill.getByRole("button", { name: "Color", exact: true }).click()

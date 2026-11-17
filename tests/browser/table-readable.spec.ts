@@ -53,7 +53,7 @@ async function readable(page: Page, spot: string, text: string): Promise<{ ink: 
 
 async function fillRow(page: Page, row: number, color: string): Promise<void> {
   const panel = page.locator("[data-design-element]")
-  await panel.getByRole("textbox", { name: `Row ${row}, column 1` }).focus()
+  await panel.getByRole("button", { name: `Row ${row}, column 1` }).click()
   await panel.getByRole("group", { name: "Apply to", exact: true }).getByRole("button", { name: "Row" }).click()
   await panel.getByRole("group", { name: "Cell fill", exact: true }).getByRole("button", { name: "Color" }).click()
   await pickColor(page, panel.getByRole("group", { name: "Color", exact: true }).first(), color)
