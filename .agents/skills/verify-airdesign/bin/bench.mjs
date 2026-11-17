@@ -7,6 +7,8 @@ import drag from "../bench/drag.mjs"
 import { defaultDecks, importCase, judgedDecks } from "../bench/import.mjs"
 import openDeck from "../bench/open-41.mjs"
 import typeDeck from "../bench/type-41.mjs"
+import switchDeck from "../bench/switch-41.mjs"
+import openFifty from "../bench/open-50.mjs"
 import { benchTable, schedule, sides, summary, verdict } from "./bench-verdict.mjs"
 import { designContext, openBrowser } from "./browser.mjs"
 import { load } from "./load.mjs"
@@ -16,7 +18,14 @@ export const throttle = 4
 const caseLimit = 180_000
 const ledger = path.join(os.homedir(), ".cache", "airdesign", "bench.jsonl")
 const valued = ["--cases", "--runs", "--base", "--before-run", "--after-run", "--out"]
-const defaultCases = ["add-text", "type-41", "drag", "open-41", ...defaultDecks.map((deck) => `import-${deck}`)]
+const defaultCases = [
+  "add-text",
+  "type-41",
+  "switch-41",
+  "drag",
+  "open-41",
+  ...defaultDecks.map((deck) => `import-${deck}`),
+]
 
 function read(args) {
   const flags = {}
@@ -31,7 +40,7 @@ function read(args) {
 }
 
 export function casesFor(given, repo) {
-  const known = [addText, typeDeck, drag, openDeck, ...judgedDecks(repo).map(importCase)]
+  const known = [addText, typeDeck, switchDeck, drag, openDeck, openFifty, ...judgedDecks(repo).map(importCase)]
   if (given === "all") return known
   return (given?.split(",") ?? defaultCases).map((name) => {
     const found = known.find((each) => each.name === name)

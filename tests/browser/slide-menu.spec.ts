@@ -133,3 +133,28 @@ test("the delete toast leaves once another step is on top, so its Undo never tak
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
   await expect(deleted).toHaveCount(0)
 })
+
+test("slide actions scroll and clip with their row without anchored layout", async ({ page }) => {
+  await open(page)
+  for (let count = 2; count <= 8; count += 1) {
+    await page.getByRole("button", { name: "Add slide" }).click()
+    await expect(page.locator("[data-slide-entry]")).toHaveCount(count)
+  }
+  await entry(page, 1).scrollIntoViewIfNeeded()
+  await expect(actions(page, 1)).toBeVisible()
+  expect(await actions(page, 1).evaluate((node) => getComputedStyle(node).position)).toBe("absolute")
+  await entry(page, 8).scrollIntoViewIfNeeded()
+  const last = await entry(page, 8).boundingBox()
+  const control = await actions(page, 8).boundingBox()
+  expect(last).not.toBeNull()
+  expect(control).not.toBeNull()
+  if (last !== null && control !== null) {
+    expect(control.y).toBeGreaterThanOrEqual(last.y)
+    expect(control.y + control.height).toBeLessThanOrEqual(last.y + last.height)
+  }
+  await actions(page, 8).click()
+  await expect(item(page, /Duplicate/)).toBeFocused()
+  await page.keyboard.press("Escape")
+  await expect(entry(page, 8)).toBeFocused()
+  await expect(page.locator('[style*="anchor("]')).toHaveCount(0)
+})

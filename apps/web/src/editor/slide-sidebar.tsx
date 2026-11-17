@@ -475,9 +475,8 @@ function SlideItem({
     onSelect?.()
     setMenuOpen(true)
   }
-  const anchor = `--slide-row-${String(index)}`
   return (
-    <>
+    <div className="relative">
       <button
         ref={entry}
         type="button"
@@ -486,7 +485,6 @@ function SlideItem({
         aria-label={slideListCopy.slideName(index, count)}
         tabIndex={reachable ? 0 : -1}
         className={cn(look, "w-full text-left")}
-        style={onChoose === undefined ? undefined : { anchorName: anchor }}
         data-stop={`slide:${String(index - 1)}`}
         data-slide-entry={index}
         data-slide-item
@@ -519,14 +517,12 @@ function SlideItem({
           number={index}
           index={index - 1}
           count={count}
-          anchor={anchor}
-          anchorRef={entry}
           open={menuOpen}
           onOpenChange={onMenuOpenChange}
           onChoose={onMenuChoose}
         />
       )}
-    </>
+    </div>
   )
 }
 

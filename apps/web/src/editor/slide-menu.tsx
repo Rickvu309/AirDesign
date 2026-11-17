@@ -1,5 +1,4 @@
-import { memo, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react"
-import { createPortal } from "react-dom"
+import { memo, useEffect } from "react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { hairlineShadow } from "@/editor/editor-chrome"
@@ -25,25 +24,10 @@ export function slideChangeAllowed(change: SlideKey, index: number, count: numbe
   return index < count - 1
 }
 
-function clipToList(anchor: HTMLElement, node: HTMLElement): void {
-  const box = node.getBoundingClientRect()
-  const frame = anchor.closest("[data-slide-list]")?.getBoundingClientRect()
-  const seen =
-    frame === undefined ||
-    (box.top >= frame.top - 1 &&
-      box.bottom <= frame.bottom + 1 &&
-      box.left >= frame.left - 1 &&
-      box.right <= frame.right + 1)
-  node.style.visibility = seen ? "visible" : "hidden"
-  node.style.pointerEvents = seen ? "auto" : "none"
-}
-
 export const SlideMenu = memo(function SlideMenu({
   number,
   index,
   count,
-  anchor,
-  anchorRef,
   open,
   onOpenChange,
   onChoose,
@@ -51,40 +35,10 @@ export const SlideMenu = memo(function SlideMenu({
   number: number
   index: number
   count: number
-  anchor: string
-  anchorRef: RefObject<HTMLElement | null>
   open: boolean
   onOpenChange: (open: boolean) => void
   onChoose: (change: SlideKey) => void
 }) {
-  const trigger = useRef<HTMLButtonElement>(null)
-  const [host, setHost] = useState<HTMLElement | null>(null)
-  useLayoutEffect(() => {
-    const anchorNode = anchorRef.current
-    const node = trigger.current
-    const root = anchorNode?.closest("[data-editor-sidebar]")
-    const next = root instanceof HTMLElement ? root : document.body
-    setHost((held) => (held === next ? held : next))
-    if (anchorNode === null || node === null) return
-    const place = () => clipToList(anchorNode, node)
-    place()
-    const list = anchorNode.closest("[data-slide-list]")
-    list?.addEventListener("scroll", place, { passive: true })
-    window.addEventListener("resize", place)
-    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(place) : undefined
-    observer?.observe(anchorNode)
-    if (observer !== undefined && list !== null) {
-      observer.observe(list)
-      for (const child of list.children) {
-        if (child !== node) observer.observe(child)
-      }
-    }
-    return () => {
-      list?.removeEventListener("scroll", place)
-      window.removeEventListener("resize", place)
-      observer?.disconnect()
-    }
-  }, [anchorRef, host])
   useEffect(() => {
     if (!open) return
     let frame = 0
@@ -102,23 +56,17 @@ export const SlideMenu = memo(function SlideMenu({
     focusFirst()
     return () => cancelAnimationFrame(frame)
   }, [open])
-  const menu = (
+  return (
     <DropdownMenu modal={false} open={open} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger
-        ref={trigger}
         type="button"
         tabIndex={-1}
         aria-label={slideListCopy.actions(number)}
         data-slide-actions={number}
         className={cn(
-          "fixed z-10 flex size-8 items-center justify-center rounded-[var(--shape-control)] bg-white text-foreground",
+          "absolute top-3 right-5 z-10 flex size-8 items-center justify-center rounded-[var(--shape-control)] bg-white text-foreground",
           hairlineShadow,
         )}
-        style={{
-          positionAnchor: anchor,
-          top: "calc(anchor(top) + 0.75rem)",
-          left: "calc(anchor(right) - 3.25rem)",
-        }}
       >
         <ActionsMark />
       </DropdownMenuTrigger>
@@ -133,7 +81,6 @@ export const SlideMenu = memo(function SlideMenu({
       </DropdownMenuContent>
     </DropdownMenu>
   )
-  return host === null ? menu : createPortal(menu, host)
 })
 
 export function SlideMenuRows({
