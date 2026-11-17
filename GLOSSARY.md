@@ -382,4 +382,4 @@ The Design panel’s none, solid, dashed and dotted presets. Line keeps exact se
 
 ## Link
 
-A click destination on an element. It opens a URL or goes to a slide. A link on a phrase is separate from the whole element’s link.
+An element’s click destination, a URL or slide. Phrase links are separate.
