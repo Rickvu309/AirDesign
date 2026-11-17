@@ -31,16 +31,20 @@ const settingsMenu = [
   { path: settingsPaths.account, label: settingsCopy.account },
 ]
 
+const iconColumn = "flex size-5 shrink-0 items-center justify-center"
+
 const starredRow =
   "flex h-7 items-center gap-2 rounded-md px-2 text-left text-[length:var(--type-dense)] leading-[var(--leading-body)] text-quiet hover:bg-black/4"
 
 function StarredRow({ name }: { name: string }) {
   return (
     <>
-      <span className="text-muted-foreground">
+      <span data-sidebar-icon className={cn(iconColumn, "text-muted-foreground")}>
         <DeckGlyph name="folder" size={14} />
       </span>
-      <span className="truncate">{name}</span>
+      <span data-sidebar-label className="truncate">
+        {name}
+      </span>
     </>
   )
 }
@@ -56,11 +60,15 @@ function AccountFace({ account: realAccount }: { account?: { email: string } }) 
         : accountName(realAccount.email)
   return (
     <>
-      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] leading-none font-semibold text-white">
+      <span
+        data-sidebar-icon
+        className="flex size-5 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] leading-none font-semibold text-white"
+      >
         {realAccount === undefined ? account.initials : name.charAt(0).toUpperCase()}
       </span>
       <span
         data-account-name
+        data-sidebar-label
         title={realAccount?.email || name}
         className="min-w-0 truncate text-[length:var(--type-dense)] leading-[var(--leading-body)] font-medium text-foreground"
       >
@@ -167,7 +175,10 @@ export function DecksShell({
             if (search || !realAccount) event.preventDefault()
           }}
         >
-          <span className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-faint">
+          <span
+            data-sidebar-icon
+            className={cn(iconColumn, "pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-faint")}
+          >
             <DeckGlyph name="search" size={14} />
           </span>
           <Input
@@ -186,7 +197,7 @@ export function DecksShell({
                   },
                 }
               : {})}
-            className="h-7 rounded-md border-0 bg-background pl-7 text-[length:var(--type-dense)] shadow-[0_0_0_1px_var(--line)] placeholder:text-quiet md:text-[length:var(--type-dense)]"
+            className="h-7 rounded-md border-0 bg-background pl-9 text-[length:var(--type-dense)] shadow-[0_0_0_1px_var(--line)] placeholder:text-quiet md:text-[length:var(--type-dense)]"
           />
         </form>
         <nav className="mt-3" aria-label="Decks">
@@ -198,8 +209,10 @@ export function DecksShell({
             )}
             aria-current={active === primary.id ? "page" : undefined}
           >
-            <DeckGlyph name={primary.glyph} size={primary.size} />
-            {primary.label}
+            <span data-sidebar-icon className={iconColumn}>
+              <DeckGlyph name={primary.glyph} size={primary.size} />
+            </span>
+            <span data-sidebar-label>{primary.label}</span>
           </a>
           <div className="mt-3 h-px bg-line" />
           <div className="mt-3 flex flex-col gap-0.5">
@@ -213,8 +226,10 @@ export function DecksShell({
                 )}
                 aria-current={active === section.id ? "page" : undefined}
               >
-                <DeckGlyph name={section.glyph} size={section.size} />
-                {section.label}
+                <span data-sidebar-icon className={iconColumn}>
+                  <DeckGlyph name={section.glyph} size={section.size} />
+                </span>
+                <span data-sidebar-label>{section.label}</span>
               </a>
             ))}
           </div>
@@ -223,12 +238,12 @@ export function DecksShell({
           <nav aria-labelledby={starredLabel} className="mt-5 flex flex-col gap-0.5">
             <div
               id={starredLabel}
-              className="flex h-7 items-center gap-1.5 px-2 text-[length:var(--type-caption)] leading-[var(--leading-body)] font-medium text-muted-foreground"
+              className="flex h-7 items-center gap-1 px-2 text-[length:var(--type-caption)] leading-[var(--leading-body)] font-medium text-muted-foreground"
             >
+              {productCopy.starred}
               <span className="text-faint">
                 <DeckGlyph name="chevron" size={12} />
               </span>
-              {productCopy.starred}
             </div>
             {empty ? (
               <p className="px-2 pt-1 text-[length:var(--type-dense)] leading-[1.45] text-muted-foreground">
