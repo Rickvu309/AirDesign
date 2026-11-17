@@ -160,7 +160,7 @@ describe("the server admits only the edits the device can write onto an element 
     const text = [...body, "text.value", "text.alpha", "link.target"]
     const effects = ["effects.shadow", "effects.glow", "effects.softEdge"]
     const named = ["identity.name", "identity.alt", "identity.hidden"]
-    const picture = ["image.source", "image.alpha", "image.recolor", "crop.rect"]
+    const picture = ["image.source", "image.mode", "image.alpha", "image.recolor", "crop.rect"]
     expect(takes({ ...facts, kind: "shape" })).toEqual([...named, ...drawn, ...fill, ...line, ...effects, ...text])
     expect(takes({ ...facts, kind: "shape", text: false })).toEqual([...named, ...drawn, ...fill, ...line, ...effects])
     expect(takes({ ...facts, kind: "picture" })).toEqual([...named, ...drawn, ...line, ...effects, ...picture])
