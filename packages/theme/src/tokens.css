@@ -34,6 +34,8 @@
   --panel-edge: #e6e6e6;
   --panel-icon: #808080;
   --panel-title-size: 14px;
+  --panel-title-leading: 20px;
+  --panel-label-leading: 16px;
   --panel-head-height: 49px;
   --panel-segment-radius: 6px;
   --field-edge: #d7d7d6;

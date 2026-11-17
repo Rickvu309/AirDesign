@@ -67,3 +67,11 @@
   width: 14px;
   height: 14px;
 }
+
+[data-design-panel] [data-design-head] > span {
+  line-height: var(--panel-title-leading);
+}
+
+[data-design-panel] h2 {
+  line-height: var(--panel-label-leading);
+}
