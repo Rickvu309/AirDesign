@@ -335,7 +335,9 @@ test("the slide view and the grid open the same zoom menu, hung from the zoom bu
   expect(slides.rows).toHaveLength(6)
   expect(slides.rightEdge).toBe(0)
   expect(slides.below).toBe(true)
-  await expect(page.locator("[data-view-bar] button")).toHaveText([/^\d+%$/, presentCopy.present, "Export"])
+  await expect(page.locator("[data-view-bar] button")).toHaveText([/^\d+%$/, "", "Export"])
+  await expect(page.locator("[data-view-bar] [data-present-button]")).toHaveAccessibleName(presentCopy.present)
+  await expect(page.locator("[data-view-bar] [data-present-button]")).toHaveText("")
 })
 
 test("Present in the grid starts the show from the focused slide and lands back in the grid", async ({ page }) => {
