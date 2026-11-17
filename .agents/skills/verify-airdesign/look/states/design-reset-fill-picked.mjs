@@ -1,10 +1,13 @@
-import { fillCopy, fillWords } from "../../../../../apps/web/src/copy/fill-copy.ts"
-import { formatCopy } from "../../../../../apps/web/src/copy/format-copy.ts"
-import { opacityCopy } from "../../../../../apps/web/src/copy/opacity-copy.ts"
+import { createRequire } from "node:module"
 import path from "node:path"
 import { expect } from "@playwright/test"
 import { fixtureDeck } from "../fixture-deck.mjs"
 import { openDeck } from "../open-deck.mjs"
+
+const require = createRequire(import.meta.url)
+const { fillCopy, fillWords } = require("../../../../../apps/web/src/copy/fill-copy.ts")
+const { formatCopy } = require("../../../../../apps/web/src/copy/format-copy.ts")
+const { opacityCopy } = require("../../../../../apps/web/src/copy/opacity-copy.ts")
 
 async function drive(kit) {
   const { page } = kit

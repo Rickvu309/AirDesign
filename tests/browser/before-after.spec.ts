@@ -1,6 +1,7 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect, test, type Page } from "@playwright/test"
+import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 
 type Box = { x: number; y: number; width: number; height: number }
@@ -26,6 +27,12 @@ test("verification states share copy after a spec loads it through CommonJS", as
     expect(journey.default).toBeInstanceOf(Function)
   }
   expect(states.some((state) => state.name === "new-deck-menu-focused")).toBe(true)
+})
+
+test("verification states load after a spec reads fill copy through CommonJS", async () => {
+  expect(fillCopy.reset).toBeTruthy()
+  const { states } = await load<{ states: { name: string }[] }>("states.mjs")
+  expect(states.some((state) => state.name === "design-reset-fill-picked")).toBe(true)
 })
 
 const fixture = `<body style="margin:0;font:16px sans-serif">
