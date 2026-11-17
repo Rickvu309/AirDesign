@@ -75,8 +75,11 @@ function recovery(transient: boolean) {
   expect(host.querySelector("button")).toBeNull()
 }
 
-it("does not paint consent before the client rule answers", () => {
-  expect(renderToStaticMarkup(<OAuthAuthorize />)).toBe("")
+it("shows loading without a consent decision before the client rule answers", () => {
+  const markup = renderToStaticMarkup(<OAuthAuthorize />)
+  expect(markup).toContain('role="status"')
+  expect(markup).toContain("Loading connection request…")
+  expect(markup).not.toContain("<button")
 })
 it.each([
   ["claude", "Claude"],
