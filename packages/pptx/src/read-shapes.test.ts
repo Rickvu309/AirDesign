@@ -1,3 +1,4 @@
+import { decodeUtf8 } from "./package-bytes.js"
 import { describe, expect, it, vi } from "vitest"
 
 declare const process: {
@@ -156,7 +157,10 @@ describe("readShapes", () => {
     } finally {
       work.counting = false
     }
-    expect(work.parses).toBeLessThanOrEqual(slides + 2)
+    const linked = [...parts].filter(
+      ([name, bytes]) => slidePart.test(name) && decodeUtf8(bytes).includes("<a:hlinkClick"),
+    ).length
+    expect(work.parses).toBeLessThanOrEqual(slides + 2 + linked)
     expect(work.visits).toBeLessThanOrEqual(8 * work.elements)
   })
 })

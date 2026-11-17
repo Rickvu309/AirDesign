@@ -3,7 +3,7 @@ import type { Kind, TextValue } from "@airdesign/document"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { slideAddresses } from "./package-address.js"
 import type { ShapeBox } from "./shape-write.js"
-import { shownLink } from "./trait-xml-link.js"
+import { shownRunLink, type RelationshipsRead } from "./trait-xml-link.js"
 import { markupChildren, shapeTextValue } from "./text-value-route.js"
 import { tableIn } from "./paint-table.js"
 
@@ -122,6 +122,7 @@ export function readSlides(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
 export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly ReadShape[] {
   const slides = slideByPart(parts)
   const rows: ReadShape[] = []
+  const relationships: RelationshipsRead = new Map()
   for (const [part, bytes] of parts) {
     if (!slidePart.test(part)) continue
     const slide = slides.get(part)
@@ -151,7 +152,7 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
         text: shapeTextValue(children, bytes, shape).map((paragraph, i) => ({
           ...paragraph,
           runs: paragraph.runs.map((run, j) => {
-            const link = shownLink(parts, { part, slide, shape: id, paragraph: i, run: j })
+            const link = shownRunLink(parts, part, bytes, children, shape, i, j, relationships)
             return link === null || link.kind === "none" ? run : { ...run, link }
           }),
         })),

@@ -17,6 +17,22 @@ const escape = (text: string) =>
 
 export type LinkAt = ElementAt & { readonly paragraph?: number; readonly run?: number }
 
+type Children = ReturnType<typeof markupChildren>
+
+function runOwner(bytes: Uint8Array, children: Children, shape: MarkupElement, at: number, runAt: number) {
+  const body = children[shape.index]?.find((each) => each.kind === "p:txBody")
+  const paragraph = body === undefined ? undefined : children[body.index]?.filter((each) => each.kind === "a:p")[at]
+  const run =
+    paragraph === undefined
+      ? undefined
+      : children[paragraph.index]?.filter((each) => ["a:r", "a:br", "a:fld"].includes(each.kind))[runAt]
+  if (run === undefined) return null
+  const holder = children[run.index]?.find((each) => each.kind === "a:rPr")
+  if (holder === undefined) return { bytes, holder: run, held: [], click: undefined, missingProperties: true }
+  const held = children[holder.index] ?? []
+  return { bytes, holder, held, click: held.find((each) => each.kind === "a:hlinkClick") }
+}
+
 function owner(parts: Parts, at: LinkAt) {
   const bytes = parts.get(at.part)
   if (bytes === undefined) return null
@@ -24,20 +40,7 @@ function owner(parts: Parts, at: LinkAt) {
   const children = markupChildren(elements)
   const shape = shapeById(elements, at.shape)
   if (shape.kind !== "p:sp") return null
-  if (at.paragraph !== undefined && at.run !== undefined) {
-    const body = children[shape.index]?.find((each) => each.kind === "p:txBody")
-    const paragraph =
-      body === undefined ? undefined : children[body.index]?.filter((each) => each.kind === "a:p")[at.paragraph]
-    const run =
-      paragraph === undefined
-        ? undefined
-        : children[paragraph.index]?.filter((each) => ["a:r", "a:br", "a:fld"].includes(each.kind))[at.run]
-    if (run === undefined) return null
-    const holder = children[run.index]?.find((each) => each.kind === "a:rPr")
-    if (holder === undefined) return { bytes, holder: run, held: [], click: undefined, missingProperties: true }
-    const held = children[holder.index] ?? []
-    return { bytes, holder, held, click: held.find((each) => each.kind === "a:hlinkClick") }
-  }
+  if (at.paragraph !== undefined && at.run !== undefined) return runOwner(bytes, children, shape, at.paragraph, at.run)
   const visual = children[shape.index]?.find((each) => each.kind === "p:nvSpPr")
   const holder = visual === undefined ? undefined : children[visual.index]?.find((each) => each.kind === "p:cNvPr")
   if (holder === undefined) return null
@@ -47,17 +50,46 @@ function owner(parts: Parts, at: LinkAt) {
 
 export type { ElementLink } from "@airdesign/document"
 
+export type RelationshipsRead = Map<string, readonly MarkupElement[] | undefined>
+
+function relationships(parts: Parts, part: string, read: RelationshipsRead): readonly MarkupElement[] | undefined {
+  const name = relsOf(part)
+  if (!read.has(name)) {
+    const rels = parts.get(name)
+    read.set(name, rels === undefined ? undefined : requireMarkup(rels).elements)
+  }
+  return read.get(name)
+}
+
 export function shownLink(parts: Parts, at: LinkAt): ElementLink | null {
   const found = owner(parts, at)
-  if (found === null) return null
-  const click = found.click
+  return found === null ? null : destination(parts, at.part, found.click, new Map())
+}
+
+export function shownRunLink(
+  parts: Parts,
+  part: string,
+  bytes: Uint8Array,
+  children: Children,
+  shape: MarkupElement,
+  paragraph: number,
+  run: number,
+  read: RelationshipsRead,
+): ElementLink | null {
+  if (shape.kind !== "p:sp") return null
+  const found = runOwner(bytes, children, shape, paragraph, run)
+  return found === null ? null : destination(parts, part, found.click, read)
+}
+
+function destination(
+  parts: Parts,
+  part: string,
+  click: MarkupElement | undefined,
+  read: RelationshipsRead,
+): ElementLink {
   if (click === undefined) return { kind: "none" }
-  const rels = parts.get(relsOf(at.part))
   const id = attr(click, "r:id")
-  const rel =
-    rels === undefined
-      ? undefined
-      : requireMarkup(rels).elements.find((each) => each.kind === "Relationship" && attr(each, "Id") === id)
+  const rel = relationships(parts, part, read)?.find((each) => each.kind === "Relationship" && attr(each, "Id") === id)
   if (rel === undefined) return { kind: "unsupported" }
   const target = attr(rel, "Target")
   const action = attr(click, "action")
@@ -73,7 +105,7 @@ export function shownLink(parts: Parts, at: LinkAt): ElementLink | null {
     attr(rel, "TargetMode") !== "External" &&
     target !== undefined
   ) {
-    const address = slideAddresses(parts).find((each) => each.part === partOf(at.part, target))
+    const address = slideAddresses(parts).find((each) => each.part === partOf(part, target))
     const slide = readSlideId(address?.slide)
     if (slide !== undefined) return { kind: "slide", slide }
   }

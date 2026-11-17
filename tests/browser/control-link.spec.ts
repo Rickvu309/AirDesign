@@ -5,6 +5,7 @@ import { openDeck, designing } from "./design-panel"
 import { exportFromDialog } from "./export-dialog"
 import { shapeAt, partsOf } from "./shape-fills"
 import { linkCopy } from "../../apps/web/src/copy/link-copy.ts"
+import { presentCopy } from "../../apps/web/src/copy/present-copy"
 
 test("a person saves and removes a whole text element URL @export", async ({ page }, info) => {
   await openDeck(page, "clean.pptx")
@@ -82,7 +83,6 @@ test("a person links selected words, sees Mixed, and picks a stable slide @expor
     kind: "url",
     url: "https://example.com/phrase",
   })
-  const { presentCopy } = await import("../../apps/web/src/copy/present-copy.ts")
   await page.keyboard.press("Escape")
   await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
   const phrase = page.locator("[data-present-show] a[data-text-link]")
