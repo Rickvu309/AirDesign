@@ -138,6 +138,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", page.url().split("/").at(-1))
   await expect.poll(() => stroke("6")).toEqual(connectorAfter)
+  await page.getByRole("button", { name: "Design", exact: true }).click()
   await expect.poll(() => stroke("4")).toEqual(rectangleAfter)
   await capture("reopened")
   note("The exported file opened again with both lines painted as before")
