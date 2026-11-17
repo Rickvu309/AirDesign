@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogOverlay, DialogPopup, DialogPortal } from "@/components/ui/dialog"
+import { Dialog, DialogDescription, DialogOverlay, DialogPopup, DialogPortal, DialogTitle } from "@/components/ui/dialog"
 import { productCopy } from "@/copy/product-copy"
 import { CloseGlyph } from "@/credits/dialog-glyphs"
 
@@ -36,10 +36,12 @@ export function ResultDialog({
             </button>
           </div>
           <div className="h-[var(--space-48)]">
-            <h2 className="text-[length:var(--type-section)] leading-[22px] font-semibold text-foreground">{title}</h2>
-            <p className="mt-1.5 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-muted-foreground">
+            <DialogTitle className="text-[length:var(--type-section)] leading-[22px] font-semibold text-foreground">
+              {title}
+            </DialogTitle>
+            <DialogDescription className="mt-1.5 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-muted-foreground">
               {body}
-            </p>
+            </DialogDescription>
           </div>
           <div className="flex h-10 items-end justify-end gap-2">
             {secondary ? (

@@ -1,3 +1,4 @@
+import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -12,16 +13,24 @@ const settingsAction =
 const settingsChoice =
   "h-8 w-[120px] border-0 bg-background px-2.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
 
-function PreferenceSelect({ value }: { value: string }) {
+function PreferenceRow({ title, status, value }: { title: string; status?: string; value: string }) {
+  const titleId = useId()
   return (
-    <Select defaultValue={value}>
-      <SelectTrigger className={settingsChoice}>
-        <SelectValue>{(selected: string | null) => selected ?? value}</SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={value}>{value}</SelectItem>
-      </SelectContent>
-    </Select>
+    <ModuleRow
+      title={title}
+      titleId={titleId}
+      status={status}
+      action={
+        <Select defaultValue={value}>
+          <SelectTrigger aria-labelledby={titleId} className={settingsChoice}>
+            <SelectValue>{(selected: string | null) => selected ?? value}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={value}>{value}</SelectItem>
+          </SelectContent>
+        </Select>
+      }
+    />
   )
 }
 
@@ -39,11 +48,11 @@ export function AccountTab() {
       />
       <Card title={settingsCopy.preferences}>
         <div className="flex flex-col gap-3.5">
-          <ModuleRow title={settingsCopy.language} action={<PreferenceSelect value={settingsCopy.english} />} />
-          <ModuleRow
+          <PreferenceRow title={settingsCopy.language} value={settingsCopy.english} />
+          <PreferenceRow
             title={settingsCopy.slideSize}
             status={settingsCopy.slideSizeBody}
-            action={<PreferenceSelect value={settingsCopy.slideRatio} />}
+            value={settingsCopy.slideRatio}
           />
         </div>
       </Card>

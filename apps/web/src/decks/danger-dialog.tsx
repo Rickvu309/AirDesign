@@ -64,7 +64,7 @@ export function DangerDialog({
               <circle cx="7" cy="11.4" r="1.3" fill="var(--background)" />
             </svg>
           </div>
-          <DialogClose className="absolute top-0 left-[324px] flex size-7 items-center justify-center rounded-md text-muted-foreground">
+          <DialogClose className="absolute top-6 right-6 flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-canvas">
             <svg width="10" height="10" viewBox="9 9 10 10" aria-hidden="true">
               <path
                 d="M9 9 L19 19 M19 9 L9 19"
