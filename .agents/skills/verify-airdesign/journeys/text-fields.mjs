@@ -41,12 +41,12 @@ export default async function drive(kit) {
       await expect(editor.locator("[data-paragraph]")).toHaveCount(2)
       const firstSize = await editor
         .locator("[data-run]")
+        .filter({ hasText: "Hello" })
         .first()
         .evaluate((run) => getComputedStyle(run).fontSize)
-      await expect(editor.locator("[data-paragraph]").last().locator("[data-run]").first()).toHaveCSS(
-        "font-size",
-        firstSize,
-      )
+      await expect(
+        editor.locator("[data-paragraph]").last().locator("[data-run]").filter({ hasText: "Second" }).first(),
+      ).toHaveCSS("font-size", firstSize)
       await expect
         .poll(() =>
           editor

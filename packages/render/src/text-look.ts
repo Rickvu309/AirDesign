@@ -322,7 +322,7 @@ function paragraphOverlay(style: Look, paragraph: CanvasParagraph, overlay: Para
   )
     return {
       ...align,
-      "--bullet-gap": "0.35em",
+      ...((paragraph.indent ?? 0) < 0 ? {} : { "--bullet-gap": "0.35em" }),
       "--bullet": cssQuote(
         `${overlay?.number ?? (paragraph.bullet != null && "number" in paragraph.bullet ? paragraph.bullet.number : 1)}.`,
       ),
@@ -446,7 +446,7 @@ function runsOf(block: HTMLElement): readonly HTMLElement[] {
 function isOnlyRun(node: Node): boolean {
   if (!isElement(node)) return node.nodeType === node.TEXT_NODE
   if (node.tagName === "BR") return true
-  return node.dataset.run !== undefined && node.children.length === 0
+  return node.dataset.run !== undefined && [...node.children].every((child) => child.tagName === "BR")
 }
 
 export function holdsOnlyRuns(box: HTMLElement): boolean {

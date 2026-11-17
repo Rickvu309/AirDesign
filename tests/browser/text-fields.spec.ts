@@ -44,12 +44,12 @@ for (const feature of ["strike", "letter-spacing", "numbers"] as const) {
       await expect(editor.locator("[data-paragraph]")).toHaveCount(2)
       const firstSize = await editor
         .locator("[data-run]")
+        .filter({ hasText: "Hello" })
         .first()
         .evaluate((run) => getComputedStyle(run).fontSize)
-      await expect(editor.locator("[data-paragraph]").last().locator("[data-run]").first()).toHaveCSS(
-        "font-size",
-        firstSize,
-      )
+      await expect(
+        editor.locator("[data-paragraph]").last().locator("[data-run]").filter({ hasText: "Second" }).first(),
+      ).toHaveCSS("font-size", firstSize)
       await expect
         .poll(() =>
           editor
@@ -75,7 +75,10 @@ for (const feature of ["strike", "letter-spacing", "numbers"] as const) {
     const xml = (await partsOf(file)).get(slide)?.toString("utf8") ?? ""
     if (feature === "strike") expect(xml).toContain('strike="sngStrike"')
     else if (feature === "letter-spacing") expect(xml).toContain('spc="-64"')
-    else expect(xml.match(/<a:buAutoNum type="arabicPeriod"\/>/g)).toHaveLength(2)
+    else {
+      expect(xml.match(/<a:buAutoNum type="arabicPeriod"\/>/g)).toHaveLength(2)
+      expect(xml.match(/sz="3200"/g)).toHaveLength(2)
+    }
     await copyFile(file, join(process.cwd(), "tests/browser", `exported-${feature}.pptx`))
   })
 }
