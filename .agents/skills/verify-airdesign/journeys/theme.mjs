@@ -1,3 +1,4 @@
+import { templateCopy, productCopy } from "../bin/product-copy.mjs"
 import path from "node:path"
 import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
@@ -47,12 +48,12 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const fonts = (locator) =>
     locator.evaluate((node) => [...node.querySelectorAll("*")].map((each) => each.style.fontFamily).join(" | "))
   await page.getByRole("button", { name: "Design", exact: true }).click()
-  await page.locator("[data-template-style]").click()
+  await entry(8).click()
+  await page.getByRole("button", { name: templateCopy.editTemplateStyle, exact: true }).click()
   const theme = page.locator("[data-design-theme]")
   await expect(theme).toBeVisible()
   await capture("theme-panel")
 
-  await entry(8).click()
   const oval = painted("ppt/slides/slide8.xml#7")
   const ovalBefore = await oval.innerHTML()
   await theme.getByRole("button", { name: "Accent 1", exact: true }).click()
@@ -66,7 +67,9 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await capture("person-accent-1")
   note("A person's Accent 1 #C00000 repainted slide 8's oval, whose line names accent1 through its style")
 
+  await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
   await entry(1).click()
+  await page.getByRole("button", { name: templateCopy.editTemplateStyle, exact: true }).click()
   const title = painted("ppt/slides/slide1.xml#2")
   const heading = theme.getByRole("textbox", { name: "Heading font", exact: true })
   await heading.fill("Georgia")
@@ -77,11 +80,15 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
 
   const server = async () => (await post(deckRoutes.open, { deck }, cookie)).json.register
   await expect
-    .poll(async () => JSON.stringify((await server()).elements["deck.theme"]?.landed ?? []))
+    .poll(async () => JSON.stringify((await server()).elements["deck.template1"]?.landed ?? []))
     .toContain('"major":{"set":"Georgia"}')
-  note("The server holds the person's accent1 and heading font rows on deck.theme")
+  note("The server holds the person's accent1 and heading font rows on deck.template1")
 
-  const set = { op: "set", target: "deck.theme", theme: { accent2: "#00B050", minor: "Verdana" } }
+  const set = {
+    op: "set",
+    target: "deck.theme",
+    theme: { accent1: "#C00000", major: "Georgia", accent2: "#00B050", minor: "Verdana" },
+  }
   let edited
   await expect
     .poll(
@@ -96,9 +103,11 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   note(`airdesign_edit_deck ${JSON.stringify(set)}: ${JSON.stringify(edited.structuredContent)}`)
   await tool("airdesign_stop_run", { deck, runId: edited.structuredContent.runId })
   const read = await tool("airdesign_read_deck", { deck })
-  expect(read.theme).toEqual({ accent1: "#C00000", major: "Georgia", accent2: "#00B050", minor: "Verdana" })
+  expect(read.templates).toHaveLength(2)
+  for (const template of read.templates)
+    expect(template.palette.slots).toMatchObject({ accent1: "C00000", accent2: "00B050" })
   for (const palette of read.palettes) expect(palette.slots).toMatchObject({ accent1: "C00000", accent2: "00B050" })
-  note(`read_deck prints theme ${JSON.stringify(read.theme)} and accent1 C00000, accent2 00B050 in every palette`)
+  note(`read_deck prints two scoped templates and accent1 C00000, accent2 00B050 in every palette`)
   for (const palette of read.palettes) expect(palette.fonts).toEqual({ major: "Georgia", minor: "Verdana" })
   const bodyFont = read.elements.find((element) => element.node === "256.4")
   expect(bodyFont?.design).toContain("text.font Verdana (master)")
@@ -109,6 +118,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await capture("agent-theme")
   note("The open editor painted the agent's body font Verdana on slide 1's subtitle and showed it in the panel")
 
+  await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
   const downloading = page.waitForEvent("download")
   await page.getByRole("button", { name: "Export", exact: true }).click()
   await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
@@ -152,7 +162,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", page.url().split("/").at(-1))
   await page.getByRole("button", { name: "Design", exact: true }).click()
-  await page.locator("[data-template-style]").click()
+  await page.getByRole("button", { name: templateCopy.editTemplateStyle, exact: true }).click()
   await expect(theme.getByRole("button", { name: "Accent 1", exact: true })).toHaveAttribute("title", /#C00000/)
   await expect(theme.getByRole("textbox", { name: "Heading font", exact: true })).toHaveValue("Georgia")
   await expect.poll(() => fonts(painted("ppt/slides/slide1.xml#2"))).toContain("Georgia")

@@ -18,6 +18,7 @@ import {
   shownGeometry,
   shownLine,
   shownTurn,
+  slideTheme,
 } from "@airdesign/pptx"
 import { element, type At, type Parts, type Probe } from "./parity-probe"
 import { pictureProbes } from "./picture-probes"
@@ -97,6 +98,14 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
     opening: () => ({ v: format, patch: { link: { target: "opening" } } }),
     edit: (_, __, value) => ({ v: format, patch: { link: { target: { set: value } } } }),
     fields: { target: { file: (parts, at) => shownLink(parts, at), shows: (value) => value } },
+  },
+  template: {
+    deck: "doe-heat-pumps.pptx",
+    kind: "slide",
+    node: "256.slide",
+    opening: () => ({ v: format, patch: { template: { id: "opening" } } }),
+    edit: (_, __, value) => ({ v: format, patch: { template: { id: { set: value } } } }),
+    fields: { id: { file: (parts, at) => slideTheme(parts, at.part), shows: (value) => value } },
   },
   geometry: {
     deck: "clean.pptx",

@@ -38,7 +38,11 @@ function themePart(parts: ReadonlyMap<string, Uint8Array>, slide: string | null)
 
 export function themeSwatches(parts: ReadonlyMap<string, Uint8Array>, slide: string | null): readonly ThemeSwatch[] {
   const part = themePart(parts, slide)
-  const bytes = part === null ? undefined : parts.get(part)
+  return part === null ? [] : themePartSwatches(parts, part)
+}
+
+export function themePartSwatches(parts: ReadonlyMap<string, Uint8Array>, part: string): readonly ThemeSwatch[] {
+  const bytes = parts.get(part)
   if (bytes === undefined) return []
   const elements = markupDocument(bytes).elements
   const children = markupChildren(elements)

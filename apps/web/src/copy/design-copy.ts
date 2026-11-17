@@ -1,6 +1,7 @@
+import { templateCopy } from "./template-copy"
 import { appearanceCopy } from "./appearance-copy"
 import type { PaintFill } from "@airdesign/pptx"
-import { nameTooLongOf } from "@/copy/product-copy"
+import { nameTooLongOf } from "./product-copy"
 import type { PanelKind } from "@/design/panel-order"
 
 type Named = Exclude<PaintFill["type"], "solid" | "none">
@@ -9,14 +10,7 @@ export const designCopy = {
   slide: (number: number) => `Slide ${String(number)}`,
   background: "Background",
   selectOneSlide: "Select one slide to change its design.",
-  templateStyle: "Template style",
-  currentTheme: "Current theme",
-  themeFontsMissing: "Fonts not specified",
-  editDeckTheme: "Edit deck theme",
-  deckThemeScope: "Changes apply to all themes in this deck.",
-  themeFonts: (heading: string, body: string) => `${heading} / ${body}`,
-  headingFont: (font: string) => `Heading: ${font}`,
-  bodyFont: (font: string) => `Body: ${font}`,
+  ...templateCopy,
   backgroundColor: (name: string) => `Background color, ${name}`,
   ...appearanceCopy,
   white: "White",

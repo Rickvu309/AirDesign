@@ -3,7 +3,7 @@ import { toast } from "@/components/ui/toast"
 import { moveDeck } from "@/decks/move-deck"
 import { useFontReady } from "@/editor/use-font-ready"
 import { storeNewer, watchNewer } from "@airdesign/live"
-import { useSyncExternalStore } from "react"
+import { useSyncExternalStore, useState } from "react"
 import { NotFoundPage } from "@/decks/not-found-page"
 import { DownloadedNotice, ThinNoticeView } from "@/thin-notice"
 import { EditorFrame } from "@/editor/editor-frame"
@@ -25,6 +25,7 @@ import { colorsIn, LiveDesignPanel } from "@/editor/live-design-panel"
 
 export function ThinDeck({ id }: { id: string }) {
   const deck = useEditorDeck(id)
+  const [selectedSlides, setSelectedSlides] = useState<readonly number[]>([])
   const paintedDeck = useFontReady(deck.paintedDeck)
   const [panel, setPanel] = useKeptPanel(id)
   useDeckOpen(deck)
@@ -82,7 +83,7 @@ export function ThinDeck({ id }: { id: string }) {
             onShape: deck.inserts.addShape,
             onIcon: deck.inserts.addIcon,
             size: shown.canvases.current(shown.current),
-            slides: slideCommands(deck, undoButtons.onUndo),
+            slides: { ...slideCommands(deck, undoButtons.onUndo), onSelection: setSelectedSlides },
             slide: editableSlide(deck),
             presentPaint: (index, width, go) => (
               <PresentLinks parts={shown.displayParts.current} index={index} width={width} go={go}>
@@ -100,9 +101,11 @@ export function ThinDeck({ id }: { id: string }) {
           onNotes={(value) => notesBar.edit(currentSlide, value)}
           panel={panel}
           onPanel={setPanel}
-          side={(selectedSlides) => (
+          side={(selectedCount) => (
             <>
-              {panel === "design" ? <LiveDesignPanel deck={deck} selectedSlides={selectedSlides} /> : null}
+              {panel === "design" ? (
+                <LiveDesignPanel deck={{ ...deck, selectedSlides }} selectedSlides={selectedCount} />
+              ) : null}
               <AiraPanel key={id} deck={id} hidden={panel !== "agent"} />
             </>
           )}

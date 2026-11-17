@@ -11,7 +11,7 @@ export type SlideKind = (typeof slideKinds)[number]
 export const themeNode = "deck.theme" as ElementId
 
 export const elementPattern = new RegExp(
-  `^(?:(?:[0-9]{1,10}|n[0-9a-z]{12})\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${slideKinds.join("|")})|deck\\.theme)$`,
+  `^(?:(?:[0-9]{1,10}|n[0-9a-z]{12})\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${slideKinds.join("|")})|deck\\.(?:theme|template[1-9][0-9]{0,3}))$`,
 )
 
 export const rootElement = "a" as ElementId
@@ -73,4 +73,17 @@ export function slideKind(node: ElementId): SlideKind | null {
 
 export function slideNode(slide: SlideId, kind: SlideKind): ElementId {
   return `${slide}.${kind}` as ElementId
+}
+
+export function templateNode(index: number): ElementId {
+  return elementId(`deck.template${index + 1}`)
+}
+
+export function templateIndex(node: string): number | null {
+  const match = /^deck\.template([1-9][0-9]{0,3})$/.exec(node)
+  return match === null ? null : Number(match[1]) - 1
+}
+
+export function themeOwned(node: string): boolean {
+  return node === themeNode || templateIndex(node) !== null
 }

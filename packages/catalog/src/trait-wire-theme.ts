@@ -5,8 +5,10 @@ function hex(digits: string): `#${string}` {
 }
 
 export const themeWire: TraitWire<"theme"> = {
-  description: "With target deck.theme: the theme's colors and fonts, which every element naming them follows.",
+  description:
+    "With target deck.theme: all themes. With deck.template1, deck.template2, etc. from read_deck.templates order: only that template. Colors and fonts update objects using them.",
   fields: {
+    name: { description: "Template name in this deck.", example: { theme: { name: "Light slides" } } },
     dk1: { description: "Dark 1, usually tx1.", example: { theme: { dk1: hex("1F1F1F") } } },
     lt1: { description: "Light 1, usually bg1.", example: { theme: { lt1: hex("FFFDF7") } } },
     dk2: { description: "Dark 2, usually tx2.", example: { theme: { dk2: hex("1F4E79") } } },

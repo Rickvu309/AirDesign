@@ -94,6 +94,15 @@ function fontCodec(font: Font): PartCodec<string> {
 export const themeXml: TraitXml<"theme"> = {
   slot: null,
   fields: {
+    name: whole({
+      read: (parts, at) => valueOf(requireMarkup(partBytes(parts, at.part)).elements[0], "name"),
+      write: (parts, at, name) =>
+        written(
+          parts,
+          at.part,
+          withAttribute("name", xmlAttribute(name).replaceAll("'", "&apos;"))(partBytes(parts, at.part)),
+        ),
+    }),
     dk1: whole(slotCodec("dk1")),
     lt1: whole(slotCodec("lt1")),
     dk2: whole(slotCodec("dk2")),
@@ -120,7 +129,11 @@ export type ShownTheme = Partial<TraitValue<"theme">>
 
 export function shownTheme(parts: Parts, slide: string): ShownTheme {
   const part = slideTheme(parts, slide)
-  const bytes = part === null ? undefined : parts.get(part)
+  return part === null ? {} : themePartValues(parts, part)
+}
+
+export function themePartValues(parts: Parts, part: string): ShownTheme {
+  const bytes = parts.get(part)
   if (bytes === undefined) return {}
   const shown: Record<string, string> = {}
   for (const slot of themeSlots) {

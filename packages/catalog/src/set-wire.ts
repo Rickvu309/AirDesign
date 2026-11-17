@@ -29,7 +29,7 @@ type Inputs = Readonly<Record<string, unknown>>
 const slidePart = "(?:[0-9]{1,10}|n[0-9a-z]{12})"
 const rolePart = `(?:${roles.join("|")})`
 const ownKinds = slideKinds.join("|")
-const targetPattern = `^(?:[0-9]{1,10}|${slidePart}\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${ownKinds}|${rolePart})|\\*\\.${rolePart}|deck\\.theme)$`
+const targetPattern = `^(?:[0-9]{1,10}|${slidePart}\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${ownKinds}|${rolePart})|\\*\\.${rolePart}|deck\\.(?:theme|template[1-9][0-9]{0,3}))$`
 const roleTarget = new RegExp(`^(${slidePart}|\\*)\\.(${rolePart})$`)
 
 const addable = ["shape", "picture"] as const

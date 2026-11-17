@@ -1,3 +1,7 @@
+import { colorCopy } from "../../apps/web/src/copy/color-copy"
+import { productCopy } from "../../apps/web/src/copy/product-copy"
+import { themeCopy } from "../../apps/web/src/copy/theme-copy"
+import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
@@ -12,10 +16,17 @@ const red = "c00000"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-async function themePanel(page: Page): Promise<Locator> {
+async function themePanel(page: Page, index?: number): Promise<Locator> {
   const design = page.getByRole("button", { name: "Design", exact: true })
   if ((await design.getAttribute("aria-pressed")) !== "true") await design.click()
-  await page.locator("[data-template-style]").click()
+  if (index === undefined) await page.getByRole("button", { name: designCopy.editTemplateStyle, exact: true }).click()
+  else {
+    await page.locator("[data-template-style]").click()
+    await page
+      .getByRole("button", { name: designCopy.editTemplateStyle, exact: true })
+      .nth(index + 1)
+      .click()
+  }
   const theme = page.locator("[data-design-theme]")
   await expect(theme).toBeVisible()
   return theme
@@ -41,42 +52,55 @@ test("a person changes accent 1 and the heading font of a deck with two themes, 
   test.setTimeout(180_000)
   await rm(judged, { force: true })
   await openDeck(page, "doe-heat-pumps.pptx")
-  let theme = await themePanel(page)
   await entry(page, 8).click()
+  let theme = await themePanel(page)
   const oval = painted(page, "ppt/slides/slide8.xml#7")
   await expect(oval).toBeVisible()
   const ovalBefore = await oval.innerHTML()
-  await typeColor(page, theme.getByRole("button", { name: "Accent 1", exact: true }), `#${red}`)
+  await typeColor(page, theme.getByRole("button", { name: themeCopy.accent1, exact: true }), colorCopy.hexName(red))
   await expect.poll(() => oval.innerHTML()).not.toBe(ovalBefore)
-  await expect(theme.getByRole("button", { name: "Accent 1", exact: true })).toHaveAttribute(
+  await expect(theme.getByRole("button", { name: themeCopy.accent1, exact: true })).toHaveAttribute(
     "title",
-    new RegExp(`#${red}`, "i"),
+    new RegExp(colorCopy.hexName(red), "i"),
   )
 
+  await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
+  theme = await themePanel(page, 0)
+  await typeColor(page, theme.getByRole("button", { name: themeCopy.accent1, exact: true }), colorCopy.hexName(red))
+  await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
   await entry(page, 1).click()
+  theme = await themePanel(page, 0)
   const title = painted(page, "ppt/slides/slide1.xml#2")
   await expect.poll(() => fonts(title)).toContain("Calibri Light")
-  const heading = theme.getByRole("textbox", { name: "Heading font", exact: true })
+  const heading = theme.getByRole("textbox", { name: themeCopy.major, exact: true })
   await expect(heading).toHaveValue("Calibri Light")
   await heading.fill("Georgia")
   await heading.press("Enter")
   await expect.poll(() => fonts(title)).toContain("Georgia")
+  await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
   await page.getByRole("button", { name: "Undo theme font", exact: true }).click()
   await expect.poll(() => fonts(title)).not.toContain("Georgia")
+  theme = await themePanel(page)
   await expect(heading).toHaveValue("Calibri Light")
+  await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
   await page.getByRole("button", { name: "Redo theme font", exact: true }).click()
   await expect.poll(() => fonts(title)).toContain("Georgia")
 
   await page.reload()
   await settled(page)
   theme = await themePanel(page)
-  await expect(theme.getByRole("textbox", { name: "Heading font", exact: true })).toHaveValue("Georgia")
-  await expect(theme.getByRole("button", { name: "Accent 1", exact: true })).toHaveAttribute(
+  await expect(theme.getByRole("textbox", { name: themeCopy.major, exact: true })).toHaveValue("Georgia")
+  await expect(theme.getByRole("button", { name: themeCopy.accent1, exact: true })).toHaveAttribute(
     "title",
-    new RegExp(`#${red}`, "i"),
+    new RegExp(colorCopy.hexName(red), "i"),
   )
   await expect.poll(() => fonts(painted(page, "ppt/slides/slide1.xml#2"))).toContain("Georgia")
 
+  await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
+  theme = await themePanel(page, 1)
+  await theme.getByRole("textbox", { name: themeCopy.major, exact: true }).fill("Georgia")
+  await theme.getByRole("textbox", { name: themeCopy.major, exact: true }).press("Enter")
+  await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)
   const file = testInfo.outputPath(exportName)
@@ -99,10 +123,10 @@ test("a person changes accent 1 and the heading font of a deck with two themes, 
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   theme = await themePanel(page)
-  await expect(theme.getByRole("textbox", { name: "Heading font", exact: true })).toHaveValue("Georgia")
-  await expect(theme.getByRole("button", { name: "Accent 1", exact: true })).toHaveAttribute(
+  await expect(theme.getByRole("textbox", { name: themeCopy.major, exact: true })).toHaveValue("Georgia")
+  await expect(theme.getByRole("button", { name: themeCopy.accent1, exact: true })).toHaveAttribute(
     "title",
-    new RegExp(`#${red}`, "i"),
+    new RegExp(colorCopy.hexName(red), "i"),
   )
 })
 
@@ -111,7 +135,8 @@ test("a shape filled with accent 1 shows the theme's new accent 1 in its fill sw
 }) => {
   await openDeck(page, "clean.pptx")
   const theme = await themePanel(page)
-  await typeColor(page, theme.getByRole("button", { name: "Accent 1", exact: true }), `#${red}`)
+  await typeColor(page, theme.getByRole("button", { name: themeCopy.accent1, exact: true }), colorCopy.hexName(red))
+  await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
   const shape = painted(page, "ppt/slides/slide1.xml#2")
   await shape.click()
   await page.keyboard.press("Escape")

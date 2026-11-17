@@ -1,4 +1,4 @@
-import { useCallback, useId, useState, useMemo, useSyncExternalStore, type ReactNode } from "react"
+import { useCallback, useId, useMemo, useSyncExternalStore, type ReactNode } from "react"
 import {
   keptRefuses,
   openRegister,
@@ -7,7 +7,6 @@ import {
   shapeOf,
   siteKinds,
   takes,
-  themeNode,
   traits,
   type FieldValue,
   type ElementId,
@@ -32,14 +31,11 @@ import {
   shownImage,
   shownLine,
   shownTextStyle,
-  shownTheme,
-  templateStyle,
   shownTurn,
   type DeckTraits,
 } from "@airdesign/pptx"
 import type { PaintStore, Selection } from "@airdesign/render"
-import { SlidersHorizontal } from "lucide-react"
-import { TemplateStyleCard } from "@/editor/template-style-card"
+import { LiveTemplateStyle } from "@/editor/live-template-style"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
 import type { Palette, Swatch } from "@/design/color-choices"
@@ -68,12 +64,12 @@ import { designShown, themeOf, type DesignShown } from "@/design-shown"
 import { ElementTitleActions } from "./element-title-actions"
 import { PicturePreview } from "@/editor/picture-preview"
 import { slideListCopy } from "@/copy/slide-list-copy"
-import { ControlView, DesignHead, DesignSection, ElementDesign, SectionStrips } from "@/editor/design-panel"
+import { ControlView, DesignHead, DesignSection, ElementDesign } from "@/editor/design-panel"
 import { LiveSelectionColors } from "./live-selection-colors"
-
 type Parts = ReadonlyMap<string, Uint8Array>
 
 export type DesigningDeck = DesignDeck & {
+  readonly selectedSlides?: readonly number[]
   readonly selection: Selection
   readonly matching?: readonly ElementId[]
   readonly selectMatching?: () => void
@@ -394,65 +390,9 @@ function LiveSlideDesign({ deck }: { deck: DesigningDeck }) {
       deck={colorsIn(parts)}
       onFill={(value) => changeDesign(deck, () => ({ target: { slide: view.slide }, fill: { value } }))}
     >
-      <LiveThemeDesign deck={deck} />
+      <LiveTemplateStyle deck={deck} />
       <LiveSelectionColors deck={deck} nodes={[]} />
     </DesignView>
-  )
-}
-
-function themeSection(deck: DesigningDeck): PanelSection | null {
-  const { shown } = deck
-  const parts = shown.displayParts.current
-  const part = readSlides(parts)[shown.current]?.part
-  const view = deviceScope(shown.shownParts.current, shown.shownRegister.current ?? openRegister("", "")).view(
-    themeNode,
-  )
-  if (part === undefined || view === undefined) return null
-  const read = Object.entries(shownTheme(parts, part))
-  const fields = Object.fromEntries(read.map(([field, value]) => [`theme.${field}`, { value, own: true }]))
-  return panelOf(view, { reads: {}, moves: false, fields }).sections.find(({ trait }) => trait === "theme") ?? null
-}
-
-function LiveThemeDesign({ deck }: { deck: DesigningDeck }) {
-  const [open, setOpen] = useState(false)
-  const parts = deck.shown.displayParts.current
-  const part = readSlides(parts)[deck.shown.current]?.part
-  const style = part === undefined ? null : templateStyle(parts, part)
-  const section = themeSection(deck)
-  if (section === null) return null
-  return (
-    <DesignSection
-      title={designCopy.templateStyle}
-      action={
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-6"
-          aria-label={designCopy.editDeckTheme}
-          aria-expanded={open}
-          onClick={() => setOpen(!open)}
-        >
-          <SlidersHorizontal className="size-3.5" />
-        </Button>
-      }
-    >
-      {style === null ? null : <TemplateStyleCard style={style} open={open} onOpen={() => setOpen(!open)} />}
-      {open ? (
-        <>
-          <p className="text-[length:var(--type-caption)] text-muted-foreground">{designCopy.deckThemeScope}</p>
-          <div className="flex flex-col gap-2" data-design-theme>
-            <SectionStrips
-              strips={section.strips}
-              palette={{ theme: [], deck: colorsIn(deck.shown.displayParts.current) }}
-              onChange={(control, value) =>
-                changeDesign(deck, () => rebasedChange(themeSection(deck)?.strips.flat() ?? [], control, value))
-              }
-            />
-          </div>
-        </>
-      ) : null}
-    </DesignSection>
   )
 }
 

@@ -20,6 +20,7 @@ export type UndoName =
   | "back"
   | "group"
   | "ungroup"
+  | "template"
   | "background"
   | "theme-color"
   | "theme-font"
@@ -69,6 +70,7 @@ export const undoCopy = {
     back: "Undo send to back",
     group: "Undo group",
     ungroup: "Undo ungroup",
+    template: "Undo template style",
     background: "Undo background color",
     "theme-color": "Undo theme color",
     "theme-font": "Undo theme font",
@@ -115,6 +117,7 @@ export const undoCopy = {
     back: "Redo send to back",
     group: "Redo group",
     ungroup: "Redo ungroup",
+    template: "Redo template style",
     background: "Redo background color",
     "theme-color": "Redo theme color",
     "theme-font": "Redo theme font",
