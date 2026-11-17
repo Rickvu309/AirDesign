@@ -1,6 +1,6 @@
 import { currentBox, currentValue, type Box, type Register } from "@airdesign/document"
 import { afterEach, expect, it, vi } from "vitest"
-import { installIndexedDb, node, other } from "./browser-fixtures.js"
+import { installIndexedDb, node, other, quiet, traffic } from "./browser-fixtures.js"
 import * as first from "./index.js"
 import { memoryRemote, type Remote } from "./index.js"
 
@@ -137,4 +137,13 @@ it("numbers an answer's rows after the rows the other tab adopted while it was o
   if (!copy.ok) throw new Error(copy.refusal)
   const kept = copy.register.elements[other]
   expect([deckOf(copy.register), kept === undefined ? undefined : currentValue(kept)]).toEqual(["moved bold", "a1"])
+})
+
+it("writes nothing to the device when it opens a deck again at the revision the copy holds", async () => {
+  installIndexedDb()
+  const live = first.connect(memoryRemote())
+  expect(await live.openDeck(deck)).toMatchObject({ ok: true })
+  quiet()
+  expect(await live.openDeck(deck)).toMatchObject({ ok: true })
+  expect(traffic.puts).toBe(0)
 })
