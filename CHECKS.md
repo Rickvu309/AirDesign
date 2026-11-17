@@ -28,9 +28,9 @@ Checks fail gate, check, check:pptx or merge. Review needs judgment. Give recurr
 | Stashes are shared; recover only yours | `scripts/worktrees.mjs` warns on missing stash sources during `pnpm check`; read-only |
 | Killed verify runs and test clusters are removed before new ones start; live processes are kept | `leftover-runs.test.mjs` and `leftover-clusters.test.ts` |
 | The branch of a pull request closed without merging does not stay on GitHub | the `closed-branch` workflow deletes it when the pull request closes. The pull request page can restore it. It leaves `main` and `archive/` branches alone |
-| Staged files are formatted without staging a person's unstaged edits | `scripts/pre-commit.mjs`, installed beside `pre-push` by `scripts/install-hooks.mjs`; an unformatted partly staged file refuses the commit |
-| Browser/support imports resolve | `browser-imports` preflight blocks after missing copy exports broke CI; `browser-imports.test.mjs` covers lazy entries. Computed targets remain runtime checks |
-| Cheap deterministic failures do not wait in the check line | `scripts/check.mjs` runs its `preflight` steps before `takeMachineLock`; `scripts/check.test.mjs` proves a failure takes no lock. `pnpm gate` takes none |
+| Formatting preserves unstaged edits | `scripts/pre-commit.mjs` refuses unformatted partly staged files; `scripts/install-hooks.mjs` installs it |
+| Browser/support imports resolve, including lazy entries | `browser-imports.test.mjs`; computed targets need runtime checks |
+| Cheap checks fail before taking a slot; gate takes none | `scripts/check.test.mjs`, `scripts/gate.test.mjs` |
 | Run `pnpm gate` after your last edit, before every push | `pnpm gate` or `pnpm check` stamps it; `pre-push` refuses any other and names `pnpm land` (`scripts/checked.test.mjs`) |
 | The gate runs what the diff reaches and waits in no line | `scripts/gate.test.mjs`: cheap checks, changed builds and `pnpm prove --plan`. Past 40 unit files, only changed ones. ci runs every step |
 | A commit whose test failed is not pushed; a failed test is load only when it passes alone | `pnpm gate` and `pnpm check` stamp no failed `test`. `pnpm land` stamps after the alone rerun (`scripts/land-check.mjs`) |
