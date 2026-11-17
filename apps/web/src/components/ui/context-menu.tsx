@@ -1,5 +1,6 @@
 "use client"
 
+import { useCallback, useLayoutEffect, useState } from "react"
 import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu"
 import { cn } from "@/lib/class-names"
 
@@ -17,9 +18,25 @@ function ContextMenuContent({
   side,
   align,
   sideOffset,
+  ref,
   ...props
 }: ContextMenuPrimitive.Popup.Props &
   Pick<ContextMenuPrimitive.Positioner.Props, "anchor" | "side" | "align" | "sideOffset">) {
+  const [popup, setPopup] = useState<HTMLDivElement | null>(null)
+  const attachPopup = useCallback(
+    (element: HTMLDivElement | null) => {
+      setPopup(element)
+      if (typeof ref === "function") return ref(element)
+      if (ref) ref.current = element
+    },
+    [ref],
+  )
+  useLayoutEffect(() => {
+    if (!popup) return
+    queueMicrotask(() => {
+      if (popup.isConnected && !popup.contains(popup.ownerDocument.activeElement)) popup.focus({ preventScroll: true })
+    })
+  }, [popup])
   return (
     <ContextMenuPrimitive.Portal>
       <ContextMenuPrimitive.Positioner
@@ -30,6 +47,7 @@ function ContextMenuContent({
         sideOffset={sideOffset}
       >
         <ContextMenuPrimitive.Popup
+          ref={attachPopup}
           data-slot="context-menu-content"
           className={cn(
             "z-50 min-w-56 origin-(--transform-origin) overflow-hidden rounded-lg bg-popover p-1 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none",
