@@ -1,6 +1,7 @@
 import type { Preset } from "@airdesign/document"
 
 export const geometryCopy = {
+  corners: "Corners",
   section: "Shape type",
   shape: "Shape type",
   adjust: (name: string) => adjustNames[name] ?? `Adjust ${name.replace(/^adj/, "")}`,

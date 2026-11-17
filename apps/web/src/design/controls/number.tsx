@@ -4,9 +4,13 @@ import { designCopy } from "@/copy/design-copy"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
 
-function shownNumber(control: ControlProps["control"]): string {
+function shownNumber(control: ControlProps["control"], scale?: number): string {
   if (control.mixed || control.desc.kind !== "number" || typeof control.value !== "number") return ""
-  return String(agentNumberOf(control.desc.unit, control.value))
+  return String(
+    scale === undefined
+      ? agentNumberOf(control.desc.unit, control.value)
+      : Math.round((control.value / scale) * 100) / 100,
+  )
 }
 
 function stepOf(event: KeyboardEvent<HTMLInputElement>, unit: number): number {
@@ -36,19 +40,26 @@ export function NumberField({
   unit,
   kind,
   step = 1,
-}: ControlProps & { unit: string; kind: string; step?: number }) {
+  scale,
+}: ControlProps & { unit: string; kind: string; step?: number; scale?: number }) {
   const look = control.look
   const Icon = look.name.show === "icon" ? look.name.icon : undefined
   const [draft, setDraft] = useState<string | null>(null)
-  const shown = shownNumber(control)
+  const shown = shownNumber(control, scale)
   const field = useRef<HTMLInputElement>(null)
   const scrub = useRef<Scrub | null>(null)
+
+  function readNumber(value: number) {
+    return scale === undefined || control.desc.kind !== "number"
+      ? readAgent(control.desc, value)
+      : readAgent({ ...control.desc, unit: "count" }, Math.round(value * scale))
+  }
 
   function commit(text: string) {
     setDraft(null)
     const typed = Number(text.trim().replace(",", "."))
     if (text.trim() === "" || !Number.isFinite(typed)) return
-    const read = readAgent(control.desc, typed)
+    const read = readNumber(typed)
     if (read.ok && (read.value !== control.value || control.inherited)) onChange(read.value)
   }
 
@@ -76,7 +87,7 @@ export function NumberField({
     if (from === null) return
     const to = scrubbed(from, event.clientX, event, step)
     if (to === from) return
-    const read = readAgent(control.desc, to.value)
+    const read = readNumber(to.value)
     scrub.current = read.ok ? to : { ...from, x: to.x }
     if (read.ok) onChange(read.value)
   }
@@ -115,6 +126,7 @@ export function NumberField({
         ref={field}
         className={cn(
           "min-w-[3ch] flex-1 bg-transparent text-right text-[length:var(--type-caption)] tabular-nums outline-none placeholder:text-quiet",
+          kind === "corners" && "text-left",
           control.inherited && draft === null ? "text-quiet" : "text-foreground",
         )}
         inputMode="decimal"

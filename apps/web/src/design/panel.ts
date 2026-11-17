@@ -20,6 +20,7 @@ import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
 import { cropChange } from "./crop-change"
 import { appearanceSections } from "./appearance-presets"
+import { cornersSection } from "./corners-control"
 import { opacitySection } from "./opacity-control"
 import { hidden, loneRows, panelKind, panelOrder, type PanelKind } from "./panel-order"
 import { alphaFieldOver, atShownAlpha } from "./shown-alpha"
@@ -27,7 +28,7 @@ import { traitControls } from "./trait-controls"
 import { arrange, canvasControl, resolveControl, type ControlKind, type ControlLook } from "./panel-arrangement"
 export type { ControlKind } from "./panel-arrangement"
 
-export type SectionName = TraitName | "opacity" | "alignment" | "border" | "shadow" | "pictureFill"
+export type SectionName = TraitName | "opacity" | "alignment" | "border" | "shadow" | "pictureFill" | "corners"
 
 export type PanelControl = {
   readonly trait: SectionName
@@ -243,6 +244,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
   const alignSection: PanelSection[] =
     alignment.length === 0 ? [] : [{ trait: "alignment", label: null, open: true, strips: [alignment] }]
   const opacity = opacitySection(view, shown)
+  const corners = cornersSection(view, shown)
   const kind = panelKind(view, shown)
   return {
     node: view.node,
@@ -250,7 +252,10 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     kind,
     sections: ordered(
       kind,
-      appearanceSections([...alignSection, ...content, ...(opacity === null ? [] : [opacity])], kind),
+      appearanceSections(
+        [...alignSection, ...content, ...(opacity === null ? [] : [opacity]), ...(corners === null ? [] : [corners])],
+        kind,
+      ),
       shown,
     ),
   }
