@@ -1,5 +1,4 @@
 import { expect } from "@playwright/test"
-import { deckRoutes } from "@airdesign/catalog"
 import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { forward, openClean, signInBrowser, test } from "./api-stack"
@@ -14,6 +13,7 @@ test("an Undo that cannot reach the server says so and keeps Undo, and the next 
   context,
   stack,
 }) => {
+  const { deckRoutes } = await import("../../packages/catalog/src/index.ts")
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
