@@ -252,6 +252,7 @@ it("tells a person how to continue when a design-panel edit is refused", async (
     await picture.answered()
     expect(error).toHaveBeenCalledExactlyOnceWith(
       "Unable to make that change. Select the element and try again, or reload the deck if it keeps happening.",
+      { duration: Infinity, closeButton: true },
     )
     expect(picture.landed()).toEqual({})
   } finally {
@@ -327,3 +328,19 @@ it.each([
   },
   20_000,
 )
+
+it("keeps a Name draft while Enter confirms an input-method composition", async () => {
+  const picture = await pictureDeck()
+  try {
+    await act(async () => picture.unfold())
+    await act(async () => picture.entered("Name", "名前"))
+    await act(async () => picture.side("Name").dispatchEvent(new window.KeyboardEvent("keydown", {
+      key: "Enter", isComposing: true, bubbles: true, cancelable: true,
+    })))
+    await picture.answered()
+    expect(picture.side("Name").value).toBe("名前")
+    expect(picture.landed()).toEqual({})
+  } finally {
+    await picture.close()
+  }
+}, 20_000)
