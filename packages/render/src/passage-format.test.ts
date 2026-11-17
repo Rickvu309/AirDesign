@@ -298,3 +298,39 @@ it("keeps a phrase link through a panel focus change and text serialization", as
   unsubscribe()
   panel.remove()
 })
+
+it("opens a rendered phrase only inside a presentation navigation surface", async () => {
+  const store = paintStore()
+  store.publish({
+    id,
+    kind: "shape",
+    picture: null,
+    text: writeTextValue([
+      { from: 0, runs: [{ from: 0, text: "Read", link: { kind: "url", url: "https://example.com" } }] },
+    ]),
+  })
+  const host = document.createElement("div")
+  document.body.append(host)
+  const root = createRoot(host)
+  roots.push({ host, root })
+  await act(async () => root.render(createElement(Passage, { store, id })))
+  const link = host.querySelector("a")
+  expect(link?.textContent).toBe("Read")
+  const editorClick = new MouseEvent("click", { bubbles: true, cancelable: true })
+  link?.dispatchEvent(editorClick)
+  expect(editorClick.defaultPrevented).toBe(true)
+  host.dataset.linkNavigation = ""
+  const presentationClick = new MouseEvent("click", { bubbles: true, cancelable: true })
+  let prevented = true
+  link?.addEventListener(
+    "click",
+    (event) => {
+      prevented = event.defaultPrevented
+      event.preventDefault()
+    },
+    { once: true },
+  )
+  expect(link?.closest("[data-link-navigation]")).toBe(host)
+  link?.dispatchEvent(presentationClick)
+  expect(prevented).toBe(false)
+})

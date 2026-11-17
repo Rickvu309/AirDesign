@@ -94,6 +94,9 @@ export function SheetText(props: {
                 <a
                   key={at}
                   data-text-link
+                  onClick={(event) => {
+                    if (event.currentTarget.closest("[data-link-navigation]") === null) event.preventDefault()
+                  }}
                   href={run.link.kind === "url" ? run.link.url : `#slide-${run.link.slide}`}
                   target={run.link.kind === "url" ? "_blank" : undefined}
                   rel="noopener noreferrer"

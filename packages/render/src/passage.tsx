@@ -181,6 +181,9 @@ function paragraphNode(document: Document, paragraph: TextParagraph, readonly: b
       link.kind !== "none" &&
       link.kind !== "unsupported"
     ) {
+      span.addEventListener("click", (event) => {
+        if (span.closest("[data-link-navigation]") === null) event.preventDefault()
+      })
       span.dataset.textLink = ""
       span.href = link.kind === "url" ? link.url : `#slide-${link.slide}`
       span.target = link.kind === "url" ? "_blank" : ""

@@ -82,4 +82,17 @@ test("a person links selected words, sees Mixed, and picks a stable slide @expor
     kind: "url",
     url: "https://example.com/phrase",
   })
+  const { presentCopy } = await import("../../apps/web/src/copy/present-copy.ts")
+  await page.keyboard.press("Escape")
+  await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
+  const phrase = page.locator("[data-present-show] a[data-text-link]")
+  await expect(phrase).toHaveText("two")
+  const box = await phrase.boundingBox()
+  if (box === null) throw new Error("phrase")
+  await page.context().route("https://example.com/**", (route) => route.fulfill({ body: "Opened" }))
+  const popup = page.waitForEvent("popup")
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  const opened = await popup
+  await expect(opened).toHaveURL("https://example.com/phrase")
+  await opened.close()
 })
