@@ -1,5 +1,6 @@
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 
 const clean = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const designed = "/screens/s42-02-editor-agent-run-complete"
@@ -59,7 +60,7 @@ async function regions(page: Page, active: number, plain: number): Promise<Regio
       const head = panel.firstElementChild
       const items = document.querySelectorAll("[data-slide-item]")
       const item = items[plain]
-      const card = item?.lastElementChild
+      const card = item?.querySelector("[data-slide-card]")
       return {
         sidebar: box(sidebar),
         sidebarHead: box(sidebar.firstElementChild),
@@ -152,6 +153,19 @@ test("the real editor's sidebar, canvas, toolbar and panel head sit where the de
   expectNear(relative(real.card, real.item), relative(design.card, design.item), "card")
   expect(real.cardLook).toEqual(design.cardLook)
   expect(real.activeLook).toEqual(design.activeLook)
+})
+
+test("a skipped slide's card keeps its box and look", async ({ page }) => {
+  await openClean(page)
+  const finished = await regions(page, 0, 0)
+  const entry = page.locator("[data-slide-entry='1']")
+  await entry.click({ button: "right" })
+  await page.getByRole("menuitem", { name: slideListCopy.skip, exact: true }).click()
+  await expect(entry).toHaveAttribute("data-slide-skipped", "true")
+  const skipped = await regions(page, 0, 0)
+  expectNear(skipped.card, finished.card, "card")
+  expectNear(relative(skipped.card, skipped.item), relative(finished.card, finished.item), "card in item")
+  expect(skipped.cardLook).toEqual(finished.cardLook)
 })
 
 type Head = {

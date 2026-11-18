@@ -24,6 +24,7 @@ export function SlideThumb({ index, width, queued = false }: { index: number; wi
     return (
       <div
         className="flex shrink-0 items-center justify-center rounded-[2px] bg-canvas text-[length:var(--type-caption)] text-quiet shadow-[inset_0px_0px_0px_1px_var(--field-edge)]"
+        data-slide-card
         style={{ width, height }}
       >
         Queued
@@ -133,6 +134,7 @@ export function SlideThumb({ index, width, queued = false }: { index: number; wi
         white && frameShadow,
         index === 4 && "justify-center",
       )}
+      data-slide-card
       style={{
         width,
         height,

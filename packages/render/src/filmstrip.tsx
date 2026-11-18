@@ -70,6 +70,7 @@ export function Filmstrip(props: {
       ref={cellRef}
       aria-hidden="true"
       className={props.className}
+      data-slide-card
       data-slide-thumb
       style={{
         contentVisibility: "auto",
