@@ -58,7 +58,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator("[data-slide-paint]")).toBeVisible()
 })
 
-test("tracks the whole range both ways, rubber bands, and snaps by distance or velocity", async ({ page }) => {
+test("tracks the whole range both ways, rubber bands, and snaps by distance", async ({ page }) => {
   await handle(page).focus()
   await page.keyboard.press("End")
   const maximum = await height(page)
@@ -85,8 +85,9 @@ test("tracks the whole range both ways, rubber bands, and snaps by distance or v
     await page.mouse.up()
     await settled(page, result)
   }
-  await handle(page).focus()
-  await page.keyboard.press("Home")
+})
+
+test("snaps by velocity when flicked across a short distance", async ({ page }) => {
   const cdp = await page.context().newCDPSession(page)
   async function flick(distance: number) {
     const box = await handle(page).boundingBox()
