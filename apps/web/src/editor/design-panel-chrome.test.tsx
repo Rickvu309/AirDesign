@@ -5,7 +5,8 @@ import { expect, it } from "vitest"
 import { designCopy } from "@/copy/design-copy"
 import { optionWord } from "@/copy/option-copy"
 import { linkCopy } from "@/copy/link-copy"
-import { fillCopy } from "@/copy/fill-copy"
+import { pictureCopy } from "@/copy/picture-copy"
+import { fillCopy, fillWords } from "@/copy/fill-copy"
 import { panelOf } from "@/design/panel"
 import { setFold } from "@/design/panel-folds"
 import { ElementDesign } from "./design-panel"
@@ -63,6 +64,46 @@ it("titles a square Image while its fills show an image, and Square once they sh
   const solid = titled({ ...geometry, "fills.p0": { value: { solid: { scheme: "accent1" } }, own: true } })
   expect(solid).toContain(designCopy.square)
   expect(solid).not.toContain(designCopy.titles.picture)
+})
+
+it("draws an image's Fill segments as the shape panel does, with the image segment pressed", () => {
+  const node = {
+    node: elementId("258.4"),
+    facts: { kind: "shape" as const, text: false, grouped: false, animated: false },
+    kept: [],
+    value: null,
+    box: { x: 0, y: 0, cx: 914_400, cy: 914_400 },
+  }
+  const segments = (fill: unknown) => {
+    const html = renderToStaticMarkup(
+      createElement(ElementDesign, {
+        model: panelOf(node, {
+          reads: {},
+          moves: true,
+          fields: {
+            "geometry.shape": { value: { preset: "rect" }, own: true },
+            "fills.p0": { value: fill, own: true },
+            "fills.source": { value: "rocket", own: true },
+          },
+        }),
+        palette: { templateColors: [], deck: [] },
+        onChange: () => {},
+      }),
+    )
+    const at = html.indexOf(`title="${fillWords.gradient}"`)
+    const group = html.slice(html.lastIndexOf("<div", html.lastIndexOf("<div", at) - 1), html.indexOf("</div>", at))
+    return { html, group }
+  }
+  const { html, group: picture } = segments({ image: true })
+  expect(html).not.toContain(pictureCopy.current("rocket"))
+  const { group: shape } = segments({ solid: { scheme: "accent1" } })
+  expect(picture).not.toContain("data-picture-kind")
+  expect(picture).not.toContain("bg-line")
+  expect(picture).not.toContain("disabled=")
+  expect(picture.match(/<button/g)).toHaveLength(4)
+  expect(picture.match(/class="[^"]*"/)?.[0]).toBe(shape.match(/class="[^"]*"/)?.[0])
+  expect(picture.match(/aria-pressed="true"/g)).toHaveLength(1)
+  expect(picture).toMatch(new RegExp(`aria-pressed="true"[^>]*title="${fillWords.image}"`))
 })
 
 it("uses the element name as the single text title", () => {

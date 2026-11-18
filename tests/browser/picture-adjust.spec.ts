@@ -44,8 +44,8 @@ test("a person lays a colour over a picture and blurs it @export", async ({ page
   const { picturePanelCopy: pictureCopy } = await import("../../apps/web/src/copy/picture-panel-copy")
   await openDeck(page, "picture-png.pptx")
   const panel = await designed(page)
-  const kinds = panel.locator("[data-picture-kind]")
-  await expect(kinds).toHaveAttribute("aria-label", fillCopy.value)
+  const kinds = panel.getByRole("group", { name: fillCopy.value, exact: true })
+  await expect(kinds).toBeVisible()
   await expect(kinds.getByRole("button", { name: fillWords.image, exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",

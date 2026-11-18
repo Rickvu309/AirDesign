@@ -1,11 +1,7 @@
 import { elementId, type ScopedElement } from "@airdesign/document"
-import { createElement } from "react"
-import { renderToStaticMarkup } from "react-dom/server"
 import { expect, it } from "vitest"
-import { fillCopy, fillWords } from "@/copy/fill-copy"
 import { unionValue } from "@/design/controls/union"
 import { panelOf } from "@/design/panel"
-import { PictureFillKinds } from "./picture-kind"
 
 const picture: ScopedElement = {
   node: elementId("258.4"),
@@ -32,15 +28,8 @@ function paint() {
   return control
 }
 
-it("draws every fill segment in normal ink, and a solid, a gradient or none replaces the image", () => {
+it("a solid, a gradient or none replaces an image fill", () => {
   const control = paint()
-  const html = renderToStaticMarkup(createElement(PictureFillKinds, { control, palette, onChange: () => {} }))
-  expect(html).toContain(`aria-label="${fillCopy.value}"`)
-  expect(html.match(/<button/g)).toHaveLength(4)
-  expect(html).not.toContain("disabled=")
-  for (const word of [fillWords.none, fillWords.solid, fillWords.gradient, fillWords.image])
-    expect(html).toContain(`title="${word}"`)
-  expect(html).toContain('aria-pressed="true"')
   expect(unionValue(control, palette, "solid")).toEqual({ solid: { scheme: "accent1" } })
   expect(unionValue(control, palette, "none")).toEqual({ none: true })
   expect(unionValue(control, palette, "gradient")).toMatchObject({ gradient: { stops: expect.any(Array) } })
