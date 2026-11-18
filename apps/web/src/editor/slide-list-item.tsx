@@ -63,6 +63,7 @@ export function SlideItem({
   const number = (
     <span className="flex w-4 flex-col items-center gap-1.5 pt-0.5">
       <span className={cn("text-xs", active ? "font-medium text-index" : "text-quiet")}>{index}</span>
+      {skipped ? <SkippedSlide /> : null}
       {working ? <span className="block size-1.5 rounded-full bg-primary" /> : null}
     </span>
   )
@@ -116,7 +117,6 @@ export function SlideItem({
       >
         {number}
         {children}
-        {skipped ? <SkippedSlide className="right-3.5 bottom-3.5" /> : null}
       </button>
       {onChoose === undefined ? null : (
         <SlideMenu

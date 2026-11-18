@@ -45,7 +45,7 @@ export type SlideStrip = {
   readonly sections?: readonly StripSection[]
   readonly current: number
   readonly skipped?: readonly boolean[]
-  readonly onSkip?: (index: number, skipped: boolean) => void
+  readonly onSkip?: (indices: readonly number[], skipped: boolean) => void
   readonly selectionBoxes?: (ids: readonly ElementId[]) => readonly PaintBox[]
   readonly onSelection?: (indices: readonly number[]) => void
   readonly onSelect: (index: number) => void
@@ -179,7 +179,7 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
       count={strip.count}
       active={index === strip.current}
       skipped={strip.skipped?.[index] === true}
-      onSkip={strip.onSkip === undefined ? undefined : (skipped) => strip.onSkip?.(index, skipped)}
+      onSkip={strip.onSkip === undefined ? undefined : (skipped) => strip.onSkip?.([index], skipped)}
       reachable={reachable === `slide:${String(index)}`}
       onSelect={() => strip.onSelect(index)}
       onKeyDown={(event) => onSlideKey(strip, index, event, announce)}

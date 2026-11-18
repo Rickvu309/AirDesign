@@ -41,7 +41,7 @@ export function GridSlideMenu({
   onAct: (command: GridCommand, index: number) => void
   onClose: () => void
   skipped: readonly boolean[] | undefined
-  onSkip: ((index: number, skipped: boolean) => void) | undefined
+  onSkip: ((indices: readonly number[], skipped: boolean) => void) | undefined
 }) {
   const multiple = held.length > 1
   const allowed = (change: SlideKey) => {
@@ -80,8 +80,12 @@ export function GridSlideMenu({
           allowed={allowed}
           {...(!multiple ? {} : { labels: slideListCopy.setActions(held.length) })}
         />
-        {onSkip === undefined || multiple ? null : (
-          <SlideSkipItem skipped={skipped?.[menu.index] === true} onSkip={(next) => onSkip(menu.index, next)} />
+        {onSkip === undefined ? null : (
+          <SlideSkipItem
+            count={held.length}
+            skipped={held.every((index) => skipped?.[index] === true)}
+            onSkip={(next) => onSkip(held, next)}
+          />
         )}
         {canAdd || canMoveSet ? <EditorMenuRule /> : null}
         {canAdd

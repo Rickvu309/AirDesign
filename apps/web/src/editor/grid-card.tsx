@@ -112,7 +112,7 @@ export function GridCard({
           paint={() => thumb(width * scale)}
           width={width * scale}
         />
-        {skipped && !active ? <SkippedSlide /> : null}
+        {skipped && !active && placement === "hidden" ? <SkippedSlide badge /> : null}
       </button>
       <span
         aria-hidden="true"
@@ -126,6 +126,7 @@ export function GridCard({
         }}
       >
         {index + 1}
+        {skipped && placement !== "hidden" ? <SkippedSlide /> : null}
       </span>
       {active ? (
         <div

@@ -102,10 +102,20 @@ export function SlideMenuRows({
   ))
 }
 
-export function SlideSkipItem({ skipped, onSkip }: { skipped: boolean; onSkip: (skipped: boolean) => void }) {
+export function SlideSkipItem({
+  skipped,
+  onSkip,
+  count = 1,
+}: {
+  skipped: boolean
+  onSkip: (skipped: boolean) => void
+  count?: number
+}) {
+  const single = skipped ? slideListCopy.unskip : slideListCopy.skip
+  const set = skipped ? slideListCopy.unskipSet : slideListCopy.skipSet
   return (
     <DropdownMenuItem className={slideMenuItem} onClick={() => onSkip(!skipped)}>
-      {skipped ? slideListCopy.unskip : slideListCopy.skip}
+      {count === 1 ? single : set(count)}
     </DropdownMenuItem>
   )
 }

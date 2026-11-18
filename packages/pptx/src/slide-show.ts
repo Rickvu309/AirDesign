@@ -1,5 +1,5 @@
 import { markupDocument, spliceBytes, type MarkupElement } from "./element-span.js"
-import { encodeUtf8 } from "./package-bytes.js"
+import { attributeEdit } from "./markup-attribute.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { whole, type TraitXml } from "./xml-codec.js"
 import { slideAddresses } from "./package-address.js"
@@ -56,14 +56,8 @@ function writeSkipped(parts: Parts, part: string, skipped: boolean): Parts {
   const bytes = partBytes(parts, part)
   const [root] = requireMarkup(bytes).elements
   if (root?.kind !== "p:sld") throw new Error("show-slide")
-  const attribute = root.attributes.find((item) => item.name === "show")
-  const at = root.openEnd - (root.selfClosing ? 2 : 1)
-  const value = skipped ? "0" : "1"
-  const edit =
-    attribute === undefined
-      ? { start: at, end: at, next: encodeUtf8(` show="${value}"`) }
-      : { start: attribute.valueStart, end: attribute.valueEnd, next: encodeUtf8(value) }
-  return new Map(parts).set(part, spliceBytes(bytes, [edit]))
+  const edit = attributeEdit(bytes, root, "show", skipped ? "0" : null)
+  return edit === null ? parts : new Map(parts).set(part, spliceBytes(bytes, [edit]))
 }
 
 export const showXml: TraitXml<"show"> = {
