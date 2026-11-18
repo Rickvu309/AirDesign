@@ -92,7 +92,7 @@ test("three selected shapes move by one drag and one nudge, each undone in one s
   expect(shifted(start, dragged)[0]).not.toBe("0 0")
 
   await page.keyboard.press("Shift+ArrowRight")
-  await expect(page.locator("[data-slide-paint] [role=status]")).toHaveText("Moved 3 elements")
+  await expect(page.locator("[data-slide-paint] [role=status]")).toHaveText("Moved 3 layers")
   await expect.poll(async () => new Set(shifted(dragged, await spots(shapes))).size).toBe(1)
   expect(shifted(dragged, await spots(shapes))[0]).not.toBe("0 0")
 

@@ -6,7 +6,7 @@ With the Design panel open, selecting an element shows its sections from the tra
 
 - `design-many-text` shows Multi-edit text for two selected text boxes. The field shows Mixed for different words. Blur or Ctrl/Cmd+Enter replaces the words in one Undo step. Escape discards the draft.
 - `design-many-line` shows the shared panel for a rectangle and a line. It omits Opacity, Corners and the None border preset.
-- `design-element` a text box selected: `Position and size` with X, Y, Width and Height, `Text` with the words, `Text color`, `Font size`, `Bold`, `Italic`, `Underline`, `Alignment` and `Bullets`.
+- `design-element` a text box selected: `Position and size` with X, Y, Width and Height, `Text` with the words, `Text color`, `Font size`, `Bold`, `Italic`, `Underline`, `Alignment` and `Bulleted list`.
 - `design-element-changed` X, Bold, a theme colour and Center set from the panel. The canvas and the thumbnail paint each change at once, and the selection frame stays while focus is in the panel (`data-keeps-selection`).
 - `design-table` a table selected: X and Y only, and `Cells`, one field per cell.
 - `design-fill` a shape whose fill comes from its theme style, filled with a gradient: `Fill` with None, Color, Gradient and Pattern, the gradient's stops (position and color each), `Add stop`, its Direction (Linear with Angle, or From center) and `Rotate with shape`. `Reset fill` in the section's header goes back to the fill the layout, master or theme style gives, and shows only while the shape has its own fill. A fill is a row of trait fields (`{ v, patch }`) in the person's queue, painted from the exported bytes.

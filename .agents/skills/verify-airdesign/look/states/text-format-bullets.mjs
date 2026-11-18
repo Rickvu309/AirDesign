@@ -1,3 +1,4 @@
+import { formatCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { fixtureDeck } from "../fixture-deck.mjs"
 
@@ -6,7 +7,7 @@ async function drive(kit) {
   const text = kit.page.locator('[data-slide-paint] [contenteditable="true"]')
   await text.click()
   await text.press("ControlOrMeta+a")
-  const bullets = kit.page.getByRole("button", { name: "Bullets" })
+  const bullets = kit.page.getByRole("button", { name: formatCopy.bullets })
   await bullets.click()
   await expect(bullets).toHaveAttribute("aria-pressed", "true")
 }
