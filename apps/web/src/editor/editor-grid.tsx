@@ -25,7 +25,8 @@ import { useGridMenu } from "@/editor/use-grid-menu"
 import type { SaveStatus } from "@/editor/use-deck-status"
 import { focusMove, gridCommand } from "@/editor/editor-grid-keys"
 import { gridSlideActions } from "@/editor/grid-slide-actions"
-import { GridSlideMenu, pointAt } from "@/editor/grid-menu"
+import { GridSlideMenu } from "@/editor/grid-menu"
+import { gridContextMenu } from "@/editor/grid-context-menu"
 import { pickAll, pickedSlides, pickRange, visiblePick } from "@/editor/grid-selection"
 import { useGridDrag } from "@/editor/use-grid-drag"
 import { useShownSelection } from "@/editor/use-grid-selection"
@@ -378,11 +379,7 @@ export function EditorGrid({
       }}
       onPressed={(event) => edit.click(index, picked, event)}
       onClick={(event) => edit.pick(index, event.shiftKey, event.metaKey || event.ctrlKey, picked)}
-      onContextMenu={(event) => {
-        event.preventDefault()
-        event.currentTarget.focus()
-        slideMenu.open(index, pointAt(event.clientX, event.clientY), true)
-      }}
+      onContextMenu={(event) => gridContextMenu(event, index, slideMenu.open)}
       rowEnd={rows.some((row) => row.end === index + 1)}
       addBlocked={addBlocked}
       onAdd={() => addSlide(index, "same", true)}
