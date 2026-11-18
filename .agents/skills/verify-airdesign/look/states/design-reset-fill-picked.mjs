@@ -3,6 +3,7 @@ import path from "node:path"
 import { expect } from "@playwright/test"
 import { fixtureDeck } from "../fixture-deck.mjs"
 import { openDeck } from "../open-deck.mjs"
+import { setPanelMode } from "../panel-mode.mjs"
 
 const require = createRequire(import.meta.url)
 const { fillCopy, fillWords } = require("../../../../../apps/web/src/copy/fill-copy.ts")
@@ -29,6 +30,10 @@ async function drive(kit) {
   await openDeck(page, file)
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await shape.click({ position: { x: 4, y: 4 } })
+  await setPanelMode(page, "design")
+  const details = panel.locator("[data-fill-details]")
+  const fold = details.getByRole("button").first()
+  if ((await fold.getAttribute("aria-expanded")) !== "true") await fold.click()
   await panel.getByRole("button", { name: fillCopy.reset, exact: true }).click()
   await panel.getByRole("group", { name: fillWords.color, exact: true }).getByRole("button").first().click()
   await page

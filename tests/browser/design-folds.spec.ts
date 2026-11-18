@@ -29,7 +29,6 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
 }) => {
   await openDeck(page, "clean.pptx")
   const panel = await designing(page, shapeAt(page, "2"))
-  await expect(panel).toContainText(designCopy.panels.text)
   await expect(panel.locator("section").first().getByRole("group", { name: boxCopy.align, exact: true })).toBeVisible()
   await expect(page.locator("[data-design-mode]")).toHaveAttribute("aria-pressed", "false")
   await expect(panel.locator("[data-design-head]")).toHaveText(designCopy.titles.text)

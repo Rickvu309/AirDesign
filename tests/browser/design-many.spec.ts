@@ -47,6 +47,7 @@ test("two selected shapes share one panel that reads Mixed, a colour picked ther
     boxCopy.section,
     shapeCopy.line,
     effectsCopy.section,
+    designCopy.fillDetails,
   ])
   await expect(panel.getByRole("textbox", { name: boxCopy.x, exact: true })).toHaveAttribute(
     "placeholder",
