@@ -1,5 +1,5 @@
 import { expect, it } from "vitest"
-import { planChange, registerScope } from "./change.js"
+import { planChange, registerScope, type SetChange } from "./change.js"
 import { openRegister, type Register } from "./decide.js"
 import type { IndexElement } from "./deck-index.js"
 import { elementId } from "./element-id.js"
@@ -23,6 +23,27 @@ function indexed(): Register {
 it("lets one paint replace fills the editor keeps, and keeps a slot above it out of reach", () => {
   const scope = registerScope(indexed())
   expect(planChange({ target: { node: kept.node }, fills: { paint: solid } }, scope).ok).toBe(true)
+  const restored = {
+    target: { node: kept.node },
+    fills: { paint: { image: true } },
+  } as unknown as SetChange
+  expect(planChange(restored, scope)).toMatchObject({
+    ok: true,
+    rows: [
+      {
+        row: {
+          patch: {
+            fills: {
+              p0: { set: { image: true } },
+              p1: { set: { none: true } },
+              p2: { set: { none: true } },
+              p3: { set: { none: true } },
+            },
+          },
+        },
+      },
+    ],
+  })
   expect(planChange({ target: { node: kept.node }, fills: { p1: solid } }, scope)).toEqual({
     ok: false,
     refusals: [{ node: "258.7", trait: "fills", code: "kept" }],

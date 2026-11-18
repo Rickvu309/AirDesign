@@ -148,7 +148,7 @@ export function readFills(shown: ShownFills): ResolvedFills {
 }
 
 export type FillsEdit =
-  | { readonly paint: Paint | null }
+  | { readonly paint: Paint | { readonly image: true } | null }
   | { readonly overlay: Overlay | null }
   | { readonly slots: readonly SlotPaint[] }
 
@@ -172,12 +172,15 @@ export function changeFills(edit: FillsEdit, current: ShownFills = {}): TraitPat
   const { paint: chosen } = edit
   if (chosen === null) return { [bottom]: "inherit", ...cleared }
   if (!("image" in chosen)) return { [bottom]: { set: chosen }, ...cleared }
+  if (chosen.image === true) return { [bottom]: { set: { image: true } }, ...cleared }
   return { [bottom]: { set: { image: true } }, ...cleared, source: { set: chosen.image } }
 }
 
 export function inputFills(input: Readonly<Record<string, unknown>>): TraitPatch<"fills"> {
   return {
-    ...(Object.hasOwn(input, "paint") ? changeFills({ paint: input.paint as Paint | null }) : {}),
+    ...(Object.hasOwn(input, "paint")
+      ? changeFills({ paint: input.paint as Paint | { readonly image: true } | null })
+      : {}),
     ...(Object.hasOwn(input, "overlay") ? changeFills({ overlay: input.overlay as Overlay | null }) : {}),
   }
 }

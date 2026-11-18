@@ -33,6 +33,38 @@ function panel(kind: ScopedElement["facts"]["kind"], geometry?: unknown) {
   )
 }
 
+it("titles a square Image while its fills show an image, and Square once they show a colour", () => {
+  const shape = {
+    node: elementId("258.4"),
+    facts: { kind: "shape" as const, text: false, grouped: false, animated: false },
+    kept: [],
+    value: null,
+    box: { x: 0, y: 0, cx: 914_400, cy: 914_400 },
+  }
+  const titled = (fields: Record<string, { readonly value: unknown; readonly own: true }>) => {
+    const html = renderToStaticMarkup(
+      createElement(ElementDesign, {
+        model: panelOf(shape, { reads: {}, moves: true, fields }),
+        palette: { templateColors: [], deck: [] },
+        onChange: () => {},
+      }),
+    )
+    const at = html.indexOf("data-design-head")
+    return html.slice(at, html.indexOf("</div>", at))
+  }
+  const geometry = { "geometry.shape": { value: { preset: "rect" }, own: true as const } }
+  expect(
+    titled({
+      ...geometry,
+      "fills.p0": { value: { image: true }, own: true },
+      "fills.source": { value: "rocket", own: true },
+    }),
+  ).toContain(designCopy.titles.picture)
+  const solid = titled({ ...geometry, "fills.p0": { value: { solid: { scheme: "accent1" } }, own: true } })
+  expect(solid).toContain(designCopy.square)
+  expect(solid).not.toContain(designCopy.titles.picture)
+})
+
 it("uses the element name as the single text title", () => {
   const html = panel("shape")
   expect(html).toContain(`data-design-head`)

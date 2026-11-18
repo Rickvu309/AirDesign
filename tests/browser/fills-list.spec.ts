@@ -58,7 +58,7 @@ test("a person adds a gradient over a photo in the design-mode fills list, undoe
   const hide = (at: number, count: number) =>
     fill.getByRole("button", { name: `${fillCopy.paint(at, count)} ${fillWords.hide.toLowerCase()}`, exact: true })
   const up = fill.getByRole("button", { name: `${fillCopy.paint(0, 2)} ${fillWords.up.toLowerCase()}`, exact: true })
-  await expect(hide(0, 1)).toHaveCount(0)
+  await expect(hide(0, 1)).toBeVisible()
 
   await fill.getByRole("button", { name: fillCopy.add, exact: true }).click()
   await page.getByRole("menuitem", { name: `${fillCopy.add} ${fillWords.gradient.toLowerCase()}`, exact: true }).click()

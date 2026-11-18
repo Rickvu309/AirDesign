@@ -16,6 +16,7 @@ it("turns one paint into the bottom slot and clears the slots above, and null in
   const cleared = { p1: { set: { none: true } }, p2: { set: { none: true } }, p3: { set: { none: true } } }
   expect(changeFills({ paint: accent })).toEqual({ p0: { set: accent }, ...cleared })
   expect(changeFills({ paint: null })).toEqual({ p0: "inherit", ...cleared })
+  expect(changeFills({ paint: { image: true } })).toEqual({ p0: { set: { image: true } }, ...cleared })
 })
 
 it("refuses a stored row that names both the old trait and fills, and keeps a row without a fill as it was", () => {
