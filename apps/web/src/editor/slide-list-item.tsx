@@ -89,7 +89,7 @@ export function SlideItem({
         aria-description={skipped ? slideListCopy.skipped : undefined}
         data-slide-skipped={skipped || undefined}
         tabIndex={reachable ? 0 : -1}
-        className={cn(look, "text-left")}
+        className={cn(look, "relative text-left")}
         data-stop={`slide:${String(index - 1)}`}
         data-slide-entry={index}
         data-slide-item
@@ -115,10 +115,8 @@ export function SlideItem({
         onDrop={onDrop}
       >
         {number}
-        <span className="relative">
-          {children}
-          {skipped ? <SkippedSlide /> : null}
-        </span>
+        {children}
+        {skipped ? <SkippedSlide className="right-3.5 bottom-3.5" /> : null}
       </button>
       {onChoose === undefined ? null : (
         <SlideMenu
