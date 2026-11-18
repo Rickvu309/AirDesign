@@ -1,10 +1,12 @@
 import path from "node:path"
 import { readFile } from "node:fs/promises"
+import { createRequire } from "node:module"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
 import { unfold } from "../look/unfold.mjs"
 
 export default async function drive({ repo, origin, page, signIn, post, capture, note, deckRoutes }) {
+  const { textCopy } = createRequire(import.meta.url)(path.join(repo, "apps/web/src/copy/text-copy.ts"))
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
   const { mcpRoutes } = await import(pathToFileURL(path.join(repo, "packages/catalog/dist/index.js")).href)
   const { cookie } = await signIn()
@@ -102,7 +104,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
     await expect(field).toHaveValue(value)
   }
   await fill(text.getByRole("textbox", { name: "Line spacing", exact: true }), "120")
-  await unfold(panel, "Paragraph spacing")
+  await unfold(panel, textCopy.paragraphSpacing)
   await fill(text.getByRole("textbox", { name: "Space before", exact: true }), "6")
   await unfold(panel, "Text box")
   const box = section("Text box")
