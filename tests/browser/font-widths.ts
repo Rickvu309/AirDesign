@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import type { Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 import type { FontWidths, ResolvedSlide } from "../../packages/document/src/index.ts"
 
 export { fontFamily as cssFamily } from "../../packages/fonts/src/index.ts"
@@ -80,6 +80,8 @@ export async function paintedHeights(
   page: Page,
   boxes: readonly { readonly key: string; readonly width: number }[],
 ): Promise<readonly (number | null)[]> {
+  await expect(page.locator("[data-fonts-pending]")).toHaveCount(0)
+  await page.evaluate(() => document.fonts.ready)
   return page.evaluate(
     (boxes) =>
       boxes.map(({ key, width }) => {
