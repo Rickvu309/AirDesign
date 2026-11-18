@@ -1,6 +1,6 @@
 import { PNG } from "pngjs"
-import { describe, expect, it } from "vitest"
-import { annotated, blank, crop, inks, shrink } from "./images.mjs"
+import { describe, expect, it, vi } from "vitest"
+import { annotated, blank, copy, crop, inks, shrink } from "./images.mjs"
 
 const at = (image, x, y) => [...image.data.subarray((y * image.width + x) * 4, (y * image.width + x) * 4 + 4)]
 
@@ -16,6 +16,19 @@ describe("images", () => {
     expect(at(marked, 100, 140)).toEqual(inks[1])
     expect(at(marked, 300, 250)).toEqual([255, 255, 255, 255])
     expect(at(image, 100, 140)).toEqual([255, 255, 255, 255])
+  })
+
+  it("copies every pixel without encoding a PNG, and drawing on the copy leaves the original alone", () => {
+    const image = new PNG({ width: 3, height: 2 })
+    image.data.set(Array.from({ length: 24 }, (_, index) => index * 10))
+    const encode = vi.spyOn(PNG.sync, "write")
+    const copied = copy(image)
+    expect(encode).not.toHaveBeenCalled()
+    encode.mockRestore()
+    expect(copied).toMatchObject({ width: 3, height: 2 })
+    expect([...copied.data]).toEqual([...image.data])
+    copied.data.fill(0)
+    expect(at(image, 2, 1)).toEqual([200, 210, 220, 230])
   })
 
   it("shrinks by averaging so a scale 2 capture becomes design size", () => {
