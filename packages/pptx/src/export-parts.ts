@@ -123,6 +123,7 @@ function writtenElement(
   node: ElementId,
   body: NodeRegister | undefined,
   opening: IndexElement | undefined,
+  media: ElementAt["media"],
 ): Parts {
   const named = shapes.filter((shape) => `${shape.slide}.${shape.shape}` === node)
   const shape = named.length === 1 ? named[0] : undefined
@@ -146,7 +147,7 @@ function writtenElement(
     written.set(trait, kept)
   }
   if (shape === undefined) return parts
-  const at = { slide: shape.slide, part: shape.part, shape: shape.shape }
+  const at = { slide: shape.slide, part: shape.part, shape: shape.shape, ...(media === undefined ? {} : { media }) }
   if (shape.contentKind === "table") return writtenTable(parts, at, written, boxLast(body))
   let next = parts
   for (const [trait, fields] of written) if (trait !== "image") next = writeTrait(next, at, trait, fields)
@@ -155,7 +156,7 @@ function writtenElement(
   return next
 }
 
-export function exportParts(parts: Parts, register: Register): Parts {
+export function exportParts(parts: Parts, register: Register, media?: ElementAt["media"]): Parts {
   const shapes = readShapes(parts)
   let next = parts
   for (const node of new Set([...register.nodes, ...floorNodes(register)])) {
@@ -170,7 +171,7 @@ export function exportParts(parts: Parts, register: Register): Parts {
           ? writtenNotes(next, node, body, opening)
           : kind === "slide"
             ? writtenSlide(next, node, body, opening)
-            : writtenElement(next, shapes, node, body, opening)
+            : writtenElement(next, shapes, node, body, opening, media)
   }
   return routedParts(parts, next)
 }

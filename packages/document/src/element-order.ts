@@ -1,4 +1,4 @@
-import { assetIcon } from "./asset-ref.js"
+import { assetIcon, mediaTypes, type Media } from "./asset-ref.js"
 import type { DeckIndex, IndexElement } from "./deck-index.js"
 import { elementId, readElementId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { onlyKeys, record } from "./plain-object.js"
@@ -9,12 +9,6 @@ import type { SlideState } from "./slide-order.js"
 import { openedTable } from "./table-value.js"
 import { indexFacts, removable } from "./element-takes.js"
 import { groupedNow } from "./element-group.js"
-
-export const mediaTypes = ["image/png", "image/jpeg", "image/gif"] as const
-
-export type MediaType = (typeof mediaTypes)[number]
-
-export type Media = { readonly sha256: string; readonly type: MediaType }
 
 export const geometries = presets
 

@@ -86,7 +86,7 @@ export function ThinDeck({ id }: { id: string }) {
             slide: editableSlide(deck),
             presentPaint: (index, width, go) => (
               <PresentLinks parts={shown.displayParts.current} index={index} width={width} go={go}>
-                {slideCommands(deck, undoButtons.onUndo).thumb(index, width)}
+                {slideCommands(deck, undoButtons.onUndo, false).thumb(index, width)}
               </PresentLinks>
             ),
             notesOf: (index) => notesOn(notesBar.notes, shown.store.current.slides()[index]?.id),

@@ -1,5 +1,5 @@
 import { readLinkTarget } from "./link-target.js"
-import { readAsset } from "./asset-ref.js"
+import { assetMedia, readAsset } from "./asset-ref.js"
 import { readColor, type Color, type MappedSlot, type ThemeSlot } from "./color.js"
 import { coordinates } from "./box.js"
 import { readElementId } from "./element-id.js"
@@ -24,7 +24,7 @@ export type Desc =
   | { readonly kind: "named"; readonly item: Desc; readonly max: number }
   | { readonly kind: "text" }
   | { readonly kind: "table" }
-  | { readonly kind: "asset" }
+  | { readonly kind: "asset"; readonly media?: true }
   | { readonly kind: "node" }
   | { readonly kind: "link" }
 
@@ -139,6 +139,8 @@ export function custom<V, A>(name: "text" | "table" | "asset" | "node" | "link")
   return kind({ kind: name })
 }
 
+export const pictureSource = kind<string, string>({ kind: "asset", media: true })
+
 const unread = Symbol("unread")
 
 const hexDigits = /^[0-9A-F]{6}$/
@@ -221,7 +223,9 @@ function readDesc(desc: Desc, raw: unknown): unknown {
     case "node":
       return readElementId(raw) ?? unread
     case "asset":
-      return readAsset(raw) ?? unread
+      return (
+        readAsset(raw) ?? (desc.media === true && typeof raw === "string" && assetMedia(raw) !== null ? raw : unread)
+      )
     case "text":
     case "table":
       return typeof raw === "string" ? raw : unread

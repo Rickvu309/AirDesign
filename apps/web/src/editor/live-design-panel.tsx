@@ -38,7 +38,6 @@ import {
   type DeckTraits,
 } from "@airdesign/pptx"
 import type { PaintStore, Selection } from "@airdesign/render"
-import type { CommitOutcome } from "@/commit-edit"
 import { SlidersHorizontal } from "lucide-react"
 import { TemplateStyleCard } from "@/editor/template-style-card"
 import { Button } from "@/components/ui/button"
@@ -60,30 +59,25 @@ import {
   type PanelControl,
   type PanelSection,
 } from "@/design/panel"
-import { changeDesign, fileValue } from "@/design/design-change"
+import { changeDesign, fileValue, type DesignDeck } from "@/design/design-change"
 import { plainNames } from "@/design/node-names"
 import { rebasedChange } from "@/design/rebase"
 import { siteNames } from "@/design/site-names"
 import { deviceScope } from "@/design/trait-edit"
 import { designShown, themeOf, type DesignShown } from "@/design-shown"
+import { ElementTitleActions } from "./element-title-actions"
 import { PicturePreview } from "@/editor/picture-preview"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { ControlView, DesignHead, DesignSection, ElementDesign, SectionStrips } from "@/editor/design-panel"
 import { LiveSelectionColors } from "./live-selection-colors"
-import type { DeckPaint } from "@/editor/use-deck-paint"
-import type { UndoList } from "@/editor/use-undo"
-import type { UndoEntry } from "@/undo-list"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
-export type DesigningDeck = {
-  readonly id: string
-  readonly shown: DeckPaint
-  readonly undo: UndoList
+export type DesigningDeck = DesignDeck & {
   readonly selection: Selection
-  readonly record: (entry: UndoEntry) => void
-  readonly settle: (outcome: CommitOutcome) => void
-  readonly setPending: (pending: boolean) => void
+  readonly matching?: readonly ElementId[]
+  readonly selectMatching?: () => void
+  readonly replacePicture?: (node: ElementId, file: File) => void
 }
 
 const deckTraits = new WeakMap<Parts, DeckTraits | null>()
@@ -270,6 +264,9 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
   const src = image == null ? null : (deck.shown.pictures.current?.src(image) ?? null)
   return (
     <ElementDesign
+      titleActions={
+        <ElementTitleActions onMatch={deck.selectMatching} model={design.model} onReplace={deck.replacePicture} />
+      }
       picture={src === null ? null : <PicturePreview src={src} />}
       model={design.model}
       palette={palette}
@@ -345,6 +342,7 @@ function LiveManyDesign({ deck, nodes }: { deck: DesigningDeck; nodes: Several }
     <ElementDesign
       model={design.model}
       palette={palette}
+      titleActions={<ElementTitleActions onMatch={deck.selectMatching} />}
       afterTitle={text}
       onChange={(control, value) =>
         changeDesign(deck, () => {
@@ -377,7 +375,8 @@ export function LiveDesignPanel({ deck, selectedSlides = 0 }: { deck: DesigningD
     )
   const { shown, selection } = deck
   const elements = shown.store.current.slides()[shown.current]?.elements ?? []
-  const [first, ...rest] = selection.ids.filter((id) => elements.includes(id))
+  const local = selection.ids.filter((id) => elements.includes(id))
+  const [first, ...rest] = [...local, ...(deck.matching ?? [])]
   if (first === undefined) return <LiveSlideDesign deck={deck} />
   if (rest.length === 0) return <LiveElementDesign key={first} deck={deck} node={first} />
   const nodes: Several = [first, ...rest]

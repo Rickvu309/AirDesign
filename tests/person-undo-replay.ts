@@ -24,7 +24,7 @@ const run = "r"
 const texts = { file: "Old", mine: "New", aira: "Aira" } as const
 const boxes = { file: { x: 0, y: 0, cx: 100, cy: 100 }, aira: { x: 50, y: 50, cx: 100, cy: 100 } } as const
 const nodeA = rootElement
-const nodeB = elementId("256.3")
+const nodeB = elementId("257.2")
 const text = (value: string) => ({ text: { value: { set: value } } })
 const stepOf = (node: typeof nodeA): NodeStep => ({ node, before: text(texts.file), after: text(texts.mine) })
 const steps: Undoable = { steps: [stepOf(nodeB), stepOf(nodeA)] }

@@ -370,10 +370,8 @@ function expandedNode(register: Register, node: ElementId): readonly ElementId[]
 }
 
 function expandedNodes(register: Register, nodes: readonly ElementId[]): readonly ElementId[] | "indexing" {
-  const slides = new Set(nodes.map((node) => shapeOf(node).slide))
-  if (slides.size !== 1) return []
-  const each = nodes.map((node) => expandedNode(register, node))
-  return each.includes("indexing") ? "indexing" : nodes
+  const unique = [...new Set(nodes)]
+  return unique.some((node) => expandedNode(register, node) === "indexing") ? "indexing" : unique
 }
 
 function sizeOf(register: Register, slide: SlideId): SlideSize | null {

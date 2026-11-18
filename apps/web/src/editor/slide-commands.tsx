@@ -1,4 +1,4 @@
-import { presentSlides, gridRows, type GridSide, type Undoable } from "@airdesign/document"
+import { presentSlides, gridRows, type ElementId, type GridSide, type Undoable } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { ownBox, SlideCanvas } from "@airdesign/render"
 import type { CommitOutcome } from "@/commit-edit"
@@ -13,6 +13,7 @@ import { slideNames } from "@/undo-names"
 
 export type CommandedDeck = {
   readonly id: string
+  readonly matching?: readonly ElementId[]
   readonly shown: DeckPaint
   readonly record: (entry: UndoEntry) => void
   readonly settle: (outcome: CommitOutcome) => void
@@ -20,7 +21,7 @@ export type CommandedDeck = {
   readonly setPending: (pending: boolean) => void
 }
 
-export function slideCommands(deck: CommandedDeck, undo: () => void): SlideStrip {
+export function slideCommands(deck: CommandedDeck, undo: () => void, showMatching = true): SlideStrip {
   const { id, record, settle, setPending } = deck
   const { store, shownParts, canvases, slideCount, sections, current, setCurrent, layouts, showEdited } = deck.shown
 
@@ -124,7 +125,10 @@ export function slideCommands(deck: CommandedDeck, undo: () => void): SlideStrip
     thumbHeight: thumbHeight(canvases.current(0)),
     thumb: (index, width) => {
       const slide = canvases.current(index)
-      return slide === null ? null : <SlideCanvas quiet slide={slide} store={store.current} width={width} />
+      const highlights = showMatching && deck.matching?.length ? deck.matching : undefined
+      return slide === null ? null : (
+        <SlideCanvas quiet slide={slide} store={store.current} width={width} {...(highlights && { highlights })} />
+      )
     },
   }
 }

@@ -47,7 +47,12 @@ function at(parts: Parts, slide: string, shape: string) {
   return { node: element.node, slide, part, shape }
 }
 
-function exported(parts: Parts, node: ReturnType<typeof at>["node"], patch: ElementPatch): Parts {
+function exported(
+  parts: Parts,
+  node: ReturnType<typeof at>["node"],
+  patch: ElementPatch,
+  media?: (sha256: string) => Uint8Array | undefined,
+): Parts {
   const index = indexPackage(parts)
   const opened: Register = {
     ...openRegister("", "clean"),
@@ -62,7 +67,7 @@ function exported(parts: Parts, node: ReturnType<typeof at>["node"], patch: Elem
     if (decision.decision === "refuse") throw new Error(decision.code)
     return decision.register
   }, opened)
-  return exportParts(parts, register)
+  return exportParts(parts, register, media)
 }
 
 function text(parts: Parts, part: string): string {
@@ -115,6 +120,39 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
     expect(decodeUtf8(filled.get(rocket.svg)!)).toBe("<svg/>")
     expect(filled.has(rocket.png)).toBe(false)
     expect(readTraits(after).elements.get(picture.node)?.reads["image.source"]).toEqual({ value: "rocket" })
+  })
+
+  it("replaces the embedded file without changing the picture's frame, crop or effects", async () => {
+    const parts = await deck("doe-heat-pumps.pptx")
+    const picture = at(parts, "2883", "13")
+    const source = (from: Parts) =>
+      paintReader(from)
+        .slide(picture.part)
+        .elements.find((each) => each.shape === picture.shape)
+    const cropped = exported(parts, picture.node, {
+      crop: { rect: { set: { l: 10000, t: 5000, r: 1000, b: 3000 } } },
+      image: { recolor: { set: { grayscale: true } } },
+    })
+    const before = source(cropped)
+    const fs = process.getBuiltinModule("node:fs")
+    const bytes = new Uint8Array(fs.readFileSync(`${process.cwd()}/scripts/pptx-fixtures/picture.png`))
+    const sha256 = "a".repeat(64)
+    const after = exported(cropped, picture.node, { image: { source: { set: `image/png:${sha256}` } } }, (hash) =>
+      hash === sha256 ? bytes : undefined,
+    )
+    const painted = source(after)
+    const image = painted?.image
+    expect(image?.part).toBe("ppt/media/picture-aaaaaaaaaaaaaaaa.png")
+    expect(after.get(image?.part ?? "")).toEqual(bytes)
+    expect(painted?.box).toEqual(before?.box)
+    expect(image?.crop).toEqual(before?.image?.crop)
+    expect(image?.recolor).toEqual(before?.image?.recolor)
+    expect(shownPictureMode(after, picture)).toBe("crop")
+    expect(changed(cropped, after)).toEqual([
+      "ppt/slides/slide9.xml",
+      "ppt/slides/_rels/slide9.xml.rels",
+      "ppt/media/picture-aaaaaaaaaaaaaaaa.png",
+    ])
   })
 
   it("writes grayscale, a duotone and an opacity as blip effects, and takes them away again", async () => {

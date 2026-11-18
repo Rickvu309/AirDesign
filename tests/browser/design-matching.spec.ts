@@ -1,0 +1,102 @@
+import { readFile } from "node:fs/promises"
+import { join } from "node:path"
+import { expect, test } from "@playwright/test"
+import { designCopy } from "../../apps/web/src/copy/design-copy"
+import { formatCopy } from "../../apps/web/src/copy/format-copy"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy"
+import { fixtures, openDeck, pickColor, settled } from "./design-panel"
+import { savedExport } from "./export-dialog"
+import { partsOf, shapeAt } from "./shape-fills"
+
+test.use({ viewport: { width: 1600, height: 1000 } })
+
+test("selects three matching footers, updates them while offline, and undoes each panel edit across slides", async ({
+  page,
+  context,
+}, testInfo) => {
+  await openDeck(page, "clean.pptx")
+  const footer = shapeAt(page, "2")
+  const words = footer.locator("[contenteditable]")
+  await words.click()
+  await words.press("ControlOrMeta+A")
+  await words.pressSequentially("Company footer")
+  await expect(words).toHaveText("Company footer")
+
+  const entries = page.locator("[data-slide-entry]")
+  for (const count of [2, 3]) {
+    await entries.nth(count - 2).focus()
+    await page.keyboard.press("ControlOrMeta+D")
+    await expect(entries).toHaveCount(count)
+  }
+  await entries.first().click()
+  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await footer.click({ position: { x: 4, y: 4 } })
+  const panel = page.locator("[data-design-element]")
+  const matching = panel.getByRole("button", { name: designCopy.selectMatching })
+  await matching.click()
+  await expect(panel).toContainText(designCopy.selected(3))
+  await expect(page.locator("[data-slide-entry] [data-chosen]")).toHaveCount(2)
+
+  await context.setOffline(true)
+  const color = panel.getByRole("group", { name: formatCopy.color, exact: true })
+  const paint = entries.locator("[data-text-body] [data-paragraph] > span")
+  const original = await paint.first().evaluate((run) => getComputedStyle(run).color)
+  await pickColor(page, color, formatCopy.colors.accent6)
+  const changed = await paint.first().evaluate((run) => getComputedStyle(run).color)
+  expect(changed).not.toBe(original)
+  for (const run of await paint.all()) await expect(run).toHaveCSS("color", changed)
+
+  const text = panel.getByRole("textbox", { name: designCopy.multiEditText })
+  await text.fill("Revised footer")
+  await text.press("ControlOrMeta+Enter")
+  for (const entry of await entries.all()) await expect(entry).toContainText("Revised footer")
+  await page.getByRole("button", { name: undoCopy.undoNamed.text, exact: true }).click()
+  for (const entry of await entries.all()) await expect(entry).toContainText("Company footer")
+  await page.getByRole("button", { name: undoCopy.undoNamed.format, exact: true }).click()
+  for (const run of await paint.all()) await expect(run).toHaveCSS("color", original)
+
+  await context.setOffline(false)
+  await page.reload()
+  await settled(page)
+  for (const entry of await entries.all()) await expect(entry).toContainText("Company footer")
+  const design = page.getByRole("button", { name: "Design", exact: true })
+  if ((await design.getAttribute("aria-pressed")) !== "true") await design.click()
+  await footer.click({ position: { x: 4, y: 4 } })
+  await page.keyboard.press("Control+Alt+A")
+  await expect(panel).toContainText(designCopy.selected(3))
+  const file = testInfo.outputPath("matching.pptx")
+  await savedExport(page, file)
+  const parts = await partsOf(file)
+  const slides = [...parts].filter(([name]) => /^ppt\/slides\/slide\d+\.xml$/.test(name))
+  expect(slides).toHaveLength(3)
+  for (const [, bytes] of slides) expect(bytes.toString()).toContain("Company footer")
+})
+
+test("replaces a picture file through the title action and keeps its frame through undo, reload and export", async ({
+  page,
+}, testInfo) => {
+  const { pictureCopy } = await import("../../apps/web/src/copy/picture-copy")
+  await openDeck(page, "picture-png.pptx")
+  const picture = shapeAt(page, "4")
+  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await picture.click({ position: { x: 8, y: 8 } })
+  const frame = await picture.boundingBox()
+  const source = () => picture.evaluate((image) => getComputedStyle(image).backgroundImage)
+  const before = await source()
+  const file = join(fixtures, "picture.jpeg")
+  const panel = page.locator("[data-design-element]")
+  const choosing = page.waitForEvent("filechooser")
+  await panel.getByRole("button", { name: pictureCopy.replace, exact: true }).click()
+  await (await choosing).setFiles(file)
+  await expect.poll(source).not.toBe(before)
+  expect(await picture.boundingBox()).toEqual(frame)
+  await page.getByRole("button", { name: undoCopy.undoNamed.picture, exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.redoNamed.picture, exact: true }).click()
+  await page.reload()
+  await settled(page)
+  const exported = testInfo.outputPath("replaced.pptx")
+  await savedExport(page, exported)
+  const parts = await partsOf(exported)
+  const raster = [...parts].find(([name]) => /^ppt\/media\/picture-[a-f0-9]+\.jpeg$/.test(name))
+  expect(raster?.[1]).toEqual(await readFile(file))
+})

@@ -42,6 +42,7 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
   readonly width: number
   readonly className?: string
   readonly quiet?: boolean
+  readonly highlights?: readonly ElementId[]
   readonly onEdit?: (id: ElementId, value: string, kind: TextEditKind) => void
   readonly onBoxes?: (moved: readonly Moved[]) => void
   readonly onRemove?: (ids: readonly ElementId[]) => void
@@ -149,6 +150,13 @@ export const SlideCanvas = memo(function SlideCanvas(props: {
           {props.notice !== undefined && props.notice !== "" ? props.notice : moving.message}
         </div>
       )}
+      {props.highlights === undefined
+        ? null
+        : slide.elements.map((each) =>
+            each.id !== null && props.highlights?.includes(each.id) ? (
+              <ChosenFrame key={each.key} id={each.id} element={each} scaled={scaled} store={props.store} />
+            ) : null,
+          )}
       {many.flatMap((each) =>
         each.id === null
           ? []
