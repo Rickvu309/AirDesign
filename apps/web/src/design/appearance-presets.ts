@@ -1,4 +1,12 @@
-import { alphaOf, fadedColor, opaque, sameColor, type Color, type SetChange } from "@airdesign/document"
+import {
+  changeEffects,
+  opaque,
+  readEffects,
+  type Alpha,
+  type SetChange,
+  type ShadowPreset,
+  type TraitPatch,
+} from "@airdesign/document"
 import { Minus } from "lucide-react"
 import type { PanelKind } from "./panel-order"
 import { fillCopy } from "@/copy/fill-copy"
@@ -9,33 +17,6 @@ import { resolveControl, arrange } from "./panel-arrangement"
 import { partControl, type PanelControl, type PanelSection } from "./panel"
 
 export const borderWidths = [1, 2, 4, 6, 8] as const
-
-export const shadowPresets = {
-  subtle: {
-    outer: {
-      blur: 25400,
-      distance: 12700,
-      direction: 2700000,
-      color: { rgb: "000000", transforms: [{ op: "alpha", val: 15000 }] },
-    },
-  },
-  medium: {
-    outer: {
-      blur: 50800,
-      distance: 25400,
-      direction: 2700000,
-      color: { rgb: "000000", transforms: [{ op: "alpha", val: 25000 }] },
-    },
-  },
-  strong: {
-    outer: {
-      blur: 101600,
-      distance: 50800,
-      direction: 2700000,
-      color: { rgb: "000000", transforms: [{ op: "alpha", val: 35000 }] },
-    },
-  },
-} as const
 
 function borderValue(fill: unknown, dash: unknown): string | undefined {
   if (typeof fill !== "object" || fill === null) return undefined
@@ -55,66 +36,46 @@ function modeList(mode: PanelControl): PanelControl {
   }
 }
 
-type Outer = {
-  readonly blur: number
-  readonly distance: number
-  readonly direction: number
-  readonly color: Color
+function shadowSource(value: unknown): Parameters<typeof readEffects>[0] {
+  if (value === undefined) return {}
+  return { landed: { shadow: { set: value } } as TraitPatch<"effects"> }
 }
 
-function readOuter(shadow: unknown): Outer | null {
-  if (typeof shadow !== "object" || shadow === null || !("outer" in shadow)) return null
-  const outer = shadow.outer
-  if (typeof outer !== "object" || outer === null) return null
-  const blur = "blur" in outer ? outer.blur : undefined
-  const distance = "distance" in outer ? outer.distance : undefined
-  const direction = "direction" in outer ? outer.direction : undefined
-  const color = "color" in outer ? outer.color : undefined
-  if (typeof blur !== "number" || typeof distance !== "number" || typeof direction !== "number") return null
-  if (typeof color !== "object" || color === null) return null
-  if (!("rgb" in color) && !("scheme" in color) && !("system" in color) && !("preset" in color)) return null
-  return { blur, distance, direction, color: color as Color }
-}
-
-function sameStrength(outer: Outer, expected: (typeof shadowPresets)[keyof typeof shadowPresets]["outer"]): boolean {
-  return (
-    outer.blur === expected.blur &&
-    outer.distance === expected.distance &&
-    outer.direction === expected.direction &&
-    sameColor(fadedColor(outer.color, opaque), fadedColor(expected.color, opaque))
-  )
+function namedShadow(value: string): value is Exclude<ShadowPreset, "custom"> {
+  return value === "none" || value === "subtle" || value === "medium" || value === "strong"
 }
 
 function shadowValue(shadow: unknown): string | undefined {
-  if (shadow === undefined || (typeof shadow === "object" && shadow !== null && "none" in shadow)) return "none"
-  const outer = readOuter(shadow)
-  if (outer === null) return undefined
-  return Object.entries(shadowPresets).find(([, preset]) => sameStrength(outer, preset.outer))?.[0]
+  if (shadow === undefined) return "none"
+  const read = readEffects(shadowSource(shadow))
+  if (read.slide.shadow === "custom") return undefined
+  if (typeof shadow === "object" && shadow !== null && "outer" in shadow && read.slide.shadow === "none")
+    return undefined
+  return read.slide.shadow
+}
+
+function shadowChange(shadow: PanelControl, edit: Parameters<typeof changeEffects>[1]): SetChange {
+  const sent = shadow.change(shadow.value)
+  const pick = changeEffects(readEffects(shadowSource(shadow.value)), edit)
+  return pick.ok ? { target: sent.target, effects: pick.effects } : { target: sent.target }
 }
 
 function shadowOpacity(shadow: PanelControl): PanelControl | null {
-  const named = shadowValue(shadow.value)
-  const outer = readOuter(shadow.value)
-  if (outer === null || named === undefined || named === "none") return null
+  const read = readEffects(shadowSource(shadow.value))
+  if (read.slide.opacity === null || read.slide.shadow === "none" || read.slide.shadow === "custom") return null
   return resolveControl({
     trait: "shadow",
     field: "opacity",
     label: opacityCopy.label,
     desc: { kind: "number", unit: "fraction", min: 0, max: opaque },
-    value: alphaOf(outer.color),
+    value: read.slide.opacity,
     mixed: false,
     inherited: false,
     reset: null,
     change: (value) => {
-      const alpha = typeof value === "number" ? Math.max(0, Math.min(opaque, Math.round(value))) : alphaOf(outer.color)
-      return shadow.change({
-        outer: {
-          blur: outer.blur,
-          distance: outer.distance,
-          direction: outer.direction,
-          color: fadedColor(outer.color, alpha),
-        },
-      })
+      const alpha = typeof value === "number" ? Math.max(0, Math.min(opaque, Math.round(value))) : read.slide.opacity
+      if (alpha === null) return { target: shadow.change(shadow.value).target }
+      return shadowChange(shadow, { slide: { opacity: alpha as Alpha } })
     },
   })
 }
@@ -219,9 +180,9 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
       value: shadowValue(shadow.value),
       reset: null,
       change: (value) =>
-        shadow.change(
-          value === "subtle" || value === "medium" || value === "strong" ? shadowPresets[value] : { none: true },
-        ),
+        typeof value === "string" && namedShadow(value)
+          ? shadowChange(shadow, { slide: { shadow: value } })
+          : { target: shadow.change(shadow.value).target },
     })
     const opacity = shadowOpacity(shadow)
     added.push({

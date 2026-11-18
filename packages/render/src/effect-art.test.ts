@@ -60,6 +60,21 @@ async function painted(shape: CanvasElement) {
 const shadowGroup = (host: HTMLElement) => host.querySelector("[data-effect-shadow]")
 
 describe("shadow paint", () => {
+  it("paints an inner shadow over the fill and blurs the whole layer", async () => {
+    const host = await painted(
+      element({
+        innerShadow: { blur: 20, distance: 10, direction: 90, color: "rgb(0 0 0 / 35%)" },
+        blur: { radius: 40 },
+      }),
+    )
+    expect(host.querySelector("[data-effect-inner]")?.getAttribute("filter")).toContain("-inner")
+    expect(host.querySelector("[data-canvas-line]")?.getAttribute("data-effect-blur")).toBe("")
+    expect(host.querySelector('[id$="-blur"] feGaussianBlur')?.getAttribute("in")).toBe("SourceGraphic")
+    expect(host.querySelector("[data-effect-inner]")?.parentElement?.querySelector("rect")?.getAttribute("fill")).toBe(
+      "steelblue",
+    )
+  })
+
   it("paints no filter and no extra svg for an element with no effects", async () => {
     const host = await painted(element(undefined))
     expect(host.querySelector("filter")).toBeNull()

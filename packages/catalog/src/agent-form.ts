@@ -21,17 +21,16 @@ import {
   type FieldValue,
   type ElementRead,
   type FillRead,
-  type GlowRead,
   type IndexElement,
   type Read,
   type CropRead,
   type BoundRead,
   type RecolorRead,
-  type ShadowRead,
   type Shown,
   type ThemeFont,
   type TraitReads,
 } from "@airdesign/document"
+import { effectAgents, foldEffects } from "./agent-effects.js"
 import { fontReferences } from "./theme-font.js"
 import { agentColor, agentPercent, colorPattern, hexPattern, readAgentColor, readAgentHex } from "./agent-color.js"
 import { knownIcon } from "./icon-names.js"
@@ -50,20 +49,6 @@ function agentFill(fill: FillRead): string {
   if ("color" in fill) return agentColor(fill.color)
   if ("gradient" in fill) return `gradient ${fill.gradient.map(agentColor).join(", ")}`
   return `pattern ${fill.pattern}`
-}
-
-function agentShadow(shadow: ShadowRead): string {
-  const parts = [
-    `blur ${String(tenths(shadow.blur / emuPerPoint))}`,
-    `distance ${String(tenths(shadow.distance / emuPerPoint))}`,
-    `direction ${String(tenths(shadow.direction / anglePerDegree))}`,
-  ]
-  return shadow.color === null ? parts.join(" ") : `${parts.join(" ")} ${agentColor(shadow.color)}`
-}
-
-function agentGlow(glow: GlowRead): string {
-  const radius = `radius ${String(tenths(glow.radius / emuPerPoint))}`
-  return glow.color === null ? radius : `${radius} ${agentColor(glow.color)}`
 }
 
 function agentRecolor(recolor: RecolorRead): string {
@@ -88,9 +73,7 @@ const agent: Agent = {
   "border.dash": (value) => value,
   "border.head": (value) => value,
   "border.tail": (value) => value,
-  "effects.shadow": agentShadow,
-  "effects.glow": agentGlow,
-  "effects.softEdge": (value) => tenths(value / emuPerPoint),
+  ...effectAgents,
   "text.size": (value) => tenths(value / hundredthsPerPoint),
   "text.color": agentColor,
   "text.font": (value) => value,
@@ -208,14 +191,6 @@ function faded(
   return next === shown ? design : { ...design, [key]: [next] }
 }
 
-type Shadow = FieldValue<"effects", "shadow">
-type Glow = FieldValue<"effects", "glow">
-type SoftEdge = FieldValue<"effects", "softEdge">
-
-const shadowShown = (shadow: Shadow) => ("none" in shadow ? null : agentShadow(shadow.outer))
-const glowShown = (glow: Glow) => ("none" in glow ? null : agentGlow(glow.halo))
-const softEdgeShown = (soft: SoftEdge) => ("none" in soft ? null : tenths(soft.radius / emuPerPoint))
-
 type End = FieldValue<"connection", "start">
 
 const endShown = (end: End) => ("none" in end ? null : agentBound(end.shape))
@@ -245,9 +220,7 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch): Des
   next = folded(next, "box.rot", patch.box?.rot, (value) => (value === 0 ? null : tenths(value / anglePerDegree)))
   next = folded(next, "box.flipH", patch.box?.flipH, (value) => (value ? true : null))
   next = folded(next, "box.flipV", patch.box?.flipV, (value) => (value ? true : null))
-  next = folded(next, "effects.shadow", patch.effects?.shadow, shadowShown)
-  next = folded(next, "effects.glow", patch.effects?.glow, glowShown)
-  next = folded(next, "effects.softEdge", patch.effects?.softEdge, softEdgeShown)
+  next = foldEffects(next, patch.effects)
   next = folded(next, "body.anchor", patch.body?.anchor, (value) => (value === "t" ? null : value))
   next = folded(next, "body.autofit", patch.body?.autofit, (value) => (value === "none" ? null : value))
   next = folded(next, "body.vertical", patch.body?.vertical, (value) => (value === "horz" ? null : value))

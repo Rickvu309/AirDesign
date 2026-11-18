@@ -50,7 +50,13 @@ const fillsOpening = {
   overlay: "opening",
 } as const
 
-const effectsOpening = { shadow: "opening", glow: "opening", softEdge: "opening" } as const
+const effectsOpening = {
+  shadow: "opening",
+  innerShadow: "opening",
+  glow: "opening",
+  softEdge: "opening",
+  blur: "opening",
+} as const
 const bodyOpening = {
   insets: "opening",
   anchor: "opening",
@@ -231,8 +237,10 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
     edit: (_, field, value) => ({ v: format, patch: { effects: { [field]: { set: value } } } }),
     fields: {
       shadow: { file: (parts, at) => shownEffects(parts, at)?.shadow.value, shows: (value) => value },
+      innerShadow: { file: (parts, at) => shownEffects(parts, at)?.innerShadow.value, shows: (value) => value },
       glow: { file: (parts, at) => shownEffects(parts, at)?.glow.value, shows: (value) => value },
       softEdge: { file: (parts, at) => shownEffects(parts, at)?.softEdge.value, shows: (value) => value },
+      blur: { file: (parts, at) => shownEffects(parts, at)?.blur.value, shows: (value) => value },
     },
   },
   body: {

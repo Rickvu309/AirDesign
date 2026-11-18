@@ -3,11 +3,17 @@ import type { TraitWire } from "./trait-wire.js"
 const black = "000000"
 
 export const effectsWire: TraitWire<"effects"> = {
-  description: "Shadow, glow and soft edge, sizes in points. Setting one keeps the others.",
+  description: "Shadow, inner shadow, glow, soft edge and blur, sizes in points. Setting one keeps the others.",
   fields: {
     shadow: {
       description: "Outer shadow; direction in degrees.",
       example: { effects: { shadow: { outer: { blur: 4, distance: 3, direction: 45, color: `#${black} alpha 35` } } } },
+    },
+    innerShadow: {
+      description: "Shadow inside the edge.",
+      example: {
+        effects: { innerShadow: { inner: { blur: 4, distance: 3, direction: 45, color: `#${black} alpha 35` } } },
+      },
     },
     glow: {
       description: "Glow around the edge.",
@@ -16,6 +22,10 @@ export const effectsWire: TraitWire<"effects"> = {
     softEdge: {
       description: "Fades the edge inward by a radius.",
       example: { effects: { softEdge: 5 } },
+    },
+    blur: {
+      description: "Blurs the layer.",
+      example: { effects: { blur: 4 } },
     },
   },
 }

@@ -1,3 +1,4 @@
+import { effectsCopy } from "../../apps/web/src/copy/effects-copy"
 import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
@@ -61,10 +62,13 @@ test("a person gives a file group a shadow, a glow and a soft edge, and the canv
   await expect(page.locator(`[data-slide-paint] [data-canvas-element="${group}"]`)).toHaveCount(1)
   await expect(layer(page)).toHaveCount(0)
   const effects = await effectsOfGroup(page)
-  await choices(effects, "Shadow").getByRole("button", { name: "Outer", exact: true }).click()
+  await effects.getByRole("button", { name: effectsCopy.add, exact: true }).click()
+  await page.getByRole("menuitem", { name: "Add shadow", exact: true }).click()
   await expect.poll(async () => (await painted(page)).members).toEqual(held)
-  await choices(effects, "Glow").getByRole("button", { name: "Glow", exact: true }).click()
-  await choices(effects, "Soft edge").getByRole("button", { name: "Radius", exact: true }).click()
+  await effects.getByRole("button", { name: effectsCopy.add, exact: true }).click()
+  await page.getByRole("menuitem", { name: "Add glow", exact: true }).click()
+  await effects.getByRole("button", { name: effectsCopy.add, exact: true }).click()
+  await page.getByRole("menuitem", { name: "Add soft edge", exact: true }).click()
   await expect
     .poll(async () => (await painted(page)).steps)
     .toEqual([

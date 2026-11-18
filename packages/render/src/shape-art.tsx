@@ -6,7 +6,10 @@ import type { Scaled } from "./text-look.js"
 import {
   CssFill,
   EffectDefs,
+  EffectFill,
   EffectLayers,
+  holdsEffectFill,
+  InnerShadow,
   paintsEffects,
   SoftFill,
   softAttributes,
@@ -132,7 +135,7 @@ export function paintsFillAsSvg(element: CanvasElement, scaled: Scaled) {
   return (
     shapePaths(element, scaled) !== null ||
     (element.outline !== "line" && sidesGradient(element.geometry?.gradient)) ||
-    softensFill(element)
+    holdsEffectFill(element)
   )
 }
 
@@ -208,10 +211,71 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
     props.grab !== true || !open || line === null
       ? []
       : (paths?.map((path) => path.d) ?? [`M0 0L${String(width)} ${String(height)}`])
+  const layerBlur = element.effects?.blur !== undefined
+  const fills =
+    paths === null
+      ? null
+      : paths.map((path, index) =>
+          path.fill && fill !== null && element.outline !== "line" ? (
+            <path key={index} d={path.d} fill={fill} {...soft} />
+          ) : path.fill && fill === null && element.fill !== null && element.outline !== "line" ? (
+            <g key={index} {...soft}>
+              <CssFill element={element} width={width} height={height} clip={`url(#${id}-fill-${index})`} />
+            </g>
+          ) : null,
+        )
+  const strokes =
+    paths === null
+      ? null
+      : paths.map((path, index) => (path.stroke ? <path key={index} d={path.d} {...stroke} /> : null))
+  const frame =
+    paths !== null ? null : translated ? (
+      compoundBands[compound].map(([from, to], index) => {
+        const offset = ((from + to) / 2) * weight
+        return (
+          <line
+            key={index}
+            x1={normal.x * offset}
+            y1={normal.y * offset}
+            x2={width + normal.x * offset}
+            y2={height + normal.y * offset}
+            {...edge}
+            strokeWidth={(to - from) * weight}
+          />
+        )
+      })
+    ) : element.outline === "line" ? (
+      <line x1={0} y1={0} x2={width} y2={height} {...stroke} />
+    ) : element.outline === "ellipse" ? (
+      <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} {...stroke} />
+    ) : (
+      <rect
+        width={width}
+        height={height}
+        {...(element.outline === "round" ? { rx: Math.min(width, height) * 0.16667 } : {})}
+        {...stroke}
+      />
+    )
+  const art = (
+    <>
+      <EffectLayers {...effect} />
+      {fills}
+      <SoftFill {...effect} paint={fill} />
+      <EffectFill {...effect} paint={fill} />
+      <InnerShadow {...effect} />
+      {strokes}
+      {frame}
+      {markerCopy}
+      {bands.map((d, index) => (
+        <GrabBand key={index} d={d} weight={weight} />
+      ))}
+    </>
+  )
   return (
     <svg
       data-canvas-line
       data-canvas-path={paths === null ? undefined : ""}
+      data-effect-blur={layerBlur ? "" : undefined}
       width={Math.max(width, 1)}
       height={Math.max(height, 1)}
       style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none" }}
@@ -251,54 +315,7 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
           ) : null,
         )}
       </defs>
-      <EffectLayers {...effect} />
-      {paths === null
-        ? null
-        : paths.map((path, index) => (
-            <g key={index}>
-              {path.fill && fill !== null && element.outline !== "line" ? (
-                <path d={path.d} fill={fill} {...soft} />
-              ) : null}
-              {path.fill && fill === null && element.fill !== null && element.outline !== "line" ? (
-                <g {...soft}>
-                  <CssFill element={element} width={width} height={height} clip={`url(#${id}-fill-${index})`} />
-                </g>
-              ) : null}
-              {path.stroke ? <path d={path.d} {...stroke} /> : null}
-            </g>
-          ))}
-      <SoftFill {...effect} paint={fill} />
-      {paths !== null ? null : translated ? (
-        compoundBands[compound].map(([from, to], index) => {
-          const offset = ((from + to) / 2) * weight
-          return (
-            <line
-              key={index}
-              x1={normal.x * offset}
-              y1={normal.y * offset}
-              x2={width + normal.x * offset}
-              y2={height + normal.y * offset}
-              {...edge}
-              strokeWidth={(to - from) * weight}
-            />
-          )
-        })
-      ) : element.outline === "line" ? (
-        <line x1={0} y1={0} x2={width} y2={height} {...stroke} />
-      ) : element.outline === "ellipse" ? (
-        <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} {...stroke} />
-      ) : (
-        <rect
-          width={width}
-          height={height}
-          {...(element.outline === "round" ? { rx: Math.min(width, height) * 0.16667 } : {})}
-          {...stroke}
-        />
-      )}
-      {markerCopy}
-      {bands.map((d, index) => (
-        <GrabBand key={index} d={d} weight={weight} />
-      ))}
+      {layerBlur ? <g filter={`url(#${id}-blur)`}>{art}</g> : art}
     </svg>
   )
 }

@@ -1,0 +1,209 @@
+import { expect, it } from "vitest"
+import type { Alpha, Color } from "./index.js"
+import { changeEffects, readEffects, type Effect, type EffectKey } from "./effects-list.js"
+
+const black = (alphaValue: number): Color => ({ rgb: "000000", transforms: [{ op: "alpha", val: alphaValue }] })
+
+const medium = { blur: 50_800, distance: 25_400, direction: 2_700_000, color: black(25_000) }
+const glow: Effect = { kind: "glow", radius: 63_500, color: { scheme: "accent1" } }
+const inner: Effect = { kind: "innerShadow", ...medium }
+const blur: Effect = { kind: "blur", radius: 63_500 }
+const shadow: Effect = { kind: "shadow", ...medium }
+
+function kinds(source: Parameters<typeof readEffects>[0]): readonly string[] {
+  return readEffects(source).list.map((entry) => ("kept" in entry ? entry.kept : entry.effect.kind))
+}
+
+function written(change: ReturnType<typeof changeEffects>) {
+  if (!change.ok) throw new Error(change.refusal)
+  return change.effects
+}
+
+function keyOf(source: Parameters<typeof readEffects>[0], kind: string): EffectKey {
+  const entry = readEffects(source).list.find((each) => ("kept" in each ? each.kept : each.effect.kind) === kind)
+  if (entry === undefined) throw new Error(kind)
+  return entry.key
+}
+
+it("picks Medium by writing only the drop shadow", () => {
+  const shown = readEffects({
+    landed: { glow: { set: { halo: { radius: glow.radius, color: glow.color } } } },
+  })
+  expect(changeEffects(shown, { slide: { shadow: "medium" } })).toEqual({
+    ok: true,
+    effects: { shadow: { outer: medium } },
+  })
+})
+
+it("writes shadow opacity onto the same shadow and leaves its offset", () => {
+  const shown = readEffects({ landed: { shadow: { set: { outer: medium } } } })
+  const pick = changeEffects(shown, { slide: { opacity: 40_000 as Alpha } })
+  expect(pick).toEqual({
+    ok: true,
+    effects: { shadow: { outer: { ...medium, color: black(40_000) } } },
+  })
+  expect(readEffects({ landed: { shadow: { set: { outer: { ...medium, color: black(40_000) } } } } }).slide).toEqual({
+    shadow: "medium",
+    opacity: 40_000,
+  })
+})
+
+it("applies a strength and an opacity in one edit", () => {
+  const shown = readEffects({})
+  expect(changeEffects(shown, { slide: { shadow: "medium", opacity: 40_000 as Alpha } })).toEqual({
+    ok: true,
+    effects: { shadow: { outer: { ...medium, color: black(40_000) } } },
+  })
+})
+
+it("refuses opacity when the layer has no drop shadow", () => {
+  expect(changeEffects(readEffects({}), { slide: { opacity: 40_000 as Alpha } })).toEqual({
+    ok: false,
+    refusal: "limit",
+  })
+})
+
+it("refuses a second drop shadow and offers the other kinds", () => {
+  const shown = readEffects({ landed: { shadow: { set: { outer: medium } } } })
+  expect(shown.addable).toEqual(["blur", "glow", "innerShadow", "softEdge"])
+  expect(changeEffects(shown, { add: shadow })).toEqual({ ok: false, refusal: "limit" })
+})
+
+it("adds a glow, an inner shadow or a blur as that field alone", () => {
+  const shown = readEffects({ landed: { shadow: { set: { outer: medium } } } })
+  expect(changeEffects(shown, { add: glow })).toEqual({
+    ok: true,
+    effects: { glow: { halo: { radius: glow.radius, color: glow.color } } },
+  })
+  expect(changeEffects(shown, { add: inner })).toEqual({
+    ok: true,
+    effects: { innerShadow: { inner: medium } },
+  })
+  expect(changeEffects(shown, { add: blur })).toEqual({ ok: true, effects: { blur: { radius: blur.radius } } })
+})
+
+it("removes one effect by clearing only its field", () => {
+  const source = {
+    landed: {
+      shadow: { set: { outer: medium } },
+      glow: { set: { halo: { radius: glow.radius, color: glow.color } } },
+    },
+  } as const
+  expect(changeEffects(readEffects(source), { remove: keyOf(source, "shadow") })).toEqual({
+    ok: true,
+    effects: { shadow: { none: true } },
+  })
+})
+
+it("keeps a key when another kind is added and when the effect is edited", () => {
+  const source = { landed: { shadow: { set: { outer: medium } } } }
+  const before = keyOf(source, "shadow")
+  const added = readEffects({
+    landed: {
+      shadow: { set: { outer: medium } },
+      glow: { set: { halo: { radius: glow.radius, color: glow.color } } },
+    },
+  })
+  expect(keyOf(source, "shadow")).toBe(before)
+  expect(before).toBe("shadow")
+  const edited = { ...shadow, blur: 1 }
+  expect(changeEffects(added, { at: before, effect: edited })).toEqual({
+    ok: true,
+    effects: {
+      shadow: { outer: { blur: 1, distance: medium.distance, direction: medium.direction, color: medium.color } },
+    },
+  })
+  expect(keyOf(source, "shadow")).toBe(before)
+})
+
+it("refuses every edit of an effect graph", () => {
+  const shown = readEffects({ kept: ["graph"], landed: { shadow: { set: { outer: medium } } } })
+  expect(shown.list).toEqual([{ key: "graph", kept: "graph" }])
+  expect(shown.addable).toEqual([])
+  expect(changeEffects(shown, { add: glow })).toEqual({ ok: false, refusal: "kept" })
+  expect(changeEffects(shown, { slide: { shadow: "strong" } })).toEqual({ ok: false, refusal: "kept" })
+  expect(changeEffects(shown, { remove: keyOf({ kept: ["graph"] }, "graph") })).toEqual({ ok: false, refusal: "kept" })
+})
+
+it("lists a reflection, refuses to remove it, and still edits the shadow", () => {
+  const source = { landed: { shadow: { set: { outer: medium } } }, kept: ["reflection"] as const }
+  const shown = readEffects(source)
+  expect(kinds(source)).toEqual(["shadow", "reflection"])
+  expect(changeEffects(shown, { remove: keyOf(source, "reflection") })).toEqual({ ok: false, refusal: "kept" })
+  const edited = { ...shadow, distance: 1 }
+  expect(written(changeEffects(shown, { at: keyOf(source, "shadow"), effect: edited }))).toEqual({
+    shadow: { outer: { ...medium, distance: 1 } },
+  })
+})
+
+it("orders modeled and kept effects as DrawingML does", () => {
+  expect(
+    kinds({
+      landed: {
+        shadow: { set: { outer: medium } },
+        glow: { set: { halo: { radius: 1, color: black(10_000) } } },
+        innerShadow: { set: { inner: medium } },
+        softEdge: { set: { radius: 1 } },
+        blur: { set: { radius: 2 } },
+      },
+      kept: ["fillOverlay", "reflection"],
+    }),
+  ).toEqual(["blur", "fillOverlay", "glow", "innerShadow", "shadow", "reflection", "softEdge"])
+})
+
+it("calls a shadow that matches no strength custom and hides its opacity", () => {
+  const shown = readEffects({ landed: { shadow: { set: { outer: { ...medium, blur: 999 } } } } })
+  expect(shown.slide).toEqual({ shadow: "custom", opacity: null })
+})
+
+it("reads an empty list as no shadow", () => {
+  expect(readEffects({}).slide).toEqual({ shadow: "none", opacity: null })
+  expect(readEffects({}).addable).toEqual(["blur", "glow", "innerShadow", "shadow", "softEdge"])
+  expect(readEffects({}).list).toEqual([])
+  expect(readEffects({}).own).toBe(false)
+})
+
+it("lets a kept preset shadow take the drop shadow place", () => {
+  const shown = readEffects({ kept: ["presetShadow"] })
+  expect(kinds({ kept: ["presetShadow"] })).toEqual(["presetShadow"])
+  expect(shown.addable).not.toContain("shadow")
+  expect(changeEffects(shown, { add: shadow })).toEqual({ ok: false, refusal: "limit" })
+  expect(changeEffects(shown, { slide: { shadow: "medium" } })).toEqual({ ok: false, refusal: "limit" })
+})
+
+it("shows a landed shadow beside an opening glow", () => {
+  const shown = readEffects({
+    opening: { glow: { set: { halo: { radius: glow.radius, color: glow.color } } } },
+    landed: { shadow: { set: { outer: medium } } },
+  })
+  expect(
+    kinds({
+      opening: { glow: { set: { halo: { radius: glow.radius, color: glow.color } } } },
+      landed: { shadow: { set: { outer: medium } } },
+    }),
+  ).toEqual(["glow", "shadow"])
+  expect(shown.own).toBe(true)
+})
+
+it("clears a slot a row inherits and still counts the layer as owning effects", () => {
+  const shown = readEffects({
+    opening: { shadow: { set: { outer: medium } } },
+    landed: { shadow: "inherit" },
+  })
+  expect(shown.list).toEqual([])
+  expect(shown.own).toBe(true)
+})
+
+it("names the three strengths by PowerPoint's sizes", () => {
+  const shown = readEffects({})
+  expect(written(changeEffects(shown, { slide: { shadow: "subtle" } }))).toEqual({
+    shadow: {
+      outer: { blur: 25_400, distance: 12_700, direction: 2_700_000, color: black(15_000) },
+    },
+  })
+  expect(written(changeEffects(shown, { slide: { shadow: "strong" } }))).toEqual({
+    shadow: {
+      outer: { blur: 101_600, distance: 50_800, direction: 2_700_000, color: black(35_000) },
+    },
+  })
+})

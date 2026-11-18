@@ -31,8 +31,11 @@ export const designKeys = [
   "border.head",
   "border.tail",
   "effects.shadow",
+  "effects.innerShadow",
   "effects.glow",
   "effects.softEdge",
+  "effects.blur",
+  "effects.kept",
   "text.size",
   "text.color",
   "text.font",
@@ -98,8 +101,11 @@ export type TraitReads = {
   readonly "border.head"?: Read<string>
   readonly "border.tail"?: Read<string>
   readonly "effects.shadow"?: Read<ShadowRead>
+  readonly "effects.innerShadow"?: Read<ShadowRead>
   readonly "effects.glow"?: Read<GlowRead>
   readonly "effects.softEdge"?: Read<number>
+  readonly "effects.blur"?: Read<number>
+  readonly "effects.kept"?: Read<string>
   readonly "text.size"?: Read<number>
   readonly "text.color"?: Read<Color>
   readonly "text.font"?: Read<string> & { readonly theme?: ThemeFont }

@@ -63,7 +63,7 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
   const controlled = await fold(panel, effectsCopy.section).getAttribute("aria-controls")
   expect(controlled).not.toBeNull()
   await expect(
-    page.locator(`[id="${controlled ?? ""}"]`).getByRole("group", { name: "Shadow", exact: true }),
+    page.locator(`[id="${controlled ?? ""}"]`).getByRole("button", { name: effectsCopy.add, exact: true }),
   ).toBeVisible()
   await page.keyboard.press("Space")
   await expect(fold(panel, effectsCopy.section)).toHaveAttribute("aria-expanded", "false")

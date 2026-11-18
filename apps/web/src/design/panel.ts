@@ -29,6 +29,7 @@ import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
 import { cropChange } from "./crop-change"
 import { appearanceSections } from "./appearance-presets"
+import { listEffects } from "./effects-list"
 import { cornersSection } from "./corners-control"
 import { opacitySection } from "./opacity-control"
 import {
@@ -387,9 +388,18 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     sections: ordered(
       kind,
       textFillSections(
-        appearanceSections(
-          [...alignSection, ...content, ...(opacity === null ? [] : [opacity]), ...(corners === null ? [] : [corners])],
-          kind,
+        listEffects(
+          appearanceSections(
+            [
+              ...alignSection,
+              ...content,
+              ...(opacity === null ? [] : [opacity]),
+              ...(corners === null ? [] : [corners]),
+            ],
+            kind,
+          ),
+          view,
+          shown,
         ),
         kind,
       ),

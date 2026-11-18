@@ -147,8 +147,16 @@ it("keeps a custom geometry and an effect graph out of reach, reads an image fil
       "text.size": { value: 4400 },
       "text.color": { value: { scheme: "tx1" } },
       "text.font": { value: "Arial", theme: "minor" },
+      "effects.kept": { value: "graph" },
     },
-    kept: ["geometry", "effects.shadow", "effects.glow", "effects.softEdge"],
+    kept: [
+      "geometry",
+      "effects.shadow",
+      "effects.innerShadow",
+      "effects.glow",
+      "effects.softEdge",
+      "effects.blur",
+    ],
   })
 })
 

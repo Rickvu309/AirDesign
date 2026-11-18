@@ -11,8 +11,17 @@ export type CanvasShadow = {
   readonly color: string
 }
 
+export type CanvasInner = {
+  readonly blur: number
+  readonly distance: number
+  readonly direction: number
+  readonly color: string
+}
+
 export type CanvasEffects = {
   readonly shadow?: CanvasShadow
+  readonly innerShadow?: CanvasInner
   readonly glow?: { readonly radius: number; readonly color: string }
   readonly softEdge?: { readonly radius: number }
+  readonly blur?: { readonly radius: number }
 }

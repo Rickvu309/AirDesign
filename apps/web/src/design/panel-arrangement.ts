@@ -182,8 +182,10 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   ],
   effects: [
     [placed("shadow")],
+    [placed("innerShadow")],
     [placed("glow")],
     [placed("softEdge")],
+    [placed("blur")],
     [placed("shadow.outer", hidden)],
     [placed("shadow.outer.blur", inside), placed("shadow.outer.distance", inside)],
     [placed("shadow.outer.direction", inside)],
@@ -192,6 +194,12 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [placed("glow.halo.radius", inside)],
     [placed("glow.halo.color")],
     [placed("softEdge.radius", inside)],
+    [placed("blur.radius", inside)],
+    [placed("innerShadow.inner", hidden)],
+    [placed("innerShadow.inner.blur", inside), placed("innerShadow.inner.distance", inside)],
+    [placed("innerShadow.inner.direction", inside)],
+    [placed("innerShadow.inner.color")],
+    [placed("add", hidden, { kind: "action" })],
   ],
   body: [
     [placed("insets")],

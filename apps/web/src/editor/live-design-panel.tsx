@@ -33,6 +33,7 @@ import {
   type DeckTraits,
 } from "@airdesign/pptx"
 import type { PaintStore, Selection } from "@airdesign/render"
+import { keptPanelField } from "@/editor/kept-panel-field"
 import { LiveTemplateStyle } from "@/editor/live-template-style"
 import { TemplateTextStyleHost } from "@/editor/text-style-dialog"
 import { Button } from "@/components/ui/button"
@@ -164,6 +165,7 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
       ...Object.fromEntries(text),
       ...Object.fromEntries(alphas),
       ...Object.fromEntries(effects),
+      ...keptPanelField(parts, at),
     }
   } catch {
     return {}

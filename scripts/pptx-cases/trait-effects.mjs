@@ -16,7 +16,7 @@ export default {
   exports: [exported],
   originals: [original],
   renders: [exported],
-  covers: ["effects.shadow", "effects.glow", "effects.softEdge"],
+  covers: ["effects.shadow", "effects.innerShadow", "effects.glow", "effects.softEdge", "effects.blur"],
   lines(answers) {
     const kept = [...(answers.parts.get(original)?.keys() ?? [])].filter(
       (name) => name !== glowing && name !== softened,

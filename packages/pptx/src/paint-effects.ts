@@ -18,10 +18,19 @@ export type PaintShadow = {
 
 export type PaintGlow = { radius: number; color: PaintColor }
 
+export type PaintInner = {
+  blur: number
+  distance: number
+  direction: number
+  color: PaintColor
+}
+
 export type PaintEffects = {
   shadow?: PaintShadow
+  innerShadow?: PaintInner
   glow?: PaintGlow
   softEdge?: { radius: number }
+  blur?: { radius: number }
 }
 
 const alignments = ["tl", "t", "tr", "l", "ctr", "r", "bl", "b", "br"]
@@ -83,5 +92,17 @@ export const paintEffects = (
   const softElement = paintChild(children, list, "a:softEdge")
   const softRadius = softElement === undefined ? null : size(softElement, "rad")
   if (softRadius !== null && softRadius > 0) effects.softEdge = { radius: softRadius }
+  const innerElement = paintChild(children, list, "a:innerShdw")
+  const innerColor = innerElement === undefined ? null : colorOf(children, innerElement, palette)
+  if (innerElement !== undefined && innerColor !== null)
+    effects.innerShadow = {
+      blur: size(innerElement, "blurRad") ?? 0,
+      distance: size(innerElement, "dist") ?? 0,
+      direction: ((((size(innerElement, "dir") ?? 0) / anglesPerDegree) % 360) + 360) % 360,
+      color: innerColor,
+    }
+  const blurElement = paintChild(children, list, "a:blur")
+  const blurRadius = blurElement === undefined ? null : size(blurElement, "rad")
+  if (blurRadius !== null && blurRadius > 0) effects.blur = { radius: blurRadius }
   return Object.keys(effects).length === 0 ? undefined : effects
 }

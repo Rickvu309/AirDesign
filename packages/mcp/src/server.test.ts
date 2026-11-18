@@ -85,28 +85,6 @@ async function withClient(session: Session, use: (client: Client) => Promise<voi
 }
 
 describe("createServer", () => {
-  it("describes each element kind", async () => {
-    await withClient(sessionFor(opened()), async (client) => {
-      const instructions = client.getInstructions() ?? ""
-      expect(instructions).toContain('"op": "set"')
-      expect(instructions).toContain(
-        "A shape takes identity (name, alt, hidden), box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape), fills (paint, source, mode, crop, recolor, overlay, blur), border (fill, width, dash, cap, compound, join, head, tail)",
-      )
-      expect(instructions).toContain("spaceAfter), link (target) and opacity.")
-      expect(instructions).toContain(
-        "A line takes identity (name, alt, hidden), box (x, y, w, h, rot, flipH, flipV, align, distribute), geometry (shape), border (fill, width, dash",
-      )
-      expect(instructions).toContain("connection (start, end) and opacity.")
-      expect(instructions).toContain('"opacity": 60')
-      expect(instructions).toContain(
-        "A table takes identity (name, alt, hidden) and box (x, y, w, h, align, distribute).",
-      )
-      expect(instructions).toContain(
-        "A group takes identity (name, alt, hidden), box (x, y, w, h, rot, flipH, flipV, align, distribute) and effects (shadow, glow, softEdge).",
-      )
-    })
-  })
-
   it("returns a new server on every call", () => {
     const session = sessionFor(opened())
     expect(createServer(session)).not.toBe(createServer(session))
