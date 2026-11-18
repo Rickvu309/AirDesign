@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { proofPlan } from "./prove-plan.mjs"
+import { lookResult } from "./prove.mjs"
 
 const rules = [
   { name: "check", script: ["check"], paths: [""] },
@@ -13,6 +14,7 @@ const facts = {
   rules,
   moved: [],
   screens: {
+    "/screens/s41-01-editor-grid-default": "editor",
     "/screens/s42-02-editor-agent-run-complete": "editor",
     "/screens/s31-04-decks-browse-all-decks-grid": "decks",
   },
@@ -20,6 +22,7 @@ const facts = {
     { name: "agent-empty", design: "/screens/s42-02-editor-agent-run-complete" },
     { name: "agent-done", design: "/screens/s42-02-editor-agent-run-complete" },
     { name: "decks-all", design: "/screens/s31-04-decks-browse-all-decks-grid" },
+    { name: "grid-add-added", design: "/screens/s41-01-editor-grid-default" },
     { name: "deck-gone", design: null },
   ],
   replays: [
@@ -90,9 +93,39 @@ describe("proofPlan", () => {
 
   it("looks at the states whose design screen sits in a touched area", () => {
     expect(step(["apps/web/src/decks/home.tsx"], "look").states).toEqual(["decks-all"])
-    expect(step(["packages/render/src/slide-canvas.tsx"], "look").states).toEqual(["agent-done", "agent-empty"])
+    expect(step(["packages/render/src/slide-canvas.tsx"], "look").states).toEqual([
+      "agent-done",
+      "agent-empty",
+      "grid-add-added",
+    ])
     expect(step([".agents/skills/verify-airdesign/look/states/deck-gone.mjs"], "look").states).toEqual(["deck-gone"])
     expect(step(["apps/web/src/decks/home.test.tsx"], "look")).toBeUndefined()
+  })
+
+  it("keeps every editor state for a Grid change, since the editor page imports Grid and shows it only at runtime", () => {
+    expect(step(["apps/web/src/editor/editor-grid.tsx"], "look").states).toEqual([
+      "agent-done",
+      "agent-empty",
+      "grid-add-added",
+    ])
+  })
+
+  it.fails("looks at every state for a theme token change, since imports cannot see CSS", () => {
+    expect(step(["packages/theme/src/tokens.css"], "look")?.states).toEqual([
+      "agent-done",
+      "agent-empty",
+      "deck-gone",
+      "decks-all",
+      "grid-add-added",
+    ])
+  })
+
+  it.fails("looks at the deck list too for a shared components/ui change", () => {
+    expect(step(["apps/web/src/components/ui/button.tsx"], "look")?.states).toContain("decks-all")
+  })
+
+  it.fails("looks at the states that show a changed copy file's words", () => {
+    expect(step(["apps/web/src/copy/aira-copy.ts"], "look")?.states).toContain("agent-done")
   })
 
   it("suggests the speed bench when the editor or the painter changes", () => {
@@ -109,5 +142,30 @@ describe("proofPlan", () => {
     expect(words.steps).toEqual([])
     expect(words.ciAlso).toEqual(["check"])
     expect(plan(["tests/browser/home.spec.ts"]).ciAlso).toEqual(["check", "browser-tests"])
+  })
+})
+
+describe("lookResult", () => {
+  it("says FAILED when the sheet stops before it is written", () => {
+    const stopped = { status: 1, output: "verify-airdesign sheet: ENOSPC: no space left on device\n" }
+    expect(lookResult(stopped, "/run/sheet", "/run/look.log.sheet")).toEqual({
+      passed: false,
+      result: "FAILED before the sheet was written, see /run/look.log.sheet",
+    })
+  })
+
+  it("names the states that failed and the findings of a written sheet", () => {
+    const answer = (failed) => ({
+      status: 0,
+      output: `${JSON.stringify({ count: 12, states: 180, failed, summary: "/run/sheet/sheet-00.png" })}\n`,
+    })
+    expect(lookResult(answer(2), "/run/sheet", "/run/look.log.sheet")).toEqual({
+      passed: false,
+      result: "FAILED 2 of 180 states, findings 12, sheet /run/sheet/sheet-00.png",
+    })
+    expect(lookResult(answer(0), "/run/sheet", "/run/look.log.sheet")).toEqual({
+      passed: true,
+      result: "PASSED 180 states, findings 12, sheet /run/sheet/sheet-00.png",
+    })
   })
 })
