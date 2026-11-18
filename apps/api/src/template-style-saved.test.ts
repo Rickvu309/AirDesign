@@ -36,6 +36,10 @@ type Saved = {
   }
 }
 
+function hashed(digits: string): `#${string}` {
+  return `#${digits}`
+}
+
 const saved = JSON.parse(
   readFileSync(path.join(process.cwd(), "packages/document/src/format-64-deck.json"), "utf8"),
 ) as Saved
@@ -174,7 +178,7 @@ it("answers an agent that still says deck.theme, and reads the template styles u
   const aliased = await agent.call("edit_deck", {
     deck,
     base: read.body.revision,
-    changes: [{ op: "set", target: "deck.theme", theme: { accent2: "#00B050", minor: "Verdana" } }],
+    changes: [{ op: "set", target: "deck.theme", theme: { accent2: hashed("00B050"), minor: "Verdana" } }],
   })
   expect(aliased.ok, aliased.said).toBe(true)
   const runId = aliased.body.runId
@@ -188,8 +192,8 @@ it("answers an agent that still says deck.theme, and reads the template styles u
       {
         op: "set",
         target: "deck.templateStyles",
-        theme: { accent2: "#FF0000" },
-        templateStyle: { accent2: "#00FF00" },
+        theme: { accent2: hashed("FF0000") },
+        templateStyle: { accent2: hashed("00FF00") },
       },
     ],
   })
