@@ -13,9 +13,10 @@ type Move = Extract<GridCommand, { readonly slide: "move-many" }>
 
 export function groupRefusal(state: SlideState, command: Move): SlideRefusal | null {
   const present = new Set(presentSlides(state).map((spot) => spot.id))
+  const anchor = command.row === "before" ? command.before : command.after
   if (
     command.ids.some((id) => !present.has(id)) ||
-    (command.after !== null && (!present.has(command.after) || command.ids.includes(command.after)))
+    (anchor !== null && (!present.has(anchor) || command.ids.includes(anchor)))
   )
     return "dead"
   if (
@@ -37,7 +38,8 @@ export function moveGroup(
   readonly heads: Set<SlideId>
   readonly effects: readonly LegacySlideCommand[]
 } {
-  const placement = gridMovePlacement(rows, command.ids, command.after, command.row)
+  const anchor = command.row === "before" ? command.before : command.after
+  const placement = gridMovePlacement(rows, command.ids, anchor, command.row)
   const held = new Set(command.ids)
   const moving = before.filter((spot) => held.has(spot.id))
   const remaining = before.filter((spot) => !held.has(spot.id))
@@ -61,19 +63,20 @@ export function moveGroup(
 export function gridMovePlacement<Id>(
   rows: readonly (readonly Id[])[],
   ids: readonly Id[],
-  after: Id | null,
+  anchor: Id | null,
   side: Move["row"],
 ) {
   const held = new Set(ids)
   const moving = rows.flat().filter((id) => held.has(id))
   const next = rows.map((row) => row.filter((id) => !held.has(id))).filter((row) => row.length > 0)
-  const number = after === null ? -1 : next.findIndex((row) => row.includes(after))
+  const number = anchor === null ? -1 : next.findIndex((row) => row.includes(anchor))
   const row = next[number]
-  const anchor = side === "same" ? after : (row?.at(-1) ?? null)
+  const separate = side === "new" || side === "keep"
+  const at = row === undefined || anchor === null ? 0 : row.indexOf(anchor) + (side === "before" ? 0 : 1)
+  const after = separate ? (row?.at(-1) ?? null) : (row?.[at - 1] ?? next[number - 1]?.at(-1) ?? null)
   if (moving.length > 0) {
-    if (side !== "same" || next.length === 0) next.splice(number + 1, 0, moving)
-    else if (row !== undefined && after !== null) row.splice(row.indexOf(after) + 1, 0, ...moving)
-    else next[0]?.unshift(...moving)
+    if (separate || next.length === 0) next.splice(number + 1, 0, moving)
+    else (row ?? next[0])?.splice(at, 0, ...moving)
   }
-  return { after: anchor, rows: next }
+  return { after, rows: next }
 }

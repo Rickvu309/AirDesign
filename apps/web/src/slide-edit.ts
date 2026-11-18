@@ -105,17 +105,13 @@ export async function commitSlideMove(
   deckId: string,
   file: readonly SlideId[],
   register: Register,
-  ids: readonly [SlideId, ...SlideId[]],
-  after: SlideId | null,
-  row: GridSide | "keep",
+  edit: Extract<SlideCommand, { slide: "move-many" }>,
   paint: (current: number, undoable: Undoable | null) => void | Promise<void>,
 ): Promise<CommitOutcome> {
-  const grid = gridCommandVersion(register)
-  const edit: SlideCommand = { slide: "move-many", grid, ids, after, row }
   const undoable = slideUndoable(register, file, edit)
   const kept = await connect(memoryRemote()).enqueueSlide(deckId, file, edit)
   if (!kept.ok) return "refused"
-  await paint(kept.painted.indexOf(ids[0]), undoable)
+  await paint(kept.painted.indexOf(edit.ids[0]), undoable)
   return flushPending(connect, deckId)
 }
 

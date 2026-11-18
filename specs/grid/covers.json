@@ -5,7 +5,7 @@
       "file": "packages/document/src/grid-order.ts",
       "names": ["foldGrid", "turnRefusal", "defaultGrid1", "defaultGrid2", "packSections", "gridRows"],
       "digest": "6c9b6cad1184",
-      "blob": "93187d913d1811937790c7402c19184112bc58b5"
+      "blob": "2fc48406768e7dae0343bf0dd01b4447f530e18f"
     },
     {
       "file": "packages/document/src/grid-undo.ts",
@@ -15,9 +15,9 @@
     },
     {
       "file": "packages/document/src/grid-move.ts",
-      "names": ["groupRefusal", "moveGroup"],
-      "digest": "b6c92ad56e3a",
-      "blob": "bc069d943854158625d66116a72301fe2b431b2e"
+      "names": ["groupRefusal", "moveGroup", "gridMovePlacement"],
+      "digest": "3fb479fd7f66",
+      "blob": "90bb00ea764776abb5bb2221dfee6a3d6e966b53"
     },
     {
       "file": "packages/document/src/grid-set.ts",

@@ -1,6 +1,6 @@
 # Checks on stored grid rows
 
-`Grid` checks six opening slides, same-row and below-row additions, a duplicate, source-head movement, deletion and restoration, guarded undo and redo, and device adoption. Its below-add paths include a foreign source-tail append, two below-adds, a deleted anchor, a colliding birth, foreign content in the added row and an unsafe redo after another tail append. It has 156 reachable states.
+`Grid` checks six opening slides, same-row and below-row additions, a duplicate, source-head movement, deletion and restoration, guarded undo and redo, and device adoption. Its below-add paths include a foreign source-tail append, two below-adds, a deleted anchor, a colliding birth, foreign content in the added row and an unsafe redo after another tail append. It has 176 reachable states.
 
 `Partition`, `NoEmptyRow`, `HeadsUniqueOrdered` and `RowMajor` require each live slide to belong to exactly one nonempty row, with live unique heads in presentation order. `ForeignRowKept` prevents a restored head or below-add taking a foreign slide from its row. `BelowSingleton` requires each accepted below-add to create its own row. `SameAcceptedPrefix` requires server and device projections to agree when they hold the same accepted prefix.
 
@@ -23,3 +23,5 @@ The selected-slide paths model deletion across row heads, duplication after the 
 The versioned paths publish section starts, pack three complete singleton sections together and choose the opening partition from the first command's version, and replay a later command from the other version. `VersionedDefault` checks the resulting heads. `grid-version.test.ts` in document also replays a recorded version-one log with and without the upgraded index, and generates section lengths to check complete-section packing, wrapping and the frozen unsectioned default. The live test recovers the version-two edit from its journal and sends a new import's index before its first edit.
 
 The device saves section starts in a format-stamped slot and reads it in the same transaction as the edit rows. The live version test checks that a fresh import has an empty edit log and can still recover a version-two edit offline.
+
+The before-anchor move can change row membership while keeping slide order. Grid checks a group prepended to a row, Undo, device adoption, refusal after the anchor is deleted, and a before-anchor move as the first edit on a sectioned deck. A planted insertion after the anchor failed the replay with slide 5 still at the row head.

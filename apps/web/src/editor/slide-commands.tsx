@@ -1,9 +1,18 @@
 import { toast } from "@/components/ui/toast"
-import { limits, presentSlides, gridRows, type ElementId, type GridSide, type Undoable } from "@airdesign/document"
+import {
+  limits,
+  presentSlides,
+  gridRows,
+  gridCommandVersion,
+  type ElementId,
+  type GridSide,
+  type Undoable,
+} from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { ownBox, SlideCanvas } from "@airdesign/render"
 import type { CommitOutcome } from "@/commit-edit"
 import { slideListCopy } from "@/copy/slide-list-copy"
+import { gridAnchor } from "@/editor/grid-drop"
 import type { SlideStrip } from "@/editor/slide-sidebar"
 import { showSlideDeleted, type UndoOf } from "@/editor/slide-toast"
 import type { DeckPaint } from "@/editor/use-deck-paint"
@@ -98,28 +107,28 @@ export function slideCommands(deck: CommandedDeck, undo: () => void, showMatchin
       const ids = sequence.filter((_, index) => held.includes(index))
       const first = ids[0]
       if (first === undefined) return
-      const after =
-        sequence
-          .slice(0, at)
-          .filter((id) => !ids.includes(id))
-          .at(-1) ?? null
+      const anchor = gridAnchor(sequence, held, at, row)
       void queue(async () => {
         const opened = await connect(memoryRemote()).openDeck(id)
         if (!opened.ok) return
+        const group = {
+          slide: "move-many",
+          grid: gridCommandVersion(opened.register),
+          ids: [first, ...ids.slice(1)],
+        } as const
+        const edit =
+          row === "before"
+            ? anchor === null
+              ? null
+              : { ...group, row, before: anchor }
+            : { ...group, row, after: anchor }
+        if (edit === null) return
         settle(
-          await commitSlideMove(
-            id,
-            file,
-            opened.register,
-            [first, ...ids.slice(1)],
-            after,
-            row,
-            async (currentIndex, undoable) => {
-              if (undoable !== null) record({ name: slideNames.move, undoable })
-              setPending(true)
-              await showEdited(currentIndex)
-            },
-          ),
+          await commitSlideMove(id, file, opened.register, edit, async (currentIndex, undoable) => {
+            if (undoable !== null) record({ name: slideNames.move, undoable })
+            setPending(true)
+            await showEdited(currentIndex)
+          }),
         )
       })
     },

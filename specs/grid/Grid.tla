@@ -25,10 +25,10 @@ Members(seq) == {seq[i] : i \in 1..Len(seq)}
 RowStart(i) == CHOOSE j \in 1..i : slides[j] \in heads /\
   \A k \in (j+1)..i : slides[k] \notin heads
 TypeOK ==
-  /\ stage \in 0..53
+  /\ stage \in 0..60
   /\ slides \in Seq(1..8)
   /\ heads \subseteq Members(slides)
-  /\ cacheStage \in 0..53
+  /\ cacheStage \in 0..60
   /\ cacheSlides \in Seq(1..8)
   /\ cacheHeads \subseteq Members(cacheSlides)
   /\ initialized \in 0..2
@@ -120,10 +120,19 @@ FirstVersionTwo ==
 LaterVersionOne == Land(50,51,<<1,3,4,6>>,{1,4})
 FirstVersionOne == Land(49,52,<<1,3,4,5,6>>,{1,5})
 LaterVersionTwo == Land(52,53,<<1,4,5,6>>,{1,5})
+MoveBefore == Land(0,54,Opening,{1,4})
+UndoBefore == Land(54,55,Opening,{1,5})
+GroupBefore == Land(0,56,<<2,4,1,3,5,6>>,{2,1})
+UndoGroupBefore == Land(56,57,Opening,{1,5})
+RefuseDeadBefore == Land(1,58,<<1,2,3,4,6>>,{1,6})
+SectionedMoveBefore ==
+  /\ stage = 49 /\ stage' = 59 /\ slides' = Opening /\ heads' = {1,3}
+  /\ initialized' = 2 /\ UNCHANGED <<cacheStage, cacheSlides, cacheHeads>>
+UndoSectionedBefore == Land(59,60,Opening,{1,4})
 Adopt ==
   /\ cacheStage # stage
   /\ cacheStage' = stage /\ cacheSlides' = slides /\ cacheHeads' = heads
   /\ UNCHANGED <<stage, slides, heads, initialized>>
-Next == RemoveHead \/ InsertGap \/ RefuseHead \/ RemoveSingleton \/ UndoSingleton \/ MoveHead \/ UndoMove \/ Add \/ Clone \/ UndoAdd \/ UndoClone \/ RemoveNonHead \/ InsertNonHeadGap \/ UndoNonHead \/ BelowInterior \/ UndoBelow \/ RedoBelow \/ BelowFinal \/ TailAppend \/ BelowAfterAppend \/ UndoConcurrentBelow \/ ForeignFillNew \/ RefuseFilledUndo \/ AppendAfterUndo \/ RefuseRedo \/ RemoveAnchor \/ RefuseDeadBelow \/ TwoBelow \/ RefuseCollision \/ GroupSame \/ UndoGroup \/ GroupNew \/ RowKeep \/ UndoRow \/ RedoRow \/ ForeignRowInsert \/ RefuseRowUndo \/ RefuseStaleRow \/ ForeignGroupGap \/ UndoForeignGroup \/ EmptyRow \/ RefuseGroupAnchor \/ DeleteSet \/ UndoDeleteSet \/ CloneSet \/ UndoCloneSet \/ RefuseWholeDeck \/ RefuseSetCollision \/ IndexSections \/ FirstVersionTwo \/ LaterVersionOne \/ FirstVersionOne \/ LaterVersionTwo \/ Adopt
+Next == RemoveHead \/ InsertGap \/ RefuseHead \/ RemoveSingleton \/ UndoSingleton \/ MoveHead \/ UndoMove \/ Add \/ Clone \/ UndoAdd \/ UndoClone \/ RemoveNonHead \/ InsertNonHeadGap \/ UndoNonHead \/ BelowInterior \/ UndoBelow \/ RedoBelow \/ BelowFinal \/ TailAppend \/ BelowAfterAppend \/ UndoConcurrentBelow \/ ForeignFillNew \/ RefuseFilledUndo \/ AppendAfterUndo \/ RefuseRedo \/ RemoveAnchor \/ RefuseDeadBelow \/ TwoBelow \/ RefuseCollision \/ GroupSame \/ UndoGroup \/ GroupNew \/ RowKeep \/ UndoRow \/ RedoRow \/ ForeignRowInsert \/ RefuseRowUndo \/ RefuseStaleRow \/ ForeignGroupGap \/ UndoForeignGroup \/ EmptyRow \/ RefuseGroupAnchor \/ DeleteSet \/ UndoDeleteSet \/ CloneSet \/ UndoCloneSet \/ RefuseWholeDeck \/ RefuseSetCollision \/ IndexSections \/ FirstVersionTwo \/ LaterVersionOne \/ FirstVersionOne \/ LaterVersionTwo \/ MoveBefore \/ UndoBefore \/ GroupBefore \/ UndoGroupBefore \/ RefuseDeadBefore \/ SectionedMoveBefore \/ UndoSectionedBefore \/ Adopt
 Spec == Init /\ [][Next]_vars
 ====
