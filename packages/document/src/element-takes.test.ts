@@ -200,7 +200,7 @@ describe("the server admits only the edits the device can write onto an element 
     expect(takes({ ...facts, kind: "chart" })).toEqual([...named, "box.x", "box.y", "box.w", "box.h"])
     expect(takes({ ...facts, kind: "group" })).toEqual([...named, ...box, ...effects])
     expect(takes({ ...facts, kind: "kept" })).toEqual([])
-    expect(takes({ ...facts, kind: "slide" })).toEqual(["fill.value", "template.id"])
+    expect(takes({ ...facts, kind: "slide" })).toEqual(["fill.value", "template.id", "show.skipped"])
     expect(takes({ ...facts, kind: "notes" })).toEqual(["notes.value"])
     expect(takes({ ...facts, kind: "shape", grouped: true })).toEqual([
       ...named,
