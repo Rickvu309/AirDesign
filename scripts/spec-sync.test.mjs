@@ -63,7 +63,7 @@ assert.deepEqual(
   "a covered function changed without a re-sync is named with its file",
 )
 const lines = driftLines(changed).join("\n")
-assert.match(lines, /^spec-sync demo: undoOrder in src\/order\.ts changed since the spec was synced\.$/m)
+assert.match(lines, /^spec-drift demo: undoOrder in src\/order\.ts changed since the spec was synced\.$/m)
 assert.match(lines, /pnpm check:specs demo/)
 assert.match(lines, /node scripts\/spec-sync\.mjs --sync demo/)
 assert.match(lines, new RegExp(`What moved: git diff ${seeded.blob} src/order\\.ts`))
@@ -78,7 +78,7 @@ assert.deepEqual(
 )
 assert.match(
   driftLines(renamed).join("\n"),
-  /^spec-sync demo: undoOrder in src\/order\.ts no longer exists\. Rename it in specs\/demo\/covers\.json\.$/m,
+  /^spec-drift demo: undoOrder in src\/order\.ts no longer exists\. Rename it in specs\/demo\/covers\.json\.$/m,
 )
 
 fs.rmSync(path.join(root, "src/order.ts"))

@@ -209,8 +209,8 @@ export const land = async (ctx) => {
     }
     line("conflicts", `none; ${behindMain(git)} commits behind origin/main`)
     const stale = staleFault(staleFiles(git))
-    if (stale !== undefined) stop("stale tree", stale)
-    line("stale tree", `none; fewer than ${restoredLimit} files put back to content main replaced`)
+    if (stale !== undefined) stop("restored-files", stale)
+    line("restored-files", `none; fewer than ${restoredLimit} files put back to content main replaced`)
     const numbers = migrationFault({ base: jsonAt(git, "origin/main"), head: jsonAt(git, "HEAD") })
     if (numbers !== undefined) stop("migrations", numbers)
     line("migrations", "no migration number is taken on origin/main")

@@ -12,7 +12,7 @@ const planWith = (tests) => ({
   steps:
     tests === undefined
       ? []
-      : [{ kind: "unit", tests, files: ["x.ts"], because: "package.json is read outside the import graph" }],
+      : [{ kind: "unit-tests", tests, files: ["x.ts"], because: "package.json is read outside the import graph" }],
 })
 same(
   "a diff with no unit source runs no unit test",
@@ -56,15 +56,15 @@ same(
 const named = (chosen) => chosen.flatMap((stage) => stage.flatMap(stepsOf)).map(([name]) => name)
 const cheap = checkSteps.cheapGateStages()
 const preflight = [
-  "browser-imports",
+  "test-imports",
   "format",
   "lint",
-  "file-size",
-  "references",
-  "bug-rule",
+  "file-growth",
+  "tsconfig-references",
+  "lint-rules",
   "commit-authors",
-  "boundaries",
-  "interface-width",
+  "package-boundaries",
+  "unused-exports",
 ]
 const full = checkSteps.affectedGateStages({
   tests: ["a.test.ts"],
@@ -74,11 +74,19 @@ const full = checkSteps.affectedGateStages({
 same("the cheap checks are the steps that wait for nothing, and the worktree sweep", named(cheap), [
   ...preflight,
   "actionlint",
-  "copy-literals",
-  "worktrees",
+  "copy-in-tests",
+  "sweep-list",
 ])
-same("then the gate builds and tests what the diff reaches", named(full), ["build", "test", "tooling"])
-for (const name of ["browser", "specs", "spec-replays", "bar", "metrics", "design-findings", "site"]) {
+same("then the gate builds and tests what the diff reaches", named(full), ["build", "unit-tests", "script-tests"])
+for (const name of [
+  "browser-tests",
+  "model-check",
+  "spec-coverage",
+  "bar",
+  "metrics",
+  "design-findings",
+  "site-build",
+]) {
   if ([...named(cheap), ...named(full)].includes(name)) throw new Error(`the gate runs ${name}, which ci runs`)
 }
 const ofName = (chosen, name) =>
@@ -105,14 +113,14 @@ same(
     ],
   ],
 )
-const testStep = ofName(checkSteps.stagesFor("all", false), "test")
+const testStep = ofName(checkSteps.stagesFor("all", false), "unit-tests")
 same(
-  "the test step runs only the chosen files, niced on two workers, with the test step's settings",
-  ofName(full, "test"),
-  ["test", "nice", ["-n", "10", testStep[1], ...testStep[2], "--maxWorkers=2", "a.test.ts"], testStep[3]],
+  "the unit-tests step runs only the chosen files, niced on two workers, with the unit-tests step's settings",
+  ofName(full, "unit-tests"),
+  ["unit-tests", "nice", ["-n", "10", testStep[1], ...testStep[2], "--maxWorkers=2", "a.test.ts"], testStep[3]],
 )
-same("the tooling step runs only the chosen files", ofName(full, "tooling"), [
-  "tooling",
+same("the script-tests step runs only the chosen files", ofName(full, "script-tests"), [
+  "script-tests",
   "node",
   ["scripts/tooling-tests.mjs", "scripts/land.test.mjs"],
 ])
@@ -149,7 +157,7 @@ same(
   passed.events.slice(1, preflight.length + 1).sort(),
   [...preflight].sort(),
 )
-for (const failing of ["format", "lint", "file-size"]) {
+for (const failing of ["format", "lint", "file-growth"]) {
   const early = await gateOf(failing)
   same(`a ${failing} failure stamps nothing`, early.stamped, 0)
   same(
@@ -158,13 +166,13 @@ for (const failing of ["format", "lint", "file-size"]) {
     [...preflight].sort(),
   )
 }
-for (const failing of ["build", "test", "actionlint", "copy-literals"]) {
+for (const failing of ["build", "unit-tests", "actionlint", "copy-in-tests"]) {
   const late = await gateOf(failing)
   same(`a ${failing} failure stamps nothing`, [late.stamped, late.failed], [0, [failing]])
 }
 same(
   "--all runs every step after a cheap failure and still stamps nothing",
-  await gateOf("format", true).then(({ events, stamped }) => [events.includes("test"), stamped]),
+  await gateOf("format", true).then(({ events, stamped }) => [events.includes("unit-tests"), stamped]),
   [true, 0],
 )
 
@@ -186,7 +194,7 @@ same("a gate that cannot choose its tests fails and stamps nothing", unchosen, "
 
 console.log("gate tests passed")
 
-if (!named(cheap).includes("interface-width")) throw new Error("unused package exports must stop the gate")
+if (!named(cheap).includes("unused-exports")) throw new Error("unused package exports must stop the gate")
 
 const reported = []
 let reportStamp = 0

@@ -21,7 +21,7 @@ One agent builds, proves and lands its own change, and starts no review agent. A
 4. `pnpm gate` stamps the commit, and `git push` refuses a commit with no stamp. Never `--no-verify`.
 5. `pnpm land --title "<title>" --body-file <file>` opens the PR, queues it and follows it to merged. The title is an imperative verb and the one outcome, in at most 72 characters. The body has the sections of `.github/pull_request_template.md`. `pnpm land` refuses a bad title or body and says why.
 
-`ci` on the PR, and again in the merge queue, is the judge. When it fails, fix what it names and land again. Rebase only when GitHub reports a conflict. `main` deploys itself once `ci` passes.
+`ci` on the PR, and again in the merge queue, is the judge. When it fails, fix the step it names and land again. Rebase only when GitHub reports a conflict. `main` deploys itself once `ci` passes.
 
 Land finished work now as its own PR, since the queue keeps the order. To wait on a PR, call `watch_pull_request`. A thread that hands out work ends its turn, and the reports wake it.
 

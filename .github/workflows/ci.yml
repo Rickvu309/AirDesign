@@ -25,8 +25,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - part: main
-          - part: side
+          - part: source
+          - part: scripts
           - part: design
           - part: browser
             shard: 1/4
@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-      - if: matrix.part == 'main'
+      - if: matrix.part == 'source'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         continue-on-error: true
         id: cache-lookup
@@ -76,7 +76,7 @@ jobs:
         run: pnpm exec playwright install --only-shell chromium
       - if: steps.work.outputs.needed == 'true'
         uses: ./.github/actions/tla
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'main'
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'source'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         continue-on-error: true
         id: work-cache
@@ -88,20 +88,20 @@ jobs:
         uses: ./.github/actions/postgres
       - if: matrix.part != 'pptx' && steps.work.outputs.needed == 'true'
         run: pnpm check --part=${{ matrix.part }}${{ matrix.shard && format(' --shard={0}', matrix.shard) || '' }}
-      - if: always() && steps.work.outputs.needed == 'true' && (matrix.part == 'main' || matrix.part == 'browser' || matrix.part == 'design')
+      - if: always() && steps.work.outputs.needed == 'true' && (matrix.part == 'source' || matrix.part == 'browser' || matrix.part == 'design')
         continue-on-error: true
         uses: ./.github/actions/affected-report
         with:
           base: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
           part: ${{ matrix.part }}
           shard: ${{ strategy.job-index }}
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'main' && !cancelled()
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'source' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         continue-on-error: true
         with:
           path: ~/.cache/airdesign/spec-results
           key: spec-results-${{ hashFiles('specs/**') }}
-      - if: github.event_name == 'merge_group' && matrix.part == 'main'
+      - if: github.event_name == 'merge_group' && matrix.part == 'source'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         continue-on-error: true
         timeout-minutes: 2
@@ -110,7 +110,7 @@ jobs:
           path: ~/.cache/airdesign/spec-results
           include-hidden-files: true
           retention-days: 1
-      - if: matrix.part == 'main' && steps.work.outputs.passed == 'true' && steps.cache-lookup.outputs.cache-hit != 'true'
+      - if: matrix.part == 'source' && steps.work.outputs.passed == 'true' && steps.cache-lookup.outputs.cache-hit != 'true'
         id: specs
         continue-on-error: true
         timeout-minutes: 2

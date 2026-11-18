@@ -122,10 +122,10 @@ export const driftLines = (moved) => {
     for (const entry of own) {
       const where = `${shownNames(entry.names)}${entry.file}`
       if (entry.reason === "changed") {
-        lines.push(`spec-sync ${spec}: ${where} changed since the spec was synced.`)
+        lines.push(`spec-drift ${spec}: ${where} changed since the spec was synced.`)
         lines.push(`  What moved: git diff ${entry.blob} ${entry.file}`)
       } else {
-        lines.push(`spec-sync ${spec}: ${where} no longer exists. Rename it in specs/${spec}/covers.json.`)
+        lines.push(`spec-drift ${spec}: ${where} no longer exists. Rename it in specs/${spec}/covers.json.`)
       }
     }
     if (own.some((entry) => entry.reason === "changed")) {
@@ -199,7 +199,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
       for (const line of driftLines(moved)) console.log(line)
       const specs = coveredSpecs(root).length
       const movedSpecs = new Set(moved.map((entry) => entry.spec)).size
-      console.log(`spec-sync: ${specs - movedSpecs} specs in step, ${movedSpecs} moved.`)
+      console.log(`spec-drift: ${specs - movedSpecs} specs in step, ${movedSpecs} moved.`)
       if (moved.length > 0) process.exit(1)
     }
   } catch (error) {

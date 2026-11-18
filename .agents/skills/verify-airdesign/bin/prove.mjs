@@ -10,7 +10,7 @@ import { changedFiles, failedTests, rerunCommand, suiteRules } from "./suites.mj
 const cli = fileURLToPath(new URL("./verify-airdesign.mjs", import.meta.url))
 const vitest = "node_modules/vitest/vitest.mjs"
 const smallUnitLimit = 40
-const kinds = ["unit", "tooling", "specs", "browser", "look", "pptx", "bench"]
+const kinds = ["unit-tests", "script-tests", "model-check", "browser-tests", "look", "pptx", "bench"]
 const optIn = { pptx: "run it with --pptx, it takes 1 to 2 minutes", bench: "bench suggested: pnpm prove --bench" }
 
 const git = (repo, args) => execFileSync("git", args, { cwd: repo, encoding: "utf8" }).trim()
@@ -122,7 +122,7 @@ export const proveCommand = async (args, { repo, evidenceRoot }) => {
   }
 
   const steps = {
-    unit: async (step, log) => {
+    "unit-tests": async (step, log) => {
       if (step.tests === "all") {
         const json = path.join(out, "unit.json")
         return {
@@ -145,7 +145,7 @@ export const proveCommand = async (args, { repo, evidenceRoot }) => {
         go: async () => vitestResult(await exec(repo, tests(lane, files, json), specEnv, log), json),
       }
     },
-    tooling: async (step, log) => ({
+    "script-tests": async (step, log) => ({
       lane: "small",
       what: step.files.join(", "),
       go: async () => {
@@ -159,7 +159,7 @@ export const proveCommand = async (args, { repo, evidenceRoot }) => {
         }
       },
     }),
-    specs: async (step, log) => ({
+    "model-check": async (step, log) => ({
       lane: "small",
       what: `${step.topics.join(", ")}: TLC, then ${step.replays.join(", ") || "no replay"}`,
       go: async () => {
@@ -171,7 +171,7 @@ export const proveCommand = async (args, { repo, evidenceRoot }) => {
         return vitestResult(await exec(repo, tests("small", step.replays, json), specEnv, log), json)
       },
     }),
-    browser: async (step, log) => {
+    "browser-tests": async (step, log) => {
       const limited = spawnSync("systemd-run", ["--user", "--scope", "--quiet", "true"]).status === 0
       const playwright = [
         "test:browser",
@@ -202,7 +202,7 @@ export const proveCommand = async (args, { repo, evidenceRoot }) => {
               total === 0
                 ? `FAILED before any test ran: ${log}`
                 : `${ran.status === 0 ? "PASSED" : "FAILED"} ${String(stats.expected ?? 0)}/${String(total)}`,
-            rerun: ran.status === 0 ? undefined : rerunCommand("browser", failedTests(readJson(report) ?? {})),
+            rerun: ran.status === 0 ? undefined : rerunCommand("browser-tests", failedTests(readJson(report) ?? {})),
           }
         },
       }

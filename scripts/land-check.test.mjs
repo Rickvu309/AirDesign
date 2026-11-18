@@ -34,8 +34,8 @@ const load = await judged({ status: 1, output: vitestOutput, alone: { status: 0,
 same("a test that fails in the gate and passes alone is load", load.verdict.passed, true)
 same("the file is rerun alone, once", load.asked, [file])
 same("both results are printed", load.said, [
-  `test: ${file} failed in the gate: an agent edit that meets a person's edit on another element while it is stored > lands once when the deck's index arrives between the read and the write, and counts one tool call`,
-  `test: ${file} passed alone. This looks like machine load, not a fault.`,
+  `unit-tests: ${file} failed in the gate: an agent edit that meets a person's edit on another element while it is stored > lands once when the deck's index arrives between the read and the write, and counts one tool call`,
+  `unit-tests: ${file} passed alone. This looks like machine load, not a fault.`,
 ])
 if (!load.verdict.how.includes("passed alone")) throw new Error("the verdict does not say the file passed alone")
 
@@ -54,7 +54,7 @@ if (!real.verdict.how.includes(file) || !real.verdict.how.includes("lands once")
 same(
   "the second result is printed",
   real.said.at(-1),
-  `test: ${file} failed alone too, so this is a real fault: lands once`.replace(
+  `unit-tests: ${file} failed alone too, so this is a real fault: lands once`.replace(
     "lands once",
     "an agent edit > lands once",
   ),
@@ -65,10 +65,10 @@ same("a step that does not depend on load stops the push", lint.verdict.passed, 
 same("and reruns nothing", lint.asked, [])
 if (!lint.verdict.how.includes("lint")) throw new Error("the stop does not name the step")
 
-const next = await judged({ status: 1, output: `${vitestOutput}\nfailed: test, typecheck\n` })
-same("test failing next to another step stops the push", [next.verdict.passed, next.asked], [false, []])
+const next = await judged({ status: 1, output: `${vitestOutput}\nfailed: unit-tests, typecheck\n` })
+same("unit-tests failing next to another step stops the push", [next.verdict.passed, next.asked], [false, []])
 
-const silent = await judged({ status: 1, output: "failed: test\n" })
+const silent = await judged({ status: 1, output: "failed: unit-tests\n" })
 same("a failed test with no file named stops the push", silent.verdict.passed, false)
 
 const nothing = await judged({ status: 1, output: "the machine fell over\n" })

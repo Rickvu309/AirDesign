@@ -11,7 +11,7 @@ A mechanical rule that passes or fails without a person or paid model.
 _Avoid_: guard, validation
 
 **gate**:
-The run `pnpm gate` stamps for a push: cheap checks, builds and unit and tooling tests selected by the diff. ci runs every step.
+The run `pnpm gate` stamps for a push. It runs cheap checks, builds, and unit and script tests selected by the diff.
 _Avoid_: pre-push check, quick check, fast check
 
 **step**:
@@ -31,7 +31,7 @@ Work whose output other steps need.
 Work that prints or lists something and judges nothing.
 
 **part**:
-Steps ci runs on one machine, beside the other parts.
+The steps ci runs on one machine, such as `source` or `scripts`.
 _Avoid_: shard, job, matrix
 
 **ci**:

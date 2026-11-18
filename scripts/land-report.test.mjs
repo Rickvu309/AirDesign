@@ -39,7 +39,7 @@ const lines = (changedOnMain, behind = 3) => {
 }
 
 const fixed = lines([oneFile, "README.md"])
-same("the run is named with its failed step", fixed.out[0], "ci run 43261070420 (merge_group) failed in test.")
+same("the run is named with its failed step", fixed.out[0], "ci run 43261070420 (merge_group) failed in unit-tests.")
 same(
   "each failed test is named with its first error",
   fixed.out[1],

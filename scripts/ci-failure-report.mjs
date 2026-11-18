@@ -8,9 +8,28 @@ const pullListLimit = 100
 export const mergedLimit = 20
 export const falseStopBudget = 1
 
+const formerStepNames = new Map([
+  ["copy-literals", "copy-in-tests"],
+  ["browser-imports", "test-imports"],
+  ["test", "unit-tests"],
+  ["tooling", "script-tests"],
+  ["bug-rule", "lint-rules"],
+  ["file-size", "file-growth"],
+  ["references", "tsconfig-references"],
+  ["interface-width", "unused-exports"],
+  ["worktrees", "sweep-list"],
+  ["stale-tree", "restored-files"],
+  ["specs", "model-check"],
+  ["spec-replays", "spec-coverage"],
+  ["spec-sync", "spec-drift"],
+  ["browser", "browser-tests"],
+  ["boundaries", "package-boundaries"],
+  ["site", "site-build"],
+])
+
 export const failureClass = (log) => {
   const step = /\bfail ([a-z:-]+)(?: [\d.]+s)?$/m.exec(log)
-  if (step) return `pnpm check: ${step[1]}`
+  if (step) return `pnpm check: ${formerStepNames.get(step[1]) ?? step[1]}`
   if (/\d+ pptx checks failed/.test(log)) return "PowerPoint check: a case failed"
   if (/ is \d+(\.\d+)? and its limit is /.test(log)) return "a timed metric went over its limit"
   const named = /^[^\t]*\t([^\t]+)\t/m.exec(log)

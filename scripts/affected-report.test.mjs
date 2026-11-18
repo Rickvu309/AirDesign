@@ -86,7 +86,7 @@ try {
   const chosen = () =>
     checkSteps.affectedGateStages({
       tests: testsFor({ plan, related, changed }).files,
-      tooling: plan.steps.find((s) => s.kind === "tooling").files,
+      tooling: plan.steps.find((s) => s.kind === "script-tests").files,
       packages: packagesFor(changed),
     })
   const before = chosen()
@@ -118,7 +118,7 @@ try {
       tests: ["packages/a/src/a.test.ts"],
       tooling: [],
     },
-    part: "main",
+    part: "source",
   })
   assert.deepEqual(
     failures.failures.map((test) => test.insideReached),
@@ -149,7 +149,7 @@ try {
   assert.equal(wrongHead.complete, false)
   assert.equal(wrongHead.unit.reached, "all")
   assert.equal(wrongHead.unit.files, null)
-  const missing = await affectedReport({ root: folder, base: "absent", head: "HEAD", part: "main" })
+  const missing = await affectedReport({ root: folder, base: "absent", head: "HEAD", part: "source" })
   assert.equal(missing.complete, false)
   assert.equal(missing.unit.reached, "all")
   assert.equal(missing.unit.files, null)
@@ -160,7 +160,7 @@ try {
       "--base",
       "absent",
       "--part",
-      "main",
+      "source",
       "--output",
       path.join(folder, "report.json"),
     ],

@@ -13,8 +13,8 @@ const names = (changed) => suitesFor(changed, rules).map((suite) => suite.name)
 
 describe("suitesFor", () => {
   it("runs the browser suite and the journeys for a change to a package the web app imports", () => {
-    expect(names(["packages/render/src/slide-canvas.tsx"])).toEqual(["check", "browser", "journeys", "pptx"])
-    expect(names(["packages/theme/tokens.css"])).toEqual(["check", "browser", "journeys"])
+    expect(names(["packages/render/src/slide-canvas.tsx"])).toEqual(["check", "browser-tests", "journeys", "pptx"])
+    expect(names(["packages/theme/tokens.css"])).toEqual(["check", "browser-tests", "journeys"])
   })
 
   it("runs the journeys but not the browser suite for a server-only change", () => {
@@ -33,7 +33,7 @@ describe("suitesFor", () => {
 
   it("names the first changed file that needs each suite", () => {
     expect(
-      suitesFor(["GLOSSARY.md", "tests/browser/home.spec.ts"], rules).find((suite) => suite.name === "browser"),
+      suitesFor(["GLOSSARY.md", "tests/browser/home.spec.ts"], rules).find((suite) => suite.name === "browser-tests"),
     ).toMatchObject({
       because: "tests/browser/home.spec.ts",
     })
@@ -70,8 +70,8 @@ describe("failedTests and rerunCommand", () => {
   })
 
   it("gives one command that reruns only the failed browser tests", () => {
-    expect(rerunCommand("browser", failedTests(report))).toBe(
-      "node .agents/skills/verify-airdesign/bin/verify-airdesign.mjs suites --run browser -- tests/browser/home.spec.ts:9",
+    expect(rerunCommand("browser-tests", failedTests(report))).toBe(
+      "node .agents/skills/verify-airdesign/bin/verify-airdesign.mjs suites --run browser-tests -- tests/browser/home.spec.ts:9",
     )
   })
 
@@ -87,6 +87,6 @@ describe("failedTests and rerunCommand", () => {
   })
 
   it("has nothing to rerun when nothing failed", () => {
-    expect(rerunCommand("browser", [])).toBeUndefined()
+    expect(rerunCommand("browser-tests", [])).toBeUndefined()
   })
 })

@@ -60,12 +60,12 @@ for (const chosen of [
     chosen,
     run: async ([name]) => {
       ran.push(name)
-      return name === "browser-imports" ? 1 : 0
+      return name === "test-imports" ? 1 : 0
     },
     lock: async () => {
       assert.fail("broken imports must stop before a machine slot or browser starts")
     },
   })
-  assert.ok(ran.includes("browser-imports"))
-  assert.deepEqual(result.failed, ["browser-imports"])
+  assert.ok(ran.includes("test-imports"))
+  assert.deepEqual(result.failed, ["test-imports"])
 }

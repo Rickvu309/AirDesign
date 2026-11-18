@@ -200,7 +200,7 @@ pnpm prove            # read the diff against origin/main, run what fits, write 
 pnpm prove --plan     # print the plan as JSON and run nothing
 ```
 
-It runs the unit tests the changed sources reach, the tooling tests that import a changed script, the TLA+ specs whose covered code moved and their replays, a changed browser spec five times under a CPU limit, and `sheet` on the states of each touched screen area. Quote its `proof.md` in the PR's `## Proof`. [prove-and-suites.md](prove-and-suites.md) has the rules, the flags, the lanes, and `$V suites` for the whole suites `ci` runs.
+It runs the unit tests the changed sources reach, the script tests that import a changed script, the TLA+ specs whose covered code moved and their replays, a changed browser spec five times under a CPU limit, and `sheet` on the states of each touched screen area. Quote its `proof.md` in the PR's `## Proof`. [prove-and-suites.md](prove-and-suites.md) has the rules, the flags, the lanes, and `$V suites` for the whole suites `ci` runs.
 
 ## Bench
 

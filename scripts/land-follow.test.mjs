@@ -9,9 +9,9 @@ const same = (what, actual, expected) => {
 const fixture = (name) => fs.readFileSync(new URL(`./land-fixtures/${name}`, import.meta.url), "utf8")
 const ok = (stdout) => ({ status: 0, stdout, stderr: "" })
 
-const pass = [{ __typename: "CheckRun", name: "check (main)", conclusion: "SUCCESS", status: "COMPLETED" }]
-const running = [{ __typename: "CheckRun", name: "check (main)", conclusion: null, status: "IN_PROGRESS" }]
-const fail = [{ __typename: "CheckRun", name: "check (main)", conclusion: "FAILURE", status: "COMPLETED" }]
+const pass = [{ __typename: "CheckRun", name: "check (source)", conclusion: "SUCCESS", status: "COMPLETED" }]
+const running = [{ __typename: "CheckRun", name: "check (source)", conclusion: null, status: "IN_PROGRESS" }]
+const fail = [{ __typename: "CheckRun", name: "check (source)", conclusion: "FAILURE", status: "COMPLETED" }]
 
 const answer = ({
   armed = true,
