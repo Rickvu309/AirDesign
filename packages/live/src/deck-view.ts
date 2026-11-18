@@ -2,27 +2,27 @@ import type { DeckId } from "@airdesign/catalog"
 import {
   decide,
   format,
-  newerFormat,
-  newerSlideCommand,
-  legacyElement,
   openRegister,
   readElementId,
-  readRow,
-  readSlideState,
+  readStoredEdit,
   replay,
   rootElement,
   storedValue,
   type ElementId,
   type Queued,
   type Register,
+  type StoredEdit,
+  type StoredRead,
 } from "@airdesign/document"
 import type { GridOpening } from "./grid-opening.js"
 import { withSlides } from "./slide-replay.js"
 import {
+  confirmedRow,
   fitConfirmed,
   isConfirmed,
   isPending,
   logicalValues,
+  pendingRow,
   rowKey,
   type ConfirmedRow,
   type PendingRow,
@@ -77,7 +77,6 @@ export function played(
   pending: readonly PendingRow[],
   opening?: GridOpening,
 ): Register {
-  if ([...confirmed, ...pending].some(newerRow)) throw new Error("newer")
   let register = openRegister("", deck)
   if (opening !== undefined) {
     register = { ...register, file: opening.file, sectionStarts: opening.sectionStarts }
@@ -98,32 +97,57 @@ export function played(
   return withSlides(replay(register, seeded), confirmed, pending)
 }
 
-export function newerRow(row: StoredRow): boolean {
-  if (newerFormat(row) || newerSlideCommand(row.slideEdit)) return true
-  const read = row.slideEdit === undefined ? readRow(row, "text") : null
-  return read !== null && !read.ok && read.refusal === "newer"
+const payload = { ok: false, refusal: "payload" } as const
+
+function storedEdit(row: StoredRow): unknown {
+  if (row.slideEdit !== undefined) return { format: row.format, file: row.slideFile, edits: [row.slideEdit] }
+  return { format: row.format, node: row.node, floor: row.floor, value: row }
 }
 
-export function readable(row: StoredRow): boolean {
-  if (row.slideEdit !== undefined) {
-    return row.slideFile !== undefined && readSlideState({ file: row.slideFile, order: [row.slideEdit] }) !== undefined
+function nodeRow(row: StoredRow, edit: Extract<StoredEdit, { readonly value: unknown }>, node: ElementId): StoredRow {
+  if (row.kind === "confirmed") return confirmedRow(row.deck, row.revision, edit.value, node)
+  const pending = pendingRow(row.deck, row.order, row.base, edit.value, node, edit.floor)
+  return row.once === undefined ? pending : { ...pending, once: row.once }
+}
+
+export function readStored(row: StoredRow): StoredRead<StoredRow> {
+  const read = readStoredEdit(storedEdit(row))
+  if (!read.ok) return read
+  const edit = read.value
+  if ("edits" in edit) {
+    const [slideEdit] = edit.edits
+    return slideEdit === undefined ? payload : { ok: true, value: { ...row, slideFile: edit.file, slideEdit } }
   }
-  if (!readRow(row, "text").ok) return false
-  if (isPending(row)) return wired(row)
-  return row.node === undefined || row.node === legacyElement || readElementId(row.node) !== undefined
+  const node = edit.node
+  if (isPending(row) && readElementId(node) === undefined) return payload
+  if (row.slideEdit !== undefined) return node === undefined ? payload : { ok: true, value: nodeRow(row, edit, node) }
+  return { ok: true, value: { ...row, ...storedValue(edit.value) } as StoredRow }
+}
+
+function newer(read: StoredRead<StoredRow>): boolean {
+  return !read.ok && read.refusal === "newer"
 }
 
 export function split(rows: readonly StoredRow[]): { confirmed: ConfirmedRow[]; pending: PendingRow[] } {
-  if (rows.some(newerRow)) throw new Error("newer")
-  const confirmed = rows
-    .filter(isConfirmed)
-    .filter(readable)
-    .sort((left, right) => left.revision - right.revision)
-  const pending = rows
-    .filter(isPending)
-    .filter((row) => readable(row) && (row.slideEdit !== undefined || wired(row)))
-    .sort((left, right) => left.order - right.order)
+  const reads = rows.map(readStored)
+  if (reads.some(newer)) throw new Error("newer")
+  const kept = reads.flatMap((read) => (read.ok ? [read.value] : []))
+  const confirmed = kept.filter(isConfirmed).sort((left, right) => left.revision - right.revision)
+  const pending = kept.filter(isPending).sort((left, right) => left.order - right.order)
   return { confirmed, pending }
+}
+
+export function readStoredRows(rows: readonly StoredRow[]): {
+  readonly newer: boolean
+  readonly read: readonly StoredRow[]
+  readonly unread: readonly StoredRow[]
+} {
+  const reads = rows.map(readStored)
+  return {
+    newer: reads.some(newer),
+    read: reads.flatMap((read) => (read.ok ? [read.value] : [])),
+    unread: rows.filter((_, at) => reads[at]?.ok !== true),
+  }
 }
 
 export function storedKey(deck: string, row: StoredRow): string {

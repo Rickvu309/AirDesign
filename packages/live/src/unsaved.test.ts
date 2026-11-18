@@ -1,7 +1,16 @@
-import { orderKeyBetween, slideId } from "@airdesign/document"
+import { format, orderKeyBetween, slideId } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { memoryShelf, node, other } from "./browser-fixtures.js"
-import { holdsUnsaved, keepUnsaved, recoverUnsaved, releaseUnsaved, unsavedOf, type Shelf } from "./unsaved.js"
+import {
+  holdsUnsaved,
+  keepUnsaved,
+  readUnsaved,
+  recoverUnsaved,
+  releaseUnsaved,
+  unsavedOf,
+  type Shelf,
+  type Unsaved,
+} from "./unsaved.js"
 
 const account = "a".repeat(32)
 const text = (value: string, at = node) => ({ kind: "text" as const, node: at, floor: "file", value })
@@ -137,4 +146,31 @@ it("journals an entire row move and recovers exactly one command", async () => {
   })
   expect(recovered).toEqual([expect.objectContaining(entry)])
   expect(unsavedOf(shelf, account, "deck")).toEqual([])
+})
+
+it("reads each kind of entry back as it was kept, and a slide background an older build kept as a fill row", () => {
+  const file = [slideId("256"), slideId("257")]
+  const kept: Unsaved[] = [
+    { ...text("T"), id: "t" },
+    { kind: "box", id: "b", node, floor: "file", box: { x: 1, y: 2, cx: 3, cy: 4 } },
+    { kind: "row", id: "r", node, floor: "file", row: { v: format, patch: { box: { x: { set: 5 } } } } },
+    { kind: "slide", id: "s", file, edit: { slide: "remove", id: slideId("257") } },
+    { kind: "slides", id: "m", file, edits: [{ slide: "remove", id: slideId("257") }] },
+  ]
+  for (const entry of kept) {
+    expect(readUnsaved({ ...entry, format })).toEqual({ ok: true, value: entry })
+    expect(readUnsaved({ ...entry, format: format + 1 })).toEqual({ ok: false, refusal: "newer" })
+  }
+  const accent = { scheme: "accent2" } as const
+  const background = { slide: "background", id: "256", color: accent }
+  expect(readUnsaved(JSON.parse(JSON.stringify({ kind: "slide", id: "g", file, edit: background })))).toEqual({
+    ok: true,
+    value: {
+      kind: "row",
+      id: "g",
+      node: "256.slide",
+      floor: "",
+      row: { v: 28, patch: { fill: { value: { set: { solid: accent } } } } },
+    },
+  })
 })

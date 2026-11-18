@@ -12,8 +12,7 @@ import {
   transaction,
 } from "./device.js"
 import { gridOpeningKey, readGridOpening, type GridOpening } from "./grid-opening.js"
-import { filledRow } from "./background-fill.js"
-import { deckView, joinable, newerRow, played, readable, split, storedKey, type DeckView } from "./deck-view.js"
+import { deckView, joinable, played, readStoredRows, split, storedKey, type DeckView } from "./deck-view.js"
 import {
   asideKey,
   confirmedRange,
@@ -107,13 +106,13 @@ export async function changeHeld<Result>(deck: DeckId, change: (held: Held) => C
     const stored = store.get(head)
     const opening = store.get(scoped(account, gridOpeningKey(deck)))
     opening.onsuccess = () => {
-      const all = (rows.result as StoredRow[]).map(filledRow)
-      if (newerFormat(opening.result) || all.some(newerRow)) {
+      const all = readStoredRows(rows.result as StoredRow[])
+      if (newerFormat(opening.result) || all.newer) {
         markNewer()
         return
       }
-      const loaded = load(deck, headOf(stored.result), all.filter(readable), readGridOpening(opening.result))
-      const dropped = all.filter((row) => !readable(row)).map((row) => storedKey(deck, row))
+      const loaded = load(deck, headOf(stored.result), all.read, readGridOpening(opening.result))
+      const dropped = all.unread.map((row) => storedKey(deck, row))
       apply(loaded, change(loaded), dropped)
     }
   }
@@ -408,13 +407,13 @@ export async function heldView(deck: DeckId): Promise<DeckView | null> {
     const rows = store.getAll(rowRange(scoped(account, deck)))
     const opening = store.get(scoped(account, gridOpeningKey(deck)))
     opening.onsuccess = () => {
-      const all = (rows.result as StoredRow[]).map(filledRow)
-      if (newerFormat(opening.result) || all.some(newerRow)) {
+      const all = readStoredRows(rows.result as StoredRow[])
+      if (newerFormat(opening.result) || all.newer) {
         markNewer()
         return
       }
-      held = load(deck, headOf(stored.result), all.filter(readable), readGridOpening(opening.result))
-      dropped = all.filter((row) => !readable(row)).map((row) => storedKey(deck, row))
+      held = load(deck, headOf(stored.result), all.read, readGridOpening(opening.result))
+      dropped = all.unread.map((row) => storedKey(deck, row))
       remember(account, deck, held)
     }
   }

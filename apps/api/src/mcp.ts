@@ -83,7 +83,10 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       const seen = turns.read(named.deck)
       if (saved === undefined) return { ok: false, refusal: "deck" }
       const access = deckAccess(saved, host.email)
-      if (!access.ok) return access
+      if (!access.ok) {
+        const { refusal } = access
+        return { ok: false, refusal: refusal === "newer" || refusal === "payload" ? "store" : refusal }
+      }
       loaded = { id: named.deck, revision: access.saved.revision, register: access.saved.register }
       session.deck = loaded
       dropGoneTurn(session, seen)
@@ -163,5 +166,6 @@ async function commitEdit(
   }
   if (saved === undefined) return editRefusal(loaded, "deck", [])
   if (saved.deleted) return editRefusal(loaded, "deleted", [])
+  if (saved.register === null) return editRefusal(loaded, "store", nodes)
   return { lost: afterWrite(false, result, { id: loaded.id, revision: saved.revision, register: saved.register }) }
 }

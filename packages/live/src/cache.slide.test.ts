@@ -2,7 +2,6 @@ import {
   currentBox,
   currentValue,
   elementId,
-  format,
   openingElement,
   orderKeyAfter,
   presentSlides,
@@ -171,7 +170,7 @@ it("sends a background colour an older build left queued as a fill row on the sl
     },
   })
   expect((await online.flush("deck")).ok).toBe(true)
-  expect(sent).toEqual([[{ v: format, patch: filled, node, floor: "" }]])
+  expect(sent).toEqual([[{ v: 28, patch: filled, node, floor: "" }]])
   const confirmed = await connect(remote).openDeck("deck")
   if (!confirmed.ok) throw new Error(confirmed.refusal)
   expect(confirmed.phase).toBe("confirmed")
@@ -189,7 +188,7 @@ it("replays a background colour an older build left in the unsaved journal as a 
       kind: "pending",
       node: "256.slide",
       floor: "",
-      v: format,
+      v: 28,
       patch: { fill: { value: { set: { solid: accent } } } },
     },
   ])

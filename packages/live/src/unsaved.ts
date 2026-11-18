@@ -1,16 +1,14 @@
-import { backgroundFill } from "./background-fill.js"
 import {
   format,
-  newerFormat,
-  newerSlideCommand,
-  readSlideState,
   limits,
   readBox,
   readRow,
+  readStoredEdit,
   type Box,
   type Row,
   type SlideCommand,
   type SlideId,
+  type StoredRead,
 } from "@airdesign/document"
 
 export type Shelf = Pick<Storage, "getItem" | "setItem" | "removeItem" | "key" | "length">
@@ -161,6 +159,38 @@ export function holdsUnsaved(shelf: Shelf | undefined, account: string, deck: st
   return unsavedOf(shelf, account, deck).some((entry) => entry.id === id)
 }
 
+function storedEdit(entry: Unsaved): unknown {
+  const stamp = { format: entry.format }
+  if (entry.kind === "slide") return { ...stamp, file: entry.file, edits: [entry.edit] }
+  if (entry.kind === "slides") return { ...stamp, file: entry.file, edits: entry.edits }
+  const value =
+    entry.kind === "text"
+      ? { value: entry.value }
+      : entry.kind === "box"
+        ? { property: "box", value: entry.box }
+        : entry.row
+  return { ...stamp, node: entry.node, floor: entry.floor, value }
+}
+
+const payload = { ok: false, refusal: "payload" } as const
+
+export function readUnsaved(entry: Unsaved): StoredRead<Unsaved> {
+  const read = readStoredEdit(storedEdit(entry))
+  if (!read.ok) return read
+  const edit = read.value
+  const { id } = entry
+  if ("edits" in edit) {
+    const [first] = edit.edits
+    if (entry.kind === "slides") return { ok: true, value: { kind: "slides", id, file: edit.file, edits: edit.edits } }
+    return first === undefined ? payload : { ok: true, value: { kind: "slide", id, file: edit.file, edit: first } }
+  }
+  const { node, floor = "", value } = edit
+  if (node === undefined) return payload
+  if (value.v !== undefined) return { ok: true, value: { kind: "row", id, node, floor, row: value } }
+  if (value.property === "box") return { ok: true, value: { kind: "box", id, node, floor, box: value.value } }
+  return { ok: true, value: { kind: "text", id, node, floor, value: value.value } }
+}
+
 const recovering = new WeakMap<Shelf, Map<string, Promise<void>>>()
 
 export function recoverUnsaved(
@@ -178,16 +208,10 @@ export function recoverUnsaved(
   const entries = unsavedOf(shelf, account, deck)
   const done = (async () => {
     for (const entry of entries) {
-      if (
-        newerFormat(entry) ||
-        (entry.kind === "slides" && readSlideState({ file: entry.file, order: entry.edits }) === undefined) ||
-        (entry.kind === "slide" &&
-          backgroundFill(entry.edit) === undefined &&
-          (newerSlideCommand(entry.edit) || readSlideState({ file: entry.file, order: [entry.edit] }) === undefined))
-      )
-        return
+      const read = readUnsaved(entry)
+      if (!read.ok) return
       try {
-        await replay(entry)
+        await replay(read.value)
       } catch {
         return
       }

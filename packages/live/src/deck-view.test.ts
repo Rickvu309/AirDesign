@@ -9,7 +9,7 @@ import {
   type Register,
 } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { newerRow, readable, rowsFromRegister, view } from "./deck-view.js"
+import { readStored, rowsFromRegister, view } from "./deck-view.js"
 import type { DeckId } from "@airdesign/catalog"
 
 const deck = "deck" as DeckId
@@ -49,12 +49,12 @@ it("keeps an agent's row of trait fields as one confirmed row and plays it back 
   expect(index === undefined ? null : currentBox(body)).toBeNull()
 })
 
-it("reads a stored row through readRow and names a row from a newer build", () => {
+it("reads a stored row through the stored reader and names a row from a newer build", () => {
   const row = { kind: "confirmed" as const, deck, revision: 0, node, v: format, patch: { box: { x: { set: 5 } } } }
-  expect(readable(row)).toBe(true)
+  expect(readStored(row)).toEqual({ ok: true, value: row })
   const unread = { ...row, patch: JSON.parse('{"box":{"spin":{"set":5}}}') as typeof row.patch }
-  expect(readable(unread)).toBe(false)
-  expect(newerRow(row)).toBe(false)
-  expect(newerRow({ ...row, v: format + 1 })).toBe(true)
-  expect(newerRow({ kind: "confirmed", deck, revision: 0, node, value: "typed" })).toBe(false)
+  expect(readStored(unread)).toEqual({ ok: false, refusal: "payload" })
+  expect(readStored({ ...row, v: format + 1 })).toEqual({ ok: false, refusal: "newer" })
+  const typed = { kind: "confirmed" as const, deck, revision: 0, node, value: "typed" }
+  expect(readStored(typed)).toEqual({ ok: true, value: typed })
 })

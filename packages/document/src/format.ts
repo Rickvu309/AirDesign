@@ -23,3 +23,25 @@ export function newerFormat(raw: unknown): boolean {
 export type StoredRead<T> =
   | { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly refusal: "newer" | "payload" }
+
+export type Conversion<Context> = {
+  readonly introduced: number
+  readonly convert: (raw: Record<string, unknown>, context: Context) => unknown
+}
+
+export function converted<Context>(
+  raw: Record<string, unknown>,
+  stampOf: (raw: Record<string, unknown>) => number,
+  conversions: readonly Conversion<Context>[],
+  context: Context,
+): Record<string, unknown> | null {
+  let value = raw
+  const due = [...conversions].sort((left, right) => left.introduced - right.introduced)
+  for (const { introduced, convert } of due) {
+    if (stampOf(value) >= introduced) continue
+    const next = convert(value, context)
+    if (typeof next !== "object" || next === null || Array.isArray(next)) return null
+    value = next as Record<string, unknown>
+  }
+  return value
+}

@@ -4,9 +4,11 @@ import {
   groupedNow,
   groupFormed,
   groupOf,
+  legacyElement,
   madeGroup,
   openRegister,
   placeOf,
+  rootElement,
   slideId,
   throughGroup,
   undoSlides,
@@ -51,13 +53,15 @@ function structureRegister(spec: Spec): Register {
   const readNodes = flag(spec, "didRead") ? nodeNames(flag(spec, "storedA"), flag(spec, "storedB")) : null
   const phase = phaseOf(spec)
   const runId = text(spec, "runId")
+  const opened = openRegister("floor", "slide")
+  const first = opened.elements[rootElement]
+  if (first === undefined) throw new Error("missing first element")
+  const body = { ...first, version: 0, phase, runId }
   return {
-    ...openRegister("floor", "slide"),
-    phase,
-    runId,
+    ...opened,
     nodes,
     readNodes,
-    b: flag(spec, "nodeB") ? { ...openRegister("floor", "slide"), phase, runId } : null,
+    elements: { [rootElement]: body, ...(flag(spec, "nodeB") ? { [legacyElement]: body } : {}) },
   }
 }
 

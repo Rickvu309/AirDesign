@@ -1,6 +1,6 @@
 import type { DeckAnswers } from "./deck-answer.js"
 import { notifyKey, type DeckId, type WireEdit, type WireRefusal, type WireSlide } from "@airdesign/catalog"
-import { answeredRegister, foldRegister, type DeckIndex, type StoredRegister } from "@airdesign/document"
+import { answeredRegister, readRegister } from "@airdesign/document"
 import { call, openDeck, type Deck } from "@airdesign/engine"
 
 import type { Sql } from "./pool.js"
@@ -63,18 +63,22 @@ type Saved = {
   readonly revision: number
   readonly owner: string
 } & (
-  | { readonly deleted: false; readonly register: Deck["register"] }
-  | { readonly deleted: true; readonly register: null }
+  | { readonly deleted: false; readonly register: Deck["register"]; readonly unread?: never }
+  | { readonly deleted: true; readonly register: null; readonly unread?: never }
+  | { readonly deleted: false; readonly register: null; readonly unread: "newer" | "payload" }
 )
 
-type LiveSaved = Extract<Saved, { readonly deleted: false }>
+type LiveSaved = Extract<Saved, { readonly register: Deck["register"] }>
 
 export function deckAccess(
   saved: Saved,
   email: string,
-): { readonly ok: true; readonly saved: LiveSaved } | { readonly ok: false; readonly refusal: "owner" | "deleted" } {
+):
+  | { readonly ok: true; readonly saved: LiveSaved }
+  | { readonly ok: false; readonly refusal: "owner" | "deleted" | "newer" | "payload" } {
   if (saved.owner !== email) return { ok: false, refusal: "owner" }
   if (saved.deleted) return { ok: false, refusal: "deleted" }
+  if (saved.register === null) return { ok: false, refusal: saved.unread }
   return { ok: true, saved }
 }
 
@@ -111,21 +115,18 @@ export async function readStoredOnce(
   return result.rows[0]
 }
 
-type StoredSaved = Omit<Saved, "register" | "deleted"> & { readonly import_index?: DeckIndex | null } & (
-    | { readonly deleted: false; readonly register: StoredRegister }
+type StoredSaved = Pick<Saved, "id" | "revision" | "owner"> & { readonly import_index?: unknown } & (
+    | { readonly deleted: false; readonly register: unknown }
     | { readonly deleted: true; readonly register: null }
   )
 
 function savedFrom(row: StoredSaved | undefined): Saved | undefined {
   if (row === undefined) return undefined
-  if (row.deleted) return row
-  return {
-    id: row.id,
-    revision: row.revision,
-    register: { ...foldRegister(row.register), ...(row.import_index == null ? {} : { index: row.import_index }) },
-    owner: row.owner,
-    deleted: row.deleted,
-  }
+  if (row.deleted) return { id: row.id, revision: row.revision, owner: row.owner, deleted: true, register: null }
+  const read = readRegister(row.register, row.import_index ?? undefined)
+  const { id, revision, owner } = row
+  if (!read.ok) return { id, revision, owner, deleted: false, register: null, unread: read.refusal }
+  return { id, revision, register: read.value, owner, deleted: false }
 }
 
 export async function readSaved(db: Sql, id: string): Promise<Saved | undefined> {
@@ -140,13 +141,23 @@ export function chosenRevision(cursor: number | null, current: number | undefine
   return undefined
 }
 
+export function watchedRevision(
+  saved: Saved | undefined,
+  email: string,
+  cursor: number | null,
+): number | "owner" | "deleted" | undefined {
+  const access = saved === undefined ? null : deckAccess(saved, email)
+  if (access?.ok === false && (access.refusal === "owner" || access.refusal === "deleted")) return access.refusal
+  return chosenRevision(cursor, saved?.revision)
+}
+
 function openedRow(
   deck: DeckId,
   saved: Saved,
   owner: string,
 ):
   | { readonly ok: true; readonly deck: DeckId; readonly revision: number; readonly register: Deck["register"] }
-  | { readonly ok: false; readonly refusal: "owner" | "deleted" } {
+  | { readonly ok: false; readonly refusal: "owner" | "deleted" | "newer" | "payload" } {
   const access = deckAccess(saved, owner)
   if (!access.ok) return access
   return { ok: true, deck, revision: access.saved.revision, register: answeredRegister(access.saved.register) }
@@ -158,7 +169,7 @@ export async function openSaved(
   owner: string,
 ): Promise<
   | { readonly ok: true; readonly deck: DeckId; readonly revision: number; readonly register: Deck["register"] }
-  | { readonly ok: false; readonly refusal: "deck" | "owner" | "deleted" }
+  | { readonly ok: false; readonly refusal: "deck" | "owner" | "deleted" | "newer" | "payload" }
 > {
   const existing = await readSaved(db, parsed.deck)
   if (existing !== undefined) return openedRow(parsed.deck, existing, owner)

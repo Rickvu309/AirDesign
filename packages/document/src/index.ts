@@ -65,7 +65,6 @@ export {
   decide,
   decideUndo,
   editMissing,
-  foldRegister,
   history,
   landedPatch,
   openRegister,
@@ -80,8 +79,6 @@ export {
   type NodeRegister,
   type Phase,
   type Register,
-  type RootRegister,
-  type StoredRegister,
   type Refusal,
 } from "./decide.js"
 export { coordinates, readBox, type Box } from "./box.js"
@@ -103,7 +100,6 @@ export {
   boxPatch,
   formatOne,
   netPatch,
-  readRow,
   rowOf,
   shows,
   type ElementPatch,
@@ -177,7 +173,6 @@ export { ungroupTurn } from "./group-turn.js"
 export {
   foldSlides,
   nextSlideId,
-  newerSlideCommand,
   orderKeyAfter,
   presentSlides,
   readSlideState,
@@ -185,7 +180,8 @@ export {
   type SlideCommand,
   type SlideState,
 } from "./slide-order.js"
-export { format, formatOf, newerFormat, stamps } from "./format.js"
+export { format, formatOf, newerFormat, stamps, type StoredRead } from "./format.js"
+export { readRegister, readRow, readStoredEdit, type StoredEdit } from "./stored.js"
 export {
   cellText,
   changedTable,
