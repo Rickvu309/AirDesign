@@ -1,6 +1,7 @@
 import type { Color } from "@airdesign/document"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
+import { fillCopy } from "@/copy/fill-copy"
 import { optionCopy } from "@/copy/option-copy"
 import { caseSeed, firstColor, seedOf } from "@/design/control-seed"
 import { partControl, type ControlProps } from "@/design/panel"
@@ -26,8 +27,8 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
     if (value !== undefined && name !== chosen) onChange(value)
   }
 
-  const fill = control.field === "value" && control.trait === "fill"
-  const names = Object.keys(cases).filter((name) => !fill || name !== "pattern")
+  const shapeFill = control.field === "value" && control.trait === "fill" && control.label !== fillCopy.box
+  const names = Object.keys(cases).filter((name) => !shapeFill || name !== "pattern")
 
   return (
     <div className="flex flex-col gap-2" data-control="union" data-inherited={control.inherited ? "" : undefined}>
