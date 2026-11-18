@@ -23,7 +23,7 @@ export const regions = [
   },
   {
     name: "slide card",
-    selector: "[data-slide-item] > :last-child",
+    selector: "[data-slide-item] [data-slide-card]",
     keys: ["x", "width", "height"],
     properties: ["border-radius"],
   },
