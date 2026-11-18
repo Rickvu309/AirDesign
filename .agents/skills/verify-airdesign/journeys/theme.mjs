@@ -1,4 +1,4 @@
-import { templateCopy, productCopy } from "../bin/product-copy.mjs"
+import { templateCopy, templateStyleCopy, productCopy, transitionCopy } from "../bin/product-copy.mjs"
 import path from "node:path"
 import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
@@ -120,10 +120,10 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
 
   await page.reload()
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
-  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await entry(1).click()
   await page.getByRole("button", { name: templateCopy.editTemplateStyle, exact: true }).click()
-  await expect(theme.getByRole("textbox", { name: "Heading font", exact: true })).toHaveValue("Georgia")
+  await expect(theme.getByRole("textbox", { name: templateStyleCopy.major, exact: true })).toHaveValue("Georgia")
   await expect.poll(() => fonts(painted("ppt/slides/slide1.xml#2"))).toContain("Georgia")
   await capture("reloaded")
   note("A reload kept Accent 1's heading font Georgia on slide 1")
@@ -171,10 +171,10 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await page.locator("input[type=file]").setInputFiles(exported)
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", page.url().split("/").at(-1))
-  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await page.getByRole("button", { name: templateCopy.editTemplateStyle, exact: true }).click()
   await expect(theme.getByRole("button", { name: "Accent 1", exact: true })).toHaveAttribute("title", /#C00000/)
-  await expect(theme.getByRole("textbox", { name: "Heading font", exact: true })).toHaveValue("Georgia")
+  await expect(theme.getByRole("textbox", { name: templateStyleCopy.major, exact: true })).toHaveValue("Georgia")
   await expect.poll(() => fonts(painted("ppt/slides/slide1.xml#2"))).toContain("Georgia")
   await capture("reopened")
   note("The exported file opened again with Accent 1 #C00000 and Georgia titles")
