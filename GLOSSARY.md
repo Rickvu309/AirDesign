@@ -170,10 +170,6 @@ _Avoid_: flowchart, SmartArt
 A layer's ordered list of effects: shadow, inner shadow, glow, soft edge, blur. Four shadows, the first native. A title or body takes one. Effects keeps exact settings. A group's effects paint around its contents.
 _Avoid_: filters, shadow styles
 
-**stand-in**:
-Extra shadows, one picture behind the shape.
-_Avoid_: flattened
-
 **request**:
 What a person asks Aira to do, and everything Aira does to answer it.
 _Avoid_: run, job, prompt (a run is the code's word for it)
@@ -226,7 +222,7 @@ _Avoid_: line (as a trait or a panel section), stroke, outline
 A layer drawn as a line. Never the stroke around a shape.
 
 **baked**:
-How a layer's fills export when PowerPoint cannot hold them, such as a gradient over a photo: as one image fill on the same shape, drawn by the same fill plan the canvas paints. The layer's text, border, effects and link stay native. Inners bake in too. Until the export, the deck keeps the paints in an AirDesign extension of the shape.
+How a layer's fills export when PowerPoint cannot hold them, such as a gradient over a photo: as one image fill on the same shape, drawn by the same fill plan the canvas paints. The layer's text, border, effects and link stay native. Until the export, the deck keeps the paints in an AirDesign extension of the shape.
 _Avoid_: flattened, rasterized
 
 **field**:
