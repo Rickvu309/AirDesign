@@ -21,7 +21,8 @@ import { notesOn } from "@/present/notes-on"
 import { showsIn } from "@/present/slide-shows"
 export { elementIds, valueStorable } from "@/deck-paint"
 import { AiraPanel } from "@/aira-panel"
-import { colorsIn, LiveDesignPanel } from "@/editor/live-design-panel"
+import { colorsIn } from "@/editor/deck-colors"
+import { LiveDesignPanel } from "@/editor/live-design-panel"
 
 export function ThinDeck({ id }: { id: string }) {
   const deck = useEditorDeck(id)
