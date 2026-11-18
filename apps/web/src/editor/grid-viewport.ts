@@ -119,7 +119,7 @@ export type GridGeometry = {
   readonly height: number
 }
 
-const sectionPixels = 44
+export const gridSectionHeight = 44
 
 function sectionRows(geometry: GridGeometry, rows: GridGeometry["rows"]): number {
   return rows.filter((row) => geometry.sections.some((start) => start >= row.start && start < row.end)).length
@@ -136,7 +136,7 @@ function gridCard(geometry: GridGeometry, index: number) {
     leading: index === row.start,
     trailing: index === row.end - 1,
     top: number * (height + 24 + spacing.row),
-    fixed: sectionRows(geometry, rows.slice(0, number + 1)) * sectionPixels,
+    fixed: sectionRows(geometry, rows.slice(0, number + 1)) * gridSectionHeight,
   }
 }
 
@@ -173,6 +173,19 @@ function rotatedBox(box: ElementBox): GridRect {
   return { left: box.x + (box.width - width) / 2, top: box.y + (box.height - height) / 2, width, height }
 }
 
+export function gridElementBounds(elements: readonly ElementBox[], unit: number): GridRect | null {
+  if (elements.length === 0 || unit <= 0) return null
+  const boxes = elements.map(rotatedBox)
+  const left = Math.min(...boxes.map((box) => box.left))
+  const top = Math.min(...boxes.map((box) => box.top))
+  return {
+    left: left * unit,
+    top: top * unit,
+    width: (Math.max(...boxes.map((box) => box.left + box.width)) - left) * unit,
+    height: (Math.max(...boxes.map((box) => box.top + box.height)) - top) * unit,
+  }
+}
+
 export function fittedGridElements(
   geometry: GridGeometry,
   index: number,
@@ -181,21 +194,12 @@ export function fittedGridElements(
   room: GridBounds,
 ): GridViewport | null {
   const card = gridCard(geometry, index)
-  if (card === null || elements.length === 0 || slideWidth <= 0) return null
-  const boxes = elements.map(rotatedBox)
-  const left = Math.min(...boxes.map((box) => box.left))
-  const top = Math.min(...boxes.map((box) => box.top))
-  const unit = geometry.width / slideWidth
-  const fit = fittedGrid(
-    {
-      width: (Math.max(...boxes.map((box) => box.left + box.width)) - left) * unit,
-      height: (Math.max(...boxes.map((box) => box.top + box.height)) - top) * unit,
-    },
-    room,
-  )
+  const bounds = slideWidth > 0 ? gridElementBounds(elements, geometry.width / slideWidth) : null
+  if (card === null || bounds === null) return null
+  const fit = fittedGrid(bounds, room)
   return {
-    x: fit.x - (card.left + left * unit) * fit.scale,
-    y: fit.y - (card.top + 24 + top * unit) * fit.scale - card.fixed,
+    x: fit.x - (card.left + bounds.left) * fit.scale,
+    y: fit.y - (card.top + 24 + bounds.top) * fit.scale - card.fixed,
     scale: fit.scale,
   }
 }
@@ -208,7 +212,7 @@ export function fittedGridRows(geometry: GridGeometry, room: GridBounds): GridVi
     width: columns * width + (columns - 1) * spacing.column,
     height: rows.length * (height + 24) + Math.max(0, rows.length - 1) * spacing.row,
   }
-  const heads = sectionRows(geometry, rows) * sectionPixels
+  const heads = sectionRows(geometry, rows) * gridSectionHeight
   return fitGridBounds(bounds, room, heads, (scale) => rowChrome(geometry, scale, true, true))
 }
 
@@ -280,21 +284,24 @@ export function gridHeadingEdge(width: number, view: GridViewport, fit: boolean)
   return width - view.x - (fit ? fitPadding : 0)
 }
 
-export function resizedGrid(view: GridViewport, box: GridRect, before: GridRect, after: GridRect): GridViewport {
-  const inside = (room: GridRect) =>
-    box.left >= room.left &&
-    box.top >= room.top &&
-    box.left + box.width <= room.left + room.width &&
-    box.top + box.height <= room.top + room.height
-  if (!inside(before) || inside(after)) return view
+export function exposedGrid(view: GridViewport, box: GridRect, room: GridRect): GridViewport {
   const delta = (start: number, size: number, edge: number, length: number) =>
-    size > length
-      ? edge + (length - size) / 2 - start
-      : Math.max(edge - start, Math.min(0, edge + length - start - size))
-  return pannedGrid(view, {
-    x: delta(box.left, box.width, after.left, after.width),
-    y: delta(box.top, box.height, after.top, after.height),
-  })
+    size > length ? edge - start : Math.max(edge - start, Math.min(0, edge + length - start - size))
+  const x = delta(box.left, box.width, room.left, room.width)
+  const y = delta(box.top, box.height, room.top, room.height)
+  return x === 0 && y === 0 ? view : pannedGrid(view, { x, y })
+}
+
+export function resizedGrid(view: GridViewport, box: GridRect, before: GridRect, after: GridRect): GridViewport {
+  const epsilon = 0.02
+  if (
+    box.left < before.left - epsilon ||
+    box.top < before.top - epsilon ||
+    box.left + box.width > before.left + before.width + epsilon ||
+    box.top + box.height > before.top + before.height + epsilon
+  )
+    return view
+  return exposedGrid(view, box, after)
 }
 
 export function gridThumbHeight(width: number, height: number, reference: number): number {

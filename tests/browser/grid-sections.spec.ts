@@ -71,7 +71,7 @@ for (const viewport of [
     await page.setViewportSize(viewport)
     await openFile(page, join(fixtures, "sections-after.pptx"))
     await openGrid(page)
-    const heads = page.locator("[data-grid-row]").first().locator("[data-section-head]")
+    const heads = page.locator('[data-grid-row-member="0"] [data-section-head]')
     await expect(heads).toHaveCount(2)
     for (const name of ["Opening", "Numbers"]) {
       const label = heads.getByText(name, { exact: true })

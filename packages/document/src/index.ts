@@ -279,6 +279,7 @@ export { colorPaint, gamma, hexRgb, hslRgb, paintSteps, presetColors, rgbHex, ty
 export { slideFindings, type SlideFindings } from "./slide-findings.js"
 
 export { defaultGrid1, gridRows, foldGrid, type GridSide } from "./grid-order.js"
+export { gridMovePlacement } from "./grid-move.js"
 export { readElementLink, readLinkTarget, type ElementLink, type LinkTarget, type LinkEdit } from "./link-target.js"
 
 export { slideBirths } from "./slide-births.js"

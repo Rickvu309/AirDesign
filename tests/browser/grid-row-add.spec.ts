@@ -1,19 +1,11 @@
 import { expect, test, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { entry, fifty, manySlides, openFile, openGrid, settled } from "./slide-grid-deck"
+import { entry, fifty, manySlides, openFile, openGrid, rowNumbers, settled } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
 const below = (page: Page, row: number) => page.getByRole("button", { name: new RegExp(`new row below row ${row}$`) })
-const rows = (page: Page) =>
-  page
-    .locator("[data-grid-row]")
-    .evaluateAll((rows) =>
-      rows.map((row) =>
-        [...row.querySelectorAll<HTMLElement>("[data-slide-entry]")].map((slide) => Number(slide.dataset.slideEntry)),
-      ),
-    )
 const original = [
   [1, 2, 3, 4],
   [5, 6, 7, 8],
@@ -63,7 +55,7 @@ test("the below plus previews an insertion line without moving any slide", async
   expect(preview.y).toBeLessThan(next.y)
   await below(page, 1).click()
   await expect(slides).toHaveCount(11)
-  expect(await rows(page)).toEqual([[1, 2, 3, 4], [5], [6, 7, 8, 9], [10, 11]])
+  expect(await rowNumbers(page)).toEqual([[1, 2, 3, 4], [5], [6, 7, 8, 9], [10, 11]])
   await expect(entry(page, 5)).toHaveAttribute("aria-current", "true")
 })
 
@@ -92,21 +84,21 @@ test("a final-row add keeps fit zoom then survives undo redo and reload", async 
   await below(page, 3).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(11)
   const added = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10], [11]]
-  expect(await rows(page)).toEqual(added)
+  expect(await rowNumbers(page)).toEqual(added)
   await expect(page.locator("[data-zoom-readout]")).toHaveText(percent ?? "")
   await page.getByRole("button", { name: undoCopy.undoNamed.new, exact: true }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(10)
-  expect(await rows(page)).toEqual(original)
+  expect(await rowNumbers(page)).toEqual(original)
   await page.getByRole("button", { name: undoCopy.redoNamed.new, exact: true }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(11)
   await zoom(page, 50)
-  expect(await rows(page)).toEqual(added)
+  expect(await rowNumbers(page)).toEqual(added)
   await page.setViewportSize({ width: 1000, height: 800 })
-  expect(await rows(page)).toEqual(added)
+  expect(await rowNumbers(page)).toEqual(added)
   await page.reload()
   await settled(page)
   await openGrid(page)
-  expect(await rows(page)).toEqual(added)
+  expect(await rowNumbers(page)).toEqual(added)
 })
 
 test("keyboard focus previews below and Escape returns to the originating slide", async ({ page }) => {
@@ -198,12 +190,12 @@ test("an offline below add and undo keep the original rows after reconnect and r
   await expect(page.locator("[data-slide-entry]")).toHaveCount(11)
   await page.getByRole("button", { name: undoCopy.undoNamed.new, exact: true }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(10)
-  expect(await rows(page)).toEqual(original)
+  expect(await rowNumbers(page)).toEqual(original)
   await context.setOffline(false)
   await page.reload()
   await settled(page)
   await openGrid(page)
-  expect(await rows(page)).toEqual(original)
+  expect(await rowNumbers(page)).toEqual(original)
 })
 
 test.describe("touch", () => {

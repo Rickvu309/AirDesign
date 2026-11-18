@@ -1,15 +1,12 @@
 import { expect, test, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { entry, manySlides, openFile, openGrid } from "./slide-grid-deck"
+import { entry, manySlides, openFile, openGrid, rowNumbers } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 const add = (page: Page, number: number) =>
   page.getByRole("button", { name: slideListCopy.addAfter(number), exact: true })
-const rows = (page: Page) =>
-  page
-    .locator("[data-grid-row]")
-    .evaluateAll((rows) => rows.map((row) => row.querySelectorAll("[data-slide-entry]").length))
+const rows = async (page: Page) => (await rowNumbers(page)).map((row) => row.length)
 async function open(page: Page, count = 10) {
   await openFile(page, { name: "gap.pptx", mimeType: "application/octet-stream", buffer: await manySlides(count) })
   await openGrid(page)

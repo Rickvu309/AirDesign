@@ -1,3 +1,5 @@
+import { gridMovePlacement } from "@airdesign/document"
+
 const edge = 56
 
 const fastest = 24
@@ -31,31 +33,32 @@ export function edgePan(
   return { x: edgeSpeed(point.x, room.left, room.width), y: edgeSpeed(point.y, room.top, room.height) }
 }
 
-export function landing(held: readonly number[], at: number): number {
-  return at - held.filter((index) => index < at).length
+export type GridMoveSide = "same" | "keep" | "new"
+
+export type GridRange = { readonly start: number; readonly end: number }
+
+export function gridIndices({ start, end }: GridRange): number[] {
+  return Array.from({ length: end - start }, (_, offset) => start + offset)
 }
 
-export function dragMoves(
-  held: readonly number[],
-  at: number,
-  count: number,
-): readonly { readonly from: number; readonly to: number }[] {
-  const order = Array.from({ length: count }, (_, index) => index)
-  const rest = order.filter((index) => !held.includes(index))
-  let anchor = rest[landing(held, at)]
-  const moves: { from: number; to: number }[] = []
-  for (const slide of [...held].sort((a, b) => b - a)) {
-    const from = order.indexOf(slide)
-    const before = anchor === undefined ? count : order.indexOf(anchor)
-    const to = before - (from < before ? 1 : 0)
-    if (from !== to) {
-      moves.push({ from, to })
-      order.splice(from, 1)
-      order.splice(to, 0, slide)
-    }
-    anchor = slide
-  }
-  return moves
+export function gridDrop(rows: readonly GridRange[], held: readonly number[], at: number, side: GridMoveSide) {
+  const before = rows.map(gridIndices)
+  const after =
+    before
+      .flat()
+      .slice(0, at)
+      .filter((index) => !held.includes(index))
+      .at(-1) ?? null
+  const next = gridMovePlacement(before, held, after, side).rows
+  if (
+    next.length === before.length &&
+    next.every(
+      (row, number) =>
+        row.length === before[number]?.length && row.every((index, offset) => index === before[number]?.[offset]),
+    )
+  )
+    return null
+  return next.flat().findIndex((index) => held.includes(index))
 }
 
 export type GridSlot = {

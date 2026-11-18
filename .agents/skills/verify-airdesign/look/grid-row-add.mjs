@@ -1,18 +1,11 @@
 import { expect } from "@playwright/test"
-import { manySlides } from "../../../../tests/browser/slide-grid-deck.ts"
+import { manySlides, rowNumbers } from "../../../../tests/browser/slide-grid-deck.ts"
 import { openDeck } from "./open-deck.mjs"
 
 export const belowRow = (page, row = 1) =>
   page.getByRole("button", { name: `Add slide in a new row below row ${row}`, exact: true })
 
-export const rowNumbers = (page) =>
-  page
-    .locator("[data-grid-row]")
-    .evaluateAll((rows) =>
-      rows.map((row) =>
-        [...row.querySelectorAll("[data-slide-entry]")].map((slide) => Number(slide.dataset.slideEntry)),
-      ),
-    )
+export { rowNumbers }
 
 export async function openRowDeck(kit, count = 10, sections = false) {
   const account = await kit.signIn()

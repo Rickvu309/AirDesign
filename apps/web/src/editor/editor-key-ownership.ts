@@ -18,3 +18,19 @@ export function editorOwnsKey(event: KeyboardEvent | ReactKeyboardEvent): boolea
     )
   return false
 }
+
+export function gridEscapeFromControl(event: ReactKeyboardEvent<HTMLDivElement>): boolean {
+  const { target } = event
+  return (
+    event.key === "Escape" &&
+    !event.defaultPrevented &&
+    target instanceof Element &&
+    event.currentTarget.contains(target) &&
+    target.closest("button, a[href], [role=button]") !== null &&
+    target.closest(
+      "[data-grid-viewport], input, textarea, select, [contenteditable], [role=dialog], [role=alertdialog]",
+    ) === null &&
+    document.querySelector('[role="dialog"][data-open], [role="alertdialog"][data-open]') === null &&
+    editorOwnsKey(event)
+  )
+}

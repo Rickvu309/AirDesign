@@ -370,15 +370,10 @@ html:has(.reflow-frame) #root {
   opacity: 1;
   pointer-events: auto;
 }
-[data-grid-row-frame]:not(
-    [data-row-blocked],
-    :has([data-slide-entry]:hover, [data-slide-number]:hover, [data-grid-edit]:hover)
-  ):is([data-row-hover="band"], :has(> [data-row-handle]:focus-visible))
-  [data-grid-card]:not([data-hover-disabled])
-  [data-grid-halo] {
+[data-row-tint] [data-grid-card]:not([data-hover-disabled]) [data-grid-halo] {
   opacity: 1;
 }
-[data-grid-row-frame]:has([data-row-insert]:hover, [data-add-row]:focus-visible) > [data-row-handle],
+[data-grid-row-frame][data-row-hover="add"] > [data-row-handle],
 [data-row-blocked] > [data-row-handle],
 [data-grid-viewport][data-panning] [data-row-handle] {
   visibility: hidden;
