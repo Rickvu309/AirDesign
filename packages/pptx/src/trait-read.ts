@@ -3,7 +3,7 @@ import {
   elementId,
   type Box,
   mappedSlots,
-  themeSlots,
+  templateColors,
   type Color,
   type DesignKey,
   type ElementId,
@@ -13,8 +13,8 @@ import {
   type Read,
   type Role,
   type Source,
-  type ThemeFont,
-  type ThemeSlot,
+  type TemplateFont,
+  type TemplateColor,
   type TraitReads,
 } from "@airdesign/document"
 import { colorIn, fillIn, fillKinds, fillOf } from "./color-read.js"
@@ -40,7 +40,7 @@ export type Styles = {
   readonly lines: readonly Held[]
   readonly effects: readonly Held[]
 }
-type Fonts = ReadonlyMap<ThemeFont, string>
+type Fonts = ReadonlyMap<TemplateFont, string>
 export type Chain = {
   readonly sheet: Sheet
   readonly layout: Sheet | null
@@ -258,9 +258,9 @@ function textReads(
     const color = fill?.element.kind === "a:solidFill" ? colorIn(fill, null) : null
     if (color !== null) reads["text.color"] = read(color, colored.source)
   } else if (referenceColor !== null) reads["text.color"] = read(referenceColor, "style")
-  const themed = (theme: ThemeFont, source: Source | undefined) => {
-    const value = fonts.get(theme)
-    return value === undefined ? undefined : { ...read(value, source), theme }
+  const themed = (templateFont: TemplateFont, source: Source | undefined) => {
+    const value = fonts.get(templateFont)
+    return value === undefined ? undefined : { ...read(value, source), templateFont }
   }
   const typeface = (held: Held) => {
     const latin = child(held, "a:latin")
@@ -297,7 +297,7 @@ export function stylesOf(theme: Sheet | null): Styles {
 }
 
 function fontsOf(theme: Sheet | null): Fonts {
-  const fonts = new Map<ThemeFont, string>()
+  const fonts = new Map<TemplateFont, string>()
   if (theme === null) return fonts
   const scheme = child(child(root(theme), "a:themeElements"), "a:fontScheme")
   for (const [name, kind] of [
@@ -312,10 +312,10 @@ function fontsOf(theme: Sheet | null): Fonts {
 }
 
 function paletteOf(chain: Chain, fonts: Fonts): Palette {
-  const slots: Partial<Record<ThemeSlot, string>> = {}
+  const slots: Partial<Record<TemplateColor, string>> = {}
   const scheme = chain.theme === null ? undefined : child(child(root(chain.theme), "a:themeElements"), "a:clrScheme")
   for (const element of scheme === undefined ? [] : inside(scheme)) {
-    const slot = themeSlots.find((name) => `a:${name}` === element.kind)
+    const slot = templateColors.find((name) => `a:${name}` === element.kind)
     const color = slot === undefined ? null : colorIn({ element, children: scheme!.children }, null)
     const hex = color === null ? null : "rgb" in color ? color.rgb : "system" in color ? color.last : null
     if (slot !== undefined && hex !== null) slots[slot] = hex
@@ -329,10 +329,10 @@ function paletteOf(chain: Chain, fonts: Fonts): Palette {
         : child(child(root(level), "p:clrMapOvr"), "a:overrideClrMapping")
     if (map !== undefined) mapping = map.element.attributes
   }
-  const map: Partial<Record<MappedSlot, ThemeSlot>> = {}
+  const map: Partial<Record<MappedSlot, TemplateColor>> = {}
   for (const { name, value } of mapping) {
     const slot = mappedSlots.find((each) => each === name)
-    const target = themeSlots.find((each) => each === value)
+    const target = templateColors.find((each) => each === value)
     if (slot !== undefined && target !== undefined) map[slot] = target
   }
   return fonts.size === 0 ? { slots, map } : { slots, map, fonts: Object.fromEntries(fonts) }

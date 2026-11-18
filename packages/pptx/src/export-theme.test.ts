@@ -2,7 +2,7 @@ import {
   decide,
   format,
   openRegister,
-  themeNode,
+  templateStylesNode,
   type Command,
   type Register,
   type TraitPatch,
@@ -29,10 +29,15 @@ async function deck(): Promise<Parts> {
   return readParts(new Uint8Array(fs.readFileSync(`${process.cwd()}/scripts/pptx-fixtures/doe-heat-pumps.pptx`)))
 }
 
-function themed(...patches: readonly TraitPatch<"theme">[]): Register {
+function styled(...patches: readonly TraitPatch<"templateStyle">[]): Register {
   const commands: Command[] = [
-    { command: "add", node: themeNode, floor: "", route: "doe" },
-    ...patches.map((theme): Command => ({ command: "person", node: themeNode, v: format, patch: { theme } })),
+    { command: "add", node: templateStylesNode, floor: "", route: "doe" },
+    ...patches.map((templateStyle): Command => ({
+      command: "person",
+      node: templateStylesNode,
+      v: format,
+      patch: { templateStyle },
+    })),
   ]
   return commands.reduce(
     (current, command) => {
@@ -63,10 +68,10 @@ function painted(parts: Parts): string {
   return JSON.stringify(readSlides(parts).map(({ part }) => reader.slide(part).elements))
 }
 
-describe("the deck's theme", () => {
+describe("a change to every template style", () => {
   it("writes an edited colour and Latin font into every theme a slide uses, keeps each theme's East Asian, complex script and script fonts, and leaves every other part alone", async () => {
     const parts = await deck()
-    const exported = exportParts(parts, themed({ accent1: { set: "C00000" }, major: { set: "Georgia" } }))
+    const exported = exportParts(parts, styled({ accent1: { set: "C00000" }, major: { set: "Georgia" } }))
     expect(changedParts(parts, exported)).toEqual(used)
     for (const part of used) {
       const before = text(parts, part)
@@ -89,7 +94,7 @@ describe("the deck's theme", () => {
 
   it("puts a hex colour where the file named a system colour, and escapes a font's name", async () => {
     const parts = await deck()
-    const exported = exportParts(parts, themed({ lt1: { set: "FFF2CC" }, minor: { set: 'Fira "Sans" & Co' } }))
+    const exported = exportParts(parts, styled({ lt1: { set: "FFF2CC" }, minor: { set: 'Fira "Sans" & Co' } }))
     const after = text(exported, "ppt/theme/theme1.xml")
     expect(after).toContain('<a:lt1><a:srgbClr val="FFF2CC"/></a:lt1>')
     expect(after).toContain(
@@ -100,15 +105,15 @@ describe("the deck's theme", () => {
 
   it("writes nothing for a value the theme already shows, or for a field back to its opening", async () => {
     const parts = await deck()
-    const same = themed({ dk1: { set: "000000" }, accent1: { set: "4472C4" }, minor: { set: "Calibri" } })
+    const same = styled({ dk1: { set: "000000" }, accent1: { set: "4472C4" }, minor: { set: "Calibri" } })
     expect(changedParts(parts, exportParts(parts, same))).toEqual([])
-    const undone = themed({ accent1: { set: "C00000" } }, { accent1: "opening" })
+    const undone = styled({ accent1: { set: "C00000" } }, { accent1: "opening" })
     expect(changedParts(parts, exportParts(parts, undone))).toEqual([])
   })
 
   it("exports the same bytes twice over", async () => {
     const parts = await deck()
-    const register = themed({ accent2: { set: "00B050" }, major: { set: "Georgia" } })
+    const register = styled({ accent2: { set: "00B050" }, major: { set: "Georgia" } })
     const once = exportParts(parts, register)
     expect(changedParts(once, exportParts(once, register))).toEqual([])
   })
@@ -116,7 +121,7 @@ describe("the deck's theme", () => {
   it("paints every element that names the slot or the heading font from the exported theme", async () => {
     const parts = await deck()
     const before = painted(parts)
-    const after = painted(exportParts(parts, themed({ accent1: { set: "C00000" }, major: { set: "Georgia" } })))
+    const after = painted(exportParts(parts, styled({ accent1: { set: "C00000" }, major: { set: "Georgia" } })))
     expect(before).not.toContain('"C00000"')
     expect(after).toContain('"C00000"')
     expect(before).not.toContain('"Georgia"')

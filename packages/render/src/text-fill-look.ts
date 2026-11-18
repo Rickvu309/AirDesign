@@ -1,6 +1,6 @@
 import { namesAlpha, colorPaint, type Color, type TextFill } from "@airdesign/document"
 import type { CSSProperties } from "react"
-import type { CanvasRunStyle, CanvasThemeColor } from "./text-record.js"
+import type { CanvasRunStyle, CanvasTemplateColor } from "./text-record.js"
 
 function cssHex(color: string | null): string | null {
   if (color === null) return null
@@ -14,7 +14,7 @@ function cssHex(color: string | null): string | null {
     .toUpperCase()
 }
 
-export function schemeOf(style: CanvasRunStyle, colors: readonly CanvasThemeColor[]): Color | null {
+export function schemeOf(style: CanvasRunStyle, colors: readonly CanvasTemplateColor[]): Color | null {
   const hex = cssHex(style.color)
   if (hex === null) return null
   const matches = colors.filter((swatch) => cssHex(swatch.css) === hex)
@@ -22,7 +22,7 @@ export function schemeOf(style: CanvasRunStyle, colors: readonly CanvasThemeColo
   return found === undefined ? null : { scheme: found.scheme }
 }
 
-export function paintedColor(color: Color, colors: readonly CanvasThemeColor[], file: string | null): string | null {
+export function paintedColor(color: Color, colors: readonly CanvasTemplateColor[], file: string | null): string | null {
   const slot = (scheme: string) => cssHex(colors.find((swatch) => swatch.scheme === scheme)?.css ?? null)
   const hex = colorPaint(
     { ...color, transforms: (color.transforms ?? []).filter(({ op }) => !op.startsWith("alpha")) },
@@ -34,7 +34,7 @@ export function paintedColor(color: Color, colors: readonly CanvasThemeColor[], 
   return alpha === undefined || !/^#[\da-f]{6}$/i.test(css) ? css : `${css}${alpha}`
 }
 
-export function gradientLook(fill: TextFill | undefined, colors: readonly CanvasThemeColor[]): CSSProperties {
+export function gradientLook(fill: TextFill | undefined, colors: readonly CanvasTemplateColor[]): CSSProperties {
   if (fill === undefined || !("gradient" in fill)) return {}
   const gradient = fill.gradient
   const css = (color: Color) => {

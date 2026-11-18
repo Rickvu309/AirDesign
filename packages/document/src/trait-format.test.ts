@@ -30,8 +30,7 @@ const recorded: Readonly<Record<TraitName, readonly string[]>> = {
   table: ["248ba3f0", "248ba3f0"],
   notes: ["d772d0d9"],
   show: ["5465b825", "fc0e1303"],
-  template: ["4d64b84a"],
-  theme: ["5465b825", "fd31b1bd", "3c85bab0", "fca050fd", "9fd0fc46"],
+  templateStyle: ["5465b825", "fd31b1bd", "3c85bab0", "fca050fd", "9fd0fc46", "facd0a47"],
   transition: ["b27cd785"],
 }
 

@@ -5,19 +5,19 @@ import { paintAttribute } from "./paint-color.js"
 import { paintRunColor } from "./run-color.js"
 import { owned, type Grid } from "./table-grid.js"
 
-export type ThemeSlot = (scheme: string) => string | null
+export type TemplateColor = (scheme: string) => string | null
 
 const following = new Set(["dk1", "lt1", "tx1", "bg1"])
 const fillKinds = new Set(["a:noFill", "a:solidFill", "a:gradFill", "a:blipFill", "a:pattFill", "a:grpFill"])
 const inlineKinds = new Set(["a:r", "a:fld"])
 
-export function themeSlot(palette: Palette): ThemeSlot {
+export function themeSlot(palette: Palette): TemplateColor {
   const slots: Readonly<Record<string, string | undefined>> = palette.slots
   const map: Readonly<Record<string, string | undefined>> = palette.map
   return (scheme) => slots[map[scheme] ?? scheme] ?? null
 }
 
-function behind(fill: CellFill, slot: ThemeSlot): readonly (string | null)[] {
+function behind(fill: CellFill, slot: TemplateColor): readonly (string | null)[] {
   const hex = (color: Color) => colorPaint(color, slot)?.hex ?? null
   if ("solid" in fill) return [hex(fill.solid)]
   if ("gradient" in fill) return fill.gradient.stops.map((stop) => hex(stop.color))
@@ -74,7 +74,7 @@ export function readableEdits(
   bytes: Uint8Array,
   cell: MarkupElement,
   fill: CellFill,
-  slot: ThemeSlot,
+  slot: TemplateColor,
 ): ByteEdit[] {
   const colors = behind(fill, slot)
   const dark = slot("dk1")

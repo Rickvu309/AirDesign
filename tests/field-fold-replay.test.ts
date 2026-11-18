@@ -8,7 +8,7 @@ import {
   landedPatch,
   readTextValue,
   storedValue,
-  themeNode,
+  templateStylesNode,
   type Color,
   type ElementId,
   type ElementPatch,
@@ -340,7 +340,7 @@ const actions: Record<string, () => Promise<void>> = {
     held.world = { ...world(), server: agentSet(world().server, node, change) }
   },
   AgentTheme: async () => {
-    held.world = { ...world(), server: agentSet(world().server, themeNode, theme) }
+    held.world = { ...world(), server: agentSet(world().server, templateStylesNode, theme) }
   },
   Sync: async () => synced(),
 }
@@ -432,7 +432,7 @@ describe("field-fold replay", () => {
     expect(
       await applyChange(changing, [
         { target: { node }, text: { value: recolored }, fills: { paint: { solid: personColour } } },
-        { target: { node: themeNode }, theme: { accent2: "FF0000" } },
+        { target: { node: templateStylesNode }, theme: { accent2: "FF0000" } },
       ]),
     ).toBe(true)
     expect(world().list.undo).toHaveLength(2)

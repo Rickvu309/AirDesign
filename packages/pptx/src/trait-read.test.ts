@@ -67,7 +67,7 @@ it("reads a shape whose fill, line, shadow and text colour come from its theme s
       "body.anchor": { value: "ctr" },
       "text.size": { value: 1800, source: "master" },
       "text.color": { value: { scheme: "lt1" }, source: "style" },
-      "text.font": { value: "Calibri", source: "style", theme: "minor" },
+      "text.font": { value: "Calibri", source: "style", templateFont: "minor" },
     },
     kept: [],
   })
@@ -146,7 +146,7 @@ it("keeps a custom geometry and an effect graph out of reach, reads an image fil
       "body.anchor": { value: "ctr" },
       "text.size": { value: 4400 },
       "text.color": { value: { scheme: "tx1" } },
-      "text.font": { value: "Arial", theme: "minor" },
+      "text.font": { value: "Arial", templateFont: "minor" },
       "effects.kept": { value: "graph" },
     },
     kept: ["geometry", "effects.shadow", "effects.innerShadow", "effects.glow", "effects.softEdge", "effects.blur"],
@@ -171,13 +171,13 @@ it("records the box a placeholder shows from its layout when it has no box of it
   expect(traits.elements.get(elementId("447.5"))).not.toHaveProperty("placed")
 })
 
-it("says which theme font a text shows, so a theme font change can name it, and gives each palette its theme's fonts", async () => {
+it("says which template font a text shows, so a template font change can name it, and gives each palette its template style's fonts", async () => {
   const traits = readTraits(await deck("doe-heat-pumps.pptx"))
   expect(traits.palettes).toEqual([expect.objectContaining({ fonts: { major: "Calibri Light", minor: "Calibri" } })])
   expect(traits.elements.get(elementId("256.4"))?.reads["text.font"]).toEqual({
     value: "Calibri",
     source: "master",
-    theme: "minor",
+    templateFont: "minor",
   })
   expect(traits.elements.get(elementId("256.2"))?.reads["text.font"]).toEqual({ value: "Abadi" })
 })

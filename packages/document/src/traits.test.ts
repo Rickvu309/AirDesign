@@ -68,8 +68,7 @@ describe("the one table of traits", () => {
       connection: "own",
       table: "own",
       notes: "own",
-      theme: "own",
-      template: "own",
+      templateStyle: "own",
       show: "own",
       transition: "own",
     })
@@ -126,25 +125,25 @@ describe("the one table of traits", () => {
       "connection.end",
       "table.value",
       "notes.value",
-      "theme.name",
-      "theme.dk1",
-      "theme.lt1",
-      "theme.dk2",
-      "theme.lt2",
-      "theme.accent1",
-      "theme.accent2",
-      "theme.accent3",
-      "theme.accent4",
-      "theme.accent5",
-      "theme.accent6",
-      "theme.hlink",
-      "theme.folHlink",
-      "theme.major",
-      "theme.minor",
-      "theme.custom",
-      "theme.removed",
-      "theme.textStyle",
-      "template.id",
+      "templateStyle.id",
+      "templateStyle.name",
+      "templateStyle.dk1",
+      "templateStyle.lt1",
+      "templateStyle.dk2",
+      "templateStyle.lt2",
+      "templateStyle.accent1",
+      "templateStyle.accent2",
+      "templateStyle.accent3",
+      "templateStyle.accent4",
+      "templateStyle.accent5",
+      "templateStyle.accent6",
+      "templateStyle.hlink",
+      "templateStyle.folHlink",
+      "templateStyle.major",
+      "templateStyle.minor",
+      "templateStyle.custom",
+      "templateStyle.removed",
+      "templateStyle.textStyle",
       "show.skipped",
       "transition.value",
     ])
@@ -187,7 +186,7 @@ describe("the one table of traits", () => {
   it("gives every kind a closed list of declared traits", () => {
     for (const kind of kinds) for (const trait of kindTraits[kind]) expect(traitNames).toContain(trait)
     expect(kindTraits.group).toEqual(["identity", "box", "effects"])
-    expect(kindTraits.slide).toEqual(["fills", "template", "show", "transition"])
+    expect(kindTraits.slide).toEqual(["fills", "templateStyle", "show", "transition"])
     expect(kindTraits.notes).toEqual(["notes"])
   })
 })

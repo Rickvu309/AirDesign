@@ -1,5 +1,5 @@
 import type { DeckId } from "@airdesign/catalog"
-import { foldDesign, printDesign, readDeckId, shownDesign, themedDesign } from "@airdesign/catalog"
+import { foldDesign, printDesign, readDeckId, shownDesign, templateFontDesign } from "@airdesign/catalog"
 import {
   bytesOf,
   foldGrid,
@@ -18,11 +18,11 @@ import {
   shapeOf,
   slideKind,
   slideBirths,
-  themeFonts,
-  themeNode,
-  themeOwned,
-  templateNode,
-  themeSlots,
+  templateFonts,
+  templateStylesNode,
+  templateStyleOwned,
+  templateStyleNode,
+  templateColors,
   textStylesOf,
   version,
   withCurrentKeys,
@@ -58,7 +58,7 @@ export type ReadElement = {
   readonly closed?: true
 }
 
-export type ReadTemplate = TemplateStyle & {
+export type ReadTemplateStyle = TemplateStyle & {
   readonly node: ElementId
   readonly custom?: readonly { readonly name: string; readonly color: string }[]
 }
@@ -70,11 +70,11 @@ export type ReadDeckAnswer = {
   readonly elements: readonly ReadElement[]
   readonly slides: readonly Pick<
     IndexSlide,
-    "id" | "position" | "palette" | "template" | "textStyles" | "skipped" | "transition"
+    "id" | "position" | "palette" | "templateStyle" | "textStyles" | "skipped" | "transition"
   >[]
-  readonly templates?: readonly ReadTemplate[]
+  readonly templateStyles?: readonly ReadTemplateStyle[]
   readonly palettes?: readonly Palette[]
-  readonly theme?: Readonly<Record<string, string>>
+  readonly templateStyle?: Readonly<Record<string, string>>
   readonly index: "missing" | "pending" | "ready"
   readonly cursor?: string
 }
@@ -166,7 +166,7 @@ function elementOf(
   const opening = indexed?.opening === undefined ? [] : [{ v: 1, patch: indexed.opening }]
   const rows = body === undefined ? [] : [{ v: 1, patch: landedPatch(body, "text") }]
   const design = foldDesign(typed, netPatch([...opening, ...rows]))
-  const line = design === undefined ? "" : printDesign(themedDesign(design, fonts))
+  const line = design === undefined ? "" : printDesign(templateFontDesign(design, fonts))
   const linkEdit = body === undefined ? undefined : landedPatch(body, "text").link?.target
   const link = typeof linkEdit === "object" ? linkEdit.set : indexed?.link
   const designed = {
@@ -196,7 +196,7 @@ function knownNodes(register: Register): readonly ElementId[] {
     listed.add(node)
   }
   for (const node of register.nodes) {
-    if (themeOwned(node) || readElementId(node) === undefined || register.elements[node] === undefined) continue
+    if (templateStyleOwned(node) || readElementId(node) === undefined || register.elements[node] === undefined) continue
     if (listed.has(node)) continue
     nodes.push(node)
     listed.add(node)
@@ -224,11 +224,14 @@ function firstAfter(nodes: readonly ElementId[], cursor: string): number {
   return low
 }
 
-type ReadHead = Pick<ReadDeckAnswer, "revision" | "grid" | "slides" | "palettes" | "templates" | "theme" | "index">
+type ReadHead = Pick<
+  ReadDeckAnswer,
+  "revision" | "grid" | "slides" | "palettes" | "templateStyles" | "templateStyle" | "index"
+>
 
-function themeSet(register: Register, node = themeNode): Readonly<Record<string, string>> {
+function styleFields(register: Register, node = templateStylesNode): Readonly<Record<string, string>> {
   const body = register.nodes.includes(node) ? register.elements[node] : undefined
-  const edits = body === undefined ? {} : (landedPatch(body, "text").theme ?? {})
+  const edits = body === undefined ? {} : (landedPatch(body, "text").templateStyle ?? {})
   return Object.fromEntries(
     Object.entries(edits).flatMap(([field, edit]) =>
       typeof edit === "object" && typeof edit.set === "string" ? [[field, edit.set]] : [],
@@ -236,10 +239,10 @@ function themeSet(register: Register, node = themeNode): Readonly<Record<string,
   )
 }
 
-function themeRemoved(register: Register, node: ElementId): boolean {
+function styleRemoved(register: Register, node: ElementId): boolean {
   const body = register.nodes.includes(node) ? register.elements[node] : undefined
   if (body === undefined) return false
-  const edit = landedPatch(body, "text").theme?.removed
+  const edit = landedPatch(body, "text").templateStyle?.removed
   return typeof edit === "object" && edit.set === true
 }
 
@@ -249,29 +252,33 @@ function customColors(
 ): readonly { readonly name: string; readonly color: string }[] | undefined {
   const body = register.nodes.includes(node) ? register.elements[node] : undefined
   if (body === undefined) return undefined
-  const edit = landedPatch(body, "text").theme?.custom
+  const edit = landedPatch(body, "text").templateStyle?.custom
   if (typeof edit !== "object" || !Array.isArray(edit.set)) return undefined
   return edit.set.map((item) => ({ name: item.name, color: `#${item.color}` }))
 }
 
-function usedTemplates(register: Register): ReadonlySet<string> {
+function usedStyles(register: Register): ReadonlySet<string> {
   const bySlide = new Map<string, string>()
   for (const slide of register.index?.slides ?? []) {
-    if (slide.template !== undefined) bySlide.set(slide.id, slide.template)
+    if (slide.templateStyle !== undefined) bySlide.set(slide.id, slide.templateStyle)
   }
   for (const node of register.nodes) {
     if (slideKind(node) !== "slide") continue
     const body = register.elements[node]
-    const edit = body === undefined ? undefined : landedPatch(body, "text").template?.id
+    const edit = body === undefined ? undefined : landedPatch(body, "text").templateStyle?.id
     if (typeof edit === "object") bySlide.set(shapeOf(node).slide, edit.set)
   }
   return new Set(bySlide.values())
 }
 
-function themedHead(palettes: readonly Palette[] | undefined, set: Readonly<Record<string, string>>) {
-  const slots = Object.fromEntries(themeSlots.flatMap((slot) => (set[slot] === undefined ? [] : [[slot, set[slot]]])))
-  const fonts = Object.fromEntries(themeFonts.flatMap((font) => (set[font] === undefined ? [] : [[font, set[font]]])))
-  const theme = Object.fromEntries(
+function styledHead(palettes: readonly Palette[] | undefined, set: Readonly<Record<string, string>>) {
+  const slots = Object.fromEntries(
+    templateColors.flatMap((slot) => (set[slot] === undefined ? [] : [[slot, set[slot]]])),
+  )
+  const fonts = Object.fromEntries(
+    templateFonts.flatMap((font) => (set[font] === undefined ? [] : [[font, set[font]]])),
+  )
+  const changed = Object.fromEntries(
     Object.entries(set).map(([field, value]) => [field, Object.hasOwn(slots, field) ? `#${value}` : value]),
   )
   return {
@@ -286,7 +293,7 @@ function themedHead(palettes: readonly Palette[] | undefined, set: Readonly<Reco
               : { fonts: { ...each.fonts, ...fonts } }),
           })),
         }),
-    ...(Object.keys(theme).length === 0 ? {} : { theme }),
+    ...(Object.keys(changed).length === 0 ? {} : { templateStyle: changed }),
   }
 }
 
@@ -339,19 +346,19 @@ export function readDeckPage(
   const goneSlides = new Set<string>(foldSlides(deck.register).flatMap((spot) => (spot.present ? [] : [spot.id])))
   const nodes = knownNodes(deck.register)
   const index = deck.register.index
-  const used = usedTemplates(deck.register)
-  const templates = index?.templates?.flatMap((style, at) => {
-    const node = templateNode(at)
-    if (themeRemoved(deck.register, node) && !used.has(style.id)) return []
-    const scoped = themeSet(deck.register, node)
+  const used = usedStyles(deck.register)
+  const templateStyles = index?.templateStyles?.flatMap((style, at) => {
+    const node = templateStyleNode(at)
+    if (styleRemoved(deck.register, node) && !used.has(style.id)) return []
+    const scoped = styleFields(deck.register, node)
     const palette =
-      themedHead([style.palette], { ...themeSet(deck.register), ...scoped }).palettes?.[0] ?? style.palette
-    const custom = customColors(deck.register, node) ?? customColors(deck.register, themeNode)
+      styledHead([style.palette], { ...styleFields(deck.register), ...scoped }).palettes?.[0] ?? style.palette
+    const custom = customColors(deck.register, node) ?? customColors(deck.register, templateStylesNode)
     return [
       {
         ...style,
         node,
-        name: scoped.name ?? themeSet(deck.register).name ?? style.name,
+        name: scoped.name ?? styleFields(deck.register).name ?? style.name,
         palette,
         ...(custom === undefined ? {} : { custom }),
       },
@@ -379,27 +386,27 @@ export function readDeckPage(
     const node = slide === undefined ? undefined : slideNode(slide, "slide")
     const body = node === undefined ? undefined : deck.register.elements[node]
     const patch = body === undefined ? {} : landedPatch(body, "text")
-    const rows = patch.template?.id
+    const rows = patch.templateStyle?.id
     const opening = node === undefined ? undefined : openingElement(deck.register, node)?.opening
     const shown = patch.show?.skipped
     const born = opening?.show?.skipped
     const skipped =
       typeof shown === "object" ? shown.set : typeof born === "object" ? born.set : originallySkipped(slide)
-    const source = node === undefined ? undefined : openingElement(deck.register, node)?.opening?.template?.id
-    const importedTemplate = (slide: string): string | undefined => {
-      const original = index?.slides.find((source) => source.id === slide)?.template
+    const source = node === undefined ? undefined : openingElement(deck.register, node)?.opening?.templateStyle?.id
+    const importedStyle = (slide: string): string | undefined => {
+      const original = index?.slides.find((source) => source.id === slide)?.templateStyle
       if (original !== undefined) return original
       const command = deck.register.order.find(
         (command) => (command.slide === "add" || command.slide === "clone") && command.id === slide,
       )
       return command?.slide === "clone"
-        ? importedTemplate(command.source)
+        ? importedStyle(command.source)
         : command?.slide === "add"
-          ? importedTemplate(command.layout)
+          ? importedStyle(command.layout)
           : undefined
     }
-    const template =
-      typeof rows === "object" ? rows.set : typeof source === "object" ? source.set : importedTemplate(id)
+    const templateStyle =
+      typeof rows === "object" ? rows.set : typeof source === "object" ? source.set : importedStyle(id)
     const transitionEdit = body === undefined ? undefined : landedPatch(body, "text").transition?.value
     const indexedTransition = index?.slides.find((source) => source.id === id)?.transition
     const transition = typeof transitionEdit === "object" ? transitionEdit.set : indexedTransition
@@ -409,30 +416,30 @@ export function readDeckPage(
       ...(skipped ? { skipped: true as const } : {}),
       ...styles,
       ...(palette === undefined || palette === 0 ? {} : { palette }),
-      ...(template === undefined ? {} : { template }),
+      ...(templateStyle === undefined ? {} : { templateStyle }),
       ...(transition === undefined ? {} : { transition }),
     }
   }
-  const themed = themedHead(index?.palettes, themeSet(deck.register))
-  if (templates !== undefined) {
+  const styled = styledHead(index?.palettes, styleFields(deck.register))
+  if (templateStyles !== undefined) {
     const allPalettes: Palette[] = []
     const slides =
       deck.register.order.length === 0
         ? (index?.slides ?? [])
         : presentSlides(deck.register).map(({ id }, position) => ({ id, position }))
     for (const slide of slides) {
-      const template = templates.find((template) => template.id === slideOf(slide.id, slide.position).template)
+      const chosenStyle = templateStyles.find((style) => style.id === slideOf(slide.id, slide.position).templateStyle)
       const opening = index?.palettes?.[palettes.get(slide.id) ?? 0]
-      const chosen = template?.palette ?? opening
+      const chosen = chosenStyle?.palette ?? opening
       if (chosen === undefined) continue
       const palette: Palette = { ...chosen, map: opening?.map ?? chosen.map }
       const found = allPalettes.findIndex((held) => JSON.stringify(held) === JSON.stringify(palette))
       palettes.set(slide.id, found < 0 ? allPalettes.length : found)
       if (found < 0) allPalettes.push(palette)
     }
-    themed.palettes = allPalettes
+    styled.palettes = allPalettes
   }
-  const fontsOf = (slide: string) => themed.palettes?.[palettes.get(slide) ?? 0]?.fonts ?? {}
+  const fontsOf = (slide: string) => styled.palettes?.[palettes.get(slide) ?? 0]?.fonts ?? {}
   return packRead(
     {
       revision: deck.revision,
@@ -446,13 +453,13 @@ export function readDeckPage(
                 return id === undefined ? [] : [id]
               }),
       }).grid,
-      ...(templates === undefined || query.cursor !== undefined ? {} : { templates }),
+      ...(templateStyles === undefined || query.cursor !== undefined ? {} : { templateStyles }),
       slides: (deck.register.order.length === 0
         ? (index?.slides ?? []).map(({ id, position }) => slideOf(id, position))
         : presentSlides(deck.register).map(({ id }, position) => slideOf(id, position))
       ).map((slide) => {
         if (query.cursor === undefined) return slide
-        if (slide.template !== undefined)
+        if (slide.templateStyle !== undefined)
           return {
             id: slide.id,
             position: slide.position,
@@ -463,7 +470,7 @@ export function readDeckPage(
         const { transition: _dropped, ...rest } = slide
         return rest
       }),
-      ...themed,
+      ...styled,
       index: index === undefined ? "missing" : index.elements.length === index.total ? "ready" : "pending",
     },
     nodes,

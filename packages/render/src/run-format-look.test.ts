@@ -63,7 +63,7 @@ it("paints alignment and bullets over the paragraph", () => {
   expect(look.fileList(0)).toBe("none")
 })
 
-it("reads a scheme colour when one theme swatch matches the painted colour", () => {
+it("reads a scheme colour when one template color matches the painted colour", () => {
   const colored: CanvasText = {
     ...text,
     colors: [{ scheme: "dk1", css: inkPaint }],
@@ -206,9 +206,9 @@ it("continues imported numbering and keeps its levels separate", () => {
   expect(numberedLabels([1, null, 1], undefined, [0, 1, 0])).toEqual(['"1."', '"•"', '"2."'])
 })
 
-it("paints a native theme-font token with the current template face", () => {
-  const themed = { ...text, fonts: { "+mj-lt": "Georgia", "+mn-lt": "Lato" } }
-  const look = textLook(themed, scaled)
+it("paints a native template font token with the current template style's face", () => {
+  const styled = { ...text, fonts: { "+mj-lt": "Georgia", "+mn-lt": "Lato" } }
+  const look = textLook(styled, scaled)
   expect(look.run(0, 0, { font: "+mj-lt" }).fontFamily).toContain('"Georgia"')
   expect(look.run(0, 0, { font: "+mn-lt" }).fontFamily).toContain('"Lato"')
   expect(look.run(0, 0, { font: "Lato Light" }).fontFamily).toContain('"Lato Light"')

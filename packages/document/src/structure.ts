@@ -47,7 +47,6 @@ type Placed = {
 
 type StructuralRoutes = {
   readonly deck: NoActions
-  readonly theme: NoActions
   readonly master: NoActions
   readonly layout: NoActions
   readonly section: {
@@ -97,7 +96,6 @@ type Covered = keyof StructuralRoutes extends Kind
 
 export const structure = {
   deck: {},
-  theme: {},
   master: {},
   layout: {},
   section: { create: sectionLstAdd, move: sectionLstOrder, remove: sectionLstRemove },

@@ -10,8 +10,8 @@ import {
   slideGone,
   slideKind,
   takes,
-  themeNode,
-  templateIndex,
+  templateStylesNode,
+  templateStyleIndex,
   type ElementId,
   type ElementPatch,
   type FieldEdit,
@@ -109,7 +109,7 @@ function writtenSlide(
   const part = slidePart(parts, slide)
   if (part === null) throw new Error("fill-slide")
   let next = parts
-  for (const trait of ["template", "fills", "show", "transition"] as const) {
+  for (const trait of ["templateStyle", "fills", "show", "transition"] as const) {
     const fields = heldFields(opening?.opening?.[trait] ?? {}, patch[trait] ?? {})
     if (Object.keys(fields).length > 0) next = writeTrait(next, { slide, part, shape: "slide" }, trait, fields)
   }
@@ -117,10 +117,11 @@ function writtenSlide(
 }
 
 function writtenTheme(parts: Parts, body: NodeRegister | undefined): Parts {
-  const fields = body === undefined ? undefined : landedPatch(body, "text").theme
+  const fields = body === undefined ? undefined : landedPatch(body, "text").templateStyle
   if (fields === undefined) return parts
   let next = parts
-  for (const part of slideThemes(parts)) next = writeTrait(next, { slide: "", part, shape: "theme" }, "theme", fields)
+  for (const part of slideThemes(parts))
+    next = writeTrait(next, { slide: "", part, shape: "theme" }, "templateStyle", fields)
   return next
 }
 
@@ -172,21 +173,24 @@ function writtenElement(
 export function exportParts(parts: Parts, register: Register, media?: ElementAt["media"]): Parts {
   const shapes = readShapes(parts)
   const numbers = slideNumbering(parts, register)
-  let next = writtenTheme(parts, register.nodes.includes(themeNode) ? register.elements[themeNode] : undefined)
-  const templates = register.index?.templates ?? templateStyles(parts)
+  let next = writtenTheme(
+    parts,
+    register.nodes.includes(templateStylesNode) ? register.elements[templateStylesNode] : undefined,
+  )
+  const styles = register.index?.templateStyles ?? templateStyles(parts)
   for (const node of new Set([...register.nodes, ...floorNodes(register)])) {
-    if (node === themeNode) continue
+    if (node === templateStylesNode) continue
     if (node.includes(".") && (slideGone(register, shapeOf(node).slide) || elementGone(register, node))) continue
     const body = register.nodes.includes(node) ? register.elements[node] : undefined
     const opening = newSlideElement(register, node)
     const kind = slideKind(node)
-    const index = templateIndex(node)
+    const index = templateStyleIndex(node)
     if (index !== null) {
-      const id = templates[index]?.id
-      const fields = body === undefined ? undefined : landedPatch(body, "text").theme
+      const id = styles[index]?.id
+      const fields = body === undefined ? undefined : landedPatch(body, "text").templateStyle
       const removed = typeof fields?.removed === "object" && fields.removed.set === true
       if (id !== undefined && fields !== undefined && !removed && next.has(id))
-        next = writeTrait(next, { slide: "", part: id, shape: "theme" }, "theme", fields)
+        next = writeTrait(next, { slide: "", part: id, shape: "theme" }, "templateStyle", fields)
       continue
     }
     next =

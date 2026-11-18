@@ -5,7 +5,7 @@ import {
   format,
   landedPatch,
   openRegister,
-  themeNode,
+  templateStylesNode,
   type Command,
   type ElementId,
   type Register,
@@ -258,10 +258,15 @@ it("draws a fill that names a theme colour in that colour once the theme changes
   const slide = readSlides(parts)[0]?.slide
   if (slide === undefined) throw new Error("slide")
   const node = elementId(`${slide}.2`)
-  const opened = applied(openRegister("", "deck"), { command: "add", node: themeNode, floor: "", route: "deck" })
+  const opened = applied(openRegister("", "deck"), {
+    command: "add",
+    node: templateStylesNode,
+    floor: "",
+    route: "deck",
+  })
   const red = "C00000"
   const patch = { theme: { accent1: { set: red } } }
-  const register = applied(opened, { command: "person", node: themeNode, v: format, patch })
+  const register = applied(opened, { command: "person", node: templateStylesNode, v: format, patch })
   device.link = { flush: async () => ({ ok: true }), openDeck: async () => ({ ok: true, register }) }
   const exposed: { current: DeckPaint | null } = { current: null }
   const host = window.document.createElement("div")

@@ -27,11 +27,11 @@ import {
   type BoundRead,
   type RecolorRead,
   type Shown,
-  type ThemeFont,
+  type TemplateFont,
   type TraitReads,
 } from "@airdesign/document"
 import { effectAgents, foldEffects } from "./agent-effects.js"
-import { fontReferences } from "./theme-font.js"
+import { fontReferences } from "./template-font.js"
 import { agentColor, agentPercent, colorPattern, hexPattern, readAgentColor, readAgentHex } from "./agent-color.js"
 import { knownIcon } from "./icon-names.js"
 import { storableText } from "./storable-text.js"
@@ -95,9 +95,9 @@ const agent: Agent = {
 
 function shownOf<Key extends DesignKey>(
   key: Key,
-  read: Read<NonNullable<TraitReads[Key]>["value"]> & { readonly theme?: ThemeFont },
+  read: Read<NonNullable<TraitReads[Key]>["value"]> & { readonly templateFont?: TemplateFont },
 ): Shown {
-  const value = read.theme === undefined ? agent[key](read.value) : fontReferences[read.theme]
+  const value = read.templateFont === undefined ? agent[key](read.value) : fontReferences[read.templateFont]
   return read.source === undefined ? [value] : [value, read.source]
 }
 

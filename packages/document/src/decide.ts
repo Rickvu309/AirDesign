@@ -1,6 +1,6 @@
 import type { Box } from "./box.js"
 import type { DeckIndex } from "./deck-index.js"
-import { rootElement, shapeOf, slideKind, themeOwned, type ElementId, type SlideId } from "./element-id.js"
+import { rootElement, shapeOf, slideKind, templateStyleOwned, type ElementId, type SlideId } from "./element-id.js"
 import { limits, overLimit } from "./limits.js"
 import { floorFits, openingElement } from "./slide-floor.js"
 import { elementGone } from "./element-order.js"
@@ -316,7 +316,7 @@ function hostedSlide(id: ElementId): string | null {
 }
 
 export function elementFacts(register: Register, node: ElementId): ElementFacts | undefined {
-  if (themeOwned(node)) return { kind: "deck", text: false, grouped: false, animated: false }
+  if (templateStyleOwned(node)) return { kind: "deck", text: false, grouped: false, animated: false }
   const kind = slideKind(node)
   if (kind !== null) return { kind, text: kind === "notes", grouped: false, animated: false }
   const opening = openingElement(register, node)

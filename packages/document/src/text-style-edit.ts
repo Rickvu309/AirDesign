@@ -1,5 +1,5 @@
 import { landedPatch, type NodeRegister } from "./decide.js"
-import { textStyleLimit } from "./trait-theme.js"
+import { textStyleLimit } from "./trait-template-style.js"
 
 export type TextStyleEdit = {
   readonly id: string
@@ -15,7 +15,7 @@ function isEdit(value: unknown): value is TextStyleEdit {
 
 export function storedTextStyleEdits(body: NodeRegister | undefined): readonly TextStyleEdit[] {
   if (body === undefined) return []
-  const field = landedPatch(body, "text").theme?.textStyle
+  const field = landedPatch(body, "text").templateStyle?.textStyle
   if (typeof field !== "object" || !("set" in field) || !Array.isArray(field.set)) return []
   return field.set.filter(isEdit)
 }

@@ -19,6 +19,7 @@ import { readTemplateStyles, type TemplateStyle } from "./template-style.js"
 import { converted, format, formatOf, type Conversion } from "./format.js"
 import { borderFormat, borderIndex } from "./border-conversion.js"
 import { fillsFormat, fillsIndex, imageFormat, imageIndex } from "./fills-conversion.js"
+import { templateStyleFormat, templateStyleIndex } from "./template-style-conversion.js"
 import { readStoredTransition, type TransitionValue } from "./trait-transition.js"
 import { bytesOf, limits } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
@@ -34,7 +35,7 @@ export type IndexSlide = {
   readonly animated?: readonly string[]
   readonly layout?: readonly IndexElement[]
   readonly skipped?: true
-  readonly template?: string
+  readonly templateStyle?: string
   readonly textStyles?: readonly TextStyle[] | string
   readonly palette?: number
   readonly transition?: TransitionValue | "kept"
@@ -60,7 +61,7 @@ export type IndexPage = {
   readonly offset: number
   readonly total: number
   readonly sectionStarts?: readonly SlideId[]
-  readonly templates?: readonly TemplateStyle[]
+  readonly templateStyles?: readonly TemplateStyle[]
   readonly palettes?: readonly Palette[]
   readonly slides: readonly IndexSlide[]
   readonly elements: readonly IndexElement[]
@@ -69,7 +70,7 @@ type BuiltIndex = {
   readonly format?: number
   readonly total: number
   readonly sectionStarts?: readonly SlideId[]
-  readonly templates?: readonly TemplateStyle[]
+  readonly templateStyles?: readonly TemplateStyle[]
   readonly palettes?: readonly Palette[]
   readonly slides: readonly IndexSlide[]
   readonly elements: readonly IndexElement[]
@@ -78,7 +79,7 @@ type BuiltIndex = {
 export type DeckIndex = BuiltIndex & { readonly next?: BuiltIndex }
 
 export const indexKeys = {
-  page: ["format", "once", "offset", "total", "palettes", "templates", "sectionStarts", "slides", "elements"],
+  page: ["format", "once", "offset", "total", "palettes", "templateStyles", "sectionStarts", "slides", "elements"],
   palette: ["slots", "map", "fonts"],
   slide: [
     "id",
@@ -88,7 +89,7 @@ export const indexKeys = {
     "animated",
     "layout",
     "palette",
-    "template",
+    "templateStyle",
     "textStyles",
     "skipped",
     "transition",
@@ -169,7 +170,8 @@ function readSlide(raw: unknown, position: number, palettes: number): IndexSlide
         ? row.textStyles
         : readTextStyles(row.textStyles)
   if (textStyles === null) return null
-  if (row.template !== undefined && (typeof row.template !== "string" || bytesOf(row.template) > 256)) return null
+  const style = row.templateStyle
+  if (style !== undefined && (typeof style !== "string" || bytesOf(style) > 256)) return null
   if (row.skipped !== undefined && row.skipped !== true) return null
   let transition: TransitionValue | "kept" | undefined
   if (row.transition !== undefined) {
@@ -182,7 +184,7 @@ function readSlide(raw: unknown, position: number, palettes: number): IndexSlide
     ...read,
     ...(textStyles === undefined ? {} : { textStyles }),
     ...(row.palette === undefined ? {} : { palette: row.palette }),
-    ...(row.template === undefined ? {} : { template: row.template }),
+    ...(style === undefined ? {} : { templateStyle: style }),
     ...(transition === undefined ? {} : { transition }),
   }
   if (row.layout === undefined) return { id: row.id, position, ...measures }
@@ -276,6 +278,7 @@ export const pageConversions: readonly Conversion<undefined>[] = [
   { introduced: fillsFormat, convert: fillsIndex },
   { introduced: imageFormat, convert: imageIndex },
   { introduced: borderFormat, convert: borderIndex },
+  { introduced: templateStyleFormat, convert: templateStyleIndex },
 ]
 
 export function readIndexPage(raw: unknown): IndexPage | null {
@@ -287,15 +290,15 @@ export function readIndexPage(raw: unknown): IndexPage | null {
       row,
       pageKeys.filter(
         (key) =>
-          (key !== "format" && key !== "palettes" && key !== "templates" && key !== "sectionStarts") ||
+          (key !== "format" && key !== "palettes" && key !== "templateStyles" && key !== "sectionStarts") ||
           row[key] !== undefined,
       ),
     )
   )
     return null
   if (row.format !== undefined && (!whole(row.format) || row.format < 1 || row.format > format)) return null
-  const templates = row.templates === undefined ? undefined : readTemplateStyles(row.templates)
-  if (templates === null) return null
+  const styles = row.templateStyles === undefined ? undefined : readTemplateStyles(row.templateStyles)
+  if (styles === null) return null
   const palettes = row.palettes === undefined ? undefined : readPalettes(row.palettes)
   if (palettes === null) return null
   if (typeof row.once !== "string" || !oncePattern.test(row.once)) return null
@@ -306,9 +309,9 @@ export function readIndexPage(raw: unknown): IndexPage | null {
     const slide = readSlide(raw, position, palettes?.length ?? 0)
     if (slide === null || slides.some((kept) => kept.id === slide.id)) return null
     if (
-      (slide.template !== undefined &&
-        templates !== undefined &&
-        !templates.some((style) => style.id === slide.template)) ||
+      (slide.templateStyle !== undefined &&
+        styles !== undefined &&
+        !styles.some((style) => style.id === slide.templateStyle)) ||
       (typeof slide.textStyles === "string" &&
         !slides.some((source) => source.id === slide.textStyles && Array.isArray(source.textStyles)))
     )
@@ -333,7 +336,7 @@ export function readIndexPage(raw: unknown): IndexPage | null {
     offset: row.offset,
     total: row.total,
     ...(palettes === undefined ? {} : { palettes }),
-    ...(templates === undefined ? {} : { templates }),
+    ...(styles === undefined ? {} : { templateStyles: styles }),
     ...(sectionStarts === undefined ? {} : { sectionStarts }),
     slides,
     elements,
@@ -434,7 +437,7 @@ function appendBuilt(current: BuiltIndex | undefined, page: IndexPage): Appended
       ...(page.format === undefined ? {} : { format: page.format }),
       total: page.total,
       ...(page.palettes === undefined ? {} : { palettes: page.palettes }),
-      ...(page.templates === undefined ? {} : { templates: page.templates }),
+      ...(page.templateStyles === undefined ? {} : { templateStyles: page.templateStyles }),
       ...(page.sectionStarts === undefined ? {} : { sectionStarts: page.sectionStarts }),
       slides: page.slides,
       elements: [...elements, ...page.elements],

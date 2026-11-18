@@ -1,7 +1,7 @@
 import { expect, it } from "vitest"
 import { gradientLook, keptTextFill } from "./text-fill-look.js"
 
-it("clips a multistop gradient to the letters and resolves theme colors", () => {
+it("clips a multistop gradient to the letters and resolves template colors", () => {
   const look = gradientLook(
     {
       gradient: {

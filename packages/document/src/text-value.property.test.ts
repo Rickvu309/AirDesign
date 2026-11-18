@@ -1,6 +1,6 @@
 import fc from "fast-check"
 import { expect, it } from "vitest"
-import { mappedSlots, themeSlots, type Color, type ColorTransform } from "./color.js"
+import { mappedSlots, templateColors, type Color, type ColorTransform } from "./color.js"
 import {
   readTextValue,
   writeTextValue,
@@ -22,7 +22,7 @@ function kept<T extends Record<string, unknown>>(value: T): T {
 function textValue(): fc.Arbitrary<TextValue> {
   const hex = fc.stringMatching(/^[0-9A-F]{6}$/)
   const base = fc.oneof(
-    fc.constantFrom(...themeSlots, ...mappedSlots).map((scheme) => ({ scheme })),
+    fc.constantFrom(...templateColors, ...mappedSlots).map((scheme) => ({ scheme })),
     hex.map((rgb) => ({ rgb })),
     hex.map((last) => ({ system: "windowText", last })),
     fc.constantFrom("black", "dkSlateBlue").map((preset) => ({ preset })),

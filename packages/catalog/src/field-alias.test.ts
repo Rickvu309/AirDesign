@@ -132,3 +132,39 @@ it("refuses the border spelled both ways in one change and names the field the t
     field: "border.width",
   })
 })
+
+it("reads an agent's theme and template, the template style's old names, and its old addresses as the template style", () => {
+  const colors = { accent1: "#C00000", major: "Georgia", custom: [{ name: "Coral", color: "#FF6600" }] }
+  const every = readSetChange({ op: "set", target: "deck.templateStyles", templateStyle: colors })
+  expect(every).toMatchObject({
+    ok: true,
+    change: { target: { node: "deck.templateStyles" }, templateStyle: { accent1: "C00000", major: "Georgia" } },
+  })
+  expect(readSetChange({ op: "set", target: "deck.theme", theme: colors })).toEqual(every)
+  expect(readSetChange({ op: "set", target: "deck.template2", theme: { name: "Night" } })).toEqual(
+    readSetChange({ op: "set", target: "deck.templateStyle2", templateStyle: { name: "Night" } }),
+  )
+  const chosen = readSetChange({ op: "set", target: "258", templateStyle: { id: "ppt/theme/theme2.xml" } })
+  expect(chosen).toMatchObject({ ok: true, change: { templateStyle: { id: "ppt/theme/theme2.xml" } } })
+  expect(readSetChange({ op: "set", target: "258", template: { id: "ppt/theme/theme2.xml" } })).toEqual(chosen)
+  const edit = { deck: "deck", base: 0, changes: [{ op: "set", target: "deck.theme", theme: { minor: "Verdana" } }] }
+  expect(readAgentEdit(edit)).toMatchObject({
+    ok: true,
+    changes: [{ op: "set", target: { node: "deck.templateStyles" }, templateStyle: { minor: "Verdana" } }],
+  })
+})
+
+it("refuses the template style spelled two ways in one change and names the field the tools advertise", () => {
+  const twice = {
+    op: "set",
+    target: "deck.templateStyles",
+    theme: { dk1: "#000000" },
+    templateStyle: { dk1: "#111111" },
+  }
+  expect(readSetChange(twice)).toEqual({ ok: false, refusal: "field", field: "templateStyle.dk1" })
+  expect(readSetChange({ op: "set", target: "258", template: { id: "a" }, templateStyle: { id: "b" } })).toEqual({
+    ok: false,
+    refusal: "field",
+    field: "templateStyle.id",
+  })
+})

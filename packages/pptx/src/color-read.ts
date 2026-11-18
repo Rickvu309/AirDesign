@@ -1,11 +1,11 @@
 import {
   mappedSlots,
-  themeSlots,
+  templateColors,
   type Color,
   type ColorTransform,
   type FillRead,
   type MappedSlot,
-  type ThemeSlot,
+  type TemplateColor,
 } from "@airdesign/document"
 import type { MarkupElement } from "./element-span.js"
 import { child, inside, whole, type Held } from "./markup-held.js"
@@ -54,9 +54,9 @@ function colorOf(held: Held, placed: Color | null): Color | null {
   if (element.kind === "a:schemeClr" && value === "phClr") base = placed
   else if (element.kind === "a:schemeClr")
     base =
-      themeSlots.find((slot) => slot === value) !== undefined ||
+      templateColors.find((slot) => slot === value) !== undefined ||
       mappedSlots.find((slot) => slot === value) !== undefined
-        ? { scheme: value as ThemeSlot | MappedSlot }
+        ? { scheme: value as TemplateColor | MappedSlot }
         : null
   else if (element.kind === "a:srgbClr" && value !== null && /^[0-9A-Fa-f]{6}$/.test(value))
     base = { rgb: value.toUpperCase() }

@@ -1,9 +1,9 @@
 import {
   mappedSlots,
-  themeSlots,
+  templateColors,
   type TemplateStyle as IndexedTemplate,
   type MappedSlot,
-  type ThemeSlot,
+  type TemplateColor,
 } from "@airdesign/document"
 import { deckMasters } from "./deck-layouts.js"
 import { decodedXmlText, markupDocument } from "./element-span.js"
@@ -65,14 +65,14 @@ export function templateStyles(parts: Parts): readonly IndexedTemplate[] {
     if (theme === undefined) continue
     const { name, values } = catalogValues(theme)
     const slots = Object.fromEntries(
-      themeSlots.flatMap((slot) => (values[slot] === undefined ? [] : [[slot, values[slot]]])),
+      templateColors.flatMap((slot) => (values[slot] === undefined ? [] : [[slot, values[slot]]])),
     )
     const bytes = parts.get(master)
     const mapping = bytes === undefined ? [] : masterMap(bytes)
-    const map: Partial<Record<MappedSlot, ThemeSlot>> = {}
+    const map: Partial<Record<MappedSlot, TemplateColor>> = {}
     for (const attribute of mapping) {
       const slot = mappedSlots.find((slot) => slot === attribute.name)
-      const target = themeSlots.find((slot) => slot === attribute.value)
+      const target = templateColors.find((slot) => slot === attribute.value)
       if (slot !== undefined && target !== undefined) map[slot] = target
     }
     const fonts = {

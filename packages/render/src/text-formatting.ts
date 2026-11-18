@@ -9,7 +9,7 @@ import type {
   TextFormat,
 } from "@airdesign/document"
 import { gestureFor, type KeyLike } from "./gestures.js"
-import type { CanvasThemeColor } from "./record.js"
+import type { CanvasTemplateColor } from "./record.js"
 
 export type FormatTarget = {
   readonly link: (editing: boolean) => ElementLink | "mixed" | null
@@ -27,7 +27,7 @@ export type FormatTarget = {
   readonly place: (align: ParagraphAlign, editing: boolean) => void
   readonly bullet: (editing: boolean) => FormatState
   readonly bullets: (editing: boolean) => void
-  readonly swatches: () => readonly CanvasThemeColor[]
+  readonly swatches: () => readonly CanvasTemplateColor[]
 }
 
 export type TextFormatting = {
@@ -47,7 +47,7 @@ export type TextFormatting = {
   readonly place: (align: ParagraphAlign) => void
   readonly bullet: () => FormatState | null
   readonly bullets: () => void
-  readonly swatches: () => readonly CanvasThemeColor[]
+  readonly swatches: () => readonly CanvasTemplateColor[]
   readonly changed: () => void
   readonly subscribe: (listener: () => void) => () => void
 }

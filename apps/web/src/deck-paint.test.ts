@@ -3,7 +3,7 @@ import {
   elementId,
   format,
   openRegister,
-  themeNode,
+  templateStylesNode,
   writeTextValue,
   type Box,
   type Command,
@@ -199,10 +199,10 @@ it("paints the rows and columns a person changed in a table the deck was importe
 
 it("paints a slide's typed title in the theme's new heading font, as it paints an untouched slide", () => {
   const typed = person(openRegister("", "doe"), "256.2", "Heat pumps")
-  const opened = decide(typed, { command: "add", node: themeNode, floor: "", route: "doe" })
+  const opened = decide(typed, { command: "add", node: templateStylesNode, floor: "", route: "doe" })
   if (opened.decision === "refuse") throw new Error(opened.code)
   const patch = { theme: { major: { set: "Georgia" } } }
-  const themed = decide(opened.register, { command: "person", node: themeNode, v: format, patch })
+  const themed = decide(opened.register, { command: "person", node: templateStylesNode, v: format, patch })
   if (themed.decision === "refuse") throw new Error(themed.code)
   const painted = paint(paintStore(), parts, themed.register, busyElements())
   const title = (index: number) =>

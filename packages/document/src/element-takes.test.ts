@@ -185,7 +185,7 @@ describe("the server admits only the edits the device can write onto an element 
     expect(takes({ ...facts, kind: "slide" })).toEqual([
       ...slots,
       "fills.source",
-      "template.id",
+      "templateStyle.id",
       "show.skipped",
       "transition.value",
     ])

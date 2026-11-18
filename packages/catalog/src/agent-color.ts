@@ -2,7 +2,7 @@ import {
   bareTransforms,
   mappedSlots,
   readColor,
-  themeSlots,
+  templateColors,
   valuedTransforms,
   type Color,
   type ColorTransform,
@@ -44,7 +44,7 @@ function valuedPattern(ops: readonly string[]): string {
   return [`(?:${stems.join("|")})(?:Mod|Off)?`, ...single].join("|")
 }
 
-export const colorPattern = `(?:#[0-9A-Fa-f]{6}|${slotPattern([...themeSlots, ...mappedSlots])})(?: (?:${valuedPattern(valuedTransforms)}) ${agentNumber}| (?:${bareTransforms.join("|")}))*`
+export const colorPattern = `(?:#[0-9A-Fa-f]{6}|${slotPattern([...templateColors, ...mappedSlots])})(?: (?:${valuedPattern(valuedTransforms)}) ${agentNumber}| (?:${bareTransforms.join("|")}))*`
 
 const colorExact = new RegExp(`^${colorPattern}$`)
 

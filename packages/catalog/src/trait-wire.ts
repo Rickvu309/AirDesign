@@ -10,8 +10,7 @@ import { identityWire } from "./trait-wire-identity.js"
 import { linkWire } from "./trait-wire-link.js"
 import { notesWire } from "./trait-wire-notes.js"
 import { textWire } from "./trait-wire-text.js"
-import { templateWire } from "./trait-wire-template.js"
-import { themeWire } from "./trait-wire-theme.js"
+import { templateStyleWire } from "./trait-wire-template-style.js"
 import { transitionWire } from "./trait-wire-transition.js"
 
 export type FieldWire<T extends TraitName, F extends WireField<T>> = {
@@ -39,8 +38,7 @@ export const traitWire: { readonly [T in TraitName]: TraitWire<T> } = {
   connection: connectionWire,
   table: { fields: {} },
   notes: notesWire,
-  theme: themeWire,
-  template: templateWire,
+  templateStyle: templateStyleWire,
   show: {
     description: "Slides only.",
     fields: { skipped: { description: "Skip in Present.", example: { show: { skipped: true } } } },

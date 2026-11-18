@@ -1,7 +1,7 @@
 import { expect, it } from "vitest"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { templateStyle } from "./template-style.js"
-import { themeXml } from "./trait-xml-theme.js"
+import { templateStyleXml } from "./trait-xml-template-style.js"
 
 const xml =
   '<a:theme name="日本 &amp; Design"><a:themeElements><a:fontScheme><a:majorFont><a:latin typeface="Heading" charset="00" pitchFamily="34"/><a:ea typeface="日本語"/><a:cs typeface="العربية"/><a:font script="Jpan" typeface="游明朝"/></a:majorFont><a:minorFont><a:latin typeface="Body"/></a:minorFont></a:fontScheme></a:themeElements></a:theme>'
@@ -30,7 +30,7 @@ it("leaves missing names and absent chains neutral instead of borrowing another 
 })
 
 it("changes only the Latin typeface bytes, preserving attributes and non-Latin fonts", () => {
-  const field = themeXml.fields.major
+  const field = templateStyleXml.fields.major
   if (field.at !== "whole") throw new Error("whole")
   const next = field.codec.write(parts, { part: "ppt/theme/theme2.xml", slide: "1", shape: "" }, "Georgia")
   expect(decodeUtf8(next.get("ppt/theme/theme2.xml") ?? new Uint8Array())).toBe(
@@ -42,7 +42,7 @@ it("changes only the Latin typeface bytes, preserving attributes and non-Latin f
 it("escapes a new typeface inside an imported single-quoted attribute", () => {
   const quoted = xml.replace('typeface="Heading"', "typeface='Heading'")
   const opening = new Map(parts).set("ppt/theme/theme2.xml", encodeUtf8(quoted))
-  const field = themeXml.fields.major
+  const field = templateStyleXml.fields.major
   if (field.at !== "whole") throw new Error("whole")
   const next = field.codec.write(opening, { part: "ppt/theme/theme2.xml", slide: "1", shape: "" }, "New 'Font' & Co")
   expect(decodeUtf8(next.get("ppt/theme/theme2.xml") ?? new Uint8Array())).toBe(

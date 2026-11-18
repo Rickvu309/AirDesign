@@ -19,7 +19,7 @@ export const templateCopy = {
   addedColorNote: "Editing an added color does not restyle existing layers.",
   currentTheme: "Current template style",
   themeFontsMissing: "Fonts not specified",
-  themeFonts: (heading: string, body: string) => `${heading} / ${body}`,
+  templateFonts: (heading: string, body: string) => `${heading} / ${body}`,
   headingFont: (font: string) => `Heading: ${font}`,
   bodyFont: (font: string) => `Body: ${font}`,
 } as const

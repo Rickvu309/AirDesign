@@ -1,6 +1,6 @@
 import { onlyKeys, record } from "./plain-object.js"
 
-export const themeSlots = [
+export const templateColors = [
   "dk1",
   "lt1",
   "dk2",
@@ -81,10 +81,10 @@ export const bareTransforms = ["comp", "inv", "gray", "gamma", "invGamma"] as co
 
 export const valuedTransforms = Object.keys(transformRanges) as readonly (keyof typeof transformRanges)[]
 
-export type ThemeSlot = (typeof themeSlots)[number]
+export type TemplateColor = (typeof templateColors)[number]
 export type MappedSlot = (typeof mappedSlots)[number]
 export type ColorBase =
-  | { readonly scheme: ThemeSlot | MappedSlot }
+  | { readonly scheme: TemplateColor | MappedSlot }
   | { readonly rgb: string }
   | { readonly system: string; readonly last: string }
   | { readonly preset: string }
@@ -103,7 +103,7 @@ function named<T extends string>(names: readonly T[], value: unknown): T | null 
 
 function readBase(color: Record<string, unknown>): ColorBase | null {
   if (onlyKeys(color, ["scheme"])) {
-    const scheme = named([...themeSlots, ...mappedSlots], color.scheme)
+    const scheme = named([...templateColors, ...mappedSlots], color.scheme)
     return scheme === null ? null : { scheme }
   }
   if (onlyKeys(color, ["rgb"])) return typeof color.rgb === "string" && hex.test(color.rgb) ? { rgb: color.rgb } : null

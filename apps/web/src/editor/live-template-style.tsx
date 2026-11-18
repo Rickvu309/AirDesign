@@ -4,8 +4,8 @@ import {
   readSlideId,
   schemeNames,
   slideNode,
-  templateNode,
-  themeSlots,
+  templateStyleNode,
+  templateColors,
   type TemplateStyle,
 } from "@airdesign/document"
 import {
@@ -195,7 +195,7 @@ function TemplateStyleDialog({
 }) {
   const [renaming, setRenaming] = useState(false)
   const parts = deck.shown.displayParts.current
-  const node = templateNode(index)
+  const node = templateStyleNode(index)
   const bytes = parts.get(style.id)
   const added = bytes === undefined ? null : themeCustomColors(bytes)
   const used = readSlides(parts).some((slide) => slideTheme(parts, slide.part) === style.id)
@@ -281,7 +281,7 @@ function TemplateStyleDialog({
         <section className="flex flex-col gap-3">
           <h3 className="font-medium">{designCopy.templateColors}</h3>
           <div className="grid grid-cols-6 gap-2">
-            {themeSlots.flatMap((slot) => {
+            {templateColors.flatMap((slot) => {
               const hex = style.palette.slots[slot]
               return hex === undefined
                 ? []

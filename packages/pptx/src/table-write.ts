@@ -2,7 +2,7 @@ import { tableColumns, type TableValue, type TextValue } from "@airdesign/docume
 import { spliceBytes, type MarkupElement } from "./element-span.js"
 import { partBytes } from "./part-markup.js"
 import { applyStructuralRoute } from "./structural-route.js"
-import { themeSlot, type ThemeSlot } from "./cell-text.js"
+import { themeSlot, type TemplateColor } from "./cell-text.js"
 import { cellEdits, cellRead, type CellRead } from "./table-cells.js"
 import { slidePalette } from "./trait-read.js"
 import { cellsOf, gridOf, type Grid } from "./table-grid.js"
@@ -94,7 +94,7 @@ export function writeTable(parts: Parts, part: string, shape: string, value: Tab
     }),
   )
   const typed = edits.length === 0 ? bytes : spliceBytes(bytes, edits)
-  let slots: ThemeSlot | null | undefined
+  let slots: TemplateColor | null | undefined
   const theme = () => {
     if (slots === undefined) {
       const palette = slidePalette(next, part)

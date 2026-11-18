@@ -1,5 +1,5 @@
 import { readDeckId } from "@airdesign/catalog"
-import { elementId, landedPatch, themeNode } from "@airdesign/document"
+import { elementId, landedPatch, templateStylesNode } from "@airdesign/document"
 import { call, indexDeck, openDeck, readDeckPage } from "@airdesign/engine"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { expect, it } from "vitest"
@@ -30,7 +30,7 @@ function session(): Session {
   return { deck: indexed.deck, caller: { actor: "agent", runId: "run" }, now: 0, turns: memoryTurns(), log: emptyLog() }
 }
 
-it("lets an agent change the theme's colours and fonts with set, read them back, and lose them to run Undo", async () => {
+it("lets an agent change every template style's colours and fonts with set, by today's names or the old ones, read them back, and lose them to run Undo", async () => {
   const held = session()
   const server = createServer(held)
   const [a, b] = InMemoryTransport.createLinkedPair()
@@ -40,32 +40,42 @@ it("lets an agent change the theme's colours and fonts with set, read them back,
   try {
     const onShape = await client.callTool({
       name: "airdesign_edit_deck",
-      arguments: { deck: "deck", base: 0, changes: [{ op: "set", target: "256.2", theme: { accent1: `#${red}` } }] },
+      arguments: {
+        deck: "deck",
+        base: 0,
+        changes: [{ op: "set", target: "256.2", templateStyle: { accent1: `#${red}` } }],
+      },
     })
     expect(onShape.isError).toBe(true)
-    expect(JSON.stringify(onShape.content)).toContain("Send theme with target deck.theme.")
-    const theme = { accent1: `#${red.toLowerCase()}`, major: "Georgia" }
+    expect(JSON.stringify(onShape.content)).toContain("Send templateStyle with target deck.templateStyles.")
+    const templateStyle = { accent1: `#${red.toLowerCase()}` }
     const set = await client.callTool({
       name: "airdesign_edit_deck",
-      arguments: { deck: "deck", base: 0, changes: [{ op: "set", target: "deck.theme", theme }] },
+      arguments: { deck: "deck", base: 0, changes: [{ op: "set", target: "deck.templateStyles", templateStyle }] },
     })
     expect(set.isError).not.toBe(true)
-    const body = held.deck.register.elements[themeNode]
-    expect(body === undefined ? undefined : landedPatch(body, "text").theme).toEqual({
+    const old = await client.callTool({
+      name: "airdesign_edit_deck",
+      arguments: { deck: "deck", base: 1, changes: [{ op: "set", target: "deck.theme", theme: { major: "Georgia" } }] },
+    })
+    expect(old.isError).not.toBe(true)
+    expect(old.structuredContent).toMatchObject({ ok: true, elements: [{ node: "deck.templateStyles" }] })
+    const body = held.deck.register.elements[templateStylesNode]
+    expect(body === undefined ? undefined : landedPatch(body, "text").templateStyle).toEqual({
       accent1: { set: "C00000" },
       major: { set: "Georgia" },
     })
     const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
     expect(read.structuredContent).toMatchObject({
       palettes: [{ slots: { accent1: "C00000" } }],
-      theme: { accent1: `#${red}`, major: "Georgia" },
+      templateStyle: { accent1: `#${red}`, major: "Georgia" },
       elements: [{ node: "256.2" }],
     })
     const undone = call("undo_run", held.deck, { actor: "person" }, { deck: "deck", runId: "run" })
     if (!undone.ok) throw new Error(undone.refusal)
     const after = readDeckPage(undone.deck, { runId: null })
     expect(after.palettes).toEqual([palette])
-    expect(after).not.toHaveProperty("theme")
+    expect(after).not.toHaveProperty("templateStyle")
   } finally {
     await client.close()
   }
