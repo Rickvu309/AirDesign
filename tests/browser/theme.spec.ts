@@ -28,7 +28,7 @@ async function themePanel(page: Page, index?: number): Promise<Locator> {
       .nth(index + 1)
       .click()
   }
-  const theme = page.locator("[data-template-style]")
+  const theme = page.locator("[data-template-style-dialog]")
   await expect(theme).toBeVisible()
   return theme
 }

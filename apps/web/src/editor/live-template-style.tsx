@@ -222,7 +222,7 @@ function TemplateStyleDialog({
       strip.some((control) => control.field === "major" || control.field === "minor"),
     ) ?? []
   return (
-    <DialogContent data-template-style>
+    <DialogContent data-template-style-dialog>
       <div className="flex items-center gap-2 pr-8">
         <DialogTitle className="min-w-0 flex-1 truncate">{style.name ?? designCopy.currentTemplateStyle}</DialogTitle>
         <Button

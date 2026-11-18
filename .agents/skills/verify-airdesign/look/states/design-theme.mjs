@@ -11,7 +11,7 @@ async function drive(kit) {
   if (await settings.count()) await settings.click()
   else if (await kit.page.locator("[data-template-style]").count())
     await kit.page.locator("[data-template-style]").click()
-  const theme = kit.page.locator("[data-design-theme]")
+  const theme = kit.page.locator("[data-template-style-dialog]")
   if ((await theme.count()) === 0) return
   await theme.getByRole("button", { name: formatCopy.colors.accent1, exact: true }).click()
   const picker = kit.page.locator("[data-color-picker]")

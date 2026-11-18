@@ -153,11 +153,18 @@ describe("what a format 64 device kept", () => {
 
   it("reads its cached index page with the template styles under their new keys", () => {
     const kept = entries.find((entry) => entry.once !== undefined && "elements" in entry)
+    if (kept === undefined) throw new Error("no index")
     const page = readIndexPage(kept)
-    expect(page?.format).toBe(written.format)
-    expect(page?.templateStyles).toEqual(kept?.templates)
-    expect(page?.slides.map((slide) => slide.templateStyle)).toEqual(
-      (kept?.slides as readonly { readonly template?: string }[]).map((slide) => slide.template),
+    if (page === null) throw new Error("no index")
+    expect(page.format).toBe(written.format)
+    expect(page.templateStyles).toEqual(kept.templates)
+    const slides = kept.slides
+    if (!Array.isArray(slides)) throw new Error("no slides")
+    expect(page.slides.map((slide) => slide.templateStyle)).toEqual(
+      slides.map((slide) => {
+        const row = record(slide)
+        return row === null || typeof row.template !== "string" ? undefined : row.template
+      }),
     )
   })
 

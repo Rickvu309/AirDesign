@@ -237,19 +237,19 @@ it("shows a slide's background and template style once each, with no section or 
   expect(panel?.querySelector("button[aria-pressed=true]")?.getAttribute("title")).toBe(optionCopy.solid)
   expect(text).toContain("Background")
   expect(text).toContain(designCopy.templateStyle)
-  expect(panel?.querySelector("[data-template-style]")).toBeNull()
+  expect(panel?.querySelector("[data-template-style-dialog]")).toBeNull()
   const card = panel?.querySelector<HTMLButtonElement>("[data-template-style]")
   expect(card?.getAttribute("aria-expanded")).toBe("false")
   await act(async () =>
     panel?.querySelector<HTMLButtonElement>(`button[aria-label="${designCopy.editTemplateStyle}"]`)?.click(),
   )
-  expect(window.document.querySelector("[data-template-style]")?.textContent).toContain(designCopy.templateScope)
+  expect(window.document.querySelector("[data-template-style-dialog]")?.textContent).toContain(designCopy.templateScope)
   expect(card?.getAttribute("aria-expanded")).toBe("false")
   expect(text).not.toContain("not available")
   expect(panel?.querySelectorAll("button:disabled")).toHaveLength(0)
   expect(panel?.querySelectorAll("button[aria-label^='Background color']")).toHaveLength(1)
   for (const name of ["Dark 1", "Accent 1", "Accent 6"])
-    expect(window.document.querySelector(`[data-template-style] button[aria-label="${name}"]`)).not.toBeNull()
+    expect(window.document.querySelector(`[data-template-style-dialog] button[aria-label="${name}"]`)).not.toBeNull()
   await slide.close()
 }, 20_000)
 

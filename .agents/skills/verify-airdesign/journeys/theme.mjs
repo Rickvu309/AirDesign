@@ -50,7 +50,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await entry(8).click()
   await page.getByRole("button", { name: templateCopy.editTemplateStyle, exact: true }).click()
-  const theme = page.locator("[data-design-theme]")
+  const theme = page.locator("[data-template-style-dialog]")
   await expect(theme).toBeVisible()
   await capture("theme-panel")
 
@@ -80,9 +80,9 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
 
   const server = async () => (await post(deckRoutes.open, { deck }, cookie)).json.register
   await expect
-    .poll(async () => JSON.stringify((await server()).elements["deck.template1"]?.landed ?? []))
+    .poll(async () => JSON.stringify((await server()).elements["deck.templateStyle1"]?.landed ?? []))
     .toContain('"major":{"set":"Georgia"}')
-  note("The server holds the person's accent1 and heading font rows on deck.template1")
+  note("The server holds the person's heading font on deck.templateStyle1")
 
   const set = {
     op: "set",
@@ -103,8 +103,8 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   note(`airdesign_edit_deck ${JSON.stringify(set)}: ${JSON.stringify(edited.structuredContent)}`)
   await tool("airdesign_stop_run", { deck, runId: edited.structuredContent.runId })
   const read = await tool("airdesign_read_deck", { deck })
-  expect(read.templates).toHaveLength(2)
-  for (const template of read.templates)
+  expect(read.templateStyles).toHaveLength(2)
+  for (const template of read.templateStyles)
     expect(template.palette.slots).toMatchObject({ accent1: "C00000", accent2: "00B050" })
   for (const palette of read.palettes) expect(palette.slots).toMatchObject({ accent1: "C00000", accent2: "00B050" })
   note(`read_deck prints two scoped templates and accent1 C00000, accent2 00B050 in every palette`)
@@ -117,6 +117,16 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await expect(theme.getByRole("textbox", { name: "Body font", exact: true })).toHaveValue("Verdana")
   await capture("agent-theme")
   note("The open editor painted the agent's body font Verdana on slide 1's subtitle and showed it in the panel")
+
+  await page.reload()
+  await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
+  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await entry(1).click()
+  await page.getByRole("button", { name: templateCopy.editTemplateStyle, exact: true }).click()
+  await expect(theme.getByRole("textbox", { name: "Heading font", exact: true })).toHaveValue("Georgia")
+  await expect.poll(() => fonts(painted("ppt/slides/slide1.xml#2"))).toContain("Georgia")
+  await capture("reloaded")
+  note("A reload kept Accent 1's heading font Georgia on slide 1")
 
   await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
   const downloading = page.waitForEvent("download")
