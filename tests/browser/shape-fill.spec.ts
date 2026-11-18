@@ -1,3 +1,4 @@
+import { openFillDetails } from "./design-panel"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
@@ -30,7 +31,7 @@ test("a person fills a shape whose fill comes from its style with a color and an
   const accentOne = await filled(rectangle)
   const panel = await fillPanel(page, rectangle)
   const kinds = panel.getByRole("group", { name: "Fill", exact: true })
-  await expect(kinds.getByRole("button")).toHaveText(["None", "Color", "Gradient", "Pattern", "Icon"])
+  await expect(kinds.getByRole("button")).toHaveText(["None", "Color", "Gradient", "Icon"])
   await expect(kinds.getByRole("button", { name: "Color", exact: true })).toHaveAttribute("aria-pressed", "true")
   await expect(panel.getByRole("button", { name: fillCopy.reset, exact: true })).toHaveCount(0)
   const colors = panel.getByRole("group", { name: "Color", exact: true })
@@ -39,6 +40,7 @@ test("a person fills a shape whose fill comes from its style with a color and an
   await expect.poll(() => filled(rectangle)).not.toBe(accentOne)
   const accentTwo = await filled(rectangle)
   await expect(shownColor(colors)).toHaveText("Accent 2")
+  await openFillDetails(panel)
   await expect(panel.getByRole("button", { name: fillCopy.reset, exact: true })).toBeVisible()
 
   const ovalPanel = await fillPanel(page, oval)

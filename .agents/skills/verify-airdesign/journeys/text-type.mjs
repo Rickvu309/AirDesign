@@ -94,7 +94,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await page.keyboard.press("Escape")
   const panel = page.locator("[data-design-element]")
   const section = (name) => panel.locator("section").filter({ has: page.getByRole("heading", { name, exact: true }) })
-  const text = section("Text")
+  const text = panel
   await expect(text.getByRole("textbox", { name: "Font", exact: true })).toHaveValue("Georgia")
   const fill = async (field, value) => {
     await field.fill(value)

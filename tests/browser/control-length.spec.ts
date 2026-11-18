@@ -79,7 +79,7 @@ test("dragging a field's label scrubs it in steps, Shift scrubs tens, and one Un
   await unfold(panel, boxCopy.section)
   const width = panel.getByRole("textbox", { name: "Width", exact: true })
   await expect(width).toHaveValue("432")
-  const label = width.locator("..").locator("span").first()
+  const label = width.locator("xpath=ancestor::label").locator("span").first()
   const box = await label.boundingBox()
   if (box === null) throw new Error("the Width label has no box")
   const y = box.y + box.height / 2

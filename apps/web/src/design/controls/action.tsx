@@ -1,4 +1,6 @@
 import { useId } from "react"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { DistributeSpacing } from "@/design/preset-icons"
 import { Button } from "@/components/ui/button"
 import { optionWord } from "@/copy/option-copy"
 import type { ControlProps } from "@/design/panel"
@@ -14,6 +16,35 @@ function cluster(options: readonly string[]): readonly (readonly string[])[] {
 export function ActionControl({ control, onChange }: ControlProps) {
   const label = useId()
   const options = control.desc.kind === "choice" ? control.desc.options : []
+  if (control.field === "distribute")
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              aria-label={control.label}
+              title={control.label}
+              className="h-[var(--control-dense)] w-6 shrink-0 p-0 text-[var(--panel-icon)]"
+            />
+          }
+        >
+          <DistributeSpacing size={16} className="size-4" aria-hidden />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-auto">
+          {options.map((option) => (
+            <DropdownMenuItem
+              key={option}
+              aria-label={`${control.label} ${optionWord(control.field, option).toLowerCase()}`}
+              onClick={() => onChange(option)}
+            >
+              {control.label} {optionWord(control.field, option).toLowerCase()}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
   return (
     <div className="flex flex-col gap-1.5" data-control="action">
       <span
@@ -22,7 +53,7 @@ export function ActionControl({ control, onChange }: ControlProps) {
       >
         {control.label}
       </span>
-      <div role="group" aria-labelledby={label} className="flex gap-1.5">
+      <div role="group" aria-labelledby={label} className="flex gap-2">
         {cluster(options).map((members) => (
           <div
             key={members.join(" ")}
@@ -40,12 +71,12 @@ export function ActionControl({ control, onChange }: ControlProps) {
                   aria-label={name}
                   title={name}
                   onClick={() => onChange(option)}
-                  className="h-[var(--control-dense)] min-w-0 flex-1 rounded-none border-0 bg-muted px-0 text-foreground hover:bg-line active:translate-y-0"
+                  className="h-[var(--control-dense)] min-w-0 flex-1 rounded-none border-0 bg-[var(--panel-track)] px-0 text-foreground hover:bg-line active:translate-y-0"
                 >
                   {Icon === undefined ? (
                     optionWord(control.field, option)
                   ) : (
-                    <Icon size={14} className="size-3.5" strokeWidth={1.5} aria-hidden />
+                    <Icon size={16} className="size-4" strokeWidth={3} aria-hidden />
                   )}
                 </Button>
               )

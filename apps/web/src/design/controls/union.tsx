@@ -1,6 +1,7 @@
 import type { Color } from "@airdesign/document"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
+import { designCopy } from "@/copy/design-copy"
 import { optionCopy } from "@/copy/option-copy"
 import { caseSeed, firstColor, seedOf } from "@/design/control-seed"
 import { partControl, type ControlProps } from "@/design/panel"
@@ -20,23 +21,17 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
   const held = heldOf(control)
   const chosen = held === null ? undefined : Object.keys(held).find((name) => Object.hasOwn(cases, name))
   const chosenDesc = chosen === undefined ? undefined : cases[chosen]
-  const accent = palette.theme.find((swatch) => swatch.scheme === "accent1")
-  const color: Color = firstColor(held) ?? { scheme: accent?.scheme ?? "accent1" }
 
   function pick(name: string) {
-    const desc = cases[name]
-    if (desc === undefined || name === chosen) return
-    if (desc.kind === "mark") onChange({ [name]: true })
-    else
-      onChange({
-        [name]:
-          caseSeed(`${control.trait}.${control.field}.${name}`, color) ??
-          seedOf(desc, color, 0, 1, control.nodes?.[0]?.node),
-      })
+    const value = unionValue(control, palette, name)
+    if (value !== undefined && name !== chosen) onChange(value)
   }
 
+  const fill = control.field === "value" && control.trait === "fill"
+  const names = Object.keys(cases).filter((name) => !fill || name !== "pattern")
+
   return (
-    <div className="flex flex-col gap-3" data-control="union" data-inherited={control.inherited ? "" : undefined}>
+    <div className="flex flex-col gap-2" data-control="union" data-inherited={control.inherited ? "" : undefined}>
       {control.look.name.show === "above" ? (
         <div className="flex min-h-6 items-center justify-between gap-2">
           <span id={label} className="text-[length:var(--type-caption)] text-quiet">
@@ -61,15 +56,14 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
       )}
       <div
         role="group"
+        data-segments
         aria-labelledby={label}
         className={cn(
-          "rounded-[var(--shape-control)] bg-line p-0.5",
-          Object.keys(cases).length > rowCases
-            ? "grid grid-cols-3 gap-0.5"
-            : "flex h-[var(--control-dense)] items-center",
+          "rounded-[var(--shape-control)] bg-[var(--panel-track)] p-0",
+          names.length > rowCases ? "grid grid-cols-3 gap-0.5" : "flex h-[var(--control-dense)] items-center",
         )}
       >
-        {Object.keys(cases).map((name) => {
+        {names.map((name) => {
           const pressed = name === chosen
           const Icon = control.look.options[name]
           const word = optionCopy[name] ?? name
@@ -82,10 +76,10 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
               title={Icon === undefined ? undefined : word}
               onClick={() => pick(name)}
               className={cn(
-                "h-5 min-w-0 flex-1 rounded-[var(--shape-segment)] px-1 text-xs font-normal active:translate-y-0",
+                "h-[var(--control-dense)] min-w-0 flex-1 rounded-[var(--panel-segment-radius)] px-1 text-xs font-normal active:translate-y-0",
                 pressed
                   ? cn(
-                      "bg-white font-medium shadow-[0px_1px_2px_var(--black-10)] hover:bg-white",
+                      "bg-white font-medium shadow-[inset_0_0_0_1px_var(--panel-edge)] hover:bg-white",
                       control.inherited ? "text-quiet" : "text-foreground",
                     )
                   : "text-quiet hover:bg-transparent hover:text-foreground",
@@ -112,5 +106,45 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
             inner,
           })}
     </div>
+  )
+}
+
+function unionValue(control: ControlProps["control"], palette: ControlProps["palette"], name: string): unknown {
+  const desc = control.desc.kind === "union" ? control.desc.cases[name] : undefined
+  if (desc === undefined) return undefined
+  if (desc.kind === "mark") return { [name]: true }
+  const accent = palette.theme.find((swatch) => swatch.scheme === "accent1")
+  const color: Color = firstColor(heldOf(control)) ?? { scheme: accent?.scheme ?? "accent1" }
+  return {
+    [name]:
+      caseSeed(`${control.trait}.${control.field}.${name}`, color) ??
+      seedOf(desc, color, 0, 1, control.nodes?.[0]?.node),
+  }
+}
+
+export function FillDetails({ control, palette, onChange }: ControlProps) {
+  const chosen = heldOf(control)
+  return (
+    <details className="border-t border-line px-4 py-3" data-fill-details>
+      <summary className="text-[length:var(--type-caption)] text-quiet">{designCopy.fillDetails}</summary>
+      <div className="flex items-center justify-between pt-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          aria-pressed={chosen !== null && "pattern" in chosen}
+          onClick={() => {
+            if (chosen === null || !("pattern" in chosen)) onChange(unionValue(control, palette, "pattern"))
+          }}
+        >
+          {optionCopy.pattern}
+        </Button>
+        {control.reset === null ? null : (
+          <Button type="button" variant="ghost" size="sm" onClick={() => onChange(null)}>
+            {control.reset}
+          </Button>
+        )}
+      </div>
+    </details>
   )
 }
