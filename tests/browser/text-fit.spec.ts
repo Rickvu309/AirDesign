@@ -52,7 +52,7 @@ async function compare(page: Page, placed: readonly PlacedCase[], zoom: number |
 }
 
 test("text fit lays text out as the painter does where sizes fall on whole pixels", async ({ page }) => {
-  test.setTimeout(20 * 60_000)
+  test.setTimeout(3 * 60_000)
   const rows = await compare(page, placeCases(fitCases(counts, 3)), 100)
   console.log(`text fit against the painter at 100%, sizes on a 3 pt grid\n${agreementTable(rows)}\n${worst(rows, 8)}`)
   for (const group of groups) {
@@ -62,7 +62,7 @@ test("text fit lays text out as the painter does where sizes fall on whole pixel
 })
 
 test("text fit agrees with the painter on overflow at the zoom that fits the slide", async ({ page }) => {
-  test.setTimeout(20 * 60_000)
+  test.setTimeout(3 * 60_000)
   const rows = await compare(page, placeCases(fitCases(counts)), null)
   console.log(
     `text fit against the painter at fit zoom, any whole point size\n${agreementTable(rows)}\n${worst(rows, 8)}`,
