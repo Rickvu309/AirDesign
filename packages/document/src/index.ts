@@ -284,4 +284,4 @@ export { readElementLink, readLinkTarget, type ElementLink, type LinkTarget, typ
 export { slideBirths } from "./slide-births.js"
 export { cloneMany } from "./grid-set.js"
 export { type TemplateStyle } from "./template-style.js"
-export { readTextStyles, type TextStyle, type TextStyleFields } from "./text-style.js"
+export { readTextStyles, textStylesOf, type TextStyle, type TextStyleFields } from "./text-style.js"

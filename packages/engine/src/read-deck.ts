@@ -22,6 +22,7 @@ import {
   themeOwned,
   templateNode,
   themeSlots,
+  textStylesOf,
   version,
   type Box,
   type ElementLink,
@@ -299,9 +300,9 @@ export function readDeckPage(
   const palettes = new Map(
     (index?.slides ?? []).flatMap(({ id, palette }) => (palette === undefined ? [] : [[id, palette]])),
   )
+  const textStyles = query.slide === undefined ? [] : textStylesOf(deck.register, query.slide)
   const slideOf = (id: string, position: number) => {
-    const textStyles = index?.slides.find((slide) => slide.id === id)?.textStyles
-    const styles = textStyles === undefined ? {} : { textStyles }
+    const styles = query.slide === id && textStyles.length > 0 ? { textStyles } : {}
     const palette = palettes.get(id)
     const slide = readSlideId(id)
     const node = slide === undefined ? undefined : slideNode(slide, "slide")

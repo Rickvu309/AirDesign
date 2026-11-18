@@ -128,7 +128,11 @@ export default async function drive(kit) {
     return result.structuredContent
   }
   const read = await tool("airdesign_read_deck", { deck })
-  const title = read.slides[0].textStyles.find((style) => style.name === placeholderRoles.ctrTitle)
+  const slideId = read.slides[0].id
+  const scoped = await tool("airdesign_read_deck", { deck, slide: slideId })
+  const title = scoped.slides
+    .find((slide) => slide.id === slideId)
+    ?.textStyles?.find((style) => style.name === placeholderRoles.ctrTitle)
   expect(title).toBeDefined()
   const edited = await tool("airdesign_edit_deck", {
     deck,

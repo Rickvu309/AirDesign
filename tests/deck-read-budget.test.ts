@@ -48,6 +48,14 @@ it("reads a 50-slide deck's design in at most 10 read_deck pages, one line per e
     if (!indexed.ok) throw new Error(indexed.refusal)
     deck = indexed.deck
   }
+  const reused = index.slides.find((slide) => typeof slide.textStyles === "string")
+  if (reused === undefined) throw new Error("template style reference")
+  const scoped = readDeckPage(deck, { runId: null, slide: reused.id })
+  expect(withinRead(readReport(readLead(scoped.revision), scoped))).toBe(true)
+  expect(scoped.slides.filter((slide) => slide.textStyles !== undefined).map((slide) => slide.id)).toEqual([reused.id])
+  expect(scoped.slides.find((slide) => slide.id === reused.id)?.textStyles).toEqual(
+    index.slides.find((slide) => slide.id === reused.textStyles)?.textStyles,
+  )
   const read: string[] = []
   let cursor: string | undefined
   let count = 0

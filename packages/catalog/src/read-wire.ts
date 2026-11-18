@@ -5,7 +5,7 @@ import { deckInput, deckPattern, inputRefusal, readInput } from "./wire.js"
 
 const slidePattern = /^(?:[0-9]{1,10}|n[0-9a-z]{12})$/
 
-const slideInput = z.string().regex(slidePattern).describe("Only this slide.")
+const slideInput = z.string().regex(slidePattern).describe("Only this slide. Includes its template text styles.")
 const elementCursor = z
   .string()
   .regex(elementPattern)
