@@ -54,7 +54,7 @@ test("typing after selecting an imported table leaves its cells unchanged", asyn
   await expect(table).toHaveText(before ?? "")
 })
 
-test("the first text box waits for its font, then takes focus and the held keys", async ({ page }) => {
+test("the first text box takes focus while its font is still arriving, and the keys land in it", async ({ page }) => {
   let release = () => {}
   const ready = new Promise<void>((resolve) => {
     release = resolve
@@ -72,9 +72,13 @@ test("the first text box waits for its font, then takes focus and the held keys"
   await page.getByRole("button", { name: "Add text", exact: true }).click()
   await loading
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
-  await expect(texts).toHaveCount(0)
+  await expect(texts).toHaveCount(1)
+  await expect(texts).toBeFocused()
+  await expect(page.locator("[data-slide-paint] [data-fonts-pending]")).toBeAttached()
   await page.keyboard.type("Waited text", { delay: 0 })
+  await expect(texts).toHaveText("Waited text")
   release()
+  await expect(page.locator("[data-slide-paint] [data-fonts-pending]")).toHaveCount(0)
   await expect(texts).toBeFocused()
   await expect(texts).toHaveText("Waited text")
 })
