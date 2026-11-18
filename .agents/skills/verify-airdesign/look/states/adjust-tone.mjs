@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test"
-import { adjustToneCopy } from "../../../../../apps/web/src/copy/adjust-tone-copy.ts"
+import { adjustToneCopy } from "../../bin/product-copy.mjs"
 import element from "./design-element.mjs"
 
 async function drive(kit) {
