@@ -19,8 +19,8 @@ async function zoom(page: Page, percent: number) {
 
 for (const [percent, placement] of [
   [53, "above"],
-  [22.5, "inside"],
-  [13.5, "inside"],
+  [23, "above"],
+  [14, "inside"],
 ] as const) {
   test(`${placement} number and hover chrome at ${percent} percent`, async ({ page }) => {
     await openFile(page, { name: "hover.pptx", mimeType: "application/octet-stream", buffer: await manySlides(2) })
@@ -32,12 +32,12 @@ for (const [percent, placement] of [
     const before = await slide.boundingBox()
     if (placement === "above") {
       const number = (await card.locator("[data-slide-number]").boundingBox())!
-      expect(before!.y - number.y - number.height).toBeCloseTo(8, 0)
+      expect(before!.y - number.y - number.height).toBeCloseTo(7, 0)
       expect(
         await card
           .locator("[data-grid-halo]")
           .evaluate((element) => getComputedStyle(element, "::before").borderRadius),
-      ).toBe("12.89px")
+      ).toBe(`${(percent * 0.13 + 8).toFixed(2)}px`)
     }
     await slide.hover()
     await expect(card.locator("[data-grid-halo]")).toHaveCSS("opacity", "1")
@@ -59,7 +59,7 @@ for (const [width, placement] of [
   [76.8, "hidden"],
   [96, "inside"],
 ] as const) {
-  test(`${placement} numbers at Figma ${width === 96 ? 5 : 4} percent`, async ({ page }) => {
+  test(`${placement} numbers at ${width} screen pixels`, async ({ page }) => {
     await openFile(page, { name: "overview.pptx", mimeType: "application/octet-stream", buffer: await manySlides(2) })
     await openGrid(page)
     await zoom(page, 10)

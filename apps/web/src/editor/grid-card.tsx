@@ -115,7 +115,7 @@ export function GridCard({
         hidden={placement === "hidden"}
         style={{
           top: 24,
-          transform: `scale(${1 / scale}) translateY(${placement === "above" ? -24 : 0}px)`,
+          transform: `scale(${1 / scale}) translate(var(--grid-number-x, 0px), var(--grid-number-y, 0px))`,
           transformOrigin: "0 0",
         }}
       >

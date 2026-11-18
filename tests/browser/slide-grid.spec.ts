@@ -30,7 +30,7 @@ async function ringed(page: Page): Promise<boolean> {
     const ring = getComputedStyle(probe).color
     probe.remove()
     const style = getComputedStyle(el)
-    return style.outlineStyle === "solid" && style.outlineWidth === "2px" && style.outlineColor === ring
+    return style.outlineStyle === "solid" && style.outlineWidth === "3px" && style.outlineColor === ring
   })
 }
 

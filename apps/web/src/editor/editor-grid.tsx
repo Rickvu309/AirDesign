@@ -419,6 +419,7 @@ export function EditorGrid({
         picked={picked}
         save={save}
         onZoom={chooseZoom}
+        canvas={list}
         onSelection={zoomSelection}
         onAdd={() => addSlide(reachable, "same", false)}
         onSlides={onSlides}

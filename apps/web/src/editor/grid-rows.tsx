@@ -40,7 +40,7 @@ export function GridRows({
   onMove: (row: number, direction: "earlier" | "later") => void
   onAdd: (index: number) => void
 }) {
-  const [hover, setHover] = useState<{ row: number; part: "band" | "slide" | "add" } | null>(null)
+  const [hover, setHover] = useState<{ row: number; part: "band" | "slide" | "handle" | "add" } | null>(null)
   const [focus, setFocus] = useState<{ row: number; part: "handle" | "add" } | null>(null)
   const spacing = gridSpacing(width, height)
   const count = rows.at(-1)?.end ?? 0
@@ -58,11 +58,13 @@ export function GridRows({
           return
         }
         const part =
-          event.target.closest("[data-row-insert]") !== null
+          event.target.closest("[data-row-insert], [data-gap-insert]") !== null
             ? "add"
-            : event.target.closest("[data-slide-entry], [data-slide-number], [data-grid-edit]") !== null
-              ? "slide"
-              : "band"
+            : event.target.closest("[data-row-handle]") !== null
+              ? "handle"
+              : event.target.closest("[data-slide-entry], [data-slide-number], [data-grid-edit]") !== null
+                ? "slide"
+                : "band"
         if (hover?.row !== row || hover.part !== part) setHover({ row, part })
       }}
       onPointerLeave={() => setHover(null)}
@@ -93,8 +95,7 @@ export function GridRows({
         const tinted =
           !rowBlocked &&
           height * scale >= gridRowHandle.minimumHeight &&
-          (rowHover === "band" || rowFocus === "handle") &&
-          rowHover !== "slide"
+          (rowHover === "handle" || (rowFocus === "handle" && rowHover !== "add"))
         return [
           <GridRowFrame
             key={`row:${key}`}

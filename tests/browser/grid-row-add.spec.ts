@@ -40,6 +40,11 @@ test("the below plus previews an insertion line without moving any slide", async
   const slides = page.locator("[data-slide-entry]")
   const boxes = () => slides.evaluateAll((entries) => entries.map((slide) => slide.getBoundingClientRect().toJSON()))
   const before = await boxes()
+  const button = (await below(page, 1).boundingBox())!
+  const second = (await entry(page, 2).boundingBox())!
+  await page.mouse.move(second.x + second.width / 2, button.y + button.height / 2)
+  await expect(below(page, 1)).toHaveCSS("opacity", "0")
+  await expect(page.locator("[data-row-insertion-line]:visible")).toHaveCount(0)
   await below(page, 1).hover()
   expect(await boxes()).toEqual(before)
   const line = page.locator("[data-row-insertion-line]:visible")
@@ -75,6 +80,11 @@ test("the last row previews a full cell when there is space below", async ({ pag
   expect(ghost.width).toBeCloseTo(card.width, 0)
   expect(ghost.height).toBeCloseTo(card.height, 0)
   expect(ghost.y).toBeGreaterThan(card.y + card.height)
+  const button = (await below(page, 3).boundingBox())!
+  expect(button.y + button.height / 2).toBeCloseTo((card.y + card.height + ghost.y) / 2, 0)
+  const stroke = placeholder.locator("rect")
+  await expect(stroke).toHaveCSS("stroke-width", "2px")
+  await expect(stroke).toHaveCSS("stroke-dasharray", "8px, 7px")
   await expect(placeholder).toBeInViewport({ ratio: 1 })
 })
 
