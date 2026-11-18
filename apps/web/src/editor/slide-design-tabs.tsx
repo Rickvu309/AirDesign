@@ -28,7 +28,7 @@ export function SlideDesignTabs({
           aria-selected={tab === id}
           className={
             tab === id
-              ? "rounded-[var(--shape-control)] bg-white px-2.5 py-1 text-[length:var(--type-caption)] shadow-[0px_0px_0px_1px_var(--field-edge)]"
+              ? "rounded-[var(--shape-control)] bg-white px-2.5 py-1 text-[length:var(--type-caption)] shadow-[inset_0px_0px_0px_1px_var(--field-edge)]"
               : "rounded-[var(--shape-control)] px-2.5 py-1 text-[length:var(--type-caption)] text-quiet"
           }
           onClick={() => onTab(id)}
