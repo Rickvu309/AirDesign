@@ -118,6 +118,8 @@ test("the add mark between slides appears on hover and stays still with reduced 
   const plus = page.getByRole("button", { name: "Add slide after slide 1" })
   await expect(plus).toHaveCSS("opacity", "0")
   await entry(page, 1).hover()
+  await expect(plus).toHaveCSS("opacity", "0")
+  await page.locator('[data-gap-insert="between"]').hover()
   await expect(plus).toBeVisible()
   await expect(plus).toHaveCSS("opacity", "1")
   await expect(plus).toHaveCSS("transition-duration", "0s")

@@ -1,3 +1,4 @@
+import { limits } from "@airdesign/document"
 import { zoomRanges } from "@/editor/canvas-zoom"
 import { Button } from "@/components/ui/button"
 import { slideListCopy } from "@/copy/slide-list-copy"
@@ -49,6 +50,7 @@ export function GridHead({
   onPresent?: () => void
   onExport: (request?: ExportRequest) => Promise<void> | void
 }) {
+  const full = strip.count >= limits.slides
   return (
     <header className="flex h-24 shrink-0 items-start justify-between px-3 pt-3">
       <Island>
@@ -66,13 +68,17 @@ export function GridHead({
           type="button"
           variant="ghost"
           className={cn(
-            "h-7 gap-1 rounded-md bg-white pr-2 pl-1.5 text-xs font-medium text-foreground hover:bg-white active:translate-y-0",
+            "h-7 gap-1 rounded-md bg-white pr-2 pl-1.5 text-xs font-medium text-foreground hover:bg-white active:translate-y-0 aria-disabled:opacity-50",
             surfaceShadow,
           )}
-          onClick={onAdd}
+          aria-disabled={full || undefined}
+          title={full ? slideListCopy.addLimit(limits.slides) : undefined}
+          onClick={() => {
+            if (!full) onAdd()
+          }}
         >
           <EditorIcon name="plus" size={13} />
-          New slide
+          {slideListCopy.newSlide}
         </Button>
         <span className="mx-1 block h-5 w-px bg-[var(--field-edge)]" />
         <Button

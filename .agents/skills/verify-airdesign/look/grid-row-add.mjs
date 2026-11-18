@@ -48,7 +48,7 @@ export async function rowAddState(kit, state) {
     await page.keyboard.press("Tab")
     await expect(button).toBeFocused()
   } else await button.hover()
-  await expect(page.locator("[data-row-placeholder]:visible")).toHaveCount(1)
+  await expect(page.locator("[data-row-insertion-line]:visible")).toHaveCount(1)
   if (state === "added" || state === "sections") {
     await button.click()
     await page.mouse.move(1400, 90)

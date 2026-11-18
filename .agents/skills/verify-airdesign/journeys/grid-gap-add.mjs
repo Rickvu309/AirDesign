@@ -13,13 +13,16 @@ export default async function drive(kit) {
   await page.locator("[data-zoom-readout]").click()
   await page.locator("[data-zoom-field]").fill("25")
   await page.keyboard.press("Enter")
-  await page.locator('[data-slide-entry="2"]').hover()
+  await page.locator("[data-gap-insert]").nth(1).hover()
   await capture("between-plus-and-end-dot")
   await page.locator("[data-grid-viewport]").hover()
   await page.mouse.wheel(800, 0)
   for (const after of [2, 4, 10]) {
     const button = page.getByRole("button", { name: slideListCopy.addAfter(after), exact: true })
-    await page.locator(`[data-slide-entry="${after}"]`).hover()
+    await page
+      .locator("[data-gap-insert]")
+      .nth(after - 1)
+      .hover()
     await button.hover()
     await capture(`preview-after-${after}`)
     await button.click()

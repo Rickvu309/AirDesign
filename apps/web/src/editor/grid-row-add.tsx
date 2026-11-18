@@ -1,4 +1,4 @@
-import { useState, type ComponentProps, type CSSProperties } from "react"
+import { useState, type ComponentProps } from "react"
 import { Button } from "@/components/ui/button"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { EditorIcon } from "@/editor/editor-icons"
@@ -9,96 +9,91 @@ export function GridRowAdd({
   height,
   gap,
   scale,
-  blocked,
-  disabled,
+  last,
   onAdd,
-  onEscape,
 }: {
   row: number
   width: number
   height: number
   gap: number
   scale: number
-  blocked: boolean
-  disabled: boolean
+  last: boolean
   onAdd: () => void
-  onEscape: () => void
 }) {
-  const [state, setState] = useState<"ready" | "used">("ready")
-  const space: CSSProperties & { readonly "--grid-row-preview-space": string } = {
-    position: "relative",
-    "--grid-row-preview-space": `${height + 24 + gap}px`,
-  }
+  const [used, setUsed] = useState(false)
+  const band = last ? Math.min(gap, 48 / scale) : gap
+  const label = slideListCopy.addBelow(row)
   return (
-    <div data-row-insert={state} style={space} inert={blocked}>
+    <div
+      data-row-insert
+      data-used={used ? "" : undefined}
+      className="absolute inset-x-0 top-full"
+      style={{ height: band }}
+      onPointerLeave={() => setUsed(false)}
+    >
       <GridAddButton
-        type="button"
-        variant="ghost"
-        size="icon"
         data-add-row
-        aria-label={slideListCopy.addBelow(row)}
-        title={slideListCopy.addBelow(row)}
-        disabled={disabled}
-        className="absolute size-11 touch-manipulation rounded-full p-0 hover:bg-transparent active:translate-y-0"
+        aria-label={label}
+        title={label}
         style={{
           left: width / 2,
-          top: Math.min(gap / 2, 24 / scale),
+          top: band / 2,
+          width: Math.min(44, width * scale),
+          height: Math.min(44, band * scale),
           transform: `scale(${1 / scale}) translate(-50%, -50%)`,
           transformOrigin: "0 0",
         }}
-        onPointerDown={(event) => event.stopPropagation()}
-        onPointerLeave={() => setState("ready")}
-        onFocus={() => setState("ready")}
-        onClick={(event) => {
-          event.stopPropagation()
-          setState("used")
+        onFocus={() => setUsed(false)}
+        onClick={() => {
+          setUsed(true)
           onAdd()
         }}
-        onKeyDown={(event) => {
-          if (event.key !== "Escape") return
-          event.preventDefault()
-          event.stopPropagation()
-          onEscape()
-        }}
       />
-      <div data-row-preview className="pointer-events-none absolute hidden" style={{ top: gap + 24 }}>
-        <GridPlaceholder width={width} height={height} scale={scale} />
+      <div data-row-preview className="pointer-events-none absolute" style={{ top: last ? gap + 24 : band * 0.85 }}>
+        {last ? (
+          <GridPlaceholder width={width} height={height} scale={scale} kind="row" />
+        ) : (
+          <div data-row-insertion-line style={{ width: width * scale, transform: `scale(${1 / scale})` }} />
+        )}
       </div>
     </div>
   )
 }
 
-export function GridAddMark() {
-  return (
-    <span
-      data-add-mark
-      className="flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground"
-    >
-      <EditorIcon name="plus" size={14} strokeWidth={2.5} />
-    </span>
+function fitPreview(node: HTMLDivElement | null) {
+  const root = node?.closest("[data-grid-viewport]")
+  if (!node || !root) return
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      node.toggleAttribute("data-preview-fits", entry?.intersectionRatio === 1)
+    },
+    { root, threshold: 1 },
   )
+  observer.observe(node)
+  return () => observer.disconnect()
 }
 
 export function GridPlaceholder({
   width,
   height,
   scale,
-  gap = false,
+  kind,
 }: {
   width: number
   height: number
   scale: number
-  gap?: boolean
+  kind: "gap" | "row"
 }) {
   return (
     <div
-      data-row-placeholder={gap ? undefined : ""}
-      data-gap-placeholder={gap ? "" : undefined}
+      ref={fitPreview}
+      data-row-placeholder={kind === "row" ? "" : undefined}
+      data-gap-placeholder={kind === "gap" ? "" : undefined}
       className="border border-dashed border-[var(--grid-placeholder-edge)] bg-[var(--grid-placeholder)]"
       style={{
         width: width * scale,
         height: height * scale,
-        borderRadius: "var(--grid-radius)",
+        borderRadius: `max(var(--grid-radius-min), calc(var(--grid-radius-canvas) * ${scale}))`,
         transform: `scale(${1 / scale})`,
         transformOrigin: "top left",
       }}
@@ -106,10 +101,32 @@ export function GridPlaceholder({
   )
 }
 
-export function GridAddButton(props: ComponentProps<typeof Button>) {
+export function GridAddButton({ onClick, ...props }: ComponentProps<typeof Button>) {
   return (
-    <Button type="button" variant="ghost" size="icon" {...props}>
-      <GridAddMark />
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="absolute rounded-full p-0 transition-none hover:bg-transparent active:translate-y-0"
+      {...props}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.stopPropagation()
+        onClick?.(event)
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== "Escape") return
+        event.preventDefault()
+        event.stopPropagation()
+        event.currentTarget
+          .closest("[data-focus-edge]")
+          ?.querySelector<HTMLElement>('[data-slide-entry][tabindex="0"]')
+          ?.focus({ preventScroll: true })
+      }}
+    >
+      <span data-add-mark className="flex items-center justify-center rounded-full bg-primary text-primary-foreground">
+        <EditorIcon name="plus" size={14} strokeWidth={2.5} />
+      </span>
     </Button>
   )
 }
