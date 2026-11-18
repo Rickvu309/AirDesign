@@ -1,15 +1,16 @@
-import { Blend, Image, Minus, SquareSquare, type LucideIcon } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { fillCopy, fillWords } from "@/copy/fill-copy"
+import { fillIcons } from "@/design/preset-icons"
 import { cn } from "@/lib/class-names"
 
 const heldBack = "A picture cannot become a shape fill and come back as the same picture."
 
 const kinds: readonly (readonly [string, LucideIcon])[] = [
-  ["none", Minus],
-  ["solid", SquareSquare],
-  ["gradient", Blend],
-  ["picture", Image],
+  ["none", fillIcons.none],
+  ["solid", fillIcons.solid],
+  ["gradient", fillIcons.gradient],
+  ["picture", fillIcons.picture],
 ]
 
 export function PictureFillKinds() {

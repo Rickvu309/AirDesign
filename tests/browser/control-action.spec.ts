@@ -15,7 +15,10 @@ test("an action moves the element, is a button that never stays pressed, and nam
   const align = panel.getByRole("group", { name: "Align", exact: true })
   await expect(align.getByRole("button")).toHaveCount(6)
   await expect(align.getByRole("button").first()).toHaveAttribute("title", "Align left")
-  await expect(panel.getByRole("group", { name: "Distribute", exact: true }).getByRole("button")).toHaveCount(2)
+  await panel.getByRole("button", { name: "Distribute", exact: true }).click()
+  await expect(page.getByRole("menuitem", { name: "Distribute horizontally" })).toBeVisible()
+  await expect(page.getByRole("menuitem", { name: "Distribute vertically" })).toBeVisible()
+  await page.keyboard.press("Escape")
 
   const left = await placed(page, element)
   const center = align.getByRole("button", { name: "Align center", exact: true })

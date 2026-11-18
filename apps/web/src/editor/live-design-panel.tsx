@@ -41,8 +41,7 @@ import type { Palette, Swatch } from "@/design/color-choices"
 import { PassageField, passageWords, typedText } from "@/design/controls/text"
 import { UnionControl } from "@/design/controls/union"
 import { resolveControl } from "@/design/panel-arrangement"
-import { SquareSquare, Image } from "lucide-react"
-import { PatternFill } from "@/design/preset-icons"
+import { fillIcons } from "@/design/preset-icons"
 import { ColorPicker } from "@/design/color-picker"
 import { ColorField, fieldLook } from "@/design/controls/color"
 import {
@@ -427,7 +426,10 @@ export function DesignView({
   })
   const control = {
     ...base,
-    look: { ...base.look, options: { solid: SquareSquare, gradient: PatternFill, picture: Image } },
+    look: {
+      ...base.look,
+      options: { solid: fillIcons.solid, gradient: fillIcons.gradient, picture: fillIcons.picture },
+    },
   }
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto" data-design-panel>

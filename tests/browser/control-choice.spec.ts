@@ -1,5 +1,7 @@
+import { appearanceCopy } from "../../apps/web/src/copy/appearance-copy"
 import { expect, test } from "@playwright/test"
 import { designing, openDeck, settled } from "./design-panel"
+import { fillPanel, shapeAt } from "./shape-fills"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -38,4 +40,14 @@ test("a choice aligns every paragraph of the element, shows the pick, and Undo p
         .evaluate((node) => getComputedStyle(node).textAlign),
     )
     .toBe("right")
+})
+
+test("shadow glyphs keep the compact size of the reference", async ({ page }) => {
+  await openDeck(page, "shapes-added.pptx")
+  const panel = await fillPanel(page, shapeAt(page, "4"))
+  const glyph = panel
+    .getByRole("group", { name: appearanceCopy.shadowPreset, exact: true })
+    .locator("button svg")
+    .last()
+  await expect.poll(() => glyph.evaluate((icon) => icon.getBoundingClientRect().width)).toBe(14)
 })

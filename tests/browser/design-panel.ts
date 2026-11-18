@@ -31,6 +31,7 @@ export async function designing(page: Page, element: Locator): Promise<Locator> 
 
 export async function unfold(panel: Locator, title: string): Promise<void> {
   const fold = panel.getByRole("heading", { name: title, exact: true }).getByRole("button")
+  if ((await fold.count()) === 0) return
   if ((await fold.getAttribute("aria-expanded")) === "false") await fold.click()
   await expect(fold).toHaveAttribute("aria-expanded", "true")
 }
@@ -117,4 +118,9 @@ export async function sharedNames(panel: Locator): Promise<string[]> {
     return role === "group" && !choices ? [] : [name]
   })
   return [...new Set(names.filter((name, at) => names.indexOf(name) !== at))]
+}
+
+export async function openFillDetails(panel: Locator): Promise<void> {
+  const details = panel.locator("[data-fill-details]")
+  if ((await details.getAttribute("open")) === null) await details.locator("summary").click()
 }

@@ -6,6 +6,7 @@ import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { designCopy } from "@/copy/design-copy"
 import type { ControlProps } from "@/design/panel"
+import { NoneFill, Opacity } from "@/design/preset-icons"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 
@@ -56,7 +57,16 @@ export function NumberField({
 }: ControlProps & { unit: string; kind: string; step?: number; scale?: number }) {
   const size = control.trait === "text" && control.field === "size"
   const look = control.look
-  const Icon = look.glyph ?? (look.name.show === "icon" ? look.name.icon : undefined)
+  const borderWidth = ["border", "line"].includes(control.trait) && control.field === "width"
+  const Icon =
+    look.glyph ??
+    (look.name.show === "icon"
+      ? look.name.icon
+      : borderWidth
+        ? NoneFill
+        : control.trait === "opacity"
+          ? Opacity
+          : undefined)
   const named = Icon !== undefined || look.name.show === "letter" || look.name.show === "inside"
   const [draft, setDraft] = useState<string | null>(null)
   const shown = shownNumber(control, scale)
@@ -111,10 +121,12 @@ export function NumberField({
     scrub.current = null
   }
 
+  const suffix = size || borderWidth || unit === "" ? "" : unit
+  const value = draft ?? shown
   const view = (
     <label
       className={cn(
-        "flex h-[var(--control-dense)] min-w-0 items-center gap-0.5 rounded-[var(--shape-control)] bg-muted pl-2",
+        "flex h-[var(--control-dense)] min-w-0 items-center gap-0 rounded-[var(--shape-control)] bg-[var(--panel-track)] pl-2",
         size ? "pr-0" : "pr-2",
       )}
       title={look.name.show === "hidden" ? undefined : control.label}
@@ -125,8 +137,7 @@ export function NumberField({
       {named ? (
         <span
           className={cn(
-            "min-w-0 shrink-0 truncate text-[length:var(--type-caption)] text-quiet",
-            !size && "mr-2",
+            "mr-2 min-w-0 shrink-0 truncate text-[length:var(--type-caption)] text-quiet",
             shown !== "" && "cursor-ew-resize touch-none select-none",
           )}
           onPointerDown={startScrub}
@@ -143,24 +154,31 @@ export function NumberField({
           ) : null}
         </span>
       ) : null}
-      <input
-        ref={field}
-        className={cn(
-          "min-w-[3ch] flex-1 bg-transparent text-right text-[length:var(--type-caption)] tabular-nums outline-none placeholder:text-quiet",
-          (kind === "corners" || size) && "text-left",
-          control.inherited && draft === null ? "text-quiet" : "text-foreground",
-        )}
-        inputMode="decimal"
-        aria-label={control.label}
-        data-session
-        placeholder={control.mixed ? designCopy.mixed : ""}
-        value={draft ?? shown}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={(event) => {
-          if (draft !== null) commit(event.currentTarget.value)
-        }}
-        onKeyDown={onKeyDown}
-      />
+      <span className="relative grid min-w-0 max-w-full">
+        <span
+          aria-hidden
+          className="invisible col-start-1 row-start-1 whitespace-pre text-[length:var(--type-caption)] tabular-nums"
+        >
+          {value || (control.mixed ? designCopy.mixed : "   ")}
+        </span>
+        <input
+          ref={field}
+          className={cn(
+            "absolute inset-0 w-full min-w-0 bg-transparent text-left text-[length:var(--type-caption)] tabular-nums outline-none placeholder:text-quiet",
+            control.inherited && draft === null ? "text-quiet" : "text-foreground",
+          )}
+          inputMode="decimal"
+          aria-label={control.label}
+          data-session
+          placeholder={control.mixed ? designCopy.mixed : ""}
+          value={value}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={(event) => {
+            if (draft !== null) commit(event.currentTarget.value)
+          }}
+          onKeyDown={onKeyDown}
+        />
+      </span>
       {size ? (
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -170,16 +188,16 @@ export function NumberField({
             <ChevronDown size={12} />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="max-h-80 overflow-y-auto">
-            {fontSizes.map((value) => (
-              <DropdownMenuItem key={value} onClick={() => commit(String(value))}>
-                {value}
+            {fontSizes.map((sizeValue) => (
+              <DropdownMenuItem key={sizeValue} onClick={() => commit(String(sizeValue))}>
+                {sizeValue}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      ) : unit === "" ? null : (
-        <span className="shrink-0 text-[length:var(--type-caption)] text-quiet" aria-hidden>
-          {unit}
+      ) : suffix === "" ? null : (
+        <span className="shrink-0 text-[length:var(--type-caption)] text-foreground" aria-hidden>
+          {suffix}
         </span>
       )}
     </label>

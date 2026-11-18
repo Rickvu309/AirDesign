@@ -1,3 +1,4 @@
+import { openFillDetails } from "./design-panel"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
 import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
@@ -170,6 +171,7 @@ test("a colour picked after Reset fill keeps the opacity shown, through a reload
   const rectangle = shapeAt(page, "4")
   const panel = await fillPanel(page, rectangle)
   await expect(panel.getByRole("textbox", { name: opacityCopy.label, exact: true })).toHaveValue("60")
+  await openFillDetails(panel)
   await panel.getByRole("button", { name: fillCopy.reset, exact: true }).click()
   await expect.poll(() => filled(rectangle)).not.toMatch(/0\.6\)$/)
   await pickColor(page, panel.getByRole("group", { name: fillWords.color, exact: true }), formatCopy.colors.accent2)

@@ -29,6 +29,9 @@ export const designCopy = {
   selectMatching: "Select matching layers",
   noMatching: "No matching layers found.",
   multiEditText: "Multi-edit text",
+  titles: { text: "Text", picture: "Image" },
+  square: "Square",
+  fillDetails: "Fill details",
   nothing: "Nothing on this element can be changed here yet.",
   refused: "Unable to make that change. Select the element and try again, or reload the deck if it keeps happening.",
   tooLong: (max: number, wide: boolean) =>
