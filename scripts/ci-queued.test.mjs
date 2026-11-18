@@ -48,7 +48,7 @@ jq -r "$4" "${folder}/runs.json"
     fs.rmSync(folder, { recursive: true, force: true })
   }
 }
-for (const part of ["main", "side", "browser", "corpus", "pptx"]) {
+for (const part of ["source", "scripts", "browser", "corpus", "pptx"]) {
   for (const hit of ["true", "false"]) {
     const env = { PART: part, CACHE_HIT: hit }
     assert.equal(execute([approved], env), "passed=true\nrun-id=123\nneeded=false", `${part} cached=${hit}`)

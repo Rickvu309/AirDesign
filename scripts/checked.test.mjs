@@ -79,8 +79,8 @@ same("and names pnpm land, which runs the gate and stamps", refused.stderr.inclu
 const gateOn = (status) =>
   runGate({
     cheap: [[["format"]]],
-    later: async () => [[["test"]]],
-    run: async ([name]) => (name === "test" ? status : 0),
+    later: async () => [[["unit-tests"]]],
+    run: async ([name]) => (name === "unit-tests" ? status : 0),
     stamp: () => stampChecked(root, workingTree(root)),
   })
 await gateOn(1)

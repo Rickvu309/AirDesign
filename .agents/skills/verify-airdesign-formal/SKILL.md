@@ -18,7 +18,7 @@ node scripts/spec-sync.mjs                     # every spec whose covered declar
 node scripts/spec-sync.mjs --since origin/main # the specs whose covered declarations this branch moved
 ```
 
-The first is the `spec-sync` step of `pnpm check`. Each line names the spec, the declarations and the file, and gives the `git diff` of what moved since the sync. A spec it names needs a look. A declaration that no longer exists is named too: rename it in that spec's `covers.json`. A name inside a declaration is covered by naming the declaration that holds it, and `"*"` covers a whole file. Also look for new code that writes the state a check guards, even in a file the entry does not list: a new op that writes run rows, a new path to a register, a new writer of the index queue. That is how the slide tools reached the turn model.
+The first is the `spec-drift` step of `pnpm check`. Each line names the spec, the declarations and the file, and gives the `git diff` of what moved since the sync. A spec it names needs a look. A declaration that no longer exists is named too: rename it in that spec's `covers.json`. A name inside a declaration is covered by naming the declaration that holds it, and `"*"` covers a whole file. Also look for new code that writes the state a check guards, even in a file the entry does not list: a new op that writes run rows, a new path to a register, a new writer of the index queue. That is how the slide tools reached the turn model.
 
 ## 2. Run the check
 
@@ -37,7 +37,7 @@ pnpm vitest run apps/api/src/owner.test.ts apps/api/src/turn.test.ts apps/api/sr
 pnpm vitest run apps/web/src/typing.test.tsx apps/web/src/device-queue.test.tsx apps/web/src/connection.test.tsx
 ```
 
-`node scripts/spec-replays.mjs` lists which test replays each spec. It is the `spec-replays` step of `pnpm check`, and it warns when a spec has no replay and no listed reason.
+`node scripts/spec-replays.mjs` lists which test replays each spec. It is the `spec-coverage` step of `pnpm check`, and it warns when a spec has no replay and no listed reason.
 
 ## 3. Read a result
 

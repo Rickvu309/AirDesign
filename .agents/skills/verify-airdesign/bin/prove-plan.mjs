@@ -50,17 +50,22 @@ const lookAreas = (changed) =>
 const unitStep = (changed) => {
   const outside = changed.filter(readOutsideGraph)
   if (outside.length > 0)
-    return { kind: "unit", files: outside, tests: "all", because: `${outside[0]} is read outside the import graph` }
+    return {
+      kind: "unit-tests",
+      files: outside,
+      tests: "all",
+      because: `${outside[0]} is read outside the import graph`,
+    }
   const sources = changed.filter(unitSource)
   if (sources.length === 0) return undefined
-  return { kind: "unit", files: sources, tests: "related", because: `${String(sources.length)} changed sources` }
+  return { kind: "unit-tests", files: sources, tests: "related", because: `${String(sources.length)} changed sources` }
 }
 
 const toolingStep = (changed, scripts) => {
   const touched = changed.filter((file) => /^scripts\/[^/]+\.mjs$/.test(file))
   const files = importersOf(scripts, touched).filter((file) => file.endsWith(".test.mjs") && file in scripts)
   if (files.length === 0) return undefined
-  return { kind: "tooling", files, because: `${touched.join(", ")} changed` }
+  return { kind: "script-tests", files, because: `${touched.join(", ")} changed` }
 }
 
 const specsStep = (changed, moved, replays) => {
@@ -69,7 +74,7 @@ const specsStep = (changed, moved, replays) => {
   if (topics.length === 0) return undefined
   const files = [...new Set(replays.filter(({ name }) => topics.includes(name)).flatMap(({ by }) => by))].sort()
   const why = moved.length > 0 ? `covered code moved for ${moved.join(", ")}` : `specs changed: ${touched.join(", ")}`
-  return { kind: "specs", topics, replays: files, because: why }
+  return { kind: "model-check", topics, replays: files, because: why }
 }
 
 const browserStep = (changed, browser) => {
@@ -81,7 +86,7 @@ const browserStep = (changed, browser) => {
     repeat === 1
       ? `${String(specs.length)} specs import the changed files, more than ${String(repeatLimit)}, so each runs once`
       : `${touched.join(", ")} changed`
-  return { kind: "browser", specs, repeat, workers: 1, cpu: "200%", because }
+  return { kind: "browser-tests", specs, repeat, workers: 1, cpu: "200%", because }
 }
 
 const lookStep = (changed, screens, states) => {

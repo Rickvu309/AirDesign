@@ -6,7 +6,7 @@ inputs:
     description: Base commit of this event
   part:
     required: true
-    description: Check part
+    description: Check part from ci.yml
   shard:
     required: true
     description: Unique matrix index

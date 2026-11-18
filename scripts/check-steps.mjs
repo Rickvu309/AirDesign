@@ -60,9 +60,9 @@ const rows = [
     gate: { order: 3 },
     showOnSuccess: true,
   },
-  { name: "copy-literals", kind: "rule", command: "node", args: ["scripts/copy-literals.mjs"], gate: { order: 11 } },
+  { name: "copy-in-tests", kind: "rule", command: "node", args: ["scripts/copy-literals.mjs"], gate: { order: 11 } },
   {
-    name: "browser-imports",
+    name: "test-imports",
     kind: "rule",
     command: "node",
     args: ["scripts/browser-imports.mjs"],
@@ -72,7 +72,7 @@ const rows = [
   },
   { name: "actionlint", kind: "rule", command: "node", args: ["scripts/actionlint.mjs"], gate: { order: 10 } },
   {
-    name: "test",
+    name: "unit-tests",
     kind: "tests",
     command: "node",
     args: ["node_modules/vitest/vitest.mjs", "run"],
@@ -83,15 +83,15 @@ const rows = [
     rerunAlone: true,
   },
   {
-    name: "tooling",
+    name: "script-tests",
     kind: "tests",
     command: "pnpm",
     args: ["test:tooling"],
-    part: "side",
+    part: "scripts",
     gate: { order: 3, select: gateTooling },
   },
   {
-    name: "bug-rule",
+    name: "lint-rules",
     kind: "rule",
     command: "node",
     args: ["scripts/bug-rule.mjs"],
@@ -100,7 +100,7 @@ const rows = [
     showOnSuccess: true,
   },
   {
-    name: "file-size",
+    name: "file-growth",
     kind: "rule",
     command: "node",
     args: ["scripts/file-size.mjs"],
@@ -109,7 +109,7 @@ const rows = [
     verdict: "warn-in-queue",
   },
   {
-    name: "references",
+    name: "tsconfig-references",
     kind: "rule",
     command: "node",
     args: ["scripts/reference-order.mjs"],
@@ -117,7 +117,7 @@ const rows = [
     gate: { order: 5 },
   },
   {
-    name: "interface-width",
+    name: "unused-exports",
     kind: "rule",
     command: "node",
     args: ["scripts/interface-width.mjs"],
@@ -125,7 +125,7 @@ const rows = [
     gate: { order: 9 },
   },
   {
-    name: "worktrees",
+    name: "sweep-list",
     kind: "report",
     command: "node",
     args: ["scripts/sweep.mjs"],
@@ -150,19 +150,19 @@ const rows = [
     args: ["scripts/migration-numbers.mjs"],
     verdict: "warn",
   },
-  { name: "stale-tree", kind: "rule", command: "node", args: ["scripts/stale-tree.mjs"], verdict: "warn" },
+  { name: "restored-files", kind: "rule", command: "node", args: ["scripts/stale-tree.mjs"], verdict: "warn" },
   {
-    name: "specs",
+    name: "model-check",
     kind: "tests",
     command: "pnpm",
     args: ["check:specs"],
     env: { AIRDESIGN_SPEC_CACHE: specCache },
     showOnSuccess: true,
   },
-  { name: "spec-replays", kind: "rule", command: "node", args: ["scripts/spec-replays.mjs"], verdict: "warn" },
-  { name: "spec-sync", kind: "rule", command: "node", args: ["scripts/spec-sync.mjs"], verdict: "warn" },
+  { name: "spec-coverage", kind: "rule", command: "node", args: ["scripts/spec-replays.mjs"], verdict: "warn" },
+  { name: "spec-drift", kind: "rule", command: "node", args: ["scripts/spec-sync.mjs"], verdict: "warn" },
   {
-    name: "browser",
+    name: "browser-tests",
     kind: "tests",
     command: "pnpm",
     args: ["test:browser"],
@@ -173,7 +173,7 @@ const rows = [
     stampOnFailure: true,
   },
   {
-    name: "boundaries",
+    name: "package-boundaries",
     kind: "rule",
     command: "pnpm",
     args: ["check:boundaries"],
@@ -190,11 +190,11 @@ const rows = [
     gate: { order: 1, select: gateBuild },
   },
   {
-    name: "site",
+    name: "site-build",
     kind: "build",
     command: "pnpm",
     args: ["--filter", "@airdesign/site...", "run", "build"],
-    part: "side",
+    part: "scripts",
     lane: "outputs",
   },
   {
@@ -225,7 +225,7 @@ const rows = [
   },
 ]
 
-const defaultPart = "main"
+const defaultPart = "source"
 
 const partsOf = ({ part = defaultPart }) => (Array.isArray(part) ? part : [part])
 

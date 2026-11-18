@@ -125,7 +125,7 @@ export const affectedReport = async ({ root = process.cwd(), base, head = "HEAD"
     scope: "report only; gate run lists are today's planned files, not proof of execution",
     limitations: [
       "Import graphs do not prove dynamic reads, directory membership or runtime dependencies.",
-      "TLC prerequisites are reported by prove's specs step; no producer is started here.",
+      "TLC prerequisites are reported by prove's model-check step; no producer is started here.",
     ],
     incomplete: [],
     unit: unknown("selection unavailable"),
@@ -165,7 +165,8 @@ export const affectedReport = async ({ root = process.cwd(), base, head = "HEAD"
         file.startsWith("scripts/") ||
         file.startsWith("specs/") ||
         !/\.(ts|tsx|mts|mjs|js)$/.test(file) ||
-        (!/^tests\/browser\//.test(file) && !proofPlan({ changed: [file] }).steps.some((step) => step.kind === "unit")),
+        (!/^tests\/browser\//.test(file) &&
+          !proofPlan({ changed: [file] }).steps.some((step) => step.kind === "unit-tests")),
     )
     const broad = deleted[0]
       ? `base-side deletion or rename: ${deleted[0]}`
@@ -173,8 +174,8 @@ export const affectedReport = async ({ root = process.cwd(), base, head = "HEAD"
         ? `test discovery gap: ${gaps[0]}`
         : unknownInput
           ? `input outside a resolved import graph: ${unknownInput}`
-          : step("unit")?.tests === "all"
-            ? step("unit").because
+          : step("unit-tests")?.tests === "all"
+            ? step("unit-tests").because
             : undefined
     let picked = broad ? "all" : sorted([...related, ...changed.filter((file) => inventory.files.includes(file))])
     if (picked !== "all") {
@@ -193,12 +194,14 @@ export const affectedReport = async ({ root = process.cwd(), base, head = "HEAD"
       gateRule: {
         limit: gate?.limit ?? legacy?.testLimit ?? null,
         reason: currentGate.ci ?? null,
-        leftOut: (step("unit")?.tests === "all" ? inventory.files : related).filter((file) => !run.includes(file)),
+        leftOut: (step("unit-tests")?.tests === "all" ? inventory.files : related).filter(
+          (file) => !run.includes(file),
+        ),
       },
     }
-    report.unit.prerequisites = plan.steps.filter((step) => step.kind === "specs")
+    report.unit.prerequisites = plan.steps.filter((step) => step.kind === "model-check")
     const tooling = toolingTests(root)
-    const toolingRun = gate?.tooling ?? step("tooling")?.files ?? []
+    const toolingRun = gate?.tooling ?? step("script-tests")?.files ?? []
     report.tooling = {
       ...family(tooling, changed.length ? "all" : [], "tooling reads repository files outside imports", toolingRun),
       knownReached: toolingRun,
@@ -211,7 +214,7 @@ export const affectedReport = async ({ root = process.cwd(), base, head = "HEAD"
       const browserFiles = Object.keys(facts.browser)
         .filter((file) => file.endsWith(".spec.ts"))
         .sort()
-      const browserHit = suitesFor(changed, facts.rules).some((suite) => suite.name === "browser")
+      const browserHit = suitesFor(changed, facts.rules).some((suite) => suite.name === "browser-tests")
       const browserOnly = changed.every((file) => /^tests\/browser\/[^/]+\.(ts|mts)$/.test(file))
       const browserUnknown = Object.entries(facts.browser).some(([file, imports]) => {
         const text = fs.readFileSync(path.join(root, file), "utf8")
@@ -223,7 +226,7 @@ export const affectedReport = async ({ root = process.cwd(), base, head = "HEAD"
       const browserAll = deleted.length > 0 || unknownInput || browserUnknown || (changed.length > 0 && !browserOnly)
       report.browser = family(
         browserFiles,
-        browserAll ? "all" : (step("browser")?.specs ?? []),
+        browserAll ? "all" : (step("browser-tests")?.specs ?? []),
         browserAll
           ? browserHit
             ? "browser suite inputs"
@@ -249,7 +252,7 @@ export const affectedReport = async ({ root = process.cwd(), base, head = "HEAD"
       const results = resultFor(root, part)
       if (!results.complete) report.incomplete.push(`${part}: run did not finish every recorded test`)
       report.failures = results.failed.flatMap((test) => {
-        const family = part === "main" ? "unit" : "browser"
+        const family = part === "source" ? "unit" : "browser"
         const reached = report[family]
         return (test.failures?.length ? test.failures : [test.title ?? null]).map((title) => ({
           ...test,

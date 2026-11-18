@@ -38,16 +38,16 @@ const answer = ({
   })
 
 const contexts = [
-  { __typename: "CheckRun", name: "check (main)", conclusion: "SUCCESS", status: "COMPLETED" },
-  { __typename: "CheckRun", name: "check (side)", conclusion: "FAILURE", status: "COMPLETED" },
+  { __typename: "CheckRun", name: "check (source)", conclusion: "SUCCESS", status: "COMPLETED" },
+  { __typename: "CheckRun", name: "check (scripts)", conclusion: "FAILURE", status: "COMPLETED" },
   { __typename: "CheckRun", name: "check (pptx)", conclusion: null, status: "IN_PROGRESS" },
   { __typename: "CheckRun", name: "corpus", conclusion: "SKIPPED", status: "COMPLETED" },
   { __typename: "StatusContext", context: "legacy", state: "PENDING" },
 ]
 const read = parsePull(answer({ contexts }))
 same("checks are sorted into passed, failed and running", read.checks, {
-  passed: ["check (main)", "corpus"],
-  failed: ["check (side)"],
+  passed: ["check (source)", "corpus"],
+  failed: ["check (scripts)"],
   running: ["check (pptx)", "legacy"],
 })
 const replaced = parsePull(
@@ -226,7 +226,7 @@ const waiting = async ({ reads, limitMs = 60000 }) => {
   })
   return { state, said, reads: () => at, clock: () => clock }
 }
-const started = [{ __typename: "CheckRun", name: "check (main)", conclusion: null, status: "IN_PROGRESS" }]
+const started = [{ __typename: "CheckRun", name: "check (source)", conclusion: null, status: "IN_PROGRESS" }]
 
 const early = await waiting({ reads: [answer(), answer(), answer({ contexts: started })] })
 same("it waits until a check is on the head", [early.state.ok, early.reads(), early.clock()], [true, 3, 20000])

@@ -26,9 +26,9 @@ const onlyOn = (step, part) => (step.if ?? "").includes(`matrix.part == '${part}
 
 const entries = check.strategy.matrix.include
 same(
-  "the check job runs the main, side, design and pptx parts and the browser tests in four shards side by side",
+  "the check job runs the source, scripts, design and pptx parts and the browser tests in four shards side by side",
   entries.map((entry) => [entry.part, entry.shard ?? ""].join(" ").trim()),
-  ["main", "side", "design", "browser 1/4", "browser 2/4", "browser 3/4", "browser 4/4", "pptx"],
+  ["source", "scripts", "design", "browser 1/4", "browser 2/4", "browser 3/4", "browser 4/4", "pptx"],
 )
 same(
   "pnpm check gets the shard of its browser part",
@@ -55,7 +55,7 @@ const browserStep = (part, shard) =>
     .stagesFor(part, true, shard)
     .flat()
     .flatMap(stepsOf)
-    .find(([name]) => name === "browser")[2]
+    .find(([name]) => name === "browser-tests")[2]
     .slice(1)
 const shards = entries.filter((entry) => entry.part === "browser").map((entry) => shardOf([`--shard=${entry.shard}`]))
 const scanned = browserTests(browserStep("design"))
@@ -113,8 +113,8 @@ same(
 
 const pptxSteps = steps.filter((step) => /pptx/.test(`${step.id ?? ""} ${text(step)}`))
 same(
-  "no PowerPoint step waits behind the main part",
-  pptxSteps.filter((step) => onlyOn(step, "main")).map((step) => step.id ?? step.run ?? step.uses),
+  "no PowerPoint step waits behind the source part",
+  pptxSteps.filter((step) => onlyOn(step, "source")).map((step) => step.id ?? step.run ?? step.uses),
   [],
 )
 
@@ -172,29 +172,8 @@ same(
   false,
 )
 
-const actionFile = path.join(root, ".github/actions/queued/action.yml")
-const action = fs.existsSync(actionFile) ? parse(fs.readFileSync(actionFile, "utf8")) : undefined
-const question = action?.runs.steps[0]
-const matrixParts = [...new Set(entries.map(({ part }) => part))]
-same(
-  "ci.yml names every check table part plus the separate pptx check",
-  matrixParts.toSorted(),
-  [...checkSteps.parts(), "pptx"].toSorted(),
-)
-const queueScript = question?.run ?? ""
-const queueCase = queueScript.match(/case "\$PART" in([\s\S]*?)^\s*esac/m)?.[1] ?? ""
-const queueParts = [
-  ...Array.from(queueScript.matchAll(/\[ "\$PART" (?:=|!=) ([\w-]+) \]/g), ([, part]) => part),
-  ...Array.from(queueCase.matchAll(/^\s*([\w-]+(?:\s*\|\s*[\w-]+)*)\)/gm), ([, parts]) =>
-    parts.split(/\s*\|\s*/),
-  ).flat(),
-]
-same(
-  "queued/action.yml names every check table part plus the separate pptx and corpus checks",
-  [...new Set(queueParts)].toSorted(),
-  [...checkSteps.parts(), "pptx", "corpus"].toSorted(),
-)
-
+const action = parse(fs.readFileSync(path.join(root, ".github/actions/queued/action.yml"), "utf8"))
+const question = action.runs.steps[0]
 same(
   "the shared action exposes the queue run id",
   action?.outputs["run-id"]?.value,
@@ -258,13 +237,13 @@ for (const [name, job] of [
     part: name === "check" ? "${{ matrix.part }}" : name,
   })
   for (const [part, passed, hit, needed] of [
-    [name === "check" ? "main" : name, "true", "true", "false"],
-    [name === "check" ? "main" : name, "true", "false", "false"],
-    [name === "check" ? "main" : name, "false", "true", "true"],
-    [name === "check" ? "main" : name, "", "true", "true"],
+    [name === "check" ? "source" : name, "true", "true", "false"],
+    [name === "check" ? "source" : name, "true", "false", "false"],
+    [name === "check" ? "source" : name, "false", "true", "true"],
+    [name === "check" ? "source" : name, "", "true", "true"],
     ...(name === "check"
       ? [
-          ["side", "true", "", "false"],
+          ["scripts", "true", "", "false"],
           ["design", "true", "", "false"],
           ["design", "false", "", "false"],
           ["browser", "true", "", "false"],
@@ -372,7 +351,7 @@ for (const event of ["pull_request", "merge_group"]) {
     `${event} never skips work or queries queue runs`,
     execute(
       question?.run ?? "exit 9",
-      { GITHUB_EVENT_NAME: event, PART: "side", CACHE_HIT: "true", GH_FORBIDDEN: "1" },
+      { GITHUB_EVENT_NAME: event, PART: "scripts", CACHE_HIT: "true", GH_FORBIDDEN: "1" },
       "123",
     ),
     { status: 0, output: "passed=false\nrun-id=\nneeded=true" },

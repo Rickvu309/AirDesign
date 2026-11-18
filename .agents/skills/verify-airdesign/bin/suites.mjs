@@ -26,7 +26,7 @@ export function suiteRules(repo) {
   return [
     { name: "check", script: ["check"], paths: [""] },
     {
-      name: "browser",
+      name: "browser-tests",
       script: ["test:browser"],
       paths: ["apps/web/", ...web, "tests/browser/", "playwright.config.ts", "pnpm-lock.yaml", `${skillPath}look/`],
     },
@@ -131,7 +131,7 @@ export async function suitesCommand(args, { repo, evidenceRoot }) {
         JOURNEYS_REPORT: report,
         PLAYWRIGHT_JSON_OUTPUT_FILE: report,
       }
-      const reporter = suite.name === "browser" ? ["--reporter=line,json"] : []
+      const reporter = suite.name === "browser-tests" ? ["--reporter=line,json"] : []
       const before = load()
       const started = Date.now()
       process.stderr.write(

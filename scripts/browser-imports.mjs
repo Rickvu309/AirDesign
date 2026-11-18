@@ -68,7 +68,7 @@ try {
     console.error(failures.join("\n"))
     process.exitCode = 1
   } else {
-    console.log("browser-imports: browser and verification import/export diagnostics passed")
+    console.log("test-imports: browser and verification import/export diagnostics passed")
   }
 } finally {
   rmSync(temporary, { recursive: true, force: true })

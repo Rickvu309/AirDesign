@@ -79,10 +79,10 @@ await within(
 )
 if (next.length > 0) fail(`the next check waited for a slot: ${next.join(" ")}`)
 
-if (checkSteps.stepLimit("test", true) !== undefined || checkSteps.stepLimit("lint", true) !== undefined)
+if (checkSteps.stepLimit("unit-tests", true) !== undefined || checkSteps.stepLimit("lint", true) !== undefined)
   fail("ci has its own job time limit and no slot to hold, so check sets no step limit there")
-if (checkSteps.stepLimit("test", false) < 600 || checkSteps.stepLimit("lint", false) < 400)
-  fail("a step limit is below the slowest step seen on a loaded machine: test took 430 s, the others 310 s")
+if (checkSteps.stepLimit("unit-tests", false) < 600 || checkSteps.stepLimit("lint", false) < 400)
+  fail("a step limit is below the slowest step seen on a loaded machine: unit-tests took 430 s, the others 310 s")
 
 let locked = false
 const early = await within(
@@ -98,11 +98,11 @@ if (early.failed.join() !== "lint" || locked) fail("a hung step before the line 
 
 printed.length = 0
 const warned = await runCheck({
-  chosen: [[node("spec-sync", forever)], [node("later", "")]],
+  chosen: [[node("spec-drift", forever)], [node("later", "")]],
   lock,
-  run: stepRunner({ limitOf: (name) => (name === "spec-sync" ? 1 : 10), say }),
+  run: stepRunner({ limitOf: (name) => (name === "spec-drift" ? 1 : 10), say }),
 })
-if (warned.failed.join() !== "spec-sync") fail("a hung warning-only step must fail the check")
+if (warned.failed.join() !== "spec-drift") fail("a hung warning-only step must fail the check")
 if (!printed.join("").includes("ok later ")) fail("a hung step must not skip later stages")
 
 const missing = []

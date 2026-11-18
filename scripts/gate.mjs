@@ -18,7 +18,7 @@ export const packagesFor = (changed) =>
   [...new Set(changed.flatMap((file) => file.match(/^(?:apps|packages)\/[^/]+(?=\/)/)?.[0] ?? []))].sort()
 
 export const testsFor = ({ plan, related, changed, limit = testLimit }) => {
-  const unit = plan.steps.find((step) => step.kind === "unit")
+  const unit = plan.steps.find((step) => step.kind === "unit-tests")
   if (unit === undefined) return { files: [], ci: undefined }
   if (unit.tests !== "all" && related.length <= limit) return { files: related, ci: undefined }
   const files = related.filter((file) => changed.includes(file))
@@ -91,17 +91,17 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
           (error) => ({ error }),
         )
         const plan = JSON.parse((await node([prove, "prove", "--plan", "--base", against])).stdout)
-        const reached = plan.steps.some((step) => step.kind === "unit")
+        const reached = plan.steps.some((step) => step.kind === "unit-tests")
         if (!reached) unneeded.abort()
         const listed = reached ? await listing : { files: [] }
         if (listed.error !== undefined) throw new Error(`vitest list failed: ${listed.error.message}`)
         const related = listed.files
         const tests = testsFor({ plan, related, changed: plan.changed })
-        const tooling = plan.steps.find((step) => step.kind === "tooling")?.files ?? []
+        const tooling = plan.steps.find((step) => step.kind === "script-tests")?.files ?? []
         const packages = packagesFor(plan.changed)
         left = tests.ci
         console.log(
-          `gate: ${String(plan.changed.length)} changed files against ${against}, chosen in ${((Date.now() - started) / 1000).toFixed(1)}s: ${String(tests.files.length)} unit test files, ${String(tooling.length)} tooling test files, ${packages.length > 0 ? `the build of ${packages.join(", ")} and what depends on them` : "no build, since nothing under apps or packages changed"}`,
+          `gate: ${String(plan.changed.length)} changed files against ${against}, chosen in ${((Date.now() - started) / 1000).toFixed(1)}s: ${String(tests.files.length)} unit test files, ${String(tooling.length)} script test files, ${packages.length > 0 ? `the build of ${packages.join(", ")} and what depends on them` : "no build, since nothing under apps or packages changed"}`,
         )
         selection = { base, plan, related, tests: tests.files, tooling, ci: tests.ci, limit: testLimit }
         return checkSteps.affectedGateStages({ tests: tests.files, tooling, packages })

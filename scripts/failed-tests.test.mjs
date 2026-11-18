@@ -10,9 +10,9 @@ const fixture = (name) => fs.readFileSync(new URL(`./land-fixtures/${name}`, imp
 
 const vitest = fixture("vitest-failed.log")
 const plain = plainLog(vitest)
-if (/\u001b|check \(main\)|\d{4}-\d\d-\d\dT/.test(plain)) throw new Error("a CI line kept its job, time or colors")
-same("a CI line keeps its words", plain.includes("fail test 208.7s"), true)
-same("the failed steps come from the check's last line", failedSteps(vitest), ["test"])
+if (/\u001b|check \(source\)|\d{4}-\d\d-\d\dT/.test(plain)) throw new Error("a CI line kept its job, time or colors")
+same("a CI line keeps its words", plain.includes("fail unit-tests 208.7s"), true)
+same("the failed steps come from the check's last line", failedSteps(vitest), ["unit-tests"])
 same("the failed vitest test is named with its file, its path and its first error", failedTests(vitest), [
   {
     file: "apps/api/src/agent-commit-race.test.ts",
@@ -22,7 +22,7 @@ same("the failed vitest test is named with its file, its path and its first erro
 ])
 
 const playwright = fixture("playwright-failed.log")
-same("a browser failure is a failed step", failedSteps(playwright), ["browser"])
+same("a browser failure is a failed step", failedSteps(playwright), ["browser-tests"])
 same("the failed browser test is named once, with its file and first error", failedTests(playwright), [
   {
     file: "tests/browser/real-save.spec.ts",
@@ -31,10 +31,10 @@ same("the failed browser test is named once, with its file and first error", fai
   },
 ])
 
-same("a log with no failure names nothing", failedTests("ok lint 1.2s\nok test 3.4s\n"), [])
-same("several failed steps are all named", failedSteps("failed: test, browser, typecheck\n"), [
-  "test",
-  "browser",
+same("a log with no failure names nothing", failedTests("ok lint 1.2s\nok unit-tests 3.4s\n"), [])
+same("several failed steps are all named", failedSteps("failed: unit-tests, browser-tests, typecheck\n"), [
+  "unit-tests",
+  "browser-tests",
   "typecheck",
 ])
 same(

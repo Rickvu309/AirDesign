@@ -37,7 +37,7 @@ runs:
           needed=false
         elif [ "$passed" = true ]; then
           case "$PART" in
-            main | side | browser | corpus | pptx) needed=false ;;
+            source | scripts | browser | corpus | pptx) needed=false ;;
           esac
         fi
         echo "passed=$passed" >> "$GITHUB_OUTPUT"

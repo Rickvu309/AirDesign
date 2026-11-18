@@ -11,6 +11,11 @@ const same = (name, actual, expected) => {
 const line = (step, text) => `ci\t${step}\t2026-11-10T03:12:40.1Z ${text}`
 
 same("a failed check step", failureClass(line("Run pnpm check", "fail lint 3.5s")), "pnpm check: lint")
+same(
+  "a unit test failure from an older run belongs to the same class",
+  failureClass(line("Run pnpm check --part=main", "fail test 3.5s")),
+  failureClass(line("Run pnpm check --part=source", "fail unit-tests 3.5s")),
+)
 same("a failed typecheck", failureClass(line("Run pnpm check", "fail typecheck 0.4s")), "pnpm check: typecheck")
 same(
   "a failed step from before steps were timed",
