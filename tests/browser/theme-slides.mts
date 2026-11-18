@@ -20,7 +20,7 @@ for (const command of [
     command: "person",
     node: document.templateStylesNode,
     v: document.format,
-    patch: { theme: { [slot]: { set: hex } } },
+    patch: { templateStyle: { [slot]: { set: hex } } },
   },
 ] as const) {
   const decision = document.decide(register, command)
