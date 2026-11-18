@@ -23,6 +23,34 @@ async function settled(page: Page, target: number) {
   await expect.poll(() => height(page)).toBeCloseTo(target, 0)
   await expect.poll(() => bar(page).evaluate((e) => e.getAnimations().length)).toBe(0)
 }
+async function catchSettle(page: Page, settle: () => Promise<void>) {
+  await page.clock.install()
+  const now = await page.evaluate(() => Date.now())
+  await page.clock.pauseAt(now + 60_000)
+  await bar(page).evaluate((element) => {
+    element.addEventListener(
+      "transitionrun",
+      () => {
+        const [animation] = element.getAnimations()
+        const timing = animation?.effect?.getComputedTiming()
+        if (timing === undefined) throw new Error("No notes height transition")
+        animation.pause()
+        animation.currentTime = timing.endTime / 2
+      },
+      { once: true },
+    )
+  })
+  await settle()
+  await expect
+    .poll(() => bar(page).evaluate((element) => element.getAnimations().map((animation) => animation.playState)))
+    .toEqual(["paused"])
+  const rendered = await height(page)
+  const point = await start(page)
+  await page.clock.resume()
+  expect(point.height).toBeCloseTo(rendered, 0)
+  expect(await bar(page).evaluate((element) => element.getAnimations().length)).toBe(0)
+  return point
+}
 test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1470, height: 923 })
   await page.goto("/")
@@ -39,18 +67,9 @@ test("tracks the whole range both ways, rubber bands, and snaps by distance or v
   for (const target of [150, 92, 40, 24, 40, 92, 150, 160, maximum]) await move(page, from, target)
   await page.mouse.move(from.x, from.y + from.height - maximum - 250)
   await expect.poll(() => height(page)).toBeCloseTo(maximum + 50, 0)
-  await page.mouse.up()
-  const overshoot = bar(page).evaluate(
-    (element) =>
-      new Promise<number>((resolve) => {
-        element.addEventListener("pointerdown", () => resolve(element.getBoundingClientRect().height), {
-          capture: true,
-          once: true,
-        })
-      }),
-  )
-  const catchPoint = await start(page)
-  expect(Math.abs(catchPoint.height - (await overshoot))).toBeLessThanOrEqual(2)
+  const catchPoint = await catchSettle(page, () => page.mouse.up())
+  expect(catchPoint.height).toBeGreaterThan(maximum)
+  expect(catchPoint.height).toBeLessThan(maximum + 50)
   await page.mouse.move(catchPoint.x, catchPoint.y - 5)
   await expect.poll(async () => Math.abs((await height(page)) - catchPoint.height)).toBeLessThanOrEqual(2)
   await page.mouse.up()
@@ -110,20 +129,10 @@ test("tracks the whole range both ways, rubber bands, and snaps by distance or v
 })
 
 test("catches a settle at its rendered height and keeps keyboard and reduced motion instant", async ({ page }) => {
-  await handle(page).click()
-  await page.waitForTimeout(60)
-  const caught = bar(page).evaluate(
-    (element) =>
-      new Promise<number>((resolve) => {
-        element.addEventListener("pointerdown", () => resolve(element.getBoundingClientRect().height), {
-          capture: true,
-          once: true,
-        })
-      }),
-  )
-  const point = await start(page)
-  expect(Math.abs(point.height - (await caught))).toBeLessThanOrEqual(2)
-  expect(Math.abs((await height(page)) - point.height)).toBeLessThanOrEqual(2)
+  const expandedHeight = await height(page)
+  const point = await catchSettle(page, () => handle(page).click())
+  expect(point.height).toBeGreaterThan(24)
+  expect(point.height).toBeLessThan(expandedHeight)
   await move(page, point, point.height + 10)
   await page.mouse.up()
   await handle(page).focus()
