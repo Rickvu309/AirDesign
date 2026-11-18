@@ -46,7 +46,7 @@ export type Derived = [
 ]
 
 describe("the one table of traits", () => {
-  it("declares the sixteen slots with the rule PowerPoint inherits each by", () => {
+  it("declares how the traits inherit in PowerPoint", () => {
     expect(Object.fromEntries(traitNames.map((name) => [name, traits[name].inherits]))).toEqual({
       identity: "own",
       link: "own",
@@ -64,10 +64,11 @@ describe("the one table of traits", () => {
       notes: "own",
       theme: "own",
       template: "own",
+      show: "own",
     })
   })
 
-  it("holds only the fields that are live: identity, the box, the geometry, the fill, the line, the effects, the text, the picture, its crop, a connector's ends, notes and table values, the theme's colours and fonts, and alpha", () => {
+  it("holds only the fields that are live", () => {
     expect(traitNames.flatMap(fieldKeys)).toEqual([
       "identity.name",
       "identity.alt",
@@ -132,6 +133,7 @@ describe("the one table of traits", () => {
       "theme.custom",
       "theme.removed",
       "template.id",
+      "show.skipped",
     ])
     expect(alphaKeys).toEqual(["fill.alpha", "line.alpha", "text.alpha", "image.alpha"])
   })
@@ -171,7 +173,7 @@ describe("the one table of traits", () => {
   it("gives every kind a closed list of declared traits", () => {
     for (const kind of kinds) for (const trait of kindTraits[kind]) expect(traitNames).toContain(trait)
     expect(kindTraits.group).toEqual(["identity", "box", "effects"])
-    expect(kindTraits.slide).toEqual(["fill", "template"])
+    expect(kindTraits.slide).toEqual(["fill", "template", "show"])
     expect(kindTraits.notes).toEqual(["notes"])
   })
 })
