@@ -122,6 +122,7 @@ test("five slide Undos and Redos focus the restored selection", async ({ page, c
   await expect(cards(page)).toHaveCount(12)
   await page.keyboard.press("Delete")
   await expect(cards(page)).toHaveCount(9)
+  await expect.poll(() => revision(stack, saved)).toBe(start + 5)
   const misplaced = []
   for (const [index, count] of [12, 9, 9, 8, 7, 8, 9, 9, 12, 9].entries()) {
     await page.keyboard.press(index < 5 ? "ControlOrMeta+z" : "ControlOrMeta+Shift+z")
