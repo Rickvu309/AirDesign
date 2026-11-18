@@ -11,19 +11,19 @@
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "stored", "landedBefore"],
       "digest": "b561187b2f9c",
-      "blob": "69c3d06e6720473dc4fb39206e78509408430335"
+      "blob": "6c9ef52fe885ff0e96a4573b00683e390e46569e"
     },
     {
       "file": "apps/web/src/editor/use-undo.ts",
       "names": ["useUndoList", "useUndoTurn"],
-      "digest": "653e1e1d17b8",
-      "blob": "72d7913d5ba42359630bda38f2cf48277e31e743"
+      "digest": "570f43eef1c9",
+      "blob": "259ff08bf7152281ae7bcc219d4d55923e300aaa"
     },
     {
       "file": "apps/web/src/undo-list.ts",
       "names": ["turnBack", "sent", "sentCommand", "recorded"],
-      "digest": "ef1369ded206",
-      "blob": "3422414c48c6564c5d4b5417bf897b50a9af3b3d"
+      "digest": "995e796e5312",
+      "blob": "099e57517effc643b12289a6fa768e9c039a63a9"
     },
     {
       "file": "apps/web/src/commit-edit.ts",
@@ -34,26 +34,26 @@
     {
       "file": "apps/web/src/editor/use-deck-open.ts",
       "names": ["useDeckOpen"],
-      "digest": "aec38e714da8",
-      "blob": "ddd51641987071965da25e9b57853b3bcf7ce9d6"
+      "digest": "08b66b6c54c0",
+      "blob": "df0488deaabd622a26a93d242aefaa1e3fadedce"
     },
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "redoOf"],
       "digest": "7e4cd4c8fc38",
-      "blob": "dd54fb16edd1d1787a1c6c6bb23687923ff0b8ca"
+      "blob": "5f2cec0de1b46fb91cb92c9ef8d6412c3a844087"
     },
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect"],
-      "digest": "8a4ce7df8c95",
-      "blob": "7987cb9d5e8760e968a365a18af90fe1ce529f6d"
+      "digest": "8a4a0c193305",
+      "blob": "9ba356657d793758accea9bbaea08a4fe5cc0dca"
     },
     {
       "file": "packages/live/src/held.ts",
       "names": ["sealRows", "confirmRows", "setAside", "takeAside"],
       "digest": "a3e2231cd5e0",
-      "blob": "5f57db5440e4b952a96ab11a451f17159de1b8c3"
+      "blob": "2474249e4aecbc138bfb24bcca8fb361c6da1f5d"
     },
     {
       "file": "packages/live/src/slide-replay.ts",

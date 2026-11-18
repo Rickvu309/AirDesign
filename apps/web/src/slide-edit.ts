@@ -2,11 +2,13 @@ import {
   cloneMany,
   limits,
   foldSlides,
+  gridCommandVersion,
   nextSlideId,
   presentSlides,
   readSlideId,
   slideUndoable,
   type Register,
+  type SlideState,
   type GridSide,
   type SlideCommand,
   type SlideId,
@@ -37,39 +39,39 @@ export function fileSlides(
 }
 
 export function slideCommand(
-  file: readonly SlideId[],
-  order: Register["order"],
+  state: SlideState,
   change: SlideChange,
   index: number,
   to = index,
   layoutPart?: string,
   row: GridSide = "same",
 ): { readonly edit: SlideCommand; readonly current: number } | null {
-  const spots = presentSlides({ file, order })
+  const grid = gridCommandVersion(state)
+  const spots = presentSlides(state)
   const spot = spots[index]
   if (spot === undefined) return null
   if (change === "remove") {
     if (spots.length < 2) return null
-    return { edit: { slide: "remove", id: spot.id, grid: 1 }, current: index < spots.length - 1 ? index : index - 1 }
+    return { edit: { slide: "remove", id: spot.id, grid }, current: index < spots.length - 1 ? index : index - 1 }
   }
   if (change === "move") {
     if (index === to || to < 0 || to >= spots.length) return null
     const remaining = spots.filter((row) => row.id !== spot.id)
     return {
-      edit: { slide: "move", id: spot.id, after: remaining[to - 1]?.id ?? null, row: "same", grid: 1 },
+      edit: { slide: "move", id: spot.id, after: remaining[to - 1]?.id ?? null, row: "same", grid },
       current: to,
     }
   }
-  const id = nextSlideId(foldSlides({ file, order }).map((slide) => slide.id))
+  const id = nextSlideId(foldSlides(state).map((slide) => slide.id))
   if (change === "add") {
     const part = layoutPart === undefined ? {} : { layoutPart }
-    const edit: SlideCommand = { slide: "add", id, after: spot.id, grid: 1, row, layout: spot.id, ...part }
+    const edit: SlideCommand = { slide: "add", id, after: spot.id, grid, row, layout: spot.id, ...part }
     return {
       edit,
-      current: presentSlides({ file, order: [...order, edit] }).findIndex((slide) => slide.id === id),
+      current: presentSlides({ ...state, order: [...state.order, edit] }).findIndex((slide) => slide.id === id),
     }
   }
-  return { edit: { slide: "clone", id, source: spot.id, grid: 1 }, current: index + 1 }
+  return { edit: { slide: "clone", id, source: spot.id, grid }, current: index + 1 }
 }
 
 export async function commitSlideChange(
@@ -84,11 +86,11 @@ export async function commitSlideChange(
   row: GridSide = "same",
 ): Promise<CommitOutcome> {
   const file = fileSlides(parts, register)
-  const state = { file, order: register.order }
+  const state = { ...register, file }
   const current = presentSlides(state)[index]
   const chosen =
     layoutPart ?? (change === "add" && current !== undefined ? newSlideLayout(parts, state, current.id) : undefined)
-  const built = slideCommand(file, register.order, change, index, to, chosen, row)
+  const built = slideCommand(state, change, index, to, chosen, row)
   if (built === null) return "refused"
   const edit = flooredEdit(parts, register, file, built.edit)
   const undoable = slideUndoable(register, file, edit)
@@ -108,7 +110,8 @@ export async function commitSlideMove(
   row: GridSide | "keep",
   paint: (current: number, undoable: Undoable | null) => void | Promise<void>,
 ): Promise<CommitOutcome> {
-  const edit: SlideCommand = { slide: "move-many", grid: 1, ids, after, row }
+  const grid = gridCommandVersion(register)
+  const edit: SlideCommand = { slide: "move-many", grid, ids, after, row }
   const undoable = slideUndoable(register, file, edit)
   const kept = await connect(memoryRemote()).enqueueSlide(deckId, file, edit)
   if (!kept.ok) return "refused"
@@ -129,14 +132,15 @@ export async function commitSlideSet(
   paint: (current: number, copies: readonly SelectedCopy[], undoable: Undoable) => Promise<void>,
 ): Promise<SetOutcome> {
   const file = fileSlides(parts, register)
-  const state = { file, order: register.order }
+  const state = { ...register, file }
+  const grid = gridCommandVersion(state)
   const slides = presentSlides(state)
   const first = slides.findIndex((slide) => ids.includes(slide.id))
   if (ids.some((id) => !slides.some((slide) => slide.id === id))) return { ok: false, message: "setRefused" }
   if (change === "remove" && ids.length >= slides.length) return { ok: false, message: "lastSlide" }
   if (change === "clone" && ids.length + slides.length > limits.slides) return { ok: false, message: "slideLimit" }
   const edit: SlideCommand | null =
-    change === "remove" ? { slide: "remove-many", grid: 1, ids } : cloneMany(state, ids, cloneFloor(parts, register))
+    change === "remove" ? { slide: "remove-many", grid, ids } : cloneMany(state, ids, cloneFloor(parts, register))
   if (edit === null) return { ok: false, message: "setRefused" }
   const undoable = slideUndoable(register, file, edit)
   if (undoable === null) return { ok: false, message: "setRefused" }

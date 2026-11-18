@@ -8,10 +8,12 @@ import {
   type DeckIndex,
   type IndexPage,
 } from "@airdesign/document"
+import { gridOpening } from "./grid-opening.js"
+import { keepGridOpening } from "./held.js"
 import type { CommitResult, OpenResult, Remote } from "./remote.js"
 import { installSlots, readSlot, replaceSlots, swapSlot } from "./store.js"
 
-type ImportIndex = Pick<DeckIndex, "slides" | "elements" | "palettes" | "templates">
+type ImportIndex = Pick<DeckIndex, "slides" | "elements" | "palettes" | "templates" | "sectionStarts">
 type Queue = { readonly count: number; readonly sent: number; readonly once?: string; readonly format?: number }
 const key = (deck: string, part: string) => `${deck}\u0002layouts\u0002${part}`
 const chunkSize = Math.floor(limits.row / 4)
@@ -69,6 +71,7 @@ export function indexPages(
   | { readonly ok: false; readonly refusal: "present" | "stale" | "limit" } {
   const shared = {
     format,
+    ...(index.sectionStarts === undefined ? {} : { sectionStarts: index.sectionStarts }),
     ...(index.templates === undefined ? {} : { templates: index.templates }),
     ...(index.palettes === undefined ? {} : { palettes: index.palettes }),
   }
@@ -127,23 +130,28 @@ export async function queueIndex(
   deck: string,
   index: ImportIndex,
   once: () => string,
+  fresh = false,
 ): Promise<{ readonly ok: true } | { readonly ok: false; readonly refusal: WireRefusal }> {
   const parsed = readDeckId(deck)
   if (!parsed.ok) return parsed
-  return keepIndex(parsed.deck, index, once)
+  const queued = await keepIndex(parsed.deck, index, once)
+  if (queued.ok && fresh && index.sectionStarts !== undefined)
+    await keepGridOpening(parsed.deck, gridOpening(index.slides, index.sectionStarts))
+  return queued
 }
 
 export async function sendIndex(
   remote: Remote,
   deck: DeckId,
   open: () => Promise<OpenResult>,
-): Promise<CommitResult | null> {
+): Promise<(CommitResult & { readonly indexedSections?: true }) | null> {
   let pending = queue(await readSlot(key(deck, "queue")))
   if (pending === null || pending.sent === pending.count) return null
   if (remote.index === undefined) return { ok: false, refusal: "store" }
   const opened = await open()
   if (!opened.ok) return opened
   let revision = opened.revision
+  let indexedSections = false
   while (pending.sent < pending.count) {
     const page = await storedPage(deck, pending.sent)
     if (page === null) return { ok: false, refusal: "payload" }
@@ -157,8 +165,9 @@ export async function sendIndex(
       const stored = queue(current)
       return stored !== null && stored.count === was.count && stored.sent === was.sent && stored.once === was.once
     })
+    if (kept && next.sent === next.count) indexedSections = page.sectionStarts !== undefined
     pending = kept ? next : queue(await readSlot(key(deck, "queue")))
     if (pending === null) return { ok: false, refusal: "payload" }
   }
-  return { ok: true, deck, revision, key: `${deck}:${revision}` }
+  return { ok: true, deck, revision, key: `${deck}:${revision}`, ...(indexedSections ? { indexedSections: true } : {}) }
 }

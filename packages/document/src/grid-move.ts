@@ -1,5 +1,5 @@
 import type { SlideId } from "./element-id.js"
-import { gridRows, type GridRow, type V1Command } from "./grid-order.js"
+import { gridRows, type GridRow, type GridCommand } from "./grid-order.js"
 import { orderKeyBetween } from "./order-key.js"
 import {
   presentSlides,
@@ -9,7 +9,7 @@ import {
   type SlideState,
 } from "./slide-order.js"
 
-type Move = Extract<V1Command, { readonly slide: "move-many" }>
+type Move = Extract<GridCommand, { readonly slide: "move-many" }>
 
 export function groupRefusal(state: SlideState, command: Move): SlideRefusal | null {
   const present = new Set(presentSlides(state).map((spot) => spot.id))
@@ -20,7 +20,9 @@ export function groupRefusal(state: SlideState, command: Move): SlideRefusal | n
     return "dead"
   if (
     command.row === "keep" &&
-    !gridRows(state).some((row) => row.length === command.ids.length && row.every((id) => command.ids.includes(id)))
+    !gridRows(state, command.grid).some(
+      (row) => row.length === command.ids.length && row.every((id) => command.ids.includes(id)),
+    )
   )
     return "stale"
   return null

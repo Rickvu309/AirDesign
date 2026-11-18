@@ -11,6 +11,7 @@ import {
   storeNewer,
   transaction,
 } from "./device.js"
+import { gridOpeningKey, readGridOpening, type GridOpening } from "./grid-opening.js"
 import { filledRow } from "./background-fill.js"
 import { deckView, joinable, newerRow, played, readable, split, storedKey, type DeckView } from "./deck-view.js"
 import {
@@ -46,15 +47,15 @@ function headOf(raw: unknown): number {
   return typeof raw === "number" ? raw : 0
 }
 
-function load(deck: DeckId, head: number, rows: readonly StoredRow[]): Held {
+function load(deck: DeckId, head: number, rows: readonly StoredRow[], opening: GridOpening | undefined): Held {
   const { confirmed, pending } = split(rows)
   const last = pending.at(-1)
   return {
     head,
     confirmed,
     pending,
-    register: played(deck, confirmed, pending),
-    before: joinable(last) ? played(deck, confirmed, pending.slice(0, -1)) : undefined,
+    register: played(deck, confirmed, pending, opening),
+    before: joinable(last) ? played(deck, confirmed, pending.slice(0, -1), opening) : undefined,
   }
 }
 
@@ -104,13 +105,14 @@ export async function changeHeld<Result>(deck: DeckId, change: (held: Held) => C
   const reload = () => {
     const rows = store.getAll(rowRange(scoped(account, deck)))
     const stored = store.get(head)
-    stored.onsuccess = () => {
+    const opening = store.get(scoped(account, gridOpeningKey(deck)))
+    opening.onsuccess = () => {
       const all = (rows.result as StoredRow[]).map(filledRow)
-      if (all.some((row) => newerFormat(row) || newerRow(row))) {
+      if (newerFormat(opening.result) || all.some(newerRow)) {
         markNewer()
         return
       }
-      const loaded = load(deck, headOf(stored.result), all.filter(readable))
+      const loaded = load(deck, headOf(stored.result), all.filter(readable), readGridOpening(opening.result))
       const dropped = all.filter((row) => !readable(row)).map((row) => storedKey(deck, row))
       apply(loaded, change(loaded), dropped)
     }
@@ -193,10 +195,16 @@ async function heldRevision(account: string, deck: DeckId): Promise<number> {
   return finished(reading, () => revisionOf(holds.result))
 }
 
-export async function adoptRows(deck: DeckId, revision: number, rows: readonly ConfirmedRow[]): Promise<boolean> {
+export async function adoptRows(
+  deck: DeckId,
+  revision: number,
+  rows: readonly ConfirmedRow[],
+  opening?: GridOpening,
+): Promise<boolean> {
   const account = signedIn()
   const lane = scoped(account, deck)
-  if (pageAdopted().get(lane) === revision && (await heldRevision(account, deck)) === revision) return true
+  if (opening === undefined && pageAdopted().get(lane) === revision && (await heldRevision(account, deck)) === revision)
+    return true
   const writing = await transaction("readwrite")
   const store = writing.objectStore(storeName)
   const head = scoped(account, headKey(deck))
@@ -211,6 +219,7 @@ export async function adoptRows(deck: DeckId, revision: number, rows: readonly C
     store.delete(confirmedRange(scoped(account, deck)))
     for (const row of rows) store.put(row, scoped(account, rowKey(deck, "confirmed", row.revision)))
     store.put(revision, slot)
+    if (opening !== undefined) store.put(opening, scoped(account, gridOpeningKey(deck)))
     store.put(headOf(stored.result) + 1, head)
   }
   try {
@@ -221,6 +230,22 @@ export async function adoptRows(deck: DeckId, revision: number, rows: readonly C
   }
   if (adopted) pageAdopted().set(lane, revision)
   return adopted
+}
+
+export async function keepGridOpening(deck: DeckId, opening: GridOpening): Promise<void> {
+  const account = signedIn()
+  const writing = await transaction("readwrite")
+  const store = writing.objectStore(storeName)
+  const key = scoped(account, gridOpeningKey(deck))
+  const head = scoped(account, headKey(deck))
+  const existing = store.get(key)
+  const stored = store.get(head)
+  stored.onsuccess = () => {
+    if (existing.result !== undefined) return
+    store.put(opening, key)
+    store.put(headOf(stored.result) + 1, head)
+  }
+  await finished(writing, () => undefined)
 }
 
 export async function confirmRows(
@@ -381,13 +406,14 @@ export async function heldView(deck: DeckId): Promise<DeckView | null> {
   const next = known === undefined ? undefined : store.get(scoped(account, nextKey(deck, known)))
   const reload = () => {
     const rows = store.getAll(rowRange(scoped(account, deck)))
-    rows.onsuccess = () => {
+    const opening = store.get(scoped(account, gridOpeningKey(deck)))
+    opening.onsuccess = () => {
       const all = (rows.result as StoredRow[]).map(filledRow)
-      if (all.some((row) => newerFormat(row) || newerRow(row))) {
+      if (newerFormat(opening.result) || all.some(newerRow)) {
         markNewer()
         return
       }
-      held = load(deck, headOf(stored.result), all.filter(readable))
+      held = load(deck, headOf(stored.result), all.filter(readable), readGridOpening(opening.result))
       dropped = all.filter((row) => !readable(row)).map((row) => storedKey(deck, row))
       remember(account, deck, held)
     }

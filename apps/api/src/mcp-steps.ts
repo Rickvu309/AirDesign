@@ -3,7 +3,7 @@ import type { createServer, IncomingMessage, Server } from "node:http"
 import type { AddressInfo } from "node:net"
 
 import { onceMeta, readDeckId, readDeckIndex, type AgentOp, type DeckId } from "@airdesign/catalog"
-import { elementId, foldSlides, type Register } from "@airdesign/document"
+import { elementId, foldSlides, readSlideId, type Register } from "@airdesign/document"
 
 import { indexSaved } from "./index-saved.js"
 import { serveMcp } from "./mcp.js"
@@ -276,8 +276,9 @@ export async function toolCalls(owned: Owned): Promise<number> {
 
 export function slidesAddedBy(register: Register, runId: string): readonly string[] {
   const added = new Set(register.order.flatMap((row) => (row.runId === runId && row.slide === "add" ? [row.id] : [])))
-  const file = register.file.length > 0 ? register.file : (register.index?.slides.map((slide) => slide.id) ?? [])
-  return foldSlides({ file: file as Register["file"], order: register.order })
+  const file =
+    register.file.length > 0 ? register.file : (register.index?.slides.flatMap(({ id }) => readSlideId(id) ?? []) ?? [])
+  return foldSlides({ ...register, file })
     .filter((slide) => slide.present && added.has(slide.id))
     .map((slide) => slide.id)
 }

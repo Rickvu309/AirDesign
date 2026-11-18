@@ -15,17 +15,15 @@ runs:
   steps:
     - shell: bash
       continue-on-error: true
-      timeout-minutes: 2
       env:
         AFFECTED_BASE: ${{ inputs.base }}
         AFFECTED_PART: ${{ inputs.part }}
       run: |
         mkdir -p test-results
         printf '%s\n' '{"complete":false,"unit":{"reached":"all","files":null},"tooling":{"reached":"all","files":null},"browser":{"reached":"all","files":null},"design":{"reached":"all","files":null},"failures":null,"incomplete":["report did not start or finish"]}' > test-results/affected-report.json
-        node scripts/affected-report.mjs --base "$AFFECTED_BASE" --part "$AFFECTED_PART" --output test-results/affected-report.json
+        timeout --kill-after=5s 2m node scripts/affected-report.mjs --base "$AFFECTED_BASE" --part "$AFFECTED_PART" --output test-results/affected-report.json
     - if: always()
       continue-on-error: true
-      timeout-minutes: 2
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       with:
         name: affected-report-${{ inputs.part }}-${{ inputs.shard }}

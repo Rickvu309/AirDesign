@@ -14,7 +14,7 @@ export function slideNumbering(parts: Parts, state: SlideState | null = null): R
     return id === undefined ? [] : [id]
   })
   const rows = new Map(
-    gridRows({ file: state?.file.length ? state.file : file, order: state?.order ?? [] }).flatMap((row) =>
+    gridRows({ ...state, file: state?.file.length ? state.file : file, order: state?.order ?? [] }).flatMap((row) =>
       row.map((slide, at) => [slide, at + 1] as const),
     ),
   )

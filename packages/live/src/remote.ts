@@ -15,6 +15,7 @@ import {
 } from "@airdesign/catalog"
 import {
   answeredRegister,
+  indexedSectionStarts,
   appendIndex,
   bytesOf,
   decide,
@@ -80,8 +81,14 @@ export function memoryRemote(): Remote {
       const { ok: _ok, deck: id, ...page } = parsed
       const next = appendIndex(stored.register.index, page)
       if (!next.ok) return next
-      decks.set(id, { ...stored, register: { ...stored.register, index: next.index } })
-      return { ok: true, deck: id, revision: stored.revision }
+      const introduced =
+        stored.register.index !== undefined &&
+        stored.register.index.sectionStarts === undefined &&
+        indexedSectionStarts(next.index) !== undefined
+      const revision = stored.revision + Number(introduced)
+      decks.set(id, { revision, register: { ...stored.register, index: next.index } })
+      if (introduced) notify(id)
+      return { ok: true, deck: id, revision }
     },
     async open(body) {
       const parsed = readCapture(body)

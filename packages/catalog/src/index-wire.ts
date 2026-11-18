@@ -9,7 +9,18 @@ export function readDeckIndex(
   const body = recordOf(raw)
   if (
     body === undefined ||
-    !knownKeys(body, ["deck", "format", "once", "offset", "total", "palettes", "templates", "slides", "elements"])
+    !knownKeys(body, [
+      "deck",
+      "format",
+      "once",
+      "offset",
+      "total",
+      "palettes",
+      "templates",
+      "sectionStarts",
+      "slides",
+      "elements",
+    ])
   )
     return fieldRefusal
   const deck = readDeckId(body.deck)

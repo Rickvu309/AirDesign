@@ -79,7 +79,7 @@ export function ready(
     const id = readSlideId(row.id)
     return id === undefined ? [] : [id]
   })
-  const present = presentSlides({ file, order: deck.register.order })
+  const present = presentSlides({ ...deck.register, file })
   if (slide === undefined || !present.some((spot) => spot.id === slide)) return { refusal: "dead" }
   return { file }
 }

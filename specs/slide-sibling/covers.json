@@ -4,14 +4,14 @@
     {
       "file": "packages/engine/src/agent-slides.ts",
       "names": ["readFresh", "agentSlide"],
-      "digest": "47619b3d111b",
-      "blob": "6ff7c2aa67668fea01c6db2cbae2cddb0219a25a"
+      "digest": "3ec9338ae17c",
+      "blob": "9790e98df9e2c15b120b23a4c38de5d2abfd037a"
     },
     {
       "file": "packages/engine/src/agent-elements.ts",
       "names": ["deleteElement", "addTextBox", "ready"],
-      "digest": "9e28c800e39a",
-      "blob": "5503bf2b5da3b0979f97ec10bcad5a52c600eafa"
+      "digest": "2d697b43e8be",
+      "blob": "49168fce8830987ab46e5d92576dc3cd88585546"
     },
     {
       "file": "packages/engine/src/call.ts",

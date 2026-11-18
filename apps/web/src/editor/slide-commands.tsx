@@ -53,8 +53,8 @@ export function slideCommands(deck: CommandedDeck, undo: () => void, showMatchin
       const target =
         row === "new"
           ? presentSlides({
+              ...opened.register,
               file: fileSlides(shownParts.current, opened.register),
-              order: opened.register.order,
             }).findIndex((slide) => slide.id === anchor)
           : index
       settle(
@@ -74,7 +74,7 @@ export function slideCommands(deck: CommandedDeck, undo: () => void, showMatchin
 
   const register = deck.shown.shownRegister.current
   const file = fileSlides(shownParts.current, register ?? { file: [], order: [] })
-  const state = { file, order: register?.order ?? [] }
+  const state = { ...register, file, order: register?.order ?? [] }
   const sequence = presentSlides(state).map((spot) => spot.id)
   return {
     count: slideCount,

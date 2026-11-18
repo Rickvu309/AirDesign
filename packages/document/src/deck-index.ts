@@ -14,7 +14,7 @@ import {
   type Palette,
   type Role,
 } from "./design.js"
-import { readElementId, shapeOf, type ElementId } from "./element-id.js"
+import { readElementId, readSlideId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { readTemplateStyles, type TemplateStyle } from "./template-style.js"
 import { format } from "./format.js"
 import { bytesOf, limits } from "./limits.js"
@@ -54,6 +54,7 @@ export type IndexPage = {
   readonly once: string
   readonly offset: number
   readonly total: number
+  readonly sectionStarts?: readonly SlideId[]
   readonly templates?: readonly TemplateStyle[]
   readonly palettes?: readonly Palette[]
   readonly slides: readonly IndexSlide[]
@@ -62,6 +63,7 @@ export type IndexPage = {
 type BuiltIndex = {
   readonly format?: number
   readonly total: number
+  readonly sectionStarts?: readonly SlideId[]
   readonly templates?: readonly TemplateStyle[]
   readonly palettes?: readonly Palette[]
   readonly slides: readonly IndexSlide[]
@@ -71,7 +73,7 @@ type BuiltIndex = {
 export type DeckIndex = BuiltIndex & { readonly next?: BuiltIndex }
 
 export const indexKeys = {
-  page: ["format", "once", "offset", "total", "palettes", "templates", "slides", "elements"],
+  page: ["format", "once", "offset", "total", "palettes", "templates", "sectionStarts", "slides", "elements"],
   palette: ["slots", "map", "fonts"],
   slide: ["id", "position", "size", "free", "animated", "layout", "palette", "template", "textStyles"],
   element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept", "placed", "group", "frame", "link"],
@@ -230,6 +232,20 @@ function readPalettes(raw: unknown): readonly Palette[] | null {
 
 const pageKeys: readonly string[] = indexKeys.page
 
+function readSectionStarts(raw: unknown, slides: readonly IndexSlide[]): readonly SlideId[] | null {
+  if (!Array.isArray(raw) || raw.length > slides.length) return null
+  const starts: SlideId[] = []
+  let previous = -1
+  for (const value of raw) {
+    const id = readSlideId(value)
+    const position = slides.findIndex((slide) => slide.id === id)
+    if (id === undefined || (previous < 0 ? position !== 0 : position <= previous)) return null
+    starts.push(id)
+    previous = position
+  }
+  return starts
+}
+
 export function readIndexPage(raw: unknown): IndexPage | null {
   const row = record(raw)
   if (row === null) return null
@@ -237,7 +253,9 @@ export function readIndexPage(raw: unknown): IndexPage | null {
     !onlyKeys(
       row,
       pageKeys.filter(
-        (key) => (key !== "format" && key !== "palettes" && key !== "templates") || row[key] !== undefined,
+        (key) =>
+          (key !== "format" && key !== "palettes" && key !== "templates" && key !== "sectionStarts") ||
+          row[key] !== undefined,
       ),
     )
   )
@@ -264,6 +282,8 @@ export function readIndexPage(raw: unknown): IndexPage | null {
       return null
     slides.push(slide)
   }
+  const sectionStarts = row.sectionStarts === undefined ? undefined : readSectionStarts(row.sectionStarts, slides)
+  if (sectionStarts === null) return null
   if (!Array.isArray(row.elements) || row.elements.length > limits.batch) return null
   if (row.elements.length === 0 && (row.total !== 0 || row.offset !== 0)) return null
   if (row.offset + row.elements.length > row.total) return null
@@ -281,6 +301,7 @@ export function readIndexPage(raw: unknown): IndexPage | null {
     total: row.total,
     ...(palettes === undefined ? {} : { palettes }),
     ...(templates === undefined ? {} : { templates }),
+    ...(sectionStarts === undefined ? {} : { sectionStarts }),
     slides,
     elements,
   }
@@ -319,6 +340,8 @@ type Appended =
 function buildBeside(current: DeckIndex, page: IndexPage, pageFormat: number): Appended {
   if (current.total !== page.total || !same(slideOrder(current.slides), slideOrder(page.slides)))
     return { ok: false, refusal: "present" }
+  if (current.sectionStarts !== undefined && !same(current.sectionStarts, page.sectionStarts))
+    return { ok: false, refusal: "present" }
   const opening = current.elements.slice(page.offset, page.offset + page.elements.length)
   if (!sameOpening(opening, page.elements)) return { ok: false, refusal: "present" }
   const { next, ...stored } = current
@@ -345,6 +368,7 @@ const slideOrder = (slides: readonly IndexSlide[]) => slides.map(({ id, position
 
 function appendBuilt(current: BuiltIndex | undefined, page: IndexPage): Appended {
   if (current !== undefined) {
+    if (!same(current.sectionStarts, page.sectionStarts)) return { ok: false, refusal: "present" }
     if (current.total !== page.total || !same(slideOrder(current.slides), slideOrder(page.slides)))
       return { ok: false, refusal: "present" }
     const prior = current.pages.find((kept) => kept.once === page.once)
@@ -378,11 +402,16 @@ function appendBuilt(current: BuiltIndex | undefined, page: IndexPage): Appended
       total: page.total,
       ...(page.palettes === undefined ? {} : { palettes: page.palettes }),
       ...(page.templates === undefined ? {} : { templates: page.templates }),
+      ...(page.sectionStarts === undefined ? {} : { sectionStarts: page.sectionStarts }),
       slides: page.slides,
       elements: [...elements, ...page.elements],
       pages: [...(current?.pages ?? []), { once: page.once, offset: page.offset, count: page.elements.length }],
     },
   }
+}
+
+export function indexedSectionStarts(index: DeckIndex | undefined): readonly SlideId[] | undefined {
+  return index !== undefined && index.total === index.elements.length ? index.sectionStarts : undefined
 }
 
 export function indexDue(stored: DeckIndex | undefined): boolean {
@@ -399,9 +428,13 @@ function rowFormat(elements: Readonly<Partial<Record<string, Rowed>>>): number {
 }
 
 export function answeredRegister<
-  Stored extends { readonly index?: DeckIndex; readonly elements: Readonly<Partial<Record<string, Rowed>>> },
+  Stored extends {
+    readonly index?: DeckIndex
+    readonly order?: readonly { readonly slide: string; readonly grid?: 1 | 2 }[]
+    readonly elements: Readonly<Partial<Record<string, Rowed>>>
+  },
 >(register: Stored): Stored & { readonly format?: number } {
-  const rows = rowFormat(register.elements)
+  const rows = register.order?.some((command) => command.grid === 2) === true ? format : rowFormat(register.elements)
   if (register.index === undefined) return rows > 1 ? { ...register, format: rows } : register
   const { next, ...index } = register.index
   const stored = Math.max(index.format ?? 1, next?.format ?? 1, rows)

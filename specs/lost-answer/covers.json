@@ -4,8 +4,8 @@
     {
       "file": "packages/live/src/cache.ts",
       "names": ["connect"],
-      "digest": "6451d697403b",
-      "blob": "4ad27345e95d272aa945dbb8a9e9cad98489f1bf"
+      "digest": "8a4a0c193305",
+      "blob": "9ba356657d793758accea9bbaea08a4fe5cc0dca"
     },
     {
       "file": "packages/live/src/slide-replay.ts",
@@ -17,7 +17,7 @@
       "file": "packages/live/src/held.ts",
       "names": ["sealRows", "confirmRows", "takeEdits", "unsealRows", "setAside", "takeAside"],
       "digest": "4ab7dde1de44",
-      "blob": "5f57db5440e4b952a96ab11a451f17159de1b8c3"
+      "blob": "2474249e4aecbc138bfb24bcca8fb361c6da1f5d"
     },
     {
       "file": "packages/live/src/commit-body.ts",
@@ -41,7 +41,7 @@
       "file": "packages/live/src/remote.ts",
       "names": ["post", "httpRemote"],
       "digest": "b076ba62b968",
-      "blob": "4e4c1f5773b65c0a90ed95c20516dbcd2a999a25"
+      "blob": "20896e4701af30974d4e649c882f10d902ec4a55"
     },
     {
       "file": "apps/web/src/commit-edit.ts",

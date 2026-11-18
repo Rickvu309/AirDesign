@@ -29,7 +29,10 @@ export function flooredEdit(
   edit: SlideCommand,
 ): SlideCommand {
   if (edit.slide === "add") {
-    return { ...edit, floor: slideRows(orderedParts(parts, { file, order: [...register.order, edit] }), edit.id) }
+    return {
+      ...edit,
+      floor: slideRows(orderedParts(parts, { ...register, file, order: [...register.order, edit] }), edit.id),
+    }
   }
   if (edit.slide !== "clone") return edit
   return { ...edit, floor: cloneFloor(parts, register)(edit.source, edit.id) }

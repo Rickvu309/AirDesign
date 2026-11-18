@@ -16,6 +16,7 @@ import {
   type Queued,
   type Register,
 } from "@airdesign/document"
+import type { GridOpening } from "./grid-opening.js"
 import { withSlides } from "./slide-replay.js"
 import {
   fitConfirmed,
@@ -70,9 +71,17 @@ function opened(register: Register, node: ElementId | undefined, floor: string):
   return decision.decision === "apply" ? decision.register : register
 }
 
-export function played(deck: DeckId, confirmed: readonly ConfirmedRow[], pending: readonly PendingRow[]): Register {
+export function played(
+  deck: DeckId,
+  confirmed: readonly ConfirmedRow[],
+  pending: readonly PendingRow[],
+  opening?: GridOpening,
+): Register {
   if ([...confirmed, ...pending].some(newerRow)) throw new Error("newer")
   let register = openRegister("", deck)
+  if (opening !== undefined) {
+    register = { ...register, file: opening.file, sectionStarts: opening.sectionStarts }
+  }
   const versions = new Map<string, number>()
   const seeded: Queued[] = []
   for (const row of logicalValues(confirmed)) {
@@ -126,9 +135,9 @@ export function deckView(register: Register, confirmed: ConfirmedRow[], pending:
   return { register, phase, pending, confirmed }
 }
 
-export function view(deck: DeckId, rows: readonly StoredRow[]): DeckView {
+export function view(deck: DeckId, rows: readonly StoredRow[], opening?: GridOpening): DeckView {
   const { confirmed, pending } = split(rows)
-  return deckView(played(deck, confirmed, pending), confirmed, pending)
+  return deckView(played(deck, confirmed, pending, opening), confirmed, pending)
 }
 
 export function joinable(row: PendingRow | undefined): row is WiredRow {

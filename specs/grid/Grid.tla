@@ -4,16 +4,34 @@ VARIABLES stage, slides, heads, cacheStage, cacheSlides, cacheHeads, initialized
 vars == <<stage, slides, heads, cacheStage, cacheSlides, cacheHeads, initialized>>
 
 Opening == <<1,2,3,4,5,6>>
+SectionSizes == <<1,1,1,3>>
+Max(a, b) == IF a > b THEN a ELSE b
+RECURSIVE PackSections(_, _, _, _)
+PackSections(sizes, position, available, columns) ==
+  IF Len(sizes) = 0 THEN {}
+  ELSE LET size == Head(sizes)
+       IN IF size <= available
+          THEN PackSections(Tail(sizes), position + size, available - size, columns)
+          ELSE {position + n * columns : n \in 0..((size - 1) \div columns)}
+               \cup PackSections(Tail(sizes), position + size, Max(0, columns - size), columns)
+SectionedDefault(sizes, base) ==
+  LET widths == IF \E i \in 1..Len(sizes) : sizes[i] > base THEN base..10 ELSE {base}
+      Heads(columns) == PackSections(sizes, 1, 0, columns)
+      Rows(columns) == Cardinality(Heads(columns))
+      width == CHOOSE columns \in widths : \A other \in widths :
+        Rows(columns) < Rows(other) \/ (Rows(columns) = Rows(other) /\ columns <= other)
+  IN Heads(width)
 Members(seq) == {seq[i] : i \in 1..Len(seq)}
 RowStart(i) == CHOOSE j \in 1..i : slides[j] \in heads /\
   \A k \in (j+1)..i : slides[k] \notin heads
 TypeOK ==
-  /\ stage \in 0..48
+  /\ stage \in 0..53
   /\ slides \in Seq(1..8)
   /\ heads \subseteq Members(slides)
-  /\ cacheStage \in 0..48
+  /\ cacheStage \in 0..53
   /\ cacheSlides \in Seq(1..8)
   /\ cacheHeads \subseteq Members(cacheSlides)
+  /\ initialized \in 0..2
 Partition ==
   /\ Cardinality(Members(slides)) = Len(slides)
   /\ slides[1] \in heads
@@ -31,13 +49,19 @@ BelowSingleton ==
     /\ 7 \in heads
     /\ \A i \in 1..Len(slides) : slides[i] = 7 => (i = Len(slides) \/ slides[i+1] \in heads)
   /\ stage = 28 => 8 \in heads
+VersionedDefault ==
+  /\ stage = 49 => (initialized = 0 /\ heads = {1,4})
+  /\ stage \in {50,51} => (initialized = 2 /\ heads = {1,4})
+  /\ stage \in {52,53} => (initialized = 1 /\ heads = {1,5})
+  /\ SectionedDefault(<<1,28,10,2>>, 8) = {1,2,12,22,30,40}
+  /\ SectionedDefault(<<1,25,1>>, 7) = {1,2,11,20,27}
 Init ==
   /\ stage = 0 /\ slides = Opening /\ heads = {1,5}
   /\ cacheStage = 0 /\ cacheSlides = Opening /\ cacheHeads = {1,5}
-  /\ initialized = FALSE
+  /\ initialized = 0
 Land(from, to, order, starts) ==
   /\ stage = from /\ stage' = to /\ slides' = order /\ heads' = starts
-  /\ initialized' = TRUE
+  /\ initialized' = IF initialized = 0 THEN 1 ELSE initialized
   /\ UNCHANGED <<cacheStage, cacheSlides, cacheHeads>>
 RemoveHead == Land(0,1,<<1,2,3,4,6>>,{1,6})
 InsertGap == Land(1,2,<<1,2,3,4,7,6>>,{1,6})
@@ -87,10 +111,19 @@ CloneSet == Land(0,45,<<1,2,3,4,5,7,8,6>>,{1,5})
 UndoCloneSet == Land(45,46,Opening,{1,5})
 RefuseWholeDeck == Land(0,47,Opening,{1,5})
 RefuseSetCollision == Land(45,48,<<1,2,3,4,5,7,8,6>>,{1,5})
+IndexSections ==
+  /\ stage = 0 /\ stage' = 49 /\ heads' = SectionedDefault(SectionSizes, 4)
+  /\ UNCHANGED <<slides, cacheStage, cacheSlides, cacheHeads, initialized>>
+FirstVersionTwo ==
+  /\ stage = 49 /\ stage' = 50 /\ slides' = <<1,3,4,5,6>> /\ heads' = heads
+  /\ initialized' = 2 /\ UNCHANGED <<cacheStage, cacheSlides, cacheHeads>>
+LaterVersionOne == Land(50,51,<<1,3,4,6>>,{1,4})
+FirstVersionOne == Land(49,52,<<1,3,4,5,6>>,{1,5})
+LaterVersionTwo == Land(52,53,<<1,4,5,6>>,{1,5})
 Adopt ==
   /\ cacheStage # stage
   /\ cacheStage' = stage /\ cacheSlides' = slides /\ cacheHeads' = heads
   /\ UNCHANGED <<stage, slides, heads, initialized>>
-Next == RemoveHead \/ InsertGap \/ RefuseHead \/ RemoveSingleton \/ UndoSingleton \/ MoveHead \/ UndoMove \/ Add \/ Clone \/ UndoAdd \/ UndoClone \/ RemoveNonHead \/ InsertNonHeadGap \/ UndoNonHead \/ BelowInterior \/ UndoBelow \/ RedoBelow \/ BelowFinal \/ TailAppend \/ BelowAfterAppend \/ UndoConcurrentBelow \/ ForeignFillNew \/ RefuseFilledUndo \/ AppendAfterUndo \/ RefuseRedo \/ RemoveAnchor \/ RefuseDeadBelow \/ TwoBelow \/ RefuseCollision \/ GroupSame \/ UndoGroup \/ GroupNew \/ RowKeep \/ UndoRow \/ RedoRow \/ ForeignRowInsert \/ RefuseRowUndo \/ RefuseStaleRow \/ ForeignGroupGap \/ UndoForeignGroup \/ EmptyRow \/ RefuseGroupAnchor \/ DeleteSet \/ UndoDeleteSet \/ CloneSet \/ UndoCloneSet \/ RefuseWholeDeck \/ RefuseSetCollision \/ Adopt
+Next == RemoveHead \/ InsertGap \/ RefuseHead \/ RemoveSingleton \/ UndoSingleton \/ MoveHead \/ UndoMove \/ Add \/ Clone \/ UndoAdd \/ UndoClone \/ RemoveNonHead \/ InsertNonHeadGap \/ UndoNonHead \/ BelowInterior \/ UndoBelow \/ RedoBelow \/ BelowFinal \/ TailAppend \/ BelowAfterAppend \/ UndoConcurrentBelow \/ ForeignFillNew \/ RefuseFilledUndo \/ AppendAfterUndo \/ RefuseRedo \/ RemoveAnchor \/ RefuseDeadBelow \/ TwoBelow \/ RefuseCollision \/ GroupSame \/ UndoGroup \/ GroupNew \/ RowKeep \/ UndoRow \/ RedoRow \/ ForeignRowInsert \/ RefuseRowUndo \/ RefuseStaleRow \/ ForeignGroupGap \/ UndoForeignGroup \/ EmptyRow \/ RefuseGroupAnchor \/ DeleteSet \/ UndoDeleteSet \/ CloneSet \/ UndoCloneSet \/ RefuseWholeDeck \/ RefuseSetCollision \/ IndexSections \/ FirstVersionTwo \/ LaterVersionOne \/ FirstVersionOne \/ LaterVersionTwo \/ Adopt
 Spec == Init /\ [][Next]_vars
 ====

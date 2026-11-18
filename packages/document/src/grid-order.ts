@@ -1,3 +1,5 @@
+import { indexedSectionStarts } from "./deck-index.js"
+import { sectionRuns } from "./section-order.js"
 import { type SlideId } from "./element-id.js"
 import { elementCommand } from "./element-order.js"
 import { groupCommand } from "./element-group.js"
@@ -29,7 +31,9 @@ export type GridUndoable = {
 }
 export type GridCopy = Omit<Extract<LegacySlideCommand, { readonly slide: "clone" }>, "slide" | "key" | "runId">
 
-export type V1Command = (
+export type GridVersion = 1 | 2
+
+export type GridCommand = (
   | (Omit<Extract<LegacySlideCommand, { readonly slide: "add" }>, "key" | "runId"> & { readonly row: GridSide })
   | Omit<Extract<LegacySlideCommand, { readonly slide: "clone" }>, "key" | "runId">
   | { readonly slide: "remove"; readonly id: SlideId }
@@ -43,11 +47,53 @@ export type V1Command = (
       readonly row: GridSide | "keep"
     }
   | { readonly slide: "grid-turn"; readonly turn: GridTurn }
-) & { readonly grid: 1; readonly runId?: string }
+) & { readonly grid: GridVersion; readonly runId?: string }
 
 export function defaultGrid1(ids: readonly SlideId[]): GridLayout {
   const columns = Math.min(10, Math.max(4, Math.ceil(Math.sqrt(ids.length * 1.5))))
   return { starts: ids.filter((_, index) => index % columns === 0) }
+}
+
+export function defaultGrid2(
+  ids: readonly SlideId[],
+  file: readonly SlideId[],
+  effects: readonly LegacySlideCommand[],
+  starts: readonly SlideId[],
+): GridLayout {
+  if (starts.length === 0) return defaultGrid1(ids)
+  const runs = partition(file, new Set(starts))
+  const sections = sectionRuns(file, effects, ids, runs).filter((slides) => slides.length > 0)
+  const base = Math.min(10, Math.max(4, Math.ceil(Math.sqrt(ids.length * 1.5))))
+  let heads = packSections(sections, base)
+  if (sections.some((slides) => slides.length > base)) {
+    for (let columns = base + 1; columns <= 10; columns++) {
+      const candidate = packSections(sections, columns)
+      if (candidate.length < heads.length) heads = candidate
+    }
+  }
+  return { starts: heads }
+}
+
+function packSections(sections: readonly (readonly SlideId[])[], columns: number): readonly SlideId[] {
+  const starts: SlideId[] = []
+  let available = 0
+  for (const slides of sections) {
+    if (slides.length <= available) {
+      available -= slides.length
+      continue
+    }
+    for (let i = 0; i < slides.length; i += columns) starts.push(slides[i]!)
+    available = Math.max(0, columns - slides.length)
+  }
+  return starts
+}
+
+export function gridSectionStarts(state: Pick<SlideState, "index" | "sectionStarts">): readonly SlideId[] | undefined {
+  return indexedSectionStarts(state.index) ?? state.sectionStarts
+}
+
+export function gridCommandVersion(state: Pick<SlideState, "index" | "sectionStarts" | "order">): GridVersion {
+  return gridSectionStarts(state) !== undefined || state.order.some((command) => command.grid !== undefined) ? 2 : 1
 }
 
 export function orderedSpots(spots: readonly FoldedSlide[]): readonly FoldedSlide[] {
@@ -66,7 +112,10 @@ function partition(ids: readonly SlideId[], starts: ReadonlySet<SlideId>): GridR
   return rows
 }
 
-export function foldGrid(state: SlideState): {
+export function foldGrid(
+  state: SlideState,
+  opening?: GridVersion,
+): {
   readonly spots: readonly FoldedSlide[]
   readonly grid: GridLayout
   readonly effects: readonly LegacySlideCommand[]
@@ -82,14 +131,23 @@ export function foldGrid(state: SlideState): {
   let initialized = false
   const effects: LegacySlideCommand[] = []
   const present = () => orderedSpots([...spots.values()])
+  const sections = gridSectionStarts(state)
+  const openingGrid = (ids: readonly SlideId[], version: GridVersion | undefined) =>
+    version === 1 || sections === undefined ? defaultGrid1(ids) : defaultGrid2(ids, state.file, effects, sections)
   for (const command of state.order) {
     if (elementCommand(command) || groupCommand(command)) {
       effects.push(command)
       continue
     }
     const before = present()
-    if (!initialized && command.grid === 1) {
-      heads = new Set(defaultGrid1(before.map((spot) => spot.id)).starts)
+    if (!initialized && command.grid !== undefined) {
+      if (command.grid === 2 && sections === undefined) throw new Error("missing section starts")
+      heads = new Set(
+        openingGrid(
+          before.map((spot) => spot.id),
+          command.grid,
+        ).starts,
+      )
       initialized = true
     }
     if (command.slide === "move-many") {
@@ -145,12 +203,12 @@ export function foldGrid(state: SlideState): {
       const remaining = before.filter((spot) => command.slide !== "move" || spot.id !== command.id)
       const anchor =
         command.slide === "add"
-          ? command.grid === 1 && command.row === "new"
+          ? command.grid !== undefined && command.row === "new"
             ? sourceRows.find((row) => row.includes(command.after))?.at(-1)
             : command.after
           : command.slide === "clone"
             ? command.source
-            : command.slide === "move" && command.grid === 1
+            : command.slide === "move" && command.grid !== undefined
               ? command.after
               : undefined
       const at = anchor === null ? -1 : remaining.findIndex((spot) => spot.id === anchor)
@@ -169,7 +227,7 @@ export function foldGrid(state: SlideState): {
               ? { from: "blank" as const, layout: command.layout }
               : { from: "blank" as const, layout: command.layout, layoutPart: command.layoutPart }
         spots.set(command.id, { id: command.id, key, birth, present: true })
-        if (command.slide === "add" && command.grid === 1 && command.row === "new") heads.add(command.id)
+        if (command.slide === "add" && command.grid !== undefined && command.row === "new") heads.add(command.id)
         if (command.slide === "add")
           effects.push({
             slide: "add",
@@ -228,13 +286,13 @@ export function foldGrid(state: SlideState): {
   const ids = present().map((spot) => spot.id)
   return {
     spots: [...spots.values()],
-    grid: initialized ? { starts: ids.filter((id) => heads.has(id)) } : defaultGrid1(ids),
+    grid: initialized ? { starts: ids.filter((id) => heads.has(id)) } : openingGrid(ids, opening),
     effects,
   }
 }
 
-export function gridRows(state: SlideState): readonly GridRow[] {
-  const folded = foldGrid(state)
+export function gridRows(state: SlideState, opening?: GridVersion): readonly GridRow[] {
+  const folded = foldGrid(state, opening)
   return partition(
     orderedSpots(folded.spots).map((spot) => spot.id),
     new Set(folded.grid.starts),
@@ -245,14 +303,14 @@ function sits(now: FoldedSlide | undefined, expected: SlideSpot): boolean {
   return (now?.present ?? false) === expected.present && (!expected.present || now?.key === expected.key)
 }
 
-export function turnRefusal(state: SlideState, turn: GridTurn): SlideRefusal | null {
-  const folded = foldGrid(state)
+export function turnRefusal(state: SlideState, turn: GridTurn, opening: GridVersion): SlideRefusal | null {
+  const folded = foldGrid(state, opening)
   const spots = new Map(folded.spots.map((spot) => [spot.id, spot]))
   const heads = new Set(folded.grid.starts)
   if (turn.heads.some((step) => !turn.spots.some((spot) => spot.id === step.id))) return "stale"
   if (turn.spots.some((step) => !spots.has(step.id) || !sits(spots.get(step.id), step.before))) return "stale"
   if (turn.heads.some((step) => heads.has(step.id) !== step.before)) return "stale"
-  const rows = gridRows(state)
+  const rows = gridRows(state, opening)
   if (
     turn.rows.some(
       (guard) => !rows.some((row) => row[0] === guard.head && JSON.stringify(row) === JSON.stringify(guard.slides)),

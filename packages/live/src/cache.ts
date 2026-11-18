@@ -21,6 +21,7 @@ import {
 } from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
 import { backgroundFill } from "./background-fill.js"
+import { indexedGridOpening } from "./grid-opening.js"
 import { queueIndex, sendIndex } from "./deck-index.js"
 import { accountKey, markNewer, storeNewer } from "./device.js"
 import { rowsFromRegister, view, type DeckView, type LivePhase } from "./deck-view.js"
@@ -205,10 +206,22 @@ export function connect(remote: Remote, options: Options = {}) {
   }
 
   async function sendRows(deck: DeckId): Promise<CommitResult> {
-    const indexed = await sendIndex(remote, deck, () => openOnce(deck))
-    if (indexed !== null && !indexed.ok) return indexed
-    const held = await heldView(deck)
-    if (held === null || held.pending.length === 0) return indexed ?? { ok: false, refusal: "batch" }
+    const index = await sendIndex(remote, deck, () => openOnce(deck))
+    if (index?.ok === false) return index
+    let held = await heldView(deck)
+    if (index?.indexedSections) {
+      const opened = await openOnce(deck)
+      if (opened.ok && (index.revision > opened.revision || held?.register.sectionStarts === undefined)) {
+        const refreshed = await refresh(deck)
+        if (!refreshed.ok) return refreshed
+        held = await heldView(deck)
+      }
+    }
+    if (!held?.pending.length) {
+      if (index === null) return { ok: false, refusal: "batch" }
+      const { indexedSections: _indexedSections, ...result } = index
+      return result
+    }
     const opened = await openOnce(deck)
     if (!opened.ok) return opened
     const adopting = !known.has(deck)
@@ -231,7 +244,13 @@ export function connect(remote: Remote, options: Options = {}) {
   }
 
   async function adopt(deck: DeckId, opened: Extract<OpenResult, { ok: true }>): Promise<void> {
-    if (accountKey() !== undefined) await adoptRows(deck, opened.revision, rowsFromRegister(deck, opened.register))
+    if (accountKey() !== undefined)
+      await adoptRows(
+        deck,
+        opened.revision,
+        rowsFromRegister(deck, opened.register),
+        indexedGridOpening(opened.register.index),
+      )
     openingDecks.set(deck, Promise.resolve(opened))
     known.set(deck, opened.revision)
   }
@@ -352,7 +371,8 @@ export function connect(remote: Remote, options: Options = {}) {
   }
 
   return {
-    index: (deck: string, index: Parameters<typeof queueIndex>[1]) => queueIndex(deck, index, nextOnce),
+    index: (deck: string, index: Parameters<typeof queueIndex>[1], fresh = false) =>
+      queueIndex(deck, index, nextOnce, fresh),
     enqueueSlide: (deck: string, file: readonly SlideId[], edit: SlideCommand) => enqueueSlides(deck, file, [edit]),
     enqueueSlides,
     enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<EnqueueResult> {
@@ -409,7 +429,10 @@ export function connect(remote: Remote, options: Options = {}) {
         if (accountKey() === undefined) return signedOut
         const held = await readRecovered(parsed.deck)
         await markSeen(parsed.deck, now())
-        if (held !== null && (held.confirmed.length > 0 || held.pending.length > 0)) {
+        if (
+          held !== null &&
+          (held.confirmed.length > 0 || held.pending.length > 0 || held.register.sectionStarts !== undefined)
+        ) {
           if (known.has(parsed.deck) || !openingDecks.has(parsed.deck)) return { ok: true, ...held }
           await serial(parsed.deck, () => adoptOpening(parsed.deck))
           const adopted = await readRecovered(parsed.deck)
@@ -418,9 +441,10 @@ export function connect(remote: Remote, options: Options = {}) {
         const opened = await openOnce(parsed.deck)
         if (!opened.ok) return opened
         const confirmed = rowsFromRegister(parsed.deck, opened.register)
-        const adopted = await adoptRows(parsed.deck, opened.revision, confirmed)
+        const opening = indexedGridOpening(opened.register.index)
+        const adopted = await adoptRows(parsed.deck, opened.revision, confirmed, opening)
         if (!known.has(parsed.deck)) known.set(parsed.deck, opened.revision)
-        if (adopted) return { ok: true, ...view(parsed.deck, confirmed) }
+        if (adopted) return { ok: true, ...view(parsed.deck, confirmed, opening) }
         const newer = await readRecovered(parsed.deck)
         return newer === null ? signedOut : { ok: true, ...newer }
       })

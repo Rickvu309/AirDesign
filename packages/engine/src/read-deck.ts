@@ -406,6 +406,7 @@ export function readDeckPage(
     {
       revision: deck.revision,
       grid: foldGrid({
+        ...deck.register,
         file:
           deck.register.file.length > 0
             ? deck.register.file
@@ -413,7 +414,6 @@ export function readDeckPage(
                 const id = readSlideId(slide.id)
                 return id === undefined ? [] : [id]
               }),
-        order: deck.register.order,
       }).grid,
       ...(templates === undefined || query.cursor !== undefined ? {} : { templates }),
       slides: (deck.register.order.length === 0

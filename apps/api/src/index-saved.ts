@@ -1,4 +1,5 @@
-import { type DeckId, type WireRefusal, readDeckIndex } from "@airdesign/catalog"
+import { indexedSectionStarts } from "@airdesign/document"
+import { type DeckId, type WireRefusal, notifyKey, readDeckIndex } from "@airdesign/catalog"
 import { indexDeck } from "@airdesign/engine"
 import type { Sql } from "./pool.js"
 import { deckAccess, readSaved } from "./saved.js"
@@ -6,11 +7,14 @@ import { deckAccess, readSaved } from "./saved.js"
 type Parsed = Extract<ReturnType<typeof readDeckIndex>, { readonly ok: true }>
 
 const writeSql = `
-update deck.saved set import_index = $3::jsonb
+with indexed as (
+update deck.saved set import_index = $3::jsonb, revision = $6
 where id = $1 and owner = $2 and deleted is null
   and import_index is not distinct from $4::jsonb
   and revision = $5
 returning id
+)
+select id, case when $6 <> $5 then pg_notify('deck', $7) end as notified from indexed
 `
 
 export async function indexSaved(
@@ -31,14 +35,23 @@ export async function indexSaved(
     const next = indexDeck(before, { actor: "person" }, wire)
     if (!next.ok) return next
     if (next.deck === before) return { ok: true, deck: parsed.deck, revision: saved.revision }
+    const introduced =
+      before.register.index !== undefined &&
+      before.register.index.sectionStarts === undefined &&
+      indexedSectionStarts(next.deck.register.index) !== undefined
+    const revision = saved.revision + Number(introduced)
+    const key = notifyKey(parsed.deck, revision)
+    if (!key.ok) return key
     const written = await db.query(writeSql, [
       parsed.deck,
       owner,
       JSON.stringify(next.deck.register.index),
       before.register.index === undefined ? null : JSON.stringify(before.register.index),
       saved.revision,
+      revision,
+      key.key,
     ])
-    if (written.rows.length > 0) return { ok: true, deck: parsed.deck, revision: saved.revision }
+    if (written.rows.length > 0) return { ok: true, deck: parsed.deck, revision }
   }
   return { ok: false, refusal: "stale" }
 }

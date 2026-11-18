@@ -2,7 +2,7 @@ import { readSlideId, type SlideId } from "./element-id.js"
 import { readOrderKey } from "./order-key.js"
 import { readSlideState } from "./slide-order.js"
 import { readFloor } from "./slide-floor.js"
-import type { GridCopy, GridTurn, HeadStep, RowGuard, SlideStep, V1Command } from "./grid-order.js"
+import type { GridCopy, GridTurn, HeadStep, RowGuard, SlideStep, GridCommand } from "./grid-order.js"
 import type { SlideSpot } from "./person-undo.js"
 import { limits } from "./limits.js"
 
@@ -91,8 +91,9 @@ function readCopies(raw: unknown): readonly [GridCopy, ...GridCopy[]] | undefine
   return [first, ...rest]
 }
 
-export function readGridCommand(raw: Record<string, unknown>): V1Command | undefined {
-  if (raw.grid !== 1) return undefined
+export function readGridCommand(raw: Record<string, unknown>): GridCommand | undefined {
+  const grid = raw.grid
+  if (grid !== 1 && grid !== 2) return undefined
   const fields =
     raw.slide === "remove-many"
       ? ["ids"]
@@ -114,29 +115,29 @@ export function readGridCommand(raw: Record<string, unknown>): V1Command | undef
   if (Object.keys(raw).some((key) => !["slide", "grid", "runId", "file", ...fields].includes(key))) return undefined
   if (raw.slide === "grid-turn") {
     const parsed = turn(raw.turn)
-    return parsed === undefined ? undefined : { slide: "grid-turn", grid: 1, turn: parsed }
+    return parsed === undefined ? undefined : { slide: "grid-turn", grid, turn: parsed }
   }
   if (raw.slide === "remove-many") {
     const ids = uniqueIds(raw.ids)
-    return ids === undefined ? undefined : { slide: "remove-many", grid: 1, ids }
+    return ids === undefined ? undefined : { slide: "remove-many", grid, ids }
   }
   if (raw.slide === "clone-many") {
     const copies = readCopies(raw.copies)
-    return copies === undefined ? undefined : { slide: "clone-many", grid: 1, copies }
+    return copies === undefined ? undefined : { slide: "clone-many", grid, copies }
   }
   if (raw.slide === "move-many") {
     const ids = uniqueIds(raw.ids)
     const after = raw.after === null ? null : readSlideId(raw.after)
     if (ids === undefined || after === undefined) return undefined
     if (raw.row !== "same" && raw.row !== "new" && raw.row !== "keep") return undefined
-    return { slide: "move-many", grid: 1, ids, after, row: raw.row }
+    return { slide: "move-many", grid, ids, after, row: raw.row }
   }
   const id = readSlideId(raw.id)
   if (id === undefined) return undefined
-  if (raw.slide === "remove") return { slide: "remove", id, grid: 1 }
+  if (raw.slide === "remove") return { slide: "remove", id, grid }
   if (raw.slide === "move") {
     const after = raw.after === null ? null : readSlideId(raw.after)
-    return after === undefined || raw.row !== "same" ? undefined : { slide: "move", id, after, row: "same", grid: 1 }
+    return after === undefined || raw.row !== "same" ? undefined : { slide: "move", id, after, row: "same", grid }
   }
   if (raw.slide !== "add" && raw.slide !== "clone") return undefined
   if (raw.slide === "add" && raw.row !== "same" && raw.row !== "new") return undefined
@@ -144,11 +145,11 @@ export function readGridCommand(raw: Record<string, unknown>): V1Command | undef
   if (parsed?.slide === "add" && parsed.grid === undefined) {
     const { key: _key, ...birth } = parsed
     if (raw.row !== "same" && raw.row !== "new") return undefined
-    return { ...birth, row: raw.row, grid: 1 }
+    return { ...birth, row: raw.row, grid }
   }
   if (parsed?.slide === "clone" && parsed.grid === undefined) {
     const { key: _key, ...birth } = parsed
-    return { ...birth, grid: 1 }
+    return { ...birth, grid }
   }
   return undefined
 }

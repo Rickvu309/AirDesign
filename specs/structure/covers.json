@@ -22,8 +22,8 @@
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["slideUndoable", "turn", "undoSlides", "turnCommands", "groupUndone"],
-      "digest": "3540bcf6fd86",
-      "blob": "5fcaf089d0926fd398ac333a6cd23a8cd33b82e4"
+      "digest": "356e20c2b344",
+      "blob": "601b32ef32b908ed33a8376338349fa586c2ba9b"
     }
   ]
 }
