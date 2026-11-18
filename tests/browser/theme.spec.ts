@@ -7,7 +7,7 @@ import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
 import { openDeck, settled, typeColor } from "./design-panel"
-import { partsOf } from "./shape-fills"
+import { boxFillPanel, filled, partsOf } from "./shape-fills"
 
 const exportName = "exported-theme.pptx"
 const judged = join(process.cwd(), "tests/browser", exportName)
@@ -138,11 +138,8 @@ test("a shape filled with accent 1 shows the theme's new accent 1 in its fill sw
   await typeColor(page, theme.getByRole("button", { name: themeCopy.accent1, exact: true }), colorCopy.hexName(red))
   await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
   const shape = painted(page, "ppt/slides/slide1.xml#2")
-  await shape.click()
-  await page.keyboard.press("Escape")
-  const panel = page.locator("[data-design-element]")
-  await expect(panel).toBeVisible()
-  const fill = panel.locator("[data-control='union']").filter({ has: page.getByText("Fill", { exact: true }) })
+  const fill = await boxFillPanel(page, shape)
   const swatch = fill.locator("[data-control='color'] span[aria-hidden]").first()
-  await expect.poll(() => swatch.evaluate((node: HTMLElement) => node.style.background)).toBe("rgb(192, 0, 0)")
+  await expect(swatch).toHaveCSS("background-color", "rgb(192, 0, 0)")
+  await expect.poll(() => filled(shape)).toBe("rgb(192, 0, 0)")
 })
