@@ -29,6 +29,8 @@ async function gridState(page: Page) {
 test("a focused slide menu owns the zoom shortcuts", async ({ page }) => {
   await openFile(page, sectioned)
   await openGrid(page)
+  await expect(entry(page, 1).locator("[data-thumb-paint]")).toContainText("Hello")
+  await expect(entry(page, 2).locator("[data-thumb-paint]")).toContainText("Heat pumps")
   await entry(page, 1).focus()
   await page.keyboard.press("ContextMenu")
   const menu = page.getByRole("menu")
