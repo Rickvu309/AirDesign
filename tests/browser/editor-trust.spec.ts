@@ -74,7 +74,7 @@ async function openFile(page: Page, file: string | undefined): Promise<{ address
 async function addAndType(page: Page, text: string): Promise<Locator> {
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
   const before = await texts.count()
-  await page.getByRole("button", { name: "Add text box", exact: true }).click()
+  await page.getByRole("button", { name: "Add text", exact: true }).click()
   await expect(texts).toHaveCount(before + 1)
   const added = texts.last()
   await expect(added).toBeFocused()

@@ -63,7 +63,7 @@ export function useNotes(deck: NotesDeck) {
     })
       .then((outcome) => {
         if (outcome === "refused")
-          toast.error("Unable to save speaker notes", {
+          toast.error("Unable to save presenter notes", {
             id: "notes-refused",
             description: "Copy your notes, reload the deck and try again.",
           })

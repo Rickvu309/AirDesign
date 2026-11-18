@@ -8,6 +8,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
 import { openDeck, settled, typeColor } from "./design-panel"
 import { boxFillPanel, filled, partsOf } from "./shape-fills"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 
 const exportName = "exported-theme.pptx"
 const judged = join(process.cwd(), "tests/browser", exportName)
@@ -78,12 +79,12 @@ test("a person changes accent 1 and the heading font of a deck with two themes, 
   await heading.press("Enter")
   await expect.poll(() => fonts(title)).toContain("Georgia")
   await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
-  await page.getByRole("button", { name: "Undo theme font", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed["theme-font"], exact: true }).click()
   await expect.poll(() => fonts(title)).not.toContain("Georgia")
   theme = await themePanel(page)
   await expect(heading).toHaveValue("Calibri Light")
   await theme.getByRole("button", { name: productCopy.close, exact: true }).click()
-  await page.getByRole("button", { name: "Redo theme font", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.redoNamed["theme-font"], exact: true }).click()
   await expect.poll(() => fonts(title)).toContain("Georgia")
 
   await page.reload()

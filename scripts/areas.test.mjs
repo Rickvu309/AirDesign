@@ -78,7 +78,7 @@ same("the map names the nine areas", names, [
   "specs",
   "tooling",
 ])
-const glossary = fs.readFileSync(new URL("../GLOSSARY.md", import.meta.url), "utf8")
-for (const name of names) same(`GLOSSARY.md names the area ${name}`, glossary.includes(`\`${name}\``), true)
+const glossary = fs.readFileSync(new URL("../check-words.md", import.meta.url), "utf8")
+for (const name of names) same(`check-words.md names the area ${name}`, glossary.includes(`\`${name}\``), true)
 
 console.log("areas tests passed")

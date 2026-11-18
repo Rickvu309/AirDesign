@@ -203,14 +203,14 @@ export function setChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "target"],
     minProperties: 3,
-    description: "Set fields on every element the target names, in one step the person can undo.",
+    description: "Set fields on every layer the target names, in one step the person can undo.",
     properties: {
       op: { type: "string", const: "set" },
       target: {
         type: "string",
         pattern: targetPattern,
         description:
-          "An element id such as 258.7 or 258.notes, a slide id, <slide>.<role> such as 258.title, *.<role>, or deck.theme.",
+          "A layer id such as 258.7 or 258.notes, a slide id, <slide>.<role> such as 258.title, *.<role>, or deck.theme.",
       },
       opacity: { ...agentSchema(opacityWire.desc), description: opacityWire.description },
       ...Object.fromEntries(wired.map((trait) => [trait, traitSchema(trait, null)])),
@@ -237,7 +237,7 @@ export function addChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "kind", "slide"],
     description:
-      "Add a text box, or with kind picture a Lucide icon, to one slide. Leave box out to put it in the largest free area of the slide. Its id comes back in elements.",
+      "Add a text layer, or with kind picture a Lucide icon, to one slide. Leave box out to put it in the largest free area of the slide. Its id comes back in elements.",
     properties: {
       op: { type: "string", const: "add" },
       kind: { type: "string", enum: addable },

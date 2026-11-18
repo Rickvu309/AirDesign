@@ -24,7 +24,7 @@ test("keys typed at once after Add text box land in the new box, before and afte
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(texts).toHaveCount(0)
   await holdDevice(page)
-  await page.getByRole("button", { name: "Add text box", exact: true }).click()
+  await page.getByRole("button", { name: "Add text", exact: true }).click()
   await page.keyboard.type("Big tx", { delay: 0 })
   await page.keyboard.press("Backspace")
   await expect(texts).toHaveCount(0)
@@ -69,7 +69,7 @@ test("the first text box waits for its font, then takes focus and the held keys"
     await route.fulfill({ status: 404, body: "" })
   })
   await blankDeck(page)
-  await page.getByRole("button", { name: "Add text box", exact: true }).click()
+  await page.getByRole("button", { name: "Add text", exact: true }).click()
   await loading
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(texts).toHaveCount(0)

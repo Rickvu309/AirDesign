@@ -37,7 +37,7 @@ export function groupChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "elements"],
     description:
-      "Group two or more elements of one slide, or with op ungroup turn each group named back into its parts. Nothing moves. A new group's id comes back in elements.",
+      "Group two or more layers of one slide, or with op ungroup turn each group named back into its parts. Nothing moves. A new group's id comes back in elements.",
     properties: {
       op: { type: "string", enum: groupOps },
       elements: {
@@ -45,7 +45,7 @@ export function groupChangeSchema(): JsonSchema {
         minItems: 1,
         maxItems: limits.batch,
         items: { type: "string" },
-        description: "Element ids such as 258.7.",
+        description: "Layer ids such as 258.7.",
       },
     },
   }

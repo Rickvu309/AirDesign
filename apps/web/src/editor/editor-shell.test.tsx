@@ -48,7 +48,7 @@ describe("editor shell", () => {
     const working = renderToStaticMarkup(
       <EditorShell title="Other deck" slideLabel="9" notes="Other notes" run="working" />,
     )
-    expect(working).toContain("Add speaker notes")
+    expect(working).toContain("Add presenter notes")
     expect(working).not.toContain("Other notes")
   })
 
@@ -98,7 +98,7 @@ describe("editor shell", () => {
     const markup = renderToStaticMarkup(
       <EditorShell title="Real deck" slideLabel="1" deck={{ ...deck, onText: () => undefined }} />,
     )
-    expect(markup).toContain('aria-label="Add text box"')
+    expect(markup).toContain('aria-label="Add text"')
     expect(disabledLabels(markup)).toEqual(["shape", "image", "icon", "Undo", "Redo"])
   })
 
@@ -110,7 +110,7 @@ describe("editor shell", () => {
         deck={{ ...deck, onText: () => undefined, onPicture: () => undefined }}
       />,
     )
-    expect(markup).toContain('aria-label="Add picture"')
+    expect(markup).toContain('aria-label="Add image"')
     expect(markup).not.toContain('type="file"')
     expect(disabledLabels(markup)).toEqual(["shape", "icon", "Undo", "Redo"])
   })
@@ -138,7 +138,7 @@ describe("editor shell", () => {
   it("gallery screen keeps its copy", () => {
     const markup = renderToStaticMarkup(<AgentWorking />)
     expect(markup).toContain('font-medium text-foreground">Q3 Investor Update')
-    expect(markup).toContain("Add speaker notes")
+    expect(markup).toContain("Add presenter notes")
 
     const saved = renderToStaticMarkup(<AgentComplete />)
     expect(saved).toContain("Q3 Investor Update")

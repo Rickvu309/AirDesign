@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test"
 import { newBlankDeck } from "./new-deck"
 
 const bar = (page: Page) => page.locator("[data-notes-bar]")
-const handle = (page: Page) => page.getByRole("button", { name: /^(Expand|Collapse) speaker notes$/ })
+const handle = (page: Page) => page.getByRole("button", { name: /^(Expand|Collapse) presenter notes$/ })
 async function height(page: Page) {
   return bar(page).evaluate((element) => element.getBoundingClientRect().height)
 }

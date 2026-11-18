@@ -24,14 +24,14 @@ import {
 
 const kindWords: Readonly<Record<Kind, string>> = {
   deck: "the deck",
-  theme: "the theme",
+  theme: "the template style",
   master: "a slide master",
   layout: "a layout",
   section: "a section",
   slide: "the slide itself, whose fill is its background",
-  notes: "the slide's speaker notes",
+  notes: "the slide's presenter notes",
   shape: "a shape",
-  picture: "a picture",
+  picture: "an image",
   connector: "a line",
   group: "a group",
   table: "a table",
@@ -47,7 +47,7 @@ const takenWords: readonly (readonly [FieldKey | "remove", string])[] = [
   ["fill.value", "a fill"],
   ["box.x", "a move"],
   ["box.w", "a resize"],
-  ["theme.accent1", "theme colors and fonts"],
+  ["theme.accent1", "template colors and fonts"],
   ["remove", "a delete"],
 ]
 
@@ -65,14 +65,14 @@ function taken({ facts }: Missing): string {
 }
 
 function what(node: ElementId, { facts }: Missing): string {
-  if (facts.kind === "shape" && !facts.text) return `Element ${node} is a shape that holds no text.`
-  return `Element ${node} is ${kindWords[facts.kind]}.`
+  if (facts.kind === "shape" && !facts.text) return `Layer ${node} is a shape that holds no text.`
+  return `Layer ${node} is ${kindWords[facts.kind]}.`
 }
 
 function textNext(node: ElementId, { facts }: Missing): string {
   const beside = `put words beside it with airdesign_edit_deck with op add and kind shape on slide ${shapeOf(node).slide}`
   if (facts.kind === "group")
-    return "Edit the text of the elements inside it: airdesign_read_deck lists them with grouped true."
+    return "Edit the text of the layers inside it: airdesign_read_deck lists them with grouped true."
   if (facts.kind === "chart") return `No tool edits a chart's data yet. Tell the person, or ${beside}.`
   if (facts.kind === "table") return `Table cells cannot be edited. You can ${beside}.`
   if (facts.kind === "kept") return "Leave it, or tell the person."
@@ -142,12 +142,12 @@ export function setProblem(
     if (code === "indexing")
       return {
         code,
-        detail: `${named}: this deck's index has no roles yet. The owner must open the deck in AirDesign to index it again. Until then, name each element by its id from airdesign_read_deck.`,
+        detail: `${named}: this deck's index has no roles yet. The owner must open the deck in AirDesign to index it again. Until then, name each layer by its id from airdesign_read_deck.`,
       }
     if (code === "dead")
       return {
         code,
-        detail: `${named}: no element on ${change.target.slide === "every" ? "any slide" : `slide ${change.target.slide}`} has the role ${change.target.role}. Check the roles airdesign_read_deck lists.`,
+        detail: `${named}: no layer on ${change.target.slide === "every" ? "any slide" : `slide ${change.target.slide}`} has the role ${change.target.role}. Check the roles airdesign_read_deck lists.`,
       }
   }
   return undefined
@@ -155,14 +155,14 @@ export function setProblem(
 
 const instructedKinds: readonly (readonly [Kind, string])[] = [
   ["shape", "A shape"],
-  ["picture", "A picture"],
+  ["picture", "An image, kind picture,"],
   ["connector", "A line"],
   ["group", "A group"],
   ["table", "A table"],
   ["chart", "A chart"],
-  ["kept", "An element kept exactly as the file has it, such as a diagram or an embedded object,"],
+  ["kept", "A layer kept exactly as the file has it, such as a diagram or an embedded object,"],
   ["slide", "A slide itself, target <slide> or node <slide>.slide,"],
-  ["notes", "A slide's speaker notes, node <slide>.notes,"],
+  ["notes", "A slide's presenter notes, node <slide>.notes,"],
 ]
 
 function traitWords(kind: Kind): string | undefined {
@@ -179,16 +179,16 @@ function traitWords(kind: Kind): string | undefined {
 
 export function kindInstructions(): string {
   return [
-    'airdesign_edit_deck sets fields with { "op": "set", "target": ..., "<trait>": { "<field>": value } }. The target is an element id, <slide> for the slide itself, whose fill is its background, <slide>.<role> for the element with that role on one slide, or *.<role> for it on every slide. One call lands on every element it names, or on none.',
-    "What each kind of element takes:",
+    'airdesign_edit_deck sets fields with { "op": "set", "target": ..., "<trait>": { "<field>": value } }. The target is a layer id, <slide> for the slide itself, whose fill is its background, <slide>.<role> for the layer with that role on one slide, or *.<role> for it on every slide. One call lands on every layer it names, or on none.',
+    "What each kind of layer takes:",
     ...instructedKinds.map(([kind, named]) => `${named} takes ${traitWords(kind) ?? "no field yet"}.`),
-    'opacity sits beside the target, { "op": "set", "target": ..., "opacity": 60 }, in percent from 0, invisible, to 100, solid. It fades the element\'s fill, line, text and picture together.',
+    'opacity sits beside the target, { "op": "set", "target": ..., "opacity": 60 }, in percent from 0, invisible, to 100, solid. It fades the layer\'s fill, border, text and image together.',
     'Add a Lucide icon with { "op": "add", "kind": "picture", "slide": ..., "icon": "rocket" }; an unknown name is refused with close names. Give it alt text with { "identity": { "alt": "..." } }.',
-    "An element inside a group takes no box, and a shape that holds no text takes no text. Any other field cannot be set yet.",
-    "Send null for a field whose type allows it to go back to what the layout, master or theme style gives it.",
-    'A connector\'s connection attaches each end with { "shape": { "node": ..., "site": ... } } or frees it with "none". Sites are numbered as PowerPoint numbers them: a rectangle, rounded rectangle, diamond or picture has 0 top, 1 left, 2 bottom and 3 right; an ellipse has 8, from 0 at the top going anticlockwise. A connector bound to two shapes follows them when they move.',
-    "Speaker notes hold plain text; send their value as plain text.",
-    "In airdesign_read_deck, role is one of title, subtitle, body, date, footer, number, picture, chart, table or object. design lists the element's look as it opened, field by field, each followed by (layout), (master) or (style) when that part shows it rather than the element itself; once a change lands on an element, its text fields follow its first run as it is now. Colors name a theme slot or hex; palettes give each slot's hex, and a slide uses palette 0 unless it names another; theme lists what deck.theme changed. connection.start and connection.end name the shape and site each end of a connector attaches to.",
+    "A layer inside a group takes no box, and a shape that holds no text takes no text. Any other field cannot be set yet.",
+    "Send null for a field whose type allows it to go back to what the layout, master or template style gives it.",
+    'A connector\'s connection attaches each end with { "shape": { "node": ..., "site": ... } } or frees it with "none". Sites are numbered as PowerPoint numbers them: a rectangle, rounded rectangle, diamond or image has 0 top, 1 left, 2 bottom and 3 right; an ellipse has 8, from 0 at the top going anticlockwise. A connector bound to two shapes follows them when they move.',
+    "Presenter notes hold plain text; send their value as plain text.",
+    "In airdesign_read_deck, role is one of title, subtitle, body, date, footer, number, picture, chart, table or object. design lists the layer's look as it opened, field by field, each followed by (layout), (master) or (style) when that part shows it rather than the layer itself; once a change lands on a layer, its text fields follow its first run as it is now. Colors name a template color slot or hex; palettes give each slot's hex, and a slide uses palette 0 unless it names another; theme lists what deck.theme changed. connection.start and connection.end name the shape and site each end of a connector attaches to.",
     "A JSON text value is [{from, runs: [{from, text}]}]: each from is an index the file has, and -1 is a new one. A run may set bold, italic, underline or strike to true or false, size in hundredths of a point from 100 to 400000, letterSpacing in hundredths of a point from -400000 to 400000, font, and color as {scheme: dk1, lt1, dk2, lt2 or accent1 through accent6} or {rgb: six uppercase hex digits}. A paragraph may set align to left, center or right, and list to none, bullets or numbers. Leaving one out keeps the file's.",
   ].join("\n")
 }

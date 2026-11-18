@@ -1,6 +1,6 @@
 export const picturePanelCopy = {
   mode: "Fill mode",
-  section: "Picture",
+  section: "Image",
   source: "Icon",
   recolor: "Recolor",
   overlay: "Overlay",

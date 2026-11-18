@@ -1,7 +1,7 @@
 import type { TraitWire } from "./trait-wire.js"
 
 export const geometryWire: TraitWire<"geometry"> = {
-  description: "A PowerPoint preset; it replaces the whole outline.",
+  description: "A PowerPoint preset; it replaces the whole shape.",
   fields: {
     shape: {
       description: "adjust maps the preset's adjust names, such as adj1, to whole numbers; { } keeps the defaults.",

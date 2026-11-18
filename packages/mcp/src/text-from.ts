@@ -19,7 +19,7 @@ function runSentence(paragraphFrom: number, runs: readonly TextRun[]): string {
 }
 
 function notText(file: TextValue): string {
-  return `Send a JSON text value for this element. Each from must be one the file has, and -1 is a new run. ${paragraphSentence(file)}`
+  return `Send a JSON text value for this layer. Each from must be one the file has, and -1 is a new run. ${paragraphSentence(file)}`
 }
 
 export function runProblem(file: TextValue, next: TextValue): TextProblem | undefined {

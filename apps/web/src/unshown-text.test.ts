@@ -25,7 +25,7 @@ const png = { part: "ppt/media/image1.png", contentType: "image/png", crop: whol
 
 describe("unshownText", () => {
   it("names the format of a picture the browser cannot draw", () => {
-    expect(unshownText(row({ image: emf }), () => null)).toBe("EMF picture can't be shown here")
+    expect(unshownText(row({ image: emf }), () => null)).toBe("EMF image can't be shown here")
   })
 
   it("says nothing of a picture that drew", () => {
@@ -33,12 +33,12 @@ describe("unshownText", () => {
   })
 
   it("names a picture whose file the deck does not hold", () => {
-    expect(unshownText(row({ image: png }), () => null)).toBe("PNG picture can't be shown here")
+    expect(unshownText(row({ image: png }), () => null)).toBe("PNG image can't be shown here")
   })
 
   it("says an added picture whose bytes have not arrived is still uploading", () => {
     const added = { ...png, part: "ppt/media/picture-0123456789abcdef.png" }
-    expect(unshownText(row({ image: added }), () => null)).toBe("Picture is still uploading from another device")
+    expect(unshownText(row({ image: added }), () => null)).toBe("Image is still uploading from another device")
     expect(unshownText(row({ image: added }), () => "blob:2")).toBeNull()
   })
 

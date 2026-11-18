@@ -103,7 +103,7 @@ describe("a schema for a caller that may not follow references", () => {
             anyOf: expect.arrayContaining([
               expect.objectContaining({
                 properties: expect.objectContaining({
-                  floor: expect.objectContaining({ description: "Opening text of the element." }),
+                  floor: expect.objectContaining({ description: "Opening text of the layer." }),
                 }),
               }),
             ]),

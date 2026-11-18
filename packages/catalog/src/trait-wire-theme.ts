@@ -6,9 +6,9 @@ function hex(digits: string): `#${string}` {
 
 export const themeWire: TraitWire<"theme"> = {
   description:
-    "deck.theme sets every theme. deck.templateN, N from templates[].node, sets that template. A deleted template is omitted and its number is not reused.",
+    "deck.theme sets every template style. deck.templateN, N from templates[].node, sets that template style. A deleted template style is omitted and its number is not reused.",
   fields: {
-    name: { description: "Template name in this deck.", example: { theme: { name: "Light slides" } } },
+    name: { description: "Template style name in this deck.", example: { theme: { name: "Light slides" } } },
     dk1: { description: "Dark 1, usually tx1.", example: { theme: { dk1: hex("1F1F1F") } } },
     lt1: { description: "Light 1, usually bg1.", example: { theme: { lt1: hex("FFFDF7") } } },
     dk2: { description: "Dark 2, usually tx2.", example: { theme: { dk2: hex("1F4E79") } } },
@@ -24,11 +24,12 @@ export const themeWire: TraitWire<"theme"> = {
     major: { description: "Heading font.", example: { theme: { major: "Georgia" } } },
     minor: { description: "Body font.", example: { theme: { minor: "Verdana" } } },
     custom: {
-      description: "Named colors stored in the theme. A shape cannot reference one, so applying it stores the hex.",
+      description:
+        "Named colors stored in the template style. A shape cannot reference one, so applying it stores the hex.",
       example: { theme: { custom: [{ name: "Coral", color: hex("FF6600") }] } },
     },
     removed: {
-      description: "Delete this template when no slide uses it. Target deck.templateN, not deck.theme.",
+      description: "Delete this template style when no slide uses it. Target deck.templateN, not deck.theme.",
       example: { theme: { removed: true } },
     },
     textStyle: {

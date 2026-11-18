@@ -2,7 +2,7 @@ import type { TraitWire } from "./trait-wire.js"
 
 export const connectionWire: TraitWire<"connection"> = {
   description:
-    "A connector's ends. Each attaches to a numbered site on a shape or picture of its slide and follows it when it moves; none frees it.",
+    "A connector's ends. Each attaches to a numbered site on a shape or image of its slide and follows it when it moves; none frees it.",
   fields: {
     start: {
       description: "Where the start attaches.",

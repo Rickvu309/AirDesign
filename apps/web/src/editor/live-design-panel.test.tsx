@@ -293,7 +293,7 @@ it("tells a person how to continue when a design-panel edit is refused", async (
     await act(async () => picture.typed("Left", "10"))
     await picture.answered()
     expect(error).toHaveBeenCalledExactlyOnceWith(
-      "Unable to make that change. Select the element and try again, or reload the deck if it keeps happening.",
+      "Unable to make that change. Select the layer and try again, or reload the deck if it keeps happening.",
       { duration: Infinity, closeButton: true },
     )
     expect(picture.landed()).toEqual({})

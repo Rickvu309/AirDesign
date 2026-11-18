@@ -29,5 +29,5 @@ it("names an element that has no name by its kind", () => {
       { name: "", kind: "shape" },
       { name: "", kind: "shape" },
     ]),
-  ).toEqual(["Picture", "Shape 1", "Shape 2"])
+  ).toEqual(["Image", "Shape 1", "Shape 2"])
 })

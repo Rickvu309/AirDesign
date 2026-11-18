@@ -3,6 +3,7 @@ import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import { elementGone, elementId, readSlideState } from "../../packages/document/src/index.ts"
 import { forward, openClean, settled, signInBrowser, test, type Stack } from "./api-stack"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const title = "ppt/slides/slide1.xml#2"
@@ -45,7 +46,7 @@ test("a person undoes and redoes an added text box and a deleted element, and th
   await expect(texts).toHaveCount(1)
   const start = await placed(page, title)
 
-  await page.getByRole("button", { name: "Add text box", exact: true }).click()
+  await page.getByRole("button", { name: "Add text", exact: true }).click()
   await expect(texts).toHaveCount(2)
   await page.keyboard.type("Added", { delay: 20 })
   await expect(texts.last()).toHaveText("Added")
@@ -53,9 +54,9 @@ test("a person undoes and redoes an added text box and a deleted element, and th
   await expect(page.getByRole("button", { name: "Undo text edit" })).toBeEnabled()
   await page.keyboard.press("ControlOrMeta+z")
   await expect(texts.last()).toHaveText("")
-  await page.getByRole("button", { name: "Undo add text box" }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed["add-box"] }).click()
   await expect(texts).toHaveCount(1)
-  await page.getByRole("button", { name: "Redo add text box" }).click()
+  await page.getByRole("button", { name: undoCopy.redoNamed["add-box"] }).click()
   await expect(texts).toHaveCount(2)
   await page.getByRole("button", { name: "Redo text edit" }).click()
   await expect(texts.last()).toHaveText("Added")
@@ -64,12 +65,12 @@ test("a person undoes and redoes an added text box and a deleted element, and th
   await page.keyboard.press("Escape")
   await page.keyboard.press("Delete")
   await expect(texts).toHaveCount(1)
-  await expect(page.getByRole("button", { name: "Undo delete element" })).toBeEnabled()
+  await expect(page.getByRole("button", { name: undoCopy.undoNamed["delete-element"] })).toBeEnabled()
   await page.keyboard.press("ControlOrMeta+z")
   await expect(texts).toHaveCount(2)
   await expect(texts.first()).toHaveText("Hello")
   expect(await placed(page, title)).toEqual(start)
-  await expect(page.getByRole("button", { name: "Redo delete element" })).toBeEnabled()
+  await expect(page.getByRole("button", { name: undoCopy.redoNamed["delete-element"] })).toBeEnabled()
 
   await expect
     .poll(async () => (await serverOrder(stack, deck, cookie)).order.map((command) => command.slide))
@@ -96,10 +97,10 @@ test("an undo of an added text box an agent wrote in changes nothing, says so an
   await forward(page, stack)
   const deck = await openClean(page)
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
-  await page.getByRole("button", { name: "Add text box", exact: true }).click()
+  await page.getByRole("button", { name: "Add text", exact: true }).click()
   await expect(texts).toHaveCount(2)
   await page.keyboard.press("Escape")
-  await expect(page.getByRole("button", { name: "Undo add text box" })).toBeEnabled()
+  await expect(page.getByRole("button", { name: undoCopy.undoNamed["add-box"] })).toBeEnabled()
   await expect.poll(async () => (await serverOrder(stack, deck, cookie)).order.length).toBe(1)
   const [add] = (await serverOrder(stack, deck, cookie)).order
   if (add?.slide !== "element-add") throw new Error("add")
@@ -143,9 +144,9 @@ test("one visit to the speaker notes is one undo step", async ({ page, context, 
   await field.click()
   await field.pressSequentially(" Typed", { delay: 20 })
   await expect(field).toHaveValue(`${before} Typed`)
-  await page.getByRole("button", { name: "Undo speaker notes edit" }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed.notes }).click()
   await expect(field).toHaveValue(before)
-  await expect(page.getByRole("button", { name: "Redo speaker notes edit" })).toBeEnabled()
+  await expect(page.getByRole("button", { name: undoCopy.redoNamed.notes })).toBeEnabled()
   await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeDisabled()
 })
 

@@ -18,7 +18,7 @@ const fileSize = megabytes.format(limits.bytes / 1_000_000)
 const overLimit: ImportFailureWords = {
   title: "This file is too large or complex to import",
   detail:
-    "It goes past a limit on what AirDesign can open. Compress its pictures in PowerPoint or split the deck, then try again.",
+    "It goes past a limit on what AirDesign can open. Compress its images in PowerPoint or split the deck, then try again.",
 }
 
 export const importFailureWordsByReason: Record<ImportFailureReason, ImportFailureWords> = {
@@ -44,7 +44,7 @@ export const importFailureWordsByReason: Record<ImportFailureReason, ImportFailu
   },
   packedBytes: {
     title: `This file is ${fileSize} or larger`,
-    detail: `Compress its pictures in PowerPoint or split the deck so each file is under ${fileSize}, then try again.`,
+    detail: `Compress its images in PowerPoint or split the deck so each file is under ${fileSize}, then try again.`,
   },
   slides: {
     title: `This deck has more than ${slidesOf(limits.slides)}`,

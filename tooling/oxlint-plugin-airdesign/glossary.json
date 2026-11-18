@@ -2,7 +2,8 @@
   "words": {
     "known fault": "known failure",
     "stick": "metric",
-    "owner gate": "bar"
+    "owner gate": "bar",
+    "speaker notes": "presenter notes"
   },
   "allowed": [
     {

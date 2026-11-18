@@ -2,7 +2,7 @@ import type { TraitWire } from "./trait-wire.js"
 
 export const boxWire: TraitWire<"box"> = {
   description:
-    "Where the element sits and how big it is, in points from the slide's top-left corner. 72 points is one inch. An element inside a group has no box of its own.",
+    "Where the layer sits and how big it is, in points from the slide's top-left corner. 72 points is one inch. A layer inside a group has no box of its own.",
   fields: {
     x: { description: "Left edge.", example: { box: { x: 72 } } },
     y: { description: "Top edge.", example: { box: { y: 54 } } },

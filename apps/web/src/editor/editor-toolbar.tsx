@@ -100,7 +100,7 @@ function InsertTool({ tool, inserts }: { tool: InsertPart; inserts: Inserts }) {
   const on = pointer === undefined && activeTool === tool
   const run =
     tool === "text" ? onText : tool === "image" && onPicture !== undefined ? () => pickPicture(onPicture) : undefined
-  const label = tool === "text" ? "Add text box" : tool === "icon" ? pictureCopy.addIcon : pictureCopy.add
+  const label = tool === "text" ? "Add text" : tool === "icon" ? pictureCopy.addIcon : pictureCopy.add
   return (
     <Button
       type="button"

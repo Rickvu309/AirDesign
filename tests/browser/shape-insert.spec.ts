@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test"
 import { shapeExportName, shapeOriginalName, shapeSlidePart } from "../../scripts/shape-export.mjs"
 import { exportFromDialog } from "./export-dialog"
 import { importTitleDeck } from "./new-deck"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 
 type ZipEntry = {
   readonly filename: string
@@ -134,11 +135,11 @@ test("a rectangle, an ellipse, a line, a star, a triangle and an arrow are inser
   await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveCount(1)
   await page.keyboard.press("Delete")
   await expect(painted(page, 9)).toHaveCount(0)
-  await page.getByRole("button", { name: "Undo delete element", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed["delete-element"], exact: true }).click()
   await expect(painted(page, 9)).toBeVisible()
-  await page.getByRole("button", { name: "Redo delete element", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.redoNamed["delete-element"], exact: true }).click()
   await expect(painted(page, 9)).toHaveCount(0)
-  await page.getByRole("button", { name: "Undo delete element", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed["delete-element"], exact: true }).click()
   await expect(painted(page, 9)).toBeVisible()
   await page.reload()
   await settled(page)

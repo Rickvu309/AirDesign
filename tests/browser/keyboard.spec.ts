@@ -79,7 +79,7 @@ test("every Tab stop shows a focus ring, a canvas frame or the notes caret", asy
   expect(stops.at(-1)?.name).toBe("Ask Aira")
   expect(stops.find((stop) => stop.name === presentCopy.notes)).toMatchObject({ caret: true, ringed: false })
   expect(stops.filter((stop) => !stop.ringed && !stop.framed && !stop.caret)).toEqual([])
-  expect(stops.map((stop) => stop.name)).toEqual(expect.arrayContaining(["Add text box", "Agent", "Ask Aira"]))
+  expect(stops.map((stop) => stop.name)).toEqual(expect.arrayContaining(["Add text", "Agent", "Ask Aira"]))
 })
 
 test("the slide list is one Tab stop, the arrows move through it, and a slide command says what it did", async ({

@@ -12,7 +12,7 @@ export const textCopy = {
   fonts: "Fonts",
   letterSpacing: "Letter spacing",
   list: "List",
-  lineSpacing: "Line spacing",
+  lineSpacing: "Line height",
   paragraphSpacing: "Paragraph spacing",
   spaceBefore: "Space before",
   spaceAfter: "Space after",
@@ -20,8 +20,8 @@ export const textCopy = {
 
 export const textWords = {
   "list.none": "No list",
-  bullets: "Bullets",
+  bullets: "Bulleted list",
   numbers: "Numbered list",
-  "list.bullets": "Bullets",
+  "list.bullets": "Bulleted list",
   "list.numbers": "Numbered list",
 } as const

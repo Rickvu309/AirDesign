@@ -5,7 +5,8 @@ import { entry, fifty, manySlides, openFile, openGrid, rowNumbers, settled } fro
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
-const below = (page: Page, row: number) => page.getByRole("button", { name: new RegExp(`new row below row ${row}$`) })
+const below = (page: Page, row: number) =>
+  page.getByRole("button", { name: new RegExp(`new slide group below slide group ${row}$`) })
 const original = [
   [1, 2, 3, 4],
   [5, 6, 7, 8],
@@ -183,7 +184,7 @@ test("leaving text editing restores the below add and keeps the text edit", asyn
   await below(page, 1).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(11)
   await expect(entry(page, 5)).toHaveAttribute("aria-current", "true")
-  await page.getByRole("button", { name: "Add text box", exact: true }).click()
+  await page.getByRole("button", { name: "Add text", exact: true }).click()
   await page.locator('[data-grid-edit] [contenteditable="true"]').first().fill("Text in the new row")
   await entry(page, 1).focus()
   await page.reload()

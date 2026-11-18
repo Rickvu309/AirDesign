@@ -378,7 +378,7 @@ export function useMoves(
     if (next === null || starts.size === 0) return
     event.preventDefault()
     if (now === null) hold({ by: "keys", ids: [...starts.keys()], starts })
-    const label = starts.size > 1 ? `${String(starts.size)} elements` : (frame.getAttribute("aria-label") ?? "")
+    const label = starts.size > 1 ? `${String(starts.size)} layers` : (frame.getAttribute("aria-label") ?? "")
     keyed.current = { verb: "Moved", label }
     place(next)
   }

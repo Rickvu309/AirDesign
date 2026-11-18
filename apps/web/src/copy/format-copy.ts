@@ -22,7 +22,7 @@ export const formatCopy = {
   },
   alignGroup: "Alignment",
   align: { left: "Align left", center: "Align center", right: "Align right" },
-  bullets: "Bullets",
+  bullets: "Bulleted list",
 } as const satisfies {
   readonly group: string
   readonly named: Record<TextFormat, string>

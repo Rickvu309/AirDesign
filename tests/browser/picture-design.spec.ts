@@ -4,6 +4,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog"
 import { openDeck, settled, unfold } from "./design-panel"
 import { partsOf } from "./shape-fills"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 
 const exportName = "exported-picture.pptx"
 const slidePart = "ppt/slides/slide1.xml"
@@ -77,7 +78,7 @@ test("a person crops, recolours, fades, describes and hides a picture, adds an i
   const recolor = section(page, panel, pictureCopy.section).getByRole("group", { name: "Recolor", exact: true })
   await recolor.getByRole("button", { name: "Grayscale", exact: true }).click()
   await expect.poll(async () => (await look(photo)).filter).toContain("grayscale(1)")
-  await page.getByRole("button", { name: "Undo picture", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed.picture, exact: true }).click()
   await expect.poll(async () => (await look(photo)).filter).toBe("none")
   await page.getByRole("button", { name: "Redo picture", exact: true }).click()
   await expect.poll(async () => (await look(photo)).filter).toContain("grayscale(1)")

@@ -4,6 +4,7 @@ import { expect, test, type Page } from "@playwright/test"
 import { notesExports } from "../../scripts/notes-export.mjs"
 import { exportFromDialog } from "./export-dialog"
 import { newBlankDeck } from "./new-deck"
+import { notesCopy } from "../../apps/web/src/copy/notes-copy.ts"
 
 const duplicate = process.platform === "darwin" ? "Meta+d" : "Control+d"
 const [blankNotes, importedNotes] = notesExports
@@ -22,12 +23,12 @@ function entry(page: Page, number: number) {
 }
 
 function field(page: Page) {
-  return page.getByRole("textbox", { name: "Speaker notes", exact: true })
+  return page.getByRole("textbox", { name: notesCopy.value, exact: true })
 }
 
 async function opened(page: Page) {
   if ((await field(page).count()) === 0)
-    await page.getByRole("button", { name: "Expand speaker notes" }).first().click()
+    await page.getByRole("button", { name: "Expand presenter notes" }).first().click()
   await expect(field(page)).toBeEditable()
   return field(page)
 }

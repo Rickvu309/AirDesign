@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { storedValues } from "./device-store"
 import { savedExport } from "./export-dialog.ts"
+import { formatCopy } from "../../apps/web/src/copy/format-copy.ts"
 
 const fixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
 const exported = join(process.cwd(), "tests/browser/exported-text-format.pptx")
@@ -88,14 +89,14 @@ test("font size, theme colour, alignment and bullets survive reload, undo and ex
   await expect(word).toHaveAttribute("data-color", "scheme:accent2")
   await page.getByRole("radio", { name: "Align center" }).click()
   await expect(page.getByRole("radio", { name: "Align center" })).toHaveAttribute("aria-checked", "true")
-  await page.getByRole("button", { name: "Bullets" }).click()
-  await expect(page.getByRole("button", { name: "Bullets" })).toHaveAttribute("aria-pressed", "true")
+  await page.getByRole("button", { name: formatCopy.bullets }).click()
+  await expect(page.getByRole("button", { name: formatCopy.bullets })).toHaveAttribute("aria-pressed", "true")
   await expect(editor).toBeFocused()
   await page.keyboard.press("ControlOrMeta+z")
-  await expect(page.getByRole("button", { name: "Bullets" })).toHaveAttribute("aria-pressed", "false")
+  await expect(page.getByRole("button", { name: formatCopy.bullets })).toHaveAttribute("aria-pressed", "false")
   await expect(page.getByRole("radio", { name: "Align center" })).toHaveAttribute("aria-checked", "true")
   await page.keyboard.press("ControlOrMeta+Shift+Z")
-  await expect(page.getByRole("button", { name: "Bullets" })).toHaveAttribute("aria-pressed", "true")
+  await expect(page.getByRole("button", { name: formatCopy.bullets })).toHaveAttribute("aria-pressed", "true")
   await expect
     .poll(async () =>
       (await storedValues(page)).some(

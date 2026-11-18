@@ -166,9 +166,9 @@ const nodeInput = z
   .string()
   .regex(elementPattern)
   .transform((value) => elementId(value))
-  .describe("Element id, <slide>.<shape>, such as 258.7.")
+  .describe("Layer id, <slide>.<shape>, such as 258.7.")
 const readAtInput = wholeInput.describe(
-  "Version of that element from airdesign_read_deck. 0 when that read omitted the element.",
+  "Version of that layer from airdesign_read_deck. 0 when that read omitted the layer.",
 )
 const coordinateInput = z.int().min(coordinates.lowest).max(coordinates.highest)
 const extentInput = z.int().min(0).max(coordinates.highest)
@@ -178,10 +178,10 @@ const textChange = z.strictObject({
     .describe("Text to write: plain text, or a JSON text value when the file's text is one."),
   node: nodeInput,
   readAt: readAtInput,
-  floor: textInput.exactOptional().describe("Opening text of the element."),
+  floor: textInput.exactOptional().describe("Opening text of the layer."),
 })
 const boxChange = z.strictObject({
-  property: z.literal("box").describe("Moves or resizes the element instead of writing its text."),
+  property: z.literal("box").describe("Moves or resizes the layer instead of writing its text."),
   value: z
     .strictObject({
       x: coordinateInput.describe("Left edge."),
@@ -189,10 +189,10 @@ const boxChange = z.strictObject({
       cx: extentInput.describe("Width."),
       cy: extentInput.describe("Height."),
     })
-    .describe("The element's box on the slide in EMU. 914400 EMU is one inch."),
+    .describe("The layer's box on the slide in EMU. 914400 EMU is one inch."),
   node: nodeInput,
   readAt: readAtInput,
-  floor: textInput.exactOptional().describe("Opening text of the element."),
+  floor: textInput.exactOptional().describe("Opening text of the layer."),
 })
 
 function agentForm<Change>(

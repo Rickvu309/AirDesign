@@ -66,7 +66,7 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
     await withClient(held, async (client) => {
       for (const [node, kind, next] of [
         ["256.3", "a shape that holds no text", "airdesign_edit_deck with op add and kind shape"],
-        ["256.4", "a picture", "airdesign_edit_deck with op add and kind shape"],
+        ["256.4", "an image", "airdesign_edit_deck with op add and kind shape"],
         ["256.5", "a chart", "Tell the person"],
         ["256.6", "a table", "Table cells cannot be edited"],
         ["256.7", "a group", "grouped"],
@@ -80,7 +80,7 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
         expect(refused.isError, node).toBe(true)
         expect(refused.structuredContent, node).toMatchObject({ ok: false, refusal: "kind" })
         const words = said(refused)
-        expect(words, node).toContain(`Element ${node} is ${kind}`)
+        expect(words, node).toContain(`Layer ${node} is ${kind}`)
         expect(words, node).toContain(next)
         expect(words, node).toContain("It takes")
         expect(words, node).not.toMatch(/\bTo put words beside it with\b/)
@@ -123,8 +123,8 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
       })
       expect(refused.structuredContent).toMatchObject({ ok: false, refusal: "group-box" })
       const words = said(refused)
-      expect(words).toContain("Element 256.7 is a group, and deleting a group is not supported yet. Leave it")
-      expect(words).not.toContain("Element 256.7 is inside a group")
+      expect(words).toContain("Layer 256.7 is a group, and deleting a group is not supported yet. Leave it")
+      expect(words).not.toContain("Layer 256.7 is inside a group")
     })
   })
 
@@ -141,9 +141,9 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
       })
       expect(refused.structuredContent).toMatchObject({ ok: false, refusal: "kind" })
       const words = said(refused)
-      expect(words).toContain("Change 1 (256.7): Element 256.7 is a group.")
-      expect(words).toContain("Change 2 (256.6): Element 256.6 is a table.")
-      expect(words).toContain("Change 3 (256.5): Element 256.5 is a chart.")
+      expect(words).toContain("Change 1 (256.7): Layer 256.7 is a group.")
+      expect(words).toContain("Change 2 (256.6): Layer 256.6 is a table.")
+      expect(words).toContain("Change 3 (256.5): Layer 256.5 is a chart.")
       expect(words).not.toContain("Change 4")
       const landed = await client.callTool({
         name: "airdesign_edit_deck",

@@ -30,7 +30,7 @@ it("names each button by its action and says its state for the selection", () =>
     "Align left",
     "Align center",
     "Align right",
-    "Bullets",
+    "Bulleted list",
   ])
   expect(tags.slice(0, 3).map((tag) => /aria-pressed="([^"]*)"/.exec(tag)?.[1])).toEqual(["true", "false", "mixed"])
   expect(tags.slice(0, 3).map((tag) => /aria-keyshortcuts="([^"]*)"/.exec(tag)?.[1])).toEqual([
@@ -40,7 +40,7 @@ it("names each button by its action and says its state for the selection", () =>
   ])
   expect(markup).toContain('aria-haspopup="dialog"')
   expect(markup).toContain('aria-checked="true"')
-  expect(markup).toContain('aria-label="Bullets"')
+  expect(markup).toContain('aria-label="Bulleted list"')
   expect(markup).toContain('aria-pressed="false"')
 })
 
@@ -51,7 +51,7 @@ it("draws only the parts a narrow toolbar keeps, so the rest can sit in More", (
   const more = renderToStaticMarkup(<FormatButtons shown={shown} parts={["color", "align", "bullets"]} />)
   expect(labels(row)).toEqual(["Bold", "Italic", "Underline", "Smaller", "Larger"])
   expect(row).toMatch(/<input[^>]*value="18"/)
-  expect(labels(more)).toEqual(["Text color", "Align left", "Align center", "Align right", "Bullets"])
+  expect(labels(more)).toEqual(["Text color", "Align left", "Align center", "Align right", "Bulleted list"])
   expect(more).not.toContain("data-text-format")
 })
 

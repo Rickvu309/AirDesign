@@ -1,7 +1,7 @@
 import { formatCopy } from "./format-copy"
 
 export const themeCopy = {
-  section: "Theme",
+  section: "Template style details",
   name: "Name",
   ...formatCopy.colors,
   hlink: "Link",

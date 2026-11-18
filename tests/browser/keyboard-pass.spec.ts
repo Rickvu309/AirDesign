@@ -145,13 +145,15 @@ test("Ctrl+= inside a text box is left to the browser", async ({ page }) => {
   expect(await percent(page)).toBe(fit)
 })
 
-test("Expand speaker notes is one tab stop", async ({ page }) => {
+test("Expand presenter notes is one tab stop", async ({ page }) => {
   await open(page)
-  await page.getByRole("button", { name: "Collapse speaker notes" }).click()
-  const expand = page.getByRole("button", { name: "Expand speaker notes" })
+  await page.getByRole("button", { name: "Collapse presenter notes" }).click()
+  const expand = page.getByRole("button", { name: "Expand presenter notes" })
   await expect(expand).toHaveCount(1)
   await expand.focus()
   await page.keyboard.press("Tab")
   await expect(expand).not.toBeFocused()
-  expect(await page.evaluate(() => document.activeElement?.getAttribute("aria-label"))).not.toBe("Expand speaker notes")
+  expect(await page.evaluate(() => document.activeElement?.getAttribute("aria-label"))).not.toBe(
+    "Expand presenter notes",
+  )
 })

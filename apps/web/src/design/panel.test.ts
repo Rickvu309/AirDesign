@@ -129,7 +129,7 @@ it("lays out a text box's body field by field, autofit included", () => {
     .filter((control) => ["font", "lineSpacing", "spaceBefore", "spaceAfter"].includes(control.field))
   expect(typed?.map((control) => [control.label, control.kind, control.value])).toEqual([
     ["Font", "text", "Calibri"],
-    ["Line spacing", "percent", undefined],
+    ["Line height", "percent", undefined],
     ["Space before", "length", undefined],
     ["Space after", "length", undefined],
   ])
