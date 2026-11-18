@@ -299,7 +299,8 @@ export function ElementDesign({
       >
         {sections.every((section) => section === "selectionColors" || section.label !== null) ? (
           <>
-            {afterAlignment ?? <DesignHead actions={titleActions}>{panelTitle(model)}</DesignHead>}
+            <DesignHead actions={titleActions}>{panelTitle(model)}</DesignHead>
+            {afterAlignment}
             {afterTitle}
           </>
         ) : null}
@@ -326,7 +327,8 @@ export function ElementDesign({
                 <DesignSection title={null}>
                   <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
                 </DesignSection>
-                {afterAlignment ?? <DesignHead actions={titleActions}>{panelTitle(model)}</DesignHead>}
+                <DesignHead actions={titleActions}>{panelTitle(model)}</DesignHead>
+                {afterAlignment}
                 {afterTitle}
               </div>
             )
