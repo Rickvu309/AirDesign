@@ -33,8 +33,8 @@ export type MarkupScan =
   | { readonly ok: false; readonly reason: "xml" }
   | { readonly ok: false; readonly reason: "limit"; readonly limit: "depth" | "attributes" | "nodes" }
 
-export function scanMarkup(data: Uint8Array, limits: MarkupLimits, nodesBefore: number): MarkupScan {
-  const shape = markupLimits(data)
+export function scanMarkup(data: Uint8Array, limits: MarkupLimits, nodesBefore: number, keep = false): MarkupScan {
+  const shape = markupLimits(data, keep)
   if (!shape.wellFormed) return { ok: false, reason: "xml" }
   if (shape.depth > limits.depth) return { ok: false, reason: "limit", limit: "depth" }
   if (shape.attributes > limits.attributes) return { ok: false, reason: "limit", limit: "attributes" }
@@ -105,7 +105,7 @@ async function readFiles(
     if (actual !== null) return actual
     parts.set(file.name, data)
     if (!xmlPart(file.name)) continue
-    const scan = scanMarkup(data, limits, nodes)
+    const scan = scanMarkup(data, limits, nodes, slidePart(file.name))
     if (!scan.ok) return scan
     nodes = scan.nodes
   }

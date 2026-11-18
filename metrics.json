@@ -5,7 +5,7 @@
   "export-coverage": { "now": 19, "goal": 50 },
   "export-verified": { "now": 31, "goal": 50 },
   "fault-detection": { "now": 10, "goal": 11 },
-  "import-parse": { "now": 141, "goal": 100 },
+  "import-parse": { "now": 115, "goal": 100 },
   "slides-repainted": { "goal": 1 },
   "eval-coverage": { "now": 49, "goal": 49 },
   "design-findings": { "now": 33, "goal": 0 },
