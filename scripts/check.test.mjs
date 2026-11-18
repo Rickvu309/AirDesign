@@ -251,6 +251,27 @@ for (const fail of [undefined, "format", "lint", "file-growth"]) {
     if (stampable(result.failed, result.ranSteps)) throw new Error("preflight failure can stamp")
   }
 }
+const released = []
+const recording = (events) => async () => (row) => events.push(row)
+const failingFiles = new Set(["apps/web/src/a.test.ts", "packages/document/src/b.test.ts"])
+await runCheck({
+  chosen: [[["unit-tests"]]],
+  tree: "ab12cd34",
+  failedFiles: failingFiles,
+  run: async () => 1,
+  lock: recording(released),
+})
+await runCheck({ chosen: [[["unit-tests"]]], tree: "ab12cd34", run: async () => 0, lock: recording(released) })
+await runCheck({ chosen: [[["unit-tests"]]], run: async () => 0, lock: recording(released) })
+if (
+  released[0].status !== "failed unit-tests" ||
+  released[0].tree !== "ab12cd34" ||
+  released[0].files !== "apps/web/src/a.test.ts packages/document/src/b.test.ts"
+)
+  throw new Error(`a failed check row lacks its tree or failing files: ${JSON.stringify(released[0])}`)
+if (released[1].tree !== "ab12cd34" || released[1].files !== undefined)
+  throw new Error(`a passed check row names failing files: ${JSON.stringify(released[1])}`)
+if (released[2].tree !== undefined) throw new Error("a check with no tree wrote one")
 const allEvents = []
 await runCheck({
   chosen: [[["format"], ["unit-tests"]]],
@@ -294,3 +315,17 @@ for (const eventName of [undefined, "", "pull_request", "push", "merge_group"]) 
   if (stampable(result.failed, result.ranSteps) !== (status === "warn"))
     throw new Error(`file-growth must allow check to finish only in the merge queue`)
 }
+
+const collected = new Set()
+await stepRunner({ limitOf: () => undefined, say: () => {}, failedFiles: collected })([
+  "unit-tests",
+  process.execPath,
+  ["-e", 'console.error(" FAIL  packages/document/src/a.test.ts > keeps order"); process.exit(1)'],
+])
+await stepRunner({ limitOf: () => undefined, say: () => {}, failedFiles: collected })([
+  "unit-tests",
+  process.execPath,
+  ["-e", "process.exit(0)"],
+])
+if ([...collected].join() !== "packages/document/src/a.test.ts")
+  throw new Error(`a failed step did not collect its failing test file: ${[...collected]}`)

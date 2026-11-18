@@ -3,7 +3,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { checkSteps } from "./check-steps.mjs"
-import { stampChecked } from "./checked.mjs"
+import { stampChecked, workingTree } from "./checked.mjs"
 import { attributionLine } from "./commit-authors.mjs"
 import { filesWithMarkers, markerFault } from "./conflict-markers.mjs"
 import { readWithRetry } from "./github-read.mjs"
@@ -296,6 +296,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
     check: () => tee(process.execPath, ["scripts/gate.mjs"], process.env, root),
     rerun: async (file) => {
       const release = await takeMachineLock({ job: "rerun", lane: "small", say: console.error })
+      const tree = workingTree(root)
       let status = "exited"
       try {
         const [command, args, env] = checkSteps.aloneCommand(file)
@@ -303,7 +304,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
         status = ran.status === 0 ? "passed" : "failed"
         return ran
       } finally {
-        await release({ status })
+        await release({ status, file, tree })
       }
     },
     stamp: () => stampChecked(root),
