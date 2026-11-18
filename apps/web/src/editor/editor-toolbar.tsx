@@ -1,3 +1,5 @@
+import { Hash } from "lucide-react"
+import { slideNumberCopy } from "@/copy/slide-number-copy"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuRadioGroup, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
@@ -30,7 +32,7 @@ export type EditorTool = "move" | "text" | "shape" | "image" | "icon"
 
 export type EditorPanel = "agent" | "design" | "none"
 
-const toolIcons: Readonly<Record<InsertPart, EditorIconName>> = {
+const toolIcons: Readonly<Record<Exclude<InsertPart, "number">, EditorIconName>> = {
   text: "text",
   shape: "shape",
   image: "image",
@@ -67,6 +69,7 @@ function Divider() {
 type Inserts = {
   readonly activeTool: EditorTool
   readonly pointer: ToolPick | undefined
+  readonly onSlideNumber: (() => void) | undefined
   readonly onText: (() => void) | undefined
   readonly onPicture: ((file: File) => void) | undefined
   readonly onShape: ((geometry: Geometry) => void) | undefined
@@ -74,7 +77,20 @@ type Inserts = {
 }
 
 function InsertTool({ tool, inserts }: { tool: InsertPart; inserts: Inserts }) {
-  const { activeTool, pointer, onText, onPicture, onShape, onIcon } = inserts
+  const { activeTool, pointer, onText, onPicture, onShape, onIcon, onSlideNumber } = inserts
+  if (tool === "number")
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label={slideNumberCopy.title}
+        className="size-9 rounded-lg text-quiet hover:bg-transparent active:translate-y-0"
+        onClick={onSlideNumber}
+      >
+        <Hash size={18} />
+      </Button>
+    )
   if (tool === "shape" && onShape !== undefined) return <ShapeTool onShape={onShape} />
   if (tool === "icon" && onIcon !== undefined) return <IconTool onIcon={onIcon} />
   const on = pointer === undefined && activeTool === tool
@@ -206,6 +222,7 @@ export function EditorToolbar({
   undo,
   onPanel,
   onText,
+  onSlideNumber,
   formatting,
   deckColors,
   formats,
@@ -220,6 +237,7 @@ export function EditorToolbar({
   undo?: UndoButtonsState
   onPanel?: (panel: Exclude<EditorPanel, "none">) => void
   onText?: () => void
+  onSlideNumber?: () => void
   formatting?: TextFormatting
   deckColors?: readonly string[]
   formats?: FormatShown
@@ -232,8 +250,9 @@ export function EditorToolbar({
   const pointerOn = pointer !== undefined || activeTool === "move"
   const live = useLiveFormat(formatting, deckColors)
   const format = live ?? (formats === undefined ? null : { shown: formats })
-  const fold = useFold(format === null ? insertParts : [...insertParts, ...formatParts])
-  const inserts: Inserts = { activeTool, pointer, onText, onPicture, onShape, onIcon }
+  const available = insertParts.filter((part) => part !== "number" || onSlideNumber !== undefined)
+  const fold = useFold(format === null ? available : [...available, ...formatParts])
+  const inserts: Inserts = { activeTool, pointer, onText, onPicture, onShape, onIcon, onSlideNumber }
   return (
     <div ref={fold.room} className="flex w-full min-w-0 justify-center">
       <div

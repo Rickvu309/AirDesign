@@ -1,7 +1,7 @@
 import { gridUndoable } from "./grid-undo.js"
 import type { GridUndoable, GridTurn } from "./grid-order.js"
 import { decide, landedPatch, shownPatch, valueHolder, type Command, type Register } from "./decide.js"
-import type { ElementId, SlideId } from "./element-id.js"
+import { readSlideId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { elementCommand, elementGone, type ElementCommand, type ElementOrder } from "./element-order.js"
 import { elementStacks, sitsBefore } from "./element-stack.js"
 import { groupCommand, groupFormed, groupNode, type GroupCommand } from "./element-group.js"
@@ -139,7 +139,7 @@ export function elementsUndoable(
   let first: { readonly edit: ElementEdit; readonly before: boolean; readonly after: boolean } | null = null
   const nodes: ElementId[] = []
   for (const edit of edits) {
-    if (first !== null && (edit.id !== first.edit.id || edit.slide !== first.edit.slide)) continue
+    if (first !== null && edit.slide !== first.edit.slide) continue
     const decision = decide(current, { command: "slide", file, edit })
     if (decision.decision !== "apply") continue
     const node = elementOf(edit)
@@ -192,9 +192,10 @@ function elementsTurn(register: Register, undoable: ElementsUndoable, from: "bef
   const commands = applying(
     register,
     turning.map(({ node }): Command => {
+      const id = readSlideId(shapeOf(node).slide) ?? undoable.slide
       const edit: SlideCommand = undoable[to]
-        ? { slide: "element-restore", id: undoable.slide, node }
-        : { slide: "element-remove", id: undoable.slide, node }
+        ? { slide: "element-restore", id, node }
+        : { slide: "element-remove", id, node }
       return { command: "slide", file, edit }
     }),
   )

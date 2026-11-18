@@ -91,7 +91,14 @@ export function decided(register: Register, file: readonly SlideId[], edit: Slid
     : { ok: true, register: result.register, runId }
 }
 
-export function addTextBox(head: Head, deck: Deck, slide: SlideId, wanted: Box | undefined, runId: string): Built {
+export function addTextBox(
+  head: Head,
+  deck: Deck,
+  slide: SlideId,
+  wanted: Box | undefined,
+  runId: string,
+  value = "",
+): Built {
   const register = deck.register
   const opened = ready(head, deck, slide, runId)
   if ("refusal" in opened) return { ok: false, refusal: opened.refusal }
@@ -101,7 +108,7 @@ export function addTextBox(head: Head, deck: Deck, slide: SlideId, wanted: Box |
   }
   const box = wanted ?? placeNewBox(measure.size ?? { width: 0, height: 0 }, takenBoxes(register, slide))
   const node = nextElementId(register, slide, measure.free)
-  const element = { node, kind: "shape", value: "", box, grouped: false } as const
+  const element = { node, kind: "shape", value, box, grouped: false } as const
   return decided(register, opened.file, { slide: "element-add", id: slide, element, runId }, runId)
 }
 

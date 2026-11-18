@@ -8,6 +8,8 @@ import {
   openingIcon,
   presentSlides,
   readTableValue,
+  hasSlideNumber,
+  plainSlideNumber,
   shapeOf,
   slideBirths,
   type ElementCommand,
@@ -98,7 +100,21 @@ function elementAdded(
   if (icon !== null) return addPicture(parts, part, { id, box, source: { icon } })
   if (shown.geometry !== undefined)
     return applyStructuralRoute(parts, { name: "spTree.add", part, id, text: "", geometry: shown.geometry, ...box })
-  if (element.kind !== "table") return applyRoute(parts, { name: "add", part, id, text: "", ...box })
+  if (element.kind !== "table") {
+    const added = applyRoute(parts, { name: "add", part, id, text: "", ...box })
+    if (!hasSlideNumber(element.value)) return added
+    return applyRoute(added, {
+      name: "text",
+      part,
+      shape,
+      value: [
+        {
+          from: 0,
+          runs: [{ from: -1, text: "1", slideNumber: plainSlideNumber }],
+        },
+      ],
+    })
+  }
   const table = readTableValue(element.value ?? "")
   const columns = table?.rows[0]?.cells.length
   if (table === null || columns === undefined) throw new Error("a:tbl")

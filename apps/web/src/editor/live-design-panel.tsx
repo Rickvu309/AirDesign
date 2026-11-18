@@ -66,6 +66,8 @@ import { PicturePreview } from "@/editor/picture-preview"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { ControlView, DesignHead, DesignSection, ElementDesign } from "@/editor/design-panel"
 import { LiveSelectionColors } from "./live-selection-colors"
+import { liveSlideNumber } from "./live-slide-number"
+
 type Parts = ReadonlyMap<string, Uint8Array>
 
 export type DesigningDeck = DesignDeck & {
@@ -258,6 +260,7 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
       formatting={deck.undo.formatting.current}
       picture={src === null ? null : <PicturePreview src={src} />}
       model={design.model}
+      afterAlignment={liveSlideNumber(deck, node, design.view.value)}
       palette={palette}
       onChange={(control, value) =>
         changeDesign(deck, () => rebasedChange(controlsOf(elementDesign(deck, node)?.model.sections), control, value))

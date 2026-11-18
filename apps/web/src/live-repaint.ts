@@ -3,6 +3,8 @@ import { sameBox, type PaintStore } from "@airdesign/render"
 import { landedBox } from "@/element-move"
 import { newSlideElement } from "@/exported-parts"
 
+import type { NumberedText } from "@/numbered-text"
+
 export type BusyElements = {
   readonly hold: (id: ElementId) => () => void
   readonly has: (id: ElementId) => boolean
@@ -45,15 +47,17 @@ export function liveRepaint(
   files: ReadonlyMap<ElementId, string>,
   painted: Register | null,
   busy: BusyElements,
+  numberText: NumberedText = (_id, stored) => stored,
 ): (register: Register, from?: "person") => void {
   const landed = new Map<ElementId, Landed>()
-  for (const [id, file] of files) landed.set(id, { text: shownValue(painted, id, file), box: landedBox(painted, id) })
+  for (const [id, file] of files)
+    landed.set(id, { text: numberText(id, shownValue(painted, id, file)), box: landedBox(painted, id) })
   return (register, from) => {
     for (const [id, file] of files) {
       const record = store.getElement(id)
       if (record === null || (from !== "person" && busy.has(id))) continue
       const before = from === "person" ? { text: record.text, box: store.getBox(id) } : landed.get(id)
-      const text = shownValue(register, id, file)
+      const text = numberText(id, shownValue(register, id, file))
       const box = landedBox(register, id)
       if (before?.text !== text) store.publish({ ...record, text })
       if (before === undefined || !sameBox(before.box, box)) store.placeBox(id, box)

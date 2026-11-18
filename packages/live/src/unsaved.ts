@@ -31,6 +31,12 @@ type Entry =
       readonly file: readonly SlideId[]
       readonly edit: SlideCommand
     }
+  | {
+      readonly kind: "slides"
+      readonly id: string
+      readonly file: readonly SlideId[]
+      readonly edits: readonly SlideCommand[]
+    }
 
 export type Unsaved = Entry & { readonly format?: number }
 
@@ -51,7 +57,9 @@ export function pageShelf(): Shelf | undefined {
 }
 
 function slotOf(entry: Kept): string | null {
-  return entry.kind === "slide" || entry.kind === "row" ? null : `${entry.kind}:${entry.node}`
+  return entry.kind === "slide" || entry.kind === "slides" || entry.kind === "row"
+    ? null
+    : `${entry.kind}:${entry.node}`
 }
 
 function isEntry(raw: unknown): raw is Unsaved {
@@ -59,6 +67,7 @@ function isEntry(raw: unknown): raw is Unsaved {
   const entry = raw as Record<string, unknown>
   if (typeof entry.id !== "string") return false
   if (entry.kind === "slide") return Array.isArray(entry.file) && typeof entry.edit === "object" && entry.edit !== null
+  if (entry.kind === "slides") return Array.isArray(entry.file) && Array.isArray(entry.edits)
   if (typeof entry.node !== "string" || typeof entry.floor !== "string") return false
   if (entry.kind === "text") return typeof entry.value === "string"
   if (entry.kind === "row") return readRow(entry.row, "text").ok
@@ -171,6 +180,7 @@ export function recoverUnsaved(
     for (const entry of entries) {
       if (
         newerFormat(entry) ||
+        (entry.kind === "slides" && readSlideState({ file: entry.file, order: entry.edits }) === undefined) ||
         (entry.kind === "slide" &&
           backgroundFill(entry.edit) === undefined &&
           (newerSlideCommand(entry.edit) || readSlideState({ file: entry.file, order: [entry.edit] }) === undefined))

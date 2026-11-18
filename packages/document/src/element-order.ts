@@ -2,10 +2,11 @@ import { assetIcon, mediaTypes, type Media } from "./asset-ref.js"
 import type { DeckIndex, IndexElement } from "./deck-index.js"
 import { elementId, readElementId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { onlyKeys, record } from "./plain-object.js"
-import { openingElement, readFloor } from "./slide-floor.js"
+import { floorOf, openingElement, readFloor } from "./slide-floor.js"
 import { slideMeasure } from "./slide-measure.js"
 import { presets, type Preset } from "./trait-geometry.js"
 import type { SlideState } from "./slide-order.js"
+import { hasSlideNumber, openingSlideNumber } from "./text-value.js"
 import { openedTable } from "./table-value.js"
 import { indexFacts, removable } from "./element-takes.js"
 import { groupedNow } from "./element-group.js"
@@ -113,7 +114,8 @@ function addable(command: ElementAdd): boolean {
   if (!freshShape(element)) return false
   if (geometry !== undefined) return media === undefined && drawable(element, geometry)
   if (element.kind === "table") return media === undefined && openedTable(element.value)
-  if (element.kind === "shape") return element.value === "" && media === undefined
+  if (element.kind === "shape")
+    return (element.value === "" || openingSlideNumber(element.value)) && media === undefined
   const sized = element.box !== null && element.box.cx > 0 && element.box.cy > 0
   const sourced = (media !== undefined) !== (openingIcon(element) !== null)
   return element.kind === "picture" && element.value === null && sized && sourced
@@ -153,6 +155,12 @@ export function elementRefusal(
   const opening = openingElement(state, node)
   if (command.slide === "element-add") {
     if (opening !== undefined || elementGone(state, node)) return "present"
+    if (hasSlideNumber(command.element.value)) {
+      const numbered = (element: IndexElement) =>
+        shapeOf(element.node).slide === command.id && hasSlideNumber(element.value) && !elementGone(state, element.node)
+      if (state.index?.elements.some(numbered) || state.order.some((edit) => floorOf(edit).some(numbered)))
+        return "present"
+    }
     return addable(command) ? null : "dead"
   }
   if (command.slide === "element-restore") return removedNow(state, node) ? null : "dead"

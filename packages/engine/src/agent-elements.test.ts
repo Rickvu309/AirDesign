@@ -1,6 +1,16 @@
 import { changeCall } from "./call-fixtures.js"
 import { readDeckId } from "@airdesign/catalog"
-import { decide, elementGone, elementId, slideId, type Box, type ElementId, type Register } from "@airdesign/document"
+import {
+  decide,
+  elementGone,
+  elementId,
+  slideId,
+  plainSlideNumber,
+  writeTextValue,
+  type Box,
+  type ElementId,
+  type Register,
+} from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { call, indexDeck, openDeck, type Deck } from "./index.js"
 
@@ -63,6 +73,18 @@ function lastAdded(register: Register) {
   if (last?.slide !== "element-add") throw new Error("no add")
   return last
 }
+
+it("lands native numbers across slides through one agent edit and refuses to add a second number", () => {
+  const value = writeTextValue([{ from: 0, runs: [{ from: -1, text: "1", slideNumber: plainSlideNumber }] }])
+  const deck = opened()
+  const changes = ["256", "257"].map((slide) => ({ op: "add", kind: "shape", slide, text: { value } }))
+  const result = landed(call("edit_deck", deck, actor, { deck: "deck", base: deck.revision, changes }))
+  expect(result.deck.revision).toBe(deck.revision + 1)
+  expect(result.deck.register.order.map((command) => command.slide === "element-add" && command.element.value)).toEqual(
+    [value, value],
+  )
+  expect(add(result.deck, { text: { value } })).toEqual({ ok: false, refusal: "present" })
+})
 
 describe("add_text_box", () => {
   it("adds an empty box at the box the agent sends, under the agent's run, with the next free shape id", () => {

@@ -1,4 +1,4 @@
-import type { FieldEdit, FieldName, FieldValue, TraitName, TraitPatch } from "@airdesign/document"
+import type { FieldEdit, SlideNumbers, FieldName, FieldValue, TraitName, TraitPatch } from "@airdesign/document"
 import { childOrder, insertChild, type ChildOf, type OrderedParent } from "./child-order.js"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { inheritedSlot, slotAt } from "./inherited-slot.js"
@@ -13,6 +13,7 @@ export type ElementAt = {
   readonly part: string
   readonly shape: string
   readonly media?: (sha256: string) => Uint8Array | undefined
+  readonly numbers?: SlideNumbers
 }
 
 export type AttributeCodec<V> = {

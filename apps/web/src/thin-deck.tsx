@@ -72,6 +72,7 @@ export function ThinDeck({ id }: { id: string }) {
             save: deck.save,
             undo: undoButtons,
             onText: deck.inserts.addText,
+            onSlideNumber: deck.inserts.addSlideNumber,
             onRename: deck.rename,
             onTrash: () =>
               void moveDeck({ deck: id, name: deck.title }, (pending) => {

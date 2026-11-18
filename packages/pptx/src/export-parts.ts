@@ -20,6 +20,7 @@ import {
   type NodeRegister,
   type Register,
   type TraitName,
+  type SlideNumbers,
 } from "@airdesign/document"
 import { routedParts } from "./connector-route.js"
 import { slidePart } from "./package-address.js"
@@ -28,6 +29,7 @@ import { readShapes, shapeKind, type ReadShape } from "./read-shapes.js"
 import { frameSize, scaledGrid } from "./table-size.js"
 import { writeTrait } from "./trait-xml.js"
 import { templateStyles } from "./template-style.js"
+import { slideNumbering } from "./slide-numbering.js"
 import { slideThemes } from "./trait-xml-theme.js"
 import type { ElementAt, Parts } from "./xml-codec.js"
 
@@ -128,6 +130,7 @@ function writtenElement(
   body: NodeRegister | undefined,
   opening: IndexElement | undefined,
   media: ElementAt["media"],
+  numbering: ReadonlyMap<string, SlideNumbers>,
 ): Parts {
   const named = shapes.filter((shape) => `${shape.slide}.${shape.shape}` === node)
   const shape = named.length === 1 ? named[0] : undefined
@@ -151,7 +154,14 @@ function writtenElement(
     written.set(trait, kept)
   }
   if (shape === undefined) return parts
-  const at = { slide: shape.slide, part: shape.part, shape: shape.shape, ...(media === undefined ? {} : { media }) }
+  const numbers = numbering.get(shape.slide)
+  const at = {
+    slide: shape.slide,
+    part: shape.part,
+    shape: shape.shape,
+    ...(media === undefined ? {} : { media }),
+    ...(numbers === undefined ? {} : { numbers }),
+  }
   if (shape.contentKind === "table") return writtenTable(parts, at, written, boxLast(body))
   let next = parts
   for (const [trait, fields] of written) if (trait !== "image") next = writeTrait(next, at, trait, fields)
@@ -162,6 +172,7 @@ function writtenElement(
 
 export function exportParts(parts: Parts, register: Register, media?: ElementAt["media"]): Parts {
   const shapes = readShapes(parts)
+  const numbers = slideNumbering(parts, register)
   let next = writtenTheme(parts, register.nodes.includes(themeNode) ? register.elements[themeNode] : undefined)
   const templates = register.index?.templates ?? templateStyles(parts)
   for (const node of new Set([...register.nodes, ...floorNodes(register)])) {
@@ -183,7 +194,7 @@ export function exportParts(parts: Parts, register: Register, media?: ElementAt[
         ? writtenNotes(next, node, body, opening)
         : kind === "slide"
           ? writtenSlide(next, node, body, opening)
-          : writtenElement(next, shapes, node, body, opening, media)
+          : writtenElement(next, shapes, node, body, opening, media, numbers)
   }
   return routedParts(parts, next)
 }

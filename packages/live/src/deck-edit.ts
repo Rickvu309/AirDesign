@@ -13,9 +13,9 @@ import {
   type SlideId,
   type Value,
 } from "@airdesign/document"
-import { fitsAlone } from "./commit-body.js"
+import { bodyBytes, fitsAlone } from "./commit-body.js"
 import { joinable } from "./deck-view.js"
-import type { Change, Held } from "./held.js"
+import type { Change, Held, Put } from "./held.js"
 import { pendingRow, rowKey, type PendingRow } from "./store.js"
 
 export type Enqueued =
@@ -116,5 +116,34 @@ export function slideChange(
     next: { ...held, pending: [...held.pending, row], register: decision.register, before: undefined },
     puts: [{ key: rowKey(deck, "pending", order), row }],
     result: { ok: true, painted: presentSlides(decision.register).map((spot) => spot.id) },
+  }
+}
+
+export function slideBatch(
+  deck: DeckId,
+  held: Held,
+  file: readonly SlideId[],
+  commands: readonly SlideCommand[],
+  once: string,
+): Change<SlideEnqueued> {
+  if (commands.length === 0 || commands.length > limits.batch) return refused({ ok: false, refusal: "batch" })
+  let current = held
+  const puts: Put[] = []
+  const rows: PendingRow[] = []
+  for (const command of commands) {
+    const planned = slideChange(deck, current, file, command)
+    if (!planned.result.ok || planned.next === undefined) return refused(planned.result)
+    current = { ...current, ...planned.next }
+    for (const { key, row } of planned.puts) {
+      if (row.kind !== "pending") continue
+      rows.push({ ...row, once })
+      puts.push({ key, row: { ...row, once } })
+    }
+  }
+  if (bodyBytes(deck, rows, once) > limits.body) return refused(tooLarge)
+  return {
+    next: { ...current, pending: [...held.pending, ...rows] },
+    puts,
+    result: { ok: true, painted: presentSlides(current.register).map((spot) => spot.id) },
   }
 }

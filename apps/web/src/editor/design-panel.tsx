@@ -229,6 +229,7 @@ export function ElementDesign({
   titleActions,
   afterTitle = null,
   formatting,
+  afterAlignment = null,
   children = null,
 }: {
   formatting?: TextFormatting
@@ -236,6 +237,7 @@ export function ElementDesign({
   picture?: ReactNode
   titleActions?: ReactNode
   afterTitle?: ReactNode
+  afterAlignment?: ReactNode
   children?: ReactNode
   palette: Palette
   onChange: (control: PanelControl, value: unknown) => void
@@ -255,7 +257,7 @@ export function ElementDesign({
       >
         {model.sections.every((section) => section.label !== null) ? (
           <>
-            <DesignHead actions={titleActions}>{panelTitle(model)}</DesignHead>
+            {afterAlignment ?? <DesignHead actions={titleActions}>{panelTitle(model)}</DesignHead>}
             {afterTitle}
           </>
         ) : null}
@@ -277,7 +279,7 @@ export function ElementDesign({
                 <DesignSection title={null}>
                   <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
                 </DesignSection>
-                <DesignHead actions={titleActions}>{panelTitle(model)}</DesignHead>
+                {afterAlignment ?? <DesignHead actions={titleActions}>{panelTitle(model)}</DesignHead>}
                 {afterTitle}
               </div>
             )

@@ -194,12 +194,21 @@ const textValue: PartCodec<string> = {
   },
   write(parts, at, value) {
     const text = shownText(value)
-    let next: Parts = applyRoute(parts, { name: "text", part: at.part, shape: at.shape, value: text })
-    for (const [paragraph, p] of text.entries())
-      for (const [run, r] of p.runs.entries()) {
+    let next: Parts = applyRoute(parts, {
+      name: "text",
+      part: at.part,
+      shape: at.shape,
+      value: text,
+      ...(at.numbers === undefined ? {} : { numbers: at.numbers }),
+    })
+    for (const [paragraph, p] of text.entries()) {
+      let run = 0
+      for (const r of p.runs) {
         if (r.link !== undefined && r.link.kind !== "unsupported")
           next = writtenLink(next, { ...at, paragraph, run }, r.link)
+        run += r.slideNumber?.count === "all" && r.slideNumber.format !== null ? 2 : 1
       }
+    }
     return next
   },
 }

@@ -4,6 +4,7 @@ import { bytesOf, limits } from "./limits.js"
 import { record } from "./plain-object.js"
 import { readOpening, type ElementPatch, type FieldEdit } from "./row.js"
 import { slideBirths } from "./slide-births.js"
+import { hasSlideNumber } from "./text-value.js"
 import type { SlideCommand, SlideState } from "./slide-order.js"
 
 type Floored = SlideState & { readonly index?: DeckIndex }
@@ -53,7 +54,10 @@ export function newSlideElement(state: Floored | null, node: ElementId): IndexEl
   if (state === null || !node.includes(".")) return undefined
   const slide = shapeOf(node).slide
   const born = state.order.some((command) => slideBirths(command).some((birth) => birth.id === slide))
-  return born ? openingElement(state, node) : undefined
+  if (born) return openingElement(state, node)
+  const added = state.order.find((command) => command.slide === "element-add" && command.element.node === node)
+  if (added?.slide !== "element-add") return undefined
+  return hasSlideNumber(added.element.value) ? added.element : undefined
 }
 
 export function floorNodes(state: Floored): readonly ElementId[] {

@@ -389,9 +389,9 @@ it("offers an empty box for editing", async () => {
   expect(await editableTexts(window, 1)).toEqual(["Other"])
 })
 
-it("does not offer a slide-number box for editing", async () => {
-  const window = await offeredWith(`<a:p><a:fld id="{1}" type="slidenum"><a:rPr/><a:t>Keep</a:t></a:fld></a:p>`)
-  const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
+it("paints a read-only native slide number", async () => {
+  const window = await offeredWith(`<a:p><a:fld id="{1}" type="slidenum"><a:rPr/><a:t>999</a:t></a:fld></a:p>`)
+  const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "2")
   expect(shown?.getAttribute("contenteditable")).toBe("false")
   expect(await editableTexts(window, 2)).toEqual(["First", "Last"])
   expect(await editableTexts(window, 1)).toEqual(["Other"])

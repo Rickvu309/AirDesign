@@ -1,5 +1,5 @@
 import { owns, shapeById } from "./shape-tree.js"
-import type { TextValue } from "@airdesign/document"
+import type { SlideNumbers, TextValue } from "@airdesign/document"
 import { insertChild } from "./child-order.js"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
@@ -15,7 +15,13 @@ import {
 } from "./text-value-route.js"
 
 export type SlideRoute =
-  | { readonly name: "text"; readonly part: string; readonly shape: string; readonly value: TextValue }
+  | {
+      readonly name: "text"
+      readonly part: string
+      readonly shape: string
+      readonly value: TextValue
+      readonly numbers?: SlideNumbers
+    }
   | { readonly name: "move"; readonly part: string; readonly shape: string; readonly x: number; readonly y: number }
   | { readonly name: "resize"; readonly part: string; readonly shape: string; readonly cx: number; readonly cy: number }
   | {
@@ -29,6 +35,14 @@ export type SlideRoute =
       readonly cy: number
     }
   | { readonly name: "remove"; readonly part: string; readonly shape: string }
+
+function fieldId(part: string, shape: string, paragraph: number, run: number): string {
+  const key = `${part}/${shape}/${paragraph}/${run}`
+  let hash = 2166136261
+  for (const char of key) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619)
+  const hex = (hash >>> 0).toString(16).padStart(8, "0")
+  return `{${hex}-0000-4000-8000-${Number(shape).toString(16).padStart(12, "0")}}`.toUpperCase()
+}
 
 const emptyBytes = new Uint8Array(0)
 
@@ -162,7 +176,12 @@ function editPart(bytes: Uint8Array, route: Exclude<SlideRoute, { readonly name:
   switch (route.name) {
     case "text": {
       const target = textTarget(bytes, route.shape)
-      return spliceBytes(bytes, textValueEdits(target.children, bytes, target.shape, route.value))
+      return spliceBytes(
+        bytes,
+        textValueEdits(target.children, bytes, target.shape, route.value, route.numbers, (paragraph, run) =>
+          fieldId(route.part, route.shape, paragraph, run),
+        ),
+      )
     }
     case "move": {
       const x = emu(route.x)
