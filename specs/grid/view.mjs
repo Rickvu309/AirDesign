@@ -42,6 +42,12 @@ const names = [
   "Group undo keeps foreign slide",
   "Source row emptied",
   "Selected anchor refused",
+  "Selected slides removed",
+  "Selection deletion undone",
+  "Copies inserted together",
+  "Selection duplication undone",
+  "Whole-deck deletion refused",
+  "Set with a colliding copy id refused",
 ]
 export const state = (v) => names[v.stage] + ", device at " + names[v.cacheStage]
 export const step = (action) => (action === "Adopt" ? "the device adopts the accepted prefix" : action)

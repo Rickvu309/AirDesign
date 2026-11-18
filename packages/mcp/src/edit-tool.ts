@@ -11,7 +11,7 @@ import {
   type AgentChange,
   type WireChange,
 } from "@airdesign/catalog"
-import { registerScope, type ElementId, type Register } from "@airdesign/document"
+import { registerScope, type ElementId, type Register, slideBirths } from "@airdesign/document"
 import { call } from "@airdesign/engine"
 import type { Session, ToolResult } from "./call-tool.js"
 import { editLanded, editRefusal, namedNodes } from "./edit-answer.js"
@@ -143,7 +143,8 @@ export function editDeck(raw: unknown, session: Session): ToolResult {
     }
   const slides = result.deck.register.order
     .slice(deck.register.order.length)
-    .flatMap((row) => (row.slide === "add" || row.slide === "clone" ? [row.id] : []))
+    .flatMap(slideBirths)
+    .map((birth) => birth.id)
   return editLanded(
     result.deck,
     [...nodes, ...addedNodes(deck.register, result.deck.register)],

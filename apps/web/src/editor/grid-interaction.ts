@@ -1,3 +1,4 @@
+import type { SlideId } from "@airdesign/document"
 import { pickedSlides, prunedPick, type GridPick } from "@/editor/grid-selection"
 
 export type GridInteraction =
@@ -61,6 +62,11 @@ export function gridPick(state: GridInteraction): GridPick {
   return state.kind === "slides" ? state.pick : null
 }
 
-export function gridRinged(state: GridInteraction, current: number, count: number): readonly number[] {
-  return state.kind === "slides" ? pickedSlides(prunedPick(state.pick, count), current) : []
+export function gridRinged(
+  state: GridInteraction,
+  current: number,
+  count: number,
+  ids?: readonly SlideId[],
+): readonly number[] {
+  return state.kind === "slides" ? pickedSlides(prunedPick(state.pick, count, ids), current) : []
 }

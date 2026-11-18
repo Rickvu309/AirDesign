@@ -9,6 +9,7 @@ import {
   presentSlides,
   readTableValue,
   shapeOf,
+  slideBirths,
   type ElementCommand,
   type Geometry,
   type IndexElement,
@@ -196,36 +197,37 @@ export function orderedParts(
   const kept = needed(state)
   const pending: Pending = new Map()
   let next: ReadonlyMap<string, Uint8Array> = parts
-  for (const [at, command] of state.order.entries()) {
-    if (!("id" in command) || !kept.has(command.id)) continue
-    if (elementCommand(command)) {
-      pendingAfter(pending, command)
+  for (const [at, edit] of state.order.entries()) {
+    if (elementCommand(edit)) {
+      if (kept.has(edit.id)) pendingAfter(pending, edit)
       continue
     }
-    if (command.slide !== "add" && command.slide !== "clone") continue
-    const anchorId = minted.get(command.slide === "add" ? command.after : command.source)
-    if (anchorId === undefined) throw new Error("slide")
-    const before = idsOf(next)
-    const layout = command.slide === "add" ? chosenLayout(next, minted, command) : null
-    const route =
-      command.slide === "add"
-        ? ({ name: "sldIdLst.add", after: anchorId, id: command.id, ...(layout === null ? {} : { layout }) } as const)
-        : ({ name: "sldIdLst.clone", slide: anchorId, id: command.id } as const)
-    next = applyStructuralRoute(next, route)
-    const id = createdId(before, idsOf(next))
-    minted.set(command.id, id)
-    if (command.slide === "clone") {
-      next = slideShown(next, id, command.source, state, at + 1, pending.get(command.source), media)
-      const prefix = {
-        file: state.file,
-        order: state.order.slice(0, at + 1),
-        ...(state.index === undefined ? {} : { index: state.index }),
+    for (const command of slideBirths(edit)) {
+      if (!kept.has(command.id)) continue
+      const anchorId = minted.get(command.slide === "add" ? command.after : command.source)
+      if (anchorId === undefined) throw new Error("slide")
+      const before = idsOf(next)
+      const layout = command.slide === "add" ? chosenLayout(next, minted, command) : null
+      const route =
+        command.slide === "add"
+          ? ({ name: "sldIdLst.add", after: anchorId, id: command.id, ...(layout === null ? {} : { layout }) } as const)
+          : ({ name: "sldIdLst.clone", slide: anchorId, id: command.id } as const)
+      next = applyStructuralRoute(next, route)
+      const id = createdId(before, idsOf(next))
+      minted.set(command.id, id)
+      if (command.slide === "clone") {
+        next = slideShown(next, id, command.source, state, at + 1, pending.get(command.source), media)
+        const prefix = {
+          file: state.file,
+          order: state.order.slice(0, at + 1),
+          ...(state.index === undefined ? {} : { index: state.index }),
+        }
+        next = arrangeSlide(next, id, stacksOf(prefix, command.source))
+        continue
       }
-      next = arrangeSlide(next, id, stacksOf(prefix, command.source))
-      continue
+      const born = slidePart(next, id)
+      if (born !== null && layout !== null) next = withLayoutPlaceholders(next, born, layout)
     }
-    const born = slidePart(next, id)
-    if (born !== null && layout !== null) next = withLayoutPlaceholders(next, born, layout)
   }
   const shaped = new Set<SlideId>([...pending.keys(), ...state.order.filter(groupCommand).map((command) => command.id)])
   for (const slide of shaped) {

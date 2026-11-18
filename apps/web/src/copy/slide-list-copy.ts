@@ -4,6 +4,10 @@ function slidesOf(count: number): string {
   return plural.select(count) === "one" ? `${String(count)} slide` : `${String(count)} slides`
 }
 
+function slideLimit(limit: number): string {
+  return `A deck can have up to ${slidesOf(limit)}.`
+}
+
 export const slideListCopy = {
   sectionCount: slidesOf,
   listName: "Slides",
@@ -12,9 +16,11 @@ export const slideListCopy = {
   selected: (count: number) => `${slidesOf(count)} selected`,
   nothingSelected: "Nothing selected",
   entered: (number: number) => `Editing slide ${String(number)}. Tab moves through its elements`,
-  selectOne: "Select one slide to duplicate, delete or move it",
   newSlide: "New slide",
-  addLimit: (limit: number) => `A deck can have up to ${slidesOf(limit)}. Delete a slide to add another.`,
+  lastSlide: "The last slide cannot be deleted.",
+  slideLimit,
+  addLimit: (limit: number) => `${slideLimit(limit)} Delete a slide to add another.`,
+  setRefused: "Unable to change the selected slides. Select them again and try again.",
   added: (number: number) => `Added slide ${String(number)}`,
   addAfter: (number: number) => `Add slide after slide ${String(number)}`,
   moveRow: (row: number) => `Move row ${String(row)}`,
@@ -22,6 +28,8 @@ export const slideListCopy = {
   rowKeys: "Alt+ArrowUp Alt+ArrowDown",
   addBelow: (row: number) => `Add slide in a new row below row ${String(row)}`,
   duplicated: (number: number) => `Duplicated slide ${String(number)}. The copy is slide ${String(number + 1)}`,
+  deletedSet: (count: number) => `${slidesOf(count)} deleted`,
+  duplicatedSet: (count: number) => `Duplicated ${slidesOf(count)}`,
   deleted: (number: number) => `Slide ${String(number)} deleted`,
   moved: (from: number, to: number) => `Moved slide ${String(from)} to position ${String(to)}`,
   movedSeveral: (count: number, to: number) => `Moved ${slidesOf(count)} to position ${String(to)}`,

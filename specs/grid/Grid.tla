@@ -8,10 +8,10 @@ Members(seq) == {seq[i] : i \in 1..Len(seq)}
 RowStart(i) == CHOOSE j \in 1..i : slides[j] \in heads /\
   \A k \in (j+1)..i : slides[k] \notin heads
 TypeOK ==
-  /\ stage \in 0..42
+  /\ stage \in 0..48
   /\ slides \in Seq(1..8)
   /\ heads \subseteq Members(slides)
-  /\ cacheStage \in 0..42
+  /\ cacheStage \in 0..48
   /\ cacheSlides \in Seq(1..8)
   /\ cacheHeads \subseteq Members(cacheSlides)
 Partition ==
@@ -81,10 +81,16 @@ ForeignGroupGap == Land(30,39,<<2,4,5,1,3,6,7>>,{2,5})
 UndoForeignGroup == Land(39,40,<<1,2,3,4,5,6,7>>,{1,5})
 EmptyRow == Land(0,41,<<1,2,5,6,3,4>>,{1})
 RefuseGroupAnchor == Land(0,42,Opening,{1,5})
+DeleteSet == Land(0,43,<<2,3,4>>,{2})
+UndoDeleteSet == Land(43,44,Opening,{1,5})
+CloneSet == Land(0,45,<<1,2,3,4,5,7,8,6>>,{1,5})
+UndoCloneSet == Land(45,46,Opening,{1,5})
+RefuseWholeDeck == Land(0,47,Opening,{1,5})
+RefuseSetCollision == Land(45,48,<<1,2,3,4,5,7,8,6>>,{1,5})
 Adopt ==
   /\ cacheStage # stage
   /\ cacheStage' = stage /\ cacheSlides' = slides /\ cacheHeads' = heads
   /\ UNCHANGED <<stage, slides, heads, initialized>>
-Next == RemoveHead \/ InsertGap \/ RefuseHead \/ RemoveSingleton \/ UndoSingleton \/ MoveHead \/ UndoMove \/ Add \/ Clone \/ UndoAdd \/ UndoClone \/ RemoveNonHead \/ InsertNonHeadGap \/ UndoNonHead \/ BelowInterior \/ UndoBelow \/ RedoBelow \/ BelowFinal \/ TailAppend \/ BelowAfterAppend \/ UndoConcurrentBelow \/ ForeignFillNew \/ RefuseFilledUndo \/ AppendAfterUndo \/ RefuseRedo \/ RemoveAnchor \/ RefuseDeadBelow \/ TwoBelow \/ RefuseCollision \/ GroupSame \/ UndoGroup \/ GroupNew \/ RowKeep \/ UndoRow \/ RedoRow \/ ForeignRowInsert \/ RefuseRowUndo \/ RefuseStaleRow \/ ForeignGroupGap \/ UndoForeignGroup \/ EmptyRow \/ RefuseGroupAnchor \/ Adopt
+Next == RemoveHead \/ InsertGap \/ RefuseHead \/ RemoveSingleton \/ UndoSingleton \/ MoveHead \/ UndoMove \/ Add \/ Clone \/ UndoAdd \/ UndoClone \/ RemoveNonHead \/ InsertNonHeadGap \/ UndoNonHead \/ BelowInterior \/ UndoBelow \/ RedoBelow \/ BelowFinal \/ TailAppend \/ BelowAfterAppend \/ UndoConcurrentBelow \/ ForeignFillNew \/ RefuseFilledUndo \/ AppendAfterUndo \/ RefuseRedo \/ RemoveAnchor \/ RefuseDeadBelow \/ TwoBelow \/ RefuseCollision \/ GroupSame \/ UndoGroup \/ GroupNew \/ RowKeep \/ UndoRow \/ RedoRow \/ ForeignRowInsert \/ RefuseRowUndo \/ RefuseStaleRow \/ ForeignGroupGap \/ UndoForeignGroup \/ EmptyRow \/ RefuseGroupAnchor \/ DeleteSet \/ UndoDeleteSet \/ CloneSet \/ UndoCloneSet \/ RefuseWholeDeck \/ RefuseSetCollision \/ Adopt
 Spec == Init /\ [][Next]_vars
 ====

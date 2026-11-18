@@ -1,4 +1,10 @@
-export type GridPick = { readonly anchor: number; readonly slides: ReadonlySet<number> } | null
+import type { SlideId } from "@airdesign/document"
+
+export type GridPick = {
+  readonly anchor: number
+  readonly slides: ReadonlySet<number>
+  readonly copies?: ReadonlySet<SlideId>
+} | null
 
 function sorted(slides: Iterable<number>): readonly number[] {
   return [...slides].sort((left, right) => left - right)
@@ -30,8 +36,14 @@ export function pickAll(count: number, current: number): GridPick {
   return heldPick(current, new Set(Array.from({ length: count }, (_, index) => index)))
 }
 
-export function prunedPick(pick: GridPick, count: number): GridPick {
+export function prunedPick(pick: GridPick, count: number, ids?: readonly SlideId[]): GridPick {
   if (pick === null) return null
+  const copies = pick.copies
+  if (copies !== undefined && ids !== undefined) {
+    const indices = ids.flatMap((id, index) => (copies.has(id) ? [index] : []))
+    const first = indices[0]
+    return first === undefined ? null : heldPick(first, new Set(indices))
+  }
   return heldPick(pick.anchor, new Set([...pick.slides].filter((index) => index < count)))
 }
 

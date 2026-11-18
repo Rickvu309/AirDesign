@@ -20,6 +20,7 @@ export function GridSlideMenu({
   count,
   held,
   canMoveSet,
+  canChangeSet,
   onAct,
   onClose,
 }: {
@@ -27,14 +28,15 @@ export function GridSlideMenu({
   count: number
   held: readonly number[]
   canMoveSet: boolean
+  canChangeSet: boolean
   onAct: (command: GridCommand, index: number) => void
   onClose: () => void
 }) {
   const multiple = held.length > 1
-  const move = (change: SlideKey) =>
-    canMoveSet &&
-    (change === "up" || change === "down") &&
-    gridMoveAt(held, count, change === "up" ? "earlier" : "later") !== null
+  const allowed = (change: SlideKey) => {
+    if (change === "clone" || change === "remove") return canChangeSet
+    return canMoveSet && gridMoveAt(held, count, change === "up" ? "earlier" : "later") !== null
+  }
   return (
     <DropdownMenu
       open
@@ -62,7 +64,7 @@ export function GridSlideMenu({
           index={menu.index}
           count={count}
           onChoose={(change) => onAct(gridChange[change], menu.index)}
-          {...(!multiple ? {} : { allowed: move, labels: slideListCopy.setActions(held.length) })}
+          {...(!multiple ? {} : { allowed, labels: slideListCopy.setActions(held.length) })}
         />
       </EditorMenuContent>
     </DropdownMenu>

@@ -41,19 +41,23 @@ export function readSlideEdit(raw: unknown): { ok: true; edit: WireSlide } | Fie
   if (body === undefined || !Object.hasOwn(body, "file")) return fieldRefusal
   const keys =
     body.grid === 1
-      ? body.slide === "move-many"
-        ? ["slide", "grid", "ids", "after", "row", "file"]
-        : body.slide === "grid-turn"
-          ? ["slide", "grid", "turn", "file"]
-          : body.slide === "move"
-            ? ["slide", "grid", "id", "after", "row", "file"]
-            : body.slide === "add"
-              ? ["slide", "grid", "id", "after", "row", "layout", "layoutPart", "floor", "file"]
-              : body.slide === "clone"
-                ? ["slide", "grid", "id", "source", "floor", "file"]
-                : body.slide === "remove"
-                  ? ["slide", "grid", "id", "file"]
-                  : undefined
+      ? body.slide === "remove-many"
+        ? ["slide", "grid", "ids", "file"]
+        : body.slide === "clone-many"
+          ? ["slide", "grid", "copies", "file"]
+          : body.slide === "move-many"
+            ? ["slide", "grid", "ids", "after", "row", "file"]
+            : body.slide === "grid-turn"
+              ? ["slide", "grid", "turn", "file"]
+              : body.slide === "move"
+                ? ["slide", "grid", "id", "after", "row", "file"]
+                : body.slide === "add"
+                  ? ["slide", "grid", "id", "after", "row", "layout", "layoutPart", "floor", "file"]
+                  : body.slide === "clone"
+                    ? ["slide", "grid", "id", "source", "floor", "file"]
+                    : body.slide === "remove"
+                      ? ["slide", "grid", "id", "file"]
+                      : undefined
       : slideKeys(body.slide)
   if (keys === undefined || !knownKeys(body, keys)) return fieldRefusal
   const state = readSlideState({ file: body.file, order: [body] })

@@ -6,6 +6,7 @@ import {
   planChange,
   shapeOf,
   slideKind,
+  slideBirths,
   registerScope,
   themeNode,
   valueBytes,
@@ -29,7 +30,7 @@ function slideOwned(register: Register, node: ElementId): boolean {
   const slide = shapeOf(node).slide
   return (
     register.index?.slides.some((each) => each.id === slide) === true ||
-    register.order.some((command) => (command.slide === "add" || command.slide === "clone") && command.id === slide)
+    register.order.some((command) => slideBirths(command).some((birth) => birth.id === slide))
   )
 }
 

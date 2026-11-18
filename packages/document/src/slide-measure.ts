@@ -1,5 +1,6 @@
 import type { DeckIndex, SlideSize } from "./deck-index.js"
 import { shapeOf, slideKind, type SlideId } from "./element-id.js"
+import { slideBirths } from "./slide-births.js"
 import { floorOf } from "./slide-floor.js"
 import type { SlideState } from "./slide-order.js"
 
@@ -14,9 +15,9 @@ type Measured = SlideState & { readonly index?: DeckIndex }
 function floorEnd(state: Measured, slide: SlideId): number {
   let end = 1
   for (const command of state.order) {
-    if (!("id" in command) || command.id !== slide) continue
     for (const element of floorOf(command))
-      if (slideKind(element.node) === null) end = Math.max(end, Number(shapeOf(element.node).shape))
+      if (slideKind(element.node) === null && shapeOf(element.node).slide === slide)
+        end = Math.max(end, Number(shapeOf(element.node).shape))
   }
   return end + 1
 }
@@ -27,9 +28,7 @@ function measureOf(
   depth: number,
 ): Pick<SlideMeasure, "free" | "animated"> | undefined {
   if (depth > state.order.length) return undefined
-  const born = state.order.find(
-    (command) => (command.slide === "add" || command.slide === "clone") && command.id === slide,
-  )
+  const born = state.order.flatMap(slideBirths).find((birth) => birth.id === slide)
   if (born?.slide === "add") return { free: floorEnd(state, slide), animated: [] }
   if (born?.slide === "clone") {
     const source = measureOf(state, born.source, depth + 1)

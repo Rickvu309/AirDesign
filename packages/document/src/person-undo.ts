@@ -323,9 +323,15 @@ function undoableAt(register: Register, at: number, edit: SlideCommand): Undoabl
     }
   }
   if (edit.slide === "grid-turn") return null
-  const ids = edit.slide === "move-many" ? edit.ids : [edit.id]
+  const ids =
+    edit.slide === "move-many" || edit.slide === "remove-many"
+      ? edit.ids
+      : edit.slide === "clone-many"
+        ? edit.copies.map((copy) => copy.id)
+        : [edit.id]
   const turnsSlide = (row: SlideCommand) =>
     ((row.slide === "remove" || row.slide === "restore") && ids.includes(row.id)) ||
+    (row.slide === "remove-many" && row.ids.some((id) => ids.includes(id))) ||
     (row.slide === "grid-turn" &&
       row.turn.spots.some((step) => ids.includes(step.id) && step.before.present !== step.after.present))
   if (fencedSince(register, at, edit, turnsSlide)) return null

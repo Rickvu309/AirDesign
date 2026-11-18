@@ -71,7 +71,7 @@ export function ready(
 ): { readonly file: readonly SlideId[] } | { readonly refusal: CallRefusal } {
   if (head.deck !== deck.id) return { refusal: "deck" }
   if (!readFresh(deck, runId, head.base)) return { refusal: "stale" }
-  const fenced = runFence(deck.register, runId, null)
+  const fenced = runFence(deck.register, runId, [])
   if (fenced !== null) return { refusal: fenced }
   const index = deck.register.index
   if (index === undefined || index.elements.length !== index.total) return { refusal: "indexing" }

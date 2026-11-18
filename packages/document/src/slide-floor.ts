@@ -3,6 +3,7 @@ import { elementId, shapeOf, type ElementId, type SlideId } from "./element-id.j
 import { bytesOf, limits } from "./limits.js"
 import { record } from "./plain-object.js"
 import { readOpening, type ElementPatch, type FieldEdit } from "./row.js"
+import { slideBirths } from "./slide-births.js"
 import type { SlideCommand, SlideState } from "./slide-order.js"
 
 type Floored = SlideState & { readonly index?: DeckIndex }
@@ -23,8 +24,7 @@ export function readFloor(raw: unknown, slide: SlideId): readonly IndexElement[]
 
 export function floorOf(command: SlideCommand): readonly IndexElement[] {
   if (command.slide === "element-add" || command.slide === "element-group") return [command.element]
-  if (command.slide === "add" || command.slide === "clone") return command.floor ?? []
-  return []
+  return slideBirths(command).flatMap((birth) => birth.floor ?? [])
 }
 
 export function floorFits(state: Floored, command: SlideCommand): boolean {
@@ -38,15 +38,11 @@ export function openingElement(state: Floored, node: ElementId): IndexElement | 
   if (indexed !== undefined || !node.includes(".")) return indexed
   const slide = shapeOf(node).slide
   for (const command of state.order) {
-    if (
-      !("id" in command) ||
-      command.id !== slide ||
-      (command.slide !== "add" &&
-        command.slide !== "clone" &&
-        command.slide !== "element-add" &&
-        command.slide !== "element-group")
-    )
-      continue
+    const onSlide =
+      command.slide === "element-add" || command.slide === "element-group"
+        ? command.id === slide
+        : slideBirths(command).some((birth) => birth.id === slide)
+    if (!onSlide) continue
     const found = floorOf(command).find((element) => element.node === node)
     if (found !== undefined) return found
   }
@@ -56,9 +52,7 @@ export function openingElement(state: Floored, node: ElementId): IndexElement | 
 export function newSlideElement(state: Floored | null, node: ElementId): IndexElement | undefined {
   if (state === null || !node.includes(".")) return undefined
   const slide = shapeOf(node).slide
-  const born = state.order.some(
-    (command) => (command.slide === "add" || command.slide === "clone") && command.id === slide,
-  )
+  const born = state.order.some((command) => slideBirths(command).some((birth) => birth.id === slide))
   return born ? openingElement(state, node) : undefined
 }
 
