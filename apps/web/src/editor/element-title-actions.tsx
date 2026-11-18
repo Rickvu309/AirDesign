@@ -1,9 +1,9 @@
 import type { ElementId } from "@airdesign/document"
 import type { PanelModel } from "@/design/panel"
-import { ImageUp, ScanSearch } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
 import { pictureCopy } from "@/copy/picture-copy"
+import { EditorIcon } from "@/editor/editor-icons"
 import { pickPicture } from "@/editor/picture-picker"
 
 export function ElementTitleActions({
@@ -34,7 +34,7 @@ export function ElementTitleActions({
           title={designCopy.selectMatching}
           onClick={onMatch}
         >
-          <ScanSearch aria-hidden className="size-3.5" />
+          <EditorIcon name="match" size={14} />
         </Button>
       )}
       {onReplace === undefined || !canReplace ? null : (
@@ -47,7 +47,7 @@ export function ElementTitleActions({
           title={pictureCopy.replace}
           onClick={() => pickPicture((file) => onReplace(model.node, file))}
         >
-          <ImageUp aria-hidden className="size-3.5" />
+          <EditorIcon name="swap" size={14} />
         </Button>
       )}
     </div>

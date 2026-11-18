@@ -38,7 +38,8 @@ import { LiveTemplateStyle } from "@/editor/live-template-style"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
 import type { Palette, Swatch } from "@/design/color-choices"
-import { PassageField, passageWords, typedText } from "@/design/controls/text"
+import { passageWords, typedText } from "@/design/controls/text"
+import { MultiEditText } from "@/editor/multi-edit-text"
 import { UnionControl } from "@/design/controls/union"
 import { resolveControl } from "@/design/panel-arrangement"
 import { fillIcons } from "@/design/preset-icons"
@@ -342,24 +343,20 @@ function LiveManyDesign({
   const design = manyDesign(deck, nodes, mode)
   if (design === null) return null
   const text = editableText(design.views) ? (
-    <DesignSection title={designCopy.multiEditText}>
-      <PassageField
-        label={designCopy.multiEditText}
-        values={design.views.map((view) => view.value ?? "")}
-        rich
-        onChange={(words) =>
-          changeDesign(deck, () => {
-            const views = manyDesign(deck, nodes, mode)?.views
-            if (views === undefined || !editableText(views)) return []
-            return views.flatMap(({ node, value }) =>
-              passageWords(value ?? "") === words
-                ? []
-                : [{ target: { node }, text: { value: typedText(value ?? "", words) } }],
-            )
-          })
-        }
-      />
-    </DesignSection>
+    <MultiEditText
+      values={design.views.map((view) => view.value ?? "")}
+      onChange={(words) =>
+        changeDesign(deck, () => {
+          const views = manyDesign(deck, nodes, mode)?.views
+          if (views === undefined || !editableText(views)) return []
+          return views.flatMap(({ node, value }) =>
+            passageWords(value ?? "") === words
+              ? []
+              : [{ target: { node }, text: { value: typedText(value ?? "", words) } }],
+          )
+        })
+      }
+    />
   ) : null
   return (
     <ElementDesign
@@ -370,10 +367,10 @@ function LiveManyDesign({
       titleActions={
         <div className="flex items-center gap-1">
           {toneHead(deck, nodes, toneFor)}
+          {text}
           <ElementTitleActions onMatch={deck.selectMatching} />
         </div>
       }
-      afterTitle={text}
       onChange={(control, value) =>
         changeDesign(deck, () => {
           const latest = manyDesign(deck, nodes, mode)
