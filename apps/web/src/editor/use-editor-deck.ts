@@ -1,11 +1,11 @@
 import { noSelection, type Selection } from "@airdesign/render"
-import { useEffect, useState } from "react"
-import { landedPatch, type ElementId } from "@airdesign/document"
+import { useEffect, useMemo, useState } from "react"
+import type { ElementId } from "@airdesign/document"
 import { flushMedia, keepMedia } from "@airdesign/live"
 import { toast } from "@/components/ui/toast"
 import { designCopy } from "@/copy/design-copy"
 import { changeDesign } from "@/design/design-change"
-import { matchingInDeck } from "@/editor/matching-layers"
+import { selectionMatches } from "@/editor/matching-layers"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { deckInserts } from "@/editor/inserts"
 import { useDeckPaint } from "@/editor/use-deck-paint"
@@ -45,20 +45,22 @@ export function useEditorDeck(id: string) {
     setSelection(next)
   }
 
-  function selectMatching() {
-    if (local === undefined) return
-    const sources = selection.ids.filter((node) => local.includes(node))
-    if (sources.length === 0) return
-    const visible = new Set(slides.flatMap((slide) => slide.elements))
+  const store = shown.store.current
+  const at = shown.current
+  const parts = shown.displayParts.current
+  const register = shown.shownRegister.current
+  const ids = selection.ids
+  const matchable = useMemo(() => {
     try {
-      const register = shown.shownRegister.current
-      const renamed = new Set(
-        (register?.nodes ?? []).filter((node) => {
-          const body = register?.elements[node]
-          return body !== undefined && typeof landedPatch(body, "text").identity?.name === "object"
-        }),
-      )
-      const found = matchingInDeck(shown.displayParts.current, visible, sources, renamed)
+      return selectionMatches(parts, register, store.slides(), at, ids).length > 0
+    } catch {
+      return false
+    }
+  }, [parts, register, store, at, ids])
+
+  function selectMatching() {
+    try {
+      const found = selectionMatches(parts, register, slides, at, ids)
       setMatched(found)
       if (found.length === 0) toast.message(designCopy.noMatching)
     } catch {
@@ -106,6 +108,7 @@ export function useEditorDeck(id: string) {
     selection,
     select,
     matching,
+    matchable,
     selectMatching,
     replacePicture,
     chooseFillImage,

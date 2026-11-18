@@ -48,7 +48,7 @@ Preconditions:
 
 ### Adjust tone
 
-- Open Design and choose **Adjust tone** in the panel title. With no selection, the request covers the current slide. A text selection or group limits the request to its text.
+- Open Design and choose **Adjust tone** in the panel title. It shows on the slide, on several selected layers and on a group, as in Figma; one text layer shows none. With no selection, the request covers the current slide. Several selected layers or a group limit the request to their text.
 - Choose a preset or drag the dial. With the keyboard, move with the arrows and press Enter to send. The editor opens the Agent panel with the request.
 - In Design, **Try again** uses the same tone for another rewrite. **Reset** restores the text through Agent undo.
 - Run `$V journey <run> adjust-tone` to drive preset and dial rewrites, Reset after reload, availability checks, and PowerPoint export with recorded Aira streams.

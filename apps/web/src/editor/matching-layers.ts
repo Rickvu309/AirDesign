@@ -1,4 +1,4 @@
-import { readElementId, type ElementId } from "@airdesign/document"
+import { landedPatch, readElementId, type ElementId, type Register } from "@airdesign/document"
 import { paintReader, readSlides, slideLayouts, type PaintElement } from "@airdesign/pptx"
 
 export type MatchLayer = Pick<PaintElement, "name" | "kind" | "group" | "placeholder" | "box" | "text"> & {
@@ -90,24 +90,50 @@ export function matchingLayers(slides: readonly MatchSlide[], selected: readonly
   return [...matches]
 }
 
-export function matchingInDeck(
-  parts: ReadonlyMap<string, Uint8Array>,
-  visible: ReadonlySet<ElementId>,
-  selected: readonly ElementId[],
-  renamed: ReadonlySet<ElementId>,
-): readonly ElementId[] {
+type Parts = ReadonlyMap<string, Uint8Array>
+
+const deckLayers = new WeakMap<Parts, readonly MatchSlide[]>()
+
+function layersOf(parts: Parts): readonly MatchSlide[] {
+  const known = deckLayers.get(parts)
+  if (known !== undefined) return known
   const reader = paintReader(parts)
   const layouts = slideLayouts(parts)
+  const read = readSlides(parts).map(({ slide, part }) => ({
+    layout: layouts.get(slide),
+    layers: reader.slide(part).elements.flatMap((layer) => {
+      const node = layer.from === "slide" ? readElementId(`${slide}.${layer.shape}`) : undefined
+      return node === undefined ? [] : [{ ...layer, node }]
+    }),
+  }))
+  deckLayers.set(parts, read)
+  return read
+}
+
+export function selectionMatches(
+  parts: Parts,
+  register: Register | null,
+  slides: readonly { readonly elements: readonly ElementId[] }[],
+  at: number,
+  selected: readonly ElementId[],
+): readonly ElementId[] {
+  const local = slides[at]?.elements
+  const sources = local === undefined ? [] : selected.filter((node) => local.includes(node))
+  if (sources.length === 0) return []
+  const visible = new Set(slides.flatMap((slide) => slide.elements))
+  const renamed = new Set(
+    (register?.nodes ?? []).filter((node) => {
+      const body = register?.elements[node]
+      return body !== undefined && typeof landedPatch(body, "text").identity?.name === "object"
+    }),
+  )
   return matchingLayers(
-    readSlides(parts).map(({ slide, part }) => ({
-      layout: layouts.get(slide),
-      layers: reader.slide(part).elements.flatMap((layer) => {
-        const node = layer.from === "slide" ? readElementId(`${slide}.${layer.shape}`) : undefined
-        return node !== undefined && visible.has(node)
-          ? [{ ...layer, node, ...(renamed.has(node) ? { renamed: true } : {}) }]
-          : []
-      }),
+    layersOf(parts).map(({ layout, layers }) => ({
+      layout,
+      layers: layers.flatMap((layer) =>
+        visible.has(layer.node) ? [renamed.has(layer.node) ? { ...layer, renamed: true as const } : layer] : [],
+      ),
     })),
-    selected,
+    sources,
   )
 }

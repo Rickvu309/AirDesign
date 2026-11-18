@@ -21,6 +21,8 @@ import { toast } from "@/components/ui/toast"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import type { PanelMode } from "@/design/panel-order"
 import type { DeckPaint } from "./use-deck-paint"
+import type { ToneControlFor } from "./adjust-tone"
+import { adjustToneCopy } from "@/copy/adjust-tone-copy"
 
 const device = vi.hoisted(() => ({ link: null as unknown }))
 
@@ -44,17 +46,30 @@ function applied(register: Register, command: Command): Register {
   return decision.register
 }
 
-function Panel(props: { readonly node: ElementId | null; readonly exposed: (shown: DeckPaint) => void }) {
+type Title = {
+  readonly selectMatching?: () => void
+  readonly matchable?: boolean
+  readonly toneFor?: ToneControlFor
+}
+
+function Panel(
+  props: { readonly node: ElementId | null; readonly exposed: (shown: DeckPaint) => void } & {
+    readonly title?: Title
+  },
+) {
   const nothing = () => undefined
   const pictures = { store: { bytes: new Map(), load: async () => false, keep: nothing } }
   const undo = editor.useUndoList()
   const shown = editor.useDeckPaint(deck, pictures, { show: nothing })
   const [mode, setMode] = useState<PanelMode>(props.node === null ? "slides" : "design")
   props.exposed(shown)
+  const { toneFor, ...title } = props.title ?? {}
   return createElement(editor.LiveDesignPanel, {
     mode,
     onMode: setMode,
+    ...(toneFor === undefined ? {} : { toneFor }),
     deck: {
+      ...title,
       id: deck,
       shown,
       undo,
@@ -72,10 +87,11 @@ async function fixtureFile(name: string): Promise<Uint8Array> {
   return fs.readFile(new URL(`../../../../scripts/pptx-fixtures/${name}`, import.meta.url))
 }
 
-async function slidePanel(fixture = "blank.pptx", selected = false) {
+async function slidePanel(fixture = "blank.pptx", selected: boolean | number = false, title?: Title) {
   const parts = await readParts(await fixtureFile(fixture))
   const slide = readSlides(parts)[0]?.slide
-  const node = selected && slide !== undefined ? elementId(`${slide}.4`) : null
+  const shape = selected === true ? 4 : selected
+  const node = shape !== false && slide !== undefined ? elementId(`${slide}.${shape}`) : null
   const register = openRegister("", "")
   device.link = {
     enqueueRow: async () => ({ ok: true }),
@@ -86,7 +102,15 @@ async function slidePanel(fixture = "blank.pptx", selected = false) {
   const host = window.document.createElement("div")
   window.document.body.append(host)
   const root = editor.createRoot(host)
-  await act(async () => root.render(createElement(Panel, { node, exposed: (now) => (exposed.current = now) })))
+  await act(async () =>
+    root.render(
+      createElement(Panel, {
+        node,
+        exposed: (now) => (exposed.current = now),
+        ...(title === undefined ? {} : { title }),
+      }),
+    ),
+  )
   const shown = exposed.current
   if (shown === null) throw new Error("not rendered")
   await act(async () => {
@@ -211,6 +235,33 @@ afterAll(() => {
   vi.unstubAllGlobals()
   window.close()
 })
+
+it("shows Select matching layers only when the layer has matches, and Adjust tone on the slide but not on one text layer", async () => {
+  const toneFor: ToneControlFor = () => ({
+    blocked: undefined,
+    notice: undefined,
+    busy: false,
+    choice: undefined,
+    resettable: false,
+    refresh: () => undefined,
+    choose: () => undefined,
+    reset: () => undefined,
+  })
+  const selectMatching = () => undefined
+  const head = (panel: Awaited<ReturnType<typeof slidePanel>>) =>
+    [...panel.host.querySelectorAll("button[aria-label]")]
+      .map((button) => button.getAttribute("aria-label"))
+      .filter((name) => name === designCopy.selectMatching || name === adjustToneCopy.title)
+  const alone = await slidePanel("clean.pptx", 2, { selectMatching, toneFor })
+  expect(head(alone)).toEqual([])
+  await alone.close()
+  const matched = await slidePanel("clean.pptx", 2, { selectMatching, matchable: true, toneFor })
+  expect(head(matched)).toEqual([designCopy.selectMatching])
+  await matched.close()
+  const slide = await slidePanel("clean.pptx", false, { selectMatching, toneFor })
+  expect(head(slide)).toEqual([adjustToneCopy.title])
+  await slide.close()
+}, 20_000)
 
 it("lists a table's inherited text color when its canvas value is plain text", async () => {
   const panel = await slidePanel("table-added.pptx", true)

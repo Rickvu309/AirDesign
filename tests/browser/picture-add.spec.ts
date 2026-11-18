@@ -91,6 +91,7 @@ test("adds a PNG to a blank deck, moves and resizes it at its ratio, and keeps i
   const parts = await partsOf(file)
   const slideXml = new TextDecoder().decode(parts.get("ppt/slides/slide1.xml"))
   expect(slideXml).toMatch(/<p:pic><p:nvPicPr><p:cNvPr id="4" name="Picture 4"\/>/)
+  expect(slideXml).toMatch(/<a:stretch><a:fillRect l="-?\d+" t="-?\d+" r="-?\d+" b="-?\d+"\/><\/a:stretch>/)
   const media = [...parts.keys()].filter((name) => name.startsWith("ppt/media/"))
   expect(media).toHaveLength(1)
   expect(Buffer.from(parts.get(media[0] ?? "") ?? [])).toEqual(await readFile(pictureFile))

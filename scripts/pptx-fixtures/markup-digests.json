@@ -137,7 +137,7 @@
   "picture-jpeg.pptx": {
     "parts": 22,
     "elements": 596,
-    "digest": "9b1892c9fed23583c5bd78234f6d50c040e472d83e6ac1b95cd2b9d426a588a8"
+    "digest": "048d5630446a8fefb63a1d0f2ee6e815f47074e06604332aa78d72b8d8d00a83"
   },
   "picture-missing.pptx": {
     "parts": 22,
@@ -147,12 +147,12 @@
   "picture-png.pptx": {
     "parts": 22,
     "elements": 596,
-    "digest": "298b9f3c43568a74c003e181947184f01a062d5922f0bf0c7012c9e6a62396e7"
+    "digest": "2832f479e045db9e16db6158c9682e43fa57a3b9de514c75c30b2c4ead6d30e8"
   },
   "pictures-jpeg.pptx": {
     "parts": 22,
     "elements": 614,
-    "digest": "dd8f286a1f6baf2cbf08d410d2564c69c6591d2b48790c2cc79a231b6cb7ae02"
+    "digest": "91f7ee825579edcff429a13962b49c1eedcd68887fd7f274c1ac527a728a01d2"
   },
   "sections-after.pptx": {
     "parts": 20,

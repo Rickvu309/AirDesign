@@ -1,5 +1,5 @@
 import { expect, it } from "vitest"
-import { picturePlacement } from "./picture-mode.js"
+import { picturePlacement } from "./picture-placement.js"
 
 it("covers or contains without distorting the picture", () => {
   expect(picturePlacement("fill", { width: 200, height: 100 }, { width: 100, height: 100 })).toEqual({
