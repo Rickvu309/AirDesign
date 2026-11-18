@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { zoomCopy } from "../../apps/web/src/copy/product-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
-import { entry, manySlides, mark, openFile, openGrid } from "./slide-grid-deck"
+import { clean, entry, manySlides, mark, openFile, openGrid } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -64,6 +64,33 @@ test("one click on an element of a slide that is not open selects it with handle
   await expect(live(page).locator("[data-selection]")).toHaveCount(1)
   await expect(frame(page)).toBeFocused()
   await expect(text(page)).not.toBeFocused()
+})
+
+test("right-clicking a live slide matches Slides element menus and opens its slide menu on blank areas", async ({
+  page,
+}) => {
+  await openFile(page, clean)
+  await page.locator("[data-slide-paint] [data-canvas-element]").first().click({ button: "right", force: true })
+  await expect(page.getByRole("menuitem", { name: /Bring to front/ })).toBeVisible()
+  const slideItems = await page.getByRole("menuitem").allTextContents()
+  await page.keyboard.press("Escape")
+
+  await openGrid(page)
+  await thumbText(page, 1).click({ force: true })
+  await expect(live(page)).toHaveCount(1)
+  await frame(page).click({ button: "right", force: true })
+  await expect(page.getByRole("menuitem", { name: /Bring to front/ })).toBeVisible()
+  expect(await page.getByRole("menuitem").allTextContents()).toEqual(slideItems)
+  await page.keyboard.press("Escape")
+
+  const paint = live(page).locator("[data-slide-paint]")
+  const box = await paint.boundingBox()
+  if (box === null) throw new Error("Missing live slide")
+  await page.mouse.click(box.x + 5, box.y + 5, { button: "right" })
+  await expect(page.getByRole("menuitem", { name: /Duplicate/ })).toBeVisible()
+  await page.keyboard.press("Escape")
+  await page.locator("[data-slide-number]").first().click({ button: "right", force: true })
+  await expect(page.getByRole("menuitem", { name: /Duplicate/ })).toBeVisible()
 })
 
 test("a drag from a slide number reorders the slide, and a drag from an element moves only the element", async ({

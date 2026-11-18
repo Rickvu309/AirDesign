@@ -1,8 +1,6 @@
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { expect, test } from "@playwright/test"
-import { openFixture } from "./fixture-deck"
-import { store } from "./home-store"
 
 for (const width of [320, 480, 735]) {
   test(`Trash Undo and pointer Close fit at ${width}px`, async ({ page }) => {
@@ -41,32 +39,4 @@ test("Trash Undo and Close dismiss by touch on a phone", async ({ browser }) => 
   } finally {
     await context.close()
   }
-})
-
-test("slide Undo stays beside Close within the phone viewport", async ({ page }) => {
-  await store(page, [])
-  await openFixture(page)
-  await page.getByRole("button", { name: "Add slide", exact: true }).click()
-  await page.locator('[data-slide-entry="2"]').click({ button: "right" })
-  await page.getByRole("menuitem", { name: /Delete/ }).click()
-  await page.setViewportSize({ width: 320, height: 700 })
-  const notice = page.locator("[data-sonner-toast]").filter({ has: page.locator("[data-slide-toast]") })
-  const close = notice.getByRole("button", { name: productCopy.close, exact: true })
-  await expect
-    .poll(async () => {
-      return notice.evaluate((element, closeLabel) => {
-        const undo = element.querySelector("[data-slide-toast] button")
-        const close = Array.from(element.querySelectorAll("button")).find(
-          (button) => button.getAttribute("aria-label") === closeLabel,
-        )
-        if (undo === null || close === undefined) return false
-        const undoBox = undo.getBoundingClientRect()
-        const closeBox = close.getBoundingClientRect()
-        return undoBox.right <= closeBox.left && closeBox.right <= innerWidth && undoBox.left >= 0
-      }, productCopy.close)
-    })
-    .toBe(true)
-  await close.click()
-  await expect(notice).toHaveCount(0)
-  await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
 })

@@ -14,7 +14,6 @@ import type { CommitOutcome } from "@/commit-edit"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { gridAnchor } from "@/editor/grid-drop"
 import type { SlideStrip } from "@/editor/slide-sidebar"
-import { showSlideDeleted, type UndoOf } from "@/editor/slide-toast"
 import type { DeckPaint } from "@/editor/use-deck-paint"
 import { fileSlides, commitSlideChange, commitSlideMove, commitSlideSet, type SlideChange } from "@/slide-edit"
 import { thumbHeight } from "@/thumb-height"
@@ -27,11 +26,10 @@ export type CommandedDeck = {
   readonly shown: DeckPaint
   readonly record: (entry: UndoEntry) => void
   readonly settle: (outcome: CommitOutcome) => void
-  readonly undo: { readonly undoList: UndoOf["list"] }
   readonly setPending: (pending: boolean) => void
 }
 
-export function slideCommands(deck: CommandedDeck, undo: () => void, showMatching = true): SlideStrip {
+export function slideCommands(deck: CommandedDeck, showMatching = true): SlideStrip {
   const { id, record, settle, setPending } = deck
   const { store, shownParts, canvases, slideCount, sections, current, setCurrent, layouts, showEdited } = deck.shown
 
@@ -52,8 +50,6 @@ export function slideCommands(deck: CommandedDeck, undo: () => void, showMatchin
         if (undoable !== null) {
           const entry = { name: slideNames[change], undoable }
           record(entry)
-          if (change === "remove")
-            showSlideDeleted(slideListCopy.deleted(index + 1), entry, { list: deck.undo.undoList, undo })
         }
         setPending(true)
         await showEdited(currentIndex)
@@ -148,8 +144,6 @@ export function slideCommands(deck: CommandedDeck, undo: () => void, showMatchin
           async (currentIndex, copies, undoable) => {
             const entry = { name: slideNames[change], undoable }
             record(entry)
-            if (change === "remove")
-              showSlideDeleted(slideListCopy.deletedSet(ids.length), entry, { list: deck.undo.undoList, undo })
             setPending(true)
             paint(copies)
             await showEdited(currentIndex)

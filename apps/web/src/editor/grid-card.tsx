@@ -53,7 +53,7 @@ export function GridCard({
   onPress: PointerEventHandler<HTMLDivElement>
   onPressed: MouseEventHandler<HTMLDivElement>
   onClick: MouseEventHandler<HTMLElement>
-  onContextMenu: MouseEventHandler<HTMLButtonElement>
+  onContextMenu: MouseEventHandler<HTMLDivElement>
   rowEnd: boolean
   addBlocked: boolean
   onAdd: () => void
@@ -72,6 +72,7 @@ export function GridCard({
       onDragStart={(event) => event.preventDefault()}
       onPointerDownCapture={onPress}
       onClickCapture={onPressed}
+      onContextMenu={onContextMenu}
     >
       <span
         aria-hidden="true"
@@ -104,7 +105,6 @@ export function GridCard({
           borderRadius: "var(--grid-radius)",
         }}
         onClick={onClick}
-        onContextMenu={onContextMenu}
       >
         <Filmstrip
           className={cn(thumbFace, active && "invisible")}

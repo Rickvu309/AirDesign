@@ -12,7 +12,6 @@ import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
 import { editableSlide } from "@/editor/editable-slide"
 import { slideCommands } from "@/editor/slide-commands"
-import { SlideToaster } from "@/editor/slide-toast"
 import { useDeckOpen } from "@/editor/use-deck-open"
 import { useKeptPanel } from "@/editor/kept-panel"
 import { shownNotice } from "@/editor/use-deck-status"
@@ -60,13 +59,12 @@ export function ThinDeck({ id }: { id: string }) {
 
   const notice = shownNotice({ ...deck, told: deck.undo.told, picture: deck.pictureTool.notice })
 
-  const strip = slideCommands(deck, undoButtons.onUndo)
+  const strip = slideCommands(deck)
   const shows = showsIn(shown.displayParts.current, strip.slideIds ?? [])
 
   return (
     <div className="thin-page" data-deck-ready={paintedDeck}>
       <ThinNoticeView notice={notice} onTryAgain={exported.tryAgain} />
-      <SlideToaster list={deck.undo.undoList} />
       {exported.downloaded !== null && notice === null && (
         <DownloadedNotice name={exported.downloaded} onDone={() => exported.setDownloaded(null)} />
       )}
@@ -111,7 +109,7 @@ export function ThinDeck({ id }: { id: string }) {
             slide: editableSlide(deck),
             presentPaint: (index, width, go) => (
               <PresentLinks parts={shown.displayParts.current} index={index} width={width} go={go}>
-                {slideCommands(deck, undoButtons.onUndo, false).thumb(index, width)}
+                {slideCommands(deck, false).thumb(index, width)}
               </PresentLinks>
             ),
             notesOf: (index) => notesOn(notesBar.notes, shown.store.current.slides()[index]?.id),

@@ -1,4 +1,3 @@
-import { expectNoticeTint } from "./notice-tint"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 
@@ -100,41 +99,21 @@ test("Shift+F10 opens the menu from the slide and Tab leaves the slide list", as
   await expect(entry(page, 2)).toContainText("Hello")
 })
 
-test("deleting a slide shows a toast whose Undo brings the slide back at its place, one step", async ({ page }) => {
+test("deleting a slide shows no notice, tells a screen reader, and one Undo brings it back at its place", async ({
+  page,
+}) => {
   await open(page)
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
   await entry(page, 1).click({ button: "right" })
   await item(page, /Delete/).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
-  const deleted = page.locator("[data-slide-toast]")
-  await expect(deleted).toContainText("Slide 1 deleted")
-  const undo = deleted.getByRole("button", { name: "Undo" })
-  await undo.hover()
-  await expectNoticeTint(undo, 26)
-  await page.mouse.down()
-  await expectNoticeTint(undo, 38)
-  await page.mouse.up()
+  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0)
+  await expect(page.getByRole("status").filter({ hasText: "Slide 1 deleted" })).toHaveCount(1)
+  await page.keyboard.press("ControlOrMeta+z")
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
   await expect(entry(page, 1)).toContainText("Hello")
   await expect(entry(page, 2)).not.toContainText("Hello")
-  await expect(deleted).toHaveCount(0)
-  await expect(page.getByRole("button", { name: "Undo new slide" })).toBeEnabled()
-})
-
-test("the delete toast leaves once another step is on top, so its Undo never takes back that step", async ({
-  page,
-}) => {
-  await open(page)
-  await page.getByRole("button", { name: "Add slide" }).click()
-  await expect(entry(page, 2)).toBeFocused()
-  await page.keyboard.press("Delete")
-  await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
-  const deleted = page.locator("[data-slide-toast]")
-  await expect(deleted).toContainText("Slide 2 deleted")
-  await page.getByRole("button", { name: "Add slide" }).click()
-  await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
-  await expect(deleted).toHaveCount(0)
 })
 
 test("right-click opens the menu after scrolling to the last slide", async ({ page }) => {
