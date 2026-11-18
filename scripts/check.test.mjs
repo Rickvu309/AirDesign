@@ -1,4 +1,8 @@
-import { readFileSync } from "node:fs"
+import { spawn } from "node:child_process"
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
 import { runCheck, stepRunner, stepsOf } from "./check.mjs"
 import { checkSteps, designScans, onCi, partOf, shardOf } from "./check-steps.mjs"
 
@@ -329,3 +333,28 @@ await stepRunner({ limitOf: () => undefined, say: () => {}, failedFiles: collect
 ])
 if ([...collected].join() !== "packages/document/src/a.test.ts")
   throw new Error(`a failed step did not collect its failing test file: ${[...collected]}`)
+
+const fakeBin = mkdtempSync(path.join(os.tmpdir(), "check-bin-"))
+writeFileSync(path.join(fakeBin, "node"), "#!/bin/sh\nexit 0\n", { mode: 0o755 })
+writeFileSync(
+  path.join(fakeBin, "pnpm"),
+  `#!/bin/sh\nyes "a long line a step prints before it fails" | head -c 400000\necho "end of pnpm $*"\nexit 1\n`,
+  { mode: 0o755 },
+)
+const slowReader = await new Promise((resolve) => {
+  const child = spawn(process.execPath, [fileURLToPath(new URL("./check.mjs", import.meta.url))], {
+    env: { ...process.env, PATH: `${fakeBin}${path.delimiter}${process.env.PATH}` },
+  })
+  let stderr = ""
+  child.stderr.pause()
+  child.stderr.on("data", (chunk) => (stderr += chunk))
+  setTimeout(() => child.stderr.resume(), 1000)
+  child.on("close", (status) => resolve({ status, stderr }))
+})
+rmSync(fakeBin, { recursive: true, force: true })
+if (slowReader.status !== 1) throw new Error(`a failed check must exit 1, and it exited ${slowReader.status}`)
+if (!slowReader.stderr.includes("end of pnpm exec oxfmt --check"))
+  throw new Error("a failed step's last line must reach a slow reader before check exits")
+const lastLine = slowReader.stderr.trimEnd().split("\n").at(-1)
+if (!lastLine.startsWith("failed: ") || !lastLine.includes("format"))
+  throw new Error("check must end with the failed steps when its reader is slow")

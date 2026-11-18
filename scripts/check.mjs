@@ -196,6 +196,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   }
   if (failed.length > 0) {
     console.error(`failed: ${failed.join(", ")}`)
-    process.exit(1)
+    process.exitCode = 1
   }
 }
