@@ -54,7 +54,7 @@ export default async function drive(kit) {
     changes: [{ op: "set", target: read.elements[0].node, text: { font: "Montserrat" } }],
   })
   await expect(page.locator("[data-slide-paint] [data-fonts-pending]")).toBeAttached()
-  await expect(page.locator("[data-slide-paint] [data-paragraph]")).toHaveCount(0)
+  await expect(page.locator("[data-slide-paint] [data-paragraph]")).toBeVisible()
   const family = page.waitForResponse("**/fonts/family?family=Montserrat")
   release()
   expect((await family).ok()).toBe(true)

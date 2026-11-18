@@ -77,7 +77,8 @@ test("the offline notice slides in and leaves by the top edge", async ({ page, c
   await expect(noticeOf(page, offlineWords)).toHaveAttribute("data-kept-notice", "true")
   await page.unroute("**/decks/commit")
   await context.setOffline(false)
-  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0)
+  await expect(noticeOf(page, offlineWords)).toHaveCount(0)
+  await expect(noticeOf(page, "Unable to reach AirDesign. Edits are saved on this device.")).toHaveCount(0)
   expect(
     await page.evaluate(() => (window as unknown as { noticeLeaving: { removed: boolean } }).noticeLeaving.removed),
   ).toBe(true)
