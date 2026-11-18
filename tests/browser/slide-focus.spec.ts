@@ -102,7 +102,7 @@ test("a slide row hugs the New slide button: its thumbnail ends on the button's 
   await entry(page, 1).click()
   const row = await page.locator("[data-new-slide-layouts]").locator("..").boundingBox()
   const band = await entry(page, 1).boundingBox()
-  const thumb = await entry(page, 1).locator("> :last-child").boundingBox()
+  const thumb = await entry(page, 1).locator("[data-slide-card]").boundingBox()
   if (row === null || band === null || thumb === null) throw new Error("the slide rail is not laid out")
   const right = (box: { x: number; width: number }) => box.x + box.width
   expect(right(thumb)).toBe(right(row))
