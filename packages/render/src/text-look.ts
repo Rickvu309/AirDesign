@@ -185,7 +185,7 @@ function bulletVars(paragraph: CanvasParagraph, scaled: Scaled): Look {
   return {
     "--bullet": cssQuote(bulletLabel(bullet)),
     "--bullet-size": `${scaled((source.size || paragraph.endStyle.size) * (bullet.size ?? 1))}px`,
-    ...bulletLine(paragraph.lineSpacing, scaled),
+    ...bulletLine(paragraph.lineHeight, scaled),
     ...(font === null ? {} : { "--bullet-font": familyOf(font) }),
     ...(color === null ? {} : { "--bullet-color": color }),
     ...(indent < 0 ? { "--bullet-hang": `${scaled(-indent)}px` } : {}),
@@ -200,8 +200,8 @@ function paragraphStyle(paragraph: CanvasParagraph, filled: boolean, scaled: Sca
   return {
     ...styleOf(paragraph.endStyle, scaled),
     textAlign: paragraph.align,
-    lineHeight: lineHeights(paragraph.lineSpacing, scaled, filled).paragraph,
-    "--end-line": lineHeights(paragraph.lineSpacing, scaled, true).run,
+    lineHeight: lineHeights(paragraph.lineHeight, scaled, filled).paragraph,
+    "--end-line": lineHeights(paragraph.lineHeight, scaled, true).run,
     ...(margin === 0 ? {} : { paddingLeft: `${scaled(margin)}px` }),
     ...(indent === 0 ? {} : { textIndent: `${scaled(indent)}px` }),
     ...(before === undefined ? {} : { marginTop: before }),
@@ -274,10 +274,10 @@ function formatted(
 
 function spaced(paragraph: CanvasParagraph, overlay: ParagraphPaint | undefined): CanvasParagraph {
   if (overlay === undefined) return paragraph
-  const { lineSpacing, spaceBefore, spaceAfter } = overlay
+  const { lineHeight, spaceBefore, spaceAfter } = overlay
   return {
     ...paragraph,
-    ...(lineSpacing === undefined ? {} : { lineSpacing: { percent: lineSpacing / wholePercent } }),
+    ...(lineHeight === undefined ? {} : { lineHeight: { percent: lineHeight / wholePercent } }),
     ...(spaceBefore === undefined ? {} : { spaceBefore: { length: spaceBefore * emuPerHundredth } }),
     ...(spaceAfter === undefined ? {} : { spaceAfter: { length: spaceAfter * emuPerHundredth } }),
   }
@@ -414,7 +414,7 @@ export function textLook(text: CanvasText, scaled: Scaled): TextLook {
       if (found === undefined) return { lineHeight: singleLine }
       const paragraph = spaced(found, overlay)
       const style = formatted(fileStyle(paragraph, run), format, colors, scale, text.fonts ?? {})
-      const lineHeight = lineHeights(paragraph.lineSpacing, scaled, true).run
+      const lineHeight = lineHeights(paragraph.lineHeight, scaled, true).run
       const drawn = marks(style, scaled)
       const plain =
         (format.underline === undefined && format.strike === undefined) || drawn.textDecoration !== undefined

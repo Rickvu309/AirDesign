@@ -1,6 +1,6 @@
 import { createLucideIcon } from "lucide-react"
 
-export const LineSpacingIcon = createLucideIcon("LineSpacing", [
+export const LineHeightIcon = createLucideIcon("LineHeight", [
   ["path", { d: "M3 3h18M3 21h18M7 17l5-10 5 10M9 14h6", key: "spacing" }],
 ])
 

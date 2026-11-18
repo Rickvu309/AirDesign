@@ -129,7 +129,7 @@ function paragraphOf(group: FitGroup, font: string, size: number, number: number
     level: 0,
     marginLeft: group === "bullets" ? 342_900 : 0,
     indent: group === "bullets" ? -342_900 : 0,
-    lineSpacing: spaced ? spacingOf(size) : null,
+    lineHeight: spaced ? spacingOf(size) : null,
     spaceBefore: spaced ? gapOf(size) : null,
     spaceAfter: spaced ? gapOf(size) : null,
     bullet:
@@ -202,7 +202,7 @@ function paragraphXml(paragraph: ResolvedParagraph): string {
         : '<a:buAutoNum type="arabicPeriod"/>'
   const last = paragraph.runs.at(-1)
   const end = last === undefined ? { ...paragraph.end, bold: false, italic: false } : last
-  return `<a:p><a:pPr marL="${paragraph.marginLeft}" indent="${paragraph.indent}" algn="${align}">${spacingXml("lnSpc", paragraph.lineSpacing)}${spacingXml("spcBef", paragraph.spaceBefore)}${spacingXml("spcAft", paragraph.spaceAfter)}${bullet}</a:pPr>${paragraph.runs
+  return `<a:p><a:pPr marL="${paragraph.marginLeft}" indent="${paragraph.indent}" algn="${align}">${spacingXml("lnSpc", paragraph.lineHeight)}${spacingXml("spcBef", paragraph.spaceBefore)}${spacingXml("spcAft", paragraph.spaceAfter)}${bullet}</a:pPr>${paragraph.runs
     .map((run) => `<a:r>${styleXml("rPr", run)}<a:t>${escaped(run.text)}</a:t></a:r>`)
     .join("")}${styleXml("endParaRPr", end)}</a:p>`
 }

@@ -150,7 +150,7 @@ describe("a run's format in the file", () => {
 describe("a paragraph's spacing in the file", () => {
   it("writes line spacing as a percent and space before and after in points, in schema order", () => {
     const value = original.map((each, index) =>
-      index === 0 ? { ...each, lineSpacing: 150_000, spaceBefore: 600, spaceAfter: 1_200 } : each,
+      index === 0 ? { ...each, lineHeight: 150_000, spaceBefore: 600, spaceAfter: 1_200 } : each,
     )
     expect(written(value)).toContain(
       '<a:pPr algn="l"><a:lnSpc><a:spcPct val="150000"/></a:lnSpc><a:spcBef><a:spcPts val="600"/></a:spcBef><a:spcAft><a:spcPts val="1200"/></a:spcAft></a:pPr>',

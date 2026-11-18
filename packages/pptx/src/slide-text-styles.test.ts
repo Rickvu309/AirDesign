@@ -30,7 +30,7 @@ it("derives scoped native styles in title and body order, retaining font tokens 
     bold: true,
     color: { scheme: "accent1" },
     align: "center",
-    lineSpacing: 120000,
+    lineHeight: 120000,
   })
   expect(slideTextStyles(new Map(), "missing")).toEqual([])
 })

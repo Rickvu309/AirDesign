@@ -39,7 +39,7 @@ export type CanvasParagraph = {
   readonly align: "left" | "center" | "right" | "justify"
   readonly marginLeft?: number
   readonly indent?: number
-  readonly lineSpacing?: CanvasSpacing | null
+  readonly lineHeight?: CanvasSpacing | null
   readonly spaceBefore?: CanvasSpacing | null
   readonly spaceAfter?: CanvasSpacing | null
   readonly bullet?: CanvasBullet | null

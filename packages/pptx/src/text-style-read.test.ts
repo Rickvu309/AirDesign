@@ -32,7 +32,7 @@ describe("shownTextStyle", () => {
       strike: { value: false, own: false },
       letterSpacing: { value: 0, own: false },
       list: { value: "none", own: false },
-      lineSpacing: { value: 90_000, own: false },
+      lineHeight: { value: 90_000, own: false },
       spaceBefore: { value: 0, own: false },
       spaceAfter: { value: 0, own: false },
     })
@@ -43,7 +43,7 @@ describe("shownTextStyle", () => {
     const shown = shownTextStyle(parts, at(parts, 1, "2"))
     expect(shown?.size).toEqual({ value: 3600, own: true })
     expect(shown?.font).toEqual({ value: "Abadi", own: true })
-    expect(shown?.lineSpacing).toEqual({ value: 90_000, own: false })
+    expect(shown?.lineHeight).toEqual({ value: 90_000, own: false })
   })
 
   it("reads what paints when the deck sets no text style: 18 pt in the theme's body font, single spacing", async () => {
@@ -56,7 +56,7 @@ describe("shownTextStyle", () => {
       strike: { value: false, own: false },
       letterSpacing: { value: 0, own: false },
       list: { value: "none", own: false },
-      lineSpacing: { value: 100_000, own: false },
+      lineHeight: { value: 100_000, own: false },
       spaceBefore: { value: 0, own: false },
       spaceAfter: { value: 0, own: false },
     })

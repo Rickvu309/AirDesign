@@ -26,7 +26,7 @@ test("a title shows the size, font and spacing it paints with as inherited, and 
   const panel = await designing(page, title)
   const size = field(panel, "Font size")
   const font = field(panel, "Font")
-  const spacing = field(panel, textCopy.lineSpacing)
+  const spacing = field(panel, textCopy.lineHeight)
   await expect(size).toHaveValue("44")
   await expect(font).toHaveValue("Calibri Light")
   await expect(spacing).toHaveValue("90")

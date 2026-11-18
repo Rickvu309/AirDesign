@@ -5,7 +5,7 @@ type Fields = Readonly<Record<string, unknown>>
 type Read = { readonly ok: true; readonly fields: Fields } | { readonly ok: false; readonly field: string }
 
 const fieldAliases: readonly { readonly trait: TraitName; readonly alias: string; readonly field: string }[] = [
-  { trait: "text", alias: "lineHeight", field: "lineSpacing" },
+  { trait: "text", alias: "lineSpacing", field: "lineHeight" },
 ]
 
 const traitAliases: readonly {

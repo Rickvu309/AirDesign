@@ -126,7 +126,7 @@ it("lays out a text box's body field by field, autofit included", () => {
   const spacing = panel.sections.find((section) => section.trait === "paragraphSpacing")
   const typed = [...(text?.strips ?? []), ...(spacing?.strips ?? [])]
     .flat()
-    .filter((control) => ["font", "lineSpacing", "spaceBefore", "spaceAfter"].includes(control.field))
+    .filter((control) => ["font", "lineHeight", "spaceBefore", "spaceAfter"].includes(control.field))
   expect(typed?.map((control) => [control.label, control.kind, control.value])).toEqual([
     ["Font", "text", "Calibri"],
     ["Line height", "percent", undefined],
@@ -140,7 +140,7 @@ const untouched = {
   "text.size": { value: 1800, own: false },
   "text.font": { value: "Arial", own: false },
   "text.align": { value: "left", own: false },
-  "text.lineSpacing": { value: 100_000, own: false },
+  "text.lineHeight": { value: 100_000, own: false },
   "text.spaceBefore": { value: 0, own: false },
   "text.spaceAfter": { value: 0, own: false },
   "body.columns": { value: 1, own: false },
@@ -162,7 +162,7 @@ it("shows an untouched text box's painted size, font and spacing as inherited", 
   expect(controls["text.font"]).toEqual(["Arial", true])
   expect(controls["textFill.value"]).toEqual([{ solid: { scheme: "tx1" } }, true])
   expect(controls["text.align"]).toEqual(["left", true])
-  expect(controls["text.lineSpacing"]).toEqual([100_000, true])
+  expect(controls["text.lineHeight"]).toEqual([100_000, true])
   expect(controls["text.spaceBefore"]).toEqual([0, true])
   expect(controls["text.spaceAfter"]).toEqual([0, true])
   expect(controls["body.columns"]).toEqual([1, true])
@@ -170,10 +170,10 @@ it("shows an untouched text box's painted size, font and spacing as inherited", 
 })
 
 it("shows a size or spacing the element sets as its own", () => {
-  const value = writeTextValue([{ from: 0, lineSpacing: 150_000, runs: [{ from: 0, text: "Hello", size: 2400 }] }])
+  const value = writeTextValue([{ from: 0, lineHeight: 150_000, runs: [{ from: 0, text: "Hello", size: 2400 }] }])
   const controls = shownControls({ ...shape, value })
   expect(controls["text.size"]).toEqual([2400, false])
-  expect(controls["text.lineSpacing"]).toEqual([150_000, false])
+  expect(controls["text.lineHeight"]).toEqual([150_000, false])
   expect(controls["text.font"]).toEqual(["Arial", true])
   expect(shownControls(shape, { ...untouched, "text.font": { value: "Abadi", own: true } })["text.font"]).toEqual([
     "Abadi",
@@ -182,8 +182,8 @@ it("shows a size or spacing the element sets as its own", () => {
 })
 
 it("leaves a field empty and not inherited when nothing paints it", () => {
-  const controls = shownControls(shape, { ...untouched, "text.lineSpacing": { value: null, own: false } })
-  expect(controls["text.lineSpacing"]).toEqual([undefined, false])
+  const controls = shownControls(shape, { ...untouched, "text.lineHeight": { value: null, own: false } })
+  expect(controls["text.lineHeight"]).toEqual([undefined, false])
 })
 
 it("sizes a table by Width and Height beside X and Y, and offers no rotation for it", () => {
@@ -340,7 +340,7 @@ it("arranges a text box into strips with resolved names and choices", () => {
     ["style"],
     ["font"],
     ["weight", "size"],
-    ["lineSpacing", "letterSpacing"],
+    ["lineHeight", "letterSpacing"],
     ["bold", "italic", "underline", "strike"],
     ["align", "list"],
   ])

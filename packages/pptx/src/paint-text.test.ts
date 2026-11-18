@@ -286,7 +286,7 @@ describe("paintText inheritance", () => {
       align: "justify",
       marginLeft: 100,
       indent: -50,
-      lineSpacing: { percent: 0.9 },
+      lineHeight: { percent: 0.9 },
       spaceBefore: { points: 6 },
       spaceAfter: { percent: 0.2 },
     })
@@ -728,7 +728,7 @@ describe("paintText on shapes", () => {
       level: 0,
       marginLeft: 0,
       align: "left",
-      lineSpacing: null,
+      lineHeight: null,
       bullet: null,
     })
     expect(found?.paragraphs[0]?.runs[0]).toMatchObject({ size: 18, bold: false, baseline: 0, color: null, font: null })

@@ -51,7 +51,7 @@ export function fitted(text: CanvasText, [scale, reduction]: FitStep): CanvasTex
   const size = scale / fit.scale
   const paragraph = (each: CanvasParagraph): CanvasParagraph => ({
     ...each,
-    lineSpacing: reduced(each.lineSpacing, reduction - fit.reduction),
+    lineHeight: reduced(each.lineHeight, reduction - fit.reduction),
     runs: each.runs.map((run) => sized(run, size)),
     endStyle: sized(each.endStyle, size),
   })

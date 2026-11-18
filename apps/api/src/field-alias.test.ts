@@ -34,7 +34,7 @@ async function edit(agent: Agent, deck: string, text: Record<string, unknown>, t
   return agent.call("edit_deck", { deck, base: read.body.revision, changes: [{ op: "set", target, text }] })
 }
 
-it("lands text.lineHeight as text.lineSpacing for a connected agent and for Aira, and refuses both spellings at once", async () => {
+it("lands text.lineSpacing, with its old percent, as text.lineHeight for a connected agent and for Aira, and refuses both spellings at once", async () => {
   const owner = await account()
   const deck = await deckOf(owner)
   const page = {
@@ -53,13 +53,13 @@ it("lands text.lineHeight as text.lineSpacing for a connected agent and for Aira
   for (const { agent, node } of callers) {
     const both = await edit(agent, deck, { lineHeight: 150, lineSpacing: 120 }, node)
     expect(both.body).toMatchObject({ ok: false, refusal: "field" })
-    expect(both.said).toContain("text.lineSpacing")
-    const aliased = await edit(agent, deck, { lineHeight: 150 }, node)
+    expect(both.said).toContain("text.lineHeight")
+    const aliased = await edit(agent, deck, { lineSpacing: 150 }, node)
     expect(aliased.body, aliased.text).toMatchObject({ ok: true })
     const rows = await landed(deck, node)
     const written = rows.at(-1)?.patch?.text?.value as { readonly set: string } | undefined
-    expect(JSON.parse(written?.set ?? "[]")).toEqual([expect.objectContaining({ lineSpacing: 150_000 })])
-    const canonical = await edit(agent, deck, { lineSpacing: 150 }, node)
+    expect(JSON.parse(written?.set ?? "[]")).toEqual([expect.objectContaining({ lineHeight: 150_000 })])
+    const canonical = await edit(agent, deck, { lineHeight: 150 }, node)
     expect(canonical.body, canonical.text).toMatchObject({ ok: true })
     expect((await landed(deck, node)).at(-1)?.patch).toEqual(rows.at(-1)?.patch)
   }

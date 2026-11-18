@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { readTableValue } from "./table-value.js"
 import { readTextValue, writeTextValue } from "./text-value.js"
 
 describe("readTextValue", () => {
@@ -171,12 +172,12 @@ describe("size, colour, alignment and bullets", () => {
 
   it("keeps a run's font face and a paragraph's line and paragraph spacing, and refuses ones it cannot write", () => {
     const stored =
-      '[{"from":0,"lineSpacing":150000,"spaceBefore":600,"spaceAfter":0,"runs":[{"from":0,"text":"a","font":"Georgia"}]}]'
+      '[{"from":0,"lineHeight":150000,"spaceBefore":600,"spaceAfter":0,"runs":[{"from":0,"text":"a","font":"Georgia"}]}]'
     const read = readTextValue(stored)
     expect(read).toEqual([
       {
         from: 0,
-        lineSpacing: 150_000,
+        lineHeight: 150_000,
         spaceBefore: 600,
         spaceAfter: 0,
         runs: [{ from: 0, text: "a", font: "Georgia" }],
@@ -185,7 +186,7 @@ describe("size, colour, alignment and bullets", () => {
     expect(read === null ? null : writeTextValue(read)).toBe(stored)
     expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","font":""}]}]')).toBeNull()
     expect(readTextValue('[{"from":0,"runs":[{"from":0,"text":"a","font":7}]}]')).toBeNull()
-    expect(readTextValue('[{"from":0,"lineSpacing":0,"runs":[{"from":0,"text":"a"}]}]')).toBeNull()
+    expect(readTextValue('[{"from":0,"lineHeight":0,"runs":[{"from":0,"text":"a"}]}]')).toBeNull()
     expect(readTextValue('[{"from":0,"spaceBefore":-1,"runs":[{"from":0,"text":"a"}]}]')).toBeNull()
     expect(readTextValue('[{"from":0,"spaceAfter":1.5,"runs":[{"from":0,"text":"a"}]}]')).toBeNull()
   })
@@ -214,4 +215,35 @@ it("refuses invalid letter spacing and list choices", () => {
   for (const list of [true, "both", 1]) {
     expect(readTextValue(JSON.stringify([{ from: 0, list, runs: [] }]))).toBeNull()
   }
+})
+
+describe("a paragraph a build stored before line height had its name", () => {
+  const typed = '[{"from":0,"lineSpacing":150000,"runs":[{"from":-1,"text":"Quarterly plan"}]}]'
+
+  it("reads its line height and writes it under today's name", () => {
+    const read = readTextValue(typed)
+    expect(read).toEqual([{ from: 0, lineHeight: 150_000, runs: [{ from: -1, text: "Quarterly plan" }] }])
+    expect(read === null ? null : writeTextValue(read)).toBe(
+      '[{"from":0,"lineHeight":150000,"runs":[{"from":-1,"text":"Quarterly plan"}]}]',
+    )
+  })
+
+  it("reads a styled paragraph and a table cell the same way", () => {
+    const styled =
+      '[{"from":0,"align":"center","lineSpacing":130000,"spaceBefore":0,"spaceAfter":0,"runs":[{"from":-1,"text":"North, South and West","size":2400}]}]'
+    expect(readTextValue(styled)?.[0]).toMatchObject({ align: "center", lineHeight: 130_000, spaceBefore: 0 })
+    const table = JSON.stringify({ rows: [{ from: 0, cells: [JSON.parse(typed)] }] })
+    expect(readTableValue(table)?.rows[0]?.cells[0]?.[0]).toMatchObject({ lineHeight: 150_000 })
+  })
+
+  it("is not structured text when one paragraph holds both names", () => {
+    expect(
+      readTextValue('[{"from":0,"lineSpacing":150000,"lineHeight":120000,"runs":[{"from":0,"text":"a"}]}]'),
+    ).toBeNull()
+  })
+
+  it("leaves a plain string that only looks like JSON as plain text", () => {
+    expect(readTextValue('[{"from":0,"lineSpacing":120000}]')).toBeNull()
+    expect(readTextValue('{"lineSpacing":120000,"runs":[]}')).toBeNull()
+  })
 })

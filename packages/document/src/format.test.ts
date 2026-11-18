@@ -45,26 +45,26 @@ describe("converted runs each conversion a stored value is older than, in the or
     const set = record(edit)?.set
     return edit === "opening" || edit === "inherit" ? edit : set === undefined ? undefined : { set: [set] }
   })
-  const lineHeight = renamed("text", "lineSpacing", "lineHeight", 50)
-  const conversions: readonly Conversion<undefined>[] = [lineHeight, paints]
+  const border = renamed("line", "fill", "paint", 50)
+  const conversions: readonly Conversion<undefined>[] = [border, paints]
   const accent = { solid: { scheme: "accent1" } }
 
   it("turns a row from before both renames into today's names and stamps it with the last", () => {
     const row = {
       v: 30,
-      patch: { fill: { value: { set: accent }, alpha: { set: 50 } }, text: { lineSpacing: { set: 120 } } },
+      patch: { fill: { value: { set: accent }, alpha: { set: 50 } }, line: { fill: { set: accent } } },
     }
     expect(converted(row, stampOf, conversions, undefined)).toEqual({
       v: 50,
-      patch: { fill: { alpha: { set: 50 }, paints: { set: [accent] } }, text: { lineHeight: { set: 120 } } },
+      patch: { fill: { alpha: { set: 50 }, paints: { set: [accent] } }, line: { paint: { set: accent } } },
     })
   })
 
   it("runs only the conversions newer than the row's own stamp", () => {
-    const row = { v: 45, patch: { fill: { value: { set: accent } }, text: { lineSpacing: { set: 120 } } } }
+    const row = { v: 45, patch: { fill: { value: { set: accent } }, line: { fill: { set: accent } } } }
     expect(converted(row, stampOf, conversions, undefined)).toEqual({
       v: 50,
-      patch: { fill: { value: { set: accent } }, text: { lineHeight: { set: 120 } } },
+      patch: { fill: { value: { set: accent } }, line: { paint: { set: accent } } },
     })
   })
 

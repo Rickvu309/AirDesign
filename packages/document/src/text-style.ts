@@ -1,5 +1,6 @@
 import type { Register } from "./decide.js"
 import type { Color } from "./color.js"
+import { canonicalKeys } from "./key-alias.js"
 import { bytesOf } from "./limits.js"
 import { record } from "./plain-object.js"
 import { text } from "./trait-text.js"
@@ -14,7 +15,7 @@ export type TextStyleFields = {
   readonly color?: Color
   readonly align?: ParagraphAlign
   readonly letterSpacing?: number
-  readonly lineSpacing?: number
+  readonly lineHeight?: number
   readonly spaceBefore?: number
   readonly spaceAfter?: number
 }
@@ -32,7 +33,7 @@ export const textStyleKeys = [
   "color",
   "align",
   "letterSpacing",
-  "lineSpacing",
+  "lineHeight",
   "spaceBefore",
   "spaceAfter",
 ] as const
@@ -45,7 +46,8 @@ export function readTextStyles(raw: unknown): readonly TextStyle[] | null {
     if (row === null || Object.keys(row).some((key) => !["id", "name", "fields"].includes(key))) return null
     if (typeof row.id !== "string" || row.id.length === 0 || bytesOf(row.id) > 200) return null
     if (typeof row.name !== "string" || row.name.length === 0 || bytesOf(row.name) > 200) return null
-    const fields = record(row.fields)
+    const stored = record(row.fields)
+    const fields = stored === null ? null : canonicalKeys(stored)
     if (fields === null || Object.keys(fields).length === 0) return null
     for (const [key, value] of Object.entries(fields)) {
       const name = textStyleKeys.find((name) => name === key)
@@ -64,7 +66,7 @@ export function textStylesOf(register: Register, slide: string): readonly TextSt
     const styles = slides.find((each) => each.id === source)?.textStyles
     if (styles !== undefined) {
       const resolved = typeof styles === "string" ? slides.find((each) => each.id === styles)?.textStyles : styles
-      return typeof resolved === "string" ? [] : (resolved ?? [])
+      return typeof resolved === "string" ? [] : (readTextStyles(resolved ?? []) ?? [])
     }
     const birth = register.order.find(
       (command) => (command.slide === "add" || command.slide === "clone") && command.id === source,

@@ -9,10 +9,11 @@ import {
   indexKeys,
   limits,
   openRegister,
+  orderKeyBetween,
   readIndexPage,
   rootElement,
-  slideId,
   roles,
+  slideId,
   sources,
   stamps,
   type DeckIndex,
@@ -334,5 +335,33 @@ describe("the register answer says the highest format the deck stores", () => {
       answeredRegister({ ...register, order: [{ slide: "remove", grid: 1, id: slideId("257") }] }).format,
     ).toBeUndefined()
     expect(answeredRegister({ ...register, order }).format).toBe(format)
+  })
+
+  it("says this build's format when a command's opening text writes line height under today's name", () => {
+    const value = (key: string) => `[{"from":0,"${key}":150000,"runs":[{"from":-1,"text":"Quarterly plan"}]}]`
+    const clone = (key: string) => ({
+      slide: "clone" as const,
+      id: slideId("257"),
+      source: slideId("256"),
+      key: orderKeyBetween(null, null),
+      floor: [{ node: elementId("257.2"), kind: "shape" as const, value: value(key), box: null, grouped: false }],
+    })
+    expect(answeredRegister({ ...register, order: [clone("lineSpacing")] }).format).toBeUndefined()
+    expect(answeredRegister({ ...register, order: [clone("lineHeight")] }).format).toBe(format)
+    const typed = `[{"from":0,"runs":[{"from":-1,"text":"He wrote \\"lineHeight\\": 2"}]}]`
+    const quoted = { ...clone("lineSpacing"), floor: [{ ...clone("lineSpacing").floor[0]!, value: typed }] }
+    expect(answeredRegister({ ...register, order: [quoted] }).format).toBeUndefined()
+    const added = {
+      slide: "element-add" as const,
+      id: slideId("256"),
+      element: {
+        node: elementId("256.6"),
+        kind: "shape" as const,
+        value: value("lineHeight"),
+        box: null,
+        grouped: false,
+      },
+    }
+    expect(answeredRegister({ ...register, order: [added] }).format).toBe(format)
   })
 })

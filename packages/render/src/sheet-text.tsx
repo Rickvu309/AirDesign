@@ -34,7 +34,7 @@ type ShownParagraph = {
   readonly align?: ShownAlign
   readonly bullet?: boolean | CanvasBullet | null
   readonly runs: readonly ShownRun[]
-  readonly lineSpacing?: unknown
+  readonly lineHeight?: unknown
   readonly spaceBefore?: unknown
   readonly spaceAfter?: unknown
 }
@@ -68,11 +68,11 @@ function overlayOf(run: ShownRun): RunPaint {
 
 function spacingOf(paragraph: ShownParagraph): ParagraphSpacing {
   const kept = (value: unknown) => (typeof value === "number" ? value : undefined)
-  const line = kept(paragraph.lineSpacing)
+  const line = kept(paragraph.lineHeight)
   const before = kept(paragraph.spaceBefore)
   const after = kept(paragraph.spaceAfter)
   return {
-    ...(line === undefined ? {} : { lineSpacing: line }),
+    ...(line === undefined ? {} : { lineHeight: line }),
     ...(before === undefined ? {} : { spaceBefore: before }),
     ...(after === undefined ? {} : { spaceAfter: after }),
   }

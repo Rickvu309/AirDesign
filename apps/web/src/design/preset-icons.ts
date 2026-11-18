@@ -92,7 +92,7 @@ export const AlignBottomEdge = createLucideIcon("AlignBottomEdge", [
   ["path", { d: "M8 4v12M16 10v6", strokeWidth: 3, key: "bars" }],
 ])
 
-export const LineSpacing = createLucideIcon("LineSpacing", [
+export const LineHeight = createLucideIcon("LineHeight", [
   ["path", { d: "M3 3h18M3 21h18M6 17l6-11 6 11M8 14h8", key: "spacing" }],
 ])
 

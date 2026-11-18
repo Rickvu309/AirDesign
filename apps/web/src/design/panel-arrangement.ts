@@ -33,7 +33,7 @@ import {
   AlignVerticalCenter,
   AlignBottomEdge,
 } from "./preset-icons"
-import { LineSpacingIcon, LetterSpacingIcon } from "./text-icons"
+import { LineHeightIcon, LetterSpacingIcon } from "./text-icons"
 import { optionWord } from "@/copy/option-copy"
 import type { Desc } from "@airdesign/document"
 import type { PanelControl, SectionName } from "./panel"
@@ -94,7 +94,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [placed("style", hidden)],
     [placed("font", hidden)],
     [placed("weight", above, { form: "list" }), placed("size", above)],
-    [icon("lineSpacing", LineSpacingIcon), icon("letterSpacing", LetterSpacingIcon)],
+    [icon("lineHeight", LineHeightIcon), icon("letterSpacing", LetterSpacingIcon)],
     [icon("bold", Bold), icon("italic", Italic), icon("underline", Underline), icon("strike", Strikethrough)],
     [
       placed("align", hidden, {

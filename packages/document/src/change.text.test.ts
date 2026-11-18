@@ -45,9 +45,9 @@ describe("type and text box layout plan as rows", () => {
   it("sets the font face on every run and line and paragraph spacing on every paragraph", () => {
     const planned = plan({
       target: { node: elementId("258.2") },
-      text: { font: "Georgia", lineSpacing: 120_000, spaceBefore: 600, spaceAfter: 1_200 },
+      text: { font: "Georgia", lineHeight: 120_000, spaceBefore: 600, spaceAfter: 1_200 },
     })
-    const spacing = { lineSpacing: 120_000, spaceBefore: 600, spaceAfter: 1_200 }
+    const spacing = { lineHeight: 120_000, spaceBefore: 600, spaceAfter: 1_200 }
     expect(textOf(planned)).toEqual([
       {
         from: 0,

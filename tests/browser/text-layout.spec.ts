@@ -84,7 +84,7 @@ test("a person sets a text box's font, spacing, margins, anchor, wrap, direction
   await expect(panel.getByRole("textbox", { name: textCopy.font, exact: true })).toBeVisible()
   await typeIn(panel.getByRole("textbox", { name: textCopy.font, exact: true }), "Georgia")
   await expect.poll(async () => (await shown(shape)).font).toMatch(/^"?Georgia"?,/)
-  await typeIn(panel.getByRole("textbox", { name: textCopy.lineSpacing, exact: true }), "150")
+  await typeIn(panel.getByRole("textbox", { name: textCopy.lineHeight, exact: true }), "150")
   await expect.poll(async () => (await shown(shape)).lineHeight).not.toBe(opening.lineHeight)
   await unfold(panel, textCopy.paragraphSpacing)
   await typeIn(panel.getByRole("textbox", { name: textCopy.spaceBefore, exact: true }), "12")

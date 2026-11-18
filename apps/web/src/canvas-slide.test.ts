@@ -435,7 +435,7 @@ const paragraph: PaintParagraph = {
   level: 0,
   marginLeft: 0,
   indent: 0,
-  lineSpacing: null,
+  lineHeight: null,
   spaceBefore: null,
   spaceAfter: null,
   bullet: null,
@@ -457,7 +457,7 @@ const text: PaintText = {
   spacingReduction: 0,
 }
 
-it("keeps a paragraph's bullet, gaps, run marks and line spacing in points, and takes the reduction off percentage line spacing", () => {
+it("keeps a paragraph's bullet, gaps, run marks and line height in points, and takes the reduction off a line height in percent", () => {
   const marked: PaintText = {
     ...text,
     fontScale: 1,
@@ -467,7 +467,7 @@ it("keeps a paragraph's bullet, gaps, run marks and line spacing in points, and 
         ...paragraph,
         marginLeft: 285_750,
         indent: -285_750,
-        lineSpacing: { points: 10 },
+        lineHeight: { points: 10 },
         spaceBefore: { points: 6 },
         spaceAfter: { percent: 0.2 },
         bullet: { autoNumber: "arabicPeriod", start: 1, number: 2, font: null, color: null, size: null },
@@ -490,16 +490,16 @@ it("keeps a paragraph's bullet, gaps, run marks and line spacing in points, and 
   expect(painted({ text: marked }).text?.paragraphs[0]).toMatchObject({
     marginLeft: 285_750,
     indent: -285_750,
-    lineSpacing: { length: 127_000 },
+    lineHeight: { length: 127_000 },
     spaceBefore: { length: 76_200 },
     spaceAfter: { percent: 0.2 },
     bullet: { autoNumber: "arabicPeriod", number: 2, font: null, color: null, size: null },
     runs: [{ underline: true, strike: true, baseline: 0.3, caps: "all", highlight: css("FFFF00"), size: 304_800 }],
   })
   const tightened: PaintText = { ...text, spacingReduction: 0.25 }
-  expect(painted({ text: tightened }).text?.paragraphs[0]?.lineSpacing).toEqual({ percent: 0.75 })
-  const narrowed: PaintText = { ...tightened, paragraphs: [{ ...paragraph, lineSpacing: { percent: 0.9 } }] }
-  const spacing = painted({ text: narrowed }).text?.paragraphs[0]?.lineSpacing
+  expect(painted({ text: tightened }).text?.paragraphs[0]?.lineHeight).toEqual({ percent: 0.75 })
+  const narrowed: PaintText = { ...tightened, paragraphs: [{ ...paragraph, lineHeight: { percent: 0.9 } }] }
+  const spacing = painted({ text: narrowed }).text?.paragraphs[0]?.lineHeight
   expect(spacing !== undefined && spacing !== null && "percent" in spacing ? spacing.percent : null).toBeCloseTo(0.65)
 })
 
@@ -518,7 +518,7 @@ it("turns a paragraph's points into the slide's units, shrunk by the box's font 
         align: "justify",
         marginLeft: 0,
         indent: 0,
-        lineSpacing: null,
+        lineHeight: null,
         spaceBefore: null,
         spaceAfter: null,
         bullet: null,

@@ -37,7 +37,7 @@ function paragraphOf(paragraph: PaintParagraph): ResolvedParagraph {
     level: paragraph.level,
     marginLeft: paragraph.marginLeft,
     indent: paragraph.indent,
-    lineSpacing: paragraph.lineSpacing,
+    lineHeight: paragraph.lineHeight,
     spaceBefore: paragraph.spaceBefore,
     spaceAfter: paragraph.spaceAfter,
     bullet:
