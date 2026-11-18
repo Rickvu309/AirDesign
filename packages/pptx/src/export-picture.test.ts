@@ -131,7 +131,11 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
         .elements.find((each) => each.shape === picture.shape)
     const cropped = exported(parts, picture.node, {
       crop: { rect: { set: { l: 10000, t: 5000, r: 1000, b: 3000 } } },
-      image: { recolor: { set: { grayscale: true } } },
+      image: {
+        recolor: { set: { grayscale: true } },
+        overlay: { set: { solid: { scheme: "accent1" } } },
+        blur: { set: 20_000 },
+      },
     })
     const before = source(cropped)
     const fs = process.getBuiltinModule("node:fs")
@@ -147,6 +151,8 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
     expect(painted?.box).toEqual(before?.box)
     expect(image?.crop).toEqual(before?.image?.crop)
     expect(image?.recolor).toEqual(before?.image?.recolor)
+    expect(image?.overlay).toEqual(before?.image?.overlay)
+    expect(image?.blur).toBe(before?.image?.blur)
     expect(shownPictureMode(after, picture)).toBe("crop")
     expect(changed(cropped, after)).toEqual([
       "ppt/slides/slide9.xml",
