@@ -1,4 +1,7 @@
 import {
+  cloneMany,
+  limits,
+  foldSlides,
   nextSlideId,
   presentSlides,
   readSlideId,
@@ -12,10 +15,12 @@ import {
 import { connect, memoryRemote } from "@airdesign/live"
 import { readSlides } from "@airdesign/pptx"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
-import { flooredEdit } from "@/slide-floor"
+import { cloneFloor, flooredEdit } from "@/slide-floor"
 import { newSlideLayout } from "@/slide-layout"
 
 export type SlideChange = "add" | "clone" | "remove" | "move"
+export type SlideSetChange = "clone" | "remove"
+export type SelectedCopy = { readonly id: SlideId; readonly index: number }
 
 export function fileSlides(
   parts: ReadonlyMap<string, Uint8Array>,
@@ -27,14 +32,6 @@ export function fileSlides(
     const id = readSlideId(slide.slide)
     if (id === undefined) return []
     ids.push(id)
-  }
-  return ids
-}
-
-function taken(file: readonly SlideId[], order: Register["order"]): readonly string[] {
-  const ids: string[] = [...file]
-  for (const command of order) {
-    if (command.slide === "add" || command.slide === "clone") ids.push(command.id)
   }
   return ids
 }
@@ -63,7 +60,7 @@ export function slideCommand(
       current: to,
     }
   }
-  const id = nextSlideId(taken(file, order))
+  const id = nextSlideId(foldSlides({ file, order }).map((slide) => slide.id))
   if (change === "add") {
     const part = layoutPart === undefined ? {} : { layoutPart }
     const edit: SlideCommand = { slide: "add", id, after: spot.id, grid: 1, row, layout: spot.id, ...part }
@@ -117,4 +114,36 @@ export async function commitSlideMove(
   if (!kept.ok) return "refused"
   await paint(kept.painted.indexOf(ids[0]), undoable)
   return flushPending(connect, deckId)
+}
+
+type SetOutcome =
+  | { readonly ok: true; readonly outcome: CommitOutcome }
+  | { readonly ok: false; readonly message: "lastSlide" | "slideLimit" | "setRefused" }
+
+export async function commitSlideSet(
+  deck: string,
+  parts: ReadonlyMap<string, Uint8Array>,
+  register: Register,
+  change: SlideSetChange,
+  ids: readonly [SlideId, ...SlideId[]],
+  paint: (current: number, copies: readonly SelectedCopy[], undoable: Undoable) => Promise<void>,
+): Promise<SetOutcome> {
+  const file = fileSlides(parts, register)
+  const state = { file, order: register.order }
+  const slides = presentSlides(state)
+  const first = slides.findIndex((slide) => ids.includes(slide.id))
+  if (ids.some((id) => !slides.some((slide) => slide.id === id))) return { ok: false, message: "setRefused" }
+  if (change === "remove" && ids.length >= slides.length) return { ok: false, message: "lastSlide" }
+  if (change === "clone" && ids.length + slides.length > limits.slides) return { ok: false, message: "slideLimit" }
+  const edit: SlideCommand | null =
+    change === "remove" ? { slide: "remove-many", grid: 1, ids } : cloneMany(state, ids, cloneFloor(parts, register))
+  if (edit === null) return { ok: false, message: "setRefused" }
+  const undoable = slideUndoable(register, file, edit)
+  if (undoable === null) return { ok: false, message: "setRefused" }
+  const kept = await connect(memoryRemote()).enqueueSlide(deck, file, edit)
+  if (!kept.ok) return { ok: false, message: "setRefused" }
+  const copies =
+    edit.slide === "clone-many" ? edit.copies.map(({ id }) => ({ id, index: kept.painted.indexOf(id) })) : []
+  await paint(copies[0]?.index ?? Math.min(first, kept.painted.length - 1), copies, undoable)
+  return { ok: true, outcome: await flushPending(connect, deck) }
 }

@@ -17,7 +17,8 @@ export function gridUndoable(
   const rightHeads = new Set(right.grid.starts)
   const affected = new Set<SlideId>()
   if ("id" in edit) affected.add(edit.id)
-  if (edit.slide === "move-many") for (const id of edit.ids) affected.add(id)
+  if (edit.slide === "move-many" || edit.slide === "remove-many") for (const id of edit.ids) affected.add(id)
+  if (edit.slide === "clone-many") for (const copy of edit.copies) affected.add(copy.id)
   if (edit.slide === "grid-turn") {
     for (const step of edit.turn.spots) affected.add(step.id)
     for (const step of edit.turn.heads) affected.add(step.id)

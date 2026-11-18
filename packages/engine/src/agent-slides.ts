@@ -1,5 +1,6 @@
 import type { CallRefusal, WireSlideChange } from "@airdesign/catalog"
 import {
+  cloneMany,
   decide,
   elementGone,
   floorFor,
@@ -43,10 +44,10 @@ export function runFenced(register: Register, runId: string): boolean {
   return held.length > 0 && live.length === 0
 }
 
-export function runFence(register: Register, runId: string, deleted: SlideId | null): CallRefusal | null {
+export function runFence(register: Register, runId: string, deleted: readonly string[]): CallRefusal | null {
   if (runFenced(register, runId)) return "run-fenced"
   const protectedHere = heldBy(register, runId).live.some(
-    ({ node, body }) => body.guarded && node.includes(".") && shapeOf(node).slide === deleted,
+    ({ node, body }) => body.guarded && node.includes(".") && deleted.includes(shapeOf(node).slide),
   )
   return protectedHere ? "person-protected" : null
 }
@@ -60,6 +61,18 @@ function openingRows(register: Deck["register"], index: DeckIndex, slide: SlideI
   return rows.filter((row) => shapeOf(row.node).slide === slide)
 }
 
+function cloneFloor(register: Register, index: DeckIndex, source: SlideId, id: SlideId): readonly IndexElement[] {
+  const floor = openingRows(register, index, source)
+    .filter((row) => !elementGone(register, row.node) && slideKind(row.node) !== "slide")
+    .map((row) => {
+      const body = register.elements[row.node]
+      const opening = floorOpening(register, row.node, body === undefined ? {} : landedPatch(body, "text"))
+      const shown = body === undefined ? row : { ...row, value: currentValue(body), box: currentBox(body) ?? row.box }
+      return opening === undefined ? shown : { ...shown, opening }
+    })
+  return floorFor([...floor, ownFloor(register, source)], id)
+}
+
 export function readFresh(deck: Deck, runId: string, base: number): boolean {
   if (base === deck.revision) return true
   const last = deck.register.lastRun
@@ -69,7 +82,8 @@ export function readFresh(deck: Deck, runId: string, base: number): boolean {
 export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, base: number): Built {
   if (!readFresh(deck, runId, base)) return { ok: false, refusal: "stale" }
   const register = deck.register
-  const fenced = runFence(register, runId, parsed.op === "delete_slide" ? parsed.slide : null)
+  const deleted = parsed.op === "delete_slide" ? [parsed.slide] : parsed.op === "delete_slides" ? parsed.slides : []
+  const fenced = runFence(register, runId, deleted)
   if (fenced !== null) return { ok: false, refusal: fenced }
   const index = register.index
   if (index === undefined || index.elements.length !== index.total) return { ok: false, refusal: "indexing" }
@@ -114,24 +128,22 @@ export function agentSlide(deck: Deck, parsed: WireSlideChange, runId: string, b
     edit = { slide: "move", id: parsed.slide, after: parsed.after, grid: 1, row: "same" }
   } else if (parsed.op === "delete_slide") {
     edit = { slide: "remove", id: parsed.slide, grid: 1 }
-  } else {
+  } else if (parsed.op === "delete_slides") {
+    edit = { slide: "remove-many", ids: parsed.slides, grid: 1 }
+  } else if (parsed.op === "duplicate_slides") {
+    const copied = cloneMany(state, parsed.slides, (source, id) => cloneFloor(register, index, source, id))
+    if (copied === null) return { ok: false, refusal: "dead" }
+    edit = copied
+  } else if (parsed.op === "duplicate_slide") {
     if (!spots.some((spot) => spot.id === parsed.slide)) return { ok: false, refusal: "dead" }
-    const floor = openingRows(register, index, parsed.slide)
-      .filter((row) => !elementGone(register, row.node) && slideKind(row.node) !== "slide")
-      .map((row) => {
-        const body = register.elements[row.node]
-        const opening = floorOpening(register, row.node, body === undefined ? {} : landedPatch(body, "text"))
-        const shown = body === undefined ? row : { ...row, value: currentValue(body), box: currentBox(body) ?? row.box }
-        return opening === undefined ? shown : { ...shown, opening }
-      })
     edit = {
       slide: "clone",
       id,
       source: parsed.slide,
       grid: 1,
-      floor: floorFor([...floor, ownFloor(register, parsed.slide)], id),
+      floor: cloneFloor(register, index, parsed.slide, id),
     }
-  }
+  } else return { ok: false, refusal: "field" }
   const result = decide(register, { command: "slide", file, edit: { ...edit, runId } })
   if (result.decision === "refuse") return { ok: false, refusal: result.code }
   return { ok: true, register: result.register, runId }

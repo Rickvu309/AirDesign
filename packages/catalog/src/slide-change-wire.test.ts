@@ -30,3 +30,12 @@ it("reads an atomic group move and refuses malformed or empty groups", () => {
   for (const slides of [[], ["256", "256"], ["bad"]])
     expect(readSlideChange({ ...command, slides })).toMatchObject({ ok: false, field: "slides" })
 })
+
+it("reads plural slide lifecycle changes without placement or duplicate ids", () => {
+  for (const op of ["duplicate_slides", "delete_slides"]) {
+    const change = { op, slides: ["258", "256"] }
+    expect(readSlideChange(change)).toEqual({ ok: true, change })
+    expect(readSlideChange({ ...change, slides: ["256", "256"] })).toMatchObject({ ok: false, field: "slides" })
+    expect(readSlideChange({ ...change, after: "257" })).toMatchObject({ ok: false, field: "after" })
+  }
+})

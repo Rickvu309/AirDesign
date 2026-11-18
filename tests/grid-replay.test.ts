@@ -172,6 +172,27 @@ const expected = [
     [1, 2, 3, 4],
     [5, 6],
   ],
+  [[2, 3, 4]],
+  [
+    [1, 2, 3, 4],
+    [5, 6],
+  ],
+  [
+    [1, 2, 3, 4],
+    [5, 7, 8, 6],
+  ],
+  [
+    [1, 2, 3, 4],
+    [5, 6],
+  ],
+  [
+    [1, 2, 3, 4],
+    [5, 6],
+  ],
+  [
+    [1, 2, 3, 4],
+    [5, 7, 8, 6],
+  ],
 ]
 
 type World = { register: Register; cache: Register; undo: readonly Undoable[]; redo: Undoable | null }
@@ -214,6 +235,24 @@ function step(world: World, action: string): World {
     })
     return world
   }
+  if (action === "RefuseWholeDeck" || action === "RefuseSetCollision") {
+    const edit: SlideCommand =
+      action === "RefuseWholeDeck"
+        ? { slide: "remove-many", grid: 1, ids: [id(1), id(2), id(3), id(4), id(5), id(6)] }
+        : {
+            slide: "clone-many",
+            grid: 1,
+            copies: [
+              { id: id(7), source: id(2) },
+              { id: id(9), source: id(3) },
+            ],
+          }
+    expect(decide(world.register, { command: "slide", file, edit })).toMatchObject({
+      decision: "refuse",
+      code: action === "RefuseWholeDeck" ? "dead" : "present",
+    })
+    return world
+  }
   if (action.startsWith("Undo") || ["RedoBelow", "RedoRow"].includes(action)) {
     const undoable = ["RedoBelow", "RedoRow"].includes(action) ? (world.redo ?? undefined) : world.undo.at(-1)
     if (undoable === undefined) throw new Error("undoable")
@@ -238,6 +277,15 @@ function step(world: World, action: string): World {
     EmptyRow: { slide: "move-many", grid: 1, ids: [id(6), id(5)], after: id(2), row: "same" },
     ForeignRowInsert: { slide: "add", grid: 1, id: id(7), after: id(5), layout: id(1), row: "same" },
     ForeignGroupGap: { slide: "add", grid: 1, id: id(7), after: id(6), layout: id(1), row: "same" },
+    DeleteSet: { slide: "remove-many", grid: 1, ids: [id(6), id(5), id(1)] },
+    CloneSet: {
+      slide: "clone-many",
+      grid: 1,
+      copies: [
+        { id: id(8), source: id(5) },
+        { id: id(7), source: id(2) },
+      ],
+    },
     RemoveNonHead: { slide: "remove", grid: 1, id: id(2) },
     RemoveHead: { slide: "remove", grid: 1, id: id(5) },
     RemoveSingleton: { slide: "remove", grid: 1, id: id(6) },
@@ -327,6 +375,12 @@ it("replays every bounded Grid edge through the joint fold and guarded inverses"
         "UndoForeignGroup",
         "EmptyRow",
         "RefuseGroupAnchor",
+        "DeleteSet",
+        "UndoDeleteSet",
+        "CloneSet",
+        "UndoCloneSet",
+        "RefuseWholeDeck",
+        "RefuseSetCollision",
       ]
       const next = step(world, edge.action === "Land" ? actions[state.stage]! : edge.action)
       expect(gridRows(next.register).map((row) => row.map(Number))).toEqual(expected[state.stage])

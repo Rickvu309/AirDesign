@@ -1,6 +1,7 @@
 import { type SlideId } from "./element-id.js"
 import { elementCommand } from "./element-order.js"
 import { groupCommand } from "./element-group.js"
+import { changeSet } from "./grid-set.js"
 import { moveGroup } from "./grid-move.js"
 import { limits } from "./limits.js"
 import { orderKeyBetween, type OrderKey } from "./order-key.js"
@@ -26,10 +27,14 @@ export type GridUndoable = {
   readonly rowsBefore: readonly RowGuard[]
   readonly rowsAfter: readonly RowGuard[]
 }
+export type GridCopy = Omit<Extract<LegacySlideCommand, { readonly slide: "clone" }>, "slide" | "key" | "runId">
+
 export type V1Command = (
   | (Omit<Extract<LegacySlideCommand, { readonly slide: "add" }>, "key" | "runId"> & { readonly row: GridSide })
   | Omit<Extract<LegacySlideCommand, { readonly slide: "clone" }>, "key" | "runId">
   | { readonly slide: "remove"; readonly id: SlideId }
+  | { readonly slide: "remove-many"; readonly ids: readonly [SlideId, ...SlideId[]] }
+  | { readonly slide: "clone-many"; readonly copies: readonly [GridCopy, ...GridCopy[]] }
   | { readonly slide: "move"; readonly id: SlideId; readonly after: SlideId | null; readonly row: "same" }
   | {
       readonly slide: "move-many"
@@ -99,6 +104,18 @@ export function foldGrid(state: SlideState): {
       for (const spot of moved.spots) spots.set(spot.id, spot)
       heads = moved.heads
       effects.push(...moved.effects)
+    } else if (command.slide === "remove-many" || command.slide === "clone-many") {
+      const changed = changeSet(
+        before,
+        partition(
+          before.map((spot) => spot.id),
+          heads,
+        ),
+        command,
+      )
+      for (const spot of changed.spots) spots.set(spot.id, spot)
+      heads = changed.heads
+      effects.push(...changed.effects)
     } else if (command.slide === "grid-turn") {
       for (const step of command.turn.spots) {
         if (step.before.present === step.after.present && step.before.key === step.after.key) continue

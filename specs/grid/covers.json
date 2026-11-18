@@ -4,20 +4,26 @@
     {
       "file": "packages/document/src/grid-order.ts",
       "names": ["foldGrid", "turnRefusal", "defaultGrid1", "gridRows"],
-      "digest": "de053693b419",
-      "blob": "e0a6ae27f4e65b5e61bf767e56b586d812c822cc"
+      "digest": "23d15a721a8f",
+      "blob": "17b85a5b5004ef8cadcc200c66112fad9b434502"
     },
     {
       "file": "packages/document/src/grid-undo.ts",
       "names": ["gridUndoable"],
-      "digest": "d45e8ffc3789",
-      "blob": "67c7a282d8c66097e59557f85d12d3e1900f9430"
+      "digest": "e748839200b5",
+      "blob": "95abb7cbde4fe793988d5419307f7672ceda376e"
     },
     {
       "file": "packages/document/src/grid-move.ts",
       "names": ["groupRefusal", "moveGroup"],
       "digest": "de7fe59eb997",
       "blob": "fff67c32742511f13b7dde2073675a14947cdd68"
+    },
+    {
+      "file": "packages/document/src/grid-set.ts",
+      "names": ["setRefusal", "changeSet"],
+      "digest": "8250311d8bd8",
+      "blob": "00780b299c2968a006752d2026846aee605ee366"
     }
   ]
 }

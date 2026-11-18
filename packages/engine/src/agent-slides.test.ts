@@ -190,3 +190,30 @@ it("moves a complete row in one revision through edit and undoes the run", () =>
     ["260", "261"],
   ])
 })
+
+it("duplicates and deletes the selected slides through edit in one revision per call", () => {
+  const deck = opened(7)
+  const original = [
+    ["256", "257", "258", "259"],
+    ["260", "261", "262"],
+  ]
+  const copy = changeCall("duplicate_slides", deck, actor, { deck: "deck", base: 0, slides: ["261", "257"] })
+  if (!copy.ok) throw new Error(copy.refusal)
+  expect(copy.deck.revision).toBe(1)
+  expect(copy.deck.register.order).toHaveLength(1)
+  expect(gridRows(copy.deck.register)).toEqual([
+    ["256", "257", "258", "259"],
+    ["260", "261", "263", "264", "262"],
+  ])
+  const deletion = changeCall("delete_slides", copy.deck, actor, { deck: "deck", base: 1, slides: ["256", "260"] })
+  if (!deletion.ok) throw new Error(deletion.refusal)
+  expect(deletion.deck.revision).toBe(2)
+  expect(deletion.deck.register.order).toHaveLength(2)
+  expect(gridRows(deletion.deck.register)).toEqual([
+    ["257", "258", "259"],
+    ["261", "263", "264", "262"],
+  ])
+  const undone = call("undo_run", deletion.deck, { actor: "person" }, { deck: "deck", runId: "run" })
+  if (!undone.ok) throw new Error(undone.refusal)
+  expect(gridRows(undone.deck.register)).toEqual(original)
+})

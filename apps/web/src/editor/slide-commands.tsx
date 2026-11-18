@@ -1,4 +1,5 @@
-import { presentSlides, gridRows, type ElementId, type GridSide, type Undoable } from "@airdesign/document"
+import { toast } from "@/components/ui/toast"
+import { limits, presentSlides, gridRows, type ElementId, type GridSide, type Undoable } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
 import { ownBox, SlideCanvas } from "@airdesign/render"
 import type { CommitOutcome } from "@/commit-edit"
@@ -6,7 +7,7 @@ import { slideListCopy } from "@/copy/slide-list-copy"
 import type { SlideStrip } from "@/editor/slide-sidebar"
 import { showSlideDeleted, type UndoOf } from "@/editor/slide-toast"
 import type { DeckPaint } from "@/editor/use-deck-paint"
-import { fileSlides, commitSlideChange, commitSlideMove, type SlideChange } from "@/slide-edit"
+import { fileSlides, commitSlideChange, commitSlideMove, commitSlideSet, type SlideChange } from "@/slide-edit"
 import { thumbHeight } from "@/thumb-height"
 import type { UndoEntry } from "@/undo-list"
 import { slideNames } from "@/undo-names"
@@ -35,14 +36,15 @@ export function slideCommands(deck: CommandedDeck, undo: () => void, showMatchin
     row: GridSide = "same",
   ) {
     const anchor = row === "new" ? sequence[index] : null
-    const run = pending.then(async () => {
+    await queue(async () => {
       const opened = await connect(memoryRemote()).openDeck(id)
       if (!opened.ok) return
       const painted = async (currentIndex: number, undoable: Undoable | null) => {
         if (undoable !== null) {
           const entry = { name: slideNames[change], undoable }
           record(entry)
-          if (change === "remove") showSlideDeleted(index + 1, entry, { list: deck.undo.undoList, undo })
+          if (change === "remove")
+            showSlideDeleted(slideListCopy.deleted(index + 1), entry, { list: deck.undo.undoList, undo })
         }
         setPending(true)
         await showEdited(currentIndex)
@@ -59,11 +61,15 @@ export function slideCommands(deck: CommandedDeck, undo: () => void, showMatchin
         await commitSlideChange(id, shownParts.current, opened.register, change, target, painted, to, layoutPart, row),
       )
     })
+  }
+
+  function queue(work: () => Promise<void>) {
+    const run = pending.then(work)
     pending = run.then(
       () => undefined,
       () => undefined,
     )
-    await run
+    return run
   }
 
   const register = deck.shown.shownRegister.current
@@ -97,7 +103,7 @@ export function slideCommands(deck: CommandedDeck, undo: () => void, showMatchin
           .slice(0, at)
           .filter((id) => !ids.includes(id))
           .at(-1) ?? null
-      const run = pending.then(async () => {
+      void queue(async () => {
         const opened = await connect(memoryRemote()).openDeck(id)
         if (!opened.ok) return
         settle(
@@ -116,10 +122,36 @@ export function slideCommands(deck: CommandedDeck, undo: () => void, showMatchin
           ),
         )
       })
-      pending = run.then(
-        () => undefined,
-        () => undefined,
-      )
+    },
+    onChangeSet: (change, held, paint) => {
+      const ids = sequence.filter((_, index) => held.includes(index))
+      const [first, ...rest] = ids
+      if (first === undefined) return
+      void queue(async () => {
+        const opened = await connect(memoryRemote()).openDeck(id)
+        if (!opened.ok) return
+        const result = await commitSlideSet(
+          id,
+          shownParts.current,
+          opened.register,
+          change,
+          [first, ...rest],
+          async (currentIndex, copies, undoable) => {
+            const entry = { name: slideNames[change], undoable }
+            record(entry)
+            if (change === "remove")
+              showSlideDeleted(slideListCopy.deletedSet(ids.length), entry, { list: deck.undo.undoList, undo })
+            setPending(true)
+            paint(copies)
+            await showEdited(currentIndex)
+          },
+        )
+        if (result.ok) settle(result.outcome)
+        else
+          toast.error(
+            result.message === "slideLimit" ? slideListCopy.slideLimit(limits.slides) : slideListCopy[result.message],
+          )
+      })
     },
     say: deck.shown.saySlide,
     thumbHeight: thumbHeight(canvases.current(0)),

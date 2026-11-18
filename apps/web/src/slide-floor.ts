@@ -32,20 +32,29 @@ export function flooredEdit(
     return { ...edit, floor: slideRows(orderedParts(parts, { file, order: [...register.order, edit] }), edit.id) }
   }
   if (edit.slide !== "clone") return edit
-  const notes = elementId(`${edit.source}.notes`)
-  const found = slideRows(slideBase(parts, register), edit.source).filter((row) => slideKind(row.node) !== "slide")
-  const rows = [
-    ...found,
-    ...(found.some((row) => row.node === notes)
-      ? []
-      : [{ node: notes, kind: "slide" as const, value: null, box: null, grouped: false }]),
-  ].flatMap((row) => {
-    const value = shownValue(register, row.node, row.value ?? "")
-    if (row.node === notes && row.value === null && value === "") return []
-    const body = register.nodes.includes(row.node) ? register.elements[row.node] : undefined
-    const opening = floorOpening(register, row.node, body === undefined ? {} : landedPatch(body, "text"))
-    const shown = { ...row, value: value === "" ? null : value, box: shownBox(register, row.node, row.box) }
-    return [opening === undefined ? shown : { ...shown, opening }]
-  })
-  return { ...edit, floor: floorFor([...rows, ownFloor(register, edit.source)], edit.id) }
+  return { ...edit, floor: cloneFloor(parts, register)(edit.source, edit.id) }
+}
+
+export function cloneFloor(parts: Parts, register: Register) {
+  const openingRows = indexPackage(slideBase(parts, register)).elements
+  return (source: SlideId, id: SlideId) => {
+    const notes = elementId(`${source}.notes`)
+    const found = openingRows
+      .filter((row) => shapeOf(row.node).slide === source)
+      .filter((row) => slideKind(row.node) !== "slide")
+    const rows = [
+      ...found,
+      ...(found.some((row) => row.node === notes)
+        ? []
+        : [{ node: notes, kind: "slide" as const, value: null, box: null, grouped: false }]),
+    ].flatMap((row) => {
+      const value = shownValue(register, row.node, row.value ?? "")
+      if (row.node === notes && row.value === null && value === "") return []
+      const body = register.nodes.includes(row.node) ? register.elements[row.node] : undefined
+      const opening = floorOpening(register, row.node, body === undefined ? {} : landedPatch(body, "text"))
+      const shown = { ...row, value: value === "" ? null : value, box: shownBox(register, row.node, row.box) }
+      return [opening === undefined ? shown : { ...shown, opening }]
+    })
+    return floorFor([...rows, ownFloor(register, source)], id)
+  }
 }

@@ -16,6 +16,7 @@ import { slideListCopy } from "@/copy/slide-list-copy"
 import { EditorIcon } from "@/editor/editor-icons"
 import { hairlineShadow, SidebarHead, surfaceShadow } from "@/editor/editor-chrome"
 import { slideKey, type SlideKey } from "@/editor/slide-keys"
+import type { SelectedCopy, SlideSetChange } from "@/slide-edit"
 import type { SaveStatus } from "@/editor/use-deck-status"
 import { SlideMenu, slideChangeAllowed } from "@/editor/slide-menu"
 import { NewSlideMenu } from "@/editor/new-slide-menu"
@@ -48,6 +49,11 @@ export type SlideStrip = {
   readonly layouts?: readonly LayoutChoice[]
   readonly onClone?: (index: number) => void
   readonly onRemove?: (index: number) => void
+  readonly onChangeSet?: (
+    change: SlideSetChange,
+    indices: readonly number[],
+    paint: (copies: readonly SelectedCopy[]) => void,
+  ) => void
   readonly onMoveMany?: (held: readonly number[], at: number, row?: "same" | "new" | "keep") => void
   readonly onMove?: (from: number, to: number) => void
   readonly say?: { current: (text: string) => void }

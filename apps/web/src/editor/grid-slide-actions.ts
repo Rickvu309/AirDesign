@@ -1,3 +1,5 @@
+import { limits } from "@airdesign/document"
+import { toast } from "@/components/ui/toast"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { gridMoveAt, type GridCommand } from "@/editor/editor-grid-keys"
 import { pickedSlides, type GridPick } from "@/editor/grid-selection"
@@ -8,13 +10,13 @@ export function gridSlideActions(
   picked: GridPick,
   {
     follow,
-    clearPick,
+    pick,
     open,
     moveSlides,
     announce,
   }: {
     follow: () => void
-    clearPick: () => void
+    pick: (pick: GridPick) => void
     open: (index: number) => void
     moveSlides: (held: readonly number[], at: number, row: boolean) => void
     announce: (text: string) => void
@@ -23,13 +25,34 @@ export function gridSlideActions(
   const { current, count } = strip
   return function act(command: GridCommand, index: number) {
     const target = picked?.slides.size === 1 ? (pickedSlides(picked, current)[0] ?? index) : index
-    if (picked?.slides.size === 1) clearPick()
+    if (picked?.slides.size === 1) pick(null)
     if (picked !== null && picked.slides.size > 1) {
+      const held = pickedSlides(picked, current)
       if (command === "earlier" || command === "later") {
-        const held = pickedSlides(picked, current)
         const at = gridMoveAt(held, count, command)
         if (at !== null && strip.onMoveMany !== undefined) moveSlides(held, at, false)
-      } else if (command !== "open") announce(slideListCopy.selectOne)
+      } else if (command !== "open") {
+        if (command === "remove" && held.length >= count) toast.error(slideListCopy.lastSlide)
+        else if (command === "clone" && held.length + count > limits.slides)
+          toast.error(slideListCopy.slideLimit(limits.slides))
+        else
+          strip.onChangeSet?.(command, held, (copies) => {
+            follow()
+            const anchor = copies[0]?.index
+            pick(
+              anchor === undefined
+                ? null
+                : {
+                    anchor,
+                    slides: new Set(copies.map((copy) => copy.index)),
+                    copies: new Set(copies.map((copy) => copy.id)),
+                  },
+            )
+            announce(
+              command === "clone" ? slideListCopy.duplicatedSet(copies.length) : slideListCopy.deletedSet(held.length),
+            )
+          })
+      }
       return
     }
     if (command === "open") {

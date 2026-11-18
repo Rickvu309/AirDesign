@@ -121,8 +121,8 @@ export function EditorGrid({
   const [elementPressed, setElementPressed] = useState(false)
   const [menu, setMenu] = useState<GridMenu | null>(null)
   const { current, count } = strip
-  const picked = prunedPick(gridPick(state), count)
-  const selected = new Set(gridRinged(state, current, count))
+  const picked = prunedPick(gridPick(state), count, strip.slideIds)
+  const selected = new Set(gridRinged(state, current, count, strip.slideIds))
   const selectedCount = selected.size
   useLayoutEffect(() => onSlideSelection?.(selectedCount), [onSlideSelection, selectedCount])
   const sections = strip.sections ?? noSections
@@ -238,7 +238,7 @@ export function EditorGrid({
     follow: () => {
       following.current = true
     },
-    clearPick: () => edit.step({ kind: "pick", pick: null }),
+    pick: (pick) => edit.step({ kind: "pick", pick }),
     open: edit.open,
     moveSlides,
     announce,
@@ -410,6 +410,7 @@ export function EditorGrid({
           count={count}
           held={pickedSlides(picked, menu.index)}
           canMoveSet={strip.onMoveMany !== undefined}
+          canChangeSet={strip.onChangeSet !== undefined}
           onAct={act}
           onClose={closeMenu}
         />

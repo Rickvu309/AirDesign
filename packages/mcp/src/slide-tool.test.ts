@@ -223,3 +223,36 @@ it("lands mixed slide and element changes in one revision or none", async () => 
     await server.close()
   }
 })
+
+it("lists and applies plural slide edits through the same tool and returns the copies' ids and content", async () => {
+  const held = session()
+  const server = createServer(held)
+  const [a, b] = InMemoryTransport.createLinkedPair()
+  const client = new Client({ name: "test", version: "1" })
+  await server.connect(b)
+  await client.connect(a)
+  try {
+    const listed = await client.listTools()
+    const edit = listed.tools.find((tool) => tool.name === "airdesign_edit_deck")
+    expect(JSON.stringify(edit?.inputSchema)).toContain("duplicate_slides")
+    expect(JSON.stringify(edit?.inputSchema)).toContain("delete_slides")
+    const change = async (edit: object) =>
+      client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: held.deck.revision, changes: [edit] },
+      })
+    expect((await change({ op: "add_slide", after: "256", layout: "256" })).isError).not.toBe(true)
+    const copied = await change({ op: "duplicate_slides", slides: ["257", "256"] })
+    expect(copied.structuredContent).toMatchObject({ slides: ["258", "259"] })
+    expect(held.deck.revision).toBe(2)
+    expect(readDeckPage(held.deck, { runId: "run", slide: "258" }).elements[0]?.value).toBe(
+      readDeckPage(held.deck, { runId: "run", slide: "256" }).elements[0]?.value,
+    )
+    expect((await change({ op: "delete_slides", slides: ["256", "257"] })).isError).not.toBe(true)
+    expect(held.deck.revision).toBe(3)
+    expect(readDeckPage(held.deck, { runId: "run" }).slides.map(({ id }) => id)).toEqual(["258", "259"])
+  } finally {
+    await client.close()
+    await server.close()
+  }
+})

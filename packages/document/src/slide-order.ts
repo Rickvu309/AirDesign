@@ -1,3 +1,5 @@
+import { slideBirths } from "./slide-births.js"
+import { setRefusal } from "./grid-set.js"
 import { groupRefusal as moveRefusal } from "./grid-move.js"
 import { foldGrid, orderedSpots, turnRefusal, readGridCommand, type V1Command } from "./grid-order.js"
 import type { DeckIndex, IndexElement } from "./deck-index.js"
@@ -119,7 +121,7 @@ export function slideGone(state: SlideState, id: string): boolean {
 
 function known(state: SlideState, id: SlideId): boolean {
   if (state.file.includes(id)) return true
-  return state.order.some((command) => (command.slide === "add" || command.slide === "clone") && command.id === id)
+  return state.order.some((command) => slideBirths(command).some((birth) => birth.id === id))
 }
 
 export function applySlide(
@@ -142,6 +144,11 @@ export function applySlide(
   if (groupCommand(command)) {
     if (!ids.has(command.id)) return { ok: false, code: "dead" }
     const refusal = groupRefusal({ ...withFile, ...index(state) }, command)
+    if (refusal !== null) return { ok: false, code: refusal }
+    return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
+  }
+  if (command.slide === "remove-many" || command.slide === "clone-many") {
+    const refusal = setRefusal(withFile, command, ids)
     if (refusal !== null) return { ok: false, code: refusal }
     return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
   }
@@ -262,6 +269,8 @@ export function newerSlideCommand(raw: unknown): boolean {
       "restore",
       "grid-turn",
       "move-many",
+      "remove-many",
+      "clone-many",
       "element-add",
       "element-remove",
       "element-restore",
