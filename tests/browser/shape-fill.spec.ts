@@ -1,8 +1,9 @@
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { exportFromDialog } from "./export-dialog"
-import { fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
+import { boxFillPanel, fillPanel, filled, partsOf, shapeAt } from "./shape-fills"
 import { openDeck, pickColor, settled, shownColor } from "./design-panel"
 
 const exportName = "exported-shape-fill.pptx"
@@ -31,14 +32,14 @@ test("a person fills a shape whose fill comes from its style with a color and an
   const kinds = panel.getByRole("group", { name: "Fill", exact: true })
   await expect(kinds.getByRole("button")).toHaveText(["None", "Color", "Gradient", "Pattern", "Icon"])
   await expect(kinds.getByRole("button", { name: "Color", exact: true })).toHaveAttribute("aria-pressed", "true")
-  await expect(panel.getByRole("button", { name: "Reset fill", exact: true })).toHaveCount(0)
+  await expect(panel.getByRole("button", { name: fillCopy.reset, exact: true })).toHaveCount(0)
   const colors = panel.getByRole("group", { name: "Color", exact: true })
   await expect(shownColor(colors)).toHaveText("Accent 1")
   await pickColor(page, colors, "Accent 2")
   await expect.poll(() => filled(rectangle)).not.toBe(accentOne)
   const accentTwo = await filled(rectangle)
   await expect(shownColor(colors)).toHaveText("Accent 2")
-  await expect(panel.getByRole("button", { name: "Reset fill", exact: true })).toBeVisible()
+  await expect(panel.getByRole("button", { name: fillCopy.reset, exact: true })).toBeVisible()
 
   const ovalPanel = await fillPanel(page, oval)
   await ovalPanel.getByRole("group", { name: "Fill", exact: true }).getByRole("button", { name: "Gradient" }).click()
@@ -95,11 +96,11 @@ test("a person resets a shape's own fill to the one its style gives, and Undo br
   await openDeck(page, "clean.pptx")
   const shape = page.locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#2"]')
   const own = await filled(shape)
-  const panel = await fillPanel(page, shape)
-  await panel.getByRole("button", { name: "Reset fill", exact: true }).click()
+  const panel = await boxFillPanel(page, shape)
+  await panel.getByRole("button", { name: fillCopy.reset, exact: true }).click()
   await expect.poll(() => filled(shape)).not.toBe(own)
-  await expect(panel.getByRole("button", { name: "Reset fill", exact: true })).toHaveCount(0)
+  await expect(panel.getByRole("button", { name: fillCopy.reset, exact: true })).toHaveCount(0)
   await page.getByRole("button", { name: "Undo fill", exact: true }).click()
   await expect.poll(() => filled(shape)).toBe(own)
-  await expect(panel.getByRole("button", { name: "Reset fill", exact: true })).toBeVisible()
+  await expect(panel.getByRole("button", { name: fillCopy.reset, exact: true })).toBeVisible()
 })

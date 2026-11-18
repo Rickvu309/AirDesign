@@ -1,3 +1,4 @@
+import { unfold } from "../look/unfold.mjs"
 import path from "node:path"
 import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
@@ -8,6 +9,7 @@ const duplicate = process.platform === "darwin" ? "Meta+d" : "Control+d"
 export default async function drive({ repo, origin, page, signIn, post, capture, note, deckRoutes }) {
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
   const { mcpRoutes } = await import(pathToFileURL(path.join(repo, "packages/catalog/dist/index.js")).href)
+  const { fillCopy, fillWords } = await import(pathToFileURL(path.join(repo, "apps/web/src/copy/fill-copy.ts")).href)
   const { cookie } = await signIn()
   let id = 0
   async function call(name, args) {
@@ -91,9 +93,13 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await subtitleShape.click({ position: { x: 4, y: 4 } })
   const panel = page.locator("[data-design-element]")
-  const kinds = panel.getByRole("group", { name: "Fill", exact: true })
+  await unfold(panel, fillCopy.box)
+  const boxFill = panel
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: fillCopy.box, exact: true }) })
+  const kinds = boxFill.getByRole("group", { name: fillCopy.box, exact: true })
   await expect(kinds).toBeVisible()
-  await kinds.getByRole("button", { name: "Gradient", exact: true }).click()
+  await kinds.getByRole("button", { name: fillWords.gradient, exact: true }).click()
   await expect.poll(() => fill(subtitleShape)).toContain("gradient")
   await capture("person-gradient")
   const gradient = await fill(subtitleShape)

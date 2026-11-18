@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test"
+import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { openDeck, pickColor } from "./design-panel"
-import { fillPanel, filled, shapeAt } from "./shape-fills"
+import { boxFillPanel, filled, shapeAt } from "./shape-fills"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -9,8 +10,8 @@ test("a list adds an item and removes one within its bounds, and Undo brings the
 }) => {
   await openDeck(page, "clean.pptx")
   const shape = shapeAt(page, "2")
-  const panel = await fillPanel(page, shape)
-  await panel.getByRole("group", { name: "Fill", exact: true }).getByRole("button", { name: "Gradient" }).click()
+  const panel = await boxFillPanel(page, shape)
+  await panel.getByRole("group", { name: fillCopy.box, exact: true }).getByRole("button", { name: "Gradient" }).click()
   const stops = panel.getByRole("list", { name: "Stops" }).getByRole("listitem")
   await expect(stops).toHaveCount(2)
   await expect(panel.getByRole("button", { name: /^Remove stop/ })).toHaveCount(0)

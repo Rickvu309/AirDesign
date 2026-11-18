@@ -1,4 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test"
+import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
+import { boxFillPanel } from "./shape-fills"
 import { openDeck, unfold } from "./design-panel"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -55,14 +57,10 @@ test("an asset control finds an icon by a word, swaps the picture's icon, and Un
 test("a shape's Fill takes an icon, which the asset control inside the fill's union swaps", async ({ page }) => {
   await openDeck(page, "clean.pptx")
   const shape = page.locator('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#2"]')
-  await page.getByRole("button", { name: "Design", exact: true }).click()
-  await shape.click({ position: { x: 4, y: 4 } })
-  const fill = page
-    .locator("[data-design-element] section")
-    .filter({ has: page.getByRole("heading", { name: "Fill", exact: true }) })
+  const fill = await boxFillPanel(page, shape)
   await fill
-    .getByRole("group", { name: "Fill", exact: true })
-    .getByRole("button", { name: "Icon", exact: true })
+    .getByRole("group", { name: fillCopy.box, exact: true })
+    .getByRole("button", { name: fillWords.picture, exact: true })
     .click()
   await expect.poll(() => drawn(shape)).toContain("blob:")
   await expect(fill.getByText("Shows the star icon")).toBeVisible()

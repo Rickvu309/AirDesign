@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, type Locator, type Page } from "@playwright/test"
+import { fillCopy } from "../../apps/web/src/copy/fill-copy"
+import { unfold } from "./design-panel"
 
 type ZipEntry = {
   readonly filename: string
@@ -47,6 +49,12 @@ export async function fillPanel(page: Page, shape: Locator): Promise<Locator> {
   await shape.click({ position: { x: 4, y: 4 } })
   const panel = page.locator("[data-design-element]")
   await expect(panel).toBeVisible()
-  await expect(panel.getByRole("group", { name: "Fill", exact: true })).toBeVisible()
+  await expect(panel.getByRole("group", { name: fillCopy.value, exact: true })).toBeVisible()
   return panel
+}
+
+export async function boxFillPanel(page: Page, shape: Locator): Promise<Locator> {
+  const panel = await fillPanel(page, shape)
+  await unfold(panel, fillCopy.box)
+  return panel.locator("section").filter({ has: page.getByRole("heading", { name: fillCopy.box, exact: true }) })
 }

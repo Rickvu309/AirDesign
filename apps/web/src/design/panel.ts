@@ -310,8 +310,8 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     kind,
     sections: ordered(
       kind,
-      appearanceSections(
-        textFillSections(
+      textFillSections(
+        appearanceSections(
           [...alignSection, ...content, ...(opacity === null ? [] : [opacity]), ...(corners === null ? [] : [corners])],
           kind,
         ),
@@ -325,7 +325,20 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
 function textFillSections(sections: readonly PanelSection[], kind: PanelKind | null): readonly PanelSection[] {
   if (kind !== "text") return sections
   return sections.flatMap((section): PanelSection[] => {
-    if (section.trait === "fill") return [{ ...section, trait: "boxFill", label: fillCopy.box, open: false }]
+    if (section.trait === "fill")
+      return [
+        {
+          ...section,
+          trait: "boxFill",
+          label: fillCopy.box,
+          open: false,
+          strips: section.strips.map((strip) =>
+            strip.map((control) =>
+              control.trait === "fill" && control.field === "value" ? { ...control, label: fillCopy.box } : control,
+            ),
+          ),
+        },
+      ]
     if (section.trait !== "text") return [section]
     const controls = section.strips.flat()
     const fill = controls.find((control) => control.field === "fill")

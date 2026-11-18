@@ -332,7 +332,7 @@ export function ElementDesign({
                     }
               }
             >
-              {section.trait === "fill" &&
+              {(section.trait === "fill" || section.trait === "boxFill") &&
               section.strips.some((strip) => strip.some((row) => row.trait === "image")) ? (
                 <>
                   <SectionStrips strips={section.strips.slice(0, 1)} palette={palette} onChange={onChange} />
