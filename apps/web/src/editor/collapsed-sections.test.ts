@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { collapsedSections, keepCollapsed, keptCollapsed } from "@/editor/collapsed-sections"
+import { collapsedSections, gridStop, keepCollapsed, keptCollapsed } from "@/editor/collapsed-sections"
 
 function shelf(): Pick<Storage, "getItem" | "setItem"> {
   const held = new Map<string, string>()
@@ -47,4 +47,16 @@ describe("collapsed sections", () => {
     expect([...collapsedSections(new Set([0, 1, 7]), sections, 6)]).toEqual([0, 1])
     expect([...collapsedSections(new Set([0]), [], 0)]).toEqual([])
   })
+})
+
+it("keeps the roving stop on a visible slide or the first heading", () => {
+  const sections = [
+    { name: "Opening", start: 0 },
+    { name: "Numbers", start: 2 },
+    { name: "Close", start: 5 },
+  ]
+  expect(gridStop(2, 2, 8, (index) => index < 2 || index >= 5, sections)).toBe(5)
+  expect(gridStop(6, 6, 8, (index) => index < 5, sections)).toBe(2)
+  expect(gridStop(4, 2, 8, () => true, sections)).toBe(4)
+  expect(gridStop(4, 2, 8, () => false, sections)).toBeNull()
 })

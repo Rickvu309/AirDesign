@@ -104,10 +104,9 @@ export function GridSectionCell({
   held,
   onToggle,
   shown,
-  height,
   children,
 }: {
-  row: GridRow
+  row: Pick<GridRow, "start" | "end">
   index: number
   sections: readonly StripSection[]
   count: number
@@ -116,7 +115,6 @@ export function GridSectionCell({
   held: ReadonlySet<number>
   onToggle: (number: number) => void
   shown: boolean
-  height: number
   children: ReactNode
 }) {
   const offset = index - row.start
@@ -146,12 +144,7 @@ export function GridSectionCell({
           </div>
         </div>
       )}
-      <div
-        style={{ gridColumn: offset + 1, gridRow: marked ? 2 : 1, visibility: shown ? "visible" : "hidden" }}
-        aria-hidden={!shown}
-      >
-        {shown ? children : <div style={{ height: height + 24 }} />}
-      </div>
+      {shown ? <div style={{ gridColumn: offset + 1, gridRow: marked ? 2 : 1 }}>{children}</div> : null}
     </div>
   )
 }

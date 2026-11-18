@@ -86,6 +86,7 @@ export function useGridViewport({
   onZoom,
   initialFit,
   layout,
+  folded,
   fitting,
   onFit,
   selected,
@@ -101,6 +102,7 @@ export function useGridViewport({
   onZoom: (size: number, persist?: boolean) => void
   onFit: (percent: number) => void
   layout: string
+  folded: string
   fitting: boolean
   initialFit: boolean
   selected: number
@@ -298,7 +300,25 @@ export function useGridViewport({
 
   useLayoutEffect(() => {
     if (fits.current) fit()
-  }, [layout])
+  }, [layout, folded])
+
+  useLayoutEffect(() => {
+    const host = viewport.current
+    const content = world.current
+    if (fits.current || host === null || content === null) return
+    const room = host.getBoundingClientRect()
+    const box = content.getBoundingClientRect()
+    const y =
+      box.bottom < room.top + 24
+        ? room.top + 24 - box.bottom
+        : box.top > room.bottom - 24
+          ? room.bottom - 24 - box.top
+          : 0
+    if (y !== 0) {
+      paint(pannedGrid(view.current, { x: 0, y }))
+      settle()
+    }
+  }, [folded])
 
   useLayoutEffect(() => {
     const host = viewport.current
