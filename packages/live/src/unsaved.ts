@@ -3,6 +3,7 @@ import {
   limits,
   readBox,
   readRow,
+  newerFormat,
   readStoredEdit,
   type Box,
   type Row,
@@ -72,22 +73,28 @@ function isEntry(raw: unknown): raw is Unsaved {
   return entry.kind === "box" && readBox(entry.box) !== null
 }
 
-function entriesAt(shelf: Shelf | undefined, key: string): Unsaved[] {
+type Held = Readonly<Record<string, unknown>> & { readonly id: string }
+
+function held(raw: unknown): raw is Held {
+  return typeof raw === "object" && raw !== null && !Array.isArray(raw) && "id" in raw && typeof raw.id === "string"
+}
+
+function heldAt(shelf: Shelf | undefined, key: string): Held[] {
   if (shelf === undefined) return []
   try {
     const raw = shelf.getItem(key)
     const parsed: unknown = raw === null ? [] : JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed.filter(isEntry) : []
+    return Array.isArray(parsed) ? parsed.filter(held) : []
   } catch {
     return []
   }
 }
 
 export function unsavedOf(shelf: Shelf | undefined, account: string, deck: string): Unsaved[] {
-  return entriesAt(shelf, shelfKey(account, deck))
+  return heldAt(shelf, shelfKey(account, deck)).filter(isEntry)
 }
 
-function write(shelf: Shelf, account: string, deck: string, entries: readonly Unsaved[]): void {
+function write(shelf: Shelf, account: string, deck: string, entries: readonly Held[]): void {
   try {
     if (entries.length === 0) shelf.removeItem(shelfKey(account, deck))
     else shelf.setItem(shelfKey(account, deck), JSON.stringify(entries))
@@ -124,14 +131,14 @@ export function dropJournal(shelf: Shelf | undefined, account: string, deck?: st
 }
 
 export function hasLegacyJournal(shelf: Shelf | undefined, deck: string): boolean {
-  return entriesAt(shelf, legacyKey(deck)).length > 0
+  return heldAt(shelf, legacyKey(deck)).length > 0
 }
 
 export function adoptJournal(shelf: Shelf | undefined, account: string, deck: string): void {
   if (shelf === undefined) return
-  const legacy = entriesAt(shelf, legacyKey(deck))
+  const legacy = heldAt(shelf, legacyKey(deck))
   if (legacy.length === 0) return
-  if (unsavedOf(shelf, account, deck).length === 0) write(shelf, account, deck, legacy)
+  if (heldAt(shelf, shelfKey(account, deck)).length === 0) write(shelf, account, deck, legacy)
   try {
     shelf.removeItem(legacyKey(deck))
   } catch {
@@ -144,15 +151,17 @@ export function keepUnsaved(shelf: Shelf | undefined, account: string, deck: str
   const slot = slotOf(entry)
   const next: Unsaved = { ...entry, id, format }
   if (JSON.stringify(next).length > limits.row) return
-  const kept = unsavedOf(shelf, account, deck).filter((held) => slot === null || slotOf(held) !== slot)
+  const kept = heldAt(shelf, shelfKey(account, deck)).filter(
+    (entry) => slot === null || !isEntry(entry) || slotOf(entry) !== slot,
+  )
   write(shelf, account, deck, [...kept, next])
 }
 
 export function releaseUnsaved(shelf: Shelf | undefined, account: string, deck: string, id: string): void {
   if (shelf === undefined) return
-  const held = unsavedOf(shelf, account, deck)
-  const rest = held.filter((entry) => entry.id !== id)
-  if (rest.length !== held.length) write(shelf, account, deck, rest)
+  const all = heldAt(shelf, shelfKey(account, deck))
+  const rest = all.filter((entry) => entry.id !== id)
+  if (rest.length !== all.length) write(shelf, account, deck, rest)
 }
 
 export function holdsUnsaved(shelf: Shelf | undefined, account: string, deck: string, id: string): boolean {
@@ -173,8 +182,13 @@ function storedEdit(entry: Unsaved): unknown {
 }
 
 const payload = { ok: false, refusal: "payload" } as const
+const newer = { ok: false, refusal: "newer" } as const
 
-export function readUnsaved(entry: Unsaved): StoredRead<Unsaved> {
+const kinds: readonly unknown[] = ["text", "box", "row", "slide", "slides"]
+
+export function readUnsaved(raw: unknown): StoredRead<Unsaved> {
+  if (!held(raw) || !kinds.includes(raw.kind)) return newerFormat(raw) ? newer : payload
+  const entry = raw as Unsaved
   const read = readStoredEdit(storedEdit(entry))
   if (!read.ok) return read
   const edit = read.value
@@ -191,32 +205,35 @@ export function readUnsaved(entry: Unsaved): StoredRead<Unsaved> {
   return { ok: true, value: { kind: "text", id, node, floor, value: value.value } }
 }
 
-const recovering = new WeakMap<Shelf, Map<string, Promise<void>>>()
+type Recovered = "newer" | "payload" | undefined
+
+const recovering = new WeakMap<Shelf, Map<string, Promise<Recovered>>>()
 
 export function recoverUnsaved(
   shelf: Shelf | undefined,
   account: string,
   deck: string,
   replay: (entry: Unsaved) => Promise<unknown>,
-): Promise<void> {
-  if (shelf === undefined) return Promise.resolve()
-  const decks = recovering.get(shelf) ?? new Map<string, Promise<void>>()
+): Promise<Recovered> {
+  if (shelf === undefined) return Promise.resolve(undefined)
+  const decks = recovering.get(shelf) ?? new Map<string, Promise<Recovered>>()
   recovering.set(shelf, decks)
   const lane = shelfKey(account, deck)
   const known = decks.get(lane)
   if (known !== undefined) return known
-  const entries = unsavedOf(shelf, account, deck)
+  const entries = heldAt(shelf, lane)
   const done = (async () => {
     for (const entry of entries) {
       const read = readUnsaved(entry)
-      if (!read.ok) return
+      if (!read.ok) return read.refusal
       try {
         await replay(read.value)
       } catch {
-        return
+        return undefined
       }
       releaseUnsaved(shelf, account, deck, entry.id)
     }
+    return undefined
   })()
   decks.set(lane, done)
   return done

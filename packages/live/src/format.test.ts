@@ -1,6 +1,6 @@
 import { format } from "@airdesign/document"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
-import { installIndexedDb, node, tracedRemote } from "./browser-fixtures.js"
+import { installIndexedDb, memoryShelf, node, other, tracedRemote } from "./browser-fixtures.js"
 import { connect, deleteDatabase } from "./index.js"
 import { accountKey, databaseName, scoped, storeName } from "./device.js"
 import { rowKey, rowRange, type StoredRow } from "./store.js"
@@ -137,3 +137,39 @@ for (const kind of ["pending", "confirmed"]) {
     expect(stored).toEqual(raw)
   })
 }
+
+it("keeps a pending row it cannot read on the device, answers newer and sends nothing", async () => {
+  const { remote, calls } = tracedRemote()
+  const tab = connect(remote)
+  await tab.openDeck("deck")
+  await tab.enqueue("deck", "typed before", node, "")
+  const { format: _, ...unstamped } = newerRow
+  await storeRow(format, { ...unstamped, node: "258.8", v: format, patch: { box: { spin: { set: 1 } } } })
+
+  expect(await connect(remote).openDeck("deck")).toEqual(newer)
+  expect(await tab.flush("deck")).toEqual(newer)
+  expect(calls).not.toContain("commit deck")
+  expect(await storedNodes(format)).toEqual(["258.7", "258.8"])
+})
+
+it("keeps what is typed after a newer build took the deck in the journal, for that build to send", async () => {
+  const journal = new Map<string, string>()
+  const tab = connect(tracedRemote().remote, { shelf: memoryShelf(journal) })
+  await tab.openDeck("deck")
+  await tab.enqueue("deck", "typed before", node, "")
+  await storeRow(format + 1, newerRow)
+
+  expect(await tab.enqueue("deck", "first after", node, "")).toEqual(newer)
+  expect(await tab.enqueue("deck", "second after", other, "")).toEqual(newer)
+  const kept = [...journal.values()].flatMap((raw) => JSON.parse(raw) as { readonly value?: string }[])
+  expect(kept.map((entry) => entry.value)).toEqual(["first after", "second after"])
+})
+
+it("writes an edit once when it is the first thing the page does with the deck's journal", async () => {
+  const journal = new Map<string, string>()
+  const tab = connect(tracedRemote().remote, { shelf: memoryShelf(journal) })
+  const row = { v: format, patch: { box: { x: { set: 5 } } } }
+  expect(await tab.enqueueRow("deck", row, node, "")).toMatchObject({ ok: true })
+  expect(await tab.pending("deck")).toHaveLength(1)
+  expect([...journal.values()]).toEqual([])
+})

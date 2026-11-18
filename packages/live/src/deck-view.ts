@@ -119,7 +119,6 @@ export function readStored(row: StoredRow): StoredRead<StoredRow> {
     return slideEdit === undefined ? payload : { ok: true, value: { ...row, slideFile: edit.file, slideEdit } }
   }
   const node = edit.node
-  if (isPending(row) && readElementId(node) === undefined) return payload
   if (row.slideEdit !== undefined) return node === undefined ? payload : { ok: true, value: nodeRow(row, edit, node) }
   return { ok: true, value: { ...row, ...storedValue(edit.value) } as StoredRow }
 }
@@ -128,26 +127,31 @@ function newer(read: StoredRead<StoredRow>): boolean {
   return !read.ok && read.refusal === "newer"
 }
 
-export function split(rows: readonly StoredRow[]): { confirmed: ConfirmedRow[]; pending: PendingRow[] } {
-  const reads = rows.map(readStored)
-  if (reads.some(newer)) throw new Error("newer")
-  const kept = reads.flatMap((read) => (read.ok ? [read.value] : []))
-  const confirmed = kept.filter(isConfirmed).sort((left, right) => left.revision - right.revision)
-  const pending = kept.filter(isPending).sort((left, right) => left.order - right.order)
-  return { confirmed, pending }
+function unwired(row: StoredRow): boolean {
+  return isPending(row) && row.slideEdit === undefined && !wired(row)
 }
 
 export function readStoredRows(rows: readonly StoredRow[]): {
-  readonly newer: boolean
+  readonly held: boolean
   readonly read: readonly StoredRow[]
-  readonly unread: readonly StoredRow[]
+  readonly dropped: readonly StoredRow[]
 } {
   const reads = rows.map(readStored)
+  const unread = rows.filter((_, at) => reads[at]?.ok !== true)
+  const read = reads.flatMap((each) => (each.ok ? [each.value] : []))
   return {
-    newer: reads.some(newer),
-    read: reads.flatMap((read) => (read.ok ? [read.value] : [])),
-    unread: rows.filter((_, at) => reads[at]?.ok !== true),
+    held: reads.some(newer) || unread.some(isPending),
+    read: read.filter((row) => !unwired(row)),
+    dropped: [...unread.filter(isConfirmed), ...read.filter(unwired)],
   }
+}
+
+export function split(rows: readonly StoredRow[]): { confirmed: ConfirmedRow[]; pending: PendingRow[] } {
+  const read = readStoredRows(rows)
+  if (read.held) throw new Error("newer")
+  const confirmed = read.read.filter(isConfirmed).sort((left, right) => left.revision - right.revision)
+  const pending = read.read.filter(isPending).sort((left, right) => left.order - right.order)
+  return { confirmed, pending }
 }
 
 export function storedKey(deck: string, row: StoredRow): string {

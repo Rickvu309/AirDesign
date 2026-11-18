@@ -193,3 +193,26 @@ it("refuses a register whose index a newer build stored, and one it cannot read,
   })
   expect(await stored(unread)).toEqual(held)
 })
+
+it("answers a sealed batch that already landed with its receipt, even once a newer build's row makes the deck unreadable here", async () => {
+  const deck = "stored-read-receipt"
+  await plant(deck, legacyRegister(deck), null)
+  const batch = [{ node: "258.7", value: "Sealed", floor: "Title" }]
+  const landed = await ask(base, "POST", deckRoutes.commit.path, { deck, batch, once: "sealed-once" }, cookie)
+  expect(landed.json).toMatchObject({ ok: true, revision: 1 })
+  const row = await stored(deck)
+  const register = row.register as ReturnType<typeof legacyRegister>
+  const newerRow = { actor: "person", visible: true, v: format + 1, patch: { glow: { radius: { set: 1 } } } }
+  const element = register.elements["258.7"]
+  await saved.query("update deck.saved set register = $2::jsonb where id = $1", [
+    deck,
+    JSON.stringify({ ...register, elements: { "258.7": { ...element, landed: [...element.landed, newerRow] } } }),
+  ])
+  const before = await stored(deck)
+
+  const retried = await ask(base, "POST", deckRoutes.commit.path, { deck, batch, once: "sealed-once" }, cookie)
+  expect(retried.json).toEqual(landed.json)
+  const fresh = await ask(base, "POST", deckRoutes.commit.path, { deck, batch, once: "fresh-once" }, cookie)
+  expect(fresh.json).toEqual({ ok: false, refusal: "newer" })
+  expect(await stored(deck)).toEqual(before)
+})

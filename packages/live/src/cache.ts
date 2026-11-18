@@ -87,14 +87,17 @@ const signedOut = { ok: false, refusal: "session" } as const
 
 const newer = { ok: false, refusal: "newer" } as const
 
-async function unlessNewer<Result>(work: () => Promise<Result>): Promise<Result | typeof newer> {
-  if (storeNewer()) return newer
+async function keptIfNewer<Result>(work: () => Promise<Result>): Promise<Result | typeof newer> {
   try {
     return await work()
   } catch (error) {
     if (storeNewer()) return newer
     throw error
   }
+}
+
+function unlessNewer<Result>(work: () => Promise<Result>): Promise<Result | typeof newer> {
+  return storeNewer() ? Promise.resolve(newer) : keptIfNewer(work)
 }
 
 function heard<Answer extends OpenResult | CommitResult>(answer: Answer): Answer {
@@ -264,7 +267,9 @@ export function connect(remote: Remote, options: Options = {}) {
   const recovered = (deck: DeckId) => {
     const account = accountKey()
     if (account === undefined) return Promise.resolve()
-    return recoverUnsaved(shelf, account, deck, (entry) => replayUnsaved(deck, entry))
+    return recoverUnsaved(shelf, account, deck, (entry) => replayUnsaved(deck, entry)).then((unread) => {
+      if (unread !== undefined) markNewer()
+    })
   }
 
   async function readRecovered(deck: DeckId): Promise<DeckView | null> {
@@ -324,6 +329,7 @@ export function connect(remote: Remote, options: Options = {}) {
     if (account === undefined) return write(entry)
     const waiting = recovered(deck)
     keepUnsaved(shelf, account, deck, entry, kept)
+    if (storeNewer()) throw new Error("newer")
     await waiting
     const result = await write(entry)
     releaseUnsaved(shelf, account, deck, entry)
@@ -350,7 +356,7 @@ export function connect(remote: Remote, options: Options = {}) {
     file: readonly SlideId[],
     edits: readonly SlideCommand[],
   ): Promise<EnqueueResult<readonly string[]>> {
-    return unlessNewer(async () => {
+    return keptIfNewer(async () => {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return parsed
       const state = readSlideState({ file, order: edits })
@@ -371,14 +377,14 @@ export function connect(remote: Remote, options: Options = {}) {
     enqueueSlide: (deck: string, file: readonly SlideId[], edit: SlideCommand) => enqueueSlides(deck, file, [edit]),
     enqueueSlides,
     enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<EnqueueResult> {
-      return unlessNewer(async () => {
+      return keptIfNewer(async () => {
         const result = await enqueueValue(deck, { value }, node, floor)
         if (!result.ok) return result
         return { ok: true, painted: result.body === undefined ? value : currentValue(result.body) }
       })
     },
     enqueueBox(deck: string, box: Box, node: ElementId, floor: string): Promise<EnqueueResult<Box>> {
-      return unlessNewer(async () => {
+      return keptIfNewer(async () => {
         const read = readBox(box)
         if (read === null) return { ok: false, refusal: "field" }
         const result = await enqueueValue(deck, { property: "box", value: read }, node, floor)
@@ -387,7 +393,7 @@ export function connect(remote: Remote, options: Options = {}) {
       })
     },
     enqueueRow(deck: string, row: Row, node: ElementId, floor: string): Promise<EnqueueResult<Row>> {
-      return unlessNewer(async () => {
+      return keptIfNewer(async () => {
         const read = readRow(row, "text")
         if (!read.ok) return { ok: false, refusal: "field" }
         const result = await enqueueValue(deck, { v: read.value.v, patch: read.value.patch }, node, floor)

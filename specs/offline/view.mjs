@@ -21,12 +21,15 @@ export const step = (action) => {
   if (action === "Skip") return "a stale edit is skipped"
   if (action === "Crash") return "a crash keeps the unsent edits"
   if (action === "Wipe") return "a wipe clears the unsent edits"
+  if (action === "MeetNewer") return "a newer build takes the store, so the device keeps everything and sends nothing"
+  if (action === "TypeLate") return "what the person types next waits in the journal for the newer build"
   return null
 }
 
 export const group = (v) => {
   if (v.wiped === true) return "Wiped"
   if (v.crashed === true) return "Crashed"
+  if (v.newer === true) return "Newer"
   if (v.skipped === true) return "Skipped"
   if (v.acked1 === true) return "Acknowledged"
   if (v.sent1 === true || v.sent2 === true) return "Sent"
@@ -39,6 +42,7 @@ export const colors = {
   Acknowledged: "purple",
   Skipped: "teal",
   Crashed: "red",
+  Newer: "red",
   Wiped: "gray",
 }
 

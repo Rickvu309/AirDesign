@@ -108,7 +108,12 @@ export async function granted(owner: Account, name: string): Promise<{ readonly 
   }
 }
 
-export type Answer = { readonly ok: boolean; readonly text: string; readonly body: Record<string, unknown> }
+export type Answer = {
+  readonly ok: boolean
+  readonly text: string
+  readonly said: string
+  readonly body: Record<string, unknown>
+}
 
 export type Agent = {
   readonly call: (tool: string, args: Record<string, unknown>) => Promise<Answer>
@@ -140,6 +145,7 @@ export async function connected(headers: Record<string, string>): Promise<Agent>
       return {
         ok: result.isError !== true,
         text: result.content[0]?.text ?? "",
+        said: result.content.map((block) => block.text).join("\n"),
         body: (result.structuredContent ?? {}) as Record<string, unknown>,
       }
     },

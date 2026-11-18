@@ -27,7 +27,7 @@
       "file": "packages/document/src/row.ts",
       "names": ["shownOver"],
       "digest": "6f194bdf1327",
-      "blob": "b2f90b3179a7dc1447eeaf305f5c5a290bac54e4"
+      "blob": "302f9ed36ae692de3b7898ccb8e6520dfda09468"
     },
     {
       "file": "packages/document/src/slide-measure.ts",
@@ -50,8 +50,8 @@
     {
       "file": "packages/document/src/decide.ts",
       "names": ["decide"],
-      "digest": "afd76d36671a",
-      "blob": "2afa6ffbfbea8b86b5f269082e669df193f85d9b"
+      "digest": "3f5fe5d94e9d",
+      "blob": "24dcc7b57cc99e1e29237174c6817421d05acf11"
     },
     {
       "file": "packages/document/src/traits.ts",
