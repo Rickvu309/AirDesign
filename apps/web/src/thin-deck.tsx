@@ -3,7 +3,6 @@ import { changeDesign } from "@/design/design-change"
 import { PresentLinks } from "@/present/present-links"
 import { toast } from "@/components/ui/toast"
 import { moveDeck } from "@/decks/move-deck"
-import { useFontReady } from "@/editor/use-font-ready"
 import { storeNewer, watchNewer } from "@airdesign/live"
 import { useState, useSyncExternalStore } from "react"
 import { NotFoundPage } from "@/decks/not-found-page"
@@ -30,7 +29,6 @@ import type { PanelMode } from "@/design/panel-order"
 export function ThinDeck({ id }: { id: string }) {
   const deck = useEditorDeck(id)
   const [selectedSlides, setSelectedSlides] = useState<readonly number[]>([])
-  const paintedDeck = useFontReady(deck.paintedDeck)
   const [panel, setPanel] = useKeptPanel(id)
   const [mode, setMode] = useState<PanelMode>("slides")
   useDeckOpen(deck)
@@ -63,7 +61,7 @@ export function ThinDeck({ id }: { id: string }) {
   const shows = showsIn(shown.displayParts.current, strip.slideIds ?? [])
 
   return (
-    <div className="thin-page" data-deck-ready={paintedDeck}>
+    <div className="thin-page" data-deck-ready={deck.paintedDeck}>
       <ThinNoticeView notice={notice} onTryAgain={exported.tryAgain} />
       <EditorFrame fills>
         <EditorShell

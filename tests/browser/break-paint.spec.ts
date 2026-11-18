@@ -14,6 +14,8 @@ async function open(page: Page): Promise<void> {
   const entry = page.locator('[data-slide-entry="11"]')
   await entry.click()
   await expect(entry).toHaveAttribute("aria-current", "true")
+  await expect(page.locator("[data-slide-paint]").getByText(broken)).toBeVisible()
+  await expect(page.locator("[data-fonts-pending]")).toHaveCount(0)
   await page.evaluate(() => document.fonts.ready)
 }
 

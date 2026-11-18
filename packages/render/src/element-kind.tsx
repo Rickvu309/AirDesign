@@ -40,7 +40,11 @@ export function PaintedElement(props: ElementPaintProps & { readonly onPaint?: (
     waited.current = false
     props.onPaint?.()
   }, [ready, props.onPaint])
-  if (!ready) return <span data-fonts-pending="" />
   const Paint = painters[elementKind(props.element)]
-  return <Paint {...props} />
+  return (
+    <>
+      {ready ? null : <span data-fonts-pending="" hidden />}
+      <Paint {...props} />
+    </>
+  )
 }
