@@ -13,6 +13,7 @@ export type GridStep =
   | { readonly kind: "type" }
   | { readonly kind: "escape" }
   | { readonly kind: "clear" }
+  | { readonly kind: "restore"; readonly state: GridInteraction }
 
 const none: GridInteraction = { kind: "none" }
 const elements: GridInteraction = { kind: "elements" }
@@ -47,6 +48,8 @@ export function gridStep(state: GridInteraction, step: GridStep): GridInteractio
       return same(state, none)
     case "escape":
       return escaped(state)
+    case "restore":
+      return step.state
   }
 }
 
