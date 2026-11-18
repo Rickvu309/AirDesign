@@ -1,4 +1,4 @@
-import { decide, foldRegister, version, type Register, type StoredRegister } from "./decide.js"
+import { decide, version, type Register } from "./decide.js"
 import { rootElement, type ElementId } from "./element-id.js"
 import { storedValue, type Value } from "./value.js"
 
@@ -19,8 +19,8 @@ function versionAt(register: Register, node: ElementId | undefined): number {
   return version(body)
 }
 
-export function replay(register: StoredRegister, pending: readonly Queued[]): Register {
-  let current = foldRegister(register)
+export function replay(register: Register, pending: readonly Queued[]): Register {
+  let current = register
   for (const edit of pending) {
     if (edit.base !== versionAt(current, edit.node)) {
       continue

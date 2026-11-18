@@ -1,6 +1,6 @@
 import { creditsRoutes } from "./credits-routes.js"
 import { unreachable } from "@airdesign/device"
-import { foldRegister, refusals, type Register } from "@airdesign/document"
+import { readRegister, refusals, type Register } from "@airdesign/document"
 import { readCommit } from "./edit-wire.js"
 import { readDeckIndex } from "./index-wire.js"
 import {
@@ -15,7 +15,6 @@ import {
   readWatch,
   type DeckId,
 } from "./wire.js"
-import { readRegister } from "./register-answer.js"
 
 const callRefusals = [...refusals, "field", "deck", "batch", "base", "payload", "indexing", "kept", "site"] as const
 
@@ -82,7 +81,7 @@ function decodeOpen(raw: unknown): OpenResult {
   const result = decode(revisionAnswer)(raw)
   if (!result.ok) return result
   const read = readRegister(result.register)
-  return read.ok ? { ...result, register: foldRegister(read.register) } : read
+  return read.ok ? { ...result, register: read.value } : read
 }
 
 function commitAnswer(raw: unknown): raw is RevisionAnswer & { readonly key: string } {

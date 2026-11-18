@@ -20,7 +20,6 @@ import {
   type Value,
 } from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
-import { backgroundFill } from "./background-fill.js"
 import { indexedGridOpening } from "./grid-opening.js"
 import { queueIndex, sendIndex } from "./deck-index.js"
 import { accountKey, markNewer, storeNewer } from "./device.js"
@@ -307,16 +306,12 @@ export function connect(remote: Remote, options: Options = {}) {
   }
 
   function replayUnsaved(deck: DeckId, entry: Unsaved): Promise<unknown> {
-    const fill = entry.kind === "slide" ? backgroundFill(entry.edit) : undefined
-    if (fill !== undefined) return writeValue(deck, storedValue(fill.row), fill.node, "", entry.id)
     if (entry.kind === "slide" || entry.kind === "slides") return writeSlide(deck, entry, entry.id, true)
     const node = readElementId(entry.node)
     if (node === undefined) return Promise.resolve()
     if (entry.kind === "text") return writeValue(deck, { value: entry.value }, node, entry.floor, entry.id)
     if (entry.kind === "row") return writeValue(deck, storedValue(entry.row), node, entry.floor, entry.id)
-    const box = readBox(entry.box)
-    if (box === null) return Promise.resolve()
-    return writeValue(deck, { property: "box", value: box }, node, entry.floor, entry.id)
+    return writeValue(deck, { property: "box", value: entry.box }, node, entry.floor, entry.id)
   }
 
   async function keepAndWrite<Result>(

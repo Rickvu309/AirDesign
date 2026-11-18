@@ -2,7 +2,7 @@ import { unreachable } from "@airdesign/device"
 import {
   decide,
   elementId,
-  foldRegister,
+  readRegister,
   format,
   openRegister,
   refusals,
@@ -18,6 +18,12 @@ import { deckRoutes } from "./index.js"
 const payload = { ok: false, refusal: "payload" }
 const revision = { ok: true, deck: "deck", revision: 0 }
 const opened = { ...revision, register: openRegister("", "") }
+
+function read(raw: unknown): Register {
+  const stored = readRegister(raw)
+  if (!stored.ok) throw new Error(stored.refusal)
+  return stored.value
+}
 
 function firstOf(register: Register): NodeRegister {
   const body = register.elements[rootElement]
@@ -212,7 +218,7 @@ it("refuses missing and malformed success fields for every deck route", () => {
 
 it("checks every register field and nested landed row before opening", () => {
   const register = { ...opened.register, ...firstOf(opened.register) }
-  expect(deckRoutes.open.result({ ...opened, register })).toEqual({ ...opened, register: foldRegister(register) })
+  expect(deckRoutes.open.result({ ...opened, register })).toEqual({ ...opened, register: read(register) })
   const bad = {
     route: null,
     floor: 1,
@@ -265,16 +271,19 @@ it("accepts root, legacy, removed and current register elements and folds the ro
     b: legacy,
   }
   const answer = { ...revision, register }
-  expect(deckRoutes.open.result(answer)).toEqual({ ...revision, register: foldRegister(register) })
-  expect(foldRegister(register).elements).toEqual({
+  expect(deckRoutes.open.result(answer)).toEqual({ ...revision, register: read(register) })
+  expect(read(register).elements).toEqual({
     "258.7": kept,
     "258.8": first,
     [legacyElement]: legacy,
     [rootElement]: { ...first, version: 0 },
   })
-  const current = foldRegister(register)
+  const current = read(register)
   expect(deckRoutes.open.result({ ...revision, register: current })).toEqual({ ...revision, register: current })
-  expect(deckRoutes.open.result({ ...revision, register: { ...current, b: legacy } })).toEqual(payload)
+  expect(deckRoutes.open.result({ ...revision, register: { ...current, b: legacy } })).toEqual({
+    ...revision,
+    register: current,
+  })
 })
 
 it("decodes the runs a register records ended, and refuses a record that is not a list of run ids", () => {

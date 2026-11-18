@@ -2,7 +2,7 @@ import { format, slideId } from "@airdesign/document"
 import { readDeckId } from "@airdesign/catalog"
 import { expect, it } from "vitest"
 import type { StoredRow } from "./store.js"
-import { newerRow, split } from "./deck-view.js"
+import { readStored, split } from "./deck-view.js"
 import { memoryShelf } from "./browser-fixtures.js"
 import { recoverUnsaved } from "./unsaved.js"
 
@@ -24,7 +24,7 @@ it("refuses an unknown structural envelope before splitting confirmed or pending
             slideFile: [slideId("256")],
             slideEdit: { slide: "move-many", grid: 1, ids: [slideId("256")], after: null, row: "keep" },
           }
-    expect(newerRow(row)).toBe(true)
+    expect(readStored(row)).toEqual({ ok: false, refusal: "newer" })
     expect(() => split([row])).toThrow("newer")
   }
 })

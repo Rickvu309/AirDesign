@@ -45,7 +45,7 @@ import type { OriginalStore } from "./original-store.js"
 import { sameSecret } from "./secrets.js"
 import { checkedResource, readUrl } from "./resource.js"
 import { authorizationMetadata, resourceChallenge, resourceMetadata } from "./discovery.js"
-import { chosenRevision, deckAccess, savedAnswers, readSaved } from "./saved.js"
+import { savedAnswers, readSaved, watchedRevision } from "./saved.js"
 import { bearerPrincipal, revokeToken, tokenAnswer } from "./tokens.js"
 import { undoAnswers } from "./undo.js"
 
@@ -251,10 +251,7 @@ async function hold(
     if (signal.aborted) return undefined
     await options.listen.ready()
     if (signal.aborted) return undefined
-    const saved = await readSaved(options.deck, deck)
-    const access = saved === undefined ? null : deckAccess(saved, email)
-    if (access?.ok === false) return access.refusal
-    const revision = chosenRevision(cursor, saved?.revision)
+    const revision = watchedRevision(await readSaved(options.deck, deck), email, cursor)
     if (revision !== undefined) return revision
     await options.listen.wait(signal)
   }

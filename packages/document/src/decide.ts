@@ -1,14 +1,6 @@
 import type { Box } from "./box.js"
 import type { DeckIndex } from "./deck-index.js"
-import {
-  legacyElement,
-  rootElement,
-  shapeOf,
-  slideKind,
-  themeOwned,
-  type ElementId,
-  type SlideId,
-} from "./element-id.js"
+import { rootElement, shapeOf, slideKind, themeOwned, type ElementId, type SlideId } from "./element-id.js"
 import { limits, overLimit } from "./limits.js"
 import { floorFits, openingElement } from "./slide-floor.js"
 import { elementGone } from "./element-order.js"
@@ -68,18 +60,6 @@ export type Register = {
   readonly readNodes: readonly ElementId[] | null
   readonly elements: Readonly<Record<ElementId, NodeRegister>>
 }
-
-export type RootRegister = NodeRegister & {
-  readonly index?: DeckIndex
-  readonly nodes: readonly ElementId[]
-  readonly readNodes: readonly ElementId[] | null
-  readonly elements: Readonly<Partial<Record<ElementId, NodeRegister>>>
-  readonly file?: readonly SlideId[]
-  readonly order?: readonly SlideCommand[]
-  readonly b?: NodeRegister | null
-}
-
-export type StoredRegister = Register | RootRegister
 
 export type Command =
   | (Value & { readonly command: "person"; readonly node?: ElementId })
@@ -199,66 +179,6 @@ export function currentBox(register: NodeRegister): Box | null {
     else if (row.patch.box !== undefined) box = patchedBox(box, row.patch.box, register.floorBox)
   }
   return box
-}
-
-function nodeOf(register: NodeRegister): NodeRegister {
-  return {
-    route: register.route,
-    floor: register.floor,
-    ...(register.floorBox === undefined ? {} : { floorBox: register.floorBox }),
-    landed: register.landed,
-    version: version(register),
-    phase: register.phase,
-    runId: register.runId,
-    readAt: register.readAt,
-    guarded: register.guarded,
-    claimed: register.claimed,
-    stoppedAt: register.stoppedAt,
-    slides: register.slides,
-    bytes: register.bytes,
-  }
-}
-
-function legacyBody(stored: RootRegister): readonly (readonly [ElementId, NodeRegister])[] {
-  if (Object.hasOwn(stored.elements, legacyElement) || !Object.hasOwn(stored, "b")) return []
-  const body = stored.b
-  if (body === undefined || body === null) return []
-  return [[legacyElement, body]]
-}
-
-const rootFields = ["landed", "version", "phase", "runId", "readAt", "guarded", "claimed", "stoppedAt", "b"] as const
-
-function rooted(stored: StoredRegister): stored is RootRegister {
-  return rootFields.some((field) => Object.hasOwn(stored, field))
-}
-
-function keptSlides(stored: StoredRegister): {
-  readonly file: readonly SlideId[]
-  readonly order: readonly SlideCommand[]
-} {
-  const slides = openSlides()
-  return { file: stored.file ?? slides.file, order: stored.order ?? slides.order }
-}
-
-export function foldRegister(stored: StoredRegister): Register {
-  if (!rooted(stored)) {
-    return stored.file !== undefined && stored.order !== undefined ? stored : { ...stored, ...keptSlides(stored) }
-  }
-  const kept = Object.entries(stored.elements).flatMap(([id, body]) =>
-    body === undefined ? [] : [[id as ElementId, body] as const],
-  )
-  const first = nodeOf({ ...stored.elements[rootElement], ...stored })
-  return {
-    route: stored.route,
-    ...(stored.index === undefined ? {} : { index: stored.index }),
-    floor: stored.floor,
-    slides: stored.slides,
-    bytes: stored.bytes,
-    ...keptSlides(stored),
-    nodes: stored.nodes,
-    readNodes: stored.readNodes,
-    elements: Object.fromEntries([...kept, ...legacyBody(stored), [rootElement, first]]),
-  }
 }
 
 function apply(register: Register, route: string): Decision {
@@ -437,10 +357,9 @@ function changedFields(patch: ElementPatch, box: Box | null): readonly FieldKey[
 }
 
 export function editMissing(
-  stored: StoredRegister,
+  register: Register,
   edit: Value & { readonly command: "person" | "agent"; readonly node: ElementId },
 ): Missing | null {
-  const register = foldRegister(stored)
   const facts = elementFacts(register, edit.node)
   if (facts === undefined) return null
   const body = storedBody(register, edit.node)
@@ -491,8 +410,7 @@ function editNode(register: Register, id: ElementId, command: Command): Decision
   return place(register, id, edited.body)
 }
 
-export function decide(stored: StoredRegister, command: Command): Decision {
-  const register = foldRegister(stored)
+export function decide(register: Register, command: Command): Decision {
   if (overLimit({ decks: 1, slides: register.slides, bytes: register.bytes })) {
     return refuse("limit")
   }

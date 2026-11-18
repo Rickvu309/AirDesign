@@ -1,12 +1,12 @@
 import { readDeckId } from "@airdesign/catalog"
-import { foldRegister, openRegister, rootElement, type RootRegister } from "@airdesign/document"
+import { legacyElement, openRegister, readRegister, rootElement } from "@airdesign/document"
 import { openDeck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
 
 import { wireCommit } from "./harness.js"
 
 import type { Sql } from "./pool.js"
-import { commitEdits, readSaved } from "./saved.js"
+import { commitEdits, readSaved, watchedRevision } from "./saved.js"
 
 const readSql =
   "select id, revision, register, import_index, owner, deleted is not null as deleted from deck.saved where id = $1"
@@ -50,7 +50,7 @@ describe("saved", () => {
   it("folds a register stored in the root shape into the element map when it reads the row", async () => {
     const first = openRegister("", "deck").elements[rootElement]
     if (first === undefined) throw new Error("missing node")
-    const stored: RootRegister = {
+    const stored = {
       ...first,
       landed: [
         { actor: "person", value: "kept", visible: true },
@@ -69,8 +69,31 @@ describe("saved", () => {
       },
     } as unknown as Sql
     const saved = await readSaved(db, "deck")
-    expect(saved).toEqual({ id: "deck", revision: 4, register: foldRegister(stored), owner: "owner@example.com" })
+    const folded = readRegister(stored)
+    expect(folded.ok).toBe(true)
+    expect(saved).toEqual({
+      id: "deck",
+      revision: 4,
+      register: folded.ok ? folded.value : null,
+      owner: "owner@example.com",
+      deleted: false,
+    })
     expect(saved?.register?.elements[rootElement]?.landed).toEqual(stored.landed)
+    expect(saved?.register?.elements[legacyElement]?.floor).toBe("legacy")
     expect(Object.hasOwn(saved?.register ?? {}, "landed")).toBe(false)
+  })
+
+  it("keeps reporting the revisions of a deck this build cannot read, and still refuses another account first", () => {
+    const unread = {
+      id: "deck",
+      revision: 3,
+      owner: "owner@example.com",
+      deleted: false,
+      register: null,
+      unread: "newer",
+    } as const
+    expect(watchedRevision(unread, "owner@example.com", 1)).toBe(2)
+    expect(watchedRevision(unread, "owner@example.com", 3)).toBeUndefined()
+    expect(watchedRevision(unread, "other@example.com", 1)).toBe("owner")
   })
 })

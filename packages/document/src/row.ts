@@ -1,5 +1,4 @@
 import type { Box } from "./box.js"
-import { format, type StoredRead } from "./format.js"
 import { onlyKeys, record } from "./plain-object.js"
 import { traitNames, traits, type FieldKey, type FieldName, type FieldValue, type TraitName } from "./traits.js"
 import type { FormatOneValue, Value } from "./value.js"
@@ -17,8 +16,6 @@ export type ValueHolder = "text" | "notes" | "table"
 
 type Loose = Readonly<Record<string, Readonly<Record<string, FieldEdit<unknown>>> | undefined>>
 
-const payload = { ok: false, refusal: "payload" } as const
-
 function heldPatch(holder: ValueHolder, value: string): ElementPatch {
   const edit = { value: { set: value } }
   if (holder === "notes") return { notes: edit }
@@ -33,21 +30,6 @@ export function boxPatch(box: Box): ElementPatch {
 export function rowOf(value: Value, holder: ValueHolder): Row {
   if (value.v !== undefined) return { v: value.v, patch: value.patch }
   return { v: 1, patch: value.property === "box" ? boxPatch(value.value) : heldPatch(holder, value.value) }
-}
-
-function readBox(raw: unknown): Box | null {
-  const stored = record(raw)
-  if (stored === null || !onlyKeys(stored, ["x", "y", "cx", "cy"])) return null
-  const { x, y, w, h } = traits.box.fields
-  const box = {
-    x: readValue(x, stored.x),
-    y: readValue(y, stored.y),
-    cx: readValue(w, stored.cx),
-    cy: readValue(h, stored.cy),
-  }
-  return box.x === null || box.y === null || box.cx === null || box.cy === null
-    ? null
-    : { x: box.x, y: box.y, cx: box.cx, cy: box.cy }
 }
 
 function readEdit(kind: AnyKind, raw: unknown): FieldEdit<unknown> | null {
@@ -72,7 +54,7 @@ function readFields(trait: TraitName, raw: unknown): Readonly<Record<string, Fie
   return read
 }
 
-function readPatch(raw: unknown): ElementPatch | null {
+export function readPatch(raw: unknown): ElementPatch | null {
   const patch = record(raw)
   if (patch === null || Object.keys(patch).length === 0) return null
   const read: Record<string, Readonly<Record<string, FieldEdit<unknown>>>> = {}
@@ -90,26 +72,6 @@ export function readOpening(raw: unknown): ElementPatch | null {
   if (patch === null) return null
   const edits = Object.values(loose(patch)).flatMap((fields) => Object.values(fields ?? {}))
   return edits.includes("opening") ? null : patch
-}
-
-function readStamped(v: unknown, raw: unknown): StoredRead<Row> {
-  if (typeof v !== "number" || !Number.isSafeInteger(v) || v < 2) return payload
-  if (v > format) return { ok: false, refusal: "newer" }
-  const patch = readPatch(raw)
-  return patch === null ? payload : { ok: true, value: { v, patch } }
-}
-
-export function readRow(raw: unknown, holder: ValueHolder): StoredRead<Row> {
-  const stored = record(raw)
-  if (stored === null) return payload
-  if (Object.hasOwn(stored, "v")) return readStamped(stored.v, stored.patch)
-  if (stored.property === "box") {
-    const box = readBox(stored.value)
-    return box === null ? payload : { ok: true, value: { v: 1, patch: boxPatch(box) } }
-  }
-  if (stored.property !== undefined) return payload
-  const value = readValue(traits[holder].fields.value, stored.value)
-  return value === null ? payload : { ok: true, value: { v: 1, patch: heldPatch(holder, value) } }
 }
 
 function loose(patch: ElementPatch): Loose {

@@ -1,4 +1,4 @@
-import { format, rootElement, type Register, type NodeRegister } from "@airdesign/document"
+import { format, openRegister, readRegister, rootElement, type Register, type NodeRegister } from "@airdesign/document"
 
 export const traitRow = {
   v: format,
@@ -29,4 +29,10 @@ export function personSplit(register: NodeRegister): { personBefore: number; per
     else personBefore += 1
   }
   return { personBefore, personAfter }
+}
+
+export function storedRoot(fields: object) {
+  const read = readRegister(JSON.parse(JSON.stringify({ ...openRegister("floor", "slide"), ...fields })))
+  if (!read.ok) throw new Error(`stored register ${read.refusal}`)
+  return viewed(read.value)
 }

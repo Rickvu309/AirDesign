@@ -4,12 +4,12 @@ import {
   openRegister,
   readElementId,
   readIndexPage,
+  readRegister,
   rootElement,
   storedElements,
 } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { deckRoutes } from "./index.js"
-import { readRegister } from "./register-answer.js"
 
 const node = () => ({
   route: "slide",

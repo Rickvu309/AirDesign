@@ -1,7 +1,7 @@
 import { parseDot, type Graph } from "./spec-graph.js"
 import { replayElement } from "./element-replay.js"
 import * as elementView from "../specs/element/view.mjs"
-import { opened, viewed, personSplit, traitRow } from "./spec-register.js"
+import { opened, viewed, personSplit, storedRoot, traitRow } from "./spec-register.js"
 import { dumpTopics } from "./spec-dump.js"
 import { replayIndex } from "./index-replay.js"
 import { replayUsage } from "./usage-replay.js"
@@ -19,7 +19,6 @@ import {
   decide,
   decideUndo,
   history,
-  openRegister,
   replay,
   unsent,
   version,
@@ -102,8 +101,7 @@ function nodeRegister(spec: Spec): Register {
     if (row.actor === "agent") Object.assign(row, { runId: run })
   }
   const phase = phaseOf(spec)
-  return {
-    ...openRegister("floor", "slide"),
+  return storedRoot({
     landed,
     version: editVersion(spec),
     phase,
@@ -112,7 +110,7 @@ function nodeRegister(spec: Spec): Register {
     guarded: flag(spec, "guarded"),
     claimed: num(spec, "claims") === -1 ? null : num(spec, "claims"),
     stoppedAt: num(spec, "stoppedAt") === -1 ? null : num(spec, "stoppedAt"),
-  }
+  })
 }
 
 function editPicture(register: Register, positional: boolean) {
@@ -259,15 +257,14 @@ function undoRegister(spec: Spec): Register {
     if (row.actor === "agent") Object.assign(row, { runId: run })
   }
   const people = landed.filter((row) => row.visible && row.actor === "person").length
-  return {
-    ...openRegister("floor", "slide"),
+  return storedRoot({
     landed,
     version: undoVersion(spec),
     phase: undoPhase(spec),
     runId: run,
     readAt: people,
     guarded: false,
-  }
+  })
 }
 
 function undoPicture(register: NodeRegister) {
@@ -316,15 +313,14 @@ function laterRegister(spec: Spec): Register {
   if (num(spec, "later") === 1 || num(spec, "laterHidden") === 1) {
     landed.push({ actor: "agent", value: "later", visible: num(spec, "later") === 1, runId: "s" })
   }
-  return {
-    ...openRegister("floor", "slide"),
+  return storedRoot({
     landed,
     version: undoVersion(spec),
     phase: laterPhase(spec),
     runId: laterRunId(spec),
     readAt: landed.filter((row) => row.visible).length,
     guarded: false,
-  }
+  })
 }
 
 function laterPicture(register: Register) {
@@ -499,8 +495,7 @@ function runRegister(spec: Spec): Register {
   if (tag !== "none") {
     for (const row of rows) Object.assign(row, { runId: tag })
   }
-  return {
-    ...openRegister("floor", "slide"),
+  return storedRoot({
     landed: rows,
     phase: phaseOf(spec),
     runId: stored === "none" ? null : stored,
@@ -508,7 +503,7 @@ function runRegister(spec: Spec): Register {
     guarded: false,
     stoppedAt: num(spec, "mark") === -1 ? null : num(spec, "mark"),
     readNodes: flag(spec, "didRead") ? ["a"] : null,
-  }
+  })
 }
 
 function runPicture(register: Register) {
@@ -712,8 +707,7 @@ function rerunRegister(spec: Spec): Register {
     landed.push({ actor: "person", value: "during", visible: true })
   }
   const phase = phaseOf(spec)
-  return {
-    ...openRegister("floor", "slide"),
+  return storedRoot({
     landed,
     version: rerunVersion(spec),
     phase,
@@ -722,7 +716,7 @@ function rerunRegister(spec: Spec): Register {
     guarded: flag(spec, "guarded"),
     claimed: num(spec, "claims") === -1 ? null : num(spec, "claims"),
     stoppedAt: num(spec, "stoppedAt") === -1 ? null : num(spec, "stoppedAt"),
-  }
+  })
 }
 
 function rerunPicture(register: Register) {
