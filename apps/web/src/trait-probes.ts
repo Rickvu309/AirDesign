@@ -5,6 +5,7 @@ import {
   readTableValue,
   readTextValue,
   writeTableValue,
+  type Paint,
   type TextValue,
   type TraitName,
 } from "@airdesign/document"
@@ -22,7 +23,7 @@ import {
   slideTheme,
 } from "@airdesign/pptx"
 import { element, type At, type Parts, type Probe } from "./parity-probe"
-import { pictureProbes } from "./picture-probes"
+import { identityProbe, imageProbes } from "./picture-probes"
 import { themeProbe } from "./theme-probe"
 
 const lineOpening = {
@@ -34,6 +35,19 @@ const lineOpening = {
   join: "opening",
   head: "opening",
   tail: "opening",
+} as const
+
+const fillsOpening = {
+  p0: "opening",
+  p1: "opening",
+  p2: "opening",
+  p3: "opening",
+  source: "opening",
+  mode: "opening",
+  crop: "opening",
+  recolor: "opening",
+  blur: "opening",
+  overlay: "opening",
 } as const
 
 const effectsOpening = { shadow: "opening", glow: "opening", softEdge: "opening" } as const
@@ -91,7 +105,7 @@ function gridShown(value: string): readonly (readonly unknown[])[] | undefined {
 }
 
 export const probes: { readonly [T in TraitName]: Probe<T> } = {
-  identity: pictureProbes.identity,
+  identity: identityProbe,
   link: {
     painted: (parts, at) => JSON.stringify(shownLink(parts, at)),
     deck: "clean.pptx",
@@ -147,14 +161,18 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
   fills: {
     deck: "clean.pptx",
     kind: "shape",
-    opening: () => ({ v: format, patch: { fills: { p0: "opening", p1: "opening", p2: "opening", p3: "opening" } } }),
-    edit: (_, __, paint) => ({ v: format, patch: { fills: changeFills({ paint }) } }),
+    opening: () => ({ v: format, patch: { fills: fillsOpening } }),
+    edit: (_, field, value) => ({
+      v: format,
+      patch: { fills: field === "paint" ? changeFills({ paint: value as Paint }) : { [field]: { set: value } } },
+    }),
     fields: {
       paint: {
         file: (parts, at) => shownFill(parts, at)?.value,
         shows: (value) => value,
         inherited: (parts, at) => shownFill(parts, at)?.own === false,
       },
+      ...imageProbes,
     },
   },
   line: {
@@ -232,8 +250,6 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
       columns: bodyProbe("columns"),
     },
   },
-  image: pictureProbes.image,
-  crop: pictureProbes.crop,
   connection: {
     deck: "census-updating-spm.pptx",
     kind: "connector",

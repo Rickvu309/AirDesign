@@ -109,9 +109,9 @@ describe("readSetChange reads the agent form into a change in stored units", () 
       refusal: "field",
       field: "connection.start",
     })
-    expect(refused({ crop: { left: 1 } })).toEqual({ ok: false, refusal: "field", field: "crop.left" })
-    expect(refused({ image: { source: "rocketship" } })).toEqual({ ok: false, refusal: "field", field: "image.source" })
-    expect(refused({ image: { source: "Rocket" } })).toEqual({ ok: false, refusal: "field", field: "image.source" })
+    expect(refused({ fills: { left: 1 } })).toEqual({ ok: false, refusal: "field", field: "fills.left" })
+    expect(refused({ fills: { source: "rocketship" } })).toEqual({ ok: false, refusal: "field", field: "fills.source" })
+    expect(refused({ fills: { source: "Rocket" } })).toEqual({ ok: false, refusal: "field", field: "fills.source" })
     expect(refused({ line: { width: 1585 } })).toEqual({ ok: false, refusal: "field", field: "line.width" })
     expect(refused({ line: { dash: "dotted" } })).toEqual({ ok: false, refusal: "field", field: "line.dash" })
     expect(refused({ box: {} })).toEqual({ ok: false, refusal: "field", field: "box" })
@@ -256,9 +256,9 @@ describe("readAddChange reads a new shape on one slide", () => {
       ok: true,
       change: { op: "add", kind: "shape", slide: slideId("258") },
     })
-    expect(readAddChange({ op: "add", kind: "picture", slide: "258", icon: "rocket" })).toEqual({
+    expect(readAddChange({ op: "add", kind: "shape", slide: "258", icon: "rocket" })).toEqual({
       ok: true,
-      change: { op: "add", kind: "picture", slide: slideId("258"), icon: "rocket" },
+      change: { op: "add", kind: "shape", slide: slideId("258"), icon: "rocket" },
     })
   })
 
@@ -281,7 +281,11 @@ describe("readAddChange reads a new shape on one slide", () => {
       refusal: "field",
       field: "text",
     })
-    expect(readAddChange({ ...add, icon: "rocket" })).toEqual({ ok: false, refusal: "field", field: "icon" })
+    expect(readAddChange({ ...add, icon: "rocket", text: { value: "x" } })).toEqual({
+      ok: false,
+      refusal: "field",
+      field: "text",
+    })
     expect(readAddChange({ ...add, kind: "chart" })).toEqual({ ok: false, refusal: "field", field: "kind" })
     expect(readAddChange({ ...add, slide: "258.2" })).toEqual({ ok: false, refusal: "field", field: "slide" })
     expect(readAddChange({ ...add, line: { width: 1 } })).toEqual({ ok: false, refusal: "field", field: "line" })

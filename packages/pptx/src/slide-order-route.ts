@@ -95,7 +95,7 @@ function elementAdded(
   const id = Number(shape)
   if (shown.media !== undefined)
     return addPicture(parts, part, { id, box, source: { media: shown.media, bytes: media(shown.media.sha256) } })
-  const icon = element.kind === "picture" ? openingIcon(element) : null
+  const icon = element.kind === "shape" && element.value === null ? openingIcon(element) : null
   if (icon !== null) return addPicture(parts, part, { id, box, source: { icon } })
   if (shown.geometry !== undefined)
     return applyStructuralRoute(parts, { name: "spTree.add", part, id, text: "", geometry: shown.geometry, ...box })

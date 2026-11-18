@@ -1,10 +1,10 @@
-import { assetIcon, assetMedia, type Alpha } from "@airdesign/document"
+import { assetIcon, assetMedia, type Alpha, type FieldValue } from "@airdesign/document"
 import { blipPieces, blipWritten, blipXml, partDeclares, withEmbed, type BlipPieces } from "./blip-edit.js"
 import { colorXml, solidFillXml } from "./color-xml.js"
 import { blurRadius } from "./picture-adjust.js"
 import { linkedSource, svgExt, svgExtension } from "./picture-write.js"
 import { shownImage, type Overlay, type Recolor } from "./picture-read.js"
-import { whole, type ElementAt, type Parts, type TraitXml } from "./xml-codec.js"
+import { whole, type ElementAt, type FieldXml, type Parts } from "./xml-codec.js"
 
 import { shownPictureMode, writtenPictureMode } from "./picture-mode.js"
 
@@ -87,23 +87,22 @@ function writtenRecolor(parts: Parts, at: ElementAt, recolor: Recolor): Parts {
   )
 }
 
-export const imageXml: TraitXml<"image"> = {
-  slot: null,
-  fields: {
-    mode: whole({ read: shownPictureMode, write: writtenPictureMode }),
-    source: whole({ read: (parts, at) => shownImage(parts, at)?.source ?? null, write: writtenSource }),
-    alpha: whole({
-      read: (parts, at) => (shownImage(parts, at)?.alpha ?? null) as Alpha | null,
-      write: writtenAlpha,
-    }),
-    recolor: whole({ read: (parts, at) => shownImage(parts, at)?.recolor ?? null, write: writtenRecolor }),
-    blur: whole({
-      read: (parts, at) => {
-        const blur = shownImage(parts, at)?.blur
-        return blur == null || blur > opaque ? null : blur
-      },
-      write: writtenBlur,
-    }),
-    overlay: whole({ read: (parts, at) => shownImage(parts, at)?.overlay ?? null, write: writtenOverlay }),
-  },
+export const imageFieldsXml = {
+  source: whole({ read: (parts, at) => shownImage(parts, at)?.source ?? null, write: writtenSource }),
+  mode: whole({ read: shownPictureMode, write: writtenPictureMode }),
+  recolor: whole({ read: (parts, at) => shownImage(parts, at)?.recolor ?? null, write: writtenRecolor }),
+  blur: whole({
+    read: (parts, at) => {
+      const blur = shownImage(parts, at)?.blur
+      return blur == null || blur > opaque ? null : blur
+    },
+    write: writtenBlur,
+  }),
+  overlay: whole({ read: (parts, at) => shownImage(parts, at)?.overlay ?? null, write: writtenOverlay }),
+} satisfies { readonly [F in "source" | "mode" | "recolor" | "blur" | "overlay"]: FieldXml<FieldValue<"fills", F>> }
+
+export function imageAlpha(parts: Parts, at: ElementAt): Alpha | null {
+  return (shownImage(parts, at)?.alpha ?? null) as Alpha | null
 }
+
+export { writtenAlpha as writtenImageAlpha }

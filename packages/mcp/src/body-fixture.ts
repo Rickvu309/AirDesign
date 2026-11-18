@@ -3,10 +3,11 @@ import { edit, elements, type Attempt } from "./score.js"
 
 export const placed: Box = { x: 914_400, y: 914_400, cx: 3_657_600, cy: 2_743_200 }
 
-export function bodyIs(kind: Kind): (register: Register) => Register {
+export function bodyIs(kind: Kind | "photo"): (register: Register) => Register {
+  const body = kind === "photo" ? { kind: "shape" as const, design: { fills: ["image"] as const } } : { kind }
   const rows = [
     { node: elements.title, kind: "shape" as const, value: "Title", box: placed, grouped: false },
-    { node: elements.body, kind, value: null, box: placed, grouped: false },
+    { node: elements.body, ...body, value: null, box: placed, grouped: false },
   ]
   return (register) => ({
     ...register,

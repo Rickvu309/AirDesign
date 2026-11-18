@@ -25,8 +25,8 @@ A layer that holds only text, as a person adds it with Add text. The design pane
 _Avoid_: text box (as a layer's name)
 
 **image**:
-A photo or graphic file shown on a slide. The design panel titles a layer Image when an image is what it shows. The code and the agent wire still say picture (`picture`) until its rename lands.
-_Avoid_: picture
+A paint that shows a photo or an icon. Its source, fill mode, crop and adjustments are fields of fills: `fills.source`, `fills.mode`, `fills.crop`, `fills.recolor`, `fills.blur` and `fills.overlay`. A photo on a slide is a shape whose fills hold an image, and the design panel titles it Image.
+_Avoid_: picture (PowerPoint's word, used only inside `packages/pptx`), image layer
 
 **solid**:
 A fill of one color, the fill kind beside None, Gradient and Image. Its Color row picks the color.
@@ -123,7 +123,7 @@ The look an imported or previously saved table takes from its deck: a header row
 _Avoid_: table theme, table format, table preset
 
 **icon**:
-A Lucide drawing a person or an agent adds by its name, such as rocket. It paints as a vector and exports as an SVG with a PNG beside it for older PowerPoint. The code calls it an icon source of a picture's `image`.
+A Lucide drawing a person or an agent adds by its name, such as rocket. It paints as a vector and exports as an SVG with a PNG beside it for older PowerPoint. The code keeps its name in `fills.source`.
 _Avoid_: symbol, glyph, clip art, sticker
 
 **recolor**:
@@ -191,7 +191,7 @@ _Avoid_: "Failed to", "Error", "Oops", "Something went wrong"
 The words the code and the agent tools use for how a deck is stored and edited. A person never reads them. The code, the test and the tool use the same word, so one search finds all of it.
 
 **element**:
-One thing on a slide: a shape, picture, connector, group, table, chart, or a kept part of the file. The code names which one in its `kind`. A person and an agent's tool texts read layer for it until the code's rename lands.
+One thing on a slide: a shape, connector, group, table, chart, or a kept part of the file. The code names which one in its `kind`. A person and an agent's tool texts read layer for it until the code's rename lands.
 _Avoid_: object, item, widget
 
 **node**:
@@ -199,7 +199,7 @@ Anything an edit can address that holds its own rows: an element, a slide's own 
 _Avoid_: entity, object, item
 
 **trait**:
-A named group of fields that an element takes together: `identity`, `box`, `geometry`, `fills`, `line`, `effects`, `body`, `text`, `image`, `crop`, `connection`, `table`, `notes` and `theme`. Each kind of element takes some traits (`kindTraits`), and an agent's `set` names a trait, then its fields.
+A named group of fields that an element takes together: `identity`, `box`, `geometry`, `fills`, `line`, `effects`, `body`, `text`, `connection`, `table`, `notes` and `theme`. Each kind of element takes some traits (`kindTraits`), and an agent's `set` names a trait, then its fields.
 _Avoid_: property, attribute, facet, section (a section is a group of slides), group (a group is an element)
 
 **fills**:
@@ -242,7 +242,7 @@ A number that goes up when a stored shape changes. Each trait has one, with a ha
 _Avoid_: schema version, migration number
 
 **kept**:
-What the editor leaves exactly as the file has it. An element of kind `kept`, such as a diagram or an embedded object, takes only a name, alt text, hidden, a move and a delete. An element's `kept` list names design fields the editor cannot express, such as a custom shape, a picture fill or an effect graph, and a `set` on one is refused with `kept`.
+What the editor leaves exactly as the file has it. An element of kind `kept`, such as a diagram or an embedded object, takes only a name, alt text, hidden, a move and a delete. An element's `kept` list names design fields the editor cannot express, such as a custom shape or an effect graph, and a `set` on one is refused with `kept`.
 _Avoid_: locked, frozen, protected, preserved
 
 **opening**:
@@ -270,7 +270,7 @@ The change that sets fields on every node its `target` names: an element id, a s
 _Avoid_: update, modify, write
 
 **add**:
-The change that puts a new element on one slide: a text layer, or with kind `picture` an icon. Without a `box` it takes the largest free area of the slide, and its id comes back in `elements`.
+The change that puts a new element on one slide: a text layer, or with `icon` a shape whose fills hold that icon. Without a `box` it takes the largest free area of the slide, and its id comes back in `elements`.
 _Avoid_: insert, create, new
 
 **gesture**:
@@ -317,4 +317,4 @@ The Design panel’s none, solid, dashed and dotted presets. Line keeps exact se
 
 An element’s click destination, a URL or slide. Phrase links are separate.
 
-- **Fill mode**: one picture placement: Fill, Fit, Crop or Tile.
+- **Fill mode**: how an image sits in its shape: Fill, Fit, Crop or Tile.

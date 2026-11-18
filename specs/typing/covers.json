@@ -5,19 +5,19 @@
       "file": "apps/web/src/undo-list.ts",
       "names": ["recordsInFlight", "joined", "recorded", "turnBack"],
       "digest": "b0e6fe2566b1",
-      "blob": "3422414c48c6564c5d4b5417bf897b50a9af3b3d"
+      "blob": "099e57517effc643b12289a6fa768e9c039a63a9"
     },
     {
       "file": "apps/web/src/live-repaint.ts",
       "names": ["liveRepaint", "busyElements"],
-      "digest": "32490101d00b",
-      "blob": "ac24102eb14fd1cd9b0c838f4aa75bd181a2218e"
+      "digest": "18f757799e70",
+      "blob": "8eaaff26862176151872ed30a09fc7d3a04a7063"
     },
     {
       "file": "apps/web/src/notes-edit.ts",
       "names": ["useNotes"],
-      "digest": "2004aea80ccf",
-      "blob": "025572400862bde9353112282e43a3e029fb6588"
+      "digest": "ea98d4bc444a",
+      "blob": "600a232a39bda3ec4de4f8e981465a05125206d9"
     },
     {
       "file": "apps/web/src/editor/undo-keys.ts",
@@ -29,25 +29,25 @@
       "file": "packages/render/src/passage.tsx",
       "names": ["Passage"],
       "digest": "316dbc33ec11",
-      "blob": "3668b5b69a5f2bd99555ceb31d891526df43c2d2"
+      "blob": "74169d83a01bd7f2ce39feda9358000b7e13e32d"
     },
     {
       "file": "apps/web/src/editor/notes-bar.tsx",
       "names": ["NotesBar"],
-      "digest": "43b49c5f7f0d",
-      "blob": "03eef65abc5e17b920019dcd72185db672aceca3"
+      "digest": "c809114497b4",
+      "blob": "2bf5d54c556c302806aa58c3c83fbe0a6d5e159f"
     },
     {
       "file": "apps/web/src/editor/use-undo.ts",
       "names": ["useUndoTurn"],
-      "digest": "54fa1ec1984e",
-      "blob": "72d7913d5ba42359630bda38f2cf48277e31e743"
+      "digest": "48295d10047c",
+      "blob": "9f0bea14d50a3870d5e3a713483fb436212a9ed9"
     },
     {
       "file": "apps/web/src/editor/editable-slide.tsx",
       "names": ["editableSlide"],
-      "digest": "fc5c27432b7f",
-      "blob": "968babcc66682d4a313db1d28b893bf6903403f1"
+      "digest": "a86cf85063eb",
+      "blob": "398cf1127e57a15ce3316cd3590641d80c66bb83"
     }
   ]
 }

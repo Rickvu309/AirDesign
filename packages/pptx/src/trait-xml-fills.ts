@@ -1,46 +1,61 @@
-import { assetIcon, namesAlpha, type Alpha } from "@airdesign/document"
+import { namesAlpha, paintSlots, type Alpha, type TraitPatch } from "@airdesign/document"
 import { alphaKept, colorsOf, fadedBytes, shownAlpha, type Faded } from "./alpha-codec.js"
-import { partDeclares } from "./blip-edit.js"
-import { insertChild, type ChildOf, type OrderedParent } from "./child-order.js"
-import { colorXml, solidFillXml } from "./color-xml.js"
-import { fillKinds } from "./color-read.js"
-import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
+import { embedded } from "./blip-edit.js"
+import { fillMarkup, imageMarkup, type Drawn, type FillTag } from "./fill-markup.js"
+import { changedPart, hostOf, ownFill, pictureAsShape, writtenFill, type FillHost } from "./fill-host.js"
 import { inheritedFill, ownBackground, shownFill, type Fill } from "./fill-read.js"
-import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
+import { decodeUtf8 } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
-import { blipMarkup, linkedSource } from "./picture-write.js"
-import { shapeById } from "./shape-tree.js"
-import { slotRoot, withChild, type Slot } from "./slot-edit.js"
-import { whole, type ElementAt, type Parts, type TraitXml } from "./xml-codec.js"
+import { iconOf } from "./picture-read.js"
+import { cropFieldXml } from "./trait-xml-crop.js"
+import { imageAlpha, imageFieldsXml, writtenImageAlpha } from "./trait-xml-image.js"
+import { markupChildren } from "./text-value-route.js"
+import { whole, writeFields, type ElementAt, type Parts, type TraitXml } from "./xml-codec.js"
 
-type FillTag = "a:noFill" | "a:solidFill" | "a:gradFill" | "a:pattFill" | "a:grpFill" | "a:blipFill"
+const none: Fill = { none: true }
+const image: Fill = { image: true }
+const fadedKinds: readonly string[] = ["a:solidFill", "a:gradFill", "a:pattFill"]
 
-type Written = { readonly tag: FillTag; readonly xml: string }
+type Wanted = Fill | "inherit" | null
 
-function flagText(value: boolean): string {
-  return value ? "1" : "0"
+function pictured(paint: Wanted): boolean {
+  return typeof paint === "object" && paint !== null && "image" in paint
 }
 
-function gradientXml(fill: Extract<Fill, { readonly gradient: unknown }>["gradient"]): string {
-  const stops = fill.stops.map((stop) => `<a:gs pos="${stop.pos}">${colorXml(stop.color)}</a:gs>`).join("")
-  const shade =
-    "linear" in fill.shade
-      ? `<a:lin ang="${fill.shade.linear.angle}" scaled="${flagText(fill.shade.linear.scaled)}"/>`
-      : `<a:path path="${fill.shade.path.kind}"><a:fillToRect l="${fill.shade.path.focus.l}" t="${fill.shade.path.focus.t}" r="${fill.shade.path.focus.r}" b="${fill.shade.path.focus.b}"/></a:path>`
-  return `<a:gradFill rotWithShape="${flagText(fill.rotateWithShape)}"><a:gsLst>${stops}</a:gsLst>${shade}</a:gradFill>`
+function shownBehind(parts: Parts, at: ElementAt): Fill | null {
+  const behind = shownFill(parts, at)?.value ?? null
+  return behind === null || "none" in behind ? null : behind
 }
 
-type Drawn = Exclude<Fill, { readonly image: unknown }>
+export function shownSlots(parts: Parts, at: ElementAt): readonly (Fill | null)[] {
+  const host = hostOf(parts, at)
+  if (host === "bg") return [ownBackground(parts, at.part), none, none, none]
+  if (host === "sp") return [shownFill(parts, at)?.value ?? null, none, none, none]
+  const behind = shownBehind(parts, at)
+  return behind === null ? [image, none, none, none] : [behind, image, none, none]
+}
 
-function imageMarkup(parts: Map<string, Uint8Array>, at: ElementAt, ref: string): Written {
-  const icon = assetIcon(ref)
-  if (icon === null) throw new Error("fills-image")
-  const linked = linkedSource(parts, at.part, { icon })
-  const blip = blipMarkup(linked, partDeclares(partBytes(parts, at.part)))
-  return {
-    tag: "a:blipFill",
-    xml: `<a:blipFill rotWithShape="1">${blip}<a:stretch><a:fillRect/></a:stretch></a:blipFill>`,
-  }
+function backgroundIcon(parts: Parts, part: string): string | null {
+  const { elements } = requireMarkup(partBytes(parts, part))
+  const children = markupChildren(elements)
+  const inside = (index: number | undefined, kind: string) =>
+    index === undefined ? undefined : children[index]?.find((each) => each.kind === kind)
+  const root = elements.find((element) => element.parent < 0)
+  const fill = inside(
+    inside(inside(inside(root?.index, "p:cSld")?.index, "p:bg")?.index, "p:bgPr")?.index,
+    "a:blipFill",
+  )
+  const blip = inside(fill?.index, "a:blip")
+  return blip === undefined || embedded(blip) === null ? null : iconOf(parts, part, children, blip)
+}
+
+function shownSource(parts: Parts, at: ElementAt): string | null {
+  if (hostOf(parts, at) === "bg") return backgroundIcon(parts, at.part)
+  return imageFieldsXml.source.at === "whole" ? imageFieldsXml.source.codec.read(parts, at) : null
+}
+
+function shownValue(parts: Parts, at: ElementAt): Fill | null {
+  return at.shape === "slide" ? ownBackground(parts, at.part) : (shownFill(parts, at)?.value ?? null)
 }
 
 function shownBytes(parts: Parts, at: ElementAt): Uint8Array | null {
@@ -50,121 +65,13 @@ function shownBytes(parts: Parts, at: ElementAt): Uint8Array | null {
   return at.shape === "slide" ? null : inheritedFill(parts, at)
 }
 
-function writtenValue(parts: Parts, at: ElementAt, value: Fill): Parts {
-  if (!("image" in value)) return writtenFill(parts, at, fillMarkup(value, shownBytes(parts, at)))
-  const next = new Map(parts)
-  return writtenFill(next, at, imageMarkup(next, at, value.image))
-}
-
-function keptGradient(xml: string, previous: Uint8Array | null): string {
-  const elements = previous === null ? [] : requireMarkup(previous).elements
-  const root = elements[0]
-  if (previous === null || root === undefined || root.kind !== "a:gradFill") return xml
-  const flip = root.attributes.find((each) => each.name === "flip")
-  const tile = elements.find((each) => each.parent === root.index && each.kind === "a:tileRect")
-  const flipped =
-    flip === undefined
-      ? xml
-      : xml.replace(
-          "<a:gradFill ",
-          `<a:gradFill flip="${decodeUtf8(previous.subarray(flip.valueStart, flip.valueEnd))}" `,
-        )
-  if (tile === undefined) return flipped
-  return `${flipped.slice(0, -"</a:gradFill>".length)}${decodeUtf8(previous.subarray(tile.start, tile.end))}</a:gradFill>`
-}
-
-export function fillMarkup(fill: Drawn, previous: Uint8Array | null = null): Written {
-  if ("none" in fill) return { tag: "a:noFill", xml: "<a:noFill/>" }
-  if ("group" in fill) return { tag: "a:grpFill", xml: "<a:grpFill/>" }
-  if ("solid" in fill) return { tag: "a:solidFill", xml: solidFillXml(fill.solid) }
-  if ("gradient" in fill) return { tag: "a:gradFill", xml: keptGradient(gradientXml(fill.gradient), previous) }
-  const { preset, fg, bg } = fill.pattern
-  return {
-    tag: "a:pattFill",
-    xml: `<a:pattFill prst="${preset}"><a:fgClr>${colorXml(fg)}</a:fgClr><a:bgClr>${colorXml(bg)}</a:bgClr></a:pattFill>`,
-  }
-}
-
-export function filledChild<P extends OrderedParent>(parent: P, tags: readonly string[], fill: Drawn): Slot {
-  return (slot) => {
-    const root = slotRoot(slot)
-    const own = requireMarkup(slot).elements.find((each) => each.parent === root.index && each.kind === "a:gradFill")
-    const written = fillMarkup(fill, own === undefined ? null : slot.subarray(own.start, own.end))
-    return withChild(parent, tags, written.tag as ChildOf<P>, written.xml)(slot)
-  }
-}
-
-function changedPart(parts: Parts, part: string, bytes: Uint8Array, edit: ByteEdit | null): Parts {
-  if (edit === null) return parts
-  const next = spliceBytes(bytes, [edit])
-  if (sameBytes(next, bytes)) return parts
-  const changed = new Map(parts)
-  changed.set(part, next)
-  return changed
-}
-
-function writtenBackground(parts: Parts, at: ElementAt, written: Written | null): Parts {
-  const bytes = partBytes(parts, at.part)
-  const { elements } = requireMarkup(bytes)
-  const root = elements.find((element) => element.parent < 0)
-  const body = elements.find((element) => element.kind === "p:cSld" && element.parent === root?.index)
-  if (body === undefined || body.selfClosing) throw new Error("p:cSld")
-  const own = elements.find((element) => element.kind === "p:bg" && element.parent === body.index)
-  const next = encodeUtf8(written === null ? "" : `<p:bg><p:bgPr>${written.xml}<a:effectLst/></p:bgPr></p:bg>`)
-  if (own !== undefined) return changedPart(parts, at.part, bytes, { start: own.start, end: own.end, next })
-  return written === null ? parts : changedPart(parts, at.part, bytes, { start: body.openEnd, end: body.openEnd, next })
-}
-
-function writtenFill(parts: Parts, at: ElementAt, written: Written | null): Parts {
-  if (at.shape === "slide") return writtenBackground(parts, at, written)
-  const bytes = partBytes(parts, at.part)
-  const { elements } = requireMarkup(bytes)
-  const shape = shapeById(elements, at.shape)
-  if (shape.kind !== "p:sp") throw new Error("fill-shape")
-  const properties = elements.filter((item) => item.parent === shape.index && item.kind === "p:spPr")
-  const spPr = properties[0]
-  if (properties.length !== 1 || spPr === undefined) throw new Error("fill-properties")
-  const fills = elements.filter((item) => item.parent === spPr.index && fillKinds.has(item.kind))
-  const fill = fills[0]
-  if (fills.length > 1) throw new Error("fill-choice")
-  let edit: ByteEdit | null = null
-  if (fill !== undefined) edit = { start: fill.start, end: fill.end, next: encodeUtf8(written?.xml ?? "") }
-  else if (written !== null && spPr.selfClosing)
-    edit = { start: spPr.openEnd - 2, end: spPr.openEnd, next: encodeUtf8(`>${written.xml}</p:spPr>`) }
-  else if (written !== null) {
-    const parent = decodeUtf8(bytes.subarray(spPr.start, spPr.end))
-    edit = {
-      start: spPr.start,
-      end: spPr.end,
-      next: encodeUtf8(insertChild("p:spPr", written.tag, written.xml, parent)),
-    }
-  }
-  return changedPart(parts, at.part, bytes, edit)
-}
-
-const fadedKinds: readonly string[] = ["a:solidFill", "a:gradFill", "a:pattFill"]
-
-function shownValue(parts: Parts, at: ElementAt): Fill | null {
-  return at.shape === "slide" ? ownBackground(parts, at.part) : (shownFill(parts, at)?.value ?? null)
-}
-
-export function fillAlpha(parts: Parts, at: ElementAt): Faded {
+function colourAlpha(parts: Parts, at: ElementAt): Faded {
   const value = shownValue(parts, at)
   return value === null ? null : shownAlpha(colorsOf(value))
 }
 
-function ownFill(bytes: Uint8Array, at: ElementAt): MarkupElement | undefined {
-  const { elements } = requireMarkup(bytes)
-  const inside = (parent: MarkupElement | undefined, kind: string) =>
-    parent === undefined ? undefined : elements.find((each) => each.parent === parent.index && each.kind === kind)
-  let host: MarkupElement | undefined
-  if (at.shape === "slide") {
-    const root = elements.find((element) => element.parent < 0)
-    host = inside(inside(inside(root, "p:cSld"), "p:bg"), "p:bgPr")
-  } else host = inside(shapeById(elements, at.shape), "p:spPr")
-  return host === undefined
-    ? undefined
-    : elements.find((each) => each.parent === host.index && fillKinds.has(each.kind))
+export function fillAlpha(parts: Parts, at: ElementAt): Faded {
+  return shownSlots(parts, at).some(pictured) ? imageAlpha(parts, at) : colourAlpha(parts, at)
 }
 
 function fadedFill(parts: Parts, at: ElementAt, alpha: Alpha): Parts {
@@ -181,32 +88,132 @@ function fadedFill(parts: Parts, at: ElementAt, alpha: Alpha): Parts {
   return writtenFill(parts, at, { tag: root.kind as FillTag, xml: decodeUtf8(fadedBytes(copied, alpha)) })
 }
 
-const above = whole<Fill>({
-  read: () => ({ none: true }),
-  write: (parts, _at, value) => {
-    if ("none" in value) return parts
-    throw new Error("fills-stack")
-  },
-})
+function writtenAlpha(parts: Parts, at: ElementAt, alpha: Alpha): Parts {
+  const slots = shownSlots(parts, at)
+  if (!slots.some(pictured)) return fadedFill(parts, at, alpha)
+  const faded = writtenImageAlpha(parts, at, alpha)
+  return hostOf(parts, at) === "pic" && !pictured(slots[0] ?? null) ? fadedFill(faded, at, alpha) : faded
+}
 
-export const fillsXml: TraitXml<"fills"> = {
+const colourCodec = alphaKept(
+  {
+    read: shownValue,
+    write: (parts: Parts, at: ElementAt, value: Fill) =>
+      writtenFill(parts, at, fillMarkup(value as Drawn, shownBytes(parts, at))),
+  },
+  colourAlpha,
+  fadedFill,
+  (value) => namesAlpha(colorsOf(value)),
+)
+
+type Painted = { readonly parts: Parts; readonly sourced: boolean }
+
+function onShape(parts: Parts, at: ElementAt, host: FillHost): Parts {
+  return host === "pic" ? pictureAsShape(parts, at) : parts
+}
+
+function newImage(parts: Parts, at: ElementAt, source: string | undefined): Painted {
+  if (source === undefined) throw new Error("fills-image")
+  const next = new Map(parts)
+  return { parts: writtenFill(next, at, imageMarkup(next, at, source)), sourced: true }
+}
+
+function writtenPaints(
+  parts: Parts,
+  at: ElementAt,
+  wanted: readonly Wanted[],
+  shown: readonly (Fill | null)[],
+  source: string | undefined,
+): Painted {
+  const host = hostOf(parts, at)
+  if (wanted.includes(null)) throw new Error("fills-unread")
+  const [bottom, ...above] = wanted
+  const paints = wanted.flatMap((paint) => (paint === null || paint === "inherit" || "none" in paint ? [] : [paint]))
+  if (bottom === "inherit") {
+    if (above.some((paint) => paint !== "inherit" && paint !== null && !("none" in paint)))
+      throw new Error("fills-stack")
+    return { parts: writtenFill(onShape(parts, at, host), at, null), sourced: false }
+  }
+  const [first, second, ...rest] = paints
+  if (first === undefined)
+    return { parts: writtenFill(onShape(parts, at, host), at, fillMarkup(none as Drawn)), sourced: false }
+  if (second === undefined && !pictured(first))
+    return { parts: colourCodec.write(onShape(parts, at, host), at, first), sourced: false }
+  if (second === undefined && host === "pic") return { parts: writtenFill(parts, at, null), sourced: false }
+  if (second === undefined)
+    return shown.some(pictured) && source === undefined ? { parts, sourced: false } : newImage(parts, at, source)
+  if (rest.length === 0 && host === "pic" && pictured(second) && !pictured(first))
+    return { parts: writtenFill(parts, at, fillMarkup(first as Drawn, shownBytes(parts, at))), sourced: false }
+  throw new Error("fills-stack")
+}
+
+const settingsXml = {
   slot: null,
   fields: {
-    p0: whole(
-      alphaKept({ read: shownValue, write: writtenValue }, fillAlpha, fadedFill, (value) =>
-        namesAlpha(colorsOf(value)),
-      ),
-      (parts, at) => writtenFill(parts, at, null),
-    ),
-    p1: above,
-    p2: above,
-    p3: above,
+    crop: cropFieldXml,
+    mode: imageFieldsXml.mode,
+    source: imageFieldsXml.source,
     alpha: whole({
       read: (parts, at) => {
         const shown = fillAlpha(parts, at)
         return shown === "mixed" ? null : shown
       },
-      write: fadedFill,
+      write: writtenAlpha,
     }),
+    recolor: imageFieldsXml.recolor,
+    blur: imageFieldsXml.blur,
+    overlay: imageFieldsXml.overlay,
+  },
+}
+
+function same(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
+export function writtenFills(parts: Parts, at: ElementAt, patch: TraitPatch<"fills">): Parts {
+  const shown = shownSlots(parts, at)
+  const wanted = paintSlots.map((slot, at): Wanted => {
+    const edit = patch[slot]
+    if (edit === undefined || edit === "opening") return shown[at] ?? null
+    return edit === "inherit" ? "inherit" : edit.set
+  })
+  const source = typeof patch.source === "object" ? patch.source.set : undefined
+  const moved = wanted.some((paint, slot) => !same(paint, shown[slot] ?? null))
+  const background = hostOf(parts, at) === "bg" && source !== undefined && source !== shownSource(parts, at)
+  const painted = moved || background ? writtenPaints(parts, at, wanted, shown, source) : { parts, sourced: false }
+  const { p0: _p0, p1: _p1, p2: _p2, p3: _p3, source: _source, ...rest } = patch
+  const imaged = wanted.some(pictured)
+  const kept = imaged ? rest : { ...(rest.alpha === undefined ? {} : { alpha: rest.alpha }) }
+  const settings = painted.sourced || patch.source === undefined || !imaged ? kept : { ...kept, source: patch.source }
+  return writeFields(painted.parts, at, settingsXml as unknown as TraitXml<"fills">, settings as TraitPatch<"fills">)
+}
+
+function slotXml(slot: (typeof paintSlots)[number]) {
+  return whole<Fill>(
+    {
+      read: (parts, at) => shownSlots(parts, at)[paintSlots.indexOf(slot)] ?? null,
+      write: (parts, at, value) => writtenFills(parts, at, { [slot]: { set: value } }),
+    },
+    slot === "p0" ? (parts, at) => writtenFills(parts, at, { p0: "inherit" }) : null,
+  )
+}
+
+export const fillsXml: TraitXml<"fills"> = {
+  slot: null,
+  fields: {
+    p0: slotXml("p0"),
+    p1: slotXml("p1"),
+    p2: slotXml("p2"),
+    p3: slotXml("p3"),
+    source: whole({
+      read: shownSource,
+      write: (parts, at, value) => writtenFills(parts, at, { source: { set: value } }),
+    }),
+    mode: settingsXml.fields.mode,
+    crop: settingsXml.fields.crop,
+    recolor: settingsXml.fields.recolor,
+    blur: settingsXml.fields.blur,
+    overlay: settingsXml.fields.overlay,
+    alpha: settingsXml.fields.alpha,
   },
 }

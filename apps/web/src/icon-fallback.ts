@@ -66,13 +66,9 @@ export async function iconPng(svg: string, side = fallbackSide): Promise<Uint8Ar
 }
 
 function patchIcons(patch: ElementPatch | undefined): readonly string[] {
-  const source = patch?.image?.source
-  const paint = patch?.fills?.p0
-  const refs = [
-    typeof source === "object" ? source.set : null,
-    typeof paint === "object" && "image" in paint.set ? paint.set.image : null,
-  ]
-  return refs.flatMap((ref) => (ref === null ? [] : (assetIcon(ref) ?? [])))
+  const source = patch?.fills?.source
+  const icon = typeof source === "object" ? assetIcon(source.set) : null
+  return icon === null ? [] : [icon]
 }
 
 export function registerIcons(register: Register): readonly string[] {

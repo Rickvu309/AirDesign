@@ -72,7 +72,7 @@ const slide = { width: 9_144_000, height: 6_858_000, background: null }
 
 async function painted(elements: readonly CanvasElement[], quiet = false): Promise<HTMLElement> {
   const store = paintStore()
-  store.publish({ id, kind: "chart", text: "", picture: null })
+  store.publish({ id, kind: "chart", text: "" })
   const host = document.createElement("div")
   document.body.append(host)
   const root = createRoot(host)

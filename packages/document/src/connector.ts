@@ -14,7 +14,7 @@ export type Routed = { readonly place: Place; readonly adjust: Readonly<Record<s
 
 type Elbow = { readonly segments: number; readonly adjusts: readonly string[] }
 
-export const siteKinds: readonly string[] = ["shape", "picture"]
+export const siteKinds: readonly string[] = ["shape"]
 
 export const routedPresets: readonly string[] = [
   "line",

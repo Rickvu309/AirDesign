@@ -14,7 +14,7 @@ function shape(node: string, value: string | null, kept?: IndexElement["kept"]):
 
 const elements: readonly IndexElement[] = [
   shape("258.2", "Title"),
-  { node: elementId("258.4"), kind: "picture", value: null, box, grouped: false },
+  { node: elementId("258.4"), kind: "shape", value: null, box, grouped: false },
   shape("258.7", null, ["fills"]),
 ]
 
@@ -52,7 +52,7 @@ describe("opacity fades every fills, line and text an element takes, at once", (
     })
     expect(plan({ target: { node: elementId("258.4") }, opacity: alpha(60_000) })).toEqual({
       ok: true,
-      rows: [{ node: "258.4", row: { v: format, patch: { line: { alpha: faded }, image: { alpha: faded } } } }],
+      rows: [{ node: "258.4", row: { v: format, patch: { fills: { alpha: faded }, line: { alpha: faded } } } }],
     })
   })
 

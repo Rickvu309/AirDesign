@@ -116,7 +116,7 @@ describe("element order", () => {
     expect(refused({ ...textBox, node: elementId("256.2") })).toBe(true)
     expect(refused({ ...textBox, value: "Text" })).toBe(true)
     expect(refused({ ...textBox, grouped: true })).toBe(true)
-    expect(refused({ ...textBox, kind: "picture" })).toBe(true)
+    expect(refused({ ...textBox, value: null })).toBe(true)
     expect(refused({ ...textBox, box: null })).toBe(true)
     expect(refused(textBox)).toBe(false)
   })

@@ -60,7 +60,7 @@ async function canvas(
 ) {
   for (const element of slide.elements) {
     if (element.id !== null)
-      store.publish({ id: element.id, kind: element.kind, text, picture: element.kind === "picture" ? "" : null })
+      store.publish({ id: element.id, kind: element.kind === "picture" ? "shape" : element.kind, text })
   }
   const host = document.createElement("div")
   document.body.append(host)
@@ -206,7 +206,7 @@ describe("SlideCanvas", () => {
     const host = await canvas({ ...wide, elements: [written(id, { editable: true })] }, 800, "", () => undefined, store)
     const publish = async (text: string) => {
       await act(async () => {
-        store.publish({ id, kind: "shape", text, picture: null })
+        store.publish({ id, kind: "shape", text })
       })
     }
     await publish("typed")
@@ -510,7 +510,6 @@ describe("SlideCanvas style", () => {
           { from: 0, text: "bigger" },
           { from: 1, text: "sm" },
         ]),
-        picture: null,
       })
     })
     expect(runNode(host, "0.0").textContent).toBe("bigger")

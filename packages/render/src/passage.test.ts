@@ -75,7 +75,7 @@ async function typeInto(editor: HTMLElement, value: string): Promise<Text> {
 
 function show(store: ReturnType<typeof paintStore>, id: ReturnType<typeof elementId>, text: string): Promise<void> {
   return act(async () => {
-    expect(store.publish({ id, kind: "shape", text, picture: null })).toEqual({ ok: true })
+    expect(store.publish({ id, kind: "shape", text })).toEqual({ ok: true })
   })
 }
 
@@ -83,7 +83,7 @@ describe("Passage", () => {
   it("composition keeps the text node", async () => {
     const store = paintStore()
     const id = elementId("1.1")
-    expect(store.publish({ id, kind: "shape", text: "hello", picture: null })).toEqual({ ok: true })
+    expect(store.publish({ id, kind: "shape", text: "hello" })).toEqual({ ok: true })
     function Parent(props: { readonly generation: number }) {
       return createElement("div", { "data-generation": props.generation }, createElement(Passage, { store, id }))
     }
@@ -128,7 +128,7 @@ describe("Passage", () => {
 
     const record = store.getElement(id)
     if (record === null) throw new Error("missing record")
-    store.publish({ id: record.id, kind: record.kind, text: "outside", picture: record.picture })
+    store.publish({ id: record.id, kind: record.kind, text: "outside" })
     expect(textIn(editor)).toBe(textNode)
     expect(store.getElement(id)?.text).toBe("hello")
 
@@ -149,7 +149,7 @@ describe("Passage", () => {
     const seen: string[] = []
     const store = paintStore()
     const id = elementId("1.1")
-    expect(store.publish({ id, kind: "shape", text: "hello", picture: null })).toEqual({ ok: true })
+    expect(store.publish({ id, kind: "shape", text: "hello" })).toEqual({ ok: true })
     const mounted = await render(
       createElement(Passage, {
         store,
@@ -190,7 +190,7 @@ describe("Passage", () => {
         store,
         id,
         onEdit: (value) => {
-          store.publish({ id, kind: "shape", text: value, picture: null })
+          store.publish({ id, kind: "shape", text: value })
         },
       }),
     )
@@ -297,7 +297,7 @@ describe("Passage", () => {
   it("refuses Enter only outside a composition", async () => {
     const store = paintStore()
     const id = elementId("1.1")
-    expect(store.publish({ id, kind: "shape", text: "hello", picture: null })).toEqual({ ok: true })
+    expect(store.publish({ id, kind: "shape", text: "hello" })).toEqual({ ok: true })
     const { host } = await render(createElement(Passage, { store, id, onEdit: () => undefined }))
     const editor = editorIn(host)
     function pressEnter(isComposing: boolean): boolean {

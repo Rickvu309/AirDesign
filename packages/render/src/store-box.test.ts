@@ -46,10 +46,10 @@ describe("paintStore boxes", () => {
 
   it("keeps the box when the element's text is published or composed", () => {
     const store = paintStore()
-    store.publish({ id, kind: "shape", text: "one", picture: null })
+    store.publish({ id, kind: "shape", text: "one" })
     store.placeBox(id, box)
     store.beginComposition(id)
-    store.publish({ id, kind: "shape", text: "two", picture: null })
+    store.publish({ id, kind: "shape", text: "two" })
     store.endComposition(id, "three")
     expect(store.getBox(id)).toEqual(box)
   })

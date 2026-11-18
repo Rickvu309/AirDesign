@@ -96,9 +96,7 @@ function sameShared(shared: Parts, before: Parts, slideParts: ReadonlySet<string
 }
 
 function sameRecord(current: ElementRecord | null, next: ElementRecord): boolean {
-  return (
-    current !== null && current.kind === next.kind && current.text === next.text && current.picture === next.picture
-  )
+  return current !== null && current.kind === next.kind && current.text === next.text
 }
 
 function laidOut(register: Register | null, id: ElementId): boolean {
@@ -171,7 +169,6 @@ export function paint(
         id,
         kind,
         text: numberText(id, shownValue(register, id, file)),
-        picture: kind === "picture" ? "" : null,
       }
       if (!sameRecord(current, record)) store.publish(record)
       store.placeBox(id, landedBox(register, id))

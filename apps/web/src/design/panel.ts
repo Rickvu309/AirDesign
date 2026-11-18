@@ -23,6 +23,7 @@ import {
 } from "@airdesign/document"
 import type { CSSProperties, ReactNode } from "react"
 import { fillCopy } from "@/copy/fill-copy"
+import { pictureCopy } from "@/copy/picture-copy"
 import { textCopy } from "@/copy/text-copy"
 import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
@@ -48,6 +49,8 @@ export type SectionName =
   | "corners"
   | "paragraphSpacing"
   | "fillDetails"
+  | "image"
+  | "crop"
 
 export type PanelControl = {
   readonly trait: SectionName
@@ -172,20 +175,40 @@ function textShown(text: TextValue, key: string, fallback: Held): Held {
 
 export type ShownField = { readonly value: unknown; readonly own: boolean }
 
-function fillsHeld(shown: PanelReads): Held {
+export function shownFills(shown: PanelReads): ShownFills | null {
   const bottom = shown.fields?.["fills.p0"]
-  if (bottom === undefined || bottom.value === null) return ownHeld(undefined)
+  if (bottom === undefined || bottom.value === null) return null
   const slots = Object.fromEntries(
     paintSlots.flatMap((slot) => {
       const read = shown.fields?.[`fills.${slot}`]?.value
       return read === undefined || read === null ? [] : [[slot, read]]
     }),
   )
-  return { value: readFills(slots as ShownFills).slidesMode, mixed: false, inherited: !bottom.own }
+  const source = shown.fields?.["fills.source"]?.value
+  return { ...slots, ...(typeof source === "string" ? { source } : {}) } as ShownFills
+}
+
+function fillsHeld(shown: PanelReads): Held {
+  const fills = shownFills(shown)
+  if (fills === null) return ownHeld(undefined)
+  return { value: readFills(fills).slidesMode, mixed: false, inherited: shown.fields?.["fills.p0"]?.own !== true }
+}
+
+const imageFields: readonly string[] = ["mode", "source", "recolor", "overlay", "blur"]
+
+export function shownPlace(trait: TraitName, field: string): { readonly trait: SectionName; readonly field: string } {
+  if (trait !== "fills") return { trait, field }
+  if (field === "crop") return { trait: "crop", field: "rect" }
+  return imageFields.includes(field) ? { trait: "image", field } : { trait, field }
+}
+
+function sectionLabel(trait: SectionName, labels: Labels): string {
+  if (trait === "image") return pictureCopy.section
+  return trait === "crop" ? pictureCopy.crop : (labels.section ?? "")
 }
 
 function shownOf(view: ScopedElement, trait: TraitName, field: string, shown: PanelReads): Held {
-  if (trait === "fills") return fillsHeld(shown)
+  if (trait === "fills" && field === "paint") return fillsHeld(shown)
   const read = shown.fields?.[`${trait}.${field}`]
   const reads = shown.reads
   if (trait === "text" && field !== "value") {
@@ -255,7 +278,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     const controls = wireFields(trait).flatMap(([field, kind]): PanelControl[] => {
       const key = writtenField(trait, field)
       const unread =
-        (key === "image.overlay" || key === "image.blur") &&
+        (key === "fills.overlay" || key === "fills.blur") &&
         shown.fields?.[key] !== undefined &&
         shown.fields[key]?.value == null
       if (
@@ -273,7 +296,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       const over = held.inherited ? alphaFieldOver(trait, key.slice(trait.length + 1)) : undefined
       const seen = over === undefined ? undefined : shown.fields?.[`${trait}.${over}`]?.value
       const change =
-        key === "crop.rect" && taken.includes("box.w")
+        key === "fills.crop" && taken.includes("box.w")
           ? cropChange(view, held.value)
           : (value: unknown) =>
               ({
@@ -294,8 +317,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       const nodes = trait === "connection" && shown.nodes !== undefined ? { nodes: shown.nodes } : {}
       return [
         resolveControl({
-          trait,
-          field,
+          ...shownPlace(trait, field),
           label,
           desc,
           ...(shown.slides === undefined ? {} : { slides: shown.slides }),
@@ -309,6 +331,12 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     })
     const visible = trait === "text" ? typographyControls(controls, view.textStyles ?? [], shown) : controls
     if (visible.length === 0) return []
+    if (trait === "fills")
+      return (["fills", "image", "crop"] as const).flatMap((place): PanelSection[] => {
+        const placed = visible.filter((control) => control.trait === place)
+        if (placed.length === 0) return []
+        return [{ trait: place, label: sectionLabel(place, labels), open: true, strips: arrange(place, placed) }]
+      })
     const strips = arrange(trait, visible)
     const section = { trait, label: labels.section ?? "", open: true, strips }
     if (trait !== "text") return [section]

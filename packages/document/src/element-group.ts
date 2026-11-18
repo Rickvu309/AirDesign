@@ -41,7 +41,7 @@ type Tree = {
   readonly made: ReadonlyMap<ElementId, ElementGroup>
 }
 
-export const groupable: readonly Kind[] = ["shape", "picture", "connector", "group", "table", "chart"]
+export const groupable: readonly Kind[] = ["shape", "connector", "group", "table", "chart"]
 
 const highestShape = 4294967295
 const fullTurn = 21_600_000

@@ -76,7 +76,7 @@ export function useEditorDeck(id: string) {
         pictures.store.keep(sha256, picture.bytes)
         changeDesign(
           { id, shown, undo, record, settle, setPending },
-          () => ({ target: { node }, image: { source: `${picture.type}:${sha256}` } }),
+          () => ({ target: { node }, fills: { source: `${picture.type}:${sha256}` } }),
           () => void flushMedia(id),
         )
       } catch {

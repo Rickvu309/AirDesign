@@ -89,7 +89,7 @@ it("adds the picture under the next free id with its hash and media type, and ex
   expect(added).toEqual({
     slide: "element-add",
     id: "256",
-    element: { node: "256.4", kind: "picture", value: null, box, grouped: false },
+    element: { node: "256.4", kind: "shape", value: null, box, grouped: false },
     media,
   })
   const register = landed(openRegister("", ""), added)

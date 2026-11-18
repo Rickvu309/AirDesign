@@ -16,10 +16,13 @@ function model(shape: unknown, element = view) {
   return panelOf(element, { reads: {}, moves: true, fields: { "geometry.shape": { value: shape, own: true } } })
 }
 
-it.each(["shape", "picture"] as const)(
+it.each(["shape", "image"] as const)(
   "rounds a %s in pixels through its existing geometry and makes zero square",
-  (kind) => {
-    const panel = model({ preset: "rect", adjust: {} }, { ...view, facts: { ...view.facts, kind } })
+  (name) => {
+    const element = name === "image" ? { ...view, facts: { ...view.facts, text: false } } : view
+    const image = name === "image" ? { "fills.p0": { value: { image: true }, own: true } } : {}
+    const fields = { ...image, "geometry.shape": { value: { preset: "rect", adjust: {} }, own: true } }
+    const panel = panelOf(element, { reads: {}, moves: true, fields })
     const section = panel.sections.find((section) => section.trait === "corners")
     expect(section?.label).toBe(geometryCopy.corners)
     expect(panel.sections.map((section) => section.trait).slice(2, 5)).toEqual(["opacity", "corners", "border"])
@@ -56,14 +59,14 @@ it("reads native adjusts including defaults and clamps rounding at half the shor
   ).toBe(false)
 })
 
-it.each(["shape", "picture"] as const)("exports Corners as native %s geometry and keeps other parts", async (kind) => {
+it.each(["shape", "image"] as const)("exports Corners as native %s geometry and keeps other parts", async (name) => {
   const { deckParts, placed, indexed, landed, painted } = await import("@/parity-probe")
   const { registerScope, planChange } = await import("@airdesign/document")
   const { exportParts, shownGeometry } = await import("@airdesign/pptx")
   const { ensureMarkup } = await import("@/markup")
   await ensureMarkup()
   const parts = await deckParts("doe-heat-pumps.pptx")
-  const at = placed(parts, kind, kind === "shape" ? "2797.13" : "2883.13")
+  const at = placed(parts, "shape", name === "shape" ? "2797.13" : "2883.13")
   const register = indexed(parts)
   const scope = registerScope(register)
   const element = scope.view(at.node)

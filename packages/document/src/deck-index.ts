@@ -17,7 +17,7 @@ import {
 import { readElementId, readSlideId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { readTemplateStyles, type TemplateStyle } from "./template-style.js"
 import { converted, format, formatOf, type Conversion } from "./format.js"
-import { fillsFormat, fillsIndex } from "./fills-conversion.js"
+import { fillsFormat, fillsIndex, imageFormat, imageIndex } from "./fills-conversion.js"
 import { readStoredTransition, type TransitionValue } from "./trait-transition.js"
 import { bytesOf, limits } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
@@ -271,7 +271,10 @@ function readSectionStarts(raw: unknown, slides: readonly IndexSlide[]): readonl
   return starts
 }
 
-export const pageConversions: readonly Conversion<undefined>[] = [{ introduced: fillsFormat, convert: fillsIndex }]
+export const pageConversions: readonly Conversion<undefined>[] = [
+  { introduced: fillsFormat, convert: fillsIndex },
+  { introduced: imageFormat, convert: imageIndex },
+]
 
 export function readIndexPage(raw: unknown): IndexPage | null {
   const stored = record(raw)

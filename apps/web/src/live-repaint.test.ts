@@ -38,8 +38,8 @@ const edited = landed([
 
 function painted() {
   const store = paintStore()
-  store.publish({ id: node, kind: "shape", text: "Hello", picture: null })
-  store.publish({ id: other, kind: "shape", text: "Typing", picture: null })
+  store.publish({ id: node, kind: "shape", text: "Hello" })
+  store.publish({ id: other, kind: "shape", text: "Typing" })
   return store
 }
 
@@ -91,7 +91,7 @@ it("keeps an element busy until every edit that held it lets go", () => {
 it("paints the text and box an undo gives back even though the last repaint already held them", () => {
   const store = painted()
   const repaint = liveRepaint(store, files, null, busyElements())
-  store.publish({ id: node, kind: "shape", text: "Mine", picture: null })
+  store.publish({ id: node, kind: "shape", text: "Mine" })
   store.placeBox(node, dragged)
   repaint(openRegister("", "deck"))
   expect(store.getElement(node)?.text).toBe("Mine")
@@ -105,7 +105,7 @@ it("paints an undo the person makes while the text they just typed is still on i
   const store = painted()
   const busy = busyElements()
   const repaint = liveRepaint(store, files, null, busy)
-  store.publish({ id: node, kind: "shape", text: "Mine", picture: null })
+  store.publish({ id: node, kind: "shape", text: "Mine" })
   const release = busy.hold(node)
   repaint(openRegister("", "deck"), "person")
   expect(store.getElement(node)?.text).toBe("Hello")
@@ -117,7 +117,7 @@ it("paints an undo of an element whose own edit is still on its way to the serve
   const store = painted()
   const repaint = liveRepaint(store, files, null, busy)
   busy.hold(node)
-  store.publish({ id: node, kind: "shape", text: "Mine", picture: null })
+  store.publish({ id: node, kind: "shape", text: "Mine" })
   store.placeBox(node, dragged)
   repaint(openRegister("", "deck"))
   expect(store.getElement(node)?.text).toBe("Mine")

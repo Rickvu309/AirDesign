@@ -3,6 +3,7 @@ import {
   beforeOf,
   formatOne,
   landedPatch,
+  paintSlots,
   planChange,
   readTableValue,
   registerScope,
@@ -126,8 +127,6 @@ const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = {
   effects: "effects",
   body: "text-box",
   geometry: "shape",
-  image: "picture",
-  crop: "crop",
   connection: "connector",
 }
 
@@ -157,7 +156,10 @@ function rowName(node: ElementId, row: Row): UndoName {
   const box = row.patch.box
   if (box?.rot !== undefined) return "rotate"
   if (box?.flipH !== undefined || box?.flipV !== undefined) return "flip"
-  if (row.patch.crop !== undefined) return "crop"
+  const fills = row.patch.fills
+  if (fills?.crop !== undefined) return "crop"
+  if (fills !== undefined && paintSlots.every((slot) => fills[slot] === undefined) && fills.alpha === undefined)
+    return "picture"
   const [named] = Object.keys(row.patch.identity ?? {})
   if (named !== undefined && identityNames[named] !== undefined) return identityNames[named]
   const [trait] = Object.keys(row.patch) as TraitName[]

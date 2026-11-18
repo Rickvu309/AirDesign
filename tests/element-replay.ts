@@ -28,7 +28,7 @@ const kinds = {
 
 let kind: keyof typeof kinds = "box"
 const media = { sha256: "d".repeat(64), type: "image/png" }
-const picture = { node, kind: "picture", value: null, box, grouped: false }
+const picture = { node, kind: "shape", value: null, box, grouped: false }
 const agent = { actor: "agent", runId: "run" } as const
 const person = { actor: "person" } as const
 type Spec = Graph["states"] extends Map<string, infer State> ? State : never
@@ -188,7 +188,7 @@ function takenByKind(failures: string[]): void {
     box: takes({ ...facts, kind: "shape", text: true }),
     shape: takes({ ...facts, kind: "shape", text: false }),
     table: takes({ ...facts, kind: "table", text: true }),
-    picture: takes({ ...facts, kind: "picture", text: false }),
+    picture: takes({ ...facts, kind: "shape", text: false }),
   }
   const values = ["text.value", "notes.value", "table.value"]
   if (!taken.box.includes("text.value")) failures.push("element TraitTakenByKind: a text box takes no text")

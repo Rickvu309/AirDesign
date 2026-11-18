@@ -50,7 +50,7 @@ function table(rows: number, overrides: Partial<CanvasElement> = {}, columns = 2
 
 async function mounted(entering: ElementId | null, overrides: Partial<CanvasElement> = {}) {
   const store = paintStore()
-  store.publish({ id, kind: "table", text: "", picture: null })
+  store.publish({ id, kind: "table", text: "" })
   const removed: ElementId[] = []
   const boxes: Box[] = []
   const host = document.createElement("div")

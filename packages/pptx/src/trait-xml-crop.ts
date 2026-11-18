@@ -2,7 +2,7 @@ import { fillWritten } from "./blip-edit.js"
 import { spliceBytes, type ByteEdit } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { shownCrop, type CropRect } from "./picture-read.js"
-import { whole, type ElementAt, type Parts, type TraitXml } from "./xml-codec.js"
+import { whole, type ElementAt, type Parts } from "./xml-codec.js"
 
 import { writtenPictureMode } from "./picture-mode.js"
 
@@ -34,7 +34,4 @@ function writtenCrop(parts: Parts, at: ElementAt, rect: CropRect): Parts {
   })
 }
 
-export const cropXml: TraitXml<"crop"> = {
-  slot: null,
-  fields: { rect: whole({ read: shownCrop, write: writtenCrop }) },
-}
+export const cropFieldXml = whole({ read: shownCrop, write: writtenCrop })

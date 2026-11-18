@@ -87,7 +87,7 @@ describe("a tool's input schema says each repeated subschema once", () => {
         expect(check.safeParse({ deck: "d", base: 0, changes: [change] }).success, JSON.stringify(example)).toBe(true)
       }
     }
-    const icon = { op: "add", kind: "picture", slide: "258", icon: "rocket" }
+    const icon = { op: "add", kind: "shape", slide: "258", icon: "rocket" }
     expect(check.safeParse({ deck: "d", base: 0, changes: [icon] }).success).toBe(true)
     const wrong = { op: "set", target: "258.2", effects: { glow: { halo: { radius: 8, color: "accent9" } } } }
     expect(check.safeParse({ deck: "d", base: 0, changes: [wrong] }).success).toBe(false)

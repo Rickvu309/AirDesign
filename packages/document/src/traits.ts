@@ -2,12 +2,10 @@ import type { Kind } from "./kinds.js"
 import { body } from "./trait-body.js"
 import { box } from "./trait-box.js"
 import { connection } from "./trait-connection.js"
-import { crop } from "./trait-crop.js"
 import { effects } from "./trait-effects.js"
 import { fills } from "./trait-fills.js"
 import { geometry } from "./trait-geometry.js"
 import { identity } from "./trait-identity.js"
-import { image } from "./trait-image.js"
 import { link } from "./trait-link.js"
 import { line } from "./trait-line.js"
 import { notes } from "./trait-notes.js"
@@ -29,8 +27,6 @@ export const traits = {
   effects,
   body,
   text,
-  image,
-  crop,
   connection,
   table,
   notes,
@@ -78,8 +74,7 @@ export const kindTraits = {
   section: [],
   slide: ["fills", "template", "show", "transition"],
   notes: ["notes"],
-  shape: ["identity", "box", "geometry", "fills", "line", "effects", "body", "text", "link", "image"],
-  picture: ["identity", "box", "geometry", "line", "effects", "image", "crop"],
+  shape: ["identity", "box", "geometry", "fills", "line", "effects", "body", "text", "link"],
   connector: ["identity", "box", "geometry", "line", "effects", "connection"],
   group: ["identity", "box", "effects"],
   table: ["identity", "box", "table"],

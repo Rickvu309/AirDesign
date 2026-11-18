@@ -63,7 +63,6 @@ type StructuralRoutes = {
   }
   readonly notes: NoActions
   readonly shape: Placed
-  readonly picture: Placed
   readonly connector: Placed
   readonly group: Placed
   readonly table: {
@@ -110,7 +109,6 @@ export const structure = {
   },
   notes: {},
   shape: placed,
-  picture: placed,
   connector: placed,
   group: placed,
   table: {

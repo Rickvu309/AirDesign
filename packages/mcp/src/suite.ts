@@ -560,7 +560,7 @@ export const suite: readonly SuiteRow[] = [
     task: {
       id: "text-on-picture",
       prompt: "Write the caption Sunrise into the picture that is the body of deck pictured.",
-      deck: () => fixture("pictured", [{ element: "title" }, { element: "body" }], bodyIs("picture")),
+      deck: () => fixture("pictured", [{ element: "title" }, { element: "body" }], bodyIs("photo")),
       want: { calls: 1, steps: [{ name: "edit_deck", outcome: "kind" }], elements: { body: [] } },
     },
     reference: one("pictured", "body", "Sunrise", 0),

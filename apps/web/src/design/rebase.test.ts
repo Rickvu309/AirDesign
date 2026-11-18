@@ -2,7 +2,7 @@ import { traits, type Desc } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { rebased } from "./rebase"
 
-const rect = traits.crop.fields.rect.desc
+const rect = traits.fills.fields.crop.desc
 const number: Desc = { kind: "number", unit: "emu", min: 0, max: 100 }
 const shadow: Desc = {
   kind: "union",

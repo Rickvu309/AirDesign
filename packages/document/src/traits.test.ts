@@ -25,9 +25,14 @@ export type Derived = [
   Expect<Same<FieldValue<"box", "flipH">, boolean>>,
   Expect<Same<FieldValue<"box", "w">, number>>,
   Expect<Same<TraitValue<"notes">, { readonly value: string }>>,
-  Expect<Same<FieldName<"fills">, "p0" | "p1" | "p2" | "p3" | "alpha">>,
+  Expect<
+    Same<
+      FieldName<"fills">,
+      "p0" | "p1" | "p2" | "p3" | "source" | "mode" | "crop" | "recolor" | "blur" | "overlay" | "alpha"
+    >
+  >,
   Expect<Same<FieldValue<"fills", "alpha">, Alpha>>,
-  Expect<Same<WireField<"fills">, "paint">>,
+  Expect<Same<WireField<"fills">, "paint" | "source" | "mode" | "crop" | "recolor" | "blur" | "overlay">>,
   Expect<Same<FieldName<"line">, "width" | "fill" | "dash" | "cap" | "compound" | "join" | "head" | "tail" | "alpha">>,
   Expect<null extends WireAgent<"line", "width"> ? true : false>,
   Expect<"none" | "accent2" extends WireAgent<"line", "fill"> ? true : false>,
@@ -58,8 +63,6 @@ describe("the one table of traits", () => {
       effects: "whole",
       body: "field",
       text: "run",
-      image: "own",
-      crop: "own",
       connection: "own",
       table: "own",
       notes: "own",
@@ -88,6 +91,12 @@ describe("the one table of traits", () => {
       "fills.p1",
       "fills.p2",
       "fills.p3",
+      "fills.source",
+      "fills.mode",
+      "fills.crop",
+      "fills.recolor",
+      "fills.blur",
+      "fills.overlay",
       "fills.alpha",
       "line.fill",
       "line.width",
@@ -109,13 +118,6 @@ describe("the one table of traits", () => {
       "body.columns",
       "text.value",
       "text.alpha",
-      "image.source",
-      "image.mode",
-      "image.alpha",
-      "image.recolor",
-      "image.blur",
-      "image.overlay",
-      "crop.rect",
       "connection.start",
       "connection.end",
       "table.value",
@@ -142,7 +144,7 @@ describe("the one table of traits", () => {
       "show.skipped",
       "transition.value",
     ])
-    expect(alphaKeys).toEqual(["fills.alpha", "line.alpha", "text.alpha", "image.alpha"])
+    expect(alphaKeys).toEqual(["fills.alpha", "line.alpha", "text.alpha"])
   })
 
   it("lets only a declared field go back to the value its layout, master or style gives", () => {

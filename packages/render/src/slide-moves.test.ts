@@ -31,7 +31,7 @@ const element: CanvasElement = {
 
 async function mounted(onSelection: (selection: Selection) => void): Promise<HTMLElement> {
   const store = paintStore()
-  store.publish({ id, kind: "shape", text: "", picture: null })
+  store.publish({ id, kind: "shape", text: "" })
   const host = document.createElement("div")
   document.body.append(host)
   const root = createRoot(host)

@@ -101,9 +101,9 @@ const agent: Agent = {
   "box.rot": (value) => tenths(value / anglePerDegree),
   "box.flipH": (value) => value,
   "box.flipV": (value) => value,
-  "image.source": (value) => value,
-  "image.recolor": agentRecolor,
-  crop: agentCrop,
+  "fills.source": (value) => value,
+  "fills.recolor": agentRecolor,
+  "fills.crop": agentCrop,
   "identity.alt": (value) => value,
   "identity.hidden": (value) => value,
   "connection.start": agentBound,
@@ -220,7 +220,7 @@ type End = FieldValue<"connection", "start">
 
 const endShown = (end: End) => ("none" in end ? null : agentBound(end.shape))
 
-type Recolor = FieldValue<"image", "recolor">
+type Recolor = FieldValue<"fills", "recolor">
 
 const recolorShown = (recolor: Recolor) =>
   "none" in recolor ? null : agentRecolor("grayscale" in recolor ? "grayscale" : recolor.duotone)
@@ -251,9 +251,9 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch): Des
   next = folded(next, "body.anchor", patch.body?.anchor, (value) => (value === "t" ? null : value))
   next = folded(next, "body.autofit", patch.body?.autofit, (value) => (value === "none" ? null : value))
   next = folded(next, "body.vertical", patch.body?.vertical, (value) => (value === "horz" ? null : value))
-  next = folded(next, "image.source", patch.image?.source, (value) => assetIcon(value))
-  next = folded(next, "image.recolor", patch.image?.recolor, recolorShown)
-  next = folded(next, "crop", patch.crop?.rect, (value) =>
+  next = folded(next, "fills.source", patch.fills?.source, (value) => assetIcon(value))
+  next = folded(next, "fills.recolor", patch.fills?.recolor, recolorShown)
+  next = folded(next, "fills.crop", patch.fills?.crop, (value) =>
     value.l + value.t + value.r + value.b === 0 ? null : agentCrop(value),
   )
   next = folded(next, "identity.alt", patch.identity?.alt, (value) => (value.trim() === "" ? null : altShown(value)))

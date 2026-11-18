@@ -12,7 +12,7 @@ const title = writeTextValue([{ from: 0, runs: [{ from: 0, text: "Title" }] }])
 const rows: readonly (readonly [string, Kind, string | null])[] = [
   ["256.2", "shape", title],
   ["256.3", "shape", null],
-  ["256.4", "picture", null],
+  ["256.4", "shape", null],
   ["256.5", "chart", null],
   ["256.6", "table", null],
   ["256.7", "group", null],
@@ -66,7 +66,7 @@ describe("edit_deck refuses an edit the element's kind cannot take, and says wha
     await withClient(held, async (client) => {
       for (const [node, kind, next] of [
         ["256.3", "a shape that holds no text", "airdesign_edit_deck with op add and kind shape"],
-        ["256.4", "an image", "airdesign_edit_deck with op add and kind shape"],
+        ["256.4", "a shape that holds no text", "airdesign_edit_deck with op add and kind shape"],
         ["256.5", "a chart", "Tell the person"],
         ["256.6", "a table", "Table cells cannot be edited"],
         ["256.7", "a group", "grouped"],

@@ -55,7 +55,7 @@ it("paints merged cell sizes, fill, borders and the existing text look without a
     },
   }
   const store = paintStore()
-  store.publish({ id, kind: "chart", text: "", picture: null })
+  store.publish({ id, kind: "chart", text: "" })
   const host = document.createElement("div")
   document.body.append(host)
   const root = createRoot(host)

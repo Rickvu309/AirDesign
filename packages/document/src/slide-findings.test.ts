@@ -136,8 +136,8 @@ describe("off-slide", () => {
 
   it("leaves a picture that bleeds past the edge, and notes one wholly off the slide", () => {
     const found = find([
-      element("2", { x: -20, y: -20, w: 1000, h: 580 }, { kind: "picture", fill: "unknown" }),
-      element("3", { x: 1000, y: 10, w: 100, h: 100 }, { kind: "picture", fill: "unknown" }),
+      element("2", { x: -20, y: -20, w: 1000, h: 580 }, { fill: "image" }),
+      element("3", { x: 1000, y: 10, w: 100, h: 100 }, { fill: "image" }),
     ])
     expect(found.map((finding) => `${finding.code} ${finding.node} ${finding.level}`)).toEqual(["off-slide 3 note"])
   })
@@ -176,13 +176,13 @@ describe("overlap", () => {
     const found = find([text, element("3", { x: 15, y: 5, w: 30, h: 30 }, { fill: { rgb: "222222" } })])
     expect(codes(found)).toEqual(["overlap 2"])
     expect(found[0]?.code === "overlap" ? found[0].by : null).toBe("cover")
-    expect(find([text, element("3", { x: 15, y: 5, w: 30, h: 30 }, { kind: "picture", fill: "unknown" })])).toEqual([])
+    expect(find([text, element("3", { x: 15, y: 5, w: 30, h: 30 }, { fill: "image" })])).toEqual([])
   })
 
   it("leaves a picture or a filled shape behind text, an empty frame, a line and a group", () => {
     expect(
       find([
-        element("1", { x: 0, y: 0, w: 960, h: 540 }, { kind: "picture", fill: "unknown" }),
+        element("1", { x: 0, y: 0, w: 960, h: 540 }, { fill: "image" }),
         element("2", { x: 5, y: 5, w: 300, h: 100 }, { fill: { rgb: "222222" } }),
         element("3", { x: 10, y: 10, w: 200, h: 40 }, { text: words(["aaaa bbbb"], 10, {}, "FFFFFF") }),
         element("4", { x: 15, y: 5, w: 30, h: 30 }),
@@ -247,7 +247,7 @@ describe("low contrast", () => {
   it("leaves text on a picture, a gradient or a shape that covers only part of it", () => {
     expect(
       find([
-        element("1", { x: 0, y: 0, w: 100, h: 100 }, { kind: "picture", fill: "unknown" }),
+        element("1", { x: 0, y: 0, w: 100, h: 100 }, { fill: "image" }),
         element("2", { x: 10, y: 10, w: 200, h: 40 }, { text: words(["aaaa"], 10, {}, "BBBBBB") }),
         element("3", { x: 300, y: 0, w: 300, h: 100 }, { fill: "unknown" }),
         element("4", { x: 310, y: 10, w: 200, h: 40 }, { text: words(["aaaa"], 10, {}, "BBBBBB") }),

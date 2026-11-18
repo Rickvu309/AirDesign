@@ -43,9 +43,9 @@ export const designKeys = [
   "box.rot",
   "box.flipH",
   "box.flipV",
-  "image.source",
-  "image.recolor",
-  "crop",
+  "fills.source",
+  "fills.recolor",
+  "fills.crop",
   "identity.alt",
   "identity.hidden",
   "connection.start",
@@ -110,9 +110,9 @@ export type TraitReads = {
   readonly "box.rot"?: Read<number>
   readonly "box.flipH"?: Read<boolean>
   readonly "box.flipV"?: Read<boolean>
-  readonly "image.source"?: Read<string>
-  readonly "image.recolor"?: Read<RecolorRead>
-  readonly crop?: Read<CropRead>
+  readonly "fills.source"?: Read<string>
+  readonly "fills.recolor"?: Read<RecolorRead>
+  readonly "fills.crop"?: Read<CropRead>
   readonly "identity.alt"?: Read<string>
   readonly "identity.hidden"?: Read<boolean>
   readonly "connection.start"?: Read<BoundRead>

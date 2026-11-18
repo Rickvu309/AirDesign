@@ -31,7 +31,6 @@ const kindWords: Readonly<Record<Kind, string>> = {
   slide: "the slide itself, whose fill is its background",
   notes: "the slide's presenter notes",
   shape: "a shape",
-  picture: "an image",
   connector: "a line",
   group: "a group",
   table: "a table",
@@ -155,7 +154,6 @@ export function setProblem(
 
 const instructedKinds: readonly (readonly [Kind, string])[] = [
   ["shape", "A shape"],
-  ["picture", "An image, kind picture,"],
   ["connector", "A line"],
   ["group", "A group"],
   ["table", "A table"],
@@ -183,7 +181,7 @@ export function kindInstructions(): string {
     "What each kind of layer takes:",
     ...instructedKinds.map(([kind, named]) => `${named} takes ${traitWords(kind) ?? "no field yet"}.`),
     'opacity sits beside the target, { "op": "set", "target": ..., "opacity": 60 }, in percent from 0, invisible, to 100, solid. It fades the layer\'s fill, border, text and image together.',
-    'Add a Lucide icon with { "op": "add", "kind": "picture", "slide": ..., "icon": "rocket" }; an unknown name is refused with close names. Give it alt text with { "identity": { "alt": "..." } }.',
+    'A photo or an icon is a shape whose fills hold an image, and the fills fields source, mode, crop, recolor, overlay and blur set that image. Add a Lucide icon with { "op": "add", "kind": "shape", "slide": ..., "icon": "rocket" }; an unknown name is refused with close names. Give it alt text with { "identity": { "alt": "..." } }.',
     "A layer inside a group takes no box, and a shape that holds no text takes no text. Any other field cannot be set yet.",
     "Send null for a field whose type allows it to go back to what the layout, master or template style gives it.",
     "A slide's transition is how it arrives in Present. Leave it out when the slide arrives on click with no transition, or when the file keeps a transition this value cannot say. Setting it replaces that kept transition.",

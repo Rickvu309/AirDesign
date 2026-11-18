@@ -18,7 +18,7 @@ const start = writeTextValue([{ from: 0, runs: [{ from: 0, text: "Hello world" }
 
 async function mounted() {
   const store = paintStore()
-  store.publish({ id, kind: "shape", text: start, picture: null })
+  store.publish({ id, kind: "shape", text: start })
   let fresh = 0
   const formatting = textFormatting(() => {
     fresh += 1
@@ -33,7 +33,7 @@ async function mounted() {
   const onEdit = (value: string, kind: string) => {
     edits.push(value)
     kinds.push(kind)
-    store.publish({ id, kind: "shape", text: value, picture: null })
+    store.publish({ id, kind: "shape", text: value })
   }
   await act(async () => root.render(createElement(Passage, { store, id, onEdit, formatting })))
   const editor = host.querySelector("[contenteditable]")
@@ -304,7 +304,6 @@ it("opens a rendered phrase only inside a presentation navigation surface", asyn
   store.publish({
     id,
     kind: "shape",
-    picture: null,
     text: writeTextValue([
       { from: 0, runs: [{ from: 0, text: "Read", link: { kind: "url", url: "https://example.com" } }] },
     ]),

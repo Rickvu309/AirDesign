@@ -7,7 +7,7 @@ import type { PanelReads, PanelSection } from "./panel"
 export const cornerSteps = [0, 4, 8, 16, 24, 32] as const
 
 export function cornersSection(view: ScopedElement, shown: PanelReads): PanelSection | null {
-  if (view.facts.kind !== "shape" && view.facts.kind !== "picture") return null
+  if (view.facts.kind !== "shape") return null
   if (keptRefuses(view.kept, "geometry", "shape")) return null
   const shape = shown.fields?.["geometry.shape"]?.value
   if (typeof shape !== "object" || shape === null || !("preset" in shape)) return null

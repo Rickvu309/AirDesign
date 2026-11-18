@@ -2,8 +2,8 @@ import { traitNames, traits } from "./traits.js"
 
 export const stamps: { readonly row: number; readonly index: number; readonly command: number } = {
   row: 2,
-  index: 14,
-  command: 11,
+  index: 15,
+  command: 12,
 }
 
 const traitVersions = traitNames.reduce((sum, name) => sum + traits[name].stamp.version, 0)

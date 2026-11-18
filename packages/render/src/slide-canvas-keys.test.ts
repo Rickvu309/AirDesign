@@ -50,8 +50,8 @@ const otherSlide: CanvasElement = { ...shape, key: `ppt/slides/slide2.xml#${adde
 
 async function mounted(removed: ElementId[] = [], removes = true) {
   const store = paintStore()
-  store.publish({ id, kind: "shape", text: "Quarterly results", picture: null })
-  store.publish({ id: added, kind: "shape", text: "Next steps", picture: null })
+  store.publish({ id, kind: "shape", text: "Quarterly results" })
+  store.publish({ id: added, kind: "shape", text: "Next steps" })
   const boxes: Box[] = []
   const host = document.createElement("div")
   document.body.append(host)
@@ -193,7 +193,7 @@ describe("canvas keyboard", () => {
   it("stacks the focused element with the PowerPoint chords and leaves a chord typed in its text alone", async () => {
     const ordered: string[] = []
     const store = paintStore()
-    store.publish({ id, kind: "shape", text: "Quarterly results", picture: null })
+    store.publish({ id, kind: "shape", text: "Quarterly results" })
     const host = document.createElement("div")
     document.body.append(host)
     const root = createRoot(host)

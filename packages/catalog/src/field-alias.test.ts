@@ -45,11 +45,53 @@ it("reads an agent's fill value, its old trait and field, as the paint of fills"
   expect(readSetChange({ op: "set", target, fill: { value: "accent2" }, fills: { paint: "accent1" } })).toEqual({
     ok: false,
     refusal: "field",
-    field: "fills",
+    field: "fills.paint",
   })
   expect(readSetChange({ op: "set", target, fill: { alpha: 50 } })).toEqual({
     ok: false,
     refusal: "field",
     field: "fills.alpha",
+  })
+})
+
+it("reads an agent's old image and crop fields as fields of fills, joined with what fills already names", () => {
+  const old = readSetChange({
+    op: "set",
+    target,
+    image: { recolor: "grayscale", blur: 40 },
+    crop: { rect: { l: 10, t: 0, r: 10, b: 0 } },
+    fills: { mode: "crop" },
+  })
+  const canonical = readSetChange({
+    op: "set",
+    target,
+    fills: { mode: "crop", recolor: "grayscale", blur: 40, crop: { l: 10, t: 0, r: 10, b: 0 } },
+  })
+  expect(canonical).toMatchObject({ ok: true })
+  expect(old).toEqual(canonical)
+  expect(readSetChange({ op: "set", target, image: { source: "rocket" } })).toEqual(
+    readSetChange({ op: "set", target, fills: { source: "rocket" } }),
+  )
+  expect(readSetChange({ op: "set", target, image: { mode: "fit" }, fills: { mode: "fill" } })).toEqual({
+    ok: false,
+    refusal: "field",
+    field: "fills.mode",
+  })
+})
+
+it("adds an icon as a shape whose fills hold it, under the old picture kind too", () => {
+  const added = { op: "add", slide: "258", icon: "rocket" }
+  const shape = readAddChange({ ...added, kind: "shape" })
+  expect(shape).toEqual({ ok: true, change: { op: "add", kind: "shape", slide: "258", icon: "rocket" } })
+  expect(readAddChange({ ...added, kind: "picture" })).toEqual(shape)
+  expect(readAddChange({ op: "add", kind: "picture", slide: "258" })).toEqual({
+    ok: false,
+    refusal: "field",
+    field: "icon",
+  })
+  expect(readAddChange({ ...added, kind: "shape", text: { value: "Hi" } })).toEqual({
+    ok: false,
+    refusal: "field",
+    field: "text",
   })
 })

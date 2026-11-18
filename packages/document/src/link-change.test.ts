@@ -17,7 +17,7 @@ it("writes a whole-element destination through the shared set path and refuses a
       ],
       elements: [
         { node, kind: "shape", value: "Hello", box: null, grouped: false },
-        { node: picture, kind: "picture", value: null, box: null, grouped: false },
+        { node: picture, kind: "shape", value: null, box: null, grouped: false },
       ],
     },
   })

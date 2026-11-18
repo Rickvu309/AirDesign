@@ -81,9 +81,9 @@ export function pictureCommand(
   const id = slide === undefined ? undefined : readSlideId(slide.slide)
   if (slide === undefined || id === undefined) return null
   const node = nextElementId(register, id, freeShapeId(base, slide.part))
-  const element = { node, kind: "picture", value: null, box, grouped: false } as const
+  const element = { node, kind: "shape", value: null, box, grouped: false } as const
   if ("media" in source) return { slide: "element-add", id, element, media: source.media }
-  const opening = { image: { source: { set: source.icon } } }
+  const opening = { fills: { p0: { set: { image: true } }, source: { set: source.icon } } } as const
   return { slide: "element-add", id, element: { ...element, opening } }
 }
 

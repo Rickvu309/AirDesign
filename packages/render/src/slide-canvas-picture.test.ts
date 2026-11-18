@@ -36,7 +36,7 @@ function picture(fill: string | null): CanvasElement {
 
 async function painted(slide: CanvasSlide): Promise<HTMLElement> {
   const store = paintStore()
-  store.publish({ id, kind: "picture", text: "", picture: "" })
+  store.publish({ id, kind: "shape", text: "" })
   const host = document.createElement("div")
   document.body.append(host)
   const root = createRoot(host)
@@ -75,7 +75,7 @@ it("says in the box what it cannot show, on the canvas and not in a thumbnail", 
   const large = { x: 0, y: 0, width: 4_000_000, height: 2_000_000, rotation: 0, flipH: false, flipV: false }
   const unshown = { ...picture(unshownFill), box: large, unshownText: words }
   const store = paintStore()
-  store.publish({ id, kind: "picture", text: "", picture: "" })
+  store.publish({ id, kind: "shape", text: "" })
   const host = document.createElement("div")
   document.body.append(host)
   const root = createRoot(host)

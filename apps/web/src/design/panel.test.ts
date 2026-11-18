@@ -82,15 +82,16 @@ it("shows Mixed when the alphas differ, and full opacity when nothing shows a co
   expect(opacityOf(connector, { "fills.alpha": 10_000, "line.alpha": 50_000 })).toMatchObject({ value: 50_000 })
 })
 
-it("lists Opacity percents on a text box, shape and picture, and not on a line or a slide", () => {
-  const picture = { ...shape, facts: { ...shape.facts, kind: "picture" as const }, value: null }
+it("lists Opacity percents on a text box, shape and image, and not on a line or a slide", () => {
+  const picture = { ...shape, facts: { ...shape.facts, text: false }, value: null }
   const drawn = { ...shape, facts: { ...shape.facts, text: false }, value: null }
   const slide = { ...shape, facts: { ...shape.facts, kind: "slide" as const } }
   expect(opacityOf(shape, {})?.label).toBe(opacityCopy.label)
   expect(opacityOf(shape, {})?.look.steps).toEqual([...opacitySteps])
   expect(opacityOf(drawn, {})?.look.steps).toEqual([...opacitySteps])
-  expect(opacityOf(picture, { "line.alpha": 100_000 })?.look.steps).toEqual([...opacitySteps])
-  expect(opacityOf(picture, { "line.alpha": 100_000 })?.look.glyph).toBeDefined()
+  const image = { "fills.p0": { image: true }, "line.alpha": 100_000 }
+  expect(opacityOf(picture, image)?.look.steps).toEqual([...opacitySteps])
+  expect(opacityOf(picture, image)?.look.glyph).toBeDefined()
   expect(opacityOf(connector, { "line.alpha": 100_000 })?.look.steps).toBeUndefined()
   expect(opacityOf(connector, { "line.alpha": 100_000 })?.look.glyph).toBeUndefined()
   expect(opacityOf(slide, { "fills.alpha": 50_000 })).toBeUndefined()

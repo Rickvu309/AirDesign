@@ -65,7 +65,7 @@ export type SetChange = { readonly target: Target } & ElementInputs & TraitInput
 
 export type AddChange =
   | { readonly kind: "shape"; readonly slide: SlideId; readonly box?: Box; readonly text?: TraitInput<"text"> }
-  | { readonly kind: "picture"; readonly slide: SlideId; readonly box?: Box; readonly icon: string }
+  | { readonly kind: "shape"; readonly slide: SlideId; readonly box?: Box; readonly icon: string }
 
 export type ScopedElement = {
   readonly node: ElementId

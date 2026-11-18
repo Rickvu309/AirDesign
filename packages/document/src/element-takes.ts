@@ -15,23 +15,20 @@ const turns: readonly FieldKey[] = ["box.rot", "box.flipH", "box.flipV"]
 const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
   table: turns,
   chart: turns,
-  slide: ["fills.alpha"],
+  slide: ["fills.mode", "fills.crop", "fills.recolor", "fills.blur", "fills.overlay", "fills.alpha"],
   kept: ["identity.name", "identity.alt", "identity.hidden"],
 }
 
 const textFields: readonly FieldKey[] = ["text.value", "text.alpha", "notes.value", "link.target"]
 
-const shapePicture: readonly FieldKey[] = ["image.mode", "image.blur", "image.overlay"]
-
-const removes: readonly Kind[] = ["shape", "picture", "connector", "table", "chart", "kept"]
+const removes: readonly Kind[] = ["shape", "connector", "table", "chart", "kept"]
 
 export function takes(facts: ElementFacts): readonly FieldKey[] {
   const fields = kindTraits[facts.kind].flatMap((trait) => (trait === "box" && facts.grouped ? [] : fieldKeys(trait)))
   return fields.filter(
     (field) =>
       !(unwritten[facts.kind]?.includes(field) ?? false) &&
-      (facts.text || !(textFields.includes(field) || field.startsWith("body."))) &&
-      (facts.kind !== "shape" || !field.startsWith("image.") || shapePicture.includes(field)),
+      (facts.text || !(textFields.includes(field) || field.startsWith("body."))),
   )
 }
 

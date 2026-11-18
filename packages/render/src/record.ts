@@ -24,7 +24,6 @@ export type ElementRecord = {
   readonly id: ElementId
   readonly kind: Kind
   readonly text: string
-  readonly picture: string | null
 }
 
 export type SlideRecord = {

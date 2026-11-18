@@ -42,7 +42,7 @@ const text: CanvasText = {
 
 async function mount(onEdit: (value: string) => void) {
   const store = paintStore()
-  store.publish({ id, kind: "shape", text: writeTextValue(words), picture: null })
+  store.publish({ id, kind: "shape", text: writeTextValue(words) })
   const host = document.createElement("div")
   document.body.append(host)
   const root = createRoot(host)

@@ -7,7 +7,6 @@ import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { paintAttribute } from "./paint-color.js"
 import type { Sheet } from "./paint-sheet.js"
 import { requireMarkup } from "./part-markup.js"
-import { heldIcon } from "./picture-read.js"
 import { ownersOf, propertiesOf, sheetOf, stylesOf, type Chain } from "./trait-read.js"
 
 export type Fill = FieldValue<"fills", "p0">
@@ -132,10 +131,7 @@ export function shownFill(parts: ReadonlyMap<string, Uint8Array>, at: FillAt): S
   const { chain, owners } = owned
   const filled = owners.findIndex((owner) => fillIn(propertiesOf(owner)) !== undefined)
   const held = fillIn(propertiesOf(owners[filled] ?? owners[0]!))
-  if (held !== undefined && held.element.kind === "a:blipFill") {
-    const icon = filled === 0 ? heldIcon(parts, at.part, held) : null
-    return { value: icon === null ? null : { image: icon }, own: filled === 0 }
-  }
+  if (held !== undefined && held.element.kind === "a:blipFill") return { value: { image: true }, own: filled === 0 }
   if (held !== undefined) return { value: fillValueOf(held, null), own: filled === 0 }
   const style = styleReference(owners, chain.theme)
   if (style === "none") return { value: { none: true }, own: false }
@@ -207,10 +203,7 @@ export function ownBackground(parts: ReadonlyMap<string, Uint8Array>, part: stri
   if (sheet === null || root === undefined) return null
   const properties = child(child(child({ element: root, children: sheet.children }, "p:cSld"), "p:bg"), "p:bgPr")
   const held = fillIn(properties)
-  if (held?.element.kind === "a:blipFill") {
-    const icon = heldIcon(parts, part, held)
-    return icon === null ? null : { image: icon }
-  }
+  if (held?.element.kind === "a:blipFill") return { image: true }
   return held === undefined ? null : fillValueOf(held, null)
 }
 
@@ -226,10 +219,8 @@ export function shownBackground(parts: ReadonlyMap<string, Uint8Array>, part: st
     if (background === undefined) continue
     const held = fillIn(child(background, "p:bgPr"))
     const own = level === sheet
-    if (held !== undefined) {
-      const icon = held.element.kind === "a:blipFill" ? heldIcon(parts, level.part, held) : null
-      return { value: icon === null ? fillValueOf(held, null) : { image: icon }, own }
-    }
+    if (held !== undefined)
+      return { value: held.element.kind === "a:blipFill" ? { image: true } : fillValueOf(held, null), own }
     const reference = child(background, "p:bgRef")
     const index = reference === undefined ? 0 : (whole(reference.element, "idx") ?? 0)
     const entry = backgroundFills(theme)[index - backgroundIndex]

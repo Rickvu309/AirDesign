@@ -48,7 +48,7 @@ describe("deck index", () => {
       ...page,
       once: "page-two",
       offset: 1,
-      elements: [{ node: elementId("259.9"), kind: "picture", value: null, box: null, grouped: true }],
+      elements: [{ node: elementId("259.9"), kind: "shape", value: null, box: null, grouped: true }],
     })
     expect(last.ok && last.index.elements.length === last.index.total).toBe(true)
     expect(appendIndex(undefined, { ...page, once: "bad", offset: 1 })).toEqual({ ok: false, refusal: "stale" })
@@ -127,7 +127,7 @@ it("adds device layout placeholders to an older index without changing its openi
 })
 
 describe("index format", () => {
-  const second = { node: elementId("259.9"), kind: "picture", value: null, box: null, grouped: true } as const
+  const second = { node: elementId("259.9"), kind: "shape", value: null, box: null, grouped: true } as const
   const stored = (() => {
     const first = appendIndex(undefined, page)
     if (!first.ok) throw new Error(first.refusal)
@@ -268,7 +268,7 @@ describe("index format", () => {
 
   it("names every key the index stores, so a new key raises the index stamp", () => {
     expect({ stamp: stamps.index, keys: indexKeys }).toEqual({
-      stamp: 14,
+      stamp: 15,
       keys: {
         page: ["format", "once", "offset", "total", "palettes", "templates", "sectionStarts", "slides", "elements"],
         palette: ["slots", "map", "fonts"],

@@ -28,7 +28,7 @@ export function missingPictures(register: Register, pictures: PictureBytes): rea
   const hashes = new Set(addedPictures(register).map((media) => media.sha256))
   for (const node of register.nodes) {
     const body = register.elements[node]
-    const source = body === undefined ? undefined : landedPatch(body, "text").image?.source
+    const source = body === undefined ? undefined : landedPatch(body, "text").fills?.source
     const media = typeof source === "object" ? assetMedia(source.set) : null
     if (media !== null) hashes.add(media.sha256)
   }

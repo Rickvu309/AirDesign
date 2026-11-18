@@ -30,6 +30,8 @@ it("places every trait each element kind takes, and its Opacity, exactly once in
               section !== "border" &&
               section !== "shadow" &&
               section !== "pictureFill" &&
+              section !== "image" &&
+              section !== "crop" &&
               section !== "corners" &&
               section !== "textFill" &&
               section !== "paragraphSpacing" &&
@@ -106,9 +108,11 @@ it("orders a drawn shape by its fill, line and shape type", () => {
   expect(sections(labelled, fields).map(([trait]) => trait)).toContain("text")
 })
 
-it("offers a picture no shape type while it is a plain rectangle", () => {
-  const picture = { ...textBox, facts: { ...textBox.facts, kind: "picture" as const, text: false }, value: null }
-  const plain = sections(picture, { "geometry.shape": { preset: "rect", adjust: {} } })
+it("offers a shape whose fills hold an image no shape type while it is a plain rectangle", () => {
+  const picture = { ...textBox, facts: { ...textBox.facts, text: false }, value: null }
+  const image = { "fills.p0": { image: true } }
+  expect(panelKind(picture, shown(image))).toBe("picture")
+  const plain = sections(picture, { ...image, "geometry.shape": { preset: "rect", adjust: {} } })
   expect(plain.map(([trait]) => trait)).toEqual([
     "alignment",
     "pictureFill",
@@ -123,7 +127,7 @@ it("offers a picture no shape type while it is a plain rectangle", () => {
     "effects",
     "identity",
   ])
-  const oval = sections(picture, { "geometry.shape": { preset: "ellipse", adjust: {} } })
+  const oval = sections(picture, { ...image, "geometry.shape": { preset: "ellipse", adjust: {} } })
   expect(oval).toContainEqual(["geometry", false])
 })
 

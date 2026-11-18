@@ -74,6 +74,7 @@ type Loose = {
         file: (parts: Parts, at: At) => unknown
         shows: (value: unknown) => unknown
         inherited?: (parts: Parts, at: At) => boolean
+        on?: { readonly deck: string; readonly kind: Kind; readonly node: string }
       }
     >
   >
@@ -102,9 +103,10 @@ async function fieldProblems(
   const example = sent?.[trait]?.[field]
   const value = desc === undefined ? undefined : fromAgent(desc, example)
   if (desc === undefined || sent === undefined || value === undefined) return [{ field: key, missing: "wire" }]
-  const parts = await deckParts(probe.deck)
-  const at = placed(parts, probe.kind, probe.node)
   const shape = probe.fields[field]
+  const on = shape?.on ?? probe
+  const parts = await deckParts(on.deck)
+  const at = placed(parts, on.kind, on.node)
   const opening = probe.opening(parts, at)
   const edit = probe.edit(opening, field, value)
   const shown = (exported: Parts) => shape !== undefined && same(shape.file(exported, at), shape.shows(value))
@@ -115,7 +117,7 @@ async function fieldProblems(
     { command: "add", node: at.node, floor: "", route: "clean" },
     { command: "person", node: at.node, ...edit },
   ])
-  const panel = canvasControl(trait, field) ? person : panelRegister(indexed(parts), at, trait, field, value)
+  const panel = canvasControl(trait, field) ? person : panelRegister(indexed(parts), at, trait, field, value, parts)
   if (panel === null || !shown(exportParts(parts, panel))) problems.push({ field: key, missing: "control" })
   const exported = person === null ? parts : exportParts(parts, person)
   if (person === null || !shown(exported)) problems.push({ field: key, missing: "round-trip" })

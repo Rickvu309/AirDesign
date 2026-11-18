@@ -16,7 +16,6 @@ it("typing after an empty run fills that run instead of adding one", async () =>
       id,
       kind: "shape",
       text: writeTextValue([{ from: 0, runs: [{ from: 0, text: "" }] }]),
-      picture: null,
     })
   })
   const sent: string[] = []

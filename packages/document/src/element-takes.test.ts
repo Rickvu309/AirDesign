@@ -25,14 +25,14 @@ const file = [slideId("256")]
 const rows: readonly (readonly [string, Kind, string | null, boolean])[] = [
   ["256.2", "shape", '[{"from":0,"runs":[{"from":0,"text":"Title"}]}]', false],
   ["256.3", "shape", null, false],
-  ["256.4", "picture", null, false],
+  ["256.4", "shape", null, false],
   ["256.5", "connector", null, false],
   ["256.6", "group", null, false],
   ["256.7", "shape", '[{"from":0,"runs":[{"from":0,"text":"Inside"}]}]', true],
   ["256.8", "table", null, false],
   ["256.9", "chart", null, false],
   ["256.10", "kept", null, false],
-  ["256.11", "picture", null, false],
+  ["256.11", "shape", null, false],
   ["256.notes", "slide", "Speak", false],
 ]
 
@@ -156,39 +156,14 @@ describe("the server admits only the edits the device can write onto an element 
       (field) => `line.${field}`,
     )
     const slots = ["fills.p0", "fills.p1", "fills.p2", "fills.p3"]
-    const fill = [...slots, "fills.alpha"]
+    const image = ["fills.source", "fills.mode", "fills.crop", "fills.recolor", "fills.blur", "fills.overlay"]
+    const fill = [...slots, ...image, "fills.alpha"]
     const body = ["insets", "anchor", "wrap", "autofit", "vertical", "columns"].map((field) => `body.${field}`)
     const text = [...body, "text.value", "text.alpha", "link.target"]
     const effects = ["effects.shadow", "effects.glow", "effects.softEdge"]
     const named = ["identity.name", "identity.alt", "identity.hidden"]
-    const picture = [
-      "image.source",
-      "image.mode",
-      "image.alpha",
-      "image.recolor",
-      "image.blur",
-      "image.overlay",
-      "crop.rect",
-    ]
-    const shapePicture = ["image.mode", "image.blur", "image.overlay"]
-    expect(takes({ ...facts, kind: "shape" })).toEqual([
-      ...named,
-      ...drawn,
-      ...fill,
-      ...line,
-      ...effects,
-      ...text,
-      ...shapePicture,
-    ])
-    expect(takes({ ...facts, kind: "shape", text: false })).toEqual([
-      ...named,
-      ...drawn,
-      ...fill,
-      ...line,
-      ...effects,
-      ...shapePicture,
-    ])
-    expect(takes({ ...facts, kind: "picture" })).toEqual([...named, ...drawn, ...line, ...effects, ...picture])
+    expect(takes({ ...facts, kind: "shape" })).toEqual([...named, ...drawn, ...fill, ...line, ...effects, ...text])
+    expect(takes({ ...facts, kind: "shape", text: false })).toEqual([...named, ...drawn, ...fill, ...line, ...effects])
     expect(takes({ ...facts, kind: "connector" })).toEqual([
       ...named,
       ...drawn,
@@ -201,7 +176,13 @@ describe("the server admits only the edits the device can write onto an element 
     expect(takes({ ...facts, kind: "chart" })).toEqual([...named, "box.x", "box.y", "box.w", "box.h"])
     expect(takes({ ...facts, kind: "group" })).toEqual([...named, ...box, ...effects])
     expect(takes({ ...facts, kind: "kept" })).toEqual([])
-    expect(takes({ ...facts, kind: "slide" })).toEqual([...slots, "template.id", "show.skipped", "transition.value"])
+    expect(takes({ ...facts, kind: "slide" })).toEqual([
+      ...slots,
+      "fills.source",
+      "template.id",
+      "show.skipped",
+      "transition.value",
+    ])
     expect(takes({ ...facts, kind: "notes" })).toEqual(["notes.value"])
     expect(takes({ ...facts, kind: "shape", grouped: true })).toEqual([
       ...named,
@@ -210,16 +191,6 @@ describe("the server admits only the edits the device can write onto an element 
       ...line,
       ...effects,
       ...text,
-      "image.mode",
-      "image.blur",
-      "image.overlay",
-    ])
-    expect(takes({ ...facts, kind: "picture", animated: true })).toEqual([
-      ...named,
-      ...drawn,
-      ...line,
-      ...effects,
-      ...picture,
     ])
     for (const kind of kinds) {
       const traits: readonly string[] = kindTraits[kind]
@@ -230,8 +201,8 @@ describe("the server admits only the edits the device can write onto an element 
   it("lets a person delete what the person's own Delete deletes", () => {
     const facts = { text: true, grouped: false, animated: false }
     const removes = kinds.filter((kind) => removable({ ...facts, kind }))
-    expect(removes).toEqual(["shape", "picture", "connector", "table", "chart", "kept"])
+    expect(removes).toEqual(["shape", "connector", "table", "chart", "kept"])
     expect(removable({ ...facts, kind: "shape", grouped: true })).toBe(false)
-    expect(removable({ ...facts, kind: "picture", animated: true })).toBe(false)
+    expect(removable({ ...facts, kind: "shape", text: false, animated: true })).toBe(false)
   })
 })

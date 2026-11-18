@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { paintStore, type ElementRecord } from "./index.js"
 
 function shape(id: ReturnType<typeof elementId>, text: string): ElementRecord {
-  return { id, kind: "shape", text, picture: null }
+  return { id, kind: "shape", text }
 }
 
 describe("paintStore", () => {
@@ -30,22 +30,13 @@ describe("paintStore", () => {
     expect(Object.is(store.getElement(keptId), first)).toBe(false)
 
     const pictureId = elementId("1.3")
-    expect(store.publish({ id: pictureId, kind: "picture", text: "shot", picture: null })).toEqual({
+    expect(store.publish({ id: pictureId, kind: "picture" as Kind, text: "shot" })).toEqual({
       ok: false,
       code: "kind",
     })
     expect(store.getElement(pictureId)).toBeNull()
     expect(store.publish(shape(pictureId, "shot"))).toEqual({ ok: true })
-    expect(store.publish({ id: pictureId, kind: "shape", text: "shot", picture: "pixels" })).toEqual({
-      ok: false,
-      code: "kind",
-    })
-    expect(store.getElement(pictureId)?.picture).toBeNull()
-    expect(store.publish({ id: pictureId, kind: "picture", text: "shot", picture: "pixels" })).toEqual({
-      ok: true,
-    })
-    expect(store.getElement(pictureId)?.picture).toBe("pixels")
-    expect(store.publish({ id: elementId("1.4"), kind: "nope" as Kind, text: "", picture: null })).toEqual({
+    expect(store.publish({ id: elementId("1.4"), kind: "nope" as Kind, text: "" })).toEqual({
       ok: false,
       code: "kind",
     })

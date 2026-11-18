@@ -4,26 +4,26 @@
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["elementsUndoable", "turn", "elementsTurn", "applying", "stillShows"],
-      "digest": "34d64ec9894d",
-      "blob": "4ca54e86e0e943bec38162ef65b5dc7760c77a79"
+      "digest": "3f7501a5a492",
+      "blob": "5f2cec0de1b46fb91cb92c9ef8d6412c3a844087"
     },
     {
       "file": "apps/web/src/undo-list.ts",
       "names": ["turnBack"],
       "digest": "2966e6f1fe0a",
-      "blob": "3422414c48c6564c5d4b5417bf897b50a9af3b3d"
+      "blob": "099e57517effc643b12289a6fa768e9c039a63a9"
     },
     {
       "file": "apps/web/src/element-edit.ts",
       "names": ["removals", "commitElement"],
       "digest": "44ce0ebbaa8f",
-      "blob": "de8e6f4c73de568ade2d632ca9015b613d97f25d"
+      "blob": "010b6a0fdbe01df28286f9d5c325b1518a06c77c"
     },
     {
       "file": "packages/render/src/slide-moves.ts",
       "names": ["useMoves"],
-      "digest": "621a50ac8223",
-      "blob": "2247b1267782d68fe2efed460879c9942199f188"
+      "digest": "1c4388b5b1b4",
+      "blob": "cf17f7be5a71dd53d08596f3c0bd3dcb14f6abf9"
     }
   ]
 }

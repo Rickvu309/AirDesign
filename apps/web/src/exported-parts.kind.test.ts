@@ -45,7 +45,14 @@ function storedBeforeTheFix(edits: readonly (readonly [string, Value])[]): Regis
 }
 
 function first(shapes: readonly ReadShape[], kind: string, test: (shape: ReadShape) => boolean = () => true) {
-  const found = shapes.find((shape) => shapeKind(shape) === kind && shape.grouped !== true && test(shape))
+  const photo = kind === "photo"
+  const found = shapes.find(
+    (shape) =>
+      shapeKind(shape) === (photo ? "shape" : kind) &&
+      (!photo || shape.kind === "p:pic") &&
+      shape.grouped !== true &&
+      test(shape),
+  )
   if (found === undefined) throw new Error(kind)
   return `${found.slide}.${found.shape}`
 }
@@ -55,7 +62,7 @@ const agentText: Value = { value: writeTextValue([{ from: 0, runs: [{ from: -1, 
 it("opens and exports a deck whose register holds agent text on elements that hold no text", async () => {
   const parts = await census()
   const shapes = readShapes(parts)
-  const refused = ["picture", "chart", "table", "group", "kept", "connector"].map((kind) => first(shapes, kind))
+  const refused = ["photo", "chart", "table", "group", "kept", "connector"].map((kind) => first(shapes, kind))
   const register = storedBeforeTheFix(refused.map((node) => [node, agentText] as const))
   expect(() => notesShown(parts, register)).not.toThrow()
   const exported = exportedParts(parts, register)
@@ -86,7 +93,7 @@ it("still writes the edits the elements can take beside the ones they cannot", a
   if (titled === undefined) throw new Error("shape")
   const node = `${titled.slide}.${titled.shape}`
   const register = storedBeforeTheFix([
-    [first(shapes, "picture"), agentText],
+    [first(shapes, "photo"), agentText],
     [node, agentText],
   ])
   const exported = exportedParts(parts, register)

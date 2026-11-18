@@ -128,10 +128,10 @@ describe("a slide's fill is its background", () => {
 
   it("writes a native picture background and reads its existing fill control value", async () => {
     const { parts, first, node } = await firstOf("blank.pptx")
-    const next = filled(parts, [[node, { fills: { p0: { set: { image: "star" } } } }]])
+    const next = filled(parts, [[node, { fills: { p0: { set: { image: true } }, source: { set: "star" } } }]])
     expect(text(next.get(first.part))).toContain("<p:bg><p:bgPr><a:blipFill")
     expect(shown(next, first.part)?.type).toBe("picture")
-    expect(shownBackground(next, first.part)).toEqual({ value: { image: "star" }, own: true })
+    expect(shownBackground(next, first.part)).toEqual({ value: { image: true }, own: true })
     expect(changedParts(next, filled(next, []))).toEqual([])
   })
 

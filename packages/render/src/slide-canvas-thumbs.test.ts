@@ -69,7 +69,7 @@ function strip(store: PaintStore, slides: readonly CanvasSlide[]) {
 it("paints only the thumbnail whose slide changed when the strip paints again", async () => {
   const ids = [elementId("256.2"), elementId("257.2"), elementId("258.2")]
   const inner = paintStore()
-  for (const id of ids) inner.publish({ id, kind: "shape", text: hello, picture: null })
+  for (const id of ids) inner.publish({ id, kind: "shape", text: hello })
   const painted: ElementId[] = []
   const store = counted(inner, painted)
   const slides = ids.map((id): CanvasSlide => ({ ...wide, elements: [shape(id)] }))
@@ -100,7 +100,7 @@ function thumbAt(host: HTMLElement, id: ElementId): readonly string[] {
 async function thumbnail(elements: readonly CanvasElement[]) {
   const store = paintStore()
   for (const each of elements) {
-    if (each.id !== null) store.publish({ id: each.id, kind: "shape", text: hello, picture: null })
+    if (each.id !== null) store.publish({ id: each.id, kind: "shape", text: hello })
   }
   const host = document.createElement("div")
   document.body.append(host)

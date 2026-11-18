@@ -76,7 +76,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const added = await tool("airdesign_edit_deck", {
     deck,
     base: before.revision,
-    changes: [{ op: "add", kind: "picture", slide, icon: "rocket" }],
+    changes: [{ op: "add", kind: "shape", slide, icon: "rocket" }],
   })
   const node = added.elements.find((element) => element.node.startsWith(`${slide}.`))?.node
   expect(node).toBeDefined()
@@ -89,7 +89,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await tool("airdesign_stop_run", { deck, runId: added.runId })
   const read = await tool("airdesign_read_deck", { deck })
   const design = read.elements.find((element) => element.node === node)?.design
-  expect(design).toBe("image.source rocket · identity.alt A rocket lifting off")
+  expect(design).toBe("fills image · fills.source rocket · identity.alt A rocket lifting off")
   note(`read_deck prints ${node} as: ${design}`)
   await expect.poll(async () => (await look(shape)).image).toContain("blob:")
   await expect.poll(async () => (await look(shape)).label).toBe("A rocket lifting off")
