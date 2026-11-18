@@ -1,3 +1,4 @@
+import { effectsCopy } from "../../../../apps/web/src/copy/effects-copy.ts"
 import path from "node:path"
 import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
@@ -100,7 +101,8 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
     .locator("[data-design-element] section")
     .filter({ has: page.getByRole("heading", { name: "Effects", exact: true }) })
   await expect(section).toBeVisible()
-  await section.getByRole("group", { name: "Glow", exact: true }).getByRole("button", { name: "Glow" }).click()
+  await section.getByRole("button", { name: effectsCopy.add, exact: true }).click()
+  await page.getByRole("menuitem", { name: "Add glow", exact: true }).click()
   await expect.poll(async () => (await effects(glowing)).glow).toBe(1)
   await section.getByRole("heading", { name: "Effects", exact: true }).scrollIntoViewIfNeeded()
   await capture("person-glow")

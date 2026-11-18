@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from "react"
-import { blurDeviation, edgeDeviation, slideShift, tidy } from "./effect-art.js"
+import { blurDeviation, castShift, edgeDeviation, slideShift, tidy } from "./effect-art.js"
 import type { CanvasElement } from "./record.js"
 import type { Scaled } from "./text-look.js"
 
@@ -9,7 +9,11 @@ export function paintsGroupEffects(element: CanvasElement): boolean {
     element.kind === "group" &&
     element.box !== null &&
     effects !== undefined &&
-    (effects.shadow !== undefined || effects.glow !== undefined || effects.softEdge !== undefined)
+    (effects.shadow !== undefined ||
+      effects.glow !== undefined ||
+      effects.softEdge !== undefined ||
+      effects.innerShadow !== undefined ||
+      effects.blur !== undefined)
   )
 }
 
@@ -31,9 +35,10 @@ export function layered(
 
 function GroupFilter(props: { readonly id: string; readonly element: CanvasElement; readonly scaled: Scaled }) {
   const { element, id, scaled } = props
-  const { glow, shadow, softEdge } = element.effects ?? {}
+  const { blur, glow, innerShadow, shadow, softEdge } = element.effects ?? {}
   const shift =
     shadow === undefined || element.box === null ? null : slideShift(shadow, element.box, scaled(shadow.distance))
+  const innerShift = innerShadow === undefined ? null : castShift(innerShadow.direction, scaled(innerShadow.distance))
   return (
     <filter id={id} x="-50%" y="-50%" width="200%" height="200%">
       {softEdge === undefined ? null : (
@@ -61,11 +66,24 @@ function GroupFilter(props: { readonly id: string; readonly element: CanvasEleme
           <feComposite in="glow-shape" in2="SourceAlpha" operator="out" result="glow" />
         </>
       )}
-      <feMerge>
+      {innerShadow === undefined || innerShift === null ? null : (
+        <>
+          <feFlood floodColor={innerShadow.color} result="inner-flood" />
+          <feComposite in="inner-flood" in2="SourceAlpha" operator="out" result="inner-out" />
+          <feGaussianBlur in="inner-out" stdDeviation={scaled(innerShadow.blur) / blurDeviation} result="inner-soft" />
+          <feOffset in="inner-soft" dx={tidy(innerShift.x)} dy={tidy(innerShift.y)} result="inner-cast" />
+          <feComposite in="inner-cast" in2="SourceAlpha" operator="in" result="inner" />
+        </>
+      )}
+      <feMerge result={blur === undefined ? undefined : "stacked"}>
         {shadow === undefined ? null : <feMergeNode in="shadow" />}
         {glow === undefined ? null : <feMergeNode in="glow" />}
         <feMergeNode in={softEdge === undefined ? "SourceGraphic" : "soft"} />
+        {innerShadow === undefined ? null : <feMergeNode in="inner" />}
       </feMerge>
+      {blur === undefined ? null : (
+        <feGaussianBlur in="stacked" stdDeviation={scaled(blur.radius) / blurDeviation} result="layer" />
+      )}
     </filter>
   )
 }

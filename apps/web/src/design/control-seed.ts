@@ -8,10 +8,12 @@ const startingIcon = "star"
 export function caseSeed(key: string, color: Color): unknown {
   switch (key) {
     case "effects.shadow.outer":
+    case "effects.innerShadow.inner":
       return { blur: 50_800, distance: 38_100, direction: 2_700_000, color: { rgb: "000000", transforms: [seen] } }
     case "effects.glow.halo":
       return { radius: 63_500, color: { ...color, transforms: [...(color.transforms ?? []), seen] } }
     case "effects.softEdge.radius":
+    case "effects.blur.radius":
       return 63_500
     case "image.recolor.duotone":
       return { dark: color, light: backdrop }

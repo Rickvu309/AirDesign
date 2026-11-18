@@ -117,7 +117,10 @@ describe("effect paint", () => {
 
   it("leaves out the effects the file does not give and the kinds it does not paint", () => {
     expect(ownOf("")).toBeUndefined()
-    expect(ownOf('<a:innerShdw blurRad="9"><a:srgbClr val="000000"/></a:innerShdw><a:reflection/>')).toBeUndefined()
+    expect(ownOf('<a:innerShdw blurRad="9"><a:srgbClr val="000000"/></a:innerShdw><a:reflection/>')).toEqual({
+      innerShadow: { blur: 9, distance: 0, direction: 0, color: { hex: "000000", alpha: 1 } },
+    })
+    expect(ownOf('<a:blur rad="63500" grow="0"/>')).toEqual({ blur: { radius: 63500 } })
     expect(effectsOf(partsOf(sp()))).toBeUndefined()
   })
 

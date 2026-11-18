@@ -124,21 +124,68 @@ function softEdgeOf(list: Held): FieldValue<"effects", "softEdge"> | null {
   return size === null ? null : { radius: size }
 }
 
+function innerShadowOf(list: Held, placed: Color | null): FieldValue<"effects", "innerShadow"> | null {
+  const shadow = child(list, "a:innerShdw")
+  if (shadow === undefined) return { none: true }
+  const blur = radius(shadow.element, "blurRad")
+  const distance = radius(shadow.element, "dist")
+  const direction = paintAttribute(shadow.element, "dir") === null ? 0 : whole(shadow.element, "dir")
+  const color = colorIn(shadow, placed)
+  if (blur === null || distance === null || direction === undefined || color === null) return null
+  if (direction < 0 || direction >= fullAngle) return null
+  return { inner: { blur, distance, direction, color } }
+}
+
+function blurOf(list: Held): FieldValue<"effects", "blur"> | null {
+  const blur = child(list, "a:blur")
+  if (blur === undefined) return { none: true }
+  const size = radius(blur.element, "rad")
+  return size === null ? null : { radius: size }
+}
+
+const keptTags = [
+  ["a:fillOverlay", "fillOverlay"],
+  ["a:prstShdw", "presetShadow"],
+  ["a:reflection", "reflection"],
+] as const
+
+export function keptIn(list: Held | undefined, dag: boolean): string | null {
+  if (dag) return "graph"
+  if (list === undefined) return null
+  const names = keptTags.flatMap(([tag, name]) => (child(list, tag) === undefined ? [] : [name]))
+  return names.length === 0 ? null : names.join(" ")
+}
+
+export function keptEffectText(parts: ReadonlyMap<string, Uint8Array>, at: EffectsAt): string | null {
+  const slot = effectsSlot(parts, at)
+  return slot === null ? null : keptIn(slot.list, slot.dag)
+}
+
 export function shownEffects(parts: ReadonlyMap<string, Uint8Array>, at: EffectsAt): ShownEffects | null {
   const slot = effectsSlot(parts, at)
   if (slot === null) return null
   const { list, dag, own, placed } = slot
-  if (dag) return { shadow: { value: null, own }, glow: { value: null, own }, softEdge: { value: null, own } }
-  if (list === undefined) {
-    return {
-      shadow: { value: { none: true }, own },
-      glow: { value: { none: true }, own },
-      softEdge: { value: { none: true }, own },
-    }
+  const empty: ShownEffects = {
+    shadow: { value: { none: true }, own },
+    innerShadow: { value: { none: true }, own },
+    glow: { value: { none: true }, own },
+    softEdge: { value: { none: true }, own },
+    blur: { value: { none: true }, own },
   }
+  if (dag)
+    return {
+      shadow: { value: null, own },
+      innerShadow: { value: null, own },
+      glow: { value: null, own },
+      softEdge: { value: null, own },
+      blur: { value: null, own },
+    }
+  if (list === undefined) return empty
   return {
     shadow: { value: shadowOf(list, placed), own },
+    innerShadow: { value: innerShadowOf(list, placed), own },
     glow: { value: glowOf(list, placed), own },
     softEdge: { value: softEdgeOf(list), own },
+    blur: { value: blurOf(list), own },
   }
 }

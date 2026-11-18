@@ -38,6 +38,17 @@ export function softensFill(element: CanvasElement): boolean {
   return element.effects?.softEdge !== undefined && element.outline !== "line" && element.fill !== null
 }
 
+export function holdsEffectFill(element: CanvasElement): boolean {
+  const effects = element.effects
+  if (effects === undefined || element.outline === "line" || element.fill === null) return false
+  return effects.softEdge !== undefined || effects.innerShadow !== undefined || effects.blur !== undefined
+}
+
+export function castShift(direction: number, distance: number): { readonly x: number; readonly y: number } {
+  const turn = direction * radiansPerDegree
+  return { x: Math.cos(turn) * distance, y: Math.sin(turn) * distance }
+}
+
 function shadowOffset(shadow: CanvasShadow, rotation: number, mirrorX: boolean, mirrorY: boolean, distance: number) {
   const direction = shadow.direction * radiansPerDegree
   let x = Math.cos(direction) * distance
@@ -228,6 +239,33 @@ export function EffectDefs(props: EffectProps) {
           <feComposite in="SourceGraphic" in2="shape" operator="in" />
         </filter>
       )}
+      {effects.innerShadow === undefined ? null : (
+        <filter
+          id={`${id}-inner`}
+          filterUnits="userSpaceOnUse"
+          {...areaAround(width, height, scaled(effects.innerShadow.blur) * reachSpread)}
+        >
+          <feFlood floodColor={effects.innerShadow.color} result="flood" />
+          <feComposite in="flood" in2="SourceAlpha" operator="out" result="outside" />
+          <feGaussianBlur in="outside" stdDeviation={scaled(effects.innerShadow.blur) / blurDeviation} result="soft" />
+          <feOffset
+            in="soft"
+            dx={tidy(castShift(effects.innerShadow.direction, scaled(effects.innerShadow.distance)).x)}
+            dy={tidy(castShift(effects.innerShadow.direction, scaled(effects.innerShadow.distance)).y)}
+            result="cast"
+          />
+          <feComposite in="cast" in2="SourceAlpha" operator="in" />
+        </filter>
+      )}
+      {effects.blur === undefined ? null : (
+        <filter
+          id={`${id}-blur`}
+          filterUnits="userSpaceOnUse"
+          {...areaAround(width, height, scaled(effects.blur.radius) * reachSpread)}
+        >
+          <feGaussianBlur in="SourceGraphic" stdDeviation={scaled(effects.blur.radius) / blurDeviation} />
+        </filter>
+      )}
     </>
   )
 }
@@ -318,11 +356,48 @@ export function CssFill(props: {
 
 export const softAttributes = (id: string) => ({ "data-effect-soft": "", filter: `url(#${id}-soft)` })
 
+export function InnerShadow(props: EffectProps) {
+  const { element, height, id, width } = props
+  const inner = element.effects?.innerShadow
+  if (inner === undefined || silhouetteOf(element) === null) return null
+  return (
+    <g data-effect-inner filter={`url(#${id}-inner)`}>
+      <Silhouette
+        element={element}
+        paths={props.paths}
+        width={width}
+        height={height}
+        {...inked(element, "black")}
+        strokeWidth={props.weight}
+      />
+    </g>
+  )
+}
+
+export function EffectFill(props: EffectProps & { readonly paint: string | null }) {
+  const { element, height, paint, width } = props
+  if (!holdsEffectFill(element) || softensFill(element) || props.paths !== null) return null
+  if (paint === null) return <CssFill element={element} width={width} height={height} />
+  return (
+    <Silhouette
+      element={element}
+      paths={null}
+      width={width}
+      height={height}
+      fill={paint}
+      stroke="none"
+      strokeWidth={0}
+    />
+  )
+}
+
 export function paintsEffects(element: CanvasElement): boolean {
   const effects = element.effects
   if (effects === undefined) return false
   return (
     softensFill(element) ||
+    effects.innerShadow !== undefined ||
+    effects.blur !== undefined ||
     ((effects.shadow !== undefined || effects.glow !== undefined) && silhouetteOf(element) !== null)
   )
 }

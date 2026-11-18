@@ -138,6 +138,17 @@ export { slideGroups } from "./slide-groups.js"
 export { floorFor, floorNodes, floorOpening, newSlideElement, openingElement } from "./slide-floor.js"
 export { type TransitionValue } from "./trait-transition.js"
 export { widestEffect } from "./trait-effects.js"
+export {
+  changeEffects,
+  readEffects,
+  type Effect,
+  type EffectKey,
+  type EffectsSource,
+  type Entry,
+  type KeptEffect,
+  type ResolvedEffects,
+  type ShadowPreset,
+} from "./effects-list.js"
 export { readTextFill, type TextFill } from "./text-fill.js"
 export { changeFills, paintSlots, patternPresets, readFills, type Paint, type ShownFills } from "./trait-fills.js"
 export { nameBytes } from "./trait-identity.js"

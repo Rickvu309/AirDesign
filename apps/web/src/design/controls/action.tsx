@@ -2,6 +2,7 @@ import { controlLabel } from "@/design/controls/control-label"
 import { useId } from "react"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { DistributeSpacing } from "@/design/preset-icons"
+import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { optionWord } from "@/copy/option-copy"
 import type { ControlProps } from "@/design/panel"
@@ -17,7 +18,7 @@ function cluster(options: readonly string[]): readonly (readonly string[])[] {
 export function ActionControl({ control, onChange }: ControlProps) {
   const label = useId()
   const options = control.desc.kind === "choice" ? control.desc.options : []
-  if (control.field === "distribute")
+  if (control.field === "distribute" || control.field === "add")
     return (
       <DropdownMenu>
         <DropdownMenuTrigger
@@ -27,11 +28,16 @@ export function ActionControl({ control, onChange }: ControlProps) {
               variant="ghost"
               aria-label={control.label}
               title={control.label}
+              disabled={control.field === "add" && options.length === 0}
               className="h-[var(--control-dense)] w-6 shrink-0 p-0 text-[var(--panel-icon)]"
             />
           }
         >
-          <DistributeSpacing size={16} className="size-4" aria-hidden />
+          {control.field === "add" ? (
+            <Plus size={16} className="size-4" aria-hidden />
+          ) : (
+            <DistributeSpacing size={16} className="size-4" aria-hidden />
+          )}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-auto">
           {options.map((option) => (

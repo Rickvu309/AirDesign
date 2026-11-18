@@ -19,7 +19,7 @@ it("gives the run format of a JSON text value, how a connector's ends attach", (
   expect(instructions).not.toContain("A JSON table value is")
   expect(instructions).toContain('attaches each end with { "shape": { "node": ..., "site": ... } }')
   expect(instructions).toContain(
-    "join, head, tail), effects (shadow, glow, softEdge), connection (start, end) and opacity.",
+    "join, head, tail), effects (shadow, innerShadow, glow, softEdge, blur), connection (start, end) and opacity.",
   )
   expect(instructions).toContain(
     "a rectangle, rounded rectangle, diamond or image has 0 top, 1 left, 2 bottom and 3 right",

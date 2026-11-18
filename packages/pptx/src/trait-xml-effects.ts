@@ -146,6 +146,19 @@ function softEdgeList(value: FieldValue<"effects", "softEdge">): List {
   return patched("a:softEdge", { rad: String(value.radius) }, null, `<a:softEdge rad="${value.radius}"/>`)
 }
 
+function innerShadowList(value: FieldValue<"effects", "innerShadow">): List {
+  if ("none" in value) return without("a:innerShdw")
+  const { blur, distance, direction, color } = value.inner
+  const values = { blurRad: String(blur), dist: String(distance), dir: String(direction) }
+  const fresh = `<a:innerShdw blurRad="${blur}" dist="${distance}" dir="${direction}">${colorXml(color)}</a:innerShdw>`
+  return patched("a:innerShdw", values, color, fresh)
+}
+
+function blurList(value: FieldValue<"effects", "blur">): List {
+  if ("none" in value) return without("a:blur")
+  return patched("a:blur", { rad: String(value.radius) }, null, `<a:blur rad="${value.radius}" grow="1"/>`)
+}
+
 function field<F extends EffectsField>(
   name: F,
   list: (value: FieldValue<"effects", F>) => List,
@@ -160,7 +173,9 @@ export const effectsXml: TraitXml<"effects"> = {
   slot: null,
   fields: {
     shadow: field("shadow", shadowList),
+    innerShadow: field("innerShadow", innerShadowList),
     glow: field("glow", glowList),
     softEdge: field("softEdge", softEdgeList),
+    blur: field("blur", blurList),
   },
 }

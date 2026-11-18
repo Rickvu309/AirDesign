@@ -163,7 +163,7 @@ Shapes joined by connectors and grouped, which an agent adds in one change with 
 _Avoid_: flowchart, SmartArt
 
 **effects**:
-A layer’s shadow, glow and soft edge. Shadow has three strengths and Shadow opacity. Effects keeps exact settings. A group’s effects paint around its contents.
+A layer's ordered list of effects: shadow, inner shadow, glow, soft edge, blur. Shadow has three strengths and Shadow opacity. Effects keeps exact settings. A group's effects paint around its contents.
 _Avoid_: filters, shadow styles
 
 **request**:

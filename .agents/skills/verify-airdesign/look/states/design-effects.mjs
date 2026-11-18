@@ -1,3 +1,4 @@
+import { effectsCopy } from "../../../../../apps/web/src/copy/effects-copy.ts"
 import path from "node:path"
 import { expect } from "@playwright/test"
 import { openDeck } from "../open-deck.mjs"
@@ -18,7 +19,8 @@ async function drive(kit) {
     .locator("section")
     .filter({ has: kit.page.getByRole("heading", { name: "Effects", exact: true }) })
   if ((await effects.count()) === 0) return
-  await effects.getByRole("group", { name: "Glow", exact: true }).getByRole("button", { name: "Glow" }).click()
+  await effects.getByRole("button", { name: effectsCopy.add, exact: true }).click()
+  await kit.page.getByRole("menuitem", { name: "Add glow", exact: true }).click()
   await expect(kit.page.getByRole("button", { name: "Undo effects", exact: true })).toBeVisible()
   await effects.getByRole("heading", { name: "Effects", exact: true }).scrollIntoViewIfNeeded()
 }

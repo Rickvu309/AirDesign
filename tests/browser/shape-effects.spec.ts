@@ -1,3 +1,4 @@
+import { effectsCopy } from "../../apps/web/src/copy/effects-copy"
 import { actualSize } from "./paint-scale"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
@@ -72,12 +73,13 @@ test("a person adds glow to a shape whose shadow comes from its style and recolo
   const effects = await pick(page, first)
   await expect(choices(effects, "Shadow").getByRole("button")).toHaveText(["None", "Outer"])
   await expect(pressed(effects, "Shadow")).toHaveText("Outer")
-  await expect(pressed(effects, "Glow")).toHaveText("None")
-  await expect(pressed(effects, "Soft edge")).toHaveText("None")
-  await choices(effects, "Glow").getByRole("button", { name: "Glow", exact: true }).click()
+  await expect(choices(effects, "Glow")).toHaveCount(0)
+  await expect(choices(effects, "Soft edge")).toHaveCount(0)
+  await effects.getByRole("button", { name: effectsCopy.add, exact: true }).click()
+  await page.getByRole("menuitem", { name: "Add glow", exact: true }).click()
   await expect.poll(() => painted(first)).toEqual({ shadow: 1, glow: 1 })
   await expect(effects.getByRole("textbox", { name: "Radius", exact: true })).toHaveValue("5")
-  const glowColor = effects.getByRole("group", { name: "Color", exact: true }).nth(1)
+  const glowColor = effects.getByRole("group", { name: "Color", exact: true }).first()
   await expect(shownColor(glowColor)).toHaveText("Accent 1")
   await pickColor(page, glowColor, "Accent 2")
   await expect(shownColor(glowColor)).toHaveText("Accent 2")
@@ -92,12 +94,13 @@ test("a person adds glow to a shape whose shadow comes from its style and recolo
   await distance.press("Enter")
   await expect.poll(() => offset(second)).not.toBe(near)
   const far = await offset(second)
-  await choices(panel, "Soft edge").getByRole("button", { name: "Radius", exact: true }).click()
+  await panel.getByRole("button", { name: effectsCopy.add, exact: true }).click()
+  await page.getByRole("menuitem", { name: "Add soft edge", exact: true }).click()
   await expect(pressed(panel, "Soft edge")).toHaveText("Radius")
   await expect(panel.getByRole("textbox", { name: "Radius", exact: true })).toHaveValue("5")
   await expect(second.locator("[data-effect-soft]")).toHaveCount(1)
   await page.getByRole("button", { name: "Undo effects", exact: true }).click()
-  await expect(pressed(panel, "Soft edge")).toHaveText("None")
+  await expect(choices(panel, "Soft edge")).toHaveCount(0)
   await expect(second.locator("[data-effect-soft]")).toHaveCount(0)
   await page.getByRole("button", { name: "Undo effects", exact: true }).click()
   await expect.poll(() => offset(second)).toBe(near)

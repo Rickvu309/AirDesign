@@ -9,6 +9,7 @@ import { BlurControl, OverlayControl } from "@/design/controls/picture-adjust"
 import { PictureFillKinds } from "@/design/controls/picture-kind"
 import type { Palette } from "@/design/color-choices"
 import type { ControlProps, PanelModel, PanelControl, PanelSection } from "@/design/panel"
+import { visibleEffects } from "@/design/effects-list"
 import { panelPlaces, sectionInMode, type PanelMode } from "@/design/panel-order"
 import { foldOpen, setFold, useFolds } from "@/design/panel-folds"
 import { swatchMist, swatchNavy, swatchTeal, swatchWhite } from "@/editor/design-panel-art"
@@ -187,6 +188,8 @@ export function Swatch({ color, name, edged = false }: { color: string; name: st
 }
 
 export function ControlView({ control, palette, onChange }: ControlProps) {
+  if (control.field.startsWith("kept."))
+    return <p className="text-[length:var(--type-caption)] text-quiet">{control.label}</p>
   if (control.trait === "image" && control.field === "overlay")
     return <OverlayControl control={control} palette={palette} onChange={onChange} />
   if (control.trait === "image" && control.field === "blur")
@@ -198,8 +201,12 @@ export function ControlView({ control, palette, onChange }: ControlProps) {
 }
 
 function stripColumns(strip: readonly PanelControl[]): string {
+  if (strip.some((control) => control.field.startsWith("remove.")))
+    return strip.map((control) => (control.field.startsWith("remove.") ? "24px" : "minmax(0, 1fr)")).join(" ")
   if (strip.every((control) => control.kind === "action"))
-    return strip.map((control) => (control.field === "distribute" ? "24px" : "minmax(0, 1fr)")).join(" ")
+    return strip
+      .map((control) => (control.field === "distribute" || control.field === "add" ? "24px" : "minmax(0, 1fr)"))
+      .join(" ")
   return `repeat(${strip.length}, minmax(0, 1fr))`
 }
 
@@ -281,7 +288,9 @@ export function ElementDesign({
       : panelPlaces(kind, mode, model.selectionKinds).flatMap<PanelSection | "selectionColors">(({ section }) => {
           if (section === "selectionColors") return selectionColors === null ? [] : [section]
           const modelSection = model.sections.find(({ trait }) => trait === section)
-          return modelSection === undefined ? [] : [sectionInMode(modelSection, mode)]
+          if (modelSection === undefined) return []
+          const placed = sectionInMode(modelSection, mode)
+          return [placed.trait === "effects" ? visibleEffects(placed) : placed]
         })
   const fillDetails = mode === "design" && fill !== undefined
   const last = sections.length - 1
