@@ -42,6 +42,8 @@ export const slideListCopy = {
   openKey: "Enter",
   skip: "Skip slide",
   unskip: "Unskip slide",
+  skipSet: (count: number) => `Skip ${slidesOf(count)}`,
+  unskipSet: (count: number) => `Unskip ${slidesOf(count)}`,
   skipped: "Skipped in Present",
   duplicate: "Duplicate",
   delete: "Delete",

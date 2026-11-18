@@ -185,6 +185,31 @@ html:has(.reflow-frame) #root {
   box-shadow: 0 0 0 1px var(--primary);
   background: transparent;
 }
+[data-slide-skipped] [data-slide-thumb] {
+  opacity: var(--slide-skip-opacity);
+}
+[data-slide-skip-mark] {
+  display: inline-block;
+  width: var(--space-12);
+  height: var(--space-12);
+  vertical-align: text-bottom;
+}
+[data-slide-number] [data-slide-skip-mark] {
+  margin-inline-start: var(--space-4);
+}
+[data-slide-skip-badge] {
+  position: absolute;
+  inset: 0 auto auto 0;
+  display: flex;
+  padding: var(--space-4);
+  pointer-events: none;
+  border-bottom-right-radius: var(--grid-number-tab-radius);
+  background: var(--grid-number-surface);
+  color: var(--grid-number);
+}
+[data-slide-item] [data-slide-skip-mark] {
+  color: var(--quiet);
+}
 [data-slide-number] {
   position: absolute;
   z-index: 1;
@@ -203,6 +228,12 @@ html:has(.reflow-frame) #root {
   --grid-number-y: var(--grid-number-inset-y);
   paint-order: stroke;
   -webkit-text-stroke: var(--grid-number-halo-width) var(--grid-number-surface);
+}
+[data-number-placement="inside"]:has(> [data-slide-skipped]) [data-slide-number] {
+  padding-inline: var(--space-4);
+  border-radius: var(--grid-number-tab-radius);
+  background: var(--grid-number-surface);
+  -webkit-text-stroke-width: 0;
 }
 @media (hover: hover) and (pointer: fine) {
   [data-grid-viewport]:not([data-hover-disabled], [data-panning])

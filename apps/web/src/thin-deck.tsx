@@ -94,10 +94,15 @@ export function ThinDeck({ id }: { id: string }) {
               ...strip,
               onSelection: setSelectedSlides,
               skipped: shows.map((show) => show.hidden),
-              onSkip: (index, skipped) => {
-                const slide = strip.slideIds?.[index]
-                if (slide === undefined) return
-                changeDesign(deck, () => ({ target: { node: slideNode(slide, "slide") }, show: { skipped } }))
+              onSkip: (indices, skipped) => {
+                const slides = indices.flatMap((index) => {
+                  const slide = strip.slideIds?.[index]
+                  return slide === undefined || shows[index]?.hidden === skipped ? [] : [slide]
+                })
+                if (slides.length === 0) return
+                changeDesign(deck, () =>
+                  slides.map((slide) => ({ target: { node: slideNode(slide, "slide") }, show: { skipped } })),
+                )
               },
             },
             slide: editableSlide(deck),

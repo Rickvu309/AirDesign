@@ -256,3 +256,35 @@ it("lists and applies plural slide edits through the same tool and returns the c
     await server.close()
   }
 })
+
+it("sets two slides' skip state in one MCP edit and reports both on read", async () => {
+  const held = session()
+  const server = createServer(held)
+  const [a, b] = InMemoryTransport.createLinkedPair()
+  const client = new Client({ name: "test", version: "1" })
+  await server.connect(b)
+  await client.connect(a)
+  try {
+    const edit = (changes: readonly unknown[]) =>
+      client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: held.deck.revision, changes },
+      })
+    expect((await edit([{ op: "add_slide", after: "256", layout: "256" }])).structuredContent).toMatchObject({
+      slides: ["257"],
+    })
+    for (const skipped of [true, false]) {
+      const before = held.deck.revision
+      const changed = await edit(["256", "257"].map((target) => ({ op: "set", target, show: { skipped } })))
+      expect(changed.structuredContent).toMatchObject({ ok: true, revision: before + 1 })
+      const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
+      expect(read.structuredContent).toMatchObject({
+        slides: ["256", "257"].map((id, position) => ({ id, position, ...(skipped ? { skipped } : {}) })),
+      })
+      expect(JSON.stringify(read.structuredContent).includes('"skipped":true')).toBe(skipped)
+    }
+  } finally {
+    await client.close()
+    await server.close()
+  }
+})

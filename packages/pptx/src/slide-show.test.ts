@@ -94,7 +94,5 @@ it("skips one slide by changing only its show attribute and restores the opening
   expect(readShows(edited)[0]?.hidden).toBe(true)
   for (const [name, bytes] of parts) if (name !== part) expect(edited.get(name)).toBe(bytes)
   expect(exportParts(parts, change(skipped, "opening")).get(part)).toBe(parts.get(part))
-  expect(decodeUtf8(exportParts(edited, change(added.register, { set: false })).get(part)!)).toBe(
-    slides[0]!.replace("<p:sld>", '<p:sld show="1">'),
-  )
+  expect(decodeUtf8(exportParts(edited, change(added.register, { set: false })).get(part)!)).toBe(slides[0]!)
 })

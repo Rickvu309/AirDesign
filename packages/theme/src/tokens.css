@@ -175,6 +175,7 @@
   --grid-number-hover: #165ba8;
   --grid-number: var(--quiet);
   --grid-number-surface: var(--background);
+  --slide-skip-opacity: 0.75;
   --grid-placeholder: var(--navy-8);
   --grid-placeholder-stroke: 2px;
   --grid-placeholder-dash: 8px;
