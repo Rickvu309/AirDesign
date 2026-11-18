@@ -25,7 +25,7 @@ describe("shownTextStyle", () => {
   it("reads a title's size, font and spacing from its layout and master, none of them its own", async () => {
     const parts = await deck("doe-heat-pumps.pptx")
     expect(shownTextStyle(parts, at(parts, 12, "2"))).toEqual({
-      fill: { value: { solid: { rgb: "000000" } }, own: false },
+      fill: { value: { solid: { scheme: "tx1" } }, own: false },
       size: { value: 4400, own: false },
       font: { value: "Calibri Light", own: false },
       align: { value: "left", own: false },
@@ -49,7 +49,7 @@ describe("shownTextStyle", () => {
   it("reads what paints when the deck sets no text style: 18 pt in the theme's body font, single spacing", async () => {
     const parts = await deck("clean.pptx")
     expect(shownTextStyle(parts, at(parts, 1, "2"))).toEqual({
-      fill: { value: { solid: { rgb: "000000" } }, own: true },
+      fill: { value: { solid: { scheme: "dk1" } }, own: true },
       size: { value: 3200, own: true },
       font: { value: "Arial", own: false },
       align: { value: "left", own: false },

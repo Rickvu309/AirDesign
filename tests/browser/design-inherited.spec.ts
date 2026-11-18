@@ -1,4 +1,5 @@
 import { expect, test, type Locator } from "@playwright/test"
+import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { designing, openDeck, unfold } from "./design-panel"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -57,9 +58,11 @@ test("a margin the text box inherits is quiet until set, and Reset fill shows th
   await left.press("Enter")
   await expect(left).toHaveValue("36")
   await expect.poll(() => inherited(left)).toBe(false)
-  const fill = panel.locator('[data-control="union"]').first()
+  await unfold(panel, fillCopy.box)
+  const box = panel.locator("section").filter({ has: panel.getByRole("button", { name: fillCopy.box, exact: true }) })
+  const fill = box.locator('[data-control="union"]')
   await expect(fill).not.toHaveAttribute("data-inherited")
-  await panel.getByRole("button", { name: "Reset fill", exact: true }).click()
+  await box.getByRole("button", { name: fillCopy.reset, exact: true }).click()
   await expect(fill).toHaveAttribute("data-inherited", "")
-  await expect(panel.getByRole("button", { name: "Reset fill", exact: true })).toHaveCount(0)
+  await expect(box.getByRole("button", { name: fillCopy.reset, exact: true })).toHaveCount(0)
 })

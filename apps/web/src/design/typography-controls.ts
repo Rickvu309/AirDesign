@@ -1,5 +1,5 @@
 import { fontFamily, portableFace, portableFaces } from "@airdesign/fonts"
-import type { TextStyle } from "@airdesign/document"
+import { readTextFill, type TextStyle } from "@airdesign/document"
 import { designCopy } from "@/copy/design-copy"
 import { formatCopy } from "@/copy/format-copy"
 import { textCopy } from "@/copy/text-copy"
@@ -72,7 +72,9 @@ export function typographyControls(
       if (control.field !== "style") return control
       const matching = styles.find((style) =>
         Object.entries(style.fields).every(([key, value]) => {
-          const held = controls.find((each) => each.field === key)
+          const held = controls.find((each) => each.field === (key === "color" ? "fill" : key))
+          const fill = key === "color" ? readTextFill(held?.value) : null
+          const current = key === "color" ? (fill !== null && "solid" in fill ? fill.solid : undefined) : held?.value
           const named =
             key === "font" && typeof value === "string" && value.startsWith("+m")
               ? (shown.fonts?.[value === "+mj-lt" ? "major" : "minor"] ?? value)
@@ -80,8 +82,7 @@ export function typographyControls(
           return (
             held !== undefined &&
             !held.mixed &&
-            (JSON.stringify(held.value) === JSON.stringify(value) ||
-              JSON.stringify(held.value) === JSON.stringify(named))
+            (JSON.stringify(current) === JSON.stringify(value) || JSON.stringify(current) === JSON.stringify(named))
           )
         }),
       )

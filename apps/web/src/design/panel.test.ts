@@ -256,13 +256,18 @@ it("reads Mixed where two shapes differ and sets the fill of both in one change"
   })
 })
 
+function textBox(node: string) {
+  return panelOf({ ...shape, node: elementId(node) }, { reads: {}, moves: true })
+}
+
 it("keeps text content out of the shared formatting controls", () => {
-  const panel = panelOfMany([filled("258.2", null, 0), filled("258.3", null, 0)])
+  const panel = panelOfMany([textBox("258.2"), textBox("258.3")])
   expect(panel.sections.map((section) => section.trait)).toEqual([
     "alignment",
     "text",
-    "fill",
+    "textFill",
     "opacity",
+    "boxFill",
     "box",
     "line",
     "effects",
@@ -407,16 +412,16 @@ it("leaves text content to the canvas and omits alignment when moves are refused
 })
 
 it("shows text controls first for a text selection and hides corners and shadow", () => {
-  const text = panelOfMany([filled("258.2", null, 0), filled("258.3", null, 0)])
+  const text = panelOfMany([textBox("258.2"), textBox("258.3")])
   const sections = text.sections.map(({ trait }) => trait)
-  expect(sections.slice(0, 4)).toEqual(["alignment", "text", "fill", "opacity"])
+  expect(sections.slice(0, 4)).toEqual(["alignment", "text", "textFill", "opacity"])
   expect(sections).not.toContain("corners")
   expect(sections).not.toContain("shadow")
 })
 
 it("hides opacity and text controls when a line joins the selection", () => {
   const line = panelOf(connector, { reads: {}, moves: true })
-  const mixed = panelOfMany([filled("258.2", null, 0), line])
+  const mixed = panelOfMany([textBox("258.2"), line])
   expect(mixed.sections.map(({ trait }) => trait)).not.toContain("opacity")
   expect(mixed.sections.map(({ trait }) => trait)).not.toContain("text")
 })
