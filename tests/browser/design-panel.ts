@@ -2,9 +2,15 @@ import { join } from "node:path"
 import { expect, type Locator, type Page } from "@playwright/test"
 import { colorCopy } from "../../apps/web/src/copy/color-copy"
 
-import { setPanelMode } from "../../.agents/skills/verify-airdesign/look/panel-mode.mjs"
-
-export { setPanelMode }
+export async function setPanelMode(page: Page, mode: "slides" | "design"): Promise<void> {
+  const toggle = page.locator("[data-design-mode]")
+  const pressed = mode === "design" ? "true" : "false"
+  if ((await toggle.getAttribute("aria-pressed")) !== pressed) await toggle.click()
+  await page.waitForFunction(
+    (expected) => document.querySelector("[data-design-mode]")?.getAttribute("aria-pressed") === expected,
+    pressed,
+  )
+}
 
 export const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 

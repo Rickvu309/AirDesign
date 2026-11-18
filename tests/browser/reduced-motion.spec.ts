@@ -1,5 +1,6 @@
 import { expect, test, type Locator } from "@playwright/test"
-import { openDeck } from "./design-panel"
+import { designCopy } from "../../apps/web/src/copy/design-copy"
+import { openDeck, setPanelMode } from "./design-panel"
 import { first, store } from "./home-store.ts"
 import { fillPanel, shapeAt } from "./shape-fills"
 
@@ -37,12 +38,14 @@ test("under reduced motion the editor's color picker opens and closes in its fin
 test("under reduced motion a design section chevron changes state without a transition", async ({ page }) => {
   await openDeck(page, "shapes-added.pptx")
   const panel = await fillPanel(page, shapeAt(page, "4"))
-  const section = panel.locator('[data-design-section="Fill"]')
-  const trigger = section.getByRole("button", { name: "Fill", exact: true })
+  await setPanelMode(page, "design")
+  const section = panel.locator(`[data-design-section="${designCopy.fillDetails}"]`)
+  const trigger = section.getByRole("button", { name: designCopy.fillDetails, exact: true })
   const chevron = trigger.locator("svg")
   await still(chevron)
-  await trigger.click()
   await expect(trigger).toHaveAttribute("aria-expanded", "false")
+  await trigger.click()
+  await expect(trigger).toHaveAttribute("aria-expanded", "true")
   await still(chevron)
 })
 
