@@ -1,4 +1,4 @@
-import { elementId, format, openRegister, slideId, type Register } from "@airdesign/document"
+import { elementId, format, openRegister, slideId, writeTextValue, type Register } from "@airdesign/document"
 import { iconParts } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { iconMarkup, iconSvg, missingIcons, registerIcons } from "./icon-fallback"
@@ -57,4 +57,18 @@ it("finds every icon a register shows: added icons, rows that set one, and icon 
     [iconParts("rocket").png, new Uint8Array()],
   ])
   expect([...missingIcons(register, held)].sort()).toEqual(["leaf", "star"])
+})
+
+it("finds an icon that fills text, so an export can embed it", () => {
+  const opened = openRegister("", "deck")
+  const root = opened.elements[opened.nodes[0]!]!
+  const node = elementId("256.2")
+  const value = writeTextValue([{ from: 0, runs: [{ from: 0, text: "Moon", fill: { image: "moon" } }] }])
+  const landed = [{ actor: "person", visible: true, v: format, patch: { text: { value: { set: value } } } }] as const
+  const register: Register = {
+    ...opened,
+    nodes: [...opened.nodes, node],
+    elements: { ...opened.elements, [node]: { ...root, landed } },
+  }
+  expect(registerIcons(register)).toEqual(["moon"])
 })

@@ -1,3 +1,4 @@
+import { imageTexts } from "@/patch-images"
 import { slideId, type ElementId, type Register, type SlideId } from "@airdesign/document"
 import {
   paintReader,
@@ -133,7 +134,11 @@ export function paint(
   const earlier = previous?.from === parts ? previous : null
   const base = sameIdentity(register === null ? parts : slideBase(parts, register, pictureBytes), earlier?.base)
   const edited =
-    register !== null && (register.order.length > 0 || tableEdited(register) || designRows(register).length > 0)
+    register !== null &&
+    (register.order.length > 0 ||
+      tableEdited(register) ||
+      designRows(register).length > 0 ||
+      imageTexts(register).length > 0)
       ? editedParts(base, register, pictureBytes)
       : base
   const display = sameIdentity(edited, earlier?.display)

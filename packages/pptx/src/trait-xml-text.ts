@@ -1,4 +1,5 @@
 import { shownLink, writtenLink } from "./trait-xml-link.js"
+import { writtenRunImage } from "./text-fill-write.js"
 import { namesAlpha, readTextValue, writeTextValue, type Alpha, type Color, type TextValue } from "@airdesign/document"
 import { agreed, alphaKept, fadedBytes, fragmentAlpha, type Faded } from "./alpha-codec.js"
 import { fillIn } from "./color-read.js"
@@ -165,8 +166,11 @@ function fadedText(parts: Parts, at: ElementAt, alpha: Alpha): Parts {
 function runColors(stored: string): readonly Color[] {
   return shownText(stored).flatMap((paragraph) =>
     paragraph.runs.flatMap((run) => {
-      if (run.fill !== undefined)
-        return "solid" in run.fill ? [run.fill.solid] : run.fill.gradient.stops.map((stop) => stop.color)
+      const { fill } = run
+      if (fill !== undefined) {
+        if ("image" in fill) return []
+        return "solid" in fill ? [fill.solid] : fill.gradient.stops.map((stop) => stop.color)
+      }
       return run.color === undefined ? [] : [run.color]
     }),
   )
@@ -206,6 +210,8 @@ const textValue: PartCodec<string> = {
       for (const r of p.runs) {
         if (r.link !== undefined && r.link.kind !== "unsupported")
           next = writtenLink(next, { ...at, paragraph, run }, r.link)
+        if (r.fill !== undefined && "image" in r.fill)
+          next = writtenRunImage(next, { ...at, paragraph, run }, r.fill.image)
         run += r.slideNumber?.count === "all" && r.slideNumber.format !== null ? 2 : 1
       }
     }

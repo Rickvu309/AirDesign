@@ -5,8 +5,10 @@ import { paintReader } from "./paint-reader.js"
 import type { PaintParagraph, PaintRunStyle, PaintSpacing } from "./paint-text.js"
 import { sheetOf } from "./trait-read.js"
 
+export type ShownTextFill = Exclude<TextFill, { readonly image: string }> | { readonly image: string | null }
+
 export type TextStyleValues = {
-  readonly fill: TextFill
+  readonly fill: ShownTextFill
   readonly size: number
   readonly font: string
   readonly strike: boolean
@@ -89,7 +91,10 @@ export function shownTextStyle(parts: ReadonlyMap<string, Uint8Array>, at: TextS
   const { paragraphs, runs } = ownHolders(parts, at)
   return {
     fill: {
-      value: style.fill ?? (style.color === null ? null : { solid: { rgb: style.color.hex } }),
+      value:
+        style.fill ??
+        (style.picture === undefined ? null : { image: null }) ??
+        (style.color === null ? null : { solid: { rgb: style.color.hex } }),
       own: runs.some((held) =>
         inside(held).some((each) => ["a:solidFill", "a:gradFill", "a:blipFill"].includes(each.kind)),
       ),

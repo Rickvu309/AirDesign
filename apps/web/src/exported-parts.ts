@@ -7,6 +7,7 @@ import {
   type TextValue,
 } from "@airdesign/document"
 import { exportParts, orderedParts, withMedia } from "@airdesign/pptx"
+import { patchImages } from "@/patch-images"
 
 export { newSlideElement } from "@airdesign/document"
 
@@ -28,9 +29,11 @@ export function missingPictures(register: Register, pictures: PictureBytes): rea
   const hashes = new Set(addedPictures(register).map((media) => media.sha256))
   for (const node of register.nodes) {
     const body = register.elements[node]
-    const source = body === undefined ? undefined : landedPatch(body, "text").fills?.source
-    const media = typeof source === "object" ? assetMedia(source.set) : null
-    if (media !== null) hashes.add(media.sha256)
+    const images = body === undefined ? [] : patchImages(landedPatch(body, "text"))
+    for (const image of images) {
+      const media = assetMedia(image)
+      if (media !== null) hashes.add(media.sha256)
+    }
   }
   return [...hashes].filter((sha256) => !pictures.has(sha256))
 }

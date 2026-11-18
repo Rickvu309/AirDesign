@@ -1,7 +1,7 @@
 import { decide, elementId, openRegister, writeTextValue, type Box, type Command } from "@airdesign/document"
 import { applyRoute, readPackage, readShapes } from "@airdesign/pptx"
 import { expect, it } from "vitest"
-import { exportedParts } from "./exported-parts"
+import { exportedParts, missingPictures } from "./exported-parts"
 import { editedRegister, fallbackSlide, onSlide, twoBoxSlide, xml } from "./slide-fixtures"
 
 it("an export skips an element whose only rows were undone", () => {
@@ -181,3 +181,11 @@ it("an export keeps the stored part when a placeholder that takes its box from t
   const away = exportedParts(read.parts, moved([[id, box]]))
   expect(away.get(shape.part)).not.toEqual(read.parts.get(shape.part))
 }, 20_000)
+
+it("asks for the picture that fills text before an export", () => {
+  const sha256 = "cd".repeat(32)
+  const register = editedRegister([
+    ["256.2", writeTextValue([{ from: 0, runs: [{ from: 0, text: "Hi", fill: { image: `image/png:${sha256}` } }] }])],
+  ])
+  expect(missingPictures(register, new Map())).toEqual([sha256])
+})

@@ -26,7 +26,27 @@ function framed(file: PaintText, exported: PaintText): PaintText {
   return { ...file, ...frame }
 }
 
+function withPicture<S extends PaintRunStyle>(style: S, picture: PaintRunStyle["picture"]): S {
+  const { picture: _file, ...rest } = style
+  return (picture === undefined ? rest : { ...rest, picture }) as S
+}
+
+function pictured(file: PaintText, exported: PaintText): PaintText {
+  return {
+    ...file,
+    paragraphs: file.paragraphs.map((paragraph, at) => {
+      const runs = exported.paragraphs[at]?.runs
+      if (runs === undefined || runs.length !== paragraph.runs.length) return paragraph
+      return { ...paragraph, runs: paragraph.runs.map((run, index) => withPicture(run, runs[index]?.picture)) }
+    }),
+  }
+}
+
 function fadedText(file: PaintText, exported: PaintText): PaintText {
+  return pictured(fadedFile(file, exported), exported)
+}
+
+function fadedFile(file: PaintText, exported: PaintText): PaintText {
   const alpha = exportedAlpha(exported)
   if (alpha === null) return framed(file, exported)
   return {

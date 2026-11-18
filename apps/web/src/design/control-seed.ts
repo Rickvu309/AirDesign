@@ -18,6 +18,7 @@ export function caseSeed(key: string, color: Color): unknown {
     case "image.recolor.duotone":
       return { dark: color, light: backdrop }
     case "fills.paint.image":
+    case "textFill.value.image":
       return startingIcon
     default:
       return undefined

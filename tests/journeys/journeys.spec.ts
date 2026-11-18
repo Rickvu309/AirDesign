@@ -56,6 +56,7 @@ for (const name of [
   "table-fill",
   "text-type",
   "text-fields",
+  "text-fill-image",
   "text-style-weight",
   "dynamic-fonts",
   "picture-icon",

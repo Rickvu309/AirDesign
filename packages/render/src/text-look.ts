@@ -253,7 +253,9 @@ function formatted(
   const { fill, picture, ...base } = style
   return {
     ...base,
-    ...(format.fill === undefined && format.color === undefined && picture !== undefined ? { picture } : {}),
+    ...((format.fill === undefined || "image" in format.fill) && format.color === undefined && picture !== undefined
+      ? { picture }
+      : {}),
     ...(format.color === undefined && fill !== undefined ? { fill } : {}),
     bold: format.bold ?? style.bold,
     italic: format.italic ?? style.italic,
