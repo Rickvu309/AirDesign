@@ -256,4 +256,6 @@ test("a person moves the first slide of a section into the section above and und
   const download = testInfo.outputPath("sections-undone.pptx")
   await (await saving).saveAs(download)
   expect(await sectionList(download)).toEqual(await sectionList(sectioned))
+  const { readParts, sectionListFailures } = await import("../../packages/pptx/src/index.ts")
+  expect(sectionListFailures(await readParts(new Uint8Array(await readFile(download))))).toEqual([])
 })

@@ -3,6 +3,7 @@ import { gridRows, presentSlides, slideId, type SlideCommand } from "@airdesign/
 import { expect, it } from "vitest"
 import { readParts } from "./package-container.js"
 import { orderedParts } from "./slide-order-route.js"
+import { sectionListFailures } from "./section-check.js"
 import { exportPackage } from "./export-package.js"
 import { indexPackage } from "./index-package.js"
 import { slideNumbering } from "./slide-numbering.js"
@@ -74,6 +75,7 @@ it("exports the same bytes for below-row and same-row additions with the same fl
   }
   const newRow = orderedParts(parts, { file, order: [below] })
   const sameRow = orderedParts(parts, { file, order: [beside] })
+  expect([...sectionListFailures(newRow), ...sectionListFailures(sameRow)]).toEqual([])
   expect(gridRows({ file, order: [below] })).toEqual([[...file], ["258"]])
   expect([...newRow.keys()].some((path) => path.includes("grid"))).toBe(false)
   expect(await exportPackage(original, newRow)).toEqual(await exportPackage(original, sameRow))

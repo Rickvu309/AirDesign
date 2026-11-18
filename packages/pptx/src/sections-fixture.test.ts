@@ -15,6 +15,7 @@ import {
 import { describe, expect, it } from "vitest"
 import { samePartBytes } from "./export-package.js"
 import { readParts } from "./package-container.js"
+import { sectionListFailures } from "./section-check.js"
 import { readSections } from "./section-read.js"
 import { orderedParts } from "./slide-order-route.js"
 
@@ -59,6 +60,8 @@ describe("the sectioned deck fixtures", () => {
       { name: "Opening", slides: ["256"] },
       { name: "Numbers", slides: ["259", "258"] },
     ])
-    expect(samePartBytes(orderedParts(before, sectionEdits()), after)).toBe(true)
+    const exported = orderedParts(before, sectionEdits())
+    expect(sectionListFailures(exported)).toEqual([])
+    expect(samePartBytes(exported, after)).toBe(true)
   })
 })
