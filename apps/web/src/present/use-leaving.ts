@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react"
 import type { SlideTransition } from "@airdesign/pptx"
-import { transitionFrames, type TransitionFrames } from "@/present/slide-transition"
+import { playedFrames, type TransitionFrames } from "@/present/slide-transition"
 
 export type Leaving = { readonly from: number; readonly frames: TransitionFrames }
 
@@ -13,7 +13,8 @@ export function useLeaving(at: number, transitionOf: (index: number) => SlideTra
   const [leaving, setLeaving] = useState<Leaving | null>(null)
   if (shown !== at) {
     const transition = at > shown ? transitionOf(at) : null
-    setLeaving(transition === null || stillPreferred() ? null : { from: shown, frames: transitionFrames(transition) })
+    const frames = transition === null ? null : playedFrames(transition, stillPreferred())
+    setLeaving(frames === null ? null : { from: shown, frames })
     setShown(at)
   }
   const done = useCallback(() => setLeaving(null), [])

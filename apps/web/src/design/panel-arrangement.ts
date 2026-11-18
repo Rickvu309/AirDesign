@@ -87,6 +87,7 @@ const paragraphSpacing = [icon("spaceBefore", ArrowUpToLine), icon("spaceAfter",
 
 export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   show: [[placed("skipped", hidden, { control: "canvas" })]],
+  transition: [[{ field: "value", name: hidden }]],
   link: [[placed("target", hidden)]],
   text: [
     [placed("value", hidden, { control: "canvas" })],

@@ -19,8 +19,8 @@ it("lines the file's hidden slides and transitions up with the deck's slides", a
   const parts = new Map(read.parts).set(part, new TextEncoder().encode(xml))
   const id = new TextDecoder().decode(parts.get("ppt/presentation.xml")).match(/<p:sldId id="(\d+)"/)?.[1]
   expect(showsIn(parts, [id, "added", undefined])).toEqual([
-    { hidden: true, transition: { kind: "fade", direction: null, duration: 500 } },
-    { hidden: false, transition: null },
-    { hidden: false, transition: null },
+    { hidden: true, transition: { kind: "fade", direction: null, duration: 500 }, advance: null },
+    { hidden: false, transition: null, advance: null },
+    { hidden: false, transition: null, advance: null },
   ])
 })

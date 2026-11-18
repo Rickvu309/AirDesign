@@ -17,6 +17,7 @@ import {
 import { readElementId, readSlideId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { readTemplateStyles, type TemplateStyle } from "./template-style.js"
 import { format } from "./format.js"
+import { readStoredTransition, type TransitionValue } from "./trait-transition.js"
 import { bytesOf, limits } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
 import { kinds, type Kind } from "./kinds.js"
@@ -34,6 +35,7 @@ export type IndexSlide = {
   readonly template?: string
   readonly textStyles?: readonly TextStyle[] | string
   readonly palette?: number
+  readonly transition?: TransitionValue | "kept"
 }
 export type IndexElement = {
   readonly link?: ElementLink
@@ -76,7 +78,19 @@ export type DeckIndex = BuiltIndex & { readonly next?: BuiltIndex }
 export const indexKeys = {
   page: ["format", "once", "offset", "total", "palettes", "templates", "sectionStarts", "slides", "elements"],
   palette: ["slots", "map", "fonts"],
-  slide: ["id", "position", "size", "free", "animated", "layout", "palette", "template", "textStyles", "skipped"],
+  slide: [
+    "id",
+    "position",
+    "size",
+    "free",
+    "animated",
+    "layout",
+    "palette",
+    "template",
+    "textStyles",
+    "skipped",
+    "transition",
+  ],
   element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept", "placed", "group", "frame", "link"],
   design: designKeys,
   roles,
@@ -155,12 +169,19 @@ function readSlide(raw: unknown, position: number, palettes: number): IndexSlide
   if (textStyles === null) return null
   if (row.template !== undefined && (typeof row.template !== "string" || bytesOf(row.template) > 256)) return null
   if (row.skipped !== undefined && row.skipped !== true) return null
+  let transition: TransitionValue | "kept" | undefined
+  if (row.transition !== undefined) {
+    const stored = readStoredTransition(row.transition)
+    if (stored === null) return null
+    transition = stored
+  }
   const measures = {
     ...(row.skipped === true ? { skipped: true as const } : {}),
     ...read,
     ...(textStyles === undefined ? {} : { textStyles }),
     ...(row.palette === undefined ? {} : { palette: row.palette }),
     ...(row.template === undefined ? {} : { template: row.template }),
+    ...(transition === undefined ? {} : { transition }),
   }
   if (row.layout === undefined) return { id: row.id, position, ...measures }
   if (!Array.isArray(row.layout) || row.layout.length > limits.batch) return null

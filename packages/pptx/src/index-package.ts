@@ -13,6 +13,7 @@ import { sectionStarts } from "./section-read.js"
 import { templateStyles } from "./template-style.js"
 import { slideTheme } from "./theme-swatches.js"
 import { readNotes } from "./notes-body.js"
+import { readArrival } from "./transition-read.js"
 import { readShapes, readSlides, shapeKind } from "./read-shapes.js"
 import { presentationPart } from "./package-address.js"
 import { slideSkipped } from "./slide-show.js"
@@ -30,6 +31,13 @@ function tableValue(parts: ReadonlyMap<string, Uint8Array>, shape: Shape): strin
   } catch {
     return null
   }
+}
+
+function indexedTransition(bytes: Uint8Array | undefined) {
+  const arrival = readArrival(bytes)
+  if (arrival.state === "kept") return { transition: "kept" as const }
+  if ("none" in arrival.value && "click" in arrival.value.none.advance) return {}
+  return { transition: arrival.value }
 }
 
 function valueOf(parts: ReadonlyMap<string, Uint8Array>, shape: Shape): string | null {
@@ -70,6 +78,7 @@ export function indexPackage(
       free: freeShapeId(parts, part),
       ...(slideSkipped(elements[0]) ? { skipped: true as const } : {}),
       animated: animatedShapeIds(elements),
+      ...indexedTransition(bytes),
     }
   })
   const order = new Map(slides.map((slide) => [slide.id, slide.position]))

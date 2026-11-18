@@ -17,6 +17,7 @@ import { textAlpha, textXml } from "./trait-xml-text.js"
 import { showXml } from "./slide-show.js"
 import { templateXml } from "./trait-xml-template.js"
 import { themeXml } from "./trait-xml-theme.js"
+import { transitionXml } from "./trait-xml-transition.js"
 import { writeFields, type ElementAt, type Parts, type TraitXml } from "./xml-codec.js"
 
 export const traitXml: { readonly [T in TraitName]: TraitXml<T> } = {
@@ -37,6 +38,7 @@ export const traitXml: { readonly [T in TraitName]: TraitXml<T> } = {
   theme: themeXml,
   template: templateXml,
   show: showXml,
+  transition: transitionXml,
 }
 
 export function writeTrait<T extends TraitName>(parts: Parts, at: ElementAt, trait: T, patch: TraitPatch<T>): Parts {

@@ -67,7 +67,10 @@ export type ReadDeckAnswer = {
   readonly revision: number
   readonly grid: { readonly starts: readonly string[] }
   readonly elements: readonly ReadElement[]
-  readonly slides: readonly Pick<IndexSlide, "id" | "position" | "palette" | "template" | "textStyles" | "skipped">[]
+  readonly slides: readonly Pick<
+    IndexSlide,
+    "id" | "position" | "palette" | "template" | "textStyles" | "skipped" | "transition"
+  >[]
   readonly templates?: readonly ReadTemplate[]
   readonly palettes?: readonly Palette[]
   readonly theme?: Readonly<Record<string, string>>
@@ -392,6 +395,9 @@ export function readDeckPage(
     }
     const template =
       typeof rows === "object" ? rows.set : typeof source === "object" ? source.set : importedTemplate(id)
+    const transitionEdit = body === undefined ? undefined : landedPatch(body, "text").transition?.value
+    const indexedTransition = index?.slides.find((source) => source.id === id)?.transition
+    const transition = typeof transitionEdit === "object" ? transitionEdit.set : indexedTransition
     return {
       id,
       position,
@@ -399,6 +405,7 @@ export function readDeckPage(
       ...styles,
       ...(palette === undefined || palette === 0 ? {} : { palette }),
       ...(template === undefined ? {} : { template }),
+      ...(transition === undefined ? {} : { transition }),
     }
   }
   const themed = themedHead(index?.palettes, themeSet(deck.register))
@@ -438,16 +445,19 @@ export function readDeckPage(
       slides: (deck.register.order.length === 0
         ? (index?.slides ?? []).map(({ id, position }) => slideOf(id, position))
         : presentSlides(deck.register).map(({ id }, position) => slideOf(id, position))
-      ).map((slide) =>
-        query.cursor === undefined || slide.template === undefined
-          ? slide
-          : {
-              id: slide.id,
-              position: slide.position,
-              ...(slide.skipped ? { skipped: true as const } : {}),
-              ...(slide.palette === undefined ? {} : { palette: slide.palette }),
-            },
-      ),
+      ).map((slide) => {
+        if (query.cursor === undefined) return slide
+        if (slide.template !== undefined)
+          return {
+            id: slide.id,
+            position: slide.position,
+            ...(slide.skipped ? { skipped: true as const } : {}),
+            ...(slide.palette === undefined ? {} : { palette: slide.palette }),
+          }
+        if (slide.transition === undefined) return slide
+        const { transition: _dropped, ...rest } = slide
+        return rest
+      }),
       ...themed,
       index: index === undefined ? "missing" : index.elements.length === index.total ? "ready" : "pending",
     },

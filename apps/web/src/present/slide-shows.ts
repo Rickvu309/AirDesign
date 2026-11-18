@@ -1,6 +1,10 @@
 import { readShows, type SlideTransition } from "@airdesign/pptx"
 
-export type ShownSlide = { readonly hidden: boolean; readonly transition: SlideTransition | null }
+export type ShownSlide = {
+  readonly hidden: boolean
+  readonly transition: SlideTransition | null
+  readonly advance: number | null
+}
 
 const showsByPart = new WeakMap<
   ReadonlyMap<string, Uint8Array>,
@@ -15,6 +19,6 @@ export function showsIn(
   showsByPart.set(parts, read)
   return slides.map((slide) => {
     const show = slide === undefined ? undefined : read.get(slide)
-    return { hidden: show?.hidden ?? false, transition: show?.transition ?? null }
+    return { hidden: show?.hidden ?? false, transition: show?.transition ?? null, advance: show?.advance ?? null }
   })
 }

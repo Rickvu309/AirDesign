@@ -1,4 +1,4 @@
-import { readShows, shownLink } from "@airdesign/pptx"
+import { readArrival, readShows, shownLink } from "@airdesign/pptx"
 import {
   format,
   readTableValue,
@@ -108,6 +108,22 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
     fields: {
       skipped: {
         file: (parts, at) => readShows(parts).find((show) => show.part === at.part)?.hidden,
+        shows: (value) => value,
+      },
+    },
+  },
+  transition: {
+    deck: "blank.pptx",
+    kind: "slide",
+    node: "256.slide",
+    opening: () => ({ v: format, patch: { transition: { value: "opening" } } }),
+    edit: (_, __, value) => ({ v: format, patch: { transition: { value: { set: value } } } }),
+    fields: {
+      value: {
+        file: (parts, at) => {
+          const arrival = readArrival(parts.get(at.part))
+          return arrival.state === "value" ? arrival.value : null
+        },
         shows: (value) => value,
       },
     },
