@@ -12,6 +12,7 @@ const written: Readonly<Record<TextFormat, readonly [name: string, on: string, o
   bold: ["b", "1", "0"],
   italic: ["i", "1", "0"],
   underline: ["u", "sng", "none"],
+  strike: ["strike", "sngStrike", "noStrike"],
 }
 
 function settings(run: TextRun): readonly (readonly [string, string])[] {
@@ -21,7 +22,11 @@ function settings(run: TextRun): readonly (readonly [string, string])[] {
     const [name, yes, no] = written[format]
     return [[name, on ? yes : no] as const]
   })
-  return run.size === undefined ? formats : [...formats, ["sz", String(run.size)] as const]
+  return [
+    ...formats,
+    ...(run.size === undefined ? [] : [["sz", String(run.size)] as const]),
+    ...(run.letterSpacing === undefined ? [] : [["spc", String(run.letterSpacing)] as const]),
+  ]
 }
 
 function attributeText(set: readonly (readonly [string, string])[]): string {

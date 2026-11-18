@@ -225,7 +225,7 @@ function doeValue(word = supplies): TextValue {
         { from: 2, text: " heat " },
       ],
     },
-    { from: 3, runs: [{ from: -1, text: "Extra line" }] },
+    { from: 3, runs: [{ from: 2, text: "Extra line" }] },
   ]
 }
 
@@ -286,6 +286,15 @@ describe("paragraphExportFailures", () => {
   })
 
   const plants: readonly (readonly [string, Plant])[] = [
+    [
+      "a lost native run format after Enter",
+      ({ elements, paragraphs, child }) => {
+        const run = child(paragraphs[4], "a:r")
+        const format = elements.find((element) => element.kind === "a:rPr" && element.parent === run.index)
+        if (format === undefined) throw new Error("a:rPr")
+        return [{ start: format.start, end: format.end, next: encodeUtf8("") }]
+      },
+    ],
     [
       "a lost bold on a replaced run",
       ({ elements, paragraphs, child }) => {

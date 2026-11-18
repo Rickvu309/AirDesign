@@ -158,9 +158,24 @@ describe("a paragraph's spacing in the file", () => {
   })
 
   it("replaces a spacing the paragraph had and keeps its bullet after it", () => {
-    const value = original.map((each, index) => (index === 1 ? { ...each, spaceBefore: 0, bullet: true } : each))
+    const value: TextValue = original.map((each, index) =>
+      index === 1 ? { ...each, spaceBefore: 0, list: "bullets" } : each,
+    )
     expect(written(value)).toContain(
       '<a:p><a:pPr><a:spcBef><a:spcPts val="0"/></a:spcBef><a:buChar char="•"/></a:pPr><a:r><a:t>no format</a:t>',
     )
   })
+})
+
+it("writes native single strike and letter spacing without changing the other runs", () => {
+  const value = withRuns(0, [
+    { from: 0, text: "Hello world", strike: true, letterSpacing: -64 },
+    { from: 1, text: "bold" },
+  ])
+  expect(written(value)).toBe(slide(first.replace('dirty="0"', 'dirty="0" strike="sngStrike" spc="-64"') + second))
+})
+
+it("writes decimal numbering as the paragraph's one list choice", () => {
+  const value = original.map((paragraph) => ({ ...paragraph, list: "numbers" as const }))
+  expect(written(value)).toContain('<a:buAutoNum type="arabicPeriod"/>')
 })

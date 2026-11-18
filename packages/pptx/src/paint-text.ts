@@ -11,6 +11,7 @@ export type PaintRunStyle = {
   italic: boolean
   underline: boolean
   strike: boolean
+  letterSpacing?: number
   baseline: number
   caps?: "all" | "small" | "none"
   color: PaintColor | null
@@ -232,6 +233,7 @@ const runStyle = (
   const near = format === undefined ? levels.nearRuns : [format, ...levels.nearRuns]
   const all = [...near, ...levels.farRuns]
   const link = linkColor(format, scope)
+  const letterSpacing = first(all, (layer) => whole(layer, "spc"))
   const nearColor = first(near, (layer) => colorOf(layer, scope))
   const color =
     link !== undefined
@@ -261,6 +263,7 @@ const runStyle = (
       false,
     underline: link !== undefined || (first(all, (layer) => presence(layer, "u", "none")) ?? false),
     strike: first(all, (layer) => presence(layer, "strike", "noStrike")) ?? false,
+    ...(letterSpacing === undefined ? {} : { letterSpacing }),
     baseline: first(all, (layer) => fraction(layer, "baseline")) ?? 0,
     ...capitalization(all),
     color: color === undefined ? defaultColor(scope) : color,

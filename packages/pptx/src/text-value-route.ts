@@ -134,7 +134,7 @@ function writtenText(bytes: Uint8Array, holder: MarkupElement | undefined, text:
   return joinBytes([open, encodeUtf8(xmlText(text)), textClose])
 }
 
-function writtenRun(bytes: Uint8Array, source: SourceParagraph, wanted: TextRun): Uint8Array {
+function writtenRun(bytes: Uint8Array, source: SourceParagraph, wanted: TextRun, again: boolean): Uint8Array {
   if (wanted.from === -1) {
     refuseBreak(wanted.text)
     return joinBytes([
@@ -147,8 +147,15 @@ function writtenRun(bytes: Uint8Array, source: SourceParagraph, wanted: TextRun)
   const origin = source.inlines[wanted.from]
   if (origin === undefined) throw new Error("text-run")
   if (origin.element.kind !== "a:r") {
-    if (origin.text !== wanted.text) throw new Error("text-carried")
-    return formattedInline(bytes, origin, wanted)
+    if (origin.text === wanted.text) return formattedInline(bytes, origin, wanted)
+    if (!again) throw new Error("text-carried")
+    refuseBreak(wanted.text)
+    return joinBytes([
+      runOpen,
+      runProperties(bytes, origin.format, wanted),
+      writtenText(bytes, undefined, wanted.text),
+      runClose,
+    ])
   }
   if (origin.text !== wanted.text) refuseBreak(wanted.text)
   return joinBytes([
@@ -169,12 +176,17 @@ function propertiesBytes(bytes: Uint8Array, source: SourceParagraph, wanted: Tex
   return paragraphBytes(bytes, source.properties, wanted) ?? copied(bytes, source.properties)
 }
 
-function writtenParagraph(bytes: Uint8Array, source: SourceParagraph, wanted: TextParagraph): Uint8Array {
+function writtenParagraph(
+  bytes: Uint8Array,
+  source: SourceParagraph,
+  wanted: TextParagraph,
+  again: boolean,
+): Uint8Array {
   if (!source.copyable) throw new Error("text-carried")
   return joinBytes([
     openTag(bytes, source.element, paragraphOpen),
     propertiesBytes(bytes, source, wanted),
-    ...wanted.runs.map((run) => writtenRun(bytes, source, run)),
+    ...wanted.runs.map((run) => writtenRun(bytes, source, run, again)),
     copied(bytes, source.end),
     paragraphClose,
   ])
@@ -241,10 +253,11 @@ export function textValueEdits(
   for (const wanted of value) {
     const source = paragraphs[wanted.from]
     if (source === undefined) throw new Error("text-paragraph")
-    const kept = wanted.from >= next && !seen.has(wanted.from) ? keptEdits(bytes, source, wanted) : null
+    const again = seen.has(wanted.from)
+    const kept = wanted.from >= next && !again ? keptEdits(bytes, source, wanted) : null
     seen.add(wanted.from)
     if (kept === null) {
-      pending.push(writtenParagraph(bytes, source, wanted))
+      pending.push(writtenParagraph(bytes, source, wanted, again))
       continue
     }
     place(wanted.from)

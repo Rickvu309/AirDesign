@@ -15,7 +15,7 @@ import {
   stepSize,
   typedSize,
   type FileAlign,
-  type FileBullet,
+  type FileList,
   type FileColor,
   type FileFormat,
   type FileSize,
@@ -140,7 +140,7 @@ describe("formatState", () => {
       {
         from: 0,
         align: "right",
-        bullet: true,
+        list: "bullets",
         runs: [{ from: 0, text: "ab", size: 2000, color: { scheme: "dk1" } }],
       },
     ]
@@ -149,7 +149,7 @@ describe("formatState", () => {
       {
         from: 0,
         align: "right",
-        bullet: true,
+        list: "bullets",
         runs: [
           { from: 0, text: "a", size: 2000, color: { scheme: "dk1" }, bold: true },
           { from: 0, text: "b", size: 2000, color: { scheme: "dk1" } },
@@ -161,11 +161,11 @@ describe("formatState", () => {
 
 const noSize: FileSize = () => null
 const noColor: FileColor = () => null
-const noBullet: FileBullet = () => false
+const noBullet: FileList = () => "none"
 const sizedFile: FileSize = (paragraph, run) => (paragraph === 0 && run === 0 ? 1800 : null)
 const coloredFile: FileColor = (paragraph, run) => (paragraph === 0 && run === 0 ? { scheme: "dk1" } : null)
 const alignedFile: FileAlign = (paragraph) => (paragraph === 0 ? "left" : null)
-const bulletedFile: FileBullet = (paragraph) => paragraph === 1
+const bulletedFile: FileList = (paragraph) => (paragraph === 1 ? "bullets" : "none")
 
 describe("size, colour, alignment and bullets", () => {
   const inside = { start: { paragraph: 0, offset: 1 }, end: { paragraph: 0, offset: 3 } }
@@ -263,7 +263,7 @@ describe("size, colour, alignment and bullets", () => {
     ])
     expect(bulletRange(value, null, false, bulletedFile)).toEqual([
       { from: 0, runs: [{ from: 0, text: "ab" }] },
-      { from: 1, bullet: false, runs: [{ from: 0, text: "" }] },
+      { from: 1, list: "none", runs: [{ from: 0, text: "" }] },
     ])
     expect(alignState(value, null, alignedFile)).toBe("mixed")
     expect(alignState(value, first, alignedFile)).toBe("left")

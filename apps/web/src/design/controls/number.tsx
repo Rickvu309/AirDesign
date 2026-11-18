@@ -6,11 +6,12 @@ import { cn } from "@/lib/class-names"
 
 function shownNumber(control: ControlProps["control"], scale?: number): string {
   if (control.mixed || control.desc.kind !== "number" || typeof control.value !== "number") return ""
-  return String(
-    scale === undefined
+  if (scale !== undefined) return String(Math.round((control.value / scale) * 100) / 100)
+  const shown =
+    control.numberScale === undefined
       ? agentNumberOf(control.desc.unit, control.value)
-      : Math.round((control.value / scale) * 100) / 100,
-  )
+      : control.value / 100 / control.numberScale
+  return String(Math.round(shown * 10000) / 10000)
 }
 
 function stepOf(event: KeyboardEvent<HTMLInputElement>, unit: number): number {
@@ -50,6 +51,7 @@ export function NumberField({
   const scrub = useRef<Scrub | null>(null)
 
   function readNumber(value: number) {
+    if (control.numberScale !== undefined) return readAgent(control.desc, value * control.numberScale)
     return scale === undefined || control.desc.kind !== "number"
       ? readAgent(control.desc, value)
       : readAgent({ ...control.desc, unit: "count" }, Math.round(value * scale))

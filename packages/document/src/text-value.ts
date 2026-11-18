@@ -2,7 +2,7 @@ import { readColor, writtenColor, type Color } from "./color.js"
 import { bytesOf } from "./limits.js"
 import { record } from "./plain-object.js"
 
-export const formatNames = ["bold", "italic", "underline"] as const
+export const formatNames = ["bold", "italic", "underline", "strike"] as const
 export const schemeNames = [
   "dk1",
   "lt1",
@@ -20,6 +20,10 @@ export const sizeFloor = 100
 export const sizeCeiling = 400_000
 export const sizeDefault = 1800
 export const typefaceBytes = 64
+export const letterSpacingFloor = -400_000
+export const letterSpacingCeiling = 400_000
+export const listNames = ["none", "bullets", "numbers"] as const
+export type TextList = (typeof listNames)[number]
 export const lineSpacingFloor = 10_000
 export const lineSpacingCeiling = 1_000_000
 export const spaceCeiling = 158_400
@@ -35,6 +39,7 @@ export type TextRun = {
   readonly size?: number
   readonly color?: Color
   readonly font?: string
+  readonly letterSpacing?: number
 } & RunFormat
 export type ParagraphSpacing = {
   readonly lineSpacing?: number
@@ -44,7 +49,7 @@ export type ParagraphSpacing = {
 export type TextParagraph = {
   readonly from: number
   readonly align?: ParagraphAlign
-  readonly bullet?: boolean
+  readonly list?: TextList
   readonly runs: readonly TextRun[]
 } & ParagraphSpacing
 export type TextValue = readonly TextParagraph[]
@@ -55,8 +60,8 @@ const spacingRange: Readonly<Record<(typeof spacingNames)[number], readonly [num
   spaceBefore: [0, spaceCeiling],
   spaceAfter: [0, spaceCeiling],
 }
-const paragraphKeys = new Set<string>(["from", "runs", "align", "bullet", ...spacingNames])
-const runKeys = new Set<string>(["from", "text", "size", "color", "font", ...formatNames])
+const paragraphKeys = new Set<string>(["from", "runs", "align", "list", "bullet", ...spacingNames])
+const runKeys = new Set<string>(["from", "text", "size", "color", "font", "letterSpacing", ...formatNames])
 
 function named<T extends string>(names: readonly T[], value: string): T | null {
   for (const name of names) if (name === value) return name
@@ -116,6 +121,17 @@ function readRun(value: unknown): TextRun | null {
   if (size !== undefined) read = { ...read, size }
   if (color !== undefined) read = { ...read, color }
   if (font !== undefined) read = { ...read, font }
+  if (run.letterSpacing !== undefined) {
+    const letterSpacing = run.letterSpacing
+    if (
+      typeof letterSpacing !== "number" ||
+      !Number.isInteger(letterSpacing) ||
+      letterSpacing < letterSpacingFloor ||
+      letterSpacing > letterSpacingCeiling
+    )
+      return null
+    read = { ...read, letterSpacing }
+  }
   return read
 }
 
@@ -135,7 +151,10 @@ function readParagraph(value: unknown): TextParagraph | null {
       ? undefined
       : named(alignNames, typeof paragraph.align === "string" ? paragraph.align : "")
   if (from === null || (paragraph.align !== undefined && align === null)) return null
-  if (paragraph.bullet !== undefined && typeof paragraph.bullet !== "boolean") return null
+  if (paragraph.bullet !== undefined && (typeof paragraph.bullet !== "boolean" || paragraph.list !== undefined))
+    return null
+  const list = paragraph.bullet === undefined ? paragraph.list : paragraph.bullet ? "bullets" : "none"
+  if (list !== undefined && !listNames.some((name) => name === list)) return null
   const spacing = readSpacing(paragraph)
   if (spacing === null) return null
   const runs: TextRun[] = []
@@ -146,7 +165,7 @@ function readParagraph(value: unknown): TextParagraph | null {
   }
   let read: TextParagraph = { from, runs }
   if (align !== undefined && align !== null) read = { ...read, align }
-  if (typeof paragraph.bullet === "boolean") read = { ...read, bullet: paragraph.bullet }
+  if (list === "none" || list === "bullets" || list === "numbers") read = { ...read, list }
   return { ...read, ...spacing }
 }
 
@@ -181,13 +200,14 @@ function writtenRun(run: TextRun): Record<string, unknown> {
   if (run.size !== undefined) written.size = run.size
   if (run.color !== undefined) written.color = writtenColor(run.color)
   if (run.font !== undefined) written.font = run.font
+  if (run.letterSpacing !== undefined) written.letterSpacing = run.letterSpacing
   return written
 }
 
 function writtenParagraph(paragraph: TextParagraph): Record<string, unknown> {
   const written: Record<string, unknown> = { from: paragraph.from }
   if (paragraph.align !== undefined) written.align = paragraph.align
-  if (paragraph.bullet !== undefined) written.bullet = paragraph.bullet
+  if (paragraph.list !== undefined) written.list = paragraph.list
   for (const name of spacingNames) if (paragraph[name] !== undefined) written[name] = paragraph[name]
   written.runs = paragraph.runs.map(writtenRun)
   return written

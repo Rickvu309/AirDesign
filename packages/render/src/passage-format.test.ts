@@ -118,7 +118,7 @@ it("changes size, colour, alignment and bullets as separate edits and keeps the 
     {
       from: 0,
       align: "center",
-      bullet: true,
+      list: "bullets",
       runs: [
         { from: 0, text: "He" },
         { from: 0, text: "llo w", size: 2000, color: { scheme: "accent1" } },
@@ -129,7 +129,7 @@ it("changes size, colour, alignment and bullets as separate edits and keeps the 
   expect(editor.querySelector("[data-size='2000']")?.textContent).toBe("llo w")
   expect(editor.querySelector("[data-color='scheme:accent1']")).not.toBeNull()
   expect(editor.querySelector("[data-align='center']")).not.toBeNull()
-  expect(editor.querySelector("[data-bullet='true']")).not.toBeNull()
+  expect(editor.querySelector("[data-list='bullets']")).not.toBeNull()
   expect(window.getSelection()?.toString()).toBe("llo w")
   expect(formatting.size()).toBe(2000)
   expect(formatting.align()).toBe("center")

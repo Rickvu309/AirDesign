@@ -1,7 +1,7 @@
 import { expect, it } from "vitest"
 import type { CanvasRunStyle, CanvasText } from "./record.js"
 import { accentPaint, inkPaint } from "./run-format-look-art.js"
-import { textLook } from "./text-look.js"
+import { restyle, textLook } from "./text-look.js"
 
 const scaled = (emu: number) => emu / 12_700
 
@@ -54,13 +54,13 @@ it("paints a chosen size and scheme colour over the file", () => {
 
 it("paints alignment and bullets over the paragraph", () => {
   const look = textLook(text, scaled)
-  expect(look.paragraph(0, true, { align: "center", bullet: true })).toMatchObject({
+  expect(look.paragraph(0, true, { align: "center", list: "bullets" })).toMatchObject({
     textAlign: "center",
     "--bullet": '"•"',
   })
-  expect(look.paragraph(0, true, { bullet: false })["--bullet"]).toBe("none")
+  expect(look.paragraph(0, true, { list: "none" })["--bullet"]).toBe("none")
   expect(look.fileAlign(0)).toBe("left")
-  expect(look.fileBullet(0)).toBe(false)
+  expect(look.fileList(0)).toBe("none")
 })
 
 it("reads a scheme colour when one theme swatch matches the painted colour", () => {
@@ -139,4 +139,69 @@ it("balances text its columns cannot hold below the box instead of adding column
   const body = textLook({ ...text, columns: 2, overflow: true }, scaled).body
   expect(body).toMatchObject({ columnCount: 2, columnFill: "balance" })
   expect(body.maxBlockSize).toBeUndefined()
+})
+
+it("paints set strikethrough and native letter spacing", () => {
+  const look = textLook(text, scaled)
+  expect(look.run(0, 0, { strike: true, letterSpacing: -64 })).toMatchObject({
+    textDecoration: "line-through",
+    letterSpacing: "-0.64px",
+  })
+})
+
+it("paints a numbered paragraph's label", () => {
+  expect(textLook(text, scaled).paragraph(0, true, { list: "numbers" })).toMatchObject({ "--bullet": '"1."' })
+})
+
+it("sizes a new list marker from its first run's current size", () => {
+  expect(
+    textLook(text, scaled).paragraph(0, true, { list: "numbers", firstRun: { from: 0, size: 3200 } }),
+  ).toMatchObject({
+    "--bullet-size": "32px",
+  })
+})
+
+function numberedLabels(
+  starts: readonly (number | null)[],
+  list?: "numbers",
+  levels: readonly number[] = [],
+): readonly string[] {
+  const paragraphs = starts.map((start, from) => ({
+    from,
+    level: levels[from] ?? 0,
+    align: "left" as const,
+    runs: [{ from: 0, text: "Item", ...plain }],
+    endStyle: plain,
+    bullet: {
+      ...(start === null ? { char: "•" } : { autoNumber: "arabicPeriod", number: start, start }),
+      font: null,
+      color: null,
+      size: null,
+    },
+  }))
+  const box = document.createElement("div")
+  const blocks = paragraphs.map((paragraph) => {
+    const block = document.createElement("div")
+    block.dataset.paragraph = String(paragraph.from)
+    if (list !== undefined) block.dataset.list = list
+    block.textContent = "Item"
+    return block
+  })
+  box.append(...blocks)
+  restyle(box, textLook({ ...text, paragraphs }, scaled))
+  return blocks.map((block) => block.style.getPropertyValue("--bullet"))
+}
+
+it("keeps each imported paragraph's number when no list format was set", () => {
+  expect(numberedLabels([1, 7])).toEqual(['"1."', '"7."'])
+})
+
+it("starts a chosen decimal list at one, as its native export does", () => {
+  expect(numberedLabels([7, 8], "numbers")).toEqual(['"1."', '"2."'])
+})
+
+it("continues imported numbering and keeps its levels separate", () => {
+  expect(numberedLabels([7, 7])).toEqual(['"7."', '"8."'])
+  expect(numberedLabels([1, 1, 1], undefined, [0, 1, 0])).toEqual(['"1."', '"1."', '"2."'])
+  expect(numberedLabels([1, null, 1], undefined, [0, 1, 0])).toEqual(['"1."', '"•"', '"2."'])
 })
