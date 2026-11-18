@@ -1,5 +1,13 @@
 import { format, themeSlots, type ThemeSlot } from "@airdesign/document"
-import { exportParts, paintReader, shownTheme, slideTheme, templateStyle, themeCustomColors } from "@airdesign/pptx"
+import {
+  exportParts,
+  paintReader,
+  readTemplateTextEdit,
+  shownTheme,
+  slideTheme,
+  templateStyle,
+  themeCustomColors,
+} from "@airdesign/pptx"
 import { indexed, landed, type At, type Parts, type Probe } from "./parity-probe"
 
 const themeOpening = {
@@ -20,6 +28,7 @@ const themeOpening = {
   minor: "opening",
   custom: "opening",
   removed: "opening",
+  textStyle: "opening",
 } as const
 
 function shown(field: keyof typeof themeOpening) {
@@ -44,12 +53,25 @@ function themeBytes(parts: Parts, at: At): Uint8Array {
   return theme === null ? new Uint8Array() : (parts.get(theme) ?? new Uint8Array())
 }
 
+const titleStyle = "ppt/slideMasters/slideMaster1.xml/titleStyle/0"
+
+function shownTextStyle(parts: Parts, at: At) {
+  const theme = slideTheme(parts, at.part)
+  if (theme === null) return []
+  const read = readTemplateTextEdit(parts, theme, titleStyle)
+  return read === null ? [] : [read]
+}
+
 export const themeProbe: Probe<"theme"> = {
   deck: "two-templates.pptx",
   kind: "deck",
   opening: () => ({ v: format, patch: { theme: themeOpening } }),
   edit: (_, field, value) => ({ v: format, patch: { theme: { [field]: { set: value } } } }),
   painted: (parts, at, field) => {
+    if (field === "textStyle") {
+      const read = shownTextStyle(parts, at)
+      return read.length === 0 ? "none" : String(read[0]?.size ?? "none")
+    }
     if (field === "removed") return parts.has("ppt/theme/theme2.xml") ? "kept" : "dropped"
     if (field === "custom") return JSON.stringify(themeCustomColors(themeBytes(parts, at)) ?? [])
     return field === "name"
@@ -78,6 +100,10 @@ export const themeProbe: Probe<"theme"> = {
     },
     removed: {
       file: (parts) => !parts.has("ppt/theme/theme2.xml"),
+      shows: (value) => value,
+    },
+    textStyle: {
+      file: shownTextStyle,
       shows: (value) => value,
     },
   },

@@ -21,5 +21,6 @@ export const themeControls: TraitControls<"theme"> = {
     minor: { label: themeCopy.minor },
     custom: { label: themeCopy.custom },
     removed: { label: themeCopy.removed },
+    textStyle: { label: themeCopy.textStyle },
   },
 }

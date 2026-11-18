@@ -235,6 +235,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [placed("minor", inside)],
     [placed("custom", hidden)],
     [placed("removed", hidden)],
+    [placed("textStyle", hidden)],
   ],
 }
 

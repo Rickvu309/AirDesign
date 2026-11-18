@@ -1,4 +1,4 @@
-import { themeSlots, type ThemeSlot, type TraitValue } from "@airdesign/document"
+import { themeSlots, type FieldValue, type ThemeSlot, type TraitValue } from "@airdesign/document"
 import { decodedXmlText, spliceBytes, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
@@ -7,6 +7,7 @@ import { withAttribute } from "./slot-edit.js"
 import { xmlAttribute } from "./shape-write.js"
 import { markupChildren } from "./text-value-route.js"
 import { themeCustomColors, withThemeCustomColors } from "./template-colors.js"
+import { writeTemplateTextEdits } from "./template-text-edit.js"
 import { slideTheme } from "./theme-swatches.js"
 import { whole, type Parts, type PartCodec, type TraitXml } from "./xml-codec.js"
 
@@ -125,6 +126,10 @@ export const themeXml: TraitXml<"theme"> = {
     removed: whole({
       read: () => false,
       write: (parts) => parts,
+    }),
+    textStyle: whole({
+      read: (): FieldValue<"theme", "textStyle"> => [],
+      write: (parts, at, value) => writeTemplateTextEdits(parts, at.part, value),
     }),
   },
 }

@@ -27,6 +27,7 @@ export default {
     "theme.minor",
     "theme.custom",
     "theme.removed",
+    "theme.textStyle",
   ],
   lines(answers) {
     const kept = [...(answers.parts.get(original)?.keys() ?? [])].filter((name) => !themes.includes(name))

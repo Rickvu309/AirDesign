@@ -10,4 +10,5 @@ export const themeCopy = {
   minor: "Body font",
   custom: "Added colors",
   removed: "Delete template style",
+  textStyle: "Text style",
 } as const

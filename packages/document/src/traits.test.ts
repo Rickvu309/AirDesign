@@ -132,6 +132,7 @@ describe("the one table of traits", () => {
       "theme.minor",
       "theme.custom",
       "theme.removed",
+      "theme.textStyle",
       "template.id",
       "show.skipped",
     ])
