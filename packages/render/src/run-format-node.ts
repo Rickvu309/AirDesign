@@ -1,6 +1,11 @@
 import { formatNames, readColor, type Color, type ColorTransform, type RunFormat } from "@airdesign/document"
 
-type RunPaint = RunFormat & { readonly size?: number; readonly color?: Color; readonly font?: string }
+type RunPaint = RunFormat & {
+  readonly size?: number
+  readonly color?: Color
+  readonly font?: string
+  readonly letterSpacing?: number
+}
 
 const sizeFloor = 100
 const sizeCeiling = 400_000
@@ -55,6 +60,7 @@ export function writeFormat(span: HTMLElement, format: RunPaint): void {
     const set = format[name]
     if (set !== undefined) span.dataset[name] = String(set)
   }
+  if (format.letterSpacing !== undefined) span.dataset.letterSpacing = String(format.letterSpacing)
   if (format.size !== undefined) span.dataset.size = String(format.size)
   if (format.color !== undefined) {
     span.dataset.color = colorToken(format.color)
@@ -68,6 +74,9 @@ export function readFormat(span: HTMLElement): RunPaint {
     const set = span.dataset[name]
     if (set === "true" || set === "false") format = { ...format, [name]: set === "true" }
   }
+  const letterSpacing = span.dataset.letterSpacing
+  if (letterSpacing !== undefined && integer.test(letterSpacing))
+    format = { ...format, letterSpacing: Number(letterSpacing) }
   const size = readSize(span.dataset.size)
   if (size !== null) format = { ...format, size }
   const color = readColorToken(span.dataset.color)

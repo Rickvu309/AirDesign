@@ -47,13 +47,13 @@ it("sets alignment and bullets on the paragraph and keeps the properties it does
   expect(aligned).toContain("<a:ghost/>")
   expect(aligned).toContain('<a:defRPr sz="1800"/>')
   expect(aligned).toContain(kept)
-  const on = apply(rich, [{ from: 0, bullet: true, runs: [{ from: 0, text: "Hi" }] }])
+  const on = apply(rich, [{ from: 0, list: "bullets", runs: [{ from: 0, text: "Hi" }] }])
   expect(on).toContain('<a:buFont typeface="Arial"/><a:buChar char="•"/>')
   expect(on).not.toContain("buNone")
   expect(on).toContain("<a:ghost/>")
   expect(on).toContain('<a:defRPr sz="1800"/>')
   const off = apply(rich.replace("<a:buNone/>", '<a:buChar char="•"/>'), [
-    { from: 0, bullet: false, runs: [{ from: 0, text: "Hi" }] },
+    { from: 0, list: "none", runs: [{ from: 0, text: "Hi" }] },
   ])
   expect(off).toContain('<a:buFont typeface="Arial"/><a:buNone/>')
   expect(off).toContain("<a:ghost/>")
@@ -61,7 +61,7 @@ it("sets alignment and bullets on the paragraph and keeps the properties it does
 
 it("inserts a bullet between the bullet font and the default run properties", () => {
   const inner = rich.replace("<a:buNone/>", "")
-  const on = apply(inner, [{ from: 0, bullet: true, runs: [{ from: 0, text: "Hi" }] }])
+  const on = apply(inner, [{ from: 0, list: "bullets", runs: [{ from: 0, text: "Hi" }] }])
   expect(on).toContain('<a:buFont typeface="Arial"/><a:buChar char="•"/><a:ghost/>')
 })
 

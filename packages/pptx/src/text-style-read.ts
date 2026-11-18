@@ -8,6 +8,9 @@ import { sheetOf } from "./trait-read.js"
 export type TextStyleValues = {
   readonly size: number
   readonly font: string
+  readonly strike: boolean
+  readonly letterSpacing: number
+  readonly list: "none" | "bullets" | "numbers"
   readonly align: ParagraphAlign
   readonly lineSpacing: number
   readonly spaceBefore: number
@@ -86,6 +89,14 @@ export function shownTextStyle(parts: ReadonlyMap<string, Uint8Array>, at: TextS
   return {
     size: { value: Math.round(style.size * 100), own: runs.some(attribute("sz")) },
     font: { value: style.font, own: runs.some(tagged("a:latin")) },
+    strike: { value: style.strike, own: runs.some(attribute("strike")) },
+    letterSpacing: { value: style.letterSpacing ?? 0, own: runs.some(attribute("spc")) },
+    list: {
+      value: paragraph.bullet === null ? "none" : "autoNumber" in paragraph.bullet ? "numbers" : "bullets",
+      own: paragraphs.some((held) =>
+        ["a:buNone", "a:buChar", "a:buAutoNum", "a:buBlip"].some((kind) => tagged(kind)(held)),
+      ),
+    },
     align: { value: alignOf(paragraph.align), own: paragraphs.some(attribute("algn")) },
     lineSpacing: { value: percentOf(paragraph.lineSpacing), own: paragraphs.some(tagged("a:lnSpc")) },
     spaceBefore: { value: pointsOf(paragraph.spaceBefore), own: paragraphs.some(tagged("a:spcBef")) },

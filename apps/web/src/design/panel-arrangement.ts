@@ -5,12 +5,13 @@ import {
   Bold,
   Italic,
   List,
+  ListOrdered,
+  Strikethrough,
   Underline,
   FlipHorizontal2,
   FlipVertical2,
   RotateCw,
   Type,
-  ArrowDownUp,
   ArrowUpToLine,
   ArrowDownToLine,
   Image,
@@ -30,6 +31,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { DottedBorder, SubtleShadow, MediumShadow, StrongShadow, PatternFill } from "./preset-icons"
+import { LineSpacingIcon, LetterSpacingIcon } from "./text-icons"
 import { optionWord } from "@/copy/option-copy"
 import type { Desc } from "@airdesign/document"
 import type { PanelControl, SectionName } from "./panel"
@@ -75,14 +77,15 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   text: [
     [placed("value", hidden, { control: "canvas" })],
     [placed("font", hidden)],
-    [icon("size", Type), icon("lineSpacing", ArrowDownUp)],
-    [icon("bold", Bold), icon("italic", Italic), icon("underline", Underline)],
+    [icon("size", Type)],
+    [icon("lineSpacing", LineSpacingIcon), icon("letterSpacing", LetterSpacingIcon)],
+    [icon("bold", Bold), icon("italic", Italic), icon("underline", Underline), icon("strike", Strikethrough)],
     [
       placed("align", hidden, {
         form: "segments",
         options: { left: AlignLeft, center: AlignCenter, right: AlignRight },
       }),
-      placed("bullet", hidden, { options: { true: List } }),
+      placed("list", hidden, { form: "segments", options: { none: Minus, bullets: List, numbers: ListOrdered } }),
     ],
     [placed("color", hidden)],
     [icon("spaceBefore", ArrowUpToLine), icon("spaceAfter", ArrowDownToLine)],

@@ -155,7 +155,7 @@ export const corpusEdits: readonly CorpusEdit[] = [
   },
   {
     name: "bullets",
-    run: (parts, deck) => panelChange(parts, deck, textTarget(parts), { text: { bullet: true } }),
+    run: (parts, deck) => panelChange(parts, deck, textTarget(parts), { text: { list: "bullets" } }),
     touches: targetPart,
   },
   {

@@ -23,7 +23,7 @@ it("lets an agent set size, a scheme colour, alignment and bullets", () => {
     {
       from: 0,
       align: "center",
-      bullet: true,
+      list: "bullets",
       runs: [{ from: 0, text: "One", size: 2400, color: { scheme: "accent2" } }],
     },
   ])

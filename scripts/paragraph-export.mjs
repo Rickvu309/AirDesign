@@ -24,7 +24,7 @@ export const paragraphsExpected = {
         { from: 2, text: " heat " },
       ],
     },
-    { from: 3, runs: [{ from: -1, text: "Extra line" }] },
+    { from: 3, runs: [{ from: 2, text: "Extra line" }] },
   ],
 }
 

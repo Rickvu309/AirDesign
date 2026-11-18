@@ -132,8 +132,8 @@ function shownText(value: string): TextValue {
   return readTextValue(value) ?? (value === "" ? [] : [{ from: 0, runs: [{ from: 0, text: value }] }])
 }
 
-const runKeys = ["color", "size", "font", "bold", "italic", "underline"] as const
-const paragraphKeys = ["align", "bullet", "lineSpacing", "spaceBefore", "spaceAfter"] as const
+const runKeys = ["color", "size", "font", "bold", "italic", "underline", "strike", "letterSpacing"] as const
+const paragraphKeys = ["align", "list", "lineSpacing", "spaceBefore", "spaceAfter"] as const
 
 function picked(input: Loose, keys: readonly string[]): Loose {
   return Object.fromEntries(keys.flatMap((key) => (Object.hasOwn(input, key) ? [[key, input[key]]] : [])))

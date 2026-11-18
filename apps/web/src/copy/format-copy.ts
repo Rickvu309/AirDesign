@@ -2,7 +2,7 @@ import type { ParagraphAlign, SchemeName, TextFormat } from "@airdesign/document
 
 export const formatCopy = {
   group: "Text format",
-  named: { bold: "Bold", italic: "Italic", underline: "Underline" },
+  named: { bold: "Bold", italic: "Italic", underline: "Underline", strike: "Strikethrough" },
   sizeGroup: "Font size",
   sizeMixed: "Font size, mixed",
   smaller: "Smaller",

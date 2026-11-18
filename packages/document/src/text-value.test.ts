@@ -92,7 +92,7 @@ describe("size, colour, alignment and bullets", () => {
       {
         from: 0,
         align: "center",
-        bullet: true,
+        list: "bullets",
         runs: [{ from: 0, text: "a", size: 1800, color: { scheme: "accent1" } }],
       },
     ])
@@ -109,13 +109,13 @@ describe("size, colour, alignment and bullets", () => {
       writeTextValue([
         {
           from: 0,
-          bullet: false,
+          list: "none",
           align: "right",
           runs: [{ from: 0, text: "a", color: { rgb: "00FF00" }, size: 2400, bold: true }],
         },
       ]),
     ).toBe(
-      '[{"from":0,"align":"right","bullet":false,"runs":[{"from":0,"text":"a","bold":true,"size":2400,"color":{"rgb":"00FF00"}}]}]',
+      '[{"from":0,"align":"right","list":"none","runs":[{"from":0,"text":"a","bold":true,"size":2400,"color":{"rgb":"00FF00"}}]}]',
     )
   })
 
@@ -189,4 +189,29 @@ describe("size, colour, alignment and bullets", () => {
     expect(readTextValue('[{"from":0,"spaceBefore":-1,"runs":[{"from":0,"text":"a"}]}]')).toBeNull()
     expect(readTextValue('[{"from":0,"spaceAfter":1.5,"runs":[{"from":0,"text":"a"}]}]')).toBeNull()
   })
+})
+
+for (const fields of [{ strike: true }, { letterSpacing: -64 }]) {
+  it(`stores the run fields ${JSON.stringify(fields)}`, () => {
+    const value = [{ from: 0, runs: [{ from: 0, text: "Text", ...fields }] }]
+    expect(readTextValue(JSON.stringify(value))).toEqual(value)
+  })
+}
+
+it("stores a single list choice and reads an older bullet flag", () => {
+  for (const list of ["none", "bullets", "numbers"]) {
+    const value = [{ from: 0, list, runs: [{ from: 0, text: "Item" }] }]
+    expect(readTextValue(JSON.stringify(value))).toEqual(value)
+  }
+  expect(readTextValue('[{"from":0,"bullet":true,"runs":[]}]')).toEqual([{ from: 0, list: "bullets", runs: [] }])
+  expect(readTextValue('[{"from":0,"list":"numbers","bullet":true,"runs":[]}]')).toBeNull()
+})
+
+it("refuses invalid letter spacing and list choices", () => {
+  for (const letterSpacing of [-400001, 400001, 0.5, "1"]) {
+    expect(readTextValue(JSON.stringify([{ from: 0, runs: [{ from: 0, text: "a", letterSpacing }] }]))).toBeNull()
+  }
+  for (const list of [true, "both", 1]) {
+    expect(readTextValue(JSON.stringify([{ from: 0, list, runs: [] }]))).toBeNull()
+  }
 })

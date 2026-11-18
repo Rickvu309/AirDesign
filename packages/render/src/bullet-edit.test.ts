@@ -107,7 +107,7 @@ it("keeps a bullet out of the caret, Enter and Backspace", async () => {
   expect(enter.defaultPrevented).toBe(true)
   expect(readTextValue(sent.at(-1) ?? "")).toEqual([
     { from: 0, runs: [{ from: 0, text: "One" }] },
-    { from: 0, runs: [] },
+    { from: 0, runs: [{ from: 0, text: "" }] },
     { from: 1, runs: [{ from: 0, text: "Two" }] },
   ])
   const empty = editor.querySelectorAll("[data-paragraph]")[1]
