@@ -11,7 +11,7 @@ export type DesignShown = {
   readonly slide: SlideId
   readonly number: number
   readonly background: { readonly css: string; readonly name: string; readonly value: Color | undefined }
-  readonly fill: FieldValue<"fill", "value"> | null
+  readonly fill: FieldValue<"fills", "p0"> | null
   readonly theme: readonly Swatch[]
 }
 

@@ -6,7 +6,7 @@ import { shownFill, type Fill } from "./fill-read.js"
 import { readPackage } from "./index.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { routeRuns } from "./route-parts.js"
-import { fillMarkup } from "./trait-xml-fill.js"
+import { fillMarkup } from "./trait-xml-fills.js"
 import { writeTrait } from "./trait-xml.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -56,7 +56,7 @@ function parts(xml: string, name = part): Map<string, Uint8Array> {
 function edit(xml: string, value: FieldEdit<Fill>, name = part): string {
   const before = parts(xml, name)
   const snapshot = new Map([...before].map(([name, bytes]) => [name, bytes.slice()]))
-  const next = writeTrait(before, { slide: "256", part: name, shape: "2" }, "fill", { value })
+  const next = writeTrait(before, { slide: "256", part: name, shape: "2" }, "fills", { p0: value })
   expect(before).toEqual(snapshot)
   for (const [other, bytes] of before) if (other !== name) expect(next.get(other)).toBe(bytes)
   const bytes = next.get(name)
@@ -71,7 +71,7 @@ function write(xml: string, value: Fill = blue, name = part): string {
 
 function refuses(xml: string, error: string) {
   const before = parts(xml)
-  expect(() => writeTrait(before, { slide: "256", part, shape: "2" }, "fill", { value: { set: blue } })).toThrow(error)
+  expect(() => writeTrait(before, { slide: "256", part, shape: "2" }, "fills", { p0: { set: blue } })).toThrow(error)
 }
 
 function cut(bytes: Uint8Array, element: MarkupElement | undefined): string {
@@ -192,11 +192,11 @@ describe("the fill a shape shows", () => {
     const shapes = await deck("shapes-added.pptx")
     const at = { slide: "256", part, shape: "4" }
     expect(shownFill(shapes, at)).toEqual({ value: { solid: { scheme: "accent1" } }, own: false })
-    expect(writeTrait(shapes, at, "fill", { value: { set: { solid: { scheme: "accent1" } } } })).toBe(shapes)
-    const filled = writeTrait(shapes, at, "fill", { value: { set: blue } })
+    expect(writeTrait(shapes, at, "fills", { p0: { set: { solid: { scheme: "accent1" } } } })).toBe(shapes)
+    const filled = writeTrait(shapes, at, "fills", { p0: { set: blue } })
     expect(shownFill(filled, at)).toEqual({ value: blue, own: true })
     expect(decodeUtf8(filled.get(part)!)).toContain(`<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${solid}</p:spPr>`)
-    expect(writeTrait(filled, at, "fill", { value: "inherit" }).get(part)).toEqual(shapes.get(part))
+    expect(writeTrait(filled, at, "fills", { p0: "inherit" }).get(part)).toEqual(shapes.get(part))
   })
 
   it("reads a reference into the theme's background fills, and no fill for index 0", async () => {

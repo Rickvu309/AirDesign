@@ -4,7 +4,7 @@ import { boxWire } from "./trait-wire-box.js"
 import { connectionWire } from "./trait-wire-connection.js"
 import { cropWire } from "./trait-wire-crop.js"
 import { effectsWire } from "./trait-wire-effects.js"
-import { fillWire } from "./trait-wire-fill.js"
+import { fillsWire } from "./trait-wire-fills.js"
 import { geometryWire } from "./trait-wire-geometry.js"
 import { identityWire } from "./trait-wire-identity.js"
 import { imageWire } from "./trait-wire-image.js"
@@ -33,7 +33,7 @@ export const traitWire: { readonly [T in TraitName]: TraitWire<T> } = {
   link: linkWire,
   box: boxWire,
   geometry: geometryWire,
-  fill: fillWire,
+  fills: fillsWire,
   line: lineWire,
   effects: effectsWire,
   body: bodyWire,

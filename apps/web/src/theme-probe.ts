@@ -39,7 +39,7 @@ function named(parts: Parts, at: At, field: string): Parts {
   const slot = themeSlots.find((each): each is ThemeSlot => each === field)
   if (slot === undefined) return parts
   const node = `${at.slide}.${at.shape}` as At["node"]
-  const fill = { fill: { value: { set: { solid: { scheme: slot } } } } }
+  const fill = { fills: { p0: { set: { solid: { scheme: slot } } } } }
   const register = landed(indexed(parts), [
     { command: "add", node, floor: "", route: "clean" },
     { command: "person", node, v: format, patch: fill },

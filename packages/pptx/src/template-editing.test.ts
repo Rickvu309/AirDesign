@@ -133,7 +133,7 @@ it("rotates the slide's template colours one step and leaves an explicit colour"
   const once = remixTargets(parts, slide)
   expect(once[0]).toMatchObject({
     target: { node: "256.5" },
-    fill: { value: { solid: { scheme: "accent2" } } },
+    fills: { paint: { solid: { scheme: "accent2" } } },
   })
   expect(once.some((change) => "text" in change)).toBe(false)
   const first = applied(parts, once)

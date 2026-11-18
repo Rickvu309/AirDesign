@@ -19,7 +19,7 @@ import { LinkFormatting } from "@/design/controls/link"
 import type { TextFormatting } from "@airdesign/render"
 import { linkCopy } from "@/copy/link-copy"
 
-const openChrome = ["text", "link", "fill", "textFill", "border", "shadow", "opacity"]
+const openChrome = ["text", "link", "fills", "textFill", "border", "shadow", "opacity"]
 
 export function DesignPanel() {
   return (
@@ -272,7 +272,7 @@ export function ElementDesign({
   const folds = useFolds()
   const { kind } = model
   const fill = model.sections
-    .find((section) => section.trait === "fill")
+    .find((section) => section.trait === "fills")
     ?.strips.flat()
     .find((control) => control.kind === "union")
   const sections =
@@ -381,7 +381,7 @@ export function ElementDesign({
                     }
               }
             >
-              {(section.trait === "fill" || section.trait === "boxFill") &&
+              {(section.trait === "fills" || section.trait === "boxFill") &&
               section.strips.some((row) => row.some((control) => control.trait === "image")) ? (
                 <>
                   <SectionStrips strips={section.strips.slice(0, 1)} palette={palette} onChange={onChange} />
@@ -391,7 +391,7 @@ export function ElementDesign({
               ) : (
                 <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
               )}
-              {reset === undefined || section.trait === "fill" ? null : (
+              {reset === undefined || section.trait === "fills" ? null : (
                 <SectionReset control={reset} onChange={onChange} />
               )}
             </DesignSection>

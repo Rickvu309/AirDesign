@@ -4,7 +4,10 @@ import { authorableTrait } from "@airdesign/catalog"
 import {
   inheritable,
   keptRefuses,
+  paintSlots,
+  readFills,
   readTextValue,
+  slotted,
   takes,
   traitNames,
   traits,
@@ -13,6 +16,7 @@ import {
   type ElementId,
   type ScopedElement,
   type SetChange,
+  type ShownFills,
   type TextValue,
   type TraitName,
   type TraitReads,
@@ -168,7 +172,20 @@ function textShown(text: TextValue, key: string, fallback: Held): Held {
 
 export type ShownField = { readonly value: unknown; readonly own: boolean }
 
+function fillsHeld(shown: PanelReads): Held {
+  const bottom = shown.fields?.["fills.p0"]
+  if (bottom === undefined || bottom.value === null) return ownHeld(undefined)
+  const slots = Object.fromEntries(
+    paintSlots.flatMap((slot) => {
+      const read = shown.fields?.[`fills.${slot}`]?.value
+      return read === undefined || read === null ? [] : [[slot, read]]
+    }),
+  )
+  return { value: readFills(slots as ShownFills).slidesMode, mixed: false, inherited: !bottom.own }
+}
+
 function shownOf(view: ScopedElement, trait: TraitName, field: string, shown: PanelReads): Held {
+  if (trait === "fills") return fillsHeld(shown)
   const read = shown.fields?.[`${trait}.${field}`]
   const reads = shown.reads
   if (trait === "text" && field !== "value") {
@@ -195,7 +212,9 @@ function shownOf(view: ScopedElement, trait: TraitName, field: string, shown: Pa
 }
 
 function wireFields(trait: TraitName): readonly (readonly [string, Desc])[] {
-  const fields = Object.entries(traits[trait].fields as Loose).filter(([, kind]) => kind.desc.kind !== "alpha")
+  const fields = Object.entries(traits[trait].fields as Loose).filter(
+    ([field, kind]) => kind.desc.kind !== "alpha" && !slotted(trait, field),
+  )
   const inputs = Object.entries(traits[trait].inputs as Loose)
   return [...fields, ...inputs].map(([field, kind]) => [field, kind.desc] as const)
 }
@@ -251,7 +270,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       const own = shown.fields?.[key]?.own === true
       const reset = own && inheritable(trait, field) ? (copy?.reset ?? null) : null
       const held = shownOf(view, trait, field, shown)
-      const over = held.inherited ? alphaFieldOver(trait, field) : undefined
+      const over = held.inherited ? alphaFieldOver(trait, key.slice(trait.length + 1)) : undefined
       const seen = over === undefined ? undefined : shown.fields?.[`${trait}.${over}`]?.value
       const change =
         key === "crop.rect" && taken.includes("box.w")
@@ -345,7 +364,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
 function textFillSections(sections: readonly PanelSection[], kind: PanelKind | null): readonly PanelSection[] {
   if (kind !== "text") return sections
   return sections.flatMap((section): PanelSection[] => {
-    if (section.trait === "fill")
+    if (section.trait === "fills")
       return [
         {
           ...section,
@@ -354,7 +373,7 @@ function textFillSections(sections: readonly PanelSection[], kind: PanelKind | n
           open: false,
           strips: section.strips.map((strip) =>
             strip.map((control) =>
-              control.trait === "fill" && control.field === "value" ? { ...control, label: fillCopy.box } : control,
+              control.trait === "fills" && control.field === "paint" ? { ...control, label: fillCopy.box } : control,
             ),
           ),
         },

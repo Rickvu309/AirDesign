@@ -37,7 +37,7 @@ it("finds every icon a register shows: added icons, rows that set one, and icon 
   const root = opened.elements[opened.nodes[0]!]!
   const node = elementId("256.2")
   const landed = [
-    { actor: "person", visible: true, v: format, patch: { fill: { value: { set: { picture: "star" } } } } },
+    { actor: "person", visible: true, v: format, patch: { fills: { p0: { set: { image: "star" } } } } },
     { actor: "person", visible: true, v: format, patch: { image: { source: { set: "leaf" } } } },
   ] as const
   const register: Register = {

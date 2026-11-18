@@ -199,8 +199,16 @@ Anything an edit can address that holds its own rows: an element, a slide's own 
 _Avoid_: entity, object, item
 
 **trait**:
-A named group of fields that an element takes together: `identity`, `box`, `geometry`, `fill`, `line`, `effects`, `body`, `text`, `image`, `crop`, `connection`, `table`, `notes` and `theme`. Each kind of element takes some traits (`kindTraits`), and an agent's `set` names a trait and then its fields.
+A named group of fields that an element takes together: `identity`, `box`, `geometry`, `fills`, `line`, `effects`, `body`, `text`, `image`, `crop`, `connection`, `table`, `notes` and `theme`. Each kind of element takes some traits (`kindTraits`), and an agent's `set` names a trait, then its fields.
 _Avoid_: property, attribute, facet, section (a section is a group of slides), group (a group is an element)
+
+**fills**:
+A shape's or a slide background's ordered list of paints, bottom first. The code stores it as the trait `fills`, in four paint slots `p0` to `p3`, and its opacity in `fills.alpha`. An agent and the design panel set it with one paint, `fills.paint`, which fills `p0` and clears the slots above. An older build's `fill.value` reads as that paint.
+_Avoid_: fill value, background fill
+
+**paint**:
+One entry of fills: a solid colour, a gradient, a pattern, a group's fill, none, or an image.
+_Avoid_: fill kind, layer (a layer is a thing on a slide)
 
 **field**:
 One value of a trait, written `trait.field`, such as `box.x`, `line.width` or `text.size`. A field is the smallest thing a row sets, a reset returns to inherited, and a refusal names.

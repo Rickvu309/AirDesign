@@ -25,8 +25,8 @@ declare const process: {
 type Parts = ReadonlyMap<string, Uint8Array>
 
 const faded = { set: 60_000 as Alpha }
-const opacity: ElementPatch = { fill: { alpha: faded }, line: { alpha: faded }, text: { alpha: faded } }
-const shapeOpacity: ElementPatch = { fill: { alpha: faded }, line: { alpha: faded } }
+const opacity: ElementPatch = { fills: { alpha: faded }, line: { alpha: faded }, text: { alpha: faded } }
+const shapeOpacity: ElementPatch = { fills: { alpha: faded }, line: { alpha: faded } }
 const slidePart = "ppt/slides/slide1.xml"
 
 async function deck(name: string): Promise<Parts> {
@@ -88,7 +88,7 @@ describe("exportParts writes an element's opacity into the alpha of its fill, li
     const written = exported(parts, "4", shapeOpacity)
     expect(shownFill(written, at(parts, "4"))?.own).toBe(true)
     expect(shownLine(written, at(parts, "4"))?.width).toEqual({ value: 12700, own: false })
-    expect(shownAlphas(written, at(parts, "4"))).toEqual({ fill: 60_000, line: 60_000, text: null })
+    expect(shownAlphas(written, at(parts, "4"))).toEqual({ fills: 60_000, line: 60_000, text: null })
   })
 
   it("copies a gradient style fill byte for byte with the reference colour in place of phClr, and fades every stop", async () => {
@@ -99,7 +99,7 @@ describe("exportParts writes an element's opacity into the alpha of its fill, li
       '<a:solidFill><a:schemeClr val="accent1"/></a:solidFill></p:spPr>',
       '</p:spPr><p:style><a:lnRef idx="0"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="2"><a:schemeClr val="accent2"><a:lumMod val="75000"/></a:schemeClr></a:fillRef><a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style>',
     )
-    expect(slide(exported(parts, "2", { fill: { alpha: faded } }))).toContain(
+    expect(slide(exported(parts, "2", { fills: { alpha: faded } }))).toContain(
       `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${styleGradient}</p:spPr>`,
     )
   })
@@ -131,11 +131,11 @@ describe("exportParts writes an element's opacity into the alpha of its fill, li
   it("keeps the alpha a field shows when a new colour replaces it, unless the colour names its own", async () => {
     const parts = exported(await deck("clean.pptx"), "2", opacity)
     const accent2 = { solid: { scheme: "accent2" } } as const
-    expect(slide(exported(parts, "2", { fill: { value: { set: accent2 } } }))).toContain(
+    expect(slide(exported(parts, "2", { fills: { p0: { set: accent2 } } }))).toContain(
       '<a:solidFill><a:schemeClr val="accent2"><a:alpha val="60000"/></a:schemeClr></a:solidFill></p:spPr>',
     )
     const own = { solid: { scheme: "accent2", transforms: [{ op: "alpha", val: 20_000 }] } } as const
-    expect(slide(exported(parts, "2", { fill: { value: { set: own } } }))).toContain(
+    expect(slide(exported(parts, "2", { fills: { p0: { set: own } } }))).toContain(
       '<a:solidFill><a:schemeClr val="accent2"><a:alpha val="20000"/></a:schemeClr></a:solidFill></p:spPr>',
     )
     const recoloured = exported(parts, "2", { text: { value: { set: "Bye" } } })
@@ -147,7 +147,7 @@ describe("exportParts writes an element's opacity into the alpha of its fill, li
     const once = exported(parts, "2", opacity)
     expect(exported(once, "2", opacity).get(slidePart)).toEqual(once.get(slidePart))
     const undone = exported(parts, "2", opacity, {
-      fill: { alpha: "opening" },
+      fills: { alpha: "opening" },
       line: { alpha: "opening" },
       text: { alpha: "opening" },
     })
@@ -162,8 +162,8 @@ describe("exportParts writes an element's opacity into the alpha of its fill, li
       '<a:solidFill><a:schemeClr val="accent1"/></a:solidFill></p:spPr>',
       '<a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="000000"/></a:gs><a:gs pos="100000"><a:srgbClr val="000000"><a:alpha val="35000"/></a:srgbClr></a:gs></a:gsLst><a:lin ang="0" scaled="0"/></a:gradFill></p:spPr>',
     )
-    expect(shownAlphas(mixed, at(mixed, "2")).fill).toBe("mixed")
-    const opaque = slide(exported(mixed, "2", { fill: { alpha: { set: 100_000 as Alpha } } }))
+    expect(shownAlphas(mixed, at(mixed, "2")).fills).toBe("mixed")
+    const opaque = slide(exported(mixed, "2", { fills: { alpha: { set: 100_000 as Alpha } } }))
     expect(opaque).toContain('<a:gs pos="100000"><a:srgbClr val="000000"/></a:gs>')
   })
 })

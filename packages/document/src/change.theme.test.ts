@@ -51,9 +51,9 @@ describe("the deck's theme", () => {
       ok: false,
       refusals: [{ node: title.node, trait: "theme", code: "kind" }],
     })
-    expect(plan({ target: { node: themeNode }, fill: { value: { none: true } } })).toEqual({
+    expect(plan({ target: { node: themeNode }, fills: { paint: { none: true } } })).toEqual({
       ok: false,
-      refusals: [{ node: themeNode, trait: "fill", code: "kind" }],
+      refusals: [{ node: themeNode, trait: "fills", code: "kind" }],
     })
   })
 

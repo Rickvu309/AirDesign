@@ -28,7 +28,7 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
     if (value !== undefined && name !== chosen) onChange(value)
   }
 
-  const shapeFill = control.field === "value" && control.trait === "fill" && control.label !== fillCopy.box
+  const shapeFill = control.field === "paint" && control.trait === "fills" && control.label !== fillCopy.box
   const names = Object.keys(cases).filter((name) => !shapeFill || name !== "pattern")
 
   return (

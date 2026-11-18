@@ -4,7 +4,7 @@ import { box } from "./trait-box.js"
 import { connection } from "./trait-connection.js"
 import { crop } from "./trait-crop.js"
 import { effects } from "./trait-effects.js"
-import { fill } from "./trait-fill.js"
+import { fills } from "./trait-fills.js"
 import { geometry } from "./trait-geometry.js"
 import { identity } from "./trait-identity.js"
 import { image } from "./trait-image.js"
@@ -24,7 +24,7 @@ export const traits = {
   link,
   box,
   geometry,
-  fill,
+  fills,
   line,
   effects,
   body,
@@ -48,7 +48,10 @@ export type InputName<T extends TraitName> = keyof InputKinds<T> & string
 export type FieldValue<T extends TraitName, F extends FieldName<T>> = ValueOf<FieldKinds<T>[F]>
 export type TraitValue<T extends TraitName> = { readonly [F in FieldName<T>]: FieldValue<T, F> }
 export type FieldKey = { [T in TraitName]: `${T}.${FieldName<T>}` }[TraitName]
-export type InheritableField<T extends TraitName> = (typeof traits)[T]["inheritable"][number] & FieldName<T>
+export type InheritableField<T extends TraitName> = (typeof traits)[T]["inheritable"][number] &
+  (FieldName<T> | InputName<T>)
+
+export type SlotField<T extends TraitName> = (typeof traits)[T]["slots"][number] & FieldName<T>
 
 export type AlphaField<T extends TraitName> = {
   [F in FieldName<T>]: FieldValue<T, F> extends Alpha ? F : never
@@ -56,13 +59,13 @@ export type AlphaField<T extends TraitName> = {
 
 export type HasAlpha = { [T in TraitName]: AlphaField<T> }[TraitName] extends never ? false : true
 
-export type WireField<T extends TraitName> = Exclude<FieldName<T>, AlphaField<T>> | InputName<T>
+export type WireField<T extends TraitName> = Exclude<FieldName<T>, AlphaField<T> | SlotField<T>> | InputName<T>
 
 export type WireAgent<T extends TraitName, F extends WireField<T>> =
   F extends FieldName<T>
     ? AgentOf<FieldKinds<T>[F]> | (F extends InheritableField<T> ? null : never)
     : F extends InputName<T>
-      ? AgentOf<InputKinds<T>[F]>
+      ? AgentOf<InputKinds<T>[F]> | (F extends InheritableField<T> ? null : never)
       : never
 
 export const traitNames = Object.keys(traits) as readonly TraitName[]
@@ -73,9 +76,9 @@ export const kindTraits = {
   master: [],
   layout: [],
   section: [],
-  slide: ["fill", "template", "show", "transition"],
+  slide: ["fills", "template", "show", "transition"],
   notes: ["notes"],
-  shape: ["identity", "box", "geometry", "fill", "line", "effects", "body", "text", "link", "image"],
+  shape: ["identity", "box", "geometry", "fills", "line", "effects", "body", "text", "link", "image"],
   picture: ["identity", "box", "geometry", "line", "effects", "image", "crop"],
   connector: ["identity", "box", "geometry", "line", "effects", "connection"],
   group: ["identity", "box", "effects"],
@@ -100,9 +103,13 @@ export function inheritable(trait: TraitName, field: string): boolean {
   return (traits[trait].inheritable as readonly string[]).includes(field)
 }
 
-const slotFields: Partial<Readonly<Record<TraitName, string>>> = { fill: "value", geometry: "shape" }
+export function slotted(trait: TraitName, field: string): boolean {
+  return (traits[trait].slots as readonly string[]).includes(field)
+}
+
+const replacing: Partial<Readonly<Record<TraitName, string>>> = { fills: "paint", geometry: "shape" }
 
 export function keptRefuses(kept: readonly string[], trait: TraitName, field: string): boolean {
   if (kept.includes(`${trait}.${field}`)) return true
-  return kept.includes(trait) && slotFields[trait] !== field
+  return kept.includes(trait) && replacing[trait] !== field
 }

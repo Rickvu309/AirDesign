@@ -152,14 +152,14 @@ it("sends a background colour an older build left queued as a fill row on the sl
     [],
   )
   const node = elementId("256.slide")
-  const filled = { fill: { value: { set: { solid: accent } } } }
+  const filled = { fills: { p0: { set: { solid: accent } } } }
   const kept = await connect(remote).openDeck("deck")
   if (!kept.ok) throw new Error(kept.refusal)
   expect(kept.phase).toBe("on-device")
   expect(kept.register.order).toEqual([])
   expect(kept.register.elements[node]?.landed).toMatchObject([{ actor: "person", visible: true, patch: filled }])
   expect(kept.register.elements[elementId("257.slide")]?.landed).toMatchObject([
-    { actor: "person", visible: true, patch: { fill: { value: { set: { solid: navy } } } } },
+    { actor: "person", visible: true, patch: { fills: { p0: { set: { solid: navy } } } } },
   ])
   const sent: unknown[] = []
   const online = connect({
@@ -170,7 +170,7 @@ it("sends a background colour an older build left queued as a fill row on the sl
     },
   })
   expect((await online.flush("deck")).ok).toBe(true)
-  expect(sent).toEqual([[{ v: 28, patch: filled, node, floor: "" }]])
+  expect(sent).toEqual([[{ v: 57, patch: filled, node, floor: "" }]])
   const confirmed = await connect(remote).openDeck("deck")
   if (!confirmed.ok) throw new Error(confirmed.refusal)
   expect(confirmed.phase).toBe("confirmed")
@@ -188,8 +188,8 @@ it("replays a background colour an older build left in the unsaved journal as a 
       kind: "pending",
       node: "256.slide",
       floor: "",
-      v: 28,
-      patch: { fill: { value: { set: { solid: accent } } } },
+      v: 57,
+      patch: { fills: { p0: { set: { solid: accent } } } },
     },
   ])
   expect(journal.size).toBe(0)

@@ -6,7 +6,7 @@ import { selectionColors, replaceSelectionColor } from "./selection-colors"
 const node = elementId("1.2")
 const palette = { theme: [], deck: [] }
 const fields = {
-  "fill.value": {
+  "fills.p0": {
     value: {
       gradient: {
         stops: [
@@ -151,7 +151,7 @@ describe("selection colors", () => {
       {
         node,
         fields: {
-          "fill.value": { value: { solid: { scheme: "accent1" } }, own: false },
+          "fills.p0": { value: { solid: { scheme: "accent1" } }, own: false },
           "line.fill": fields["line.fill"],
         },
       },

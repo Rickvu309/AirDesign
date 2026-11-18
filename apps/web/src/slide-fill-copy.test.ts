@@ -19,7 +19,7 @@ import { exportedParts } from "./exported-parts"
 import { flooredEdit } from "./slide-floor"
 
 type Parts = ReadonlyMap<string, Uint8Array>
-type Fill = FieldValue<"fill", "value">
+type Fill = FieldValue<"fills", "p0">
 
 const red: Fill = { solid: { rgb: "C00000" } }
 const navy: Fill = {
@@ -70,10 +70,10 @@ function fills(parts: Parts, register: Register): Readonly<Record<string, Fill |
 
 it("keeps a duplicate's fill as the source showed it, through a duplicate of the duplicate and an opening row", async () => {
   const parts = await fixture("clean.pptx")
-  let register = filled(openRegister("", "deck"), "256.2", { fill: { value: { set: red } } })
+  let register = filled(openRegister("", "deck"), "256.2", { fills: { p0: { set: red } } })
   register = cloned(parts, register, slideId("256"), slideId("257"))
-  register = filled(register, "256.2", { fill: { value: { set: navy } } })
-  register = filled(register, "257.2", { fill: { value: "opening" } })
+  register = filled(register, "256.2", { fills: { p0: { set: navy } } })
+  register = filled(register, "257.2", { fills: { p0: "opening" } })
   register = cloned(parts, register, slideId("257"), slideId("258"))
   expect(fills(parts, register)).toEqual({ "256": navy, "257": red, "258": red })
 })
@@ -82,7 +82,7 @@ it("keeps a duplicate's fill gone back to inherited when its source was reset", 
   const parts = await fixture("clean.pptx")
   const accent = { solid: { scheme: "accent1" } }
   expect(fills(parts, openRegister("", "deck"))).toEqual({ "256": accent })
-  let register = filled(openRegister("", "deck"), "256.2", { fill: { value: "inherit" } })
+  let register = filled(openRegister("", "deck"), "256.2", { fills: { p0: "inherit" } })
   register = cloned(parts, register, slideId("256"), slideId("257"))
   expect(fills(parts, register)).toEqual({ "256": { none: true }, "257": { none: true } })
 })

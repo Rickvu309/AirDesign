@@ -25,7 +25,7 @@ function painted(parts: ReadonlyMap<string, Uint8Array>, color: Color) {
   const node = elementId(`${file[0] ?? ""}.slide`)
   const commands: readonly Command[] = [
     { command: "add", node, floor: "", route: "deck" },
-    { command: "person", node, v: format, patch: { fill: { value: { set: { solid: color } } } } },
+    { command: "person", node, v: format, patch: { fills: { p0: { set: { solid: color } } } } },
   ]
   const register = commands.reduce<Register>(
     (current, command) => {

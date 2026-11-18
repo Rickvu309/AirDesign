@@ -33,7 +33,7 @@ test("a person lays a colour over a picture and blurs it @export", async ({ page
   const panel = await designed(page)
   const kinds = panel.locator("[data-picture-kind]")
   await expect(kinds).toHaveAttribute("aria-label", fillCopy.value)
-  await expect(kinds.getByRole("button", { name: fillWords.picture, exact: true })).toHaveAttribute(
+  await expect(kinds.getByRole("button", { name: fillWords.image, exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",
   )
@@ -110,7 +110,7 @@ test("a shape whose fill is an icon shows the picture fill controls", async ({ p
   const fill = await boxFillPanel(page, shape)
   await fill
     .getByRole("group", { name: fillCopy.box, exact: true })
-    .getByRole("button", { name: fillWords.picture, exact: true })
+    .getByRole("button", { name: fillWords.image, exact: true })
     .click()
   await expect(fill.locator("[data-picture-preview]")).toBeVisible()
   await expect(fill.getByRole("combobox", { name: pictureCopy.mode, exact: true })).toBeVisible()

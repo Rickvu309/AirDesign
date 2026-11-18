@@ -36,7 +36,7 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
   ],
   shape: [
     slides("alignment"),
-    slides("fill"),
+    slides("fills"),
     slides("opacity"),
     slides("corners"),
     slides("border"),
@@ -90,7 +90,7 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
     slides("alignment"),
     slides("text"),
     slides("textFill"),
-    slides("fill"),
+    slides("fills"),
     slides("opacity"),
     design("boxFill"),
     slides("link"),
@@ -117,7 +117,7 @@ export function panelPlaces(
 }
 
 export function sectionInMode(section: PanelSection, mode: PanelMode): PanelSection {
-  if (mode === "design" || section.trait !== "fill") return section
+  if (mode === "design" || section.trait !== "fills") return section
   return {
     ...section,
     strips: section.strips.map((strip) =>

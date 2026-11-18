@@ -5,31 +5,31 @@
       "file": "packages/document/src/row.ts",
       "names": ["netPatch", "beforeOf", "shows"],
       "digest": "e884d873b806",
-      "blob": "b2f90b3179a7dc1447eeaf305f5c5a290bac54e4"
+      "blob": "302f9ed36ae692de3b7898ccb8e6520dfda09468"
     },
     {
       "file": "packages/document/src/decide.ts",
       "names": ["landedPatch", "shownPatch"],
       "digest": "ef74e6ff3820",
-      "blob": "2afa6ffbfbea8b86b5f269082e669df193f85d9b"
+      "blob": "24dcc7b57cc99e1e29237174c6817421d05acf11"
     },
     {
       "file": "packages/document/src/change.ts",
       "names": ["traitPatch", "planNode", "planChange"],
-      "digest": "530576e67e95",
-      "blob": "a7e701ec7a84229cdd3672a1dc5538a939c67f6d"
+      "digest": "1a86b7c535dd",
+      "blob": "5379978f717f8cbce4fddb10aeb2918298fbd918"
     },
     {
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "turn", "stepCommands"],
       "digest": "4e0fd4a0c00c",
-      "blob": "601b32ef32b908ed33a8376338349fa586c2ba9b"
+      "blob": "5f2cec0de1b46fb91cb92c9ef8d6412c3a844087"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "landedBefore", "heldPatch"],
       "digest": "a022f6949f23",
-      "blob": "6c9ef52fe885ff0e96a4573b00683e390e46569e"
+      "blob": "13f7c7bf50fbd6d101a66ff8bb78f2025f7b6fc5"
     },
     {
       "file": "apps/web/src/design/rebase.ts",
@@ -40,8 +40,8 @@
     {
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
-      "digest": "8f44d848c179",
-      "blob": "bc21eae6452c4d5127b9d4832dd0ae2453741f76"
+      "digest": "6747248664c5",
+      "blob": "a53f624741e80aad9b5c862e12a46e7c52418acd"
     },
     {
       "file": "apps/web/src/design/shown-alpha.ts",
@@ -52,14 +52,14 @@
     {
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["fieldsRead", "elementDesign"],
-      "digest": "67383895576e",
-      "blob": "9b159790c82e4782e27c7d9d2936ba3b812a89ae"
+      "digest": "364c12c9c0d2",
+      "blob": "a08a73f018859d0e1ac6eb40951349703dd5cdc0"
     },
     {
       "file": "apps/web/src/undo-list.ts",
       "names": ["recorded", "turnBack", "sent", "sentCommand"],
-      "digest": "6f9395d19c1c",
-      "blob": "3422414c48c6564c5d4b5417bf897b50a9af3b3d"
+      "digest": "e2df293d4de1",
+      "blob": "099e57517effc643b12289a6fa768e9c039a63a9"
     },
     {
       "file": "apps/web/src/exported-parts.ts",
@@ -70,38 +70,38 @@
     {
       "file": "apps/web/src/deck-paint.ts",
       "names": ["paint"],
-      "digest": "69365851f783",
-      "blob": "9f9320654709d4cec2b71367c2e2984651407517"
+      "digest": "73a0f30bba44",
+      "blob": "260eedcabf488b13b4d74c282b188ec8b4668a15"
     },
     {
       "file": "packages/pptx/src/export-parts.ts",
       "names": ["exportParts", "writtenElement", "writtenTheme"],
-      "digest": "5ce06955aaa2",
-      "blob": "6a021b4befff0f9248c49c82c30c9158359bc070"
+      "digest": "eb7e49fcc16d",
+      "blob": "ebaf161709066aea6cc162b77201b0125c8a2b35"
     },
     {
       "file": "packages/pptx/src/xml-codec.ts",
       "names": ["writeFields"],
       "digest": "20d2d3dc702d",
-      "blob": "c2453e4c33fc6d5844e30229fa19060847035ce7"
+      "blob": "ccc265475afdde5f85a28fdc40d847f538d3c786"
     },
     {
-      "file": "packages/pptx/src/trait-xml-fill.ts",
-      "names": ["fillAlpha", "fadedFill", "fillXml"],
-      "digest": "671b6f7b7f5c",
-      "blob": "7b7af657694f22d0df34457bc4b38c6f68822f2f"
+      "file": "packages/pptx/src/trait-xml-fills.ts",
+      "names": ["fillAlpha", "fadedFill", "fillsXml"],
+      "digest": "13dd7233338c",
+      "blob": "a726e53652cb2c11c5de4fa12083ac1d10d868c9"
     },
     {
       "file": "packages/pptx/src/alpha-codec.ts",
       "names": ["alphaKept"],
       "digest": "ce0077cf1df2",
-      "blob": "0ab5c0e73de21e251a441cc53d319ca48e89f743"
+      "blob": "3295201fee4b7f90f7e7d1c1a920c0131a887993"
     },
     {
       "file": "packages/engine/src/apply-change.ts",
       "names": ["applySet", "landRow"],
       "digest": "b3d2b91658cb",
-      "blob": "1585efaf74933f2e555e7bd5c911d16984c0602b"
+      "blob": "ff104f376772669e18dd35613fa68271183c6377"
     }
   ]
 }

@@ -16,7 +16,8 @@ import {
 } from "./design.js"
 import { readElementId, readSlideId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { readTemplateStyles, type TemplateStyle } from "./template-style.js"
-import { format } from "./format.js"
+import { converted, format, formatOf, type Conversion } from "./format.js"
+import { fillsFormat, fillsIndex } from "./fills-conversion.js"
 import { readStoredTransition, type TransitionValue } from "./trait-transition.js"
 import { bytesOf, limits } from "./limits.js"
 import { onlyKeys, record } from "./plain-object.js"
@@ -270,8 +271,11 @@ function readSectionStarts(raw: unknown, slides: readonly IndexSlide[]): readonl
   return starts
 }
 
+export const pageConversions: readonly Conversion<undefined>[] = [{ introduced: fillsFormat, convert: fillsIndex }]
+
 export function readIndexPage(raw: unknown): IndexPage | null {
-  const row = record(raw)
+  const stored = record(raw)
+  const row = stored === null ? null : converted(stored, formatOf, pageConversions, undefined)
   if (row === null) return null
   if (
     !onlyKeys(
@@ -440,30 +444,4 @@ export function indexedSectionStarts(index: DeckIndex | undefined): readonly Sli
 
 export function indexDue(stored: DeckIndex | undefined): boolean {
   return stored === undefined || stored.elements.length !== stored.total || (stored.format ?? 1) < format
-}
-
-type Rowed = { readonly landed: readonly { readonly v?: number }[] }
-
-function rowFormat(elements: Readonly<Partial<Record<string, Rowed>>>): number {
-  let highest = 1
-  for (const body of Object.values(elements))
-    for (const row of body?.landed ?? []) highest = Math.max(highest, row.v ?? 1)
-  return highest
-}
-
-export function answeredRegister<
-  Stored extends {
-    readonly index?: DeckIndex
-    readonly order?: readonly { readonly slide: string; readonly grid?: number; readonly row?: string }[]
-    readonly elements: Readonly<Partial<Record<string, Rowed>>>
-  },
->(register: Stored): Stored & { readonly format?: number } {
-  const newerCommand = register.order?.some(
-    (command) => (command.grid ?? 1) > 1 || (command.slide === "move-many" && command.row === "before"),
-  )
-  const rows = newerCommand === true ? format : rowFormat(register.elements)
-  if (register.index === undefined) return rows > 1 ? { ...register, format: rows } : register
-  const { next, ...index } = register.index
-  const stored = Math.max(index.format ?? 1, next?.format ?? 1, rows)
-  return { ...register, index, ...(stored > 1 ? { format: stored } : {}) }
 }

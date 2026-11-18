@@ -11,7 +11,7 @@
       "file": "packages/mcp/src/edit-tool.ts",
       "names": ["editDeck", "addTurn"],
       "digest": "6c5d59e34060",
-      "blob": "9981bbd10cf57bc6a7197788a425f50dac2acba4"
+      "blob": "3e9b2fd55cd7a759180ccc91d6e6c47a9516e44f"
     },
     {
       "file": "packages/engine/src/agent-slides.ts",
@@ -46,8 +46,8 @@
     {
       "file": "apps/api/src/mcp.ts",
       "names": ["serveMcp", "commitEdit"],
-      "digest": "7749f5a59fbb",
-      "blob": "1be793bf16ce9f4bd925b81fca3c670d773ec59e"
+      "digest": "c44daa888486",
+      "blob": "325a95cd9c0ea771da13000cd306d13d7764a4bf"
     }
   ]
 }

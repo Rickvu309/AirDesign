@@ -33,13 +33,13 @@ describe("person undo writes a row where format 1 cannot", () => {
   })
 
   it("undoes a fill back to the opening fill with a row, and redoes it", () => {
-    const after = { fill: { value: { set: { solid: { scheme: "accent2" as const } } } } }
-    const filled: Undoable = { steps: [{ node, before: { fill: { value: "opening" } }, after }] }
-    const fillOf = (register: Register) => landedPatch(register.elements[node]!, "text").fill
+    const after = { fills: { p0: { set: { solid: { scheme: "accent2" as const } } } } }
+    const filled: Undoable = { steps: [{ node, before: { fills: { p0: "opening" } }, after }] }
+    const fillOf = (register: Register) => landedPatch(register.elements[node]!, "text").fills
     const changed = landed(edited(), { command: "person", v: format, patch: after, node })
     const undone = turned(changed, undoOf(changed, filled))
-    expect(fillOf(undone)).toEqual({ value: "opening" })
-    expect(fillOf(turned(undone, redoOf(undone, filled)))).toEqual(after.fill)
+    expect(fillOf(undone)).toEqual({ p0: "opening" })
+    expect(fillOf(turned(undone, redoOf(undone, filled)))).toEqual(after.fills)
     expect(undoOf(undone, filled)).toEqual({ ok: false })
   })
 })

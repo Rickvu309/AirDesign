@@ -56,14 +56,14 @@
     {
       "file": "packages/document/src/traits.ts",
       "names": ["kindTraits"],
-      "digest": "a8d2b718d112",
-      "blob": "c5d07c3388844e12d29363b0189abbb3e232f591"
+      "digest": "e744d45cf923",
+      "blob": "1d8c3aac34a6d543471b9a13d21e78ae9825e815"
     },
     {
       "file": "packages/document/src/element-takes.ts",
       "names": ["takes"],
       "digest": "6cdac03c877e",
-      "blob": "0aad07f0690dcc1e8cf07652b15fb349b034c2b8"
+      "blob": "a59db49fd778525e2fbbe56e415514d6f753c2c8"
     }
   ]
 }

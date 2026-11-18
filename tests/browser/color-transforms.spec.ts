@@ -66,9 +66,9 @@ async function storeColor(page: Page, color: unknown): Promise<number> {
       cursor.onsuccess = () => {
         const at = cursor.result
         if (at === null) return
-        const row = at.value as { kind?: unknown; node?: unknown; patch?: { fill?: unknown } }
+        const row = at.value as { kind?: unknown; node?: unknown; patch?: { fills?: unknown } }
         if (row.kind === "pending" && typeof row.node === "string" && row.node.endsWith(".slide")) {
-          at.update({ ...row, patch: { fill: { value: { set: { solid: next } } } } })
+          at.update({ ...row, patch: { fills: { ...row.patch?.fills, p0: { set: { solid: next } } } } })
           count += 1
         }
         at.continue()

@@ -13,7 +13,7 @@ export default {
   specs: ["tests/browser/shape-fill.spec.ts"],
   exports: [exported],
   renders: [exported],
-  covers: ["fill.value"],
+  covers: ["fills.paint"],
   lines(answers) {
     const kept = [...(answers.parts.get(original)?.keys() ?? [])].filter((name) => !deckParts.includes(name))
     const lines = slideExportLines({ ...answers, original, exported, kept }).map((line) =>

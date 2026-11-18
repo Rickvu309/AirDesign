@@ -6,7 +6,7 @@ import { connectionXml } from "./trait-xml-connection.js"
 import { cropXml } from "./trait-xml-crop.js"
 import { effectsXml } from "./trait-xml-effects.js"
 import type { Faded } from "./alpha-codec.js"
-import { fillAlpha, fillXml } from "./trait-xml-fill.js"
+import { fillAlpha, fillsXml } from "./trait-xml-fills.js"
 import { geometryXml } from "./trait-xml-geometry.js"
 import { identityXml } from "./trait-xml-identity.js"
 import { imageXml } from "./trait-xml-image.js"
@@ -25,7 +25,7 @@ export const traitXml: { readonly [T in TraitName]: TraitXml<T> } = {
   link: linkXml,
   box: boxXml,
   geometry: geometryXml,
-  fill: fillXml,
+  fills: fillsXml,
   line: lineXml,
   effects: effectsXml,
   body: bodyXml,
@@ -45,8 +45,8 @@ export function writeTrait<T extends TraitName>(parts: Parts, at: ElementAt, tra
   return writeFields(parts, at, traitXml[trait], patch)
 }
 
-export type ShownAlphas = { readonly fill: Faded; readonly line: Faded; readonly text: Faded }
+export type ShownAlphas = { readonly fills: Faded; readonly line: Faded; readonly text: Faded }
 
 export function shownAlphas(parts: Parts, at: ElementAt): ShownAlphas {
-  return { fill: fillAlpha(parts, at), line: lineAlpha(parts, at), text: textAlpha(parts, at) }
+  return { fills: fillAlpha(parts, at), line: lineAlpha(parts, at), text: textAlpha(parts, at) }
 }

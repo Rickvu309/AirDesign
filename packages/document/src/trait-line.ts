@@ -1,5 +1,5 @@
 import { trait, type NoInputs } from "./trait-decl.js"
-import { fillCases } from "./trait-fill.js"
+import { fillCases } from "./trait-fills.js"
 import { alphaOver, choice, record, sizeUpTo, union } from "./value-kind.js"
 
 export const dashPresets = [

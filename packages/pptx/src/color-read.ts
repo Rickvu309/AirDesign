@@ -107,7 +107,7 @@ export function fillOf(held: Held, placed: Color | null): FillRead | "none" | nu
       return preset === null ? null : { pattern: preset }
     }
     case "a:blipFill":
-      return "picture"
+      return "image"
     case "a:grpFill":
       return "group"
   }

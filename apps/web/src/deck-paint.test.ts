@@ -241,7 +241,7 @@ it("holds the fit the file stored on a box until its text, its size or its text 
     if (edited.decision === "refuse") throw new Error(edited.code)
     return edited.register
   }
-  expect(fitOf(designed({ fill: { value: { set: { solid: { scheme: "accent2" } } } } }))).toEqual({
+  expect(fitOf(designed({ fills: { p0: { set: { solid: { scheme: "accent2" } } } } }))).toEqual({
     kind: "shrink",
     scale: 0.775,
     reduction: 0.2,

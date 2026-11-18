@@ -23,7 +23,7 @@ function filled(node: string, fill: unknown, x: number) {
   return panelOf(view, {
     reads: {},
     moves: true,
-    fields: { "geometry.shape": { value: { preset: "ellipse" }, own: true }, "fill.value": { value: fill, own: true } },
+    fields: { "geometry.shape": { value: { preset: "ellipse" }, own: true }, "fills.p0": { value: fill, own: true } },
   })
 }
 

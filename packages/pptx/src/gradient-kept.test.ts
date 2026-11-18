@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest"
 import { markupDocument } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { readTable, writeTable } from "./table-write.js"
-import { fillMarkup } from "./trait-xml-fill.js"
+import { fillMarkup } from "./trait-xml-fills.js"
 import { writeTrait } from "./trait-xml.js"
 
-type Fill = Exclude<FieldValue<"fill", "value">, { readonly picture: unknown }>
+type Fill = Exclude<FieldValue<"fills", "p0">, { readonly picture: unknown }>
 type Gradient = Extract<Fill, { readonly gradient: unknown }>
 
 const part = "ppt/slides/slide1.xml"
@@ -61,9 +61,9 @@ describe("a gradient a change rewrites keeps the flip and tile rectangle its val
   it("keeps them on a shape's own fill, and drops them when the fill becomes another kind", () => {
     const before = parts(shape(tiled))
     const at = { slide: "256", part, shape: "2" }
-    const written = text(writeTrait(before, at, "fill", { value: { set: gradient } }))
+    const written = text(writeTrait(before, at, "fills", { p0: { set: gradient } }))
     expect(written).toBe(text(parts(shape(kept))))
-    expect(text(writeTrait(before, at, "fill", { value: { set: solid } }))).toBe(
+    expect(text(writeTrait(before, at, "fills", { p0: { set: solid } }))).toBe(
       text(parts(shape(fillMarkup(solid).xml))),
     )
   })
@@ -71,7 +71,7 @@ describe("a gradient a change rewrites keeps the flip and tile rectangle its val
   it("keeps them on a slide's own background", () => {
     const background = (fill: string) => `<p:bg><p:bgPr>${fill}<a:effectLst/></p:bgPr></p:bg>`
     const before = parts("", background(tiled))
-    const written = writeTrait(before, { slide: "256", part, shape: "slide" }, "fill", { value: { set: gradient } })
+    const written = writeTrait(before, { slide: "256", part, shape: "slide" }, "fills", { p0: { set: gradient } })
     expect(text(written)).toBe(text(parts("", background(kept))))
   })
 

@@ -43,7 +43,7 @@ it("orders shape appearance before its shut detail sections", () => {
       .slice(0, 8),
   ).toEqual([
     ["alignment", true],
-    ["fill", true],
+    ["fills", true],
     ["opacity", true],
     ["border", true],
     ["shadow", true],

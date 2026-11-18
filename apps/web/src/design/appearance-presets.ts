@@ -43,8 +43,8 @@ function borderValue(fill: unknown, dash: unknown): string | undefined {
   return "solid" in fill && (dash === "solid" || dash === "dash" || dash === "dot") ? dash : undefined
 }
 
-function pictureValue(value: unknown): boolean {
-  return typeof value === "object" && value !== null && "picture" in value
+function imageValue(value: unknown): boolean {
+  return typeof value === "object" && value !== null && "image" in value
 }
 
 function modeList(mode: PanelControl): PanelControl {
@@ -128,9 +128,9 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
   const overlay = controls.find((control) => control.trait === "image" && control.field === "overlay")
   const blur = controls.find((control) => control.trait === "image" && control.field === "blur")
   const adjust = [overlay, blur].filter((control) => control !== undefined)
-  const fillValue = controls.find((control) => control.trait === "fill" && control.field === "value")?.value
+  const fillValue = controls.find((control) => control.trait === "fills" && control.field === "paint")?.value
   const shapePanel = kind === "shape" || kind === "text"
-  const shapePicture = shapePanel && pictureValue(fillValue)
+  const shapePicture = shapePanel && imageValue(fillValue)
   const added: PanelSection[] =
     kind === "picture"
       ? [
@@ -234,7 +234,7 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
           )
           .filter((strip) => strip.length > 0),
       }
-    if (section.trait === "fill" && shapePicture && mode !== undefined)
+    if (section.trait === "fills" && shapePicture && mode !== undefined)
       return {
         ...section,
         strips: [...section.strips, [modeList(mode)], ...(adjust.length === 0 ? [] : [adjust])],

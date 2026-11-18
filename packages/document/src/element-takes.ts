@@ -15,7 +15,7 @@ const turns: readonly FieldKey[] = ["box.rot", "box.flipH", "box.flipV"]
 const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
   table: turns,
   chart: turns,
-  slide: ["fill.alpha"],
+  slide: ["fills.alpha"],
   kept: ["identity.name", "identity.alt", "identity.hidden"],
 }
 

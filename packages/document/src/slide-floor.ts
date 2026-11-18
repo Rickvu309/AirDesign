@@ -1,5 +1,6 @@
 import { readElement, type DeckIndex, type IndexElement } from "./deck-index.js"
 import { elementId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
+import { fillsElement } from "./fills-conversion.js"
 import { bytesOf, limits } from "./limits.js"
 import { record } from "./plain-object.js"
 import { readOpening, type ElementPatch, type FieldEdit } from "./row.js"
@@ -14,7 +15,7 @@ export function readFloor(raw: unknown, slide: SlideId): readonly IndexElement[]
   const slides = new Set([slide])
   const floor: IndexElement[] = []
   for (const item of raw) {
-    const { opening, ...rest } = record(item) ?? {}
+    const { opening, ...rest } = record(fillsElement(item)) ?? {}
     const element = readElement(rest, slides)
     const patch = opening === undefined ? undefined : readOpening(opening)
     if (element === null || patch === null || floor.some((kept) => kept.node === element.node)) return undefined

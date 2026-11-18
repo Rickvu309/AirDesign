@@ -8,7 +8,7 @@ import {
   siteKinds,
   takes,
   traits,
-  type FieldValue,
+  type Paint,
   type ElementId,
   type ScopedElement,
   type TraitReads,
@@ -156,7 +156,7 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
             "connection.end": { value: connection.end, own: true },
           }),
       ...Object.fromEntries(identity),
-      ...(fill === null ? {} : { "fill.value": fill }),
+      ...(fill === null ? {} : { "fills.p0": fill }),
       ...(geometry === null ? {} : { "geometry.shape": geometry }),
       "box.rot": { value: turn.rot, own: true },
       "box.flipH": { value: turn.flipH, own: true },
@@ -448,7 +448,7 @@ function SlideChrome({ deck, mode, toneFor }: { deck: DesigningDeck; mode: Panel
       <SlideBackground
         shown={view}
         deck={colorsIn(parts)}
-        onFill={(value) => changeDesign(deck, () => ({ target: { slide: view.slide }, fill: { value } }))}
+        onFill={(paint) => changeDesign(deck, () => ({ target: { slide: view.slide }, fills: { paint } }))}
       />,
     ],
     ["selectionColors", <LiveSelectionColors deck={deck} nodes={[]} />],
@@ -470,34 +470,32 @@ function SlideBackground({
 }: {
   shown: DesignShown
   deck: readonly string[]
-  onFill: (fill: FieldValue<"fill", "value">) => void
+  onFill: (paint: Paint) => void
 }) {
   const { background } = shown
   const named = useId()
-  const desc = traits.fill.fields.value.desc
+  const desc = traits.fills.inputs.paint.desc
   const cases = desc.kind === "union" ? desc.cases : {}
   const base = resolveControl({
-    trait: "fill",
-    field: "value",
+    trait: "fills",
+    field: "paint",
     label: designCopy.background,
     desc: {
       kind: "union",
       plain: null,
-      cases: Object.fromEntries(
-        Object.entries(cases).filter(([key]) => ["solid", "gradient", "picture"].includes(key)),
-      ),
+      cases: Object.fromEntries(Object.entries(cases).filter(([key]) => ["solid", "gradient", "image"].includes(key))),
     },
-    value: shown.fill ?? (background.value === undefined ? { picture: null } : { solid: background.value }),
+    value: shown.fill ?? (background.value === undefined ? { image: null } : { solid: background.value }),
     mixed: false,
     inherited: false,
     reset: null,
-    change: (value) => ({ target: { slide: shown.slide }, fill: { value: value as FieldValue<"fill", "value"> } }),
+    change: (value) => ({ target: { slide: shown.slide }, fills: { paint: value as Paint } }),
   })
   const control = {
     ...base,
     look: {
       ...base.look,
-      options: { solid: fillIcons.solid, gradient: fillIcons.gradient, picture: fillIcons.picture },
+      options: { solid: fillIcons.solid, gradient: fillIcons.gradient, image: fillIcons.image },
     },
   }
   return (
@@ -505,9 +503,9 @@ function SlideBackground({
       <UnionControl
         control={control}
         palette={{ theme: shown.theme, deck }}
-        onChange={(value) => onFill(value as FieldValue<"fill", "value">)}
+        onChange={(value) => onFill(value as Paint)}
         inner={(props) =>
-          props.control.field === "value.solid" ? (
+          props.control.field === "paint.solid" ? (
             <ColorPicker
               title={designCopy.background}
               value={background.value}

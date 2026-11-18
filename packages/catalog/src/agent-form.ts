@@ -5,7 +5,7 @@ import {
   assetIcon,
   bytesOf,
   designBytes,
-  designKeys,
+  designOrder,
   fadedColor,
   iconNamePattern,
   namesAlpha,
@@ -46,7 +46,7 @@ function tenths(value: number): number {
 }
 
 function agentFill(fill: FillRead): string {
-  if (fill === "picture" || fill === "group") return fill
+  if (fill === "image" || fill === "group") return fill
   if ("color" in fill) return agentColor(fill.color)
   if ("gradient" in fill) return `gradient ${fill.gradient.map(agentColor).join(", ")}`
   return `pattern ${fill.pattern}`
@@ -82,7 +82,7 @@ type Agent = { readonly [Key in DesignKey]: (read: NonNullable<TraitReads[Key]>[
 
 const agent: Agent = {
   geometry: (value) => value,
-  fill: agentFill,
+  fills: agentFill,
   "line.width": (value) => tenths(value / emuPerPoint),
   "line.fill": agentFill,
   "line.dash": (value) => value,
@@ -118,12 +118,9 @@ function shownOf<Key extends DesignKey>(
   return read.source === undefined ? [value] : [value, read.source]
 }
 
-const firstKeys: readonly DesignKey[] = ["box.rot", "box.flipH", "box.flipV", "connection.start", "connection.end"]
-const keptFirst: readonly DesignKey[] = [...firstKeys, ...designKeys.filter((key) => !firstKeys.includes(key))]
-
 export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design" | "kept" | "placed" | "link"> {
   const design: Partial<Record<DesignKey, Shown>> = {}
-  for (const key of keptFirst) {
+  for (const key of designOrder) {
     const field = read.reads[key] as Read<never> | undefined
     if (field === undefined) continue
     const shown = shownOf(key, field)
@@ -141,12 +138,12 @@ export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design
   }
 }
 
-type Fill = FieldValue<"fill", "value">
+type Fill = FieldValue<"fills", "p0">
 
 function agentFillValue(fill: Fill | FieldValue<"line", "fill">): string {
   if ("none" in fill) return "none"
   if ("group" in fill) return "group"
-  if ("picture" in fill) return "picture"
+  if ("image" in fill) return "image"
   if ("solid" in fill) return agentColor(fill.solid)
   if ("pattern" in fill) return `pattern ${fill.pattern.preset}`
   return `gradient ${fill.gradient.stops.map((stop) => agentColor(stop.color)).join(", ")}`
@@ -238,7 +235,7 @@ function altShown(alt: string): string {
 export function foldDesign(design: Design | undefined, patch: ElementPatch): Design | undefined {
   const line = patch.line
   const before = design ?? {}
-  let next = folded(before, "fill", patch.fill?.value, agentFillValue)
+  let next = folded(before, "fills", patch.fills?.p0, agentFillValue)
   next = folded(next, "line.width", line?.width, (value) => tenths(value / emuPerPoint))
   next = folded(next, "line.fill", line?.fill, agentFillValue)
   next = folded(next, "line.dash", line?.dash, (value) => (value === "solid" ? null : value))
@@ -263,7 +260,7 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch): Des
   next = folded(next, "identity.hidden", patch.identity?.hidden, (value) => (value ? true : null))
   next = folded(next, "connection.start", patch.connection?.start, endShown)
   next = folded(next, "connection.end", patch.connection?.end, endShown)
-  next = faded(next, before, "fill", patch.fill?.value, patch.fill?.alpha)
+  next = faded(next, before, "fills", patch.fills?.p0, patch.fills?.alpha)
   next = faded(next, before, "line.fill", line?.fill, line?.alpha)
   next = faded(next, before, "text.color", undefined, patch.text?.alpha)
   if (next === before) return design

@@ -110,7 +110,7 @@ describe("the floor of a slide that was not in the file", () => {
     expect(read([{ ...placeholder, node: "259.2", box: { x: 1 } }])).toBeUndefined()
     expect(read("rows")).toBeUndefined()
     const own = { node: "259.slide", kind: "slide", value: null, box: null, grouped: false }
-    const fill = { fill: { value: { set: { solid: { rgb: "0F2433" } } } } }
+    const fill = { fills: { p0: { set: { solid: { rgb: "0F2433" } } } } }
     expect(read([{ ...own, opening: fill }])?.order[0]).toMatchObject({ floor: [{ node: "259.slide", opening: fill }] })
     expect(read([{ ...own, node: "258.slide" }])).toBeUndefined()
     expect(readSlideState({ file, order: [{ slide: "clone", id: "259", source: "256", key }] })?.order[0]).toEqual({
@@ -122,20 +122,20 @@ describe("the floor of a slide that was not in the file", () => {
   })
 
   it("carries each cloned element's opening patch, and reads no floor that says opening inside it", () => {
-    const fill = { value: { set: { solid: { scheme: "accent2" } } } }
+    const fills = { p0: { set: { solid: { scheme: "accent2" } } } }
     const read = (opening: unknown) =>
       readSlideState({
         file,
         order: [{ slide: "clone", id: "259", source: "256", key, floor: [{ ...placeholder, node: "259.2", opening }] }],
       })
-    expect(read({ fill })?.order[0]).toMatchObject({ floor: [{ node: "259.2", opening: { fill } }] })
-    expect(read({ fill: { value: "inherit" } })?.order[0]).toMatchObject({
-      floor: [{ opening: { fill: { value: "inherit" } } }],
+    expect(read({ fills })?.order[0]).toMatchObject({ floor: [{ node: "259.2", opening: { fills } }] })
+    expect(read({ fills: { p0: "inherit" } })?.order[0]).toMatchObject({
+      floor: [{ opening: { fills: { p0: "inherit" } } }],
     })
-    expect(read({ fill: { value: "opening" } })).toBeUndefined()
-    expect(read({ fill: { value: { set: { solid: { scheme: "nope" } } } } })).toBeUndefined()
+    expect(read({ fills: { p0: "opening" } })).toBeUndefined()
+    expect(read({ fills: { p0: { set: { solid: { scheme: "nope" } } } } })).toBeUndefined()
     expect(read({ glow: { value: "inherit" } })).toBeUndefined()
-    expect(stamps.command).toBe(10)
+    expect(stamps.command).toBe(11)
   })
 
   it("gives a clone the fields its source shows, over the source's own opening, past the box and text", () => {
@@ -146,16 +146,16 @@ describe("the floor of a slide that was not in the file", () => {
       id: slideId("259"),
       source: file[0],
       key,
-      floor: [{ ...placeholder, node: elementId("259.2"), opening: { fill: { value: navy } } }],
+      floor: [{ ...placeholder, node: elementId("259.2"), opening: { fills: { p0: navy } } }],
     })
     const node = elementId("259.2")
-    expect(floorOpening(cloned, node, {})).toEqual({ fill: { value: navy } })
-    expect(floorOpening(cloned, node, { fill: { value: "opening" } })).toEqual({ fill: { value: navy } })
-    expect(floorOpening(cloned, node, { fill: { value: red }, box: { x: { set: 1 } } })).toEqual({
-      fill: { value: red },
+    expect(floorOpening(cloned, node, {})).toEqual({ fills: { p0: navy } })
+    expect(floorOpening(cloned, node, { fills: { p0: "opening" } })).toEqual({ fills: { p0: navy } })
+    expect(floorOpening(cloned, node, { fills: { p0: red }, box: { x: { set: 1 } } })).toEqual({
+      fills: { p0: red },
     })
-    expect(floorOpening(indexed(), elementId("256.2"), { fill: { value: "inherit" } })).toEqual({
-      fill: { value: "inherit" },
+    expect(floorOpening(indexed(), elementId("256.2"), { fills: { p0: "inherit" } })).toEqual({
+      fills: { p0: "inherit" },
     })
     expect(floorOpening(indexed(), elementId("256.2"), { text: { value: { set: "x" } } })).toBeUndefined()
     expect(format).toBeGreaterThan(stamps.command)

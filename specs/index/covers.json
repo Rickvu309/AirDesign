@@ -9,9 +9,15 @@
     },
     {
       "file": "packages/document/src/deck-index.ts",
-      "names": ["appendIndex", "indexDue", "answeredRegister"],
-      "digest": "65fab69e82f7",
-      "blob": "389a8129b6e6b48328fc88e020026d274b5da36f"
+      "names": ["appendIndex", "indexDue"],
+      "digest": "36de3786c719",
+      "blob": "61fee966d0e44fe01395aa067d6f7f13c3a0e785"
+    },
+    {
+      "file": "packages/document/src/answered-register.ts",
+      "names": ["answeredRegister"],
+      "digest": "9429507d6688",
+      "blob": "c027a4559e4d2e665e5b87a555889ad6f9370b12"
     },
     {
       "file": "packages/live/src/deck-index.ts",

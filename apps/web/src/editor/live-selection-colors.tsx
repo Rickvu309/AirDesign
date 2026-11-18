@@ -84,7 +84,7 @@ function colorSources(deck: DesigningDeck, nodes: readonly ElementId[]): readonl
     sources.push({
       node: slideNode(slide, "slide"),
       fields: {
-        "fill.value": background ?? { value: fallback === undefined ? undefined : { solid: fallback }, own: false },
+        "fills.p0": background ?? { value: fallback === undefined ? undefined : { solid: fallback }, own: false },
       },
     })
   }

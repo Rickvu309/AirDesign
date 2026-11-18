@@ -113,16 +113,16 @@ describe("undo list", () => {
   })
 
   it("sends a fill step through the row queue, back to the opening fill and forward again", async () => {
-    const after = { fill: { value: { set: { solid: { scheme: "accent2" as const } } } } }
+    const after = { fills: { p0: { set: { solid: { scheme: "accent2" as const } } } } }
     const deck = deckLink(landed(edited(), { command: "person", v: format, patch: after, node }))
     const fill = {
       name: "fill",
-      undoable: { steps: [{ node, before: { fill: { value: "opening" } }, after }] },
+      undoable: { steps: [{ node, before: { fills: { p0: "opening" } }, after }] },
     } as const
     const undone = await turnBack(deck.link, "deck", recorded(emptyUndo, fill), "undo")
     expect(undone.outcome).toBe("turned")
     await turnBack(deck.link, "deck", undone.list, "redo")
-    expect(deck.sent).toEqual([`row {"fill":{"value":"opening"}}`, `row ${JSON.stringify(after)}`])
+    expect(deck.sent).toEqual([`row {"fills":{"p0":"opening"}}`, `row ${JSON.stringify(after)}`])
     expect(undoLabel("undo", shownOf(recorded(emptyUndo, fill), null))).toBe("Undo fill")
   })
 

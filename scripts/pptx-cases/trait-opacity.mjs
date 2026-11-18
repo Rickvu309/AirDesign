@@ -23,7 +23,7 @@ export default {
     pages: true,
   })),
   renders: [styled.exported, texted.exported],
-  covers: ["fill.alpha", "line.alpha", "text.alpha"],
+  covers: ["fills.alpha", "line.alpha", "text.alpha"],
   lines(answers) {
     const decode = (name) => new TextDecoder().decode(answers.parts.get(name)?.get(slide) ?? new Uint8Array())
     const lines = [styled, texted].flatMap(({ original, exported }) => {
@@ -40,7 +40,7 @@ export default {
       lines.push("opacity changed a shape's style reference")
     const parts = answers.parts.get(styled.exported)
     const shown = (shape) => answers.pptx.shownAlphas(parts, { slide: "256", part: slide, shape })
-    if (JSON.stringify(shown("5")) !== JSON.stringify({ fill: 60000, line: 60000, text: null }))
+    if (JSON.stringify(shown("5")) !== JSON.stringify({ fills: 60000, line: 60000, text: null }))
       lines.push("opacity does not read the oval's fill and line at 60 percent")
     if (shown("6").line !== 40000) lines.push("opacity does not read the connector's line at 40 percent")
     if (answers.pptx.shownLine(parts, { part: slide, shape: "5" })?.width.own !== false)

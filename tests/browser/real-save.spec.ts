@@ -28,7 +28,7 @@ test("home import exposes every untouched text box on slide one to the agent API
       value: '[{"from":0,"runs":[{"from":0,"text":"Hello"}]}]',
       version: 0,
       box: { x: 457200, y: 457200, cx: 5486400, cy: 1828800 },
-      design: "fill accent1 · text.size 32 · text.color dk1",
+      design: "fills accent1 · text.size 32 · text.color dk1",
     },
   ])
   expect(read.elements.map((element) => element.node)).toEqual(

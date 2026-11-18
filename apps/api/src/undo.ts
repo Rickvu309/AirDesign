@@ -22,7 +22,8 @@ export async function undoRun(
     const result = call("undo_run", current, { actor: "person" }, { deck: parsed.deck, runId: parsed.runId })
     if (!result.ok) return result
     const { id, revision, register } = result.deck
-    if (await writeRevision(db, { id, revision, register, expected: current.revision, key: result.key })) {
+    const write = { id, revision, register, storedIndex: access.saved.storedIndex, expected: current.revision }
+    if (await writeRevision(db, { ...write, key: result.key })) {
       return { ok: true, deck: id, revision, key: result.key }
     }
   }

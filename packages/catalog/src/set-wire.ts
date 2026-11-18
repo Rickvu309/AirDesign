@@ -16,7 +16,7 @@ import {
   type TraitName,
 } from "@airdesign/document"
 import { agentSchema, readAgent, type AgentRead, type JsonSchema } from "./agent-form.js"
-import { canonicalFields } from "./field-alias.js"
+import { canonicalFields, canonicalTraits } from "./field-alias.js"
 import { opacityWire } from "./opacity-wire.js"
 import { traitWire } from "./trait-wire.js"
 
@@ -103,7 +103,10 @@ function readTrait(trait: TraitName, raw: unknown): Read<Inputs> {
   return { ok: true, change: read }
 }
 
-function readTraits(body: Inputs, head: readonly string[]): Read<Readonly<Record<string, Inputs>>> {
+function readTraits(raw: Inputs, head: readonly string[]): Read<Readonly<Record<string, Inputs>>> {
+  const named = canonicalTraits(raw)
+  if (!named.ok) return refused(named.field)
+  const body = named.fields
   const read: Record<string, Inputs> = {}
   for (const [key, raw] of Object.entries(body)) {
     if (head.includes(key)) continue

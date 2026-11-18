@@ -111,7 +111,7 @@ describe("the writers keep a theme colour's transforms", () => {
     const [first] = readSlides(parts)
     if (first === undefined) throw new Error("slide")
     const at = { slide: first.slide, part: first.part, shape: "slide" }
-    const filled = (color: Color) => writeTrait(parts, at, "fill", { value: { set: { solid: color } } })
+    const filled = (color: Color) => writeTrait(parts, at, "fills", { p0: { set: { solid: color } } })
     const next = filled(darker)
     expect(decodeUtf8(next.get(first.part)!)).toContain(
       '<p:cSld><p:bg><p:bgPr><a:solidFill><a:schemeClr val="accent1"><a:lumMod val="75000"/></a:schemeClr></a:solidFill><a:effectLst/></p:bgPr></p:bg>',
@@ -129,8 +129,8 @@ describe("the writers keep a theme colour's transforms", () => {
     const slide = (properties: string) =>
       `<p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="S"/></p:nvSpPr>${properties}</p:sp></p:spTree>`
     const at = { slide: "256", part, shape: "2" }
-    const fill = { value: { set: { solid: { scheme: "accent1" as const } } } }
-    const after = writeTrait(new Map([[part, encodeUtf8(slide("<p:spPr/>"))]]), at, "fill", fill)
+    const fill = { p0: { set: { solid: { scheme: "accent1" as const } } } }
+    const after = writeTrait(new Map([[part, encodeUtf8(slide("<p:spPr/>"))]]), at, "fills", fill)
     expect(decodeUtf8(after.get(part)!)).toBe(slide(`<p:spPr>${solidFillXml({ scheme: "accent1" })}</p:spPr>`))
   })
 })

@@ -77,6 +77,7 @@ describe("saved", () => {
       register: folded.ok ? folded.value : null,
       owner: "owner@example.com",
       deleted: false,
+      storedIndex: null,
     })
     expect(saved?.register?.elements[rootElement]?.landed).toEqual(stored.landed)
     expect(saved?.register?.elements[legacyElement]?.floor).toBe("legacy")

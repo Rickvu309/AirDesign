@@ -2,8 +2,10 @@
 \* How one element's design panel fields fold. The element is a shape whose file fill has its own
 \* colour and its own transparency, whose style names a theme colour it inherits when its fill is
 \* reset, and whose text sets no size, so it paints the size its master gives it.
-\* Three fields: the fill's colour (fill.value), its transparency (the element's Opacity, written to
-\* the alpha of its fill, line and text) and the text's size (written as the whole text value).
+\* Three fields: the fill's colour (the paint of fills, one row over all four paint slots), its
+\* transparency (the element's Opacity, written to the alpha of its fill, line and text) and the
+\* text's size (written as the whole text value). The replay checks the slots above the paint
+\* follow it in every state: back to the file's when the colour is, cleared otherwise.
 \* A row sets one of them, sends the colour back to inherit (Reset fill), or sends a field back to
 \* the file's own value ("opening"); a node shows its rows folded field by field (netPatch in
 \* packages/document/src/row.ts). The export writes that fold over the file's own bytes

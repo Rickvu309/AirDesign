@@ -170,7 +170,7 @@ it("reads each kind of entry back as it was kept, and a slide background an olde
       id: "g",
       node: "256.slide",
       floor: "",
-      row: { v: 28, patch: { fill: { value: { set: { solid: accent } } } } },
+      row: { v: 57, patch: { fills: { p0: { set: { solid: accent } } } } },
     },
   })
 })

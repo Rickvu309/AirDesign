@@ -52,7 +52,7 @@ it("turns an element's read into its role, a design in agent units with each sou
   const read: ElementRead = {
     role: "title",
     reads: {
-      fill: { value: { color: { scheme: "accent1" } }, source: "style" },
+      fills: { value: { color: { scheme: "accent1" } }, source: "style" },
       "line.width": { value: 12_700, source: "style" },
       "line.fill": {
         value: { color: { scheme: "accent1", transforms: [{ op: "shade", val: 50_000 }] } },
@@ -80,7 +80,7 @@ it("turns an element's read into its role, a design in agent units with each sou
     role: "title",
     design: {
       geometry: ["roundRect"],
-      fill: ["accent1", "style"],
+      fills: ["accent1", "style"],
       "line.width": [1, "style"],
       "line.fill": ["accent1 shade 50", "style"],
       "effects.shadow": [`blur 4 distance 3 direction 90 #${black} alpha 35`, "style"],
@@ -94,8 +94,8 @@ it("turns an element's read into its role, a design in agent units with each sou
   })
   expect(designOf({ reads: {}, kept: [] })).toEqual({})
   expect(
-    designOf({ reads: { fill: { value: { gradient: [{ scheme: "accent1" }, { rgb: white }] } } }, kept: [] }).design,
-  ).toEqual({ fill: [`gradient accent1, #${white}`] })
+    designOf({ reads: { fills: { value: { gradient: [{ scheme: "accent1" }, { rgb: white }] } } }, kept: [] }).design,
+  ).toEqual({ fills: [`gradient accent1, #${white}`] })
 })
 
 it("drops the last fields of a design that would not fit, so the index always takes it", () => {
@@ -224,24 +224,24 @@ describe("the agent form reads what an agent sends into stored values, in agent 
 describe("foldDesign shows an element's opacity in the alpha of every colour its design line names", () => {
   const faded = { set: 60_000 as Alpha }
   const design: Design = {
-    fill: ["accent1", "style"],
+    fills: ["accent1", "style"],
     "line.fill": ["accent1 shade 15", "style"],
     "line.width": [1, "style"],
     "text.color": ["tx1 alpha 35", "master"],
   }
 
   it("fades each colour, a gradient stop by stop, and leaves a pattern's line as it is", () => {
-    expect(foldDesign(design, { fill: { alpha: faded }, line: { alpha: faded }, text: { alpha: faded } })).toEqual({
-      fill: ["accent1 alpha 60"],
+    expect(foldDesign(design, { fills: { alpha: faded }, line: { alpha: faded }, text: { alpha: faded } })).toEqual({
+      fills: ["accent1 alpha 60"],
       "line.fill": ["accent1 shade 15 alpha 60"],
       "line.width": [1, "style"],
       "text.color": ["tx1 alpha 60"],
     })
-    expect(foldDesign({ fill: [`gradient accent1, #${black} alpha 35`] }, { fill: { alpha: faded } })).toEqual({
-      fill: [`gradient accent1 alpha 60, #${black} alpha 60`],
+    expect(foldDesign({ fills: [`gradient accent1, #${black} alpha 35`] }, { fills: { alpha: faded } })).toEqual({
+      fills: [`gradient accent1 alpha 60, #${black} alpha 60`],
     })
-    expect(foldDesign({ fill: ["pattern dkDnDiag"] }, { fill: { alpha: faded } })).toEqual({
-      fill: ["pattern dkDnDiag"],
+    expect(foldDesign({ fills: ["pattern dkDnDiag"] }, { fills: { alpha: faded } })).toEqual({
+      fills: ["pattern dkDnDiag"],
     })
     expect(foldDesign({ "text.color": ["tx1 alpha 35"] }, { text: { alpha: { set: 100_000 as Alpha } } })).toEqual({
       "text.color": ["tx1"],
@@ -249,19 +249,19 @@ describe("foldDesign shows an element's opacity in the alpha of every colour its
   })
 
   it("keeps the alpha a colour showed when a new one replaces it, unless the new one names its own", () => {
-    const shown: Design = { fill: ["accent1 alpha 60"] }
-    expect(foldDesign(shown, { fill: { value: { set: { solid: { scheme: "accent2" } } } } })).toEqual({
-      fill: ["accent2 alpha 60"],
+    const shown: Design = { fills: ["accent1 alpha 60"] }
+    expect(foldDesign(shown, { fills: { p0: { set: { solid: { scheme: "accent2" } } } } })).toEqual({
+      fills: ["accent2 alpha 60"],
     })
     const own = { solid: { scheme: "accent2", transforms: [{ op: "alpha", val: 20_000 }] } } as const
-    expect(foldDesign(shown, { fill: { value: { set: own } } })).toEqual({ fill: ["accent2 alpha 20"] })
-    expect(foldDesign(shown, { fill: { alpha: "opening" } })).toBe(shown)
+    expect(foldDesign(shown, { fills: { p0: { set: own } } })).toEqual({ fills: ["accent2 alpha 20"] })
+    expect(foldDesign(shown, { fills: { alpha: "opening" } })).toBe(shown)
   })
 })
 
 it("folds the effects a change set over the design line, and drops one set to none", () => {
   const design: Design = {
-    fill: ["accent1", "style"],
+    fills: ["accent1", "style"],
     "effects.shadow": [`blur 3.1 distance 1.8 direction 90 #${black} alpha 35`, "style"],
   }
   const shadow = {
@@ -282,7 +282,7 @@ it("folds the effects a change set over the design line, and drops one set to no
     },
   })
   expect(lit).toEqual({
-    fill: ["accent1", "style"],
+    fills: ["accent1", "style"],
     "effects.shadow": [`blur 4 distance 3 direction 45 #${black} alpha 35`],
     "effects.glow": ["radius 8 accent1 alpha 60"],
     "effects.softEdge": [5],
@@ -291,7 +291,7 @@ it("folds the effects a change set over the design line, and drops one set to no
     foldDesign(lit, {
       effects: { shadow: { set: { none: true } }, glow: { set: { none: true } }, softEdge: { set: { none: true } } },
     }),
-  ).toEqual({ fill: ["accent1", "style"] })
+  ).toEqual({ fills: ["accent1", "style"] })
 })
 
 describe("foldDesign shows a text box's layout as its rows set it", () => {

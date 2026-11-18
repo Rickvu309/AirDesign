@@ -121,7 +121,7 @@ type Planned = {
 } & ({ readonly values: readonly FormatOneValue[] } | { readonly row: Row })
 
 const rowNames: Partial<Readonly<Record<TraitName, UndoName>>> = {
-  fill: "fill",
+  fills: "fill",
   line: "line",
   effects: "effects",
   body: "text-box",

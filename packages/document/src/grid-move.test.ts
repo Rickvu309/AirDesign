@@ -1,5 +1,5 @@
 import { expect, it } from "vitest"
-import { answeredRegister } from "./deck-index.js"
+import { answeredRegister } from "./answered-register.js"
 import { format } from "./format.js"
 import { decide, openRegister, type Register } from "./decide.js"
 import { slideId } from "./element-id.js"

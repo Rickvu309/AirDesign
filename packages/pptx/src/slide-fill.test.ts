@@ -21,8 +21,8 @@ type Parts = ReadonlyMap<string, Uint8Array>
 const { readFileSync } = process.getBuiltinModule("node:fs")
 const fixture = (name: string) => readParts(readFileSync(`${process.cwd()}/scripts/pptx-fixtures/${name}`))
 const text = (bytes: Uint8Array | undefined) => (bytes === undefined ? "" : decodeUtf8(bytes))
-const accent: ElementPatch = { fill: { value: { set: { solid: { scheme: "accent1" } } } } }
-const navy: ElementPatch = { fill: { value: { set: { solid: { rgb: "0F2433" } } } } }
+const accent: ElementPatch = { fills: { p0: { set: { solid: { scheme: "accent1" } } } } }
+const navy: ElementPatch = { fills: { p0: { set: { solid: { rgb: "0F2433" } } } } }
 const written = (val: string) => `<p:bg><p:bgPr><a:solidFill>${val}</a:solidFill><a:effectLst/></p:bgPr></p:bg>`
 
 function landed(register: Register, command: Command): Register {
@@ -83,14 +83,14 @@ describe("a slide's fill is its background", () => {
     const { parts, node } = await firstOf("nasa-1d-cnn.pptx")
     const next = filled(parts, [
       [node, navy],
-      [node, { fill: { value: "opening" } }],
+      [node, { fills: { p0: "opening" } }],
     ])
     expect(changedParts(parts, next)).toEqual([])
   })
 
   it("removes the slide's own background so its layout's shows again", async () => {
     const { parts, first, node } = await firstOf("nasa-1d-cnn.pptx")
-    const next = filled(parts, [[node, { fill: { value: "inherit" } }]])
+    const next = filled(parts, [[node, { fills: { p0: "inherit" } }]])
     const before = text(parts.get(first.part))
     const own = /<p:bg>.*?<\/p:bg>/.exec(before)?.[0] ?? ""
     expect(text(next.get(first.part))).toBe(before.replace(own, ""))
@@ -100,8 +100,8 @@ describe("a slide's fill is its background", () => {
   it("writes a gradient background and paints it", async () => {
     const { parts, first, node } = await firstOf("blank.pptx")
     const gradient: ElementPatch = {
-      fill: {
-        value: {
+      fills: {
+        p0: {
           set: {
             gradient: {
               stops: [
@@ -121,17 +121,17 @@ describe("a slide's fill is its background", () => {
     )
     expect(shown(next, first.part)?.type).toBe("gradient")
     expect(shownBackground(next, first.part)).toEqual({
-      value: typeof gradient.fill?.value === "object" && "set" in gradient.fill.value ? gradient.fill.value.set : null,
+      value: typeof gradient.fills?.p0 === "object" && "set" in gradient.fills.p0 ? gradient.fills.p0.set : null,
       own: true,
     })
   })
 
   it("writes a native picture background and reads its existing fill control value", async () => {
     const { parts, first, node } = await firstOf("blank.pptx")
-    const next = filled(parts, [[node, { fill: { value: { set: { picture: "star" } } } }]])
+    const next = filled(parts, [[node, { fills: { p0: { set: { image: "star" } } } }]])
     expect(text(next.get(first.part))).toContain("<p:bg><p:bgPr><a:blipFill")
     expect(shown(next, first.part)?.type).toBe("picture")
-    expect(shownBackground(next, first.part)).toEqual({ value: { picture: "star" }, own: true })
+    expect(shownBackground(next, first.part)).toEqual({ value: { image: "star" }, own: true })
     expect(changedParts(next, filled(next, []))).toEqual([])
   })
 
@@ -169,7 +169,7 @@ describe("a slide's fill is its background", () => {
       parts,
       [
         [node, accent],
-        ["900.slide", { fill: { value: "opening" } }],
+        ["900.slide", { fills: { p0: "opening" } }],
       ],
       [clone],
     )

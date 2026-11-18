@@ -2,6 +2,7 @@ import { authorableTrait, readAgent, traitWire } from "@airdesign/catalog"
 import {
   inheritable,
   rowOf,
+  slotted,
   traitNames,
   traits,
   undoOf,
@@ -96,7 +97,7 @@ async function fieldProblems(
   wire: Partial<LooseWire>,
 ): Promise<Problem[]> {
   const key = `${trait}.${field}`
-  const desc = (traits[trait].fields as Readonly<Record<string, { readonly desc: Desc }>>)[field]?.desc
+  const desc = kindsOf(trait)[field]?.desc
   const sent = wire.fields?.[field]?.example as Readonly<Record<string, Readonly<Record<string, unknown>>>> | undefined
   const example = sent?.[trait]?.[field]
   const value = desc === undefined ? undefined : fromAgent(desc, example)
@@ -162,10 +163,14 @@ async function inputProblems(
   return problems
 }
 
+function kindsOf(trait: TraitName): Readonly<Record<string, { readonly desc: Desc }>> {
+  return { ...traits[trait].fields, ...traits[trait].inputs }
+}
+
 function copyProblems(trait: TraitName, controls: Partial<LooseControls>, wire: Partial<LooseWire>): Problem[] {
   const fields = [
     ...Object.entries(traits[trait].fields as Readonly<Record<string, { readonly desc: Desc }>>).filter(
-      ([field]) => !alphaField(trait, field),
+      ([field]) => !alphaField(trait, field) && !slotted(trait, field),
     ),
     ...Object.entries(traits[trait].inputs as Readonly<Record<string, { readonly desc: Desc }>>),
   ]
@@ -196,9 +201,13 @@ async function parityProblems(): Promise<readonly Problem[]> {
     const wire = traitWire[trait] as Partial<LooseWire>
     problems.push(...copyProblems(trait, traitControls[trait] as Partial<LooseControls>, wire))
     for (const field of Object.keys(traits[trait].fields))
-      if (!alphaField(trait, field)) problems.push(...(await fieldProblems(trait, field, probe, wire)))
+      if (!alphaField(trait, field) && !slotted(trait, field))
+        problems.push(...(await fieldProblems(trait, field, probe, wire)))
+    const slots = traits[trait].slots.length > 0
     for (const input of Object.keys(traits[trait].inputs))
-      problems.push(...(await inputProblems(trait, input, probe, wire)))
+      problems.push(
+        ...(await (slots ? fieldProblems(trait, input, probe, wire) : inputProblems(trait, input, probe, wire))),
+      )
   }
   return problems
 }

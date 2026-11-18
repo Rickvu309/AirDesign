@@ -13,6 +13,7 @@ import {
   type ElementId,
   type ElementPatch,
   type Register,
+  type TraitPatch,
   type Value,
 } from "@airdesign/document"
 import { call, openDeck, type Deck } from "@airdesign/engine"
@@ -167,7 +168,7 @@ function painted(register: Register) {
   const display = shown.display
   const fields: Record<string, ShownField> = {}
   const fill = shownFill(display, at)
-  if (fill !== null) fields["fill.value"] = fill
+  if (fill !== null) fields["fills.p0"] = fill
   for (const [trait, value] of Object.entries(shownAlphas(display, at))) fields[`${trait}.alpha`] = { value, own: true }
   for (const [field, value] of Object.entries(shownTextStyle(display, at) ?? {})) fields[`text.${field}`] = value
   const scope = deviceScope(file, register).view(node)
@@ -195,6 +196,15 @@ async function changed(trait: string, field: string, value: unknown): Promise<vo
 
 const same = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right)
 
+function paintCode(fills: TraitPatch<"fills"> | undefined): number {
+  const code = colourCode(fills?.p0)
+  const above = [fills?.p1, fills?.p2, fills?.p3]
+  const cleared = code === 1 ? [undefined, "opening"] : [{ set: { none: true } }]
+  if (!above.every((edit) => cleared.some((each) => same(edit, each))))
+    throw new Error(`the slots above the paint do not follow it ${JSON.stringify(fills)}`)
+  return code
+}
+
 function colourCode(edit: unknown): number {
   if (edit === undefined || edit === "opening") return 1
   if (edit === "inherit") return 2
@@ -220,7 +230,7 @@ function sizeCode(edit: unknown): number {
 }
 
 function codes(patch: ElementPatch): readonly number[] {
-  return [colourCode(patch.fill?.value), alphaCode(patch.fill?.alpha), sizeCode(patch.text?.value)]
+  return [paintCode(patch.fills), alphaCode(patch.fills?.alpha), sizeCode(patch.text?.value)]
 }
 
 function folded(register: Register): readonly number[] {
@@ -233,8 +243,8 @@ function stepCode(entry: UndoEntry): number {
   const [step, ...rest] = steps
   if (step === undefined || rest.length > 0 || step.node !== node) throw new Error("not one step on the element")
   const named = (patch: ElementPatch) => {
-    if (patch.fill?.value !== undefined) return colourCode(patch.fill.value)
-    if (patch.fill?.alpha !== undefined) return alphaCode(patch.fill.alpha)
+    if (patch.fills?.p0 !== undefined) return paintCode(patch.fills)
+    if (patch.fills?.alpha !== undefined) return alphaCode(patch.fills.alpha)
     return sizeCode(patch.text?.value)
   }
   return named(step.before) * 10 + named(step.after)
@@ -268,7 +278,7 @@ function judged(target: Spec, said: string, failures: string[]) {
   )
   expectSame("told", now.told, target.told)
   const shown = painted(device)
-  const fill = controlOf(shown.controls, "fill", "value")
+  const fill = controlOf(shown.controls, "fills", "paint")
   const solid = (fill.value as { readonly solid?: Color } | undefined)?.solid
   const panelHex = solid === undefined ? null : colorHex(solid, shown.theme).toUpperCase()
   const fileTheme = themeOf(file, part)
@@ -288,7 +298,7 @@ function judged(target: Spec, said: string, failures: string[]) {
   const alpha = alphas[String(target.alpha)]
   expectSame("panel colour", panelHex, colour)
   expectSame("panel colour in quiet ink", fill.inherited, target.quiet)
-  expectSame("panel opacity of the fill", shown.fields["fill.alpha"]?.value, alpha)
+  expectSame("panel opacity of the fill", shown.fields["fills.alpha"]?.value, alpha)
   const canvas = hexOf(shown.canvas?.fill)
   expectSame("canvas colour", canvas?.hex, colour)
   expectSame("canvas opacity", canvas?.alpha, Math.round(((alpha ?? 0) / opaque) * 255))
@@ -309,8 +319,8 @@ function openedRegister(): Register {
 const theme = { op: "set", target: "deck.theme", theme: { accent2: `#${themeHex}` } }
 
 const actions: Record<string, () => Promise<void>> = {
-  Reset: () => changed("fill", "value", null),
-  SetColour: () => changed("fill", "value", { solid: personColour }),
+  Reset: () => changed("fills", "paint", null),
+  SetColour: () => changed("fills", "paint", { solid: personColour }),
   SetAlpha: () => changed("opacity", "opacity", personAlpha),
   SetSize: () => changed("text", "size", personSize),
   Undo: async () => {
@@ -318,11 +328,11 @@ const actions: Record<string, () => Promise<void>> = {
     if (turned.outcome === "empty") throw new Error("nothing to undo")
     const steps = "steps" in turned.entry.undoable ? turned.entry.undoable.steps : []
     const after = steps[0]?.after
-    const field = after?.fill?.value !== undefined ? 1 : after?.fill?.alpha !== undefined ? 2 : 3
+    const field = after?.fills?.p0 !== undefined ? 1 : after?.fills?.alpha !== undefined ? 2 : 3
     held.world = { ...world(), list: turned.list, told: turned.outcome === "changed" ? field : 0 }
   },
   AgentColour: async () => {
-    const change = { op: "set", target: node, fill: { value: `#${agentHex}` } }
+    const change = { op: "set", target: node, fills: { paint: `#${agentHex}` } }
     held.world = { ...world(), server: agentSet(world().server, node, change) }
   },
   AgentAlpha: async () => {
@@ -408,10 +418,10 @@ describe("field-fold replay", () => {
   it("keeps the transparency Reset fill showed when the person then picks a colour", async () => {
     held.world = { server: opened(), read: opened().register, pending: [], list: { undo: [], redo: [] }, told: 0 }
     await actions.Reset?.()
-    const reset = painted(deviceRegister()).fields["fill.alpha"]?.value
+    const reset = painted(deviceRegister()).fields["fills.alpha"]?.value
     expect(reset).toBe(opaque)
     await actions.SetColour?.()
-    expect(painted(deviceRegister()).fields["fill.alpha"]?.value).toBe(reset)
+    expect(painted(deviceRegister()).fields["fills.alpha"]?.value).toBe(reset)
   })
 
   it("undoes mixed color fields across nodes together", async () => {
@@ -421,7 +431,7 @@ describe("field-fold replay", () => {
     const recolored = typed.replace('"text":"Already typed"', '"text":"Already typed","color":{"rgb":"C00000"}')
     expect(
       await applyChange(changing, [
-        { target: { node }, text: { value: recolored }, fill: { value: { solid: personColour } } },
+        { target: { node }, text: { value: recolored }, fills: { paint: { solid: personColour } } },
         { target: { node: themeNode }, theme: { accent2: "FF0000" } },
       ]),
     ).toBe(true)
@@ -437,10 +447,10 @@ describe("field-fold replay", () => {
     held.world = { server: opened(), read: opened().register, pending: [], list: { undo: [], redo: [] }, told: 0 }
     await actions.Reset?.()
     await actions.Sync?.()
-    const reset = painted(deviceRegister()).fields["fill.alpha"]?.value
+    const reset = painted(deviceRegister()).fields["fills.alpha"]?.value
     expect(reset).toBe(opaque)
     await actions.AgentColour?.()
     await actions.Sync?.()
-    expect(painted(deviceRegister()).fields["fill.alpha"]?.value).toBe(reset)
+    expect(painted(deviceRegister()).fields["fills.alpha"]?.value).toBe(reset)
   })
 })

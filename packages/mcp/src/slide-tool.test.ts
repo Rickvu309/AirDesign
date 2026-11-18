@@ -154,17 +154,20 @@ it("fills a slide's background through edit_deck's set with a slide target, and 
     expect(listed.tools.map((tool) => tool.name)).not.toContain("airdesign_set_background")
     const set = await client.callTool({
       name: "airdesign_edit_deck",
-      arguments: { deck: "deck", base: 0, changes: [{ op: "set", target: "256", fill: { value: "accent1" } }] },
+      arguments: { deck: "deck", base: 0, changes: [{ op: "set", target: "256", fills: { paint: "accent1" } }] },
     })
     expect(set.isError).not.toBe(true)
     expect(set.structuredContent).toMatchObject({ ok: true, revision: 1, runId: "run" })
     const body = held.deck.register.elements[elementId("256.slide")]
-    expect(body === undefined ? undefined : landedPatch(body, "text").fill).toEqual({
-      value: { set: { solid: { scheme: "accent1" } } },
+    expect(body === undefined ? undefined : landedPatch(body, "text").fills).toEqual({
+      p0: { set: { solid: { scheme: "accent1" } } },
+      p1: { set: { none: true } },
+      p2: { set: { none: true } },
+      p3: { set: { none: true } },
     })
     const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck: "deck" } })
     expect(read.structuredContent).toMatchObject({
-      elements: [{ node: "256.2" }, { node: "256.slide", kind: "slide", value: null, design: "fill accent1" }],
+      elements: [{ node: "256.2" }, { node: "256.slide", kind: "slide", value: null, design: "fills accent1" }],
     })
     const old = await client
       .callTool({
