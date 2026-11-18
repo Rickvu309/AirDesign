@@ -12,7 +12,7 @@ Checks fail gate, check, check:pptx or merge. Review needs judgment. Give recurr
 | Only `packages/document` makes an `ElementId`: no type assertion to `ElementId` outside `packages/document/src` | lint: `no-element-id-cast`. It warns for now and blocks nothing |
 | A package exposes only its `index.ts`, declares what it imports, and stays pure | `pnpm check:boundaries` |
 | A package's `index.ts` exports only names a caller outside the package, or a test through `index.ts`, uses | `interface-width` blocks gate and CI; `scripts/{check,gate}.test.mjs` enforce it |
-| Agent-written files over 5,000 tokens cannot grow; new files stay below it. A token is four bytes | `scripts/file-size.mjs` blocks except in the merge queue, where `check.mjs` warns |
+| Agent-written files over 5,000 tokens cannot grow; new files stay below it. A token is four bytes | `scripts/file-size.mjs` blocks except in the merge queue, where `check-steps.mjs` warns |
 | No hand-kept list of what a folder holds: `pnpm typecheck` reads `apps/` and `packages/`, `pnpm test:tooling` reads `scripts/`, and the spec replay reads `specs/` | the `references` step of `pnpm check` fails when the root `tsconfig.json` lists references |
 | Unit tests run with nothing built: a test reads sources, never a package's `dist` | `scripts/source-only.mjs` makes vitest refuse to load any `apps/*/dist` or `packages/*/dist` file, so a test that reads built output fails even when a build ran first. `scripts/source-only.test.mjs` fails when a vitest project drops it. `pnpm check` runs typecheck, build and site one after another beside the tests, because all three write `dist` |
 | Builds run serially: concurrent `tsc -b` writes leave shared declarations incomplete | `scripts/build-order.test.mjs` fails a `pnpm` command in `package.json` or a workflow that builds two projects with `--filter` and no `--workspace-concurrency=1`. The `journeys` build failed this way on main at a83f2535 |
@@ -76,7 +76,7 @@ Checks fail gate, check, check:pptx or merge. Review needs judgment. Give recurr
 | An agent's comment or review on a pull request or issue starts with the agent line | review |
 | A change to what `ci` checks is seen by the owner | the `bar` check labels the PR `changes-ci`. It does not block |
 | A bug you find and do not fix is an `it.fails` test. A skipped, todo, expected-failure or no-expect test counts as a known failure | `scripts/metrics.mjs` prints the count on every run. A known failure is shown, never blocked. A deleted test is caught only by the `mutation` job, which reports the planted faults that tests no longer catch |
-| A new check starts in `warnSteps` in `scripts/check.mjs` and blocks only after it has caught a real fault with no false stop | review |
+| Set new rules to `warn` in `scripts/check-steps.mjs` until they catch a real fault with no false stop | review |
 | Extend before you build a parallel version, reduced motion shows the finished state | review |
 | Tests take product words from `apps/web/src/copy`; existing duplicate literals are counted and additions per file and value fail with the export to import | `scripts/copy-literals.mjs`, the `copy-literals` step of `pnpm check`, covers browser tests, journeys and verify-airdesign journeys and look states |
 | Copy: `better-writing`, `GLOSSARY.md`, current behavior | review; `no-limit-in-copy`: use `@airdesign/document` limits |

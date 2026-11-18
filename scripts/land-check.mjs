@@ -1,14 +1,7 @@
+import { checkSteps } from "./check-steps.mjs"
 import { failedSteps, failedTests } from "./failed-tests.mjs"
-import { smallLaneCommand } from "./machine-lock.mjs"
-
-const dependsOnLoad = new Set(["test"])
 
 const filesOf = (tests) => [...new Set(tests.map((test) => test.file))]
-
-export const aloneRun = ([, command, args, env], file) => [
-  ...smallLaneCommand(command, [...args, "--maxWorkers=2", file]),
-  env,
-]
 
 const fault = (how) => ({ passed: false, how })
 
@@ -16,21 +9,22 @@ export const judgeCheck = async ({ status, output, rerun, say }) => {
   if (status === 0) return { passed: true, how: "the gate passed" }
   const steps = failedSteps(output)
   if (steps.length === 0) return fault("the gate failed and named no step. Read its output above.")
-  const stuck = steps.filter((step) => !dependsOnLoad.has(step))
+  const stuck = steps.filter((step) => !checkSteps.rerunsAlone(step))
   if (stuck.length > 0) return fault(`the gate failed in ${stuck.join(", ")}. Fix it; load does not cause this.`)
+  const [step] = steps
   const failed = failedTests(output)
-  if (failed.length === 0) return fault("the test step failed and named no test file. Read its output above.")
+  if (failed.length === 0) return fault(`the ${step} step failed and named no test file. Read its output above.`)
   const alone = []
   for (const file of filesOf(failed)) {
     for (const test of failed.filter((each) => each.file === file))
-      say(`test: ${file} failed in the gate: ${test.name}`)
+      say(`${step}: ${file} failed in the gate: ${test.name}`)
     const again = await rerun(file)
     const still = failedTests(again.output)
     if (again.status === 0) {
-      say(`test: ${file} passed alone. This looks like machine load, not a fault.`)
+      say(`${step}: ${file} passed alone. This looks like machine load, not a fault.`)
     } else {
       const names = (still.length > 0 ? still : [{ name: "(no test named)" }]).map((test) => test.name)
-      say(`test: ${file} failed alone too, so this is a real fault: ${names.join("; ")}`)
+      say(`${step}: ${file} failed alone too, so this is a real fault: ${names.join("; ")}`)
       alone.push({ file, names })
     }
   }

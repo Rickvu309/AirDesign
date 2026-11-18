@@ -2,7 +2,7 @@ import { spawn } from "node:child_process"
 import { readdirSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { onCi } from "./check.mjs"
+import { onCi } from "./check-steps.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 

@@ -5,7 +5,8 @@ import os from "node:os"
 import path from "node:path"
 import { parse } from "yaml"
 import { affectedReport } from "./affected-report.mjs"
-import { gateSteps, packagesFor, testsFor } from "./gate.mjs"
+import { checkSteps } from "./check-steps.mjs"
+import { packagesFor, testsFor } from "./gate.mjs"
 import { proofPlan } from "../.agents/skills/verify-airdesign/bin/prove-plan.mjs"
 
 assert.deepEqual(Object.keys(await import("./affected-report.mjs")), ["affectedReport"])
@@ -83,7 +84,7 @@ try {
   const plan = proofPlan({ changed, scripts: { "scripts/a.mjs": [], "scripts/a.test.mjs": ["scripts/a.mjs"] } })
   const related = ["packages/a/src/a.test.ts"]
   const chosen = () =>
-    gateSteps({
+    checkSteps.affectedGateStages({
       tests: testsFor({ plan, related, changed }).files,
       tooling: plan.steps.find((s) => s.kind === "tooling").files,
       packages: packagesFor(changed),

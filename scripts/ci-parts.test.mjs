@@ -5,7 +5,8 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { parse } from "yaml"
-import { designScans, shardOf, stagesFor, stepsOf, stepsToRun } from "./check.mjs"
+import { stepsOf } from "./check.mjs"
+import { checkSteps, designScans, shardOf } from "./check-steps.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -50,7 +51,8 @@ const browserTests = (args) =>
     .filter((line) => line.includes(" › "))
     .map((line) => line.trim())
 const browserStep = (part, shard) =>
-  stepsToRun(stagesFor(part, true, shard), true)
+  checkSteps
+    .stagesFor(part, true, shard)
     .flat()
     .flatMap(stepsOf)
     .find(([name]) => name === "browser")[2]
@@ -173,6 +175,26 @@ same(
 const actionFile = path.join(root, ".github/actions/queued/action.yml")
 const action = fs.existsSync(actionFile) ? parse(fs.readFileSync(actionFile, "utf8")) : undefined
 const question = action?.runs.steps[0]
+const matrixParts = [...new Set(entries.map(({ part }) => part))]
+same(
+  "ci.yml names every check table part plus the separate pptx check",
+  matrixParts.toSorted(),
+  [...checkSteps.parts(), "pptx"].toSorted(),
+)
+const queueScript = question?.run ?? ""
+const queueCase = queueScript.match(/case "\$PART" in([\s\S]*?)^\s*esac/m)?.[1] ?? ""
+const queueParts = [
+  ...Array.from(queueScript.matchAll(/\[ "\$PART" (?:=|!=) ([\w-]+) \]/g), ([, part]) => part),
+  ...Array.from(queueCase.matchAll(/^\s*([\w-]+(?:\s*\|\s*[\w-]+)*)\)/gm), ([, parts]) =>
+    parts.split(/\s*\|\s*/),
+  ).flat(),
+]
+same(
+  "queued/action.yml names every check table part plus the separate pptx and corpus checks",
+  [...new Set(queueParts)].toSorted(),
+  [...checkSteps.parts(), "pptx", "corpus"].toSorted(),
+)
+
 same(
   "the shared action exposes the queue run id",
   action?.outputs["run-id"]?.value,

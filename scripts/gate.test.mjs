@@ -1,5 +1,6 @@
-import { preflight, stages, stepsOf } from "./check.mjs"
-import { cheapSteps, gateSteps, packagesFor, runGate, testLimit, testsFor } from "./gate.mjs"
+import { stepsOf } from "./check.mjs"
+import { checkSteps } from "./check-steps.mjs"
+import { packagesFor, runGate, testLimit, testsFor } from "./gate.mjs"
 
 const same = (what, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -53,12 +54,24 @@ same(
 )
 
 const named = (chosen) => chosen.flatMap((stage) => stage.flatMap(stepsOf)).map(([name]) => name)
-const full = gateSteps({
+const cheap = checkSteps.cheapGateStages()
+const preflight = [
+  "browser-imports",
+  "format",
+  "lint",
+  "file-size",
+  "references",
+  "bug-rule",
+  "commit-authors",
+  "boundaries",
+  "interface-width",
+]
+const full = checkSteps.affectedGateStages({
   tests: ["a.test.ts"],
   tooling: ["scripts/land.test.mjs"],
   packages: ["apps/web", "packages/render"],
 })
-same("the cheap checks are the steps that wait for nothing, and the worktree sweep", named(cheapSteps), [
+same("the cheap checks are the steps that wait for nothing, and the worktree sweep", named(cheap), [
   ...preflight,
   "actionlint",
   "copy-literals",
@@ -66,7 +79,7 @@ same("the cheap checks are the steps that wait for nothing, and the worktree swe
 ])
 same("then the gate builds and tests what the diff reaches", named(full), ["build", "test", "tooling"])
 for (const name of ["browser", "specs", "spec-replays", "bar", "metrics", "design-findings", "site"]) {
-  if ([...named(cheapSteps), ...named(full)].includes(name)) throw new Error(`the gate runs ${name}, which ci runs`)
+  if ([...named(cheap), ...named(full)].includes(name)) throw new Error(`the gate runs ${name}, which ci runs`)
 }
 const ofName = (chosen, name) =>
   chosen
@@ -92,7 +105,7 @@ same(
     ],
   ],
 )
-const testStep = ofName(stages, "test")
+const testStep = ofName(checkSteps.stagesFor("all", false), "test")
 same(
   "the test step runs only the chosen files, niced on two workers, with the test step's settings",
   ofName(full, "test"),
@@ -103,7 +116,11 @@ same("the tooling step runs only the chosen files", ofName(full, "tooling"), [
   "node",
   ["scripts/tooling-tests.mjs", "scripts/land.test.mjs"],
 ])
-same("a docs change runs the cheap checks alone", gateSteps({ tests: [], tooling: [], packages: [] }), [])
+same(
+  "a docs change runs the cheap checks alone",
+  checkSteps.affectedGateStages({ tests: [], tooling: [], packages: [] }),
+  [],
+)
 
 const gateOf = async (failing, all = false) => {
   const events = []
@@ -111,7 +128,7 @@ const gateOf = async (failing, all = false) => {
   const result = await runGate({
     later: async () => {
       events.push("choose")
-      return gateSteps({ tests: ["a.test.ts"], tooling: [], packages: ["apps/web"] })
+      return checkSteps.affectedGateStages({ tests: ["a.test.ts"], tooling: [], packages: ["apps/web"] })
     },
     all,
     run: async ([name]) => {
@@ -169,7 +186,7 @@ same("a gate that cannot choose its tests fails and stamps nothing", unchosen, "
 
 console.log("gate tests passed")
 
-if (!named(cheapSteps).includes("interface-width")) throw new Error("unused package exports must stop the gate")
+if (!named(cheap).includes("interface-width")) throw new Error("unused package exports must stop the gate")
 
 const reported = []
 let reportStamp = 0

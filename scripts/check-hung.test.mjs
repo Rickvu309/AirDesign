@@ -1,7 +1,8 @@
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { runCheck, stepLimit, stepRunner } from "./check.mjs"
+import { runCheck, stepRunner } from "./check.mjs"
+import { checkSteps } from "./check-steps.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 
 const fail = (message) => {
@@ -78,9 +79,9 @@ await within(
 )
 if (next.length > 0) fail(`the next check waited for a slot: ${next.join(" ")}`)
 
-if (stepLimit("test", true) !== undefined || stepLimit("lint", true) !== undefined)
+if (checkSteps.stepLimit("test", true) !== undefined || checkSteps.stepLimit("lint", true) !== undefined)
   fail("ci has its own job time limit and no slot to hold, so check sets no step limit there")
-if (stepLimit("test", false) < 600 || stepLimit("lint", false) < 400)
+if (checkSteps.stepLimit("test", false) < 600 || checkSteps.stepLimit("lint", false) < 400)
   fail("a step limit is below the slowest step seen on a loaded machine: test took 430 s, the others 310 s")
 
 let locked = false
