@@ -238,7 +238,7 @@ Shapes joined by connectors and grouped, which an agent adds in one change with 
 _Avoid_: flowchart, SmartArt
 
 **effects**:
-An element’s shadow, glow and soft edge. Shadow offers None and three rising strengths. Once a strength is on, Opacity is a slider and a percent field named Shadow opacity, so it is not a second Opacity. Effects keeps the exact settings. A group’s effects paint once around its contents.
+An element’s shadow, glow and soft edge. Shadow has three strengths and Shadow opacity. Effects keeps exact settings. A group’s effects paint around its contents.
 _Avoid_: filters, shadow styles
 
 **request**:
