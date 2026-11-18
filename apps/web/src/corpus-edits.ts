@@ -220,6 +220,20 @@ export const corpusEdits: readonly CorpusEdit[] = [
     touches: (parts) => [slidePart(parts, 0), "ppt/tableStyles.xml"],
   },
   {
+    name: "text-image",
+    run: (parts, deck) =>
+      typed(parts, deck, (text) =>
+        text.map((paragraph) => ({
+          ...paragraph,
+          runs: paragraph.runs.map(({ color: _color, ...run }) => ({
+            ...run,
+            fill: { image: `${corpusMedia.type}:${corpusMedia.sha256}` },
+          })),
+        })),
+      ),
+    touches: (parts) => [...targetPart(parts), slideRels(textTarget(parts).part), "[Content_Types].xml"],
+  },
+  {
     name: "add-picture",
     run: (parts, deck) => addedPicture(parts, deck, 0),
     touches: (parts) => [slidePart(parts, 0), slideRels(slidePart(parts, 0)), "[Content_Types].xml"],

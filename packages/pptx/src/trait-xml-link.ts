@@ -19,7 +19,7 @@ export type LinkAt = ElementAt & { readonly paragraph?: number; readonly run?: n
 
 type Children = ReturnType<typeof markupChildren>
 
-function runOwner(bytes: Uint8Array, children: Children, shape: MarkupElement, at: number, runAt: number) {
+export function runOwner(bytes: Uint8Array, children: Children, shape: MarkupElement, at: number, runAt: number) {
   const body = children[shape.index]?.find((each) => each.kind === "p:txBody")
   const paragraph = body === undefined ? undefined : children[body.index]?.filter((each) => each.kind === "a:p")[at]
   const run =

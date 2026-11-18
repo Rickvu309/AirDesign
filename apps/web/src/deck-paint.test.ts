@@ -9,7 +9,7 @@ import {
   type Command,
   type Register,
 } from "@airdesign/document"
-import { readPackage, readParts, readShapes } from "@airdesign/pptx"
+import { iconParts, readPackage, readParts, readShapes } from "@airdesign/pptx"
 import { paintStore, type PaintStore } from "@airdesign/render"
 import { beforeAll, expect, it } from "vitest"
 import { paint } from "./deck-paint"
@@ -249,3 +249,18 @@ it("holds the fit the file stored on a box until its text, its size or its text 
   })
   expect(fitOf(designed({ body: { columns: { set: 2 } } }))).toEqual({ kind: "shrink", scale: 0.775, reduction: 0.2 })
 }, 120_000)
+
+it("paints a title filled with an icon as the exported picture clipped to its letters", () => {
+  const value = writeTextValue([{ from: 0, runs: [{ from: 0, text: "Heat pumps", fill: { image: "star" } }] }])
+  const icon = iconParts("star")
+  const bytes = new Map([
+    [icon.svg, new TextEncoder().encode("<svg/>")],
+    [icon.png, new Uint8Array([1])],
+  ])
+  const run = (register: Register) =>
+    paint(paintStore(), parts, register, busyElements(), bytes)
+      .canvases(0)
+      ?.elements.find((element) => element.key.endsWith("#2"))?.text?.paragraphs[0]?.runs[0]
+  expect(run(person(openRegister("", "doe"), "256.2", value))?.picture).toMatch(/^url\(/)
+  expect(run(person(openRegister("", "doe"), "256.2", "Heat pumps"))?.picture).toBeUndefined()
+})

@@ -7,10 +7,14 @@ import { fillKinds, fillIn } from "./color-read.js"
 import { fillValueOf } from "./fill-read.js"
 import type { Held } from "./markup-held.js"
 
-export function runFill(layers: readonly Held[]): TextFill | undefined {
+export type DrawnTextFill = Exclude<TextFill, { readonly image: string }>
+
+export function runFill(layers: readonly Held[]): DrawnTextFill | undefined {
   for (const layer of layers) {
     const held = fillIn(layer)
-    if (held !== undefined) return readTextFill(fillValueOf(held, null)) ?? undefined
+    if (held === undefined) continue
+    const fill = readTextFill(fillValueOf(held, null))
+    return fill === null || "image" in fill ? undefined : fill
   }
   return undefined
 }

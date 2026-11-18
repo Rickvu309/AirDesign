@@ -12,7 +12,7 @@ export const textWire: TraitWire<"text"> = {
       example: { text: { value: "Quarterly review" } },
     },
     fill: {
-      description: "Letter fill: solid color or gradient, using the shape fill form.",
+      description: "Letter fill in the shape fill form: solid, gradient or image.",
       example: { text: { fill: { solid: "accent1" } } },
     },
     color: {

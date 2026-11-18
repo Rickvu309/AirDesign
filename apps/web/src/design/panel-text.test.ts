@@ -56,7 +56,12 @@ it("shows a template font's family while retaining its native token and matching
 it("routes a text box's Fill to its letters and keeps its box fill folded", () => {
   const panel = panelOf(shape, { reads: {}, moves: true })
   const fill = panel.sections.find((section) => section.trait === "textFill")?.strips.flat()[0]
-  expect(fill?.desc).toMatchObject({ kind: "union", cases: { solid: { kind: "color" }, gradient: { kind: "record" } } })
+  expect(fill?.desc).toMatchObject({
+    kind: "union",
+    cases: { solid: { kind: "color" }, gradient: { kind: "record" }, image: { kind: "asset" } },
+  })
+  expect(Object.keys(fill?.desc.kind === "union" ? fill.desc.cases : {})).toEqual(["solid", "gradient", "image"])
+  expect(fill?.change({ image: "star" })).toEqual({ target: { node: shape.node }, text: { fill: { image: "star" } } })
   expect(fill?.change({ solid: { scheme: "accent1" } })).toEqual({
     target: { node: shape.node },
     text: { fill: { solid: { scheme: "accent1" } } },

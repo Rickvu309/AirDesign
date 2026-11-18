@@ -42,7 +42,9 @@ function shifted(edits: readonly ByteEdit[], by: number): readonly ByteEdit[] {
 function colored(slice: Uint8Array, run: TextRun): Uint8Array {
   const painted =
     run.fill !== undefined
-      ? withRunFill(slice, encodeUtf8(fillMarkup(run.fill).xml))
+      ? "image" in run.fill
+        ? slice
+        : withRunFill(slice, encodeUtf8(fillMarkup(run.fill).xml))
       : run.color === undefined
         ? slice
         : paintRunColor(slice, run.color)

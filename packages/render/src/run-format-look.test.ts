@@ -213,3 +213,16 @@ it("paints a native template font token with the current template style's face",
   expect(look.run(0, 0, { font: "+mn-lt" }).fontFamily).toContain('"Lato"')
   expect(look.run(0, 0, { font: "Lato Light" }).fontFamily).toContain('"Lato Light"')
 })
+
+it("paints a run filled with an image as the file's picture clipped to the letters", () => {
+  const picture = 'url("blob:moon") 0% 0% / 100% 100% no-repeat'
+  const look = textLook(
+    { ...text, paragraphs: [{ ...text.paragraphs[0]!, runs: [{ from: 0, text: "a", ...plain, picture }] }] },
+    scaled,
+  )
+  expect(look.run(0, 0, { fill: { image: "moon" } })).toMatchObject({
+    background: picture,
+    backgroundClip: "text",
+    color: "transparent",
+  })
+})

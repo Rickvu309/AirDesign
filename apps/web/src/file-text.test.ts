@@ -125,3 +125,26 @@ it("paints the file's runs inside the text frame the export gives, so margins, a
   const painted = fileTexts([row("2", { ...text(true), ...frame })], file([row("2", text(false))]))
   expect(painted[0]?.text).toEqual({ ...text(false), ...frame })
 })
+
+function pictured(picture: PaintRunStyle["picture"]): PaintText {
+  const shown = text(false)
+  return {
+    ...shown,
+    paragraphs: shown.paragraphs.map((paragraph) => ({
+      ...paragraph,
+      runs: paragraph.runs.map((run) => (picture === undefined ? run : { ...run, picture })),
+    })),
+  }
+}
+
+it("paints the picture the export fills each run with over the file's runs, and drops one the export no longer has", () => {
+  const picture = {
+    type: "picture",
+    part: "ppt/media/icon-star.svg",
+    contentType: "image/svg+xml",
+    crop: { left: 0, top: 0, right: 0, bottom: 0 },
+    tile: false,
+  } as const
+  expect(fileTexts([row("2", pictured(picture))], file([row("2", text(false))]))[0]?.text).toEqual(pictured(picture))
+  expect(fileTexts([row("2", text(false))], file([row("2", pictured(picture))]))[0]?.text).toEqual(text(false))
+})

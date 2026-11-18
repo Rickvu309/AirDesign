@@ -398,3 +398,13 @@ describe("the set and add schemas derive from the agent forms", () => {
     })
   })
 })
+
+it("reads an agent's image fill on text named the way a shape's image fill is, and refuses an unknown icon", () => {
+  expect(readSetChange({ op: "set", target: "258.7", text: { fill: { image: "rocket" } } })).toEqual({
+    ok: true,
+    change: { op: "set", target: { node: "258.7" }, text: { fill: { image: "rocket" } } },
+  })
+  expect(readSetChange({ op: "set", target: "258.7", text: { fill: { image: "no such icon" } } })).toMatchObject({
+    ok: false,
+  })
+})

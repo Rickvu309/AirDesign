@@ -26,3 +26,18 @@ it("refuses two competing text paints", () => {
     ),
   ).toBeNull()
 })
+
+it("keeps an image as one text fill choice, named the way a shape's image fill is", () => {
+  const photo = `image/png:${"a".repeat(64)}`
+  for (const image of ["rocket", photo]) {
+    const value = [{ from: 0, runs: [{ from: 0, text: "Image", fill: { image } }] }]
+    expect(readTextValue(JSON.stringify(value))).toEqual(value)
+    expect(readTextValue(writeTextValue(value))).toEqual(value)
+  }
+})
+
+it("refuses an image fill that names no icon or picture", () => {
+  expect(
+    readTextValue(JSON.stringify([{ from: 0, runs: [{ from: 0, text: "A", fill: { image: "Not an icon" } }] }])),
+  ).toBeNull()
+})

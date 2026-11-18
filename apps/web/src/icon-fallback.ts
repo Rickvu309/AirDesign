@@ -10,6 +10,7 @@ import {
 } from "@airdesign/document"
 import { iconParts } from "@airdesign/pptx"
 import dynamicIconImports from "lucide-react/dynamicIconImports"
+import { patchImages } from "@/patch-images"
 
 type IconNode = readonly [string, Readonly<Record<string, unknown>>, (readonly IconNode[])?]
 
@@ -66,9 +67,7 @@ export async function iconPng(svg: string, side = fallbackSide): Promise<Uint8Ar
 }
 
 function patchIcons(patch: ElementPatch | undefined): readonly string[] {
-  const source = patch?.fills?.source
-  const icon = typeof source === "object" ? assetIcon(source.set) : null
-  return icon === null ? [] : [icon]
+  return patchImages(patch).flatMap((image) => assetIcon(image) ?? [])
 }
 
 export function registerIcons(register: Register): readonly string[] {
