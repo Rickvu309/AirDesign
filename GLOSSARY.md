@@ -211,7 +211,7 @@ One entry of fills: a solid colour, a gradient, a pattern, a group's fill, none,
 _Avoid_: fill kind, layer (a layer is a thing on a slide)
 
 **border**:
-The stroke around a shape or image or along a line: its paint, width, dash, cap, join, compound strokes and arrowheads, stored as the trait `border`. The design panel's Border section shows none, solid, dashed and dotted, then Color and Border width; design mode shows the paint and every setting. A deck, device or agent that still says `line` is read as border. PowerPoint writes `a:ln`.
+The stroke around a shape or image or along a line: its paint, width, dash, cap, join, compound strokes and arrowheads, stored as the trait `border`. The design panel's Border section shows none, solid, dashed and dotted, then Color and Border width; design mode shows the paint as a word list, every setting, and the arrowheads only on an open shape. A deck, device or agent that still says `line` is read as border. PowerPoint writes `a:ln`.
 _Avoid_: line (as a trait or a panel section), stroke, outline
 
 **line**:

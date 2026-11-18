@@ -111,7 +111,11 @@ function widthControl(controls: readonly PanelControl[]): PanelControl | undefin
       }
 }
 
-export function appearanceSections(sections: readonly PanelSection[], kind: PanelKind | null): readonly PanelSection[] {
+export function appearanceSections(
+  sections: readonly PanelSection[],
+  kind: PanelKind | null,
+  ends = false,
+): readonly PanelSection[] {
   const controls = sections.flatMap((section) => section.strips.flat())
   const fill = controls.find((control) => control.trait === "border" && control.field === "fill")
   const dash = controls.find((control) => control.trait === "border" && control.field === "dash")
@@ -161,7 +165,12 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
     const styled = dash.value === "solid" || dash.value === "dash" || dash.value === "dot"
     const width = widthControl(controls)
     const color = styled ? colorControl(fill) : undefined
-    const exact = controls.filter((control) => control.trait === "border" && exactFields.includes(control.field))
+    const exact = controls.filter(
+      (control) =>
+        control.trait === "border" &&
+        exactFields.includes(control.field) &&
+        (ends || (control.field !== "head" && control.field !== "tail")),
+    )
     added.push({
       trait: "border",
       label: designCopy.border,

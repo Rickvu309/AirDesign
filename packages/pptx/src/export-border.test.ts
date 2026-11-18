@@ -89,9 +89,9 @@ describe("exportParts on a line", () => {
       width: { value: 38100, own: true },
       fill: { value: { solid: { scheme: "accent1", transforms: [{ op: "shade", val: 15000 }] } }, own: false },
       dash: { value: "solid", own: false },
-      cap: { value: null, own: false },
+      cap: { value: "flat", own: false },
       compound: { value: "sng", own: false },
-      join: { value: null, own: false },
+      join: { value: "round", own: false },
       head: { value: { type: "none", width: "med", length: "med" }, own: false },
       tail: { value: { type: "none", width: "med", length: "med" }, own: false },
     })

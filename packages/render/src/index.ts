@@ -21,7 +21,7 @@ export {
   type PaintBox,
 } from "./record.js"
 export { holdKeys, type HeldKeys } from "./held-keys.js"
-export { adjustDefaults, presetOutline } from "./preset-path.js"
+export { adjustDefaults, openPreset, presetOutline } from "./preset-path.js"
 export { SlideCanvas, unshownFill, type Entering } from "./slide-canvas.js"
 export { paintStore, type PaintStore } from "./store.js"
 export { textFormatting, type TextFormatting } from "./text-formatting.js"

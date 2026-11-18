@@ -29,6 +29,7 @@ import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
 import { cropChange } from "./crop-change"
 import { appearanceSections } from "./appearance-presets"
+import { endsOpen } from "./border-ends"
 import { listEffects } from "./effects-list"
 import { cornersSection } from "./corners-control"
 import { opacitySection } from "./opacity-control"
@@ -397,6 +398,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
               ...(corners === null ? [] : [corners]),
             ],
             kind,
+            endsOpen(kind, shown),
           ),
           view,
           shown,

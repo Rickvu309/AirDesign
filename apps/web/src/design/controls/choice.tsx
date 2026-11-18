@@ -57,18 +57,38 @@ export function ChoiceControl(props: ControlProps) {
   const arrow = control.trait === "border" && /^(head|tail)\./.test(control.field)
   const look = control.look
   const layout = look.form
+  const named = look.name.show !== "hidden"
+  const reset = control.trait === "border" && named ? control.reset : null
+  const title = arrow ? (
+    <>
+      <span className="sr-only">{control.label}</span>
+      <span aria-hidden>{optionWord("", control.field.split(".").at(-1) ?? "")}</span>
+    </>
+  ) : (
+    control.label
+  )
   return (
     <div className="flex flex-col gap-1" data-control="choice" data-inherited={control.inherited ? "" : undefined}>
-      <span id={label} className={look.name.show === "hidden" ? "sr-only" : controlLabel}>
-        {arrow ? (
-          <>
-            <span className="sr-only">{control.label}</span>
-            <span aria-hidden>{optionWord("", control.field.split(".").at(-1) ?? "")}</span>
-          </>
-        ) : (
-          control.label
-        )}
-      </span>
+      {reset === null ? (
+        <span id={label} className={named ? controlLabel : "sr-only"}>
+          {title}
+        </span>
+      ) : (
+        <div className="flex min-h-6 items-center justify-between gap-2">
+          <span id={label} className={controlLabel}>
+            {title}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-6 px-1.5 text-[length:var(--type-caption)] font-normal text-quiet hover:text-foreground active:translate-y-0"
+            onClick={() => onChange(null)}
+          >
+            {reset}
+          </Button>
+        </div>
+      )}
       {layout === "list" ? (
         <ChoiceList {...props} label={label} options={options} />
       ) : (
