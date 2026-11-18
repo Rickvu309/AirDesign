@@ -14,7 +14,7 @@ async function drive(kit) {
   await element.click({ position: { x: 4, y: 4 } })
   const panel = page.locator("[data-design-element]")
   await panel
-    .getByRole("group", { name: fillCopy.value, exact: true })
+    .getByRole("group", { name: fillCopy.text, exact: true })
     .getByRole("button", { name: fillWords.gradient, exact: true })
     .click()
   await expect(element.locator("[data-run]").first()).toHaveCSS("background-clip", "text")

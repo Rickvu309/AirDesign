@@ -82,7 +82,8 @@ export type ControlProps = {
 }
 
 export function partControl(control: PanelControl, name: string, desc: Desc, value: unknown): PanelControl {
-  const label = control.trait === "textFill" && name === "solid" ? formatCopy.color : optionWord(control.field, name)
+  const textFill = control.trait === "textFill" || (control.trait === "text" && control.field === "fill")
+  const label = textFill && name === "solid" ? formatCopy.color : optionWord(control.field, name)
   return resolveControl({
     ...control,
     parent: control.value,

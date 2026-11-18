@@ -43,18 +43,18 @@ export function filled(shape: Locator): Promise<string> {
   })
 }
 
-export async function fillPanel(page: Page, shape: Locator): Promise<Locator> {
+export async function fillPanel(page: Page, shape: Locator, label: string = fillCopy.value): Promise<Locator> {
   const design = page.getByRole("button", { name: "Design", exact: true })
   if ((await design.getAttribute("aria-pressed")) !== "true") await design.click()
   await shape.click({ position: { x: 4, y: 4 } })
   const panel = page.locator("[data-design-element]")
   await expect(panel).toBeVisible()
-  await expect(panel.getByRole("group", { name: fillCopy.value, exact: true })).toBeVisible()
+  await expect(panel.getByRole("group", { name: label, exact: true })).toBeVisible()
   return panel
 }
 
 export async function boxFillPanel(page: Page, shape: Locator): Promise<Locator> {
-  const panel = await fillPanel(page, shape)
+  const panel = await fillPanel(page, shape, fillCopy.text)
   await unfold(panel, fillCopy.box)
   return panel.locator("section").filter({ has: page.getByRole("heading", { name: fillCopy.box, exact: true }) })
 }
