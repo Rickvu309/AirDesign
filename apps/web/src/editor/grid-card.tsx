@@ -1,3 +1,4 @@
+import { SkippedSlide } from "@/editor/skipped-slide"
 import { gridNumberPlacement, gridElementPresses } from "@/editor/grid-number"
 import { gridSpacing } from "@/editor/grid-viewport"
 import { Filmstrip } from "@airdesign/render"
@@ -12,6 +13,7 @@ export function GridCard({
   index,
   count,
   current,
+  skipped,
   selected,
   multiple,
   reachable,
@@ -35,6 +37,7 @@ export function GridCard({
   index: number
   count: number
   current: boolean
+  skipped: boolean
   selected: boolean
   multiple: boolean
   reachable: boolean
@@ -89,6 +92,8 @@ export function GridCard({
             ? slideListCopy.selectedName(index + 1, count)
             : slideListCopy.slideName(index + 1, count)
         }
+        aria-description={skipped ? slideListCopy.skipped : undefined}
+        data-slide-skipped={skipped || undefined}
         tabIndex={reachable ? 0 : -1}
         data-slide-entry={index + 1}
         data-selected={selected ? "" : undefined}
@@ -107,6 +112,7 @@ export function GridCard({
           paint={() => thumb(width * scale)}
           width={width * scale}
         />
+        {skipped && !active ? <SkippedSlide /> : null}
       </button>
       <span
         aria-hidden="true"

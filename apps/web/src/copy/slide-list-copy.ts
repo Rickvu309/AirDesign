@@ -40,6 +40,9 @@ export const slideListCopy = {
   actions: (number: number) => `Slide ${String(number)} actions`,
   open: "Open",
   openKey: "Enter",
+  skip: "Skip slide",
+  unskip: "Unskip slide",
+  skipped: "Skipped in Present",
   duplicate: "Duplicate",
   delete: "Delete",
   setActions: (count: number) => ({

@@ -1,3 +1,6 @@
+import { copyFile } from "node:fs/promises"
+import { savedExport } from "./export-dialog"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy.ts"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { connectionCopy } from "../../apps/web/src/copy/connection-copy.ts"
@@ -110,4 +113,40 @@ test("presenter buttons respond to Enter and Space", async ({ page }) => {
   await page.getByRole("button", { name: presentCopy.stop }).focus()
   await page.keyboard.press(slideListCopy.openKey)
   await expect(page.locator("[data-presenter-view]")).toHaveCount(0)
+})
+
+test("a skipped slide survives offline edits, undo and an exported slide show @export", async ({
+  page,
+  context,
+}, testInfo) => {
+  await opened(page)
+  const entry = page.locator('[data-slide-entry="2"]')
+  async function choose(name: string) {
+    await entry.click({ button: "right" })
+    await page.getByRole("menuitem", { name, exact: true }).click()
+  }
+  await context.setOffline(true)
+  await choose(slideListCopy.skip)
+  await expect(entry).toHaveAttribute("data-slide-skipped", "true")
+  await page.getByRole("button", { name: undoCopy.undoNamed["skip-slide"] }).click()
+  await expect(entry).not.toHaveAttribute("data-slide-skipped", "true")
+  await page.getByRole("button", { name: undoCopy.redoNamed["skip-slide"] }).click()
+  await expect(entry).toHaveAttribute("data-slide-skipped", "true")
+  await context.setOffline(false)
+  await page.getByRole("button", { name: "Grid", exact: true }).click()
+  await expect(entry).toHaveAttribute("aria-description", slideListCopy.skipped)
+  await choose(slideListCopy.unskip)
+  await expect(entry).not.toHaveAttribute("data-slide-skipped", "true")
+  await choose(slideListCopy.skip)
+  await expect(entry).toHaveAttribute("data-slide-skipped", "true")
+  await page.reload()
+  await expect(entry).toHaveAttribute("data-slide-skipped", "true")
+  await page.locator('[data-slide-entry="1"]').click()
+  await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
+  await page.keyboard.press("ArrowRight")
+  await expect(shown(page)).toHaveAttribute("data-present-slide", "3")
+  await page.keyboard.press("Escape")
+  const exported = testInfo.outputPath("exported-slide-skip.pptx")
+  await savedExport(page, exported)
+  await copyFile(exported, join(process.cwd(), "tests/browser/exported-slide-skip.pptx"))
 })

@@ -1,3 +1,5 @@
+import { slideNode } from "@airdesign/document"
+import { changeDesign } from "@/design/design-change"
 import { PresentLinks } from "@/present/present-links"
 import { toast } from "@/components/ui/toast"
 import { moveDeck } from "@/decks/move-deck"
@@ -55,6 +57,9 @@ export function ThinDeck({ id }: { id: string }) {
 
   const notice = shownNotice({ ...deck, told: deck.undo.told, picture: deck.pictureTool.notice })
 
+  const strip = slideCommands(deck, undoButtons.onUndo)
+  const shows = showsIn(shown.displayParts.current, strip.slideIds ?? [])
+
   return (
     <div className="thin-page" data-deck-ready={paintedDeck}>
       <ThinNoticeView notice={notice} onTryAgain={exported.tryAgain} />
@@ -85,7 +90,16 @@ export function ThinDeck({ id }: { id: string }) {
             onShape: deck.inserts.addShape,
             onIcon: deck.inserts.addIcon,
             size: shown.canvases.current(shown.current),
-            slides: { ...slideCommands(deck, undoButtons.onUndo), onSelection: setSelectedSlides },
+            slides: {
+              ...strip,
+              onSelection: setSelectedSlides,
+              skipped: shows.map((show) => show.hidden),
+              onSkip: (index, skipped) => {
+                const slide = strip.slideIds?.[index]
+                if (slide === undefined) return
+                changeDesign(deck, () => ({ target: { node: slideNode(slide, "slide") }, show: { skipped } }))
+              },
+            },
             slide: editableSlide(deck),
             presentPaint: (index, width, go) => (
               <PresentLinks parts={shown.displayParts.current} index={index} width={width} go={go}>
@@ -95,7 +109,7 @@ export function ThinDeck({ id }: { id: string }) {
             notesOf: (index) => notesOn(notesBar.notes, shown.store.current.slides()[index]?.id),
             shows: () =>
               showsIn(
-                shown.shownParts.current,
+                shown.displayParts.current,
                 shown.store.current.slides().map((slide) => slide.id),
               ),
           }}

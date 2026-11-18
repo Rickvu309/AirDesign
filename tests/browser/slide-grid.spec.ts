@@ -141,6 +141,7 @@ test("a right click or the menu key on a slide offers the slide commands, and ea
     /^Delete/,
     /^Move up/,
     /^Move down/,
+    slideListCopy.skip,
     slideListCopy.addAfterMenu,
     slideListCopy.addBelowMenu,
     slideListCopy.moveBelowMenu,

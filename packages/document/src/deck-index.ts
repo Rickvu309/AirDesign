@@ -30,6 +30,7 @@ export type IndexSlide = {
   readonly free?: number
   readonly animated?: readonly string[]
   readonly layout?: readonly IndexElement[]
+  readonly skipped?: true
   readonly template?: string
   readonly textStyles?: readonly TextStyle[] | string
   readonly palette?: number
@@ -75,7 +76,7 @@ export type DeckIndex = BuiltIndex & { readonly next?: BuiltIndex }
 export const indexKeys = {
   page: ["format", "once", "offset", "total", "palettes", "templates", "sectionStarts", "slides", "elements"],
   palette: ["slots", "map", "fonts"],
-  slide: ["id", "position", "size", "free", "animated", "layout", "palette", "template", "textStyles"],
+  slide: ["id", "position", "size", "free", "animated", "layout", "palette", "template", "textStyles", "skipped"],
   element: ["node", "kind", "value", "box", "grouped", "role", "design", "kept", "placed", "group", "frame", "link"],
   design: designKeys,
   roles,
@@ -153,7 +154,9 @@ function readSlide(raw: unknown, position: number, palettes: number): IndexSlide
         : readTextStyles(row.textStyles)
   if (textStyles === null) return null
   if (row.template !== undefined && (typeof row.template !== "string" || bytesOf(row.template) > 256)) return null
+  if (row.skipped !== undefined && row.skipped !== true) return null
   const measures = {
+    ...(row.skipped === true ? { skipped: true as const } : {}),
     ...read,
     ...(textStyles === undefined ? {} : { textStyles }),
     ...(row.palette === undefined ? {} : { palette: row.palette }),
