@@ -61,7 +61,7 @@ export type EditorShellProps = {
   run?: SidebarRun
   panel?: EditorPanel
   onPanel?: (panel: Exclude<EditorPanel, "none">) => void
-  side?: ReactNode
+  side?: ReactNode | ((selectedSlides: number) => ReactNode)
   rail?: EditorRail
   activeTool?: EditorTool
   toolMenu?: boolean
@@ -97,6 +97,8 @@ export function EditorShell({
   const [zoom, setZoom] = useState<Zoom>("fit")
   const [gridOpen, setGridOpen] = useState(false)
   const [gridPanel, setGridPanel] = useState(false)
+  const [selectedSlides, setSelectedSlides] = useState(0)
+  const sideContent = typeof side === "function" ? side(gridOpen ? selectedSlides : 0) : side
   const pointer = usePointerTool(deck !== undefined)
   const size = deck?.size ?? null
   const width = size === null ? room.width : zoomWidth(zoom, room, size)
@@ -153,6 +155,7 @@ export function EditorShell({
         <div className="min-w-0 flex-1">
           <EditorGrid
             slide={deck.slide}
+            onSlideSelection={setSelectedSlides}
             id={deck.id ?? null}
             title={title}
             strip={deck.slides}
@@ -185,7 +188,7 @@ export function EditorShell({
             className="relative flex h-full w-[360px] shrink-0 flex-col border-l border-line bg-white"
             data-editor-panel
           >
-            {side}
+            {sideContent}
           </aside>
         )}
         {toast}
@@ -304,7 +307,7 @@ export function EditorShell({
             />
           </span>
         </PanelHead>
-        {side}
+        {sideContent}
       </ResizablePanel>
       {templatePicker ? <TemplatePicker /> : null}
       {toast}

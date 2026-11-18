@@ -20,7 +20,8 @@ import { gridOpened, gridPick, gridRinged, gridStep } from "@/editor/grid-intera
 import { GridThumbnail, useGridViewport } from "@/editor/use-grid-viewport"
 import { useGridEditing } from "@/editor/use-grid-editing"
 import type { SaveStatus } from "@/editor/use-deck-status"
-import { focusMove, gridCommand, type GridCommand } from "@/editor/editor-grid-keys"
+import { focusMove, gridCommand } from "@/editor/editor-grid-keys"
+import { gridSlideActions } from "@/editor/grid-slide-actions"
 import { GridSlideMenu, pointAt, type GridMenu, type MenuAnchor } from "@/editor/grid-menu"
 import { pickAll, pickedSlides, pickRange, prunedPick } from "@/editor/grid-selection"
 import { useGridDrag } from "@/editor/use-grid-drag"
@@ -59,6 +60,7 @@ export function EditorGrid({
   select = () => undefined,
   save = null,
   slide,
+  onSlideSelection,
 }: {
   id?: string | null
   title: string
@@ -76,6 +78,7 @@ export function EditorGrid({
   select?: (selection: Selection) => void
   save?: SaveStatus | null
   slide?: (width: number) => ReactNode
+  onSlideSelection?: (count: number) => void
 }) {
   const list = useRef<HTMLDivElement>(null)
   const [state, dispatch] = useReducer(gridStep, selection.ids.length > 0, gridOpened)
@@ -117,6 +120,8 @@ export function EditorGrid({
   const { current, count } = strip
   const picked = prunedPick(gridPick(state), count)
   const selected = new Set(gridRinged(state, current, count))
+  const selectedCount = selected.size
+  useLayoutEffect(() => onSlideSelection?.(selectedCount), [onSlideSelection, selectedCount])
   const sections = strip.sections ?? noSections
   const collapsed = useKeptCollapsed(id, sections, current)
   const [seen, setSeen] = useState(current)
@@ -138,9 +143,18 @@ export function EditorGrid({
     setStop(current)
     if (next !== null && next !== undefined && next !== document.activeElement) next.focus({ preventScroll: true })
   }, [current, count])
+  function zoomSelection() {
+    if (edit.editing) {
+      const boxes = strip.selectionBoxes?.(selection.ids)
+      if (boxes !== undefined && boxes.length > 0) {
+        viewport.elements(current, boxes, (size ?? wideSlide).width)
+        return
+      }
+    }
+    viewport.selection(edit.editing ? [current] : [...selected].filter(shown))
+  }
   useZoomKeys(!presenting, (key) => {
-    if (key === "selection")
-      viewport.selection(state.kind === "elements" || state.kind === "text" ? [current] : [...selected])
+    if (key === "selection") zoomSelection()
     else chooseZoom(key === "fit" ? "fit" : steppedZoom(key, percent, zoomRanges.grid))
   })
   const reachable = stop >= 0 && stop < count && shown(stop) ? stop : current
@@ -200,46 +214,22 @@ export function EditorGrid({
     strip.onAdd?.(undefined, index, "new")
   }
 
-  function act(command: GridCommand, index: number) {
-    const target = picked?.slides.size === 1 ? (pickedSlides(picked, current)[0] ?? index) : index
-    if (picked?.slides.size === 1) edit.step({ kind: "pick", pick: null })
-    if (command === "open") {
-      edit.open(target)
-      return
-    }
-    if (picked !== null && picked.slides.size > 1) {
-      announce(slideListCopy.selectOne)
-      return
-    }
-    if (command === "remove") {
-      if (count < 2) return
+  const act = gridSlideActions(strip, picked, {
+    follow: () => {
       following.current = true
-      strip.onRemove?.(target)
-      announce(slideListCopy.deleted(target + 1))
-      return
-    }
-    if (command === "clone") {
-      following.current = true
-      strip.onClone?.(target)
-      announce(slideListCopy.duplicated(target + 1))
-      return
-    }
-    if (command === "earlier" && target > 0) {
-      following.current = true
-      strip.onMove?.(target, target - 1)
-      announce(slideListCopy.moved(target + 1, target))
-    }
-    if (command === "later" && target < count - 1) {
-      following.current = true
-      strip.onMove?.(target, target + 1)
-      announce(slideListCopy.moved(target + 1, target + 2))
-    }
-  }
+    },
+    clearPick: () => edit.step({ kind: "pick", pick: null }),
+    open: edit.open,
+    moveSlides,
+    announce,
+  })
 
   function openMenu(index: number, anchor: MenuAnchor, pointer: boolean) {
-    edit.step({ kind: "pick", pick: null })
+    if (!selected.has(index)) {
+      edit.step({ kind: "pick", pick: null })
+      strip.onSelect(index)
+    }
     setStop(index)
-    strip.onSelect(index)
     setMenu({ index, anchor, pointer })
   }
 
@@ -371,7 +361,7 @@ export function EditorGrid({
         picked={picked}
         save={save}
         onZoom={chooseZoom}
-        onSelection={() => viewport.selection(state.kind === "elements" ? [current] : [...selected])}
+        onSelection={zoomSelection}
         onAdd={() => addAfter(reachable)}
         onSlides={onSlides}
         onExport={onExport}
@@ -390,7 +380,16 @@ export function EditorGrid({
           thumb={(size) => strip.thumb(dragging, size)}
         />
       )}
-      {menu === null ? null : <GridSlideMenu menu={menu} count={count} onAct={act} onClose={closeMenu} />}
+      {menu === null ? null : (
+        <GridSlideMenu
+          menu={menu}
+          count={count}
+          held={pickedSlides(picked, menu.index)}
+          canMoveSet={strip.onMoveMany !== undefined}
+          onAct={act}
+          onClose={closeMenu}
+        />
+      )}
       <div
         {...viewport.handlers}
         className={cn(

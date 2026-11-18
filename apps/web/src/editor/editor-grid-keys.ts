@@ -58,6 +58,14 @@ export function gridCommand(event: {
   return null
 }
 
+export function gridMoveAt(held: readonly number[], count: number, direction: "earlier" | "later"): number | null {
+  const first = held[0]
+  const last = held.at(-1)
+  if (first === undefined || last === undefined) return null
+  if (direction === "earlier") return first > 0 ? first - 1 : null
+  return last < count - 1 ? last + 2 : null
+}
+
 const moveKeys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"]
 
 export function focusMove(list: HTMLElement, key: string): number | null {

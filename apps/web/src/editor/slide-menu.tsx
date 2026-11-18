@@ -74,20 +74,24 @@ export function SlideMenuRows({
   index,
   count,
   onChoose,
+  allowed,
+  labels,
 }: {
   index: number
   count: number
   onChoose: (change: SlideKey) => void
+  allowed?: (change: SlideKey) => boolean
+  labels?: Record<SlideKey, string>
 }) {
   return order.map((change) => (
     <DropdownMenuItem
       key={change}
-      disabled={!slideChangeAllowed(change, index, count)}
+      disabled={!(allowed?.(change) ?? slideChangeAllowed(change, index, count))}
       aria-keyshortcuts={keys[change].shortcuts}
       className={slideMenuItem}
       onClick={() => onChoose(change)}
     >
-      <span className="min-w-0 flex-1">{keys[change].label}</span>
+      <span className="min-w-0 flex-1">{labels?.[change] ?? keys[change].label}</span>
       <span className="text-xs text-[var(--shortcut)]">{keys[change].shown}</span>
     </DropdownMenuItem>
   ))

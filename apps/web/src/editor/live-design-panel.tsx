@@ -67,6 +67,7 @@ import { siteNames } from "@/design/site-names"
 import { deviceScope } from "@/design/trait-edit"
 import { designShown, themeOf, type DesignShown } from "@/design-shown"
 import { PicturePreview } from "@/editor/picture-preview"
+import { slideListCopy } from "@/copy/slide-list-copy"
 import { ControlView, DesignHead, DesignSection, ElementDesign, SectionStrips } from "@/editor/design-panel"
 import { LiveSelectionColors } from "./live-selection-colors"
 import type { DeckPaint } from "@/editor/use-deck-paint"
@@ -363,7 +364,14 @@ function LiveManyDesign({ deck, nodes }: { deck: DesigningDeck; nodes: Several }
   )
 }
 
-export function LiveDesignPanel({ deck }: { deck: DesigningDeck }) {
+export function LiveDesignPanel({ deck, selectedSlides = 0 }: { deck: DesigningDeck; selectedSlides?: number }) {
+  if (selectedSlides > 1)
+    return (
+      <div className="flex min-h-0 flex-1 flex-col" data-design-panel>
+        <DesignHead>{slideListCopy.selected(selectedSlides)}</DesignHead>
+        <p className="px-4 py-3 text-[length:var(--type-caption)] text-muted-foreground">{designCopy.selectOneSlide}</p>
+      </div>
+    )
   const { shown, selection } = deck
   const elements = shown.store.current.slides()[shown.current]?.elements ?? []
   const [first, ...rest] = selection.ids.filter((id) => elements.includes(id))

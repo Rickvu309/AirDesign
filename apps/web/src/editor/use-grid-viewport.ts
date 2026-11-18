@@ -1,3 +1,4 @@
+import type { PaintBox } from "@airdesign/render"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import {
   createElement,
@@ -18,6 +19,7 @@ import {
   wheeledGrid,
   arrowGrid,
   fittedGridCards,
+  fittedGridElements,
   fittedGridRows,
   resizedGrid,
   type GridGeometry,
@@ -284,29 +286,29 @@ export function useGridViewport({
 
   function fit(indices?: readonly number[]) {
     const host = viewport.current
-    const content = world.current
-    if (!host || !content) return
-    const wanted = indices === undefined ? null : new Set(indices.map((index) => String(index + 1)))
-    const cards =
-      wanted === null
-        ? []
-        : [...content.querySelectorAll("[data-grid-card]")]
-            .filter((card) => {
-              const entry = card.querySelector("[data-slide-entry]")?.getAttribute("data-slide-entry")
-              return entry !== null && entry !== undefined && wanted.has(entry)
-            })
-            .map((card) => card.getBoundingClientRect())
-    if (wanted !== null && cards.length === 0) return
+    if (host === null || world.current === null) return
+    const room = host.getBoundingClientRect()
     const next =
-      wanted === null
-        ? fittedGridRows(geometryRef.current, host.getBoundingClientRect())
-        : fittedGridCards(view.current, cards, host.getBoundingClientRect())
+      indices === undefined
+        ? fittedGridRows(geometryRef.current, room)
+        : fittedGridCards(geometryRef.current, indices, room)
+    if (next !== null) paintFit(next, indices !== undefined)
+  }
+
+  function elements(index: number, boxes: readonly PaintBox[], slideWidth: number) {
+    const host = viewport.current
+    if (host === null) return
+    const next = fittedGridElements(geometryRef.current, index, boxes, slideWidth, host.getBoundingClientRect())
+    if (next !== null) paintFit(next, true)
+  }
+
+  function paintFit(next: GridViewport, selection: boolean) {
     paint(next)
     if (frame.current !== null) cancelAnimationFrame(frame.current)
     frame.current = null
     stopTimer()
     dirty.current = false
-    if (wanted === null) {
+    if (!selection) {
       keepGridViewport(kept.current, null)
       fitted.current(next.scale * 100)
       return
@@ -318,6 +320,7 @@ export function useGridViewport({
 
   return {
     reset: () => fit(),
+    elements,
     selection: (indices: readonly number[]) => fit(indices),
     space,
     panBy: (delta: { readonly x: number; readonly y: number }) => {
