@@ -101,34 +101,44 @@ test("text fit agrees with the painter on the text of real decks", async ({ page
   const verdicts = { agree: 0, missed: 0, alarms: 0 }
   for (const deck of decks) {
     await openDeck(page, deck.name, readFileSync(deck.path))
-    const widths = await slideWidths(page, deck.slides)
+    const captured: {
+      readonly at: number
+      readonly element: ResolvedElement
+      readonly truth: number
+    }[] = []
     for (const [at, slide] of deck.slides.entries()) {
       await showSlide(page, at + 1)
-      const judged = slide.elements.flatMap((element) => {
+      const boxes = slide.elements.flatMap((element) => {
         if (element.from !== "slide" || element.text === null || element.box === null || element.rotation !== 0)
           return []
         if (!element.text.paragraphs.some((paragraph) => paragraph.runs.some((run) => run.text !== ""))) return []
-        const laid = layText(element.text, element.box, widths)
-        return typeof laid === "string" ? [] : [{ element, laid, key: element.node, width: element.box.cx / point }]
+        return [{ element, key: element.node, width: element.box.cx / point }]
       })
-      if (judged.length === 0) continue
-      await page.locator(`[data-slide-paint] [data-canvas-element="${judged[0]?.key ?? ""}"]`).waitFor()
-      const heights = await paintedHeights(page, judged)
-      for (const [index, { element, laid }] of judged.entries()) {
+      if (boxes.length === 0) continue
+      await page.locator(`[data-slide-paint] [data-canvas-element="${boxes[0]?.key ?? ""}"]`).waitFor()
+      const heights = await paintedHeights(page, boxes)
+      for (const [index, { element }] of boxes.entries()) {
         const truth = heights[index]
         if (truth === null || truth === undefined) continue
-        rows.push({
-          group: shapeOf(element),
-          truth,
-          said: laid.height,
-          label: `${deck.name} slide ${at + 1} ${element.node}`,
-        })
-        const real = truth > laid.room + findingLimits.overflow
-        const said = laid.height > laid.room + findingLimits.overflow
-        if (real === said) verdicts.agree += 1
-        else if (real) verdicts.missed += 1
-        else verdicts.alarms += 1
+        captured.push({ at, element, truth })
       }
+    }
+    const widths = await slideWidths(page, deck.slides)
+    for (const { at, element, truth } of captured) {
+      if (element.text === null || element.box === null) continue
+      const laid = layText(element.text, element.box, widths)
+      if (typeof laid === "string") continue
+      rows.push({
+        group: shapeOf(element),
+        truth,
+        said: laid.height,
+        label: `${deck.name} slide ${at + 1} ${element.node}`,
+      })
+      const real = truth > laid.room + findingLimits.overflow
+      const said = laid.height > laid.room + findingLimits.overflow
+      if (real === said) verdicts.agree += 1
+      else if (real) verdicts.missed += 1
+      else verdicts.alarms += 1
     }
   }
   console.log(`text fit against the painter on ${truthDecks.join(", ")}\n${agreementTable(rows)}\n${worst(rows, 12)}`)
