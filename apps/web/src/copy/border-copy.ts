@@ -1,9 +1,6 @@
-export const lineCopy = {
+export const borderCopy = {
   color: "Color",
-  borderWidth: "Border width",
-  section: "Line",
-  fill: "Line",
-  width: "Line width",
+  width: "Border width",
   dash: "Dash",
   cap: "Cap",
   compound: "Compound",
@@ -11,8 +8,8 @@ export const lineCopy = {
   head: "Start arrow",
   tail: "End arrow",
   reset: {
-    fill: "Reset line color",
-    width: "Reset line width",
+    fill: "Reset border color",
+    width: "Reset border width",
     dash: "Reset dash",
     cap: "Reset cap",
     compound: "Reset compound",
@@ -22,13 +19,13 @@ export const lineCopy = {
   },
 } as const
 
-export const lineWords: Readonly<Record<string, string>> = {
+export const borderWords: Readonly<Record<string, string>> = {
   "border.none": "None",
   "border.solid": "Solid",
   "border.dash": "Dashed",
   "border.dot": "Dotted",
   "dash.solid": "Solid",
-  "fill.solid": "Line color",
+  "fill.solid": "Border color",
   dot: "Dot",
   dash: "Dash",
   lgDash: "Long dash",

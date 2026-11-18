@@ -78,7 +78,7 @@ describe("a gradient a change rewrites keeps the flip and tile rectangle its val
   it("keeps them on a line's fill", () => {
     const line = (fill: string) => `<a:ln w="12700">${fill}</a:ln>`
     const before = parts(shape(line(tiled)))
-    const written = writeTrait(before, { slide: "256", part, shape: "2" }, "line", { fill: { set: gradient } })
+    const written = writeTrait(before, { slide: "256", part, shape: "2" }, "border", { fill: { set: gradient } })
     expect(text(written)).toBe(text(parts(shape(line(kept)))))
   })
 

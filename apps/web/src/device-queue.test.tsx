@@ -104,15 +104,15 @@ function widthCode(edit: unknown): number {
   throw new Error(`not a width ${JSON.stringify(edit)}`)
 }
 
-function lineWidth(patch: ElementPatch | undefined): unknown {
-  return (patch as { readonly line?: { readonly width?: unknown } } | undefined)?.line?.width
+function borderWidth(patch: ElementPatch | undefined): unknown {
+  return patch?.border?.width
 }
 
 function shownWidth(register: Register | null): number {
   if (register === null) return 1
   if (elementGone(register, node)) return 0
   const body = register.elements[node]
-  return widthCode(body === undefined ? undefined : lineWidth(landedPatch(body, "text")))
+  return widthCode(body === undefined ? undefined : borderWidth(landedPatch(body, "text")))
 }
 
 function stepsCode(side: readonly UndoEntry[]): number {
@@ -120,7 +120,7 @@ function stepsCode(side: readonly UndoEntry[]): number {
     const { undoable } = entry
     const [step, ...rest] = "steps" in undoable ? undoable.steps : []
     if (step === undefined || rest.length > 0 || step.node !== node) throw new Error("not a width step")
-    return code * 100 + widthCode(lineWidth(step.before)) * 10 + widthCode(lineWidth(step.after))
+    return code * 100 + widthCode(borderWidth(step.before)) * 10 + widthCode(borderWidth(step.after))
   }, 0)
 }
 
@@ -239,7 +239,7 @@ async function queueDeck() {
     settle,
     setPending: () => undefined,
   })
-  const widthChange = (code: number): SetChange => ({ target: { node }, line: { width: widths[code] } }) as SetChange
+  const widthChange = (code: number): SetChange => ({ target: { node }, border: { width: widths[code] } }) as SetChange
   async function clicked(click: () => void, direction: "undo" | "redo" | null) {
     await act(async () => {
       click()
@@ -339,10 +339,10 @@ async function queueDeck() {
     const landed = stored.register.elements[node]?.landed ?? []
     const list = hooks().undo.undoList.current
     return {
-      pending: pending.map((row) => (row.v === undefined ? -1 : widthCode(lineWidth(row.patch)))).join(""),
+      pending: pending.map((row) => (row.v === undefined ? -1 : widthCode(borderWidth(row.patch)))).join(""),
       sealed: pending.filter((row) => row.once !== undefined).length,
       wire: wire === null ? "none" : wire.answer === undefined ? "sent" : wire.answer.ok ? "applied" : "refused",
-      onServer: landed.map((row) => (row.v === undefined ? -1 : widthCode(lineWidth(row.patch)))).join(""),
+      onServer: landed.map((row) => (row.v === undefined ? -1 : widthCode(borderWidth(row.patch)))).join(""),
       gone: elementGone(stored.register, node),
       device: shownWidth(device.register),
       aside,

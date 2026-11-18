@@ -10,6 +10,7 @@ import { readRegister, readRow } from "./stored.js"
 
 const fillsFormat = 57
 const imageFormat = 63
+const borderFormat = 64
 
 function readDeck(): Register {
   const read = readRegister(written.register)
@@ -34,10 +35,10 @@ describe("a deck a format 53 build saved", () => {
     expect(patches(register, "382.3")).toEqual([{ v: fillsFormat, patch: { fills: { p0: "inherit" } } }])
     expect(patches(register, "382.5")).toEqual([
       {
-        v: fillsFormat,
+        v: borderFormat,
         patch: {
           fills: { alpha: { set: 40_000 } },
-          line: { alpha: { set: 40_000 } },
+          border: { alpha: { set: 40_000 } },
           text: { alpha: { set: 40_000 } },
         },
       },
@@ -90,7 +91,7 @@ describe("what a format 53 device kept", () => {
     })
     expect(rows.map((row) => Object.keys(row.patch))).toEqual([
       ["fills"],
-      ["fills", "line", "text"],
+      ["fills", "border", "text"],
       ["fills"],
       ["fills"],
       ["fills"],

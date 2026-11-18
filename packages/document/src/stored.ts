@@ -11,6 +11,7 @@ import {
   type SlideId,
 } from "./element-id.js"
 import { format, formatOf, newerFormat, converted, type Conversion, type StoredRead } from "./format.js"
+import { borderFormat, borderRegister, borderRow } from "./border-conversion.js"
 import { fillsFormat, fillsRegister, fillsRow, imageFormat, imageRow } from "./fills-conversion.js"
 import { onlyKeys, record } from "./plain-object.js"
 import { formatOne, readPatch, type Row, type ValueHolder } from "./row.js"
@@ -104,12 +105,14 @@ export const conversions: {
     { introduced: 2, convert: formatOneBox },
     { introduced: fillsFormat, convert: fillsRow },
     { introduced: imageFormat, convert: imageRow },
+    { introduced: borderFormat, convert: borderRow },
   ],
   edit: [{ introduced: fillRowFormat, convert: slideBackground }],
   register: [
     { introduced: 2, convert: rootShape },
     { introduced: 2, convert: slideOrder },
     { introduced: fillsFormat, convert: fillsRegister },
+    { introduced: borderFormat, convert: borderRegister },
   ],
   page: pageConversions,
 }

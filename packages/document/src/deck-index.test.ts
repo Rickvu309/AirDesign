@@ -152,7 +152,7 @@ describe("index format", () => {
     kept: ["geometry"],
     placed: { x: 1, y: 2, cx: 3, cy: 4 },
   } as const
-  const pictured = { ...second, role: "picture", design: { "line.width": [1, "style"] } } as const
+  const pictured = { ...second, role: "picture", design: { "border.width": [1, "style"] } } as const
   const resent = (offset: number, element: object, at = format): IndexPage => ({
     ...page,
     format: at,

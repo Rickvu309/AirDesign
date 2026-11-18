@@ -56,8 +56,8 @@
     {
       "file": "packages/document/src/traits.ts",
       "names": ["kindTraits"],
-      "digest": "75ae24dcbcb2",
-      "blob": "8ac7345482b22303a60f84974eb154390bb3793e"
+      "digest": "218eda05c05a",
+      "blob": "f2cba9aeb37ecc5dc4b03460ecb3fefe7df1b21a"
     },
     {
       "file": "packages/document/src/element-takes.ts",

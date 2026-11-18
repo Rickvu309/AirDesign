@@ -112,8 +112,8 @@ describe("readSetChange reads the agent form into a change in stored units", () 
     expect(refused({ fills: { left: 1 } })).toEqual({ ok: false, refusal: "field", field: "fills.left" })
     expect(refused({ fills: { source: "rocketship" } })).toEqual({ ok: false, refusal: "field", field: "fills.source" })
     expect(refused({ fills: { source: "Rocket" } })).toEqual({ ok: false, refusal: "field", field: "fills.source" })
-    expect(refused({ line: { width: 1585 } })).toEqual({ ok: false, refusal: "field", field: "line.width" })
-    expect(refused({ line: { dash: "dotted" } })).toEqual({ ok: false, refusal: "field", field: "line.dash" })
+    expect(refused({ border: { width: 1585 } })).toEqual({ ok: false, refusal: "field", field: "border.width" })
+    expect(refused({ border: { dash: "dotted" } })).toEqual({ ok: false, refusal: "field", field: "border.dash" })
     expect(refused({ box: {} })).toEqual({ ok: false, refusal: "field", field: "box" })
     for (const opacity of [101, -1, "60", null, true])
       expect(refused({ opacity })).toEqual({ ok: false, refusal: "field", field: "opacity" })
@@ -288,7 +288,7 @@ describe("readAddChange reads a new shape on one slide", () => {
     })
     expect(readAddChange({ ...add, kind: "chart" })).toEqual({ ok: false, refusal: "field", field: "kind" })
     expect(readAddChange({ ...add, slide: "258.2" })).toEqual({ ok: false, refusal: "field", field: "slide" })
-    expect(readAddChange({ ...add, line: { width: 1 } })).toEqual({ ok: false, refusal: "field", field: "line" })
+    expect(readAddChange({ ...add, border: { width: 1 } })).toEqual({ ok: false, refusal: "field", field: "border" })
     expect(readAddChange({ ...add, box: { x: 1, y: 1, w: 1, h: 1, rot: 90 } })).toEqual({
       ok: false,
       refusal: "field",

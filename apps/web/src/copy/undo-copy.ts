@@ -30,7 +30,6 @@ export type UndoName =
   | "theme-font"
   | "text-style"
   | "fill"
-  | "line"
   | "effects"
   | "text-box"
   | "shape"
@@ -87,7 +86,6 @@ export const undoCopy = {
     fill: "Undo fill",
     "cell-fill": "Undo cell fill",
     border: "Undo border",
-    line: "Undo line",
     effects: "Undo effects",
     "text-box": "Undo text box",
     shape: "Undo shape",
@@ -139,7 +137,6 @@ export const undoCopy = {
     fill: "Redo fill",
     "cell-fill": "Redo cell fill",
     border: "Redo border",
-    line: "Redo line",
     effects: "Redo effects",
     "text-box": "Redo text box",
     shape: "Redo shape",

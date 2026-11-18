@@ -42,7 +42,7 @@ it("reads a shape whose fill, line, shadow and text colour come from its theme s
         },
         source: "style",
       },
-      "line.fill": {
+      "border.fill": {
         value: {
           color: {
             scheme: "accent1",
@@ -54,7 +54,7 @@ it("reads a shape whose fill, line, shadow and text colour come from its theme s
         },
         source: "style",
       },
-      "line.width": { value: 9525, source: "style" },
+      "border.width": { value: 9525, source: "style" },
       "effects.shadow": {
         value: {
           blur: 40_000,
@@ -93,8 +93,8 @@ it("names each placeholder's role and says which of its layout or master shows e
   expect(traits.elements.get(elementId("1188.5"))).toEqual({
     reads: {
       geometry: { value: "line" },
-      "line.fill": { value: { color: { scheme: "tx1" } } },
-      "line.width": { value: 28_575 },
+      "border.fill": { value: { color: { scheme: "tx1" } } },
+      "border.width": { value: 28_575 },
     },
     kept: [],
   })

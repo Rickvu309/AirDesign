@@ -44,7 +44,7 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
     fillCopy.box,
     textCopy.paragraphSpacing,
     boxCopy.section,
-    "Line",
+    designCopy.border,
     effectsCopy.section,
     bodyCopy.section,
     geometryCopy.shape,
@@ -55,7 +55,7 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
   await expect(fold(panel, effectsCopy.section)).toHaveAttribute("aria-expanded", "false")
   await expect(panel.getByRole("group", { name: "Shadow", exact: true })).toHaveCount(0)
 
-  await fold(panel, "Line").focus()
+  await fold(panel, designCopy.border).focus()
   await page.keyboard.press("Tab")
   await expect(fold(panel, effectsCopy.section)).toBeFocused()
   await page.keyboard.press("Enter")
@@ -84,7 +84,6 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
     designCopy.shadow,
     selectionColorsCopy.section,
     geometryCopy.shape,
-    "Line",
     effectsCopy.section,
     boxCopy.section,
     "Name and alt text",

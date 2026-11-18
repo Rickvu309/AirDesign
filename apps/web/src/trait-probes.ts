@@ -18,7 +18,7 @@ import {
   shownEffects,
   shownFill,
   shownGeometry,
-  shownLine,
+  shownBorder,
   shownTurn,
   slideTheme,
 } from "@airdesign/pptx"
@@ -26,7 +26,7 @@ import { element, type At, type Parts, type Probe } from "./parity-probe"
 import { identityProbe, imageProbes } from "./picture-probes"
 import { themeProbe } from "./theme-probe"
 
-const lineOpening = {
+const borderOpening = {
   fill: "opening",
   width: "opening",
   dash: "opening",
@@ -175,52 +175,52 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
       ...imageProbes,
     },
   },
-  line: {
+  border: {
     deck: "census-updating-spm.pptx",
     kind: "connector",
     node: "324.26",
-    opening: () => ({ v: format, patch: { line: lineOpening } }),
-    edit: (_, field, value) => ({ v: format, patch: { line: { [field]: { set: value } } } }),
+    opening: () => ({ v: format, patch: { border: borderOpening } }),
+    edit: (_, field, value) => ({ v: format, patch: { border: { [field]: { set: value } } } }),
     fields: {
       fill: {
-        file: (parts, at) => shownLine(parts, at)?.fill.value,
+        file: (parts, at) => shownBorder(parts, at)?.fill.value,
         shows: (value) => value,
-        inherited: (parts, at) => shownLine(parts, at)?.fill.own === false,
+        inherited: (parts, at) => shownBorder(parts, at)?.fill.own === false,
       },
       width: {
-        file: (parts, at) => shownLine(parts, at)?.width.value,
+        file: (parts, at) => shownBorder(parts, at)?.width.value,
         shows: (value) => value,
-        inherited: (parts, at) => shownLine(parts, at)?.width.own === false,
+        inherited: (parts, at) => shownBorder(parts, at)?.width.own === false,
       },
       dash: {
-        file: (parts, at) => shownLine(parts, at)?.dash.value,
+        file: (parts, at) => shownBorder(parts, at)?.dash.value,
         shows: (value) => value,
-        inherited: (parts, at) => shownLine(parts, at)?.dash.own === false,
+        inherited: (parts, at) => shownBorder(parts, at)?.dash.own === false,
       },
       cap: {
-        file: (parts, at) => shownLine(parts, at)?.cap.value,
+        file: (parts, at) => shownBorder(parts, at)?.cap.value,
         shows: (value) => value,
-        inherited: (parts, at) => shownLine(parts, at)?.cap.own === false,
+        inherited: (parts, at) => shownBorder(parts, at)?.cap.own === false,
       },
       compound: {
-        file: (parts, at) => shownLine(parts, at)?.compound.value,
+        file: (parts, at) => shownBorder(parts, at)?.compound.value,
         shows: (value) => value,
-        inherited: (parts, at) => shownLine(parts, at)?.compound.own === false,
+        inherited: (parts, at) => shownBorder(parts, at)?.compound.own === false,
       },
       join: {
-        file: (parts, at) => shownLine(parts, at)?.join.value,
+        file: (parts, at) => shownBorder(parts, at)?.join.value,
         shows: (value) => value,
-        inherited: (parts, at) => shownLine(parts, at)?.join.own === false,
+        inherited: (parts, at) => shownBorder(parts, at)?.join.own === false,
       },
       head: {
-        file: (parts, at) => shownLine(parts, at)?.head.value,
+        file: (parts, at) => shownBorder(parts, at)?.head.value,
         shows: (value) => value,
-        inherited: (parts, at) => shownLine(parts, at)?.head.own === false,
+        inherited: (parts, at) => shownBorder(parts, at)?.head.own === false,
       },
       tail: {
-        file: (parts, at) => shownLine(parts, at)?.tail.value,
+        file: (parts, at) => shownBorder(parts, at)?.tail.value,
         shows: (value) => value,
-        inherited: (parts, at) => shownLine(parts, at)?.tail.own === false,
+        inherited: (parts, at) => shownBorder(parts, at)?.tail.own === false,
       },
     },
   },

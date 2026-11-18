@@ -94,7 +94,7 @@ describe("an agent builds a diagram in one change", () => {
       end: { set: { shape: { node: node(10), site: 1 } } },
     })
     expect(patchOf(deck.register, 13).connection?.end).toEqual({ set: { shape: { node: node(11), site: 1 } } })
-    expect(patchOf(deck.register, 12).line).toMatchObject({
+    expect(patchOf(deck.register, 12).border).toMatchObject({
       fill: { set: { solid: { scheme: "accent1" } } },
       width: { set: 25_400 },
       tail: { set: { type: "triangle", width: "med", length: "med" } },

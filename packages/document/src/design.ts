@@ -25,11 +25,11 @@ export type Source = (typeof sources)[number]
 export const designKeys = [
   "geometry",
   "fills",
-  "line.width",
-  "line.fill",
-  "line.dash",
-  "line.head",
-  "line.tail",
+  "border.width",
+  "border.fill",
+  "border.dash",
+  "border.head",
+  "border.tail",
   "effects.shadow",
   "effects.glow",
   "effects.softEdge",
@@ -92,11 +92,11 @@ export type BoundRead = { readonly node: string; readonly site: number }
 export type TraitReads = {
   readonly geometry?: Read<string>
   readonly fills?: Read<FillRead>
-  readonly "line.width"?: Read<number>
-  readonly "line.fill"?: Read<FillRead>
-  readonly "line.dash"?: Read<string>
-  readonly "line.head"?: Read<string>
-  readonly "line.tail"?: Read<string>
+  readonly "border.width"?: Read<number>
+  readonly "border.fill"?: Read<FillRead>
+  readonly "border.dash"?: Read<string>
+  readonly "border.head"?: Read<string>
+  readonly "border.tail"?: Read<string>
   readonly "effects.shadow"?: Read<ShadowRead>
   readonly "effects.glow"?: Read<GlowRead>
   readonly "effects.softEdge"?: Read<number>

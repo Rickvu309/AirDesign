@@ -54,7 +54,7 @@ export function ChoiceControl(props: ControlProps) {
   const { control, onChange } = props
   const label = useId()
   const options = control.desc.kind === "choice" ? control.desc.options : []
-  const arrow = control.trait === "line" && /^(head|tail)\./.test(control.field)
+  const arrow = control.trait === "border" && /^(head|tail)\./.test(control.field)
   const look = control.look
   const layout = look.form
   return (

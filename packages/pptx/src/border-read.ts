@@ -2,10 +2,10 @@ import {
   arrowheads,
   arrowSizes,
   dashPresets,
-  lineCaps,
-  lineCompounds,
-  lineJoins,
-  widestLine,
+  borderCaps,
+  borderCompounds,
+  borderJoins,
+  widestBorder,
   type Color,
   type FieldName,
   type FieldValue,
@@ -17,19 +17,19 @@ import { linkedPart } from "./notes-part.js"
 import { paintAttribute } from "./paint-color.js"
 import { ownersOf, propertiesOf, sheetOf, stylesOf } from "./trait-read.js"
 
-export type LineField = Exclude<FieldName<"line">, "alpha">
+export type BorderField = Exclude<FieldName<"border">, "alpha">
 
-export type ShownLine = {
-  readonly [F in LineField]: { readonly value: FieldValue<"line", F> | null; readonly own: boolean }
+export type ShownBorder = {
+  readonly [F in BorderField]: { readonly value: FieldValue<"border", F> | null; readonly own: boolean }
 }
 
-export type LineAt = { readonly part: string; readonly shape: string }
+export type BorderAt = { readonly part: string; readonly shape: string }
 
 type Level = { readonly line: Held; readonly placed: Color | null; readonly own: boolean }
 
-type Arrow = FieldValue<"line", "head">
+type Arrow = FieldValue<"border", "head">
 
-function levelsOf(parts: ReadonlyMap<string, Uint8Array>, at: LineAt): readonly Level[] | null {
+function levelsOf(parts: ReadonlyMap<string, Uint8Array>, at: BorderAt): readonly Level[] | null {
   const sheet = sheetOf(parts, at.part)
   const item = sheet?.drawn.find((each) => each.shape === at.shape)
   if (sheet === null || item === undefined) return null
@@ -72,24 +72,24 @@ function attribute<const T extends string>(name: string, options: readonly T[]):
 const width: Reader<number> = ({ line }) => {
   if (paintAttribute(line.element, "w") === null) return undefined
   const value = whole(line.element, "w")
-  return value === undefined || value < 0 || value > widestLine ? null : value
+  return value === undefined || value < 0 || value > widestBorder ? null : value
 }
 
-const fill: Reader<FieldValue<"line", "fill">> = ({ line, placed }) => {
+const fill: Reader<FieldValue<"border", "fill">> = ({ line, placed }) => {
   const held = fillIn(line)
   if (held === undefined) return undefined
   const value = fillValueOf(held, placed)
   return value === null || "group" in value || "image" in value ? null : value
 }
 
-const dash: Reader<FieldValue<"line", "dash">> = ({ line }) => {
+const dash: Reader<FieldValue<"border", "dash">> = ({ line }) => {
   const preset = child(line, "a:prstDash")
   if (preset !== undefined) return oneOf(dashPresets, paintAttribute(preset.element, "val") ?? "solid")
   return child(line, "a:custDash") === undefined ? undefined : null
 }
 
-const join: Reader<FieldValue<"line", "join">> = ({ line }) => {
-  const found = lineJoins.find((kind) => child(line, `a:${kind}`) !== undefined)
+const join: Reader<FieldValue<"border", "join">> = ({ line }) => {
+  const found = borderJoins.find((kind) => child(line, `a:${kind}`) !== undefined)
   return found ?? undefined
 }
 
@@ -108,15 +108,15 @@ function arrowOf(levels: readonly Level[], tag: "a:headEnd" | "a:tailEnd") {
   return { value, own: levels[0]?.own === true && child(levels[0].line, tag) !== undefined }
 }
 
-export function shownLine(parts: ReadonlyMap<string, Uint8Array>, at: LineAt): ShownLine | null {
+export function shownBorder(parts: ReadonlyMap<string, Uint8Array>, at: BorderAt): ShownBorder | null {
   const levels = levelsOf(parts, at)
   if (levels === null) return null
   return {
     width: first(levels, width, null),
     fill: first(levels, fill, { none: true }),
     dash: first(levels, dash, "solid"),
-    cap: first(levels, attribute("cap", lineCaps), null),
-    compound: first(levels, attribute("cmpd", lineCompounds), "sng"),
+    cap: first(levels, attribute("cap", borderCaps), null),
+    compound: first(levels, attribute("cmpd", borderCompounds), "sng"),
     join: first(levels, join, null),
     head: arrowOf(levels, "a:headEnd"),
     tail: arrowOf(levels, "a:tailEnd"),

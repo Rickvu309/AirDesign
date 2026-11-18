@@ -1,5 +1,6 @@
 import type { Kind } from "./kinds.js"
 import { body } from "./trait-body.js"
+import { border } from "./trait-border.js"
 import { box } from "./trait-box.js"
 import { connection } from "./trait-connection.js"
 import { effects } from "./trait-effects.js"
@@ -7,7 +8,6 @@ import { fills } from "./trait-fills.js"
 import { geometry } from "./trait-geometry.js"
 import { identity } from "./trait-identity.js"
 import { link } from "./trait-link.js"
-import { line } from "./trait-line.js"
 import { notes } from "./trait-notes.js"
 import { show } from "./trait-show.js"
 import { table } from "./trait-table.js"
@@ -23,7 +23,7 @@ export const traits = {
   box,
   geometry,
   fills,
-  line,
+  border,
   effects,
   body,
   text,
@@ -74,8 +74,8 @@ export const kindTraits = {
   section: [],
   slide: ["fills", "template", "show", "transition"],
   notes: ["notes"],
-  shape: ["identity", "box", "geometry", "fills", "line", "effects", "body", "text", "link"],
-  connector: ["identity", "box", "geometry", "line", "effects", "connection"],
+  shape: ["identity", "box", "geometry", "fills", "border", "effects", "body", "text", "link"],
+  connector: ["identity", "box", "geometry", "border", "effects", "connection"],
   group: ["identity", "box", "effects"],
   table: ["identity", "box", "table"],
   row: [],

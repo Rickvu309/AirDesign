@@ -2,7 +2,7 @@ import { namesAlpha, type Alpha, type FieldValue } from "@airdesign/document"
 import { alphaKept, colorsOf, fadedBytes, fadedFill, shownAlpha, type Faded } from "./alpha-codec.js"
 import { insertChild, type ChildOf } from "./child-order.js"
 import { spliceBytes, type ByteEdit } from "./element-span.js"
-import { shownLine, type LineField } from "./line-read.js"
+import { shownBorder, type BorderField } from "./border-read.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { isShapeTag, shapeById, shapeTags } from "./shape-tree.js"
@@ -12,7 +12,7 @@ import { whole, type ElementAt, type FieldXml, type PartCodec, type Parts, type 
 
 type LineChild = ChildOf<"a:ln">
 
-type Arrow = FieldValue<"line", "head">
+type Arrow = FieldValue<"border", "head">
 
 const empty = "<a:ln/>"
 const fillTags = ["a:noFill", "a:solidFill", "a:gradFill", "a:pattFill", "a:blipFill", "a:grpFill"]
@@ -21,18 +21,18 @@ const joinTags = ["a:round", "a:bevel", "a:miter"]
 const miterLimit = "800000"
 const fadedKinds = ["a:solidFill", "a:gradFill", "a:pattFill"]
 
-function lineChild(tags: readonly string[], tag: LineChild | null, element: string | null): Slot {
+function borderChild(tags: readonly string[], tag: LineChild | null, element: string | null): Slot {
   return childIn("a:ln", tags, tag, element)
 }
 
-function lineEdited(parts: Parts, at: ElementAt, slot: Slot): Parts {
+function borderEdited(parts: Parts, at: ElementAt, slot: Slot): Parts {
   const bytes = partBytes(parts, at.part)
   const { elements } = requireMarkup(bytes)
   const shape = shapeById(elements, at.shape)
-  if (!isShapeTag(shape.kind) || shapeTags[shape.kind].properties !== "p:spPr") throw new Error("line-shape")
+  if (!isShapeTag(shape.kind) || shapeTags[shape.kind].properties !== "p:spPr") throw new Error("border-shape")
   const properties = elements.filter((each) => each.parent === shape.index && each.kind === "p:spPr")
   const host = properties[0]
-  if (properties.length !== 1 || host === undefined) throw new Error("line-properties")
+  if (properties.length !== 1 || host === undefined) throw new Error("border-properties")
   const own = elements.find((each) => each.parent === host.index && each.kind === "a:ln")
   let edit: ByteEdit
   if (own !== undefined) {
@@ -57,30 +57,30 @@ function arrowXml(tag: "a:headEnd" | "a:tailEnd", arrow: Arrow): string {
   return `<${tag} type="${arrow.type}" w="${arrow.width}" len="${arrow.length}"/>`
 }
 
-function codec<F extends LineField>(
+function codec<F extends BorderField>(
   name: F,
-  write: (value: FieldValue<"line", F>) => Slot,
-): PartCodec<FieldValue<"line", F>> {
+  write: (value: FieldValue<"border", F>) => Slot,
+): PartCodec<FieldValue<"border", F>> {
   return {
-    read: (parts, at) => shownLine(parts, at)?.[name].value ?? null,
-    write: (parts, at, value) => lineEdited(parts, at, write(value)),
+    read: (parts, at) => shownBorder(parts, at)?.[name].value ?? null,
+    write: (parts, at, value) => borderEdited(parts, at, write(value)),
   }
 }
 
-function field<F extends LineField>(
+function field<F extends BorderField>(
   name: F,
-  write: (value: FieldValue<"line", F>) => Slot,
+  write: (value: FieldValue<"border", F>) => Slot,
   inherit: Slot,
-): FieldXml<FieldValue<"line", F>> {
-  return whole(codec(name, write), (parts, at) => lineEdited(parts, at, inherit))
+): FieldXml<FieldValue<"border", F>> {
+  return whole(codec(name, write), (parts, at) => borderEdited(parts, at, inherit))
 }
 
-function filled(value: FieldValue<"line", "fill">): Slot {
+function filled(value: FieldValue<"border", "fill">): Slot {
   return filledChild("a:ln", fillTags, value)
 }
 
-export function lineAlpha(parts: Parts, at: ElementAt): Faded {
-  const value = shownLine(parts, at)?.fill.value
+export function borderAlpha(parts: Parts, at: ElementAt): Faded {
+  const value = shownBorder(parts, at)?.fill.value
   return value == null ? null : shownAlpha(colorsOf(value))
 }
 
@@ -95,50 +95,50 @@ function fadedChild(alpha: Alpha): Slot {
   }
 }
 
-function fadedLine(parts: Parts, at: ElementAt, alpha: Alpha): Parts {
-  const shown = shownLine(parts, at)?.fill
+function fadedBorder(parts: Parts, at: ElementAt, alpha: Alpha): Parts {
+  const shown = shownBorder(parts, at)?.fill
   const value = shown?.value
   if (shown === undefined || value == null || colorsOf(value).length === 0) return parts
-  return lineEdited(parts, at, shown.own ? fadedChild(alpha) : filled(fadedFill(value, alpha)))
+  return borderEdited(parts, at, shown.own ? fadedChild(alpha) : filled(fadedFill(value, alpha)))
 }
 
-export const lineXml: TraitXml<"line"> = {
+export const borderXml: TraitXml<"border"> = {
   slot: null,
   fields: {
     width: field("width", (value) => withAttribute("w", String(value)), withAttribute("w", null)),
     fill: whole(
-      alphaKept(codec("fill", filled), lineAlpha, fadedLine, (value) => namesAlpha(colorsOf(value))),
-      (parts, at) => lineEdited(parts, at, lineChild(fillTags, null, null)),
+      alphaKept(codec("fill", filled), borderAlpha, fadedBorder, (value) => namesAlpha(colorsOf(value))),
+      (parts, at) => borderEdited(parts, at, borderChild(fillTags, null, null)),
     ),
     dash: field(
       "dash",
-      (value) => lineChild(dashTags, "a:prstDash", `<a:prstDash val="${value}"/>`),
-      lineChild(dashTags, null, null),
+      (value) => borderChild(dashTags, "a:prstDash", `<a:prstDash val="${value}"/>`),
+      borderChild(dashTags, null, null),
     ),
     cap: field("cap", (value) => withAttribute("cap", value), withAttribute("cap", null)),
     compound: field("compound", (value) => withAttribute("cmpd", value), withAttribute("cmpd", null)),
     join: field(
       "join",
       (value) =>
-        lineChild(joinTags, `a:${value}`, value === "miter" ? `<a:miter lim="${miterLimit}"/>` : `<a:${value}/>`),
-      lineChild(joinTags, null, null),
+        borderChild(joinTags, `a:${value}`, value === "miter" ? `<a:miter lim="${miterLimit}"/>` : `<a:${value}/>`),
+      borderChild(joinTags, null, null),
     ),
     head: field(
       "head",
-      (value) => lineChild(["a:headEnd"], "a:headEnd", arrowXml("a:headEnd", value)),
-      lineChild(["a:headEnd"], null, null),
+      (value) => borderChild(["a:headEnd"], "a:headEnd", arrowXml("a:headEnd", value)),
+      borderChild(["a:headEnd"], null, null),
     ),
     tail: field(
       "tail",
-      (value) => lineChild(["a:tailEnd"], "a:tailEnd", arrowXml("a:tailEnd", value)),
-      lineChild(["a:tailEnd"], null, null),
+      (value) => borderChild(["a:tailEnd"], "a:tailEnd", arrowXml("a:tailEnd", value)),
+      borderChild(["a:tailEnd"], null, null),
     ),
     alpha: whole({
       read: (parts, at) => {
-        const shown = lineAlpha(parts, at)
+        const shown = borderAlpha(parts, at)
         return shown === "mixed" ? null : shown
       },
-      write: fadedLine,
+      write: fadedBorder,
     }),
   },
 }

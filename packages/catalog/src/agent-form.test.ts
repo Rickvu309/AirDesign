@@ -53,8 +53,8 @@ it("turns an element's read into its role, a design in agent units with each sou
     role: "title",
     reads: {
       fills: { value: { color: { scheme: "accent1" } }, source: "style" },
-      "line.width": { value: 12_700, source: "style" },
-      "line.fill": {
+      "border.width": { value: 12_700, source: "style" },
+      "border.fill": {
         value: { color: { scheme: "accent1", transforms: [{ op: "shade", val: 50_000 }] } },
         source: "style",
       },
@@ -81,8 +81,8 @@ it("turns an element's read into its role, a design in agent units with each sou
     design: {
       geometry: ["roundRect"],
       fills: ["accent1", "style"],
-      "line.width": [1, "style"],
-      "line.fill": ["accent1 shade 50", "style"],
+      "border.width": [1, "style"],
+      "border.fill": ["accent1 shade 50", "style"],
       "effects.shadow": [`blur 4 distance 3 direction 90 #${black} alpha 35`, "style"],
       "text.size": [36, "master"],
       "text.color": ["tx1", "master"],
@@ -101,12 +101,12 @@ it("turns an element's read into its role, a design in agent units with each sou
 it("drops the last fields of a design that would not fit, so the index always takes it", () => {
   const long = { value: "A".repeat(150) }
   const read: ElementRead = {
-    reads: { geometry: long, "line.dash": long, "line.head": long, "text.font": long },
+    reads: { geometry: long, "border.dash": long, "border.head": long, "text.font": long },
     kept: [],
   }
   const { design } = designOf(read)
   expect(JSON.stringify(design).length).toBeLessThanOrEqual(designBytes)
-  expect(Object.keys(design ?? {})).toEqual(["geometry", "line.dash"])
+  expect(Object.keys(design ?? {})).toEqual(["geometry", "border.dash"])
   expect(readDesign(design)).toEqual(design)
 })
 
@@ -114,7 +114,7 @@ it("keeps an element's turn and flips when the rest of its design does not fit, 
   const long = { value: "A".repeat(150) }
   const reads = {
     geometry: long,
-    "line.dash": long,
+    "border.dash": long,
     "text.font": long,
     "box.rot": { value: 5_400_000 },
     "box.flipH": { value: true },
@@ -225,16 +225,16 @@ describe("foldDesign shows an element's opacity in the alpha of every colour its
   const faded = { set: 60_000 as Alpha }
   const design: Design = {
     fills: ["accent1", "style"],
-    "line.fill": ["accent1 shade 15", "style"],
-    "line.width": [1, "style"],
+    "border.fill": ["accent1 shade 15", "style"],
+    "border.width": [1, "style"],
     "text.color": ["tx1 alpha 35", "master"],
   }
 
   it("fades each colour, a gradient stop by stop, and leaves a pattern's line as it is", () => {
-    expect(foldDesign(design, { fills: { alpha: faded }, line: { alpha: faded }, text: { alpha: faded } })).toEqual({
+    expect(foldDesign(design, { fills: { alpha: faded }, border: { alpha: faded }, text: { alpha: faded } })).toEqual({
       fills: ["accent1 alpha 60"],
-      "line.fill": ["accent1 shade 15 alpha 60"],
-      "line.width": [1, "style"],
+      "border.fill": ["accent1 shade 15 alpha 60"],
+      "border.width": [1, "style"],
       "text.color": ["tx1 alpha 60"],
     })
     expect(foldDesign({ fills: [`gradient accent1, #${black} alpha 35`] }, { fills: { alpha: faded } })).toEqual({

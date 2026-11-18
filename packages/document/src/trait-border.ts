@@ -20,13 +20,13 @@ export const arrowheads = ["none", "triangle", "stealth", "diamond", "oval", "ar
 
 export const arrowSizes = ["sm", "med", "lg"] as const
 
-export const lineCaps = ["flat", "rnd", "sq"] as const
+export const borderCaps = ["flat", "rnd", "sq"] as const
 
-export const lineCompounds = ["sng", "dbl", "thickThin", "thinThick", "tri"] as const
+export const borderCompounds = ["sng", "dbl", "thickThin", "thinThick", "tri"] as const
 
-export const lineJoins = ["round", "bevel", "miter"] as const
+export const borderJoins = ["round", "bevel", "miter"] as const
 
-export const widestLine = 20_116_800
+export const widestBorder = 20_116_800
 
 const arrowSize = choice(arrowSizes)
 
@@ -34,16 +34,16 @@ const arrow = record({ type: choice(arrowheads), width: arrowSize, length: arrow
 
 const noInputs: NoInputs = {}
 
-export const line = trait(
+export const border = trait(
   "field",
-  { version: 2, shape: "db2c2c2c" },
+  { version: 3, shape: "db2c2c2c" },
   {
     fill: union(fillCases, "solid"),
-    width: sizeUpTo(widestLine),
+    width: sizeUpTo(widestBorder),
     dash: choice(dashPresets),
-    cap: choice(lineCaps),
-    compound: choice(lineCompounds),
-    join: choice(lineJoins),
+    cap: choice(borderCaps),
+    compound: choice(borderCompounds),
+    join: choice(borderJoins),
     head: arrow,
     tail: arrow,
     alpha: alphaOver("fill"),

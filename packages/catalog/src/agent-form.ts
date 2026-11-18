@@ -83,11 +83,11 @@ type Agent = { readonly [Key in DesignKey]: (read: NonNullable<TraitReads[Key]>[
 const agent: Agent = {
   geometry: (value) => value,
   fills: agentFill,
-  "line.width": (value) => tenths(value / emuPerPoint),
-  "line.fill": agentFill,
-  "line.dash": (value) => value,
-  "line.head": (value) => value,
-  "line.tail": (value) => value,
+  "border.width": (value) => tenths(value / emuPerPoint),
+  "border.fill": agentFill,
+  "border.dash": (value) => value,
+  "border.head": (value) => value,
+  "border.tail": (value) => value,
   "effects.shadow": agentShadow,
   "effects.glow": agentGlow,
   "effects.softEdge": (value) => tenths(value / emuPerPoint),
@@ -140,7 +140,7 @@ export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design
 
 type Fill = FieldValue<"fills", "p0">
 
-function agentFillValue(fill: Fill | FieldValue<"line", "fill">): string {
+function agentFillValue(fill: Fill | FieldValue<"border", "fill">): string {
   if ("none" in fill) return "none"
   if ("group" in fill) return "group"
   if ("image" in fill) return "image"
@@ -161,7 +161,7 @@ function folded<V>(
   return value === null ? rest : { ...rest, [key]: [value] }
 }
 
-type Arrow = FieldValue<"line", "head">
+type Arrow = FieldValue<"border", "head">
 
 const arrowShown = (arrow: Arrow) => (arrow.type === "none" ? null : arrow.type)
 
@@ -233,14 +233,14 @@ function altShown(alt: string): string {
 }
 
 export function foldDesign(design: Design | undefined, patch: ElementPatch): Design | undefined {
-  const line = patch.line
+  const border = patch.border
   const before = design ?? {}
   let next = folded(before, "fills", patch.fills?.p0, agentFillValue)
-  next = folded(next, "line.width", line?.width, (value) => tenths(value / emuPerPoint))
-  next = folded(next, "line.fill", line?.fill, agentFillValue)
-  next = folded(next, "line.dash", line?.dash, (value) => (value === "solid" ? null : value))
-  next = folded(next, "line.head", line?.head, arrowShown)
-  next = folded(next, "line.tail", line?.tail, arrowShown)
+  next = folded(next, "border.width", border?.width, (value) => tenths(value / emuPerPoint))
+  next = folded(next, "border.fill", border?.fill, agentFillValue)
+  next = folded(next, "border.dash", border?.dash, (value) => (value === "solid" ? null : value))
+  next = folded(next, "border.head", border?.head, arrowShown)
+  next = folded(next, "border.tail", border?.tail, arrowShown)
   next = folded(next, "geometry", patch.geometry?.shape, (value) => (value.preset === "rect" ? null : value.preset))
   next = folded(next, "box.rot", patch.box?.rot, (value) => (value === 0 ? null : tenths(value / anglePerDegree)))
   next = folded(next, "box.flipH", patch.box?.flipH, (value) => (value ? true : null))
@@ -261,7 +261,7 @@ export function foldDesign(design: Design | undefined, patch: ElementPatch): Des
   next = folded(next, "connection.start", patch.connection?.start, endShown)
   next = folded(next, "connection.end", patch.connection?.end, endShown)
   next = faded(next, before, "fills", patch.fills?.p0, patch.fills?.alpha)
-  next = faded(next, before, "line.fill", line?.fill, line?.alpha)
+  next = faded(next, before, "border.fill", border?.fill, border?.alpha)
   next = faded(next, before, "text.color", undefined, patch.text?.alpha)
   if (next === before) return design
   return Object.keys(next).length === 0 ? undefined : next

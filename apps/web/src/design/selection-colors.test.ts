@@ -17,7 +17,7 @@ const fields = {
     },
     own: true,
   },
-  "line.fill": { value: { solid: { rgb: "000000" } }, own: true },
+  "border.fill": { value: { solid: { rgb: "000000" } }, own: true },
   "effects.shadow": { value: { outer: { color: { rgb: "000000" }, blur: 100 } }, own: true },
 }
 
@@ -39,12 +39,12 @@ describe("selection colors", () => {
     expect(changes).toHaveLength(1)
     expect(changes[0]).toMatchObject({
       target: { node },
-      line: { fill: { solid: { rgb: "FF0000" } } },
+      border: { fill: { solid: { rgb: "FF0000" } } },
       effects: { shadow: { outer: { color: { rgb: "FF0000" }, blur: 100 } } },
       text: { color: { rgb: "FF0000", transforms: [{ op: "alpha", val: 50000 }] } },
     })
     expect(JSON.stringify(changes)).toContain('"FFFFFF"')
-    expect(fields["line.fill"].value.solid.rgb).toBe("000000")
+    expect(fields["border.fill"].value.solid.rgb).toBe("000000")
   })
   it("replaces matching rich text runs without changing other run colors or formatting", () => {
     const value = [
@@ -152,7 +152,7 @@ describe("selection colors", () => {
         node,
         fields: {
           "fills.p0": { value: { solid: { scheme: "accent1" } }, own: false },
-          "line.fill": fields["line.fill"],
+          "border.fill": fields["border.fill"],
         },
       },
     ]

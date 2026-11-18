@@ -1,5 +1,6 @@
-import { lineCopy } from "../../apps/web/src/copy/line-copy"
-import { lineWords } from "../../apps/web/src/copy/line-copy"
+import { appearanceCopy } from "../../apps/web/src/copy/appearance-copy"
+import { borderCopy, borderWords } from "../../apps/web/src/copy/border-copy"
+import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { actualSize } from "./paint-scale"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
@@ -8,11 +9,12 @@ import { exportFromDialog } from "./export-dialog"
 import { openDeck, settled, unfold } from "./design-panel"
 import { partsOf, shapeAt } from "./shape-fills"
 import { fillWords } from "../../apps/web/src/copy/fill-copy.ts"
+import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 
-const exportName = "exported-line-style.pptx"
+const exportName = "exported-border-style.pptx"
 const judged = join(process.cwd(), "tests/browser", exportName)
 const slidePart = "ppt/slides/slide1.xml"
-const rectangleLine =
+const rectangleBorder =
   '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:ln w="76200"><a:prstDash val="lgDash"/></a:ln></p:spPr><p:style><a:lnRef idx="2"><a:schemeClr val="accent1"><a:shade val="15000"/></a:schemeClr></a:lnRef>'
 const connectorLine =
   '<a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln w="28575"><a:tailEnd type="triangle" w="lg" len="med"/></a:ln></p:spPr><p:style><a:lnRef idx="1">'
@@ -34,14 +36,12 @@ function stroked(shape: Locator): Promise<Stroke> {
   })
 }
 
-function lineSection(panel: Locator): Locator {
-  return panel
-    .locator("section")
-    .filter({ has: panel.page().getByRole("heading", { name: lineCopy.section, exact: true }) })
+function borderSection(panel: Locator): Locator {
+  return panel.locator(`[data-design-section="${appearanceCopy.border}"]`)
 }
 
 async function design(page: Page): Promise<Locator> {
-  const button = page.getByRole("button", { name: "Design", exact: true })
+  const button = page.getByRole("button", { name: transitionCopy.design, exact: true })
   if ((await button.getAttribute("aria-pressed")) !== "true") await button.click()
   const panel = page.locator("[data-design-element]")
   return panel
@@ -50,10 +50,9 @@ async function design(page: Page): Promise<Locator> {
 async function pickShape(page: Page, shape: Locator): Promise<Locator> {
   const panel = await design(page)
   await shape.click({ position: { x: 4, y: 4 } })
-  await unfold(panel, lineCopy.section)
-  await expect(lineSection(panel)).toBeVisible()
-  await unfold(panel, lineCopy.section)
-  return lineSection(panel)
+  await unfold(panel, appearanceCopy.border)
+  await expect(borderSection(panel)).toBeVisible()
+  return borderSection(panel)
 }
 
 async function pickConnector(page: Page, connector: Locator): Promise<Locator> {
@@ -62,8 +61,8 @@ async function pickConnector(page: Page, connector: Locator): Promise<Locator> {
   if (box === null) throw new Error("no connector")
   await page.mouse.click(box.x + box.width / 2, box.y)
   await expect(panel).toHaveAttribute("data-design-element", /\.6$/)
-  await unfold(panel, lineCopy.section)
-  return lineSection(panel)
+  await unfold(panel, appearanceCopy.border)
+  return borderSection(panel)
 }
 
 async function choose(section: Locator, label: string, option: string) {
@@ -71,7 +70,7 @@ async function choose(section: Locator, label: string, option: string) {
   await section.page().getByRole("option", { name: option, exact: true }).click()
 }
 
-test("a person widens and dashes a line that comes from its style and puts an arrowhead on a connector, and the line survives Undo, a reload, the export and a new import @export", async ({
+test("a person widens and dashes a border that comes from its style and puts an arrowhead on a line, all in the one Border section, and the border survives Undo, a reload, the export and a new import @export", async ({
   page,
 }, testInfo) => {
   await rm(judged, { force: true })
@@ -80,43 +79,51 @@ test("a person widens and dashes a line that comes from its style and puts an ar
   const rectangle = shapeAt(page, "4")
   const connector = shapeAt(page, "6")
   const before = await stroked(rectangle)
-  const line = await pickShape(page, rectangle)
-  const width = line.getByRole("textbox", { name: "Line width", exact: true })
+  const border = await pickShape(page, rectangle)
+  await expect(
+    border.getByRole("group", { name: appearanceCopy.border, exact: true }).getByRole("button", {
+      name: borderWords["border.solid"],
+      exact: true,
+    }),
+  ).toHaveAttribute("aria-pressed", "true")
+  const width = border.getByRole("textbox", { name: borderCopy.width, exact: true })
   await expect(width).toHaveValue("1")
   expect(
-    await line
-      .getByRole("group", { name: lineCopy.section, exact: true })
+    await border
+      .getByRole("group", { name: borderCopy.color, exact: true })
       .getByRole("button")
       .evaluateAll((buttons) => buttons.map((button) => button.getAttribute("title"))),
-  ).toEqual(["None", fillWords.solid, "Gradient", "Pattern"])
-  await expect(line.getByRole("combobox", { name: "Dash", exact: true })).toHaveText(/^Solid/)
-  await line.getByRole("combobox", { name: "Cap", exact: true }).click()
-  await expect(page.getByRole("option", { name: "Flat", exact: true })).toBeVisible()
+  ).toEqual([fillWords.none, fillWords.solid, fillWords.gradient, fillWords.pattern])
+  await expect(border.getByRole("combobox", { name: borderCopy.dash, exact: true })).toHaveText(/^Solid/)
+  await border.getByRole("combobox", { name: borderCopy.cap, exact: true }).click()
+  await expect(page.getByRole("option", { name: borderWords.flat, exact: true })).toBeVisible()
   await page.keyboard.press("Escape")
   await width.fill("6")
   await width.press("Enter")
   await expect.poll(async () => (await stroked(rectangle)).width).not.toBe(before.width)
-  await choose(line, "Dash", "Long dash")
+  await choose(border, borderCopy.dash, borderWords.lgDash)
   await expect.poll(async () => (await stroked(rectangle)).dash).not.toBeNull()
-  await expect(line.getByRole("combobox", { name: "Dash", exact: true })).toHaveText(/^Long dash/)
+  await expect(border.getByRole("combobox", { name: borderCopy.dash, exact: true })).toHaveText(/^Long dash/)
   const styled = await stroked(rectangle)
 
   const ends = await pickConnector(page, connector)
-  const tail = ends.getByRole("group", { name: "End arrow", exact: true })
-  await expect(tail.getByText("End arrow", { exact: true })).toBeVisible()
-  await expect(tail.getByRole("combobox", { name: "End arrowhead", exact: true })).toHaveText(/^None/)
-  await choose(tail, "End arrowhead", "Triangle")
+  const tail = ends.getByRole("group", { name: borderCopy.tail, exact: true })
+  await expect(tail.getByText(borderCopy.tail, { exact: true })).toBeVisible()
+  await expect(tail.getByRole("combobox", { name: borderWords["tail.type"], exact: true })).toHaveText(
+    new RegExp(`^${fillWords.none}`),
+  )
+  await choose(tail, borderWords["tail.type"], borderWords.triangle)
   await expect.poll(async () => (await stroked(connector)).tail).toMatch(/url\(#.+-tail\)/)
-  const large = tail.getByRole("combobox", { name: lineWords["tail.width"], exact: true })
-  await choose(tail, lineWords["tail.width"], "Large")
-  await expect(large).toHaveText(/^Large/)
-  await page.getByRole("button", { name: "Undo line", exact: true }).click()
-  await page.getByRole("button", { name: "Undo line", exact: true }).click()
+  const large = tail.getByRole("combobox", { name: borderWords["tail.width"], exact: true })
+  await choose(tail, borderWords["tail.width"], borderWords.lg)
+  await expect(large).toHaveText(new RegExp(`^${borderWords.lg}`))
+  await page.getByRole("button", { name: undoCopy.undoNamed.border, exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.undoNamed.border, exact: true }).click()
   await expect.poll(async () => (await stroked(connector)).tail).toBeNull()
-  await expect(large).not.toHaveText(/^Large/)
-  await page.getByRole("button", { name: "Redo line", exact: true }).click()
-  await page.getByRole("button", { name: "Redo line", exact: true }).click()
-  await expect(large).toHaveText(/^Large/)
+  await expect(large).not.toHaveText(new RegExp(`^${borderWords.lg}`))
+  await page.getByRole("button", { name: undoCopy.redoNamed.border, exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.redoNamed.border, exact: true }).click()
+  await expect(large).toHaveText(new RegExp(`^${borderWords.lg}`))
   await expect.poll(async () => (await stroked(connector)).tail).toMatch(/url\(#.+-tail\)/)
 
   await page.reload()
@@ -132,7 +139,7 @@ test("a person widens and dashes a line that comes from its style and puts an ar
   const original = await partsOf(join(process.cwd(), "scripts/pptx-fixtures/shapes-added.pptx"))
   const saved = await partsOf(file)
   const slide = saved.get(slidePart)?.toString("utf8") ?? ""
-  expect(slide).toContain(rectangleLine)
+  expect(slide).toContain(rectangleBorder)
   expect(slide).toContain(connectorLine)
   const changed = [...original].filter(([name, bytes]) => saved.get(name)?.equals(bytes) !== true)
   expect(changed.map(([name]) => name)).toEqual([slidePart])

@@ -24,6 +24,7 @@ import {
 import { indexPackage, paintReader, readPackage, readSlides } from "@airdesign/pptx"
 import { fillSlotFields } from "./design/fill-slots"
 import { panelOf, shownPlace } from "./design/panel"
+import { sectionInMode } from "./design/panel-order"
 
 export type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -180,7 +181,7 @@ function panelControl(register: Register, at: At, trait: TraitName, field: strin
     view === undefined
       ? undefined
       : panelOf(view, { reads: {}, moves: true, ...(fields === undefined ? {} : { fields }) }).sections
-  const controls = sections?.flatMap((section) => section.strips.flat())
+  const controls = sections?.flatMap((section) => sectionInMode(section, "design").strips.flat())
   if (trait === "text" && (field === "fill" || field === "color"))
     return controls?.find(
       (each) =>

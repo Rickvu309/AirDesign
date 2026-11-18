@@ -87,7 +87,7 @@ function imagePatch(raw: unknown): unknown {
   return renamedTraits(patch, ["image", "crop"], moved)
 }
 
-function stamped(raw: Loose, patch: unknown, format: number): unknown {
+export function stamped(raw: Loose, patch: unknown, format: number): unknown {
   if (patch === null) return null
   return patch === raw.patch ? raw : { ...raw, v: format, patch }
 }
@@ -100,7 +100,7 @@ export function imageRow(raw: Loose): unknown {
   return stamped(raw, imagePatch(raw.patch), imageFormat)
 }
 
-type Renames = Readonly<Record<string, string>>
+export type Renames = Readonly<Record<string, string>>
 
 const fillsKeys: Renames = { fill: "fills" }
 
@@ -134,7 +134,7 @@ function renamedKept(raw: unknown, renames: Renames): unknown {
   return raw.map((key) => (named(key) ? renames[key] : key))
 }
 
-type Stage = {
+export type Stage = {
   readonly keys: Renames
   readonly patch: (raw: unknown) => unknown
   readonly kind: (raw: unknown) => unknown
@@ -157,7 +157,7 @@ const imageStage: Stage = {
   opening: pictureOpening,
 }
 
-function stagedElement(raw: unknown, stage: Stage): unknown {
+export function stagedElement(raw: unknown, stage: Stage): unknown {
   const element = record(raw)
   if (element === null) return raw
   const kind = stage.kind(element.kind)
@@ -197,7 +197,7 @@ function stagedSlide(raw: unknown, stage: Stage): unknown {
   return layout === slide.layout ? raw : { ...slide, layout }
 }
 
-function stagedIndex(raw: Loose, stage: Stage): Loose | null {
+export function stagedIndex(raw: Loose, stage: Stage): Loose | null {
   const elements = stagedList(raw.elements, (element) => stagedElement(element, stage))
   const slides = stagedList(raw.slides, (slide) => stagedSlide(slide, stage))
   const held = record(raw.next)
@@ -223,7 +223,7 @@ export function fillsRegister(raw: Loose): unknown {
   return converted === null ? null : { ...raw, index: converted }
 }
 
-function holdsFills(raw: unknown): boolean {
+export function holdsFills(raw: unknown): boolean {
   const element = record(raw)
   const named = (key: unknown) => key === "fills" || (typeof key === "string" && key.startsWith("fills."))
   return (
@@ -234,30 +234,32 @@ function holdsFills(raw: unknown): boolean {
   )
 }
 
-function slideHoldsFills(raw: unknown): boolean {
+type Holds = (raw: unknown) => boolean
+
+function slideHolds(raw: unknown, holds: Holds): boolean {
   const slide = record(raw)
-  return Array.isArray(slide?.layout) && slide.layout.some(holdsFills)
+  return Array.isArray(slide?.layout) && slide.layout.some(holds)
 }
 
-export function indexHoldsFills(raw: unknown): boolean {
+export function indexHolds(raw: unknown, holds: Holds): boolean {
   const index = record(raw)
   if (index === null) return false
   return (
-    (Array.isArray(index.elements) && index.elements.some(holdsFills)) ||
-    (Array.isArray(index.slides) && index.slides.some(slideHoldsFills)) ||
-    indexHoldsFills(index.next)
+    (Array.isArray(index.elements) && index.elements.some(holds)) ||
+    (Array.isArray(index.slides) && index.slides.some((slide) => slideHolds(slide, holds))) ||
+    indexHolds(index.next, holds)
   )
 }
 
-function floorHoldsFills(raw: unknown): boolean {
-  return Array.isArray(raw) && raw.some(holdsFills)
+function floorHolds(raw: unknown, holds: Holds): boolean {
+  return Array.isArray(raw) && raw.some(holds)
 }
 
-export function commandHoldsFills(raw: unknown): boolean {
+export function commandHolds(raw: unknown, holds: Holds): boolean {
   const command = record(raw)
   return (
-    holdsFills(command?.element) ||
-    floorHoldsFills(command?.floor) ||
-    (Array.isArray(command?.copies) && command.copies.some((copy) => floorHoldsFills(record(copy)?.floor)))
+    holds(command?.element) ||
+    floorHolds(command?.floor, holds) ||
+    (Array.isArray(command?.copies) && command.copies.some((copy) => floorHolds(record(copy)?.floor, holds)))
   )
 }

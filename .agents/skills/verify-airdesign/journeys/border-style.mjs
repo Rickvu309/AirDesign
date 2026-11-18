@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
 import { unfold } from "../look/unfold.mjs"
+import { appearanceCopy, borderCopy, borderWords, transitionCopy } from "../bin/product-copy.mjs"
 
 export default async function drive({ repo, origin, page, signIn, post, capture, note, deckRoutes }) {
   const pptx = await import(pathToFileURL(path.join(repo, "packages/pptx/dist/index.js")).href)
@@ -68,7 +69,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
         const set = {
           op: "set",
           target: node,
-          line: { width: 4, fill: "accent2", dash: "dash", tail: { type: "triangle", width: "lg", length: "lg" } },
+          border: { width: 4, fill: "accent2", dash: "dash", tail: { type: "triangle", width: "lg", length: "lg" } },
         }
         edited = await call("airdesign_edit_deck", { deck, base: read.revision, changes: [set] })
         return edited.isError === true ? JSON.stringify(edited.structuredContent) : "landed"
@@ -76,11 +77,11 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
       { timeout: 60_000, intervals: [1_000] },
     )
     .toBe("landed")
-  note(`airdesign_edit_deck set line on ${node}: ${JSON.stringify(edited.structuredContent)}`)
+  note(`airdesign_edit_deck set border on ${node}: ${JSON.stringify(edited.structuredContent)}`)
   await tool("airdesign_stop_run", { deck, runId: edited.structuredContent.runId })
   const read = await tool("airdesign_read_deck", { deck })
   const design = read.elements.find((element) => element.node === node).design
-  expect(design).toContain("line.width 4 · line.fill accent2 · line.dash dash · line.tail triangle")
+  expect(design).toContain("border.width 4 · border.fill accent2 · border.dash dash · border.tail triangle")
   note(`read_deck prints ${node} as: ${design}`)
   await expect.poll(async () => (await stroke("6")).tail).toMatch(/^<marker /)
   const connectorAfter = await stroke("6")
@@ -89,20 +90,18 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await capture("agent-styled-connector")
   note(`The open editor painted the connector ${JSON.stringify(connectorBefore)} -> ${JSON.stringify(connectorAfter)}`)
 
-  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await page.locator(`[data-slide-paint] [data-canvas-element="${part}#4"]`).click({ position: { x: 4, y: 4 } })
   await expect(page.locator("[data-design-element]")).toBeVisible()
-  await unfold(page.locator("[data-design-element]"), "Line")
-  const line = page
-    .locator("[data-design-element] section")
-    .filter({ has: page.getByRole("heading", { name: "Line", exact: true }) })
-  await expect(line).toBeVisible()
+  await unfold(page.locator("[data-design-element]"), appearanceCopy.border)
+  const border = page.locator(`[data-design-element] [data-design-section="${appearanceCopy.border}"]`)
+  await expect(border).toBeVisible()
   const rectangleBefore = await stroke("4")
-  const width = line.getByRole("textbox", { name: "Line width", exact: true })
+  const width = border.getByRole("textbox", { name: borderCopy.width, exact: true })
   await width.fill("6")
   await width.press("Enter")
-  await line.getByRole("combobox", { name: "Join", exact: true }).click()
-  await page.getByRole("option", { name: "Bevel", exact: true }).click()
+  await border.getByRole("combobox", { name: borderCopy.join, exact: true }).click()
+  await page.getByRole("option", { name: borderWords.bevel, exact: true }).click()
   await expect.poll(async () => (await stroke("4")).width).not.toBe(rectangleBefore.width)
   const rectangleAfter = await stroke("4")
   expect(rectangleAfter.color).toBe(rectangleBefore.color)
@@ -113,18 +112,18 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
 
   const server = async () => JSON.stringify((await post(deckRoutes.open, { deck }, cookie)).json.register)
   await expect.poll(server).toContain('"join":{"set":"bevel"}')
-  note("The server holds the agent's line row and the person's line rows")
+  note("The server holds the agent's border row and the person's border rows")
 
   const downloading = page.waitForEvent("download")
   await page.getByRole("button", { name: "Export", exact: true }).click()
   await expect(page.getByRole("dialog", { name: "Export" }).getByRole("button", { name: "Export" })).toBeFocused()
   await page.keyboard.press("Enter")
   const out = path.dirname(await capture("exported"))
-  const exported = path.join(out, "line-style.pptx")
+  const exported = path.join(out, "border-style.pptx")
   await (await downloading).saveAs(exported)
   const parts = await pptx.readParts(await readFile(exported))
-  const connector = pptx.shownLine(parts, { part, shape: "6" })
-  const rectangle = pptx.shownLine(parts, { part, shape: "4" })
+  const connector = pptx.shownBorder(parts, { part, shape: "6" })
+  const rectangle = pptx.shownBorder(parts, { part, shape: "4" })
   expect(connector.width).toEqual({ value: 50800, own: true })
   expect(connector.tail.value).toEqual({ type: "triangle", width: "lg", length: "lg" })
   expect(rectangle.width).toEqual({ value: 76200, own: true })
@@ -138,7 +137,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", page.url().split("/").at(-1))
   await expect.poll(() => stroke("6")).toEqual(connectorAfter)
-  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await expect.poll(() => stroke("4")).toEqual(rectangleAfter)
   await capture("reopened")
   note("The exported file opened again with both lines painted as before")

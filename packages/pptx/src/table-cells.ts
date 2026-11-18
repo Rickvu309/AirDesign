@@ -1,7 +1,7 @@
 import {
   dashPresets,
   tableSides,
-  widestLine,
+  widestBorder,
   type Border,
   type Borders,
   type CellFill,
@@ -41,7 +41,7 @@ function borderOf(line: Held): Border {
   const dash =
     preset === undefined ? undefined : dashPresets.find((each) => each === paintAttribute(preset.element, "val"))
   return {
-    ...(width === undefined || width < 0 || width > widestLine ? {} : { width }),
+    ...(width === undefined || width < 0 || width > widestBorder ? {} : { width }),
     ...(fill === null ? {} : { fill }),
     ...(dash === undefined ? {} : { dash }),
   }

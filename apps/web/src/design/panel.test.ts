@@ -12,43 +12,6 @@ const connector: ScopedElement = {
   box: { x: 0, y: 0, cx: 914_400, cy: 0 },
 }
 
-function lineControls(fill: unknown): readonly string[] {
-  const panel = panelOf(connector, { reads: {}, moves: true, fields: { "line.fill": { value: fill, own: true } } })
-  return (
-    panel.sections
-      .find((section) => section.trait === "line")
-      ?.strips.flat()
-      .map((control) => control.field) ?? []
-  )
-}
-
-it("shows only the line's kind while the line is none, and every line field once it has a color", () => {
-  expect(lineControls({ none: true })).toEqual(["fill"])
-  expect(lineControls({ solid: { scheme: "accent1" } })).toEqual([
-    "fill",
-    "width",
-    "dash",
-    "cap",
-    "compound",
-    "join",
-    "head",
-    "tail",
-  ])
-})
-
-it("names the line's own color apart from the fill's, so each swatch group has its own name", () => {
-  const panel = panelOf(connector, {
-    reads: {},
-    moves: true,
-    fields: { "line.fill": { value: { solid: { scheme: "accent1" } }, own: true } },
-  })
-  const fill = panel.sections.find((section) => section.trait === "line")?.strips.flat()[0]
-  if (fill === undefined || fill.desc.kind !== "union") throw new Error("line fill")
-  const solid = fill.desc.cases.solid
-  if (solid === undefined) throw new Error("solid")
-  expect(partControl(fill, "solid", solid, { scheme: "accent1" }).label).toBe("Line color")
-})
-
 const shape: ScopedElement = {
   node: elementId("258.2"),
   facts: { kind: "shape", text: true, grouped: false, animated: false },
@@ -66,20 +29,20 @@ function opacityOf(view: ScopedElement, fields: Readonly<Record<string, unknown>
 it("shows one Opacity for the fill, line and text it fades together", () => {
   const panel = panelOf(shape, { reads: {}, moves: true, fields: {} })
   expect(panel.sections.filter((section) => section.trait === "opacity")).toHaveLength(1)
-  const control = opacityOf(shape, { "fills.alpha": 60_000, "line.alpha": 60_000, "text.alpha": 60_000 })
+  const control = opacityOf(shape, { "fills.alpha": 60_000, "border.alpha": 60_000, "text.alpha": 60_000 })
   expect(control).toMatchObject({ label: "Opacity", kind: "percent", value: 60_000, mixed: false, reset: null })
   expect(control?.change(25_000)).toEqual({ target: { node: "258.2" }, opacity: 25_000 })
 })
 
 it("shows Mixed when the alphas differ, and full opacity when nothing shows a colour", () => {
-  expect(opacityOf(shape, { "fills.alpha": 60_000, "line.alpha": 30_000 })).toMatchObject({ mixed: true })
-  expect(opacityOf(shape, { "fills.alpha": "mixed", "line.alpha": null })).toMatchObject({ mixed: true })
-  expect(opacityOf(shape, { "fills.alpha": 40_000, "line.alpha": null, "text.alpha": null })).toMatchObject({
+  expect(opacityOf(shape, { "fills.alpha": 60_000, "border.alpha": 30_000 })).toMatchObject({ mixed: true })
+  expect(opacityOf(shape, { "fills.alpha": "mixed", "border.alpha": null })).toMatchObject({ mixed: true })
+  expect(opacityOf(shape, { "fills.alpha": 40_000, "border.alpha": null, "text.alpha": null })).toMatchObject({
     value: 40_000,
     mixed: false,
   })
   expect(opacityOf(shape, {})).toMatchObject({ value: 100_000, mixed: false })
-  expect(opacityOf(connector, { "fills.alpha": 10_000, "line.alpha": 50_000 })).toMatchObject({ value: 50_000 })
+  expect(opacityOf(connector, { "fills.alpha": 10_000, "border.alpha": 50_000 })).toMatchObject({ value: 50_000 })
 })
 
 it("lists Opacity percents on a text box, shape and image, and not on a line or a slide", () => {
@@ -89,11 +52,11 @@ it("lists Opacity percents on a text box, shape and image, and not on a line or 
   expect(opacityOf(shape, {})?.label).toBe(opacityCopy.label)
   expect(opacityOf(shape, {})?.look.steps).toEqual([...opacitySteps])
   expect(opacityOf(drawn, {})?.look.steps).toEqual([...opacitySteps])
-  const image = { "fills.p0": { image: true }, "line.alpha": 100_000 }
+  const image = { "fills.p0": { image: true }, "border.alpha": 100_000 }
   expect(opacityOf(picture, image)?.look.steps).toEqual([...opacitySteps])
   expect(opacityOf(picture, image)?.look.glyph).toBeDefined()
-  expect(opacityOf(connector, { "line.alpha": 100_000 })?.look.steps).toBeUndefined()
-  expect(opacityOf(connector, { "line.alpha": 100_000 })?.look.glyph).toBeUndefined()
+  expect(opacityOf(connector, { "border.alpha": 100_000 })?.look.steps).toBeUndefined()
+  expect(opacityOf(connector, { "border.alpha": 100_000 })?.look.glyph).toBeUndefined()
   expect(opacityOf(slide, { "fills.alpha": 50_000 })).toBeUndefined()
 })
 
@@ -287,9 +250,9 @@ it("keeps text content out of the shared formatting controls", () => {
     "opacity",
     "boxFill",
     "link",
+    "border",
     "paragraphSpacing",
     "box",
-    "line",
     "effects",
   ])
   expect(panel.sections.find((section) => section.trait === "effects")?.open).toBe(false)
@@ -310,27 +273,31 @@ it("keeps the fill kind two shapes share, and names no kind when their kinds dif
 })
 
 function pickedOver(own: boolean, alpha: number) {
-  const fields = { "line.fill": { value: { solid: { scheme: "accent2" } }, own }, "line.alpha": { value: alpha, own } }
+  const fields = {
+    "border.fill": { value: { solid: { scheme: "accent2" } }, own },
+    "border.alpha": { value: alpha, own },
+    "border.dash": { value: "solid", own: false },
+  }
   const panel = panelOf(connector, { reads: {}, moves: true, fields })
   const control = panel.sections
-    .find((section) => section.trait === "line")
+    .find((section) => section.trait === "border")
     ?.strips.flat()
-    .find((each) => each.field === "fill")
-  if (control === undefined) throw new Error("line fill")
-  return control.change({ solid: { rgb: "C00000" } })
+    .find((each) => each.field === "color")
+  if (control === undefined) throw new Error("border color")
+  return control.change({ rgb: "C00000" })
 }
 
-it("writes a colour picked over an inherited line color at the opacity the line showed, so the file's own alpha does not come back", () => {
+it("writes a colour picked over an inherited border color at the opacity the border showed, so the file's own alpha does not come back", () => {
   expect(pickedOver(false, 100_000)).toEqual({
     target: { node: connector.node },
-    line: { fill: { solid: { rgb: "C00000", transforms: [{ op: "alpha", val: 100_000 }] } } },
+    border: { fill: { solid: { rgb: "C00000", transforms: [{ op: "alpha", val: 100_000 }] } } },
   })
 })
 
-it("writes a colour picked over the line's own color as picked, so the export keeps the alpha it showed", () => {
+it("writes a colour picked over the border's own color as picked, so the export keeps the alpha it showed", () => {
   expect(pickedOver(true, 60_000)).toEqual({
     target: { node: connector.node },
-    line: { fill: { solid: { rgb: "C00000" } } },
+    border: { fill: { solid: { rgb: "C00000" } } },
   })
 })
 
@@ -384,16 +351,23 @@ it("resolves box actions and letter names in the shape's strips", () => {
 })
 
 it("resolves a connector's choice form explicitly and its site override", () => {
-  const panel = panelOf(connector, { reads: {}, moves: true })
-  const line = panel.sections.find((section) => section.trait === "line")
-  expect(line?.strips.map((strip) => strip.map((control) => control.field))).toEqual([
+  const fields = {
+    "border.fill": { value: { solid: { scheme: "accent1" } }, own: false },
+    "border.dash": { value: "lgDash", own: false },
+  }
+  const panel = panelOf(connector, { reads: {}, moves: true, fields })
+  const border = panel.sections.find((section) => section.trait === "border")
+  const exact = border?.designStrips ?? []
+  expect(exact.map((strip) => strip.map((control) => control.field))).toEqual([
+    ["border"],
     ["fill"],
-    ["width", "dash"],
+    ["width"],
+    ["dash"],
     ["cap", "compound"],
     ["join"],
     ["head", "tail"],
   ])
-  expect(line?.strips[2]?.[0]?.look.form).toBe("list")
+  expect(exact[4]?.[0]?.look.form).toBe("list")
   const connection = panel.sections.find((section) => section.trait === "connection")?.strips.flat()[0]
   if (connection === undefined || connection.desc.kind !== "union") throw new Error("connection")
   const attached = connection.desc.cases.shape

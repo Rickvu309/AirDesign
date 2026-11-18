@@ -31,7 +31,6 @@ it("leads a shape whose fills hold an image with Fill, Opacity, Border and Shado
     "image",
     "crop",
     "box",
-    "line",
     "effects",
     "identity",
   ])

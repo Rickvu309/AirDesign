@@ -2,7 +2,7 @@ import { alphaOf, fadedColor, opaque, sameColor, type Color, type SetChange } fr
 import { Minus } from "lucide-react"
 import type { PanelKind } from "./panel-order"
 import { fillCopy } from "@/copy/fill-copy"
-import { lineCopy } from "@/copy/line-copy"
+import { borderCopy } from "@/copy/border-copy"
 import { opacityCopy } from "@/copy/opacity-copy"
 import { designCopy } from "@/copy/design-copy"
 import { resolveControl, arrange } from "./panel-arrangement"
@@ -119,10 +119,41 @@ function shadowOpacity(shadow: PanelControl): PanelControl | null {
   })
 }
 
+const exactFields = ["dash", "cap", "compound", "join", "head", "tail"]
+
+function present(controls: readonly (PanelControl | undefined)[]): readonly PanelControl[] {
+  return controls.filter((control) => control !== undefined)
+}
+
+function colorControl(fill: PanelControl): PanelControl | undefined {
+  const desc = fill.desc.kind === "union" ? fill.desc.cases.solid : undefined
+  if (desc === undefined || typeof fill.value !== "object" || fill.value === null || !("solid" in fill.value))
+    return undefined
+  const color = partControl(fill, "solid", desc, fill.value.solid)
+  return {
+    ...color,
+    field: "color",
+    label: borderCopy.color,
+    look: { ...color.look, name: { show: "above" } },
+    change: (value) => fill.change({ solid: value }),
+  }
+}
+
+function widthControl(controls: readonly PanelControl[]): PanelControl | undefined {
+  const width = controls.find((control) => control.trait === "border" && control.field === "width")
+  return width === undefined
+    ? undefined
+    : {
+        ...width,
+        label: borderCopy.width,
+        look: { ...width.look, name: { show: "above" }, glyph: Minus, steps: borderWidths, unit: "" },
+      }
+}
+
 export function appearanceSections(sections: readonly PanelSection[], kind: PanelKind | null): readonly PanelSection[] {
   const controls = sections.flatMap((section) => section.strips.flat())
-  const fill = controls.find((control) => control.trait === "line" && control.field === "fill")
-  const dash = controls.find((control) => control.trait === "line" && control.field === "dash")
+  const fill = controls.find((control) => control.trait === "border" && control.field === "fill")
+  const dash = controls.find((control) => control.trait === "border" && control.field === "dash")
   const shadow = controls.find((control) => control.trait === "effects" && control.field === "shadow")
   const mode = controls.find((control) => control.trait === "image" && control.field === "mode")
   const overlay = controls.find((control) => control.trait === "image" && control.field === "overlay")
@@ -162,41 +193,20 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
             ? fill.value
             : { solid: { scheme: "tx1" } }
         const change = fill.change(color)
-        return { ...change, line: { ...change.line, dash: value } }
+        return { ...change, border: { ...change.border, dash: value } }
       },
     })
-    const extra: PanelControl[] = []
+    const on = !(typeof fill.value === "object" && fill.value !== null && "none" in fill.value)
     const styled = dash.value === "solid" || dash.value === "dash" || dash.value === "dot"
-    if (
-      styled &&
-      fill.desc.kind === "union" &&
-      typeof fill.value === "object" &&
-      fill.value !== null &&
-      "solid" in fill.value
-    ) {
-      const desc = fill.desc.cases.solid
-      if (desc !== undefined) {
-        const color = partControl(fill, "solid", desc, fill.value.solid)
-        extra.push({
-          ...color,
-          label: lineCopy.color,
-          look: { ...color.look, name: { show: "above" } },
-          change: (value) => fill.change({ solid: value }),
-        })
-      }
-      const width = controls.find((control) => control.trait === "line" && control.field === "width")
-      if (width !== undefined)
-        extra.push({
-          ...width,
-          label: lineCopy.borderWidth,
-          look: { ...width.look, name: { show: "above" }, glyph: Minus, steps: borderWidths, unit: "" },
-        })
-    }
+    const width = widthControl(controls)
+    const color = styled ? colorControl(fill) : undefined
+    const exact = controls.filter((control) => control.trait === "border" && exactFields.includes(control.field))
     added.push({
       trait: "border",
       label: designCopy.border,
       open: true,
-      strips: arrange("border", [border, ...extra]),
+      strips: arrange("border", [border, ...(color === undefined ? [] : present([color, width]))]),
+      ...(on ? { designStrips: arrange("border", [border, fill, ...present([width]), ...exact]) } : {}),
     })
   }
   if (shadow !== undefined) {
@@ -239,11 +249,9 @@ export function appearanceSections(sections: readonly PanelSection[], kind: Pane
         ...section,
         strips: [...section.strips, [modeList(mode)], ...(adjust.length === 0 ? [] : [adjust])],
       }
-    const fill =
-      section.trait === "line" ? section.strips.flat().find((control) => control.field === "fill") : undefined
-    if (fill === undefined || typeof fill.value !== "object" || fill.value === null || !("none" in fill.value))
-      return section
-    return { ...section, strips: [[fill]] }
+    return section
   })
-  return [...details, ...added].filter((section) => section.trait !== "image" || section.strips.length > 0)
+  return [...details.filter((section) => !added.some(({ trait }) => trait === section.trait)), ...added].filter(
+    (section) => section.trait !== "image" || section.strips.length > 0,
+  )
 }

@@ -23,7 +23,7 @@ export default {
     pages: true,
   })),
   renders: [styled.exported, texted.exported],
-  covers: ["fills.alpha", "line.alpha", "text.alpha"],
+  covers: ["fills.alpha", "border.alpha", "text.alpha"],
   lines(answers) {
     const decode = (name) => new TextDecoder().decode(answers.parts.get(name)?.get(slide) ?? new Uint8Array())
     const lines = [styled, texted].flatMap(({ original, exported }) => {
@@ -35,16 +35,16 @@ export default {
     const before = decode(styled.original)
     const after = decode(styled.exported)
     if (!after.includes(oval))
-      lines.push("opacity did not copy the oval's style fill and line as its own and fade them")
+      lines.push("opacity did not copy the oval's style fill and border as its own and fade them")
     if (JSON.stringify(after.match(styles)) !== JSON.stringify(before.match(styles)))
       lines.push("opacity changed a shape's style reference")
     const parts = answers.parts.get(styled.exported)
     const shown = (shape) => answers.pptx.shownAlphas(parts, { slide: "256", part: slide, shape })
-    if (JSON.stringify(shown("5")) !== JSON.stringify({ fills: 60000, line: 60000, text: null }))
-      lines.push("opacity does not read the oval's fill and line at 60 percent")
-    if (shown("6").line !== 40000) lines.push("opacity does not read the connector's line at 40 percent")
-    if (answers.pptx.shownLine(parts, { part: slide, shape: "5" })?.width.own !== false)
-      lines.push("opacity lost the line width the oval's style gives it")
+    if (JSON.stringify(shown("5")) !== JSON.stringify({ fills: 60000, border: 60000, text: null }))
+      lines.push("opacity does not read the oval's fill and border at 60 percent")
+    if (shown("6").border !== 40000) lines.push("opacity does not read the connector's border at 40 percent")
+    if (answers.pptx.shownBorder(parts, { part: slide, shape: "5" })?.width.own !== false)
+      lines.push("opacity lost the border width the oval's style gives it")
     if (!decode(texted.exported).includes(run)) lines.push("opacity did not write the alpha on the text's run")
     return lines
   },

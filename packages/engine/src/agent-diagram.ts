@@ -84,7 +84,7 @@ function labelChange(words: string): Omit<SetChange, "target"> {
 function arrowChange(from: ElementId, to: ElementId): Omit<SetChange, "target"> {
   return {
     connection: { start: { shape: { node: from, site: right } }, end: { shape: { node: to, site: left } } },
-    line: {
+    border: {
       fill: { solid: { scheme: "accent1" } },
       width: arrowWidth,
       tail: { type: "triangle", width: "med", length: "med" },

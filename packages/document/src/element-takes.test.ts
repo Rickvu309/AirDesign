@@ -152,8 +152,8 @@ describe("the server admits only the edits the device can write onto an element 
     const facts = { text: true, grouped: false, animated: false }
     const box = ["box.x", "box.y", "box.w", "box.h", "box.rot", "box.flipH", "box.flipV"]
     const drawn = [...box, "geometry.shape"]
-    const line = ["fill", "width", "dash", "cap", "compound", "join", "head", "tail", "alpha"].map(
-      (field) => `line.${field}`,
+    const border = ["fill", "width", "dash", "cap", "compound", "join", "head", "tail", "alpha"].map(
+      (field) => `border.${field}`,
     )
     const slots = ["fills.p0", "fills.p1", "fills.p2", "fills.p3"]
     const image = ["fills.source", "fills.mode", "fills.crop", "fills.recolor", "fills.blur", "fills.overlay"]
@@ -162,12 +162,18 @@ describe("the server admits only the edits the device can write onto an element 
     const text = [...body, "text.value", "text.alpha", "link.target"]
     const effects = ["effects.shadow", "effects.glow", "effects.softEdge"]
     const named = ["identity.name", "identity.alt", "identity.hidden"]
-    expect(takes({ ...facts, kind: "shape" })).toEqual([...named, ...drawn, ...fill, ...line, ...effects, ...text])
-    expect(takes({ ...facts, kind: "shape", text: false })).toEqual([...named, ...drawn, ...fill, ...line, ...effects])
+    expect(takes({ ...facts, kind: "shape" })).toEqual([...named, ...drawn, ...fill, ...border, ...effects, ...text])
+    expect(takes({ ...facts, kind: "shape", text: false })).toEqual([
+      ...named,
+      ...drawn,
+      ...fill,
+      ...border,
+      ...effects,
+    ])
     expect(takes({ ...facts, kind: "connector" })).toEqual([
       ...named,
       ...drawn,
-      ...line,
+      ...border,
       ...effects,
       "connection.start",
       "connection.end",
@@ -188,7 +194,7 @@ describe("the server admits only the edits the device can write onto an element 
       ...named,
       "geometry.shape",
       ...fill,
-      ...line,
+      ...border,
       ...effects,
       ...text,
     ])

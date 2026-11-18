@@ -42,7 +42,7 @@ describe("readRow reads both format 1 forms as trait fields", () => {
   })
 
   it("refuses a row from a newer build as newer, and one it cannot read as payload", () => {
-    expect(readRow({ v: format + 1, patch: { line: { width: { set: 12_700 } } } }, "text")).toEqual({
+    expect(readRow({ v: format + 1, patch: { border: { width: { set: 12_700 } } } }, "text")).toEqual({
       ok: false,
       refusal: "newer",
     })

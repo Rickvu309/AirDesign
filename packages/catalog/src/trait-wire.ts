@@ -1,5 +1,6 @@
 import type { TraitName, WireAgent, WireField } from "@airdesign/document"
 import { bodyWire } from "./trait-wire-body.js"
+import { borderWire } from "./trait-wire-border.js"
 import { boxWire } from "./trait-wire-box.js"
 import { connectionWire } from "./trait-wire-connection.js"
 import { effectsWire } from "./trait-wire-effects.js"
@@ -7,7 +8,6 @@ import { fillsWire } from "./trait-wire-fills.js"
 import { geometryWire } from "./trait-wire-geometry.js"
 import { identityWire } from "./trait-wire-identity.js"
 import { linkWire } from "./trait-wire-link.js"
-import { lineWire } from "./trait-wire-line.js"
 import { notesWire } from "./trait-wire-notes.js"
 import { textWire } from "./trait-wire-text.js"
 import { templateWire } from "./trait-wire-template.js"
@@ -32,7 +32,7 @@ export const traitWire: { readonly [T in TraitName]: TraitWire<T> } = {
   box: boxWire,
   geometry: geometryWire,
   fills: fillsWire,
-  line: lineWire,
+  border: borderWire,
   effects: effectsWire,
   body: bodyWire,
   text: textWire,
