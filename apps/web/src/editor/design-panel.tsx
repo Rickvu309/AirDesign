@@ -337,7 +337,9 @@ export function ElementDesign({
                 title={section.label}
                 last={at === last && children === null && !fillDetails}
               >
-                <PictureFillKinds />
+                {fill === undefined ? null : (
+                  <PictureFillKinds control={fill} palette={palette} onChange={(value) => onChange(fill, value)} />
+                )}
                 {picture}
                 <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
               </DesignSection>

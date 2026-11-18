@@ -171,7 +171,7 @@ function UnionList({
   )
 }
 
-function unionValue(control: ControlProps["control"], palette: ControlProps["palette"], name: string): unknown {
+export function unionValue(control: ControlProps["control"], palette: ControlProps["palette"], name: string): unknown {
   const desc = control.desc.kind === "union" ? control.desc.cases[name] : undefined
   if (desc === undefined) return undefined
   if (desc.kind === "mark") return { [name]: true }

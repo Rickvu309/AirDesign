@@ -42,6 +42,13 @@ function paintValue(paint: SlotPaint, shown: ShownFills): unknown {
   return "image" in paint ? { image: shown.source ?? null } : paint
 }
 
+function pictureMark(paint: PanelControl, shown: ShownFills, listed: SlotPaint | undefined): PanelControl {
+  if (paint.desc.kind !== "union" || listed === undefined || !("image" in listed)) return paint
+  const source = shown.source
+  if (typeof source === "string" && !source.includes(":")) return paint
+  return { ...paint, desc: { ...paint.desc, cases: { ...paint.desc.cases, image: { kind: "mark" } } } }
+}
+
 function paintRow(
   paint: PanelControl,
   view: ScopedElement,
@@ -51,7 +58,7 @@ function paintRow(
 ): PanelControl {
   const listed = listedPaints(shown)[at]
   return {
-    ...paint,
+    ...pictureMark(paint, shown, listed?.paint),
     label: fillCopy.paint(at, count),
     value: listed === undefined ? undefined : paintValue(listed.paint, shown),
     inherited: false,
@@ -67,24 +74,19 @@ function paintRow(
   }
 }
 
-function imageOnly(paint: PanelControl): PanelControl {
-  if (paint.desc.kind !== "union") return paint
-  return { ...paint, desc: { ...paint.desc, cases: { image: { kind: "mark" } } } }
-}
-
 function orderRow(
   view: ScopedElement,
   shown: ShownFills,
   at: number,
   count: number,
-  listed: { readonly hidden: boolean; readonly held: boolean },
-): PanelControl | null {
+  listed: { readonly hidden: boolean },
+): PanelControl {
   const options = [
     ...(at < count - 1 ? ["up"] : []),
     ...(at > 0 ? ["down"] : []),
-    ...(listed.held ? [] : [listed.hidden ? "show" : "hide", "remove"]),
+    listed.hidden ? "show" : "hide",
+    "remove",
   ]
-  if (options.length === 0) return null
   return {
     trait: "fills",
     field: `order.${String(at)}`,
@@ -130,15 +132,12 @@ export function fillsList(
   paint: PanelControl,
   view: ScopedElement,
   shown: ShownFills,
-  picture: boolean,
 ): readonly (readonly PanelControl[])[] {
   const listed = listedPaints(shown)
   const rows = listed.map((each, at) => {
-    const held = picture && "image" in each.paint
-    const order = orderRow(view, shown, at, listed.length, { hidden: each.hidden, held })
     return [
-      ...(order === null ? [] : [[order]]),
-      [paintRow(held ? imageOnly(paint) : paint, view, shown, at, listed.length)],
+      [orderRow(view, shown, at, listed.length, { hidden: each.hidden })],
+      [paintRow(paint, view, shown, at, listed.length)],
     ]
   })
   return [...rows.toReversed().flat(), [addRow(view, shown, listed.length)]]

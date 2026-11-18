@@ -47,9 +47,20 @@ it("lists a photo's paints top first in design mode, each with its order actions
   expect(strips[0]?.[0]?.desc).toEqual({ kind: "choice", options: ["down", "hide", "remove"] })
   expect(strips[0]?.[0]?.label).toBe(fillCopy.paint(1, 2))
   expect(strips[0]?.[0]?.look).toMatchObject({ name: { show: "above" }, form: "header" })
-  expect(strips[2]?.[0]?.desc).toEqual({ kind: "choice", options: ["up"] })
+  expect(strips[2]?.[0]?.desc).toEqual({ kind: "choice", options: ["up", "hide", "remove"] })
   const held = strips[3]?.[0]?.desc
-  expect(held?.kind === "union" ? held.cases : {}).toEqual({ image: { kind: "mark" } })
+  expect(held?.kind === "union" ? Object.keys(held.cases) : []).toEqual(
+    expect.arrayContaining(["none", "solid", "gradient", "image"]),
+  )
+  expect(held?.kind === "union" ? held.cases.image.kind : "").toBe("asset")
+  expect(strips[3]?.[0]?.change({ solid: { scheme: "accent2" } })).toEqual({
+    target: { node: "258.4" },
+    fills: { p0: { solid: { scheme: "accent2" } } },
+  })
+  expect(strips[1]?.[0]?.change({ image: true })).toEqual({
+    target: { node: "258.4" },
+    fills: { p1: { image: true } },
+  })
   const add = strips.at(-1)?.[0]
   expect(add?.change("gradient")).toMatchObject({
     target: { node: "258.4" },
@@ -81,7 +92,22 @@ it("keeps slides mode to one Fill control, and its Overlay edits the top paint a
   expect(added?.change(blue)).toEqual({ target: { node: "258.4" }, fills: { p3: blue } })
 })
 
-it("keeps a picture's only image in its list without order actions, its fit mode and blur under it", () => {
+it("lets a picture's only image be hidden or removed, with its fit mode and blur under it", () => {
   const strips = fillSection(image, "design")?.strips ?? []
-  expect(strips.map((strip) => strip.map((control) => control.field))).toEqual([["paint"], ["mode"], ["blur"], ["add"]])
+  expect(strips.map((strip) => strip.map((control) => control.field))).toEqual([
+    ["order.0"],
+    ["paint"],
+    ["mode"],
+    ["blur"],
+    ["add"],
+  ])
+  expect(strips[0]?.[0]?.desc).toEqual({ kind: "choice", options: ["hide", "remove"] })
+  expect(strips[0]?.[0]?.change("hide")).toEqual({
+    target: { node: "258.4" },
+    fills: { p0: { hidden: { image: true } } },
+  })
+  expect(strips[0]?.[0]?.change("remove")).toEqual({ target: { node: "258.4" }, fills: { p0: none } })
+  const { "fills.source": _icon, ...photo } = image
+  const marked = fillSection(photo, "design")?.strips[1]?.[0]?.desc
+  expect(marked?.kind === "union" ? marked.cases.image : null).toEqual({ kind: "mark" })
 })

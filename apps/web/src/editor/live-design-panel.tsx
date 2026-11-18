@@ -56,6 +56,7 @@ import {
 import { panelPlaces, type PanelMode } from "@/design/panel-order"
 import { changeDesign, fileValue, type DesignDeck } from "@/design/design-change"
 import { rebasedChange } from "@/design/rebase"
+import { chosenFill } from "@/design/fill-image"
 import { fillSlotFields } from "@/design/fill-slots"
 import { deviceScope } from "@/design/trait-edit"
 import { designShown, templateColorsOf, type DesignShown } from "@/design-shown"
@@ -80,6 +81,7 @@ export type DesigningDeck = DesignDeck & {
   readonly matching?: readonly ElementId[]
   readonly selectMatching?: () => void
   readonly replacePicture?: (node: ElementId, file: File) => void
+  readonly chooseFillImage?: (node: ElementId) => void
 }
 
 const deckTraits = new WeakMap<Parts, DeckTraits | null>()
@@ -266,9 +268,16 @@ function LiveElementDesign({
       mode={mode}
       selectionColors={<LiveSelectionColors deck={deck} nodes={[node]} />}
       palette={palette}
-      onChange={(control, value) =>
-        changeDesign(deck, () => rebasedChange(controlsOf(elementDesign(deck, node)?.model.sections), control, value))
-      }
+      onChange={(control, value) => {
+        const chosen = chosenFill(value, control, deck.shown.shownParts.current, deck.shown.shownRegister.current, node)
+        if ("pick" in chosen) {
+          deck.chooseFillImage?.(node)
+          return
+        }
+        changeDesign(deck, () =>
+          rebasedChange(controlsOf(elementDesign(deck, node)?.model.sections), control, chosen.value),
+        )
+      }}
     />
   )
 }

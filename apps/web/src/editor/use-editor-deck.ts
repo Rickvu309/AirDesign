@@ -15,6 +15,7 @@ import { useDeckTitle } from "@/editor/use-deck-title"
 import { useExport } from "@/editor/use-export"
 import { useUndoList } from "@/editor/use-undo"
 import { useNotes } from "@/notes-edit"
+import { pickPicture } from "@/editor/picture-picker"
 import { usePictureStore, usePictureTool } from "@/picture-tool"
 
 export type EditorDeck = ReturnType<typeof useEditorDeck>
@@ -69,20 +70,30 @@ export function useEditorDeck(id: string) {
 
   const inserts = deckInserts({ id, shown, pictureTool: pictures, record, settle, setPending })
   const pictureTool = usePictureTool(status.paintedDeck === id, pictures.store, inserts.addPicture)
-  function replacePicture(node: ElementId, file: File) {
+  function placeImage(node: ElementId, file: File, paint: boolean) {
     pictureTool.pick(file, async (picture) => {
       try {
         const sha256 = await keepMedia(id, picture.bytes)
         pictures.store.keep(sha256, picture.bytes)
+        const ref = `${picture.type}:${sha256}`
         changeDesign(
           { id, shown, undo, record, settle, setPending },
-          () => ({ target: { node }, fills: { source: `${picture.type}:${sha256}` } }),
+          () =>
+            paint
+              ? { target: { node }, fills: { paint: { image: ref } } }
+              : { target: { node }, fills: { source: ref } },
           () => void flushMedia(id),
         )
       } catch {
         toast.error(designCopy.refused)
       }
     })
+  }
+  function replacePicture(node: ElementId, file: File) {
+    placeImage(node, file, false)
+  }
+  function chooseFillImage(node: ElementId) {
+    pickPicture((file) => placeImage(node, file, true))
   }
   const { changeElement } = inserts
   const exported = useExport({ id, records, pictureTool, setFailure: status.setFailure })
@@ -97,6 +108,7 @@ export function useEditorDeck(id: string) {
     matching,
     selectMatching,
     replacePicture,
+    chooseFillImage,
     rename,
     undo,
     record,

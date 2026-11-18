@@ -370,7 +370,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
           appearanceSections(
             [
               ...alignSection,
-              ...(kind === "text" ? content : withFillsList(content, view, shown, kind === "picture")),
+              ...(kind === "text" ? content : withFillsList(content, view, shown)),
               ...(opacity === null ? [] : [opacity]),
               ...(corners === null ? [] : [corners]),
             ],
@@ -392,12 +392,11 @@ function withFillsList(
   sections: readonly PanelSection[],
   view: ScopedElement,
   shown: PanelReads,
-  picture: boolean,
 ): readonly PanelSection[] {
   return sections.map((section) => {
     const paint = section.strips.flat().find((control) => control.trait === "fills" && control.field === "paint")
     if (section.trait !== "fills" || paint === undefined) return section
-    return { ...section, designStrips: fillsList(paint, view, shownFills(shown) ?? {}, picture) }
+    return { ...section, designStrips: fillsList(paint, view, shownFills(shown) ?? {}) }
   })
 }
 

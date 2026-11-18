@@ -7,7 +7,6 @@ export const picturePanelCopy = {
   blur: "Blur",
   overlayOpacity: "Overlay opacity",
   crop: "Crop",
-  heldBack: "This image can't change to another fill yet.",
 } as const
 
 export const pictureWords: Readonly<Record<string, string>> = {
