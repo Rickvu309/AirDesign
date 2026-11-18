@@ -7,7 +7,7 @@ import { cssColor } from "@/paint-css"
 const emuPerPoint = 12_700
 const aligned = { left: "left", center: "center", right: "right", justify: "justify", distributed: "justify" } as const
 
-type Spacing = PaintText["paragraphs"][number]["lineSpacing"]
+type Spacing = PaintText["paragraphs"][number]["lineHeight"]
 
 function spacingOf(spacing: Spacing) {
   if (spacing === null) return null
@@ -64,7 +64,7 @@ function canvasParagraph(
     align: aligned[paragraph.align],
     marginLeft: paragraph.marginLeft,
     indent: paragraph.indent,
-    lineSpacing: reducedLines(paragraph.lineSpacing, reduction),
+    lineHeight: reducedLines(paragraph.lineHeight, reduction),
     spaceBefore: spacingOf(paragraph.spaceBefore),
     spaceAfter: spacingOf(paragraph.spaceAfter),
     bullet: canvasBullet(paragraph.bullet),

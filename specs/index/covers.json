@@ -16,8 +16,8 @@
     {
       "file": "packages/document/src/answered-register.ts",
       "names": ["answeredRegister"],
-      "digest": "9429507d6688",
-      "blob": "c027a4559e4d2e665e5b87a555889ad6f9370b12"
+      "digest": "73e53b76eb44",
+      "blob": "9f06a1f13d196517af79cd8d4f14935624d60ab2"
     },
     {
       "file": "packages/live/src/deck-index.ts",

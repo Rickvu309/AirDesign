@@ -28,11 +28,11 @@ function fieldsOf(paragraphs: readonly Held[], local: readonly Held[]): TextStyl
     const amount = number(child(held, percent ? "a:spcPct" : "a:spcPts"), "val")
     return amount ?? (number(child(held, "a:spcPct"), "val") === 0 ? 0 : null)
   }
-  const lineSpacing = spacing("a:lnSpc", true)
+  const lineHeight = spacing("a:lnSpc", true)
   const spaceBefore = spacing("a:spcBef", false)
   const spaceAfter = spacing("a:spcAft", false)
   const align = first(paragraphs, (held) => attribute(held, "algn")) ?? "l"
-  if (lineSpacing === null || spaceBefore === null || spaceAfter === null || !["l", "ctr", "r"].includes(align))
+  if (lineHeight === null || spaceBefore === null || spaceAfter === null || !["l", "ctr", "r"].includes(align))
     return null
   const fill = first(runs, (held) => child(held, "a:solidFill"))
   const color = fill === undefined ? { scheme: "tx1" as const } : colorIn(fill, null)
@@ -47,7 +47,7 @@ function fieldsOf(paragraphs: readonly Held[], local: readonly Held[]): TextStyl
     color,
     align: align === "ctr" ? "center" : align === "r" ? "right" : "left",
     letterSpacing: first(runs, (held) => number(held, "spc")) ?? 0,
-    lineSpacing,
+    lineHeight,
     spaceBefore,
     spaceAfter,
   }

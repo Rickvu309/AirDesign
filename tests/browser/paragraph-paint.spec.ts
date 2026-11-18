@@ -67,7 +67,7 @@ test("an empty paragraph paints no bullet until someone types in its box, as Pow
   expect(await emptyBullets()).toEqual(['"•"', '"•"'])
 })
 
-test("a bullet keeps its line as tall as its paragraph's tight line spacing, as PowerPoint does", async ({ page }) => {
+test("a bullet keeps its line as tall as its paragraph's tight line height, as PowerPoint does", async ({ page }) => {
   await open(page, heraDeck)
   await showSlide(page, 7)
   const body = page.locator('[data-slide-paint] [contenteditable="true"]', { hasText: "Limiting resupply" })

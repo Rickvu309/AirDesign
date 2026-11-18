@@ -3,8 +3,8 @@ import { trait } from "./trait-decl.js"
 import {
   letterSpacingFloor,
   letterSpacingCeiling,
-  lineSpacingCeiling,
-  lineSpacingFloor,
+  lineHeightCeiling,
+  lineHeightFloor,
   spaceCeiling,
   typefaceBytes,
 } from "./text-value.js"
@@ -23,7 +23,7 @@ import {
 
 export const text = trait(
   "run",
-  { version: 5, shape: "aaea7ede" },
+  { version: 6, shape: "aaea7ede" },
   { value: custom<string, string>("text"), alpha: alphaOver("value") },
   {
     style: words(200),
@@ -38,7 +38,7 @@ export const text = trait(
     letterSpacing: pointsWithin(letterSpacingFloor, letterSpacingCeiling),
     align: choice(["left", "center", "right"]),
     list: choice(["none", "bullets", "numbers"]),
-    lineSpacing: fractionWithin(lineSpacingFloor, lineSpacingCeiling),
+    lineHeight: fractionWithin(lineHeightFloor, lineHeightCeiling),
     spaceBefore: pointsUpTo(spaceCeiling),
     spaceAfter: pointsUpTo(spaceCeiling),
   },

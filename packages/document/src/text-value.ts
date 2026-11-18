@@ -1,6 +1,7 @@
 import { readColor, writtenColor, type Color } from "./color.js"
 import { readElementLink, type ElementLink } from "./link-target.js"
 import { readTextFill, type TextFill } from "./text-fill.js"
+import { canonicalKeys } from "./key-alias.js"
 import { bytesOf } from "./limits.js"
 import { record } from "./plain-object.js"
 
@@ -28,8 +29,8 @@ export const letterSpacingFloor = -400_000
 export const letterSpacingCeiling = 400_000
 export const listNames = ["none", "bullets", "numbers"] as const
 export type TextList = (typeof listNames)[number]
-export const lineSpacingFloor = 10_000
-export const lineSpacingCeiling = 1_000_000
+export const lineHeightFloor = 10_000
+export const lineHeightCeiling = 1_000_000
 export const spaceCeiling = 158_400
 
 export type TextFormat = (typeof formatNames)[number]
@@ -49,7 +50,7 @@ export type TextRun = {
   readonly letterSpacing?: number
 } & RunFormat
 export type ParagraphSpacing = {
-  readonly lineSpacing?: number
+  readonly lineHeight?: number
   readonly spaceBefore?: number
   readonly spaceAfter?: number
 }
@@ -61,9 +62,9 @@ export type TextParagraph = {
 } & ParagraphSpacing
 export type TextValue = readonly TextParagraph[]
 
-export const spacingNames = ["lineSpacing", "spaceBefore", "spaceAfter"] as const
+export const spacingNames = ["lineHeight", "spaceBefore", "spaceAfter"] as const
 const spacingRange: Readonly<Record<(typeof spacingNames)[number], readonly [number, number]>> = {
-  lineSpacing: [lineSpacingFloor, lineSpacingCeiling],
+  lineHeight: [lineHeightFloor, lineHeightCeiling],
   spaceBefore: [0, spaceCeiling],
   spaceAfter: [0, spaceCeiling],
 }
@@ -164,7 +165,8 @@ function readRun(value: unknown): TextRun | null {
 }
 
 function readParagraph(value: unknown): TextParagraph | null {
-  const paragraph = record(value)
+  const stored = record(value)
+  const paragraph = stored === null ? null : canonicalKeys(stored)
   if (
     paragraph === null ||
     !Object.keys(paragraph).every((key) => paragraphKeys.has(key)) ||

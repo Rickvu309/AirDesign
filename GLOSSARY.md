@@ -103,7 +103,7 @@ A paragraph’s one choice of No list, Bulleted list or Numbered list. The code 
 _Avoid_: bullets (as the name of the choice)
 
 **line height**:
-The distance from one line of text to the next, in percent of PowerPoint's single line. The code still says line spacing (`text.lineSpacing`) until its rename lands; PowerPoint writes it as `lnSpc`.
+The distance from one line of text to the next, in percent of PowerPoint's single line: `text.lineHeight`. PowerPoint writes it as `lnSpc`. A deck or an agent that still says `lineSpacing` is read as line height.
 _Avoid_: line spacing
 
 **template style**:

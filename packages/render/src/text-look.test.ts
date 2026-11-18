@@ -29,7 +29,7 @@ function paragraph(overrides: Partial<CanvasParagraph> = {}): CanvasText {
         align: "left",
         marginLeft: margin,
         indent: -margin,
-        lineSpacing: { percent: 0.9 },
+        lineHeight: { percent: 0.9 },
         spaceBefore: { length: 63_500 },
         spaceAfter: { percent: 0.2 },
         bullet: { char: "•", font: "Serifa", color: "rgb(4, 5, 6)", size: 0.8 },
@@ -78,9 +78,9 @@ it("paints a hanging bullet, the gaps around a paragraph, and the marks on a run
   expect(Number.parseFloat(paintedRun.style.verticalAlign)).toBeCloseTo(scaled(font * 0.3), 4)
 })
 
-it("numbers a list and keeps an exact line spacing on an empty paragraph", () => {
+it("numbers a list and keeps an exact line height on an empty paragraph", () => {
   const text = paragraph({
-    lineSpacing: { length: 127_000 },
+    lineHeight: { length: 127_000 },
     bullet: { autoNumber: "alphaLcParenR", number: 2, font: null, color: null, size: null },
     runs: [],
   })
@@ -95,7 +95,7 @@ it("prints roman numerals and a positive indent has no hang", () => {
   const { block, run: paintedRun } = painted(
     paragraph({
       indent: margin,
-      lineSpacing: null,
+      lineHeight: null,
       spaceBefore: null,
       spaceAfter: null,
       bullet: { autoNumber: "romanUcPeriod", number: 4, font: null, color: null, size: null },
@@ -132,11 +132,11 @@ it("paints a superscript or subscript run at 58% of its size, raised or lowered 
 })
 
 it("spaces lines by a share of PowerPoint's single line, which is 1.2 times the font size", () => {
-  expect(painted(paragraph({ lineSpacing: { percent: 0.9 } })).run.style.lineHeight).toBe("1.08")
-  expect(painted(paragraph({ lineSpacing: { percent: 1.5 } })).run.style.lineHeight).toBe("1.8")
-  expect(painted(paragraph({ lineSpacing: null })).run.style.lineHeight).toBe("1.2")
-  expect(painted(paragraph({ lineSpacing: { percent: 0.9 }, runs: [] }), "").block.style.lineHeight).toBe("1.08")
-  expect(painted(paragraph({ lineSpacing: null, runs: [] }), "").block.style.lineHeight).toBe("1.2")
+  expect(painted(paragraph({ lineHeight: { percent: 0.9 } })).run.style.lineHeight).toBe("1.08")
+  expect(painted(paragraph({ lineHeight: { percent: 1.5 } })).run.style.lineHeight).toBe("1.8")
+  expect(painted(paragraph({ lineHeight: null })).run.style.lineHeight).toBe("1.2")
+  expect(painted(paragraph({ lineHeight: { percent: 0.9 }, runs: [] }), "").block.style.lineHeight).toBe("1.08")
+  expect(painted(paragraph({ lineHeight: null, runs: [] }), "").block.style.lineHeight).toBe("1.2")
 })
 
 it.each([

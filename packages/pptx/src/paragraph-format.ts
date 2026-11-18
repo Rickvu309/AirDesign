@@ -25,12 +25,12 @@ const order = [
 ]
 const emptyBytes = new Uint8Array(0)
 const spacingXml: Readonly<Record<(typeof spacingNames)[number], (value: number) => string>> = {
-  lineSpacing: (value) => `<a:lnSpc><a:spcPct val="${value}"/></a:lnSpc>`,
+  lineHeight: (value) => `<a:lnSpc><a:spcPct val="${value}"/></a:lnSpc>`,
   spaceBefore: (value) => `<a:spcBef><a:spcPts val="${value}"/></a:spcBef>`,
   spaceAfter: (value) => `<a:spcAft><a:spcPts val="${value}"/></a:spcAft>`,
 }
 const spacingTags: Readonly<Record<(typeof spacingNames)[number], string>> = {
-  lineSpacing: "a:lnSpc",
+  lineHeight: "a:lnSpc",
   spaceBefore: "a:spcBef",
   spaceAfter: "a:spcAft",
 }

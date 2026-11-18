@@ -4,9 +4,9 @@ import { fitted, grownBox, heldFit, shrinkSteps } from "./text-fit.js"
 
 const style = { font: "Arial", size: 254_000, points: 2_000, bold: false, italic: false, color: null }
 
-const text = (fit: CanvasText["fit"], lineSpacing: CanvasText["paragraphs"][number]["lineSpacing"] = null) =>
+const text = (fit: CanvasText["fit"], lineHeight: CanvasText["paragraphs"][number]["lineHeight"] = null) =>
   ({
-    paragraphs: [{ from: 0, align: "left", lineSpacing, runs: [{ from: 0, text: "a", ...style }], endStyle: style }],
+    paragraphs: [{ from: 0, align: "left", lineHeight, runs: [{ from: 0, text: "a", ...style }], endStyle: style }],
     anchor: "top",
     insets: { left: 0, top: 0, right: 0, bottom: 0 },
     wrap: true,
@@ -57,24 +57,24 @@ describe("shrink steps", () => {
 })
 
 describe("fitted text", () => {
-  it("scales each size from the stored scale and takes the further reduction off the line spacing, as ECMA-376 subtracts it", () => {
+  it("scales each size from the stored scale and takes the further reduction off the line height, as ECMA-376 subtracts it", () => {
     const shown = fitted(text({ kind: "shrink", scale: 0.5, reduction: 0.1 }, { percent: 0.7 }), [0.25, 0.2])
     const paragraph = shown.paragraphs[0]
     expect(paragraph?.runs[0]?.size).toBe(127_000)
     expect(paragraph?.runs[0]?.points).toBe(2_000)
     expect(paragraph?.endStyle.size).toBe(127_000)
-    expect(paragraph?.lineSpacing).toEqual({ percent: 0.6 })
+    expect(paragraph?.lineHeight).toEqual({ percent: 0.6 })
     expect(shown.fit).toEqual({ kind: "shrink", scale: 0.25, reduction: 0.2 })
   })
 
-  it("keeps line spacing set in points, which the reduction does not apply to", () => {
+  it("keeps a line height set in points, which the reduction does not apply to", () => {
     const shown = fitted(text({ kind: "shrink", scale: 1, reduction: 0 }, { length: 254_000 }), [1, 0.2])
-    expect(shown.paragraphs[0]?.lineSpacing).toEqual({ length: 254_000 })
+    expect(shown.paragraphs[0]?.lineHeight).toEqual({ length: 254_000 })
   })
 
   it("narrows single lines that the file leaves at their standard spacing", () => {
     const shown = fitted(text({ kind: "shrink", scale: 1, reduction: 0 }), [1, 0.1])
-    expect(shown.paragraphs[0]?.lineSpacing).toEqual({ percent: 0.9 })
+    expect(shown.paragraphs[0]?.lineHeight).toEqual({ percent: 0.9 })
   })
 })
 

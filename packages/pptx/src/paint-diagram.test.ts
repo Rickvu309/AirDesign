@@ -101,7 +101,7 @@ describe("diagram paint", () => {
       paragraphs: [
         {
           align: "center",
-          lineSpacing: { percent: 0.9 },
+          lineHeight: { percent: 0.9 },
           runs: [{ text: "2023", size: 56, font: "Aptos", color: { hex: "FFFFFF", alpha: 1 } }],
         },
       ],

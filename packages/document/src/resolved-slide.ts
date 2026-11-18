@@ -22,7 +22,7 @@ export type ResolvedParagraph = {
   readonly level: number
   readonly marginLeft: number
   readonly indent: number
-  readonly lineSpacing: Spacing | null
+  readonly lineHeight: Spacing | null
   readonly spaceBefore: Spacing | null
   readonly spaceAfter: Spacing | null
   readonly bullet: ResolvedBullet | null

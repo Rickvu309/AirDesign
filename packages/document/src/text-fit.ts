@@ -115,7 +115,7 @@ type Paragraph = {
 }
 
 function glyphsOf(paragraph: ResolvedParagraph, text: ResolvedText, widths: FontWidths): Paragraph | Unjudged {
-  const spacing = reduced(paragraph.lineSpacing, text.lineReduction)
+  const spacing = reduced(paragraph.lineHeight, text.lineReduction)
   const sized: Sized[] = []
   const glyphs: Glyph[] = []
   const empties: { run: number; at: number }[] = []
@@ -230,7 +230,7 @@ function placeParagraph(
   const spans = spansOf(glyphs, inner - margin - lead, inner - margin)
   const endSize = paragraph.end.size * text.fontScale
   const endFace = widths[fontFace(paragraph.end.font, false, false)]
-  const spacing = reduced(paragraph.lineSpacing, text.lineReduction)
+  const spacing = reduced(paragraph.lineHeight, text.lineReduction)
   const strut = extent(filled ? 0 : lineOf(spacing, endSize), endFace, endSize)
   const largest = Math.max(endSize, ...sized.map((run) => run.size))
   let y = gapOf(paragraph.spaceBefore, largest)

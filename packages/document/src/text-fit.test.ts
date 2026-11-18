@@ -26,7 +26,7 @@ function paragraph(runs: readonly ResolvedRun[], more: Partial<ResolvedParagraph
     level: 0,
     marginLeft: 0,
     indent: 0,
-    lineSpacing: null,
+    lineHeight: null,
     spaceBefore: null,
     spaceAfter: null,
     bullet: null,
@@ -94,10 +94,10 @@ describe("layText", () => {
     expect(result.height).toBeCloseTo(24)
   })
 
-  it("spaces lines by the paragraph's line spacing, rounded the way the painter rounds it", () => {
-    const result = laid(text([paragraph([run("aaaa bbbb cccc")], { lineSpacing: { percent: 0.9 } })]), 50)
+  it("spaces lines by the paragraph's line height, rounded the way the painter rounds it", () => {
+    const result = laid(text([paragraph([run("aaaa bbbb cccc")], { lineHeight: { percent: 0.9 } })]), 50)
     expect(result.height).toBeCloseTo(2 * 10.8)
-    const fixed = laid(text([paragraph([run("aaaa bbbb cccc")], { lineSpacing: { points: 15 } })]), 50)
+    const fixed = laid(text([paragraph([run("aaaa bbbb cccc")], { lineHeight: { points: 15 } })]), 50)
     expect(fixed.height).toBeCloseTo(30)
   })
 
@@ -120,9 +120,9 @@ describe("layText", () => {
     expect(laid(text([paragraph([run("aa")]), empty]), 100).height).toBeCloseTo(12 + 24)
   })
 
-  it("keeps a bullet's line within its paragraph's tight line spacing, as PowerPoint does", () => {
-    const bulleted = (lineSpacing: ResolvedParagraph["lineSpacing"]) =>
-      paragraph([run("aaaa")], { lineSpacing, bullet: { text: "•", font: "Plain", size: 10 } })
+  it("keeps a bullet's line within its paragraph's tight line height, as PowerPoint does", () => {
+    const bulleted = (lineHeight: ResolvedParagraph["lineHeight"]) =>
+      paragraph([run("aaaa")], { lineHeight, bullet: { text: "•", font: "Plain", size: 10 } })
     expect(laid(text([bulleted({ percent: 0.7 })]), 100).height).toBeCloseTo(8.4)
     expect(laid(text([bulleted({ points: 7 })]), 100).height).toBeCloseTo(7)
     expect(laid(text([bulleted(null)]), 100).height).toBeCloseTo(12)
@@ -147,8 +147,8 @@ describe("layText", () => {
   })
 
   it("subtracts the line reduction from percentage spacing and leaves spacing in points, as ECMA-376 says", () => {
-    const tight = (lineSpacing: ResolvedParagraph["lineSpacing"]) =>
-      laid(text([paragraph([run("aaaa")], { lineSpacing })], { lineReduction: 0.2 }), 100).height
+    const tight = (lineHeight: ResolvedParagraph["lineHeight"]) =>
+      laid(text([paragraph([run("aaaa")], { lineHeight })], { lineReduction: 0.2 }), 100).height
     expect(tight({ percent: 0.9 })).toBeCloseTo(12 * 0.7)
     expect(tight({ points: 15 })).toBeCloseTo(15)
   })

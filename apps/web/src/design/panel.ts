@@ -124,7 +124,7 @@ type Labels = {
   readonly fields: Readonly<Record<string, { readonly label: string; readonly reset?: string }>>
 }
 
-const paragraphKeys = ["align", "list", "lineSpacing", "spaceBefore", "spaceAfter"] as const
+const paragraphKeys = ["align", "list", "lineHeight", "spaceBefore", "spaceAfter"] as const
 
 type Held = { readonly value: unknown; readonly mixed: boolean; readonly inherited: boolean }
 

@@ -7,7 +7,7 @@ function shownText(value: string): TextValue {
 }
 
 const runKeys = ["fill", "color", "size", "font", "bold", "italic", "underline", "strike", "letterSpacing"] as const
-const paragraphKeys = ["align", "list", "lineSpacing", "spaceBefore", "spaceAfter"] as const
+const paragraphKeys = ["align", "list", "lineHeight", "spaceBefore", "spaceAfter"] as const
 
 function picked(input: Loose, keys: readonly string[]): Loose {
   return Object.fromEntries(keys.flatMap((key) => (Object.hasOwn(input, key) ? [[key, input[key]]] : [])))

@@ -26,7 +26,7 @@ function words(
       level: 0,
       marginLeft: 0,
       indent: 0,
-      lineSpacing: null,
+      lineHeight: null,
       spaceBefore: null,
       spaceAfter: null,
       bullet: null,

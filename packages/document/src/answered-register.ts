@@ -1,6 +1,7 @@
 import type { DeckIndex } from "./deck-index.js"
 import { commandHoldsFills, indexHoldsFills } from "./fills-conversion.js"
 import { format } from "./format.js"
+import { opensRenamedKey } from "./key-alias.js"
 
 type Rowed = { readonly landed: readonly { readonly v?: number }[] }
 
@@ -23,7 +24,8 @@ export function answeredRegister<
       (command) =>
         (command.grid ?? 1) > 1 ||
         (command.slide === "move-many" && command.row === "before") ||
-        commandHoldsFills(command),
+        commandHoldsFills(command) ||
+        opensRenamedKey(command),
     ) || indexHoldsFills(register.index)
   const rows = newerCommand === true ? format : rowFormat(register.elements)
   if (register.index === undefined) return rows > 1 ? { ...register, format: rows } : register

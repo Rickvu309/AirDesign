@@ -44,7 +44,7 @@ export type PaintParagraph = {
   level: number
   marginLeft: number
   indent: number
-  lineSpacing: PaintSpacing | null
+  lineHeight: PaintSpacing | null
   spaceBefore: PaintSpacing | null
   spaceAfter: PaintSpacing | null
   bullet: PaintBullet | null
@@ -457,7 +457,7 @@ const textParagraph = (
     level,
     marginLeft: first(layers, (layer) => whole(layer, "marL")) ?? 0,
     indent: first(layers, (layer) => whole(layer, "indent")) ?? 0,
-    lineSpacing: first(layers, (layer) => spacing(layer, "a:lnSpc")) ?? null,
+    lineHeight: first(layers, (layer) => spacing(layer, "a:lnSpc")) ?? null,
     spaceBefore: first(layers, (layer) => spacing(layer, "a:spcBef")) ?? null,
     spaceAfter: first(layers, (layer) => spacing(layer, "a:spcAft")) ?? null,
     bullet: bulletOf(layers, level, count, scope),

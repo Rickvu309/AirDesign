@@ -35,7 +35,7 @@ export const textWire: TraitWire<"text"> = {
       description: "Letter spacing in points; negative tightens.",
       example: { text: { letterSpacing: 1.5 } },
     },
-    lineSpacing: { description: "Line height in percent; 100 is single.", example: { text: { lineSpacing: 150 } } },
+    lineHeight: { description: "Line height in percent; 100 is single.", example: { text: { lineHeight: 150 } } },
     spaceBefore: { description: "Space above each paragraph, in points.", example: { text: { spaceBefore: 12 } } },
     style: {
       description: "Apply a textStyles id from read_deck with the slide selected. Explicit fields override it.",
