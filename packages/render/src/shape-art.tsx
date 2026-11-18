@@ -218,7 +218,10 @@ export function ShapeArt(props: { readonly element: CanvasElement; readonly scal
       : paths.map((path, index) =>
           path.fill && fill !== null && element.outline !== "line" ? (
             <path key={index} d={path.d} fill={fill} {...soft} />
-          ) : path.fill && fill === null && element.fill !== null && element.outline !== "line" ? (
+          ) : path.fill &&
+            fill === null &&
+            (element.fill !== null || element.layers !== undefined) &&
+            element.outline !== "line" ? (
             <g key={index} {...soft}>
               <CssFill element={element} width={width} height={height} clip={`url(#${id}-fill-${index})`} />
             </g>

@@ -1,9 +1,18 @@
 import { paintKind, type PaintElement } from "@airdesign/pptx"
-import type { CanvasElement, CanvasLine, CanvasOutline, CanvasTable, CanvasText } from "@airdesign/render"
+import {
+  unshownFill,
+  type CanvasElement,
+  type CanvasLayer,
+  type CanvasLine,
+  type CanvasOutline,
+  type CanvasTable,
+  type CanvasText,
+} from "@airdesign/render"
 import type { CanvasShape } from "@/canvas-source"
-import type { PictureSource } from "@/picture-fill"
+import { fillPlan, type PlanLayer } from "@/fill-plan"
+import { pictureLayer, type PictureSource } from "@/picture-fill"
 import { canvasEffects } from "@/canvas-effects"
-import { cssColor, visibleFill } from "@/paint-css"
+import { cssColor, cssGradient, visibleFill } from "@/paint-css"
 import { unshownText } from "@/unshown-text"
 
 export type RowPaint = {
@@ -30,7 +39,7 @@ export function movableRow(ctx: RowPaint): boolean {
   return (ctx.shape?.movable ?? false) && ctx.row.group === null && ctx.row.box !== null
 }
 
-type Picture = NonNullable<CanvasElement["picture"]>
+type Picture = NonNullable<CanvasLayer["picture"]>
 
 function toneOf(image: NonNullable<PaintElement["image"]>): Picture {
   const recolor = image.recolor
@@ -45,25 +54,32 @@ function toneOf(image: NonNullable<PaintElement["image"]>): Picture {
   }
 }
 
-function pictureOf(row: PaintElement): { readonly picture?: Picture } {
-  const image = row.image
-  if (image !== null) {
-    const plain =
-      image.alpha === undefined &&
-      image.recolor === undefined &&
-      image.blur === undefined &&
-      image.overlay === undefined
-    if (plain) return {}
-    return { picture: toneOf(image) }
-  }
-  const fill = row.fill
-  if (fill?.type !== "picture" || (fill.blur === undefined && fill.overlay === undefined)) return {}
-  return {
-    picture: {
-      ...(fill.blur === undefined ? {} : { blur: fill.blur }),
-      ...(fill.overlay === undefined ? {} : { overlay: cssColor(fill.overlay) }),
-    },
-  }
+function canvasLayer(layer: PlanLayer, src: PictureSource): CanvasLayer {
+  if (layer.kind === "color") return { background: cssColor(layer.color) }
+  if (layer.kind === "gradient") return { background: cssGradient(layer.gradient) }
+  const url = src(layer.image)
+  const background = url === null ? null : pictureLayer(layer.image, url)
+  return { background: background ?? unshownFill, picture: toneOf(layer.image) }
+}
+
+function plain(layer: CanvasLayer): boolean {
+  return layer.picture === undefined || Object.keys(layer.picture).length === 0
+}
+
+function layersOf(row: PaintElement, src: PictureSource): readonly CanvasLayer[] | null {
+  const plan = fillPlan(row)
+  if (row.stack === undefined && !plan.some((layer) => layer.kind === "image")) return null
+  return plan.map((layer) => canvasLayer(layer, src))
+}
+
+function framedFill(layers: readonly CanvasLayer[] | null): string | null | undefined {
+  if (layers === null || !layers.every(plain)) return undefined
+  return layers.length === 0
+    ? null
+    : layers
+        .map((layer) => layer.background)
+        .toReversed()
+        .join(", ")
 }
 
 function labelOf(row: PaintElement): { readonly label?: string } {
@@ -80,9 +96,12 @@ export function elementFrom(ctx: RowPaint, spec: DrawnSpec): CanvasElement {
   const { key, row, shape } = ctx
   const unshown = unshownText(row, ctx.src)
   const effects = canvasEffects(row.effects)
+  const painted = layersOf(row, ctx.src)
+  const framed = framedFill(painted)
+  const layers = framed === undefined ? painted : null
   return {
     ...labelOf(row),
-    ...pictureOf(row),
+    ...(layers === null ? {} : { layers }),
     key,
     id: shape?.id ?? null,
     kind: row.kind === "p:pic" ? "picture" : (shape?.kind ?? paintKind(row.kind)),
@@ -92,8 +111,8 @@ export function elementFrom(ctx: RowPaint, spec: DrawnSpec): CanvasElement {
     placeholder: row.placeholder !== null,
     ...(row.prompt ? { prompt: row.prompt } : {}),
     ...(unshown === null ? {} : { unshownText: unshown }),
-    filled: visibleFill(row.fill),
-    fill: spec.fill,
+    filled: painted === null ? visibleFill(row.fill) : painted.length > 0,
+    fill: framed === undefined ? (layers === null ? spec.fill : null) : framed,
     line: spec.line,
     ...(effects === undefined ? {} : { effects }),
     outline: spec.outline,

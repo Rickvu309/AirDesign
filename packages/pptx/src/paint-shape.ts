@@ -5,6 +5,7 @@ import { paintChild, paintFill } from "./paint-fill.js"
 import type { MarkupChildren } from "./text-value-route.js"
 import type { PaintPicture } from "./paint-image.js"
 import { paintEffects, type PaintEffects } from "./paint-effects.js"
+import { stackUri } from "./stack-extension.js"
 
 export type PaintJoin = { kind: "round" | "bevel" | "miter"; limit?: number }
 
@@ -41,7 +42,10 @@ export type PaintStyles = {
   effects: readonly MarkupElement[]
 }
 
+export type StackPaint = PaintFill | { readonly type: "image" }
+
 export type ShapePaint = {
+  stack?: readonly StackPaint[]
   fill: PaintFill | null
   line: PaintLine | null
   geometry: string | null
@@ -257,5 +261,29 @@ export const paintShape = (
       break
     }
   }
-  return { fill, line, geometry, adjusts, ...(effects === undefined ? {} : { effects }) }
+  const stack = stackOf(own, readFill)
+  return {
+    fill,
+    line,
+    geometry,
+    adjusts,
+    ...(effects === undefined ? {} : { effects }),
+    ...(stack === null ? {} : { stack }),
+  }
+}
+
+function stackOf(
+  source: PaintSource,
+  readFill: (source: PaintSource, fill: MarkupElement) => PaintFill | null,
+): readonly StackPaint[] | null {
+  const list = paintChild(source.children, propertiesOf(source), "a:extLst")
+  const ext = (list === undefined ? [] : (source.children[list.index] ?? [])).find(
+    (element) => paintAttribute(element, "uri") === stackUri,
+  )
+  const held = ext === undefined ? undefined : source.children[ext.index]?.[0]
+  if (held === undefined) return null
+  const paints = (source.children[held.index] ?? []).map((element): StackPaint | null =>
+    element.kind === "adf:image" ? { type: "image" } : readFill(source, element),
+  )
+  return paints.every((paint) => paint !== null) ? (paints as readonly StackPaint[]) : null
 }

@@ -36,7 +36,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const canvas = (shape) => page.locator(`[data-slide-paint] [data-canvas-element="${slidePart}#${shape}"]`)
   const look = (shape) =>
     canvas(shape).evaluate((node) => {
-      const style = getComputedStyle(node)
+      const style = getComputedStyle(node.querySelector("[data-fill-image]") ?? node)
       return {
         image: style.backgroundImage,
         size: style.backgroundSize,

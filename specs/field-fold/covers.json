@@ -40,8 +40,8 @@
     {
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
-      "digest": "e7d728935bf9",
-      "blob": "43b15a1d90fbec5196629908e36c61f5fd3cff8f"
+      "digest": "00c0dcf7958f",
+      "blob": "d6f303145efd3bdf1eb7e1d8c02ed50cc380033d"
     },
     {
       "file": "apps/web/src/design/shown-alpha.ts",
@@ -52,8 +52,8 @@
     {
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["fieldsRead", "elementDesign"],
-      "digest": "a58444ff0064",
-      "blob": "e9265a484f07c32ab8df009d0afb63427743102b"
+      "digest": "59e3c8acb369",
+      "blob": "a6a97f7996d19dcfba0006c02304be0307590d50"
     },
     {
       "file": "apps/web/src/undo-list.ts",
@@ -89,7 +89,7 @@
       "file": "packages/pptx/src/trait-xml-fills.ts",
       "names": ["fillAlpha", "fadedFill", "fillsXml"],
       "digest": "674cd7688782",
-      "blob": "ed3c04e1438eaa42b3fc00aa0e7c3e6493d77ccd"
+      "blob": "11838879643f5a6ab484ed15153bad1731865915"
     },
     {
       "file": "packages/pptx/src/alpha-codec.ts",

@@ -4,7 +4,7 @@ import type { CanvasEffects } from "./effect-record.js"
 import type { CanvasLine, CanvasOutline } from "./line-record.js"
 import type { CanvasElement } from "./record.js"
 import type { PaintBox } from "./paint-box.js"
-import type { CanvasPicture } from "./picture-tone.js"
+import type { CanvasLayer } from "./fill-layers.js"
 import type { CanvasTable } from "./table-record.js"
 import type { CanvasText } from "./text-record.js"
 
@@ -49,6 +49,6 @@ export type ElementPaint = {
   readonly diagram?: readonly CanvasElement[]
   readonly chart?: CanvasChart
   readonly label?: string
-  readonly picture?: CanvasPicture
+  readonly layers?: readonly CanvasLayer[]
   readonly connection?: CanvasConnection
 }

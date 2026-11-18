@@ -1,3 +1,4 @@
+import { FillLayers } from "./fill-layers.js"
 import type { ReactNode } from "react"
 import type { CanvasShadow } from "./effect-record.js"
 import type { presetOutline } from "./preset-path.js"
@@ -29,7 +30,8 @@ const roundCorner = 0.16667
 export const tidy = (value: number) => Math.round(value * 1000) / 1000 + 0
 
 export function silhouetteOf(element: CanvasElement): "fill" | "line" | "both" | null {
-  const filled = (element.fill !== null && element.outline !== "line") || element.kind === "picture"
+  const filled =
+    (element.fill !== null && element.outline !== "line") || element.kind === "picture" || element.layers !== undefined
   if (element.line !== null) return filled ? "both" : "line"
   return filled ? "fill" : null
 }
@@ -349,7 +351,17 @@ export function CssFill(props: {
       overflow="visible"
       {...(props.clip === undefined ? {} : { clipPath: props.clip })}
     >
-      <div style={{ width: "100%", height: "100%", background: element.fill ?? "none", ...radius }} />
+      {element.layers === undefined ? (
+        <div style={{ width: "100%", height: "100%", background: element.fill ?? "none", ...radius }} />
+      ) : (
+        <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", ...radius }}>
+          <FillLayers
+            element={element}
+            scaled={(emu) => (element.box === null || element.box.width <= 0 ? 0 : (emu * width) / element.box.width)}
+            unshown={false}
+          />
+        </div>
+      )}
     </foreignObject>
   )
 }

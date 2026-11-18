@@ -217,6 +217,10 @@ _Avoid_: line (as a trait or a panel section), stroke, outline
 **line**:
 A layer drawn as a line. Never the stroke around a shape.
 
+**baked**:
+How a layer's fills export when PowerPoint cannot hold them, such as a gradient over a photo: as one image fill on the same shape, drawn by the same fill plan the canvas paints. The layer's text, border, effects and link stay native. Until the export, the deck keeps the paints in an AirDesign extension of the shape.
+_Avoid_: flattened, rasterized
+
 **field**:
 One value of a trait, written `trait.field`, such as `box.x`, `border.width` or `text.size`. A field is the smallest thing a row sets, a reset returns to inherited, and a refusal names.
 _Avoid_: property, attribute, setting
