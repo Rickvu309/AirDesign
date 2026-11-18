@@ -135,6 +135,20 @@ if (!waitLine(1, undefined, "small").includes("small lane")) fail("the small lan
 if (!waitLine(3, 90).includes("Expect about 5 min")) fail("the expected wait does not count the checks ahead")
 if (waitLine(1, undefined).includes("Expect")) fail("an empty queue log still promised a wait")
 
+const fieldsFolder = fs.mkdtempSync(path.join(os.tmpdir(), "machine-lock-fields-"))
+const releaseWithFields = await takeMachineLock({ folder: fieldsFolder, env: {}, say, job: "rerun", lane: "small" })
+await releaseWithFields({ status: "passed", file: "apps/web/src/x.test.ts", tree: "ab12cd34" })
+const releaseBare = await takeMachineLock({ folder: fieldsFolder, env: {}, say, job: "rerun", lane: "small" })
+await releaseBare({ status: "passed" })
+const [withFields, bare] = fs
+  .readFileSync(path.join(fieldsFolder, queueLogName), "utf8")
+  .trim()
+  .split("\n")
+  .map((line) => JSON.parse(line))
+if (withFields.file !== "apps/web/src/x.test.ts" || withFields.tree !== "ab12cd34" || withFields.status !== "passed")
+  fail("the queue row does not carry the file and tree a release was given")
+if ("file" in bare || "tree" in bare) fail("a release with no file or tree wrote them into its row")
+
 const gib = 2 ** 30
 if (checkSlots({}, 8, 16 * gib) !== 1) fail("a small machine ran more than one check at once")
 if (checkSlots({}, 32, 16 * gib) !== 1) fail("16 GB of memory ran more than one check at once")

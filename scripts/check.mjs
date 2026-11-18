@@ -5,6 +5,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { checkSteps, onCi, partOf, shardOf } from "./check-steps.mjs"
 import { stampChecked, workingTree } from "./checked.mjs"
+import { failedTests } from "./failed-tests.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 import { timeMetric } from "./metrics.mjs"
 
@@ -23,7 +24,7 @@ const keepSteps = (chosen, keep) =>
     )
     .filter((stage) => stage.length > 0)
 
-export const runCheck = async ({ chosen, lock, run, all = false, eventName = "" }) => {
+export const runCheck = async ({ chosen, lock, run, all = false, eventName = "", tree, failedFiles = new Set() }) => {
   const failed = []
   let hung = false
   const runStep = async (step) => {
@@ -55,7 +56,11 @@ export const runCheck = async ({ chosen, lock, run, all = false, eventName = "" 
     }
     return { failed, ranSteps }
   } finally {
-    await release({ status: failed.length === 0 ? "passed" : `failed ${failed.join(" ")}` })
+    await release({
+      status: failed.length === 0 ? "passed" : `failed ${failed.join(" ")}`,
+      tree,
+      files: failed.length === 0 || failedFiles.size === 0 ? undefined : [...failedFiles].join(" "),
+    })
   }
 }
 
@@ -84,7 +89,7 @@ const hungLine = (name, command, args, limit, running) =>
 const print = (text, stream) => (stream === "error" ? process.stderr : process.stdout).write(text)
 
 export const stepRunner =
-  ({ limitOf, say = print, eventName = "" }) =>
+  ({ limitOf, say = print, eventName = "", failedFiles = new Set() }) =>
   ([name, command, args, extra]) =>
     new Promise((resolve) => {
       const limit = limitOf(name)
@@ -122,6 +127,7 @@ export const stepRunner =
         } else {
           say(`${checkSteps.showsOutput(name) ? output : ""}ok ${name} ${seconds}s\n`)
         }
+        if (status !== 0) for (const test of failedTests(output)) failedFiles.add(test.file)
         const hint = checkSteps.failureHint(name)
         if (status !== 0 && hint !== undefined) say(`${hint}\n`, "error")
         resolve(hung ? "hung" : status)
@@ -147,13 +153,16 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const previousTemp = process.env.TMPDIR
   process.env.TMPDIR = ownTemp
   let checkStarted
+  const failedFiles = new Set()
   let result
   try {
     result = await runCheck({
       eventName,
       chosen: checkSteps.stagesFor(part, ci, shardOf(process.argv)),
       all: process.argv.includes("--all"),
-      run: stepRunner({ limitOf: (name) => checkSteps.stepLimit(name, ci), eventName }),
+      tree: checkedTree,
+      failedFiles,
+      run: stepRunner({ limitOf: (name) => checkSteps.stepLimit(name, ci), eventName, failedFiles }),
       lock: async () => {
         const release = await takeMachineLock()
         checkStarted = Date.now()

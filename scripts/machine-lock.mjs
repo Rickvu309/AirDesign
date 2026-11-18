@@ -235,7 +235,7 @@ export const takeMachineLock = async ({
   const started = clock()
   env[held] = file
   let recorded = false
-  const record = (status = "exited") => {
+  const record = (status = "exited", fields = {}) => {
     if (recorded) return
     recorded = true
     const seconds = (from, to) => Math.round((to - from) / 100) / 10
@@ -247,13 +247,14 @@ export const takeMachineLock = async ({
       queued: queuedAt,
       waited: seconds(queued, started),
       ran: seconds(started, clock()),
+      ...fields,
     }
     fs.appendFileSync(log, `${JSON.stringify(row)}\n`)
   }
   const exited = () => record()
   process.once("exit", exited)
-  return ({ status = "done" } = {}) => {
-    record(status)
+  return ({ status = "done", ...fields } = {}) => {
+    record(status, fields)
     process.removeListener("exit", exited)
     delete env[held]
     return letGo(holder)
