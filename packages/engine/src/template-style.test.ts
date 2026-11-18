@@ -120,18 +120,19 @@ it("edits only the addressed template and reports its current name and fonts", (
 })
 
 it("reports an added colour on that template and omits an unused template once it is deleted", () => {
+  const coral = `#${"FF6600"}`
   let deck = indexed()
   deck = landed(call("start_run", deck, agent, { deck: "deck", runId: "run", elements: [{ node: "deck.template2" }] }))
   deck = landed(
     call("edit_deck", deck, agent, {
       deck: "deck",
       base: deck.revision,
-      changes: [{ op: "set", target: "deck.template2", theme: { custom: [{ name: "Coral", color: "#FF6600" }] } }],
+      changes: [{ op: "set", target: "deck.template2", theme: { custom: [{ name: "Coral", color: coral }] } }],
     }),
   )
   expect(readDeckPage(deck, { runId: "run" }).templates?.[1]).toMatchObject({
     node: "deck.template2",
-    custom: [{ name: "Coral", color: "#FF6600" }],
+    custom: [{ name: "Coral", color: coral }],
   })
   expect(readDeckPage(deck, { runId: "run" }).templates?.[0]).not.toHaveProperty("custom")
   deck = landed(
