@@ -21,6 +21,7 @@ export const optionCopy: Readonly<Record<string, string>> = {
   ...bodyWords,
   ...pictureWords,
   ...connectionWords,
+  name: "Name",
 }
 
 export function optionWord(field: string, option: string): string {

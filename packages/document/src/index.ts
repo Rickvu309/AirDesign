@@ -213,6 +213,7 @@ export {
   type MappedSlot,
   type ThemeSlot,
 } from "./color.js"
+export { cycledColor, presentSlots } from "./template-remix.js"
 export {
   readTextValue,
   hasSlideNumber,

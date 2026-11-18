@@ -129,6 +129,8 @@ describe("the one table of traits", () => {
       "theme.folHlink",
       "theme.major",
       "theme.minor",
+      "theme.custom",
+      "theme.removed",
       "template.id",
     ])
     expect(alphaKeys).toEqual(["fill.alpha", "line.alpha", "text.alpha", "image.alpha"])

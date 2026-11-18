@@ -109,7 +109,7 @@ it("edits only the addressed template and reports its current name and fonts", (
     }),
   )
   const read = readDeckPage(deck, { runId: "run" })
-  expect(read.templates?.[0]).toEqual(templates[0])
+  expect(read.templates?.[0]).toEqual({ ...templates[0], node: "deck.template1" })
   expect(read.templates?.[1]).toMatchObject({
     name: "Night",
     palette: { fonts: { major: "Verdana" }, slots: { accent1: "112233" } },
@@ -117,6 +117,33 @@ it("edits only the addressed template and reports its current name and fonts", (
   expect(
     call("start_run", deck, agent, { deck: "deck", runId: "run", elements: [{ node: "deck.template3" }] }),
   ).toMatchObject({ ok: false, refusal: "dead" })
+})
+
+it("reports an added colour on that template and omits an unused template once it is deleted", () => {
+  let deck = indexed()
+  deck = landed(call("start_run", deck, agent, { deck: "deck", runId: "run", elements: [{ node: "deck.template2" }] }))
+  deck = landed(
+    call("edit_deck", deck, agent, {
+      deck: "deck",
+      base: deck.revision,
+      changes: [{ op: "set", target: "deck.template2", theme: { custom: [{ name: "Coral", color: "#FF6600" }] } }],
+    }),
+  )
+  expect(readDeckPage(deck, { runId: "run" }).templates?.[1]).toMatchObject({
+    node: "deck.template2",
+    custom: [{ name: "Coral", color: "#FF6600" }],
+  })
+  expect(readDeckPage(deck, { runId: "run" }).templates?.[0]).not.toHaveProperty("custom")
+  deck = landed(
+    call("edit_deck", deck, agent, {
+      deck: "deck",
+      base: deck.revision,
+      changes: [{ op: "set", target: "deck.template2", theme: { removed: true } }],
+    }),
+  )
+  const read = readDeckPage(deck, { runId: "run" })
+  expect(read.templates?.map((style) => style.node)).toEqual(["deck.template1"])
+  expect(read.templates?.map((style) => style.id)).toEqual([templates[0]!.id])
 })
 
 it("expands a deck-wide theme edit to the same template nodes, so it can replace earlier scoped values", () => {

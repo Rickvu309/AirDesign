@@ -23,6 +23,7 @@ import {
   type SlideNumbers,
 } from "@airdesign/document"
 import { routedParts } from "./connector-route.js"
+import { dropUnusedTemplates } from "./template-drop.js"
 import { slidePart } from "./package-address.js"
 import { partBytes } from "./part-markup.js"
 import { readShapes, shapeKind, type ReadShape } from "./read-shapes.js"
@@ -185,7 +186,8 @@ export function exportParts(parts: Parts, register: Register, media?: ElementAt[
     if (index !== null) {
       const id = templates[index]?.id
       const fields = body === undefined ? undefined : landedPatch(body, "text").theme
-      if (id !== undefined && fields !== undefined)
+      const removed = typeof fields?.removed === "object" && fields.removed.set === true
+      if (id !== undefined && fields !== undefined && !removed && next.has(id))
         next = writeTrait(next, { slide: "", part: id, shape: "theme" }, "theme", fields)
       continue
     }
@@ -196,5 +198,5 @@ export function exportParts(parts: Parts, register: Register, media?: ElementAt[
           ? writtenSlide(next, node, body, opening)
           : writtenElement(next, shapes, node, body, opening, media, numbers)
   }
-  return routedParts(parts, next)
+  return dropUnusedTemplates(routedParts(parts, next), register)
 }

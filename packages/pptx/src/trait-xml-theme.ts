@@ -6,6 +6,7 @@ import { readSlides } from "./read-shapes.js"
 import { withAttribute } from "./slot-edit.js"
 import { xmlAttribute } from "./shape-write.js"
 import { markupChildren } from "./text-value-route.js"
+import { themeCustomColors, withThemeCustomColors } from "./template-colors.js"
 import { slideTheme } from "./theme-swatches.js"
 import { whole, type Parts, type PartCodec, type TraitXml } from "./xml-codec.js"
 
@@ -117,6 +118,14 @@ export const themeXml: TraitXml<"theme"> = {
     folHlink: whole(slotCodec("folHlink")),
     major: whole(fontCodec("major")),
     minor: whole(fontCodec("minor")),
+    custom: whole({
+      read: (parts, at) => themeCustomColors(partBytes(parts, at.part)),
+      write: (parts, at, value) => written(parts, at.part, withThemeCustomColors(partBytes(parts, at.part), value)),
+    }),
+    removed: whole({
+      read: () => false,
+      write: (parts) => parts,
+    }),
   },
 }
 

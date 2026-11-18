@@ -1,12 +1,13 @@
 import { trait } from "./trait-decl.js"
 import { typefaceBytes } from "./text-value.js"
-import { hex, words } from "./value-kind.js"
+import { flag, hex, list, record, words } from "./value-kind.js"
 
 const typeface = words(typefaceBytes)
+const customColor = record({ name: words(255), color: hex })
 
 export const theme = trait(
   "own",
-  { version: 2, shape: "3c85bab0" },
+  { version: 3, shape: "fca050fd" },
   {
     name: words(256),
     dk1: hex,
@@ -23,5 +24,7 @@ export const theme = trait(
     folHlink: hex,
     major: typeface,
     minor: typeface,
+    custom: list(customColor, 0, 32),
+    removed: flag,
   },
 )

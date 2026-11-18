@@ -8,4 +8,6 @@ export const themeCopy = {
   folHlink: "Visited link",
   major: "Heading font",
   minor: "Body font",
+  custom: "Added colors",
+  removed: "Delete template style",
 } as const

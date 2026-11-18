@@ -209,6 +209,8 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [placed("hlink", hidden), placed("folHlink", hidden)],
     [placed("major", inside)],
     [placed("minor", inside)],
+    [placed("custom", hidden)],
+    [placed("removed", hidden)],
   ],
 }
 
