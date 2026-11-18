@@ -91,11 +91,15 @@ export const fillCases = { none: mark, solid: color, gradient, pattern } as cons
 
 export const recolors = union({ none: mark, grayscale: mark, duotone: record({ dark: color, light: color }) })
 
-export const overlays = union({ none: mark, solid: color })
-
 export const fillModes = ["fill", "fit", "crop", "tile", "stretch"] as const
 
-const slotPaint = union({ ...fillCases, image: mark, group: mark }, "solid")
+const shownPaint = union({ ...fillCases, image: mark, group: mark }, "solid")
+
+const slotPaint = union({ ...fillCases, image: mark, group: mark, hidden: shownPaint }, "solid")
+
+export const overlay = union({ none: mark, solid: color, gradient }, "solid")
+
+export type Overlay = ValueOf<typeof overlay>
 
 export const paint = union({ ...fillCases, image: pictureSource, group: mark }, "solid")
 
@@ -111,7 +115,7 @@ export type PaintSlot = (typeof paintSlots)[number]
 
 export const fills = trait(
   "whole",
-  { version: 12, shape: "8542c018" },
+  { version: 13, shape: "1d69c93e" },
   {
     p0: slotPaint,
     p1: slotPaint,
@@ -122,10 +126,9 @@ export const fills = trait(
     crop: record({ l: fraction, t: fraction, r: fraction, b: fraction }),
     recolor: recolors,
     blur: fraction,
-    overlay: overlays,
     alpha: alphaOver("p0"),
   },
-  { paint },
+  { paint, overlay },
   ["p0", "paint"],
   paintSlots,
 )
@@ -137,19 +140,44 @@ export type ResolvedFills = { readonly paints: readonly ShownPaint[]; readonly s
 export function readFills(shown: ShownFills): ResolvedFills {
   const paints = paintSlots.flatMap((slot): ShownPaint[] => {
     const held = shown[slot]
-    if (held === undefined || "none" in held) return []
+    if (held === undefined || "none" in held || "hidden" in held) return []
     return "image" in held ? [{ image: shown.source ?? null }] : [held]
   })
-  return { paints, slidesMode: paints.at(-1) ?? { none: true } }
+  const image = paints.find((each) => "image" in each)
+  return { paints, slidesMode: image ?? paints.at(-1) ?? { none: true } }
 }
 
-export type FillsEdit = { readonly paint: Paint | null }
+export type FillsEdit =
+  | { readonly paint: Paint | null }
+  | { readonly overlay: Overlay | null }
+  | { readonly slots: readonly SlotPaint[] }
 
-export function changeFills(edit: FillsEdit): TraitPatch<"fills"> {
+const empty: SlotPaint = { none: true }
+
+function same(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
+export function changeFills(edit: FillsEdit, current: ShownFills = {}): TraitPatch<"fills"> {
+  if ("overlay" in edit) return { p3: { set: edit.overlay ?? empty } }
+  if ("slots" in edit)
+    return Object.fromEntries(
+      paintSlots.flatMap((slot, at) => {
+        const next = edit.slots[at] ?? empty
+        return same(next, current[slot] ?? empty) ? [] : [[slot, { set: next }]]
+      }),
+    )
   const [bottom, ...above] = paintSlots
   const cleared = Object.fromEntries(above.map((slot) => [slot, { set: { none: true } }]))
   const { paint: chosen } = edit
   if (chosen === null) return { [bottom]: "inherit", ...cleared }
   if (!("image" in chosen)) return { [bottom]: { set: chosen }, ...cleared }
   return { [bottom]: { set: { image: true } }, ...cleared, source: { set: chosen.image } }
+}
+
+export function inputFills(input: Readonly<Record<string, unknown>>): TraitPatch<"fills"> {
+  return {
+    ...(Object.hasOwn(input, "paint") ? changeFills({ paint: input.paint as Paint | null }) : {}),
+    ...(Object.hasOwn(input, "overlay") ? changeFills({ overlay: input.overlay as Overlay | null }) : {}),
+  }
 }

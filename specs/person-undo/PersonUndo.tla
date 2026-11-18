@@ -2,7 +2,7 @@
 \* A person's undo is one step: a person edit back to what showed before, on every element the step named, and only on the fields it named.
 \* The step names the text of two elements, A and B. An agent's run writes one row on A, on its text or on its box.
 \* The step lands only while each field it names still shows the person's edit, so it never covers an agent's row on such a field, never hides one, and leaves A's box as it is.
-\* The replay runs it twice: on the text of two text boxes, and on the crop of two photos, where the run's other field is the recolour of A's image, a field of the same fills.
+\* The replay runs it twice: on the text of two text boxes, and on the crop of two photos, where the run's other field is the recolour of A's image, or the overlay paint in its top slot, both of the same fills.
 EXTENDS Integers
 
 VARIABLES rowsA, rowsB, boxA, agentRow, agentField, agentAt, phase, readAt, guarded, held, told, last, turns, covered

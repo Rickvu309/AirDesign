@@ -30,8 +30,8 @@ export const fillsWire: TraitWire<"fills"> = {
       example: { fills: { recolor: { duotone: { dark: "accent1", light: `#${white}` } } } },
     },
     overlay: {
-      description: "A color laid over the image. The color's own opacity is how strongly it covers the image.",
-      example: { fills: { overlay: { solid: `#${black} alpha 50` } } },
+      description: "A color or gradient laid over a photo or the other paints.",
+      example: { fills: { overlay: `#${black} alpha 50` } },
     },
     blur: {
       description: "How soft the image looks, in percent.",

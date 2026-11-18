@@ -28,6 +28,7 @@ it("leads a shape whose fills hold an image with Fill, Opacity, Border and Shado
     "corners",
     "border",
     "shadow",
+    "fills",
     "image",
     "crop",
     "box",

@@ -281,8 +281,11 @@ function stackOf(
     (element) => paintAttribute(element, "uri") === stackUri,
   )
   const held = ext === undefined ? undefined : source.children[ext.index]?.[0]
-  if (held === undefined) return null
-  const paints = (source.children[held.index] ?? []).map((element): StackPaint | null =>
+  if (held === undefined || paintAttribute(held, "bake") !== "1") return null
+  const shown = (source.children[held.index] ?? []).filter(
+    (element) => element.kind !== "adf:hidden" && element.kind !== "a:noFill",
+  )
+  const paints = shown.map((element): StackPaint | null =>
     element.kind === "adf:image" ? { type: "image" } : readFill(source, element),
   )
   return paints.every((paint) => paint !== null) ? (paints as readonly StackPaint[]) : null

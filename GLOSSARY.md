@@ -25,7 +25,7 @@ A layer that holds only text, as a person adds it with Add text. The design pane
 _Avoid_: text box (as a layer's name)
 
 **image**:
-A paint that shows a photo or an icon. Its source, fill mode, crop and adjustments are fields of fills: `fills.source`, `fills.mode`, `fills.crop`, `fills.recolor`, `fills.blur` and `fills.overlay`. A photo on a slide is a shape whose fills hold an image, and the design panel titles it Image.
+A paint that shows a photo or an icon. Its source, fill mode, crop and adjustments are fields of fills: `fills.source`, `fills.mode`, `fills.crop`, `fills.recolor` and `fills.blur`. A photo on a slide is a shape whose fills hold an image, and the design panel titles it Image.
 _Avoid_: picture (PowerPoint's word, used only inside `packages/pptx`), image layer
 
 **solid**:
@@ -207,11 +207,11 @@ A named group of fields that an element takes together: `identity`, `box`, `geom
 _Avoid_: property, attribute, facet, section (a section is a group of slides), group (a group is an element)
 
 **fills**:
-A shape's or a slide background's ordered list of paints, bottom first. The code stores it as the trait `fills`, in four paint slots `p0` to `p3`, and its opacity in `fills.alpha`. An agent and the design panel set it with one paint, `fills.paint`, which fills `p0` and clears the slots above. An older build's `fill.value` reads as that paint.
+A shape's or a slide background's ordered list of paints, bottom first. The code stores it as the trait `fills`, in four paint slots `p0` to `p3`, and its opacity in `fills.alpha`. An agent and the slides-mode panel set it with one paint, `fills.paint`, which fills `p0` and clears the slots above. Design mode lists every paint, top first. An older build's `fill.value` reads as that paint.
 _Avoid_: fill value, background fill
 
 **paint**:
-One entry of fills: a solid colour, a gradient, a pattern, a group's fill, none, or an image.
+One entry of fills: a solid colour, a gradient, a pattern, a group's fill, none, or an image. A hidden paint, `{ hidden: <paint> }`, neither paints nor exports.
 _Avoid_: fill kind, layer (a layer is a thing on a slide)
 
 **border**:

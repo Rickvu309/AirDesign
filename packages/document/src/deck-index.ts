@@ -18,6 +18,7 @@ import { readElementId, readSlideId, shapeOf, type ElementId, type SlideId } fro
 import { readTemplateStyles, type TemplateStyle } from "./template-style.js"
 import { converted, format, formatOf, type Conversion } from "./format.js"
 import { borderFormat, borderIndex } from "./border-conversion.js"
+import { overlayFormat, overlayIndex } from "./overlay-conversion.js"
 import { fillsFormat, fillsIndex, imageFormat, imageIndex } from "./fills-conversion.js"
 import { templateStyleFormat, templateStyleIndex } from "./template-style-conversion.js"
 import { readStoredTransition, type TransitionValue } from "./trait-transition.js"
@@ -279,6 +280,7 @@ export const pageConversions: readonly Conversion<undefined>[] = [
   { introduced: imageFormat, convert: imageIndex },
   { introduced: borderFormat, convert: borderIndex },
   { introduced: templateStyleFormat, convert: templateStyleIndex },
+  { introduced: overlayFormat, convert: overlayIndex },
 ]
 
 export function readIndexPage(raw: unknown): IndexPage | null {

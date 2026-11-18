@@ -54,8 +54,11 @@ function toneOf(image: NonNullable<PaintElement["image"]>): Picture {
   }
 }
 
-function canvasLayer(layer: PlanLayer, src: PictureSource): CanvasLayer {
-  if (layer.kind === "color") return { background: cssColor(layer.color) }
+function canvasLayer(layer: PlanLayer, src: PictureSource, above: boolean): CanvasLayer {
+  if (layer.kind === "color") {
+    const color = cssColor(layer.color)
+    return { background: above ? `linear-gradient(${color}, ${color})` : color }
+  }
   if (layer.kind === "gradient") return { background: cssGradient(layer.gradient) }
   const url = src(layer.image)
   const background = url === null ? null : pictureLayer(layer.image, url)
@@ -69,7 +72,7 @@ function plain(layer: CanvasLayer): boolean {
 function layersOf(row: PaintElement, src: PictureSource): readonly CanvasLayer[] | null {
   const plan = fillPlan(row)
   if (row.stack === undefined && !plan.some((layer) => layer.kind === "image")) return null
-  return plan.map((layer) => canvasLayer(layer, src))
+  return plan.map((layer, at) => canvasLayer(layer, src, at > 0))
 }
 
 function framedFill(layers: readonly CanvasLayer[] | null): string | null | undefined {

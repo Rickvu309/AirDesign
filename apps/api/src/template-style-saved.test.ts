@@ -16,6 +16,8 @@ import { afterAll, beforeAll, expect, it } from "vitest"
 import { account, connected, deckOf, grant, startAgents, stores, address, type Account } from "./agents-drive.js"
 import { ask } from "./harness.js"
 
+const templateStyleFormat = 68
+
 type Row = { readonly v?: number; readonly patch?: Readonly<Record<string, unknown>> }
 type Body = { readonly landed: readonly Row[] }
 type Saved = {
@@ -155,7 +157,7 @@ it("takes the template colour that build left unsent, undoes a new one, and stor
   )
   const after = await stored(deck)
   expect(after.register.elements[node]?.landed.at(-1)).toMatchObject({
-    v: format,
+    v: templateStyleFormat,
     patch: { templateStyle: { accent4: { set: "123456" } } },
   })
   expect(JSON.stringify(after.register.elements[node])).not.toContain('"theme"')

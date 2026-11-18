@@ -11,9 +11,11 @@ export type Place = {
   readonly section: PanelSectionName
   readonly open: boolean
   readonly mode: PanelMode
+  readonly only?: true
 }
 
 const slides = (section: PanelSectionName): Place => ({ section, open: true, mode: "slides" })
+const slidesOnly = (section: PanelSectionName): Place => ({ ...slides(section), only: true })
 const design = (section: PanelSectionName, open = false): Place => ({ section, open, mode: "design" })
 
 export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>> = {
@@ -54,11 +56,12 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly Place[]>>
   ],
   picture: [
     slides("alignment"),
-    slides("pictureFill"),
+    slidesOnly("pictureFill"),
     slides("opacity"),
     slides("corners"),
     slides("border"),
     slides("shadow"),
+    design("fills", true),
     design("image"),
     design("crop"),
     design("box"),
@@ -107,7 +110,7 @@ export function panelPlaces(
   mode: PanelMode,
   selection: readonly (PanelKind | null)[] = [],
 ): readonly Place[] {
-  const places = panelOrder[kind].filter((place) => mode === "design" || place.mode === mode)
+  const places = panelOrder[kind].filter((place) => (mode === "design" ? place.only !== true : place.mode === mode))
   const offered = selection.map((kind) => (kind === null ? [] : panelPlaces(kind, mode)))
   return places.filter(({ section }) => offered.every((places) => places.some((place) => place.section === section)))
 }

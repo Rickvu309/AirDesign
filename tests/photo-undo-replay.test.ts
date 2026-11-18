@@ -10,21 +10,24 @@ import { parseDot } from "./spec-graph.js"
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
 describe("person-undo replay on photos", () => {
-  it("drives every edge of a person's undo through decide, with a crop as the step's field and a recolour as the run's other one", async () => {
+  it("drives every edge of a person's undo through decide, with a crop as the step's field and a recolour or the overlay paint as the run's other one", async () => {
     assertJar(jarPath())
     const spec = topics(root).find((topic: { name: string }) => topic.name === "person-undo")
     if (spec === undefined) throw new Error("no person-undo spec")
     const [dumped] = await dumpTopics([spec])
     if (dumped === undefined) throw new Error("no graph")
     const graph = parseDot(dumped.graph)
-    const failures: string[] = []
-    const report = replayPhotoUndo(
-      graph,
-      (source, target, action) => `${view.state(source)} -${action}-> ${view.state(target)}`,
-      failures,
-    )
-    expect(failures, JSON.stringify(report)).toEqual([])
-    expect(report.replayed + report.told).toBe(graph.edges.length)
-    expect(report.told).toBeGreaterThan(0)
+    for (const other of ["recolor", "overlay"] as const) {
+      const failures: string[] = []
+      const report = replayPhotoUndo(
+        graph,
+        (source, target, action) => `${view.state(source)} -${action}-> ${view.state(target)}`,
+        failures,
+        other,
+      )
+      expect(failures, JSON.stringify(report)).toEqual([])
+      expect(report.replayed + report.told).toBe(graph.edges.length)
+      expect(report.told).toBeGreaterThan(0)
+    }
   }, 60_000)
 })

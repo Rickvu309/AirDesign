@@ -150,7 +150,17 @@ export {
   type ShadowPreset,
 } from "./effects-list.js"
 export { readTextFill, type TextFill } from "./text-fill.js"
-export { changeFills, paintSlots, patternPresets, readFills, type Paint, type ShownFills } from "./trait-fills.js"
+export {
+  changeFills,
+  paintSlots,
+  patternPresets,
+  readFills,
+  type Overlay,
+  type Paint,
+  type ShownFills,
+  type SlotPaint,
+} from "./trait-fills.js"
+export { listedPaints, listedSlots, type FillsListEdit } from "./fills-list.js"
 export { nameBytes } from "./trait-identity.js"
 export { assetIcon, assetMedia, iconNamePattern, mediaTypes, type Media, type MediaType } from "./asset-ref.js"
 export {

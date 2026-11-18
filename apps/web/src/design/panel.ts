@@ -4,8 +4,6 @@ import { authorableTrait } from "@airdesign/catalog"
 import {
   inheritable,
   keptRefuses,
-  paintSlots,
-  readFills,
   readTextValue,
   slotted,
   takes,
@@ -16,7 +14,6 @@ import {
   type ElementId,
   type ScopedElement,
   type SetChange,
-  type ShownFills,
   type TextValue,
   type TraitName,
   type TraitReads,
@@ -28,6 +25,8 @@ import { textCopy } from "@/copy/text-copy"
 import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
 import { cropChange } from "./crop-change"
+import { fillsList } from "./fills-list"
+import { fillsHeld, overlayChange, overlayHeld, ownHeld, shownFills, type Held } from "./fills-held"
 import { appearanceSections } from "./appearance-presets"
 import { endsOpen } from "./border-ends"
 import { listEffects } from "./effects-list"
@@ -140,10 +139,6 @@ type Labels = {
 
 const paragraphKeys = ["align", "list", "lineHeight", "spaceBefore", "spaceAfter"] as const
 
-type Held = { readonly value: unknown; readonly mixed: boolean; readonly inherited: boolean }
-
-const ownHeld = (value: unknown): Held => ({ value, mixed: false, inherited: false })
-
 function fallbackOf(reads: TraitReads, key: string, read: ShownField | undefined): Held {
   if (read !== undefined)
     return { value: read.value ?? undefined, mixed: false, inherited: !read.own && read.value !== null }
@@ -186,25 +181,6 @@ function textShown(text: TextValue, key: string, fallback: Held): Held {
 
 export type ShownField = { readonly value: unknown; readonly own: boolean }
 
-export function shownFills(shown: PanelReads): ShownFills | null {
-  const bottom = shown.fields?.["fills.p0"]
-  if (bottom === undefined || bottom.value === null) return null
-  const slots = Object.fromEntries(
-    paintSlots.flatMap((slot) => {
-      const read = shown.fields?.[`fills.${slot}`]?.value
-      return read === undefined || read === null ? [] : [[slot, read]]
-    }),
-  )
-  const source = shown.fields?.["fills.source"]?.value
-  return { ...slots, ...(typeof source === "string" ? { source } : {}) } as ShownFills
-}
-
-function fillsHeld(shown: PanelReads): Held {
-  const fills = shownFills(shown)
-  if (fills === null) return ownHeld(undefined)
-  return { value: readFills(fills).slidesMode, mixed: false, inherited: shown.fields?.["fills.p0"]?.own !== true }
-}
-
 const imageFields: readonly string[] = ["mode", "source", "recolor", "overlay", "blur"]
 
 export function shownPlace(trait: TraitName, field: string): { readonly trait: SectionName; readonly field: string } {
@@ -220,6 +196,7 @@ function sectionLabel(trait: SectionName, labels: Labels): string {
 
 function shownOf(view: ScopedElement, trait: TraitName, field: string, shown: PanelReads): Held {
   if (trait === "fills" && field === "paint") return fillsHeld(shown)
+  if (trait === "fills" && field === "overlay") return overlayHeld(shown)
   const read = shown.fields?.[`${trait}.${field}`]
   const reads = shown.reads
   if (trait === "text" && field !== "value") {
@@ -288,10 +265,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
     const labels = traitControls[trait] as Labels
     const controls = wireFields(trait).flatMap(([field, kind]): PanelControl[] => {
       const key = writtenField(trait, field)
-      const unread =
-        (key === "fills.overlay" || key === "fills.blur") &&
-        shown.fields?.[key] !== undefined &&
-        shown.fields[key]?.value == null
+      const unread = key === "fills.blur" && shown.fields?.[key] !== undefined && shown.fields[key]?.value == null
       if (
         (trait === "text" && field === "color") ||
         unread ||
@@ -307,13 +281,15 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       const over = held.inherited ? alphaFieldOver(trait, key.slice(trait.length + 1)) : undefined
       const seen = over === undefined ? undefined : shown.fields?.[`${trait}.${over}`]?.value
       const change =
-        key === "fills.crop" && taken.includes("box.w")
-          ? cropChange(view, held.value)
-          : (value: unknown) =>
-              ({
-                target: { node: view.node },
-                [trait]: { [field]: typeof seen === "number" ? atShownAlpha(value, seen) : value },
-              }) as SetChange
+        trait === "fills" && field === "overlay"
+          ? overlayChange(view, shown)
+          : key === "fills.crop" && taken.includes("box.w")
+            ? cropChange(view, held.value)
+            : (value: unknown) =>
+                ({
+                  target: { node: view.node },
+                  [trait]: { [field]: typeof seen === "number" ? atShownAlpha(value, seen) : value },
+                }) as SetChange
       const desc = shownDesc(kind, view.facts.grouped, held.value)
       const label = copy?.label ?? ""
       const text = readTextValue(view.value ?? "")
@@ -393,7 +369,7 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
           appearanceSections(
             [
               ...alignSection,
-              ...content,
+              ...(kind === "text" ? content : withFillsList(content, view, shown, kind === "picture")),
               ...(opacity === null ? [] : [opacity]),
               ...(corners === null ? [] : [corners]),
             ],
@@ -408,6 +384,19 @@ export function panelOf(view: ScopedElement, shown: PanelReads): PanelModel {
       shown,
     ),
   }
+}
+
+function withFillsList(
+  sections: readonly PanelSection[],
+  view: ScopedElement,
+  shown: PanelReads,
+  picture: boolean,
+): readonly PanelSection[] {
+  return sections.map((section) => {
+    const paint = section.strips.flat().find((control) => control.trait === "fills" && control.field === "paint")
+    if (section.trait !== "fills" || paint === undefined) return section
+    return { ...section, designStrips: fillsList(paint, view, shownFills(shown) ?? {}, picture) }
+  })
 }
 
 function textFillSections(sections: readonly PanelSection[], kind: PanelKind | null): readonly PanelSection[] {
@@ -508,7 +497,9 @@ export function panelOfMany(models: readonly [PanelModel, ...PanelModel[]], mode
     const found = present(
       models.map((model) => {
         const section = model.sections.find(({ trait }) => trait === place.section)
-        return section === undefined ? undefined : sectionInMode(section, mode)
+        if (section === undefined) return undefined
+        const { designStrips: _list, ...single } = section
+        return sectionInMode(section.trait === "fills" ? single : section, mode)
       }),
     )
     const [lead] = found ?? []

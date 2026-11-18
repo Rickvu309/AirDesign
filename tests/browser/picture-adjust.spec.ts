@@ -4,7 +4,7 @@ import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
 import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { presentCopy } from "../../apps/web/src/copy/present-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { openDeck, settled, unfold } from "./design-panel"
+import { openDeck, setPanelMode, settled } from "./design-panel"
 import { savedExport } from "./export-dialog"
 import { boxFillPanel, partsOf } from "./shape-fills"
 
@@ -17,13 +17,26 @@ function picture(page: Page): Locator {
 }
 
 async function designed(page: Page): Promise<Locator> {
-  const { picturePanelCopy: pictureCopy } = await import("../../apps/web/src/copy/picture-panel-copy")
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await picture(page).click({ position: { x: 8, y: 8 } })
   const panel = page.locator("[data-design-element]")
   await expect(panel).toBeVisible()
-  await unfold(panel, pictureCopy.section)
+  await setPanelMode(page, "slides")
   return panel
+}
+
+function blurred(painted: Locator): Promise<boolean> {
+  return painted.evaluate((node) =>
+    [node, ...node.querySelectorAll("*")].some((each) => getComputedStyle(each).filter.includes("blur")),
+  )
+}
+
+function overlaid(painted: Locator): Promise<boolean> {
+  return painted.evaluate((node) =>
+    [node, ...node.querySelectorAll("*")].some((each) =>
+      /linear-gradient\((rgba?\([^)]*\)), \1\)/.test(getComputedStyle(each).backgroundImage),
+    ),
+  )
 }
 
 test("a person lays a colour over a picture and blurs it @export", async ({ page }) => {
@@ -50,7 +63,7 @@ test("a person lays a colour over a picture and blurs it @export", async ({ page
   const overlay = page.locator("[data-overlay-panel]")
   await overlay.getByRole("button", { name: formatCopy.colors.dk1, exact: true }).click()
   await page.keyboard.press("Escape")
-  await expect(picture(page).locator("[data-fill-overlay]")).toBeVisible()
+  await expect.poll(() => overlaid(picture(page))).toBe(true)
 
   await panel.getByRole("button", { name: pictureCopy.blur, exact: true }).click()
   const blur = page.locator("[data-blur-panel]")
@@ -65,28 +78,25 @@ test("a person lays a colour over a picture and blurs it @export", async ({ page
 
   await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
   const shown = page.locator("[data-present-show]")
-  await expect(shown.locator("[data-fill-overlay]")).toBeVisible()
+  await expect.poll(() => overlaid(shown)).toBe(true)
   await expect(shown.locator("[data-fill-image]")).toBeVisible()
   await page.keyboard.press("Escape")
 
   await page.getByRole("button", { name: undoCopy.undoNamed.picture, exact: true }).click()
-  const washed = () =>
-    picture(page)
-      .locator("[data-fill-image]")
-      .evaluate((node) => getComputedStyle(node).filter)
-  await expect.poll(washed).not.toContain("blur")
-  await expect(picture(page).locator("[data-fill-overlay]")).toBeVisible()
-  await page.getByRole("button", { name: undoCopy.undoNamed.picture, exact: true }).click()
+  await expect.poll(() => blurred(picture(page))).toBe(false)
+  await expect.poll(() => overlaid(picture(page))).toBe(true)
+  await page.getByRole("button", { name: undoCopy.undoNamed.fill, exact: true }).click()
   await expect(picture(page).locator("[data-fill-image]")).toHaveCount(0)
-  await expect(picture(page).locator("[data-fill-overlay]")).toHaveCount(0)
+  await expect.poll(() => overlaid(picture(page))).toBe(false)
+  await page.getByRole("button", { name: undoCopy.redoNamed.fill, exact: true }).click()
   await page.getByRole("button", { name: undoCopy.redoNamed.picture, exact: true }).click()
-  await page.getByRole("button", { name: undoCopy.redoNamed.picture, exact: true }).click()
-  await expect(picture(page).locator("[data-fill-overlay]")).toBeVisible()
+  await expect.poll(() => overlaid(picture(page))).toBe(true)
+  await expect.poll(() => blurred(picture(page))).toBe(true)
 
   await page.reload()
   await settled(page)
-  await expect(picture(page).locator("[data-fill-overlay]")).toBeVisible()
-  await expect(picture(page).locator("[data-fill-image]")).toBeVisible()
+  await expect.poll(() => overlaid(picture(page))).toBe(true)
+  await expect.poll(() => blurred(picture(page))).toBe(true)
 
   const file = join(process.cwd(), "tests/browser", "exported-picture-adjust.pptx")
   await savedExport(page, file)
@@ -119,5 +129,5 @@ test("a shape whose fill is an icon shows the picture fill controls", async ({ p
   await fill.getByRole("button", { name: pictureCopy.overlay, exact: true }).click()
   await page.locator("[data-overlay-panel]").getByRole("button", { name: formatCopy.colors.dk1, exact: true }).click()
   await page.keyboard.press("Escape")
-  await expect(shape.locator("[data-fill-overlay]")).toBeVisible()
+  await expect.poll(() => overlaid(shape)).toBe(true)
 })

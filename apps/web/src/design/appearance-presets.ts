@@ -82,6 +82,14 @@ function shadowOpacity(shadow: PanelControl): PanelControl | null {
 
 const exactFields = ["dash", "cap", "compound", "join", "head", "tail"]
 
+function withImageSettings(
+  list: readonly (readonly PanelControl[])[],
+  settings: readonly (readonly PanelControl[])[],
+): readonly (readonly PanelControl[])[] {
+  const at = list.findIndex((strip) => strip.some((control) => control.field === "paint" && imageValue(control.value)))
+  return at === -1 ? list : [...list.slice(0, at + 1), ...settings, ...list.slice(at + 1)]
+}
+
 function present(controls: readonly (PanelControl | undefined)[]): readonly PanelControl[] {
   return controls.filter((control) => control !== undefined)
 }
@@ -214,10 +222,20 @@ export function appearanceSections(
           )
           .filter((strip) => strip.length > 0),
       }
-    if (section.trait === "fills" && shapePicture && mode !== undefined)
+    if (section.trait === "fills" && mode !== undefined && (shapePicture || kind === "picture"))
       return {
         ...section,
-        strips: [...section.strips, [modeList(mode)], ...(adjust.length === 0 ? [] : [adjust])],
+        ...(shapePicture
+          ? { strips: [...section.strips, [modeList(mode)], ...(adjust.length === 0 ? [] : [adjust])] }
+          : {}),
+        ...(section.designStrips === undefined
+          ? {}
+          : {
+              designStrips: withImageSettings(section.designStrips, [
+                [modeList(mode)],
+                ...present([blur]).map((control) => [control]),
+              ]),
+            }),
       }
     return section
   })

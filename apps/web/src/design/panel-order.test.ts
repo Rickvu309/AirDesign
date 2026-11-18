@@ -118,6 +118,7 @@ it("offers a shape whose fills hold an image no shape type while it is a plain r
     "corners",
     "border",
     "shadow",
+    "fills",
     "image",
     "crop",
     "box",

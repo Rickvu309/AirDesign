@@ -1,9 +1,9 @@
 import { insertChild } from "./child-order.js"
 import { fillMarkup, type Drawn } from "./fill-markup.js"
 import { changedPart } from "./fill-host.js"
-import { fillValueOf, type Fill } from "./fill-read.js"
+import { fillValueOf, type SlotFill } from "./fill-read.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import type { MarkupElement } from "./element-span.js"
+import { spliceBytes, type MarkupElement } from "./element-span.js"
 import { paintAttribute } from "./paint-color.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { shapeById } from "./shape-tree.js"
@@ -33,21 +33,33 @@ function found(parts: Parts, at: ElementAt): Found | null {
   return { bytes, children, properties, list, own }
 }
 
-export function stackXml(paints: readonly Fill[]): string {
-  const inner = paints.map((paint) => ("image" in paint ? "<adf:image/>" : fillMarkup(paint as Drawn).xml)).join("")
-  return `<a:ext uri="${stackUri}"><adf:fills xmlns:adf="${stackNamespace}">${inner}</adf:fills></a:ext>`
+function entryXml(paint: SlotFill): string {
+  if ("hidden" in paint) return `<adf:hidden>${entryXml(paint.hidden)}</adf:hidden>`
+  return "image" in paint ? "<adf:image/>" : fillMarkup(paint as Drawn).xml
 }
 
-export function shownStack(parts: Parts, at: ElementAt): readonly (Fill | null)[] | null {
+export function stackXml(paints: readonly SlotFill[], bake: boolean): string {
+  const inner = paints.map(entryXml).join("")
+  const baked = bake ? ' bake="1"' : ""
+  return `<a:ext uri="${stackUri}"><adf:fills xmlns:adf="${stackNamespace}"${baked}>${inner}</adf:fills></a:ext>`
+}
+
+function entryOf(element: MarkupElement, children: ReturnType<typeof markupChildren>): SlotFill | null {
+  if (element.kind === "adf:image") return { image: true }
+  if (element.kind !== "adf:hidden") return fillValueOf({ element, children }, null)
+  const inner = children[element.index]?.[0]
+  const shown = inner === undefined ? null : entryOf(inner, children)
+  return shown === null || "hidden" in shown ? null : ({ hidden: shown } as SlotFill)
+}
+
+export function shownStack(parts: Parts, at: ElementAt): readonly (SlotFill | null)[] | null {
   const held = found(parts, at)
   const list = held?.own === undefined ? undefined : held.children[held.own.index]?.[0]
   if (held === null || list === undefined) return null
-  return (held.children[list.index] ?? []).map((element) =>
-    element.kind === "adf:image" ? { image: true } : fillValueOf({ element, children: held.children }, null),
-  )
+  return (held.children[list.index] ?? []).map((element) => entryOf(element, held.children))
 }
 
-export function writtenStack(parts: Parts, at: ElementAt, paints: readonly Fill[] | null): Parts {
+export function writtenStack(parts: Parts, at: ElementAt, paints: readonly SlotFill[] | null, bake = true): Parts {
   const held = found(parts, at)
   if (held === null) {
     if (paints === null) return parts
@@ -61,11 +73,31 @@ export function writtenStack(parts: Parts, at: ElementAt, paints: readonly Fill[
       ? parts
       : changedPart(parts, at.part, bytes, { start: gone.start, end: gone.end, next: new Uint8Array() })
   }
-  const next = encodeUtf8(stackXml(paints))
+  const next = encodeUtf8(stackXml(paints, bake))
   if (own !== undefined) return changedPart(parts, at.part, bytes, { start: own.start, end: own.end, next })
   if (list !== undefined)
     return changedPart(parts, at.part, bytes, { start: list.closeStart, end: list.closeStart, next })
   const parent = decodeUtf8(bytes.subarray(properties.start, properties.end))
-  const written = insertChild("p:spPr", "a:extLst", `<a:extLst>${stackXml(paints)}</a:extLst>`, parent)
+  const written = insertChild("p:spPr", "a:extLst", `<a:extLst>${stackXml(paints, bake)}</a:extLst>`, parent)
   return changedPart(parts, at.part, bytes, { start: properties.start, end: properties.end, next: encodeUtf8(written) })
+}
+
+export function strippedStacks(parts: Parts): Parts {
+  let next = parts
+  for (const [part, bytes] of parts) {
+    if (!part.startsWith("ppt/slides/slide") || !part.endsWith(".xml")) continue
+    const { elements } = requireMarkup(bytes)
+    const children = markupChildren(elements)
+    const gone = elements.flatMap((element) => {
+      if (element.kind !== "a:ext" || paintAttribute(element, "uri") !== stackUri) return []
+      const list = elements[element.parent]
+      return [list !== undefined && children[list.index]?.length === 1 ? list : element]
+    })
+    if (gone.length === 0) continue
+    const edits = gone.map((element) => ({ start: element.start, end: element.end, next: new Uint8Array() }))
+    const changed = new Map(next)
+    changed.set(part, spliceBytes(bytes, edits))
+    next = changed
+  }
+  return next
 }

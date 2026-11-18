@@ -21,6 +21,7 @@ const recorded: Readonly<Record<TraitName, readonly string[]>> = {
     "5465b825",
     "3c06b041",
     "8542c018",
+    "1d69c93e",
   ],
   border: ["5465b825", "118c2fdf", "db2c2c2c", "db2c2c2c"],
   effects: ["5465b825", "20b46c0f", "8899ef6e"],

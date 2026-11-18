@@ -133,7 +133,6 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
       fills: {
         crop: { set: { l: 10000, t: 5000, r: 1000, b: 3000 } },
         recolor: { set: { grayscale: true } },
-        overlay: { set: { solid: { scheme: "accent1" } } },
         blur: { set: 20_000 },
       },
     })
@@ -339,7 +338,7 @@ const dot = new Uint8Array([
   73, 69, 78, 68, 174, 66, 96, 130,
 ])
 
-it("writes a blur and a colour overlay on the picture and takes both away", async () => {
+it("writes a blur on the picture's blip and a colour overlay as the paint above it, and takes both away", async () => {
   const parts = await deck("picture-png.pptx")
   const picture = at(parts, "256", "4")
   const media = "ppt/media/picture-008753c5d40023df.png"
@@ -357,21 +356,20 @@ it("writes a blur and a colour overlay on the picture and takes both away", asyn
       .elements.find((each) => each.shape === "4")?.image?.blur,
   ).toBe(10)
   const after = exported(parts, picture.node, {
-    fills: { blur: { set: 40_000 }, overlay: { set: { solid: black } } },
+    fills: { blur: { set: 40_000 }, p3: { set: { solid: black } } },
   })
   const slide = text(after, picture.part)
   const blur = `<a:blur rad="${String(blurRadius(40_000))}" grow="0"/>`
-  const overlay = `<a:fillOverlay blend="over"><a:solidFill><a:srgbClr val="000000"><a:alpha val="50000"/></a:srgbClr></a:solidFill></a:fillOverlay>`
-  expect(slide).toContain(`<a:blip r:embed="rId2">${blur}${overlay}</a:blip>`)
-  expect(slide.indexOf("<a:blur")).toBeLessThan(slide.indexOf("<a:fillOverlay"))
-  expect(shownImage(after, picture)).toMatchObject({ blur: 40_000, overlay: { solid: black } })
+  expect(slide).toContain(`<a:blip r:embed="rId2">${blur}</a:blip>`)
+  expect(slide).not.toContain("<a:fillOverlay")
+  expect(shownImage(after, picture)).toMatchObject({ blur: 40_000 })
   const painted = paintReader(after)
     .slide(picture.part)
-    .elements.find((each) => each.shape === "4")?.image
-  expect(painted?.blur).toBe(20)
-  expect(painted?.overlay).toEqual({ hex: "000000", alpha: 0.5 })
+    .elements.find((each) => each.shape === "4")
+  expect(painted?.image?.blur).toBe(20)
+  expect(painted?.stack?.map((paint) => paint.type)).toEqual(["image", "solid"])
   expect(sameBytes(after.get(media)!, parts.get(media)!)).toBe(true)
-  const cleared = exported(after, picture.node, { fills: { blur: { set: 0 }, overlay: { set: { none: true } } } })
+  const cleared = exported(after, picture.node, { fills: { blur: { set: 0 }, p3: { set: { none: true } } } })
   expect(text(cleared, picture.part)).toBe(text(parts, picture.part))
 })
 

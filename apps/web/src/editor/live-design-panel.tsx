@@ -145,7 +145,6 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
             "fills.source": { value: image.source, own: true },
             "fills.recolor": { value: image.recolor, own: true },
             "fills.blur": { value: image.blur === null ? null : Math.min(image.blur, 100_000), own: true },
-            "fills.overlay": { value: image.overlay, own: true },
           }),
       ...(crop === null ? {} : { "fills.crop": { value: crop, own: true } }),
       ...(connection === null

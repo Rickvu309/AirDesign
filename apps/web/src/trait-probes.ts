@@ -5,6 +5,7 @@ import {
   readTableValue,
   readTextValue,
   writeTableValue,
+  type Overlay,
   type Paint,
   type TextValue,
   type TraitName,
@@ -46,7 +47,6 @@ const fillsOpening = {
   crop: "opening",
   recolor: "opening",
   blur: "opening",
-  overlay: "opening",
 } as const
 
 const effectsOpening = {
@@ -161,7 +161,14 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
     opening: () => ({ v: format, patch: { fills: fillsOpening } }),
     edit: (_, field, value) => ({
       v: format,
-      patch: { fills: field === "paint" ? changeFills({ paint: value as Paint }) : { [field]: { set: value } } },
+      patch: {
+        fills:
+          field === "paint"
+            ? changeFills({ paint: value as Paint })
+            : field === "overlay"
+              ? changeFills({ overlay: value as Overlay })
+              : { [field]: { set: value } },
+      },
     }),
     fields: {
       paint: {
