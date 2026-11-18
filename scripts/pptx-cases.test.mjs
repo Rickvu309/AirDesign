@@ -10,7 +10,9 @@ import {
   caseOriginals,
   caseProblems,
   caseSpecs,
+  caseWritten,
   loadCases,
+  writeCases,
 } from "./pptx-cases.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -33,6 +35,7 @@ assert.deepEqual(
     "paragraphs.mjs",
     "picture-adjust.mjs",
     "picture-mode.mjs",
+    "section-list.mjs",
     "shapes.mjs",
     "slide-background.mjs",
     "slide-edits.mjs",
@@ -126,4 +129,49 @@ assert.deepEqual(caseExports(loaded), ["exported-one.pptx", "exported-two.pptx"]
 await assert.rejects(
   loadCases(scenario({ "three.mjs": "export default { specs: [], exports: [], lines: 1 }\n" })),
   /three\.mjs needs specs[\s\S]*three\.mjs needs exports[\s\S]*three\.mjs needs lines/,
+)
+
+const writing = { written: ["written-a.pptx"], write: () => [], lines: () => [] }
+assert.deepEqual(caseProblems("w.mjs", writing), [])
+assert.match(caseProblems("w.mjs", { ...writing, write: undefined })[0], /w\.mjs needs write/)
+assert.match(caseProblems("w.mjs", { ...writing, written: ["exported-a.pptx"] })[0], /needs written/)
+assert.match(caseProblems("w.mjs", { written: [], lines: () => [] }).join("\n"), /needs write[\s\S]*needs written/)
+assert.deepEqual(caseSpecs([writing, good]), good.specs)
+assert.deepEqual(caseExports([writing, good]), good.exports)
+assert.deepEqual(caseWritten([writing, good]), ["written-a.pptx"])
+assert.deepEqual(caseWritten(entries).slice(0, 2), ["written-section-split.pptx", "written-section-merge.pptx"])
+
+const out = scenario({})
+const original = new Map([["a", new Uint8Array([1])]])
+const fakePptx = {
+  exportPackage: async (bytes, parts) => new Uint8Array([...bytes, ...parts.get("a")]),
+  readParts: async (bytes) => new Map([["a", bytes]]),
+}
+const deckParts = new Map([["deck.pptx", original]])
+const files = await writeCases({
+  pptx: fakePptx,
+  entries: [
+    { ...good },
+    {
+      ...writing,
+      written: ["written-a.pptx"],
+      write: ({ parts }) => [{ name: "written-a.pptx", original: "deck.pptx", parts: parts.get("deck.pptx") }],
+    },
+  ],
+  parts: deckParts,
+  original: (name) => (name === "deck.pptx" ? new Uint8Array([9]) : undefined),
+  directory: out,
+})
+assert.deepEqual(files, [path.join(out, "written-a.pptx")])
+assert.deepEqual([...fs.readFileSync(files[0])], [9, 1])
+assert.deepEqual([...deckParts.get("written-a.pptx").get("a")], [9, 1])
+await assert.rejects(
+  writeCases({
+    pptx: fakePptx,
+    entries: [{ ...writing, file: "w.mjs" }],
+    parts: deckParts,
+    original: () => new Uint8Array(),
+    directory: out,
+  }),
+  /w\.mjs wrote /,
 )

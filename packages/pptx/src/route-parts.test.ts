@@ -9,6 +9,7 @@ import { danglingShapeReferences, newDanglingShapeReferences } from "./shape-id.
 import { applyRoute, type SlideRoute } from "./slide-route.js"
 import { shapeById } from "./shape-tree.js"
 import { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
+import { sectionListFailures } from "./section-check.js"
 import { tableEditFault } from "./route-table-proof.js"
 import { markupChildren, shapeTextValue, shownText, type MarkupChildren } from "./text-value-route.js"
 
@@ -473,19 +474,12 @@ function expectInside(before: Parts, after: Parts, edit: Edit) {
       )
       return
     case "sectionLst.remove":
-      expectOnlyWrapped(oldPresentation, nextPresentation, named(markup(oldPresentation), "p14:section", edit.section))
       expect(sectionIds(nextPresentation)).toEqual(sectionIds(oldPresentation).filter((id) => id !== edit.section))
+      expect(sectionListFailures(after)).toEqual([])
       return
     case "sectionLst.order": {
-      const elements = markup(oldPresentation)
-      expectBytes(
-        nextPresentation,
-        movedBefore(
-          oldPresentation,
-          named(elements, "p14:section", edit.section),
-          named(elements, "p14:section", edit.before),
-        ),
-      )
+      const ids = sectionIds(nextPresentation)
+      expect([ids.indexOf(edit.section) + 1, sectionListFailures(after)]).toEqual([ids.indexOf(edit.before), []])
       return
     }
     default:
