@@ -2,6 +2,7 @@ import { join } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
+import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { openDeck, setPanelMode, settled } from "./design-panel"
 import { savedExport } from "./export-dialog"
@@ -20,7 +21,7 @@ function photo(page: Page): Promise<string> {
 }
 
 async function designed(page: Page): Promise<Locator> {
-  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await picture(page).click({ position: { x: 8, y: 8 } })
   const panel = page.locator("[data-design-element]")
   await expect(panel).toBeVisible()
