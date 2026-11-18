@@ -88,6 +88,17 @@ const lastJson = (output) => JSON.parse(output.split("\n").findLast((line) => li
 
 const readJson = (file) => (existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : undefined)
 
+export const lookResult = ({ status, output }, sheet, log) => {
+  const answer = lastJson(output)
+  if (status !== 0 || answer.states === undefined)
+    return { passed: false, result: `FAILED before the sheet was written, see ${log}` }
+  const passed = !answer.failed
+  const states = passed
+    ? `PASSED ${String(answer.states)} states`
+    : `FAILED ${String(answer.failed)} of ${String(answer.states)} states`
+  return { passed, result: `${states}, findings ${String(answer.count)}, sheet ${answer.summary ?? sheet}` }
+}
+
 export const proveCommand = async (args, { repo, evidenceRoot }) => {
   const flag = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined)
   const plan = proofPlan(await readFacts(repo, flag("--base") ?? "origin/main"))
@@ -223,11 +234,7 @@ export const proveCommand = async (args, { repo, evidenceRoot }) => {
             {},
             `${log}.sheet`,
           )
-          const answer = lastJson(looked.output)
-          return {
-            passed: looked.status === 0 && !answer.failed,
-            result: `findings ${String(answer.count ?? "?")}, sheet ${answer.summary ?? sheet}`,
-          }
+          return lookResult(looked, sheet, `${log}.sheet`)
         } finally {
           await exec(repo, ["node", [cli, "stop", stack]], {}, `${log}.stop`)
         }
