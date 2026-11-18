@@ -101,7 +101,7 @@ export function EditorShell({
   const [gridOpen, setGridOpen] = useState(false)
   const [gridPanel, setGridPanel] = useState(false)
   const [selectedSlides, setSelectedSlides] = useState(0)
-  const sideContent = typeof side === "function" ? side(gridOpen ? selectedSlides : 0) : side
+  const sideContent = typeof side === "function" ? side(gridOpen ? selectedSlides : 1) : side
   const pointer = usePointerTool(deck !== undefined)
   const size = deck?.size ?? null
   const width = size === null ? room.width : zoomWidth(zoom, room, size)

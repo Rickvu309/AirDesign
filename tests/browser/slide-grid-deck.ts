@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 
 const deckAddress = /\/deck\/[A-Za-z0-9_-]{1,64}$/
 export const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
@@ -138,4 +138,13 @@ export function rowNumbers(page: Page): Promise<number[][]> {
         ].map((slide) => Number(slide.dataset.slideEntry)),
       ),
     )
+}
+
+export function numberText(number: Locator): Promise<{ readonly top: number; readonly bottom: number }> {
+  return number.evaluate((element) => {
+    const range = document.createRange()
+    range.selectNodeContents(element.firstChild ?? element)
+    const { top, bottom } = range.getBoundingClientRect()
+    return { top, bottom }
+  })
 }

@@ -21,6 +21,7 @@ export function GridSlideMenu({
   count,
   held,
   canMoveSet,
+  canMoveBelow,
   canChangeSet,
   canAdd,
   onAdd,
@@ -34,6 +35,7 @@ export function GridSlideMenu({
   count: number
   held: readonly number[]
   canMoveSet: boolean
+  canMoveBelow: boolean
   canChangeSet: boolean
   canAdd: boolean
   onAdd: (side: GridSide) => void
@@ -103,7 +105,7 @@ export function GridSlideMenu({
             ))
           : null}
         {canMoveSet ? (
-          <DropdownMenuItem className={slideMenuItem} onClick={onMoveBelow}>
+          <DropdownMenuItem disabled={!canMoveBelow} className={slideMenuItem} onClick={onMoveBelow}>
             {slideListCopy.moveBelowMenu}
           </DropdownMenuItem>
         ) : null}

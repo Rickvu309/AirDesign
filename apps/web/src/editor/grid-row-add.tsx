@@ -35,6 +35,17 @@ export function GridRowAdd({
       }}
       onPointerLeave={() => setUsed(false)}
     >
+      <div
+        data-row-preview
+        className="pointer-events-none absolute"
+        style={{ top: last ? "var(--grid-row-preview-distance)" : band / 2 }}
+      >
+        {last ? (
+          <GridPlaceholder width={width} height={height} scale={scale} kind="row" />
+        ) : (
+          <div data-row-insertion-line style={{ width: width * scale, transform: `scale(${1 / scale})` }} />
+        )}
+      </div>
       <GridAddButton
         data-add-row
         aria-label={label}
@@ -52,17 +63,6 @@ export function GridRowAdd({
           onAdd()
         }}
       />
-      <div
-        data-row-preview
-        className="pointer-events-none absolute"
-        style={{ top: last ? "var(--grid-row-preview-distance)" : band * 0.85 }}
-      >
-        {last ? (
-          <GridPlaceholder width={width} height={height} scale={scale} kind="row" />
-        ) : (
-          <div data-row-insertion-line style={{ width: width * scale, transform: `scale(${1 / scale})` }} />
-        )}
-      </div>
     </div>
   )
 }

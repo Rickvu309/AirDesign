@@ -232,6 +232,7 @@ html:has(.reflow-frame) #root {
 }
 [data-number-placement="above"] [data-slide-number] {
   --grid-number-y: var(--grid-number-above);
+  padding-bottom: calc(-1 * var(--grid-number-above) - var(--grid-number-line));
 }
 [data-number-placement="inside"] [data-slide-number] {
   --grid-number-x: var(--grid-number-inset-x);

@@ -3,6 +3,7 @@ import {
   gridEditing,
   gridOpened,
   gridPick,
+  gridDesigned,
   gridRinged,
   gridStep,
   type GridInteraction,
@@ -112,5 +113,15 @@ describe("grid interaction", () => {
   it("opens inside the slide when the document already has selected elements", () => {
     expect(gridOpened(true)).toEqual(elements)
     expect(gridOpened(false)).toEqual(current)
+  })
+})
+
+describe("slides the Design panel shows", () => {
+  it("counts the ringed slides, none after the canvas is cleared, and the open slide while its elements are edited", () => {
+    expect(gridDesigned(several, 2, 5)).toBe(2)
+    expect(gridDesigned(current, 2, 5)).toBe(1)
+    expect(gridDesigned(none, 2, 5)).toBe(0)
+    expect(gridDesigned(elements, 2, 5)).toBe(1)
+    expect(gridDesigned(text, 2, 5)).toBe(1)
   })
 })

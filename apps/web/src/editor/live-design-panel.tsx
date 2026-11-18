@@ -405,7 +405,14 @@ export function LiveDesignPanel(props: PanelProps) {
   )
 }
 
-function DesignPanelSwitch({ deck, selectedSlides = 0, mode, toneFor }: PanelProps) {
+function DesignPanelSwitch({ deck, selectedSlides = 1, mode, toneFor }: PanelProps) {
+  if (selectedSlides === 0)
+    return (
+      <div className="flex min-h-0 flex-1 flex-col" data-design-panel>
+        <DesignHead>{slideListCopy.nothingSelected}</DesignHead>
+        <p className="px-4 py-3 text-[length:var(--type-caption)] text-muted-foreground">{designCopy.selectSlide}</p>
+      </div>
+    )
   if (selectedSlides > 1)
     return (
       <div className="flex min-h-0 flex-1 flex-col" data-design-panel>
