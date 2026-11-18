@@ -22,7 +22,8 @@ import type { ElementPatch, FieldEdit, Row } from "./row.js"
 import { siteCount } from "./preset-sites.js"
 import { floorNodes, openingElement } from "./slide-floor.js"
 import { presentSlides, slideGone } from "./slide-order.js"
-import { readTextValue, writeTextValue, type TextValue } from "./text-value.js"
+import { restyled } from "./text-restyle.js"
+import { readTextValue } from "./text-value.js"
 import {
   inheritable,
   keptRefuses,
@@ -128,36 +129,6 @@ function refusalOf(view: ScopedElement, trait: TraitName, input: Loose): PlanRef
   if (unset || Object.keys(input).some((key) => !taken.includes(writtenField(trait, key))))
     return view.facts.grouped && trait === "box" ? "group-box" : "kind"
   return Object.keys(input).some((key) => keptRefuses(view.kept, trait, key)) ? "kept" : null
-}
-
-function shownText(value: string): TextValue {
-  return readTextValue(value) ?? (value === "" ? [] : [{ from: 0, runs: [{ from: 0, text: value }] }])
-}
-
-const runKeys = ["fill", "color", "size", "font", "bold", "italic", "underline", "strike", "letterSpacing"] as const
-const paragraphKeys = ["align", "list", "lineSpacing", "spaceBefore", "spaceAfter"] as const
-
-function picked(input: Loose, keys: readonly string[]): Loose {
-  return Object.fromEntries(keys.flatMap((key) => (Object.hasOwn(input, key) ? [[key, input[key]]] : [])))
-}
-
-function restyled(value: string, input: Loose): string {
-  const run = picked(input, Object.hasOwn(input, "fill") ? runKeys.filter((key) => key !== "color") : runKeys)
-  const paragraph = picked(input, paragraphKeys)
-  const text = shownText(value).map((each) => ({
-    ...each,
-    ...paragraph,
-    runs: each.runs.map((item) => {
-      const { color, fill, ...rest } = item
-      return {
-        ...rest,
-        ...(Object.hasOwn(run, "fill") ? {} : color === undefined ? {} : { color }),
-        ...(Object.hasOwn(run, "color") ? {} : fill === undefined ? {} : { fill }),
-        ...run,
-      }
-    }),
-  })) as TextValue
-  return text.length === 0 ? "" : writeTextValue(text)
 }
 
 function wholeBox(box: Box | null): Loose {

@@ -14,7 +14,6 @@ import {
   type TraitReads,
 } from "@airdesign/document"
 import {
-  deckColors,
   paintReader,
   readSlides,
   readTraits,
@@ -61,6 +60,7 @@ import { rebasedChange } from "@/design/rebase"
 import { siteNames } from "@/design/site-names"
 import { deviceScope } from "@/design/trait-edit"
 import { designShown, themeOf, type DesignShown } from "@/design-shown"
+import { colorsIn } from "./deck-colors"
 import { ElementTitleActions } from "./element-title-actions"
 import { PicturePreview } from "@/editor/picture-preview"
 import { slideListCopy } from "@/copy/slide-list-copy"
@@ -168,21 +168,6 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
 export function themeAt(parts: Parts, index: number): readonly Swatch[] {
   const part = readSlides(parts)[index]?.part
   return part === undefined ? [] : themeOf(parts, part)
-}
-
-const shownColors = new WeakMap<Parts, readonly string[]>()
-
-export function colorsIn(parts: Parts): readonly string[] {
-  const known = shownColors.get(parts)
-  if (known !== undefined) return known
-  let found: readonly string[] = []
-  try {
-    found = deckColors(parts)
-  } catch {
-    found = []
-  }
-  shownColors.set(parts, found)
-  return found
 }
 
 function nodeChoices(deck: DesigningDeck, connector: ScopedElement): readonly NodeChoice[] {
