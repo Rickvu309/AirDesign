@@ -15,13 +15,16 @@ import {
 import { describe, expect, it } from "vitest"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { readParts } from "./package-container.js"
+import { sectionListFailures } from "./section-check.js"
 import { readSections } from "./section-read.js"
 import { orderedParts } from "./slide-order-route.js"
 
 const fixture = `${process.cwd()}/scripts/pptx-fixtures/tall-glyph-before.pptx`
 const file = [slideId("256"), slideId("257")]
-const first = `<p14:section name="Opening" id="{A}"><p14:sldIdLst><p14:sldId id="256"/></p14:sldIdLst></p14:section>`
-const second = `<p14:section name="Numbers" id="{B}"><p14:sldIdLst><p14:sldId id="257"/></p14:sldIdLst></p14:section>`
+const opening = "{6D0E4C2A-1B7F-4C3E-9A55-0F1D2C3B4A01}"
+const numbers = "{6D0E4C2A-1B7F-4C3E-9A55-0F1D2C3B4A02}"
+const first = `<p14:section name="Opening" id="${opening}"><p14:sldIdLst><p14:sldId id="256"/></p14:sldIdLst></p14:section>`
+const second = `<p14:section name="Numbers" id="${numbers}"><p14:sldIdLst><p14:sldId id="257"/></p14:sldIdLst></p14:section>`
 const sectionList = `<p:extLst><p:ext uri="{521415D9-36F7-43E2-AB2F-B90AF26B5E84}"><p14:sectionLst xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main">${first}${second}</p14:sectionLst></p:ext></p:extLst>`
 
 async function sectioned(): Promise<ReadonlyMap<string, Uint8Array>> {
@@ -49,6 +52,7 @@ describe("orderedParts with sections", () => {
     const original = await sectioned()
     const add = addAfter({ file, order: [] }, "258", "257")
     const exported = orderedParts(original, { file, order: [add] })
+    expect(sectionListFailures(exported)).toEqual([])
     expect(readSections(exported)).toEqual([
       { name: "Opening", slides: ["256"] },
       { name: "Numbers", slides: ["257", "258"] },
@@ -59,8 +63,9 @@ describe("orderedParts with sections", () => {
   it("takes a deleted slide out of its section and keeps the emptied section as an empty list", async () => {
     const original = await sectioned()
     const exported = orderedParts(original, { file, order: [{ slide: "remove", id: slideId("257") }] })
+    expect(sectionListFailures(exported)).toEqual([])
     expect(presentationOf(exported)).not.toContain('<p14:sldId id="257"/>')
-    expect(presentationOf(exported)).toContain('name="Numbers" id="{B}"><p14:sldIdLst/></p14:section>')
+    expect(presentationOf(exported)).toContain(`name="Numbers" id="${numbers}"><p14:sldIdLst/></p14:section>`)
     expect(presentationOf(exported)).toContain(first)
     expect(readSections(exported)).toEqual([
       { name: "Opening", slides: ["256"] },
@@ -72,10 +77,11 @@ describe("orderedParts with sections", () => {
     const original = await sectioned()
     const key = orderKeyBetween(null, presentSlides({ file, order: [] })[0]?.key ?? null)
     const exported = orderedParts(original, { file, order: [{ slide: "move", id: slideId("257"), key }] })
+    expect(sectionListFailures(exported)).toEqual([])
     expect(presentationOf(exported)).toContain(
-      '<p14:section name="Opening" id="{A}"><p14:sldIdLst><p14:sldId id="257"/><p14:sldId id="256"/></p14:sldIdLst></p14:section>',
+      `<p14:section name="Opening" id="${opening}"><p14:sldIdLst><p14:sldId id="257"/><p14:sldId id="256"/></p14:sldIdLst></p14:section>`,
     )
-    expect(presentationOf(exported)).toContain('name="Numbers" id="{B}"><p14:sldIdLst/></p14:section>')
+    expect(presentationOf(exported)).toContain(`name="Numbers" id="${numbers}"><p14:sldIdLst/></p14:section>`)
   })
 
   it("keeps the presentation as it was when no section changed", async () => {
@@ -84,6 +90,7 @@ describe("orderedParts with sections", () => {
     const noSections = new Map(original)
     noSections.set("ppt/presentation.xml", encodeUtf8(presentationOf(original).replace(sectionList, "")))
     const exported = orderedParts(noSections, { file, order: [add] })
+    expect(sectionListFailures(exported)).toEqual([])
     expect(presentationOf(exported)).not.toContain("sectionLst")
   })
 })

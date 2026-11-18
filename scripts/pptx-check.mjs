@@ -58,6 +58,7 @@ import {
 import { cloneEditsLines, writeCloneEdits } from "./clone-edits.mjs"
 import { corpusEditLines, writeCorpusEdits } from "./corpus-edits.mjs"
 import { storedZip } from "./stored-zip.mjs"
+import { sectionProofDeck, sectionProofLines, sectionWarnLines, writeSectionProof } from "./section-list.mjs"
 import { browserEnv } from "../.agents/skills/verify-airdesign/bin/browser.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -240,6 +241,8 @@ if (fixedWork) {
   const cloneEditsFile = await writeCloneEdits({ pptx, root, parts, directory: routeDir })
   validate([cloneEditsFile])
 }
+const sectionProof = fixedWork ? writeSectionProof({ parts: parts.get(sectionProofDeck), directory: routeDir }) : []
+validate(sectionProof.map((row) => row.file))
 const corpusEdits = await writeCorpusEdits({
   full: decision.full,
   root,
@@ -367,6 +370,11 @@ for (const row of cases) {
     )
   }
 }
+for (const line of sectionProofLines({ pptx, proof: sectionProof, lists })) console.log(line)
+const routeBacks = writtenDecks.flatMap((deck) =>
+  deck.written.flatMap((item) => (item.back === null ? [] : [[path.basename(item.file), item.back]])),
+)
+for (const line of sectionWarnLines({ pptx, files: [...parts, ...routeBacks] })) console.log(line)
 endJudging()
 const checkSeconds = decision.duration(() => timeMetric(root, "pptx-check-duration", checkStarted))
 console.log(checkSeconds.line)
