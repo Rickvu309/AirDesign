@@ -1,4 +1,4 @@
-import type { TextParagraph, TextValue } from "@airdesign/document"
+import { plainSlideNumber, type TextParagraph, type TextValue } from "@airdesign/document"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import { decodedXmlText, markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
@@ -118,6 +118,7 @@ function expectedValue(body: readonly GeneratedParagraph[]): TextValue {
     runs: paragraph.inlines.map((inline, at) => ({
       from: at,
       text: inline.kind === "break" ? "\n" : inline.text,
+      ...(inline.kind === "field" ? { slideNumber: plainSlideNumber } : {}),
     })),
   }))
 }
@@ -337,7 +338,7 @@ describe("text value write-back", () => {
           }
           const back = value.map((paragraph, from) => ({
             from,
-            runs: paragraph.runs.map((run, at) => ({ from: at, text: run.text })),
+            runs: paragraph.runs.map((run, at) => ({ ...run, from: at })),
           }))
           expect(readValue(after)).toEqual(back)
         },
@@ -492,14 +493,6 @@ describe("oneRunValue", () => {
     expect(written).toEqual(encodeUtf8(`<p:spTree>${one.replace(">One<", ">typed<")}${many}</p:spTree>`))
     const manyFirst = new Map([[part, encodeUtf8(`<p:spTree>${many}${one}</p:spTree>`)]])
     expect(() => oneRunValue(manyFirst, part, "2", "typed")).toThrow(/text-shape/)
-  })
-
-  it("leaves a field box to be refused by the route with its bytes unchanged", () => {
-    const box = boxOf(`<a:p><a:fld id="{1}" type="slidenum"><a:rPr/><a:t>7</a:t></a:fld></a:p>`)
-    expect(textStorable(new Map([[part, box]]), part, "2")).toBe(false)
-    const saved = Uint8Array.from(box)
-    expect(() => edited(box, oneRunValue(new Map([[part, box]]), part, "2", "8"))).toThrow(/text-carried/)
-    expect(box).toEqual(saved)
   })
 })
 

@@ -131,15 +131,19 @@ function shownFooters(
   )
 }
 
-function slideNumber(parts: ReadonlyMap<string, Uint8Array>, slide: string): number {
+export function firstSlideNumber(parts: ReadonlyMap<string, Uint8Array>): number {
   const presentation = parts.get(presentationPart)
   const root =
     presentation === undefined
       ? undefined
       : markupDocument(presentation).elements.find((element) => element.kind === "p:presentation")
   const first = Number.parseInt((root === undefined ? null : attr(root, "firstSlideNum")) ?? "1", 10)
+  return Number.isSafeInteger(first) ? first : 1
+}
+
+function slideNumber(parts: ReadonlyMap<string, Uint8Array>, slide: string): number {
   const position = slideAddresses(parts).findIndex((address) => address.part === slide)
-  return (Number.isSafeInteger(first) ? first : 1) + Math.max(position, 0)
+  return firstSlideNumber(parts) + Math.max(position, 0)
 }
 
 type Mark = { readonly ph: string; readonly text: string }

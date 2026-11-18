@@ -40,6 +40,7 @@ export type EditorDeck = {
   readonly selection?: Selection
   readonly select?: (selection: Selection) => void
   readonly onText?: () => void
+  readonly onSlideNumber?: () => void
   readonly onTrash?: () => void
   readonly onRename?: (name: string) => void
   readonly formatting?: TextFormatting
@@ -140,6 +141,7 @@ export function EditorShell({
     menuOpen: toolMenu,
     panel,
     ...(deck === undefined ? {} : { pointer, undo: deck.undo }),
+    ...(deck?.onSlideNumber === undefined ? {} : { onSlideNumber: deck.onSlideNumber }),
     ...(deck?.onText === undefined ? {} : { onText: deck.onText }),
     ...(deck?.formatting === undefined ? {} : { formatting: deck.formatting }),
     ...(deck?.deckColors === undefined ? {} : { deckColors: deck.deckColors }),

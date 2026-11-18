@@ -121,6 +121,13 @@ export function slideShapes(shared: Parts, slide: string, part: string, base: Pa
     if (holding === null || seen.get(id) !== 1) continue
     const table = shape.contentKind === "table" && tableEditable(holding, shape)
     if (table || boxStorable(holding, shape)) movables.set(id, { id, file })
+    const numbered = [...shape.text, ...shown.text].some((each) =>
+      each.runs.some((run) => run.slideNumber !== undefined),
+    )
+    if (!shape.locked && numbered) {
+      editable.set(id, shape)
+      continue
+    }
     if (!table && (shape.locked || !valueStorable(holding, shape, trialValue(shape.text)))) continue
     boxes.set(id, { id, file })
     editable.set(id, shape)

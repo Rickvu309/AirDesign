@@ -64,7 +64,11 @@ export function useDeckPaint(
     bound.current = boundTargets(next.display)
     structure.current = structureOf(register, bound.current)
     shownRegister.current = register
-    repaint.current = liveRepaint(store.current, next.files, register, busy.current)
+    const paintChanges = liveRepaint(store.current, next.files, register, busy.current, next.numberText)
+    repaint.current = (changed, from) => {
+      shownRegister.current = changed
+      paintChanges(changed, from)
+    }
     notesBar.show(notesShown(shownParts.current, register))
     setSlideCount(next.count)
     setSections(next.sections)

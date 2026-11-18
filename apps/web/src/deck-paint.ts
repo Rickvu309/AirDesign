@@ -2,6 +2,7 @@ import { slideId, type ElementId, type Register, type SlideId } from "@airdesign
 import {
   paintReader,
   readSlides,
+  slideNumbering,
   sectionStarts,
   themeSwatches,
   type ReadShape,
@@ -15,6 +16,7 @@ import { editedParts, newSlideElement, slideBase, type PictureBytes } from "@/ex
 import { pictureSources, type PictureSources } from "@/picture-fill"
 import { shownValue, type BusyElements } from "@/live-repaint"
 import { fallbackPrompt } from "@/copy/placeholder-copy"
+import { numberedText } from "@/numbered-text"
 import { tableEdited } from "@/table-edit"
 import { designRows } from "@/design-rows"
 import {
@@ -43,6 +45,7 @@ export type Painted = {
   readonly movables: ReadonlyMap<ElementId, TextBox>
   readonly shapes: ReadonlyMap<ElementId, ReadShape>
   readonly pictures: PictureSources
+  readonly numberText: ReturnType<typeof numberedText>
   readonly files: ReadonlyMap<ElementId, string>
   readonly base: Parts
   readonly display: Parts
@@ -110,8 +113,8 @@ function refitted(register: Register | null, { id, file, opening }: SlideShape):
   return shownValue(register, id, file) !== file
 }
 
-function shownOf(register: Register | null, id: ElementId, file: string): string {
-  return JSON.stringify([shownValue(register, id, file), landedBox(register, id)])
+function shownOf(register: Register | null, id: ElementId, text: string): string {
+  return JSON.stringify([text, landedBox(register, id)])
 }
 
 const themePart = /^ppt\/theme\/theme\d+\.xml$/
@@ -137,6 +140,7 @@ export function paint(
       : base
   const display = sameIdentity(edited, earlier?.display)
   const read = readSlides(display)
+  const numberText = numberedText(slideNumbering(display, register))
   const slideParts = new Set(read.map((each) => each.part))
   const shared = sharedParts(display, slideParts)
   const reusable = earlier !== null && sameShared(shared, earlier.shared, slideParts)
@@ -146,7 +150,9 @@ export function paint(
     const old = before.get(part)
     const same = old !== undefined && sameSlide(old.shapes, slide, base, display)
     const shapes = same ? old.shapes : slideShapes(shared, slide, part, base, display)
-    const values = shapes.shapes.map(({ id, file }) => shownOf(register, id, file)).join("\n")
+    const values = shapes.shapes
+      .map(({ id, file }) => shownOf(register, id, numberText(id, shownValue(register, id, file))))
+      .join("\n")
     if (same && old.values === values && old.canvas !== null && sameMedia(old.canvas, display))
       return { shapes, values, canvas: old.canvas }
     if (!same || old.values !== values) repainted.push(slideId(slide))
@@ -161,7 +167,12 @@ export function paint(
       files.set(id, file)
       const current = store.getElement(id)
       if (busy.has(id) && current !== null) continue
-      const record = { id, kind, text: shownValue(register, id, file), picture: kind === "picture" ? "" : null }
+      const record = {
+        id,
+        kind,
+        text: numberText(id, shownValue(register, id, file)),
+        picture: kind === "picture" ? "" : null,
+      }
       if (!sameRecord(current, record)) store.publish(record)
       store.placeBox(id, landedBox(register, id))
     }
@@ -195,6 +206,7 @@ export function paint(
     shapes: rows,
     pictures,
     files,
+    numberText,
     base,
     display,
     repainted,

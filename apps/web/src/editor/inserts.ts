@@ -10,6 +10,8 @@ import type { PictureStore } from "@/picture-tool"
 import type { UndoEntry } from "@/undo-list"
 import { elementNames, stackNames } from "@/undo-names"
 
+import { addSlideNumbers } from "./slide-number-actions"
+
 export type InsertingDeck = {
   readonly id: string
   readonly shown: DeckPaint
@@ -71,5 +73,5 @@ export function deckInserts(deck: InsertingDeck) {
     settle(await commitIcon(id, shownParts.current, name, at, recordAdded("add-icon")))
   }
 
-  return { changeElement, addText, addShape, addPicture, addIcon }
+  return { changeElement, addText, addShape, addPicture, addIcon, addSlideNumber: () => void addSlideNumbers(deck) }
 }

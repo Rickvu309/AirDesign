@@ -34,6 +34,7 @@ export type UndoLink = {
   enqueue(deck: string, value: string, node: ElementId, floor: string): Kept
   enqueueBox(deck: string, box: Box, node: ElementId, floor: string): Kept
   enqueueRow(deck: string, row: Row, node: ElementId, floor: string): Kept
+  enqueueSlides?(deck: string, file: readonly SlideId[], edits: readonly SlideCommand[]): Kept
   enqueueSlide(deck: string, file: readonly SlideId[], edit: SlideCommand): Kept
 }
 
@@ -127,7 +128,26 @@ async function sent(
 ): Promise<UndoEntry | null> {
   const turn = direction === "undo" ? undoOf(register, entry.undoable) : redoOf(register, entry.undoable)
   if (!turn.ok) return null
-  for (const command of turn.commands) if (!(await sentCommand(link, deck, command))) return null
+  const [first] = turn.commands
+  if (
+    first?.command === "slide" &&
+    turn.commands.length > 1 &&
+    link.enqueueSlides !== undefined &&
+    turn.commands.every((command) => command.command === "slide")
+  ) {
+    if (
+      !(
+        await link.enqueueSlides(
+          deck,
+          first.file,
+          turn.commands.map(({ edit }) => edit),
+        )
+      ).ok
+    )
+      return null
+  } else {
+    for (const command of turn.commands) if (!(await sentCommand(link, deck, command))) return null
+  }
   return { ...entry, undoable: turn.undoable }
 }
 

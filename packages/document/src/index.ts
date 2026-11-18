@@ -215,6 +215,8 @@ export {
 } from "./color.js"
 export {
   readTextValue,
+  hasSlideNumber,
+  openingSlideNumber,
   alignNames,
   formatNames,
   schemeNames,
@@ -286,3 +288,11 @@ export { slideBirths } from "./slide-births.js"
 export { cloneMany } from "./grid-set.js"
 export { type TemplateStyle } from "./template-style.js"
 export { readTextStyles, textStylesOf, type TextStyle, type TextStyleFields } from "./text-style.js"
+export {
+  plainSlideNumber,
+  shownSlideNumber,
+  numberCounts,
+  numberFormats,
+  type SlideNumber,
+  type SlideNumbers,
+} from "./slide-number.js"

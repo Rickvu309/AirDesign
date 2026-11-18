@@ -4,6 +4,8 @@ import { readTextFill, type TextFill } from "./text-fill.js"
 import { bytesOf } from "./limits.js"
 import { record } from "./plain-object.js"
 
+import { readSlideNumber, type SlideNumber } from "./slide-number.js"
+
 export const formatNames = ["bold", "italic", "underline", "strike"] as const
 export const schemeNames = [
   "dk1",
@@ -38,6 +40,7 @@ export type RunFormat = { readonly [format in TextFormat]?: boolean }
 export type TextRun = {
   readonly from: number
   readonly text: string
+  readonly slideNumber?: SlideNumber
   readonly size?: number
   readonly fill?: TextFill
   readonly color?: Color
@@ -68,6 +71,7 @@ const paragraphKeys = new Set<string>(["from", "runs", "align", "list", "bullet"
 const runKeys = new Set<string>([
   "from",
   "text",
+  "slideNumber",
   "link",
   "size",
   "fill",
@@ -127,7 +131,9 @@ function readRun(value: unknown): TextRun | null {
   if (from === null || typeof run.text !== "string" || size === null || color === null || font === null) {
     return null
   }
-  let read: TextRun = { from, text: run.text }
+  const slideNumber = readSlideNumber(run.slideNumber)
+  if (slideNumber === null && run.slideNumber !== undefined) return null
+  let read: TextRun = { from, text: run.text, ...(slideNumber === null ? {} : { slideNumber }) }
   for (const format of formatNames) {
     const set = run[format]
     if (set === undefined) continue
@@ -218,6 +224,7 @@ export function readParagraphs(parsed: unknown): TextValue | null {
 
 function writtenRun(run: TextRun): Record<string, unknown> {
   const written: Record<string, unknown> = { from: run.from, text: run.text }
+  if (run.slideNumber !== undefined) written.slideNumber = run.slideNumber
   for (const format of formatNames) if (run[format] !== undefined) written[format] = run[format]
   if (run.link !== undefined) written.link = run.link
   if (run.size !== undefined) written.size = run.size
@@ -239,4 +246,19 @@ function writtenParagraph(paragraph: TextParagraph): Record<string, unknown> {
 
 export function writeTextValue(text: TextValue): string {
   return JSON.stringify(text.map(writtenParagraph))
+}
+
+export function hasSlideNumber(value: string | null): boolean {
+  return (
+    value !== null &&
+    value.includes('"slideNumber"') &&
+    readTextValue(value)?.some((paragraph) => paragraph.runs.some((run) => run.slideNumber !== undefined)) === true
+  )
+}
+
+export function openingSlideNumber(value: string | null): boolean {
+  if (!hasSlideNumber(value) || value === null) return false
+  const text = readTextValue(value)
+  const paragraph = text?.[0]
+  return text?.length === 1 && paragraph?.from === 0 && paragraph.runs.length === 1 && paragraph.runs[0]?.from === -1
 }

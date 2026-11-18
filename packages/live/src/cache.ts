@@ -24,7 +24,7 @@ import { backgroundFill } from "./background-fill.js"
 import { queueIndex, sendIndex } from "./deck-index.js"
 import { accountKey, markNewer, storeNewer } from "./device.js"
 import { rowsFromRegister, view, type DeckView, type LivePhase } from "./deck-view.js"
-import { slideChange, valueChange, type Enqueued } from "./deck-edit.js"
+import { slideBatch, slideChange, valueChange, type Enqueued } from "./deck-edit.js"
 import {
   adoptRows,
   confirmRows,
@@ -271,25 +271,26 @@ export function connect(remote: Remote, options: Options = {}) {
     })
   }
 
-  function writeSlide(
-    deck: DeckId,
-    file: readonly SlideId[],
-    command: SlideCommand,
-    replaying?: string,
-  ): Promise<EnqueueResult<readonly string[]>> {
+  function writeSlide(deck: DeckId, kept: Extract<Kept, { kind: "slide" | "slides" }>, id?: string, replay = false) {
     const account = accountKey()
     if (account === undefined) return Promise.resolve(signedOut)
     return editHeld<EnqueueResult<readonly string[]>>(deck, (held) => {
-      if (replaying !== undefined && !holdsUnsaved(shelf, account, deck, replaying))
+      if (
+        replay &&
+        id !== undefined &&
+        (!holdsUnsaved(shelf, account, deck, id) || held.pending.some((row) => row.once === id))
+      )
         return { puts: [], result: { ok: true, painted: [] } }
-      return slideChange(deck, held, file, command)
+      return kept.kind === "slide"
+        ? slideChange(deck, held, kept.file, kept.edit)
+        : slideBatch(deck, held, kept.file, kept.edits, id ?? nextOnce())
     })
   }
 
   function replayUnsaved(deck: DeckId, entry: Unsaved): Promise<unknown> {
     const fill = entry.kind === "slide" ? backgroundFill(entry.edit) : undefined
     if (fill !== undefined) return writeValue(deck, storedValue(fill.row), fill.node, "", entry.id)
-    if (entry.kind === "slide") return writeSlide(deck, entry.file, entry.edit, entry.id)
+    if (entry.kind === "slide" || entry.kind === "slides") return writeSlide(deck, entry, entry.id, true)
     const node = readElementId(entry.node)
     if (node === undefined) return Promise.resolve()
     if (entry.kind === "text") return writeValue(deck, { value: entry.value }, node, entry.floor, entry.id)
@@ -299,14 +300,18 @@ export function connect(remote: Remote, options: Options = {}) {
     return writeValue(deck, { property: "box", value: box }, node, entry.floor, entry.id)
   }
 
-  async function keepAndWrite<Result>(deck: DeckId, kept: Kept, write: () => Promise<Result>): Promise<Result> {
+  async function keepAndWrite<Result>(
+    deck: DeckId,
+    kept: Kept,
+    write: (entry: string) => Promise<Result>,
+  ): Promise<Result> {
     const account = accountKey()
-    if (account === undefined) return write()
-    const waiting = recovered(deck)
     const entry = nextEntry()
+    if (account === undefined) return write(entry)
+    const waiting = recovered(deck)
     keepUnsaved(shelf, account, deck, entry, kept)
     await waiting
-    const result = await write()
+    const result = await write(entry)
     releaseUnsaved(shelf, account, deck, entry)
     return result
   }
@@ -326,25 +331,30 @@ export function connect(remote: Remote, options: Options = {}) {
     return keepAndWrite(parsed.deck, kept, () => writeValue(parsed.deck, edit, named, floor))
   }
 
+  function enqueueSlides(
+    deck: string,
+    file: readonly SlideId[],
+    edits: readonly SlideCommand[],
+  ): Promise<EnqueueResult<readonly string[]>> {
+    return unlessNewer(async () => {
+      const parsed = readDeckId(deck)
+      if (!parsed.ok) return parsed
+      const state = readSlideState({ file, order: edits })
+      const first = state?.order[0]
+      if (state === undefined || first === undefined || !state.order.every(authorableSlide))
+        return { ok: false, refusal: "field" }
+      const kept: Kept =
+        state.order.length === 1
+          ? { kind: "slide", file: state.file, edit: first }
+          : { kind: "slides", file: state.file, edits: state.order }
+      return keepAndWrite(parsed.deck, kept, (id) => writeSlide(parsed.deck, kept, id))
+    })
+  }
+
   return {
     index: (deck: string, index: Parameters<typeof queueIndex>[1]) => queueIndex(deck, index, nextOnce),
-    enqueueSlide(
-      deck: string,
-      file: readonly SlideId[],
-      edit: SlideCommand,
-    ): Promise<EnqueueResult<readonly string[]>> {
-      return unlessNewer(async () => {
-        const parsed = readDeckId(deck)
-        if (!parsed.ok) return parsed
-        const state = readSlideState({ file, order: [edit] })
-        const command = state?.order[0]
-        if (state === undefined || command === undefined || !authorableSlide(command))
-          return { ok: false, refusal: "field" }
-        return keepAndWrite(parsed.deck, { kind: "slide", file: state.file, edit: command }, () =>
-          writeSlide(parsed.deck, state.file, command),
-        )
-      })
-    },
+    enqueueSlide: (deck: string, file: readonly SlideId[], edit: SlideCommand) => enqueueSlides(deck, file, [edit]),
+    enqueueSlides,
     enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<EnqueueResult> {
       return unlessNewer(async () => {
         const result = await enqueueValue(deck, { value }, node, floor)

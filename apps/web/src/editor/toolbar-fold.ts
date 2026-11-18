@@ -1,4 +1,4 @@
-export const insertParts = ["text", "shape", "image", "icon"] as const
+export const insertParts = ["number", "text", "shape", "image", "icon"] as const
 
 export const formatParts = ["styles", "size", "color", "align", "bullets"] as const
 
@@ -13,6 +13,7 @@ export const foldOrder: readonly ToolbarPart[] = [
   "image",
   "shape",
   "text",
+  "number",
   "bullets",
   "align",
   "color",

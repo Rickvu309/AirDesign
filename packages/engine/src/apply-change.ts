@@ -1,6 +1,7 @@
 import type { CallRefusal, WireAdd, WireRunElement, WireSet } from "@airdesign/catalog"
 import {
   decide,
+  openingSlideNumber,
   limits,
   openingElement,
   planChange,
@@ -90,7 +91,9 @@ function addedNode(register: Register): ElementId | undefined {
 function applyAdd(deck: Deck, change: WireAdd, runId: string, base: number): Applied {
   if (change.kind === "picture")
     return addIcon({ deck: deck.id, base }, deck, change.slide, change.icon, change.box, runId)
-  const added = addTextBox({ deck: deck.id, base }, deck, change.slide, change.box, runId)
+  const value = change.text?.value
+  const opening = typeof value === "string" && openingSlideNumber(value) ? value : ""
+  const added = addTextBox({ deck: deck.id, base }, deck, change.slide, change.box, runId, opening)
   if (!added.ok) return added
   const node = addedNode(added.register)
   if (change.text === undefined || node === undefined) return added
