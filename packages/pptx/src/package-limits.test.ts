@@ -1,5 +1,7 @@
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from "@zip.js/zip.js"
 import { afterEach, describe, expect, it, vi } from "vitest"
+import { markupDocument } from "./element-span.js"
+import { markupBytesRead } from "./markup-reader.js"
 import { packageLimits, readPackage, readPackageWith, scanMarkup } from "./package-limits.js"
 
 const forced = vi.hoisted(() => ({ nodesPerPart: null as number | null }))
@@ -8,9 +10,9 @@ vi.mock("./element-span.js", async (importOriginal) => {
   const original = await importOriginal<typeof import("./element-span.js")>()
   return {
     ...original,
-    markupLimits: (data: Uint8Array) =>
+    markupLimits: (data: Uint8Array, keep?: boolean) =>
       forced.nodesPerPart === null
-        ? original.markupLimits(data)
+        ? original.markupLimits(data, keep)
         : { wellFormed: true, depth: 1, attributes: 0, nodes: forced.nodesPerPart },
   }
 })
@@ -194,6 +196,9 @@ describe("readPackage", () => {
     const slide = read.parts.get("ppt/slides/slide1.xml")
     if (slide === undefined) throw new Error("slide")
     expect(decode(slide)).toBe("<p:sld/>")
+    const parsed = markupBytesRead()
+    expect(markupDocument(slide).elements[0]?.kind).toBe("p:sld")
+    expect(markupBytesRead()).toBe(parsed)
     expect(await readPackage(await slides(50))).toMatchObject({ ok: true })
   })
 

@@ -112,8 +112,8 @@ export function markupDocument(bytes: Uint8Array): MarkupDocument {
   return document
 }
 
-export function markupLimits(bytes: Uint8Array): MarkupDocument {
-  return readMarkup(bytes, false)
+export function markupLimits(bytes: Uint8Array, keep = false): MarkupDocument {
+  return keep ? markupDocument(bytes) : readMarkup(bytes, false)
 }
 
 export function spliceBytes(bytes: Uint8Array, edits: readonly ByteEdit[]): Uint8Array {
