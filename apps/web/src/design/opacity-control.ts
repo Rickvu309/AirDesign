@@ -9,7 +9,7 @@ import {
 } from "@airdesign/document"
 import { opacityCopy } from "@/copy/opacity-copy"
 import { arrange, resolveControl } from "./panel-arrangement"
-import { Checker } from "./preset-icons"
+import { Opacity } from "./preset-icons"
 import type { PanelReads, PanelSection } from "./panel"
 
 export const opacitySteps = [100, 75, 50, 25, 10, 0] as const
@@ -41,6 +41,6 @@ export function opacitySection(view: ScopedElement, shown: PanelReads): PanelSec
     change,
   })
   const listed = view.facts.kind === "shape" || view.facts.kind === "picture"
-  const control = listed ? { ...resolved, look: { ...resolved.look, glyph: Checker, steps: opacitySteps } } : resolved
+  const control = listed ? { ...resolved, look: { ...resolved.look, glyph: Opacity, steps: opacitySteps } } : resolved
   return { trait: "opacity", label: opacityCopy.section, open: true, strips: arrange("opacity", [control]) }
 }

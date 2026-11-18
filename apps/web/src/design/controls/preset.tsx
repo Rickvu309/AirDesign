@@ -1,3 +1,4 @@
+import { controlLabel } from "@/design/controls/control-label"
 import { presets, type Preset } from "@airdesign/document"
 import { ChevronDownIcon } from "lucide-react"
 import { useId, useRef, useState } from "react"
@@ -20,8 +21,8 @@ export function PresetControl({ control, onChange }: ControlProps) {
   const shapes = control.desc.kind === "choice" ? control.desc.options.filter(isPreset) : []
   const chosen = !control.mixed && isPreset(control.value) ? control.value : null
   return (
-    <div className="flex flex-col gap-1.5" data-control="preset" data-inherited={control.inherited ? "" : undefined}>
-      <span id={label} className="text-[length:var(--type-caption)] text-quiet">
+    <div className="flex flex-col gap-1" data-control="preset" data-inherited={control.inherited ? "" : undefined}>
+      <span id={label} className={controlLabel}>
         {control.label}
       </span>
       <Popover open={open} onOpenChange={setOpen}>
@@ -32,7 +33,7 @@ export function PresetControl({ control, onChange }: ControlProps) {
               variant="ghost"
               aria-labelledby={`${label} ${shown}`}
               className={cn(
-                "h-[var(--control-dense)] w-full justify-start gap-2 rounded-[var(--shape-control)] bg-white px-2 text-[length:var(--type-caption)] font-normal shadow-[0px_0px_0px_1px_var(--field-edge)] hover:bg-white active:translate-y-0",
+                "h-[var(--control-dense)] w-full justify-start gap-2 rounded-[var(--shape-control)] bg-white px-2 text-[length:var(--type-caption)] font-normal shadow-[inset_0px_0px_0px_1px_var(--field-edge)] hover:bg-white active:translate-y-0",
                 control.inherited ? "text-quiet" : "text-foreground",
               )}
             />

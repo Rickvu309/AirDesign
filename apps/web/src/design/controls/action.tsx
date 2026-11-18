@@ -1,3 +1,4 @@
+import { controlLabel } from "@/design/controls/control-label"
 import { useId } from "react"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { DistributeSpacing } from "@/design/preset-icons"
@@ -46,11 +47,8 @@ export function ActionControl({ control, onChange }: ControlProps) {
       </DropdownMenu>
     )
   return (
-    <div className="flex flex-col gap-1.5" data-control="action">
-      <span
-        id={label}
-        className={control.look.name.show === "hidden" ? "sr-only" : "text-[length:var(--type-caption)] text-quiet"}
-      >
+    <div className="flex flex-col gap-1" data-control="action">
+      <span id={label} className={control.look.name.show === "hidden" ? "sr-only" : controlLabel}>
         {control.label}
       </span>
       <div role="group" aria-labelledby={label} className="flex gap-2">

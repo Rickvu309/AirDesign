@@ -1,3 +1,4 @@
+import { controlLabel } from "@/design/controls/control-label"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
@@ -13,7 +14,7 @@ export function ListControl({ control, palette, onChange, inner }: ControlProps)
   if (desc === null) return null
   return (
     <div className="flex flex-col gap-2" data-control="list">
-      <span id={label} className="text-[length:var(--type-caption)] text-quiet">
+      <span id={label} className={controlLabel}>
         {control.label}
       </span>
       <ol aria-labelledby={label} className="flex flex-col gap-2">

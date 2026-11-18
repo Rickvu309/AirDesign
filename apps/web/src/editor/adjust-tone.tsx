@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover"
 import { adjustToneCopy as words } from "@/copy/adjust-tone-copy"
 import { dialStep, dialSteps, toneCenter, toneName, type Tone, type TonePoint, type ToneScope } from "@/aira-prompts"
-import { SparkIcon } from "@/editor/editor-icons"
+import { ToneIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 
 export type ToneAction = {
@@ -121,7 +121,7 @@ export function AdjustTone({ action }: { action: ToneAction }) {
       <PopoverTrigger
         render={<Button type="button" variant="ghost" size="icon" className="size-6" aria-label={words.title} />}
       >
-        <SparkIcon size={14} />
+        <ToneIcon size={14} />
       </PopoverTrigger>
       <PopoverContent
         side="left"

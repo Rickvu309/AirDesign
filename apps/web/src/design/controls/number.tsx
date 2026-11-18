@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react"
+import { controlLabel } from "@/design/controls/control-label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { textCopy } from "@/copy/text-copy"
 import { agentNumberOf, readAgent } from "@airdesign/catalog"
@@ -46,6 +46,9 @@ export function scrubbed(
   const each = keys.shiftKey ? step * 10 : keys.altKey ? step / 10 : step
   return { value: Math.round((scrub.value + steps * each) * 10) / 10, x: scrub.x + steps * scrubPixels }
 }
+
+const listTrigger =
+  "ml-auto flex h-full w-6 shrink-0 items-center justify-center rounded-r-[var(--shape-control)] border-l border-white text-foreground outline-none"
 
 export function NumberField({
   control,
@@ -123,11 +126,37 @@ export function NumberField({
 
   const suffix = size || borderWidth || unit === "" ? "" : unit
   const value = draft ?? shown
-  const view = (
+  const steps = look.steps
+  const list = size ? (
+    <DropdownMenu>
+      <DropdownMenuTrigger aria-label={textCopy.sizes} className={listTrigger} data-focus-ring>
+        <EditorIcon name="chev" size={12} className="size-3" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="max-h-80 overflow-y-auto">
+        {fontSizes.map((sizeValue) => (
+          <DropdownMenuItem key={sizeValue} onClick={() => commit(String(sizeValue))}>
+            {sizeValue}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ) : steps === undefined ? null : (
+    <StepList
+      label={designCopy.list(control.label)}
+      steps={steps}
+      unit={unit}
+      shown={shown}
+      onPick={(step) => {
+        const read = readNumber(step)
+        if (read.ok && (read.value !== control.value || control.inherited)) onChange(read.value)
+      }}
+    />
+  )
+  const row = (
     <label
       className={cn(
-        "flex h-[var(--control-dense)] min-w-0 items-center gap-0 rounded-[var(--shape-control)] bg-[var(--panel-track)] pl-2",
-        size ? "pr-0" : "pr-2",
+        "flex h-[var(--control-dense)] w-full min-w-0 items-center gap-0 rounded-[var(--shape-control)] bg-[var(--panel-track)] pl-2",
+        list === null ? "pr-2" : "pr-0",
       )}
       title={look.name.show === "hidden" ? undefined : control.label}
       data-control={kind}
@@ -137,7 +166,8 @@ export function NumberField({
       {named ? (
         <span
           className={cn(
-            "mr-2 min-w-0 shrink-0 truncate text-[length:var(--type-caption)] text-quiet",
+            "mr-2 min-w-0 truncate text-[length:var(--type-caption)] text-quiet",
+            look.name.show === "inside" ? "shrink" : "shrink-0",
             shown !== "" && "cursor-ew-resize touch-none select-none",
           )}
           onPointerDown={startScrub}
@@ -154,7 +184,7 @@ export function NumberField({
           ) : null}
         </span>
       ) : null}
-      <span className="relative grid min-w-0 max-w-full">
+      <span className={cn("relative grid min-w-0 max-w-full", look.name.show === "inside" && "shrink-0")}>
         <span
           aria-hidden
           className="invisible col-start-1 row-start-1 whitespace-pre text-[length:var(--type-caption)] tabular-nums"
@@ -179,56 +209,19 @@ export function NumberField({
           onKeyDown={onKeyDown}
         />
       </span>
-      {size ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            aria-label={textCopy.sizes}
-            className="flex h-6 w-6 shrink-0 items-center justify-center border-l border-white"
-          >
-            <ChevronDown size={12} />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="max-h-80 overflow-y-auto">
-            {fontSizes.map((sizeValue) => (
-              <DropdownMenuItem key={sizeValue} onClick={() => commit(String(sizeValue))}>
-                {sizeValue}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : suffix === "" ? null : (
+      {suffix === "" ? null : (
         <span className="shrink-0 text-[length:var(--type-caption)] text-foreground" aria-hidden>
           {suffix}
         </span>
       )}
+      {list}
     </label>
   )
-  const steps = look.steps
-  const row =
-    steps === undefined ? (
-      view
-    ) : (
-      <div className="flex min-w-0 items-center gap-1">
-        {view}
-        <StepList
-          label={designCopy.list(control.label)}
-          steps={steps}
-          unit={unit}
-          shown={shown}
-          onPick={(step) => {
-            const read = readNumber(step)
-            if (read.ok && (read.value !== control.value || control.inherited)) onChange(read.value)
-          }}
-        />
-      </div>
-    )
   return look.name.show === "above" ? (
-    <div className="flex min-w-0 flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1">
       <span
         aria-hidden
-        className={cn(
-          "text-[length:var(--type-caption)] text-quiet",
-          size && shown !== "" && "cursor-ew-resize touch-none select-none",
-        )}
+        className={cn(controlLabel, size && shown !== "" && "cursor-ew-resize touch-none select-none")}
         onPointerDown={size ? startScrub : undefined}
         onPointerMove={size ? moveScrub : undefined}
         onPointerUp={size ? endScrub : undefined}
@@ -260,16 +253,7 @@ function StepList({
   const chosen = chosenStep(shown, steps)
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            aria-label={label}
-            className="flex h-[var(--control-dense)] w-6 shrink-0 items-center justify-center rounded-[var(--shape-control)] bg-muted text-quiet"
-            data-focus-ring
-          />
-        }
-      >
+      <PopoverTrigger render={<button type="button" aria-label={label} className={listTrigger} data-focus-ring />}>
         <EditorIcon name="chev" size={12} className="size-3" />
       </PopoverTrigger>
       <PopoverContent align="end" className="w-auto min-w-24 gap-0 p-1 duration-0">

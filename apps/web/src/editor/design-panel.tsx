@@ -197,8 +197,6 @@ export function ControlView({ control, palette, onChange }: ControlProps) {
 }
 
 function stripColumns(strip: readonly PanelControl[]): string {
-  if (strip.length === 2 && strip[0]?.field === "fill.solid" && strip[1]?.field === "width")
-    return "minmax(0, 1fr) 5.25rem"
   if (strip.every((control) => control.kind === "action"))
     return strip.map((control) => (control.field === "distribute" ? "24px" : "minmax(0, 1fr)")).join(" ")
   return `repeat(${strip.length}, minmax(0, 1fr))`
@@ -369,7 +367,7 @@ export function ElementDesign({
                     aria-label={linkCopy.create}
                     onClick={(event) => event.currentTarget.closest("section")?.querySelector("input")?.focus()}
                   >
-                    <EditorIcon name="link" size={16} />
+                    <EditorIcon name="link" size={14} />
                   </button>
                 ) : null
               }

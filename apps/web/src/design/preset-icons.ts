@@ -25,13 +25,6 @@ export const StrongShadow = createLucideIcon("StrongShadow", [
   ["rect", { x: 2, y: 2, width: 15, height: 15, rx: 1, fill: "var(--muted)", key: "shape" }],
 ])
 
-export const Checker = createLucideIcon("Checker", [
-  ["rect", { x: "4", y: "4", width: "7", height: "7", fill: "currentColor", stroke: "none", key: "a" }],
-  ["rect", { x: "13", y: "13", width: "7", height: "7", fill: "currentColor", stroke: "none", key: "b" }],
-  ["rect", { x: "13", y: "4", width: "7", height: "7", key: "c" }],
-  ["rect", { x: "4", y: "13", width: "7", height: "7", key: "d" }],
-])
-
 export const PatternFill = createLucideIcon("PatternFill", [
   ["rect", { x: 4, y: 3, width: 16, height: 18, rx: 1, key: "edge" }],
   [
@@ -52,20 +45,20 @@ export const SolidFill = createLucideIcon("SolidFill", [
 
 export const GradientFill = createLucideIcon("GradientFill", [
   ["rect", { x: 3, y: 3, width: 18, height: 18, rx: 2, key: "edge" }],
-  ...[0, 1, 2].flatMap((row) =>
-    [0, 1, 2].map(
-      (col): ["circle", { cx: number; cy: number; r: number; fill: string; stroke: string; key: string }] => [
+  ...[0, 1, 2, 3].flatMap((row) =>
+    [0, 1, 2, 3]
+      .filter((col) => (row + col) % 2 === 0)
+      .map((col): ["circle", { cx: number; cy: number; r: number; fill: string; stroke: string; key: string }] => [
         "circle",
         {
-          cx: 7 + col * 5,
-          cy: 7 + row * 5,
-          r: 0.55 + (row + 2 - col) * 0.2,
+          cx: 7 + col * 3.4,
+          cy: 7 + row * 3.4,
+          r: 1.5 - col * 0.2,
           fill: "currentColor",
           stroke: "none",
           key: `${row}-${col}`,
         },
-      ],
-    ),
+      ]),
   ),
 ])
 
@@ -112,12 +105,12 @@ export const ImageFill = createLucideIcon("ImageFill", [
 ])
 
 export const Opacity = createLucideIcon("Opacity", [
-  ["rect", { x: 3, y: 3, width: 18, height: 18, rx: 2, key: "edge" }],
+  ["rect", { x: 3, y: 3, width: 18, height: 18, rx: 3, key: "edge" }],
   [
     "path",
     {
-      d: "M16 7h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01",
-      strokeWidth: 1.5,
+      d: "M16.5 7.5h.01M13.5 10.5h.01M16.5 10.5h.01M10.5 13.5h.01M13.5 13.5h.01M16.5 13.5h.01M7.5 16.5h.01M10.5 16.5h.01M13.5 16.5h.01M16.5 16.5h.01",
+      strokeWidth: 1.75,
       key: "dots",
     },
   ],

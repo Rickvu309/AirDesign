@@ -17,7 +17,8 @@ import {
   themeCustomColors,
   type ThemeCustomColor,
 } from "@airdesign/pptx"
-import { Ellipsis, Plus, Shuffle, SlidersVertical, Trash2 } from "lucide-react"
+import { EditorIcon } from "@/editor/editor-icons"
+import { Ellipsis, Plus, Shuffle, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -96,64 +97,64 @@ export function LiveTemplateStyle({ deck }: { deck: DesigningDeck }) {
     <DesignSection
       title={designCopy.templateStyle}
       action={
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-6"
-          aria-label={designCopy.editTemplateStyle}
-          onClick={() => setEditing(current)}
-        >
-          <SlidersVertical className="size-3.5" />
-        </Button>
-      }
-    >
-      <div className="flex items-center gap-1">
-        <div className="min-w-0 flex-1">
-          <Popover open={choosing} onOpenChange={setChoosing}>
-            <PopoverTrigger
-              render={<TemplateStyleCard style={style} open={choosing} onOpen={() => setChoosing(!choosing)} />}
-            />
-            <PopoverContent align="end" aria-label={designCopy.chooseTemplateStyle}>
-              {styles.map((choice) => (
-                <div key={choice.id} className="flex items-center gap-1">
-                  <TemplateStyleCard
-                    style={cardOf(choice)}
-                    open={false}
-                    label={choice.name ?? designCopy.currentTheme}
-                    onOpen={() => apply(choice.id)}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={designCopy.editTemplateStyle}
-                    onClick={() => {
-                      setChoosing(false)
-                      setEditing(choice.id)
-                    }}
-                  >
-                    <SlidersVertical />
-                  </Button>
-                </div>
-              ))}
-            </PopoverContent>
-          </Popover>
-        </div>
-        {remixable ? (
+        <div className="flex items-center gap-1">
+          {remixable ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-6"
+              aria-label={designCopy.remixTemplateColors}
+              onClick={() => {
+                if (part === undefined) return
+                changeDesign(deck, () => remixTargets(deck.shown.displayParts.current, part))
+              }}
+            >
+              <Shuffle className="size-3.5" />
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="ghost"
             size="icon"
             className="size-6"
-            aria-label={designCopy.remixTemplateColors}
-            onClick={() => {
-              if (part === undefined) return
-              changeDesign(deck, () => remixTargets(deck.shown.displayParts.current, part))
-            }}
+            aria-label={designCopy.editTemplateStyle}
+            onClick={() => setEditing(current)}
           >
-            <Shuffle className="size-3.5" />
+            <EditorIcon name="styleSliders" size={14} />
           </Button>
-        ) : null}
+        </div>
+      }
+    >
+      <div className="min-w-0">
+        <Popover open={choosing} onOpenChange={setChoosing}>
+          <PopoverTrigger
+            render={<TemplateStyleCard style={style} open={choosing} onOpen={() => setChoosing(!choosing)} />}
+          />
+          <PopoverContent align="end" aria-label={designCopy.chooseTemplateStyle}>
+            {styles.map((choice) => (
+              <div key={choice.id} className="flex items-center gap-1">
+                <TemplateStyleCard
+                  style={cardOf(choice)}
+                  open={false}
+                  label={choice.name ?? designCopy.currentTheme}
+                  onOpen={() => apply(choice.id)}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={designCopy.editTemplateStyle}
+                  onClick={() => {
+                    setChoosing(false)
+                    setEditing(choice.id)
+                  }}
+                >
+                  <EditorIcon name="styleSliders" size={16} />
+                </Button>
+              </div>
+            ))}
+          </PopoverContent>
+        </Popover>
       </div>
       <Dialog
         open={edited !== undefined}

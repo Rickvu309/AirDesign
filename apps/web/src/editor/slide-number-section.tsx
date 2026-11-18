@@ -27,7 +27,11 @@ export function SlideNumberSection({ settings, numbers, onChange, onAddAll }: Pr
             if (value !== null) onChange({ ...settings, count: value })
           }}
         >
-          <SelectTrigger size="sm" aria-label={copy.count} className="w-full text-[length:var(--type-caption)]">
+          <SelectTrigger
+            size="sm"
+            aria-label={copy.count}
+            className="w-full text-[length:var(--type-caption)] data-[size=sm]:h-[var(--control-dense)]"
+          >
             <SelectValue>{copy.counts[settings.count]}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -55,7 +59,11 @@ export function SlideNumberSection({ settings, numbers, onChange, onAddAll }: Pr
                 if (value !== null) onChange({ ...settings, format: value })
               }}
             >
-              <SelectTrigger size="sm" aria-label={copy.format} className="w-full text-[length:var(--type-caption)]">
+              <SelectTrigger
+                size="sm"
+                aria-label={copy.format}
+                className="w-full text-[length:var(--type-caption)] data-[size=sm]:h-[var(--control-dense)]"
+              >
                 <SelectValue>{formats.find((item) => item.value === settings.format)?.label}</SelectValue>
               </SelectTrigger>
               <SelectContent>

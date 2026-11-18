@@ -20,7 +20,7 @@ const checker: CSSProperties = {
 }
 
 const trigger =
-  "h-[var(--control-dense)] w-full min-w-0 justify-start gap-1 rounded-[var(--shape-control)] border-0 bg-white px-1.5 text-[length:var(--type-caption)] font-normal text-foreground shadow-[0px_0px_0px_1px_var(--field-edge)] hover:bg-white active:translate-y-0"
+  "h-[var(--control-dense)] w-full min-w-0 justify-start gap-1 rounded-[var(--shape-control)] border-0 bg-white px-1.5 text-[length:var(--type-caption)] font-normal text-foreground shadow-[inset_0px_0px_0px_1px_var(--field-edge)] hover:bg-white active:translate-y-0"
 
 type Overlay = { readonly none: true } | { readonly solid: Color }
 
