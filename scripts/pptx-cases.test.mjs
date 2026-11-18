@@ -31,6 +31,7 @@ assert.deepEqual(
     "new-slide-prompts.mjs",
     "notes.mjs",
     "paragraphs.mjs",
+    "picture-adjust.mjs",
     "picture-mode.mjs",
     "shapes.mjs",
     "slide-background.mjs",
