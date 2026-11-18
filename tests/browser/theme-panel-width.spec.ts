@@ -26,7 +26,7 @@ test("template colors stay named and reachable at narrow editor widths", async (
   }
 })
 
-test("the Border preset glyphs render at 14 px", async ({ page }) => {
+test("the Border preset glyphs render at the segment size", async ({ page }) => {
   await openDeck(page, "shapes-added.pptx")
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await page
@@ -36,5 +36,5 @@ test("the Border preset glyphs render at 14 px", async ({ page }) => {
     .getByRole("group", { name: appearanceCopy.border, exact: true })
     .locator("svg")
     .evaluateAll((icons) => icons.map((icon) => icon.getBoundingClientRect().width))
-  expect(sizes).toEqual([14, 14, 14, 14])
+  expect(sizes).toEqual([16, 16, 16, 16])
 })
