@@ -230,6 +230,8 @@ export {
   type TextValue,
 } from "./text-value.js"
 export {
+  linkRange,
+  linkState,
   alignRange,
   alignState,
   bulletRange,
@@ -276,7 +278,8 @@ export { colorPaint, gamma, hexRgb, hslRgb, paintSteps, presetColors, rgbHex, ty
 export { slideFindings, type SlideFindings } from "./slide-findings.js"
 
 export { defaultGrid1, gridRows, foldGrid, type GridSide } from "./grid-order.js"
-export { readLinkTarget, type ElementLink, type LinkTarget, type LinkEdit } from "./link-target.js"
+export { readElementLink, readLinkTarget, type ElementLink, type LinkTarget, type LinkEdit } from "./link-target.js"
+
 export { slideBirths } from "./slide-births.js"
 export { cloneMany } from "./grid-set.js"
 export { type TemplateStyle } from "./template-style.js"

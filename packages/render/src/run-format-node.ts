@@ -1,6 +1,15 @@
-import { formatNames, readColor, type Color, type ColorTransform, type RunFormat } from "@airdesign/document"
+import {
+  readElementLink,
+  type ElementLink,
+  formatNames,
+  readColor,
+  type Color,
+  type ColorTransform,
+  type RunFormat,
+} from "@airdesign/document"
 
 type RunPaint = RunFormat & {
+  readonly link?: ElementLink
   readonly size?: number
   readonly color?: Color
   readonly font?: string
@@ -65,6 +74,7 @@ export function writeFormat(span: HTMLElement, format: RunPaint): void {
   if (format.color !== undefined) {
     span.dataset.color = colorToken(format.color)
   }
+  if (format.link !== undefined) span.dataset.link = JSON.stringify(format.link)
   if (format.font !== undefined) span.dataset.font = format.font
 }
 
@@ -77,6 +87,13 @@ export function readFormat(span: HTMLElement): RunPaint {
   const letterSpacing = span.dataset.letterSpacing
   if (letterSpacing !== undefined && integer.test(letterSpacing))
     format = { ...format, letterSpacing: Number(letterSpacing) }
+  const rawLink = span.dataset.link
+  if (rawLink !== undefined) {
+    try {
+      const link = readElementLink(JSON.parse(rawLink))
+      if (link !== null) format = { ...format, link }
+    } catch {}
+  }
   const size = readSize(span.dataset.size)
   if (size !== null) format = { ...format, size }
   const color = readColorToken(span.dataset.color)

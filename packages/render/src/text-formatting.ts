@@ -1,8 +1,20 @@
-import type { ElementId, FormatState, ParagraphAlign, Color, SizeStep, TextFormat } from "@airdesign/document"
+import type {
+  ElementLink,
+  LinkEdit,
+  ElementId,
+  FormatState,
+  ParagraphAlign,
+  Color,
+  SizeStep,
+  TextFormat,
+} from "@airdesign/document"
 import { gestureFor, type KeyLike } from "./gestures.js"
 import type { CanvasThemeColor } from "./record.js"
 
 export type FormatTarget = {
+  readonly link: (editing: boolean) => ElementLink | "mixed" | null
+  readonly linkTo: (link: LinkEdit, editing: boolean) => void
+  readonly selection: (editing: boolean) => boolean
   readonly edits: (node: Element) => boolean
   readonly state: (format: TextFormat, editing: boolean) => FormatState
   readonly apply: (format: TextFormat, editing: boolean) => void
@@ -19,6 +31,9 @@ export type FormatTarget = {
 }
 
 export type TextFormatting = {
+  readonly link: () => ElementLink | "mixed" | null
+  readonly linkTo: (link: LinkEdit) => void
+  readonly selection: () => boolean
   readonly register: (id: ElementId, target: FormatTarget) => () => void
   readonly aim: (id: ElementId | null, focused?: HTMLElement) => void
   readonly state: (format: TextFormat) => FormatState | null
@@ -89,6 +104,17 @@ export function textFormatting(fresh: () => void = () => undefined): TextFormatt
       aimed = id
       returnTo = id === null ? null : (focused ?? null)
       changed()
+    },
+    link() {
+      const found = target()
+      return found === undefined ? null : found.link(editing(found))
+    },
+    linkTo(link) {
+      act((found, on) => found.linkTo(link, on), false)
+    },
+    selection() {
+      const found = target()
+      return found !== undefined && found.selection(editing(found))
     },
     state(format) {
       const found = target()

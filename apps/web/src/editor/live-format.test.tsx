@@ -33,6 +33,9 @@ type Target = Parameters<TextFormatting["register"]>[1]
 
 function targetWith(held: { bold: "on" | "off"; size: number }): Target {
   return {
+    link: () => null,
+    linkTo: () => undefined,
+    selection: () => false,
     edits: () => true,
     state: (format) => (format === "bold" ? held.bold : "off"),
     apply: () => undefined,

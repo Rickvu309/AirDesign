@@ -52,6 +52,7 @@ const textRule =
   '[data-paragraph]::before{content:var(--bullet);display:inline-block;margin-inline-end:var(--bullet-gap,0);min-width:var(--bullet-hang,auto);text-indent:0;pointer-events:none;user-select:none;white-space:pre;font-family:var(--bullet-font,inherit);color:var(--bullet-color,inherit);font-size:var(--bullet-size,1em);line-height:var(--bullet-line,1)}[data-text-body]:not(:focus-within)>[data-paragraph]::before{content:var(--bullet-unfocused,var(--bullet))}[data-paragraph][data-end-break]::after{content:"\\200b";line-height:var(--end-line)}'
 
 export type RunPaint = RunFormat & {
+  readonly link?: import("@airdesign/document").ElementLink
   readonly size?: number
   readonly color?: Color
   readonly font?: string
