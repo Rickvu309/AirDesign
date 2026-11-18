@@ -1,6 +1,7 @@
 import type { SlideId } from "@airdesign/document"
 import { useLayoutEffect, useRef, useState, type ReactNode, type PointerEvent, type RefObject } from "react"
 import { slideListCopy } from "@/copy/slide-list-copy"
+import { gridRowHandle } from "@/editor/grid-viewport"
 import { gridCommand } from "@/editor/editor-grid-keys"
 
 export function GridRowFrame({
@@ -21,7 +22,7 @@ export function GridRowFrame({
   children: ReactNode
 }) {
   const [hover, setHover] = useState<"band" | "slide" | null>(null)
-  const small = height * scale < 80
+  const small = height * scale < gridRowHandle.minimumHeight
   return (
     <div
       data-grid-row-frame
@@ -56,12 +57,13 @@ export function GridRowFrame({
         aria-keyshortcuts={slideListCopy.rowKeys}
         disabled={blocked || small}
         style={{
-          left: -32 / scale,
+          left: -gridRowHandle.offset / scale,
+          width: gridRowHandle.width,
           top: `calc(100% - ${height / 2}px)`,
           transform: `scale(${1 / scale}) translate(-50%, -50%)`,
           transformOrigin: "0 0",
         }}
-        className="absolute z-10 flex h-11 w-7 touch-none items-center justify-center rounded-full bg-primary text-primary-foreground"
+        className="absolute z-10 flex h-11 touch-none items-center justify-center rounded-full bg-primary text-primary-foreground"
         onPointerDown={(event) => {
           event.stopPropagation()
           event.currentTarget.focus({ preventScroll: true })

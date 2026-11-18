@@ -134,13 +134,18 @@ test("keeps the selected slide visible when menu and keys zoom", async ({ page }
   await expect(entry(page, 7)).toBeInViewport()
 })
 
-test("centres occupied slide bounds even with one slide", async ({ page }) => {
+test("centres the occupied row including chrome even with one slide", async ({ page }) => {
   await openFile(page, clean)
   await openGrid(page)
   const card = await page.locator("[data-grid-card]").boundingBox()
   const room = await page.locator("[data-grid-viewport]").boundingBox()
-  expect(card!.x + card!.width / 2).toBeCloseTo(room!.x + room!.width / 2, 0)
-  expect(card!.y + card!.height / 2).toBeCloseTo(room!.y + room!.height / 2, 0)
+  const grip = await page.locator("[data-row-handle]").boundingBox()
+  const end = await page.locator('[data-gap-insert="end"] [data-add-mark]').boundingBox()
+  if (card === null || room === null || grip === null || end === null) throw new Error("row bounds")
+  expect(grip.x).toBeGreaterThanOrEqual(48)
+  expect(end.x + end.width).toBeLessThanOrEqual(room.x + room.width - 47)
+  expect((grip.x + end.x + end.width) / 2).toBeCloseTo(room.x + room.width / 2, 0)
+  expect(card.y + card.height / 2).toBeCloseTo(room.y + room.height / 2, 0)
 })
 
 test("numbers clear the preceding row at fit", async ({ page }) => {
@@ -159,10 +164,13 @@ async function resizedGrid(page: Page, resize: () => Promise<void>) {
         const { x, y, width, height } = entry.getBoundingClientRect()
         return { x, y, width, height }
       })
+    const dot = host.querySelector('[data-grid-row-frame]:last-child [data-gap-insert="end"] [data-add-mark]')
+    const end = dot?.getBoundingClientRect().right ?? 0
     const width = host.clientWidth
     const height = host.clientHeight
     return {
       before: positions(),
+      end,
       resized: new Promise<ReturnType<typeof positions>[]>((resolve) => {
         const observer = new ResizeObserver(() => {
           if (host.clientWidth === width && host.clientHeight === height) return
@@ -180,7 +188,7 @@ async function resizedGrid(page: Page, resize: () => Promise<void>) {
     }
   })
   await resize()
-  const result = await recording.evaluate(async ({ before, resized }) => ({ before, frames: await resized }))
+  const result = await recording.evaluate(async ({ before, end, resized }) => ({ before, end, frames: await resized }))
   await recording.dispose()
   const afterRoom = (await page.locator("[data-grid-viewport]").boundingBox())!
   return { ...result, beforeRoom, afterRoom }
@@ -216,23 +224,22 @@ test("keeps a chosen zoom and pans only when resize newly clips the working slid
     () => page.getByRole("button", { name: "Design", exact: true }).click(),
     () => page.getByRole("button", { name: "Design", exact: true }).click(),
   ]) {
-    const { before, frames, beforeRoom, afterRoom } = await resizedGrid(page, resize)
+    const { before, end, frames, beforeRoom, afterRoom } = await resizedGrid(page, resize)
     const working = before[6]!
+    const right = Math.max(working.x + working.width, end)
     const visible =
       working.x >= beforeRoom.x &&
       working.y >= beforeRoom.y &&
-      working.x + working.width <= beforeRoom.x + beforeRoom.width &&
+      right <= beforeRoom.x + beforeRoom.width &&
       working.y + working.height <= beforeRoom.y + beforeRoom.height
-    const dx = visible
-      ? Math.max(afterRoom.x - working.x, Math.min(0, afterRoom.x + afterRoom.width - working.x - working.width))
-      : 0
+    const dx = visible ? Math.max(afterRoom.x - working.x, Math.min(0, afterRoom.x + afterRoom.width - right)) : 0
     const dy = visible
       ? Math.max(afterRoom.y - working.y, Math.min(0, afterRoom.y + afterRoom.height - working.y - working.height))
       : 0
     for (const frame of frames) {
       for (const [index, card] of frame.entries()) {
-        expect(card.width).toBe(before[index]!.width)
-        expect(card.height).toBe(before[index]!.height)
+        expect(card.width).toBeCloseTo(before[index]!.width, 3)
+        expect(card.height).toBeCloseTo(before[index]!.height, 3)
         expect(card.x).toBeCloseTo(before[index]!.x + dx, 1)
         expect(card.y).toBeCloseTo(before[index]!.y + dy, 1)
       }
@@ -271,4 +278,22 @@ test("typed Grid zoom accepts low values and keeps them after reload", async ({ 
   await expect(page.locator("[data-zoom-readout]")).toContainText("5%")
   await page.keyboard.press("ControlOrMeta+Minus")
   await expect(page.locator("[data-zoom-readout]")).toContainText("1%")
+})
+
+test("zoom reveals the whole row handle after panning past it", async ({ page }) => {
+  await openFile(page, {
+    name: "seven.pptx",
+    mimeType: "application/octet-stream",
+    buffer: await manySlides(7),
+  })
+  await openGrid(page)
+  const canvas = page.locator("[data-grid-viewport]")
+  await canvas.dispatchEvent("wheel", { deltaX: 385 })
+  await zoomTo(page, 25)
+  await entry(page, 1).hover()
+  const grip = await page.locator("[data-row-handle]").first().boundingBox()
+  const room = await canvas.boundingBox()
+  if (grip === null || room === null) throw new Error("row grip")
+  expect(grip.x - room.x).toBeCloseTo(24, 0)
+  expect(grip.width).toBeCloseTo(28, 0)
 })

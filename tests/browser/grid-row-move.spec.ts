@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import { test } from "./api-stack"
-import { boxOf, grab, hover, moveRequests, openSaved, picked, zoomTo } from "./grid-reorder-deck"
+import { boxOf, grab, hover, moveRequests, openSaved, picked, roomOf, zoomTo } from "./grid-reorder-deck"
 import { entry } from "./slide-grid-deck"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
@@ -58,7 +58,7 @@ test("row hover yields to slide hover, Space, editing and small zoom", async ({ 
   expect(await saved.rows()).toEqual([saved.ids.slice(0, 4), saved.ids.slice(4, 8), saved.ids.slice(8)])
 })
 
-for (const cancel of ["Escape", "outside", "drop"]) {
+for (const cancel of ["Escape", "outside", "empty", "drop"]) {
   test(`a whole row drags between unequal rows: ${cancel}`, async ({ page, context, stack }) => {
     const saved = await openSaved(page, context, stack, 10)
     const moves = moveRequests(page)
@@ -75,6 +75,10 @@ for (const cancel of ["Escape", "outside", "drop"]) {
     await expect(page.locator("[data-drop-bar][data-row-drop]")).toBeVisible()
     if (cancel === "Escape") await page.keyboard.press("Escape")
     if (cancel === "outside") await page.mouse.move(700, 20)
+    if (cancel === "empty") {
+      await page.mouse.move(first.x + first.width * 0.8, first.y + first.height * 0.5)
+      await expect(page.locator("[data-drop-bar]")).toBeHidden()
+    }
     await page.mouse.up()
     await expect(page.locator("[data-drag-ghost]")).toHaveCount(0)
     await expect
@@ -215,3 +219,54 @@ test("a foreign structural edit cancels a held row without moving different slid
   ])
   expect(moves()).toBe(0)
 })
+
+for (const last of [false, true]) {
+  test(`edge pan keeps the ${last ? "last" : "first"} row mark until release`, async ({ page, context, stack }) => {
+    const saved = await openSaved(page, context, stack, 50)
+    const original = await saved.rows()
+    await zoomTo(page, 18)
+    const room = await roomOf(page)
+    const point = { x: room.x + room.width / 2, y: last ? room.y + room.height - 12 : room.y + 12 }
+    const terminal = await boxOf(page, last ? 50 : 1)
+    const source = handle(page, last ? 5 : 2)
+    const start = await source.boundingBox()
+    if (start === null) throw new Error("handle")
+    await page.locator("[data-grid-viewport]").dispatchEvent("wheel", {
+      deltaX: start.x + start.width / 2 - 310,
+      deltaY: last ? terminal.y + terminal.height - point.y - 68 : terminal.y - point.y + 68,
+    })
+    const origin = await source.boundingBox()
+    if (origin === null) throw new Error("panned handle")
+    const x = origin.x + origin.width / 2
+    const y = origin.y + origin.height / 2
+    await page.mouse.move(x + 20, y)
+    await page.mouse.move(x, y)
+    expect(
+      await page.evaluate(({ x, y }) => Boolean(document.elementFromPoint(x, y)?.closest("[data-row-handle]")), {
+        x,
+        y,
+      }),
+    ).toBe(true)
+    await page.mouse.down()
+    await page.mouse.move(point.x, point.y)
+    const bar = page.locator("[data-row-drop]")
+    await page.locator("[data-grid-viewport]").evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          let frames = 32
+          const frame = () => {
+            if (--frames === 0) resolve()
+            else requestAnimationFrame(frame)
+          }
+          requestAnimationFrame(frame)
+        }),
+    )
+    await expect(bar).toBeVisible()
+    await expect(bar).toHaveAttribute("data-drop-place", last ? "51" : "1")
+    await page.mouse.up()
+    const expected = last
+      ? [...original.slice(0, 4), original[5], original[4]]
+      : [original[1], original[0], ...original.slice(2)]
+    await expect.poll(saved.rows).toEqual(expected)
+  })
+}

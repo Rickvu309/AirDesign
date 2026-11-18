@@ -41,3 +41,47 @@ test("a section collapses to its heading, stays collapsed for the deck, and open
   await openGrid(page)
   await expect(numbers).toHaveAttribute("aria-expanded", "true")
 })
+
+for (const viewport of [
+  { width: 1280, height: 720 },
+  { width: 1470, height: 923 },
+]) {
+  test(`Fit shows section names beyond their slide at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport)
+    await openFile(page, join(fixtures, "doe-heat-pumps.pptx"))
+    await openGrid(page)
+    for (const name of ["Introduction", "Appendices"]) {
+      const head = page.locator("[data-section-head]").filter({ hasText: name })
+      const label = head.getByText(name, { exact: true })
+      await expect(label).toBeVisible()
+      expect(await label.evaluate((node) => node.clientWidth)).toBeGreaterThanOrEqual(24)
+      if (name === "Appendices") expect(await label.evaluate((node) => node.clientWidth >= node.scrollWidth)).toBe(true)
+      const bounds = await head.boundingBox()
+      expect(bounds?.height).toBeCloseTo(20, 0)
+      expect((bounds?.x ?? 0) + (bounds?.width ?? 0)).toBeLessThan(viewport.width - 47)
+    }
+  })
+}
+
+for (const viewport of [
+  { width: 1280, height: 720 },
+  { width: 1470, height: 923 },
+]) {
+  test(`section markers share one row without overlap at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport)
+    await openFile(page, join(fixtures, "sections-after.pptx"))
+    await openGrid(page)
+    const heads = page.locator("[data-grid-row]").first().locator("[data-section-head]")
+    await expect(heads).toHaveCount(2)
+    for (const name of ["Opening", "Numbers"]) {
+      const label = heads.getByText(name, { exact: true })
+      await expect(label).toBeVisible()
+      expect(await label.evaluate((node) => node.clientWidth >= node.scrollWidth)).toBe(true)
+    }
+    const first = await heads.first().boundingBox()
+    const next = await heads.last().boundingBox()
+    if (first === null || next === null) throw new Error("section headings")
+    expect(first.y).toBeCloseTo(next.y)
+    expect(first.x + first.width).toBeLessThan(next.x)
+  })
+}

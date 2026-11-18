@@ -87,3 +87,12 @@ export function slotUnder(x: number, y: number, slots: readonly GridSlot[]): Gri
       y < slot.top + slot.height + below,
   )
 }
+
+export const terminalRowBand = 80
+
+export function rowPan(delta: number, pointerY: number, firstTop: number, lastBottom: number): number {
+  const clearance = terminalRowBand / 2
+  return delta > 0
+    ? Math.min(delta, Math.max(0, pointerY + clearance - firstTop))
+    : Math.max(delta, Math.min(0, pointerY - clearance - lastBottom))
+}
