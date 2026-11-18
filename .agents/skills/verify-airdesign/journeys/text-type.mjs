@@ -102,6 +102,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
     await expect(field).toHaveValue(value)
   }
   await fill(text.getByRole("textbox", { name: "Line spacing", exact: true }), "120")
+  await unfold(panel, "Paragraph spacing")
   await fill(text.getByRole("textbox", { name: "Space before", exact: true }), "6")
   await unfold(panel, "Text box")
   const box = section("Text box")
