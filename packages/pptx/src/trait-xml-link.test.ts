@@ -4,6 +4,7 @@ import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { relsOf } from "./package-address.js"
 import { linkXml, shownLink, withoutSlideLinks } from "./trait-xml-link.js"
 import { writeFields } from "./xml-codec.js"
+import { textXml } from "./trait-xml-text.js"
 
 const part = "ppt/slides/slide1.xml"
 const at = { slide: "256", part, shape: "2" }
@@ -88,4 +89,53 @@ describe("native whole-element click links", () => {
     const missing = writeFields(original, at, linkXml, { target: { set: { kind: "slide", slide: slideId("999") } } })
     expect(shownLink(missing, at)).toEqual({ kind: "none" })
   })
+})
+
+it("writes phrase destinations natively without changing the object or shared relationship", () => {
+  const before = opened()
+  const text = [
+    {
+      from: 0,
+      runs: [
+        { from: 0, text: "linked ", link: { kind: "url", url: "https://new.example" } },
+        { from: 0, text: "phrase", link: { kind: "slide", slide: slideId("258") } },
+      ],
+    },
+  ]
+  const after = writeFields(before, at, textXml, { value: { set: JSON.stringify(text) } })
+  expect(shownLink(after, { ...at, paragraph: 0, run: 0 })).toEqual(text[0]!.runs[0]!.link)
+  expect(shownLink(after, { ...at, paragraph: 0, run: 1 })).toEqual(text[0]!.runs[1]!.link)
+  expect(shownLink(after, at)).toEqual({ kind: "none" })
+  expect(decodeUtf8(after.get(relsOf(part))!)).toContain(relation)
+  expect(after.get("untouched.bin")).toBe(before.get("untouched.bin"))
+  expect(decodeUtf8(after.get(part)!)).toContain(hover)
+})
+
+it("keeps an imported unsupported run action through a different run's link edit", () => {
+  const before = opened()
+  before.set(
+    part,
+    encodeUtf8(
+      decodeUtf8(before.get(part)!).replace(
+        '<a:hlinkClick r:id="rId1"/>',
+        '<a:hlinkClick action="ppaction://macro?name=kept"/>',
+      ),
+    ),
+  )
+  const after = writeFields(before, at, textXml, {
+    value: {
+      set: JSON.stringify([
+        {
+          from: 0,
+          runs: [
+            { from: 0, text: "linked ", link: { kind: "unsupported" } },
+            { from: 0, text: "phrase", link: { kind: "url", url: "https://example.com" } },
+          ],
+        },
+      ]),
+    },
+  })
+  expect(shownLink(after, { ...at, paragraph: 0, run: 0 })).toEqual({ kind: "unsupported" })
+  expect(decodeUtf8(after.get(part)!)).toContain('<a:hlinkClick action="ppaction://macro?name=kept"/>')
+  expect(shownLink(after, { ...at, paragraph: 0, run: 1 })).toEqual({ kind: "url", url: "https://example.com" })
 })

@@ -278,3 +278,59 @@ it("keeps the live selection on keydown before selectionchange is delivered", as
     },
   ])
 })
+
+it("keeps a phrase link through a panel focus change and text serialization", async () => {
+  const { editor, formatting, edits } = await mounted()
+  await select(editor, 6, 11)
+  formatting.aim(id, editor)
+  const panel = document.createElement("input")
+  panel.dataset.keepsFormat = ""
+  document.body.append(panel)
+  const unsubscribe = formatting.subscribe(() => undefined)
+  await act(async () => panel.focus())
+  expect(formatting.selection()).toBe(true)
+  await act(async () => formatting.linkTo({ kind: "url", url: "https://example.com" }))
+  expect(readTextValue(edits.at(-1) ?? "")?.[0]?.runs).toEqual([
+    { from: 0, text: "Hello " },
+    { from: 0, text: "world", link: { kind: "url", url: "https://example.com" }, underline: true },
+  ])
+  expect(formatting.link()).toEqual({ kind: "url", url: "https://example.com" })
+  unsubscribe()
+  panel.remove()
+})
+
+it("opens a rendered phrase only inside a presentation navigation surface", async () => {
+  const store = paintStore()
+  store.publish({
+    id,
+    kind: "shape",
+    picture: null,
+    text: writeTextValue([
+      { from: 0, runs: [{ from: 0, text: "Read", link: { kind: "url", url: "https://example.com" } }] },
+    ]),
+  })
+  const host = document.createElement("div")
+  document.body.append(host)
+  const root = createRoot(host)
+  roots.push({ host, root })
+  await act(async () => root.render(createElement(Passage, { store, id })))
+  const link = host.querySelector("a")
+  expect(link?.textContent).toBe("Read")
+  const editorClick = new MouseEvent("click", { bubbles: true, cancelable: true })
+  link?.dispatchEvent(editorClick)
+  expect(editorClick.defaultPrevented).toBe(true)
+  host.dataset.linkNavigation = ""
+  const presentationClick = new MouseEvent("click", { bubbles: true, cancelable: true })
+  let prevented = true
+  link?.addEventListener(
+    "click",
+    (event) => {
+      prevented = event.defaultPrevented
+      event.preventDefault()
+    },
+    { once: true },
+  )
+  expect(link?.closest("[data-link-navigation]")).toBe(host)
+  link?.dispatchEvent(presentationClick)
+  expect(prevented).toBe(false)
+})

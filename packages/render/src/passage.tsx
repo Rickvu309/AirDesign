@@ -162,7 +162,7 @@ function pointAt(box: HTMLElement, caret: Caret): readonly [Node, number] {
   return run === null ? [paragraph, 0] : [run, 0]
 }
 
-function paragraphNode(document: Document, paragraph: TextParagraph): HTMLElement {
+function paragraphNode(document: Document, paragraph: TextParagraph, readonly: boolean): HTMLElement {
   const block = document.createElement("div")
   block.dataset.paragraph = String(paragraph.from)
   if (paragraph.align !== undefined) block.dataset.align = paragraph.align
@@ -172,7 +172,28 @@ function paragraphNode(document: Document, paragraph: TextParagraph): HTMLElemen
     if (kept !== undefined) block.dataset[name] = String(kept)
   }
   for (const run of paragraph.runs) {
-    const span = document.createElement("span")
+    const link = run.link
+    const span =
+      readonly && link !== undefined && link.kind !== "none" && link.kind !== "unsupported"
+        ? document.createElement("a")
+        : document.createElement("span")
+    if (
+      span instanceof document.defaultView!.HTMLAnchorElement &&
+      link !== undefined &&
+      link.kind !== "none" &&
+      link.kind !== "unsupported"
+    ) {
+      span.addEventListener("click", (event) => {
+        if (span.closest("[data-link-navigation]") === null) event.preventDefault()
+      })
+      span.dataset.textLink = ""
+      span.href = link.kind === "url" ? link.url : `#slide-${link.slide}`
+      span.target = link.kind === "url" ? "_blank" : ""
+      span.rel = "noopener noreferrer"
+      span.style.pointerEvents = "auto"
+      span.style.position = "relative"
+      span.style.zIndex = "1"
+    }
     span.dataset.run = `${paragraph.from}.${run.from}`
     writeFormat(span, run)
     if (run.text !== "") span.append(run.text)
@@ -185,7 +206,11 @@ function paragraphNode(document: Document, paragraph: TextParagraph): HTMLElemen
 }
 
 function showValue(box: HTMLElement, value: TextValue, carets: Carets | null, look: TextLook | undefined): void {
-  box.replaceChildren(...value.map((paragraph) => paragraphNode(box.ownerDocument, paragraph)))
+  box.replaceChildren(
+    ...value.map((paragraph) =>
+      paragraphNode(box.ownerDocument, paragraph, box.getAttribute("contenteditable") === "false"),
+    ),
+  )
   if (look !== undefined) restyle(box, look)
   if (carets === null || !box.contains(box.ownerDocument.activeElement)) return
   const selection = box.ownerDocument.getSelection()

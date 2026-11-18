@@ -263,6 +263,7 @@ function LiveElementDesign({ deck, node }: { deck: DesigningDeck; node: ElementI
       titleActions={
         <ElementTitleActions onMatch={deck.selectMatching} model={design.model} onReplace={deck.replacePicture} />
       }
+      formatting={deck.undo.formatting.current}
       picture={src === null ? null : <PicturePreview src={src} />}
       model={design.model}
       palette={palette}

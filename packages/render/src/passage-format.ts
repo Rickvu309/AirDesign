@@ -1,4 +1,6 @@
 import {
+  linkRange,
+  linkState,
   alignRange,
   alignState,
   bulletRange,
@@ -64,6 +66,15 @@ export function formatTarget(
   }
   const unregister = formatting.register(id, {
     edits: (node) => node === shown,
+    selection: (editing) => range(editing) !== null,
+    link(editing) {
+      const read = readNow()
+      return read === null ? null : linkState(read.value, range(editing))
+    },
+    linkTo(link, editing) {
+      const read = readNow()
+      if (read !== null) commit(read.value, linkRange(read.value, range(editing), link), editing)
+    },
     state(format, editing) {
       const read = readNow()
       return read === null ? "off" : formatState(read.value, range(editing), format, file)

@@ -1,4 +1,4 @@
-import type { LinkTarget } from "@airdesign/document"
+import { readLinkTarget, type LinkTarget } from "@airdesign/document"
 import type { ReactNode } from "react"
 import { readSlides, shownLink, paintReader } from "@airdesign/pptx"
 
@@ -26,7 +26,21 @@ export function PresentLinks({
   const size = paintReader(parts).slide(slide.part)
   const scale = width / size.width
   return (
-    <div className="relative">
+    <div
+      data-link-navigation
+      className="relative"
+      onClickCapture={(event) => {
+        const node = event.target instanceof Element ? event.target.closest("a[data-text-link]") : null
+        if (!(node instanceof HTMLAnchorElement)) return
+        event.stopPropagation()
+        const href = node.getAttribute("href") ?? ""
+        if (href.startsWith("#slide-")) {
+          event.preventDefault()
+          const destination = slides.findIndex((slide) => slide.slide === href.slice(7))
+          if (destination >= 0) go(destination)
+        }
+      }}
+    >
       {children}
       {size.elements.flatMap((shape) => {
         if (shape.from !== "slide" || shape.kind !== "p:sp" || shape.box === null) return []
@@ -49,7 +63,25 @@ export function PresentLinks({
             }}
             onClick={(event) => {
               event.stopPropagation()
-              activate(target, destination, go)
+              const host = event.currentTarget.parentElement
+              const phrase = [...(host?.querySelectorAll<HTMLAnchorElement>("a[data-text-link]") ?? [])].find((link) =>
+                [...link.getClientRects()].some(
+                  (box) =>
+                    event.clientX >= box.left &&
+                    event.clientX <= box.right &&
+                    event.clientY >= box.top &&
+                    event.clientY <= box.bottom,
+                ),
+              )
+              const href = phrase?.getAttribute("href")
+              const phraseTarget = href?.startsWith("#slide-")
+                ? readLinkTarget({ kind: "slide", slide: href.slice(7) })
+                : readLinkTarget({ kind: "url", url: href })
+              if (phraseTarget !== null && phraseTarget.kind !== "none") {
+                const next =
+                  phraseTarget.kind === "slide" ? slides.findIndex((slide) => slide.slide === phraseTarget.slide) : -1
+                if (phraseTarget.kind === "url" || next >= 0) activate(phraseTarget, next, go)
+              } else activate(target, destination, go)
             }}
           />,
         ]

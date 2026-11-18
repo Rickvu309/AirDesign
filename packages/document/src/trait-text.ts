@@ -22,7 +22,7 @@ import {
 
 export const text = trait(
   "run",
-  { version: 3, shape: "aaea7ede" },
+  { version: 4, shape: "aaea7ede" },
   { value: custom<string, string>("text"), alpha: alphaOver("value") },
   {
     color,
