@@ -108,6 +108,7 @@ test("text fit agrees with the painter on the text of real decks", async ({ page
     }[] = []
     for (const [at, slide] of deck.slides.entries()) {
       await showSlide(page, at + 1)
+      if (deck.name === "doe-heat-pumps.pptx" && at === 39) await page.locator("[data-never-painted]").waitFor()
       const boxes = slide.elements.flatMap((element) => {
         if (element.from !== "slide" || element.text === null || element.box === null || element.rotation !== 0)
           return []
