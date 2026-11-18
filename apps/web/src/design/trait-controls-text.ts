@@ -8,7 +8,7 @@ export const textControls: TraitControls<"text"> = {
   fields: {
     style: { label: textCopy.style },
     value: { label: textCopy.value },
-    fill: { label: fillCopy.value },
+    fill: { label: fillCopy.text },
     color: { label: formatCopy.color },
     size: { label: formatCopy.sizeGroup },
     font: { label: textCopy.font },
