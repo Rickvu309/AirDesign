@@ -135,7 +135,7 @@ export function useGridEditing({
       event.preventDefault()
       event.stopPropagation()
       flushSync(() => pick(index, event.shiftKey, event.metaKey || event.ctrlKey, picked))
-      entry(index)?.focus({ preventScroll: true })
+      entry(index)?.focus({ preventScroll: true, focusVisible: false })
       return
     }
     const pressed = swallow.current
@@ -157,18 +157,25 @@ export function useGridEditing({
   function key(event: KeyboardEvent<HTMLDivElement>, chrome = false) {
     if (event.key !== "Escape" || event.nativeEvent.isComposing || event.defaultPrevented) return
     if (!chrome && (!(event.target instanceof Element) || event.target.closest("[data-grid-viewport]") === null)) return
-    if (state.kind === "none" || (state.kind === "text" && !chrome)) return
+    if (state.kind === "none") {
+      if (!chrome) return
+      event.preventDefault()
+      event.stopPropagation()
+      world.current?.focus({ preventScroll: true, focusVisible: true })
+      return
+    }
+    if (state.kind === "text" && !chrome) return
     event.preventDefault()
     event.stopPropagation()
     if (chrome || state.kind === "slides") {
       step({ kind: "escape" })
-      world.current?.focus({ preventScroll: true })
+      world.current?.focus({ preventScroll: true, focusVisible: true })
       if (state.kind === "slides") announce(slideListCopy.nothingSelected)
       else if (state.kind === "elements") announce(slideListCopy.selected(1))
       return
     }
     flushSync(() => step({ kind: "escape" }))
-    entry(current)?.focus({ preventScroll: true })
+    entry(current)?.focus({ preventScroll: true, focusVisible: true })
     announce(slideListCopy.selected(1))
   }
 
@@ -184,7 +191,7 @@ export function useGridEditing({
   function clear() {
     if (state.kind === "none") return
     step({ kind: "clear" })
-    world.current?.focus({ preventScroll: true })
+    world.current?.focus({ preventScroll: true, focusVisible: false })
     announce(slideListCopy.nothingSelected)
   }
 

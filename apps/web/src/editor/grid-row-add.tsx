@@ -132,7 +132,7 @@ export function GridAddButton({ onClick, ...props }: ComponentProps<typeof Butto
         event.currentTarget
           .closest("[data-focus-edge]")
           ?.querySelector<HTMLElement>('[data-slide-entry][tabindex="0"]')
-          ?.focus({ preventScroll: true })
+          ?.focus({ preventScroll: true, focusVisible: true })
       }}
     >
       <span data-add-mark className="flex items-center justify-center rounded-full bg-primary text-primary-foreground">

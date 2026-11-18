@@ -125,6 +125,10 @@ function sectionRows(geometry: GridGeometry, rows: GridGeometry["rows"]): number
   return rows.filter((row) => geometry.sections.some((start) => start >= row.start && start < row.end)).length
 }
 
+export function gridScreenFixed(geometry: GridGeometry, index: number): number {
+  return gridCard(geometry, index)?.fixed ?? 0
+}
+
 function gridCard(geometry: GridGeometry, index: number) {
   const { rows, width, height } = geometry
   const number = rows.findIndex((row) => index >= row.start && index < row.end)
@@ -292,16 +296,33 @@ export function exposedGrid(view: GridViewport, box: GridRect, room: GridRect): 
   return x === 0 && y === 0 ? view : pannedGrid(view, { x, y })
 }
 
-export function resizedGrid(view: GridViewport, box: GridRect, before: GridRect, after: GridRect): GridViewport {
+function fullyInside(start: number, size: number, edge: number, length: number): boolean {
   const epsilon = 0.02
-  if (
-    box.left < before.left - epsilon ||
-    box.top < before.top - epsilon ||
-    box.left + box.width > before.left + before.width + epsilon ||
-    box.top + box.height > before.top + before.height + epsilon
-  )
-    return view
-  return exposedGrid(view, box, after)
+  return start >= edge - epsilon && start + size <= edge + length + epsilon
+}
+
+export function resizedGrid(
+  view: GridViewport,
+  box: GridRect,
+  before: GridRect,
+  after: GridRect,
+  fixed = 0,
+): GridViewport {
+  if (!fullyInside(box.left, box.width, before.left, before.width)) return view
+  const available = after.width - 2 * fitPadding
+  const scale =
+    box.width > after.width && available > 0 && view.scale > 0
+      ? Math.min(view.scale, boundedGridScale(available / (box.width / view.scale)))
+      : view.scale
+  if (scale < view.scale) {
+    const worldLeft = (box.left - after.left - view.x) / view.scale
+    const centre = box.top + box.height / 2
+    const worldCentre = (centre - after.top - view.y - fixed) / view.scale
+    return { x: fitPadding - worldLeft * scale, y: centre - after.top - fixed - worldCentre * scale, scale }
+  }
+  const panned = exposedGrid(view, box, after)
+  if (fullyInside(box.top, box.height, before.top, before.height) || panned.y === view.y) return panned
+  return panned.x === view.x ? view : { x: panned.x, y: view.y, scale: view.scale }
 }
 
 export function gridThumbHeight(width: number, height: number, reference: number): number {

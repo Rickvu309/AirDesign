@@ -89,7 +89,7 @@ export type TurningDeck = {
 
 export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
   const { id, undo, shown, notesBar, settle, setPending } = deck
-  const [gridTurn, setGridTurn] = useState(0)
+  const [gridFocus, setGridFocus] = useState({ turn: 0, visible: false })
   const { undoList, undoShown, show, told, typed, sessions, focused, records, turnAfter } = undo
   const { store, shownParts, structure, bound, repaint, setCurrent, showRegister } = shown
 
@@ -123,7 +123,12 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
     return undoable.slide
   }
 
-  async function showTurned(entry: UndoEntry, direction: UndoDirection, grid: Element | null | undefined) {
+  async function showTurned(
+    entry: UndoEntry,
+    direction: UndoDirection,
+    grid: Element | null | undefined,
+    visible: boolean,
+  ) {
     const { undoable } = entry
     const held = shown.current
     const slideId = slideOf(undoable)
@@ -145,11 +150,11 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
         : slides.findIndex((slide) => nodes.some((node) => node.startsWith(`${slide.id}.`)))
     setCurrent((index) => (shownSlide >= 0 ? shownSlide : Math.max(0, Math.min(index, slides.length - 1))))
     if (grid?.isConnected && (grid.contains(document.activeElement) || document.activeElement === document.body))
-      setGridTurn((turn) => turn + 1)
+      setGridFocus((focus) => ({ turn: focus.turn + 1, visible }))
     setPending(true)
   }
 
-  function turn(direction: UndoDirection) {
+  function turn(direction: UndoDirection, visible = false) {
     const grid = document.activeElement?.closest("[data-editor-grid]")
     turnAfter(async () => {
       await records.current.landed()
@@ -159,17 +164,18 @@ export function useUndoTurn(deck: TurningDeck): UndoButtonsState {
       if (turned.outcome === "empty") return
       show(turned.list, turned.outcome === "changed" ? direction : null)
       if (turned.outcome === "changed") return
-      await showTurned(turned.entry, direction, grid)
+      await showTurned(turned.entry, direction, grid, visible)
       void flushPending(connect, id).then(settle)
     })
   }
 
-  useUndoKeys(deck.paintedDeck === id, turn)
+  useUndoKeys(deck.paintedDeck === id, (direction) => turn(direction, true))
 
   return {
     undoLabel: undoLabel("undo", undoShown),
     redoLabel: undoLabel("redo", undoShown),
-    gridTurn,
+    gridTurn: gridFocus.turn,
+    gridFocusVisible: gridFocus.visible,
     canUndo: undoShown.undo !== null,
     canRedo: undoShown.redo !== null,
     onUndo: () => turn("undo"),

@@ -103,7 +103,7 @@ export function useGridMarquee({
   function finish(held: Press) {
     const next = gridStep(held.before, marqueeStep(held.before, held.deck, held.hits, held.adding))
     if (next.kind === "none") {
-      list.current?.focus({ preventScroll: true })
+      list.current?.focus({ preventScroll: true, focusVisible: false })
       if (held.before.kind !== "none") announce(slideListCopy.nothingSelected)
       return
     }
@@ -177,7 +177,7 @@ export function useGridMarquee({
     if (held === null || held.pointer !== event.pointerId) return
     press.current = null
     if (held.faces === null) {
-      viewport.handlers.ref.current?.focus({ preventScroll: true })
+      viewport.handlers.ref.current?.focus({ preventScroll: true, focusVisible: false })
       return
     }
     swallowClick()

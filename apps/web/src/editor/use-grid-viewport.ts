@@ -28,6 +28,7 @@ import {
   gridHeadingEdge,
   gridCardBounds,
   gridElementBounds,
+  gridScreenFixed,
   exposedGrid,
   type GridViewport,
 } from "@/editor/grid-viewport"
@@ -35,6 +36,22 @@ import { gridBlank } from "@/editor/grid-hit"
 import { keptGridViewport, keepGridViewport } from "@/editor/grid-zoom"
 
 const settleAfter = 180
+
+function unionBounds(boxes: readonly { left: number; top: number; width: number; height: number }[]) {
+  const first = boxes[0]
+  if (first === undefined) return null
+  let left = first.left
+  let top = first.top
+  let right = left + first.width
+  let bottom = top + first.height
+  for (const box of boxes.slice(1)) {
+    left = Math.min(left, box.left)
+    top = Math.min(top, box.top)
+    right = Math.max(right, box.left + box.width)
+    bottom = Math.max(bottom, box.top + box.height)
+  }
+  return { left, top, width: right - left, height: bottom - top }
+}
 
 const arrowKeys = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"])
 
@@ -103,6 +120,7 @@ export function useGridViewport({
   const frame = useRef<number | null>(null)
   const viewport = useRef<HTMLDivElement>(null)
   const roomWidth = useRef<number | null>(null)
+  const openRoom = useRef<DOMRect | null>(null)
   const [restored] = useState(() => keptGridViewport(deck))
   const view = useRef<GridViewport>(restored ?? { x: 48, y: 24, scale })
   const kept = useRef(deck)
@@ -199,11 +217,64 @@ export function useGridViewport({
   function sizeHeadings() {
     const host = viewport.current
     if (host === null) return
-    roomWidth.current ??= host.clientWidth
+    if ((roomWidth.current ?? 0) === 0) roomWidth.current = host.clientWidth
     world.current?.style.setProperty(
       "--grid-heading-edge",
-      `${gridHeadingEdge(roomWidth.current, view.current, fits.current)}px`,
+      `${gridHeadingEdge(roomWidth.current ?? 0, view.current, fits.current)}px`,
     )
+  }
+
+  function screenFixed(indices: readonly number[]): number {
+    const values = indices.map((index) => gridScreenFixed(geometryRef.current, index))
+    return values.length === 0 ? 0 : (Math.min(...values) + Math.max(...values)) / 2
+  }
+
+  function workingTarget() {
+    const content = world.current
+    if (content === null) return null
+    const working = workingBounds.current
+    const elements = working.elementsOf?.() ?? []
+    if (elements.length > 0) {
+      const card = content.querySelector(`[data-slide-entry="${working.selected + 1}"]`)
+      if (card === null) return null
+      const face = card.getBoundingClientRect()
+      const boxes = gridElementBounds(elements, face.width / working.slideWidth)
+      const box =
+        boxes === null
+          ? face
+          : { left: face.left + boxes.left, top: face.top + boxes.top, width: boxes.width, height: boxes.height }
+      return { box, fixed: gridScreenFixed(geometryRef.current, working.selected) }
+    }
+    const focusedIndex = focused.current
+    const focusedCard = content.querySelector<HTMLElement>(`[data-slide-entry="${focusedIndex + 1}"]`)
+    const selectedCards = [...content.querySelectorAll<HTMLElement>("[data-slide-entry][data-selected]")]
+    const indices = selectedCards.map((card) => Number(card.dataset.slideEntry) - 1)
+    if (selectedCards.length > 0 && (focusedCard === null || indices.includes(focusedIndex))) {
+      const box = unionBounds(selectedCards.map((card) => card.getBoundingClientRect()))
+      if (box === null) return null
+      return { box, fixed: screenFixed(indices) }
+    }
+    if (focusedCard === null) return null
+    return { box: focusedCard.getBoundingClientRect(), fixed: gridScreenFixed(geometryRef.current, focusedIndex) }
+  }
+
+  function applyFitted(next: GridViewport) {
+    if (next === view.current) return
+    const moved = gridScaleMoved(view.current, next.scale)
+    paint(next)
+    settle()
+    if (!moved) return
+    flushSync(() => zoom.current(view.current.scale * 100, false))
+  }
+
+  function placeSelection() {
+    if (fits.current) return
+    const wide = openRoom.current
+    const host = viewport.current
+    if (wide === null || host === null) return
+    const target = workingTarget()
+    if (target === null) return
+    applyFitted(resizedGrid(view.current, target.box, wide, host.getBoundingClientRect(), target.fixed))
   }
 
   useLayoutEffect(() => {
@@ -254,22 +325,13 @@ export function useGridViewport({
     const observer = new ResizeObserver(() => {
       const after = host.getBoundingClientRect()
       roomWidth.current = after.width
+      if (after.width < before.width - 0.5) {
+        if (openRoom.current === null || before.width > openRoom.current.width + 0.5) openRoom.current = before
+      } else if (openRoom.current !== null && after.width >= openRoom.current.width - 0.5) openRoom.current = null
       if (fits.current) flushSync(() => fit())
       else {
-        const working = workingBounds.current
-        const elements = working.elementsOf?.() ?? []
-        const index = elements.length > 0 ? working.selected : focused.current
-        const card = world.current?.querySelector(`[data-slide-entry="${index + 1}"]`)
-        if (card) {
-          const face = card.getBoundingClientRect()
-          const boxes = gridElementBounds(elements, face.width / working.slideWidth)
-          const target = boxes === null ? face : { ...boxes, left: face.left + boxes.left, top: face.top + boxes.top }
-          const next = resizedGrid(view.current, target, before, after)
-          if (next !== view.current) {
-            paint(next)
-            settle()
-          }
-        }
+        const target = workingTarget()
+        if (target !== null) applyFitted(resizedGrid(view.current, target.box, before, after, target.fixed))
       }
       sizeHeadings()
       before = after
@@ -278,12 +340,27 @@ export function useGridViewport({
     return () => observer.disconnect()
   }, [])
 
+  const elementKey = (elementsOf?.() ?? [])
+    .map((box) => `${box.x}:${box.y}:${box.width}:${box.height}:${box.rotation}`)
+    .join(";")
+  useLayoutEffect(() => {
+    placeSelection()
+  }, [elementKey, selected])
+
+  useLayoutEffect(() => {
+    const content = world.current
+    if (content === null || typeof MutationObserver === "undefined") return
+    const observer = new MutationObserver(() => placeSelection())
+    observer.observe(content, { subtree: true, attributes: true, attributeFilter: ["data-selected"] })
+    return () => observer.disconnect()
+  }, [])
+
   function press(event: PointerEvent<HTMLDivElement>) {
     const blank = gridBlank(event.target)
     const touch = blank && event.pointerType === "touch"
     if (event.button !== 1 && !(event.button === 0 && (hand || heldSpace.current || touch))) return
     dragged.current = hand || heldSpace.current || event.button === 1
-    if (blank) event.currentTarget.focus({ preventScroll: true })
+    if (blank) event.currentTarget.focus({ preventScroll: true, focusVisible: false })
     event.preventDefault()
     event.stopPropagation()
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -362,11 +439,11 @@ export function useGridViewport({
     zoom.current(next.scale * 100, false)
   }
 
-  function focus(card: HTMLElement) {
+  function focus(card: HTMLElement, visible = false) {
     const host = viewport.current
     if (host === null) return
     focusing.current = true
-    card.focus({ preventScroll: true })
+    card.focus({ preventScroll: true, focusVisible: visible })
     focusing.current = false
     focused.current = Number(card.getAttribute("data-slide-entry")) - 1
     const next = exposedGrid(view.current, card.getBoundingClientRect(), host.getBoundingClientRect())

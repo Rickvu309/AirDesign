@@ -6,6 +6,7 @@ export type UndoButtonsState = {
   readonly undoLabel: string
   readonly redoLabel: string
   readonly gridTurn?: number
+  readonly gridFocusVisible?: boolean
   readonly canUndo: boolean
   readonly canRedo: boolean
   readonly onUndo: () => void
