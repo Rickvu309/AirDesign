@@ -1,7 +1,9 @@
+import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { expect, type BrowserContext, type Page } from "@playwright/test"
 import { forward, openClean, signInBrowser, test } from "./api-stack"
 
 const offlineWords = "You're offline. Edits are saved on this device."
+const unreachedWords = productCopy.editorUnreached
 const undoChangedWords = "Unable to undo. This changed after your edit, so it stays as it is."
 
 test.use({ viewport: { width: 1470, height: 923 } })
@@ -68,17 +70,14 @@ test("the offline notice slides in and leaves by the top edge", async ({ page, c
   await watchLeaving(page)
   await noticeOf(page, offlineWords).evaluate((notice) => notice.setAttribute("data-kept-notice", "true"))
   await context.setOffline(false)
-  await expect(noticeOf(page, "Unable to reach AirDesign. Edits are saved on this device.")).toHaveAttribute(
-    "data-kept-notice",
-    "true",
-  )
+  await expect(noticeOf(page, unreachedWords)).toHaveAttribute("data-kept-notice", "true")
   await expect(page.locator('[data-sonner-toast][data-removed="true"]')).toHaveCount(0)
   await context.setOffline(true)
   await expect(noticeOf(page, offlineWords)).toHaveAttribute("data-kept-notice", "true")
   await page.unroute("**/decks/commit")
   await context.setOffline(false)
   await expect(noticeOf(page, offlineWords)).toHaveCount(0)
-  await expect(noticeOf(page, "Unable to reach AirDesign. Edits are saved on this device.")).toHaveCount(0)
+  await expect(noticeOf(page, unreachedWords)).toHaveCount(0)
   expect(
     await page.evaluate(() => (window as unknown as { noticeLeaving: { removed: boolean } }).noticeLeaving.removed),
   ).toBe(true)
