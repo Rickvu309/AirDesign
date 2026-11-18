@@ -12,6 +12,7 @@ export default defineConfig({
   testDir: "tests/browser",
   globalSetup: "./tests/browser/launch.ts",
   retries: 0,
+  globalTimeout: onCi(process.env) ? 10 * 60_000 : 0,
   workers: workerLimit({
     cores: availableParallelism(),
     ci: onCi(process.env),
