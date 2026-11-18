@@ -8,6 +8,7 @@ type Named = Exclude<PaintFill["type"], "solid" | "none">
 export const designCopy = {
   slide: (number: number) => `Slide ${String(number)}`,
   background: "Background",
+  selectOneSlide: "Select one slide to change its design.",
   templateStyle: "Template style",
   currentTheme: "Current theme",
   themeFontsMissing: "Fonts not specified",

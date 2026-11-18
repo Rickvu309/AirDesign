@@ -258,21 +258,8 @@ for (const zoom of ["fit", 50, 200] as const) {
   })
 }
 
-test("Shift+2 fits the slides selected by the grid model, including a slide with elements selected", async ({
-  page,
-}) => {
+test("Shift+2 fits the slides selected by the grid model", async ({ page }) => {
   await slides(page, 3)
-  await thumbText(page, 2).click({ force: true })
-  await page.keyboard.press("Shift+Digit2")
-  const room = await page.locator("[data-grid-viewport]").boundingBox()
-  const second = await entry(page, 2).boundingBox()
-  if (room === null || second === null) throw new Error("no canvas")
-  expect(second.x).toBeGreaterThanOrEqual(room.x + 47)
-  expect(second.y).toBeGreaterThanOrEqual(room.y + 47)
-  expect(second.x + second.width).toBeLessThanOrEqual(room.x + room.width - 47)
-  expect(second.y + second.height).toBeLessThanOrEqual(room.y + room.height - 47)
-  await expect(live(page).locator("[data-selection]")).toHaveCount(1)
-  await page.keyboard.press("Shift+Digit1")
   await number(page, 1).click()
   await number(page, 3).click({ modifiers: ["ControlOrMeta"] })
   await page.keyboard.press("Shift+Digit2")

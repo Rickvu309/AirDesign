@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   fittedGridRows,
+  fittedGridElements,
   resizedGrid,
   zoomedGrid,
   fittedGridCards,
@@ -60,15 +61,23 @@ it("reveals a selected slide even when zoom makes it larger than the canvas", ()
   ).toEqual({ x: -3700, y: -2325, scale: 8 })
 })
 
-it("fits occupied cards after the canvas has already been panned and zoomed", () => {
-  const view = fittedGridCards({ x: -500, y: 200, scale: 2 }, [{ left: -400, top: 350, width: 640, height: 408 }], {
-    left: 100,
-    top: 150,
-    width: 1470,
-    height: 759,
-  })
-  expect(view.x + 160 * view.scale).toBeCloseTo(735)
-  expect(view.y + 102 * view.scale).toBeCloseTo(379.5)
+it("fits the occupied cards across section headers with screen-space padding", () => {
+  const view = fittedGridCards(
+    {
+      rows: [
+        { start: 0, end: 2 },
+        { start: 2, end: 4 },
+      ],
+      sections: [0, 2],
+      width: 1000,
+      height: 500,
+    },
+    [1, 3],
+    { width: 1096, height: 1473 },
+  )
+  expect(view?.scale).toBe(1)
+  expect(view?.y).toBe(4)
+  expect(view?.x).toBe(-1082)
 })
 
 describe("grid spacing", () => {
@@ -203,4 +212,30 @@ it("pans only newly clipped previously visible slides by the minimum distance", 
   expect(resizedGrid(view, { left: -1, top: 132, width: 640, height: 360 }, old, next)).toEqual(view)
   expect(resizedGrid(view, { left: 100, top: 132, width: 640, height: 360 }, old, next)).toEqual(view)
   expect(resizedGrid(view, { left: 806, top: 132, width: 640, height: 360 }, next, old)).toEqual(view)
+})
+
+it("fits the rotated union in a sectioned row using the world geometry", () => {
+  const geometry = {
+    rows: [
+      { start: 0, end: 2 },
+      { start: 2, end: 4 },
+    ],
+    sections: [0, 2],
+    width: 1000,
+    height: 500,
+  }
+  const boxes = [
+    { x: 100, y: 50, width: 400, height: 100, rotation: 90 },
+    { x: 600, y: 50, width: 100, height: 100, rotation: 0 },
+  ]
+  const view = fittedGridElements(geometry, 3, boxes, 1000, { width: 996, height: 696 })
+  expect(view?.scale).toBe(1.5)
+  expect(view?.x).toBeCloseTo((996 - 450 * 1.5) / 2 - (1130 + 250) * 1.5)
+  expect(view?.y).toBeCloseTo(48 - (500 + 24 + 285 + 24 - 100) * 1.5 - 88)
+})
+
+it("clamps a very small element to Grid's maximum zoom", () => {
+  const geometry = { rows: [{ start: 0, end: 1 }], sections: [], width: 1000, height: 500 }
+  const box = { x: 100, y: 50, width: 1, height: 1, rotation: 0 }
+  expect(fittedGridElements(geometry, 0, [box], 1000, { width: 996, height: 696 })?.scale).toBe(4)
 })

@@ -29,6 +29,12 @@ export const slideListCopy = {
   openKey: "Enter",
   duplicate: "Duplicate",
   delete: "Delete",
+  setActions: (count: number) => ({
+    clone: `Duplicate ${slidesOf(count)}`,
+    remove: `Delete ${slidesOf(count)}`,
+    up: `Move ${slidesOf(count)} up`,
+    down: `Move ${slidesOf(count)} down`,
+  }),
   moveUp: "Move up",
   moveDown: "Move down",
   duplicateKey: "Ctrl+D",

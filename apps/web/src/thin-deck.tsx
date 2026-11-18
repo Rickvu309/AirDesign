@@ -100,12 +100,12 @@ export function ThinDeck({ id }: { id: string }) {
           onNotes={(value) => notesBar.edit(currentSlide, value)}
           panel={panel}
           onPanel={setPanel}
-          side={
+          side={(selectedSlides) => (
             <>
-              {panel === "design" ? <LiveDesignPanel deck={deck} /> : null}
+              {panel === "design" ? <LiveDesignPanel deck={deck} selectedSlides={selectedSlides} /> : null}
               <AiraPanel key={id} deck={id} hidden={panel !== "agent"} />
             </>
-          }
+          )}
           slideLabel={String(shown.current + 1)}
           title={deck.title}
         />

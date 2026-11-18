@@ -1,6 +1,6 @@
 import { presentSlides, gridRows, type GridSide, type Undoable } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
-import { SlideCanvas } from "@airdesign/render"
+import { ownBox, SlideCanvas } from "@airdesign/render"
 import type { CommitOutcome } from "@/commit-edit"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import type { SlideStrip } from "@/editor/slide-sidebar"
@@ -75,6 +75,12 @@ export function slideCommands(deck: CommandedDeck, undo: () => void): SlideStrip
     slideIds: sequence,
     sections,
     current,
+    selectionBoxes: (ids) =>
+      (canvases.current(current)?.elements ?? []).flatMap((element) => {
+        if (element.id === null || !ids.includes(element.id)) return []
+        const box = ownBox(element, store.current.getBox(element.id))
+        return box === null ? [] : [box]
+      }),
     onSelect: setCurrent,
     onAdd: (layoutPart, after = current, row = "same") => void changeSlide("add", after, after, layoutPart, row),
     layouts,

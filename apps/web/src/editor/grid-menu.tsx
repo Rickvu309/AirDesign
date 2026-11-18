@@ -1,6 +1,6 @@
 import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { slideListCopy } from "@/copy/slide-list-copy"
-import type { GridCommand } from "@/editor/editor-grid-keys"
+import { gridMoveAt, type GridCommand } from "@/editor/editor-grid-keys"
 import { EditorMenuContent } from "@/editor/editor-menu"
 import type { SlideKey } from "@/editor/slide-keys"
 import { slideMenuItem, SlideMenuRows } from "@/editor/slide-menu"
@@ -18,14 +18,23 @@ export function pointAt(x: number, y: number): MenuAnchor {
 export function GridSlideMenu({
   menu,
   count,
+  held,
+  canMoveSet,
   onAct,
   onClose,
 }: {
   menu: GridMenu
   count: number
+  held: readonly number[]
+  canMoveSet: boolean
   onAct: (command: GridCommand, index: number) => void
   onClose: () => void
 }) {
+  const multiple = held.length > 1
+  const move = (change: SlideKey) =>
+    canMoveSet &&
+    (change === "up" || change === "down") &&
+    gridMoveAt(held, count, change === "up" ? "earlier" : "later") !== null
   return (
     <DropdownMenu
       open
@@ -34,16 +43,27 @@ export function GridSlideMenu({
       }}
     >
       <EditorMenuContent
+        {...(multiple ? { className: "w-56" } : {})}
         anchor={menu.anchor}
         side={menu.pointer ? "bottom" : "right"}
         align="start"
         sideOffset={menu.pointer ? 2 : 8}
       >
-        <DropdownMenuItem aria-keyshortcuts="Enter" className={slideMenuItem} onClick={() => onAct("open", menu.index)}>
+        <DropdownMenuItem
+          disabled={multiple}
+          aria-keyshortcuts="Enter"
+          className={slideMenuItem}
+          onClick={() => onAct("open", menu.index)}
+        >
           <span className="min-w-0 flex-1">{slideListCopy.open}</span>
           <span className="text-xs text-[var(--shortcut)]">{slideListCopy.openKey}</span>
         </DropdownMenuItem>
-        <SlideMenuRows index={menu.index} count={count} onChoose={(change) => onAct(gridChange[change], menu.index)} />
+        <SlideMenuRows
+          index={menu.index}
+          count={count}
+          onChoose={(change) => onAct(gridChange[change], menu.index)}
+          {...(!multiple ? {} : { allowed: move, labels: slideListCopy.setActions(held.length) })}
+        />
       </EditorMenuContent>
     </DropdownMenu>
   )
