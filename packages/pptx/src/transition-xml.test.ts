@@ -82,6 +82,21 @@ describe("a slide transition", () => {
     expect(opened.get(first.part)).toBe(parts.get(first.part))
   })
 
+  it("reads a PowerPoint push and leaves those bytes when the same arrival is set again", async () => {
+    const bytes = readFileSync(`${process.cwd()}/scripts/pptx-fixtures/powerpoint-push-slide.xml`)
+    const push: TransitionValue = { push: { direction: "bottom", duration: 1000, advance: clicked } }
+    expect(readArrival(bytes)).toEqual({ state: "value", value: push })
+    expect(readPlayback(bytes).transition).toEqual({ kind: "push", direction: "u", duration: 1000 })
+    const blank = await readParts(readFileSync(`${process.cwd()}/scripts/pptx-fixtures/blank.pptx`))
+    const first = readSlides(blank)[0]
+    if (first === undefined) throw new Error("slide")
+    const parts = new Map(blank)
+    parts.set(first.part, bytes)
+    const again = exported(parts, [[`${first.slide}.slide`, { transition: { value: { set: push } } }]])
+    expect(again.get(first.part)).toBe(bytes)
+    expect(text(again.get(first.part))).toContain(`<p:transition spd="slow"><p:push dir="u"/></p:transition>`)
+  })
+
   it("keeps a wipe, a sound, an exact duration, and an alternate-content transition", async () => {
     const wipe = await readParts(
       readFileSync(`${process.cwd()}/scripts/pptx-fixtures/corpus/nasa-cots-electronics.pptx`),
