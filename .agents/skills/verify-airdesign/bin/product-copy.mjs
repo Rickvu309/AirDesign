@@ -35,7 +35,7 @@ export const { picturePanelCopy: pictureCopy } = createRequire(import.meta.url)(
 export const { lineCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/line-copy.ts")
 export const { creditsCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/credits-copy.ts")
 
-export const { pictureCopy: pictureToolCopy } = createRequire(import.meta.url)(
-  "../../../../apps/web/src/copy/picture-copy.ts",
-)
+export function readPictureToolCopy() {
+  return createRequire(import.meta.url)("../../../../apps/web/src/copy/picture-copy.ts").pictureCopy
+}
 export const { templateCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/template-copy.ts")

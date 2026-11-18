@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { execFileSync, spawnSync } from "node:child_process"
 import fs from "node:fs"
+import { registerHooks } from "node:module"
 import os from "node:os"
 import path from "node:path"
 import { parse } from "yaml"
@@ -48,7 +49,14 @@ try {
     git("-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "Change fixture")
     return affectedReport({ root: folder, base: "HEAD^", head: "HEAD" })
   }
-  const reached = await reportFor("packages/a/src/core.ts")
+  const sourceOnly = registerHooks({
+    load(url, context, next) {
+      assert.doesNotMatch(url, /\/packages\/[^/]+\/dist\//, "planning must work before workspace packages build")
+      return next(url, context)
+    },
+  })
+  const reached = await reportFor("packages/a/src/core.ts").finally(() => sourceOnly.deregister())
+  assert.deepEqual(reached.incomplete, [])
   assert.deepEqual(
     reached.unit.files,
     ["packages/a/src/a.test.ts", "packages/a/src/b.test.ts"],

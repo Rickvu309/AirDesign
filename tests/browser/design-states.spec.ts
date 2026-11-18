@@ -44,10 +44,12 @@ test.describe.configure({ mode: "serial" })
 
 test("loads product copy through workspace exports under Playwright", async () => {
   type IconCopy = { addIcon: string }
-  const { pictureToolCopy } = await load<{ pictureToolCopy: IconCopy }>(join(skill, "bin/product-copy.mjs"))
+  const { readPictureToolCopy } = await load<{ readPictureToolCopy: () => IconCopy }>(
+    join(skill, "bin/product-copy.mjs"),
+  )
   const { pictureCopy } = await load<{ pictureCopy: IconCopy }>(join(root, "apps/web/src/copy/picture-copy.ts"))
-  expect(pictureToolCopy.addIcon).toEqual(expect.any(String))
-  expect(pictureToolCopy.addIcon).toBe(pictureCopy.addIcon)
+  expect(readPictureToolCopy().addIcon).toEqual(expect.any(String))
+  expect(readPictureToolCopy().addIcon).toBe(pictureCopy.addIcon)
 })
 
 test("every named state of the real app is reached and scanned in one stack", async ({ browser }) => {
