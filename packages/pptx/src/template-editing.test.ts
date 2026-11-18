@@ -131,7 +131,11 @@ it("rotates the slide's template colours one step and leaves an explicit colour"
   const slide = "ppt/slides/slide1.xml"
   const before = schemes(parts, slide)
   const once = remixTargets(parts, slide)
-  expect(once.length).toBeGreaterThan(0)
+  expect(once[0]).toMatchObject({
+    target: { node: "256.5" },
+    fill: { value: { solid: { scheme: "accent2" } } },
+  })
+  expect(once.some((change) => "text" in change)).toBe(false)
   const first = applied(parts, once)
   expect(schemes(first, slide)).toEqual(["dk2", "tx1", "tx1", "accent2"])
   expect(decodeUtf8(first.get(slide)!)).toContain('val="123456"')
