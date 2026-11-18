@@ -17,7 +17,7 @@ export default async function drive(kit) {
   const before = await saved()
   await capture("before")
   await belowRow(page).hover()
-  await expect(page.locator("[data-row-placeholder]:visible")).toHaveCount(1)
+  await expect(page.locator("[data-row-insertion-line]:visible")).toHaveCount(1)
   expect((await saved()).order).toEqual(before.order)
   await capture("preview")
   await belowRow(page).click()

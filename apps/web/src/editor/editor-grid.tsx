@@ -11,6 +11,7 @@ import { cardPress } from "@/editor/grid-hit"
 import { GridCard } from "@/editor/grid-card"
 import { GridHead } from "@/editor/grid-head"
 import { GridRowFrame, moveGridRow, gridMoveMessage, useGridRowFocus } from "@/editor/grid-row-frame"
+import { gridAddFits } from "@/editor/grid-add-placement"
 import { GridRowAdd } from "@/editor/grid-row-add"
 import { gridSpacing } from "@/editor/grid-viewport"
 import { GridDragGhost } from "@/editor/grid-drag-ghost"
@@ -115,6 +116,7 @@ export function EditorGrid({
     setZoom(next)
     if (next === "fit") viewport.reset()
   }
+  const [touch, setTouch] = useState(false)
   const [elementPressed, setElementPressed] = useState(false)
   const [menu, setMenu] = useState<GridMenu | null>(null)
   const { current, count } = strip
@@ -183,6 +185,23 @@ export function EditorGrid({
     onMove: moveSlides,
   })
   const dragging = drag.dragging
+  const scale = percent / 100
+  const addBlocked =
+    strip.onAdd === undefined ||
+    count >= limits.slides ||
+    viewport.space ||
+    pointer?.tool === "hand" ||
+    dragging !== null ||
+    elementPressed ||
+    edit.editing ||
+    menu !== null ||
+    touch ||
+    !gridAddFits({
+      width: width * scale,
+      height: height * scale,
+      columnGap: spacing.column * scale,
+      rowGap: spacing.row * scale,
+    })
 
   function moveSlides(held: readonly number[], at: number, row: boolean) {
     if (dragMoves(held, at, count).length === 0) return
@@ -242,6 +261,7 @@ export function EditorGrid({
 
   function onGridKey(event: KeyboardEvent<HTMLDivElement>) {
     if (!editorOwnsKey(event)) return
+    if (touch) setTouch(false)
     if (
       event.target instanceof Element &&
       event.target.closest("[data-add-row], [data-add-gap], [data-row-handle]") !== null
@@ -329,8 +349,7 @@ export function EditorGrid({
         openMenu(index, pointAt(event.clientX, event.clientY), true)
       }}
       rowEnd={rows.some((row) => row.end === index + 1)}
-      addBlocked={viewport.space || pointer?.tool === "hand" || dragging !== null || elementPressed || edit.editing}
-      addDisabled={strip.onAdd === undefined || count >= limits.slides}
+      addBlocked={addBlocked}
       onAdd={() => addAfter(index, true)}
     />
   )
@@ -341,7 +360,11 @@ export function EditorGrid({
       inert={presenting}
       data-editor-grid
       data-keeps-selection
+      onPointerMoveCapture={(event) => {
+        if (touch && event.pointerType === "mouse") setTouch(false)
+      }}
       onPointerDownCapture={(event) => {
+        if (event.pointerType === "touch") setTouch(true)
         const pressed = cardPress(event)
         if (event.button === 0 && (pressed === "element" || pressed === "editor")) setElementPressed(true)
       }}
@@ -475,21 +498,17 @@ export function EditorGrid({
                     )
                   })}
                 </section>
-                <GridRowAdd
-                  row={number + 1}
-                  width={width}
-                  height={height}
-                  gap={spacing.row}
-                  scale={percent / 100}
-                  blocked={viewport.space || pointer?.tool === "hand" || dragging !== null || elementPressed}
-                  disabled={strip.onAdd === undefined || count >= limits.slides}
-                  onAdd={() => addBelow(row.start)}
-                  onEscape={() =>
-                    list.current
-                      ?.querySelector<HTMLElement>(`[data-slide-entry="${row.start + 1}"]`)
-                      ?.focus({ preventScroll: true })
-                  }
-                />
+                {addBlocked ? null : (
+                  <GridRowAdd
+                    row={number + 1}
+                    width={width}
+                    height={height}
+                    gap={spacing.row}
+                    scale={scale}
+                    last={number === rows.length - 1}
+                    onAdd={() => addBelow(row.start)}
+                  />
+                )}
               </GridRowFrame>
             ))}
           </div>

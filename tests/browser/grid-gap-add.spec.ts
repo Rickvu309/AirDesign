@@ -23,7 +23,7 @@ async function zoom(page: Page, percent: number) {
 test("a gap plus is centred between neighbours and adds from the left layout", async ({ page }) => {
   await open(page)
   await zoom(page, 25)
-  await entry(page, 2).hover()
+  await page.locator("[data-gap-insert]").nth(1).hover()
   const left = await entry(page, 2).boundingBox()
   const right = await entry(page, 3).boundingBox()
   const button = await add(page, 2).boundingBox()
@@ -93,10 +93,10 @@ test("gap affordances hide at small zoom during Space and Hand and during text e
   await expect(add(page, 4)).toBeHidden()
 })
 
-test("fifty slides disable row-end addition without a preview", async ({ page }) => {
+test("fifty slides remove every same-row insertion target", async ({ page }) => {
   await open(page, 50)
   await zoom(page, 25)
-  await expect(page.locator("[data-add-gap]").nth(8)).toBeDisabled()
+  await expect(page.locator("[data-add-gap]")).toHaveCount(0)
   await expect(page.locator("[data-gap-placeholder]:visible")).toHaveCount(0)
   expect(await rows(page)).toEqual([9, 9, 9, 9, 9, 5])
 })

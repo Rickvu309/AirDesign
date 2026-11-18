@@ -31,7 +31,6 @@ export function GridCard({
   onAdd,
   rowEnd,
   addBlocked,
-  addDisabled,
 }: {
   index: number
   count: number
@@ -54,7 +53,6 @@ export function GridCard({
   onContextMenu: MouseEventHandler<HTMLButtonElement>
   rowEnd: boolean
   addBlocked: boolean
-  addDisabled: boolean
   onAdd: () => void
 }) {
   const screen = { width: width * scale, gap: gridSpacing(width, height).row * scale }
@@ -135,17 +133,17 @@ export function GridCard({
           {slide?.(width * scale)}
         </div>
       ) : null}
-      <GridGapAdd
-        reachable={reachable}
-        index={index}
-        width={width}
-        height={height}
-        scale={scale}
-        end={rowEnd}
-        blocked={addBlocked}
-        disabled={addDisabled}
-        onAdd={onAdd}
-      />
+      {addBlocked ? null : (
+        <GridGapAdd
+          reachable={reachable}
+          index={index}
+          width={width}
+          height={height}
+          scale={scale}
+          end={rowEnd}
+          onAdd={onAdd}
+        />
+      )}
     </div>
   )
 }

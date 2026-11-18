@@ -13,6 +13,8 @@ export const slideListCopy = {
   nothingSelected: "Nothing selected",
   entered: (number: number) => `Editing slide ${String(number)}. Tab moves through its elements`,
   selectOne: "Select one slide to duplicate, delete or move it",
+  newSlide: "New slide",
+  addLimit: (limit: number) => `A deck can have up to ${slidesOf(limit)}. Delete a slide to add another.`,
   added: (number: number) => `Added slide ${String(number)}`,
   addAfter: (number: number) => `Add slide after slide ${String(number)}`,
   moveRow: (row: number) => `Move row ${String(row)}`,

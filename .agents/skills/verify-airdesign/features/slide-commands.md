@@ -4,7 +4,7 @@ The slide list on the left of an open deck lists every slide. The person adds a 
 
 ## Sub-features
 
-- `grid-row-add` Grid’s round plus below each row previews a dashed slide at the first column. Clicking or pressing Enter adds one slide in its own row, selects it and preserves the camera. Space and Hand mode hide the controls. At 50 slides they are disabled. Journey `grid-row-add`; browser `grid-row-add.spec.ts` also covers touch, editing and offline Undo.
+- `grid-row-add` Hover or focus below a Grid row to preview a dashed line at the first column. Below the last row a full slide outline appears if it fits. Click or press Enter to add one slide in its own row and select it. At small zoom use New slide. At 50 slides the inline controls are removed. Journey `grid-row-add`; browser `grid-row-add.spec.ts` also covers touch, editing and offline Undo.
 - `slide-add` `button "Add slide"` adds a slide after the current one with the current slide's layout (the deck's content layout after a title slide), and opens it. The new slide takes typed text.
 - `slide-layout` the chevron beside `New slide` (`button "Choose a layout for the new slide"`) lists the deck's layouts by the names in the file. Choosing one adds a slide after the current one with that layout's placeholders. `Add slide` uses the current slide's layout, and the deck's content layout after a title slide. Journey `slide-layouts`.
 - `slide-duplicate` Ctrl/Cmd+D on a focused `[data-slide-entry]` adds a copy after it and makes the copy current. The copy keeps the text the slide had when it was made.
@@ -20,7 +20,7 @@ The slide list on the left of an open deck lists every slide. The person adds a 
 
 - An open deck `/deck/<id>`: the `+` button (`Add slide`) at the top of the slide list.
 - Click a slide in the list, then the keys.
-- Open Grid, then the round plus below the first slide of a row. Tab reaches it; Escape returns to the row’s first slide.
+- Open Grid, then the round plus below the first slide of a row. Tab reaches it. Escape returns to the originating slide.
 
 ## Driving it with verify-airdesign
 

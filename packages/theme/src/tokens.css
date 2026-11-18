@@ -150,6 +150,7 @@
   --shadow-chrome: none;
   --grid-add-size: 24px;
   --grid-add-dot: 8px;
+  --grid-insertion-line-width: 1px;
   --grid-radius-min: 2px;
   --grid-radius-canvas: 13px;
   --grid-radius: var(--grid-radius-min);
