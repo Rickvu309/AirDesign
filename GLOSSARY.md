@@ -76,10 +76,6 @@ _Avoid_: bot, integration, app
 The agent built into AirDesign. It reads a deck, changes what a person can change in the design panel, adds, duplicates, deletes and reorders slides, sets a slide's background color, adds text, icons and diagrams, groups and ungroups layers, attaches connectors and deletes layers.
 _Avoid_: the assistant, the AI
 
-**transition**:
-How a slide arrives when presenting: its style, how long that style takes, and whether the next slide waits for a click or follows after a delay.
-_Avoid_: animation, effect
-
 **design panel**:
 The panel beside a slide that sets the selection's appearance and geometry. With no selection it sets the slide background and template style. Shared fields set every selected layer in one undo step. The title shows how many are selected. Multi-edit text replaces the words of several selected text layers in one undo step.
 _Avoid_: inspector, properties, format pane
