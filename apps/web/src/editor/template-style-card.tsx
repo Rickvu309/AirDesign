@@ -19,12 +19,12 @@ export function TemplateStyleCard({
     major && minor
       ? major === minor
         ? major
-        : designCopy.templateFonts(major, minor)
+        : designCopy.templateFontLine(major, minor)
       : major
         ? designCopy.headingFont(major)
         : minor
           ? designCopy.bodyFont(minor)
-          : designCopy.themeFontsMissing
+          : designCopy.templateFontsMissing
   const bars = ["lt1", "dk1", "accent1"].map((slot) => swatches.find(({ scheme }) => scheme === slot))
   return (
     <button
@@ -46,8 +46,8 @@ export function TemplateStyleCard({
         ))}
       </span>
       <span className="flex min-w-0 flex-col text-[length:var(--panel-control-size)]">
-        <span className="truncate font-semibold" title={name ?? designCopy.currentTheme}>
-          {name ?? designCopy.currentTheme}
+        <span className="truncate font-semibold" title={name ?? designCopy.currentTemplateStyle}>
+          {name ?? designCopy.currentTemplateStyle}
         </span>
         <span className="truncate font-normal text-[length:var(--panel-card-meta)]" title={fonts}>
           {fonts}

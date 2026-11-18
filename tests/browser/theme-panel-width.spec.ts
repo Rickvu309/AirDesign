@@ -1,5 +1,5 @@
 import { productCopy } from "../../apps/web/src/copy/product-copy"
-import { themeCopy } from "../../apps/web/src/copy/theme-copy"
+import { templateStyleCopy } from "../../apps/web/src/copy/template-style-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { appearanceCopy } from "../../apps/web/src/copy/appearance-copy"
 import { expect, test, type Page } from "@playwright/test"
@@ -16,11 +16,11 @@ test("template colors stay named and reachable at narrow editor widths", async (
     await resize.press("Home")
     for (let at = 220; at < width; at += 10) await resize.press("ArrowLeft")
     await page.getByRole("button", { name: designCopy.editTemplateStyle, exact: true }).click()
-    const dialog = page.locator("[data-design-theme]")
+    const dialog = page.locator("[data-template-style]")
     for (const slot of ["dk1", "accent1", "accent6"] as const) {
-      const swatch = dialog.getByRole("button", { name: themeCopy[slot], exact: true })
+      const swatch = dialog.getByRole("button", { name: templateStyleCopy[slot], exact: true })
       await expect(swatch).toBeVisible()
-      await expect(swatch).toHaveAttribute("title", new RegExp(themeCopy[slot]))
+      await expect(swatch).toHaveAttribute("title", new RegExp(templateStyleCopy[slot]))
     }
     await dialog.getByRole("button", { name: productCopy.close, exact: true }).click()
   }

@@ -26,8 +26,8 @@ export type UndoName =
   | "template"
   | "transition"
   | "background"
-  | "theme-color"
-  | "theme-font"
+  | "template-color"
+  | "template-font"
   | "text-style"
   | "fill"
   | "effects"
@@ -80,8 +80,8 @@ export const undoCopy = {
     template: "Undo template style",
     transition: "Undo transition",
     background: "Undo background color",
-    "theme-color": "Undo template color",
-    "theme-font": "Undo template font",
+    "template-color": "Undo template color",
+    "template-font": "Undo template font",
     "text-style": "Undo text style",
     fill: "Undo fill",
     "cell-fill": "Undo cell fill",
@@ -131,8 +131,8 @@ export const undoCopy = {
     template: "Redo template style",
     transition: "Redo transition",
     background: "Redo background color",
-    "theme-color": "Redo template color",
-    "theme-font": "Redo template font",
+    "template-color": "Redo template color",
+    "template-font": "Redo template font",
     "text-style": "Redo text style",
     fill: "Redo fill",
     "cell-fill": "Redo cell fill",

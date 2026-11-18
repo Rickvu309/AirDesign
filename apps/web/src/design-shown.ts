@@ -12,7 +12,7 @@ export type DesignShown = {
   readonly number: number
   readonly background: { readonly css: string; readonly name: string; readonly value: Color | undefined }
   readonly fill: FieldValue<"fills", "p0"> | null
-  readonly theme: readonly Swatch[]
+  readonly templateColors: readonly Swatch[]
 }
 
 const whiteHex = "FFFFFF"
@@ -39,16 +39,21 @@ function ownColor(parts: Parts, part: string): Color | null {
   }
 }
 
-function valueOf(parts: Parts, part: string, solid: string | null, theme: readonly Swatch[]): Color | undefined {
+function valueOf(
+  parts: Parts,
+  part: string,
+  solid: string | null,
+  templateColors: readonly Swatch[],
+): Color | undefined {
   const own = ownColor(parts, part)
   if (own !== null) return own
   if (solid === null) return undefined
   const hex = solid.slice(1, 7)
-  const slot = theme.find((swatch) => swatch.css.slice(1) === hex)
+  const slot = templateColors.find((swatch) => swatch.css.slice(1) === hex)
   return slot === undefined ? { rgb: hex } : { scheme: slot.scheme }
 }
 
-export function themeOf(parts: Parts, part: string): readonly Swatch[] {
+export function templateColorsOf(parts: Parts, part: string): readonly Swatch[] {
   return themeSwatches(parts, part).map((swatch) => ({
     ...swatch,
     css: swatch.css.toUpperCase(),
@@ -62,11 +67,11 @@ export function designShown(parts: Parts, index: number, painted: string | null 
   if (found === undefined || slide === undefined) return null
   const fill = fillOf(parts, found.part)
   const solid = solidOf(fill)
-  const theme = themeOf(parts, found.part)
-  const value = valueOf(parts, found.part, solid, theme)
+  const templateColors = templateColorsOf(parts, found.part)
+  const value = valueOf(parts, found.part, solid, templateColors)
   const name =
     value !== undefined
-      ? shownName(value, theme)
+      ? shownName(value, templateColors)
       : fill !== null && fill.type !== "solid" && fill.type !== "none"
         ? designCopy.fills[fill.type]
         : designCopy.white
@@ -75,6 +80,6 @@ export function designShown(parts: Parts, index: number, painted: string | null 
     number: index + 1,
     background: { css: painted ?? solid ?? "white", name, value },
     fill: shownBackground(parts, found.part)?.value ?? null,
-    theme,
+    templateColors,
   }
 }

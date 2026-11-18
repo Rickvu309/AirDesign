@@ -8,7 +8,7 @@ import {
   shadesOf,
   shownName,
   shownHex,
-  themeColumns,
+  templateColorColumns,
   tintChoices,
   typedColor,
   type Palette,
@@ -16,7 +16,7 @@ import {
 
 const hash = "#"
 
-const theme = [
+const templateColors = [
   { scheme: "dk1", css: "000000", name: "Dark 1" },
   { scheme: "lt1", css: "FFFFFF", name: "Light 1" },
   { scheme: "dk2", css: "000000", name: "Dark 2" },
@@ -25,7 +25,7 @@ const theme = [
   { scheme: "accent2", css: "1A1A1A", name: "Accent 2" },
 ] as const
 
-const palette: Palette = { theme, deck: ["C00000", "4472C4", "1F4E79"] }
+const palette: Palette = { templateColors, deck: ["C00000", "4472C4", "1F4E79"] }
 
 const written = (css: string) =>
   shadesOf(css).map(({ direction, percent, transforms }) => [
@@ -76,9 +76,9 @@ describe("PowerPoint's tint and shade rows", () => {
   })
 })
 
-describe("the theme colours a person picks from", () => {
+describe("the template colors a person picks from", () => {
   it("keeps equal-looking slots and paints their shades as the canvas does", () => {
-    const columns = themeColumns(theme)
+    const columns = templateColorColumns(templateColors)
     expect(columns.map((column) => column.swatch.name)).toEqual([
       "Dark 1",
       "Light 1",
@@ -103,7 +103,7 @@ describe("the theme colours a person picks from", () => {
   })
 
   it("presses only the named slot or its real alias", () => {
-    const [dark] = themeColumns(theme)
+    const [dark] = templateColorColumns(templateColors)
     expect(dark !== undefined && matches(dark.swatch.color, { scheme: "dk2" })).toBe(false)
     expect(dark !== undefined && matches(dark.swatch.color, { scheme: "tx1" })).toBe(true)
     expect(dark !== undefined && matches(dark.swatch.color, { rgb: "000000" })).toBe(false)
@@ -113,21 +113,21 @@ describe("the theme colours a person picks from", () => {
 
   it("offers all ten PowerPoint picker slots even when several have the same colour", () => {
     const full = [
-      ...theme,
+      ...templateColors,
       ...(["accent3", "accent4", "accent5", "accent6"] as const).map((scheme) => ({
         scheme,
         css: "000000",
         name: scheme,
       })),
     ]
-    expect(themeColumns(full).map(({ swatch }) => swatch.color)).toEqual(
+    expect(templateColorColumns(full).map(({ swatch }) => swatch.color)).toEqual(
       ["dk1", "lt1", "dk2", "lt2", "accent1", "accent2", "accent3", "accent4", "accent5", "accent6"].map((scheme) => ({
         scheme,
       })),
     )
   })
 
-  it("keeps equal slots' names and transforms distinct as the theme changes", () => {
+  it("keeps equal slots' names and transforms distinct as the template colors change", () => {
     const transforms = [{ op: "lumMod", val: 50_000 }] as const
     const dark2 = { scheme: "dk2", transforms } as const
     expect(matches({ scheme: "dk1", transforms }, dark2)).toBe(false)
@@ -135,9 +135,9 @@ describe("the theme colours a person picks from", () => {
     expect(matches({ scheme: "dk2" }, dark2)).toBe(false)
     expect(matches({ scheme: "lt1" }, { scheme: "bg1" })).toBe(true)
     expect(matches({ scheme: "lt2" }, { scheme: "bg2" })).toBe(true)
-    expect(shownName({ scheme: "dk2" }, theme)).toBe("Dark 2")
-    const changed = theme.map((swatch) => (swatch.scheme === "dk2" ? { ...swatch, css: "4472C4" } : swatch))
-    expect(shownHex({ scheme: "dk2" }, theme)).toBe("000000")
+    expect(shownName({ scheme: "dk2" }, templateColors)).toBe("Dark 2")
+    const changed = templateColors.map((swatch) => (swatch.scheme === "dk2" ? { ...swatch, css: "4472C4" } : swatch))
+    expect(shownHex({ scheme: "dk2" }, templateColors)).toBe("000000")
     expect(shownHex({ scheme: "dk2" }, changed)).toBe("4472C4")
     expect(shownHex({ scheme: "dk1" }, changed)).toBe("000000")
     expect(shownName({ scheme: "dk2" }, changed)).toBe("Dark 2")
@@ -145,25 +145,27 @@ describe("the theme colours a person picks from", () => {
 })
 
 describe("the deck's colours", () => {
-  it("offers the deck's rgb colours that are not theme colours, most used first", () => {
+  it("offers the deck's rgb colours that are not template colors, most used first", () => {
     expect(deckChoices(palette).map((choice) => choice.color)).toEqual([{ rgb: "C00000" }, { rgb: "1F4E79" }])
   })
 
   it("keeps every rgb colour, including past the first ten", () => {
     const many = Array.from({ length: 12 }, (_, index) => (index + 1).toString(16).padStart(6, "B").toUpperCase())
-    expect(deckChoices({ theme, deck: many })).toHaveLength(12)
+    expect(deckChoices({ templateColors, deck: many })).toHaveLength(12)
   })
 })
 
-describe("theme tints inside Add color", () => {
+describe("template color tints inside Add color", () => {
   it("lists PowerPoint's lighter and darker rows, and a tint those rows do not already have", () => {
     const odd = { scheme: "accent1" as const, transforms: [{ op: "lumMod" as const, val: 33_000 }] }
-    const choices = tintChoices(theme, odd)
+    const choices = tintChoices(templateColors, odd)
     expect(choices[0]?.color).toEqual(odd)
     expect(choices.some((choice) => choice.name === colorCopy.lighter("Accent 1", 40))).toBe(true)
-    const standard = themeColumns(theme)[4]?.shades[2]?.color
+    const standard = templateColorColumns(templateColors)[4]?.shades[2]?.color
     const same =
-      standard === undefined ? [] : tintChoices(theme, standard).filter((choice) => matches(choice.color, standard))
+      standard === undefined
+        ? []
+        : tintChoices(templateColors, standard).filter((choice) => matches(choice.color, standard))
     expect(same).toHaveLength(1)
   })
 })
@@ -185,10 +187,12 @@ describe("a custom colour", () => {
 })
 
 describe("the shown value", () => {
-  it("names a theme slot, and shows a hex for a tint, an rgb colour and a colour the picker cannot write", () => {
-    expect(shownName({ scheme: "accent1" }, theme)).toBe("Accent 1")
-    expect(shownName({ scheme: "tx1" }, theme)).toBe("Dark 1")
-    expect(shownName({ scheme: "accent1", transforms: [{ op: "alpha", val: 40_000 }] }, theme)).toBe("Accent 1")
+  it("names a template color slot, and shows a hex for a tint, an rgb colour and a colour the picker cannot write", () => {
+    expect(shownName({ scheme: "accent1" }, templateColors)).toBe("Accent 1")
+    expect(shownName({ scheme: "tx1" }, templateColors)).toBe("Dark 1")
+    expect(shownName({ scheme: "accent1", transforms: [{ op: "alpha", val: 40_000 }] }, templateColors)).toBe(
+      "Accent 1",
+    )
     expect(
       shownName(
         {
@@ -198,12 +202,12 @@ describe("the shown value", () => {
             { op: "lumOff", val: 40_000 },
           ],
         },
-        theme,
+        templateColors,
       ),
     ).toBe(`${hash}8FAADC`)
-    expect(shownName({ rgb: "1F4E79" }, theme)).toBe(`${hash}1F4E79`)
-    expect(shownName({ preset: "red" }, theme)).toBe(`${hash}FF0000`)
-    expect(shownName({ scheme: "accent1", transforms: [{ op: "satMod", val: 50_000 }] }, theme)).toMatch(
+    expect(shownName({ rgb: "1F4E79" }, templateColors)).toBe(`${hash}1F4E79`)
+    expect(shownName({ preset: "red" }, templateColors)).toBe(`${hash}FF0000`)
+    expect(shownName({ scheme: "accent1", transforms: [{ op: "satMod", val: 50_000 }] }, templateColors)).toMatch(
       /^#[0-9A-F]{6}$/,
     )
   })

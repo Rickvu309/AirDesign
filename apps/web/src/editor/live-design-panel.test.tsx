@@ -229,7 +229,7 @@ it("keeps both crop sides a person types one after another while the first is st
   await picture.close()
 }, 20_000)
 
-it("shows a slide's background and theme once each, with no section or button that does nothing", async () => {
+it("shows a slide's background and template style once each, with no section or button that does nothing", async () => {
   const slide = await slidePanel()
   const panel = slide.host.querySelector("[data-design-panel]")
   const text = panel?.textContent ?? ""
@@ -237,23 +237,23 @@ it("shows a slide's background and theme once each, with no section or button th
   expect(panel?.querySelector("button[aria-pressed=true]")?.getAttribute("title")).toBe(optionCopy.solid)
   expect(text).toContain("Background")
   expect(text).toContain(designCopy.templateStyle)
-  expect(panel?.querySelector("[data-design-theme]")).toBeNull()
+  expect(panel?.querySelector("[data-template-style]")).toBeNull()
   const card = panel?.querySelector<HTMLButtonElement>("[data-template-style]")
   expect(card?.getAttribute("aria-expanded")).toBe("false")
   await act(async () =>
     panel?.querySelector<HTMLButtonElement>(`button[aria-label="${designCopy.editTemplateStyle}"]`)?.click(),
   )
-  expect(window.document.querySelector("[data-design-theme]")?.textContent).toContain(designCopy.templateScope)
+  expect(window.document.querySelector("[data-template-style]")?.textContent).toContain(designCopy.templateScope)
   expect(card?.getAttribute("aria-expanded")).toBe("false")
   expect(text).not.toContain("not available")
   expect(panel?.querySelectorAll("button:disabled")).toHaveLength(0)
   expect(panel?.querySelectorAll("button[aria-label^='Background color']")).toHaveLength(1)
   for (const name of ["Dark 1", "Accent 1", "Accent 6"])
-    expect(window.document.querySelector(`[data-design-theme] button[aria-label="${name}"]`)).not.toBeNull()
+    expect(window.document.querySelector(`[data-template-style] button[aria-label="${name}"]`)).not.toBeNull()
   await slide.close()
 }, 20_000)
 
-it("draws a fill that names a theme colour in that colour once the theme changes it, as the canvas paints it", async () => {
+it("draws a fill that names a template color in that color once the template style changes it, as the canvas paints it", async () => {
   const parts = await readParts(await fixtureFile("clean.pptx"))
   const slide = readSlides(parts)[0]?.slide
   if (slide === undefined) throw new Error("slide")
@@ -265,7 +265,7 @@ it("draws a fill that names a theme colour in that colour once the theme changes
     route: "deck",
   })
   const red = "C00000"
-  const patch = { theme: { accent1: { set: red } } }
+  const patch = { templateStyle: { accent1: { set: red } } }
   const register = applied(opened, { command: "person", node: templateStylesNode, v: format, patch })
   device.link = { flush: async () => ({ ok: true }), openDeck: async () => ({ ok: true, register }) }
   const exposed: { current: DeckPaint | null } = { current: null }

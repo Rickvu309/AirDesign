@@ -4,7 +4,7 @@ import { elementId } from "@airdesign/document"
 import { selectionColors, replaceSelectionColor } from "./selection-colors"
 
 const node = elementId("1.2")
-const palette = { theme: [], deck: [] }
+const palette = { templateColors: [], deck: [] }
 const fields = {
   "fills.p0": {
     value: {
@@ -142,9 +142,9 @@ describe("selection colors", () => {
     ])
   })
 
-  it("deduplicates theme and rgb colors that paint alike and replaces only the chosen scope", () => {
-    const themed = {
-      theme: [{ scheme: "accent1" as const, css: `#${"000000"}`, name: formatCopy.colors.accent1 }],
+  it("deduplicates template colors and rgb colors that paint alike and replaces only the chosen scope", () => {
+    const palette = {
+      templateColors: [{ scheme: "accent1" as const, css: `#${"000000"}`, name: formatCopy.colors.accent1 }],
       deck: [],
     }
     const sources = [
@@ -156,7 +156,7 @@ describe("selection colors", () => {
         },
       },
     ]
-    expect(selectionColors(sources, themed)).toHaveLength(1)
-    expect(replaceSelectionColor(sources, "FFFFFF", { rgb: "FF0000" }, themed)).toEqual([])
+    expect(selectionColors(sources, palette)).toHaveLength(1)
+    expect(replaceSelectionColor(sources, "FFFFFF", { rgb: "FF0000" }, palette)).toEqual([])
   })
 })

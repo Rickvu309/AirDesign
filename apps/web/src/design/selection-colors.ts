@@ -59,7 +59,7 @@ export function selectionColors(sources: readonly ColorSource[], palette: Palett
       mapColors(
         field?.value,
         (color) => {
-          const hex = shownHex(color, palette.theme)
+          const hex = shownHex(color, palette.templateColors)
           if (!colors.has(hex)) colors.set(hex, color)
           return color
         },
@@ -87,7 +87,7 @@ export function replaceSelectionColor(
       const value = mapColors(
         field?.value,
         (held) => {
-          if (shownHex(held, palette.theme) !== hex) return held
+          if (shownHex(held, palette.templateColors) !== hex) return held
           changed = true
           return fadedColor(color, alphaOf(held))
         },

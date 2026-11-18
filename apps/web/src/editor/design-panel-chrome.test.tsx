@@ -29,7 +29,7 @@ function panel(kind: ScopedElement["facts"]["kind"], geometry?: unknown) {
     },
   )
   return renderToStaticMarkup(
-    createElement(ElementDesign, { model, palette: { theme: [], deck: [] }, onChange: () => {} }),
+    createElement(ElementDesign, { model, palette: { templateColors: [], deck: [] }, onChange: () => {} }),
   )
 }
 
@@ -70,7 +70,7 @@ it("keeps pattern and reset inside a design-mode fill section", () => {
           },
         },
       ),
-      palette: { theme: [], deck: [] },
+      palette: { templateColors: [], deck: [] },
       onChange: () => {},
     }),
   )

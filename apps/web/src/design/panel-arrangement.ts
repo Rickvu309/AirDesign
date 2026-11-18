@@ -229,8 +229,8 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   ],
   table: [[placed("value")]],
   notes: [[placed("value", hidden)]],
-  template: [[{ field: "id", name: { show: "hidden" } }]],
-  theme: [
+  templateStyle: [
+    [{ field: "id", name: { show: "hidden" } }],
     [placed("name", inside)],
     [placed("dk1", hidden), placed("lt1", hidden)],
     [placed("dk2", hidden), placed("lt2", hidden)],

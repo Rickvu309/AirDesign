@@ -5,13 +5,13 @@ import { colorCopy } from "@/copy/color-copy"
 export type Swatch = { readonly scheme: SchemeName; readonly css: string; readonly name: string }
 
 export type Palette = {
-  readonly theme: readonly Swatch[]
+  readonly templateColors: readonly Swatch[]
   readonly deck: readonly string[]
 }
 
 export type Choice = { readonly color: Color; readonly css: string; readonly name: string }
 
-export type ThemeColumn = { readonly swatch: Choice; readonly shades: readonly Choice[] }
+export type TemplateColorColumn = { readonly swatch: Choice; readonly shades: readonly Choice[] }
 
 type Step = { readonly op: "lumMod" | "lumOff"; readonly val: number }
 
@@ -65,16 +65,16 @@ function shadeName(name: string, shade: Shade): string {
   return shade.direction === "lighter" ? colorCopy.lighter(name, shade.percent) : colorCopy.darker(name, shade.percent)
 }
 
-function painted(color: Color, theme: readonly Swatch[]): string {
-  return `#${colorHex(color, theme) ?? "000000"}`
+function painted(color: Color, templateColors: readonly Swatch[]): string {
+  return `#${colorHex(color, templateColors) ?? "000000"}`
 }
 
-export function themeColumns(theme: readonly Swatch[]): readonly ThemeColumn[] {
-  return theme.map((swatch) => {
+export function templateColorColumns(templateColors: readonly Swatch[]): readonly TemplateColorColumn[] {
+  return templateColors.map((swatch) => {
     const css = bare(swatch.css)
     const shades = shadesOf(css).map((shade) => {
       const color: Color = { scheme: swatch.scheme, transforms: shade.transforms }
-      return { color, css: painted(color, theme), name: shadeName(swatch.name, shade) }
+      return { color, css: painted(color, templateColors), name: shadeName(swatch.name, shade) }
     })
     return { swatch: { color: { scheme: swatch.scheme }, css: `#${css}`, name: swatch.name }, shades }
   })
@@ -89,19 +89,19 @@ export function matches(choice: Color, value: Color): boolean {
 }
 
 export function deckChoices(palette: Palette): readonly Choice[] {
-  const themed = new Set(palette.theme.map((swatch) => bare(swatch.css)))
+  const taken = new Set(palette.templateColors.map((swatch) => bare(swatch.css)))
   return palette.deck
-    .filter((hex) => !themed.has(hex))
+    .filter((hex) => !taken.has(hex))
     .map((hex) => ({ color: { rgb: hex }, css: `#${hex}`, name: colorCopy.hexName(hex) }))
 }
 
-export function tintChoices(theme: readonly Swatch[], value: Color | undefined): readonly Choice[] {
-  const shades = themeColumns(theme).flatMap((column) => column.shades)
+export function tintChoices(templateColors: readonly Swatch[], value: Color | undefined): readonly Choice[] {
+  const shades = templateColorColumns(templateColors).flatMap((column) => column.shades)
   if (value === undefined) return shades
   const plain = fadedColor(value, opaque)
   if (!("scheme" in plain) || plain.transforms === undefined || plain.transforms.length === 0) return shades
   if (shades.some((choice) => matches(choice.color, plain))) return shades
-  const hex = shownHex(plain, theme)
+  const hex = shownHex(plain, templateColors)
   return [{ color: plain, css: `#${hex}`, name: colorCopy.hexName(hex) }, ...shades]
 }
 
@@ -152,16 +152,16 @@ export function hsvOf(hex: string): Hsv {
   return { hue: Math.round(sector * 60), saturation: high === 0 ? 0 : delta / high, value: high }
 }
 
-export function shownHex(value: Color, theme: readonly Swatch[]): string {
-  return bare(painted(fadedColor(value, opaque), theme))
+export function shownHex(value: Color, templateColors: readonly Swatch[]): string {
+  return bare(painted(fadedColor(value, opaque), templateColors))
 }
 
-export function shownName(value: Color, theme: readonly Swatch[]): string {
+export function shownName(value: Color, templateColors: readonly Swatch[]): string {
   const plain = fadedColor(value, opaque)
   if ("scheme" in plain && (plain.transforms === undefined || plain.transforms.length === 0)) {
     const scheme = usualSlots[plain.scheme] ?? plain.scheme
-    const named = theme.find((swatch) => swatch.scheme === scheme)
+    const named = templateColors.find((swatch) => swatch.scheme === scheme)
     if (named !== undefined) return named.name
   }
-  return colorCopy.hexName(shownHex(value, theme))
+  return colorCopy.hexName(shownHex(value, templateColors))
 }

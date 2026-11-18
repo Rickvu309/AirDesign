@@ -160,14 +160,14 @@ it("does not name the three shadow strengths soft, medium or hard", () => {
   const shadow = preset("shadow")
   expect(shadow.look.unnamed).toBe(true)
   const html = renderToStaticMarkup(
-    createElement(ChoiceControl, { control: shadow, palette: { theme: [], deck: [] }, onChange: () => {} }),
+    createElement(ChoiceControl, { control: shadow, palette: { templateColors: [], deck: [] }, onChange: () => {} }),
   )
   for (const word of words) expect(html).toContain(`aria-label="${word}"`)
   expect(html).not.toContain("title=")
   const border = renderToStaticMarkup(
     createElement(ChoiceControl, {
       control: preset("border"),
-      palette: { theme: [], deck: [] },
+      palette: { templateColors: [], deck: [] },
       onChange: () => {},
     }),
   )

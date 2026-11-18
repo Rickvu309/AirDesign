@@ -17,7 +17,7 @@ export function HexControl({ control, palette, onChange }: ControlProps) {
         title={control.label}
         value={shown === null ? undefined : { rgb: shown }}
         palette={palette}
-        theme={false}
+        showTemplateColors={false}
         onPick={(color) => {
           if ("rgb" in color && color.rgb !== shown) onChange(color.rgb)
         }}

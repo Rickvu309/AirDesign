@@ -29,11 +29,11 @@ function shownFont(token: string, major: string | null, minor: string | null): s
 
 export function listedTextStyles(
   parts: Parts,
-  theme: string,
+  styleId: string,
   major: string | null,
   minor: string | null,
 ): readonly ListedTextStyle[] {
-  const index = templateStyles(parts).findIndex((style) => style.id === theme)
+  const index = templateStyles(parts).findIndex((style) => style.id === styleId)
   if (index < 0) return []
   const node = templateStyleNode(index)
   const seen = new Set<string>()
@@ -52,7 +52,7 @@ export function listedTextStyles(
     })
   }
   for (const slide of readSlides(parts)) {
-    if (slideTheme(parts, slide.part) !== theme) continue
+    if (slideTheme(parts, slide.part) !== styleId) continue
     for (const style of slideTextStyles(parts, slide.part)) {
       const font = style.fields.font
       const size = style.fields.size
@@ -60,7 +60,7 @@ export function listedTextStyles(
       add({ id: style.id, name: style.name, font, size })
     }
   }
-  for (const style of masterTextStyles(parts, theme)) {
+  for (const style of masterTextStyles(parts, styleId)) {
     add({ id: style.id, name: designCopy.templateStyleRole[style.role], font: style.font, size: style.size })
   }
   return listed
@@ -68,11 +68,11 @@ export function listedTextStyles(
 
 function locate(parts: Parts, id: string): ListedTextStyle | null {
   for (const slide of readSlides(parts)) {
-    const theme = slideTheme(parts, slide.part)
-    if (theme === null) continue
-    const found = listedTextStyles(parts, theme, null, null).find((style) => style.id === id)
+    const styleId = slideTheme(parts, slide.part)
+    if (styleId === null) continue
+    const found = listedTextStyles(parts, styleId, null, null).find((style) => style.id === id)
     if (found === undefined) continue
-    const fonts = templateStyles(parts).find((style) => style.id === theme)?.palette.fonts
+    const fonts = templateStyles(parts).find((style) => style.id === styleId)?.palette.fonts
     return { ...found, shown: shownFont(found.font, fonts?.major ?? null, fonts?.minor ?? null) }
   }
   return null
@@ -104,7 +104,7 @@ function TextStyleDialog({
     setNotice("")
     changeDesign(deck, () => ({
       target: { node: style.node },
-      theme: { textStyle: [{ id: style.id, size: stored, font: face }] },
+      templateStyle: { textStyle: [{ id: style.id, size: stored, font: face }] },
     }))
   }
   return (

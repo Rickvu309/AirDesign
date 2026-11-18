@@ -10,7 +10,7 @@ import {
 } from "@airdesign/pptx"
 import { indexed, landed, type At, type Parts, type Probe } from "./parity-probe"
 
-const themeOpening = {
+const styleOpening = {
   name: "opening",
   dk1: "opening",
   lt1: "opening",
@@ -31,7 +31,7 @@ const themeOpening = {
   textStyle: "opening",
 } as const
 
-function shown(field: keyof typeof themeOpening) {
+function shown(field: keyof typeof styleOpening) {
   return { file: (parts: Parts, at: At) => shownTheme(parts, at.part)[field], shows: (value: string) => value }
 }
 
@@ -48,37 +48,46 @@ function named(parts: Parts, at: At, field: string): Parts {
   return exportParts(parts, register)
 }
 
-function themeBytes(parts: Parts, at: At): Uint8Array {
-  const theme = slideTheme(parts, at.part)
-  return theme === null ? new Uint8Array() : (parts.get(theme) ?? new Uint8Array())
+function styleBytes(parts: Parts, at: At): Uint8Array {
+  const part = slideTheme(parts, at.part)
+  return part === null ? new Uint8Array() : (parts.get(part) ?? new Uint8Array())
 }
 
 const titleStyle = "ppt/slideMasters/slideMaster1.xml/titleStyle/0"
 
 function shownTextStyle(parts: Parts, at: At) {
-  const theme = slideTheme(parts, at.part)
-  if (theme === null) return []
-  const read = readTemplateTextEdit(parts, theme, titleStyle)
+  const part = slideTheme(parts, at.part)
+  if (part === null) return []
+  const read = readTemplateTextEdit(parts, part, titleStyle)
   return read === null ? [] : [read]
 }
 
-export const themeProbe: Probe<"theme"> = {
+export const templateStyleProbe: Probe<"templateStyle"> = {
   deck: "two-templates.pptx",
   kind: "deck",
-  opening: () => ({ v: format, patch: { theme: themeOpening } }),
-  edit: (_, field, value) => ({ v: format, patch: { theme: { [field]: { set: value } } } }),
+  opening: (_parts, at) =>
+    at.node.endsWith(".slide")
+      ? { v: format, patch: { templateStyle: { id: "opening" } } }
+      : { v: format, patch: { templateStyle: styleOpening } },
+  edit: (_, field, value) => ({ v: format, patch: { templateStyle: { [field]: { set: value } } } }),
   painted: (parts, at, field) => {
+    if (field === "id") return slideTheme(parts, at.part) ?? ""
     if (field === "textStyle") {
       const read = shownTextStyle(parts, at)
       return read.length === 0 ? "none" : String(read[0]?.size ?? "none")
     }
     if (field === "removed") return parts.has("ppt/theme/theme2.xml") ? "kept" : "dropped"
-    if (field === "custom") return JSON.stringify(themeCustomColors(themeBytes(parts, at)) ?? [])
+    if (field === "custom") return JSON.stringify(themeCustomColors(styleBytes(parts, at)) ?? [])
     return field === "name"
       ? (templateStyle(parts, at.part).name ?? "")
       : JSON.stringify(paintReader(named(parts, at, field)).slide(at.part).elements)
   },
   fields: {
+    id: {
+      file: (parts, at) => slideTheme(parts, at.part),
+      shows: (value) => value,
+      on: { deck: "doe-heat-pumps.pptx", kind: "slide", node: "256.slide" },
+    },
     name: { file: (parts, at) => templateStyle(parts, at.part).name, shows: (value) => value },
     dk1: shown("dk1"),
     lt1: shown("lt1"),
@@ -95,7 +104,7 @@ export const themeProbe: Probe<"theme"> = {
     major: shown("major"),
     minor: shown("minor"),
     custom: {
-      file: (parts, at) => themeCustomColors(themeBytes(parts, at)) ?? [],
+      file: (parts, at) => themeCustomColors(styleBytes(parts, at)) ?? [],
       shows: (value) => value,
     },
     removed: {

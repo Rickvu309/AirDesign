@@ -39,15 +39,15 @@ function painted(parts: ReadonlyMap<string, Uint8Array>, color: Color) {
 }
 
 describe("design shown", () => {
-  it("names the slide, its background from the master, and every theme colour", async () => {
+  it("names the slide, its background from the master, and every template color", async () => {
     const parts = await fixture("blank.pptx")
     const shown = designShown(parts, 0)
     expect(shown?.slide).toBe(readSlides(parts)[0]?.slide)
     expect(shown?.number).toBe(1)
     expect(shown?.background.name).toBe("Light 1")
     expect(shown?.background.value).toEqual({ scheme: "lt1" })
-    expect(shown?.background.css).toBe(shown?.theme.find((color) => color.scheme === "lt1")?.css)
-    expect(shown?.theme.map((color) => color.name)).toEqual([
+    expect(shown?.background.css).toBe(shown?.templateColors.find((color) => color.scheme === "lt1")?.css)
+    expect(shown?.templateColors.map((color) => color.name)).toEqual([
       "Dark 1",
       "Light 1",
       "Dark 2",
@@ -61,7 +61,7 @@ describe("design shown", () => {
     ])
   })
 
-  it("shows a colour set on the slide by its theme name, a theme tint by its hex, and an RGB colour by its hex", async () => {
+  it("shows a colour set on the slide by its template color name, a tint by its hex, and an RGB colour by its hex", async () => {
     const parts = await fixture("blank.pptx")
     const accent = designShown(painted(parts, { scheme: "accent2" }), 0)
     expect(accent?.background.name).toBe("Accent 2")
@@ -74,7 +74,7 @@ describe("design shown", () => {
       ],
     }
     const tinted = designShown(painted(parts, tint), 0)
-    expect(tinted?.background.name).toBe(`#${shownHex(tint, tinted?.theme ?? [])}`)
+    expect(tinted?.background.name).toBe(`#${shownHex(tint, tinted?.templateColors ?? [])}`)
     expect(tinted?.background.value).toEqual(tint)
     const navy = designShown(painted(parts, { rgb: "0F2433" }), 0)
     expect(navy?.background.css.slice(1)).toBe("0F2433")

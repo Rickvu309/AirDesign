@@ -115,10 +115,10 @@ function shownOf(register: Register | null, id: ElementId, text: string): string
   return JSON.stringify([text, landedBox(register, id)])
 }
 
-const themePart = /^ppt\/theme\/theme\d+\.xml$/
+const stylePart = /^ppt\/theme\/theme\d+\.xml$/
 
-function themed(base: Parts, display: Parts): Parts {
-  const shown = [...display].filter(([name, bytes]) => themePart.test(name) && base.get(name) !== bytes)
+function changedStyleParts(base: Parts, display: Parts): Parts {
+  const shown = [...display].filter(([name, bytes]) => stylePart.test(name) && base.get(name) !== bytes)
   return shown.length === 0 ? base : new Map([...base, ...shown])
 }
 
@@ -188,7 +188,7 @@ export function paint(
     if (painted === undefined) return null
     if (painted.canvas !== null) return painted.canvas.slide
     reader ??= paintReader(display, { fallbackPrompt })
-    const fileTexts = () => (texts ??= paintReader(themed(base, display), { fallbackPrompt }))
+    const fileTexts = () => (texts ??= paintReader(changedStyleParts(base, display), { fallbackPrompt }))
     const swatches = themeSwatches(display, painted.shapes.part)
     const refit = new Set(painted.shapes.shapes.filter((shape) => refitted(register, shape)).map((shape) => shape.id))
     painted.canvas = paintCanvas(painted.shapes, reader, fileTexts, pictures.src, display, swatches, refit)

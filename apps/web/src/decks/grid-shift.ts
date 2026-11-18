@@ -28,9 +28,9 @@ export function gridShift(grid: () => HTMLElement | null, change: () => void) {
       },
     ]),
   )
-  const theme = getComputedStyle(grid() ?? document.documentElement)
-  const shift = theme.getPropertyValue("--ease-grid").trim()
-  const micro = theme.getPropertyValue("--ease-micro").trim()
+  const motion = getComputedStyle(grid() ?? document.documentElement)
+  const shift = motion.getPropertyValue("--ease-grid").trim()
+  const micro = motion.getPropertyValue("--ease-micro").trim()
   clearGridShift(grid())
   flushSync(change)
   const after = cards(grid()).map((card) => ({ card, rect: card.getBoundingClientRect() }))

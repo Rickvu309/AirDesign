@@ -160,12 +160,12 @@ export function FormatButtons({
   const designColor: Color = { scheme: "dk1" }
   const colorShown = color === undefined ? designColor : color
   const alignShown = align === undefined ? "left" : align
-  const theme = (swatches !== undefined && swatches.length > 0 ? swatches : formatSwatches).map((swatch) => ({
+  const templateColors = (swatches !== undefined && swatches.length > 0 ? swatches : formatSwatches).map((swatch) => ({
     ...swatch,
     name: formatCopy.colors[swatch.scheme],
   }))
   const value = colorShown === null || colorShown === "mixed" ? undefined : colorShown
-  const bar = value === undefined ? null : `#${shownHex(value, theme)}`
+  const bar = value === undefined ? null : `#${shownHex(value, templateColors)}`
   const checked = alignShown === "left" || alignShown === "center" || alignShown === "right" ? alignShown : null
   const showing = (part: FormatPart) => parts.includes(part)
   return (
@@ -227,7 +227,7 @@ export function FormatButtons({
         <ColorPicker
           title={formatCopy.color}
           value={value}
-          palette={{ theme, deck: deckColors }}
+          palette={{ templateColors, deck: deckColors }}
           keepsFormat
           closesOnSwatch
           side="top"

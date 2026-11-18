@@ -164,7 +164,7 @@ it("brings a shape to the front of its siblings and refuses a move that changes 
   expect(elementCommand(parts, register, { change: "order", node: elementId("256.7"), move: "front" })).toBeNull()
 })
 
-it("adds a rectangle, an ellipse and a line on the slide under the next free id, each in the theme's style", () => {
+it("adds a rectangle, an ellipse and a line on the slide under the next free id, each in the template style", () => {
   const parts = onSlide(xml(twoBoxSlide))
   const register = openRegister("", "")
   const shape = (geometry: Geometry) => elementCommand(parts, register, { change: "shape", geometry, index: 0, size })
