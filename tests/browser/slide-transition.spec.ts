@@ -2,6 +2,7 @@ import { copyFile, readFile, rm } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { presentCopy } from "../../apps/web/src/copy/present-copy"
 import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { exportFromDialog } from "./export-dialog"
@@ -53,7 +54,7 @@ test("a person sets how a slide arrives, presents it, undoes it, and the export 
   await page.locator("input[type=file]").setInputFiles(fixture)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
-  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await page.getByRole("tab", { name: transitionCopy.animate }).click()
   const panel = page.locator("[data-animate-panel]")
   await expect(panel.getByText(transitionCopy.transition, { exact: true })).toBeVisible()
@@ -68,13 +69,13 @@ test("a person sets how a slide arrives, presents it, undoes it, and the export 
   await expect(panel.getByRole("combobox", { name: transitionCopy.style })).toContainText(
     transitionCopy.styles.dissolve,
   )
-  await page.getByRole("button", { name: "Present", exact: true }).click()
+  await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
   await expect(page.locator("[data-present-show]")).toBeVisible()
   await page.keyboard.press("Escape")
   await expect(page.locator("[data-present-show]")).toHaveCount(0)
   await page.reload()
   await settled(page)
-  await page.getByRole("button", { name: "Design", exact: true }).click()
+  await page.getByRole("button", { name: transitionCopy.design, exact: true }).click()
   await page.getByRole("tab", { name: transitionCopy.animate }).click()
   await expect(
     page.locator("[data-animate-panel]").getByRole("combobox", { name: transitionCopy.style }),
