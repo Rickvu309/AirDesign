@@ -65,6 +65,7 @@ describe("the one table of traits", () => {
       theme: "own",
       template: "own",
       show: "own",
+      transition: "own",
     })
   })
 
@@ -135,6 +136,7 @@ describe("the one table of traits", () => {
       "theme.textStyle",
       "template.id",
       "show.skipped",
+      "transition.value",
     ])
     expect(alphaKeys).toEqual(["fill.alpha", "line.alpha", "text.alpha", "image.alpha"])
   })
@@ -174,7 +176,7 @@ describe("the one table of traits", () => {
   it("gives every kind a closed list of declared traits", () => {
     for (const kind of kinds) for (const trait of kindTraits[kind]) expect(traitNames).toContain(trait)
     expect(kindTraits.group).toEqual(["identity", "box", "effects"])
-    expect(kindTraits.slide).toEqual(["fill", "template", "show"])
+    expect(kindTraits.slide).toEqual(["fill", "template", "show", "transition"])
     expect(kindTraits.notes).toEqual(["notes"])
   })
 })

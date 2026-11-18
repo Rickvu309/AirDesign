@@ -39,12 +39,13 @@ it("reads which slides a show skips and how each one comes in", () => {
   expect(shows.map((show) => show.transition)).toEqual([
     { kind: "fade", direction: null, duration: 500 },
     null,
-    { kind: "fade", direction: null, duration: 1000 },
-    { kind: "push", direction: "u", duration: 1200 },
+    null,
+    null,
     { kind: "wipe", direction: "d", duration: 500 },
     null,
     { kind: "push", direction: "l", duration: 750 },
   ])
+  expect(shows.map((show) => show.advance)).toEqual([null, null, null, null, null, 3000, null])
 })
 
 it("reads nothing from a package without slides", () => {

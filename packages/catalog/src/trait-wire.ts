@@ -14,6 +14,7 @@ import { notesWire } from "./trait-wire-notes.js"
 import { textWire } from "./trait-wire-text.js"
 import { templateWire } from "./trait-wire-template.js"
 import { themeWire } from "./trait-wire-theme.js"
+import { transitionWire } from "./trait-wire-transition.js"
 
 export type FieldWire<T extends TraitName, F extends WireField<T>> = {
   readonly description: string
@@ -48,4 +49,5 @@ export const traitWire: { readonly [T in TraitName]: TraitWire<T> } = {
     description: "Slides only.",
     fields: { skipped: { description: "Skip in Present.", example: { show: { skipped: true } } } },
   },
+  transition: transitionWire,
 }

@@ -14,6 +14,7 @@ import { lineControls } from "./trait-controls-line"
 import { notesControls } from "./trait-controls-notes"
 import { textControls } from "./trait-controls-text"
 import { designCopy } from "@/copy/design-copy"
+import { transitionCopy } from "@/copy/transition-copy"
 import { themeControls } from "./trait-controls-theme"
 
 export type FieldCopy = {
@@ -43,4 +44,5 @@ export const traitControls: { readonly [T in TraitName]: TraitControls<T> } = {
   theme: themeControls,
   template: { section: designCopy.templateStyle, fields: { id: { label: designCopy.templateStyle } } },
   show: { section: slideListCopy.listName, fields: { skipped: { label: slideListCopy.skip } } },
+  transition: { section: transitionCopy.transition, fields: { value: { label: transitionCopy.style } } },
 }

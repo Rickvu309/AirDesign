@@ -16,6 +16,7 @@ import { table } from "./trait-table.js"
 import { text } from "./trait-text.js"
 import { template } from "./trait-template.js"
 import { theme } from "./trait-theme.js"
+import { transition } from "./trait-transition.js"
 import type { AgentOf, Alpha, Fields, ValueOf } from "./value-kind.js"
 
 export const traits = {
@@ -36,6 +37,7 @@ export const traits = {
   theme,
   template,
   show,
+  transition,
 } as const
 
 export type TraitName = keyof typeof traits
@@ -71,7 +73,7 @@ export const kindTraits = {
   master: [],
   layout: [],
   section: [],
-  slide: ["fill", "template", "show"],
+  slide: ["fill", "template", "show", "transition"],
   notes: ["notes"],
   shape: ["identity", "box", "geometry", "fill", "line", "effects", "body", "text", "link", "image"],
   picture: ["identity", "box", "geometry", "line", "effects", "image", "crop"],

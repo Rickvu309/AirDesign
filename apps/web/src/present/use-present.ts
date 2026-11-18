@@ -133,6 +133,18 @@ export function usePresent(deck: PresentDeck | null): Present {
     }
   }, [presenting])
 
+  useEffect(() => {
+    if (show === null) return
+    const delay = read.current[show.at]?.advance
+    if (typeof delay !== "number") return
+    if (show.ended) {
+      step("next")
+      return
+    }
+    const timer = setTimeout(() => step("next"), delay)
+    return () => clearTimeout(timer)
+  }, [show])
+
   const ticking = show?.view === "presenter" && clock.since !== null
   useEffect(() => {
     if (!ticking) return

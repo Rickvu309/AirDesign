@@ -39,6 +39,7 @@ assert.deepEqual(
     "slide-hidden.mjs",
     "slide-skip.mjs",
     "slide-subset.mjs",
+    "slide-transition.mjs",
     "slides.mjs",
     "template-style.mjs",
     "text-fields.mjs",

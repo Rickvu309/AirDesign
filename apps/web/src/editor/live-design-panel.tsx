@@ -62,6 +62,7 @@ import { rebasedChange } from "@/design/rebase"
 import { siteNames } from "@/design/site-names"
 import { deviceScope } from "@/design/trait-edit"
 import { designShown, themeOf, type DesignShown } from "@/design-shown"
+import { SlideSurface } from "@/editor/slide-design-tabs"
 import { colorsIn } from "./deck-colors"
 import { ElementTitleActions } from "./element-title-actions"
 import { PicturePreview } from "@/editor/picture-preview"
@@ -431,6 +432,10 @@ function DesignPanelSwitch({ deck, selectedSlides = 1, mode, toneFor }: PanelPro
 }
 
 function LiveSlideDesign({ deck, mode, toneFor }: { deck: DesigningDeck; mode: PanelMode; toneFor?: ToneControlFor }) {
+  return <SlideSurface deck={deck} design={<SlideChrome deck={deck} mode={mode} toneFor={toneFor} />} />
+}
+
+function SlideChrome({ deck, mode, toneFor }: { deck: DesigningDeck; mode: PanelMode; toneFor?: ToneControlFor }) {
   const { shown } = deck
   const parts = shown.displayParts.current
   const painted = shown.canvases.current(shown.current)?.background ?? null
