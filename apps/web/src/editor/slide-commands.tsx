@@ -2,7 +2,6 @@ import { toast } from "@/components/ui/toast"
 import {
   limits,
   presentSlides,
-  gridRows,
   gridCommandVersion,
   type ElementId,
   type GridSide,
@@ -83,7 +82,7 @@ export function slideCommands(deck: CommandedDeck, showMatching = true): SlideSt
   const sequence = presentSlides(state).map((spot) => spot.id)
   return {
     count: slideCount,
-    gridStarts: gridRows(state).map((row) => sequence.indexOf(row[0])),
+    gridStarts: sections.map((section) => section.start),
     slideIds: sequence,
     sections,
     current,

@@ -20,10 +20,7 @@ export function gridWrapColumns(
   rows: readonly { readonly start: number; readonly end: number }[],
 ): number {
   const base = gridBaseColumns(count)
-  if (rows.length < 2) {
-    const span = rows.reduce((longest, row) => Math.max(longest, row.end - row.start), 0)
-    return span > 10 ? base : Math.max(base, span)
-  }
+  if (rows.length < 2) return base
   const lengths = rows.map((row) => row.end - row.start)
   if (lengths.every((length) => length <= base)) return base
   let columns = base
@@ -50,7 +47,7 @@ export function gridLineGap(groupGap: number, columnGap: number): number {
 
 export function gridVisualLines<T extends GridLineTrack>(tracks: readonly T[], columns: number): T[] {
   return tracks.flatMap((track) => {
-    if (track.cards.length === 0 || track.end - track.start <= columns) return [track]
+    if (track.end - track.start <= columns) return [track]
     const lines: T[] = []
     for (let start = track.start; start < track.end; start += columns) {
       const end = Math.min(track.end, start + columns)

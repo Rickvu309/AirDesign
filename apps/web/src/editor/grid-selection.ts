@@ -52,11 +52,3 @@ export function toggledCurrent(pick: GridPick, index: number): number {
   const left = sorted(pick.slides)
   return left.filter((slide) => slide < index).at(-1) ?? left[0] ?? index
 }
-
-export function visiblePick(pick: GridPick, shown: (index: number) => boolean): GridPick {
-  if (pick === null) return null
-  const slides = [...pick.slides].filter(shown)
-  if (slides.length === pick.slides.size) return pick
-  const first = slides[0]
-  return first === undefined ? null : heldPick(shown(pick.anchor) ? pick.anchor : first, new Set(slides))
-}

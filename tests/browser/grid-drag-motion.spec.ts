@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
-import { entry, manySlides, openFile, openGrid } from "./slide-grid-deck"
+import { entry, manySlides, openFile, openGrid, rowSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "no-preference" })
 
@@ -48,7 +48,11 @@ test("slides move aside to show where a dragged slide lands, go back when it goe
   page,
 }) => {
   test.setTimeout(120_000)
-  await openFile(page, { name: "four.pptx", mimeType: "application/octet-stream", buffer: await manySlides(4) })
+  await openFile(page, {
+    name: "four.pptx",
+    mimeType: "application/octet-stream",
+    buffer: await manySlides(4, rowSizes(4)),
+  })
   await openGrid(page)
   await page.locator("[data-zoom-readout]").click()
   await expect(page.locator("[data-zoom-field]")).toBeFocused()
@@ -81,7 +85,11 @@ test("slides move aside to show where a dragged slide lands, go back when it goe
 })
 
 test("a drag keeps the motion setting it started with until the drop", async ({ page }) => {
-  await openFile(page, { name: "four.pptx", mimeType: "application/octet-stream", buffer: await manySlides(4) })
+  await openFile(page, {
+    name: "four.pptx",
+    mimeType: "application/octet-stream",
+    buffer: await manySlides(4, rowSizes(4)),
+  })
   await openGrid(page)
   const first = await boxOf(page, 1)
   const third = await boxOf(page, 3)
@@ -98,7 +106,11 @@ test("a drag keeps the motion setting it started with until the drop", async ({ 
 })
 
 test("a drag to the first place of its own grid row moves the slides aside with no drop bar", async ({ page }) => {
-  await openFile(page, { name: "eight.pptx", mimeType: "application/octet-stream", buffer: await manySlides(8) })
+  await openFile(page, {
+    name: "eight.pptx",
+    mimeType: "application/octet-stream",
+    buffer: await manySlides(8, rowSizes(8)),
+  })
   await openGrid(page)
   const firstInRow = await boxOf(page, 5)
   const step = (await boxOf(page, 6)).x - firstInRow.x
@@ -113,7 +125,11 @@ test("a drag to the first place of its own grid row moves the slides aside with 
 })
 
 test("a drag to the first place of another grid row keeps the slides still and shows the bar", async ({ page }) => {
-  await openFile(page, { name: "eight.pptx", mimeType: "application/octet-stream", buffer: await manySlides(8) })
+  await openFile(page, {
+    name: "eight.pptx",
+    mimeType: "application/octet-stream",
+    buffer: await manySlides(8, rowSizes(8)),
+  })
   await openGrid(page)
   await grab(page, 3)
   await pointAt(page, await boxOf(page, 5), 0.2)
@@ -125,7 +141,11 @@ test("a drag to the first place of another grid row keeps the slides still and s
 })
 
 test("the add mark between slides appears on hover and stays still with reduced motion", async ({ page }) => {
-  await openFile(page, { name: "two.pptx", mimeType: "application/octet-stream", buffer: await manySlides(2) })
+  await openFile(page, {
+    name: "two.pptx",
+    mimeType: "application/octet-stream",
+    buffer: await manySlides(2, rowSizes(2)),
+  })
   await openGrid(page)
   const plus = page.getByRole("button", { name: "Add slide after slide 1" })
   await expect(plus).toHaveCSS("opacity", "0")

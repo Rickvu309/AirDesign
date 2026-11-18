@@ -7,14 +7,15 @@ const strip: SlideStrip = {
   count: 4,
   current: 2,
   sections: [
-    { name: "Opening", start: 0 },
-    { name: "Results", start: 2 },
+    { name: "Opening", start: 0, key: "f0" },
+    { name: "Results", start: 2, key: "f1" },
   ],
   onSelect: () => undefined,
   onAdd: () => undefined,
   onClone: () => undefined,
   onRemove: () => undefined,
   onMove: () => undefined,
+  gridStarts: [0, 2],
   thumbHeight: 101,
   thumb: (index) => <span data-painted={index} />,
 }
@@ -39,8 +40,10 @@ describe("slide grid", () => {
     const html = grid()
     expect(html).toContain('data-editor-grid="true"')
     expect(html).toContain('role="group" aria-label="Slides"')
-    expect(html).toContain(">Opening<")
-    expect(html).toContain(">Results<")
+    expect(html).toContain('aria-label="Opening"')
+    expect(html).toContain('aria-label="Results"')
+    expect(html).not.toContain("data-section-head")
+    expect(html).not.toContain("data-group-rule")
     expect(html).toContain('aria-label="Grid"')
     expect(html).toContain('aria-pressed="true"')
     expect(html).toContain('aria-label="Slides"')
@@ -78,11 +81,12 @@ describe("slide grid", () => {
     expect(html).toContain('data-slide-list="true"')
   })
 
-  it("counts the slides of each section beside its name", () => {
+  it("announces a slide group by name and draws no count", () => {
     const html = grid()
-    expect(html).toMatch(/>Opening<\/span><span[^>]*>2 slides<\/span><\/button><\/h2>/)
-    expect(html).toMatch(/>Results<\/span><span[^>]*>2 slides<\/span><\/button><\/h2>/)
-    expect(grid({ count: 3 })).toMatch(/>Results<\/span><span[^>]*>1 slide<\/span><\/button><\/h2>/)
+    expect(html).toContain('aria-label="Opening"')
+    expect(html).toContain('aria-label="Results"')
+    expect(html).not.toContain("2 slides")
+    expect(html).not.toContain("data-section-head")
   })
 
   it("keeps each slide number separate from its slide button", () => {

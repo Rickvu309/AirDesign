@@ -42,7 +42,7 @@ export function readSlideEdit(raw: unknown): { ok: true; edit: WireSlide } | Fie
   const body = recordOf(raw)
   if (body === undefined || !Object.hasOwn(body, "file")) return fieldRefusal
   const keys =
-    body.grid === 1 || body.grid === 2
+    body.grid === 1 || body.grid === 2 || body.grid === 3
       ? body.slide === "remove-many"
         ? ["slide", "grid", "ids", "file"]
         : body.slide === "clone-many"

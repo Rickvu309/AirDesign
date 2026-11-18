@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test"
 import { forward, test } from "./api-stack"
 import { boxOf, grab, hover, openSaved, panOf, roomOf, zoomTo } from "./grid-reorder-deck"
-import { entry, openGrid, rowNumbers, settled } from "./slide-grid-deck"
+import { entry, openGrid, rowNumbers, settled, rowSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -10,7 +10,7 @@ test("row-start drops follow the pointer, save across tabs and reload, and undo 
   context,
   stack,
 }) => {
-  const saved = await openSaved(page, context, stack, 8)
+  const saved = await openSaved(page, context, stack, 8, rowSizes(8))
   const before = await saved.rows()
   expect(before).toEqual([saved.ids.slice(0, 4), saved.ids.slice(4)])
   await zoomTo(page, 20)
@@ -143,7 +143,7 @@ test("row-start drops follow the pointer, save across tabs and reload, and undo 
     await expect.poll(sectioned.rows).toEqual([sectioned.ids.slice(0, 2), sectioned.ids.slice(2)])
     const { deckRoutes } = await import("../../packages/catalog/src/index.ts")
     const { json } = await stack.post(deckRoutes.open.path, { deck: sectioned.deck }, sectioned.cookie)
-    expect(json.register).toMatchObject({ order: [{ slide: "move-many", grid: 2, row: "before" }] })
+    expect(json.register).toMatchObject({ order: [{ slide: "move-many", grid: 3, row: "before" }] })
     await page.keyboard.press("ControlOrMeta+z")
     await expect.poll(sectioned.rows).toEqual([sectioned.ids.slice(0, 3), sectioned.ids.slice(3)])
   })

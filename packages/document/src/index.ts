@@ -133,7 +133,7 @@ export {
 export type { Alpha, Desc, Fields, NumberUnit } from "./value-kind.js"
 export { kinds, type Kind } from "./kinds.js"
 export { structure } from "./structure.js"
-export { foldSections, type FileSection } from "./section-order.js"
+export { type FileSection } from "./section-order.js"
 export { slideGroups } from "./slide-groups.js"
 export { floorFor, floorNodes, floorOpening, newSlideElement, openingElement } from "./slide-floor.js"
 export { type TransitionValue } from "./trait-transition.js"

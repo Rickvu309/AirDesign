@@ -18,7 +18,7 @@ export async function openSaved(
   context: BrowserContext,
   stack: Stack,
   file: number | string,
-  sections = false,
+  sections: boolean | readonly number[] = false,
 ): Promise<Saved> {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
@@ -37,8 +37,9 @@ export async function openSaved(
   const rows = async () => {
     const read = (await stack.callTool("airdesign_read_deck", { deck }, cookie)) as ReadDeckAnswer
     const partition: string[][] = []
+    const firsts = new Set(read.groups.map((group) => group.first))
     for (const slide of read.slides) {
-      if (read.grid.starts.includes(slide.id) || partition.length === 0) partition.push([slide.id])
+      if (firsts.has(slide.id) || partition.length === 0) partition.push([slide.id])
       else partition.at(-1)?.push(slide.id)
     }
     return partition

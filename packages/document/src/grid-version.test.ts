@@ -5,6 +5,7 @@ import {
   decide,
   elementId,
   format,
+  gridCommandVersion,
   gridRows,
   openRegister,
   readSlideState,
@@ -96,6 +97,15 @@ it("freezes the first tagged default through both orders of a mixed-version log"
     if (state === undefined) throw new Error("grid command")
     expect(gridRows({ ...state, index: index.index })).toEqual(frozen)
   }
+})
+
+it("plans a Grid command against slide groups once the section starts are known, and against rows until then", () => {
+  const older = { slide: "remove", grid: 2, id: file[1]! } as const
+  expect(gridCommandVersion({ order: [] })).toBe(1)
+  expect(gridCommandVersion({ order: [older] })).toBe(2)
+  expect(gridCommandVersion({ order: [], sectionStarts })).toBe(3)
+  expect(gridCommandVersion({ order: [], sectionStarts: [] })).toBe(3)
+  expect(gridCommandVersion({ order: [older], sectionStarts })).toBe(3)
 })
 
 it("refuses to freeze a version two grid while the section starts are unavailable", () => {

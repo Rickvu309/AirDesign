@@ -1,6 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server"
-import { afterEach, describe, expect, it, vi } from "vitest"
-import { GridSectionHead, gridHeadingShowsCount } from "./grid-section"
+import { describe, expect, it } from "vitest"
 import { EditorGrid } from "@/editor/editor-grid"
 import type { SlideStrip } from "@/editor/slide-sidebar"
 
@@ -8,17 +7,16 @@ const strip: SlideStrip = {
   count: 5,
   current: 3,
   sections: [
-    { name: "Opening", start: 0 },
-    { name: "Results", start: 2 },
+    { name: "Opening", start: 0, key: "f0" },
+    { name: "Results", start: 2, key: "f1" },
   ],
   onSelect: () => undefined,
+  gridStarts: [0, 2],
   thumbHeight: 101,
   thumb: (index) => <span data-painted={index} />,
 }
 
-function grid(kept: string | null, over: Partial<SlideStrip> = {}): string {
-  const held = new Map<string, string>(kept === null ? [] : [["airdesign.collapsed-sections.deck", kept]])
-  vi.stubGlobal("localStorage", { getItem: (key: string) => held.get(key) ?? null, setItem: () => undefined })
+function grid(over: Partial<SlideStrip> = {}): string {
   return renderToStaticMarkup(
     <EditorGrid
       id="deck"
@@ -30,50 +28,40 @@ function grid(kept: string | null, over: Partial<SlideStrip> = {}): string {
   )
 }
 
-function heads(html: string): string[] {
-  return [...html.matchAll(/<button[^>]*data-section-head[^>]*>/g)].map((found) => found[0])
-}
-
 function entries(html: string): string[] {
   return [...html.matchAll(/data-slide-entry="(\d+)"/g)].map((found) => found[1] ?? "")
 }
 
-afterEach(() => {
-  vi.unstubAllGlobals()
-})
-
 describe("grid sections", () => {
-  it("gives each section a heading button that says its size and whether it is open", () => {
-    const html = grid(null)
-    const [opening, results] = heads(html)
-    expect(opening).toContain('aria-expanded="true"')
-    expect(results).toContain('aria-expanded="true"')
-    expect(html).toMatch(/<h2[^>]*><button[^>]*aria-expanded="true"[^>]*>.*Opening.*2 slides.*<\/button><\/h2>/)
+  it("names each slide group for a screen reader and draws no heading", () => {
+    const html = grid()
+    expect(html).toContain('role="group" aria-label="Opening"')
+    expect(html).toContain('role="group" aria-label="Results"')
+    expect(html).not.toContain("data-section-head")
+    expect(html).not.toContain("data-group-rule")
     expect(entries(html)).toEqual(["1", "2", "3", "4", "5"])
   })
 
-  it("shows a section the deck kept collapsed as its heading alone, and keeps the current slide's section open", () => {
-    const html = grid("[0,1]")
-    const [opening, results] = heads(html)
-    expect(opening).toContain('aria-expanded="false"')
-    expect(results).toContain('aria-expanded="true"')
-    expect(entries(html)).toEqual(["3", "4", "5"])
-    expect(html).toContain('data-slide-entry="4"')
-    expect(html).toMatch(/data-slide-entry="4"[^>]*>|tabindex="0"[^>]*data-slide-entry="4"/)
+  it("shows every slide of a named group, including one the filmstrip has collapsed", () => {
+    const html = grid()
+    expect(entries(html)).toEqual(["1", "2", "3", "4", "5"])
+    const groups = [...html.matchAll(/<div[^>]*data-slide-group="\d+"[^>]*>/g)].map((found) => found[0])
+    expect(groups.length).toBeGreaterThan(0)
+    for (const group of groups) expect(group).not.toContain("aria-expanded")
   })
-})
 
-it("drops a section count before the name is cut", () => {
-  expect(gridHeadingShowsCount(80, 120)).toBe(false)
-  expect(gridHeadingShowsCount(120, 120)).toBe(true)
-})
-
-it("keeps overview section names on one line with a full accessible and pointer name", () => {
-  const html = renderToStaticMarkup(
-    <GridSectionHead marker name="Introduction" count={12} open onToggle={() => undefined} />,
-  )
-  expect(html).toContain('title="Introduction"')
-  expect(html).toContain('aria-label="Introduction')
-  expect(html).not.toContain("wrap-anywhere")
-  expect(html).toContain("truncate")
+  it("leaves a slide group without a name unlabeled", () => {
+    const sections = [
+      { name: "Opening", start: 0, key: "f0" },
+      { name: null, start: 2, key: "n3" },
+      { name: "Results", start: 3, key: "f1" },
+    ]
+    const html = grid({ sections, gridStarts: [0, 2, 3] })
+    expect(html).toContain('role="group" aria-label="Opening"')
+    expect(html).toContain('role="group" aria-label="Results"')
+    const groups = [...html.matchAll(/<div[^>]*data-slide-group="(\d+)"[^>]*>/g)].map((found) => found[0])
+    expect(groups).toHaveLength(3)
+    expect(groups[1]).not.toContain("aria-label")
+    expect(entries(html)).toEqual(["1", "2", "3", "4", "5"])
+  })
 })

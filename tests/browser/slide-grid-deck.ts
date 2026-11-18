@@ -34,7 +34,16 @@ export function mark(number: number, count: number): string {
   return `Mark ${String(number).padStart(String(count).length, "0")}`
 }
 
-export async function manySlides(count: number, sections = false): Promise<Buffer> {
+export function rowSizes(count: number): number[] {
+  const columns = Math.min(10, Math.max(4, Math.ceil(Math.sqrt(count * 1.5))))
+  return Array.from({ length: Math.ceil(count / columns) }, (_, row) => Math.min(columns, count - row * columns))
+}
+
+export async function manySlides(
+  count: number,
+  sections: boolean | readonly number[] = false,
+  named: readonly string[] = [],
+): Promise<Buffer> {
   const reader = new zip.ZipReader(new zip.Uint8ArrayReader(new Uint8Array(await readFile(clean))))
   const files = new Map<string, Uint8Array>()
   for (const entry of await reader.getEntries()) {
@@ -60,14 +69,16 @@ export async function manySlides(count: number, sections = false): Promise<Buffe
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst>${ids}</p:sldIdLst><p:sldSz cx="12192000" cy="6858000"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`,
     ),
   )
-  if (sections) {
+  if (sections !== false) {
     const xml = Buffer.from(files.get("ppt/presentation.xml")!).toString("utf8")
-    const groups = ["Opening", "Results"]
-      .map((name, group) => {
-        const first = group === 0 ? 0 : Math.floor(count / 2)
-        const last = group === 0 ? Math.floor(count / 2) : count
-        const members = Array.from({ length: last - first }, (_, i) => `<p14:sldId id="${256 + first + i}"/>`).join("")
-        return `<p14:section name="${name}" id="{00000000-0000-0000-0000-00000000000${group + 1}}"><p14:sldIdLst>${members}</p14:sldIdLst></p14:section>`
+    const sizes = sections === true ? [Math.floor(count / 2), count - Math.floor(count / 2)] : sections
+    const names = sections === true ? ["Opening", "Results"] : sizes.map((_, group) => named[group] ?? "")
+    const groups = sizes
+      .map((size, group) => {
+        const first = sizes.slice(0, group).reduce((total, each) => total + each, 0)
+        const members = Array.from({ length: size }, (_, i) => `<p14:sldId id="${256 + first + i}"/>`).join("")
+        const id = String(group + 1).padStart(12, "0")
+        return `<p14:section name="${names[group] ?? ""}" id="{00000000-0000-0000-0000-${id}}"><p14:sldIdLst>${members}</p14:sldIdLst></p14:section>`
       })
       .join("")
     const extension = `<p:extLst><p:ext uri="{521415D9-36F7-43E2-AB2F-B90AF26B5E84}"><p14:sectionLst xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main">${groups}</p14:sectionLst></p:ext></p:extLst>`

@@ -52,8 +52,12 @@ test("a selected slide has one frame that follows its thumbnail corners", async 
 test("the grid shows every slide, and the keyboard opens one", async ({ page }) => {
   await openFile(page, sectioned)
   await openGrid(page)
-  await expect(page.getByRole("heading", { name: "Opening" })).toBeVisible()
-  await expect(page.getByRole("heading", { name: "Numbers" })).toBeVisible()
+  const groups = page.locator("[data-editor-grid] [data-slide-group]")
+  await expect(groups).toHaveCount(2)
+  await expect(groups.nth(0)).toHaveAccessibleName("Opening")
+  await expect(groups.nth(1)).toHaveAccessibleName("Numbers")
+  await expect(page.locator("[data-editor-grid]").getByRole("heading", { name: "Opening" })).toHaveCount(0)
+  await expect(page.locator("[data-editor-grid]").getByRole("heading", { name: "Numbers" })).toHaveCount(0)
   await expect(entry(page, 1)).toHaveAccessibleName("Slide 1 of 2")
   await expect(entry(page, 2)).toHaveAccessibleName("Slide 2 of 2")
   await expect(page.getByRole("button", { name: "Grid" })).toHaveAttribute("aria-pressed", "true")
@@ -71,7 +75,7 @@ test("the grid shows every slide, and the keyboard opens one", async ({ page }) 
   await page.keyboard.press("ArrowDown")
   await expect(entry(page, 2)).toBeFocused()
   await page.keyboard.press("ArrowUp")
-  await expect(entry(page, 2)).toBeFocused()
+  await expect(entry(page, 1)).toBeFocused()
   await page.keyboard.press("End")
   await expect(entry(page, 2)).toBeFocused()
   await page.keyboard.press("Home")
@@ -238,13 +242,15 @@ test("a slide dragged onto half of another lands on that side of it, where the d
   await expect(page.locator("[data-slide-entry]")).toHaveCount(4)
 })
 
-test("a slide dropped at the start of a section shows and lands at the end of the section before it", async ({
+test("a slide dropped at the start of a section's line shows there and joins that section at its start", async ({
   page,
 }) => {
   await openFile(page, join(fixtures, "sections-after.pptx"))
   await openGrid(page)
-  const opening = page.locator("[data-grid-row-member]", { has: page.getByRole("heading", { name: "Opening" }) })
-  await expect(opening.getByText("1 slide", { exact: true })).toBeVisible()
+  const groups = page.locator("[data-editor-grid] [data-slide-group]")
+  await expect(groups.nth(0)).toHaveAccessibleName("Opening")
+  await expect(groups.nth(1)).toHaveAccessibleName("Numbers")
+  expect(await groupCounts(page)).toEqual([1, 2])
   const source = await entry(page, 3).boundingBox()
   const target = await entry(page, 2).boundingBox()
   const previous = await entry(page, 1).boundingBox()
@@ -255,13 +261,30 @@ test("a slide dropped at the start of a section shows and lands at the end of th
   const bar = page.locator("[data-drop-bar]")
   await expect(bar).toHaveAttribute("data-drop-place", "2")
   const mark = await bar.boundingBox()
-  expect(Math.abs((mark?.y ?? 0) - previous.y)).toBeLessThan(2)
-  expect((mark?.x ?? 0) - (previous.x + previous.width)).toBeGreaterThan(0)
-  expect((mark?.x ?? 0) - (previous.x + previous.width)).toBeLessThan(previous.width * 0.13)
+  expect(Math.abs((mark?.y ?? 0) - target.y)).toBeLessThan(2)
+  expect(target.x - (mark?.x ?? 0)).toBeGreaterThan(0)
+  expect(target.x - (mark?.x ?? 0)).toBeLessThan(target.width * 0.13)
+  expect(previous.y).toBeLessThan(target.y)
   await page.mouse.up()
   await expect(page.locator("[data-editor-grid] [data-announcer]")).toHaveText("Moved slide 3 to position 2")
-  await expect(opening.getByText("2 slides", { exact: true })).toBeVisible()
+  await expect(groups.nth(0)).toHaveAccessibleName("Opening")
+  await expect(groups.nth(1)).toHaveAccessibleName("Numbers")
+  expect(await groupCounts(page)).toEqual([1, 2])
 })
+
+async function groupCounts(page: Page): Promise<number[]> {
+  return page.locator("[data-editor-grid] [data-grid-row-member]").evaluateAll((nodes) => {
+    const counts = new Map<string, number>()
+    for (const node of nodes) {
+      const start = node.getAttribute("data-grid-row-member")
+      if (start === null) continue
+      const slides = node.querySelectorAll("[data-slide-entry]").length
+      if (slides === 0) continue
+      counts.set(start, (counts.get(start) ?? 0) + slides)
+    }
+    return [...counts.keys()].sort((left, right) => Number(left) - Number(right)).map((key) => counts.get(key) ?? 0)
+  })
+}
 
 test("a 50-slide deck paints grid thumbnails as they come into view", async ({ page }) => {
   test.setTimeout(120_000)

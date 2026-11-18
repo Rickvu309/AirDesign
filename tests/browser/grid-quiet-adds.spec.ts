@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
-import { entry, manySlides, openFile, openGrid } from "./slide-grid-deck"
+import { entry, manySlides, openFile, openGrid, rowSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 } })
 
@@ -11,7 +11,7 @@ async function open(page: Page, count = 7) {
   await openFile(page, {
     name: "seven-slides.pptx",
     mimeType: "application/octet-stream",
-    buffer: await manySlides(count),
+    buffer: await manySlides(count, rowSizes(count)),
   })
   await openGrid(page)
 }

@@ -60,17 +60,14 @@ describe("orderedParts with sections", () => {
     expect(presentationOf(exported)).toContain(first)
   })
 
-  it("takes a deleted slide out of its section and keeps the emptied section as an empty list", async () => {
+  it("takes a deleted slide out of its section and removes the section it emptied", async () => {
     const original = await sectioned()
     const exported = orderedParts(original, { file, order: [{ slide: "remove", id: slideId("257") }] })
     expect(sectionListFailures(exported)).toEqual([])
     expect(presentationOf(exported)).not.toContain('<p14:sldId id="257"/>')
-    expect(presentationOf(exported)).toContain(`name="Numbers" id="${numbers}"><p14:sldIdLst/></p14:section>`)
+    expect(presentationOf(exported)).not.toContain(numbers)
     expect(presentationOf(exported)).toContain(first)
-    expect(readSections(exported)).toEqual([
-      { name: "Opening", slides: ["256"] },
-      { name: "Numbers", slides: [] },
-    ])
+    expect(readSections(exported)).toEqual([{ name: "Opening", slides: ["256"] }])
   })
 
   it("writes a moved slide into the section of the slide before it, in the new order", async () => {
@@ -81,7 +78,26 @@ describe("orderedParts with sections", () => {
     expect(presentationOf(exported)).toContain(
       `<p14:section name="Opening" id="${opening}"><p14:sldIdLst><p14:sldId id="257"/><p14:sldId id="256"/></p14:sldIdLst></p14:section>`,
     )
-    expect(presentationOf(exported)).toContain(`name="Numbers" id="${numbers}"><p14:sldIdLst/></p14:section>`)
+    expect(presentationOf(exported)).not.toContain(numbers)
+  })
+
+  it("keeps a section the file already had empty after the section before it", async () => {
+    const empty = '<p14:section name="Later" id="{6D0E4C2A-1B7F-4C3E-9A55-0F1D2C3B4A03}"><p14:sldIdLst/></p14:section>'
+    const original = new Map(await sectioned())
+    original.set("ppt/presentation.xml", encodeUtf8(presentationOf(original).replace(second, `${empty}${second}`)))
+    const add = addAfter({ file, order: [] }, "258", "257")
+    const added = orderedParts(original, { file, order: [add] })
+    expect(sectionListFailures(added)).toEqual([])
+    expect(presentationOf(added)).toContain(`${first}${empty}`)
+    expect(readSections(added).map((section) => [section.name, section.slides])).toEqual([
+      ["Opening", ["256"]],
+      ["Later", []],
+      ["Numbers", ["257", "258"]],
+    ])
+    const edit: SlideCommand = { slide: "move-many", grid: 3, ids: [slideId("257")], after: null, row: "keep" }
+    const moved = orderedParts(original, { file, order: [edit] })
+    expect(sectionListFailures(moved)).toEqual([])
+    expect(readSections(moved).map((section) => section.name)).toEqual(["Numbers", "Opening", "Later"])
   })
 
   it("keeps the presentation as it was when no section changed", async () => {

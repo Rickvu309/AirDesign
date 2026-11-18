@@ -12,14 +12,14 @@
         "gridRows",
         "gridCommandVersion"
       ],
-      "digest": "52cf832b7e66",
-      "blob": "ec894d48d8e62668d540749879d63ed829f7bb30"
+      "digest": "cfa2c6121beb",
+      "blob": "395fa4eeeab32fb6b4e2fe02f63590a98eed2804"
     },
     {
       "file": "packages/document/src/grid-undo.ts",
       "names": ["gridUndoable"],
-      "digest": "4d09cf533fd8",
-      "blob": "dc153daf9d8156c89500ae6eb97aedbf53ff5bc7"
+      "digest": "4f8896b6ce96",
+      "blob": "31208fe4e4a99993a9f57b07bc4a0b6b04d86fb1"
     },
     {
       "file": "packages/document/src/grid-move.ts",
@@ -36,14 +36,14 @@
     {
       "file": "packages/document/src/slide-group-keys.ts",
       "names": ["*"],
-      "digest": "510f7674e2c1",
-      "blob": "a7ef0fe8a33b8845870e6dda05b1798ad5af2b0a"
+      "digest": "29224ee24524",
+      "blob": "4822c596a7ecb9ac17a445a40a620df624ce0177"
     },
     {
       "file": "packages/document/src/slide-groups.ts",
       "names": ["slideGroups"],
-      "digest": "597c5730681d",
-      "blob": "a4150c81f48697c1dd0478c6e64a7ca79c278885"
+      "digest": "b702d44c5820",
+      "blob": "1dc7280a8edb9f7b6af57fb6175ca2db72f6c765"
     },
     {
       "file": "packages/document/src/slide-order.ts",

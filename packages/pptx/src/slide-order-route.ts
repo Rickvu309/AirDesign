@@ -2,7 +2,6 @@ import { foldGrid } from "@airdesign/document"
 import {
   elementCommand,
   elementStacks,
-  foldSections,
   foldSlides,
   groupCommand,
   openingIcon,
@@ -23,8 +22,7 @@ import {
 
 import { deckLayouts } from "./deck-layouts.js"
 import { slideAddresses, slidePart } from "./package-address.js"
-import { readSections } from "./section-read.js"
-import { writeSections } from "./section-write.js"
+import { withFileSections, writeSlideGroups } from "./slide-group-write.js"
 import { addPicture } from "./picture-write.js"
 import { layoutPart, withLayoutPlaceholders } from "./slide-placeholders.js"
 import { arrangeSlide, stacksOf } from "./element-stack-route.js"
@@ -192,30 +190,17 @@ function chosenLayout(
   return layoutSlide === null ? null : layoutPart(parts, layoutSlide)
 }
 
-function withSectionSlides(
-  parts: ReadonlyMap<string, Uint8Array>,
-  original: ReadonlyMap<string, Uint8Array>,
-  state: SlideState,
-  minted: ReadonlyMap<string, string>,
-): ReadonlyMap<string, Uint8Array> {
-  const sections = foldSections(state, readSections(original))
-  if (sections.length === 0) return parts
-  return writeSections(
-    parts,
-    sections.map((section, from) => ({ from, slides: section.slides.map((id) => minted.get(id) ?? id) })),
-  )
-}
-
 export type MediaBytes = (sha256: string) => Uint8Array | undefined
 
 const noMedia: MediaBytes = () => undefined
 
 export function orderedParts(
   parts: ReadonlyMap<string, Uint8Array>,
-  state: GroupedState,
+  given: GroupedState,
   media: MediaBytes = noMedia,
 ): ReadonlyMap<string, Uint8Array> {
-  if (state.order.length === 0) return parts
+  if (given.order.length === 0) return parts
+  const state = withFileSections(given, parts)
   const minted = new Map<string, string>(state.file.map((id) => [id, id]))
   const kept = needed(state)
   const pending: Pending = new Map()
@@ -283,5 +268,5 @@ export function orderedParts(
     if (id === undefined) throw new Error("slide")
     wanted.push(id)
   }
-  return withSectionSlides(placed(next, wanted), parts, state, minted)
+  return writeSlideGroups(placed(next, wanted), parts, state, minted)
 }

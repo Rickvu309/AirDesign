@@ -12,7 +12,6 @@ export function GridRowFrame({
   hover,
   style,
   tint = false,
-  rule,
   band,
 }: {
   start: number
@@ -21,7 +20,6 @@ export function GridRowFrame({
   hover: "band" | "slide" | "handle" | "add" | null
   style: CSSProperties
   tint?: boolean
-  rule?: CSSProperties
   band?: CSSProperties
 }) {
   return (
@@ -35,9 +33,6 @@ export function GridRowFrame({
       style={style}
     >
       <span aria-hidden="true" className="absolute inset-y-0" style={{ left: -52 / scale, width: 52 / scale }} />
-      {rule === undefined ? null : (
-        <span data-group-rule aria-hidden="true" className="absolute bg-line" style={rule} />
-      )}
       {band === undefined ? null : (
         <span data-group-band aria-hidden="true" className="pointer-events-none absolute" style={band} />
       )}

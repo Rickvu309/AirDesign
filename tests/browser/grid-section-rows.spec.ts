@@ -18,13 +18,9 @@ test("a sectioned import keeps its first-slide row starts in Fit, on the first e
   await expect.poll(() => rowNumbers(page)).toEqual(initial)
   await expect.poll(saved.rows).toEqual([saved.ids.slice(0, 3), saved.ids.slice(3)])
   for (const [index, name] of ["Opening", "Results"].entries()) {
-    const row = page.locator(`[data-grid-row-member="${index * 3}"]`)
-    const heading = row.getByRole("button", { name: new RegExp(name) })
-    await expect(heading).toBeInViewport()
-    const bounds = await heading.boundingBox()
-    const slide = await boxOf(page, index * 3 + 1)
-    expect(bounds!.x).toBeCloseTo(slide.x, 0)
-    expect(bounds!.y).toBeLessThan(slide.y)
+    const group = page.locator(`[data-slide-group="${index * 3}"]`)
+    await expect(group).toHaveAccessibleName(name)
+    await expect(entry(page, index * 3 + 1)).toBeVisible()
   }
   const beforeFit = await boxOf(page, 6)
   await page.keyboard.press("ControlOrMeta+0")
@@ -52,21 +48,28 @@ test("a sectioned import keeps its first-slide row starts in Fit, on the first e
   expect(after.filter((id) => saved.ids.includes(id))).toEqual(saved.ids)
   await expect
     .poll(async () => (await stack.post(deckRoutes.open.path, { deck: saved.deck }, saved.cookie)).json.register)
-    .toMatchObject({ order: [{ slide: "clone", grid: 2 }] })
+    .toMatchObject({ order: [{ slide: "clone", grid: 3 }] })
   await page.reload()
   await settled(page)
   await openGrid(page)
   await expect.poll(() => rowNumbers(page)).toEqual(edited)
 })
 
-test("an unsectioned import keeps the same browser and MCP row partition", async ({ page, context, stack }) => {
+test("an unsectioned import of six slides is one slide group in the browser and for agents, drawn as four and two", async ({
+  page,
+  context,
+  stack,
+}) => {
   const saved = await openSaved(page, context, stack, 6)
-  await expect
-    .poll(() => rowNumbers(page))
-    .toEqual([
-      [1, 2, 3, 4],
-      [5, 6],
-    ])
+  await expect.poll(() => rowNumbers(page)).toEqual([[1, 2, 3, 4, 5, 6]])
   await expect(page.locator("[data-section-head]")).toHaveCount(0)
-  await expect.poll(saved.rows).toEqual([saved.ids.slice(0, 4), saved.ids.slice(4)])
+  await expect(page.locator("[data-row-handle]")).toHaveCount(1)
+  await expect.poll(saved.rows).toEqual([saved.ids])
+  await expect(page.locator("[data-zoom-readout]")).toHaveText("23%")
+  const tops = await Promise.all([1, 2, 3, 4, 5, 6].map(async (number) => Math.round((await boxOf(page, number)).y)))
+  expect(new Set(tops.slice(0, 4)).size).toBe(1)
+  expect(new Set(tops.slice(4)).size).toBe(1)
+  expect(tops[4]).toBeGreaterThan(tops[0]!)
+  await expect(page.locator("[data-group-rule]")).toHaveCount(0)
+  await expect(page.locator("[data-slide-group]")).toHaveCount(1)
 })

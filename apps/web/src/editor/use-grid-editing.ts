@@ -4,7 +4,7 @@ import { flushSync } from "react-dom"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { cardPress, thumbElementAt } from "@/editor/grid-hit"
 import { gridEditing, gridStep, type GridInteraction, type GridStep } from "@/editor/grid-interaction"
-import { pickRange, visiblePick, pickToggle, toggledCurrent, type GridPick } from "@/editor/grid-selection"
+import { pickRange, pickToggle, toggledCurrent, type GridPick } from "@/editor/grid-selection"
 
 const editableText = '[contenteditable="true"]'
 
@@ -52,7 +52,6 @@ export function useGridEditing({
   select,
   onSelect,
   announce,
-  shown,
 }: {
   world: RefObject<HTMLDivElement | null>
   state: GridInteraction
@@ -61,7 +60,6 @@ export function useGridEditing({
   select: (selection: Selection) => void
   onSelect: (index: number) => void
   announce: (text: string) => void
-  shown: (index: number) => boolean
 }) {
   const replaying = useRef(false)
   const swallow = useRef(false)
@@ -82,8 +80,7 @@ export function useGridEditing({
       onSelect(index)
       return
     }
-    const anchor = shown(current) ? current : index
-    const next = visiblePick(shift ? pickRange(picked, index, anchor) : pickToggle(picked, index, anchor), shown)
+    const next = shift ? pickRange(picked, index, current) : pickToggle(picked, index, current)
     step({ kind: "pick", pick: next })
     if (next !== null) announce(slideListCopy.selected(next.slides.size))
     onSelect(toggledCurrent(next, index))

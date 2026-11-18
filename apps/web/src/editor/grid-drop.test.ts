@@ -5,7 +5,6 @@ import {
   dropTarget,
   edgePan,
   gridDrop,
-  gridDropBoundary,
   liveTarget,
   moveBelowPlace,
   previewSlot,
@@ -218,12 +217,4 @@ describe("move to a new row below", () => {
     expect(moveBelowPlace(rows, [4], 4)).toBeNull()
     expect(moveBelowPlace(rows, [5, 6, 7], 6)).toBeNull()
   })
-})
-
-it("uses the whole collapsed section as the boundary of a drop", () => {
-  const collapsed = [{ start: 2, end: 8 }]
-  expect(gridDropBoundary(collapsed, { at: 4, side: "same" }, 0)).toEqual({ at: 8, side: "new" })
-  expect(gridDropBoundary(collapsed, { at: 4, side: "keep" }, 9)).toEqual({ at: 2, side: "keep" })
-  expect(gridDropBoundary(collapsed, { at: 8, side: "same" }, 0)).toEqual({ at: 8, side: "new" })
-  expect(gridDropBoundary(collapsed, { at: 1, side: "same" }, 0)).toEqual({ at: 1, side: "same" })
 })

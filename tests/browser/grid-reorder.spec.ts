@@ -2,7 +2,7 @@ import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import { test } from "./api-stack"
 import { boxOf, canvas, grab, hover, openSaved, panOf, picked, roomOf, zoomTo } from "./grid-reorder-deck"
-import { entry, fixtures } from "./slide-grid-deck"
+import { entry, fixtures, rowSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -106,7 +106,7 @@ test("drops land where the bar shows at 25% and 150%, after panning, at the firs
   stack,
 }) => {
   test.setTimeout(120_000)
-  const saved = await openSaved(page, context, stack, 8)
+  const saved = await openSaved(page, context, stack, 8, rowSizes(8))
   await zoomTo(page, 25)
   await page.mouse.move(700, 400)
   await page.mouse.wheel(120, 60)

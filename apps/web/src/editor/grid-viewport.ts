@@ -26,8 +26,16 @@ export function boundedGridScale(scale: number): number {
   return Math.max(zoomRanges.grid.least / 100, Math.min(zoomRanges.grid.most / 100, scale))
 }
 
+const fitPadding = 48
+
 export function fittedGrid(bounds: GridBounds, room: GridBounds): GridViewport {
-  return fitGridBounds(bounds, room, 0, () => ({ left: 0, right: 0 }))
+  return fitGridBounds(
+    bounds.width,
+    (scale) => bounds.height * scale,
+    room,
+    () => ({ left: 0, right: 0 }),
+    (room.height - 2 * fitPadding) / Math.max(1, bounds.height),
+  )
 }
 
 export function revealedGrid(view: GridViewport, box: GridRect, room: GridRect, keepLeft = false): GridViewport {
@@ -108,30 +116,19 @@ export function readGridViewport(raw: string | null): GridViewport | null {
   }
 }
 
-export function gridSectionGap(scale: number): number {
-  return 32 / scale
-}
-
 export type GridGeometry = {
   readonly rows: readonly { readonly start: number; readonly end: number }[]
   readonly sections: readonly number[]
-  readonly shown?: (index: number) => boolean
   readonly rowHandles?: boolean
   readonly width: number
   readonly height: number
 }
 
-export const gridHeadingHeight = 20
-export const gridSectionHeight = 56
-const gridHeadingGap = 24
-
-export function gridTracks({ rows, sections, shown }: GridGeometry) {
+export function gridTracks({ rows, sections }: GridGeometry) {
   return rows.flatMap(({ start, end }, number) => {
     const heads = sections.filter((index) => index >= start && index < end)
-    const cards = Array.from({ length: end - start }, (_, offset) => start + offset).filter(
-      (index) => shown?.(index) ?? true,
-    )
-    return heads.length === 0 && cards.length === 0 ? [] : [{ start, end, number, heads, cards }]
+    const cards = Array.from({ length: end - start }, (_, offset) => start + offset)
+    return cards.length === 0 ? [] : [{ start, end, number, heads, cards }]
   })
 }
 
@@ -155,7 +152,8 @@ export function gridTrackGap(
   const line = lines[index]
   if (next === undefined || line === undefined) return 0
   const spacing = gridSpacing(geometry.width, geometry.height)
-  return next.number === line.number ? gridLineGap(spacing.row, spacing.column) : spacing.row
+  if (next.number === line.number) return gridLineGap(spacing.row, spacing.column)
+  return spacing.row
 }
 
 export function gridTrackColumns(track: GridTrack): number {
@@ -163,15 +161,14 @@ export function gridTrackColumns(track: GridTrack): number {
 }
 
 export function gridTrackSize(track: GridTrack, geometry: GridGeometry, gap: number) {
-  const cards = track.cards.length > 0
   return {
-    world: cards ? geometry.height + gridCardInset + gap : 0,
-    fixed: cards
-      ? track.heads.length === 0
-        ? 0
-        : gridSectionHeight
-      : gridHeadingHeight + (gap === 0 ? 0 : gridHeadingGap),
+    world: track.cards.length > 0 ? geometry.height + gridCardInset + gap : 0,
+    fixed: 0,
   }
+}
+
+function gridTrackSizes(geometry: GridGeometry, lines: readonly GridTrack[]) {
+  return lines.map((line, index) => gridTrackSize(line, geometry, gridTrackGap(geometry, lines, index)))
 }
 
 export function gridScreenFixed(geometry: GridGeometry, index: number): number {
@@ -184,15 +181,13 @@ function gridCard(geometry: GridGeometry, index: number) {
   const line = lines[number]
   if (line === undefined) return null
   const { width, height } = geometry
-  const preceding = lines
-    .slice(0, number)
-    .map((each, offset) => gridTrackSize(each, geometry, gridTrackGap(geometry, lines, offset)))
+  const preceding = gridTrackSizes(geometry, lines).slice(0, number)
   return {
     left: (index - line.start) * (width + gridSpacing(width, height).column),
     leading: index === line.cards[0] && line.cards.length === line.end - line.start,
     trailing: index === line.cards.at(-1),
     top: preceding.reduce((total, row) => total + row.world, 0),
-    fixed: preceding.reduce((total, row) => total + row.fixed, gridTrackSize(line, geometry, 0).fixed),
+    fixed: 0,
   }
 }
 
@@ -201,20 +196,33 @@ export function fittedGridCards(
   indices: readonly number[],
   room: GridBounds,
 ): GridViewport | null {
-  const cards = indices.flatMap((index) => gridCard(geometry, index) ?? [])
+  const placed = () => indices.flatMap((index) => gridCard(geometry, index) ?? [])
+  const cards = placed()
   if (cards.length === 0) return null
   const left = Math.min(...cards.map((card) => card.left))
-  const top = Math.min(...cards.map((card) => card.top))
-  const fixed = Math.min(...cards.map((card) => card.fixed))
   const right = Math.max(...cards.map((card) => card.left))
-  const bounds = {
-    width: right - left + geometry.width,
-    height: Math.max(...cards.map((card) => card.top)) - top + geometry.height + gridCardInset,
+  const span = (scale: number) => {
+    const at = placed()
+    const tops = at.map((card) => card.top)
+    const fixed = at.map((card) => card.fixed)
+    return {
+      top: Math.min(...tops),
+      fixed: Math.min(...fixed),
+      height:
+        (Math.max(...tops) - Math.min(...tops) + geometry.height + gridCardInset) * scale +
+        Math.max(...fixed) -
+        Math.min(...fixed),
+    }
   }
   const leading = cards.some((card) => card.leading)
   const trailing = cards.some((card) => card.trailing && card.left === right)
-  const heads = Math.max(...cards.map((card) => card.fixed)) - fixed
-  const fit = fitGridBounds(bounds, room, heads, (scale) => rowChrome(geometry, scale, leading, trailing))
+  const fit = fitGridBounds(
+    right - left + geometry.width,
+    (scale) => span(scale).height,
+    room,
+    (scale) => rowChrome(geometry, scale, leading, trailing),
+  )
+  const { top, fixed } = span(fit.scale)
   return { x: fit.x - left * fit.scale, y: fit.y - top * fit.scale - fixed, scale: fit.scale }
 }
 
@@ -249,10 +257,11 @@ export function fittedGridElements(
   slideWidth: number,
   room: GridBounds,
 ): GridViewport | null {
-  const card = gridCard(geometry, index)
   const bounds = slideWidth > 0 ? gridElementBounds(elements, geometry.width / slideWidth) : null
-  if (card === null || bounds === null) return null
+  if (bounds === null) return null
   const fit = fittedGrid(bounds, room)
+  const card = gridCard(geometry, index)
+  if (card === null) return null
   return {
     x: fit.x - (card.left + bounds.left) * fit.scale,
     y: fit.y - (card.top + 24 + bounds.top) * fit.scale - card.fixed,
@@ -264,15 +273,14 @@ export function fittedGridRows(geometry: GridGeometry, room: GridBounds): GridVi
   const { width, height } = geometry
   const lines = gridLayoutLines(geometry)
   const columns = Math.max(1, ...lines.map(gridTrackColumns))
-  const sizes = lines.map((line, index) => gridTrackSize(line, geometry, gridTrackGap(geometry, lines, index)))
-  const bounds = {
-    width: columns * width + (columns - 1) * gridSpacing(width, height).column,
-    height: sizes.reduce((total, size) => total + size.world, 0),
-  }
-  const heads = sizes.reduce((total, size) => total + size.fixed, 0)
   const handles = lines.some((line) => line.cards.length === line.end - line.start)
   const trailing = lines.some((line) => line.cards.at(-1) === line.start + columns - 1)
-  return fitGridBounds(bounds, room, heads, (scale) => rowChrome(geometry, scale, handles, trailing))
+  return fitGridBounds(
+    columns * width + (columns - 1) * gridSpacing(width, height).column,
+    (scale) => gridTrackSizes(geometry, lines).reduce((total, size) => total + size.world * scale + size.fixed, 0),
+    room,
+    (scale) => rowChrome(geometry, scale, handles, trailing),
+  )
 }
 
 export const gridRowHandle = { offset: 32, width: 28, minimumHeight: 80 }
@@ -305,27 +313,24 @@ export function gridCardBounds(
   }
 }
 
-const fitPadding = 48
-
 function fitGridBounds(
-  bounds: GridBounds,
+  width: number,
+  tall: (scale: number) => number,
   room: GridBounds,
-  heads: number,
   chrome: (scale: number) => { left: number; right: number },
+  tallest = Number.POSITIVE_INFINITY,
 ): GridViewport {
   const available = room.width - 2 * fitPadding
-  const widest = Math.max(1, bounds.width)
-  let scale = boundedGridScale(
-    Math.min(available / widest, (room.height - 2 * fitPadding - heads) / Math.max(1, bounds.height)),
-  )
+  const widest = Math.max(1, width)
+  let scale = boundedGridScale(Math.min(available / widest, tallest))
   const fits = (at: number) => {
     const { left, right } = chrome(at)
-    return widest * at + left + right <= available
+    return widest * at + left + right <= available && tall(at) <= room.height - 2 * fitPadding
   }
   if (!fits(scale)) {
     let high = scale
     scale = zoomRanges.grid.least / 100
-    for (let i = 0; i < 32; i++) {
+    for (let i = 0; i < 40; i++) {
       const middle = (scale + high) / 2
       if (fits(middle)) scale = middle
       else high = middle
@@ -333,14 +338,10 @@ function fitGridBounds(
   }
   const { left, right } = chrome(scale)
   return {
-    x: (room.width - bounds.width * scale + left - right) / 2,
-    y: (room.height - bounds.height * scale - heads) / 2,
+    x: (room.width - width * scale + left - right) / 2,
+    y: (room.height - tall(scale)) / 2,
     scale,
   }
-}
-
-export function gridHeadingEdge(width: number, view: GridViewport, fit: boolean): number {
-  return width - view.x - (fit ? fitPadding : 0)
 }
 
 export function exposedGrid(view: GridViewport, box: GridRect, room: GridRect): GridViewport {

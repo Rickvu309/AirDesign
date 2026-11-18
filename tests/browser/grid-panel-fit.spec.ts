@@ -176,46 +176,22 @@ test("a narrower window keeps a zoomed title inside the canvas", async ({ page }
   expect(Number.parseInt((await readout(page).textContent()) ?? "", 10)).toBeLessThanOrEqual(zoom)
 })
 
-test("section headings use the free room and drop the count before the name", async ({ page }) => {
+test("named groups keep their names for a screen reader when the window is narrow", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 })
   await openFile(page, join(fixtures, "doe-heat-pumps.pptx"))
   await openGrid(page)
-  const introduction = page.locator("[data-section-head]").filter({ hasText: "Introduction" })
-  const label = introduction.getByText("Introduction", { exact: true })
-  await expect(label).toBeVisible()
-  expect(await label.evaluate((node) => node.clientWidth >= node.scrollWidth - 1)).toBe(true)
-  const [head, slide] = await Promise.all([introduction.boundingBox(), entry(page, 1).boundingBox()])
-  expect(head?.width ?? 0).toBeGreaterThan(slide?.width ?? 0)
+  await expect(page.locator("[data-section-head]")).toHaveCount(0)
+  await expect(page.locator("[data-slide-group]").first()).toHaveAccessibleName("Introduction")
   await zoomTo(page, 3)
-  await expect(label).toBeVisible()
-  expect(await label.evaluate((node) => getComputedStyle(node).visibility)).toBe("visible")
-  expect(await label.evaluate((node) => node.clientWidth >= node.scrollWidth - 1)).toBe(true)
+  await expect(page.locator("[data-slide-group]").first()).toHaveAccessibleName("Introduction")
+  await expect(entry(page, 1)).toBeVisible()
 
   await openFile(page, join(fixtures, "sections-after.pptx"))
   await openGrid(page)
   await zoomTo(page, 5)
-  const opening = page.locator("[data-section-head]").filter({ hasText: "Opening" })
-  const openingName = opening.getByText("Opening", { exact: true })
-  await expect(openingName).toBeVisible()
-  const state = await opening.evaluate((node) => {
-    const name = [...node.querySelectorAll("span")].find((span) => span.textContent === "Opening")
-    const count = [...node.querySelectorAll("span")].find((span) => span.textContent?.includes("slide"))
-    const hidden =
-      count === undefined ||
-      count.hidden ||
-      getComputedStyle(count).visibility === "hidden" ||
-      getComputedStyle(count).display === "none"
-    return {
-      nameCut: name !== undefined && name.scrollWidth > name.clientWidth + 1,
-      countHidden: hidden,
-      nameVisibility: name === undefined ? "missing" : getComputedStyle(name).visibility,
-    }
-  })
-  expect(state.nameVisibility).toBe("visible")
-  expect(state.nameCut && !state.countHidden).toBe(false)
-  const [first, next] = await Promise.all([
-    opening.boundingBox(),
-    page.locator("[data-section-head]").filter({ hasText: "Numbers" }).boundingBox(),
-  ])
-  expect((first?.x ?? 0) + (first?.width ?? 0)).toBeLessThanOrEqual((next?.x ?? 0) + 1)
+  const groups = page.locator("[data-slide-group]")
+  await expect(groups.first()).toHaveAccessibleName("Opening")
+  await expect(groups.last()).toHaveAccessibleName("Numbers")
+  const [first, next] = await Promise.all([entry(page, 1).boundingBox(), entry(page, 2).boundingBox()])
+  expect((first?.y ?? 0) + (first?.height ?? 0)).toBeLessThanOrEqual(next?.y ?? 0)
 })

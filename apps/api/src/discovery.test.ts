@@ -157,7 +157,7 @@ it("discovers authorization from only the MCP address and calls a tool with its 
       revision: 0,
       elements: [],
       slides: [],
-      grid: { starts: [] },
+      groups: [],
       index: "missing",
     })
     const committed = await ask(

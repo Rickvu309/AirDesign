@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test"
 import { test } from "./api-stack"
 import { boxOf, grab, hover, moveRequests, openSaved, picked, roomOf, zoomTo } from "./grid-reorder-deck"
-import { entry } from "./slide-grid-deck"
+import { entry, rowSizes } from "./slide-grid-deck"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 
@@ -9,7 +9,7 @@ const handle = (page: Page, row: number) => page.getByRole("button", { name: sli
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
 test("a group drop is one saved edit and one undo restores both slides", async ({ page, context, stack }) => {
-  const saved = await openSaved(page, context, stack, 8)
+  const saved = await openSaved(page, context, stack, 8, rowSizes(8))
   const moves = moveRequests(page)
   await zoomTo(page, 25)
   await entry(page, 2).focus()
@@ -27,7 +27,7 @@ test("a group drop is one saved edit and one undo restores both slides", async (
 })
 
 test("row hover yields to slide hover, Space, editing and small zoom", async ({ page, context, stack }) => {
-  const saved = await openSaved(page, context, stack, 10)
+  const saved = await openSaved(page, context, stack, 10, rowSizes(10))
   await zoomTo(page, 50)
   const one = await boxOf(page, 1)
   await page.mouse.move(one.x - 8, one.y + one.height / 2)
@@ -59,7 +59,7 @@ test("row hover yields to slide hover, Space, editing and small zoom", async ({ 
 
 for (const cancel of ["Escape", "outside", "empty", "drop"]) {
   test(`a whole row drags between unequal rows: ${cancel}`, async ({ page, context, stack }) => {
-    const saved = await openSaved(page, context, stack, 10)
+    const saved = await openSaved(page, context, stack, 10, rowSizes(10))
     const moves = moveRequests(page)
     await zoomTo(page, 20)
     await handle(page, 3).focus()
@@ -99,18 +99,16 @@ for (const cancel of ["Escape", "outside", "empty", "drop"]) {
   })
 }
 
-test("Tab reaches each row handle after its heading and before its first slide, whatever the mouse does", async ({
+test("Tab reaches each row handle before its first slide, whatever the mouse does", async ({
   page,
   context,
   stack,
 }) => {
   await openSaved(page, context, stack, 6, true)
-  const heading = page.locator("[data-section-head]").first()
+  await expect(page.locator("[data-section-head]")).toHaveCount(0)
   const room = await roomOf(page)
   await page.mouse.move(room.x + room.width - 30, room.y + 30)
   await page.getByRole("button", { name: "Export", exact: true }).focus()
-  await page.keyboard.press("Tab")
-  await expect(heading).toBeFocused()
   await page.keyboard.press("Tab")
   await expect(handle(page, 1)).toBeFocused()
   await page.keyboard.press("Tab")
@@ -118,7 +116,7 @@ test("Tab reaches each row handle after its heading and before its first slide, 
   const one = await boxOf(page, 1)
   await page.mouse.move(one.x - 8, one.y + one.height / 2)
   await expect(page.locator('[data-row-hover="band"]')).toHaveCount(1)
-  await heading.focus()
+  await page.getByRole("button", { name: "Export", exact: true }).focus()
   await page.keyboard.press("Tab")
   await expect(handle(page, 1)).toBeFocused()
   await page.keyboard.press("Tab")
@@ -126,7 +124,7 @@ test("Tab reaches each row handle after its heading and before its first slide, 
 })
 
 test("Alt+Up and Alt+Down move the focused row and announce its position", async ({ page, context, stack }) => {
-  const saved = await openSaved(page, context, stack, 10)
+  const saved = await openSaved(page, context, stack, 10, rowSizes(10))
   await handle(page, 3).focus()
   await page.keyboard.press("Alt+ArrowUp")
   await expect.poll(saved.order).toEqual(picked(saved.ids, [1, 2, 3, 4, 9, 10, 5, 6, 7, 8]))
@@ -151,7 +149,11 @@ test("Alt+Up and Alt+Down move the focused row and announce its position", async
   await expect(handle(page, 1)).toBeFocused()
 })
 
-test("a row crossing a named section follows placement and saves the same rows", async ({ page, context, stack }) => {
+test("a named slide group moved below another keeps its own name and saves the same slide groups", async ({
+  page,
+  context,
+  stack,
+}) => {
   const saved = await openSaved(page, context, stack, 6, true)
   await handle(page, 1).focus()
   const control = await handle(page, 1).boundingBox(),
@@ -161,16 +163,19 @@ test("a row crossing a named section follows placement and saves the same rows",
   await page.keyboard.press("Alt+ArrowDown")
   await expect.poll(saved.order).toEqual(picked(saved.ids, [4, 5, 6, 1, 2, 3]))
   await expect.poll(saved.rows).toEqual([saved.ids.slice(3), saved.ids.slice(0, 3)])
-  await expect(page.locator("[data-section-head]")).toHaveCount(1)
-  await expect(page.locator("[data-section-head]")).toContainText("Results")
+  const groups = page.locator("[data-slide-group]")
+  await expect(groups).toHaveCount(2)
+  await expect(groups.first()).toHaveAccessibleName("Results")
+  await expect(groups.last()).toHaveAccessibleName("Opening")
   await page.getByRole("button", { name: undoCopy.undoNamed.order, exact: true }).click()
   await expect.poll(saved.order).toEqual(saved.ids)
   await expect.poll(saved.rows).toEqual([saved.ids.slice(0, 3), saved.ids.slice(3)])
-  await expect(page.locator("[data-section-head]")).toHaveCount(2)
+  await expect(groups.first()).toHaveAccessibleName("Opening")
+  await expect(groups.last()).toHaveAccessibleName("Results")
 })
 
 test("a row drag edge-pans and cancellation saves no move", async ({ page, context, stack }) => {
-  const saved = await openSaved(page, context, stack, 50)
+  const saved = await openSaved(page, context, stack, 50, rowSizes(50))
   await zoomTo(page, 50)
   await handle(page, 1).focus()
   const button = await handle(page, 1).boundingBox()
@@ -193,7 +198,7 @@ test("a row drag edge-pans and cancellation saves no move", async ({ page, conte
 test.describe("row touch", () => {
   test.use({ hasTouch: true })
   test("a touch tap never leaves row chrome", async ({ page, context, stack }) => {
-    const saved = await openSaved(page, context, stack, 10)
+    const saved = await openSaved(page, context, stack, 10, rowSizes(10))
     await entry(page, 2).tap({ position: { x: 100, y: 80 } })
     await expect(page.locator("[data-row-hover]")).toHaveCount(0)
     await expect(handle(page, 1)).toHaveCSS("opacity", "0")
@@ -207,7 +212,7 @@ test("a foreign structural edit cancels a held row without moving different slid
   context,
   stack,
 }) => {
-  const saved = await openSaved(page, context, stack, 10)
+  const saved = await openSaved(page, context, stack, 10, rowSizes(10))
   const moves = moveRequests(page)
   await zoomTo(page, 20)
   await handle(page, 2).focus()
@@ -246,7 +251,7 @@ test("a foreign structural edit cancels a held row without moving different slid
 
 for (const last of [false, true]) {
   test(`edge pan keeps the ${last ? "last" : "first"} row mark until release`, async ({ page, context, stack }) => {
-    const saved = await openSaved(page, context, stack, 50)
+    const saved = await openSaved(page, context, stack, 50, rowSizes(50))
     const original = await saved.rows()
     await zoomTo(page, 18)
     const room = await roomOf(page)

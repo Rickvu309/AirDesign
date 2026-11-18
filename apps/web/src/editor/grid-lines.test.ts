@@ -10,6 +10,7 @@ import {
   gridWrapColumns,
   type GridLineTrack,
 } from "@/editor/grid-lines"
+import { gridColumns } from "@/editor/grid-zoom"
 
 const rows = (lengths: readonly number[]) => {
   const ranges: { start: number; end: number }[] = []
@@ -34,10 +35,18 @@ describe("grid line layout", () => {
     expect([1, 4, 7, 12, 24, 41, 50].map(gridBaseColumns)).toEqual([4, 4, 4, 5, 6, 8, 9])
   })
 
-  it("keeps one group's column count, leaves a row that fits in ten columns on one line, and widens several groups only while that removes lines", () => {
+  it("wraps one group at the deck's column count, and widens several groups only while that removes lines", () => {
+    expect(gridWrapColumns(6, rows([6]))).toBe(gridColumns(6))
+    expect(gridColumns(6)).toBe(4)
+    expect(gridWrapColumns(10, rows([10]))).toBe(gridColumns(10))
+    expect(gridColumns(10)).toBe(4)
     expect(gridWrapColumns(16, rows([16]))).toBe(5)
-    expect(gridWrapColumns(10, rows([10]))).toBe(10)
-    expect(gridWrapColumns(8, rows([6]))).toBe(6)
+    expect(
+      gridVisualLines([track(0, 0, 6)], gridWrapColumns(6, rows([6]))).map((line) => line.end - line.start),
+    ).toEqual([4, 2])
+    expect(
+      gridVisualLines([track(0, 0, 10)], gridWrapColumns(10, rows([10]))).map((line) => line.end - line.start),
+    ).toEqual([4, 4, 2])
     expect(gridWrapColumns(41, rows([1, 28, 10, 2]))).toBe(10)
     expect(gridWrapColumns(41, rows([1, 10, 10, 8, 10, 2]))).toBe(10)
     expect(gridWrapColumns(8, rows([4, 4]))).toBe(4)
@@ -55,10 +64,6 @@ describe("grid line layout", () => {
     ])
     const fitted = gridVisualLines([track(0, 0, 4), track(1, 4, 8)], 8)
     expect(fitted).toEqual([track(0, 0, 4), track(1, 4, 8)])
-  })
-
-  it("keeps a collapsed row on one heading line", () => {
-    expect(gridVisualLines([track(0, 0, 28, false)], 10)).toEqual([track(0, 0, 28, false)])
   })
 
   it("puts a section heading on the line that contains its first slide", () => {

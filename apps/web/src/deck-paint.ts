@@ -1,17 +1,10 @@
 import { imageTexts } from "@/patch-images"
 import { currentBox, slideId, type Box, type ElementId, type Register, type SlideId } from "@airdesign/document"
-import {
-  paintReader,
-  readShapes,
-  readSlides,
-  slideNumbering,
-  sectionStarts,
-  themeSwatches,
-  type ReadShape,
-  type SectionStart,
-} from "@airdesign/pptx"
+import { paintReader, readShapes, readSlides, slideNumbering, themeSwatches, type ReadShape } from "@airdesign/pptx"
 import type { ElementRecord, PaintStore } from "@airdesign/render"
 import type { SlideCanvases } from "@/canvas-slide"
+import type { StripSection } from "@/editor/slide-sidebar"
+import { stripSections } from "@/strip-sections"
 import type { TextBox } from "@/commit-edit"
 import { landedBox } from "@/element-move"
 import { editedParts, newSlideElement, slideBase, type PictureBytes } from "@/exported-parts"
@@ -48,7 +41,7 @@ type PaintedSlide = {
 
 export type Painted = {
   readonly count: number
-  readonly sections: readonly SectionStart[]
+  readonly sections: readonly StripSection[]
   readonly canvases: SlideCanvases
   readonly boxes: ReadonlyMap<ElementId, TextBox>
   readonly movables: ReadonlyMap<ElementId, TextBox>
@@ -193,7 +186,7 @@ export function paint(
       : base
   const display = sameIdentity(edited, earlier?.display)
   const read = readSlides(display)
-  const numberText = numberedText(slideNumbering(display, register))
+  const numberText = numberedText(slideNumbering(display))
   const slideParts = new Set(read.map((each) => each.part))
   const shared = sharedParts(display, slideParts)
   const reusable = earlier !== null && sameShared(shared, earlier.shared, slideParts)
@@ -252,7 +245,7 @@ export function paint(
   }
   return {
     count: read.length,
-    sections: sectionStarts(display),
+    sections: stripSections(parts, register),
     canvases,
     boxes,
     movables,

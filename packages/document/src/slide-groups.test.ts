@@ -117,6 +117,13 @@ describe("older logs, as the design's section 4 table maps them", () => {
     )
   })
 
+  it("reads a section with an empty name as an unnamed slide group", () => {
+    expect(groups(sectioned(), ["", "Results"])).toEqual([
+      ["f0", null, 256, 257, 258],
+      ["f1", "Results", 259, 260, 261, 262],
+    ])
+  })
+
   it("reads a file with no sections as one slide group", () => {
     expect(groups(opened(deck(12)), [])).toEqual([["f0", null, ...deck(12).map(Number)]])
     expect(groups(opened(deck(12), []), [])).toEqual([["f0", null, ...deck(12).map(Number)]])
@@ -190,6 +197,16 @@ describe("older logs, as the design's section 4 table maps them", () => {
     ])
   })
 
+  it("keeps a section's name on a row a person made where that section starts, and leaves the rest unnamed", () => {
+    const moved = land(sectioned(), { slide: "move-many", grid: 1, ids: [id(259)], after: id(258), row: "new" })
+    expect(gridRows(moved).map((row) => row.map(Number))).toEqual([[256, 257, 258], [259], [260, 261, 262]])
+    expect(groups(moved)).toEqual([
+      ["f0", "Intro", 256, 257, 258],
+      ["f1", "Results", 259],
+      ["r260", null, 260, 261, 262],
+    ])
+  })
+
   it("reads version one rows on a sectioned deck as today's sections split where a person made a row", () => {
     const start = opened(deck(6), [id(256), id(259)])
     const added = land(start, { slide: "add", grid: 1, row: "new", id: id(300), after: id(257), layout: id(256) })
@@ -257,6 +274,23 @@ describe("version three commands plan against slide groups", () => {
       ["f0", "Intro", 256, 257, 259, 258],
       ["f1", "Results", 260, 261, 262],
     ])
+  })
+
+  it("keeps one named group of the same slides when its first slide moves to a later line of that group", () => {
+    const start = opened(deck(41), [id(256), id(257), id(285), id(295)])
+    const labels = ["Introduction", "Part 1", "Part 2", "Appendices"]
+    const before = slideGroups(start, labels)
+    const moved = land(start, { slide: "move-many", grid: 3, ids: [id(257)], after: id(279), row: "same" })
+    const after = slideGroups(moved, labels)
+    expect(after.map((group) => [group.key, group.name, group.slides.length])).toEqual([
+      ["f0", "Introduction", 1],
+      ["f1", "Part 1", 28],
+      ["f2", "Part 2", 10],
+      ["f3", "Appendices", 2],
+    ])
+    expect(after[1]!.slides[0]).toBe(id(258))
+    expect(after[1]!.slides.indexOf(id(257))).toBe(22)
+    expect(after[1]!.slides.toSorted()).toEqual(before[1]!.slides.toSorted())
   })
 
   it("brings a merged group's name back on undo, and ends it again on redo", () => {

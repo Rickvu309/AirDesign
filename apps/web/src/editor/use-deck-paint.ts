@@ -1,9 +1,10 @@
 import { type ElementId, type Register } from "@airdesign/document"
 import { connect, memoryRemote } from "@airdesign/live"
-import { boundTargets, type ReadShape, type SectionStart } from "@airdesign/pptx"
+import { boundTargets, type ReadShape } from "@airdesign/pptx"
 import { paintStore, type Entering } from "@airdesign/render"
 import { useRef, useState } from "react"
 import { type SlideCanvases } from "@/canvas-slide"
+import type { StripSection } from "@/editor/slide-sidebar"
 import { type TextBox } from "@/commit-edit"
 import { paint, withFileFloors, type Painted } from "@/deck-paint"
 import { busyElements, liveRepaint } from "@/live-repaint"
@@ -38,7 +39,7 @@ export function useDeckPaint(
   const [entering, setEntering] = useState<Entering | null>(null)
   const [slideCount, setSlideCount] = useState(0)
   const [layouts, setLayouts] = useState<ReturnType<typeof layoutChoices>>([])
-  const [sections, setSections] = useState<readonly SectionStart[]>([])
+  const [sections, setSections] = useState<readonly StripSection[]>([])
   const [current, setCurrent] = useState(0)
   const saySlide = useRef<(text: string) => void>(() => undefined)
 

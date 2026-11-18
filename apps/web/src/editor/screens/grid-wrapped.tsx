@@ -5,78 +5,89 @@ import { gridAnchor, type GridMoveSide } from "@/editor/grid-drop"
 import { SlideThumb } from "@/editor/slide-thumb"
 import { slideThumbWidth } from "@/editor/slide-sidebar"
 
+type Group = { readonly key: string; readonly name: string | null; readonly slides: readonly number[] }
+
 const sectionNames = [
-  { id: 0, name: "Introduction" },
-  { id: 1, name: "Part 1: Basic Principles of Heat Pump Operation" },
-  { id: 29, name: "Part 2: System Design Options/Considerations" },
-  { id: 39, name: "Appendices" },
+  "Introduction",
+  "Part 1: Basic Principles of Heat Pump Operation",
+  "Part 2: System Design Options/Considerations",
+  "Appendices",
 ] as const
 
-function initialRows(): number[][] {
-  return [
-    [0],
-    Array.from({ length: 28 }, (_, index) => index + 1),
-    Array.from({ length: 10 }, (_, index) => index + 29),
-    [39, 40],
-  ]
+function initialGroups(): Group[] {
+  let next = 0
+  return [1, 28, 10, 2].map((size, index) => {
+    const slides = Array.from({ length: size }, (_, offset) => next + offset)
+    next += size
+    return { key: `f${String(index)}`, name: sectionNames[index] ?? null, slides }
+  })
 }
 
-function moveSlides(
+function regrouped(
+  groups: readonly Group[],
   rows: readonly (readonly number[])[],
-  indices: readonly number[],
-  at: number,
-  side: GridMoveSide,
-): number[][] {
-  const flat = rows.flat()
+  moving: ReadonlySet<number>,
+): Group[] {
+  const owner = new Map(rows.flatMap((row, index) => row.map((id) => [id, index] as const)))
+  const held = new Map<number, Group>()
+  const claim = (group: Group, id: number | undefined) => {
+    const at = id === undefined ? undefined : owner.get(id)
+    if (at !== undefined && !held.has(at)) held.set(at, group)
+  }
+  for (const group of groups)
+    claim(
+      group,
+      group.slides.find((id) => !moving.has(id)),
+    )
+  for (const group of groups) if (group.slides.every((id) => moving.has(id))) claim(group, group.slides[0])
+  return rows.flatMap((slides, index) => {
+    const first = slides[0]
+    if (first === undefined) return []
+    const group = held.get(index)
+    return [{ key: group?.key ?? `r${String(first)}`, name: group?.name ?? null, slides: [...slides] }]
+  })
+}
+
+function moveSlides(groups: readonly Group[], indices: readonly number[], at: number, side: GridMoveSide): Group[] {
+  const flat = groups.flatMap((group) => group.slides)
   const moving = indices.flatMap((index) => {
     const id = flat[index]
     return id === undefined ? [] : [id]
   })
-  return gridMovePlacement(
-    rows.map((row) => [...row]),
+  const rows = gridMovePlacement(
+    groups.map((group) => [...group.slides]),
     moving,
     gridAnchor(flat, indices, at, side),
     side,
   ).rows
+  return regrouped(groups, rows, new Set(moving))
 }
 
-function insertSlide(
-  rows: readonly (readonly number[])[],
-  after: number | undefined,
-  side: "same" | "new",
-): number[][] {
-  const next = rows.map((row) => [...row])
-  const flat = next.flat()
+function insertSlide(groups: readonly Group[], after: number | undefined, side: "same" | "new"): Group[] {
+  const flat = groups.flatMap((group) => group.slides)
   const id = Math.max(-1, ...flat) + 1
   const anchor = after === undefined ? flat[0] : flat[after]
-  const rowIndex = next.findIndex((row) => anchor !== undefined && row.includes(anchor))
-  const row = next[rowIndex]
-  if (row === undefined || anchor === undefined) return [...next, [id]]
-  if (side === "new") {
-    next.splice(rowIndex + 1, 0, [id])
-    return next
-  }
-  row.splice(row.indexOf(anchor) + 1, 0, id)
-  return next
+  const at = groups.findIndex((group) => anchor !== undefined && group.slides.includes(anchor))
+  const group = groups[at]
+  const added: Group = { key: `r${String(id)}`, name: null, slides: [id] }
+  if (group === undefined || anchor === undefined) return [...groups, added]
+  if (side === "new") return groups.toSpliced(at + 1, 0, added)
+  const slides = group.slides.toSpliced(group.slides.indexOf(anchor) + 1, 0, id)
+  return groups.with(at, { ...group, slides })
 }
 
 export function GridWrapped() {
-  const [rows, setRows] = useState(initialRows)
+  const [groups, setGroups] = useState(initialGroups)
   const [current, setCurrent] = useState(0)
   const [skipped, setSkipped] = useState<ReadonlySet<number>>(() => new Set())
-  const flat = rows.flat()
+  const flat = groups.flatMap((group) => group.slides)
   const starts: number[] = []
   let cursor = 0
-  for (const row of rows) {
+  for (const group of groups) {
     starts.push(cursor)
-    cursor += row.length
+    cursor += group.slides.length
   }
-  const sections = sectionNames
-    .flatMap(({ id, name }) => {
-      const start = flat.indexOf(id)
-      return start < 0 ? [] : [{ name, start }]
-    })
-    .sort((left, right) => left.start - right.start)
+  const sections = groups.map((group, index) => ({ name: group.name, start: starts[index] ?? 0, key: group.key }))
   return (
     <div className="h-dvh">
       <EditorGrid
@@ -105,10 +116,10 @@ export function GridWrapped() {
             })
           },
           onAdd: (_layout, after, side) => {
-            setRows((held) => insertSlide(held, after, side === "new" ? "new" : "same"))
+            setGroups((held) => insertSlide(held, after, side === "new" ? "new" : "same"))
           },
           onMoveMany: (indices, at, side = "same") => {
-            setRows((held) => moveSlides(held, indices, at, side))
+            setGroups((held) => moveSlides(held, indices, at, side))
           },
           thumbHeight: Math.round((slideThumbWidth * 9) / 16),
           thumb: (index, width) => (

@@ -40,14 +40,11 @@ describe("exporting the chosen slides", () => {
     for (const address of removed) expect(parts.has(address.part)).toBe(false)
   })
 
-  it("keeps each section with only its chosen slides", async () => {
+  it("keeps each section that holds a chosen slide, with only its chosen slides", async () => {
     const deck = await opened("sections-before.pptx")
     const parts = await exported(deck.bytes, orderedParts(deck.parts, slidesKept(deck.state, [1])))
     expect(slideAddresses(parts).map((address) => address.slide)).toEqual(["257"])
-    expect(readSections(parts)).toEqual([
-      { name: "Opening", slides: [] },
-      { name: "Numbers", slides: ["257"] },
-    ])
+    expect(readSections(parts)).toEqual([{ name: "Numbers", slides: ["257"] }])
   })
 
   it("leaves the blank deck's one slide untouched", async () => {

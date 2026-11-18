@@ -19,7 +19,11 @@ async function boxIn(page: Page, selector: string): Promise<Box> {
 }
 
 async function eight(page: Page, percent: number): Promise<void> {
-  await openFile(page, { name: "eight.pptx", mimeType: "application/octet-stream", buffer: await manySlides(8) })
+  await openFile(page, {
+    name: "eight.pptx",
+    mimeType: "application/octet-stream",
+    buffer: await manySlides(8, [4, 4]),
+  })
   await openGrid(page)
   await zoomTo(page, percent)
   await expect
