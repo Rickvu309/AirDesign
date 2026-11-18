@@ -6,7 +6,7 @@ import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { validatorFiles } from "./paragraph-export.mjs"
 import { freshBrowserExport, playwrightTestLines } from "./browser-export.mjs"
-import { browserExportArgs, caseExports, caseOriginals, loadCases } from "./pptx-cases.mjs"
+import { browserExportArgs, caseExports, caseOriginals, loadCases, writeCases } from "./pptx-cases.mjs"
 import { textExportName } from "./pptx-cases/text.mjs"
 import { judgeParts } from "./judge.mjs"
 import {
@@ -243,6 +243,15 @@ if (fixedWork) {
 }
 const sectionProof = fixedWork ? writeSectionProof({ parts: parts.get(sectionProofDeck), directory: routeDir }) : []
 validate(sectionProof.map((row) => row.file))
+validate(
+  await writeCases({
+    pptx,
+    entries,
+    parts,
+    original: (name) => fs.readFileSync(fixturePath(name)),
+    directory: routeDir,
+  }),
+)
 const corpusEdits = await writeCorpusEdits({
   full: decision.full,
   root,

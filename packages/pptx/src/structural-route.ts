@@ -2,7 +2,7 @@ import type { Geometry } from "@airdesign/document"
 import { presentationPart } from "./package-address.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { editPart, partBytes, replacePart } from "./part-markup.js"
-import { addSection, orderSection, removeSection } from "./section-route.js"
+import { addSection, orderSection, removeSection } from "./section-write.js"
 import { cloneShape, orderShape } from "./shape-route.js"
 import { addDrawnShape, addTextShape, type ShapeBox } from "./shape-write.js"
 import { addSlide, orderSlide, removeSlide } from "./slide-list-route.js"
@@ -78,14 +78,11 @@ export function writeStructuralRoute(parts: ReadonlyMap<string, Uint8Array>, rou
       editPart(next, presentationPart, (bytes) => orderSlide(bytes, route.slide, route.before))
       return { parts: next, id: null }
     case "sectionLst.add":
-      editPart(next, presentationPart, (bytes) => addSection(bytes, route.title))
-      return { parts: next, id: null }
+      return { parts: new Map(addSection(next, route.title)), id: null }
     case "sectionLst.remove":
-      editPart(next, presentationPart, (bytes) => removeSection(bytes, route.section))
-      return { parts: next, id: null }
+      return { parts: new Map(removeSection(next, route.section)), id: null }
     case "sectionLst.order":
-      editPart(next, presentationPart, (bytes) => orderSection(bytes, route.section, route.before))
-      return { parts: next, id: null }
+      return { parts: new Map(orderSection(next, route.section, route.before)), id: null }
     case "graphicFrame.addTable": {
       const style = newTableStyle(next)
       editPart(next, route.part, (bytes) => addTable(bytes, route, style))

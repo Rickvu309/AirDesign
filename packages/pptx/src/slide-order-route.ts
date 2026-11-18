@@ -22,10 +22,9 @@ import {
 } from "@airdesign/document"
 
 import { deckLayouts } from "./deck-layouts.js"
-import { presentationPart, slideAddresses, slidePart } from "./package-address.js"
-import { editPart } from "./part-markup.js"
+import { slideAddresses, slidePart } from "./package-address.js"
 import { readSections } from "./section-read.js"
-import { writeSectionSlides } from "./section-write.js"
+import { writeSections } from "./section-write.js"
 import { addPicture } from "./picture-write.js"
 import { layoutPart, withLayoutPlaceholders } from "./slide-placeholders.js"
 import { arrangeSlide, stacksOf } from "./element-stack-route.js"
@@ -189,14 +188,10 @@ function withSectionSlides(
 ): ReadonlyMap<string, Uint8Array> {
   const sections = foldSections(state, readSections(original))
   if (sections.length === 0) return parts
-  const next = new Map(parts)
-  editPart(next, presentationPart, (bytes) =>
-    writeSectionSlides(
-      bytes,
-      sections.map((section) => section.slides.map((id) => minted.get(id) ?? id)),
-    ),
+  return writeSections(
+    parts,
+    sections.map((section, from) => ({ from, slides: section.slides.map((id) => minted.get(id) ?? id) })),
   )
-  return next
 }
 
 export type MediaBytes = (sha256: string) => Uint8Array | undefined

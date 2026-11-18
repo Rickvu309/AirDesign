@@ -15,19 +15,30 @@ function localName(kind: string): string {
   return kind.slice(kind.indexOf(":") + 1)
 }
 
-function referenceFailures(parts: Parts, known: ReadonlySet<string>): string[] {
-  const failures: string[] = []
-  for (const [name, bytes] of parts) {
-    if (!name.endsWith(".xml")) continue
+type SectionReference = { readonly part: string; readonly id: string }
+
+function zoomReferences(parts: Parts): SectionReference[] {
+  const found: SectionReference[] = []
+  for (const [part, bytes] of parts) {
+    if (!part.endsWith(".xml")) continue
     if (!decodeUtf8(bytes).includes("sectionId=")) continue
     for (const element of markupDocument(bytes).elements) {
       if (!zoomObjects.has(localName(element.kind))) continue
       const id = attributeOf(element, "sectionId")
-      if (id === undefined || known.has(id)) continue
-      failures.push(`reference: ${name} names section ${id}, which the section list does not have`)
+      if (id !== undefined) found.push({ part, id })
     }
   }
-  return failures
+  return found
+}
+
+export function sectionReferences(parts: Parts): ReadonlySet<string> {
+  return new Set(zoomReferences(parts).map((reference) => reference.id))
+}
+
+function referenceFailures(parts: Parts, known: ReadonlySet<string>): string[] {
+  return zoomReferences(parts).flatMap(({ part, id }) =>
+    known.has(id) ? [] : [`reference: ${part} names section ${id}, which the section list does not have`],
+  )
 }
 
 function idFailures(sections: readonly MarkupElement[]): string[] {
