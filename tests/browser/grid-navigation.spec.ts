@@ -257,10 +257,13 @@ test("Space pans before a restored canvas has keyboard focus", async ({ page }) 
   expect((await entry(page, 1).boundingBox())!.x).toBeCloseTo(box.x + 40, 0)
 })
 
-test("numbers clear named section headings at fit", async ({ page }) => {
+test("slide numbers sit above the slide and Grid draws no section heading", async ({ page }) => {
   await openFile(page, "scripts/pptx-fixtures/sections-before.pptx")
   await openGrid(page)
-  const heading = (await page.getByRole("heading", { name: "Opening" }).boundingBox())!
-  const number = (await page.locator("[data-slide-number]").first().boundingBox())!
-  expect(number.y).toBeGreaterThan(heading.y + heading.height + 4)
+  await expect(page.locator("[data-editor-grid]").getByRole("heading", { name: "Opening" })).toHaveCount(0)
+  await expect(page.locator("[data-slide-group]").first()).toHaveAccessibleName("Opening")
+  const number = await page.locator("[data-slide-number]").first().boundingBox()
+  const slide = await entry(page, 1).boundingBox()
+  if (number === null || slide === null) throw new Error("bounds")
+  expect(number.y + number.height).toBeLessThanOrEqual(slide.y + 1)
 })

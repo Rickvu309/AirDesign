@@ -5,7 +5,6 @@ import { EditorFrame } from "@/editor/editor-frame"
 import { DeckTitle, ExportButton, Island, surfaceShadow, ZoomReadout } from "@/editor/editor-chrome"
 import { EditorIcon } from "@/editor/editor-icons"
 import { EditorToolbar } from "@/editor/editor-toolbar"
-import { GridSectionHead } from "@/editor/grid-section"
 import { PastedThumb, SlideThumb } from "@/editor/slide-thumb"
 import { ViewBar } from "@/editor/view-bar"
 import { cn } from "@/lib/class-names"
@@ -100,13 +99,7 @@ function Section({ name, items, state }: { name: string; items: (number | string
   const showHandle = name === "Performance" && (state === "hover" || state === "hold")
   let number = startNumber(name, state)
   return (
-    <section className="flex flex-col gap-4">
-      <GridSectionHead
-        name={name}
-        count={items.filter((item) => item !== "ghost").length}
-        open
-        onToggle={() => undefined}
-      />
+    <section className="flex flex-col gap-4" aria-label={name}>
       <div className="relative grid grid-cols-[repeat(4,300px)] gap-x-8 gap-y-6">
         {showHandle ? (
           <span className="absolute top-[84px] left-[-26px] h-9 w-1.5 -translate-y-1/2 rounded-full bg-[var(--drop)]" />

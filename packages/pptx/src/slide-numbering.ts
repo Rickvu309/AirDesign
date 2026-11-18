@@ -1,30 +1,20 @@
-import { gridRows, readSlideId, type Box, type SlideNumbers, type SlideState } from "@airdesign/document"
+import type { Box, SlideNumbers } from "@airdesign/document"
 import { linkedPart } from "./notes-part.js"
 import { boxOf, sheetFrom, slidePlacement } from "./paint-sheet.js"
 import { readSlides } from "./read-shapes.js"
+import { sectionStarts } from "./section-read.js"
 import { firstSlideNumber, layoutPart } from "./slide-placeholders.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
-export function slideNumbering(parts: Parts, state: SlideState | null = null): ReadonlyMap<string, SlideNumbers> {
+export function slideNumbering(parts: Parts): ReadonlyMap<string, SlideNumbers> {
   const slides = readSlides(parts)
   const first = firstSlideNumber(parts)
-  const file = slides.flatMap(({ slide }) => {
-    const id = readSlideId(slide)
-    return id === undefined ? [] : [id]
-  })
-  const rows = new Map(
-    gridRows({ ...state, file: state?.file.length ? state.file : file, order: state?.order ?? [] }).flatMap((row) =>
-      row.map((slide, at) => [slide, at + 1] as const),
-    ),
-  )
+  const starts = sectionStarts(parts).map(({ start }) => start)
   return new Map(
     slides.map(({ slide }, at) => {
-      const id = readSlideId(slide)
-      return [
-        slide,
-        { number: first + at, total: slides.length, rowNumber: id === undefined ? 1 : (rows.get(id) ?? 1) },
-      ]
+      const start = starts.findLast((each) => each <= at) ?? 0
+      return [slide, { number: first + at, total: slides.length, rowNumber: at - start + 1 }]
     }),
   )
 }

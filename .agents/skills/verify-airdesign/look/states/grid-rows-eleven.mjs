@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test"
-import { manySlides } from "../../../../../tests/browser/slide-grid-deck.ts"
+import { manySlides, rowSizes } from "../../../../../tests/browser/slide-grid-deck.ts"
 import { openDeck } from "../open-deck.mjs"
 
 async function drive(kit) {
@@ -8,7 +8,7 @@ async function drive(kit) {
   await openDeck(kit.page, {
     name: "ten.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    buffer: await manySlides(10),
+    buffer: await manySlides(10, rowSizes(10)),
   })
   await kit.page.getByRole("button", { name: "Grid", exact: true }).click()
   await kit.page.locator('[data-slide-entry="10"]').hover()

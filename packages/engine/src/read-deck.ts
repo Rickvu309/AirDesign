@@ -1,8 +1,8 @@
 import type { DeckId } from "@airdesign/catalog"
 import { foldDesign, printDesign, readDeckId, shownDesign, templateFontDesign } from "@airdesign/catalog"
 import {
+  slideGroups,
   bytesOf,
-  foldGrid,
   readSlideId,
   foldSlides,
   presentSlides,
@@ -66,7 +66,7 @@ export type ReadTemplateStyle = TemplateStyle & {
 export type ReadDeckAnswer = {
   readonly ok: true
   readonly revision: number
-  readonly grid: { readonly starts: readonly string[] }
+  readonly groups: readonly { readonly first: string }[]
   readonly elements: readonly ReadElement[]
   readonly slides: readonly Pick<
     IndexSlide,
@@ -226,7 +226,7 @@ function firstAfter(nodes: readonly ElementId[], cursor: string): number {
 
 type ReadHead = Pick<
   ReadDeckAnswer,
-  "revision" | "grid" | "slides" | "palettes" | "templateStyles" | "templateStyle" | "index"
+  "revision" | "groups" | "slides" | "palettes" | "templateStyles" | "templateStyle" | "index"
 >
 
 function styleFields(register: Register, node = templateStylesNode): Readonly<Record<string, string>> {
@@ -443,7 +443,7 @@ export function readDeckPage(
   return packRead(
     {
       revision: deck.revision,
-      grid: foldGrid({
+      groups: slideGroups({
         ...deck.register,
         file:
           deck.register.file.length > 0
@@ -452,7 +452,7 @@ export function readDeckPage(
                 const id = readSlideId(slide.id)
                 return id === undefined ? [] : [id]
               }),
-      }).grid,
+      }).map((group) => ({ first: group.slides[0] })),
       ...(templateStyles === undefined || query.cursor !== undefined ? {} : { templateStyles }),
       slides: (deck.register.order.length === 0
         ? (index?.slides ?? []).map(({ id, position }) => slideOf(id, position))

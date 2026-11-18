@@ -161,15 +161,3 @@ export function moveBelowPlace(rows: readonly GridRange[], held: readonly number
   const row = rangeOf(rows, index)
   return row === undefined || gridDrop(rows, held, row.end, "new") === null ? null : row.end
 }
-
-export function gridDropBoundary(
-  collapsed: readonly GridRange[],
-  drop: { readonly at: number; readonly side: GridMoveSide },
-  from: number,
-): { readonly at: number; readonly side: GridMoveSide } {
-  const section = collapsed.find(({ start, end }) => drop.at > start && drop.at <= end)
-  if (section === undefined) return drop
-  const at = drop.at === section.end || from < section.start ? section.end : section.start
-  const side = drop.side === "keep" ? "keep" : at === section.end ? "new" : "same"
-  return { at, side }
-}

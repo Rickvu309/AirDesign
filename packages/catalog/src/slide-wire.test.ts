@@ -182,3 +182,18 @@ it("carries a layer joining or leaving a frame on a person's commit", () => {
   const elsewhere = { slide: "element-join", id: "256", member, frame: "257.20", before: null, file: ["256", "257"] }
   expect(readCommit({ deck: "deck", batch: [elsewhere] })).toEqual(field)
 })
+
+it("reads a Grid edit planned against slide groups on a person's commit, and refuses a Grid version it does not know", () => {
+  const file = ["256", "257"]
+  const edits = [
+    { slide: "add", grid: 3, row: "new", id: "258", after: "256", layout: "256", file },
+    { slide: "move-many", grid: 3, ids: ["257"], after: null, row: "keep", file },
+    { slide: "move-many", grid: 3, ids: ["257"], before: "256", row: "before", file },
+    { slide: "remove-many", grid: 3, ids: ["257"], file },
+  ]
+  for (const edit of edits) {
+    const { file: _file, ...command } = edit
+    expect(readCommit({ deck: "deck", batch: [edit] })).toMatchObject({ ok: true, batch: [command] })
+  }
+  expect(readCommit({ deck: "deck", batch: [{ ...edits[0], grid: 4 }] })).toEqual(field)
+})

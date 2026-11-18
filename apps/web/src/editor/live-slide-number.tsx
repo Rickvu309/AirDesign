@@ -10,7 +10,7 @@ export function liveSlideNumber(deck: DesigningDeck, node: ElementId, value: str
   const settings = numberRun(value ?? "")?.slideNumber
   if (settings === undefined) return null
   const { shown } = deck
-  const numbers = slideNumbering(shown.displayParts.current, shown.shownRegister.current).get(shapeOf(node).slide)
+  const numbers = slideNumbering(shown.displayParts.current).get(shapeOf(node).slide)
   if (numbers === undefined) return null
   return (
     <SlideNumberSection

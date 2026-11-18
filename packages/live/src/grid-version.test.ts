@@ -1,4 +1,5 @@
-import { format, gridRows, slideId } from "@airdesign/document"
+import { format, formatOf, gridCommandVersion, gridRows, slideGroups, slideId, stamps } from "@airdesign/document"
+import { deckRoutes } from "@airdesign/catalog"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { installIndexedDb, memoryShelf } from "./browser-fixtures.js"
 import { accountKey, newPage } from "./device.js"
@@ -75,4 +76,71 @@ it("opens a new import offline and publishes its section starts before sending i
   if (!saved.ok) throw new Error(saved.refusal)
   expect(saved.register.order).toEqual([edit])
   expect(gridRows(saved.register)).toEqual(after)
+})
+
+it("refuses, on a tab one command stamp older, the deck a version three Grid edit reached, and keeps its Grid edit for this build to send", async () => {
+  const server = memoryRemote()
+  const cache = connect(server)
+  await cache.open("deck")
+  await cache.index("deck", { slides: file.map((id, position) => ({ id, position })), elements: [], sectionStarts })
+  expect(await cache.flush("deck")).toMatchObject({ ok: true, revision: 0 })
+  const older = format - 1
+  const seenOlder = {
+    ...server,
+    open: async (body: { readonly deck: string }) => {
+      const answer = await server.open(body)
+      if (!answer.ok) return answer
+      const register = { ...answer.register, format: formatOf(answer.register) + format - older }
+      return deckRoutes.open.result(JSON.parse(JSON.stringify({ ...answer, register })))
+    },
+  }
+  newPage()
+  const journal = new Map<string, string>()
+  const tab = connect(seenOlder, { shelf: memoryShelf(journal) })
+  const before = await tab.openDeck("deck")
+  if (!before.ok) throw new Error(before.refusal)
+
+  const regroup = {
+    slide: "move-many",
+    grid: gridCommandVersion(before.register),
+    ids: [file[3]!],
+    after: file[2]!,
+    row: "same",
+  } as const
+  expect(regroup.grid).toBe(3)
+  expect(await server.commit({ deck: "deck", batch: [{ ...regroup, file }], once: "regroup" })).toMatchObject({
+    ok: true,
+  })
+  const answered = await server.open({ deck: "deck" })
+  if (!answered.ok) throw new Error(answered.refusal)
+  expect(formatOf(answered.register)).toBe(format)
+  expect(stamps.command).toBe(13)
+
+  const unsent = { slide: "add", grid: 2, row: "same", id: slideId("300"), after: file[1]!, layout: file[0]! } as const
+  const sent = vi.spyOn(server, "commit")
+  expect(await tab.enqueueSlide("deck", file, unsent)).toMatchObject({ ok: true })
+  expect(await tab.flush("deck")).toEqual({ ok: false, refusal: "newer" })
+  expect(await tab.enqueueSlide("deck", file, { ...unsent, id: slideId("301") })).toEqual({
+    ok: false,
+    refusal: "newer",
+  })
+  expect(sent).not.toHaveBeenCalled()
+  expect([...journal.values()].flatMap((raw) => JSON.parse(raw) as { readonly edit?: unknown }[])).toMatchObject([
+    { edit: { ...unsent, id: slideId("301") } },
+  ])
+
+  newPage()
+  const current = connect(server, { shelf: memoryShelf(journal) })
+  expect(await current.pending("deck")).toMatchObject([
+    { slideEdit: unsent },
+    { slideEdit: { ...unsent, id: slideId("301") } },
+  ])
+  expect(await current.flush("deck")).toMatchObject({ ok: true, revision: 2 })
+  const saved = await server.open({ deck: "deck" })
+  if (!saved.ok) throw new Error(saved.refusal)
+  expect(saved.register.order).toEqual([regroup, unsent, { ...unsent, id: slideId("301") }])
+  expect(slideGroups(saved.register).map((group) => group.slides)).toEqual([
+    [file[0], file[1], slideId("301"), slideId("300"), file[2], file[3]],
+    [file[4], file[5]],
+  ])
 })

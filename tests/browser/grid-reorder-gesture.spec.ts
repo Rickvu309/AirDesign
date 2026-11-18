@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test"
 import { test } from "./api-stack"
 import { boxOf, grab, hover, moveRequests, openSaved, picked, roomOf, zoomTo } from "./grid-reorder-deck"
-import { entry } from "./slide-grid-deck"
+import { entry, rowSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 } })
 
@@ -22,7 +22,7 @@ test("several selected slides travel together in deck order, and the drag shows 
   context,
   stack,
 }) => {
-  const saved = await openSaved(page, context, stack, 8)
+  const saved = await openSaved(page, context, stack, 8, rowSizes(8))
   const moves = moveRequests(page)
   await zoomTo(page, 25)
   await entry(page, 1).focus()
@@ -48,7 +48,7 @@ test("several selected slides travel together in deck order, and the drag shows 
 })
 
 test("escape, outside, and empty releases put every slide back and send no move", async ({ page, context, stack }) => {
-  const saved = await openSaved(page, context, stack, 8)
+  const saved = await openSaved(page, context, stack, 8, rowSizes(8))
   const moves = moveRequests(page)
   for (const cancel of ["Escape", "outside", "empty"]) {
     await grab(page, 1)
@@ -82,7 +82,7 @@ for (const percent of [12, 200]) {
     stack,
   }) => {
     await page.emulateMedia({ reducedMotion: "reduce" })
-    await openSaved(page, context, stack, 4)
+    await openSaved(page, context, stack, 4, rowSizes(4))
     await zoomTo(page, percent)
     await entry(page, 2).focus()
     if (percent === 200) {
@@ -120,7 +120,7 @@ test("bracket keys and Alt+arrows move a slide and pan the canvas to keep it in 
   context,
   stack,
 }) => {
-  const saved = await openSaved(page, context, stack, 6)
+  const saved = await openSaved(page, context, stack, 6, rowSizes(6))
   await zoomTo(page, 200)
   await entry(page, 1).focus()
   const inView = async (number: number) => {
@@ -159,7 +159,7 @@ test("a slide number, a slide's blank background and a touch drag reorder; an ob
   stack,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" })
-  const saved = await openSaved(page, context, stack, 4)
+  const saved = await openSaved(page, context, stack, 4, rowSizes(4))
   await zoomTo(page, 20)
   const number = await page.locator("[data-slide-number]").first().boundingBox()
   if (number === null) throw new Error("no slide number")
@@ -211,7 +211,7 @@ for (const [percent, placement] of [
 ] as const) {
   test(`${placement} number placement keeps selection and pointer reorder`, async ({ page, context, stack }) => {
     await page.emulateMedia({ reducedMotion: "reduce" })
-    const saved = await openSaved(page, context, stack, 4)
+    const saved = await openSaved(page, context, stack, 4, rowSizes(4))
     await zoomTo(page, Math.max(10, percent))
     if (percent < 10) {
       await page.locator("[data-grid-viewport]").evaluate((host) => {
@@ -246,7 +246,7 @@ test("releasing selected slides on empty canvas clears the drop and saves nothin
   context,
   stack,
 }) => {
-  const saved = await openSaved(page, context, stack, 7)
+  const saved = await openSaved(page, context, stack, 7, rowSizes(7))
   const moves = moveRequests(page)
   const number = page.locator("[data-slide-number]")
   await number.nth(0).click()

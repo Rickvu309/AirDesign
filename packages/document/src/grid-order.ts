@@ -25,6 +25,7 @@ export type GridTurn = {
 }
 export type GridUndoable = {
   readonly file: readonly SlideId[]
+  readonly grid: GridVersion
   readonly spots: readonly SlideStep[]
   readonly heads: readonly HeadStep[]
   readonly rowsBefore: readonly RowGuard[]
@@ -95,8 +96,8 @@ export function gridSectionStarts(state: Pick<SlideState, "index" | "sectionStar
 }
 
 export function gridCommandVersion(state: Pick<SlideState, "index" | "sectionStarts" | "order">): GridVersion {
-  if (state.order.some((command) => command.grid === 3)) return 3
-  return gridSectionStarts(state) !== undefined || state.order.some((command) => command.grid !== undefined) ? 2 : 1
+  if (gridSectionStarts(state) !== undefined || state.order.some((command) => command.grid === 3)) return 3
+  return state.order.some((command) => command.grid !== undefined) ? 2 : 1
 }
 
 export function orderedSpots(spots: readonly FoldedSlide[]): readonly FoldedSlide[] {

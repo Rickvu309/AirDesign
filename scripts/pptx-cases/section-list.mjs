@@ -28,6 +28,95 @@ const outside = (xml) =>
 
 const shown = (pptx, parts) => pptx.readSections(parts).map((section) => `${section.name} ${section.slides.length}`)
 
+const inOrder = (parts, ids) => {
+  const xml = text(parts.get(presentation))
+  const elements = ids.map((id) => xml.match(new RegExp(`<p:sldId id="${id}"[^>]*/>`))?.[0])
+  if (elements.some((element) => element === undefined)) throw new Error("section list case slide")
+  const list = xml.match(/<p:sldIdLst>[\s\S]*?<\/p:sldIdLst>/)?.[0]
+  if (list === undefined) throw new Error("section list case order")
+  return new Map(parts).set(
+    presentation,
+    encoder.encode(xml.replace(list, `<p:sldIdLst>${elements.join("")}</p:sldIdLst>`)),
+  )
+}
+
+const gridCases = ({ pptx, parts }) => {
+  const deck = parts.get(heatPumps)
+  const file = pptx.readSlides(deck).map((row) => row.slide)
+  const [intro, one, two, appendices] = pptx.readSections(deck)
+  const edited = (order) => pptx.orderedParts(deck, { file, order })
+  const plainDeck = parts.get(plain)
+  const plainFile = pptx.readSlides(plainDeck).map((row) => row.slide)
+  const half = Math.ceil(plainFile.length / 2)
+  const joined = { slide: "move-many", grid: 3, ids: [two.slides[0]], after: one.slides.at(-1), row: "same" }
+  const moved = [...two.slides, ...intro.slides, ...one.slides, ...appendices.slides]
+  return [
+    {
+      name: "written-grid-group-moved.pptx",
+      original: heatPumps,
+      base: inOrder(deck, moved),
+      parts: edited([{ slide: "move-many", grid: 3, ids: two.slides, after: null, row: "keep" }]),
+      sections: [`${partTwo} 10`, "Introduction 1", `${partOne} 28`, "Appendices 2"],
+    },
+    {
+      name: "written-grid-slide-joins.pptx",
+      original: heatPumps,
+      base: deck,
+      parts: edited([joined]),
+      sections: ["Introduction 1", `${partOne} 29`, `${partTwo} 9`, "Appendices 2"],
+    },
+    {
+      name: "written-grid-new-group.pptx",
+      original: heatPumps,
+      base: deck,
+      parts: edited([{ slide: "move-many", grid: 3, ids: one.slides.slice(10), after: one.slides[9], row: "new" }]),
+      sections: ["Introduction 1", `${partOne} 10`, "Untitled Section 18", `${partTwo} 10`, "Appendices 2"],
+    },
+    {
+      name: "written-grid-merged.pptx",
+      original: heatPumps,
+      base: deck,
+      parts: edited([{ slide: "move-many", grid: 3, ids: intro.slides, before: one.slides[0], row: "before" }]),
+      sections: [`${partOne} 29`, `${partTwo} 10`, "Appendices 2"],
+    },
+    {
+      name: "written-grid-first-groups.pptx",
+      original: plain,
+      base: plainDeck,
+      parts: pptx.orderedParts(plainDeck, {
+        file: plainFile,
+        order: [{ slide: "move-many", grid: 3, ids: plainFile.slice(half), after: plainFile[half - 1], row: "new" }],
+      }),
+      sections: [`Untitled Section ${half}`, `Untitled Section ${plainFile.length - half}`],
+    },
+    {
+      name: "written-grid-first-later.pptx",
+      original: heatPumps,
+      base: inOrder(deck, [
+        ...intro.slides,
+        ...one.slides.slice(1, 23),
+        one.slides[0],
+        ...one.slides.slice(23),
+        ...two.slides,
+        ...appendices.slides,
+      ]),
+      parts: edited([{ slide: "move-many", grid: 3, ids: [one.slides[0]], after: one.slides[22], row: "same" }]),
+      sections: ["Introduction 1", `${partOne} 28`, `${partTwo} 10`, "Appendices 2"],
+    },
+    {
+      name: "written-grid-back.pptx",
+      original: heatPumps,
+      base: deck,
+      parts: edited([
+        joined,
+        { slide: "move-many", grid: 3, ids: [two.slides[0]], before: two.slides[1], row: "before" },
+      ]),
+      sections: ["Introduction 1", `${partOne} 28`, `${partTwo} 10`, "Appendices 2"],
+      same: true,
+    },
+  ]
+}
+
 export const sectionCases = ({ pptx, parts }) => {
   const deck = parts.get(heatPumps)
   const [intro, one, two, appendices] = pptx.readSections(deck)
@@ -141,10 +230,17 @@ export default {
     "written-section-first.pptx",
     "written-section-regroup.pptx",
     "written-section-back.pptx",
+    "written-grid-group-moved.pptx",
+    "written-grid-slide-joins.pptx",
+    "written-grid-new-group.pptx",
+    "written-grid-merged.pptx",
+    "written-grid-first-groups.pptx",
+    "written-grid-first-later.pptx",
+    "written-grid-back.pptx",
   ],
-  write: sectionCases,
+  write: (read) => [...sectionCases(read), ...gridCases(read)],
   lines({ pptx, parts, lists }) {
-    return sectionCases({ pptx, parts }).flatMap((row) => {
+    return [...sectionCases({ pptx, parts }), ...gridCases({ pptx, parts })].flatMap((row) => {
       const after = parts.get(row.name)
       const before = parts.get(row.original)
       if (after === undefined || before === undefined) return [`${row.name} was not written`]

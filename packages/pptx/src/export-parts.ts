@@ -219,7 +219,7 @@ function laidOutFrames(parts: Parts, register: Register): Parts {
 
 export function exportParts(parts: Parts, register: Register, media?: ElementAt["media"]): Parts {
   const shapes = readShapes(parts)
-  const numbers = slideNumbering(parts, register)
+  const numbers = slideNumbering(parts)
   let next = writtenTheme(
     parts,
     register.nodes.includes(templateStylesNode) ? register.elements[templateStylesNode] : undefined,

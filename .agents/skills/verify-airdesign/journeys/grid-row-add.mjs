@@ -25,7 +25,7 @@ export default async function drive(kit) {
   await expect.poll(() => rowNumbers(page)).toEqual(added)
   await expect.poll(async () => (await saved()).order?.length).toBe(1)
   const confirmed = await saved()
-  expect(confirmed.order[0]).toMatchObject({ slide: "add", grid: 2, row: "new", after: confirmed.file[0] })
+  expect(confirmed.order[0]).toMatchObject({ slide: "add", grid: 3, row: "new", after: confirmed.file[0] })
   expect(confirmed.order[0]).not.toHaveProperty("key")
   expect(gridRows(confirmed)).toEqual([
     confirmed.file.slice(0, 4),
@@ -46,7 +46,7 @@ export default async function drive(kit) {
   await expect.poll(() => rowNumbers(page)).toEqual(added)
   await capture("reloaded")
   note(
-    "Ten slides stayed in their original rows. Hover saved no edit. The server stored one semantic row:new add; Undo, Redo and reload kept the same partition.",
+    "Ten slides stayed in their original slide groups. Hover saved no edit. The server stored one row:new add at version three; Undo, Redo and reload kept the same slide groups.",
   )
   const sectionAccount = await openRowDeck(kit, 6, true)
   await expect(page.locator("[data-section-head]")).toHaveCount(2)
@@ -63,6 +63,6 @@ export default async function drive(kit) {
   await page.mouse.move(1400, 90)
   await capture("sections")
   note(
-    "A deck with Opening and Results kept two section markers after adding a third grid row; grid rows did not create sections.",
+    "A deck with Opening and Results kept two section headings after adding a slide in a new slide group, which has no heading.",
   )
 }

@@ -25,7 +25,6 @@ import {
   type GridGeometry,
   revealedGrid,
   gridScaleMoved,
-  gridHeadingEdge,
   gridCardBounds,
   gridElementBounds,
   gridScreenFixed,
@@ -86,7 +85,6 @@ export function useGridViewport({
   onZoom,
   initialFit,
   layout,
-  folded,
   fitting,
   onFit,
   selected,
@@ -102,7 +100,6 @@ export function useGridViewport({
   onZoom: (size: number, persist?: boolean) => void
   onFit: (percent: number) => void
   layout: string
-  folded: string
   fitting: boolean
   initialFit: boolean
   selected: number
@@ -121,7 +118,6 @@ export function useGridViewport({
   geometryRef.current = geometry
   const frame = useRef<number | null>(null)
   const viewport = useRef<HTMLDivElement>(null)
-  const roomWidth = useRef<number | null>(null)
   const openRoom = useRef<DOMRect | null>(null)
   const [restored] = useState(() => keptGridViewport(deck))
   const view = useRef<GridViewport>(restored ?? { x: 48, y: 24, scale })
@@ -157,7 +153,6 @@ export function useGridViewport({
   function settle() {
     dirty.current = true
     fits.current = false
-    sizeHeadings()
     stopTimer()
     timer.current = setTimeout(store, settleAfter)
   }
@@ -213,17 +208,6 @@ export function useGridViewport({
     const host = viewport.current
     if (content === null || host === null) return
     content.style.transform = `translate(${next.x}px, ${next.y}px) scale(${next.scale})`
-    sizeHeadings()
-  }
-
-  function sizeHeadings() {
-    const host = viewport.current
-    if (host === null) return
-    if ((roomWidth.current ?? 0) === 0) roomWidth.current = host.clientWidth
-    world.current?.style.setProperty(
-      "--grid-heading-edge",
-      `${gridHeadingEdge(roomWidth.current ?? 0, view.current, fits.current)}px`,
-    )
   }
 
   function screenFixed(indices: readonly number[]): number {
@@ -257,7 +241,10 @@ export function useGridViewport({
       return { box, fixed: screenFixed(indices) }
     }
     if (focusedCard === null) return null
-    return { box: focusedCard.getBoundingClientRect(), fixed: gridScreenFixed(geometryRef.current, focusedIndex) }
+    return {
+      box: focusedCard.getBoundingClientRect(),
+      fixed: gridScreenFixed(geometryRef.current, focusedIndex),
+    }
   }
 
   function applyFitted(next: GridViewport) {
@@ -300,25 +287,7 @@ export function useGridViewport({
 
   useLayoutEffect(() => {
     if (fits.current) fit()
-  }, [layout, folded])
-
-  useLayoutEffect(() => {
-    const host = viewport.current
-    const content = world.current
-    if (fits.current || host === null || content === null) return
-    const room = host.getBoundingClientRect()
-    const box = content.getBoundingClientRect()
-    const y =
-      box.bottom < room.top + 24
-        ? room.top + 24 - box.bottom
-        : box.top > room.bottom - 24
-          ? room.bottom - 24 - box.top
-          : 0
-    if (y !== 0) {
-      paint(pannedGrid(view.current, { x: 0, y }))
-      settle()
-    }
-  }, [folded])
+  }, [layout])
 
   useLayoutEffect(() => {
     const host = viewport.current
@@ -344,7 +313,6 @@ export function useGridViewport({
     let before = host.getBoundingClientRect()
     const observer = new ResizeObserver(() => {
       const after = host.getBoundingClientRect()
-      roomWidth.current = after.width
       if (after.width < before.width - 0.5) {
         if (openRoom.current === null || before.width > openRoom.current.width + 0.5) openRoom.current = before
       } else if (openRoom.current !== null && after.width >= openRoom.current.width - 0.5) openRoom.current = null
@@ -353,7 +321,6 @@ export function useGridViewport({
         const target = workingTarget()
         if (target !== null) applyFitted(resizedGrid(view.current, target.box, before, after, target.fixed))
       }
-      sizeHeadings()
       before = after
     })
     observer.observe(host)

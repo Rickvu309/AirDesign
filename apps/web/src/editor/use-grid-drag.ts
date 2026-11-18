@@ -15,7 +15,6 @@ import {
   dropPlace,
   edgePan,
   gridDrop,
-  gridDropBoundary,
   gridIndices,
   liveTarget,
   type GridBand,
@@ -121,7 +120,6 @@ export function useGridDrag({
   ghost,
   viewport,
   rows,
-  collapsed,
   selected,
   slideIds,
   panBy,
@@ -134,7 +132,6 @@ export function useGridDrag({
   ghost: RefObject<HTMLDivElement | null>
   viewport: RefObject<HTMLDivElement | null>
   rows: readonly GridRange[]
-  collapsed: readonly GridRange[]
   selected: readonly number[]
   slideIds: readonly SlideId[]
   panBy: (delta: Point) => void
@@ -264,10 +261,7 @@ export function useGridDrag({
         return
       }
       const found = rowDrop(bands.current, y, scale)
-      const drop =
-        found === null
-          ? null
-          : { ...found, at: gridDropBoundary(collapsed, { at: found.at, side: "keep" }, held.from).at }
+      const drop = found
       const mark = bar.current
       if (drop === null || mark === null || gridDrop(rows, held.held, drop.at, "keep") === null) {
         clearPlace(held)
@@ -289,7 +283,7 @@ export function useGridDrag({
       return
     }
     const candidate = dropAt(rows, held.held, slot.index, dropPlace(x, slot, slot.index))
-    const { at, side } = gridDropBoundary(collapsed, candidate, held.from)
+    const { at, side } = candidate
     const band = rowOf(rows, slot.index)
     const withinHeldRow = band !== undefined && gridIndices(band).every((index) => held.held.includes(index))
     if (withinHeldRow || gridDrop(rows, held.held, at, side) === null) {

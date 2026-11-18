@@ -74,14 +74,6 @@ export function gridRinged(
   return state.kind === "slides" ? pickedSlides(prunedPick(state.pick, count, ids), current) : []
 }
 
-export function gridDesigned(
-  state: GridInteraction,
-  current: number,
-  count: number,
-  ids?: readonly SlideId[],
-  shown: (index: number) => boolean = () => true,
-): number {
-  return state.kind === "elements" || state.kind === "text"
-    ? 1
-    : gridRinged(state, current, count, ids).filter(shown).length
+export function gridDesigned(state: GridInteraction, current: number, count: number, ids?: readonly SlideId[]): number {
+  return state.kind === "elements" || state.kind === "text" ? 1 : gridRinged(state, current, count, ids).length
 }

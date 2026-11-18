@@ -16,6 +16,6 @@ export function slideGroups(state: SlideState, names: readonly string[] = []): r
   return partition(ids, new Set(folded.grid.starts)).map((slides) => {
     const key = keys.get(slides[0]) ?? `r${slides[0]}`
     const name = /^f\d+$/.test(key) ? names[Number(key.slice(1))] : undefined
-    return name === undefined ? { key, slides } : { key, slides, name }
+    return name === undefined || name === "" ? { key, slides } : { key, slides, name }
   })
 }

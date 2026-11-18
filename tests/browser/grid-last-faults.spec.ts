@@ -3,7 +3,7 @@ import { limits } from "../../packages/document/src/index.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test, type Stack } from "./api-stack"
 import { boxOf, canvas, hover, openSaved, panOf, roomOf, zoomTo, type Saved } from "./grid-reorder-deck"
-import { entry, fixtures } from "./slide-grid-deck"
+import { entry, fixtures, rowSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -39,7 +39,7 @@ async function focusMeasure(page: Page) {
 }
 
 test("a drop with unchanged slide order saves new row membership and undoes once", async ({ page, context, stack }) => {
-  const saved = await openSaved(page, context, stack, 7)
+  const saved = await openSaved(page, context, stack, 7, rowSizes(7))
   await addBelow(page).focus()
   await page.keyboard.press("Enter")
   await expect.poll(saved.rows).toHaveLength(3)
@@ -71,7 +71,7 @@ test("a drop with unchanged slide order saves new row membership and undoes once
 
 for (const target of ["element", "slide"] as const) {
   test(`Design keeps the working ${target} inside the canvas`, async ({ page, context, stack }) => {
-    await openSaved(page, context, stack, 7)
+    await openSaved(page, context, stack, 7, rowSizes(7))
     if (target === "element") {
       await entry(page, 1).press("Enter")
       await liveElement(page).click()
@@ -104,7 +104,7 @@ for (const target of ["element", "slide"] as const) {
 }
 
 test("five slide Undos and Redos focus the restored selection", async ({ page, context, stack }) => {
-  const saved = await openSaved(page, context, stack, 7)
+  const saved = await openSaved(page, context, stack, 7, rowSizes(7))
   const before = await saved.rows()
   const start = await revision(stack, saved)
   await entry(page, 1).focus()
@@ -140,7 +140,7 @@ test("five slide Undos and Redos focus the restored selection", async ({ page, c
 
 for (const path of [slideListCopy.deleteKey, "menu"] as const) {
   test(`last slide deletion explains the refusal via ${path}`, async ({ page, context, stack }) => {
-    const saved = await openSaved(page, context, stack, 1)
+    const saved = await openSaved(page, context, stack, 1, rowSizes(1))
     await entry(page, 1).focus()
     if (path === "menu") {
       await page.keyboard.press("ContextMenu")
@@ -156,7 +156,7 @@ test("context menu inserts relative to its slide and moves the selection into a 
   context,
   stack,
 }) => {
-  const saved = await openSaved(page, context, stack, 7)
+  const saved = await openSaved(page, context, stack, 7, rowSizes(7))
   const before = await saved.rows()
   const start = await revision(stack, saved)
   await zoomTo(page, 8)
@@ -190,7 +190,7 @@ test("context menu inserts relative to its slide and moves the selection into a 
 })
 
 test("context menu describes the slide limit at Fit", async ({ page, context, stack }) => {
-  const saved = await openSaved(page, context, stack, limits.slides)
+  const saved = await openSaved(page, context, stack, limits.slides, rowSizes(limits.slides))
   await entry(page, 1).press("ContextMenu")
   for (const name of [menuAfter, menuBelow]) {
     const item = menuItem(page, name)
@@ -220,19 +220,16 @@ for (const control of ["Design", "zoom"] as const) {
   })
 }
 
-test("Redo opens the collapsed section holding the slide it brings back", async ({ page, context, stack }) => {
+test("Redo brings back the slide it removed and keeps that slide in view", async ({ page, context, stack }) => {
   const saved = await openSaved(page, context, stack, `${fixtures}/sections-after.pptx`)
   await entry(page, 1).press("ContextMenu")
   await menuItem(page, menuAfter).click()
   await expect(cards(page)).toHaveCount(4)
   await entry(page, 3).press("ControlOrMeta+z")
   await expect(cards(page)).toHaveCount(3)
-  const opening = page.locator("[data-section-head]").first()
-  await opening.press(slideListCopy.openKey)
-  await expect(entry(page, 1)).toHaveCount(0)
   await entry(page, 2).press("ControlOrMeta+Shift+z")
   await expect.poll(() => revision(stack, saved)).toBe(3)
-  await expect(opening).toHaveAttribute("aria-expanded", "true")
+  await expect(cards(page)).toHaveCount(4)
   await expect(entry(page, 2)).toBeFocused()
   await expect(entry(page, 2)).toBeInViewport()
 })

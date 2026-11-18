@@ -1,6 +1,6 @@
 import { expect, it } from "vitest"
 import { readDeckId } from "@airdesign/catalog"
-import { elementId, orderKeyBetween } from "@airdesign/document"
+import { elementId, format, orderKeyBetween } from "@airdesign/document"
 import { call, indexDeck, openDeck, readDeckPage, type Deck } from "./index.js"
 
 const person = { actor: "person" } as const
@@ -137,24 +137,28 @@ it("refuses backfill whose opening order disagrees with earlier slide commands",
   ).toEqual({ ok: false, refusal: "stale" })
 })
 
-it("reads the same default grid on every page without writing and freezes it on the first add", () => {
+it("reads the slide groups on every page without writing, a slide group made by an edit included", () => {
   const file = Array.from({ length: 10 }, (_, i) => String(i + 256))
-  const loaded = indexDeck(initial, person, {
+  const opening = {
     deck: initial.id,
     once: "ten",
     offset: 0,
     total: 0,
     elements: [],
     slides: file.map((id, position) => ({ id, position })),
-  })
+  }
+  const unsectioned = indexDeck(initial, person, opening)
+  if (!unsectioned.ok) throw new Error(unsectioned.refusal)
+  expect(readDeckPage(unsectioned.deck, { runId: null }).groups).toEqual([{ first: "256" }])
+  const loaded = indexDeck(initial, person, { ...opening, format, sectionStarts: ["256", "260"] })
   if (!loaded.ok) throw new Error(loaded.refusal)
   const before = JSON.stringify(loaded.deck.register)
   for (const query of [{ runId: null }, { runId: null, slide: "260" }]) {
-    expect(readDeckPage(loaded.deck, query).grid).toEqual({ starts: ["256", "260", "264"] })
+    expect(readDeckPage(loaded.deck, query).groups).toEqual([{ first: "256" }, { first: "260" }])
   }
   expect(JSON.stringify(loaded.deck.register)).toBe(before)
   const changed = edit(loaded.deck, [
-    { slide: "add", grid: 1, row: "same", id: "266", after: "265", layout: "256", file },
+    { slide: "add", grid: 3, row: "new", id: "266", after: "257", layout: "256", file },
   ])
-  expect(readDeckPage(changed, { runId: null }).grid).toEqual({ starts: ["256", "260", "264"] })
+  expect(readDeckPage(changed, { runId: null }).groups).toEqual([{ first: "256" }, { first: "266" }, { first: "260" }])
 })

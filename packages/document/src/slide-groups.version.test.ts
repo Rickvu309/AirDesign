@@ -43,8 +43,9 @@ function sameAsVersionThree(register: Register, edit: SlideCommand) {
 const switched = () => land(opened(deck(12), [id(256), id(260)]), { slide: "remove", grid: 3, id: id(267) })
 
 describe("an older command folded after a version three command", () => {
-  it("plans new commands against slide groups once the log holds one", () => {
-    expect(gridCommandVersion(opened(deck(12), [id(256)]))).toBe(2)
+  it("plans new commands against slide groups once the section starts are known or the log holds one", () => {
+    expect(gridCommandVersion({ order: [] })).toBe(1)
+    expect(gridCommandVersion(opened(deck(12), [id(256)]))).toBe(3)
     expect(gridCommandVersion(switched())).toBe(3)
   })
 

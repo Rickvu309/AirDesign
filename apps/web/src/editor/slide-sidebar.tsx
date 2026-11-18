@@ -2,6 +2,7 @@ import { SlideItem } from "@/editor/slide-list-item"
 import { Filmstrip, type PaintBox } from "@airdesign/render"
 import type { ElementId, GridSide, SlideId } from "@airdesign/document"
 import {
+  Fragment,
   useCallback,
   useLayoutEffect,
   useRef,
@@ -21,7 +22,7 @@ import type { SelectedCopy, SlideSetChange } from "@/slide-edit"
 import type { SaveStatus } from "@/editor/use-deck-status"
 import { slideChangeAllowed } from "@/editor/slide-menu"
 import { NewSlideMenu } from "@/editor/new-slide-menu"
-import { sectionAt } from "@/editor/collapsed-sections"
+import { heldSections, sectionAt } from "@/editor/collapsed-sections"
 import { SlideThumb } from "@/editor/slide-thumb"
 import type { LayoutChoice } from "@/slide-layout"
 import { cn } from "@/lib/class-names"
@@ -34,7 +35,7 @@ const thumbWidth = slideThumbWidth
 
 const thumbCard = cn("block shrink-0 overflow-hidden rounded-[2px] bg-white", hairlineShadow)
 
-export type StripSection = { readonly name: string; readonly start: number }
+export type StripSection = { readonly name: string | null; readonly start: number; readonly key: string }
 
 const noSections: readonly StripSection[] = []
 
@@ -158,7 +159,8 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
     if (next !== document.activeElement) next.focus()
   }, [current, count])
   const sections = strip.sections ?? noSections
-  const [collapsed, setCollapsed] = useState<ReadonlySet<number>>(new Set())
+  const [folded, setFolded] = useState<ReadonlySet<string>>(new Set())
+  const collapsed = heldSections(folded, sections)
   const [stop, setStop] = useState<string | null>(null)
   const [message, setMessage] = useState<Announcement | null>(null)
   const announce = useCallback(
@@ -169,8 +171,8 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
   const [seen, setSeen] = useState(strip.current)
   if (seen !== strip.current) {
     setSeen(strip.current)
-    const at = sectionAt(sections, strip.current)
-    if (collapsed.has(at)) setCollapsed(new Set([...collapsed].filter((each) => each !== at)))
+    const key = sections[sectionAt(sections, strip.current)]?.key
+    if (key !== undefined && folded.has(key)) setFolded(new Set([...folded].filter((each) => each !== key)))
   }
   const item = (index: number) => (
     <SlideItem
@@ -218,14 +220,12 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
   const present = (key: string) => {
     const [kind, number] = key.split(":")
     const at = Number(number)
-    if (kind === "section") return at >= 0 && at < sections.length
+    if (kind === "section") return (sections[at]?.name ?? null) !== null
     return at >= 0 && at < strip.count && visible(at)
   }
   const reachable = stop !== null && present(stop) ? stop : fallback
-  const toggle = (number: number) =>
-    setCollapsed((held) =>
-      held.has(number) ? new Set([...held].filter((each) => each !== number)) : new Set([...held, number]),
-    )
+  const toggle = (key: string) =>
+    setFolded((held) => (held.has(key) ? new Set([...held].filter((each) => each !== key)) : new Set([...held, key])))
   return (
     <>
       <div className="flex px-3 pb-2">
@@ -274,20 +274,27 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
             following.current = false
         }}
       >
-        {sections.length === 0
+        {sections.every((section) => section.name === null)
           ? Array.from({ length: strip.count }, (_, index) => item(index))
           : sections.map((section, number) => {
               const end = sections[number + 1]?.start ?? strip.count
               const open = !collapsed.has(number)
+              if (section.name === null)
+                return (
+                  <Fragment key={section.key}>
+                    {number === 0 ? null : <span aria-hidden="true" className="mx-3 my-1 block h-px bg-line" />}
+                    {Array.from({ length: end - section.start }, (_, offset) => item(section.start + offset))}
+                  </Fragment>
+                )
               return (
                 <SectionBlock
-                  key={`${number}:${section.name}`}
+                  key={section.key}
                   name={section.name}
                   reachable={reachable === `section:${String(number)}`}
                   stop={`section:${String(number)}`}
                   open={open}
                   range={open ? undefined : rangeOf(section.start, end)}
-                  onToggle={() => toggle(number)}
+                  onToggle={() => toggle(section.key)}
                   stack={
                     <Filmstrip
                       className={thumbCard}

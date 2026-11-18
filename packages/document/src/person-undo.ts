@@ -1,4 +1,3 @@
-import { gridCommandVersion } from "./grid-order.js"
 import { gridUndoable } from "./grid-undo.js"
 import type { GridUndoable, GridTurn } from "./grid-order.js"
 import { decide, landedPatch, shownPatch, valueHolder, type Command, type Register } from "./decide.js"
@@ -239,7 +238,7 @@ function turnCommands(
     return landing(register, {
       command: "slide",
       file,
-      edit: { slide: "grid-turn", grid: gridCommandVersion(register), turn },
+      edit: { slide: "grid-turn", grid: undoable.grid, turn },
     })
   }
   if ("stack" in undoable) {
@@ -294,7 +293,7 @@ function turnCommands(
     file,
     edit: {
       slide: "grid-turn",
-      grid: gridCommandVersion(register),
+      grid: planned.grid,
       turn: { spots: planned.spots, heads: planned.heads, rows: planned.rowsBefore },
     },
   })

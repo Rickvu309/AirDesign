@@ -59,8 +59,9 @@ export function mappedSlideGroups(
     const boundary = position === 0 || sections.get(id) !== sections.get(ids[position - 1]!)
     const own = tag?.key ?? null
     const free = !held.has(section) && !given.has(section)
+    const claimed = own !== null && !own.startsWith("f") && boundary && free && sections.has(id)
     const key =
-      own !== null && !given.has(own)
+      own !== null && !given.has(own) && !claimed
         ? own
         : boundary && free
           ? section

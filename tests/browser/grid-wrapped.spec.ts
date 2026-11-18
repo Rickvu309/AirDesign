@@ -3,7 +3,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { blankAt, centre, crossed, marquee, selectedNumbers, type Point } from "./grid-marquee-deck.ts"
 import { boxOf, canvas, grab, hover, panOf, roomOf, zoomTo } from "./grid-reorder-deck.ts"
-import { entry, fixtures, openFile, openGrid, rowNumbers } from "./slide-grid-deck.ts"
+import { entry, fixtures, manySlides, openFile, openGrid, rowNumbers } from "./slide-grid-deck.ts"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -13,7 +13,7 @@ const handle = (page: Page, row: number) => page.getByRole("button", { name: sli
 async function openWrapped(page: Page): Promise<void> {
   await page.goto(screen)
   await expect(page.locator("[data-editor-grid]")).toBeVisible()
-  await expect(page.locator("[data-group-rule]")).toBeVisible()
+  await expect(page.locator("[data-group-rule]")).toHaveCount(0)
 }
 
 async function lengths(page: Page): Promise<number[]> {
@@ -65,17 +65,15 @@ async function bring(page: Page, target: Locator): Promise<void> {
   throw new Error("could not pan to the target")
 }
 
-test("a stored row longer than the column count wraps onto closer lines and keeps one heading", async ({ page }) => {
+test("a stored row longer than the column count wraps onto closer lines and keeps one name", async ({ page }) => {
   await openWrapped(page)
   expect(await lengths(page)).toEqual([1, 28, 10, 2])
-  await expect(page.locator("[data-group-rule]")).toHaveCount(1)
-  await expect(page.locator("[data-section-head]").filter({ hasText: "Part 1:" })).toHaveCount(1)
-  const heading = await page.locator("[data-section-head]").filter({ hasText: "Part 1:" }).boundingBox()
+  await expect(page.locator("[data-group-rule]")).toHaveCount(0)
+  await expect(page.locator("[data-section-head]")).toHaveCount(0)
+  await expect(page.locator("[data-slide-group]").nth(1)).toHaveAccessibleName(/^Part 1:/)
   const firstLine = await boxOf(page, 2)
   const secondLine = await boxOf(page, 12)
   const nextGroup = await boxOf(page, 30)
-  if (heading === null) throw new Error("heading")
-  expect(heading.y + heading.height).toBeLessThanOrEqual(firstLine.y + 1)
   expect(secondLine.y - firstLine.y).toBeLessThan(nextGroup.y - (await boxOf(page, 22)).y)
   expect(secondLine.y - firstLine.y).toBeLessThan(firstLine.y - (await boxOf(page, 1)).y)
 })
@@ -85,7 +83,7 @@ test("one handle sits on the wrapped group, and the add control is only under it
   await zoomTo(page, 25)
   await bring(page, handle(page, 2))
   await expect(page.locator("[data-row-handle]")).toHaveCount(4)
-  await expect(page.locator("[data-group-rule]")).toHaveCount(1)
+  await expect(page.locator("[data-group-rule]")).toHaveCount(0)
   const line = await boxOf(page, 2)
   const next = await boxOf(page, 12)
   const adds = await page
@@ -145,7 +143,7 @@ test("hovering the handle tints every line as one band and nothing animates", as
   await expect(grip).toBeEnabled()
   await page.keyboard.press("Shift+Digit1")
   await expect(page.locator('[data-grid-row="1"]')).toHaveAttribute("data-row-blocked", "")
-  await expect(page.locator("[data-group-rule]")).toBeVisible()
+  await expect(page.locator("[data-group-rule]")).toHaveCount(0)
 })
 
 test("dragging the handle moves every line of the group", async ({ page }) => {
@@ -153,11 +151,11 @@ test("dragging the handle moves every line of the group", async ({ page }) => {
   await openWrapped(page)
   await zoomTo(page, 12)
   const room = await roomOf(page)
-  const heading = page.locator("[data-section-head]").first()
-  await place(page, heading, room.x + 180, room.y + 80)
+  const anchor = entry(page, 1)
+  await place(page, anchor, room.x + 180, room.y + 80)
   const grip = handle(page, 2)
   const origin = await grip.boundingBox()
-  const head = await heading.boundingBox()
+  const head = await anchor.boundingBox()
   if (origin === null || head === null) throw new Error("handle")
   const x = origin.x + origin.width / 2
   expect(x).toBeGreaterThan(room.x)
@@ -214,6 +212,12 @@ test("dragging a slide from the first line to the third reorders it inside the g
   )
   expect(ids[1]).not.toBe(1)
   expect(ids.indexOf(1)).toBeGreaterThan(ids.indexOf(23))
+  const groups = page.locator("[data-slide-group]")
+  await expect(groups).toHaveCount(4)
+  await expect(groups.nth(0)).toHaveAccessibleName("Introduction")
+  await expect(groups.nth(1)).toHaveAccessibleName(/^Part 1:/)
+  await expect(groups.nth(2)).toHaveAccessibleName(/^Part 2:/)
+  await expect(groups.nth(3)).toHaveAccessibleName("Appendices")
 })
 
 test.describe("live slide aside", () => {
@@ -251,7 +255,8 @@ test("a slide dropped on a later line joins that group, and the start of the gro
   expect(joined.slice(1, 30)).toContain(40)
   expect(joined[1]).not.toBe(40)
   await page.reload()
-  await expect(page.locator("[data-group-rule]")).toBeVisible()
+  await expect(page.locator("[data-group-rule]")).toHaveCount(0)
+  await expect(page.locator("[data-slide-group]")).toHaveCount(4)
   await grab(page, 41)
   await hover(page, 2, 0.2)
   await page.mouse.up()
@@ -259,9 +264,7 @@ test("a slide dropped on a later line joins that group, and the start of the gro
   expect((await origins(page))[1]).toBe(40)
 })
 
-test("Fit, Zoom to selection, remembered pan, collapse, arrows, marquee and skip follow the wrapped lines", async ({
-  page,
-}) => {
+test("Fit, Zoom to selection, remembered pan, arrows, marquee and skip follow the wrapped lines", async ({ page }) => {
   await openWrapped(page)
   await zoomTo(page, 25)
   await page.keyboard.press("Shift+Digit1")
@@ -280,16 +283,9 @@ test("Fit, Zoom to selection, remembered pan, collapse, arrows, marquee and skip
   await page.waitForTimeout(300)
   const held = await panOf(page)
   await page.reload()
-  await expect(page.locator("[data-group-rule]")).toBeVisible()
+  await expect(page.locator("[data-group-rule]")).toHaveCount(0)
   await expect.poll(() => panOf(page)).toEqual(held)
   await page.keyboard.press("Shift+Digit1")
-  const part = page.getByRole("button", { name: /^Part 1:/ })
-  await part.click()
-  await expect(part).toHaveAttribute("aria-expanded", "false")
-  await expect(entry(page, 2)).toHaveCount(0)
-  await expect(page.locator("[data-group-rule]")).toHaveCount(0)
-  await expect(part).toBeVisible()
-  await part.click()
   await expect(entry(page, 2)).toBeVisible()
   await entry(page, 2).focus()
   await page.keyboard.press("ArrowDown")
@@ -316,14 +312,27 @@ test("Fit, Zoom to selection, remembered pan, collapse, arrows, marquee and skip
   ).toHaveCount(1)
 })
 
-test("a deck whose stored rows already fit one line draws no wrap", async ({ page }) => {
+test("a deck whose slide groups already fit one line draws no wrap", async ({ page }) => {
+  await openFile(page, {
+    name: "twenty.pptx",
+    mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    buffer: await manySlides(20, [10, 10]),
+  })
+  await openGrid(page)
+  expect(await lengths(page)).toEqual([10, 10])
+  await expect(page.locator("[data-group-rule]")).toHaveCount(0)
+  const first = await boxOf(page, 1)
+  const last = await boxOf(page, 10)
+  expect(last.y).toBeCloseTo(first.y, 0)
+})
+
+test("an imported section longer than a line is one slide group drawn on wrapped lines", async ({ page }) => {
   await openFile(page, join(fixtures, "doe-heat-pumps.pptx"))
   await openGrid(page)
-  expect(await lengths(page)).toEqual([1, 10, 10, 8, 10, 2])
+  expect(await lengths(page)).toEqual([1, 28, 10, 2])
   await expect(page.locator("[data-group-rule]")).toHaveCount(0)
-  const first = await boxOf(page, 2)
-  const last = await boxOf(page, 11)
-  expect(last.y).toBeCloseTo(first.y, 0)
+  await expect(page.locator("[data-section-head]")).toHaveCount(0)
+  await expect(page.locator("[data-slide-group]").nth(1)).toHaveAccessibleName(/^Part 1:/)
 })
 
 async function blankBeside(page: Page, number: number): Promise<Point> {

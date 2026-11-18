@@ -1,7 +1,7 @@
 import { foldGrid, orderedSpots } from "./grid-order.js"
 import type { SlideId } from "./element-id.js"
 import type { OrderKey } from "./order-key.js"
-import { foldSlides, presentSlides, type SlideState, type LegacySlideCommand } from "./slide-order.js"
+import { foldSlides, type SlideState, type LegacySlideCommand } from "./slide-order.js"
 
 export type FileSection = { readonly name: string; readonly slides: readonly string[] }
 export type Section = { readonly name: string; readonly slides: readonly SlideId[] }
@@ -24,21 +24,24 @@ export function sectionRuns(
     keys.set(key, member.get(id) ?? 0)
     held.set(id, keys)
   }
-  for (const spot of foldSlides({ file, order: [] })) hold(spot.id, spot.key)
-  for (const [position, command] of effects.entries()) {
+  const placed = new Map<SlideId, OrderKey | null>()
+  for (const spot of foldSlides({ file, order: [] })) {
+    hold(spot.id, spot.key)
+    placed.set(spot.id, spot.key)
+  }
+  for (const command of effects) {
     if (command.slide === "add") member.set(command.id, member.get(command.after) ?? 0)
     if (command.slide === "clone") member.set(command.id, member.get(command.source) ?? 0)
-    if (command.slide === "add" || command.slide === "clone" || command.slide === "restore")
+    if (command.slide === "add" || command.slide === "clone" || command.slide === "restore") {
       hold(command.id, command.key)
-    if (command.slide !== "move") continue
-    const returned = held.get(command.id)?.get(command.key)
-    if (returned !== undefined) member.set(command.id, returned)
-    else {
-      const present = presentSlides({ file, order: effects.slice(0, position + 1) })
-      const at = present.findIndex((spot) => spot.id === command.id)
-      const near = at > 0 ? present[at - 1] : present[at + 1]
-      member.set(command.id, member.get(near?.id ?? command.id) ?? 0)
+      placed.set(command.id, command.key)
     }
+    if (command.slide === "remove") placed.set(command.id, null)
+    if (command.slide !== "move") continue
+    placed.set(command.id, command.key)
+    const returned = held.get(command.id)?.get(command.key)
+    const near = returned === undefined ? neighbour(placed, command.id, command.key) : undefined
+    member.set(command.id, returned ?? member.get(near ?? command.id) ?? 0)
     hold(command.id, command.key)
   }
   const grouped = base.map((): SlideId[] => [])
@@ -48,6 +51,20 @@ export function sectionRuns(
     grouped[current]?.push(id)
   }
   return grouped
+}
+
+function neighbour(placed: ReadonlyMap<SlideId, OrderKey | null>, id: SlideId, key: OrderKey): SlideId | undefined {
+  const earlier = (leftId: SlideId, left: OrderKey, rightId: SlideId, right: OrderKey) =>
+    left < right || (left === right && leftId < rightId)
+  let before: [SlideId, OrderKey] | undefined
+  let after: [SlideId, OrderKey] | undefined
+  for (const [other, at] of placed) {
+    if (other === id || at === null) continue
+    if (earlier(other, at, id, key)) {
+      if (before === undefined || earlier(before[0], before[1], other, at)) before = [other, at]
+    } else if (after === undefined || earlier(other, at, after[0], after[1])) after = [other, at]
+  }
+  return (before ?? after)?.[0]
 }
 
 export function foldSections(state: SlideState, base: readonly FileSection[]): readonly Section[] {

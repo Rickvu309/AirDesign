@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test"
-import { manySlides, rowNumbers } from "../../../../tests/browser/slide-grid-deck.ts"
+import { manySlides, rowNumbers, rowSizes } from "../../../../tests/browser/slide-grid-deck.ts"
 import { openDeck } from "./open-deck.mjs"
 
 export const belowRow = (page, row = 1) =>
@@ -7,11 +7,11 @@ export const belowRow = (page, row = 1) =>
 
 export { rowNumbers }
 
-export async function openRowDeck(kit, count = 10, sections = false) {
+export async function openRowDeck(kit, count = 10, sections = rowSizes(count)) {
   const account = await kit.signIn()
   await kit.page.goto("/")
   await openDeck(kit.page, {
-    name: sections ? "sections.pptx" : "ten.pptx",
+    name: sections === true ? "sections.pptx" : "ten.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     buffer: await manySlides(count, sections),
   })
@@ -21,7 +21,8 @@ export async function openRowDeck(kit, count = 10, sections = false) {
 
 export async function rowAddState(kit, state) {
   const { page } = kit
-  await openRowDeck(kit, state === "limit" ? 50 : state === "sections" ? 6 : 10, state === "sections")
+  const count = state === "limit" ? 50 : state === "sections" ? 6 : 10
+  await openRowDeck(kit, count, state === "sections" ? true : rowSizes(count))
   if (state === "limit") return
   await page.locator("[data-zoom-readout]").click()
   await page.locator("[data-zoom-field]").fill("25")

@@ -5,7 +5,7 @@ import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { test } from "./api-stack"
 import { openSaved, picked, roomOf } from "./grid-reorder-deck"
-import { entry } from "./slide-grid-deck"
+import { entry, rowSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -23,7 +23,7 @@ test("reorders the selected slides together and restores the server rows with on
   context,
   stack,
 }) => {
-  const saved = await openSaved(page, context, stack, 7)
+  const saved = await openSaved(page, context, stack, 7, rowSizes(7))
   const originalRows = await saved.rows()
   await selectThree(page)
   await page.keyboard.press("Alt+ArrowDown")
@@ -36,7 +36,7 @@ test("reorders the selected slides together and restores the server rows with on
 })
 
 test("pointer and keyboard menus keep a selected set and disable Open", async ({ page, context, stack }) => {
-  await openSaved(page, context, stack, 7)
+  await openSaved(page, context, stack, 7, rowSizes(7))
   await selectThree(page)
   const menu = page.getByRole("menu")
   const labels = slideListCopy.setActions(3)
@@ -56,7 +56,7 @@ test("pointer and keyboard menus keep a selected set and disable Open", async ({
 })
 
 test("Design shows the slide count without a single slide Background control", async ({ page, context, stack }) => {
-  await openSaved(page, context, stack, 7)
+  await openSaved(page, context, stack, 7, rowSizes(7))
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await selectThree(page)
   const panel = page.locator("[data-design-panel]")
@@ -90,7 +90,7 @@ test("Zoom to selection centers the element and repeats the same viewport", asyn
 })
 
 test("Zoom to selection frames the text box during text editing", async ({ page, context, stack }) => {
-  await openSaved(page, context, stack, 7)
+  await openSaved(page, context, stack, 7, rowSizes(7))
   await entry(page, 1).locator("[data-thumb-node]").first().dblclick()
   const text = page.locator('[data-grid-edit] [contenteditable="true"]').first()
   await expect(text).toBeFocused()

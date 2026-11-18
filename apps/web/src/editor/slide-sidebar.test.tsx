@@ -7,8 +7,8 @@ const strip: SlideStrip = {
   count: 4,
   current: 2,
   sections: [
-    { name: "Opening", start: 0 },
-    { name: "Results", start: 2 },
+    { name: "Opening", start: 0, key: "f0" },
+    { name: "Results", start: 2, key: "f1" },
   ],
   onSelect: () => undefined,
   thumbHeight: 101,
@@ -46,7 +46,7 @@ describe("slide list", () => {
   })
 
   it("keeps the one tab stop on the current slide when the deck has a single section", () => {
-    const html = markup({ current: 0, sections: [{ name: "Opening", start: 0 }] })
+    const html = markup({ current: 0, sections: [{ name: "Opening", start: 0, key: "f0" }] })
     const reachable = tags(html, /<button[^>]*data-(?:slide-entry|section-head)[^>]*>/g).filter((tag) =>
       tag.includes('tabindex="0"'),
     )

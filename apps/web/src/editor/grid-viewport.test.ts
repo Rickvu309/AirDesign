@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest"
+import { percentWidth } from "./canvas-zoom"
 import { gridLineGap } from "@/editor/grid-lines"
 import {
   fittedGridRows,
+  gridThumbHeight,
   fittedGridElements,
   resizedGrid,
   zoomedGrid,
@@ -15,13 +17,11 @@ import {
   revealedGrid,
   gridSpacing,
   gridCardBounds,
-  gridSectionGap,
-  gridSectionHeight,
-  gridHeadingHeight,
   wheeledGrid,
   gridScaleMoved,
   arrowGrid,
   readGridViewport,
+  type GridGeometry,
 } from "./grid-viewport"
 
 describe("grid viewport", () => {
@@ -84,7 +84,7 @@ it("fits the occupied cards across section headers with screen-space padding", (
   )
   const scale = (1000 - 4) / (1000 + 65)
   expect(view?.scale).toBeCloseTo(scale)
-  expect(view?.y).toBeCloseTo((1473 - gridSectionHeight - 1333 * scale) / 2 - gridSectionHeight)
+  expect(view?.y).toBeCloseTo((1473 - 1333 * scale) / 2)
   expect(view?.x).toBeCloseTo(48 - 1130 * scale)
 })
 
@@ -92,10 +92,6 @@ describe("grid spacing", () => {
   it("keeps gaps a share of the slide and numbers readable at fifty-slide fit", () => {
     expect(gridSpacing(1280, 720)).toEqual({ column: 166.4, row: 410.4 })
     expect(gridSpacing(960, 720).column).toBeCloseTo(124.8)
-  })
-
-  it("reserves a screen-space gutter between section headings and numbers", () => {
-    for (const scale of [0.1, 0.4, 1, 4]) expect(gridSectionGap(scale) * scale).toBe(32)
   })
 })
 
@@ -199,10 +195,13 @@ describe("scale-independent row fit", () => {
             const geometry = { rows, sections: sections.filter((n) => n < count), width: 960, height: 720 }
             const room = { width, height }
             const fit = fittedGridRows(geometry, room)
-            const marked = rows.filter((row) => geometry.sections.some((n) => n >= row.start && n < row.end)).length
-            const worldHeight = rows.length * 744 + (rows.length - 1) * 410.4
+            const lines = gridLayoutLines(geometry)
+            const shown = lines.reduce((total, line, index) => {
+              const size = gridTrackSize(line, geometry, gridTrackGap(geometry, lines, index))
+              return total + size.world * fit.scale + size.fixed
+            }, 0)
             expect(fit.y).toBeGreaterThanOrEqual(48 - 1e-8)
-            expect(fit.y + worldHeight * fit.scale + marked * gridSectionHeight).toBeLessThanOrEqual(height - 48 + 1e-8)
+            expect(fit.y + shown).toBeLessThanOrEqual(height - 48 + 1e-8)
             expect(fit.x).toBeGreaterThanOrEqual(48 - 1e-8)
             expect(Array.from({ length: 6 }, () => fittedGridRows(geometry, room))).toEqual(Array(6).fill(fit))
           })
@@ -299,7 +298,7 @@ it("fits the rotated union in a sectioned row using the world geometry", () => {
   const view = fittedGridElements(geometry, 3, boxes, 1000, { width: 996, height: 696 })
   expect(view?.scale).toBe(1.5)
   expect(view?.x).toBeCloseTo((996 - 450 * 1.5) / 2 - (1130 + 250) * 1.5)
-  expect(view?.y).toBeCloseTo(48 - (500 + 24 + 285 + 24 - 100) * 1.5 - 2 * gridSectionHeight)
+  expect(view?.y).toBeCloseTo(48 - (500 + 24 + 285 + 24 - 100) * 1.5)
 })
 
 it("clamps a very small element to Grid's maximum zoom", () => {
@@ -342,25 +341,6 @@ it("fits a selected row head and tail using the stored columns and their chrome"
   expect(view?.y).toBeCloseTo(fitted.y, 9)
 })
 
-it("fits collapsed heading tracks without reserving space for hidden rows", () => {
-  const geometry = {
-    rows: [
-      { start: 0, end: 1 },
-      { start: 1, end: 5 },
-      { start: 5, end: 9 },
-      { start: 9, end: 10 },
-    ],
-    sections: [0, 1, 9],
-    shown: (index: number) => index === 0 || index === 9,
-    width: 1000,
-    height: 750,
-  }
-  const room = { width: 1470, height: 923 }
-  const fit = fittedGridRows(geometry, room)
-  expect(fit.scale).toBeGreaterThan(0.3)
-  expect(fittedGridCards(geometry, [5], room)).toBeNull()
-})
-
 it("places later lines of one group closer together than the next group", () => {
   const rows = [
     { start: 0, end: 1 },
@@ -395,9 +375,79 @@ it("places later lines of one group closer together than the next group", () => 
   expect(gridTrackGap(plain, fitting, 0)).toBe(gridSpacing(960, 540).row)
 })
 
-it("leaves at least six screen pixels between a heading and the hover halo of its first row at every zoom", () => {
-  const haloBand = 30
-  for (const scale of [0.01, 0.22, 1, 4]) {
-    expect(gridSectionHeight - gridHeadingHeight + 24 * scale - haloBand).toBeGreaterThanOrEqual(6)
+const wide = { width: 12_192_000, height: 6_858_000 }
+const fourByThree = { width: 9_144_000, height: 6_858_000 }
+const thumbWidth = 197
+const fitRoom = { width: 1470, height: 759 }
+
+function slideBox(slide: { width: number; height: number }) {
+  const width = percentWidth(100, slide)
+  const thumb = Math.round((thumbWidth * slide.height) / slide.width)
+  return { width, height: gridThumbHeight(width, thumb, thumbWidth) }
+}
+
+function deck(slide: { width: number; height: number }, sizes: readonly number[], named: boolean): GridGeometry {
+  const box = slideBox(slide)
+  let start = 0
+  const rows = sizes.map((size) => {
+    const row = { start, end: start + size }
+    start += size
+    return row
+  })
+  return {
+    rows,
+    sections: named ? rows.map((row) => row.start) : [],
+    rowHandles: true,
+    width: box.width,
+    height: box.height,
   }
+}
+
+function screenGaps(geometry: GridGeometry, scale: number) {
+  const lines = gridLayoutLines(geometry)
+  let within: number | null = null
+  let between: number | null = null
+  for (let index = 0; index < lines.length; index += 1) {
+    const next = lines[index + 1]
+    const line = lines[index]
+    if (next === undefined || line === undefined) continue
+    const gap = gridTrackGap(geometry, lines, index)
+    if (within === null && next.number === line.number) within = gap
+    if (between === null && next.number !== line.number) between = gap
+  }
+  return {
+    within: within === null ? null : within * scale,
+    between: between === null ? null : between * scale,
+  }
+}
+
+describe("Fit without a heading band", () => {
+  it("fits the four reference decks in the 1470 by 923 grid room", () => {
+    const twelve = deck(wide, Array(12).fill(2), true)
+    const heat = deck(fourByThree, [1, 28, 10, 2], true)
+    const six = deck(wide, [3, 3], true)
+    const plain = deck(wide, [6], false)
+    const heatScale = fittedGridRows(heat, fitRoom).scale
+    const fit = screenGaps(heat, heatScale)
+    const quarter = screenGaps(heat, 0.25)
+    expect(Math.round(fittedGridRows(twelve, fitRoom).scale * 100)).toBe(5)
+    expect(Math.round(heatScale * 100)).toBe(11)
+    expect(Math.round(fittedGridRows(six, fitRoom).scale * 100)).toBe(31)
+    expect(Math.round(fittedGridRows(plain, fitRoom).scale * 100)).toBe(23)
+    expect(fit.within).toBeCloseTo(13.9, 0)
+    expect(fit.between).toBeCloseTo(45.77, 1)
+    expect(quarter.within).toBeCloseTo(31.2, 1)
+    expect(quarter.between).toBeCloseTo(102.74, 1)
+  })
+
+  it("keeps wrapped lines of the heat-pump deck closer than the next group at Fit and at 25%", () => {
+    const heat = deck(fourByThree, [1, 28, 10, 2], true)
+    const fit = fittedGridRows(heat, fitRoom).scale
+    for (const scale of [fit, 0.25]) {
+      const gaps = screenGaps(heat, scale)
+      expect(gaps.within).not.toBeNull()
+      expect(gaps.between).not.toBeNull()
+      expect(gaps.between ?? 0).toBeGreaterThan((gaps.within ?? 0) * 2)
+    }
+  })
 })

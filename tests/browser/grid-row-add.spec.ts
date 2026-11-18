@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
-import { entry, fifty, manySlides, openFile, openGrid, rowNumbers, settled } from "./slide-grid-deck"
+import { entry, fifty, manySlides, openFile, openGrid, rowNumbers, settled, rowSizes } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -14,7 +14,11 @@ const original = [
 ]
 
 async function ten(page: Page) {
-  await openFile(page, { name: "ten.pptx", mimeType: "application/octet-stream", buffer: await manySlides(10) })
+  await openFile(page, {
+    name: "ten.pptx",
+    mimeType: "application/octet-stream",
+    buffer: await manySlides(10, rowSizes(10)),
+  })
   await openGrid(page)
 }
 
@@ -27,7 +31,11 @@ async function zoom(page: Page, percent: number) {
 }
 
 test("a one-slide deck keeps the below control within the fitted viewport", async ({ page }) => {
-  await openFile(page, { name: "one.pptx", mimeType: "application/octet-stream", buffer: await manySlides(1) })
+  await openFile(page, {
+    name: "one.pptx",
+    mimeType: "application/octet-stream",
+    buffer: await manySlides(1, rowSizes(1)),
+  })
   await openGrid(page)
   await expect(below(page, 1)).toBeInViewport({ ratio: 1 })
   const button = await below(page, 1).boundingBox()
@@ -160,7 +168,11 @@ test("below controls and the preview yield to Space pan and Hand mode", async ({
 })
 
 test("a full deck removes every inline add and describes the limit in the top bar", async ({ page }) => {
-  await openFile(page, { name: "fifty.pptx", mimeType: "application/octet-stream", buffer: await manySlides(fifty) })
+  await openFile(page, {
+    name: "fifty.pptx",
+    mimeType: "application/octet-stream",
+    buffer: await manySlides(fifty, rowSizes(fifty)),
+  })
   await openGrid(page)
   await zoom(page, 25)
   await expect(page.locator("[data-add-row], [data-add-gap]")).toHaveCount(0)

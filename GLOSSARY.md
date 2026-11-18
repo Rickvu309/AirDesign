@@ -37,7 +37,7 @@ The shape names Figma's shape tool uses. A PowerPoint shape Figma does not have 
 _Avoid_: oval, five-point star
 
 **slide group**:
-Slides kept together, shown as one row in grid view. In a PowerPoint file it is a section. The code and the agent wire still say grid row (`GridRow`, `grid.starts`, `row`) and section (`section`) until their renames land, and a grid row is not exported yet.
+Slides kept together. Grid shows one row, or several lines when the group is long. A PowerPoint section imports as one, and export writes them back. Code still says grid row (`GridRow`, `row`) and section (`section`).
 _Avoid_: grid row, row, section
 
 **import**:
