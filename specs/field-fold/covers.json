@@ -23,7 +23,7 @@
       "file": "packages/document/src/person-undo.ts",
       "names": ["undoOf", "turn", "stepCommands"],
       "digest": "4e0fd4a0c00c",
-      "blob": "5fcaf089d0926fd398ac333a6cd23a8cd33b82e4"
+      "blob": "dd54fb16edd1d1787a1c6c6bb23687923ff0b8ca"
     },
     {
       "file": "apps/web/src/design/trait-edit.ts",
@@ -41,7 +41,7 @@
       "file": "apps/web/src/design/panel.ts",
       "names": ["panelOf", "shownOf", "fallbackOf", "textShown"],
       "digest": "af22fbc22411",
-      "blob": "7661c9f732b8ba8082d52a7f5069f4dc11b7edf6"
+      "blob": "ad35adab9be09d5dc5e0a7b80965a80da232b667"
     },
     {
       "file": "apps/web/src/design/shown-alpha.ts",
@@ -52,8 +52,8 @@
     {
       "file": "apps/web/src/editor/live-design-panel.tsx",
       "names": ["fieldsRead", "elementDesign"],
-      "digest": "1e6aee631137",
-      "blob": "e3e757478a5f0c3f72e4016f9956bdd4f2d7190a"
+      "digest": "78a77ad5cf97",
+      "blob": "bba0d2e4765cadd1d3e01eca0e35829d3ebed909"
     },
     {
       "file": "apps/web/src/undo-list.ts",
@@ -76,8 +76,8 @@
     {
       "file": "packages/pptx/src/export-parts.ts",
       "names": ["exportParts", "writtenElement", "writtenTheme"],
-      "digest": "c02b4a4c209a",
-      "blob": "23daee38ee2d9788a93f3161848a06018c54b7e7"
+      "digest": "71e1db6cc862",
+      "blob": "ddd679627b9901fff36b0da1a804919c46d8c888"
     },
     {
       "file": "packages/pptx/src/xml-codec.ts",
