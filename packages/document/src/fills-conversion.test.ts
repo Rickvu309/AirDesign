@@ -9,6 +9,7 @@ import { readSlideState } from "./slide-order.js"
 import { readRegister, readRow } from "./stored.js"
 
 const fillsFormat = 57
+const imageFormat = 63
 
 function readDeck(): Register {
   const read = readRegister(written.register)
@@ -42,8 +43,8 @@ describe("a deck a format 53 build saved", () => {
       },
     ])
     expect(patches(register, "447.4")[0]).toEqual({
-      v: fillsFormat,
-      patch: { fills: { p0: { set: { image: "rocket" } } } },
+      v: imageFormat,
+      patch: { fills: { p0: { set: { image: true } }, source: { set: "rocket" } } },
     })
     expect(patches(register, "452.slide")).toEqual([
       { v: fillsFormat, patch: { fills: { p0: { set: { solid: { rgb: "1F4E79" } } } } } },

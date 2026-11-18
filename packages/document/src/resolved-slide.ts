@@ -2,7 +2,7 @@ import type { Box } from "./box.js"
 import type { SlideSize } from "./deck-index.js"
 import type { Kind } from "./kinds.js"
 
-export type Fill = "none" | "unknown" | { readonly rgb: string }
+export type Fill = "none" | "unknown" | "image" | { readonly rgb: string }
 
 export type Spacing = { readonly percent: number } | { readonly points: number }
 

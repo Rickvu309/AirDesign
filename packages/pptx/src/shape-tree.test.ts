@@ -26,7 +26,7 @@ it("finds the nearest shape and keeps group children out of their parent's owned
 it("recognizes only shape tags and maps them to document kinds", () => {
   expect(["p:sp", "p:pic", "p:graphicFrame", "p:cxnSp", "p:grpSp"].filter(isShapeTag).map(paintKind)).toEqual([
     "shape",
-    "picture",
+    "shape",
     "chart",
     "connector",
     "group",

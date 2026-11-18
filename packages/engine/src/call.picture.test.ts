@@ -7,7 +7,7 @@ const person = { actor: "person" } as const
 const file = ["256"]
 const node = elementId("256.9")
 const media = { sha256: "e".repeat(64), type: "image/gif" }
-const picture = { node, kind: "picture", value: null, box: { x: 1, y: 2, cx: 300, cy: 200 }, grouped: false }
+const picture = { node, kind: "shape", value: null, box: { x: 1, y: 2, cx: 300, cy: 200 }, grouped: false }
 
 function added(): Deck {
   const id = readDeckId("deck")
@@ -20,11 +20,11 @@ function added(): Deck {
   return result.deck
 }
 
-it("lets a person add a picture by its hash and media type, and a read lists it with its box", () => {
-  expect(readDeckPage(added(), { runId: null }).elements).toMatchObject([{ node, kind: "picture", box: picture.box }])
+it("lets a person add a photo by its hash and media type, and a read lists it as a shape with its box", () => {
+  expect(readDeckPage(added(), { runId: null }).elements).toMatchObject([{ node, kind: "shape", box: picture.box }])
 })
 
-it("refuses text typed into a picture, which export cannot write", () => {
+it("refuses text typed into a photo, which export cannot write", () => {
   expect(call("commit_edits", added(), person, { deck: "deck", batch: [{ node, value: "Typed" }] })).toMatchObject({
     ok: false,
   })

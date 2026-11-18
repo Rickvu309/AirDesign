@@ -27,7 +27,7 @@ function shape(node: string, role: IndexElement["role"], value: string | null): 
 const elements: readonly IndexElement[] = [
   shape("258.2", "title", writeTextValue(quarterly)),
   shape("258.3", "body", "Plain words"),
-  { node: elementId("258.4"), kind: "picture", value: null, box, grouped: false, role: "picture" },
+  { node: elementId("258.4"), kind: "shape", value: null, box, grouped: false, role: "picture" },
   { node: elementId("258.5"), kind: "shape", value: "", box, grouped: true },
   { ...shape("258.6", undefined, ""), kept: ["text.color"] },
   { ...shape("258.7", undefined, null), kept: ["fills"] },
@@ -198,9 +198,9 @@ describe("planChange refuses the whole change and names every element it cannot 
     })
     const boxed = { target: { node: elementId("258.3") }, box: { x: null } } as unknown as SetChange
     expect(plan(boxed)).toEqual({ ok: false, refusals: [{ node: "258.3", trait: "box", code: "kind" }] })
-    expect(plan({ target: { node: elementId("258.4") }, fills: { paint: { none: true } } })).toEqual({
+    expect(plan({ target: { node: elementId("259.3") }, fills: { paint: { none: true } } })).toEqual({
       ok: false,
-      refusals: [{ node: "258.4", trait: "fills", code: "kind" }],
+      refusals: [{ node: "259.3", trait: "fills", code: "kind" }],
     })
   })
 

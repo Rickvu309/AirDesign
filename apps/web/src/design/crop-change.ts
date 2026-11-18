@@ -30,8 +30,8 @@ export function cropChange(view: ScopedElement, before: unknown): (value: unknow
   return (value) => {
     const target = { node: view.node }
     const box = view.box === null ? null : croppedBox(view.box, before, value)
-    const crop = { rect: value } as SetChange["crop"]
-    if (box === null) return { target, crop, image: { mode: "crop" } } as SetChange
-    return { target, crop, image: { mode: "crop" }, box: { x: box.x, y: box.y, w: box.cx, h: box.cy } } as SetChange
+    const fills = { crop: value, mode: "crop" } as SetChange["fills"]
+    if (box === null) return { target, fills }
+    return { target, fills, box: { x: box.x, y: box.y, w: box.cx, h: box.cy } }
   }
 }

@@ -33,7 +33,8 @@ const ownKinds = slideKinds.join("|")
 const targetPattern = `^(?:[0-9]{1,10}|${slidePart}\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${ownKinds}|${rolePart})|\\*\\.${rolePart}|deck\\.(?:theme|template[1-9][0-9]{0,3}))$`
 const roleTarget = new RegExp(`^(${slidePart}|\\*)\\.(${rolePart})$`)
 
-const addable = ["shape", "picture"] as const
+const addable = ["shape"] as const
+const oldAddable = ["picture"]
 const boxSides = { x: "x", y: "y", w: "cx", h: "cy" } as const
 
 function refused(field: string): Refused {
@@ -146,27 +147,26 @@ export function readPlacedBox(raw: unknown): Box | null {
   return cx > 0 && cy > 0 ? { x, y, cx, cy } : null
 }
 
-const addKeys = {
-  shape: ["op", "kind", "slide", "box", "text"],
-  picture: ["op", "kind", "slide", "box", "icon"],
-} as const
+const addKeys = ["op", "kind", "slide", "box", "text", "icon"]
 
 export function readAddChange(raw: unknown): Read<WireAdd> {
   if (!plainObject(raw) || raw.op !== "add") return refused("op")
   const kind = addable.find((each) => each === raw.kind)
-  if (kind === undefined) return refused("kind")
+  const old = oldAddable.includes(String(raw.kind))
+  if (kind === undefined && !old) return refused("kind")
   const slide = readSlideId(raw.slide)
   if (slide === undefined) return refused("slide")
-  const keys: readonly string[] = addKeys[kind]
-  const extra = Object.keys(raw).find((key) => !keys.includes(key))
+  const extra = Object.keys(raw).find((key) => !addKeys.includes(key))
   if (extra !== undefined) return refused(extra)
+  if (old && raw.icon === undefined) return refused("icon")
+  if (raw.icon !== undefined && raw.text !== undefined) return refused("text")
   const box = raw.box === undefined ? undefined : readPlacedBox(raw.box)
   if (box === null) return refused("box")
   const placed = box === undefined ? {} : { box }
-  if (kind === "picture") {
-    const icon = readAgent(traits.image.fields.source.desc, raw.icon)
+  if (raw.icon !== undefined) {
+    const icon = readAgent(traits.fills.fields.source.desc, raw.icon)
     if (!icon.ok || typeof icon.value !== "string") return refused("icon")
-    return { ok: true, change: { op: "add", kind, slide, ...placed, icon: icon.value } }
+    return { ok: true, change: { op: "add", kind: "shape", slide, ...placed, icon: icon.value } }
   }
   const text = raw.text === undefined ? undefined : readTrait("text", raw.text)
   if (text !== undefined && !text.ok) return text
@@ -174,7 +174,7 @@ export function readAddChange(raw: unknown): Read<WireAdd> {
     ok: true,
     change: {
       op: "add",
-      kind,
+      kind: "shape",
       slide,
       ...placed,
       ...(text === undefined ? {} : { text: text.change }),
@@ -240,7 +240,7 @@ export function addChangeSchema(): JsonSchema {
     additionalProperties: false,
     required: ["op", "kind", "slide"],
     description:
-      "Add a text layer, or with kind picture a Lucide icon, to one slide. Leave box out to put it in the largest free area of the slide. Its id comes back in elements.",
+      "Add a text layer, or with icon a shape whose fills hold a Lucide icon, to one slide. Leave box out to put it in the largest free area of the slide. Its id comes back in elements.",
     properties: {
       op: { type: "string", const: "add" },
       kind: { type: "string", enum: addable },
@@ -248,8 +248,8 @@ export function addChangeSchema(): JsonSchema {
       box: placedBoxSchema(),
       text: traitSchema("text", null),
       icon: {
-        ...agentSchema(traits.image.fields.source.desc),
-        description: "With kind picture, an icon name such as rocket.",
+        ...agentSchema(traits.fills.fields.source.desc),
+        description: "An icon name such as rocket, in place of text.",
       },
     },
   }

@@ -114,15 +114,14 @@ function addable(command: ElementAdd): boolean {
   if (!freshShape(element)) return false
   if (geometry !== undefined) return media === undefined && drawable(element, geometry)
   if (element.kind === "table") return media === undefined && openedTable(element.value)
-  if (element.kind === "shape")
-    return (element.value === "" || openingSlideNumber(element.value)) && media === undefined
+  if (element.kind !== "shape") return false
+  if (element.value !== null) return (element.value === "" || openingSlideNumber(element.value)) && media === undefined
   const sized = element.box !== null && element.box.cx > 0 && element.box.cy > 0
-  const sourced = (media !== undefined) !== (openingIcon(element) !== null)
-  return element.kind === "picture" && element.value === null && sized && sourced
+  return sized && (media !== undefined) !== (openingIcon(element) !== null)
 }
 
 export function openingIcon(element: IndexElement): string | null {
-  const source = element.opening?.image?.source
+  const source = element.opening?.fills?.source
   return source !== undefined && typeof source === "object" ? assetIcon(source.set) : null
 }
 

@@ -10,7 +10,7 @@ import {
   type Register,
   type Row,
 } from "@airdesign/document"
-import { exportParts, shownAlphas, shownImage } from "@airdesign/pptx"
+import { exportParts, shownAlphas } from "@airdesign/pptx"
 import { beforeAll, expect, it } from "vitest"
 import { opacityCopy } from "@/copy/opacity-copy"
 import { ensureMarkup } from "@/markup"
@@ -33,16 +33,17 @@ type Layer = "change" | "wire" | "control" | "round-trip" | "paint-change" | "un
 
 type Problem = { readonly field: string; readonly missing: Layer }
 
-const probes: Partial<Readonly<Record<Kind, { readonly deck: string; readonly node: string }>>> = {
-  shape: { deck: "doe-heat-pumps.pptx", node: "2797.13" },
-  picture: { deck: "doe-heat-pumps.pptx", node: "2883.13" },
-  connector: { deck: "census-updating-spm.pptx", node: "324.26" },
-}
+const probes: readonly { readonly name: string; readonly kind: Kind; readonly deck: string; readonly node: string }[] =
+  [
+    { name: "shape", kind: "shape", deck: "doe-heat-pumps.pptx", node: "2797.13" },
+    { name: "image", kind: "shape", deck: "doe-heat-pumps.pptx", node: "2883.13" },
+    { name: "connector", kind: "connector", deck: "census-updating-spm.pptx", node: "324.26" },
+  ]
 
 const opacity = opacityWire.example.opacity * 1000
 
 function unfaded(parts: Parts, at: At, keys: readonly string[]): readonly string[] {
-  const shown: Readonly<Record<string, unknown>> = { ...shownAlphas(parts, at), image: shownImage(parts, at)?.alpha }
+  const shown: Readonly<Record<string, unknown>> = shownAlphas(parts, at)
   return keys.filter((key) => shown[key.split(".")[0] ?? ""] !== opacity)
 }
 
@@ -61,12 +62,12 @@ function panelRegister(register: Register, at: At): { readonly register: Registe
   return opened === null ? null : { register: opened, row }
 }
 
-async function kindProblems(kind: Kind, deck: string, node: string): Promise<readonly Problem[]> {
+async function kindProblems(name: string, kind: Kind, deck: string, node: string): Promise<readonly Problem[]> {
   const parts = await deckParts(deck)
   const at = placed(parts, kind, node)
   const keys = opacityFields({ kind, text: element(parts, at)?.value != null, grouped: false, animated: false })
   const missing = (fields: readonly string[], layer: Layer) =>
-    fields.map((key): Problem => ({ field: `${kind} ${key}`, missing: layer }))
+    fields.map((key): Problem => ({ field: `${name} ${key}`, missing: layer }))
   const shown = unfaded(parts, at, keys)
   const problems = [
     ...missing(
@@ -96,12 +97,9 @@ let probed: readonly string[] = []
 beforeAll(async () => {
   await ensureMarkup()
   const problems: Problem[] = []
-  for (const [kind, probe] of Object.entries(probes) as [Kind, { deck: string; node: string }][])
-    problems.push(...(await kindProblems(kind, probe.deck, probe.node)))
+  for (const probe of probes) problems.push(...(await kindProblems(probe.name, probe.kind, probe.deck, probe.node)))
   found = problems
-  probed = Object.keys(probes).flatMap((kind) =>
-    opacityFields({ kind: kind as Kind, text: true, grouped: false, animated: false }),
-  )
+  probed = probes.flatMap(({ kind }) => opacityFields({ kind, text: true, grouped: false, animated: false }))
 }, 120_000)
 
 it("lands { opacity: 60 } on each kind that takes an alpha field as an agent and from the Opacity row, exports, reads, paints, undoes and judges every alpha it takes", () => {

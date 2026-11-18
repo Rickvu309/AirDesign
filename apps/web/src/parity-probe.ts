@@ -22,7 +22,8 @@ import {
   valueHolder,
 } from "@airdesign/document"
 import { indexPackage, paintReader, readPackage, readSlides } from "@airdesign/pptx"
-import { panelOf } from "./design/panel"
+import { fillSlotFields } from "./design/fill-slots"
+import { panelOf, shownPlace } from "./design/panel"
 
 export type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -157,6 +158,7 @@ type ShownValue<T extends TraitName, F> = F extends keyof Inputs<T> ? NonNullabl
 export type FieldProbe<T extends TraitName, F extends Shown<T>> = {
   readonly file: (parts: Parts, at: At) => unknown
   readonly shows: (value: ShownValue<T, F>) => unknown
+  readonly on?: { readonly deck: string; readonly kind: Kind; readonly node: string }
 } & (F extends InheritableField<T> ? { readonly inherited: (parts: Parts, at: At) => boolean } : unknown)
 
 export type Probe<T extends TraitName> = [FieldName<T>] extends [never]
@@ -171,16 +173,21 @@ export type Probe<T extends TraitName> = [FieldName<T>] extends [never]
       readonly painted?: (parts: Parts, at: At, field: string) => string
     }
 
-function panelControl(register: Register, at: At, trait: TraitName, field: string) {
+function panelControl(register: Register, at: At, trait: TraitName, field: string, parts?: Parts) {
   const view = registerScope(register).view(at.node)
-  const sections = view === undefined ? undefined : panelOf(view, { reads: {}, moves: true }).sections
+  const fields = parts === undefined ? undefined : fillSlotFields(parts, at)
+  const sections =
+    view === undefined
+      ? undefined
+      : panelOf(view, { reads: {}, moves: true, ...(fields === undefined ? {} : { fields }) }).sections
   const controls = sections?.flatMap((section) => section.strips.flat())
   if (trait === "text" && (field === "fill" || field === "color"))
     return controls?.find(
       (each) =>
         (each.trait === "textFill" && each.field === "value") || (each.trait === "text" && each.field === "fill"),
     )
-  return controls?.find((each) => each.trait === trait && each.field === field)
+  const place = shownPlace(trait, field)
+  return controls?.find((each) => each.trait === place.trait && each.field === place.field)
 }
 
 export function panelRegister(
@@ -189,9 +196,10 @@ export function panelRegister(
   trait: TraitName,
   field: string,
   value: unknown,
+  parts?: Parts,
 ): Register | null {
   const scope = registerScope(register)
-  const control = panelControl(register, at, trait, field)
+  const control = panelControl(register, at, trait, field, parts)
   const input = trait === "text" && field === "color" ? { solid: value } : value
   const planned = control === undefined ? null : planChange(control.change(input), scope)
   if (planned === null || !planned.ok) return null

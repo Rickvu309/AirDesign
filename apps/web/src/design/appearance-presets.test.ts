@@ -79,12 +79,17 @@ it("writes fixed outer shadow strengths, recognizes each and leaves custom shado
 })
 
 function borderSection(kind: "shape" | "picture" | "connector", fill: unknown, dash: unknown) {
+  const image = kind === "picture" ? { "fills.p0": { value: { image: true }, own: true } } : {}
   return panelOf(
-    { ...view, facts: { ...view.facts, kind } },
+    {
+      ...view,
+      facts: { ...view.facts, kind: kind === "picture" ? "shape" : kind, text: kind !== "picture" && view.facts.text },
+    },
     {
       reads: {},
       moves: true,
       fields: {
+        ...image,
         "line.fill": { value: fill, own: true },
         "line.dash": { value: dash, own: true },
       },

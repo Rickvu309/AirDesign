@@ -18,7 +18,7 @@ const file = [slideId("256"), slideId("257")]
 const node = elementId("256.9")
 const box = { x: 100, y: 200, cx: 3000, cy: 2000 }
 const sha256 = "a".repeat(64)
-const picture: IndexElement = { node, kind: "picture", value: null, box, grouped: false }
+const picture: IndexElement = { node, kind: "shape", value: null, box, grouped: false }
 const media = { sha256, type: "image/png" } as const
 
 function slide(register: Register, edit: SlideCommand) {

@@ -89,8 +89,7 @@ function addedNode(register: Register): ElementId | undefined {
 }
 
 function applyAdd(deck: Deck, change: WireAdd, runId: string, base: number): Applied {
-  if (change.kind === "picture")
-    return addIcon({ deck: deck.id, base }, deck, change.slide, change.icon, change.box, runId)
+  if ("icon" in change) return addIcon({ deck: deck.id, base }, deck, change.slide, change.icon, change.box, runId)
   const value = change.text?.value
   const opening = typeof value === "string" && openingSlideNumber(value) ? value : ""
   const added = addTextBox({ deck: deck.id, base }, deck, change.slide, change.box, runId, opening)

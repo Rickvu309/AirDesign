@@ -132,8 +132,8 @@ export function addIcon(
   const size = measure.size ?? { width: 0, height: 0 }
   const box = wanted ?? placeNewBox(size, takenBoxes(register, slide), { cx: iconSide, cy: iconSide })
   const node = nextElementId(register, slide, measure.free)
-  const opening = { image: { source: { set: icon } } }
-  const element = { node, kind: "picture", value: null, box, grouped: false, opening } as const
+  const opening = { fills: { p0: { set: { image: true } }, source: { set: icon } } } as const
+  const element = { node, kind: "shape", value: null, box, grouped: false, opening } as const
   return decided(register, opened.file, { slide: "element-add", id: slide, element, runId }, runId)
 }
 

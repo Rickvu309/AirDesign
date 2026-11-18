@@ -45,7 +45,7 @@ function element(named: ElementId): CanvasElement {
 
 async function painted() {
   const store = paintStore()
-  store.publish({ id: added, kind: "shape", text: "", picture: null })
+  store.publish({ id: added, kind: "shape", text: "" })
   const host = document.createElement("div")
   const button = document.createElement("button")
   document.body.append(button, host)

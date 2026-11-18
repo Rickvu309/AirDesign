@@ -19,7 +19,7 @@ it("moves the frame's edges with the crop, so the shown part keeps its scale", (
 it("sends the crop and the frame in one change, and the crop alone for an element with no box", () => {
   const view: ScopedElement = {
     node: elementId("256.4"),
-    facts: { kind: "picture", text: false, grouped: false, animated: false },
+    facts: { kind: "shape", text: false, grouped: false, animated: false },
     kept: [],
     value: null,
     box,
@@ -27,13 +27,11 @@ it("sends the crop and the frame in one change, and the crop alone for an elemen
   const rect = { l: 0, t: 25_000, r: 0, b: 25_000 }
   expect(cropChange(view, { l: 0, t: 0, r: 0, b: 0 })(rect)).toEqual({
     target: { node: "256.4" },
-    crop: { rect },
-    image: { mode: "crop" },
+    fills: { crop: rect, mode: "crop" },
     box: { x: 1_000_000, y: 1_000_000, w: 4_000_000, h: 1_000_000 },
   })
   expect(cropChange({ ...view, box: null }, undefined)(rect)).toEqual({
     target: { node: "256.4" },
-    crop: { rect },
-    image: { mode: "crop" },
+    fills: { crop: rect, mode: "crop" },
   })
 })

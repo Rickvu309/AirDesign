@@ -24,7 +24,7 @@ function contains(outer: Rect, inner: Rect): boolean {
 const margins = new Set(["sldNum", "dt", "ftr"])
 
 function covers(element: ResolvedElement): boolean {
-  if (element.kind === "connector" || element.kind === "group" || element.kind === "picture") return false
+  if (element.kind === "connector" || element.kind === "group" || element.fill === "image") return false
   return element.kind !== "shape" || element.fill !== "none"
 }
 
@@ -96,7 +96,7 @@ function backdrop(slide: ResolvedSlide, placed: readonly Placed[], at: number): 
   const place = placed[at]
   if (place === undefined) return null
   const own = place.element.fill
-  if (own === "unknown") return null
+  if (own === "unknown" || own === "image") return null
   if (own !== "none") return own.rgb
   const extent = union(place.glyphs)
   for (const behind of placed.slice(0, at).reverse()) {
@@ -105,10 +105,10 @@ function backdrop(slide: ResolvedSlide, placed: readonly Placed[], at: number): 
     const turned = element.rotation % 360 !== 0
     if (meet(behind.box, extent) === null && !turned) continue
     if (element.kind === "shape" && element.fill === "none") continue
-    if (turned || element.kind !== "shape" || element.fill === "unknown" || element.fill === "none") return null
+    if (turned || element.kind !== "shape" || typeof element.fill === "string") return null
     return contains(behind.box, extent) ? element.fill.rgb : null
   }
-  return slide.background === "none" || slide.background === "unknown" ? null : slide.background.rgb
+  return typeof slide.background === "string" ? null : slide.background.rgb
 }
 
 export function contrastFindings(slide: ResolvedSlide, placed: readonly Placed[]): readonly Finding[] {

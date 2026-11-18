@@ -52,9 +52,20 @@ function addTurn(session: Session, base: number) {
   } as const
 }
 
+type IconNamed = {
+  readonly icon?: unknown
+  readonly image?: { readonly source?: unknown }
+  readonly fills?: { readonly source?: unknown; readonly paint?: { readonly image?: unknown } }
+}
+
+function iconName(field: string, named: IconNamed): unknown {
+  if (field === "icon") return named.icon
+  if (field === "fills.source") return named.fills?.source ?? named.image?.source
+  return field === "fills.paint" ? named.fills?.paint?.image : undefined
+}
+
 function iconHint(field: string, change: unknown): string {
-  const named = change as { readonly icon?: unknown; readonly image?: { readonly source?: unknown } }
-  const name = field === "icon" ? named.icon : field === "image.source" ? named.image?.source : undefined
+  const name = iconName(field, change as IconNamed)
   if (typeof name !== "string") return ""
   const close = closeIcons(name)
   const quoted = JSON.stringify(name)

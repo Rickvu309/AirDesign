@@ -1,4 +1,4 @@
-import type { ScopedElement } from "@airdesign/document"
+import { paintSlots, type ScopedElement } from "@airdesign/document"
 import type { PanelReads, PanelSection, SectionName } from "./panel"
 
 export type PanelKind = "text" | "shape" | "picture" | "connector" | "group" | "table" | "chart" | "kept" | "many"
@@ -151,8 +151,16 @@ function drawn(shown: PanelReads): boolean {
   return read.value === undefined || read.value === null ? read.own : !rectangle(read.value)
 }
 
+function imaged(shown: PanelReads): boolean {
+  return paintSlots.some((slot) => {
+    const value = shown.fields?.[`fills.${slot}`]?.value
+    return typeof value === "object" && value !== null && "image" in value
+  })
+}
+
 export function panelKind(view: ScopedElement, shown: PanelReads): PanelKind | null {
   const { kind, text } = view.facts
+  if (kind === "shape" && !text && imaged(shown)) return "picture"
   if (kind === "shape") return text && !drawn(shown) ? "text" : "shape"
   return panelKinds.includes(kind) ? (kind as PanelKind) : null
 }

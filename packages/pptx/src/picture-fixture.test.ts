@@ -23,7 +23,7 @@ function sha256(bytes: Uint8Array): string {
 
 function add(shape: number, media: Media, box: typeof centred) {
   const node = elementId(`256.${String(shape)}`)
-  const element = { node, kind: "picture" as const, value: null, box, grouped: false }
+  const element = { node, kind: "shape" as const, value: null, box, grouped: false }
   return { slide: "element-add" as const, id: slideId("256"), element, media }
 }
 

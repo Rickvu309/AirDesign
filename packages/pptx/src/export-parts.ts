@@ -165,9 +165,7 @@ function writtenElement(
   }
   if (shape.contentKind === "table") return writtenTable(parts, at, written, boxLast(body))
   let next = parts
-  for (const [trait, fields] of written) if (trait !== "image") next = writeTrait(next, at, trait, fields)
-  const image = written.get("image")
-  if (image !== undefined) next = writeTrait(next, at, "image", image)
+  for (const [trait, fields] of written) next = writeTrait(next, at, trait, fields)
   return next
 }
 

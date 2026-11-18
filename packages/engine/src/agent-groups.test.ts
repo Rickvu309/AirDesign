@@ -30,7 +30,7 @@ const elements: readonly IndexElement[] = [
   { node: node(5), kind: "shape", value: "", box: { x: 0, y: 0, cx: 100, cy: 100 }, grouped: true, group: node(4) },
   {
     node: node(6),
-    kind: "picture",
+    kind: "shape",
     value: null,
     box: { x: 100, y: 0, cx: 100, cy: 100 },
     grouped: true,

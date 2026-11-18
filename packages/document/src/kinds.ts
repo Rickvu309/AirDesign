@@ -7,7 +7,6 @@ export const kinds = [
   "slide",
   "notes",
   "shape",
-  "picture",
   "connector",
   "group",
   "table",

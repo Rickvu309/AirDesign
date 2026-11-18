@@ -62,7 +62,7 @@ type Told = { boxes: [ElementId, Box][]; grouped: (readonly ElementId[])[]; ungr
 async function mounted() {
   const store = paintStore()
   for (const each of elements)
-    if (each.id !== null) store.publish({ id: each.id, kind: each.kind, text: "", picture: null })
+    if (each.id !== null) store.publish({ id: each.id, kind: each.kind === "picture" ? "shape" : each.kind, text: "" })
   const told: Told = { boxes: [], grouped: [], ungrouped: [] }
   const host = document.createElement("div")
   document.body.append(host)

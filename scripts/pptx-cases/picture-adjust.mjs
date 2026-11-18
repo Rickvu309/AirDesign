@@ -5,7 +5,7 @@ const media = "ppt/media/picture-008753c5d40023df.png"
 export default {
   specs: ["tests/browser/picture-adjust.spec.ts"],
   exports: [exported],
-  covers: ["image.blur", "image.overlay"],
+  covers: ["fills.blur", "fills.overlay"],
   cases: [
     {
       name: "picture-adjust",

@@ -23,7 +23,6 @@ import {
   shownBody,
   shownConnection,
   shownLink,
-  shownFill,
   shownGeometry,
   shownIdentity,
   shownPictureMode,
@@ -60,6 +59,7 @@ import { changeDesign, fileValue, type DesignDeck } from "@/design/design-change
 import { plainNames } from "@/design/node-names"
 import { rebasedChange } from "@/design/rebase"
 import { siteNames } from "@/design/site-names"
+import { fillSlotFields } from "@/design/fill-slots"
 import { deviceScope } from "@/design/trait-edit"
 import { designShown, themeOf, type DesignShown } from "@/design-shown"
 import { SlideSurface } from "@/editor/slide-design-tabs"
@@ -117,7 +117,6 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
   if (part === undefined) return {}
   const at = { slide, part, shape }
   try {
-    const fill = shownFill(parts, at)
     const geometry = shownGeometry(parts, at)
     const turn = shownTurn(parts, at)
     const line = Object.entries(shownLine(parts, at) ?? {}).map(([field, shown]) => [`line.${field}`, shown])
@@ -141,14 +140,13 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
       ...(image === null
         ? {}
         : {
-            "image.mode": { value: shownPictureMode(parts, at), own: true },
-            "image.source": { value: image.source, own: true },
-            "image.recolor": { value: image.recolor, own: true },
-            "image.alpha": { value: image.alpha, own: true },
-            "image.blur": { value: image.blur === null ? null : Math.min(image.blur, 100_000), own: true },
-            "image.overlay": { value: image.overlay, own: true },
+            "fills.mode": { value: shownPictureMode(parts, at), own: true },
+            "fills.source": { value: image.source, own: true },
+            "fills.recolor": { value: image.recolor, own: true },
+            "fills.blur": { value: image.blur === null ? null : Math.min(image.blur, 100_000), own: true },
+            "fills.overlay": { value: image.overlay, own: true },
           }),
-      ...(crop === null ? {} : { "crop.rect": { value: crop, own: true } }),
+      ...(crop === null ? {} : { "fills.crop": { value: crop, own: true } }),
       ...(connection === null
         ? {}
         : {
@@ -156,7 +154,7 @@ function fieldsRead(parts: Parts, node: ElementId): PanelReads["fields"] {
             "connection.end": { value: connection.end, own: true },
           }),
       ...Object.fromEntries(identity),
-      ...(fill === null ? {} : { "fills.p0": fill }),
+      ...fillSlotFields(parts, at),
       ...(geometry === null ? {} : { "geometry.shape": geometry }),
       "box.rot": { value: turn.rot, own: true },
       "box.flipH": { value: turn.flipH, own: true },

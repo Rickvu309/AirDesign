@@ -30,7 +30,7 @@ function element(node: string, extra: Partial<IndexElement> = {}): IndexElement 
 
 const elements: readonly IndexElement[] = [
   element("258.2", { role: "title" }),
-  element("258.4", { kind: "picture", value: null, role: "picture" }),
+  element("258.4", { kind: "shape", value: null, role: "picture" }),
   element("258.5", { grouped: true }),
   element("258.6", { kept: ["text.color"] }),
   element("259.2", { role: "title" }),

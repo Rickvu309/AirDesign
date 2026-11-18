@@ -14,8 +14,8 @@ Text == <<agent, shows, left>>
 
 Shown == added /\ ~removed
 
-\* What each kind of element takes, as the one table of kinds says. A text box takes text; a picture does not.
-Takes == [box |-> {"box", "text"}, picture |-> {"box", "image"}]
+\* What each kind of element takes, as the one table of kinds says. A text box takes text; a picture, a shape whose fills hold an image and no text body, does not.
+Takes == [box |-> {"box", "text"}, picture |-> {"box", "fills"}]
 
 Kind == IF picture THEN "picture" ELSE "box"
 

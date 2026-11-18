@@ -56,7 +56,8 @@ export function aimAt(
   placed: (element: CanvasElement) => PaintBox | null,
 ): Aim | null {
   const under = elements.toReversed().flatMap((each): Aim[] => {
-    if (each.id === null || each.id === connector.id || !siteKinds.includes(each.kind)) return []
+    if (each.id === null || each.id === connector.id || !(each.kind === "picture" || siteKinds.includes(each.kind)))
+      return []
     if (each.group?.id !== connector.group?.id) return []
     const box = placed(each)
     if (box === null || !inside(box, at, reach)) return []

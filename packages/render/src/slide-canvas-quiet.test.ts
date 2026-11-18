@@ -68,7 +68,7 @@ describe("quiet SlideCanvas", () => {
 
   it("shows the store text, follows an edit, and is not a text box", async () => {
     const store = paintStore()
-    store.publish({ id, kind: "shape", text: stored("Hello"), picture: null })
+    store.publish({ id, kind: "shape", text: stored("Hello") })
     const host = await paint({ ...wide, elements: [shape(id)] }, store)
     const thumb = host.querySelector("[data-thumb-paint]")
     expect(thumb?.textContent).toContain("Hello")
@@ -77,7 +77,7 @@ describe("quiet SlideCanvas", () => {
     expect(host.querySelector("[contenteditable]")).toBeNull()
     expect(thumb?.querySelector("[tabindex]")).toBeNull()
     await act(async () => {
-      store.publish({ id, kind: "shape", text: stored("Hello!"), picture: null })
+      store.publish({ id, kind: "shape", text: stored("Hello!") })
     })
     expect(host.querySelector("[data-thumb-paint]")?.textContent).toContain("Hello!")
   })

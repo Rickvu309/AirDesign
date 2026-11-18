@@ -26,19 +26,24 @@ it("finds every icon a register shows: added icons, rows that set one, and icon 
     id: slide,
     element: {
       node: elementId("256.5"),
-      kind: "picture",
+      kind: "shape",
       value: null,
       box: { x: 0, y: 0, cx: 914_400, cy: 914_400 },
       grouped: false,
-      opening: { image: { source: { set: "rocket" } } },
+      opening: { fills: { p0: { set: { image: true } }, source: { set: "rocket" } } },
     },
   } as const
   const opened = openRegister("", "deck")
   const root = opened.elements[opened.nodes[0]!]!
   const node = elementId("256.2")
   const landed = [
-    { actor: "person", visible: true, v: format, patch: { fills: { p0: { set: { image: "star" } } } } },
-    { actor: "person", visible: true, v: format, patch: { image: { source: { set: "leaf" } } } },
+    {
+      actor: "person",
+      visible: true,
+      v: format,
+      patch: { fills: { p0: { set: { image: true } }, source: { set: "star" } } },
+    },
+    { actor: "person", visible: true, v: format, patch: { fills: { source: { set: "leaf" } } } },
   ] as const
   const register: Register = {
     ...opened,

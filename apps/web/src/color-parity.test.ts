@@ -25,7 +25,15 @@ type Loose = {
   readonly kind: Parameters<typeof placed>[1]
   readonly node?: string
   readonly fields: Readonly<
-    Record<string, { file: (parts: Parts, at: At) => unknown; shows: (value: unknown) => unknown } | undefined>
+    Record<
+      string,
+      | {
+          file: (parts: Parts, at: At) => unknown
+          shows: (value: unknown) => unknown
+          on?: { readonly deck: string; readonly kind: Parameters<typeof placed>[1]; readonly node: string }
+        }
+      | undefined
+    >
   >
 }
 
@@ -92,15 +100,16 @@ async function landings(): Promise<readonly Landed[]> {
         trait
       ]?.[field]
       const read = readAgent(desc, sent)
-      const parts = await deckParts(probe.deck)
-      const at = placed(parts, probe.kind, probe.node)
+      const on = probe.fields[field]?.on ?? probe
+      const parts = await deckParts(on.deck)
+      const at = placed(parts, on.kind, on.node)
       const theme = themeSwatches(parts, at.part).map((swatch) => ({
         ...swatch,
         name: formatCopy.colors[swatch.scheme],
       }))
       for (const [name, color] of Object.entries(personColors(theme))) {
         const value = read.ok && color !== null ? recolored(read.value, color) : undefined
-        const register = value === undefined ? null : panelRegister(indexed(parts), at, trait, field, value)
+        const register = value === undefined ? null : panelRegister(indexed(parts), at, trait, field, value, parts)
         const exported = register === null ? null : exportParts(parts, register)
         const shape = probe.fields[field]
         const shown =

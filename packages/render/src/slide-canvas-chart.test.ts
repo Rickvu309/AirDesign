@@ -70,7 +70,7 @@ function frame(chart: CanvasChart | undefined, placeholder = false): CanvasEleme
 
 async function painted(elements: readonly CanvasElement[], quiet = false): Promise<HTMLElement> {
   const store = paintStore()
-  store.publish({ id, kind: "chart", text: "", picture: null })
+  store.publish({ id, kind: "chart", text: "" })
   const host = document.createElement("div")
   document.body.append(host)
   const root = createRoot(host)

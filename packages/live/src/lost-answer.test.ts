@@ -120,8 +120,8 @@ const picture = elementId("256.11")
 const notes = elementId("256.notes")
 const ahead = orderKeyBetween(null, keyAfter(file, file[0]))
 
-function element(node: IndexElement["node"], kind: "shape" | "picture"): IndexElement {
-  if (kind === "picture") return { node, kind, value: null, box, grouped: false }
+function element(node: IndexElement["node"], kind: "shape" | "photo"): IndexElement {
+  if (kind === "photo") return { node, kind: "shape", value: null, box, grouped: false }
   return { node, kind, value: "", box, grouped: false }
 }
 
@@ -154,7 +154,7 @@ const shapes: readonly {
       cache.enqueueSlide(deck, file, {
         slide: "element-add",
         id: file[0],
-        element: element(picture, "picture"),
+        element: element(picture, "photo"),
         media: { sha256: "a".repeat(64), type: "image/png" },
       }),
   },

@@ -1,0 +1,2789 @@
+{
+  "written": "format 57, the build that first stored fills: a verify-airdesign run imported picture-png.pptx, an agent cropped, recoloured, blurred, overlaid and faded its picture, added an icon, gave a shape an icon fill and a fit mode, then the person set the picture to tile while offline. page is the index page the same build uploads for census-updating-spm.pptx, whose cropped oval picture has a fill behind it",
+  "register": {
+    "route": "",
+    "floor": "",
+    "slides": 1,
+    "bytes": 444,
+    "file": ["256"],
+    "order": [
+      {
+        "slide": "element-add",
+        "id": "256",
+        "element": {
+          "node": "256.5",
+          "kind": "picture",
+          "value": null,
+          "box": { "x": 5638800, "y": 5311140, "cx": 914400, "cy": 914400 },
+          "grouped": false,
+          "opening": { "image": { "source": { "set": "rocket" } } }
+        },
+        "runId": "39e36e60eb8adc5a-d8b75429-55d6-4f3f-b6d1-d3afcc05d207"
+      }
+    ],
+    "nodes": ["a", "256.4", "256.2"],
+    "readNodes": null,
+    "elements": {
+      "a": {
+        "route": "",
+        "floor": "",
+        "landed": [],
+        "phase": "idle",
+        "runId": null,
+        "readAt": null,
+        "guarded": false,
+        "claimed": null,
+        "stoppedAt": null,
+        "slides": 1,
+        "bytes": 0
+      },
+      "256.2": {
+        "route": "",
+        "floor": "[{\"from\":0,\"runs\":[]}]",
+        "floorBox": { "x": 914400, "y": 1828800, "cx": 10363200, "cy": 1371600 },
+        "landed": [
+          {
+            "v": 57,
+            "patch": {
+              "fills": {
+                "p0": { "set": { "image": "star" } },
+                "p1": { "set": { "none": true } },
+                "p2": { "set": { "none": true } },
+                "p3": { "set": { "none": true } }
+              }
+            },
+            "actor": "agent",
+            "visible": true,
+            "runId": "39e36e60eb8adc5a-02103eaa-6c24-42dd-b506-9b7ed7be966a"
+          },
+          {
+            "v": 57,
+            "patch": { "image": { "mode": { "set": "fit" } } },
+            "actor": "agent",
+            "visible": true,
+            "runId": "39e36e60eb8adc5a-14b80a69-61ca-4991-8bf8-c88c7220a8c6"
+          }
+        ],
+        "version": 2,
+        "phase": "stopped",
+        "runId": "39e36e60eb8adc5a-14b80a69-61ca-4991-8bf8-c88c7220a8c6",
+        "readAt": 1,
+        "guarded": false,
+        "claimed": 1,
+        "stoppedAt": 2,
+        "slides": 1,
+        "bytes": 0
+      },
+      "256.4": {
+        "route": "",
+        "floor": "",
+        "floorBox": { "x": 3810000, "y": 1905000, "cx": 4572000, "cy": 3048000 },
+        "landed": [
+          {
+            "v": 57,
+            "patch": { "crop": { "rect": { "set": { "l": 10000, "t": 0, "r": 10000, "b": 0 } } } },
+            "actor": "agent",
+            "visible": true,
+            "runId": "39e36e60eb8adc5a-3efb9889-84ef-4b32-a5d6-048d23f9452a"
+          },
+          {
+            "v": 57,
+            "patch": { "image": { "recolor": { "set": { "grayscale": true } } } },
+            "actor": "agent",
+            "visible": true,
+            "runId": "39e36e60eb8adc5a-775c2460-cad3-402c-9f38-c56b2efdba62"
+          },
+          {
+            "v": 57,
+            "patch": {
+              "image": {
+                "blur": { "set": 20000 },
+                "overlay": { "set": { "solid": { "rgb": "000000", "transforms": [{ "op": "alpha", "val": 50000 }] } } }
+              }
+            },
+            "actor": "agent",
+            "visible": true,
+            "runId": "39e36e60eb8adc5a-105efc38-1617-4deb-8162-13353e728c8f"
+          },
+          {
+            "v": 57,
+            "patch": { "line": { "alpha": { "set": 70000 } }, "image": { "alpha": { "set": 70000 } } },
+            "actor": "agent",
+            "visible": true,
+            "runId": "39e36e60eb8adc5a-3ac18c3a-8312-4b70-a48a-a50785b7fad2"
+          }
+        ],
+        "version": 4,
+        "phase": "stopped",
+        "runId": "39e36e60eb8adc5a-3ac18c3a-8312-4b70-a48a-a50785b7fad2",
+        "readAt": 3,
+        "guarded": false,
+        "claimed": 3,
+        "stoppedAt": 4,
+        "slides": 1,
+        "bytes": 0
+      }
+    },
+    "index": {
+      "pages": [{ "once": "5f3e2821-1b3b-41a2-9a44-e8be4dba93fb", "count": 3, "offset": 0 }],
+      "total": 3,
+      "format": 57,
+      "slides": [
+        {
+          "id": "256",
+          "free": 5,
+          "size": { "width": 12192000, "height": 6858000 },
+          "layout": [
+            {
+              "box": null,
+              "kind": "shape",
+              "node": "256.2",
+              "role": "title",
+              "value": "[{\"from\":0,\"runs\":[]}]",
+              "grouped": false
+            },
+            {
+              "box": null,
+              "kind": "shape",
+              "node": "256.3",
+              "role": "subtitle",
+              "value": "[{\"from\":0,\"runs\":[]}]",
+              "grouped": false
+            }
+          ],
+          "animated": [],
+          "position": 0,
+          "template": "ppt/theme/theme1.xml",
+          "textStyles": [
+            {
+              "id": "ppt/slideLayouts/slideLayout1.xml/2/0",
+              "name": "Title",
+              "fields": {
+                "bold": false,
+                "font": "+mn-lt",
+                "size": 4400,
+                "align": "center",
+                "color": { "scheme": "tx1" },
+                "italic": false,
+                "spaceAfter": 0,
+                "lineSpacing": 100000,
+                "spaceBefore": 0,
+                "letterSpacing": 0
+              }
+            },
+            {
+              "id": "ppt/slideLayouts/slideLayout1.xml/3/0",
+              "name": "Subtitle",
+              "fields": {
+                "bold": false,
+                "font": "+mn-lt",
+                "size": 2400,
+                "align": "center",
+                "color": { "scheme": "tx1" },
+                "italic": false,
+                "spaceAfter": 0,
+                "lineSpacing": 100000,
+                "spaceBefore": 0,
+                "letterSpacing": 0
+              }
+            }
+          ]
+        }
+      ],
+      "elements": [
+        {
+          "box": { "x": 914400, "y": 1828800, "cx": 10363200, "cy": 1371600 },
+          "kind": "shape",
+          "node": "256.2",
+          "role": "title",
+          "value": "[{\"from\":0,\"runs\":[]}]",
+          "design": { "text.font": ["+mn-lt"], "text.size": [44], "text.color": ["tx1"], "body.anchor": ["ctr"] },
+          "grouped": false
+        },
+        {
+          "box": { "x": 914400, "y": 3429000, "cx": 10363200, "cy": 1371600 },
+          "kind": "shape",
+          "node": "256.3",
+          "role": "subtitle",
+          "value": "[{\"from\":0,\"runs\":[]}]",
+          "design": { "text.font": ["+mn-lt"], "text.size": [24], "text.color": ["tx1"] },
+          "grouped": false
+        },
+        {
+          "box": { "x": 3810000, "y": 1905000, "cx": 4572000, "cy": 3048000 },
+          "kind": "picture",
+          "node": "256.4",
+          "value": null,
+          "grouped": false
+        }
+      ],
+      "palettes": [
+        {
+          "map": { "bg1": "lt1", "bg2": "lt2", "tx1": "dk1", "tx2": "dk2" },
+          "fonts": { "major": "Arial", "minor": "Arial" },
+          "slots": {
+            "dk1": "202020",
+            "dk2": "1F3A5F",
+            "lt1": "FFFFFF",
+            "lt2": "EEF2F6",
+            "hlink": "2D6FCD",
+            "accent1": "2D6FCD",
+            "accent2": "E07A2E",
+            "accent3": "2F9E62",
+            "accent4": "7A4FC4",
+            "accent5": "D2455B",
+            "accent6": "1E9AA8",
+            "folHlink": "7A4FC4"
+          }
+        }
+      ],
+      "templates": [
+        {
+          "id": "ppt/theme/theme1.xml",
+          "name": "Neutral",
+          "palette": {
+            "map": { "bg1": "lt1", "bg2": "lt2", "tx1": "dk1", "tx2": "dk2" },
+            "fonts": { "major": "Arial", "minor": "Arial" },
+            "slots": {
+              "dk1": "202020",
+              "dk2": "1F3A5F",
+              "lt1": "FFFFFF",
+              "lt2": "EEF2F6",
+              "hlink": "2D6FCD",
+              "accent1": "2D6FCD",
+              "accent2": "E07A2E",
+              "accent3": "2F9E62",
+              "accent4": "7A4FC4",
+              "accent5": "D2455B",
+              "accent6": "1E9AA8",
+              "folHlink": "7A4FC4"
+            }
+          }
+        }
+      ],
+      "sectionStarts": []
+    },
+    "ended": ["39e36e60eb8adc5a-d8b75429-55d6-4f3f-b6d1-d3afcc05d207"],
+    "lastRun": { "runId": "39e36e60eb8adc5a-14b80a69-61ca-4991-8bf8-c88c7220a8c6", "since": 12, "revision": 13 },
+    "format": 57
+  },
+  "device": {
+    "rows": [
+      {
+        "kind": "confirmed",
+        "deck": "91299a91-40e4-4f75-9f14-f3b020f2e791",
+        "revision": 0,
+        "v": 57,
+        "patch": { "crop": { "rect": { "set": { "l": 10000, "t": 0, "r": 10000, "b": 0 } } } },
+        "node": "256.4"
+      },
+      {
+        "kind": "confirmed",
+        "deck": "91299a91-40e4-4f75-9f14-f3b020f2e791",
+        "revision": 1,
+        "v": 57,
+        "patch": { "image": { "recolor": { "set": { "grayscale": true } } } },
+        "node": "256.4"
+      },
+      {
+        "kind": "confirmed",
+        "deck": "91299a91-40e4-4f75-9f14-f3b020f2e791",
+        "revision": 2,
+        "v": 57,
+        "patch": {
+          "image": {
+            "blur": { "set": 20000 },
+            "overlay": { "set": { "solid": { "rgb": "000000", "transforms": [{ "op": "alpha", "val": 50000 }] } } }
+          }
+        },
+        "node": "256.4"
+      },
+      {
+        "kind": "confirmed",
+        "deck": "91299a91-40e4-4f75-9f14-f3b020f2e791",
+        "revision": 3,
+        "v": 57,
+        "patch": { "line": { "alpha": { "set": 70000 } }, "image": { "alpha": { "set": 70000 } } },
+        "node": "256.4"
+      },
+      {
+        "kind": "confirmed",
+        "deck": "91299a91-40e4-4f75-9f14-f3b020f2e791",
+        "revision": 4,
+        "v": 57,
+        "patch": {
+          "fills": {
+            "p0": { "set": { "image": "star" } },
+            "p1": { "set": { "none": true } },
+            "p2": { "set": { "none": true } },
+            "p3": { "set": { "none": true } }
+          }
+        },
+        "node": "256.2",
+        "floor": "[{\"from\":0,\"runs\":[]}]"
+      },
+      {
+        "kind": "confirmed",
+        "deck": "91299a91-40e4-4f75-9f14-f3b020f2e791",
+        "revision": 5,
+        "v": 57,
+        "patch": { "image": { "mode": { "set": "fit" } } },
+        "node": "256.2"
+      },
+      {
+        "kind": "pending",
+        "deck": "91299a91-40e4-4f75-9f14-f3b020f2e791",
+        "order": 0,
+        "base": 4,
+        "v": 57,
+        "patch": { "image": { "mode": { "set": "tile" } } },
+        "node": "256.4"
+      }
+    ]
+  },
+  "page": {
+    "format": 57,
+    "once": "page1",
+    "offset": 100,
+    "total": 173,
+    "palettes": [
+      {
+        "slots": {
+          "dk1": "000000",
+          "lt1": "FFFFFF",
+          "dk2": "44546A",
+          "lt2": "E7E6E6",
+          "accent1": "2C567A",
+          "accent2": "0072C7",
+          "accent3": "0D1D51",
+          "accent4": "666666",
+          "accent5": "3C76A6",
+          "accent6": "1E44BC",
+          "hlink": "0563C1",
+          "folHlink": "954F72"
+        },
+        "map": { "bg1": "lt1", "tx1": "dk1", "bg2": "lt2", "tx2": "dk2" },
+        "fonts": { "major": "Corbel", "minor": "Calibri" }
+      }
+    ],
+    "templates": [
+      {
+        "id": "ppt/theme/theme1.xml",
+        "name": "Office Theme",
+        "palette": {
+          "slots": {
+            "dk1": "000000",
+            "lt1": "FFFFFF",
+            "dk2": "44546A",
+            "lt2": "E7E6E6",
+            "accent1": "2C567A",
+            "accent2": "0072C7",
+            "accent3": "0D1D51",
+            "accent4": "666666",
+            "accent5": "3C76A6",
+            "accent6": "1E44BC",
+            "hlink": "0563C1",
+            "folHlink": "954F72"
+          },
+          "map": { "bg1": "lt1", "tx1": "dk1", "bg2": "lt2", "tx2": "dk2" },
+          "fonts": { "major": "Corbel", "minor": "Calibri" }
+        }
+      }
+    ],
+    "sectionStarts": [],
+    "slides": [
+      {
+        "id": "302",
+        "position": 0,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 5,
+        "animated": [],
+        "textStyles": [
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/titleStyle/0",
+            "name": "Title",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 4400,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 0,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideLayouts/slideLayout4.xml/2/0",
+            "name": "Title · 3_Title Slide_02",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 5400,
+              "bold": true,
+              "italic": false,
+              "color": { "scheme": "bg1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 0,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideLayouts/slideLayout4.xml/3/0",
+            "name": "Subtitle",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 1800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "bg1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 1000,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/0",
+            "name": "Body 1",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 2800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 1000,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/1",
+            "name": "Body 2",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 2400,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 500,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/2",
+            "name": "Body 3",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 2000,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 500,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/3",
+            "name": "Body 4",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 1800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 500,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/otherStyle/0",
+            "name": "Other text",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 1800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 100000,
+              "spaceBefore": 0,
+              "spaceAfter": 0
+            }
+          }
+        ],
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "302.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          },
+          {
+            "node": "302.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "subtitle"
+          }
+        ]
+      },
+      {
+        "id": "303",
+        "position": 1,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 5,
+        "animated": [],
+        "textStyles": [
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/titleStyle/0",
+            "name": "Title",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 4400,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 0,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideLayouts/slideLayout6.xml/6/0",
+            "name": "Title · Title and Content Only",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 3200,
+              "bold": true,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 0,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/0",
+            "name": "Body 1",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 2800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 1000,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/1",
+            "name": "Body 2",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 2400,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 500,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/2",
+            "name": "Body 3",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 2000,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 500,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/3",
+            "name": "Body 4",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 1800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 500,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/otherStyle/0",
+            "name": "Other text",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 1800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 100000,
+              "spaceBefore": 0,
+              "spaceAfter": 0
+            }
+          }
+        ],
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "303.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          },
+          {
+            "node": "303.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"4\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "303.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          }
+        ]
+      },
+      {
+        "id": "264",
+        "position": 2,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 5,
+        "animated": [],
+        "textStyles": [
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/titleStyle/0",
+            "name": "Title",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 4400,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 0,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideLayouts/slideLayout11.xml/13/0",
+            "name": "Title · Title and Content",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 3200,
+              "bold": true,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 0,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/0",
+            "name": "Body 1",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 2800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 1000,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/1",
+            "name": "Body 2",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 2400,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 500,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/2",
+            "name": "Body 3",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 2000,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 500,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/3",
+            "name": "Body 4",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 1800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 500,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/otherStyle/0",
+            "name": "Other text",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 1800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 100000,
+              "spaceBefore": 0,
+              "spaceAfter": 0
+            }
+          }
+        ],
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "264.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "264.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "264.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "258",
+        "position": 3,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 5,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "258.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "258.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "258.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "265",
+        "position": 4,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 35,
+        "animated": [],
+        "textStyles": [
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/titleStyle/0",
+            "name": "Title",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 4400,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 0,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/0",
+            "name": "Body 1",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 2800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 1000,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/1",
+            "name": "Body 2",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 2400,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 500,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/2",
+            "name": "Body 3",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 2000,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 500,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/3",
+            "name": "Body 4",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 1800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 500,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/otherStyle/0",
+            "name": "Other text",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 1800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 100000,
+              "spaceBefore": 0,
+              "spaceAfter": 0
+            }
+          }
+        ],
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "265.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          },
+          {
+            "node": "265.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"9\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          }
+        ]
+      },
+      {
+        "id": "304",
+        "position": 5,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 7,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "304.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "304.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "304.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "324",
+        "position": 6,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 34,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "324.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "324.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "324.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "327",
+        "position": 7,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 34,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "327.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "327.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "327.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "325",
+        "position": 8,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 34,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "325.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "325.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "325.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "326",
+        "position": 9,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 34,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "326.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "326.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "326.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "320",
+        "position": 10,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 6,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "320.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "320.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "320.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "305",
+        "position": 11,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 5,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "305.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "305.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "305.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "306",
+        "position": 12,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 5,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "306.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "306.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "306.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "307",
+        "position": 13,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 10,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "307.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "307.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "307.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "309",
+        "position": 14,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 7,
+        "animated": [],
+        "textStyles": "303",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "309.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          },
+          {
+            "node": "309.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"4\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "309.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          }
+        ]
+      },
+      {
+        "id": "315",
+        "position": 15,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 10,
+        "animated": [],
+        "textStyles": "303",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "315.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          },
+          {
+            "node": "315.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"4\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "315.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          }
+        ]
+      },
+      {
+        "id": "316",
+        "position": 16,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 12,
+        "animated": [],
+        "textStyles": "303",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "316.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          },
+          {
+            "node": "316.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"4\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "316.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          }
+        ]
+      },
+      {
+        "id": "317",
+        "position": 17,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 15,
+        "animated": [],
+        "textStyles": "303",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "317.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          },
+          {
+            "node": "317.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"4\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "317.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          }
+        ]
+      },
+      {
+        "id": "312",
+        "position": 18,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 17,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "312.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "312.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "312.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "314",
+        "position": 19,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 7,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "314.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "314.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "314.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "328",
+        "position": 20,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 7,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "328.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "328.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "328.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "330",
+        "position": 21,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 7,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "330.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "330.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "330.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "331",
+        "position": 22,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 7,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "331.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "331.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "331.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "329",
+        "position": 23,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 7,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "329.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "329.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "329.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "278",
+        "position": 24,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 5,
+        "animated": [],
+        "textStyles": "264",
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          {
+            "node": "278.2",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"6\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+            "box": null,
+            "grouped": false,
+            "role": "number"
+          },
+          {
+            "node": "278.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "278.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      },
+      {
+        "id": "290",
+        "position": 25,
+        "size": { "width": 12192000, "height": 6858000 },
+        "free": 7,
+        "animated": [],
+        "textStyles": [
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/titleStyle/0",
+            "name": "Title",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 4400,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 0,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideLayouts/slideLayout9.xml/18/0",
+            "name": "Title · 1_Title Slide_02",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 6000,
+              "bold": true,
+              "italic": false,
+              "color": { "scheme": "bg1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 0,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideLayouts/slideLayout9.xml/21/0",
+            "name": "Subtitle",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 1600,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "bg1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 1000,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/0",
+            "name": "Body 1",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 2800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 1000,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/1",
+            "name": "Body 2",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 2400,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 500,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/2",
+            "name": "Body 3",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 2000,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 500,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/bodyStyle/3",
+            "name": "Body 4",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 1800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 90000,
+              "spaceBefore": 500,
+              "spaceAfter": 0
+            }
+          },
+          {
+            "id": "ppt/slideMasters/slideMaster1.xml/otherStyle/0",
+            "name": "Other text",
+            "fields": {
+              "font": "+mn-lt",
+              "size": 1800,
+              "bold": false,
+              "italic": false,
+              "color": { "scheme": "tx1" },
+              "align": "left",
+              "letterSpacing": 0,
+              "lineSpacing": 100000,
+              "spaceBefore": 0,
+              "spaceAfter": 0
+            }
+          }
+        ],
+        "template": "ppt/theme/theme1.xml",
+        "layout": [
+          { "node": "290.2", "kind": "shape", "value": null, "box": null, "grouped": false, "role": "picture" },
+          {
+            "node": "290.3",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "subtitle"
+          },
+          {
+            "node": "290.4",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "body"
+          },
+          {
+            "node": "290.5",
+            "kind": "shape",
+            "value": "[{\"from\":0,\"runs\":[]}]",
+            "box": null,
+            "grouped": false,
+            "role": "title"
+          }
+        ]
+      }
+    ],
+    "elements": [
+      {
+        "node": "309.3",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"15\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "number",
+        "design": {
+          "text.size": [9, "layout"],
+          "text.color": ["#205392", "layout"],
+          "text.font": ["+mn-lt", "layout"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["ctr", "master"]
+        },
+        "placed": { "x": 11363696, "y": 6455739, "cx": 294460, "cy": 187367 }
+      },
+      {
+        "node": "309.5",
+        "kind": "table",
+        "value": null,
+        "box": { "x": 1537232, "y": 1487475, "cx": 8822900, "cy": 3657600 },
+        "grouped": false
+      },
+      {
+        "node": "309.6",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"S: Estimate is withheld due to small sample size.\"}]},{\"from\":1,\"runs\":[{\"from\":0,\"text\":\"Note: Details may not sum to totals due to rounding.\"}]},{\"from\":2,\"runs\":[{\"from\":0,\"text\":\"Source: U.S. Census Bureau, Current Population Survey, 2023 Annual Social and Economic Supplement (CPS ASEC).  \"}]}]",
+        "box": { "x": 4887817, "y": 6242996, "cx": 6096000, "cy": 553998 },
+        "grouped": false,
+        "design": {
+          "text.size": [10],
+          "text.color": ["tx1", "master"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      { "node": "309.notes", "kind": "slide", "value": "", "box": null, "grouped": false },
+      {
+        "node": "315.2",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Types of Households Impacted\"}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "title",
+        "design": {
+          "text.size": [40],
+          "text.color": ["#205493"],
+          "text.font": ["+mn-lt", "master"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["b", "layout"]
+        },
+        "placed": { "x": 515938, "y": 246621, "cx": 11150600, "cy": 920336 }
+      },
+      {
+        "node": "315.3",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"16\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "number",
+        "design": {
+          "text.size": [9, "layout"],
+          "text.color": ["#205392", "layout"],
+          "text.font": ["+mn-lt", "layout"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["ctr", "master"]
+        },
+        "placed": { "x": 11363696, "y": 6455739, "cx": 294460, "cy": 187367 }
+      },
+      {
+        "node": "315.4",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[]}]",
+        "box": { "x": 4686299, "y": 3316275, "cx": 2047009, "cy": 1819984 },
+        "grouped": false,
+        "design": {
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "text.size": [18, "master"],
+          "text.font": ["+mn-lt", "style"],
+          "body.anchor": ["ctr"]
+        }
+      },
+      {
+        "node": "315.5",
+        "kind": "table",
+        "value": null,
+        "box": { "x": 1537232, "y": 1487475, "cx": 8822900, "cy": 3657600 },
+        "grouped": false
+      },
+      {
+        "node": "315.6",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"S: Estimate is withheld due to small sample size.\"}]},{\"from\":1,\"runs\":[{\"from\":0,\"text\":\"Note: Details may not sum to totals due to rounding.\"}]},{\"from\":2,\"runs\":[{\"from\":0,\"text\":\"Source: U.S. Census Bureau, Current Population Survey, 2023 Annual Social and Economic Supplement (CPS ASEC).  \"}]}]",
+        "box": { "x": 4835862, "y": 6242996, "cx": 6096000, "cy": 553998 },
+        "grouped": false,
+        "design": {
+          "text.size": [10],
+          "text.color": ["tx1", "master"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      {
+        "node": "315.7",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Roommates—All 1 person SPM Units: 52.3%\"}]}]",
+        "box": { "x": 857147, "y": 5463203, "cx": 5697265, "cy": 461665 },
+        "grouped": false,
+        "design": {
+          "text.size": [24],
+          "text.color": ["#FF0000"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      {
+        "node": "315.9",
+        "kind": "connector",
+        "value": null,
+        "box": { "x": 3106882, "y": 5237018, "cx": 1712287, "cy": 226185 },
+        "grouped": false,
+        "design": {
+          "box.flipV": [true],
+          "geometry": ["straightConnector1"],
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "line.tail": ["triangle"]
+        }
+      },
+      { "node": "315.notes", "kind": "slide", "value": "", "box": null, "grouped": false },
+      {
+        "node": "316.10",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Multiple Families: 4.0%\"}]}]",
+        "box": { "x": 10789624, "y": 1617183, "cx": 1402376, "cy": 1200329 },
+        "grouped": false,
+        "design": {
+          "text.size": [24],
+          "text.color": ["#FF0000"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      {
+        "node": "316.11",
+        "kind": "connector",
+        "value": null,
+        "box": { "x": 10442065, "y": 2281802, "cx": 425405, "cy": 233847 },
+        "grouped": false,
+        "design": {
+          "box.flipH": [true],
+          "geometry": ["straightConnector1"],
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "line.tail": ["triangle"]
+        }
+      },
+      {
+        "node": "316.2",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Types of Households Impacted\"}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "title",
+        "design": {
+          "text.size": [40],
+          "text.color": ["#205493"],
+          "text.font": ["+mn-lt", "master"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["b", "layout"]
+        },
+        "placed": { "x": 515938, "y": 246621, "cx": 11150600, "cy": 920336 }
+      },
+      {
+        "node": "316.3",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"17\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "number",
+        "design": {
+          "text.size": [9, "layout"],
+          "text.color": ["#205392", "layout"],
+          "text.font": ["+mn-lt", "layout"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["ctr", "master"]
+        },
+        "placed": { "x": 11363696, "y": 6455739, "cx": 294460, "cy": 187367 }
+      },
+      {
+        "node": "316.4",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[]}]",
+        "box": { "x": 4686299, "y": 3316275, "cx": 2047009, "cy": 1819984 },
+        "grouped": false,
+        "design": {
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "text.size": [18, "master"],
+          "text.font": ["+mn-lt", "style"],
+          "body.anchor": ["ctr"]
+        }
+      },
+      {
+        "node": "316.5",
+        "kind": "table",
+        "value": null,
+        "box": { "x": 1537232, "y": 1487475, "cx": 8822900, "cy": 3657600 },
+        "grouped": false
+      },
+      {
+        "node": "316.6",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"S: Estimate is withheld due to small sample size.\"}]},{\"from\":1,\"runs\":[{\"from\":0,\"text\":\"Note: Details may not sum to totals due to rounding.\"}]},{\"from\":2,\"runs\":[{\"from\":0,\"text\":\"Source: U.S. Census Bureau, Current Population Survey, 2023 Annual Social and Economic Supplement (CPS ASEC).  \"}]}]",
+        "box": { "x": 4835862, "y": 6242996, "cx": 6096000, "cy": 553998 },
+        "grouped": false,
+        "design": {
+          "text.size": [10],
+          "text.color": ["tx1", "master"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      {
+        "node": "316.7",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Roommates—All 1 person SPM Units: 52.3%\"}]}]",
+        "box": { "x": 857147, "y": 5463203, "cx": 5697265, "cy": 461665 },
+        "grouped": false,
+        "design": {
+          "text.size": [24],
+          "text.color": ["#FF0000"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      {
+        "node": "316.8",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[]}]",
+        "box": { "x": 8776855, "y": 2398726, "cx": 1583278, "cy": 489947 },
+        "grouped": false,
+        "design": {
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "text.size": [18, "master"],
+          "text.font": ["+mn-lt", "style"],
+          "body.anchor": ["ctr"]
+        }
+      },
+      {
+        "node": "316.9",
+        "kind": "connector",
+        "value": null,
+        "box": { "x": 3106882, "y": 5237018, "cx": 1712287, "cy": 226185 },
+        "grouped": false,
+        "design": {
+          "box.flipV": [true],
+          "geometry": ["straightConnector1"],
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "line.tail": ["triangle"]
+        }
+      },
+      { "node": "316.notes", "kind": "slide", "value": "", "box": null, "grouped": false },
+      {
+        "node": "317.10",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Multiple Families: 4.0%\"}]}]",
+        "box": { "x": 10789624, "y": 1617183, "cx": 1402376, "cy": 1200329 },
+        "grouped": false,
+        "design": {
+          "text.size": [24],
+          "text.color": ["#FF0000"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      {
+        "node": "317.11",
+        "kind": "connector",
+        "value": null,
+        "box": { "x": 10442065, "y": 2281802, "cx": 425405, "cy": 233847 },
+        "grouped": false,
+        "design": {
+          "box.flipH": [true],
+          "geometry": ["straightConnector1"],
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "line.tail": ["triangle"]
+        }
+      },
+      {
+        "node": "317.12",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[]}]",
+        "box": { "x": 6729846, "y": 2888673, "cx": 3630286, "cy": 2247586 },
+        "grouped": false,
+        "design": {
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "text.size": [18, "master"],
+          "text.font": ["+mn-lt", "style"],
+          "body.anchor": ["ctr"]
+        }
+      },
+      {
+        "node": "317.13",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Family + Extra: 43.7%\"}]}]",
+        "box": { "x": 8999271, "y": 5634182, "cx": 2885587, "cy": 461665 },
+        "grouped": false,
+        "design": {
+          "text.size": [24],
+          "text.color": ["#FF0000"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      {
+        "node": "317.14",
+        "kind": "connector",
+        "value": null,
+        "box": { "x": 9568494, "y": 5272128, "cx": 604077, "cy": 370870 },
+        "grouped": false,
+        "design": {
+          "box.flipH": [true],
+          "box.flipV": [true],
+          "geometry": ["straightConnector1"],
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "line.tail": ["triangle"]
+        }
+      },
+      {
+        "node": "317.2",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Types of Households Impacted\"}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "title",
+        "design": {
+          "text.size": [40],
+          "text.color": ["#205493"],
+          "text.font": ["+mn-lt", "master"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["b", "layout"]
+        },
+        "placed": { "x": 515938, "y": 246621, "cx": 11150600, "cy": 920336 }
+      },
+      {
+        "node": "317.3",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"18\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "number",
+        "design": {
+          "text.size": [9, "layout"],
+          "text.color": ["#205392", "layout"],
+          "text.font": ["+mn-lt", "layout"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["ctr", "master"]
+        },
+        "placed": { "x": 11363696, "y": 6455739, "cx": 294460, "cy": 187367 }
+      },
+      {
+        "node": "317.4",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[]}]",
+        "box": { "x": 4686299, "y": 3316275, "cx": 2047009, "cy": 1819984 },
+        "grouped": false,
+        "design": {
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "text.size": [18, "master"],
+          "text.font": ["+mn-lt", "style"],
+          "body.anchor": ["ctr"]
+        }
+      },
+      {
+        "node": "317.5",
+        "kind": "table",
+        "value": null,
+        "box": { "x": 1537232, "y": 1487475, "cx": 8822900, "cy": 3657600 },
+        "grouped": false
+      },
+      {
+        "node": "317.6",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"S: Estimate is withheld due to small sample size.\"}]},{\"from\":1,\"runs\":[{\"from\":0,\"text\":\"Note: Details may not sum to totals due to rounding.\"}]},{\"from\":2,\"runs\":[{\"from\":0,\"text\":\"Source: U.S. Census Bureau, Current Population Survey, 2023 Annual Social and Economic Supplement (CPS ASEC).  \"}]}]",
+        "box": { "x": 4835862, "y": 6242996, "cx": 6096000, "cy": 553998 },
+        "grouped": false,
+        "design": {
+          "text.size": [10],
+          "text.color": ["tx1", "master"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      {
+        "node": "317.7",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Roommates—All 1 person SPM Units: 52.3%\"}]}]",
+        "box": { "x": 857147, "y": 5463203, "cx": 5697265, "cy": 461665 },
+        "grouped": false,
+        "design": {
+          "text.size": [24],
+          "text.color": ["#FF0000"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      {
+        "node": "317.8",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[]}]",
+        "box": { "x": 8776855, "y": 2398726, "cx": 1583278, "cy": 489947 },
+        "grouped": false,
+        "design": {
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "text.size": [18, "master"],
+          "text.font": ["+mn-lt", "style"],
+          "body.anchor": ["ctr"]
+        }
+      },
+      {
+        "node": "317.9",
+        "kind": "connector",
+        "value": null,
+        "box": { "x": 3106882, "y": 5237018, "cx": 1712287, "cy": 226185 },
+        "grouped": false,
+        "design": {
+          "box.flipV": [true],
+          "geometry": ["straightConnector1"],
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "line.tail": ["triangle"]
+        }
+      },
+      { "node": "317.notes", "kind": "slide", "value": "", "box": null, "grouped": false },
+      {
+        "node": "312.11",
+        "kind": "chart",
+        "value": null,
+        "box": { "x": 45027, "y": 1548328, "cx": 4166754, "cy": 3761340 },
+        "grouped": false
+      },
+      {
+        "node": "312.16",
+        "kind": "chart",
+        "value": null,
+        "box": { "x": 4384498, "y": 1548329, "cx": 3928695, "cy": 3761341 },
+        "grouped": false
+      },
+      {
+        "node": "312.2",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"19\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "number",
+        "design": {
+          "text.size": [9, "layout"],
+          "text.color": ["#205392", "layout"],
+          "text.font": ["+mn-lt", "layout"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["ctr", "master"]
+        },
+        "placed": { "x": 11363696, "y": 6455739, "cx": 294460, "cy": 187367 }
+      },
+      {
+        "node": "312.4",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Demographics of Individuals Impacted\"}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "title",
+        "design": {
+          "text.size": [40],
+          "text.color": ["#205493"],
+          "text.font": ["+mn-lt", "master"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["b", "layout"]
+        },
+        "placed": { "x": 515938, "y": 246621, "cx": 11150600, "cy": 920336 }
+      },
+      {
+        "node": "312.6",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Source: U.S. Census Bureau, Current Population Survey, 2023 Annual Social and Economic Supplement (CPS ASEC).  \"}]}]",
+        "box": { "x": 4939772, "y": 5937117, "cx": 6096000, "cy": 246221 },
+        "grouped": false,
+        "design": {
+          "text.size": [10],
+          "text.color": ["tx1", "master"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      {
+        "node": "312.8",
+        "kind": "chart",
+        "value": null,
+        "box": { "x": 8530937, "y": 1548328, "cx": 3616036, "cy": 3761341 },
+        "grouped": false
+      },
+      {
+        "node": "314.2",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"20\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "number",
+        "design": {
+          "text.size": [9, "layout"],
+          "text.color": ["#205392", "layout"],
+          "text.font": ["+mn-lt", "layout"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["ctr", "master"]
+        },
+        "placed": { "x": 11363696, "y": 6455739, "cx": 294460, "cy": 187367 }
+      },
+      {
+        "node": "314.3",
+        "kind": "picture",
+        "value": null,
+        "box": { "x": 2167894, "y": 1231589, "cx": 8315643, "cy": 4900044 },
+        "grouped": false
+      },
+      {
+        "node": "314.4",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Impact on 2022 SPM Poverty Rates\"}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "title",
+        "design": {
+          "text.size": [40],
+          "text.color": ["#205493"],
+          "text.font": ["+mn-lt", "master"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["b", "layout"]
+        },
+        "placed": { "x": 515938, "y": 246621, "cx": 11150600, "cy": 920336 }
+      },
+      {
+        "node": "314.6",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"* An asterisk following an estimate indicates difference is statistically different from zero at the 90 percent confidence level.\"}]},{\"from\":1,\"runs\":[{\"from\":0,\"text\":\"Note: Details may not sum to totals due to rounding\"}]},{\"from\":2,\"runs\":[{\"from\":0,\"text\":\"Source: U.S. Census Bureau, Current Population Survey, 2023 Annual Social and Economic Supplement (CPS ASEC).  \"}]}]",
+        "box": { "x": 3796937, "y": 6101796, "cx": 6686600, "cy": 553998 },
+        "grouped": false,
+        "design": {
+          "text.size": [10],
+          "text.color": ["tx1", "master"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      {
+        "node": "328.2",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"21\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "number",
+        "design": {
+          "text.size": [9, "layout"],
+          "text.color": ["#205392", "layout"],
+          "text.font": ["+mn-lt", "layout"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["ctr", "master"]
+        },
+        "placed": { "x": 11363696, "y": 6455739, "cx": 294460, "cy": 187367 }
+      },
+      {
+        "node": "328.3",
+        "kind": "picture",
+        "value": null,
+        "box": { "x": 2167894, "y": 1231589, "cx": 8315643, "cy": 4900044 },
+        "grouped": false
+      },
+      {
+        "node": "328.4",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Impact on 2022 SPM Poverty Rates\"}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "title",
+        "design": {
+          "text.size": [40],
+          "text.color": ["#205493"],
+          "text.font": ["+mn-lt", "master"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["b", "layout"]
+        },
+        "placed": { "x": 515938, "y": 246621, "cx": 11150600, "cy": 920336 }
+      },
+      {
+        "node": "328.5",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[]}]",
+        "box": { "x": 1915391, "y": 2148632, "cx": 8562109, "cy": 332509 },
+        "grouped": false,
+        "design": {
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "text.size": [18, "master"],
+          "text.color": ["lt1", "style"],
+          "text.font": ["+mn-lt", "style"],
+          "body.anchor": ["ctr"]
+        }
+      },
+      {
+        "node": "328.6",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"* An asterisk following an estimate indicates difference is statistically different from zero at the 90 percent confidence level.\"}]},{\"from\":1,\"runs\":[{\"from\":0,\"text\":\"Note: Details may not sum to totals due to rounding\"}]},{\"from\":2,\"runs\":[{\"from\":0,\"text\":\"Source: U.S. Census Bureau, Current Population Survey, 2023 Annual Social and Economic Supplement (CPS ASEC).  \"}]}]",
+        "box": { "x": 3796937, "y": 6101796, "cx": 6686600, "cy": 553998 },
+        "grouped": false,
+        "design": {
+          "text.size": [10],
+          "text.color": ["tx1", "master"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      {
+        "node": "330.2",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"22\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "number",
+        "design": {
+          "text.size": [9, "layout"],
+          "text.color": ["#205392", "layout"],
+          "text.font": ["+mn-lt", "layout"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["ctr", "master"]
+        },
+        "placed": { "x": 11363696, "y": 6455739, "cx": 294460, "cy": 187367 }
+      },
+      {
+        "node": "330.3",
+        "kind": "picture",
+        "value": null,
+        "box": { "x": 2167894, "y": 1231589, "cx": 8315643, "cy": 4900044 },
+        "grouped": false
+      },
+      {
+        "node": "330.4",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Impact on 2022 SPM Poverty Rates\"}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "title",
+        "design": {
+          "text.size": [40],
+          "text.color": ["#205493"],
+          "text.font": ["+mn-lt", "master"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["b", "layout"]
+        },
+        "placed": { "x": 515938, "y": 246621, "cx": 11150600, "cy": 920336 }
+      },
+      {
+        "node": "330.5",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[]}]",
+        "box": { "x": 1921428, "y": 2491532, "cx": 8562109, "cy": 332509 },
+        "grouped": false,
+        "design": {
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "text.size": [18, "master"],
+          "text.color": ["lt1", "style"],
+          "text.font": ["+mn-lt", "style"],
+          "body.anchor": ["ctr"]
+        }
+      },
+      {
+        "node": "330.6",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"* An asterisk following an estimate indicates difference is statistically different from zero at the 90 percent confidence level.\"}]},{\"from\":1,\"runs\":[{\"from\":0,\"text\":\"Note: Details may not sum to totals due to rounding\"}]},{\"from\":2,\"runs\":[{\"from\":0,\"text\":\"Source: U.S. Census Bureau, Current Population Survey, 2023 Annual Social and Economic Supplement (CPS ASEC).  \"}]}]",
+        "box": { "x": 3796937, "y": 6101796, "cx": 6686600, "cy": 553998 },
+        "grouped": false,
+        "design": {
+          "text.size": [10],
+          "text.color": ["tx1", "master"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      {
+        "node": "331.2",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"23\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "number",
+        "design": {
+          "text.size": [9, "layout"],
+          "text.color": ["#205392", "layout"],
+          "text.font": ["+mn-lt", "layout"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["ctr", "master"]
+        },
+        "placed": { "x": 11363696, "y": 6455739, "cx": 294460, "cy": 187367 }
+      },
+      {
+        "node": "331.3",
+        "kind": "picture",
+        "value": null,
+        "box": { "x": 2167894, "y": 1231589, "cx": 8315643, "cy": 4900044 },
+        "grouped": false
+      },
+      {
+        "node": "331.4",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Impact on 2022 SPM Poverty Rates\"}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "title",
+        "design": {
+          "text.size": [40],
+          "text.color": ["#205493"],
+          "text.font": ["+mn-lt", "master"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["b", "layout"]
+        },
+        "placed": { "x": 515938, "y": 246621, "cx": 11150600, "cy": 920336 }
+      },
+      {
+        "node": "331.5",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[]}]",
+        "box": { "x": 1921428, "y": 3645093, "cx": 8562109, "cy": 332509 },
+        "grouped": false,
+        "design": {
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "text.size": [18, "master"],
+          "text.color": ["lt1", "style"],
+          "text.font": ["+mn-lt", "style"],
+          "body.anchor": ["ctr"]
+        }
+      },
+      {
+        "node": "331.6",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"* An asterisk following an estimate indicates difference is statistically different from zero at the 90 percent confidence level.\"}]},{\"from\":1,\"runs\":[{\"from\":0,\"text\":\"Note: Details may not sum to totals due to rounding\"}]},{\"from\":2,\"runs\":[{\"from\":0,\"text\":\"Source: U.S. Census Bureau, Current Population Survey, 2023 Annual Social and Economic Supplement (CPS ASEC).  \"}]}]",
+        "box": { "x": 3796937, "y": 6101796, "cx": 6686600, "cy": 553998 },
+        "grouped": false,
+        "design": {
+          "text.size": [10],
+          "text.color": ["tx1", "master"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      {
+        "node": "329.2",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"24\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "number",
+        "design": {
+          "text.size": [9, "layout"],
+          "text.color": ["#205392", "layout"],
+          "text.font": ["+mn-lt", "layout"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["ctr", "master"]
+        },
+        "placed": { "x": 11363696, "y": 6455739, "cx": 294460, "cy": 187367 }
+      },
+      {
+        "node": "329.3",
+        "kind": "picture",
+        "value": null,
+        "box": { "x": 2167894, "y": 1231589, "cx": 8315643, "cy": 4900044 },
+        "grouped": false
+      },
+      {
+        "node": "329.4",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Impact on 2022 SPM Poverty Rates\"}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "title",
+        "design": {
+          "text.size": [40],
+          "text.color": ["#205493"],
+          "text.font": ["+mn-lt", "master"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["b", "layout"]
+        },
+        "placed": { "x": 515938, "y": 246621, "cx": 11150600, "cy": 920336 }
+      },
+      {
+        "node": "329.5",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[]}]",
+        "box": { "x": 1810183, "y": 4829487, "cx": 8562109, "cy": 1207677 },
+        "grouped": false,
+        "design": {
+          "line.width": [2.3],
+          "line.fill": ["#FF0000"],
+          "text.size": [18, "master"],
+          "text.color": ["lt1", "style"],
+          "text.font": ["+mn-lt", "style"],
+          "body.anchor": ["ctr"]
+        }
+      },
+      {
+        "node": "329.6",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"* An asterisk following an estimate indicates difference is statistically different from zero at the 90 percent confidence level.\"}]},{\"from\":1,\"runs\":[{\"from\":0,\"text\":\"Note: Details may not sum to totals due to rounding\"}]},{\"from\":2,\"runs\":[{\"from\":0,\"text\":\"Source: U.S. Census Bureau, Current Population Survey, 2023 Annual Social and Economic Supplement (CPS ASEC).  \"}]}]",
+        "box": { "x": 3796937, "y": 6101796, "cx": 6686600, "cy": 553998 },
+        "grouped": false,
+        "design": {
+          "text.size": [10],
+          "text.color": ["tx1", "master"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["grow"]
+        }
+      },
+      {
+        "node": "278.2",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Additional Considerations and Next Steps\"}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "title",
+        "design": {
+          "text.size": [40],
+          "text.color": ["#205493"],
+          "text.font": ["+mn-lt", "master"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["b", "layout"]
+        },
+        "placed": { "x": 515938, "y": 246621, "cx": 11150600, "cy": 920336 }
+      },
+      {
+        "node": "278.3",
+        "kind": "kept",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Continued work on:\"}]},{\"from\":1,\"runs\":[{\"from\":0,\"text\":\"Change in equivalence scales (\"}]},{\"from\":2,\"runs\":[{\"from\":0,\"text\":\"Look at additional years\"}]},{\"from\":3,\"runs\":[{\"from\":0,\"text\":\"Additional exploration of unit changers\"}]},{\"from\":4,\"runs\":[{\"from\":0,\"text\":\"Next Steps:\"}]},{\"from\":5,\"runs\":[{\"from\":0,\"text\":\"Integrate thresholds based on household units\"}]},{\"from\":6,\"runs\":[{\"from\":0,\"text\":\"Release working paper\"}]},{\"from\":7,\"runs\":[]}]",
+        "box": null,
+        "grouped": false,
+        "role": "body",
+        "design": {
+          "text.size": [28, "master"],
+          "text.color": ["tx1", "master"],
+          "text.font": ["+mn-lt", "master"],
+          "body.autofit": ["shrink"]
+        },
+        "placed": { "x": 515938, "y": 1825625, "cx": 10837862, "cy": 4351338 }
+      },
+      {
+        "node": "278.4",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"25\",\"slideNumber\":{\"count\":\"all\",\"format\":null}}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "number",
+        "design": {
+          "text.size": [9, "layout"],
+          "text.color": ["#205392", "layout"],
+          "text.font": ["+mn-lt", "layout"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["ctr", "master"]
+        },
+        "placed": { "x": 11363696, "y": 6455739, "cx": 294460, "cy": 187367 }
+      },
+      {
+        "node": "290.3",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Liana.e.fox@census.gov\"}]},{\"from\":1,\"runs\":[]}]",
+        "box": { "x": 6814620, "y": 4200455, "cx": 4540440, "cy": 503167 },
+        "grouped": false,
+        "role": "subtitle",
+        "design": { "text.size": [16, "layout"], "text.color": ["bg1", "layout"], "text.font": ["+mn-lt", "master"] }
+      },
+      {
+        "node": "290.5",
+        "kind": "shape",
+        "value": "[{\"from\":0,\"runs\":[{\"from\":0,\"text\":\"Thank\"},{\"from\":1,\"text\":\" \"},{\"from\":2,\"text\":\"You\"}]}]",
+        "box": null,
+        "grouped": false,
+        "role": "title",
+        "design": {
+          "text.size": [60, "layout"],
+          "text.color": ["bg1", "layout"],
+          "text.font": ["+mn-lt", "master"],
+          "text.bold": [true, "layout"],
+          "body.anchor": ["b", "layout"]
+        },
+        "placed": { "x": 6343650, "y": 1114147, "cx": 5011410, "cy": 2735742 }
+      },
+      {
+        "node": "290.6",
+        "kind": "picture",
+        "value": null,
+        "box": { "x": 684213, "y": 701675, "cx": 5367337, "cy": 5367338 },
+        "grouped": false,
+        "design": {
+          "geometry": ["ellipse"],
+          "fills": ["bg2"],
+          "crop": ["l 0 t 0 r 0 b 0"],
+          "identity.alt": ["cityscape"]
+        }
+      }
+    ]
+  }
+}

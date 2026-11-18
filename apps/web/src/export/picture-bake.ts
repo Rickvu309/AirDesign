@@ -206,8 +206,8 @@ async function raster(image: PictureImage, box: PaintBox, bytes: Uint8Array): Pr
 }
 
 function touched(patch: ElementPatch): boolean {
-  const blur = patch.image?.blur
-  const overlay = patch.image?.overlay
+  const blur = patch.fills?.blur
+  const overlay = patch.fills?.overlay
   return (typeof blur === "object" && blur.set > 0) || (typeof overlay === "object" && "solid" in overlay.set)
 }
 

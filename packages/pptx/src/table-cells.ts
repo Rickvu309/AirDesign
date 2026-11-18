@@ -18,7 +18,7 @@ import { paintAttribute } from "./paint-color.js"
 import { requireMarkup } from "./part-markup.js"
 import { slotRoot, withAttribute, withChild, type Slot } from "./slot-edit.js"
 import { cellsOf, type Grid } from "./table-grid.js"
-import { filledChild } from "./trait-xml-fills.js"
+import { filledChild } from "./fill-markup.js"
 
 export type CellRead = { readonly fill: CellFill | null; readonly borders: Borders }
 

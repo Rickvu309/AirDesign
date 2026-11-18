@@ -10,9 +10,9 @@ import type { Drawn, Sheet } from "./paint-sheet.js"
 import type { MarkupChildren } from "./text-value-route.js"
 import type { ElementAt, Parts } from "./xml-codec.js"
 
-export type Recolor = FieldValue<"image", "recolor">
-export type Overlay = FieldValue<"image", "overlay">
-export type CropRect = FieldValue<"crop", "rect">
+export type Recolor = FieldValue<"fills", "recolor">
+export type Overlay = FieldValue<"fills", "overlay">
+export type CropRect = FieldValue<"fills", "crop">
 
 export type ShownImage = {
   readonly source: string | null
@@ -128,9 +128,10 @@ export function shownIdentity(parts: Parts, at: ElementAt): ShownIdentity | null
 const altShown = 60
 
 export type PictureReads = {
-  "image.source"?: { readonly value: string }
-  "image.recolor"?: { readonly value: RecolorRead }
-  crop?: { readonly value: CropRead }
+  fills?: { readonly value: "image" }
+  "fills.source"?: { readonly value: string }
+  "fills.recolor"?: { readonly value: RecolorRead }
+  "fills.crop"?: { readonly value: CropRead }
   "identity.alt"?: { readonly value: string }
   "identity.hidden"?: { readonly value: boolean }
 }
@@ -145,14 +146,16 @@ export function pictureReads(parts: Parts, sheet: Sheet, item: Drawn): PictureRe
   const fill = sheet.children[item.element.index]?.find((each) => each.kind === "p:blipFill")
   const blip = fill === undefined ? undefined : sheet.children[fill.index]?.find((each) => each.kind === "a:blip")
   if (fill === undefined || blip === undefined) return reads
+  reads.fills = { value: "image" }
   const icon = iconOf(parts, sheet.part, sheet.children, blip)
-  if (icon !== null) reads["image.source"] = { value: icon }
+  if (icon !== null) reads["fills.source"] = { value: icon }
   const found = { bytes: sheet.bytes, elements: sheet.elements, children: sheet.children, fill, blip }
   const recolor = recolorOf(found, blip)
-  if (recolor !== null && "grayscale" in recolor) reads["image.recolor"] = { value: "grayscale" }
-  if (recolor !== null && "duotone" in recolor) reads["image.recolor"] = { value: recolor.duotone }
+  if (recolor !== null && "grayscale" in recolor) reads["fills.recolor"] = { value: "grayscale" }
+  if (recolor !== null && "duotone" in recolor) reads["fills.recolor"] = { value: recolor.duotone }
   const rect = sheet.children[fill.index]?.find((each) => each.kind === "a:srcRect")
   const [l, t, r, b] = ["l", "t", "r", "b"].map((name) => side(rect, name))
-  if (l != null && t != null && r != null && b != null && l + t + r + b > 0) reads.crop = { value: { l, t, r, b } }
+  if (l != null && t != null && r != null && b != null && l + t + r + b > 0)
+    reads["fills.crop"] = { value: { l, t, r, b } }
   return reads
 }

@@ -35,7 +35,7 @@ const element: CanvasElement = {
 
 async function mounted() {
   const store = paintStore()
-  store.publish({ id, kind: "shape", text: "", picture: null })
+  store.publish({ id, kind: "shape", text: "" })
   const boxes: [ElementId, Box][] = []
   const host = document.createElement("div")
   document.body.append(host)

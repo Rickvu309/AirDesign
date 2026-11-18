@@ -69,8 +69,7 @@ async function mounted(
 ): Promise<Mounted> {
   const store = paintStore()
   for (const each of elements) {
-    if (each.id !== null)
-      store.publish({ id: each.id, kind: each.kind, text, picture: each.kind === "picture" ? "" : null })
+    if (each.id !== null) store.publish({ id: each.id, kind: each.kind === "picture" ? "shape" : each.kind, text })
   }
   const boxes: [ElementId, Box][] = []
   const calls: (readonly [ElementId, Box][])[] = []

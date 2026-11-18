@@ -122,7 +122,7 @@ it("names each placeholder's role and says which of its layout or master shows e
   expect(traits.slides.size).toBe(13)
 })
 
-it("keeps a custom geometry, a picture fill and an effect graph out of reach, and reads a turned, flipped box", async () => {
+it("keeps a custom geometry and an effect graph out of reach, reads an image fill as fills, and reads a turned, flipped box", async () => {
   const parts = new Map(await deck("blank.pptx"))
   const part = "ppt/slides/slide1.xml"
   const slide = decodeUtf8(parts.get(part)!)
@@ -148,7 +148,7 @@ it("keeps a custom geometry, a picture fill and an effect graph out of reach, an
       "text.color": { value: { scheme: "tx1" } },
       "text.font": { value: "Arial", theme: "minor" },
     },
-    kept: ["geometry", "fills", "effects.shadow", "effects.glow", "effects.softEdge"],
+    kept: ["geometry", "effects.shadow", "effects.glow", "effects.softEdge"],
   })
 })
 

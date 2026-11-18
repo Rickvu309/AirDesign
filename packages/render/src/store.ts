@@ -34,18 +34,11 @@ function copyRecord(record: ElementRecord): ElementRecord {
     id: record.id,
     kind: record.kind,
     text: record.text,
-    picture: record.picture,
   })
 }
 
 function refuseRecord(record: ElementRecord): PaintResult | null {
-  if (!kinds.includes(record.kind)) return { ok: false, code: "kind" }
-  if (record.kind === "picture") {
-    if (record.picture === null) return { ok: false, code: "kind" }
-    return null
-  }
-  if (record.picture !== null) return { ok: false, code: "kind" }
-  return null
+  return kinds.includes(record.kind) ? null : { ok: false, code: "kind" }
 }
 
 function copySlide(slide: SlideRecord): SlideRecord {
@@ -218,7 +211,7 @@ export function paintStore(): PaintStore {
       composing.delete(id)
       held.delete(id)
       if (current !== null) {
-        commit({ id: current.id, kind: current.kind, text: data, picture: current.picture })
+        commit({ id: current.id, kind: current.kind, text: data })
       }
       for (const record of queue) commit(record)
     },

@@ -259,7 +259,7 @@ it("keeps every shape's words on the slide when the reader lists none of the sli
 it("names each kind the way the record does", () => {
   expect(["p:sp", "p:pic", "p:cxnSp", "p:grpSp", "p:graphicFrame"].map((kind) => paintKind(kind as never))).toEqual([
     "shape",
-    "picture",
+    "shape",
     "connector",
     "group",
     "chart",

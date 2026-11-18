@@ -43,18 +43,23 @@ async function withClient(held: Session, use: (client: Client) => Promise<void>)
 }
 
 describe("an agent places a Lucide icon by name", () => {
-  it("adds a one-inch picture whose opening source is the icon, then sets its alt text", async () => {
+  it("adds a one-inch shape whose opening fills hold the icon, then sets its alt text", async () => {
     const held = session()
     await withClient(held, async (client) => {
       const added = await client.callTool({
         name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ op: "add", kind: "picture", slide: "256", icon: "rocket" }] },
+        arguments: { deck: "deck", base: 0, changes: [{ op: "add", kind: "shape", slide: "256", icon: "rocket" }] },
       })
       expect(added.isError).not.toBe(true)
       const command = held.deck.register.order.at(-1)
       expect(command).toMatchObject({
         slide: "element-add",
-        element: { node: "256.5", kind: "picture", value: null, opening: { image: { source: { set: "rocket" } } } },
+        element: {
+          node: "256.5",
+          kind: "shape",
+          value: null,
+          opening: { fills: { p0: { set: { image: true } }, source: { set: "rocket" } } },
+        },
       })
       const placed = command?.slide === "element-add" ? command.element.box : null
       expect(placed).toMatchObject({ cx: 914_400, cy: 914_400 })
@@ -69,8 +74,8 @@ describe("an agent places a Lucide icon by name", () => {
       expect(alt.isError).not.toBe(true)
       const read = readDeckPage(held.deck, { runId: "run", slide: "256" })
       expect(read.elements.find((element) => element.node === "256.5")).toMatchObject({
-        kind: "picture",
-        design: "image.source rocket · identity.alt A rocket lifting off",
+        kind: "shape",
+        design: "fills image · fills.source rocket · identity.alt A rocket lifting off",
       })
     })
   })
@@ -92,6 +97,15 @@ describe("an agent places a Lucide icon by name", () => {
         arguments: { deck: "deck", base: 0, changes: [{ op: "set", target: "256.2", image: { source: "zzzz" } }] },
       })
       expect(JSON.stringify(swapped.content)).toContain("none is close")
+      const painted = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: {
+          deck: "deck",
+          base: 0,
+          changes: [{ op: "set", target: "256.2", fills: { paint: { image: "rockets" } } }],
+        },
+      })
+      expect(JSON.stringify(painted.content)).toContain("Close names: rocket")
     })
     expect(held.deck.register.order).toEqual([])
   })

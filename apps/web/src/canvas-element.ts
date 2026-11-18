@@ -85,7 +85,7 @@ export function elementFrom(ctx: RowPaint, spec: DrawnSpec): CanvasElement {
     ...pictureOf(row),
     key,
     id: shape?.id ?? null,
-    kind: shape?.kind ?? paintKind(row.kind),
+    kind: row.kind === "p:pic" ? "picture" : (shape?.kind ?? paintKind(row.kind)),
     box: row.box,
     editable: spec.editable,
     movable: spec.movable,

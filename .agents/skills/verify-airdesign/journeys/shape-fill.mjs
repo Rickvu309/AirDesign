@@ -85,7 +85,11 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   note(`The open editor painted slide ${position + 1}'s title ${hex(accent)} (accent2) before any reload`)
 
   const subtitle = read.elements.find(
-    (element) => element.slide === firstTitle.slide && element.kind === "shape" && element.role !== "title",
+    (element) =>
+      element.slide === firstTitle.slide &&
+      element.kind === "shape" &&
+      element.role !== "title" &&
+      !String(element.design ?? "").startsWith("fills image"),
   )
   const subtitleShape = page.locator(
     `[data-slide-paint] [data-canvas-element="${firstPart}#${subtitle.node.split(".")[1]}"]`,

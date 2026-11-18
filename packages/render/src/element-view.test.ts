@@ -46,8 +46,8 @@ function deck() {
   const slide = slideId("slide")
   const left = elementId("1.1")
   const right = elementId("1.2")
-  store.publish({ id: left, kind: "shape", text: "left", picture: null })
-  store.publish({ id: right, kind: "shape", text: "right", picture: null })
+  store.publish({ id: left, kind: "shape", text: "left" })
+  store.publish({ id: right, kind: "shape", text: "right" })
   store.setSlides([{ id: slide, elements: [left, right] }])
   return { store, slide, left, right }
 }
@@ -94,7 +94,7 @@ describe("OpenSlide", () => {
     expect(leftPaints).toBeGreaterThan(0)
     expect(rightPaints).toBeGreaterThan(0)
 
-    store.publish({ id: left, kind: "shape", text: "changed", picture: null })
+    store.publish({ id: left, kind: "shape", text: "changed" })
     await act(async () => {})
 
     expect(painted.elementPaints(left)).toBe(leftPaints + 1)

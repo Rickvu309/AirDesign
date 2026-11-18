@@ -3,13 +3,11 @@ import type { TraitName, TraitPatch } from "@airdesign/document"
 import { bodyXml } from "./trait-xml-body.js"
 import { boxXml } from "./trait-xml-box.js"
 import { connectionXml } from "./trait-xml-connection.js"
-import { cropXml } from "./trait-xml-crop.js"
 import { effectsXml } from "./trait-xml-effects.js"
 import type { Faded } from "./alpha-codec.js"
-import { fillAlpha, fillsXml } from "./trait-xml-fills.js"
+import { fillAlpha, fillsXml, writtenFills } from "./trait-xml-fills.js"
 import { geometryXml } from "./trait-xml-geometry.js"
 import { identityXml } from "./trait-xml-identity.js"
-import { imageXml } from "./trait-xml-image.js"
 import { lineAlpha, lineXml } from "./trait-xml-line.js"
 import { notesXml } from "./trait-xml-notes.js"
 import { tableXml } from "./trait-xml-table.js"
@@ -30,8 +28,6 @@ export const traitXml: { readonly [T in TraitName]: TraitXml<T> } = {
   effects: effectsXml,
   body: bodyXml,
   text: textXml,
-  image: imageXml,
-  crop: cropXml,
   connection: connectionXml,
   table: tableXml,
   notes: notesXml,
@@ -42,6 +38,7 @@ export const traitXml: { readonly [T in TraitName]: TraitXml<T> } = {
 }
 
 export function writeTrait<T extends TraitName>(parts: Parts, at: ElementAt, trait: T, patch: TraitPatch<T>): Parts {
+  if (trait === "fills") return writtenFills(parts, at, patch as TraitPatch<"fills">)
   return writeFields(parts, at, traitXml[trait], patch)
 }
 

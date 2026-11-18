@@ -88,7 +88,7 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
   it("swaps a raster picture for an icon: a PNG fallback blip with the SVG in svgBlip, linked and typed", async () => {
     const parts = await deck("doe-heat-pumps.pptx")
     const picture = at(parts, "2883", "13")
-    const after = exported(parts, picture.node, { image: { source: { set: "rocket" } } })
+    const after = exported(parts, picture.node, { fills: { source: { set: "rocket" } } })
     expect(changed(parts, after)).toEqual(["ppt/slides/slide9.xml", "ppt/slides/_rels/slide9.xml.rels"])
     const slide = text(after, picture.part)
     const rels = text(after, "ppt/slides/_rels/slide9.xml.rels")
@@ -119,7 +119,7 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
     const filled = withMedia(after, (part) => (part === rocket.svg ? encodeUtf8("<svg/>") : undefined))
     expect(decodeUtf8(filled.get(rocket.svg)!)).toBe("<svg/>")
     expect(filled.has(rocket.png)).toBe(false)
-    expect(readTraits(after).elements.get(picture.node)?.reads["image.source"]).toEqual({ value: "rocket" })
+    expect(readTraits(after).elements.get(picture.node)?.reads["fills.source"]).toEqual({ value: "rocket" })
   })
 
   it("replaces the embedded file without changing the picture's frame, crop or effects", async () => {
@@ -130,8 +130,8 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
         .slide(picture.part)
         .elements.find((each) => each.shape === picture.shape)
     const cropped = exported(parts, picture.node, {
-      crop: { rect: { set: { l: 10000, t: 5000, r: 1000, b: 3000 } } },
-      image: {
+      fills: {
+        crop: { set: { l: 10000, t: 5000, r: 1000, b: 3000 } },
         recolor: { set: { grayscale: true } },
         overlay: { set: { solid: { scheme: "accent1" } } },
         blur: { set: 20_000 },
@@ -141,7 +141,7 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
     const fs = process.getBuiltinModule("node:fs")
     const bytes = new Uint8Array(fs.readFileSync(`${process.cwd()}/scripts/pptx-fixtures/picture.png`))
     const sha256 = "a".repeat(64)
-    const after = exported(cropped, picture.node, { image: { source: { set: `image/png:${sha256}` } } }, (hash) =>
+    const after = exported(cropped, picture.node, { fills: { source: { set: `image/png:${sha256}` } } }, (hash) =>
       hash === sha256 ? bytes : undefined,
     )
     const painted = source(after)
@@ -167,7 +167,7 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
     const dark = { scheme: "accent1" } as const
     const light = { rgb: "FFFFFF" } as const
     const gray = exported(parts, picture.node, {
-      image: { recolor: { set: { grayscale: true } }, alpha: { set: 60_000 as Alpha } },
+      fills: { recolor: { set: { grayscale: true } }, alpha: { set: 60_000 as Alpha } },
     })
     expect(text(gray, picture.part)).toContain(
       '<a:blip r:embed="rId9"><a:alphaModFix amt="60000"/><a:grayscl/></a:blip>',
@@ -179,7 +179,7 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
       blur: 0,
       overlay: { none: true },
     })
-    const duotone = exported(gray, picture.node, { image: { recolor: { set: { duotone: { dark, light } } } } })
+    const duotone = exported(gray, picture.node, { fills: { recolor: { set: { duotone: { dark, light } } } } })
     expect(text(duotone, picture.part)).toContain(
       '<a:blip r:embed="rId9"><a:alphaModFix amt="60000"/><a:duotone><a:schemeClr val="accent1"/><a:srgbClr val="FFFFFF"/></a:duotone></a:blip>',
     )
@@ -194,7 +194,7 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
       ],
     })
     const plain = exported(duotone, picture.node, {
-      image: { recolor: { set: { none: true } }, alpha: { set: 100_000 as Alpha } },
+      fills: { recolor: { set: { none: true } }, alpha: { set: 100_000 as Alpha } },
     })
     expect(text(plain, picture.part)).toContain('<a:blip r:embed="rId9"/>')
     expect(text(plain, picture.part)).toBe(text(parts, picture.part))
@@ -204,7 +204,9 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
     const parts = await deck("doe-heat-pumps.pptx")
     const picture = at(parts, "2883", "13")
     expect(shownCrop(parts, picture)).toEqual({ l: 0, t: 0, r: 0, b: 0 })
-    const cropped = exported(parts, picture.node, { crop: { rect: { set: { l: 10_000, t: 0, r: 20_000, b: 5_000 } } } })
+    const cropped = exported(parts, picture.node, {
+      fills: { crop: { set: { l: 10_000, t: 0, r: 20_000, b: 5_000 } } },
+    })
     expect(text(cropped, picture.part)).toContain(
       '<p:blipFill><a:blip r:embed="rId9"/><a:srcRect l="10000" r="20000" b="5000"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>',
     )
@@ -213,7 +215,7 @@ describe("a picture's icon, recolour, opacity and crop export into its blip", ()
       .slide(picture.part)
       .elements.find((each) => each.shape === "13")?.image
     expect(painted?.crop).toEqual({ left: 0.1, top: 0, right: 0.2, bottom: 0.05 })
-    const back = exported(cropped, picture.node, { crop: { rect: { set: { l: 0, t: 0, r: 0, b: 0 } } } })
+    const back = exported(cropped, picture.node, { fills: { crop: { set: { l: 0, t: 0, r: 0, b: 0 } } } })
     expect(text(back, picture.part)).toBe(text(parts, picture.part))
   })
 })
@@ -253,11 +255,11 @@ describe("a shape's fill takes an icon as a picture fill", () => {
   it("writes a blipFill with the icon and reads the icon back as the fill", async () => {
     const parts = await deck("clean.pptx")
     const shape = at(parts, readSlides(parts)[0]!.slide, "2")
-    const after = exported(parts, shape.node, { fills: { p0: { set: { image: "rocket" } } } })
+    const after = exported(parts, shape.node, { fills: { p0: { set: { image: true } }, source: { set: "rocket" } } })
     const slide = text(after, shape.part)
     expect(slide).toContain('<a:blipFill rotWithShape="1"><a:blip r:embed="rId2"><a:extLst>')
     expect(slide).toContain("<a:stretch><a:fillRect/></a:stretch></a:blipFill>")
-    expect(shownFill(after, shape)).toEqual({ value: { image: "rocket" }, own: true })
+    expect(shownFill(after, shape)).toEqual({ value: { image: true }, own: true })
     expect(text(parts, "[Content_Types].xml")).not.toContain('Extension="svg"')
     expect(text(after, "[Content_Types].xml")).toContain('<Default Extension="svg" ContentType="image/svg+xml"/>')
     const painted = paintReader(after)
@@ -273,10 +275,10 @@ describe("a picture added with an icon opening", () => {
     const slide = readSlides(parts)[0]!
     const id = slideId(slide.slide)
     const node = elementId(`${slide.slide}.${String(freeShapeId(parts, slide.part))}`)
-    const opening = { image: { source: { set: "rocket" } } }
+    const opening = { fills: { source: { set: "rocket" } } }
     const element = {
       node,
-      kind: "picture",
+      kind: "shape",
       value: null,
       box: { x: 0, y: 0, cx: 914_400, cy: 914_400 },
       grouped: false,
@@ -296,7 +298,7 @@ it("exports exclusive native picture modes while preserving media and every othe
   const parts = await deck("doe-heat-pumps.pptx")
   const picture = at(parts, "2883", "13")
   for (const mode of ["fill", "fit", "crop", "tile"] as const) {
-    const after = exported(parts, picture.node, { image: { mode: { set: mode } } })
+    const after = exported(parts, picture.node, { fills: { mode: { set: mode } } })
     expect(changed(parts, after)).toEqual([picture.part])
     expect(shownPictureMode(after, picture)).toBe(mode)
     const painted = paintReader(after)
@@ -316,7 +318,7 @@ it("reads Fill and Fit back even when a square picture has zero placement offset
   for (const mode of ["fill", "fit"] as const) {
     const after = exported(parts, picture.node, {
       box: { w: { set: 1000000 }, h: { set: 1000000 } },
-      image: { source: { set: "rocket" }, mode: { set: mode } },
+      fills: { source: { set: "rocket" }, mode: { set: mode } },
     })
     expect(shownPictureMode(after, picture)).toBe(mode)
   }
@@ -355,7 +357,7 @@ it("writes a blur and a colour overlay on the picture and takes both away", asyn
       .elements.find((each) => each.shape === "4")?.image?.blur,
   ).toBe(10)
   const after = exported(parts, picture.node, {
-    image: { blur: { set: 40_000 }, overlay: { set: { solid: black } } },
+    fills: { blur: { set: 40_000 }, overlay: { set: { solid: black } } },
   })
   const slide = text(after, picture.part)
   const blur = `<a:blur rad="${String(blurRadius(40_000))}" grow="0"/>`
@@ -369,7 +371,7 @@ it("writes a blur and a colour overlay on the picture and takes both away", asyn
   expect(painted?.blur).toBe(20)
   expect(painted?.overlay).toEqual({ hex: "000000", alpha: 0.5 })
   expect(sameBytes(after.get(media)!, parts.get(media)!)).toBe(true)
-  const cleared = exported(after, picture.node, { image: { blur: { set: 0 }, overlay: { set: { none: true } } } })
+  const cleared = exported(after, picture.node, { fills: { blur: { set: 0 }, overlay: { set: { none: true } } } })
   expect(text(cleared, picture.part)).toBe(text(parts, picture.part))
 })
 

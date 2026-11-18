@@ -24,7 +24,7 @@ const card = elementId("256.3")
 const lineBox: PaintBox = { x: 1_000_000, y: 1_000_000, width: 2_000_000, height: 0, ...upright }
 const cardBox: PaintBox = { x: 4_000_000, y: 500_000, width: 2_000_000, height: 1_000_000, ...upright }
 
-function element(id: ElementId, kind: "shape" | "connector", box: PaintBox, preset: string): CanvasElement {
+function element(id: ElementId, kind: "shape" | "connector" | "picture", box: PaintBox, preset: string): CanvasElement {
   return {
     key: `ppt/slides/slide1.xml#${id}`,
     id,
@@ -49,7 +49,7 @@ async function mounted(
 ): Promise<{ host: HTMLDivElement; bound: [ElementId, string, Bound | Place][]; moved: [ElementId, unknown][] }> {
   const store = paintStore()
   for (const each of shown)
-    if (each.id !== null) store.publish({ id: each.id, kind: each.kind, text: "", picture: null })
+    if (each.id !== null) store.publish({ id: each.id, kind: each.kind === "picture" ? "shape" : each.kind, text: "" })
   const bound: [ElementId, string, Bound | Place][] = []
   const moved: [ElementId, unknown][] = []
   const host = document.createElement("div")
@@ -231,6 +231,16 @@ describe("aimAt", () => {
     const grouped = { ...rectangle, group: { id: elementId("256.9"), box: null } }
     expect(aimAt([grouped], connector, { x: 4_000_000, y: 1_000_000 }, 10, placed)).toBeNull()
     expect(aimAt([connector], connector, { x: 2_000_000, y: 1_000_000 }, 10, placed)).toBeNull()
+  })
+
+  it("snaps to a site of a photo, a shape whose fills hold an image that the canvas paints as a picture", () => {
+    const [connector] = elements
+    if (connector === undefined) throw new Error("elements")
+    const photo = element(elementId("256.5"), "picture", cardBox, "rect")
+    expect(aimAt([photo], connector, { x: 4_005_000, y: 1_000_000 }, 10_000, placed)).toMatchObject({
+      node: elementId("256.5"),
+      site: 1,
+    })
   })
 
   it("snaps to a site of a shape that a larger one above it covers, and shows the topmost when no site is near", () => {

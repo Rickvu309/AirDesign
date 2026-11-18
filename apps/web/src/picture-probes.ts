@@ -1,51 +1,31 @@
-import { format } from "@airdesign/document"
+import { format, type Kind } from "@airdesign/document"
 import { shownPictureMode, shownCrop, shownIdentity, shownImage } from "@airdesign/pptx"
-import type { Probe } from "./parity-probe"
+import type { At, Parts, Probe } from "./parity-probe"
 
-const picture = "2883.13"
+const on = { deck: "doe-heat-pumps.pptx", kind: "shape" as Kind, node: "2883.13" }
 
 const identityOpening = { name: "opening", alt: "opening", hidden: "opening" } as const
 
-export const pictureProbes: {
-  readonly identity: Probe<"identity">
-  readonly image: Probe<"image">
-  readonly crop: Probe<"crop">
-} = {
-  identity: {
-    deck: "doe-heat-pumps.pptx",
-    kind: "picture",
-    node: picture,
-    opening: () => ({ v: format, patch: { identity: identityOpening } }),
-    edit: (_, field, value) => ({ v: format, patch: { identity: { [field]: { set: value } } } }),
-    fields: {
-      name: { file: (parts, at) => shownIdentity(parts, at)?.name, shows: (value) => value },
-      alt: { file: (parts, at) => shownIdentity(parts, at)?.alt, shows: (value) => value },
-      hidden: { file: (parts, at) => shownIdentity(parts, at)?.hidden, shows: (value) => value },
-    },
+export const identityProbe: Probe<"identity"> = {
+  ...on,
+  opening: () => ({ v: format, patch: { identity: identityOpening } }),
+  edit: (_, field, value) => ({ v: format, patch: { identity: { [field]: { set: value } } } }),
+  fields: {
+    name: { file: (parts, at) => shownIdentity(parts, at)?.name, shows: (value) => value },
+    alt: { file: (parts, at) => shownIdentity(parts, at)?.alt, shows: (value) => value },
+    hidden: { file: (parts, at) => shownIdentity(parts, at)?.hidden, shows: (value) => value },
   },
-  image: {
-    deck: "doe-heat-pumps.pptx",
-    kind: "picture",
-    node: picture,
-    opening: () => ({
-      v: format,
-      patch: { image: { mode: "opening", source: "opening", recolor: "opening", blur: "opening", overlay: "opening" } },
-    }),
-    edit: (_, field, value) => ({ v: format, patch: { image: { [field]: { set: value } } } }),
-    fields: {
-      mode: { file: (parts, at) => shownPictureMode(parts, at), shows: (value) => value },
-      source: { file: (parts, at) => shownImage(parts, at)?.source, shows: (value) => value },
-      recolor: { file: (parts, at) => shownImage(parts, at)?.recolor, shows: (value) => value },
-      blur: { file: (parts, at) => shownImage(parts, at)?.blur, shows: (value) => value },
-      overlay: { file: (parts, at) => shownImage(parts, at)?.overlay, shows: (value) => value },
-    },
-  },
-  crop: {
-    deck: "doe-heat-pumps.pptx",
-    kind: "picture",
-    node: picture,
-    opening: () => ({ v: format, patch: { crop: { rect: "opening" } } }),
-    edit: (_, __, value) => ({ v: format, patch: { crop: { rect: { set: value } } } }),
-    fields: { rect: { file: (parts, at) => shownCrop(parts, at), shows: (value) => value } },
-  },
+}
+
+function imageProbe(file: (parts: Parts, at: At) => unknown) {
+  return { on, file, shows: (value: unknown) => value }
+}
+
+export const imageProbes = {
+  mode: imageProbe((parts, at) => shownPictureMode(parts, at)),
+  source: imageProbe((parts, at) => shownImage(parts, at)?.source),
+  crop: imageProbe((parts, at) => shownCrop(parts, at)),
+  recolor: imageProbe((parts, at) => shownImage(parts, at)?.recolor),
+  blur: imageProbe((parts, at) => shownImage(parts, at)?.blur),
+  overlay: imageProbe((parts, at) => shownImage(parts, at)?.overlay),
 }

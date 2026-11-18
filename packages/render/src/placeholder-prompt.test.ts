@@ -92,7 +92,7 @@ describe("placeholder prompt in SlideCanvas", () => {
 
   it("placeholder with text does not paint prompt or quiet outline", async () => {
     const store = paintStore()
-    store.publish({ id, kind: "shape", text: stored("My subtitle"), picture: null })
+    store.publish({ id, kind: "shape", text: stored("My subtitle") })
     const host = await mount({ ...wide, elements: [placeholderShape(id, "Add a subtitle")] }, store, false)
     expect(host.querySelector("[data-placeholder-prompt]")).toBeNull()
     const frame = host.querySelector<HTMLElement>(`[data-canvas-element="${id}"]`)

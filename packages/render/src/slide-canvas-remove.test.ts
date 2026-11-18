@@ -39,7 +39,8 @@ function element(named: ElementId, overrides: Partial<CanvasElement> = {}): Canv
 async function mounted(elements: readonly CanvasElement[], entering: ElementId | null = null) {
   const store = paintStore()
   for (const each of elements) {
-    if (each.id !== null) store.publish({ id: each.id, kind: each.kind, text: "Hello", picture: null })
+    if (each.id !== null)
+      store.publish({ id: each.id, kind: each.kind === "picture" ? "shape" : each.kind, text: "Hello" })
   }
   const removed: (readonly ElementId[])[] = []
   const host = document.createElement("div")

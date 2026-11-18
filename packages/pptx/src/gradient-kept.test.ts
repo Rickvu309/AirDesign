@@ -1,12 +1,12 @@
 import { changedTable, type FieldValue } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { markupDocument } from "./element-span.js"
+import { fillMarkup } from "./fill-markup.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { readTable, writeTable } from "./table-write.js"
-import { fillMarkup } from "./trait-xml-fills.js"
 import { writeTrait } from "./trait-xml.js"
 
-type Fill = Exclude<FieldValue<"fills", "p0">, { readonly picture: unknown }>
+type Fill = Exclude<FieldValue<"fills", "p0">, { readonly image: unknown }>
 type Gradient = Extract<Fill, { readonly gradient: unknown }>
 
 const part = "ppt/slides/slide1.xml"

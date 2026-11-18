@@ -15,7 +15,7 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 async function serverCrop(stack: Stack, deck: string, node: ElementId, cookie: string): Promise<unknown> {
   const { register } = (await stack.post("/decks/open", { deck }, cookie)).json as { register: Register }
   const body = register.elements[node]
-  return body === undefined ? undefined : landedPatch(body, "text").crop?.rect
+  return body === undefined ? undefined : landedPatch(body, "text").fills?.crop
 }
 
 function width(photo: Locator): Promise<number> {

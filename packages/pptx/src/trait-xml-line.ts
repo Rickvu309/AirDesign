@@ -7,7 +7,7 @@ import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { isShapeTag, shapeById, shapeTags } from "./shape-tree.js"
 import { openTag, slotRoot, withAttribute, withChild as childIn, type Slot } from "./slot-edit.js"
-import { filledChild } from "./trait-xml-fills.js"
+import { filledChild } from "./fill-markup.js"
 import { whole, type ElementAt, type FieldXml, type PartCodec, type Parts, type TraitXml } from "./xml-codec.js"
 
 type LineChild = ChildOf<"a:ln">

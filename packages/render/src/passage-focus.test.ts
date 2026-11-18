@@ -14,7 +14,7 @@ it("a value from elsewhere does not move the selection into a box that has lost 
   const id = elementId("1.1")
   const show = (text: string) =>
     act(async () => {
-      store.publish({ id, kind: "shape", text, picture: null })
+      store.publish({ id, kind: "shape", text })
     })
   await show("Hello world")
   const host = document.createElement("div")

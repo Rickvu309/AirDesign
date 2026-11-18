@@ -154,7 +154,7 @@ async function typingDeck() {
     },
   }
   const store = paintStore()
-  store.publish({ id: box, kind: "shape", text: oldText, picture: null })
+  store.publish({ id: box, kind: "shape", text: oldText })
   const busy = busyElements()
   const paint = {
     store: { current: store },

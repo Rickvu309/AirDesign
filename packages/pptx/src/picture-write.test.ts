@@ -28,7 +28,7 @@ function pictureAdd(slide: string, shape: number, media: Media) {
   return {
     slide: "element-add" as const,
     id: slideId(slide),
-    element: { node, kind: "picture" as const, value: null, box, grouped: false },
+    element: { node, kind: "shape" as const, value: null, box, grouped: false },
     media,
   }
 }

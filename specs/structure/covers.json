@@ -4,8 +4,8 @@
     {
       "file": "packages/document/src/element-group.ts",
       "names": ["*"],
-      "digest": "4447d48a4d85",
-      "blob": "008732c00f56a274249f088c514593288e37aff9"
+      "digest": "3e52e8983d8e",
+      "blob": "8690579014ebb634acf995f53bba202a13268af3"
     },
     {
       "file": "packages/document/src/group-place.ts",
@@ -23,7 +23,7 @@
       "file": "packages/document/src/person-undo.ts",
       "names": ["slideUndoable", "turn", "undoSlides", "turnCommands", "groupUndone"],
       "digest": "356e20c2b344",
-      "blob": "601b32ef32b908ed33a8376338349fa586c2ba9b"
+      "blob": "5f2cec0de1b46fb91cb92c9ef8d6412c3a844087"
     }
   ]
 }

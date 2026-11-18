@@ -85,7 +85,11 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   note(`The open editor painted slide ${position + 1}'s title against the slide's right edge before any reload`)
 
   const other = read.elements.find(
-    (element) => element.slide === firstTitle.slide && element.kind === "shape" && element.role !== "title",
+    (element) =>
+      element.slide === firstTitle.slide &&
+      element.kind === "shape" &&
+      element.role !== "title" &&
+      !String(element.design ?? "").startsWith("fills image"),
   )
   const otherShape = page.locator(`[data-slide-paint] [data-canvas-element="${firstPart}#${other.node.split(".")[1]}"]`)
   await page.getByRole("button", { name: "Design", exact: true }).click()

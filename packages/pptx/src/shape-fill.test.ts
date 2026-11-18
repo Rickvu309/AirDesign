@@ -1,12 +1,12 @@
 import type { FieldEdit } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { fillKinds } from "./color-read.js"
+import { fillMarkup } from "./fill-markup.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { shownFill, type Fill } from "./fill-read.js"
 import { readPackage } from "./index.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { routeRuns } from "./route-parts.js"
-import { fillMarkup } from "./trait-xml-fills.js"
 import { writeTrait } from "./trait-xml.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -162,8 +162,17 @@ describe("the fill codec writes the shape's one fill choice", () => {
     expect(edit(xml, "opening")).toBe(xml)
   })
 
-  it.each(["p:pic", "p:grpSp", "p:graphicFrame", "p:cxnSp"])("refuses %s without writing", (kind) => {
+  it.each(["p:grpSp", "p:graphicFrame", "p:cxnSp"])("refuses %s without writing", (kind) => {
     refuses(slide("<p:spPr/>", kind), "fill-shape")
+  })
+
+  it("rewrites a picture given a colour as a shape that keeps its id, name, alt text and box", () => {
+    const identity = '<p:cNvPr id="2" name="Photo 1" descr="City at night"><a:hlinkClick r:id="rId9"/></p:cNvPr>'
+    const properties = `<p:spPr>${beforeGeometry}</p:spPr>`
+    const xml = `<p:sld><p:cSld><p:spTree><p:pic><p:nvPicPr>${identity}<p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr><p:ph idx="3"/></p:nvPr></p:nvPicPr><p:blipFill><a:blip r:embed="rId2"/><a:stretch/></p:blipFill>${properties}</p:pic></p:spTree></p:cSld></p:sld>`
+    expect(write(xml)).toBe(
+      `<p:sld><p:cSld><p:spTree><p:sp><p:nvSpPr>${identity}<p:cNvSpPr/><p:nvPr><p:ph idx="3"/></p:nvPr></p:nvSpPr><p:spPr>${beforeGeometry}${solid}</p:spPr></p:sp></p:spTree></p:cSld></p:sld>`,
+    )
   })
 
   it("refuses missing, duplicate properties and two fill choices", () => {
@@ -211,9 +220,9 @@ describe("the fill a shape shows", () => {
     expect(shownFill(referred("0"), at)).toEqual({ value: { none: true }, own: false })
   })
 
-  it("reads a fill the types cannot hold as no value, so a person replaces it whole", () => {
+  it("reads a picture fill as an image, and a fill the types cannot hold as no value, so a person replaces it whole", () => {
     const picture = slide('<p:spPr><a:blipFill><a:blip r:embed="rId2"/></a:blipFill></p:spPr>')
-    expect(shownFill(parts(picture), { part, shape: "2" })).toEqual({ value: null, own: true })
+    expect(shownFill(parts(picture), { part, shape: "2" })).toEqual({ value: { image: true }, own: true })
     const one = slide(
       '<p:spPr><a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="FFFFFF"/></a:gs></a:gsLst></a:gradFill></p:spPr>',
     )

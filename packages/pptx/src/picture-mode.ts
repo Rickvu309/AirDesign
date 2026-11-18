@@ -6,7 +6,7 @@ import { paintAttribute } from "./paint-color.js"
 import { rasterDimensions } from "./raster-dimensions.js"
 import type { ElementAt, Parts } from "./xml-codec.js"
 
-type Mode = FieldValue<"image", "mode">
+type Mode = FieldValue<"fills", "mode">
 type Size = { width: number; height: number }
 
 export function picturePlacement(mode: "fill" | "fit", image: Size, box: Size) {
