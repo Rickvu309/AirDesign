@@ -26,6 +26,15 @@ describe("grid keys", () => {
     expect(gridMove("End", grid, 1)).toBe(5)
   })
 
+  it("moves down onto the next line of the same group", () => {
+    const boxes = [0, 1, 2].flatMap((line) => [0, 1, 2, 3, 4].map((column) => row(column * 120, line * 80)))
+    expect(gridMove("ArrowDown", boxes, 0)).toBe(5)
+    expect(gridMove("ArrowDown", boxes, 4)).toBe(9)
+    expect(gridMove("ArrowDown", boxes, 5)).toBe(10)
+    expect(gridMove("ArrowUp", boxes, 10)).toBe(5)
+    expect(gridMove("ArrowDown", boxes, 12)).toBe(12)
+  })
+
   it("stays put when the row has nowhere above or below", () => {
     expect(gridMove("ArrowDown", [row(0, 0), row(120, 0)], 0)).toBe(0)
     expect(gridMove("ArrowUp", [row(0, 0), row(120, 0)], 1)).toBe(1)

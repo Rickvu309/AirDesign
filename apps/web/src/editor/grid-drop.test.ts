@@ -159,6 +159,14 @@ describe("drop side", () => {
     expect(dropAt(rows, [6], 4, 5)).toEqual({ at: 5, side: "same" })
   })
 
+  it("drops before a group only at its first slide, including when that group wraps", () => {
+    const wrapped = [{ start: 0, end: 28 }]
+    expect(dropAt(wrapped, [20], 0, 0)).toEqual({ at: 0, side: "before" })
+    expect(dropAt(wrapped, [20], 10, 10)).toEqual({ at: 10, side: "same" })
+    expect(dropAt(wrapped, [20], 20, 21)).toEqual({ at: 21, side: "same" })
+    expect(liveTarget(wrapped, 2, 20, 21)).toBe(20)
+  })
+
   it("keeps a row's first slide in its row when it is dropped on its own right half", () => {
     expect(dropAt(rows, [4], 4, 5)).toEqual({ at: 4, side: "before" })
     expect(gridDrop(rows, [4], 4, "before")).toBeNull()

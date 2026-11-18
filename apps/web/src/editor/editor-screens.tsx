@@ -19,12 +19,14 @@ import {
   Unreached,
 } from "@/editor/screens/slide-views"
 import { GridAddHold, GridAddHover, GridDefault, GridPasted } from "@/editor/screens/grid-views"
+import { GridWrapped } from "@/editor/screens/grid-wrapped"
 
 export const screens = {
   [editorRoutes.gridDefault]: GridDefault,
   [editorRoutes.gridAddHover]: GridAddHover,
   [editorRoutes.gridAddHold]: GridAddHold,
   [editorRoutes.gridPasted]: GridPasted,
+  [editorRoutes.gridWrapped]: GridWrapped,
   [editorRoutes.agentWorking]: AgentWorking,
   [editorRoutes.agentComplete]: AgentComplete,
   [editorRoutes.agentOwn]: AgentOwn,

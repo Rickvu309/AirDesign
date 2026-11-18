@@ -13,7 +13,7 @@ import { GridCard } from "@/editor/grid-card"
 import { GridHead } from "@/editor/grid-head"
 import { moveGridRow, gridMoveMessage, useGridRowFocus } from "@/editor/grid-row-frame"
 import { gridAddFits } from "@/editor/grid-add-placement"
-import { gridSpacing, gridThumbHeight, gridTrackColumns, gridTracks } from "@/editor/grid-viewport"
+import { gridColumnCount, gridSpacing, gridThumbHeight } from "@/editor/grid-viewport"
 import { GridDragGhost } from "@/editor/grid-drag-ghost"
 import { gridDrop, gridDropBoundary, type GridMoveSide } from "@/editor/grid-drop"
 import { gridLayout, keptGridViewport, useKeptGridZoom } from "@/editor/grid-zoom"
@@ -108,7 +108,6 @@ export function EditorGrid({
     height,
     shown,
   }
-  const tracks = gridTracks(geometry)
   const viewport = useGridViewport({
     geometry,
     folded: folding.key,
@@ -211,7 +210,7 @@ export function EditorGrid({
   })
   const spacing = gridSpacing(width, height)
   const focusRow = useGridRowFocus(list, rows, strip.slideIds ?? [])
-  const columns = Math.max(1, ...tracks.map(gridTrackColumns))
+  const columns = gridColumnCount(geometry)
   const layoutWidth = columns * width + (columns - 1) * spacing.column
   const drag = useGridDrag({
     list,
@@ -508,7 +507,6 @@ export function EditorGrid({
           />
           <GridRows
             geometry={geometry}
-            tracks={tracks}
             sections={sections}
             ids={strip.slideIds}
             columns={columns}
