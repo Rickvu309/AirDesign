@@ -36,7 +36,7 @@ function median(values: readonly number[]): number {
 }
 
 test("findings over every fixture deck, counted by kind and timed with no device", async ({ page }) => {
-  test.setTimeout(10 * 60_000)
+  test.setTimeout(3 * 60_000)
   const decks = await readDecks()
   await page.goto("/")
   const widths = await slideWidths(
@@ -95,7 +95,7 @@ function shapeOf(element: ResolvedElement): string {
 }
 
 test("text fit agrees with the painter on the text of real decks", async ({ page }) => {
-  test.setTimeout(20 * 60_000)
+  test.setTimeout(3 * 60_000)
   const decks = (await readDecks()).filter((deck) => truthDecks.includes(deck.name))
   const rows: Row[] = []
   const verdicts = { agree: 0, missed: 0, alarms: 0 }
