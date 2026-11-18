@@ -66,20 +66,20 @@ function opacityOf(view: ScopedElement, fields: Readonly<Record<string, unknown>
 it("shows one Opacity for the fill, line and text it fades together", () => {
   const panel = panelOf(shape, { reads: {}, moves: true, fields: {} })
   expect(panel.sections.filter((section) => section.trait === "opacity")).toHaveLength(1)
-  const control = opacityOf(shape, { "fill.alpha": 60_000, "line.alpha": 60_000, "text.alpha": 60_000 })
+  const control = opacityOf(shape, { "fills.alpha": 60_000, "line.alpha": 60_000, "text.alpha": 60_000 })
   expect(control).toMatchObject({ label: "Opacity", kind: "percent", value: 60_000, mixed: false, reset: null })
   expect(control?.change(25_000)).toEqual({ target: { node: "258.2" }, opacity: 25_000 })
 })
 
 it("shows Mixed when the alphas differ, and full opacity when nothing shows a colour", () => {
-  expect(opacityOf(shape, { "fill.alpha": 60_000, "line.alpha": 30_000 })).toMatchObject({ mixed: true })
-  expect(opacityOf(shape, { "fill.alpha": "mixed", "line.alpha": null })).toMatchObject({ mixed: true })
-  expect(opacityOf(shape, { "fill.alpha": 40_000, "line.alpha": null, "text.alpha": null })).toMatchObject({
+  expect(opacityOf(shape, { "fills.alpha": 60_000, "line.alpha": 30_000 })).toMatchObject({ mixed: true })
+  expect(opacityOf(shape, { "fills.alpha": "mixed", "line.alpha": null })).toMatchObject({ mixed: true })
+  expect(opacityOf(shape, { "fills.alpha": 40_000, "line.alpha": null, "text.alpha": null })).toMatchObject({
     value: 40_000,
     mixed: false,
   })
   expect(opacityOf(shape, {})).toMatchObject({ value: 100_000, mixed: false })
-  expect(opacityOf(connector, { "fill.alpha": 10_000, "line.alpha": 50_000 })).toMatchObject({ value: 50_000 })
+  expect(opacityOf(connector, { "fills.alpha": 10_000, "line.alpha": 50_000 })).toMatchObject({ value: 50_000 })
 })
 
 it("lists Opacity percents on a text box, shape and picture, and not on a line or a slide", () => {
@@ -93,13 +93,13 @@ it("lists Opacity percents on a text box, shape and picture, and not on a line o
   expect(opacityOf(picture, { "line.alpha": 100_000 })?.look.glyph).toBeDefined()
   expect(opacityOf(connector, { "line.alpha": 100_000 })?.look.steps).toBeUndefined()
   expect(opacityOf(connector, { "line.alpha": 100_000 })?.look.glyph).toBeUndefined()
-  expect(opacityOf(slide, { "fill.alpha": 50_000 })).toBeUndefined()
+  expect(opacityOf(slide, { "fills.alpha": 50_000 })).toBeUndefined()
 })
 
 it("offers no Opacity on a group, or on a shape whose fill the index keeps", () => {
   const group = { ...shape, facts: { ...shape.facts, kind: "group" as const } }
   expect(opacityOf(group, {})).toBeUndefined()
-  expect(opacityOf({ ...shape, kept: ["fill"] }, {})).toBeUndefined()
+  expect(opacityOf({ ...shape, kept: ["fills"] }, {})).toBeUndefined()
 })
 
 it("lays out a text box's body field by field, autofit included", () => {
@@ -246,7 +246,7 @@ function filled(node: string, fill: unknown, x: number) {
   return panelOf(view, {
     reads: {},
     moves: true,
-    fields: { "geometry.shape": { value: { preset: "ellipse" }, own: true }, "fill.value": { value: fill, own: true } },
+    fields: { "geometry.shape": { value: { preset: "ellipse" }, own: true }, "fills.p0": { value: fill, own: true } },
   })
 }
 
@@ -260,12 +260,12 @@ it("reads Mixed where two shapes differ and sets the fill of both in one change"
       .find((section) => section.trait === trait)
       ?.strips.flat()
       .find((each) => each.field === field)
-  expect(control("fill", "value")).toMatchObject({ value: { solid: { scheme: "accent1" } }, mixed: true })
+  expect(control("fills", "paint")).toMatchObject({ value: { solid: { scheme: "accent1" } }, mixed: true })
   expect(control("box", "x")).toMatchObject({ value: undefined, mixed: true })
   expect(control("box", "y")).toMatchObject({ value: 0, mixed: false })
-  expect(control("fill", "value")?.change({ solid: { scheme: "accent2" } })).toEqual({
+  expect(control("fills", "paint")?.change({ solid: { scheme: "accent2" } })).toEqual({
     target: { nodes: ["258.2", "258.3"] },
-    fill: { value: { solid: { scheme: "accent2" } } },
+    fills: { paint: { solid: { scheme: "accent2" } } },
   })
   expect(control("alignment", "align")?.change("left")).toEqual({
     target: { nodes: ["258.2", "258.3"] },
@@ -303,7 +303,7 @@ it("keeps the fill kind two shapes share, and names no kind when their kinds dif
   const solid = filled("258.2", { solid: { scheme: "accent1" } }, 0)
   const none = filled("258.3", { none: true }, 0)
   const fill = panelOfMany([solid, none], "design")
-    .sections.find((section) => section.trait === "fill")
+    .sections.find((section) => section.trait === "fills")
     ?.strips.flat()[0]
   expect(fill).toMatchObject({ value: undefined, mixed: true })
 })

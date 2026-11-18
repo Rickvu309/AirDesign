@@ -337,10 +337,10 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
       )
     })
     if (host === undefined) continue
-    const fill = { value: { set: { solid: { rgb: "19A7E8" } } } } as const
+    const fills = { p0: { set: { solid: { rgb: "19A7E8" } } } } as const
     const at = { slide: "", part, shape: host.id }
     runs.push(
-      attempt("spPr.fill", null, () => ({ touch: slideTouch(part), parts: writeTrait(parts, at, "fill", fill) })),
+      attempt("spPr.fill", null, () => ({ touch: slideTouch(part), parts: writeTrait(parts, at, "fills", fills) })),
     )
     break
   }

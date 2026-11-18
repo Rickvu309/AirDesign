@@ -19,7 +19,7 @@ it("reads a shape whose fill, line, shadow and text colour come from its theme s
   const traits = readTraits(await deck("corpus/nasa-class-d-mar.pptx"))
   expect(traits.elements.get(elementId("1192.4"))).toEqual({
     reads: {
-      fill: {
+      fills: {
         value: {
           gradient: [
             {
@@ -140,7 +140,7 @@ it("keeps a custom geometry, a picture fill and an effect graph out of reach, an
     role: "title",
     reads: {
       geometry: { value: "custom" },
-      fill: { value: "picture" },
+      fills: { value: "image" },
       "box.rot": { value: 5_400_000 },
       "box.flipV": { value: true },
       "body.anchor": { value: "ctr" },
@@ -148,7 +148,7 @@ it("keeps a custom geometry, a picture fill and an effect graph out of reach, an
       "text.color": { value: { scheme: "tx1" } },
       "text.font": { value: "Arial", theme: "minor" },
     },
-    kept: ["geometry", "fill", "effects.shadow", "effects.glow", "effects.softEdge"],
+    kept: ["geometry", "fills", "effects.shadow", "effects.glow", "effects.softEdge"],
   })
 })
 

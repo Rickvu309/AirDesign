@@ -25,21 +25,22 @@ export type Derived = [
   Expect<Same<FieldValue<"box", "flipH">, boolean>>,
   Expect<Same<FieldValue<"box", "w">, number>>,
   Expect<Same<TraitValue<"notes">, { readonly value: string }>>,
-  Expect<Same<FieldName<"fill">, "value" | "alpha">>,
-  Expect<Same<FieldValue<"fill", "alpha">, Alpha>>,
+  Expect<Same<FieldName<"fills">, "p0" | "p1" | "p2" | "p3" | "alpha">>,
+  Expect<Same<FieldValue<"fills", "alpha">, Alpha>>,
+  Expect<Same<WireField<"fills">, "paint">>,
   Expect<Same<FieldName<"line">, "width" | "fill" | "dash" | "cap" | "compound" | "join" | "head" | "tail" | "alpha">>,
   Expect<null extends WireAgent<"line", "width"> ? true : false>,
   Expect<"none" | "accent2" extends WireAgent<"line", "fill"> ? true : false>,
-  Expect<null extends WireAgent<"fill", "value"> ? true : false>,
+  Expect<null extends WireAgent<"fills", "paint"> ? true : false>,
   Expect<null extends WireAgent<"box", "x"> ? false : true>,
-  Expect<"none" | "group" | "accent1" extends WireAgent<"fill", "value"> ? true : false>,
+  Expect<"none" | "group" | "accent1" extends WireAgent<"fills", "paint"> ? true : false>,
   Expect<Same<WireField<"box">, "x" | "y" | "w" | "h" | "rot" | "flipH" | "flipV" | "align" | "distribute">>,
   Expect<"center" extends WireAgent<"box", "align"> ? true : false>,
   Expect<Same<WireAgent<"box", "x">, number>>,
   Expect<Same<WireAgent<"text", "value">, string>>,
   Expect<Same<HasAlpha, true>>,
   Expect<"table.value" extends FieldKey ? true : false>,
-  Expect<"fill.value" extends FieldKey ? true : false>,
+  Expect<"fills.p3" extends FieldKey ? true : false>,
   Expect<"line.width" extends FieldKey ? true : false>,
   Expect<"line.alpha" extends FieldKey ? true : false>,
   Expect<Same<WireField<"line">, Exclude<FieldName<"line">, "alpha">>>,
@@ -52,7 +53,7 @@ describe("the one table of traits", () => {
       link: "own",
       box: "whole",
       geometry: "whole",
-      fill: "whole",
+      fills: "whole",
       line: "field",
       effects: "whole",
       body: "field",
@@ -83,8 +84,11 @@ describe("the one table of traits", () => {
       "box.flipH",
       "box.flipV",
       "geometry.shape",
-      "fill.value",
-      "fill.alpha",
+      "fills.p0",
+      "fills.p1",
+      "fills.p2",
+      "fills.p3",
+      "fills.alpha",
       "line.fill",
       "line.width",
       "line.dash",
@@ -138,7 +142,7 @@ describe("the one table of traits", () => {
       "show.skipped",
       "transition.value",
     ])
-    expect(alphaKeys).toEqual(["fill.alpha", "line.alpha", "text.alpha", "image.alpha"])
+    expect(alphaKeys).toEqual(["fills.alpha", "line.alpha", "text.alpha", "image.alpha"])
   })
 
   it("lets only a declared field go back to the value its layout, master or style gives", () => {
@@ -146,7 +150,7 @@ describe("the one table of traits", () => {
       Object.keys(traits[trait].fields).flatMap((field) => (inheritable(trait, field) ? [`${trait}.${field}`] : [])),
     )
     expect(fields).toEqual([
-      "fill.value",
+      "fills.p0",
       "line.fill",
       "line.width",
       "line.dash",
@@ -165,18 +169,19 @@ describe("the one table of traits", () => {
   })
 
   it("keeps a slot it cannot model from a patch inside it, but lets a whole value replace it", () => {
-    expect(keptRefuses(["fill"], "fill", "value")).toBe(false)
+    expect(keptRefuses(["fills"], "fills", "paint")).toBe(false)
+    expect(keptRefuses(["fills"], "fills", "p1")).toBe(true)
     expect(keptRefuses(["geometry"], "geometry", "shape")).toBe(false)
     expect(keptRefuses(["box.rot"], "box", "rot")).toBe(true)
     expect(keptRefuses(["effects.shadow"], "effects", "shadow")).toBe(true)
     expect(keptRefuses(["text.color"], "text", "value")).toBe(false)
-    expect(keptRefuses([], "fill", "value")).toBe(false)
+    expect(keptRefuses([], "fills", "paint")).toBe(false)
   })
 
   it("gives every kind a closed list of declared traits", () => {
     for (const kind of kinds) for (const trait of kindTraits[kind]) expect(traitNames).toContain(trait)
     expect(kindTraits.group).toEqual(["identity", "box", "effects"])
-    expect(kindTraits.slide).toEqual(["fill", "template", "show", "transition"])
+    expect(kindTraits.slide).toEqual(["fills", "template", "show", "transition"])
     expect(kindTraits.notes).toEqual(["notes"])
   })
 })

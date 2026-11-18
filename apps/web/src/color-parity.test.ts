@@ -3,6 +3,7 @@ import {
   alphaOf,
   fadedColor,
   readColor,
+  slotted,
   traitNames,
   traits,
   type Color,
@@ -72,8 +73,12 @@ function personColors(theme: readonly Swatch[]): Readonly<Record<string, Color |
 function colorFields(trait: TraitName): readonly (readonly [string, Desc, boolean])[] {
   const loose = (shown: object) => Object.entries(shown as Readonly<Record<string, { readonly desc: Desc }>>)
   return [
-    ...loose(traits[trait].fields).map(([field, kind]) => [field, kind.desc, false] as const),
-    ...loose(traits[trait].inputs).map(([field, kind]) => [field, kind.desc, true] as const),
+    ...loose(traits[trait].fields)
+      .filter(([field]) => !slotted(trait, field))
+      .map(([field, kind]) => [field, kind.desc, false] as const),
+    ...loose(traits[trait].inputs).map(
+      ([field, kind]) => [field, kind.desc, traits[trait].slots.length === 0] as const,
+    ),
   ].filter(([, desc]) => colored(desc))
 }
 

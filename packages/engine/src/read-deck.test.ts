@@ -284,7 +284,7 @@ describe("design lines", () => {
             value: null,
             box,
             grouped: false,
-            design: { geometry: ["custom"], fill: ["accent1", "style"], "line.width": [1, "style"] },
+            design: { geometry: ["custom"], fills: ["accent1", "style"], "line.width": [1, "style"] },
             kept: ["geometry"],
           },
         ],
@@ -308,7 +308,7 @@ describe("design lines", () => {
       role: "title",
       design: "text.size 36 (master) · text.color tx1 (master) · body.anchor b (layout)",
     })
-    expect(read.get("259.7")?.design).toBe("geometry custom · fill accent1 (style) · line.width 1 (style)")
+    expect(read.get("259.7")?.design).toBe("geometry custom · fills accent1 (style) · line.width 1 (style)")
     expect(read.get("259.7")).not.toHaveProperty("role")
     expect(answer.palettes).toEqual([palette, second])
     expect(answer.slides).toEqual([
@@ -359,21 +359,21 @@ describe("design lines", () => {
       const set = call("edit_deck", deck, actor, {
         deck: "designed",
         base: deck.revision,
-        changes: [{ op: "set", target: "259.7", fill: { value } }],
+        changes: [{ op: "set", target: "259.7", fills: { paint: value } }],
       })
       if (!set.ok) throw new Error(set.refusal)
       return set.deck
     }
     const red = fill(running.deck, `#${crimson}`)
     expect(byNode(readDeckPage(red, { runId: "run" })).get("259.7")?.design).toBe(
-      `geometry custom · fill #${crimson} · line.width 1 (style)`,
+      `geometry custom · fills #${crimson} · line.width 1 (style)`,
     )
     const copied = changeCall("duplicate_slide", red, actor, { deck: "designed", base: red.revision, slide: "259" })
     if (!copied.ok) throw new Error(copied.refusal)
     const copy = readDeckPage(copied.deck, { runId: "run" }).elements.find(
       (element) => element.slide !== "258" && element.slide !== "259",
     )
-    expect(copy?.design).toBe(`geometry custom · fill #${crimson} · line.width 1 (style)`)
+    expect(copy?.design).toBe(`geometry custom · fills #${crimson} · line.width 1 (style)`)
     expect(byNode(readDeckPage(fill(red, null), { runId: "run" })).get("259.7")?.design).toBe(
       "geometry custom · line.width 1 (style)",
     )
@@ -403,11 +403,11 @@ describe("design lines", () => {
       tail: { type: "stealth", width: "lg", length: "lg" },
     })
     expect(byNode(readDeckPage(styled, { runId: "run" })).get("259.7")?.design).toBe(
-      "geometry custom · fill accent1 (style) · line.width 3 · line.fill accent2 · line.dash sysDot · line.tail stealth",
+      "geometry custom · fills accent1 (style) · line.width 3 · line.fill accent2 · line.dash sysDot · line.tail stealth",
     )
     const back = line(styled, { width: null, dash: "solid", tail: { type: "none", width: "med", length: "med" } })
     expect(byNode(readDeckPage(back, { runId: "run" })).get("259.7")?.design).toBe(
-      "geometry custom · fill accent1 (style) · line.fill accent2",
+      "geometry custom · fills accent1 (style) · line.fill accent2",
     )
   })
 
@@ -433,11 +433,11 @@ describe("design lines", () => {
       box: { rot: 45, flipV: true },
     })
     expect(byNode(readDeckPage(turned, { runId: "run" })).get("259.7")?.design).toBe(
-      "geometry roundRect · fill accent1 (style) · line.width 1 (style) · box.rot 45 · box.flipV",
+      "geometry roundRect · fills accent1 (style) · line.width 1 (style) · box.rot 45 · box.flipV",
     )
     const back = set(turned, { geometry: { shape: { preset: "rect", adjust: {} } }, box: { rot: 0, flipV: false } })
     expect(byNode(readDeckPage(back, { runId: "run" })).get("259.7")?.design).toBe(
-      "fill accent1 (style) · line.width 1 (style)",
+      "fills accent1 (style) · line.width 1 (style)",
     )
   })
 
@@ -456,7 +456,7 @@ describe("design lines", () => {
     })
     if (!set.ok) throw new Error(set.refusal)
     expect(byNode(readDeckPage(set.deck, { runId: "run" })).get("259.7")?.design).toBe(
-      "geometry custom · fill accent1 alpha 60 · line.width 1 (style) · line.fill accent2 alpha 60",
+      "geometry custom · fills accent1 alpha 60 · line.width 1 (style) · line.fill accent2 alpha 60",
     )
   })
 

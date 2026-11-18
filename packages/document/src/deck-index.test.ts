@@ -143,7 +143,7 @@ describe("index format", () => {
     ...page.elements[0]!,
     role: "title",
     design: {
-      fill: ["accent1", "style"],
+      fills: ["accent1", "style"],
       "text.size": [36, "master"],
       "text.font": ["+mj-lt", "master"],
       "box.flipH": [true],
@@ -166,11 +166,11 @@ describe("index format", () => {
     expect(read).toEqual(resent(0, titled))
     for (const element of [
       { ...titled, role: "headline" },
-      { ...titled, design: { "fill.color": ["accent1"] } },
-      { ...titled, design: { fill: ["accent1", "file"] } },
-      { ...titled, design: { fill: [] } },
-      { ...titled, design: { fill: [{ scheme: "accent1" }] } },
-      { ...titled, design: { fill: ["x".repeat(401)] } },
+      { ...titled, design: { "fills.color": ["accent1"] } },
+      { ...titled, design: { fills: ["accent1", "file"] } },
+      { ...titled, design: { fills: [] } },
+      { ...titled, design: { fills: [{ scheme: "accent1" }] } },
+      { ...titled, design: { fills: ["x".repeat(401)] } },
       { ...titled, kept: [] },
       { ...titled, kept: ["geometry", "geometry"] },
       { ...titled, placed: { x: 1, y: 2, cx: -3, cy: 4 } },
@@ -267,7 +267,7 @@ describe("index format", () => {
 
   it("names every key the index stores, so a new key raises the index stamp", () => {
     expect({ stamp: stamps.index, keys: indexKeys }).toEqual({
-      stamp: 13,
+      stamp: 14,
       keys: {
         page: ["format", "once", "offset", "total", "palettes", "templates", "sectionStarts", "slides", "elements"],
         palette: ["slots", "map", "fonts"],

@@ -18,7 +18,7 @@ import { paintAttribute } from "./paint-color.js"
 import { requireMarkup } from "./part-markup.js"
 import { slotRoot, withAttribute, withChild, type Slot } from "./slot-edit.js"
 import { cellsOf, type Grid } from "./table-grid.js"
-import { filledChild } from "./trait-xml-fill.js"
+import { filledChild } from "./trait-xml-fills.js"
 
 export type CellRead = { readonly fill: CellFill | null; readonly borders: Borders }
 
@@ -31,7 +31,7 @@ const dashTags = ["a:prstDash", "a:custDash"]
 function fillOf(held: Held | undefined): CellFill | null {
   const fill = fillIn(held)
   const value = fill === undefined ? null : fillValueOf(fill, null)
-  return value === null || "group" in value || "picture" in value ? null : value
+  return value === null || "group" in value || "image" in value ? null : value
 }
 
 function borderOf(line: Held): Border {

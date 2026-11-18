@@ -46,7 +46,7 @@ export async function indexSaved(
       parsed.deck,
       owner,
       JSON.stringify(next.deck.register.index),
-      before.register.index === undefined ? null : JSON.stringify(before.register.index),
+      saved.storedIndex === undefined || saved.storedIndex === null ? null : JSON.stringify(saved.storedIndex),
       saved.revision,
       revision,
       key.key,

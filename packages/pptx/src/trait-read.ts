@@ -105,9 +105,9 @@ function shapeReads(
       : fillReference === undefined || fillReference === "none"
         ? undefined
         : { held: fillReference.entry, value: fillOf(fillReference.entry, fillReference.placed) }
-  if (fill?.value === "picture") kept.push("fill")
+  if (fill?.value === "image") kept.push("fills")
   if (fill !== undefined && fill.value !== null && fill.value !== "none")
-    reads.fill = read(fill.value, fill.held.source)
+    reads.fills = read(fill.value, fill.held.source)
   lineReads(properties, owners, styles, reads)
   effectReads(properties, owners, styles, reads, kept)
 }

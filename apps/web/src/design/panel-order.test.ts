@@ -35,7 +35,7 @@ it("places every trait each element kind takes, and its Opacity, exactly once in
               section !== "paragraphSpacing" &&
               section !== "selectionColors",
           )
-          .map((section) => (section === "boxFill" ? "fill" : section))
+          .map((section) => (section === "boxFill" ? "fills" : section))
           .toSorted(),
       }).toEqual({ panel, placed: wanted })
     }
@@ -68,7 +68,7 @@ function sections(view: ScopedElement, fields: Readonly<Record<string, unknown>>
 
 it("orders a text box Text first, with its rare sections and its shape type folded", () => {
   expect(panelKind(textBox, shown({}))).toBe("text")
-  expect(sections(textBox, { "fill.value": { none: true } })).toEqual([
+  expect(sections(textBox, { "fills.p0": { none: true } })).toEqual([
     ["alignment", true],
     ["text", true],
     ["link", true],
@@ -91,7 +91,7 @@ it("orders a drawn shape by its fill, line and shape type", () => {
   expect(panelKind(oval, shown(fields))).toBe("shape")
   expect(sections(oval, fields)).toEqual([
     ["alignment", true],
-    ["fill", true],
+    ["fills", true],
     ["opacity", true],
     ["border", true],
     ["shadow", true],
@@ -145,14 +145,14 @@ it("marks the simple sections separately from the exact PowerPoint controls", ()
   const slides = (kind: PanelKind | "slide") => panelPlaces(kind, "slides").map(({ section }) => section)
 
   expect(slides("text")).toEqual(["alignment", "text", "link", "textFill", "opacity"])
-  expect(slides("shape")).toEqual(["alignment", "fill", "opacity", "corners", "border", "shadow", "selectionColors"])
+  expect(slides("shape")).toEqual(["alignment", "fills", "opacity", "corners", "border", "shadow", "selectionColors"])
   expect(slides("picture")).toEqual(["alignment", "pictureFill", "opacity", "corners", "border", "shadow"])
   expect(slides("connector")).toEqual(["alignment", "border", "shadow"])
   expect(slides("many")).toEqual([
     "alignment",
     "text",
     "textFill",
-    "fill",
+    "fills",
     "opacity",
     "link",
     "corners",

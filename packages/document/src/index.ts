@@ -19,8 +19,8 @@ export {
   type SlideId,
 } from "./element-id.js"
 export { orderKeyBetween, type OrderKey } from "./order-key.js"
+export { answeredRegister } from "./answered-register.js"
 export {
-  answeredRegister,
   appendIndex,
   indexDue,
   indexedSectionStarts,
@@ -35,6 +35,7 @@ export {
 export {
   designBytes,
   designKeys,
+  designOrder,
   readDesign,
   roles,
   sources,
@@ -114,11 +115,14 @@ export {
   inheritable,
   keptRefuses,
   kindTraits,
+  slotted,
   traitNames,
   traits,
   type FieldKey,
   type HasAlpha,
   type InheritableField,
+  type InputName,
+  type SlotField,
   type FieldName,
   type FieldValue,
   type TraitName,
@@ -135,7 +139,7 @@ export { floorFor, floorNodes, floorOpening, newSlideElement, openingElement } f
 export { type TransitionValue } from "./trait-transition.js"
 export { widestEffect } from "./trait-effects.js"
 export { readTextFill, type TextFill } from "./text-fill.js"
-export { patternPresets } from "./trait-fill.js"
+export { changeFills, paintSlots, patternPresets, readFills, type Paint, type ShownFills } from "./trait-fills.js"
 export { nameBytes } from "./trait-identity.js"
 export { assetIcon, assetMedia, iconNamePattern, mediaTypes, type Media, type MediaType } from "./asset-ref.js"
 export { arrowheads, arrowSizes, dashPresets, lineCaps, lineCompounds, lineJoins, widestLine } from "./trait-line.js"

@@ -60,6 +60,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
     turns,
   }
   let loaded: Deck = session.deck
+  let storedIndex: unknown = null
   const bridge: Host = {
     admit: (called) => admitCaller(host.session, host.email, "tool", called.now, host.agentKey),
     prepare: async (name, raw) => {
@@ -88,6 +89,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
         return { ok: false, refusal: refusal === "newer" || refusal === "payload" ? "store" : refusal }
       }
       loaded = { id: named.deck, revision: access.saved.revision, register: access.saved.register }
+      storedIndex = access.saved.storedIndex
       session.deck = loaded
       dropGoneTurn(session, seen)
       if (session.once === undefined) return { ok: true }
@@ -103,6 +105,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       commitEdit(
         host.deck,
         loaded,
+        storedIndex,
         result,
         session.once === undefined ? undefined : { email: host.email, once: session.once },
       ),
@@ -137,6 +140,7 @@ function storedAnswer(loaded: Deck, stored: unknown): ToolResult {
 async function commitEdit(
   db: Sql,
   loaded: Deck,
+  storedIndex: unknown,
   result: ToolResult,
   once: { readonly email: string; readonly once: string } | undefined,
 ): Promise<ToolResult | Lost> {
@@ -150,6 +154,7 @@ async function commitEdit(
       id: result.deck.id,
       revision: result.deck.revision,
       register: result.deck.register,
+      storedIndex,
       expected: loaded.revision,
       key: key.key,
       ...(once === undefined ? {} : { once: { ...once, answer: { content: result.content, answer: result.answer } } }),

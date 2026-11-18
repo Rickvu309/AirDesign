@@ -5,7 +5,7 @@ import { boxControls } from "./trait-controls-box"
 import { connectionControls } from "./trait-controls-connection"
 import { cropControls } from "./trait-controls-crop"
 import { effectsControls } from "./trait-controls-effects"
-import { fillControls } from "./trait-controls-fill"
+import { fillsControls } from "./trait-controls-fills"
 import { geometryControls } from "./trait-controls-geometry"
 import { identityControls } from "./trait-controls-identity"
 import { imageControls } from "./trait-controls-image"
@@ -31,7 +31,7 @@ export const traitControls: { readonly [T in TraitName]: TraitControls<T> } = {
   link: linkControls,
   box: boxControls,
   geometry: geometryControls,
-  fill: fillControls,
+  fills: fillsControls,
   line: lineControls,
   effects: effectsControls,
   body: bodyControls,

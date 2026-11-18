@@ -1,6 +1,6 @@
 import { readBox } from "./box.js"
 import type { Landed, NodeRegister, Register } from "./decide.js"
-import type { DeckIndex } from "./deck-index.js"
+import { pageConversions, type DeckIndex } from "./deck-index.js"
 import {
   legacyElement,
   readElementId,
@@ -11,6 +11,7 @@ import {
   type SlideId,
 } from "./element-id.js"
 import { format, formatOf, newerFormat, converted, type Conversion, type StoredRead } from "./format.js"
+import { fillsFormat, fillsRegister, fillsRow } from "./fills-conversion.js"
 import { onlyKeys, record } from "./plain-object.js"
 import { formatOne, readPatch, type Row, type ValueHolder } from "./row.js"
 import { newerSlideCommand, readSlideState, type SlideCommand } from "./slide-order.js"
@@ -96,16 +97,20 @@ export const conversions: {
   readonly value: readonly Conversion<ValueHolder>[]
   readonly edit: readonly Conversion<undefined>[]
   readonly register: readonly Conversion<undefined>[]
+  readonly page: readonly Conversion<undefined>[]
 } = {
   value: [
     { introduced: 2, convert: formatOneText },
     { introduced: 2, convert: formatOneBox },
+    { introduced: fillsFormat, convert: fillsRow },
   ],
   edit: [{ introduced: fillRowFormat, convert: slideBackground }],
   register: [
     { introduced: 2, convert: rootShape },
     { introduced: 2, convert: slideOrder },
+    { introduced: fillsFormat, convert: fillsRegister },
   ],
+  page: pageConversions,
 }
 
 function rowStamp(raw: Record<string, unknown>): number {

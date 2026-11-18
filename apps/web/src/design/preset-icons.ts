@@ -121,5 +121,5 @@ export const fillIcons = {
   solid: SolidFill,
   gradient: GradientFill,
   pattern: PatternFill,
-  picture: ImageFill,
+  image: ImageFill,
 } as const

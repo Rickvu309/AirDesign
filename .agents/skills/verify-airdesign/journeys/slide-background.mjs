@@ -78,7 +78,10 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
       rows: rows.map((row) => row.patch),
     }
   }
-  await expect.poll(fills).toEqual({ order: 0, rows: [{ fill: { value: { set: { solid: { scheme: "accent1" } } } } }] })
+  const cleared = { p1: { set: { none: true } }, p2: { set: { none: true } }, p3: { set: { none: true } } }
+  await expect
+    .poll(fills)
+    .toEqual({ order: 0, rows: [{ fills: { p0: { set: { solid: { scheme: "accent1" } } }, ...cleared } }] })
   note(
     `Accent 1 painted the canvas and the thumbnail ${chip}, and the server holds one fill row on the slide's own node`,
   )
@@ -96,7 +99,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const set = await tool("airdesign_edit_deck", {
     deck,
     base: read.revision,
-    changes: [{ op: "set", target: slide, fill: { value: "#1F4E79" } }],
+    changes: [{ op: "set", target: slide, fills: { paint: "#1F4E79" } }],
   })
   await tool("airdesign_stop_run", { deck, runId: set.runId })
   await painted(agentColor)
@@ -123,9 +126,9 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   note(`The export ${path.basename(exported)} reads back a solid 1F4E79 background on ${first.part}`)
   if ((await panel.count()) === 0) await page.getByRole("button", { name: "Design", exact: true }).click()
   const imageOf = (selector) => page.locator(selector).evaluate((node) => getComputedStyle(node).backgroundImage)
-  for (const [kind, button, expected] of [
-    ["gradient", fillWords.gradient, "linear-gradient"],
-    ["picture", fillWords.picture, "blob:"],
+  for (const [kind, button, expected, stored] of [
+    ["gradient", fillWords.gradient, "linear-gradient", "gradient"],
+    ["picture", fillWords.image, "blob:", "image"],
   ]) {
     await panel.getByRole("button", { name: button, exact: true }).click()
     for (const selector of ["[data-slide-paint]", "[data-slide-entry='1'] [data-thumb-paint]"])
@@ -136,7 +139,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
     await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
     await expect.poll(() => imageOf("[data-slide-paint]")).toContain(expected)
     const opened = (await post(deckRoutes.open, { deck }, cookie)).json
-    expect(JSON.stringify(opened.register)).toContain(`"${kind}"`)
+    expect(JSON.stringify(opened.register)).toContain(`"${stored}"`)
     await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
     await expect.poll(() => imageOf("[data-slide-paint]")).toContain(expected)
     await capture(`present-${kind}`)

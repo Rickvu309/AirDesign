@@ -11,13 +11,13 @@
       "file": "apps/web/src/design/trait-edit.ts",
       "names": ["applyChange", "planned", "stored", "landedBefore"],
       "digest": "b561187b2f9c",
-      "blob": "5699c1ce482eb6c91ffdd28aca94546239c2f601"
+      "blob": "d78ba9192083eb04ff6b22bdfec78a30c9454d3b"
     },
     {
       "file": "apps/web/src/editor/use-undo.ts",
       "names": ["useUndoList", "useUndoTurn"],
-      "digest": "570f43eef1c9",
-      "blob": "259ff08bf7152281ae7bcc219d4d55923e300aaa"
+      "digest": "a4b2a6db6010",
+      "blob": "9f0bea14d50a3870d5e3a713483fb436212a9ed9"
     },
     {
       "file": "apps/web/src/undo-list.ts",
@@ -64,8 +64,8 @@
     {
       "file": "apps/api/src/saved.ts",
       "names": ["commitEdits"],
-      "digest": "13f2400994f9",
-      "blob": "dc22fa8bcfb80a4a303ee8780d8d47edd3622eda"
+      "digest": "b29e3ccb7238",
+      "blob": "ba34bb38939f74bdb8616b44210ae4c72046404e"
     }
   ]
 }

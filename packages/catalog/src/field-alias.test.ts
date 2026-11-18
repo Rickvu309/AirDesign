@@ -27,3 +27,29 @@ it("refuses both spellings of one field in one change and names the field the to
     changes: [{ op: "set", text: { lineSpacing: expect.any(Number) } }],
   })
 })
+
+it("reads an agent's fill value, its old trait and field, as the paint of fills", () => {
+  const canonical = readSetChange({ op: "set", target, fills: { paint: "accent2" } })
+  expect(canonical).toEqual({
+    ok: true,
+    change: { op: "set", target: { node: target }, fills: { paint: { solid: { scheme: "accent2" } } } },
+  })
+  expect(readSetChange({ op: "set", target, fill: { value: "accent2" } })).toEqual(canonical)
+  expect(readSetChange({ op: "set", target, fill: { value: null } })).toEqual(
+    readSetChange({ op: "set", target, fills: { paint: null } }),
+  )
+  expect(readSetChange({ op: "set", target, fill: { value: { picture: "rocket" } } })).toEqual({
+    ok: true,
+    change: { op: "set", target: { node: target }, fills: { paint: { image: "rocket" } } },
+  })
+  expect(readSetChange({ op: "set", target, fill: { value: "accent2" }, fills: { paint: "accent1" } })).toEqual({
+    ok: false,
+    refusal: "field",
+    field: "fills",
+  })
+  expect(readSetChange({ op: "set", target, fill: { alpha: 50 } })).toEqual({
+    ok: false,
+    refusal: "field",
+    field: "fills.alpha",
+  })
+})

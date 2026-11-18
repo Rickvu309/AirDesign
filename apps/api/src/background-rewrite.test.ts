@@ -47,10 +47,13 @@ function withSlideRow(): Register {
   const node = elementId("256.slide")
   const opened = decide({ ...openRegister("", "deck"), file }, { command: "add", node, floor: "", route: "deck" })
   if (opened.decision !== "apply") throw new Error(opened.code)
-  const patch = { fill: { value: { set: { solid: accent } } } }
-  const filled = decide(opened.register, { command: "person", node, v: 28, patch })
-  if (filled.decision !== "apply") throw new Error(filled.code)
-  return filled.register
+  const body = opened.register.elements[node]
+  if (body === undefined) throw new Error(node)
+  const written = { actor: "person", visible: true, v: 28, patch: { fill: { value: { set: { solid: accent } } } } }
+  return {
+    ...opened.register,
+    elements: { ...opened.register.elements, [node]: { ...body, landed: [written] } },
+  } as never
 }
 
 async function insert(id: string, register: string | null, extra = ""): Promise<void> {
@@ -76,13 +79,13 @@ async function read(id: string): Promise<{ revision: number; register: Register 
 
 function fillOf(register: Register, node: string) {
   const body = register.elements[elementId(node)]
-  return body === undefined ? undefined : landedPatch(body, "text").fill?.value
+  return body === undefined ? undefined : landedPatch(body, "text").fills?.p0
 }
 
 function row(color: unknown, runId?: string) {
   const value = color === null ? "opening" : { set: { solid: color } }
   const actor = runId === undefined ? { actor: "person" } : { actor: "agent", runId }
-  return { ...actor, visible: true, v: 28, patch: { fill: { value } } }
+  return { ...actor, visible: true, v: 57, patch: { fills: { p0: value } } }
 }
 
 async function open(database: string): Promise<Client> {
@@ -183,14 +186,14 @@ it("rewrites each stored background command into fill rows on a database that ne
       id: "900",
       source: "256",
       key: first,
-      floor: [{ ...ownNode, node: "900.slide", opening: { fill: { value: { set: { solid: navy } } } } }],
+      floor: [{ ...ownNode, node: "900.slide", opening: { fills: { p0: { set: { solid: navy } } } } }],
     },
     {
       slide: "clone",
       id: "901",
       source: "900",
       key: second,
-      floor: [{ ...ownNode, node: "901.slide", opening: { fill: { value: { set: { solid: navy } } } } }],
+      floor: [{ ...ownNode, node: "901.slide", opening: { fills: { p0: { set: { solid: navy } } } } }],
     },
     {
       slide: "clone",
@@ -198,7 +201,7 @@ it("rewrites each stored background command into fill rows on a database that ne
       source: "257",
       key: third,
       runId: "run",
-      floor: [{ ...ownNode, node: "902.slide", opening: { fill: { value: { set: { solid: accent } } } } }],
+      floor: [{ ...ownNode, node: "902.slide", opening: { fills: { p0: { set: { solid: accent } } } } }],
     },
     { slide: "clone", id: "903", source: "256", key: fourth },
     { slide: "remove", id: "903" },

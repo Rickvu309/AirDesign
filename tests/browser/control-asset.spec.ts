@@ -61,7 +61,7 @@ test("a shape's Fill takes an icon, which the asset control inside the fill's un
   const fill = await boxFillPanel(page, shape)
   await fill
     .getByRole("group", { name: fillCopy.box, exact: true })
-    .getByRole("button", { name: fillWords.picture, exact: true })
+    .getByRole("button", { name: fillWords.image, exact: true })
     .click()
   await expect.poll(() => drawn(shape)).toContain("blob:")
   await expect(fill.getByText("Shows the star icon")).toBeVisible()

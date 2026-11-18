@@ -6,6 +6,8 @@ import { elementId, slideId } from "./element-id.js"
 import { format } from "./format.js"
 import { readTextValue, writeTextValue, type TextValue } from "./text-value.js"
 
+const cleared = { p1: { set: { none: true } }, p2: { set: { none: true } }, p3: { set: { none: true } } } as const
+
 const box = { x: 10, y: 20, cx: 300, cy: 400 }
 const quarterly: TextValue = [
   {
@@ -28,7 +30,7 @@ const elements: readonly IndexElement[] = [
   { node: elementId("258.4"), kind: "picture", value: null, box, grouped: false, role: "picture" },
   { node: elementId("258.5"), kind: "shape", value: "", box, grouped: true },
   { ...shape("258.6", undefined, ""), kept: ["text.color"] },
-  { ...shape("258.7", undefined, null), kept: ["fill"] },
+  { ...shape("258.7", undefined, null), kept: ["fills"] },
   shape("259.2", "title", ""),
   { node: elementId("259.3"), kind: "table", value: "{}", box, grouped: false, role: "table" },
 ]
@@ -178,27 +180,27 @@ describe("planChange refuses the whole change and names every element it cannot 
     })
   })
 
-  it("fills a shape whose picture fill it keeps, since a fill replaces the whole slot", () => {
+  it("fills a shape whose picture fill it keeps, since one paint replaces the whole fills", () => {
     const solid = { solid: { scheme: "accent2" } } as const
-    expect(plan({ target: { node: elementId("258.7") }, fill: { value: solid } })).toEqual({
+    expect(plan({ target: { node: elementId("258.7") }, fills: { paint: solid } })).toEqual({
       ok: true,
-      rows: [{ node: "258.7", row: { v: format, patch: { fill: { value: { set: solid } } } } }],
+      rows: [{ node: "258.7", row: { v: format, patch: { fills: { p0: { set: solid }, ...cleared } } } }],
     })
   })
 
   it("writes null on a field that inherits as a way back to the inherited value, and refuses it elsewhere", () => {
-    expect(plan({ target: { role: "title", slide: "every" }, fill: { value: null } })).toEqual({
+    expect(plan({ target: { role: "title", slide: "every" }, fills: { paint: null } })).toEqual({
       ok: true,
       rows: [
-        { node: "258.2", row: { v: format, patch: { fill: { value: "inherit" } } } },
-        { node: "259.2", row: { v: format, patch: { fill: { value: "inherit" } } } },
+        { node: "258.2", row: { v: format, patch: { fills: { p0: "inherit", ...cleared } } } },
+        { node: "259.2", row: { v: format, patch: { fills: { p0: "inherit", ...cleared } } } },
       ],
     })
     const boxed = { target: { node: elementId("258.3") }, box: { x: null } } as unknown as SetChange
     expect(plan(boxed)).toEqual({ ok: false, refusals: [{ node: "258.3", trait: "box", code: "kind" }] })
-    expect(plan({ target: { node: elementId("258.4") }, fill: { value: { none: true } } })).toEqual({
+    expect(plan({ target: { node: elementId("258.4") }, fills: { paint: { none: true } } })).toEqual({
       ok: false,
-      refusals: [{ node: "258.4", trait: "fill", code: "kind" }],
+      refusals: [{ node: "258.4", trait: "fills", code: "kind" }],
     })
   })
 
@@ -273,24 +275,24 @@ function moved258(register: Register, box: { x: number; y: number; cx: number; c
   ])
 }
 
-describe("a slide's own node takes fill, which PowerPoint calls the background", () => {
+describe("a slide's own node takes fills, which PowerPoint calls the background", () => {
   const solid = { solid: { scheme: "accent2" } } as const
 
   it("reaches the slide's own node from a slide target", () => {
-    expect(plan({ target: { slide: slideId("259") }, fill: { value: solid } })).toEqual({
+    expect(plan({ target: { slide: slideId("259") }, fills: { paint: solid } })).toEqual({
       ok: true,
-      rows: [{ node: "259.slide", row: { v: format, patch: { fill: { value: { set: solid } } } } }],
+      rows: [{ node: "259.slide", row: { v: format, patch: { fills: { p0: { set: solid }, ...cleared } } } }],
     })
-    expect(plan({ target: { node: elementId("258.slide") }, fill: { value: null } })).toEqual({
+    expect(plan({ target: { node: elementId("258.slide") }, fills: { paint: null } })).toEqual({
       ok: true,
-      rows: [{ node: "258.slide", row: { v: format, patch: { fill: { value: "inherit" } } } }],
+      rows: [{ node: "258.slide", row: { v: format, patch: { fills: { p0: "inherit", ...cleared } } } }],
     })
   })
 
   it("lands the row on the slide's node and refuses text there", () => {
     const node = elementId("258.slide")
     const opened = applied(indexed(), [{ command: "add", node, floor: "", route: "deck" }])
-    const planned = plan({ target: { slide: slideId("258") }, fill: { value: solid } }, opened)
+    const planned = plan({ target: { slide: slideId("258") }, fills: { paint: solid } }, opened)
     if (!planned.ok) throw new Error("plan")
     expect(decide(opened, { command: "person", node, ...(planned.rows[0]?.row ?? { v: 0, patch: {} }) }).decision).toBe(
       "apply",
@@ -303,19 +305,19 @@ describe("a slide's own node takes fill, which PowerPoint calls the background",
   })
 
   it("keeps the speaker notes node to its notes", () => {
-    expect(plan({ target: { node: elementId("258.notes") }, fill: { value: solid } })).toEqual({
+    expect(plan({ target: { node: elementId("258.notes") }, fills: { paint: solid } })).toEqual({
       ok: false,
-      refusals: [{ node: "258.notes", trait: "fill", code: "kind" }],
+      refusals: [{ node: "258.notes", trait: "fills", code: "kind" }],
     })
     expect(plan({ target: { node: elementId("258.notes") }, notes: { value: "Say this" } }).ok).toBe(true)
   })
 
   it("finds no slide that was deleted or never was", () => {
     const refused = { ok: false, refusals: [{ node: null, trait: null, code: "dead" }] }
-    expect(plan({ target: { slide: slideId("259") }, fill: { value: solid } }, deleted(indexed(), "259"))).toEqual(
+    expect(plan({ target: { slide: slideId("259") }, fills: { paint: solid } }, deleted(indexed(), "259"))).toEqual(
       refused,
     )
-    expect(plan({ target: { slide: slideId("300") }, fill: { value: solid } })).toEqual(refused)
+    expect(plan({ target: { slide: slideId("300") }, fills: { paint: solid } })).toEqual(refused)
   })
 })
 

@@ -30,7 +30,7 @@ it.each([
   { name: "move", edit: { property: "box", value: { ...box, x: 100 } } },
   { name: "resize", edit: { property: "box", value: { ...box, cx: 100 } } },
   { name: "replace the text of", edit: { value: "Replacement" } },
-  { name: "recolor", edit: { v: format, patch: { fill: { value: { set: { solid: { scheme: "accent1" } } } } } } },
+  { name: "recolor", edit: { v: format, patch: { fills: { p0: { set: { solid: { scheme: "accent1" } } } } } } },
 ])("lets a person $name a box whose imported text is over the value limit", ({ edit }) => {
   const result = call("commit_edits", opened(), person, { deck: "deck", batch: [{ node, floor, ...edit }] })
   if (!result.ok) throw new Error(result.refusal)

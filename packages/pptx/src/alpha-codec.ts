@@ -6,7 +6,7 @@ import type { ElementAt, PartCodec, Parts } from "./xml-codec.js"
 
 export type Faded = Alpha | "mixed" | null
 
-type Fill = FieldValue<"fill", "value"> | FieldValue<"line", "fill">
+type Fill = FieldValue<"fills", "p0"> | FieldValue<"line", "fill">
 
 const alphaOps: readonly string[] = ["alpha", "alphaMod", "alphaOff"]
 const colorKinds: readonly string[] = ["a:schemeClr", "a:srgbClr", "a:sysClr", "a:prstClr", "a:scrgbClr", "a:hslClr"]

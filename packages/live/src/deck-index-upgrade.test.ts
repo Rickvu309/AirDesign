@@ -54,7 +54,7 @@ it("sends the index queued again at this build's format while an older queue's l
 const designed = {
   palettes: [{ slots: { dk1: "000000", accent1: "4472C4" }, map: { tx1: "dk1" } }] as const,
   slides: [{ id: "258", position: 0 }],
-  elements: [{ ...index.elements[0]!, role: "title", design: { fill: ["accent1", "style"] } } as const],
+  elements: [{ ...index.elements[0]!, role: "title", design: { fills: ["accent1", "style"] } } as const],
 }
 
 function olderIndex(remote: ReturnType<typeof memoryRemote>, deck: string, elements = index.elements) {

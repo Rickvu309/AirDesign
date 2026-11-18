@@ -9,7 +9,7 @@ const kinds: readonly (readonly [string, LucideIcon])[] = [
   ["none", fillIcons.none],
   ["solid", fillIcons.solid],
   ["gradient", fillIcons.gradient],
-  ["picture", fillIcons.picture],
+  ["image", fillIcons.image],
 ]
 
 export function PictureFillKinds() {
@@ -21,7 +21,7 @@ export function PictureFillKinds() {
       className="flex h-[var(--control-dense)] items-center rounded-[var(--shape-control)] bg-line p-0.5"
     >
       {kinds.map(([name, Icon]) => {
-        const pressed = name === "picture"
+        const pressed = name === "image"
         const word = fillWords[name] ?? name
         return (
           <Button

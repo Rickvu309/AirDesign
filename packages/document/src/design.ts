@@ -24,7 +24,7 @@ export type Source = (typeof sources)[number]
 
 export const designKeys = [
   "geometry",
-  "fill",
+  "fills",
   "line.width",
   "line.fill",
   "line.dash",
@@ -53,6 +53,10 @@ export const designKeys = [
 ] as const
 export type DesignKey = (typeof designKeys)[number]
 
+const firstKeys: readonly DesignKey[] = ["box.rot", "box.flipH", "box.flipV", "connection.start", "connection.end"]
+
+export const designOrder: readonly DesignKey[] = [...firstKeys, ...designKeys.filter((key) => !firstKeys.includes(key))]
+
 export type Shown = readonly [value: string | number | boolean, source?: Source]
 export type Design = { readonly [Key in DesignKey]?: Shown }
 
@@ -73,7 +77,7 @@ export type FillRead =
   | { readonly color: Color }
   | { readonly gradient: readonly Color[] }
   | { readonly pattern: string }
-  | "picture"
+  | "image"
   | "group"
 export type ShadowRead = {
   readonly blur: number
@@ -87,7 +91,7 @@ export type CropRead = { readonly l: number; readonly t: number; readonly r: num
 export type BoundRead = { readonly node: string; readonly site: number }
 export type TraitReads = {
   readonly geometry?: Read<string>
-  readonly fill?: Read<FillRead>
+  readonly fills?: Read<FillRead>
   readonly "line.width"?: Read<number>
   readonly "line.fill"?: Read<FillRead>
   readonly "line.dash"?: Read<string>

@@ -140,7 +140,7 @@ export const corpusEdits: readonly CorpusEdit[] = [
   { name: "resize", run: (parts, deck) => commit(deck, [moved(textTarget(parts), 0, 0.8)]), touches: targetPart },
   {
     name: "recolor",
-    run: (parts, deck) => panelChange(parts, deck, textTarget(parts), { fill: { value: "accent1" } }),
+    run: (parts, deck) => panelChange(parts, deck, textTarget(parts), { fills: { paint: "accent1" } }),
     touches: targetPart,
   },
   {
@@ -183,7 +183,7 @@ export const corpusEdits: readonly CorpusEdit[] = [
   },
   {
     name: "recolor-every-shape",
-    run: (parts, deck) => eachPanel(parts, deck, fillable(parts), { fill: { value: "accent2" } }),
+    run: (parts, deck) => eachPanel(parts, deck, fillable(parts), { fills: { paint: "accent2" } }),
     touches: (parts) => partsOf(fillable(parts)),
   },
   {
@@ -210,7 +210,7 @@ export const corpusEdits: readonly CorpusEdit[] = [
       const edit = elementCommand(parts, deck.register, { change: "shape", geometry: "ellipse", index: 0, size: room })
       if (edit?.slide !== "element-add") throw new Error("no shape")
       const added = commit(deck, [slideWire(parts, deck.register, edit)])
-      return panelChange(parts, added, { node: edit.element.node, floor: "" }, { fill: { value: "accent6" } })
+      return panelChange(parts, added, { node: edit.element.node, floor: "" }, { fills: { paint: "accent6" } })
     },
     touches: (parts) => [slidePart(parts, 0)],
   },

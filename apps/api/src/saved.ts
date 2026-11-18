@@ -25,7 +25,7 @@ with updated as (
   update deck.saved
   set revision = $2, register = $3::jsonb - 'index', edited = now()
   where id = $1 and revision = $4 and deleted is null
-    and import_index is not distinct from ($3::jsonb -> 'index')
+    and import_index is not distinct from $6::jsonb
   returning id, revision, register
 )
 select updated.id, updated.revision, updated.register, pg_notify('deck', $5) as notified
@@ -45,7 +45,7 @@ with updated as (
   update deck.saved
   set revision = $2, register = $3::jsonb - 'index', edited = now()
   where id = $1 and revision = $4 and deleted is null
-    and import_index is not distinct from ($3::jsonb -> 'index')
+    and import_index is not distinct from $9::jsonb
   returning id, revision, register
 ),
 noted as (
@@ -62,6 +62,7 @@ type Saved = {
   readonly id: string
   readonly revision: number
   readonly owner: string
+  readonly storedIndex?: unknown
 } & (
   | { readonly deleted: false; readonly register: Deck["register"]; readonly unread?: never }
   | { readonly deleted: true; readonly register: null; readonly unread?: never }
@@ -86,6 +87,7 @@ export type RevisionWrite = {
   readonly id: string
   readonly revision: number
   readonly register: Deck["register"]
+  readonly storedIndex?: unknown
   readonly expected: number
   readonly key: string
   readonly once?: {
@@ -126,7 +128,7 @@ function savedFrom(row: StoredSaved | undefined): Saved | undefined {
   const read = readRegister(row.register, row.import_index ?? undefined)
   const { id, revision, owner } = row
   if (!read.ok) return { id, revision, owner, deleted: false, register: null, unread: read.refusal }
-  return { id, revision, register: read.value, owner, deleted: false }
+  return { id, revision, register: read.value, owner, deleted: false, storedIndex: row.import_index ?? null }
 }
 
 export async function readSaved(db: Sql, id: string): Promise<Saved | undefined> {
@@ -190,6 +192,11 @@ export async function openSaved(
   return openedRow(parsed.deck, raced, owner)
 }
 
+function storedJson(input: RevisionWrite): string | null {
+  const index = Object.hasOwn(input, "storedIndex") ? input.storedIndex : input.register.index
+  return index === undefined || index === null ? null : JSON.stringify(index)
+}
+
 export async function writeRevision(db: Sql, input: RevisionWrite): Promise<boolean> {
   if (input.once === undefined) {
     const result = await db.query(revisionSql, [
@@ -198,6 +205,7 @@ export async function writeRevision(db: Sql, input: RevisionWrite): Promise<bool
       JSON.stringify(input.register),
       input.expected,
       input.key,
+      storedJson(input),
     ])
     return result.rows.length > 0
   }
@@ -210,6 +218,7 @@ export async function writeRevision(db: Sql, input: RevisionWrite): Promise<bool
     input.once.email,
     input.once.once,
     input.once.answer === undefined ? null : JSON.stringify(input.once.answer),
+    storedJson(input),
   ])
   return result.rows.length > 0
 }
@@ -254,6 +263,7 @@ export async function commitEdits(
         id: result.deck.id,
         revision: result.deck.revision,
         register: result.deck.register,
+        storedIndex: saved.storedIndex,
         expected: saved.revision,
         key: result.key,
         ...(parsed.once === undefined ? {} : { once: { email: owner, once: parsed.once } }),

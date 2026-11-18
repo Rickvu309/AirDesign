@@ -99,7 +99,7 @@ describe("readSetChange reads the agent form into a change in stored units", () 
       field: "geometry.shape",
     })
     expect(refused({ text: { color: "accent9" } })).toEqual({ ok: false, refusal: "field", field: "text.color" })
-    expect(refused({ fill: { value: "accent9" } })).toEqual({ ok: false, refusal: "field", field: "fill.value" })
+    expect(refused({ fills: { paint: "accent9" } })).toEqual({ ok: false, refusal: "field", field: "fills.paint" })
     expect(refused({ box: { x: null } })).toEqual({ ok: false, refusal: "field", field: "box.x" })
     expect(refused({ effects: { glow: 1 } })).toEqual({ ok: false, refusal: "field", field: "effects.glow" })
     expect(refused({ effects: { softEdge: null } })).toEqual({ ok: false, refusal: "field", field: "effects.softEdge" })
@@ -123,9 +123,9 @@ describe("readSetChange reads the agent form into a change in stored units", () 
       refusal: "field",
       field: "target",
     })
-    expect(readSetChange({ op: "set", target: "258", fill: { value: "accent2" } })).toEqual({
+    expect(readSetChange({ op: "set", target: "258", fills: { paint: "accent2" } })).toEqual({
       ok: true,
-      change: { op: "set", target: { slide: "258" }, fill: { value: { solid: { scheme: "accent2" } } } },
+      change: { op: "set", target: { slide: "258" }, fills: { paint: { solid: { scheme: "accent2" } } } },
     })
     expect(readSetChange({ target: "258.2", box: { x: 1 } })).toEqual({ ok: false, refusal: "field", field: "op" })
   })
@@ -158,22 +158,22 @@ describe("readSetChange reads an element's one opacity in percent", () => {
       ok: true,
       change: { op: "set", target: { role: "title", slide: "every" }, opacity: 60_000 },
     })
-    expect(readSetChange({ op: "set", target: "258.2", opacity: 12.5, fill: { value: "accent2" } })).toEqual({
+    expect(readSetChange({ op: "set", target: "258.2", opacity: 12.5, fills: { paint: "accent2" } })).toEqual({
       ok: true,
       change: {
         op: "set",
         target: { node: title },
         opacity: 12_500,
-        fill: { value: { solid: { scheme: "accent2" } } },
+        fills: { paint: { solid: { scheme: "accent2" } } },
       },
     })
   })
 
   it("names no alpha on a trait, since opacity fades every field at once", () => {
-    expect(readSetChange({ op: "set", target: "258.2", fill: { alpha: 60 } })).toEqual({
+    expect(readSetChange({ op: "set", target: "258.2", fills: { alpha: 60 } })).toEqual({
       ok: false,
       refusal: "field",
-      field: "fill.alpha",
+      field: "fills.alpha",
     })
   })
 })
@@ -181,7 +181,7 @@ describe("readSetChange reads an element's one opacity in percent", () => {
 describe("readSetChange reads a fill in each of its forms", () => {
   const fill = (value: unknown) => {
     const read = readSetChange({ op: "set", target: "258.2", fill: { value } })
-    return read.ok ? read.change.fill?.value : read
+    return read.ok ? read.change.fills?.paint : read
   }
 
   it("reads a bare color as one color, a mark by its name, and null as the way back to the inherited fill", () => {
@@ -224,7 +224,7 @@ describe("readSetChange reads a fill in each of its forms", () => {
   it("refuses one stop, eleven stops, a pattern PowerPoint does not name and a picture", () => {
     const stop = { pos: 0, color: "accent1" }
     const shade = { linear: { angle: 0, scaled: false } }
-    const refused = { ok: false, refusal: "field", field: "fill.value" }
+    const refused = { ok: false, refusal: "field", field: "fills.paint" }
     expect(fill({ gradient: { stops: [stop], shade, rotateWithShape: true } })).toEqual(refused)
     expect(fill({ gradient: { stops: Array(11).fill(stop), shade, rotateWithShape: true } })).toEqual(refused)
     expect(fill({ pattern: { preset: "stripes", fg: "accent2", bg: "bg1" } })).toEqual(refused)
@@ -338,7 +338,7 @@ describe("the set and add schemas derive from the agent forms", () => {
     expect(readSetChange(opacity).ok).toBe(true)
     expect(check.safeParse({ op: "set", target: "258.2", opacity: 101 }).success).toBe(false)
     expect(check.safeParse({ op: "set", target: "258.2", text: { color: "accent9" } }).success).toBe(false)
-    expect(check.safeParse({ op: "set", target: "*.title", fill: { value: null } }).success).toBe(true)
+    expect(check.safeParse({ op: "set", target: "*.title", fills: { paint: null } }).success).toBe(true)
     expect(check.safeParse({ op: "set", target: "*.title", text: { color: null } }).success).toBe(false)
   })
 

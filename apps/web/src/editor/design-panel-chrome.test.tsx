@@ -24,7 +24,7 @@ function panel(kind: ScopedElement["facts"]["kind"], geometry?: unknown) {
       moves: true,
       fields: {
         "geometry.shape": { value: geometry ?? { preset: "rect" }, own: true },
-        "fill.value": { value: { solid: { rgb: "112233" } }, own: true },
+        "fills.p0": { value: { solid: { rgb: "112233" } }, own: true },
       },
     },
   )
@@ -66,7 +66,7 @@ it("keeps pattern and reset inside a design-mode fill section", () => {
           moves: true,
           fields: {
             "geometry.shape": { value: { preset: "ellipse" }, own: true },
-            "fill.value": { value: { solid: { rgb: "112233" } }, own: true },
+            "fills.p0": { value: { solid: { rgb: "112233" } }, own: true },
           },
         },
       ),

@@ -10,11 +10,13 @@ import {
   type AlphaField,
   type Command,
   type FieldName,
-  type FieldValue,
   type IndexElement,
   type InheritableField,
+  type InputName,
   type Kind,
   type Register,
+  type SetChange,
+  type SlotField,
   type TraitName,
   type Value,
   valueHolder,
@@ -144,12 +146,18 @@ export function sameParts(left: Parts, right: Parts): boolean {
   })
 }
 
-export type FieldProbe<T extends TraitName, F extends FieldName<T>> = {
-  readonly file: (parts: Parts, at: At) => unknown
-  readonly shows: (value: FieldValue<T, F>) => unknown
-} & (F extends InheritableField<T> ? { readonly inherited: (parts: Parts, at: At) => boolean } : unknown)
+type SlotInput<T extends TraitName> = [SlotField<T>] extends [never] ? never : InputName<T>
 
-export type Shown<T extends TraitName> = Exclude<FieldName<T>, AlphaField<T>>
+export type Shown<T extends TraitName> = Exclude<FieldName<T>, AlphaField<T> | SlotField<T>> | SlotInput<T>
+
+type Inputs<T extends TraitName> = NonNullable<SetChange[T]>
+
+type ShownValue<T extends TraitName, F> = F extends keyof Inputs<T> ? NonNullable<Inputs<T>[F]> : never
+
+export type FieldProbe<T extends TraitName, F extends Shown<T>> = {
+  readonly file: (parts: Parts, at: At) => unknown
+  readonly shows: (value: ShownValue<T, F>) => unknown
+} & (F extends InheritableField<T> ? { readonly inherited: (parts: Parts, at: At) => boolean } : unknown)
 
 export type Probe<T extends TraitName> = [FieldName<T>] extends [never]
   ? { readonly fields: Readonly<Record<never, never>> }
@@ -158,7 +166,7 @@ export type Probe<T extends TraitName> = [FieldName<T>] extends [never]
       readonly kind: Kind
       readonly node?: string
       readonly opening: (parts: Parts, at: At) => Value
-      readonly edit: (opening: Value, field: Shown<T>, value: FieldValue<T, Shown<T>>) => Value
+      readonly edit: (opening: Value, field: Shown<T>, value: ShownValue<T, Shown<T>>) => Value
       readonly fields: { readonly [F in Shown<T>]-?: FieldProbe<T, F> }
       readonly painted?: (parts: Parts, at: At, field: string) => string
     }

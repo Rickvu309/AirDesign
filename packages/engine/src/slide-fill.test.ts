@@ -40,19 +40,27 @@ function filled(deck: Deck, target: string, value: unknown) {
   return call("edit_deck", started, agent, {
     deck: "deck",
     base: started.revision,
-    changes: [{ op: "set", target, fill: { value } }],
+    changes: [{ op: "set", target, fills: { paint: value } }],
   })
 }
 
 function fillOf(register: Register, node: string) {
   const body = register.elements[elementId(node)]
-  return body === undefined ? undefined : landedPatch(body, "text").fill?.value
+  return body === undefined ? undefined : landedPatch(body, "text").fills?.p0
 }
 
 it("fills a slide's background from a slide target as the agent's row, and undo_run takes it back", () => {
   const deck = landed(filled(indexed(), "256", "accent2"))
   expect(deck.register.elements[elementId("256.slide")]?.landed).toEqual([
-    { actor: "agent", runId: "run", visible: true, v: expect.any(Number), patch: { fill: { value: accent2 } } },
+    {
+      actor: "agent",
+      runId: "run",
+      visible: true,
+      v: expect.any(Number),
+      patch: {
+        fills: { p0: accent2, p1: { set: { none: true } }, p2: { set: { none: true } }, p3: { set: { none: true } } },
+      },
+    },
   ])
   expect(fillOf(deck.register, "257.slide")).toBeUndefined()
   const undone = landed(call("undo_run", deck, person, { deck: "deck", runId: "run" }))
@@ -85,7 +93,9 @@ it("gives a duplicate the background its source's fill row shows, and no opening
   const rowed = landed(filled(indexed(), "256", `#${hex}`))
   const copy = landed(changeCall("duplicate_slide", rowed, agent, { deck: "deck", base: rowed.revision, slide: "256" }))
   const minted = copy.register.order.find((command) => command.slide === "clone")?.id ?? ""
-  expect(openingElement(copy.register, elementId(`${minted}.slide`))?.opening).toEqual({ fill: { value: navy } })
+  expect(openingElement(copy.register, elementId(`${minted}.slide`))?.opening).toEqual({
+    fills: { p0: navy, p1: { set: { none: true } }, p2: { set: { none: true } }, p3: { set: { none: true } } },
+  })
   const plain = landed(changeCall("duplicate_slide", indexed(), agent, { deck: "deck", base: 0, slide: "257" }))
   const blank = plain.register.order.find((command) => command.slide === "clone")?.id ?? ""
   expect(openingElement(plain.register, elementId(`${blank}.slide`))).toEqual({

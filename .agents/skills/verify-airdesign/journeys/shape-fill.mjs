@@ -44,7 +44,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
   await capture("imported")
 
-  const set = { op: "set", target: "*.title", fill: { value: "accent2" } }
+  const set = { op: "set", target: "*.title", fills: { paint: "accent2" } }
   let edited
   await expect
     .poll(
@@ -62,8 +62,8 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
   const filledTitles = edited.structuredContent.elements.length
   const titles = read.elements.filter((element) => element.role === "title")
   expect(titles.length).toBeGreaterThan(5)
-  for (const title of titles) expect(title.design).toContain("fill accent2")
-  note(`set landed on ${filledTitles} titles; read_deck's first page prints fill accent2 on its ${titles.length}`)
+  for (const title of titles) expect(title.design).toContain("fills accent2")
+  note(`set landed on ${filledTitles} titles; read_deck's first page prints fills accent2 on its ${titles.length}`)
   const firstTitle = titles[0]
   const position = read.slides.find((slide) => slide.id === firstTitle.slide).position
   const firstPart = fileSlides.find((slide) => slide.slide === firstTitle.slide).part
@@ -117,7 +117,7 @@ export default async function drive({ repo, origin, page, signIn, post, capture,
 
   const server = async () => (await post(deckRoutes.open, { deck }, cookie)).json.register
   await expect.poll(async () => JSON.stringify(await server())).toContain('"gradient"')
-  const accentRow = /"fill":\{"value":\{"set":\{"solid":\{"scheme":"accent2"\}/g
+  const accentRow = /"fills":\{"p0":\{"set":\{"solid":\{"scheme":"accent2"\}/g
   const register = await server()
   const floors = JSON.stringify(register.order.filter((command) => command.slide === "clone"))
   const nodes = JSON.stringify(register.elements)

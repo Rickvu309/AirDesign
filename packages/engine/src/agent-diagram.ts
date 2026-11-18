@@ -75,7 +75,7 @@ function added(
 function labelChange(words: string): Omit<SetChange, "target"> {
   return {
     geometry: { shape: { preset: "roundRect", adjust: {} } },
-    fill: { value: { solid: { scheme: "accent1" } } },
+    fills: { paint: { solid: { scheme: "accent1" } } },
     body: { anchor: "ctr" },
     text: { value: words, align: "center", color: { scheme: "lt1" } },
   }

@@ -7,7 +7,7 @@ const recorded: Readonly<Record<TraitName, readonly string[]>> = {
   identity: ["5465b825", "5ca2d09f"],
   box: ["f180e7a7", "4f9a7811"],
   geometry: ["5465b825", "bd526818"],
-  fill: ["5465b825", "5b43a296", "7ae321c1", "a06873f9"],
+  fills: ["5465b825", "5b43a296", "7ae321c1", "a06873f9", "2fde11a7"],
   line: ["5465b825", "118c2fdf", "db2c2c2c"],
   effects: ["5465b825", "20b46c0f"],
   body: ["5465b825", "fbdbb36e"],

@@ -79,7 +79,7 @@ const fill: Reader<FieldValue<"line", "fill">> = ({ line, placed }) => {
   const held = fillIn(line)
   if (held === undefined) return undefined
   const value = fillValueOf(held, placed)
-  return value === null || "group" in value || "picture" in value ? null : value
+  return value === null || "group" in value || "image" in value ? null : value
 }
 
 const dash: Reader<FieldValue<"line", "dash">> = ({ line }) => {

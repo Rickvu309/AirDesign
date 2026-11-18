@@ -38,7 +38,7 @@ export function remixTargets(parts: Parts, part: string): readonly SetChange[] {
   const objects: SetChange[] = []
   for (const [node, element] of traits.elements) {
     if (!node.startsWith(`${slide}.`)) continue
-    const fillRead = element.reads.fill
+    const fillRead = element.reads.fills
     const fill =
       fillRead !== undefined && typeof fillRead.value === "object" && "color" in fillRead.value
         ? schemeColor(fillRead.value.color)
@@ -49,7 +49,7 @@ export function remixTargets(parts: Parts, part: string): readonly SetChange[] {
     if (nextFill === null && nextText === null) continue
     objects.push({
       target: { node: elementId(node) },
-      ...(nextFill === null ? {} : { fill: { value: { solid: nextFill } } }),
+      ...(nextFill === null ? {} : { fills: { paint: { solid: nextFill } } }),
       ...(nextText === null ? {} : { text: { color: nextText } }),
     })
   }
@@ -64,5 +64,5 @@ export function remixTargets(parts: Parts, part: string): readonly SetChange[] {
   )
   return nextBackground === null
     ? objects
-    : [...objects, { target: { node: slideNode(slideId, "slide") }, fill: { value: { solid: nextBackground } } }]
+    : [...objects, { target: { node: slideNode(slideId, "slide") }, fills: { paint: { solid: nextBackground } } }]
 }

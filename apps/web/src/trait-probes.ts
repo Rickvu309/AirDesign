@@ -1,5 +1,6 @@
 import { readArrival, readShows, shownLink } from "@airdesign/pptx"
 import {
+  changeFills,
   format,
   readTableValue,
   readTextValue,
@@ -143,13 +144,13 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
     edit: (_, __, value) => ({ v: format, patch: { geometry: { shape: { set: value } } } }),
     fields: { shape: { file: (parts, at) => shownGeometry(parts, at)?.value, shows: (value) => value } },
   },
-  fill: {
+  fills: {
     deck: "clean.pptx",
     kind: "shape",
-    opening: () => ({ v: format, patch: { fill: { value: "opening" } } }),
-    edit: (_, __, value) => ({ v: format, patch: { fill: { value: { set: value } } } }),
+    opening: () => ({ v: format, patch: { fills: { p0: "opening", p1: "opening", p2: "opening", p3: "opening" } } }),
+    edit: (_, __, paint) => ({ v: format, patch: { fills: changeFills({ paint }) } }),
     fields: {
-      value: {
+      paint: {
         file: (parts, at) => shownFill(parts, at)?.value,
         shows: (value) => value,
         inherited: (parts, at) => shownFill(parts, at)?.own === false,

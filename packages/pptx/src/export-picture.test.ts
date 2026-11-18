@@ -253,11 +253,11 @@ describe("a shape's fill takes an icon as a picture fill", () => {
   it("writes a blipFill with the icon and reads the icon back as the fill", async () => {
     const parts = await deck("clean.pptx")
     const shape = at(parts, readSlides(parts)[0]!.slide, "2")
-    const after = exported(parts, shape.node, { fill: { value: { set: { picture: "rocket" } } } })
+    const after = exported(parts, shape.node, { fills: { p0: { set: { image: "rocket" } } } })
     const slide = text(after, shape.part)
     expect(slide).toContain('<a:blipFill rotWithShape="1"><a:blip r:embed="rId2"><a:extLst>')
     expect(slide).toContain("<a:stretch><a:fillRect/></a:stretch></a:blipFill>")
-    expect(shownFill(after, shape)).toEqual({ value: { picture: "rocket" }, own: true })
+    expect(shownFill(after, shape)).toEqual({ value: { image: "rocket" }, own: true })
     expect(text(parts, "[Content_Types].xml")).not.toContain('Extension="svg"')
     expect(text(after, "[Content_Types].xml")).toContain('<Default Extension="svg" ContentType="image/svg+xml"/>')
     const painted = paintReader(after)

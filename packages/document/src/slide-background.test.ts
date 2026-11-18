@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   beforeOf,
+  changeFills,
   decide,
   elementId,
   format,
@@ -16,8 +17,8 @@ import {
 
 const file = [slideId("256"), slideId("257")]
 const node = elementId("256.slide")
-const accent: ElementPatch = { fill: { value: { set: { solid: { scheme: "accent1" } } } } }
-const navy: ElementPatch = { fill: { value: { set: { solid: { rgb: "0F2433" } } } } }
+const accent: ElementPatch = { fills: changeFills({ paint: { solid: { scheme: "accent1" } } }) }
+const navy: ElementPatch = { fills: changeFills({ paint: { solid: { rgb: "0F2433" } } }) }
 
 function landed(register: Register, command: Command): Register {
   const decision = decide(register, command)
@@ -35,10 +36,10 @@ function painted(register: Register, patch: ElementPatch): Register {
 
 function shown(register: Register) {
   const body = register.elements[node]
-  return body === undefined ? undefined : landedPatch(body, "text").fill?.value
+  return body === undefined ? undefined : landedPatch(body, "text").fills?.p0
 }
 
-describe("a slide's background is a fill row on the slide's own node", () => {
+describe("a slide's background is a fills row on the slide's own node", () => {
   it("keeps the opening background until a fill is set, and the last fill set wins", () => {
     expect(shown(opened())).toBeUndefined()
     expect(shown(painted(opened(), accent))).toEqual({ set: { solid: { scheme: "accent1" } } })
@@ -55,7 +56,7 @@ describe("a slide's background is a fill row on the slide's own node", () => {
 
   it("undoes a person's fill back to the opening background, and redoes it", () => {
     const step = { node, before: beforeOf({}, accent), after: accent }
-    expect(step.before).toEqual({ fill: { value: "opening" } })
+    expect(step.before).toEqual({ fills: { p0: "opening", p1: "opening", p2: "opening", p3: "opening" } })
     const filled = painted(opened(), accent)
     const undo = undoOf(filled, { steps: [step] })
     if (!undo.ok) throw new Error("changed")

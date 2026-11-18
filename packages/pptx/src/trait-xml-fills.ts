@@ -30,11 +30,11 @@ function gradientXml(fill: Extract<Fill, { readonly gradient: unknown }>["gradie
   return `<a:gradFill rotWithShape="${flagText(fill.rotateWithShape)}"><a:gsLst>${stops}</a:gsLst>${shade}</a:gradFill>`
 }
 
-type Drawn = Exclude<Fill, { readonly picture: unknown }>
+type Drawn = Exclude<Fill, { readonly image: unknown }>
 
-function pictureMarkup(parts: Map<string, Uint8Array>, at: ElementAt, ref: string): Written {
+function imageMarkup(parts: Map<string, Uint8Array>, at: ElementAt, ref: string): Written {
   const icon = assetIcon(ref)
-  if (icon === null) throw new Error("fill-picture")
+  if (icon === null) throw new Error("fills-image")
   const linked = linkedSource(parts, at.part, { icon })
   const blip = blipMarkup(linked, partDeclares(partBytes(parts, at.part)))
   return {
@@ -51,9 +51,9 @@ function shownBytes(parts: Parts, at: ElementAt): Uint8Array | null {
 }
 
 function writtenValue(parts: Parts, at: ElementAt, value: Fill): Parts {
-  if (!("picture" in value)) return writtenFill(parts, at, fillMarkup(value, shownBytes(parts, at)))
+  if (!("image" in value)) return writtenFill(parts, at, fillMarkup(value, shownBytes(parts, at)))
   const next = new Map(parts)
-  return writtenFill(next, at, pictureMarkup(next, at, value.picture))
+  return writtenFill(next, at, imageMarkup(next, at, value.image))
 }
 
 function keptGradient(xml: string, previous: Uint8Array | null): string {
@@ -181,15 +181,26 @@ function fadedFill(parts: Parts, at: ElementAt, alpha: Alpha): Parts {
   return writtenFill(parts, at, { tag: root.kind as FillTag, xml: decodeUtf8(fadedBytes(copied, alpha)) })
 }
 
-export const fillXml: TraitXml<"fill"> = {
+const above = whole<Fill>({
+  read: () => ({ none: true }),
+  write: (parts, _at, value) => {
+    if ("none" in value) return parts
+    throw new Error("fills-stack")
+  },
+})
+
+export const fillsXml: TraitXml<"fills"> = {
   slot: null,
   fields: {
-    value: whole(
+    p0: whole(
       alphaKept({ read: shownValue, write: writtenValue }, fillAlpha, fadedFill, (value) =>
         namesAlpha(colorsOf(value)),
       ),
       (parts, at) => writtenFill(parts, at, null),
     ),
+    p1: above,
+    p2: above,
+    p3: above,
     alpha: whole({
       read: (parts, at) => {
         const shown = fillAlpha(parts, at)

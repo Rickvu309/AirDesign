@@ -206,9 +206,9 @@ it("gives a duplicate the background the person set on its source, and keeps the
   const navy = { set: { solid: { rgb: "0F2433" } } } as const
   const filled = (register: Register, node: string, patch: ElementPatch): Register =>
     applied(opened(register, node), { command: "person", v: format, patch, node: elementId(node) })
-  let register = filled(openRegister("", "deck"), "256.slide", { fill: { value: navy } })
+  let register = filled(openRegister("", "deck"), "256.slide", { fills: { p0: navy } })
   register = sliding(parts, register, { slide: "clone", id: copy, source, key: after(parts, register, source) })
-  register = filled(register, "256.slide", { fill: { value: "opening" } })
+  register = filled(register, "256.slide", { fills: { p0: "opening" } })
   const clone = register.order.at(-1)
   expect(clone?.slide === "clone" ? clone.floor?.find((row) => row.node === "257.slide") : undefined).toEqual({
     node: elementId("257.slide"),
@@ -216,7 +216,7 @@ it("gives a duplicate the background the person set on its source, and keeps the
     value: null,
     box: null,
     grouped: false,
-    opening: { fill: { value: navy } },
+    opening: { fills: { p0: navy } },
   })
   const exported = exportedParts(parts, register)
   const painted = new Map(

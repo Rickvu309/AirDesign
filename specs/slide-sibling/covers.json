@@ -28,14 +28,14 @@
     {
       "file": "apps/api/src/mcp.ts",
       "names": ["serveMcp", "commitEdit"],
-      "digest": "7749f5a59fbb",
-      "blob": "1be793bf16ce9f4bd925b81fca3c670d773ec59e"
+      "digest": "c44daa888486",
+      "blob": "325a95cd9c0ea771da13000cd306d13d7764a4bf"
     },
     {
       "file": "apps/api/src/saved.ts",
       "names": ["commitEdits", "readStoredOnce", "writeRevision"],
-      "digest": "cbf96529924f",
-      "blob": "dc22fa8bcfb80a4a303ee8780d8d47edd3622eda"
+      "digest": "444bfea260bd",
+      "blob": "ba34bb38939f74bdb8616b44210ae4c72046404e"
     }
   ]
 }

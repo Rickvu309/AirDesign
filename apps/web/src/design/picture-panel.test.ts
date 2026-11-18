@@ -71,9 +71,9 @@ it("puts a picture fill's preview controls on the shape's Fill section", () => {
   const panel = panelOf(shape, {
     reads: {},
     moves: true,
-    fields: { "fill.value": { value: { picture: "rocket" }, own: true } },
+    fields: { "fills.p0": { value: { image: "rocket" }, own: true } },
   })
-  const fill = panel.sections.find((section) => section.trait === "fill")
+  const fill = panel.sections.find((section) => section.trait === "fills")
   expect(fill?.strips.slice(-2).map((strip) => strip.map((row) => [row.field, row.label]))).toEqual([
     [["mode", "Fill mode"]],
     [
@@ -85,10 +85,10 @@ it("puts a picture fill's preview controls on the shape's Fill section", () => {
   const solid = panelOf(shape, {
     reads: {},
     moves: true,
-    fields: { "fill.value": { value: { solid: { scheme: "accent1" } }, own: true } },
+    fields: { "fills.p0": { value: { solid: { scheme: "accent1" } }, own: true } },
   })
   const fields = solid.sections
-    .find((section) => section.trait === "fill")
+    .find((section) => section.trait === "fills")
     ?.strips.flat()
     .map((row) => row.field)
   expect(fields).not.toContain("mode")

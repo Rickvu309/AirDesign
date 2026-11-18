@@ -10,7 +10,7 @@ import { requireMarkup } from "./part-markup.js"
 import { heldIcon } from "./picture-read.js"
 import { ownersOf, propertiesOf, sheetOf, stylesOf, type Chain } from "./trait-read.js"
 
-export type Fill = FieldValue<"fill", "value">
+export type Fill = FieldValue<"fills", "p0">
 
 export type ShownFill = { readonly value: Fill | null; readonly own: boolean }
 
@@ -134,7 +134,7 @@ export function shownFill(parts: ReadonlyMap<string, Uint8Array>, at: FillAt): S
   const held = fillIn(propertiesOf(owners[filled] ?? owners[0]!))
   if (held !== undefined && held.element.kind === "a:blipFill") {
     const icon = filled === 0 ? heldIcon(parts, at.part, held) : null
-    return { value: icon === null ? null : { picture: icon }, own: filled === 0 }
+    return { value: icon === null ? null : { image: icon }, own: filled === 0 }
   }
   if (held !== undefined) return { value: fillValueOf(held, null), own: filled === 0 }
   const style = styleReference(owners, chain.theme)
@@ -209,7 +209,7 @@ export function ownBackground(parts: ReadonlyMap<string, Uint8Array>, part: stri
   const held = fillIn(properties)
   if (held?.element.kind === "a:blipFill") {
     const icon = heldIcon(parts, part, held)
-    return icon === null ? null : { picture: icon }
+    return icon === null ? null : { image: icon }
   }
   return held === undefined ? null : fillValueOf(held, null)
 }
@@ -228,7 +228,7 @@ export function shownBackground(parts: ReadonlyMap<string, Uint8Array>, part: st
     const own = level === sheet
     if (held !== undefined) {
       const icon = held.element.kind === "a:blipFill" ? heldIcon(parts, level.part, held) : null
-      return { value: icon === null ? fillValueOf(held, null) : { picture: icon }, own }
+      return { value: icon === null ? fillValueOf(held, null) : { image: icon }, own }
     }
     const reference = child(background, "p:bgRef")
     const index = reference === undefined ? 0 : (whole(reference.element, "idx") ?? 0)

@@ -5,13 +5,13 @@
       "file": "apps/api/src/saved.ts",
       "names": ["deckAccess"],
       "digest": "241ce53cbcc7",
-      "blob": "dc22fa8bcfb80a4a303ee8780d8d47edd3622eda"
+      "blob": "ba34bb38939f74bdb8616b44210ae4c72046404e"
     },
     {
       "file": "apps/api/src/mcp.ts",
       "names": ["serveMcp"],
-      "digest": "6c2bef101b89",
-      "blob": "1be793bf16ce9f4bd925b81fca3c670d773ec59e"
+      "digest": "313d5b353bc2",
+      "blob": "325a95cd9c0ea771da13000cd306d13d7764a4bf"
     },
     {
       "file": "apps/api/src/tokens.ts",

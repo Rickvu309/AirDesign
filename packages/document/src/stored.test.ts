@@ -51,18 +51,18 @@ describe("readStoredEdit", () => {
     expect(readStoredEdit({ format, file, edits: [remove] })).toEqual({ ok: true, value: { file, edits: [remove] } })
   })
 
-  it("turns a slide background command from before fill rows into a fill row on the slide's own node", () => {
+  it("turns a slide background command from before fill rows into a fills row on the slide's own node", () => {
     const background = { file, edits: [{ slide: "background", id: "257", color: { scheme: "accent1" } }] }
     const fill = {
       node: elementId("257.slide"),
       floor: "",
-      value: { v: 28, patch: { fill: { value: { set: { solid: { scheme: "accent1" } } } } } },
+      value: { v: 57, patch: { fills: { p0: { set: { solid: { scheme: "accent1" } } } } } },
     }
     expect(readStoredEdit(background)).toEqual({ ok: true, value: fill })
     expect(readStoredEdit({ ...background, format: 27 })).toEqual({ ok: true, value: fill })
     expect(readStoredEdit({ ...background, edits: [{ slide: "background", id: "257", color: null }] })).toEqual({
       ok: true,
-      value: { ...fill, value: { v: 28, patch: { fill: { value: "opening" } } } },
+      value: { ...fill, value: { v: 57, patch: { fills: { p0: "opening" } } } },
     })
   })
 

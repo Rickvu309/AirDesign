@@ -44,7 +44,7 @@ const kindWords: Readonly<Record<Kind, string>> = {
 const takenWords: readonly (readonly [FieldKey | "remove", string])[] = [
   ["text.value", "new text"],
   ["notes.value", "new text"],
-  ["fill.value", "a fill"],
+  ["fills.p0", "a fill"],
   ["box.x", "a move"],
   ["box.w", "a resize"],
   ["theme.accent1", "template colors and fonts"],
