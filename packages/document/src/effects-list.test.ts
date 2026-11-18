@@ -1,4 +1,11 @@
 import { expect, it } from "vitest"
+import { planChange, registerScope } from "./change.js"
+import { decide, landedPatch, openRegister, type Register } from "./decide.js"
+import type { IndexElement } from "./deck-index.js"
+import { elementId } from "./element-id.js"
+import { format } from "./format.js"
+import { beforeOf, netPatch, type Row } from "./row.js"
+import { undoOf } from "./person-undo.js"
 import type { Alpha, Color } from "./index.js"
 import { changeEffects, readEffects, type Effect, type EffectKey } from "./effects-list.js"
 
@@ -63,10 +70,20 @@ it("refuses opacity when the layer has no drop shadow", () => {
   })
 })
 
-it("refuses a second drop shadow and offers the other kinds", () => {
+it("writes a second drop shadow into the next slot and keeps the first", () => {
   const shown = readEffects({ landed: { shadow: { set: { outer: medium } } } })
-  expect(shown.addable).toEqual(["blur", "glow", "innerShadow", "softEdge"])
-  expect(changeEffects(shown, { add: shadow })).toEqual({ ok: false, refusal: "limit" })
+  expect(shown.addable).toEqual(["blur", "glow", "innerShadow", "shadow", "softEdge"])
+  const added = changeEffects(shown, { add: shadow })
+  expect(added).toEqual({ ok: true, effects: { drop1: { outer: medium } } })
+  const both = readEffects({
+    landed: { shadow: { set: { outer: medium } }, drop1: { set: { outer: medium } } },
+  })
+  expect(both.list.map((entry) => entry.key)).toEqual(["shadow", "shadow.1"])
+  expect(both.slide).toEqual({ shadow: "custom", opacity: null })
+  expect(changeEffects(both, { slide: { shadow: "medium" } })).toEqual({
+    ok: true,
+    effects: { shadow: { outer: medium } },
+  })
 })
 
 it("adds a glow, an inner shadow or a blur as that field alone", () => {
@@ -206,4 +223,88 @@ it("names the three strengths by PowerPoint's sizes", () => {
       outer: { blur: 101_600, distance: 50_800, direction: 2_700_000, color: black(35_000) },
     },
   })
+})
+
+it("fills empty shadow slots in order, refuses a fifth, and refuses a second on a title", () => {
+  let source: Parameters<typeof readEffects>[0] = { landed: { shadow: { set: { outer: medium } } } }
+  for (const slot of ["drop1", "drop2", "drop3"] as const) {
+    const added = changeEffects(readEffects(source), { add: shadow })
+    expect(added.ok).toBe(true)
+    if (!added.ok) return
+    source = { landed: { ...source.landed, [slot]: { set: added.effects[slot] } } }
+  }
+  expect(readEffects(source).list.map((entry) => entry.key)).toEqual(["shadow", "shadow.1", "shadow.2", "shadow.3"])
+  expect(changeEffects(readEffects(source), { add: shadow })).toEqual({ ok: false, refusal: "limit" })
+  const titled = readEffects({ landed: { shadow: { set: { outer: medium } } }, placeholder: true })
+  expect(titled.addable).toEqual(["blur", "glow", "innerShadow", "softEdge"])
+  expect(changeEffects(titled, { add: shadow })).toEqual({ ok: false, refusal: "placeholder" })
+  expect(changeEffects(readEffects({ placeholder: true }), { add: shadow }).ok).toBe(true)
+})
+
+it("removes one extra shadow without moving the others", () => {
+  const source = {
+    landed: {
+      shadow: { set: { outer: medium } },
+      drop1: { set: { outer: medium } },
+      drop2: { set: { outer: medium } },
+    },
+  }
+  expect(changeEffects(readEffects(source), { remove: keyOf(source, "shadow") })).toEqual({
+    ok: true,
+    effects: { shadow: { none: true } },
+  })
+  const second = readEffects(source).list.find((entry) => entry.key === "shadow.1")
+  if (second === undefined) throw new Error("shadow.1")
+  expect(changeEffects(readEffects(source), { remove: second.key })).toEqual({
+    ok: true,
+    effects: { drop1: { none: true } },
+  })
+})
+
+it("keeps two shadows two people added at once, and lets the later write win on one slot", () => {
+  const row = (patch: Row["patch"]): Row => ({ v: format, patch })
+  const first = row({ effects: { drop1: { set: { outer: medium } } } })
+  const second = row({ effects: { drop2: { set: { outer: medium } } } })
+  expect(netPatch([first, second]).effects).toEqual({
+    drop1: { set: { outer: medium } },
+    drop2: { set: { outer: medium } },
+  })
+  const later = row({ effects: { drop1: { set: { outer: { ...medium, blur: 1 } } } } })
+  expect(netPatch([first, later]).effects).toEqual({ drop1: { set: { outer: { ...medium, blur: 1 } } } })
+})
+
+it("plans one extra shadow as one row, and undoes that row in one step", () => {
+  const node = elementId("258.4")
+  const shape: IndexElement = {
+    node,
+    kind: "shape",
+    value: null,
+    box: { x: 0, y: 0, cx: 100, cy: 100 },
+    grouped: false,
+    kept: [],
+  }
+  const slides = [{ id: "258", position: 0 }]
+  const indexed = (): Register => ({
+    ...openRegister("", "deck"),
+    index: { format, total: 1, slides, elements: [shape], pages: [] },
+  })
+  const shown = readEffects({ landed: { shadow: { set: { outer: medium } } } })
+  const added = changeEffects(shown, { add: shadow })
+  if (!added.ok) throw new Error(added.refusal)
+  const planned = planChange({ target: { node }, effects: added.effects }, registerScope(indexed()))
+  expect(planned.ok).toBe(true)
+  if (!planned.ok) return
+  expect(planned.rows).toHaveLength(1)
+  const patch = planned.rows[0]?.row.patch
+  if (patch === undefined) throw new Error("patch")
+  const addedNode = decide(indexed(), { command: "add", node, floor: "", route: "clean" })
+  if (addedNode.decision !== "apply") throw new Error(addedNode.code)
+  const body = addedNode.register.elements[node]
+  if (body === undefined) throw new Error("node")
+  const before = beforeOf(landedPatch(body, "text"), patch)
+  const applied = decide(addedNode.register, { command: "person", node, v: format, patch })
+  if (applied.decision !== "apply") throw new Error(applied.code)
+  const undone = undoOf(applied.register, { steps: [{ node, before, after: patch }] })
+  expect(undone.ok).toBe(true)
+  if (undone.ok) expect(undone.commands).toHaveLength(1)
 })

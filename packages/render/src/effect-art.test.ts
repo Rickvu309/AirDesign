@@ -59,6 +59,14 @@ async function painted(shape: CanvasElement) {
 
 const shadowGroup = (host: HTMLElement) => host.querySelector("[data-effect-shadow]")
 
+const drop = { ...shadow, rotateWithShape: false }
+
+it("paints each extra drop shadow on its own layer", async () => {
+  const host = await painted(element({ drops: [drop, { ...drop, distance: 40 }] }))
+  expect(host.querySelectorAll("[data-effect-drop]")).toHaveLength(2)
+  expect(host.querySelector("[data-effect-shadow]")).toBeNull()
+})
+
 describe("shadow paint", () => {
   it("paints an inner shadow over the fill and blurs the whole layer", async () => {
     const host = await painted(

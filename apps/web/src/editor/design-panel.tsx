@@ -234,9 +234,9 @@ export function SectionStrips({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      {strips.map((strip) => (
+      {strips.map((strip, index) => (
         <div
-          key={strip.map((control) => control.field).join(" ")}
+          key={`${String(index)} ${strip.map((control) => control.field).join(" ")}`}
           className="grid items-start gap-2"
           style={{ gridTemplateColumns: stripColumns(strip) }}
         >

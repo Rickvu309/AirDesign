@@ -24,4 +24,6 @@ export type CanvasEffects = {
   readonly glow?: { readonly radius: number; readonly color: string }
   readonly softEdge?: { readonly radius: number }
   readonly blur?: { readonly radius: number }
+  readonly drops?: readonly CanvasShadow[]
+  readonly inners?: readonly CanvasInner[]
 }

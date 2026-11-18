@@ -1,4 +1,4 @@
-import type { PaintColor, PaintElement, PaintFill, StackPaint } from "@airdesign/pptx"
+import type { PaintColor, PaintElement, PaintFill, PaintInner, StackPaint } from "@airdesign/pptx"
 import { pictureFrame, type PictureImage } from "@/picture-fill"
 
 export type Placed =
@@ -9,6 +9,7 @@ export type PlanLayer =
   | { readonly kind: "color"; readonly color: PaintColor }
   | { readonly kind: "gradient"; readonly gradient: Extract<PaintFill, { type: "gradient" }> }
   | { readonly kind: "image"; readonly image: PictureImage; readonly placed: Placed }
+  | { readonly kind: "inner"; readonly inner: PaintInner }
 
 const whole = { width: 1, height: 1 }
 

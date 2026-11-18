@@ -205,6 +205,19 @@ function nodeChoices(deck: DesigningDeck, connector: ScopedElement): readonly No
   return found.map(({ node, sites }, at) => ({ node, name: names[at] ?? node, sites }))
 }
 
+function placeholderRole(parts: Parameters<typeof paintReader>[0], node: ElementId): string | undefined {
+  try {
+    const at = shapeOf(node)
+    const part = readSlides(parts).find((slide) => slide.slide === at.slide)?.part
+    if (part === undefined) return undefined
+    return paintReader(parts)
+      .slide(part)
+      .elements.find((element) => element.shape === at.shape)?.placeholder?.type
+  } catch {
+    return undefined
+  }
+}
+
 function elementDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElement; model: PanelModel } | null {
   const { shown } = deck
   const store = shown.store.current
@@ -216,12 +229,14 @@ function elementDesign(deck: DesigningDeck, node: ElementId): { view: ScopedElem
   const held = opening.value ?? fileValue(shown, node)
   const value = opening.facts.kind === "table" && readTableValue(text ?? "") === null ? held : (text ?? held)
   const view = { ...opening, value, box: box ?? opening.box }
+  const role = placeholderRole(shown.displayParts.current, node)
   const model = panelOf(view, {
     fonts: fontsOf(shown.displayParts.current, node),
     reads: readsOf(edited, node),
     moves: shown.movables.current.has(node),
     slides: readSlides(shown.displayParts.current).map((each) => each.slide),
     fields: fieldsOf(shown.displayParts.current, node),
+    ...(role === undefined ? {} : { role }),
     ...(view.facts.kind === "connector" ? { nodes: nodeChoices(deck, view) } : {}),
   })
   return { view, model }

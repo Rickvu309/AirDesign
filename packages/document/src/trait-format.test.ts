@@ -24,7 +24,7 @@ const recorded: Readonly<Record<TraitName, readonly string[]>> = {
     "1d69c93e",
   ],
   border: ["5465b825", "118c2fdf", "db2c2c2c", "db2c2c2c"],
-  effects: ["5465b825", "20b46c0f", "8899ef6e"],
+  effects: ["5465b825", "20b46c0f", "8899ef6e", "820d38e6"],
   body: ["5465b825", "fbdbb36e"],
   text: ["7bd8d0c1", "aaea7ede", "aaea7ede", "aaea7ede", "aaea7ede", "aaea7ede", "aaea7ede"],
   connection: ["5465b825", "4ad8435a"],

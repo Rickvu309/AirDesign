@@ -33,6 +33,7 @@ export type ResolvedEffects = {
   readonly list: readonly Entry[]
   readonly addable: readonly Effect["kind"][]
   readonly own: boolean
+  readonly placeholder: boolean
   readonly slide: { readonly shadow: ShadowPreset; readonly opacity: Alpha | null }
 }
 
@@ -40,6 +41,7 @@ export type EffectsSource = {
   readonly opening?: TraitPatch<"effects">
   readonly landed?: TraitPatch<"effects">
   readonly kept?: readonly KeptEffect[]
+  readonly placeholder?: boolean
 }
 
 export type EffectsEdit =
@@ -52,9 +54,11 @@ export type EffectsEdit =
 
 export type EffectsChange =
   | { readonly ok: true; readonly effects: TraitInput<"effects"> }
-  | { readonly ok: false; readonly refusal: "limit" | "kept" }
+  | { readonly ok: false; readonly refusal: "limit" | "kept" | "placeholder" }
 
 type EffectField = Effect["kind"]
+
+type StackSlot = "shadow" | "drop1" | "drop2" | "drop3" | "innerShadow" | "inner1" | "inner2" | "inner3"
 
 const order = [
   "blur",
@@ -74,6 +78,12 @@ const modeled: readonly EffectField[] = ["blur", "glow", "innerShadow", "shadow"
 const keptKinds = ["fillOverlay", "presetShadow", "reflection"] as const
 
 const presetNames = ["subtle", "medium", "strong"] as const
+
+const dropFields = ["shadow", "drop1", "drop2", "drop3"] as const
+
+const innerFields = ["innerShadow", "inner1", "inner2", "inner3"] as const
+
+const stackCap = 4
 
 function black(alphaValue: number): Color {
   return { rgb: "000000", transforms: [{ op: "alpha", val: alphaValue }] }
@@ -98,7 +108,7 @@ function owns(landed: TraitPatch<"effects"> | undefined): boolean {
   return Object.values(landed).some((edit) => edit !== undefined && edit !== "opening")
 }
 
-function winning(source: EffectsSource, field: EffectField): unknown {
+function winning(source: EffectsSource, field: StackSlot | EffectField): unknown {
   const landed = source.landed?.[field]
   if (landed === "inherit") return undefined
   const opening = source.opening?.[field]
@@ -137,6 +147,19 @@ function asEffect(kind: EffectField, value: unknown): Effect | null {
   return null
 }
 
+function slotOf(key: string): string {
+  if (key.startsWith("shadow.")) return `drop${key.slice("shadow.".length)}`
+  if (key.startsWith("innerShadow.")) return `inner${key.slice("innerShadow.".length)}`
+  return key
+}
+
+function keyFor(slot: string): EffectKey {
+  if (slot.startsWith("drop")) return effectKeyOf(`shadow.${slot.slice("drop".length)}`)
+  if (slot.startsWith("inner") && slot !== "innerShadow")
+    return effectKeyOf(`innerShadow.${slot.slice("inner".length)}`)
+  return effectKeyOf(slot)
+}
+
 function placeOf(entry: Entry): Place {
   if ("effect" in entry) return entry.effect.kind
   if (entry.kept === "presetShadow") return "shadow"
@@ -144,9 +167,19 @@ function placeOf(entry: Entry): Place {
   return entry.kept
 }
 
+function slotIndex(entry: Entry): number {
+  if (!("effect" in entry)) return 0
+  const key = entry.key
+  const extra = key.startsWith("shadow.")
+    ? Number(key.slice("shadow.".length))
+    : key.startsWith("innerShadow.")
+      ? Number(key.slice("innerShadow.".length))
+      : 0
+  return Number.isFinite(extra) ? extra : 0
+}
+
 function rank(entry: Entry): number {
-  if ("effect" in entry) return order.indexOf(entry.effect.kind)
-  return order.indexOf(entry.kept === "graph" ? "blur" : entry.kept)
+  return order.indexOf(placeOf(entry)) * 10 + slotIndex(entry)
 }
 
 function sameStrength(outer: Offset, expected: Offset): boolean {
@@ -158,7 +191,12 @@ function sameStrength(outer: Offset, expected: Offset): boolean {
   )
 }
 
-function slideOf(effect: Extract<Effect, { kind: "shadow" }> | null): ResolvedEffects["slide"] {
+function countOf(list: readonly Entry[], kind: "shadow" | "innerShadow"): number {
+  return list.filter((entry) => "effect" in entry && entry.effect.kind === kind).length
+}
+
+function slideOf(effect: Extract<Effect, { kind: "shadow" }> | null, extra: boolean): ResolvedEffects["slide"] {
+  if (extra) return { shadow: "custom", opacity: null }
   if (effect === null) return { shadow: "none", opacity: null }
   const named = presetNames.find((name) => sameStrength(effect, presets[name]))
   return named === undefined
@@ -171,66 +209,125 @@ function keptEntries(kept: readonly KeptEffect[]): Entry[] {
   return keptKinds.flatMap((kind) => (kept.includes(kind) ? [{ key: effectKeyOf(kind), kept: kind }] : []))
 }
 
-function addableOf(list: readonly Entry[]): EffectField[] {
+function addableOf(list: readonly Entry[], placeholder: boolean): EffectField[] {
   if (list.some((entry) => "kept" in entry && entry.kept === "graph")) return []
   const taken = new Set(list.map(placeOf))
-  return modeled.filter((kind) => !taken.has(kind))
+  const shadows = countOf(list, "shadow")
+  const inners = countOf(list, "innerShadow")
+  return modeled.filter((kind) => {
+    if (kind === "shadow") {
+      if (taken.has("shadow") && shadows === 0) return false
+      return shadows < (placeholder ? 1 : stackCap)
+    }
+    if (kind === "innerShadow") return inners < stackCap
+    return !taken.has(kind)
+  })
 }
 
 function fitsPowerPoint(list: readonly Entry[]): boolean {
   if (list.some((entry) => "kept" in entry && entry.kept === "graph")) return list.length === 1
-  const places = list.map(placeOf)
-  if (new Set(places).size !== places.length) return false
-  for (let at = 1; at < places.length; at += 1) {
-    const previous = places[at - 1]
-    const place = places[at]
-    if (previous === undefined || place === undefined || order.indexOf(previous) >= order.indexOf(place)) return false
+  let previous = -1
+  let shadowBlocked = false
+  let shadows = 0
+  let inners = 0
+  for (const entry of list) {
+    const place = placeOf(entry)
+    const at = order.indexOf(place)
+    if (at < previous) return false
+    if (at === previous && place !== "shadow" && place !== "innerShadow") return false
+    previous = at
+    if (place === "shadow" && "kept" in entry) {
+      if (shadows > 0) return false
+      shadowBlocked = true
+    }
+    if (place === "shadow" && "effect" in entry) {
+      if (shadowBlocked) return false
+      shadows += 1
+      if (shadows > stackCap) return false
+    }
+    if (place === "innerShadow" && "effect" in entry) {
+      inners += 1
+      if (inners > stackCap) return false
+    }
   }
   return true
 }
 
+function slotsOf(
+  source: EffectsSource,
+  kind: EffectField,
+  fields: readonly string[],
+): { readonly key: EffectKey; readonly effect: Effect }[] {
+  return fields.flatMap((field) => {
+    const effect = asEffect(kind, winning(source, field as StackSlot | EffectField))
+    return effect === null ? [] : [{ key: keyFor(field), effect }]
+  })
+}
+
 export function readEffects(source: EffectsSource): ResolvedEffects {
+  const placeholder = source.placeholder === true
   const kept = keptEntries(source.kept ?? [])
   if (kept.some((entry) => "kept" in entry && entry.kept === "graph"))
-    return { list: kept, addable: [], own: owns(source.landed), slide: { shadow: "none", opacity: null } }
-  const present = modeled.flatMap((kind) => {
-    const effect = asEffect(kind, winning(source, kind))
-    return effect === null ? [] : [{ key: effectKeyOf(kind), effect }]
-  })
+    return { list: kept, addable: [], own: owns(source.landed), placeholder, slide: { shadow: "none", opacity: null } }
+  const present = [
+    ...slotsOf(source, "blur", ["blur"]),
+    ...slotsOf(source, "glow", ["glow"]),
+    ...slotsOf(source, "innerShadow", innerFields),
+    ...slotsOf(source, "shadow", dropFields),
+    ...slotsOf(source, "softEdge", ["softEdge"]),
+  ]
   const list = [...present, ...kept].sort((left, right) => rank(left) - rank(right))
-  const shadow = present.find((entry) => entry.effect.kind === "shadow")
+  const shadow = present.find((entry) => entry.effect.kind === "shadow" && entry.key === "shadow")
+  const extra = present.some((entry) => entry.effect.kind === "shadow" && entry.key !== "shadow")
   return {
     list,
-    addable: addableOf(list),
+    addable: addableOf(list, placeholder),
     own: owns(source.landed),
-    slide: slideOf(shadow?.effect.kind === "shadow" ? shadow.effect : null),
+    placeholder,
+    slide: slideOf(shadow?.effect.kind === "shadow" ? shadow.effect : null, extra),
   }
 }
 
-function written(effect: Effect): TraitInput<"effects"> {
-  if (effect.kind === "shadow") {
-    const { blur, distance, direction, color } = effect
-    return { shadow: { outer: { blur, distance, direction, color } } }
-  }
-  if (effect.kind === "innerShadow") {
-    const { blur, distance, direction, color } = effect
-    return { innerShadow: { inner: { blur, distance, direction, color } } }
-  }
+function shadowInput(slot: (typeof dropFields)[number], effect: Offset): TraitInput<"effects"> {
+  const outer = { blur: effect.blur, distance: effect.distance, direction: effect.direction, color: effect.color }
+  if (slot === "shadow") return { shadow: { outer } }
+  if (slot === "drop1") return { drop1: { outer } }
+  if (slot === "drop2") return { drop2: { outer } }
+  return { drop3: { outer } }
+}
+
+function innerInput(slot: (typeof innerFields)[number], effect: Offset): TraitInput<"effects"> {
+  const inner = { blur: effect.blur, distance: effect.distance, direction: effect.direction, color: effect.color }
+  if (slot === "innerShadow") return { innerShadow: { inner } }
+  if (slot === "inner1") return { inner1: { inner } }
+  if (slot === "inner2") return { inner2: { inner } }
+  return { inner3: { inner } }
+}
+
+function writtenAt(slot: string, effect: Effect): TraitInput<"effects"> {
+  if (effect.kind === "shadow") return shadowInput(slot as (typeof dropFields)[number], effect)
+  if (effect.kind === "innerShadow") return innerInput(slot as (typeof innerFields)[number], effect)
   if (effect.kind === "glow") return { glow: { halo: { radius: effect.radius, color: effect.color } } }
   if (effect.kind === "softEdge") return { softEdge: { radius: effect.radius } }
   return { blur: { radius: effect.radius } }
 }
 
-function cleared(kind: EffectField): TraitInput<"effects"> {
-  if (kind === "shadow") return { shadow: { none: true } }
-  if (kind === "innerShadow") return { innerShadow: { none: true } }
-  if (kind === "glow") return { glow: { none: true } }
-  if (kind === "softEdge") return { softEdge: { none: true } }
+function clearedAt(slot: string): TraitInput<"effects"> {
+  if (slot === "shadow") return { shadow: { none: true } }
+  if (slot === "drop1") return { drop1: { none: true } }
+  if (slot === "drop2") return { drop2: { none: true } }
+  if (slot === "drop3") return { drop3: { none: true } }
+  if (slot === "innerShadow") return { innerShadow: { none: true } }
+  if (slot === "inner1") return { inner1: { none: true } }
+  if (slot === "inner2") return { inner2: { none: true } }
+  if (slot === "inner3") return { inner3: { none: true } }
+  if (slot === "glow") return { glow: { none: true } }
+  if (slot === "softEdge") return { softEdge: { none: true } }
   return { blur: { none: true } }
 }
 
 function shadowOf(current: ResolvedEffects): Offset | null {
-  const entry = current.list.find((each) => "effect" in each && each.effect.kind === "shadow")
+  const entry = current.list.find((each) => "effect" in each && each.key === "shadow")
   if (entry === undefined || !("effect" in entry) || entry.effect.kind !== "shadow") return null
   const { blur, distance, direction, color } = entry.effect
   return { blur, distance, direction, color }
@@ -249,6 +346,14 @@ function replaced(current: ResolvedEffects, outer: Offset | null): Entry[] {
   )
 }
 
+function nextSlot(current: ResolvedEffects, kind: "shadow" | "innerShadow"): string | undefined {
+  const fields = kind === "shadow" ? dropFields : innerFields
+  const used = new Set(
+    current.list.flatMap((entry) => ("effect" in entry && entry.effect.kind === kind ? [slotOf(entry.key)] : [])),
+  )
+  return fields.find((field) => !used.has(field))
+}
+
 function slideChange(
   current: ResolvedEffects,
   slide: { readonly shadow?: Exclude<ShadowPreset, "custom">; readonly opacity?: Alpha },
@@ -265,8 +370,8 @@ function slideChange(
   }
   const next = replaced(current, outer)
   if (!fitsPowerPoint(next)) return { ok: false, refusal: "limit" }
-  if (outer === null) return { ok: true, effects: cleared("shadow") }
-  return { ok: true, effects: written({ kind: "shadow", ...outer }) }
+  if (outer === null) return { ok: true, effects: clearedAt("shadow") }
+  return { ok: true, effects: writtenAt("shadow", { kind: "shadow", ...outer }) }
 }
 
 export function changeEffects(current: ResolvedEffects, edit: EffectsEdit): EffectsChange {
@@ -278,7 +383,7 @@ export function changeEffects(current: ResolvedEffects, edit: EffectsEdit): Effe
     if ("kept" in entry) return { ok: false, refusal: "kept" }
     const next = current.list.filter((each) => each.key !== edit.remove)
     if (!fitsPowerPoint(next)) return { ok: false, refusal: "limit" }
-    return { ok: true, effects: cleared(entry.effect.kind) }
+    return { ok: true, effects: clearedAt(slotOf(entry.key)) }
   }
   if ("at" in edit) {
     const entry = current.list.find((each) => each.key === edit.at)
@@ -287,12 +392,17 @@ export function changeEffects(current: ResolvedEffects, edit: EffectsEdit): Effe
     if (edit.effect.kind !== entry.effect.kind) return { ok: false, refusal: "limit" }
     const next = current.list.map((each) => (each.key === edit.at ? { key: each.key, effect: edit.effect } : each))
     if (!fitsPowerPoint(next)) return { ok: false, refusal: "limit" }
-    return { ok: true, effects: written(edit.effect) }
+    return { ok: true, effects: writtenAt(slotOf(entry.key), edit.effect) }
   }
+  if (edit.add.kind === "shadow" && current.placeholder && countOf(current.list, "shadow") >= 1)
+    return { ok: false, refusal: "placeholder" }
   if (!current.addable.includes(edit.add.kind)) return { ok: false, refusal: "limit" }
-  const next = [...current.list, { key: effectKeyOf(edit.add.kind), effect: edit.add }].sort(
+  const slot =
+    edit.add.kind === "shadow" || edit.add.kind === "innerShadow" ? nextSlot(current, edit.add.kind) : edit.add.kind
+  if (slot === undefined) return { ok: false, refusal: "limit" }
+  const next = [...current.list, { key: keyFor(slot), effect: edit.add }].sort(
     (left, right) => rank(left) - rank(right),
   )
   if (!fitsPowerPoint(next)) return { ok: false, refusal: "limit" }
-  return { ok: true, effects: written(edit.add) }
+  return { ok: true, effects: writtenAt(slot, edit.add) }
 }

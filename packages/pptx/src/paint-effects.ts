@@ -31,6 +31,8 @@ export type PaintEffects = {
   glow?: PaintGlow
   softEdge?: { radius: number }
   blur?: { radius: number }
+  drops?: readonly PaintShadow[]
+  inners?: readonly PaintInner[]
 }
 
 const alignments = ["tl", "t", "tr", "l", "ctr", "r", "bl", "b", "br"]

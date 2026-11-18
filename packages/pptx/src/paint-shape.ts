@@ -4,6 +4,7 @@ import { paintAttribute, paintColor, type PaintFill, type PaintPalette } from ".
 import { paintChild, paintFill } from "./paint-fill.js"
 import type { MarkupChildren } from "./text-value-route.js"
 import type { PaintPicture } from "./paint-image.js"
+import { paintedExtras } from "./effects-extension.js"
 import { paintEffects, type PaintEffects } from "./paint-effects.js"
 import { stackUri } from "./stack-extension.js"
 
@@ -237,6 +238,17 @@ export const paintShape = (
     const style = styleOf("a:effectRef", styles?.effects ?? [])
     const list = paintChild(themeSource.children, style?.element, "a:effectLst")
     if (style !== null && list !== undefined) effects = paintEffects(themeSource.children, list, style.palette)
+  }
+  const ownProperties = own === undefined ? undefined : propertiesOf(own)
+  if (own !== undefined && paintChild(own.children, ownProperties, "a:effectDag") === undefined) {
+    const extra = paintedExtras(own.children, ownProperties, palette)
+    if (extra.drops.length > 0 || extra.inners.length > 0) {
+      effects = {
+        ...effects,
+        ...(extra.drops.length === 0 ? {} : { drops: extra.drops }),
+        ...(extra.inners.length === 0 ? {} : { inners: extra.inners }),
+      }
+    }
   }
   let geometry: string | null = null
   const adjusts: Record<string, number> = {}
