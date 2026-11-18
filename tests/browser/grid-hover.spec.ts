@@ -32,7 +32,8 @@ for (const [percent, placement] of [
     const before = await slide.boundingBox()
     if (placement === "above") {
       const number = (await card.locator("[data-slide-number]").boundingBox())!
-      expect(before!.y - number.y - number.height).toBeCloseTo(7, 0)
+      expect(before!.y - number.y).toBeCloseTo(23, 0)
+      expect(number.y + number.height).toBeCloseTo(before!.y, 0)
       expect(
         await card
           .locator("[data-grid-halo]")

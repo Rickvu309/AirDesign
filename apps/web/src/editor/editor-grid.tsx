@@ -17,7 +17,7 @@ import { gridSpacing, gridThumbHeight } from "@/editor/grid-viewport"
 import { GridDragGhost } from "@/editor/grid-drag-ghost"
 import { gridDrop, type GridMoveSide } from "@/editor/grid-drop"
 import { gridLayout, keptGridViewport, useKeptGridZoom } from "@/editor/grid-zoom"
-import { gridOpened, gridPick, gridRinged, gridStep } from "@/editor/grid-interaction"
+import { gridDesigned, gridOpened, gridPick, gridRinged, gridStep } from "@/editor/grid-interaction"
 import { GridThumbnail, useGridViewport } from "@/editor/use-grid-viewport"
 import { useGridEditing } from "@/editor/use-grid-editing"
 import { useGridMarquee } from "@/editor/use-grid-marquee"
@@ -128,8 +128,8 @@ export function EditorGrid({
   const { current, count } = strip
   const picked = prunedPick(gridPick(state), count, strip.slideIds)
   const selected = new Set(gridRinged(state, current, count, strip.slideIds))
-  const selectedCount = selected.size
-  useLayoutEffect(() => onSlideSelection?.(selectedCount), [onSlideSelection, selectedCount])
+  const designed = gridDesigned(state, current, count, strip.slideIds)
+  useLayoutEffect(() => onSlideSelection?.(designed), [onSlideSelection, designed])
   useGridSelection(strip.onSelection, selected, current)
   const sections = strip.sections ?? noSections
   const collapsed = useKeptCollapsed(id, sections, current)
@@ -439,6 +439,7 @@ export function EditorGrid({
           count={count}
           held={pickedSlides(picked, menu.index)}
           canMoveSet={strip.onMoveMany !== undefined}
+          canMoveBelow={slideMenu.canMoveBelow}
           canChangeSet={strip.onChangeSet !== undefined}
           canAdd={strip.onAdd !== undefined}
           onAdd={(side) => addSlide(menu.index, side, true)}

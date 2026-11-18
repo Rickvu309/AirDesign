@@ -97,19 +97,31 @@ test("a drag keeps the motion setting it started with until the drop", async ({ 
   await expect(page.locator("[data-editor-grid] [data-announcer]")).toHaveText("Moved slide 1 to position 3")
 })
 
-test("a drag to the first place of a grid row keeps the slides still and shows the bar where the slide lands", async ({
-  page,
-}) => {
+test("a drag to the first place of its own grid row moves the slides aside with no drop bar", async ({ page }) => {
   await openFile(page, { name: "eight.pptx", mimeType: "application/octet-stream", buffer: await manySlides(8) })
   await openGrid(page)
   const firstInRow = await boxOf(page, 5)
+  const step = (await boxOf(page, 6)).x - firstInRow.x
   await grab(page, 7)
   await pointAt(page, firstInRow, 0.2)
-  await expect(page.locator("[data-drop-bar]")).toHaveAttribute("data-drop-place", "5")
-  await expect.poll(() => shiftOf(page, 5)).toBe(0)
-  await expect.poll(() => shiftOf(page, 7)).toBe(0)
+  await expect.poll(() => shiftOf(page, 5)).toBeCloseTo(step, 0)
+  await expect.poll(() => shiftOf(page, 6)).toBeCloseTo(step, 0)
+  await expect.poll(() => shiftOf(page, 7)).toBeCloseTo(-2 * step, 0)
+  await expect(page.locator("[data-drop-bar]")).toBeHidden()
   await page.mouse.up()
   await expect(page.locator("[data-editor-grid] [data-announcer]")).toHaveText("Moved slide 7 to position 5")
+})
+
+test("a drag to the first place of another grid row keeps the slides still and shows the bar", async ({ page }) => {
+  await openFile(page, { name: "eight.pptx", mimeType: "application/octet-stream", buffer: await manySlides(8) })
+  await openGrid(page)
+  await grab(page, 3)
+  await pointAt(page, await boxOf(page, 5), 0.2)
+  await expect(page.locator("[data-drop-bar]")).toHaveAttribute("data-drop-place", "5")
+  await expect.poll(() => shiftOf(page, 5)).toBe(0)
+  await expect.poll(() => shiftOf(page, 4)).toBe(0)
+  await page.mouse.up()
+  await expect(page.locator("[data-editor-grid] [data-announcer]")).toHaveText("Moved slide 3 to position 4")
 })
 
 test("the add mark between slides appears on hover and stays still with reduced motion", async ({ page }) => {

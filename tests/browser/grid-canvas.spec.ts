@@ -10,7 +10,7 @@ async function zoomTo(page: Page, percent: number | "fit") {
   }
 }
 import { expect, test } from "@playwright/test"
-import { clean, entry, openFile, openGrid, settled, manySlides } from "./slide-grid-deck"
+import { clean, entry, numberText, openFile, openGrid, settled, manySlides } from "./slide-grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -38,10 +38,9 @@ test("keeps slide numbers above the canvas", async ({ page }) => {
   await openFile(page, clean)
   await openGrid(page)
   const card = await entry(page, 1).boundingBox()
-  const number = await page.locator("[data-slide-number]").first().boundingBox()
+  const number = await numberText(page.locator("[data-slide-number]").first())
   expect(card).not.toBeNull()
-  expect(number).not.toBeNull()
-  expect((number?.y ?? 0) + (number?.height ?? 0)).toBeLessThan(card?.y ?? 0)
+  expect(number.bottom).toBeLessThan(card?.y ?? 0)
 })
 
 test("pans beyond the slide layout and zooms without reflowing it", async ({ page }) => {

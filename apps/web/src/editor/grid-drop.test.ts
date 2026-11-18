@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest"
-import { dropPlace, dropTarget, edgePan, gridDrop, previewSlot, slotUnder } from "@/editor/grid-drop"
+import {
+  dropAt,
+  dropPlace,
+  dropTarget,
+  edgePan,
+  gridDrop,
+  liveTarget,
+  moveBelowPlace,
+  previewSlot,
+  rowDrop,
+  slotUnder,
+  terminalRowBand,
+} from "@/editor/grid-drop"
 
 const card = { left: 100, width: 300 }
 
@@ -112,5 +124,89 @@ describe("moving slides between rows", () => {
     expect(gridDrop(rows, [5, 6, 7], 4, "keep")).toBe(4)
     expect(gridDrop(rows, [2, 0], 7, "same")).toBe(5)
     expect(gridDrop(rows, [5, 0], 7, "new")).toBe(6)
+  })
+})
+
+describe("live moves inside a row", () => {
+  const rows = [
+    { start: 0, end: 4 },
+    { start: 4, end: 8 },
+  ]
+
+  it("moves the siblings aside for any slot of the dragged slide's own row, its first slot included", () => {
+    expect(liveTarget(rows, 2, 0, 0)).toBe(0)
+    expect(liveTarget(rows, 6, 4, 4)).toBe(4)
+    expect(liveTarget(rows, 0, 2, 3)).toBe(2)
+  })
+
+  it("keeps the slides still for another row, its own row end, or the end of the row above", () => {
+    expect(liveTarget(rows, 6, 0, 0)).toBeNull()
+    expect(liveTarget(rows, 1, 3, 4)).toBeNull()
+    expect(liveTarget(rows, 5, 3, 4)).toBeNull()
+    expect(liveTarget(rows, 2, 2, 2)).toBeNull()
+  })
+})
+
+describe("drop side", () => {
+  const rows = [
+    { start: 0, end: 4 },
+    { start: 4, end: 8 },
+  ]
+
+  it("drops at a row start before its first slide", () => {
+    expect(dropAt(rows, [6], 4, 4)).toEqual({ at: 4, side: "before" })
+    expect(dropAt(rows, [6], 4, 5)).toEqual({ at: 5, side: "same" })
+  })
+
+  it("keeps a row's first slide in its row when it is dropped on its own right half", () => {
+    expect(dropAt(rows, [4], 4, 5)).toEqual({ at: 4, side: "before" })
+    expect(gridDrop(rows, [4], 4, "before")).toBeNull()
+    expect(dropAt(rows, [4, 1], 4, 5)).toEqual({ at: 4, side: "before" })
+    expect(gridDrop(rows, [4, 1], 4, "before")).toBe(3)
+  })
+})
+
+describe("whole-row drops", () => {
+  const bands = [
+    { start: 0, end: 3, top: 100, bottom: 400 },
+    { start: 3, end: 8, top: 600, bottom: 900 },
+  ]
+  const scale = 0.5
+  const outside = terminalRowBand / 2 / scale
+
+  it("puts the bar above the first row's numbers, clear of them by half the drop band", () => {
+    expect(rowDrop(bands, 60, scale)).toEqual({ at: 0, top: 100 - outside })
+  })
+
+  it("puts the bar below the last row's slides, clear of them by half the drop band", () => {
+    expect(rowDrop(bands, 950, scale)).toEqual({ at: 8, top: 900 + outside })
+  })
+
+  it("puts the bar midway between two rows", () => {
+    expect(rowDrop(bands, 500, scale)).toEqual({ at: 3, top: 500 })
+  })
+
+  it("drops nowhere over a row or far from the rows", () => {
+    expect(rowDrop(bands, 200, scale)).toBeNull()
+    expect(rowDrop(bands, 100 - 2 * outside - 1, scale)).toBeNull()
+    expect(rowDrop(bands, 900 + 2 * outside + 1, scale)).toBeNull()
+  })
+})
+
+describe("move to a new row below", () => {
+  const rows = [
+    { start: 0, end: 4 },
+    { start: 4, end: 5 },
+    { start: 5, end: 8 },
+  ]
+
+  it("starts a new row after the slide's row", () => {
+    expect(moveBelowPlace(rows, [1], 1)).toBe(4)
+    expect(moveBelowPlace(rows, [5, 6], 5)).toBe(8)
+  })
+
+  it("offers nothing when the slides already make up their row alone", () => {
+    expect(moveBelowPlace(rows, [4], 4)).toBeNull()
+    expect(moveBelowPlace(rows, [5, 6, 7], 6)).toBeNull()
   })
 })

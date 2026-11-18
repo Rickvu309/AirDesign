@@ -1,5 +1,5 @@
 import { useState, type RefObject } from "react"
-import type { GridMoveSide, GridRange } from "@/editor/grid-drop"
+import { moveBelowPlace, type GridMoveSide, type GridRange } from "@/editor/grid-drop"
 import type { GridStep } from "@/editor/grid-interaction"
 import type { GridMenu, MenuAnchor } from "@/editor/grid-menu"
 import { pickedSlides, type GridPick } from "@/editor/grid-selection"
@@ -41,11 +41,11 @@ export function useGridMenu({
     list.current?.querySelector<HTMLElement>(`[data-slide-entry="${shown.index + 1}"]`)?.focus()
   }
 
+  const below = menu === null ? null : moveBelowPlace(rows, pickedSlides(picked, menu.index), menu.index)
+
   function moveBelow() {
-    if (menu === null) return
-    const row = rows.find(({ start, end }) => start <= menu.index && menu.index < end)
-    if (row !== undefined) moveSlides(pickedSlides(picked, menu.index), row.end, "new")
+    if (menu !== null && below !== null) moveSlides(pickedSlides(picked, menu.index), below, "new")
   }
 
-  return { menu, open, close, moveBelow }
+  return { menu, open, close, moveBelow, canMoveBelow: below !== null }
 }

@@ -117,3 +117,47 @@ export function rowPan(delta: number, pointerY: number, firstTop: number, lastBo
     ? Math.min(delta, Math.max(0, pointerY + clearance - firstTop))
     : Math.max(delta, Math.min(0, pointerY - clearance - lastBottom))
 }
+
+function rangeOf(rows: readonly GridRange[], index: number): GridRange | undefined {
+  return rows.find((row) => index >= row.start && index < row.end)
+}
+
+export function dropAt(
+  rows: readonly GridRange[],
+  held: readonly number[],
+  slot: number,
+  at: number,
+): { readonly at: number; readonly side: GridMoveSide } {
+  const band = rangeOf(rows, slot)
+  return band !== undefined && gridIndices({ start: band.start, end: at }).every((index) => held.includes(index))
+    ? { at: band.start, side: "before" }
+    : { at, side: "same" }
+}
+
+export function liveTarget(rows: readonly GridRange[], from: number, slot: number, at: number): number | null {
+  const home = rangeOf(rows, from)
+  return home !== undefined && home === rangeOf(rows, slot) && at < home.end ? dropTarget(from, at) : null
+}
+
+export type GridBand = GridRange & { readonly top: number; readonly bottom: number }
+
+export function rowDrop(
+  bands: readonly GridBand[],
+  y: number,
+  scale: number,
+): { readonly at: number; readonly top: number } | null {
+  const reach = terminalRowBand / scale
+  const next = bands.find((band, i) => y < band.top && y >= (bands[i - 1]?.bottom ?? band.top - reach))
+  const previous = next === undefined ? undefined : bands[bands.indexOf(next) - 1]
+  if (next !== undefined)
+    return { at: next.start, top: previous === undefined ? next.top - reach / 2 : (previous.bottom + next.top) / 2 }
+  const last = bands.at(-1)
+  return last !== undefined && y >= last.bottom && y <= last.bottom + reach
+    ? { at: last.end, top: last.bottom + reach / 2 }
+    : null
+}
+
+export function moveBelowPlace(rows: readonly GridRange[], held: readonly number[], index: number): number | null {
+  const row = rangeOf(rows, index)
+  return row === undefined || gridDrop(rows, held, row.end, "new") === null ? null : row.end
+}

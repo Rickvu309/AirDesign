@@ -11,17 +11,19 @@ import {
 } from "react"
 import {
   dragSlop,
+  dropAt,
   dropPlace,
-  dropTarget,
   edgePan,
   gridDrop,
   gridIndices,
+  liveTarget,
+  type GridBand,
   type GridMoveSide,
   type GridRange,
   previewSlot,
+  rowDrop,
   rowPan,
   slotUnder,
-  terminalRowBand,
   type GridSlot,
 } from "@/editor/grid-drop"
 import { cardPress } from "@/editor/grid-hit"
@@ -74,6 +76,31 @@ export function slotsIn(scroller: HTMLElement): readonly GridSlot[] {
   })
 }
 
+function bandsIn(scroller: HTMLElement, rows: readonly GridRange[]): readonly GridBand[] {
+  const box = scroller.getBoundingClientRect()
+  const scale = scroller.offsetWidth === 0 ? 1 : box.width / scroller.offsetWidth
+  const at = (y: number) => (y - box.top) / scale
+  const cards = [...scroller.querySelectorAll<HTMLElement>("[data-slide-entry]")]
+  return rows.flatMap((row) => {
+    const members = cards.filter((card) => {
+      const index = Number(card.dataset.slideEntry) - 1
+      return index >= row.start && index < row.end
+    })
+    if (members.length === 0) return []
+    const tops = members.flatMap((card) =>
+      [
+        card,
+        card.closest("[data-grid-row-member]"),
+        card.parentElement?.querySelector("[data-slide-number]:not([hidden])"),
+      ]
+        .filter((part): part is HTMLElement => part instanceof HTMLElement)
+        .map((part) => at(part.getBoundingClientRect().top)),
+    )
+    const bottoms = members.map((card) => at(card.getBoundingClientRect().bottom))
+    return [{ ...row, top: Math.min(...tops), bottom: Math.max(...bottoms) }]
+  })
+}
+
 function inside(point: Point, room: DOMRect): boolean {
   return point.x >= room.left && point.x <= room.right && point.y >= room.top && point.y <= room.bottom
 }
@@ -119,6 +146,7 @@ export function useGridDrag({
   const clock = useRef(0)
   const place = useRef<{ at: number; side: GridMoveSide } | null>(null)
   const slots = useRef<readonly GridSlot[]>([])
+  const bands = useRef<readonly GridBand[]>([])
   const [preview, setPreview] = useState<Preview | null>(null)
   const [settling, setSettling] = useState(false)
   const [calm, setCalm] = useState(false)
@@ -171,6 +199,7 @@ export function useGridDrag({
     pointer.current = null
     place.current = null
     slots.current = []
+    bands.current = []
     onPanEnd()
     show(null)
     hideBar()
@@ -195,6 +224,7 @@ export function useGridDrag({
     if (press.current?.order.join(",") !== slideIds.join(",")) return
     const world = list.current
     slots.current = world === null ? [] : slotsIn(world)
+    bands.current = row && world !== null ? bandsIn(world, rows) : []
     const range = rowOf(rows, index)
     const held = row && range !== undefined ? gridIndices(range) : selected.includes(index) ? selected : [index]
     const quiet = still()
@@ -230,33 +260,13 @@ export function useGridDrag({
         clearPlace(held)
         return
       }
-      const bands = rows.flatMap((row) => {
-        const cells = slots.current.filter((slot) => slot.index >= row.start && slot.index < row.end)
-        return cells.length === 0
-          ? []
-          : [
-              {
-                ...row,
-                top: Math.min(...cells.map((cell) => cell.top)),
-                bottom: Math.max(...cells.map((cell) => cell.top + cell.height)),
-              },
-            ]
-      })
-      const next = bands.find(
-        (band, i) => y < band.top && y >= (bands[i - 1]?.bottom ?? band.top - terminalRowBand / scale),
-      )
-      const last = bands.at(-1)
-      const at =
-        next?.start ??
-        (last !== undefined && y >= last.bottom && y <= last.bottom + terminalRowBand / scale ? last.end : null)
-      const previous = bands.find((band) => band.end === at)
-      const top =
-        next === undefined ? last?.bottom : previous === undefined ? next.top : (previous.bottom + next.top) / 2
+      const drop = rowDrop(bands.current, y, scale)
       const mark = bar.current
-      if (at === null || top === undefined || mark === null || gridDrop(rows, held.held, at, "keep") === null) {
+      if (drop === null || mark === null || gridDrop(rows, held.held, drop.at, "keep") === null) {
         clearPlace(held)
         return
       }
+      const { at, top } = drop
       place.current = { at, side: "keep" }
       mark.hidden = false
       mark.dataset.rowDrop = ""
@@ -271,20 +281,17 @@ export function useGridDrag({
       clearPlace(held)
       return
     }
-    const at = dropPlace(x, slot, slot.index)
+    const { at, side } = dropAt(rows, held.held, slot.index, dropPlace(x, slot, slot.index))
     const band = rowOf(rows, slot.index)
-    const side = at === band?.start ? "before" : "same"
     const withinHeldRow = band !== undefined && gridIndices(band).every((index) => held.held.includes(index))
     if (withinHeldRow || gridDrop(rows, held.held, at, side) === null) {
       clearPlace(held)
       return
     }
     place.current = { at, side }
-    const home = rowOf(rows, held.from)
-    const moves = held.moving && band !== undefined && home === band && side === "same" && at !== band.end
-    if (moves) hideBar()
-    else showBar(at, slot, scale)
-    const next = moves ? dropTarget(held.from, at) : null
+    const next = held.moving ? liveTarget(rows, held.from, slot.index, at) : null
+    if (next !== null) hideBar()
+    else showBar(at, slots.current.find((cell) => cell.index === at && at !== slot.index + 1) ?? slot, scale)
     if (next !== held.to) show({ ...held, to: next })
   }
 
