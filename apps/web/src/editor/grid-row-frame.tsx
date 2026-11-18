@@ -6,41 +6,30 @@ import { gridIndices, type GridMoveSide } from "@/editor/grid-drop"
 import { gridCommand } from "@/editor/editor-grid-keys"
 
 export function GridRowFrame({
-  number,
+  start,
   scale,
-  height,
   blocked,
-  onGrab,
-  onMove,
   hover,
   style,
-  start,
   tint = false,
-  center,
   rule,
   band,
 }: {
-  number: number
+  start: number
   scale: number
-  height: number
   blocked: boolean
-  onGrab: (event: PointerEvent<HTMLButtonElement>) => void
-  onMove: (direction: "earlier" | "later") => void
   hover: "band" | "slide" | "handle" | "add" | null
   style: CSSProperties
-  start: number
   tint?: boolean
-  center?: number
   rule?: CSSProperties
   band?: CSSProperties
 }) {
-  const small = height * scale < gridRowHandle.minimumHeight
   return (
     <div
       data-grid-row-frame
       data-grid-row={start}
-      data-row-hover={blocked || small ? undefined : (hover ?? undefined)}
-      data-row-blocked={blocked || small ? "" : undefined}
+      data-row-hover={blocked ? undefined : (hover ?? undefined)}
+      data-row-blocked={blocked ? "" : undefined}
       data-row-tint={tint ? "" : undefined}
       className="relative"
       style={style}
@@ -52,49 +41,70 @@ export function GridRowFrame({
       {band === undefined ? null : (
         <span data-group-band aria-hidden="true" className="pointer-events-none absolute" style={band} />
       )}
-      <button
-        type="button"
-        data-row-handle
-        aria-label={slideListCopy.moveRow(number)}
-        aria-keyshortcuts={slideListCopy.rowKeys}
-        disabled={blocked || small}
-        style={{
-          left: -gridRowHandle.offset / scale,
-          width: gridRowHandle.width,
-          top: center === undefined ? `calc(100% - ${height / 2}px)` : center,
-          transform: `scale(${1 / scale}) translate(-50%, -50%)`,
-          transformOrigin: "0 0",
-        }}
-        className="absolute z-10 flex touch-none items-center justify-center rounded-full"
-        onPointerDown={(event) => {
-          event.stopPropagation()
-          event.currentTarget.focus({ preventScroll: true, focusVisible: false })
-          onGrab(event)
-        }}
-        onClick={(event) => event.stopPropagation()}
-        onKeyDown={(event) => {
-          const command = gridCommand(event)
-          if (command !== "earlier" && command !== "later") return
-          event.preventDefault()
-          event.stopPropagation()
-          onMove(command)
-        }}
-      >
-        <span data-row-grip aria-hidden="true" className="flex items-center justify-center rounded-full">
-          <svg
-            width="12"
-            height="16"
-            viewBox="0 0 12 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
-            <path d="M3 3h6M3 8h6M3 13h6" />
-          </svg>
-        </span>
-      </button>
     </div>
+  )
+}
+
+export function GridRowHandle({
+  number,
+  scale,
+  height,
+  blocked,
+  center,
+  onGrab,
+  onMove,
+}: {
+  number: number
+  scale: number
+  height: number
+  blocked: boolean
+  center?: number
+  onGrab: (event: PointerEvent<HTMLButtonElement>) => void
+  onMove: (direction: "earlier" | "later") => void
+}) {
+  return (
+    <button
+      type="button"
+      data-row-handle
+      aria-label={slideListCopy.moveRow(number)}
+      aria-keyshortcuts={slideListCopy.rowKeys}
+      disabled={blocked || height * scale < gridRowHandle.minimumHeight}
+      style={{
+        left: -gridRowHandle.offset / scale,
+        width: gridRowHandle.width,
+        top: center === undefined ? `calc(100% - ${height / 2}px)` : center,
+        transform: `scale(${1 / scale}) translate(-50%, -50%)`,
+        transformOrigin: "0 0",
+      }}
+      className="pointer-events-auto absolute z-10 flex touch-none items-center justify-center rounded-full"
+      onPointerDown={(event) => {
+        event.stopPropagation()
+        event.currentTarget.focus({ preventScroll: true, focusVisible: false })
+        onGrab(event)
+      }}
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => {
+        const command = gridCommand(event)
+        if (command !== "earlier" && command !== "later") return
+        event.preventDefault()
+        event.stopPropagation()
+        onMove(command)
+      }}
+    >
+      <span data-row-grip aria-hidden="true" className="flex items-center justify-center rounded-full">
+        <svg
+          width="12"
+          height="16"
+          viewBox="0 0 12 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        >
+          <path d="M3 3h6M3 8h6M3 13h6" />
+        </svg>
+      </span>
+    </button>
   )
 }
 

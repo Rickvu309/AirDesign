@@ -99,6 +99,32 @@ for (const cancel of ["Escape", "outside", "empty", "drop"]) {
   })
 }
 
+test("Tab reaches each row handle after its heading and before its first slide, whatever the mouse does", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await openSaved(page, context, stack, 6, true)
+  const heading = page.locator("[data-section-head]").first()
+  const room = await roomOf(page)
+  await page.mouse.move(room.x + room.width - 30, room.y + 30)
+  await page.getByRole("button", { name: "Export", exact: true }).focus()
+  await page.keyboard.press("Tab")
+  await expect(heading).toBeFocused()
+  await page.keyboard.press("Tab")
+  await expect(handle(page, 1)).toBeFocused()
+  await page.keyboard.press("Tab")
+  await expect(entry(page, 1)).toBeFocused()
+  const one = await boxOf(page, 1)
+  await page.mouse.move(one.x - 8, one.y + one.height / 2)
+  await expect(page.locator('[data-row-hover="band"]')).toHaveCount(1)
+  await heading.focus()
+  await page.keyboard.press("Tab")
+  await expect(handle(page, 1)).toBeFocused()
+  await page.keyboard.press("Tab")
+  await expect(entry(page, 1)).toBeFocused()
+})
+
 test("Alt+Up and Alt+Down move the focused row and announce its position", async ({ page, context, stack }) => {
   const saved = await openSaved(page, context, stack, 10)
   await handle(page, 3).focus()

@@ -437,7 +437,7 @@ html:has(.reflow-frame) #root {
 [data-row-handle]:is(:hover, :focus-visible) [data-row-grip] svg {
   display: block;
 }
-[data-grid-row-frame][data-row-hover]:not([data-row-hover="add"]) > [data-row-handle],
+[data-grid-row-frame][data-row-hover]:not([data-row-hover="add"]) + div [data-row-handle],
 [data-row-handle]:is(:hover, :focus-visible) {
   opacity: 1;
 }
@@ -462,7 +462,7 @@ html:has(.reflow-frame) #root {
     color: var(--grid-number);
   }
 }
-[data-row-blocked] > [data-row-handle],
+[data-grid-row-frame][data-row-blocked] + div [data-row-handle],
 [data-grid-viewport][data-panning] [data-row-handle] {
   visibility: hidden;
 }
