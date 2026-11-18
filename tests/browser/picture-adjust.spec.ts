@@ -6,7 +6,7 @@ import { presentCopy } from "../../apps/web/src/copy/present-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { openDeck, settled, unfold } from "./design-panel"
 import { savedExport } from "./export-dialog"
-import { partsOf } from "./shape-fills"
+import { boxFillPanel, partsOf } from "./shape-fills"
 
 const part = "ppt/slides/slide1.xml"
 const pictureKey = `${part}#4`
@@ -110,13 +110,9 @@ test("a shape whose fill is an icon shows the picture fill controls", async ({ p
   const { picturePanelCopy: pictureCopy } = await import("../../apps/web/src/copy/picture-panel-copy")
   await openDeck(page, "clean.pptx")
   const shape = page.locator(`[data-slide-paint] [data-canvas-element="${part}#2"]`)
-  await page.getByRole("button", { name: "Design", exact: true }).click()
-  await shape.click({ position: { x: 4, y: 4 } })
-  const fill = page
-    .locator("[data-design-element] section")
-    .filter({ has: page.getByRole("heading", { name: fillCopy.section, exact: true }) })
+  const fill = await boxFillPanel(page, shape)
   await fill
-    .getByRole("group", { name: fillCopy.value, exact: true })
+    .getByRole("group", { name: fillCopy.box, exact: true })
     .getByRole("button", { name: fillWords.picture, exact: true })
     .click()
   await expect(fill.locator("[data-picture-preview]")).toBeVisible()

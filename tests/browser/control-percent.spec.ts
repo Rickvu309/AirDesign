@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test"
+import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { openDeck } from "./design-panel"
-import { fillPanel, filled, shapeAt } from "./shape-fills"
+import { boxFillPanel, filled, shapeAt } from "./shape-fills"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -9,8 +10,8 @@ test("a percent takes a typed number in percent, steps with the arrow keys, and 
 }) => {
   await openDeck(page, "clean.pptx")
   const shape = shapeAt(page, "2")
-  const panel = await fillPanel(page, shape)
-  await panel.getByRole("group", { name: "Fill", exact: true }).getByRole("button", { name: "Gradient" }).click()
+  const panel = await boxFillPanel(page, shape)
+  await panel.getByRole("group", { name: fillCopy.box, exact: true }).getByRole("button", { name: "Gradient" }).click()
   const position = panel.getByRole("group", { name: "Stop 2", exact: true }).getByRole("textbox", { name: "Position" })
   await expect(position).toHaveValue("100")
   const before = await filled(shape)
