@@ -30,7 +30,7 @@ type Inputs = Readonly<Record<string, unknown>>
 const slidePart = "(?:[0-9]{1,10}|n[0-9a-z]{12})"
 const rolePart = `(?:${roles.join("|")})`
 const ownKinds = slideKinds.join("|")
-const targetPattern = `^(?:[0-9]{1,10}|${slidePart}\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${ownKinds}|${rolePart})|\\*\\.${rolePart}|deck\\.(?:theme|template[1-9][0-9]{0,3}))$`
+const targetPattern = `^(?:[0-9]{1,10}|${slidePart}\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${ownKinds}|${rolePart})|\\*\\.${rolePart}|deck\\.templateStyle(?:s|[1-9][0-9]{0,3}))$`
 const roleTarget = new RegExp(`^(${slidePart}|\\*)\\.(${rolePart})$`)
 
 const addable = ["shape"] as const
@@ -213,7 +213,7 @@ export function setChangeSchema(): JsonSchema {
         type: "string",
         pattern: targetPattern,
         description:
-          "A layer id such as 258.7 or 258.notes, a slide id, <slide>.<role> such as 258.title, *.<role>, or deck.theme.",
+          "A layer id such as 258.7 or 258.notes, a slide id, <slide>.<role> such as 258.title, *.<role>, or deck.templateStyles.",
       },
       opacity: { ...agentSchema(opacityWire.desc), description: opacityWire.description },
       ...Object.fromEntries(wired.map((trait) => [trait, traitSchema(trait, null)])),

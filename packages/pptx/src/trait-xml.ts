@@ -13,8 +13,7 @@ import { notesXml } from "./trait-xml-notes.js"
 import { tableXml } from "./trait-xml-table.js"
 import { textAlpha, textXml } from "./trait-xml-text.js"
 import { showXml } from "./slide-show.js"
-import { templateXml } from "./trait-xml-template.js"
-import { themeXml } from "./trait-xml-theme.js"
+import { templateStyleXml } from "./trait-xml-template-style.js"
 import { transitionXml } from "./trait-xml-transition.js"
 import { writeFields, type ElementAt, type Parts, type TraitXml } from "./xml-codec.js"
 
@@ -31,8 +30,7 @@ export const traitXml: { readonly [T in TraitName]: TraitXml<T> } = {
   connection: connectionXml,
   table: tableXml,
   notes: notesXml,
-  theme: themeXml,
-  template: templateXml,
+  templateStyle: templateStyleXml,
   show: showXml,
   transition: transitionXml,
 }

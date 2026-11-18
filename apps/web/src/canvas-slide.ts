@@ -1,5 +1,5 @@
 import type { PaintReader } from "@airdesign/pptx"
-import type { CanvasElement, CanvasSlide, CanvasText, CanvasThemeColor } from "@airdesign/render"
+import type { CanvasElement, CanvasSlide, CanvasText, CanvasTemplateColor } from "@airdesign/render"
 import { backgroundOf } from "@/canvas-background"
 import { isGroupKind } from "@/canvas-group"
 import { paintElements } from "@/canvas-kind"
@@ -57,11 +57,11 @@ function canvasOf(
   }
 }
 
-function tintText(text: CanvasText | null, colors: readonly CanvasThemeColor[]): CanvasText | null {
+function tintText(text: CanvasText | null, colors: readonly CanvasTemplateColor[]): CanvasText | null {
   return text === null || colors.length === 0 ? text : { ...text, colors }
 }
 
-function withColors(element: CanvasElement, colors: readonly CanvasThemeColor[]): CanvasElement {
+function withColors(element: CanvasElement, colors: readonly CanvasTemplateColor[]): CanvasElement {
   if (colors.length === 0) return element
   const table =
     element.table === undefined
@@ -87,7 +87,7 @@ export function slideCanvas(
   source: CanvasSource,
   src: PictureSource,
   texts: PaintReader | undefined,
-  swatches: readonly CanvasThemeColor[],
+  swatches: readonly CanvasTemplateColor[],
 ): CanvasSlide {
   const canvas = canvasOf(reader, source, src, texts)
   return swatches.length === 0
@@ -100,7 +100,7 @@ export function slideCanvases(
   sources: readonly CanvasSource[],
   src: PictureSource = () => null,
   texts?: PaintReader,
-  colors: (part: string) => readonly CanvasThemeColor[] = () => [],
+  colors: (part: string) => readonly CanvasTemplateColor[] = () => [],
 ): SlideCanvases {
   const known = new Map<number, CanvasSlide>()
   return (index) => {

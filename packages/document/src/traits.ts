@@ -12,8 +12,7 @@ import { notes } from "./trait-notes.js"
 import { show } from "./trait-show.js"
 import { table } from "./trait-table.js"
 import { text } from "./trait-text.js"
-import { template } from "./trait-template.js"
-import { theme } from "./trait-theme.js"
+import { templateStyle } from "./trait-template-style.js"
 import { transition } from "./trait-transition.js"
 import type { AgentOf, Alpha, Fields, ValueOf } from "./value-kind.js"
 
@@ -30,8 +29,7 @@ export const traits = {
   connection,
   table,
   notes,
-  theme,
-  template,
+  templateStyle,
   show,
   transition,
 } as const
@@ -67,12 +65,11 @@ export type WireAgent<T extends TraitName, F extends WireField<T>> =
 export const traitNames = Object.keys(traits) as readonly TraitName[]
 
 export const kindTraits = {
-  deck: ["theme"],
-  theme: [],
+  deck: ["templateStyle"],
   master: [],
   layout: [],
   section: [],
-  slide: ["fills", "template", "show", "transition"],
+  slide: ["fills", "templateStyle", "show", "transition"],
   notes: ["notes"],
   shape: ["identity", "box", "geometry", "fills", "border", "effects", "body", "text", "link"],
   connector: ["identity", "box", "geometry", "border", "effects", "connection"],

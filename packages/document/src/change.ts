@@ -9,9 +9,9 @@ import {
   shapeOf,
   slideKind,
   slideNode,
-  themeNode,
-  templateIndex,
-  templateNode,
+  templateStylesNode,
+  templateStyleIndex,
+  templateStyleNode,
   type ElementId,
   type SlideId,
 } from "./element-id.js"
@@ -84,7 +84,7 @@ export type Scope = {
   readonly expand: (target: Target) => readonly ElementId[] | "indexing"
   readonly view: (node: ElementId) => ScopedElement | undefined
   readonly size: (slide: SlideId) => SlideSize | null
-  readonly templates?: readonly string[]
+  readonly templateStyles?: readonly string[]
 }
 
 export type PlanRefusal = "kind" | "group-box" | "kept" | "site" | "indexing" | "dead"
@@ -276,8 +276,8 @@ function planNode(
   spot: Spot | undefined,
   scope: Scope,
 ): NodeRow | readonly ChangeRefusal[] {
-  if (change.template?.id !== undefined && !scope.templates?.includes(change.template.id))
-    return [{ node: view.node, trait: "template", code: "kind" }]
+  if (change.templateStyle?.id !== undefined && !scope.templateStyles?.includes(change.templateStyle.id))
+    return [{ node: view.node, trait: "templateStyle", code: "kind" }]
   const style = change.text?.style
   const definition = style === undefined ? undefined : view.textStyles?.find((each) => each.id === style)
   if (style !== undefined && definition === undefined) return [{ node: view.node, trait: "text", code: "kind" }]
@@ -313,9 +313,10 @@ function planNode(
   if (opacity !== undefined)
     for (const [trait, field] of opacityFields(view.facts).map(fieldOf))
       patch[trait] = { ...patch[trait], [field]: { set: opacity } }
-  const merged = mergeTextStyleEdits(view.textStyleEdits, patch.theme?.textStyle)
-  if (merged === "too-many") return [{ node: view.node, trait: "theme", code: "kind" }]
-  if (merged !== undefined && patch.theme !== undefined) patch.theme = { ...patch.theme, textStyle: { set: merged } }
+  const merged = mergeTextStyleEdits(view.textStyleEdits, patch.templateStyle?.textStyle)
+  if (merged === "too-many") return [{ node: view.node, trait: "templateStyle", code: "kind" }]
+  if (merged !== undefined && patch.templateStyle !== undefined)
+    patch.templateStyle = { ...patch.templateStyle, textStyle: { set: merged } }
   return { node: view.node, row: { v: format, patch: patch as ElementPatch } }
 }
 
@@ -371,9 +372,9 @@ function expandRole(register: Register, role: Role, slide: SlideId | "every"): r
 }
 
 function slideOwned(register: Register, node: ElementId): boolean {
-  if (node === themeNode) return true
-  const index = templateIndex(node)
-  if (index !== null) return register.index?.templates?.[index] !== undefined
+  if (node === templateStylesNode) return true
+  const index = templateStyleIndex(node)
+  if (index !== null) return register.index?.templateStyles?.[index] !== undefined
   return slideKind(node) !== null && slideOrder(register).includes(shapeOf(node).slide)
 }
 
@@ -384,8 +385,8 @@ function expanded(register: Register, target: Target): readonly ElementId[] | "i
     const node = slideNode(target.slide, "slide")
     return slideOwned(register, node) && present(register, node) ? [node] : []
   }
-  const templates = register.index?.templates ?? []
-  if (target.node === themeNode && templates.length > 0) return templates.map((_, index) => templateNode(index))
+  const styles = register.index?.templateStyles ?? []
+  if (target.node === templateStylesNode && styles.length > 0) return styles.map((_, index) => templateStyleNode(index))
   return expandedNode(register, target.node)
 }
 
@@ -423,7 +424,7 @@ function outlineNow(
 export function registerScope(register: Register): Scope {
   return {
     expand: (target) => expanded(register, target),
-    templates: register.index?.templates?.map((style) => style.id) ?? [],
+    templateStyles: register.index?.templateStyles?.map((style) => style.id) ?? [],
     size: (slide) => sizeOf(register, slide),
     view: (node) => {
       const opening = openingElement(register, node)

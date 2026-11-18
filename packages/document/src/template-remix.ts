@@ -1,21 +1,21 @@
-import { mappedSlots, themeSlots, type Color, type MappedSlot, type ThemeSlot } from "./color.js"
+import { mappedSlots, templateColors, type Color, type MappedSlot, type TemplateColor } from "./color.js"
 
-const themeNames = new Set<string>(themeSlots)
+const colorNames = new Set<string>(templateColors)
 const mappedNames = new Set<string>(mappedSlots)
 
-export function presentSlots(slots: Readonly<Record<string, string | undefined>>): readonly ThemeSlot[] {
-  return themeSlots.filter((slot) => slots[slot] !== undefined)
+export function presentSlots(slots: Readonly<Record<string, string | undefined>>): readonly TemplateColor[] {
+  return templateColors.filter((slot) => slots[slot] !== undefined)
 }
 
 export function cycledColor(
   color: Color | null | undefined,
-  present: readonly ThemeSlot[],
-  map: Readonly<Partial<Record<MappedSlot, ThemeSlot>>>,
+  present: readonly TemplateColor[],
+  map: Readonly<Partial<Record<MappedSlot, TemplateColor>>>,
 ): Color | null {
   if (color === null || color === undefined || !("scheme" in color) || present.length < 2) return null
   const named = color.scheme
-  const resolved = themeNames.has(named)
-    ? (named as ThemeSlot)
+  const resolved = colorNames.has(named)
+    ? (named as TemplateColor)
     : mappedNames.has(named)
       ? map[named as MappedSlot]
       : undefined

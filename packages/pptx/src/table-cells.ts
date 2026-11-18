@@ -8,7 +8,7 @@ import {
   type TableRow,
   type TableSide,
 } from "@airdesign/document"
-import { readableEdits, type ThemeSlot } from "./cell-text.js"
+import { readableEdits, type TemplateColor } from "./cell-text.js"
 import { fillIn } from "./color-read.js"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { fillValueOf } from "./fill-read.js"
@@ -124,7 +124,7 @@ export function cellEdits(
   grid: Grid,
   bytes: Uint8Array,
   rows: readonly TableRow[],
-  theme: () => ThemeSlot | null,
+  theme: () => TemplateColor | null,
 ): Uint8Array | null {
   const edits = grid.rows.flatMap((element, at) => {
     const row = rows[at]

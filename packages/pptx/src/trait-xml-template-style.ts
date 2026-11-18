@@ -7,6 +7,7 @@ import { encodeUtf8 } from "./package-bytes.js"
 import { paintAttribute } from "./paint-color.js"
 import { insertAt, partBytes, requireMarkup } from "./part-markup.js"
 import { slideTheme } from "./theme-swatches.js"
+import { themeFields } from "./trait-xml-theme.js"
 import { whole, type Parts, type TraitXml } from "./xml-codec.js"
 
 function retarget(bytes: Uint8Array, type: string, target: string): Uint8Array {
@@ -100,12 +101,13 @@ function applyTemplate(parts: Parts, slide: string, theme: string): Parts {
   return next
 }
 
-export const templateXml: TraitXml<"template"> = {
+export const templateStyleXml: TraitXml<"templateStyle"> = {
   slot: null,
   fields: {
     id: whole({
       read: (parts, at) => slideTheme(parts, at.part),
       write: (parts, at, id) => applyTemplate(parts, at.part, id),
     }),
+    ...themeFields,
   },
 }

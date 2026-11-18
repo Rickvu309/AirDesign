@@ -13,7 +13,7 @@ import { keepGridOpening } from "./held.js"
 import type { CommitResult, OpenResult, Remote } from "./remote.js"
 import { installSlots, readSlot, replaceSlots, swapSlot } from "./store.js"
 
-type ImportIndex = Pick<DeckIndex, "slides" | "elements" | "palettes" | "templates" | "sectionStarts">
+type ImportIndex = Pick<DeckIndex, "slides" | "elements" | "palettes" | "templateStyles" | "sectionStarts">
 type Queue = { readonly count: number; readonly sent: number; readonly once?: string; readonly format?: number }
 const key = (deck: string, part: string) => `${deck}\u0002layouts\u0002${part}`
 const chunkSize = Math.floor(limits.row / 4)
@@ -72,7 +72,7 @@ export function indexPages(
   const shared = {
     format,
     ...(index.sectionStarts === undefined ? {} : { sectionStarts: index.sectionStarts }),
-    ...(index.templates === undefined ? {} : { templates: index.templates }),
+    ...(index.templateStyles === undefined ? {} : { templateStyles: index.templateStyles }),
     ...(index.palettes === undefined ? {} : { palettes: index.palettes }),
   }
   const pages: IndexPage[] = []

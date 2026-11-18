@@ -23,8 +23,7 @@ import {
 } from "@airdesign/document"
 
 const kindWords: Readonly<Record<Kind, string>> = {
-  deck: "the deck",
-  theme: "the template style",
+  deck: "a template style",
   master: "a slide master",
   layout: "a layout",
   section: "a section",
@@ -46,7 +45,8 @@ const takenWords: readonly (readonly [FieldKey | "remove", string])[] = [
   ["fills.p0", "a fill"],
   ["box.x", "a move"],
   ["box.w", "a resize"],
-  ["theme.accent1", "template colors and fonts"],
+  ["templateStyle.id", "a template style"],
+  ["templateStyle.accent1", "template colors and fonts"],
   ["remove", "a delete"],
 ]
 
@@ -85,7 +85,9 @@ function boxNext({ facts }: Missing): string {
 }
 
 function nextStep(node: ElementId, found: Missing): string {
-  if (found.missing.some((edit) => edit.startsWith("theme."))) return "Send theme with target deck.theme."
+  const style = found.missing.filter((edit) => edit.startsWith("templateStyle."))
+  if (style.some((edit) => edit !== "templateStyle.id")) return "Send templateStyle with target deck.templateStyles."
+  if (style.length > 0) return "Send templateStyle.id with a slide target."
   if (found.missing.some((edit) => valueFields.includes(edit))) return textNext(node, found)
   if (found.missing.includes("remove")) return "Leave it, or tell the person."
   return boxNext(found)
@@ -187,7 +189,7 @@ export function kindInstructions(): string {
     "A slide's transition is how it arrives in Present. Leave it out when the slide arrives on click with no transition, or when the file keeps a transition this value cannot say. Setting it replaces that kept transition.",
     'A connector\'s connection attaches each end with { "shape": { "node": ..., "site": ... } } or frees it with "none". Sites are numbered as PowerPoint numbers them: a rectangle, rounded rectangle, diamond or image has 0 top, 1 left, 2 bottom and 3 right; an ellipse has 8, from 0 at the top going anticlockwise. A connector bound to two shapes follows them when they move.',
     "Presenter notes hold plain text; send their value as plain text.",
-    "In airdesign_read_deck, role is one of title, subtitle, body, date, footer, number, picture, chart, table or object. design lists the layer's look as it opened, field by field, each followed by (layout), (master) or (style) when that part shows it rather than the layer itself; once a change lands on a layer, its text fields follow its first run as it is now. Colors name a template color slot or hex; palettes give each slot's hex, and a slide uses palette 0 unless it names another; theme lists what deck.theme changed. connection.start and connection.end name the shape and site each end of a connector attaches to.",
+    "In airdesign_read_deck, role is one of title, subtitle, body, date, footer, number, picture, chart, table or object. design lists the layer's look as it opened, field by field, each followed by (layout), (master) or (style) when that part shows it rather than the layer itself; once a change lands on a layer, its text fields follow its first run as it is now. Colors name a template color slot or hex; palettes give each slot's hex, and a slide uses palette 0 unless it names another; templateStyle lists what deck.templateStyles changed. connection.start and connection.end name the shape and site each end of a connector attaches to.",
     "A JSON text value is [{from, runs: [{from, text}]}]: each from is an index the file has, and -1 is a new one. A run may set bold, italic, underline or strike to true or false, size in hundredths of a point from 100 to 400000, letterSpacing in hundredths of a point from -400000 to 400000, font, and color as {scheme: dk1, lt1, dk2, lt2 or accent1 through accent6} or {rgb: six uppercase hex digits}. A paragraph may set align to left, center or right, and list to none, bullets or numbers. Leaving one out keeps the file's.",
   ].join("\n")
 }

@@ -19,7 +19,7 @@ export function TemplateStyleCard({
     major && minor
       ? major === minor
         ? major
-        : designCopy.themeFonts(major, minor)
+        : designCopy.templateFonts(major, minor)
       : major
         ? designCopy.headingFont(major)
         : minor

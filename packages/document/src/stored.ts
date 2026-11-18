@@ -14,6 +14,7 @@ import { format, formatOf, newerFormat, converted, type Conversion, type StoredR
 import { borderFormat, borderRegister, borderRow } from "./border-conversion.js"
 import { fillsFormat, fillsRegister, fillsRow, imageFormat, imageRow } from "./fills-conversion.js"
 import { onlyKeys, record } from "./plain-object.js"
+import { templateStyleFormat, templateStyleRegister, templateStyleRow } from "./template-style-conversion.js"
 import { formatOne, readPatch, type Row, type ValueHolder } from "./row.js"
 import { newerSlideCommand, readSlideState, type SlideCommand } from "./slide-order.js"
 import type { Value } from "./value.js"
@@ -106,6 +107,7 @@ export const conversions: {
     { introduced: fillsFormat, convert: fillsRow },
     { introduced: imageFormat, convert: imageRow },
     { introduced: borderFormat, convert: borderRow },
+    { introduced: templateStyleFormat, convert: templateStyleRow },
   ],
   edit: [{ introduced: fillRowFormat, convert: slideBackground }],
   register: [
@@ -113,6 +115,7 @@ export const conversions: {
     { introduced: 2, convert: slideOrder },
     { introduced: fillsFormat, convert: fillsRegister },
     { introduced: borderFormat, convert: borderRegister },
+    { introduced: templateStyleFormat, convert: templateStyleRegister },
   ],
   page: pageConversions,
 }
@@ -287,7 +290,7 @@ function elementMap(raw: unknown): Record<ElementId, NodeRegister> | undefined {
   for (const [key, value] of Object.entries(bodies)) {
     const id = storedNode(key)
     const body = nodeBody(value)
-    if (id === undefined || body === undefined) return undefined
+    if (id === undefined || body === undefined || Object.hasOwn(elements, id)) return undefined
     elements[id] = body
   }
   return elements

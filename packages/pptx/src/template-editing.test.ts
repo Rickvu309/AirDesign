@@ -70,7 +70,7 @@ function schemes(parts: ReadonlyMap<string, Uint8Array>, part: string): readonly
 it("stores an added colour on one theme and leaves the other theme byte for byte", async () => {
   const parts = await load("two-templates.pptx")
   const coral = [{ name: "A & B", color: "FF6600" }]
-  const next = exportParts(parts, edited("deck.template2", { theme: { custom: { set: coral } } }))
+  const next = exportParts(parts, edited("deck.templateStyle2", { templateStyle: { custom: { set: coral } } }))
   const written = decodeUtf8(next.get("ppt/theme/theme2.xml")!)
   expect(written).toContain(
     '<a:custClrLst><a:custClr name="A &amp; B"><a:srgbClr val="FF6600"/></a:custClr></a:custClrLst>',
@@ -78,7 +78,7 @@ it("stores an added colour on one theme and leaves the other theme byte for byte
   expect(written.indexOf("<a:custClrLst>")).toBeGreaterThan(written.indexOf("</a:themeElements>"))
   expect(themeCustomColors(next.get("ppt/theme/theme2.xml")!)).toEqual(coral)
   expect(sameBytes(next.get("ppt/theme/theme1.xml")!, parts.get("ppt/theme/theme1.xml")!)).toBe(true)
-  const cleared = exportParts(next, edited("deck.template2", { theme: { custom: { set: [] } } }))
+  const cleared = exportParts(next, edited("deck.templateStyle2", { templateStyle: { custom: { set: [] } } }))
   expect(decodeUtf8(cleared.get("ppt/theme/theme2.xml")!)).not.toContain("custClr")
 })
 
@@ -95,7 +95,7 @@ it("leaves a custom colour it cannot read untouched when the field is not set", 
     ),
   )
   expect(themeCustomColors(parts.get(theme)!)).toBeNull()
-  const next = exportParts(parts, edited("deck.template1", { theme: { accent1: { set: "123456" } } }))
+  const next = exportParts(parts, edited("deck.templateStyle1", { templateStyle: { accent1: { set: "123456" } } }))
   expect(decodeUtf8(next.get(theme)!)).toContain('<a:custClr name="Shade"><a:schemeClr val="accent1"/></a:custClr>')
 })
 
@@ -103,7 +103,7 @@ it("drops an unused template and keeps a template a slide still uses", async () 
   const parts = await load("two-templates.pptx")
   const index = indexPackage(parts)
   const register = {
-    ...edited("deck.template2", { theme: { removed: { set: true } } }),
+    ...edited("deck.templateStyle2", { templateStyle: { removed: { set: true } } }),
     index: { ...index, total: index.elements.length, pages: [] },
   }
   const dropped = exportParts(parts, register)
@@ -117,11 +117,11 @@ it("drops an unused template and keeps a template a slide still uses", async () 
   const again = exportParts(dropped, register)
   expect(again.has("ppt/theme/theme2.xml")).toBe(false)
   expect(again.has("ppt/slides/slide1.xml")).toBe(true)
-  const kept = exportParts(parts, edited("deck.theme", { theme: { removed: { set: true } } }))
+  const kept = exportParts(parts, edited("deck.templateStyles", { templateStyle: { removed: { set: true } } }))
   expect(kept.has("ppt/theme/theme1.xml")).toBe(true)
   expect(kept.has("ppt/theme/theme2.xml")).toBe(false)
   const doe = await load("doe-heat-pumps.pptx")
-  const used = exportParts(doe, edited("deck.theme", { theme: { removed: { set: true } } }))
+  const used = exportParts(doe, edited("deck.templateStyles", { templateStyle: { removed: { set: true } } }))
   expect(used.has("ppt/theme/theme1.xml")).toBe(true)
   expect(used.has("ppt/theme/theme2.xml")).toBe(true)
 })

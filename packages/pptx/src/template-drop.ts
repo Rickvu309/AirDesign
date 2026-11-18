@@ -1,4 +1,4 @@
-import { landedPatch, templateNode, themeNode, type ElementId, type Register } from "@airdesign/document"
+import { landedPatch, templateStyleNode, templateStylesNode, type ElementId, type Register } from "@airdesign/document"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { deckMasters } from "./deck-layouts.js"
 import { contentTypesPart, partOf, presentationPart, presentationRels, relsOf } from "./package-address.js"
@@ -37,16 +37,16 @@ function themeOf(parts: Parts, master: string): string | null {
 function removed(register: Register, node: ElementId): boolean {
   const body = register.nodes.includes(node) ? register.elements[node] : undefined
   if (body === undefined) return false
-  const edit = landedPatch(body, "text").theme?.removed
+  const edit = landedPatch(body, "text").templateStyle?.removed
   return typeof edit === "object" && edit.set === true
 }
 
 function flagged(parts: Parts, register: Register): ReadonlySet<string> {
-  const templates = register.index?.templates ?? templateStyles(parts)
+  const styles = register.index?.templateStyles ?? templateStyles(parts)
   const ids = new Set<string>()
-  if (removed(register, themeNode)) for (const style of templates) ids.add(style.id)
-  templates.forEach((style, index) => {
-    if (removed(register, templateNode(index))) ids.add(style.id)
+  if (removed(register, templateStylesNode)) for (const style of styles) ids.add(style.id)
+  styles.forEach((style, index) => {
+    if (removed(register, templateStyleNode(index))) ids.add(style.id)
   })
   return ids
 }

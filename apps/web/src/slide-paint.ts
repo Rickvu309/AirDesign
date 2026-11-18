@@ -1,6 +1,6 @@
 import { readElementId, type ElementId, type TextValue } from "@airdesign/document"
 import { applyRoute, paintKind, readShapes, type PaintReader, type ReadShape } from "@airdesign/pptx"
-import type { CanvasSlide, CanvasThemeColor } from "@airdesign/render"
+import type { CanvasSlide, CanvasTemplateColor } from "@airdesign/render"
 import { slideCanvas, type CanvasSource } from "@/canvas-slide"
 import type { TextBox } from "@/commit-edit"
 import { boxStorable } from "@/element-move"
@@ -166,7 +166,7 @@ export function paintCanvas(
   texts: () => PaintReader,
   src: PictureSource,
   display: Parts,
-  swatches: readonly CanvasThemeColor[],
+  swatches: readonly CanvasTemplateColor[],
   refit: ReadonlySet<ElementId>,
 ): PaintedCanvas {
   const media = new Map<string, Uint8Array | undefined>()

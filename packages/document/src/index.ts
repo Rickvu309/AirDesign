@@ -11,10 +11,10 @@ export {
   slideKind,
   slideKinds,
   storedElements,
-  themeNode,
-  templateNode,
-  templateIndex,
-  themeOwned,
+  templateStylesNode,
+  templateStyleNode,
+  templateStyleIndex,
+  templateStyleOwned,
   type ElementId,
   type SlideId,
 } from "./element-id.js"
@@ -39,7 +39,7 @@ export {
   readDesign,
   roles,
   sources,
-  themeFonts,
+  templateFonts,
   type Design,
   type DesignKey,
   type ElementRead,
@@ -54,7 +54,7 @@ export {
   type ShadowRead,
   type Shown,
   type Source,
-  type ThemeFont,
+  type TemplateFont,
   type TraitReads,
 } from "./design.js"
 export { replay, unsent, type Queued } from "./replay.js"
@@ -228,12 +228,12 @@ export {
   opaque,
   readColor,
   sameColor,
-  themeSlots,
+  templateColors,
   valuedTransforms,
   type Color,
   type ColorTransform,
   type MappedSlot,
-  type ThemeSlot,
+  type TemplateColor,
 } from "./color.js"
 export { cycledColor, presentSlots } from "./template-remix.js"
 export {

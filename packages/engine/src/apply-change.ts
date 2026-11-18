@@ -9,8 +9,8 @@ import {
   slideKind,
   slideBirths,
   registerScope,
-  themeNode,
-  templateIndex,
+  templateStylesNode,
+  templateStyleIndex,
   valueBytes,
   version,
   type ElementId,
@@ -27,9 +27,9 @@ export type Applied =
   | { readonly ok: false; readonly refusal: CallRefusal }
 
 function slideOwned(register: Register, node: ElementId): boolean {
-  if (node === themeNode) return true
-  const index = templateIndex(node)
-  if (index !== null) return register.index?.templates?.[index] !== undefined
+  if (node === templateStylesNode) return true
+  const index = templateStyleIndex(node)
+  if (index !== null) return register.index?.templateStyles?.[index] !== undefined
   if (slideKind(node) === null) return false
   const slide = shapeOf(node).slide
   return (

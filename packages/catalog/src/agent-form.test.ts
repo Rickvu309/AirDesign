@@ -4,7 +4,7 @@ import {
   designBytes,
   mappedSlots,
   readDesign,
-  themeSlots,
+  templateColors,
   valuedTransforms,
   type Alpha,
   type Desc,
@@ -20,9 +20,9 @@ const navy = "1F4E79"
 const black = "000000"
 const white = "FFFFFF"
 
-it("spells every theme slot and transform once in a compact colour pattern, and nothing else", () => {
+it("spells every template color and transform once in a compact colour pattern, and nothing else", () => {
   const exact = new RegExp(`^${colorPattern}$`)
-  const slots = [...themeSlots, ...mappedSlots]
+  const slots = [...templateColors, ...mappedSlots]
   for (const slot of slots) expect(exact.test(slot), slot).toBe(true)
   for (const op of valuedTransforms) expect(exact.test(`accent1 ${op} 50`), op).toBe(true)
   for (const op of bareTransforms) expect(exact.test(`#${navy} ${op}`), op).toBe(true)
@@ -31,7 +31,7 @@ it("spells every theme slot and transform once in a compact colour pattern, and 
   expect(colorPattern.length).toBeLessThan(220)
 })
 
-it("writes a colour as an agent sends one: a theme slot or hex, then each transform in percent", () => {
+it("writes a colour as an agent sends one: a template color or hex, then each transform in percent", () => {
   expect(agentColor({ scheme: "accent1" })).toBe("accent1")
   expect(agentColor({ rgb: navy })).toBe(`#${navy}`)
   expect(
@@ -160,7 +160,7 @@ describe("the agent form reads what an agent sends into stored values, in agent 
     expect(read(emu, "72")).toEqual({ ok: false })
   })
 
-  it("reads a colour as a theme slot or hex, then each transform in percent", () => {
+  it("reads a colour as a template color or hex, then each transform in percent", () => {
     expect(readAgentColor("accent1")).toEqual({ scheme: "accent1" })
     expect(readAgentColor(`#${navy.toLowerCase()}`)).toEqual({ rgb: navy })
     expect(readAgentColor("tx1 lumMod 75 lumOff 25")).toEqual({
@@ -314,10 +314,10 @@ it("shows the font face of the first run once a change lands on the text", () =>
   expect(shownDesign({ "text.font": ["Calibri", "master"] }, value)).toEqual({ "text.font": ["Georgia"] })
 })
 
-describe("a text that shows a theme font", () => {
-  it("keeps the theme font's place in the index rather than its name", () => {
-    const read = (theme: "major" | "minor"): ElementRead => ({
-      reads: { "text.font": { value: "Calibri", source: "master", theme } },
+describe("a text that shows a template font", () => {
+  it("keeps the template font's place in the index rather than its name", () => {
+    const read = (templateFont: "major" | "minor"): ElementRead => ({
+      reads: { "text.font": { value: "Calibri", source: "master", templateFont } },
       kept: [],
     })
     expect(designOf(read("major")).design).toEqual({ "text.font": ["+mj-lt", "master"] })

@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from "react"
-import { templateNode, type ElementId } from "@airdesign/document"
+import { templateStyleNode, type ElementId } from "@airdesign/document"
 import { masterTextStyles, readSlides, slideTextStyles, slideTheme, templateStyles } from "@airdesign/pptx"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -35,7 +35,7 @@ export function listedTextStyles(
 ): readonly ListedTextStyle[] {
   const index = templateStyles(parts).findIndex((style) => style.id === theme)
   if (index < 0) return []
-  const node = templateNode(index)
+  const node = templateStyleNode(index)
   const seen = new Set<string>()
   const listed: ListedTextStyle[] = []
   const add = (style: { id: string; name: string; font: string; size: number | null }) => {

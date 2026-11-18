@@ -58,20 +58,20 @@ function slideSize(parts: ReadonlyMap<string, Uint8Array>): { readonly width: nu
 
 export function indexPackage(
   parts: ReadonlyMap<string, Uint8Array>,
-): Pick<DeckIndex, "slides" | "elements" | "templates" | "sectionStarts"> {
+): Pick<DeckIndex, "slides" | "elements" | "templateStyles" | "sectionStarts"> {
   const size = slideSize(parts)
   const styleSources = new Map<string, string>()
   const slides = readSlides(parts).map(({ slide, part }, position) => {
     const bytes = parts.get(part)
     const elements = bytes === undefined ? [] : markupDocument(bytes).elements
-    const template = slideTheme(parts, part)
+    const templateStyle = slideTheme(parts, part)
     const styles = slideTextStyles(parts, part)
     const key = JSON.stringify(styles)
     const source = styleSources.get(key)
     styleSources.set(key, source ?? slide)
     return {
       id: slide,
-      ...(template === null ? {} : { template }),
+      ...(templateStyle === null ? {} : { templateStyle }),
       ...(styles.length === 0 ? {} : { textStyles: source ?? styles }),
       position,
       ...(size === null ? {} : { size }),
@@ -108,5 +108,5 @@ export function indexPackage(
     const id = readSlideId(slides[start]?.id)
     return id === undefined ? [] : [id]
   })
-  return { slides, elements, sectionStarts: starts, templates: templateStyles(parts) }
+  return { slides, elements, sectionStarts: starts, templateStyles: templateStyles(parts) }
 }

@@ -17,6 +17,7 @@ export function readDeckIndex(
       "total",
       "palettes",
       "templates",
+      "templateStyles",
       "sectionStarts",
       "slides",
       "elements",

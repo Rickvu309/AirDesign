@@ -7,10 +7,11 @@ const customColor = record({ name: words(255), color: hex })
 export const textStyleLimit = 64
 const textStyleEdit = record({ id: words(200), size: typeSize, font: typeface })
 
-export const theme = trait(
+export const templateStyle = trait(
   "own",
-  { version: 4, shape: "9fd0fc46" },
+  { version: 5, shape: "facd0a47" },
   {
+    id: words(256),
     name: words(256),
     dk1: hex,
     lt1: hex,

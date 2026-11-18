@@ -34,8 +34,8 @@ function assigned(slide: string, id: string, opening = false): Register {
   let register = openRegister("", "file")
   for (const command of [
     { command: "add", node, floor: "", route: "file" } as const,
-    { command: "person", node, v: format, patch: { template: { id: { set: id } } } } as const,
-    ...(opening ? [{ command: "person", node, v: format, patch: { template: { id: "opening" } } } as const] : []),
+    { command: "person", node, v: format, patch: { templateStyle: { id: { set: id } } } } as const,
+    ...(opening ? [{ command: "person", node, v: format, patch: { templateStyle: { id: "opening" } } } as const] : []),
   ]) {
     const next = decide(register, command)
     if (next.decision === "refuse") throw new Error(next.code)
@@ -69,9 +69,9 @@ it("offers actual master themes and applies one slide's style without changing a
   expect([...exportParts(parts, assigned(first.slide, "ppt/theme/theme2.xml", true))]).toEqual([...parts])
 })
 
-it("edits a single template's colors, font and name and preserves the other master's theme", async () => {
+it("edits a single template style's colors, font and name and preserves the other master's theme", async () => {
   const parts = await specimen()
-  const node = elementId("deck.template2")
+  const node = elementId("deck.templateStyle2")
   let register = openRegister("", "file")
   for (const command of [
     { command: "add", node, floor: "", route: "file" } as const,
@@ -79,7 +79,7 @@ it("edits a single template's colors, font and name and preserves the other mast
       command: "person",
       node,
       v: format,
-      patch: { theme: { name: { set: "Night & day" }, accent1: { set: "123456" }, minor: { set: "Verdana" } } },
+      patch: { templateStyle: { name: { set: "Night & day" }, accent1: { set: "123456" }, minor: { set: "Verdana" } } },
     } as const,
   ]) {
     const next = decide(register, command)

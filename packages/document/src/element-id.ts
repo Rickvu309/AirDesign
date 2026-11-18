@@ -8,18 +8,24 @@ export const slideKinds = ["notes", "slide"] as const
 
 export type SlideKind = (typeof slideKinds)[number]
 
-export const themeNode = "deck.theme" as ElementId
+export const templateStylesNode = "deck.templateStyles" as ElementId
 
 export const elementPattern = new RegExp(
-  `^(?:(?:[0-9]{1,10}|n[0-9a-z]{12})\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${slideKinds.join("|")})|deck\\.(?:theme|template[1-9][0-9]{0,3}))$`,
+  `^(?:(?:[0-9]{1,10}|n[0-9a-z]{12})\\.(?:[0-9]{1,10}|n[0-9a-z]{12}|${slideKinds.join("|")})|deck\\.templateStyle(?:s|[1-9][0-9]{0,3}))$`,
 )
+
+const nodeAliases: readonly { readonly alias: RegExp; readonly node: string }[] = [
+  { alias: /^deck\.theme$/, node: templateStylesNode },
+  { alias: /^deck\.template([1-9][0-9]{0,3})$/, node: "deck.templateStyle$1" },
+]
 
 export const rootElement = "a" as ElementId
 export const legacyElement = "b" as ElementId
 
 export function readElementId(raw: unknown): ElementId | undefined {
-  if (typeof raw !== "string" || !elementPattern.test(raw)) return undefined
-  return raw as ElementId
+  if (typeof raw !== "string") return undefined
+  const named = nodeAliases.reduce((node, { alias, node: current }) => node.replace(alias, current), raw)
+  return elementPattern.test(named) ? (named as ElementId) : undefined
 }
 
 export function elementId(value: string): ElementId {
@@ -75,15 +81,15 @@ export function slideNode(slide: SlideId, kind: SlideKind): ElementId {
   return `${slide}.${kind}` as ElementId
 }
 
-export function templateNode(index: number): ElementId {
-  return elementId(`deck.template${index + 1}`)
+export function templateStyleNode(index: number): ElementId {
+  return elementId(`deck.templateStyle${index + 1}`)
 }
 
-export function templateIndex(node: string): number | null {
-  const match = /^deck\.template([1-9][0-9]{0,3})$/.exec(node)
+export function templateStyleIndex(node: string): number | null {
+  const match = /^deck\.templateStyle([1-9][0-9]{0,3})$/.exec(node)
   return match === null ? null : Number(match[1]) - 1
 }
 
-export function themeOwned(node: string): boolean {
-  return node === themeNode || templateIndex(node) !== null
+export function templateStyleOwned(node: string): boolean {
+  return node === templateStylesNode || templateStyleIndex(node) !== null
 }

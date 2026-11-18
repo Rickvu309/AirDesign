@@ -12,10 +12,21 @@ export type ElementFacts = {
 
 const turns: readonly FieldKey[] = ["box.rot", "box.flipH", "box.flipV"]
 
+const chosenStyle: FieldKey = "templateStyle.id"
+
 const unwritten: Partial<Readonly<Record<Kind, readonly FieldKey[]>>> = {
   table: turns,
   chart: turns,
-  slide: ["fills.mode", "fills.crop", "fills.recolor", "fills.blur", "fills.overlay", "fills.alpha"],
+  slide: [
+    "fills.mode",
+    "fills.crop",
+    "fills.recolor",
+    "fills.blur",
+    "fills.overlay",
+    "fills.alpha",
+    ...fieldKeys("templateStyle").filter((field) => field !== chosenStyle),
+  ],
+  deck: [chosenStyle],
   kept: ["identity.name", "identity.alt", "identity.hidden"],
 }
 

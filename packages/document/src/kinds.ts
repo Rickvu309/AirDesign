@@ -1,6 +1,5 @@
 export const kinds = [
   "deck",
-  "theme",
   "master",
   "layout",
   "section",

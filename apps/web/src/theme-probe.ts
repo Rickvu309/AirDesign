@@ -1,4 +1,4 @@
-import { format, themeSlots, type ThemeSlot } from "@airdesign/document"
+import { format, templateColors, type TemplateColor } from "@airdesign/document"
 import {
   exportParts,
   paintReader,
@@ -36,7 +36,7 @@ function shown(field: keyof typeof themeOpening) {
 }
 
 function named(parts: Parts, at: At, field: string): Parts {
-  const slot = themeSlots.find((each): each is ThemeSlot => each === field)
+  const slot = templateColors.find((each): each is TemplateColor => each === field)
   if (slot === undefined) return parts
   const node = `${at.slide}.${at.shape}` as At["node"]
   const fill = { fills: { p0: { set: { solid: { scheme: slot } } } } }

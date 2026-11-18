@@ -162,7 +162,7 @@ it("follows a font with no open twin with the page font alone", () => {
   expect(painted(paragraph()).run.style.fontFamily).toBe('"Serifa", var(--font-sans)')
 })
 
-it("paints a theme tint and shade a person picks before the file has them", () => {
+it("paints a template color tint and shade a person picks before the file has them", () => {
   const text = { ...paragraph(), colors: [{ scheme: "accent1", css: "rgb(68, 114, 196)" }] } as const
   const look = textLook(text, scaled)
   const tint = {

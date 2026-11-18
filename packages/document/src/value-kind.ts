@@ -1,6 +1,6 @@
 import { readLinkTarget } from "./link-target.js"
 import { assetMedia, readAsset } from "./asset-ref.js"
-import { readColor, type Color, type MappedSlot, type ThemeSlot } from "./color.js"
+import { readColor, type Color, type MappedSlot, type TemplateColor } from "./color.js"
 import { coordinates } from "./box.js"
 import { readElementId } from "./element-id.js"
 import { bytesOf } from "./limits.js"
@@ -42,7 +42,7 @@ export type Alpha = number & { readonly alpha: true }
 export type MarkAgent = { readonly [markBrand]: true }
 export type MarkKind = ValueKind<true, MarkAgent>
 
-type Slot = ThemeSlot | MappedSlot
+type Slot = TemplateColor | MappedSlot
 export type AgentColor = Slot | `#${string}` | `${Slot} ${string}` | `#${string} ${string}`
 
 function kind<V, A>(desc: Desc): ValueKind<V, A> {

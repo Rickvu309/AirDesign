@@ -1,4 +1,4 @@
-import { themeSlots, type FieldValue, type ThemeSlot, type TraitValue } from "@airdesign/document"
+import { templateColors, type FieldValue, type TemplateColor, type TraitValue } from "@airdesign/document"
 import { decodedXmlText, spliceBytes, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
@@ -28,7 +28,7 @@ function valueOf(element: MarkupElement | undefined, name: string): string | nul
   return held === undefined ? null : decodedXmlText(held.value)
 }
 
-function slotPath(slot: ThemeSlot): readonly string[] {
+function slotPath(slot: TemplateColor): readonly string[] {
   return ["a:themeElements", "a:clrScheme", `a:${slot}`]
 }
 
@@ -36,7 +36,7 @@ function fontPath(font: Font): readonly string[] {
   return ["a:themeElements", "a:fontScheme", fontTags[font], "a:latin"]
 }
 
-function colorOf(bytes: Uint8Array, slot: ThemeSlot): string | null {
+function colorOf(bytes: Uint8Array, slot: TemplateColor): string | null {
   const held = found(bytes, slotPath(slot))
   if (held === undefined) return null
   const { elements } = requireMarkup(bytes)
@@ -47,7 +47,7 @@ function colorOf(bytes: Uint8Array, slot: ThemeSlot): string | null {
   return hex === null ? null : hex.toUpperCase()
 }
 
-function withSlot(bytes: Uint8Array, slot: ThemeSlot, hex: string): Uint8Array {
+function withSlot(bytes: Uint8Array, slot: TemplateColor, hex: string): Uint8Array {
   const held = found(bytes, slotPath(slot))
   if (held === undefined) throw new Error("theme-slot")
   const color = encodeUtf8(`<a:srgbClr val="${hex}"/>`)
@@ -79,7 +79,7 @@ function written(parts: Parts, part: string, bytes: Uint8Array): Parts {
   return next
 }
 
-function slotCodec(slot: ThemeSlot): PartCodec<string> {
+function slotCodec(slot: TemplateColor): PartCodec<string> {
   return {
     read: (parts, at) => colorOf(partBytes(parts, at.part), slot),
     write: (parts, at, value) => written(parts, at.part, withSlot(partBytes(parts, at.part), slot, value)),
@@ -93,45 +93,42 @@ function fontCodec(font: Font): PartCodec<string> {
   }
 }
 
-export const themeXml: TraitXml<"theme"> = {
-  slot: null,
-  fields: {
-    name: whole({
-      read: (parts, at) => valueOf(requireMarkup(partBytes(parts, at.part)).elements[0], "name"),
-      write: (parts, at, name) =>
-        written(
-          parts,
-          at.part,
-          withAttribute("name", xmlAttribute(name).replaceAll("'", "&apos;"))(partBytes(parts, at.part)),
-        ),
-    }),
-    dk1: whole(slotCodec("dk1")),
-    lt1: whole(slotCodec("lt1")),
-    dk2: whole(slotCodec("dk2")),
-    lt2: whole(slotCodec("lt2")),
-    accent1: whole(slotCodec("accent1")),
-    accent2: whole(slotCodec("accent2")),
-    accent3: whole(slotCodec("accent3")),
-    accent4: whole(slotCodec("accent4")),
-    accent5: whole(slotCodec("accent5")),
-    accent6: whole(slotCodec("accent6")),
-    hlink: whole(slotCodec("hlink")),
-    folHlink: whole(slotCodec("folHlink")),
-    major: whole(fontCodec("major")),
-    minor: whole(fontCodec("minor")),
-    custom: whole({
-      read: (parts, at) => themeCustomColors(partBytes(parts, at.part)),
-      write: (parts, at, value) => written(parts, at.part, withThemeCustomColors(partBytes(parts, at.part), value)),
-    }),
-    removed: whole({
-      read: () => false,
-      write: (parts) => parts,
-    }),
-    textStyle: whole({
-      read: (): FieldValue<"theme", "textStyle"> => [],
-      write: (parts, at, value) => writeTemplateTextEdits(parts, at.part, value),
-    }),
-  },
+export const themeFields: Omit<TraitXml<"templateStyle">["fields"], "id"> = {
+  name: whole({
+    read: (parts, at) => valueOf(requireMarkup(partBytes(parts, at.part)).elements[0], "name"),
+    write: (parts, at, name) =>
+      written(
+        parts,
+        at.part,
+        withAttribute("name", xmlAttribute(name).replaceAll("'", "&apos;"))(partBytes(parts, at.part)),
+      ),
+  }),
+  dk1: whole(slotCodec("dk1")),
+  lt1: whole(slotCodec("lt1")),
+  dk2: whole(slotCodec("dk2")),
+  lt2: whole(slotCodec("lt2")),
+  accent1: whole(slotCodec("accent1")),
+  accent2: whole(slotCodec("accent2")),
+  accent3: whole(slotCodec("accent3")),
+  accent4: whole(slotCodec("accent4")),
+  accent5: whole(slotCodec("accent5")),
+  accent6: whole(slotCodec("accent6")),
+  hlink: whole(slotCodec("hlink")),
+  folHlink: whole(slotCodec("folHlink")),
+  major: whole(fontCodec("major")),
+  minor: whole(fontCodec("minor")),
+  custom: whole({
+    read: (parts, at) => themeCustomColors(partBytes(parts, at.part)),
+    write: (parts, at, value) => written(parts, at.part, withThemeCustomColors(partBytes(parts, at.part), value)),
+  }),
+  removed: whole({
+    read: () => false,
+    write: (parts) => parts,
+  }),
+  textStyle: whole({
+    read: (): FieldValue<"templateStyle", "textStyle"> => [],
+    write: (parts, at, value) => writeTemplateTextEdits(parts, at.part, value),
+  }),
 }
 
 export function slideThemes(parts: Parts): readonly string[] {
@@ -139,7 +136,7 @@ export function slideThemes(parts: Parts): readonly string[] {
   return [...new Set(themes)]
 }
 
-export type ShownTheme = Partial<TraitValue<"theme">>
+export type ShownTheme = Partial<TraitValue<"templateStyle">>
 
 export function shownTheme(parts: Parts, slide: string): ShownTheme {
   const part = slideTheme(parts, slide)
@@ -148,7 +145,7 @@ export function shownTheme(parts: Parts, slide: string): ShownTheme {
 
 export function themeByteValues(bytes: Uint8Array): ShownTheme {
   const shown: Record<string, string> = {}
-  for (const slot of themeSlots) {
+  for (const slot of templateColors) {
     const hex = colorOf(bytes, slot)
     if (hex !== null) shown[slot] = hex
   }

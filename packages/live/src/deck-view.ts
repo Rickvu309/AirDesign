@@ -120,7 +120,10 @@ export function readStored(row: StoredRow): StoredRead<StoredRow> {
   }
   const node = edit.node
   if (row.slideEdit !== undefined) return node === undefined ? payload : { ok: true, value: nodeRow(row, edit, node) }
-  return { ok: true, value: { ...row, ...storedValue(edit.value) } as StoredRow }
+  return {
+    ok: true,
+    value: { ...row, ...storedValue(edit.value), ...(node === undefined ? {} : { node }) } as StoredRow,
+  }
 }
 
 function newer(read: StoredRead<StoredRow>): boolean {

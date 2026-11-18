@@ -20,7 +20,7 @@ import type {
   CanvasRunStyle,
   CanvasSpacing,
   CanvasText,
-  CanvasThemeColor,
+  CanvasTemplateColor,
 } from "./record.js"
 
 export type Scaled = (emu: number) => number
@@ -77,7 +77,7 @@ export type TextLook = {
   fileAlign(paragraph: number): ParagraphAlign | null
   fileList(paragraph: number): TextList
   fileNumber(paragraph: number): ListSource
-  swatches(): readonly CanvasThemeColor[]
+  swatches(): readonly CanvasTemplateColor[]
 }
 
 export const anchored = { top: "flex-start", middle: "center", bottom: "flex-end" } as const
@@ -105,7 +105,7 @@ function shift(run: CanvasRunStyle): number {
   return run.baseline ?? 0
 }
 
-function styleOf(run: CanvasRunStyle, scaled: Scaled, colors: readonly CanvasThemeColor[] = []): Look {
+function styleOf(run: CanvasRunStyle, scaled: Scaled, colors: readonly CanvasTemplateColor[] = []): Look {
   return {
     fontFamily: familyOf(run.font),
     fontSize: `${scaled(shift(run) === 0 ? run.size : run.size * shiftedShare)}px`,
@@ -246,7 +246,7 @@ function hundredths(style: CanvasRunStyle): number | null {
 function formatted(
   style: CanvasRunStyle,
   format: RunPaint,
-  colors: readonly CanvasThemeColor[],
+  colors: readonly CanvasTemplateColor[],
   scale: number,
   fonts: Readonly<Record<string, string>>,
 ): CanvasRunStyle {

@@ -6,7 +6,7 @@ export type CanvasFit =
 
 export type CanvasSpacing = { readonly percent: number } | { readonly length: number }
 
-export type CanvasThemeColor = { readonly scheme: SchemeName; readonly css: string }
+export type CanvasTemplateColor = { readonly scheme: SchemeName; readonly css: string }
 
 export type CanvasBullet = {
   readonly font: string | null
@@ -49,7 +49,7 @@ export type CanvasParagraph = {
 
 export type CanvasText = {
   readonly fonts?: Readonly<Record<string, string>>
-  readonly colors?: readonly CanvasThemeColor[]
+  readonly colors?: readonly CanvasTemplateColor[]
   readonly paragraphs: readonly CanvasParagraph[]
   readonly anchor: "top" | "middle" | "bottom"
   readonly insets: {

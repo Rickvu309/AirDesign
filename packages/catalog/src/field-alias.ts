@@ -18,6 +18,8 @@ const traitAliases: readonly {
   { alias: "image", trait: "fills", fields: {}, cases: {} },
   { alias: "crop", trait: "fills", fields: { rect: "crop" }, cases: {} },
   { alias: "line", trait: "border", fields: {}, cases: {} },
+  { alias: "theme", trait: "templateStyle", fields: {}, cases: {} },
+  { alias: "template", trait: "templateStyle", fields: {}, cases: {} },
 ]
 
 function plainObject(raw: unknown): raw is Fields {

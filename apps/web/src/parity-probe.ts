@@ -5,7 +5,7 @@ import {
   openRegister,
   planChange,
   registerScope,
-  themeNode,
+  templateStylesNode,
   readElementId,
   type AlphaField,
   type Command,
@@ -102,7 +102,7 @@ export function placed(parts: Parts, kind: Kind, node?: string): At {
   const [slide = "", shape = ""] = found.node.split(".")
   const part = readSlides(parts).find((each) => each.slide === slide)?.part ?? ""
   return {
-    node: own ? (readElementId(node) ?? found.node) : deck ? themeNode : found.node,
+    node: own ? (readElementId(node) ?? found.node) : deck ? templateStylesNode : found.node,
     slide,
     part,
     shape,

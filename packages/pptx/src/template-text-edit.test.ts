@@ -70,7 +70,7 @@ function planned(register: Register, change: SetChange) {
 }
 
 function changeOf(node: ElementId, edit: TemplateTextEdit): SetChange {
-  return { target: { node }, theme: { textStyle: [edit] } }
+  return { target: { node }, templateStyle: { textStyle: [edit] } }
 }
 
 function differing(left: Parts, right: Parts): readonly string[] {
@@ -132,7 +132,7 @@ function titled(parts: Parts) {
     const id = `${master}/titleStyle/0`
     const read = readTemplateTextEdit(parts, style.id, id)
     if (read?.size !== 4400) continue
-    return { node: elementId(`deck.template${String(index + 1)}`), theme: style.id, master, id, font: read.font }
+    return { node: elementId(`deck.templateStyle${String(index + 1)}`), theme: style.id, master, id, font: read.font }
   }
   throw new Error("title style")
 }
@@ -147,7 +147,7 @@ it("restyles inheriting titles from the master and leaves explicit sizes in one 
   let register = opened(parts)
   const first = planned(register, changeOf(found.node, title))
   expect(first).toHaveLength(1)
-  expect(first[0]?.row.patch.theme).toEqual({ textStyle: { set: [title] } })
+  expect(first[0]?.row.patch.templateStyle).toEqual({ textStyle: { set: [title] } })
   register = apply(register, changeOf(found.node, title))
   const edited = exportParts(parts, register)
   expect(differing(baseline, edited)).toEqual([found.master])
@@ -171,7 +171,7 @@ it("restyles inheriting titles from the master and leaves explicit sizes in one 
   expect(stayed).toBeGreaterThan(0)
   const second = planned(register, changeOf(found.node, body))
   expect(second).toHaveLength(1)
-  expect(second[0]?.row.patch.theme).toEqual({ textStyle: { set: [title, body] } })
+  expect(second[0]?.row.patch.templateStyle).toEqual({ textStyle: { set: [title, body] } })
   const both = exportParts(parts, apply(register, changeOf(found.node, body)))
   expect(readTemplateTextEdit(both, found.theme, found.id)).toEqual(title)
   expect(readTemplateTextEdit(both, found.theme, body.id)).toEqual(body)
@@ -191,7 +191,7 @@ it("creates a title level on an empty master style and leaves the slide file", a
   if (master === null) throw new Error("master")
   const edit: TemplateTextEdit = { id: `${master}/titleStyle/0`, size: 3200, font: "Georgia" }
   const baseline = exportParts(parts, opened(parts))
-  const edited = exportParts(parts, apply(opened(parts), changeOf(elementId("deck.template1"), edit)))
+  const edited = exportParts(parts, apply(opened(parts), changeOf(elementId("deck.templateStyle1"), edit)))
   const slice = styleSlice(edited.get(master)!, "titleStyle")
   expect(slice).toContain('<a:lvl1pPr><a:defRPr sz="3200"><a:latin typeface="Georgia"/></a:defRPr></a:lvl1pPr>')
   const fallback = slice.indexOf("<a:defPPr")
@@ -224,7 +224,7 @@ it("writes a layout placeholder style without touching the slide", async () => {
     font,
   }
   const index = templateStyles(parts).findIndex((item) => item.id === theme)
-  const node = elementId(`deck.template${String(index + 1)}`)
+  const node = elementId(`deck.templateStyle${String(index + 1)}`)
   const baseline = exportParts(parts, opened(parts))
   const edited = exportParts(parts, apply(opened(parts), changeOf(node, edit)))
   expect(differing(baseline, edited)).toEqual([layout])
@@ -245,7 +245,7 @@ it("keeps a master text style that has no level of its own", async () => {
   const index = templateStyles(parts).findIndex((item) => item.id === theme)
   const edited = exportParts(
     parts,
-    apply(opened(parts), changeOf(elementId(`deck.template${String(index + 1)}`), { ...title, size: 3200 })),
+    apply(opened(parts), changeOf(elementId(`deck.templateStyle${String(index + 1)}`), { ...title, size: 3200 })),
   )
   expect(readTemplateTextEdit(edited, theme, title.id)).toEqual({ id: title.id, size: 3200, font: title.font })
 })

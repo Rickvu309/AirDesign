@@ -13,7 +13,7 @@ export type {
   CanvasRunStyle,
   CanvasSpacing,
   CanvasText,
-  CanvasThemeColor,
+  CanvasTemplateColor,
 } from "./text-record.js"
 export type { CanvasEffects, CanvasShadow } from "./effect-record.js"
 export type { CanvasLine, CanvasOutline } from "./line-record.js"

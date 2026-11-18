@@ -15,8 +15,13 @@ if (prepare !== undefined) {
 const parts = await pptx.readParts(new Uint8Array(readFileSync(join(root, "scripts/pptx-fixtures", deck))))
 let register = document.openRegister("", "theme")
 for (const command of [
-  { command: "add", node: document.themeNode, floor: "", route: "theme" },
-  { command: "person", node: document.themeNode, v: document.format, patch: { theme: { [slot]: { set: hex } } } },
+  { command: "add", node: document.templateStylesNode, floor: "", route: "theme" },
+  {
+    command: "person",
+    node: document.templateStylesNode,
+    v: document.format,
+    patch: { theme: { [slot]: { set: hex } } },
+  },
 ] as const) {
   const decision = document.decide(register, command)
   if (decision.decision === "refuse") throw new Error(decision.code)
