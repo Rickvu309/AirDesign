@@ -14,6 +14,7 @@ import { designCopy } from "@/copy/design-copy"
 import { textCopy } from "@/copy/text-copy"
 import type { ControlProps } from "@/design/panel"
 import { useTextStyleEdit } from "@/design/text-style-edit"
+import { cn } from "@/lib/class-names"
 
 export function TypographyControl({ control, onChange }: ControlProps) {
   const loader = typeof document === "undefined" ? undefined : fontsFor(document)
@@ -44,7 +45,12 @@ export function TypographyControl({ control, onChange }: ControlProps) {
         <SelectTrigger
           aria-label={textCopy.style}
           disabled={!control.choices?.length}
-          className="h-8 w-full rounded-[var(--shape-control)] border-0 bg-white px-2 shadow-[0px_0px_0px_1px_var(--field-edge)]"
+          className={cn(
+            "w-full rounded-[var(--shape-control)] border-0 bg-white px-2 shadow-[inset_0px_0px_0px_1px_var(--field-edge)]",
+            chosen === undefined
+              ? "h-[var(--control-dense)] text-[length:var(--type-caption)] data-[size=default]:h-[var(--control-dense)]"
+              : "h-8",
+          )}
           style={chosen?.appearance}
         >
           <SelectValue>

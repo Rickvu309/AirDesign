@@ -1,3 +1,4 @@
+import { controlLabel } from "@/design/controls/control-label"
 import type { Color } from "@airdesign/document"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
@@ -34,7 +35,7 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
     <div className="flex flex-col gap-2" data-control="union" data-inherited={control.inherited ? "" : undefined}>
       {control.look.name.show === "above" ? (
         <div className="flex min-h-6 items-center justify-between gap-2">
-          <span id={label} className="text-[length:var(--type-caption)] text-quiet">
+          <span id={label} className={controlLabel}>
             {control.label}
           </span>
           {control.reset === null ? null : (

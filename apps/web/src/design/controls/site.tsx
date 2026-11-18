@@ -1,3 +1,4 @@
+import { controlLabel } from "@/design/controls/control-label"
 import { useId } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { ControlProps } from "@/design/panel"
@@ -14,8 +15,8 @@ export function SiteControl({ control, onChange }: ControlProps) {
   const value =
     !control.mixed && typeof control.value === "number" && control.value in names ? String(control.value) : null
   return (
-    <div className="flex flex-col gap-1.5" data-control="site">
-      <span id={label} className="text-[length:var(--type-caption)] text-quiet">
+    <div className="flex flex-col gap-1" data-control="site">
+      <span id={label} className={controlLabel}>
         {control.label}
       </span>
       <Select
@@ -28,7 +29,7 @@ export function SiteControl({ control, onChange }: ControlProps) {
       >
         <SelectTrigger
           aria-labelledby={label}
-          className="h-[var(--control-dense)] w-full rounded-[var(--shape-control)] border-0 bg-white text-[length:var(--type-caption)] shadow-[0px_0px_0px_1px_var(--field-edge)]"
+          className="h-[var(--control-dense)] w-full rounded-[var(--shape-control)] border-0 bg-white text-[length:var(--type-caption)] shadow-[inset_0px_0px_0px_1px_var(--field-edge)] data-[size=default]:h-[var(--control-dense)]"
         >
           <SelectValue>
             {(selected: string | null) => (selected === null ? "" : (names[Number(selected)] ?? ""))}

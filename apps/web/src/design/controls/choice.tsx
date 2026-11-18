@@ -1,3 +1,4 @@
+import { controlLabel } from "@/design/controls/control-label"
 import { designCopy } from "@/copy/design-copy"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
@@ -23,8 +24,7 @@ function ChoiceList({
       <SelectTrigger
         aria-labelledby={label}
         className={cn(
-          "h-[var(--control-dense)] w-full rounded-[var(--shape-control)] border-0 bg-white text-[length:var(--type-caption)] shadow-[0px_0px_0px_1px_var(--field-edge)]",
-          control.field === "weight" ? "data-[size=default]:h-[var(--control-dense)]" : null,
+          "h-[var(--control-dense)] w-full rounded-[var(--shape-control)] border-0 bg-white text-[length:var(--type-caption)] shadow-[inset_0px_0px_0px_1px_var(--field-edge)] data-[size=default]:h-[var(--control-dense)]",
           control.inherited ? "text-quiet" : null,
         )}
       >
@@ -58,11 +58,8 @@ export function ChoiceControl(props: ControlProps) {
   const look = control.look
   const layout = look.form
   return (
-    <div className="flex flex-col gap-1.5" data-control="choice" data-inherited={control.inherited ? "" : undefined}>
-      <span
-        id={label}
-        className={look.name.show === "hidden" ? "sr-only" : "text-[length:var(--type-caption)] text-quiet"}
-      >
+    <div className="flex flex-col gap-1" data-control="choice" data-inherited={control.inherited ? "" : undefined}>
+      <span id={label} className={look.name.show === "hidden" ? "sr-only" : controlLabel}>
         {arrow ? (
           <>
             <span className="sr-only">{control.label}</span>
@@ -106,7 +103,11 @@ export function ChoiceControl(props: ControlProps) {
                     : "text-quiet hover:bg-transparent hover:text-foreground",
                 )}
               >
-                {Icon ? <Icon size={14} className="size-3.5" strokeWidth={1.5} aria-hidden /> : word}
+                {Icon ? (
+                  <Icon size={14} className="size-3.5" strokeWidth={1.5} aria-hidden />
+                ) : (
+                  <span className="truncate">{word}</span>
+                )}
               </Button>
             )
           })}

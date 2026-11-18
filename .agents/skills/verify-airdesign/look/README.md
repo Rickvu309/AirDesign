@@ -35,6 +35,19 @@ Regions are the `data-*` handles both sides share, listed in `compare.mjs`. The 
 
 To add a state, add `states/<name>.mjs` that default-exports the state, named after its file. Reuse a journey's capture when one shows the state. A driver that two states share goes in its own module beside `states.mjs`, never in `states/`.
 
+## The Design panel beside Figma
+
+`panel-kinds.mjs` reaches the Design panel of each kind (text, shape, picture, connector, pair, slide) on a fixture that matches Figma's screenshots as nearly as ours allow, in slides mode or design mode. The states `panel-<kind>` and `panel-<kind>-design` use it, so `look` and `sheet` judge every panel.
+
+`panel-shots.mjs` is a journey that screenshots the panel element itself at 240 px wide and scale 2, the whole panel with nothing scrolled away, and puts each beside Figma's screenshot of the same kind at the same scale:
+
+```sh
+PANEL_OUT=<folder> PANEL_FIGMA=<folder with text.png, shape.png, picture.png, connector.png, pair.png, slide.png> \
+  $V journey <run> .agents/skills/verify-airdesign/look/panel-shots.mjs
+```
+
+`PANEL_MODES` (default `slides,design`) and `PANEL_KINDS` narrow the set. Figma's screenshots stay out of the repository. Open every `beside-*.png` and name each difference you see.
+
 ## before-after and annotate
 
 `callouts.mjs` reads the callouts file and refuses a bad one with the block and callout it means. `placement.mjs` is the rule: each numbered circle goes on the side of its target with the most free room, off every target and every other circle, in the frame's 30 px margin when the crop has no room, at the same spot on both sides; the arrow stops 3 px outside the target. `annotate.mjs` lays each block out as HTML with the `packages/theme` tokens and Geist, and the browser screenshots it at 850 CSS px and scale 2, a new image every 6000 px. Narrow crops sit side by side, wide ones stack. Callouts default to the text bounds. `"target": "element"` aims at the element frame for borders and geometry. Both sides use the union of their crop bounds, so a smaller new component cannot crop away the old edge. A warning names any target outside or clipped by that crop. `before-after.mjs` drives a state on one stack and measures the selectors. A side runs its own `look/states.mjs` when it has the state, and otherwise this one with that side's own journey files.

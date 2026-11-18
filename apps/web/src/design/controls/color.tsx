@@ -1,3 +1,4 @@
+import { controlLabel } from "@/design/controls/control-label"
 import { alphaKeys, alphaOf, fadedColor, opaque, type Color } from "@airdesign/document"
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
@@ -43,7 +44,7 @@ export function ColorField({
 }
 
 export const fieldLook =
-  "h-[var(--control-dense)] w-full min-w-0 justify-start gap-2 rounded-[var(--shape-control)] border-0 bg-white px-2 font-normal shadow-[0px_0px_0px_1px_var(--field-edge)] hover:bg-white active:translate-y-0"
+  "h-[var(--control-dense)] w-full min-w-0 justify-start gap-2 rounded-[var(--shape-control)] border-0 bg-white px-2 font-normal shadow-[inset_0px_0px_0px_1px_var(--field-edge)] hover:bg-white active:translate-y-0"
 
 export function ColorControl({ control, palette, onChange }: ControlProps) {
   const label = useId()
@@ -58,14 +59,11 @@ export function ColorControl({ control, palette, onChange }: ControlProps) {
     <div
       role="group"
       aria-labelledby={label}
-      className="flex flex-col gap-1.5"
+      className="flex flex-col gap-1"
       data-control="color"
       data-inherited={control.inherited ? "" : undefined}
     >
-      <span
-        id={label}
-        className={control.look.name.show === "hidden" ? "sr-only" : "text-[length:var(--type-caption)] text-quiet"}
-      >
+      <span id={label} className={control.look.name.show === "hidden" ? "sr-only" : controlLabel}>
         {control.label}
       </span>
       <ColorPicker

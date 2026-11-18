@@ -76,7 +76,7 @@ function WordsField({ control, onChange, max }: ControlProps & { readonly max: n
   return (
     <div className="flex min-w-0 flex-col gap-1">
       <label
-        className="flex h-[var(--control-dense)] min-w-0 items-center gap-2 rounded-[var(--shape-control)] bg-white px-2 shadow-[0px_0px_0px_1px_var(--field-edge)] has-[[aria-invalid=true]]:shadow-[0px_0px_0px_2px_var(--destructive)]"
+        className="flex h-[var(--control-dense)] min-w-0 items-center gap-2 rounded-[var(--shape-control)] bg-white px-2 shadow-[inset_0px_0px_0px_1px_var(--field-edge)] has-[[aria-invalid=true]]:shadow-[0px_0px_0px_2px_var(--destructive)]"
         data-control="words"
         data-inherited={control.inherited ? "" : undefined}
         data-focus-ring

@@ -1,3 +1,4 @@
+import { controlLabel } from "@/design/controls/control-label"
 import { agentNumberOf, readAgent } from "@airdesign/catalog"
 import { designCopy } from "@/copy/design-copy"
 import { opacityCopy } from "@/copy/opacity-copy"
@@ -20,8 +21,8 @@ function PercentSlider({ control, onChange, palette }: ControlProps) {
     look: { ...control.look, name: { show: "hidden" as const }, slider: undefined, steps: undefined },
   }
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <span className="text-[length:var(--type-caption)] text-quiet">{control.label}</span>
+    <div className="flex min-w-0 flex-col gap-1">
+      <span className={controlLabel}>{control.label}</span>
       <div className="flex min-w-0 items-center gap-2">
         <input
           type="range"

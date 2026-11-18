@@ -1,7 +1,7 @@
 import { cn } from "@/lib/class-names"
 
 const iconPaths = {
-  link: '<path d="m10 13 4-4M8 15l-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0M16 9l1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
   chev: '<path d="m6 9 6 6 6-6"/>',
   chevr: '<path d="m9 6 6 6-6 6"/>',
   chevl: '<path d="m15 6-6 6 6 6"/>',
@@ -48,8 +48,10 @@ const iconPaths = {
     '<circle cx="6" cy="7" r="1.15" fill="currentColor" stroke="none"/><circle cx="6" cy="12" r="1.15" fill="currentColor" stroke="none"/><circle cx="6" cy="17" r="1.15" fill="currentColor" stroke="none"/><path d="M10 7h10M10 12h10M10 17h10"/>',
   blur: '<g fill="currentColor" stroke="none"><circle cx="7" cy="7" r="1.15"/><circle cx="12" cy="7" r="1.15"/><circle cx="17" cy="7" r="1.15"/><circle cx="7" cy="12" r="1.15"/><circle cx="12" cy="12" r="1.15"/><circle cx="17" cy="12" r="1.15"/><circle cx="7" cy="17" r="1.15"/><circle cx="12" cy="17" r="1.15"/><circle cx="17" cy="17" r="1.15"/></g>',
   match:
-    '<rect x="3.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.3" stroke-dasharray="2.1 1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.3" stroke-dasharray="2.1 1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.3" stroke-dasharray="2.1 1.8"/>',
-  swap: '<path d="M5.5 7.4h5.6a1.4 1.4 0 0 1 1.4 1.4V11"/><path d="M5.5 7.4V13a1.4 1.4 0 0 0 1.4 1.4h2"/><path d="M14.8 8.4a5.7 5.7 0 1 1-4.6 7.4"/><path d="M17.6 4.4 14.6 8.2h4.6"/>',
+    '<rect x="4.5" y="4.5" width="5" height="5" rx="1"/><path d="M14.5 5.7V4.5h1.2M18.3 4.5h1.2v1.2M19.5 8.3v1.2h-1.2M15.7 9.5h-1.2V8.3M4.5 15.7v-1.2h1.2M8.3 14.5h1.2v1.2M9.5 18.3v1.2H8.3M5.7 19.5H4.5v-1.2M14.5 15.7v-1.2h1.2M18.3 14.5h1.2v1.2M19.5 18.3v1.2h-1.2M15.7 19.5h-1.2v-1.2"/>',
+  swap: '<path d="m12 9.5 5.5 5.5-5.5 5.5-5.5-5.5z"/><path d="M5.5 9C7.5 4.6 13 3.4 16.6 6.4"/><path d="M17.6 3.4v3.6H14"/>',
+  styleSliders:
+    '<path d="M8 3v6.5M8 14.5V21M16 3v1.5M16 9.5V21"/><circle cx="8" cy="12" r="2.5"/><circle cx="16" cy="7" r="2.5"/>',
 } as const
 
 export type EditorIconName = keyof typeof iconPaths
@@ -79,6 +81,21 @@ export function EditorIcon({
       aria-hidden="true"
       dangerouslySetInnerHTML={{ __html: iconPaths[name] }}
     />
+  )
+}
+
+export function ToneIcon({ size = 14, className }: { size?: number; className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className={cn("shrink-0", className)} aria-hidden="true">
+      <path
+        d="M10 1.5Q12.6 7.4 18.5 10 12.6 12.6 10 18.5 7.4 12.6 1.5 10 7.4 7.4 10 1.5z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M15 15.5h7M18.5 15.5v6M17 21.5h3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
   )
 }
 

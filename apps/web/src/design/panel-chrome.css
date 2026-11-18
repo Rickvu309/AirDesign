@@ -51,7 +51,7 @@
 [data-design-panel] [data-control="color"] button,
 [data-design-panel] [data-design-swatch] {
   gap: 6px;
-  padding-right: 8px;
+  padding-right: 6px;
   padding-left: 4px;
 }
 
