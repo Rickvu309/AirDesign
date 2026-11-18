@@ -1,3 +1,4 @@
+import { SlideItem } from "@/editor/slide-list-item"
 import { Filmstrip, type PaintBox } from "@airdesign/render"
 import type { ElementId, GridSide, SlideId } from "@airdesign/document"
 import {
@@ -5,7 +6,6 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  type DragEvent,
   type FocusEvent,
   type KeyboardEvent,
   type ReactNode,
@@ -19,7 +19,7 @@ import type { GridMoveSide } from "@/editor/grid-drop"
 import { slideKey, type SlideKey } from "@/editor/slide-keys"
 import type { SelectedCopy, SlideSetChange } from "@/slide-edit"
 import type { SaveStatus } from "@/editor/use-deck-status"
-import { SlideMenu, slideChangeAllowed } from "@/editor/slide-menu"
+import { slideChangeAllowed } from "@/editor/slide-menu"
 import { NewSlideMenu } from "@/editor/new-slide-menu"
 import { sectionAt } from "@/editor/collapsed-sections"
 import { SlideThumb } from "@/editor/slide-thumb"
@@ -44,6 +44,8 @@ export type SlideStrip = {
   readonly slideIds?: readonly SlideId[]
   readonly sections?: readonly StripSection[]
   readonly current: number
+  readonly skipped?: readonly boolean[]
+  readonly onSkip?: (index: number, skipped: boolean) => void
   readonly selectionBoxes?: (ids: readonly ElementId[]) => readonly PaintBox[]
   readonly onSelection?: (indices: readonly number[]) => void
   readonly onSelect: (index: number) => void
@@ -176,6 +178,8 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
       index={index + 1}
       count={strip.count}
       active={index === strip.current}
+      skipped={strip.skipped?.[index] === true}
+      onSkip={strip.onSkip === undefined ? undefined : (skipped) => strip.onSkip?.(index, skipped)}
       reachable={reachable === `slide:${String(index)}`}
       onSelect={() => strip.onSelect(index)}
       onKeyDown={(event) => onSlideKey(strip, index, event, announce)}
@@ -429,118 +433,6 @@ function onSlideKey(
   if (change === null) return
   event.preventDefault()
   runSlideChange(strip, index, change, announce)
-}
-
-function SlideItem({
-  index,
-  count = 0,
-  active,
-  reachable = true,
-  working = false,
-  onSelect,
-  onChoose,
-  onKeyDown,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  children,
-}: {
-  index: number
-  count?: number
-  active: boolean
-  reachable?: boolean
-  working?: boolean
-  onSelect?: () => void
-  onChoose?: (change: SlideKey) => void
-  onKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void
-  onDragStart?: (event: DragEvent<HTMLButtonElement>) => void
-  onDragOver?: (event: DragEvent<HTMLButtonElement>) => void
-  onDrop?: (event: DragEvent<HTMLButtonElement>) => void
-  children: ReactNode
-}) {
-  const entry = useRef<HTMLButtonElement>(null)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const latest = useRef({ onSelect, onChoose })
-  useLayoutEffect(() => {
-    latest.current = { onSelect, onChoose }
-  })
-  const onMenuChoose = useCallback((change: SlideKey) => latest.current.onChoose?.(change), [])
-  const onMenuOpenChange = useCallback((next: boolean) => {
-    setMenuOpen(next)
-    if (next) latest.current.onSelect?.()
-    else if (entry.current?.isConnected) entry.current.focus()
-  }, [])
-  const look = cn(
-    "flex w-fit items-start gap-2 rounded-[var(--shape-card)] py-1.5 pr-1.5 pl-2",
-    active ? "bg-[var(--row)]" : onSelect !== undefined && "hover:bg-black/4",
-  )
-  const number = (
-    <span className="flex w-4 flex-col items-center gap-1.5 pt-0.5">
-      <span className={cn("text-xs", active ? "font-medium text-index" : "text-quiet")}>{index}</span>
-      {working ? <span className="block size-1.5 rounded-full bg-primary" /> : null}
-    </span>
-  )
-  if (onSelect === undefined) {
-    return (
-      <div className={look} data-slide-item>
-        {number}
-        {children}
-      </div>
-    )
-  }
-  const openMenu = () => {
-    onSelect?.()
-    setMenuOpen(true)
-  }
-  return (
-    <div className="relative">
-      <button
-        ref={entry}
-        type="button"
-        draggable={onDragStart !== undefined}
-        aria-current={active ? "true" : undefined}
-        aria-label={slideListCopy.slideName(index, count)}
-        tabIndex={reachable ? 0 : -1}
-        className={cn(look, "text-left")}
-        data-stop={`slide:${String(index - 1)}`}
-        data-slide-entry={index}
-        data-slide-item
-        onClick={onSelect}
-        onContextMenu={
-          onChoose === undefined
-            ? undefined
-            : (event) => {
-                event.preventDefault()
-                openMenu()
-              }
-        }
-        onKeyDown={(event) => {
-          if (onChoose !== undefined && (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey))) {
-            event.preventDefault()
-            openMenu()
-            return
-          }
-          onKeyDown?.(event)
-        }}
-        onDragStart={onDragStart}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
-      >
-        {number}
-        {children}
-      </button>
-      {onChoose === undefined ? null : (
-        <SlideMenu
-          anchor={entry}
-          index={index - 1}
-          count={count}
-          open={menuOpen}
-          onOpenChange={onMenuOpenChange}
-          onChoose={onMenuChoose}
-        />
-      )}
-    </div>
-  )
 }
 
 function SectionHead({

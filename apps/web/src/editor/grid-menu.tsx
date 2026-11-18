@@ -4,7 +4,7 @@ import { slideListCopy } from "@/copy/slide-list-copy"
 import { gridMoveAt, type GridCommand } from "@/editor/editor-grid-keys"
 import { EditorMenuContent, EditorMenuRule } from "@/editor/editor-menu"
 import type { SlideKey } from "@/editor/slide-keys"
-import { slideChangeAllowed, slideMenuItem, SlideMenuRows } from "@/editor/slide-menu"
+import { slideChangeAllowed, slideMenuItem, SlideMenuRows, SlideSkipItem } from "@/editor/slide-menu"
 
 export type MenuAnchor = { readonly getBoundingClientRect: () => DOMRect }
 
@@ -27,6 +27,8 @@ export function GridSlideMenu({
   onMoveBelow,
   onAct,
   onClose,
+  skipped,
+  onSkip,
 }: {
   menu: GridMenu
   count: number
@@ -38,6 +40,8 @@ export function GridSlideMenu({
   onMoveBelow: () => void
   onAct: (command: GridCommand, index: number) => void
   onClose: () => void
+  skipped: readonly boolean[] | undefined
+  onSkip: ((index: number, skipped: boolean) => void) | undefined
 }) {
   const multiple = held.length > 1
   const allowed = (change: SlideKey) => {
@@ -76,6 +80,9 @@ export function GridSlideMenu({
           allowed={allowed}
           {...(!multiple ? {} : { labels: slideListCopy.setActions(held.length) })}
         />
+        {onSkip === undefined || multiple ? null : (
+          <SlideSkipItem skipped={skipped?.[menu.index] === true} onSkip={(next) => onSkip(menu.index, next)} />
+        )}
         {canAdd || canMoveSet ? <EditorMenuRule /> : null}
         {canAdd
           ? (["same", "new"] as const).map((side) => (

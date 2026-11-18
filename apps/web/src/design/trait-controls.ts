@@ -1,3 +1,4 @@
+import { slideListCopy } from "@/copy/slide-list-copy"
 import type { TraitName, WireField } from "@airdesign/document"
 import { bodyControls } from "./trait-controls-body"
 import { boxControls } from "./trait-controls-box"
@@ -41,4 +42,5 @@ export const traitControls: { readonly [T in TraitName]: TraitControls<T> } = {
   notes: notesControls,
   theme: themeControls,
   template: { section: designCopy.templateStyle, fields: { id: { label: designCopy.templateStyle } } },
+  show: { section: slideListCopy.listName, fields: { skipped: { label: slideListCopy.skip } } },
 }

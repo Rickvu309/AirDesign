@@ -17,6 +17,7 @@ import {
   readElementId,
   shapeOf,
   slideKind,
+  slideBirths,
   themeFonts,
   themeNode,
   themeOwned,
@@ -66,7 +67,7 @@ export type ReadDeckAnswer = {
   readonly revision: number
   readonly grid: { readonly starts: readonly string[] }
   readonly elements: readonly ReadElement[]
-  readonly slides: readonly Pick<IndexSlide, "id" | "position" | "palette" | "template" | "textStyles">[]
+  readonly slides: readonly Pick<IndexSlide, "id" | "position" | "palette" | "template" | "textStyles" | "skipped">[]
   readonly templates?: readonly ReadTemplate[]
   readonly palettes?: readonly Palette[]
   readonly theme?: Readonly<Record<string, string>>
@@ -352,13 +353,30 @@ export function readDeckPage(
     (index?.slides ?? []).flatMap(({ id, palette }) => (palette === undefined ? [] : [[id, palette]])),
   )
   const textStyles = query.slide === undefined ? [] : textStylesOf(deck.register, query.slide)
+  const skippedSources = new Set(index?.slides.filter((slide) => slide.skipped).map((slide) => slide.id))
+  const clonedFrom = new Map(
+    deck.register.order.flatMap((command) =>
+      slideBirths(command).flatMap((birth) => (birth.slide === "clone" ? [[birth.id, birth.source] as const] : [])),
+    ),
+  )
+  function originallySkipped(slide: ReturnType<typeof readSlideId>): boolean {
+    if (slide === undefined) return false
+    const source = clonedFrom.get(slide)
+    return source === undefined ? skippedSources.has(slide) : originallySkipped(source)
+  }
   const slideOf = (id: string, position: number) => {
     const styles = query.slide === id && textStyles.length > 0 ? { textStyles } : {}
     const palette = palettes.get(id)
     const slide = readSlideId(id)
     const node = slide === undefined ? undefined : slideNode(slide, "slide")
     const body = node === undefined ? undefined : deck.register.elements[node]
-    const rows = body === undefined ? undefined : landedPatch(body, "text").template?.id
+    const patch = body === undefined ? {} : landedPatch(body, "text")
+    const rows = patch.template?.id
+    const opening = node === undefined ? undefined : openingElement(deck.register, node)?.opening
+    const shown = patch.show?.skipped
+    const born = opening?.show?.skipped
+    const skipped =
+      typeof shown === "object" ? shown.set : typeof born === "object" ? born.set : originallySkipped(slide)
     const source = node === undefined ? undefined : openingElement(deck.register, node)?.opening?.template?.id
     const importedTemplate = (slide: string): string | undefined => {
       const original = index?.slides.find((source) => source.id === slide)?.template
@@ -377,6 +395,7 @@ export function readDeckPage(
     return {
       id,
       position,
+      ...(skipped ? { skipped: true as const } : {}),
       ...styles,
       ...(palette === undefined || palette === 0 ? {} : { palette }),
       ...(template === undefined ? {} : { template }),
@@ -425,6 +444,7 @@ export function readDeckPage(
           : {
               id: slide.id,
               position: slide.position,
+              ...(slide.skipped ? { skipped: true as const } : {}),
               ...(slide.palette === undefined ? {} : { palette: slide.palette }),
             },
       ),

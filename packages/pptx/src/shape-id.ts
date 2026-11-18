@@ -131,8 +131,7 @@ function idsWithin(elements: readonly MarkupElement[], shape: MarkupElement): Re
   return new Set(elements.filter((item) => inside(item, shape)).map((item) => shapeMarkId(elements, item)))
 }
 
-export function animatedShapeIds(bytes: Uint8Array): readonly string[] {
-  const { elements } = markupDocument(bytes)
+export function animatedShapeIds(elements: readonly MarkupElement[]): readonly string[] {
   const ids = new Set<string>()
   for (const element of elements) {
     const id = animationId(elements, element)

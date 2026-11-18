@@ -11,6 +11,7 @@ import { image } from "./trait-image.js"
 import { link } from "./trait-link.js"
 import { line } from "./trait-line.js"
 import { notes } from "./trait-notes.js"
+import { show } from "./trait-show.js"
 import { table } from "./trait-table.js"
 import { text } from "./trait-text.js"
 import { template } from "./trait-template.js"
@@ -34,6 +35,7 @@ export const traits = {
   notes,
   theme,
   template,
+  show,
 } as const
 
 export type TraitName = keyof typeof traits
@@ -69,7 +71,7 @@ export const kindTraits = {
   master: [],
   layout: [],
   section: [],
-  slide: ["fill", "template"],
+  slide: ["fill", "template", "show"],
   notes: ["notes"],
   shape: ["identity", "box", "geometry", "fill", "line", "effects", "body", "text", "link", "image"],
   picture: ["identity", "box", "geometry", "line", "effects", "image", "crop"],

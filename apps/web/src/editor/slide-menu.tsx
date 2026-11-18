@@ -29,6 +29,8 @@ export const SlideMenu = memo(function SlideMenu({
   open,
   onOpenChange,
   onChoose,
+  skipped,
+  onSkip,
 }: {
   anchor: RefObject<HTMLButtonElement | null>
   index: number
@@ -36,6 +38,8 @@ export const SlideMenu = memo(function SlideMenu({
   open: boolean
   onOpenChange: (open: boolean) => void
   onChoose: (change: SlideKey) => void
+  skipped: boolean
+  onSkip: ((skipped: boolean) => void) | undefined
 }) {
   useEffect(() => {
     if (!open) return
@@ -65,6 +69,7 @@ export const SlideMenu = memo(function SlideMenu({
         className="flex w-[188px] min-w-0 flex-col rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0 duration-0"
       >
         <SlideMenuRows index={index} count={count} onChoose={onChoose} />
+        {onSkip === undefined ? null : <SlideSkipItem skipped={skipped} onSkip={onSkip} />}
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -95,4 +100,12 @@ export function SlideMenuRows({
       <span className="text-xs text-[var(--shortcut)]">{keys[change].shown}</span>
     </DropdownMenuItem>
   ))
+}
+
+export function SlideSkipItem({ skipped, onSkip }: { skipped: boolean; onSkip: (skipped: boolean) => void }) {
+  return (
+    <DropdownMenuItem className={slideMenuItem} onClick={() => onSkip(!skipped)}>
+      {skipped ? slideListCopy.unskip : slideListCopy.skip}
+    </DropdownMenuItem>
+  )
 }

@@ -348,6 +348,7 @@ export function EditorGrid({
       index={index}
       count={count}
       current={index === current}
+      skipped={strip.skipped?.[index] === true}
       selected={selected.has(index)}
       multiple={picked !== null}
       reachable={index === reachable}
@@ -451,6 +452,8 @@ export function EditorGrid({
           onMoveBelow={moveBelow}
           onAct={act}
           onClose={closeMenu}
+          skipped={strip.skipped}
+          onSkip={strip.onSkip}
         />
       )}
       <div

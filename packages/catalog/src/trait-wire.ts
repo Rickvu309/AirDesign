@@ -44,4 +44,8 @@ export const traitWire: { readonly [T in TraitName]: TraitWire<T> } = {
   notes: notesWire,
   theme: themeWire,
   template: templateWire,
+  show: {
+    description: "Slides only.",
+    fields: { skipped: { description: "Skip in Present.", example: { show: { skipped: true } } } },
+  },
 }

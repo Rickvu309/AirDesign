@@ -15,6 +15,7 @@ import { slideTheme } from "./theme-swatches.js"
 import { readNotes } from "./notes-body.js"
 import { readShapes, readSlides, shapeKind } from "./read-shapes.js"
 import { presentationPart } from "./package-address.js"
+import { slideSkipped } from "./slide-show.js"
 import { markupDocument } from "./element-span.js"
 import { animatedShapeIds, freeShapeId } from "./shape-id.js"
 import { readTable } from "./table-write.js"
@@ -54,6 +55,7 @@ export function indexPackage(
   const styleSources = new Map<string, string>()
   const slides = readSlides(parts).map(({ slide, part }, position) => {
     const bytes = parts.get(part)
+    const elements = bytes === undefined ? [] : markupDocument(bytes).elements
     const template = slideTheme(parts, part)
     const styles = slideTextStyles(parts, part)
     const key = JSON.stringify(styles)
@@ -66,7 +68,8 @@ export function indexPackage(
       position,
       ...(size === null ? {} : { size }),
       free: freeShapeId(parts, part),
-      animated: bytes === undefined ? [] : animatedShapeIds(bytes),
+      ...(slideSkipped(elements[0]) ? { skipped: true as const } : {}),
+      animated: animatedShapeIds(elements),
     }
   })
   const order = new Map(slides.map((slide) => [slide.id, slide.position]))

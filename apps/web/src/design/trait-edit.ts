@@ -141,6 +141,8 @@ function faded(row: Row): boolean {
 }
 
 function rowName(node: ElementId, row: Row): UndoName {
+  if (row.patch.show?.skipped !== undefined)
+    return typeof row.patch.show.skipped === "object" && row.patch.show.skipped.set ? "skip-slide" : "unskip-slide"
   if (row.patch.template !== undefined) return "template"
   if (slideKind(node) === "slide") return "background"
   const theme = row.patch.theme

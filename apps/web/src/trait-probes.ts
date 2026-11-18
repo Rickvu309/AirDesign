@@ -1,4 +1,4 @@
-import { shownLink } from "@airdesign/pptx"
+import { readShows, shownLink } from "@airdesign/pptx"
 import {
   format,
   readTableValue,
@@ -98,6 +98,19 @@ export const probes: { readonly [T in TraitName]: Probe<T> } = {
     opening: () => ({ v: format, patch: { link: { target: "opening" } } }),
     edit: (_, __, value) => ({ v: format, patch: { link: { target: { set: value } } } }),
     fields: { target: { file: (parts, at) => shownLink(parts, at), shows: (value) => value } },
+  },
+  show: {
+    deck: "blank.pptx",
+    kind: "slide",
+    node: "256.slide",
+    opening: () => ({ v: format, patch: { show: { skipped: "opening" } } }),
+    edit: (_, __, value) => ({ v: format, patch: { show: { skipped: { set: value } } } }),
+    fields: {
+      skipped: {
+        file: (parts, at) => readShows(parts).find((show) => show.part === at.part)?.hidden,
+        shows: (value) => value,
+      },
+    },
   },
   template: {
     deck: "doe-heat-pumps.pptx",

@@ -72,6 +72,7 @@ const icon = (field: string, glyph: LucideIcon): Placed => placed(field, { show:
 const letter = (field: string, text: string): Placed => placed(field, { show: "letter", letter: text })
 
 export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
+  show: [[placed("skipped", hidden, { control: "canvas" })]],
   link: [[placed("target", hidden)]],
   text: [
     [placed("value", hidden, { control: "canvas" })],

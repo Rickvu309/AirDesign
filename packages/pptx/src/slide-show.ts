@@ -1,4 +1,7 @@
-import { markupDocument, type MarkupElement } from "./element-span.js"
+import { markupDocument, spliceBytes, type MarkupElement } from "./element-span.js"
+import { encodeUtf8 } from "./package-bytes.js"
+import { partBytes, requireMarkup } from "./part-markup.js"
+import { whole, type TraitXml } from "./xml-codec.js"
 import { slideAddresses } from "./package-address.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -44,18 +47,45 @@ function transitionOf(elements: readonly MarkupElement[]): SlideTransition | nul
   return null
 }
 
+export function slideSkipped(root: MarkupElement | undefined): boolean {
+  const show = root?.kind === "p:sld" ? attr(root, "show") : undefined
+  return show === "0" || show === "false"
+}
+
+function writeSkipped(parts: Parts, part: string, skipped: boolean): Parts {
+  const bytes = partBytes(parts, part)
+  const [root] = requireMarkup(bytes).elements
+  if (root?.kind !== "p:sld") throw new Error("show-slide")
+  const attribute = root.attributes.find((item) => item.name === "show")
+  const at = root.openEnd - (root.selfClosing ? 2 : 1)
+  const value = skipped ? "0" : "1"
+  const edit =
+    attribute === undefined
+      ? { start: at, end: at, next: encodeUtf8(` show="${value}"`) }
+      : { start: attribute.valueStart, end: attribute.valueEnd, next: encodeUtf8(value) }
+  return new Map(parts).set(part, spliceBytes(bytes, [edit]))
+}
+
+export const showXml: TraitXml<"show"> = {
+  slot: null,
+  fields: {
+    skipped: whole({
+      read: (parts, at) => slideSkipped(requireMarkup(partBytes(parts, at.part)).elements[0]),
+      write: (parts, at, skipped) => writeSkipped(parts, at.part, skipped),
+    }),
+  },
+}
+
 export function readShows(parts: Parts): readonly SlideShow[] {
   return slideAddresses(parts).flatMap(({ slide, part }) => {
     const bytes = parts.get(part)
     if (bytes === undefined) return []
     const document = markupDocument(bytes)
-    const root = document.elements.find((element) => element.kind === "p:sld")
-    const show = root === undefined ? undefined : attr(root, "show")
     return [
       {
         slide,
         part,
-        hidden: show === "0" || show === "false",
+        hidden: slideSkipped(document.elements[0]),
         transition: document.wellFormed ? transitionOf(document.elements) : null,
       },
     ]
