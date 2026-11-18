@@ -374,9 +374,8 @@ export function LiveDesignPanel({ deck, selectedSlides = 0 }: { deck: DesigningD
       </div>
     )
   const { shown, selection } = deck
-  const elements = shown.store.current.slides()[shown.current]?.elements ?? []
-  const local = selection.ids.filter((id) => elements.includes(id))
-  const [first, ...rest] = [...local, ...(deck.matching ?? [])]
+  const ids = shown.store.current.slides()[shown.current]?.elements ?? []
+  const [first, ...rest] = [...selection.ids.filter((id) => ids.includes(id)), ...(deck.matching ?? [])]
   if (first === undefined) return <LiveSlideDesign deck={deck} />
   if (rest.length === 0) return <LiveElementDesign key={first} deck={deck} node={first} />
   const nodes: Several = [first, ...rest]
