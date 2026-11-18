@@ -2,7 +2,7 @@ import type { patternPresets } from "@airdesign/document"
 
 type Preset = (typeof patternPresets)[number]
 
-export const fillCopy = { section: "Fill", value: "Fill", reset: "Reset fill" } as const
+export const fillCopy = { section: "Fill", box: "Box fill", value: "Fill", reset: "Reset fill" } as const
 
 const presets: Readonly<Record<Preset, string>> = {
   pct5: "5%",

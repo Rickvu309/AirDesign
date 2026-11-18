@@ -81,3 +81,14 @@ describe("type and text box layout plan as rows", () => {
     })
   })
 })
+
+it("sets one letter fill on every run and removes the previous solid colour", () => {
+  const fill = { solid: { scheme: "accent1" } } as const
+  const text = textOf(plan({ target: { node: elementId("258.2") }, text: { fill } }))
+  expect(text?.flatMap((paragraph) => paragraph.runs.map((run) => run.fill))).toEqual([fill, fill, fill])
+  expect(text?.flatMap((paragraph) => paragraph.runs.map((run) => run.color))).toEqual([
+    undefined,
+    undefined,
+    undefined,
+  ])
+})

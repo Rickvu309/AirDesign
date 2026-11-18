@@ -355,7 +355,14 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
       const drawn = shown[at]
       return drawn === undefined
         ? element
-        : { ...element, text: textOf(drawn, item.sheet, layout, master, scope), ...tableOf(drawn, item.sheet, scope) }
+        : {
+            ...element,
+            text: textOf(drawn, item.sheet, layout, master, () => ({
+              ...scope(),
+              picture: (id) => picture(item.sheet.part, id),
+            })),
+            ...tableOf(drawn, item.sheet, scope),
+          }
     })
     textedAbove.set(key, read)
     return read
@@ -462,7 +469,10 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
             group: item.group,
             placeholder: item.placeholder,
             prompt: placeholderPrompt(item, sheet, layoutSheet, options?.fallbackPrompt),
-            text: textOf(item, sheet, layoutSheet, masterSheet, scope),
+            text: textOf(item, sheet, layoutSheet, masterSheet, () => ({
+              ...scope(),
+              picture: (id) => picture(sheet.part, id),
+            })),
             ...tableOf(item, sheet, scope),
             ...diagramOf(item, box),
             ...frameChart(item.element, sheet.children, slidePart, charts),

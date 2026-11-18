@@ -37,7 +37,7 @@ export function paintTable(ctx: RowPaint): CanvasElement {
     outline,
     fill: paintedFill(ctx.row, outline, ctx.src),
     line: canvasLine(ctx.row.line),
-    text: canvasText(ctx.row.text),
+    text: canvasText(ctx.row.text, ctx.src),
     geometry: geometryOf(ctx.row),
     table: canvasTable(ctx.row.table, ctx.src),
     editable: ctx.shape?.editable ?? false,

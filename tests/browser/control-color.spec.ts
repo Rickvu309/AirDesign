@@ -118,6 +118,18 @@ for (const opacity of ["100", "10"]) {
     const opacityField = panel.getByRole("textbox", { name: opacityCopy.label, exact: true })
     await opacityField.fill(opacity)
     await opacityField.press(slideListCopy.openKey)
+    await expect
+      .poll(() =>
+        page
+          .locator("[data-slide-paint] [data-run]")
+          .first()
+          .evaluate((node) => getComputedStyle(node).color),
+      )
+      .toBe(opacity === "100" ? "rgb(0, 0, 0)" : "rgba(0, 0, 0, 0.1)")
+    const before = await page
+      .locator("[data-slide-paint] [data-run]")
+      .first()
+      .evaluate((node) => getComputedStyle(node).color)
     const field = panel.getByRole("group", { name: "Text color" })
     await shownColor(field).click()
     await expect(picker(page)).not.toContainText(/Contrast|Passes AA|Fails AA/)
@@ -130,13 +142,12 @@ for (const opacity of ["100", "10"]) {
     await page.keyboard.press("Escape")
     await expect(shownColor(field)).toBeFocused()
     const run = page.locator("[data-slide-paint] [data-run]").first()
-    await expect(run).toHaveAttribute("data-color", new RegExp("^scheme:accent2 lumMod:50000"))
     await expect
       .poll(() => run.evaluate((node) => getComputedStyle(node).color))
       .toBe(opacity === "100" ? "rgb(26, 26, 77)" : "rgba(26, 26, 77, 0.1)")
     await expect(shownColor(field)).toHaveText(/^#[0-9A-F]{6}$/)
     await page.getByRole("button", { name: "Undo text format", exact: true }).click()
-    await expect(run).not.toHaveAttribute("data-color", /accent2/)
+    await expect.poll(() => run.evaluate((node) => getComputedStyle(node).color)).toBe(before)
   })
 }
 

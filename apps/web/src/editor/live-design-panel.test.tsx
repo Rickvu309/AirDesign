@@ -15,6 +15,7 @@ import { readParts, readSlides } from "@airdesign/pptx"
 import { act, createElement } from "react"
 import { designCopy } from "@/copy/design-copy"
 import { formatCopy } from "@/copy/format-copy"
+import { fillCopy } from "@/copy/fill-copy"
 import { pictureCopy } from "@/copy/picture-copy"
 import { toast } from "@/components/ui/toast"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
@@ -269,9 +270,11 @@ it("draws a fill that names a theme colour in that colour once the theme changes
     shown.showOpened(parts, register)
   })
   const painted = shown.canvases.current(0)?.elements.find((element) => element.id === node)?.fill
-  const fill = [...host.querySelectorAll("[data-control='union']")].find(
-    (control) => control.firstElementChild?.textContent === "Fill",
-  )
+  const boxFill = host.querySelector(`[data-design-section="${fillCopy.box}"]`)
+  const toggle = boxFill?.querySelector<HTMLButtonElement>("button")
+  if (toggle === undefined || toggle === null) throw new Error("box fill")
+  await act(async () => toggle.click())
+  const fill = boxFill?.querySelector("[data-control='union']")
   const swatch = fill?.querySelector<HTMLElement>("[data-control='color'] span[aria-hidden]")?.style.background
   expect(painted).toBe(`#${red}`)
   expect(swatch).toBe("rgb(192, 0, 0)")

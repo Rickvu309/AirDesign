@@ -87,7 +87,8 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
       }),
       placed("list", hidden, { form: "segments", options: { none: Minus, bullets: List, numbers: ListOrdered } }),
     ],
-    [placed("color", hidden)],
+    [placed("fill", hidden, { options: fills })],
+    [placed("color", hidden, { control: "canvas" })],
     [icon("spaceBefore", ArrowUpToLine), icon("spaceAfter", ArrowDownToLine)],
   ],
   box: [
@@ -131,6 +132,8 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   ],
   alignment: [[placed("align", hidden), placed("distribute", hidden)]],
   pictureFill: [],
+  textFill: [[placed("value", hidden, { options: fills })], [placed("value.solid", hidden)]],
+  boxFill: [[placed("value", hidden, { options: fills })], [placed("value.solid", hidden)]],
   border: [
     [
       placed("border", hidden, {

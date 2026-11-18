@@ -1,5 +1,6 @@
 import { readColor, writtenColor, type Color } from "./color.js"
 import { readElementLink, type ElementLink } from "./link-target.js"
+import { readTextFill, type TextFill } from "./text-fill.js"
 import { bytesOf } from "./limits.js"
 import { record } from "./plain-object.js"
 
@@ -17,8 +18,8 @@ export const schemeNames = [
   "accent6",
 ] as const
 export const alignNames = ["left", "center", "right"] as const
-export const sizeFloor = 100
-export const sizeCeiling = 400_000
+import { sizeFloor, sizeCeiling } from "./text-size.js"
+export { sizeFloor, sizeCeiling } from "./text-size.js"
 export const sizeDefault = 1800
 export const typefaceBytes = 64
 export const letterSpacingFloor = -400_000
@@ -38,6 +39,7 @@ export type TextRun = {
   readonly from: number
   readonly text: string
   readonly size?: number
+  readonly fill?: TextFill
   readonly color?: Color
   readonly link?: ElementLink
   readonly font?: string
@@ -63,7 +65,17 @@ const spacingRange: Readonly<Record<(typeof spacingNames)[number], readonly [num
   spaceAfter: [0, spaceCeiling],
 }
 const paragraphKeys = new Set<string>(["from", "runs", "align", "list", "bullet", ...spacingNames])
-const runKeys = new Set<string>(["from", "text", "link", "size", "color", "font", "letterSpacing", ...formatNames])
+const runKeys = new Set<string>([
+  "from",
+  "text",
+  "link",
+  "size",
+  "fill",
+  "color",
+  "font",
+  "letterSpacing",
+  ...formatNames,
+])
 
 function named<T extends string>(names: readonly T[], value: string): T | null {
   for (const name of names) if (name === value) return name
@@ -108,6 +120,8 @@ function readRun(value: unknown): TextRun | null {
   }
   const from = integerAtLeast(run.from, -1)
   const size = readSize(run.size)
+  const fill = run.fill === undefined ? undefined : readTextFill(run.fill)
+  if (fill === null || (fill !== undefined && run.color !== undefined)) return null
   const color = readColor(run.color)
   const font = readTypeface(run.font)
   if (from === null || typeof run.text !== "string" || size === null || color === null || font === null) {
@@ -126,6 +140,7 @@ function readRun(value: unknown): TextRun | null {
     read = { ...read, link }
   }
   if (size !== undefined) read = { ...read, size }
+  if (fill !== undefined) read = { ...read, fill }
   if (color !== undefined) read = { ...read, color }
   if (font !== undefined) read = { ...read, font }
   if (run.letterSpacing !== undefined) {
@@ -206,6 +221,7 @@ function writtenRun(run: TextRun): Record<string, unknown> {
   for (const format of formatNames) if (run[format] !== undefined) written[format] = run[format]
   if (run.link !== undefined) written.link = run.link
   if (run.size !== undefined) written.size = run.size
+  if (run.fill !== undefined) written.fill = run.fill
   if (run.color !== undefined) written.color = writtenColor(run.color)
   if (run.font !== undefined) written.font = run.font
   if (run.letterSpacing !== undefined) written.letterSpacing = run.letterSpacing

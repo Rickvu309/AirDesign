@@ -91,7 +91,6 @@ function WordsField({ control, onChange, max }: ControlProps & { readonly max: n
           {control.label}
         </span>
         <input
-          placeholder={control.mixed ? designCopy.mixed : undefined}
           className={cn(
             "min-w-0 flex-1 bg-transparent text-[length:var(--type-caption)] outline-none",
             control.look.name.show === "hidden" ? "text-left" : "text-right",

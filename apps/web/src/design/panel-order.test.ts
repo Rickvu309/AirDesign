@@ -27,8 +27,13 @@ it("places every trait each element kind takes, and its Opacity, exactly once in
         placed: placed
           .filter(
             (section) =>
-              section !== "border" && section !== "shadow" && section !== "pictureFill" && section !== "corners",
+              section !== "border" &&
+              section !== "shadow" &&
+              section !== "pictureFill" &&
+              section !== "corners" &&
+              section !== "textFill",
           )
+          .map((section) => (section === "boxFill" ? "fill" : section))
           .toSorted(),
       }).toEqual({ panel, placed: wanted })
     }
@@ -65,8 +70,9 @@ it("orders a text box Text first, with its rare sections and its shape type fold
     ["alignment", true],
     ["text", true],
     ["link", true],
-    ["fill", true],
+    ["textFill", true],
     ["opacity", true],
+    ["boxFill", false],
     ["box", false],
     ["line", false],
     ["effects", false],

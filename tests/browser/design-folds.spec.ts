@@ -1,5 +1,6 @@
 import { geometryCopy } from "../../apps/web/src/copy/geometry-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
+import { fillCopy } from "../../apps/web/src/copy/fill-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { selectionColorsCopy } from "../../apps/web/src/copy/selection-colors-copy"
 import { linkCopy } from "../../apps/web/src/copy/link-copy"
@@ -33,6 +34,7 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
     linkCopy.section,
     "Fill",
     opacityCopy.label,
+    fillCopy.box,
     boxCopy.section,
     "Line",
     "Effects",
