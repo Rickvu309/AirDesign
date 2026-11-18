@@ -11,6 +11,7 @@ import {
   openRegister,
   readIndexPage,
   rootElement,
+  slideId,
   roles,
   sources,
   stamps,
@@ -325,5 +326,13 @@ describe("the register answer says the highest format the deck stores", () => {
     const index: DeckIndex = { format: 2, total: 0, slides: [], elements: [], pages: [] }
     expect(answeredRegister({ ...register, index }).format).toBe(2)
     expect(answeredRegister({ ...withRow, index }).format).toBe(format)
+  })
+
+  it("says this build's format for a deck holding a command planned against slide groups", () => {
+    const order = [{ slide: "remove", grid: 3, id: slideId("257") }] as const
+    expect(
+      answeredRegister({ ...register, order: [{ slide: "remove", grid: 1, id: slideId("257") }] }).format,
+    ).toBeUndefined()
+    expect(answeredRegister({ ...register, order }).format).toBe(format)
   })
 })

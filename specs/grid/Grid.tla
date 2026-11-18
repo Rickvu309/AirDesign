@@ -25,13 +25,13 @@ Members(seq) == {seq[i] : i \in 1..Len(seq)}
 RowStart(i) == CHOOSE j \in 1..i : slides[j] \in heads /\
   \A k \in (j+1)..i : slides[k] \notin heads
 TypeOK ==
-  /\ stage \in 0..60
+  /\ stage \in 0..71
   /\ slides \in Seq(1..8)
   /\ heads \subseteq Members(slides)
-  /\ cacheStage \in 0..60
+  /\ cacheStage \in 0..71
   /\ cacheSlides \in Seq(1..8)
   /\ cacheHeads \subseteq Members(cacheSlides)
-  /\ initialized \in 0..2
+  /\ initialized \in 0..3
 Partition ==
   /\ Cardinality(Members(slides)) = Len(slides)
   /\ slides[1] \in heads
@@ -55,6 +55,17 @@ VersionedDefault ==
   /\ stage \in {52,53} => (initialized = 1 /\ heads = {1,5})
   /\ SectionedDefault(<<1,28,10,2>>, 8) = {1,2,12,22,30,40}
   /\ SectionedDefault(<<1,25,1>>, 7) = {1,2,11,20,27}
+GroupsFixed ==
+  /\ stage \in {62,64,65,66,67,68,69,70,71} <=> initialized = 3
+  /\ stage = 62 => heads = {1}
+  /\ stage = 64 => heads = {1,7,5}
+  /\ stage = 70 => heads = {1,3,4}
+OldCommandMeaning ==
+  /\ stage = 65 => (slides = <<1,3,4,7,5,6,2,8>> /\ heads = {1,7,5})
+  /\ stage \in {66,67} => (slides = <<1,2,3,4,7,5,6,8>> /\ heads = {1,7,5})
+  /\ stage = 68 => (slides = <<5,6,8,1,2,3,4,7>> /\ heads = {5,1,7})
+  /\ stage = 69 => (slides = <<1,2,3,4,5,6,8>> /\ heads = {1,5})
+  /\ stage = 71 => (slides = <<1,3,4,5>> /\ heads = {1,3,4})
 Init ==
   /\ stage = 0 /\ slides = Opening /\ heads = {1,5}
   /\ cacheStage = 0 /\ cacheSlides = Opening /\ cacheHeads = {1,5}
@@ -129,10 +140,27 @@ SectionedMoveBefore ==
   /\ stage = 49 /\ stage' = 59 /\ slides' = Opening /\ heads' = {1,3}
   /\ initialized' = 2 /\ UNCHANGED <<cacheStage, cacheSlides, cacheHeads>>
 UndoSectionedBefore == Land(59,60,Opening,{1,4})
+IndexNoSections(from, to) ==
+  /\ stage = from /\ stage' = to
+  /\ UNCHANGED <<slides, heads, cacheStage, cacheSlides, cacheHeads, initialized>>
+LandThree(from, to, order, starts) ==
+  /\ stage = from /\ stage' = to /\ slides' = order /\ heads' = starts
+  /\ initialized' = 3 /\ UNCHANGED <<cacheStage, cacheSlides, cacheHeads>>
+OpenNoSections == IndexNoSections(0,61)
+FirstVersionThree == LandThree(61,62,<<1,3,4,5,6>>,{1})
+RowsNoSections == IndexNoSections(15,63)
+ThreeKeepsMadeRows == LandThree(63,64,<<1,2,3,4,7,5,6,8>>,{1,7,5})
+OldMoveAfterThree == Land(64,65,<<1,3,4,7,5,6,2,8>>,{1,7,5})
+RefuseOldNewRow == Land(64,66,<<1,2,3,4,7,5,6,8>>,{1,7,5})
+RefuseOldPartRow == Land(64,67,<<1,2,3,4,7,5,6,8>>,{1,7,5})
+OldWholeGroup == Land(64,68,<<5,6,8,1,2,3,4,7>>,{5,1,7})
+OldUndoAfterThree == Land(64,69,<<1,2,3,4,5,6,8>>,{1,5})
+ThreeAfterTwo == LandThree(50,70,<<1,3,4,5>>,{1,3,4})
+RefuseOldUndo == Land(70,71,<<1,3,4,5>>,{1,3,4})
 Adopt ==
   /\ cacheStage # stage
   /\ cacheStage' = stage /\ cacheSlides' = slides /\ cacheHeads' = heads
   /\ UNCHANGED <<stage, slides, heads, initialized>>
-Next == RemoveHead \/ InsertGap \/ RefuseHead \/ RemoveSingleton \/ UndoSingleton \/ MoveHead \/ UndoMove \/ Add \/ Clone \/ UndoAdd \/ UndoClone \/ RemoveNonHead \/ InsertNonHeadGap \/ UndoNonHead \/ BelowInterior \/ UndoBelow \/ RedoBelow \/ BelowFinal \/ TailAppend \/ BelowAfterAppend \/ UndoConcurrentBelow \/ ForeignFillNew \/ RefuseFilledUndo \/ AppendAfterUndo \/ RefuseRedo \/ RemoveAnchor \/ RefuseDeadBelow \/ TwoBelow \/ RefuseCollision \/ GroupSame \/ UndoGroup \/ GroupNew \/ RowKeep \/ UndoRow \/ RedoRow \/ ForeignRowInsert \/ RefuseRowUndo \/ RefuseStaleRow \/ ForeignGroupGap \/ UndoForeignGroup \/ EmptyRow \/ RefuseGroupAnchor \/ DeleteSet \/ UndoDeleteSet \/ CloneSet \/ UndoCloneSet \/ RefuseWholeDeck \/ RefuseSetCollision \/ IndexSections \/ FirstVersionTwo \/ LaterVersionOne \/ FirstVersionOne \/ LaterVersionTwo \/ MoveBefore \/ UndoBefore \/ GroupBefore \/ UndoGroupBefore \/ RefuseDeadBefore \/ SectionedMoveBefore \/ UndoSectionedBefore \/ Adopt
+Next == RemoveHead \/ InsertGap \/ RefuseHead \/ RemoveSingleton \/ UndoSingleton \/ MoveHead \/ UndoMove \/ Add \/ Clone \/ UndoAdd \/ UndoClone \/ RemoveNonHead \/ InsertNonHeadGap \/ UndoNonHead \/ BelowInterior \/ UndoBelow \/ RedoBelow \/ BelowFinal \/ TailAppend \/ BelowAfterAppend \/ UndoConcurrentBelow \/ ForeignFillNew \/ RefuseFilledUndo \/ AppendAfterUndo \/ RefuseRedo \/ RemoveAnchor \/ RefuseDeadBelow \/ TwoBelow \/ RefuseCollision \/ GroupSame \/ UndoGroup \/ GroupNew \/ RowKeep \/ UndoRow \/ RedoRow \/ ForeignRowInsert \/ RefuseRowUndo \/ RefuseStaleRow \/ ForeignGroupGap \/ UndoForeignGroup \/ EmptyRow \/ RefuseGroupAnchor \/ DeleteSet \/ UndoDeleteSet \/ CloneSet \/ UndoCloneSet \/ RefuseWholeDeck \/ RefuseSetCollision \/ IndexSections \/ FirstVersionTwo \/ LaterVersionOne \/ FirstVersionOne \/ LaterVersionTwo \/ MoveBefore \/ UndoBefore \/ GroupBefore \/ UndoGroupBefore \/ RefuseDeadBefore \/ SectionedMoveBefore \/ UndoSectionedBefore \/ OpenNoSections \/ FirstVersionThree \/ RowsNoSections \/ ThreeKeepsMadeRows \/ OldMoveAfterThree \/ RefuseOldNewRow \/ RefuseOldPartRow \/ OldWholeGroup \/ OldUndoAfterThree \/ ThreeAfterTwo \/ RefuseOldUndo \/ Adopt
 Spec == Init /\ [][Next]_vars
 ====

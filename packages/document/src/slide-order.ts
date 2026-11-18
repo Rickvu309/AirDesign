@@ -6,6 +6,7 @@ import {
   orderedSpots,
   turnRefusal,
   gridCommandVersion,
+  gridSectionStarts,
   readGridCommand,
   type GridCommand,
 } from "./grid-order.js"
@@ -141,6 +142,8 @@ export function applySlide(
   if (file.length === 0 || new Set(file).size !== file.length) return { ok: false, code: "dead" }
   if (state.file.length > 0 && !sameIds(state.file, file)) return { ok: false, code: "stale" }
   if (command.grid === 2 && gridCommandVersion(state) === 1) return { ok: false, code: "stale" }
+  if (command.grid === 3 && gridSectionStarts(state) === undefined) return { ok: false, code: "stale" }
+  if (rowPlaced(command) && state.order.some((row) => row.grid === 3)) return { ok: false, code: "stale" }
   const withFile = state.file.length === 0 ? { ...state, file } : state
   const present = presentSlides(withFile)
   const ids = new Set(present.map((spot) => spot.id))
@@ -199,6 +202,12 @@ export function applySlide(
   }
   if (!ids.has(command.source)) return { ok: false, code: "dead" }
   return { ok: true, state: { ...withFile, order: [...withFile.order, command] } }
+}
+
+function rowPlaced(command: SlideCommand): boolean {
+  if (command.grid === undefined || command.grid === 3) return false
+  if (command.slide === "add") return command.row === "new"
+  return command.slide === "move-many" && command.row !== "same" && command.row !== "before" && command.after !== null
 }
 
 function index(state: { readonly index?: DeckIndex }): { readonly index?: DeckIndex } {
@@ -272,7 +281,7 @@ export function readSlideState(raw: unknown): SlideState | undefined {
 
 export function newerSlideCommand(raw: unknown): boolean {
   if (typeof raw !== "object" || raw === null || !("slide" in raw)) return false
-  if ("grid" in raw && raw.grid !== undefined && raw.grid !== 1 && raw.grid !== 2) return true
+  if ("grid" in raw && raw.grid !== undefined && raw.grid !== 1 && raw.grid !== 2 && raw.grid !== 3) return true
   return (
     typeof raw.slide === "string" &&
     ![

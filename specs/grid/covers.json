@@ -3,9 +3,17 @@
   "covers": [
     {
       "file": "packages/document/src/grid-order.ts",
-      "names": ["foldGrid", "turnRefusal", "defaultGrid1", "defaultGrid2", "packSections", "gridRows"],
-      "digest": "6c9b6cad1184",
-      "blob": "2fc48406768e7dae0343bf0dd01b4447f530e18f"
+      "names": [
+        "foldGrid",
+        "turnRefusal",
+        "defaultGrid1",
+        "defaultGrid2",
+        "packSections",
+        "gridRows",
+        "gridCommandVersion"
+      ],
+      "digest": "52cf832b7e66",
+      "blob": "ec894d48d8e62668d540749879d63ed829f7bb30"
     },
     {
       "file": "packages/document/src/grid-undo.ts",
@@ -24,6 +32,30 @@
       "names": ["setRefusal", "changeSet"],
       "digest": "8250311d8bd8",
       "blob": "a899b1ba1bee162e16c987dfcbe79751206efc49"
+    },
+    {
+      "file": "packages/document/src/slide-group-keys.ts",
+      "names": ["*"],
+      "digest": "510f7674e2c1",
+      "blob": "a7ef0fe8a33b8845870e6dda05b1798ad5af2b0a"
+    },
+    {
+      "file": "packages/document/src/slide-groups.ts",
+      "names": ["slideGroups"],
+      "digest": "597c5730681d",
+      "blob": "a4150c81f48697c1dd0478c6e64a7ca79c278885"
+    },
+    {
+      "file": "packages/document/src/slide-order.ts",
+      "names": ["applySlide", "rowPlaced"],
+      "digest": "6aa3f5631df9",
+      "blob": "178dd12bcd1e0c5011fb5b67a0135d2973cd8b24"
+    },
+    {
+      "file": "packages/document/src/grid-read.ts",
+      "names": ["readGridCommand"],
+      "digest": "5f00065ee3b7",
+      "blob": "e8c4fb1bdd61531633e2b94e7b7f94c090bbf66f"
     }
   ]
 }

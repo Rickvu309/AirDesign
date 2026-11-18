@@ -93,7 +93,7 @@ function readCopies(raw: unknown): readonly [GridCopy, ...GridCopy[]] | undefine
 
 export function readGridCommand(raw: Record<string, unknown>): GridCommand | undefined {
   const grid = raw.grid
-  if (grid !== 1 && grid !== 2) return undefined
+  if (grid !== 1 && grid !== 2 && grid !== 3) return undefined
   const fields =
     raw.slide === "remove-many"
       ? ["ids"]
