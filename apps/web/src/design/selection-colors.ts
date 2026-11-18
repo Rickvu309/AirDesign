@@ -6,6 +6,7 @@ import {
   type Color,
   type ElementId,
   type SetChange,
+  type TextFill,
 } from "@airdesign/document"
 import { shownHex, type Palette } from "./color-choices"
 import type { PanelReads } from "./panel"
@@ -14,34 +15,40 @@ export type ColorSource = {
   readonly node: ElementId
   readonly fields: PanelReads["fields"]
   readonly textColors?: (paragraph: number, run: number) => Color | undefined
+  readonly textFills?: (paragraph: number, run: number) => TextFill | undefined
   readonly textColor?: Color
 }
 
-function mapColors(
-  value: unknown,
-  visit: (color: Color) => Color,
-  fallback?: Color,
-  textColors?: ColorSource["textColors"],
-): unknown {
+function mapColors(value: unknown, visit: (color: Color) => Color, source?: ColorSource): unknown {
   const color = readColor(value)
   if (color != null) return visit(color)
   if (Array.isArray(value)) {
     const text = readTextValue(JSON.stringify(value))
+    const fallback = source?.textColor
     if (text !== null && fallback !== undefined)
       return text.map((paragraph, p) => ({
         ...paragraph,
         runs: paragraph.runs.map((run, r) => {
-          const held = run.color ?? textColors?.(p, r) ?? fallback
-          const next = run.text === "" ? held : visit(held)
+          if (run.text === "") return run
+          const fill = run.fill ?? (run.color === undefined ? source?.textFills?.(p, r) : undefined)
+          if (fill !== undefined) {
+            let changed = false
+            const next = mapColors(fill, (color) => {
+              const picked = visit(color)
+              changed ||= picked !== color
+              return picked
+            })
+            return changed ? { ...run, fill: next } : run
+          }
+          const held = run.color ?? source?.textColors?.(p, r) ?? fallback
+          const next = visit(held)
           return next === held ? run : { ...run, color: next }
         }),
       }))
-    return value.map((item: unknown) => mapColors(item, visit, fallback, textColors))
+    return value.map((item: unknown) => mapColors(item, visit, source))
   }
   if (typeof value === "object" && value !== null)
-    return Object.fromEntries(
-      Object.entries(value).map(([key, item]) => [key, mapColors(item, visit, fallback, textColors)]),
-    )
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, mapColors(item, visit, source)]))
   return value
 }
 
@@ -56,8 +63,7 @@ export function selectionColors(sources: readonly ColorSource[], palette: Palett
           if (!colors.has(hex)) colors.set(hex, color)
           return color
         },
-        source.textColor,
-        source.textColors,
+        source,
       )
   const brightness = (hex: string) =>
     0.2126 * Number.parseInt(hex.slice(0, 2), 16) +
@@ -85,8 +91,7 @@ export function replaceSelectionColor(
           changed = true
           return fadedColor(color, alphaOf(held))
         },
-        source.textColor,
-        source.textColors,
+        source,
       )
       const [trait, name] = key.split(".")
       if (changed && trait !== undefined && name !== undefined)
