@@ -433,12 +433,12 @@ function rowFormat(elements: Readonly<Partial<Record<string, Rowed>>>): number {
 export function answeredRegister<
   Stored extends {
     readonly index?: DeckIndex
-    readonly order?: readonly { readonly slide: string; readonly grid?: 1 | 2; readonly row?: string }[]
+    readonly order?: readonly { readonly slide: string; readonly grid?: number; readonly row?: string }[]
     readonly elements: Readonly<Partial<Record<string, Rowed>>>
   },
 >(register: Stored): Stored & { readonly format?: number } {
   const newerCommand = register.order?.some(
-    (command) => command.grid === 2 || (command.slide === "move-many" && command.row === "before"),
+    (command) => (command.grid ?? 1) > 1 || (command.slide === "move-many" && command.row === "before"),
   )
   const rows = newerCommand === true ? format : rowFormat(register.elements)
   if (register.index === undefined) return rows > 1 ? { ...register, format: rows } : register

@@ -60,6 +60,17 @@ const names = [
   "Missing before anchor refused",
   "Previous row tail joins the sectioned row",
   "Sectioned row move undone",
+  "Index says the deck has no sections",
+  "Version three dissolves the default rows",
+  "Index says the rowed deck has no sections",
+  "Version three keeps the rows a person made as slide groups",
+  "Version one move lands as version three",
+  "Version one new row refused",
+  "Version one part of a group refused",
+  "Version one whole group moved",
+  "Version one undo lands on matching heads",
+  "Version three fixes groups after version two",
+  "Version two undo refused on changed heads",
 ]
 export const state = (v) => names[v.stage] + ", device at " + names[v.cacheStage]
 export const step = (action) => (action === "Adopt" ? "the device adopts the accepted prefix" : action)

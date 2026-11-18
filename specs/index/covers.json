@@ -10,8 +10,8 @@
     {
       "file": "packages/document/src/deck-index.ts",
       "names": ["appendIndex", "indexDue", "answeredRegister"],
-      "digest": "76c81c797e60",
-      "blob": "16b8490da52696b51faaa1cdfea8ae6be14f7a84"
+      "digest": "65fab69e82f7",
+      "blob": "389a8129b6e6b48328fc88e020026d274b5da36f"
     },
     {
       "file": "packages/live/src/deck-index.ts",

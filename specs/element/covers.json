@@ -44,8 +44,8 @@
     {
       "file": "packages/document/src/slide-order.ts",
       "names": ["applySlide"],
-      "digest": "cb218272b36b",
-      "blob": "d9c65275479a92a9b11b5b0eec6250a49945ce01"
+      "digest": "201ce181ae77",
+      "blob": "178dd12bcd1e0c5011fb5b67a0135d2973cd8b24"
     },
     {
       "file": "packages/document/src/decide.ts",

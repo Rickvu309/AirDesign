@@ -10,6 +10,7 @@ import {
   slideUndoable,
   undoOf,
   redoOf,
+  slideGroups,
   type Register,
   type SlideCommand,
   type Undoable,
@@ -240,11 +241,28 @@ const expected = [
     [1, 2, 3],
     [4, 5, 6],
   ],
+  [
+    [1, 2, 3, 4],
+    [5, 6],
+  ],
+  [[1, 3, 4, 5, 6]],
+  [[1, 2, 3, 4], [7], [5, 6]],
+  [[1, 2, 3, 4], [7], [5, 6, 8]],
+  [[1, 3, 4], [7], [5, 6, 2, 8]],
+  [[1, 2, 3, 4], [7], [5, 6, 8]],
+  [[1, 2, 3, 4], [7], [5, 6, 8]],
+  [[5, 6, 8], [1, 2, 3, 4], [7]],
+  [
+    [1, 2, 3, 4],
+    [5, 6, 8],
+  ],
+  [[1], [3], [4, 5]],
+  [[1], [3], [4, 5]],
 ]
 
 type World = { register: Register; cache: Register; undo: readonly Undoable[]; redo: Undoable | null }
 function step(world: World, action: string): World {
-  if (action === "IndexSections") {
+  if (action === "IndexSections" || action === "OpenNoSections" || action === "RowsNoSections") {
     const indexed = appendIndex(world.register.index, {
       format,
       once: "sections",
@@ -252,7 +270,7 @@ function step(world: World, action: string): World {
       total: 0,
       slides: file.map((id, position) => ({ id, position })),
       elements: [],
-      sectionStarts: [id(1), id(2), id(3), id(4)],
+      sectionStarts: action === "IndexSections" ? [id(1), id(2), id(3), id(4)] : [],
     })
     if (!indexed.ok) throw new Error(indexed.refusal)
     return { ...world, register: { ...world.register, index: indexed.index } }
@@ -263,7 +281,7 @@ function step(world: World, action: string): World {
     const { index } = world.register
     return { ...world, cache: { ...openRegister("", ""), ...parsed, ...(index === undefined ? {} : { index }) } }
   }
-  if (action === "RefuseHead" || action === "RefuseFilledUndo" || action === "RefuseRowUndo") {
+  if (["RefuseHead", "RefuseFilledUndo", "RefuseRowUndo", "RefuseOldUndo"].includes(action)) {
     const undoable = world.undo.at(-1)
     if (undoable === undefined) throw new Error("undoable")
     expect(undoOf(world.register, undoable).ok).toBe(false)
@@ -285,6 +303,17 @@ function step(world: World, action: string): World {
     expect(decide(world.register, { command: "slide", file, edit })).toMatchObject({
       decision: "refuse",
       code: action === "RefuseGroupAnchor" ? "dead" : "stale",
+    })
+    return world
+  }
+  if (action === "RefuseOldNewRow" || action === "RefuseOldPartRow") {
+    const edit: SlideCommand =
+      action === "RefuseOldNewRow"
+        ? { slide: "move-many", grid: 1, ids: [id(3)], after: id(2), row: "new" }
+        : { slide: "move-many", grid: 1, ids: [id(5), id(6)], after: null, row: "keep" }
+    expect(decide(world.register, { command: "slide", file, edit })).toMatchObject({
+      decision: "refuse",
+      code: "stale",
     })
     return world
   }
@@ -319,7 +348,7 @@ function step(world: World, action: string): World {
     })
     return world
   }
-  if (action.startsWith("Undo") || ["RedoBelow", "RedoRow"].includes(action)) {
+  if (action.startsWith("Undo") || ["RedoBelow", "RedoRow", "OldUndoAfterThree"].includes(action)) {
     const undoable = ["RedoBelow", "RedoRow"].includes(action) ? (world.redo ?? undefined) : world.undo.at(-1)
     if (undoable === undefined) throw new Error("undoable")
     const undo = ["RedoBelow", "RedoRow"].includes(action)
@@ -375,6 +404,11 @@ function step(world: World, action: string): World {
     ForeignFillNew: { slide: "add", grid: 1, id: id(8), after: id(7), layout: id(1), row: "same" },
     AppendAfterUndo: { slide: "add", grid: 1, id: id(8), after: id(4), layout: id(1), row: "same" },
     TwoBelow: { slide: "add", grid: 1, id: id(8), after: id(2), layout: id(1), row: "new" },
+    FirstVersionThree: { slide: "remove", grid: 3, id: id(2) },
+    ThreeKeepsMadeRows: { slide: "add", grid: 3, id: id(8), after: id(6), layout: id(1), row: "same" },
+    OldMoveAfterThree: { slide: "move", grid: 1, id: id(2), after: id(6), row: "same" },
+    OldWholeGroup: { slide: "move-many", grid: 1, ids: [id(5), id(6), id(8)], after: null, row: "keep" },
+    ThreeAfterTwo: { slide: "remove", grid: 3, id: id(6) },
   }
   const edit = edits[action]
   if (edit === undefined) throw new Error(`unknown edge ${action}`)
@@ -386,7 +420,15 @@ function step(world: World, action: string): World {
     register: answer.register,
     undo:
       action.startsWith("Insert") ||
-      ["TailAppend", "ForeignFillNew", "AppendAfterUndo", "ForeignRowInsert", "ForeignGroupGap"].includes(action)
+      [
+        "TailAppend",
+        "ForeignFillNew",
+        "AppendAfterUndo",
+        "ForeignRowInsert",
+        "ForeignGroupGap",
+        "ThreeKeepsMadeRows",
+        "ThreeAfterTwo",
+      ].includes(action)
         ? world.undo
         : [...world.undo, undoable],
   }
@@ -466,10 +508,25 @@ it("replays every bounded Grid edge through the joint fold and guarded inverses"
         "RefuseDeadBefore",
         "SectionedMoveBefore",
         "UndoSectionedBefore",
+        "OpenNoSections",
+        "FirstVersionThree",
+        "RowsNoSections",
+        "ThreeKeepsMadeRows",
+        "OldMoveAfterThree",
+        "RefuseOldNewRow",
+        "RefuseOldPartRow",
+        "OldWholeGroup",
+        "OldUndoAfterThree",
+        "ThreeAfterTwo",
+        "RefuseOldUndo",
       ]
-      const next = step(world, edge.action === "Land" ? actions[state.stage]! : edge.action)
+      const named = ["Land", "LandThree", "IndexNoSections"].includes(edge.action)
+      const next = step(world, named ? actions[state.stage]! : edge.action)
       expect(gridRows(next.register).map((row) => row.map(Number))).toEqual(expected[state.stage])
       expect(gridRows(next.cache).map((row) => row.map(Number))).toEqual(expected[state.cacheStage])
+      for (const register of [next.register, next.cache])
+        if (register.order.some((command) => command.grid === 3))
+          expect(slideGroups(register).map((group) => group.slides)).toEqual(gridRows(register))
       edges++
       if (!worlds.has(edge.to)) {
         worlds.set(edge.to, next)
