@@ -256,10 +256,10 @@ export function readIndexPage(raw: unknown): IndexPage | null {
     if (slide === null || slides.some((kept) => kept.id === slide.id)) return null
     if (
       (slide.template !== undefined &&
-      templates !== undefined &&
-      !templates.some((style) => style.id === slide.template)) ||
+        templates !== undefined &&
+        !templates.some((style) => style.id === slide.template)) ||
       (typeof slide.textStyles === "string" &&
-      !slides.some((source) => source.id === slide.textStyles && Array.isArray(source.textStyles)))
+        !slides.some((source) => source.id === slide.textStyles && Array.isArray(source.textStyles)))
     )
       return null
     slides.push(slide)
