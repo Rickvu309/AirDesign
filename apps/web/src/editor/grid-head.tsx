@@ -1,3 +1,4 @@
+import type { RefObject } from "react"
 import { limits } from "@airdesign/document"
 import { zoomRanges } from "@/editor/canvas-zoom"
 import { Button } from "@/components/ui/button"
@@ -26,6 +27,7 @@ export function GridHead({
   picked,
   save,
   onZoom,
+  canvas,
   onSelection,
   onAdd,
   onSlides,
@@ -42,6 +44,7 @@ export function GridHead({
   picked: GridPick
   save: SaveStatus | null
   onZoom: (zoom: Zoom) => void
+  canvas?: RefObject<HTMLElement | null>
   onSelection: () => void
   onAdd: () => void
   onSlides: () => void
@@ -117,6 +120,7 @@ export function GridHead({
                 zoom={zoom}
                 percent={Math.round(percent)}
                 onZoom={onZoom}
+                {...(canvas === undefined ? {} : { canvas })}
                 onSelection={onSelection}
               />
             )

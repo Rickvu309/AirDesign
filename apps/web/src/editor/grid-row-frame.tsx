@@ -22,7 +22,7 @@ export function GridRowFrame({
   blocked: boolean
   onGrab: (event: PointerEvent<HTMLButtonElement>) => void
   onMove: (direction: "earlier" | "later") => void
-  hover: "band" | "slide" | "add" | null
+  hover: "band" | "slide" | "handle" | "add" | null
   style: CSSProperties
   start: number
 }) {
@@ -50,7 +50,7 @@ export function GridRowFrame({
           transform: `scale(${1 / scale}) translate(-50%, -50%)`,
           transformOrigin: "0 0",
         }}
-        className="absolute z-10 flex h-11 touch-none items-center justify-center rounded-full bg-primary text-primary-foreground"
+        className="absolute z-10 flex touch-none items-center justify-center rounded-full"
         onPointerDown={(event) => {
           event.stopPropagation()
           event.currentTarget.focus({ preventScroll: true })
@@ -65,18 +65,19 @@ export function GridRowFrame({
           onMove(command)
         }}
       >
-        <svg
-          width="12"
-          height="16"
-          viewBox="0 0 12 16"
-          aria-hidden="true"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-        >
-          <path d="M3 3h6M3 8h6M3 13h6" />
-        </svg>
+        <span data-row-grip aria-hidden="true" className="flex items-center justify-center rounded-full">
+          <svg
+            width="12"
+            height="16"
+            viewBox="0 0 12 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <path d="M3 3h6M3 8h6M3 13h6" />
+          </svg>
+        </span>
       </button>
     </div>
   )

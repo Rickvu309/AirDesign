@@ -88,7 +88,7 @@ test("keeps chrome constant and numbers visible while they fit", async ({ page }
   const focusWidth = await entry(page, 1).evaluate(
     (el) => (Number.parseFloat(getComputedStyle(el).outlineWidth) * el.getBoundingClientRect().width) / el.offsetWidth,
   )
-  expect(focusWidth).toBeCloseTo(2, 1)
+  expect(focusWidth).toBeCloseTo(3, 1)
   await zoomTo(page, 10)
   await expect(page.locator("[data-slide-number]").first()).toBeVisible()
 })

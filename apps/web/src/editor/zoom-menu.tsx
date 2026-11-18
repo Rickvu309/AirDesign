@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react"
+import { useLayoutEffect, useRef, useState, type KeyboardEvent, type RefObject } from "react"
 import { zoomCopy, zoomToOf } from "@/copy/product-copy"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuRadioGroup, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -55,6 +55,7 @@ export function ZoomMenu({
   percent,
   onZoom,
   onSelection,
+  canvas,
   range = zoomRanges.slides,
 }: {
   range?: ZoomRange
@@ -62,14 +63,30 @@ export function ZoomMenu({
   percent: number
   onZoom: (zoom: Zoom) => void
   onSelection?: () => void
+  canvas?: RefObject<HTMLElement | null>
 }) {
   const [open, setOpen] = useState(false)
+  const typed = useRef(false)
+  function restoreAfterTyping() {
+    if (!typed.current || canvas === undefined) return true
+    typed.current = false
+    queueMicrotask(() => canvas.current?.focus({ preventScroll: true }))
+    return false
+  }
   const choose = (next: Zoom) => {
+    typed.current = true
     onZoom(next)
     setOpen(false)
   }
   return (
-    <DropdownMenu modal={false} open={open} onOpenChange={setOpen}>
+    <DropdownMenu
+      modal={false}
+      open={open}
+      onOpenChange={(next) => {
+        if (next) typed.current = false
+        setOpen(next)
+      }}
+    >
       <DropdownMenuTrigger
         render={
           <Button
@@ -83,7 +100,13 @@ export function ZoomMenu({
         {`${String(percent)}%`}
         <EditorIcon name="chev" size={12} className="text-faint" />
       </DropdownMenuTrigger>
-      <EditorMenuContent side="bottom" align="end" sideOffset={10} className="w-[220px]">
+      <EditorMenuContent
+        side="bottom"
+        align="end"
+        sideOffset={10}
+        className="w-[220px]"
+        {...(canvas === undefined ? {} : { finalFocus: restoreAfterTyping })}
+      >
         <ZoomField percent={percent} onZoom={choose} range={range} />
         <EditorMenuRule />
         <EditorMenuAction

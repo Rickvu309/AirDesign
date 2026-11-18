@@ -29,9 +29,8 @@ test("a group drop is one saved edit and one undo restores both slides", async (
 test("row hover yields to slide hover, Space, editing and small zoom", async ({ page, context, stack }) => {
   const saved = await openSaved(page, context, stack, 10)
   await zoomTo(page, 50)
-  const one = await boxOf(page, 1),
-    two = await boxOf(page, 2)
-  await page.mouse.move((one.x + one.width + two.x) / 2, one.y + one.height / 2)
+  const one = await boxOf(page, 1)
+  await page.mouse.move(one.x - 8, one.y + one.height / 2)
   await expect(page.locator('[data-row-hover="band"]')).toHaveCount(1)
   await expect(handle(page, 1)).toBeVisible()
   await entry(page, 2).hover()
@@ -112,9 +111,8 @@ test("Alt+Up and Alt+Down move the focused row and announce its position", async
   await expect.poll(saved.order).toEqual(saved.ids)
   await expect.poll(saved.rows).toEqual([saved.ids.slice(0, 4), saved.ids.slice(4, 8), saved.ids.slice(8)])
   await expect(handle(page, 3)).toBeFocused()
-  const one = await boxOf(page, 1),
-    two = await boxOf(page, 2)
-  await page.mouse.move((one.x + one.width + two.x) / 2, one.y + one.height / 2)
+  const one = await boxOf(page, 1)
+  await page.mouse.move(one.x - 8, one.y + one.height / 2)
   await expect(page.locator('[data-row-hover="band"]')).toHaveCount(1)
   await handle(page, 1).focus()
   await page.keyboard.press("Alt+ArrowDown")

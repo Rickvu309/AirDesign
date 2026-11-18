@@ -21,9 +21,8 @@ export async function rowMoveState(kit, state) {
   const account = await prepareRows(kit)
   const { page } = kit
   const one = await page.locator('[data-slide-entry="1"]').boundingBox()
-  const two = await page.locator('[data-slide-entry="2"]').boundingBox()
-  await page.mouse.move((one.x + one.width + two.x) / 2, one.y + one.height / 2)
   if ((await handle(page).count()) === 0) return account
+  await handle(page).hover()
   await expect(handle(page)).toHaveCSS("opacity", "1")
   if (state === "hover") return account
   await handle(page).focus()

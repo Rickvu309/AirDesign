@@ -25,10 +25,14 @@ export function GridRowAdd({
   const label = slideListCopy.addBelow(row)
   return (
     <div
-      data-row-insert
+      data-row-insert={last ? "last" : "between"}
       data-used={used ? "" : undefined}
-      className="absolute inset-x-0 top-full"
-      style={{ height: band }}
+      className="absolute top-full left-0"
+      style={{
+        width,
+        height: band,
+        ...{ "--grid-row-preview-distance": `${gap + 24}px` },
+      }}
       onPointerLeave={() => setUsed(false)}
     >
       <GridAddButton
@@ -37,7 +41,6 @@ export function GridRowAdd({
         title={label}
         style={{
           left: width / 2,
-          top: band / 2,
           width: Math.min(44, width * scale),
           height: Math.min(44, band * scale),
           transform: `scale(${1 / scale}) translate(-50%, -50%)`,
@@ -49,7 +52,11 @@ export function GridRowAdd({
           onAdd()
         }}
       />
-      <div data-row-preview className="pointer-events-none absolute" style={{ top: last ? gap + 24 : band * 0.85 }}>
+      <div
+        data-row-preview
+        className="pointer-events-none absolute"
+        style={{ top: last ? "var(--grid-row-preview-distance)" : band * 0.85 }}
+      >
         {last ? (
           <GridPlaceholder width={width} height={height} scale={scale} kind="row" />
         ) : (
@@ -89,15 +96,19 @@ export function GridPlaceholder({
       ref={fitPreview}
       data-row-placeholder={kind === "row" ? "" : undefined}
       data-gap-placeholder={kind === "gap" ? "" : undefined}
-      className="border border-dashed border-[var(--grid-placeholder-edge)] bg-[var(--grid-placeholder)]"
+      aria-hidden="true"
       style={{
         width: width * scale,
         height: height * scale,
-        borderRadius: `max(var(--grid-radius-min), calc(var(--grid-radius-canvas) * ${scale}))`,
+        ...{ "--grid-radius": `max(var(--grid-radius-min), calc(var(--grid-radius-canvas) * ${scale}))` },
         transform: `scale(${1 / scale})`,
         transformOrigin: "top left",
       }}
-    />
+    >
+      <svg className="block size-full">
+        <rect data-grid-placeholder-border />
+      </svg>
+    </div>
   )
 }
 

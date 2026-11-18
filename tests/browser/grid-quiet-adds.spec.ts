@@ -164,15 +164,14 @@ test("a menu, pan and slide drag block every add", async ({ page }) => {
 test("row tint clears in the first frame with slide hover", async ({ page }) => {
   await open(page)
   await zoom(page, 25)
-  const first = await entry(page, 1).boundingBox()
-  const second = await entry(page, 2).boundingBox()
-  if (!first || !second) throw new Error("slide boxes")
-  const y = first.y + first.height / 2
-  await page.mouse.move((first.x + first.width + second.x) / 2, y)
+  const grip = page.locator("[data-row-handle]").first()
   const halo = page.locator('[data-grid-row-member="0"] [data-grid-halo]')
-  await expect(halo.first()).toHaveCSS("opacity", "1")
-  for (let x = Math.ceil(second.x) - 4; x <= second.x + 12; x += 2) {
-    await page.mouse.move(x, y)
+  const second = (await entry(page, 2).boundingBox())!
+  const y = second.y + second.height / 2
+  for (let offset = 2; offset <= 12; offset += 2) {
+    await grip.hover()
+    await expect(halo.first()).toHaveCSS("opacity", "1")
+    await page.mouse.move(Math.ceil(second.x) + offset, y)
     const overlap = await halo.evaluateAll(
       ([other, slide]) =>
         new Promise<boolean>((resolve) => {
@@ -185,7 +184,7 @@ test("row tint clears in the first frame with slide hover", async ({ page }) => 
           })
         }),
     )
-    expect(overlap, `pointer x=${x}`).toBe(false)
+    expect(overlap, `pointer offset=${offset}`).toBe(false)
   }
   await expect(halo.nth(1)).toHaveCSS("opacity", "1")
 })
