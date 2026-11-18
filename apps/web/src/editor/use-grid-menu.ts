@@ -47,5 +47,5 @@ export function useGridMenu({
     if (menu !== null && below !== null) moveSlides(pickedSlides(picked, menu.index), below, "new")
   }
 
-  return { menu, open, close, moveBelow, canMoveBelow: below !== null }
+  return { menu, open, close, moveBelow, canMoveBelow: below !== null, dismiss: () => setMenu(null) }
 }

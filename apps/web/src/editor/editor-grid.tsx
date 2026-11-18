@@ -13,11 +13,11 @@ import { GridCard } from "@/editor/grid-card"
 import { GridHead } from "@/editor/grid-head"
 import { moveGridRow, gridMoveMessage, useGridRowFocus } from "@/editor/grid-row-frame"
 import { gridAddFits } from "@/editor/grid-add-placement"
-import { gridSpacing, gridThumbHeight } from "@/editor/grid-viewport"
+import { gridSpacing, gridThumbHeight, gridTrackColumns, gridTracks } from "@/editor/grid-viewport"
 import { GridDragGhost } from "@/editor/grid-drag-ghost"
-import { gridDrop, type GridMoveSide } from "@/editor/grid-drop"
+import { gridDrop, gridDropBoundary, type GridMoveSide } from "@/editor/grid-drop"
 import { gridLayout, keptGridViewport, useKeptGridZoom } from "@/editor/grid-zoom"
-import { gridDesigned, gridOpened, gridPick, gridRinged, gridStep } from "@/editor/grid-interaction"
+import { gridOpened, gridStep } from "@/editor/grid-interaction"
 import { GridThumbnail, useGridViewport } from "@/editor/use-grid-viewport"
 import { useGridEditing } from "@/editor/use-grid-editing"
 import { useGridMarquee } from "@/editor/use-grid-marquee"
@@ -26,20 +26,19 @@ import type { SaveStatus } from "@/editor/use-deck-status"
 import { focusMove, gridCommand } from "@/editor/editor-grid-keys"
 import { gridSlideActions } from "@/editor/grid-slide-actions"
 import { GridSlideMenu, pointAt } from "@/editor/grid-menu"
-import { pickAll, pickedSlides, pickRange, prunedPick } from "@/editor/grid-selection"
+import { pickAll, pickedSlides, pickRange, visiblePick } from "@/editor/grid-selection"
 import { useGridDrag } from "@/editor/use-grid-drag"
-import { useGridSelection } from "@/editor/use-grid-selection"
+import { useShownSelection } from "@/editor/use-grid-selection"
 import type { ToolPick } from "@/editor/pointer-tool"
 import { gridRows } from "@/editor/grid-section"
+import { useGridSectionFocus, useGridSections } from "@/editor/use-grid-sections"
 import { GridRows } from "@/editor/grid-rows"
-import { sectionAt, useKeptCollapsed } from "@/editor/collapsed-sections"
-import { slideThumbWidth, useSlideSay, type SlideStrip, type StripSection } from "@/editor/slide-sidebar"
+import { sectionAt } from "@/editor/collapsed-sections"
+import { slideThumbWidth, useSlideSay, type SlideStrip } from "@/editor/slide-sidebar"
 import { insertsFirst, type ToolbarTools } from "@/editor/toolbar-tools"
 import { useZoomKeys } from "@/editor/zoom-keys"
 import type { ExportRequest } from "@/export/export-deck"
 import { cn } from "@/lib/class-names"
-
-const noSections: readonly StripSection[] = []
 
 const wideSlide = { width: 12_192_000, height: 6_858_000 }
 
@@ -97,14 +96,22 @@ export function EditorGrid({
   const fit = gridLayout(100, size ?? wideSlide, strip.count)
   const width = fit.width
   const rows = gridRows(strip)
+  const { current, count } = strip
+  const folding = useGridSections(id, strip, stop)
+  const { sections, shown, reachable, collapsed, collapsedRanges } = folding
+  const height = gridThumbHeight(width, strip.thumbHeight, slideThumbWidth)
+  const geometry = {
+    rows,
+    sections: sections.map((section) => section.start),
+    rowHandles: strip.onMoveMany !== undefined,
+    width,
+    height,
+    shown,
+  }
+  const tracks = gridTracks(geometry)
   const viewport = useGridViewport({
-    geometry: {
-      rows,
-      sections: (strip.sections ?? []).map((section) => section.start),
-      rowHandles: strip.onMoveMany !== undefined,
-      width,
-      height: gridThumbHeight(width, strip.thumbHeight, slideThumbWidth),
-    },
+    geometry,
+    folded: folding.key,
     deck: id,
     world: list,
     scale,
@@ -112,7 +119,7 @@ export function EditorGrid({
     working: !presenting,
     onZoom: setZoom,
     onFit: setFitPercent,
-    selected: strip.current,
+    selected: reachable ?? current,
     slideWidth: (size ?? wideSlide).width,
     elementsOf: () => strip.selectionBoxes?.(selection.ids),
     initialFit: zoom === "fit",
@@ -125,25 +132,21 @@ export function EditorGrid({
   }
   const [touch, setTouch] = useState(false)
   const [elementPressed, setElementPressed] = useState(false)
-  const { current, count } = strip
-  const picked = prunedPick(gridPick(state), count, strip.slideIds)
-  const selected = new Set(gridRinged(state, current, count, strip.slideIds))
-  const designed = gridDesigned(state, current, count, strip.slideIds)
-  useLayoutEffect(() => onSlideSelection?.(designed), [onSlideSelection, designed])
-  useGridSelection(strip.onSelection, selected, current)
-  const sections = strip.sections ?? noSections
-  const collapsed = useKeptCollapsed(id, sections, current)
-  const [seen, setSeen] = useState(current)
-  if (seen !== current) {
-    setSeen(current)
-    collapsed.open(sectionAt(sections, current))
-  }
-  const shown = (index: number) => !collapsed.held.has(sectionAt(sections, index))
+  const { picked, selected } = useShownSelection(state, strip, shown, onSlideSelection)
   const announce = useCallback(
     (text: string) => setMessage((held) => ({ text, odd: held === null ? false : !held.odd })),
     [],
   )
-  const edit = useGridEditing({ world: list, state, dispatch, current, select, onSelect: strip.onSelect, announce })
+  const edit = useGridEditing({
+    world: list,
+    state,
+    dispatch,
+    current,
+    select,
+    onSelect: strip.onSelect,
+    announce,
+    shown,
+  })
   const slideMenu = useGridMenu({
     list,
     rows,
@@ -172,7 +175,7 @@ export function EditorGrid({
       if (card) viewport.focus(card)
     } else if (following.current) {
       const next = list.current?.querySelector<HTMLElement>(`[data-slide-entry="${current + 1}"]`)
-      setStop(current)
+      setStop(shown(current) ? current : (reachable ?? current))
       if (next && next === document.activeElement) viewport.reveal(next)
       else next?.focus({ preventScroll: true })
     } else if (focusedEntry.current?.isConnected) {
@@ -181,6 +184,17 @@ export function EditorGrid({
     }
     following.current = false
   }, [current, count, order, starts, tools.undo?.gridTurn, collapsed.held])
+  const sectionFocus = useGridSectionFocus({
+    list,
+    folding,
+    setStop,
+    focus: viewport.focus,
+    picked,
+    selected,
+    edit,
+    menu,
+    dismiss: slideMenu.dismiss,
+  })
   function zoomSelection() {
     if (edit.editing) {
       const boxes = strip.selectionBoxes?.(selection.ids)
@@ -195,11 +209,9 @@ export function EditorGrid({
     if (key === "selection") zoomSelection()
     else chooseZoom(key === "fit" ? "fit" : steppedZoom(key, percent, zoomRanges.grid))
   })
-  const reachable = stop >= 0 && stop < count && shown(stop) ? stop : current
-  const height = gridThumbHeight(width, strip.thumbHeight, slideThumbWidth)
   const spacing = gridSpacing(width, height)
   const focusRow = useGridRowFocus(list, rows, strip.slideIds ?? [])
-  const columns = Math.max(1, ...rows.map((row) => row.end - row.start))
+  const columns = Math.max(1, ...tracks.map(gridTrackColumns))
   const layoutWidth = columns * width + (columns - 1) * spacing.column
   const drag = useGridDrag({
     list,
@@ -207,7 +219,8 @@ export function EditorGrid({
     ghost,
     viewport: viewport.handlers.ref,
     rows,
-    selected: pickedSlides(picked, current),
+    selected: pickedSlides(picked, current).filter(shown),
+    collapsed: collapsedRanges,
     slideIds: strip.slideIds ?? [],
     panBy: viewport.panBy,
     onPanEnd: viewport.panEnd,
@@ -239,6 +252,10 @@ export function EditorGrid({
     })
 
   function moveSlides(held: readonly number[], at: number, side: GridMoveSide) {
+    if (!held.every(shown)) return
+    const drop = gridDropBoundary(collapsedRanges, { at, side }, held[0] ?? at)
+    at = drop.at
+    side = drop.side
     const first = gridDrop(rows, held, at, side)
     if (first === null || strip.onMoveMany === undefined) return
     const row = side === "keep"
@@ -304,7 +321,7 @@ export function EditorGrid({
     }
     if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "a") {
       event.preventDefault()
-      const all = pickAll(count, current)
+      const all = visiblePick(pickAll(count, reachable ?? current), shown)
       edit.step({ kind: "pick", pick: all })
       if (all !== null) announce(slideListCopy.selected(all.slides.size))
       return
@@ -329,7 +346,7 @@ export function EditorGrid({
     if (slide === null) return
     event.preventDefault()
     if (event.shiftKey) {
-      const next = pickRange(picked, slide, current)
+      const next = visiblePick(pickRange(picked, slide, shown(current) ? current : slide), shown)
       edit.step({ kind: "pick", pick: next })
       if (next !== null) announce(slideListCopy.selected(next.slides.size))
     } else edit.step({ kind: "pick", pick: null })
@@ -415,12 +432,12 @@ export function EditorGrid({
         onZoom={chooseZoom}
         canvas={list}
         onSelection={zoomSelection}
-        onAdd={() => addSlide(reachable, "same", false)}
+        onAdd={() => addSlide(reachable ?? current, "same", false)}
         onSlides={onSlides}
         onExport={onExport}
         {...(onRename === undefined ? {} : { onRename })}
         {...(onTrash === undefined ? {} : { onTrash })}
-        {...(onPresent === undefined ? {} : { onPresent: () => onPresent(reachable) })}
+        {...(onPresent === undefined ? {} : { onPresent: () => onPresent(reachable ?? current) })}
       />
       <Announcer message={message} />
       {dragging === null ? null : (
@@ -459,7 +476,8 @@ export function EditorGrid({
         )}
         onPointerDown={marquee.press}
         onClick={(event) => {
-          if (event.target instanceof Element && event.target.closest("[data-grid-card]") === null) edit.clear()
+          if (event.target instanceof Element && event.target.closest("[data-grid-card], [data-section-head]") === null)
+            edit.clear()
         }}
         data-hover-disabled={
           viewport.space || hand || dragging !== null || marquee.active || elementPressed ? "true" : undefined
@@ -489,15 +507,13 @@ export function EditorGrid({
             style={{ width: 4 / scale, borderRadius: 2 / scale }}
           />
           <GridRows
-            rows={rows}
+            geometry={geometry}
+            tracks={tracks}
             sections={sections}
             ids={strip.slideIds}
             columns={columns}
-            width={width}
-            height={height}
             scale={scale}
-            collapsed={collapsed}
-            shown={shown}
+            collapsed={sectionFocus}
             renderCard={card}
             addBlocked={addBlocked}
             rowBlocked={

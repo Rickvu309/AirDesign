@@ -12,6 +12,8 @@ import {
   gridSpacing,
   gridCardBounds,
   gridSectionGap,
+  gridSectionHeight,
+  gridHeadingHeight,
   wheeledGrid,
   gridScaleMoved,
   arrowGrid,
@@ -78,7 +80,7 @@ it("fits the occupied cards across section headers with screen-space padding", (
   )
   const scale = (1000 - 4) / (1000 + 65)
   expect(view?.scale).toBeCloseTo(scale)
-  expect(view?.y).toBeCloseTo((1473 - 44 - 1333 * scale) / 2 - 44)
+  expect(view?.y).toBeCloseTo((1473 - gridSectionHeight - 1333 * scale) / 2 - gridSectionHeight)
   expect(view?.x).toBeCloseTo(48 - 1130 * scale)
 })
 
@@ -196,7 +198,7 @@ describe("scale-independent row fit", () => {
             const marked = rows.filter((row) => geometry.sections.some((n) => n >= row.start && n < row.end)).length
             const worldHeight = rows.length * 744 + (rows.length - 1) * 410.4
             expect(fit.y).toBeGreaterThanOrEqual(48 - 1e-8)
-            expect(fit.y + worldHeight * fit.scale + marked * 44).toBeLessThanOrEqual(height - 48 + 1e-8)
+            expect(fit.y + worldHeight * fit.scale + marked * gridSectionHeight).toBeLessThanOrEqual(height - 48 + 1e-8)
             expect(fit.x).toBeGreaterThanOrEqual(48 - 1e-8)
             expect(Array.from({ length: 6 }, () => fittedGridRows(geometry, room))).toEqual(Array(6).fill(fit))
           })
@@ -233,7 +235,7 @@ it("fits the rotated union in a sectioned row using the world geometry", () => {
   const view = fittedGridElements(geometry, 3, boxes, 1000, { width: 996, height: 696 })
   expect(view?.scale).toBe(1.5)
   expect(view?.x).toBeCloseTo((996 - 450 * 1.5) / 2 - (1130 + 250) * 1.5)
-  expect(view?.y).toBeCloseTo(48 - (500 + 24 + 285 + 24 - 100) * 1.5 - 88)
+  expect(view?.y).toBeCloseTo(48 - (500 + 24 + 285 + 24 - 100) * 1.5 - 2 * gridSectionHeight)
 })
 
 it("clamps a very small element to Grid's maximum zoom", () => {
@@ -274,4 +276,30 @@ it("fits a selected row head and tail using the stored columns and their chrome"
   expect(view?.scale).toBeCloseTo(fitted.scale, 9)
   expect(view?.x).toBeCloseTo(fitted.x, 9)
   expect(view?.y).toBeCloseTo(fitted.y, 9)
+})
+
+it("fits collapsed heading tracks without reserving space for hidden rows", () => {
+  const geometry = {
+    rows: [
+      { start: 0, end: 1 },
+      { start: 1, end: 5 },
+      { start: 5, end: 9 },
+      { start: 9, end: 10 },
+    ],
+    sections: [0, 1, 9],
+    shown: (index: number) => index === 0 || index === 9,
+    width: 1000,
+    height: 750,
+  }
+  const room = { width: 1470, height: 923 }
+  const fit = fittedGridRows(geometry, room)
+  expect(fit.scale).toBeGreaterThan(0.3)
+  expect(fittedGridCards(geometry, [5], room)).toBeNull()
+})
+
+it("leaves at least six screen pixels between a heading and the hover halo of its first row at every zoom", () => {
+  const haloBand = 30
+  for (const scale of [0.01, 0.22, 1, 4]) {
+    expect(gridSectionHeight - gridHeadingHeight + 24 * scale - haloBand).toBeGreaterThanOrEqual(6)
+  }
 })

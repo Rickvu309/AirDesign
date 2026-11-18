@@ -1,22 +1,28 @@
 import type { SlideId } from "@airdesign/document"
 import { useState, type PointerEvent, type ReactNode } from "react"
-import { gridIndices } from "@/editor/grid-drop"
 import { GridRowAdd } from "@/editor/grid-row-add"
 import { GridRowFrame } from "@/editor/grid-row-frame"
-import { GridSectionCell, type GridRow } from "@/editor/grid-section"
-import { gridRowHandle, gridSectionHeight, gridSpacing } from "@/editor/grid-viewport"
+import { GridSectionCell } from "@/editor/grid-section"
+import {
+  gridHeadingHeight,
+  gridRowHandle,
+  gridSectionHeight,
+  gridSpacing,
+  gridTrackColumns,
+  gridTracks,
+  gridTrackSize,
+  type GridGeometry,
+} from "@/editor/grid-viewport"
 import type { StripSection } from "@/editor/slide-sidebar"
 
 export function GridRows({
-  rows,
+  geometry,
+  tracks,
   sections,
   ids,
   columns,
-  width,
-  height,
   scale,
   collapsed,
-  shown,
   renderCard,
   addBlocked,
   rowBlocked,
@@ -24,15 +30,13 @@ export function GridRows({
   onMove,
   onAdd,
 }: {
-  rows: readonly GridRow[]
+  geometry: GridGeometry
+  tracks: ReturnType<typeof gridTracks>
   sections: readonly StripSection[]
   ids: readonly SlideId[] | undefined
   columns: number
-  width: number
-  height: number
   scale: number
   collapsed: { held: ReadonlySet<number>; toggle: (number: number) => void }
-  shown: (index: number) => boolean
   renderCard: (index: number) => ReactNode
   addBlocked: boolean
   rowBlocked: boolean
@@ -42,13 +46,23 @@ export function GridRows({
 }) {
   const [hover, setHover] = useState<{ row: number; part: "band" | "slide" | "handle" | "add" } | null>(null)
   const [focus, setFocus] = useState<{ row: number; part: "handle" | "add" } | null>(null)
+  const { rows, width, height } = geometry
   const spacing = gridSpacing(width, height)
   const count = rows.at(-1)?.end ?? 0
   const columnsOf = (length: number) => `repeat(${length}, ${width}px)`
   return (
     <div
       className="grid"
-      style={{ gridTemplateColumns: columnsOf(columns), columnGap: spacing.column, rowGap: spacing.row }}
+      style={{
+        gridTemplateColumns: columnsOf(columns),
+        columnGap: spacing.column,
+        gridTemplateRows: tracks
+          .map((track, index) => {
+            const { world, fixed } = gridTrackSize(track, geometry, index === tracks.length - 1)
+            return `${world + fixed / scale}px`
+          })
+          .join(" "),
+      }}
       onPointerMove={(event) => {
         if (event.pointerType !== "mouse" || rowBlocked || !(event.target instanceof Element)) return
         const member = event.target.closest<HTMLElement>("[data-grid-row], [data-grid-row-member]")
@@ -83,13 +97,16 @@ export function GridRows({
         if (focus !== null) setFocus(null)
       }}
     >
-      {rows.flatMap((row, number) => {
-        const indices = gridIndices(row)
-        const key = ids?.[row.start] ?? row.start
-        const place = { gridRow: number + 1, gridColumn: `1 / span ${indices.length}` }
-        const heads = sections.some((section) => section.start >= row.start && section.start < row.end)
-        const headingGap = 24 / scale
-        const rowHeight = height + 24 + (heads ? gridSectionHeight / scale : 0)
+      {tracks.flatMap((track, index) => {
+        const { start, end, heads, cards, number } = track
+        const row = rows[number]
+        if (row === undefined) return []
+        const key = ids?.[start] ?? start
+        const length = gridTrackColumns(track)
+        const full = cards.length === end - start
+        const place = { gridRow: index + 1, gridColumn: `1 / span ${length}` }
+        const size = gridTrackSize(track, geometry, true)
+        const rowHeight = size.world + size.fixed / scale
         const rowHover = hover?.row === row.start ? hover.part : null
         const rowFocus = focus?.row === row.start ? focus.part : null
         const tinted =
@@ -97,59 +114,69 @@ export function GridRows({
           height * scale >= gridRowHandle.minimumHeight &&
           (rowHover === "handle" || (rowFocus === "handle" && rowHover !== "add"))
         return [
-          <GridRowFrame
-            key={`row:${key}`}
-            number={number + 1}
-            start={row.start}
-            height={height}
-            scale={scale}
-            blocked={rowBlocked}
-            hover={rowFocus === "add" ? "add" : rowHover}
-            style={{ ...place, height: rowHeight }}
-            onGrab={(event) => onGrab(row.start, event)}
-            onMove={(direction) => {
-              setHover(null)
-              onMove(number, direction)
-            }}
-          />,
-          ...indices.map((index) => (
-            <div
-              key={ids?.[index] ?? index}
-              data-grid-row-member={row.start}
-              data-row-tint={tinted ? "" : undefined}
-              className="pointer-events-none relative grid [&>div>div]:pointer-events-auto"
-              style={{
-                ...place,
-                gridTemplateColumns: columnsOf(indices.length),
-                gridTemplateRows: heads ? `${gridSectionHeight / scale - headingGap}px 1fr` : undefined,
-                columnGap: spacing.column,
-                rowGap: headingGap,
-              }}
-            >
-              <GridSectionCell
-                row={row}
-                index={index}
-                sections={sections}
-                count={count}
-                scale={scale}
-                pitch={width + spacing.column}
-                held={collapsed.held}
-                onToggle={collapsed.toggle}
-                shown={shown(index)}
-                height={height}
+          ...(full
+            ? [
+                <GridRowFrame
+                  key={`row:${key}`}
+                  number={number + 1}
+                  start={row.start}
+                  height={height}
+                  scale={scale}
+                  blocked={rowBlocked}
+                  hover={rowFocus === "add" ? "add" : rowHover}
+                  style={{ ...place, height: rowHeight }}
+                  onGrab={(event) => onGrab(row.start, event)}
+                  onMove={(direction) => {
+                    setHover(null)
+                    onMove(number, direction)
+                  }}
+                />,
+              ]
+            : []),
+          ...[...new Set([...heads, ...cards])]
+            .sort((a, b) => a - b)
+            .map((index) => (
+              <div
+                key={ids?.[index] ?? index}
+                data-grid-row-member={cards.length > 0 ? row.start : undefined}
+                data-row-tint={tinted ? "" : undefined}
+                className="pointer-events-none relative grid [&>div>div]:pointer-events-auto"
+                style={{
+                  ...place,
+                  height: rowHeight,
+                  gridTemplateColumns: columnsOf(length),
+                  gridTemplateRows:
+                    heads.length === 0
+                      ? undefined
+                      : cards.length === 0
+                        ? `${gridHeadingHeight / scale}px`
+                        : `${gridSectionHeight / scale}px 1fr`,
+                  columnGap: spacing.column,
+                }}
               >
-                {renderCard(index)}
-              </GridSectionCell>
-            </div>
-          )),
-          ...(addBlocked
+                <GridSectionCell
+                  row={row}
+                  index={index}
+                  sections={sections}
+                  count={count}
+                  scale={scale}
+                  pitch={width + spacing.column}
+                  held={collapsed.held}
+                  onToggle={collapsed.toggle}
+                  shown={cards.includes(index)}
+                >
+                  {cards.includes(index) ? renderCard(index) : null}
+                </GridSectionCell>
+              </div>
+            )),
+          ...(addBlocked || !full
             ? []
             : [
                 <div
                   key={`add:${key}`}
                   data-grid-row-member={row.start}
                   className="pointer-events-none relative [&>[data-row-insert]]:pointer-events-auto"
-                  style={place}
+                  style={{ ...place, height: rowHeight }}
                 >
                   <GridRowAdd
                     row={number + 1}
@@ -157,7 +184,7 @@ export function GridRows({
                     height={height}
                     gap={spacing.row}
                     scale={scale}
-                    last={number === rows.length - 1}
+                    last={index === tracks.length - 1}
                     onAdd={() => onAdd(row.start)}
                   />
                 </div>,

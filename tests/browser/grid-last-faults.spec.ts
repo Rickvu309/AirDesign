@@ -218,18 +218,19 @@ for (const control of ["Design", "zoom"] as const) {
   })
 }
 
-test("Undo opens the collapsed section holding the first selected slide", async ({ page, context, stack }) => {
+test("Redo opens the collapsed section holding the slide it brings back", async ({ page, context, stack }) => {
   const saved = await openSaved(page, context, stack, `${fixtures}/sections-after.pptx`)
-  await entry(page, 3).press("ContextMenu")
+  await entry(page, 1).press("ContextMenu")
   await menuItem(page, menuAfter).click()
   await expect(cards(page)).toHaveCount(4)
+  await entry(page, 3).press("ControlOrMeta+z")
+  await expect(cards(page)).toHaveCount(3)
   const opening = page.locator("[data-section-head]").first()
   await opening.press(slideListCopy.openKey)
   await expect(entry(page, 1)).toHaveCount(0)
-  await entry(page, 4).press("ControlOrMeta+a")
-  await page.keyboard.press("ControlOrMeta+z")
-  await expect.poll(() => revision(stack, saved)).toBe(2)
+  await entry(page, 2).press("ControlOrMeta+Shift+z")
+  await expect.poll(() => revision(stack, saved)).toBe(3)
   await expect(opening).toHaveAttribute("aria-expanded", "true")
-  await expect(entry(page, 1)).toBeFocused()
-  await expect(entry(page, 1)).toBeInViewport()
+  await expect(entry(page, 2)).toBeFocused()
+  await expect(entry(page, 2)).toBeInViewport()
 })

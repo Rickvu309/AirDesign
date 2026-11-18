@@ -17,9 +17,10 @@ export function keptCollapsed(deck: string): ReadonlySet<number> {
   }
 }
 
-export function keepCollapsed(deck: string, collapsed: ReadonlySet<number>): void {
+export function keepCollapsed(deck: string, collapsed: ReadonlySet<number>, current?: number): void {
   try {
     localStorage.setItem(stored(deck), JSON.stringify([...collapsed].sort((left, right) => left - right)))
+    if (current !== undefined) localStorage.setItem(`${stored(deck)}.current`, String(current))
   } catch {
     return
   }
@@ -42,6 +43,14 @@ export function collapsedSections(
   return new Set([...collapsed].filter((number) => number < sections.length && number !== open))
 }
 
+function keptCurrent(deck: string): string | null {
+  try {
+    return localStorage.getItem(`${stored(deck)}.current`)
+  } catch {
+    return null
+  }
+}
+
 type Collapsed = {
   readonly held: ReadonlySet<number>
   readonly toggle: (number: number) => void
@@ -52,12 +61,12 @@ export function useKeptCollapsed(deck: string | null, sections: readonly StripSe
   const [held, setHeld] = useState(() => {
     if (deck === null) return none
     const kept = keptCollapsed(deck)
-    const shown = collapsedSections(kept, sections, current)
-    if (shown.size !== kept.size) keepCollapsed(deck, shown)
+    const shown = collapsedSections(kept, sections, keptCurrent(deck) === String(current) ? -1 : current)
+    if (shown.size !== kept.size) keepCollapsed(deck, shown, current)
     return shown
   })
   const keep = (next: ReadonlySet<number>) => {
-    if (deck !== null) keepCollapsed(deck, next)
+    if (deck !== null) keepCollapsed(deck, next, current)
     setHeld(next)
   }
   const without = (number: number) => new Set([...held].filter((each) => each !== number))
@@ -68,4 +77,18 @@ export function useKeptCollapsed(deck: string | null, sections: readonly StripSe
       if (held.has(number)) keep(without(number))
     },
   }
+}
+
+export function gridStop(
+  stop: number,
+  current: number,
+  count: number,
+  shown: (index: number) => boolean,
+  sections: readonly StripSection[],
+): number | null {
+  const start = stop >= 0 && stop < count ? stop : current
+  for (let index = start; index < count; index++) if (shown(index)) return index
+  for (let index = start - 1; index >= 0; index--)
+    if (shown(index)) return sections[sectionAt(sections, index)]?.start ?? 0
+  return null
 }

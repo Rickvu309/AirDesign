@@ -114,29 +114,54 @@ export function gridSectionGap(scale: number): number {
 export type GridGeometry = {
   readonly rows: readonly { readonly start: number; readonly end: number }[]
   readonly sections: readonly number[]
+  readonly shown?: (index: number) => boolean
   readonly rowHandles?: boolean
   readonly width: number
   readonly height: number
 }
 
-export const gridSectionHeight = 44
+export const gridHeadingHeight = 20
+export const gridSectionHeight = 56
+const gridHeadingGap = 24
+const gridCardInset = 24
 
-function sectionRows(geometry: GridGeometry, rows: GridGeometry["rows"]): number {
-  return rows.filter((row) => geometry.sections.some((start) => start >= row.start && start < row.end)).length
+export function gridTracks({ rows, sections, shown }: GridGeometry) {
+  return rows.flatMap(({ start, end }, number) => {
+    const heads = sections.filter((index) => index >= start && index < end)
+    const cards = Array.from({ length: end - start }, (_, offset) => start + offset).filter(
+      (index) => shown?.(index) ?? true,
+    )
+    return heads.length === 0 && cards.length === 0 ? [] : [{ start, end, number, heads, cards }]
+  })
+}
+
+type GridTrack = ReturnType<typeof gridTracks>[number]
+
+export function gridTrackColumns(track: GridTrack): number {
+  return Math.max(...track.heads, ...track.cards) - track.start + 1
+}
+
+export function gridTrackSize(track: GridTrack, geometry: GridGeometry, last: boolean) {
+  const cards = track.cards.length > 0
+  return {
+    world: cards ? geometry.height + gridCardInset + (last ? 0 : gridSpacing(geometry.width, geometry.height).row) : 0,
+    fixed: cards ? (track.heads.length === 0 ? 0 : gridSectionHeight) : gridHeadingHeight + (last ? 0 : gridHeadingGap),
+  }
 }
 
 function gridCard(geometry: GridGeometry, index: number) {
-  const { rows, width, height } = geometry
-  const number = rows.findIndex((row) => index >= row.start && index < row.end)
-  const row = rows[number]
-  if (row === undefined) return null
-  const spacing = gridSpacing(width, height)
+  const tracks = gridTracks(geometry)
+  const number = tracks.findIndex((track) => track.cards.includes(index))
+  const track = tracks[number]
+  if (track === undefined) return null
+  const { width, height } = geometry
+  const preceding = tracks.slice(0, number).map((each) => gridTrackSize(each, geometry, false))
   return {
-    left: (index - row.start) * (width + spacing.column),
-    leading: index === row.start,
-    trailing: index === row.end - 1,
-    top: number * (height + 24 + spacing.row),
-    fixed: sectionRows(geometry, rows.slice(0, number + 1)) * gridSectionHeight,
+    left: (index - track.start) * (width + gridSpacing(width, height).column),
+    leading: index === track.cards[0] && track.cards.length === track.end - track.start,
+    trailing: index === track.cards.at(-1),
+    top: preceding.reduce((total, row) => total + row.world, 0),
+    fixed: preceding.reduce((total, row) => total + row.fixed, gridTrackSize(track, geometry, true).fixed),
   }
 }
 
@@ -153,7 +178,7 @@ export function fittedGridCards(
   const right = Math.max(...cards.map((card) => card.left))
   const bounds = {
     width: right - left + geometry.width,
-    height: Math.max(...cards.map((card) => card.top)) - top + geometry.height + 24,
+    height: Math.max(...cards.map((card) => card.top)) - top + geometry.height + gridCardInset,
   }
   const leading = cards.some((card) => card.leading)
   const trailing = cards.some((card) => card.trailing && card.left === right)
@@ -205,15 +230,18 @@ export function fittedGridElements(
 }
 
 export function fittedGridRows(geometry: GridGeometry, room: GridBounds): GridViewport {
-  const { rows, width, height } = geometry
-  const spacing = gridSpacing(width, height)
-  const columns = Math.max(1, ...rows.map((row) => row.end - row.start))
+  const { width, height } = geometry
+  const tracks = gridTracks(geometry)
+  const columns = Math.max(1, ...tracks.map(gridTrackColumns))
+  const sizes = tracks.map((track, index) => gridTrackSize(track, geometry, index === tracks.length - 1))
   const bounds = {
-    width: columns * width + (columns - 1) * spacing.column,
-    height: rows.length * (height + 24) + Math.max(0, rows.length - 1) * spacing.row,
+    width: columns * width + (columns - 1) * gridSpacing(width, height).column,
+    height: sizes.reduce((total, size) => total + size.world, 0),
   }
-  const heads = sectionRows(geometry, rows) * gridSectionHeight
-  return fitGridBounds(bounds, room, heads, (scale) => rowChrome(geometry, scale, true, true))
+  const heads = sizes.reduce((total, size) => total + size.fixed, 0)
+  const handles = tracks.some((track) => track.cards.length === track.end - track.start)
+  const trailing = tracks.some((track) => track.cards.at(-1) === track.start + columns - 1)
+  return fitGridBounds(bounds, room, heads, (scale) => rowChrome(geometry, scale, handles, trailing))
 }
 
 export const gridRowHandle = { offset: 32, width: 28, minimumHeight: 80 }
@@ -236,8 +264,8 @@ export function gridCardBounds(
   box: GridRect,
   trailingMargin = 0,
 ): GridRect {
-  const row = geometry.rows.find((row) => index >= row.start && index < row.end)
-  const chrome = rowChrome(geometry, scale, index === row?.start, index === (row?.end ?? 0) - 1)
+  const card = gridCard(geometry, index)
+  const chrome = rowChrome(geometry, scale, card?.leading ?? false, card?.trailing ?? false)
   return {
     left: box.left - chrome.left,
     top: box.top,

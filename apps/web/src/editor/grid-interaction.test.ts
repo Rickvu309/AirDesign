@@ -124,4 +124,9 @@ describe("slides the Design panel shows", () => {
     expect(gridDesigned(elements, 2, 5)).toBe(1)
     expect(gridDesigned(text, 2, 5)).toBe(1)
   })
+
+  it("leaves out ringed slides in a collapsed section", () => {
+    expect(gridDesigned(several, 2, 5, undefined, (index) => index !== 1)).toBe(1)
+    expect(gridDesigned(several, 2, 5, undefined, () => false)).toBe(0)
+  })
 })
