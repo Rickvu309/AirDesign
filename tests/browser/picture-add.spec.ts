@@ -131,7 +131,7 @@ test("Undo takes back an added picture and Redo paints it again, through a reloa
   await painted(picture)
   await page.getByRole("button", { name: undoCopy.undoNamed["add-picture"], exact: true }).click()
   await expect(picture).toHaveCount(0)
-  await page.getByRole("button", { name: "Redo add picture", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.redoNamed["add-picture"], exact: true }).click()
   await painted(picture)
   await page.reload()
   await settled(page)

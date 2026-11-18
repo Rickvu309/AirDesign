@@ -31,7 +31,7 @@ export default {
       },
       { editable, letter },
     )
-    await page.getByRole("button", { name: "Add text box", exact: true }).click()
+    await page.getByRole("button", { name: "Add text", exact: true }).click()
     await page.keyboard.type(letter, { delay: 0 })
     return page.evaluate(() => window.benchAnswer)
   },

@@ -10,6 +10,7 @@ import { boxCopy } from "../../apps/web/src/copy/box-copy"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { designing, openDeck, settled, setPanelMode } from "./design-panel"
 import { shapeAt } from "./shape-fills"
+import { bodyCopy } from "../../apps/web/src/copy/body-copy"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -45,7 +46,7 @@ test("a text box's panel leads with Text and folds its rare sections, and a pers
     boxCopy.section,
     "Line",
     effectsCopy.section,
-    designCopy.panels.text,
+    bodyCopy.section,
     geometryCopy.shape,
     "Name and alt text",
     selectionColorsCopy.section,

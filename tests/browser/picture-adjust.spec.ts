@@ -40,10 +40,7 @@ test("a person lays a colour over a picture and blurs it @export", async ({ page
   for (const name of [fillWords.none, fillWords.solid, fillWords.gradient] as const) {
     const choice = kinds.getByRole("button", { name, exact: true })
     await expect(choice).toBeDisabled()
-    await expect(choice).toHaveAttribute(
-      "title",
-      "A picture cannot become a shape fill and come back as the same picture.",
-    )
+    await expect(choice).toHaveAttribute("title", pictureCopy.heldBack)
   }
   await expect(panel.locator("[data-picture-preview]")).toBeVisible()
   await expect(panel.getByRole("button", { name: pictureCopy.overlay, exact: true })).toContainText(pictureCopy.overlay)

@@ -9,13 +9,13 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const deck = page.url().split("/").at(-1)
   await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
-  await page.getByRole("button", { name: "Add text box", exact: true }).click()
+  await page.getByRole("button", { name: "Add text", exact: true }).click()
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')
   await expect(texts).toHaveCount(1)
   await expect(texts.first()).toBeFocused()
   await page.keyboard.type("Remove me")
   await capture("before-add")
-  await page.getByRole("button", { name: "Add text box", exact: true }).click()
+  await page.getByRole("button", { name: "Add text", exact: true }).click()
   await expect(texts).toHaveCount(2)
   await expect(texts.last()).toBeFocused()
   await capture("added-box")
@@ -51,6 +51,6 @@ export default async function drive({ page, signIn, post, capture, note, deckRou
   await expect(texts.last()).toHaveText("Added text")
   await capture("reimported")
   note(
-    "Add text box put a selected, focused box in the middle of the slide; the typed text reached the server and came back after a reload. Delete on the selected text box (outside its text) removed it on the server and after a reload. The export and a new import kept both.",
+    "Add text put a selected, focused box in the middle of the slide; the typed text reached the server and came back after a reload. Delete on the selected text box (outside its text) removed it on the server and after a reload. The export and a new import kept both.",
   )
 }

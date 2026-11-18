@@ -51,7 +51,7 @@ test("an asset control finds an icon by a word, swaps the picture's icon, and Un
 
   await page.getByRole("button", { name: undoCopy.undoNamed.picture, exact: true }).click()
   await expect(section.getByText("Shows the rocket icon")).toBeVisible()
-  await page.getByRole("button", { name: "Redo picture", exact: true }).click()
+  await page.getByRole("button", { name: undoCopy.redoNamed.picture, exact: true }).click()
   await expect(section.getByText("Shows the star icon")).toBeVisible()
 })
 

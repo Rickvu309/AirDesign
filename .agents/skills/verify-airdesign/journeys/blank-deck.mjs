@@ -54,7 +54,7 @@ export default async function drive({ repo, page, context, signIn, post, capture
   await expect(page.locator("[data-slide-paint] [data-placeholder-prompt]")).toHaveCount(0)
   await expect(page.locator("aside").first()).toContainText(productCopy.blankDeck)
   await capture("blank-created-offline")
-  await page.getByRole("button", { name: "Add text box", exact: true }).click()
+  await page.getByRole("button", { name: "Add text", exact: true }).click()
   await expect(title).toBeFocused()
   await title.pressSequentially(typed, { delay: 50 })
   await expect(title).toHaveText(typed)

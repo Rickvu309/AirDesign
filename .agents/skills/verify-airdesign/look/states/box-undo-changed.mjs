@@ -1,3 +1,4 @@
+import { undoCopy } from "../../bin/product-copy.mjs"
 import path from "node:path"
 import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
@@ -24,10 +25,10 @@ async function drive(kit) {
   await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/clean.pptx"))
   const deck = kit.page.url().split("/").at(-1)
   const texts = kit.page.locator('[data-slide-paint] [contenteditable="true"]')
-  await kit.page.getByRole("button", { name: "Add text box", exact: true }).click()
+  await kit.page.getByRole("button", { name: "Add text", exact: true }).click()
   await expect(texts).toHaveCount(2)
   await kit.page.keyboard.press("Escape")
-  await expect(kit.page.getByRole("button", { name: "Undo add text box" })).toBeEnabled()
+  await expect(kit.page.getByRole("button", { name: undoCopy.undoNamed["add-box"] })).toBeEnabled()
   let read = await tool("airdesign_read_deck", { deck, slide: "256" })
   await expect
     .poll(async () => {
@@ -42,7 +43,7 @@ async function drive(kit) {
   await expect(texts.last()).toHaveText("Written by an agent")
   await kit.page.keyboard.press("ControlOrMeta+z")
   const refused = kit.page.getByText("Unable to undo. This changed after your edit, so it stays as it is.")
-  await expect(refused.or(kit.page.getByRole("button", { name: "Redo add text box" }))).toBeVisible()
+  await expect(refused.or(kit.page.getByRole("button", { name: undoCopy.redoNamed["add-box"] }))).toBeVisible()
 }
 
 export default { name: "box-undo-changed", design: editor, drive }

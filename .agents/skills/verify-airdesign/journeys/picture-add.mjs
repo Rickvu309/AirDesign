@@ -1,3 +1,4 @@
+import { readPictureToolCopy } from "../bin/product-copy.mjs"
 import { createHash } from "node:crypto"
 import { readFileSync } from "node:fs"
 import path from "node:path"
@@ -37,7 +38,7 @@ export default async function drive({ repo, page, context, signIn, post, capture
   const deck = first.url().split("/").at(-1)
   await expect.poll(async () => (await post(deckRoutes.original, { deck }, cookie)).json.ok).toBe(true)
   const choosing = first.waitForEvent("filechooser")
-  await first.getByRole("button", { name: "Add picture", exact: true }).click()
+  await first.getByRole("button", { name: readPictureToolCopy().add, exact: true }).click()
   await (await choosing).setFiles(file)
   await painted(first.locator(`[data-slide-paint] [data-canvas-element="${pictureKey}"]`))
   const order = async () => (await post(deckRoutes.open, { deck }, cookie)).json.register.order
@@ -78,6 +79,6 @@ export default async function drive({ repo, page, context, signIn, post, capture
   await painted(picture)
   await capture("reimported")
   note(
-    `Add picture painted the PNG at once on the device that added it while its upload was blocked; the server's order held an element-add with sha256 ${sha256.slice(0, 12)}… and image/png, and /decks/media answered missing. A second device opened the deck, painted the box with "Picture is still uploading from another device" and refused export with "Unable to export. A picture is uploading." Once the first device reloaded, the bytes uploaded, the second device painted the picture, exported ${path.basename(exported)}, and a new import of that file painted it.`,
+    `Add image painted the PNG at once on the device that added it while its upload was blocked; the server's order held an element-add with sha256 ${sha256.slice(0, 12)}… and image/png, and /decks/media answered missing. A second device opened the deck, painted the box with "Image is still uploading from another device" and refused export with "Unable to export. An image is uploading." Once the first device reloaded, the bytes uploaded, the second device painted the picture, exported ${path.basename(exported)}, and a new import of that file painted it.`,
   )
 }

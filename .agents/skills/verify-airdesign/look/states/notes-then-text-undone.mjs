@@ -1,3 +1,4 @@
+import { notesCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
 import { notesState } from "../notes-deck.mjs"
@@ -6,7 +7,7 @@ async function drive(kit) {
   await notesState(kit, true)
   const held = []
   await kit.page.route(`**${kit.deckRoutes.commit.path}`, (route) => held.push(route))
-  const field = kit.page.getByRole("textbox", { name: "Speaker notes", exact: true })
+  const field = kit.page.getByRole("textbox", { name: notesCopy.value, exact: true })
   await expect(field).toBeEditable()
   await field.pressSequentially("Hi", { delay: 40 })
   await expect.poll(() => held.length).toBeGreaterThan(0)

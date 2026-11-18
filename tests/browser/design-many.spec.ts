@@ -54,7 +54,7 @@ test("two selected shapes share one panel that reads Mixed, a colour picked ther
     designCopy.mixed,
   )
   const kinds = panel.getByRole("group", { name: fillCopy.value, exact: true })
-  await expect(kinds.getByRole("button", { name: fillWords.color, exact: true })).toHaveAttribute(
+  await expect(kinds.getByRole("button", { name: fillWords.solid, exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",
   )
