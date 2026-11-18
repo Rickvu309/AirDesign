@@ -2,6 +2,7 @@ declare const process: { cwd(): string; getBuiltinModule(name: "node:fs"): { rea
 import { elementId, orderKeyBetween, slideId, type Media, type SlideState } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { decodeUtf8 } from "./package-bytes.js"
+import { shownPictureMode } from "./picture-mode.js"
 import {
   danglingShapeReferences,
   orderedParts,
@@ -139,4 +140,39 @@ it("shares the media part with a duplicated slide and drops a removed picture's 
   expect([...changed.keys()].filter((name) => name.startsWith("ppt/media/"))).toHaveLength(1)
   expect(danglingShapeReferences(changed)).toEqual(danglingShapeReferences(original))
   expect(sharedOwnedParts(changed)).toEqual([])
+})
+
+async function added(size: { cx: number; cy: number }, bytes: Uint8Array | undefined) {
+  const parts = await fixture("clean.pptx")
+  const slide = readSlides(parts)[0]!
+  const shape = String(readShapes(parts).filter((each) => each.slide === slide.slide).length + 2)
+  const node = elementId(`${slide.slide}.${shape}`)
+  const media: Media = { sha256: "c3".repeat(32), type: "image/png" }
+  const element = { node, kind: "shape", value: null, box: { x: 0, y: 0, ...size }, grouped: false } as const
+  const register = {
+    file: [slideId(slide.slide)],
+    order: [{ slide: "element-add", id: slideId(slide.slide), element, media }],
+  } as const
+  const after = orderedParts(parts, register, (sha256) => (sha256 === media.sha256 ? bytes : undefined))
+  return { after, at: { slide: slide.slide, part: slide.part, shape }, xml: decodeUtf8(after.get(slide.part)!) }
+}
+
+it("places a picture a person or an agent adds with Fill, in PowerPoint's native placement, as Figma places a new image", async () => {
+  const picture = new Uint8Array(readFileSync(`${process.cwd()}/scripts/pptx-fixtures/picture.png`))
+  const emu = 9525
+  const own = await added({ cx: 480 * emu, cy: 320 * emu }, picture)
+  expect(shownPictureMode(own.after, own.at)).toBe("fill")
+  expect(own.xml).toContain('<a:stretch><a:fillRect l="0" t="0" r="0" b="0"/></a:stretch>')
+  const wide = await added({ cx: 960 * emu, cy: 320 * emu }, picture)
+  expect(shownPictureMode(wide.after, wide.at)).toBe("fill")
+  expect(wide.xml).toContain('<a:fillRect l="0" t="-50000" r="0" b="-50000"/>')
+  const painted = paintReader(wide.after)
+    .slide(wide.at.part)
+    .elements.find((each) => each.shape === wide.at.shape)
+  expect(painted?.image).toMatchObject({ contentType: "image/png" })
+})
+
+it("keeps the plain stretch placement for an added picture whose bytes are not on this device", async () => {
+  const { xml } = await added({ cx: 914_400, cy: 914_400 }, undefined)
+  expect(xml).toContain("<a:stretch><a:fillRect/></a:stretch>")
 })

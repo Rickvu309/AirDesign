@@ -3,18 +3,11 @@ import { embedded, fillWritten, linkTarget, pictureAt } from "./blip-edit.js"
 import { spliceBytes } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { paintAttribute } from "./paint-color.js"
+import { placementXml } from "./picture-placement.js"
 import { rasterDimensions } from "./raster-dimensions.js"
 import type { ElementAt, Parts } from "./xml-codec.js"
 
 type Mode = FieldValue<"fills", "mode">
-type Size = { width: number; height: number }
-
-export function picturePlacement(mode: "fill" | "fit", image: Size, box: Size) {
-  const scale = Math[mode === "fill" ? "max" : "min"](box.width / image.width, box.height / image.height)
-  const l = Math.round((1 - (image.width * scale) / box.width) * 50000)
-  const t = Math.round((1 - (image.height * scale) / box.height) * 50000)
-  return { l: l === 0 ? 0 : l, t: t === 0 ? 0 : t, r: l === 0 ? 0 : l, b: t === 0 ? 0 : t }
-}
 
 export function shownPictureMode(parts: Parts, at: ElementAt): Mode | null {
   const found = pictureAt(parts, at)
@@ -60,11 +53,7 @@ export function writtenPictureMode(parts: Parts, at: ElementAt, mode: Mode): Par
       height: Number(ext === undefined ? 0 : paintAttribute(ext, "cy")),
     }
     if (image === null || box.width <= 0 || box.height <= 0) throw new Error("picture-dimensions")
-    const rect = picturePlacement(mode, image, box)
-    placement =
-      mode === "fit" && rect.l === 0
-        ? `<a:stretch><a:fillRect t="${rect.t}" b="${rect.b}"/></a:stretch>`
-        : `<a:stretch><a:fillRect l="${rect.l}" t="${rect.t}" r="${rect.r}" b="${rect.b}"/></a:stretch>`
+    placement = placementXml(mode, image, box)
   }
   return fillWritten(parts, at, (current) => {
     if (current.fill.selfClosing) throw new Error("picture-fill")

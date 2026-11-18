@@ -6,6 +6,8 @@ import { contentTypesPart, partOf, relsOf } from "./package-address.js"
 import { decodeUtf8, encodeUtf8, sameBytes } from "./package-bytes.js"
 import { insertAt, partBytes, requireMarkup, rootClose } from "./part-markup.js"
 import { appendShape, shapeBox, type ShapeBox } from "./shape-write.js"
+import { placementXml } from "./picture-placement.js"
+import { rasterDimensions } from "./raster-dimensions.js"
 
 export type AddedPicture = {
   readonly id: number
@@ -161,8 +163,15 @@ export function blipMarkup(linked: LinkedSource, declared: boolean): string {
   return `<a:blip${namespace} r:embed="${linked.embed}"><a:extLst>${svgExt(linked.svg)}</a:extLst></a:blip>`
 }
 
-function pictureMarkup(id: string, blip: string, box: ShapeBox): string {
-  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="Picture ${id}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill>${blip}<a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr>${shapeBox(box)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`
+function pictureMarkup(id: string, blip: string, box: ShapeBox, placement: string): string {
+  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="Picture ${id}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill>${blip}${placement}</p:blipFill><p:spPr>${shapeBox(box)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`
+}
+
+function addedPlacement(bytes: Uint8Array | undefined, box: ShapeBox): string {
+  const image = bytes === undefined ? null : rasterDimensions(bytes)
+  if (image === null || image.width <= 0 || image.height <= 0 || box.cx <= 0 || box.cy <= 0)
+    return "<a:stretch><a:fillRect/></a:stretch>"
+  return placementXml("fill", image, { width: box.cx, height: box.cy })
 }
 
 export function addPicture(
@@ -172,8 +181,12 @@ export function addPicture(
 ): ReadonlyMap<string, Uint8Array> {
   const next = new Map(parts)
   const slideXml = decodeUtf8(partBytes(next, slide))
-  const blip = blipMarkup(linkedSource(next, slide, picture.source), declaresRelationships(slideXml))
-  const written = appendShape(slideXml, (id) => pictureMarkup(id, blip, picture.box), picture.id)
+  const linked = linkedSource(next, slide, picture.source)
+  const blip = blipMarkup(linked, declaresRelationships(slideXml))
+  const bytes =
+    "media" in picture.source ? next.get(mediaName(next, picture.source.media, picture.source.bytes)) : undefined
+  const placement = addedPlacement(bytes, picture.box)
+  const written = appendShape(slideXml, (id) => pictureMarkup(id, blip, picture.box, placement), picture.id)
   next.set(slide, encodeUtf8(written.xml))
   return next
 }

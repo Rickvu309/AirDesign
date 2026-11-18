@@ -18,16 +18,16 @@ test("a person changes a picture's fill mode and exports its native placement @e
   const width = panel.getByRole("textbox", { name: boxCopy.w, exact: true })
   await width.fill("320")
   await width.press("Enter")
-  let covered = ""
-  for (const mode of ["fill", "fit", "crop", "tile"] as const) {
+  let fitted = ""
+  for (const mode of ["fit", "fill", "crop", "tile"] as const) {
     await panel.getByRole("combobox", { name: pictureCopy.mode, exact: true }).click()
     await page.getByRole("option", { name: pictureWords[mode], exact: true }).click()
     await expect(panel.getByRole("combobox", { name: pictureCopy.mode, exact: true })).toContainText(
       pictureWords[mode]!,
     )
     const size = () => picture.evaluate((node) => getComputedStyle(node).backgroundSize)
-    if (mode === "fill") covered = await size()
-    if (mode === "fit") await expect.poll(size).not.toBe(covered)
+    if (mode === "fit") fitted = await size()
+    if (mode === "fill") await expect.poll(size).not.toBe(fitted)
     const file = join(process.cwd(), "tests/browser", `exported-picture-${mode}.pptx`)
     await savedExport(page, file)
     const parts = await partsOf(file)

@@ -80,6 +80,7 @@ export type DesigningDeck = DesignDeck & {
   readonly selection: Selection
   readonly matching?: readonly ElementId[]
   readonly selectMatching?: () => void
+  readonly matchable?: boolean
   readonly replacePicture?: (node: ElementId, file: File) => void
   readonly chooseFillImage?: (node: ElementId) => void
 }
@@ -226,6 +227,10 @@ function toneHead(deck: DesigningDeck, selection: readonly ElementId[], toneFor?
   return scope === null ? null : <AdjustTone key={[scope.slide, ...selection].join(" ")} action={toneFor(scope)} />
 }
 
+function matchAction(deck: DesigningDeck) {
+  return deck.matchable === true ? deck.selectMatching : undefined
+}
+
 function LiveElementDesign({
   deck,
   node,
@@ -257,8 +262,8 @@ function LiveElementDesign({
     <ElementDesign
       titleActions={
         <div className="flex items-center gap-1">
-          {design.model.kind === "text" || design.model.kind === "group" ? toneHead(deck, [node], toneFor) : null}
-          <ElementTitleActions onMatch={deck.selectMatching} model={design.model} onReplace={deck.replacePicture} />
+          {design.model.kind === "group" ? toneHead(deck, [node], toneFor) : null}
+          <ElementTitleActions onMatch={matchAction(deck)} model={design.model} onReplace={deck.replacePicture} />
         </div>
       }
       formatting={deck.undo.formatting.current}
@@ -357,7 +362,7 @@ function LiveManyDesign({
         <div className="flex items-center gap-1">
           {toneHead(deck, nodes, toneFor)}
           {text}
-          <ElementTitleActions onMatch={deck.selectMatching} />
+          <ElementTitleActions onMatch={matchAction(deck)} />
         </div>
       }
       onChange={(control, value) =>

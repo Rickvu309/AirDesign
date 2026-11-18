@@ -21,6 +21,13 @@ test("selects three matching footers, updates them while offline, and undoes eac
   await words.press("ControlOrMeta+A")
   await words.pressSequentially("Company footer")
   await expect(words).toHaveText("Company footer")
+  const design = page.getByRole("button", { name: "Design", exact: true })
+  await design.click()
+  await words.press("Escape")
+  const panel = page.locator("[data-design-element]")
+  await expect(panel).toBeVisible()
+  const matching = panel.getByRole("button", { name: designCopy.selectMatching })
+  await expect(matching).toHaveCount(0)
 
   const entries = page.locator("[data-slide-entry]")
   for (const count of [2, 3]) {
@@ -29,10 +36,8 @@ test("selects three matching footers, updates them while offline, and undoes eac
     await expect(entries).toHaveCount(count)
   }
   await entries.first().click()
-  await page.getByRole("button", { name: "Design", exact: true }).click()
+  if ((await design.getAttribute("aria-pressed")) !== "true") await design.click()
   await footer.click({ position: { x: 4, y: 4 } })
-  const panel = page.locator("[data-design-element]")
-  const matching = panel.getByRole("button", { name: designCopy.selectMatching })
   await matching.click()
   await expect(panel).toContainText(designCopy.selected(3))
   await expect(page.locator("[data-slide-entry] [data-chosen]")).toHaveCount(2)
@@ -60,7 +65,6 @@ test("selects three matching footers, updates them while offline, and undoes eac
   await page.reload()
   await settled(page)
   for (const entry of await entries.all()) await expect(entry).toContainText("Company footer")
-  const design = page.getByRole("button", { name: "Design", exact: true })
   if ((await design.getAttribute("aria-pressed")) !== "true") await design.click()
   await footer.click({ position: { x: 4, y: 4 } })
   await page.keyboard.press("Control+Alt+A")
