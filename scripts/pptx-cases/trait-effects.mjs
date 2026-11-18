@@ -6,7 +6,8 @@ const glowing = "ppt/slides/slide7.xml"
 const softened = "ppt/slides/slide8.xml"
 const styleShadow =
   '<a:outerShdw blurRad="40000" dist="23000" dir="5400000" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="35000"/></a:srgbClr></a:outerShdw>'
-const glowList = `<a:effectLst><a:glow rad="63500"><a:schemeClr val="accent2"><a:alpha val="40000"/></a:schemeClr></a:glow>${styleShadow}</a:effectLst></p:spPr>`
+const cast = '<a:srgbClr val="000000"><a:alpha val="40000"/></a:srgbClr>'
+const glowList = `<a:effectLst><a:blur rad="63500" grow="1"/><a:glow rad="63500"><a:schemeClr val="accent2"><a:alpha val="40000"/></a:schemeClr></a:glow><a:innerShdw blurRad="50800" dist="38100" dir="2700000">${cast}</a:innerShdw>${styleShadow}</a:effectLst></p:spPr>`
 const softList =
   '<a:effectLst><a:outerShdw blurRad="40000" dist="76200" dir="5400000" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="35000"/></a:srgbClr></a:outerShdw><a:softEdge rad="63500"/></a:effectLst></p:spPr>'
 const styles = /<p:style>.*?<\/p:style>/gs
@@ -29,7 +30,7 @@ export default {
     if (!theme.includes(`<a:effectStyle><a:effectLst>${styleShadow}</a:effectLst></a:effectStyle>`))
       lines.push("shape effects: the theme no longer holds the style shadow the case copies")
     if (!decode(exported, glowing).includes(glowList))
-      lines.push("shape effects did not copy the style's shadow byte for byte before the glow")
+      lines.push("shape effects did not keep the style shadow and write the glow, inner shadow and blur")
     if (!decode(exported, softened).includes(softList))
       lines.push("shape effects did not move only the shadow's distance and add the soft edge")
     for (const part of [glowing, softened]) {
@@ -37,8 +38,13 @@ export default {
         lines.push(`shape effects changed a style reference in ${part}`)
     }
     const shown = answers.pptx.shownEffects(answers.parts.get(exported), { part: glowing, shape: "4" })
-    if (shown?.glow.value?.halo?.radius !== 63500 || shown?.shadow.value?.outer?.distance !== 23000)
-      lines.push("shape effects does not read the glow and the copied shadow it wrote")
+    if (
+      shown?.glow.value?.halo?.radius !== 63500 ||
+      shown?.shadow.value?.outer?.distance !== 23000 ||
+      shown?.innerShadow.value?.inner?.blur !== 50800 ||
+      shown?.blur.value?.radius !== 63500
+    )
+      lines.push("shape effects does not read the glow, inner shadow, blur and copied shadow it wrote")
     return lines
   },
 }

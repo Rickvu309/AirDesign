@@ -1,4 +1,4 @@
-import { effectsCopy } from "../../apps/web/src/copy/effects-copy"
+import { effectsCopy, effectsWords } from "../../apps/web/src/copy/effects-copy"
 import { actualSize } from "./paint-scale"
 import { copyFile, rm } from "node:fs/promises"
 import { join } from "node:path"
@@ -14,18 +14,21 @@ const glowing = "ppt/slides/slide7.xml"
 const softened = "ppt/slides/slide8.xml"
 const styleShadow =
   '<a:outerShdw blurRad="40000" dist="23000" dir="5400000" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="35000"/></a:srgbClr></a:outerShdw>'
-const glowList = `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:effectLst><a:glow rad="63500"><a:schemeClr val="accent2"><a:alpha val="40000"/></a:schemeClr></a:glow>${styleShadow}</a:effectLst></p:spPr><p:style>`
+const cast = '<a:srgbClr val="000000"><a:alpha val="40000"/></a:srgbClr>'
+const glowList = `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:effectLst><a:blur rad="63500" grow="1"/><a:glow rad="63500"><a:schemeClr val="accent2"><a:alpha val="40000"/></a:schemeClr></a:glow><a:innerShdw blurRad="50800" dist="38100" dir="2700000">${cast}</a:innerShdw>${styleShadow}</a:effectLst></p:spPr><p:style>`
 const softList =
   '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:effectLst><a:outerShdw blurRad="40000" dist="76200" dir="5400000" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="35000"/></a:srgbClr></a:outerShdw><a:softEdge rad="63500"/></a:effectLst></p:spPr><p:style>'
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-type Painted = { readonly shadow: number; readonly glow: number }
+type Painted = { readonly shadow: number; readonly glow: number; readonly inner: number; readonly blur: number }
 
 function painted(shape: Locator): Promise<Painted> {
   return shape.evaluate((node) => ({
     shadow: node.querySelectorAll("[data-effect-shadow]").length,
     glow: node.querySelectorAll("[data-effect-glow]").length,
+    inner: node.querySelectorAll("[data-effect-inner]").length,
+    blur: node.querySelectorAll("[data-effect-blur]").length,
   }))
 }
 
@@ -69,7 +72,7 @@ test("a person adds glow to a shape whose shadow comes from its style and recolo
   await actualSize(page)
   await slide(page, 7)
   const first = shapeAt(page, "4", glowing)
-  await expect.poll(() => painted(first)).toEqual({ shadow: 1, glow: 0 })
+  await expect.poll(() => painted(first)).toEqual({ shadow: 1, glow: 0, inner: 0, blur: 0 })
   const effects = await pick(page, first)
   await expect(choices(effects, "Shadow").getByRole("button")).toHaveText(["None", "Outer"])
   await expect(pressed(effects, "Shadow")).toHaveText("Outer")
@@ -77,12 +80,23 @@ test("a person adds glow to a shape whose shadow comes from its style and recolo
   await expect(choices(effects, "Soft edge")).toHaveCount(0)
   await effects.getByRole("button", { name: effectsCopy.add, exact: true }).click()
   await page.getByRole("menuitem", { name: "Add glow", exact: true }).click()
-  await expect.poll(() => painted(first)).toEqual({ shadow: 1, glow: 1 })
+  await expect.poll(() => painted(first)).toEqual({ shadow: 1, glow: 1, inner: 0, blur: 0 })
   await expect(effects.getByRole("textbox", { name: "Radius", exact: true })).toHaveValue("5")
   const glowColor = effects.getByRole("group", { name: "Color", exact: true }).first()
   await expect(shownColor(glowColor)).toHaveText("Accent 1")
   await pickColor(page, glowColor, "Accent 2")
   await expect(shownColor(glowColor)).toHaveText("Accent 2")
+  await effects.getByRole("button", { name: effectsCopy.add, exact: true }).click()
+  await page
+    .getByRole("menuitem", { name: `${effectsCopy.add} ${effectsWords["add.innerShadow"].toLowerCase()}`, exact: true })
+    .click()
+  await effects.getByRole("button", { name: effectsCopy.add, exact: true }).click()
+  await page
+    .getByRole("menuitem", { name: `${effectsCopy.add} ${effectsWords["add.blur"].toLowerCase()}`, exact: true })
+    .click()
+  await expect(pressed(effects, effectsCopy.innerShadow)).toHaveText(effectsWords.inner)
+  await expect(pressed(effects, effectsCopy.blur)).toHaveText(effectsWords.radius)
+  await expect.poll(() => painted(first)).toEqual({ shadow: 1, glow: 1, inner: 1, blur: 1 })
 
   await slide(page, 8)
   const second = shapeAt(page, "4", softened)
@@ -117,7 +131,7 @@ test("a person adds glow to a shape whose shadow comes from its style and recolo
   await expect(shapeAt(page, "4", softened).locator("[data-effect-soft]")).toHaveCount(1)
   await expect(pressed(await pick(page, shapeAt(page, "4", softened)), "Soft edge")).toHaveText("Radius")
   await slide(page, 7)
-  await expect.poll(() => painted(shapeAt(page, "4", glowing))).toEqual({ shadow: 1, glow: 1 })
+  await expect.poll(() => painted(shapeAt(page, "4", glowing))).toEqual({ shadow: 1, glow: 1, inner: 1, blur: 1 })
 
   const saving = page.waitForEvent("download")
   await exportFromDialog(page)
@@ -137,7 +151,7 @@ test("a person adds glow to a shape whose shadow comes from its style and recolo
   await settled(page)
   await actualSize(page)
   await slide(page, 7)
-  await expect.poll(() => painted(shapeAt(page, "4", glowing))).toEqual({ shadow: 1, glow: 1 })
+  await expect.poll(() => painted(shapeAt(page, "4", glowing))).toEqual({ shadow: 1, glow: 1, inner: 1, blur: 1 })
   await slide(page, 8)
   await expect.poll(() => offset(shapeAt(page, "4", softened))).toBe(far)
   await expect(shapeAt(page, "4", softened).locator("[data-effect-soft]")).toHaveCount(1)
