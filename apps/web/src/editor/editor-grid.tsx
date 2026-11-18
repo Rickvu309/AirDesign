@@ -169,7 +169,7 @@ export function EditorGrid({
       gridTurn.current = tools.undo?.gridTurn
       setStop(index)
       const card = list.current?.querySelector<HTMLElement>(`[data-slide-entry="${index + 1}"]`)
-      if (card) viewport.focus(card)
+      if (card) viewport.focus(card, tools.undo?.gridFocusVisible === true)
     } else if (following.current) {
       const next = list.current?.querySelector<HTMLElement>(`[data-slide-entry="${current + 1}"]`)
       setStop(current)

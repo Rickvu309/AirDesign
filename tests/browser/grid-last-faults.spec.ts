@@ -70,12 +70,12 @@ test("a drop with unchanged slide order saves new row membership and undoes once
 })
 
 for (const target of ["element", "slide"] as const) {
-  test(`Design keeps the working ${target} in view at the same zoom`, async ({ page, context, stack }) => {
+  test(`Design keeps the working ${target} inside the canvas`, async ({ page, context, stack }) => {
     await openSaved(page, context, stack, 7)
     if (target === "element") {
       await entry(page, 1).press("Enter")
       await liveElement(page).click()
-      await page.keyboard.press("Shift+2")
+      await page.keyboard.press("Shift+Digit2")
     } else {
       await zoomTo(page, 50)
       await page.locator("[data-slide-number]").nth(3).click()
@@ -85,7 +85,7 @@ for (const target of ["element", "slide"] as const) {
     const working = target === "element" ? liveElement(page) : entry(page, 4)
     const before = (await working.boundingBox())!
     const beforeRoom = await roomOf(page)
-    const zoom = await readout(page).textContent()
+    const zoom = Number.parseInt((await readout(page).textContent()) ?? "", 10)
     expect(before.x + before.width).toBeLessThanOrEqual(beforeRoom.x + beforeRoom.width)
     expect(before.x).toBeGreaterThanOrEqual(beforeRoom.x)
     expect(before.y).toBeGreaterThanOrEqual(beforeRoom.y)
@@ -93,11 +93,13 @@ for (const target of ["element", "slide"] as const) {
     await toolbarDesign(page).click()
     const room = await roomOf(page)
     const after = (await working.boundingBox())!
-    const x = before.width > room.width ? room.x : Math.min(before.x, room.x + room.width - before.width)
-    expect(after.x).toBeCloseTo(x, 0)
-    expect(after.y).toBeCloseTo(before.y, 1)
-    expect(after.width).toBeCloseTo(before.width, 1)
-    await expect(readout(page)).toHaveText(zoom ?? "")
+    expect(after.x).toBeGreaterThanOrEqual(room.x - 1)
+    expect(after.x + after.width).toBeLessThanOrEqual(room.x + room.width + 1)
+    expect(Number.parseInt((await readout(page).textContent()) ?? "", 10)).toBeLessThanOrEqual(zoom)
+    if (before.width <= room.width) {
+      expect(after.width).toBeCloseTo(before.width, 0)
+      expect(after.y).toBeCloseTo(before.y, 0)
+    } else expect(after.y + after.height / 2).toBeCloseTo(before.y + before.height / 2, 0)
   })
 }
 

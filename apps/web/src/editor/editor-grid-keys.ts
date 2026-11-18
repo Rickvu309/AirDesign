@@ -78,6 +78,6 @@ export function focusMove(list: HTMLElement, key: string): number | null {
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
   })
   const next = gridMove(key, boxes, at)
-  buttons[next]?.focus()
+  buttons[next]?.focus({ focusVisible: true })
   return Number(buttons[next]?.dataset.slideEntry ?? next + 1) - 1
 }

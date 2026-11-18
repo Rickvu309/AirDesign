@@ -216,6 +216,66 @@ it("pans only newly clipped previously visible slides by the minimum distance", 
   expect(resizedGrid(view, { left: 806, top: 132, width: 640, height: 360 }, next, old)).toEqual(view)
 })
 
+it("zooms a fully visible target out until its width fits the narrower room", () => {
+  const view = { x: 20, y: 30, scale: 1 }
+  const before = { left: 100, top: 50, width: 1400, height: 800 }
+  const after = { left: 100, top: 50, width: 900, height: 800 }
+  const box = { left: 150, top: 80, width: 1000, height: 400 }
+  const next = resizedGrid(view, box, before, after)
+  const centre = box.top + box.height / 2
+  expect(next.scale).toBeCloseTo(0.804)
+  expect(next.scale).toBeLessThan(view.scale)
+  expect(next.x).toBeCloseTo(48 - 30 * next.scale)
+  expect(after.top + next.y + ((centre - after.top - view.y) / view.scale) * next.scale).toBeCloseTo(centre)
+  expect(after.left + next.x + ((box.left - after.left - view.x) / view.scale) * next.scale).toBeCloseTo(
+    after.left + 48,
+  )
+})
+
+it("keeps the vertical centre when a screen-fixed heading sits above the target", () => {
+  const view = { x: 20, y: 30, scale: 1.68 }
+  const before = { left: 0, top: 0, width: 1470, height: 800 }
+  const after = { left: 0, top: 0, width: 1110, height: 800 }
+  const box = { left: 48, top: 200, width: 1374, height: 219 }
+  const fixed = 44
+  const next = resizedGrid(view, box, before, after, fixed)
+  const centre = box.top + box.height / 2
+  const world = (centre - after.top - view.y - fixed) / view.scale
+  expect(next.scale).toBeLessThan(view.scale)
+  expect(after.top + next.y + fixed + world * next.scale).toBeCloseTo(centre)
+  expect(after.top + next.y + ((centre - after.top - view.y) / view.scale) * next.scale).not.toBeCloseTo(centre)
+})
+
+it("fits a horizontally visible target that already overflows the room vertically", () => {
+  const view = { x: 0, y: 0, scale: 1 }
+  const before = { left: 0, top: 0, width: 1000, height: 500 }
+  const after = { left: 0, top: 0, width: 800, height: 500 }
+  expect(resizedGrid(view, { left: 700, top: -10, width: 200, height: 100 }, before, after)).toEqual({
+    x: -100,
+    y: 0,
+    scale: 1,
+  })
+  const wide = resizedGrid(view, { left: 50, top: -10, width: 900, height: 100 }, before, after)
+  expect(wide.scale).toBeCloseTo(704 / 900)
+  expect(wide.scale).toBeLessThan(view.scale)
+})
+
+it("leaves a vertically panned target where it is when the room does not move", () => {
+  const view = { x: 70, y: -473, scale: 1 }
+  const room = { left: 0, top: 96, width: 1400, height: 759 }
+  const box = { left: 120, top: -300, width: 960, height: 540 }
+  expect(resizedGrid(view, box, room, room)).toBe(view)
+})
+
+it("does not zoom in when the room grows or cannot hold the fit padding", () => {
+  const view = { x: 0, y: 0, scale: 0.5 }
+  const narrow = { left: 0, top: 0, width: 80, height: 200 }
+  const wide = { left: 0, top: 0, width: 400, height: 200 }
+  const box = { left: 10, top: 20, width: 100, height: 40 }
+  expect(resizedGrid(view, box, narrow, wide)).toEqual(view)
+  expect(resizedGrid(view, box, wide, narrow)).toEqual({ ...view, x: -10 })
+})
+
 it("fits the rotated union in a sectioned row using the world geometry", () => {
   const geometry = {
     rows: [

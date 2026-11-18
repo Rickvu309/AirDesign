@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { GridSectionHead } from "./grid-section"
+import { GridSectionHead, gridHeadingShowsCount } from "./grid-section"
 import { EditorGrid } from "@/editor/editor-grid"
 import type { SlideStrip } from "@/editor/slide-sidebar"
 
@@ -61,6 +61,11 @@ describe("grid sections", () => {
     expect(html).toContain('data-slide-entry="4"')
     expect(html).toMatch(/data-slide-entry="4"[^>]*>|tabindex="0"[^>]*data-slide-entry="4"/)
   })
+})
+
+it("drops a section count before the name is cut", () => {
+  expect(gridHeadingShowsCount(80, 120)).toBe(false)
+  expect(gridHeadingShowsCount(120, 120)).toBe(true)
 })
 
 it("keeps overview section names on one line with a full accessible and pointer name", () => {

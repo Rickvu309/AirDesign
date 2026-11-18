@@ -26,6 +26,10 @@ export function gridRows(strip: SlideStrip): readonly GridRow[] {
 
 const sectionNameStyle = "text-[length:var(--type-caption)] font-semibold text-foreground"
 
+export function gridHeadingShowsCount(visibleName: number, fullName: number): boolean {
+  return fullName <= visibleName + 1
+}
+
 export function GridSectionHead({
   name,
   count,
@@ -39,26 +43,30 @@ export function GridSectionHead({
   onToggle: () => void
   marker?: boolean
 }) {
+  const row = useRef<HTMLDivElement>(null)
   const label = useRef<HTMLSpanElement>(null)
-  const sample = useRef<HTMLSpanElement>(null)
-  const letters = Array.from(name)
-  const shortest = letters.length > 3 ? `${letters.slice(0, 3).join("")}…` : name
+  const meta = useRef<HTMLSpanElement>(null)
   useLayoutEffect(() => {
-    const text = label.current
-    const minimum = sample.current
-    if (text === null || minimum === null) return
-    const resize = () => {
-      text.style.visibility =
-        text.getBoundingClientRect().width + 0.25 < minimum.getBoundingClientRect().width ? "hidden" : ""
+    const room = row.current
+    const title = label.current
+    const countLabel = meta.current
+    if (room === null || title === null || countLabel === null) return
+    let roomWidth = 0
+    const fit = () => {
+      const width = room.clientWidth
+      if (countLabel.hidden && width <= roomWidth + 0.5) return
+      roomWidth = width
+      countLabel.hidden = false
+      const hide = !gridHeadingShowsCount(title.clientWidth, title.scrollWidth)
+      if (countLabel.hidden !== hide) countLabel.hidden = hide
     }
-    resize()
-    const observer = new ResizeObserver(resize)
-    observer.observe(text)
-    observer.observe(minimum)
+    fit()
+    const observer = new ResizeObserver(fit)
+    observer.observe(room)
     return () => observer.disconnect()
-  }, [marker, name])
+  }, [count, name])
   return (
-    <div className="flex h-5 min-w-0 items-center gap-2" style={marker ? { containerType: "inline-size" } : undefined}>
+    <div ref={row} className="flex h-5 w-full min-w-0 items-center gap-2">
       <h2 className="flex min-w-0 max-w-full">
         <button
           type="button"
@@ -76,23 +84,12 @@ export function GridSectionHead({
           <span ref={label} className={cn(sectionNameStyle, "min-w-0 truncate")}>
             {name}
           </span>
-          <span
-            className={cn(
-              "shrink-0 text-[length:var(--type-caption)] text-quiet tabular-nums",
-              marker && "@max-[160px]:hidden",
-            )}
-          >
+          <span ref={meta} className="shrink-0 text-[length:var(--type-caption)] text-quiet tabular-nums">
             {slideListCopy.sectionCount(count)}
           </span>
         </button>
       </h2>
-      {marker ? (
-        <span ref={sample} aria-hidden="true" className={cn(sectionNameStyle, "invisible absolute whitespace-nowrap")}>
-          {shortest}
-        </span>
-      ) : (
-        <span aria-hidden="true" className="ml-1 block h-px flex-1 bg-line" />
-      )}
+      {marker ? null : <span aria-hidden="true" className="ml-1 block h-px flex-1 bg-line" />}
     </div>
   )
 }

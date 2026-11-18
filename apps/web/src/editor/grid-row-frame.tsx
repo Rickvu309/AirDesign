@@ -53,7 +53,7 @@ export function GridRowFrame({
         className="absolute z-10 flex touch-none items-center justify-center rounded-full"
         onPointerDown={(event) => {
           event.stopPropagation()
-          event.currentTarget.focus({ preventScroll: true })
+          event.currentTarget.focus({ preventScroll: true, focusVisible: false })
           onGrab(event)
         }}
         onClick={(event) => event.stopPropagation()}
@@ -109,7 +109,8 @@ export function useGridRowFocus(
     if (wanted === null || order === wanted.order) return
     pending.current = null
     if (ids[rows[wanted.to]?.start ?? -1] !== wanted.head) return
-    list.current?.querySelectorAll<HTMLButtonElement>("[data-row-handle]")[wanted.to]?.focus({ preventScroll: true })
+    const handle = list.current?.querySelectorAll<HTMLButtonElement>("[data-row-handle]")[wanted.to]
+    handle?.focus({ preventScroll: true, focusVisible: true })
   }, [list, rows, ids, order])
   return (held: readonly number[], at: number) => {
     const head = ids[held[0] ?? -1]
