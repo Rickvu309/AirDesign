@@ -36,7 +36,7 @@ test("a person switches an imported photo to a solid, and back to the same photo
   await expect(panel).toHaveAttribute("data-panel-kind", "picture")
   await expect(panel.locator("[data-design-head]")).toContainText(designCopy.titles.picture)
   await expect.poll(() => photo(page)).toContain("url(")
-  const kinds = panel.locator("[data-picture-kind]")
+  const kinds = panel.getByRole("group", { name: fillCopy.value, exact: true })
   await expect(kinds.getByRole("button")).toHaveCount(4)
   for (const name of [fillWords.none, fillWords.solid, fillWords.gradient, fillWords.image])
     await expect(kinds.getByRole("button", { name, exact: true })).toBeEnabled()

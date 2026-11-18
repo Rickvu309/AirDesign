@@ -3,10 +3,9 @@ import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { designCopy } from "@/copy/design-copy"
 import { colorCopy } from "@/copy/color-copy"
-import { FillDetails } from "@/design/controls/union"
+import { FillDetails, UnionControl } from "@/design/controls/union"
 import { controlViews } from "@/design/control-views"
 import { BlurControl, OverlayControl } from "@/design/controls/picture-adjust"
-import { PictureFillKinds } from "@/design/controls/picture-kind"
 import type { Palette } from "@/design/color-choices"
 import type { ControlProps, PanelModel, PanelControl, PanelSection } from "@/design/panel"
 import { visibleEffects } from "@/design/effects-list"
@@ -338,7 +337,7 @@ export function ElementDesign({
                 last={at === last && children === null && !fillDetails}
               >
                 {fill === undefined ? null : (
-                  <PictureFillKinds control={fill} palette={palette} onChange={(value) => onChange(fill, value)} />
+                  <UnionControl control={fill} palette={palette} onChange={(value) => onChange(fill, value)} />
                 )}
                 {picture}
                 <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
